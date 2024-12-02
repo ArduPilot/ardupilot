@@ -4,14 +4,16 @@
 
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 local rc_switch = rc:find_channel_for_option(24)
+
 if not rc_switch then
     gcs:send_text(MAV_SEVERITY.ERROR, "Mission Reset switch not assigned")
     return
 end
 
 local current_mission_index = 0
-local max_missions = 9
+local max_missions = 6  -- Aggiornato a 6 poiché hai fino a mission6.txt
 local high_timer = 0
+local latest_mission_loaded = -1  -- Track the last loaded mission
 
 local function read_mission(file_name)
     if vehicle:get_mode() == 3 then
@@ -43,7 +45,6 @@ local function read_mission(file_name)
             data[i] = file:read('n')
             if data[i] == nil then
                 if i == 1 then
-                    gcs:send_text(MAV_SEVERITY.WARNING, "Loaded mission: " .. file_name)
                     file:close()
                     return true
                 else
@@ -78,14 +79,14 @@ if not read_mission("mission0.txt") then
 end
 
 local function load_next_mission()
-    if vehicle:get_mode() == 3 then
-        return
-    end
-
     current_mission_index = (current_mission_index + 1) % (max_missions + 1)
     local file_name = string.format("mission%d.txt", current_mission_index)
+
     if read_mission(file_name) then
-        gcs:send_text(MAV_SEVERITY.WARNING, "Loaded mission: " .. file_name)
+        if latest_mission_loaded ~= current_mission_index then
+            gcs:send_text(MAV_SEVERITY.WARNING, "Loaded mission: " .. file_name)
+            latest_mission_loaded = current_mission_index
+        end
     end
 end
 
@@ -105,11 +106,11 @@ function update()
         end
     else
         if high_timer > 0 and high_timer < 3 then
-            load_next_mission()
+            load_next_mission()  -- Load next mission if switched back before 3 seconds
         end
         high_timer = 0
     end
-
+    
     return update, 1000
 end
 
