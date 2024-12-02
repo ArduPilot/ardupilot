@@ -14,8 +14,7 @@ local max_missions = 9
 local high_timer = 0
 
 local function read_mission(file_name)
-    if vehicle:get_mode() == 10 then  -- 10 = AUTO mode
-        gcs:send_text(MAV_SEVERITY.ERROR, "Cannot load mission in AUTO mode")
+    if vehicle:get_mode() == 3 then
         return false
     end
 
@@ -26,7 +25,14 @@ local function read_mission(file_name)
 
     local header = file:read('l')
     assert(string.find(header, 'QGC WPL 110') == 1, file_name .. ': incorrect format')
-    assert(mission:clear(), 'Could not clear current mission')
+
+    if vehicle:get_mode() ~= 3 then
+        if not mission:clear() then
+            gcs:send_text(MAV_SEVERITY.ERROR, "Could not clear current mission")
+            file:close()
+            return false
+        end
+    end
 
     local item = mavlink_mission_item_int_t()
     local index = 0
@@ -72,6 +78,10 @@ if not read_mission("mission0.txt") then
 end
 
 local function load_next_mission()
+    if vehicle:get_mode() == 3 then
+        return
+    end
+
     current_mission_index = (current_mission_index + 1) % (max_missions + 1)
     local file_name = string.format("mission%d.txt", current_mission_index)
     if read_mission(file_name) then
@@ -85,9 +95,12 @@ function update()
     if sw_pos == 2 then
         high_timer = high_timer + 1
         if high_timer >= 3 then
-            current_mission_index = 0
-            read_mission("mission0.txt")
-            gcs:send_text(MAV_SEVERITY.WARNING, "Reset to mission0.txt")
+            if vehicle:get_mode() ~= 3 then
+                current_mission_index = 0
+                if read_mission("mission0.txt") then
+                    gcs:send_text(MAV_SEVERITY.WARNING, "Reset to mission0.txt")
+                end
+            end
             high_timer = 0
         end
     else
