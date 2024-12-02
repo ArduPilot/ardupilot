@@ -10,8 +10,10 @@ The scripts should be installed in the SCRIPTS folder on the MicroSD, and the mi
 
 The mission file called mission0.txt (the default mission) must exist and is loaded at boot, if the script does not find it it stops working.
 
-To load to the next mission file just bring AUX switch from low to high, each switch loads the next mission file in numerical order.
+To load to the next mission file just bring AUX switch from low to high for no more than three seconds, each switch high-low loads the next mission file in numerical order.
 
 If the next mission file numerically does not exist load the next one, at the end of the rotation it returns to load mission0.txt.
+
+If AUX is held at high state for more than three seconds the script will restart by loading mission0.txt.
 
 Provides for sending messages under any condition, load or error.
