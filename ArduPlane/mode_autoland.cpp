@@ -68,7 +68,6 @@ bool ModeAutoLand::_enter()
     cmd.content.location = plane.next_WP_loc;
     plane.start_command(cmd);
     land_started = false;
-    gcs().send_text(MAV_SEVERITY_WARNING, "AutoLanding");
     return true;
 }
 

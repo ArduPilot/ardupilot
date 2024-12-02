@@ -890,12 +890,6 @@ protected:
     bool _enter() override;
     AP_Mission::Mission_Command cmd;
     bool land_started;
- 
-
-private:
-
-
-
 };
 
 #if HAL_SOARING_ENABLED

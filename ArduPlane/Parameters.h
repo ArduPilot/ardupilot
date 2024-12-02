@@ -100,7 +100,7 @@ public:
         k_param_sonar_old, // unused
         k_param_log_bitmask,
         k_param_BoardConfig,
-        k_param_mode_autoland,     // was rssi_range
+        k_param_rssi_range,     // unused, replaced by rssi_ library parameters
         k_param_flapin_channel_old,  // unused, moved to RC_OPTION
         k_param_flaperon_output, // unused
         k_param_gps,
@@ -363,6 +363,8 @@ public:
 
         k_param_pullup = 270,
         k_param_quicktune,
+        k_param_mode_autoland, 
+
     };
 
     AP_Int16 format_version;
