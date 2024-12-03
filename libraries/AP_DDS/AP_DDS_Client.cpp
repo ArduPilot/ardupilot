@@ -896,7 +896,11 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         if (deserialize_success == false) {
             break;
         }
-        mode_switch_response.status = AP::vehicle()->set_mode(mode_switch_request.mode, ModeReason::DDS_COMMAND);
+#if AP_EXTERNAL_CONTROL_ENABLED
+        mode_switch_response.status = AP_DDS_External_Control::set_mode(mode_switch_request.mode);
+#else // AP_EXTERNAL_CONTROL_ENABLED
+        mode_switch_response.status = false;
+#endif // AP_EXTERNAL_CONTROL_ENABLED
         mode_switch_response.curr_mode = AP::vehicle()->get_mode();
 
         const uxrObjectId replier_id = {
