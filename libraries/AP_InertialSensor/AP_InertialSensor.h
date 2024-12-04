@@ -831,6 +831,8 @@ public:
     void update_backend_filters();
     // are rate loop samples enabled for this instance?
     bool is_rate_loop_gyro_enabled(uint8_t instance) const;
+    // is dynamic fifo enabled for this instance
+    bool is_dynamic_fifo_enabled(uint8_t instance) const;
     // endif AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 };
 
