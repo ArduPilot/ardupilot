@@ -488,18 +488,18 @@ bool AP_InertialSensor_Invensense::update() /* front end */
     return true;
 }
 
-#if AP_INERTIALSENSOR_DYNAMIC_FIFO
 void AP_InertialSensor_Invensense::set_primary_gyro(bool is_primary)
 {
-    if (((1U<<gyro_instance) & AP_INERTIALSENSOR_DYNAMIC_FIFO_MASK) && enable_fast_sampling(gyro_instance)) {
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    if (_imu.is_dynamic_fifo_enabled(gyro_instance)) {
         if (is_primary) {
             _dev->adjust_periodic_callback(periodic_handle, 1000000UL / _gyro_backend_rate_hz);
         } else {
             _dev->adjust_periodic_callback(periodic_handle, 1000000UL / 1000);
         }
     }
-}
 #endif
+}
 
 /*
   accumulate new samples
