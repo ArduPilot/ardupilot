@@ -644,7 +644,7 @@ void AC_AutoTune_Multi::twitching_test_angle(float angle, float rate, float angl
 }
 
 // twitching_measure_acceleration - measure rate of change of measurement
-void AC_AutoTune_Multi::twitching_measure_acceleration(float &accel_average, float rate, float rate_max) const
+void AC_AutoTune_Multi::twitching_measure_acceleration(float &accel_average, float rate, float &rate_max) const
 {
     if (rate_max < rate) {
         rate_max = rate;
