@@ -188,6 +188,12 @@ private:
     AP_Int16 _power_mw;
     uint16_t _current_power;
     AP_Int16 _max_power_mw;
+    AP_Int16 _vtx_power_1;
+    AP_Int16 _vtx_power_2;
+    AP_Int16 _vtx_power_3;
+    AP_Int16 _vtx_power_4;
+    AP_Int16 _vtx_power_5;
+    AP_Int16 _vtx_power_6;
 
     // frequency band
     AP_Int8 _band;

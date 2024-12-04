@@ -75,6 +75,42 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
     // @Range: 25 1000
     AP_GROUPINFO("MAX_POWER", 7, AP_VideoTX, _max_power_mw, 800),
 
+    // @Param: VTX_POWER1
+    // @DisplayName: VTX_POWER1
+    // @Description: The VTX Power for switch position 1 (910 to 1230 and above 2049)
+    // @Range: 25 1000
+    AP_GROUPINFO("VTX_POWER1", 8, AP_VideoTX, _vtx_power_1, 0),
+
+    // @Param: VTX_POWER2
+    // @DisplayName: VTX_POWER2
+    // @Description: The VTX Power for switch position 2 (1231 to 1360)
+    // @Range: 25 1000
+    AP_GROUPINFO("VTX_POWER2", 9, AP_VideoTX, _vtx_power_2, 25),
+
+    // @Param: VTX_POWER3
+    // @DisplayName: VTX_POWER3
+    // @Description: The VTX Power for switch position 3 (1361 to 1490)
+    // @Range: 25 1000
+    AP_GROUPINFO("VTX_POWER3", 10, AP_VideoTX, _vtx_power_3, 100),
+
+    // @Param: VTX_POWER4
+    // @DisplayName: VTX_POWER4
+    // @Description: The VTX Power for switch position 4 (1491 to 1620)
+    // @Range: 25 1000
+    AP_GROUPINFO("VTX_POWER4", 11, AP_VideoTX, _vtx_power_4, 200),
+
+    // @Param: VTX_POWER5
+    // @DisplayName: VTX_POWER5
+    // @Description: The VTX Power for switch position 5 (1621 to 1749)
+    // @Range: 25 1000
+    AP_GROUPINFO("VTX_POWER5", 12, AP_VideoTX, _vtx_power_5, 400),
+
+    // @Param: VTX_POWER6
+    // @DisplayName: VTX_POWER6
+    // @Description: The VTX Power for switch position 6 (1750 to 2049)
+    // @Range: 25 1000
+    AP_GROUPINFO("VTX_POWER6", 13, AP_VideoTX, _vtx_power_6, 800),
+
     AP_GROUPEND
 };
 
@@ -508,36 +544,46 @@ void AP_VideoTX::change_power(int8_t position)
     if (!_enabled || position < 0 || position > 5) {
         return;
     }
-    // first find out how many possible levels there are
-    uint8_t num_active_levels = 0;
-    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
-        if (_power_levels[i].active != PowerActive::Inactive && _power_levels[i].mw <= _max_power_mw) {
-            num_active_levels++;
-        }
-    }
-    // iterate through to find the level
-    uint16_t level = constrain_int16(roundf((num_active_levels * (position + 1)/ 6.0f) - 1), 0, num_active_levels - 1);
-    debug("looking for pos %d power level %d from %d", position, level, num_active_levels);
     uint16_t power = 0;
-    for (uint8_t i = 0, j = 0; i < num_active_levels; i++, j++) {
-        while (j < VTX_MAX_POWER_LEVELS-1 && _power_levels[j].active == PowerActive::Inactive) {
-            j++;
-        }
-        if (i == level) {
-            power = _power_levels[j].mw;
-            debug("selected power %dmw", power);
-            break;
-        }
-    }
-
-    if (power == 0) {
-        if (!hal.util->get_soft_armed()) {    // don't allow pitmode to be entered if already armed
-            set_configured_options(get_configured_options() | uint8_t(VideoOptions::VTX_PITMODE));
-        }
+    if (position == 0){
+        power = _vtx_power_1;
+    } else if (position == 1){
+        power = _vtx_power_2;
+    } else if (position == 2){
+        power = _vtx_power_3;
+    } else if (position == 3){
+        power = _vtx_power_4;
+    } else if (position == 4){
+        power = _vtx_power_5;
+    } else if (position == 5){
+        power = _vtx_power_6;
     } else {
-        if (has_option(VideoOptions::VTX_PITMODE)) {
-            set_configured_options(get_configured_options() & ~uint8_t(VideoOptions::VTX_PITMODE));
-        }
+        power = 0;
+    }
+    debug("selected power %dmw", power);
+    if ((power == 0)
+        && !(has_option(VideoOptions::VTX_PITMODE_ON_DISARM)
+             || has_option(VideoOptions::VTX_PITMODE_UNTIL_ARM)
+             )
+        && (!hal.util->get_soft_armed())
+        ){
+        /**
+         * If power is 0 this indicates pitmode by RC switch but there are two constraints.
+         * 1. Pitmode must not be controlled by ARM state.
+         * 2. It is not allowed to enter pitmode if the vehicle is already armed for safety.
+         * If none of this is the case set the VTX_PITMODE flag.
+         */
+        set_configured_options(get_configured_options() | uint8_t(VideoOptions::VTX_PITMODE));
+    } else if (!(has_option(VideoOptions::VTX_PITMODE_ON_DISARM)
+                 || has_option(VideoOptions::VTX_PITMODE_UNTIL_ARM)
+                 )
+               && (has_option(VideoOptions::VTX_PITMODE))
+               ) {
+        // pitmode is not controlled by arm state and we need to disable it
+        set_configured_options(get_configured_options() & ~uint8_t(VideoOptions::VTX_PITMODE));
+    }
+    if (power > 0){
+        // The configured power may not be 0.
         set_configured_power_mw(power);
     }
 }
