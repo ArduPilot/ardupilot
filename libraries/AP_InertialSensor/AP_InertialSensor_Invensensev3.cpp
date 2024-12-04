@@ -31,6 +31,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include "AP_InertialSensor_rate_config.h"
 #include "AP_InertialSensor_Invensensev3.h"
 #include <utility>
 #include <stdio.h>
@@ -405,18 +406,18 @@ bool AP_InertialSensor_Invensensev3::update()
     return true;
 }
 
-#if AP_INERTIALSENSOR_DYNAMIC_FIFO
 void AP_InertialSensor_Invensensev3::set_primary_gyro(bool is_primary)
 {
-    if (((1U<<gyro_instance) & AP_INERTIALSENSOR_DYNAMIC_FIFO_MASK) && enable_fast_sampling(gyro_instance)) {
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    if (_imu.is_dynamic_fifo_enabled(gyro_instance)) {
         if (is_primary) {
             dev->adjust_periodic_callback(periodic_handle, backend_period_us);
         } else {
             dev->adjust_periodic_callback(periodic_handle, backend_period_us * get_fast_sampling_rate());
         }
     }
-}
 #endif
+}
 
 /*
   accumulate new samples

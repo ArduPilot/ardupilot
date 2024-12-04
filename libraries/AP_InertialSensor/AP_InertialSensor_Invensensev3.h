@@ -46,9 +46,7 @@ public:
     const uint16_t multiplier_accel = INT16_MAX/(32*GRAVITY_MSS);
 
 protected:
-#if AP_INERTIALSENSOR_DYNAMIC_FIFO
     void set_primary_gyro(bool is_primary) override;
-#endif
 
 private:
     AP_InertialSensor_Invensensev3(AP_InertialSensor &imu,

@@ -23,6 +23,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
+#include "AP_InertialSensor_rate_config.h"
 #include "AP_InertialSensor_Invensensev2.h"
 
 extern const AP_HAL::HAL& hal;
