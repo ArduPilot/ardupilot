@@ -323,7 +323,7 @@ float AC_PID::update_error(float error, float dt, bool limit)
 //  If the limit flag is set the integral is only allowed to shrink
 void AC_PID::update_i(float dt, bool limit)
 {
-    if (!is_zero(_ki) && is_positive(dt)) {
+    if (!is_zero(_ki) && is_positive(dt)) { //检查积分增益ki是否为0，如果为0则不执行积分计算
         // Ensure that integrator can only be reduced if the output is saturated
         if (!limit || ((is_positive(_integrator) && is_negative(_error)) || (is_negative(_integrator) && is_positive(_error)))) {
             _integrator += ((float)_error * _ki) * dt;
