@@ -535,6 +535,9 @@ private:
     // 0 = disabled, 1 = enabled for throttle, 2 = enabled for current
     AP_Int8     _motor_comp_type;
 
+    // motor compensation battery mask
+    AP_Int16     _motor_comp_batmask;
+    
     // automatic compass orientation on calibration
     AP_Int8     _rotate_auto;
 
