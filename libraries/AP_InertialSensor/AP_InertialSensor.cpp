@@ -1006,6 +1006,16 @@ AP_InertialSensor::init(uint16_t loop_rate)
 #endif
 
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+
+#if APM_BUILD_TYPE(APM_BUILD_Heli)
+    // Throttle tracking does not make sense with heli because "throttle" is actually collective position in AP_MotorsHeli
+    for (auto &notch : harmonic_notches) {
+        if (notch.params.enabled() && notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateThrottle) {
+            AP_BoardConfig::config_error("Throttle notch unavailable with heli");
+        }
+    }
+#endif
+
     // the center frequency of the harmonic notch is always taken from the calculated value so that it can be updated
     // dynamically, the calculated value is always some multiple of the configured center frequency, so start with the
     // configured value
