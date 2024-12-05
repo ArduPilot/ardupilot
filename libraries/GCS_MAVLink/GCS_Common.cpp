@@ -3260,8 +3260,8 @@ MAV_RESULT GCS_MAVLINK::handle_request_operator_control(const mavlink_command_in
                 1, // Param2: Release/request control. If we are here this should always be 1 (request). 0 would not make sense anyway 
                 packet.param3, // Param3: Allow takeover, this way the GCS in control can prompt the operator with the specific type of control request 
                 0, 0, 0, 0);
-            // We should answer this on this case, see MAV_CMD_REQUEST_OPERATOR_CONTROL documentation for more information
-            return MAV_RESULT_PERMISSION_DENIED;
+            // We should answer result failed, see MAV_CMD_REQUEST_OPERATOR_CONTROL documentation for more information
+            return MAV_RESULT_FAILED;
         }
     // Release control
     } else {
