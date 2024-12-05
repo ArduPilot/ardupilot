@@ -21,6 +21,7 @@
 #include "HarmonicNotchFilter.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #define HNF_MAX_FILTERS HAL_HNF_MAX_FILTERS // must be even for double-notch filters
 
@@ -47,6 +48,13 @@
   point at which the harmonic notch goes to zero attenuation
  */
 #define NOTCHFILTER_ATTENUATION_CUTOFF 0.25
+
+#if APM_BUILD_TYPE(APM_BUILD_Heli)
+    // We cannot use throttle based notch on helis
+    #define NOTCHFILTER_DEFAULT_MODE float(HarmonicNotchDynamicMode::Fixed) // fixed
+#else
+    #define NOTCHFILTER_DEFAULT_MODE float(HarmonicNotchDynamicMode::UpdateThrottle) // throttle based
+#endif
 
 
 // table of user settable parameters
@@ -120,7 +128,7 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
     // @Range: 0 5
     // @Values: 0:Fixed,1:Throttle,2:RPM Sensor,3:ESC Telemetry,4:Dynamic FFT,5:Second RPM Sensor
     // @User: Advanced
-    AP_GROUPINFO("MODE", 7, HarmonicNotchFilterParams, _tracking_mode, int8_t(HarmonicNotchDynamicMode::UpdateThrottle)),
+    AP_GROUPINFO("MODE", 7, HarmonicNotchFilterParams, _tracking_mode, NOTCHFILTER_DEFAULT_MODE),
 
     // @Param: OPTS
     // @DisplayName: Harmonic Notch Filter options
