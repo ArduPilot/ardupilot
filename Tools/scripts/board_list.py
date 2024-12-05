@@ -73,6 +73,7 @@ class BoardList(object):
             Board("blue"),
             Board("pxfmini"),
             Board("canzero"),
+            Board("pilotpi"),
             Board("SITL_x86_64_linux_gnu"),
             Board("SITL_arm_linux_gnueabihf"),
         ]
