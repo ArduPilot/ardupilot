@@ -182,13 +182,20 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 17, AC_PrecLand, _options, 0),
 
+    // @Param: COV_SCALING
+    // @DisplayName: Covariance Scaling factor
+    // @Description: Covariance Scaling factor, higher values indicate weight from the accels
+    // @Range: 5 20
+    // @User: Advanced
+    AP_GROUPINFO("COV_SCALING", 18, AC_PrecLand, _cov_factor, 1.0f),
+
     // @Param: ORIENT
     // @DisplayName: Camera Orientation
     // @Description: Orientation of camera/sensor on body
     // @Values: 0:Forward, 4:Back, 25:Down
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO_FRAME("ORIENT", 18, AC_PrecLand, _orient, AC_PRECLAND_ORIENT_DEFAULT, AP_PARAM_FRAME_ROVER),
+    AP_GROUPINFO_FRAME("ORIENT", 19, AC_PrecLand, _orient, AC_PRECLAND_ORIENT_DEFAULT, AP_PARAM_FRAME_ROVER),
 
     AP_GROUPEND
 };
@@ -545,7 +552,7 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
 
             // Update if a new Line-Of-Sight measurement is available
             if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
-                float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*AP::ahrs().get_gyro().length()) + 0.02f);
+                float xy_pos_var = _cov_factor*sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*AP::ahrs().get_gyro().length()) + 0.02f);
                 if (!_estimator_initialized) {
                     // Inform the user landing target has been found
                     gcs().send_text(MAV_SEVERITY_INFO, "PrecLand: Target Found");
