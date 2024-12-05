@@ -126,10 +126,23 @@ private:
 
         static const struct AP_Param::GroupInfo var_info[];
 
+        enum class Options : uint32_t {
+            LOG_ALL_FRAMES = (1U<<0),
+        };
+
+        bool option_is_set(Options option) const {
+            return (_options & uint32_t(option)) != 0;
+        }
+
     private:
         AP_Int8 _driver_number;
         AP_Int32 _bitrate;
         AP_Int32 _fdbitrate;
+        AP_Int32 _options;
+
+#if AP_CAN_LOGGING_ENABLED && HAL_LOGGING_ENABLED
+        uint8_t logging_id;
+#endif
     };
 
     //Parameter Interface for CANDrivers
@@ -198,6 +211,14 @@ private:
 
     void process_frame_buffer(void);
 #endif // HAL_GCS_ENABLED
+
+#if AP_CAN_LOGGING_ENABLED && HAL_LOGGING_ENABLED
+    /*
+      handler for CAN frames for logging
+    */
+    void can_logging_callback(uint8_t bus, const AP_HAL::CANFrame &frame);
+    void check_logging_enable(void);
+#endif
 };
 
 namespace AP
