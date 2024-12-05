@@ -33,6 +33,8 @@ void stm32_flash_set_NRST_MODE(uint8_t nrst_mode);
 #if defined(STM32H7)
 void stm32_flash_corrupt(uint32_t addr);
 #endif
+void stm32_flash_set_BOR_level(uint8_t bor_level);
+void stm32_flash_set_options(const uint32_t mask, const uint32_t pos, const uint32_t value);
 #ifndef HAL_BOOTLOADER_BUILD
 bool stm32_flash_recent_erase(void);
 #endif
