@@ -93,6 +93,7 @@ void AP_CRSF_Telem::setup_wfq_scheduler(void)
     add_scheduler_entry(50, 100);   // heartbeat        10Hz
     add_scheduler_entry(5, 20);     // parameters       50Hz (generally not active unless requested by the TX)
     add_scheduler_entry(50, 200);   // baro_vario        5Hz
+    add_scheduler_entry(50, 200);   // vario             5Hz
     add_scheduler_entry(50, 120);   // Attitude and compass 8Hz
     add_scheduler_entry(200, 1000); // VTX parameters    1Hz
     add_scheduler_entry(1300, 500); // battery           2Hz
