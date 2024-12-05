@@ -306,14 +306,14 @@ response:
 ardupilot_msgs.srv.RallySet_Response(success=True, size=1)
 ```
 
-Get a specific Rally Point:
+Get a specific Rally Point (the same service can be used to request the size of the Rally list):
 
 ```bash
 ros2 service call /ap/rally_get ardupilot_msgs/srv/RallyGet "index: 0"
 requester: making request: ardupilot_msgs.srv.RallyGet_Request(index=0)
 
 response:
-ardupilot_msgs.srv.RallyGet_Response(success=True, rally=ardupilot_msgs.msg.Rally(point=geographic_msgs.msg.GeoPoint(latitude=-35.0, longitude=151.0, altitude=400.0), altitude_frame=0))
+ardupilot_msgs.srv.RallyGet_Response(success=True, size=1, rally=ardupilot_msgs.msg.Rally(point=geographic_msgs.msg.GeoPoint(latitude=-35.0, longitude=151.0, altitude=400.0), altitude_frame=0))
 ```
 
 ## Commanding using ROS 2 Topics

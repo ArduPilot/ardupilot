@@ -999,6 +999,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         const AP_Rally *rally = AP::rally();
         if (rally->get_rally_point_with_index(rally_get_request.index, rally_location)) {
             rally_get_response.success = true;
+            rally_get_response.size = rally->get_rally_total();
             rally_get_response.rally.point.latitude = rally_location.lat * 1e-7;
             rally_get_response.rally.point.longitude = rally_location.lng * 1e-7;
             rally_get_response.rally.point.altitude = rally_location.alt;

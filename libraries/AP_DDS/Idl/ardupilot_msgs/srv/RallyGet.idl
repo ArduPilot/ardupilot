@@ -6,9 +6,10 @@
 
 module ardupilot_msgs {
   module srv {
+    @verbatim (language="comment", text=
+      "This service requests a Rally point from its ID.")
     struct RallyGet_Request {
       @verbatim (language="comment", text=
-        "This service requests a Rally point from its ID." "\n"
         "Rally Point ID.")
       uint8 index;
     };
@@ -16,6 +17,10 @@ module ardupilot_msgs {
       "True is the retrieved point is valid.")
     struct RallyGet_Response {
       boolean success;
+
+      @verbatim (language="comment", text=
+        "Size of Rally Points list.")
+      uint8 size;
 
       @verbatim (language="comment", text=
         "Rally point.")
