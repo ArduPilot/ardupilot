@@ -3259,7 +3259,8 @@ MAV_RESULT GCS_MAVLINK::handle_request_operator_control(const mavlink_command_in
                 msg.sysid, // Param1: Sysid of the GCS requesting control
                 1, // Param2: Release/request control. If we are here this should always be 1 (request). 0 would not make sense anyway 
                 packet.param3, // Param3: Allow takeover, this way the GCS in control can prompt the operator with the specific type of control request 
-                0, 0, 0, 0);
+                packet.param4, // Param4: Timeout in seconds before a request to a GCS to allow takeover is assumed to be rejected. This is used to display the timeout graphically on requestor and GCS in control.
+                0, 0, 0);
             // We should answer result failed, see MAV_CMD_REQUEST_OPERATOR_CONTROL documentation for more information
             return MAV_RESULT_FAILED;
         }
