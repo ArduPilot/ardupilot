@@ -789,7 +789,16 @@ float Plane::tecs_hgt_afe(void)
       coming.
     */
     float hgt_afe;
+
     if (flight_stage == AP_FixedWing::FlightStage::LAND) {
+
+        #if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+            // if external HAGL is active use that
+            if (get_external_HAGL(hgt_afe)) {
+                return hgt_afe;
+            }
+        #endif
+
         hgt_afe = height_above_target();
 #if AP_RANGEFINDER_ENABLED
         hgt_afe -= rangefinder_correction();
