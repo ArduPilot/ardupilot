@@ -314,6 +314,9 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
         mount->get_attitude_quaternion(get_mount_instance(), quat);
     }
 
+    // rotate attitude quaternion to earth frame using AHRS yaw
+    quat.rotate(Vector3f(0, 0, AP::ahrs().get_yaw()));
+
     // send camera fov status message only if the last calculated values aren't stale
     const float quat_array[4] = {
         quat.q1,
