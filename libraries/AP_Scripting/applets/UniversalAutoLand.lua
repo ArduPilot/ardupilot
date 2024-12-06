@@ -13,7 +13,7 @@ function bind_add_param(name, idx, default_value)
 end
 
 --[[
-  // @Param: ENABLE
+  // @Param: AUTOLAND_ENABLE
   // @DisplayName: AUTOLAND ENABLE
   // @Description: enable AUTOLAND script action
   // @Values: 0:Disabled,1:Enabled
@@ -23,7 +23,7 @@ local AULND_ENABLE = bind_add_param('ENABLE', 1, 1)
 local enable = AULND_ENABLE:get()
 
 --[[
-  // @Param: WP_ALT
+  // @Param: AUTOLAND_WP_ALT
   // @DisplayName: Final approach waypoint alt
   // @Description: Altitude of final approach waypoint created by script
   // @Range: 1 100
@@ -33,7 +33,7 @@ local enable = AULND_ENABLE:get()
 local AULND_ALT = bind_add_param('WP_ALT', 2, 0)
 local final_wp_alt = AULND_ALT:get()
 --[[
-  // @Param: WP_DIST
+  // @Param: AUTOLAND_WP_DIST
   // @DisplayName: Final approach waypoint distance
   // @Description: Distance from landng point (HOME) to final approach waypoint created by script in the opposite direction of initial takeoff
   // @Range: 0 1000
