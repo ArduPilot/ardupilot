@@ -5326,6 +5326,40 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             else:
                 raise NotAchievedException("Missing trick %s" % t)
 
+    def UniversalAutoLandScript(self):
+        '''Test UniversalAutoLandScript'''
+        applet_script = "UniversalAutoLand.lua"
+        self.customise_SITL_commandline(["--home", "-35.362938,149.165085,585,173"])
+
+        self.install_applet_script_context(applet_script)
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "SCR_ENABLE" : 1,
+            "SCR_VM_I_COUNT" : 1000000,
+            "RTL_AUTOLAND" : 2
+            })
+        self.reboot_sitl()
+        self.wait_text("Loaded UniversalAutoLand.lua", check_context=True)
+        self.set_parameters({
+             "AUTOLAND_ENABLE" : 1,
+             "AUTOLAND_WP_ALT" : 55,
+             "AUTOLAND_WP_DIST" : 400
+            })
+        self.scripting_restart()
+        self.wait_text("Scripting: restarted", check_context=True)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode("AUTO")
+        self.wait_text("Captured initial takeoff direction", check_context=True)
+
+        self.wait_disarmed(120)
+        self.progress("Check the landed heading matches takeoff")
+        self.wait_heading(173, accuracy=5, timeout=1)
+        loc = mavutil.location(-35.362938, 149.165085, 585, 173)
+        if self.get_distance(loc, self.mav.location()) > 35:
+            raise NotAchievedException("Did not land close to home")
+
     def SDCardWPTest(self):
         '''test BRD_SD_MISSION support'''
         spiral_script = "mission_spiral.lua"
@@ -6457,6 +6491,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.Soaring,
             self.Terrain,
             self.TerrainMission,
+            self.UniversalAutoLandScript,
         ])
         return ret
 
