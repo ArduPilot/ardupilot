@@ -109,6 +109,10 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
             _dot_Omega_c = (_Omega_c - _Omega_c_last) / dt;  //理论上应该可以实现逐元素求导
         }
 
+        //update I term 更新积分项
+        //void AC_PDNN_3D::update_i(float dt, float _ki, float _c1, float _kimax, bool limit)
+        update_i(dt, 0.1f, 20.0f, 10.0f, true);
+
     }
  
 
@@ -127,14 +131,42 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     J.c.x=0;      J.c.y=0;     J.c.z=0.005;
     _geomrtry_output = J*(_Omega_hat * _R.transposed() * _R_c * _Omega_c  - _R.transposed() * _R_c * _dot_Omega_c);
 
+    //(void)_geomrtry_output;
+
     //计算总输出，每个方向上乘以惯性张量
-    _pdnn_output.x = -_e_R.x * _kR - _e_Omega.x * _kOmega - _geomrtry_output.x; 
-    _pdnn_output.y = -_e_R.y * _kR - _e_Omega.y * _kOmega - _geomrtry_output.y;
-    _pdnn_output.z = -_e_R.z * _kR_z - _e_Omega.z * _kOmega_z - _geomrtry_output.z;
+    _pdnn_output.x = -_e_R.x * _kR - _e_Omega.x * _kOmega - _integrator.x - _geomrtry_output.x; 
+    _pdnn_output.y = -_e_R.y * _kR - _e_Omega.y * _kOmega - _integrator.y - _geomrtry_output.y;
+    _pdnn_output.z = -_e_R.z * _kR_z - _e_Omega.z * _kOmega_z - _integrator.z - _geomrtry_output.z;
 
 
     return _pdnn_output; //返回pdnn控制器输出
 }
+
+void AC_PDNN_SO3::update_i(float dt, float _ki, float _c2, float _kimax, bool limit)
+{
+   if (limit){
+
+    Vector3f delta_integrator = (_e_Omega + _e_R * _c2) * dt;
+    _integrator += delta_integrator;
+    
+    float _integrator_x = _integrator.x;
+    float _integrator_y = _integrator.y;
+    float _integrator_z = _integrator.z;
+    _integrator_x = constrain_float(_integrator_x, -_kimax, _kimax); //分别在xyz方向上限制积分大小
+    _integrator_y = constrain_float(_integrator_y, -_kimax, _kimax);
+    _integrator_z = constrain_float(_integrator_z, -_kimax, _kimax);
+
+    _integrator.x = _integrator_x; //把限制后的值重新赋值
+    _integrator.y = _integrator_y;
+    _integrator.z = _integrator_z;
+
+    _integrator =  _integrator * _ki;
+} else{
+    _integrator.zero();
+}
+
+}
+
 
 Vector3f AC_PDNN_SO3::get_R() const
 {

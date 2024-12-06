@@ -99,19 +99,19 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     _c_z_5.x = _c_1_5; _c_z_5.y = _c_2_5;//第5个隐藏层中心2*1向量
 
     //设置RBF网络的宽度 Setting the width of the RBF network
-    float _b_x = 4.0f;  
-    float _b_y = 4.0f;  
-    float _b_z = 4.0f;
+    float _b_x = 2.0f;  
+    float _b_y = 2.0f;  
+    float _b_z = 2.0f;
     //Lyapunov矩阵P（通过MATLAB求解后在这里定义）
     float _P_x_1_1,_P_x_1_2,_P_x_2_1,_P_x_2_2;   
-    _P_x_1_1 = 1.5f;_P_x_1_2 = 0.5f;           (void)_P_x_1_1; //标记为未使用，避免编译的时候报错
-    _P_x_2_1 = 0.5f;_P_x_2_2 = 1.0f;           (void)_P_x_2_1; //标记为未使用，避免编译的时候报错
+    _P_x_1_1 = 1.8333f;  _P_x_1_2 = 0.8333f;           (void)_P_x_1_1; //标记为未使用，避免编译的时候报错
+    _P_x_2_1 = 0.8333f; _P_x_2_2 = 2.2222f;           (void)_P_x_2_1; //标记为未使用，避免编译的时候报错
     float _P_y_1_1,_P_y_1_2,_P_y_2_1,_P_y_2_2;
-    _P_y_1_1 = 1.5f;_P_y_1_2 = 0.5f;           (void)_P_y_1_1; //标记为未使用，避免编译的时候报错
-    _P_y_2_1 = 0.5f;_P_y_2_2 = 1.0f;           (void)_P_y_2_1; //标记为未使用，避免编译的时候报错
+    _P_y_1_1 = 1.8333f;     _P_y_1_2 = 0.8333f;           (void)_P_y_1_1; //标记为未使用，避免编译的时候报错
+    _P_y_2_1 = 0.8333f; _P_y_2_2 = 2.2222f;           (void)_P_y_2_1; //标记为未使用，避免编译的时候报错
     float _P_z_1_1,_P_z_1_2,_P_z_2_1,_P_z_2_2;
-    _P_z_1_1 = 1.5f;_P_z_1_2 = 0.5f;           (void)_P_z_1_1; //标记为未使用，避免编译的时候报错
-    _P_z_2_1 = 0.5f;_P_z_2_2 = 1.0f;           (void)_P_z_2_1; //标记为未使用，避免编译的时候报错
+    _P_z_1_1 = 1.8333f;    _P_z_1_2 = 0.8333f;           (void)_P_z_1_1; //标记为未使用，避免编译的时候报错
+    _P_z_2_1 = 0.8333f;_P_z_2_2 = 2.2222f;           (void)_P_z_2_1; //标记为未使用，避免编译的时候报错
 
     
 
@@ -122,6 +122,7 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
         _reset_filter = false;
         _error = measurement - _target;
         _derivative.zero();  //.zero是vector3f自带的成员函数，可以便捷地初始化归零一个三维向量
+        _integrator.zero();  //初始化归零积分项
 
         //初始化隐藏层输入X
         _X_x.x = _error.x; _X_x.y = _derivative.x; //x方向2*1
@@ -156,6 +157,12 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
             const Vector3f derivative{(_error - error_last) / dt}; //_error - error_last：计算当前误差与上一时刻误差之间的差，表示误差的变化量。计算误差变化量除以时间步长 dt，得到误差变化的速率，即微分项。
             _derivative += (derivative - _derivative) * get_filt_D_alpha(dt); //低通滤波：微分项变化量*滤波系数。使用低通滤波来对微分项进行平滑处理
         }
+
+        // update I term 更新积分项
+        //void AC_PDNN_3D::update_i(float dt, float _ki, float _c1, float _kimax, bool limit)
+        update_i(dt, 0.1f, 30.0f, 20.0f, true);
+   
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~神经网络NN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         //定义隐藏层输入X
         _X_x.x = _error.x; _X_x.y = _derivative.x; //x方向2*1
         _X_y.x = _error.y; _X_y.y = _derivative.y; //y方向2*1
@@ -196,21 +203,21 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
         _h_z_5 = expf(-L_z_5*L_z_5/(2*_b_z*_b_z));//z方向第5个隐藏层输出
 
         //计算权重更新律
-        float _gamma_x = 0.2;
+        float _gamma_x = 0.001;
         _dot_W_x_1 = _gamma_x * (_error.x * _P_x_1_2 + _derivative.x * _P_x_2_2) * _h_x_1;//x方向第1个权重更新律
         _dot_W_x_2 = _gamma_x * (_error.x * _P_x_1_2 + _derivative.x * _P_x_2_2) * _h_x_2;//x方向第2个权重更新律
         _dot_W_x_3 = _gamma_x * (_error.x * _P_x_1_2 + _derivative.x * _P_x_2_2) * _h_x_3;//x方向第3个权重更新律
         _dot_W_x_4 = _gamma_x * (_error.x * _P_x_1_2 + _derivative.x * _P_x_2_2) * _h_x_4;//x方向第4个权重更新律
         _dot_W_x_5 = _gamma_x * (_error.x * _P_x_1_2 + _derivative.x * _P_x_2_2) * _h_x_5;//x方向第5个权重更新律
 
-        float _gamma_y = 0.2;
+        float _gamma_y = 0.001;
         _dot_W_y_1 = _gamma_y * (_error.y * _P_y_1_2 + _derivative.y * _P_y_2_2) * _h_y_1;//y方向第1个权重更新律
         _dot_W_y_2 = _gamma_y * (_error.y * _P_y_1_2 + _derivative.y * _P_y_2_2) * _h_y_2;//y方向第2个权重更新律
         _dot_W_y_3 = _gamma_y * (_error.y * _P_y_1_2 + _derivative.y * _P_y_2_2) * _h_y_3;//y方向第3个权重更新律
         _dot_W_y_4 = _gamma_y * (_error.y * _P_y_1_2 + _derivative.y * _P_y_2_2) * _h_y_4;//y方向第4个权重更新律
         _dot_W_y_5 = _gamma_y * (_error.y * _P_y_1_2 + _derivative.y * _P_y_2_2) * _h_y_5;//y方向第5个权重更新律
 
-        float _gamma_z = 0.1;
+        float _gamma_z = 0.002;
         _dot_W_z_1 = _gamma_z * (_error.z * _P_z_1_2 + _derivative.z * _P_z_2_2) * _h_z_1;//z方向第1个权重更新律
         _dot_W_z_2 = _gamma_z * (_error.z * _P_z_1_2 + _derivative.z * _P_z_2_2) * _h_z_2;//z方向第2个权重更新律
         _dot_W_z_3 = _gamma_z * (_error.z * _P_z_1_2 + _derivative.z * _P_z_2_2) * _h_z_3;//z方向第3个权重更新律
@@ -285,11 +292,36 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     _pdnn_output_D.y = _error.y * _kd;
     _pdnn_output_D.z = _error.z * _kd_z;
 
-    _pdnn_output.x = -_error.x * _kp - _derivative.x * _kd + _target.x * _kff - _phi_x; //计算总输出
-    _pdnn_output.y = -_error.y * _kp - _derivative.y * _kd + _target.y * _kff - _phi_y;
-    _pdnn_output.z = -_error.z * _kp_z - _derivative.z * _kd_z - 9.80665f + _target.z * _kff -_phi_z; //加入重力值9.80665, NED坐标系下为负数
+    _pdnn_output.x = -_error.x * _kp - _integrator.x - _derivative.x * _kd + _target.x * _kff - _phi_x; //计算总输出
+    _pdnn_output.y = -_error.y * _kp - _integrator.y - _derivative.y * _kd + _target.y * _kff -_phi_y;
+    _pdnn_output.z = -_error.z * _kp_z - _integrator.z - _derivative.z * _kd_z - 9.80665f + _target.z * _kff -_phi_z; //加入重力值9.80665, NED坐标系下为负数
 
     return _pdnn_output; //返回pdnn控制器输出
+
+}
+
+void AC_PDNN_3D::update_i(float dt, float _ki, float _c1, float _kimax, bool limit)
+{
+   if (limit){
+
+    Vector3f delta_integrator = (_derivative + _error * _c1) * dt;
+    _integrator += delta_integrator;
+    
+    float _integrator_x = _integrator.x;
+    float _integrator_y = _integrator.y;
+    float _integrator_z = _integrator.z;
+    _integrator_x = constrain_float(_integrator_x, -_kimax, _kimax); //分别在xyz方向上限制积分大小
+    _integrator_y = constrain_float(_integrator_y, -_kimax, _kimax);
+    _integrator_z = constrain_float(_integrator_z, -_kimax, _kimax);
+
+    _integrator.x = _integrator_x; //把限制后的值重新赋值
+    _integrator.y = _integrator_y;
+    _integrator.z = _integrator_z;
+
+    _integrator =  _integrator * _ki;
+} else{
+    _integrator.zero();
+}
 
 }
 
@@ -311,6 +343,16 @@ Vector3f AC_PDNN_3D::get_ff()
     _pdnn_info_z.FF = _target.z * _kff;
     return _target * _kff;
 }
+
+Vector3f AC_PDNN_3D::get_phi() const
+{   
+    Vector3f _phi;
+    _phi.x = _phi_x;
+    _phi.y = _phi_y;
+    _phi.z = _phi_z;
+    return _phi;
+}
+
 
 // save_gains - save gains to eeprom
 void AC_PDNN_3D::save_gains()

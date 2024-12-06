@@ -41,10 +41,10 @@
  # define AC_ATC_MULTI_RATE_YAW_FILT_HZ     2.5f
 #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加pdnn~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#define ATTCONTROL_PDNN_XY_kR                  1.0f    // horizontal pdnn controller P gain default
-#define ATTCONTROL_PDNN_XY_KOmega                  1.0f    // horizontal pdnn controller D gain default
-#define ATTCONTROL_PDNN_Z_kR                  1.0f    // veritical pdnn controller P gain default
-#define ATTCONTROL_PDNN_Z_KOmega                  1.0f    // veritical pdnn controller D gain default
+#define ATTCONTROL_PDNN_XY_kR                  0.4f    // horizontal pdnn controller P gain default
+#define ATTCONTROL_PDNN_XY_KOmega              0.4f    // horizontal pdnn controller D gain default
+#define ATTCONTROL_PDNN_Z_kR                   0.4f    // veritical pdnn controller P gain default
+#define ATTCONTROL_PDNN_Z_KOmega               0.4f    // veritical pdnn controller D gain default
 //在头文件中定义pdnn控制器构造函数的初始化默认值，是因为cpp文件中if编译需要工作空间先build copter
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

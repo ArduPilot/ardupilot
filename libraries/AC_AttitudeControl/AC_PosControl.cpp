@@ -1071,6 +1071,25 @@ DIYWrench get_current_DIYwrench(){
 }
 ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY End~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+float AC_PosControl::pos_desired_z_set_update(float z_final, float rate, float frequncy)
+{   
+    //z_final为设置无人机最终期望NEU高度（cm）
+    //_pos_set_z为平滑后的期望NEU高度（cm）
+    static bool initialized = false; // 标志是否已初始化，静态变量只会初始化一次
+    static float _pos_set_z = 0.0f;           // static 局部变量，值只初始化一次
+
+    if (!initialized) {
+        _pos_set_z = 0.0f;        // 只在第一次调用时初始化
+        initialized = true;
+    }                                
+    if (_pos_set_z < z_final){
+        _pos_set_z += rate / frequncy;                  //位置控制刷新频率为100hz，所以每秒升高z厘米对应每此循环应该除以100份
+    } else {
+      _pos_set_z =  z_final; 
+    }
+  return _pos_set_z;
+
+}
 
 /// update_z_controller - runs the vertical position controller correcting position, velocity and acceleration errors.
 ///     Position and velocity errors are converted to velocity and acceleration targets using PID objects
@@ -1106,7 +1125,7 @@ void AC_PosControl::update_z_controller()
     _vel_target.z *= AP::ahrs().getControlScaleZ(); //光流补偿缩放因子
 
     _pos_target.z = pos_target_zf; //局部变量的赋值还原
-    _pos_desired.z = _pos_target.z - (_pos_offset.z + _pos_terrain); //重新计算期望位置
+    //_pos_desired.z = _pos_target.z - (_pos_offset.z + _pos_terrain); //重新计算期望位置
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnn控制器~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     const Vector3f &pos_meas_neu = _inav.get_position_neu_cm();  //通过 `inav` 系统获取无人机在北-东-上（NEU）坐标系中的位置，单位是厘米。mocap中这里考虑替换为mocap位置反馈
@@ -1114,10 +1133,11 @@ void AC_PosControl::update_z_controller()
     pos_meas_ned.z = -pos_meas_neu.z;                        //转化测量位置为ned 
     Vector3f _pos_desired_3f;                                //转换数据类型为Vector3f
     _pos_desired_3f.x = _pos_desired.x;                      //转换数据类型为Vector3f
-    _pos_desired_3f.y = _pos_desired.y;                      //转换数据类型为Vector3f
-    _pos_desired_3f.z = -_pos_desired.z;                      //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
+    _pos_desired_3f.y = _pos_desired.y;                      //转换数据类型为Vector3f                
+    _pos_desired_3f.z = - pos_desired_z_set_update(500.0f, 20.0f, 400.0f);   //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
     
     _U_x = _pdnn_pos.update_all(_pos_desired_3f, pos_meas_ned, _dt); //调用pdnn控制器循环
+    //_U_x.x += pos_desired_z_set_update(500.0f, 20.0f, 400.0f)/100.0f; //加一个持续激励的扰动
 
     _R_body_to_ned_meas = _ahrs.get_rotation_body_to_ned(); //获取旋转矩阵测量值 body to NED，并传递给_R_body_to_ned_meas
     //_R_body_to_neu_meas = _R_body_to_ned_meas;
@@ -1129,7 +1149,7 @@ void AC_PosControl::update_z_controller()
     fd = -_U_x.dot(_R_body_to_ned_meas.colz());                  //colz是拷贝取值，fd=U_x * Re3
     float fd_nor;
     fd_nor = fd/200.0f;                                         // fd_nor = fd/f_max，除以预设的无人机最大推力进行归一化
-    float test_msg_1 = -_pos_desired.z;
+    float test_msg_1 = _pdnn_pos.get_phi().x;
     float test_msg_2 = fd_nor; //memo这里用来测试转置效果
     current_DIYwrench = get_DIYwrench(test_msg_1, test_msg_2); //用于ROS2推力话题 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

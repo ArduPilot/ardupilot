@@ -25,10 +25,13 @@ public:
     //计算和更新 PDNN 控制器的输出
     Vector3f update_all(const Vector3f &target, const Vector3f &measurement, float dt);
 
+    void update_i(float dt, float _ki, float _c1, float _kimax, bool limit); //更新 PID 控制器的积分项
+
     // get results from pdnn controller //获取 PDNN 控制器各部分结果的成员函数。
     Vector3f get_p() const; //获取比例项输出
     Vector3f get_d() const; //获取微分项输出
     Vector3f get_ff(); //获取前馈项输出
+    Vector3f get_phi() const; //获取神经网络输出
     const Vector3f& get_error() const { return _error; } //获取当前误差值
 
     // reset_filter - input and D term filter will be reset to the next value provided to set_input()

@@ -21,6 +21,8 @@ public:
 
     //计算和更新 PDNN 控制器的输出
     Vector3f update_all(const Matrix3f &R_c, const Matrix3f &R, const Vector3f &Omega, float dt);
+    
+    void update_i(float dt, float _ki, float _c2, float _kimax, bool limit); //更新 PID 控制器的积分项
 
     // get results from pdnn controller //获取 PDNN 控制器各部分结果的成员函数。
     Vector3f get_R() const; //获取R比例项输出
