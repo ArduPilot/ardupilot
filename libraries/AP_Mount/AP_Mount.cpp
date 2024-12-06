@@ -663,18 +663,25 @@ bool AP_Mount::get_poi(uint8_t instance, Quaternion &quat, Location &loc, Locati
 }
 #endif
 
-// get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
-// returns true on success
-bool AP_Mount::get_attitude_euler(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_bf_deg)
+// get attitude as a quaternion.  returns true on success.
+// att_quat will be an earth-frame quaternion rotated such that
+// yaw is in body-frame.
+bool AP_Mount::get_attitude_quaternion(uint8_t instance, Quaternion& att_quat)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return false;
     }
+    return backend->get_attitude_quaternion(att_quat);
+}
 
+// get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
+// returns true on success
+bool AP_Mount::get_attitude_euler(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_bf_deg)
+{
     // re-use get_attitude_quaternion and convert to Euler angles
     Quaternion att_quat;
-    if (!backend->get_attitude_quaternion(att_quat)) {
+    if (!get_attitude_quaternion(instance, att_quat)) {
         return false;
     }
 
