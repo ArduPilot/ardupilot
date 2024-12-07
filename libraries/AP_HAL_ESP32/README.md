@@ -86,7 +86,7 @@ press [tab] then enter on the [exit]  box to exit the app
 done.    the 'sdkconfig' file in this folder should have been updated
 cd ../../../..
 
-If you want to make changes to sdkconfig (sdkconfig is in git ignore list) permanent and to commit them back in git, you should edit sdkconfig.defaults manually or to use ninja save-defconfig tool after menuconfig.
+If you want to make changes to sdkconfig (sdkconfig is in the build dir) permanent and to commit them back in git, you should edit sdkconfig.defaults manually or use ninja save-defconfig tool after menuconfig and replace sdkconfig.defaults with defconfig.
 
 5. Recommanded way to flash the firmware :
 ```
