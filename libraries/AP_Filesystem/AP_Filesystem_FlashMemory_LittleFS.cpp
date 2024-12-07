@@ -713,7 +713,9 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     fs_cfg.prog_size = page_size;
     fs_cfg.block_size = block_size;
     fs_cfg.block_count = block_count;
-
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+    fs_cfg.metadata_max = page_size;
+#endif
     fs_cfg.block_cycles = 500;
     fs_cfg.lookahead_size = 16;
 
