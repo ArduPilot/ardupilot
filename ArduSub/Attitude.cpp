@@ -117,6 +117,33 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
     }
 }
 
+// behavior is similar to Sub::get_pilot_desired_climb_rate
+float Sub::get_pilot_desired_horizontal_rate(RC_Channel *channel) const
+{
+    if (failsafe.pilot_input) {
+        return 0;
+    }
+
+    // forward and lateral sticks have center trim, unlike throttle
+    auto control = channel->norm_input();
+
+    // normalize deadzone
+    auto dz = (float)g.throttle_deadzone * 2.0f / (float)(channel->get_radio_max() - channel->get_radio_min());
+    auto deadband_top = dz * gain;
+    auto deadband_bottom = -dz * gain;
+
+    if (control < deadband_bottom) {
+        // below the deadband
+        return (float)g.pilot_speed * (control - deadband_bottom);
+    } else if (control > deadband_top) {
+        // above the deadband
+        return (float)g.pilot_speed * (control - deadband_top);
+    } else {
+        // must be in the deadband
+        return 0;
+    }
+}
+
 // rotate vector from vehicle's perspective to North-East frame
 void Sub::rotate_body_frame_to_NE(float &x, float &y)
 {
