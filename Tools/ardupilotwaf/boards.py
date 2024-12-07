@@ -949,6 +949,7 @@ class sitl_periph_universal(sitl_periph):
             HAL_PERIPH_ENABLE_AIRSPEED = 1,
             HAL_PERIPH_ENABLE_MAG = 1,
             HAL_PERIPH_ENABLE_BARO = 1,
+            HAL_PERIPH_ENABLE_IMU = 1,
             HAL_PERIPH_ENABLE_RANGEFINDER = 1,
             HAL_PERIPH_ENABLE_BATTERY = 1,
             HAL_PERIPH_ENABLE_EFI = 1,
@@ -963,6 +964,7 @@ class sitl_periph_universal(sitl_periph):
             HAL_WITH_ESC_TELEM = 1,
             AP_EXTENDED_ESC_TELEM_ENABLED = 1,
             AP_TERRAIN_AVAILABLE = 1,
+            HAL_GYROFFT_ENABLED = 0,
         )
 
 class sitl_periph_gps(sitl_periph):
