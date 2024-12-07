@@ -31,6 +31,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include "AP_InertialSensor_rate_config.h"
 #include "AP_InertialSensor_Invensensev3.h"
 #include <utility>
 #include <stdio.h>
@@ -170,7 +171,7 @@ struct PACKED FIFODataHighRes {
 static_assert(sizeof(FIFOData) == 16, "FIFOData must be 16 bytes");
 static_assert(sizeof(FIFODataHighRes) == 20, "FIFODataHighRes must be 20 bytes");
 
-#define INV3_FIFO_BUFFER_LEN 8
+#define INV3_FIFO_BUFFER_LEN 16
 
 AP_InertialSensor_Invensensev3::AP_InertialSensor_Invensensev3(AP_InertialSensor &imu,
                                                                AP_HAL::OwnPtr<AP_HAL::Device> _dev,
@@ -405,6 +406,19 @@ bool AP_InertialSensor_Invensensev3::update()
     return true;
 }
 
+void AP_InertialSensor_Invensensev3::set_primary_gyro(bool is_primary)
+{
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    if (_imu.is_dynamic_fifo_enabled(gyro_instance)) {
+        if (is_primary) {
+            dev->adjust_periodic_callback(periodic_handle, backend_period_us);
+        } else {
+            dev->adjust_periodic_callback(periodic_handle, backend_period_us * get_fast_sampling_rate());
+        }
+    }
+#endif
+}
+
 /*
   accumulate new samples
  */
@@ -561,7 +575,9 @@ void AP_InertialSensor_Invensensev3::read_fifo()
 
     // adjust the periodic callback to be synchronous with the incoming data
     // this means that we rarely run read_fifo() without updating the sensor data
-    dev->adjust_periodic_callback(periodic_handle, backend_period_us);
+    if (is_primary_gyro) {
+        dev->adjust_periodic_callback(periodic_handle, backend_period_us);
+    }
 
     while (n_samples > 0) {
         uint8_t n = MIN(n_samples, INV3_FIFO_BUFFER_LEN);
