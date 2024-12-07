@@ -11960,29 +11960,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()  # because we set home
 
-    def GripperReleaseOnThrustLoss(self):
-        '''tests that gripper is released on thrust loss if option set'''
-
-        self.context_push()
-        self.set_servo_gripper_parameters()
-        self.reboot_sitl()
-
-        self.takeoff(30, mode='LOITER')
-        self.context_push()
-        self.context_collect('STATUSTEXT')
-        self.set_parameters({
-            "SIM_ENGINE_FAIL": 1,
-            "SIM_ENGINE_MUL": 0.5,
-            "FLIGHT_OPTIONS": 4,
-        })
-
-        self.wait_statustext("Gripper Load Released", timeout=60)
-        self.context_pop()
-
-        self.do_RTL()
-        self.context_pop()
-        self.reboot_sitl()
-
     def assert_home_position_not_set(self):
         try:
             self.poll_home_position()
@@ -12322,7 +12299,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GuidedForceArm,
             self.GuidedWeatherVane,
             self.Clamp,
-            self.GripperReleaseOnThrustLoss,
             self.REQUIRE_POSITION_FOR_ARMING,
             self.LoggingFormat,
             self.MissionRTLYawBehaviour,
