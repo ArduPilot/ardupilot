@@ -1124,7 +1124,6 @@ void AP_TECS::_initialise_states(float hgt_afe)
         _integKE              = 0.0f;
         _last_throttle_dem    = aparm.throttle_cruise * 0.01f;
         _last_pitch_dem       = _ahrs.get_pitch();
-        _hgt_afe              = hgt_afe;
         _hgt_dem_in_prev      = hgt_afe;
         _hgt_dem_lpf          = hgt_afe;
         _hgt_dem_rate_ltd     = hgt_afe;
@@ -1501,4 +1500,32 @@ void AP_TECS::_update_pitch_limits(const int32_t ptchMinCO_cd) {
 
     // don't allow max pitch to go below min pitch
     _PITCHmaxf = MAX(_PITCHmaxf, _PITCHminf);
+}
+
+void AP_TECS::offset_altitude(const float alt_offset)
+{
+    // Convention: When alt_offset is positive it means that the altitude of
+    // home has increased. Thus, the relative altitude of the vehicle has
+    // decreased.
+    //
+    // Assumption: This method is called more often and before
+    // `update_pitch_throttle()`. This is necessary to ensure that new height
+    // demands which incorporate the home change are compatible with the
+    // (now updated) internal height state.
+
+    _flare_hgt_dem_ideal    -= alt_offset;
+    _flare_hgt_dem_adj      -= alt_offset;
+    _hgt_at_start_of_flare  -= alt_offset;
+    _hgt_dem_in_prev        -= alt_offset;
+    _hgt_dem_lpf            -= alt_offset;
+    _hgt_dem_rate_ltd       -= alt_offset;
+    _hgt_dem_prev           -= alt_offset;
+    _height_filter.height   -= alt_offset;
+
+    // The following variables are updated anew in every call of
+    // `update_pitch_throttle()`. There's no need to update those.
+    // _hgt_dem
+    // _hgt_dem_in_raw
+    // _hgt_dem_in
+    // Energies
 }

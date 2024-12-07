@@ -21,6 +21,7 @@
 #include "AP_BattMonitor_EFI.h"
 #include "AP_BattMonitor_INA2xx.h"
 #include "AP_BattMonitor_INA239.h"
+#include "AP_BattMonitor_INA3221.h"
 #include "AP_BattMonitor_LTC2946.h"
 #include "AP_BattMonitor_Torqeedo.h"
 #include "AP_BattMonitor_FuelLevel_Analog.h"
@@ -604,6 +605,11 @@ AP_BattMonitor::init()
                 drivers[instance] = NEW_NOTHROW AP_BattMonitor_Scripting(*this, state[instance], _params[instance]);
                 break;
 #endif // AP_BATTERY_SCRIPTING_ENABLED
+#if AP_BATTERY_INA3221_ENABLED
+            case Type::INA3221:
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_INA3221(*this, state[instance], _params[instance]);
+                break;
+#endif  // AP_BATTERY_INA3221_ENABLED
             case Type::NONE:
             default:
                 break;

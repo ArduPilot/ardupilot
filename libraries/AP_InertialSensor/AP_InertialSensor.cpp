@@ -1863,8 +1863,7 @@ void AP_InertialSensor::HarmonicNotch::update_params(uint8_t instance, bool conv
 {
     if (!is_equal(last_bandwidth_hz[instance], params.bandwidth_hz()) ||
         !is_equal(last_attenuation_dB[instance], params.attenuation_dB()) ||
-        (params.tracking_mode() == HarmonicNotchDynamicMode::Fixed &&
-         !is_equal(last_center_freq_hz[instance], params.center_freq_hz())) ||
+        !is_equal(last_center_freq_hz[instance], params.center_freq_hz()) ||
         converging) {
         filter[instance].init(gyro_rate, params);
         last_center_freq_hz[instance] = params.center_freq_hz();

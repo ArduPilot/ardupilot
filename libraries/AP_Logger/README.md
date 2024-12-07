@@ -68,6 +68,7 @@ Please keep the names consistent with Tools/autotest/param_metadata/param.py:33
 | 's' | "s" | seconds|
 | 'q' | "rpm" | revolutions per minute|  Not an SI unit, but sometimes more intuitive than Hertz|
 | 'r' | "rad" | radians|
+| 't' | "N.m" | Newton meters | torque |
 | 'U' | "deglongitude" | degrees of longitude|
 | 'u' | "ppm" | pulses per minute|
 | 'v' | "V" | Volt|

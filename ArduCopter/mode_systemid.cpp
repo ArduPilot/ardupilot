@@ -414,6 +414,7 @@ void ModeSystemId::log_data() const
 
     // Full rate logging of attitude, rate and pid loops
     copter.Log_Write_Attitude();
+    copter.Log_Write_Rate();
     copter.Log_Write_PIDS();
 
     if (is_poscontrol_axis_type()) {

@@ -67,6 +67,7 @@ const struct UnitStructure log_Units[] = {
     { '%', "%" },             // percent
     { 'S', "satellites" },    // number of satellites
     { 's', "s" },             // seconds
+    { 't', "N.m" },           // Newton meters, torque
     { 'q', "rpm" },           // rounds per minute. Not SI, but sometimes more intuitive than Hertz
     { 'r', "rad" },           // radians
     { 'U', "deglongitude" },  // degrees of longitude
@@ -147,6 +148,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AC_AttitudeControl/LogStructure.h>
 #include <AP_HAL/LogStructure.h>
 #include <AP_Mission/LogStructure.h>
+#include <AP_Servo_Telem/LogStructure.h>
 
 // structure used to define logging format
 // It is packed on ChibiOS to save flash space; however, this causes problems
@@ -476,22 +478,6 @@ struct PACKED log_TERRAIN {
     float reference_offset;
 };
 
-struct PACKED log_CSRV {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;     
-    uint8_t id;
-    float position;
-    float force;
-    float speed;
-    uint8_t power_pct;
-    float pos_cmd;
-    float voltage;
-    float current;
-    float mot_temp;
-    float pcb_temp;
-    uint8_t error;
-};
-
 struct PACKED log_ARSP {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -697,21 +683,6 @@ struct PACKED log_VER {
 // @Field: Hp: Probability sensor is healthy
 // @Field: TR: innovation test ratio
 // @Field: Pri: True if sensor is the primary sensor
-
-// @LoggerMessage: CSRV
-// @Description: Servo feedback data
-// @Field: TimeUS: Time since system startup
-// @Field: Id: Servo number this data relates to
-// @Field: Pos: Current servo position
-// @Field: Force: Force being applied
-// @Field: Speed: Current servo movement speed
-// @Field: Pow: Amount of rated power being applied
-// @Field: PosCmd: commanded servo position
-// @Field: V: Voltage
-// @Field: A: Current
-// @Field: MotT: motor temperature
-// @Field: PCBT: PCB temperature
-// @Field: Err: error flags
 
 // @LoggerMessage: DMS
 // @Description: DataFlash-Over-MAVLink statistics
@@ -1222,8 +1193,7 @@ LOG_STRUCTURE_FROM_AVOIDANCE \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHHf","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded,ROfs", "s-DU-mm--m", "F-GG-00--0", true }, \
 LOG_STRUCTURE_FROM_ESC_TELEM \
-    { LOG_CSRV_MSG, sizeof(log_CSRV), \
-      "CSRV","QBfffBfffffB","TimeUS,Id,Pos,Force,Speed,Pow,PosCmd,V,A,MotT,PCBT,Err", "s#---%dvAOO-", "F-000000000-", false }, \
+LOG_STRUCTURE_FROM_SERVO_TELEM \
     { LOG_PIDR_MSG, sizeof(log_PID), \
       "PIDR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS, true },  \
     { LOG_PIDP_MSG, sizeof(log_PID), \
@@ -1306,7 +1276,7 @@ enum LogMessages : uint8_t {
     LOG_IDS_FROM_CAMERA,
     LOG_IDS_FROM_MOUNT,
     LOG_TERRAIN_MSG,
-    LOG_CSRV_MSG,
+    LOG_IDS_FROM_SERVO_TELEM,
     LOG_IDS_FROM_ESC_TELEM,
     LOG_IDS_FROM_BATTMONITOR,
     LOG_IDS_FROM_HAL_CHIBIOS,

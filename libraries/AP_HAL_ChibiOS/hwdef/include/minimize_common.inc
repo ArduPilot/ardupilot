@@ -102,7 +102,6 @@ define AP_LANDINGGEAR_ENABLED APM_BUILD_COPTER_OR_HELI
 # Plane-specific defines; these defines are only used in the Plane
 #  directory, but are seen across the entire codebase:
 define AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED 0
-define QAUTOTUNE_ENABLED 0
 
 # Copter-specific defines; these defines are only used in the Copter
 #  directory, but are seen across the entire codebase:

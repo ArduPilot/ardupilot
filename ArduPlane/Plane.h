@@ -330,6 +330,10 @@ private:
     ModeThermal mode_thermal;
 #endif
 
+#if AP_QUICKTUNE_ENABLED
+    AP_Quicktune quicktune;
+#endif
+    
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     Mode *control_mode = &mode_initializing;
@@ -449,7 +453,7 @@ private:
         float throttle_lim_max;
         float throttle_lim_min;
         uint32_t throttle_max_timer_ms;
-        // Good candidate for keeping the initial time for TKOFF_THR_MAX_T.
+        uint32_t level_off_start_time_ms;
     } takeoff_state;
 
     // ground steering controller state
@@ -875,6 +879,10 @@ private:
     static const TerrainLookupTable Terrain_lookup[];
 #endif
 
+#if AP_QUICKTUNE_ENABLED
+    void update_quicktune(void);
+#endif
+
     // Attitude.cpp
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
@@ -1139,6 +1147,7 @@ private:
     int16_t get_takeoff_pitch_min_cd(void);
     void landing_gear_update(void);
     bool check_takeoff_timeout(void);
+    bool check_takeoff_timeout_level_off(void);
 
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);

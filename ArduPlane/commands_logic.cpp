@@ -138,6 +138,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         }
         break;
 
+    case MAV_CMD_DO_RETURN_PATH_START:
     case MAV_CMD_DO_LAND_START:
         break;
 
@@ -304,6 +305,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_INVERTED_FLIGHT:
+    case MAV_CMD_DO_RETURN_PATH_START:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
@@ -587,7 +589,10 @@ bool Plane::verify_takeoff()
 
     // see if we have reached takeoff altitude
     int32_t relative_alt_cm = adjusted_relative_altitude_cm();
-    if (relative_alt_cm > auto_state.takeoff_altitude_rel_cm) {
+    if (
+        relative_alt_cm > auto_state.takeoff_altitude_rel_cm || // altitude reached
+        plane.check_takeoff_timeout_level_off() // pitch level-off maneuver has timed out
+        ) {
         gcs().send_text(MAV_SEVERITY_INFO, "Takeoff complete at %.2fm",
                           (double)(relative_alt_cm*0.01f));
         steer_state.hold_course_cd = -1;

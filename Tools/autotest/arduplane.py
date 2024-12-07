@@ -5,6 +5,7 @@ AP_FLAKE8_CLEAN
 '''
 
 from __future__ import print_function
+import copy
 import math
 import os
 import signal
@@ -4859,6 +4860,46 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
+    def TakeoffBadLevelOff(self):
+        '''Ensure that the takeoff can be completed under 0 pitch demand.'''
+        '''
+        When using no airspeed, the pitch level-off will eventually command 0
+        pitch demand. Ensure that the plane can climb the final 2m to deem the
+        takeoff complete.
+        '''
+
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "ARSPD_USE": 0.0,
+            "PTCH_TRIM_DEG": -10.0,
+            "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
+            "TKOFF_ALT": 50.0,
+            "TKOFF_DIST": 1000.0,
+            "TKOFF_THR_MAX": 75.0,
+            "TKOFF_THR_MINACC": 3.0,
+        })
+
+        self.load_mission("flaps_tkoff_50.txt")
+        self.change_mode('AUTO')
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Throw the catapult.
+        self.set_servo(7, 2000)
+
+        # Wait until we've reached the takeoff altitude.
+        target_alt = 50
+        self.wait_altitude(target_alt-1, target_alt+1, relative=True, timeout=30)
+
+        self.delay_sim_time(5)
+
+        self.disarm_vehicle(force=True)
+
     def DCMFallback(self):
         '''Really annoy the EKF and force fallback'''
         self.reboot_sitl()
@@ -6190,9 +6231,42 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             higher_home = home
             higher_home.alt += 40
             self.set_home(higher_home)
+            self.change_mode(mode)
             self.wait_altitude(15, 25, relative=True, minimum_duration=10)
             self.disarm_vehicle(force=True)
             self.reboot_sitl()
+
+    def SetHomeAltChange2(self):
+        '''ensure TECS operates predictably as home altitude changes continuously'''
+        '''
+        This can happen when performing a ship landing, where the home
+        coordinates are continuously set by the ship GNSS RX.
+        '''
+        self.set_parameter('TRIM_THROTTLE', 70)
+        self.wait_ready_to_arm()
+        home = self.home_position_as_mav_location()
+        target_alt = 20
+        self.takeoff(target_alt, mode="TAKEOFF")
+        self.change_mode("LOITER")
+        self.delay_sim_time(20) # Let the plane settle.
+
+        tstart = self.get_sim_time()
+        test_time = 10 # Run the test for 10s.
+        pub_freq = 10
+        for i in range(test_time*pub_freq):
+            tnow = self.get_sim_time()
+            higher_home = copy.copy(home)
+            # Produce 1Hz sine waves in home altitude change.
+            higher_home.alt += 40*math.sin((tnow-tstart)*(2*math.pi))
+            self.set_home(higher_home)
+            if tnow-tstart > test_time:
+                break
+            self.delay_sim_time(1.0/pub_freq)
+
+        # Test if the altitude is still within bounds.
+        self.wait_altitude(home.alt+target_alt-5, home.alt+target_alt+5, relative=False, minimum_duration=1, timeout=2)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
 
     def ForceArm(self):
         '''check force-arming functionality'''
@@ -6418,6 +6492,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TakeoffTakeoff4,
             self.TakeoffGround,
             self.TakeoffIdleThrottle,
+            self.TakeoffBadLevelOff,
             self.ForcedDCM,
             self.DCMFallback,
             self.MAVFTP,
@@ -6462,6 +6537,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ScriptStats,
             self.GPSPreArms,
             self.SetHomeAltChange,
+            self.SetHomeAltChange2,
             self.ForceArm,
             self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
             self.GliderPullup,

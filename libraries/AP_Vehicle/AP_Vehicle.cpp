@@ -3,6 +3,7 @@
 #if AP_VEHICLE_ENABLED
 
 #include "AP_Vehicle.h"
+#include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Common/AP_FWVersion.h>
@@ -621,7 +622,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50, 205),
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50, 210),
 #endif
-#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED && !AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
     SCHED_TASK(update_dynamic_notch_at_specified_rate,      LOOP_RATE,                    200, 215),
 #endif
 #if AP_VIDEOTX_ENABLED
@@ -633,6 +634,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20, 225),
 #if HAL_WITH_ESC_TELEM
     SCHED_TASK_CLASS(AP_ESC_Telem, &vehicle.esc_telem,      update,                  100,  50, 230),
+#endif
+#if AP_SERVO_TELEM_ENABLED
+    SCHED_TASK_CLASS(AP_Servo_Telem, &vehicle.servo_telem,  update,                   50,  50, 231),
 #endif
 #if HAL_GENERATOR_ENABLED
     SCHED_TASK_CLASS(AP_Generator, &vehicle.generator,      update,                   10,  50, 235),

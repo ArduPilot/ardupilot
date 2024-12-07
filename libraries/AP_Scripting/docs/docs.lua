@@ -1686,6 +1686,14 @@ function mavlink_video_stream_information_t_ud:uri(index) end
 ---@param value integer
 function mavlink_video_stream_information_t_ud:uri(index, value) end
 
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:encoding() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:encoding(value) end
+
 -- Populate the fields of the VIDEO_STREAM_INFORMATION message
 ---@param instance integer
 ---@param stream_info mavlink_video_stream_information_t_ud
@@ -2549,6 +2557,11 @@ function SRV_Channels:set_output_pwm_chan_timeout(chan, pwm, timeout_ms) end
 ---@param chan integer -- servo channel number (zero indexed)
 ---@param pwm integer -- pwm value
 function SRV_Channels:set_output_pwm_chan(chan, pwm) end
+
+-- Get the pwm for a given servo output channel
+---@param chan integer -- servo channel number (zero indexed)
+---@return integer|nil -- output pwm if available
+function SRV_Channels:get_output_pwm_chan(chan) end
 
 -- Set the pwm for a given servo output function
 ---@param function_num integer -- servo function number (See SERVOx_FUNCTION parameters)

@@ -156,7 +156,7 @@ private:
     void twitching_test_angle(float angle, float rate, float angle_target, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max);
 
     // measure acceleration during twitch test
-    void twitching_measure_acceleration(float &accel_average, float rate, float rate_max) const;
+    void twitching_measure_acceleration(float &accel_average, float rate, float &rate_max) const;
 
     // updating_rate_d_up - increase D and adjust P to optimize the D term for a little bounce back
     // optimize D term while keeping the maximum just below the target by adjusting P
