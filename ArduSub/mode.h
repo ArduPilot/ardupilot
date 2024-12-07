@@ -429,6 +429,10 @@ protected:
     const char *name() const override { return "POSHOLD"; }
     const char *name4() const override { return "POSH"; }
     Mode::Number number() const override { return Mode::Number::POSHOLD; }
+
+private:
+
+    void control_horizontal();
 };
 
 
