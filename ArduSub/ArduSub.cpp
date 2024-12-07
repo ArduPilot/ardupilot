@@ -91,6 +91,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #if HAL_LOGGING_ENABLED
     SCHED_TASK(ten_hz_logging_loop,   10,    350,  51),
     SCHED_TASK(twentyfive_hz_logging, 25,    110,  54),
+    SCHED_TASK(loop_rate_logging, LOOP_RATE, 50,   55),
     SCHED_TASK_CLASS(AP_Logger,           &sub.logger,       periodic_tasks,     400, 300,  57),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor,   &sub.ins,          periodic,           400,  50,  60),
@@ -234,7 +235,15 @@ void Sub::twentyfive_hz_logging()
     }
 
     // log IMU data if we're not already logging at the higher rate
-    if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_RAW)) {
+    if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_FAST)) {
+        AP::ins().Write_IMU();
+    }
+}
+
+// Full rate logging of IMU
+void Sub::loop_rate_logging()
+{
+    if (should_log(MASK_LOG_IMU_FAST)) {
         AP::ins().Write_IMU();
     }
 }
