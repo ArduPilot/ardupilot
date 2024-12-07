@@ -5151,7 +5151,11 @@ static int32_t convert_COMMAND_LONG_loc_param(float param, bool stores_location)
     }
 
     if (stores_location) {
-        return param *1e7;
+     	float convertedValue = param *1e7;
+        if (convertedValue < INT32_MIN || convertedValue > INT32_MAX) {
+            return 0;
+        }
+        return convertedValue;
     }
 
     return param;
