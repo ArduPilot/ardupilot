@@ -42,7 +42,11 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_STORAGE_BACKUP_COUNT
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#define HAL_STORAGE_BACKUP_COUNT 5
+#else
 #define HAL_STORAGE_BACKUP_COUNT 100
+#endif
 #endif
 
 #define STORAGE_FLASH_RETRIES 5
@@ -128,7 +132,7 @@ void Storage::_storage_open(void)
 void Storage::_save_backup(void)
 {
 #ifdef USE_POSIX
-    // allow for fallback to microSD based storage
+    // allow for fallback to microSD or dataflash based storage
     // create the backup directory if need be
     int ret;
     const char* _storage_bak_directory = HAL_STORAGE_BACKUP_FOLDER;
