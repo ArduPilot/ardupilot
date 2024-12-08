@@ -6391,6 +6391,40 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_current_waypoint(4)
         self.fly_home_land_and_disarm()
 
+    def MAV_CMD_DO_JUMP_to_self(self):
+        '''Test MAV_CMD_DO_JUMP to Jumping To Self and skipping rest of mission'''
+        offset = 500
+        alt = self.get_parameter("RTL_ALTITUDE")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, offset, offset, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, offset, -offset, alt),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_JUMP,
+                p1=4,  # waypoint to jump to
+                p2=-1  # number of jumps (-1: infinite)
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -offset, -offset, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -offset, offset, alt)
+        ])
+
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+
+        # check the vehicle is flying to each waypoint as expected
+        self.wait_distance_to_waypoint(2, distance_min=10, distance_max=20, timeout=90) # North East
+        self.wait_distance_to_waypoint(3, distance_min=10, distance_max=20, timeout=90) # North West
+
+        self.progress("check MAV_CMD_DO_JUMP to self did not cause RTL")
+        self.delay_sim_time(5)
+        self.assert_mode_is("AUTO")
+
+        self.wait_distance_to_waypoint(5, distance_min=10, distance_max=20, timeout=90) # South West
+        self.wait_distance_to_waypoint(6, distance_min=10, distance_max=20, timeout=90) # South East
+        self.fly_home_land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -6542,6 +6576,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
             self.GliderPullup,
             self.BadRollChannelDefined,
+            self.MAV_CMD_DO_JUMP_to_self,
         ]
 
     def disabled_tests(self):
