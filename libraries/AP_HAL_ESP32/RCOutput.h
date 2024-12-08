@@ -54,6 +54,8 @@ public:
     uint16_t read(uint8_t ch) override;
     void read(uint16_t* period_us, uint8_t len) override;
 
+    void set_output_mode(uint32_t mask, const enum output_mode mode) override;
+
     void cork() override;
     void push() override;
 
@@ -107,6 +109,7 @@ private:
 
         uint32_t rc_frequency; // frequency in Hz
         uint32_t ch_mask; // mask of channels in this group
+        enum output_mode current_mode; // output mode (none, normal, brushed)
     };
 
     struct pwm_chan {
@@ -120,6 +123,10 @@ private:
     };
 
     uint32_t fast_channel_mask;
+
+    uint32_t constrain_freq(pwm_group &group);
+
+    void set_group_mode(pwm_group &group);
 
     void write_int(uint8_t chan, uint16_t period_us);
 
