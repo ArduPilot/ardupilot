@@ -211,6 +211,8 @@ $ ros2 service list
 /ap/mode_switch
 /ap/prearm_check
 /ap/experimental/takeoff
+/ap/rally_get
+/ap/rally_set
 ---
 ```
 
@@ -238,6 +240,8 @@ $ ros2 service list -t
 /ap/mode_switch [ardupilot_msgs/srv/ModeSwitch]
 /ap/prearm_check [std_srvs/srv/Trigger]
 /ap/experimental/takeoff [ardupilot_msgs/srv/Takeoff]
+/ap/rally_get [ardupilot_msgs/srv/RallyGet]
+/ap/rally_set [ardupilot_msgs/srv/RallySet]
 ```
 
 Call the arm motors service:
@@ -274,14 +278,42 @@ or
 std_srvs.srv.Trigger_Response(success=True, message='Vehicle is Armable')
 ```
 
-Call the takeoff service:
+
+Clear the Rally Points list (the provided Point will be ignored):
 
 ```bash
-$ ros2 service call /ap/experimental/takeoff ardupilot_msgs/srv/Takeoff "{alt: 10.5}"
-requester: making request: ardupilot_msgs.srv.Takeoff_Request(alt=10.5)
+ros2 service call /ap/rally_set ardupilot_msgs/srv/RallySet "{clear: true}"
+requester: making request: ardupilot_msgs.srv.RallySet_Request(rally=ardupilot_msgs.msg.Rally(point=geographic_msgs.msg.GeoPoint(latitude=0.0, longitude=0.0, altitude=0.0), altitude_frame=0), clear=True)
 
 response:
-ardupilot_msgs.srv.Takeoff_Response(status=True)
+ardupilot_msgs.srv.RallySet_Response(success=True, size=0)
+```
+
+Append a Rally Point:
+
+Rally points units of measure are:
+* degrees for the latitude and longitude;
+* meters for the altitude.
+
+The `altitude_frame` specifies the datum for the altitude, among Home, Absolute, Terrain or EKF Origin
+(use the enumerator specified in the message definition).
+
+```bash
+ros2 service call /ap/rally_set ardupilot_msgs/srv/RallySet "{rally: {point: {latitude: -35, longitude: 151, altitude: 400}}}"
+requester: making request: ardupilot_msgs.srv.RallySet_Request(rally=ardupilot_msgs.msg.Rally(point=geographic_msgs.msg.GeoPoint(latitude=-35.0, longitude=151.0, altitude=400.0), altitude_frame=0), clear=False)
+
+response:
+ardupilot_msgs.srv.RallySet_Response(success=True, size=1)
+```
+
+Get a specific Rally Point (the same service can be used to request the size of the Rally list):
+
+```bash
+ros2 service call /ap/rally_get ardupilot_msgs/srv/RallyGet "index: 0"
+requester: making request: ardupilot_msgs.srv.RallyGet_Request(index=0)
+
+response:
+ardupilot_msgs.srv.RallyGet_Response(success=True, size=1, rally=ardupilot_msgs.msg.Rally(point=geographic_msgs.msg.GeoPoint(latitude=-35.0, longitude=151.0, altitude=400.0), altitude_frame=0))
 ```
 
 ## Commanding using ROS 2 Topics
@@ -308,7 +340,7 @@ ros2 topic pub /ap/cmd_gps_pose ardupilot_msgs/msg/GlobalPosition "{latitude: 34
 publisher: beginning loop
 publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), coordinate_frame=0, type_mask=0, latitude=34.0, longitude=118.0, altitude=1000.0, velocity=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), acceleration_or_force=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), yaw=0.0)
 ```
- 
+
 ## Contributing to `AP_DDS` library
 
 ### Adding DDS messages to Ardupilot
