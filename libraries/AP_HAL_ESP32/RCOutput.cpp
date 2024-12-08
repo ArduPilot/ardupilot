@@ -188,7 +188,9 @@ void RCOutput::enable_ch(uint8_t chan)
     }
 
     pwm_out &out = pwm_group_list[chan];
-    ESP_ERROR_CHECK(mcpwm_timer_start_stop(out.h_timer, MCPWM_TIMER_START_NO_STOP));
+    // set output to high when timer == 0 like normal
+    ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(out.h_gen,
+        MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH)));
 }
 
 void RCOutput::disable_ch(uint8_t chan)
@@ -199,7 +201,10 @@ void RCOutput::disable_ch(uint8_t chan)
 
     write(chan, 0);
     pwm_out &out = pwm_group_list[chan];
-    ESP_ERROR_CHECK(mcpwm_timer_start_stop(out.h_timer, MCPWM_TIMER_STOP_EMPTY));
+    // set output to low when timer == 0, so the output is always low (after
+    // this cycle). conveniently avoids pulse truncation
+    ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(out.h_gen,
+        MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_LOW)));
 }
 
 void RCOutput::write(uint8_t chan, uint16_t period_us)
