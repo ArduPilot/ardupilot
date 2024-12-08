@@ -12,7 +12,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Code by Charles "Silvanosky" Villard, David "Buzz" Bussenschutt and Andrey "ARg" Romanov
+ * Code by Charles "Silvanosky" Villard, David "Buzz" Bussenschutt,
+ * Andrey "ARg" Romanov, and Thomas "tpw_rules" Watson'
  *
  */
 
@@ -98,31 +99,37 @@ public:
 
 private:
 
-    struct pwm_out {
+    struct pwm_group {
+        // SDK objects for the group
+        uint8_t mcpwm_group_id;
+        mcpwm_timer_handle_t h_timer;
+        mcpwm_oper_handle_t h_oper;
 
-         uint8_t chan;
-         uint8_t gpio_num;
-         uint8_t group_id;
-         int     freq;
-         int     value;
-
-         mcpwm_timer_handle_t h_timer;
-         mcpwm_oper_handle_t  h_oper;
-         mcpwm_cmpr_handle_t  h_cmpr;
-         mcpwm_gen_handle_t   h_gen;        
+        uint32_t rc_frequency; // frequency in Hz
+        uint32_t ch_mask; // mask of channels in this group
     };
 
+    struct pwm_chan {
+        // SDK objects for the channel
+        mcpwm_cmpr_handle_t h_cmpr;
+        mcpwm_gen_handle_t h_gen;
+        pwm_group *group; // associated group
+
+        uint8_t gpio_num; // associated GPIO number (always defined)
+        int value; // output value in microseconds
+    };
+
+    uint32_t fast_channel_mask;
 
     void write_int(uint8_t chan, uint16_t period_us);
 
-    static pwm_out pwm_group_list[];
+    static pwm_group pwm_group_list[];
+    static pwm_chan pwm_chan_list[];
 
     bool _corked;
     uint32_t _pending_mask;
     uint16_t _pending[12];
     uint16_t safe_pwm[12]; // pwm to use when safety is on
-
-    uint16_t _max_channels;
 
     // safety switch state
     AP_HAL::Util::safety_state safety_state;
