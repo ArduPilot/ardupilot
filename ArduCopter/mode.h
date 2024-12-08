@@ -1232,6 +1232,15 @@ public:
     using ModeGuided::Mode;
     Number mode_number() const override { return Number::GUIDED_NOGPS; }
 
+    ModeGuided mode_guided;
+    Quaternion q;
+    float fly_angle = 0.0f;
+    float interval_ms = 0.0f;
+    float fly_alt_min = 50.0f;
+    float climb_rate = 0.0f;
+    float timeout = 0.0f;
+    float home_yaw = 0.0f;
+
     bool init(bool ignore_checks) override;
     void run() override;
 
@@ -1247,7 +1256,6 @@ protected:
 private:
 
 };
-
 
 class ModeLand : public Mode {
 

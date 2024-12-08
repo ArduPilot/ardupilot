@@ -31,6 +31,13 @@
 #endif
 
 const AP_Param::Info Copter::var_info[] = {
+    // @Param: DR_HOME_YAW
+    // @DisplayName: DR Home Yaw
+    // @Description: Dr Home Yaw
+    // @Range: 0 360
+    // @User: Advanced
+    GSCALAR(dr_home_yaw, "DR_HOME_YAW", DR_HOME_YAW_DEFAULT),
+
     // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
     // @Description: This value is incremented when changes are made to the eeprom format

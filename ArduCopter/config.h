@@ -605,3 +605,7 @@
 #ifndef USER_PARAMS_ENABLED
   #define USER_PARAMS_ENABLED 0
 #endif
+
+#ifndef DR_HOME_YAW_DEFAULT
+ # define DR_HOME_YAW_DEFAULT 0
+#endif

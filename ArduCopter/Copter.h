@@ -210,6 +210,7 @@ public:
     friend class ModeFlowHold;
     friend class ModeFollow;
     friend class ModeGuided;
+    friend class ModeGuidedNoGPS;
     friend class ModeLand;
     friend class ModeLoiter;
     friend class ModePosHold;
@@ -227,6 +228,8 @@ public:
     friend class _AutoTakeoff;
 
     friend class PayloadPlace;
+
+    float azimuth_to_home;
 
     Copter(void);
 
@@ -942,6 +945,9 @@ private:
     // mode_land.cpp
     void set_mode_land_with_pause(ModeReason reason);
     bool landing_with_GPS();
+
+    // mode_guided_nogps.cpp
+    void set_mode_guided_nogps(ModeReason reason);
 
     // motor_test.cpp
     void motor_test_output();

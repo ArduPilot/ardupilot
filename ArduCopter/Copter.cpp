@@ -960,6 +960,16 @@ bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
     return true;
 }
 
+//  set_mode_guided_nogps - sets mode to Guided_NoGPS and triggers 4 second delay before descent starts
+//  this is always called from a failsafe so we trigger notification to pilot
+void Copter::set_mode_guided_nogps(ModeReason reason)
+{
+    set_mode(Mode::Number::GUIDED_NOGPS, reason);
+
+    // alert pilot to mode change
+    AP_Notify::events.failsafe_mode_change = 1;
+}
+
 /*
   constructor for main Copter class
  */

@@ -353,12 +353,22 @@ void Copter::failsafe_deadreckon_check()
         return;
     }
 
+    if (!ekf_dead_reckoning) {
+        Location home = AP::ahrs().get_home();
+        Location current_location;
+        AP::ahrs().get_location(current_location);
+
+        if (!home.is_zero() && !current_location.is_zero()) {
+            copter.azimuth_to_home = current_location.get_bearing(home) * (180.0 / M_PI);
+        }
+    }
+
     // check for failsafe action
     if (failsafe.deadreckon != ekf_dead_reckoning) {
         failsafe.deadreckon = ekf_dead_reckoning;
 
         // only take action in modes requiring position estimate
-        if (failsafe.deadreckon && copter.flightmode->requires_GPS()) {
+        if (failsafe.deadreckon) {
 
             // log error
             LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_DEADRECKON, LogErrorCode::FAILSAFE_OCCURRED);
@@ -386,8 +396,8 @@ void Copter::set_mode_RTL_or_land_with_pause(ModeReason reason)
         return;
     }
 #endif
-    // set mode to land will trigger mode change notification to pilot
-    set_mode_land_with_pause(reason);
+    // set mode to guided_nogps will trigger mode change notification to pilot
+    set_mode_guided_nogps(reason);
 }
 
 // set_mode_SmartRTL_or_land_with_pause - sets mode to SMART_RTL if possible or LAND with 4 second delay before descent starts
