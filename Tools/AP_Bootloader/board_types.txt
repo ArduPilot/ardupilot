@@ -331,6 +331,7 @@ AP_HW_MountainEagleH743              1444
 
 AP_HW_StellarF4                      1500
 AP_HW_GEPRCF745BTHD                  1501
+AP_HW_GEPRC_TAKER_H743               1502
 
 AP_HW_HGLRCF405V4                    1524
 
