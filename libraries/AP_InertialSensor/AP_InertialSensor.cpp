@@ -577,10 +577,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 #endif
 
     // @Param: _GYRO_RATE
-    // @DisplayName: Gyro rate for IMUs with Fast Sampling enabled
-    // @Description: Gyro rate for IMUs with fast sampling enabled. The gyro rate is the sample rate at which the IMU filters operate and needs to be at least double the maximum filter frequency. If the sensor does not support the selected rate the next highest supported rate will be used. For IMUs which do not support fast sampling this setting is ignored and the default gyro rate of 1Khz is used.
+    // @DisplayName: Gyro rate multiplier for IMUs with Fast Sampling enabled
+    // @Description: Gyro rate multipier for IMUs with fast sampling enabled. The gyro rate is the sample rate multiplier of base output data rate at which the IMU filters operate and needs to be at least double the maximum filter frequency. If the sensor does not support the selected rate the next highest supported rate will be used. For IMUs which do not support fast sampling this setting is ignored and the default gyro rate is used.
     // @User: Advanced
-    // @Values: 0:1kHz,1:2kHz,2:4kHz,3:8kHz
+    // @Values: 0:x1,1:x2,2:x4,3:x8
     // @RebootRequired: True
     AP_GROUPINFO("_GYRO_RATE",  42, AP_InertialSensor, _fast_sampling_rate, MPU_FIFO_FASTSAMPLE_DEFAULT),
 
