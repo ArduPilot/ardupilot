@@ -1241,6 +1241,11 @@ public:
     float timeout = 0.0f;
     float home_yaw = 0.0f;
 
+
+    float normalize_radians(float radians);
+    float degrees_to_radians(float degrees);
+    float normalize_angle_deg(float angle);
+
     bool init(bool ignore_checks) override;
     void run() override;
 
