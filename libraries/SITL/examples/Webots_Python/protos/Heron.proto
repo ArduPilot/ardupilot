@@ -1,0 +1,190 @@
+#VRML_SIM R2023a utf8
+# license: Copyright Cyberbotics Ltd. Licensed for use only with Webots.
+# license url: https://cyberbotics.com/webots_assets_license
+# documentation url: https://webots.cloud/run?url=https://github.com/cyberbotics/webots/blob/released/projects/robots/clearpath/heron/protos/Heron.proto
+# keywords: robot/wheeled
+# Clearpath Heron USV is an autonomous watercraft designed for various marine tasks. 
+# It features electric propulsion, advanced navigation systems, and integration capabilities for collaborative missions.
+# With a streamlined hull and multiple sensor suites including cameras,
+# it excels in environmental monitoring, surveillance, and research.
+
+PROTO Heron [
+  field SFVec3f    translation     0 0 0.0     # Is `Pose.translation`.
+  field SFRotation rotation        0 0 1 0       # Is `Pose.rotation`.
+  field SFString   name            "Heron USV"       # Is `Solid.name`.
+  field SFString   controller      "void"      # Is `Robot.controller`.
+  field MFString   controllerArgs  []            # Is `Robot.controllerArgs`.
+  field SFString   window          "<generic>"   # Is `Robot.window`.
+  field SFBool     synchronization TRUE          # Is `Robot.synchronization`.
+  field MFNode     bodySlot        []            # Extends the robot with new nodes in the body slot.
+]
+{
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "Clearpath Heron"
+    controller IS controller
+    controllerArgs IS controllerArgs
+    window IS window
+    synchronization IS synchronization
+  children [
+    DEF BODY_SLOT Group {
+      children IS bodySlot
+    }
+    Transform {
+      translation -0.185 0 0
+      rotation 0 0 1 1.01503e-06
+      children [
+        Shape { 
+          castShadows FALSE
+          appearance PBRAppearance {
+            baseColor 0.964706 0.827451 0.176471
+            metalness 0
+          }
+          geometry Mesh {
+            url [
+              "obj/plain-rear-plate.stl"
+            ]
+          }
+        }
+      ]
+    }
+    Transform {
+      translation 0 -0.35 0.05
+      children [
+        Shape { 
+          castShadows FALSE
+          appearance PBRAppearance {
+            baseColor 0.960784 0.760784 0.0666667
+            metalness 0
+          }
+          geometry Mesh {
+            url [
+              "obj/right_panel.stl"
+            ]
+          }
+        }
+      ]
+    }
+    Transform {
+      translation 0 0.35 0.05
+      children [
+        Shape { 
+          castShadows FALSE
+          appearance PBRAppearance {
+            baseColor 0.960784 0.760784 0.0666667
+            metalness 0
+          }
+          geometry Mesh {
+            url [
+              "obj/left_panel.stl"
+            ]
+          }
+        }
+      ]
+    }
+    Transform {
+      translation -0.73 0.38 -0.14
+      children [
+        Propeller {
+          device RotationalMotor {
+            name "left_motor"
+            maxVelocity 30
+          }
+          fastHelix Solid {
+            rotation 0 1 0 1.57
+            children [
+              Shape { 
+                castShadows FALSE
+                appearance PBRAppearance {
+                  baseColor 0.368627 0.360784 0.392157
+                }
+                geometry Cylinder {
+                  height 0.1
+                  radius 0.05
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+    Transform {
+      translation -0.73 -0.38 -0.14
+      children [
+        Propeller {
+          device RotationalMotor {
+            name "right_motor"
+            maxVelocity 30
+          }
+          fastHelix Solid {
+            rotation 0 1 0 1.5708
+            children [
+              Shape { 
+                castShadows FALSE
+                appearance PBRAppearance {
+                  baseColor 0.368627 0.360784 0.392157
+                }
+                geometry Cylinder {
+                  height 0.1
+                  radius 0.05
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+    DEF HERON Shape { 
+      castShadows FALSE
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.239216 0.219608 0.27451
+        }
+        texture ImageTexture {
+        }
+        textureTransform TextureTransform {
+        }
+      }
+      geometry Mesh {
+        url [
+          "obj/heron_base.stl"
+        ]
+      }
+    }
+  ]
+  name "heron_usv"
+  immersionProperties [
+    ImmersionProperties {
+      fluidName "fluid"
+      dragForceCoefficients 0.01 0 0
+      dragTorqueCoefficients 0.05 0 0
+      viscousResistanceForceCoefficient 400
+      viscousResistanceTorqueCoefficient 0.1
+    }
+  ]
+  boundingObject Transform {
+      scale 0.1 0.1 0.1
+      children [
+        Mesh {
+          url [
+            "obj/heron_collision.stl"
+          ]
+        }
+      ]
+  }
+  physics Physics {
+    density 400
+    centerOfMass [
+      0 0 0
+    ]
+    damping Damping {
+      linear 0.5
+      angular 0.5
+    }
+  }
+  linearVelocity -1.4502243780299133e-41 2.229921041216923e-42 0.0058372174879208726
+  angularVelocity 0.00023835911050514857 0.001746443229709772 4.0940932765468614e-19
+}
+}
