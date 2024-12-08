@@ -697,7 +697,6 @@ void AP_ADSB::handle_out_control(const mavlink_uavionix_adsb_out_control_t &pack
 {
     out_state.ctrl.baroCrossChecked = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_EXTERNAL_BARO_CROSSCHECKED;
     out_state.ctrl.airGroundState = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_ON_GROUND;
-    out_state.ctrl.identActive = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_IDENT_BUTTON_ACTIVE;
     out_state.ctrl.modeAEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_A_ENABLED;
     out_state.ctrl.modeCEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_C_ENABLED;
     out_state.ctrl.modeSEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_S_ENABLED;
@@ -707,6 +706,10 @@ void AP_ADSB::handle_out_control(const mavlink_uavionix_adsb_out_control_t &pack
     out_state.ctrl.emergencyState = packet.emergencyStatus;
     memcpy(out_state.ctrl.callsign, packet.flight_id, sizeof(out_state.ctrl.callsign));
     out_state.ctrl.x_bit = packet.x_bit;
+
+    if (packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_IDENT_BUTTON_ACTIVE) {
+        IGNORE_RETURN(ident_start());
+    }
 }
 
 /*
@@ -928,6 +931,18 @@ uint32_t AP_ADSB::convert_base_to_decimal(const uint8_t baseIn, uint32_t inputNu
         if (inputNumber == 0) break;
     }
     return outputNumber;
+}
+
+// Trigger a Mode 3/A transponder IDENT. This should only be done when requested to do so by an Air Traffic Controller.
+// See wikipedia for IDENT explanation https://en.wikipedia.org/wiki/Transponder_(aeronautics)
+bool AP_ADSB::ident_start()
+{
+    if (!healthy()) {
+        return false;
+    }
+    out_state.ctrl.identActive = true;
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO,"ADSB: IDENT!");
+    return true;
 }
 
 // methods for embedded class Location
