@@ -172,6 +172,7 @@ public:
     friend class ModeTakeoff;
     friend class ModeThermal;
     friend class ModeLoiterAltQLand;
+    friend class ModeAutoLand;
 
 #if AP_EXTERNAL_CONTROL_ENABLED
     friend class AP_ExternalControl_Plane;
@@ -326,6 +327,7 @@ private:
 #endif  // QAUTOTUNE_ENABLED
 #endif  // HAL_QUADPLANE_ENABLED
     ModeTakeoff mode_takeoff;
+    ModeAutoLand mode_autoland;
 #if HAL_SOARING_ENABLED
     ModeThermal mode_thermal;
 #endif
@@ -454,6 +456,9 @@ private:
         float throttle_lim_min;
         uint32_t throttle_max_timer_ms;
         uint32_t level_off_start_time_ms;
+        // Good candidate for keeping the initial time for TKOFF_THR_MAX_T.
+        int32_t takeoff_initial_direction; //deg
+        bool takeoff_direction_initialized;
     } takeoff_state;
 
     // ground steering controller state
