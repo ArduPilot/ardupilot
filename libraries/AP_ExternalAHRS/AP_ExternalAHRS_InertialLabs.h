@@ -23,6 +23,7 @@
 #if AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
 
 #include "AP_ExternalAHRS_backend.h"
+#include "AP_ExternalAHRS_command_context.h"
 
 class AP_ExternalAHRS_InertialLabs : public AP_ExternalAHRS_backend {
 
@@ -220,6 +221,8 @@ private:
     void update_thread();
     bool check_uart();
     bool check_header(const ILabsHeader *h) const;
+    bool write_bytes(const char *bytes, uint8_t len) override;
+    bool handle_command(ExternalAHRS_command command) override;
 
     // re-sync on header bytes
     void re_sync(void);
