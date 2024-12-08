@@ -150,7 +150,7 @@ void AP_ADSB_Sagetech_MXS::update()
         last.operating_rf_select = _frontend.out_state.cfg.rfSelect;
         last.modeAEnabled = _frontend.out_state.ctrl.modeAEnabled;
         last.modeCEnabled = _frontend.out_state.ctrl.modeCEnabled;
-        last.modeSEnabled = _frontend.out_state.ctrl.modeSEnabled;
+        last.modeSEnabled = (_frontend._options & uint32_t(AP_ADSB::AdsbOption::Mode3_Only)) ? 0 : _frontend.out_state.ctrl.modeSEnabled;
 
         last.operating_alt = _frontend._my_loc.alt;
         last.packet_Operating_ms = now_ms;

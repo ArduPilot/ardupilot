@@ -78,6 +78,7 @@ public:
         Squawk_7400_FS_RC               = (1<<1),
         Squawk_7400_FS_GCS              = (1<<2),
         SagteTech_MXS_External_Config   = (1<<3),
+        Mode3_Only                      = (1<<4),
     };
 
     // for holding parameters
