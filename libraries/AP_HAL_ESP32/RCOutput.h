@@ -118,10 +118,9 @@ private:
     static pwm_out pwm_group_list[];
 
     bool _corked;
-    uint16_t _pending[12]; //Max channel with 2 unit MCPWM
     uint32_t _pending_mask;
-
-    uint16_t safe_pwm[16]; // pwm to use when safety is on
+    uint16_t _pending[12];
+    uint16_t safe_pwm[12]; // pwm to use when safety is on
 
     uint16_t _max_channels;
 
