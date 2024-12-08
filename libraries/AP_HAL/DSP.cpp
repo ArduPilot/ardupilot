@@ -286,6 +286,11 @@ float DSP::calculate_jains_estimator(const FFTWindowState* fft, const float* rea
     float y1 = real_fft[k_max-1];
     float y2 = real_fft[k_max];
     float y3 = real_fft[k_max+1];
+
+    if (is_zero(y2) || is_zero(y1)) {
+        return 0.0f;
+    }
+
     float d = 0.0f;
 
     if (y1 > y3) {
