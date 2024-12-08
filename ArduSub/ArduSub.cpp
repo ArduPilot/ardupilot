@@ -159,6 +159,8 @@ void Sub::fifty_hz_loop()
     failsafe_sensors_check();
 
     rc().read_input();
+
+    update_servos();
 }
 
 // update_batt_compass - read battery and compass
