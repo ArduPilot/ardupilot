@@ -958,6 +958,26 @@ bool AP_ADSB::Loc::vertical_accuracy(float &vacc) const
     return true;
 }
 
+uint8_t AP_ADSB::convert_maxknots_to_enum(const float maxAircraftSpeed_knots)
+{
+    if (maxAircraftSpeed_knots <= 0) {
+        // not set or unknown. no bits set
+        return 0;
+    } else if (maxAircraftSpeed_knots <= 75) {
+        return 1;
+    } else if (maxAircraftSpeed_knots <= 150) {
+        return 2;
+    } else if (maxAircraftSpeed_knots <= 300) {
+        return 3;
+    } else if (maxAircraftSpeed_knots <= 600) {
+        return 4;
+    } else if (maxAircraftSpeed_knots <= 1200) {
+        return 5;
+    } else {
+        return 6;
+    }
+}
+
 AP_ADSB *AP::ADSB()
 {
     return AP_ADSB::get_singleton();
