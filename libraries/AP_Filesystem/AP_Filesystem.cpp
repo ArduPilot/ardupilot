@@ -35,6 +35,9 @@ static AP_Filesystem_ESP32 fs_local;
 #elif AP_FILESYSTEM_POSIX_ENABLED
 #include "AP_Filesystem_posix.h"
 static AP_Filesystem_Posix fs_local;
+#elif AP_FILESYSTEM_LITTLEFS_ENABLED
+#include "AP_Filesystem_FlashMemory_LittleFS.h"
+static AP_Filesystem_FlashMemory_LittleFS fs_local;
 #else
 static AP_Filesystem_Backend fs_local;
 int errno;
@@ -308,6 +311,12 @@ bool AP_Filesystem::retry_mount(void)
 void AP_Filesystem::unmount(void)
 {
     return LOCAL_BACKEND.fs.unmount();
+}
+
+// if non-zero size at which syncs should be peformed, only used by flash fs
+uint32_t AP_Filesystem::get_sync_size(void) const
+{
+    return LOCAL_BACKEND.fs.get_sync_size();
 }
 
 /*
