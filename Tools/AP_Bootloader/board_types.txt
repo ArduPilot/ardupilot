@@ -427,6 +427,11 @@ AP_HW_MFE_AirSpeed_CAN                     6103
 # IDs 7000-7099 reserved for CUAV
 AP_HW_CUAV-7-NANO                    7000
 
+AP_HW_BrahmaF4                       7010
+
+# IDs 7100-7109 reserved for VIEWPRO
+AP_HW_VUAV-V7pro                     7100
+
 # IDs 7100-7109 reserved for V-UAV
 AP_HW_VUAV-V7pro                     7100
 
