@@ -47,7 +47,6 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Camera/AP_RunCam.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_Hott_Telem/AP_Hott_Telem.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
@@ -373,9 +372,6 @@ protected:
     AP_RSSI rssi;
 #endif
 
-#if HAL_RUNCAM_ENABLED
-    AP_RunCam runcam;
-#endif
 #if HAL_GYROFFT_ENABLED
     AP_GyroFFT gyro_fft;
 #endif
