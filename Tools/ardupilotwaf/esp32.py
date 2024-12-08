@@ -57,6 +57,24 @@ def configure(cfg):
 
     #env.append_value('GIT_SUBMODULES', 'esp_idf')
 
+# delete the output sdkconfig file when the input defaults changes. we take the
+# stamp as the output so we can compute the path to the sdkconfig, yet it
+# doesn't have to exist when we're done.
+class clean_sdkconfig(Task.Task):
+    def keyword(self):
+        return "delete sdkconfig generated from"
+
+    def run(self):
+        prefix = ".clean-stamp-"
+        for out in self.outputs:
+            if not out.name.startswith(prefix):
+                raise ValueError("not a stamp file: "+out)
+            dest = out.parent.abspath()+"/"+out.name[len(prefix):]
+            if os.path.exists(dest):
+                os.unlink(dest)
+
+            # waf needs the output to exist after the task, so touch it
+            open(out.abspath(), "w").close()
 
 def pre_build(self):
     """Configure esp-idf as lib target"""
@@ -74,7 +92,20 @@ def pre_build(self):
             )
 
     esp_idf_showinc = esp_idf.build('showinc', target='esp-idf_build/includes.list')
+
+    # task to delete the sdkconfig (thereby causing it to be regenerated) when
+    # the .defaults changes. it uses a stamp to find the sdkconfig. changing
+    # the sdkconfig WILL NOT cause it to be deleted as it's not an input. this
+    # is by design so the user can tweak it for testing purposes.
+    clean_sdkconfig_task = esp_idf_showinc.create_task("clean_sdkconfig",
+        src=self.srcnode.find_or_declare(self.env.AP_HAL_ESP32+"/sdkconfig.defaults"),
+        tgt=self.bldnode.find_or_declare("esp-idf_build/.clean-stamp-sdkconfig"))
+
     esp_idf_showinc.post()
+
+    # ensure the sdkconfig will be deleted before the cmake configure occurs
+    # that regenerates it
+    esp_idf_showinc.cmake_config_task.set_run_after(clean_sdkconfig_task)
 
     from waflib import Task
     class load_generated_includes(Task.Task):
