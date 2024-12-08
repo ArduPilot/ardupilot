@@ -34,7 +34,7 @@ The UARTs are marked Rx and Tx in the above pinouts.
 | SERIAL 1 | RX1/TX1  | USART 1 | (DMA)   (Reciever)  |
 | SERIAL 2 | RX3/TX3  | USART 3 | (NODMA) (MAVLINK)       |
 | SERIAL 3 | RX6/TX6 | USART 6| (DMA) (GPS1)      |
-| SERIAL 4 | RX6/TX6  | USART 6 | (DMA)   (GPS)       |
+| SERIAL 4 | RX4/TX4  | USART 4 | (NODMA)   (GPS2)       |
 
 USART1 and USART6 supports RX and TX DMA.  
 UART2 and UART4 do not support DMA.  
