@@ -961,7 +961,7 @@ void Plane::set_servos(void)
 #endif  // AP_ICENGINE_ENABLED
 
     // run output mixer and send values to the hal for output
-    servos_output();
+    servos_output(false);
 }
 
 /*
@@ -1017,10 +1017,12 @@ void Plane::indicate_waiting_for_rud_neutral_to_takeoff(void)
   for each channel and calculates PWM values, then pushes them to
   hal.rcout
  */
-void Plane::servos_output(void)
+void Plane::servos_output(bool cork)
 {
     auto &srv = AP::srv();
-    srv.cork();
+    if (cork) {
+        srv.cork();
+    }
 
     // support twin-engine aircraft
     servos_twin_engine_mix();
