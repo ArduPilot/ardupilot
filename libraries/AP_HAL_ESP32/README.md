@@ -68,11 +68,11 @@ https://docs.espressif.com/projects/esp-idf/en/latest/get-started/ -
 in expansion of macro 'configSUPPORT_STATIC_ALLOCATION'
 warning: "CONFIG_SUPPORT_STATIC_ALLOCATION" is not defined
 
-this means your 'sdkconfig' file that the IDF relies on is perhaps a bit out of date or out of sync with your IDF.
+this means your 'sdkconfig' file that the IDF relies on is perhaps a bit out of date or out of sync with your IDF. This should not happen, please file a bug if it does!
 
-You can simply remove sdkconfig file and idf build system will recreate it using sdkconfig.defaults, which should fix the problem.
+Changing the sdkconfig.defaults file will cause the sdkconfig to be deleted and regenerated. The sdkconfig will also be regenerated if it is manually deleted.
 
-If you need to change sdkconfig, you can edit sdkconfig manually or to use ninja menuconfig: 
+If you need to change sdkconfig (which will not cause it to be deleted), you can edit sdkconfig manually or to use ninja menuconfig: 
 
 So double check you are using the correct IDF version:
 ```
