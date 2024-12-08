@@ -839,6 +839,11 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     sitl->models.slung_payload_sim.update(get_position_relhome(), velocity_ef, accel_earth, wind_ef);
 #endif
 
+    // update tether
+#if AP_SIM_TETHER_ENABLED
+    sitl->models.tether_sim.update(location);
+#endif
+
     // allow for changes in physics step
     adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
 }
@@ -1273,18 +1278,26 @@ void Aircraft::add_twist_forces(Vector3f &rot_accel)
     }
 }
 
-#if AP_SIM_SLUNGPAYLOAD_ENABLED
-// add body-frame force due to slung payload
-void Aircraft::add_slungpayload_forces(Vector3f &body_accel)
+// add body-frame force due to slung payload and tether
+void Aircraft::add_external_forces(Vector3f &body_accel)
 {
-    Vector3f forces_ef;
-    sitl->models.slung_payload_sim.get_forces_on_vehicle(forces_ef);
+    Vector3f total_force;
+#if AP_SIM_SLUNGPAYLOAD_ENABLED
+    Vector3f forces_ef_slung;
+    sitl->models.slung_payload_sim.get_forces_on_vehicle(forces_ef_slung);
+    total_force += forces_ef_slung;
+#endif
+
+#if AP_SIM_TETHER_ENABLED
+    Vector3f forces_ef_tether;
+    sitl->models.tether_sim.get_forces_on_vehicle(forces_ef_tether);
+    total_force += forces_ef_tether;
+#endif
 
     // convert ef forces to body-frame accelerations (acceleration = force / mass)
-    const Vector3f accel_bf = dcm.transposed() * forces_ef / mass;
-    body_accel += accel_bf;
+    const Vector3f accel_bf_tether = dcm.transposed() * total_force / mass;
+    body_accel += accel_bf_tether;
 }
-#endif
 
 /*
   get position relative to home
