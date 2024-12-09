@@ -757,6 +757,14 @@ const AP_Param::Info Plane::var_info[] = {
     // @Range: 10 127
     // @Increment: 1
     // @User: Advanced
+    
+        //ZEF
+    // @Param: ZEF_MATRIX_INDEX
+    // @DisplayName: Matrix Index
+    // @Description: Sets a forced matrix index. -1 to select the matrix by wind speed, any number starting from 0 to force an specific matrix
+    // @Range: -1 40
+    GSCALAR(matrix_index, "ZEF_MATRIX_INDEX", -1),  
+    
     GSCALAR(crash_accel_threshold,          "CRASH_ACC_THRESH",   0),
 
     // @Param: CRASH_DETECT

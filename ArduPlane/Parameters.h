@@ -362,6 +362,22 @@ public:
         k_param_takeoff_throttle_idle,
 
         k_param_pullup = 270,
+        
+        // zef parametros do balao
+        k_param_min_balloon_pressure_diff, //pressão minima para religar balonetes
+        k_param_max_balloon_pressure_diff, //pressão para desligar balonetes
+        k_param_enable_ballonet, //ligar balonete
+        k_param_enable_wind_log, //imprime os logs de vento
+        k_param_matrix_index, //selecionar matriz de controle forçadamente
+        k_param_ballonet_deactivated, //desligar um balonete pelo indice
+        // calibração motores
+        /*k_param_cal_roll_mot,
+        k_param_cal_pitch_mot,
+        k_param_cal_yaw_mot,
+        k_param_cal_cima_baixo,
+        k_param_cal_roll_estab,
+        k_param_cal_dir_esq,*/
+
     };
 
     AP_Int16 format_version;
@@ -471,6 +487,10 @@ public:
 #if HAL_WITH_IO_MCU
     AP_Int8 override_channel;
 #endif
+
+    //Zefiro
+    AP_Int16        matrix_index;
+    
     AP_Int16 gcs_pid_mask;
 };
 

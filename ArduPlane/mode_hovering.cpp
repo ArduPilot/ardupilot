@@ -16,6 +16,8 @@ void ModeManualK::update()
 #include <AP_Baro/AP_Baro.h>
 #include <AP_HAL/AP_HAL.h>
 
+#include <AP_WindVane/AP_WindVane.h>
+
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <RC_Channel/RC_Channel.h>
@@ -224,6 +226,9 @@ void ModeHovering::update()
     //zefiroControl.update(double U_longit_speed, double V_lateral_speed, double W_vertical_speed,
     //    double P_v_roll, double Q_v_pitch, double R_v_yaw, double Roll, double Pitch, double Yaw);
     //double wind_direction = wrap_PI(plane.g2.windvane.get_apparent_wind_speeddirection_rad()); // radians(wrap_360(degrees(plane.g2.windvane.get_apparent_wind_direction_rad())));
+        if (AP::windvane() == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Windvane module not available");
+    }
     double wind_direction = wrap_PI(AP::windvane()->get_apparent_wind_direction_rad());
     double wind_speed = AP::windvane()->get_apparent_wind_speed();
     double vx = wind_speed * cosf(wind_direction);
