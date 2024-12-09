@@ -10,21 +10,21 @@ title: UDP Loopback
 ---
 graph LR
 
-  subgraph Linux Computer
+subgraph Linux Computer
 
-    subgraph Ardupilot SITL
-      veh[sim_vehicle.py] <--> xrceClient[EProsima Micro XRCE DDS Client]
-      xrceClient <--> port1[udp:2019]
-    end
+subgraph Ardupilot SITL
+veh[sim_vehicle.py] <--> xrceClient[EProsima Micro XRCE DDS Client]
+xrceClient <--> port1[udp:2019]
+end
 
-    subgraph DDS Application
-      ros[ROS 2 Node] <--> agent[Micro ROS Agent]
-      agent <-->port1[udp:2019]
-    end
+subgraph DDS Application
+ros[ROS 2 Node] <--> agent[Micro ROS Agent]
+agent <-->port1[udp:2019]
+end
 
-    loopback
+loopback
 
-  end
+end
 ```
 
 ```mermaid
@@ -33,21 +33,21 @@ title: Hardware Serial Port Loopback
 ---
 graph LR
 
-  subgraph Linux Computer
+subgraph Linux Computer
 
-    subgraph Ardupilot SITL
-      veh[sim_vehicle.py] <--> xrceClient[EProsima Micro XRCE DDS Client]
-      xrceClient <--> port1[devUSB1]
-    end
+subgraph Ardupilot SITL
+veh[sim_vehicle.py] <--> xrceClient[EProsima Micro XRCE DDS Client]
+xrceClient <--> port1[devUSB1]
+end
 
-    subgraph DDS Application
-      ros[ROS 2 Node] <--> agent[Micro ROS Agent]
-      agent <--> port2[devUSB2]
-    end
+subgraph DDS Application
+ros[ROS 2 Node] <--> agent[Micro ROS Agent]
+agent <--> port2[devUSB2]
+end
 
-    port1 <--> port2
+port1 <--> port2
 
-  end
+end
 ```
 
 
@@ -59,89 +59,89 @@ Follow the wiki [here](https://ardupilot.org/dev/docs/ros2.html#installation-ubu
 
 ### Serial Only: Set up serial for SITL with DDS
 
-On Linux, creating a virtual serial port will be necessary to use serial in SITL, because of that install socat.
+                       On Linux, creating a virtual serial port will be necessary to use serial in SITL, because of that install socat.
 
-```
-sudo apt-get update
-sudo apt-get install socat
-```
+                       ```
+                       sudo apt-get update
+                       sudo apt-get install socat
+                       ```
 
 ## Setup ardupilot for SITL with DDS
 
-Set up your [SITL](https://ardupilot.org/dev/docs/setting-up-sitl-on-linux.html).
-Run the simulator with the following command. If using UDP, the only parameter you need to set it `DDS_ENABLE`.
+                       Set up your [SITL](https://ardupilot.org/dev/docs/setting-up-sitl-on-linux.html).
+                               Run the simulator with the following command. If using UDP, the only parameter you need to set it `DDS_ENABLE`.
 
-| Name | Description | Default |
-| - | - | - |
-| DDS_ENABLE | Set to 1 to enable DDS, or 0 to disable | 1 |
-| SERIAL1_BAUD | The serial baud rate for DDS | 57 |
-| SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port | 0 |
+                               | Name | Description | Default |
+                               | - | - | - |
+                               | DDS_ENABLE | Set to 1 to enable DDS, or 0 to disable | 1 |
+                               | SERIAL1_BAUD | The serial baud rate for DDS | 57 |
+                               | SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port | 0 |
 
-```console
+                               ```console
 # Wipe params till you see "AP: ArduPilot Ready"
 # Select your favorite vehicle type
-sim_vehicle.py -w -v ArduPlane --console -DG --enable-dds
+                               sim_vehicle.py -w -v ArduPlane --console -DG --enable-dds
 
 # Only set this for Serial, which means 115200 baud
-param set SERIAL1_BAUD 115
+                               param set SERIAL1_BAUD 115
 # See libraries/AP_SerialManager/AP_SerialManager.h AP_SerialManager SerialProtocol_DDS_XRCE
-param set SERIAL1_PROTOCOL 45
-```
+                               param set SERIAL1_PROTOCOL 45
+                               ```
 
-DDS is currently enabled by default, if it's part of the build. To disable it, run the following and reboot the simulator.
-```
-param set DDS_ENABLE 0
-REBOOT
-```
+                               DDS is currently enabled by default, if it's part of the build. To disable it, run the following and reboot the simulator.
+                                   ```
+                                   param set DDS_ENABLE 0
+                                   REBOOT
+                                   ```
 
 ## Setup ROS 2 and micro-ROS
 
-Follow the steps to use the microROS Agent
+                                   Follow the steps to use the microROS Agent
 
-- Install ROS Humble (as described here)
+                                   - Install ROS Humble (as described here)
 
-  - https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html
+                                   - https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html
 
-- Install geographic_msgs
-  ```console
-  sudo apt install ros-humble-geographic-msgs
-  ```
+                                   - Install geographic_msgs
+                                   ```console
+                                   sudo apt install ros-humble-geographic-msgs
+                                   ```
 
-- Install and run the microROS agent (as described here). Make sure to use the `humble` branch.
-  - Follow [the instructions](https://micro.ros.org/docs/tutorials/core/first_application_linux/) for the following:
+                                   - Install and run the microROS agent (as described here). Make sure to use the `humble` branch.
+                                   - Follow [the instructions](https://micro.ros.org/docs/tutorials/core/first_application_linux/) for the following:
 
-    - Do "Installing ROS 2 and the micro-ROS build system"
-      - Skip the docker run command, build it locally instead
-    - Skip "Creating a new firmware workspace"
-    - Skip "Building the firmware"
-    - Do "Creating the micro-ROS agent"
-    - Source your ROS workspace
+                                           - Do "Installing ROS 2 and the micro-ROS build system"
+                                           - Skip the docker run command, build it locally instead
+                                           - Skip "Creating a new firmware workspace"
+                                           - Skip "Building the firmware"
+                                           - Do "Creating the micro-ROS agent"
+                                           - Source your ROS workspace
 
 ## Using the ROS 2 CLI to Read Ardupilot Data
 
-After your setups are complete, do the following:
-- Source the ROS 2 installation
-  ```console
-  source /opt/ros/humble/setup.bash
-  ```
+                                           After your setups are complete, do the following:
+                                               - Source the ROS 2 installation
+                                               ```console
+                                               source /opt/ros/humble/setup.bash
+                                               ```
 
-Next, follow the associated section for your chosen transport, and finally you can use the ROS 2 CLI.
+                                               Next, follow the associated section for your chosen transport, and finally you can use the ROS 2 CLI.
 
 ### UDP (recommended for SITL)
 
-- Run the microROS agent
-  ```console
-  cd ardupilot/libraries/AP_DDS
-  ros2 run micro_ros_agent micro_ros_agent udp4 -p 2019
-  ```
-- Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
-  ```console
-  sim_vehicle.py -v ArduPlane -DG --console --enable-dds
-  ```
+                                                   - Run the microROS agent
+                                                   ```console
+                                                   cd ardupilot/libraries/AP_DDS
+                                                   ros2 run micro_ros_agent micro_ros_agent udp4 -p 2019
+                                                   ```
+                                                   - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
+                                                   ```console
+                                                   sim_vehicle.py -v ArduPlane -DG --console --enable-dds
+                                                   ```
 
 ### Serial
 
-- Start a virtual serial port with socat. Take note of the two `/dev/pts/*` ports. If yours are different, substitute as needed.
+                                                   - Start a virtual serial port with socat. Take note of the two `/dev/pts/*` ports. If yours are different, substitute as needed.
   ```console
   socat -d -d pty,raw,echo=0 pty,raw,echo=0
   >>> 2023/02/21 05:26:06 socat[334] N PTY is /dev/pts/1
@@ -292,16 +292,16 @@ ardupilot_msgs.srv.RallySet_Response(success=True, size=0)
 Append a Rally Point:
 
 Rally points units of measure are:
-* degrees for the latitude and longitude;
-* meters for the altitude.
+* degrees for the latitude and longitude (up to 7 decimal digits resolution);
+* meters for the altitude (with no decimals).
 
 The `altitude_frame` specifies the datum for the altitude, among Home, Absolute, Terrain or EKF Origin
 (use the enumerator specified in the message definition).
 
 ```bash
-ros2 service call /ap/rally_set ardupilot_msgs/srv/RallySet "{rally: {altitude_frame: 1,  point: {latitude: -35, longitude: 151, altitude: 400}}}"
+ros2 service call /ap/rally_set ardupilot_msgs/srv/RallySet "{rally: {altitude_frame: 1,  point: {latitude: -35.12345, longitude: 151.12345, altitude: 400.5}}}"
 
-requester: making request: ardupilot_msgs.srv.RallySet_Request(rally=ardupilot_msgs.msg.Rally(point=geographic_msgs.msg.GeoPoint(latitude=-35.0, longitude=151.0, altitude=400.0), altitude_frame=1), clear=False)
+requester: making request: ardupilot_msgs.srv.RallySet_Request(rally=ardupilot_msgs.msg.Rally(point=geographic_msgs.msg.GeoPoint(latitude=-35.12345, longitude=151.12345, altitude=400.5), altitude_frame=1), clear=False)
 
 response:
 ardupilot_msgs.srv.RallySet_Response(success=True, size=1)
@@ -315,7 +315,7 @@ ros2 service call /ap/rally_get ardupilot_msgs/srv/RallyGet "index: 0"
 requester: making request: ardupilot_msgs.srv.RallyGet_Request(index=0)
 
 response:
-ardupilot_msgs.srv.RallyGet_Response(success=True, size=1, rally=ardupilot_msgs.msg.Rally(point=geographic_msgs.msg.GeoPoint(latitude=-35.0, longitude=151.0, altitude=400.0), altitude_frame=1))
+ardupilot_msgs.srv.RallyGet_Response(success=True, size=1, rally=ardupilot_msgs.msg.Rally(point=geographic_msgs.msg.GeoPoint(latitude=35.12345504760742, longitude=151.12345176604336, altitude=400.0), altitude_frame=1))
 ```
 
 ## Commanding using ROS 2 Topics
