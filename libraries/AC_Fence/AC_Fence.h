@@ -249,7 +249,6 @@ private:
     float           _circle_breach_distance;    // distance beyond the circular fence
 
     // other internal variables
-    uint8_t         _auto_enable_mask = AC_FENCE_ALL_FENCES;  // fences that can be auto-enabled or auto-disabled
     float           _home_distance;         // distance from home in meters (provided by main code)
 
     // breach information

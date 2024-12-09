@@ -219,7 +219,6 @@ void AC_Fence::update()
     // if someone changes the parameter we want to enable or disable everything
     if (_enabled != _last_enabled || _auto_enabled != _last_auto_enabled) {
         // reset the auto mask since we just reconfigured all of fencing
-        _auto_enable_mask = AC_FENCE_ALL_FENCES;
         _last_enabled = _enabled;
         _last_auto_enabled = _auto_enabled;
         if (_enabled) {
@@ -254,11 +253,6 @@ uint8_t AC_Fence::enable(bool value, uint8_t fence_types, bool update_auto_mask)
 
     if (!fences_to_change) {
         return 0;
-    }
-
-    // fences that were manually changed are no longer eligible for auto-enablement or disablement
-    if (update_auto_mask) {
-        _auto_enable_mask &= ~fences_to_change;
     }
 
 #if HAL_LOGGING_ENABLED
@@ -306,7 +300,7 @@ void AC_Fence::auto_enable_fence_on_arming(void)
         return;
     }
 
-    const uint8_t fences = enable(true, _auto_enable_mask & ~AC_FENCE_TYPE_ALT_MIN, false);
+    const uint8_t fences = enable(true, AC_FENCE_ARMING_FENCES, false);
     print_fence_message("auto-enabled", fences);
 }
 
@@ -319,7 +313,7 @@ void AC_Fence::auto_disable_fence_on_disarming(void)
         return;
     }
 
-    const uint8_t fences = enable(false, _auto_enable_mask, false);
+    const uint8_t fences = enable(false, AC_FENCE_ALL_FENCES, false);
     print_fence_message("auto-disabled", fences);
 }
 
@@ -333,7 +327,7 @@ void AC_Fence::auto_enable_fence_after_takeoff(void)
         return;
     }
 
-    const uint8_t fences = enable(true, _auto_enable_mask, false);
+    const uint8_t fences = enable(true, AC_FENCE_ALL_FENCES, false);
     print_fence_message("auto-enabled", fences);
 }
 
@@ -343,12 +337,12 @@ uint8_t AC_Fence::get_auto_disable_fences(void) const
     uint8_t auto_disable = 0;
     switch (auto_enabled()) {
         case AC_Fence::AutoEnable::ENABLE_ON_AUTO_TAKEOFF:
-            auto_disable = _auto_enable_mask;
+            auto_disable = AC_FENCE_ALL_FENCES;
             break;
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
         case AC_Fence::AutoEnable::ONLY_WHEN_ARMED:
         default: // when auto disable is not set we still need to disable the altmin fence on landing
-            auto_disable = _auto_enable_mask & AC_FENCE_TYPE_ALT_MIN;
+            auto_disable = AC_FENCE_TYPE_ALT_MIN;
             break;
     }
     return auto_disable;
@@ -616,7 +610,6 @@ bool AC_Fence::auto_enable_fence_floor()
     // altitude fence check
     if (!(_configured_fences & AC_FENCE_TYPE_ALT_MIN)       // not configured
         || (get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN)   // already enabled
-        || !(_auto_enable_mask & AC_FENCE_TYPE_ALT_MIN)     // has been manually disabled
         || (!_enabled && (auto_enabled() == AC_Fence::AutoEnable::ALWAYS_DISABLED
             || auto_enabled() == AutoEnable::ENABLE_ON_AUTO_TAKEOFF))) {
         // not enabled
@@ -727,6 +720,26 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
         print_fence_message("auto-disabled", fences_to_disable);
     }
 
+#if 0
+    /*
+      this debug log message is very useful both when developing tests
+      and doing manual SITL fence testing
+     */
+    {
+        float alt;
+        AP::ahrs().get_relative_position_D_home(alt);
+
+        AP::logger().WriteStreaming("FENC", "TimeUS,EN,AE,CF,EF,DF,Alt", "QIIIIIf",
+                                    AP_HAL::micros64(),
+                                    enabled(),
+                                    _auto_enabled,
+                                    _configured_fences,
+                                    get_enabled_fences(),
+                                    disabled_fences,
+                                    alt*-1);
+    }
+#endif
+    
     // return immediately if disabled
     if ((!enabled() && !_auto_enabled && !(_configured_fences & AC_FENCE_TYPE_ALT_MIN)) || !_configured_fences) {
         return 0;
