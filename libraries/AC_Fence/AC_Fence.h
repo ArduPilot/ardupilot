@@ -251,8 +251,6 @@ private:
     // other internal variables
     uint8_t         _auto_enable_mask = AC_FENCE_ALL_FENCES;  // fences that can be auto-enabled or auto-disabled
     float           _home_distance;         // distance from home in meters (provided by main code)
-    float           _curr_alt;
-
 
     // breach information
     uint8_t         _breached_fences;       // bitmask holding the fence type that was breached (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)

@@ -524,7 +524,7 @@ bool AC_Fence::check_fence_alt_max()
 
     float alt;
     AP::ahrs().get_relative_position_D_home(alt);
-    _curr_alt = -alt; // translate Down to Up
+    const float _curr_alt = -alt; // translate Down to Up
 
     // check if we are over the altitude fence
     if (_curr_alt >= _alt_max) {
@@ -573,7 +573,7 @@ bool AC_Fence::check_fence_alt_min()
 
     float alt;
     AP::ahrs().get_relative_position_D_home(alt);
-    _curr_alt = -alt; // translate Down to Up
+    const float _curr_alt = -alt; // translate Down to Up
 
     // check if we are under the altitude fence
     if (_curr_alt <= _alt_min) {
@@ -625,7 +625,7 @@ bool AC_Fence::auto_enable_fence_floor()
 
     float alt;
     AP::ahrs().get_relative_position_D_home(alt);
-    _curr_alt = -alt; // translate Down to Up
+    const float _curr_alt = -alt; // translate Down to Up
 
     // check if we are over the altitude fence
     if (!floor_enabled() && _curr_alt >= _alt_min + _margin) {
