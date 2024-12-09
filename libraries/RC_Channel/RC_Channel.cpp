@@ -242,6 +242,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 178:FlightMode Pause/Resume
     // @Values{Plane}: 179:ICEngine start / stop
     // @Values{Copter, Plane}: 180:Test autotuned gains after tune is complete
+    // @Values{Plane}: 181: QuickTune
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
