@@ -259,6 +259,13 @@ private:
 
     uint32_t        _manual_recovery_start_ms;  // system time in milliseconds that pilot re-took manual control
 
+    enum class MinAltState
+    {
+        DEFAULT = 0,
+        MANUALLY_ENABLED,
+        MANUALLY_DISABLED
+    } _min_alt_state;
+    
 
     AC_PolyFence_loader _poly_loader{_total, _options}; // polygon fence
 };

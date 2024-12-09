@@ -237,9 +237,9 @@ void AC_Fence::update()
 }
 
 // enable or disable configured fences present in fence_types
-// also updates the bitmask of auto enabled fences if update_auto_mask is true
+// also updates the _min_alt_state enum if update_auto_enable is true
 // returns a bitmask of fences that were changed
-uint8_t AC_Fence::enable(bool value, uint8_t fence_types, bool update_auto_mask)
+uint8_t AC_Fence::enable(bool value, uint8_t fence_types, bool update_auto_enable)
 {
     uint8_t fences = _configured_fences.get() & fence_types;
     uint8_t enabled_fences = _enabled_fences;
@@ -247,6 +247,11 @@ uint8_t AC_Fence::enable(bool value, uint8_t fence_types, bool update_auto_mask)
         enabled_fences |= fences;
     } else {
         enabled_fences &= ~fences;
+    }
+
+    if (update_auto_enable && (fences & AC_FENCE_TYPE_ALT_MIN) != 0) {
+        // remember that min-alt fence was manually enabled/disabled
+        _min_alt_state = value ? MinAltState::MANUALLY_ENABLED : MinAltState::MANUALLY_DISABLED;
     }
 
     uint8_t fences_to_change = _enabled_fences ^ enabled_fences;
@@ -300,6 +305,10 @@ void AC_Fence::auto_enable_fence_on_arming(void)
         return;
     }
 
+    // reset min alt state, after an auto-enable the min alt fence can be auto-enabled on
+    // reaching altitude
+    _min_alt_state = MinAltState::DEFAULT;
+
     const uint8_t fences = enable(true, AC_FENCE_ARMING_FENCES, false);
     print_fence_message("auto-enabled", fences);
 }
@@ -327,6 +336,9 @@ void AC_Fence::auto_enable_fence_after_takeoff(void)
         return;
     }
 
+    // reset min-alt state
+    _min_alt_state = MinAltState::DEFAULT;
+
     const uint8_t fences = enable(true, AC_FENCE_ALL_FENCES, false);
     print_fence_message("auto-enabled", fences);
 }
@@ -344,6 +356,10 @@ uint8_t AC_Fence::get_auto_disable_fences(void) const
         default: // when auto disable is not set we still need to disable the altmin fence on landing
             auto_disable = AC_FENCE_TYPE_ALT_MIN;
             break;
+    }
+    if (_min_alt_state == MinAltState::MANUALLY_ENABLED) {
+        // don't auto-disable min alt fence if manually enabled
+        auto_disable &= ~AC_FENCE_TYPE_ALT_MIN;
     }
     return auto_disable;
 }
@@ -610,6 +626,7 @@ bool AC_Fence::auto_enable_fence_floor()
     // altitude fence check
     if (!(_configured_fences & AC_FENCE_TYPE_ALT_MIN)       // not configured
         || (get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN)   // already enabled
+        || _min_alt_state == MinAltState::MANUALLY_DISABLED // user has manually disabled the fence
         || (!_enabled && (auto_enabled() == AC_Fence::AutoEnable::ALWAYS_DISABLED
             || auto_enabled() == AutoEnable::ENABLE_ON_AUTO_TAKEOFF))) {
         // not enabled
@@ -714,6 +731,11 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
     clear_breach(~_configured_fences);
     // clear any breach from disabled fences
     clear_breach(fences_to_disable);
+
+    if (_min_alt_state == MinAltState::MANUALLY_ENABLED) {
+        // if user has manually enabled the min-alt fence then don't auto-disable
+        fences_to_disable &= ~AC_FENCE_TYPE_ALT_MIN;
+    }
 
     // report on any fences that were auto-disabled
     if (fences_to_disable) {
