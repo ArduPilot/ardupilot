@@ -71,18 +71,34 @@ void ModeGuidedNoGPS::run()
     while (error > M_PI) error -= 2.0f * M_PI;
     while (error < -M_PI) error += 2.0f * M_PI;
 
-    // Smoothing factor (the smaller, the slower and smoother the rotation)
-    float smoothing_factor = 0.05f;
+    // Пороговая ошибка для начала движения вперед (например, 10 градусов)
+    float yaw_threshold = radians(10.0f);
+
+    // Быстрый поворот: увеличим smoothing_factor
+    // Чем больше error, тем выше factor
+    float base_factor = 0.2f; // базовый фактор, выше чем 0.1f для более быстрого поворота
+    // Можно сделать factor зависимым от ошибки:
+    // например, factor растёт от base_factor до base_factor*2 при больших ошибках
+    float factor_multiplier = 1.0f + std::min(fabsf(error) / M_PI, 1.0f);
+    float smoothing_factor = base_factor * factor_multiplier;
+
     float new_yaw = current_yaw + error * smoothing_factor;
 
-    // Set the angles. Here pitch will tilt the drone forward/backward,
-    // do not change roll (in this example 0), and bring yaw closer to home_yaw.
-    //
-    // If you need to take roll/pitch into account for lateral or longitudinal displacement,
-    // add the appropriate calculations based on the desired direction of movement.
-    //
-    // For now, for the example, only smooth yaw, and a small pitch for forward flight:
-    q.from_euler(radians(0.0f), -radians(fly_angle), new_yaw);
+    float pitch_angle = 0.0f;
+
+    // Если ошибка по yaw больше порога - просто поворачиваемся на месте, без наклона вперед.
+    if (fabsf(error) < yaw_threshold) {
+        // Теперь можно лететь вперед
+        pitch_angle = -radians(fly_angle);
+    } else {
+        // Пока большая угловая ошибка - только поворот
+        // pitch_angle = 0.0f; // уже задано выше
+    }
+
+    // roll оставляем 0, если нужно - можно добавить логику
+    float roll_angle = 0.0f;
+
+    q.from_euler(roll_angle, pitch_angle, new_yaw);
 
     // Set target angles and vertical speed
     ModeGuided::set_angle(q, Vector3f{}, climb_rate * 100.0f, false);
