@@ -2161,6 +2161,64 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 self.progress("Wind estimates correlated")
                 break
 
+    def setup_RealFlight_vehicle(self, model, home):
+        '''
+        Restart the SITL for RealFlight. RealFlight must already be running and
+        the correct airport and model must be loaded.
+        '''
+        defaults_filepath = self.model_defaults_filepath(model)
+        extra_params = 'default_params/realflight-autotest-extra.parm'
+        defaults_filepath.append(os.path.join(testdir, extra_params))
+        self.customise_SITL_commandline(
+            [
+                f"--home={home}",
+            ],
+            model=f"flightaxis:{self.realflight_address}",
+            defaults_filepath=defaults_filepath
+        )
+
+    def RealFlightHover(self, model, home):
+        '''
+        Perform a simple hover test in RealFlight. Useful for generating logs
+        for comparative analysis.
+        '''
+        if not self.realflight_address:
+            self.progress("Specify an IP address with --realflight-address or REALFLIGHT_IPADDR to run this test")
+            return
+
+        # Log fullrate attitude for PID Review Tool
+        self.set_parameters({
+            "LOG_BITMASK": 0x10FFFF,
+        })
+        self.setup_RealFlight_vehicle(model, home)
+
+        self.wait_ready_to_arm()
+        self.change_mode("QLOITER")
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.wait_altitude(8, 12, relative=True)
+        self.set_rc(3, 1500)
+        stick_deflections = [
+            (2000, 1500, "Roll right"),
+            (1500, 1500, "Center"),
+            (1000, 1500, "Roll left"),
+            (1500, 1500, "Center"),
+            (1500, 2000, "Pitch forward"),
+            (1500, 1500, "Center"),
+            (1500, 1000, "Pitch back"),
+            (1500, 1500, "Center"),
+        ]
+        n_iterations = 10
+        for i in range(n_iterations):
+            print(f"Control input cycle: {i+1}/{n_iterations}")
+            for roll, pitch, msg in stick_deflections:
+                self.progress(f"{msg}")
+                self.set_rc(1, roll)
+                self.set_rc(2, pitch)
+                self.delay_sim_time(0.5)
+        self.change_mode("QLAND")
+        self.wait_disarmed(timeout=120)
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2213,5 +2271,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
             self.AHRSFlyForwardFlag,
+            Test(self.RealFlightHover, speedup=1, kwargs={
+                'model': 'realflight-titan-cobra',
+                'home': 'EliField'
+            }),
         ])
         return ret
