@@ -71,14 +71,14 @@ void ModeGuidedNoGPS::run()
     while (error > M_PI) error -= 2.0f * M_PI;
     while (error < -M_PI) error += 2.0f * M_PI;
 
-    // Пороговая ошибка для начала движения вперед (например, 10 градусов)
+    // Threshold error for starting forward movement (eg 10 degrees)
     float yaw_threshold = radians(10.0f);
 
-    // Быстрый поворот: увеличим smoothing_factor
-    // Чем больше error, тем выше factor
-    float base_factor = 0.2f; // базовый фактор, выше чем 0.1f для более быстрого поворота
-    // Можно сделать factor зависимым от ошибки:
-    // например, factor растёт от base_factor до base_factor*2 при больших ошибках
+    // Quick turn: increase smoothing_factor
+    // The higher the error, the higher the factor
+    float base_factor = 0.2f; // base factor higher than 0.1f for faster rotation
+    // You can make factor dependent on the error:
+    // for example, factor grows from base_factor to base_factor*2 for large errors
     float factor_multiplier = 1.0f + std::min(fabsf(error) / M_PI, 1.0f);
     float smoothing_factor = base_factor * factor_multiplier;
 
@@ -86,16 +86,11 @@ void ModeGuidedNoGPS::run()
 
     float pitch_angle = 0.0f;
 
-    // Если ошибка по yaw больше порога - просто поворачиваемся на месте, без наклона вперед.
+    // If the error in yaw is greater than the threshold, we simply turn on the spot, without leaning forward.
     if (fabsf(error) < yaw_threshold) {
-        // Теперь можно лететь вперед
         pitch_angle = -radians(fly_angle);
-    } else {
-        // Пока большая угловая ошибка - только поворот
-        // pitch_angle = 0.0f; // уже задано выше
     }
 
-    // roll оставляем 0, если нужно - можно добавить логику
     float roll_angle = 0.0f;
 
     q.from_euler(roll_angle, pitch_angle, new_yaw);
