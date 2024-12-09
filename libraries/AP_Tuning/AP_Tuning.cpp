@@ -202,10 +202,10 @@ void AP_Tuning::check_input(uint8_t flightmode)
 
     //hal.console->printf("chan_value %.2f last_channel_value %.2f\n", chan_value, last_channel_value);
 
+    const float dead_zone = 0.02;
     if (mid_point_wait) {
         // see if we have crossed the mid-point. We use a small deadzone to make it easier
         // to move to the "indent" portion of a slider to start tuning
-        const float dead_zone = 0.02;
         if ((chan_value > dead_zone && last_channel_value > 0) ||
             (chan_value < -dead_zone && last_channel_value < 0)) {
             // still waiting
@@ -213,7 +213,6 @@ void AP_Tuning::check_input(uint8_t flightmode)
         }
         // starting tuning
         mid_point_wait = false;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Tuning: mid-point %s", get_tuning_name(current_parm));
         AP_Notify::events.tune_started = 1;
     }
     last_channel_value = chan_value;
@@ -227,6 +226,12 @@ void AP_Tuning::check_input(uint8_t flightmode)
     changed = true;
     need_revert |= (1U << current_parm_index);
     set_value(current_parm, new_value);
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, 
+        "Tuning %s%s%0.5f", 
+        get_tuning_name(current_parm), 
+        ((chan_value < dead_zone) && (chan_value > -dead_zone)) ? "> " : ": ", 
+        (double)(new_value));
 
 #if HAL_LOGGING_ENABLED
     Log_Write_Parameter_Tuning(new_value);
