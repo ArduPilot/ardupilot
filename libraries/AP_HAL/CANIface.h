@@ -273,8 +273,8 @@ protected:
 #ifndef HAL_BOOTLOADER_BUILD
         HAL_Semaphore sem;
 #endif
-        // allow up to 2 callbacks per interface
-        FrameCb cb[2];
+        // allow up to 3 callbacks per interface
+        FrameCb cb[3];
     } callbacks;
 
     uint32_t bitrate_;
