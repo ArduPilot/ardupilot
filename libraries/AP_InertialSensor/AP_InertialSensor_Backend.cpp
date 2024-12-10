@@ -18,6 +18,8 @@
 #define AP_HEATER_IMU_INSTANCE 0
 #endif
 
+#define PRIMARY_UPDATE_TIMEOUT_US 200000UL    // continue to notify the primary at 5Hz
+
 const extern AP_HAL::HAL& hal;
 
 AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
@@ -813,9 +815,12 @@ void AP_InertialSensor_Backend::update_primary_gyro()
     // timing changes need to be made in the bus thread in order to take effect which is
     // why they are actioned here
     const bool is_new_primary = gyro_instance == _imu._primary_gyro;
-    if (is_primary_gyro != is_new_primary) {
+    uint32_t now_us = AP_HAL::micros();
+    if (is_primary_gyro != is_new_primary
+        || AP_HAL::timeout_expired(last_primary_gyro_update_us, now_us, PRIMARY_UPDATE_TIMEOUT_US)) {
         set_primary_gyro(is_new_primary);
         is_primary_gyro = is_new_primary;
+        last_primary_gyro_update_us = now_us;
     }
 }
 
@@ -867,9 +872,12 @@ void AP_InertialSensor_Backend::update_primary_accel()
     // timing changes need to be made in the bus thread in order to take effect which is
     // why they are actioned here
     const bool is_new_primary = accel_instance == _imu._primary_accel;
-    if (is_primary_accel != is_new_primary) {
+    uint32_t now_us = AP_HAL::micros();
+    if (is_primary_accel != is_new_primary
+        || AP_HAL::timeout_expired(last_primary_accel_update_us, now_us, PRIMARY_UPDATE_TIMEOUT_US)) {
         set_primary_accel(is_new_primary);
         is_primary_accel = is_new_primary;
+        last_primary_accel_update_us = now_us;
     }
 }
 
