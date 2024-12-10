@@ -110,6 +110,10 @@
 extern AP_IOMCU iomcu;
 #endif
 
+#if AP_AHRS_EXTERNAL_ENABLED
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#endif
+
 #include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
@@ -4878,6 +4882,39 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavl
 }
 #endif
 
+#if AP_AHRS_EXTERNAL_ENABLED
+MAV_RESULT GCS_MAVLINK::handle_EAHRS_message(const mavlink_command_int_t &packet)
+{
+    switch (packet.command) {
+        case MAV_CMD_EAHRS_START:
+        {
+            const bool result = AP::externalAHRS().handle_command(ExternalAHRS_command::START);
+            return result ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+        }
+        case MAV_CMD_EAHRS_STOP:
+        {
+            const bool result = AP::externalAHRS().handle_command(ExternalAHRS_command::STOP);
+            return result ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+        }
+
+        case MAV_CMD_EAHRS_ENABLE_GNSS:
+        {
+            const bool result = AP::externalAHRS().handle_command(ExternalAHRS_command::ENABLE_GNSS);
+            return result ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+        }
+
+        case MAV_CMD_EAHRS_DISABLE_GNSS:
+        {
+            const bool result = AP::externalAHRS().handle_command(ExternalAHRS_command::DISABLE_GNSS);
+            return result ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+        }
+
+        default:
+            return MAV_RESULT_FAILED;
+    }
+}
+#endif
+
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_int_t &packet)
 {
     const MAV_MODE _base_mode = (MAV_MODE)packet.param1;
@@ -5638,6 +5675,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_REQUEST_MESSAGE:
         return handle_command_request_message(packet);
 
+#if AP_AHRS_EXTERNAL_ENABLED
+    case MAV_CMD_EAHRS_START:
+    case MAV_CMD_EAHRS_STOP:
+    case MAV_CMD_EAHRS_ENABLE_GNSS:
+    case MAV_CMD_EAHRS_DISABLE_GNSS:
+        return handle_EAHRS_message(packet);
+#endif
     }
 
     return MAV_RESULT_UNSUPPORTED;

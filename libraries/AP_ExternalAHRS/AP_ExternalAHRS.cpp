@@ -375,6 +375,22 @@ void AP_ExternalAHRS::send_status_report(GCS_MAVLINK &link) const
                                        mag_var, 0, 0);
 }
 
+bool AP_ExternalAHRS::write_bytes(const char *bytes, uint8_t len)
+{
+    if (!backend) {
+        return false;
+    }
+    return backend->write_bytes(bytes, len);
+}
+
+bool AP_ExternalAHRS::handle_command(ExternalAHRS_command command)
+{
+    if (!backend) {
+        return false;
+    }
+    return backend->handle_command(command);
+}
+
 void AP_ExternalAHRS::update(void)
 {
     if (backend) {
