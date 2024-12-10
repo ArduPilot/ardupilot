@@ -779,7 +779,7 @@ void AC_PosControl::update_Rc()
 //接下来计算b3c=fd/||fd||
     if (!_U_x.is_zero()){  //如果fd不是零向量，则归一化后作为b3轴
         _b_3c = -_U_x.normalized(); //使用NEU体坐标系则与推力方向同向+，NED则反向-
-        _b_1d = Vector3f(sqrt(3.0f)/2.0f, -0.5f, 0.0f); //设置 期望的b1d轴
+        _b_1d = Vector3f(1.0f, 0.0f, 0.0f);//Vector3f(sqrt(3.0f)/2.0f, -0.5f, 0.0f); //设置 期望的b1d轴
         //计算_b_2c轴
         _b_2c = _b_3c.cross(_b_1d).normalized(); //NED是b3c X b1d后归一化
         //计算_b_1c轴
@@ -1077,19 +1077,37 @@ float AC_PosControl::pos_desired_z_set_update(float z_final, float rate, float f
     //_pos_set_z为平滑后的期望NEU高度（cm）
     static bool initialized = false; // 标志是否已初始化，静态变量只会初始化一次
     static float _pos_set_z = 0.0f;           // static 局部变量，值只初始化一次
+    static float _t = 0.0f;
+    // 更新时间
+    _t += 1.0f/frequncy;
 
     if (!initialized) {
         _pos_set_z = 0.0f;        // 只在第一次调用时初始化
         initialized = true;
     }                                
-    if (_pos_set_z < z_final){
+    if (_pos_set_z < z_final && _t > 5.0f){  //一秒后才开始更新
         _pos_set_z += rate / frequncy;                  //位置控制刷新频率为100hz，所以每秒升高z厘米对应每此循环应该除以100份
-    } else {
+    } else if( (_pos_set_z >= z_final)) {
       _pos_set_z =  z_final; 
     }
   return _pos_set_z;
 
 }
+
+float AC_PosControl::disturb(float frequncy)
+{
+    static float _t = 0.0f;
+    // 更新时间
+    _t += 1.0f/frequncy;
+
+    // 计算扰动值
+    float disturbance_value = 10.0 + 2.0f* sinf(0.5f * _t);
+ 
+    // 返回扰动值
+    return disturbance_value;
+
+}
+
 
 /// update_z_controller - runs the vertical position controller correcting position, velocity and acceleration errors.
 ///     Position and velocity errors are converted to velocity and acceleration targets using PID objects
@@ -1134,10 +1152,10 @@ void AC_PosControl::update_z_controller()
     Vector3f _pos_desired_3f;                                //转换数据类型为Vector3f
     _pos_desired_3f.x = _pos_desired.x;                      //转换数据类型为Vector3f
     _pos_desired_3f.y = _pos_desired.y;                      //转换数据类型为Vector3f                
-    _pos_desired_3f.z = - pos_desired_z_set_update(500.0f, 20.0f, 400.0f);   //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
+    _pos_desired_3f.z = - pos_desired_z_set_update(500.0f, 10.0f, 400.0f);   //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
     
     _U_x = _pdnn_pos.update_all(_pos_desired_3f, pos_meas_ned, _dt); //调用pdnn控制器循环
-    //_U_x.x += pos_desired_z_set_update(500.0f, 20.0f, 400.0f)/100.0f; //加一个持续激励的扰动
+    _U_x.z += disturb(400.0f); //加一个持续激励的扰动
 
     _R_body_to_ned_meas = _ahrs.get_rotation_body_to_ned(); //获取旋转矩阵测量值 body to NED，并传递给_R_body_to_ned_meas
     //_R_body_to_neu_meas = _R_body_to_ned_meas;
@@ -1148,9 +1166,9 @@ void AC_PosControl::update_z_controller()
     float fd;
     fd = -_U_x.dot(_R_body_to_ned_meas.colz());                  //colz是拷贝取值，fd=U_x * Re3
     float fd_nor;
-    fd_nor = fd/200.0f;                                         // fd_nor = fd/f_max，除以预设的无人机最大推力进行归一化
-    float test_msg_1 = _pdnn_pos.get_phi().x;
-    float test_msg_2 = fd_nor; //memo这里用来测试转置效果
+    fd_nor = fd/50.0f;                                         // fd_nor = fd/f_max，除以预设的无人机最大推力进行归一化
+    float test_msg_1 = _pdnn_pos.get_phi().z;
+    float test_msg_2 = _pdnn_pos.get_m().z; 
     current_DIYwrench = get_DIYwrench(test_msg_1, test_msg_2); //用于ROS2推力话题 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

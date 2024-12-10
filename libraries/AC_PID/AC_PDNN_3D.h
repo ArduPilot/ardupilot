@@ -32,6 +32,7 @@ public:
     Vector3f get_d() const; //获取微分项输出
     Vector3f get_ff(); //获取前馈项输出
     Vector3f get_phi() const; //获取神经网络输出
+    Vector3f get_m() const; //获取自适应参数
     const Vector3f& get_error() const { return _error; } //获取当前误差值
 
     // reset_filter - input and D term filter will be reset to the next value provided to set_input()
@@ -84,7 +85,11 @@ public:
     // internal variables
     Vector3f    _target;        // target value to enable filtering
     Vector3f    _error;         // error value to enable filtering
+    Vector3f    _error_m;         //位置误差（米）
+    Vector3f    _error_ori;      //原始误差
     Vector3f    _derivative;    // last derivative from low-pass filter
+    Vector3f    _derivative_m; //速度误差（米）
+    Vector3f    _derivative_ori; //原始误差导数
     Vector3f    _integrator;    // integrator value
     Vector3f    _pdnn_output;    //pdnn控制器输出
     Vector3f    _pdnn_output_P;  //pdnn控制器输出P
@@ -96,8 +101,12 @@ public:
     AP_PDNNInfo _pdnn_info_z;
 
     SlewCalculator2D _slew_calc;    //暂时不使用 2D slew rate calculator
-
-    //声明权重变量
+    
+    //声明滤波前权重
+    float W_x_1,W_x_2,W_x_3,W_x_4,W_x_5; //x方向神经网路的权重
+    float W_y_1,W_y_2,W_y_3,W_y_4,W_y_5; //y方向神经网路的权重
+    float W_z_1,W_z_2,W_z_3,W_z_4,W_z_5; //z方向神经网路的权重
+    //声明滤波后权重
     float _W_x_1,_W_x_2,_W_x_3,_W_x_4,_W_x_5; //x方向神经网路的权重
     float _W_y_1,_W_y_2,_W_y_3,_W_y_4,_W_y_5; //y方向神经网路的权重
     float _W_z_1,_W_z_2,_W_z_3,_W_z_4,_W_z_5; //z方向神经网路的权重
@@ -117,6 +126,11 @@ public:
 
     //声明神经网络输出
     float _phi_x,_phi_y,_phi_z;
+
+    //声明自适应参数
+    float _m_x, _m_y, _m_z;
+    //声明自适应更新律
+    float _dot_m_x, _dot_m_y, _dot_m_z;
 
     private:
     const float default_kp;

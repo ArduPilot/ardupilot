@@ -1,5 +1,5 @@
 /// @file	AC_PDNN_3D.cpp
-/// @brief	Generic PDNN algorithm
+/// @brief	Generic PDNN algorithm 注意此控制器应该转换外部误差单位cm -> m
 
 #include <AP_Math/AP_Math.h>
 #include "AC_PDNN_3D.h"
@@ -99,28 +99,30 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     _c_z_5.x = _c_1_5; _c_z_5.y = _c_2_5;//第5个隐藏层中心2*1向量
 
     //设置RBF网络的宽度 Setting the width of the RBF network
-    float _b_x = 2.0f;  
-    float _b_y = 2.0f;  
-    float _b_z = 2.0f;
+    float _b_x = 0.6f;   
+    float _b_y = 0.6f;  
+    float _b_z = 1.0f;
     //Lyapunov矩阵P（通过MATLAB求解后在这里定义）
     float _P_x_1_1,_P_x_1_2,_P_x_2_1,_P_x_2_2;   
-    _P_x_1_1 = 1.8333f;  _P_x_1_2 = 0.8333f;           (void)_P_x_1_1; //标记为未使用，避免编译的时候报错
-    _P_x_2_1 = 0.8333f; _P_x_2_2 = 2.2222f;           (void)_P_x_2_1; //标记为未使用，避免编译的时候报错
+    _P_x_1_1 = 4.3333f;  _P_x_1_2 = 0.0033f;           (void)_P_x_1_1; //标记为未使用，避免编译的时候报错
+    _P_x_2_1 = 3.3333f; _P_x_2_2 = 0.0036f;           (void)_P_x_2_1; //标记为未使用，避免编译的时候报错
     float _P_y_1_1,_P_y_1_2,_P_y_2_1,_P_y_2_2;
-    _P_y_1_1 = 1.8333f;     _P_y_1_2 = 0.8333f;           (void)_P_y_1_1; //标记为未使用，避免编译的时候报错
-    _P_y_2_1 = 0.8333f; _P_y_2_2 = 2.2222f;           (void)_P_y_2_1; //标记为未使用，避免编译的时候报错
+    _P_y_1_1 = 4.3333f;     _P_y_1_2 = 0.0033f;           (void)_P_y_1_1; //标记为未使用，避免编译的时候报错
+    _P_y_2_1 = 3.3333f; _P_y_2_2 = 0.0036f;           (void)_P_y_2_1; //标记为未使用，避免编译的时候报错
     float _P_z_1_1,_P_z_1_2,_P_z_2_1,_P_z_2_2;
-    _P_z_1_1 = 1.8333f;    _P_z_1_2 = 0.8333f;           (void)_P_z_1_1; //标记为未使用，避免编译的时候报错
-    _P_z_2_1 = 0.8333f;_P_z_2_2 = 2.2222f;           (void)_P_z_2_1; //标记为未使用，避免编译的时候报错
+    _P_z_1_1 = 4.3333f;    _P_z_1_2 = 0.0100f;           (void)_P_z_1_1; //标记为未使用，避免编译的时候报错
+    _P_z_2_1 = 3.3333f;_P_z_2_2 = 0.0120f;           (void)_P_z_2_1; //标记为未使用，避免编译的时候报错
 
     
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // reset input filter to value received //无人机重启pid时的初始化
-    if (_reset_filter) {
+    if (_reset_filter) { 
         _reset_filter = false;
-        _error = measurement - _target;
+        _error = (measurement - _target); 
+        _error_m = (measurement - _target) / 100.0f; 
+        _error_ori = (measurement - _target);
         _derivative.zero();  //.zero是vector3f自带的成员函数，可以便捷地初始化归零一个三维向量
         _integrator.zero();  //初始化归零积分项
 
@@ -138,7 +140,7 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
         _dot_W_x_1 = _dot_W_x_2 = _dot_W_x_3 = _dot_W_x_4 = _dot_W_x_5 = 0.0f;  //x方向
         _dot_W_y_1 = _dot_W_y_2 = _dot_W_y_3 = _dot_W_y_4 = _dot_W_y_5 = 0.0f;  //y方向
         _dot_W_z_1 = _dot_W_z_2 = _dot_W_z_3 = _dot_W_z_4 = _dot_W_z_5 = 0.0f;  //z方向
-
+ 
         //初始化权重
         _W_x_1 = _W_x_2 = _W_x_3 = _W_x_4 = _W_x_5 = 0.0f; //x方向
         _W_y_1 = _W_y_2 = _W_y_3 = _W_y_4 = _W_y_5 = 0.0f; //y方向
@@ -147,26 +149,43 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
         //初始化神经网络输出_phi
         _phi_x = _phi_y = _phi_z = 0.0f;
 
+        //定义自适应参数初始值
+        _m_x =_m_y = _m_z = 1.5f;
+        //初始化归零控制器输出
+        _pdnn_output.x = 0;
+        _pdnn_output.y = 0;
+        _pdnn_output.z = 0;
+
         
     } else {
+       
         Vector3f error_last{_error}; //将上一个循环计算出的误差 _error 存储到一个临时变量 error_last 中，用于后续的微分项计算。
-        _error += ((measurement - _target) - _error) * get_filt_E_alpha(dt); //低通滤波：误差变化量*滤波系数
+        _error += ((measurement - _target) - _error) * get_filt_E_alpha(dt); //低通滤波：误差变化量*滤波系数 
+        _error_m = _error / 100.0f; //转化单位为米
+        
 
         // calculate and filter derivative
         if (is_positive(dt)) { //检查时间步长是否有效
             const Vector3f derivative{(_error - error_last) / dt}; //_error - error_last：计算当前误差与上一时刻误差之间的差，表示误差的变化量。计算误差变化量除以时间步长 dt，得到误差变化的速率，即微分项。
             _derivative += (derivative - _derivative) * get_filt_D_alpha(dt); //低通滤波：微分项变化量*滤波系数。使用低通滤波来对微分项进行平滑处理
+            _derivative_m = _derivative / 100.0f; //转化单位为米
+        }
+
+        Vector3f error_ori_last{_error_ori};
+        _error_ori = measurement - _target; //未经过滤波的误差
+        if (is_positive(dt)) {
+            _derivative_ori = (_error_ori - error_ori_last) / dt;
         }
 
         // update I term 更新积分项
         //void AC_PDNN_3D::update_i(float dt, float _ki, float _c1, float _kimax, bool limit)
-        update_i(dt, 0.1f, 30.0f, 20.0f, true);
+        update_i(dt, 1.0f, 10.0f, 10.0f, true);
    
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~神经网络NN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         //定义隐藏层输入X
-        _X_x.x = _error.x; _X_x.y = _derivative.x; //x方向2*1
-        _X_y.x = _error.y; _X_y.y = _derivative.y; //y方向2*1
-        _X_z.x = _error.z; _X_z.y = _derivative.z; //z方向2*1
+        _X_x.x = _error_m.x; _X_x.y = _derivative_m.x; //x方向2*1
+        _X_y.x = _error_m.y; _X_y.y = _derivative_m.y; //y方向2*1
+        _X_z.x = _error_m.z; _X_z.y = _derivative_m.z; //z方向2*1
         
         //计算隐藏层输出
         float L_x_1 = (_X_x-_c_x_1).length(); //存储欧式距离
@@ -203,36 +222,41 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
         _h_z_5 = expf(-L_z_5*L_z_5/(2*_b_z*_b_z));//z方向第5个隐藏层输出
 
         //计算权重更新律
-        float _gamma_x = 0.001;
-        _dot_W_x_1 = _gamma_x * (_error.x * _P_x_1_2 + _derivative.x * _P_x_2_2) * _h_x_1;//x方向第1个权重更新律
-        _dot_W_x_2 = _gamma_x * (_error.x * _P_x_1_2 + _derivative.x * _P_x_2_2) * _h_x_2;//x方向第2个权重更新律
-        _dot_W_x_3 = _gamma_x * (_error.x * _P_x_1_2 + _derivative.x * _P_x_2_2) * _h_x_3;//x方向第3个权重更新律
-        _dot_W_x_4 = _gamma_x * (_error.x * _P_x_1_2 + _derivative.x * _P_x_2_2) * _h_x_4;//x方向第4个权重更新律
-        _dot_W_x_5 = _gamma_x * (_error.x * _P_x_1_2 + _derivative.x * _P_x_2_2) * _h_x_5;//x方向第5个权重更新律
+        float _gamma_x = 1000.0f;
+        _dot_W_x_1 = _gamma_x * (_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _h_x_1;//x方向第1个权重更新律
+        _dot_W_x_2 = _gamma_x * (_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _h_x_2;//x方向第2个权重更新律
+        _dot_W_x_3 = _gamma_x * (_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _h_x_3;//x方向第3个权重更新律
+        _dot_W_x_4 = _gamma_x * (_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _h_x_4;//x方向第4个权重更新律
+        _dot_W_x_5 = _gamma_x * (_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _h_x_5;//x方向第5个权重更新律
 
-        float _gamma_y = 0.001;
-        _dot_W_y_1 = _gamma_y * (_error.y * _P_y_1_2 + _derivative.y * _P_y_2_2) * _h_y_1;//y方向第1个权重更新律
-        _dot_W_y_2 = _gamma_y * (_error.y * _P_y_1_2 + _derivative.y * _P_y_2_2) * _h_y_2;//y方向第2个权重更新律
-        _dot_W_y_3 = _gamma_y * (_error.y * _P_y_1_2 + _derivative.y * _P_y_2_2) * _h_y_3;//y方向第3个权重更新律
-        _dot_W_y_4 = _gamma_y * (_error.y * _P_y_1_2 + _derivative.y * _P_y_2_2) * _h_y_4;//y方向第4个权重更新律
-        _dot_W_y_5 = _gamma_y * (_error.y * _P_y_1_2 + _derivative.y * _P_y_2_2) * _h_y_5;//y方向第5个权重更新律
+        float _gamma_y = 1000.0f;
+        _dot_W_y_1 = _gamma_y * (_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _h_y_1;//y方向第1个权重更新律
+        _dot_W_y_2 = _gamma_y * (_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _h_y_2;//y方向第2个权重更新律
+        _dot_W_y_3 = _gamma_y * (_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _h_y_3;//y方向第3个权重更新律
+        _dot_W_y_4 = _gamma_y * (_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _h_y_4;//y方向第4个权重更新律
+        _dot_W_y_5 = _gamma_y * (_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _h_y_5;//y方向第5个权重更新律
 
-        float _gamma_z = 0.002;
-        _dot_W_z_1 = _gamma_z * (_error.z * _P_z_1_2 + _derivative.z * _P_z_2_2) * _h_z_1;//z方向第1个权重更新律
-        _dot_W_z_2 = _gamma_z * (_error.z * _P_z_1_2 + _derivative.z * _P_z_2_2) * _h_z_2;//z方向第2个权重更新律
-        _dot_W_z_3 = _gamma_z * (_error.z * _P_z_1_2 + _derivative.z * _P_z_2_2) * _h_z_3;//z方向第3个权重更新律
-        _dot_W_z_4 = _gamma_z * (_error.z * _P_z_1_2 + _derivative.z * _P_z_2_2) * _h_z_4;//z方向第4个权重更新律
-        _dot_W_z_5 = _gamma_z * (_error.z * _P_z_1_2 + _derivative.z * _P_z_2_2) * _h_z_5;//z方向第5个权重更新律
+        float _gamma_z = 100.0f;
+        _dot_W_z_1 = _gamma_z * (_error_m.z * _P_z_1_2 + _derivative_m.z * _P_z_2_2) * _h_z_1;//z方向第1个权重更新律
+        _dot_W_z_2 = _gamma_z * (_error_m.z * _P_z_1_2 + _derivative_m.z * _P_z_2_2) * _h_z_2;//z方向第2个权重更新律
+        _dot_W_z_3 = _gamma_z * (_error_m.z * _P_z_1_2 + _derivative_m.z * _P_z_2_2) * _h_z_3;//z方向第3个权重更新律
+        _dot_W_z_4 = _gamma_z * (_error_m.z * _P_z_1_2 + _derivative_m.z * _P_z_2_2) * _h_z_4;//z方向第4个权重更新律
+        _dot_W_z_5 = _gamma_z * (_error_m.z * _P_z_1_2 + _derivative_m.z * _P_z_2_2) * _h_z_5;//z方向第5个权重更新律
 
         //计算当前权重（求积分）
         if (is_positive(dt)) { //检查时间步长是否有效
 
         //x方向的权重
           _W_x_1 += _dot_W_x_1 * dt;
+          //_W_x_1 += (W_x_1 - _W_x_1) * get_filt_D_alpha(dt);
           _W_x_2 += _dot_W_x_2 * dt;
+          //_W_x_2 += (W_x_2 - _W_x_2) * get_filt_D_alpha(dt);
           _W_x_3 += _dot_W_x_3 * dt;
+          //_W_x_3 += (W_x_3 - _W_x_3) * get_filt_D_alpha(dt);
           _W_x_4 += _dot_W_x_4 * dt;
+          //W_x_4 += (W_x_4 - _W_x_4) * get_filt_D_alpha(dt);
           _W_x_5 += _dot_W_x_5 * dt;
+          //_W_x_5 += (W_x_5 - _W_x_5) * get_filt_D_alpha(dt);
           //y方向的权重
           _W_y_1 += _dot_W_y_1 * dt;
           _W_y_2 += _dot_W_y_2 * dt;
@@ -254,9 +278,87 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
         //(void)_phi_x;
         //(void)_phi_y;
         //(void)_phi_z;//暂时标记为未使用，避免报错
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~自适应律~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        
+        float _m_max = 3.0f; //定义自适应参数上限
+        //~~~~~x方向
+        float _eta_x = 0.05f; //定义自适应律参数，eta越大越平滑
+        float _s_x = 0.002f;  //定义缩放因子
+        if ((_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _pdnn_output.x > 0 )
+        {
+            _dot_m_x = -(_m_x * _m_x) / _eta_x * (_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _pdnn_output.x;
+        }
+        if ((_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _pdnn_output.x <= 0 )
+        {
+            if (_m_x < _m_max)
+            {
+                _dot_m_x = -(_m_x * _m_x) / _eta_x * (_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _pdnn_output.x;
+            }
+            else
+            {
+                _dot_m_x = -_s_x * (_m_x * _m_x);  
+            }
+        }
+         //计算当前自适应参数（求积分）
+        if (is_positive(dt)) { //检查时间步长是否有效
 
+        //x方向的自适应参数_m_x
+          _m_x += _dot_m_x * dt;
+        }
+        //~~~~~~y方向
+        float _eta_y = 0.05f; //定义自适应律参数，eta越大越平滑
+        float _s_y = 0.002f;  //定义缩放因子
+        if ((_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _pdnn_output.y > 0 )
+        {
+            _dot_m_y = -(_m_y * _m_y) / _eta_y * (_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _pdnn_output.y;
+        }
+        if ((_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _pdnn_output.y <= 0 )
+        {
+            if (_m_y < _m_max)
+            {
+                _dot_m_y = -(_m_y * _m_y) / _eta_y * (_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _pdnn_output.y;
+            }
+            else
+            {
+                _dot_m_y = -_s_y * (_m_y * _m_y);  
+            }
+        }
+         //计算当前自适应参数（求积分）
+        if (is_positive(dt)) { //检查时间步长是否有效
+
+        //x方向的自适应参数_m_x
+          _m_y += _dot_m_y * dt;
+        }
+        //~~~~~~z方向
+        float _eta_z = 0.5f; //定义自适应律参数，eta越大越平滑
+        float _s_z = 0.002f;  //定义缩放因子
+        if ((_error_m.z * _P_z_1_2 + _derivative_m.z * _P_z_2_2) * _pdnn_output.z > 0 )
+        {
+            _dot_m_z = -(_m_z * _m_z) / _eta_z * (_error_m.z * _P_z_1_2 + _derivative_m.z * _P_z_2_2) * _pdnn_output.z;
+        }
+        if ((_error_m.z * _P_z_1_2 + _derivative_m.z * _P_z_2_2) * _pdnn_output.z <= 0 )
+        {
+            if (_m_z < _m_max)
+            {
+                _dot_m_z = -(_m_z * _m_z) / _eta_z * (_error_m.z * _P_z_1_2 + _derivative_m.z * _P_z_2_2) * _pdnn_output.z;
+            }
+            else
+            {
+                _dot_m_z = -_s_z * (_m_z * _m_z);  
+            }
+        }
+         //计算当前自适应参数（求积分）
+        if (is_positive(dt)) { //检查时间步长是否有效
+
+        //x方向的自适应参数_m_x
+          _m_z += _dot_m_z * dt;
         }
 
+
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        }
     
 
     // calculate slew limit //后续考虑删除
@@ -292,9 +394,9 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     _pdnn_output_D.y = _error.y * _kd;
     _pdnn_output_D.z = _error.z * _kd_z;
 
-    _pdnn_output.x = -_error.x * _kp - _integrator.x - _derivative.x * _kd + _target.x * _kff - _phi_x; //计算总输出
-    _pdnn_output.y = -_error.y * _kp - _integrator.y - _derivative.y * _kd + _target.y * _kff -_phi_y;
-    _pdnn_output.z = -_error.z * _kp_z - _integrator.z - _derivative.z * _kd_z - 9.80665f + _target.z * _kff -_phi_z; //加入重力值9.80665, NED坐标系下为负数
+    _pdnn_output.x = _m_x * (-_error_m.x * _kp - 0.0f*_integrator.x - _derivative_m.x * _kd + _target.x * _kff - 1.0f*_phi_x); //计算总输出
+    _pdnn_output.y = _m_y * (-_error_m.y * _kp - 0.0f*_integrator.y - _derivative_m.y * _kd + _target.y * _kff -1.0f * _phi_y);
+    _pdnn_output.z = _m_z * (-_error_m.z * _kp_z - 0.0f*_integrator.z - _derivative_m.z * _kd_z - 9.80665f + _target.z * _kff -1.0f *_phi_z); //加入重力值9.80665, NED坐标系下为负数
 
     return _pdnn_output; //返回pdnn控制器输出
 
@@ -304,7 +406,7 @@ void AC_PDNN_3D::update_i(float dt, float _ki, float _c1, float _kimax, bool lim
 {
    if (limit){
 
-    Vector3f delta_integrator = (_derivative + _error * _c1) * dt;
+    Vector3f delta_integrator = (_derivative_m + _error_m * _c1) * dt;
     _integrator += delta_integrator;
     
     float _integrator_x = _integrator.x;
@@ -352,6 +454,16 @@ Vector3f AC_PDNN_3D::get_phi() const
     _phi.z = _phi_z;
     return _phi;
 }
+
+Vector3f AC_PDNN_3D::get_m() const
+{   
+    Vector3f _m;
+    _m.x = _m_x;
+    _m.y = _m_y;
+    _m.z = _m_z;
+    return _m;
+}
+
 
 
 // save_gains - save gains to eeprom
