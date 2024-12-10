@@ -35,11 +35,8 @@ extern AP_IOMCU iomcu;
   2nd group of parameters
  */
 const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
-#if HAL_RUNCAM_ENABLED
-    // @Group: CAM_RC_
-    // @Path: ../AP_Camera/AP_RunCam.cpp
-    AP_SUBGROUPINFO(runcam, "CAM_RC_", 1, AP_Vehicle, AP_RunCam),
-#endif
+
+    // 1: RunCam
 
 #if HAL_GYROFFT_ENABLED
     // @Group: FFT_
@@ -450,9 +447,6 @@ void AP_Vehicle::setup()
     gyro_fft.init(1000);
 #endif
 #endif
-#if HAL_RUNCAM_ENABLED
-    runcam.init();
-#endif
 #if HAL_HOTT_TELEM_ENABLED
     hott_telem.init();
 #endif
@@ -614,9 +608,6 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Notify,    &vehicle.notify,         update,                   50, 300, 78),
 #if HAL_NMEA_OUTPUT_ENABLED
     SCHED_TASK_CLASS(AP_NMEA_Output, &vehicle.nmea,         update,                   50, 50, 180),
-#endif
-#if HAL_RUNCAM_ENABLED
-    SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50, 200),
 #endif
 #if HAL_GYROFFT_ENABLED
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50, 205),
