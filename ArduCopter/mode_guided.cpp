@@ -746,8 +746,8 @@ void ModeGuided::pos_control_run()
     pos_control->input_pos_xyz(guided_pos_target_cm, terr_offset, pos_offset_z_buffer);
 
     // run position controllers
-    pos_control->update_xy_controller();
-    pos_control->update_z_controller();
+    pos_control->update_xy_controller(true);
+    pos_control->update_z_controller(true);
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
@@ -791,8 +791,8 @@ void ModeGuided::accel_control_run()
     }
 
     // call velocity controller which includes z axis controller
-    pos_control->update_xy_controller();
-    pos_control->update_z_controller();
+    pos_control->update_xy_controller(true);
+    pos_control->update_z_controller(true);
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
@@ -846,8 +846,8 @@ void ModeGuided::velaccel_control_run()
     pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
 
     // call velocity controller which includes z axis controller
-    pos_control->update_xy_controller();
-    pos_control->update_z_controller();
+    pos_control->update_xy_controller(true);
+    pos_control->update_z_controller(true);
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
@@ -935,8 +935,8 @@ void ModeGuided::posvelaccel_control_run()
     guided_pos_target_cm.z = pz;
 
     // run position controllers
-    pos_control->update_xy_controller();
-    pos_control->update_z_controller();
+    pos_control->update_xy_controller(true);
+    pos_control->update_z_controller(true);
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
