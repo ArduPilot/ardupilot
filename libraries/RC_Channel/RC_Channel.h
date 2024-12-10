@@ -263,6 +263,8 @@ public:
         QUICKTUNE =          181,  //quicktune 3 position switch
 
 
+        GPS_DISABLE_EK3 =    190, // disable GPS only for EKF3
+
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input
