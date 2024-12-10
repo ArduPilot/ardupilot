@@ -1,9 +1,11 @@
--- Script to load one of up to 10 mission files based on AUX switch state
--- Always loads mission0.txt at boot, cycles missions on AUX high if held less than 3 seconds
--- Reset the mission0.txt if AUX is high for more than 3 seconds
--- Prevents mission change if the vehicle is in AUTO mode
--- Prevents the script from loading if the vehicle is in AUTO
--- For each loaded mission it also shows the number of events it contains
+--[[
+- Script to load one of up to 10 mission files based on AUX switch state
+- Always loads mission0.txt at boot, cycles missions on AUX high if held less than 3 seconds
+- Reset the mission0.txt if AUX is high for more than 3 seconds
+- Prevents mission change if the vehicle is in AUTO mode
+- Prevents the script from loading if the vehicle is in AUTO
+- For each loaded mission it also shows the number of events it contains
+--]]
 
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 local rc_switch = rc:find_channel_for_option(24)
