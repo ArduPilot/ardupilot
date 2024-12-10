@@ -161,8 +161,10 @@ protected:
     // instance numbers of accel and gyro data
     uint8_t gyro_instance;
     bool is_primary_gyro = true;
+    uint32_t last_primary_gyro_update_us;
     uint8_t accel_instance;
     bool is_primary_accel = true;
+    uint32_t last_primary_accel_update_us;
 
     void _rotate_and_correct_accel(uint8_t instance, Vector3f &accel) __RAMFUNC__;
     void _rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) __RAMFUNC__;
