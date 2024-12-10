@@ -83,9 +83,12 @@ void ModeTakeoff::update()
     if (!takeoff_mode_setup) {
         plane.auto_state.takeoff_altitude_rel_cm = alt * 100;
         const uint16_t altitude = plane.relative_ground_altitude(false,true);
-        const float direction = degrees(ahrs.get_yaw());
+        const Vector2f &groundspeed2d = ahrs.groundspeed_vector();
+        const float direction = wrap_360(degrees(groundspeed2d.angle()));
+        const float groundspeed = groundspeed2d.length();
+
         // see if we will skip takeoff as already flying
-        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && ahrs.groundspeed() > 3) {
+        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && groundspeed > 3) {
             if (altitude >= alt) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Above TKOFF alt - loitering");
                 plane.next_WP_loc = plane.current_loc;
@@ -115,7 +118,15 @@ void ModeTakeoff::update()
 
             plane.set_flight_stage(AP_FixedWing::FlightStage::TAKEOFF);
 
-            if (!plane.throttle_suppressed) {
+            /*
+              don't lock in the takeoff loiter location until we reach
+              a ground speed of AIRSPEED_MIN*0.3 to cope with aircraft
+              with no compass or poor compass. If flying in a very
+              strong headwind then the is_flying() check above will
+              eventually trigger
+             */
+            if (!plane.throttle_suppressed &&
+                groundspeed > plane.aparm.airspeed_min*0.3) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Takeoff to %.0fm for %.1fm heading %.1f deg",
                                 alt, dist, direction);
                 plane.takeoff_state.start_time_ms = millis();
