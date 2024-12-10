@@ -1342,9 +1342,6 @@ void RCOutput::cork(void)
  */
 void RCOutput::push(void)
 {
-    if (!corked) {
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-    }
     corked = false;
     push_local();
 #if HAL_WITH_IO_MCU
