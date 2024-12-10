@@ -1728,6 +1728,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "FENCE_ALT_MIN": 20,
             "FENCE_ACTION": 0,
         })
+        self.reboot_sitl()
 
         self.takeoff(30, mode="LOITER")
         """Hold loiter position."""
