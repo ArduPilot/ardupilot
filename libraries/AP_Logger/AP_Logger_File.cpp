@@ -16,6 +16,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#include <AP_Filesystem/AP_Filesystem_FlashMemory_LittleFS.h>
+#endif
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
@@ -984,29 +987,7 @@ void AP_Logger_File::io_timer(void)
     }
 
 #if AP_FILESYSTEM_LITTLEFS_ENABLED
-    // see https://github.com/littlefs-project/littlefs/issues/564#issuecomment-2363032827
-    // n = (N − w/8 ( popcount( N/(B − 2w/8) − 1) + 2))/(B − 2w/8))
-    // off = N − ( B − 2w/8 ) n − w/8popcount( n )
-#define BLOCK_INDEX(N, B) \
-    (N - sizeof(uint32_t) * (__builtin_popcount(N/(B - 2 * sizeof(uint32_t)) -1) + 2))/(B - 2 * sizeof(uint32_t))
-
-#define BLOCK_OFFSET(N, B, n) \
-    (N - (B - 2*sizeof(uint32_t)) * n - sizeof(uint32_t) * __builtin_popcount(n))
-
-    uint32_t blocksize = AP::FS().get_sync_size();
-    uint32_t block_index = BLOCK_INDEX(_write_offset, blocksize);
-    uint32_t block_offset = BLOCK_OFFSET(_write_offset, blocksize, block_index);
-    bool end_of_block = false;
-    if (blocksize - block_offset <= nbytes) {
-        if (blocksize == block_offset) {
-            // exactly at the end of the block, sync and then write all the data
-            AP::FS().fsync(_write_fd);
-        } else {
-            // near the end of the block, fill in the remaining gap
-            nbytes = blocksize - block_offset;
-            end_of_block = true;
-        }
-    }
+    bool sync_block = AP::littlefs().sync_block(_write_fd, _write_offset, nbytes);
 #endif // AP_FILESYSTEM_LITTLEFS_ENABLED
 
     ssize_t nwritten = AP::FS().write(_write_fd, head, nbytes);
@@ -1034,7 +1015,7 @@ void AP_Logger_File::io_timer(void)
           required since the whole point of the filesystem is to avoid corruption
          */
 #if AP_FILESYSTEM_LITTLEFS_ENABLED
-        if (end_of_block)
+        if (sync_block)
 #endif // AP_FILESYSTEM_LITTLEFS_ENABLED
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
         {
