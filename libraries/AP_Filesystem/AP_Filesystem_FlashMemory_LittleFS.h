@@ -25,6 +25,7 @@
 class AP_Filesystem_FlashMemory_LittleFS : public AP_Filesystem_Backend
 {
 public:
+    AP_Filesystem_FlashMemory_LittleFS();
     // functions that closely match the equivalent posix calls
     int open(const char *fname, int flags, bool allow_absolute_paths = false) override;
     int close(int fd) override;
@@ -47,7 +48,7 @@ public:
     // set modification time on a file
     bool set_mtime(const char *filename, const uint32_t mtime_sec) override;
 
-    uint32_t get_sync_size() const override { return fs_cfg.block_size; }
+    bool sync_block(int _write_fd, uint32_t _write_offset, uint32_t& nbytes);
 
     bool retry_mount(void) override;
     void unmount(void) override;
@@ -59,6 +60,9 @@ public:
     int _flashmem_prog(lfs_block_t block, lfs_off_t off, const void* buffer, lfs_size_t size);
     int _flashmem_erase(lfs_block_t block);
     int _flashmem_sync();
+
+    // get_singleton for scripting
+    static AP_Filesystem_FlashMemory_LittleFS *get_singleton(void);
 
 private:
     // JEDEC ID of the flash memory, JEDEC_ID_UNKNOWN if not known or not supported
@@ -102,6 +106,8 @@ private:
     bool use_32bit_address;
     FormatStatus format_status;
 
+    static AP_Filesystem_FlashMemory_LittleFS* singleton;
+
     int allocate_fd();
     int free_fd(int fd);
     void free_all_fds();
@@ -120,6 +126,10 @@ private:
     void write_status_register(uint8_t reg, uint8_t bits);
     void format_handler(void);
     void mark_dead();
+};
+
+namespace AP {
+    AP_Filesystem_FlashMemory_LittleFS &littlefs();
 };
 
 #endif  // #if AP_FILESYSTEM_LITTLEFS_ENABLED
