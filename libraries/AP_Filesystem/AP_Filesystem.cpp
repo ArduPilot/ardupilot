@@ -313,12 +313,6 @@ void AP_Filesystem::unmount(void)
     return LOCAL_BACKEND.fs.unmount();
 }
 
-// if non-zero size at which syncs should be peformed, only used by flash fs
-uint32_t AP_Filesystem::get_sync_size(void) const
-{
-    return LOCAL_BACKEND.fs.get_sync_size();
-}
-
 /*
   Load a file's contents into memory. Returned object must be `delete`d to free
   the data. The data is guaranteed to be null-terminated such that it can be
