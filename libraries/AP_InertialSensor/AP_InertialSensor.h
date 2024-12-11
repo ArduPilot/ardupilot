@@ -283,6 +283,10 @@ public:
     // Returns newly calculated trim values if calculated
     bool get_new_trim(Vector3f &trim_rad);
 
+    // notify IMUs of the new primaries
+    void set_primary_gyro(uint8_t instance);
+    void set_primary_accel(uint8_t instance);
+
 #if HAL_INS_ACCELCAL_ENABLED
     // initialise and register accel calibrator
     // called during the startup of accel cal

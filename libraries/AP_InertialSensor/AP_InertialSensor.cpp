@@ -1881,6 +1881,16 @@ void AP_InertialSensor::HarmonicNotch::update_params(uint8_t instance, bool conv
 }
 #endif
 
+// notify IMUs of the new primaries
+void AP_InertialSensor::set_primary_gyro(uint8_t instance)
+{
+    _primary_gyro = instance;
+}
+void AP_InertialSensor::set_primary_accel(uint8_t instance)
+{
+    _primary_accel = instance;
+}
+
 /*
   update gyro and accel values from backends
  */
@@ -1949,11 +1959,6 @@ void AP_InertialSensor::update(void)
             }
         }
 
-#if AP_AHRS_ENABLED
-        // ask AHRS for the true primary, might just be us though
-        _primary_gyro = AP::ahrs().get_primary_gyro_index();
-        _primary_accel = AP::ahrs().get_primary_accel_index();
-#endif
         // set primary to first healthy accel and gyro
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_gyro_healthy[i] && _use(i)) {
