@@ -3043,7 +3043,6 @@ function terrain:status() end
 ---@return boolean
 function terrain:enabled() end
 
-
 -- RangeFinder state structure
 ---@class (exact) RangeFinder_State_ud
 local RangeFinder_State_ud = {}
