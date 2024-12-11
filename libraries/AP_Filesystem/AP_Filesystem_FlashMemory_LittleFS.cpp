@@ -58,6 +58,16 @@ static int lfs_flags_from_flags(int flags);
 
 const extern AP_HAL::HAL& hal;
 
+AP_Filesystem_FlashMemory_LittleFS* AP_Filesystem_FlashMemory_LittleFS::singleton;
+
+AP_Filesystem_FlashMemory_LittleFS::AP_Filesystem_FlashMemory_LittleFS()
+{
+    if (singleton) {
+        AP_HAL::panic("Too many AP_Filesystem_FlashMemory_LittleFS instances");
+    }
+    singleton = this;
+}
+
 int AP_Filesystem_FlashMemory_LittleFS::open(const char *pathname, int flags, bool allow_absolute_path)
 {
     int fd, retval;
@@ -554,6 +564,34 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define W25NXX_TIMEOUT_PAGE_PROGRAM_US     700  // tPPmax = 700us
 #define W25NXX_TIMEOUT_BLOCK_ERASE_MS      10   // tBEmax = 10ms
 #define W25NXX_TIMEOUT_RESET_MS            500  // tRSTmax = 500ms
+
+bool AP_Filesystem_FlashMemory_LittleFS::sync_block(int _write_fd, uint32_t _write_offset, uint32_t& nbytes)
+{
+    // see https://github.com/littlefs-project/littlefs/issues/564#issuecomment-2363032827
+    // n = (N − w/8 ( popcount( N/(B − 2w/8) − 1) + 2))/(B − 2w/8))
+    // off = N − ( B − 2w/8 ) n − w/8popcount( n )
+#define BLOCK_INDEX(N, B) \
+    (N - sizeof(uint32_t) * (__builtin_popcount(N/(B - 2 * sizeof(uint32_t)) -1) + 2))/(B - 2 * sizeof(uint32_t))
+
+#define BLOCK_OFFSET(N, B, n) \
+    (N - (B - 2*sizeof(uint32_t)) * n - sizeof(uint32_t) * __builtin_popcount(n))
+
+    uint32_t blocksize = fs_cfg.block_size;
+    uint32_t block_index = BLOCK_INDEX(_write_offset, blocksize);
+    uint32_t block_offset = BLOCK_OFFSET(_write_offset, blocksize, block_index);
+    if (blocksize - block_offset <= nbytes) {
+        if (blocksize == block_offset) {
+            // exactly at the end of the block, sync and then write all the data
+            AP::FS().fsync(_write_fd);
+            return false;
+        } else {
+            // near the end of the block, fill in the remaining gap
+            nbytes = blocksize - block_offset;
+            return true;
+        }
+    }
+    return false;
+}
 
 bool AP_Filesystem_FlashMemory_LittleFS::is_busy()
 {
@@ -1108,6 +1146,20 @@ static int lfs_flags_from_flags(int flags)
     }
 
     return outflags;
+}
+
+// get_singleton for scripting
+AP_Filesystem_FlashMemory_LittleFS *AP_Filesystem_FlashMemory_LittleFS::get_singleton(void)
+{
+    return singleton;
+}
+
+namespace AP
+{
+AP_Filesystem_FlashMemory_LittleFS &littlefs()
+{
+    return *AP_Filesystem_FlashMemory_LittleFS::get_singleton();
+}
 }
 
 #endif  // AP_FILESYSTEM_LITTLEFS_ENABLED
