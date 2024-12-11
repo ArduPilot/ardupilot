@@ -1,6 +1,53 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
-Release 4.6.0-beta 13 Nov 2024
+Release 4.6.0-beta2 11 Dec 2024
+
+Changes from 4.6.0-beta1
+
+1) Board specfic changes
+
+- FoxeerF405v2 supports BMP280 baro
+- KakuteH7, H7-Mini, H7-Wing, F4 support SPA06 baro
+- MUPilot support
+- SkySakura H743 support
+- TBS Lucid H7 support
+- VUAV-V7pro README documentation fixed
+- X-MAV AP-H743v2 CAN pin definition fixed
+
+2) Copter specific enhancements and bug fixes
+
+- AutoTune fix for calc of maximum angular acceleration
+- Advanced Failsafe customer build server option
+
+3) Plane related enhancements and bug fixes
+
+- QuadPlane fix for QLand getting stuck in pilot repositioning
+- QuikTune C++ conversion (allow running quiktun on F4 and f7 boards)
+- Takeoff direction fixed when no yaw source
+- TECS correctly handles home altitude changes
+
+4) Bug Fixes and minor enhancements
+
+- AIRSPEED_AUTOCAL mavlink message only sent when required and fixed for 2nd sensor
+- CAN frame logging added to ease support
+- CRSF reconnection after failsafe fixed
+- EKF3 position and velocity resets default to user defined source
+- Ethernet IP address default 192.168.144.x
+- Fence autoenable fix when both RCn_OPTION=11/Fence and FENCE_AUTOENABLE = 3 (AutoEnableOnlyWhenArmed)
+- Fence pre-arm check that vehicle is within polygon fence
+- Fence handling of more than 256 items fixed
+- FFT protection against divide-by-zero in Jain estimator
+- Frsky telemetry apparent wind speed fixed
+- Inertial sensors stop sensor converging if motors arm
+- Inertial sensors check for changes to notch filters fixed
+- Real Time Clock allowed to shift forward when disarmed
+- ROS2/DDS get/set parameter service added
+- Scripting gets memory handling improvements
+- Scripting promote video-stream-information to applet
+- Topotek gimbal driver uses GIA message to retrieve current angle
+- Tramp VTX OSD power indicator fixed
+------------------------------------------------------------------
+Release 4.6.0-beta1 13 Nov 2024
 
 Changes from 4.5.7
 
