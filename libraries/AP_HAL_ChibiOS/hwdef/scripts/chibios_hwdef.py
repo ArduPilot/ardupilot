@@ -989,7 +989,6 @@ class ChibiOSHWDef(object):
             f.write('#define HAL_USE_SDC FALSE\n')
             self.build_flags.append('USE_FATFS=no')
             self.env_vars['WITH_LITTLEFS'] = "1"
-            self.env_vars['DISABLE_SCRIPTING'] = True
         else:
             f.write('#define HAL_USE_SDC FALSE\n')
             self.build_flags.append('USE_FATFS=no')
