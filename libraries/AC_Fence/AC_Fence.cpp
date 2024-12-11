@@ -142,7 +142,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param{Plane, Copter}: OPTIONS
     // @DisplayName: Fence options
     // @Description: When bit 0 is set sisable mode change following fence action until fence breach is cleared. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
-    // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared, 1:Allow union of inclusion areas
+    // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared, 1:Allow union of inclusion areas, 2:Notify on margin breaches
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(AC_FENCE_OPTIONS_DEFAULT), AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
 
@@ -556,6 +556,10 @@ bool AC_Fence::check_fence_alt_max()
         }
         // old breach
         return false;
+    } else if (_curr_alt >= _alt_max - _margin) {
+        record_margin_breach(AC_FENCE_TYPE_ALT_MAX);
+    } else {
+        clear_margin_breach(AC_FENCE_TYPE_ALT_MAX);
     }
 
     // not breached
@@ -605,6 +609,10 @@ bool AC_Fence::check_fence_alt_min()
         }
         // old breach
         return false;
+    } else if (_curr_alt <= _alt_min + _margin) {
+        record_margin_breach(AC_FENCE_TYPE_ALT_MIN);
+    } else {
+        clear_margin_breach(AC_FENCE_TYPE_ALT_MIN);
     }
 
     // not breached
@@ -659,13 +667,23 @@ bool AC_Fence::check_fence_polygon()
     }
 
     const bool was_breached = _breached_fences & AC_FENCE_TYPE_POLYGON;
-    if (_poly_loader.breached()) {
+
+    Location loc;
+    bool have_location = AP::ahrs().get_location(loc);
+    bool inside_margin = false;
+
+    if (have_location && _poly_loader.breached(loc, _margin, inside_margin)) {
         if (!was_breached) {
             record_breach(AC_FENCE_TYPE_POLYGON);
             return true;
         }
         return false;
+    } else if (option_enabled(OPTIONS::MARGIN_BREACH) && inside_margin) {
+        record_margin_breach(AC_FENCE_TYPE_POLYGON);
+    } else {
+        clear_margin_breach(AC_FENCE_TYPE_POLYGON);
     }
+
     if (was_breached) {
         clear_breach(AC_FENCE_TYPE_POLYGON);
     }
@@ -705,6 +723,10 @@ bool AC_Fence::check_fence_circle()
             return true;
         }
         return false;
+    } else if (_home_distance >= _circle_radius - _margin) {
+        record_margin_breach(AC_FENCE_TYPE_CIRCLE);
+    } else {
+        clear_margin_breach(AC_FENCE_TYPE_CIRCLE);
     }
 
     // not currently breached
@@ -876,10 +898,46 @@ void AC_Fence::record_breach(uint8_t fence_type)
     _breached_fences |= fence_type;
 }
 
-/// clear_breach - update breach bitmask, time and count
+/// record_margin_breach - update margin_breach bitmask, time and count
+void AC_Fence::record_margin_breach(uint8_t fence_type)
+{
+    // if we haven't already breached a margin limit, update the breach time
+    if (!(_breached_fence_margins & fence_type)) {
+        const uint32_t now = AP_HAL::millis();
+
+        // emit a message indicated we're newly-breached, but not too often
+        if (option_enabled(OPTIONS::MARGIN_BREACH)
+            && AP_HAL::timeout_expired(_last_margin_breach_notify_sent_ms, now, 1000U)) {
+            _last_margin_breach_notify_sent_ms = now;
+            print_fence_message("outside margin", _breached_fence_margins | fence_type);
+        }
+    }
+
+    // update bitmask
+    _breached_fence_margins |= fence_type;
+}
+
+/// clear_breach - update breach bitmask
 void AC_Fence::clear_breach(uint8_t fence_type)
 {
     _breached_fences &= ~fence_type;
+}
+
+/// clear_margin_breach - update margin reach bitmask
+void AC_Fence::clear_margin_breach(uint8_t fence_type)
+{
+    if (_breached_fence_margins & fence_type) {
+        const uint32_t now = AP_HAL::millis();
+
+        // emit a message indicated we're newly-breached, but not too often
+        if (option_enabled(OPTIONS::MARGIN_BREACH)
+            && AP_HAL::timeout_expired(_last_margin_breach_notify_sent_ms, now, 1000U)) {
+            _last_margin_breach_notify_sent_ms = now;
+            print_fence_message("inside margin", fence_type);
+        }
+    }
+
+    _breached_fence_margins &= ~fence_type;
 }
 
 /// get_breach_distance - returns maximum distance in meters outside
