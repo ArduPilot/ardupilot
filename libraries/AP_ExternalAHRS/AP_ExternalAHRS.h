@@ -28,6 +28,8 @@
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_GPS/AP_GPS_FixType.h>
 
+#include "AP_ExternalAHRS_command_context.h"
+
 class AP_ExternalAHRS_backend;
 
 class AP_ExternalAHRS {
@@ -121,6 +123,8 @@ public:
     bool get_accel(Vector3f &accel);
     void send_status_report(class GCS_MAVLINK &link) const;
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
+    bool write_bytes(const char *bytes, uint8_t len);
+    bool handle_command(ExternalAHRS_command command);
 
     // update backend
     void update();
