@@ -293,6 +293,7 @@ AP_HW_X-MAV-AP-H743V2                1174
 AP_HW_BETAFPV_F4_2-3S_20A            1175
 AP_HW_MicoAir743AIOv1                1176
 AP_HW_CrazyF405                      1177
+AP_HW_MicoAir743v2                   1178
 AP_HW_FlywooF405HD_AIOv2             1180
 AP_HW_FlywooH743Pro                  1181
 
