@@ -251,13 +251,13 @@ struct Vector2
         const T intersection_run = point.x-seg_start.x;
         // check slopes are identical:
         if (::is_zero(expected_run)) {
-            if (fabsF(intersection_run) > FLT_EPSILON) {
+            if (std::abs(intersection_run) > FLT_EPSILON) {
                 return false;
             }
         } else {
             const T expected_slope = (seg_end.y-seg_start.y)/expected_run;
             const T intersection_slope = (point.y-seg_start.y)/intersection_run;
-            if (fabsF(expected_slope - intersection_slope) > FLT_EPSILON) {
+            if (std::abs(expected_slope - intersection_slope) > FLT_EPSILON) {
                 return false;
             }
         }
