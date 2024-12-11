@@ -90,7 +90,7 @@ If you want to make changes to sdkconfig (sdkconfig is in the build dir) permane
 
 5. Recommanded way to flash the firmware :
 ```
-ESPBAUD=921600 ./waf plane --upload
+ESPPORT=/dev/ttyUSB0 ESPBAUD=921600 ./waf plane --upload
 ```
 
 6. The espressif esp-idf original project is built at `cd build/esp32{BOARD}/esp-idf_build/`.
