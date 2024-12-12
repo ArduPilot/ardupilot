@@ -1,5 +1,13 @@
 #include "SIM_Invensense_v3.h"
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_SIM_ICM40609_ENABLED
+#define AP_SIM_ICM40609_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if AP_SIM_ICM40609_ENABLED
+
 namespace SITL {
 
 class ICM40609DevReg : public InvensenseV3DevReg {
@@ -21,3 +29,5 @@ private:
 };
 
 } // namespace SITL
+
+#endif  // AP_SIM_ICM40609_ENABLED

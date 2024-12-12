@@ -1,5 +1,13 @@
 #include "SIM_I2CDevice.h"
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_SIM_TEMPERATURETSYS01_ENABLED
+#define AP_SIM_TEMPERATURETSYS01_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if AP_SIM_TEMPERATURETSYS01_ENABLED
+
 /*
   Simulator for the TSYS01 temperature sensor
 
@@ -63,3 +71,5 @@ private:
 };
 
 } // namespace SITL
+
+#endif  // AP_SIM_TEMPERATURETSYS01_ENABLED

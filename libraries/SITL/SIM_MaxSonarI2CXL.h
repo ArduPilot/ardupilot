@@ -2,6 +2,14 @@
 
 #include "SIM_I2CDevice.h"
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_SIM_MAXSONARI2CXL_ENABLED
+#define AP_SIM_MAXSONARI2CXL_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if AP_SIM_MAXSONARI2CXL_ENABLED
+
 namespace SITL {
 
 class MaxSonarI2CXL : public I2CDevice, public I2CCommandResponseDevice
@@ -29,3 +37,5 @@ private:
 };
 
 } // namespace SITL
+
+#endif  // AP_SIM_MAXSONARI2CXL_ENABLED

@@ -1,5 +1,13 @@
 #include "SIM_I2CDevice.h"
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_SIM_TEMPERATUREMCP9600_ENABLED
+#define AP_SIM_TEMPERATUREMCP9600_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if AP_SIM_TEMPERATUREMCP9600_ENABLED
+
 /*
   Simulator for the MCP9600 temperature sensor
 
@@ -36,3 +44,5 @@ private:
 };
 
 } // namespace SITL
+
+#endif  // AP_SIM_TEMPERATUREMCP9600_ENABLED
