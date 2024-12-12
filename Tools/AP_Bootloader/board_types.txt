@@ -12,6 +12,7 @@ TARGET_HW_PX4_FMU_V5X                  51
 TARGET_HW_PX4_FMU_V6                   52
 TARGET_HW_PX4_FMU_V6X                  53
 TARGET_HW_ARK_FMU_V6X                  57
+TARGET_HW_ARK_FPV                      59
 TARGET_HW_MINDPX_V2                    88
 TARGET_HW_PX4_FLOW_V1                   6
 TARGET_HW_PX4_DISCOVERY_V1             99
@@ -57,6 +58,7 @@ Reserved "PX4 [BL] FMU v6X.x"          53
 Reserved "PX4 [BL] FMU v6C.x"          56
 
 Reserved "ARK [BL] FMU v6X.x"          57
+Reserved "ARK [BL] FPV"                59
 
 Reserved "GUMSTIX [BL] FMU v6"         54
 Reserved "ARK CAN FLOW"                80
