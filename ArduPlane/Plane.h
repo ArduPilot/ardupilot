@@ -364,6 +364,9 @@ private:
         // saved flight mode
         enum Mode::Number saved_mode_number;
 
+        // saved waypoint number
+        uint16_t saved_waypoint;
+
         // A tracking variable for type of failsafe active
         // Used for failsafe based on loss of RC signal or GCS signal
         int16_t state;
@@ -1048,6 +1051,7 @@ private:
     // events.cpp
     void failsafe_short_on_event(enum failsafe_state fstype, ModeReason reason);
     void failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason);
+    void failsafe_long_on_event_most_modes(enum failsafe_state fstype, ModeReason reason);
     void failsafe_short_off_event(ModeReason reason);
     void failsafe_long_off_event(ModeReason reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
