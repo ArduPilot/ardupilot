@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AP_GSOF_config.h"
+#include <AP_Common/Bitmask.h>
 
 #if AP_GSOF_ENABLED
 
@@ -12,13 +13,17 @@ public:
 
     static constexpr int NO_GSOF_DATA = 0;
     static constexpr int UNEXPECTED_NUM_GSOF_PACKETS = -1;
+    static constexpr int PARSED_AS_EXPECTED = 1;
+
+    // A type alias for which packets have been parsed.
+    using MsgTypes = Bitmask<70>;
 
     // Parse a single byte into the buffer.
-    // When enough data has arrived, it returns the number of GSOF packets parsed in the GENOUT packet.
+    // When enough data has arrived, it populates a bitmask of which GSOF packets were parsed in the GENOUT packet.
     // If an unexpected number of GSOF packets were parsed, returns UNEXPECTED_NUM_GSOF_PACKETS.
-    // This means there is no fix.
     // If it returns NO_GSOF_DATA, the parser just needs more data.
-    int parse(const uint8_t temp, const uint8_t n_expected) WARN_IF_UNUSED;
+    // Upon parsing the expected message contents, it returns PARSED_AS_EXPECTED.
+    int parse(const uint8_t temp, MsgTypes& message_types) WARN_IF_UNUSED;
 
     // GSOF packet numbers.
     enum msg_idx_t {
@@ -91,8 +96,10 @@ public:
 
 private:
 
-    // Parses current data and returns the number of parsed GSOF messages.
-    int process_message() WARN_IF_UNUSED;
+    // Parses current data.
+    // Returns true if, and only if, the expected packets were parsed.
+    // Unexpected/unparsed data will make this return false.
+    bool process_message(const MsgTypes& expected_msgs) WARN_IF_UNUSED;
 
     void parse_pos_time(uint32_t a);
     void parse_pos(uint32_t a);
