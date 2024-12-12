@@ -62,7 +62,7 @@
 #endif
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
-#if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
+#if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && HAL_PERIPH_ENABLE_GPS)
     // Needs SerialManager + (AHRS or GPS)
     #error "AP_NMEA_Output requires Serial/GCS and either AHRS or GPS. Needs HAL_GCS_ENABLED and HAL_PERIPH_ENABLE_GPS"
 #endif
@@ -216,7 +216,7 @@ public:
     AP_Stats node_stats;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if HAL_PERIPH_ENABLE_GPS
     AP_GPS gps;
 #if HAL_NUM_CAN_IFACES >= 2
     int8_t gps_mb_can_port = -1;
@@ -452,7 +452,7 @@ public:
 #ifdef HAL_PERIPH_ENABLE_MAG
     uint32_t last_mag_update_ms;
 #endif
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if HAL_PERIPH_ENABLE_GPS
     uint32_t last_gps_update_ms;
     uint32_t last_gps_yaw_ms;
 #endif
@@ -463,7 +463,7 @@ public:
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
     uint32_t last_airspeed_update_ms;
 #endif
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if HAL_PERIPH_ENABLE_GPS
     bool saw_gps_lock_once;
 #endif
 

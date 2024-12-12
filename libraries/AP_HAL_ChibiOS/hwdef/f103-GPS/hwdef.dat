@@ -19,7 +19,7 @@ undef HAL_UART_MIN_TX_SIZE
 define HAL_UART_MIN_TX_SIZE 256
 
 # GPS
-define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_ENABLE_GPS 1
 # restrict backends available on f103:
 define AP_GPS_NOVA_ENABLED 0
 define AP_GPS_SBF_ENABLED 0
