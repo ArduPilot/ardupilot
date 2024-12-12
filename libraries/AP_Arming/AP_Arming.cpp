@@ -1291,7 +1291,7 @@ bool AP_Arming::fence_checks(bool display_failure)
 }
 #endif  // AP_FENCE_ENABLED
 
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
 bool AP_Arming::camera_checks(bool display_failure)
 {
     if (check_enabled(ARMING_CHECK_CAMERA)) {
@@ -1309,7 +1309,7 @@ bool AP_Arming::camera_checks(bool display_failure)
     }
     return true;
 }
-#endif  // HAL_RUNCAM_ENABLED
+#endif  // AP_CAMERA_RUNCAM_ENABLED
 
 #if OSD_ENABLED
 bool AP_Arming::osd_checks(bool display_failure) const
@@ -1603,7 +1603,7 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if HAL_PROXIMITY_ENABLED
         &  proximity_checks(report)
 #endif
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
         &  camera_checks(report)
 #endif
 #if OSD_ENABLED
