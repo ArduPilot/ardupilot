@@ -79,6 +79,17 @@ bool AP_InertialSensor::is_rate_loop_gyro_enabled(uint8_t instance) const
     return fast_rate_buffer->use_rate_loop_gyro_samples() && instance == AP::ahrs().get_primary_gyro_index();
 }
 
+// whether or not to use the dynamic fifo
+bool AP_InertialSensor::is_dynamic_fifo_enabled(uint8_t instance) const
+{
+    if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
+        return false;
+    }
+    return ((1U<<instance) & AP_INERTIALSENSOR_DYNAMIC_FIFO_MASK)
+            && (_fast_sampling_mask & (1U<<instance)) != 0
+            && fast_rate_buffer->use_rate_loop_gyro_samples();
+}
+
 // get the next available gyro sample from the fast rate buffer
 bool AP_InertialSensor::get_next_gyro_sample(Vector3f& gyro)
 {

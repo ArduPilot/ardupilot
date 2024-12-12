@@ -74,6 +74,9 @@ public:
     // 16G
     const uint16_t multiplier_accel = INT16_MAX/(26*GRAVITY_MSS);
 
+protected:
+    void set_primary_gyro(bool is_primary) override;
+
 private:
     AP_InertialSensor_Invensense(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
@@ -144,6 +147,7 @@ private:
 
     AP_HAL::DigitalSource *_drdy_pin;
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device::PeriodicHandle periodic_handle;
     AP_Invensense_AuxiliaryBus *_auxiliary_bus;
 
     // which sensor type this is

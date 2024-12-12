@@ -160,7 +160,11 @@ protected:
 
     // instance numbers of accel and gyro data
     uint8_t gyro_instance;
+    bool is_primary_gyro = true;
+    uint32_t last_primary_gyro_update_us;
     uint8_t accel_instance;
+    bool is_primary_accel = true;
+    uint32_t last_primary_accel_update_us;
 
     void _rotate_and_correct_accel(uint8_t instance, Vector3f &accel) __RAMFUNC__;
     void _rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) __RAMFUNC__;
@@ -291,6 +295,12 @@ protected:
     // common accel update function for all backends
     void update_accel(uint8_t instance) __RAMFUNC__; /* front end */
     void update_accel_filters(uint8_t instance) __RAMFUNC__; /* front end */
+
+    // catch updates to the primary gyro and accel
+    void update_primary_gyro() __RAMFUNC__; /* backend */
+    void update_primary_accel() __RAMFUNC__; /* backend */
+    virtual void set_primary_gyro(bool is_primary) {}
+    virtual void set_primary_accel(bool is_primary) {}
 
     // support for updating filter at runtime
     uint16_t _last_accel_filter_hz;
