@@ -162,6 +162,9 @@ private:
         PLND_OPTION_FAST_DESCEND = (1 << 2),
     };
 
+    // converts old parameters to new ones
+    void convert_params();
+
     // check the status of the target
     void check_target_status(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
