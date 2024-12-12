@@ -70,8 +70,6 @@ class POWRChange(object):
 
                     if new_acc_bit_set and not old_acc_bit_set:
                         line += " ACCFLAGS+%s" % self.bit_description(bit)
-                    elif not new_bit_set and old_bit_set:
-                        line += " ACCFLAGS-%s" % self.bit_description(bit)
 
             if len(line) == 0:
                 continue

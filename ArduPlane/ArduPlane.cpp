@@ -139,6 +139,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if AC_PRECLAND_ENABLED
     SCHED_TASK(precland_update, 400, 50, 160),
 #endif
+#if AP_QUICKTUNE_ENABLED
+    SCHED_TASK(update_quicktune, 40, 100, 163),
+#endif
 };
 
 void Plane::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -329,7 +332,7 @@ void Plane::one_second_loop()
     set_control_channels();
 
 #if HAL_WITH_IO_MCU
-    iomcu.setup_mixing(&rcmap, g.override_channel.get(), g.mixing_gain, g2.manual_rc_mask);
+    iomcu.setup_mixing(g.override_channel.get(), g.mixing_gain, g2.manual_rc_mask);
 #endif
 
 #if HAL_ADSB_ENABLED
@@ -346,7 +349,7 @@ void Plane::one_second_loop()
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
 
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
@@ -1022,6 +1025,18 @@ void Plane::precland_update(void)
 #else
     return g2.precland.update(0, false);
 #endif
+}
+#endif
+
+#if AP_QUICKTUNE_ENABLED
+/*
+  update AP_Quicktune object. We pass the supports_quicktune() method
+  in so that quicktune can detect if the user changes to a
+  non-quicktune capable mode while tuning and the gains can be reverted
+ */
+void Plane::update_quicktune(void)
+{
+    quicktune.update(control_mode->supports_quicktune());
 }
 #endif
 

@@ -758,52 +758,52 @@ void AP_ESC_Telem::update()
                                                 telemdata.power_percentage);
                 }
 #endif //AP_EXTENDED_ESC_TELEM_ENABLED
-            }
 
 #if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
-            // Write an EDTv2 message, if there is any update
-            uint16_t edt2_status = telemdata.edt2_status;
-            uint16_t edt2_stress = telemdata.edt2_stress;
-            if (EDT2_HAS_NEW_DATA(edt2_status | edt2_stress)) {
-                // Could probably be faster/smaller with bitmasking, but not sure
-                uint8_t status = 0;
-                if (EDT2_HAS_NEW_DATA(edt2_stress)) {
-                    status |= uint8_t(log_Edt2_Status::HAS_STRESS_DATA);
+                // Write an EDTv2 message, if there is any update
+                uint16_t edt2_status = telemdata.edt2_status;
+                uint16_t edt2_stress = telemdata.edt2_stress;
+                if (EDT2_HAS_NEW_DATA(edt2_status | edt2_stress)) {
+                    // Could probably be faster/smaller with bitmasking, but not sure
+                    uint8_t status = 0;
+                    if (EDT2_HAS_NEW_DATA(edt2_stress)) {
+                        status |= uint8_t(log_Edt2_Status::HAS_STRESS_DATA);
+                    }
+                    if (EDT2_HAS_NEW_DATA(edt2_status)) {
+                        status |= uint8_t(log_Edt2_Status::HAS_STATUS_DATA);
+                    }
+                    if (EDT2_ALERT_BIT_FROM_STATUS(edt2_status)) {
+                        status |= uint8_t(log_Edt2_Status::ALERT_BIT);
+                    }
+                    if (EDT2_WARNING_BIT_FROM_STATUS(edt2_status)) {
+                        status |= uint8_t(log_Edt2_Status::WARNING_BIT);
+                    }
+                    if (EDT2_ERROR_BIT_FROM_STATUS(edt2_status)) {
+                        status |= uint8_t(log_Edt2_Status::ERROR_BIT);
+                    }
+                    // An EDT2 status message is:
+                    //   id: starts from 0
+                    //   stress: the current stress which comes from edt2_stress
+                    //   max_stress: the maximum stress which comes from edt2_status
+                    //   status: the status bits which come from both
+                    const struct log_Edt2 pkt_edt2{
+                        LOG_PACKET_HEADER_INIT(uint8_t(LOG_EDT2_MSG)),
+                        time_us     : now_us64,
+                        instance    : i,
+                        stress      : EDT2_STRESS_FROM_STRESS(edt2_stress),
+                        max_stress  : EDT2_STRESS_FROM_STATUS(edt2_status),
+                        status      : status,
+                    };
+                    if (AP::logger().WriteBlock_first_succeed(&pkt_edt2, sizeof(pkt_edt2))) {
+                        // Only clean the telem_updated bits if the write succeeded.
+                        // This is important because, if rate limiting is enabled,
+                        // the log-on-change behavior may lose a lot of entries
+                        telemdata.edt2_status &= ~EDT2_TELEM_UPDATED;
+                        telemdata.edt2_stress &= ~EDT2_TELEM_UPDATED;
+                    }
                 }
-                if (EDT2_HAS_NEW_DATA(edt2_status)) {
-                    status |= uint8_t(log_Edt2_Status::HAS_STATUS_DATA);
-                }
-                if (EDT2_ALERT_BIT_FROM_STATUS(edt2_status)) {
-                    status |= uint8_t(log_Edt2_Status::ALERT_BIT);
-                }
-                if (EDT2_WARNING_BIT_FROM_STATUS(edt2_status)) {
-                    status |= uint8_t(log_Edt2_Status::WARNING_BIT);
-                }
-                if (EDT2_ERROR_BIT_FROM_STATUS(edt2_status)) {
-                    status |= uint8_t(log_Edt2_Status::ERROR_BIT);
-                }
-                // An EDT2 status message is:
-                //   id: starts from 0
-                //   stress: the current stress which comes from edt2_stress
-                //   max_stress: the maximum stress which comes from edt2_status
-                //   status: the status bits which come from both
-                const struct log_Edt2 pkt_edt2{
-                    LOG_PACKET_HEADER_INIT(uint8_t(LOG_EDT2_MSG)),
-                    time_us     : now_us64,
-                    instance    : i,
-                    stress      : EDT2_STRESS_FROM_STRESS(edt2_stress),
-                    max_stress  : EDT2_STRESS_FROM_STATUS(edt2_status),
-                    status      : status,
-                };
-                if (AP::logger().WriteBlock_first_succeed(&pkt_edt2, sizeof(pkt_edt2))) {
-                    // Only clean the telem_updated bits if the write succeeded.
-                    // This is important because, if rate limiting is enabled,
-                    // the log-on-change behavior may lose a lot of entries
-                    telemdata.edt2_status &= ~EDT2_TELEM_UPDATED;
-                    telemdata.edt2_stress &= ~EDT2_TELEM_UPDATED;
-                }
-            }
 #endif // AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+            }
         }
     }
 #endif  // HAL_LOGGING_ENABLED

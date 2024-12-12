@@ -21,24 +21,14 @@ import fnmatch
 import optparse
 import os
 import pathlib
+import queue
 import shutil
 import string
 import subprocess
-import sys
 import tempfile
 import threading
 import time
 import board_list
-
-try:
-    import queue as Queue
-except ImportError:
-    import Queue
-
-if sys.version_info[0] < 3:
-    running_python3 = False
-else:
-    running_python3 = True
 
 
 class SizeCompareBranchesResult(object):
@@ -250,10 +240,9 @@ class SizeCompareBranches(object):
                     # select not available on Windows... probably...
                 time.sleep(0.1)
                 continue
-            if running_python3:
-                x = bytearray(x)
-                x = filter(lambda x : chr(x) in string.printable, x)
-                x = "".join([chr(c) for c in x])
+            x = bytearray(x)
+            x = filter(lambda x : chr(x) in string.printable, x)
+            x = "".join([chr(c) for c in x])
             output += x
             x = x.rstrip()
             some_output = "%s: %s" % (prefix, x)
@@ -437,7 +426,7 @@ class SizeCompareBranches(object):
         while True:
             try:
                 result = self.thread_exit_result_queue.get_nowait()
-            except Queue.Empty:
+            except queue.Empty:
                 break
             if result is None:
                 continue
@@ -449,7 +438,7 @@ class SizeCompareBranches(object):
         # shared list for the threads:
         self.parallel_tasks = copy.copy(tasks)  # make this an argument instead?!
         threads = []
-        self.thread_exit_result_queue = Queue.Queue()
+        self.thread_exit_result_queue = queue.Queue()
         tstart = time.time()
         self.failure_exceptions = []
 

@@ -50,6 +50,10 @@ protected:
     void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) override;
     void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) override;
 
+    // Send the mode with the given index (not mode number!) return the total number of modes
+    // Index starts at 1
+    uint8_t send_available_mode(uint8_t index) const override;
+
 private:
 
     void send_pid_info(const struct AP_PIDInfo *pid_info, const uint8_t axis, const float achieved);
@@ -82,8 +86,6 @@ private:
 
     MAV_MODE base_mode() const override;
     MAV_STATE vehicle_system_status() const override;
-
-    uint8_t radio_in_rssi() const;
 
     float vfr_hud_airspeed() const override;
     int16_t vfr_hud_throttle() const override;

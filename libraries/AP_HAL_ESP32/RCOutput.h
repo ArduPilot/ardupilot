@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Code by Charles "Silvanosky" Villard and David "Buzz" Bussenschutt
+ * Code by Charles "Silvanosky" Villard, David "Buzz" Bussenschutt and Andrey "ARg" Romanov
  *
  */
 
@@ -21,9 +21,11 @@
 
 #include <AP_HAL/RCOutput.h>
 #include "HAL_ESP32_Namespace.h"
-#include "driver/mcpwm.h"
 #define HAL_PARAM_DEFAULTS_PATH nullptr
 #include <AP_HAL/Util.h>
+
+#include "driver/gpio.h"
+#include "driver/mcpwm_prelude.h"
 
 namespace ESP32
 {
@@ -96,13 +98,19 @@ public:
 
 
 private:
+
     struct pwm_out {
-        int gpio_num;
-        mcpwm_unit_t unit_num;
-        mcpwm_timer_t timer_num;
-        mcpwm_io_signals_t io_signal;
-        mcpwm_operator_t op;
-        uint8_t chan;
+
+         uint8_t chan;
+         uint8_t gpio_num;
+         uint8_t group_id;
+         int     freq;
+         int     value;
+
+         mcpwm_timer_handle_t h_timer;
+         mcpwm_oper_handle_t  h_oper;
+         mcpwm_cmpr_handle_t  h_cmpr;
+         mcpwm_gen_handle_t   h_gen;        
     };
 
 

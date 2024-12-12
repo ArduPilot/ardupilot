@@ -638,7 +638,7 @@ void NavEKF3_core::readGpsData()
         useGpsVertVel = false;
     }
 
-    if ((frontend->_options & (int32_t)NavEKF3::Options::JammingExpected) &&
+    if (frontend->option_is_enabled(NavEKF3::Option::JammingExpected) &&
         (lastTimeGpsReceived_ms - secondLastGpsTime_ms) > frontend->gpsNoFixTimeout_ms) {
         const bool doingBodyVelNav = (imuSampleTime_ms - prevBodyVelFuseTime_ms < 1000);
         const bool doingFlowNav = (imuSampleTime_ms - prevFlowFuseTime_ms < 1000);;

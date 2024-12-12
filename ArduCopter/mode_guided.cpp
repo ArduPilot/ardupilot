@@ -7,7 +7,7 @@
  */
 
 static Vector3p guided_pos_target_cm;       // position target (used by posvel controller only)
-bool guided_pos_terrain_alt;                // true if guided_pos_target_cm.z is an alt above terrain
+static bool guided_pos_terrain_alt;         // true if guided_pos_target_cm.z is an alt above terrain
 static Vector3f guided_vel_target_cms;      // velocity target (used by pos_vel_accel controller and vel_accel controller)
 static Vector3f guided_accel_target_cmss;   // acceleration target (used by pos_vel_accel controller vel_accel controller and accel controller)
 static uint32_t update_time_ms;             // system time of last target update to pos_vel_accel, vel_accel or accel controller
@@ -30,7 +30,15 @@ struct Guided_Limit {
     float horiz_max_cm; // horizontal position limit in cm from where guided mode was initiated (0 = no limit)
     uint32_t start_time;// system time in milliseconds that control was handed to the external computer
     Vector3f start_pos; // start position as a distance from home in cm.  used for checking horiz_max limit
-} guided_limit;
+} static guided_limit;
+
+// controls which controller is run (pos or vel):
+ModeGuided::SubMode ModeGuided::guided_mode = SubMode::TakeOff;
+bool ModeGuided::send_notification;     // used to send one time notification to ground station
+bool ModeGuided::takeoff_complete;      // true once takeoff has completed (used to trigger retracting of landing gear)
+
+// guided mode is paused or not
+bool ModeGuided::_paused;
 
 // init - initialise guided controller
 bool ModeGuided::init(bool ignore_checks)

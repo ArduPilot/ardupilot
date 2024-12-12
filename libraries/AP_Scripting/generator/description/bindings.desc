@@ -309,6 +309,9 @@ singleton AP_ONVIF method set_absolutemove boolean float'skip_check float'skip_c
 singleton AP_ONVIF method get_pan_tilt_limit_min Vector2f
 singleton AP_ONVIF method get_pan_tilt_limit_max Vector2f
 
+ap_object AP_Vehicle::custom_mode_state depends (!defined(HAL_BUILD_AP_PERIPH))
+ap_object AP_Vehicle::custom_mode_state field allow_entry boolean read write
+
 include AP_Vehicle/AP_Vehicle.h
 singleton AP_Vehicle depends (!defined(HAL_BUILD_AP_PERIPH))
 singleton AP_Vehicle rename vehicle
@@ -352,6 +355,7 @@ singleton AP_Vehicle method reboot void boolean
 singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
 singleton AP_Vehicle method set_crosstrack_start boolean Location
+singleton AP_Vehicle method register_custom_mode AP_Vehicle::custom_mode_state uint8_t'skip_check string string
 
 
 include AP_SerialLED/AP_SerialLED.h
@@ -373,6 +377,7 @@ singleton SRV_Channels method set_output_pwm_chan_timeout void uint8_t 0 NUM_SER
 singleton SRV_Channels method set_output_pwm_chan_timeout depends (!defined(HAL_BUILD_AP_PERIPH))
 singleton SRV_Channels method set_output_scaled void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float'skip_check
 singleton SRV_Channels method get_output_pwm boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'Null
+singleton SRV_Channels method get_output_pwm_chan boolean uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t'Null
 singleton SRV_Channels method get_output_scaled float SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1
 singleton SRV_Channels method set_output_norm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float -1 1
 singleton SRV_Channels method set_angle void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
@@ -698,6 +703,9 @@ ap_object ScriptingCANBuffer method write_frame boolean AP_HAL::CANFrame uint32_
 ap_object ScriptingCANBuffer method read_frame boolean AP_HAL::CANFrame'Null
 ap_object ScriptingCANBuffer method add_filter boolean uint32_t'skip_check uint32_t'skip_check
 
+include AP_DroneCAN/AP_DroneCAN.h
+global manual DroneCAN_get_FlexDebug lua_DroneCAN_get_FlexDebug 4 2 depends (HAL_ENABLE_DRONECAN_DRIVERS==1)
+
 include ../Tools/AP_Periph/AP_Periph.h depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW rename periph
@@ -818,6 +826,7 @@ userdata mavlink_video_stream_information_t field count uint8_t'skip_check read 
 userdata mavlink_video_stream_information_t field type uint8_t'skip_check read write
 userdata mavlink_video_stream_information_t field name'array 32 uint8_t'skip_check read write
 userdata mavlink_video_stream_information_t field uri'array 160 uint8_t'skip_check read write
+userdata mavlink_video_stream_information_t field encoding uint8_t'skip_check read write
 
 include AP_Camera/AP_Camera.h
 singleton AP_Camera depends AP_CAMERA_ENABLED && (AP_CAMERA_SCRIPTING_ENABLED == 1)

@@ -249,10 +249,7 @@ private:
     float           _circle_breach_distance;    // distance beyond the circular fence
 
     // other internal variables
-    uint8_t         _auto_enable_mask = AC_FENCE_ALL_FENCES;  // fences that can be auto-enabled or auto-disabled
     float           _home_distance;         // distance from home in meters (provided by main code)
-    float           _curr_alt;
-
 
     // breach information
     uint8_t         _breached_fences;       // bitmask holding the fence type that was breached (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)
@@ -262,6 +259,13 @@ private:
 
     uint32_t        _manual_recovery_start_ms;  // system time in milliseconds that pilot re-took manual control
 
+    enum class MinAltState
+    {
+        DEFAULT = 0,
+        MANUALLY_ENABLED,
+        MANUALLY_DISABLED
+    } _min_alt_state;
+    
 
     AC_PolyFence_loader _poly_loader{_total, _options}; // polygon fence
 };

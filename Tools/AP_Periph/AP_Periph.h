@@ -568,6 +568,15 @@ public:
     uint16_t pool_peak_percent();
     void set_rgb_led(uint8_t red, uint8_t green, uint8_t blue);
 
+#if AP_SIM_ENABLED
+    // update simulation of servos
+    void sim_update_actuator(uint8_t actuator_id);
+    struct {
+        uint32_t mask;
+        uint32_t last_send_ms;
+    } sim_actuator;
+#endif
+    
     struct dronecan_protocol_t {
         CanardInstance canard;
         uint32_t canard_memory_pool[HAL_CAN_POOL_SIZE/sizeof(uint32_t)];

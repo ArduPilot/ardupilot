@@ -28,13 +28,17 @@ public:
     };
 
     /// constructors
-    Location();
+    Location() { zero(); }
     Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame);
     Location(const Vector3f &ekf_offset_neu, AltFrame frame);
     Location(const Vector3d &ekf_offset_neu, AltFrame frame);
 
     // set altitude
     void set_alt_cm(int32_t alt_cm, AltFrame frame);
+    // set_alt_m - set altitude in metres
+    void set_alt_m(float alt_m, AltFrame frame) {
+        set_alt_cm(alt_m*100, frame);
+    }
 
     // get altitude (in cm) in the desired frame
     // returns false on failure to get altitude in the desired frame which can only happen if the original frame or desired frame is:

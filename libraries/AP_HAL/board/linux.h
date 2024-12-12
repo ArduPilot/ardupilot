@@ -57,6 +57,7 @@
     #define HAL_LINUX_HEAT_TARGET_TEMP 50
     #define BEBOP_CAMV_PWM  9
     #define BEBOP_CAMV_PWM_FREQ 43333333
+    #define OPTICAL_FLOW_TYPE_DEFAULT Type::BEBOP
     #define HAL_OPTFLOW_ONBOARD_VDEV_PATH "/dev/video0"
     #define HAL_OPTFLOW_ONBOARD_SUBDEV_PATH "/dev/v4l-subdev0"
     #define HAL_OPTFLOW_ONBOARD_SENSOR_WIDTH 320
@@ -420,4 +421,8 @@
 #define HAL_LINUX_USE_VIRTUAL_CAN 1
 #else
 #define HAL_LINUX_USE_VIRTUAL_CAN 0
+#endif
+
+#ifndef HAL_INS_RATE_LOOP
+#define HAL_INS_RATE_LOOP 1
 #endif

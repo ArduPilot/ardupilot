@@ -260,6 +260,7 @@ public:
         FLIGHTMODE_PAUSE =   178,  // e.g. pause movement towards waypoint
         ICE_START_STOP =     179, // AP_ICEngine start stop
         AUTOTUNE_TEST_GAINS = 180, // auto tune tuning switch to test or revert gains
+        QUICKTUNE =          181,  //quicktune 3 position switch
 
 
         // inputs from 200 will eventually used to replace RCMAP
@@ -504,7 +505,6 @@ public:
 
     class RC_Channel *find_channel_for_option(const RC_Channel::AUX_FUNC option);
     bool duplicate_options_exist();
-    RC_Channel::AuxSwitchPos get_channel_pos(const uint8_t rcmapchan) const;
     void convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option);
 
     void init_aux_all();

@@ -94,6 +94,7 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @Bitmask: 3: log runtime memory usage and execution time
     // @Bitmask: 4: Disable pre-arm check
     // @Bitmask: 5: Save CRC of current scripts to loaded and running checksum parameters enabling pre-arm
+    // @Bitmask: 6: Disable heap expansion on allocation failure
     // @User: Advanced
     AP_GROUPINFO("DEBUG_OPTS", 4, AP_Scripting, _debug_options, 0),
 
@@ -380,7 +381,7 @@ void AP_Scripting::thread(void) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Scripting: %s", "restarted");
                 break;
             }
-            if ((_debug_options.get() & uint8_t(lua_scripts::DebugLevel::NO_SCRIPTS_TO_RUN)) != 0) {
+            if (option_is_set(DebugOption::NO_SCRIPTS_TO_RUN)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Scripting: %s", "stopped");
             }
         }
@@ -420,7 +421,7 @@ void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd
 
 bool AP_Scripting::arming_checks(size_t buflen, char *buffer) const
 {
-    if (!enabled() || ((_debug_options.get() & uint8_t(lua_scripts::DebugLevel::DISABLE_PRE_ARM)) != 0)) {
+    if (!enabled() || option_is_set(DebugOption::DISABLE_PRE_ARM)) {
         return true;
     }
 
@@ -518,9 +519,7 @@ void AP_Scripting::update() {
 // Check if DEBUG_OPTS bit has been set to save current checksum values to params
 void AP_Scripting::save_checksum() {
 
-    const uint8_t opts = _debug_options.get();
-    const uint8_t save_bit = uint8_t(lua_scripts::DebugLevel::SAVE_CHECKSUM);
-    if ((opts & save_bit) == 0) {
+    if (!option_is_set(DebugOption::SAVE_CHECKSUM)) {
         // Bit not set, nothing to do
         return;
     }
@@ -530,7 +529,7 @@ void AP_Scripting::save_checksum() {
     _required_running_checksum.set_and_save(lua_scripts::get_running_checksum() & checksum_param_mask);
 
     // Un-set debug option bit
-    _debug_options.set_and_save(opts & ~save_bit);
+    option_clear(DebugOption::SAVE_CHECKSUM);
 
     GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Scripting: %s", "saved checksums");
 

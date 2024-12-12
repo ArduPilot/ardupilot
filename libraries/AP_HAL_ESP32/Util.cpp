@@ -92,36 +92,10 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 
 
 #if ENABLE_HEAP
-
-void *Util::allocate_heap_memory(size_t size)
-{
-    void *buf = calloc(1, size);
-    if (buf == nullptr) {
-        return nullptr;
-    }
-
-    multi_heap_handle_t *heap = (multi_heap_handle_t *)calloc(1, sizeof(multi_heap_handle_t));
-    if (heap != nullptr) {
-        auto hp = multi_heap_register(buf, size);
-        memcpy(heap, &hp, sizeof(multi_heap_handle_t));
-    }
-
-    return heap;
-}
-
-void *Util::heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size)
-{
-    if (heap == nullptr) {
-        return nullptr;
-    }
-
-    return multi_heap_realloc(*(multi_heap_handle_t *)heap, ptr, new_size);
-}
-
 /*
-  realloc implementation thanks to wolfssl, used by AP_Scripting
+  realloc implementation thanks to wolfssl, used by ExpandingString
  */
-void *Util::std_realloc(void *addr, size_t size)
+void *Util::std_realloc(void *addr, uint32_t size)
 {
     if (size == 0) {
         free(addr);

@@ -242,6 +242,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 178:FlightMode Pause/Resume
     // @Values{Plane}: 179:ICEngine start / stop
     // @Values{Copter, Plane}: 180:Test autotuned gains after tune is complete
+    // @Values{Plane}: 181: QuickTune
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -1919,14 +1920,6 @@ RC_Channel::AuxSwitchPos RC_Channel::get_aux_switch_pos() const
     UNUSED_RESULT(read_3pos_switch(position));
 
     return position;
-}
-
-// return switch position value as LOW, MIDDLE, HIGH
-// if reading the switch fails then it returns LOW
-RC_Channel::AuxSwitchPos RC_Channels::get_channel_pos(const uint8_t rcmapchan) const
-{
-    const RC_Channel* chan = rc().channel(rcmapchan-1);
-    return chan != nullptr ? chan->get_aux_switch_pos() : RC_Channel::AuxSwitchPos::LOW;
 }
 
 RC_Channel *RC_Channels::find_channel_for_option(const RC_Channel::AUX_FUNC option)

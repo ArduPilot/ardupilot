@@ -1222,8 +1222,11 @@ void handle_ap_object(void) {
   } else if (strcmp(type, keyword_manual) == 0) {
     handle_manual(node, ALIAS_TYPE_MANUAL);
 
+  } else if (strcmp(type, keyword_field) == 0) {
+    handle_userdata_field(node);
+
   } else {
-    error(ERROR_SINGLETON, "AP_Objects only support renames, methods, semaphore or manual keywords (got %s)", type);
+    error(ERROR_SINGLETON, "AP_Objects only support renames, methods, field, semaphore or manual keywords (got %s)", type);
   }
 
   // check that we didn't just add 2 singleton flags
@@ -1822,6 +1825,28 @@ void emit_singleton_fields() {
       start_dependency(source, node->dependency);
       while(field) {
         emit_singleton_field(node, field);
+        field = field->next;
+      }
+      end_dependency(source, node->dependency);
+    }
+    node = node->next;
+  }
+}
+
+void emit_ap_object_field(const struct userdata *data, const struct userdata_field *field) {
+  fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, field->name);
+  fprintf(source, "    %s *ud = *check_%s(L, 1);\n", data->name, data->sanatized_name);
+  emit_field(field, "ud", "->");
+}
+
+void emit_ap_object_fields() {
+  struct userdata * node = parsed_ap_objects;
+  while(node) {
+    struct userdata_field *field = node->fields;
+    if (field) {
+      start_dependency(source, node->dependency);
+      while(field) {
+        emit_ap_object_field(node, field);
         field = field->next;
       }
       end_dependency(source, node->dependency);
@@ -3162,7 +3187,7 @@ int main(int argc, char **argv) {
   emit_methods(parsed_userdata);
   emit_index(parsed_userdata);
 
-
+  emit_ap_object_fields();
   emit_methods(parsed_ap_objects);
   emit_index(parsed_ap_objects);
 
