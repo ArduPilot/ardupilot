@@ -41,10 +41,10 @@
  # define AC_ATC_MULTI_RATE_YAW_FILT_HZ     2.5f
 #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加pdnn~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#define ATTCONTROL_PDNN_XY_kR                  0.4f    // horizontal pdnn controller P gain default
-#define ATTCONTROL_PDNN_XY_KOmega              0.4f    // horizontal pdnn controller D gain default
-#define ATTCONTROL_PDNN_Z_kR                   0.4f    // veritical pdnn controller P gain default
-#define ATTCONTROL_PDNN_Z_KOmega               0.4f    // veritical pdnn controller D gain default
+#define ATTCONTROL_PDNN_XY_kR                  70.0f    // horizontal pdnn controller P gain default
+#define ATTCONTROL_PDNN_XY_KOmega              70.0f    // horizontal pdnn controller D gain default
+#define ATTCONTROL_PDNN_Z_kR                   50.0f    // veritical pdnn controller P gain default
+#define ATTCONTROL_PDNN_Z_KOmega               50.0f    // veritical pdnn controller D gain default
 //在头文件中定义pdnn控制器构造函数的初始化默认值，是因为cpp文件中if编译需要工作空间先build copter
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -71,7 +71,7 @@ public:
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override; //override是一个标记符，用于表示继承
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Rc旋转矩阵传入~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    void set_Rc(const Matrix3f& Rc) override;  //接受从位置控制Ac_PosControl中传入的Rc，并存储到_Rc内部变量
+    void set_Rc(const Matrix3f& Rc, bool Rc_active) override;  //接受从位置控制Ac_PosControl中传入的Rc，并存储到_Rc内部变量
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // calculate total body frame throttle required to produce the given earth frame throttle
@@ -175,6 +175,7 @@ protected:
      //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~声明内部成员变量~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Matrix3f    _Rc;      //解算后的期望旋转矩阵
+    bool        _Rc_active;
     Matrix3f    _R_body_to_ned_meas; //旋转矩阵测量值 body to NED
     Matrix3f    _R_body_to_neu_meas; //旋转矩阵测量值 body to NEU
 

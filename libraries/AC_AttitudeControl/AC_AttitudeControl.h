@@ -338,7 +338,7 @@ public:
     virtual void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) = 0; //=0表示纯虚函数
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Rc stter纯虚函数~~~~~~~~~~~~~~~~~~~~
-    virtual void set_Rc(const Matrix3f& Rc) = 0; //=0表示纯虚函数，需要在所有派生类(AC_AttitudeContro_Sub)中添加对应实现
+    virtual void set_Rc(const Matrix3f& Rc, bool Rc_active) = 0; //=0表示纯虚函数，需要在所有派生类(AC_AttitudeContro_Sub)中添加对应实现
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // get throttle passed into attitude controller (i.e. throttle_in provided to set_throttle_out)

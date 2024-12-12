@@ -371,8 +371,9 @@ void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_an
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~_Rc旋转矩阵传入~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void AC_AttitudeControl_Multi::set_Rc(const Matrix3f& Rc) {
+void AC_AttitudeControl_Multi::set_Rc(const Matrix3f& Rc, bool Rc_active) {
     _Rc = Rc;  // 将传递的目标旋转矩阵保存到姿态控制模块的内部变量
+    _Rc_active = Rc_active;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -510,16 +511,16 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, floa
     Vector3f Omega = gyro; //NEU体坐标系下的角速度
     //Omega.z = -gyro.z; //可以翻转NED下gyro的Z轴，实现NED -> NEU的角速度测量值转换
 
-    Vector3f Md = _pdnn_att.update_all(_Rc, _R_body_to_ned_meas, Omega, dt); //pdnn几何姿态控制器，输出为3*1扭矩
-    float test_msg_3 = Md.x;
-    float test_msg_4 = Md.z;
+    Vector3f Md = _pdnn_att.update_all(_Rc, _R_body_to_ned_meas, Omega, dt, _Rc_active); //pdnn几何姿态控制器，输出为3*1扭矩
+    float test_msg_3 = _pdnn_att.get_phi().x;
+    float test_msg_4 = _pdnn_att.get_e_Omega().x;
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    _motors.set_roll(Md.x/10.0f);  //发送控制力矩给Mixer
+    _motors.set_roll(Md.x/13.3f);  //发送控制力矩给Mixer
     _motors.set_roll_ff(0.0f); //设置为无前馈
-    _motors.set_pitch(Md.y/10.0f);
+    _motors.set_pitch(Md.y/13.3f);
     _motors.set_pitch_ff(0.0f);
-    _motors.set_yaw(Md.z/10.0f); //因为Mixer是基于NED配置，所以这里如果是用到NEU，需要再将NEU下的力矩翻转到NED发送给mixer
+    _motors.set_yaw(Md.z/13.3f); //因为Mixer是基于NED配置，所以这里如果是用到NEU，需要再将NEU下的力矩翻转到NED发送给mixer
     _motors.set_yaw_ff(0.0f);
 
     //~~~~~~~~~~~~~~~~~~~测试ROS2 Topic~~~~~~~~~~~~~~~~~~~~~

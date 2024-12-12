@@ -40,8 +40,8 @@
 #define POSCONTROL_RELAX_TC                     0.16f   // This is used to decay the I term to 5% in half a second.
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加pdnn~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#define POSCONTROL_PDNN_XY_P                  15.0f    // horizontal pdnn controller P gain default
-#define POSCONTROL_PDNN_XY_D                  15.0f    // horizontal pdnn controller D gain default
+#define POSCONTROL_PDNN_XY_P                  5.0f    // horizontal pdnn controller P gain default
+#define POSCONTROL_PDNN_XY_D                  5.0f    // horizontal pdnn controller D gain default
 #define POSCONTROL_PDNN_Z_P                  5.0f    // veritical pdnn controller P gain default
 #define POSCONTROL_PDNN_Z_D                  5.0f    // veritical pdnn controller D gain default
 //在头文件中定义pdnn控制器构造函数的初始化默认值，是因为cpp文件中if编译需要工作空间先build copter

@@ -72,7 +72,7 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     }
 
     _target = target; //_target 是一个私有成员变量，作为内部使用的值
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Neural Networks变量声明和定义~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
     //设置默认RBF网络中心矩阵 Setting the centers of RBF c=Matrix5*2
     float _c_1_1 = -1.0f; float _c_1_2 = -0.5f; float _c_1_3 = 0.0f; float _c_1_4 = 0.5f; float _c_1_5 = 1.0f; 
     float _c_2_1 = -1.0f; float _c_2_2 = -0.5f; float _c_2_3 = 0.0f; float _c_2_4 = 0.5f; float _c_2_5 = 1.0f; 
@@ -104,11 +104,11 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     float _b_z = 1.0f;
     //Lyapunov矩阵P（通过MATLAB求解后在这里定义）
     float _P_x_1_1,_P_x_1_2,_P_x_2_1,_P_x_2_2;   
-    _P_x_1_1 = 4.3333f;  _P_x_1_2 = 0.0033f;           (void)_P_x_1_1; //标记为未使用，避免编译的时候报错
-    _P_x_2_1 = 3.3333f; _P_x_2_2 = 0.0036f;           (void)_P_x_2_1; //标记为未使用，避免编译的时候报错
+    _P_x_1_1 = 4.3333f;  _P_x_1_2 = 0.0100f;           (void)_P_x_1_1; //标记为未使用，避免编译的时候报错
+    _P_x_2_1 = 3.3333f; _P_x_2_2 = 0.0120f;           (void)_P_x_2_1; //标记为未使用，避免编译的时候报错
     float _P_y_1_1,_P_y_1_2,_P_y_2_1,_P_y_2_2;
-    _P_y_1_1 = 4.3333f;     _P_y_1_2 = 0.0033f;           (void)_P_y_1_1; //标记为未使用，避免编译的时候报错
-    _P_y_2_1 = 3.3333f; _P_y_2_2 = 0.0036f;           (void)_P_y_2_1; //标记为未使用，避免编译的时候报错
+    _P_y_1_1 = 4.3333f;     _P_y_1_2 = 0.0100f;           (void)_P_y_1_1; //标记为未使用，避免编译的时候报错
+    _P_y_2_1 = 3.3333f; _P_y_2_2 = 0.0120f;           (void)_P_y_2_1; //标记为未使用，避免编译的时候报错
     float _P_z_1_1,_P_z_1_2,_P_z_2_1,_P_z_2_2;
     _P_z_1_1 = 4.3333f;    _P_z_1_2 = 0.0100f;           (void)_P_z_1_1; //标记为未使用，避免编译的时候报错
     _P_z_2_1 = 3.3333f;_P_z_2_2 = 0.0120f;           (void)_P_z_2_1; //标记为未使用，避免编译的时候报错
@@ -150,7 +150,7 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
         _phi_x = _phi_y = _phi_z = 0.0f;
 
         //定义自适应参数初始值
-        _m_x =_m_y = _m_z = 1.5f;
+        _m_x =_m_y = _m_z = 2.0f;
         //初始化归零控制器输出
         _pdnn_output.x = 0;
         _pdnn_output.y = 0;
@@ -281,7 +281,7 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~自适应律~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
-        float _m_max = 3.0f; //定义自适应参数上限
+        float _m_max = 3.5f; //定义自适应参数上限
         //~~~~~x方向
         float _eta_x = 0.05f; //定义自适应律参数，eta越大越平滑
         float _s_x = 0.002f;  //定义缩放因子
@@ -489,7 +489,3 @@ float AC_PDNN_3D::get_filt_D_alpha(float dt) const
 {
     return calc_lowpass_alpha_dt(dt, _filt_D_hz);
 }
-
-
-
-  

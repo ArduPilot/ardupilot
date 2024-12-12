@@ -40,7 +40,7 @@ AC_PDNN_SO3::AC_PDNN_SO3(float initial_kR, float initial_kOmega, float initial_k
 //  target and error are filtered
 //  the derivative is then calculated and filtered
 //  the integral is then updated if it does not increase in the direction of the limit vector
-Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const Vector3f &Omega, float dt)
+Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const Vector3f &Omega, float dt, bool Rc_active)
 {
     // don't process inf or NaN //检查输入的有效性，避免处理空值NaN与无穷大inf的值
     if (R_c.is_nan() || R.is_nan()) {
@@ -48,12 +48,43 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     }
     _R = R;
     _Omega = Omega;
+    _Rc_active = Rc_active; //检查位置控制环是否被调用
     //更新_Omega_hat斜对称矩阵
     _Omega_hat.a.x = 0.0f;_Omega_hat.a.y = -_Omega.z;_Omega_hat.a.z = _Omega.y;
     _Omega_hat.b.x = _Omega.z;_Omega_hat.b.y = 0.0f;_Omega_hat.b.z = -_Omega.x;
     _Omega_hat.c.x = -_Omega.y;_Omega_hat.c.y = _Omega.x;_Omega_hat.c.z = 0.0f;
  
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Neural Networks变量声明和定义~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//设置默认RBF网络中心矩阵 Setting the centers of RBF c=Matrix5*2
+    float _c_1_1 = -1.0f; float _c_1_2 = -0.5f; float _c_1_3 = 0.0f; float _c_1_4 = 0.5f; float _c_1_5 = 1.0f; 
+    float _c_2_1 = -1.0f; float _c_2_2 = -0.5f; float _c_2_3 = 0.0f; float _c_2_4 = 0.5f; float _c_2_5 = 1.0f; 
+    //定义 特定方向 第j个 隐藏层对应的RBF网络中心（可以理解为上面RBF网络中心矩阵的第j列）
+    Vector2f _c_x_1, _c_x_2, _c_x_3, _c_x_4, _c_x_5; //x方向
+    _c_x_1.x = _c_1_1; _c_x_1.y = _c_2_1;//第1个隐藏层中心2*1向量
+    _c_x_2.x = _c_1_2; _c_x_2.y = _c_2_2;//第2个隐藏层中心2*1向量
+    _c_x_3.x = _c_1_3; _c_x_3.y = _c_2_3;//第3个隐藏层中心2*1向量
+    _c_x_4.x = _c_1_4; _c_x_4.y = _c_2_4;//第4个隐藏层中心2*1向量
+    _c_x_5.x = _c_1_5; _c_x_5.y = _c_2_5;//第5个隐藏层中心2*1向量
 
+    Vector2f _c_y_1, _c_y_2, _c_y_3, _c_y_4, _c_y_5; //y方向
+    _c_y_1.x = _c_1_1; _c_y_1.y = _c_2_1;//第1个隐藏层中心2*1向量
+    _c_y_2.x = _c_1_2; _c_y_2.y = _c_2_2;//第2个隐藏层中心2*1向量
+    _c_y_3.x = _c_1_3; _c_y_3.y = _c_2_3;//第3个隐藏层中心2*1向量
+    _c_y_4.x = _c_1_4; _c_y_4.y = _c_2_4;//第4个隐藏层中心2*1向量
+    _c_y_5.x = _c_1_5; _c_y_5.y = _c_2_5;//第5个隐藏层中心2*1向量
+
+    Vector2f _c_z_1, _c_z_2, _c_z_3, _c_z_4, _c_z_5; //z方向
+    _c_z_1.x = _c_1_1; _c_z_1.y = _c_2_1;//第1个隐藏层中心2*1向量
+    _c_z_2.x = _c_1_2; _c_z_2.y = _c_2_2;//第2个隐藏层中心2*1向量
+    _c_z_3.x = _c_1_3; _c_z_3.y = _c_2_3;//第3个隐藏层中心2*1向量
+    _c_z_4.x = _c_1_4; _c_z_4.y = _c_2_4;//第4个隐藏层中心2*1向量
+    _c_z_5.x = _c_1_5; _c_z_5.y = _c_2_5;//第5个隐藏层中心2*1向量
+
+    //设置RBF网络的宽度 Setting the width of the RBF network
+    float _b_x = 0.6f;   
+    float _b_y = 0.6f;  
+    float _b_z = 0.6f;
+    
     // reset input filter to value received //无人机重启pdnn姿态控制时的初始化
     if (_reset) { //初始化逻辑
         _reset = false;
@@ -74,6 +105,37 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         //角速度误差_e_Omega初始化
         //！！！先尝试初始化为Omega，因为前面初始化了微分项！！这里可能需要修改
         _e_Omega = _Omega;
+
+        //初始化隐藏层输入X
+        _X_x.x = _e_R.x; _X_x.y = _e_Omega.x; //x方向2*1
+        _X_y.x = _e_R.y; _X_y.y = _e_Omega.y; //x方向2*1
+        _X_z.x = _e_R.z; _X_z.y = _e_Omega.z; //x方向2*1
+
+        //初始化隐藏层输出
+        _h_x_1 = _h_x_2 = _h_x_3 = _h_x_4 = _h_x_5 = 0.0f; //x方向
+        _h_y_1 = _h_y_2 = _h_y_3 = _h_y_4 = _h_y_5 = 0.0f; //y方向
+        _h_z_1 = _h_z_2 = _h_z_3 = _h_z_4 = _h_z_5 = 0.0f; //z方向
+
+        //初始化权重更新律
+        _dot_W_x_1 = _dot_W_x_2 = _dot_W_x_3 = _dot_W_x_4 = _dot_W_x_5 = 0.0f;  //x方向
+        _dot_W_y_1 = _dot_W_y_2 = _dot_W_y_3 = _dot_W_y_4 = _dot_W_y_5 = 0.0f;  //y方向
+        _dot_W_z_1 = _dot_W_z_2 = _dot_W_z_3 = _dot_W_z_4 = _dot_W_z_5 = 0.0f;  //z方向
+ 
+        //初始化权重
+        _W_x_1 = _W_x_2 = _W_x_3 = _W_x_4 = _W_x_5 = 0.0f; //x方向
+        _W_y_1 = _W_y_2 = _W_y_3 = _W_y_4 = _W_y_5 = 0.0f; //y方向
+        _W_z_1 = _W_z_2 = _W_z_3 = _W_z_4 = _W_z_5 = 0.0f; //z方向
+
+        //初始化神经网络输出_phi
+        _phi_x = _phi_y = _phi_z = 0.0f;
+
+        //定义自适应参数初始值
+        _J_x = 0.01f;_J_y = 0.02f;_J_z = 0.02f;
+        //初始化归零控制器输出
+        _pdnn_output.x = 0;
+        _pdnn_output.y = 0;
+        _pdnn_output.z = 0;
+
 
     } else { //更新循环
         Matrix3f _R_c_last{_R_c}; //将上一个循环的_R_c存储到一个临时变量 _R_c_last 中，用于后续的微分项计算。这里用到拷贝函数，等价于Matrix3f error_last = _error;
@@ -104,18 +166,201 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         _e_Omega = _Omega - _R.transposed() * _R_c * _Omega_c;
         //_e_Omega = _Omega; //暂时第二项设置为0 
 
-        //计算_Omega_c微分项，这里暂时不考虑滤波
+        //计算_Omega_c微分项，这里进行了滤波来消除微分爆炸（重要）
         if (is_positive(dt)) { //检查时间步长是否有效
-            _dot_Omega_c = (_Omega_c - _Omega_c_last) / dt;  //理论上应该可以实现逐元素求导
+            const Vector3f dot_Omega_c{(_Omega_c - _Omega_c_last) / dt}; //_error - error_last：计算当前误差与上一时刻误差之间的差，表示误差的变化量。计算误差变化量除以时间步长 dt，得到误差变化的速率，即微分项。
+            _dot_Omega_c += (dot_Omega_c - _dot_Omega_c) * get_filt_D_alpha(dt);
+            //_dot_Omega_c = (_Omega_c - _Omega_c_last) / dt;  //理论上应该可以实现逐元素求导，这里是不滤波的代码
         }
 
         //update I term 更新积分项
         //void AC_PDNN_3D::update_i(float dt, float _ki, float _c1, float _kimax, bool limit)
-        update_i(dt, 0.1f, 20.0f, 10.0f, true);
+        update_i(dt, 1.0f, 1.0f, 50.0f, true); //尽量小，姿态控制要求实时性
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~神经网络NN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        
+        if (_Rc_active) {       //只在takeoffmode启用，Rc被调用时开始输入
+        //定义隐藏层输入X
+        _X_x.x = _e_R.x; _X_x.y = _e_Omega.x; //x方向2*1
+        _X_y.x = _e_R.y; _X_y.y = _e_Omega.y; //y方向2*1
+        _X_z.x = _e_R.z; _X_z.y = _e_Omega.z; //z方向2*1 
+
+        //计算隐藏层输出
+        float L_x_1 = (_X_x-_c_x_1).length(); //存储欧式距离
+        _h_x_1 = expf(-L_x_1*L_x_1/(2*_b_x*_b_x));//x方向第1个隐藏层输出
+        float L_x_2 = (_X_x-_c_x_2).length(); //存储欧式距离
+        _h_x_2 = expf(-L_x_2*L_x_2/(2*_b_x*_b_x));//x方向第2个隐藏层输出
+        float L_x_3 = (_X_x-_c_x_3).length(); //存储欧式距离
+        _h_x_3 = expf(-L_x_3*L_x_3/(2*_b_x*_b_x));//x方向第3个隐藏层输出
+        float L_x_4 = (_X_x-_c_x_4).length(); //存储欧式距离
+        _h_x_4 = expf(-L_x_4*L_x_4/(2*_b_x*_b_x));//x方向第4个隐藏层输出
+        float L_x_5 = (_X_x-_c_x_5).length(); //存储欧式距离
+        _h_x_5 = expf(-L_x_5*L_x_5/(2*_b_x*_b_x));//x方向第5个隐藏层输出
+
+        float L_y_1 = (_X_y-_c_y_1).length(); //存储欧式距离
+        _h_y_1 = expf(-L_y_1*L_y_1/(2*_b_y*_b_y));//y方向第1个隐藏层输出
+        float L_y_2 = (_X_y-_c_y_2).length(); //存储欧式距离
+        _h_y_2 = expf(-L_y_2*L_y_2/(2*_b_y*_b_y));//y方向第2个隐藏层输出
+        float L_y_3 = (_X_y-_c_y_3).length(); //存储欧式距离
+        _h_y_3 = expf(-L_y_3*L_y_3/(2*_b_y*_b_y));//y方向第3个隐藏层输出
+        float L_y_4 = (_X_y-_c_y_4).length(); //存储欧式距离
+        _h_y_4 = expf(-L_y_4*L_y_4/(2*_b_y*_b_y));//y方向第4个隐藏层输出
+        float L_y_5 = (_X_y-_c_y_5).length(); //存储欧式距离
+        _h_y_5 = expf(-L_y_5*L_y_5/(2*_b_y*_b_y));//y方向第5个隐藏层输出
+
+        float L_z_1 = (_X_z-_c_z_1).length(); //存储欧式距离
+        _h_z_1 = expf(-L_z_1*L_z_1/(2*_b_z*_b_z));//z方向第1个隐藏层输出
+        float L_z_2 = (_X_z-_c_z_2).length(); //存储欧式距离
+        _h_z_2 = expf(-L_z_2*L_z_2/(2*_b_z*_b_z));//z方向第2个隐藏层输出
+        float L_z_3 = (_X_z-_c_z_3).length(); //存储欧式距离
+        _h_z_3 = expf(-L_z_3*L_z_3/(2*_b_z*_b_z));//z方向第3个隐藏层输出
+        float L_z_4 = (_X_z-_c_z_4).length(); //存储欧式距离
+        _h_z_4 = expf(-L_z_4*L_z_4/(2*_b_z*_b_z));//z方向第4个隐藏层输出
+        float L_z_5 = (_X_z-_c_z_5).length(); //存储欧式距离
+        _h_z_5 = expf(-L_z_5*L_z_5/(2*_b_z*_b_z));//z方向第5个隐藏层输出
+
+        //计算权重更新律
+        float _gamma_x = 100.0f;
+        _dot_W_x_1 = _gamma_x * _e_Omega.x * _h_x_1;//x方向第1个权重更新律
+        _dot_W_x_2 = _gamma_x * _e_Omega.x * _h_x_2;//x方向第2个权重更新律
+        _dot_W_x_3 = _gamma_x * _e_Omega.x * _h_x_3;//x方向第3个权重更新律
+        _dot_W_x_4 = _gamma_x * _e_Omega.x * _h_x_4;//x方向第4个权重更新律
+        _dot_W_x_5 = _gamma_x * _e_Omega.x * _h_x_5;//x方向第5个权重更新律
+
+        float _gamma_y = 100.0f;
+        _dot_W_y_1 = _gamma_y * _e_Omega.y * _h_y_1;//y方向第1个权重更新律
+        _dot_W_y_2 = _gamma_y * _e_Omega.y * _h_y_2;//y方向第2个权重更新律
+        _dot_W_y_3 = _gamma_y * _e_Omega.y * _h_y_3;//y方向第3个权重更新律
+        _dot_W_y_4 = _gamma_y * _e_Omega.y * _h_y_4;//y方向第4个权重更新律
+        _dot_W_y_5 = _gamma_y * _e_Omega.y * _h_y_5;//y方向第5个权重更新律
+
+        float _gamma_z = 10.0f;
+        _dot_W_z_1 = _gamma_z * _e_Omega.z * _h_z_1;//z方向第1个权重更新律
+        _dot_W_z_2 = _gamma_z * _e_Omega.z * _h_z_2;//z方向第2个权重更新律
+        _dot_W_z_3 = _gamma_z * _e_Omega.z * _h_z_3;//z方向第3个权重更新律
+        _dot_W_z_4 = _gamma_z * _e_Omega.z * _h_z_4;//z方向第4个权重更新律
+        _dot_W_z_5 = _gamma_z * _e_Omega.z * _h_z_5;//z方向第5个权重更新律
+
+        //计算当前权重（求积分）
+        if (is_positive(dt)) { //检查时间步长是否有效
+
+        //x方向的权重
+          _W_x_1 += _dot_W_x_1 * dt;
+          //_W_x_1 += (W_x_1 - _W_x_1) * get_filt_D_alpha(dt);
+          _W_x_2 += _dot_W_x_2 * dt;
+          //_W_x_2 += (W_x_2 - _W_x_2) * get_filt_D_alpha(dt);
+          _W_x_3 += _dot_W_x_3 * dt;
+          //_W_x_3 += (W_x_3 - _W_x_3) * get_filt_D_alpha(dt);
+          _W_x_4 += _dot_W_x_4 * dt;
+          //W_x_4 += (W_x_4 - _W_x_4) * get_filt_D_alpha(dt);
+          _W_x_5 += _dot_W_x_5 * dt;
+          //_W_x_5 += (W_x_5 - _W_x_5) * get_filt_D_alpha(dt);
+          //y方向的权重
+          _W_y_1 += _dot_W_y_1 * dt;
+          _W_y_2 += _dot_W_y_2 * dt;
+          _W_y_3 += _dot_W_y_3 * dt;
+          _W_y_4 += _dot_W_y_4 * dt;
+          _W_y_5 += _dot_W_y_5 * dt;
+          //z方向的权重
+          _W_z_1 += _dot_W_z_1 * dt;
+          _W_z_2 += _dot_W_z_2 * dt;
+          _W_z_3 += _dot_W_z_3 * dt;
+          _W_z_4 += _dot_W_z_4 * dt;
+          _W_z_5 += _dot_W_z_5 * dt;
+        }
+
+         //计算神经网络输出_phi = W' * h
+        _phi_x = _W_x_1 * _h_x_1 + _W_x_2 * _h_x_2 + _W_x_3 * _h_x_3 + _W_x_4 * _h_x_4 + _W_x_5 * _h_x_5; //x方向神经网络输出
+        _phi_y = _W_y_1 * _h_y_1 + _W_y_2 * _h_y_2 + _W_y_3 * _h_y_3 + _W_y_4 * _h_y_4 + _W_y_5 * _h_y_5; //y方向神经网络输出
+        _phi_z = _W_z_1 * _h_z_1 + _W_z_2 * _h_z_2 + _W_z_3 * _h_z_3 + _W_z_4 * _h_z_4 + _W_z_5 * _h_z_5; //z方向神经网络输出
+        //(void)_phi_x;
+        //(void)_phi_y;
+        //(void)_phi_z;//暂时标记为未使用，避免报错
+        }
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~自适应律~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        
+        float _J_max = 0.04f; //定义自适应参数上限
+        //~~~~~x方向
+        float _eta_x = 0.05f; //定义自适应律参数，eta越大越平滑
+        float _s_x = 0.002f;  //定义缩放因子
+        if (_e_Omega.x * _pdnn_output.x > 0 )
+        {
+            _dot_J_x = -(_J_x * _J_x) / _eta_x * _e_Omega.x * _pdnn_output.x;
+        }
+        if (_e_Omega.x * _pdnn_output.x <= 0 )
+        {
+            if (_J_x < _J_max)
+            {
+                _dot_J_x = -(_J_x * _J_x) / _eta_x * _e_Omega.x * _pdnn_output.x;
+            }
+            else
+            {
+                _dot_J_x = -_s_x * (_J_x * _J_x);  
+            }
+        }
+         //计算当前自适应参数（求积分）
+        if (is_positive(dt)) { //检查时间步长是否有效
+
+        //x方向的自适应参数_m_x
+          _J_x += _dot_J_x * dt;
+        }
+
+        //~~~~~~y方向
+        float _eta_y = 0.05f; //定义自适应律参数，eta越大越平滑
+        float _s_y = 0.002f;  //定义缩放因子
+        if (_e_Omega.y * _pdnn_output.y > 0 )
+        {
+            _dot_J_y = -(_J_y * _J_y) / _eta_y * _e_Omega.y * _pdnn_output.y;
+        }
+        if (_e_Omega.y * _pdnn_output.y <= 0 )
+        {
+            if (_J_y < _J_max)
+            {
+                _dot_J_y = -(_J_y * _J_y) / _eta_y * _e_Omega.y * _pdnn_output.y;
+            }
+            else
+            {
+                _dot_J_y = -_s_y * (_J_y * _J_y);  
+            }
+        }
+         //计算当前自适应参数（求积分）
+        if (is_positive(dt)) { //检查时间步长是否有效
+
+        //x方向的自适应参数_m_x
+          _J_y += _dot_J_y * dt;
+        }
+
+        //~~~~~~z方向
+        float _eta_z = 0.05f; //定义自适应律参数，eta越大越平滑
+        float _s_z = 0.002f;  //定义缩放因子
+        if (_e_Omega.y * _pdnn_output.z > 0 )
+        {
+            _dot_J_z = -(_J_z * _J_z) / _eta_z * _e_Omega.y * _pdnn_output.z;
+        }
+        if (_e_Omega.y * _pdnn_output.z <= 0 )
+        {
+            if (_J_z < _J_max)
+            {
+                _dot_J_z = -(_J_z * _J_z) / _eta_z * _e_Omega.y * _pdnn_output.z;
+            }
+            else
+            {
+                _dot_J_z = -_s_z * (_J_z * _J_z);  
+            }
+        }
+         //计算当前自适应参数（求积分）
+        if (is_positive(dt)) { //检查时间步长是否有效
+
+        //x方向的自适应参数_m_x
+          _J_z += _dot_J_z * dt;
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     }
- 
-
+   
+   
     _pdnn_output_R.x = -_e_R.x * _kR; //计算P项输出
     _pdnn_output_R.y = -_e_R.y * _kR;
     _pdnn_output_R.z = -_e_R.z * _kR_z;
@@ -125,18 +370,18 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     _pdnn_output_Omega.z = -_e_Omega.z * _kOmega_z;
     
     //计算几何控制项，这里惯性张量
-    Matrix3f J;
-    J.a.x=0.001;J.a.y=0;     J.a.z=0;
-    J.b.x=0;      J.b.y=0.001;J.b.z=0;
-    J.c.x=0;      J.c.y=0;     J.c.z=0.005;
-    _geomrtry_output = J*(_Omega_hat * _R.transposed() * _R_c * _Omega_c  - _R.transposed() * _R_c * _dot_Omega_c);
+    //Matrix3f J;
+    //J.a.x=0.01f;J.a.y=0.0f;     J.a.z=0.0f;
+    //J.b.x=0.0f;      J.b.y=0.02f;J.b.z=0.0f;
+    //J.c.x=0.0f;      J.c.y=0.0f;     J.c.z=0.02f;
+    _geomrtry_output = _Omega_hat * _R.transposed() * _R_c * _Omega_c  - _R.transposed() * _R_c * _dot_Omega_c;
 
     //(void)_geomrtry_output;
 
     //计算总输出，每个方向上乘以惯性张量
-    _pdnn_output.x = -_e_R.x * _kR - _e_Omega.x * _kOmega - _integrator.x - _geomrtry_output.x; 
-    _pdnn_output.y = -_e_R.y * _kR - _e_Omega.y * _kOmega - _integrator.y - _geomrtry_output.y;
-    _pdnn_output.z = -_e_R.z * _kR_z - _e_Omega.z * _kOmega_z - _integrator.z - _geomrtry_output.z;
+    _pdnn_output.x = _J_x * (-_e_R.x * _kR - _e_Omega.x * _kOmega - 0.0f * _integrator.x - _geomrtry_output.x - _phi_x); 
+    _pdnn_output.y = _J_y * (-_e_R.y * _kR - _e_Omega.y * _kOmega - 0.0f *_integrator.y - _geomrtry_output.y- _phi_y);
+    _pdnn_output.z = _J_z * (-_e_R.z * _kR_z - _e_Omega.z * _kOmega_z - 1.0f *_integrator.z - _geomrtry_output.z - _phi_z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
 
 
     return _pdnn_output; //返回pdnn控制器输出
@@ -178,6 +423,42 @@ Vector3f AC_PDNN_SO3::get_Omega() const
     return _pdnn_output_Omega;
 }
 
+Vector3f AC_PDNN_SO3::get_e_Omega() const
+{   
+    
+    return _e_Omega;
+}
+
+Vector3f AC_PDNN_SO3::get_e_R() const
+{   
+    
+    return _e_R;
+}
+
+Vector3f AC_PDNN_SO3::get_dot_Omega_c() const
+{   
+    
+    return _dot_Omega_c;
+}
+
+Vector3f AC_PDNN_SO3::get_phi() const
+{   
+    Vector3f _phi;
+    _phi.x = _phi_x;
+    _phi.y = _phi_y;
+    _phi.z = _phi_z;
+    return _phi;
+}
+
+Vector3f AC_PDNN_SO3::get_J() const
+{   
+    Vector3f _J;
+    _J.x = _J_x;
+    _J.y = _J_y;
+    _J.z = _J_z;
+    return _J;
+}
+
 
 // save_gains - save gains to eeprom
 void AC_PDNN_SO3::save_gains()
@@ -190,6 +471,17 @@ void AC_PDNN_SO3::save_gains()
     //_filt_D_hz.save();
 }
 
+// get the target filter alpha
+float AC_PDNN_SO3::get_filt_E_alpha(float dt) const
+{
+    return calc_lowpass_alpha_dt(dt, 5.0f);
+}
+
+// get the derivative filter alpha
+float AC_PDNN_SO3::get_filt_D_alpha(float dt) const
+{
+    return calc_lowpass_alpha_dt(dt, 5.0f);
+}
 
 
   
