@@ -335,6 +335,7 @@ void panic(const char *errormsg, ...)
         va_start(ap, errormsg);
         vprintf(errormsg, ap);
         va_end(ap);
+        printf("\n");
         hal.scheduler->delay(delay_ms);
         delay_ms = 500;
     }
