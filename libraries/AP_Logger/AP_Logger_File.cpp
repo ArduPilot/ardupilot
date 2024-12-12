@@ -986,7 +986,7 @@ void AP_Logger_File::io_timer(void)
         return;
     }
 
-#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#if AP_FILESYSTEM_LITTLEFS_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
     bool sync_block = AP::littlefs().sync_block(_write_fd, _write_offset, nbytes);
 #endif // AP_FILESYSTEM_LITTLEFS_ENABLED
 
@@ -1014,10 +1014,10 @@ void AP_Logger_File::io_timer(void)
           fsync on littlefs is extremely expensive (20% CPU on an H7) and not
           required since the whole point of the filesystem is to avoid corruption
          */
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
 #if AP_FILESYSTEM_LITTLEFS_ENABLED
         if (sync_block)
 #endif // AP_FILESYSTEM_LITTLEFS_ENABLED
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
         {
             last_io_operation = "fsync";
             AP::FS().fsync(_write_fd);
