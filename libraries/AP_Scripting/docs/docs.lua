@@ -3932,6 +3932,14 @@ function fence:get_breach_time() end
 ---| 8 # Minimum altitude
 function fence:get_breaches() end
 
+-- Returns the type bitmask of any fence whose margins have been crossed
+---@return integer fence_type bitmask
+---| 1 # Maximim altitude
+---| 2 # Circle
+---| 4 # Polygon
+---| 8 # Minimum altitude
+function fence:get_margin_breaches() end
+
 -- desc
 ---@class (exact) stat_t_ud
 local stat_t_ud = {}
