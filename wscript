@@ -155,6 +155,11 @@ def options(opt):
         action='store_true',
         default=False,
         help='Add debug symbolds to build.')
+
+    g.add_option('--vs-launch',
+        action='store_true',
+        default=False,
+        help='Generate launch.json template for Visual Studio Code.')
     
     g.add_option('--disable-watchdog',
         action='store_true',
@@ -502,6 +507,7 @@ def configure(cfg):
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.VS_LAUNCH = cfg.options.vs_launch
     cfg.env.DEBUG_SYMBOLS = cfg.options.debug_symbols
     cfg.env.COVERAGE = cfg.options.coverage
     cfg.env.FORCE32BIT = cfg.options.force_32bit
@@ -607,6 +613,13 @@ def configure(cfg):
     else:
         cfg.end_msg('disabled', color='YELLOW')
 
+    if cfg.env.DEBUG:
+        cfg.start_msg('VS Code launch')
+        if cfg.env.VS_LAUNCH:
+            cfg.end_msg('enabled')
+        else:
+            cfg.end_msg('disabled', color='YELLOW')
+
     cfg.start_msg('Coverage build')
     if cfg.env.COVERAGE:
         cfg.end_msg('enabled')
@@ -651,6 +664,9 @@ def configure(cfg):
 
     cfg.remove_target_list()
     _collect_autoconfig_files(cfg)
+
+    if cfg.env.VS_LAUNCH:
+        _create_vscode_launch_json(cfg)
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
@@ -874,6 +890,132 @@ def _load_pre_build(bld):
     brd = bld.get_board()
     if getattr(brd, 'pre_build', None):
         brd.pre_build(bld)    
+
+def _create_vscode_launch_json(cfg):
+    launch_json_path = os.path.join(cfg.srcnode.abspath(), '.vscode', 'launch.json')
+    if os.path.exists(launch_json_path):
+        default_template = {
+            "version": "0.2.0",
+            "configurations": []
+        }
+        try:
+            with open(launch_json_path, 'r') as f:
+                content = f.read().strip()
+                if content:
+                    launch_json = json.loads(content)
+                else:
+                    launch_json = default_template
+            if "configurations" not in launch_json:
+                launch_json["configurations"] = [] #initialize configurations
+            if type(launch_json["configurations"]) is not list:
+                launch_json["configurations"] = [] #overwrite invalid configurations
+        except json.JSONDecodeError:
+            print(f"\033[91mError: Invalid JSON in {launch_json_path}. Creating a new launch.json file.\033[0m")
+            launch_json = default_template
+    else:
+        launch_json = default_template
+
+    configurations = [
+        {'name': 'ArduCopter', 'target': 'arducopter'},
+        {'name': 'ArduPlane', 'target': 'arduplane'},
+        {'name': 'ArduCopter-Heli', 'target': 'arducopter-heli'},
+        {'name': 'ArduRover', 'target': 'ardurover'},
+        {'name': 'ArduSub', 'target': 'ardusub'},
+        {'name': 'AP_Periph', 'target': 'AP_Periph'},
+        {'name': 'AP_Blimp', 'target': 'blimp'},
+        {'name': 'AntennaTracker', 'target': 'antennatracker'},
+        {'name': 'AP_Bootloader', 'target': 'ap_bootloader'},
+    ] #pending to add more targets
+
+    for configuration in configurations:
+        if cfg.options.board == 'sitl':
+            if configuration['name'] == 'AP_Bootloader':
+                continue
+            launch_configuration = {
+                "name": configuration['name'],
+                "type": "cppdbg",
+                "request": "launch",
+                "program": "${workspaceFolder}/build/sitl/bin/" + configuration['target'],
+                "args": [
+                    "-S",
+                    "--model",
+                    "+",
+                    "--speedup",
+                    "1",
+                    "--slave",
+                    "0",
+                    "--sim-address=127.0.0.1",
+                    "-I0"
+                ],
+                "stopAtEntry": False,
+                "cwd": "${workspaceFolder}",
+                "environment": [],
+                "externalConsole": False,
+                "MIMode": "lldb",
+                "setupCommands": [
+                    {
+                        "description": "Enable pretty-printing for gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": False
+                    }
+                ],
+            }
+        else:
+            if configuration['name'] == 'AP_Bootloader':
+                executable_path = "${workspaceFolder}/build/"+ cfg.options.board + "/bootloader/AP_Bootloader"
+            else:
+                executable_path = "${workspaceFolder}/build/"+ cfg.options.board + "/bin/" + configuration['target']
+            launch_configuration = {
+                "name": configuration['name'],
+                "cwd": "${workspaceFolder}",
+                "executable": executable_path,
+                "liveWatch": {
+                    "enabled": True,
+                    "samplesPerSecond": 4
+                },
+                "request": "launch",
+                "type": "cortex-debug",
+                "servertype": "openocd",
+                "configFiles": [
+                    "${workspaceFolder}/build/" + cfg.options.board + "/openocd.cfg",
+                ]
+            }
+
+        configuration_overwrited = False
+        for index, current_configuration in enumerate(launch_json["configurations"]):
+            if current_configuration.get('name') == launch_configuration['name']:
+                launch_json["configurations"][index] = launch_configuration
+                configuration_overwrited = True
+                break
+        if not configuration_overwrited:
+            launch_json["configurations"].append(launch_configuration)
+
+    with open(launch_json_path, 'w') as f:
+        json.dump(launch_json, f, indent=4)
+
+    #create openocd.cfg file
+    if cfg.options.board != 'sitl':
+        openocd_cfg_path = os.path.join(cfg.srcnode.abspath(), 'build', cfg.options.board, 'openocd.cfg')
+        mcu_type = cfg.env.get_flat('APJ_BOARD_TYPE')
+        openocd_target = ''
+        if mcu_type.startswith("STM32H7"):
+            openocd_target = 'stm32h7x.cfg'
+        elif mcu_type.startswith("STM32F7"):
+            openocd_target = 'stm32f7x.cfg'
+        elif mcu_type.startswith("STM32F4"):
+            openocd_target = 'stm32f4x.cfg'
+        elif mcu_type.startswith("STM32F3"):
+            openocd_target = 'stm32f3x.cfg'
+        elif mcu_type.startswith("STM32L4"):
+            openocd_target = 'stm32l4x.cfg'
+        elif mcu_type.startswith("STM32G4"):
+            openocd_target = 'stm32g4x.cfg'
+
+        with open(openocd_cfg_path, 'w+') as f:
+            f.write("source [find interface/stlink.cfg]\n")
+            f.write(f"source [find target/{openocd_target}]\n")
+            f.write("init\n")
+            f.write("$_TARGETNAME configure -rtos auto\n")
 
 def build(bld):
     config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
