@@ -10,6 +10,8 @@
 
 #define TAKEOFF_RUDDER_WARNING_TIMEOUT 3000 //ms that GCS warning about not returning arming rudder to neutral repeats
 
+#define GPS_GND_CRS_MIN_SPD 5 // m/s, used to set when takeoff_initial_direction is captured in NAV_TAKEOFF and Mode TAKEOFF
+
 // failsafe
 // ----------------------
 enum failsafe_state {
@@ -45,6 +47,7 @@ enum failsafe_action_long {
     FS_ACTION_LONG_GLIDE = 2,
     FS_ACTION_LONG_PARACHUTE = 3,
     FS_ACTION_LONG_AUTO = 4,
+    FS_ACTION_LONG_AUTOLAND = 5,
 };
 
 // type of stick mixing enabled
