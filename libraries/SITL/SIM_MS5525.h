@@ -1,5 +1,13 @@
 #include "SIM_MS5XXX.h"
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_SIM_MS5525_ENABLED
+#define AP_SIM_MS5525_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if AP_SIM_MS5525_ENABLED
+
 #include <AP_Common/Bitmask.h>
 
 namespace SITL {
@@ -43,3 +51,5 @@ private:
 };
 
 } // namespace SITL
+
+#endif  // AP_SIM_MS5525_ENABLED
