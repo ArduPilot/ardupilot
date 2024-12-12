@@ -16,7 +16,8 @@
   ArduPilot filesystem interface for systems using the LittleFS filesystem in
   flash memory
 
-  littlefs integration by Tamas Nepusz <ntamas@gmail.com>
+  Original littlefs integration by Tamas Nepusz <ntamas@gmail.com>
+  Further development by Andy Piper <github@andypiper.com>
 */
 #include "AP_Filesystem_config.h"
 
@@ -28,6 +29,10 @@
 #include <AP_RTC/AP_RTC.h>
 
 #include "lfs.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include "bd/lfs_filebd.h"
+#include <cstdio>
+#endif
 
 //#define AP_LFS_DEBUG
 #ifdef AP_LFS_DEBUG
@@ -42,6 +47,7 @@
 #define LFS_CHECK_NULL(func) do { int __retval = func; if (__retval < 0) { errno = errno_from_lfs_error(__retval); return nullptr; }} while (0)
 #define LFS_ATTR_MTIME 'M'
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
 static int flashmem_read(
     const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off,
     void* buffer, lfs_size_t size
@@ -52,7 +58,7 @@ static int flashmem_prog(
 );
 static int flashmem_erase(const struct lfs_config *cfg, lfs_block_t block);
 static int flashmem_sync(const struct lfs_config *cfg);
-
+#endif
 static int errno_from_lfs_error(int lfs_error);
 static int lfs_flags_from_flags(int flags);
 
@@ -341,13 +347,13 @@ struct dirent *AP_Filesystem_FlashMemory_LittleFS::readdir(void *ptr)
 
     memset(&pair->entry, 0, sizeof(pair->entry));
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     pair->entry.d_ino = 0;
     pair->entry.d_seekoff++;
 #endif
 
     strncpy(pair->entry.d_name, info.name, MIN(strlen(info.name)+1, sizeof(pair->entry.d_name)));
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     pair->entry.d_namlen = strlen(info.name);
 #endif
 
@@ -662,7 +668,17 @@ void AP_Filesystem_FlashMemory_LittleFS::write_status_register(uint8_t reg, uint
     dev->transfer(cmd, 3, nullptr, 0);
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+const static struct lfs_filebd_config fbd_config {
+    .read_size = 2048,
+    .prog_size = 2048,
+    .erase_size = 131072,
+    .erase_count = 256
+};
+#endif
+
 uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (!wait_until_device_is_ready()) {
         return false;
     }
@@ -754,6 +770,20 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
     fs_cfg.metadata_max = page_size;
 #endif
+#else
+    fs_cfg.read_size = 2048;
+    fs_cfg.prog_size = 2048;
+    fs_cfg.block_size = 131072;
+    fs_cfg.block_count = 256;
+    fs_cfg.metadata_max = 2048;
+
+    char lfsname[L_tmpnam];
+    uint32_t id = 0;
+    if (std::tmpnam(lfsname)) {
+        lfs_filebd_create(&fs_cfg, lfsname, &fbd_config);
+        id = 0xFAFF;
+    }
+#endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL
     fs_cfg.block_cycles = 500;
     fs_cfg.lookahead_size = 16;
 
@@ -761,7 +791,7 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     // occasionally get read or prog requests in flashmem_read() and
     // flashmem_prog() whose size is equal to the cache size, and we do not
     // handle that right now
-    fs_cfg.cache_size = page_size;
+    fs_cfg.cache_size = fs_cfg.prog_size;
 
     return id;
 }
@@ -778,19 +808,26 @@ bool AP_Filesystem_FlashMemory_LittleFS::mount_filesystem() {
     EXPECT_DELAY_MS(3000);
 
     fs_cfg.context = this;
-
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     fs_cfg.read = flashmem_read;
     fs_cfg.prog = flashmem_prog;
     fs_cfg.erase = flashmem_erase;
     fs_cfg.sync = flashmem_sync;
 
     dev = hal.spi->get_device("dataflash");
+
     if (!dev) {
         mark_dead();
         return false;
     }
 
     dev_sem = dev->get_semaphore();
+#else
+    fs_cfg.read = lfs_filebd_read;
+    fs_cfg.prog = lfs_filebd_prog;
+    fs_cfg.erase = lfs_filebd_erase;
+    fs_cfg.sync = lfs_filebd_sync;
+#endif
 
     uint32_t id = find_block_size_and_count();
 
@@ -798,12 +835,12 @@ bool AP_Filesystem_FlashMemory_LittleFS::mount_filesystem() {
         mark_dead();
         return false;
     }
-
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (!init_flash()) {
         mark_dead();
         return false;
     }
-
+#endif
     if (lfs_mount(&fs, &fs_cfg) < 0) {
         /* maybe not formatted? try formatting it */
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Formatting flash");
@@ -1063,6 +1100,7 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_sync() {
     }
 }
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
 static int flashmem_read(
     const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off,
     void* buffer, lfs_size_t size
@@ -1088,6 +1126,7 @@ static int flashmem_sync(const struct lfs_config *cfg) {
     AP_Filesystem_FlashMemory_LittleFS* self = static_cast<AP_Filesystem_FlashMemory_LittleFS*>(cfg->context);
     return self->_flashmem_sync();
 }
+#endif
 
 /* ************************************************************************* */
 /* LittleFS to POSIX API conversion functions                                */
@@ -1109,7 +1148,7 @@ static int errno_from_lfs_error(int lfs_error)
         case LFS_ERR_INVAL: return EINVAL;
         case LFS_ERR_NOSPC: return ENOSPC;
         case LFS_ERR_NOMEM: return ENOMEM;
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
         case LFS_ERR_NOATTR: return ENOATTR;
 #endif
         case LFS_ERR_NAMETOOLONG: return ENAMETOOLONG;
