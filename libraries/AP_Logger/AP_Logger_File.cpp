@@ -16,6 +16,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#include <AP_Filesystem/AP_Filesystem_FlashMemory_LittleFS.h>
+#endif
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
@@ -941,6 +944,7 @@ void AP_Logger_File::io_timer(void)
         // least once per 2 seconds if data is available
         return;
     }
+
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
         last_io_operation = "disk_space_avail";
@@ -964,6 +968,7 @@ void AP_Logger_File::io_timer(void)
     const uint8_t *head = _writebuf.readptr(size);
     nbytes = MIN(nbytes, size);
 
+#if !AP_FILESYSTEM_LITTLEFS_ENABLED
     // try to align writes on a 512 byte boundary to avoid filesystem reads
     if ((nbytes + _write_offset) % 512 != 0) {
         uint32_t ofs = (nbytes + _write_offset) % 512;
@@ -971,7 +976,7 @@ void AP_Logger_File::io_timer(void)
             nbytes -= ofs;
         }
     }
-
+#endif
     last_io_operation = "write";
     if (!write_fd_semaphore.take(1)) {
         return;
@@ -980,6 +985,11 @@ void AP_Logger_File::io_timer(void)
         write_fd_semaphore.give();
         return;
     }
+
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+    bool sync_block = AP::littlefs().sync_block(_write_fd, _write_offset, nbytes);
+#endif // AP_FILESYSTEM_LITTLEFS_ENABLED
+
     ssize_t nwritten = AP::FS().write(_write_fd, head, nbytes);
     last_io_operation = "";
     if (nwritten <= 0) {
@@ -999,16 +1009,20 @@ void AP_Logger_File::io_timer(void)
         _last_write_ms = tnow;
         _write_offset += nwritten;
         _writebuf.advance(nwritten);
+
         /*
-          the best strategy for minimizing corruption on microSD cards
-          seems to be to write in 4k chunks and fsync the file on each
-          chunk, ensuring the directory entry is updated after each
-          write.
+          fsync on littlefs is extremely expensive (20% CPU on an H7) and not
+          required since the whole point of the filesystem is to avoid corruption
          */
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+        if (sync_block)
+#endif // AP_FILESYSTEM_LITTLEFS_ENABLED
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
-        last_io_operation = "fsync";
-        AP::FS().fsync(_write_fd);
-        last_io_operation = "";
+        {
+            last_io_operation = "fsync";
+            AP::FS().fsync(_write_fd);
+            last_io_operation = "";
+        }
 #endif
 
 #if AP_RTC_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

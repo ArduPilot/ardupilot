@@ -565,6 +565,7 @@ def configure(cfg):
     if cfg.options.enable_benchmarks:
         cfg.load('gbenchmark')
     cfg.load('gtest')
+    cfg.load('littlefs')
     cfg.load('static_linking')
     cfg.load('build_summary')
 
@@ -794,6 +795,8 @@ def _build_common_taskgens(bld):
         ap_vehicle='UNKNOWN',
         ap_libraries=bld.ap_get_all_libraries(),
     )
+
+    bld.littlefs()
 
     if bld.env.HAS_GTEST:
         bld.libgtest(cxxflags=['-include', 'ap_config.h'])
