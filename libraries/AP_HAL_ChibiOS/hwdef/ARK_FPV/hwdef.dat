@@ -1,20 +1,19 @@
-# processed by chibios_hwdef.py
+# Processed by chibios_hwdef.py
 
 include common.inc
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 2
 
-
-# bootloader takes first sector
+# Bootloader takes first sector
 FLASH_RESERVE_START_KB 128
 
-# use last 2 pages for flash storage
+# Use last 2 pages for flash storage
 # H743 has 16 pages of 128k each
 define HAL_STORAGE_SIZE 32768
 STORAGE_FLASH_PAGE 14
 
-# to be compatible with the px4 bootloader we need
+# To be compatible with the px4 bootloader we need
 # to use a different RAM_MAP
 env USE_ALT_RAM_MAP 1
 
@@ -22,11 +21,11 @@ env OPTIMIZE -O2
 
 SERIAL_ORDER OTG1 UART7 UART5 USART1 USART2 UART4 USART6 OTG2
 
-# debug console
+# Debug console
 STDOUT_SERIAL SD3
 STDOUT_BAUDRATE 57600
 
-# default to all pins low to avoid ESD issues
+# Default to all pins low to avoid ESD issues
 DEFAULTGPIO OUTPUT LOW PULLDOWN
 
 # Telem1 - Telem
@@ -58,8 +57,7 @@ PC7 USART6_RX USART6
 # ADCs
 PA0 SCALED1_V3V3 ADC1 SCALE(2)
 PB1 VDD_5V_SENS ADC1 SCALE(2)
-
-# TODO: 12V
+# TODO: 12V monitor
 # PA4 SCALED2_V3V3 ADC1 SCALE(2)
 
 PB0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
@@ -85,14 +83,14 @@ PG9 SPI1_MISO SPI1
 PI9 IMU1_CS CS
 PF2 IMU1_DRDY INPUT
 
-# SPI6 - external
+# SPI6 - external (SPI OSD or IMU)
 PB3  SPI6_SCK SPI6
 PA6  SPI6_MISO SPI6
 PG14 SPI6_MOSI SPI6
 PI10 EXT1_CS CS
 PD11 DRDY_ADIS16507 INPUT GPIO(93)
 
-# use GPIO(93) for data ready on ADIS16507
+# GPIO(93) for data ready on ADIS16507
 # define ADIS_DRDY_PIN 93
 
 # Motors
@@ -139,10 +137,10 @@ define HAL_IMUHEAT_I_DEFAULT 0.07
 # TODO: should we use this?
 # define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
 
-# armed indication
+# Armed indication
 PE6 nARMED OUTPUT HIGH
 
-# power enable pins
+# Power enable pins
 PC13 VDD_3V3_SD_CARD_EN OUTPUT HIGH
 PI11 VDD_3V3_SENSORS1_EN OUTPUT HIGH
 
@@ -151,7 +149,7 @@ PI11 VDD_3V3_SENSORS1_EN OUTPUT HIGH
 # bootloader hold
 PG4 nVDD_5V_PERIPH_EN OUTPUT HIGH
 
-# power sensing
+# Power sensing
 PE15 VDD_5V_PERIPH_nOC INPUT PULLUP
 PF13 VDD_5V_HIPOWER_nOC INPUT PULLUP
 PG1 VDD_BRICK_nVALID INPUT PULLUP
@@ -196,17 +194,18 @@ IMU Invensensev3 SPI:iim42653 ROTATION_YAW_270
 
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
+# Prioritze SD logging and IMU
 DMA_PRIORITY SDMMC* SPI*
 
+# Bidir DShot timers cannot share DMA
 DMA_NOSHARE SPI* TIM5* TIM8*
 
-# enable FAT filesystem support (needs a microSD defined via SDMMC)
+# Enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
 
-
-# bootloader embedding / bootloader flashing not available
+# Bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
 
-# setup for OSD
+# Setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 5 # MSP Displayport

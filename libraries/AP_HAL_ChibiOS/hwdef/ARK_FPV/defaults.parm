@@ -1,0 +1,17 @@
+# CAN
+CAN_P1_DRIVER 1  # Enables the use of CAN
+
+# Onboard OSD
+OSD_TYPE 5 # MSP
+OSD_CELL_COUNT 0 # auto based on voltage at start
+
+# Serial ports
+SERIAL1_PROTOCOL 2  # Mavlink
+SERIAL2_PROTOCOL 42 # DisplayPort
+SERIAL3_PROTOCOL 5  # GPS
+SERIAL4_PROTOCOL 0  # TODO: DJI HDL?
+SERIAL5_PROTOCOL 16 # ESC telemetry
+SERIAL6_PROTOCOL 23 # RCIN
+SERIAL7_PROTOCOL 22 # SLCAN
+
+

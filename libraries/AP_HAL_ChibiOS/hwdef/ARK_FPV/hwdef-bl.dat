@@ -1,16 +1,15 @@
-# processed by chibios_hwdef.py
+# Processed by chibios_hwdef.py
 
 include common.inc
 
-# bootloader is installed at zero offset
+# Bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 0
 
-# the location where the bootloader will put the firmware
+# Location where the bootloader will put the firmware
 FLASH_BOOTLOADER_LOAD_KB 128
 
 env OPTIMIZE -Os
 
-# order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7 UART5 USART3
 
 # CS pins
@@ -19,17 +18,13 @@ PI9 IMU1_CS CS
 # SPI6 - external
 PI10 EXT1_CS CS
 
-# telem1
+# Telem1 - Telem
 PE8  UART7_TX  UART7
 PF6  UART7_RX  UART7
 PF8  UART7_RTS UART7
 PE10 UART7_CTS UART7
 
-# telem2
-PC12 UART5_TX UART5
-PD2  UART5_RX UART5
-
-# armed indication
+# Armed indication
 PE6 nARMED OUTPUT HIGH
 
 # 12V peripheral enable
@@ -40,5 +35,6 @@ PE3 LED_ACTIVITY OUTPUT OPENDRAIN HIGH # red
 PE5 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # blue
 define HAL_LED_ON 0
 
+# No param flash storage for bootloader
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
