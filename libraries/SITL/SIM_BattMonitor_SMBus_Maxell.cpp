@@ -1,5 +1,7 @@
 #include "SIM_BattMonitor_SMBus_Maxell.h"
 
+#if AP_SIM_BATT_MONITOR_SMBUS_MAXELL_ENABLED
+
 SITL::Maxell::Maxell() :
     SIM_BattMonitor_SMBus_Generic()
 {
@@ -15,3 +17,5 @@ SITL::Maxell::Maxell() :
     
     set_register(SMBusBattGenericDevReg::SERIAL, (uint16_t)37);
 }
+
+#endif // AP_SIM_BATT_MONITOR_SMBUS_MAXELL_ENABLED

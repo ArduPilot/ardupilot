@@ -1,4 +1,7 @@
 #include "SIM_BattMonitor_SMBus_Rotoye.h"
+
+#if AP_SIM_BATT_MONITOR_SMBUS_ROTOYE_ENABLED
+
 #include <AP_HAL/utility/sparse-endian.h>
 
 SITL::Rotoye::Rotoye() :
@@ -28,3 +31,5 @@ void SITL::Rotoye::update(const class Aircraft &aircraft)
         set_register(SMBusBattRotoyeDevReg::TEMP_EXT, int16_t(outside_temp + 100));  // it's a little warmer inside.... (10 degrees here)
     }
 }
+
+#endif  // AP_SIM_BATT_MONITOR_SMBUS_ROTOYE_ENABLED
