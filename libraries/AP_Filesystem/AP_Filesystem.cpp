@@ -32,12 +32,12 @@ static AP_Filesystem_FATFS fs_local;
 #elif AP_FILESYSTEM_ESP32_ENABLED
 #include "AP_Filesystem_ESP32.h"
 static AP_Filesystem_ESP32 fs_local;
-#elif AP_FILESYSTEM_POSIX_ENABLED
-#include "AP_Filesystem_posix.h"
-static AP_Filesystem_Posix fs_local;
 #elif AP_FILESYSTEM_LITTLEFS_ENABLED
 #include "AP_Filesystem_FlashMemory_LittleFS.h"
 static AP_Filesystem_FlashMemory_LittleFS fs_local;
+#elif AP_FILESYSTEM_POSIX_ENABLED
+#include "AP_Filesystem_posix.h"
+static AP_Filesystem_Posix fs_local;
 #else
 static AP_Filesystem_Backend fs_local;
 int errno;
