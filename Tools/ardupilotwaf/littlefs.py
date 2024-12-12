@@ -17,7 +17,7 @@ def configure(cfg):
 def littlefs(bld, **kw):
     kw.update(
         name='littlefs',
-        source=['modules/littlefs/lfs.c', 'modules/littlefs/lfs_util.c'],
+        source=['modules/littlefs/lfs.c', 'modules/littlefs/lfs_util.c', 'modules/littlefs/bd/lfs_filebd.c'],
         target='littlefs',
         defines=['LFS_NO_DEBUG'],
         cflags=['-Wno-format', '-Wno-format-extra-args', '-Wno-shadow', '-Wno-unused-function', '-Wno-missing-declarations']
