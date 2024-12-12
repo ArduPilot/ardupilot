@@ -282,6 +282,14 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         }
 #endif
 
+#if AP_GRIPPER_ENABLED
+        // check deprecated release-gripper-on-thrust-loss flight option
+        if (copter.option_is_enabled(Copter::FlightOption::RELEASE_GRIPPER_ON_THRUST_LOSS_DEPRECATED)) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "FLIGHT_OPTIONS has deprecated option set");
+            return false;
+        }
+#endif
+
         // check adsb avoidance failsafe
 #if HAL_ADSB_ENABLED
         if (copter.failsafe.adsb) {

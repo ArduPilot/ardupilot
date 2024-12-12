@@ -96,7 +96,12 @@ void Copter::crash_check()
     }
 }
 
-// check for loss of thrust and trigger thrust boost in motors library
+// thrust_loss_check - returns true when the aircraft detects for 1 second that it is:
+//                      above 90% demanded thrust or high thrust saturation,,
+//                      less than 15 degrees lean angle target,
+//                      less than 30 degrees of attitude error,
+//                      is descending.
+// This check provides a warning that the aircraft is near it's maximum thrust limits and is used trigger thrust boost algorithm in the motors library
 void Copter::thrust_loss_check()
 {
     static uint16_t thrust_loss_counter;  // number of iterations vehicle may have been crashed
@@ -169,12 +174,6 @@ void Copter::thrust_loss_check()
         // enable thrust loss handling
         motors->set_thrust_boost(true);
         // the motors library disables this when it is no longer needed to achieve the commanded output
-
-#if AP_GRIPPER_ENABLED
-        if (copter.option_is_enabled(FlightOption::RELEASE_GRIPPER_ON_THRUST_LOSS)) {
-            gripper.release();
-        }
-#endif
     }
 }
 
