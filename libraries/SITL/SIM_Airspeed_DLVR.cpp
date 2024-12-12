@@ -1,5 +1,7 @@
 #include "SIM_Airspeed_DLVR.h"
 
+#if AP_SIM_AIRSPEED_DLVR_ENABLED
+
 #include "SITL.h"
 
 int SITL::Airspeed_DLVR::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
@@ -68,3 +70,5 @@ void SITL::Airspeed_DLVR::update(const class Aircraft &aircraft)
     // To Do: Add a sensor board temperature offset parameter
     temperature = AP_Baro::get_temperatureC_for_alt_amsl(sim_alt);
 }
+
+#endif  // AP_SIM_AIRSPEED_DLVR_ENABLED
