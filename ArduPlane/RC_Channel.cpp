@@ -470,7 +470,7 @@ bool RC_Channel_Plane::do_aux_function(const AuxFuncTrigger &trigger)
 
 #if AP_ICENGINE_ENABLED
     case AUX_FUNC::ICE_START_STOP:
-        plane.g2.ice_control.do_aux_function(ch_flag);
+        plane.g2.ice_control.do_aux_function(trigger);
         break;
 #endif
 
