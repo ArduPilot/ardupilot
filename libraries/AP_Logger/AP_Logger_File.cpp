@@ -1011,14 +1011,22 @@ void AP_Logger_File::io_timer(void)
         _writebuf.advance(nwritten);
 
         /*
-          fsync on littlefs is extremely expensive (20% CPU on an H7) and not
-          required since the whole point of the filesystem is to avoid corruption
+          fsync on littlefs is extremely expensive (20% CPU on an H7) particularly because the
+          COW architecture can mean you end up copying a load of blocks. instead try and only sync
+          at the end of a block to avoid copying and minimise CPU. fsync is needed for the file
+          metadata (including size) to be updated
          */
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
 #if AP_FILESYSTEM_LITTLEFS_ENABLED
         if (sync_block)
 #endif // AP_FILESYSTEM_LITTLEFS_ENABLED
         {
+            /*
+              the best strategy for minimizing corruption on microSD cards
+              seems to be to write in 4k chunks and fsync the file on each
+              chunk, ensuring the directory entry is updated after each
+              write.
+            */
             last_io_operation = "fsync";
             AP::FS().fsync(_write_fd);
             last_io_operation = "";
