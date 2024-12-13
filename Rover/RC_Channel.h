@@ -12,7 +12,7 @@ public:
 protected:
 
     void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos) override;
-    bool do_aux_function(AUX_FUNC ch_option, AuxSwitchPos) override;
+    bool do_aux_function(const AuxFuncTrigger &trigger) override;
 
     // called when the mode switch changes position:
     void mode_switch_changed(modeswitch_pos_t new_pos) override;
