@@ -1039,3 +1039,14 @@ include AP_TemperatureSensor/AP_TemperatureSensor.h
 singleton AP_TemperatureSensor depends AP_TEMPERATURE_SENSOR_ENABLED
 singleton AP_TemperatureSensor rename temperature_sensor
 singleton AP_TemperatureSensor method get_temperature boolean float'Null uint8_t'skip_check
+
+
+include AP_Avoidance/AP_Avoidance.h
+singleton AP_Avoidance rename avoid
+singleton AP_Avoidance method num_obstacles uint8_t
+singleton AP_Avoidance method get_obstacle_loc Location uint8_t'skip_check
+singleton AP_Avoidance method get_obstacle_vel Vector3f uint8_t'skip_check
+singleton AP_Avoidance method get_obstacle_id int32_t uint8_t'skip_check
+singleton AP_Avoidance method get_obstacle_time int32_t uint8_t'skip_check
+
+
