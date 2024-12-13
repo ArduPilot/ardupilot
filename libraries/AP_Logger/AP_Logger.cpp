@@ -58,7 +58,11 @@ extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_LOGGER_MIN_MB_FREE
 #if AP_FILESYSTEM_LITTLEFS_ENABLED
-#define HAL_LOGGER_MIN_MB_FREE 1
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+#define HAL_LOGGER_MIN_MB_FREE 10
+#else
+#define HAL_LOGGER_MIN_MB_FREE 2
+#endif
 #else
 #define HAL_LOGGER_MIN_MB_FREE 500
 #endif
@@ -143,7 +147,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @DisplayName: Old logs on the SD card will be deleted to maintain this amount of free space
     // @Description: Set this such that the free space is larger than your largest typical flight log
     // @Units: MB
-    // @Range: 10 1000
+    // @Range: 2 1000
     // @User: Standard
     AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, HAL_LOGGER_MIN_MB_FREE),
 
