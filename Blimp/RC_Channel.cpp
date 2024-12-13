@@ -99,8 +99,11 @@ void RC_Channel_Blimp::do_aux_function_change_mode(const Mode::Number mode,
 }
 
 // do_aux_function - implement the function invoked by auxiliary switches
-bool RC_Channel_Blimp::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel_Blimp::do_aux_function(const AuxFuncTrigger &trigger)
 {
+    const AUX_FUNC &ch_option = trigger.func;
+    const AuxSwitchPos &ch_flag = trigger.pos;
+
     switch (ch_option) {
 
     case AUX_FUNC::SAVE_TRIM:
@@ -120,7 +123,7 @@ bool RC_Channel_Blimp::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
         break;
 
     default:
-        return RC_Channel::do_aux_function(ch_option, ch_flag);
+        return RC_Channel::do_aux_function(trigger);
     }
     return true;
 }
