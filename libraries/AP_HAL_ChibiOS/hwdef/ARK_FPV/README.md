@@ -57,8 +57,8 @@ https://arkelectron.com/product/ark-fpv-flight-controller/
 - Weight: 7.5g with MicroSD card
 
 ## Pinout
-![ark_fpv_top](ark_fpv_top.png)
-![ark_fpv_bottom](ark_fpv_bottom.png)
+![top](ark_fpv_top.png)
+![bottom](ark_fpv_bottom.png)
 
 #### PWM UART4 - 8 Pin JST-GH
 | Pin | Signal Name     | Voltage      |
