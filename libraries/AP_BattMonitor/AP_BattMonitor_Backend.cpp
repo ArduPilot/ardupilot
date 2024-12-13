@@ -34,6 +34,7 @@
     1-6:    AP_BattMonitor_Analog.cpp
     10-11:  AP_BattMonitor_SMBus.cpp
     20:     AP_BattMonitor_Sum.cpp
+    22-24:  AP_BattMonitor_INA3221.cpp
     25-26:  AP_BattMonitor_INA2xx.cpp
     27-28:  AP_BattMonitor_INA2xx.cpp, AP_BattMonitor_INA239.cpp (legacy duplication)
     30:     AP_BattMonitor_DroneCAN.cpp
@@ -41,7 +42,6 @@
     40-43:  AP_BattMonitor_FuelLevel_Analog.cpp
     45-48:  AP_BattMonitor_FuelLevel_Analog.cpp
     50-51:  AP_BattMonitor_Synthetic_Current.cpp
-    56-58:  AP_BattMonitor_INA3221.cpp
     56-61:  AP_BattMonitor_AD7091R5.cpp
 
   Usage does not need to be contiguous. The maximum possible index is 63.
