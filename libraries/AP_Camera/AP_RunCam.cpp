@@ -131,7 +131,7 @@ AP_RunCam::AP_RunCam(AP_Camera &frontend, AP_Camera_Params &params, uint8_t inst
 {
     AP_Param::setup_object_defaults(this, var_info);
     if (_singleton != nullptr && _singleton->_instance == instance) {
-        AP_HAL::panic("AP_RunCam instance must be a singleton %u\n", instance);
+        AP_HAL::panic("AP_RunCam instance must be a singleton %u", instance);
     }
     if (_singleton == nullptr) {
         _singleton = this;
@@ -1078,12 +1078,14 @@ bool AP_RunCam::healthy() const
 }
 
 // momentary switch to change camera between picture and video modes
-void AP_RunCam::cam_mode_toggle() {
+void AP_RunCam::cam_mode_toggle()
+{
 
 }
 
 // entry point to actually take a picture.  returns true on success
-bool AP_RunCam::trigger_pic() {
+bool AP_RunCam::trigger_pic()
+{
     return false;
 }
 
@@ -1091,7 +1093,7 @@ bool AP_RunCam::trigger_pic() {
 void AP_RunCam::send_camera_information(mavlink_channel_t chan) const
 {
     // exit immediately if not initialised
-    if (!camera_ready() || _cam_type.get() == 0 || _cam_type.get() > int8_t(ARRAY_SIZE(_models))) {
+    if (!camera_ready() || _cam_type.get() <= 0 || _cam_type.get() > int8_t(ARRAY_SIZE(_models))) {
         return;
     }
 
@@ -1118,9 +1120,9 @@ void AP_RunCam::send_camera_information(mavlink_channel_t chan) const
         vendor_name,            // vendor_name uint8_t[32]
         model_name,             // model_name uint8_t[32]
         0,                      // firmware version uint32_t
+        NaNf,                   // focal_length float (mm)
         NaNf,                   // sensor_size_h float (mm)
         NaNf,                   // sensor_size_v float (mm)
-        0,                      // sensor_size_v float (mm)
         0,                      // resolution_h uint16_t (pix)
         0,                      // resolution_v uint16_t (pix)
         0,                      // lens_id uint8_t
