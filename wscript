@@ -303,6 +303,11 @@ submodules at specific revisions.
     g.add_option('--enable-dronecan-tests', action='store_true',
                  default=False,
                  help="Enables DroneCAN tests in sitl")
+
+    g.add_option('--sitl-littlefs', action='store_true',
+                 default=False,
+                 help="Enable littlefs for filesystem accesson SITL")
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -565,6 +570,15 @@ def configure(cfg):
     if cfg.options.enable_benchmarks:
         cfg.load('gbenchmark')
     cfg.load('gtest')
+
+    if cfg.env.BOARD == "sitl":
+        cfg.start_msg('Littlefs')
+
+        if cfg.options.sitl_littlefs:
+            cfg.end_msg('enabled')
+        else:
+            cfg.end_msg('disabled', color='YELLOW')
+
     cfg.load('littlefs')
     cfg.load('static_linking')
     cfg.load('build_summary')
