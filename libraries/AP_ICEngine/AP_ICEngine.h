@@ -71,7 +71,7 @@ public:
     bool allow_throttle_while_disarmed(void) const;
 
     // Handle incoming aux function trigger
-    void do_aux_function(const RC_Channel::AuxSwitchPos ch_flag);
+    void do_aux_function(const RC_Channel::AuxFuncTrigger &trigger);
 
 #if AP_RELAY_ENABLED
     // Needed for param conversion from relay numbers to functions
@@ -96,6 +96,9 @@ private:
 
     // enable library
     AP_Int8 enable;
+
+    // min pwm on start channel for engine stop
+    AP_Int16 start_chan_min_pwm;
 
 #if AP_RPM_ENABLED
     // which RPM instance to use
