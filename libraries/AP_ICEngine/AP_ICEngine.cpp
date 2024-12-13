@@ -161,8 +161,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Description: This is a minimum PWM value for engine start channel for an engine stop to be commanded. Setting this value will avoid RC input glitches with low PWM values from causing an unwanted engine stop. A value of zero means any PWM above 800 and below 1300 triggers an engine stop. To stop the engine start channel must above the larger of this value and 800 and below 1300.
     // @User: Standard
     // @Range: 0 1300
-
-    // 16 was STARTCHN_MIN
+    AP_GROUPINFO("STARTCHN_MIN", 16, AP_ICEngine, start_chan_min_pwm, 0),
 
 #if AP_RPM_ENABLED
     // @Param: REDLINE_RPM
@@ -282,9 +281,17 @@ void AP_ICEngine::param_conversion()
 }
 
 // Handle incoming aux function
-void AP_ICEngine::do_aux_function(const RC_Channel::AuxSwitchPos ch_flag)
+void AP_ICEngine::do_aux_function(const RC_Channel::AuxFuncTrigger &trigger)
 {
-    aux_pos = ch_flag;
+    // If triggered from RC apply start chan min
+    if (trigger.source == RC_Channel::AuxFuncTrigger::Source::RC) {
+        RC_Channel *chan = rc().channel(trigger.source_index);
+        if ((chan != nullptr) && (chan->get_radio_in() < start_chan_min_pwm)) {
+            return;
+        }
+    }
+
+    aux_pos = trigger.pos;
 }
 
 /*
