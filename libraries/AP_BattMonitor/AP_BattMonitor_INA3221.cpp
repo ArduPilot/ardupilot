@@ -67,8 +67,6 @@ uint8_t AP_BattMonitor_INA3221::address_driver_count;
 
 const AP_Param::GroupInfo AP_BattMonitor_INA3221::var_info[] = {
 
-    // Param indexes must be between 56 and 61 to avoid conflict with other battery monitor param tables loaded by pointer
-
     // @Param: I2C_BUS
     // @DisplayName: Battery monitor I2C bus number
     // @Description: Battery monitor I2C bus number
@@ -92,6 +90,8 @@ const AP_Param::GroupInfo AP_BattMonitor_INA3221::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("CHANNEL", 58, AP_BattMonitor_INA3221, channel, 1),
+
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
 
     AP_GROUPEND
 };

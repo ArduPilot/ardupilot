@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Synthetic_Current::var_info[] = {
     // also inherit analog backend parameters
     AP_SUBGROUPEXTENSION("", 51, AP_BattMonitor_Synthetic_Current, AP_BattMonitor_Analog::var_info),
 
-    // Param indexes must be between 50 and 55 to avoid conflict with other battery monitor param tables loaded by pointer
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
 
     AP_GROUPEND
 };
