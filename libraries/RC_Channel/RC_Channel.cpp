@@ -779,7 +779,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
 #if AP_AHRS_ENABLED
     case AUX_FUNC::AHRS_TYPE:
-        run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
+        run_aux_function(ch_option, ch_flag, AuxFuncTrigger::Source::INIT);
         break;
 #endif
     default:
@@ -977,7 +977,7 @@ bool RC_Channel::read_aux()
 #endif
 
     // debounced; undertake the action:
-    run_aux_function(_option, new_position, AuxFuncTriggerSource::RC);
+    run_aux_function(_option, new_position, AuxFuncTrigger::Source::RC, get_radio_in());
     return true;
 }
 
@@ -1402,12 +1402,20 @@ void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const
 }
 #endif  // HAL_MOUNT_ENABLED
 
-bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source)
+bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTrigger::Source source, int16_t pwm)
 {
 #if AP_SCRIPTING_ENABLED
     rc().set_aux_cached(ch_option, pos);
 #endif
-    const bool ret = do_aux_function(ch_option, pos);
+
+    const AuxFuncTrigger trigger {
+        func: ch_option,
+        pos: pos,
+        source: source,
+        pwm: pwm,
+    };
+
+    const bool ret = do_aux_function(trigger);
 
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: AUXF
@@ -1418,7 +1426,7 @@ bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncT
     // @Field: pos: switch position when function triggered
     // @FieldValueEnum: pos: RC_Channel::AuxSwitchPos
     // @Field: source: source of auxiliary function invocation
-    // @FieldValueEnum: source: RC_Channel::AuxFuncTriggerSource
+    // @FieldValueEnum: source: RC_Channel::AuxFuncTrigger::Source
     // @Field: result: true if function was successful
     AP::logger().Write(
         "AUXF",
@@ -1437,8 +1445,11 @@ bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncT
     return ret;
 }
 
-bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 {
+    const AUX_FUNC &ch_option = trigger.func;
+    const AuxSwitchPos &ch_flag = trigger.pos;
+
     switch (ch_option) {
 #if AP_FENCE_ENABLED
     case AUX_FUNC::FENCE:
