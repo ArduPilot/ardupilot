@@ -164,11 +164,13 @@ void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspe
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         update_calibration(i, vground, max_airspeed_allowed_during_cal);
     }
+#if HAL_GCS_ENABLED && AP_AIRSPEED_AUTOCAL_ENABLE
     send_airspeed_calibration(vground);
+#endif
 }
 
 
-#if HAL_GCS_ENABLED
+#if HAL_GCS_ENABLED && AP_AIRSPEED_AUTOCAL_ENABLE
 void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
 {
     /*
@@ -180,7 +182,6 @@ void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
             // auto-calibration not enabled on this sensor
             continue;
         }
-#if AP_AIRSPEED_AUTOCAL_ENABLE
         const mavlink_airspeed_autocal_t packet{
         vx: vground.x,
         vy: vground.y,
@@ -199,8 +200,7 @@ void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
                                       (const char *)&packet);
         break; // we can only send for one sensor
     }
-#endif // AP_AIRSPEED_AUTOCAL_ENABLE
 }
-#endif  // HAL_GCS_ENABLED
+#endif  // HAL_GCS_ENABLED && AP_AIRSPEED_AUTOCAL_ENABLE
 
 #endif  // AP_AIRSPEED_ENABLED
