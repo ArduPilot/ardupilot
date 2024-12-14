@@ -229,6 +229,9 @@ class EnumDocco(object):
             self.name = name
             self.entries = entries
 
+        def __str__(self):
+            return f"EnumDocco.Enumeration: {self.name} [{len(self.entries)} entries]"
+
     def search_for_files(self, dirs_to_search):
         _next = []
         for _dir in dirs_to_search:
@@ -285,3 +288,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     s.run()
+
+    if args.verbose:
+        for e in s.enumerations:
+            print(e)
