@@ -385,6 +385,7 @@ void AP_CANManager::log_text(AP_CANManager::LogLevel loglevel, const char *tag, 
     if (loglevel > _loglevel) {
         return;
     }
+    WITH_SEMAPHORE(_sem);
 
     if ((LOG_BUFFER_SIZE - _log_pos) < (10 + strlen(tag) + strlen(fmt))) {
         // reset log pos
