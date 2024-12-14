@@ -127,8 +127,5 @@ private:
 
     static const uint8_t STX = 0x02;
     static const uint8_t ETX = 0x03;
-
-    uint8_t packetcount;
-    uint32_t gsofmsg_time;
 };
 #endif // AP_GSOF_ENABLED

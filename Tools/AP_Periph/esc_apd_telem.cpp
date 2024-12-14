@@ -17,8 +17,9 @@ extern const AP_HAL::HAL& hal;
 #define TELEM_LEN    0x16
 
 ESC_APD_Telem::ESC_APD_Telem (AP_HAL::UARTDriver *_uart, float num_poles) :
-    pole_count(num_poles),
-    uart(_uart) {
+    uart(_uart),
+    pole_count(num_poles)
+{
     uart->begin(115200);
 }
 

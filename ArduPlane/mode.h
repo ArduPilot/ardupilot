@@ -11,6 +11,12 @@
 #include <AP_Mission/AP_Mission.h>
 #include "pullup.h"
 
+#ifndef AP_QUICKTUNE_ENABLED
+#define AP_QUICKTUNE_ENABLED HAL_QUADPLANE_ENABLED
+#endif
+
+#include <AP_Quicktune/AP_Quicktune.h>
+
 class AC_PosControl;
 class AC_AttitudeControl_Multi;
 class AC_Loiter;
@@ -142,6 +148,11 @@ public:
     // true if voltage correction should be applied to throttle
     virtual bool use_battery_compensation() const;
 
+#if AP_QUICKTUNE_ENABLED
+    // does this mode support VTOL quicktune?
+    virtual bool supports_quicktune() const { return false; }
+#endif
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -158,6 +169,9 @@ protected:
 
     // Output pilot throttle, this is used in stabilized modes without auto throttle control
     void output_pilot_throttle();
+
+    // makes the initialiser list in the constructor manageable
+    uint8_t unused_integer;
 
 #if HAL_QUADPLANE_ENABLED
     // References for convenience, used by QModes
@@ -322,6 +336,9 @@ protected:
 
     bool _enter() override;
     bool _pre_arm_checks(size_t buflen, char *buffer) const override { return true; }
+#if AP_QUICKTUNE_ENABLED
+    bool supports_quicktune() const override { return true; }
+#endif
 
 private:
     float active_radius_m;
@@ -659,6 +676,9 @@ public:
 protected:
 
     bool _enter() override;
+#if AP_QUICKTUNE_ENABLED
+    bool supports_quicktune() const override { return true; }
+#endif
 };
 
 class ModeQLoiter : public Mode
@@ -685,6 +705,10 @@ protected:
 
     bool _enter() override;
     uint32_t last_target_loc_set_ms;
+
+#if AP_QUICKTUNE_ENABLED
+    bool supports_quicktune() const override { return true; }
+#endif
 };
 
 class ModeQLand : public Mode

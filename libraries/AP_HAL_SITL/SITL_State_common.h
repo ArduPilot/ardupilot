@@ -231,7 +231,7 @@ public:
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 
     // simulated GPS devices
-    SITL::GPS *gps[2];  // constrained by # of parameter sets
+    SITL::GPS *gps[AP_SIM_MAX_GPS_SENSORS];  // constrained by # of parameter sets
 
     // Simulated ELRS radio
     SITL::ELRS *elrs;

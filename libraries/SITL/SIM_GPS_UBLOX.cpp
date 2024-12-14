@@ -35,6 +35,47 @@ void GPS_UBlox::send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
     write_to_autopilot((char*)chk, sizeof(chk));
 }
 
+void GPS_UBlox::update_relposned(ubx_nav_relposned &relposned, uint32_t tow_ms, float yaw_deg)
+{
+    Vector3f ant1_pos { NaNf, NaNf, NaNf };
+
+    // find our partner:
+    for (uint8_t i=0; i<ARRAY_SIZE(_sitl->gps); i++) {
+        if (i == instance) {
+            // this shouldn't matter as our heading type should never be base
+            continue;
+        }
+        if (_sitl->gps[i].hdg_enabled != SITL::SIM::GPS_HEADING_BASE) {
+            continue;
+        }
+        ant1_pos = _sitl->gps[i].pos_offset.get();
+        break;
+    }
+    if (ant1_pos.is_nan()) {
+        return;
+    }
+
+    const Vector3f ant2_pos = _sitl->gps[instance].pos_offset.get();
+    Vector3f rel_antenna_pos = ant2_pos - ant1_pos;
+    Matrix3f rot;
+    // project attitude back using gyros to get antenna orientation at time of GPS sample
+    Vector3f gyro(radians(_sitl->state.rollRate),
+                  radians(_sitl->state.pitchRate),
+                  radians(_sitl->state.yawRate));
+    rot.from_euler(radians(_sitl->state.rollDeg), radians(_sitl->state.pitchDeg), radians(yaw_deg));
+    const float lag = _sitl->gps[instance].delay_ms * 0.001;
+    rot.rotate(gyro * (-lag));
+    rel_antenna_pos = rot * rel_antenna_pos;
+    relposned.version = 1;
+    relposned.iTOW = tow_ms;
+    relposned.relPosN = rel_antenna_pos.x * 100;
+    relposned.relPosE = rel_antenna_pos.y * 100;
+    relposned.relPosD = rel_antenna_pos.z * 100;
+    relposned.relPosLength = rel_antenna_pos.length() * 100;
+    relposned.relPosHeading = degrees(Vector2f(rel_antenna_pos.x, rel_antenna_pos.y).angle()) * 1.0e5;
+    relposned.flags = gnssFixOK | diffSoln | carrSolnFixed | isMoving | relPosValid | relPosHeadingValid;
+}
+
 /*
   send a new set of GPS UBLOX packets
  */
@@ -139,44 +180,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
             int32_t prRes;
         } sv[SV_COUNT];
     } svinfo {};
-    enum RELPOSNED {
-        gnssFixOK          = 1U << 0,
-        diffSoln           = 1U << 1,
-        relPosValid        = 1U << 2,
-        carrSolnFloat      = 1U << 3,
-
-        carrSolnFixed      = 1U << 4,
-        isMoving           = 1U << 5,
-        refPosMiss         = 1U << 6,
-        refObsMiss         = 1U << 7,
-
-        relPosHeadingValid = 1U << 8,
-        relPosNormalized   = 1U << 9
-    };
-    struct PACKED ubx_nav_relposned {
-        uint8_t version;
-        uint8_t reserved1;
-        uint16_t refStationId;
-        uint32_t iTOW;
-        int32_t relPosN;
-        int32_t relPosE;
-        int32_t relPosD;
-        int32_t relPosLength;
-        int32_t relPosHeading;
-        uint8_t reserved2[4];
-        int8_t relPosHPN;
-        int8_t relPosHPE;
-        int8_t relPosHPD;
-        int8_t relPosHPLength;
-        uint32_t accN;
-        uint32_t accE;
-        uint32_t accD;
-        uint32_t accLength;
-        uint32_t accHeading;
-        uint8_t reserved3[4];
-        uint32_t flags;
-    } relposned {};
-
+    ubx_nav_relposned relposned {};
     const uint8_t MSG_POSLLH = 0x2;
     const uint8_t MSG_STATUS = 0x3;
     const uint8_t MSG_DOP = 0x4;
@@ -267,27 +271,15 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pvt.headVeh = 0;
     memset(pvt.reserved2, '\0', ARRAY_SIZE(pvt.reserved2));
 
-    if (_sitl->gps_hdg_enabled[instance] > SITL::SIM::GPS_HEADING_NONE) {
-        const Vector3f ant1_pos = _sitl->gps_pos_offset[instance^1].get();
-        const Vector3f ant2_pos = _sitl->gps_pos_offset[instance].get();
-        Vector3f rel_antenna_pos = ant2_pos - ant1_pos;
-        Matrix3f rot;
-        // project attitude back using gyros to get antenna orientation at time of GPS sample
-        Vector3f gyro(radians(_sitl->state.rollRate),
-                      radians(_sitl->state.pitchRate),
-                      radians(_sitl->state.yawRate));
-        rot.from_euler(radians(_sitl->state.rollDeg), radians(_sitl->state.pitchDeg), radians(d->yaw_deg));
-        const float lag = _sitl->gps_delay_ms[instance] * 0.001;
-        rot.rotate(gyro * (-lag));
-        rel_antenna_pos = rot * rel_antenna_pos;
-        relposned.version = 1;
-        relposned.iTOW = gps_tow.ms;
-        relposned.relPosN = rel_antenna_pos.x * 100;
-        relposned.relPosE = rel_antenna_pos.y * 100;
-        relposned.relPosD = rel_antenna_pos.z * 100;
-        relposned.relPosLength = rel_antenna_pos.length() * 100;
-        relposned.relPosHeading = degrees(Vector2f(rel_antenna_pos.x, rel_antenna_pos.y).angle()) * 1.0e5;
-        relposned.flags = gnssFixOK | diffSoln | carrSolnFixed | isMoving | relPosValid | relPosHeadingValid;
+    switch (_sitl->gps[instance].hdg_enabled) {
+    case SITL::SIM::GPS_HEADING_NONE:
+    case SITL::SIM::GPS_HEADING_BASE:
+        break;
+    case SITL::SIM::GPS_HEADING_THS:
+    case SITL::SIM::GPS_HEADING_KSXT:
+    case SITL::SIM::GPS_HEADING_HDT:
+        update_relposned(relposned, gps_tow.ms, d->yaw_deg);
+        break;
     }
 
     send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
@@ -296,7 +288,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol));
     send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop));
     send_ubx(MSG_PVT,    (uint8_t*)&pvt, sizeof(pvt));
-    if (_sitl->gps_hdg_enabled[instance] > SITL::SIM::GPS_HEADING_NONE) {
+    if (_sitl->gps[instance].hdg_enabled > SITL::SIM::GPS_HEADING_NONE) {
         send_ubx(MSG_RELPOSNED,    (uint8_t*)&relposned, sizeof(relposned));
     }
 

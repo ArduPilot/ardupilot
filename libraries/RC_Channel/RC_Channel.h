@@ -260,6 +260,7 @@ public:
         FLIGHTMODE_PAUSE =   178,  // e.g. pause movement towards waypoint
         ICE_START_STOP =     179, // AP_ICEngine start stop
         AUTOTUNE_TEST_GAINS = 180, // auto tune tuning switch to test or revert gains
+        QUICKTUNE =          181,  //quicktune 3 position switch
 
 
         // inputs from 200 will eventually used to replace RCMAP
@@ -293,9 +294,17 @@ public:
         SCRIPTING_6 =        305,
         SCRIPTING_7 =        306,
         SCRIPTING_8 =        307,
+        SCRIPTING_9 =        308,
+        SCRIPTING_10 =       309,
+        SCRIPTING_11 =       310,
+        SCRIPTING_12 =       311,
+        SCRIPTING_13 =       312,
+        SCRIPTING_14 =       313,
+        SCRIPTING_15 =       314,
+        SCRIPTING_16 =       315,
 
         // this must be higher than any aux function above
-        AUX_FUNCTION_MAX =   308,
+        AUX_FUNCTION_MAX =   316,
     };
 
     // auxiliary switch handling (n.b.: we store this as 2-bits!):
@@ -504,7 +513,6 @@ public:
 
     class RC_Channel *find_channel_for_option(const RC_Channel::AUX_FUNC option);
     bool duplicate_options_exist();
-    RC_Channel::AuxSwitchPos get_channel_pos(const uint8_t rcmapchan) const;
     void convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option);
 
     void init_aux_all();

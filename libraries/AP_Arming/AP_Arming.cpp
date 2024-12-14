@@ -175,7 +175,7 @@ extern AP_IOMCU iomcu;
 #endif
 
 #pragma GCC diagnostic push
-#if defined (__clang__)
+#if defined(__clang_major__) && __clang_major__ >= 14
 #pragma GCC diagnostic ignored "-Wbitwise-instead-of-logical"
 #endif
 
@@ -582,11 +582,11 @@ bool AP_Arming::compass_checks(bool report)
                              (double)MAX(fabsf(diff_mgauss.x), (double)fabsf(diff_mgauss.y)), (int)magfield_error_threshold);
                 return false;
             }
-            if (fabsf(diff_mgauss.x) > magfield_error_threshold*2.0) {
+            if (fabsf(diff_mgauss.z) > magfield_error_threshold*2.0) {
                 check_failed(ARMING_CHECK_COMPASS, report, "Check mag field (z diff:%.0f>%d)",
                              (double)fabsf(diff_mgauss.z), (int)magfield_error_threshold*2);
                 return false;
-            }           
+            }
         }
 #endif  // AP_AHRS_ENABLED
     }
@@ -1291,7 +1291,7 @@ bool AP_Arming::fence_checks(bool display_failure)
 }
 #endif  // AP_FENCE_ENABLED
 
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
 bool AP_Arming::camera_checks(bool display_failure)
 {
     if (check_enabled(ARMING_CHECK_CAMERA)) {
@@ -1309,7 +1309,7 @@ bool AP_Arming::camera_checks(bool display_failure)
     }
     return true;
 }
-#endif  // HAL_RUNCAM_ENABLED
+#endif  // AP_CAMERA_RUNCAM_ENABLED
 
 #if OSD_ENABLED
 bool AP_Arming::osd_checks(bool display_failure) const
@@ -1603,7 +1603,7 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if HAL_PROXIMITY_ENABLED
         &  proximity_checks(report)
 #endif
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
         &  camera_checks(report)
 #endif
 #if OSD_ENABLED

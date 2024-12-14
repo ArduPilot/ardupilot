@@ -48,6 +48,7 @@ define AP_WINCH_ENABLED 0
 define AP_CAMERA_BACKEND_DEFAULT_ENABLED 0
 define AP_CAMERA_RELAY_ENABLED AP_CAMERA_ENABLED
 define AP_CAMERA_SERVO_ENABLED AP_CAMERA_ENABLED
+define AP_CAMERA_RUNCAM_ENABLED AP_CAMERA_ENABLED
 
 # no SLCAN on these boards (use can-over-mavlink if required)
 define AP_CAN_SLCAN_ENABLED 0
@@ -102,7 +103,6 @@ define AP_LANDINGGEAR_ENABLED APM_BUILD_COPTER_OR_HELI
 # Plane-specific defines; these defines are only used in the Plane
 #  directory, but are seen across the entire codebase:
 define AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED 0
-define QAUTOTUNE_ENABLED 0
 
 # Copter-specific defines; these defines are only used in the Copter
 #  directory, but are seen across the entire codebase:

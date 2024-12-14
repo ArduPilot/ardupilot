@@ -22,7 +22,7 @@
 /*****************************************
 * Throttle slew limit
 *****************************************/
-void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
+void Plane::throttle_slew_limit()
 {
 #if HAL_QUADPLANE_ENABLED
     const bool do_throttle_slew = (control_mode->does_auto_throttle() || quadplane.in_assisted_flight() || quadplane.in_vtol_mode());
@@ -32,7 +32,9 @@ void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
 
     if (!do_throttle_slew) {
         // only do throttle slew limiting in modes where throttle control is automatic
-        SRV_Channels::set_slew_rate(func, 0.0, 100, G_Dt);
+        SRV_Channels::set_slew_rate(SRV_Channel::k_throttle,      0.0, 100, G_Dt);
+        SRV_Channels::set_slew_rate(SRV_Channel::k_throttleLeft,  0.0, 100, G_Dt);
+        SRV_Channels::set_slew_rate(SRV_Channel::k_throttleRight, 0.0, 100, G_Dt);
         return;
     }
 
@@ -55,7 +57,9 @@ void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
         slewrate = g.takeoff_throttle_slewrate;
     }
 #endif
-    SRV_Channels::set_slew_rate(func, slewrate, 100, G_Dt);
+    SRV_Channels::set_slew_rate(SRV_Channel::k_throttle,      slewrate, 100, G_Dt);
+    SRV_Channels::set_slew_rate(SRV_Channel::k_throttleLeft,  slewrate, 100, G_Dt);
+    SRV_Channels::set_slew_rate(SRV_Channel::k_throttleRight, slewrate, 100, G_Dt);
 }
 
 /* We want to suppress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
@@ -619,6 +623,11 @@ void Plane::set_throttle(void)
             // throttle is suppressed (above) to zero in final flare in auto mode, but we allow instead thr_min if user prefers, eg turbines:
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, aparm.throttle_min.get());
 
+        } else if ((flight_stage == AP_FixedWing::FlightStage::TAKEOFF)
+                    && (aparm.takeoff_throttle_idle.get() > 0)
+                  ) {
+            // we want to spin at idle throttle before the takeoff conditions are met
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, aparm.takeoff_throttle_idle.get());
         } else {
             // default
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
@@ -788,8 +797,6 @@ void Plane::servos_twin_engine_mix(void)
     } else {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_left);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right);
-        throttle_slew_limit(SRV_Channel::k_throttleLeft);
-        throttle_slew_limit(SRV_Channel::k_throttleRight);
     }
 }
 
@@ -853,8 +860,8 @@ void Plane::set_servos(void)
     // start with output corked. the cork is released when we run
     // servos_output(), which is run from all code paths in this
     // function
-    SRV_Channels::cork();
-    
+    AP::srv().cork();
+
     // this is to allow the failsafe module to deliberately crash 
     // the plane. Only used in extreme circumstances to meet the
     // OBC rules
@@ -908,7 +915,7 @@ void Plane::set_servos(void)
     airbrake_update();
 
     // slew rate limit throttle
-    throttle_slew_limit(SRV_Channel::k_throttle);
+    throttle_slew_limit();
 
     int8_t min_throttle = 0;
 #if AP_ICENGINE_ENABLED
@@ -1012,7 +1019,8 @@ void Plane::indicate_waiting_for_rud_neutral_to_takeoff(void)
  */
 void Plane::servos_output(void)
 {
-    SRV_Channels::cork();
+    auto &srv = AP::srv();
+    srv.cork();
 
     // support twin-engine aircraft
     servos_twin_engine_mix();
@@ -1050,7 +1058,7 @@ void Plane::servos_output(void)
 
     SRV_Channels::output_ch_all();
 
-    SRV_Channels::push();
+    srv.push();
 
     if (g2.servo_channels.auto_trim_enabled()) {
         servos_auto_trim();

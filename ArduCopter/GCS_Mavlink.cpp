@@ -505,10 +505,16 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
 #endif
     MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT, // MISSION_CURRENT
+#if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
     MSG_GPS_RAW,
+#endif
+#if AP_GPS_GPS_RTK_SENDING_ENABLED
     MSG_GPS_RTK,
-#if GPS_MAX_RECEIVERS > 1
+#endif
+#if AP_GPS_GPS2_RAW_SENDING_ENABLED
     MSG_GPS2_RAW,
+#endif
+#if AP_GPS_GPS2_RTK_SENDING_ENABLED
     MSG_GPS2_RTK,
 #endif
     MSG_NAV_CONTROLLER_OUTPUT,
@@ -583,7 +589,8 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
 #endif
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
-    MSG_NEXT_PARAM
+    MSG_NEXT_PARAM,
+    MSG_AVAILABLE_MODES
 };
 static const ap_message STREAM_ADSB_msgs[] = {
     MSG_ADSB_VEHICLE,
@@ -1519,7 +1526,7 @@ void GCS_MAVLINK_Copter::handle_message(const mavlink_message_t &msg)
 }
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_int_t &packet) {
-#if ADVANCED_FAILSAFE
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     if (GCS_MAVLINK::handle_flight_termination(packet) == MAV_RESULT_ACCEPTED) {
         return MAV_RESULT_ACCEPTED;
     }
@@ -1657,3 +1664,148 @@ uint8_t GCS_MAVLINK_Copter::high_latency_wind_direction() const
     return 0;
 }
 #endif // HAL_HIGH_LATENCY2_ENABLED
+
+// Send the mode with the given index (not mode number!) return the total number of modes
+// Index starts at 1
+uint8_t GCS_MAVLINK_Copter::send_available_mode(uint8_t index) const
+{
+    const Mode* modes[] {
+#if MODE_AUTO_ENABLED
+        &copter.mode_auto, // This auto is actually auto RTL!
+        &copter.mode_auto, // This one is really is auto!
+#endif
+#if MODE_ACRO_ENABLED
+        &copter.mode_acro,
+#endif
+        &copter.mode_stabilize,
+        &copter.mode_althold,
+#if MODE_CIRCLE_ENABLED
+        &copter.mode_circle,
+#endif
+#if MODE_LOITER_ENABLED
+        &copter.mode_loiter,
+#endif
+#if MODE_GUIDED_ENABLED
+        &copter.mode_guided,
+#endif
+        &copter.mode_land,
+#if MODE_RTL_ENABLED
+        &copter.mode_rtl,
+#endif
+#if MODE_DRIFT_ENABLED
+        &copter.mode_drift,
+#endif
+#if MODE_SPORT_ENABLED
+        &copter.mode_sport,
+#endif
+#if MODE_FLIP_ENABLED
+        &copter.mode_flip,
+#endif
+#if AUTOTUNE_ENABLED
+        &copter.mode_autotune,
+#endif
+#if MODE_POSHOLD_ENABLED
+        &copter.mode_poshold,
+#endif
+#if MODE_BRAKE_ENABLED
+        &copter.mode_brake,
+#endif
+#if MODE_THROW_ENABLED
+        &copter.mode_throw,
+#endif
+#if HAL_ADSB_ENABLED
+        &copter.mode_avoid_adsb,
+#endif
+#if MODE_GUIDED_NOGPS_ENABLED
+        &copter.mode_guided_nogps,
+#endif
+#if MODE_SMARTRTL_ENABLED
+        &copter.mode_smartrtl,
+#endif
+#if MODE_FLOWHOLD_ENABLED
+        (Mode*)copter.g2.mode_flowhold_ptr,
+#endif
+#if MODE_FOLLOW_ENABLED
+        &copter.mode_follow,
+#endif
+#if MODE_ZIGZAG_ENABLED
+        &copter.mode_zigzag,
+#endif
+#if MODE_SYSTEMID_ENABLED
+        (Mode *)copter.g2.mode_systemid_ptr,
+#endif
+#if MODE_AUTOROTATE_ENABLED
+        &copter.mode_autorotate,
+#endif
+#if MODE_TURTLE_ENABLED
+        &copter.mode_turtle,
+#endif
+    };
+
+    const uint8_t base_mode_count = ARRAY_SIZE(modes);
+    uint8_t mode_count = base_mode_count;
+
+#if AP_SCRIPTING_ENABLED
+    for (uint8_t i = 0; i < ARRAY_SIZE(copter.mode_guided_custom); i++) {
+        if (copter.mode_guided_custom[i] != nullptr) {
+            mode_count += 1;
+        }
+    }
+#endif
+
+    // Convert to zero indexed
+    const uint8_t index_zero = index - 1;
+    if (index_zero >= mode_count) {
+        // Mode does not exist!?
+        return mode_count;
+    }
+
+    // Ask the mode for its name and number
+    const char* name;
+    uint8_t mode_number;
+
+    if (index_zero < base_mode_count) {
+        name = modes[index_zero]->name();
+        mode_number = (uint8_t)modes[index_zero]->mode_number();
+
+    } else {
+#if AP_SCRIPTING_ENABLED
+        const uint8_t custom_index = index_zero - base_mode_count;
+        if (copter.mode_guided_custom[custom_index] == nullptr) {
+            // Invalid index, should not happen
+            return mode_count;
+        }
+        name = copter.mode_guided_custom[custom_index]->name();
+        mode_number = (uint8_t)copter.mode_guided_custom[custom_index]->mode_number();
+#else
+        // Should not endup here
+        return mode_count;
+#endif
+    }
+
+#if MODE_AUTO_ENABLED
+    // Auto RTL is odd
+    // Have to deal with is separately becase its number and name can change depending on if were in it or not
+    if (index_zero == 0) {
+        mode_number = (uint8_t)Mode::Number::AUTO_RTL;
+        name = "AUTO RTL";
+
+    } else if (index_zero == 1) {
+        mode_number = (uint8_t)Mode::Number::AUTO;
+        name = "AUTO";
+
+    }
+#endif
+
+    mavlink_msg_available_modes_send(
+        chan,
+        mode_count,
+        index,
+        MAV_STANDARD_MODE::MAV_STANDARD_MODE_NON_STANDARD,
+        mode_number,
+        0, // MAV_MODE_PROPERTY bitmask
+        name
+    );
+
+    return mode_count;
+}

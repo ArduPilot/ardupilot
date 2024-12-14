@@ -85,6 +85,26 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
     return false;
 }
 
+bool AP_DDS_External_Control::arm(AP_Arming::Method method, bool do_arming_checks)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return false;
+    }
+
+    return external_control->arm(method, do_arming_checks);
+}
+
+bool AP_DDS_External_Control::disarm(AP_Arming::Method method, bool do_disarm_checks)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return false;
+    }
+
+    return external_control->disarm(method, do_disarm_checks);
+}
+
 bool AP_DDS_External_Control::convert_alt_frame(const uint8_t frame_in,  Location::AltFrame& frame_out)
 {
 

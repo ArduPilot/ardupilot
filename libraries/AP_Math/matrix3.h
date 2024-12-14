@@ -219,14 +219,14 @@ public:
     bool invert() WARN_IF_UNUSED;
 
     // zero the matrix
-    void        zero(void);
+    void        zero(void) {
+        memset((void*)this, 0, sizeof(*this));
+    }
 
     // setup the identity matrix
     void        identity(void) {
+        zero();
         a.x = b.y = c.z = 1;
-        a.y = a.z = 0;
-        b.x = b.z = 0;
-        c.x = c.y = 0;
     }
 
     // check if any elements are NAN

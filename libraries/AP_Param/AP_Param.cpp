@@ -268,7 +268,12 @@ void AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
         if (size == 0) {
             FATAL("invalid type in %s", group_info[i].name);
         }
-        if (prefix_length + strlen(group_info[i].name) > 16) {
+        uint8_t param_name_length = prefix_length + strlen(group_info[i].name);
+        if (type == AP_PARAM_VECTOR3F) {
+            // need room for _X/_Y/_Z
+            param_name_length += 2;
+        }
+        if (param_name_length > 16) {
             FATAL("suffix is too long in %s", group_info[i].name);
         }
         (*total_size) += size + sizeof(struct Param_header);
@@ -1611,7 +1616,7 @@ void AP_Param::load_defaults_file_from_filesystem(const char *default_file, bool
 #endif
     } else {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        AP_HAL::panic("Failed to load defaults from %s\n", default_file);
+        AP_HAL::panic("Failed to load defaults from %s", default_file);
 #else
         printf("Failed to load defaults from %s\n", default_file);
 #endif

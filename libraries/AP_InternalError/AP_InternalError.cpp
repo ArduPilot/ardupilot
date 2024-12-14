@@ -127,7 +127,7 @@ void AP_stack_overflow(const char *thread_name)
     }
     hal.util->persistent_data.fault_type = 42; // magic value
     if (!hal.util->get_soft_armed()) {
-        AP_HAL::panic("stack overflow %s\n", thread_name);
+        AP_HAL::panic("stack overflow %s", thread_name);
     }
 }
 
@@ -137,7 +137,7 @@ void AP_memory_guard_error(uint32_t size)
     INTERNAL_ERROR(AP_InternalError::error_t::mem_guard);
     if (!hal.util->get_soft_armed()) {
         ::printf("memory guard error size=%u\n", unsigned(size));
-        AP_HAL::panic("memory guard size=%u\n", unsigned(size));
+        AP_HAL::panic("memory guard size=%u", unsigned(size));
     }
 }
 

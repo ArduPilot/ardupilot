@@ -6807,7 +6807,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Test jamming simulation works'''
         self.wait_ready_to_arm()
         start_loc = self.assert_receive_message('GPS_RAW_INT')
-        self.set_parameter("SIM_GPS_JAM", 1)
+        self.set_parameter("SIM_GPS1_JAM", 1)
 
         class Requirement():
             def __init__(self, field, min_value):
@@ -6876,6 +6876,75 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameter("BATT_MONITOR", 0)
         self.wait_ready_to_arm()
 
+    # this method modified from cmd_addpoly in the MAVProxy code:
+    def generate_polyfence(self, centre_loc, command, radius, count, rotation=0):
+        '''adds a number of waypoints equally spaced around a circle
+
+        '''
+        if count < 3:
+            raise ValueError("Invalid count (%s)" % str(count))
+        if radius <= 0:
+            raise ValueError("Invalid radius (%s)" % str(radius))
+
+        latlon = (centre_loc.lat, centre_loc.lng)
+
+        items = []
+        for i in range(0, count):
+            (lat, lon) = mavextra.gps_newpos(latlon[0],
+                                             latlon[1],
+                                             360/float(count)*i + rotation,
+                                             radius)
+
+            m = mavutil.mavlink.MAVLink_mission_item_int_message(
+                1,  # target system
+                1,  # target component
+                0,    # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL,    # frame
+                command,    # command
+                0,    # current
+                0,    # autocontinue
+                count, # param1,
+                0.0,  # param2,
+                0.0,  # param3
+                0.0,  # param4
+                int(lat*1e7),  # x (latitude)
+                int(lon*1e7),  # y (longitude)
+                0,                     # z (altitude)
+                mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+            )
+            items.append(m)
+
+        return items
+
+    def SDPolyFence(self):
+        '''test storage of fence on SD card'''
+        self.set_parameters({
+            'BRD_SD_FENCE': 32767,
+        })
+        self.reboot_sitl()
+
+        home = self.home_position_as_mav_location()
+        fence = self.generate_polyfence(
+            home,
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+            radius=100,
+            count=100,
+        )
+
+        for bearing in range(0, 359, 60):
+            x = self.offset_location_heading_distance(home, bearing, 100)
+            fence.extend(self.generate_polyfence(
+                x,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
+                radius=100,
+                count=100,
+            ))
+
+        self.correct_wp_seq_numbers(fence)
+        self.check_fence_upload_download(fence)
+
+        self.delay_sim_time(1000)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6927,6 +6996,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.DataFlash,
             self.SkidSteer,
             self.PolyFence,
+            self.SDPolyFence,
             self.PolyFenceAvoidance,
             self.PolyFenceObjectAvoidanceAuto,
             self.PolyFenceObjectAvoidanceGuided,

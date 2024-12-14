@@ -40,5 +40,5 @@ public:
     virtual bool add_11bit_driver(CANSensor *sensor) { return false; }
 
     // handler for outgoing frames for auxillary drivers
-    virtual bool write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us) { return false; }
+    virtual bool write_aux_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us) { return false; }
 };

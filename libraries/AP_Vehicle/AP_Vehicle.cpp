@@ -3,6 +3,7 @@
 #if AP_VEHICLE_ENABLED
 
 #include "AP_Vehicle.h"
+#include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Common/AP_FWVersion.h>
@@ -34,11 +35,8 @@ extern AP_IOMCU iomcu;
   2nd group of parameters
  */
 const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
-#if HAL_RUNCAM_ENABLED
-    // @Group: CAM_RC_
-    // @Path: ../AP_Camera/AP_RunCam.cpp
-    AP_SUBGROUPINFO(runcam, "CAM_RC_", 1, AP_Vehicle, AP_RunCam),
-#endif
+
+    // 1: RunCam
 
 #if HAL_GYROFFT_ENABLED
     // @Group: FFT_
@@ -438,7 +436,7 @@ void AP_Vehicle::setup()
 
 
 #if AP_SRV_CHANNELS_ENABLED
-    SRV_Channels::init();
+    AP::srv().init();
 #endif
 
     // gyro FFT needs to be initialized really late
@@ -448,9 +446,6 @@ void AP_Vehicle::setup()
 #else
     gyro_fft.init(1000);
 #endif
-#endif
-#if HAL_RUNCAM_ENABLED
-    runcam.init();
 #endif
 #if HAL_HOTT_TELEM_ENABLED
     hott_telem.init();
@@ -614,14 +609,11 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_NMEA_OUTPUT_ENABLED
     SCHED_TASK_CLASS(AP_NMEA_Output, &vehicle.nmea,         update,                   50, 50, 180),
 #endif
-#if HAL_RUNCAM_ENABLED
-    SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50, 200),
-#endif
 #if HAL_GYROFFT_ENABLED
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50, 205),
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50, 210),
 #endif
-#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED && !AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
     SCHED_TASK(update_dynamic_notch_at_specified_rate,      LOOP_RATE,                    200, 215),
 #endif
 #if AP_VIDEOTX_ENABLED
@@ -633,6 +625,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20, 225),
 #if HAL_WITH_ESC_TELEM
     SCHED_TASK_CLASS(AP_ESC_Telem, &vehicle.esc_telem,      update,                  100,  50, 230),
+#endif
+#if AP_SERVO_TELEM_ENABLED
+    SCHED_TASK_CLASS(AP_Servo_Telem, &vehicle.servo_telem,  update,                   50,  50, 231),
 #endif
 #if HAL_GENERATOR_ENABLED
     SCHED_TASK_CLASS(AP_Generator, &vehicle.generator,      update,                   10,  50, 235),

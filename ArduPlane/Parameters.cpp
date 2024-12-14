@@ -60,7 +60,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Bitmask: 0:Roll,1:Pitch,2:Yaw,3:Steering,4:Landing
+    // @Bitmask: 0:Roll,1:Pitch,2:Yaw,3:Steering,4:Landing,5:AccZ
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
     // @Param: KFF_RDDRMIX
@@ -157,6 +157,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @Increment: 1
     // @User: Standard
     ASCALAR(takeoff_throttle_min,       "TKOFF_THR_MIN",    0),
+
+    // @Param: TKOFF_THR_IDLE
+    // @DisplayName: Takeoff idle throttle
+    // @Description: The idle throttle to hold after arming and before a takeoff. Applicable in TAKEOFF and AUTO modes.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    ASCALAR(takeoff_throttle_idle,       "TKOFF_THR_IDLE",    0),
 
     // @Param: TKOFF_OPTIONS
     // @DisplayName: Takeoff options
@@ -737,7 +746,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: RTL_AUTOLAND
     // @DisplayName: RTL auto land
     // @Description: Automatically begin landing sequence after arriving at RTL location. This requires the addition of a DO_LAND_START mission item, which acts as a marker for the start of a landing sequence. The closest landing sequence will be chosen to the current location. If this is set to 0 and there is a DO_LAND_START mission item then you will get an arming check failure. You can set to a value of 3 to avoid the arming check failure and use the DO_LAND_START for go-around without it changing RTL behaviour. For a value of 1 a rally point will be used instead of HOME if in range (see rally point documentation).
-    // @Values: 0:Disable,1:Fly HOME then land,2:Go directly to landing sequence, 3:OnlyForGoAround
+    // @Values: 0:Disable,1:Fly HOME then land via DO_LAND_START mission item, 2:Go directly to landing sequence via DO_LAND_START mission item, 3:OnlyForGoAround, 4:Go directly to landing sequence via DO_RETURN_PATH_START mission item
     // @User: Standard
     GSCALAR(rtl_autoland,         "RTL_AUTOLAND",   float(RtlAutoland::RTL_DISABLE)),
 
@@ -1029,6 +1038,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     PARAM_VEHICLE_INFO,
 
+#if AP_QUICKTUNE_ENABLED
+    // @Group: QWIK_
+    // @Path: ../libraries/AP_Quicktune/AP_Quicktune.cpp
+    GOBJECT(quicktune, "QWIK_",  AP_Quicktune),
+#endif
+    
     AP_VAREND
 };
 

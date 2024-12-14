@@ -5,7 +5,13 @@
 
 XOLDPWD=$PWD  # profile changes directory :-(
 
-. ~/.profile
+if [ -z "$GITHUB_ACTIONS" ] || [ "$GITHUB_ACTIONS" != "true" ]; then
+  . ~/.profile
+fi
+
+if [ "$CI" = "true" ]; then
+  export PIP_ROOT_USER_ACTION=ignore
+fi
 
 cd $XOLDPWD
 
@@ -40,7 +46,7 @@ function install_pymavlink() {
     if [ $pymavlink_installed -eq 0 ]; then
         echo "Installing pymavlink"
         git submodule update --init --recursive --depth 1
-        (cd modules/mavlink/pymavlink && python3 -m pip install --user .)
+        (cd modules/mavlink/pymavlink && python3 -m pip install --progress-bar off --cache-dir /tmp/pip-cache --user .)
         pymavlink_installed=1
     fi
 }
@@ -51,12 +57,12 @@ function install_mavproxy() {
         pushd /tmp
           git clone https://github.com/ardupilot/MAVProxy --depth 1
           pushd MAVProxy
-            python3 -m pip install --user --force .
+            python3 -m pip install --progress-bar off --cache-dir /tmp/pip-cache --user --force .
           popd
         popd
         mavproxy_installed=1
         # now uninstall the version of pymavlink pulled in by MAVProxy deps:
-        python -m pip uninstall -y pymavlink
+        python3 -m pip uninstall -y pymavlink --cache-dir /tmp/pip-cache
     fi
 }
 
@@ -241,6 +247,10 @@ for t in $CI_BUILD_TARGET; do
         $waf AP_Periph
         echo "Building FreeflyRTK peripheral fw"
         $waf configure --board FreeflyRTK
+        $waf clean
+        $waf AP_Periph
+        echo "Building CubeNode-ETH peripheral fw"
+        $waf configure --board CubeNode-ETH
         $waf clean
         $waf AP_Periph
         continue
@@ -454,7 +464,7 @@ for t in $CI_BUILD_TARGET; do
         echo "Building signed firmwares"
         sudo apt-get update
         sudo apt-get install -y python3-dev
-        python3 -m pip install pymonocypher==3.1.3.2
+        python3 -m pip install pymonocypher==3.1.3.2 --progress-bar off --cache-dir /tmp/pip-cache
         ./Tools/scripts/signing/generate_keys.py testkey
         $waf configure --board CubeOrange-ODID --signed-fw --private-key testkey_private_key.dat
         $waf copter
@@ -473,7 +483,11 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "astyle-cleanliness" ]; then
         echo "Checking AStyle code cleanliness"
+
         ./Tools/scripts/run_astyle.py --dry-run
+        if [ $? -ne 0 ]; then
+            echo The code failed astyle cleanliness checks. Please run ./Tools/scripts/run_astyle.py
+        fi
         continue
     fi
 
@@ -512,7 +526,14 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "param_parse" ]; then
         for v in Rover AntennaTracker ArduCopter ArduPlane ArduSub Blimp AP_Periph; do
-            python Tools/autotest/param_metadata/param_parse.py --vehicle $v
+            python3 Tools/autotest/param_metadata/param_parse.py --vehicle $v
+        done
+        continue
+    fi
+
+    if [ "$t" == "logger_metadata" ]; then
+        for v in Rover Tracker Copter Plane Sub Blimp; do
+            python3 Tools/autotest/logger_metadata/parse.py --vehicle $v
         done
         continue
     fi

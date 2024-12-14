@@ -116,7 +116,7 @@ XPlane::XPlane(const char *frame_str) :
 #endif
 
     if (!load_dref_map(XPLANE_JSON)) {
-        AP_HAL::panic("%s failed to load\n", XPLANE_JSON);
+        AP_HAL::panic("%s failed to load", XPLANE_JSON);
     }
 }
 
