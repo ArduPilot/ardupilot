@@ -4003,7 +4003,6 @@ function networking:get_netmask_active() end
 function networking:get_ip_active() end
 
 -- visual odometry object
---@class visual_odom
 visual_odom = {}
 
 -- visual odometry health
@@ -4013,3 +4012,58 @@ function visual_odom:healthy() end
 -- visual odometry quality as a percentage from 1 to 100 or 0 if unknown
 ---@return integer
 function visual_odom:quality() end
+
+
+-- servo telemetry class
+---@class servo_telem
+servo_telem = {}
+
+-- Get the type spesfic status flags for the given servo number
+---@param servo_index integer -- 0 indexed servo number
+---@return integer|nil -- status flags or nil if not available
+function servo_telem:get_status_flags(servo_index) end
+
+-- Get the pcb temprature for the given servo number
+---@param servo_index integer -- 0 indexed servo number
+---@return number|nil -- pcb temprature in degrees C or nil if not available
+function servo_telem:get_pcb_temperature(servo_index) end
+
+-- Get motor temprature for the given servo number
+---@param servo_index integer
+---@return number|nil -- motor temprature in degrees C or nil if not available
+function servo_telem:get_motor_temperature(servo_index) end
+
+-- Get the duty cycle for the given servo number
+---@param servo_index integer -- 0 indexed servo number
+---@return integer|nil -- duty cycle 0% to 100% or nil if not available
+function servo_telem:get_duty_cycle(servo_index) end
+
+-- Get the current for the given servo number
+---@param servo_index integer -- 0 indexed servo number
+---@return number|nil -- current in amps or nil if not available
+function servo_telem:get_current(servo_index) end
+
+-- Get the voltage for the given servo number
+---@param servo_index integer -- 0 indexed servo number
+---@return number|nil -- voltage in volts or nil if not available
+function servo_telem:get_voltage(servo_index) end
+
+-- Get the speed for the given servo number
+---@param servo_index integer -- 0 indexed servo number
+---@return number|nil -- speed in degrees per second or nil if not available
+function servo_telem:get_speed(servo_index) end
+
+-- Get the force for the given servo number
+---@param servo_index integer -- 0 indexed servo number
+---@return number|nil -- force in newton meters or nil if not available
+function servo_telem:get_force(servo_index) end
+
+-- Get the measured position for the given servo number
+---@param servo_index integer -- 0 indexed servo number
+---@return number|nil -- measured position in degrees or nil if not available
+function servo_telem:get_measured_position(servo_index) end
+
+-- Get the commanded position for the given servo number
+---@param servo_index integer -- 0 indexed servo number
+---@return number|nil -- comanded position in degrees or nil if not available
+function servo_telem:get_commanded_position(servo_index) end
