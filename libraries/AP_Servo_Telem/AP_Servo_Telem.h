@@ -70,7 +70,42 @@ public:
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(const uint8_t servo_index, const TelemetryData& new_data);
 
+    // Getters for telem values
+
+    // Return the commanded position servo position in degrees if available
+    bool get_commanded_position(const uint8_t servo_index, float &command_position) const;
+
+    // Return the measured Servo position in degrees if available
+    bool get_measured_position(const uint8_t servo_index, float &measured_position) const;
+
+    // Return the force in newton meters if available
+    bool get_force(const uint8_t servo_index, float &force) const;
+
+    // Return the speed in degrees per second if available
+    bool get_speed(const uint8_t servo_index, float &speed) const;
+
+    // Return the voltage in volts per second if available
+    bool get_voltage(const uint8_t servo_index, float &voltage) const;
+
+    // Return the current in amps per second if available
+    bool get_current(const uint8_t servo_index, float &current) const;
+
+    // Return the duty cycle 0% to 100% if available
+    bool get_duty_cycle(const uint8_t servo_index, uint8_t &duty_cycle) const;
+
+    // Return the motor temperature in degrees C if available
+    bool get_motor_temperature(const uint8_t servo_index, float &motor_temperature) const;
+
+    // Return the pcb temperature in degrees C if available
+    bool get_pcb_temperature(const uint8_t servo_index, float &pcb_temperature) const;
+
+    // Return type specific status flags if available
+    bool get_status_flags(const uint8_t servo_index, uint8_t &status_flags) const;
+
 private:
+
+    // Helper to check index and if data is available
+    bool data_available(const uint8_t servo_index, const TelemetryData::Types type) const;
 
     // Log telem of each servo
     void write_log();
