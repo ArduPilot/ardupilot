@@ -264,7 +264,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: RTL_RADIUS
     // @DisplayName: RTL loiter radius
-    // @Description: Defines the radius of the loiter circle when in RTL mode. If this is zero then WP_LOITER_RAD is used. If the radius is negative then a counter-clockwise is used. If positive then a clockwise loiter is used.
+    // @Description: Defines the radius of the loiter circle when in RTL mode. If this is zero then WP_LOITER_RAD is used. If the radius is negative then a counter-clockwise is used. If positive then a clockwise loiter is used. For quadplanes with Q_RTL_MODE set to 1 (Enabled), this value is used to set the minimum radius at which the plane will transition from fixed-wing to VTOL mode for landing.
     // @Units: m
     // @Range: -32767 32767
     // @Increment: 1
