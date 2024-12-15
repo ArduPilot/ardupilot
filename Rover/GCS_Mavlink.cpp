@@ -650,6 +650,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_WIND,
 #if AP_RANGEFINDER_ENABLED
     MSG_RANGEFINDER,
+    MSG_WATER_DEPTH,
 #endif
     MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,
