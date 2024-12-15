@@ -199,9 +199,14 @@ void GCS_MAVLINK_Rover::send_water_depth() const
 
     RangeFinder *rangefinder = RangeFinder::get_singleton();
 
-    if (rangefinder == nullptr || !rangefinder->has_orientation(ROTATION_PITCH_270)){
+    if (rangefinder == nullptr) {
         return;
-    } 
+    }
+
+    // depth can only be measured by a downward-facing rangefinder:
+    if (!rangefinder->has_orientation(ROTATION_PITCH_270)) {
+        return;
+    }
 
     // get position
     const AP_AHRS &ahrs = AP::ahrs();
