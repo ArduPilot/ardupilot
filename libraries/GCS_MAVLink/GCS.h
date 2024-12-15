@@ -403,7 +403,6 @@ public:
 #if AP_WINCH_ENABLED
     virtual void send_winch_status() const {};
 #endif
-    void send_water_depth() const;
     int8_t battery_remaining_pct(const uint8_t instance) const;
 
 #if HAL_HIGH_LATENCY2_ENABLED
