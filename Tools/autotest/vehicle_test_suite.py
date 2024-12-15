@@ -11069,6 +11069,17 @@ Also, ignores heartbeats not from our target system'''
             loc = self.change_alt_frame(loc, AltFrame.ABOVE_HOME)
         return loc.mav_frame(), loc.get_alt_m(loc.alt_frame)
 
+    def assert_home_position_at(self, lat, lng, alt):
+        '''assert home is at specified lat/lng/alt, deg/deg/metres'''
+        home = self.home_position_as_location()
+        if abs(home.lat - lat) > 1e-7:
+            raise NotAchievedException("Bad lat (want=%f got=%f)" % (lat, home.lat))
+        if abs(home.lng - lng) > 1e-7:
+            raise NotAchievedException("Bad lng (want=%f got=%f)" % (lng, home.lng))
+        home_alt = home.get_alt_m(AltFrame.ABSOLUTE)
+        if abs(home_alt - alt) > 0.01:
+            raise NotAchievedException("Bad alt (want=%f got=%f)" % (alt, home_alt))
+
     def offset_location_ne(self, location: Location, metres_north, metres_east) -> Location:
         '''return a new Location offset from passed-in Location,
         preserving its altitude frame'''
