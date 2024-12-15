@@ -192,6 +192,11 @@ void GCS_MAVLINK_Rover::send_water_depth() const
         return;
     }
 
+    // only send for boats:
+    if (!rover.is_boat()) {
+        return;
+    }
+
     RangeFinder *rangefinder = RangeFinder::get_singleton();
 
     if (rangefinder == nullptr || !rangefinder->has_orientation(ROTATION_PITCH_270)){
