@@ -44,6 +44,9 @@ protected:
     // Index starts at 1
     uint8_t send_available_mode(uint8_t index) const override;
 
+    // send WATER_DEPTH - metres and temperature
+    void send_water_depth() const;
+
 private:
 
     void handle_message(const mavlink_message_t &msg) override;
