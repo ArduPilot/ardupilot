@@ -1,6 +1,8 @@
-#include "SIM_Temperature_TSYS01.h"
+#include "SIM_config.h"
 
 #if AP_SIM_TEMPERATURE_TSYS01_ENABLED
+
+#include "SIM_Temperature_TSYS01.h"
 
 #include <stdio.h>
 

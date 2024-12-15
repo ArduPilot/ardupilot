@@ -1,6 +1,8 @@
-#include "SIM_Temperature_MCP9600.h"
+#include "SIM_config.h"
 
 #if AP_SIM_TEMPERATURE_MCP9600_ENABLED
+
+#include "SIM_Temperature_MCP9600.h"
 
 using namespace SITL;
 

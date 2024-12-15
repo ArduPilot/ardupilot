@@ -1,6 +1,8 @@
-#include "SIM_MS5525.h"
+#include "SIM_config.h"
 
 #if AP_SIM_MS5525_ENABLED
+
+#include "SIM_MS5525.h"
 
 #include <SITL/SITL.h>
 

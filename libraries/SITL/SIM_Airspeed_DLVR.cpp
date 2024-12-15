@@ -1,6 +1,8 @@
-#include "SIM_Airspeed_DLVR.h"
+#include "SIM_config.h"
 
 #if AP_SIM_AIRSPEED_DLVR_ENABLED
+
+#include "SIM_Airspeed_DLVR.h"
 
 #include "SITL.h"
 

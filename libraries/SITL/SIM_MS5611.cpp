@@ -1,6 +1,8 @@
-#include "SIM_MS5611.h"
+#include "SIM_config.h"
 
 #if AP_SIM_MS5611_ENABLED
+
+#include "SIM_MS5611.h"
 
 #include <SITL/SITL.h>
 
