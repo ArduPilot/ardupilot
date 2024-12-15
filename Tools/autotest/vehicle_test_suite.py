@@ -9611,6 +9611,16 @@ Also, ignores heartbeats not from our target system'''
         m = self.poll_home_position()
         return mavutil.location(m.latitude*1.0e-7, m.longitude*1.0e-7, m.altitude*1.0e-3, 0)
 
+    def assert_home_position_at(self, lat, lng, alt):
+        '''assert home is at specified lat/lng/alt, deg/deg/metres'''
+        home = self.home_position_as_mav_location()
+        if home.lat != lat:
+            raise NotAchievedException("Bad lat")
+        if home.lng != lng:
+            raise NotAchievedException("Bad lng")
+        if home.alt != alt:
+            raise NotAchievedException("Bad alt")
+
     def offset_location_ne(self, location, metres_north, metres_east):
         '''return a new location offset from passed-in location'''
         (target_lat, target_lng) = mavextra.gps_offset(location.lat,
