@@ -40,6 +40,9 @@ protected:
     uint32_t log_radio_bit() const override { return MASK_LOG_PM; }
 #endif
 
+    // send WATER_DEPTH - metres and temperature
+    void send_water_depth() const;
+
 private:
 
     void handle_message(const mavlink_message_t &msg) override;
