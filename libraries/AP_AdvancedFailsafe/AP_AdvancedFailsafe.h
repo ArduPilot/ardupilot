@@ -58,7 +58,7 @@ public:
         {
             AP_Param::setup_object_defaults(this, var_info);
             if (_singleton != nullptr) {
-                AP_HAL::panic("AP_Logger must be singleton");
+                AP_HAL::panic("AP_AdvancedFailsafe must be singleton");
             }
 
             _singleton = this;
