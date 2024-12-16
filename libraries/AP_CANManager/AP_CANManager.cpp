@@ -247,19 +247,8 @@ void AP_CANManager::init()
         if (_drivers[drv_num] == nullptr) {
             continue;
         }
-        bool enable_filter = false;
-        for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
-            if (_interfaces[i]._driver_number == (drv_num+1) &&
-                hal_mutable.can[i] != nullptr &&
-                hal_mutable.can[i]->get_operating_mode() == AP_HAL::CANIface::FilteredMode) {
-                // Don't worry we don't enable Filters for Normal Ifaces under the driver
-                // this is just to ensure we enable them for the ones we already decided on
-                enable_filter = true;
-                break;
-            }
-        }
 
-        _drivers[drv_num]->init(drv_num, enable_filter);
+        _drivers[drv_num]->init(drv_num, false);
     }
 
 #if AP_CAN_LOGGING_ENABLED
