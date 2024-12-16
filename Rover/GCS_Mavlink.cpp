@@ -185,6 +185,73 @@ void GCS_MAVLINK_Rover::send_rangefinder() const
         distance,
         voltage);
 }
+
+void GCS_MAVLINK_Rover::send_water_depth()
+{
+    if (!HAVE_PAYLOAD_SPACE(chan, WATER_DEPTH)) {
+        return;
+    }
+
+    // only send for boats:
+    if (!rover.is_boat()) {
+        return;
+    }
+
+    RangeFinder *rangefinder = RangeFinder::get_singleton();
+
+    if (rangefinder == nullptr) {
+        return;
+    }
+
+    // depth can only be measured by a downward-facing rangefinder:
+    if (!rangefinder->has_orientation(ROTATION_PITCH_270)) {
+        return;
+    }
+
+    // get position
+    const AP_AHRS &ahrs = AP::ahrs();
+    Location loc;
+    IGNORE_RETURN(ahrs.get_location(loc));
+
+    const auto num_sensors = rangefinder->num_sensors();
+    for (uint8_t i=0; i<num_sensors; i++) {
+        last_WATER_DEPTH_index += 1;
+        if (last_WATER_DEPTH_index >= num_sensors) {
+            last_WATER_DEPTH_index = 0;
+        }
+
+        const AP_RangeFinder_Backend *s = rangefinder->get_backend(last_WATER_DEPTH_index);
+
+        if (s == nullptr || s->orientation() != ROTATION_PITCH_270 || !s->has_data()) {
+            continue;
+        }
+
+        // get temperature
+        float temp_C;
+        if (!s->get_temp(temp_C)) {
+            temp_C = 0.0f;
+        }
+
+        const bool sensor_healthy = (s->status() == RangeFinder::Status::Good);
+
+        mavlink_msg_water_depth_send(
+            chan,
+            AP_HAL::millis(),   // time since system boot TODO: take time of measurement
+            last_WATER_DEPTH_index, // rangefinder instance
+            sensor_healthy,     // sensor healthy
+            loc.lat,            // latitude of vehicle
+            loc.lng,            // longitude of vehicle
+            loc.alt * 0.01f,    // altitude of vehicle (MSL)
+            ahrs.get_roll(),    // roll in radians
+            ahrs.get_pitch(),   // pitch in radians
+            ahrs.get_yaw(),     // yaw in radians
+            s->distance(),    // distance in meters
+            temp_C);            // temperature in degC
+
+        break;  // only send one WATER_DEPTH message per loop
+    }
+
+}
 #endif  // AP_RANGEFINDER_ENABLED
 
 /*
