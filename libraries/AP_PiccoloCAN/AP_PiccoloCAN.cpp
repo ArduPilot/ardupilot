@@ -149,7 +149,7 @@ bool AP_PiccoloCAN::add_interface(AP_HAL::CANIface* can_iface) {
 }
 
 // initialize PiccoloCAN bus
-void AP_PiccoloCAN::init(uint8_t driver_index, bool enable_filters)
+void AP_PiccoloCAN::init(uint8_t driver_index)
 {
     _driver_index = driver_index;
 
