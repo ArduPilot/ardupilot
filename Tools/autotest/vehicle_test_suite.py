@@ -1715,8 +1715,8 @@ class FRSkySPort(FRSky):
             if not self.connect():
                 self.progress("Failed to connect")
                 return
-        self.check_poll()
         self.do_sport_read()
+        self.check_poll()
 
     def do_sport_read(self):
         self.buffer += self.do_read()
