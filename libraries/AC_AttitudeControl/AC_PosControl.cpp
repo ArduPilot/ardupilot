@@ -1208,6 +1208,28 @@ bool AC_PosControl::get_posvelaccel_offset(Vector3f &pos_offset_NED, Vector3f &v
     accel_offset_NED.z = -_accel_offset_target.z * 0.01;
     return true;
 }
+
+// get target velocity in m/s in NED frame
+bool AC_PosControl::get_vel_target(Vector3f &vel_target_NED)
+{
+    if (!is_active_xy() || !is_active_z()) {
+        return false;
+    }
+    vel_target_NED.xy() = _vel_target.xy() * 0.01;
+    vel_target_NED.z = -_vel_target.z * 0.01;
+    return true;
+}
+
+// get target acceleration in m/s/s in NED frame
+bool AC_PosControl::get_accel_target(Vector3f &accel_target_NED)
+{
+    if (!is_active_xy() || !is_active_z()) {
+        return false;
+    }
+    accel_target_NED.xy() = _accel_target.xy() * 0.01;
+    accel_target_NED.z = -_accel_target.z * 0.01;
+    return true;
+}
 #endif
 
 /// set the horizontal position, velocity and acceleration offset targets in cm, cms and cm/s/s from EKF origin in NE frame
