@@ -289,6 +289,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_WINCH_PWM_ENABLED')
             feature_define_whitelist.add(r'AP_MOTORS_FRAME_.*_ENABLED')
             feature_define_whitelist.add('AP_COPTER_ADVANCED_FAILSAFE_ENABLED')
+            feature_define_whitelist.add('AP_COPTER_AHRS_AUTO_TRIM_ENABLED')
 
         if target.lower() != "plane":
             # only on Plane:
