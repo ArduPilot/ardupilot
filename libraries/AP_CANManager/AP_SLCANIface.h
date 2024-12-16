@@ -96,7 +96,7 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    bool init(const uint32_t bitrate, const OperatingMode mode) override
+    bool init(const uint32_t bitrate) override
     {
         return false;
     }
