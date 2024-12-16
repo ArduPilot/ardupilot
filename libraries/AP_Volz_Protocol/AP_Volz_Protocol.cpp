@@ -69,6 +69,9 @@ void AP_Volz_Protocol::init(void)
         return;
     }
 
+    // update baud param in case user looks at it
+    serial_manager.set_default_baud(AP_SerialManager::SerialProtocol_Volz, 0, baudrate);
+
     // Create thread to handle output
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Volz_Protocol::loop, void),
                                           "Volz",

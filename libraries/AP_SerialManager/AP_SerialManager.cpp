@@ -484,13 +484,6 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_GPS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_GPS_BUFSIZE_TX);
                     break;
-                case SerialProtocol_AlexMos:
-                    // Note baudrate is hardcoded to 115200
-                    state[i].baud.set_and_default(AP_SERIALMANAGER_ALEXMOS_BAUD / 1000);   // update baud param in case user looks at it
-                    uart->begin(AP_SERIALMANAGER_ALEXMOS_BAUD,
-                                         AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX,
-                                         AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX);
-                    break;
                 case SerialProtocol_Gimbal:
                     // Note baudrate is hardcoded to 115200
                     state[i].baud.set_and_default(AP_SERIALMANAGER_GIMBAL_BAUD / 1000);     // update baud param in case user looks at it
@@ -501,33 +494,10 @@ void AP_SerialManager::init()
                 case SerialProtocol_Aerotenna_USD1:
                     state[i].protocol.set_and_save(SerialProtocol_Rangefinder);
                     break;
-                case SerialProtocol_Volz:
-                    // Note baudrate is hardcoded to 115200
-                    state[i].baud.set_and_default(AP_SERIALMANAGER_VOLZ_BAUD);   // update baud param in case user looks at it
-                    break;
-                case SerialProtocol_Sbus1:
-                    state[i].baud.set_and_default(AP_SERIALMANAGER_SBUS1_BAUD / 1000);   // update baud param in case user looks at it
-                    uart->begin(state[i].baudrate(),
-                                         AP_SERIALMANAGER_SBUS1_BUFSIZE_RX,
-                                         AP_SERIALMANAGER_SBUS1_BUFSIZE_TX);
-                    uart->configure_parity(2);    // enable even parity
-                    uart->set_stop_bits(2);
-                    uart->set_unbuffered_writes(true);
-                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-                    break;
-
                 case SerialProtocol_ESCTelemetry:
                     // ESC telemetry protocol from BLHeli32 ESCs. Note that baudrate is hardcoded to 115200
                     state[i].baud.set_and_default(115200 / 1000);
                     uart->begin(state[i].baudrate(), 30, 30);
-                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-                    break;
-
-                case SerialProtocol_Robotis:
-                    uart->begin(state[i].baudrate(),
-                                         AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX,
-                                         AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX);
-                    uart->set_unbuffered_writes(true);
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
@@ -674,6 +644,15 @@ uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol, uint8_t i
         return 0;
     }
     return _state->baudrate();
+}
+
+void AP_SerialManager::set_default_baud(enum SerialProtocol protocol, uint8_t instance, uint32_t _baud)
+{
+    const struct UARTState *_state = find_protocol_instance(protocol, instance);
+    if (_state == nullptr) {
+        return;
+    }
+    state->baud.set_and_default(_baud);
 }
 
 // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
