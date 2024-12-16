@@ -923,11 +923,14 @@ bool CANIface::init(const uint32_t bitrate, const CANIface::OperatingMode mode)
      */
     can_->MCR = bxcan::MCR_ABOM | bxcan::MCR_AWUM | bxcan::MCR_INRQ;  // RM page 648
 
+    if (mode != NormalMode) {
+        AP_HAL::panic("bad mode");
+    }
+
     can_->BTR = ((timings.sjw & 3U)  << 24) |
                 ((timings.bs1 & 15U) << 16) |
                 ((timings.bs2 & 7U)  << 20) |
-                (timings.prescaler & 1023U) |
-                ((mode == SilentMode) ? bxcan::BTR_SILM : 0);
+                (timings.prescaler & 1023U);
 
     can_->IER = bxcan::IER_TMEIE |   // TX mailbox empty
                 bxcan::IER_FMPIE0 |  // RX FIFO 0 is not empty
