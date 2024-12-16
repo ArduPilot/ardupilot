@@ -62,12 +62,14 @@ void Copter::update_throttle_hover()
 
 // get_pilot_desired_climb_rate - transform pilot's throttle input to climb rate in cm/s
 // without any deadzone at the bottom
-float Copter::get_pilot_desired_climb_rate(float throttle_control)
+float Copter::get_pilot_desired_climb_rate()
 {
     // throttle failsafe check
     if (failsafe.radio || !rc().has_ever_seen_rc_input()) {
         return 0.0f;
     }
+
+    float throttle_control = copter.channel_throttle->get_control_in();
 
 #if TOY_MODE_ENABLED
     if (g2.toy_mode.enabled()) {

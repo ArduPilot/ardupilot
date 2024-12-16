@@ -65,7 +65,7 @@ void ModeSport::run()
     float target_yaw_rate = get_pilot_desired_yaw_rate();
 
     // get pilot desired climb rate
-    float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    float target_climb_rate = get_pilot_desired_climb_rate();
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // Sport State Machine Determination
