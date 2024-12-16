@@ -117,7 +117,6 @@ public:
         PassThroughMode,
         NormalMode,
         SilentMode,
-        FilteredMode
     };
 
     OperatingMode get_operating_mode() { return mode_; }
@@ -158,16 +157,6 @@ public:
         }
     };
 
-    struct CanFilterConfig {
-        uint32_t id = 0;
-        uint32_t mask = 0;
-
-        bool operator==(const CanFilterConfig& rhs) const
-        {
-            return rhs.id == id && rhs.mask == mask;
-        }
-    };
-
     virtual bool init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode) {
         return init(bitrate, mode);
     }
@@ -200,19 +189,6 @@ public:
     // 0 if no frame available, 1 if successful
     // must be called on child class
     virtual int16_t receive(CANFrame& out_frame, uint64_t& out_ts_monotonic, CanIOFlags& out_flags);
-
-    //Configure filters so as to reject frames that are not going to be handled by us
-    virtual bool configureFilters(const CanFilterConfig* filter_configs, uint16_t num_configs)
-    {
-        return 0;
-    }
-
-    
-    //Number of available hardware filters.
-    virtual uint16_t getNumFilters() const
-    {
-        return 0;
-    }
 
     //Return Total Error Count generated so far
     virtual uint32_t getErrorCount() const
