@@ -1309,7 +1309,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RNGFND_LND_ORNT", 36, ParametersG2, rangefinder_land_orient, ROTATION_PITCH_270),
 #endif
-    
+
+    // @Param: TERRAIN_LKA_CLMB
+    // @DisplayName: terrain lookahead climb pitch ratio
+    // @Description: The ratio of climb rate to use when doing a terrain lookahead so the plane is not constantly at 100% throttle. 100% is the maximum climb rate which should give maximum ground clearance, and 0% should give the minimum climb rate and the minimum ground clearance, the default is 50% to try to balance safety vs battery usage. User TERRAIN_LOOKAHD=0 to disable lookahead.
+    // @Range: 0 100
+    // @Units: %
+    // @User: Standard
+    AP_GROUPINFO("TERRAIN_LKA_CLMB", 37, ParametersG2, terrain_lookahead_pitch_climb_rate, 50),
+
     AP_GROUPEND
 };
 
