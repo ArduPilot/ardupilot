@@ -605,7 +605,7 @@ float Plane::lookahead_adjustment(void)
     // we need to know the climb ratio. We use 50% of the maximum
     // climb rate so we are not constantly at 100% throttle and to
     // give a bit more margin on terrain
-    float climb_ratio = 0.5f * TECS_controller.get_max_climbrate() / groundspeed;
+    float climb_ratio = g2.pitch_lookahead_climb_ratio * TECS_controller.get_max_climbrate() / groundspeed;
 
     if (climb_ratio <= 0) {
         // lookahead makes no sense for negative climb rates
