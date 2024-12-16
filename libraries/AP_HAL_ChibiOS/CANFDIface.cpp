@@ -463,9 +463,9 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
 }
 
 bool CANIface::clock_init_ = false;
-bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode)
+bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate)
 {
-    Debug("Bitrate %lu mode %d", static_cast<unsigned long>(bitrate), static_cast<int>(mode));
+    Debug("Bitrate %lu", static_cast<unsigned long>(bitrate));
     if (self_index_ > HAL_NUM_CAN_IFACES) {
         Debug("CAN drv init failed");
         return false;
@@ -478,7 +478,6 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const Oper
     }
 
     bitrate_ = bitrate;
-    mode_ = mode;
     //Only do it once
     //Doing it second time will reset the previously initialised bus
     if (!clock_init_) {
@@ -634,10 +633,6 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const Oper
 #if HAL_CANFD_SUPPORTED
     can_->CCCR |= FDCAN_CCCR_FDOE | FDCAN_CCCR_BRSE; // enable sending CAN FD frames, and Bitrate switching
 #endif
-
-    if (mode != NormalMode) {
-        AP_HAL::panic("bad mode");
-    }
 
     // finish initialisation here without filters
     can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode

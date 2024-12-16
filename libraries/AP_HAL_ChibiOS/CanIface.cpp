@@ -762,9 +762,9 @@ void CANIface::initOnce(bool enable_irq)
     }
 }
 
-bool CANIface::init(const uint32_t bitrate, const CANIface::OperatingMode mode)
+bool CANIface::init(const uint32_t bitrate)
 {
-    Debug("Bitrate %lu mode %d", static_cast<unsigned long>(bitrate), static_cast<int>(mode));
+    Debug("Bitrate %lu", static_cast<unsigned long>(bitrate));
     if (self_index_ > HAL_NUM_CAN_IFACES) {
         Debug("CAN drv init failed");
         return false;
@@ -777,7 +777,6 @@ bool CANIface::init(const uint32_t bitrate, const CANIface::OperatingMode mode)
     }
 
     bitrate_ = bitrate;
-    mode_ = mode;
 
     if (can_ifaces[0] == nullptr) {
         can_ifaces[0] = NEW_NOTHROW CANIface(0);
@@ -791,7 +790,7 @@ bool CANIface::init(const uint32_t bitrate, const CANIface::OperatingMode mode)
         Debug("Enabling CAN iface 0");
         can_ifaces[0]->initOnce(false);
         Debug("Initing iface 0...");
-        if (!can_ifaces[0]->init(bitrate, mode)) {
+        if (!can_ifaces[0]->init(bitrate)) {
             Debug("Iface 0 init failed");
             return false;
         }
@@ -842,10 +841,6 @@ bool CANIface::init(const uint32_t bitrate, const CANIface::OperatingMode mode)
      * Hardware initialization (the hardware has already confirmed initialization mode, see above)
      */
     can_->MCR = bxcan::MCR_ABOM | bxcan::MCR_AWUM | bxcan::MCR_INRQ;  // RM page 648
-
-    if (mode != NormalMode) {
-        AP_HAL::panic("bad mode");
-    }
 
     can_->BTR = ((timings.sjw & 3U)  << 24) |
                 ((timings.bs1 & 15U) << 16) |
