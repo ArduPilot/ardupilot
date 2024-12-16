@@ -94,8 +94,8 @@ https://arkelectron.com/product/ark-fpv-flight-controller/
 | Pin | Signal Name | Voltage      |
 |-----|-------------|--------------|
 | 1   | 12.0V       | 12.0V        |
-| 2   | VBAT IN/OUT | 5.5V-54V     |
-| 3   | GND         | GND          |
+| 2   | GND         | GND          |
+| 3   | VBAT IN/OUT | 5.5V-54V     |
 
 #### CAN - 4 Pin JST-GH
 | Pin | Signal Name | Voltage |
