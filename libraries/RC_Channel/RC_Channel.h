@@ -261,7 +261,7 @@ public:
         ICE_START_STOP =     179, // AP_ICEngine start stop
         AUTOTUNE_TEST_GAINS = 180, // auto tune tuning switch to test or revert gains
         QUICKTUNE =          181,  //quicktune 3 position switch
-
+        AHRS_AUTO_TRIM =     182,  // in-flight trim Copter AHRS using manual levelling
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
