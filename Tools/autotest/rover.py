@@ -6121,7 +6121,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if not self.current_onboard_log_contains_message("DPTH"):
             raise NotAchievedException("Expected DPTH log message")
 
-        # self.context_pop()
+        self.progress("Ensuring we get WATER_DEPTH at 12Hz with 2 backends")
+        self.set_message_rate_hz('WATER_DEPTH', 12)
+        self.assert_message_rate_hz('WATER_DEPTH', 12)
 
     def EStopAtBoot(self):
         '''Ensure EStop prevents arming when asserted at boot time'''
