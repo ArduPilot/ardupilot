@@ -3785,6 +3785,14 @@ function poscontrol:set_posvelaccel_offset(pos_offset_NED, vel_offset_NED, accel
 ---@return Vector3f_ud|nil
 function poscontrol:get_posvelaccel_offset() end
 
+-- get position controller's target velocity in m/s in NED frame
+---@return Vector3f_ud|nil
+function poscontrol:get_vel_target() end
+
+-- get position controller's target acceleration in m/s/s in NED frame
+---@return Vector3f_ud|nil
+function poscontrol:get_accel_target() end
+
 -- desc
 AR_PosControl = {}
 
