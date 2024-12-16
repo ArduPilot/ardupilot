@@ -761,7 +761,8 @@ void RC_Channels_Copter::auto_trim_run()
         }
 
         // only trim in certain modes:
-        if (copter.flightmode != &copter.mode_stabilize) {
+        if (copter.flightmode != &copter.mode_stabilize &&
+            copter.flightmode != &copter.mode_althold) {
             auto_trim_cancel();
             return;
         }
