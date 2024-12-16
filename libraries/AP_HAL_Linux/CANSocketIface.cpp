@@ -414,7 +414,7 @@ void CANIface::_updateDownStatusFromPollResult(const pollfd& pfd)
     }
 }
 
-bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
+bool CANIface::init(const uint32_t bitrate)
 {
     char iface_name[16];
 #if HAL_LINUX_USE_VIRTUAL_CAN
@@ -426,7 +426,6 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
         return _initialized;
     }
     bitrate_ = bitrate;
-    mode_ = mode;
     // TODO: Add possibility change bitrate
     _fd = _openSocket(iface_name);
     Debug("Socket opened iface_name: %s fd: %d", iface_name, _fd);

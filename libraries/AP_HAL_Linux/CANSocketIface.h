@@ -64,7 +64,7 @@ public:
     ~CANIface() { }
 
     // Initialise CAN Peripheral
-    bool init(const uint32_t bitrate, const OperatingMode mode) override;
+    bool init(const uint32_t bitrate) override;
 
     // Put frame into Tx FIFO returns negative on error, 0 on buffer full, 
     // 1 on successfully pushing a frame into FIFO
