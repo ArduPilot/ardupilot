@@ -1021,9 +1021,9 @@ float Mode::get_pilot_desired_yaw_rate() const
 // pass-through functions to reduce code churn on conversion;
 // these are candidates for moving into the Mode base
 // class.
-float Mode::get_pilot_desired_climb_rate(float throttle_control)
+float Mode::get_pilot_desired_climb_rate()
 {
-    return copter.get_pilot_desired_climb_rate(throttle_control);
+    return copter.get_pilot_desired_climb_rate();
 }
 
 float Mode::get_non_takeoff_throttle()
