@@ -219,9 +219,6 @@ private:
     AP_Float _pitch_ff_k;
     AP_Float _accel_gf;
 
-    // temporary _pitch_max_limit. Cleared on each loop. Clear when >= 90
-    int8_t _pitch_max_limit = 90;
-    
     // current height estimate (above field elevation)
     float _height;
 

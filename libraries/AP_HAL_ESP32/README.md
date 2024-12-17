@@ -20,7 +20,6 @@ Tools/environment_install/install-prereqs-arch.sh
 # from: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-setup.html
 sudo apt-get install git wget flex bison gperf cmake ninja-build ccache libffi-dev libssl-dev dfu-util
 sudo apt-get install python3 python3-pip python3-setuptools
-sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
 
 #or
 sudo pacman -S --needed gcc git make flex bison gperf python-pip cmake ninja ccache dfu-util libusb

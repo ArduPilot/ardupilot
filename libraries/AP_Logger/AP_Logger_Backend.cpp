@@ -403,7 +403,7 @@ void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
         } else {
             strncpy(name, "?NM?", ARRAY_SIZE(name));
         }
-        AP_HAL::panic("Size mismatch for %u (%s) (expected=%u got=%u)\n",
+        AP_HAL::panic("Size mismatch for %u (%s) (expected=%u got=%u)",
                       type, name, type_len, size);
     }
 }
