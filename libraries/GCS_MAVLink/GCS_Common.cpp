@@ -7098,8 +7098,20 @@ bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const MAV_FRAME
 
 uint64_t GCS_MAVLINK::capabilities() const
 {
+    /**
+     * Basic capabilities, changed December 2024
+     * - Param float (FIXME: deprecated since 2022)
+     * - Compass calibration (already there, not checked)
+     * - Mission Int (added, code is there)
+     * - Command Int (added, code is there)
+     * - Set Position Target Global Int (added, code is there, used for guided mode)
+     * - param encode c cast (TODO: should be added, code is there)
+     */
     uint64_t ret = MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
-        MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION;
+        MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION |
+        MAV_PROTOCOL_CAPABILITY_MISSION_INT |
+        MAV_PROTOCOL_CAPABILITY_COMMAND_INT |
+        MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT;
 
     const auto mavlink_protocol = uartstate->get_protocol();
     if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 || mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL) {
