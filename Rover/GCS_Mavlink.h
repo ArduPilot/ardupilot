@@ -29,8 +29,6 @@ protected:
 
     void send_position_target_global_int() override;
 
-    bool persist_streamrates() const override { return true; }
-
     uint64_t capabilities() const override;
 
     void send_nav_controller_output() const override;
