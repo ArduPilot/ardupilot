@@ -13738,8 +13738,11 @@ switch value'''
 
     def FRSkySPort(self):
         '''Test FrSky SPort mode'''
-        self.set_parameter("SERIAL5_PROTOCOL", 4) # serial5 is FRSky sport
-        self.set_parameter("RPM1_TYPE", 10) # enable SITL RPM sensor
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 4, # serial5 is FRSky sport
+            "RPM1_TYPE": 10, # enable SITL RPM sensor
+            "GPS1_TYPE": 100,  # use simulated backend for consistent position
+        })
         port = self.spare_network_port()
         self.customise_SITL_commandline([
             "--serial5=tcp:%u" % port # serial5 spews to localhost port
