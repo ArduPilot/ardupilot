@@ -88,7 +88,6 @@ private:
 
     // Loop in thread to output to uart
     void loop();
-    uint8_t sent_count;
 
     void init(void);
 
@@ -119,6 +118,8 @@ private:
     // Reading of telem packets
     void read_telem();
     void process_response(const CMD &cmd);
+
+    uint8_t sent_count;
 
     struct {
         CMD_ID types[3] {
