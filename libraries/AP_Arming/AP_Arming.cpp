@@ -1647,6 +1647,31 @@ bool AP_Arming::pre_arm_checks(bool report)
 bool AP_Arming::arm_checks(AP_Arming::Method method)
 {
 #if AP_RC_CHANNEL_ENABLED
+    if (method == AP_Arming::Method::RUDDER) {
+        if (get_rudder_arming_type() == AP_Arming::RudderArming::IS_DISABLED) {
+            //parameter disallows rudder arming/disabling
+            return false;
+        }
+
+        // only permit arming if the vehicle isn't being commanded to
+        // move via RC input
+        const RCMapper * rcmap = AP::rcmap();
+        if (rcmap == nullptr) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            return false;
+        }
+        RC_Channel *c = rc().channel(rcmap->throttle() - 1);
+        if (c == nullptr) {
+            // vehicles will segfault well before we get here
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            return false;
+        }
+        if (c->get_control_in() != 0) {
+            check_failed(true, "Non-zero throttle");
+            return false;
+        }
+    }
+
     if (check_enabled(ARMING_CHECK_RC)) {
         if (!rc_arm_checks(method)) {
             return false;
@@ -1801,6 +1826,13 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
     if (!armed) { // already disarmed
         return false;
+    }
+    if (method == AP_Arming::Method::RUDDER) {
+        // option must be enabled:
+        if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Rudder disarm: disabled");
+            return false;
+        }
     }
     armed = false;
     _last_disarm_method = method;

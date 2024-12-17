@@ -634,6 +634,8 @@ public:
 
 protected:
 
+    bool seen_neutral_rudder() const { return have_seen_neutral_rudder; }
+
     void new_override_received() {
         has_new_overrides = true;
         _has_had_override = true;
@@ -676,6 +678,20 @@ private:
 
     RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number);
     RC_Channel dummy_rcchannel;
+
+    // time that rudder arming has been running
+    uint32_t rudder_arm_timer;
+    // true if we have seen a neutral rudder control input after
+    // arming via rudder-input:
+    bool have_seen_neutral_rudder;
+
+    // time that rudder arming has been running - for Copter's
+    // auto-trim behaviour
+    uint32_t rudder_10_second_timer;
+
+    // check for arm/disarm command based on rudder stick position:
+    void rudder_arm_disarm_check();
+    virtual void rudder_10_second_callback() { }
 };
 
 RC_Channels &rc();
