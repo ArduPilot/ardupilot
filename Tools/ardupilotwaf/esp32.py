@@ -49,12 +49,6 @@ def configure(cfg):
         env.IDF = cfg.srcnode.abspath()+"/modules/esp_idf"
     print("USING EXPRESSIF IDF:"+str(env.IDF))
 
-    try:
-        env.DEFAULT_PARAMETERS = os.environ['DEFAULT_PARAMETERS']
-    except:
-        env.DEFAULT_PARAMETERS = cfg.srcnode.abspath()+"/libraries/AP_HAL_ESP32/boards/defaults.parm"
-    print("USING DEFAULT_PARAMETERS:"+str(env.DEFAULT_PARAMETERS))
-
     #env.append_value('GIT_SUBMODULES', 'esp_idf')
 
 # delete the output sdkconfig file when the input defaults changes. we take the
@@ -133,81 +127,7 @@ def esp32_firmware(self):
 
     build.cmake_build_task.set_run_after(self.link_task)
 
-    # tool that can update the default params in a .bin or .apj
-    #self.default_params_task = self.create_task('set_default_parameters',
-    #                                          src='esp-idf_build/ardupilot.bin')
-    #self.default_params_task.set_run_after(self.generate_bin_task)
-
     # optional upload is last
     if self.bld.options.upload:
         flasher = esp_idf.build('flash')
         flasher.post()
-
-
-class set_default_parameters(Task.Task):
-    color='CYAN'
-    always_run = True
-    def keyword(self):
-        return "setting default params"
-    def run(self):
-
-        # TODO: disabled this task outright as apjtool appears to destroy checksums and/or the esp32 partition table
-        # TIP:  if u do try this, afterwards, be sure to 'rm -rf build/esp32buzz/idf-plane/*.bin' and re-run waf
-        return
-
-        # (752) esp_image: Checksum failed. Calculated 0xd3 read 0xa3
-        # (752) boot: OTA app partition slot 0 is not bootable
-        # (753) esp_image: image at 0x200000 has invalid magic byte
-        # (759) boot_comm: mismatch chip ID, expected 0, found 65535
-        # (766) boot_comm: can't run on lower chip revision, expected 1, found 255
-        # (773) esp_image: image at 0x200000 has invalid SPI mode 255
-        # (779) esp_image: image at 0x200000 has invalid SPI size 15
-        # (786) boot: OTA app partition slot 1 is not bootable
-        # (792) boot: No bootable app partitions in the partition table
-
-
-        # skip task if nothing to do.
-        if not self.env.DEFAULT_PARAMETERS:
-            return
-
-        default_parameters = self.env.get_flat('DEFAULT_PARAMETERS').replace("'", "")
-        #print("apj defaults file:"+str(default_parameters))
-
-        _bin = str(self.inputs[0])
-
-        # paranoia check  before and after apj_tool to see if file hash has changed...
-        cmd = "shasum -b {0}".format( _bin )
-        result = subprocess.check_output(cmd, shell=True)
-        prehash = str(result).split(' ')[0][2:]
-
-        cmd = "{1} {2} --set-file {3}".format(self.env.SRCROOT, self.env.APJ_TOOL, _bin, default_parameters )
-        print(cmd)
-        result = subprocess.check_output(cmd, shell=True)
-        if not isinstance(result, str):
-            result = result.decode()
-        for i in str(result).split('\n'):
-            print("\t"+i)
-
-        # paranoia check  before and after apj_tool to see if file hash has changed...
-        cmd = "shasum -b {0}".format( _bin )
-        result = subprocess.check_output(cmd, shell=True)
-        posthash = str(result).split(' ')[0][2:]
-
-        # display --show output, helpful.
-        cmd = "{1} {2} --show ".format(self.env.SRCROOT, self.env.APJ_TOOL, _bin )
-        print(cmd)
-        result = subprocess.check_output(cmd, shell=True)
-        if not isinstance(result, str):
-            result = result.decode()
-        for i in str(result).split('\n'):
-            print("\t"+i)
-
-        # were embedded params updated in .bin?
-        if prehash == posthash:
-            print("Embedded params in .bin unchanged (probably already up-to-date)")
-        else:
-            print("Embedded params in .bin UPDATED")
-
-
-
-
