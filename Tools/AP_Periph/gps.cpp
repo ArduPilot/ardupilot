@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if HAL_PERIPH_ENABLE_GPS
 
 /*
   GPS support
