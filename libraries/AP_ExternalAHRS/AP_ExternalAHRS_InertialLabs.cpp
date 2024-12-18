@@ -79,6 +79,14 @@ extern const AP_HAL::HAL &hal;
 #define ILABS_AIRDATA_AIRSPEED_FAIL               0x0200
 #define ILABS_AIRDATA_BELOW_THRESHOLD             0x0400
 
+namespace Command {
+
+const char START_UDD[] = "\xAA\x55\x00\x00\x07\x00\x95\x9C\x00";
+const char STOP[] = "\xAA\x55\x00\x00\x07\x00\xFE\x05\x01";
+const char ENABLE_GNSS[] = "\xAA\x55\x00\x00\x07\x00\x71\x78\x00";
+const char DISABLE_GNSS[] = "\xAA\x55\x00\x00\x07\x00\x72\x79\x00";
+
+} // namespace Command
 
 // constructor
 AP_ExternalAHRS_InertialLabs::AP_ExternalAHRS_InertialLabs(AP_ExternalAHRS *_frontend,
@@ -1118,6 +1126,32 @@ bool AP_ExternalAHRS_InertialLabs::get_variances(float &velVar, float &posVar, f
     hgtVar = state2.kf_pos_covariance.z * hgt_gate_scale;
     tasVar = 0;
     return true;
+}
+
+bool AP_ExternalAHRS_InertialLabs::write_bytes(const char *bytes, uint8_t len)
+{
+    return uart->write(reinterpret_cast<const uint8_t *>(bytes), len);
+}
+
+void AP_ExternalAHRS_InertialLabs::set_data_sending_state(bool enabled)
+{
+    if (enabled)
+    {
+        write_bytes(Command::START_UDD, sizeof(Command::START_UDD) - 1);
+        return;
+    }
+    write_bytes(Command::STOP, sizeof(Command::STOP) - 1);
+}
+
+void AP_ExternalAHRS_InertialLabs::set_gnss_state(bool enabled)
+{
+    if (enabled)
+    {
+        write_bytes(Command::ENABLE_GNSS, sizeof(Command::ENABLE_GNSS) - 1);
+        return;
+    }
+
+    write_bytes(Command::DISABLE_GNSS, sizeof(Command::DISABLE_GNSS) - 1);
 }
 
 #endif  // AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED

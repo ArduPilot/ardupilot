@@ -121,6 +121,9 @@ public:
     bool get_accel(Vector3f &accel);
     void send_status_report(class GCS_MAVLINK &link) const;
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
+    void set_data_sending_state(bool enabled);
+    void set_gnss_state(bool enabled);
+    bool write_bytes(const char *bytes, uint8_t len);
 
     // update backend
     void update();
@@ -166,11 +169,6 @@ public:
         float differential_pressure; // Pa
         float temperature; // degC
     } airspeed_data_message_t;
-
-    // set GNSS disable for auxillary function GPS_DISABLE
-    void set_gnss_disable(bool disable) {
-        gnss_is_disabled = disable;
-    }
 
 protected:
 

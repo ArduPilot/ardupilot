@@ -4878,6 +4878,39 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavl
 }
 #endif
 
+#if AP_AHRS_ENABLED
+MAV_RESULT GCS_MAVLINK::handle_AHRS_message(const mavlink_command_int_t &packet)
+{
+    switch (packet.command) {
+        case MAV_CMD_AHRS_START:
+        {
+            AP::ahrs().set_data_sending_state(/*enabled*/ true);
+            return MAV_RESULT_ACCEPTED;
+        }
+        case MAV_CMD_AHRS_STOP:
+        {
+            AP::ahrs().set_data_sending_state(/*enabled*/ false);
+            return MAV_RESULT_ACCEPTED;
+        }
+
+        case MAV_CMD_AHRS_ENABLE_GNSS:
+        {
+            AP::ahrs().set_gnss_state(/*enabled*/ true);
+            return MAV_RESULT_ACCEPTED;
+        }
+
+        case MAV_CMD_AHRS_DISABLE_GNSS:
+        {
+            AP::ahrs().set_gnss_state(/*enabled*/ false);
+            return MAV_RESULT_ACCEPTED;
+        }
+
+        default:
+            return MAV_RESULT_FAILED;
+    }
+}
+#endif
+
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_int_t &packet)
 {
     const MAV_MODE _base_mode = (MAV_MODE)packet.param1;
@@ -5638,6 +5671,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_REQUEST_MESSAGE:
         return handle_command_request_message(packet);
 
+#if AP_AHRS_ENABLED
+    case MAV_CMD_AHRS_START:
+    case MAV_CMD_AHRS_STOP:
+    case MAV_CMD_AHRS_ENABLE_GNSS:
+    case MAV_CMD_AHRS_DISABLE_GNSS:
+        return handle_AHRS_message(packet);
+#endif
     }
 
     return MAV_RESULT_UNSUPPORTED;

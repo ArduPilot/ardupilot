@@ -3629,6 +3629,30 @@ float AP_AHRS::get_air_density_ratio(void) const
     return 1.0 / sq(eas2tas);
 }
 
+void AP_AHRS::set_data_sending_state(bool enabled)
+{
+    switch (active_EKF_type()) {
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+        return external.set_data_sending_state(enabled);
+#endif
+    default:
+        break;
+    }
+}
+
+void AP_AHRS::set_gnss_state(bool enabled)
+{
+    switch (active_EKF_type()) {
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+        return external.set_gnss_state(enabled);
+#endif
+    default:
+        break;
+    }
+}
+
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;
 

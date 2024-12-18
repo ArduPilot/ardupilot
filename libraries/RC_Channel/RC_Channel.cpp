@@ -1579,7 +1579,7 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
     case AUX_FUNC::GPS_DISABLE:
         AP::gps().force_disable(ch_flag == AuxSwitchPos::HIGH);
 #if HAL_EXTERNAL_AHRS_ENABLED
-        AP::externalAHRS().set_gnss_disable(ch_flag == AuxSwitchPos::HIGH);
+        AP::externalAHRS().set_gnss_state(/*enabled*/ ch_flag != AuxSwitchPos::HIGH);
 #endif
         break;
 

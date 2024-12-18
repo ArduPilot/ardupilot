@@ -683,6 +683,10 @@ public:
     // get access to an EKFGSF_yaw estimator
     const EKFGSF_yaw *get_yaw_estimator(void) const;
 
+    // enable/disable sending data to autopilot
+    void set_data_sending_state(bool enabled);
+    void set_gnss_state(bool enabled);
+
 private:
 
     // roll/pitch/yaw euler angles, all in radians

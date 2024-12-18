@@ -220,6 +220,9 @@ private:
     void update_thread();
     bool check_uart();
     bool check_header(const ILabsHeader *h) const;
+    bool write_bytes(const char *bytes, uint8_t len) override;
+    void set_data_sending_state(bool enabled) override;
+    void set_gnss_state(bool enabled) override;
 
     // re-sync on header bytes
     void re_sync(void);
