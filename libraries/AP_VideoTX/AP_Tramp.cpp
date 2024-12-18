@@ -532,8 +532,11 @@ bool AP_Tramp::init(void)
         port->configure_parity(0);
         port->set_stop_bits(1);
         port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-        port->set_options((port->get_options() & ~AP_HAL::UARTDriver::OPTION_RXINV));
-
+        port->set_options((port->get_options() & ~AP_HAL::UARTDriver::OPTION_RXINV)
+                          | AP_HAL::UARTDriver::OPTION_HDPLEX
+                          | AP_HAL::UARTDriver::OPTION_PULLDOWN_TX
+                          | AP_HAL::UARTDriver::OPTION_PULLDOWN_RX
+                          );
         port->begin(AP_TRAMP_UART_BAUD, AP_TRAMP_UART_BUFSIZE_RX, AP_TRAMP_UART_BUFSIZE_TX);
         debug("port opened");
 
