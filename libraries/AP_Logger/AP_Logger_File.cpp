@@ -945,6 +945,7 @@ void AP_Logger_File::io_timer(void)
         return;
     }
 
+#if !AP_FILESYSTEM_LITTLEFS_ENABLED // too expensive on littlefs, rely on ENOSPC below
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
         last_io_operation = "disk_space_avail";
@@ -957,7 +958,7 @@ void AP_Logger_File::io_timer(void)
         }
         last_io_operation = "";
     }
-
+#endif
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
         // be kind to the filesystem layer
@@ -993,7 +994,12 @@ void AP_Logger_File::io_timer(void)
     ssize_t nwritten = AP::FS().write(_write_fd, head, nbytes);
     last_io_operation = "";
     if (nwritten <= 0) {
-        if ((tnow - _last_write_ms)/1000U > unsigned(_front._params.file_timeout)) {
+        if (errno == ENOSPC) {
+            DEV_PRINTF("Out of space for logging\n");
+            stop_logging();
+            _open_error_ms = AP_HAL::millis(); // prevent logging starting again for 5s
+            last_io_operation = "";
+        } else if ((tnow - _last_write_ms)/1000U > unsigned(_front._params.file_timeout)) {
             // if we can't write for LOG_FILE_TIMEOUT seconds we give up and close
             // the file. This allows us to cope with temporary write
             // failures caused by directory listing
