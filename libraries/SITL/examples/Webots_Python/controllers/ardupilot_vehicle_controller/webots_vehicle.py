@@ -155,14 +155,13 @@ class WebotsArduVehicle():
         Args:
             port (int, optional): Port to listen for SITL on. Defaults to 9002.
         """
-
         # create a local UDP socket server to listen for SITL
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # SOCK_STREAM
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind(('0.0.0.0', port))
 
         # wait for SITL to connect
-        print(f"Listening for ardupilot SITL (I{self._instance}) at 127.0.0.1:{port}")
+        print(f"Listening for ardupilot SITL (I{self._instance}) at {sitl_address}:{port}")
         self.robot.step(self._timestep) # flush print in webots console
 
         while not select.select([s], [], [], 0)[0]: # wait for socket to be readable
@@ -241,12 +240,12 @@ class WebotsArduVehicle():
         Args:
             command (tuple): tuple of motor speeds 0.0-1.0 where -1.0 is unused
         """
-
         # get only the number of motors we have
         command_motors = command[:len(self._motors)]
         if -1 in command_motors:
             print(f"Warning: SITL provided {command.index(-1)} motors "
                   f"but model specifies {len(self._motors)} (I{self._instance})")
+            command_motors = [v if v != -1 else 0.0 for v in command_motors]
 
         # scale commands to -1.0-1.0 if the motors are bidirectional (ex rover wheels)
         if self._bidirectional_motors:
