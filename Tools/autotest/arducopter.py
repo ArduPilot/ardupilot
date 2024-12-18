@@ -1929,10 +1929,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ## 110m polyfence
         home_loc = self.mav.location()
         locs = [
-            mavutil.location(home_loc.lat - 0.0013, home_loc.lng - 0.0013, 0, 0),
-            mavutil.location(home_loc.lat - 0.0013, home_loc.lng + 0.0013, 0, 0),
-            mavutil.location(home_loc.lat + 0.0013, home_loc.lng + 0.0013, 0, 0),
-            mavutil.location(home_loc.lat + 0.0013, home_loc.lng - 0.0013, 0, 0),
+            self.offset_location_ne(home_loc, -110, -110),
+            self.offset_location_ne(home_loc, 110, -110),
+            self.offset_location_ne(home_loc, 110, 110),
+            self.offset_location_ne(home_loc, -110, 110),
         ]
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, locs),
@@ -1959,7 +1959,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if self.get_sim_time_cached() - tstart > 30:
                 raise NotAchievedException("Did not breach fence")
 
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
             alt = m.relative_alt / 1000.0 # mm -> m
             home_distance = self.distance_to_home(use_cached_home=True)
             self.progress("Alt: %.02f  HomeDistance: %.02f (fence radius=%f)" %
@@ -1969,7 +1969,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Waiting until we get home and disarm")
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() < tstart + timeout:
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
             alt = m.relative_alt / 1000.0 # mm -> m
             home_distance = self.distance_to_home(use_cached_home=True)
             self.progress("Alt: %.02f  HomeDistance: %.02f" %
