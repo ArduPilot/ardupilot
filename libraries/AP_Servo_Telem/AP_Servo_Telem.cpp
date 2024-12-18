@@ -100,6 +100,131 @@ void AP_Servo_Telem::update_telem_data(const uint8_t servo_index, const Telemetr
     telemdata.last_update_ms = AP_HAL::millis();
 }
 
+// Return the commanded position servo position in degrees if available
+bool AP_Servo_Telem::get_commanded_position(const uint8_t servo_index, float &command_position) const
+{
+    if (!data_available(servo_index, TelemetryData::Types::COMMANDED_POSITION)) {
+        return false;
+    }
+
+    command_position = _telem_data[servo_index].command_position;
+    return true;
+}
+
+// Return the measured Servo position in degrees if available
+bool AP_Servo_Telem::get_measured_position(const uint8_t servo_index, float &measured_position) const
+{
+    if (!data_available(servo_index, TelemetryData::Types::MEASURED_POSITION)) {
+        return false;
+    }
+
+    measured_position = _telem_data[servo_index].measured_position;
+    return true;
+}
+
+// Return the force in newton meters if available
+bool AP_Servo_Telem::get_force(const uint8_t servo_index, float &force) const
+{
+    if (!data_available(servo_index, TelemetryData::Types::FORCE)) {
+        return false;
+    }
+
+    force = _telem_data[servo_index].force;
+    return true;
+}
+
+// Return the speed in degrees per second if available
+bool AP_Servo_Telem::get_speed(const uint8_t servo_index, float &speed) const
+{
+    if (!data_available(servo_index, TelemetryData::Types::SPEED)) {
+        return false;
+    }
+
+    speed = _telem_data[servo_index].speed;
+    return true;
+}
+
+// Return the voltage in volts per second if available
+bool AP_Servo_Telem::get_voltage(const uint8_t servo_index, float &voltage) const
+{
+    if (!data_available(servo_index, TelemetryData::Types::VOLTAGE)) {
+        return false;
+    }
+
+    voltage = _telem_data[servo_index].voltage;
+    return true;
+}
+
+// Return the current in amps per second if available
+bool AP_Servo_Telem::get_current(const uint8_t servo_index, float &current) const
+{
+    if (!data_available(servo_index, TelemetryData::Types::CURRENT)) {
+        return false;
+    }
+
+    current = _telem_data[servo_index].current;
+    return true;
+}
+
+
+// Return the duty cycle 0% to 100% if available
+bool AP_Servo_Telem::get_duty_cycle(const uint8_t servo_index, uint8_t &duty_cycle) const
+{
+    if (!data_available(servo_index, TelemetryData::Types::DUTY_CYCLE)) {
+        return false;
+    }
+
+    duty_cycle = _telem_data[servo_index].duty_cycle;
+    return true;
+}
+
+// Return the motor temperature in degrees C if available
+bool AP_Servo_Telem::get_motor_temperature(const uint8_t servo_index, float &motor_temperature) const
+{
+    if (!data_available(servo_index, TelemetryData::Types::MOTOR_TEMP)) {
+        return false;
+    }
+
+    motor_temperature = _telem_data[servo_index].motor_temperature_cdeg * 0.01;
+    return true;
+}
+
+// Return the pcb temperature in degrees C if available
+bool AP_Servo_Telem::get_pcb_temperature(const uint8_t servo_index, float &pcb_temperature) const
+{
+    if (!data_available(servo_index, TelemetryData::Types::PCB_TEMP)) {
+        return false;
+    }
+
+    pcb_temperature = _telem_data[servo_index].pcb_temperature_cdeg * 0.01;
+    return true;
+}
+
+// Return type specific status flags if available
+bool AP_Servo_Telem::get_status_flags(const uint8_t servo_index, uint8_t &status_flags) const
+{
+    if (!data_available(servo_index, TelemetryData::Types::STATUS)) {
+        return false;
+    }
+
+    status_flags = _telem_data[servo_index].status_flags;
+    return true;
+}
+
+// Helper to check index and if data is available
+bool AP_Servo_Telem::data_available(const uint8_t servo_index, const TelemetryData::Types type) const
+{
+    if (servo_index >= SERVO_TELEM_MAX_SERVOS) {
+        return false;
+    }
+
+    if (!_telem_data[servo_index].valid(type)) {
+        return false;
+    }
+
+    return true;
+}
+
 void AP_Servo_Telem::update()
 {
 #if HAL_LOGGING_ENABLED

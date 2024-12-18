@@ -1041,3 +1041,19 @@ include AP_TemperatureSensor/AP_TemperatureSensor.h
 singleton AP_TemperatureSensor depends AP_TEMPERATURE_SENSOR_ENABLED
 singleton AP_TemperatureSensor rename temperature_sensor
 singleton AP_TemperatureSensor method get_temperature boolean float'Null uint8_t'skip_check
+
+
+include AP_Servo_Telem/AP_Servo_Telem.h depends AP_SERVO_TELEM_ENABLED
+include AP_Servo_Telem/AP_Servo_Telem_config.h
+singleton AP_Servo_Telem depends AP_SERVO_TELEM_ENABLED
+singleton AP_Servo_Telem rename servo_telem
+singleton AP_Servo_Telem method get_commanded_position boolean uint8_t'skip_check float'Null
+singleton AP_Servo_Telem method get_measured_position boolean uint8_t'skip_check float'Null
+singleton AP_Servo_Telem method get_force boolean uint8_t'skip_check float'Null
+singleton AP_Servo_Telem method get_speed boolean uint8_t'skip_check float'Null
+singleton AP_Servo_Telem method get_voltage boolean uint8_t'skip_check float'Null
+singleton AP_Servo_Telem method get_current boolean uint8_t'skip_check float'Null
+singleton AP_Servo_Telem method get_duty_cycle boolean uint8_t'skip_check uint8_t'Null
+singleton AP_Servo_Telem method get_motor_temperature boolean uint8_t'skip_check float'Null
+singleton AP_Servo_Telem method get_pcb_temperature boolean uint8_t'skip_check float'Null
+singleton AP_Servo_Telem method get_status_flags boolean uint8_t'skip_check uint8_t'Null
