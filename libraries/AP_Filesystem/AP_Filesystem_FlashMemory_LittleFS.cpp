@@ -785,13 +785,8 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     }
 #endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL
     fs_cfg.block_cycles = 500;
-    fs_cfg.lookahead_size = 16;
-
-    // cache_size has to be the same as the page_size, otherwise we would
-    // occasionally get read or prog requests in flashmem_read() and
-    // flashmem_prog() whose size is equal to the cache size, and we do not
-    // handle that right now
-    fs_cfg.cache_size = fs_cfg.prog_size;
+    fs_cfg.lookahead_size = 128;
+    fs_cfg.cache_size = 2*fs_cfg.prog_size;
 
     return id;
 }
@@ -985,88 +980,112 @@ bool AP_Filesystem_FlashMemory_LittleFS::init_flash()
     return true;
 }
 
+#ifdef AP_LFS_DEBUG
+static uint32_t block_writes;
+static uint32_t last_write_msg_ms;
+uint32_t page_reads;
+#endif
 int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
     lfs_block_t block, lfs_off_t off, void* buffer, lfs_size_t size
 ) {
     uint32_t address;
+    lfs_off_t read_off = 0;
 
     if (dead) {
         return LFS_ERR_IO;
     }
 
     address = lfs_block_and_offset_to_raw_flash_address(block, off);
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-    /* We need to read an entire page into an internal buffer and then read
-        * that buffer with JEDEC_READ_DATA later */
-    if (!wait_until_device_is_ready()) {
-        return LFS_ERR_IO;
-    }
 
-    {
-        WITH_SEMAPHORE(dev_sem);
-        send_command_addr(JEDEC_PAGE_DATA_READ, address / fs_cfg.read_size);
-        address %= fs_cfg.read_size;
-    }
+    EXPECT_DELAY_MS((25*size)/(fs_cfg.read_size*1000));
+
+    while (size > 0) {
+        uint32_t read_size = MIN(size, fs_cfg.read_size);
+#ifdef AP_LFS_DEBUG
+        page_reads++;
 #endif
-    if (!wait_until_device_is_ready()) {
-        return LFS_ERR_IO;
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+        /* We need to read an entire page into an internal buffer and then read
+            * that buffer with JEDEC_READ_DATA later */
+        if (!wait_until_device_is_ready()) {
+            return LFS_ERR_IO;
+        }
+        {
+            WITH_SEMAPHORE(dev_sem);
+            send_command_addr(JEDEC_PAGE_DATA_READ, address / fs_cfg.read_size);
+        }
+#endif
+        if (!wait_until_device_is_ready()) {
+            return LFS_ERR_IO;
+        }
+
+        WITH_SEMAPHORE(dev_sem);
+
+        dev->set_chip_select(true);
+        send_command_addr(JEDEC_READ_DATA, address % fs_cfg.read_size);
+        dev->transfer(nullptr, 0, static_cast<uint8_t*>(buffer)+read_off, size);
+        dev->set_chip_select(false);
+
+        size -= read_size;
+        address += read_size;
+        read_off += read_size;
     }
-
-    WITH_SEMAPHORE(dev_sem);
-
-    dev->set_chip_select(true);
-    send_command_addr(JEDEC_READ_DATA, address);
-    dev->transfer(nullptr, 0, static_cast<uint8_t*>(buffer), size);
-    dev->set_chip_select(false);
-
     return LFS_ERR_OK;
 }
 
-#ifdef AP_LFS_DEBUG
-static uint32_t block_writes;
-static uint32_t last_write_msg_ms;
-#endif
 
 int AP_Filesystem_FlashMemory_LittleFS::_flashmem_prog(
     lfs_block_t block, lfs_off_t off, const void* buffer, lfs_size_t size
 ) {
     uint32_t address;
+    lfs_off_t prog_off = 0;
 
     if (dead) {
         return LFS_ERR_IO;
     }
 
-    if (!write_enable()) {
-        return LFS_ERR_IO;
-    }
+    EXPECT_DELAY_MS((250*size)/(fs_cfg.read_size*1000));
 
-#ifdef AP_LFS_DEBUG
-    block_writes++;
-    if (AP_HAL::millis() - last_write_msg_ms > 5000) {
-        debug("LFS: writes %lukB/s, pages %lu/s\n", (block_writes*fs_cfg.prog_size)/(5*1024), block_writes/5);
-        block_writes = 0;
-        last_write_msg_ms = AP_HAL::millis();
-    }
-#endif
     address = lfs_block_and_offset_to_raw_flash_address(block, off);
 
-    WITH_SEMAPHORE(dev_sem);
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-    /* First we need to write into the data buffer at column address zero,
-     * then we need to issue PROGRAM_EXECUTE to commit the internal buffer */
-    dev->set_chip_select(true);
-    send_command_page(JEDEC_PAGE_WRITE, address % fs_cfg.prog_size);
-    dev->transfer(static_cast<const uint8_t*>(buffer), size, nullptr, 0);
-    dev->set_chip_select(false);
-    send_command_addr(JEDEC_PROGRAM_EXECUTE, address / fs_cfg.prog_size);
-    // this simply means the data is in the internal cache, it will take some period to
-    // propagate to the flash itself
-#else
-    dev->set_chip_select(true);
-    send_command_addr(JEDEC_PAGE_WRITE, address);
-    dev->transfer(static_cast<const uint8_t*>(buffer), size, nullptr, 0);
-    dev->set_chip_select(false);
+    while (size > 0) {
+        uint32_t prog_size = MIN(size, fs_cfg.prog_size);
+        if (!write_enable()) {
+            return LFS_ERR_IO;
+        }
+
+#ifdef AP_LFS_DEBUG
+        block_writes++;
+        if (AP_HAL::millis() - last_write_msg_ms > 5000) {
+            debug("LFS: writes %lukB/s, pages %lu/s (reads %lu/s)",
+                (block_writes*fs_cfg.prog_size)/(5*1024), block_writes/5, page_reads/5);
+            block_writes = 0;
+            page_reads = 0;
+            last_write_msg_ms = AP_HAL::millis();
+        }
 #endif
+
+        WITH_SEMAPHORE(dev_sem);
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+        /* First we need to write into the data buffer at column address zero,
+        * then we need to issue PROGRAM_EXECUTE to commit the internal buffer */
+        dev->set_chip_select(true);
+        send_command_page(JEDEC_PAGE_WRITE, address % fs_cfg.prog_size);
+        dev->transfer(static_cast<const uint8_t*>(buffer)+prog_off, prog_size, nullptr, 0);
+        dev->set_chip_select(false);
+        send_command_addr(JEDEC_PROGRAM_EXECUTE, address / fs_cfg.prog_size);
+        // this simply means the data is in the internal cache, it will take some period to
+        // propagate to the flash itself
+#else
+        dev->set_chip_select(true);
+        send_command_addr(JEDEC_PAGE_WRITE, address);
+        dev->transfer(static_cast<const uint8_t*>(buffer)+prog_off, prog_size, nullptr, 0);
+        dev->set_chip_select(false);
+#endif
+        size -= prog_size;
+        address += prog_size;
+        prog_off += prog_size;
+    }
     return LFS_ERR_OK;
 }
 
@@ -1074,6 +1093,8 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_erase(lfs_block_t block) {
     if (dead) {
         return LFS_ERR_IO;
     }
+
+    EXPECT_DELAY_MS(2);
 
     if (!write_enable()) {
         return LFS_ERR_IO;
@@ -1161,7 +1182,7 @@ static int lfs_flags_from_flags(int flags)
     int outflags = 0;
 
     if (flags & O_WRONLY) {
-        outflags |= LFS_O_WRONLY;
+        outflags |= LFS_O_WRONLY | LFS_F_WRUNCHECKED;
     } else if (flags & O_RDWR) {
         outflags |= LFS_O_RDWR;
     } else {
