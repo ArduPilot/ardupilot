@@ -3761,6 +3761,10 @@ AC_AttitudeControl = {}
 ---@return number -- yaw slew rate
 function AC_AttitudeControl:get_rpy_srate() end
 
+-- return current VTOL total attitude error in degrees
+---@return number -- attitude error
+function AC_AttitudeControl:get_att_error_angle_deg() end
+
 -- desc
 AR_AttitudeControl = {}
 
