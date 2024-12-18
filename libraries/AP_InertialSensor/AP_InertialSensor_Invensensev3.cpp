@@ -887,23 +887,28 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm42670(void)
 void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
 {
     uint8_t odr_config = 4;
-    backend_rate_hz = 1600;
+    backend_rate_hz = 800;
     // always fast sampling
     fast_sampling = dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
 
     if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() > 1) {
-        backend_rate_hz = calculate_fast_sampling_backend_rate(backend_rate_hz, backend_rate_hz * 4);
+        backend_rate_hz = calculate_fast_sampling_backend_rate(backend_rate_hz, backend_rate_hz * 8);
     }
 
-    // this sensor actually only supports 2 speeds
-    backend_rate_hz = constrain_int16(backend_rate_hz, 3200, 6400);
+    backend_rate_hz = constrain_int16(backend_rate_hz, 800, 6400);
 
     switch (backend_rate_hz) {
     case 6400: // 6.4Khz
         odr_config = 3;
         break;
-    case 3200: // 3.2Khz
+    case 3200: // 3.2Khz / ODR 6.4KHz
+        odr_config = 3;
+        break;
+    case 1600: // 1.6Khz / ODR 3.2KHz
         odr_config = 4;
+        break;
+    case 800: // 800hz / ODR 1.6KHz
+        odr_config = 5;
         break;
     default:
         break;
@@ -913,10 +918,10 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
     register_write(INV3REG_456_FIFO_CONFIG3, 0x00);
     register_write(INV3REG_456_FIFO_CONFIG0, 0x00);
 
-    // setup gyro for 1.6-6.4kHz, 4000dps range
+    // setup gyro for 800-6.4kHz, 4000dps range
     register_write(INV3REG_456_GYRO_CONFIG0, (0x0 << 4) | odr_config); // GYRO_UI_FS_SEL b4-7, GYRO_ODR b0-3
 
-    // setup accel for 1.6-6.4kHz, 32g range
+    // setup accel for 800-6.4kHz, 32g range
     register_write(INV3REG_456_ACCEL_CONFIG0, (0x0 << 4) | odr_config); // ACCEL_UI_FS_SEL b4-6, ACCEL_ODR b0-3
 
     // enable timestamps on FIFO data 
