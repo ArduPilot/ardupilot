@@ -4911,6 +4911,74 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
+    def TakeoffIdleThrottle(self):
+        '''Apply idle throttle before takeoff.'''
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "TKOFF_THR_IDLE": 20.0,
+            "TKOFF_THR_MINSPD": 3.0,
+        })
+        self.change_mode("TAKEOFF")
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Ensure that the throttle rises to idle throttle.
+        expected_idle_throttle = 1000+10*self.get_parameter("TKOFF_THR_IDLE")
+        self.assert_servo_channel_range(3, expected_idle_throttle-10, expected_idle_throttle+10)
+
+        # Launch the catapult
+        self.set_servo(6, 1000)
+
+        self.delay_sim_time(5)
+        self.change_mode('RTL')
+
+        self.fly_home_land_and_disarm()
+
+    def TakeoffBadLevelOff(self):
+        '''Ensure that the takeoff can be completed under 0 pitch demand.'''
+        '''
+        When using no airspeed, the pitch level-off will eventually command 0
+        pitch demand. Ensure that the plane can climb the final 2m to deem the
+        takeoff complete.
+        '''
+
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "ARSPD_USE": 0.0,
+            "PTCH_TRIM_DEG": -10.0,
+            "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
+            "TKOFF_ALT": 50.0,
+            "TKOFF_DIST": 1000.0,
+            "TKOFF_THR_MAX": 75.0,
+            "TKOFF_THR_MINACC": 3.0,
+        })
+
+        self.load_mission("flaps_tkoff_50.txt")
+        self.change_mode('AUTO')
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Throw the catapult.
+        self.set_servo(7, 2000)
+
+        # Wait until we've reached the takeoff altitude.
+        target_alt = 50
+        self.wait_altitude(target_alt-1, target_alt+1, relative=True, timeout=30)
+
+        self.delay_sim_time(5)
+
+        self.disarm_vehicle(force=True)
+
     def DCMFallback(self):
         '''Really annoy the EKF and force fallback'''
         self.reboot_sitl()
@@ -6503,6 +6571,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TakeoffTakeoff4,
             self.TakeoffTakeoff5,
             self.TakeoffGround,
+            self.TakeoffIdleThrottle,
+            self.TakeoffBadLevelOff,
             self.ForcedDCM,
             self.DCMFallback,
             self.MAVFTP,
