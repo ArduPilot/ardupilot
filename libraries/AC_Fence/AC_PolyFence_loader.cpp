@@ -1666,7 +1666,7 @@ bool AC_PolyFence_loader::get_inclusion_circle(uint8_t index, Vector2f &center_p
 void AC_PolyFence_loader::handle_msg(GCS_MAVLINK &link, const mavlink_message_t& msg) {};
 
 bool AC_PolyFence_loader::breached() const { return false; }
-bool AC_PolyFence_loader::breached(const Location& loc) const { return false; }
+bool AC_PolyFence_loader::breached(const Location& loc, float margin, bool& inside_margin) const { return false; }
 
 uint16_t AC_PolyFence_loader::max_items() const { return 0; }
 
