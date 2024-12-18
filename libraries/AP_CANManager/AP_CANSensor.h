@@ -33,7 +33,7 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(CANSensor);
 
-    void init(uint8_t driver_index, bool enable_filters) override;
+    void init(uint8_t driver_index) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
 
     // Return true if this sensor has been successfully registered to a driver and initialized.
