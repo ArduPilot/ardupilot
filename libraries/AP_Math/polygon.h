@@ -40,7 +40,7 @@ bool Polygon_intersects(const Vector2f *V, unsigned N, const Vector2f &p1, const
 float Polygon_closest_distance_line(const Vector2f *V, unsigned N, const Vector2f &p1, const Vector2f &p2);
 
 /*
-  return the closest distance that a point p comes to an edge of
-  closed polygon V, defined by N points
+  return the closest distance that a point p in lat/lng comes to an edge of
+  closed polygon V, defined by N points of lat/lng. Returns true if successful, false otherwise
  */
-float Polygon_closest_distance_point(const Vector2f *V, unsigned N, const Vector2f &p);
+bool Polygon_closest_distance_point(const Vector2l *V, unsigned N, const Vector2l &p, ftype& closest);
