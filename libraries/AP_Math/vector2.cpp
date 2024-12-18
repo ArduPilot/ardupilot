@@ -20,6 +20,13 @@
 
 #include "AP_Math.h"
 
+template float Vector2f::closest_distance_between_line_and_point_squared(const Vector2f &w1,
+                                                              const Vector2f &w2,
+                                                              const Vector2f &p);
+template int32_t Vector2l::closest_distance_between_line_and_point_squared(const Vector2l &w1,
+                                                              const Vector2l &w2,
+                                                              const Vector2l &p);
+
 template <typename T>
 T Vector2<T>::length_squared() const
 {
