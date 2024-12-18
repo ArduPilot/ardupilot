@@ -389,10 +389,13 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
         limit.throttle_upper = true;
     }
 
-    // ensure not below landed/landing collective
+    // In non-manual collective modes, ensure not below landed/landing collective.  If collective offset is used, don't allow negative
+    // collective offsets.  Only allow positive collective offsets to keep collective above landed collective.  
     if (_heliflags.land_complete && _heliflags.landing_collective && collective_out < _collective_land_min_pct + _collective_offset_landed) {
-        _collective_offset_landed += 0.0001 * (_collective_land_offset_pct - _collective_offset_landed);
-        collective_out = _collective_land_min_pct + _collective_offset_landed;
+        float alpha = _dt / (_dt + 1.0/(2.0 * M_PI * 5.0)); //calculate LP filter alpha for 5 hz cutoff freq
+        _collective_offset_landed += alpha * (_collective_land_offset_pct - _collective_offset_landed);
+        // constrain collective_out so it never goes above collective zero thrust
+        collective_out = constrain_float((_collective_land_min_pct + _collective_offset_landed), _collective_land_min_pct, _collective_zero_thrust_pct);
         limit.throttle_lower = true;
     } else if (_heliflags.landing_collective && collective_out < _collective_land_min_pct && !_main_rotor.in_autorotation()) {
         collective_out = _collective_land_min_pct;
