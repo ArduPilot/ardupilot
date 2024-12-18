@@ -667,28 +667,24 @@ bool AC_Fence::check_fence_polygon()
     }
 
     const bool was_breached = _breached_fences & AC_FENCE_TYPE_POLYGON;
-    if (_poly_loader.breached()) {
+
+    Location loc;
+    if (!AP::ahrs().get_location(loc)) {
+        return false;
+    }
+
+    bool inside_margin = false;
+
+    if (_poly_loader.breached(loc, _margin, inside_margin)) {
         if (!was_breached) {
             record_breach(AC_FENCE_TYPE_POLYGON);
             return true;
         }
         return false;
-    } else if (option_enabled(OPTIONS::MARGIN_BREACH)) {    // check is relatively expensive
-        Location loc;
-        if (AP::ahrs().get_location(loc)) {
-            Location l1 = loc, l2 = loc, l3 = loc, l4 = loc;
-            // quite approximate
-            l1.offset(_margin, _margin);
-            l2.offset(_margin, -_margin);
-            l3.offset(-_margin, _margin);
-            l4.offset(-_margin, -_margin);
-            if (_poly_loader.breached(l1) || _poly_loader.breached(l2)
-                || _poly_loader.breached(l3) || _poly_loader.breached(l4)) {
-                record_margin_breach(AC_FENCE_TYPE_POLYGON);
-            } else {
-                clear_margin_breach(AC_FENCE_TYPE_POLYGON);
-            }
-        }
+    } else if (option_enabled(OPTIONS::MARGIN_BREACH) && inside_margin) {
+        record_margin_breach(AC_FENCE_TYPE_POLYGON);
+    } else {
+        clear_margin_breach(AC_FENCE_TYPE_POLYGON);
     }
 
     if (was_breached) {
