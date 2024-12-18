@@ -224,3 +224,15 @@ void AP_HAL::UARTDriver::log_stats(const uint8_t inst, StatsTracker &stats, cons
 }
 #endif // HAL_LOGGING_ENABLED
 #endif // HAL_UART_STATS_ENABLED
+
+const extern AP_HAL::HAL& hal;
+
+extern "C" {
+    void hal_console_printf(const char *, ...);
+}
+void hal_console_printf(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    hal.console->vprintf(fmt, ap);
+    va_end(ap);
+}
