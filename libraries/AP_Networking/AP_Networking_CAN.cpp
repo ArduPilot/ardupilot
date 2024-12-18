@@ -182,7 +182,11 @@ void AP_Networking_CAN::mcast_server(void)
             const uint16_t timeout_us = 2000;
 
             while (frame_buffers[bus]->peek(frame)) {
-                auto retcode = get_caniface(bus)->send(frame,
+                auto *cbus = get_caniface(bus);
+                if (cbus == nullptr) {
+                    break;
+                }
+                auto retcode = cbus->send(frame,
                                                       AP_HAL::micros64() + timeout_us,
                                                       AP_HAL::CANIface::IsMAVCAN);
                 if (retcode == 0) {
