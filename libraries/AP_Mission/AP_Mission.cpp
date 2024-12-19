@@ -2175,6 +2175,14 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
                 return false;
             }
 
+            // handle jump item that points to itself
+            if (temp_cmd.content.jump.target == cmd_index) {
+                // This jump points to itself - move on to next mission item
+                // To-Do: log an error?
+                cmd_index++;
+                continue;
+            }
+
             // check for endless loops
             if (!increment_jump_num_times_if_found && jump_index == cmd_index) {
                 // we have somehow reached this jump command twice and there is no chance it will complete
