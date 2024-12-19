@@ -19,3 +19,10 @@ void bootloader(unsigned timeout);
 
 enum led_state {LED_BLINK, LED_ON, LED_OFF, LED_BAD_FW};
 void led_set(enum led_state state);
+
+enum bl_info_opts {
+    OptionUnsignedFirmware  = 1 << 0,
+    OptionSignedFirmware    = 1 << 1,
+    OptionFlashFromSDCard   = 1 << 2,
+    OptionCheckFWOk         = 1 << 3,
+};

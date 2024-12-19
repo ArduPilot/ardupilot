@@ -237,13 +237,16 @@ class uploader(object):
 
     CHIP_FULL_ERASE = b'\x40'     # full erase of flash
 
-    INFO_BL_REV     = b'\x01'        # bootloader protocol revision
-    BL_REV_MIN      = 2              # minimum supported bootloader protocol
-    BL_REV_MAX      = 5              # maximum supported bootloader protocol
-    INFO_BOARD_ID   = b'\x02'        # board type
-    INFO_BOARD_REV  = b'\x03'        # board revision
-    INFO_FLASH_SIZE = b'\x04'        # max firmware size in bytes
-    INFO_EXTF_SIZE  = b'\x06'        # available external flash size
+    INFO_BL_REV         = b'\x01'        # bootloader protocol revision
+    BL_REV_MIN          = 2              # minimum supported bootloader protocol
+    BL_REV_MAX          = 5              # maximum supported bootloader protocol
+    INFO_BOARD_ID       = b'\x02'        # board type
+    INFO_BOARD_REV      = b'\x03'        # board revision
+    INFO_FLASH_SIZE     = b'\x04'        # max firmware size in bytes
+    INFO_EXTF_SIZE      = b'\x06'        # available external flash size
+    INFO_SW_BL_BUILD    = b'\x07'        # information about bootloader software build version
+    INFO_SW_BL_OPTS     = b'\x08'        # information about bootloader build options
+    INFO_SW_APP_BUILD   = b'\x09'        # information about application software build version
 
     PROG_MULTI_MAX  = 252            # protocol max is 255, must be multiple of 4
     READ_MULTI_MAX  = 252            # protocol max is 255
@@ -262,7 +265,8 @@ class uploader(object):
                  source_system=None,
                  source_component=None,
                  no_extf=False,
-                 force_erase=False):
+                 force_erase=False,
+                 identify_only=False):
         self.MAVLINK_REBOOT_ID1 = bytearray(b'\xfe\x21\x72\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x01\x00\x00\x53\x6b')  # NOQA
         self.MAVLINK_REBOOT_ID0 = bytearray(b'\xfe\x21\x45\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x00\x00\x00\xcc\x37')  # NOQA
         if target_component is None:
@@ -273,6 +277,7 @@ class uploader(object):
             source_component = 1
         self.no_extf = no_extf
         self.force_erase = force_erase
+        self.identify_only = identify_only
 
         # open the port, keep the default timeout short so we can poll quickly
         self.port = serial.Serial(portname, baudrate_bootloader, timeout=2.0, write_timeout=2.0)
@@ -737,6 +742,23 @@ class uploader(object):
         self.board_rev = self.__getInfo(uploader.INFO_BOARD_REV)
         self.fw_maxsize = self.__getInfo(uploader.INFO_FLASH_SIZE)
 
+        if self.identify_only:
+            # Only run if we are trying to identify the board
+            try:
+                self.bootloader_options = self.__getInfo(uploader.INFO_SW_BL_OPTS)
+            except Exception:
+                self.__sync()
+
+            try:
+                self.git_hash_bl = self.__getInfo(uploader.INFO_SW_BL_BUILD)
+            except Exception:
+                self.__sync()
+
+            try:
+                self.git_hash_app = self.__getInfo(uploader.INFO_SW_APP_BUILD)
+            except Exception:
+                self.__sync()
+
     def dump_board_info(self):
         # OTP added in v4:
         print("Bootloader Protocol: %u" % self.bl_rev)
@@ -838,6 +860,31 @@ class uploader(object):
         else:
             print("  board_type: %u" % self.board_type)
         print("  board_rev: %u" % self.board_rev)
+
+        if hasattr(self, "git_hash_bl") and self.git_hash_bl is not None:
+            git_hash_bl = "%x" % (self.git_hash_bl)
+            print("  git hash (Bootloader): %s" % git_hash_bl)
+
+        if hasattr(self, "bootloader_options") and self.bootloader_options is not None:
+            def decode_bootloader_options(bootloader_options):
+                '''decode the bootloader options bits'''
+                print("  bootloader options:")
+                # print(f"  raw options bits: {bootloader_options:032b}")
+                option_bits = {
+                    0: "UnsignedFirmware",  # CheckFirmware Enabled, Unsigned Firmware
+                    1: "SignedFirmware",    # CheckFirmware Enabled, Signed Firmware
+                    2: "FlashFromSDCard",   # Flash From SD Card Supported
+                    3: "OptionCheckFWOk",   # CheckFirmware Enabled, firmware check is good
+                }
+                for i in range(32):
+                    if (bootloader_options & (1 << i)) == (1 << i):
+                        print(f"    - {option_bits.get(i, 'Unknown Option')}")
+
+            decode_bootloader_options(self.bootloader_options)
+
+        if hasattr(self, "git_hash_app") and self.git_hash_app is not None:
+            git_hash_app = "%x" % (self.git_hash_app)
+            print("  git hash (Application): %s" % git_hash_app)
 
         print("Identification complete")
 
@@ -1162,7 +1209,8 @@ def main():
                                   args.source_system,
                                   args.source_component,
                                   args.no_extf,
-                                  args.force_erase)
+                                  args.force_erase,
+                                  args.identify)
 
                 except Exception as e:
                     if not is_WSL and not is_WSL2 and "win32" not in _platform:
