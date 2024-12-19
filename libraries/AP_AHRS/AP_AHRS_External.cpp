@@ -137,4 +137,14 @@ void AP_AHRS_External::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVe
     ekfNavVelGainScaler = 0.5;
 }
 
+void AP_AHRS_External::set_data_sending_state(bool enabled)
+{
+    AP::externalAHRS().set_data_sending_state(enabled);
+}
+
+void AP_AHRS_External::set_gnss_state(bool enabled)
+{
+    AP::externalAHRS().set_gnss_state(enabled);
+}
+
 #endif
