@@ -234,6 +234,7 @@ bool AC_PolyFence_loader::breached(const Location& loc, float margin, bool& insi
     Vector2l pos;
     pos.x = loc.lat;
     pos.y = loc.lng;
+    margin = margin * 1.0e7 / 11132.0;  // convert margin to degrees
 
     const uint16_t num_inclusion = _num_loaded_circle_inclusion_boundaries + _num_loaded_inclusion_boundaries;
     uint16_t num_inclusion_outside = 0;
