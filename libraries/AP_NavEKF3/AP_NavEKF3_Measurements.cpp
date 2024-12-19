@@ -547,6 +547,11 @@ void NavEKF3_core::readGpsData()
     // check for new GPS data
     const auto &gps = dal.gps();
 
+    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS) {
+        // don't read GPS data when disabled in the current source set
+        return;
+    }
+
     // limit update rate to avoid overflowing the FIFO buffer
     if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms <= frontend->sensorIntervalMin_ms) {
         return;
