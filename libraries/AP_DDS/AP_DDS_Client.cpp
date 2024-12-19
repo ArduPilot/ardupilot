@@ -32,6 +32,9 @@
 #if AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
 #include "ardupilot_msgs/srv/Takeoff.h"
 #endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+#if AP_DDS_RC_PUB_ENABLED
+#include "AP_RSSI/AP_RSSI.h"
+#endif // AP_DDS_RC_PUB_ENABLED
 
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
@@ -65,6 +68,9 @@ static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = AP_DDS_DELAY_LOCAL_VEL
 #if AP_DDS_AIRSPEED_PUB_ENABLED
 static constexpr uint16_t DELAY_AIRSPEED_TOPIC_MS = AP_DDS_DELAY_AIRSPEED_TOPIC_MS;
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_RC_PUB_ENABLED
+static constexpr uint16_t DELAY_RC_TOPIC_MS = AP_DDS_DELAY_RC_TOPIC_MS;
+#endif // AP_DDS_RC_PUB_ENABLED
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = AP_DDS_DELAY_GEO_POSE_TOPIC_MS;
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
@@ -524,6 +530,38 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Airspeed& msg)
     return is_airspeed_available;
 }
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
+
+#if AP_DDS_RC_PUB_ENABLED
+bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Rc& msg)
+{
+    update_topic(msg.header.stamp);
+    AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
+    auto rc = RC_Channels::get_singleton();
+    static int16_t counter = 0;
+
+    // Is connected if not in failsafe.
+    // This is only valid if the RC has been connected at least once
+    msg.is_connected = !rc->in_rc_failsafe();
+    // Receiver RSSI is reported between 0.0 and 1.0.
+    msg.receiver_rssi = static_cast<uint8_t>(ap_rssi->read_receiver_rssi()*100.f);
+
+    // Limit the max number of available channels to 8
+    msg.channels_size = MIN(static_cast<uint32_t>(rc->get_valid_channel_count()), 32U);
+    msg.active_overrides_size = msg.channels_size;
+    if (msg.channels_size) {
+        for (uint8_t i = 0; i < static_cast<uint8_t>(msg.channels_size); i++) {
+            msg.channels[i] = rc->rc_channel(i)->get_radio_in();
+            msg.active_overrides[i] = rc->rc_channel(i)->has_override();
+        }
+    } else {
+        // If no channels are available, the RC is disconnected.
+        msg.is_connected = false;
+    }
+
+    // Return true if Radio is connected, or once every 10 steps to reduce useless traffic.
+    return msg.is_connected ? true : (counter++ % 10 == 0);
+}
+#endif // AP_DDS_RC_PUB_ENABLED
 
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
@@ -1568,6 +1606,22 @@ void AP_DDS_Client::write_tx_local_airspeed_topic()
     }
 }
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_RC_PUB_ENABLED
+void AP_DDS_Client::write_tx_local_rc_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = ardupilot_msgs_msg_Rc_size_of_topic(&tx_local_rc_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::LOCAL_RC_PUB)].dw_id, &ub, topic_size);
+        const bool success = ardupilot_msgs_msg_Rc_serialize_topic(&ub, &tx_local_rc_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+#endif // AP_DDS_RC_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::write_imu_topic()
 {
@@ -1720,6 +1774,14 @@ void AP_DDS_Client::update()
         }
     }
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_RC_PUB_ENABLED
+    if (cur_time_ms - last_rc_time_ms > DELAY_RC_TOPIC_MS) {
+        last_rc_time_ms = cur_time_ms;
+        if (update_topic(tx_local_rc_topic)) {
+            write_tx_local_rc_topic();
+        }
+    }
+#endif // AP_DDS_RC_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
     if (cur_time_ms - last_imu_time_ms > DELAY_IMU_TOPIC_MS) {
         update_topic(imu_topic);
