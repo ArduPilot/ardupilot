@@ -1906,6 +1906,7 @@ class TestSuite(ABC):
                  dronecan_tests=False,
                  generate_junit=False,
                  enable_fgview=False,
+                 realflight_address=None,
                  build_opts={}):
 
         self.start_time = time.time()
@@ -1973,6 +1974,7 @@ class TestSuite(ABC):
         self.in_drain_mav = False
         self.tlog = None
         self.enable_fgview = enable_fgview
+        self.realflight_address = realflight_address or os.getenv("REALFLIGHT_IPADDR")
 
         self.rc_thread = None
         self.rc_thread_should_quit = False
