@@ -234,16 +234,18 @@ bool AC_PolyFence_loader::breached(const Location& loc, float margin, bool& insi
     Vector2l pos;
     pos.x = loc.lat;
     pos.y = loc.lng;
-    margin = margin * 1.0e7 / 11132.0;  // convert margin to degrees
+    margin = margin * 1.0e7 / 111132.954;  // convert margin to degrees
 
     const uint16_t num_inclusion = _num_loaded_circle_inclusion_boundaries + _num_loaded_inclusion_boundaries;
     uint16_t num_inclusion_outside = 0;
     inside_margin = false;
 
+
     // check we are inside each inclusion zone:
     for (uint8_t i=0; i<_num_loaded_inclusion_boundaries; i++) {
         const InclusionBoundary &boundary = _loaded_inclusion_boundary[i];
         if (Polygon_outside(pos, boundary.points_lla, boundary.count)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%f %f", Polygon_closest_distance_point(boundary.points_lla, boundary.count, pos), margin);
             num_inclusion_outside++;
         } else if (Polygon_closest_distance_point(boundary.points_lla, boundary.count, pos) < margin) {
             inside_margin = true;
