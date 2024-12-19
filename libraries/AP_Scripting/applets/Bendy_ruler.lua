@@ -1,3 +1,5 @@
+local UPDATE_RATE_HZ = 10
+
 -- MAV_COLLISION_THREAT_LEVEL
 MAV_COLLISION_THREAT_LEVEL = {
     NONE = 0,         -- Not a threat
@@ -19,8 +21,10 @@ MAV_COLLISION_ACTION={
     MOVE_PERPENDICULAR=4, -- Aircraft to move perpendicular to the collision's velocity vector 
     RTL=5, -- Aircraft to fly directly back to its launch point 
     HOVER=6, -- Aircraft to stop in place 
- } ;
+}
 
+
+local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
 local gcs_threat = {
     src = nil,  
@@ -143,23 +147,19 @@ WARN_DIST_XY  = bind_param("AVD_W_DIST_XY")
 WARN_ACTION  = bind_param("AVD_W_ACTION")
 local warn_act= WARN_ACTION:get()
 AVD_ENABLE  = bind_param("AVD_ENABLE")
-local enabled=AVD_ENABLE:get()
 ROLL_LIMIT_DEG = bind_param("ROLL_LIMIT_DEG")
 local roll_limit_cd=ROLL_LIMIT_DEG:get() *100
 local lookahead_param=BENDY_LOOKAHEAD:get()
 local margin_fence=BENDY_MARGIN_FENCE:get()
-local enabled=AVD_ENABLE:get()
 local current_loc=Location()
 local target_loc=Location()
 local thread_created = false
 local current_lookahead =0
-local obstacle_count
 local collision_detected
 local GRAVITY_MSS=9.80665
 local LOCATION_SCALING_FACTOR_INV=89.83204953368922
 local new_target_loc = Location() 
 local current_target_s
-local flag=0
 
 --Auxiliary functions
 function wrap_180(angle)
@@ -355,25 +355,25 @@ function within_avoidance_height(obstacle,margin, deltat)
 end
 
 --get height difference between an obstacle and our location
- function obstacle_height_difference(obstacle)
-     location=obstacle.location
-     local alt1_cm=0;
-     location:change_alt_frame(ALT_FRAME_ABSOLUTE)
-     alt1_cm=location:alt()
- 
-     local alt2_cm=0;
-     local myloc = ahrs:get_position()
-     myloc:change_alt_frame(ALT_FRAME_ABSOLUTE)
-     alt2_cm=myloc:alt()
-     return (alt1_cm - alt2_cm) * 0.01;
- end
+function obstacle_height_difference(obstacle)
+    location=obstacle.location
+    local alt1_cm=0;
+    location:change_alt_frame(ALT_FRAME_ABSOLUTE)
+    alt1_cm=location:alt()
 
- function mission_clear(current_loc, xy_clearance, z_clearance, time_s)
-    if enabled==0 or warn_act  ~= 2 then
-        gcs:send_text(0, string.format("AVD_ENABLE %d: ,WARN_ACTION: %d", enabled, warn_act))
-        gcs:send_text(0, "Params not enabled for clear checking")
-        return true
-    end    
+    local alt2_cm=0;
+    local myloc = ahrs:get_position()
+    myloc:change_alt_frame(ALT_FRAME_ABSOLUTE)
+    alt2_cm=myloc:alt()
+    return (alt1_cm - alt2_cm) * 0.01;
+end
+
+--[[
+    this function will be used to implement
+    MAV_CMD_NAV_DELAY_AIRSPACE_CLEAR, CONDITION_TYPE_AIRSPACE_CLEAR
+    and CONDITION_TYPE_AIRSPACE_NOT_CLEAR
+--]]
+function mission_clear(current_loc, xy_clearance, z_clearance, time_s)
     local timeout_ms = 5000
     local now = millis()  
     --assume we are not moving
@@ -386,7 +386,7 @@ end
     local closest_idx = -1
     local closest_dist = 5000
     local closest_radius = 0   
-    obstacle_count=avoid:num_obstacles() 
+    local obstacle_count = avoid:num_obstacles()
     if obstacle_count == 0 then
         --gcs:send_text(0, "No obstacles detected")
     else
@@ -447,9 +447,13 @@ end
     end    
     -- All clear
     return true
-
 end
 
+--[[
+  given our location, velocity and a avoidance time, find the closest
+  we will come to any of the obstacles avoidance radiuses
+  A negative result means we will come within the avoidance radius of at least one object
+--]]
 function mission_avoidance_margin(our_loc, our_velocity, avoid_sec)
     local timeout_ms = 5000
     local margin = math.max(BENDY_MARGIN_WIDE:get(), WARN_DIST_XY:get())
@@ -459,6 +463,7 @@ function mission_avoidance_margin(our_loc, our_velocity, avoid_sec)
     local closest_id = 0
     gcs_threat.closest_approach_z = 1000
     local obs_count = 0    
+    local obstacle_count = avoid:num_obstacles()
     for i = 0, obstacle_count-1 do
         -- obstacles can update via MAVLink while we are calculating
         -- avoidance margins
@@ -537,6 +542,9 @@ function calc_avoidance_margin(loc1, loc2, our_velocity, avoid_sec)
     return obs_margin
 end
 
+--[[
+    calculate what our ground speed would be in a given direction, using wind estimate
+--]]
 function effective_groundspeed(airspeed, bearing_deg, wind_dir_rad, wind_speed)
     -- Ensure airspeed is at least 1.0
     airspeed = math.max(airspeed, 1.0)    
@@ -572,6 +580,7 @@ function have_collided(current_loc)
     local ret = false
     local now = millis()    
   
+    local obstacle_count = avoid:num_obstacles()
     for i = 0, obstacle_count-1 do
         local obstacle = {}
         obstacle.timestamp_ms=avoid:get_obstacle_time(i)
@@ -609,13 +618,20 @@ function have_collided(current_loc)
     return ret
 end
 
-function update_mission_avoidance(avd, new_target_loc)
+--[[
+    calculate a new avoidance target location, returning the new location or nil
+    avd contains some meta-data on the current state
+
+    takes target_loc as the current (non-avoidance) target
+    returns a new target location if avoidance is needed, otherwise nil
+--]]
+function update_mission_avoidance(avd, target_loc)
     --gcs:send_text(0, "Started mission avoidance update")
     local airspeed = math.max(avd.airspeed, 1.0)
     local current_loc = avd.current_loc
     current_lookahead = math.min(math.max(current_lookahead, lookahead_param * 0.5), lookahead_param)
     --gcs:send_text(0, "got current lookahead")
-    local full_distance = current_loc:get_distance(new_target_loc)    
+    local full_distance = current_loc:get_distance(target_loc)    
     -- the distance we look ahead is adjusted dynamically based on avoidance results
     local avoid_step1_m = current_lookahead
     local avoid_step2_m = current_lookahead * 2
@@ -624,7 +640,7 @@ function update_mission_avoidance(avd, new_target_loc)
     local avoid_sec1 = avoid_max / airspeed
     local bearing_inc_cd = 1500
     local distance = airspeed * avoid_sec1
-    local bearing_cd =math.deg(current_loc:get_bearing(new_target_loc))*100  
+    local bearing_cd =math.deg(current_loc:get_bearing(target_loc))*100  
     -- report collisions
     have_collided(current_loc)    
     -- get the current ground course
@@ -634,7 +650,7 @@ function update_mission_avoidance(avd, new_target_loc)
        
     -- If the full distance is less than 20m, no avoidance is needed
     if full_distance < 20 then
-        return false
+        return nil
     end    
     -- Try 5 degree increments around a circle, alternating left and right. Check each one to see if flying in that direction would avoid all obstacles.
     local best_bearing = bearing_cd * 0.01
@@ -697,10 +713,10 @@ function update_mission_avoidance(avd, new_target_loc)
                 best_bearing = bearing_test
             end            
             local test_bearings = { 0, 45, -45 }
-            local target_bearing = math.deg(loc_test:get_bearing(new_target_loc)) 
+            local target_bearing = math.deg(loc_test:get_bearing(target_loc)) 
             for _, delta in ipairs(test_bearings) do
                 local new_bearing = target_bearing + delta
-                local target_distance2 = loc_test:get_distance(new_target_loc)
+                local target_distance2 = loc_test:get_distance(target_loc)
                 local distance2 = math.min(math.max(avoid_step2_m, 10), target_distance2)
                 local avoid_sec2 = distance2 / airspeed
                 local loc_test2 = location_project(loc_test, new_bearing, distance2)
@@ -714,15 +730,13 @@ function update_mission_avoidance(avd, new_target_loc)
                     --gcs:send_text(0, string.format("Inside second if"))
                     -- Project the new target in the chosen direction by the full distance
                     local new_loc = location_project(projected_loc, bearing_test, full_distance)
-                    new_target_loc:lat(new_loc:lat())
-                    new_target_loc:lng(new_loc:lng())
-                    new_target_loc:alt(new_loc:alt())
-                    --gcs:send_text(0, string.format("M2 Lat: %.2f, M2 lon: %.2f", new_target_loc:lat(),new_target_loc:lng()))
                     current_lookahead = math.min(lookahead_param, current_lookahead * 1.1)
                     gcs_action = (i ~= 0 or delta ~= 0) and 1 or 0
-                    --gcs:send_text(0, string.format("delta: %d",delta))
-                    --gcs:send_text(0, string.format("Margin: %f, Margin2: %f", margin, margin2)) 
-                    return i ~= 0 or delta ~= 0
+                    if i ~= 0 or delta ~= 0 then
+                        return new_loc
+                    end
+                    -- no avoidance to be done
+                    return nil
                 end
             end
         --else
@@ -743,58 +757,19 @@ function update_mission_avoidance(avd, new_target_loc)
     end    
     -- Calculate new target location based on the best effort
     local new_loc = location_project(current_loc, chosen_bearing, full_distance)
-    new_target_loc:lat(new_loc:lat())
-    new_target_loc:lng(new_loc:lng())
-    new_target_loc:alt(new_loc:alt())
-    --gcs:send_text(0, string.format("Mission avoidance updated?: True"))
-    return true
+    return new_loc
 end
 
-
-function avoidance_thread()      
-    -- Local variables for target location and new target location
-    local local_target_loc = Location()     
-    -- Get the current time
-    local now = millis()        
-    -- If the request is too old (more than 2000 ms), skip processing
-    if now - avoidance_request.request_time_ms > 2000 then
-        --gcs:send_text(0, string.format("Time passed: %.2f", (now - avoidance_request.request_time_ms):tofloat()))
-        return -- Skip the rest of this loop iteration
-    end    
-    --gcs:send_text(0, string.format("Time passed: %.2f", (now - avoidance_request.request_time_ms):tofloat()))    
-    -- Copy the avoidance request into a local variable
-    avoid_req2 = avoidance_request
-    local_target_loc = avoid_req2.target_loc:copy()
-    new_target_loc = local_target_loc:copy()
-    --gcs:send_text(0, string.format("Local1 Lat: %.2f, Local1 lon: %.2f", local_target_loc:lat(), local_target_loc:lng()))        
-    -- Call the function to update the mission avoidance with the request and new target location
-    local res = update_mission_avoidance(avoid_req2, new_target_loc) 
-    --[[if res then
-        gcs:send_text(0, string.format("res: True"))
-        gcs:send_text(0, string.format("NT Lat: %.2f, NT lon: %.2f", new_target_loc:lat(),new_target_loc:lng()))
-    else
-        gcs:send_text(0, string.format("res: False"))
-    end ]]   
-      
-    -- Update the avoidance result directly without semaphore
-    --gcs:send_text(0, string.format("Local2 Lat: %.2f, Local2 lon: %.2f", local_target_loc:lat(), local_target_loc:lng()))
-    avoidance_result.target_loc = local_target_loc
-    avoidance_result.new_target_loc = res and new_target_loc or local_target_loc
-    avoidance_result.result_time_ms = millis()
-    avoidance_result.avoidance_needed = res
-end
-
+--[[
+    calculate and return an adjusted target location or return nil
+    for no avoidance needed
+--]]
 function mission_avoidance(current_loc, target_loc, groundspeed)
-    -- Check if avoidance is disabled or warning action is not set to 2
-    if enabled==0 or warn_act  ~= 2 then
-        -- Reset threat and action if conditions aren't met
-        gcs_threat = {}  -- Clear GCS threat data
-        gcs_action = 0   -- Reset GCS action
-        return false
-    end    
-    -- Simulate thread creation for avoidance logic
-    avoidance_thread()
-    -- Get current time (milliseconds simulation)
+    local local_target_loc = Location()
+
+    --[[
+        fill in avoidance_result with current state
+    --]]
     local now = millis()    -- Populate avoidance request with current data
     avoidance_request.current_loc = current_loc
     avoidance_request.target_loc = target_loc
@@ -804,93 +779,93 @@ function mission_avoidance(current_loc, target_loc, groundspeed)
         avoidance_request.airspeed = groundspeed
     else
         avoidance_request.airspeed = ahrs:airspeed_estimate()
-    end    -- Get wind estimate and convert to 2D
+    end
+
+    -- Get wind estimate and convert to 2D
     local wind_3d = ahrs:wind_estimate()
     local wind_2d = Vector2f()
     wind_2d:x(wind_3d:x())
     wind_2d:y(wind_3d:y())
-     -- Calculate wind direction and speed
+
+    -- Calculate wind direction and speed
     avoidance_request.wind_dir_rad = wind_2d:angle()
     avoidance_request.wind_speed = wind_2d:length()    
     -- Record request time
     avoidance_request.request_time_ms = now    
-    -- Check if previous result is still valid and matches the current target location
-    if avoidance_result.target_loc then
-        --gcs:send_text(0, string.format("lat_tar: .%.2f, res_lat: %.2f", target_loc:lat(), avoidance_result.target_loc:lat()))
-        if target_loc:lat() == avoidance_result.target_loc:lat() and target_loc:lng() == avoidance_result.target_loc:lng() and (now - avoidance_result.result_time_ms) < 2000 then
-            -- Update target location with the new avoidance result location
-            target_loc:lat(avoidance_result.new_target_loc:lat())
-            target_loc:lng(avoidance_result.new_target_loc:lng())
-            -- Return whether avoidance is needed based on the result
-            --gcs:send_text(0, string.format("Up Lat: %.2f, Up lon: %.2f", avoidance_result.new_target_loc:lat(),avoidance_result.new_target_loc:lng()))
-            return avoidance_result.avoidance_needed
-        end
-    else
-        --gcs:send_text(0, "No calculation performed")
-    end
 
-    -- Return false if no valid avoidance result is available
-    return false
+    -- call the main mission avoidance logic
+    local new_target_loc = update_mission_avoidance(avoidance_request, target_loc)
+
+    return new_target_loc
 end
 
-function update()
-    --gcs:send_text(0, "Lua running")
-    -- Check if the 'avoid' function is available
-    if avoid == nil then
-        gcs:send_text(0, "AP_Avoidance singleton not available")
+--[[
+    return true if two locations are identical
+--]]
+local function locations_equal(loc1, loc2)
+    return loc1:lat() == loc2:lat() and loc1:lng() == loc2:lng() and loc1:alt() == loc2:alt()
+end
+
+local orig_target_loc = nil
+local last_updated_target_loc = nil
+
+--[[
+    update avoidance at UPDATE_RATE_HZ. Calls mission_avoidance() and
+    updates target location in the vehicle code
+--]]
+function update_avoidance()
+    if AVD_ENABLE:get() == 0 then
+        -- disabled by the user
         return
     end
 
-    
     current_loc = ahrs:get_position()
-    target_loc= vehicle:get_target_location()
-    local current_target
-    if target_loc ~=nil then
-        current_target=target_loc:copy()
-        --gcs:send_text(0, "Update_Current_target")
-    end
-    --gcs:send_text(0, string.format("Original pos: Lat: %.2f, Lon: %.2f", target_loc:lat(),target_loc:lng()))
+    target_loc = vehicle:get_target_location()
 
-    
-    if flag==0 and target_loc ~=nil then
-        current_target_s=target_loc:copy()
+    if not current_loc or not target_loc then
+        -- no position or not navigating
+        orig_target_loc = nil
+        last_updated_target_loc = nil
+        return
     end
-    --gcs:send_text(0, string.format("Current_targ Latitude: %.2f, Current_targ longitude: %.2f", current_target:lat(),current_target:lng()))
-    local groundspeed=ahrs:groundspeed_vector():length()
-    if not current_loc then
-        gcs:send_text(0, "Not current position")
-        return update, 100
+
+    if not orig_target_loc or
+        not last_updated_target_loc or
+        not locations_equal(last_updated_target_loc, target_loc) then
+        -- the vehicle navigation code has changed it's target
+        orig_target_loc = target_loc:copy()
+        gcs:send_text(MAV_SEVERITY.INFO, "BR: new target loc")
+    end
+
+    local groundspeed = ahrs:groundspeed_vector():length()
+
+    -- run avoidance calculation
+    local new_target_loc = mission_avoidance(current_loc, orig_target_loc, groundspeed)
+
+    if new_target_loc then
+        -- tell the vehicle to fly to the new calculated target
+        vehicle:update_target_location(target_loc, new_target_loc)
+        last_updated_target_loc = new_target_loc:copy()
+
+        local avoid_dist = orig_target_loc:get_distance(new_target_loc)
+
+        gcs:send_named_float("AVD_DIST", avoid_dist)
     else
-        if mission_clear(current_loc, 400, 100, 25)== true then
-            gcs:send_text(6, "Mission clear")
-            if target_loc ~=nil then
-                if target_loc:lng()~=current_target_s:lng() and flag==1 then
-                    vehicle:update_target_location(current_target, current_target_s) 
-                    flag=0
-                    gcs:send_text(4, "Returning to path")
-                end
-            end
-        else
-            if target_loc then
-                --gcs:send_text(0, "Calculating mission avoidance")
-                if mission_avoidance(current_loc, target_loc, groundspeed)==true then
-                    --gcs:send_text(0, "Updating target")
-                    --vehicle:set_mode(15)
-                    vehicle:update_target_location(current_target, target_loc) 
-                    --vehicle:set_target_location(target_loc)
-                    --gcs:send_text(0, string.format("New pos: Lat: %.2f, Lon: %.2f", target_loc:lat(),target_loc:lng()))
-                    gcs:send_text(4, "Updating target")
-                    flag=1
-                end
-                gcs:send_text(0, "Mission not clear")
-
-            end
-            
-
-        end
+        -- revert to the original target location, no avoidance needed
+        vehicle:update_target_location(target_loc, orig_target_loc)
+        last_updated_target_loc = orig_target_loc
+        gcs:send_named_float("AVD_DIST", -1)
     end
-
-    return update, 100
 end
 
-return update,100
+if avoid == nil then
+    gcs:send_text(0, "AP_Avoidance singleton not available")
+    return
+end
+
+function update()
+    update_avoidance()
+    return update, 1000 / UPDATE_RATE_HZ
+end
+
+return update, 100
