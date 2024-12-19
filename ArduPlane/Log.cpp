@@ -215,6 +215,7 @@ public:
         CRASHED             = 1U<<2,  // vehicle believes itself to be crashed
         STILL               = 1U<<3,  // vehicle is not moving on any axis
         IMPACT              = 1U<<4,  // vehicle has suffered some sort of impact
+        THROTTLE_SUPPRESSED = 1U<<5,  // throttle is suppressed
     };
 
     void set(Bit bit, bool new_value) {
@@ -247,6 +248,7 @@ void Plane::Log_Write_Status()
     status.set(LogStatus::Bit::CRASHED, crash_state.is_crashed);
     status.set(LogStatus::Bit::STILL, AP::ins().is_still());
     status.set(LogStatus::Bit::IMPACT, crash_state.impact_detected);
+    status.set(LogStatus::Bit::THROTTLE_SUPPRESSED, throttle_suppressed);
 
     const struct log_Status pkt {
         LOG_PACKET_HEADER_INIT(LOG_STATUS_MSG),
