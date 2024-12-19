@@ -378,6 +378,8 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
     // DO_CHANGE_SPEED commands
     plane.new_airspeed_cm = -1;
 
+    // takeoff direction always cleared on disarm
+    plane.takeoff_state.takeoff_direction_initialized = false;
     send_arm_disarm_statustext("Throttle disarmed");
 
     return true;
