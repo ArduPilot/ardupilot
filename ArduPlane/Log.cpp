@@ -204,22 +204,63 @@ struct PACKED log_Status {
     bool is_still;
     uint8_t stage;
     bool impact;
+    uint16_t status;
+};
+
+class LogStatus {
+public:
+    enum class Bit : uint16_t {
+        IS_FLYING           = 1U<<0,  // vehicle thinks it is flying
+        ARMED               = 1U<<1,  // vehicle is armed
+        CRASHED             = 1U<<2,  // vehicle believes itself to be crashed
+        STILL               = 1U<<3,  // vehicle is not moving on any axis
+        IMPACT              = 1U<<4,  // vehicle has suffered some sort of impact
+    };
+
+    void set(Bit bit, bool new_value) {
+        if (!new_value) {
+            value &= ~(uint16_t(bit));
+            return;
+        }
+        set(bit);
+    }
+    void set(Bit bit) {
+        value |= (uint16_t(bit));
+    }
+    bool get(Bit bit) const {
+        return value & (uint16_t(bit));
+    }
+    void clear(Bit bit) {
+        value &= ~(uint16_t(bit));
+    }
+    operator uint16_t() {
+        return value;
+    }
+    uint16_t value = 0;
 };
 
 void Plane::Log_Write_Status()
 {
-    struct log_Status pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_STATUS_MSG)
-        ,time_us   : AP_HAL::micros64()
-        ,is_flying   : is_flying()
-        ,is_flying_probability : isFlyingProbability
-        ,armed       : hal.util->get_soft_armed()
-        ,safety      : static_cast<uint8_t>(hal.util->safety_switch_state())
-        ,is_crashed  : crash_state.is_crashed
-        ,is_still    : AP::ins().is_still()
-        ,stage       : static_cast<uint8_t>(flight_stage)
-        ,impact      : crash_state.impact_detected
-        };
+    LogStatus status;
+    status.set(LogStatus::Bit::IS_FLYING, is_flying());
+    status.set(LogStatus::Bit::ARMED, hal.util->get_soft_armed());
+    status.set(LogStatus::Bit::CRASHED, crash_state.is_crashed);
+    status.set(LogStatus::Bit::STILL, AP::ins().is_still());
+    status.set(LogStatus::Bit::IMPACT, crash_state.impact_detected);
+
+    const struct log_Status pkt {
+        LOG_PACKET_HEADER_INIT(LOG_STATUS_MSG),
+        time_us   : AP_HAL::micros64(),
+        is_flying   : status.get(LogStatus::Bit::IS_FLYING),
+        is_flying_probability : isFlyingProbability,
+        armed       : status.get(LogStatus::Bit::ARMED),
+        safety      : static_cast<uint8_t>(hal.util->safety_switch_state()),
+        is_crashed  : status.get(LogStatus::Bit::CRASHED),
+        is_still    : status.get(LogStatus::Bit::STILL),
+        stage       : static_cast<uint8_t>(flight_stage),
+        impact      : status.get(LogStatus::Bit::IMPACT),
+        status      : status,
+    };
 
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -376,8 +417,10 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Still: True when vehicle is not moving in any axis
 // @Field: Stage: Current stage of the flight
 // @Field: Hit: True if impact is detected
+// @Field: Bit: bitmask of vehicle state information
+// @FieldBitmaskEnum: Bit: LogStatus::Bit
     { LOG_STATUS_MSG, sizeof(log_Status),
-      "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit", "s--------", "F--------" , true },
+      "STAT", "QBfBBBBBBH",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit,Bit", "s---------", "F---------" , true },
 
 // @LoggerMessage: QTUN
 // @Description: QuadPlane vertical tuning message
