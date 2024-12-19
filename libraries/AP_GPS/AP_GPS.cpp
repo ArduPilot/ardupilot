@@ -1197,35 +1197,62 @@ void AP_GPS::update_primary(void)
         return;
     }
 
-    // handle switch between real GPSs
+    // Use the primary GPS as reference for the best GPS
+    uint8_t best_satellites = state[primary_instance].num_sats;
+    uint8_t best_status = state[primary_instance].status;
+    uint8_t best_gps_instance = primary_instance;
+
+    // Find out which GPS has the best fix or the most satellites
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (i == primary_instance) {
             continue;
         }
-        if (state[i].status > state[primary_instance].status) {
-            // we have a higher status lock, or primary is set to the blended GPS, change GPS
-            primary_instance = i;
-            _last_instance_swap_ms = now;
+
+        if (best_status >= state[i].status) {
+            continue;
+        }
+        
+        if (best_satellites >= state[i].num_sats) {
             continue;
         }
 
-        bool another_gps_has_1_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 1);
+        best_status = state[i].status;
+        best_satellites = state[i].num_sats;
+        best_gps_instance = i;
+    }
 
-        if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
+    if (best_gps_instance == primary_instance) {
+        // We already have the best GPS
+        return;
+    }
 
-            bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
+    uint32_t time_since_last_switch = now - _last_instance_swap_ms;
 
-            if ((another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
-                (another_gps_has_2_or_more_sats && (now - _last_instance_swap_ms) >= 5000)) {
-                // this GPS has more satellites than the
-                // current primary, switch primary. Once we switch we will
-                // then tend to stick to the new GPS as primary. We don't
-                // want to switch too often as it will look like a
-                // position shift to the controllers.
-                primary_instance = i;
-                _last_instance_swap_ms = now;
-            }
-        }
+    if (time_since_last_switch < 5000) {
+        // We don't want to switch too often as it will look like a
+        // position shift to the controllers.
+        return;
+    }
+
+    if (best_status > state[primary_instance].status) {
+        // This GPS has a higher status lock than the current primary, switch primary
+        primary_instance = best_gps_instance;
+        _last_instance_swap_ms = now;
+        return;
+    }
+
+    uint8_t satellite_delta = state[best_gps_instance].num_sats - state[primary_instance].num_sats;
+
+    if (time_since_last_switch >= 20000 || satellite_delta >= 1) {
+        // This GPS has the most amount of satellites than the
+        // current primary, switch primary. Once we switch we will
+        // then tend to stick to the new GPS as primary. We don't
+        // want to switch too often as it will look like a
+        // position shift to the controllers.
+
+        primary_instance = best_gps_instance;
+        _last_instance_swap_ms = now;
+        return;
     }
 }
 #endif  // GPS_MAX_RECEIVERS > 1
