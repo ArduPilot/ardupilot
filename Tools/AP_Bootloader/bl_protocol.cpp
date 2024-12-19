@@ -49,11 +49,16 @@
 #include "bl_protocol.h"
 #include "support.h"
 #include "can.h"
+#include "AP_Bootloader_config.h"
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #if EXT_FLASH_SIZE_MB
 #include <AP_FlashIface/AP_FlashIface_JEDEC.h>
 #endif
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
+
+#define FORCE_VERSION_H_INCLUDE
+#include "ap_version.h"
+#undef FORCE_VERSION_H_INCLUDE
 
 // #pragma GCC optimize("O0")
 
@@ -122,14 +127,30 @@
 #define PROTO_READ_MULTI_MAX    255	// size of the size field
 
 /* argument values for PROTO_GET_DEVICE */
-#define PROTO_DEVICE_BL_REV	1	// bootloader revision
-#define PROTO_DEVICE_BOARD_ID	2	// board ID
-#define PROTO_DEVICE_BOARD_REV	3	// board revision
-#define PROTO_DEVICE_FW_SIZE	4	// size of flashable area
-#define PROTO_DEVICE_VEC_AREA	5	// contents of reserved vectors 7-10
-#define PROTO_DEVICE_EXTF_SIZE  6   // size of available external flash
+#define PROTO_DEVICE_BL_REV       1  // bootloader revision
+#define PROTO_DEVICE_BOARD_ID	  2  // board ID
+#define PROTO_DEVICE_BOARD_REV	  3  // board revision
+#define PROTO_DEVICE_FW_SIZE	  4  // size of flashable area
+#define PROTO_DEVICE_VEC_AREA	  5  // contents of reserved vectors 7-10
+#define PROTO_DEVICE_EXTF_SIZE    6  // size of available external flash
+#define PROTO_DEVICE_BL_SOFTWARE  7  // bl software version
+#define PROTO_DEVICE_BL_OPTS      8  // bl software info bits
+#define PROTO_DEVICE_APP_SOFTWARE 9  // app software info
+
 // all except PROTO_DEVICE_VEC_AREA and PROTO_DEVICE_BOARD_REV should be done
-#define CHECK_GET_DEVICE_FINISHED(x)   ((x & (0xB)) == 0xB)
+
+// Convert the Device Info to a bitmask
+#define DEVICE_INFO_MASK(x) (1<<(x-1))
+
+// Define the required device info as a mask
+#define REQUIRED_DEVICE_INFO_MASK ( \
+              DEVICE_INFO_MASK(PROTO_DEVICE_BL_REV) \
+            | DEVICE_INFO_MASK(PROTO_DEVICE_BOARD_ID) \
+            | DEVICE_INFO_MASK(PROTO_DEVICE_FW_SIZE) \
+        )
+
+// Checks whether all required device info has been obtained
+#define CHECK_GET_DEVICE_FINISHED(x)   ((x & (REQUIRED_DEVICE_INFO_MASK)) == REQUIRED_DEVICE_INFO_MASK)
 
 // interrupt vector table for STM32
 #define SCB_VTOR 0xE000ED08
@@ -602,11 +623,57 @@ bootloader(unsigned timeout)
             case PROTO_DEVICE_EXTF_SIZE:
                 cout((uint8_t *)&board_info.extf_size, sizeof(board_info.extf_size));
                 break;
+            
+            case PROTO_DEVICE_BL_SOFTWARE:
+            {
+                uint32_t git_hash = GIT_VERSION_INT;
+                cout((uint8_t *)&git_hash, sizeof(git_hash));
+                break;
+            }
+
+            case PROTO_DEVICE_BL_OPTS:
+            {
+                uint32_t options = 0;
+#if AP_CHECK_FIRMWARE_ENABLED
+#if AP_SIGNED_FIRMWARE
+                options |= OptionSignedFirmware;
+#else
+                options |= OptionUnsignedFirmware;
+#endif
+                if (check_good_firmware() == check_fw_result_t::CHECK_FW_OK) {
+                    options |= OptionCheckFWOk;
+                }
+#endif
+#if AP_BOOTLOADER_FLASH_FROM_SD_ENABLED
+                options |= OptionFlashFromSDCard;
+#endif
+                cout((uint8_t *)&options, sizeof(options));
+                break;
+            }
+
+            case PROTO_DEVICE_APP_SOFTWARE:
+            {
+#if AP_CHECK_FIRMWARE_ENABLED
+                uint32_t git_hash;
+                const auto *ad = get_app_descriptor();
+                
+                if (ad != nullptr) {
+                    // app_descriptor is valid, grab the hash and output
+                    git_hash = ad->git_hash;
+                    cout((uint8_t *)&git_hash, sizeof(git_hash));
+                    break;                    
+                }
+#endif // AP_CHECK_FIRMWARE_ENABLED
+                // either app descriptor is null, or check firmware is not enabled
+                goto cmd_bad;
+                
+                break;
+            }
 
             default:
                 goto cmd_bad;
             }
-            done_get_device_flags |= (1<<(arg-1)); // set the flags for use when resetting timeout 
+            done_get_device_flags |= DEVICE_INFO_MASK(arg); // set the flags for use when resetting timeout 
             break;
 
         // erase and prepare for programming

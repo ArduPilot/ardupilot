@@ -11,6 +11,7 @@ struct boardinfo {
     uint32_t	board_rev;
     uint32_t	fw_size;
     uint32_t    extf_size;
+    uint32_t    git_hash;
 } __attribute__((packed));
 
 extern struct boardinfo board_info;
