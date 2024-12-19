@@ -269,7 +269,7 @@ void AP_MotorsHeli_Dual::calculate_scalars()
     _collective_zero_thrust_deg.set(constrain_float(_collective_zero_thrust_deg, _collective_min_deg, _collective_max_deg));
 
     _collective_land_min_deg.set(constrain_float(_collective_land_min_deg, _collective_min_deg, _collective_max_deg));
-    _collective_land_offset_deg.set(constrain_float(_collective_land_offset_deg, _collective_min_deg, _collective_max_deg));
+    _collective_land_offset_deg.set(constrain_float(_collective_land_offset_deg, 0.0, _collective_zero_thrust_deg-_collective_land_min_deg));
 
     if (!is_equal((float)_collective_max_deg, (float)_collective_min_deg)) {
         // calculate collective zero thrust point as a number from 0 to 1
@@ -424,8 +424,8 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
 
     // In non-manual collective modes, ensure not below landed/landing collective.  If collective offset is used, don't allow negative
     // collective offsets.  Only allow positive collective offsets to keep collective above landed collective.  
-    if (_heliflags.land_complete && _heliflags.landing_collective && collective_out < _collective_land_min_pct + _collective_offset_landed) {
-        float alpha = _dt / (_dt + 1.0/(2.0 * M_PI * 5.0)); //calculate LP filter alpha for 5 hz cutoff freq
+    if (_heliflags.land_complete && _heliflags.landing_collective && collective_out <= _collective_land_min_pct + _collective_offset_landed) {
+        float alpha = _dt / (_dt + 1.0/(2.0 * M_PI * AP_MOTORS_HELI_COLLECTIVE_FILTER_FREQ)); //calculate LP filter alpha for 2 hz cutoff freq
         _collective_offset_landed += alpha * (_collective_land_offset_pct - _collective_offset_landed);
         // constrain collective_out so it never goes above collective zero thrust
         collective_out = constrain_float((_collective_land_min_pct + _collective_offset_landed), _collective_land_min_pct, _collective_zero_thrust_pct);

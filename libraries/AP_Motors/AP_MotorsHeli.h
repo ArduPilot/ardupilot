@@ -25,6 +25,7 @@
 #define AP_MOTORS_HELI_COLLECTIVE_MIN_DEG      -90.0f // minimum collective blade pitch angle in deg
 #define AP_MOTORS_HELI_COLLECTIVE_MAX_DEG       90.0f // maximum collective blade pitch angle in deg
 #define AP_MOTORS_HELI_COLLECTIVE_LAND_MIN      -2.0f // minimum landed collective blade pitch angle in deg for modes using althold
+#define AP_MOTORS_HELI_COLLECTIVE_FILTER_FREQ   2.0f // time constant used to update estimated hover throttle, 0 ~ 1
 
 
 // flybar types
