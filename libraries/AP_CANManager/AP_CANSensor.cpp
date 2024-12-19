@@ -71,13 +71,13 @@ void CANSensor::register_driver_periph(const AP_CAN::Protocol dtype)
             continue;
         }
 
-        init(0, false); // TODO: allow multiple drivers
+        init(0); // TODO: allow multiple drivers
         return;
     }
 }
 #endif
 
-void CANSensor::init(uint8_t driver_index, bool enable_filters)
+void CANSensor::init(uint8_t driver_index)
 {
     _driver_index = driver_index;
 
