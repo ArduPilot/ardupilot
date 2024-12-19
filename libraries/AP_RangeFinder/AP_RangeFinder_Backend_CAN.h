@@ -31,6 +31,7 @@ protected:
     bool get_reading(float &reading_m);
 
     // it is essential that anyone relying on the base-class update to implement this
+    // returns true if packet consumed
     virtual bool handle_frame(AP_HAL::CANFrame &frame) = 0;
 
     // maximum time between readings before we change state to NoData:
