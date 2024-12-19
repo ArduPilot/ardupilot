@@ -16,6 +16,10 @@ import struct
 import base64
 import subprocess
 
+# modify our search path:
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
+import chibios_hwdef
+
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
     bldnode = bld.bldnode.make_node('modules/ChibiOS')
@@ -638,17 +642,27 @@ def generate_hwdef_h(env):
         print(env.BOOTLOADER_OPTION)
         env.BOOTLOADER_OPTION += " --signed-fw"
         print(env.BOOTLOADER_OPTION)
-    hwdef_script = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
     hwdef_out = env.BUILDROOT
     if not os.path.exists(hwdef_out):
         os.mkdir(hwdef_out)
-    python = sys.executable
-    cmd = "{0} '{1}' -D '{2}' --params '{3}' '{4}'".format(python, hwdef_script, hwdef_out, env.DEFAULT_PARAMETERS, env.HWDEF)
+
+    # Build a list of the hardware definitions
+    hwdef_arr = [env.HWDEF]
     if env.HWDEF_EXTRA:
-        cmd += " '{0}'".format(env.HWDEF_EXTRA)
-    if env.BOOTLOADER_OPTION:
-        cmd += " " + env.BOOTLOADER_OPTION
-    return subprocess.call(cmd, shell=True)
+        # Add any extra hwdefs that may be defined
+        hwdef_arr.append(env.HWDEF_EXTRA)
+    ch = chibios_hwdef.ChibiOSHWDef(outdir=hwdef_out,
+                                    bootloader=env.BOOTLOADER,
+                                    signed_fw=env.AP_SIGNED_FIRMWARE,
+                                    default_params_filepath=env.DEFAULT_PARAMETERS,
+                                    hwdef=hwdef_arr)
+    try:
+        ch.run()
+        # Return success for subprocess call
+        return 0
+    except SystemExit:
+        # The run failed, so return the error code
+        return 1
 
 def pre_build(bld):
     '''pre-build hook to change dynamic sources'''
@@ -668,21 +682,18 @@ def pre_build(bld):
 
 def build(bld):
 
-
-    hwdef_rule="%s '%s/hwdef/scripts/chibios_hwdef.py' -D '%s' --params '%s' '%s'" % (
-            bld.env.get_flat('PYTHON'),
-            bld.env.AP_HAL_ROOT,
-            bld.env.BUILDROOT,
-            bld.env.default_parameters,
-            bld.env.HWDEF)
+    hwdef_arr = [bld.env.HWDEF]
     if bld.env.HWDEF_EXTRA:
-        hwdef_rule += " " + bld.env.HWDEF_EXTRA
-    if bld.env.BOOTLOADER_OPTION:
-        hwdef_rule += " " + bld.env.BOOTLOADER_OPTION
+        hwdef_arr.append(bld.env.HWDEF_EXTRA)
+    ch = chibios_hwdef.ChibiOSHWDef(outdir=bld.env.BUILDROOT,
+                                    bootloader=bld.env.BOOTLOADER,
+                                    signed_fw=bld.env.AP_SIGNED_FIRMWARE,
+                                    default_params_filepath=bld.env.DEFAULT_PARAMETERS,
+                                    hwdef=hwdef_arr)
     bld(
         # build hwdef.h from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob(bld.env.HWDEF),
-        rule=hwdef_rule,
+        rule=ch.run,
         group='dynamic_sources',
         target=[bld.bldnode.find_or_declare('hwdef.h'),
                 bld.bldnode.find_or_declare('ldscript.ld'),
