@@ -346,9 +346,9 @@ void AP_AHRS::update_state(void)
     state.primary_core = _get_primary_core_index();
     state.wind_estimate_ok = _wind_estimate(state.wind_estimate);
     state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
-    state.airspeed_ok = _airspeed_estimate(state.airspeed, state.airspeed_estimate_type);
-    state.airspeed_true_ok = _airspeed_estimate_true(state.airspeed_true);
-    state.airspeed_vec_ok = _airspeed_vector_true(state.airspeed_vec);
+    state.airspeed_ok = _airspeed_EAS(state.airspeed, state.airspeed_estimate_type);
+    state.airspeed_true_ok = _airspeed_TAS(state.airspeed_true);
+    state.airspeed_vec_ok = _airspeed_TAS(state.airspeed_vec);
     state.quat_ok = _get_quaternion(state.quat);
     state.secondary_attitude_ok = _get_secondary_attitude(state.secondary_attitude);
     state.secondary_quat_ok = _get_secondary_quaternion(state.secondary_quat);
@@ -931,7 +931,7 @@ bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
 
 // return an airspeed estimate if available. return true
 // if we have an estimate
-bool AP_AHRS::_airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &airspeed_estimate_type) const
+bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_estimate_type) const
 {
 #if AP_AHRS_DCM_ENABLED || (AP_AIRSPEED_ENABLED && AP_GPS_ENABLED)
     const uint8_t idx = get_active_airspeed_index();
@@ -970,20 +970,20 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &airs
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_estimate(idx, airspeed_ret);
+        return dcm.airspeed_EAS(idx, airspeed_ret);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
         airspeed_estimate_type = AirspeedEstimateType::SIM;
-        return sim.airspeed_estimate(airspeed_ret);
+        return sim.airspeed_EAS(airspeed_ret);
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
 #if AP_AHRS_DCM_ENABLED
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_estimate(idx, airspeed_ret);
+        return dcm.airspeed_EAS(idx, airspeed_ret);
 #else
         return false;
 #endif
@@ -999,7 +999,7 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &airs
     case EKFType::EXTERNAL:
 #if AP_AHRS_DCM_ENABLED
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_estimate(idx, airspeed_ret);
+        return dcm.airspeed_EAS(idx, airspeed_ret);
 #else
         return false;
 #endif
@@ -1027,18 +1027,18 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &airs
 #if AP_AHRS_DCM_ENABLED
     // fallback to DCM
     airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-    return dcm.airspeed_estimate(idx, airspeed_ret);
+    return dcm.airspeed_EAS(idx, airspeed_ret);
 #endif
 
     return false;
 }
 
-bool AP_AHRS::_airspeed_estimate_true(float &airspeed_ret) const
+bool AP_AHRS::_airspeed_TAS(float &airspeed_ret) const
 {
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return dcm.airspeed_estimate_true(airspeed_ret);
+        return dcm.airspeed_TAS(airspeed_ret);
 #endif
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -1064,7 +1064,7 @@ bool AP_AHRS::_airspeed_estimate_true(float &airspeed_ret) const
 
 // return estimate of true airspeed vector in body frame in m/s
 // returns false if estimate is unavailable
-bool AP_AHRS::_airspeed_vector_true(Vector3f &vec) const
+bool AP_AHRS::_airspeed_TAS(Vector3f &vec) const
 {
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
@@ -1126,14 +1126,14 @@ bool AP_AHRS::airspeed_health_data(float &innovation, float &innovationVariance,
     return false;
 }
 
-// return a synthetic airspeed estimate (one derived from sensors
+// return a synthetic EAS estimate (one derived from sensors
 // other than an actual airspeed sensor), if available. return
 // true if we have a synthetic airspeed.  ret will not be modified
 // on failure.
 bool AP_AHRS::synthetic_airspeed(float &ret) const
 {
 #if AP_AHRS_DCM_ENABLED
-    return dcm.synthetic_airspeed(ret);
+    return dcm.synthetic_airspeed_EAS(ret);
 #endif
     return false;
 }
