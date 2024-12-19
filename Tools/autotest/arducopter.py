@@ -1926,7 +1926,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # fence requires home to be set:
         m = self.poll_home_position(quiet=False)
 
-        ## 110m polyfence
+        # 110m polyfence
         home_loc = self.mav.location()
         locs = [
             self.offset_location_ne(home_loc, -110, -110),
