@@ -25,6 +25,7 @@
 #define AP_MOTORS_HELI_COLLECTIVE_MIN_DEG      -90.0f // minimum collective blade pitch angle in deg
 #define AP_MOTORS_HELI_COLLECTIVE_MAX_DEG       90.0f // maximum collective blade pitch angle in deg
 #define AP_MOTORS_HELI_COLLECTIVE_LAND_MIN      -2.0f // minimum landed collective blade pitch angle in deg for modes using althold
+#define AP_MOTORS_HELI_COLLECTIVE_FILTER_FREQ   2.0f // time constant used to update estimated hover throttle, 0 ~ 1
 
 
 // flybar types
@@ -132,7 +133,10 @@ public:
 
     // set land complete flag
     void set_land_complete(bool landed) { _heliflags.land_complete = landed; }
-	
+
+    // set land complete maybe flag
+    void set_land_complete_maybe(bool landed) { _heliflags.land_complete_maybe = landed; }
+
 	//return zero lift collective position
     float get_coll_mid() const { return _collective_zero_thrust_pct; }
 
@@ -254,6 +258,7 @@ protected:
         uint8_t below_land_min_coll     : 1;    // true if collective is below H_COL_LAND_MIN
         uint8_t rotor_spooldown_complete : 1;    // true if the rotors have spooled down completely
         uint8_t start_engine            : 1;    // true if turbine start RC option is initiated
+        uint8_t land_complete_maybe     : 1;    // true if aircraft is landed_maybe
     } _heliflags;
 
     // parameters
@@ -269,11 +274,14 @@ protected:
     AP_Float        _collective_land_min_deg;   // Minimum Landed collective blade pitch in degrees for non-manual collective modes (i.e. modes that use altitude hold)
     AP_Float        _collective_max_deg;        // Maximum collective blade pitch angle in deg that corresponds to the PWM set for maximum collective pitch (H_COL_MAX)
     AP_Float        _collective_min_deg;        // Minimum collective blade pitch angle in deg that corresponds to the PWM set for minimum collective pitch (H_COL_MIN)
+    AP_Float        _collective_land_offset_deg;// Offset of Landed collective blade pitch in degrees for non-manual collective modes (i.e. modes that use altitude hold)
 
     // internal variables
     float           _collective_zero_thrust_pct;      // collective zero thrutst parameter value converted to 0 ~ 1 range
     float           _collective_land_min_pct;      // collective land min parameter value converted to 0 ~ 1 range
+    float           _collective_land_offset_pct;   // collective land offset parameter value converted to fraction of collective range
     uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
+    float           _collective_offset_landed;  // current value of collective offset
 
     motor_frame_type _frame_type;
     motor_frame_class _frame_class;
