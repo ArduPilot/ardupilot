@@ -29,5 +29,6 @@ public:
         Scripting2 = 12,
         TOFSenseP = 13,
         NanoRadar = 14,
+        Hexsoon = 15,
     };
 };
