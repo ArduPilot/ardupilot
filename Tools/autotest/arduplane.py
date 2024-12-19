@@ -4201,8 +4201,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
             "plane-tailsitter": "unstable in hover; unflyable in cruise",
-            "plane-ice" : "needs ICE control channel for ignition",
-            "quadplane-ice" : "needs ICE control channel for ignition",
             "quadplane-can" : "needs CAN periph",
             "stratoblimp" : "not expected to fly normally",
             "glider" : "needs balloon lift",
