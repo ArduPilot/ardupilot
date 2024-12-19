@@ -85,8 +85,7 @@ bool AP_InertialSensor::is_dynamic_fifo_enabled(uint8_t instance) const
     if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
         return false;
     }
-    return ((1U<<instance) & AP_INERTIALSENSOR_DYNAMIC_FIFO_MASK)
-            && (_fast_sampling_mask & (1U<<instance)) != 0
+    return (_fast_sampling_mask & (1U<<instance)) != 0
             && fast_rate_buffer->use_rate_loop_gyro_samples();
 }
 
