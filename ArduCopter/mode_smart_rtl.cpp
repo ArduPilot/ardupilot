@@ -11,6 +11,13 @@
 
 bool ModeSmartRTL::init(bool ignore_checks)
 {
+    // Add check to prevent SmartRTL activation when disarmed
+    if (!motors->armed()) {
+        // Send a warning message to the GCS
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Cannot engage SmartRTL while disarmed");
+        return false;  // Prevent initialization
+    }
+
     if (g2.smart_rtl.is_active()) {
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
@@ -174,8 +181,12 @@ void ModeSmartRTL::pre_land_position_run()
 // save current position for use by the smart_rtl flight mode
 void ModeSmartRTL::save_position()
 {
-    const bool should_save_position = motors->armed() && (copter.flightmode->mode_number() != Mode::Number::SMART_RTL);
+    // Prevent saving positions when the drone is disarmed
+    if (!motors->armed()) {
+        return;
+    }
 
+    const bool should_save_position = motors->armed() && (copter.flightmode->mode_number() != Mode::Number::SMART_RTL);
     copter.g2.smart_rtl.update(copter.position_ok(), should_save_position);
 }
 
