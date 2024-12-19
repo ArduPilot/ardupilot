@@ -26,7 +26,6 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
 
-#include "AP_InertialSensor_rate_config.h"
 #include "AP_InertialSensor_Invensense.h"
 #include <GCS_MAVLink/GCS.h>
 
