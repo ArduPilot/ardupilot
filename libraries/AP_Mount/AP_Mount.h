@@ -69,6 +69,7 @@ class AP_Mount
     friend class AP_Mount_Xacti;
     friend class AP_Mount_Viewpro;
     friend class AP_Mount_Topotek;
+    friend class AP_Mount_Tusuav;
 
 public:
     AP_Mount();
@@ -119,6 +120,9 @@ public:
 #endif
 #if HAL_MOUNT_TOPOTEK_ENABLED
         Topotek = 12,        /// Topotek gimbal using a custom serial protocol
+#endif
+#if HAL_MOUNT_TUSUAV_ENABLED
+        Tusuav = 13,        /// Tusuav gimbal using a custom serial protocol
 #endif
     };
 
