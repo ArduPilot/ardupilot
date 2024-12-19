@@ -29,6 +29,9 @@ jobs:
         with:
           submodules: 'recursive'
 
+      - name: Register lua problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/Lua.json"
+
       - name: Lua Linter
         shell: bash
         run: |
