@@ -401,11 +401,11 @@ bool AP_InertialSensor_Invensensev3::update()
     return true;
 }
 
-void AP_InertialSensor_Invensensev3::set_primary_gyro(bool is_primary)
+void AP_InertialSensor_Invensensev3::set_primary_gyro(bool _is_primary)
 {
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
     if (_imu.is_dynamic_fifo_enabled(gyro_instance)) {
-        if (is_primary) {
+        if (_is_primary) {
             dev->adjust_periodic_callback(periodic_handle, backend_period_us);
         } else {
             dev->adjust_periodic_callback(periodic_handle, backend_period_us * get_fast_sampling_rate());
@@ -570,7 +570,7 @@ void AP_InertialSensor_Invensensev3::read_fifo()
 
     // adjust the periodic callback to be synchronous with the incoming data
     // this means that we rarely run read_fifo() without updating the sensor data
-    if (is_primary_gyro) {
+    if (is_primary) {
         dev->adjust_periodic_callback(periodic_handle, backend_period_us);
     }
 

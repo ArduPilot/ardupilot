@@ -370,7 +370,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 
     // 5us
     log_gyro_raw(instance, sample_us, gyro, _imu._gyro_filtered[instance]);
-    update_primary_gyro();
+    update_primary();
 }
 
 /*
@@ -458,7 +458,7 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
     }
 
     log_gyro_raw(instance, sample_us, gyro, _imu._gyro_filtered[instance]);
-    update_primary_gyro();
+    update_primary();
 }
 
 void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &raw_gyro, const Vector3f &filtered_gyro)
@@ -616,7 +616,6 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     // assume we're doing pre-filter logging:
     log_accel_raw(instance, sample_us, accel);
 #endif
-    update_primary_accel();
 }
 
 /*
@@ -694,7 +693,6 @@ void AP_InertialSensor_Backend::_notify_new_delta_velocity(uint8_t instance, con
     // assume we're doing pre-filter logging
     log_accel_raw(instance, sample_us, accel);
 #endif
-    update_primary_accel();
 }
 
 
@@ -810,17 +808,19 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
     update_gyro_filters(instance);
 }
 
-void AP_InertialSensor_Backend::update_primary_gyro()
+void AP_InertialSensor_Backend::update_primary()
 {
     // timing changes need to be made in the bus thread in order to take effect which is
-    // why they are actioned here
+    // why they are actioned here. Currently the _primary_gyro and _primary_accel can never
+    // be different for a particular IMU
     const bool is_new_primary = gyro_instance == _imu._primary_gyro;
     uint32_t now_us = AP_HAL::micros();
-    if (is_primary_gyro != is_new_primary
-        || AP_HAL::timeout_expired(last_primary_gyro_update_us, now_us, PRIMARY_UPDATE_TIMEOUT_US)) {
+    if (is_primary != is_new_primary
+        || AP_HAL::timeout_expired(last_primary_update_us, now_us, PRIMARY_UPDATE_TIMEOUT_US)) {
         set_primary_gyro(is_new_primary);
-        is_primary_gyro = is_new_primary;
-        last_primary_gyro_update_us = now_us;
+        set_primary_accel(is_new_primary);
+        is_primary = is_new_primary;
+        last_primary_update_us = now_us;
     }
 }
 
@@ -865,20 +865,6 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance) /* front end */
     }
 
     update_accel_filters(instance);
-}
-
-void AP_InertialSensor_Backend::update_primary_accel()
-{
-    // timing changes need to be made in the bus thread in order to take effect which is
-    // why they are actioned here
-    const bool is_new_primary = accel_instance == _imu._primary_accel;
-    uint32_t now_us = AP_HAL::micros();
-    if (is_primary_accel != is_new_primary
-        || AP_HAL::timeout_expired(last_primary_accel_update_us, now_us, PRIMARY_UPDATE_TIMEOUT_US)) {
-        set_primary_accel(is_new_primary);
-        is_primary_accel = is_new_primary;
-        last_primary_accel_update_us = now_us;
-    }
 }
 
 /*
