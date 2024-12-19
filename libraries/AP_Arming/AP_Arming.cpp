@@ -1269,6 +1269,7 @@ bool AP_Arming::can_checks(bool report)
                 case AP_CAN::Protocol::TOFSenseP:
                 case AP_CAN::Protocol::NanoRadar:
                 case AP_CAN::Protocol::Benewake:
+                case AP_CAN::Protocol::Hexsoon:
                 {
                     for (uint8_t j = i; j; j--) {
                         if (AP::can().get_driver_type(i) == AP::can().get_driver_type(j-1)) {
