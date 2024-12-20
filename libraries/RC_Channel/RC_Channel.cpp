@@ -779,7 +779,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
 #if AP_AHRS_ENABLED
     case AUX_FUNC::AHRS_TYPE:
-        run_aux_function(ch_option, ch_flag, AuxFuncTrigger::Source::INIT);
+        run_aux_function(ch_option, ch_flag, AuxFuncTrigger::Source::INIT, ch_in);
         break;
 #endif
     default:
@@ -977,7 +977,7 @@ bool RC_Channel::read_aux()
 #endif
 
     // debounced; undertake the action:
-    run_aux_function(_option, new_position, AuxFuncTrigger::Source::RC, get_radio_in());
+    run_aux_function(_option, new_position, AuxFuncTrigger::Source::RC, ch_in);
     return true;
 }
 
@@ -1402,7 +1402,7 @@ void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const
 }
 #endif  // HAL_MOUNT_ENABLED
 
-bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTrigger::Source source, int16_t pwm)
+bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTrigger::Source source, uint16_t source_index)
 {
 #if AP_SCRIPTING_ENABLED
     rc().set_aux_cached(ch_option, pos);
@@ -1412,7 +1412,7 @@ bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncT
         func: ch_option,
         pos: pos,
         source: source,
-        pwm: pwm,
+        source_index: source_index,
     };
 
     const bool ret = do_aux_function(trigger);
@@ -1427,17 +1427,19 @@ bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncT
     // @FieldValueEnum: pos: RC_Channel::AuxSwitchPos
     // @Field: source: source of auxiliary function invocation
     // @FieldValueEnum: source: RC_Channel::AuxFuncTrigger::Source
+    // @Field: index: index within source. 0 indexed. Invalid for scripting.
     // @Field: result: true if function was successful
     AP::logger().Write(
         "AUXF",
-        "TimeUS,function,pos,source,result",
-        "s#---",
-        "F----",
-        "QHBBB",
+        "TimeUS,function,pos,source,index,result",
+        "s#----",
+        "F-----",
+        "QHBBHB",
         AP_HAL::micros64(),
         uint16_t(ch_option),
         uint8_t(pos),
         uint8_t(source),
+        source_index,
         uint8_t(ret)
     );
 #endif
@@ -1915,7 +1917,8 @@ void RC_Channel::init_aux()
     if (!read_3pos_switch(position)) {
         position = AuxSwitchPos::LOW;
     }
-    init_aux_function((AUX_FUNC)option.get(), position);
+
+    run_aux_function((AUX_FUNC)option.get(), position, AuxFuncTrigger::Source::INIT, ch_in);
 }
 
 // read_3pos_switch
