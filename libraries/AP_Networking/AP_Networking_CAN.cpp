@@ -108,7 +108,6 @@ void AP_Networking_CAN::mcast_server(void)
         }
         char address[] = MCAST_ADDRESS_BASE;
         const uint32_t buffer_size = 20; // good for fw upload
-        uint8_t callback_id = 0;
 
         address[strlen(address)-1] = '0' + bus;
         if (!mcast_sockets[bus]->connect(address, MCAST_PORT)) {
@@ -122,6 +121,14 @@ void AP_Networking_CAN::mcast_server(void)
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "CAN_MCAST[%u]: failed to register", unsigned(bus));
             goto de_allocate;
         }
+#ifndef HAL_BOOTLOADER_BUILD
+        // check if bridged mode is enabled
+        cbus->set_rx_cb_disabled(callback_id, !AP::network().is_can_mcast_ep_bridged(bus));
+#else
+        // never bridge in bootloader, as we can cause loops if multiple
+        // bootloaders with mcast are running on the same network
+        cbus->set_rx_cb_disabled(callback_id, true);
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         // tell the ethernet interface that we want to receive all
@@ -151,7 +158,8 @@ void AP_Networking_CAN::mcast_server(void)
         thread_sleep_us(delay_us);
 #endif
         for (uint8_t bus=0; bus<HAL_NUM_CAN_IFACES; bus++) {
-            if (mcast_sockets[bus] == nullptr) {
+            auto *cbus = get_caniface(bus);
+            if (mcast_sockets[bus] == nullptr || cbus == nullptr) {
                 continue;
             }
 
@@ -180,15 +188,28 @@ void AP_Networking_CAN::mcast_server(void)
             */
             AP_HAL::CANFrame frame;
             const uint16_t timeout_us = 2000;
-
+#ifndef HAL_BOOTLOADER_BUILD
+            // check if bridged mode is enabled
+            bool bridged = AP::network().is_can_mcast_ep_bridged(bus);
+            cbus->set_rx_cb_disabled(callback_id, !bridged);
+#else
+            // never bridge in bootloader, as we can cause loops if multiple
+            // bootloaders with mcast are running on the same network and CAN Bus
+            bool bridged = false;
+#endif
             while (frame_buffers[bus]->peek(frame)) {
-                auto *cbus = get_caniface(bus);
-                if (cbus == nullptr) {
-                    break;
+                bool retcode;
+                if (!bridged) {
+                    AP_HAL::CANIface::CanRxItem rx_item;
+                    rx_item.timestamp_us = AP_HAL::micros64();
+                    rx_item.flags = AP_HAL::CANIface::IsMAVCAN;
+                    rx_item.frame = frame;
+                    retcode = cbus->add_to_rx_queue(rx_item);
+                } else {
+                    retcode = cbus->send(frame,
+                                    AP_HAL::micros64() + timeout_us,
+                                    AP_HAL::CANIface::IsMAVCAN);
                 }
-                auto retcode = cbus->send(frame,
-                                                      AP_HAL::micros64() + timeout_us,
-                                                      AP_HAL::CANIface::IsMAVCAN);
                 if (retcode == 0) {
                     break;
                 }
