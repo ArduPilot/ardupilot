@@ -106,8 +106,10 @@ void AP_Proximity_LD06::get_readings()
                 continue;
             }
 
-            const uint32_t total_packet_length = _response[START_DATA_LENGTH] + 3;
-            if (total_packet_length > ARRAY_SIZE(_response)) {
+            // total_packet_length = sizeof(header) + datalength + sizeof(footer):
+            const uint32_t total_packet_length = 6 + 3*_response[START_DATA_LENGTH] + 5;
+            if (_response[START_DATA_LENGTH] != PAYLOAD_COUNT ||
+                total_packet_length > ARRAY_SIZE(_response)) {
                 // invalid packet received; throw away all data and
                 // start again.
                 _byte_count = 0;
