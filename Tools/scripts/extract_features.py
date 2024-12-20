@@ -135,7 +135,7 @@ class ExtractFeatures(object):
 
             ('HAL_PARACHUTE_ENABLED', 'AP_Parachute::update',),
             ('AP_FENCE_ENABLED', r'AC_Fence::check\b',),
-            ('HAL_RALLY_ENABLED', r'AP_Rally::get_rally_max\b',),
+            ('HAL_RALLY_ENABLED', 'AP_Rally::find_nearest_rally_point',),
             ('AC_AVOID_ENABLED', 'AC_Avoid::AC_Avoid',),
             ('AC_OAPATHPLANNER_ENABLED', 'AP_OAPathPlanner::AP_OAPathPlanner',),
             ('AC_PAYLOAD_PLACE_ENABLED', 'PayloadPlace::start_descent'),
