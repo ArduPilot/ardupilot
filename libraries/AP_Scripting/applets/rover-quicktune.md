@@ -60,6 +60,8 @@ If you move the switch to the low position at any time in the tune before gains 
 
 If the pilot gives steering or throttle input during tuning then tuning is paused for 4 seconds.  Tuning restarts once the pilot returns to the input to the neutral position.
 
+If the vehicle is not able to turn correctly to enter or track the circle, the ``PSC`` parameters may be to be increased. For example ``PSC_VEL_FF`` to 1 and ``PSC_VEL_P`` to 8 for very small vehicles.
+
 # Parameters
 
 The script has the following parameters to configure its behaviour
@@ -101,12 +103,12 @@ The default of 1.0 is good for most users.
 ## RTUN_SPD_P_RATIO
 
 Ratio between speed FF and P gain. Raise this to get a higher P gain, 0 to leave P unchanged
-The default of 1.0 is good for most users.
+The default of 1.0 is good for most users. Slow vehicles (<0.2m/s) may need this reduced to 0.3 or lower
 
 ## RTUN_SPD_I_RATIO
 
 Ratio between speed FF and I gain. Raise this to get a higher I gain, 0 to leave I unchanged
-The default of 1.0 is good for most users.
+The default of 1.0 is good for most users. Slow vehicles (<0.2m/s) may need this reduced to 0.3 or lower
 
 ## RTUN_AUTO_FILTER
 
@@ -120,3 +122,8 @@ completes unless the pilot move the RC switch low to revert the tune.
 Setting this to a non-zero value allows you to use quicktune with a 2-position
 switch, with the switch settings as low and mid positions. A zero
 value disables auto-save and you need to have a 3 position switch.
+
+## RTUN_SPEED_MIN
+
+The minimum speed at which tuning will occur. The vehicle must be able to
+run in Circle mode at this speed or greater.
