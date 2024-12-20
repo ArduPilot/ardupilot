@@ -1,160 +1,151 @@
-# ArduPilot Project
+Aqui está um relatório completo, com base nas comparações detalhadas das diferenças entre os códigos da versão 4.4.0 e 4.7.0 do ArduPilot.
 
-<a href="https://ardupilot.org/discord"><img src="https://img.shields.io/discord/674039678562861068.svg" alt="Discord">
+---
 
-[![Test Copter](https://github.com/ArduPilot/ardupilot/workflows/test%20copter/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_copter.yml) [![Test Plane](https://github.com/ArduPilot/ardupilot/workflows/test%20plane/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_plane.yml) [![Test Rover](https://github.com/ArduPilot/ardupilot/workflows/test%20rover/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_rover.yml) [![Test Sub](https://github.com/ArduPilot/ardupilot/workflows/test%20sub/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_sub.yml) [![Test Tracker](https://github.com/ArduPilot/ardupilot/workflows/test%20tracker/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_tracker.yml)
+## **Relatório de Comparação entre as Versões 4.4.0 e 4.7.0 do ArduPilot: Análise das Diferenças no Código**
 
-[![Test AP_Periph](https://github.com/ArduPilot/ardupilot/workflows/test%20ap_periph/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_periph.yml) [![Test Chibios](https://github.com/ArduPilot/ardupilot/workflows/test%20chibios/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_chibios.yml) [![Test Linux SBC](https://github.com/ArduPilot/ardupilot/workflows/test%20Linux%20SBC/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_linux_sbc.yml) [![Test Replay](https://github.com/ArduPilot/ardupilot/workflows/test%20replay/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_replay.yml)
+### **1. Introdução**
+O ArduPilot, na versão 4.4.0 e na versão 4.7.0, apresenta mudanças significativas no código que impactam a modularidade, o controle de dirigíveis, e as operações matemáticas e físicas. Este relatório tem como objetivo comparar essas duas versões, destacando as principais diferenças nas declarações de funções, nas bibliotecas utilizadas e nas lógicas de controle de entradas e saídas.
 
-[![Test Unit Tests](https://github.com/ArduPilot/ardupilot/workflows/test%20unit%20tests%20and%20sitl%20building/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_unit_tests.yml)[![test size](https://github.com/ArduPilot/ardupilot/actions/workflows/test_size.yml/badge.svg)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_size.yml)
+### **2. Diferenças nas Bibliotecas Inclusas**
 
-[![Test Environment Setup](https://github.com/ArduPilot/ardupilot/actions/workflows/test_environment.yml/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_environment.yml)
+#### **Versão 4.4.0**
+- **Bibliotecas principais**:
+  - `AP_Baro/AP_Baro.h`: Para leitura de dados do barômetro.
+  - `AP_HAL/AP_HAL.h`: Abstração de hardware de baixo nível.
+  - `AP_Vehicle/AP_Vehicle.h`: Controle do veículo, incluindo a lógica de voo.
 
-[![Cygwin Build](https://github.com/ArduPilot/ardupilot/actions/workflows/cygwin_build.yml/badge.svg)](https://github.com/ArduPilot/ardupilot/actions/workflows/cygwin_build.yml) [![Macos Build](https://github.com/ArduPilot/ardupilot/actions/workflows/macos_build.yml/badge.svg)](https://github.com/ArduPilot/ardupilot/actions/workflows/macos_build.yml)
+#### **Versão 4.7.0**
+- **Bibliotecas principais**:
+  - Inclui as mesmas bibliotecas da versão 4.4.0, com **adição das bibliotecas**:
+    - `AP_Math/AP_Math.h`: Para operações matemáticas mais complexas, incluindo manipulação de matrizes e álgebra linear.
+    - `AP_Notify/AP_Notify.h`: Para notificações e controle de displays ou alertas.
 
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/5331/badge.svg)](https://scan.coverity.com/projects/ardupilot-ardupilot)
+Essa adição de bibliotecas sugere que a versão 4.7.0 traz **cálculos matemáticos e feedback mais detalhados**, permitindo maior flexibilidade na manipulação de dados e controle do dirigível.
 
-[![Test Coverage](https://github.com/ArduPilot/ardupilot/actions/workflows/test_coverage.yml/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_coverage.yml)
+### **3. Declarações de Funções e Estrutura do Código**
 
-[![Autotest Status](https://autotest.ardupilot.org/autotest-badge.svg)](https://autotest.ardupilot.org/)
+#### **Funções na Versão 4.4.0**
+As funções da versão 4.4.0 são mais simples e diretas, focando principalmente no **controle manual** e **cálculos básicos**.
 
-ArduPilot is the most advanced, full-featured, and reliable open source autopilot software available.
-It has been under development since 2010 by a diverse team of professional engineers, computer scientists, and community contributors.
-Our autopilot software is capable of controlling almost any vehicle system imaginable, from conventional airplanes, quad planes, multi-rotors, and helicopters to rovers, boats, balance bots, and even submarines.
-It is continually being expanded to provide support for new emerging vehicle types.
+Exemplo de funções na versão 4.4.0:
+```cpp
+void ZefControl::mult_mat(const float matrix[12][12], const double vector[12], double (&results)[12]);
+void ZefControl::find_matrix(const double longit_speed);
+void ZefControl::add_traction(double (&U_array)[12], double longit_speed);
+void ZefControl::adjust_for_manual(double (&U_array)[12]);
+void ZefControl::manual_inputs_update(double aileron, double elevator, double rudder, double throttle, double right_switch, double left_switch);
+```
+Essas funções lidam com operações como multiplicação de matrizes, ajuste de entradas de controle e cálculo da tração. O código não lida com matrizes de controle dinâmicas ou coeficientes ajustáveis.
 
-## The ArduPilot project is made up of: ##
+#### **Funções na Versão 4.7.0**
+A versão 4.7.0 introduz uma **maior modularização** e uma estrutura de código mais robusta, com **funções mais complexas** para lidar com novos cálculos e sensores, como a manipulação de quaternions, o controle dos infladores e o ajuste de posição.
 
-- ArduCopter: [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduCopter), [wiki](https://ardupilot.org/copter/index.html)
+Exemplo de funções na versão 4.7.0:
+```cpp
+void ZefControl::mult_mat(const float matrix[8][12], const double vector[12], double (&results)[12]);
+void ZefControl::add_traction(double (&U_array)[12], double longit_speed);
+void ZefControl::adjust_for_manual(double (&U_array)[12]);
+void ZefControl::manual_inputs_update(double aileron, double elevator, double rudder, double throttle, double right_switch, double left_switch);
+void ZefControl::set_RHO(double rho);
+void ZefControl::getPositionError(double desired_position_lat, double desired_position_long, double desired_position_alt, double current_position_lat, double current_position_long, double current_position_alt, double azimute, double (&ret_errors)[3]);
+void ZefControl::rotate_inertial_to_body(float roll, float pitch, float yaw, const Vector3f &inertial_vector);
+void ZefControl::operateInflators(AP_Baro *barometer, float min_p, float max_p, int deactivate_unit);
+```
+Principais melhorias:
+- **Controle de infladores** (`operateInflators`) com base na diferença de pressão do barômetro.
+- **Manipulação de quaternions** (`rotate_inertial_to_body`) para rotacionar vetores do referencial inercial para o referencial da aeronave.
+- **Cálculo do erro de posição** (`getPositionError`) para corrigir a posição do dirigível.
+- **Ajuste dinâmico da densidade do ar** (`set_RHO`).
 
-- ArduPlane: [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduPlane), [wiki](https://ardupilot.org/plane/index.html)
+Essas mudanças aumentam a **precisão**, **modularidade** e **flexibilidade** no controle do dirigível.
 
-- Rover: [code](https://github.com/ArduPilot/ardupilot/tree/master/Rover), [wiki](https://ardupilot.org/rover/index.html)
+### **4. Diferenças no Controle de Força e Tracionamento**
 
-- ArduSub : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduSub), [wiki](http://ardusub.com/)
+#### **Versão 4.4.0**
+Na versão 4.4.0, o cálculo da força dos motores é direto e ajustado manualmente. A função `add_traction` adiciona um valor fixo de tração, baseado em parâmetros como **coeficiente de arrasto** e **volume**:
+```cpp
+void ZefControl::add_traction(double (&U_array)[12], double longit_speed) {
+    double Cd = 0.03;
+    double Volume_2_3 = 9.0;
+    for (int i = 0; i < 8; i++) {
+        if(i % 2 == 0) {
+            double f_static = 0.5 * RHO_air_density * Cd * Volume_2_3 * (powf(longit_speed, 2) / 4);
+            U_array[i] += f_static;
+        }
+    }
+}
+```
 
-- Antenna Tracker : [code](https://github.com/ArduPilot/ardupilot/tree/master/AntennaTracker), [wiki](https://ardupilot.org/antennatracker/index.html)
+#### **Versão 4.7.0**
+Na versão 4.7.0, a tração é calculada de forma mais complexa, incluindo a **força antagonista** e coeficientes ajustáveis. A função `add_traction` agora adiciona a força antagonista em determinados eixos e calcula a tração baseada na velocidade longitudinal:
+```cpp
+void ZefControl::add_traction(double (&U_array)[12], double longit_speed) {
+    double Cd = 0.03;
+    double Volume_2_3 = 9.0;
+    for (int i = 0; i < 8; i++) {
+        if(i % 2 == 0) {
+            double f_static = 0.5 * RHO_air_density * Cd * Volume_2_3 * (powf(longit_speed, 2) / 4);
+            U_array[i] += f_static;
+        }
+    }
+    U_array[0] += antagonist_force;
+    U_array[2] += antagonist_force * -1;
+    U_array[4] += antagonist_force;
+    U_array[6] += antagonist_force * -1;
+}
+```
+Isso permite um **controle mais preciso** da força e tração nos motores.
 
-## User Support & Discussion Forums ##
+### **5. Controle Manual**
 
-- Support Forum: <https://discuss.ardupilot.org/>
+#### **Versão 4.4.0**
+A versão 4.4.0 lida diretamente com as entradas dos controles manuais, fazendo ajustes simples em cada canal de controle (aileron, elevator, rudder, throttle):
+```cpp
+void ZefControl::manual_inputs_update(double aileron, double elevator, double rudder, double throttle, double right_switch, double left_switch) {
+    J1_cmd_roll = aileron / 1.0;
+    J2_cmd_pitch = elevator / 1.0;
+    J3_cmd_throttle = throttle / 1.0;
+    J4_cmd_yaw = rudder / 1.0;
+}
+```
 
-- Community Site: <https://ardupilot.org>
+#### **Versão 4.7.0**
+A versão 4.7.0 introduz **normalização** e **zonas mortas** para garantir que os comandos de controle sejam mais precisos e responsivos. O ajuste das entradas agora leva em conta zonas mortas para cada eixo de controle:
+```cpp
+double control_aileron = rc().channel(CH_1)->get_control_in();
+control_aileron /= normalizador_inputs_apy;
+control_aileron = zefiroControl.dead_zone(control_aileron, dead_zone);
+zefiroControl.manual_inputs_update(control_aileron, control_pitch, control_yaw, control_throttle, control_right_switch, control_left_switch);
+```
+Isso melhora a **precisão** e **suaviza as transições** nos comandos de controle.
 
-## Developer Information ##
+### **6. Controle de Estabilizadores e Infladores**
 
-- Github repository: <https://github.com/ArduPilot/ardupilot>
+#### **Versão 4.4.0**
+O controle de estabilizadores e infladores é mais simples e direto. Não há lógica avançada para a manipulação de infladores baseada em pressão:
+```cpp
+void ZefControl::operateInflators(AP_Baro *barometer, float min_p, float max_p, int deactivate_unit);
+```
 
-- Main developer wiki: <https://ardupilot.org/dev/>
+#### **Versão 4.7.0**
+Na versão 4.7.0, o controle dos infladores é **dinâmico** e depende da **diferença de pressão** medida pelo barômetro. Além disso, a função `operateInflators` é mais detalhada, permitindo a ativação ou desativação dos infladores com base em limites de pressão:
+```cpp
+void ZefControl::operateInflators(AP_Baro *barometer, float min_p, float max_p, int deactivate_unit) {
+    double pressure_diff = (barometer->get_pressure(1) - barometer->get_pressure(0)) * 0.01;
+    if (pressure_diff < min_p && inflator_state == 0) {
+        inflator_state = 1;
+        hal.gpio->pinMode(gpio_pin, HAL_GPIO_OUTPUT);
+        hal.gpio->write(gpio_pin, 1);
+    } else {
+        if (inflator_state == 1 && pressure_diff > max_p) {
+            inflator_state = 0;
+        }
+    }
+}
+```
+Isso permite um **controle mais eficiente** da pressão interna dos infladores, garantindo melhor estabilidade.
 
-- Developer discussion: <https://discuss.ardupilot.org>
+### **7. Conclusão**
 
-- Developer chat: <https://discord.com/channels/ardupilot>
-
-## Top Contributors ##
-
-- [Flight code contributors](https://github.com/ArduPilot/ardupilot/graphs/contributors)
-- [Wiki contributors](https://github.com/ArduPilot/ardupilot_wiki/graphs/contributors)
-- [Most active support forum users](https://discuss.ardupilot.org/u?order=post_count&period=quarterly)
-- [Partners who contribute financially](https://ardupilot.org/about/Partners)
-
-## How To Get Involved ##
-
-- The ArduPilot project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](https://ardupilot.org/dev/docs/contributing.html)
-
-- We have an active group of Beta Testers to help us improve our code: [release procedures](https://ardupilot.org/dev/docs/release-procedures.html)
-
-- Desired Enhancements and Bugs can be posted to the [issues list](https://github.com/ArduPilot/ardupilot/issues).
-
-- Help other users with log analysis in the [support forums](https://discuss.ardupilot.org/)
-
-- Improve the wiki and chat with other [wiki editors on Discord #documentation](https://discord.com/channels/ardupilot)
-
-- Contact the developers on one of the [communication channels](https://ardupilot.org/copter/docs/common-contact-us.html)
-
-## License ##
-
-The ArduPilot project is licensed under the GNU General Public
-License, version 3.
-
-- [Overview of license](https://ardupilot.org/dev/docs/license-gplv3.html)
-
-- [Full Text](https://github.com/ArduPilot/ardupilot/blob/master/COPYING.txt)
-
-## Maintainers ##
-
-ArduPilot is comprised of several parts, vehicles and boards. The list below
-contains the people that regularly contribute to the project and are responsible
-for reviewing patches on their specific area.
-
-- [Andrew Tridgell](https://github.com/tridge):
-  - ***Vehicle***: Plane, AntennaTracker
-  - ***Board***: Pixhawk, Pixhawk2, PixRacer
-- [Francisco Ferreira](https://github.com/oxinarf):
-  - ***Bug Master***
-- [Grant Morphett](https://github.com/gmorph):
-  - ***Vehicle***: Rover
-- [Willian Galvani](https://github.com/williangalvani):
-  - ***Vehicle***: Sub
-  - ***Board***: Navigator
-- [Michael du Breuil](https://github.com/WickedShell):
-  - ***Subsystem***: Batteries
-  - ***Subsystem***: GPS
-  - ***Subsystem***: Scripting
-- [Peter Barker](https://github.com/peterbarker):
-  - ***Subsystem***: DataFlash, Tools
-- [Randy Mackay](https://github.com/rmackay9):
-  - ***Vehicle***: Copter, Rover, AntennaTracker
-- [Siddharth Purohit](https://github.com/bugobliterator):
-  - ***Subsystem***: CAN, Compass
-  - ***Board***: Cube*
-- [Tom Pittenger](https://github.com/magicrub):
-  - ***Vehicle***: Plane
-- [Bill Geyer](https://github.com/bnsgeyer):
-  - ***Vehicle***: TradHeli
-- [Emile Castelnuovo](https://github.com/emilecastelnuovo):
-  - ***Board***: VRBrain
-- [Georgii Staroselskii](https://github.com/staroselskii):
-  - ***Board***: NavIO
-- [Gustavo José de Sousa](https://github.com/guludo):
-  - ***Subsystem***: Build system
-- [Julien Beraud](https://github.com/jberaud):
-  - ***Board***: Bebop & Bebop 2
-- [Leonard Hall](https://github.com/lthall):
-  - ***Subsystem***: Copter attitude control and navigation
-- [Matt Lawrence](https://github.com/Pedals2Paddles):
-  - ***Vehicle***: 3DR Solo & Solo based vehicles
-- [Matthias Badaire](https://github.com/badzz):
-  - ***Subsystem***: FRSky
-- [Mirko Denecke](https://github.com/mirkix):
-  - ***Board***: BBBmini, BeagleBone Blue, PocketPilot
-- [Paul Riseborough](https://github.com/priseborough):
-  - ***Subsystem***: AP_NavEKF2
-  - ***Subsystem***: AP_NavEKF3
-- [Víctor Mayoral Vilches](https://github.com/vmayoral):
-  - ***Board***: PXF, Erle-Brain 2, PXFmini
-- [Amilcar Lucas](https://github.com/amilcarlucas):
-  - ***Subsystem***: Marvelmind
-- [Samuel Tabor](https://github.com/samuelctabor):
-  - ***Subsystem***: Soaring/Gliding
-- [Henry Wurzburg](https://github.com/Hwurzburg):
-  - ***Subsystem***: OSD
-  - ***Site***: Wiki
-- [Peter Hall](https://github.com/IamPete1):
-  - ***Vehicle***: Tailsitters
-  - ***Vehicle***: Sailboat
-  - ***Subsystem***: Scripting
-- [Andy Piper](https://github.com/andyp1per):
-  - ***Subsystem***: Crossfire
-  - ***Subsystem***: ESC
-  - ***Subsystem***: OSD
-  - ***Subsystem***: SmartAudio
-- [Alessandro Apostoli ](https://github.com/yaapu):
-  - ***Subsystem***: Telemetry
-  - ***Subsystem***: OSD
-- [Rishabh Singh ](https://github.com/rishabsingh3003):
-  - ***Subsystem***: Avoidance/Proximity
-- [David Bussenschutt ](https://github.com/davidbuzz):
-  - ***Subsystem***: ESP32,AP_HAL_ESP32
-- [Charles Villard ](https://github.com/Silvanosky):
-  - ***Subsystem***: ESP32,AP_HAL_ESP32
+A **versão 4.7.0** do ArduPilot oferece uma série de **melhorias significativas** em relação à versão 4.4.0, com maior **modularidade**, **precisão** e **flexibilidade**. A introdução de funções como o controle de infladores, a manipulação de quaternions, o cálculo de erros de posição, e o uso de matrizes dinâmicas melhora consideravelmente a capacidade de controle do dirigível. Além disso, o código agora lida de forma mais sofisticada com as entradas manuais e o cálculo das forças, utilizando coeficientes ajustáveis e técnicas de normalização para garantir a precisão e suavidade do controle.
