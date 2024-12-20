@@ -194,7 +194,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
 #if AP_ICENGINE_ENABLED
     case AUX_FUNC::ICE_START_STOP:
 #endif
-        run_aux_function(ch_option, ch_flag, AuxFuncTrigger::Source::INIT);
+        run_aux_function(ch_option, ch_flag, AuxFuncTrigger::Source::INIT, ch_in);
         break;
 
     case AUX_FUNC::REVERSE_THROTTLE:
