@@ -7,7 +7,7 @@ def configure(cfg):
     cfg.env.HAL_GCS_ENABLED = 0
 
 def build(bld):
-    if isinstance(bld.get_board(), boards.chibios) and bld.env['WITH_FATFS'] != '1':
+    if isinstance(bld.get_board(), boards.chibios) and bld.env['WITH_FATFS'] != '1' and bld.env['WITH_LITTLEFS'] != 1:
         # we need a filesystem for replay
         return
 
