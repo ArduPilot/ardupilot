@@ -28,7 +28,6 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_RTC/AP_RTC.h>
 
-#include "lfs.h"
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "bd/lfs_filebd.h"
 #include <cstdio>
@@ -46,6 +45,7 @@
 #define LFS_CHECK(func) do { int __retval = func; if (__retval < 0) { errno = errno_from_lfs_error(__retval); return -1; }} while (0)
 #define LFS_CHECK_NULL(func) do { int __retval = func; if (__retval < 0) { errno = errno_from_lfs_error(__retval); return nullptr; }} while (0)
 #define LFS_ATTR_MTIME 'M'
+#define LFS_FLASH_BLOCKS_PER_BLOCK 1
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
 static int flashmem_read(
@@ -76,20 +76,17 @@ AP_Filesystem_FlashMemory_LittleFS::AP_Filesystem_FlashMemory_LittleFS()
 
 int AP_Filesystem_FlashMemory_LittleFS::open(const char *pathname, int flags, bool allow_absolute_path)
 {
-    int fd, retval;
-    file_descriptor* fp;
-
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(fs_sem);
 
     ENSURE_MOUNTED();
 
-    fd = allocate_fd();
+    int fd = allocate_fd();
     if (fd < 0) {
         return -1;
     }
 
-    fp = lfs_file_from_fd(fd);
+    FileDescriptor* fp = lfs_file_from_fd(fd);
     if (fp == nullptr) {
         return -1;
     }
@@ -110,11 +107,14 @@ int AP_Filesystem_FlashMemory_LittleFS::open(const char *pathname, int flags, bo
         .buffer = &fp->mtime,
         .size = sizeof(fp->mtime)
     };
-    // this is a cheat, in theory it could be dynamically allocated but is only used to find the descriptor 
-    // for mtime and we know that's called with a name that doesn't disappear
-    fp->filename = pathname;
+    fp->filename = strdup(pathname);
+    if (fp->filename == nullptr) {
+        errno = ENOMEM;
+        free_fd(fd);
+        return -1;
+    }
 
-    retval = lfs_file_opencfg(&fs, &fp->file, pathname, lfs_flags_from_flags(flags), &fp->cfg);
+    int retval = lfs_file_opencfg(&fs, &fp->file, pathname, lfs_flags_from_flags(flags), &fp->cfg);
 
     if (retval < 0) {
         errno = errno_from_lfs_error(retval);
@@ -128,18 +128,15 @@ int AP_Filesystem_FlashMemory_LittleFS::open(const char *pathname, int flags, bo
 
 int AP_Filesystem_FlashMemory_LittleFS::close(int fileno)
 {
-    file_descriptor* fp;
-    int retval;
-
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(fs_sem);
 
-    fp = lfs_file_from_fd(fileno);
+    FileDescriptor* fp = lfs_file_from_fd(fileno);
     if (fp == nullptr) {
         return -1;
     }
 
-    retval = lfs_file_close(&fs, &(fp->file));
+    int retval = lfs_file_close(&fs, &(fp->file));
     if (retval < 0) {
         free_fd(fileno);   // ignore error code, we have something else to report
         errno = errno_from_lfs_error(retval);
@@ -155,19 +152,16 @@ int AP_Filesystem_FlashMemory_LittleFS::close(int fileno)
 
 int32_t AP_Filesystem_FlashMemory_LittleFS::read(int fd, void *buf, uint32_t count)
 {
-    file_descriptor* fp;
-    lfs_ssize_t read;
-
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(fs_sem);
     ENSURE_MOUNTED();
 
-    fp = lfs_file_from_fd(fd);
+    FileDescriptor* fp = lfs_file_from_fd(fd);
     if (fp == nullptr) {
         return -1;
     }
 
-    read = lfs_file_read(&fs, &(fp->file), buf, count);
+    lfs_ssize_t read = lfs_file_read(&fs, &(fp->file), buf, count);
     if (read < 0) {
         errno = errno_from_lfs_error(read);
         return -1;
@@ -178,19 +172,16 @@ int32_t AP_Filesystem_FlashMemory_LittleFS::read(int fd, void *buf, uint32_t cou
 
 int32_t AP_Filesystem_FlashMemory_LittleFS::write(int fd, const void *buf, uint32_t count)
 {
-    file_descriptor* fp;
-    lfs_ssize_t written;
-
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(fs_sem);
     ENSURE_MOUNTED();
 
-    fp = lfs_file_from_fd(fd);
+    FileDescriptor* fp = lfs_file_from_fd(fd);
     if (fp == nullptr) {
         return -1;
     }
 
-    written = lfs_file_write(&fs, &(fp->file), buf, count);
+    lfs_ssize_t written = lfs_file_write(&fs, &(fp->file), buf, count);
     if (written < 0) {
         errno = errno_from_lfs_error(written);
         return -1;
@@ -201,13 +192,11 @@ int32_t AP_Filesystem_FlashMemory_LittleFS::write(int fd, const void *buf, uint3
 
 int AP_Filesystem_FlashMemory_LittleFS::fsync(int fd)
 {
-    file_descriptor* fp;
-
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(fs_sem);
     ENSURE_MOUNTED();
 
-    fp = lfs_file_from_fd(fd);
+    FileDescriptor* fp = lfs_file_from_fd(fd);
     if (fp == nullptr) {
         return -1;
     }
@@ -218,29 +207,46 @@ int AP_Filesystem_FlashMemory_LittleFS::fsync(int fd)
 
 int32_t AP_Filesystem_FlashMemory_LittleFS::lseek(int fd, int32_t position, int whence)
 {
-    file_descriptor* fp;
-
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(fs_sem);
     ENSURE_MOUNTED();
 
-    fp = lfs_file_from_fd(fd);
+    FileDescriptor* fp = lfs_file_from_fd(fd);
     if (fp == nullptr) {
         return -1;
     }
 
-    LFS_CHECK(lfs_file_seek(&fs, &(fp->file), position, whence));
+    int lfs_whence;
+    switch (whence) {
+    case SEEK_END:
+        lfs_whence = LFS_SEEK_SET;
+        break;
+    case SEEK_CUR:
+        lfs_whence = LFS_SEEK_CUR;
+        break;
+    case SEEK_SET:
+    default:
+        lfs_whence = LFS_SEEK_SET;
+        break;
+    }
+
+    lfs_soff_t size = lfs_file_size(&fs, &(fp->file));
+    // emulate SEEK_SET past the end by truncating and filling with zeros
+    if (position > size && whence == SEEK_SET) {
+        LFS_CHECK(lfs_file_truncate(&fs, &(fp->file), position));
+    }
+
+    LFS_CHECK(lfs_file_seek(&fs, &(fp->file), position, lfs_whence));
     return 0;
 }
 
 int AP_Filesystem_FlashMemory_LittleFS::stat(const char *name, struct stat *buf)
 {
-    lfs_info info;
-
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(fs_sem);
     ENSURE_MOUNTED();
 
+    lfs_info info;
     LFS_CHECK(lfs_stat(&fs, name, &info));
 
     memset(buf, 0, sizeof(*buf));
@@ -267,7 +273,7 @@ bool AP_Filesystem_FlashMemory_LittleFS::set_mtime(const char *filename, const u
     // unfortunately lfs_setattr will not work while the file is open, instead
     // we need to update the file config, but that means finding the file config
     for (int fd = 0; fd < MAX_OPEN_FILES; fd++) {
-        if (open_files[fd] != nullptr && open_files[fd]->filename == filename) {
+        if (open_files[fd] != nullptr && strcmp(open_files[fd]->filename, filename) == 0) {
             open_files[fd]->mtime = mtime_sec;
             return true;
         }
@@ -293,26 +299,25 @@ int AP_Filesystem_FlashMemory_LittleFS::mkdir(const char *pathname)
     return 0;
 }
 
-typedef struct {
+
+struct DirEntry {
     lfs_dir_t dir;
     struct dirent entry;
-} lfs_dir_entry_pair;
+};
 
 void *AP_Filesystem_FlashMemory_LittleFS::opendir(const char *pathdir)
 {
-    int retval;
-
     FS_CHECK_ALLOWED(nullptr);
     WITH_SEMAPHORE(fs_sem);
     ENSURE_MOUNTED_NULL();
 
-    lfs_dir_entry_pair *result = new lfs_dir_entry_pair;
+    DirEntry *result = new DirEntry;
     if (!result) {
         errno = ENOMEM;
         return nullptr;
     }
 
-    retval = lfs_dir_open(&fs, &result->dir, pathdir);
+    int retval = lfs_dir_open(&fs, &result->dir, pathdir);
     if (retval < 0) {
         delete result;
         errno = errno_from_lfs_error(retval);
@@ -338,20 +343,28 @@ void *AP_Filesystem_FlashMemory_LittleFS::opendir(const char *pathdir)
     return result;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
 struct dirent *AP_Filesystem_FlashMemory_LittleFS::readdir(void *ptr)
 {
     FS_CHECK_ALLOWED(nullptr);
     WITH_SEMAPHORE(fs_sem);
 
-    lfs_info info;
-    lfs_dir_entry_pair *pair = static_cast<lfs_dir_entry_pair*>(ptr);
+    DirEntry *pair = static_cast<DirEntry*>(ptr);
     if (!pair) {
         errno = EINVAL;
         return nullptr;
     }
 
-    if (!lfs_dir_read(&fs, &pair->dir, &info)) {
+    lfs_info info;
+    int retval = lfs_dir_read(&fs, &pair->dir, &info);
+    if (retval == 0) {
         /* no more entries */
+        return nullptr;
+    }
+    if (retval < 0) {
+        // failure
+        errno = errno_from_lfs_error(retval);
         return nullptr;
     }
 
@@ -371,13 +384,14 @@ struct dirent *AP_Filesystem_FlashMemory_LittleFS::readdir(void *ptr)
 
     return &pair->entry;
 }
+#pragma GCC diagnostic pop
 
 int AP_Filesystem_FlashMemory_LittleFS::closedir(void *ptr)
 {
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(fs_sem);
 
-    lfs_dir_entry_pair *pair = static_cast<lfs_dir_entry_pair*>(ptr);
+    DirEntry *pair = static_cast<DirEntry*>(ptr);
     if (!pair) {
         errno = EINVAL;
         return 0;
@@ -397,13 +411,11 @@ int AP_Filesystem_FlashMemory_LittleFS::closedir(void *ptr)
 
 int64_t AP_Filesystem_FlashMemory_LittleFS::disk_free(const char *path)
 {
-    lfs_ssize_t alloc_size;
-
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(fs_sem);
     ENSURE_MOUNTED();
 
-    alloc_size = lfs_fs_size(&fs);
+    lfs_ssize_t alloc_size = lfs_fs_size(&fs);
     if (alloc_size < 0) {
         errno = errno_from_lfs_error(alloc_size);
         return -1;
@@ -439,9 +451,9 @@ void AP_Filesystem_FlashMemory_LittleFS::unmount(void)
     WITH_SEMAPHORE(fs_sem);
 
     if (mounted && !dead) {
-        if (lfs_unmount(&fs) >= 0) {
-            mounted = false;
-        }
+        free_all_fds();
+        lfs_unmount(&fs);
+        mounted = false;
     }
 }
 
@@ -451,11 +463,9 @@ void AP_Filesystem_FlashMemory_LittleFS::unmount(void)
 
 int AP_Filesystem_FlashMemory_LittleFS::allocate_fd()
 {
-    int fd;
-
-    for (fd = 0; fd < MAX_OPEN_FILES; fd++) {
+    for (int fd = 0; fd < MAX_OPEN_FILES; fd++) {
         if (open_files[fd] == nullptr) {
-            open_files[fd] = static_cast<file_descriptor*>(calloc(1, sizeof(file_descriptor)));
+            open_files[fd] = static_cast<FileDescriptor*>(calloc(1, sizeof(FileDescriptor)));
             if (open_files[fd] == nullptr) {
                 errno = ENOMEM;
                 return -1;
@@ -471,29 +481,28 @@ int AP_Filesystem_FlashMemory_LittleFS::allocate_fd()
 
 int AP_Filesystem_FlashMemory_LittleFS::free_fd(int fd)
 {
-    file_descriptor* fp = lfs_file_from_fd(fd);
+    FileDescriptor* fp = lfs_file_from_fd(fd);
     if (!fp) {
         return -1;
     }
 
+    free(fp->filename);
     free(fp);
-    open_files[fd] = fp = nullptr;
+    open_files[fd] = nullptr;
 
     return 0;
 }
 
 void AP_Filesystem_FlashMemory_LittleFS::free_all_fds()
 {
-    int fd;
-
-    for (fd = 0; fd < MAX_OPEN_FILES; fd++) {
-        if (open_files[fd] == nullptr) {
+    for (int fd = 0; fd < MAX_OPEN_FILES; fd++) {
+        if (open_files[fd] != nullptr) {
             free_fd(fd);
         }
     }
 }
 
-AP_Filesystem_FlashMemory_LittleFS::file_descriptor* AP_Filesystem_FlashMemory_LittleFS::lfs_file_from_fd(int fd) const
+AP_Filesystem_FlashMemory_LittleFS::FileDescriptor* AP_Filesystem_FlashMemory_LittleFS::lfs_file_from_fd(int fd) const
 {
     if (fd < 0 || fd >= MAX_OPEN_FILES || open_files[fd] == nullptr) {
         errno = EBADF;
@@ -723,52 +732,52 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     // irrespectively of what the flash chip documentation refers to as a "block"
     /* Most flash chips are programmable in chunks of 256 bytes and erasable in
      * blocks of 4K so we start with these defaults */
-    uint32_t block_count = 0;
     uint16_t page_size = 256;
-    uint32_t block_size = 4096;
+    flash_block_size = 4096;
+    flash_block_count = 0;
 
     switch (id) {
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
     case JEDEC_ID_WINBOND_W25N01GV:
         /* 128M, programmable in chunks of 2048 bytes, erasable in blocks of 128K */
         page_size = 2048;
-        block_size = 131072;
-        block_count = 1024;
+        flash_block_size = 131072;
+        flash_block_count = 1024;
         break;
     case JEDEC_ID_WINBOND_W25N02KV:
         /* 256M, programmable in chunks of 2048 bytes, erasable in blocks of 128K */
         page_size = 2048;
-        block_size = 131072;
-        block_count = 2048;
+        flash_block_size = 131072;
+        flash_block_count = 2048;
         break;
 #else
     case JEDEC_ID_WINBOND_W25Q16:
     case JEDEC_ID_MICRON_M25P16:
-        block_count = 32;   /* 128K */
+        flash_block_count = 32;   /* 128K */
         break;
 
     case JEDEC_ID_WINBOND_W25Q32:
     case JEDEC_ID_WINBOND_W25X32:
     case JEDEC_ID_MACRONIX_MX25L3206E:
-        block_count = 64;   /* 256K */
+        flash_block_count = 64;   /* 256K */
         break;
 
     case JEDEC_ID_MICRON_N25Q064:
     case JEDEC_ID_WINBOND_W25Q64:
     case JEDEC_ID_MACRONIX_MX25L6406E:
-        block_count = 128;  /* 512K */
+        flash_block_count = 128;  /* 512K */
         break;
 
     case JEDEC_ID_MICRON_N25Q128:
     case JEDEC_ID_WINBOND_W25Q128:
     case JEDEC_ID_WINBOND_W25Q128_2:
     case JEDEC_ID_CYPRESS_S25FL128L:
-        block_count = 256;  /* 1M */
+        flash_block_count = 256;  /* 1M */
         break;
 
     case JEDEC_ID_WINBOND_W25Q256:
     case JEDEC_ID_MACRONIX_MX25L25635E:
-        block_count = 512;  /* 2M */
+        flash_block_count = 512;  /* 2M */
         use_32bit_address = true;
         break;
 #endif
@@ -780,12 +789,14 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
 
     fs_cfg.read_size = page_size;
     fs_cfg.prog_size = page_size;
-    fs_cfg.block_size = block_size;
-    fs_cfg.block_count = block_count;
+    fs_cfg.block_size = flash_block_size * LFS_FLASH_BLOCKS_PER_BLOCK;
+    fs_cfg.block_count = flash_block_count / LFS_FLASH_BLOCKS_PER_BLOCK;
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-    fs_cfg.metadata_max = page_size;
+    fs_cfg.metadata_max = page_size * 2;
+    fs_cfg.compact_thresh = fs_cfg.metadata_max * 0.88f;
 #endif
 #else
+    // SITL config
     fs_cfg.read_size = 2048;
     fs_cfg.prog_size = 2048;
     fs_cfg.block_size = 131072;
@@ -799,9 +810,14 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
         id = 0xFAFF;
     }
 #endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    fs_cfg.block_cycles = 500;
-    fs_cfg.lookahead_size = 128;
-    fs_cfg.cache_size = 2*fs_cfg.prog_size;
+    fs_cfg.block_cycles = 75000;
+    // cache entire flash state in RAM (8 blocks = 1 byte of storage) to
+    // avoid scanning while logging
+    fs_cfg.lookahead_size = fs_cfg.block_count/8;
+    // non-inlined files require their own block, but must be copie. Generally we have requirements for tiny files
+    // (scripting) and very large files (e.g. logging), but not much in-between. Setting the cache size will also
+    // limit the inline size.
+    fs_cfg.cache_size = fs_cfg.prog_size;
 
     return id;
 }
@@ -854,11 +870,6 @@ bool AP_Filesystem_FlashMemory_LittleFS::mount_filesystem() {
     if (lfs_mount(&fs, &fs_cfg) < 0) {
         /* maybe not formatted? try formatting it */
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Formatting flash");
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-        EXPECT_DELAY_MS(3000);
-#else
-        EXPECT_DELAY_MS(30000);
-#endif
 
         if (lfs_format(&fs, &fs_cfg) < 0) {
             mark_dead();
@@ -873,13 +884,14 @@ bool AP_Filesystem_FlashMemory_LittleFS::mount_filesystem() {
         }
     }
 
-#ifdef HAL_BOARD_STORAGE_DIRECTORY
     // try to create the root storage folder. Ignore the error code in case
     // the filesystem is corrupted or it already exists.
     if (strlen(HAL_BOARD_STORAGE_DIRECTORY) > 0) {
         lfs_mkdir(&fs, HAL_BOARD_STORAGE_DIRECTORY);
     }
-#endif
+
+    // Force garbage collection to avoid expensive operations after boot
+    lfs_fs_gc(&fs);
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Mounted flash 0x%x as littlefs", unsigned(id));
     mounted = true;
     return true;
@@ -917,13 +929,11 @@ void AP_Filesystem_FlashMemory_LittleFS::format_handler(void)
         ret = lfs_mount(&fs, &fs_cfg);
     }
 
-#ifdef HAL_BOARD_STORAGE_DIRECTORY
     // try to create the root storage folder. Ignore the error code in case
     // the filesystem is corrupted or it already exists.
-    if (strlen(HAL_BOARD_STORAGE_DIRECTORY) > 0) {
-        lfs_mkdir(&fs, HAL_BOARD_STORAGE_DIRECTORY);
+    if (ret == LFS_ERR_OK && strlen(HAL_BOARD_STORAGE_DIRECTORY) > 0) {
+        ret = lfs_mkdir(&fs, HAL_BOARD_STORAGE_DIRECTORY);
     }
-#endif
 
     if (ret == LFS_ERR_OK) {
         format_status = FormatStatus::SUCCESS;
@@ -942,14 +952,14 @@ AP_Filesystem_Backend::FormatStatus AP_Filesystem_FlashMemory_LittleFS::get_form
     return format_status;
 }
 
-uint32_t AP_Filesystem_FlashMemory_LittleFS::lfs_block_and_offset_to_raw_flash_address(lfs_block_t index, lfs_off_t off)
+inline uint32_t AP_Filesystem_FlashMemory_LittleFS::lfs_block_and_offset_to_raw_flash_address(lfs_block_t index, lfs_off_t off, lfs_off_t flash_block)
 {
-    return index * fs_cfg.block_size + off;
+    return index * fs_cfg.block_size + off + flash_block * flash_block_size;
 }
 
-uint32_t AP_Filesystem_FlashMemory_LittleFS::lfs_block_to_raw_flash_page_index(lfs_block_t index)
+inline uint32_t AP_Filesystem_FlashMemory_LittleFS::lfs_block_to_raw_flash_page_index(lfs_block_t index, lfs_off_t flash_block)
 {
-    return index * (fs_cfg.block_size / fs_cfg.prog_size);
+    return index * (fs_cfg.block_size / fs_cfg.prog_size) + flash_block * (flash_block_size / fs_cfg.prog_size);
 }
 
 bool AP_Filesystem_FlashMemory_LittleFS::write_enable()
@@ -986,7 +996,7 @@ bool AP_Filesystem_FlashMemory_LittleFS::init_flash()
 #else
     if (use_32bit_address) {
         WITH_SEMAPHORE(dev_sem);
-
+        // enter 4-byte address mode
         const uint8_t cmd = 0xB7;
         dev->transfer(&cmd, 1, nullptr, 0);
     }
@@ -998,7 +1008,7 @@ bool AP_Filesystem_FlashMemory_LittleFS::init_flash()
 #ifdef AP_LFS_DEBUG
 static uint32_t block_writes;
 static uint32_t last_write_msg_ms;
-uint32_t page_reads;
+static uint32_t page_reads;
 #endif
 int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
     lfs_block_t block, lfs_off_t off, void* buffer, lfs_size_t size
@@ -1109,21 +1119,23 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_erase(lfs_block_t block) {
         return LFS_ERR_IO;
     }
 
-    EXPECT_DELAY_MS(2);
+    for (lfs_off_t fblock = 0; fblock < LFS_FLASH_BLOCKS_PER_BLOCK; fblock++) {
 
-    if (!write_enable()) {
-        return LFS_ERR_IO;
-    }
+        if (!write_enable()) {
+            return LFS_ERR_IO;
+        }
 
-    WITH_SEMAPHORE(dev_sem);
+        WITH_SEMAPHORE(dev_sem);
+
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-    send_command_addr(JEDEC_BLOCK_ERASE, lfs_block_to_raw_flash_page_index(block));
+        send_command_addr(JEDEC_BLOCK_ERASE, lfs_block_to_raw_flash_page_index(block, fblock));
 #else
-    send_command_addr(JEDEC_SECTOR4_ERASE, lfs_block_and_offset_to_raw_flash_address(block));
+        send_command_addr(JEDEC_SECTOR4_ERASE, lfs_block_and_offset_to_raw_flash_address(block, 0, fblock));
 #endif
 
-    // sleep so that othher processes get the CPU cycles that the 4ms erase cycle needs.
-    hal.scheduler->delay(4);
+        // sleep so that other processes get the CPU cycles that the 4ms erase cycle needs.
+        hal.scheduler->delay(4);
+    }
 
     return LFS_ERR_OK;
 }
@@ -1223,7 +1235,7 @@ static int lfs_flags_from_flags(int flags)
     return outflags;
 }
 
-// get_singleton for scripting
+// get_singleton for access from logging layer
 AP_Filesystem_FlashMemory_LittleFS *AP_Filesystem_FlashMemory_LittleFS::get_singleton(void)
 {
     return singleton;
