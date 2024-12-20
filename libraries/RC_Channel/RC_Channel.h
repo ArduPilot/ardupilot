@@ -314,19 +314,19 @@ public:
         HIGH       // indicates auxiliary switch is in the high position (pwm >1800)
     };
 
-    // Trigger structure containing the function, position and pwm (if applicable)
+    // Trigger structure containing the function, position, source and source index
     struct AuxFuncTrigger {
         AUX_FUNC func;
         AuxSwitchPos pos;
+        // @LoggerEnum: AuxFuncTrigger::Source
         enum class Source : uint8_t {
-            INIT,
-            RC,
-            BUTTON,
-            MAVLINK,
-            MISSION,
-            SCRIPTING,
+            INIT,      // Source index is RC channel index
+            RC,        // Source index is RC channel index
+            BUTTON,    // Source index is button index
+            MAVLINK,   // Source index is MAVLink channel number
+            MISSION,   // Source index is mission item index
+            SCRIPTING, // Source index is not used (always 0)
         } source;
-        // Index within source
         uint16_t source_index;
     };
 
