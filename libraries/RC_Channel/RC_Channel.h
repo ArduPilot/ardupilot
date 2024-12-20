@@ -318,6 +318,7 @@ public:
     struct AuxFuncTrigger {
         AUX_FUNC func;
         AuxSwitchPos pos;
+// @LoggerEnum: AuxFuncTrigger::Source
         enum class Source : uint8_t {
             INIT,
             RC,
