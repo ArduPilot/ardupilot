@@ -148,3 +148,7 @@ enum LoggingParameters {
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE      (1<<10)
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE (1<<11)
 
+// if you change this, aso update SRV_CHANNEL.h to add new enum entries
+#define ACTUATOR_CHANNELS 5
+#define ACTUATOR_DEFAULT_INCREMENT_ACCEL 0.001
+#define ACTUATOR_DEFAULT_INCREMENT 0.001
