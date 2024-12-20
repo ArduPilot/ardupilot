@@ -4200,9 +4200,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         vinfo = vehicleinfo.VehicleInfo()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
-            "plane-tailsitter": "does not take off; immediately emits 'AP: Transition VTOL done' while on ground",
-            "plane-ice" : "needs ICE control channel for ignition",
-            "quadplane-ice" : "needs ICE control channel for ignition",
+            "plane-tailsitter": "unstable in hover; unflyable in cruise",
             "quadplane-can" : "needs CAN periph",
             "stratoblimp" : "not expected to fly normally",
             "glider" : "needs balloon lift",
@@ -4219,11 +4217,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 self.progress("Actually, no I'm not - it is an external simulation")
                 continue
             model = frame_bits.get("model", frame)
-            # the model string for Callisto has crap in it.... we
-            # should really have another entry in the vehicleinfo data
-            # to carry the path to the JSON.
-            actual_model = model.split(":")[0]
-            defaults = self.model_defaults_filepath(actual_model)
+            defaults = self.model_defaults_filepath(frame)
             if not isinstance(defaults, list):
                 defaults = [defaults]
             self.customise_SITL_commandline(
