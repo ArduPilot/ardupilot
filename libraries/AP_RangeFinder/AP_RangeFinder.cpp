@@ -24,9 +24,7 @@
 #include "AP_RangeFinder_BBB_PRU.h"
 #include "AP_RangeFinder_LightWareI2C.h"
 #include "AP_RangeFinder_LightWareSerial.h"
-#if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
-     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) &&      \
-    defined(HAVE_LIBIIO)
+#if AP_RANGEFINDER_BEBOP_ENABLED
 #include "AP_RangeFinder_Bebop.h"
 #endif
 #include "AP_RangeFinder_Backend.h"
