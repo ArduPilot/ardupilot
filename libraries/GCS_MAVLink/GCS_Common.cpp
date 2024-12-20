@@ -1153,6 +1153,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_AIRSPEED, MSG_AIRSPEED},
 #endif
         { MAVLINK_MSG_ID_AVAILABLE_MODES, MSG_AVAILABLE_MODES},
+        { MAVLINK_MSG_ID_AVAILABLE_MODES_MONITOR, MSG_AVAILABLE_MODES_MONITOR},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -3210,6 +3211,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int
         available_modes.should_send = true;
         available_modes.next_index = 1;
         available_modes.requested_index = (uint8_t)packet.param2;
+
+        // After the first request sequnece is streamed in the AVAILABLE_MODES_MONITOR message
+        // This allows the GCS to re-request modes if there is a change
+        set_ap_message_interval(MSG_AVAILABLE_MODES_MONITOR, 5000);
         break;
 
     default:
@@ -5961,57 +5966,6 @@ void GCS_MAVLINK::send_generator_status() const
 }
 #endif
 
-#if AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
-void GCS_MAVLINK::send_water_depth() const
-{
-    if (!HAVE_PAYLOAD_SPACE(chan, WATER_DEPTH)) {
-        return;
-    }
-
-    RangeFinder *rangefinder = RangeFinder::get_singleton();
-
-    if (rangefinder == nullptr || !rangefinder->has_orientation(ROTATION_PITCH_270)){
-        return;
-    } 
-
-    // get position
-    const AP_AHRS &ahrs = AP::ahrs();
-    Location loc;
-    IGNORE_RETURN(ahrs.get_location(loc));
-
-    for (uint8_t i=0; i<rangefinder->num_sensors(); i++) {
-        const AP_RangeFinder_Backend *s = rangefinder->get_backend(i);
-        
-        if (s == nullptr || s->orientation() != ROTATION_PITCH_270 || !s->has_data()) {
-            continue;
-        }
-
-        // get temperature
-        float temp_C;
-        if (!s->get_temp(temp_C)) {
-            temp_C = 0.0f;
-        }
-
-        const bool sensor_healthy = (s->status() == RangeFinder::Status::Good);
-
-        mavlink_msg_water_depth_send(
-            chan,
-            AP_HAL::millis(),   // time since system boot TODO: take time of measurement
-            i,                  // rangefinder instance
-            sensor_healthy,     // sensor healthy
-            loc.lat,            // latitude of vehicle
-            loc.lng,            // longitude of vehicle
-            loc.alt * 0.01f,    // altitude of vehicle (MSL)
-            ahrs.get_roll(),    // roll in radians
-            ahrs.get_pitch(),   // pitch in radians
-            ahrs.get_yaw(),     // yaw in radians
-            s->distance(),    // distance in meters
-            temp_C);            // temperature in degC
-    }
-
-}
-#endif  // AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
-
 #if HAL_ADSB_ENABLED
 void GCS_MAVLINK::send_uavionix_adsb_out_status() const
 {
@@ -6133,6 +6087,18 @@ bool GCS_MAVLINK::send_available_modes()
         // Sending all and just sent the last
         available_modes.should_send = false;
     }
+
+    return true;
+}
+
+bool GCS_MAVLINK::send_available_mode_monitor()
+{
+    CHECK_PAYLOAD_SIZE(AVAILABLE_MODES_MONITOR);
+
+    mavlink_msg_available_modes_monitor_send(
+        chan,
+        gcs().get_available_modes_sequence()
+    );
 
     return true;
 }
@@ -6530,13 +6496,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif
 
-#if AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
-    case MSG_WATER_DEPTH:
-        CHECK_PAYLOAD_SIZE(WATER_DEPTH);
-        send_water_depth();
-        break;
-#endif
-
 #if HAL_HIGH_LATENCY2_ENABLED
     case MSG_HIGH_LATENCY2:
         CHECK_PAYLOAD_SIZE(HIGH_LATENCY2);
@@ -6569,6 +6528,10 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
     case MSG_AVAILABLE_MODES:
         ret = send_available_modes();
+        break;
+
+    case MSG_AVAILABLE_MODES_MONITOR:
+        ret = send_available_mode_monitor();
         break;
 
     default:

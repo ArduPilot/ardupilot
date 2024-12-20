@@ -29,6 +29,9 @@
 #if AP_DDS_ARM_CHECK_SERVER_ENABLED
 #include "std_srvs/srv/Trigger.h"
 #endif // AP_DDS_ARM_CHECK_SERVER_ENABLED
+#if AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+#include "ardupilot_msgs/srv/Takeoff.h"
+#endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
 
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
@@ -915,6 +918,35 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         break;
     }
 #endif // AP_DDS_MODE_SWITCH_SERVER_ENABLED
+#if AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+    case services[to_underlying(ServiceIndex::TAKEOFF)].rep_id: {
+        ardupilot_msgs_srv_Takeoff_Request takeoff_request;
+        ardupilot_msgs_srv_Takeoff_Response takeoff_response;
+        const bool deserialize_success = ardupilot_msgs_srv_Takeoff_Request_deserialize_topic(ub, &takeoff_request);
+        if (deserialize_success == false) {
+            break;
+        }
+        takeoff_response.status = AP::vehicle()->start_takeoff(takeoff_request.alt);
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::TAKEOFF)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        uint8_t reply_buffer[8] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, sizeof(reply_buffer));
+        const bool serialize_success = ardupilot_msgs_srv_Takeoff_Response_serialize_topic(&reply_ub, &takeoff_response);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Takeoff : %s", msg_prefix, takeoff_response.status ? "SUCCESS" : "FAIL");
+        break;
+    }
+#endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
 #if AP_DDS_ARM_CHECK_SERVER_ENABLED
     case services[to_underlying(ServiceIndex::PREARM_CHECK)].rep_id: {
         std_srvs_srv_Trigger_Request prearm_check_request;
@@ -943,7 +975,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
         break;
     }
-#endif //AP_DDS_ARM_CHECK_SERVER_ENABLED    
+#endif //AP_DDS_ARM_CHECK_SERVER_ENABLED
 #if AP_DDS_PARAMETER_SERVER_ENABLED
     case services[to_underlying(ServiceIndex::SET_PARAMETERS)].rep_id: {
         const bool deserialize_success = rcl_interfaces_srv_SetParameters_Request_deserialize_topic(ub, &set_parameter_request);
@@ -1420,7 +1452,7 @@ void AP_DDS_Client::write_time_topic()
         const bool success = builtin_interfaces_msg_Time_serialize_topic(&ub, &time_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: XRCE_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: XRCE_Client failed to serialize");
         }
     }
 }
@@ -1436,7 +1468,7 @@ void AP_DDS_Client::write_nav_sat_fix_topic()
         const bool success = sensor_msgs_msg_NavSatFix_serialize_topic(&ub, &nav_sat_fix_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1453,7 +1485,7 @@ void AP_DDS_Client::write_static_transforms()
         const bool success = tf2_msgs_msg_TFMessage_serialize_topic(&ub, &tx_static_transforms_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1470,7 +1502,7 @@ void AP_DDS_Client::write_battery_state_topic()
         const bool success = sensor_msgs_msg_BatteryState_serialize_topic(&ub, &battery_state_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1487,7 +1519,7 @@ void AP_DDS_Client::write_local_pose_topic()
         const bool success = geometry_msgs_msg_PoseStamped_serialize_topic(&ub, &local_pose_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1504,7 +1536,7 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
         const bool success = geometry_msgs_msg_TwistStamped_serialize_topic(&ub, &tx_local_velocity_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1520,7 +1552,7 @@ void AP_DDS_Client::write_tx_local_airspeed_topic()
         const bool success = geometry_msgs_msg_Vector3Stamped_serialize_topic(&ub, &tx_local_airspeed_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1536,7 +1568,7 @@ void AP_DDS_Client::write_imu_topic()
         const bool success = sensor_msgs_msg_Imu_serialize_topic(&ub, &imu_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1553,7 +1585,7 @@ void AP_DDS_Client::write_geo_pose_topic()
         const bool success = geographic_msgs_msg_GeoPoseStamped_serialize_topic(&ub, &geo_pose_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1570,7 +1602,7 @@ void AP_DDS_Client::write_clock_topic()
         const bool success = rosgraph_msgs_msg_Clock_serialize_topic(&ub, &clock_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1586,7 +1618,7 @@ void AP_DDS_Client::write_gps_global_origin_topic()
         uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::GPS_GLOBAL_ORIGIN_PUB)].dw_id, &ub, topic_size);
         const bool success = geographic_msgs_msg_GeoPointStamped_serialize_topic(&ub, &gps_global_origin_topic);
         if (!success) {
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1602,7 +1634,7 @@ void AP_DDS_Client::write_goal_topic()
         uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::GOAL_PUB)].dw_id, &ub, topic_size);
         const bool success = geographic_msgs_msg_GeoPointStamped_serialize_topic(&ub, &goal_topic);
         if (!success) {
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }
@@ -1619,7 +1651,7 @@ void AP_DDS_Client::write_status_topic()
         const bool success = ardupilot_msgs_msg_Status_serialize_topic(&ub, &status_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
         }
     }
 }

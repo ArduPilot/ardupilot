@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma GCC optimize("Os")
+
 #include "AP_Generator.h"
 
 #if HAL_GENERATOR_ENABLED

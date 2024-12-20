@@ -11,6 +11,9 @@ enum class ServiceIndex: uint8_t {
 #if AP_DDS_ARM_CHECK_SERVER_ENABLED
     PREARM_CHECK,
 #endif // AP_DDS_ARM_CHECK_SERVER_ENABLED
+#if AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+    TAKEOFF,
+#endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
 #if AP_DDS_PARAMETER_SERVER_ENABLED
     SET_PARAMETERS,
     GET_PARAMETERS
@@ -66,6 +69,18 @@ constexpr struct AP_DDS_Client::Service_table AP_DDS_Client::services[] = {
         .reply_topic_name = "rr/ap/prearm_checkReply",
     },
 #endif // AP_DDS_ARM_CHECK_SERVER_ENABLED    
+#if AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+    {
+        .req_id = to_underlying(ServiceIndex::TAKEOFF),
+        .rep_id = to_underlying(ServiceIndex::TAKEOFF),
+        .service_rr = Service_rr::Replier,
+        .service_name = "rs/ap/experimental/takeoffService",
+        .request_type = "ardupilot_msgs::srv::dds_::Takeoff_Request_",
+        .reply_type = "ardupilot_msgs::srv::dds_::Takeoff_Response_",
+        .request_topic_name = "rq/ap/experimental/takeoffRequest",
+        .reply_topic_name = "rr/ap/experimental/takeoffReply",
+    },
+#endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
 #if AP_DDS_PARAMETER_SERVER_ENABLED
     {
         .req_id = to_underlying(ServiceIndex::SET_PARAMETERS),

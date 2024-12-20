@@ -28,6 +28,7 @@ def build(bld):
             'AC_PrecLand',
             'AP_WindVane',
             'AP_IRLock',
+            'AP_Quicktune',
         ],
     )
 

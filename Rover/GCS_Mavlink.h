@@ -29,8 +29,6 @@ protected:
 
     void send_position_target_global_int() override;
 
-    bool persist_streamrates() const override { return true; }
-
     uint64_t capabilities() const override;
 
     void send_nav_controller_output() const override;
@@ -43,6 +41,9 @@ protected:
     // Send the mode with the given index (not mode number!) return the total number of modes
     // Index starts at 1
     uint8_t send_available_mode(uint8_t index) const override;
+
+    // send WATER_DEPTH - metres and temperature
+    void send_water_depth() const;
 
 private:
 

@@ -142,6 +142,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if AC_PRECLAND_ENABLED
     SCHED_TASK(precland_update, 400, 50, 160),
 #endif
+#if AP_QUICKTUNE_ENABLED
+    SCHED_TASK(update_quicktune, 40, 100, 163),
+#endif
 };
 
 void Plane::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -789,7 +792,16 @@ float Plane::tecs_hgt_afe(void)
       coming.
     */
     float hgt_afe;
+
     if (flight_stage == AP_FixedWing::FlightStage::LAND) {
+
+        #if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+            // if external HAGL is active use that
+            if (get_external_HAGL(hgt_afe)) {
+                return hgt_afe;
+            }
+        #endif
+
         hgt_afe = height_above_target();
 #if AP_RANGEFINDER_ENABLED
         hgt_afe -= rangefinder_correction();
@@ -1025,6 +1037,18 @@ void Plane::precland_update(void)
 #else
     return g2.precland.update(0, false);
 #endif
+}
+#endif
+
+#if AP_QUICKTUNE_ENABLED
+/*
+  update AP_Quicktune object. We pass the supports_quicktune() method
+  in so that quicktune can detect if the user changes to a
+  non-quicktune capable mode while tuning and the gains can be reverted
+ */
+void Plane::update_quicktune(void)
+{
+    quicktune.update(control_mode->supports_quicktune());
 }
 #endif
 

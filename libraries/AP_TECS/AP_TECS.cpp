@@ -751,10 +751,10 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         const float nomThr = aparm.throttle_cruise * 0.01f;
         const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
         // Use the demanded rate of change of total energy as the feed-forward demand, but add
-        // additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
+        // additional component which scales with (1/(cos(bank angle)**2) - 1) to compensate for induced
         // drag increase during turns.
-        const float cosPhi = sqrtf((rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y));
-        STEdot_dem = STEdot_dem + _rollComp * (1.0f/constrain_float(cosPhi * cosPhi, 0.1f, 1.0f) - 1.0f);
+        const float cosPhi_squared = (rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y);
+        STEdot_dem = STEdot_dem + _rollComp * (1.0f/constrain_float(cosPhi_squared, 0.1f, 1.0f) - 1.0f);
         const float ff_throttle = nomThr + STEdot_dem / K_thr2STE;
 
         // Calculate PD + FF throttle
@@ -905,10 +905,10 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge, float pi
     // Calculate additional throttle for turn drag compensation including throttle nudging
     const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
     // Use the demanded rate of change of total energy as the feed-forward demand, but add
-    // additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
+    // additional component which scales with (1/(cos(bank angle)**2) - 1) to compensate for induced
     // drag increase during turns.
-    float cosPhi = sqrtf((rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y));
-    float STEdot_dem = _rollComp * (1.0f/constrain_float(cosPhi * cosPhi, 0.1f, 1.0f) - 1.0f);
+    const float cosPhi_squared = (rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y);
+    float STEdot_dem = _rollComp * (1.0f/constrain_float(cosPhi_squared, 0.1f, 1.0f) - 1.0f);
     _throttle_dem = _throttle_dem + STEdot_dem / (_STEdot_max - _STEdot_min) * (_THRmaxf - _THRminf);
 
     constrain_throttle();
@@ -1124,7 +1124,6 @@ void AP_TECS::_initialise_states(float hgt_afe)
         _integKE              = 0.0f;
         _last_throttle_dem    = aparm.throttle_cruise * 0.01f;
         _last_pitch_dem       = _ahrs.get_pitch();
-        _hgt_afe              = hgt_afe;
         _hgt_dem_in_prev      = hgt_afe;
         _hgt_dem_lpf          = hgt_afe;
         _hgt_dem_rate_ltd     = hgt_afe;
@@ -1501,4 +1500,32 @@ void AP_TECS::_update_pitch_limits(const int32_t ptchMinCO_cd) {
 
     // don't allow max pitch to go below min pitch
     _PITCHmaxf = MAX(_PITCHmaxf, _PITCHminf);
+}
+
+void AP_TECS::offset_altitude(const float alt_offset)
+{
+    // Convention: When alt_offset is positive it means that the altitude of
+    // home has increased. Thus, the relative altitude of the vehicle has
+    // decreased.
+    //
+    // Assumption: This method is called more often and before
+    // `update_pitch_throttle()`. This is necessary to ensure that new height
+    // demands which incorporate the home change are compatible with the
+    // (now updated) internal height state.
+
+    _flare_hgt_dem_ideal    -= alt_offset;
+    _flare_hgt_dem_adj      -= alt_offset;
+    _hgt_at_start_of_flare  -= alt_offset;
+    _hgt_dem_in_prev        -= alt_offset;
+    _hgt_dem_lpf            -= alt_offset;
+    _hgt_dem_rate_ltd       -= alt_offset;
+    _hgt_dem_prev           -= alt_offset;
+    _height_filter.height   -= alt_offset;
+
+    // The following variables are updated anew in every call of
+    // `update_pitch_throttle()`. There's no need to update those.
+    // _hgt_dem
+    // _hgt_dem_in_raw
+    // _hgt_dem_in
+    // Energies
 }

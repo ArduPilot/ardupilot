@@ -226,10 +226,10 @@ void AP_InertialSensor_BMI160::_check_err_reg()
 
     r = _dev->read_registers(BMI160_REG_ERR_REG, &v, 1);
     if (!r) {
-        AP_HAL::panic("BMI160: couldn't read ERR_REG\n");
+        AP_HAL::panic("BMI160: couldn't read ERR_REG");
     }
     if (v) {
-        AP_HAL::panic("BMI160: error detected on ERR_REG\n");
+        AP_HAL::panic("BMI160: error detected on ERR_REG");
     }
 #endif
 }

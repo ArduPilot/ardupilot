@@ -92,21 +92,33 @@ void AP_Proximity_LD06::get_readings()
     // Loops through all bytes that were received
     while (nbytes-- > 0) {
 
-        // Gets and logs the current byte being read
-        const uint8_t c = _uart->read();
+        uint8_t c;
+        if (!_uart->read(c)) {
+            break;
+        }
 
         // Stores the byte in an array if the byte is a start byte or we have already read a start byte
-        if (c == LD_START_CHAR || _response_data) {
-
-            // Sets to true if a start byte has been read, default false otherwise
-            _response_data = true;
-
+        if (c == LD_START_CHAR || _byte_count) {
             // Stores the next byte in an array
             _response[_byte_count] = c;
+            if (_byte_count < START_DATA_LENGTH) {
+                _byte_count++;
+                continue;
+            }
+
+            const uint32_t total_packet_length = _response[START_DATA_LENGTH] + 3;
+            if (total_packet_length > ARRAY_SIZE(_response)) {
+                // invalid packet received; throw away all data and
+                // start again.
+                _byte_count = 0;
+                _uart->discard_input();
+                break;
+            }
+
             _byte_count++;
 
-            if (_byte_count == _response[START_DATA_LENGTH] + 3) {
-                
+            if (_byte_count == total_packet_length) {
+
                 const uint32_t current_ms = AP_HAL::millis();
 
                 // Stores the last distance taken, used to reduce number of readings taken
@@ -121,7 +133,6 @@ void AP_Proximity_LD06::get_readings()
 
                 // Resets the bytes read and whether or not we are reading data to accept a new payload
                 _byte_count = 0;
-                _response_data = false;
             }
         }
     }

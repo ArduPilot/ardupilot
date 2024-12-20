@@ -1715,8 +1715,8 @@ class FRSkySPort(FRSky):
             if not self.connect():
                 self.progress("Failed to connect")
                 return
-        self.check_poll()
         self.do_sport_read()
+        self.check_poll()
 
     def do_sport_read(self):
         self.buffer += self.do_read()
@@ -2711,8 +2711,6 @@ class TestSuite(ABC):
             "SIM_MAG1_OFS_Z",
             "SIM_PARA_ENABLE",
             "SIM_PARA_PIN",
-            "SIM_PLD_ALT_LMT",
-            "SIM_PLD_DIST_LMT",
             "SIM_RICH_CTRL",
             "SIM_RICH_ENABLE",
             "SIM_SHIP_DSIZE",
@@ -3320,7 +3318,7 @@ class TestSuite(ABC):
             os.link(self.logfile, self.buildlog)
         except OSError as error:
             self.progress("OSError [%d]: %s" % (error.errno, error.strerror))
-            self.progress("WARN: Failed to create link: %s => %s, "
+            self.progress("Problem: Failed to create link: %s => %s, "
                           "will copy tlog manually to target location" %
                           (self.logfile, self.buildlog))
             self.copy_tlog = True
@@ -4366,7 +4364,13 @@ class TestSuite(ABC):
 
     def message_has_field_values(self, m, fieldvalues, verbose=True, epsilon=None):
         for (fieldname, value) in fieldvalues.items():
-            got = getattr(m, fieldname)
+            if "[" in fieldname: # fieldname == "arrayname[index]"
+                assert fieldname[-1] == "]", fieldname
+                arrayname, index = fieldname.split("[", 1)
+                index = int(index[:-1])
+                got = getattr(m, arrayname)[index]
+            else:
+                got = getattr(m, fieldname)
 
             value_string = value
             got_string = got
@@ -9430,6 +9434,20 @@ Also, ignores heartbeats not from our target system'''
                                 location.alt,
                                 location.heading)
 
+    def offset_location_heading_distance(self, location, bearing, distance):
+        (target_lat, target_lng) = mavextra.gps_newpos(
+            location.lat,
+            location.lng,
+            bearing,
+            distance
+        )
+        return mavutil.location(
+            target_lat,
+            target_lng,
+            location.alt,
+            location.heading
+        )
+
     def monitor_groundspeed(self, want, tolerance=0.5, timeout=5):
         tstart = self.get_sim_time()
         while True:
@@ -13720,8 +13738,11 @@ switch value'''
 
     def FRSkySPort(self):
         '''Test FrSky SPort mode'''
-        self.set_parameter("SERIAL5_PROTOCOL", 4) # serial5 is FRSky sport
-        self.set_parameter("RPM1_TYPE", 10) # enable SITL RPM sensor
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 4, # serial5 is FRSky sport
+            "RPM1_TYPE": 10, # enable SITL RPM sensor
+            "GPS1_TYPE": 100,  # use simulated backend for consistent position
+        })
         port = self.spare_network_port()
         self.customise_SITL_commandline([
             "--serial5=tcp:%u" % port # serial5 spews to localhost port

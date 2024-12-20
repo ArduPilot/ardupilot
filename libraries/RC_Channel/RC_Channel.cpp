@@ -242,6 +242,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 178:FlightMode Pause/Resume
     // @Values{Plane}: 179:ICEngine start / stop
     // @Values{Copter, Plane}: 180:Test autotuned gains after tune is complete
+    // @Values{Plane}: 181: QuickTune
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -251,7 +252,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Rover}: 211:Walking Height
     // @Values{Copter, Rover, Plane}: 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw
     // @Values{Copter}: 219:Transmitter Tuning
-    // @Values{Copter, Rover, Plane}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
+    // @Values{Copter, Rover, Plane}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8, 308:Scripting9, 309:Scripting10, 310:Scripting11, 311:Scripting12, 312:Scripting13, 313:Scripting14, 314:Scripting15, 315:Scripting16
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE|AP_PARAM_FRAME_BLIMP),
 
@@ -684,6 +685,14 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::SCRIPTING_6:
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
+    case AUX_FUNC::SCRIPTING_9:
+    case AUX_FUNC::SCRIPTING_10:
+    case AUX_FUNC::SCRIPTING_11:
+    case AUX_FUNC::SCRIPTING_12:
+    case AUX_FUNC::SCRIPTING_13:
+    case AUX_FUNC::SCRIPTING_14:
+    case AUX_FUNC::SCRIPTING_15:
+    case AUX_FUNC::SCRIPTING_16:
 #endif
 #if AP_VIDEOTX_ENABLED
     case AUX_FUNC::VTX_POWER:
@@ -741,7 +750,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
     case AUX_FUNC::MOTOR_ESTOP:
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
     case AUX_FUNC::RUNCAM_CONTROL:
     case AUX_FUNC::RUNCAM_OSD_CONTROL:
 #endif
@@ -848,7 +857,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #endif
     { AUX_FUNC::SAILBOAT_MOTOR_3POS,"SailboatMotor"},
     { AUX_FUNC::SURFACE_TRACKING,"SurfaceTracking"},
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
     { AUX_FUNC::RUNCAM_CONTROL,"RunCamControl"},
     { AUX_FUNC::RUNCAM_OSD_CONTROL,"RunCamOSDControl"},
 #endif
@@ -1168,7 +1177,7 @@ bool RC_Channel::do_aux_function_camera_lens(const AuxSwitchPos ch_flag)
 }
 #endif // AP_CAMERA_ENABLED
 
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
 void RC_Channel::do_aux_function_runcam_control(const AuxSwitchPos ch_flag)
 {
     AP_RunCam *runcam = AP::runcam();
@@ -1473,7 +1482,7 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         break;
 #endif  // AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
 
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
     case AUX_FUNC::RUNCAM_CONTROL:
         do_aux_function_runcam_control(ch_flag);
         break;
@@ -1863,6 +1872,14 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
     case AUX_FUNC::SCRIPTING_6:
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
+    case AUX_FUNC::SCRIPTING_9:
+    case AUX_FUNC::SCRIPTING_10:
+    case AUX_FUNC::SCRIPTING_11:
+    case AUX_FUNC::SCRIPTING_12:
+    case AUX_FUNC::SCRIPTING_13:
+    case AUX_FUNC::SCRIPTING_14:
+    case AUX_FUNC::SCRIPTING_15:
+    case AUX_FUNC::SCRIPTING_16:
 #endif
         break;
 

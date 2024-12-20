@@ -1686,6 +1686,14 @@ function mavlink_video_stream_information_t_ud:uri(index) end
 ---@param value integer
 function mavlink_video_stream_information_t_ud:uri(index, value) end
 
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:encoding() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:encoding(value) end
+
 -- Populate the fields of the VIDEO_STREAM_INFORMATION message
 ---@param instance integer
 ---@param stream_info mavlink_video_stream_information_t_ud
@@ -2550,6 +2558,11 @@ function SRV_Channels:set_output_pwm_chan_timeout(chan, pwm, timeout_ms) end
 ---@param pwm integer -- pwm value
 function SRV_Channels:set_output_pwm_chan(chan, pwm) end
 
+-- Get the pwm for a given servo output channel
+---@param chan integer -- servo channel number (zero indexed)
+---@return integer|nil -- output pwm if available
+function SRV_Channels:get_output_pwm_chan(chan) end
+
 -- Set the pwm for a given servo output function
 ---@param function_num integer -- servo function number (See SERVOx_FUNCTION parameters)
 ---@param pwm integer -- pwm value
@@ -2825,6 +2838,25 @@ function vehicle:is_landing() end
 ---@param new_start_location Location_ud
 ---@return boolean -- true on success
 function vehicle:set_crosstrack_start(new_start_location) end
+
+-- Register a custom mode. This behaves like guided mode but will report with a custom number and name
+---@param number integer -- mode number to use, should be over 100
+---@param full_name string -- Full mode name
+---@param short_name string -- Short mode name upto 4 characters
+---@return AP_Vehicle__custom_mode_state_ud|nil -- Returns custom mode state which allows customisation of behavior, nil if mode register fails
+function vehicle:register_custom_mode(number, full_name, short_name) end
+
+-- Custom mode state, allows customisation of mode behavior
+---@class (exact) AP_Vehicle__custom_mode_state_ud
+local AP_Vehicle__custom_mode_state_ud = {}
+
+-- get allow_entry, if true the vehicle is allowed to enter this custom mode
+---@return boolean
+function AP_Vehicle__custom_mode_state_ud:allow_entry() end
+
+-- set allow_entry, if true the vehicle is allowed to enter this custom mode
+---@param value boolean
+function AP_Vehicle__custom_mode_state_ud:allow_entry(value) end
 
 -- desc
 onvif = {}
@@ -3752,6 +3784,14 @@ function poscontrol:set_posvelaccel_offset(pos_offset_NED, vel_offset_NED, accel
 ---@return Vector3f_ud|nil
 ---@return Vector3f_ud|nil
 function poscontrol:get_posvelaccel_offset() end
+
+-- get position controller's target velocity in m/s in NED frame
+---@return Vector3f_ud|nil
+function poscontrol:get_vel_target() end
+
+-- get position controller's target acceleration in m/s/s in NED frame
+---@return Vector3f_ud|nil
+function poscontrol:get_accel_target() end
 
 -- desc
 AR_PosControl = {}

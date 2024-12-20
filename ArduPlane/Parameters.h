@@ -378,6 +378,7 @@ public:
         k_param_cal_roll_estab,
         k_param_cal_dir_esq,*/
 
+        k_param_quicktune,
     };
 
     AP_Int16 format_version;

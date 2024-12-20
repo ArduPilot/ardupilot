@@ -631,6 +631,17 @@ private:
         RELEASE_GRIPPER_ON_THRUST_LOSS = (1<<2),  // 4
         REQUIRE_POSITION_FOR_ARMING =   (1<<3),   // 8
     };
+
+    // type of fast rate attitude controller in operation
+    enum class FastRateType : uint8_t {
+        FAST_RATE_DISABLED            = 0,
+        FAST_RATE_DYNAMIC             = 1,
+        FAST_RATE_FIXED_ARMED         = 2,
+        FAST_RATE_FIXED               = 3,
+    };
+
+    FastRateType get_fast_rate_type() const { return FastRateType(g2.att_enable.get()); }
+
     // returns true if option is enabled for this vehicle
     bool option_is_enabled(FlightOption option) const {
         return (g2.flight_options & uint32_t(option)) != 0;
@@ -668,12 +679,12 @@ private:
 #if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 #if MODE_GUIDED_ENABLED
     bool set_target_location(const Location& target_loc) override;
+    bool start_takeoff(const float alt) override;
 #endif // MODE_GUIDED_ENABLED
 #endif // AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
 #if AP_SCRIPTING_ENABLED
 #if MODE_GUIDED_ENABLED
-    bool start_takeoff(float alt) override;
     bool get_target_location(Location& target_loc) override;
     bool update_target_location(const Location &old_loc, const Location &new_loc) override;
     bool set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt) override;
@@ -684,6 +695,8 @@ private:
     bool set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs) override;
     bool set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps, float throttle) override;
 
+    // Register a custom mode with given number and names
+    AP_Vehicle::custom_mode_state* register_custom_mode(const uint8_t number, const char* full_name, const char* short_name) override;
 #endif
 #if MODE_CIRCLE_ENABLED
     bool get_circle_radius(float &radius_m) override;
@@ -726,7 +739,25 @@ private:
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn() const;
-    void run_rate_controller();
+    void run_rate_controller_main();
+
+    // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    struct RateControllerRates {
+        uint8_t fast_logging_rate;
+        uint8_t medium_logging_rate;
+        uint8_t filter_rate;
+        uint8_t main_loop_rate;
+    };
+
+    uint8_t calc_gyro_decimation(uint8_t gyro_decimation, uint16_t rate_hz);
+    void rate_controller_thread();
+    void rate_controller_filter_update();
+    void rate_controller_log_update();
+    void rate_controller_set_rates(uint8_t rate_decimation, RateControllerRates& rates, bool warn_cpu_high);
+    void enable_fast_rate_loop(uint8_t rate_decimation, RateControllerRates& rates);
+    void disable_fast_rate_loop(RateControllerRates& rates);
+    void update_dynamic_notch_at_specified_rate_main();
+    // endif AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     void run_custom_controller() { custom_control.update(); }
@@ -876,6 +907,7 @@ private:
     // Log.cpp
     void Log_Write_Control_Tuning();
     void Log_Write_Attitude();
+    void Log_Write_Rate();
     void Log_Write_EKF_POS();
     void Log_Write_PIDS();
     void Log_Write_Data(LogDataID id, int32_t value);
@@ -890,6 +922,7 @@ private:
     void Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out);
     void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z);
     void Log_Write_Vehicle_Startup_Messages();
+    void Log_Write_Rate_Thread_Dt(float dt, float dtAvg, float dtMax, float dtMin);
 #endif  // HAL_LOGGING_ENABLED
 
     // mode.cpp
@@ -919,7 +952,8 @@ private:
     // motors.cpp
     void arm_motors_check();
     void auto_disarm_check();
-    void motors_output();
+    void motors_output(bool full_push = true);
+    void motors_output_main();
     void lost_vehicle_check();
 
     // navigation.cpp
@@ -1029,6 +1063,10 @@ private:
 #endif
 #if MODE_GUIDED_ENABLED
     ModeGuided mode_guided;
+#if AP_SCRIPTING_ENABLED
+    // Custom modes registered at runtime
+    ModeGuidedCustom *mode_guided_custom[5];
+#endif
 #endif
     ModeLand mode_land;
 #if MODE_LOITER_ENABLED
@@ -1079,6 +1117,9 @@ private:
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
+
+    bool started_rate_thread;
+    bool using_rate_thread;
 
 public:
     void failsafe_check();      // failsafe.cpp

@@ -185,6 +185,65 @@ void GCS_MAVLINK_Rover::send_rangefinder() const
         distance,
         voltage);
 }
+
+void GCS_MAVLINK_Rover::send_water_depth() const
+{
+    if (!HAVE_PAYLOAD_SPACE(chan, WATER_DEPTH)) {
+        return;
+    }
+
+    // only send for boats:
+    if (!rover.is_boat()) {
+        return;
+    }
+
+    RangeFinder *rangefinder = RangeFinder::get_singleton();
+
+    if (rangefinder == nullptr) {
+        return;
+    }
+
+    // depth can only be measured by a downward-facing rangefinder:
+    if (!rangefinder->has_orientation(ROTATION_PITCH_270)) {
+        return;
+    }
+
+    // get position
+    const AP_AHRS &ahrs = AP::ahrs();
+    Location loc;
+    IGNORE_RETURN(ahrs.get_location(loc));
+
+    for (uint8_t i=0; i<rangefinder->num_sensors(); i++) {
+        const AP_RangeFinder_Backend *s = rangefinder->get_backend(i);
+        
+        if (s == nullptr || s->orientation() != ROTATION_PITCH_270 || !s->has_data()) {
+            continue;
+        }
+
+        // get temperature
+        float temp_C;
+        if (!s->get_temp(temp_C)) {
+            temp_C = 0.0f;
+        }
+
+        const bool sensor_healthy = (s->status() == RangeFinder::Status::Good);
+
+        mavlink_msg_water_depth_send(
+            chan,
+            AP_HAL::millis(),   // time since system boot TODO: take time of measurement
+            i,                  // rangefinder instance
+            sensor_healthy,     // sensor healthy
+            loc.lat,            // latitude of vehicle
+            loc.lng,            // longitude of vehicle
+            loc.alt * 0.01f,    // altitude of vehicle (MSL)
+            ahrs.get_roll(),    // roll in radians
+            ahrs.get_pitch(),   // pitch in radians
+            ahrs.get_yaw(),     // yaw in radians
+            s->distance(),    // distance in meters
+            temp_C);            // temperature in degC
+    }
+
+}
 #endif  // AP_RANGEFINDER_ENABLED
 
 /*
@@ -400,6 +459,13 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     }
 #endif
 
+#if AP_RANGEFINDER_ENABLED
+    case MSG_WATER_DEPTH:
+        CHECK_PAYLOAD_SIZE(WATER_DEPTH);
+        send_water_depth();
+        break;
+#endif  // AP_RANGEFINDER_ENABLED
+
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
@@ -589,6 +655,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_WIND,
 #if AP_RANGEFINDER_ENABLED
     MSG_RANGEFINDER,
+    MSG_WATER_DEPTH,
 #endif
     MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,

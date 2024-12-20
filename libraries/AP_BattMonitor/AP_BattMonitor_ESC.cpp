@@ -22,8 +22,6 @@
 
 const AP_Param::GroupInfo AP_BattMonitor_ESC::var_info[] = {
 
-    // Param indexes must be between 36 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
-
     // @Param: ESC_MASK
     // @DisplayName: ESC mask
     // @Description: If 0 all connected ESCs will be used. If non-zero, only those selected in will be used.
@@ -31,7 +29,7 @@ const AP_Param::GroupInfo AP_BattMonitor_ESC::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ESC_MASK", 36, AP_BattMonitor_ESC, _mask, 0),
 
-    // Param indexes must be between 36 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
 
     AP_GROUPEND
 };

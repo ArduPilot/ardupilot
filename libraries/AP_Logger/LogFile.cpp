@@ -452,31 +452,6 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
-/*
-  write servo status from CAN servo
- */
-void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct,
-                                  float pos_cmd, float voltage, float current, float mot_temp, float pcb_temp, uint8_t error)
-{
-    const struct log_CSRV pkt {
-        LOG_PACKET_HEADER_INIT(LOG_CSRV_MSG),
-        time_us     : time_us,
-        id          : id,
-        position    : position,
-        force       : force,
-        speed       : speed,
-        power_pct   : power_pct,
-        pos_cmd     : pos_cmd,
-        voltage     : voltage,
-        current     : current,
-        mot_temp    : mot_temp,
-        pcb_temp    : pcb_temp,
-        error       : error,
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-
 // Write a Yaw PID packet
 void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
 {
