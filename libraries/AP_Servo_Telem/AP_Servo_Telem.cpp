@@ -152,6 +152,23 @@ void AP_Servo_Telem::write_log()
 }
 #endif  // HAL_LOGGING_ENABLED
 
+// Fill in telem structure if telem is available, return false if not
+bool AP_Servo_Telem::get_telem(const uint8_t servo_index, TelemetryData& telem) const volatile
+{
+    // Check for valid index
+    if (servo_index >= ARRAY_SIZE(_telem_data)) {
+        return false;
+    }
+
+    // Check if data has ever been received for the servo index provided
+    if ((active_mask & (1U << servo_index)) == 0) {
+        return false;
+    }
+
+    telem = *const_cast<TelemetryData*>(&_telem_data[servo_index]);
+    return true;
+}
+
 // Get the AP_Servo_Telem singleton
 AP_Servo_Telem *AP_Servo_Telem::get_singleton()
 {

@@ -70,6 +70,9 @@ public:
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(const uint8_t servo_index, const TelemetryData& new_data);
 
+    // Fill in telem structure if telem is available, return false if not
+    bool get_telem(const uint8_t servo_index, TelemetryData& telem) const volatile;
+
 private:
 
     // Log telem of each servo
