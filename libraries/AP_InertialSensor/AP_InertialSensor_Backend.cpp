@@ -813,12 +813,11 @@ void AP_InertialSensor_Backend::update_primary()
     // timing changes need to be made in the bus thread in order to take effect which is
     // why they are actioned here. Currently the _primary_gyro and _primary_accel can never
     // be different for a particular IMU
-    const bool is_new_primary = gyro_instance == _imu._primary_gyro;
+    const bool is_new_primary = (gyro_instance == _imu._primary_gyro);
     uint32_t now_us = AP_HAL::micros();
     if (is_primary != is_new_primary
         || AP_HAL::timeout_expired(last_primary_update_us, now_us, PRIMARY_UPDATE_TIMEOUT_US)) {
-        set_primary_gyro(is_new_primary);
-        set_primary_accel(is_new_primary);
+        set_primary(is_new_primary);
         is_primary = is_new_primary;
         last_primary_update_us = now_us;
     }
