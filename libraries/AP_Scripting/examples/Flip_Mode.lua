@@ -217,13 +217,11 @@ local function exit()
 end
 
 local function update()
-
-    -- Only allow entry into flip mode if armed and flying
-    local armed = arming:is_armed()
-    local flying = vehicle:get_likely_flying()
-    FLIP_MODE_STATE:allow_entry(armed and flying)
-
     local mode = vehicle:get_mode()
+
+    -- Update entry state
+    FLIP_MODE_STATE:allow_entry(allow_enter(mode))
+
     if mode == MODE_NUMBER then
         if last_mode_number ~= MODE_NUMBER then
             -- Fist call after entering

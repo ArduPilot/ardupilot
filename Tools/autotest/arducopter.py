@@ -12281,6 +12281,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # restart GPS driver
         self.reboot_sitl()
 
+    def ScriptingFlipMode(self):
+        '''test adding custom mode from scripting'''
+        # Really it would be nice to check for the AVAILABLE_MODES message, but pymavlink does not understand them yet.
+
+        # enable scripting and install flip script
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+        })
+        self.install_example_script_context('Flip_Mode.lua')
+        self.reboot_sitl()
+
+        # Takeoff in loiter
+        self.takeoff(10, mode="LOITER")
+
+        # Try and switch to flip, should not be posible from loiter
+        try:
+            self.change_mode(100, timeout=10)
+        except AutoTestTimeoutException:
+            self.progress("PASS not able to enter from loiter")
+
+        # Should be alowd to enter from alt hold
+        self.change_mode("ALT_HOLD")
+        self.change_mode(100)
+
+        # Should return to previous mode after flipping
+        self.wait_mode("ALT_HOLD")
+
+        # Test done
+        self.land_and_disarm()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -12389,6 +12419,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ScriptingAHRSSource,
             self.CommonOrigin,
             self.TestTetherStuck,
+            self.ScriptingFlipMode,
         ])
         return ret
 
