@@ -32,6 +32,8 @@ char keyword_global[]              = "global";
 char keyword_creation[]            = "creation";
 char keyword_manual_operator[]     = "manual_operator";
 char keyword_operator_getter[]     = "operator_getter";
+char keyword_field_valid_mask[]    = "valid_mask";
+
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -184,6 +186,10 @@ struct type {
     char *enum_name;
     char *literal;
   } data;
+  struct {
+    char *name;
+    char *value;
+  } valid_mask;
 };
 
 int TRACE_LEVEL = 0;
@@ -510,6 +516,12 @@ unsigned int parse_access_flags(struct type * type) {
             error(ERROR_INTERNAL, "Can't access a NONE type");
         }
       }
+    } else if (strcmp(state.token, keyword_field_valid_mask) == 0) {
+      char * name = next_token();
+      string_copy(&(type->valid_mask.name), name);
+      char * value = next_token();
+      string_copy(&(type->valid_mask.value), value);
+
     } else {
       error(ERROR_UNKNOWN_KEYWORD, "Unknown access provided: %s", state.token);
       break;
@@ -1716,10 +1728,20 @@ void emit_field(const struct userdata_field *field, const char* object_name, con
     fprintf(source, "    binding_argcheck(L, %d);\n",args);
   }
 
+  int valid_mask = (field->type.valid_mask.name != NULL) && (field->type.valid_mask.value != NULL);
+
   if (field->access_flags & ACCESS_FLAG_READ) {
     if (use_switch) {
       fprintf(source, "        case 1:\n");
     }
+
+    // Check if field is valid
+    if (valid_mask) {
+        fprintf(source, "%sif ((%s%s%s & %s) == 0) {\n", indent, object_name, object_access, field->type.valid_mask.name, field->type.valid_mask.value);
+        fprintf(source, "%s    return 0;\n", indent);
+        fprintf(source, "%s}\n", indent);
+    }
+
     switch (field->type.type) {
       case TYPE_BOOLEAN:
         fprintf(source, "%slua_pushinteger(L, %s%s%s%s);\n", indent, object_name, object_access, field->name, index_string);
@@ -1764,6 +1786,12 @@ void emit_field(const struct userdata_field *field, const char* object_name, con
       fprintf(source, "        case 2: {\n");
     }
     emit_checker(field->type, write_arg_number, 0, indent);
+
+    // set field valid
+    if (valid_mask) {
+      fprintf(source, "%s%s%s%s |= %s;\n", indent, object_name, object_access, field->type.valid_mask.name, field->type.valid_mask.value);
+    }
+
     fprintf(source, "%s%s%s%s%s = data_%i;\n", indent, object_name, object_access, field->name, index_string, write_arg_number);
     fprintf(source, "%sreturn 0;\n", indent);
     if (use_switch) {
@@ -2579,7 +2607,7 @@ void emit_loaders(void) {
 }
 
 int should_emit_creation(struct userdata * data) {
-    // Dont expose creation function for all read only items
+    // Don't expose creation function for items with only read-only fields
     int expose_creation = FALSE;
     if (data->creation || data->methods) {
       // Custom creation or methods, if not specifically disabled
@@ -2605,7 +2633,6 @@ void emit_userdata_new_funcs(void) {
   fprintf(source, "    const lua_CFunction fun;\n");
   fprintf(source, "} new_userdata[] = {\n");
   while (data) {
-    // Dont expose creation function for all read only items
     if (should_emit_creation(data)) {
       start_dependency(source, data->dependency);
       if (data->creation) {
@@ -2889,32 +2916,29 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
     }
 
     if (is_userdata) {
-      if (should_emit_creation(node)) {
-        // local userdata
-        fprintf(docs, "local %s = {}\n\n", name);
+      // local userdata
+      fprintf(docs, "local %s = {}\n\n", name);
 
-        int creation_disabled = (node->creation && node->creation_args == -1);
-        if (emit_creation && (!node->creation || !creation_disabled)) {
-          // creation function
-          if (node->creation != NULL) {
-            for (int i = 0; i < node->creation_args; ++i) {
-              fprintf(docs, "---@param param%i UNKNOWN\n", i+1);
+      if (emit_creation && should_emit_creation(node)) {
+        // creation function
+        if (node->creation != NULL) {
+          for (int i = 0; i < node->creation_args; ++i) {
+            fprintf(docs, "---@param param%i UNKNOWN\n", i+1);
+          }
+        }
+
+        fprintf(docs, "---@return %s\n", name);
+        fprintf(docs, "function %s(", node->rename ? node->rename : node->sanatized_name);
+        if (node->creation == NULL) {
+          fprintf(docs, ") end\n\n");
+        } else {
+          for (int i = 0; i < node->creation_args; ++i) {
+            fprintf(docs, "param%i", i+1);
+            if (i < node->creation_args-1) {
+              fprintf(docs, ", ");
             }
           }
-
-          fprintf(docs, "---@return %s\n", name);
-          fprintf(docs, "function %s(", node->rename ? node->rename : node->sanatized_name);
-          if (node->creation == NULL) {
-            fprintf(docs, ") end\n\n");
-          } else {
-            for (int i = 0; i < node->creation_args; ++i) {
-              fprintf(docs, "param%i", i+1);
-              if (i < node->creation_args-1) {
-                fprintf(docs, ", ");
-              }
-            }
-            fprintf(docs, ") end\n\n");
-          }
+          fprintf(docs, ") end\n\n");
         }
       }
     } else {
@@ -2927,11 +2951,14 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
     if (node->fields != NULL) {
       struct userdata_field *field = node->fields;
       while(field) {
+          int valid_mask = (field->type.valid_mask.name != NULL) && (field->type.valid_mask.value != NULL);
+          const char * return_postfix = valid_mask ? "|nil\n" : "\n";
+
           if (field->array_len == NULL) {
             // single value field
             if (field->access_flags & ACCESS_FLAG_READ) {
               fprintf(docs, "-- get field\n");
-              emit_docs_type(field->type, "---@return", "\n");
+              emit_docs_type(field->type, "---@return", return_postfix);
               fprintf(docs, "function %s:%s() end\n\n", name, field->rename ? field->rename : field->name);
             }
             if (field->access_flags & ACCESS_FLAG_WRITE) {
@@ -2944,7 +2971,7 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
             if (field->access_flags & ACCESS_FLAG_READ) {
               fprintf(docs, "-- get array field\n");
               fprintf(docs, "---@param index integer\n");
-              emit_docs_type(field->type, "---@return", "\n");
+              emit_docs_type(field->type, "---@return", return_postfix);
               fprintf(docs, "function %s:%s(index) end\n\n", name, field->rename ? field->rename : field->name);
             }
             if (field->access_flags & ACCESS_FLAG_WRITE) {
