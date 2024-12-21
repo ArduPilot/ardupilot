@@ -684,7 +684,7 @@ void Plane::update_flight_stage(void)
             }
 #endif
             set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
-        } else if (control_mode != &mode_takeoff) {
+        } else if ((control_mode != &mode_takeoff) && (control_mode != &mode_autoland)) {
             // If not in AUTO then assume normal operation for normal TECS operation.
             // This prevents TECS from being stuck in the wrong stage if you switch from
             // AUTO to, say, FBWB during a landing, an aborted landing or takeoff.
