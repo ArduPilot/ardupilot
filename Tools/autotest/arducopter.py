@@ -7582,6 +7582,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "OA_TYPE": 2,
         })
         sensors = [  # tuples of name, prx_type
+            ('ld06', 16, {
+                mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 273,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_45: 256,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_90: 1130,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_135: 696,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_180: 625,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_225: 967,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_270: 760,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_315: 771,
+            }),
             ('sf45b', 8, {
                 mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 270,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_45: 258,
