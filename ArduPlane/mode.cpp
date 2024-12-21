@@ -306,7 +306,7 @@ bool Mode::use_throttle_limits() const
         return !plane.g.throttle_passthru_stabilize;
     }
 
-    if (is_guided_mode() && plane.guided_throttle_passthru) {
+    if (is_guided_or_adsb_mode() && plane.guided_throttle_passthru) {
         // manual pass through of throttle while in GUIDED
         return false;
     }
@@ -338,7 +338,7 @@ bool Mode::use_battery_compensation() const
         return false;
     }
 
-    if (is_guided_mode() && plane.guided_throttle_passthru) {
+    if (is_guided_or_adsb_mode() && plane.guided_throttle_passthru) {
         // manual pass through of throttle while in GUIDED
         return false;
     }

@@ -103,6 +103,9 @@ public:
     virtual bool is_vtol_man_mode() const { return false; }
 
     // guided or adsb mode
+    virtual bool is_guided_or_adsb_mode() const { return is_guided_mode(); }
+
+    // guided mode
     virtual bool is_guided_mode() const { return false; }
 
     // true if mode can have terrain following disabled by switch
@@ -617,7 +620,8 @@ public:
 
     void navigate() override;
 
-    virtual bool is_guided_mode() const override { return true; }
+    // guided or adsb mode
+    virtual bool is_guided_or_adsb_mode() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
 

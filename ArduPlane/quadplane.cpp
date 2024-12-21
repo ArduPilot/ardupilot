@@ -1303,7 +1303,7 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 
     if ((plane.g.stick_mixing == StickMixing::NONE) &&
         (plane.control_mode == &plane.mode_qrtl ||
-         plane.control_mode->is_guided_mode() ||
+         plane.control_mode->is_guided_or_adsb_mode() ||
          in_vtol_auto())) {
         return 0;
     }
@@ -2077,7 +2077,7 @@ bool QuadPlane::in_vtol_mode(void) const
     if (plane.control_mode->is_vtol_mode()) {
         return true;
     }
-    if (plane.control_mode->is_guided_mode()
+    if (plane.control_mode->is_guided_or_adsb_mode()
         && plane.auto_state.vtol_loiter &&
         poscontrol.get_state() > QPOS_APPROACH) {
         return true;
@@ -2108,7 +2108,7 @@ bool QuadPlane::in_vtol_posvel_mode(void) const
 #if QAUTOTUNE_ENABLED
             plane.control_mode == &plane.mode_qautotune ||
 #endif
-            (plane.control_mode->is_guided_mode() &&
+            (plane.control_mode->is_guided_or_adsb_mode() &&
             plane.auto_state.vtol_loiter &&
              poscontrol.get_state() > QPOS_APPROACH) ||
             in_vtol_auto());

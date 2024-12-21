@@ -43,7 +43,7 @@ void Plane::fence_check()
             case AC_FENCE_ACTION_GUIDED_THROTTLE_PASS:
             case AC_FENCE_ACTION_RTL_AND_LAND:
                 if (plane.control_mode_reason == ModeReason::FENCE_BREACHED &&
-                    control_mode->is_guided_mode()) {
+                    control_mode->is_guided_or_adsb_mode()) {
                     set_mode(*previous_mode, ModeReason::FENCE_RETURN_PREVIOUS_MODE);
                 }
                 break;

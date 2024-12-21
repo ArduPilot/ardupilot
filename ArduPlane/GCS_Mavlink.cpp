@@ -1129,7 +1129,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_DO_CHANGE_SPEED(const mavlink_comma
         // controlled modes (e.g., MANUAL, TRAINING)
         // this command should be ignored since it comes in from GCS
         // or a companion computer:
-        if ((!plane.control_mode->is_guided_mode()) &&
+        if (!plane.control_mode->is_guided_or_adsb_mode() &&
             (plane.control_mode != &plane.mode_auto)) {
             // failed
             return MAV_RESULT_FAILED;
