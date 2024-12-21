@@ -171,7 +171,20 @@ struct PACKED FIFODataHighRes {
 static_assert(sizeof(FIFOData) == 16, "FIFOData must be 16 bytes");
 static_assert(sizeof(FIFODataHighRes) == 20, "FIFODataHighRes must be 20 bytes");
 
-#define INV3_FIFO_BUFFER_LEN 16
+/*
+    Ideally we would like the fifo buffer to be big enough to hold all of the packets that might have been
+    accumulated between reads. This is so that they can all be read in a single SPI transaction and avoid
+    the overhead of multiple reads. The maximum number of samples for 20-bit high res that can be store in the
+    fifo is 2k/20, or 105 samples. The likely maximum required for dynamic fifo is the output data rate / 2x loop rate,
+    4k/400 or 10 samples in the extreme case we are trying to support. We need double this to account for the
+    fact that we might only have 9 samples at the time the fifo is read and hence the next time it is read we
+    could have 19 sample
+ */
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+#define INV3_FIFO_BUFFER_LEN 24
+#else
+#define INV3_FIFO_BUFFER_LEN 8
+#endif
 
 AP_InertialSensor_Invensensev3::AP_InertialSensor_Invensensev3(AP_InertialSensor &imu,
                                                                AP_HAL::OwnPtr<AP_HAL::Device> _dev,
@@ -401,14 +414,16 @@ bool AP_InertialSensor_Invensensev3::update()
     return true;
 }
 
-void AP_InertialSensor_Invensensev3::set_primary_gyro(bool _is_primary)
+void AP_InertialSensor_Invensensev3::set_primary(bool _is_primary)
 {
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
     if (_imu.is_dynamic_fifo_enabled(gyro_instance)) {
         if (_is_primary) {
             dev->adjust_periodic_callback(periodic_handle, backend_period_us);
         } else {
-            dev->adjust_periodic_callback(periodic_handle, backend_period_us * get_fast_sampling_rate());
+            // scale down non-primary to 2x loop rate, but no greater than the default sampling rate
+            dev->adjust_periodic_callback(periodic_handle,
+                                          1000000UL / constrain_int16(get_loop_rate_hz() * 2, 400, 1000));
         }
     }
 #endif
