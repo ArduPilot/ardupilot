@@ -204,7 +204,7 @@ const double EARTH_RADIUS_METERS = 6378137.0; // Earth's radius in meters (WGS84
 
 // Converts 1e7 degrees to radians
 double toRadians(long degrees_1e7) {
-    return (degrees_1e7 / 1e7) * M_PI / 180.0;
+    return radians(degrees_1e7 / 1.0e7);
 }
 
 // Converts (latitude, longitude) in radians to 3D Cartesian coordinates on a unit sphere
@@ -215,18 +215,15 @@ void latLonToCartesian(double latRad, double lonRad, double &x, double &y, doubl
 }
 
 // Haversine distance between two points given in 1e7 degrees
-double haversineDistance(long lat1_1e7, long lon1_1e7, long lat2_1e7, long lon2_1e7) {
+double haversine(long lat1_1e7, long lon1_1e7, long lat2_1e7, long lon2_1e7) {
     double lat1 = toRadians(lat1_1e7);
-    double lon1 = toRadians(lon1_1e7);
     double lat2 = toRadians(lat2_1e7);
-    double lon2 = toRadians(lon2_1e7);
 
-    double dLat = lat2 - lat1;
-    double dLon = lon2 - lon1;
+    double dLat = toRadians(lat2_1e7 - lat1_1e7);
+    double dLon = toRadians(lon2_1e7 - lon1_1e7);
 
-    double a = std::sin(dLat / 2) * std::sin(dLat / 2) +
-               std::cos(lat1) * std::cos(lat2) * std::sin(dLon / 2) * std::sin(dLon / 2);
-    double c = 2 * std::atan2(std::sqrt(a), std::sqrt(1 - a));
+    double a = pow(sin(dLat / 2), 2) + pow(sin(dLon / 2), 2) * cos(lat1) * cos(lat2);
+    double c = 2 * asin(sqrt(a));
     return EARTH_RADIUS_METERS * c;
 }
 
@@ -281,7 +278,7 @@ double closestDistanceToLineSegment(long pointLat_1e7, long pointLon_1e7,
     long closestLon_1e7 = static_cast<long>((closestLon * 180.0 / M_PI) * 1e7);
 
     // Calculate the Haversine distance from the point to the closest point on the line
-    return haversineDistance(pointLat_1e7, pointLon_1e7, closestLat_1e7, closestLon_1e7);
+    return haversine(pointLat_1e7, pointLon_1e7, closestLat_1e7, closestLon_1e7);
 }
 
 /*
