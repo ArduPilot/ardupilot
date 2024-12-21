@@ -1395,9 +1395,6 @@ function camera:take_picture(instance) end
 ---@class (exact) AP_Camera__camera_state_t_ud
 local AP_Camera__camera_state_t_ud = {}
 
----@return AP_Camera__camera_state_t_ud
-function AP_Camera__camera_state_t() end
-
 -- get field
 ---@return Vector2f_ud
 function AP_Camera__camera_state_t_ud:tracking_p1() end
