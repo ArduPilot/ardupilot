@@ -2578,20 +2578,14 @@ void emit_loaders(void) {
   fprintf(source, "}\n\n");
 }
 
-void emit_userdata_new_funcs(void) {
-  struct userdata *data = parsed_userdata;
-  fprintf(source, "const struct userdata {\n");
-  fprintf(source, "    const char *name;\n");
-  fprintf(source, "    const lua_CFunction fun;\n");
-  fprintf(source, "} new_userdata[] = {\n");
-  while (data) {
+int should_emit_creation(struct userdata * data) {
     // Dont expose creation function for all read only items
     int expose_creation = FALSE;
     if (data->creation || data->methods) {
       // Custom creation or methods, if not specifically disabled
       expose_creation = !(data->creation && data->creation_args == -1);
     } else {
-      // Feilds only
+      // Fields only
       struct userdata_field * field = data->fields;
       while(field) {
         if (field->access_flags & ACCESS_FLAG_WRITE) {
@@ -2601,8 +2595,18 @@ void emit_userdata_new_funcs(void) {
         field = field->next;
       }
     }
+    return expose_creation;
+}
 
-    if (expose_creation) {
+void emit_userdata_new_funcs(void) {
+  struct userdata *data = parsed_userdata;
+  fprintf(source, "const struct userdata {\n");
+  fprintf(source, "    const char *name;\n");
+  fprintf(source, "    const lua_CFunction fun;\n");
+  fprintf(source, "} new_userdata[] = {\n");
+  while (data) {
+    // Dont expose creation function for all read only items
+    if (should_emit_creation(data)) {
       start_dependency(source, data->dependency);
       if (data->creation) {
         // expose custom creation function to user (not used internally)
@@ -2885,32 +2889,33 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
     }
 
     if (is_userdata) {
-      // local userdata
-      fprintf(docs, "local %s = {}\n\n", name);
+      if (should_emit_creation(node)) {
+        // local userdata
+        fprintf(docs, "local %s = {}\n\n", name);
 
-      int creation_disabled = (node->creation && node->creation_args == -1);
-      if (emit_creation && (!node->creation || !creation_disabled)) {
-        // creation function
-        if (node->creation != NULL) {
-          for (int i = 0; i < node->creation_args; ++i) {
-            fprintf(docs, "---@param param%i UNKNOWN\n", i+1);
-          }
-        }
-
-        fprintf(docs, "---@return %s\n", name);
-        fprintf(docs, "function %s(", node->rename ? node->rename : node->sanatized_name);
-        if (node->creation == NULL) {
-          fprintf(docs, ") end\n\n");
-        } else {
-          for (int i = 0; i < node->creation_args; ++i) {
-            fprintf(docs, "param%i", i+1);
-            if (i < node->creation_args-1) {
-              fprintf(docs, ", ");
+        int creation_disabled = (node->creation && node->creation_args == -1);
+        if (emit_creation && (!node->creation || !creation_disabled)) {
+          // creation function
+          if (node->creation != NULL) {
+            for (int i = 0; i < node->creation_args; ++i) {
+              fprintf(docs, "---@param param%i UNKNOWN\n", i+1);
             }
           }
-          fprintf(docs, ") end\n\n");
-        }
 
+          fprintf(docs, "---@return %s\n", name);
+          fprintf(docs, "function %s(", node->rename ? node->rename : node->sanatized_name);
+          if (node->creation == NULL) {
+            fprintf(docs, ") end\n\n");
+          } else {
+            for (int i = 0; i < node->creation_args; ++i) {
+              fprintf(docs, "param%i", i+1);
+              if (i < node->creation_args-1) {
+                fprintf(docs, ", ");
+              }
+            }
+            fprintf(docs, ") end\n\n");
+          }
+        }
       }
     } else {
       // global
