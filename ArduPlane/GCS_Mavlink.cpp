@@ -868,7 +868,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
 
     // location is valid load and set
     if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
-        (plane.control_mode == &plane.mode_guided)) {
+        plane.control_mode->is_guided_mode()) {
         plane.set_mode(plane.mode_guided, ModeReason::GCS_COMMAND);
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
         plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
@@ -899,7 +899,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
   switch(packet.command) {
     case MAV_CMD_GUIDED_CHANGE_SPEED: {
         // command is only valid in guided mode
-        if (plane.control_mode != &plane.mode_guided) {
+        if (!plane.control_mode->is_guided_mode()) {
             return MAV_RESULT_FAILED;
         }
 
@@ -938,7 +938,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
 
      case MAV_CMD_GUIDED_CHANGE_ALTITUDE: {
         // command is only valid in guided
-        if (plane.control_mode != &plane.mode_guided) {
+        if (!plane.control_mode->is_guided_mode()) {
             return MAV_RESULT_FAILED;
         }
 
@@ -972,7 +972,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
      case MAV_CMD_GUIDED_CHANGE_HEADING: {
 
         // command is only valid in guided mode
-        if (plane.control_mode != &plane.mode_guided) {
+        if (!plane.control_mode->is_guided_mode()) {
             return MAV_RESULT_FAILED;
         }
 
@@ -1306,7 +1306,7 @@ void GCS_MAVLINK_Plane::handle_set_attitude_target(const mavlink_message_t &msg)
         // in e.g., RTL, CICLE. Specifying a single mode for companion
         // computer control is more safe (even more so when using
         // FENCE_ACTION = 4 for geofence failures).
-        if (plane.control_mode != &plane.mode_guided) { // don't screw up failsafes
+        if (!plane.control_mode->is_guided_mode()) { // don't screw up failsafes
             return;
         }
 
@@ -1374,7 +1374,7 @@ void GCS_MAVLINK_Plane::handle_set_position_target_local_ned(const mavlink_messa
         mavlink_msg_set_position_target_local_ned_decode(&msg, &packet);
 
         // exit if vehicle is not in Guided mode
-        if (plane.control_mode != &plane.mode_guided) {
+        if (!plane.control_mode->is_guided_mode()) {
             return;
         }
 
@@ -1397,7 +1397,7 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
         // in modes such as RTL, CIRCLE, etc.  Specifying ONLY one mode
         // for companion computer control is more safe (provided
         // one uses the FENCE_ACTION = 4 (RTL) for geofence failures).
-        if (plane.control_mode != &plane.mode_guided) {
+        if (!plane.control_mode->is_guided_mode()) {
             //don't screw up failsafes
             return;
         }

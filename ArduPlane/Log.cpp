@@ -268,7 +268,7 @@ void Plane::Log_Write_RC(void)
 void Plane::Log_Write_Guided(void)
 {
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
-    if (control_mode != &mode_guided) {
+    if (!control_mode->is_guided_mode()) {
         return;
     }
 
