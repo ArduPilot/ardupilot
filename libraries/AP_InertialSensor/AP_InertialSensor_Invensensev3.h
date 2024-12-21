@@ -46,7 +46,7 @@ public:
     const uint16_t multiplier_accel = INT16_MAX/(32*GRAVITY_MSS);
 
 protected:
-    void set_primary_gyro(bool is_primary) override;
+    void set_primary(bool _is_primary) override;
 
 private:
     AP_InertialSensor_Invensensev3(AP_InertialSensor &imu,

@@ -296,8 +296,7 @@ protected:
 
     // catch updates to the primary gyro and accel
     void update_primary() __RAMFUNC__; /* backend */
-    virtual void set_primary_gyro(bool is_primary_gyro) {}
-    virtual void set_primary_accel(bool is_primary_accel) {}
+    virtual void set_primary(bool _is_primary) {}
 
     // support for updating filter at runtime
     uint16_t _last_accel_filter_hz;

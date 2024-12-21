@@ -817,8 +817,7 @@ void AP_InertialSensor_Backend::update_primary()
     uint32_t now_us = AP_HAL::micros();
     if (is_primary != is_new_primary
         || AP_HAL::timeout_expired(last_primary_update_us, now_us, PRIMARY_UPDATE_TIMEOUT_US)) {
-        set_primary_gyro(is_new_primary);
-        set_primary_accel(is_new_primary);
+        set_primary(is_new_primary);
         is_primary = is_new_primary;
         last_primary_update_us = now_us;
     }
