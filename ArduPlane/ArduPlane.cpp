@@ -689,8 +689,6 @@ void Plane::update_flight_stage(void)
             // This prevents TECS from being stuck in the wrong stage if you switch from
             // AUTO to, say, FBWB during a landing, an aborted landing or takeoff.
             set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
-        } else  if (control_mode == &mode_autoland) {
-            set_flight_stage(AP_FixedWing::FlightStage::LAND);
         }
         return;
     }

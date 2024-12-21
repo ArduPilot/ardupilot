@@ -43,7 +43,7 @@ ModeAutoLand::ModeAutoLand() :
 }
 
 bool ModeAutoLand::_enter()
-{             
+{   
     //must be flying to enter
     if (!plane.is_flying()) { 
         gcs().send_text(MAV_SEVERITY_WARNING, "Must already be flying!"); 
@@ -52,8 +52,8 @@ bool ModeAutoLand::_enter()
     
     //takeoff direction must be set and must not be a quadplane, otherwise since flying switch to RTL so this can be used as FS action
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.available()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "AutoLand is fixed wing only mode"); 
+    if (quadplane.available() && !quadplane.option_is_set(QuadPlane::OPTION::ALLOW_FW_LAND)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Option not set to allow fixed wing autoland"); 
         return false; 
     }
 #endif
@@ -105,6 +105,7 @@ void ModeAutoLand::navigate()
             plane.prev_WP_loc = plane.current_loc;
             plane.next_WP_loc = home_loc;
             plane.start_command(cmd);
+            plane.set_flight_stage(AP_FixedWing::FlightStage::LAND);
         }
         return;
     //otherwise keep flying the current command   
