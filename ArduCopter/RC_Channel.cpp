@@ -140,7 +140,7 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::CUSTOM_CONTROLLER:
     case AUX_FUNC::WEATHER_VANE_ENABLE:
     case AUX_FUNC::TRANSMITTER_TUNING:
-        run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
+        run_aux_function(ch_option, ch_flag, AuxFuncTrigger::Source::INIT, ch_in);
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -169,8 +169,11 @@ void RC_Channel_Copter::do_aux_function_change_mode(const Mode::Number mode,
 }
 
 // do_aux_function - implement the function invoked by auxiliary switches
-bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
 {
+    const AUX_FUNC &ch_option = trigger.func;
+    const AuxSwitchPos &ch_flag = trigger.pos;
+
     switch(ch_option) {
         case AUX_FUNC::FLIP:
             // flip if switch is on, positive throttle and we're actually flying
@@ -668,7 +671,7 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
         break;
 
     default:
-        return RC_Channel::do_aux_function(ch_option, ch_flag);
+        return RC_Channel::do_aux_function(trigger);
     }
     return true;
 }

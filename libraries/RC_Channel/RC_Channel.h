@@ -314,19 +314,27 @@ public:
         HIGH       // indicates auxiliary switch is in the high position (pwm >1800)
     };
 
-    enum class AuxFuncTriggerSource : uint8_t {
-        INIT,
-        RC,
-        BUTTON,
-        MAVLINK,
-        MISSION,
-        SCRIPTING,
+    // Trigger structure containing the function, position and pwm (if applicable)
+    struct AuxFuncTrigger {
+        AUX_FUNC func;
+        AuxSwitchPos pos;
+// @LoggerEnum: AuxFuncTrigger::Source
+        enum class Source : uint8_t {
+            INIT,
+            RC,
+            BUTTON,
+            MAVLINK,
+            MISSION,
+            SCRIPTING,
+        } source;
+        // Index within source
+        uint16_t source_index;
     };
 
     AuxSwitchPos get_aux_switch_pos() const;
 
     // wrapper function around do_aux_function which allows us to log
-    bool run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source);
+    bool run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTrigger::Source source, uint16_t source_index);
 
 #if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     const char *string_for_aux_function(AUX_FUNC function) const;
@@ -357,7 +365,7 @@ protected:
     virtual void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos);
 
     // virtual function to be overridden my subclasses
-    virtual bool do_aux_function(AUX_FUNC ch_option, AuxSwitchPos);
+    virtual bool do_aux_function(const AuxFuncTrigger &trigger);
 
     void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
@@ -388,6 +396,8 @@ protected:
         // no action by default (e.g. Tracker, Sub, who do their own thing)
     };
 
+    // the input channel this corresponds to
+    uint8_t ch_in;
 
 private:
 
@@ -406,9 +416,6 @@ private:
 
     ControlType type_in;
     int16_t     high_in;
-
-    // the input channel this corresponds to
-    uint8_t     ch_in;
 
     // overrides
     uint16_t override_value;
@@ -597,8 +604,8 @@ public:
 
     // method for other parts of the system (e.g. Button and mavlink)
     // to trigger auxiliary functions
-    bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTriggerSource source) {
-        return rc_channel(0)->run_aux_function(ch_option, pos, source);
+    bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTrigger::Source source, uint16_t source_index) {
+        return rc_channel(0)->run_aux_function(ch_option, pos, source, source_index);
     }
 
     // check if flight mode channel is assigned RC option
