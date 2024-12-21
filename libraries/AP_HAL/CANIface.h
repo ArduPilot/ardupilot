@@ -262,19 +262,20 @@ public:
     FUNCTOR_TYPEDEF(FrameCb, void, uint8_t, const AP_HAL::CANFrame &);
 
     // register a frame callback function
-    virtual bool register_frame_callback(FrameCb cb, uint8_t &cb_id);
-    virtual void unregister_frame_callback(uint8_t cb_id);
+    bool register_frame_callback(FrameCb cb, uint8_t &cb_id);
+    void unregister_frame_callback(uint8_t cb_id);
+    virtual bool add_to_rx_queue(const CanRxItem &rx_item) = 0;
+    void set_rx_cb_disabled(uint8_t cb_id, bool rx_cb_disable) { callbacks.rx_cb_disable[cb_id-1] = rx_cb_disable; }
 
 protected:
     virtual int8_t get_iface_num() const = 0;
-    virtual bool add_to_rx_queue(const CanRxItem &rx_item) = 0;
-
     struct {
 #ifndef HAL_BOOTLOADER_BUILD
         HAL_Semaphore sem;
 #endif
         // allow up to 3 callbacks per interface
         FrameCb cb[3];
+        bool rx_cb_disable[3];
     } callbacks;
 
     uint32_t bitrate_;

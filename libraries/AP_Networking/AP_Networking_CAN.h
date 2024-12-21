@@ -15,7 +15,7 @@ private:
     uint8_t bus_mask;
 
     AP_HAL::CANIface *get_caniface(uint8_t) const;
-
+    uint8_t callback_id;
 #ifdef HAL_BOOTLOADER_BUILD
     static void mcast_trampoline(void *ctx);
 #endif
