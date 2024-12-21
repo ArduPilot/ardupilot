@@ -186,7 +186,7 @@ void GCS_MAVLINK_Rover::send_rangefinder() const
         voltage);
 }
 
-void GCS_MAVLINK_Rover::send_water_depth() const
+void GCS_MAVLINK_Rover::send_water_depth()
 {
     if (!HAVE_PAYLOAD_SPACE(chan, WATER_DEPTH)) {
         return;
@@ -213,9 +213,15 @@ void GCS_MAVLINK_Rover::send_water_depth() const
     Location loc;
     IGNORE_RETURN(ahrs.get_location(loc));
 
-    for (uint8_t i=0; i<rangefinder->num_sensors(); i++) {
-        const AP_RangeFinder_Backend *s = rangefinder->get_backend(i);
-        
+    const auto num_sensors = rangefinder->num_sensors();
+    for (uint8_t i=0; i<num_sensors; i++) {
+        last_WATER_DEPTH_index += 1;
+        if (last_WATER_DEPTH_index >= num_sensors) {
+            last_WATER_DEPTH_index = 0;
+        }
+
+        const AP_RangeFinder_Backend *s = rangefinder->get_backend(last_WATER_DEPTH_index);
+
         if (s == nullptr || s->orientation() != ROTATION_PITCH_270 || !s->has_data()) {
             continue;
         }
@@ -231,7 +237,7 @@ void GCS_MAVLINK_Rover::send_water_depth() const
         mavlink_msg_water_depth_send(
             chan,
             AP_HAL::millis(),   // time since system boot TODO: take time of measurement
-            i,                  // rangefinder instance
+            last_WATER_DEPTH_index, // rangefinder instance
             sensor_healthy,     // sensor healthy
             loc.lat,            // latitude of vehicle
             loc.lng,            // longitude of vehicle
@@ -241,6 +247,8 @@ void GCS_MAVLINK_Rover::send_water_depth() const
             ahrs.get_yaw(),     // yaw in radians
             s->distance(),    // distance in meters
             temp_C);            // temperature in degC
+
+        break;  // only send one WATER_DEPTH message per loop
     }
 
 }
