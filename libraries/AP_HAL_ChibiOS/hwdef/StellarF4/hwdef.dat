@@ -1,4 +1,4 @@
-# hw definition file for Stellar F4 v1.2
+# hw definition file for Stellar F4 v1.5
 # tested on the Stellar F4
 # with thanks to betaflight for pinout
 
@@ -135,8 +135,6 @@ IMU BMI270 SPI:bmi270 ROTATION_ROLL_180
 BARO SPL06  I2C:0:0x76
 BARO DPS310 I2C:0:0x76
 BARO BMP280 I2C:0:0x76
-# define AP_BARO_BACKEND_DEFAULT_ENABLED 0
-# define AP_BARO_SPL06_ENABLED 1
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
@@ -167,22 +165,3 @@ define DEFAULT_NTF_LED_TYPES 257
 
 # GPIOs  81:CAM SELECT,82:9V SWITCH
 PC03  PINIO1 OUTPUT GPIO(81) LOW
-
-
-undef AP_CAMERA_MOUNT_ENABLED
-undef HAL_MOUNT_ENABLED
-undef HAL_MOUNT_SERVO_ENABLED
-
-define AP_CAMERA_MOUNT_ENABLED 1
-define HAL_MOUNT_ENABLED 1
-define HAL_MOUNT_SERVO_ENABLED 1
-
-undef HAL_MOUNT_SIYI_ENABLED
-undef HAL_MOUNT_SERVO_ENABLED
-undef HAL_MOUNT_STORM32MAVLINK_ENABLED
-undef HAL_MOUNT_STORM32SERIAL_ENABLED
-
-define HAL_MOUNT_SIYI_ENABLED 1 
-define HAL_MOUNT_SERVO_ENABLED 1 
-define HAL_MOUNT_STORM32MAVLINK_ENABLED 1
-define HAL_MOUNT_STORM32SERIAL_ENABLED 1
