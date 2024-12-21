@@ -4015,7 +4015,6 @@ function networking:get_netmask_active() end
 function networking:get_ip_active() end
 
 -- visual odometry object
---@class visual_odom
 visual_odom = {}
 
 -- visual odometry health
@@ -4025,3 +4024,59 @@ function visual_odom:healthy() end
 -- visual odometry quality as a percentage from 1 to 100 or 0 if unknown
 ---@return integer
 function visual_odom:quality() end
+
+-- servo telemetry class
+servo_telem = {}
+
+-- get servo telem for the given servo number
+---@param servo_index integer -- 0 indexed servo number
+---@return AP_Servo_Telem_Data_ud|nil
+function servo_telem:get_telem(servo_index) end
+
+-- Servo telemtry userdata object
+---@class AP_Servo_Telem_Data_ud
+local AP_Servo_Telem_Data_ud = {}
+
+-- Get timestamp of last telem update
+---@return uint32_t_ud -- milliseconds since boot
+function AP_Servo_Telem_Data_ud:last_update_ms() end
+
+-- Get type spesfic status flags
+---@return integer|nil -- flags or nil if not available
+function AP_Servo_Telem_Data_ud:status_flags() end
+
+-- Get pcb temprature in centidegrees
+---@return integer|nil -- temperature in centidegrees or nil if not available
+function AP_Servo_Telem_Data_ud:pcb_temperature_cdeg() end
+
+-- Get motor temprature in centidegrees
+---@return integer|nil -- temperature in centidegrees or nil if not available
+function AP_Servo_Telem_Data_ud:motor_temperature_cdeg() end
+
+-- Get duty cycle
+---@return integer|nil -- duty cycle 0% to 100% or nil if not available
+function AP_Servo_Telem_Data_ud:duty_cycle() end
+
+-- get current
+---@return number|nil -- current in amps or nil if not available
+function AP_Servo_Telem_Data_ud:current() end
+
+-- get voltage
+---@return number|nil -- voltage in volts or nil if not available
+function AP_Servo_Telem_Data_ud:voltage() end
+
+-- get speed
+---@return number|nil -- speed in degrees per second or nil if not available
+function AP_Servo_Telem_Data_ud:speed() end
+
+-- get force
+---@return number|nil -- force in newton meters or nil if not available
+function AP_Servo_Telem_Data_ud:force() end
+
+-- get measured position
+---@return number|nil -- measured position in degrees or nil if not available
+function AP_Servo_Telem_Data_ud:measured_position() end
+
+-- get commanded position
+---@return number|nil -- comanded position in degrees or nil if not available
+function AP_Servo_Telem_Data_ud:command_position() end
