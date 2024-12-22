@@ -134,6 +134,9 @@ void ModeTakeoff::update()
                 plane.takeoff_state.throttle_max_timer_ms = millis();
                 takeoff_mode_setup = true;
                 plane.steer_state.hold_course_cd = wrap_360_cd(direction*100); // Necessary to allow Plane::takeoff_calc_roll() to function.
+#if MODE_AUTOLAND_ENABLED
+                plane.takeoff_state.initial_direction.initialized = false;
+#endif
             }
         }
     }
@@ -142,7 +145,16 @@ void ModeTakeoff::update()
         plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
         takeoff_mode_setup = false;
     }
-
+#if MODE_AUTOLAND_ENABLED
+    // set initial_direction.heading
+    const float min_gps_speed = GPS_GND_CRS_MIN_SPD;
+    if (!(plane.takeoff_state.initial_direction.initialized) && (plane.gps.ground_speed() > min_gps_speed)
+       && (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF)) {
+       plane.takeoff_state.initial_direction.heading = wrap_360(plane.gps.ground_course() + plane.mode_autoland.landing_dir_off);
+       plane.takeoff_state.initial_direction.initialized = true;
+       gcs().send_text(MAV_SEVERITY_INFO, "Autoland direction= %u",int(plane.takeoff_state.initial_direction.heading));
+    }
+#endif
     // We update the waypoint to follow once we're past TKOFF_LVL_ALT or we
     // pass the target location. The check for target location prevents us
     // flying towards a wrong location if we can't climb.
