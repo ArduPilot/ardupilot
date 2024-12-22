@@ -66,6 +66,8 @@ public:
 
     void convert_parameters(void);
 
+    void reset(void);
+
     void do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
     bool verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
             const int32_t auto_state_takeoff_altitude_rel_cm, bool &throttle_suppressed);
