@@ -15,6 +15,10 @@
 #define AP_QUICKTUNE_ENABLED HAL_QUADPLANE_ENABLED
 #endif
 
+#ifndef MODE_AUTOLAND_ENABLED
+#define MODE_AUTOLAND_ENABLED 1
+#endif
+
 #include <AP_Quicktune/AP_Quicktune.h>
 
 class AC_PosControl;
@@ -60,6 +64,9 @@ public:
         THERMAL       = 24,
 #if HAL_QUADPLANE_ENABLED
         LOITER_ALT_QLAND = 25,
+#endif
+#if MODE_AUTOLAND_ENABLED
+        AUTOLAND      = 26,
 #endif
 
     // Mode number 30 reserved for "offboard" for external/lua control.
@@ -859,7 +866,41 @@ private:
     bool have_autoenabled_fences;
 
 };
+#if MODE_AUTOLAND_ENABLED
+class ModeAutoLand: public Mode
+{
+public:
+    ModeAutoLand();
 
+    Number mode_number() const override { return Number::AUTOLAND; }
+    const char *name() const override { return "AUTOLAND"; }
+    const char *name4() const override { return "ALND"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    void navigate() override;
+
+    bool allows_throttle_nudging() const override { return true; }
+
+    bool does_auto_navigation() const override { return true; }
+
+    bool does_auto_throttle() const override { return true; }
+    
+
+    // var_info for holding parameter information
+    static const struct AP_Param::GroupInfo var_info[];
+
+    AP_Int16 final_wp_alt;
+    AP_Int16 final_wp_dist;
+    AP_Int16 landing_dir_off;
+
+protected:
+    bool _enter() override;
+    AP_Mission::Mission_Command cmd;
+    bool land_started;
+};
+#endif
 #if HAL_SOARING_ENABLED
 
 class ModeThermal: public Mode
