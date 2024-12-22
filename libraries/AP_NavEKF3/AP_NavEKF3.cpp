@@ -739,8 +739,8 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Optional EKF behaviour
-    // @Description: This controls optional EKF behaviour. Setting JammingExpected will change the EKF nehaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad
-    // @Bitmask: 0:JammingExpected
+    // @Description: This controls optional EKF behaviour. Setting JammingExpected will change the EKF behaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad. Setting LimitRngToLocUpdate will stop range to location measurements updating sensor bias and vehicle attitude states. This will will result in a fallback to attitude only operation if range to location data is the only sour e of aiding data.
+    // @Bitmask: 0:JammingExpected,1:DisableRangeFusion,2:DisableSetLatLng,3:EnableRangeToLocHgtOffset,4:LimitRngToLocUpdate
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
 
@@ -1420,8 +1420,14 @@ bool NavEKF3::setOriginLLH(const Location &loc)
 bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
 {
 #if EK3_FEATURE_POSITION_RESET
+    WITH_SEMAPHORE(_write_mutex);
+
     dal.log_SetLatLng(loc, posAccuracy, timestamp_ms);
 
+    if (_options & (int32_t)NavEKF3::Options::DisableSetLatLng) {
+        return false;
+    }
+    
     if (!core) {
         return false;
     }
@@ -2060,6 +2066,28 @@ void NavEKF3::writeDefaultAirSpeed(float airspeed, float uncertainty)
         core[i].writeDefaultAirSpeed(airspeed, uncertainty);
     }
 }
+
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
+// Write a range measurement and 1-sigma uncertainty in metres to a location.
+void NavEKF3::writeRangeToLocation(const float range, const float uncertainty, const Location &loc, const uint32_t timeStamp_ms, const uint8_t index)
+{
+    WITH_SEMAPHORE(_write_mutex);
+
+    // ignore any data if the EKF is not started
+    if (!core) {
+        return;
+    }
+
+    AP::dal().log_writeRangeToLocation(range, uncertainty, loc, timeStamp_ms, index);
+
+    if (_options & (int32_t)NavEKF3::Options::DisableRangeFusion) {
+        return;
+    }
+    for (uint8_t i=0; i<num_cores; i++) {
+        core[i].writeRangeToLocation(range, uncertainty, loc, timeStamp_ms, index);
+    }
+}
+#endif
 
 // returns true when the yaw angle has been aligned
 bool NavEKF3::yawAlignmentComplete(void) const
