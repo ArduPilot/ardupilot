@@ -1028,6 +1028,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: mode_takeoff.cpp
     GOBJECT(mode_takeoff, "TKOFF_", ModeTakeoff),
 
+#if MODE_AUTOLAND_ENABLED
+    // @Group: AUTOLAND_
+    // @Path: mode_autoland.cpp
+    GOBJECT(mode_autoland, "AUTOLAND_", ModeAutoLand),
+#endif
+
 #if AP_PLANE_GLIDER_PULLUP_ENABLED
     // @Group: PUP_
     // @Path: pullup.cpp
