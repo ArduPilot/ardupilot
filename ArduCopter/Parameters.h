@@ -3,7 +3,7 @@
 #define AP_PARAM_VEHICLE_NAME copter
 
 #include <AP_Common/AP_Common.h>
-#include "RC_Channel.h"
+#include "RC_Channel_Copter.h"
 #include <AP_Proximity/AP_Proximity.h>
 
 #if MODE_FOLLOW_ENABLED
