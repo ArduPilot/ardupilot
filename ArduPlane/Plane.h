@@ -92,7 +92,7 @@
  # include <AC_PrecLand/AC_PrecLand.h>
 #endif
 
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Plane.h"
 #include "GCS_Plane.h"
 #include "quadplane.h"
 #include <AP_Tuning/AP_Tuning_config.h>
@@ -115,7 +115,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
-#include "RC_Channel.h"     // RC Channel Library
+#include "RC_Channel_Plane.h"     // RC Channel Library
 #include "Parameters.h"
 #if HAL_ADSB_ENABLED
 #include "avoidance_adsb.h"
