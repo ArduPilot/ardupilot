@@ -20,6 +20,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Vehicle/AP_Vehicle_config.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
