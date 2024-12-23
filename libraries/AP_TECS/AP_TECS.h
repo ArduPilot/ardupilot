@@ -22,6 +22,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_FixedWing.h>
 #include <Filter/AverageFilter.h>
+#include <Filter/LowPassFilter.h>
 
 class AP_Landing;
 class AP_TECS {
