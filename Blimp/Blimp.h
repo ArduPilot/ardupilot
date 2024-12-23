@@ -36,8 +36,6 @@
 // Application dependencies
 #include <AP_Logger/AP_Logger.h>          // ArduPilot Mega Flash Memory Library
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-// #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
-// #include <AP_InertialSensor/AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS/AP_AHRS.h>
 #include <Filter/Filter.h>             // Filter library
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
