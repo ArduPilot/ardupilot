@@ -4,7 +4,7 @@ This LUA script is an evolution on the MissionSelector.LUA.
 
 Allows you to select up to 10 missions, either while arming or in the unarmed state.
 
-Requires that an RCx_OPTION be set to 24 (Mission Reset).
+Requires that an RCx_OPTION be set to 302 or another value that contemplates scripting, in which case it will also have to be changed within the LUA.
 
 The scripts should be installed in the SCRIPTS folder on the MicroSD, and the mission files in the root.
 
@@ -18,6 +18,6 @@ If AUX is held at high state for more than three seconds the script will restart
 
 If a mission switch is attempted in AUTO flight mode, a warning "Cannot switch missions in AUTO mode" will be shown and no operation will be performed.
 
-If the script is loaded while the flight mode is AUTO you will get the error message "The script cannot be loaded in AUTO mode"
+If the script is loaded while the flight mode is AUTO you will get the error message "The script cannot be loaded in AUTO mode".
 
 Provides for sending messages under any condition, load or error.
