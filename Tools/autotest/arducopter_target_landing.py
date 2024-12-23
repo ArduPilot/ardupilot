@@ -14,31 +14,12 @@ from vehicle_test_suite import Test
 from arducopter import AutoTestCopter
 
 from Target_Landing.Platform import Platform
+from Target_Landing.Landing_Error_Visualization.simulation_env import SeaState, SimulationEnvironment, TestInfo, WindSpeed
 
 testdir = os.path.dirname(os.path.realpath(__file__))
 drone_lat_initial = 12.992006
 drone_lng_initial = 80.236649
 SITL_START_LOCATION = mavutil.location(drone_lat_initial,drone_lng_initial,0,0)
-
-class WindSpeed(TypedDict):
-    speed: float
-    dir: float
-    turbulence: float
-
-class TestInfo(TypedDict):
-    test_name: str
-    velocity: NDArray[np.float64]
-    acceleration: NDArray[np.float64]
-    gps_error:  Dict[str, any]
-    gps_latency: float
-    gps_frequency: float
-    wind_speed: WindSpeed
-    target_distance_from_drone: float
-
-class SeaState(TypedDict):
-    state: int
-    wind_speed: NDArray[np.float64] # in kmph
-    wave_height: NDArray[np.float64] # in kmph
 
 class AutoTestCopterTargetLanding(AutoTestCopter):
 
@@ -54,40 +35,9 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
 
     R = 6378137.0  # Radius of earth in meters
 
-    target_log_file_path = os.path.expanduser("~/UAV_Landing/logs/test")
+    target_log_file_path = os.path.expanduser("~/UAV_Landing/test")
 
-    sea_states: List[SeaState] = [
-        {
-            "state": 0,
-            "wind_speed": np.array([0, 1]),
-            "wave_height": np.array([])
-        },
-        {
-            "state": 1,
-            "wind_speed": np.array([1, 5]),
-            "wave_height": np.array([])
-        },
-        {
-            "state": 2,
-            "wind_speed": np.array([6, 11]),
-            "wave_height": np.array([])
-        },
-        {
-            "state": 3,
-            "wind_speed": np.array([12, 19]),
-            "wave_height": np.array([])
-        },
-        {
-            "state": 4,
-            "wind_speed": np.array([20, 28]),
-            "wave_height": np.array([])
-        },
-        {
-            "state": 5,
-            "wind_speed": np.array([29, 38]),
-            "wave_height": np.array([])
-        }
-    ]
+    sea_states: List[SeaState] = SimulationEnvironment.sea_states
 
 
     def get_acceleration(self, a, acc_last_update_time, tstart):
@@ -173,6 +123,7 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
         self.set_parameter("TERRAIN_ENABLE", 0)
         self.set_parameter("SIM_SPEEDUP", 1)
 
+
         # Verify parameters were set correctly
         self.progress("Verifying AP_Follow parameters...")
         if (self.get_parameter("FOLL_DIST_MAX") != 100 or
@@ -187,10 +138,17 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
     def set_wind_parameters(self, wind_speed: WindSpeed):
 
         self.set_parameters({
-            "SIM_WIND_SPD": wind_speed['speed']*5/18, # convert wind speed to m/s
+            "SIM_WIND_SPD": SimulationEnvironment.get_wind_spd_from_sea_state(wind_speed['sea_state']),
             "SIM_WIND_DIR": wind_speed['dir'],
             "SIM_WIND_TURB": wind_speed['turbulence']
         })
+
+    def set_drone_gps_error(self):
+
+        self.set_parameter("FOLL_GPS_N", 2)
+        # self.set_parameter("SIM_GPS_HZ", 1)
+        self.set_parameter("SIM_GPS_LAG_MS", 200)
+
 
     def send_target_pos(self, time_boot):
         gpi = self.mav.mav.global_position_int_encode(
@@ -215,7 +173,14 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
         drone_pos = self.mav.location()
 
         return drone_pos, np.array([msg.vx/100, msg.vy/100, msg.vz/100])
+    
+    def get_raw_drone_pos(self):
+        '''
+        Fetches the drone position without the added gps error
+        '''
+        msg = self.mav.recv_match(type='GPS_RAW_INT', blocking=True)
 
+        return np.array([msg.lat, msg.lon, msg.alt/1000])
     def test_landing_on_moving_target(self, test_config: TestInfo):
         '''Take off and follow the moving target, then land on the moving target  ''' 
 
@@ -230,6 +195,7 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
 
         # set wind parameters
         self.set_wind_parameters(test_config['wind_speed'])
+        self.set_drone_gps_error()
 
         # Take of the drone to 40m altitude
         self.change_mode('GUIDED', 10)
@@ -244,6 +210,7 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
         drone_pos, drone_vel = self.get_drone_pos()
         target_pos = Location(self.target_state[0]*1e-7, self.target_state[1]*1e-7)
         distance = self.get_distance(drone_pos, target_pos)
+        alt_diff = drone_pos.alt - self.target_state[2]
         
         test_start = self.get_sim_time_cached()
         acc_last_update_time = test_start
@@ -284,18 +251,23 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
             
 
             drone_pos, drone_vel = self.get_drone_pos()
+            drone_pos_raw = self.get_raw_drone_pos()
+
             target_pos = Location(self.target_state[0]*1e-7, self.target_state[1]*1e-7)
 
             # Log drone data
             self.log_trajectory(os.path.join(log_file_path,'drone.csv'), 
                                 {
                                     'time': now,
-                                    'lat': drone_pos.lat,
-                                    'lng': drone_pos.lng,
+                                    'lat': drone_pos.lat*1e7,
+                                    'lng': drone_pos.lng*1e7,
                                     'alt': drone_pos.alt,
                                     'vx': drone_vel[0],
                                     'vy': drone_vel[1],
                                     'vz': drone_vel[2],
+                                    'lat_raw': drone_pos_raw[0],
+                                    'lon_raw': drone_pos_raw[1],
+                                    'alt_raw': drone_pos_raw[2]
                                 })
             # self.log_test_data(log_file_path, drone_pos)
             
@@ -306,13 +278,24 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
 
             if not self.armed():
                 break
+
+        is_landed = False
+
+        if alt_diff <= 1:
+            is_landed = True
         
+        # log test config
+        self.log_test_config(self.target_log_file_path, test_config, {
+            'is_landed': is_landed,
+            'alt_diff': alt_diff,
+            'distance': distance
+        })
+
         if self.armed:
             self.disarm_vehicle()
             self.wait_disarmed()
 
-        # log test config
-        self.log_test_config(self.target_log_file_path, test_config)
+        
         self.progress("Success")
         self.rename_autotest_bin_logs("~/UAV_Landing/ardupilot/Tools/autotest/logs", test_config['test_name'])
 
@@ -400,22 +383,27 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
         with open(os.path.join(log_file_path,'drone_pos.csv'), 'ab') as f:
                 np.savetxt(f, [np.array([drone_pos.lat, drone_pos.lng, drone_pos.alt])], delimiter=',', fmt='%f')
 
-    def log_test_config(self, folder_path, test_config: TestInfo):  
+    def log_test_config(self, folder_path, test_config: TestInfo, traj_info: Dict[str, any]):  
         config = {
                 'name': test_config['test_name'],
-                'wind_speed': test_config['wind_speed']['speed'],
+                'wind_speed': test_config['wind_speed']['sea_state'],
                 'wind_dir': test_config['wind_speed']['dir'],
                 'wind_turb': test_config['wind_speed']['turbulence'],
                 'velocity': test_config['velocity'],
                 'acceleration': test_config['acceleration'],
                 'gps_error_sigma': test_config['gps_error']['sigma'],
                 'gps_update_frequency': test_config['gps_frequency'],
-                'gps_latency': test_config['gps_latency']
+                'gps_latency': test_config['gps_latency'],
+                'initial_distance_from_target': test_config['target_distance_from_drone'],
+                'is_landed': traj_info['is_landed'],
+                'distance': traj_info['distance'],
+                'alt_diff': traj_info['alt_diff']
             }
         
-        file_name = os.path.join(folder_path, 'test_config.csv');
+        file_name = os.path.join(folder_path, 'test_config.csv')
         file_exists = os.path.exists(file_name)
-        mode = 'a' if file_exists else 'w'
+        # mode = 'a' if file_exists else 'w'
+        mode =  'a'
         with open(file_name, mode, newline='', encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, 
                                     fieldnames=config.keys(),
@@ -430,63 +418,6 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
     def calculate_gps_time_delay(self, gps_frequency, gps_latency):
         return (1/gps_frequency) + gps_latency
 
-    def generate_test_configs(self):
-
-        target_distance_from_drone = [25, 50, 75, 100]
-        
-        gps_error: Dict[str, any] = {
-                "type": "Gaussian",
-                "mu": 0,
-                "sigma": np.array([0.2, 0.4, 0.5, 1, 1.5, 2])
-        }
-
-        gps_time: Dict[str, float] = {
-            'frequency': [0.5, 1, 2],
-            'latency': [0.2, 0.5, 1]
-        }
-
-        winds: Dict[str, any] = {
-            # "sea_states": np.array([1, 2, 3]),
-            "sea_states": np.array([3]),
-            "wind_direction": np.array([0, 90, 180, 270]),
-            "turbulence": np.array([0.2])
-            # Low turbulence (0.0-0.3): Stable, predictable wind
-            # Medium turbulence (0.3-0.7): Occasional gusts
-            # High turbulence (0.7-1.0): Frequent, strong gusts
-        }
-
-        test_configs: List[TestInfo] = []
-
-        for dist in target_distance_from_drone:
-            for sea_state in range(0, len(winds['sea_states'])):
-                for dir in range(0, len(winds['wind_direction'])):
-                    for turb in range(0, len(winds['turbulence'])):
-                        for sigma in gps_error['sigma']:
-                            for gps_frequency in gps_time['frequency']:
-                                for gps_latency in gps_time['latency']:
-                        
-                                    sea_state_info = self.sea_states[sea_state]
-                                    test_configs.append({
-                                        "test_name": f"sigma-{round(sigma, 3)}__sea_state-{sea_state}__dir-{dir}__turb{turb}",
-                                        "wind_speed": {
-                                            'speed':np.random.uniform(low=sea_state_info['wind_speed'][0], high=sea_state_info['wind_speed'][1]),
-                                            'dir': winds['wind_direction'][dir],
-                                            "turbulence": winds['turbulence'][turb]
-                                        },
-                                        "velocity": np.array([5, 0, 0]),
-                                        "acceleration": np.array([0, 0, 0]),
-                                        "gps_error": {
-                                            "type": gps_error['type'],
-                                            "mu": gps_error["mu"],
-                                            "sigma": sigma
-                                        },
-                                        "gps_frequency": gps_frequency,
-                                        "gps_latency": gps_latency,
-                                        "target_distance_from_drone": dist
-                                    })
-
-        return test_configs
-    
     def create_function(self,name, docstring, func_body):
         """
         Create a function with a specified name, docstring, and body.
@@ -511,19 +442,133 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
 
     def tests(self):
 
-        test_configs = self.generate_test_configs()
+        # test_configs = SimulationEnvironment.generate_test_configs()
+        test_configs = SimulationEnvironment.specific_test_case()
 
         ret = []
-        for i in range(1, 2, 1):
+        for i in range(0, len(test_configs), 1):
 
             fun = self.create_function(test_configs[i]['test_name'], f"test-{test_configs[i]['test_name']}",self.test_landing_on_moving_target)
             ret.append(Test(fun, kwargs={
                 "self": self,
-                "test_config": test_configs[i]
+                "test_config": test_configs[i],
             }))
         
+        # ret = [
+        #         self.test_wind_params,
+        #         self.check_test_configs,
+        #         self.print_test_config
+        #         ]
         return ret
+    
+    def print_test_config(self):
+        '''Prints test config'''
 
+        test_configs = SimulationEnvironment.specific_test_case()
+
+        print(test_configs)
+
+    def check_test_configs(self):
+        '''Check the no of test configs to be tested'''
+        test_configs = SimulationEnvironment.generate_test_configs()
+
+        gps_error = []
+        gps_freq = []
+        gps_latency = []
+        wind_spd = []
+        wind_dir = []
+        wind_turb = []
+        dist_from_target = []
+
+        for config in test_configs:
+
+            gps_error.append(config['gps_error']["sigma"])
+            gps_freq.append(config['gps_frequency'])
+            gps_latency.append(config['gps_latency'])
+
+            wind_spd.append(config['wind_speed']['sea_state'])
+            wind_dir.append(config['wind_speed']['dir'])
+            wind_turb.append(config['wind_speed']['turbulence'])
+            dist_from_target.append(config['target_distance_from_drone'])
+
+        gps_error = list(set(gps_error))
+        expected_gps_error = 2
+
+        gps_freq = list(set(gps_freq))
+        expected_gps_freq = 2
+
+        gps_latency = list(set(gps_latency))
+        expected_gps_lat = 3
+
+        wind_spd = list(set(wind_spd))
+        expected_wind_spd = 6
+
+        wind_dir = list(set(wind_dir))
+        expected_wind_dir = 4
+
+        wind_turb = list(set(wind_turb))
+        expected_wind_turb = 1
+
+        dist_from_target = list(set(dist_from_target))
+        expected_dist_from_target = 4
+
+        if(len(gps_error) != expected_gps_error or
+           len(gps_freq) != expected_gps_freq or
+           len(gps_latency) != expected_gps_lat or
+           len(wind_spd) != expected_wind_spd or
+           len(wind_dir) != expected_wind_dir or
+           len(wind_turb) != expected_wind_turb or
+           len(dist_from_target)) != expected_dist_from_target:
+            print(f"gps_error expected {expected_gps_error} got {len(gps_error)}")
+            print(f"gps_freq expected {expected_gps_freq} got {len(gps_freq)}")
+            print(f"gps_latency expected {expected_gps_lat} got {len(gps_latency)}")
+            print(f"wind_spd expected {expected_wind_spd} got {len(wind_spd)}")
+            print(f"wind_dir expected {expected_wind_dir} got {len(wind_dir)}")
+            print(f"wind_turb expected {expected_wind_turb} got {len(wind_turb)}")
+            print(f"distance_from_target expected {expected_dist_from_target} got {len(dist_from_target)}")
+            raise NotAchievedException("There is a mismatch in test config")
+
+    def test_wind_params(self):
+        '''Test wind param setting'''
+        sigma = 0.5,
+        gps_freq = 1
+        gps_latency = 0.2
+        dist_from_target = 25
+        sea_state = 2
+        wind_dir = 180
+        wind_turb = 0.2
+
+        test_config: TestInfo = {
+            'test_name': "",
+            'acceleration': np.array([0,0]),
+            'velocity': np.array([5, 0, 0]),
+            'gps_error':{
+                'type': "Gaussian",
+                'sigma': sigma,
+                'mu': 0
+            },
+            'gps_frequency': gps_freq,
+            'gps_latency': gps_latency,
+            'target_distance_from_drone': dist_from_target,
+            'wind_speed':{
+                'sea_state': sea_state,
+                'dir': wind_dir,
+                'turbulence': wind_turb
+            }
+        }
+
+        self.test_landing_on_moving_target(test_config)
+        
+        if(round(self.get_parameter('SIM_WIND_SPD'), 2) != 3.06):
+            raise NotAchievedException(f"Expected wind speed {3.06} actual wind speed {round(self.get_parameter('SIM_WIND_SPD'), 2)}")
+        if(self.get_parameter('SIM_WIND_DIR') != wind_dir):
+            raise NotAchievedException(self.exception_str("SIM_WIND_DIR",wind_dir, self.get_parameter('SIM_WIND_DIR')))
+        if(round(self.get_parameter('SIM_WIND_TURB'), 2) != wind_turb):
+            raise NotAchievedException(self.exception_str('SIM_WIND_TURB', wind_turb, self.get_parameter('SIM_WIND_TURB')))
+
+    def exception_str(self, param, expected, actual):
+        return f"{param} expected {expected} actual {actual}"
+    
 class Location:
 
     def __init__(self, lat, lon):
