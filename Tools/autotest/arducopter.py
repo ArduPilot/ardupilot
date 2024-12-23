@@ -1374,7 +1374,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # cut motor 1's to efficiency
         self.progress("Cutting motor 1 to 65% efficiency")
-        self.set_parameter("SIM_ENGINE_MUL", 0.65)
+        self.set_parameters({
+            "SIM_ENGINE_MUL": 0.65,
+            "SIM_ENGINE_FAIL": 1 << 0, # motor 1
+        })
 
         while self.get_sim_time_cached() < tstart + holdtime:
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
@@ -1719,8 +1722,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     # Also check that the vehicle will not try and ascend too fast when trying to backup from a min alt fence due to avoidance
     def MinAltFenceAvoid(self):
         '''Test Min Alt Fence Avoidance'''
-        self.takeoff(30, mode="LOITER")
-        """Hold loiter position."""
 
         # enable fence, only min altitude
         # No action, rely on avoidance to prevent the breach
@@ -1730,6 +1731,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "FENCE_ALT_MIN": 20,
             "FENCE_ACTION": 0,
         })
+        self.reboot_sitl()
+
+        self.takeoff(30, mode="LOITER")
+        """Hold loiter position."""
 
         # Try and fly past the fence
         self.set_rc(3, 1120)
@@ -3283,8 +3288,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.progress("Killing motor %u (%u%%)" %
                               (fail_servo+1, fail_mul))
                 self.set_parameters({
-                    "SIM_ENGINE_FAIL": fail_servo,
                     "SIM_ENGINE_MUL": fail_mul,
+                    "SIM_ENGINE_FAIL": 1 << fail_servo,
                 })
                 failed = True
 
@@ -3343,10 +3348,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("Vehicle is descending")
 
         self.progress("Fixing motors")
-        self.set_parameters({
-            "SIM_ENGINE_FAIL": 0,
-            "SIM_ENGINE_MUL": 1.0,
-        })
+        self.set_parameter("SIM_ENGINE_FAIL", 0)
 
         self.do_RTL()
 
@@ -4168,8 +4170,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.takeoff(40)
         self.set_rc(9, 1500)
         self.set_parameters({
-            "SIM_ENGINE_MUL": 0,
-            "SIM_ENGINE_FAIL": 1,
+            "SIM_ENGINE_FAIL": 1 << 1, # motor 2
         })
         self.wait_statustext('BANG! Parachute deployed', timeout=60)
         self.set_rc(9, 1000)
@@ -4182,8 +4183,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.takeoff(loiter_alt, mode='LOITER')
         self.set_rc(9, 1100)
         self.set_parameters({
-            "SIM_ENGINE_MUL": 0,
-            "SIM_ENGINE_FAIL": 1,
+            "SIM_ENGINE_FAIL": 1 << 1, # motor 2
         })
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() < tstart + 5:
@@ -8304,6 +8304,57 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def TestTetherStuck(self):
+        """Test tethered vehicle stuck because of tether"""
+        # Enable tether simulation
+        self.set_parameters({
+            "SIM_TETH_ENABLE": 1,
+        })
+        self.delay_sim_time(2)
+        self.reboot_sitl()
+
+        # Set tether line length
+        self.set_parameters({
+            "SIM_TETH_LINELEN": 10,
+        })
+        self.delay_sim_time(2)
+
+        # Prepare and take off
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.takeoff(10, mode='LOITER')
+
+        # Simulate vehicle getting stuck by increasing RC throttle
+        self.set_rc(3, 1900)
+        self.delay_sim_time(5, reason='let tether get stuck')
+
+        # Monitor behavior for 10 seconds
+        tstart = self.get_sim_time()
+        initial_alt = self.get_altitude()
+        stuck = True  # Assume it's stuck unless proven otherwise
+
+        while self.get_sim_time() - tstart < 10:
+            # Fetch current altitude
+            current_alt = self.get_altitude()
+            self.progress(f"current_alt={current_alt}")
+
+            # Fetch and log battery status
+            battery_status = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=1)
+            if battery_status:
+                self.progress(f"Battery: {battery_status}")
+
+            # Check if the vehicle is stuck.
+            # We assume the vehicle is stuck if the current is high and the altitude is not changing
+            if battery_status and (battery_status.current_battery < 6500 or abs(current_alt - initial_alt) > 2):
+                stuck = False  # Vehicle moved or current is abnormal
+                break
+
+        if not stuck:
+            raise NotAchievedException("Vehicle did not get stuck as expected")
+
+        # Land and disarm the vehicle to ensure we can go down
+        self.land_and_disarm()
+
     def fly_rangefinder_drivers_fly(self, rangefinders):
         '''ensure rangefinder gives height-above-ground'''
         self.change_mode('GUIDED')
@@ -9411,9 +9462,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.progress("Actually, no I'm not - it is an external simulation")
                 continue
             model = frame_bits.get("model", frame)
-            # the model string for Callisto has crap in it.... we
-            # should really have another entry in the vehicleinfo data
-            # to carry the path to the JSON.
             defaults = self.model_defaults_filepath(frame)
             if not isinstance(defaults, list):
                 defaults = [defaults]
@@ -9927,6 +9975,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('SMART_RTL')
         self.change_mode('ALT_HOLD')
         self.change_mode('SMART_RTL')
+
+    def SMART_RTL_Repeat(self):
+        '''Test whether Smart RTL catches the repeat'''
+        self.takeoff(alt_min=10, mode='GUIDED')
+        self.set_rc(3, 1500)
+        self.change_mode("CIRCLE")
+        self.delay_sim_time(1300)
+        self.change_mode("SMART_RTL")
+        self.wait_disarmed()
 
     def GPSForYawCompassLearn(self):
         '''Moving baseline GPS yaw - with compass learning'''
@@ -11971,8 +12028,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_push()
         self.context_collect('STATUSTEXT')
         self.set_parameters({
-            "SIM_ENGINE_FAIL": 1,
             "SIM_ENGINE_MUL": 0.5,
+            "SIM_ENGINE_FAIL": 1 << 1, # motor 2
             "FLIGHT_OPTIONS": 4,
         })
 
@@ -12251,6 +12308,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AP_Avoidance,
             self.SMART_RTL,
             self.SMART_RTL_EnterLeave,
+            self.SMART_RTL_Repeat,
             self.RTL_TO_RALLY,
             self.FlyEachFrame,
             self.GPSBlending,
@@ -12330,6 +12388,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAV_CMD_MISSION_START_p1_p2,
             self.ScriptingAHRSSource,
             self.CommonOrigin,
+            self.TestTetherStuck,
         ])
         return ret
 
@@ -12412,6 +12471,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "GPSForYawCompassLearn": "Vehicle currently crashed in spectacular fashion",
             "CompassMot": "Cuases an arithmetic exception in the EKF",
             "SMART_RTL_EnterLeave": "Causes a panic",
+            "SMART_RTL_Repeat": "Currently fails due to issue with loop detection",
         }
 
 

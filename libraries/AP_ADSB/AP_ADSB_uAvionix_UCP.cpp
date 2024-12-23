@@ -411,8 +411,8 @@ void AP_ADSB_uAvionix_UCP::send_Transponder_Control()
     _frontend.out_state.ctrl.identActive = false; // only send identButtonActive once per request
     msg.modeAEnabled = _frontend.out_state.ctrl.modeAEnabled;
     msg.modeCEnabled = _frontend.out_state.ctrl.modeCEnabled;
-    msg.modeSEnabled = _frontend.out_state.ctrl.modeSEnabled;
-    msg.es1090TxEnabled = _frontend.out_state.ctrl.es1090TxEnabled;
+    msg.modeSEnabled = (_frontend._options & uint32_t(AP_ADSB::AdsbOption::Mode3_Only)) ? 0 : _frontend.out_state.ctrl.modeSEnabled;
+    msg.es1090TxEnabled = (_frontend._options & uint32_t(AP_ADSB::AdsbOption::Mode3_Only)) ? 0 : _frontend.out_state.ctrl.es1090TxEnabled;
 
     // if enabled via param ADSB_OPTIONS, use squawk 7400 while in any Loss-Comms related failsafe
     // https://www.faa.gov/documentLibrary/media/Notice/N_JO_7110.724_5-2-9_UAS_Lost_Link_2.pdf

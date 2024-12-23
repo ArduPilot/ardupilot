@@ -1686,6 +1686,14 @@ function mavlink_video_stream_information_t_ud:uri(index) end
 ---@param value integer
 function mavlink_video_stream_information_t_ud:uri(index, value) end
 
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:encoding() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:encoding(value) end
+
 -- Populate the fields of the VIDEO_STREAM_INFORMATION message
 ---@param instance integer
 ---@param stream_info mavlink_video_stream_information_t_ud
@@ -3753,6 +3761,10 @@ AC_AttitudeControl = {}
 ---@return number -- yaw slew rate
 function AC_AttitudeControl:get_rpy_srate() end
 
+-- Return the angle between the target thrust vector and the current thrust vector in degrees.
+---@return number -- attitude error
+function AC_AttitudeControl:get_att_error_angle_deg() end
+
 -- desc
 AR_AttitudeControl = {}
 
@@ -3776,6 +3788,14 @@ function poscontrol:set_posvelaccel_offset(pos_offset_NED, vel_offset_NED, accel
 ---@return Vector3f_ud|nil
 ---@return Vector3f_ud|nil
 function poscontrol:get_posvelaccel_offset() end
+
+-- get position controller's target velocity in m/s in NED frame
+---@return Vector3f_ud|nil
+function poscontrol:get_vel_target() end
+
+-- get position controller's target acceleration in m/s/s in NED frame
+---@return Vector3f_ud|nil
+function poscontrol:get_accel_target() end
 
 -- desc
 AR_PosControl = {}

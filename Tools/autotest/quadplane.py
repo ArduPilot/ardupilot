@@ -767,8 +767,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                              "Q_WVANE_ENABLE": 1,
                              "Q_WVANE_GAIN": 1,
                              "STICK_MIXING": 0,
-                             "Q_FWD_THR_USE": 2,
-                             "SIM_ENGINE_FAIL": 2}) # we want to fail the forward thrust motor only
+                             "Q_FWD_THR_USE": 2})
 
         self.takeoff(10, mode="QLOITER")
         self.set_rc(2, 1000)
@@ -785,7 +784,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
         self.delay_sim_time(5)
         loc1 = self.mav.location()
-        self.set_parameter("SIM_ENGINE_MUL", 0) # simulate a complete loss of forward motor thrust
+        self.set_parameter("SIM_ENGINE_FAIL", 1 << 2) # simulate a complete loss of forward motor thrust
         self.delay_sim_time(20)
         self.change_mode('QLAND')
         self.wait_disarmed(timeout=60)
@@ -1475,7 +1474,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                     (p, new_values[p], threshold))
 
         self.progress("ensure we are not overtuned")
-        self.set_parameter('SIM_ENGINE_MUL', 0.9)
+        self.set_parameters({
+            'SIM_ENGINE_MUL': 0.9,
+            'SIM_ENGINE_FAIL': 1 << 0,
+        })
 
         self.delay_sim_time(5)
 

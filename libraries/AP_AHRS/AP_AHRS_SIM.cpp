@@ -41,7 +41,7 @@ bool AP_AHRS_SIM::wind_estimate(Vector3f &wind) const
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_estimate(float &airspeed_ret) const
+bool AP_AHRS_SIM::airspeed_EAS(float &airspeed_ret) const
 {
     if (_sitl == nullptr) {
         return false;
@@ -52,9 +52,9 @@ bool AP_AHRS_SIM::airspeed_estimate(float &airspeed_ret) const
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_estimate(uint8_t index, float &airspeed_ret) const
+bool AP_AHRS_SIM::airspeed_EAS(uint8_t index, float &airspeed_ret) const
 {
-    return airspeed_estimate(airspeed_ret);
+    return airspeed_EAS(airspeed_ret);
 }
 
 bool AP_AHRS_SIM::get_quaternion(Quaternion &quat) const

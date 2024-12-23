@@ -86,10 +86,10 @@ if len(sys.argv) != 2:
 
 parse_af_table(sys.argv[1], table)
 
-sys.stdout.write("AltFunction_map = {\n");
+sys.stdout.write("AltFunction_map = {\n")
 sys.stdout.write('\t# format is PIN:FUNCTION : AFNUM\n')
 sys.stdout.write('\t# extracted from %s\n' % os.path.basename(sys.argv[1]))
 for k in sorted(table.keys(), key=cmp_to_key(pin_compare)):
     s = '"' + k + '"'
     sys.stdout.write('\t%-20s\t:\t%s,\n' % (s, table[k]))
-sys.stdout.write("}\n");
+sys.stdout.write("}\n")

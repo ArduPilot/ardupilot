@@ -138,7 +138,7 @@ class ExtractFeatures(object):
             ('AP_CAMERA_SEND_FOV_STATUS_ENABLED', 'AP_Camera::send_camera_fov_status'),
             ('AP_CAMERA_SEND_THERMAL_RANGE_ENABLED', 'AP_Camera::send_camera_thermal_range'),
             ('AP_CAMERA_INFO_FROM_SCRIPT_ENABLED', 'AP_Camera_Backend::set_camera_information'),
-            ('HAL_RUNCAM_ENABLED', 'AP_RunCam::AP_RunCam',),
+            ('AP_CAMERA_RUNCAM_ENABLED', 'AP_RunCam::AP_RunCam',),
 
             ('HAL_PROXIMITY_ENABLED', 'AP_Proximity::AP_Proximity',),
             ('AP_PROXIMITY_{type}_ENABLED', 'AP_Proximity_(?P<type>.*)::update',),
@@ -284,6 +284,8 @@ class ExtractFeatures(object):
             ('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED', r'GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands'),
             ('AP_SERIALMANAGER_REGISTER_ENABLED', r'AP_SerialManager::register_port'),
             ('AP_QUICKTUNE_ENABLED', r'AP_Quicktune::update'),
+            ('AP_FILTER_ENABLED', r'AP_Filters::update'),
+            ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
         ]
 
     def progress(self, msg):

@@ -46,17 +46,17 @@ private:
 bool FlashTest::flash_write(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
 {
     if (sector > 1) {
-        AP_HAL::panic("FATAL: write to sector %u\n", (unsigned)sector);
+        AP_HAL::panic("FATAL: write to sector %u", (unsigned)sector);
     }
     if (offset + length > flash_sector_size) {
-        AP_HAL::panic("FATAL: write to sector %u at offset %u length %u\n",
+        AP_HAL::panic("FATAL: write to sector %u at offset %u length %u",
                       (unsigned)sector,
                       (unsigned)offset,
                       (unsigned)length);
     }
     uint8_t *b = &flash[sector][offset];
     if ((offset & 1) || (length & 1)) {
-        AP_HAL::panic("FATAL: invalid write at %u:%u len=%u\n",
+        AP_HAL::panic("FATAL: invalid write at %u:%u len=%u",
                       (unsigned)sector,
                       (unsigned)offset,
                       (unsigned)length);
@@ -66,7 +66,7 @@ bool FlashTest::flash_write(uint8_t sector, uint32_t offset, const uint8_t *data
         const uint16_t v = le16toh_ptr(&data[i*2]);
         uint16_t v2 = le16toh_ptr(&b[i*2]);
         if (v & !v2) {
-            AP_HAL::panic("FATAL: invalid write16 at %u:%u 0x%04x 0x%04x\n",
+            AP_HAL::panic("FATAL: invalid write16 at %u:%u 0x%04x 0x%04x",
                           (unsigned)sector,
                           unsigned(offset+i),
                           b[i],
@@ -74,7 +74,7 @@ bool FlashTest::flash_write(uint8_t sector, uint32_t offset, const uint8_t *data
         }
 #ifndef AP_FLASHSTORAGE_MULTI_WRITE
         if (v != v2 && v != 0xFFFF && v2 != 0xFFFF) {
-            AP_HAL::panic("FATAL: invalid write16 at %u:%u 0x%04x 0x%04x\n",
+            AP_HAL::panic("FATAL: invalid write16 at %u:%u 0x%04x 0x%04x",
                           (unsigned)sector,
                           unsigned(offset+i),
                           b[i],
@@ -90,10 +90,10 @@ bool FlashTest::flash_write(uint8_t sector, uint32_t offset, const uint8_t *data
 bool FlashTest::flash_read(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
 {
     if (sector > 1) {
-        AP_HAL::panic("FATAL: read from sector %u\n", (unsigned)sector);
+        AP_HAL::panic("FATAL: read from sector %u", (unsigned)sector);
     }
     if (offset + length > flash_sector_size) {
-        AP_HAL::panic("FATAL: read from sector %u at offset %u length %u\n",
+        AP_HAL::panic("FATAL: read from sector %u at offset %u length %u",
                       (unsigned)sector,
                       (unsigned)offset,
                       (unsigned)length);
@@ -105,7 +105,7 @@ bool FlashTest::flash_read(uint8_t sector, uint32_t offset, uint8_t *data, uint1
 bool FlashTest::flash_erase(uint8_t sector)
 {
     if (sector > 1) {
-        AP_HAL::panic("FATAL: erase sector %u\n", (unsigned)sector);
+        AP_HAL::panic("FATAL: erase sector %u", (unsigned)sector);
     }
     memset(&flash[sector][0], 0xFF, flash_sector_size);
     return true;

@@ -268,6 +268,8 @@ class TestBuildOptions(object):
             'AP_OPTICALFLOW_ONBOARD_ENABLED',  # only instantiated on Linux
             'HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL',  # entirely elided if no user
             'AP_PLANE_BLACKBOX_LOGGING',  # entirely elided if no user
+            'AP_COMPASS_AK8963_ENABLED',  # probed on a board-by-board basis, not on CubeOrange for example
+            'AP_COMPASS_LSM303D_ENABLED',  # probed on a board-by-board basis, not on CubeOrange for example
         ])
         if target.lower() != "copter":
             feature_define_whitelist.add('MODE_ZIGZAG_ENABLED')
