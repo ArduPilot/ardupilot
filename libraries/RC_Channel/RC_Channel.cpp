@@ -40,6 +40,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Generator/AP_Generator.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
