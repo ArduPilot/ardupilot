@@ -19,6 +19,7 @@
 
 #include <AP_Common/Location.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
@@ -29,6 +30,24 @@ extern const AP_HAL::HAL& hal;
 
 void AP_AHRS_Backend::init()
 {
+}
+
+// get the index of the current primary accelerometer sensor
+uint8_t AP_AHRS_Backend::get_primary_accel_index(void) const {
+#if AP_INERTIALSENSOR_ENABLED
+    return AP::ins().get_first_usable_accel();
+#else
+    return 0;
+#endif
+}
+
+// get the index of the current primary gyro sensor
+uint8_t AP_AHRS_Backend::get_primary_gyro_index(void) const {
+#if AP_INERTIALSENSOR_ENABLED
+    return AP::ins().get_first_usable_gyro();
+#else
+    return 0;
+#endif
 }
 
 // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
