@@ -725,6 +725,7 @@ private:
     AP_Int8 _gps_minsats;
 
     EKFType active_EKF_type(void) const { return state.active_EKF; }
+    AP_AHRS_Backend::Estimates *active_estimates;
 
     bool always_use_EKF() const {
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;

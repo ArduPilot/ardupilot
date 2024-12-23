@@ -19,28 +19,6 @@ bool AP_AHRS_SIM::get_location(Location &loc) const
     return true;
 }
 
-bool AP_AHRS_SIM::get_velocity_NED(Vector3f &vec) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    const struct SITL::sitl_fdm &fdm = _sitl->state;
-    vec = Vector3f(fdm.speedN, fdm.speedE, fdm.speedD);
-
-    return true;
-}
-
-bool AP_AHRS_SIM::wind_estimate(Vector3f &wind) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    wind = _sitl->state.wind_ef;
-    return true;
-}
-
 bool AP_AHRS_SIM::airspeed_EAS(float &airspeed_ret) const
 {
     if (_sitl == nullptr) {
@@ -55,51 +33,6 @@ bool AP_AHRS_SIM::airspeed_EAS(float &airspeed_ret) const
 bool AP_AHRS_SIM::airspeed_EAS(uint8_t index, float &airspeed_ret) const
 {
     return airspeed_EAS(airspeed_ret);
-}
-
-bool AP_AHRS_SIM::get_quaternion(Quaternion &quat) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    const struct SITL::sitl_fdm &fdm = _sitl->state;
-    quat = fdm.quaternion;
-
-    return true;
-}
-
-Vector2f AP_AHRS_SIM::groundspeed_vector(void)
-{
-    if (_sitl == nullptr) {
-        return Vector2f{};
-    }
-
-    const struct SITL::sitl_fdm &fdm = _sitl->state;
-
-    return Vector2f(fdm.speedN, fdm.speedE);
-}
-
-bool AP_AHRS_SIM::get_vert_pos_rate_D(float &velocity) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    velocity = _sitl->state.speedD;
-
-    return true;
-}
-
-bool AP_AHRS_SIM::get_hagl(float &height) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    height = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
-
-    return true;
 }
 
 bool AP_AHRS_SIM::get_relative_position_NED_origin(Vector3f &vec) const
@@ -165,20 +98,6 @@ bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
     return true;
 }
 
-void AP_AHRS_SIM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
-{
-    // same as EKF2 for no optical flow
-    ekfGndSpdLimit = 400.0f;
-    ekfNavVelGainScaler = 1.0f;
-}
-
-bool AP_AHRS_SIM::get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const
-{
-    magOffsets.zero();
-
-    return true;
-}
-
 void AP_AHRS_SIM::send_ekf_status_report(GCS_MAVLINK &link) const
 {
 #if HAL_GCS_ENABLED
@@ -235,6 +154,8 @@ bool AP_AHRS_SIM::get_variances(float &velVar, float &posVar, float &hgtVar, Vec
 
 void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 {
+    results = {};
+
     if (_sitl == nullptr) {
         _sitl = AP::sitl();
         if (_sitl == nullptr) {
@@ -245,9 +166,17 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     const struct SITL::sitl_fdm &fdm = _sitl->state;
     const AP_InertialSensor &_ins = AP::ins();
 
+    results.initialised = true;
+    results.healthy = true;
+
+    results.primary_imu_index = AP::ins().get_first_usable_gyro();
+
     fdm.quaternion.rotation_matrix(results.dcm_matrix);
     results.dcm_matrix = results.dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
+    results.attitude_valid = true;
+
+    results.quat = fdm.quaternion;
 
     results.gyro_estimate = _ins.get_gyro();
     results.gyro_drift.zero();
@@ -255,7 +184,35 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     const Vector3f &accel = _ins.get_accel();
     results.accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
 
+    results.velocity_NED.x = fdm.speedN;
+    results.velocity_NED.y = fdm.speedE;
+    results.velocity_NED.z = fdm.speedD;
+    results.velocity_NED_valid = true;
+
+    results.groundspeed_vector = Vector2f(fdm.speedN, fdm.speedE);
+
+    // kinematically-consistent down-rate:
+    results.vert_pos_rate_D = _sitl->state.speedD;
+    results.vert_pos_rate_D_valid = true;
+
     results.location_valid = get_location(results.location);
+
+    results.origin_valid = get_origin(results.origin);
+
+    results.relative_position_NED_origin_valid = get_relative_position_NED_origin(results.relative_position_NED_origin);
+    results.relative_position_NE_origin_valid = get_relative_position_NE_origin(results.relative_position_NE_origin);
+    results.relative_position_D_origin_valid = get_relative_position_D_origin(results.relative_position_D_origin);
+
+    results.hagl = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
+    results.hagl_valid = true;
+
+    // wind estimation:
+    results.wind = _sitl->state.wind_ef;
+    results.wind_valid = true;
+
+    // estimator limits on control:
+    results.ekfGndSpdLimit = 400.0;
+    results.controlScaleXY = 1;
 
 #if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {

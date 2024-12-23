@@ -72,12 +72,6 @@ public:
         return _error_yaw;
     }
 
-    // return a wind estimation vector, in m/s
-    bool wind_estimate(Vector3f &wind) const override {
-        wind = _wind;
-        return true;
-    }
-
     void set_external_wind_estimate(float speed, float direction);
 
     // return an airspeed estimate if available. return true
@@ -97,46 +91,31 @@ public:
         return true;
     }
 
-    // return a ground vector estimate in meters/second, in North/East order
-    Vector2f groundspeed_vector() override;
-
     bool            use_compass() override;
 
-    // return the quaternion defining the rotation from NED to XYZ (body) axes
-    bool get_quaternion(Quaternion &quat) const override WARN_IF_UNUSED;
-
     void estimate_wind(void);
-
-    // is the AHRS subsystem healthy?
-    bool healthy() const override;
-
-    bool get_velocity_NED(Vector3f &vec) const override;
-
-    // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
-    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    bool get_vert_pos_rate_D(float &velocity) const override;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
-
-    // relative-origin functions for fallback in AP_InertialNav
-    bool get_origin(Location &ret) const override;
-    bool get_relative_position_NED_origin(Vector3f &vec) const override;
-    bool get_relative_position_NE_origin(Vector2f &posNE) const override;
-    bool get_relative_position_D_origin(float &posD) const override;
 
     void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
     // return true if DCM has a yaw source
     bool yaw_source_available(void) const;
 
-    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
-
 private:
+
+    bool get_relative_position_NED_origin(Vector3f &vec) const;
+
+    // is the AHRS subsystem healthy?
+    bool healthy() const;
 
     // dead-reckoning support
     bool get_location(Location &loc) const;
+
+    // local-position origin
+    bool get_origin(Location &ret) const;
 
     // settable parameters
     AP_Float &_kp_yaw;
@@ -282,6 +261,9 @@ private:
     Vector2f _lp; // ground vector low-pass filter
     Vector2f _hp; // ground vector high-pass filter
     Vector2f _lastGndVelADS; // previous HPF input
+
+    // return a ground vector estimate in meters/second, in North/East order
+    Vector2f groundspeed_vector();
 
     // pre-calculated trig cache:
     float _sin_yaw;
