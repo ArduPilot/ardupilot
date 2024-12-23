@@ -1,42 +1,63 @@
---[[
-- Script to load one of up to 10 mission files based on AUX switch state
-- Always loads mission0.txt at boot, cycles missions on AUX high if held less than 3 seconds
-- Reset the mission0.txt if AUX is high for more than 3 seconds
-- Prevents mission change if the vehicle is in AUTO mode
-- Prevents the script from loading if the vehicle is in AUTO
-- For each loaded mission it also shows the number of events it contains
---]]
+-- Script to load one of up to 10 mission files based on AUX switch state
+-- Always loads mission0.txt at boot, cycles missions on AUX high if held less than 3 seconds
+-- Reset the mission0.txt if AUX is high for more than 3 seconds
+-- Prevents mission change if the vehicle is in AUTO mode
+-- Prevents the script from loading if the vehicle is in AUTO
 
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
-local rc_switch = rc:find_channel_for_option(24)
+local rc_switch = rc:find_channel_for_option(302)
 
 if not rc_switch then
-    gcs:send_text(MAV_SEVERITY.ERROR, "Mission Reset switch not assigned correctly")
+    gcs:send_text(MAV_SEVERITY.ERROR, "RCx_OPTION not right assigned")
     return
 end
 
-local vehicle_fw_type = FWVersion:type()
-local vehicle_types = {Plane=3, Rover=2, Copter=4, Submarine=5, Tracker=10}
 local vehicle_type
+local vehicle_fw_type = FWVersion:type()
 
-for k, v in pairs(vehicle_types) do
-    if v == vehicle_fw_type then
-        vehicle_type = k
-        break
-    end
-end
-
-if not vehicle_type then
+if vehicle_fw_type == 3 then
+    vehicle_type = "Plane"
+elseif vehicle_fw_type == 2 then
+    vehicle_type = "Rover"
+elseif vehicle_fw_type == 4 then
+    vehicle_type = "Copter"
+elseif vehicle_fw_type == 5 then
+    vehicle_type = "Submarine"
+elseif vehicle_fw_type == 10 then
+    vehicle_type = "Tracker"
+else
     gcs:send_text(MAV_SEVERITY.ERROR, "Unrecognized vehicle type!")
     return
 end
 
 gcs:send_text(MAV_SEVERITY.INFO, "Vehicle Type: " .. vehicle_type)
 
-local auto_modes = {Plane=10, Copter=3, Rover=10, Submarine=10, Tracker=10}
-local mode_auto = auto_modes[vehicle_type]
+local mode_auto
+if vehicle_type == "Plane" then
+    mode_auto = 10
+elseif vehicle_type == "Copter" then
+    mode_auto = 3
+elseif vehicle_type == "Rover" then
+    mode_auto = 10
+elseif vehicle_type == "Submarine" then
+    mode_auto = 10
+elseif vehicle_type == "Helicopter" then
+    mode_auto = 3
+elseif vehicle_type == "Tracker" then
+    mode_auto = 10
+elseif vehicle_type == "Sailboat" then
+    mode_auto = 3
+elseif vehicle_type == "Car" then
+    mode_auto = 10
+elseif vehicle_type == "Boat" then
+    mode_auto = 3
+elseif vehicle_type == "VTOL" then
+    mode_auto = 10
+else
+    return
+end
 
-if not mode_auto or vehicle:get_mode() == mode_auto then
+if vehicle:get_mode() == mode_auto then
     gcs:send_text(MAV_SEVERITY.ERROR, "The script cannot be loaded in AUTO mode")
     return
 end
@@ -44,6 +65,7 @@ end
 local current_mission_index = 0
 local max_missions = 9
 local high_timer = 0
+local reset_done = false
 
 local function read_mission(file_name)
     local file = io.open(file_name, "r")
@@ -95,8 +117,12 @@ local function read_mission(file_name)
     end
     file:close()
 
-    local event_count = last_event and tonumber(string.match(last_event, "^%d+")) or 0
-    gcs:send_text(MAV_SEVERITY.WARNING, "Loaded " .. file_name .. " with " .. tostring(event_count) .. " events")
+    if last_event then
+        local first_number = tonumber(string.match(last_event, "^%d+"))
+        gcs:send_text(MAV_SEVERITY.INFO, "Loaded " .. file_name .. " with " .. tostring(first_number) .. " events")
+    else
+        gcs:send_text(MAV_SEVERITY.INFO, "Loaded " .. file_name .. " with 0 events")
+    end
     return true
 end
 
@@ -111,13 +137,19 @@ local function load_next_mission()
         return
     end
 
-    for _ = 1, max_missions + 1 do
+    local attempts = 0
+    repeat
         current_mission_index = (current_mission_index + 1) % (max_missions + 1)
         local file_name = string.format("mission%d.txt", current_mission_index)
-        if io.open(file_name, "r") then
-            if read_mission(file_name) then return end
+        local file = io.open(file_name, "r")
+        if file then
+            file:close()
+            if read_mission(file_name) then
+                return
+            end
         end
-    end
+        attempts = attempts + 1
+    until attempts > max_missions
 
     gcs:send_text(MAV_SEVERITY.ERROR, "No valid mission files found")
 end
@@ -128,19 +160,20 @@ function update()
     if sw_pos == 2 then
         high_timer = high_timer + 1
         if high_timer >= 3 then
-            if vehicle:get_mode() ~= mode_auto then
+            if not reset_done and vehicle:get_mode() ~= mode_auto then
                 current_mission_index = 0
                 if read_mission("mission0.txt") then
-                    gcs:send_text(MAV_SEVERITY.WARNING, "Reset to mission0.txt")
+                    gcs:send_text(MAV_SEVERITY.INFO, "Reset to mission0.txt")
                 end
+                reset_done = true
             end
-            high_timer = 0
         end
     else
         if high_timer > 0 and high_timer < 3 then
             load_next_mission()
         end
         high_timer = 0
+        reset_done = false
     end
 
     return update, 1000
