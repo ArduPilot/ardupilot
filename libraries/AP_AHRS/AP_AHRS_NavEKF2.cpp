@@ -5,6 +5,7 @@
 #include "AP_AHRS_NavEKF2.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 

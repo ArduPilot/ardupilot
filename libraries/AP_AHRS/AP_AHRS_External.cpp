@@ -4,6 +4,7 @@
 
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 void AP_AHRS_External::update()
 {
