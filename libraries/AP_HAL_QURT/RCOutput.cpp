@@ -153,7 +153,7 @@ void RCOutput::send_esc_command(void)
     // We don't set any LEDs
     data[4] = 0;
 
-    for (uint8_t i=0; i<channel_count; i++) {
+    for (uint8_t i=0; i<esc_channel_count; i++) {
         data[i] = pwm_to_esc(pwm_output[i]);
         // Make sure feedback request bit is cleared for all ESCs
         data[i] &= 0xFFFE;
@@ -186,12 +186,8 @@ void RCOutput::send_io_command(void)
 
     // Resolution of commands in the packet is 0.05us = 50ns
     // Convert from standard 1us resolution to IO command resolution
-    for (uint32_t idx=0; idx<channel_count; idx++) {
+    for (uint32_t idx=0; idx<io_channel_count; idx++) {
         hires_pwm_cmd.vals[idx] = pwm_output[idx] * 20;
-    }
-    // Channels 4 - 8 not supported right now
-    for (uint32_t idx=4; idx<8; idx++) {
-        hires_pwm_cmd.vals[idx] = 0;
     }
 
     send_packet(IO_PACKET_TYPE_PWM_HIRES_CMD, (uint8_t *) &hires_pwm_cmd, sizeof(hires_pwm_cmd));
@@ -207,7 +203,7 @@ void RCOutput::send_pwm_output(void)
         safety_mask = boardconfig->get_safety_mask();
     }
 
-    for (uint8_t i=0; i<channel_count; i++) {
+    for (uint8_t i=0; i<max_channel_count; i++) {
         uint16_t v = period[i];
         if (safety_on && (safety_mask & (1U<<i)) == 0) {
             // when safety is on we send 0, which allows us to still
@@ -307,7 +303,7 @@ void RCOutput::handle_version_feedback(const struct extended_version_info &pkt)
 void RCOutput::handle_esc_feedback(const struct esc_response_v2 &pkt)
 {
     const uint8_t idx = pkt.id_state>>4;
-    if (idx >= ARRAY_SIZE(period)) {
+    if (idx >= esc_channel_count) {
         return;
     }
     update_rpm(idx, pkt.rpm);
