@@ -140,7 +140,7 @@ function update()
   if (climb_mode == 1) then
     -- convert rangefinder distance to pitch speed
     if rangefinder:has_data_orient(0) then
-      local distance_m = rangefinder:distance_cm_orient(0) * 0.01
+      local distance_m = rangefinder:distance_orient(0)
       wall_pitch_speed = (distance_m - wall_dist_target) * wall_dist_to_speed_P
       wall_pitch_speed = math.min(wall_pitch_speed, wall_pitch_speed_max)
       wall_pitch_speed = math.max(wall_pitch_speed, -wall_pitch_speed_max)

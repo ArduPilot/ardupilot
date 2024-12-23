@@ -88,12 +88,12 @@ local function get_and_eval(test_idx, dist_m_in, signal_quality_pct_in, status_e
 
     -- L U A   I N T E R F A C E   T E S T
     -- Check that the distance and signal_quality from the frontend are as expected
-    local distance1_cm_out = rangefinder:distance_cm_orient(RNGFND_ORIENTATION_DOWN)
+    local distance1_cm_out = rangefinder:distance_orient(RNGFND_ORIENTATION_DOWN) * 100
     local signal_quality1_pct_out = rangefinder:signal_quality_pct_orient(RNGFND_ORIENTATION_DOWN)
 
     -- Make sure data was returned
     if not distance1_cm_out or not signal_quality1_pct_out then
-        return "No data returned from rangefinder:distance_cm_orient()"
+        return "No data returned from rangefinder:distance_orient()"
     end
 
     send(string.format("Frontend test %i dist in_m: %.2f out_cm: %.2f, signal_quality_pct in: %.1f out: %.1f",
