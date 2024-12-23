@@ -64,13 +64,13 @@
 #include "afs_rover.h"
 #endif
 #include "Parameters.h"
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Rover.h"
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
 #if AC_PRECLAND_ENABLED
 #include <AC_PrecLand/AC_PrecLand.h>
 #endif
-#include "RC_Channel.h"                  // RC Channel Library
+#include "RC_Channel_Rover.h"                  // RC Channel Library
 
 #include "mode.h"
 
