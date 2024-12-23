@@ -24,7 +24,6 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <Filter/LowPassFilter.h>
 #include <Filter/FilterWithBuffer.h>
 
@@ -221,9 +220,7 @@ private:
     // whether analysis can be run again or not
     bool start_analysis();
     // return samples available in the gyro window
-    uint16_t get_available_samples(uint8_t axis) {
-        return _sample_mode == 0 ?_ins->get_raw_gyro_window(axis).available() : _downsampled_gyro_data[axis].available();
-    }
+    uint16_t get_available_samples(uint8_t axis);
     void update_parameters(bool force);
     // semaphore for access to shared FFT data
     HAL_Semaphore _sem;
@@ -358,7 +355,7 @@ private:
     AP_Int8 _num_frames;
     // mask of IMUs to record gyro frames after the filter bank
     AP_Int32 _options;
-    AP_InertialSensor* _ins;
+    class AP_InertialSensor* _ins;
 #if DEBUG_FFT
     uint32_t _last_output_ms;
     EngineState _debug_state;
