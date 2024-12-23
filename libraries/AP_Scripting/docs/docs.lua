@@ -3761,6 +3761,10 @@ AC_AttitudeControl = {}
 ---@return number -- yaw slew rate
 function AC_AttitudeControl:get_rpy_srate() end
 
+-- Return the angle between the target thrust vector and the current thrust vector in degrees.
+---@return number -- attitude error
+function AC_AttitudeControl:get_att_error_angle_deg() end
+
 -- desc
 AR_AttitudeControl = {}
 

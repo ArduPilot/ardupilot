@@ -9976,6 +9976,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('ALT_HOLD')
         self.change_mode('SMART_RTL')
 
+    def SMART_RTL_Repeat(self):
+        '''Test whether Smart RTL catches the repeat'''
+        self.takeoff(alt_min=10, mode='GUIDED')
+        self.set_rc(3, 1500)
+        self.change_mode("CIRCLE")
+        self.delay_sim_time(1300)
+        self.change_mode("SMART_RTL")
+        self.wait_disarmed()
+
     def GPSForYawCompassLearn(self):
         '''Moving baseline GPS yaw - with compass learning'''
         self.context_push()
@@ -12299,6 +12308,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AP_Avoidance,
             self.SMART_RTL,
             self.SMART_RTL_EnterLeave,
+            self.SMART_RTL_Repeat,
             self.RTL_TO_RALLY,
             self.FlyEachFrame,
             self.GPSBlending,
@@ -12461,6 +12471,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "GPSForYawCompassLearn": "Vehicle currently crashed in spectacular fashion",
             "CompassMot": "Cuases an arithmetic exception in the EKF",
             "SMART_RTL_EnterLeave": "Causes a panic",
+            "SMART_RTL_Repeat": "Currently fails due to issue with loop detection",
         }
 
 
