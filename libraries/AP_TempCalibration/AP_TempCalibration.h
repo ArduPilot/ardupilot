@@ -22,9 +22,8 @@
 
 #if AP_TEMPCALIBRATION_ENABLED
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/vector3.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
 
 class AP_TempCalibration
 {
