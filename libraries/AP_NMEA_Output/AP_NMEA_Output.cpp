@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <AP_AHRS/AP_AHRS_config.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 #if AP_AHRS_ENABLED
 #include <AP_AHRS/AP_AHRS.h>
