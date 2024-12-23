@@ -357,6 +357,10 @@ bool AP_AHRS::configured_backend_has_status(Status status) const {
     return (filter_status.value & uint32_t(status)) != 0;
 }
 
+const Vector3f &AP_AHRS::get_accel(void) const {
+    return AP::ins().get_accel(get_primary_accel_index());
+}
+
 // updates matrices responsible for rotating vectors from vehicle body
 // frame to autopilot body frame from _trim variables
 void AP_AHRS::update_trim_rotation_matrices()

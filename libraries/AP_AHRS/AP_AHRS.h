@@ -696,9 +696,7 @@ public:
     Vector3f get_vibration(void) const;
 
     // return primary accels
-    const Vector3f &get_accel(void) const {
-        return AP::ins().get_accel(get_primary_accel_index());
-    }
+    const Vector3f &get_accel(void) const;
 
     // return primary accel bias. This should be subtracted from
     // get_accel() vector to get best current body frame accel
