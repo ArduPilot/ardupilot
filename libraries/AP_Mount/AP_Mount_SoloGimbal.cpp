@@ -5,6 +5,7 @@
 #include "AP_Mount_SoloGimbal.h"
 
 #include "SoloGimbal.h"
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
