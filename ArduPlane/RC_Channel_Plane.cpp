@@ -1,6 +1,6 @@
 #include "Plane.h"
 
-#include "RC_Channel.h"
+#include "RC_Channel_Plane.h"
 #include "qautotune.h"
 
 // defining these two macros and including the RC_Channels_VarInfo
