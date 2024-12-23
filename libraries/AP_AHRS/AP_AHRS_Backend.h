@@ -134,6 +134,30 @@ public:
             _controlScaleXY = controlScaleXY;
         }
 
+        // return the amount of yaw angle change due to the last yaw angle reset in radians
+        // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
+        uint32_t getLastYawResetAngle(float &yawAng) {
+            return 0;
+        };
+
+        // return the amount of NE position change in metres due to the last reset
+        // returns the time of the last reset or 0 if no reset has ever occurred
+        uint32_t getLastPosNorthEastReset(Vector2f &pos) WARN_IF_UNUSED {
+            return 0;
+        };
+
+        // return the amount of NE velocity change in metres/sec due to the last reset
+        // returns the time of the last reset or 0 if no reset has ever occurred
+        uint32_t getLastVelNorthEastReset(Vector2f &vel) const WARN_IF_UNUSED {
+            return 0;
+        };
+
+        // return the amount of vertical position change due to the last reset in meters
+        // returns the time of the last reset or 0 if no reset has ever occurred
+        uint32_t getLastPosDownReset(float &posDelta) WARN_IF_UNUSED {
+            return 0;
+        };
+
     private:
 
         Vector3f velocity_NED;
@@ -264,30 +288,6 @@ public:
 
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
-
-    // return the amount of yaw angle change due to the last yaw angle reset in radians
-    // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastYawResetAngle(float &yawAng) {
-        return 0;
-    };
-
-    // return the amount of NE position change in metres due to the last reset
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastPosNorthEastReset(Vector2f &pos) WARN_IF_UNUSED {
-        return 0;
-    };
-
-    // return the amount of NE velocity change in metres/sec due to the last reset
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastVelNorthEastReset(Vector2f &vel) const WARN_IF_UNUSED {
-        return 0;
-    };
-
-    // return the amount of vertical position change due to the last reset in meters
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastPosDownReset(float &posDelta) WARN_IF_UNUSED {
-        return 0;
-    };
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero

@@ -2658,7 +2658,7 @@ uint32_t AP_AHRS::getLastYawResetAngle(float &yawAng)
 
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return dcm.getLastYawResetAngle(yawAng);
+        return dcm_estimates.getLastYawResetAngle(yawAng);
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2673,11 +2673,11 @@ uint32_t AP_AHRS::getLastYawResetAngle(float &yawAng)
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.getLastYawResetAngle(yawAng);
+        return sim_estimates.getLastYawResetAngle(yawAng);
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        return external.getLastYawResetAngle(yawAng);
+        return external_estimates.getLastYawResetAngle(yawAng);
 #endif
     }
     return 0;
@@ -2691,7 +2691,7 @@ uint32_t AP_AHRS::getLastPosNorthEastReset(Vector2f &pos)
 
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return 0;
+        return dcm_estimates.getLastPosNorthEastReset(pos);
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2706,11 +2706,11 @@ uint32_t AP_AHRS::getLastPosNorthEastReset(Vector2f &pos)
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.getLastPosNorthEastReset(pos);
+        return sim_estimates.getLastPosNorthEastReset(pos);
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        return 0;
+        return external_estimates.getLastPosNorthEastReset(pos);
 #endif
     }
     return 0;
@@ -2739,11 +2739,11 @@ uint32_t AP_AHRS::getLastVelNorthEastReset(Vector2f &vel) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.getLastVelNorthEastReset(vel);
+        return sim_estimates.getLastVelNorthEastReset(vel);
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        return 0;
+        return external_estimates.getLastVelNorthEastReset(vel);;
 #endif
     }
     return 0;
@@ -2757,7 +2757,7 @@ uint32_t AP_AHRS::getLastPosDownReset(float &posDelta)
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return 0;
+        return dcm_estimates.getLastPosDownReset(posDelta);
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2772,11 +2772,11 @@ uint32_t AP_AHRS::getLastPosDownReset(float &posDelta)
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.getLastPosDownReset(posDelta);
+        return sim_estimates.getLastPosDownReset(posDelta);
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        return 0;
+        return external_estimates.getLastPosDownReset(posDelta);
 #endif
     }
     return 0;
