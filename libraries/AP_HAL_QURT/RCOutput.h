@@ -105,9 +105,11 @@ private:
 
     int fd = -1;
     uint16_t enable_mask;
-    static const uint8_t channel_count = 4;
-    uint16_t period[channel_count];
-    uint16_t pwm_output[channel_count];
+    static const uint8_t max_channel_count = 8;
+    static const uint8_t esc_channel_count = 4;
+    static const uint8_t io_channel_count = 8;
+    uint16_t period[max_channel_count];
+    uint16_t pwm_output[max_channel_count];
     volatile bool need_write;
     bool corked;
     HAL_Semaphore mutex;
