@@ -464,6 +464,18 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
 }
 
 /*
+  reset landing state
+ */
+void AP_Landing::reset(void)
+{
+    initial_slope = 0;
+    slope = 0;
+    type_slope_flags.post_stats = false;
+    type_slope_flags.has_aborted_due_to_slope_recalc = false;
+    type_slope_stage = SlopeStage::NORMAL;
+}
+
+/*
      Restart a landing by first checking for a DO_LAND_START and
      jump there. Otherwise decrement waypoint so we would re-start
      from the top with same glide slope. Return true if successful.
