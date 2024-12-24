@@ -51,6 +51,7 @@ public:
         MANUAL =       19,  // Pass-through input with no stabilization
         MOTOR_DETECT = 20,  // Automatically detect motors orientation
         SURFTRAK =     21   // Track distance above seafloor (hold range)
+        // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
     // constructor
