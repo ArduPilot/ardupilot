@@ -61,6 +61,8 @@ public:
 #if HAL_QUADPLANE_ENABLED
         LOITER_ALT_QLAND = 25,
 #endif
+
+    // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
     // Constructor
