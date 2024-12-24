@@ -1,16 +1,12 @@
 --[[
  support package place for quadplanes
 --]]
--- luacheck: only 0
----@diagnostic disable: param-type-mismatch
-
 
 local PARAM_TABLE_KEY = 9
 local PARAM_TABLE_PREFIX = "PKG_"
 
 local MODE_AUTO = 10
 
-local NAV_TAKEOFF = 22
 local NAV_VTOL_PAYLOAD_PLACE = 94
 
 -- add a parameter and bind it to a variable
@@ -31,7 +27,6 @@ local Q_LAND_FINAL_ALT = Parameter("Q_LAND_FINAL_ALT")
 
 local MAV_SEVERITY_INFO = 6
 local MAV_SEVERITY_NOTICE = 5
-local MAV_SEVERITY_EMERGENCY = 0
 
 local RNG_ORIENT_DOWN = 25
 
