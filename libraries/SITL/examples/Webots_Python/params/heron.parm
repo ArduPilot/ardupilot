@@ -1,0 +1,13 @@
+FRAME_CLASS      2          # Boat
+
+SERVO1_FUNCTION  73         # Throttle Left (Boat throttle channel)
+SERVO2_FUNCTION  74         # Throttle Right (Boat throttle channel)
+SERVO3_FUNCTION  0          # Disabled (no steering required)
+SERVO4_FUNCTION  0          # Disabled (no steering required)
+
+AHRS_EKF_TYPE    10         # Use sim AHRS
+#ARMING_CHECK	 1045534    # No RC requirements
+ARMING_CHECK	 0    # No RC requirements
+MOT_THST_EXPO    0.3        # Small motor exponential curve for smoother throttle
+SCHED_LOOP_RATE  300        
+INS_GYR_CAL      0          # No gyro calibration (use simulated or fixed values)
