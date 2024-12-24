@@ -145,15 +145,15 @@ private:
     AP_LeakDetector leak_detector;
 
     struct {
-        bool enabled:1;
-        bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
-        int16_t alt_cm;     // tilt compensated altitude (in cm) from rangefinder
-        int16_t min_cm;     // min rangefinder distance (in cm)
-        int16_t max_cm;     // max rangefinder distance (in cm)
+        bool enabled;
+        bool alt_healthy; // true if we can trust the altitude from the rangefinder
+        float alt;     // tilt compensated altitude from rangefinder
+        float min;     // min rangefinder distance
+        float max;     // max rangefinder distance
         uint32_t last_healthy_ms;
         float inertial_alt_cm;                  // inertial alt at time of last rangefinder sample
         float rangefinder_terrain_offset_cm;    // terrain height above EKF origin
-        LowPassFilterFloat alt_cm_filt;         // altitude filter
+        LowPassFilterFloat alt_filt;         // altitude filter
     } rangefinder_state = { false, false, 0, 0, 0, 0, 0, 0 };
 
 #if AP_RPM_ENABLED
