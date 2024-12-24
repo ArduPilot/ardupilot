@@ -1,6 +1,6 @@
 #include "Rover.h"
 
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Rover.h"
 
 #include <AP_RPM/AP_RPM_config.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>

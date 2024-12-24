@@ -1,6 +1,6 @@
 #include "Blimp.h"
 
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Blimp.h"
 #include <AP_RPM/AP_RPM_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow_config.h>
 

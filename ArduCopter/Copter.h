@@ -87,9 +87,9 @@
  #include <AC_Autorotation/AC_Autorotation.h> // Autorotation controllers
 #endif
 
-#include "RC_Channel.h"         // RC Channel Library
+#include "RC_Channel_Copter.h"         // RC Channel Library
 
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Copter.h"
 #include "GCS_Copter.h"
 #include "AP_Rally.h"           // Rally point library
 #include "AP_Arming.h"

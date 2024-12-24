@@ -46,9 +46,9 @@
 #include "config.h"
 #include "defines.h"
 
-#include "RC_Channel.h"
+#include "RC_Channel_Tracker.h"
 #include "Parameters.h"
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Tracker.h"
 #include "GCS_Tracker.h"
 
 #include "AP_Arming.h"

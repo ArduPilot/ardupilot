@@ -1,6 +1,6 @@
 #include "Tracker.h"
 
-#include "RC_Channel.h"
+#include "RC_Channel_Tracker.h"
 
 // defining these two macros and including the RC_Channels_VarInfo
 // header defines the parameter information common to all vehicle
