@@ -5,8 +5,6 @@
    generators. It monitors battery voltage and controls the throttle
    of the generator to maintain a target voltage using a PI controller
 --]]
--- luacheck: only 0
-
 ---@diagnostic disable: need-check-nil
 ---@diagnostic disable: param-type-mismatch
 
@@ -63,7 +61,6 @@ GENCTL_VOLT_TARG = bind_add_param('VOLT_TARG', 11, 0)
 GENCTL_SLEW_RATE = bind_add_param('SLEW_RATE', 12, 100)
 
 local MAV_SEVERITY_INFO = 6
-local MAV_SEVERITY_NOTICE = 5
 local MAV_SEVERITY_EMERGENCY = 0
 
 local switch = nil
