@@ -43,7 +43,7 @@ private:
         GIMBAL_MODE_TILT_LOCK = (1<<0),
         GIMBAL_MODE_ROLL_LOCK = (1<<1),
         GIMBAL_MODE_YAW_LOCK  = (1<<2),
-    } _mount_lock_mode;
+    };
 
     // send_target_angles
     void send_target_angles(const MountTarget& angle_target_rad);
