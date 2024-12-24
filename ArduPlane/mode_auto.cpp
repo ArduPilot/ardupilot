@@ -6,7 +6,7 @@ bool ModeAuto::_enter()
 #if HAL_QUADPLANE_ENABLED
     // check if we should refuse auto mode due to a missing takeoff in
     // guided_wait_takeoff state
-    if (plane.previous_mode == &plane.mode_guided &&
+    if (plane.previous_mode->is_guided_mode() &&
         quadplane.guided_wait_takeoff_on_mode_enter) {
         if (!plane.mission.starts_with_takeoff_cmd()) {
             gcs().send_text(MAV_SEVERITY_ERROR,"Takeoff waypoint required");

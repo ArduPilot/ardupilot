@@ -1166,7 +1166,7 @@ bool QuadPlane::is_flying(void)
     if (!available()) {
         return false;
     }
-    if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
+    if (plane.control_mode->is_guided_mode() && guided_takeoff) {
         return true;
     }
     if (motors->get_throttle() > 0.01f && !motors->limit.throttle_lower) {
@@ -1217,7 +1217,7 @@ bool QuadPlane::is_flying_vtol(void) const
         // in manual throttle modes with airmode on, don't consider aircraft landed
         return true;
     }
-    if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
+    if (plane.control_mode->is_guided_mode() && guided_takeoff) {
         return true;
     }
     if (plane.control_mode->is_vtol_man_mode()) {
@@ -1303,7 +1303,7 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 
     if ((plane.g.stick_mixing == StickMixing::NONE) &&
         (plane.control_mode == &plane.mode_qrtl ||
-         plane.control_mode->is_guided_mode() ||
+         plane.control_mode->is_guided_or_adsb_mode() ||
          in_vtol_auto())) {
         return 0;
     }
@@ -1385,7 +1385,7 @@ void QuadPlane::set_armed(bool armed)
     }
     motors->armed(armed);
 
-    if (plane.control_mode == &plane.mode_guided) {
+    if (plane.control_mode->is_guided_mode()) {
         guided_wait_takeoff = armed;
     }
 
@@ -2077,12 +2077,12 @@ bool QuadPlane::in_vtol_mode(void) const
     if (plane.control_mode->is_vtol_mode()) {
         return true;
     }
-    if (plane.control_mode->is_guided_mode()
+    if (plane.control_mode->is_guided_or_adsb_mode()
         && plane.auto_state.vtol_loiter &&
         poscontrol.get_state() > QPOS_APPROACH) {
         return true;
     }
-    if (plane.control_mode == &plane.mode_guided &&
+    if (plane.control_mode->is_guided_mode() &&
         guided_takeoff) {
         return true;
     }
@@ -2108,7 +2108,7 @@ bool QuadPlane::in_vtol_posvel_mode(void) const
 #if QAUTOTUNE_ENABLED
             plane.control_mode == &plane.mode_qautotune ||
 #endif
-            (plane.control_mode->is_guided_mode() &&
+            (plane.control_mode->is_guided_or_adsb_mode() &&
             plane.auto_state.vtol_loiter &&
              poscontrol.get_state() > QPOS_APPROACH) ||
             in_vtol_auto());
@@ -2783,7 +2783,7 @@ void QuadPlane::vtol_position_controller(void)
                 break;
             }
         }
-        if (plane.control_mode == &plane.mode_guided || vtol_loiter_auto) {
+        if (plane.control_mode->is_guided_mode() || vtol_loiter_auto) {
             plane.ahrs.get_location(plane.current_loc);
             int32_t target_altitude_cm;
             if (!plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN,target_altitude_cm)) {
@@ -3066,7 +3066,7 @@ void QuadPlane::takeoff_controller(void)
 
     uint32_t now = AP_HAL::millis();
     const auto spool_state = motors->get_desired_spool_state();
-    if (plane.control_mode == &plane.mode_guided && guided_takeoff
+    if (plane.control_mode->is_guided_mode() && guided_takeoff
         && tiltrotor.enabled() && !tiltrotor.fully_up() &&
         spool_state != AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
         // waiting for motors to tilt up
@@ -3140,7 +3140,7 @@ void QuadPlane::takeoff_controller(void)
                                                                   get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
 
     float vel_z = wp_nav->get_default_speed_up();
-    if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
+    if (plane.control_mode->is_guided_mode() && guided_takeoff) {
         // for guided takeoff we aim for a specific height with zero
         // velocity at that height
         Location origin;
@@ -3856,7 +3856,7 @@ void QuadPlane::guided_start(void)
  */
 void QuadPlane::guided_update(void)
 {
-    if (plane.control_mode == &plane.mode_guided && guided_takeoff && plane.current_loc.alt < plane.next_WP_loc.alt) {
+    if (plane.control_mode->is_guided_mode() && guided_takeoff && plane.current_loc.alt < plane.next_WP_loc.alt) {
         throttle_wait = false;
         set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         takeoff_controller();
@@ -3887,7 +3887,7 @@ bool QuadPlane::guided_mode_enabled(void)
         return false;
     }
     // only use quadplane guided when in AUTO or GUIDED mode
-    if (plane.control_mode != &plane.mode_guided && plane.control_mode != &plane.mode_auto) {
+    if (!plane.control_mode->is_guided_mode() && plane.control_mode != &plane.mode_auto) {
         return false;
     }
     if (plane.control_mode == &plane.mode_auto &&
@@ -3909,7 +3909,7 @@ void QuadPlane::set_alt_target_current(void)
 // user initiated takeoff for guided mode
 bool QuadPlane::do_user_takeoff(float takeoff_altitude)
 {
-    if (plane.control_mode != &plane.mode_guided) {
+    if (!plane.control_mode->is_guided_mode()) {
         gcs().send_text(MAV_SEVERITY_INFO, "User Takeoff only in GUIDED mode");
         return false;
     }
@@ -4745,7 +4745,7 @@ bool QuadPlane::should_disable_TECS() const
     if (in_vtol_land_descent()) {
         return true;
     }
-    if (plane.control_mode == &plane.mode_guided &&
+    if (plane.control_mode->is_guided_mode() &&
         plane.auto_state.vtol_loiter) {
         return true;
     }

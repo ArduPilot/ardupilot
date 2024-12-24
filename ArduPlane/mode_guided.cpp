@@ -45,7 +45,7 @@ void ModeGuided::update()
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // guided_state.target_heading is radians at this point between -pi and pi ( defaults to -4 )
     // This function is used in Guided and AvoidADSB, check for guided
-    } else if ((plane.control_mode == &plane.mode_guided) && (plane.guided_state.target_heading_type != GUIDED_HEADING_NONE) ) {
+    } else if (plane.control_mode->is_guided_mode() && (plane.guided_state.target_heading_type != GUIDED_HEADING_NONE) ) {
         uint32_t tnow = AP_HAL::millis();
         float delta = (tnow - plane.guided_state.target_heading_time_ms) * 1e-3f;
         plane.guided_state.target_heading_time_ms = tnow;

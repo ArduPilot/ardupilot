@@ -188,7 +188,7 @@ void Plane::calc_airspeed_errors()
                                   get_throttle_input()) + ((int32_t)aparm.airspeed_min * 100);
         }
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
-    } else if (control_mode == &mode_guided && guided_state.target_airspeed_cm >  0.0) { // if offboard guided speed change cmd not set, then this section is skipped
+    } else if (control_mode->is_guided_mode() && guided_state.target_airspeed_cm >  0.0) { // if offboard guided speed change cmd not set, then this section is skipped
         // offboard airspeed demanded
         uint32_t now = AP_HAL::millis();
         float delta = 1e-3f * (now - guided_state.target_airspeed_time_ms);
@@ -229,7 +229,7 @@ void Plane::calc_airspeed_errors()
     } else if (flight_stage == AP_FixedWing::FlightStage::LAND) {
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();
-    } else if (control_mode == &mode_guided && new_airspeed_cm > 0) { //DO_CHANGE_SPEED overrides onboard guided speed commands, user would have re-enter guided mode to revert
+    } else if (control_mode->is_guided_mode() && new_airspeed_cm > 0) { //DO_CHANGE_SPEED overrides onboard guided speed commands, user would have re-enter guided mode to revert
                        target_airspeed_cm = new_airspeed_cm;
     } else if (control_mode == &mode_auto) {
         target_airspeed_cm = mode_auto_target_airspeed_cm();
@@ -257,7 +257,7 @@ void Plane::calc_airspeed_errors()
 
     // when using the special GUIDED mode features for slew control, don't allow airspeed nudging as it doesn't play nicely.
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
-    if (control_mode == &mode_guided && !is_zero(guided_state.target_airspeed_cm) && (airspeed_nudge_cm != 0)) {
+    if (control_mode->is_guided_mode() && !is_zero(guided_state.target_airspeed_cm) && (airspeed_nudge_cm != 0)) {
         airspeed_nudge_cm = 0; //airspeed_nudge_cm forced to zero
     }
 #endif
@@ -319,7 +319,7 @@ void Plane::update_loiter_update_nav(uint16_t radius)
 #endif
 
     if ((loiter.start_time_ms == 0 &&
-         (control_mode == &mode_auto || control_mode == &mode_guided) &&
+         (control_mode == &mode_auto || control_mode->is_guided_mode()) &&
          auto_state.crosstrack &&
          current_loc.get_distance(next_WP_loc) > 3 * nav_controller->loiter_radius(radius)) ||
         quadplane_qrtl_switch) {
@@ -359,7 +359,7 @@ void Plane::update_loiter(uint16_t radius)
             auto_state.wp_proportion > 1) {
             // we've reached the target, start the timer
             loiter.start_time_ms = millis();
-            if (control_mode->is_guided_mode()) {
+            if (control_mode->is_guided_or_adsb_mode()) {
                 // starting a loiter in GUIDED means we just reached the target point
                 gcs().send_mission_item_reached_message(0);
             }
