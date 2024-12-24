@@ -332,6 +332,10 @@ public:
 
     void update_target_altitude() override;
 
+    // Return guided mode timeout in milliseconds.
+    // Only used for velocity, acceleration, angle control, and angular rate control.
+    uint32_t get_timeout_ms() const;
+
 protected:
 
     bool _enter() override;
