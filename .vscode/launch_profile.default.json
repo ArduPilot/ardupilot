@@ -1,0 +1,31 @@
+{
+    "sitl": {
+        "args": [
+            "-S",
+            "--model",
+            "flightaxis:127.0.0.1", 
+            "--speedup",
+            "1",
+            "--slave",
+            "0",
+            "--sim-address=127.0.0.1",
+            "-IO"
+        ],
+        "postRemoteConnectCommands": [
+            {
+                "description": "Set breakpoint at AP_HAL::panic",
+                "text": "-break-insert AP_HAL::panic",
+                "ignoreFailures": false
+            }
+        ],
+        "variables": {
+            "CRASH_DUMP": "crash_dump.bin"
+        }
+    },
+    "hardware": {
+        "variables": {
+            "CRASH_DUMP": "crash_dump.bin"
+        },
+        "miDebuggerArgs": "-nx -ex \"set target-charset ASCII\" -ex \"target remote | ${workspaceFolder}/modules/CrashDebug/bins/lin64/CrashDebug --elf ${workspaceFolder}/${ELF_FILE} --dump ${workspaceFolder}/${CRASH_DUMP}\""
+    }
+}
