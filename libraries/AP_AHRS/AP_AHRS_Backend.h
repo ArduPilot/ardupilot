@@ -329,4 +329,7 @@ public:
     virtual void set_terrain_hgt_stable(bool stable) {}
 
     virtual void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const = 0;
+
+    virtual void set_data_sending_state(bool enabled) {};
+    virtual void set_gnss_state(bool enabled) {};
 };

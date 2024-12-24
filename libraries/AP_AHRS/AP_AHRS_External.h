@@ -87,6 +87,9 @@ public:
     void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
+
+    void set_data_sending_state(bool enabled) override;
+    void set_gnss_state(bool enabled) override;
 };
 
 #endif
