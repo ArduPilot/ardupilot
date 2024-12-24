@@ -1486,13 +1486,18 @@ bool AP_GPS::all_consistent(float &distance) const
 {
     // return true immediately if only one valid receiver
     if (num_instances <= 1 ||
-        drivers[0] == nullptr || params[0].type == GPS_TYPE_NONE) {
+        drivers[0] == nullptr || params[0].type == GPS_TYPE_NONE || GPS_MAX_INSTANCES <= 1) {
         distance = 0;
         return true;
     }
 
     // calculate distance
-    distance = state[0].location.get_distance_NED(state[1].location).length();
+    if (state[0].have_altitude && state[1].have_altitude) {
+        distance = state[0].location.get_distance_NED(state[1].location).length();
+    } else {
+        distance = state[0].location.get_distance_NE(state[1].location).length();
+    }
+
     // success if distance is within 50m
     return (distance < 50);
 }
