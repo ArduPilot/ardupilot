@@ -4,6 +4,7 @@
 
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 // true if the AHRS has completed initialisation
 bool AP_AHRS_External::initialised(void) const

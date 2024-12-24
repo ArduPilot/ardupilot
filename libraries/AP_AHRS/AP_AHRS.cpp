@@ -278,6 +278,14 @@ void AP_AHRS::init()
 #endif  // AP_CUSTOMROTATIONS_ENABLED
 }
 
+const Vector3f &AP_AHRS::get_accel(void) const {
+#if AP_INERTIALSENSOR_ENABLED
+    return AP::ins().get_accel(_get_primary_accel_index());
+#else
+    return Vector3f();
+#endif
+}
+
 // updates matrices responsible for rotating vectors from vehicle body
 // frame to autopilot body frame from _trim variables
 void AP_AHRS::update_trim_rotation_matrices()

@@ -25,6 +25,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #include <AP_Motors/AP_Motors.h>
 #endif
@@ -426,6 +427,11 @@ void AP_GyroFFT::update()
     if (!_rpy_health.z) {
         _health.z = 0;
     }
+}
+
+uint16_t AP_GyroFFT::get_available_samples(uint8_t axis)
+{
+    return _sample_mode == 0 ?_ins->get_raw_gyro_window(axis).available() : _downsampled_gyro_data[axis].available();
 }
 
 // analyse gyro data using FFT, returns number of samples still held

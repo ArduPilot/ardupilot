@@ -31,7 +31,6 @@
 #include <AP_NavEKF/AP_NavEKF_core_common.h>
 #include <AP_NavEKF/AP_NavEKF_Source.h>
 #include <AP_NavEKF/EKF_Buffer.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"

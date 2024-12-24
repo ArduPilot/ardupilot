@@ -14,7 +14,7 @@
 */
 #pragma once
 
-#include "AP_InertialSensor.h"
+#include "AP_InertialSensor_rate_config.h"
 
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 

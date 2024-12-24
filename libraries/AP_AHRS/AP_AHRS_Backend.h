@@ -23,7 +23,6 @@
 #include <AP_Math/AP_Math.h>
 #include <inttypes.h>
 #include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Common/Location.h>
 #include <AP_NavEKF/AP_NavEKF_Source.h>
 
@@ -76,22 +75,10 @@ public:
     virtual int8_t get_primary_core_index() const { return -1; }
 
     // get the index of the current primary accelerometer sensor
-    virtual uint8_t get_primary_accel_index(void) const {
-#if AP_INERTIALSENSOR_ENABLED
-        return AP::ins().get_first_usable_accel();
-#else
-        return 0;
-#endif
-    }
+    virtual uint8_t get_primary_accel_index(void) const;
 
     // get the index of the current primary gyro sensor
-    virtual uint8_t get_primary_gyro_index(void) const {
-#if AP_INERTIALSENSOR_ENABLED
-        return AP::ins().get_first_usable_gyro();
-#else
-        return 0;
-#endif
-    }
+    virtual uint8_t get_primary_gyro_index(void) const;
 
     // Methods
     virtual void update() = 0;

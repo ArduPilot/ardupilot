@@ -19,6 +19,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_GPS/AP_GPS.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
