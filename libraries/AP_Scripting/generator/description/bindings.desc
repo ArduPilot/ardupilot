@@ -298,6 +298,7 @@ singleton GCS rename gcs
 singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG "%s"'literal string
 singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t'skip_check int32_t -1 INT32_MAX
 singleton GCS method send_named_float void string float'skip_check
+singleton GCS method send_named_int void string int32_t'skip_check
 singleton GCS method frame_type MAV_TYPE'enum
 singleton GCS method get_hud_throttle int16_t
 singleton GCS method sysid_mygcs_last_seen_time_ms uint32_t
