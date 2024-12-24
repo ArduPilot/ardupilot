@@ -58,9 +58,9 @@ git submodule update --init --recursive
 
 echo
 echo "installing missing python modules"
-python -m pip install empy==3.3.4
-python -m pip install pexpect
-python -m pip install future
+PIP_BREAK_SYSTEM_PACKAGES=1 python -m pip install empy==3.3.4
+PIP_BREAK_SYSTEM_PACKAGES=1 python -m pip install pexpect
+PIP_BREAK_SYSTEM_PACKAGES=1 python -m pip install future
 
 cd ../..
 
