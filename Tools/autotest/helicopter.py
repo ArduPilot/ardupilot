@@ -309,6 +309,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_parameters({
             "AROT_ENABLE": 1,
             "H_RSC_AROT_ENBL": 1,
+            "H_COL_LAND_MIN" : -2.0
         })
         bail_out_time = self.get_parameter('H_RSC_AROT_RUNUP')
         self.change_mode('POSHOLD')
@@ -333,13 +334,12 @@ class AutoTestHelicopter(AutoTestCopter):
         # Change to the autorotation flight mode
         self.progress("Triggering autorotate mode")
         self.change_mode('AUTOROTATE')
-        self.delay_sim_time(2)
 
         # Disengage the interlock to remove power
         self.set_rc(8, 1000)
 
         # Ensure we have progressed through the mode's state machine
-        self.wait_statustext("SS Glide Phase", check_context=True)
+        self.wait_statustext("Glide Phase", check_context=True)
 
         self.progress("Testing bailout from autorotation")
         self.set_rc(8, 2000)
@@ -359,6 +359,39 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(3, 1000)
 
         self.wait_disarmed()
+        self.context_pop()
+
+    def AutorotationPreArm(self):
+        """Check autorotation pre-arms are working"""
+        self.context_push()
+        self.progress("Check pass when autorotation mode not enabled")
+        self.set_parameters({"AROT_ENABLE": 0,
+                             "RPM1_TYPE": 0})
+        self.reboot_sitl()
+        try:
+            self.wait_statustext("PreArm: AROT: RPM1 not enabled", timeout=50)
+        except AutoTestTimeoutException:
+            # We want to hit the timeout on wait_statustext()
+            pass
+
+        self.progress("Check pre-arm fails when autorotation mode enabled")
+        self.set_parameter("AROT_ENABLE", 1)
+        self.wait_statustext("PreArm: AROT: RPM1 not enabled", timeout=50)
+        self.set_parameter("RPM1_TYPE", 10) # reboot required to take effect
+        self.reboot_sitl()
+
+        self.progress("Check pre-arm fails with bad HS_Sensor config")
+        self.set_parameter("AROT_HS_SENSOR", -1)
+        self.wait_statustext("PreArm: AROT: RPM instance <0", timeout=50)
+        self.set_parameter("AROT_HS_SENSOR", 0)
+
+        self.progress("Check pre-arm fails with bad RSC config")
+        self.wait_statustext("PreArm: AROT: H_RSC_AROT_* not configured", timeout=50)
+
+        self.progress("Check pre-arms clear with all issues corrected")
+        self.set_parameter("H_RSC_AROT_ENBL", 1)
+        self.wait_ready_to_arm()
+
         self.context_pop()
 
     def ManAutorotation(self, timeout=600):
@@ -473,19 +506,19 @@ class AutoTestHelicopter(AutoTestCopter):
 
         # We test the bailout behavior of two different configs
         # First we test config with a regular throttle curve
-        self.progress("testing autorotation with throttle curve config")
+        self.start_subtest("testing autorotation with throttle curve config")
         self.context_push()
         TestAutorotationConfig(self, rsc_idle=5.0, arot_ramp_time=2.0, arot_idle=0, cool_down=0)
 
         # Now we test a config that would be used with an ESC with internal governor and an autorotation window
-        self.progress("testing autorotation with ESC autorotation window config")
+        self.start_subtest("testing autorotation with ESC autorotation window config")
         TestAutorotationConfig(self, rsc_idle=0.0, arot_ramp_time=0.0, arot_idle=20.0, cool_down=0)
 
         # Check rsc output behavior when using the cool down feature
-        self.progress("testing autorotation with cool down enabled and zero autorotation idle")
+        self.start_subtest("testing autorotation with cool down enabled and zero autorotation idle")
         TestAutorotationConfig(self, rsc_idle=5.0, arot_ramp_time=2.0, arot_idle=0, cool_down=5.0)
 
-        self.progress("testing that H_RSC_AROT_IDLE is used over RSC_IDLE when cool down is enabled")
+        self.start_subtest("testing that H_RSC_AROT_IDLE is used over RSC_IDLE when cool down is enabled")
         TestAutorotationConfig(self, rsc_idle=5.0, arot_ramp_time=2.0, arot_idle=10, cool_down=5.0)
 
         self.context_pop()
@@ -1154,6 +1187,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.PosHoldTakeOff,
             self.StabilizeTakeOff,
             self.SplineWaypoint,
+            self.AutorotationPreArm,
             self.Autorotation,
             self.ManAutorotation,
             self.governortest,
