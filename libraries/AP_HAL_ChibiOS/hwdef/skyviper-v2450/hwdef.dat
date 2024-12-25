@@ -72,8 +72,7 @@ include ../include/skyviper.inc
 define AP_BEACON_ENABLED 0
 define AP_OPTICALFLOW_ENABLED 0
 define AP_FRSKY_TELEM_ENABLED 0
-define HAL_ADSB_SAGETECH_ENABLED 0
-define HAL_ADSB_UAVIONIX_MAVLINK_ENABLED 0
+define HAL_ADSB_ENABLED 0
 define AP_AIS_ENABLED 0
 define AP_BATTERY_BACKEND_DEFAULT_ENABLED 0
 define AP_BATTERY_ANALOG_ENABLED 1
@@ -103,6 +102,7 @@ define AP_ROBOTISSERVO_ENABLED 0
 define AP_VOLZ_ENABLED 0
 define HAL_SUPPORT_RCOUT_SERIAL 0
 define HAL_TORQEEDO_ENABLED 0
+define AP_SBUSOUTPUT_ENABLED 0
 
 # the SkyViper only has a single Baro:
 define AP_BARO_BACKEND_DEFAULT_ENABLED 0
@@ -195,9 +195,6 @@ define OSD_PARAM_ENABLED 0
 define HAL_WITH_MSP_DISPLAYPORT 0
 define HAL_MSP_ENABLED 0
 
-// no UCP ADSB sensors:
-define HAL_ADSB_UCP_ENABLED 0
-
 // no auxiliary temperature sensors:
 define AP_TEMPERATURE_SENSOR_ENABLED 0
 
@@ -219,5 +216,12 @@ define HAL_LANDING_DEEPSTALL_ENABLED 0
 
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
+
+# no payload place support.  It's lucky to lift itself:
+define AC_PAYLOAD_PLACE_ENABLED 0
+define AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED 0
+
+# don't need so many servo outputs (~850 bytes!)
+define NUM_SERVO_CHANNELS 15
 
 AUTOBUILD_TARGETS Copter

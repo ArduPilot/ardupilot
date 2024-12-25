@@ -278,7 +278,7 @@ void AP_Button::run_aux_functions(bool force)
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Button %i: executing (%s %s)", i+1, str, rc_channel->string_for_aux_pos(pos));
         }
 #endif
-        rc_channel->run_aux_function(func, pos, RC_Channel::AuxFuncTriggerSource::BUTTON);
+        rc_channel->run_aux_function(func, pos, RC_Channel::AuxFuncTrigger::Source::BUTTON, i);
     }
 }
 

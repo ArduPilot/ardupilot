@@ -95,7 +95,7 @@
 // disble temp cal of gyros by default
 #define HAL_INS_TEMPERATURE_CAL_ENABLE 0
 
-//turn off a bunch of advanced plane scheduler table things. see ArduPlane.cpp
+//turn off a bunch of advanced plane scheduler table things. see Plane.cpp
 #define AP_ADVANCEDFAILSAFE_ENABLED 0
 #define AP_ICENGINE_ENABLED 0
 #define AP_OPTICALFLOW_ENABLED 0
