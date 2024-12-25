@@ -308,6 +308,8 @@ class ModeGuided : public Mode
 {
 public:
 
+    ModeGuided();
+
     Number mode_number() const override { return Number::GUIDED; }
     const char *name() const override { return "GUIDED"; }
     const char *name4() const override { return "GUID"; }
@@ -336,6 +338,9 @@ public:
     // Only used for velocity, acceleration, angle control, and angular rate control.
     uint32_t get_timeout_ms() const;
 
+    // var_info for holding parameter information
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
 
     bool _enter() override;
@@ -345,6 +350,7 @@ protected:
 #endif
 
 private:
+    AP_Float guided_timeout;
     float active_radius_m;
 };
 

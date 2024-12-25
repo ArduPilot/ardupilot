@@ -1,6 +1,29 @@
 #include "mode.h"
 #include "Plane.h"
 
+/*
+  mode guided parameters
+ */
+const AP_Param::GroupInfo ModeGuided::var_info[] = {
+
+    // @Param: _TIMEOUT
+    // @DisplayName: Guided mode timeout
+    // @Description: Guided mode timeout after which vehicle will return to guided loiter if no updates are received from caller. Only applicable during any combination of velocity, acceleration, angle control, and/or angular rate control
+    // @Units: s
+    // @Range: 0.01 5
+    // @User: Advanced
+    AP_GROUPINFO("TIMEOUT", 1, ModeGuided, guided_timeout, 3.0),
+
+    AP_GROUPEND
+};
+
+ModeGuided::ModeGuided() :
+    Mode()
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
+
 bool ModeGuided::_enter()
 {
     plane.guided_throttle_passthru = false;
@@ -161,5 +184,5 @@ void ModeGuided::update_target_altitude()
 
 uint32_t ModeGuided::get_timeout_ms() const
 {
-    return constrain_float(plane.g2.guided_timeout, 0.01, 5.0) * 1000;
+    return constrain_float(guided_timeout, 0.01, 5.0) * 1000;
 }

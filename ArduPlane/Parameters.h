@@ -363,6 +363,7 @@ public:
 
         k_param_pullup = 270,
         k_param_quicktune,
+        k_param_mode_guided,
     };
 
     AP_Int16 format_version;
@@ -566,7 +567,6 @@ public:
     // guided yaw heading PID
     AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.0};
 #endif
-    AP_Float guided_timeout;
 
 
 #if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED

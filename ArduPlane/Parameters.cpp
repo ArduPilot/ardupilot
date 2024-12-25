@@ -1028,6 +1028,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: mode_takeoff.cpp
     GOBJECT(mode_takeoff, "TKOFF_", ModeTakeoff),
 
+    // @Group: GUIDED_
+    // @Path: mode_guided.cpp
+    GOBJECT(mode_guided, "GUIDED_", ModeGuided),
+
 #if AP_PLANE_GLIDER_PULLUP_ENABLED
     // @Group: PUP_
     // @Path: pullup.cpp
@@ -1303,14 +1307,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RNGFND_LND_ORNT", 36, ParametersG2, rangefinder_land_orient, ROTATION_PITCH_270),
 #endif
-
-    // @Param: GUID_TIMEOUT
-    // @DisplayName: Guided mode timeout
-    // @Description: Guided mode timeout after which vehicle will return to guided loiter if no updates are received from caller. Only applicable during any combination of velocity, acceleration, angle control, and/or angular rate control
-    // @Units: s
-    // @Range: 0.01 5
-    // @User: Advanced
-    AP_GROUPINFO("GUID_TIMEOUT", 37, ParametersG2, guided_timeout, 3.0),
     
     AP_GROUPEND
 };
