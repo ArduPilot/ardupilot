@@ -165,7 +165,7 @@ def main(args=None):
 
             is_ascending_to_takeoff_alt = node.get_cur_geopose().pose.position.altitude < TAKEOFF_ALT
 
-        if is_ascending_to_takeoff_alt:
+        if not is_ascending_to_takeoff_alt:
             raise RuntimeError("Failed to reach takeoff altitude")
 
     except KeyboardInterrupt:
