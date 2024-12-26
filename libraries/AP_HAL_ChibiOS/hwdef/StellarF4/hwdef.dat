@@ -38,7 +38,7 @@ PA6 SPI1_MISO SPI1
 PA7 SPI1_MOSI SPI1
 PA4 GYRO1_CS CS
 
-# spi2 for OSD and sdcard
+# spi2 for OSD and dataflash
 PB13 SPI2_SCK SPI2
 PB14 SPI2_MISO SPI2
 PB15 SPI2_MOSI SPI2
@@ -145,10 +145,10 @@ define HAL_I2C_INTERNAL_MASK 0
 # Motor order implies Betaflight/X for standard ESCs
 define HAL_FRAME_TYPE_DEFAULT 12
 
-# filesystem setup on sdcard
-# define HAL_OS_FATFS_IO 1
-# define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-# define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+# enable logging to dataflash
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+define HAL_STORAGE_SIZE 15360
+STORAGE_FLASH_PAGE 1
 
 # setup for OSD
 define OSD_ENABLED 1
