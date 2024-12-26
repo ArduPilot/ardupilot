@@ -112,12 +112,6 @@ PB5  TIM3_CH2 TIM3 PWM(7) GPIO(56)
 PB4  TIM3_CH1 TIM3 PWM(8) GPIO(57)
 PC9  TIM8_CH4 TIM8 PWM(9) GPIO(58)
 
-# OSD pad for TTL based OSD control, not supported by AP
-PB3 CAM_C OUTPUT LOW GPIO(83)        # labelled as "CC"
-
-define HAL_STORAGE_SIZE 15360
-STORAGE_FLASH_PAGE 1
-
 # reserve 16k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 48
 
