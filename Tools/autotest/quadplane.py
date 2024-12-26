@@ -1077,7 +1077,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.context_collect("STATUSTEXT")
         self.progress("Starting QLAND")
         self.change_mode("QLAND")
-        self.wait_statustext("Rangefinder engaged")
+        self.wait_statustext("Rangefinder engaged", check_context=True)
         self.wait_disarmed(timeout=100)
 
     def setup_ICEngine_vehicle(self):
