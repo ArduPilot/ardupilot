@@ -276,7 +276,8 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
         }
     }
     if (!found) {
-        // not a current transfer
+        // not a current transfer, we may be getting long delays
+        fw_update.rtt_ms = MIN(3000, fw_update.rtt_ms+250);
         return;
     }
     if (uavcan_protocol_file_ReadResponse_decode(transfer, &fw_update.reads[idx].pkt)) {
