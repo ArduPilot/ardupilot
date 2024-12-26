@@ -526,7 +526,8 @@ void AP_Airspeed::calibrate(bool in_startup)
             continue;
         }
         if (sensor[i] == nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u not initalized, cannot cal", i+1);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u not initialized, cannot calibrate", i+1);
+            calibration_state[i] = CalibrationState::FAILED;
             continue;
         }
         state[i].cal.start_ms = AP_HAL::millis();
