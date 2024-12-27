@@ -968,7 +968,6 @@ private:
     void convert_prx_parameters();
 #endif
     void convert_lgr_parameters(void);
-    void convert_tradheli_parameters(void) const;
 
     // precision_landing.cpp
     void init_precland();
