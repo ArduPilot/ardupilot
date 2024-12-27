@@ -12311,6 +12311,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # Test done
         self.land_and_disarm()
 
+    def RTLYaw(self):
+        '''test that vehicle yaws to original heading on RTL'''
+        # 0 is WP_YAW_BEHAVIOR_NONE
+        # 1 is WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP
+        # 2 is WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
+        # 3 is WP_YAW_BEHAVIOR_LOOK_AHEAD
+        for behaviour in 1, 3:
+            self.set_parameters({
+                'WP_YAW_BEHAVIOR': behaviour,
+            })
+            self.change_mode('GUIDED')
+            original_heading = self.get_heading()
+            target_heading = 100
+            if original_heading - target_heading < 90:
+                raise NotAchievedException("Bad initial heading")
+            self.takeoff(10, mode='GUIDED')
+            self.guided_achieve_heading(target_heading)
+            self.change_mode('RTL')
+            self.wait_heading(original_heading)
+            self.wait_disarmed()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -12340,6 +12361,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.SMART_RTL_EnterLeave,
             self.SMART_RTL_Repeat,
             self.RTL_TO_RALLY,
+            self.RTLYaw,
             self.FlyEachFrame,
             self.GPSBlending,
             self.GPSWeightedBlending,
