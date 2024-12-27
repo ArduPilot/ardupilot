@@ -1382,7 +1382,6 @@ void Copter::convert_pid_parameters(void)
     // TradHeli default parameters
 #if FRAME_CONFIG == HELI_FRAME
     static const struct AP_Param::defaults_table_struct heli_defaults_table[] = {
-        // PARAMETER_CONVERSION - Added: Nov-2018
         { "LOIT_ACC_MAX", 500.0f },
         { "LOIT_BRK_ACCEL", 125.0f },
         { "LOIT_BRK_DELAY", 1.0f },
@@ -1394,11 +1393,8 @@ void Copter::convert_pid_parameters(void)
         { "PSC_VELXY_D", 0.0f },
         { "PSC_VELXY_I", 0.5f },
         { "PSC_VELXY_P", 1.0f },
-        // PARAMETER_CONVERSION - Added: Jan-2019
         { "RC8_OPTION", 32 },
-        // PARAMETER_CONVERSION - Added: Aug-2018
         { "RC_OPTIONS", 0 },
-        // PARAMETER_CONVERSION - Added: Feb-2022
         { "ATC_RAT_RLL_ILMI", 0.05},
         { "ATC_RAT_PIT_ILMI", 0.05},
     };
