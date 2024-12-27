@@ -897,8 +897,8 @@ public:
 
 protected:
     bool _enter() override;
-    AP_Mission::Mission_Command cmd;
-    bool land_started;
+    AP_Mission::Mission_Command cmd[3];
+    uint8_t stage;
 };
 #endif
 #if HAL_SOARING_ENABLED

@@ -64,21 +64,62 @@ bool ModeAutoLand::_enter()
         return false;
     }
 
-
-    //setup final approach waypoint
     plane.prev_WP_loc = plane.current_loc;
-    const Location &home = ahrs.get_home();
     plane.set_target_altitude_current();
-    plane.next_WP_loc = home;
-    const float bearing = wrap_360(plane.takeoff_state.initial_direction.heading + 180);
-    plane.next_WP_loc.offset_bearing(bearing, final_wp_dist);
-    plane.next_WP_loc.set_alt_m(final_wp_alt, Location::AltFrame::ABOVE_HOME);
-    
-    // create a command to fly to final approach waypoint and start it
-    cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location = plane.next_WP_loc;
-    plane.start_command(cmd);
-    land_started = false;
+
+    /*
+      landing is in 3 steps:
+        1) a base leg waypoint
+        2) a land start WP, with crosstrack
+        3) the landing WP, with crosstrack
+
+      the base leg point is 90 degrees off from the landing leg
+     */
+    const Location &home = ahrs.get_home();
+
+    /*
+      first calculate the starting waypoint we will use when doing the
+      NAV_LAND. This is offset by final_wp_dist from home, in a
+      direction 180 degrees from takeoff direction
+     */
+    Location land_start_WP = home;
+    land_start_WP.offset_bearing(wrap_360(plane.takeoff_state.initial_direction.heading + 180), final_wp_dist);
+    land_start_WP.set_alt_m(final_wp_alt, Location::AltFrame::ABOVE_HOME);
+    land_start_WP.change_alt_frame(Location::AltFrame::ABSOLUTE);
+
+    /*
+      now create the initial target waypoint for the base leg. We
+      choose if we will do a right or left turn onto the landing based
+      on where we are when we enter the landing mode
+     */
+    const float bearing_to_current_deg = wrap_180(degrees(land_start_WP.get_bearing(plane.current_loc)));
+    const float bearing_err_deg = wrap_180(wrap_180(plane.takeoff_state.initial_direction.heading) - bearing_to_current_deg);
+    const float bearing_offset_deg = bearing_err_deg > 0? -90 : 90;
+    const float base_leg_length = final_wp_dist * 0.333;
+    cmd[0].id = MAV_CMD_NAV_WAYPOINT;
+    cmd[0].content.location = land_start_WP;
+    cmd[0].content.location.offset_bearing(plane.takeoff_state.initial_direction.heading + bearing_offset_deg, base_leg_length);
+    // set a 1m acceptance radius, we want to fly all the way to this waypoint
+    cmd[0].p1 = 1;
+
+    /*
+      create the WP for the start of the landing
+     */
+    cmd[1].content.location = land_start_WP;
+    cmd[1].id = MAV_CMD_NAV_WAYPOINT;
+
+    // and the land WP
+    cmd[2].id = MAV_CMD_NAV_LAND;
+    cmd[2].content.location = home;
+
+    // start first leg
+    stage = 0;
+    plane.start_command(cmd[0]);
+
+    // don't crosstrack initially
+    plane.auto_state.crosstrack = false;
+    plane.auto_state.next_wp_crosstrack = true;
+
     return true;
 }
 
@@ -96,23 +137,22 @@ void ModeAutoLand::update()
 }
 
 void ModeAutoLand::navigate()
-{    
-    // check to see if if we have reached final approach waypoint, switch to NAV_LAND command and start it once if so
-    if (!land_started){
-        if (plane.verify_nav_wp(cmd)){
-            const Location &home_loc = ahrs.get_home();
-            cmd.id = MAV_CMD_NAV_LAND;
-            cmd.content.location = home_loc;
-            land_started = true;
-            plane.prev_WP_loc = plane.current_loc;
-            plane.next_WP_loc = home_loc;
-            plane.start_command(cmd);
-            plane.set_flight_stage(AP_FixedWing::FlightStage::LAND);
-        }
+{
+    if (stage == 2) {
+        // we are on final landing leg
+        plane.set_flight_stage(AP_FixedWing::FlightStage::LAND);
+        plane.verify_command(cmd[stage]);
         return;
-    //otherwise keep flying the current command   
-    } else {
-       plane.verify_command(cmd);
+    }
+
+    // see if we have completed the leg
+    if (plane.verify_nav_wp(cmd[stage])) {
+        stage++;
+        plane.prev_WP_loc = plane.next_WP_loc;
+        plane.auto_state.next_turn_angle = 90;
+        plane.start_command(cmd[stage]);
+        plane.auto_state.crosstrack = true;
+        plane.auto_state.next_wp_crosstrack = true;
     }
 }
 #endif
