@@ -161,6 +161,22 @@ jobs:
           fi
           Tools/environment_install/install-prereqs-mac.sh -y
           source ~/.bash_profile
+      # Put ccache into github cache for faster build
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        shell: bash
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
+      - name: ccache cache files
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{github.workflow}}-ccache-${{matrix.config}}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-${{matrix.config}} # restore ccache from either previous build on this branch or on master
+      - name: setup ccache
+        run: |
+          . .github/workflows/ccache.env
       - name: test build ${{matrix.config}}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
@@ -173,3 +189,5 @@ jobs:
           ./waf
           ./waf configure --board ${{matrix.config}} --debug
           ./waf
+          ccache -s
+          ccache -z
