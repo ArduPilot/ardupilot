@@ -712,6 +712,26 @@ ap_object ScriptingCANBuffer method write_frame boolean AP_HAL::CANFrame uint32_
 ap_object ScriptingCANBuffer method read_frame boolean AP_HAL::CANFrame'Null
 ap_object ScriptingCANBuffer method add_filter boolean uint32_t'skip_check uint32_t'skip_check
 
+include AP_Scripting/AP_Scripting_CRSFMenu.h
+userdata CRSFParameter depends AP_CRSF_SCRIPTING
+userdata CRSFParameter method id uint8_t'skip_check
+userdata CRSFParameter manual data lua_CRSF_param_data 1 0
+
+userdata CRSFMenu depends AP_CRSF_SCRIPTING
+userdata CRSFMenu creation lua_CRSF_new_menu 1
+userdata CRSFMenu method id uint8_t'skip_check
+userdata CRSFMenu method name string
+userdata CRSFMenu method num_params uint8_t'skip_check
+userdata CRSFMenu manual add_parameter lua_CRSF_add_parameter 1 2
+userdata CRSFMenu manual add_menu lua_CRSF_add_menu 1 2
+
+singleton AP::crsf_telem() depends AP_CRSF_SCRIPTING
+singleton AP::crsf_telem() literal
+singleton AP::crsf_telem() rename crsf
+singleton AP::crsf_telem() manual add_menu lua_CRSF_add_root_menu 1 1
+singleton AP::crsf_telem() manual get_menu_event lua_CRSF_get_menu_event 1 3
+singleton AP::crsf_telem() manual send_write_response lua_CRSF_send_response 1 1
+
 include AP_DroneCAN/AP_DroneCAN.h
 global manual DroneCAN_get_FlexDebug lua_DroneCAN_get_FlexDebug 4 2 depends (HAL_ENABLE_DRONECAN_DRIVERS==1)
 

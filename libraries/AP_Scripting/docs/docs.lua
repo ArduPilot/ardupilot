@@ -4106,3 +4106,66 @@ sim = {}
 ---@param gyro_rads Vector3f_ud -- gyro body rate in rad/s
 ---@return boolean
 function sim:set_pose(instance, loc, orient, velocity_bf, gyro_rads) end
+
+-- desc
+---@class (exact) CRSFParameter_ud
+local CRSFParameter_ud = {}
+
+---@return CRSFParameter_ud
+function CRSFParameter() end
+
+-- get field
+---@return integer
+function CRSFParameter_ud:id() end
+
+-- get field
+---@return string
+function CRSFParameter_ud:data() end
+
+-- desc
+---@class (exact) CRSFMenu_ud
+local CRSFMenu_ud = {}
+
+---@param size integer -- size
+---@return CRSFMenu_ud
+function CRSFMenu(size) end
+
+-- get field
+---@return integer
+function CRSFMenu_ud:id() end
+
+-- get field
+---@return string
+function CRSFMenu_ud:name() end
+
+-- get field
+---@return integer
+function CRSFMenu_ud:num_params() end
+
+---@param data string -- binary encoded parameter
+---@return CRSFParameter_ud|nil
+function CRSFMenu_ud:add_parameter(data) end
+
+---@param name string -- menu name
+---@return CRSFMenu_ud|nil
+function CRSFMenu_ud:add_menu(name) end
+
+-- desc
+crsf = {}
+
+-- add CRSF menu
+---@param name string
+---@return CRSFMenu_ud|nil
+function crsf:add_menu(name) end
+
+-- get pending CRSF menu event and associated data
+---@param events integer -- events
+---@return integer -- parameter id
+---@return string -- binary encoded response payload
+---@return integer -- events
+function crsf:get_menu_event(events) end
+
+-- send a CRSF parameter response
+---@param data string -- binary encoded response payload
+---@return boolean
+function crsf:send_write_response(data) end
