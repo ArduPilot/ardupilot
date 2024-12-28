@@ -782,4 +782,15 @@ bool Tiltrotor::tilt_over_max_angle(void) const
     return (current_tilt > MIN(tilt_threshold, get_forward_flight_tilt()));
 }
 
+/*
+  get a proportion of how far we are through the 2nd part of a transition
+  0 means tilt is less than Q_TILT_MAX. 1 means fully forward
+*/
+float Tiltrotor::get_tilt_completion() const
+{
+    const float tilt_threshold = (max_angle_deg/90.0f);
+    const float completion_tilt = get_forward_flight_tilt();
+    return constrain_float((current_tilt - tilt_threshold) / (completion_tilt - tilt_threshold), 0, 1);
+}
+
 #endif  // HAL_QUADPLANE_ENABLED

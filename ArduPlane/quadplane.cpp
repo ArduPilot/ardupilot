@@ -1483,6 +1483,7 @@ void SLT_Transition::update()
         transition_state = TRANSITION_DONE;
         transition_start_ms = 0;
         transition_low_airspeed_ms = 0;
+        quadplane.assisted_flight = false;
     }
 
     if (transition_state < TRANSITION_DONE) {
@@ -1597,9 +1598,17 @@ void SLT_Transition::update()
             transition_start_ms = 0;
             transition_low_airspeed_ms = 0;
             gcs().send_text(MAV_SEVERITY_INFO, "Transition done");
+            quadplane.assisted_flight = false;
+        } else {
+            quadplane.assisted_flight = true;
         }
 
-        float transition_scale = (trans_time_ms - transition_timer_ms) / trans_time_ms;
+        float transition_scale;
+        if (quadplane.tiltrotor.enabled()) {
+            transition_scale = 1.0 - quadplane.tiltrotor.get_tilt_completion();
+        } else {
+            transition_scale = (trans_time_ms - transition_timer_ms) / trans_time_ms;
+        }
         float throttle_scaled = last_throttle * transition_scale;
 
         // set zero throttle mix, to give full authority to
@@ -1620,7 +1629,6 @@ void SLT_Transition::update()
             const float fw_throttle = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),0) * 0.01;
             throttle_scaled = constrain_float(throttle_scaled * (1.0-ratio) + fw_throttle * ratio, 0.0, 1.0);
         }
-        quadplane.assisted_flight = true;
         quadplane.hold_stabilize(throttle_scaled);
 
         // set desired yaw to current yaw in both desired angle and
