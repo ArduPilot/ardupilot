@@ -18,6 +18,7 @@
 #if AP_SCRIPTING_ENABLED
 
 #include <AP_Scripting/AP_Scripting.h>
+#include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Arming/AP_Arming.h>
@@ -360,6 +361,10 @@ void AP_Scripting::thread(void) {
 #if AP_SCRIPTING_SERIALDEVICE_ENABLED
         // clear data in serial buffers that hasn't been transmitted
         _serialdevice.clear();
+#endif
+
+#if AP_CRSF_SCRIPTING
+        AP::crsf_telem()->clear_menus();
 #endif
         
         // Clear blocked commands
