@@ -31,7 +31,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: TRANSITION_MS
     // @DisplayName: Transition time
-    // @Description: Transition time in milliseconds after minimum airspeed is reached
+    // @Description: Transition time in milliseconds after minimum airspeed is reached. This is not used for tilt quadplanes, in tilt quadplanes transition completion occurs when the tilting rotors are fully tilted.
     // @Units: ms
     // @Range: 500 30000
     // @User: Advanced
@@ -1588,7 +1588,10 @@ void SLT_Transition::update()
         // transition time, but continue to stabilize
         const uint32_t transition_timer_ms = now - transition_low_airspeed_ms;
         const float trans_time_ms = constrain_float(quadplane.transition_time_ms,500,30000);
-        if (transition_timer_ms > unsigned(trans_time_ms)) {
+
+        // note that tiltrotors complete transition when tilt is fully
+        // forward, checked above
+        if (!quadplane.tiltrotor.enabled() && transition_timer_ms > unsigned(trans_time_ms)) {
             transition_state = TRANSITION_DONE;
             in_forced_transition = false;
             transition_start_ms = 0;
