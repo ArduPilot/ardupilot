@@ -45,13 +45,16 @@ public:
     void write_log(float cyclic_scaler, float col_ang_min, float col_ang_max, int16_t col_min, int16_t col_max) const;
 #endif
 
+    // Swashplate specific arming checks
+    bool arming_checks(size_t buflen, char *buffer) const;
+
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
     // linearize mechanical output of swashplate servo
-    float get_linear_servo_output(float input) const;
+    void linearise_servo_output(float& input) const;
 
     // CCPM Mixers - calculate mixing scale factors by swashplate type
     void calculate_roll_pitch_collective_factors();
@@ -73,7 +76,6 @@ private:
     // Currently configured setup
     SwashPlateType       _swash_type;                 // Swashplate type
     CollectiveDirection  _collective_direction;       // Collective control direction, normal or reversed
-    bool                 _make_servo_linear;          // Sets servo output to be linearized
 
     // Internal variables
     bool                 _enabled[_max_num_servos];                 // True if this output servo is enabled
@@ -92,7 +94,7 @@ private:
     // parameters
     AP_Int8  _swashplate_type;                   // Swash Type Setting
     AP_Int8  _swash_coll_dir;                    // Collective control direction, normal or reversed
-    AP_Int8  _linear_swash_servo;                // linearize swashplate output
+    AP_Float  _linear_swash_servo_ang_deg;       // Swashplate servo horn max range level, used to linearize swashplate output
     AP_Int8  enable;
     AP_Int16 _servo1_pos;                        // servo1 azimuth position on swashplate with front of heli being 0 deg
     AP_Int16 _servo2_pos;                        // servo2 azimuth position on swashplate with front of heli being 0 deg

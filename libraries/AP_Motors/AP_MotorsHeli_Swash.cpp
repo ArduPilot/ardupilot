@@ -38,12 +38,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Swash::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("COL_DIR", 2, AP_MotorsHeli_Swash, _swash_coll_dir, COLLECTIVE_DIRECTION_NORMAL),
 
-    // @Param: LIN_SVO
-    // @DisplayName: Linearize Swashplate Servo Mechanical Throw
-    // @Description: This linearizes the swashplate servo's mechanical output to account for nonlinear output due to arm rotation.  This requires a specific setup procedure to work properly.  The servo arm must be centered on the mechanical throw at the servo trim position and the servo trim position kept as close to 1500 as possible. Leveling the swashplate can only be done through the pitch links.  See the ardupilot wiki for more details on setup.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    AP_GROUPINFO("LIN_SVO", 3, AP_MotorsHeli_Swash, _linear_swash_servo, 0),
+    // LIN_SVO was replaced by LIN_SV_ANG
 
     // @Param: H3_ENABLE
     // @DisplayName: Enable Generic H3 Swashplate Settings
@@ -84,6 +79,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_Swash::var_info[] = {
     // @User: Advanced
     // @Increment: 1
     AP_GROUPINFO("H3_PHANG", 8, AP_MotorsHeli_Swash, _phase_angle, 0),
+
+    // @Param: LIN_SV_ANG
+    // @DisplayName: Linearize Swashplate Servo Mechanical Throw
+    // @Description: Set 0 to disable. Set max angle range of servo horn from level. This linearizes the swashplate servo's mechanical output to account for nonlinear output due to arm rotation. This requires a specific setup procedure to work properly. The servo arm must be centered on the mechanical throw at the servo trim position and the servo trim position kept as close to 1500 as possible. Leveling the swashplate can only be done through the pitch links. See the ardupilot wiki for more details on setup.
+    // @Range: 0 60
+    // @Units: deg
+    // @User: Standard
+    AP_GROUPINFO("LIN_SV_ANG", 9, AP_MotorsHeli_Swash, _linear_swash_servo_ang_deg, 0),
    
     AP_GROUPEND
 };
@@ -101,7 +104,6 @@ void AP_MotorsHeli_Swash::configure()
 
     _swash_type = static_cast<SwashPlateType>(_swashplate_type.get());
     _collective_direction = static_cast<CollectiveDirection>(_swash_coll_dir.get());
-    _make_servo_linear = _linear_swash_servo != 0;
     enable.set(_swash_type == SWASHPLATE_TYPE_H3);
 
     calculate_roll_pitch_collective_factors();
@@ -237,22 +239,24 @@ void AP_MotorsHeli_Swash::calculate(float roll, float pitch, float collective)
         // rescale from -1..1, so we can use the pwm calc that includes trim
         _output[i] = 2.0f * _output[i] - 1.0f;
 
-        if (_make_servo_linear) {
-            _output[i] = get_linear_servo_output(_output[i]);
-        }
-
+        // If servo linearisation param is set we linearise the output
+        linearise_servo_output(_output[i]);
     }
 }
 
 // set_linear_servo_out - sets swashplate servo output to be linear
-float AP_MotorsHeli_Swash::get_linear_servo_output(float input) const
+void AP_MotorsHeli_Swash::linearise_servo_output(float& input) const
 {
+    if (_linear_swash_servo_ang_deg.get() <= 0) {
+        // Don't apply linearisation
+        return;
+    }
 
     input = constrain_float(input, -1.0f, 1.0f);
 
-    //servo output is calculated by normalizing input to 50 deg arm rotation as full input for a linear throw
-    return safe_asin(0.766044f * input) * 1.145916;
-
+    // servo output is calculated by normalizing input to max servo horn rotation angle
+    float servo_ang_rads = radians(_linear_swash_servo_ang_deg.get());
+    input = safe_asin(sinf(servo_ang_rads) * input) * 1/servo_ang_rads;
 }
 
 // Output calculated values to servos
@@ -321,3 +325,17 @@ void AP_MotorsHeli_Swash::write_log(float cyclic_scaler, float col_ang_min, floa
                                 rcyc);
 }
 #endif
+
+bool AP_MotorsHeli_Swash::arming_checks(size_t buflen, char *buffer) const
+{
+    // Sanity check swash linearisation angle range
+    if (_linear_swash_servo_ang_deg.get() >= 90.0) {
+        if (_instance == 1) {
+            hal.util->snprintf(buffer, buflen, "H_SW_LIN_SV_ANG > 90 out of range");
+        } else {
+            hal.util->snprintf(buffer, buflen, "H_SW%u_LIN_SV_ANG > 90 out of range", _instance);
+        }
+        return false;
+    }
+    return true;
+}
