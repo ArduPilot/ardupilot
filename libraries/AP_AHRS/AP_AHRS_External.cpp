@@ -128,9 +128,9 @@ bool AP_AHRS_External::get_origin(Location &ret) const
 
 void AP_AHRS_External::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
-    // lower gains in VTOL controllers when flying on DCM
-    ekfGndSpdLimit = 50.0;
-    ekfNavVelGainScaler = 0.5;
+    // no limit on gains, large vel limit
+    ekfGndSpdLimit = 400.0;
+    ekfNavVelGainScaler = 1;
 }
 
 #endif
