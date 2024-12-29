@@ -280,6 +280,127 @@ private:
     };
 #endif // AP_NETWORKING_REGISTER_PORT_ENABLED
 
+#if AP_NETWORKING_FILESYSTEM_ENABLED
+    class NineP2000 {
+    public:
+        /* Do not allow copies */
+        CLASS_NO_COPY(NineP2000);
+
+        NineP2000() {}
+
+        void init();
+
+        static const struct AP_Param::GroupInfo var_info[];
+        AP_Int8 enabled;
+        AP_Networking_IPV4 ip {"0.0.0.0"};
+        AP_Int32 port;
+        SocketAPM *sock;
+
+    private:
+        void loop();
+        bool connected;
+
+        void update();
+
+        // State of connection process
+        enum class State {
+            Version,
+            Attach,
+            Mounted,
+        } state;
+
+        // Message shape
+        union Message {
+            uint8_t buffer[1024];
+
+            // Header is used on all messages
+            struct PACKED {
+                struct PACKED {
+                    uint32_t length;
+                    uint8_t type;
+                    uint16_t tag;
+                } header;
+                uint8_t payload[sizeof(buffer) - sizeof(header)];
+            } content;
+        };
+
+        // qid structure is used in several messages
+        struct PACKED qid {
+            uint8_t type;
+            uint32_t vers;
+            uint64_t path;
+        };
+
+        enum qidType {
+            QTDIR    = (1 << 7), // DMDIR bit 31, directory
+            QTAPPEND = (1 << 6), // DMAPPEND bit 30, append only
+            QTEXCL   = (1 << 5), // DMEXCL bit 29, exclusive use
+            // Not used
+            QTAUTH   = (1 << 3), // DMAUTH bit 27, authentication file
+            QTTMP    = (1 << 2), // DMTMP bit 26, temporay
+            QTFILE   = 0,
+        };
+
+        // Receive buffer
+        Message receive;
+
+        // Send buffer
+        Message send;
+
+        // Buffer length must be negotiated.
+        uint16_t bufferLen;
+
+        // UID of root directory
+        uint64_t root;
+
+        // Add a string to a message
+        void add_string(Message &msg, const char *str) const;
+
+        // Request version and message size
+        void request_version();
+
+        // Handle version response
+        void handle_version();
+
+        // Request attach
+        void request_attach();
+
+        // Handle attach response
+        void handle_attach();
+
+        enum class Type: uint8_t {
+            Tversion = 100,
+            Rversion = 101,
+            Tauth    = 102,
+            Rauth    = 103,
+            Tattach  = 104,
+            Rattach  = 105,
+            Rerror   = 107,
+            Tflush   = 108,
+            Rflush   = 109,
+            Twalk    = 110,
+            Rwalk    = 111,
+            Topen    = 112,
+            Ropen    = 113,
+            Tcreate  = 114,
+            Rcreate  = 115,
+            Tread    = 116,
+            Rread    = 117,
+            Twrite   = 118,
+            Rwrite   = 119,
+            Tclunk   = 120,
+            Rclunk   = 121,
+            Tremove  = 122,
+            Rremove  = 123,
+            Tstat    = 124,
+            Rstat    = 125,
+            Twstat   = 126,
+            Rwstat   = 127,
+        };
+
+    } NineP2000_client;
+#endif // AP_NETWORKING_FILESYSTEM_ENABLED
+
 private:
     uint32_t announce_ms;
 
