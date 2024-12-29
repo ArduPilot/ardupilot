@@ -946,9 +946,6 @@ private:
     // return secondary attitude solution if available, as quaternion
     bool _get_secondary_quaternion(Quaternion &quat) const;
 
-    // get ground speed 2D
-    Vector2f _groundspeed_vector(void);
-
     // set state.active_EKF_type and the pointer to the active backend
     void update_active_EKF_type();
 

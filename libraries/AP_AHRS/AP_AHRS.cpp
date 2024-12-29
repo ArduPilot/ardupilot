@@ -493,7 +493,7 @@ void AP_AHRS::update_state(void)
     }
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
     state.secondary_pos_ok = _get_secondary_position(state.secondary_pos);
-    state.ground_speed_vec = _groundspeed_vector();
+    state.ground_speed_vec = active_backend->groundspeed_vector();
     state.ground_speed = _groundspeed();
     _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
 
@@ -1346,38 +1346,6 @@ bool AP_AHRS::_get_secondary_position(Location &loc) const
 
     // since there is no default case above, this is unreachable
     return false;
-}
-
-// EKF has a better ground speed vector estimate
-Vector2f AP_AHRS::_groundspeed_vector(void)
-{
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.groundspeed_vector();
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.groundspeed_vector();
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.groundspeed_vector();
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.groundspeed_vector();
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL: {
-        return external.groundspeed_vector();
-    }
-#endif
-    }
-    return Vector2f();
 }
 
 float AP_AHRS::_groundspeed(void)
