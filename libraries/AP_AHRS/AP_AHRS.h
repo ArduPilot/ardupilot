@@ -338,7 +338,10 @@ public:
     void writeTerrainAMSL(float alt_amsl_m);
 
     // get speed limit
-    void getControlLimits(float &ekfGndSpdLimit, float &controlScaleXY) const;
+    void getControlLimits(float &ekfGndSpdLimit, float &controlScaleXY) const {
+        active_backend->get_control_limits(ekfGndSpdLimit, controlScaleXY);
+    }
+
     float getControlScaleZ(void) const;
 
     // is the AHRS subsystem healthy?
