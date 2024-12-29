@@ -217,6 +217,10 @@ void AP_Networking::init()
     // init network mapped serialmanager ports
     ports_init();
 #endif
+
+#if AP_NETWORKING_FILESYSTEM_ENABLED
+    NineP2000_client.init();
+#endif
 }
 
 /*
