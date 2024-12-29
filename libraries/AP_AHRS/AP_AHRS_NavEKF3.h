@@ -33,6 +33,8 @@ public:
     CLASS_NO_COPY(AP_AHRS_NavEKF3);
     AP_AHRS_NavEKF3() {}
 
+    const char *shortname() const override { return "EKF3"; }
+
     bool healthy(void) const override {
         if (!started) {
             return false;

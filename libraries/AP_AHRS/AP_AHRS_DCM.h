@@ -50,6 +50,8 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_AHRS_DCM);
 
+    const char *shortname() const override { return "DCM"; }
+
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
     void reset_gyro_drift() override;
