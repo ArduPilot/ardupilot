@@ -1168,35 +1168,18 @@ bool AP_AHRS::airspeed_health_data(uint8_t instance, float &innovation, float &i
 // true if compass is being used
 bool AP_AHRS::use_compass(void)
 {
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        break;
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.use_compass();
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.use_compass();
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.use_compass();
-#endif
-
 #if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        break;
+    if (active_backend == &external) {
+#if AP_AHRS_DCM_ENABLED
+        // for external we return true if DCM is using compass..
+        return dcm.use_compass();
+#else
+        return false;
 #endif
     }
-#if AP_AHRS_DCM_ENABLED
-    return dcm.use_compass();
 #endif
-    return false;
+
+    return active_backend->use_compass();
 }
 
 bool AP_AHRS::_get_quaternion(Quaternion &quat) const
