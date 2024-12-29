@@ -970,9 +970,6 @@ private:
     // return secondary position solution if available
     bool _get_secondary_position(Location &loc) const;
 
-    // return ground speed estimate in meters/second. Used by ground vehicles.
-    float _groundspeed(void);
-
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     void _getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const;
 

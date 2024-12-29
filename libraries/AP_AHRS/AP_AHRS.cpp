@@ -494,7 +494,7 @@ void AP_AHRS::update_state(void)
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
     state.secondary_pos_ok = _get_secondary_position(state.secondary_pos);
     state.ground_speed_vec = active_backend->groundspeed_vector();
-    state.ground_speed = _groundspeed();
+    state.ground_speed = state.ground_speed_vec.length();
     _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
 
     // check if origin has been set
@@ -1346,11 +1346,6 @@ bool AP_AHRS::_get_secondary_position(Location &loc) const
 
     // since there is no default case above, this is unreachable
     return false;
-}
-
-float AP_AHRS::_groundspeed(void)
-{
-    return groundspeed_vector().length();
 }
 
 // set the EKF's origin location in 10e7 degrees.  This should only
