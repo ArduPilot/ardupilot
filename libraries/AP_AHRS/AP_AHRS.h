@@ -955,9 +955,6 @@ private:
     // get active EKF type
     EKFType _active_EKF_type(void) const;
 
-    // return a wind estimation vector, in m/s
-    bool _wind_estimate(Vector3f &wind) const WARN_IF_UNUSED;
-
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
     bool _airspeed_TAS(float &airspeed_ret) const;
