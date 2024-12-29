@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <AP_Math/AP_Math.h>
 
+#define MAX_EKF_CORES     3 // maximum allowed EKF Cores to be instantiated
+
 // enumeration corresponding to buts within nav_filter_status union.
 // Only used for documentation purposes.
 enum class NavFilterStatusBit {
