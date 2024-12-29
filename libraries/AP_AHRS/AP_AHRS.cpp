@@ -248,6 +248,10 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
     // load default values from var_info table
     AP_Param::setup_object_defaults(this, var_info);
 
+    // we assume active_backend is not nullptr in many places, so make
+    // sure it is set early:
+    update_active_EKF_type();
+
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduSub)
     // Copter and Sub force the use of EKF
     _ekf_flags |= AP_AHRS::FLAG_ALWAYS_USE_EKF;
@@ -258,6 +262,72 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
     _last_trim = _trim.get();
     _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, _last_trim.z);
     _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
+}
+
+// set active_backend variable in AP_AHRS object:
+const AP_AHRS_Backend *AP_AHRS::backend_for_type(EKFType type) const
+{
+    switch (type) {
+#if AP_AHRS_DCM_ENABLED
+    case EKFType::DCM:
+        return &dcm;
+#endif
+#if AP_AHRS_NAVEKF3_ENABLED
+    case EKFType::THREE:
+        return &ekf3;
+#endif
+#if AP_AHRS_NAVEKF2_ENABLED
+    case EKFType::TWO:
+        return &ekf2;
+#endif
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+        return &external;
+#endif
+#if AP_AHRS_SIM_ENABLED
+    case EKFType::SIM:
+        return &sim;
+#endif
+    }
+    return nullptr;
+}
+AP_AHRS_Backend *AP_AHRS::backend_for_type(EKFType type)
+{
+    switch (type) {
+#if AP_AHRS_DCM_ENABLED
+    case EKFType::DCM:
+        return &dcm;
+#endif
+#if AP_AHRS_NAVEKF3_ENABLED
+    case EKFType::THREE:
+        return &ekf3;
+#endif
+#if AP_AHRS_NAVEKF2_ENABLED
+    case EKFType::TWO:
+        return &ekf2;
+#endif
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+        return &external;
+#endif
+#if AP_AHRS_SIM_ENABLED
+    case EKFType::SIM:
+        return &sim;
+#endif
+    }
+    return nullptr;
+}
+
+void AP_AHRS::update_active_EKF_type()
+{
+    const auto new_type = _active_EKF_type();
+    auto *new_backend = backend_for_type(new_type);
+    if (new_backend != nullptr) {
+        state.active_EKF_type = new_type;
+        active_backend = new_backend;
+        return;
+    }
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
 }
 
 // init sets up INS board orientation
@@ -290,6 +360,9 @@ void AP_AHRS::init()
 #endif
 
     last_active_ekf_type = (EKFType)_ekf_type.get();
+
+    // we may have updated ekf_type()'s results, so set the backend again:
+    update_active_EKF_type();
 
     // init backends
 #if AP_AHRS_DCM_ENABLED
@@ -533,38 +606,12 @@ void AP_AHRS::update(bool skip_ins_update)
     // update AOA and SSA
     update_AOA_SSA();
 
-    state.active_EKF_type = _active_EKF_type();
+    update_active_EKF_type();
+
 #if HAL_GCS_ENABLED
     if (state.active_EKF_type != last_active_ekf_type) {
         last_active_ekf_type = state.active_EKF_type;
-        const char *shortname = "???";
-        switch ((EKFType)state.active_EKF_type) {
-#if AP_AHRS_DCM_ENABLED
-        case EKFType::DCM:
-            shortname = "DCM";
-            break;
-#endif
-#if AP_AHRS_SIM_ENABLED
-        case EKFType::SIM:
-            shortname = "SIM";
-            break;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-        case EKFType::EXTERNAL:
-            shortname = "External";
-            break;
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-        case EKFType::THREE:
-            shortname = "EKF3";
-            break;
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-        case EKFType::TWO:
-            shortname = "EKF2";
-            break;
-#endif
-        }
+        const char *shortname = active_backend->shortname();
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: %s active", shortname);
     }
 #endif // HAL_GCS_ENABLED
