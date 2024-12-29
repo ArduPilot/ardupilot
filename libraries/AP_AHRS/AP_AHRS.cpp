@@ -2681,32 +2681,13 @@ void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 // return origin for a specified EKF type
 bool AP_AHRS::_get_origin(EKFType type, Location &ret) const
 {
-    switch (type) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.get_origin(ret);
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.get_origin(ret);
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.get_origin(ret);
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.get_origin(ret);
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return external.get_origin(ret);
-#endif
+    auto *backend = backend_for_type(type);
+    if (backend == nullptr) {
+        // internal error?
+        return false;
     }
-    return false;
+
+    return backend->get_origin(ret);
 }
 
 /*
