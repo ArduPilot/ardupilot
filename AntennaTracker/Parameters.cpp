@@ -520,7 +520,7 @@ const AP_Param::Info Tracker::var_info[] = {
 #if HAL_NAVEKF3_AVAILABLE
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
-    GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
+    GOBJECTN(ahrs.ekf3.EKF3, NavEKF3, "EK3_", NavEKF3),
 #endif
 
 #if HAL_GCS_ENABLED
