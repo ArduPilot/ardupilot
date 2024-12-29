@@ -26,10 +26,10 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |:-|:-|:-|
 |SERIAL0|COMPUTER|USB|
 |SERIAL1|RX1/TX1|UART1 (GPS, DMA-enabled)|
-|SERIAL3|TX3/RX3|UART3 (ELRS, internal)
-|SERIAL4|TX4/RX4|UART4 (DJI)|
-|SERIAL5|RX5|UART5 (RX-only)|
-|SERIAL6|RX6|UART6 (SBUS, RX-only, inverted, DMA-enabled)|
+|SERIAL3|TX3/RX3|UART3 (ELRS, internal - can be freed up through board modifications, see https://betafpv.com/products/f4-2-3s-20a-aio-fc-v1?_pos=1&_sid=a0000be76&_ss=r)
+|SERIAL4|TX4/RX4|UART4 (MSP DisplayPort)|
+|SERIAL5|RX5|UART5 (SBUS, inverted and connected to RX-only)|
+|SERIAL6|TX6/RX6|UART6 (Spare, DMA-enabled)|
 
 ## RC Input
 
@@ -48,8 +48,6 @@ The PWM are in in two groups:
  - PWM 1-2 in group1
  - PWM 3-4 in group2
  - PWM 5 in group3
- - PWM 6 in group4
- - PWM 7 in group5
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -74,9 +72,14 @@ These are set by default in the firmware and shouldn't need to be adjusted
 
 The BETAFPV F405 AIO does not have a builtin compass.
 
+## GPIO Pin / Relay
+
+The board has an IO pin on RELAY2 (GPIO pin 81) which can be enabled by setting BRD_ALT_CONFIG to 1.
+This then turns UART6_TX into a relay which can be used for controlling an external LED (e.g. on the Pavo 20 Pro)
+
 ## NeoPixel LED
 
-The board includes a NeoPixel LED on the underside which is pre-configured to output ArduPilot sequences. This is the seventh PWM output.
+The board includes a NeoPixel LED on the underside which is pre-configured to output ArduPilot sequences. This is the fifth PWM output.
 
 ## Loading Firmware
 
