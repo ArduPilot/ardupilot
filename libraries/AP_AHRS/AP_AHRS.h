@@ -376,15 +376,21 @@ public:
 
     // return the amount of NE position change in meters due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &pos);
+    uint32_t getLastPosNorthEastReset(Vector2f &pos) {
+        return active_backend->getLastPosNorthEastReset(pos);
+    }
 
     // return the amount of NE velocity change in meters/sec due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastVelNorthEastReset(Vector2f &vel) const;
+    uint32_t getLastVelNorthEastReset(Vector2f &vel) const {
+        return active_backend->getLastVelNorthEastReset(vel);
+    }
 
     // return the amount of vertical position change due to the last reset in meters
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosDownReset(float &posDelta);
+    uint32_t getLastPosDownReset(float &posDelta) {
+        return active_backend->getLastPosDownReset(posDelta);
+    }
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
