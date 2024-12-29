@@ -778,7 +778,7 @@ private:
     AP_Float _origin_lon;
     AP_Float _origin_alt;
 
-    EKFType active_EKF_type(void) const { return state.active_EKF; }
+    EKFType active_EKF_type(void) const { return state.active_EKF_type; }
 
     bool always_use_EKF() const {
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;
@@ -1010,7 +1010,7 @@ private:
       state updated at the end of each update() call
      */
     struct {
-        EKFType active_EKF;
+        EKFType active_EKF_type;
         uint8_t primary_IMU;
         uint8_t primary_gyro;
         uint8_t primary_accel;
