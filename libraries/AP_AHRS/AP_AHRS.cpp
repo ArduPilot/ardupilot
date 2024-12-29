@@ -2710,39 +2710,6 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
     return true;
 }
 
-// return the amount of yaw angle change due to the last yaw angle reset in radians
-// returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t AP_AHRS::getLastYawResetAngle(float &yawAng)
-{
-    switch (active_EKF_type()) {
-
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.getLastYawResetAngle(yawAng);
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.getLastYawResetAngle(yawAng);
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.getLastYawResetAngle(yawAng);
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.getLastYawResetAngle(yawAng);
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return external.getLastYawResetAngle(yawAng);
-#endif
-    }
-    return 0;
-}
-
 // return the amount of NE position change in metres due to the last reset
 // returns the time of the last reset or 0 if no reset has ever occurred
 uint32_t AP_AHRS::getLastPosNorthEastReset(Vector2f &pos)
