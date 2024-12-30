@@ -146,6 +146,24 @@ def get_legacy_defines(sketch_name, bld):
         'AP_BUILD_TARGET_NAME="' + sketch_name + '"',
     ]
 
+def set_double_precision_flags(flags):
+    # set up flags for double precision files:
+    # * remove all single precision constant flags
+    # * set define to allow double precision math in AP headers
+
+    flags = flags[:] # copy the list to avoid affecting other builds
+
+    # remove GCC and clang single precision constant flags
+    for opt in ('-fsingle-precision-constant', '-cl-single-precision-constant'):
+        while True: # might have multiple copies from different sources
+            try:
+                flags.remove(opt)
+            except ValueError:
+                break
+    flags.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+
+    return flags
+
 IGNORED_AP_LIBRARIES = [
     'doc',
     'AP_Scripting', # this gets explicitly included when it is needed and should otherwise never be globbed in
