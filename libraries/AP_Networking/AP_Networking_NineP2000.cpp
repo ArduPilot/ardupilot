@@ -8,6 +8,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Math/AP_Math.h>
 #include <errno.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -455,7 +456,7 @@ void AP_Networking::NineP2000::clear_file_id(const uint32_t fileId)
     }
 }
 
-// Clone file ID prior to walking tree
+// Walk to a new file or directory, return tag, NOTAG if failed
 uint16_t AP_Networking::NineP2000::request_walk(const char* path)
 {
     WITH_SEMAPHORE(request_sem);
@@ -546,6 +547,20 @@ uint16_t AP_Networking::NineP2000::request_walk(const char* path)
     return tag;
 }
 
+void AP_Networking::NineP2000::print_if_error(Message &msg)
+{
+    // Nothing to do if not error
+    if (msg.content.header.type != (uint8_t)Type::Rerror) {
+        return;
+    }
+
+    // null terminate string and print directly out of buffer
+    const uint16_t &len = (uint16_t&)msg.content.payload;
+    receive.content.payload[MIN(len, 100) + sizeof(len)] = 0;
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "9P2000: error: %s", (char*)&receive.content.payload[sizeof(len)]);
+}
+
 uint32_t AP_Networking::NineP2000::dir_walk_result(const uint16_t tag)
 {
     WITH_SEMAPHORE(request_sem);
@@ -557,34 +572,27 @@ uint32_t AP_Networking::NineP2000::dir_walk_result(const uint16_t tag)
     }
 
     // Should be a walk response
-    if (request[tag].result.content.header.type != (uint8_t)Type::Rwalk) {
-        if (request[tag].result.content.header.type == (uint8_t)Type::Rerror) {
-            uint16_t len;
-            memcpy(&len, &receive.content.payload, sizeof(len));
-
-            // null terminate string and print directly out of buffer
-            receive.content.payload[MIN(len, 100) + sizeof(len)] = 0;
-
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "9P2000: error: %s", (char*)&receive.content.payload[sizeof(len)]);
-        }
+    Message &msg = request[tag].result;
+    if (msg.content.header.type != (uint8_t)Type::Rwalk) {
+        print_if_error(msg);
         clear_tag(tag);
         return 0;
     }
 
     uint16_t num_ids;
-    memcpy(&num_ids, &receive.content.payload, sizeof(num_ids));
+    memcpy(&num_ids, &msg.content.payload, sizeof(num_ids));
 
     // Read in ids
     const uint32_t fileId = request[tag].fileId;
     qid_t qid;
-    memcpy(&qid, &receive.content.payload[sizeof(num_ids)], sizeof(qid));
+    memcpy(&qid, &msg.content.payload[sizeof(num_ids)], sizeof(qid));
 
     // Copied everything from message, can clear
     clear_tag(tag);
 
     // Expecting a directory
     if (qid.type != qidType::QTDIR) {
-        // clunk file id
+        free_file_id(fileId);
         return 0;
     }
 
@@ -618,4 +626,169 @@ void AP_Networking::NineP2000::free_file_id(const uint32_t id)
     sock->send(send.buffer, send.content.header.length);
 }
 
+// Request read of given file or directory with given flags
+uint16_t AP_Networking::NineP2000::request_open(const uint32_t id, const int flags)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // See if there are any tags free
+    const uint16_t tag = get_free_tag();
+    if (tag == NOTAG) {
+        return NOTAG;
+    }
+
+    // Mark tag as active
+    request[tag].active = true;
+    request[tag].pending = true;
+    request[tag].fileId = id;
+
+    // Translate flags to mode
+    uint8_t mode = 0;
+    if ((flags & O_RDWR) != 0) {
+        mode = openMode::ORDWR;
+
+    } else if ((flags & O_WRONLY) != 0) {
+        mode = openMode::OWRITE;
+
+    } else {
+        mode = openMode::OREAD;
+    }
+
+    // Fill in message
+    send.content.header.type = (uint8_t)Type::Topen;
+    send.content.header.tag = tag;
+    send.content.header.length = sizeof(send.content.header) + sizeof(id) + sizeof(mode);
+    memcpy(&send.content.payload, &id, sizeof(id));
+    memcpy(&send.content.payload[sizeof(id)], &mode, sizeof(mode));
+
+    sock->send(send.buffer, send.content.header.length);
+
+    return tag;
+}
+
+
+// Fill in a directory item based on the read result, returns none zero if success
+bool AP_Networking::NineP2000::open_result(const uint16_t tag)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // Make sure the tag is valid and there is a waiting response
+    if (!tag_response(tag)) {
+        clear_tag(tag);
+        return false;
+    }
+
+    // Should be a open response
+    Message &msg = request[tag].result;
+    if (msg.content.header.type != (uint8_t)Type::Ropen) {
+        print_if_error(msg);
+        clear_tag(tag);
+        return false;
+    }
+
+    // Should be the correct length
+    const uint16_t len = sizeof(msg.content.header) + sizeof(qid_t) + 4;
+    if (msg.content.header.length != len) {
+        clear_tag(tag);
+        return false;
+    }
+    
+    clear_tag(tag);
+    return true;
+}
+
+// Read a directory or file, return tag, NOTAG if failed
+uint16_t AP_Networking::NineP2000::request_read(const uint32_t id, const uint64_t offset, uint32_t count)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // See if there are any tags free
+    const uint16_t tag = get_free_tag();
+    if (tag == NOTAG) {
+        return NOTAG;
+    }
+
+    // Mark tag as active
+    request[tag].active = true;
+    request[tag].pending = true;
+    request[tag].fileId = id;
+
+    // Limit count so as not to request a message over the max length
+    // Response has a header and 32 bit count.
+    const uint16_t maxLen = bufferLen - sizeof(send.content.header) - 4;
+    count = MIN(count, maxLen);
+
+    // Fill in message
+    send.content.header.type = (uint8_t)Type::Tread;
+    send.content.header.tag = tag;
+    send.content.header.length = sizeof(send.content.header) + sizeof(id) + sizeof(offset) + sizeof(count);
+    memcpy(&send.content.payload, &id, sizeof(id));
+    memcpy(&send.content.payload[sizeof(id)], &offset, sizeof(offset));
+    memcpy(&send.content.payload[sizeof(id)+sizeof(offset)], &count, sizeof(count));
+
+    sock->send(send.buffer, send.content.header.length);
+
+    return tag;
+}
+
+
+// Fill in a directory item based on the read result, returns none zero if success
+uint32_t AP_Networking::NineP2000::dir_read_result(const uint16_t tag, struct dirent &de)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // Make sure the tag is valid and there is a waiting response
+    if (!tag_response(tag)) {
+        clear_tag(tag);
+        return 0;
+    }
+
+    // Should be a read response
+    Message &msg = request[tag].result;
+    if (msg.content.header.type != (uint8_t)Type::Rread) {
+        print_if_error(msg);
+        clear_tag(tag);
+        return 0;
+    }
+
+    // Should at least contain header count and stat
+    const uint16_t stat_end = sizeof(msg.content.header) + 4 + sizeof(stat);
+    if (msg.content.header.length < stat_end) {
+        clear_tag(tag);
+        return 0;
+    }
+
+    const stat &info = (stat&)msg.content.payload[4];
+
+    // Length feild does not include itself
+    const uint16_t stat_len = info.msg_size + sizeof(info.msg_size);
+
+    // Make sure there is room for the whole stat now we know the full size
+    if (msg.content.header.length < (sizeof(msg.content.header) + 4 + stat_len)) {
+        clear_tag(tag);
+        return 0;
+    }
+
+    // Copy name, comes after the stat
+    const uint16_t name_len = (uint16_t&)msg.buffer[stat_end];
+
+    memset(de.d_name, 0, sizeof(de.d_name));
+    strncpy(de.d_name, (char*)&msg.buffer[stat_end + 2], MIN(sizeof(de.d_name), name_len));
+
+    // Fill in file flags
+    const uint8_t &mode = info.qid.type;
+    if (mode == qidType::QTFILE) {
+        de.d_type = DT_REG;
+    } else if (mode == qidType::QTDIR) {
+        de.d_type = DT_DIR;
+    } else {
+        // Invalid type
+        clear_tag(tag);
+        return 0;
+    }
+
+    // Return the size of the stat object so the directory offset can be updated
+    clear_tag(tag);
+    return stat_len;
+}
 #endif // AP_NETWORKING_FILESYSTEM_ENABLED
