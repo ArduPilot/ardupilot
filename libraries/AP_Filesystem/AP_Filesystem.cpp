@@ -60,6 +60,11 @@ static AP_Filesystem_Sys fs_sys;
 static AP_Filesystem_Mission fs_mission;
 #endif
 
+#if AP_FILESYSTEM_P92000_ENABLED
+#include "AP_Filesystem_9P2000.h"
+static AP_Filesystem_9P2000 fs_9P2000;
+#endif
+
 /*
   mapping from filesystem prefix to backend
  */
@@ -76,6 +81,9 @@ const AP_Filesystem::Backend AP_Filesystem::backends[] = {
 #endif
 #if AP_FILESYSTEM_MISSION_ENABLED
     { "@MISSION", fs_mission },
+#endif
+#if AP_FILESYSTEM_P92000_ENABLED
+    { "@9P2000", fs_9P2000 },
 #endif
 };
 
