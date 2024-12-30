@@ -27,6 +27,7 @@
 
 using namespace SITL;
 
+#if AP_MOTORS_FRAME_QUAD_ENABLED
 static Motor quad_plus_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
@@ -96,7 +97,9 @@ static Motor tiltquad[] =
     Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4, -1, 0, 0, 8, 10, -90),
     Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2),
 };
+#endif  // AP_MOTORS_FRAME_QUAD_ENABLED
 
+#if AP_MOTORS_FRAME_HEXA_ENABLED
 static Motor hexa_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
@@ -136,7 +139,9 @@ static Motor hexa_cw_x_motors[] =
     Motor(AP_MOTORS_MOT_5,  -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
     Motor(AP_MOTORS_MOT_6,  -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6)
 };
+#endif  // AP_MOTORS_FRAME_HEXA_ENABLED
 
+#if AP_MOTORS_FRAME_OCTA_ENABLED
 static Motor octa_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,    0,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
@@ -172,7 +177,9 @@ static Motor octa_cw_x_motors[] =
     Motor(AP_MOTORS_MOT_7,  -67.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 7),
     Motor(AP_MOTORS_MOT_8,  -22.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8)
 };
+#endif  // AP_MOTORS_FRAME_OCTA_ENABLED
 
+#if AP_MOTORS_FRAME_OCTAQUAD_ENABLED
 static Motor octa_quad_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
@@ -196,7 +203,9 @@ static Motor octa_quad_cw_x_motors[] =
     Motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 7),
     Motor(AP_MOTORS_MOT_8,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8)
 };
+#endif  // AP_MOTORS_FRAME_OCTAQUAD_ENABLED
 
+#if AP_MOTORS_FRAME_DODECAHEXA_ENABLED
 static Motor dodeca_hexa_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,   30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1),
@@ -212,7 +221,9 @@ static Motor dodeca_hexa_motors[] =
     Motor(AP_MOTORS_MOT_11, -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   11),
     Motor(AP_MOTORS_MOT_12, -30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  12)
 };
+#endif  // AP_MOTORS_FRAME_DODECAHEXA_ENABLED
 
+#if AP_MOTORS_FRAME_DECA_ENABLED
 static Motor deca_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,     0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1),
@@ -240,6 +251,7 @@ static Motor deca_cw_x_motors[] =
     Motor(AP_MOTORS_MOT_9,   -54, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  9),
     Motor(AP_MOTORS_MOT_10,  -18, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  10)
 };
+#endif  // AP_MOTORS_FRAME_DECA_ENABLED
 
 static Motor tri_motors[] =
 {
@@ -262,6 +274,7 @@ static Motor tilttri_vectored_motors[] =
     Motor(AP_MOTORS_MOT_4,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2)
 };
 
+#if AP_MOTORS_FRAME_Y6_ENABLED
 static Motor y6_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,  60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
@@ -271,6 +284,7 @@ static Motor y6_motors[] =
     Motor(AP_MOTORS_MOT_5,  60, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
     Motor(AP_MOTORS_MOT_6, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3)
 };
+#endif  // AP_MOTORS_FRAME_Y6_ENABLED
 
 /*
   FireflyY6 is a Y6 with front motors tiltable using servo on channel 9 (output 8)
@@ -291,6 +305,7 @@ static Motor firefly_motors[] =
  */
 static Frame supported_frames[] =
 {
+#if AP_MOTORS_FRAME_QUAD_ENABLED
     Frame("+",         4, quad_plus_motors),
     Frame("quad",      4, quad_plus_motors),
     Frame("copter",    4, quad_plus_motors),
@@ -300,24 +315,41 @@ static Frame supported_frames[] =
     Frame("djix",      4, quad_dji_x_motors),
     Frame("cwx",       4, quad_cw_x_motors),
     Frame("tilthvec",  4, tiltquad_h_vectored_motors),
+#endif  // AP_MOTORS_FRAME_QUAD_ENABLED
+#if AP_MOTORS_FRAME_HEXA_ENABLED
     Frame("hexax",     6, hexax_motors),
     Frame("hexa-cwx",  6, hexa_cw_x_motors),
     Frame("hexa-dji",  6, hexa_dji_x_motors),
     Frame("hexa",      6, hexa_motors),
+#endif  // AP_MOTORS_FRAME_HEXA_ENABLED
+#if AP_MOTORS_FRAME_OCTA_ENABLED
     Frame("octa-cwx",  8, octa_cw_x_motors),
     Frame("octa-dji",  8, octa_dji_x_motors),
+#endif  // AP_MOTORS_FRAME_OCTA_ENABLED
+#if AP_MOTORS_FRAME_OCTAQUAD_ENABLED
     Frame("octa-quad-cwx",8, octa_quad_cw_x_motors),
     Frame("octa-quad", 8, octa_quad_motors),
+#endif  // AP_MOTORS_FRAME_OCTAQUAD_ENABLED
+#if AP_MOTORS_FRAME_OCTA_ENABLED
     Frame("octa",      8, octa_motors),
+#endif  // AP_MOTORS_FRAME_OCTA_ENABLED
+#if AP_MOTORS_FRAME_DECA_ENABLED
     Frame("deca",     10, deca_motors),
     Frame("deca-cwx", 10, deca_cw_x_motors),
+#endif  // AP_MOTORS_FRAME_DECA_ENABLED
+#if AP_MOTORS_FRAME_DODECAHEXA_ENABLED
     Frame("dodeca-hexa", 12, dodeca_hexa_motors),
+#endif  // AP_MOTORS_FRAME_DODECAHEXA_ENABLED
     Frame("tri",       3, tri_motors),
     Frame("tilttrivec",3, tilttri_vectored_motors),
     Frame("tilttri",   3, tilttri_motors),
+#if AP_MOTORS_FRAME_Y6_ENABLED
     Frame("y6",        6, y6_motors),
+#endif  // AP_MOTORS_FRAME_Y6_ENABLED
     Frame("firefly",   6, firefly_motors),
+#if AP_MOTORS_FRAME_QUAD_ENABLED
     Frame("tilt",      4, tiltquad),
+#endif  // AP_MOTORS_FRAME_QUAD_ENABLED
 };
 
 // get air density in kg/m^3
