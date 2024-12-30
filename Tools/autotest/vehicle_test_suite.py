@@ -8492,10 +8492,8 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Waiting for EKF not having bits %u" % not_required_value)
         last_print_time = 0
         while timeout is None or self.get_sim_time_cached() < tstart + timeout:
-            m = self.mav.recv_match(type='EKF_STATUS_REPORT', blocking=True, timeout=timeout)
-            if m is None:
-                continue
-            current = m.flags
+            esr = self.assert_receive_message('EKF_STATUS_REPORT', timeout=timeout)
+            current = esr.flags
             if self.get_sim_time_cached() - last_print_time > 1:
                 self.progress("Wait EKF.flags: not required:%u current:%u" %
                               (not_required_value, current))
@@ -8503,6 +8501,7 @@ Also, ignores heartbeats not from our target system'''
             if current & not_required_value != not_required_value:
                 self.progress("GPS disable OK")
                 return
+        self.progress(f"Last EKF_STATUS_REPORT: {esr}")
         raise AutoTestTimeoutException("Failed to get EKF.flags=%u disabled" % not_required_value)
 
     def wait_text(self, *args, **kwargs):
