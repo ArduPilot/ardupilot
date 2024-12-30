@@ -20,7 +20,7 @@
     Usage: 
     1. drop it in the scripts/modules directory
     2. include in your own script using 
-         local speedpi = requre("speedpi.lua")
+         local speedpi = require("speedpi.lua")
     3. create an instance - you may need to tune the gains
         local speed_controller = speedpi.speed_controller(0.1, 0.1, 2.5, airspeed_min, airspeed_max)
     4. call it's update() from your update() with the current airspeed and airspeed error
@@ -31,7 +31,7 @@
 
 local SpeedPI = {}
 
-SpeedPI.SCRIPT_VERSION = "4.6.0-004"
+SpeedPI.SCRIPT_VERSION = "4.7.0-005"
 SpeedPI.SCRIPT_NAME = "Speed PI Controller"
 SpeedPI.SCRIPT_NAME_SHORT = "SpeedPI"
 
@@ -126,7 +126,7 @@ function SpeedPI.PI_controller(kP,kI,iMax,min,max)
        -- I = calculated Integral component
        -- Total = calculated new Airspeed 
        -- Add - passed in as 0 
-       logger.write(name,'Targ,Curr,P,I,Total,Add','ffffff',_target,_current,_P,_I,_total,add_total)
+       logger:write(name,'Targ,Curr,P,I,Total,Add','ffffff',_target,_current,_P,_I,_total,add_total)
     end
  
     -- return the instance
@@ -153,3 +153,4 @@ end
 gcs:send_text(MAV_SEVERITY.INFO, string.format("%s %s module loaded", SpeedPI.SCRIPT_NAME, SpeedPI.SCRIPT_VERSION) )
 
 return SpeedPI
+

@@ -23,7 +23,7 @@
 
 local MAVLink = {}
 
-MAVLink.SCRIPT_VERSION = "4.6.0-003"
+MAVLink.SCRIPT_VERSION = "4.7.0-004"
 MAVLink.SCRIPT_NAME = "MAVLink command_int module"
 MAVLink.SCRIPT_NAME_SHORT = "MAVcmdint"
 
@@ -143,3 +143,4 @@ function MAVLink.set_vehicle_target_altitude(target)
 end
 
 return MAVLink
+
