@@ -350,7 +350,7 @@ private:
     Canard::ObjCallback<AP_DroneCAN, com_himark_servo_ServoInfo> himark_servo_ServoInfo_cb{this, &AP_DroneCAN::handle_himark_servoinfo};
     Canard::Subscriber<com_himark_servo_ServoInfo> himark_servo_ServoInfo_cb_listener{himark_servo_ServoInfo_cb, _driver_index};
 #endif
-#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED && AP_SERVO_TELEM_ENABLED
+#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
     Canard::ObjCallback<AP_DroneCAN, com_volz_servo_ActuatorStatus> volz_servo_ActuatorStatus_cb{this, &AP_DroneCAN::handle_actuator_status_Volz};
     Canard::Subscriber<com_volz_servo_ActuatorStatus> volz_servo_ActuatorStatus_listener{volz_servo_ActuatorStatus_cb, _driver_index};
 #endif
@@ -418,7 +418,7 @@ private:
 #if AP_SERVO_TELEM_ENABLED
     void handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);
 #endif
-#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED && AP_SERVO_TELEM_ENABLED
+#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
     void handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg);
 #endif
     void handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg);
