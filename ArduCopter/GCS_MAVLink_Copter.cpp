@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Copter.h"
 #include <AP_RPM/AP_RPM_config.h>
 #include <AP_EFI/AP_EFI_config.h>
 

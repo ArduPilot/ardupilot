@@ -1,4 +1,4 @@
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Tracker.h"
 #include "Tracker.h"
 
 MAV_TYPE GCS_Tracker::frame_type() const

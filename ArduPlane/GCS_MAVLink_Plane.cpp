@@ -1,4 +1,4 @@
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Plane.h"
 
 #include "Plane.h"
 #include <AP_RPM/AP_RPM_config.h>
