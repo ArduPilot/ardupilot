@@ -494,14 +494,7 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
         )
         filename = os.path.basename(f.abspath())
         if filename in DOUBLE_PRECISION_SOURCES:
-            t.env.CXXFLAGS = t.env.CXXFLAGS[:]
-            single_precision_option='-fsingle-precision-constant'
-            if single_precision_option in t.env.CXXFLAGS:
-                t.env.CXXFLAGS.remove(single_precision_option)
-            single_precision_option='-cl-single-precision-constant'
-            if single_precision_option in t.env.CXXFLAGS:
-                t.env.CXXFLAGS.remove(single_precision_option)
-            t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+            t.env.CXXFLAGS = set_double_precision_flags(t.env.CXXFLAGS)
 
 _versions = []
 
