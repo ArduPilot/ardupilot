@@ -51,6 +51,9 @@ public:
 
 private:
 
+    // Open a given file ID with flags
+    bool open_fileId(AP_Networking::NineP2000& fs, const uint32_t fileId, int flags);
+
     // Wait for response, blocking
     bool wait_for_tag(AP_Networking::NineP2000& fs, const uint16_t tag) const;
 
@@ -68,7 +71,7 @@ private:
     struct rdir {
         char *path;
         uint32_t fileId;
-        uint16_t ofs;
+        uint32_t ofs;
         struct dirent de;
     } dir[max_open_dir];
 };

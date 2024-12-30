@@ -32,6 +32,12 @@ extern const AP_HAL::HAL& hal;
 // Wait for response, blocking
 bool AP_Filesystem_9P2000::wait_for_tag(AP_Networking::NineP2000& fs, const uint16_t tag) const
 {
+    // Tag is invalid
+    if (tag == fs.NOTAG) {
+        errno = ENFILE;
+        return false;
+    }
+
     const uint32_t timeout = 250;
     const uint32_t wait_start = AP_HAL::millis();
     do {
@@ -43,7 +49,23 @@ bool AP_Filesystem_9P2000::wait_for_tag(AP_Networking::NineP2000& fs, const uint
 
     // Timeout!
     fs.clear_tag(tag);
+    errno = EBUSY;
     return false;
+}
+
+// Open a given file ID with flags
+bool AP_Filesystem_9P2000::open_fileId(AP_Networking::NineP2000& fs, const uint32_t fileId, const int flags)
+{
+    // Request the open
+    const uint16_t tag = fs.request_open(fileId, flags);
+
+    // Wait for the reply
+    if (!wait_for_tag(fs, tag)) {
+        return false;
+    }
+
+    // Got reply
+    return fs.open_result(tag);
 }
 
 int AP_Filesystem_9P2000::open(const char *fname, int flags, bool allow_absolute_paths)
@@ -201,10 +223,8 @@ void *AP_Filesystem_9P2000::opendir(const char *pathname)
 
     // Wait for the reply
     if (!wait_for_tag(fs, tag)) {
-        // Time out
         free(dir[idx].path);
         dir[idx].path = nullptr;
-        errno = EBUSY;
         return nullptr;
     }
 
@@ -212,6 +232,15 @@ void *AP_Filesystem_9P2000::opendir(const char *pathname)
     const uint32_t fid = fs.dir_walk_result(tag);
     if (fid == 0) {
         // walk failed
+        free(dir[idx].path);
+        dir[idx].path = nullptr;
+        errno = ENOENT;
+        return nullptr;
+    }
+
+    // Got a valid directory, now open it
+    if (!open_fileId(fs, fid, O_RDONLY)) {
+        // open failed
         free(dir[idx].path);
         dir[idx].path = nullptr;
         errno = ENOENT;
@@ -233,7 +262,40 @@ struct dirent *AP_Filesystem_9P2000::readdir(void *dirp)
         return nullptr;
     }
 
-    return nullptr;
+    uint32_t idx = ((rdir*)dirp) - &dir[0];
+    if (idx >= max_open_dir) {
+        // Invalid rdir obj
+        errno = EBADF;
+        return nullptr;
+    }
+
+    // Make sure filesystem is still mounted.
+    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    if (!fs.mounted()) {
+        errno = ENODEV;
+        return nullptr;
+    }
+
+    // Read the next item, use large count which will be shortened
+    // Because the file stat includes names we can't be sure how long it is.
+    const uint16_t tag = fs.request_read(dir[idx].fileId, dir[idx].ofs, UINT32_MAX);
+
+    // Wait for the reply
+    if (!wait_for_tag(fs, tag)) {
+        return nullptr;
+    }
+
+    // Grab reply, should be none zero
+    const uint32_t size = fs.dir_read_result(tag, dir[idx].de);
+    if (size == 0) {
+        // Got to the last item (or read failed)
+        return nullptr;
+    }
+
+    // Increment offset for next call
+    dir[idx].ofs += size;
+
+    return &dir[idx].de;
 }
 
 int AP_Filesystem_9P2000::closedir(void *dirp)
