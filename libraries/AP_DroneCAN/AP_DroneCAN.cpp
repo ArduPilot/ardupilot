@@ -1448,7 +1448,7 @@ void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, 
         .voltage = msg.voltage * 0.2,
         .current = msg.current * 0.025,
         .duty_cycle = msg.motor_pwm * (100.0/255.0),
-        .motor_temperature_cdeg = (int16_t(msg.motor_temperature) - 50)) * 100,
+        .motor_temperature_cdeg = (int16_t(msg.motor_temperature) - 50) * 100,
         .valid_types = AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
                        AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
                        AP_Servo_Telem::TelemetryData::Types::CURRENT |
