@@ -193,7 +193,7 @@ public:
         // Send a stat command, return tag, NOTAG if failed
         uint16_t request_stat(const uint32_t fid);
 
-        // Walk to a new file or directory
+        // Walk to a new file or directory, return tag, NOTAG if failed
         uint16_t request_walk(const char* path);
 
         // Check if the walk result is valid for a directory
@@ -201,6 +201,18 @@ public:
 
         // Return the file id to the server for re-use
         void free_file_id(const uint32_t id);
+
+        // Request read of given file or directory with given flags
+        uint16_t request_open(const uint32_t id, const int flags);
+
+        // Return true if open success
+        bool open_result(const uint16_t tag);
+
+        // Read a directory or file, return tag, NOTAG if failed
+        uint16_t request_read(const uint32_t id, const uint64_t offset, const uint32_t count);
+
+        // Fill in a directory item based on the read result, returns none zero if success
+        uint32_t dir_read_result(const uint16_t tag, struct dirent &de);
 
         // Magic value for invalid tag
         static constexpr uint16_t NOTAG = 0xFFFF;
@@ -260,6 +272,16 @@ public:
             QTAUTH   = (1 << 3), // DMAUTH bit 27, authentication file
             QTTMP    = (1 << 2), // DMTMP bit 26, temporay
             QTFILE   = 0,
+        };
+
+        enum openMode {
+            OREAD   = 0, // Read only
+            OWRITE  = 1, // Write only
+            ORDWR   = 2, // Read and write
+            OEXEC   = 3, // Execute
+            NONE    = 4,
+            OTRUNC  = 0x10,
+            ORCLOSE = 0x40,
         };
 
         // Receive buffer
@@ -342,15 +364,11 @@ public:
         // Return the next available tag, NOTAG is none free
         uint16_t get_free_tag();
 
+        // Decode error messaged print
+        void print_if_error(Message &msg);
+
         // Semaphore should be take any time the request array is used
         HAL_Semaphore request_sem;
-
-    public: 
-        // Max number of items we can list in a directory
-        // This assumes we get the message size we ask for.
-        // Directory read returns a stat object followed by three strings each of min length 2.
-        static constexpr uint16_t maxItems = sizeof(Message) / (sizeof(stat) + (2 * 3));
-
     };
 
     // Get the 9P2000 client
