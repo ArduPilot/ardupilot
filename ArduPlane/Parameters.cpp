@@ -1028,6 +1028,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: mode_takeoff.cpp
     GOBJECT(mode_takeoff, "TKOFF_", ModeTakeoff),
 
+    // @Group: GUIDED_
+    // @Path: mode_guided.cpp
+    GOBJECT(mode_guided, "GUIDED_", ModeGuided),
+
 #if AP_PLANE_GLIDER_PULLUP_ENABLED
     // @Group: PUP_
     // @Path: pullup.cpp
