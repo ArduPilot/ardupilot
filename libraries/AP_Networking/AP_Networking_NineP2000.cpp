@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AP_Networking::NineP2000::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("PORT", 3, AP_Networking::NineP2000, port, 0),
-    
+
     AP_GROUPEND
 };
 
@@ -87,6 +87,12 @@ void AP_Networking::NineP2000::loop()
     }
 }
 
+// Return true if connected and mounted
+bool AP_Networking::NineP2000::mounted()
+{
+    return connected && (state == State::Mounted);
+}
+
 // Deal with incoming data
 void AP_Networking::NineP2000::update()
 {
@@ -113,6 +119,9 @@ void AP_Networking::NineP2000::update()
         return;
     }
 
+    // Use semaphore for thread safety
+    WITH_SEMAPHORE(request_sem);
+
     // Deal with each message type
     switch ((Type)receive.content.header.type) {
         case Type::Rversion: {
@@ -132,8 +141,53 @@ void AP_Networking::NineP2000::update()
             break;
         }
 
-        default:
+        // Auth and flush are not supported
+        case Type::Rauth:
+        case Type::Rflush:
             break;
+
+        // Clear tag from clunk
+        case Type::Rclunk: {
+            // Note that there is no timeout, so we could leak a tag and a file id
+            // Clear the tag and file ID so they can be used again
+            const uint16_t tag = receive.content.header.tag;
+            if (tag < ARRAY_SIZE(request)) {
+                clear_file_id(request[tag].fileId);
+            }
+            clear_tag(tag);
+            break;
+        }
+
+        // Stash result for callback
+        case Type::Rerror:
+        case Type::Rwalk:
+        case Type::Ropen:
+        case Type::Rcreate:
+        case Type::Rread:
+        case Type::Rwrite:
+        case Type::Rremove:
+        case Type::Rstat:
+        case Type::Rwstat: {
+            // Should be mounted before responses start turning up
+            if (state != State::Mounted) {
+                INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                return;
+            }
+
+            // Check tag is valid
+            const uint16_t tag = receive.content.header.tag;
+            if ((tag >= ARRAY_SIZE(request)) || !request[tag].pending) {
+                INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                return;
+            }
+
+            // Valid tag, fill in message
+            memcpy(&request[tag].result.buffer, &receive.buffer, sizeof(request[tag].result.buffer));
+
+            // No longer pending
+            request[tag].pending = false;
+            break;
+        }
 
         // Not expecting to receive any requests
         case Type::Tversion:
@@ -149,6 +203,7 @@ void AP_Networking::NineP2000::update()
         case Type::Tremove:
         case Type::Tstat:
         case Type::Twstat:
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             break;
     }
 
@@ -181,7 +236,7 @@ void AP_Networking::NineP2000::request_version()
     bufferLen = 32; // Assume a minimum message length
 
     send.content.header.type = (uint8_t)Type::Tversion;
-    send.content.header.tag = 0;
+    send.content.header.tag = NOTAG;
     send.content.header.length = sizeof(send.content.header);
 
     const uint32_t msize = sizeof(Message);
@@ -201,8 +256,8 @@ void AP_Networking::NineP2000::handle_version()
         return;
     }
 
-    if (receive.content.header.tag != 0) {
-        // tag should always be 0, throw a error?
+    if (receive.content.header.tag != NOTAG) {
+        // tag should always be NOTAG, throw a error?
         return;
     }
 
@@ -241,7 +296,7 @@ void AP_Networking::NineP2000::request_attach()
     state = State::Attach;
 
     send.content.header.type = (uint8_t)Type::Tattach;
-    send.content.header.tag = 0;
+    send.content.header.tag = ARRAY_SIZE(request); // Use a tag that will not be used in normal operation
     send.content.header.length = sizeof(send.content.header);
 
     // Use zero file id
@@ -265,30 +320,302 @@ void AP_Networking::NineP2000::request_attach()
 void AP_Networking::NineP2000::handle_attach()
 {
     // Fixed length message, header and qid
-    if (receive.content.header.length != sizeof(receive.content.header) + sizeof(qid)) {
+    if (receive.content.header.length != sizeof(receive.content.header) + sizeof(qid_t)) {
         return;
     }
 
-    if (receive.content.header.tag != 0) {
-        // tag should always be 0
+    // tag should match the request
+    if (receive.content.header.tag != ARRAY_SIZE(request)) {
         return;
     }
 
     // Read in qid
-    qid id;
-    memcpy(&id, &receive.content.payload, sizeof(qid));
+    qid_t id;
+    memcpy(&id, &receive.content.payload, sizeof(id));
 
     // Expecting a directory
     if (id.type != qidType::QTDIR) {
         return;
     }
 
-    // Keep track of root directory and mark as mounted
-    root = id.path;
     state = State::Mounted;
-
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "9P2000: mounted file system");
+}
 
+// Return the next available tag, NOTAG is none free
+uint16_t AP_Networking::NineP2000::get_free_tag()
+{
+    // Must be mounted for operations to be valid
+    if (state != State::Mounted) {
+        return NOTAG;
+    }
+
+    for (uint8_t i = 0; i < ARRAY_SIZE(request); i++) {
+        if (!request[i].active) {
+            return i;
+        }
+    }
+
+    return NOTAG;
+}
+
+// Return true if there is a response for the given tag
+bool AP_Networking::NineP2000::tag_response(const uint16_t tag)
+{
+    if (tag >= ARRAY_SIZE(request)) {
+        return false;
+    }
+
+    WITH_SEMAPHORE(request_sem);
+    return request[tag].active && !request[tag].pending;
+}
+
+// Called when a command is timed out
+void AP_Networking::NineP2000::clear_tag(const uint16_t tag)
+{
+    if (tag >= ARRAY_SIZE(request)) {
+        return;
+    }
+
+    WITH_SEMAPHORE(request_sem);
+    request[tag].active = false;
+}
+
+// Request stat for given file id
+uint16_t AP_Networking::NineP2000::request_stat(const uint32_t fid)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    const uint16_t tag = get_free_tag();
+    if (tag == NOTAG) {
+        return NOTAG;
+    }
+
+    // Fill in message
+    send.content.header.type = (uint8_t)Type::Tstat;
+    send.content.header.tag = tag;
+    send.content.header.length = sizeof(send.content.header) + sizeof(fid);
+
+    memcpy(&send.content.payload, &fid, sizeof(fid));
+
+    // Send and mark active
+    sock->send(send.buffer, send.content.header.length);
+    request[tag].active = true;
+    request[tag].fileId = fid;
+
+    // Return tag which the caller can use to check for the result
+    return tag;
+}
+
+// Generate a new unique file id
+uint32_t AP_Networking::NineP2000::generate_unique_file_id() const
+{
+    // Generate a random id and check it does not clash with existing IDs.
+    // If it does we try again, this could recurse forever! (but its very unlikely)
+
+    uint32_t id;
+    hal.util->get_random_vals((uint8_t*)&id, sizeof(id));
+
+    // 0 is reserved for root
+    if (id == 0) {
+        return generate_unique_file_id();
+    }
+
+    // Check active IDs
+    for (uint8_t i = 0; i < ARRAY_SIZE(fileIds); i++) {
+        if (id == fileIds[i]) {
+            return generate_unique_file_id();
+        }
+    }
+
+    // No conflicts!
+    return id;
+}
+
+// Add a file ID to the list of those being used, return false if not space available
+bool AP_Networking::NineP2000::add_file_id(const uint32_t fileId)
+{
+    for (uint8_t i = 0; i < ARRAY_SIZE(fileIds); i++) {
+        if (fileIds[i] == 0) {
+            fileIds[i] = fileId;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Clear a file id now the file has been closed
+void AP_Networking::NineP2000::clear_file_id(const uint32_t fileId)
+{
+    for (uint8_t i = 0; i < ARRAY_SIZE(fileIds); i++) {
+        if (fileIds[i] == fileId) {
+            fileIds[i] = 0;
+        }
+    }
+}
+
+// Clone file ID prior to walking tree
+uint16_t AP_Networking::NineP2000::request_walk(const char* path)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // See if there are any tags free
+    const uint16_t tag = get_free_tag();
+    if (tag == NOTAG) {
+        return NOTAG;
+    }
+
+    // Get a new file ID
+    const uint32_t id = generate_unique_file_id();
+
+    // Make sure we can reserve it
+    bool reserved = false;
+    for (uint8_t i = 0; i < ARRAY_SIZE(fileIds); i++) {
+        if (fileIds[i] == 0) {
+            fileIds[i] = id;
+            reserved = true;
+            break;
+        }
+    }
+
+    // No free tags, give up
+    if (!reserved) {
+        return NOTAG;
+    }
+
+    // Fill in message
+    send.content.header.type = (uint8_t)Type::Twalk;
+    send.content.header.tag = tag;
+    send.content.header.length = sizeof(send.content.header);
+
+    // Start at root
+    const uint32_t root = 0;
+    memcpy(&send.buffer[send.content.header.length], &root, sizeof(root));
+    send.content.header.length += sizeof(root);
+
+    // Clone to new ID
+    memcpy(&send.buffer[send.content.header.length], &id, sizeof(id));
+    send.content.header.length += sizeof(id);
+
+    // Take reference to name count
+    uint16_t &num_names = (uint16_t&) send.buffer[send.content.header.length];
+    num_names = 0;
+    send.content.header.length += sizeof(num_names);
+
+    // Step through path and add strings
+    const uint16_t len = strlen(path);
+    uint16_t name_start = 0; 
+    for (uint16_t i = 0; i < len; i++) {
+        const bool split = path[i] == '/';
+        const bool last = i == (len - 1);
+        if (split || last) {
+            // Should check total length of message is still valid
+            const uint16_t name_len = i - name_start + (split ? 0 : 1);
+            const uint32_t new_len = send.content.header.length + sizeof(name_len) + name_len;
+
+            // Check total message length is still valid
+            if (new_len > bufferLen) {
+                return NOTAG;
+            }
+
+            // Add string length
+            memcpy(&send.buffer[send.content.header.length], &name_len, sizeof(name_len));
+            send.content.header.length += sizeof(name_len);
+
+            // Add string itself
+            memcpy(&send.buffer[send.content.header.length], &path[name_start], name_len);
+            send.content.header.length += name_len;
+
+            // Increment number of names
+            num_names += 1;
+
+            // Next section starts after this one
+            name_start = i + 1;
+        }
+    }
+
+    // Make tag as active
+    request[tag].active = true;
+    request[tag].pending = true;
+    request[tag].fileId = id;
+
+    // Send command
+    sock->send(send.buffer, send.content.header.length);
+
+    return tag;
+}
+
+uint32_t AP_Networking::NineP2000::dir_walk_result(const uint16_t tag)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // Make sure the tag is valid and there is a waiting response
+    if (!tag_response(tag)) {
+        clear_tag(tag);
+        return 0;
+    }
+
+    // Should be a walk response
+    if (request[tag].result.content.header.type != (uint8_t)Type::Rwalk) {
+        if (request[tag].result.content.header.type == (uint8_t)Type::Rerror) {
+            uint16_t len;
+            memcpy(&len, &receive.content.payload, sizeof(len));
+
+            // null terminate string and print directly out of buffer
+            receive.content.payload[MIN(len, 100) + sizeof(len)] = 0;
+
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "9P2000: error: %s", (char*)&receive.content.payload[sizeof(len)]);
+        }
+        clear_tag(tag);
+        return 0;
+    }
+
+    uint16_t num_ids;
+    memcpy(&num_ids, &receive.content.payload, sizeof(num_ids));
+
+    // Read in ids
+    const uint32_t fileId = request[tag].fileId;
+    qid_t qid;
+    memcpy(&qid, &receive.content.payload[sizeof(num_ids)], sizeof(qid));
+
+    // Copied everything from message, can clear
+    clear_tag(tag);
+
+    // Expecting a directory
+    if (qid.type != qidType::QTDIR) {
+        // clunk file id
+        return 0;
+    }
+
+    // success, return id
+    return fileId;
+}
+
+// Return the file id to the server for re-use
+void AP_Networking::NineP2000::free_file_id(const uint32_t id)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // See if there are any tags free
+    const uint16_t tag = get_free_tag();
+    if (tag == NOTAG) {
+        // This is bad, it means we leak a file id.
+        return;
+    }
+
+    // Mark tag as active
+    request[tag].active = true;
+    request[tag].pending = true;
+    request[tag].fileId = id;
+
+    // Fill in message
+    send.content.header.type = (uint8_t)Type::Tclunk;
+    send.content.header.tag = tag;
+    send.content.header.length = sizeof(send.content.header) + sizeof(id);
+    memcpy(&send.content.payload, &id, sizeof(id));
+
+    sock->send(send.buffer, send.content.header.length);
 }
 
 #endif // AP_NETWORKING_FILESYSTEM_ENABLED
