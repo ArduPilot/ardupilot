@@ -277,13 +277,7 @@ def double_precision_check(tasks):
             double_library = t.env.DOUBLE_PRECISION_LIBRARIES.get(src[0],False)
 
             if double_library or src in double_tasks:
-                t.env.CXXFLAGS = t.env.CXXFLAGS[:]
-                for opt in ['-fsingle-precision-constant', '-cl-single-precision-constant']:
-                    try:
-                        t.env.CXXFLAGS.remove(opt)
-                    except ValueError:
-                        pass
-                t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+                t.env.CXXFLAGS = ap.set_double_precision_flags(t.env.CXXFLAGS)
 
 
 def gsoap_library_check(bld, tasks):
