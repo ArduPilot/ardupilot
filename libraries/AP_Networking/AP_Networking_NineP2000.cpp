@@ -1000,4 +1000,71 @@ int32_t AP_Networking::NineP2000::write_result(const uint16_t tag)
     return count;
 }
 
+// Request create for given directory id, return tag
+uint16_t AP_Networking::NineP2000::request_create(const uint32_t id, const char*name, const bool dir)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // ID invalid
+    if (!valid_file_id(id)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return NOTAG;
+    }
+
+    // See if there are any tags free
+    const uint16_t tag = get_free_tag();
+    if (tag == NOTAG) {
+        return NOTAG;
+    }
+
+    // Mark tag as active
+    request[tag].pending = true;
+    request[tag].fileId = id;
+    request[tag].expectedType = Type::Rcreate;
+
+    // Fill in message
+    send.content.header.type = (uint8_t)Type::Tcreate;
+    send.content.header.tag = tag;
+    send.content.header.length = sizeof(send.content.header) + sizeof(id);
+    memcpy(&send.content.payload, &id, sizeof(id));
+    add_string(send, name);
+
+    // Give everyone rwx permissions
+    const uint32_t perm = 0777 | (dir ? (qidType::QTDIR << 24) : 0);
+    const uint8_t mode = 0;
+
+    memcpy(&send.buffer[send.content.header.length], &perm, sizeof(perm));
+    memcpy(&send.buffer[send.content.header.length + sizeof(perm)], &mode, sizeof(mode));
+
+    send.content.header.length += sizeof(perm) + sizeof(mode);
+
+    sock->send(send.buffer, send.content.header.length);
+
+    return tag;
+}
+
+bool AP_Networking::NineP2000::create_result(const uint16_t tag)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // Make sure the tag is valid and there is a waiting response
+    if (!tag_response(tag)) {
+        clear_tag(tag);
+        return false;
+    }
+
+    // Should be a create response
+    Message &msg = request[tag].result;
+    if (msg.content.header.type != (uint8_t)Type::Rcreate) {
+        print_if_error(msg);
+        clear_tag(tag);
+        return false;
+    }
+
+    // Finished with tag
+    clear_tag(tag);
+
+    return true;
+}
+
 #endif // AP_NETWORKING_FILESYSTEM_ENABLED

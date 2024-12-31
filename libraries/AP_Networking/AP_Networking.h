@@ -226,6 +226,12 @@ public:
         // Return the number of bytes written, -1 for error
         int32_t write_result(const uint16_t tag);
 
+        // Request create for given directory id, return tag
+        uint16_t request_create(const uint32_t id, const char*name, const bool dir);
+
+        // Get create result
+        bool create_result(const uint16_t tag);
+
         // Magic value for invalid tag
         static constexpr uint16_t NOTAG = 0xFFFF;
 
