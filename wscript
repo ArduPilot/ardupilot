@@ -306,7 +306,7 @@ submodules at specific revisions.
 
     g.add_option('--sitl-littlefs', action='store_true',
                  default=False,
-                 help="Enable littlefs for filesystem accesson SITL")
+                 help="Enable littlefs for filesystem access on SITL (under construction)")
 
     g = opt.ap_groups['linux']
 
