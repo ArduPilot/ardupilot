@@ -825,6 +825,36 @@ uint32_t AP_Networking::NineP2000::dir_read_result(const uint16_t tag, struct di
     return stat_len;
 }
 
+// Return the number of bytes read, -1 for error
+int32_t AP_Networking::NineP2000::file_read_result(const uint16_t tag, void *buf)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // Make sure the tag is valid and there is a waiting response
+    if (!tag_response(tag)) {
+        clear_tag(tag);
+        return -1;
+    }
+
+    // Should be a read response
+    Message &msg = request[tag].result;
+    if (msg.content.header.type != (uint8_t)Type::Rread) {
+        print_if_error(msg);
+        clear_tag(tag);
+        return -1;
+    }
+
+    // Copy result
+    uint32_t count;
+    memcpy(&count, &msg.content.payload, sizeof(count));
+    memcpy(buf, &msg.content.payload[sizeof(count)], count);
+
+    // Finished with tag
+    clear_tag(tag);
+
+    return count;
+}
+
 // Request stat for a given file id
 uint16_t AP_Networking::NineP2000::request_stat(const uint32_t id)
 {
@@ -901,6 +931,73 @@ bool AP_Networking::NineP2000::stat_result(const uint16_t tag, struct stat *stbu
     clear_tag(tag);
 
     return true;
+}
+
+// Request write for given file id, return tag
+uint16_t AP_Networking::NineP2000::request_write(const uint32_t id, const uint64_t offset, uint32_t count, const void *buf)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // ID invalid
+    if (!valid_file_id(id)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return NOTAG;
+    }
+
+    // See if there are any tags free
+    const uint16_t tag = get_free_tag();
+    if (tag == NOTAG) {
+        return NOTAG;
+    }
+
+    // Limit write to max packet size
+    const uint16_t data_offset = sizeof(send.content.header) + sizeof(id) + sizeof(offset) + sizeof(count);
+    count = MIN(count, uint32_t(bufferLen - data_offset));
+
+    // Mark tag as active
+    request[tag].pending = true;
+    request[tag].fileId = id;
+    request[tag].expectedType = Type::Rwrite;
+
+    // Fill in message
+    send.content.header.type = (uint8_t)Type::Twrite;
+    send.content.header.tag = tag;
+    send.content.header.length = data_offset + count;
+    memcpy(&send.content.payload, &id, sizeof(id));
+    memcpy(&send.content.payload[sizeof(id)], &offset, sizeof(offset));
+    memcpy(&send.content.payload[sizeof(id)+sizeof(offset)], &count, sizeof(count));
+    memcpy(&send.buffer[data_offset], buf, count);
+
+    sock->send(send.buffer, send.content.header.length);
+
+    return tag;
+}
+
+int32_t AP_Networking::NineP2000::write_result(const uint16_t tag)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // Make sure the tag is valid and there is a waiting response
+    if (!tag_response(tag)) {
+        clear_tag(tag);
+        return -1;
+    }
+
+    // Should be a write response
+    Message &msg = request[tag].result;
+    if (msg.content.header.type != (uint8_t)Type::Rwrite) {
+        print_if_error(msg);
+        clear_tag(tag);
+        return -1;
+    }
+
+    uint32_t count;
+    memcpy(&count, &msg.content.payload, sizeof(count));
+
+    // Finished with tag
+    clear_tag(tag);
+
+    return count;
 }
 
 #endif // AP_NETWORKING_FILESYSTEM_ENABLED
