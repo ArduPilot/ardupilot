@@ -123,6 +123,7 @@ void AP_Tuning::re_center(void)
     AP_Float *f = get_param_pointer(current_parm);
     if (f != nullptr) {
         center_value = f->get();
+        old_value = 0.0;
     }
     mid_point_wait = true;
 }
@@ -218,7 +219,6 @@ void AP_Tuning::check_input(uint8_t flightmode)
     last_channel_value = chan_value;
 
     float new_value;
-    static float old_value;
     if (chan_value > 0) {
         new_value = linear_interpolate(center_value, range*center_value, chan_value, 0, 1);
     } else {
@@ -231,7 +231,7 @@ void AP_Tuning::check_input(uint8_t flightmode)
     if ( fabsf(new_value-old_value) > (0.05 * old_value) ) {
         old_value = new_value;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, 
-            "Tuning %s%s%0.4f", 
+            "Tuning: %s%s%0.4f", 
             get_tuning_name(current_parm), 
             ((chan_value < dead_zone) && (chan_value > -dead_zone)) ? "> " : ": ", 
             (double)(new_value));
