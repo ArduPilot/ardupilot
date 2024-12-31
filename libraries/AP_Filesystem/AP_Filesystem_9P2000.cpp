@@ -89,24 +89,29 @@ bool AP_Filesystem_9P2000::create_file(AP_Networking::NineP2000& fs, const char 
     const uint16_t len = strlen(fname);
 
     uint16_t split = 0;
+    bool found = false;
     for (uint16_t i = 0; i < len; i++) {
         if (fname[i] == '/') {
+            found = true;
             split = i;
         }
     }
 
     char name[len + 1] {};
     memcpy(&name, fname, len);
-    name[split] = 0;
+    if (found) {
+        name[split] = 0;
+    }
 
     // Navigate to parent directory
-    const uint32_t fid = get_file_id(fs, name, true);
+    const uint32_t fid = get_file_id(fs, found ? name : "", true);
     if (fid == 0) {
         return false;
     }
 
     // Create the new item
-    const uint16_t tag = fs.request_create(fid, &name[split+1], is_dir);
+    const uint8_t name_state = split + (found ? 1 : 0);
+    const uint16_t tag = fs.request_create(fid, &name[name_state], is_dir);
     if (tag == fs.NOTAG) {
         return false;
     }
@@ -391,8 +396,20 @@ int AP_Filesystem_9P2000::mkdir(const char *pathname)
         return -1;
     }
 
-    errno = EROFS;
-    return -1;
+    // Make sure filesystem is mounted.
+    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    if (!fs.mounted()) {
+        errno = ENODEV;
+        return -1;
+    }
+
+    // Make folder
+    if (!create_file(fs, pathname, true)) {
+        errno = EROFS;
+        return -1;
+    }
+
+    return 0;
 }
 
 void *AP_Filesystem_9P2000::opendir(const char *pathname)
