@@ -83,6 +83,47 @@ uint32_t AP_Filesystem_9P2000::get_file_id(AP_Networking::NineP2000& fs, const c
     return fs.walk_result(tag, is_dir);
 }
 
+bool AP_Filesystem_9P2000::create_file(AP_Networking::NineP2000& fs, const char *fname, bool is_dir)
+{
+    // Copy string a split into path and name
+    const uint16_t len = strlen(fname);
+
+    uint16_t split = 0;
+    for (uint16_t i = 0; i < len; i++) {
+        if (fname[i] == '/') {
+            split = i;
+        }
+    }
+
+    char name[len + 1] {};
+    memcpy(&name, fname, len);
+    name[split] = 0;
+
+    // Navigate to parent directory
+    const uint32_t fid = get_file_id(fs, name, true);
+    if (fid == 0) {
+        return false;
+    }
+
+    // Create the new item
+    const uint16_t tag = fs.request_create(fid, &name[split+1], is_dir);
+    if (tag == fs.NOTAG) {
+        return false;
+    }
+
+    // Wait for the reply
+    if (!wait_for_tag(fs, tag)) {
+        fs.free_file_id(fid);
+        return false;
+    }
+
+    const bool ret = fs.create_result(tag);
+
+    fs.free_file_id(fid);
+
+    return ret;
+}
+
 int AP_Filesystem_9P2000::open(const char *fname, int flags, bool allow_absolute_paths)
 {
     if (hal.scheduler->in_main_thread()) {
@@ -113,12 +154,22 @@ int AP_Filesystem_9P2000::open(const char *fname, int flags, bool allow_absolute
     // Navigate to the given path
     const uint32_t fid = get_file_id(fs, fname, false);
     if (fid == 0) {
+        // Can't get file id if the file does not exist.
+        // If flags are not readonly try and create a new file
+        const bool readonly = (flags & O_ACCMODE) == 0;
+        if (!readonly && create_file(fs, fname, false)) {
+            // Try open again
+            return open(fname, flags, allow_absolute_paths);
+        }
         errno = ENOENT;
         return -1;
     }
 
     // Request stats to get length for seek commands
     const uint16_t tag = fs.request_stat(fid);
+    if (tag == fs.NOTAG) {
+        return -1;
+    }
 
     // Wait for the reply
     if (!wait_for_tag(fs, tag)) {
@@ -301,6 +352,9 @@ int AP_Filesystem_9P2000::stat(const char *name, struct stat *stbuf)
 
     // Request stat
     const uint16_t tag = fs.request_stat(fid);
+    if (tag == fs.NOTAG) {
+        return -1;
+    }
 
     // Wait for the reply
     if (!wait_for_tag(fs, tag)) {
