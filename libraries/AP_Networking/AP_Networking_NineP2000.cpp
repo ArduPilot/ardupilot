@@ -1128,4 +1128,80 @@ bool AP_Networking::NineP2000::remove_result(const uint16_t tag)
     return true;
 }
 
+// Request rename for given id, return tag
+uint16_t AP_Networking::NineP2000::request_rename(const uint32_t id, const char*name)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // ID invalid
+    if (!valid_file_id(id)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return NOTAG;
+    }
+
+    // See if there are any tags free
+    const uint16_t tag = get_free_tag();
+    if (tag == NOTAG) {
+        return NOTAG;
+    }
+
+    // Mark tag as active
+    request[tag].pending = true;
+    request[tag].fileId = id;
+    request[tag].expectedType = Type::Rwstat;
+
+    // Fill in message
+    send.content.header.type = (uint8_t)Type::Twstat;
+    send.content.header.tag = tag;
+    send.content.header.length = sizeof(send.content.header) + sizeof(id);
+    memcpy(&send.content.payload, &id, sizeof(id));
+
+    // Number of stats
+    uint16_t num = 1;
+    memcpy(&send.content.payload[sizeof(id)], &num, sizeof(num));
+    send.content.header.length += sizeof(num);
+
+    // Max values indicate don't change.
+    stat_t stat;
+    memset(&stat, 0xFF, sizeof(stat));
+    send.content.header.length += sizeof(stat);
+
+    // Add new name
+    add_string(send, name);
+
+    // Don't change other names
+    add_string(send, "");
+    add_string(send, "");
+    add_string(send, "");
+
+    sock->send(send.buffer, send.content.header.length);
+
+    return tag;
+}
+
+// Get result of remove
+bool AP_Networking::NineP2000::rename_result(const uint16_t tag)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // Make sure the tag is valid and there is a waiting response
+    if (!tag_response(tag)) {
+        clear_tag(tag);
+        return false;
+    }
+
+    // Should be a remove response
+    Message &msg = request[tag].result;
+    if (msg.content.header.type != (uint8_t)Type::Rwstat) {
+        print_if_error(msg);
+        clear_tag(tag);
+        return false;
+    }
+
+    // Finished with tag
+    clear_tag(tag);
+
+    return true;
+}
+
 #endif // AP_NETWORKING_FILESYSTEM_ENABLED
