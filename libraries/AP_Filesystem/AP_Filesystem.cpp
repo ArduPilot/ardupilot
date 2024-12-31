@@ -201,6 +201,15 @@ int AP_Filesystem::mkdir(const char *pathname)
 int AP_Filesystem::rename(const char *oldpath, const char *newpath)
 {
     const Backend &backend = backend_by_path(oldpath);
+
+    // Don't need the backend again, but we need it to remove the backend pre-fix from the new path.
+    const Backend &backend2 = backend_by_path(newpath);
+
+    // Don't try and rename between backends.
+    if (&backend != &backend2) {
+        return -1;
+    }
+
     return backend.fs.rename(oldpath, newpath);
 }
 
