@@ -58,7 +58,7 @@ private:
     bool wait_for_tag(AP_Networking::NineP2000& fs, const uint16_t tag) const;
 
     // Get the file id for a given name
-    uint32_t get_file_id(AP_Networking::NineP2000& fs, const char *name, const bool is_dir) const;
+    uint32_t get_file_id(AP_Networking::NineP2000& fs, const char *name, const AP_Networking::NineP2000::walkType type) const;
 
     // Create a file or directory with the given name
     bool create_file(AP_Networking::NineP2000& fs, const char *fname, bool is_dir);
