@@ -111,9 +111,7 @@ int AP_Filesystem_FlashMemory_LittleFS::open(const char *pathname, int flags, bo
         .buffer = &fp->mtime,
         .size = sizeof(fp->mtime)
     };
-    // this is a cheat, in theory it could be dynamically allocated but is only used to find the descriptor 
-    // for mtime and we know that's called with a name that doesn't disappear
-    fp->filename = pathname;
+    fp->filename = strdup(pathname);
 
     retval = lfs_file_opencfg(&fs, &fp->file, pathname, lfs_flags_from_flags(flags), &fp->cfg);
 
@@ -268,7 +266,7 @@ bool AP_Filesystem_FlashMemory_LittleFS::set_mtime(const char *filename, const u
     // unfortunately lfs_setattr will not work while the file is open, instead
     // we need to update the file config, but that means finding the file config
     for (int fd = 0; fd < MAX_OPEN_FILES; fd++) {
-        if (open_files[fd] != nullptr && open_files[fd]->filename == filename) {
+        if (open_files[fd] != nullptr && strcmp(open_files[fd]->filename, filename) == 0) {
             open_files[fd]->mtime = mtime_sec;
             return true;
         }
@@ -329,6 +327,8 @@ void *AP_Filesystem_FlashMemory_LittleFS::opendir(const char *pathdir)
     return result;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
 struct dirent *AP_Filesystem_FlashMemory_LittleFS::readdir(void *ptr)
 {
     FS_CHECK_ALLOWED(nullptr);
@@ -341,8 +341,13 @@ struct dirent *AP_Filesystem_FlashMemory_LittleFS::readdir(void *ptr)
         return nullptr;
     }
 
-    if (!lfs_dir_read(&fs, &pair->dir, &info)) {
+    int retval = lfs_dir_read(&fs, &pair->dir, &info);
+    if (retval == 0) {
         /* no more entries */
+        return nullptr;
+    } else if (retval < 0) {
+        // failure
+        errno = errno_from_lfs_error(retval);
         return nullptr;
     }
 
@@ -362,6 +367,7 @@ struct dirent *AP_Filesystem_FlashMemory_LittleFS::readdir(void *ptr)
 
     return &pair->entry;
 }
+#pragma GCC diagnostic pop
 
 int AP_Filesystem_FlashMemory_LittleFS::closedir(void *ptr)
 {
@@ -462,8 +468,9 @@ int AP_Filesystem_FlashMemory_LittleFS::free_fd(int fd)
         return -1;
     }
 
+    free(fp->filename);
     free(fp);
-    open_files[fd] = fp = nullptr;
+    open_files[fd] = nullptr;
 
     return 0;
 }
@@ -473,7 +480,7 @@ void AP_Filesystem_FlashMemory_LittleFS::free_all_fds()
     int fd;
 
     for (fd = 0; fd < MAX_OPEN_FILES; fd++) {
-        if (open_files[fd] == nullptr) {
+        if (open_files[fd] != nullptr) {
             free_fd(fd);
         }
     }
@@ -769,7 +776,8 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     fs_cfg.block_size = flash_block_size * LFS_FLASH_BLOCKS_PER_BLOCK;
     fs_cfg.block_count = flash_block_count / LFS_FLASH_BLOCKS_PER_BLOCK;
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-    fs_cfg.metadata_max = page_size;
+    fs_cfg.metadata_max = page_size * 2;
+    fs_cfg.compact_thresh = fs_cfg.metadata_max * 0.88f;
 #endif
 #else
     // SITL config
@@ -787,6 +795,8 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     }
 #endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL
     fs_cfg.block_cycles = 75000;
+    // cache entire flash state in RAM (8 blocks = 1 byte of storage) to
+    // avoid scanning while logging
     fs_cfg.lookahead_size = fs_cfg.block_count/8;
     fs_cfg.cache_size = 2*fs_cfg.prog_size;
 
@@ -970,7 +980,7 @@ bool AP_Filesystem_FlashMemory_LittleFS::init_flash()
 #else
     if (use_32bit_address) {
         WITH_SEMAPHORE(dev_sem);
-
+        // enter 4-byte address mode
         const uint8_t cmd = 0xB7;
         dev->transfer(&cmd, 1, nullptr, 0);
     }
@@ -1093,8 +1103,6 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_erase(lfs_block_t block) {
         return LFS_ERR_IO;
     }
 
-    EXPECT_DELAY_MS(2 * LFS_FLASH_BLOCKS_PER_BLOCK);
-
     for (lfs_off_t fblock = 0; fblock < LFS_FLASH_BLOCKS_PER_BLOCK; fblock++) {
 
         if (!write_enable()) {
@@ -1102,13 +1110,14 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_erase(lfs_block_t block) {
         }
 
         WITH_SEMAPHORE(dev_sem);
+
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
         send_command_addr(JEDEC_BLOCK_ERASE, lfs_block_to_raw_flash_page_index(block, fblock));
 #else
         send_command_addr(JEDEC_SECTOR4_ERASE, lfs_block_and_offset_to_raw_flash_address(block, 0, fblock));
 #endif
 
-        // sleep so that othher processes get the CPU cycles that the 4ms erase cycle needs.
+        // sleep so that other processes get the CPU cycles that the 4ms erase cycle needs.
         hal.scheduler->delay(4);
     }
 
@@ -1210,7 +1219,7 @@ static int lfs_flags_from_flags(int flags)
     return outflags;
 }
 
-// get_singleton for scripting
+// get_singleton for access from logging layer
 AP_Filesystem_FlashMemory_LittleFS *AP_Filesystem_FlashMemory_LittleFS::get_singleton(void)
 {
     return singleton;

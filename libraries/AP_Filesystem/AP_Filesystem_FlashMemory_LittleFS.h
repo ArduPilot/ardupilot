@@ -65,9 +65,6 @@ public:
     static AP_Filesystem_FlashMemory_LittleFS *get_singleton(void);
 
 private:
-    // JEDEC ID of the flash memory, JEDEC_ID_UNKNOWN if not known or not supported
-    uint32_t jedec_id;
-
     // Semaphore to protect against concurrent accesses to fs
     HAL_Semaphore fs_sem;
 
@@ -94,7 +91,7 @@ private:
         lfs_file_config cfg;
         lfs_attr attrs[1];
         uint32_t mtime;
-        const char* filename;
+        char* filename;
     };
     file_descriptor* open_files[MAX_OPEN_FILES];
 
