@@ -68,6 +68,21 @@ bool AP_Filesystem_9P2000::open_fileId(AP_Networking::NineP2000& fs, const uint3
     return fs.open_result(tag);
 }
 
+// Get file id for a given path, return 0 if fail
+uint32_t AP_Filesystem_9P2000::get_file_id(AP_Networking::NineP2000& fs, const char *name, const bool is_dir) const
+{
+    // Navigate to the given path
+    const uint16_t tag = fs.request_walk(name);
+
+    // Wait for the reply
+    if (!wait_for_tag(fs, tag)) {
+        return 0;
+    }
+
+    // Grab reply, should be none zero
+    return fs.walk_result(tag, is_dir);
+}
+
 int AP_Filesystem_9P2000::open(const char *fname, int flags, bool allow_absolute_paths)
 {
     if (hal.scheduler->in_main_thread()) {
@@ -148,7 +163,35 @@ int AP_Filesystem_9P2000::stat(const char *name, struct stat *stbuf)
         return -1;
     }
 
-    return -1;
+    // Make sure filesystem is mounted.
+    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    if (!fs.mounted()) {
+        errno = ENODEV;
+        return -1;
+    }
+
+    // Navigate to the given path
+    const uint32_t fid = get_file_id(fs, name, false);
+    if (fid == 0) {
+        errno = ENOENT;
+        return -1;
+    }
+
+    // Request stat
+    const uint16_t tag = fs.request_stat(fid);
+
+    // Wait for the reply
+    if (!wait_for_tag(fs, tag)) {
+        return -1;
+    }
+
+    // Get result
+    const int ret = fs.stat_result(tag, stbuf) ? 0 : -1;
+
+    // Return file handle
+    fs.free_file_id(fid);
+
+    return ret;
 }
 
 int AP_Filesystem_9P2000::unlink(const char *pathname)
@@ -212,24 +255,8 @@ void *AP_Filesystem_9P2000::opendir(const char *pathname)
         return nullptr;
     }
 
-    // Special case root, can always open if attached
-    if (strcmp(pathname, "") == 0) {
-        dir[idx].fileId = 0;
-        return (void*)&dir[idx];
-    }
-
-    // Navigate to the given path
-    const uint16_t tag = fs.request_walk(pathname);
-
-    // Wait for the reply
-    if (!wait_for_tag(fs, tag)) {
-        free(dir[idx].path);
-        dir[idx].path = nullptr;
-        return nullptr;
-    }
-
-    // Grab reply, should be none zero
-    const uint32_t fid = fs.dir_walk_result(tag);
+    // File id should be none zero
+    const uint32_t fid = get_file_id(fs, pathname, true);
     if (fid == 0) {
         // walk failed
         free(dir[idx].path);
