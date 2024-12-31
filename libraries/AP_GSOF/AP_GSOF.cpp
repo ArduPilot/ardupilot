@@ -28,7 +28,7 @@ do {                                            \
 #endif
 
 int
-AP_GSOF::parse(const uint8_t temp, const uint8_t n_expected)
+AP_GSOF::parse(const uint8_t temp, MsgTypes& parsed_msgs)
 {
     // https://receiverhelp.trimble.com/oem-gnss/index.html#API_DataCollectorFormatPacketStructure.html
     switch (msg.state) {
@@ -67,11 +67,10 @@ AP_GSOF::parse(const uint8_t temp, const uint8_t n_expected)
         msg.checksum = temp;
         msg.state = Msg_Parser::State::ENDTX;
         if (msg.checksum == msg.checksumcalc) {
-            const auto n_processed = process_message();
-            if (n_processed != n_expected ) {
-                return UNEXPECTED_NUM_GSOF_PACKETS;
+            if (!process_message(parsed_msgs)) {
+                return NO_GSOF_DATA;
             }
-            return n_processed;
+            return PARSED_GSOF_DATA;
         }
         break;
     case Msg_Parser::State::ENDTX:
@@ -83,8 +82,8 @@ AP_GSOF::parse(const uint8_t temp, const uint8_t n_expected)
     return NO_GSOF_DATA;
 }
 
-int
-AP_GSOF::process_message(void)
+bool
+AP_GSOF::process_message(MsgTypes& parsed_msgs)
 {
     if (msg.packettype == 0x40) { // GSOF
         // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_TIME.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____25
@@ -97,12 +96,9 @@ AP_GSOF::process_message(void)
               pageidx, maxpageidx, trans_number);
 #endif
 
-        // This counts up the number of received packets.
-        int valid = 0;
-
-        // want 1 2 8 9 12
         for (uint32_t a = 3; a < msg.length; a++) {
             const uint8_t output_type = msg.data[a];
+            parsed_msgs.set(output_type);
             a++;
             const uint8_t output_length = msg.data[a];
             a++;
@@ -111,23 +107,18 @@ AP_GSOF::process_message(void)
             switch (output_type) {
             case POS_TIME:
                 parse_pos_time(a);
-                valid++;
                 break;
             case POS:
                 parse_pos(a);
-                valid++;
                 break;
             case VEL:
                 parse_vel(a);
-                valid++;
                 break;
             case DOP:
                 parse_dop(a);
-                valid++;
                 break;
             case POS_SIGMA:
                 parse_pos_sigma(a);
-                valid++;
                 break;
             default:
                 break;
@@ -136,11 +127,11 @@ AP_GSOF::process_message(void)
             a += output_length - 1u;
         }
 
-        return valid;
+        return true;
     }
 
     // No GSOF packets.
-    return NO_GSOF_DATA;
+    return false;
 }
 
 void AP_GSOF::parse_pos_time(uint32_t a)
