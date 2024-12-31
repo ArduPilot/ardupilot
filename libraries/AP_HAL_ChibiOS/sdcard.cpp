@@ -26,7 +26,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#ifdef USE_POSIX_FATFS
+#if HAL_USE_FATFS
 static FATFS SDC_FS; // FATFS object
 #ifndef HAL_BOOTLOADER_BUILD
 static HAL_Semaphore sem;
@@ -54,7 +54,7 @@ static SPIConfig highspeed;
  */
 bool sdcard_init()
 {
-#ifdef USE_POSIX_FATFS
+#if HAL_USE_FATFS
 #ifndef HAL_BOOTLOADER_BUILD
     WITH_SEMAPHORE(sem);
 
@@ -150,7 +150,7 @@ bool sdcard_init()
     }
 #endif
     sdcard_running = false;
-#endif  // USE_POSIX_FATFS
+#endif  // HAL_USE_FATFS
     return false;
 }
 
@@ -159,7 +159,7 @@ bool sdcard_init()
  */
 void sdcard_stop(void)
 {
-#ifdef USE_POSIX_FATFS
+#if HAL_USE_FATFS
     // unmount
     f_mount(nullptr, "/", 1);
 #endif
@@ -185,7 +185,7 @@ void sdcard_stop(void)
 
 bool sdcard_retry(void)
 {
-#ifdef USE_POSIX_FATFS
+#if HAL_USE_FATFS
     if (!sdcard_running) {
         if (sdcard_init()) {
 #if AP_FILESYSTEM_FILE_WRITING_ENABLED
