@@ -69,7 +69,7 @@ bool AP_Filesystem_9P2000::open_fileId(AP_Networking::NineP2000& fs, const uint3
 }
 
 // Get file id for a given path, return 0 if fail
-uint32_t AP_Filesystem_9P2000::get_file_id(AP_Networking::NineP2000& fs, const char *name, const bool is_dir) const
+uint32_t AP_Filesystem_9P2000::get_file_id(AP_Networking::NineP2000& fs, const char *name, const AP_Networking::NineP2000::walkType type) const
 {
     // Navigate to the given path
     const uint16_t tag = fs.request_walk(name);
@@ -80,7 +80,7 @@ uint32_t AP_Filesystem_9P2000::get_file_id(AP_Networking::NineP2000& fs, const c
     }
 
     // Grab reply, should be none zero
-    return fs.walk_result(tag, is_dir);
+    return fs.walk_result(tag, type);
 }
 
 bool AP_Filesystem_9P2000::create_file(AP_Networking::NineP2000& fs, const char *fname, bool is_dir)
@@ -104,7 +104,7 @@ bool AP_Filesystem_9P2000::create_file(AP_Networking::NineP2000& fs, const char 
     }
 
     // Navigate to parent directory
-    const uint32_t fid = get_file_id(fs, found ? name : "", true);
+    const uint32_t fid = get_file_id(fs, found ? name : "", AP_Networking::NineP2000::walkType::Directory);
     if (fid == 0) {
         return false;
     }
@@ -157,7 +157,7 @@ int AP_Filesystem_9P2000::open(const char *fname, int flags, bool allow_absolute
     }
 
     // Navigate to the given path
-    const uint32_t fid = get_file_id(fs, fname, false);
+    const uint32_t fid = get_file_id(fs, fname, AP_Networking::NineP2000::walkType::File);
     if (fid == 0) {
         // Can't get file id if the file does not exist.
         // If flags are not readonly try and create a new file
@@ -349,7 +349,7 @@ int AP_Filesystem_9P2000::stat(const char *name, struct stat *stbuf)
     }
 
     // Navigate to the given path
-    const uint32_t fid = get_file_id(fs, name, false);
+    const uint32_t fid = get_file_id(fs, name, AP_Networking::NineP2000::walkType::File);
     if (fid == 0) {
         errno = ENOENT;
         return -1;
@@ -384,8 +384,42 @@ int AP_Filesystem_9P2000::unlink(const char *pathname)
         return -1;
     }
 
-    errno = EROFS;
-    return -1;
+    // Make sure filesystem is mounted.
+    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    if (!fs.mounted()) {
+        errno = ENODEV;
+        return -1;
+    }
+
+    // Navigate to the given path
+    const uint32_t fid = get_file_id(fs, pathname, AP_Networking::NineP2000::walkType::Any);
+    if (fid == 0) {
+        errno = ENOENT;
+        return -1;
+    }
+
+    // Request stat
+    const uint16_t tag = fs.request_remove(fid);
+    if (tag == fs.NOTAG) {
+        return -1;
+    }
+
+    // Wait for the reply
+    if (!wait_for_tag(fs, tag)) {
+        fs.free_file_id(fid);
+        return -1;
+    }
+
+    // Get result
+    const bool ret = fs.remove_result(tag);
+
+    // Return file handle if the remove failed
+    // If remove succeeds then the file id is removed automaticaly.
+    if (!ret) {
+        fs.free_file_id(fid);
+    }
+
+    return ret ? 0 : -1;
 }
 
 int AP_Filesystem_9P2000::mkdir(const char *pathname)
@@ -450,7 +484,7 @@ void *AP_Filesystem_9P2000::opendir(const char *pathname)
     }
 
     // File id should be none zero
-    const uint32_t fid = get_file_id(fs, pathname, true);
+    const uint32_t fid = get_file_id(fs, pathname, AP_Networking::NineP2000::walkType::Directory);
     if (fid == 0) {
         // walk failed
         free(dir[idx].path);
