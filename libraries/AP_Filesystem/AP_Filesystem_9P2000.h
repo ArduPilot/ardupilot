@@ -57,6 +57,9 @@ private:
     // Wait for response, blocking
     bool wait_for_tag(AP_Networking::NineP2000& fs, const uint16_t tag) const;
 
+    // Get the file id for a given name
+    uint32_t get_file_id(AP_Networking::NineP2000& fs, const char *name, const bool is_dir) const;
+
     // only allow up to 4 files at a time
     static constexpr uint8_t max_open_file = 4;
     static constexpr uint8_t max_open_dir = 4;
