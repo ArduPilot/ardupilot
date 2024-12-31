@@ -162,8 +162,7 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 SPIDEV sdcard    SPI2 DEVID3 SD_CS      MODE0 400*KHZ 25*MHZ
 SPIDEV dataflash SPI2 DEVID1 FLASH_CS   MODE3 104*MHZ  104*MHZ
 
-define HAL_OS_LITTLEFS_IO 1
-define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_W25NXX
+DATAFLASH littlefs:w25nxx
 
 # ----------------- I2C compass & Baro -----------------
 # no built-in compass, but probe the i2c bus for all possible

@@ -20,6 +20,10 @@
 #define HAL_OS_LITTLEFS_IO 0
 #endif
 
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 0
+#endif
+
 #ifndef AP_TERRAIN_AVAILABLE
 // enable terrain only if there's an SD card available:
 #define AP_TERRAIN_AVAILABLE (HAL_OS_FATFS_IO || (HAL_OS_LITTLEFS_IO && (BOARD_FLASH_SIZE>1024)))
