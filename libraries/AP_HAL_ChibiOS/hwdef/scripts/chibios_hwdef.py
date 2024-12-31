@@ -118,6 +118,9 @@ class ChibiOSHWDef(object):
         self.baro_list = []
         self.airspeed_list = []
 
+        # dataflash config
+        self.dataflash_list = []
+
         # output lines:
         self.all_lines = []
 
@@ -948,17 +951,24 @@ class ChibiOSHWDef(object):
             f.write('#define HAL_STDOUT_SERIAL %s\n\n' % self.get_config('STDOUT_SERIAL'))
             f.write('// baudrate used for stdout (printf)\n')
             f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % self.get_config('STDOUT_BAUDRATE', type=int))
-        if self.have_type_prefix('SDIO'):
+        if len(self.dataflash_list) > 0:
+            # we only support dataflash OR sdcard, so prioritize dataflash if its been explicitly configured
+            f.write('#define HAL_USE_FATFS FALSE\n\n')
+            f.write('#define HAL_USE_SDC FALSE\n')
+            self.build_flags.append('USE_FATFS=no')
+        elif self.have_type_prefix('SDIO'):
             f.write('// SDIO available, enable POSIX filesystem support\n')
             f.write('#define USE_POSIX\n')
-            f.write('#define USE_POSIX_FATFS\n\n')
+            f.write('#define HAL_OS_POSIX_IO TRUE\n\n')
+            f.write('#define HAL_USE_FATFS TRUE\n\n')
             f.write('#define HAL_USE_SDC TRUE\n')
             self.build_flags.append('USE_FATFS=yes')
             self.env_vars['WITH_FATFS'] = "1"
         elif self.have_type_prefix('SDMMC2'):
             f.write('// SDMMC2 available, enable POSIX filesystem support\n')
             f.write('#define USE_POSIX\n')
-            f.write('#define USE_POSIX_FATFS\n\n')
+            f.write('#define HAL_OS_POSIX_IO TRUE\n\n')
+            f.write('#define HAL_USE_FATFS TRUE\n\n')
             f.write('#define HAL_USE_SDC TRUE\n')
             f.write('#define STM32_SDC_USE_SDMMC2 TRUE\n')
             f.write('#define HAL_USE_SDMMC 1\n')
@@ -967,7 +977,8 @@ class ChibiOSHWDef(object):
         elif self.have_type_prefix('SDMMC'):
             f.write('// SDMMC available, enable POSIX filesystem support\n')
             f.write('#define USE_POSIX\n')
-            f.write('#define USE_POSIX_FATFS\n\n')
+            f.write('#define HAL_USE_FATFS TRUE\n\n')
+            f.write('#define HAL_OS_POSIX_IO TRUE\n\n')
             f.write('#define HAL_USE_SDC TRUE\n')
             f.write('#define STM32_SDC_USE_SDMMC1 TRUE\n')
             f.write('#define HAL_USE_SDMMC 1\n')
@@ -976,20 +987,15 @@ class ChibiOSHWDef(object):
         elif self.has_sdcard_spi():
             f.write('// MMC via SPI available, enable POSIX filesystem support\n')
             f.write('#define USE_POSIX\n')
-            f.write('#define USE_POSIX_FATFS\n\n')
+            f.write('#define HAL_USE_FATFS TRUE\n\n')
+            f.write('#define HAL_OS_POSIX_IO TRUE\n\n')
             f.write('#define HAL_USE_MMC_SPI TRUE\n')
             f.write('#define HAL_USE_SDC FALSE\n')
             f.write('#define HAL_SDCARD_SPI_HOOK TRUE\n')
             self.build_flags.append('USE_FATFS=yes')
             self.env_vars['WITH_FATFS'] = "1"
-        elif self.has_dataflash_spi():
-            f.write('// Dataflash memory via SPI available, enable POSIX filesystem support\n')
-            f.write('#define USE_POSIX\n')
-            f.write('#define USE_POSIX_LITTLEFS\n\n')
-            f.write('#define HAL_USE_SDC FALSE\n')
-            self.build_flags.append('USE_FATFS=no')
-            self.env_vars['WITH_LITTLEFS'] = "1"
         else:
+            f.write('#define HAL_USE_FATFS FALSE\n\n')
             f.write('#define HAL_USE_SDC FALSE\n')
             self.build_flags.append('USE_FATFS=no')
         if 'OTG1' in self.bytype:
@@ -1797,6 +1803,31 @@ INCLUDE common.ld
         if len(devlist) > 0:
             f.write('#define HAL_AIRSPEED_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
+    def write_DATAFLASH_config(self, f):
+        '''write dataflash config defines'''
+        # DATAFLASH block|littlefs:<w25nxx>
+        devlist = []
+        seen = set()
+        for dev in self.dataflash_list:
+            if not self.has_dataflash_spi():
+                self.error("Missing DATAFLASH device: %s" % self.seen_str(dev))
+            if self.seen_str(dev) in seen:
+                self.error("Duplicate DATAFLASH: %s" % self.seen_str(dev))
+            seen.add(self.seen_str(dev))
+            a = dev[0].split(':')
+            if a[0].startswith('block'):
+                if len(a) > 1 and a[1].startswith('w25nxx'):
+                    f.write('#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25NXX')
+                f.write('#define HAL_LOGGING_DATAFLASH_ENABLED TRUE')
+            elif a[0].startswith('littlefs'):
+                f.write('#define USE_POSIX\n')
+                f.write('#define HAL_OS_LITTLEFS_IO TRUE\n')
+                f.write('#define HAL_OS_POSIX_IO TRUE\n')
+                if len(a) > 1 and a[1].startswith('w25nxx'):
+                    f.write('#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_W25NXX')
+                self.build_flags.append('USE_FATFS=no')
+                self.env_vars['WITH_LITTLEFS'] = "1"
+ 
     def write_board_validate_macro(self, f):
         '''write board validation macro'''
         validate_string = ''
@@ -2661,6 +2692,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.write_MAG_config(f)
         self.write_BARO_config(f)
         self.write_AIRSPEED_config(f)
+        self.write_DATAFLASH_config(f)
         self.write_board_validate_macro(f)
         self.write_check_firmware(f)
 
@@ -3088,6 +3120,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.compass_list.append(a[1:])
         elif a[0] == 'BARO':
             self.baro_list.append(a[1:])
+        elif a[0] == 'DATAFLASH':
+            self.dataflash_list.append(a[1:])
         elif a[0] == 'AIRSPEED':
             self.airspeed_list.append(a[1:])
         elif a[0] == 'ROMFS':
@@ -3127,6 +3161,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
                     self.compass_list = []
                 if u == 'BARO':
                     self.baro_list = []
+                if u == 'DATAFLASH':
+                    self.dataflash_list = []
                 if u == 'AIRSPEED':
                     self.airspeed_list = []
                 if u == 'ROMFS':
