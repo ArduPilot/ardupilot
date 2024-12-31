@@ -190,14 +190,11 @@ public:
         // Called when a command is timed out
         void clear_tag(const uint16_t tag);
 
-        // Send a stat command, return tag, NOTAG if failed
-        uint16_t request_stat(const uint32_t fid);
-
         // Walk to a new file or directory, return tag, NOTAG if failed
         uint16_t request_walk(const char* path);
 
-        // Check if the walk result is valid for a directory
-        uint32_t dir_walk_result(const uint16_t tag);
+        // Check if the walk result is valid for a directory or file
+        uint32_t walk_result(const uint16_t tag, const bool dir);
 
         // Return the file id to the server for re-use
         void free_file_id(const uint32_t id);
@@ -214,6 +211,12 @@ public:
         // Fill in a directory item based on the read result, returns none zero if success
         uint32_t dir_read_result(const uint16_t tag, struct dirent &de);
 
+        // Request stat for a given file id, return tag, NOTAG if failed
+        uint16_t request_stat(const uint32_t id);
+
+        // Fill in stat pointer based on result
+        bool stat_result(const uint16_t tag, struct stat *stbuf);
+
         // Magic value for invalid tag
         static constexpr uint16_t NOTAG = 0xFFFF;
 
@@ -221,7 +224,8 @@ public:
         void loop();
         bool connected;
 
-        void update();
+        bool update();
+        void parse(const uint32_t len);
 
         // State of connection process
         enum class State {
@@ -253,7 +257,7 @@ public:
         };
 
         // Static part of stat structure, followed by four variable length strings
-        struct PACKED stat {
+        struct PACKED stat_t {
             uint16_t msg_size;
             uint16_t type;
             uint32_t dev;
@@ -344,22 +348,26 @@ public:
         struct {
             bool active;
             bool pending;
+            Type expectedType;
             uint32_t fileId;
             Message result;
-        } request [8];
+        } request[8];
 
         // Active file IDs, cannot used concurrently
         // 0 is always root and means unused
-        uint32_t fileIds[ARRAY_SIZE(request)];
+        struct {
+            bool active;
+            bool clunked;
+        } fileIds[ARRAY_SIZE(request)];
 
         // Generate a new unique file id
-        uint32_t generate_unique_file_id() const;
-
-        // Add a file ID to the list of those being used, return false if not space available
-        bool add_file_id(const uint32_t fileId);
+        uint32_t generate_unique_file_id();
 
         // Clear a file id now the file has been closed
         void clear_file_id(const uint32_t fileId);
+
+        // Check if a given ID active
+        bool valid_file_id(const uint32_t fileId);
 
         // Return the next available tag, NOTAG is none free
         uint16_t get_free_tag();
