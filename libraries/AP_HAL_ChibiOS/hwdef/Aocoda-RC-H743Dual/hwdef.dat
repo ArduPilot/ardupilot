@@ -218,5 +218,4 @@ define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # enable logging to dataflash
-define HAL_OS_LITTLEFS_IO 1
-define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_W25NXX
+DATAFLASH littlefs:w25nxx

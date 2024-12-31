@@ -585,7 +585,7 @@ void __wrap__free_r(void *rptr, void *ptr)
     return free(ptr);
 }
 
-#ifdef USE_POSIX_FATFS
+#if HAL_USE_FATFS
 /*
   allocation functions for FATFS
  */
@@ -615,7 +615,7 @@ void ff_memfree(void* mblock)
 {
     free(mblock);
 }
-#endif // USE_POSIX_FATFS
+#endif // HAL_USE_FATFS
 
 /*
   return true if a memory region is safe for a DMA operation
