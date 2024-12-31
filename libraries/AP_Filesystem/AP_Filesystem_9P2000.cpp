@@ -91,7 +91,57 @@ int AP_Filesystem_9P2000::open(const char *fname, int flags, bool allow_absolute
         return -1;
     }
 
-    return -1;
+    // Make sure filesystem is mounted.
+    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    if (!fs.mounted()) {
+        errno = ENODEV;
+        return -1;
+    }
+
+    // Find free file object
+    uint8_t idx;
+    for (idx=0; idx<max_open_file; idx++) {
+        if (file[idx].fileId == 0) {
+            break;
+        }
+    }
+    if (idx == max_open_file) {
+        errno = ENFILE;
+        return -1;
+    }
+
+    // Navigate to the given path
+    const uint32_t fid = get_file_id(fs, fname, false);
+    if (fid == 0) {
+        errno = ENOENT;
+        return -1;
+    }
+
+    // Request stats to get length for seek commands
+    const uint16_t tag = fs.request_stat(fid);
+
+    // Wait for the reply
+    if (!wait_for_tag(fs, tag)) {
+        fs.free_file_id(fid);
+        return -1;
+    }
+
+    // Decode stats and open file
+    struct stat stats;
+    if (!fs.stat_result(tag, &stats) || !open_fileId(fs, fid, flags)) {
+        fs.free_file_id(fid);
+        errno = ENOENT;
+        return -1;
+    }
+
+    // Populate file struct
+    file[idx].fileId = fid;
+
+    // Set offset to size if appending
+    file[idx].ofs = (flags & O_APPEND) ? stats.st_size : 0;
+    file[idx].size = stats.st_size;
+
+    return idx;
 }
 
 int AP_Filesystem_9P2000::close(int fd)
@@ -102,7 +152,23 @@ int AP_Filesystem_9P2000::close(int fd)
         return -1;
     }
 
-    return -1;
+    // Check valid file
+    if ((fd < 0) || (fd >= (int)ARRAY_SIZE(file)) || (file[fd].fileId == 0)) {
+        errno = EBADF;
+        return -1;
+    }
+
+    // Make sure filesystem is mounted.
+    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    if (!fs.mounted()) {
+        errno = ENODEV;
+        return -1;
+    }
+
+    // Free ID and clear file object for reused
+    fs.free_file_id(file[fd].fileId);
+    file[fd].fileId = 0;
+    return 0;
 }
 
 int32_t AP_Filesystem_9P2000::read(int fd, void *buf, uint32_t count)
@@ -113,7 +179,34 @@ int32_t AP_Filesystem_9P2000::read(int fd, void *buf, uint32_t count)
         return -1;
     }
 
-    return -1;
+    if ((fd < 0) || (fd >= (int)ARRAY_SIZE(file)) || (file[fd].fileId == 0)) {
+        // Invalid file
+        errno = EBADF;
+        return -1;
+    }
+
+    // Make sure filesystem is mounted.
+    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    if (!fs.mounted()) {
+        errno = ENODEV;
+        return -1;
+    }
+
+    // Send read command
+    const uint16_t tag = fs.request_read(file[fd].fileId, file[fd].ofs, count);
+
+    // Wait for the reply
+    if (!wait_for_tag(fs, tag)) {
+        return -1;
+    }
+
+    const int read = fs.file_read_result(tag, buf);
+    if (read < 0) {
+        return -1;
+    }
+
+    file[fd].ofs += read;
+    return read;
 }
 
 int32_t AP_Filesystem_9P2000::write(int fd, const void *buf, uint32_t count)
@@ -124,12 +217,41 @@ int32_t AP_Filesystem_9P2000::write(int fd, const void *buf, uint32_t count)
         return -1;
     }
 
-    return -1;
+    if ((fd < 0) || (fd >= (int)ARRAY_SIZE(file)) || (file[fd].fileId == 0)) {
+        // Invalid file
+        errno = EBADF;
+        return -1;
+    }
+
+    // Make sure filesystem is mounted.
+    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    if (!fs.mounted()) {
+        errno = ENODEV;
+        return -1;
+    }
+
+    // Send write command
+    const uint16_t tag = fs.request_write(file[fd].fileId, file[fd].ofs, count, buf);
+
+    // Wait for the reply
+    if (!wait_for_tag(fs, tag)) {
+        return -1;
+    }
+
+    const int32_t written = fs.write_result(tag);
+    if (written < 0) {
+        return -1;
+    }
+
+    // Return length written
+    file[fd].ofs += written;
+    file[fd].size = MAX(file[fd].size, file[fd].ofs);
+    return written;
 }
 
 int32_t AP_Filesystem_9P2000::lseek(int fd, int32_t offset, int seek_from)
 {
-    if ((fd < 0) || (fd >= max_open_file) || (file[fd].path == nullptr)) {
+    if ((fd < 0) || (fd >= (int)ARRAY_SIZE(file)) || (file[fd].fileId == 0)) {
         // Invalid file
         errno = EBADF;
         return -1;
@@ -182,6 +304,7 @@ int AP_Filesystem_9P2000::stat(const char *name, struct stat *stbuf)
 
     // Wait for the reply
     if (!wait_for_tag(fs, tag)) {
+        fs.free_file_id(fid);
         return -1;
     }
 

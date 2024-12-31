@@ -64,7 +64,6 @@ private:
     static constexpr uint8_t max_open_file = 4;
     static constexpr uint8_t max_open_dir = 4;
     struct rfile {
-        char *path;
         uint32_t fileId;
         uint32_t size;
         uint32_t ofs;
