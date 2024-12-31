@@ -245,6 +245,12 @@ public:
         // Get remove result
         bool remove_result(const uint16_t tag);
 
+        // Request rename for given id, return tag
+        uint16_t request_rename(const uint32_t id, const char*name);
+
+        // Get rename result
+        bool rename_result(const uint16_t tag);
+
         // Magic value for invalid tag
         static constexpr uint16_t NOTAG = 0xFFFF;
 
