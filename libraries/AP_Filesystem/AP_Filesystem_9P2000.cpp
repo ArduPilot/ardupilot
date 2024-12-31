@@ -110,8 +110,8 @@ bool AP_Filesystem_9P2000::create_file(AP_Networking::NineP2000& fs, const char 
     }
 
     // Create the new item
-    const uint8_t name_state = split + (found ? 1 : 0);
-    const uint16_t tag = fs.request_create(fid, &name[name_state], is_dir);
+    const uint8_t name_start = split + (found ? 1 : 0);
+    const uint16_t tag = fs.request_create(fid, &name[name_start], is_dir);
     if (tag == fs.NOTAG) {
         return false;
     }
@@ -572,7 +572,65 @@ int AP_Filesystem_9P2000::closedir(void *dirp)
 
 int AP_Filesystem_9P2000::rename(const char *oldpath, const char *newpath)
 {
-    return -1;
+    if (hal.scheduler->in_main_thread()) {
+        // Too slow for the main thread
+        errno = MAIN_THREAD_ERROR;
+        return -1;
+    }
+
+    // Make sure filesystem is mounted.
+    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    if (!fs.mounted()) {
+        errno = ENODEV;
+        return -1;
+    }
+
+    // Should have a common path.
+    const uint16_t oldlen = strlen(oldpath);
+    const uint16_t newlen = strlen(newpath);
+
+    uint16_t common = 0;
+    uint16_t split = 0;
+    bool found_split = false;
+    for (uint16_t i = 0; i < MIN(oldlen, newlen); i++) {
+        if (oldpath[i] == newpath[i]) {
+            common = i;
+        }
+        if ((oldpath[i] == '/') || (newpath[i] == '/')) {
+            found_split = true;
+            split = i;
+        }
+    }
+
+    // Path must be common, only name different
+    if (found_split && (common < split)) {
+        errno = EPERM;
+        return -1;
+    }
+
+    // Navigate to the given path
+    const uint32_t fid = get_file_id(fs, oldpath, AP_Networking::NineP2000::walkType::Any);
+    if (fid == 0) {
+        errno = ENOENT;
+        return -1;
+    }
+
+    // Request rename, pass new name
+    const uint8_t name_start = split + (found_split ? 1 : 0);
+    const uint16_t tag = fs.request_rename(fid, &newpath[name_start]);
+    if (tag == fs.NOTAG) {
+        return -1;
+    }
+
+    // Wait for the reply
+    if (!wait_for_tag(fs, tag)) {
+        fs.free_file_id(fid);
+        return -1;
+    }
+
+    fs.free_file_id(fid);
+
+    return fs.rename_result(tag) ? 0 : -1;
 }
 
 // set modification time on a file
