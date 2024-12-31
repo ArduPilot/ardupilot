@@ -556,7 +556,7 @@ void AP_Networking::NineP2000::print_if_error(Message &msg)
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "9P2000: error: %s", (char*)&msg.content.payload[sizeof(len)]);
 }
 
-uint32_t AP_Networking::NineP2000::walk_result(const uint16_t tag, const bool dir)
+uint32_t AP_Networking::NineP2000::walk_result(const uint16_t tag, const walkType type)
 {
     WITH_SEMAPHORE(request_sem);
 
@@ -581,7 +581,7 @@ uint32_t AP_Networking::NineP2000::walk_result(const uint16_t tag, const bool di
         const uint32_t fileId = request[tag].fileId;
         clear_tag(tag);
         // Root must be a dir
-        if (!dir) {
+        if (type != walkType::Directory) {
             free_file_id(fileId);
             return 0;
         }
@@ -597,16 +597,19 @@ uint32_t AP_Networking::NineP2000::walk_result(const uint16_t tag, const bool di
         return 0;
     }
 
-    // Read in last id
-    const qid_t &qid = (qid_t&)msg.content.payload[id_offset];
-
     // Expecting the correct type
-    const uint8_t expected_type = dir ? qidType::QTDIR : qidType::QTFILE;
     const uint32_t fileId = request[tag].fileId;
-    if (qid.type != expected_type) {
-        clear_tag(tag);
-        free_file_id(fileId);
-        return 0;
+    if (type != walkType::Any) {
+
+        // Read in last id
+        const qid_t &qid = (qid_t&)msg.content.payload[id_offset];
+
+        const uint8_t expected_type = (type == walkType::Directory) ? qidType::QTDIR : qidType::QTFILE;
+        if (qid.type != expected_type) {
+            clear_tag(tag);
+            free_file_id(fileId);
+            return 0;
+        }
     }
 
     // success, return id
@@ -1056,6 +1059,64 @@ bool AP_Networking::NineP2000::create_result(const uint16_t tag)
     // Should be a create response
     Message &msg = request[tag].result;
     if (msg.content.header.type != (uint8_t)Type::Rcreate) {
+        print_if_error(msg);
+        clear_tag(tag);
+        return false;
+    }
+
+    // Finished with tag
+    clear_tag(tag);
+
+    return true;
+}
+
+// Request remove for given id, return tag
+uint16_t AP_Networking::NineP2000::request_remove(const uint32_t id)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // ID invalid
+    if (!valid_file_id(id)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return NOTAG;
+    }
+
+    // See if there are any tags free
+    const uint16_t tag = get_free_tag();
+    if (tag == NOTAG) {
+        return NOTAG;
+    }
+
+    // Mark tag as active
+    request[tag].pending = true;
+    request[tag].fileId = id;
+    request[tag].expectedType = Type::Rremove;
+
+    // Fill in message
+    send.content.header.type = (uint8_t)Type::Tremove;
+    send.content.header.tag = tag;
+    send.content.header.length = sizeof(send.content.header) + sizeof(id);
+    memcpy(&send.content.payload, &id, sizeof(id));
+
+    sock->send(send.buffer, send.content.header.length);
+
+    return tag;
+}
+
+// Get result of remove
+bool AP_Networking::NineP2000::remove_result(const uint16_t tag)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // Make sure the tag is valid and there is a waiting response
+    if (!tag_response(tag)) {
+        clear_tag(tag);
+        return false;
+    }
+
+    // Should be a remove response
+    Message &msg = request[tag].result;
+    if (msg.content.header.type != (uint8_t)Type::Rremove) {
         print_if_error(msg);
         clear_tag(tag);
         return false;

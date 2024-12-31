@@ -193,8 +193,15 @@ public:
         // Walk to a new file or directory, return tag, NOTAG if failed
         uint16_t request_walk(const char* path);
 
+        // Destination of walk
+        enum walkType {
+            File,
+            Directory,
+            Any,
+        };
+
         // Check if the walk result is valid for a directory or file
-        uint32_t walk_result(const uint16_t tag, const bool dir);
+        uint32_t walk_result(const uint16_t tag, const walkType type);
 
         // Return the file id to the server for re-use
         void free_file_id(const uint32_t id);
@@ -231,6 +238,12 @@ public:
 
         // Get create result
         bool create_result(const uint16_t tag);
+
+        // Request remove for given id, return tag
+        uint16_t request_remove(const uint32_t id);
+
+        // Get remove result
+        bool remove_result(const uint16_t tag);
 
         // Magic value for invalid tag
         static constexpr uint16_t NOTAG = 0xFFFF;
