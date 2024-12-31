@@ -211,11 +211,20 @@ public:
         // Fill in a directory item based on the read result, returns none zero if success
         uint32_t dir_read_result(const uint16_t tag, struct dirent &de);
 
+        // Return the number of bytes read, -1 for error
+        int32_t file_read_result(const uint16_t tag, void *buf);
+
         // Request stat for a given file id, return tag, NOTAG if failed
         uint16_t request_stat(const uint32_t id);
 
         // Fill in stat pointer based on result
         bool stat_result(const uint16_t tag, struct stat *stbuf);
+
+        // Request write for given file id, return tag
+        uint16_t request_write(const uint32_t id, const uint64_t offset, uint32_t count, const void *buf);
+
+        // Return the number of bytes written, -1 for error
+        int32_t write_result(const uint16_t tag);
 
         // Magic value for invalid tag
         static constexpr uint16_t NOTAG = 0xFFFF;
