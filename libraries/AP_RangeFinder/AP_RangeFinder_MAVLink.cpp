@@ -67,9 +67,9 @@ float AP_RangeFinder_MAVLink::min_distance() const
         return baseclass_min_distance;
     }
 
-    // return the smaller of the base class's distance and what we
+    // return the larger of the base class's distance and what we
     // receive from the network:
-    return MIN(baseclass_min_distance, _min_distance);
+    return MAX(baseclass_min_distance, _min_distance);
 }
 
 /*
