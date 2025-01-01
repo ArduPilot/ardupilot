@@ -1918,7 +1918,7 @@ void RC_Channel::init_aux()
         position = AuxSwitchPos::LOW;
     }
 
-    run_aux_function((AUX_FUNC)option.get(), position, AuxFuncTrigger::Source::INIT, ch_in);
+    init_aux_function((AUX_FUNC)option.get(), position);
 }
 
 // read_3pos_switch
