@@ -67,14 +67,17 @@ template float safe_asin<short>(const short v);
 template float safe_asin<float>(const float v);
 template float safe_asin<double>(const double v);
 
+// sqrt which takes any type and returns 0 if the input is NaN or less than zero
 template <typename T>
 float safe_sqrt(const T v)
 {
-    float ret = sqrtf(static_cast<float>(v));
-    if (isnan(ret)) {
-        return 0;
+    // cast before checking so we sqrtf the same value we check
+    const float val = static_cast<float>(v);
+    // use IEEE-754 compliant function which returns false if val is NaN
+    if (isgreaterequal(val, 0)) {
+        return sqrtf(val);
     }
-    return ret;
+    return 0;
 }
 
 template float safe_sqrt<int>(const int v);
