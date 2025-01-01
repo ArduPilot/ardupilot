@@ -75,6 +75,9 @@ public:
     // dynamic pressure in Pascal. Divide by 100 for millibars or hectopascals
     const Vector3f& get_dynamic_pressure(uint8_t instance) const { return sensors[instance].dynamic_pressure; }
 #endif
+#if AP_BARO_THST_COMP_ENABLED
+    float get_corrected_pressure(uint8_t instance) const { return sensors[instance].corrected_pressure; }
+#endif
 
     // temperature in degrees C
     float get_temperature(void) const { return get_temperature(_primary); }
@@ -299,6 +302,10 @@ private:
         WindCoeff wind_coeff;
         Vector3f dynamic_pressure;      // calculated dynamic pressure
 #endif
+#if AP_BARO_THST_COMP_ENABLED
+        AP_Float mot_scale;             // thrust-based pressure scaling
+        float corrected_pressure;
+#endif
     } sensors[BARO_MAX_INSTANCES];
 
     AP_Float                            _alt_offset;
@@ -340,7 +347,9 @@ private:
     */
     float wind_pressure_correction(uint8_t instance);
 #endif
-
+#if AP_BARO_THST_COMP_ENABLED
+    float thrust_pressure_correction(uint8_t instance);
+#endif
     // Logging function
     void Write_Baro(void);
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
