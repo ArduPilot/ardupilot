@@ -73,3 +73,7 @@
 #ifndef HAL_MONITOR_THREAD_ENABLED
 #define HAL_MONITOR_THREAD_ENABLED 0
 #endif
+
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 0
+#endif
