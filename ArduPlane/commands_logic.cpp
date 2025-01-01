@@ -382,9 +382,6 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
     // zero locked course
     steer_state.locked_course_err = 0;
     steer_state.hold_course_cd = -1;
-#if MODE_AUTOLAND_ENABLED
-    takeoff_state.initial_direction.initialized = false;
-#endif
     auto_state.baro_takeoff_alt = barometer.get_altitude();
 }
 
@@ -559,11 +556,6 @@ bool Plane::verify_takeoff()
             gps.ground_speed() > min_gps_speed &&
             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
             auto_state.takeoff_speed_time_ms = millis();
-#if MODE_AUTOLAND_ENABLED
-            plane.takeoff_state.initial_direction.heading = wrap_360(plane.gps.ground_course() + plane.mode_autoland.landing_dir_off);
-            takeoff_state.initial_direction.initialized = true;
-            gcs().send_text(MAV_SEVERITY_INFO, "Autoland direction= %u",int(takeoff_state.initial_direction.heading));
-#endif
         }
         if (auto_state.takeoff_speed_time_ms != 0 &&
             millis() - auto_state.takeoff_speed_time_ms >= 2000) {
@@ -1172,11 +1164,14 @@ bool Plane::verify_loiter_heading(bool init)
         return true;
     }
 #endif
-
     //Get the lat/lon of next Nav waypoint after this one:
     AP_Mission::Mission_Command next_nav_cmd;
+    bool in_autoland_mode = false;
+#if MODE_AUTOLAND_ENABLED
+    in_autoland_mode = plane.control_mode-> mode_number() == Mode::Number::AUTOLAND;
+#endif
     if (! mission.get_next_nav_cmd(mission.get_current_nav_index() + 1,
-                                   next_nav_cmd)) {
+                                   next_nav_cmd) && !in_autoland_mode) {
         //no next waypoint to shoot for -- go ahead and break out of loiter
         return true;
     }
@@ -1185,6 +1180,11 @@ bool Plane::verify_loiter_heading(bool init)
         loiter.sum_cd = 0;
     }
 
+#if MODE_AUTOLAND_ENABLED
+    if (plane.control_mode-> mode_number() == Mode::Number::AUTOLAND){
+        return plane.mode_loiter.isHeadingLinedUp( plane.mode_autoland.loiter_WP,plane.mode_autoland.land_start_WP);
+    } 
+#endif
     return plane.mode_loiter.isHeadingLinedUp(next_WP_loc, next_nav_cmd.content.location);
 }
 
