@@ -630,13 +630,47 @@ int AP_Filesystem_9P2000::rename(const char *oldpath, const char *newpath)
 
     fs.free_file_id(fid);
 
-    return fs.rename_result(tag) ? 0 : -1;
+    return fs.stat_update_result(tag) ? 0 : -1;
 }
 
 // set modification time on a file
 bool AP_Filesystem_9P2000::set_mtime(const char *filename, const uint32_t mtime_sec)
 {
-    return false;
+    if (hal.scheduler->in_main_thread()) {
+        // Too slow for the main thread
+        errno = MAIN_THREAD_ERROR;
+        return false;
+    }
+
+    // Make sure filesystem is mounted.
+    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    if (!fs.mounted()) {
+        errno = ENODEV;
+        return false;
+    }
+
+    // Navigate to the given path
+    const uint32_t fid = get_file_id(fs, filename, AP_Networking::NineP2000::walkType::Any);
+    if (fid == 0) {
+        errno = ENOENT;
+        return false;
+    }
+
+    // Request update, pass new time
+    const uint16_t tag = fs.request_set_mtime(fid, mtime_sec);
+    if (tag == fs.NOTAG) {
+        return -1;
+    }
+
+    // Wait for the reply
+    if (!wait_for_tag(fs, tag)) {
+        fs.free_file_id(fid);
+        return -1;
+    }
+
+    fs.free_file_id(fid);
+
+    return fs.stat_update_result(tag);
 }
 
 #endif // AP_FILESYSTEM_P92000_ENABLED
