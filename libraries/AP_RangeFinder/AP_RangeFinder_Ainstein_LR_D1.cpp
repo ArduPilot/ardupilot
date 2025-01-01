@@ -111,23 +111,26 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
 #if AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
 void AP_RangeFinder_Ainstein_LR_D1::report_malfunction(const uint8_t _malfunction_alert_, const uint8_t _malfunction_alert_prev_)
 {
-    // _malfunction_alert_ _malfunction_alert_prev_
-    // 0 0 : not message
-    // 1 0 : message
-    // 0 1 : not message
-    // 1 1 : not message
-    const uint8_t alert = _malfunction_alert_ & (_malfunction_alert_ ^ _malfunction_alert_prev_);
-    if (alert & static_cast<uint8_t>(MalfunctionAlert::Temperature)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RangeFinder: Temperature alert");
-    }
-    if (alert & static_cast<uint8_t>(MalfunctionAlert::Voltage)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RangeFinder: Voltage alert");
-    }    
-    if (alert & static_cast<uint8_t>(MalfunctionAlert::IFSignalSaturation)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RangeFinder: IF signal saturation alert");
-    }
-    if (alert & static_cast<uint8_t>(MalfunctionAlert::AltitudeReading)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RangeFinder: Altitude reading overflow alert");
+    static const struct {
+        MalfunctionAlert bit;
+        const char *name;
+    } alerts[] {
+        { MalfunctionAlert::Temperature, "Temperature" },
+        { MalfunctionAlert::Voltage, "Voltage" },
+        { MalfunctionAlert::IFSignalSaturation, "IF signal saturation" },
+        { MalfunctionAlert::AltitudeReading, "Attitude reading overflow" },
+    };
+
+    for (const auto &alert : alerts) {
+        if ((_malfunction_alert_ & uint8_t(alert.bit)) == 0) {
+            // alert not current
+            continue;
+        }
+        if ((_malfunction_alert_prev_ & uint8_t(alert.bit)) != 0) {
+            // alert is not new
+            continue;
+        }
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RangeFinder: %s alert", alert.name);
     }
 }
 #endif // AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
