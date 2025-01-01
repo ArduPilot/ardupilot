@@ -231,7 +231,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 #if HAL_BARO_THST_COMP_ENABLED
     // @Param: 1_THST_SCALE
     // @DisplayName: Thrust compensation
-    // @Description: User provided thrust scaling. This is used to adjust for local pressure difference induced by the props.
+    // @Description: User provided thrust scaling in Pascals. This is used to adjust linearly based on the thrust output for local pressure difference induced by the props.
     // @Range: -300 300
     // @User: Advanced
     AP_GROUPINFO("1_THST_SCALE", 25, AP_Baro, sensors[0].mot_scale, 0),
@@ -239,7 +239,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 #if BARO_MAX_INSTANCES > 1
     // @Param: 2_THST_SCALE
     // @DisplayName: Thrust compensation
-    // @Description: User provided thrust scaling. This is used to adjust for local pressure difference induced by the props.
+    // @Description: User provided thrust scaling in Pascals. This is used to adjust linearly based on the thrust output for local pressure difference induced by the props.
     // @Range: -300 300
     // @User: Advanced
     AP_GROUPINFO("2_THST_SCALE", 26, AP_Baro, sensors[1].mot_scale, 0),
@@ -247,7 +247,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 #if BARO_MAX_INSTANCES > 2
     // @Param: 3_THST_SCALE
     // @DisplayName: Thrust compensation
-    // @Description: User provided thrust scaling. This is used to adjust for local pressure difference induced by the props.
+    // @Description: User provided thrust scaling in Pascals. This is used to adjust linearly based on the thrust output for local pressure difference induced by the props.
     // @Range: -300 300
     // @User: Advanced
     AP_GROUPINFO("3_THST_SCALE", 27, AP_Baro, sensors[2].mot_scale, 0),

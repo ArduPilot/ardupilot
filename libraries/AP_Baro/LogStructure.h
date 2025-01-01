@@ -18,7 +18,8 @@
 // @Field: SMS: time last sample was taken
 // @Field: Offset: raw adjustment of barometer altitude, zeroed on calibration, possibly set by GCS
 // @Field: GndTemp: temperature on ground, specified by parameter or measured while on ground
-// @Field: Health: true if barometer is considered healthy
+// @Field: H: true if barometer is considered healthy
+// @Field: CPress: compensated atmospheric pressure
 struct PACKED log_BARO {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -55,7 +56,7 @@ struct PACKED log_BARD {
     { LOG_BARO_MSG, sizeof(log_BARO),                                   \
             "BARO",                                                     \
             "Q"       "B"  "f"    "f"        "f"      "c"     "f"    "I"    "f"       "f"        "B"      "f", \
-            "TimeUS," "I," "Alt," "AltAMSL," "Press," "Temp," "CRt," "SMS," "Offset," "GndTemp," "Hlth,"  "CPress", \
+            "TimeUS," "I," "Alt," "AltAMSL," "Press," "Temp," "CRt," "SMS," "Offset," "GndTemp," "H,"     "CPress", \
             "s"       "#"  "m"    "m"        "P"      "O"     "n"    "s"    "m"       "O"        "-"      "P", \
             "F"       "-"  "0"    "0"        "0"      "B"     "0"    "C"    "?"       "0"        "-"      "0", \
             true                                                        \
