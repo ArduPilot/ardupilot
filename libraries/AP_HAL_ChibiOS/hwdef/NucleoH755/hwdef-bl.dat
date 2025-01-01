@@ -13,7 +13,6 @@ define SMPS_PWR
 # board ID for firmware load
 APJ_BOARD_ID 139
 
-# the nucleo seems to have trouble with flashing the last sector?
 FLASH_SIZE_KB 2048
 
 # the location where the bootloader will put the firmware
