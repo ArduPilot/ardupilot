@@ -142,7 +142,12 @@
 #define HAL_USE_OCTOSPI (HAL_USE_OCTOSPI1 || HAL_USE_OCTOSPI2)
 
 #ifndef HAL_INS_RATE_LOOP
-#if defined(STM32H7) || defined(STM32F7)
+#if defined(STM32H7) || defined(STM32F7) || (defined(STM32F4) && INS_MAX_INSTANCES == 1)
+/* F405 tested successfully with:
+   INS_GYRO_RATE = 1 (2kHz)
+   SCHED_LOOP_RATE = 200
+   FSTRATE_DIV = 2 (1kHz)
+   SERVO_DSHOT_RATE = 1 (1kHz)*/
 #define HAL_INS_RATE_LOOP 1
 #else
 #define HAL_INS_RATE_LOOP 0
