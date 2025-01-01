@@ -21,6 +21,7 @@ void AP_Baro::Write_Baro_instance(uint64_t time_us, uint8_t baro_instance)
         drift_offset  : get_baro_drift_offset(),
         ground_temp   : get_ground_temperature(),
         healthy       : (uint8_t)healthy(baro_instance),
+        corrected_pressure : get_corrected_pressure(baro_instance),
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 #if HAL_BARO_WIND_COMP_ENABLED
