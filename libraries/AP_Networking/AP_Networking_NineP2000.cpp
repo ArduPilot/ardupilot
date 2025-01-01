@@ -1179,8 +1179,8 @@ uint16_t AP_Networking::NineP2000::request_rename(const uint32_t id, const char*
     return tag;
 }
 
-// Get result of remove
-bool AP_Networking::NineP2000::rename_result(const uint16_t tag)
+// Get result of rename and mtime set
+bool AP_Networking::NineP2000::stat_update_result(const uint16_t tag)
 {
     WITH_SEMAPHORE(request_sem);
 
@@ -1202,6 +1202,58 @@ bool AP_Networking::NineP2000::rename_result(const uint16_t tag)
     clear_tag(tag);
 
     return true;
+}
+
+// Request mtime update for given id, return tag
+uint16_t AP_Networking::NineP2000::request_set_mtime(const uint32_t id, const uint32_t mtime)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // ID invalid
+    if (!valid_file_id(id)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return NOTAG;
+    }
+
+    // See if there are any tags free
+    const uint16_t tag = get_free_tag();
+    if (tag == NOTAG) {
+        return NOTAG;
+    }
+
+    // Mark tag as active
+    request[tag].pending = true;
+    request[tag].fileId = id;
+    request[tag].expectedType = Type::Rwstat;
+
+    // Fill in message
+    send.content.header.type = (uint8_t)Type::Twstat;
+    send.content.header.tag = tag;
+    send.content.header.length = sizeof(send.content.header) + sizeof(id);
+    memcpy(&send.content.payload, &id, sizeof(id));
+
+    // Number of stats
+    uint16_t num = 1;
+    memcpy(&send.content.payload[sizeof(id)], &num, sizeof(num));
+    send.content.header.length += sizeof(num);
+
+    // Max values indicate don't change.
+    stat_t stat;
+    memset(&stat, 0xFF, sizeof(stat));
+    send.content.header.length += sizeof(stat);
+
+    // Set mtime
+    stat.mtime = mtime;
+
+    // Don't change names
+    add_string(send, "");
+    add_string(send, "");
+    add_string(send, "");
+    add_string(send, "");
+
+    sock->send(send.buffer, send.content.header.length);
+
+    return tag;
 }
 
 #endif // AP_NETWORKING_FILESYSTEM_ENABLED
