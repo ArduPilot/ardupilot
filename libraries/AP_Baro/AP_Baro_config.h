@@ -103,3 +103,7 @@
 // this allows for using the simple model with the --ekf-single configure option
 #define AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED HAL_WITH_EKF_DOUBLE || AP_SIM_ENABLED
 #endif
+
+#ifndef AP_BARO_THST_COMP_ENABLED
+#define AP_BARO_THST_COMP_ENABLED 0
+#endif
