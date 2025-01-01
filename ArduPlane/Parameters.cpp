@@ -170,7 +170,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TKOFF_OPTIONS
     // @DisplayName: Takeoff options
     // @Description: This selects the mode of the takeoff in AUTO and TAKEOFF flight modes. 
-    // @Bitmask: 0: When unset the maximum allowed throttle is always used (THR_MAX or TKOFF_THR_MAX) during takeoff. When set TECS is allowed to operate between a minimum (THR_MIN or TKOFF_THR_MIN) and a maximum (THR_MAX or TKOFF_THR_MAX) limit. Applicable only when using an airspeed sensor.
+    // @Bitmask: 0: When unset the maximum allowed throttle is always used (THR_MAX or TKOFF_THR_MAX) during takeoff. When set TECS is allowed to operate between a minimum (THR_MIN or TKOFF_THR_MIN) and a maximum (THR_MAX or TKOFF_THR_MAX) limit. Applicable only when using an airspeed sensor., 1: When set if there is a healthy compass in use the compass heading will be captured at arming and used for the AUTOLAND mode's initial takeoff direction instead of capturing ground course in NAV_TAKEOFF or Mode TAKEOFF or other modes.
     // @User: Advanced
     ASCALAR(takeoff_options,               "TKOFF_OPTIONS",       0),
     

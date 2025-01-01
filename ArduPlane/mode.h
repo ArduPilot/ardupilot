@@ -156,6 +156,11 @@ public:
 
     // true if voltage correction should be applied to throttle
     virtual bool use_battery_compensation() const;
+ 
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    virtual bool allows_autoland_direction_capture() const { return false; }
+#endif
 
 #if AP_QUICKTUNE_ENABLED
     // does this mode support VTOL quicktune?
@@ -261,6 +266,11 @@ public:
     bool verify_altitude_wait(const AP_Mission::Mission_Command& cmd);
 
     void run() override;
+
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
 
 #if AP_PLANE_GLIDER_PULLUP_ENABLED
     bool in_pullup() const { return pullup.in_pullup(); }
@@ -449,6 +459,11 @@ public:
     // true if voltage correction should be applied to throttle
     bool use_battery_compensation() const override { return false; }
 
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
+
 };
 
 
@@ -494,6 +509,11 @@ public:
     void update() override;
 
     void run() override;
+
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
 
 private:
     void stabilize_stick_mixing_direct();
@@ -551,6 +571,11 @@ public:
     bool mode_allows_autotuning() const override { return true; }
 
     void run() override;
+
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
 
 };
 
@@ -788,6 +813,11 @@ public:
     bool is_vtol_man_throttle() const override { return true; }
     virtual bool is_vtol_man_mode() const override { return true; }
 
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
+
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
@@ -843,6 +873,11 @@ public:
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
 
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
