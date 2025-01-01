@@ -56,6 +56,9 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#if AP_BARO_THST_COMP_ENABLED
+#include <AP_Motors/AP_Motors.h>
+#endif
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
@@ -253,7 +256,15 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 24, AP_Baro, _options, 0),
 #endif
-    
+
+#if AP_BARO_THST_COMP_ENABLED
+    // @Param: 1_THST_SCALE
+    // @DisplayName: Thrust compensation
+    // @Description: Thrust scaling in Pascals. This value scaled by the normalized thrust is subtracted from the barometer pressure. This is used to adjust linearly based on the thrust output for local pressure difference induced by the props.
+    // @Range: -300 300
+    // @User: Advanced
+    AP_GROUPINFO("1_THST_SCALE", 25, AP_Baro, sensors[0].mot_scale, 0),
+#endif  // AP_BARO_THST_COMP_ENABLED
     AP_GROUPEND
 };
 
@@ -872,6 +883,12 @@ void AP_Baro::update(void)
 #if HAL_BARO_WIND_COMP_ENABLED
                 corrected_pressure -= wind_pressure_correction(i);
 #endif
+#if AP_BARO_THST_COMP_ENABLED
+                corrected_pressure -= thrust_pressure_correction(i);
+#endif
+#if (HAL_BARO_WIND_COMP_ENABLED || AP_BARO_THST_COMP_ENABLED)
+                sensors[i].corrected_pressure = corrected_pressure;
+#endif
                 altitude = get_altitude_difference(sensors[i].ground_pressure, corrected_pressure);
 
                 // the ground pressure is references against the field elevation
@@ -987,6 +1004,22 @@ void AP_Baro::update_field_elevation(void)
 #endif
 }
 
+#if AP_BARO_THST_COMP_ENABLED
+// scale the baro linearly with thrust
+float AP_Baro::thrust_pressure_correction(uint8_t instance)
+{
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_COPTER_OR_HELI
+    const AP_Motors* motors = AP::motors();
+    if (motors == nullptr) {
+         return 0.0f;
+    }
+    const float motors_throttle = MAX(0,motors->get_throttle_out());
+    return sensors[instance].mot_scale * motors_throttle;
+#else
+    return 0.0f;
+#endif
+}
+#endif
 
 /* register a new sensor, claiming a sensor slot. If we are out of
    slots it will panic
