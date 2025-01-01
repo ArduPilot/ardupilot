@@ -4241,17 +4241,28 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def AutoLandMode(self):
         '''Test AUTOLAND mode'''
+        self.set_parameters({
+            "AUTOLAND_DIR_OFF": 45,
+        })
         self.customise_SITL_commandline(["--home", "-35.362938,149.165085,585,173"])
         self.context_collect('STATUSTEXT')
         self.takeoff(alt=80, mode='TAKEOFF')
         self.wait_text("Autoland direction", check_context=True)
         self.change_mode(26)
         self.wait_disarmed(120)
-        self.progress("Check the landed heading matches takeoff")
-        self.wait_heading(173, accuracy=5, timeout=1)
-        loc = mavutil.location(-35.362938, 149.165085, 585, 173)
+        self.progress("Check the landed heading matches takeoff plus offset")
+        self.wait_heading(218, accuracy=5, timeout=1)
+        loc = mavutil.location(-35.362938, 149.165085, 585, 218)
         if self.get_distance(loc, self.mav.location()) > 35:
             raise NotAchievedException("Did not land close to home")
+        self.set_parameters({
+            "TKOFF_OPTIONS": 2,
+        })
+        self.wait_ready_to_arm()
+        self.set_autodisarm_delay(0)
+        self.arm_vehicle()
+        self.progress("Check the set dir on arm option")
+        self.wait_text("Autoland direction", check_context=True)
 
     def RCDisableAirspeedUse(self):
         '''Test RC DisableAirspeedUse option'''
