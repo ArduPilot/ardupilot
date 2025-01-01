@@ -56,6 +56,9 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#if HAL_BARO_THST_COMP_ENABLED
+#include <AP_Motors/AP_Motors.h>
+#endif
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
@@ -222,6 +225,32 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Group: 3_WCF_
     // @Path: AP_Baro_Wind.cpp
     AP_SUBGROUPINFO(sensors[2].wind_coeff, "3_WCF_", 20, AP_Baro, WindCoeff),
+#endif
+#endif  // HAL_BARO_WIND_COMP_ENABLED
+
+#if HAL_BARO_THST_COMP_ENABLED
+    // @Param: 1_THST_SCALE
+    // @DisplayName: Thrust compensation
+    // @Description: User provided thrust scaling in Pascals. This is used to adjust linearly based on the thrust output for local pressure difference induced by the props.
+    // @Range: -300 300
+    // @User: Advanced
+    AP_GROUPINFO("1_THST_SCALE", 25, AP_Baro, sensors[0].mot_scale, 0),
+
+#if BARO_MAX_INSTANCES > 1
+    // @Param: 2_THST_SCALE
+    // @DisplayName: Thrust compensation
+    // @Description: User provided thrust scaling in Pascals. This is used to adjust linearly based on the thrust output for local pressure difference induced by the props.
+    // @Range: -300 300
+    // @User: Advanced
+    AP_GROUPINFO("2_THST_SCALE", 26, AP_Baro, sensors[1].mot_scale, 0),
+#endif
+#if BARO_MAX_INSTANCES > 2
+    // @Param: 3_THST_SCALE
+    // @DisplayName: Thrust compensation
+    // @Description: User provided thrust scaling in Pascals. This is used to adjust linearly based on the thrust output for local pressure difference induced by the props.
+    // @Range: -300 300
+    // @User: Advanced
+    AP_GROUPINFO("3_THST_SCALE", 27, AP_Baro, sensors[2].mot_scale, 0),
 #endif
 #endif  // HAL_BARO_WIND_COMP_ENABLED
 
@@ -872,6 +901,10 @@ void AP_Baro::update(void)
 #if HAL_BARO_WIND_COMP_ENABLED
                 corrected_pressure -= wind_pressure_correction(i);
 #endif
+#if HAL_BARO_THST_COMP_ENABLED
+                corrected_pressure -= thrust_pressure_correction(i);
+                sensors[i].corrected_pressure = corrected_pressure;
+#endif
                 altitude = get_altitude_difference(sensors[i].ground_pressure, corrected_pressure);
 
                 // the ground pressure is references against the field elevation
@@ -987,6 +1020,21 @@ void AP_Baro::update_field_elevation(void)
 #endif
 }
 
+#if HAL_BARO_THST_COMP_ENABLED
+float AP_Baro::thrust_pressure_correction(uint8_t instance)
+{
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_COPTER_OR_HELI
+    const AP_Motors* motors = AP::motors();
+    if (motors == nullptr) {
+         return 0.0f;
+    }
+    const float motors_throttle = MAX(0,motors->get_throttle_out());
+    return sensors[instance].mot_scale * motors_throttle;
+#else
+    return 0.0f;
+#endif
+}
+#endif
 
 /* register a new sensor, claiming a sensor slot. If we are out of
    slots it will panic
