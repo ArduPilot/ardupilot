@@ -228,7 +228,27 @@ int32_t AP_Filesystem_FlashMemory_LittleFS::lseek(int fd, int32_t position, int 
         return -1;
     }
 
-    LFS_CHECK(lfs_file_seek(&fs, &(fp->file), position, whence));
+    int lfs_whence;
+    switch (whence) {
+    case SEEK_END:
+        lfs_whence = LFS_SEEK_SET;
+        break;
+    case SEEK_CUR:
+        lfs_whence = LFS_SEEK_CUR;
+        break;
+    case SEEK_SET:
+    default:
+        lfs_whence = LFS_SEEK_SET;
+        break;
+    }
+
+    lfs_soff_t size = lfs_file_size(&fs, &(fp->file));
+    // emulate SEEK_SET past the end by truncating and filling with zeros
+    if (position > size && whence == SEEK_SET) {
+        LFS_CHECK(lfs_file_truncate(&fs, &(fp->file), position));
+    }
+
+    LFS_CHECK(lfs_file_seek(&fs, &(fp->file), position, lfs_whence));
     return 0;
 }
 
