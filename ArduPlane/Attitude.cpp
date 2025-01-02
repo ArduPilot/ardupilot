@@ -209,7 +209,7 @@ float Plane::stabilize_pitch_get_pitch_out()
     const bool quadplane_in_frwd_transition = false;
 #endif
 
-    int32_t demanded_pitch = nav_pitch_cd + int32_t(g.pitch_trim * 100.0) + SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * g.kff_throttle_to_pitch;
+    demanded_pitch_logged = nav_pitch_cd*0.01f + g.pitch_trim + SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01f*g.kff_throttle_to_pitch;
     bool disable_integrator = false;
     if (control_mode == &mode_stabilize && channel_pitch->get_control_in() != 0) {
         disable_integrator = true;
@@ -224,10 +224,10 @@ float Plane::stabilize_pitch_get_pitch_out()
         !control_mode->does_auto_throttle() &&
         flare_mode == FlareMode::ENABLED_PITCH_TARGET &&
         throttle_at_zero()) {
-        demanded_pitch = landing.get_pitch_cd();
+        demanded_pitch_logged = landing.get_pitch_cd()*0.01f;
     }
 
-    return pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, speed_scaler, disable_integrator,
+    return pitchController.get_servo_out(demanded_pitch_logged*100 - ahrs.pitch_sensor, speed_scaler, disable_integrator,
                                          ground_mode && !(plane.flight_option_enabled(FlightOptions::DISABLE_GROUND_PID_SUPPRESSION)));
 }
 
