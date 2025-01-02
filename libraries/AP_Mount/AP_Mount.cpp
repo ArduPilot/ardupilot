@@ -584,40 +584,6 @@ void AP_Mount::handle_global_position_int(const mavlink_message_t &msg)
     }
 }
 
-#if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
-/// Change the configuration of the mount
-void AP_Mount::handle_mount_configure(const mavlink_message_t &msg)
-{
-    auto *backend = get_primary();
-    if (backend == nullptr) {
-        return;
-    }
-
-    mavlink_mount_configure_t packet;
-    mavlink_msg_mount_configure_decode(&msg, &packet);
-
-    // send message to backend
-    backend->handle_mount_configure(packet);
-}
-#endif
-
-#if AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
-/// Control the mount (depends on the previously set mount configuration)
-void AP_Mount::handle_mount_control(const mavlink_message_t &msg)
-{
-    auto *backend = get_primary();
-    if (backend == nullptr) {
-        return;
-    }
-
-    mavlink_mount_control_t packet;
-    mavlink_msg_mount_control_decode(&msg, &packet);
-
-    // send message to backend
-    backend->handle_mount_control(packet);
-}
-#endif
-
 #if HAL_GCS_ENABLED
 // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
 void AP_Mount::send_gimbal_device_attitude_status(mavlink_channel_t chan)
@@ -998,16 +964,6 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &m
     case MAVLINK_MSG_ID_GIMBAL_REPORT:
         handle_gimbal_report(chan, msg);
         break;
-#if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
-    case MAVLINK_MSG_ID_MOUNT_CONFIGURE:
-        handle_mount_configure(msg);
-        break;
-#endif
-#if AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
-    case MAVLINK_MSG_ID_MOUNT_CONTROL:
-        handle_mount_control(msg);
-        break;
-#endif
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
         handle_global_position_int(msg);
         break;
