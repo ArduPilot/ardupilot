@@ -118,6 +118,26 @@ public:
         k_script_3              = 110,
         k_script_4              = 111,
 
+        k_servo_4_min            = 112,
+        k_servo_4_max            = 113,
+        k_servo_4_center         = 114,
+        k_servo_4_inc            = 115,
+        k_servo_4_dec            = 116,
+        k_servo_4_min_momentary  = 117,
+        k_servo_4_max_momentary  = 118,
+        k_servo_4_min_toggle     = 119,
+        k_servo_4_max_toggle     = 120,
+
+        k_servo_5_min            = 121,
+        k_servo_5_max            = 122,
+        k_servo_5_center         = 123,
+        k_servo_5_inc            = 124,
+        k_servo_5_dec            = 125,
+        k_servo_5_min_momentary  = 126,
+        k_servo_5_max_momentary  = 127,
+        k_servo_5_min_toggle     = 128,
+        k_servo_5_max_toggle     = 129,
+
         // 112+ reserved for future functions
         k_nr_btn_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } button_function_t;

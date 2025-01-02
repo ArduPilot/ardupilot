@@ -256,6 +256,8 @@ private:
     uint8_t depth_sensor_idx;
 
     AP_Motors6DOF motors;
+    float aux_actuator_value[ACTUATOR_CHANNELS];
+    float aux_actuator_change_speed[ACTUATOR_CHANNELS];
 
     // Circle
     bool circle_pilot_yaw_override; // true if pilot is overriding yaw
@@ -467,6 +469,15 @@ private:
     void exit_mode(Mode::Number old_control_mode, Mode::Number new_control_mode);
     void notify_flight_mode();
     void read_inertia();
+    void initialize_servos();
+    void update_servos();
+    void increase_servo(uint8_t servo_num, bool should_accelerate);
+    void decrease_servo(uint8_t servo_num, bool should_accelerate);
+    void min_servo(uint8_t servo_num);
+    void max_servo(uint8_t servo_num);
+    void min_toggle_servo(uint8_t servo_num);
+    void max_toggle_servo(uint8_t servo_num);
+    void center_servo(uint8_t servo_num);
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
     void set_bottomed(bool at_bottom);
