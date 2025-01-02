@@ -367,6 +367,12 @@ bool Vector3<T>::is_nan(void) const
 }
 
 template <typename T>
+bool Vector3<T>::is_all_nan(void) const
+{
+    return isnan(x) && isnan(y) && isnan(z);
+}
+
+template <typename T>
 bool Vector3<T>::is_inf(void) const
 {
     return isinf(x) || isinf(y) || isinf(z);
