@@ -54,8 +54,10 @@ void ModeTraining::run()
 
     if (plane.training_manual_pitch) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pexpo);
+        plane.flag_demanded_pitch_used = false;
     } else {
         plane.stabilize_pitch();
+        plane.flag_demanded_pitch_used = true;
         if ((plane.nav_pitch_cd > 0 && pexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)) ||
             (plane.nav_pitch_cd < 0 && pexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_elevator))) {
             // allow user to get back to level

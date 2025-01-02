@@ -1,6 +1,12 @@
 #include "mode.h"
 #include "Plane.h"
 
+bool ModeManual::_enter()
+{
+    plane.flag_demanded_pitch_used = false;
+    return true;
+}
+
 void ModeManual::update()
 {
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.roll_in_expo(false));

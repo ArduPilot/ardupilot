@@ -71,6 +71,9 @@ bool Mode::enter()
     plane.auto_state.highest_airspeed = 0;
     plane.auto_state.initial_pitch_cd = ahrs.pitch_sensor;
 
+    // Declare that pitch is actively controlled, unless children ovewrite.
+    plane.flag_demanded_pitch_used = true;
+
     // disable taildrag takeoff on mode change
     plane.auto_state.fbwa_tdrag_takeoff_mode = false;
 

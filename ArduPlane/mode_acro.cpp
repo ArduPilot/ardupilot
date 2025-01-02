@@ -5,6 +5,7 @@ bool ModeAcro::_enter()
 {
     acro_state.locked_roll = false;
     acro_state.locked_pitch = false;
+    plane.flag_demanded_pitch_used = false; // ACRO does not control pitch through demanded_pitch_cd.
     IGNORE_RETURN(ahrs.get_quaternion(acro_state.q));
     return true;
 }

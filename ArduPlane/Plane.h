@@ -668,8 +668,11 @@ private:
     // The instantaneous desired bank angle.  Hundredths of a degree
     int32_t nav_roll_cd;
 
-    // The instantaneous desired pitch angle.  Hundredths of a degree
+    // The instantaneous navigator-commanded pitch angle. Hundredths of a degree
     int32_t nav_pitch_cd;
+
+    int32_t demanded_pitch_cd; // The instantaneous desired pitch angle. Hundredths of a degree.
+    bool flag_demanded_pitch_used; // For logging purposes, declares if active pitch control is happening.
 
     // the aerodynamic load factor. This is calculated from the demanded
     // roll before the roll is clipped, using 1/sqrt(cos(nav_roll))

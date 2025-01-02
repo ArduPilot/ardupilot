@@ -439,6 +439,8 @@ public:
     const char *name4() const override { return "MANU"; }
 
     // methods that affect movement of the vehicle in this mode
+    bool _enter() override;
+
     void update() override;
 
     void run() override;
