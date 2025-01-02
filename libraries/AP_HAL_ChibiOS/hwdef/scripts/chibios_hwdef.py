@@ -951,7 +951,12 @@ class ChibiOSHWDef(object):
             f.write('#define HAL_STDOUT_SERIAL %s\n\n' % self.get_config('STDOUT_SERIAL'))
             f.write('// baudrate used for stdout (printf)\n')
             f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % self.get_config('STDOUT_BAUDRATE', type=int))
-        if self.have_type_prefix('SDIO'):
+        if len(self.dataflash_list) > 0:
+            # we only support dataflash OR sdcard, so prioritize dataflash if its been explicitly configured
+            f.write('#define HAL_USE_FATFS FALSE\n\n')
+            f.write('#define HAL_USE_SDC FALSE\n')
+            self.build_flags.append('USE_FATFS=no')
+        elif self.have_type_prefix('SDIO'):
             f.write('// SDIO available, enable POSIX filesystem support\n')
             f.write('#define USE_POSIX\n')
             f.write('#define HAL_OS_POSIX_IO TRUE\n\n')
