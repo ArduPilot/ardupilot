@@ -509,10 +509,10 @@ TEST(Control, test_limit_accel)
         signal_caught = true;
     } else {
         // we come through here normally
-        EXPECT_FALSE(limit_accel_xy(vel, accel, accel_max));
+        EXPECT_TRUE(limit_accel_xy(vel, accel, accel_max));
     }
 
-    EXPECT_TRUE(signal_caught);
+    EXPECT_FALSE(signal_caught);
 
     // now restore the original fpe handling
     if (fesetexceptflag(&old_except_flags, excepts) == -1) {
