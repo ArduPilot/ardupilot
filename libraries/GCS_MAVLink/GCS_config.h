@@ -71,18 +71,6 @@
 #define AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED 0
 #endif
 
-// CODE_REMOVAL
-// ArduPilot 4.5 sends deprecation warnings for MOUNT_CONTROL/MOUNT_CONFIGURE
-// ArduPilot 4.6 stops compiling them in
-// ArduPilot 4.7 removes the code entirely
-#ifndef AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
-#define AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED 0
-#endif
-
-#ifndef AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
-#define AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED 0
-#endif
-
 // this is for both read and write messages:
 #ifndef AP_MAVLINK_MSG_DEVICE_OP_ENABLED
 #define AP_MAVLINK_MSG_DEVICE_OP_ENABLED HAL_GCS_ENABLED
