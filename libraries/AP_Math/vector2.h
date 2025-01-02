@@ -151,6 +151,9 @@ struct Vector2
     // limit vector to a given length. returns true if vector was limited
     bool limit_length(T max_length);
 
+    // limit the square of the length of the vector to the square of max_length
+    bool limit_length_squared(T max_length);
+
     // normalizes this vector
     void normalize();
 
