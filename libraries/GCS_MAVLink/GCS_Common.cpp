@@ -747,7 +747,7 @@ void GCS_MAVLINK::send_mission_current(const class AP_Mission &mission, uint16_t
  */
 void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg)
 {
-    // send_received_message_deprecation_warning("MISSION_SET_CURRENT");
+    send_received_message_deprecation_warning("MISSION_SET_CURRENT");
 
     // decode
     mavlink_mission_set_current_t packet;
@@ -4998,11 +4998,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_i
 #endif  // AP_ARMING_ENABLED
 
 #if AP_MISSION_ENABLED
-// changes the current waypoint; at time of writing GCS
-// implementations use the mavlink message MISSION_SET_CURRENT to set
-// the current waypoint, rather than this DO command.  It is hoped we
-// can move to this command in the future to avoid acknowledgement
-// issues with MISSION_SET_CURRENT
+// changes the current waypoint
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_command_int_t &packet)
 {
     AP_Mission &mission = AP::mission();
