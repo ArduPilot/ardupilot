@@ -13,7 +13,7 @@
 static_assert(ESC_TELEM_MAX_ESCS > 0, "Cannot have 0 ESC telemetry instances");
 
 #define ESC_TELEM_DATA_TIMEOUT_MS 5000UL
-#define ESC_RPM_DATA_TIMEOUT_US 1000000UL
+#define ESC_RPM_DATA_TIMEOUT_US 1000000L
 
 class AP_ESC_Telem {
 public:
@@ -134,7 +134,7 @@ public:
 private:
 
     // helper that validates RPM data
-    static bool rpm_data_within_timeout (const volatile AP_ESC_Telem_Backend::RpmData &instance, const uint32_t now_us, const uint32_t timeout_us);
+    static bool rpm_data_within_timeout (const volatile AP_ESC_Telem_Backend::RpmData &instance, const uint32_t now_us, const int32_t timeout_us);
     static bool was_rpm_data_ever_reported (const volatile AP_ESC_Telem_Backend::RpmData &instance);
 
 #if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED

@@ -27,7 +27,7 @@
 
 //#define ESC_TELEM_DEBUG
 
-#define ESC_RPM_CHECK_TIMEOUT_US 210000UL   // timeout for motor running validity
+#define ESC_RPM_CHECK_TIMEOUT_US 210000L   // timeout for motor running validity
 
 extern const AP_HAL::HAL& hal;
 
@@ -202,7 +202,7 @@ bool AP_ESC_Telem::get_rpm(uint8_t esc_index, float& rpm) const
 
     const uint32_t now = AP_HAL::micros();
     if (rpm_data_within_timeout(rpmdata, now, ESC_RPM_DATA_TIMEOUT_US)) {
-        const float slew = MIN(1.0f, (now - rpmdata.last_update_us) * rpmdata.update_rate_hz * (1.0f / 1e6f));
+        const float slew = constrain_float(int32_t(now - rpmdata.last_update_us) * rpmdata.update_rate_hz * (1.0f / 1e6f), 0, 1);
         rpm = (rpmdata.prev_rpm + (rpmdata.rpm - rpmdata.prev_rpm) * slew);
 
 #if AP_SCRIPTING_ENABLED
@@ -811,16 +811,18 @@ void AP_ESC_Telem::update()
     const uint32_t now_us = AP_HAL::micros();
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         // Invalidate RPM data if not received for too long
-        if ((now_us - _rpm_data[i].last_update_us) > ESC_RPM_DATA_TIMEOUT_US) {
+        // (last_update_us might be fresher than now_us, so we use a signed difference)
+        if (int32_t(now_us - _rpm_data[i].last_update_us) > ESC_RPM_DATA_TIMEOUT_US) {
             _rpm_data[i].data_valid = false;
         }
     }
 }
 
-bool AP_ESC_Telem::rpm_data_within_timeout(const volatile AP_ESC_Telem_Backend::RpmData &instance, const uint32_t now_us, const uint32_t timeout_us)
+bool AP_ESC_Telem::rpm_data_within_timeout(const volatile AP_ESC_Telem_Backend::RpmData &instance, const uint32_t now_us, const int32_t timeout_us)
 {
     // easy case, has the time window been crossed so it's invalid
-    if ((now_us - instance.last_update_us) > timeout_us) {
+    // (last_update_us might be fresher than now_us, so we use a signed difference)
+    if (int32_t(now_us - instance.last_update_us) > timeout_us) {
         return false;
     }
     // we never got a valid data, to it's invalid
