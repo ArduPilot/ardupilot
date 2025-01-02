@@ -4284,18 +4284,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 #endif
 
 #if HAL_MOUNT_ENABLED
-#if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
-    case MAVLINK_MSG_ID_MOUNT_CONFIGURE: // deprecated. Use MAV_CMD_DO_MOUNT_CONFIGURE
-        send_received_message_deprecation_warning("MOUNT_CONFIGURE");
-        handle_mount_message(msg);
-        break;
-#endif
-#if AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
-    case MAVLINK_MSG_ID_MOUNT_CONTROL: // deprecated. Use MAV_CMD_DO_MOUNT_CONTROL
-        send_received_message_deprecation_warning("MOUNT_CONTROL");
-        handle_mount_message(msg);
-        break;
-#endif
     case MAVLINK_MSG_ID_GIMBAL_REPORT:
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS:
