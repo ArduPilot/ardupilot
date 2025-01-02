@@ -798,6 +798,9 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     // cache entire flash state in RAM (8 blocks = 1 byte of storage) to
     // avoid scanning while logging
     fs_cfg.lookahead_size = fs_cfg.block_count/8;
+    // non-inlined files require their own block, but must be copie. Generally we have requirements for tiny files
+    // (scripting) and very large files (e.g. logging), but not much in-between. Setting the cache size will also
+    // limit the inline size.
     fs_cfg.cache_size = 2*fs_cfg.prog_size;
 
     return id;
