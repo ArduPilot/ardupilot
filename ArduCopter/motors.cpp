@@ -51,15 +51,6 @@ void Copter::arm_motors_check()
             }
         }
 
-        // arm the motors and configure for flight
-        if (arming_counter == AUTO_TRIM_DELAY && motors->armed() && flightmode->mode_number() == Mode::Number::STABILIZE) {
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim start");
-            auto_trim_counter = 250;
-            auto_trim_started = false;
-            // ensure auto-disarm doesn't trigger immediately
-            auto_disarm_begin = millis();
-        }
-
     // full left and rudder disarming is enabled
     } else if ((yaw_in < -4000) && (arming_rudder == AP_Arming::RudderArming::ARMDISARM)) {
         if (!flightmode->has_manual_throttle() && !ap.land_complete) {
