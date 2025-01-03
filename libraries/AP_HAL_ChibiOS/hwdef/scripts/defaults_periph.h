@@ -472,3 +472,7 @@
 #ifndef AP_QUICKTUNE_ENABLED
 #define AP_QUICKTUNE_ENABLED 0
 #endif
+
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 0
+#endif
