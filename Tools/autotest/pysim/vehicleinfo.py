@@ -376,6 +376,12 @@ class VehicleInfo(object):
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/stratoblimp.parm",
             },
+            "realflight-titan-cobra": {
+                "model": "flightaxis",
+                "waf_target": "bin/arduplane",
+                "default_params_filename": "default_params/realflight-titan-cobra.parm",
+                "external": True,
+            },
         },
     },
     "Rover": {

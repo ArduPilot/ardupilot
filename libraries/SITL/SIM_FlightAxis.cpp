@@ -134,8 +134,12 @@ FlightAxis::FlightAxis(const char *frame_str) :
     }
 
     const char *colon = strchr(frame_str, ':');
+    const char *env = getenv("REALFLIGHT_IPADDR");
     if (colon) {
         controller_ip = colon+1;
+    }
+    else if (env) {
+        controller_ip = env;
     }
     for (uint8_t i=0; i<ARRAY_SIZE(sim_defaults); i++) {
         AP_Param::set_default_by_name(sim_defaults[i].name, sim_defaults[i].value);
@@ -399,7 +403,7 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         reply = soap_request_end(0);
         if (reply == nullptr) {
             sock_error_count++;
-            if (sock_error_count >= 10000 && timestamp_sec() - last_recv_sec > 1) {
+            if (sock_error_count >= 10000 && timestamp_sec() - last_recv_sec > 3*average_frame_time_s) {
                 printf("socket timeout\n");
                 delete sock;
                 sock = nullptr;
