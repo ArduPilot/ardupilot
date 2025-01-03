@@ -150,6 +150,8 @@ void Tiltrotor::setup()
     }
     quadplane.transition = transition;
 
+    SRV_Channels::set_range(SRV_Channel::k_throttle_tilt, 100); // match k_throttle
+
     setup_complete = true;
 }
 
@@ -229,7 +231,9 @@ void Tiltrotor::continuous_update(void)
 
         max_change = tilt_max_change(false);
 
-        float new_throttle = constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01, 0, 1);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle_tilt, MAX(0,SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)));
+        float new_throttle = constrain_float(SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_throttle_tilt)*0.01, 0, 1);
+
         if (current_tilt < get_fully_forward_tilt()) {
             current_throttle = constrain_float(new_throttle,
                                                     current_throttle-max_change,
@@ -245,7 +249,7 @@ void Tiltrotor::continuous_update(void)
         }
         if (!quadplane.motor_test.running) {
             // the motors are all the way forward, start using them for fwd thrust
-            const uint32_t mask = is_zero(current_throttle) ? 0U : tilt_mask.get();
+            const uint16_t mask = tilt_mask.get();
             motors->output_motor_mask(current_throttle, mask, plane.rudder_dt);
         }
         return;
@@ -363,7 +367,8 @@ void Tiltrotor::binary_update(void)
         // all the way forward and run them as a forward motor
         binary_slew(true);
 
-        float new_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01f;
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle_tilt, SRV_Channels::get_output_scaled(SRV_Channel::k_throttle));
+        float new_throttle = constrain_float(SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_throttle_tilt)*0.01, 0, 1);
         if (current_tilt >= 1) {
             const uint32_t mask = is_zero(new_throttle) ? 0 : tilt_mask.get();
             // the motors are all the way forward, start using them for fwd thrust
@@ -493,6 +498,9 @@ void Tiltrotor::tilt_compensate_angle(float *thrust, uint8_t num_motors, float n
         for (uint8_t i=0; i<num_motors; i++) {
             thrust[i] *= scale;
         }
+    }
+    if (!fully_fwd()) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle_tilt, largest_tilted*100);
     }
 }
 
