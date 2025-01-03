@@ -125,6 +125,9 @@ public:
     SITL::Vicon *vicon;
 #endif
 
+    SITL::SerialRangeFinder *serial_rangefinders[16];
+    uint8_t num_serial_rangefinders;
+
     // simulated Ainstein LR-D1 rangefinder:
     SITL::RF_Ainstein_LR_D1 *ainsteinlrd1;
     // simulated Benewake tf02 rangefinder:
