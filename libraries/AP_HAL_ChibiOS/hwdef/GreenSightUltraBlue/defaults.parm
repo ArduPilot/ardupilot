@@ -1,0 +1,5 @@
+# The CAM_TRIG and CAM_TRIG_RET pins on the
+# mezzanine connector are intended to be GPIO but
+# can also be PWM so we set defaults in the hwdef.dat
+SERVO15_FUNCTION -1
+SERVO16_FUNCTION -1
