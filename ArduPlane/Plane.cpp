@@ -514,6 +514,10 @@ void Plane::update_control_mode(void)
     update_fly_forward();
 
     control_mode->update();
+
+#if MODE_AUTOLAND_ENABLED
+    check_takeoff_direction();
+#endif
 }
 
 
@@ -1058,7 +1062,30 @@ void Plane::update_quicktune(void)
     quicktune.update(control_mode->supports_quicktune());
 }
 #endif
+#if MODE_AUTOLAND_ENABLED
+/*
+  In certain pilot controlled modes other than NAV_TAKEOFF or Mode TAKEOFF,takeoff direction is initialized after arm when sufficient altitude and ground speed is obtained, then captured takeoff direction + offset used as landing direction in AUTOLAND
+*/
+void Plane::check_takeoff_direction()
+{
+    if (takeoff_direction_check_completed || takeoff_state.initial_direction.initialized) {
+        return;
+    }
+    //set autoland direction to GPS course over ground
+    if (control_mode->allows_autoland_direction_capture() && (gps.ground_speed() > GPS_GND_CRS_MIN_SPD)) {
+        set_autoland_direction();
+    }      
+}
 
+// Sets autoland direction using ground course + offest parameter
+void Plane::set_autoland_direction()
+{
+    takeoff_state.initial_direction.heading = wrap_360(gps.ground_course() + mode_autoland.landing_dir_off);
+    takeoff_state.initial_direction.initialized = true;
+    takeoff_direction_check_completed = true;
+    gcs().send_text(MAV_SEVERITY_INFO, "Autoland direction= %u",int(takeoff_state.initial_direction.heading));
+}
+#endif
 /*
   constructor for main Plane class
  */

@@ -56,5 +56,6 @@ struct AP_FixedWing {
     // Bitfields of TKOFF_OPTIONS
     enum class TakeoffOption {
         THROTTLE_RANGE          = (1U << 0), // Unset: Max throttle. Set: Throttle range.
+        AUTOLAND_DIR_ON_ARM     = (1U << 1), // set dir for autoland on arm if compass in use.
     };
 };

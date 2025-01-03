@@ -1311,6 +1311,12 @@ private:
 
     // last target alt we passed to tecs
     int32_t tecs_target_alt_cm;
+#if MODE_AUTOLAND_ENABLED
+    // used to set takeoff direction for AUTOLAND mode in some cases
+    void check_takeoff_direction(void);
+    bool takeoff_direction_check_completed;
+    void set_autoland_direction(void);
+#endif
 
 public:
     void failsafe_check(void);
@@ -1332,6 +1338,11 @@ public:
     bool set_crosstrack_start(const Location &new_start_location) override;
 
 #endif // AP_SCRIPTING_ENABLED
+
+    bool tkoff_option_is_set(AP_FixedWing::TakeoffOption option) const {
+        return (aparm.takeoff_options & int32_t(option)) != 0;
+    }
+   
 
 };
 
