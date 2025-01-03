@@ -590,6 +590,8 @@ public:
     // orientation of rangefinder to use for landing
     AP_Int8 rangefinder_land_orient;
 #endif
+
+    AP_Float        pitch_lookahead_climb_ratio;
 };
 
 extern const AP_Param::Info var_info[];

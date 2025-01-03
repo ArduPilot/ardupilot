@@ -1309,7 +1309,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RNGFND_LND_ORNT", 36, ParametersG2, rangefinder_land_orient, ROTATION_PITCH_270),
 #endif
-    
+
+    // @Param: PTCH_LKAHD_CLMB
+    // @DisplayName: lookahead climb pitch ratio
+    // @Description: The ratio of pitch to use when doing a terrain lookahead so the plane is not constantly at 100% throttle.
+    // @Range: 0 100
+    // @Units: %
+    // @User: Standard
+    AP_GROUPINFO("PTCH_LKAHD_CLMB", 37, ParametersG2, pitch_lookahead_climb_ratio, 50),
+
     AP_GROUPEND
 };
 
