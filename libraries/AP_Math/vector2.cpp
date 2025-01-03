@@ -45,6 +45,29 @@ bool Vector2<T>::limit_length(T max_length)
     return false;
 }
 
+// limit the square of the length of the vector to the square of max_length
+template <typename T>
+bool Vector2<T>::limit_length_squared(T max_length)
+{
+    const T len_squared = length_squared();
+    const T max_length_squared = sq(max_length);
+    if ((len_squared <= max_length_squared)) {
+        // no limitting required
+        return false;
+    }
+    const T len = sqrtf(len_squared);
+    if (!is_positive(len)) {
+        // can't scale zero.  floating point vagaries means this isn't
+        // covered in the above comparison of the squared vector
+        // lengths
+        return false;
+    }
+    x *= (max_length / len);
+    y *= (max_length / len);
+
+    return true;
+}
+
 // dot product
 template <typename T>
 T Vector2<T>::operator *(const Vector2<T> &v) const

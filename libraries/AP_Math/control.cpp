@@ -384,7 +384,7 @@ bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max)
             float accel_dir = vel_input_unit * accel;
             // cross track acceleration
             Vector2f accel_cross = accel - (vel_input_unit * accel_dir);
-            if (accel_cross.limit_length(accel_max)) {
+            if (accel_cross.limit_length_squared(accel_max)) {
                 accel_dir = 0.0;
             } else {
                 float accel_max_dir = safe_sqrt(sq(accel_max) - accel_cross.length_squared());

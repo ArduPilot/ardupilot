@@ -5,6 +5,9 @@
 #include <AP_Math/vector3.h>
 #include <AP_Math/control.h>
 
+#include <fenv.h>
+#include <setjmp.h>
+
 TEST(Control, test_control)
 {
     postype_t pos_start = 17;
@@ -465,6 +468,58 @@ TEST(Control, test_control)
     EXPECT_FLOAT_EQ(velxy.y, 0.0);
 }
 
+// catch floating point exceptions
+sigjmp_buf avert_your_eyes_children;
+static void _tc_sig_fpe(int signum)
+{
+    siglongjmp(avert_your_eyes_children, 1);
+}
+
+TEST(Control, test_limit_accel)
+{
+    // reproduction of FPE (https://github.com/ArduPilot/ardupilot/issues/28969)
+    // FPE will only be raised in SITL HAL, so compiling for linux HAL
+    // isn't useful.
+    const Vector2f vel{
+        0.984285712, 0.176583186
+    };
+    Vector2f accel{99.9008408, -557.304077};
+    const float accel_max = 566.187256;
+
+    struct sigaction old_sa_fpe = {};
+
+    struct sigaction sa_fpe = {};
+    sigemptyset(&sa_fpe.sa_mask);
+    sa_fpe.sa_handler = _tc_sig_fpe;
+    if (sigaction(SIGFPE, &sa_fpe, &old_sa_fpe) == -1) {
+        abort();
+    }
+    const int excepts = FE_UNDERFLOW | FE_OVERFLOW | FE_INVALID;
+    fexcept_t old_except_flags;
+    if (fegetexceptflag(&old_except_flags, excepts) == -1) {
+        abort();
+    }
+
+    feenableexcept(excepts);
+
+    bool signal_caught = false;
+    if (sigsetjmp(avert_your_eyes_children, 1)) {
+        // we come through here if an FPE is triggered (via a goto in
+        // our custom signal handler, _tc_sig_fpe)
+        signal_caught = true;
+    } else {
+        // we come through here normally
+        EXPECT_TRUE(limit_accel_xy(vel, accel, accel_max));
+    }
+
+    EXPECT_FALSE(signal_caught);
+
+    // now restore the original fpe handling
+    if (fesetexceptflag(&old_except_flags, excepts) == -1) {
+        abort();
+    }
+    sigaction(SIGFPE, &old_sa_fpe, nullptr);
+}
 
 AP_GTEST_MAIN()
 int hal = 0;
