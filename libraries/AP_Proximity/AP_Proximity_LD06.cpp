@@ -116,8 +116,6 @@ void AP_Proximity_LD06::get_readings()
 
                 // Updates the temporary boundary and passes off the completed data
                 parse_response_data();
-                _temp_boundary.update_3D_boundary(state.instance, frontend.boundary);
-                _temp_boundary.reset();
 
                 // Resets the bytes read and whether or not we are reading data to accept a new payload
                 _byte_count = 0;
@@ -162,37 +160,52 @@ void AP_Proximity_LD06::parse_response_data()
 
     // Takes the angle in the middle of the readings to be pushed to the database
     const float push_angle = correct_angle_for_orientation(uncorrected_angle);
-
     float distance_avg = 0.0;
+    uint16_t confidence_sum = 0;
 
     // Each recording point is three bytes long, goes through all of that and updates database
     for (uint16_t i = START_PAYLOAD; i < START_PAYLOAD + MEASUREMENT_PAYLOAD_LENGTH * PAYLOAD_COUNT; i += MEASUREMENT_PAYLOAD_LENGTH) {
-
         // Gets the distance recorded and converts to meters
-        const float distance_meas = UINT16_VALUE(_response[i + 1], _response[i]) * 0.001;
-
+        const float distance_m = UINT16_VALUE(_response[i + 1], _response[i]) * 0.001;
+        const uint8_t confidence_meas = _response[i+2];
         // Validates data and checks if it should be included
-        if (distance_meas > distance_min() && distance_meas < distance_max()) {
-            if (ignore_reading(push_angle, distance_meas)) {
-                continue;
-            }
-
-            sampled_counts ++;
-            distance_avg += distance_meas;
+        if (distance_m > distance_min() && distance_m < distance_max()) {
+            sampled_counts++;
+            distance_avg += distance_m * confidence_meas;
+            confidence_sum += confidence_meas;
         }
     }
 
-    // Convert angle to appropriate face and adds to database
-    // Since angle increments are only about 3 degrees, ignore readings if there were only 1 or 2 measurements
-    //    (likely outliers) recorded in the range
-    if (sampled_counts > 2) {
+    if (sampled_counts > (PAYLOAD_COUNT/2)) {
         // Gets the average distance read
-        distance_avg /= sampled_counts;
+        distance_avg /= confidence_sum;
+        if (!ignore_reading(push_angle, distance_avg)) {
+            const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(push_angle);
 
-        // Pushes the average distance and angle to the obstacle avoidance database
-        const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(push_angle);
-        _temp_boundary.add_distance(face, push_angle, distance_avg);
-        database_push(push_angle, distance_avg);
+            if (face != _last_face) {
+                // distance is for a new face, the previous one can be updated now
+                if (_last_distance_valid) {
+                    frontend.boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m, state.instance);
+                } else {
+                    // reset distance from last face
+                    frontend.boundary.reset_face(face, state.instance);
+                }
+
+                // initialize the new face
+                _last_face = face;
+                _last_distance_valid = false;
+            }
+            if (distance_avg > distance_min()) {
+                // update shortest distance
+                if (!_last_distance_valid || (distance_avg < _last_distance_m)) {
+                    _last_distance_m = distance_avg;
+                    _last_distance_valid = true;
+                    _last_angle_deg = push_angle;
+                }
+                // update OA database
+                database_push(_last_angle_deg, _last_distance_m);
+            }
+        }
     }
 }
 #endif // AP_PROXIMITY_LD06_ENABLED
