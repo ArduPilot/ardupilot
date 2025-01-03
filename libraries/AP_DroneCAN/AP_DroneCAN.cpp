@@ -317,7 +317,7 @@ bool AP_DroneCAN::add_interface(AP_HAL::CANIface* can_iface)
     return true;
 }
 
-void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
+void AP_DroneCAN::init(uint8_t driver_index)
 {
     if (driver_index != _driver_index) {
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: init called with wrong driver_index");

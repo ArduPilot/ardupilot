@@ -819,7 +819,7 @@ void can_start()
     canStart(&CAND1, &cancfg);
 #else
     for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
-        can_iface[i].init(baudrate, AP_HAL::CANIface::NormalMode);
+        can_iface[i].init(baudrate);
     }
 #endif
     canardInit(&canard, (uint8_t *)canard_memory_pool, sizeof(canard_memory_pool),
