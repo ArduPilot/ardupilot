@@ -20,10 +20,10 @@ struct PACKED log_UART {
     float rx_rate;
 };
 
-#if !HAL_UART_STATS_ENABLED
-#define LOG_STRUCTURE_FROM_HAL
-#else
+#if HAL_UART_STATS_ENABLED
 #define LOG_STRUCTURE_FROM_HAL                          \
     { LOG_UART_MSG, sizeof(log_UART),                   \
       "UART","QBff","TimeUS,I,Tx,Rx", "s#BB", "F---" },
+#else
+#define LOG_STRUCTURE_FROM_HAL
 #endif
