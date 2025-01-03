@@ -414,6 +414,10 @@ void NavEKF3_core::InitialiseVariables()
     storedExtNavVel.reset();
 #endif
 
+#if EK3_FEATURE_SETWIND
+    lastExtWindVelSet_ms = 0;
+#endif // EK3_FEATURE_SETWIND
+
     // initialise pre-arm message
     dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF3 still initialising");
 

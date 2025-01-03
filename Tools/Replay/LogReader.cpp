@@ -126,7 +126,9 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
         msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RWOH(formats[f.type], ekf2, ekf3);
     } else if (streq(name, "RBOH")) {
         msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RBOH(formats[f.type], ekf2, ekf3);
-	} else {
+    } else if (streq(name, "RSWS")) {
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RSWS(formats[f.type], ekf2, ekf3);
+    } else {
         // debug("  No parser for (%s)\n", name);
     }
 
