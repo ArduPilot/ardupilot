@@ -19,14 +19,30 @@
 #include <AP_Param/AP_Param.h>
 #include <SITL/SIM_JSBSim.h>
 #include <AP_HAL/utility/Socket_native.h>
-
-extern const AP_HAL::HAL& hal;
+#include "SITL_State_common.h"
 
 using namespace HALSITL;
+
+static const struct {
+    const char *name;
+    SITL::SerialRangeFinder *(*createfn)();
+}  serial_rangefinder_definitions[] {
+};
 
 #define streq(a, b) (!strcmp(a, b))
 SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const char *arg, const uint8_t portNumber)
 {
+    for (const auto &definition : serial_rangefinder_definitions) {
+        if (!streq(definition.name, name)) {
+            continue;
+        }
+        if (num_serial_rangefinders >= ARRAY_SIZE(serial_rangefinders)) {
+            AP_HAL::panic("Too many simulated serial rangefinders");
+        }
+        serial_rangefinders[num_serial_rangefinders] = definition.createfn();
+        return serial_rangefinders[num_serial_rangefinders++];
+    }
+
     if (streq(name, "benewake_tf02")) {
         if (benewake_tf02 != nullptr) {
             AP_HAL::panic("Only one benewake_tf02 at a time");
@@ -407,6 +423,9 @@ void SITL_State_Common::sim_update(void)
     }
     if (gyus42v2 != nullptr) {
         gyus42v2->update(sitl_model->rangefinder_range());
+    }
+    for (uint8_t i=0; i<num_serial_rangefinders; i++) {
+        serial_rangefinders[i]->update(sitl_model->rangefinder_range());
     }
     if (efi_ms != nullptr) {
         efi_ms->update();
