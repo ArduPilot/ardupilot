@@ -43,14 +43,6 @@
 #include <AP_Common/sorting.h>
 #include <AP_Logger/AP_Logger.h>
 
-/*
-  avoid a recursion issue with config defines
- */
-#if AP_CAN_LOGGING_ENABLED && !HAL_LOGGING_ENABLED
-#undef AP_CAN_LOGGING_ENABLED
-#define AP_CAN_LOGGING_ENABLED 0
-#endif
-
 #define LOG_TAG "CANMGR"
 #define LOG_BUFFER_SIZE 1024
 
