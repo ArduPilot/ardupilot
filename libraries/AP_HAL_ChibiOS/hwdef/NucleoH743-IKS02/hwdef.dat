@@ -1,0 +1,129 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H743 bootloader
+
+AUTOBUILD_TARGETS None
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+define STM32_HSE_BYPASS
+
+# board ID for firmware load
+APJ_BOARD_ID 139
+
+# the nucleo seems to have trouble with flashing the last sector?
+FLASH_SIZE_KB 2048
+
+FLASH_RESERVE_START_KB 128
+
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 EMPTY UART5 UART7
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# UART7 is debug
+PF6 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA
+
+# UART5
+PB5 UART5_RX UART5 NODMA
+PB6 UART5_TX UART5 NODMA
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384
+
+define HAL_SPI_CHECK_CLOCK_FREQ
+
+# sensor CS
+PA4 MPU_CS CS
+PC7 BARO_CS CS
+
+PB0 LED1 OUTPUT LOW
+PB7 LED2 OUTPUT LOW
+
+# SPI1
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# SPI3
+#PB3 SPI3_SCK SPI3
+#PB4 SPI3_MISO SPI3
+#PB5 SPI3_MOSI SPI3
+
+# SPI devices
+# SPIDEV mpu6000        SPI3 DEVID1  MPU_CS    MODE3  2*MHZ  8*MHZ
+# SPIDEV ms5611         SPI3 DEVID2  BARO_CS   MODE3  8*MHZ  8*MHZ
+
+# analog in
+PA0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PA1 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# CAN bus
+PD0  CAN1_RX CAN1
+PA10 CAN1_TX CAN1
+
+I2C_ORDER I2C1
+
+# I2C1
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# define ALLOW_ARM_NO_COMPASS
+
+# probe for an invensense IMU
+#IMU LSM303DLHC I2C:0:0x19 I2C:0:0x3C
+IMU ISM330DHCX I2C:0:0x6B ROTATION_NONE
+define ISM330DHCX_DEBUG
+
+# and ms5611 baro
+#BARO MS56XX SPI:ms5611
+
+# --------------------- PWM -----------------------
+PE9  TIM1_CH1   TIM1  PWM(1)  GPIO(60)
+PE11 TIM1_CH2   TIM1  PWM(2)  GPIO(64)
+PB1  TIM3_CH4   TIM3  PWM(3)  GPIO(47)
+PC8  TIM3_CH3   TIM3  PWM(4)  GPIO(98)
+
+
+
+# define HAL_DISABLE_DCACHE
+
+
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+define COMPASS_ENABLE 0
+# define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+define HAL_BARO_ALLOW_INIT_NO_BARO
+
+ARSPD_BUS     0   # I2C1
+ARSPD_TYPE    0
+define HAL_LOGGING_ENABLED 1
+
+
+# setup a harmonic notch filter to reduce noise
+define INS_GYRO_FILTER 100
+INS_HNTCH_ATT         40
+INS_HNTCH_BW          49
+INS_HNTCH_ENABLE       1
+INS_HNTCH_FREQ        99
+INS_HNTCH_HMNCS       7
+INS_HNTCH_MODE         1
+INS_HNTCH_OPTS         1
+INS_HNTCH_REF          0.4560
+define INS_ACCEL_FILTER 50
+
+
+#include ../include/SimOnHW.inc
