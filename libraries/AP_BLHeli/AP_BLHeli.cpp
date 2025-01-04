@@ -1469,7 +1469,7 @@ void AP_BLHeli::read_telemetry_packet(void)
 
     uint8_t normalized_motor_idx = motor_idx - chan_offset;
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_dshot()) {
+    if (AP_BoardConfig::io_enabled()) {
         normalized_motor_idx = motor_idx;
     }
 #endif
