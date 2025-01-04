@@ -305,6 +305,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED')
             feature_define_whitelist.add('HAL_QUADPLANE_ENABLED')
             feature_define_whitelist.add('AP_BATTERY_WATT_MAX_ENABLED')
+            feature_define_whitelist.add('MODE_AUTOLAND_ENABLED')
 
         if target.lower() not in ["plane", "copter"]:
             feature_define_whitelist.add('HAL_ADSB_ENABLED')
