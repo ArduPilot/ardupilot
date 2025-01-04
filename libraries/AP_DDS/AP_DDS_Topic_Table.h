@@ -42,9 +42,9 @@ enum class TopicIndex: uint8_t {
 #if AP_DDS_GEOPOSE_PUB_ENABLED
     GEOPOSE_PUB,
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
-#ifdef AP_DDS_GOAL_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
     GOAL_PUB,
-#endif // AP_DDS_GOAL_PUB_ENABLED
+#endif // AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
 #if AP_DDS_CLOCK_PUB_ENABLED
     CLOCK_PUB,
 #endif // AP_DDS_CLOCK_PUB_ENABLED
@@ -238,7 +238,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         },
     },
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
-#if AP_DDS_GOAL_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
     {
         .topic_id = to_underlying(TopicIndex::GOAL_PUB),
         .pub_id = to_underlying(TopicIndex::GOAL_PUB),
@@ -255,7 +255,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
             .depth = 1,
         },
     },
-#endif // AP_DDS_GOAL_PUB_ENABLED
+#endif // AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
 #if AP_DDS_CLOCK_PUB_ENABLED
     {
         .topic_id = to_underlying(TopicIndex::CLOCK_PUB),
