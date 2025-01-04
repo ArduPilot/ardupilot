@@ -228,4 +228,4 @@ void AP_Networking_CAN::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &
     mcast_sockets[bus]->send((void*)&pkt, data_length+MCAST_HDR_LENGTH);
 }
 
-#endif // AP_NETWORKING_ENABLED && AP_NETWORKING_CAN_MCAST_ENABLED
+#endif // AP_NETWORKING_ENABLED
