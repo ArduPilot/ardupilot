@@ -56,6 +56,7 @@ void Plane::throttle_slew_limit()
     if (g.takeoff_throttle_slewrate != 0 && quadplane.in_frwd_transition()) {
         slewrate = g.takeoff_throttle_slewrate;
     }
+    SRV_Channels::set_slew_rate(SRV_Channel::k_throttle_tilt, quadplane.tiltrotor.fully_fwd()?slewrate:0, 100, G_Dt);
 #endif
     SRV_Channels::set_slew_rate(SRV_Channel::k_throttle,      slewrate, 100, G_Dt);
     SRV_Channels::set_slew_rate(SRV_Channel::k_throttleLeft,  slewrate, 100, G_Dt);
