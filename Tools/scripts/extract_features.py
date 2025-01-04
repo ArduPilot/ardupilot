@@ -130,6 +130,7 @@ class ExtractFeatures(object):
 
             ('AP_IBUS_TELEM_ENABLED', 'AP_IBus_Telem::init',),
 
+            ('MODE_AUTOLAND_ENABLED', 'ModeAutoLand::update'),
             ('MODE_{type}_ENABLED', r'Mode(?P<type>.+)::init',),
             ('MODE_GUIDED_NOGPS_ENABLED', r'ModeGuidedNoGPS::init',),
 
