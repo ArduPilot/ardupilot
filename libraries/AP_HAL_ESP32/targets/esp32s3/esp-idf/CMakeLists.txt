@@ -121,6 +121,9 @@ target_link_libraries(${elf_file}
 # linker script generation, partition_table generation, etc.
 idf_build_executable(${elf_file})
 
+# wrap malloc to ensure memory is zeroed
+target_link_options(${elf_file} PRIVATE "-Wl,--wrap,malloc")
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 # Additional targets for measuring RAM use: size, size-components, size-files
