@@ -68,9 +68,9 @@ static constexpr uint16_t DELAY_AIRSPEED_TOPIC_MS = AP_DDS_DELAY_AIRSPEED_TOPIC_
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = AP_DDS_DELAY_GEO_POSE_TOPIC_MS;
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
-#if AP_DDS_GOAL_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
 static constexpr uint16_t DELAY_GOAL_TOPIC_MS = AP_DDS_DELAY_GOAL_TOPIC_MS ;
-#endif // AP_DDS_GOAL_PUB_ENABLED
+#endif // AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
 #if AP_DDS_CLOCK_PUB_ENABLED
 static constexpr uint16_t DELAY_CLOCK_TOPIC_MS =AP_DDS_DELAY_CLOCK_TOPIC_MS;
 #endif // AP_DDS_CLOCK_PUB_ENABLED
@@ -78,7 +78,7 @@ static constexpr uint16_t DELAY_CLOCK_TOPIC_MS =AP_DDS_DELAY_CLOCK_TOPIC_MS;
 static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS = AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS;
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 static constexpr uint16_t DELAY_PING_MS = 500;
-#ifdef AP_DDS_STATUS_PUB_ENABLED
+#if AP_DDS_STATUS_PUB_ENABLED
 static constexpr uint16_t DELAY_STATUS_TOPIC_MS = AP_DDS_DELAY_STATUS_TOPIC_MS;
 #endif // AP_DDS_STATUS_PUB_ENABLED
 
@@ -88,7 +88,9 @@ static constexpr uint16_t DELAY_STATUS_TOPIC_MS = AP_DDS_DELAY_STATUS_TOPIC_MS;
 #if AP_DDS_JOY_SUB_ENABLED
 sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
 #endif // AP_DDS_JOY_SUB_ENABLED
+#if AP_DDS_DYNAMIC_TF_SUB_ENABLED
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
+#endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
 #if AP_DDS_VEL_CTRL_ENABLED
 geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
 #endif // AP_DDS_VEL_CTRL_ENABLED
@@ -162,6 +164,7 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
     AP_GROUPEND
 };
 
+#if AP_DDS_STATIC_TF_PUB_ENABLED | AP_DDS_LOCAL_POSE_PUB_ENABLED | AP_DDS_GEOPOSE_PUB_ENABLED | AP_DDS_IMU_PUB_ENABLED
 static void initialize(geometry_msgs_msg_Quaternion& q)
 {
     q.x = 0.0;
@@ -169,6 +172,7 @@ static void initialize(geometry_msgs_msg_Quaternion& q)
     q.z = 0.0;
     q.w = 1.0;
 }
+#endif // AP_DDS_STATIC_TF_PUB_ENABLED | AP_DDS_LOCAL_POSE_PUB_ENABLED | AP_DDS_GEOPOSE_PUB_ENABLED | AP_DDS_IMU_PUB_ENABLED
 
 AP_DDS_Client::~AP_DDS_Client()
 {
@@ -563,7 +567,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
 }
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
 
-#if AP_DDS_GOAL_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
 bool AP_DDS_Client::update_topic_goal(geographic_msgs_msg_GeoPointStamped& msg)
 {
     const auto &vehicle = AP::vehicle();
@@ -594,7 +598,7 @@ bool AP_DDS_Client::update_topic_goal(geographic_msgs_msg_GeoPointStamped& msg)
         return false;
     }
 }
-#endif // AP_DDS_GOAL_PUB_ENABLED
+#endif // AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
 
 #if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
@@ -1006,7 +1010,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             // bool, string, byte_array, bool_array, integer_array, double_array and string_array
             bool param_isnan = true;
             bool param_isinf = true;
-            float param_value;
+            float param_value = 0.0f;
             switch (param.value.type) {
             case PARAMETER_INTEGER: {
                 param_isnan = isnan(param.value.integer_value);
@@ -1624,7 +1628,7 @@ void AP_DDS_Client::write_gps_global_origin_topic()
 }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
-#if AP_DDS_GOAL_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
 void AP_DDS_Client::write_goal_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1638,7 +1642,7 @@ void AP_DDS_Client::write_goal_topic()
         }
     }
 }
-#endif // AP_DDS_GOAL_PUB_ENABLED
+#endif // AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
 
 #if AP_DDS_STATUS_PUB_ENABLED
 void AP_DDS_Client::write_status_topic()
@@ -1736,14 +1740,14 @@ void AP_DDS_Client::update()
         write_gps_global_origin_topic();
     }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
-#if AP_DDS_GOAL_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
     if (cur_time_ms - last_goal_time_ms > DELAY_GOAL_TOPIC_MS) {
         if (update_topic_goal(goal_topic)) {
             write_goal_topic();
         }
         last_goal_time_ms = cur_time_ms;
     }
-#endif // AP_DDS_GOAL_PUB_ENABLED
+#endif // AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
 #if AP_DDS_STATUS_PUB_ENABLED
     if (cur_time_ms - last_status_check_time_ms > DELAY_STATUS_TOPIC_MS) {
         if (update_topic(status_topic)) {
@@ -1756,7 +1760,7 @@ void AP_DDS_Client::update()
     status_ok = uxr_run_session_time(&session, 1);
 }
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD != HAL_BOARD_ESP32
 extern "C" {
     int clock_gettime(clockid_t clockid, struct timespec *ts);
 }
@@ -1773,6 +1777,6 @@ int clock_gettime(clockid_t clockid, struct timespec *ts)
     ts->tv_nsec = (utc_usec % 1000000ULL) * 1000UL;
     return 0;
 }
-#endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL
+#endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD != HAL_BOARD_ESP32
 
 #endif // AP_DDS_ENABLED

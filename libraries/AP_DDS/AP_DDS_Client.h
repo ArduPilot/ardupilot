@@ -114,7 +114,7 @@ private:
     static void update_topic(geographic_msgs_msg_GeoPointStamped& msg);
 # endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
-#if AP_DDS_GOAL_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
     geographic_msgs_msg_GeoPointStamped goal_topic;
     // The last ms timestamp AP_DDS wrote a goal message
     uint64_t last_goal_time_ms;
@@ -122,7 +122,7 @@ private:
     void write_goal_topic();
     bool update_topic_goal(geographic_msgs_msg_GeoPointStamped& msg);
     geographic_msgs_msg_GeoPointStamped prev_goal_msg;
-# endif // AP_DDS_GOAL_PUB_ENABLED
+#endif // AP_DDS_GOAL_PUB_ENABLED & AP_SCRIPTING_ENABLED
 
 #if AP_DDS_GEOPOSE_PUB_ENABLED
     geographic_msgs_msg_GeoPoseStamped geo_pose_topic;
