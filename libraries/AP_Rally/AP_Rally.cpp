@@ -8,6 +8,9 @@
 #include <AP_Logger/AP_Logger.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AC_Avoidance/AC_Avoidance_config.h>
+#include <AC_Avoidance/AP_OAPathPlanner.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
@@ -47,6 +50,13 @@ const AP_Param::GroupInfo AP_Rally::var_info[] = {
     // @User: Standard
     // @Values: 0:DoNotIncludeHome,1:IncludeHome
     AP_GROUPINFO("INCL_HOME", 2, AP_Rally, _rally_incl_home, RALLY_INCLUDE_HOME_DEFAULT),
+
+    // @Param: OPTIONS
+    // @DisplayName: Rally Options
+    // @Description: Options to Rally point usage
+    // @User: Standard
+    // @Values: 0:Use Dijkstras to decide closest point
+    AP_GROUPINFO("OPTIONS", 3, AP_Rally, _options, 0),
 
     AP_GROUPEND
 };
@@ -182,6 +192,100 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
     }
 
     return return_loc;
+}
+
+// find rally point or home with shortest flight path distance calculated using Dijkstras
+// returns true on completion and fills in ret with the Location of the closest rally point or home
+// returns false if the calculation has not yet completed
+// should be called continuously until it returns true.  only one caller is supported at a time
+// if dijkstras is disabled or "Use Dikstras" options bit is not set then it will fall back to calc_best_rally_or_home_location()
+bool AP_Rally::find_nearest_rally_or_home_with_dijkstras(const Location &current_loc, float rtl_home_alt_amsl_cm, Location& ret)
+{
+#if AP_OAPATHPLANNER_ENABLED
+    // get oa singleton
+    AP_OAPathPlanner *oa_ptr = AP_OAPathPlanner::get_singleton();
+    
+    // fallback to calc_best_rally_or_home_location if dijkstras is disabled or not rally points
+    if (!option_is_set(Options::USE_DIJKSTRAS) || (oa_ptr == nullptr) || (get_rally_total() == 0)) {
+        ret = calc_best_rally_or_home_location(current_loc, rtl_home_alt_amsl_cm);
+        return true;
+    }
+
+    // initialise state
+    if (_find_with_dijkstras.state != FindWithDijkstras::State::PROCESSING) {
+        _find_with_dijkstras.state = FindWithDijkstras::State::PROCESSING;
+        _find_with_dijkstras.home_dist_calced = false;
+        _find_with_dijkstras.rally_index = 0;
+    }
+
+    // get destination location (e.g. home or next rally point)
+    Location search_loc;
+    if (!_find_with_dijkstras.home_dist_calced) {
+        // calculating path length to home
+        search_loc = AP::ahrs().get_home();
+    } else {
+        // calculating path length to a rally point
+        RallyLocation rallyloc;
+        if (!get_rally_point_with_index(_find_with_dijkstras.rally_index, rallyloc)) {
+            // unexpected failure to get rally point, fall back to calc_best_rally_or_home_location
+            _find_with_dijkstras.state = FindWithDijkstras::State::COMPLETED;
+            ret = calc_best_rally_or_home_location(current_loc, rtl_home_alt_amsl_cm);
+            return true;
+        }
+
+        // convert rally location to Location
+        search_loc = rally_location_to_location(rallyloc);
+    }
+
+    // get path length to search_loc
+    float path_length = 0;
+    AP_OAPathPlanner::OA_RetState oa_ret = oa_ptr->get_path_length(current_loc, search_loc, path_length);
+
+    // check response
+    switch (oa_ret) {
+    case AP_OAPathPlanner::OA_NOT_REQUIRED:
+    case AP_OAPathPlanner::OA_ERROR:
+        // object avoidance is not required or unrecoverable error during calculation
+        // fall back to calc_best_rally_or_home_location
+        _find_with_dijkstras.state = FindWithDijkstras::State::COMPLETED;
+        ret = calc_best_rally_or_home_location(current_loc, rtl_home_alt_amsl_cm);
+        return true;
+    case AP_OAPathPlanner::OA_PROCESSING:
+        // still calculating path length
+        return false;
+    case AP_OAPathPlanner::OA_SUCCESS:
+        if (!_find_with_dijkstras.home_dist_calced) {
+            // path length to home calculated, default to this being shortest path
+            _find_with_dijkstras.home_dist_calced = true;
+            _find_with_dijkstras.shortest_path_loc = search_loc;
+            _find_with_dijkstras.shortest_path_length = path_length;
+        } else {
+            // path length to a rally point calculated
+            if (path_length < _find_with_dijkstras.shortest_path_length) {
+                _find_with_dijkstras.shortest_path_loc = search_loc;
+                _find_with_dijkstras.shortest_path_length = path_length;
+            }
+
+            // advance to the next rally point
+            _find_with_dijkstras.rally_index++;
+        }
+
+        // if home and all rally points have been checked then complete
+        if (_find_with_dijkstras.home_dist_calced && _find_with_dijkstras.rally_index >= get_rally_total()) {
+            _find_with_dijkstras.state = FindWithDijkstras::State::COMPLETED;
+            ret = _find_with_dijkstras.shortest_path_loc;
+            return true;
+        }
+        return false;
+    }
+
+    // we should never get here but just in case, raise internal error and keep processing
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    return false;
+#else
+    ret = calc_best_rally_or_home_location(current_loc, rtl_home_alt_amsl_cm);
+    return true;
+#endif
 }
 
 // singleton instance
