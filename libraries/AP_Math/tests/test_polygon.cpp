@@ -276,9 +276,9 @@ static const struct {
     Vector2l point;
     bool outside;
 } OBC_test_points[] = {
-    { Vector2l(-266398870, 1518220000), true },
-    { Vector2l(-266418700, 1518709260), false },
-    { Vector2l(-350000000, 1490000000), true },
+    { Vector2l(-266398870, 1518220000), true, },
+    { Vector2l(-266418700, 1518709260), false, },
+    { Vector2l(-350000000, 1490000000), true, },
     { Vector2l(0, 0),                   true },
     { Vector2l(-265768150, 1518408250), false },
     { Vector2l(-265774060, 1518405860), true },
@@ -302,6 +302,54 @@ static const struct {
 TEST(Polygon, obc)
 {
     TEST_POLYGON_POINTS(OBC_boundary, OBC_test_points);
+}
+
+#define TEST_POLYGON_DISTANCE_POINTS(POLYGON, TEST_POINTS)                       \
+    do {                                                                \
+        for (uint32_t i = 0; i < ARRAY_SIZE(TEST_POINTS); i++) {        \
+            EXPECT_EQ(TEST_POINTS[i].distance,                       \
+                      Polygon_closest_distance_point(POLYGON,           \
+                                                     ARRAY_SIZE(POLYGON),\
+                                                     TEST_POINTS[i].point)); \
+        }                                                               \
+    } while(0)
+
+// Center of London (Charing Cross)
+const int32_t CENTER_LAT = static_cast<int32_t>(51.5085 * 1E7); // 515085000
+const int32_t CENTER_LON = static_cast<int32_t>(-0.1257 * 1E7); // -1257000
+
+// Bounding box coordinates (in 1E7 degrees)
+const int32_t NORTH_WEST_LAT = static_cast<int32_t>((51.5085 + 0.0006732) * 1E7); // 515092732
+const int32_t NORTH_WEST_LON = static_cast<int32_t>((-0.1257 - 0.0010776) * 1E7); // -1267776
+
+const int32_t NORTH_EAST_LAT = static_cast<int32_t>((51.5085 + 0.0006732) * 1E7); // 515092732
+const int32_t NORTH_EAST_LON = static_cast<int32_t>((-0.1257 + 0.0010776) * 1E7); // -1246224
+
+const int32_t SOUTH_WEST_LAT = static_cast<int32_t>((51.5085 - 0.0006732) * 1E7); // 515080268
+const int32_t SOUTH_WEST_LON = static_cast<int32_t>((-0.1257 - 0.0010776) * 1E7); // -1267776
+
+const int32_t SOUTH_EAST_LAT = static_cast<int32_t>((51.5085 - 0.0006732) * 1E7); // 515080268
+const int32_t SOUTH_EAST_LON = static_cast<int32_t>((-0.1257 + 0.0010776) * 1E7); // -1246224
+
+// Array of coordinates in [latitude, longitude] pairs for each corner
+static const Vector2l London_boundary[] {
+    Vector2l(NORTH_WEST_LAT, NORTH_WEST_LON), // Northwest corner
+    Vector2l(NORTH_EAST_LAT, NORTH_EAST_LON), // Northeast corner
+    Vector2l(SOUTH_WEST_LAT, SOUTH_WEST_LON), // Southwest corner
+    Vector2l(SOUTH_EAST_LAT, SOUTH_EAST_LON), // Southeast corner
+    Vector2l(NORTH_WEST_LAT, NORTH_WEST_LON), // Northwest corner
+};
+
+static const struct {
+    Vector2l point;
+    float distance;
+} London_test_points[] = {
+    { Vector2l(CENTER_LAT, CENTER_LON), 6737U, },
+};
+
+TEST(Polygon, London_distance)
+{
+    TEST_POLYGON_DISTANCE_POINTS(London_boundary, London_test_points);
 }
 
 static const Vector2f PROX_boundary[] = {

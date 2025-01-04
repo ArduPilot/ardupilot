@@ -123,7 +123,8 @@ template bool Polygon_outside<int32_t>(const Vector2l &P, const Vector2l *V, uns
 template bool Polygon_complete<int32_t>(const Vector2l *V, unsigned n);
 template bool Polygon_outside<float>(const Vector2f &P, const Vector2f *V, unsigned n);
 template bool Polygon_complete<float>(const Vector2f *V, unsigned n);
-
+template float Polygon_closest_distance_point<float>(const Vector2f *V, unsigned N, const Vector2f &p);
+template float Polygon_closest_distance_point<int32_t>(const Vector2l *V, unsigned N, const Vector2l &p);
 
 /*
   determine if the polygon of N verticies defined by points V is
@@ -196,21 +197,109 @@ float Polygon_closest_distance_line(const Vector2f *V, unsigned N, const Vector2
     return sqrtf(closest_sq);
 }
 
+#include <cmath>
+#include <iostream>
+
+const double EARTH_RADIUS_METERS = 6378137.0; // Earth's radius in meters (WGS84)
+
+// Converts 1e7 degrees to radians
+double toRadians(long degrees_1e7) {
+    return radians(degrees_1e7 / 1.0e7);
+}
+
+// Converts (latitude, longitude) in radians to 3D Cartesian coordinates on a unit sphere
+void latLonToCartesian(double latRad, double lonRad, double &x, double &y, double &z) {
+    x = std::cos(latRad) * std::cos(lonRad);
+    y = std::cos(latRad) * std::sin(lonRad);
+    z = std::sin(latRad);
+}
+
+// Haversine distance between two points given in 1e7 degrees
+double haversine(long lat1_1e7, long lon1_1e7, long lat2_1e7, long lon2_1e7) {
+    double lat1 = toRadians(lat1_1e7);
+    double lat2 = toRadians(lat2_1e7);
+
+    double dLat = toRadians(lat2_1e7 - lat1_1e7);
+    double dLon = toRadians(lon2_1e7 - lon1_1e7);
+
+    double a = pow(sin(dLat / 2), 2) + pow(sin(dLon / 2), 2) * cos(lat1) * cos(lat2);
+    double c = 2 * asin(sqrt(a));
+    return EARTH_RADIUS_METERS * c;
+}
+
+// Compute closest distance from a point to a line segment on a sphere
+double closestDistanceToLineSegment(long pointLat_1e7, long pointLon_1e7, 
+                                    long lineStartLat_1e7, long lineStartLon_1e7, 
+                                    long lineEndLat_1e7, long lineEndLon_1e7) {
+    // Convert lat/lon to 3D Cartesian coordinates on a unit sphere
+    double x1, y1, z1, x2, y2, z2, xp, yp, zp;
+    latLonToCartesian(toRadians(lineStartLat_1e7), toRadians(lineStartLon_1e7), x1, y1, z1);
+    latLonToCartesian(toRadians(lineEndLat_1e7), toRadians(lineEndLon_1e7), x2, y2, z2);
+    latLonToCartesian(toRadians(pointLat_1e7), toRadians(pointLon_1e7), xp, yp, zp);
+
+    // Compute vector from lineStart to lineEnd (v) and from lineStart to point (w)
+    double vx = x2 - x1;
+    double vy = y2 - y1;
+    double vz = z2 - z1;
+    double wx = xp - x1;
+    double wy = yp - y1;
+    double wz = zp - z1;
+
+    // Project w onto v
+    double dot_vw = vx * wx + vy * wy + vz * wz;
+    double dot_vv = vx * vx + vy * vy + vz * vz;
+    double t = (dot_vv != 0) ? dot_vw / dot_vv : -1;
+
+    double closestX, closestY, closestZ;
+    if (t < 0) {
+        // Closest to line start
+        closestX = x1;
+        closestY = y1;
+        closestZ = z1;
+    } else if (t > 1) {
+        // Closest to line end
+        closestX = x2;
+        closestY = y2;
+        closestZ = z2;
+    } else {
+        // Closest point is on the line
+        closestX = x1 + t * vx;
+        closestY = y1 + t * vy;
+        closestZ = z1 + t * vz;
+    }
+
+    // Convert closest point back to lat/lon (reverse cartesian)
+    double norm = std::sqrt(closestX * closestX + closestY * closestY + closestZ * closestZ);
+    double closestLat = std::asin(closestZ / norm); // Latitude from z-coordinate
+    double closestLon = std::atan2(closestY, closestX); // Longitude from x and y
+
+    // Convert back to 1e7 degrees
+    long closestLat_1e7 = static_cast<long>((closestLat * 180.0 / M_PI) * 1e7);
+    long closestLon_1e7 = static_cast<long>((closestLon * 180.0 / M_PI) * 1e7);
+
+    // Calculate the Haversine distance from the point to the closest point on the line
+    return haversine(pointLat_1e7, pointLon_1e7, closestLat_1e7, closestLon_1e7);
+}
+
 /*
   return the closest distance that point p comes to an edge of closed
   polygon V, defined by N points
  */
-float Polygon_closest_distance_point(const Vector2f *V, unsigned N, const Vector2f &p)
+template <typename T>
+float Polygon_closest_distance_point(const Vector2<T> *V, unsigned N, const Vector2<T> &p)
 {
-    float closest_sq = FLT_MAX;
+    T closest = std::numeric_limits<T>::max();
     for (uint8_t i=0; i<N-1; i++) {
-        const Vector2f &v1 = V[i];
-        const Vector2f &v2 = V[i+1];
+        const Vector2<T> &v1 = V[i];
+        const Vector2<T> &v2 = V[i+1];
 
-        float dist_sq = Vector2f::closest_distance_between_line_and_point_squared(v1, v2, p);
-        if (dist_sq < closest_sq) {
-            closest_sq = dist_sq;
+        double distance = closestDistanceToLineSegment(p.x, p.y, 
+                                                   v1.x, v1.y, 
+                                                   v2.x, v2.y);
+        ::printf("%f\n", distance);
+        if (distance < closest) {
+            closest = distance;
         }
     }
-    return sqrtf(closest_sq);
+    return closest;
 }
