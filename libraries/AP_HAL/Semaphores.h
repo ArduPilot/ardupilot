@@ -32,12 +32,11 @@ public:
   macro will block forever for a semaphore, and will automatically
   release the semaphore when it goes out of scope
 
-  Note that we have two types of semaphores. A normal semaphore can
-  only be taken once. A recursive semaphore allows for the thread
-  holding the semaphore to take it again. It must be released the same
-  number of times it is taken.
+  All semaphores are recursive. This allows for the thread holding
+  the semaphore to take it again. It must be released the same number
+  of times it is taken.
 
-  The WITH_SEMAPHORE() macro can be used with either type of semaphore
+  The WITH_SEMAPHORE() macro cannot be used with binary semaphores
  */
 
 class WithSemaphore {
