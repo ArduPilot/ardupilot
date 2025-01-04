@@ -152,6 +152,38 @@ void AP_Servo_Telem::write_log()
 }
 #endif  // HAL_LOGGING_ENABLED
 
+// Fill in telem structure if telem is available, return false if not
+bool AP_Servo_Telem::get_telem(const uint8_t servo_index, TelemetryData& telem) const volatile
+{
+    // Check for valid index
+    if (servo_index >= ARRAY_SIZE(_telem_data)) {
+        return false;
+    }
+
+    // Check if data has ever been received for the servo index provided
+    if ((active_mask & (1U << servo_index)) == 0) {
+        return false;
+    }
+
+    const volatile TelemetryData &telem_data = _telem_data[servo_index];
+
+    // Because the structure is volatile we have to copy element wise
+    telem.last_update_ms = telem_data.last_update_ms;
+    telem.valid_types = telem_data.valid_types;
+    telem.command_position = telem_data.command_position;
+    telem.measured_position = telem_data.measured_position;
+    telem.force = telem_data.force;
+    telem.speed = telem_data.speed;
+    telem.voltage = telem_data.voltage;
+    telem.current = telem_data.current;
+    telem.duty_cycle = telem_data.duty_cycle;
+    telem.motor_temperature_cdeg = telem_data.motor_temperature_cdeg;
+    telem.pcb_temperature_cdeg = telem_data.pcb_temperature_cdeg;
+    telem.status_flags = telem_data.status_flags;
+
+    return true;
+}
+
 // Get the AP_Servo_Telem singleton
 AP_Servo_Telem *AP_Servo_Telem::get_singleton()
 {
