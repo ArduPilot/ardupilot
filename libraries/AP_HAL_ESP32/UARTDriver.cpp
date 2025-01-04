@@ -13,66 +13,100 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL_ESP32/UARTDriver.h>
+#include <AP_HAL/AP_HAL.h>
+
 #include <AP_Math/AP_Math.h>
+#include "Semaphores.h"
+#include "Scheduler.h"
+#include "UARTDriver.h"
 
 #include "esp_log.h"
 
 extern const AP_HAL::HAL& hal;
 
-namespace ESP32
-{
+#include "rom/ets_sys.h" //for ets_printf
+extern int ets_printf(const char* format, ...); //for ets_printf in rom
 
-UARTDesc uart_desc[] = {HAL_ESP32_UART_DEVICES};
+using namespace ESP32;
+
+
+const UARTDriver::SerialDef UARTDriver::_serial_tab[] = {HAL_ESP32_UART_DEVICES};
+
+// table to find UARTDrivers from serial number, used for event handling
+UARTDriver *UARTDriver::serial_drivers[UART_MAX_DRIVERS];
+
+UARTDriver::UARTDriver(uint8_t serial_num) :
+    AP_HAL::UARTDriver(),
+    sdef(_serial_tab[_serial_num]),
+    _serial_num(serial_num)
+{
+    _initialized = false;
+    if(_serial_num > UART_MAX_DRIVERS) {
+        // ets is very low level and can't print floats etc
+        ets_printf("too many UART drivers");
+    }
+    serial_drivers[_serial_num] = this;
+    //no printf allowed in static constructor, not allowed
+}
 
 void UARTDriver::vprintf(const char *fmt, va_list ap)
 {
+    // the idea is that no other thread can printf to the console etc till the current one finishes its line/action/etc.
+    WITH_SEMAPHORE(_sem);
 
-    uart_port_t p = uart_desc[uart_num].port;
+    uart_port_t p = sdef.port;
     if (p == 0) {
         esp_log_writev(ESP_LOG_INFO, "", fmt, ap);
     } else {
         AP_HAL::UARTDriver::vprintf(fmt, ap);
     }
+    //hal.scheduler->delay_microseconds(10000);// time for hw to flush while holding sem ? todo get rid of this?
+}
+
+// disable TX/RX pins for unusued uart
+void UARTDriver::disable_rxtx(void) const
+{
+    // nop on esp32. todo?
 }
 
 void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
-    if (uart_num < ARRAY_SIZE(uart_desc)) {
-        uart_port_t p = uart_desc[uart_num].port;
-        if (!_initialized) {
+    // hal.console->printf("%s:%d UART num:%d\n", __PRETTY_FUNCTION__, __LINE__, sdef.port);
 
-            uart_config_t config = {
-                .baud_rate = (int)b,
-                .data_bits = UART_DATA_8_BITS,
-                .parity = UART_PARITY_DISABLE,
-                .stop_bits = UART_STOP_BITS_1,
-                .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-            };
-            uart_param_config(p, &config);
-            uart_set_pin(p,
-                         uart_desc[uart_num].tx,
-                         uart_desc[uart_num].rx,
-                         UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-            //uart_driver_install(p, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
-            uart_driver_install(p, 2*UART_HW_FIFO_LEN(p), 0, 0, nullptr, 0);
-            _readbuf.set_size(RX_BUF_SIZE);
-            _writebuf.set_size(TX_BUF_SIZE);
+    uart_port_t p = sdef.port;
+    if (!_initialized) {
 
-            _initialized = true;
-        } else {
-            flush();
-            uart_set_baudrate(p, b);
+        uart_config_t config = {
+            .baud_rate = (int)b,
+            .data_bits = UART_DATA_8_BITS,
+            .parity = UART_PARITY_DISABLE,
+            .stop_bits = UART_STOP_BITS_1,
+            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        };
+        uart_param_config(p, &config);
+        uart_set_pin(p,
+                      sdef.tx,
+                      sdef.rx,
+                      UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+        //uart_driver_install(p, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
+        uart_driver_install(p, 2*UART_HW_FIFO_LEN(p), 0, 0, nullptr, 0);
+        _readbuf.set_size(RX_BUF_SIZE);
+        _writebuf.set_size(TX_BUF_SIZE);
 
-        }
+        _initialized = true;
+    } else {
+        flush();
+        uart_set_baudrate(p, b);
+
     }
+    
     _baudrate = b;
 }
 
 void UARTDriver::_end()
 {
     if (_initialized) {
-        uart_driver_delete(uart_desc[uart_num].port);
+        uart_driver_delete(sdef.port);
         _readbuf.set_size(0);
         _writebuf.set_size(0);
     }
@@ -81,7 +115,7 @@ void UARTDriver::_end()
 
 void UARTDriver::_flush()
 {
-    uart_port_t p = uart_desc[uart_num].port;
+    uart_port_t p = sdef.port;
     uart_flush(p);
 }
 
@@ -115,6 +149,18 @@ uint32_t UARTDriver::txspace()
 
 }
 
+// set optional features, return true on success
+bool UARTDriver::set_options(uint16_t options)
+{
+    return false;
+}
+
+// get optional features
+uint16_t UARTDriver::get_options(void) const
+{
+    return _last_options;
+}
+
 ssize_t IRAM_ATTR UARTDriver::_read(uint8_t *buffer, uint16_t count)
 {
     if (!_initialized) {
@@ -143,7 +189,7 @@ void IRAM_ATTR UARTDriver::_timer_tick(void)
 
 void IRAM_ATTR UARTDriver::read_data()
 {
-    uart_port_t p = uart_desc[uart_num].port;
+    uart_port_t p = sdef.port;
     int count = 0;
     do {
         count = uart_read_bytes(p, _buffer, sizeof(_buffer), 0);
@@ -155,7 +201,7 @@ void IRAM_ATTR UARTDriver::read_data()
 
 void IRAM_ATTR UARTDriver::write_data()
 {
-    uart_port_t p = uart_desc[uart_num].port;
+    uart_port_t p = sdef.port;
     int count = 0;
     _write_mutex.take_blocking();
     do {
@@ -184,7 +230,7 @@ size_t IRAM_ATTR UARTDriver::_write(const uint8_t *buffer, size_t size)
 
 bool UARTDriver::_discard_input()
 {
-    //uart_port_t p = uart_desc[uart_num].port;
+    //uart_port_t p = sdef.port;
     //return uart_flush_input(p) == ESP_OK;
     return false;
 }
@@ -219,4 +265,3 @@ uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
     return last_receive_us;
 }
 
-}
