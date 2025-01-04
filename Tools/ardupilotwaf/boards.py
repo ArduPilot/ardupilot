@@ -1372,6 +1372,7 @@ class linux(Board):
         ]
 
         # wrap malloc to ensure memory is zeroed
+        # note that this also needs to be done in the CMakeLists.txt files
         env.LINKFLAGS += ['-Wl,--wrap,malloc']
 
         if cfg.options.force_32bit:
