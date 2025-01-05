@@ -15,9 +15,9 @@
 
 #pragma once
 
-#include "AP_Filesystem_config.h"
+#include <AP_Networking/AP_Networking_Config.h>
 
-#if AP_FILESYSTEM_P92000_ENABLED
+#if AP_NETWORKING_FILESYSTEM_ENABLED
 
 #include "AP_Filesystem_backend.h"
 #include <AP_Networking/AP_Networking.h>
@@ -81,4 +81,4 @@ private:
     } dir[max_open_dir];
 };
 
-#endif  // AP_FILESYSTEM_P92000_ENABLED
+#endif  // AP_NETWORKING_FILESYSTEM_ENABLED

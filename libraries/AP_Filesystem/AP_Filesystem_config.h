@@ -61,8 +61,3 @@
 #include <AP_Mission/AP_Mission_config.h>
 #define AP_FILESYSTEM_MISSION_ENABLED AP_MISSION_ENABLED
 #endif
-
-#ifndef AP_FILESYSTEM_P92000_ENABLED
-#include <AP_Networking/AP_Networking_Config.h>
-#define AP_FILESYSTEM_P92000_ENABLED (AP_NETWORKING_ENABLED && AP_NETWORKING_FILESYSTEM_ENABLED)
-#endif
