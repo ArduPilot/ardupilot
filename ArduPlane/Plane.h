@@ -1130,6 +1130,8 @@ private:
     bool set_mode(Mode& new_mode, const ModeReason reason);
     bool set_mode(const uint8_t mode, const ModeReason reason) override;
     bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason);
+    // called when an attempt to change into a mode is unsuccessful
+    void mode_change_failed(const Mode *mode, const char *reason);
     void check_long_failsafe();
     void check_short_failsafe();
     void startup_INS(void);

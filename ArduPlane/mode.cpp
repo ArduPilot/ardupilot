@@ -209,6 +209,10 @@ void Mode::update_target_altitude()
 // returns true if the vehicle can be armed in this mode
 bool Mode::pre_arm_checks(size_t buflen, char *buffer) const
 {
+    if (requires_home() && !ahrs.home_is_set()) {
+        hal.util->snprintf(buffer, buflen, "mode requires home");
+        return false;
+    }
     if (!_pre_arm_checks(buflen, buffer)) {
         if (strlen(buffer) == 0) {
             // If no message is provided add a generic one
@@ -350,4 +354,12 @@ bool Mode::use_battery_compensation() const
 #endif
 
     return true;
+}
+
+void Plane::mode_change_failed(const Mode *mode, const char *reason)
+{
+    gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to %s failed: %s", mode->name(), reason);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode->mode_number()));
+    // make sad noise
+    AP_Notify::events.user_mode_change_failed = 1;
 }

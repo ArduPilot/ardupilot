@@ -286,6 +286,16 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         return false;
     }
 
+    // Block mode changes to modes that require home if we don't have a home, we need a home, and we're armed.
+    // Mode changes without a home, while disarmed, are always ok.
+    if (new_mode.requires_home() &&
+        !ahrs.home_is_set() && 
+        hal.util->get_soft_armed()
+        ) {
+        mode_change_failed(&new_mode, "requires home");
+        return false;
+    }
+
     // backup current control_mode and previous_mode
     Mode &old_previous_mode = *previous_mode;
     Mode &old_mode = *control_mode;

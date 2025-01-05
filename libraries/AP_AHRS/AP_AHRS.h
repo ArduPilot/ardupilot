@@ -683,6 +683,12 @@ public:
     // get access to an EKFGSF_yaw estimator
     const EKFGSF_yaw *get_yaw_estimator(void) const;
 
+    // get whether the AHRS allows arming without a home set in modes that don't require a home.
+    // used in plane for flying in modes such as MANUAL and FBWA.
+    bool allows_arming_without_home() {
+        return option_set(Options::ALLOW_ARMING_WITHOUT_HOME);
+    }
+
 private:
 
     // roll/pitch/yaw euler angles, all in radians
@@ -1016,6 +1022,7 @@ private:
         DISABLE_DCM_FALLBACK_FW=(1U<<0),
         DISABLE_DCM_FALLBACK_VTOL=(1U<<1),
         DISABLE_AIRSPEED_EKF_CHECK=(1U<<2),
+        ALLOW_ARMING_WITHOUT_HOME=(1U<<3),
     };
     AP_Int16 _options;
     
