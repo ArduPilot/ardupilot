@@ -52,16 +52,16 @@ public:
 private:
 
     // Open a given file ID with flags
-    bool open_fileId(AP_Networking::NineP2000& fs, const uint32_t fileId, int flags);
+    bool open_fileId(NineP2000& fs, const uint32_t fileId, int flags);
 
     // Wait for response, blocking
-    bool wait_for_tag(AP_Networking::NineP2000& fs, const uint16_t tag) const;
+    bool wait_for_tag(NineP2000& fs, const uint16_t tag) const;
 
     // Get the file id for a given name
-    uint32_t get_file_id(AP_Networking::NineP2000& fs, const char *name, const AP_Networking::NineP2000::walkType type) const;
+    uint32_t get_file_id(NineP2000& fs, const char *name, const NineP2000::walkType type) const;
 
     // Create a file or directory with the given name
-    bool create_file(AP_Networking::NineP2000& fs, const char *fname, bool is_dir);
+    bool create_file(NineP2000& fs, const char *fname, bool is_dir);
 
     // only allow up to 4 files at a time
     static constexpr uint8_t max_open_file = 4;

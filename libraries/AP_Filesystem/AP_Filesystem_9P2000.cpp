@@ -30,7 +30,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 // Wait for response, blocking
-bool AP_Filesystem_9P2000::wait_for_tag(AP_Networking::NineP2000& fs, const uint16_t tag) const
+bool AP_Filesystem_9P2000::wait_for_tag(NineP2000& fs, const uint16_t tag) const
 {
     // Tag is invalid
     if (tag == fs.NOTAG) {
@@ -54,7 +54,7 @@ bool AP_Filesystem_9P2000::wait_for_tag(AP_Networking::NineP2000& fs, const uint
 }
 
 // Open a given file ID with flags
-bool AP_Filesystem_9P2000::open_fileId(AP_Networking::NineP2000& fs, const uint32_t fileId, const int flags)
+bool AP_Filesystem_9P2000::open_fileId(NineP2000& fs, const uint32_t fileId, const int flags)
 {
     // Request the open
     const uint16_t tag = fs.request_open(fileId, flags);
@@ -69,7 +69,7 @@ bool AP_Filesystem_9P2000::open_fileId(AP_Networking::NineP2000& fs, const uint3
 }
 
 // Get file id for a given path, return 0 if fail
-uint32_t AP_Filesystem_9P2000::get_file_id(AP_Networking::NineP2000& fs, const char *name, const AP_Networking::NineP2000::walkType type) const
+uint32_t AP_Filesystem_9P2000::get_file_id(NineP2000& fs, const char *name, const NineP2000::walkType type) const
 {
     // Navigate to the given path
     const uint16_t tag = fs.request_walk(name);
@@ -83,7 +83,7 @@ uint32_t AP_Filesystem_9P2000::get_file_id(AP_Networking::NineP2000& fs, const c
     return fs.walk_result(tag, type);
 }
 
-bool AP_Filesystem_9P2000::create_file(AP_Networking::NineP2000& fs, const char *fname, bool is_dir)
+bool AP_Filesystem_9P2000::create_file(NineP2000& fs, const char *fname, bool is_dir)
 {
     // Copy string a split into path and name
     const uint16_t len = strlen(fname);
@@ -104,7 +104,7 @@ bool AP_Filesystem_9P2000::create_file(AP_Networking::NineP2000& fs, const char 
     }
 
     // Navigate to parent directory
-    const uint32_t fid = get_file_id(fs, found ? name : "", AP_Networking::NineP2000::walkType::Directory);
+    const uint32_t fid = get_file_id(fs, found ? name : "", NineP2000::walkType::Directory);
     if (fid == 0) {
         return false;
     }
@@ -138,7 +138,7 @@ int AP_Filesystem_9P2000::open(const char *fname, int flags, bool allow_absolute
     }
 
     // Make sure filesystem is mounted.
-    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    NineP2000& fs = AP::network().get_filesystem();
     if (!fs.mounted()) {
         errno = ENODEV;
         return -1;
@@ -157,7 +157,7 @@ int AP_Filesystem_9P2000::open(const char *fname, int flags, bool allow_absolute
     }
 
     // Navigate to the given path
-    const uint32_t fid = get_file_id(fs, fname, AP_Networking::NineP2000::walkType::File);
+    const uint32_t fid = get_file_id(fs, fname, NineP2000::walkType::File);
     if (fid == 0) {
         // Can't get file id if the file does not exist.
         // If flags are not readonly try and create a new file
@@ -215,7 +215,7 @@ int AP_Filesystem_9P2000::close(int fd)
     }
 
     // Make sure filesystem is mounted.
-    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    NineP2000& fs = AP::network().get_filesystem();
     if (!fs.mounted()) {
         errno = ENODEV;
         return -1;
@@ -242,7 +242,7 @@ int32_t AP_Filesystem_9P2000::read(int fd, void *buf, uint32_t count)
     }
 
     // Make sure filesystem is mounted.
-    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    NineP2000& fs = AP::network().get_filesystem();
     if (!fs.mounted()) {
         errno = ENODEV;
         return -1;
@@ -280,7 +280,7 @@ int32_t AP_Filesystem_9P2000::write(int fd, const void *buf, uint32_t count)
     }
 
     // Make sure filesystem is mounted.
-    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    NineP2000& fs = AP::network().get_filesystem();
     if (!fs.mounted()) {
         errno = ENODEV;
         return -1;
@@ -342,14 +342,14 @@ int AP_Filesystem_9P2000::stat(const char *name, struct stat *stbuf)
     }
 
     // Make sure filesystem is mounted.
-    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    NineP2000& fs = AP::network().get_filesystem();
     if (!fs.mounted()) {
         errno = ENODEV;
         return -1;
     }
 
     // Navigate to the given path
-    const uint32_t fid = get_file_id(fs, name, AP_Networking::NineP2000::walkType::File);
+    const uint32_t fid = get_file_id(fs, name, NineP2000::walkType::File);
     if (fid == 0) {
         errno = ENOENT;
         return -1;
@@ -385,14 +385,14 @@ int AP_Filesystem_9P2000::unlink(const char *pathname)
     }
 
     // Make sure filesystem is mounted.
-    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    NineP2000& fs = AP::network().get_filesystem();
     if (!fs.mounted()) {
         errno = ENODEV;
         return -1;
     }
 
     // Navigate to the given path
-    const uint32_t fid = get_file_id(fs, pathname, AP_Networking::NineP2000::walkType::Any);
+    const uint32_t fid = get_file_id(fs, pathname, NineP2000::walkType::Any);
     if (fid == 0) {
         errno = ENOENT;
         return -1;
@@ -431,7 +431,7 @@ int AP_Filesystem_9P2000::mkdir(const char *pathname)
     }
 
     // Make sure filesystem is mounted.
-    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    NineP2000& fs = AP::network().get_filesystem();
     if (!fs.mounted()) {
         errno = ENODEV;
         return -1;
@@ -455,7 +455,7 @@ void *AP_Filesystem_9P2000::opendir(const char *pathname)
     }
 
     // Make sure filesystem is mounted.
-    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    NineP2000& fs = AP::network().get_filesystem();
     if (!fs.mounted()) {
         errno = ENODEV;
         return nullptr;
@@ -484,7 +484,7 @@ void *AP_Filesystem_9P2000::opendir(const char *pathname)
     }
 
     // File id should be none zero
-    const uint32_t fid = get_file_id(fs, pathname, AP_Networking::NineP2000::walkType::Directory);
+    const uint32_t fid = get_file_id(fs, pathname, NineP2000::walkType::Directory);
     if (fid == 0) {
         // walk failed
         free(dir[idx].path);
@@ -525,7 +525,7 @@ struct dirent *AP_Filesystem_9P2000::readdir(void *dirp)
     }
 
     // Make sure filesystem is still mounted.
-    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    NineP2000& fs = AP::network().get_filesystem();
     if (!fs.mounted()) {
         errno = ENODEV;
         return nullptr;
@@ -579,7 +579,7 @@ int AP_Filesystem_9P2000::rename(const char *oldpath, const char *newpath)
     }
 
     // Make sure filesystem is mounted.
-    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    NineP2000& fs = AP::network().get_filesystem();
     if (!fs.mounted()) {
         errno = ENODEV;
         return -1;
@@ -609,7 +609,7 @@ int AP_Filesystem_9P2000::rename(const char *oldpath, const char *newpath)
     }
 
     // Navigate to the given path
-    const uint32_t fid = get_file_id(fs, oldpath, AP_Networking::NineP2000::walkType::Any);
+    const uint32_t fid = get_file_id(fs, oldpath, NineP2000::walkType::Any);
     if (fid == 0) {
         errno = ENOENT;
         return -1;
@@ -643,14 +643,14 @@ bool AP_Filesystem_9P2000::set_mtime(const char *filename, const uint32_t mtime_
     }
 
     // Make sure filesystem is mounted.
-    AP_Networking::NineP2000& fs = AP::network().get_filesystem();
+    NineP2000& fs = AP::network().get_filesystem();
     if (!fs.mounted()) {
         errno = ENODEV;
         return false;
     }
 
     // Navigate to the given path
-    const uint32_t fid = get_file_id(fs, filename, AP_Networking::NineP2000::walkType::Any);
+    const uint32_t fid = get_file_id(fs, filename, NineP2000::walkType::Any);
     if (fid == 0) {
         errno = ENOENT;
         return false;
