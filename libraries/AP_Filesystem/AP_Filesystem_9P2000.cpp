@@ -97,7 +97,8 @@ bool AP_Filesystem_9P2000::create_file(NineP2000& fs, const char *fname, bool is
         }
     }
 
-    char name[len + 1] {};
+    char name[len + 1];
+    memset(&name, 0, sizeof(name));
     memcpy(&name, fname, len);
     if (found) {
         name[split] = 0;
