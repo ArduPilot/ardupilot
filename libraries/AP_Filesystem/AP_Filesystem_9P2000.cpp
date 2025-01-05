@@ -12,9 +12,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "AP_Filesystem_config.h"
+#include <AP_Networking/AP_Networking_Config.h>
 
-#if AP_FILESYSTEM_P92000_ENABLED
+#if AP_NETWORKING_FILESYSTEM_ENABLED
 
 #include "AP_Filesystem.h"
 #include "AP_Filesystem_9P2000.h"
@@ -673,4 +673,4 @@ bool AP_Filesystem_9P2000::set_mtime(const char *filename, const uint32_t mtime_
     return fs.stat_update_result(tag);
 }
 
-#endif // AP_FILESYSTEM_P92000_ENABLED
+#endif // AP_NETWORKING_FILESYSTEM_ENABLED
