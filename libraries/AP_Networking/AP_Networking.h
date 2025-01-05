@@ -271,21 +271,6 @@ public:
             Mounted,
         } state;
 
-        // Message shape
-        union Message {
-            uint8_t buffer[1024];
-
-            // Header is used on all messages
-            struct PACKED {
-                struct PACKED {
-                    uint32_t length;
-                    uint8_t type;
-                    uint16_t tag;
-                } header;
-                uint8_t payload[sizeof(buffer) - sizeof(header)];
-            } content;
-        };
-
         // qid structure is used in several messages
         struct PACKED qid_t {
             uint8_t type;
@@ -303,6 +288,149 @@ public:
             uint32_t atime;
             uint32_t mtime;
             uint64_t length;
+            // name string with length
+            // uid string with length
+            // gid string with length
+            // muid string with length
+        };
+
+        // Message shape
+        union PACKED Message {
+            uint8_t buffer[1024];
+
+            struct PACKED {
+                // Header is used on all messages
+                struct PACKED {
+                    uint32_t length;
+                    uint8_t type;
+                    uint16_t tag;
+                } header;
+
+                // Message payloads differ
+                union PACKED {
+
+                    // Version request and response
+                    struct PACKED {
+                        uint32_t msize;
+                        // version string with length
+                    } Tversion;
+
+                    struct PACKED {
+                        uint32_t msize;
+                        uint16_t version_string_len;
+                        // version string of length version_string_len
+                    } Rversion;
+
+                    // Attach request and response
+                    struct PACKED {
+                        uint32_t fid;
+                        uint32_t afid;
+                        // uname string with length
+                        // aname string with length
+                    } Tattach;
+
+                    struct PACKED {
+                        qid_t qid;
+                    } Rattach;
+
+                    // Clunk request
+                    struct PACKED {
+                        uint32_t fid;
+                    } Tclunk;
+
+                    // Error response
+                    struct PACKED {
+                        uint16_t ename_string_len;
+                        // ename string with length
+                    } Rerror;
+
+                    // Open request and response
+                    struct PACKED {
+                        uint32_t fid;
+                        uint8_t mode;
+                    } Topen;
+
+                    struct PACKED {
+                        qid_t qid;
+                        uint32_t iounit;
+                    } Ropen;
+
+                    // Create request and response
+                    struct PACKED {
+                        uint32_t fid;
+                        // name string with length
+                        // uint32_t perm
+                        // uint8_t mode
+                    } Tcreate;
+
+                    struct PACKED {
+                        qid_t qid;
+                        uint32_t iounit;
+                    } Rcreate;
+
+                    // Read request and response
+                    struct PACKED {
+                        uint32_t fid;
+                        uint64_t offset;
+                        uint32_t count;
+                    } Tread;
+
+                    struct PACKED {
+                        uint32_t count;
+                        // count * data
+                    } Rread;
+
+                    // Write request and response
+                    struct PACKED {
+                        uint32_t fid;
+                        uint64_t offset;
+                        uint32_t count;
+                        // count * data
+                    } Twrite;
+
+                    struct PACKED {
+                        uint32_t count;
+                    } Rwrite;
+
+                    // Remove request
+                    struct PACKED {
+                        uint32_t fid;
+                    } Tremove;
+
+                    // Stat request and response
+                    struct PACKED {
+                        uint32_t fid;
+                    } Tstat;
+
+                    struct PACKED {
+                        uint16_t stat_len;
+                        stat_t stat;
+                        // note stat has variable length strings!
+                    } Rstat;
+
+                    // Stat write request
+                    struct PACKED {
+                        uint32_t fid;
+                        uint16_t nstat;
+                        stat_t stat;
+                        // note stat has variable length strings!
+                    } Twstat;
+
+                    // Walk request and response
+                    struct PACKED {
+                        uint32_t fid;
+                        uint32_t newfid;
+                        uint16_t nwname;
+                        // nwname * wname string with length
+                    } Twalk;
+
+                    struct PACKED {
+                        uint16_t nwqid;
+                        // nwqid * qid_t
+                    } Rwalk;
+
+                };
+            };
         };
 
         enum qidType {
@@ -335,7 +463,7 @@ public:
         uint16_t bufferLen;
 
         // Add a string to a message
-        void add_string(Message &msg, const char *str) const;
+        bool add_string(Message &msg, const char *str) const WARN_IF_UNUSED;
 
         // Request version and message size
         void request_version();
