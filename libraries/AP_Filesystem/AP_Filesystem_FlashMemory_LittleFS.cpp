@@ -28,7 +28,6 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_RTC/AP_RTC.h>
 
-#include "lfs.h"
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "bd/lfs_filebd.h"
 #include <cstdio>
@@ -78,7 +77,7 @@ AP_Filesystem_FlashMemory_LittleFS::AP_Filesystem_FlashMemory_LittleFS()
 int AP_Filesystem_FlashMemory_LittleFS::open(const char *pathname, int flags, bool allow_absolute_path)
 {
     int fd, retval;
-    file_descriptor* fp;
+    FileDescriptor* fp;
 
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(fs_sem);
@@ -127,7 +126,7 @@ int AP_Filesystem_FlashMemory_LittleFS::open(const char *pathname, int flags, bo
 
 int AP_Filesystem_FlashMemory_LittleFS::close(int fileno)
 {
-    file_descriptor* fp;
+    FileDescriptor* fp;
     int retval;
 
     FS_CHECK_ALLOWED(-1);
@@ -154,7 +153,7 @@ int AP_Filesystem_FlashMemory_LittleFS::close(int fileno)
 
 int32_t AP_Filesystem_FlashMemory_LittleFS::read(int fd, void *buf, uint32_t count)
 {
-    file_descriptor* fp;
+    FileDescriptor* fp;
     lfs_ssize_t read;
 
     FS_CHECK_ALLOWED(-1);
@@ -177,7 +176,7 @@ int32_t AP_Filesystem_FlashMemory_LittleFS::read(int fd, void *buf, uint32_t cou
 
 int32_t AP_Filesystem_FlashMemory_LittleFS::write(int fd, const void *buf, uint32_t count)
 {
-    file_descriptor* fp;
+    FileDescriptor* fp;
     lfs_ssize_t written;
 
     FS_CHECK_ALLOWED(-1);
@@ -200,7 +199,7 @@ int32_t AP_Filesystem_FlashMemory_LittleFS::write(int fd, const void *buf, uint3
 
 int AP_Filesystem_FlashMemory_LittleFS::fsync(int fd)
 {
-    file_descriptor* fp;
+    FileDescriptor* fp;
 
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(fs_sem);
@@ -217,7 +216,7 @@ int AP_Filesystem_FlashMemory_LittleFS::fsync(int fd)
 
 int32_t AP_Filesystem_FlashMemory_LittleFS::lseek(int fd, int32_t position, int whence)
 {
-    file_descriptor* fp;
+    FileDescriptor* fp;
 
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(fs_sem);
@@ -312,10 +311,11 @@ int AP_Filesystem_FlashMemory_LittleFS::mkdir(const char *pathname)
     return 0;
 }
 
-typedef struct {
+
+struct DirEntry {
     lfs_dir_t dir;
     struct dirent entry;
-} lfs_dir_entry_pair;
+};
 
 void *AP_Filesystem_FlashMemory_LittleFS::opendir(const char *pathdir)
 {
@@ -325,7 +325,7 @@ void *AP_Filesystem_FlashMemory_LittleFS::opendir(const char *pathdir)
     WITH_SEMAPHORE(fs_sem);
     ENSURE_MOUNTED_NULL();
 
-    lfs_dir_entry_pair *result = new lfs_dir_entry_pair;
+    DirEntry *result = new DirEntry;
     if (!result) {
         errno = ENOMEM;
         return nullptr;
@@ -355,7 +355,7 @@ struct dirent *AP_Filesystem_FlashMemory_LittleFS::readdir(void *ptr)
     WITH_SEMAPHORE(fs_sem);
 
     lfs_info info;
-    lfs_dir_entry_pair *pair = static_cast<lfs_dir_entry_pair*>(ptr);
+    DirEntry *pair = static_cast<DirEntry*>(ptr);
     if (!pair) {
         errno = EINVAL;
         return nullptr;
@@ -394,7 +394,7 @@ int AP_Filesystem_FlashMemory_LittleFS::closedir(void *ptr)
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(fs_sem);
 
-    lfs_dir_entry_pair *pair = static_cast<lfs_dir_entry_pair*>(ptr);
+    DirEntry *pair = static_cast<DirEntry*>(ptr);
     if (!pair) {
         errno = EINVAL;
         return 0;
@@ -467,7 +467,7 @@ int AP_Filesystem_FlashMemory_LittleFS::allocate_fd()
 
     for (fd = 0; fd < MAX_OPEN_FILES; fd++) {
         if (open_files[fd] == nullptr) {
-            open_files[fd] = static_cast<file_descriptor*>(calloc(1, sizeof(file_descriptor)));
+            open_files[fd] = static_cast<FileDescriptor*>(calloc(1, sizeof(FileDescriptor)));
             if (open_files[fd] == nullptr) {
                 errno = ENOMEM;
                 return -1;
@@ -483,7 +483,7 @@ int AP_Filesystem_FlashMemory_LittleFS::allocate_fd()
 
 int AP_Filesystem_FlashMemory_LittleFS::free_fd(int fd)
 {
-    file_descriptor* fp = lfs_file_from_fd(fd);
+    FileDescriptor* fp = lfs_file_from_fd(fd);
     if (!fp) {
         return -1;
     }
@@ -506,7 +506,7 @@ void AP_Filesystem_FlashMemory_LittleFS::free_all_fds()
     }
 }
 
-AP_Filesystem_FlashMemory_LittleFS::file_descriptor* AP_Filesystem_FlashMemory_LittleFS::lfs_file_from_fd(int fd) const
+AP_Filesystem_FlashMemory_LittleFS::FileDescriptor* AP_Filesystem_FlashMemory_LittleFS::lfs_file_from_fd(int fd) const
 {
     if (fd < 0 || fd >= MAX_OPEN_FILES || open_files[fd] == nullptr) {
         errno = EBADF;

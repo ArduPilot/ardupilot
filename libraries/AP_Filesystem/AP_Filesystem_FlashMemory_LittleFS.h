@@ -86,14 +86,15 @@ private:
     bool dead;
 
     // Array of currently open file descriptors
-    struct file_descriptor {
+    struct FileDescriptor {
         lfs_file_t file;
         lfs_file_config cfg;
         lfs_attr attrs[1];
         uint32_t mtime;
         char* filename;
     };
-    file_descriptor* open_files[MAX_OPEN_FILES];
+
+    FileDescriptor* open_files[MAX_OPEN_FILES];
 
     // SPI device that handles the raw flash memory
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
@@ -110,7 +111,7 @@ private:
     int allocate_fd();
     int free_fd(int fd);
     void free_all_fds();
-    file_descriptor* lfs_file_from_fd(int fd) const;
+    FileDescriptor* lfs_file_from_fd(int fd) const;
 
     uint32_t lfs_block_and_offset_to_raw_flash_address(lfs_block_t block, lfs_off_t off = 0, lfs_off_t flash_block = 0);
     uint32_t lfs_block_to_raw_flash_page_index(lfs_block_t block, lfs_off_t flash_block = 0);
