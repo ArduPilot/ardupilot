@@ -143,6 +143,7 @@ static const struct {
     { "octa-cwx",           MultiCopter::create },
     { "octa-dji",           MultiCopter::create },
     { "octa-quad-cwx",      MultiCopter::create },
+    { "m32",                MultiCopter::create },
     { "dodeca-hexa",        MultiCopter::create },
     { "tri",                MultiCopter::create },
     { "y6",                 MultiCopter::create },
