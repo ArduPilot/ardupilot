@@ -8,6 +8,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+NavEKF2 AP_AHRS_NavEKF2::EKF2;
+
 void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
 {
     /*
