@@ -78,13 +78,6 @@ public:
         return EKF2.use_compass();
     }
 
-    // Set to true if the terrain underneath is stable enough to be
-    // used as a height reference this is not related to terrain
-    // following
-    void set_terrain_hgt_stable(bool stable) override {
-        EKF2.setTerrainHgtStable(stable);
-    }
-
     uint32_t getLastYawResetAngle(float &yawAng) override {
         return EKF2.getLastYawResetAngle(yawAng);
     };
@@ -105,9 +98,6 @@ public:
 
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override {
         return EKF2.getEkfControlLimits(ekfGndSpdLimit, controlScaleXY);
-    }
-    bool get_hgt_ctrl_limit(float &limit) const override WARN_IF_UNUSED {
-        return EKF2.getHeightControlLimit(limit);
     }
 
     void send_ekf_status_report(class GCS_MAVLINK &link) const override {

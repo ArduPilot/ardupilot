@@ -2473,7 +2473,7 @@ void AP_AHRS::writeTerrainAMSL(float alt_amsl_m)
     }
     // convert from amsl alt to alt above EKF origin
     const float alt_above_origin_m = alt_amsl_m - (state.origin.alt * 0.01f);
-    EKF3.writeTerrainData(alt_above_origin_m);
+    ekf3.EKF3.writeTerrainData(alt_above_origin_m);
 #endif
 }
 
@@ -3024,12 +3024,12 @@ bool AP_AHRS::get_hgt_ctrl_limit(float& limit) const
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        return ekf2.get_hgt_ctrl_limit(limit);
+        return ekf2.EKF2.getHeightControlLimit(limit);
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return ekf3.get_hgt_ctrl_limit(limit);
+        return ekf3.EKF3.getHeightControlLimit(limit);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
@@ -3068,10 +3068,10 @@ void AP_AHRS::set_terrain_hgt_stable(bool stable)
     terrainHgtStableState = (TriState)stable;
 
 #if HAL_NAVEKF2_AVAILABLE
-    ekf2.set_terrain_hgt_stable(stable);
+    ekf2.EKF2.setTerrainHgtStable(stable);
 #endif
 #if HAL_NAVEKF3_AVAILABLE
-    ekf3.set_terrain_hgt_stable(stable);
+    ekf3.EKF3.setTerrainHgtStable(stable);
 #endif
 }
 
@@ -3198,7 +3198,7 @@ bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vecto
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         // use EKF to get variance
-        return ekf3.get_vel_innovations_and_variances_for_source(source, innovations, variances);
+        return ekf3.EKF3.getVelInnovationsAndVariancesForSource((AP_NavEKF_Source::SourceXY)source, innovations, variances);
 #endif
 
 #if AP_AHRS_SIM_ENABLED

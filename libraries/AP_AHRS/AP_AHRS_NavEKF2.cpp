@@ -74,7 +74,7 @@ bool AP_AHRS_NavEKF2::pre_arm_check(bool requires_position, char *failure_msg, u
         hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 not started");
         return false;
     }
-    return EKF2.pre_arm_check(requires_position, failure_msg, failure_msg_len);
+    return EKF2.pre_arm_check(failure_msg, failure_msg_len);
 }
 
 #endif  // AP_AHRS_NAVEKF2_ENABLED

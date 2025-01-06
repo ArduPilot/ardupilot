@@ -77,12 +77,6 @@ public:
         return EKF3.use_compass();
     }
 
-    // Set to true if the terrain underneath is stable enough to be used as a height reference
-    // this is not related to terrain following
-    void set_terrain_hgt_stable(bool stable) override {
-        EKF3.setTerrainHgtStable(stable);
-    }
-
     uint32_t getLastYawResetAngle(float &yawAng) override {
         return EKF3.getLastYawResetAngle(yawAng);
     };
@@ -111,10 +105,6 @@ public:
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override {
         return EKF3.getEkfControlLimits(ekfGndSpdLimit, controlScaleXY);
     }
-    bool get_hgt_ctrl_limit(float &limit) const override WARN_IF_UNUSED {
-        return EKF3.getHeightControlLimit(limit);
-    }
-
     void send_ekf_status_report(class GCS_MAVLINK &link) const override {
         EKF3.send_status_report(link);
     }
@@ -134,14 +124,6 @@ public:
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override {
         Vector2f offset;
         return EKF3.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-    }
-
-    bool get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const override WARN_IF_UNUSED {
-        return EKF3.getVelInnovationsAndVariancesForSource((AP_NavEKF_Source::SourceXY)source, innovations, variances);
-    }
-
-    void request_yaw_reset(void) override {
-        EKF3.requestYawReset();
     }
 
     // this is out here so parameters can be poked into it
