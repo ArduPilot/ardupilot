@@ -127,7 +127,7 @@ public:
     }
 
     // this is out here so parameters can be poked into it
-    NavEKF3 EKF3;
+    static NavEKF3 EKF3;
 
     bool started;
 };
