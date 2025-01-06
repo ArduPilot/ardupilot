@@ -17,7 +17,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-#if APM_BUILD_COPTER_OR_HELI
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Blimp)
 #include <AP_Logger/AP_Logger.h>
 #endif
 #include "SCurve.h"
@@ -874,7 +874,7 @@ void SCurve::calculate_path(float Sm, float Jm, float V0, float Am, float Vm, fl
 #endif
         INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
 
-#if APM_BUILD_COPTER_OR_HELI
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Blimp)
         // @LoggerMessage: SCVE
         // @Description: Debug message for SCurve internal error
         // @Field: TimeUS: Time since system startup
@@ -916,7 +916,7 @@ void SCurve::calculate_path(float Sm, float Jm, float V0, float Am, float Vm, fl
         }
 #endif  // HAL_LOGGING_ENABLED
 
-#endif  // APM_BUILD_COPTER_OR_HELI
+#endif  // APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Blimp)
 
         Jm_out = 0.0f;
         t2_out = 0.0f;
