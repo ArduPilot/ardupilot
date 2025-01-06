@@ -70,7 +70,7 @@ class AutoTestBlimp(TestSuite):
         return 'Blimp'
 
     def default_frame(self):
-        return "Blimp"
+        return "blimp"
 
     def apply_defaultfile_parameters(self):
         # Blimp passes in a defaults_filepath in place of applying
