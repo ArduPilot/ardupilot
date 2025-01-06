@@ -22,10 +22,6 @@
 
 #include <AP_Math/AP_Math.h>
 
-#ifndef HAL_NO_UARTDRIVER
-#include <GCS_MAVLink/GCS.h>
-#endif
-
 using namespace ESP32;
 
 extern const AP_HAL::HAL& hal;
@@ -118,7 +114,7 @@ void RCInput::_timer_tick(void)
     if (!_init) {
         return;
     }
-#ifndef HAL_NO_UARTDRIVER
+#if AP_HAVE_GCS_SEND_TEXT
     const char *rc_protocol = nullptr;
     RCSource source = last_source;
 #endif
@@ -146,7 +142,7 @@ void RCInput::_timer_tick(void)
         rcprot.read(_rc_values, _num_channels);
         _rssi = rcprot.get_RSSI();
         _rx_link_quality = rcprot.get_rx_link_quality();
-#ifndef HAL_NO_UARTDRIVER
+#if AP_HAVE_GCS_SEND_TEXT
         rc_protocol = rcprot.protocol_name();
         source = rcprot.using_uart() ? RCSource::RCPROT_BYTES : RCSource::RCPROT_PULSES;
         // printf("RCInput: decoding %s", last_protocol);
@@ -154,7 +150,7 @@ void RCInput::_timer_tick(void)
     }
 #endif // AP_RCPROTOCOL_ENABLED
 
-#ifndef HAL_NO_UARTDRIVER
+#if AP_HAVE_GCS_SEND_TEXT
     if (rc_protocol && (rc_protocol != last_protocol || source != last_source)) {
         last_protocol = rc_protocol;
         last_source = source;
