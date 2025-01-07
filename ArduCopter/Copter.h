@@ -706,7 +706,8 @@ private:
     bool is_taking_off() const override;
     void rc_loop();
     void throttle_loop();
-    void update_batt_compass(void);
+    void update_batt(void);
+    void update_compass(void);
     void loop_rate_logging();
     void ten_hz_logging_loop();
     void twentyfive_hz_logging();
