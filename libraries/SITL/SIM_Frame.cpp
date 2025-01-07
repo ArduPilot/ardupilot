@@ -22,6 +22,8 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "SIM_Aircraft.h"
 
+#include "SIM_config.h"
+
 #include <stdio.h>
 #include <sys/stat.h>
 
@@ -80,6 +82,52 @@ static Motor quad_cw_x_motors[] =
     Motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
     Motor(AP_MOTORS_MOT_4,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
 };
+
+#if AP_SIM_FRAME_COPTER_DOTRIACONTA_OCTAQUAD_X_ENABLED
+static Motor dotriaconta_octaquad_x_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   1),
+    Motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  17),
+    Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   25),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    9),
+
+    Motor(AP_MOTORS_MOT_5,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    2),
+    Motor(AP_MOTORS_MOT_6, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   18),
+    Motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  26),
+    Motor(AP_MOTORS_MOT_8,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  10),
+
+    Motor(AP_MOTORS_MOT_9,    45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3),
+    Motor(AP_MOTORS_MOT_10, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 19),
+    Motor(AP_MOTORS_MOT_11,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  27),
+    Motor(AP_MOTORS_MOT_12,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  11),
+
+    Motor(AP_MOTORS_MOT_13,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4),
+    Motor(AP_MOTORS_MOT_14, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  20),
+    Motor(AP_MOTORS_MOT_15,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 28),
+    Motor(AP_MOTORS_MOT_16,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 12),
+
+    Motor(AP_MOTORS_MOT_17,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5),
+    Motor(AP_MOTORS_MOT_18, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 21),
+    Motor(AP_MOTORS_MOT_19,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  29),
+    Motor(AP_MOTORS_MOT_20,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  13),
+
+    Motor(AP_MOTORS_MOT_21,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6),
+    Motor(AP_MOTORS_MOT_22, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  22),
+    Motor(AP_MOTORS_MOT_23,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 30),
+    Motor(AP_MOTORS_MOT_24,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 14),
+
+    Motor(AP_MOTORS_MOT_25,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  7),
+    Motor(AP_MOTORS_MOT_26, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 23),
+    Motor(AP_MOTORS_MOT_27,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  31),
+    Motor(AP_MOTORS_MOT_28,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  15),
+
+    Motor(AP_MOTORS_MOT_29,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   8),
+    Motor(AP_MOTORS_MOT_30, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  24),
+    Motor(AP_MOTORS_MOT_31,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 32),
+    Motor(AP_MOTORS_MOT_32,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 16),
+};
+#endif  // AP_SIM_FRAME_COPTER_DOTRIACONTA_OCTAQUAD_X_ENABLED
+
 
 static Motor tiltquad_h_vectored_motors[] =
 {
@@ -337,6 +385,9 @@ static Frame supported_frames[] =
     Frame("x",         4, quad_x_motors),
     Frame("bfxrev",    4, quad_bf_x_rev_motors),
     Frame("bfx",       4, quad_bf_x_motors),
+#if AP_SIM_FRAME_COPTER_DOTRIACONTA_OCTAQUAD_X_ENABLED
+    Frame("dotriaconta", 32, dotriaconta_octaquad_x_motors),
+#endif  // AP_SIM_FRAME_COPTER_DOTRIACONTA_OCTAQUAD_X_ENABLED
     Frame("djix",      4, quad_dji_x_motors),
     Frame("cwx",       4, quad_cw_x_motors),
     Frame("tilthvec",  4, tiltquad_h_vectored_motors),
