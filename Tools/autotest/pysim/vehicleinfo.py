@@ -135,6 +135,7 @@ class VehicleInfo(object):
                     "default_params/copter.parm",
                     "default_params/copter-dotriaconta_octaquad_x.parm",
                 ],
+                "frame_example_script": "MotorMatrix_dotriaconta_octaquad_x.lua",
             },
             "hexadeca-octa": {
                 "waf_target": "bin/arducopter",
