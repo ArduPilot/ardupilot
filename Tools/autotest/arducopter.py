@@ -9647,12 +9647,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             defaults = self.model_defaults_filepath(frame)
             if not isinstance(defaults, list):
                 defaults = [defaults]
+            self.context_push()
+            frame_script = frame_bits.get('frame_example_script', None)
+            if frame_script is not None:
+                self.install_example_script_context(frame_script)
             self.customise_SITL_commandline(
                 [],
                 defaults_filepath=defaults,
                 model=model,
                 wipe=True,
             )
+            if frame_script is not None:
+                self.set_parameters({
+                    "SCR_ENABLE": 1,
+                    "LOG_BITMASK": 65535,
+                })
+                self.reboot_sitl()
 
             # add a listener that verifies yaw looks good:
             def verify_yaw(mav, m):
@@ -9691,6 +9701,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.context_pop()
 
             self.do_RTL()
+
+            self.context_pop()
 
     def Replay(self):
         '''test replay correctness'''
