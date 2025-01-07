@@ -87,6 +87,10 @@ Enable generator control. 0:Disabled,1:Enabled
 SkyPower EFI restart time. If engine should be running and it has stopped for
 this amount of time then auto-restart. To disable this feature set this value to zero.
 
+## EFI_SP_THR_MAX
+
+SkyPower EFI maximum throttle command. Use this parameter to limit the maximum demanded throttle, in case your engine power curve drops off past a throttle value. It is recommended that you limit your autopilot throttle limit instead.
+
 ## EFI_SP_GEN_AUTO
 
 Enable automatic EFI Generator on/off logic. This will automatically switch

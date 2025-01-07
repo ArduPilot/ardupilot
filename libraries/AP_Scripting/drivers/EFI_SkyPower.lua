@@ -74,7 +74,7 @@ end
 local efi_backend = nil
 
 -- Setup EFI Parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 19), 'could not add EFI_SP param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 20), 'could not add EFI_SP param table')
 
 --[[
   // @Param: EFI_SP_ENABLE
@@ -251,6 +251,15 @@ local EFI_SP_GEN_TIMER = bind_add_param('GEN_TIMER', 18, 2)
   // @User: Standard
 --]]
 local EFI_SP_GEN_TOUT = bind_add_param('GEN_TOUT', 19, 5)
+
+--[[
+  // @Param: EFI_SP_THR_MAX
+  // @DisplayName: SkyPower EFI max throttle
+  // @Description: SkyPower EFI maximum throttle command. Use this parameter to limit the maximum demanded throttle, in case your engine power curve drops off past a throttle value. It is recommended that you limit your autopilot throttle limit instead.
+  // @Range: 0 1
+  // @User: Standard
+--]]
+local EFI_SP_THR_MAX = bind_add_param('THR_MAX', 20, 1)
 
 
 if EFI_SP_ENABLE:get() == 0 then
@@ -488,6 +497,11 @@ local function engine_control(_driver)
 
     --- send throttle command, thr is 0 to 1
     function self.send_throttle(thr)
+       -- Constrain to set max throttle
+       local max_throttle = EFI_SP_THR_MAX:get()
+       if max_throttle then
+         thr = math.min(thr, max_throttle)
+       end
        last_throttle = thr
        local msg = CANFrame()
        msg:id(FRM_500)
