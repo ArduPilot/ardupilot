@@ -129,11 +129,11 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-dodecahexa.parm" ],
             },
-            "m32": {
+            "dotriaconta_octaquad_x": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": [
                     "default_params/copter.parm",
-                    "default_params/copter-32.parm",
+                    "default_params/copter-dotriaconta_octaquad_x.parm",
                 ],
             },
             "hexadeca-octa": {
