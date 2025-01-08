@@ -137,3 +137,7 @@ define AC_PAYLOAD_PLACE_ENABLED 0
 # disable extra camera messages
 define AP_CAMERA_INFO_FROM_SCRIPT_ENABLED 0
 define AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED 0
+
+
+# no servo feedback on minimized boards:
+define AP_SERVO_TELEM_ENABLED 0
