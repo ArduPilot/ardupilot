@@ -628,14 +628,6 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
     if (serial_start_ms == 0) {
         serial_start_ms = AP_HAL::millis();
     }
-    uint32_t now = AP_HAL::millis();
-    if (serial_start_ms == 0 || now - serial_start_ms < 1000) {
-        /*
-          we've just started the interface. We want it idle for at
-          least 1 second before we start sending serial data. 
-         */
-        hal.scheduler->delay(1100);
-    }
     memcpy(blheli.buf, buf, len);
     uint16_t crc = BL_CRC(buf, len);
     blheli.buf[len] = crc;
@@ -750,10 +742,6 @@ bool AP_BLHeli::BL_ReadA(uint8_t cmd, uint8_t *buf, uint16_t n)
  */
 bool AP_BLHeli::BL_ConnectEx(void)
 {
-    if (blheli.connected[blheli.chan] != 0) {
-        debug("Using cached interface 0x%x for %u", blheli.interface_mode[blheli.chan], blheli.chan);
-        return true;
-    }
     debug("BL_ConnectEx %u/%u at %u", blheli.chan, num_motors, motor_map[blheli.chan]);
     setDisconnected();
     const uint8_t BootInit[] = {0,0,0,0,0,0,0,0,0,0,0,0,0x0D,'B','L','H','e','l','i',0xF4,0x7D};
@@ -761,7 +749,7 @@ bool AP_BLHeli::BL_ConnectEx(void)
         return false;
     }
 
-    uint8_t BootInfo[8];
+    uint8_t BootInfo[9];
     if (!BL_ReadBuf(BootInfo, 8)) {
         return false;
     }
@@ -927,9 +915,13 @@ void AP_BLHeli::blheli_process_command(void)
     switch (blheli.command) {
     case cmd_InterfaceTestAlive: {
         debug("cmd_InterfaceTestAlive");
-        BL_SendCMDKeepAlive();
-        if (blheli.ack != ACK_OK) {
-            setDisconnected();
+        if (!isMcuConnected()) {
+            blheli.ack = ACK_D_GENERAL_ERROR;
+        } else {
+            BL_SendCMDKeepAlive();
+            if (blheli.ack != ACK_OK) {
+                setDisconnected();
+            }
         }
         uint8_t b = 0;
         blheli_send_reply(&b, 1);
@@ -997,21 +989,37 @@ void AP_BLHeli::blheli_process_command(void)
     }
 
     case cmd_DeviceInitFlash: {
+        uint8_t chan = blheli.buf[0];
+
         debug("cmd_DeviceInitFlash(%u)", unsigned(blheli.buf[0]));
         if (blheli.buf[0] >= num_motors) {
             debug("bad channel %u", blheli.buf[0]);
             blheli.ack = ACK_I_INVALID_CHANNEL;
-            blheli_send_reply(&blheli.buf[0], 1);
+            blheli_send_reply(&chan, 1);
             break;
         }
-        blheli.chan = blheli.buf[0];
-        blheli.ack = ACK_OK;
-        BL_ConnectEx();
-        uint8_t buf[4] = {blheli.deviceInfo[blheli.chan][0],
-                          blheli.deviceInfo[blheli.chan][1],
-                          blheli.deviceInfo[blheli.chan][2],
-                          blheli.deviceInfo[blheli.chan][3]};  // device ID
-        blheli_send_reply(buf, sizeof(buf));
+        // betaflight tries three times to connect, this avoids the need to wait some arbitrary
+        // period for the interface to be up.
+        bool failed = true;
+        for (uint8_t i = 0; i<3; i++) {
+            blheli.chan = chan;
+            blheli.ack = ACK_OK;
+            if (BL_ConnectEx()) {
+                uint8_t buf[4] = {blheli.deviceInfo[blheli.chan][0],
+                                blheli.deviceInfo[blheli.chan][1],
+                                blheli.deviceInfo[blheli.chan][2],
+                                blheli.deviceInfo[blheli.chan][3]};  // device ID
+                blheli_send_reply(buf, sizeof(buf));
+                failed = false;
+                break;
+            }
+        }
+
+        if (failed) {
+            blheli.ack = ACK_D_GENERAL_ERROR;
+            blheli_send_reply(&chan, 1);
+            setDisconnected();
+        }
         break;
     }
 
