@@ -544,7 +544,8 @@ bool SRV_Channels::set_aux_channel_default(SRV_Channel::Aux_servo_function_t fun
         // already assigned
         return true;
     }
-    if (channels[channel].function != SRV_Channel::k_none) {
+    if (channels[channel].function != SRV_Channel::k_none &&
+        !(channel >15 && channels[channel].function == SRV_Channel::k_GPIO)) {
         if (channels[channel].function == function) {
             return true;
         }
