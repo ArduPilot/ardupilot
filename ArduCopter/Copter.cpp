@@ -144,7 +144,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     FAST_TASK_CLASS(AP_Mount, &copter.camera_mount, update_fast),
 #endif
 #if HAL_LOGGING_ENABLED
-    FAST_TASK(Log_Video_Stabilisation),
+    FAST_TASK(Log_Video_Stabilisation), // TODO, OLSLO, this shall be commented out as we do not need that.
 #endif
 
     SCHED_TASK(rc_loop,              250,    130,  3),
@@ -156,8 +156,8 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if AP_OPTICALFLOW_ENABLED
     SCHED_TASK_CLASS(AP_OpticalFlow,          &copter.optflow,             update,         200, 160,  12),
 #endif
-    SCHED_TASK(update_batt,   50,    120, 15),
-    SCHED_TASK(update_compass,   10,    120, 15),
+    SCHED_TASK(update_compass,   10,    80, 13),
+    SCHED_TASK(update_batt,   50,    80, 15),
     SCHED_TASK_CLASS(RC_Channels, (RC_Channels*)&copter.g2.rc_channels, read_aux_all,    10,  50,  18),
     SCHED_TASK(arm_motors_check,      10,     50, 21),
 #if TOY_MODE_ENABLED == ENABLED
