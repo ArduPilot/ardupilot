@@ -573,9 +573,23 @@ bool Plane::verify_takeoff()
             // course. This keeps wings level until we are ready to
             // rotate, and also allows us to cope with arbitrary
             // compass errors for auto takeoff
-            float takeoff_course = wrap_PI(radians(gps.ground_course())) - steer_state.locked_course_err;
-            takeoff_course = wrap_PI(takeoff_course);
-            steer_state.hold_course_cd = wrap_360_cd(degrees(takeoff_course)*100);
+            const float ground_course_rad = wrap_PI(ahrs.groundspeed_vector().angle());
+            const float takeoff_course_rad = wrap_PI(ground_course_rad - steer_state.locked_course_err);
+            steer_state.hold_course_cd = wrap_360_cd(degrees(takeoff_course_rad)*100);
+
+            // when true, we will follow the recorded takeoff heading.
+            // when false, we xtrack to a virtual waypoint 10km ahead of us on this takeoff heading.
+            // We start false (heading hold) until we gain a little altitude then we switch to xtrack
+            steer_state.locked_course = false;
+
+            // grab current location and heading to calcule next_WP_loc 10km ahead.
+            // Save this for when we gain a little altitude
+            const float ground_course = wrap_360(degrees(ground_course_rad));
+            next_WP_loc = current_loc;
+            next_WP_loc.offset_bearing(ground_course, 10000); // push it out 10km
+            set_next_WP(next_WP_loc);
+            auto_state.crosstrack = true; // For when we start calling update_waypoint() soon
+
             gcs().send_text(MAV_SEVERITY_INFO, "Holding course %d at %.1fm/s (%.1f)",
                               (int)steer_state.hold_course_cd,
                               (double)gps.ground_speed(),
@@ -583,7 +597,10 @@ bool Plane::verify_takeoff()
         }
     }
 
-    if (steer_state.hold_course_cd != -1) {
+    if (!steer_state.locked_course && !prev_WP_loc.same_latlon_as(next_WP_loc)) {
+        // heading is not locked and we have valid waypoints to follow
+        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+    } else if (steer_state.hold_course_cd != -1) {
         // call navigation controller for heading hold
         nav_controller->update_heading_hold(steer_state.hold_course_cd);
     } else {
