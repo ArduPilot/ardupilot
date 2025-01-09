@@ -16,6 +16,8 @@
 
 #if AP_RANGEFINDER_LWI2C_ENABLED
 
+#include <ctype.h>
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 
@@ -431,9 +433,7 @@ bool AP_RangeFinder_LightWareI2C::sf20_parse_stream(uint8_t *stream_buf,
     bool number_found = false;
     uint16_t accumulator = 0;
     uint16_t digit_u16 = (uint16_t)stream_buf[*p_num_processed_chars];
-    while ((((digit_u16 <= '9') &&
-             (digit_u16 >= '0')) ||
-            (digit_u16 == '.')) &&
+    while ((isdigit(digit_u16) || (digit_u16 == '.')) &&
            (*p_num_processed_chars < lx20_max_reply_len_bytes)) {
         (*p_num_processed_chars)++;
         if (decrement_multiplier) {
