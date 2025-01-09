@@ -1,0 +1,5 @@
+# CAN
+CAN_P1_DRIVER 1  # Enables the use of CAN
+
+# Onboard OSD
+OSD_TYPE 5 # MSP
