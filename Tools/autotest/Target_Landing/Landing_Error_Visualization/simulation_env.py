@@ -13,15 +13,23 @@ class WindSpeed(TypedDict):
     dir: float
     turbulence: float
 
+class PositionSensor(TypedDict):
+    error: Dict[str, any]
+    update_rate: float
+    update_latency: float
+
 class TestInfo(TypedDict):
     test_name: str
     velocity: NDArray[np.float64]
     acceleration: NDArray[np.float64]
-    gps_error:  Dict[str, any]
-    gps_latency: float
-    gps_frequency: float
+
+    target_pos_sensor: PositionSensor
+    drone_pos_sensor: PositionSensor
+
     wind_speed: WindSpeed
     target_distance_from_drone: float
+
+    drone_alt: float
 
 class SimulationEnvironment:
 
@@ -71,6 +79,11 @@ class SimulationEnvironment:
                 }
             ]
     
+    ship_speed = 7.72 # 15 Knots
+    drone_speed = 15
+    
+    drone_alts = [40]
+
     initial_distance_from_target = [25, 50, 75, 100]
 
     winds: Dict[str, any] = {
@@ -82,18 +95,28 @@ class SimulationEnvironment:
                     # High turbulence (0.7-1.0): Frequent, strong gusts
                 }
     
-    gps_error: Dict[str, any] = {
+
+    pos_error: Dict[str, any] = {
                         "type": "Gaussian",
                         "mu": 0,
                         # "sigma": np.array([0.5, 1, 1.5, 2])
                         "sigma": np.array([0.5, 1])
                 }
     
-    gps_time: Dict[str, float] = {
-            'frequency': [0.5, 1],
-            'latency': [0.2, 0.5, 1]
-        }
+    pos_sensor: PositionSensor = {
+        "error": pos_error,
+        "update_rate": [1, 5],
+        "update_latency": [0.1, 0.2]
+    }
+
+    drone_pos_sensor: PositionSensor = {
+        "error": pos_error,
+        "update_rate": [5, 10],     # Ardupilot GPS frequency is from 5Hz - 20Hz
+        "update_latency": [0.1, 0.2] # Ardupilot latency is from 0 - 250ms
+
+    }
     
+
     @staticmethod
     def get_wind_spd_from_sea_state(sea_state: int):
         '''
@@ -124,44 +147,62 @@ class SimulationEnvironment:
     
 
     @staticmethod
-    def get_test_name(dist, sea_state, dir, turb, sigma, gps_freq, gps_latency):
-        return f"dist-{dist}__sea_state-{sea_state}__dir-{dir}__turb-{turb}__sigma-{sigma}__gps_freq-{gps_freq}__gps_lat-{gps_latency}"
+    def get_test_name(drone_alt, dist, sea_state, dir, turb, sigma, gps_freq, target_pos_update_latency):
+        return f"drone_alt-{drone_alt}__dist-{dist}__sea_state-{sea_state}__dir-{dir}__turb-{turb}__sigma-{sigma}__gps_freq-{gps_freq}__gps_lat-{target_pos_update_latency}"
     
     @staticmethod
     def generate_test_configs():
 
         initial_distance_from_target = SimulationEnvironment.initial_distance_from_target
-        gps_error: Dict[str, any] = SimulationEnvironment.gps_error
-        gps_time: Dict[str, float] = SimulationEnvironment.gps_time
+        pos_error: Dict[str, any] = SimulationEnvironment.pos_sensor["error"]
+        pos_sensor = SimulationEnvironment.pos_sensor
         winds: Dict[str, any] = SimulationEnvironment.winds
+        drone_alts = SimulationEnvironment.drone_alts
 
         test_configs: List[TestInfo] = []
 
-        for dist in initial_distance_from_target:
-            for sea_state in winds['sea_states']:
-                for dir in range(0, len(winds['wind_direction'])):
-                    for turb in range(0, len(winds['turbulence'])):
-                        for sigma in gps_error['sigma']:
-                            for gps_frequency in gps_time['frequency']:
-                                for gps_latency in gps_time['latency']:
-                        
-                                    test_configs.append({
-                                        "test_name": SimulationEnvironment.get_test_name(dist, sea_state, dir, turb, sigma, gps_frequency, gps_latency),
-                                        "wind_speed": {
-                                            'sea_state': sea_state,
-                                            'dir': winds['wind_direction'][dir],
-                                            "turbulence": winds['turbulence'][turb]
-                                        },
-                                        "velocity": np.array([5, 0, 0]),
-                                        "acceleration": np.array([0, 0, 0]),
-                                        "gps_error": {
-                                            "type": gps_error['type'],
-                                            "mu": gps_error["mu"],
-                                            "sigma": sigma
-                                        },
-                                        "gps_frequency": gps_frequency,
-                                        "gps_latency": gps_latency,
-                                        "target_distance_from_drone": dist
+        for drone_alt in drone_alts:
+            for dist in initial_distance_from_target:
+                for sea_state in winds['sea_states']:
+                    for wind_dir in range(0, len(winds['wind_direction'])):
+                        for turb in range(0, len(winds['turbulence'])):
+                            for sigma_i, sigma in enumerate(pos_error['sigma']):
+                                for update_rate_i, target_pos_update_rate in enumerate(pos_sensor['update_rate']):
+                                    for latency_i, target_pos_update_latency in enumerate(pos_sensor['update_latency']):
+
+                                        target_pos_sensor: PositionSensor = {
+                                            "error": {
+                                                "type": pos_error['type'],
+                                                "mu": pos_error["mu"],
+                                                "sigma": sigma
+                                            },
+                                            "update_latency": target_pos_update_latency,
+                                            "update_rate": target_pos_update_rate
+                                        }
+
+                                        drone_pos_sensor: PositionSensor = {
+                                             "error": {
+                                                "type": pos_error['type'],
+                                                "mu": pos_error["mu"],
+                                                "sigma": sigma
+                                            },
+                                            "update_latency": SimulationEnvironment.drone_pos_sensor["update_latency"][latency_i],
+                                            "update_rate":  SimulationEnvironment.drone_pos_sensor["update_rate"][update_rate_i]
+                                        }
+                            
+                                        test_configs.append({
+                                            "test_name": SimulationEnvironment.get_test_name(drone_alt, dist, sea_state, wind_dir, turb, sigma, target_pos_update_rate, target_pos_update_latency),
+                                            "wind_speed": {
+                                                'sea_state': sea_state,
+                                                'dir': winds['wind_direction'][wind_dir],
+                                                "turbulence": winds['turbulence'][turb]
+                                            },
+                                            "velocity": np.array([SimulationEnvironment.ship_speed, 0, 0]),
+                                            "acceleration": np.array([0, 0, 0]),
+                                            "target_pos_sensor": target_pos_sensor,
+                                            "drone_pos_sensor": drone_pos_sensor,
+                                            "target_distance_from_drone": dist,
+                                            "drone_alt": drone_alt
                                     })
 
         return test_configs
@@ -170,35 +211,57 @@ class SimulationEnvironment:
     def specific_test_case():
 
         sigma = 0
-        gps_latency = 0.2
-        gps_frequency = 1
+        target_pos_update_latency = 0.2
+        drone_pos_update_latency = 0.05
+        target_pos_update_rate = 1
+        drone_pos_update_rate = 5
         sea_state = 0
         wind_dir = 0
         wind_turb = 0
         dist = 25
+        drone_alt = 40
 
-        initial_distance_from_target = SimulationEnvironment.initial_distance_from_target
-        gps_error: Dict[str, any] = SimulationEnvironment.gps_error
-        gps_time: Dict[str, float] = SimulationEnvironment.gps_time
         winds: Dict[str, any] = SimulationEnvironment.winds
 
+        target_pos_sensor: PositionSensor = {
+                                            "error": {
+                                                "type": "Gaussian",
+                                                "mu": 0,
+                                                "sigma": sigma
+                                            },
+                                            "update_latency": target_pos_update_latency,
+                                            "update_rate": target_pos_update_rate
+                                        }
+
+        target_pos_sensor: PositionSensor = {
+                                    "error": {
+                                        "type": "Gaussian",
+                                        "mu": 0,
+                                        "sigma": sigma
+                                    },
+                                    "update_latency": drone_pos_update_latency,
+                                    "update_rate": drone_pos_update_rate
+                                }
+
         test_config: List[TestInfo] = [{
-            'test_name': SimulationEnvironment.get_test_name(dist, sea_state, wind_dir, wind_turb, sigma, gps_frequency, gps_latency),
-            'acceleration': np.array([0, 0]),
-            'velocity': np.array([5, 0, 0]),
-            'gps_error': {
-                'type': "Gaussian",
-                'mu': 0,
-                'sigma': sigma
-            },
-            'gps_latency': gps_latency,
-            'gps_frequency': gps_frequency,
-            'target_distance_from_drone': dist,
-            'wind_speed': {
+            'test_name': SimulationEnvironment.get_test_name(drone_alt, dist, sea_state, wind_dir, wind_turb, sigma, target_pos_update_rate, target_pos_update_latency),
+             'wind_speed': {
                 'sea_state': sea_state,
                 'dir': winds['wind_direction'][wind_dir],
                 "turbulence": winds['turbulence'][wind_turb]
             },
+            'velocity': np.array([SimulationEnvironment.ship_speed, 0, 0]),
+            'acceleration': np.array([0, 0]),
+            'target_pos_error': {
+                'type': "Gaussian",
+                'mu': 0,
+                'sigma': sigma
+            },
+             "target_pos_sensor": target_pos_sensor,
+            "drone_pos_sensor": target_pos_sensor,
+            "target_distance_from_drone": dist,
+            "drone_alt": drone_alt
+
         }]
 
         return test_config

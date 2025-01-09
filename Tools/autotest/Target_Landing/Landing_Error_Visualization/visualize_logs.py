@@ -14,16 +14,29 @@ from simulation_env import TestInfo, SimulationEnvironment
 from Data_Visualizer import DataVisualizer
 
 class ErrorAnalysis(TypedDict):
-     gps_error_sd: float
-     wind_speed: float
-     wind_direction: float
-     wind_turbulence:  float
-     target_velocity: NDArray[np.float64]
-     target_acceleration: NDArray[np.float64]
-     has_landed: str
-     landing_error: float
+    drone_alt: float
 
-log_file_path = "~/UAV_Landing/logs2"
+    initial_distance_from_target:float
+
+    target_pos_error_sd: float
+    target_pos_update_rate: float
+    target_pos_update_latency: float
+
+    drone_pos_error_sd: float
+    drone_pos_update_rate: float
+    drone_pos_update_latency: float
+
+    wind_speed: float
+    wind_direction: float
+    wind_turbulence:  float
+
+    target_velocity: NDArray[np.float64]
+    target_acceleration: NDArray[np.float64]
+
+    has_landed: str
+    landing_error: float
+
+log_file_path = "~/UAV_Landing/test-10Kn"
 
 def load_data(folder_path, folder):
         
@@ -33,15 +46,15 @@ def load_data(folder_path, folder):
         drone_file = os.path.join(folder_path, folder, "drone.csv")
         
         # Load data
-        target_state_noisy = np.loadtxt(target_noisy_file, delimiter=",", dtype=float, usecols=(1,2,3,4,5))
-        target_state = np.loadtxt(target_file, delimiter=",", dtype=float, usecols=(1,2,3,4,5))
-        drone_data = np.loadtxt(drone_file, delimiter=",", dtype=float, usecols=(1,2,3,4,5))
+        target_state_noisy = np.loadtxt(target_noisy_file, delimiter=",", dtype=float, usecols=(1,2,3,4,5), skiprows=1)
+        target_state = np.loadtxt(target_file, delimiter=",", dtype=float, usecols=(1,2,3,4,5), skiprows=1)
+        drone_data = np.loadtxt(drone_file, delimiter=",", dtype=float, usecols=(1,2,3,4,5), skiprows=1)
         drone_position = drone_data[:, 0:3]
         # drone_position_raw = drone_data[:, 6:10]
         drone_position_raw = []
 
-        time = np.loadtxt(drone_file, delimiter=",", dtype=float, usecols=0)
-        time_gps = np.loadtxt(target_noisy_file, delimiter=",", dtype=float, usecols=0)
+        time = np.loadtxt(drone_file, delimiter=",", dtype=float, usecols=0, skiprows=1)
+        time_gps = np.loadtxt(target_noisy_file, delimiter=",", dtype=float, usecols=0, skiprows=1)
 
         return time, time_gps, target_state, target_state_noisy, drone_position, drone_position_raw
 
@@ -53,8 +66,10 @@ def calculate_landing_error():
 
     error_analysis_file = os.path.join(data_folder_path, "error_analysis.csv")
     error_analysis: List[ErrorAnalysis] = []
-    for config in test_configs:
+    # for config in test_configs:
+    for i in range(0, 400, 1):
         
+        config = test_configs[i]
         folder_name = config["test_name"]
 
         if not os.path.exists(os.path.join(data_folder_path, folder_name)):
@@ -78,7 +93,7 @@ def calculate_landing_error():
         landing_off_y = actual_landing_pos[1] - desired_landing_pos[1] 
 
 
-        if actual_landing_pos[2] <= 1.5:
+        if actual_landing_pos[2] <= 1 or (actual_landing_pos[2] <= 10 and drone_position[-1, 2] > 1):
              has_landed = True
 
 
@@ -89,18 +104,26 @@ def calculate_landing_error():
              'wind_turb': config["wind_speed"]["turbulence"],
              'velocity': config["velocity"],
              'acceleration': config["acceleration"],
-             'gps_error_sigma': config["gps_error"]['sigma'],
-             'gps_update_frequency': config['gps_frequency'],
-             'gps_latency': config['gps_latency'],
+
+             'target_pos_error_sigma': config["target_pos_sensor"]['error']['sigma'],
+             'target_pos_update_rate': config["target_pos_sensor"]['update_rate'],
+             'target_pos_update_latency': config["target_pos_sensor"]['update_latency'],
+
+             'drone_pos_error_sigma': config["drone_pos_sensor"]['error']['sigma'],
+             'drone_pos_update_rate': config["drone_pos_sensor"]['update_rate'],
+             'drone_pos_update_latency': config["drone_pos_sensor"]['update_latency'],
+
              'initial_distance_from_target': config['target_distance_from_drone'],
-             'is_landed': has_landed,
+             'drone_alt': config["drone_alt"],
+
+             'has_landed': has_landed,
              'landing_error': landing_error,
              'alt_diff': drone_pos_m[-1,2],
              'landing_off_x': landing_off_x,
              'landing_off_y': landing_off_y
         })
 
-    # compute_landing_correlations(pd.DataFrame(error_analysis, columns=['wind_speed', 'wind_dir', 'gps_error_sigma', 'landing_error']))
+    # compute_landing_correlations(pd.DataFrame(error_analysis, columns=['wind_speed', 'wind_dir', 'target_pos_error_sigma', 'landing_error']))
 
     # plot_bar(error_analysis)
     plot_landing_error(error_analysis)
@@ -188,26 +211,39 @@ def compute_landing_correlations(simulation_data):
 
 def plot_landing_error(sim_data: List[ErrorAnalysis]):
      
-    parameters = ["wind_speed", "wind_dir", "gps_error_sigma", "gps_update_frequency", 
-                                                  "gps_latency", "initial_distance_from_target"]
+    parameters = ["wind_speed", "wind_dir", "target_pos_error_sigma", "target_pos_update_rate", 
+                    "target_pos_update_latency", "drone_pos_error_sigma",  "drone_pos_update_rate", 
+                    "drone_pos_update_latency"]
          
-    sim_data_df = pd.DataFrame(sim_data, columns=["wind_speed", "wind_dir", "gps_error_sigma", "gps_update_frequency", 
-                                                  "gps_latency", "initial_distance_from_target", "landing_error", "landing_off_x", "landing_off_y"]) 
+    sim_data_df = pd.DataFrame(sim_data, columns=["wind_speed", "wind_dir", "target_pos_error_sigma", "target_pos_update_rate", 
+                    "target_pos_update_latency", "drone_pos_error_sigma",  "drone_pos_update_rate", 
+                    "drone_pos_update_latency", "landing_error", "landing_off_x", "landing_off_y"]) 
 
-    sim_data_df = sim_data_df[sim_data_df["landing_error"] <= 5]
+    sim_data_df = sim_data_df[sim_data_df["landing_error"] <= 25]
     print(sim_data_df.shape)
 
-   
+    # Overall Landing error
+
+    plt.figure()
+    plt.title("Landing Error")
+    plt.scatter(sim_data_df["landing_off_x"], sim_data_df["landing_off_y"])
+    plt.scatter(0,0,marker="*")
+    plot_square(2)
+    plot_square(5)
+    plot_square(10)
+    plt.axis("equal")
+    plt.xlim([-6, 6])
+    plt.ylim([-6, 6])
 
 
-    print(sim_data_df.shape)
-
+    fig = plt.figure()
     for i, param in enumerate(parameters):
           
-        # subplt = plt.subplot(3,2, i+1)
-        plt.rcParams.update({'font.size': 20})
-        fig = plt.figure(figsize=(12,12))
-        fig.suptitle('Effect of real world scenarios on landing', fontsize=16)
+        subplt = plt.subplot(4,2, i+1)
+        # plt.rcParams.update({'font.size': 20})
+        # fig = plt.figure(figsize=(4,3))
+        # fig = plt.subplot()
+        fig.suptitle('Effect of real world scenarios on landing error', fontsize=16)
         values = get_bins(param)
 
         for value in values:
@@ -218,19 +254,20 @@ def plot_landing_error(sim_data: List[ErrorAnalysis]):
         plot_square(2)
         plot_square(5)
         plot_square(10)
-        plt.legend()
+        plt.legend(loc="upper right")
         plt.xlabel(get_xlabel(param))
-        plt.xlim([-5, 5])
-        plt.ylim([-5, 5])
+        plt.xlim([-6, 6])
+        plt.ylim([-6, 6])
+        plt.axis("equal")
         
         # plot_parameter_specific_hist(sim_data_df, param, bins=get_bins(param))
 
-    plt.subplots_adjust(left=0.1,
-                    bottom=0.1, 
-                    right=0.9, 
-                    top=0.9, 
-                    wspace=0.4, 
-                    hspace=0.4)
+        plt.subplots_adjust(left=0.1,
+                        bottom=0.1, 
+                        right=0.9, 
+                        top=0.9, 
+                        wspace=0.4, 
+                        hspace=0.4)
     plt.show()
 
 def plot_square(side):
@@ -242,18 +279,13 @@ def plot_square(side):
 
 def plot_bar(sim_data: List[ErrorAnalysis]):
      
-    parameters = ["wind_speed", "wind_dir", "gps_error_sigma", "gps_update_frequency", 
-                                                  "gps_latency", "initial_distance_from_target"]
+    parameters = ["wind_speed", "wind_dir", "target_pos_error_sigma", "target_pos_update_rate", 
+                                                  "target_pos_update_latency", "initial_distance_from_target"]
      
-    sim_data_df = pd.DataFrame(sim_data, columns=["wind_speed", "wind_dir", "gps_error_sigma", "gps_update_frequency", 
-                                                  "gps_latency", "initial_distance_from_target", "is_landed"]) 
+    sim_data_df = pd.DataFrame(sim_data, columns=["wind_speed", "wind_dir", "target_pos_error_sigma", "target_pos_update_rate", 
+                                                  "target_pos_update_latency", "initial_distance_from_target", "is_landed"]) 
     
     print(sim_data_df.shape)
-    # sim_data_df = sim_data_df[(sim_data_df["gps_error_sigma"] == 0.5) &
-    #                           (sim_data_df["gps_latency"] != 1) &
-    #                           (sim_data_df["gps_update_frequency"] == 1) &
-    #                           (sim_data_df["wind_dir"] >= 90) &
-    #                           (sim_data_df["wind_speed"] <= 6)]
 
     plt.rcParams.update({'font.size': 20})
     fig = plt.figure(figsize=(12,10))
@@ -296,7 +328,7 @@ def plot_bar(sim_data: List[ErrorAnalysis]):
         plt.xlabel(get_xlabel(param))
         plt.ylabel("# of Occurences")
 
-        if param ==  "gps_error_sigma" or param == "gps_update_frequency" or param == "gps_latency":
+        if param ==  "target_pos_error_sigma" or param == "target_pos_update_rate" or param == "target_pos_update_latency":
             plt.xlim(0, 1.5)
 
         # plot_parameter_specific_hist(sim_data_df, param, bins=get_bins(param))
@@ -316,12 +348,18 @@ def get_xlabel(param: str):
             return "Wind Speed (m/s)"
         case "wind_dir":
             return "Wind Direction (deg)"
-        case "gps_error_sigma":
-            return "GPS Error Std Deviation"
-        case "gps_update_frequency":
-            return "Target GPS Frequency (Hz)"
-        case "gps_latency":
-            return "Target GPS latency (s)"
+        case "target_pos_error_sigma":
+            return "Target Position Error"
+        case "target_pos_update_rate":
+            return "Target Position Update Rate (Hz)"
+        case "target_pos_update_latency":
+            return "Target Postion Update Latency (s)"
+        case "drone_pos_error_sigma":
+            return "Drone Position Error"
+        case "drone_pos_update_rate":
+            return "Drone Position Update Rate (Hz)"
+        case "drone_pos_update_latency":
+            return "Drone Postion Update Latency (s)"
         case "initial_distance_from_target":
             return "Initial distance from target (m)"
 
@@ -334,15 +372,16 @@ def get_bins(param:str):
         case "wind_dir":
             return SimulationEnvironment.winds["wind_direction"]
             # return [90, 180, 270]
-        case "gps_error_sigma":
-            return SimulationEnvironment.gps_error["sigma"]
-            # return [0.5]
-        case "gps_update_frequency":
-            return SimulationEnvironment.gps_time["frequency"]
-            # return [1]
-        case "gps_latency":
-            return SimulationEnvironment.gps_time["latency"]
-            # return [0.2, 0.5]
+        case "target_pos_error_sigma" | "drone_pos_error_sigma":
+            return SimulationEnvironment.pos_error["sigma"]
+        case "target_pos_update_rate":
+            return SimulationEnvironment.pos_sensor["update_rate"]
+        case "target_pos_update_latency":
+            return SimulationEnvironment.pos_sensor["update_latency"]
+        case "drone_pos_update_rate":
+            return SimulationEnvironment.drone_pos_sensor["update_rate"]
+        case "drone_pos_update_latency":
+            return SimulationEnvironment.drone_pos_sensor["update_latency"]
         case "initial_distance_from_target":
             return [25, 50, 75, 100]
 

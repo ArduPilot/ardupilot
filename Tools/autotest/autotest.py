@@ -879,7 +879,8 @@ if __name__ == "__main__":
                       action='store_true',
                       help='enable experimental tests')
     parser.add_option("--timeout",
-                      default=None,
+                    #   default=None,
+                      default=3*24*3600,
                       type='int',
                       help='maximum runtime in seconds')
     parser.add_option("--show-test-timings",
