@@ -15,6 +15,7 @@ public:
     static bool handle_velocity_control(geometry_msgs_msg_TwistStamped& cmd_vel);
     static bool arm(AP_Arming::Method method, bool do_arming_checks);
     static bool disarm(AP_Arming::Method method, bool do_disarm_checks);
+    static bool set_mode(const uint8_t mode);
 
 private:
     static bool convert_alt_frame(const uint8_t frame_in,  Location::AltFrame& frame_out);

@@ -4,9 +4,11 @@
 
 #include "AP_DDS_ExternalControl.h"
 #include "AP_DDS_Frames.h"
-#include <AP_AHRS/AP_AHRS.h>
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_ExternalControl/AP_ExternalControl.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/ModeReason.h>
 
 // These are the Goal Interface constants. Because microxrceddsgen does not expose
 // them in the generated code, they are manually maintained
@@ -103,6 +105,16 @@ bool AP_DDS_External_Control::disarm(AP_Arming::Method method, bool do_disarm_ch
     }
 
     return external_control->disarm(method, do_disarm_checks);
+}
+
+bool AP_DDS_External_Control::set_mode(const uint8_t mode)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return false;
+    }
+
+    return external_control->set_mode(mode, ModeReason::DDS_COMMAND);
 }
 
 bool AP_DDS_External_Control::convert_alt_frame(const uint8_t frame_in,  Location::AltFrame& frame_out)
