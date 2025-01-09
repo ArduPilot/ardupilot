@@ -773,6 +773,15 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SYSTEM:
         mavlink_msg_open_drone_id_system_decode(&msg, &pkt_system);
         last_system_ms = AP_HAL::millis();
+        if (pkt_system.operator_latitude == 0 && pkt_system.operator_longitude == 0) {
+            // set the operator location to the takeoff location if it is not set,
+            // Specification ASTM F3411-22 5.4.5.19
+            pkt_system.operator_latitude = _takeoff_location.lat;
+            pkt_system.operator_longitude = _takeoff_location.lng;
+            pkt_system.operator_altitude_geo = _takeoff_location.alt;
+            pkt_system.operator_location_type &= ~0x3;
+            pkt_system.operator_location_type |= MAV_ODID_OPERATOR_LOCATION_TYPE_TAKEOFF;
+        }
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SYSTEM_UPDATE: {
         mavlink_open_drone_id_system_update_t pkt_system_update;
@@ -781,6 +790,15 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
         pkt_system.operator_longitude = pkt_system_update.operator_longitude;
         pkt_system.operator_altitude_geo = pkt_system_update.operator_altitude_geo;
         pkt_system.timestamp = pkt_system_update.timestamp;
+        if (pkt_system.operator_latitude == 0 && pkt_system.operator_longitude == 0) {
+            // set the operator location to the takeoff location if it is not set,
+            // Specification ASTM F3411-22 5.4.5.19
+            pkt_system.operator_latitude = _takeoff_location.lat;
+            pkt_system.operator_longitude = _takeoff_location.lng;
+            pkt_system.operator_altitude_geo = _takeoff_location.alt;
+            pkt_system.operator_location_type &= ~0x3;
+            pkt_system.operator_location_type |= MAV_ODID_OPERATOR_LOCATION_TYPE_TAKEOFF;
+        }
         last_system_update_ms = AP_HAL::millis();
         if (last_system_ms != 0) {
             // we can only mark system as updated if we have the other
