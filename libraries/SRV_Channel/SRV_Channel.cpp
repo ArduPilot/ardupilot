@@ -323,6 +323,7 @@ bool SRV_Channel::should_e_stop(SRV_Channel::Aux_servo_function_t function)
     case Aux_servo_function_t::k_motor6:
     case Aux_servo_function_t::k_motor7:
     case Aux_servo_function_t::k_motor8:
+    case Aux_servo_function_t::k_ignition:
     case Aux_servo_function_t::k_starter:
     case Aux_servo_function_t::k_throttle:
     case Aux_servo_function_t::k_throttleLeft:
