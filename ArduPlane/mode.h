@@ -117,6 +117,9 @@ public:
     // true if mode can have terrain following disabled by switch
     virtual bool allows_terrain_disable() const { return false; }
 
+    // true if mode requires the AHRS to have a home before using this mode.
+    virtual bool requires_home() const { return true; };
+
     // true if automatic switch to thermal mode is supported.
     virtual bool does_automatic_thermal_switch() const {return false; }
 
@@ -211,6 +214,8 @@ public:
     void stabilize();
 
     void stabilize_quaternion();
+
+    bool requires_home() const override { return false; };
 
 protected:
 
@@ -334,6 +339,10 @@ public:
 
     bool does_auto_throttle() const override { return true; }
 
+    // Once offboard mode exists, only global position control modes require home.
+    // Low level velocity and acceleration controls don't require home.
+    bool requires_home() const override { return true; };
+
     // handle a guided target request from GCS
     bool handle_guided_request(Location target_loc) override;
 
@@ -367,6 +376,8 @@ public:
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+    bool requires_home() const override { return false; };
 
 protected:
 
@@ -449,6 +460,8 @@ public:
     // true if voltage correction should be applied to throttle
     bool use_battery_compensation() const override { return false; }
 
+    bool requires_home() const override { return false; };
+
 };
 
 
@@ -495,6 +508,8 @@ public:
 
     void run() override;
 
+    bool requires_home() const override { return false; };
+
 private:
     void stabilize_stick_mixing_direct();
 
@@ -507,6 +522,8 @@ public:
     Number mode_number() const override { return Number::TRAINING; }
     const char *name() const override { return "TRAINING"; }
     const char *name4() const override { return "TRAN"; }
+
+    bool requires_home() const override { return false; };
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -532,6 +549,8 @@ public:
 
     bool does_auto_throttle() const override { return true; }
 
+    bool requires_home() const override { return false; };
+
 protected:
     bool _pre_arm_checks(size_t buflen, char *buffer) const override { return false; }
 
@@ -549,6 +568,8 @@ public:
     void update() override;
     
     bool mode_allows_autotuning() const override { return true; }
+
+    bool requires_home() const override { return false; };
 
     void run() override;
 
@@ -572,6 +593,8 @@ public:
     bool does_auto_throttle() const override { return true; }
     
     bool mode_allows_autotuning() const override { return true; }
+
+    bool requires_home() const override { return false; };
 
     void update_target_altitude() override {};
 
@@ -787,6 +810,7 @@ public:
     bool is_vtol_mode() const override { return true; }
     bool is_vtol_man_throttle() const override { return true; }
     virtual bool is_vtol_man_mode() const override { return true; }
+    bool requires_home() const override { return false; };
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -843,6 +867,8 @@ public:
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+    bool requires_home() const override { return false; };
 
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
