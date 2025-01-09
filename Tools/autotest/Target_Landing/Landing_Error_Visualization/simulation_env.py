@@ -84,12 +84,15 @@ class SimulationEnvironment:
     
     drone_alts = [40]
 
-    initial_distance_from_target = [25, 50, 75, 100]
+    initial_distance_from_target = [25]
 
     winds: Dict[str, any] = {
-                    "sea_states": np.array([0, 1, 2, 3, 4, 5]),
-                    "wind_direction": np.array([0,90,180,270]),
-                    "turbulence": np.array([0.2])
+                    # "sea_states": np.array([0, 1, 2, 3, 4, 5]),
+                    # "wind_direction": np.array([0,90,180,270]),
+                    # "turbulence": np.array([0.2])
+                    "sea_states": np.array([0]),
+                    "wind_direction": np.array([0]),
+                    "turbulence": np.array([0])
                     # Low turbulence (0.0-0.3): Stable, predictable wind
                     # Medium turbulence (0.3-0.7): Occasional gusts
                     # High turbulence (0.7-1.0): Frequent, strong gusts
@@ -100,19 +103,25 @@ class SimulationEnvironment:
                         "type": "Gaussian",
                         "mu": 0,
                         # "sigma": np.array([0.5, 1, 1.5, 2])
-                        "sigma": np.array([0.5, 1])
+                        "sigma": np.array([1, 2, 3, 4, 5])
                 }
     
     pos_sensor: PositionSensor = {
         "error": pos_error,
         "update_rate": [1, 5],
-        "update_latency": [0.1, 0.2]
+        # "update_latency": [0.1, 0.2]
+        "update_latency": [0]
     }
 
     drone_pos_sensor: PositionSensor = {
-        "error": pos_error,
-        "update_rate": [5, 10],     # Ardupilot GPS frequency is from 5Hz - 20Hz
-        "update_latency": [0.1, 0.2] # Ardupilot latency is from 0 - 250ms
+        "error": {
+            "type": "Gaussian",
+            "mu": 0,
+            "sigma": np.array([0])
+        },
+        "update_rate": [5],     # Ardupilot GPS frequency is from 5Hz - 20Hz
+        # "update_latency": [0.1, 0.2] # Ardupilot latency is from 0 - 250ms
+        "update_latency": [0]
 
     }
     
@@ -186,8 +195,8 @@ class SimulationEnvironment:
                                                 "mu": pos_error["mu"],
                                                 "sigma": sigma
                                             },
-                                            "update_latency": SimulationEnvironment.drone_pos_sensor["update_latency"][latency_i],
-                                            "update_rate":  SimulationEnvironment.drone_pos_sensor["update_rate"][update_rate_i]
+                                            "update_latency": SimulationEnvironment.drone_pos_sensor["update_latency"][0],
+                                            "update_rate":  SimulationEnvironment.drone_pos_sensor["update_rate"][0]
                                         }
                             
                                         test_configs.append({
