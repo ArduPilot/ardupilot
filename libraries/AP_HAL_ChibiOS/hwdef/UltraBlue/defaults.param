@@ -1,0 +1,12 @@
+# The CAM_TRIG and CAM_TRIG_RET pins on the
+# mezzanine connector are intended to be GPIO but
+# can also be PWM so we set defaults here
+SERVO15_FUNCTION -1
+SERVO16_FUNCTION -1
+RELAY1_PIN 64
+RELAY2_PIN 65
+
+# Default SERIAL6 interface to ESC telemetry as it
+# is pinned out on the mezzanine connector and
+# designed to only really be for ESC telemetry
+SERIAL6_PROTOCOL 16
