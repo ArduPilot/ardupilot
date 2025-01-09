@@ -64,9 +64,9 @@ int16_t AP_HAL::CANIface::receive(CANFrame& out_frame, uint64_t& out_ts_monotoni
 #ifndef HAL_BOOTLOADER_BUILD
     WITH_SEMAPHORE(callbacks.sem);
 #endif
-    for (auto &cb : callbacks.cb) {
-        if (cb != nullptr) {
-            cb(get_iface_num(), out_frame);
+    for (uint8_t i=0; i<ARRAY_SIZE(callbacks.cb); i++) {
+        if (callbacks.cb[i] != nullptr && !callbacks.rx_cb_disable[i]) {
+            callbacks.cb[i](get_iface_num(), out_frame);
         }
     }
     return 1;
@@ -129,6 +129,7 @@ void AP_HAL::CANIface::unregister_frame_callback(uint8_t callback_id)
     const uint8_t idx = callback_id - 1;
     if (idx < ARRAY_SIZE(callbacks.cb)) {
         callbacks.cb[idx] = nullptr;
+        callbacks.rx_cb_disable[idx] = false;
     }
 }
 
