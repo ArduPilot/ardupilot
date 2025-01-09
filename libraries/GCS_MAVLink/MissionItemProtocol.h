@@ -101,6 +101,12 @@ private:
     // then we issue a warning - once per transfer.
     bool mission_item_warning_sent = false;
 
+    // if the autopilot sends a mission_request_int to a GCS and runs into a timeout,
+    // it does fallback to mission_request instead, ...
+    bool mission_request_int_fallback_to_mission_request = false;
+    // ... and we issue a warning - once per transfer.
+    bool mission_request_int_warning_sent = false;
+
     // support for GCS getting waypoints etc from us:
     virtual MAV_MISSION_RESULT get_item(const GCS_MAVLINK &_link,
                                         const mavlink_message_t &msg,
