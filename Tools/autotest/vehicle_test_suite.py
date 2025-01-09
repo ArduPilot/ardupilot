@@ -7001,6 +7001,24 @@ class TestSuite(ABC):
             timeout=timeout,
         )
 
+    def run_cmd_do_set_mode_with_number(self,
+                            mode,
+                            timeout=30,
+                            run_cmd=None,
+                            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+        if run_cmd is None:
+            run_cmd = self.run_cmd
+        base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
+        # custom_mode = self.get_mode_from_mode_mapping(mode)
+        run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_MODE,
+            p1=base_mode,
+            p2=mode,
+            want_result=want_result,
+            timeout=timeout,
+        )
+
+
     def do_set_mode_via_command_XYZZY(self, mode, run_cmd, timeout=30):
         """Set mode with a command long message."""
         tstart = self.get_sim_time()
