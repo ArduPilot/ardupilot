@@ -21,6 +21,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -158,6 +159,15 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 11, AP_PitchController, AC_PID),
 
+    // @Param: 2SRV_FLAP
+    // @DisplayName: Flap compensation
+    // @Description: Gain added to pitch to keep aircraft from descending or ascending when deploying flaps. Decrease to compensate for pitching up when deploying flaps, increase if the vehicle pitches down when deploying flaps.
+    // @Range: -0.5 0.5
+    // @Increment: 0.25
+    // @User: Standard
+    AP_GROUPINFO("2SRV_FLAP",      12, AP_PitchController, _flap_ff, 0),
+
+
     AP_GROUPEND
 };
 
@@ -167,7 +177,6 @@ AP_PitchController::AP_PitchController(const AP_FixedWing &parms)
     AP_Param::setup_object_defaults(this, var_info);
     rate_pid.set_slew_limit_scale(45);
 }
-
 /*
   AC_PID based rate controller
 */
@@ -199,10 +208,13 @@ float AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool d
         rate_pid.set_integrator(old_I);
     }
 
+    // calculate feed forward for auto flaps
+    const float scaled_ff_flap = (SRV_Channels::get_slew_limited_output_norm(SRV_Channel::k_flap_auto) + 1) * _flap_ff * scaler * 0.5f;
+
     // FF should be scaled by scaler/eas2tas, but since we have scaled
     // the AC_PID target above by scaler*scaler we need to instead
     // divide by scaler*eas2tas to get the right scaling
-    const float ff = degrees(ff_scale * rate_pid.get_ff() / (scaler * eas2tas));
+    const float ff = degrees(ff_scale * (rate_pid.get_ff() + scaled_ff_flap) / (scaler * eas2tas));
     ff_scale = 1.0;
 
     if (disable_integrator) {

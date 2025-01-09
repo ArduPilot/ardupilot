@@ -765,6 +765,18 @@ float SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t function)
     return channels[chan].get_output_norm();
 }
 
+
+float SRV_Channels::get_slew_limited_output_norm(SRV_Channel::Aux_servo_function_t function) {
+    uint8_t chan;
+    if (!find_channel(function, chan)) {
+        return 0;
+    }
+    if (SRV_Channel::valid_function(function)) {
+        channels[chan].calc_pwm(get_slew_limited_output_scaled(function));
+    }
+    return channels[chan].get_output_norm();
+}
+
 // set normalised output (-1 to 1 with 0 at mid point of servo_min/servo_max) for the given function
 void SRV_Channels::set_output_norm(SRV_Channel::Aux_servo_function_t function, float value)
 {

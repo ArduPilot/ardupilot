@@ -60,6 +60,7 @@ private:
     bool failed_autotune_alloc;
     AP_Int16 _max_rate_neg;
     AP_Float _roll_ff;
+    AP_Float _flap_ff;
     float _last_out;
     AC_PID rate_pid{0.04, 0.15, 0, 0.345, 0.666, 3, 0, 12, 150, 1};
     float angle_err_deg;
