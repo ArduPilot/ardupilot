@@ -52,7 +52,6 @@ enum class SocketCanError
 
 #define CAN_MAX_POLL_ITERATIONS_COUNT 100
 #define CAN_MAX_INIT_TRIES_COUNT 100
-#define CAN_FILTER_NUMBER 8
 
 class CANIface: public AP_HAL::CANIface {
 public:
@@ -65,7 +64,7 @@ public:
     ~CANIface() { }
 
     // Initialise CAN Peripheral
-    bool init(const uint32_t bitrate, const OperatingMode mode) override;
+    bool init(const uint32_t bitrate) override;
 
     // Put frame into Tx FIFO returns negative on error, 0 on buffer full, 
     // 1 on successfully pushing a frame into FIFO
@@ -77,10 +76,6 @@ public:
     int16_t receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_us,
                     CanIOFlags& out_flags) override;
 
-    // Set Filters to ignore frames not to be handled by us
-    bool configureFilters(const CanFilterConfig* filter_configs,
-                          uint16_t num_configs) override;
-
     // Always return false, there's no busoff condition in Linux CAN
     bool is_busoff() const override
     {
@@ -90,9 +85,6 @@ public:
     void flush_tx() override;
 
     void clear_rx() override;
-
-    // Get number of Filter configurations
-    uint16_t getNumFilters() const override;
 
     // Get total number of Errors discovered
     uint32_t getErrorCount() const override;
@@ -130,8 +122,6 @@ private:
 
     bool _wasInPendingLoopbackSet(const AP_HAL::CANFrame& frame);
 
-    bool _checkHWFilters(const can_frame& frame) const;
-
     bool _hasReadyTx();
 
     bool _hasReadyRx();
@@ -161,7 +151,6 @@ private:
     std::priority_queue<CanTxItem> _tx_queue;
     std::queue<CanRxItem> _rx_queue;
     std::unordered_multiset<uint32_t> _pending_loopback_ids;
-    std::vector<can_filter> _hw_filters_container;
 
     struct bus_stats : public AP_HAL::CANIface::bus_stats_t {
         uint32_t tx_confirmed;
