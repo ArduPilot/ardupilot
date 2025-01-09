@@ -709,7 +709,7 @@ void GCS_MAVLINK::send_mission_current(const class AP_Mission &mission, uint16_t
  */
 void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg)
 {
-    // send_received_message_deprecation_warning("MISSION_SET_CURRENT");
+    send_received_message_deprecation_warning("MISSION_SET_CURRENT");
 
     // decode
     mavlink_mission_set_current_t packet;
