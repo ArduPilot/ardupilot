@@ -45,6 +45,7 @@
 #define MASK_GPS_POS_DRIFT  (1<<5)
 #define MASK_GPS_VERT_SPD   (1<<6)
 #define MASK_GPS_HORIZ_SPD  (1<<7)
+#define MASK_GPS_STATUS     (1<<8)
 
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
