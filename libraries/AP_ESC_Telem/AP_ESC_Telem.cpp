@@ -104,13 +104,12 @@ uint8_t AP_ESC_Telem::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) con
 // ESC_TELEM_DATA_TIMEOUT_MS/ESC_RPM_DATA_TIMEOUT_US
 uint32_t AP_ESC_Telem::get_active_esc_mask() const {
     uint32_t ret = 0;
-    const uint32_t now = AP_HAL::millis();
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         if (_telem_data[i].last_update_ms == 0 && !was_rpm_data_ever_reported(_rpm_data[i])) {
             // have never seen telem from this ESC
             continue;
         }
-        if (_telem_data[i].stale(now) && !_rpm_data[i].data_valid) {
+        if (_telem_data[i].stale() && !_rpm_data[i].data_valid) {
             continue;
         }
         ret |= (1U << i);
@@ -123,13 +122,12 @@ uint8_t AP_ESC_Telem::get_max_rpm_esc() const
 {
     uint32_t ret = 0;
     float max_rpm = 0;
-    const uint32_t now = AP_HAL::millis();
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         if (_telem_data[i].last_update_ms == 0 && !was_rpm_data_ever_reported(_rpm_data[i])) {
             // have never seen telem from this ESC
             continue;
         }
-        if (_telem_data[i].stale(now) && !_rpm_data[i].data_valid) {
+        if (_telem_data[i].stale() && !_rpm_data[i].data_valid) {
             continue;
         }
         if (_rpm_data[i].rpm > max_rpm) {
@@ -405,8 +403,6 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
         return;
     }
 
-    const uint32_t now = AP_HAL::millis();
-
     // loop through groups of 4 ESCs
     const uint8_t esc_offset = constrain_int16(mavlink_offset, 0, ESC_TELEM_MAX_ESCS-1);
 
@@ -427,7 +423,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
         for (uint8_t j=0; j<4; j++) {
             const uint8_t esc_id = (i * 4 + j) + esc_offset;
             if (esc_id < ESC_TELEM_MAX_ESCS &&
-                (!_telem_data[esc_id].stale(now) || _rpm_data[esc_id].data_valid)) {
+                (!_telem_data[esc_id].stale() || _rpm_data[esc_id].data_valid)) {
                 all_stale = false;
                 break;
             }
@@ -584,6 +580,7 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
     telemdata.count++;
     telemdata.types |= data_mask;
     telemdata.last_update_ms = AP_HAL::millis();
+    telemdata.any_data_valid = true;
 }
 
 // record an update to the RPM together with timestamp, this allows the notch values to be slewed
@@ -806,6 +803,12 @@ void AP_ESC_Telem::update()
         // Invalidate RPM data if not received for too long
         if (AP_HAL::timeout_expired(last_updated_us, now_us, ESC_RPM_DATA_TIMEOUT_US)) {
             _rpm_data[i].data_valid = false;
+        }
+        const uint32_t last_telem_data_ms = _telem_data[i].last_update_ms;
+        const uint32_t now_ms = AP_HAL::millis();
+        // Invalidate telemetry data if not received for too long
+        if (AP_HAL::timeout_expired(last_telem_data_ms, now_ms, ESC_TELEM_DATA_TIMEOUT_MS)) {
+            _telem_data[i].any_data_valid = false;
         }
     }
 }
