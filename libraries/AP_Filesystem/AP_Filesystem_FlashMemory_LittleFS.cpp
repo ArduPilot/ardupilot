@@ -325,6 +325,16 @@ void *AP_Filesystem_FlashMemory_LittleFS::opendir(const char *pathdir)
     result->entry.d_reclen = sizeof(result->entry);
 #endif
 
+    // LittleFS has issues with opendir where filesystem operations that trigger
+    // writes while a directory is open can break the iteration and cause
+    // LittleFS to report filesystem corruption. We hope readdir loops don't do
+    // writes (none do in ArduPilot at the time of writing), but also take the
+    // lock again so other threads can't write until the corresponding release
+    // in closedir. This is safe here since the lock is recursive; recursion
+    // also lets the thread with the directory open do reads. Hopefully this
+    // will be fixed upstream so we can remove this quirk.
+    fs_sem.take_blocking();
+
     return result;
 }
 
@@ -372,6 +382,11 @@ int AP_Filesystem_FlashMemory_LittleFS::closedir(void *ptr)
         errno = EINVAL;
         return 0;
     }
+
+    // Before the close, undo the lock we did in opendir so it's released even
+    // if the close fails. We don't undo it above, as the input being nullptr
+    // means we didn't successfully open the directory and lock.
+    fs_sem.give();
 
     LFS_CHECK(lfs_dir_close(&fs, &pair->dir));
 
