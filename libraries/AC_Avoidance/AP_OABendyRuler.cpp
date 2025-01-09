@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_OABendyRuler::var_info[] = {
     // @Description: BendyRuler will search for clear path along the direction defined by this parameter
     // @Values: 1:Horizontal search, 2:Vertical search
     // @User: Standard
-    AP_GROUPINFO_FRAME("TYPE", 4, AP_OABendyRuler, _bendy_type, OA_BENDYRULER_TYPE_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("TYPE", 4, AP_OABendyRuler, _bendy_type, OA_BENDYRULER_TYPE_DEFAULT, AP_PARAM_FRAME_COPTER),
 
     AP_GROUPEND
 };

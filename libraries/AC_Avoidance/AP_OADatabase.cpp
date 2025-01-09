@@ -105,7 +105,7 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
     // @Units: m
     // @Range: 0 4
     // @User: Advanced
-    AP_GROUPINFO_FRAME("ALT_MIN", 8, AP_OADatabase, _min_alt, 0.0f, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("ALT_MIN", 8, AP_OADatabase, _min_alt, 0.0f, AP_PARAM_FRAME_COPTER),
 
     AP_GROUPEND
 };

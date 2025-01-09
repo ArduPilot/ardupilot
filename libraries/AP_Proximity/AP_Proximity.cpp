@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Description: Ignore proximity data that is within 1 meter of the ground below the vehicle. This requires a downward facing rangefinder
     // @Values: 0:Disabled, 1:Enabled
     // @User: Standard
-    AP_GROUPINFO_FRAME("_IGN_GND", 16, AP_Proximity, _ign_gnd_enable, 0, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("_IGN_GND", 16, AP_Proximity, _ign_gnd_enable, 0, AP_PARAM_FRAME_COPTER),
 
     // @Param: _LOG_RAW
     // @DisplayName: Proximity raw distances log

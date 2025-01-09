@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Increment: 10
     // @Range: 0 4500
     // @User: Standard
-    AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000, AP_PARAM_FRAME_COPTER),
 
     // @Param{Copter}: DIST_MAX
     // @DisplayName: Avoidance distance maximum in non-GPS flight modes
@@ -62,7 +62,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Units: m
     // @Range: 1 30
     // @User: Standard
-    AP_GROUPINFO_FRAME("DIST_MAX", 3,  AC_Avoid, _dist_max, AC_AVOID_NONGPS_DIST_MAX_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("DIST_MAX", 3,  AC_Avoid, _dist_max, AC_AVOID_NONGPS_DIST_MAX_DEFAULT, AP_PARAM_FRAME_COPTER),
 
     // @Param: MARGIN
     // @DisplayName: Avoidance distance margin in GPS modes
@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Description: Avoidance behaviour (slide or stop)
     // @Values: 0:Slide,1:Stop
     // @User: Standard
-    AP_GROUPINFO_FRAME("BEHAVE", 5, AC_Avoid, _behavior, AP_AVOID_BEHAVE_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_ROVER),
+    AP_GROUPINFO_FRAME("BEHAVE", 5, AC_Avoid, _behavior, AP_AVOID_BEHAVE_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_ROVER),
 
     // @Param: BACKUP_SPD
     // @DisplayName: Avoidance maximum horizontal backup speed
@@ -93,7 +93,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Units: m
     // @Range: 0 6
     // @User: Standard
-    AP_GROUPINFO_FRAME("ALT_MIN", 7, AC_Avoid, _alt_min, 0.0f, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("ALT_MIN", 7, AC_Avoid, _alt_min, 0.0f, AP_PARAM_FRAME_COPTER),
 
     // @Param: ACCEL_MAX
     // @DisplayName: Avoidance maximum acceleration
