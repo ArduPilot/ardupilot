@@ -134,6 +134,10 @@ public:
     static float get_minimum_board_voltage(void) {
         return _singleton?_singleton->_vbus_min.get():0;
     }
+    // get maximum board voltage
+    static float get_maximum_board_voltage(void) {
+        return _singleton?_singleton->_vbus_max.get():0;
+    }
 #endif
 
 #if HAL_HAVE_SERVO_VOLTAGE
@@ -312,6 +316,7 @@ private:
 
 #if HAL_HAVE_BOARD_VOLTAGE
     AP_Float _vbus_min;
+    AP_Float _vbus_max;
 #endif
 
 #if HAL_HAVE_SERVO_VOLTAGE

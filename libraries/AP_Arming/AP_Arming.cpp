@@ -987,8 +987,9 @@ bool AP_Arming::board_voltage_checks(bool report)
 #if HAL_HAVE_BOARD_VOLTAGE
         const float bus_voltage =  hal.analogin->board_voltage();
         const float vbus_min = AP_BoardConfig::get_minimum_board_voltage();
-        if(((bus_voltage < vbus_min) || (bus_voltage > AP_ARMING_BOARD_VOLTAGE_MAX))) {
-            check_failed(ARMING_CHECK_VOLTAGE, report, "Board (%1.1fv) out of range %1.1f-%1.1fv", (double)bus_voltage, (double)vbus_min, (double)AP_ARMING_BOARD_VOLTAGE_MAX);
+        const float vbus_max = AP_BoardConfig::get_maximum_board_voltage();
+        if(((bus_voltage < vbus_min) || (bus_voltage > vbus_max))) {
+            check_failed(ARMING_CHECK_VOLTAGE, report, "Board (%1.1fv) out of range %1.1f-%1.1fv", (double)bus_voltage, (double)vbus_min, (double)vbus_max);
             return false;
         }
 #endif // HAL_HAVE_BOARD_VOLTAGE
