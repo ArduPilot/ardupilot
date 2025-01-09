@@ -6,8 +6,6 @@ import csv
 import types
 import shutil
 import datetime
-import time
-import pdb
 
 from pymavlink import mavutil
 
@@ -38,11 +36,11 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
     drone_att = []
     drone_battery_info = []
 
-    drone_operation_timeout = 7*60          # Timeout in secs to stop the test when drone cannot land
+    drone_operation_timeout = 3*60          # Timeout in secs to stop the test when drone cannot land
 
     R = 6378137.0  # Radius of earth in meters
 
-    log_folder_path = os.path.expanduser("~/UAV_Landing/test-10Kn")
+    log_folder_path = os.path.expanduser("~/UAV_Landing/target_pos_error")
 
     sea_states: List[SeaState] = SimulationEnvironment.sea_states
 
@@ -153,10 +151,6 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
 
     def set_drone_parameters(self, drone_pos_sensor: PositionSensor):
 
-        # self.set_parameter("WPNAV_SPEED", SimulationEnvironment.drone_speed*100)
-
-        print(drone_pos_sensor)
-
         self.set_parameter("FOLL_GPS_N", drone_pos_sensor['error']['sigma'])
         self.set_parameter("SIM_GPS_HZ", drone_pos_sensor['update_rate'])
         self.set_parameter("SIM_GPS_LAG_MS", drone_pos_sensor["update_latency"]*1000)
@@ -242,7 +236,9 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
         # Set the necessary parameters and change the mode to TARLAND
         self.set_follow_parameters()
         self.send_target_pos(self.get_sim_time_cached())
-        self.change_mode('TARLAND')
+        # self.change_mode('TARLAND')
+        self.run_cmd_do_set_mode_with_number(29)
+
         self.target_pos_last_updated_on = self.get_sim_time_cached()
 
         drone_pos, drone_vel = self.get_drone_pos()
@@ -286,8 +282,15 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
                     break
             mav_msg_handler.stop()
 
-            drone_loc = Location(self.drone_traj[-1]["lat"]*1e-7, self.drone_traj[-1]["lng"]*1e-7)
+            # drone_loc = Location(self.drone_traj[-1]["lat"]*1e-7, self.drone_traj[-1]["lng"]*1e-7)
             target_loc = Location(target_traj[-1]["lat"]*1e-7, target_traj[-1]["lng"]*1e-7)
+
+            target_timestamp = [obj["time"] for obj in target_traj]
+            drone_timestamp = [obj["time"] for obj in self.drone_traj]
+
+            drone_end_i = np.abs(drone_timestamp - target_timestamp[-1]).argmin()
+
+            drone_loc = Location(self.drone_traj[drone_end_i]["lat"]*1e-7, self.drone_traj[drone_end_i]["lng"]*1e-7)
 
             distance = self.get_distance(drone_loc, target_loc)
             alt_diff = self.drone_traj[-1]["alt"] - target_traj[-1]["alt"]
@@ -310,6 +313,7 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
             self.progress("Success")
 
         except KeyboardInterrupt:
+            print("keyboard interrupt - saving the variables")
             distance = self.get_distance(drone_loc, target_loc)
             alt_diff = self.drone_traj[-1]["alt"] - target_traj[-1]["alt"]
             self.log_trajectory(os.path.join(test_data_log_folder_path, 'target.csv'), target_traj)
