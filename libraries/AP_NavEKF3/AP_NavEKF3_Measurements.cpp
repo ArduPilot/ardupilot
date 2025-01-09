@@ -25,7 +25,7 @@ void NavEKF3_core::readRangeFinder(void)
     if (_rng == nullptr) {
         return;
     }
-    rngOnGnd = MAX(_rng->ground_clearance_cm_orient(ROTATION_PITCH_270) * 0.01f, 0.05f);
+    rngOnGnd = MAX(_rng->ground_clearance_orient(ROTATION_PITCH_270), 0.05f);
 
     // limit update rate to maximum allowed by data buffers
     if ((imuSampleTime_ms - lastRngMeasTime_ms) > frontend->sensorIntervalMin_ms) {
@@ -47,7 +47,7 @@ void NavEKF3_core::readRangeFinder(void)
                     rngMeasIndex[sensorIndex] = 0;
                 }
                 storedRngMeasTime_ms[sensorIndex][rngMeasIndex[sensorIndex]] = imuSampleTime_ms - 25;
-                storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->distance_cm() * 0.01f;
+                storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->distance();
             } else {
                 continue;
             }

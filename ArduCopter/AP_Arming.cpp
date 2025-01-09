@@ -267,8 +267,8 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                     return false;
                 }
                 // check if RTL_ALT is higher than rangefinder's max range
-                if (copter.g.rtl_altitude > copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
-                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, failure_template, "RTL_ALT>RNGFND_MAX_CM");
+                if (copter.g.rtl_altitude > copter.rangefinder.max_distance_orient(ROTATION_PITCH_270) * 100) {
+                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, failure_template, "RTL_ALT (in cm) above RNGFND_MAX (in metres)");
                     return false;
                 }
 #else

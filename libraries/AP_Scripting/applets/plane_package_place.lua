@@ -108,7 +108,7 @@ function update()
    -- check the distance, if less than RNG_ORIENT_DOWN then release
    local dist_m
    if not landed then
-      dist_m = rangefinder:distance_cm_orient(RNG_ORIENT_DOWN) * 0.01
+      dist_m = rangefinder:distance_orient(RNG_ORIENT_DOWN)
    else
       dist_m = 0.0
    end

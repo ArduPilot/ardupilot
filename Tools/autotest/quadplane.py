@@ -1077,7 +1077,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.context_collect("STATUSTEXT")
         self.progress("Starting QLAND")
         self.change_mode("QLAND")
-        self.wait_statustext("Rangefinder engaged")
+        self.wait_statustext("Rangefinder engaged", check_context=True)
         self.wait_disarmed(timeout=100)
 
     def setup_ICEngine_vehicle(self):
@@ -1524,7 +1524,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "RNGFND1_TYPE": 100,
             "RNGFND1_PIN" : 0,
             "RNGFND1_SCALING" : 12.2,
-            "RNGFND1_MAX_CM" : 5000,
+            "RNGFND1_MAX" : 50.00,
             "RNGFND_LANDING" : 1,
         })
 
