@@ -1221,7 +1221,6 @@ class ChibiOSHWDef(object):
 #define HAL_BOOTLOADER_BUILD TRUE
 #define HAL_USE_ADC FALSE
 #define HAL_USE_EXT FALSE
-#define HAL_NO_UARTDRIVER
 #define HAL_NO_PRINTF
 #define HAL_NO_CCM
 #define HAL_USE_I2C FALSE

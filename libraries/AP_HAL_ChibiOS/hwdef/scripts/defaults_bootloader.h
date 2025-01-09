@@ -10,6 +10,11 @@
 #define HAL_GYROFFT_ENABLED 0
 #endif
 
+// bootloaders use serial directly:
+#ifndef AP_HAL_UARTDRIVER_ENABLED
+#define AP_HAL_UARTDRIVER_ENABLED 0
+#endif
+
 // bootloaders don't talk to the GCS:
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 0

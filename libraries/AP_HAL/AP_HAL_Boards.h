@@ -206,6 +206,10 @@
 #define HAL_WITH_DSP HAL_GYROFFT_ENABLED
 #endif
 
+#ifndef AP_HAL_UARTDRIVER_ENABLED
+#define AP_HAL_UARTDRIVER_ENABLED 1
+#endif
+
 #ifndef HAL_OS_FATFS_IO
 #define HAL_OS_FATFS_IO 0
 #endif
