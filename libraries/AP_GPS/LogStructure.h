@@ -9,6 +9,7 @@
     LOG_GPS_RAW_MSG,                            \
     LOG_GPS_RAWH_MSG,                           \
     LOG_GPS_RAWS_MSG,                           \
+    LOG_GPS_RTCM_MSG,                           \
     LOG_GPS_UBX1_MSG,                           \
     LOG_GPS_UBX2_MSG,                           \
     LOG_IDS_FROM_GPS_SBP
@@ -203,6 +204,22 @@ struct PACKED log_GPS_RAWS {
     uint8_t trkStat;
 };
 
+// @LoggerMessage: GRTK
+// @Description: RTCM input status
+// @Field: TimeUS: Time since system startup
+// @Field: ver: Message version (0x02 for this version)
+// @Field: flgs: RTCM input status flags (see graphic below)
+// @Field: ref: Reference station ID
+// @Field: msgType: Message type
+struct PACKED log_GPS_RTCM {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t version;
+    uint8_t flags;
+    uint16_t refStation;
+    uint16_t msgType;
+};
+
 #define LOG_STRUCTURE_FROM_GPS \
     { LOG_GPS_MSG, sizeof(log_GPS), \
       "GPS",  "QBBIHBcLLeffffB", "TimeUS,I,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U", "s#-s-S-DUmnhnh-", "F--C-0BGGB000--" , true }, \
@@ -218,4 +235,6 @@ struct PACKED log_GPS_RAWS {
       "GRXH", "QdHbBB", "TimeUS,rcvTime,week,leapS,numMeas,recStat", "s-----", "F-----" , true }, \
     { LOG_GPS_RAWS_MSG, sizeof(log_GPS_RAWS), \
       "GRXS", "QddfBBBHBBBBB", "TimeUS,prMes,cpMes,doMes,gnss,sv,freq,lock,cno,prD,cpD,doD,trk", "s------------", "F------------" , true }, \
+    { LOG_GPS_RTCM_MSG, sizeof(log_GPS_RTCM), \
+      "GRTK", "QBBHH", "TimeUS,ver,flgs,ref,msgType", "s----", "F----" , true }, \
     LOG_STRUCTURE_FROM_GPS_SBP
