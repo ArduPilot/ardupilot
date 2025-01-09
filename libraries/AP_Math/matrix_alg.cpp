@@ -24,29 +24,6 @@
 #include <fenv.h>
 #endif
 
-/*
- *    Does matrix multiplication of two regular/square matrices
- *
- *    @param     A,           Matrix A
- *    @param     B,           Matrix B
- *    @param     n,           dimemsion of square matrices
- *    @returns                multiplied matrix i.e. A*B
- */
-template<typename T>
-static T* matrix_multiply(const T *A, const T *B, uint16_t n)
-{
-    T* ret = NEW_NOTHROW T[n*n];
-    memset(ret,0.0f,n*n*sizeof(T));
-
-    for(uint16_t i = 0; i < n; i++) {
-        for(uint16_t j = 0; j < n; j++) {
-            for(uint16_t k = 0;k < n; k++) {
-                ret[i*n + j] += A[i*n + k] * B[k*n + j];
-            }
-        }
-    }
-    return ret;
-}
 
 template<typename T>
 static inline void swap(T &a, T &b)
@@ -149,58 +126,59 @@ static void mat_back_sub(const T *U, T *out, uint16_t n)
  *    @param     n,           dimension of matrix
  */
 template<typename T>
-static void mat_LU_decompose(const T* A, T* L, T* U, T *P, uint16_t n)
+static void mat_LU_decompose(const T* A, T* L, T* U, T *P, T *APrime, uint16_t n)
 {
     memset(L,0,n*n*sizeof(T));
     memset(U,0,n*n*sizeof(T));
     memset(P,0,n*n*sizeof(T));
     mat_pivot(A,P,n);
 
-    T *APrime = matrix_multiply(P,A,n);
+    mat_mul(P, A, APrime, n);
     for(uint16_t i = 0; i < n; i++) {
         L[i*n + i] = 1;
     }
     for(uint16_t i = 0; i < n; i++) {
         for(uint16_t j = 0; j < n; j++) {
-            if(j <= i) {    
+            if(j <= i) {
                 U[j*n + i] = APrime[j*n + i];
                 for(uint16_t k = 0; k < j; k++) {
-                    U[j*n + i] -= L[j*n + k] * U[k*n + i]; 
+                    U[j*n + i] -= L[j*n + k] * U[k*n + i];
                 }
             }
             if(j >= i) {
                 L[j*n + i] = APrime[j*n + i];
                 for(uint16_t k = 0; k < i; k++) {
-                    L[j*n + i] -= L[j*n + k] * U[k*n + i]; 
+                    L[j*n + i] -= L[j*n + k] * U[k*n + i];
                 }
                 L[j*n + i] /= U[i*n + i];
             }
         }
     }
-    delete[] APrime;
 }
+
 
 /*
  *    matrix inverse code for any square matrix using LU decomposition
  *    inv = inv(U)*inv(L)*P, where L and U are triagular matrices and P the pivot matrix
  *    ref: http://www.cl.cam.ac.uk/teaching/1314/NumMethods/supporting/mcmaster-kiruba-ludecomp.pdf
  *    @param     m,           input 4x4 matrix
- *    @param     inv,      Output inverted 4x4 matrix
- *    @param     n,           dimension of square matrix
+ *    @param     inv,         Output inverted 4x4 matrix
+ *    @tparam    n,           dimension of square matrix
+ *    @param     buf,         buffer handler for temp matrices
  *    @returns                false = matrix is Singular, true = matrix inversion successful
  */
 template<typename T>
-static bool mat_inverseN(const T* A, T* inv, uint16_t n)
+static bool mat_inverseN(const T* A, T* inv, const uint16_t n, MatInvBuffer<T> &buf)
 {
-    T *L, *U, *P;
-    bool ret = true;
-    L = NEW_NOTHROW T[n*n];
-    U = NEW_NOTHROW T[n*n];
-    P = NEW_NOTHROW T[n*n];
-    mat_LU_decompose(A,L,U,P,n);
+    T *L      = buf.L();
+    T *U      = buf.U();
+    T *P      = buf.P();
+    T *L_inv  = buf.L_inv();
+    T *U_inv  = buf.U_inv();
+    T *APrime = buf.APrime();
 
-    T *L_inv = NEW_NOTHROW T[n*n];
-    T *U_inv = NEW_NOTHROW T[n*n];
+    bool ret = true;
+    mat_LU_decompose(A,L,U,P, APrime, n);
 
     memset(L_inv,0,n*n*sizeof(T));
     mat_forward_sub(L,L_inv,n);
@@ -208,12 +186,11 @@ static bool mat_inverseN(const T* A, T* inv, uint16_t n)
     memset(U_inv,0,n*n*sizeof(T));
     mat_back_sub(U,U_inv,n);
 
-    // decomposed matrices no longer required
-    delete[] L;
-    delete[] U;
-
-    T *inv_unpivoted = matrix_multiply(U_inv,L_inv,n);
-    T *inv_pivoted = matrix_multiply(inv_unpivoted, P, n);
+    // decomposed matrices no longer required, reusing buffer
+    T *inv_unpivoted = L;
+    T *inv_pivoted = U;
+    mat_mul(U_inv        , L_inv, inv_unpivoted, n);
+    mat_mul(inv_unpivoted, P    , inv_pivoted  , n);
 
     //check sanity of results
     for(uint16_t i = 0; i < n; i++) {
@@ -225,14 +202,9 @@ static bool mat_inverseN(const T* A, T* inv, uint16_t n)
     }
     memcpy(inv,inv_pivoted,n*n*sizeof(T));
 
-    //free memory
-    delete[] inv_pivoted;
-    delete[] inv_unpivoted;
-    delete[] P;
-    delete[] U_inv;
-    delete[] L_inv;
     return ret;
 }
+
 
 /*
  *    fast matrix inverse code only for 3x3 square matrix
@@ -426,22 +398,34 @@ static bool inverse4x4(const T m[],T invOut[])
     return true;
 }
 
+
 /*
  *    generic matrix inverse code
  *
  *    @param     x,     input nxn matrix
  *    @param     y,     Output inverted nxn matrix
  *    @param     n,     dimension of square matrix
+ *    @param     buf,   buffer for temp matrices
  *    @returns          false = matrix is Singular, true = matrix inversion successful
  */
+
+
 template<typename T>
-bool mat_inverse(const T x[], T y[], uint16_t dim)
+bool mat_inverse(const T x[], T y[], const uint16_t dim, MatInvBuffer<T> &buf)
 {
     switch(dim){
     case 3: return inverse3x3(x,y);
     case 4: return inverse4x4(x,y);
-    default: return mat_inverseN(x,y,dim);
+    default: return mat_inverseN(x,y,dim,buf);
     }
+}
+
+// matrix inverse with default buffer on heap
+template <typename T>
+bool mat_inverse(const T x[], T y[], const uint16_t dim)
+{
+    MatInvBuffer<T> buf {static_cast<size_t>(dim)*dim};
+    return mat_inverse(x, y, dim, buf);
 }
 
 template <typename T>
@@ -466,10 +450,13 @@ void mat_identity(T *A, uint16_t n)
     }
 }
 
-template bool mat_inverse<float>(const float x[], float y[], uint16_t dim);
+
+template bool mat_inverse<float>(const float x[], float y[], const uint16_t dim, MatInvBuffer<float>& buf);
+template bool mat_inverse<float>(const float x[], float y[], const uint16_t dim);
 template void mat_mul<float>(const float *A, const float *B, float *C, uint16_t n);
 template void mat_identity<float>(float x[], uint16_t dim);
 
-template bool mat_inverse<double>(const double x[], double y[], uint16_t dim);
+template bool mat_inverse<double>(const double x[], double y[], const uint16_t dim, MatInvBuffer<double>& buf);
+template bool mat_inverse<double>(const double x[], double y[], const uint16_t dim);
 template void mat_mul<double>(const double *A, const double *B, double *C, uint16_t n);
 template void mat_identity<double>(double x[], uint16_t dim);

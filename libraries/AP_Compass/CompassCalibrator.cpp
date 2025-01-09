@@ -675,12 +675,15 @@ void CompassCalibrator::run_sphere_fit()
         JTJ2[i*COMPASS_CAL_NUM_SPHERE_PARAMS+i] += _sphere_lambda/lma_damping;
     }
 
-    if (!mat_inverse(JTJ, JTJ, 4)) {
-        return;
-    }
+    {
+        MatInvBuffer<float> buffer {COMPASS_CAL_NUM_SPHERE_PARAMS*COMPASS_CAL_NUM_SPHERE_PARAMS};
+        if (!mat_inverse(JTJ, JTJ, 4, buffer)) {
+            return;
+        }
 
-    if (!mat_inverse(JTJ2, JTJ2, 4)) {
-        return;
+        if (!mat_inverse(JTJ2, JTJ2, 4, buffer)) {
+            return;
+        }
     }
 
     // extract radius, offset, diagonals and offdiagonal parameters
@@ -791,12 +794,15 @@ void CompassCalibrator::run_ellipsoid_fit()
         JTJ2[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+i] += _ellipsoid_lambda/lma_damping;
     }
 
-    if (!mat_inverse(JTJ, JTJ, 9)) {
-        return;
-    }
+    {
+        MatInvBuffer<float> buffer {COMPASS_CAL_NUM_ELLIPSOID_PARAMS*COMPASS_CAL_NUM_ELLIPSOID_PARAMS};
+        if (!mat_inverse(JTJ, JTJ, 9, buffer)) {
+            return;
+        }
 
-    if (!mat_inverse(JTJ2, JTJ2, 9)) {
-        return;
+        if (!mat_inverse(JTJ2, JTJ2, 9, buffer)) {
+            return;
+        }
     }
 
     // extract radius, offset, diagonals and offdiagonal parameters
