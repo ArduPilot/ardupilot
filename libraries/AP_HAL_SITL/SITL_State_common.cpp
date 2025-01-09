@@ -136,6 +136,14 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         crsf = NEW_NOTHROW SITL::CRSF();
         return crsf;
 #endif
+#if AP_SIM_PS_LD06_ENABLED
+    } else if (streq(name, "ld06")) {
+        if (ld06 != nullptr) {
+            AP_HAL::panic("Only one ld06 at a time");
+        }
+        ld06 = NEW_NOTHROW SITL::PS_LD06();
+        return ld06;
+#endif  // AP_SIM_PS_LD06_ENABLED
 #if HAL_SIM_PS_RPLIDARA2_ENABLED
     } else if (streq(name, "rplidara2")) {
         if (rplidara2 != nullptr) {
@@ -313,6 +321,12 @@ void SITL_State_Common::sim_update(void)
         crsf->update();
     }
 #endif
+
+#if AP_SIM_PS_LD06_ENABLED
+    if (ld06 != nullptr) {
+        ld06->update(sitl_model->get_location());
+    }
+#endif  // AP_SIM_PS_LD06_ENABLED
 
 #if HAL_SIM_PS_RPLIDARA2_ENABLED
     if (rplidara2 != nullptr) {

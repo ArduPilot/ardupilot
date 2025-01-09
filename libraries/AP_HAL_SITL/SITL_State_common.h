@@ -26,6 +26,7 @@
 #include <SITL/SIM_CRSF.h>
 // #include <SITL/SIM_Frsky_SPort.h>
 // #include <SITL/SIM_Frsky_SPortPassthrough.h>
+#include <SITL/SIM_PS_LD06.h>
 #include <SITL/SIM_PS_RPLidarA2.h>
 #include <SITL/SIM_PS_RPLidarA1.h>
 #include <SITL/SIM_PS_TeraRangerTower.h>
@@ -114,6 +115,11 @@ public:
     SITL::Frsky_D *frsky_d;
     // SITL::Frsky_SPort *frsky_sport;
     // SITL::Frsky_SPortPassthrough *frsky_sportpassthrough;
+
+#if AP_SIM_PS_LD06_ENABLED
+    // simulated LD06:
+    SITL::PS_LD06 *ld06;
+#endif  // AP_SIM_PS_LD06_ENABLED
 
 #if HAL_SIM_PS_RPLIDARA2_ENABLED
     // simulated RPLidarA2:
