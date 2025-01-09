@@ -65,7 +65,7 @@ int32_t AC_WPNav_OA::get_wp_bearing_to_destination() const
 /// true when we have come within RADIUS cm of the waypoint
 bool AC_WPNav_OA::reached_wp_destination() const
 {
-    return (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) && AC_WPNav::reached_wp_destination();
+    return AC_WPNav::reached_wp_destination();
 }
 
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
