@@ -30,8 +30,11 @@ public:
         uint8_t power_percentage;   // Percentage of output power
 #endif // AP_EXTENDED_ESC_TELEM_ENABLED
 
+        // set to false if no data has been received within the timeout period
+        bool any_data_valid;
+
         // return true if the data is stale
-        bool stale(uint32_t now_ms) const volatile;
+        bool stale() const volatile;
 
         //  return true if the requested type of data is available and not stale
         bool valid(const uint16_t type_mask) const volatile;
