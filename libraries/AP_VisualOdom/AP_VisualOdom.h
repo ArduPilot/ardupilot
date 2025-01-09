@@ -113,6 +113,10 @@ public:
     // should only be called when this library is not being used as the position source
     void align_position_to_ahrs(bool align_xy, bool align_z);
 
+    // align position to the given position expressed in meters offset from EKF origin
+    // and the given yaw expressed in radians from North
+    void align_position_and_yaw(const Vector3f& pos_ned, float yaw_rad);
+
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
 

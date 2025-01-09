@@ -90,4 +90,10 @@ uint32_t AP_VisualOdom_Backend::get_reset_timestamp_ms(uint8_t reset_counter)
     return _reset_timestamp_ms;
 }
 
+// force an update of the reset timestamp (used when external caller updates position or yaw)
+void AP_VisualOdom_Backend::force_update_reset_timestamp_ms()
+{
+    _reset_timestamp_ms = AP_HAL::millis();
+}
+
 #endif

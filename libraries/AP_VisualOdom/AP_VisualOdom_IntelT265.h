@@ -28,6 +28,10 @@ public:
     // should only be called when this library is not being used as the position source
     void align_position_to_ahrs(bool align_xy, bool align_z) override { _align_posxy = align_xy; _align_posz = align_z; }
 
+    // align position to the given position expressed in meters offset from EKF origin
+    // and the given yaw expressed in radians from North
+    void align_position_and_yaw(const Vector3f& pos_ned, float yaw_rad) override;
+
     // arming check
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
 
@@ -86,6 +90,11 @@ protected:
     Quaternion _attitude_last;                  // last attitude received from camera (used for arming checks)
     uint8_t _pos_reset_counter_last;            // last vision-position-estimate reset counter value
     uint32_t _pos_reset_ignore_start_ms;        // system time we start ignoring sensor information, 0 if sensor data is not being ignored
+    struct {
+        Vector3f pos_ned;                       // externally requested position in NED frame (meters offset from EKF origin)
+        float yaw_rad;                          // externally requested yaw in radians
+        bool align;                             // true when an extenrally requested pos_ned and yaw_rad have been provided
+    } ext_align_request;
 
     // voxl reset jump handling variables
     uint8_t _voxl_reset_counter_last;           // last reset counter from voxl camera (only used for origin jump handling)
