@@ -21,6 +21,7 @@
 #include "AP_Follow.h"
 #include <ctype.h>
 #include <stdio.h>
+#include <random>
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
@@ -141,6 +142,15 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 11, AP_Follow, _options, 0),
 
+    // @Param: GPS_N
+    // @DisplayName: Copter GPS error
+    // @Description: Standard deviation for Copter GPS error
+    // @Range: 0 5
+    // @Units: m
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_GPS_N", 12, AP_Follow, _gps_noise, 0),
+
     AP_GROUPEND
 };
 
@@ -215,6 +225,9 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
         clear_dist_and_bearing_to_target();
          return false;
     }
+
+    current_loc.offset(generateGPSNoise(0, _gps_noise));
+    AP::logger().Write("GPSN", "lat,lon,alt", "LLL", current_loc.lat, current_loc.lng, current_loc.alt);
 
     // get target location and velocity
     Location target_loc;
@@ -579,6 +592,23 @@ bool AP_Follow::have_target(void) const
         return false;
     }
     return true;
+}
+
+// Function to generate a 3x1 random vector using normal distribution
+Vector3p AP_Follow::generateGPSNoise(double mean, double stddev) {
+    // Create a random number generator
+    std::random_device rd;  // Seed for the random number engine
+    std::mt19937 gen(rd()); // Standard Mersenne Twister engine
+    std::normal_distribution<> dist(mean, stddev);
+
+    // Create a 3x1 vector and fill it with random numbers
+    Vector3p randomVector;
+
+    randomVector.x = dist(gen);
+    randomVector.y = dist(gen);
+    randomVector.z = dist(gen);
+
+    return randomVector;
 }
 
 namespace AP {

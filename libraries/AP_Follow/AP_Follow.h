@@ -146,6 +146,9 @@ private:
     // write out an onboard-log message to help diagnose follow problems:
     void Log_Write_FOLL();
 
+    // add noise to copter GPS
+    Vector3p generateGPSNoise(double mean, double stddev);
+
     // parameters
     AP_Int8     _enabled;           // 1 if this subsystem is enabled
     AP_Int16    _sysid;             // target's mavlink system id (0 to use first sysid seen)
@@ -156,6 +159,7 @@ private:
     AP_Int8     _alt_type;          // altitude source for follow mode
     AC_P        _p_pos;             // position error P controller
     AP_Int16    _options;           // options for mount behaviour follow mode
+    AP_Float    _gps_noise;          // Copter's GPS noise standard deviation
 
     // local variables
     uint32_t _last_location_update_ms;  // system time of last position update
