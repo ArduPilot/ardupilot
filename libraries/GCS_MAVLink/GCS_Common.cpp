@@ -871,7 +871,7 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 
     // record if the GCS has been receiving radio messages from
     // the aircraft
-    if (packet.remrssi != 0) {
+    if (packet.remrssi != 0 && packet.remrssi != 255) {
         last_radio_status.remrssi_ms = now;
     }
 
