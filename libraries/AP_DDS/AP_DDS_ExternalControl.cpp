@@ -58,6 +58,8 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
         return false;
     }
 
+    // TODO handle stale data from timestamp gracefully.
+
     if (strcmp(cmd_vel.header.frame_id, BASE_LINK_FRAME_ID) == 0) {
         // Convert commands from body frame (x-forward, y-left, z-up) to NED.
         Vector3f linear_velocity;
@@ -67,8 +69,13 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
             float(-cmd_vel.twist.linear.z) };
         const float yaw_rate = -cmd_vel.twist.angular.z;
 
+        if (linear_velocity_base_link.is_all_nan()) {
+            return external_control->set_yaw_rate(yaw_rate);
+        }
+
         auto &ahrs = AP::ahrs();
         linear_velocity = ahrs.body_to_earth(linear_velocity_base_link);
+
         return external_control->set_linear_velocity_and_yaw_rate(linear_velocity, yaw_rate);
     }
 

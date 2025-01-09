@@ -182,6 +182,9 @@ public:
     // check if any elements are NAN
     bool is_nan(void) const WARN_IF_UNUSED;
 
+    // check if all elements are NAN
+    bool is_all_nan(void) const WARN_IF_UNUSED;
+
     // check if any elements are infinity
     bool is_inf(void) const WARN_IF_UNUSED;
 
