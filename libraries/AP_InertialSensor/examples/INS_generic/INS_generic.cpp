@@ -20,7 +20,7 @@ static void display_offsets_and_scaling();
 static void run_test();
 
 // board specific config
-static AP_BoardConfig BoardConfig;
+static AP_BoardConfig boardconfig;
 static AP_Int32 log_bitmask;
 static AP_Logger logger;
 
@@ -30,7 +30,7 @@ void loop(void);
 void setup(void)
 {
     // setup any board specific drivers
-    BoardConfig.init();
+    boardconfig.init();
 
     hal.console->begin(115200);
     hal.console->printf("AP_InertialSensor startup...\n");

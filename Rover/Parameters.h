@@ -46,7 +46,7 @@ public:
         k_param_initial_mode,
         k_param_scheduler,
         k_param_relay,
-        k_param_BoardConfig,
+        k_param_BoardConfig_old,
         k_param_pivot_turn_angle_old,   // unused
         k_param_rc_13_old,  // unused
         k_param_rc_14_old,  // unused
