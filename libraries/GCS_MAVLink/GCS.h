@@ -30,6 +30,7 @@
 #include <AP_Airspeed/AP_Airspeed_config.h>
 
 #include "ap_message.h"
+#include "DBGprint.h"
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
