@@ -168,14 +168,23 @@ void Tracker::prepare_servos()
     SRV_Channels::output_ch_all();
 }
 
-void Tracker::set_mode(Mode &newmode, const ModeReason reason)
+bool Tracker::set_mode(Mode &newmode, const ModeReason reason)
 {
     control_mode_reason = reason;
 
     if (mode == &newmode) {
         // don't switch modes if we are already in the correct mode.
-        return;
+        return false;
     }
+
+    // Try entering the new mode
+    // NOTE: futureproofing, currently all modes return true
+    if (!newmode.enter()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Tracker mode change failed");
+        return false;
+    }
+    // Exit the previous one and swap
+    mode->exit();
     mode = &newmode;
 
     if (mode->requires_armed_servos()) {
@@ -191,6 +200,7 @@ void Tracker::set_mode(Mode &newmode, const ModeReason reason)
     gcs().send_message(MSG_HEARTBEAT);
 
     nav_status.bearing = ahrs.yaw_sensor * 0.01f;
+    return true;
 }
 
 bool Tracker::set_mode(const uint8_t new_mode, const ModeReason reason)
@@ -221,8 +231,7 @@ bool Tracker::set_mode(const uint8_t new_mode, const ModeReason reason)
     if (fred == nullptr) {
         return false;
     }
-    set_mode(*fred, reason);
-    return true;
+    return set_mode(*fred, reason);
 }
 
 #if HAL_LOGGING_ENABLED

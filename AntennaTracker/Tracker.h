@@ -200,7 +200,7 @@ private:
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location &temp, bool lock) override WARN_IF_UNUSED;
     void prepare_servos();
-    void set_mode(Mode &newmode, ModeReason reason);
+    bool set_mode(Mode &newmode, ModeReason reason);
     bool set_mode(uint8_t new_mode, ModeReason reason) override;
     uint8_t get_mode() const override { return (uint8_t)mode->number(); }
     bool should_log(uint32_t mask);

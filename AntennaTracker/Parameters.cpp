@@ -553,9 +553,9 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Param: AUTO_OPTIONS
     // @DisplayName: Auto mode options
-    // @Description: 1: Scan for unknown target
+    // @Description: Behavior options in automatic mode
     // @User: Standard
-    // @Bitmask: 0:Scan for unknown target
+    // @Bitmask: 0:Scan for unknown target, 1: Disable automatic scanning
     GSCALAR(auto_opts,              "AUTO_OPTIONS",        0),
 
     // @Group:
