@@ -183,10 +183,12 @@ class Platform:
             case 'Gaussian':
                 mu = noise_info['mu']
                 sigma = noise_info['sigma']
-                pos_error = sigma*np.random.randn(6,) + mu
+                # SD is divided by 2 because 95% lies below 2 SD
+                pos_error = (sigma/2)*np.random.randn(3,) + mu
+                vel_error = (0.5/2)*np.random.randn(3,)
                 pos_error[0:2] = self.meters_to_lat_lng(pos_error[0], pos_error[1], lat=target_state[0])
         
-                return pos_error
+                return np.hstack((pos_error, vel_error))
     
     def save_trajectory_data(self, x_curr, filename):
          # Append to CSV using numpy
