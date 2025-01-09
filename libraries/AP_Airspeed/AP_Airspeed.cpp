@@ -53,6 +53,7 @@
 #include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed_MSP.h"
 #include "AP_Airspeed_External.h"
+#include "AP_Airspeed_ND210.h"
 #include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
 
@@ -419,6 +420,11 @@ void AP_Airspeed::allocate()
             sensor[i] = NEW_NOTHROW AP_Airspeed_ASP5033(*this, i);
 #endif
             break;
+        case TYPE_I2C_ND210:
+#if AP_AIRSPEED_ND210_ENABLED
+            sensor[i] = new AP_Airspeed_ND210(*this, i);
+#endif
+            break;
         case TYPE_UAVCAN:
 #if AP_AIRSPEED_DRONECAN_ENABLED
             sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
@@ -757,7 +763,7 @@ void AP_Airspeed::handle_external(const AP_ExternalAHRS::airspeed_data_message_t
         }
     }
 }
-#endif 
+#endif
 
 #if HAL_LOGGING_ENABLED
 // @LoggerMessage: HYGR
