@@ -6688,6 +6688,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
             self.GliderPullup,
             self.BadRollChannelDefined,
+            self.SetpointGlobalPos
         ]
 
     def disabled_tests(self):
