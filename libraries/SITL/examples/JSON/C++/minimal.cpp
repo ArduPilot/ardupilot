@@ -18,6 +18,7 @@
 
 #include <time.h>
 #include <chrono>
+#include <thread>
 #include <stdlib.h>
 
 #include "libAP_JSON.cpp"
@@ -33,9 +34,9 @@ uint64_t micros() {
 int main() {
     // init the ArduPilot connection
     libAP_JSON ap;
-    if (ap.InitSockets("127.0.0.1", 9002))
+    if (ap.InitSockets("127.0.0.1", 9002)) // the fdm address and port number
     {
-        std::cout << "started socket" << std::endl;
+        std::cout << "[minimal] started fdm socket" << std::endl;
     }
 
     // send and receive data from AP
@@ -74,8 +75,11 @@ int main() {
                      0, 0, 0,    // position
                      0, 0, 0,    // attitude
                      0, 0, 0);    // velocity
-
+#ifdef _WIN32
+        std::this_thread::sleep_for(std::chrono::microseconds(1000));
+#else
         usleep(1000); // run this example at about 1000 Hz. Realistically it is about 800 Hz.
+#endif
     }
     return 0;
 }
