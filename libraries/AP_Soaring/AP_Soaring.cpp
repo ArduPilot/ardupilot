@@ -369,6 +369,12 @@ void SoaringController::update_thermalling()
                                            (double)wind_drift.x,
                                            (double)wind_drift.y,
                                            (double)_thermalability);
+#if HAL_SOARING_NVF_EKF_ENABLED
+    gcs().send_named_float("SOAREKFX0", (float)_ekf.X[0]);
+    gcs().send_named_float("SOAREKFX1", (float)_ekf.X[1]);
+    gcs().send_named_float("SOAREKFX2", (float)_ekf.X[2]);
+    gcs().send_named_float("SOAREKFX3", (float)_ekf.X[3]);
+#endif // HAL_SOARING_NVF_EKF_ENABLED
 #endif
 }
 
