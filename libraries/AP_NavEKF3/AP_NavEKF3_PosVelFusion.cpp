@@ -1263,7 +1263,13 @@ void NavEKF3_core::selectHeightForFusion()
     bool lostRngHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) && !rangeFinderDataIsFresh);
     bool lostGpsHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000 || !gpsAccuracyGoodForAltitude));
 #if EK3_FEATURE_BEACON_FUSION
-    bool lostRngBcnHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::BEACON) && ((imuSampleTime_ms - rngBcn.dataDelayed.time_ms) > 2000));
+    uint32_t latest_delayed_data_time_ms = 0;
+    for (uint8_t i=0; i< rngBcn.N; i++) {
+        if (rngBcn.dataDelayed[i].time_ms > latest_delayed_data_time_ms) {
+            latest_delayed_data_time_ms = rngBcn.dataDelayed[i].time_ms;
+        }
+    }
+    bool lostRngBcnHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::BEACON) && ((imuSampleTime_ms - latest_delayed_data_time_ms) > 2000));
 #endif
     bool fallback_to_baro =
         lostRngHgt

@@ -2445,6 +2445,14 @@ void AP_AHRS::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
 #endif
 }
 
+// Write range measurements from a known location for processing by the navigation EKF. Cannot be used together with AP_Beacon functionality.
+void AP_AHRS::writeRangeToLocation(const float range, const float uncertainty, const Location &loc, const uint32_t timeStamp_ms, const uint8_t index)
+{
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
+    EKF3.writeRangeToLocation(range, uncertainty, loc, timeStamp_ms, index);
+#endif
+}
+
 // get speed limit and XY navigation gain scale factor
 void AP_AHRS::getControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {

@@ -251,6 +251,23 @@ void AP_DAL::log_writeDefaultAirSpeed3(const float aspeed, const float uncertain
 #endif
 }
 
+void AP_DAL::log_writeRangeToLocation(const float range, const float uncertainty, const Location &loc, const uint32_t timeStamp_ms, const uint8_t index)
+{
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+    struct log_RRLT pkt{
+        range        : range,
+        uncertainty  : uncertainty,
+        lat          : loc.lat,
+        lng          : loc.lng,
+        alt          : loc.alt,
+        timeStamp_ms : timeStamp_ms,
+        index        : index,
+    };
+    _RRLT = pkt;
+    WRITE_REPLAY_BLOCK(RRLT, pkt);
+#endif
+}
+
 void AP_DAL::log_writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -527,6 +544,18 @@ void AP_DAL::handle_message(const log_RSLL &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
     // note that EKF2 does not support body frame odometry
     const Location loc {msg.lat, msg.lng, 0, Location::AltFrame::ABSOLUTE };
     ekf3.setLatLng(loc, msg.posAccSD, msg.timestamp_ms);
+}
+
+/*
+  handle range information
+ */
+void AP_DAL::handle_message(const log_RRLT &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+{
+    _RRLT = msg;
+    Location loc{msg.lat, msg.lng, msg.alt, Location::AltFrame::ABSOLUTE};
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
+    ekf3.writeRangeToLocation(msg.range, msg.uncertainty, loc, msg.timeStamp_ms, msg.index);
+#endif
 }
 #endif // APM_BUILD_Replay
 
