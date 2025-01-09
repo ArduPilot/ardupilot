@@ -735,6 +735,76 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ORIGIN_ALT", 21, ParametersG2, backup_origin_alt, 0),
 
+    // @Param: ACTUATOR1_INC
+    // @DisplayName: Increment step for actuator 1
+    // @Description:  Initial increment step for changing the actuator's PWM
+    // @Units: us
+    // @User: Standard
+    AP_GROUPINFO("ACTUATOR1_INC", 22, ParametersG2, actuator_increment_step[0], ACTUATOR_DEFAULT_INCREMENT),
+
+    // @Param: ACTUATOR2_INC
+    // @DisplayName: Increment step for actuator 2
+    // @Description:  Initial increment step for changing the actuator's PWM
+    // @Units: us
+    // @User: Standard
+    AP_GROUPINFO("ACTUATOR2_INC", 23, ParametersG2, actuator_increment_step[1], ACTUATOR_DEFAULT_INCREMENT),
+
+    // @Param: ACTUATOR3_INC
+    // @DisplayName: Increment step for actuator 3
+    // @Description:  Initial increment step for changing the actuator's PWM
+    // @Units: us
+    // @User: Standard
+    AP_GROUPINFO("ACTUATOR3_INC", 24, ParametersG2, actuator_increment_step[2], ACTUATOR_DEFAULT_INCREMENT),
+
+    // @Param: ACTUATOR4_INC
+    // @DisplayName: Increment step for actuator 4
+    // @Description:  Initial increment step for changing the actuator's PWM
+    // @Units: us
+    // @User: Standard
+    AP_GROUPINFO("ACTUATOR4_INC", 25, ParametersG2, actuator_increment_step[3], ACTUATOR_DEFAULT_INCREMENT),
+
+    // @Param: ACTUATOR5_INC
+    // @DisplayName: Increment step for actuator 5
+    // @Description:  Initial increment step for changing the actuator's PWM
+    // @Units: us
+    // @User: Standard
+    AP_GROUPINFO("ACTUATOR5_INC", 26, ParametersG2, actuator_increment_step[4], ACTUATOR_DEFAULT_INCREMENT),
+
+    // @Param: ACTUATOR1_ACC
+    // @DisplayName: Rate at which actuator 1 change speed increases or decreases
+    // @Description: Rate at which actuator 5 change speed increases or decreases
+    // @Units: %/s
+    // @User: Standard
+    AP_GROUPINFO("ACTUATOR1_ACC", 27, ParametersG2, actuator_acceleration[0], ACTUATOR_DEFAULT_INCREMENT_ACCEL),
+
+    // @Param: ACTUATOR2_ACC
+    // @DisplayName: Rate at which actuator 2 change speed increases or decreases
+    // @Description: Rate at which actuator 5 change speed increases or decreases
+    // @Units: %/s
+    // @User: Standard
+    AP_GROUPINFO("ACTUATOR2_ACC", 28, ParametersG2, actuator_acceleration[1], ACTUATOR_DEFAULT_INCREMENT_ACCEL),
+
+    // @Param: ACTUATOR3_ACC
+    // @DisplayName: Rate at which actuator 3 change speed increases or decreases
+    // @Description: Rate at which actuator 5 change speed increases or decreases
+    // @Units: %/s
+    // @User: Standard
+    AP_GROUPINFO("ACTUATOR3_ACC", 29, ParametersG2, actuator_acceleration[2], ACTUATOR_DEFAULT_INCREMENT_ACCEL),
+
+    // @Param: ACTUATOR4_ACC
+    // @DisplayName: Rate at which actuator 4 change speed increases or decreases
+    // @Description: Rate at which actuator 5 change speed increases or decreases
+    // @Units: %/s
+    // @User: Standard
+    AP_GROUPINFO("ACTUATOR4_ACC", 30, ParametersG2, actuator_acceleration[3], ACTUATOR_DEFAULT_INCREMENT_ACCEL),
+
+    // @Param: ACTUATOR5_ACC
+    // @DisplayName: Rate at which actuator 5 change speed increases or decreases
+    // @Description: Rate at which actuator 5 change speed increases or decreases
+    // @Units: %/s
+    // @User: Standard
+    AP_GROUPINFO("ACTUATOR5_ACC", 31, ParametersG2, actuator_acceleration[4], ACTUATOR_DEFAULT_INCREMENT_ACCEL),
+
     AP_GROUPEND
 };
 
