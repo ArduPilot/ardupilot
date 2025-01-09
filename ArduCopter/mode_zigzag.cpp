@@ -227,7 +227,6 @@ void ModeZigZag::move_to_side()
                 current_dest = next_dest;
                 current_terr_alt = terr_alt;
                 reach_wp_time_ms = 0;
-                char const *dir[] = {"forward", "right", "backward", "left"};
                 gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), dir[(uint8_t)zigzag_direction]);
             }
         }
@@ -534,7 +533,6 @@ void ModeZigZag::run_auto()
             if (wp_nav->set_wp_destination(current_dest, current_terr_alt)) {
                 stage = AUTO;
                 reach_wp_time_ms = 0;
-                char const *dir[] = {"forward", "right", "backward", "left"};
                 gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), dir[(uint8_t)zigzag_direction]);
             }
         }

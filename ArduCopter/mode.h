@@ -1546,6 +1546,8 @@ private:
         IgnorePilotYaw    = (1U << 2),
     };
 
+    const char *flightMode = "RTL";
+
 };
 
 
@@ -2005,6 +2007,8 @@ private:
     uint16_t line_count = 0;        // current line number
     int16_t line_num = 0;           // target line number
     bool is_suspended;              // true if zigzag auto is suspended
+
+    const char *dir[4] = {"forward", "right", "backward", "left"};
 };
 
 #if MODE_AUTOROTATE_ENABLED

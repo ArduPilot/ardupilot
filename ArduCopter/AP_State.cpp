@@ -22,20 +22,21 @@ void Copter::set_auto_armed(bool b)
 void Copter::set_simple_mode(SimpleMode b)
 {
     if (simple_mode != b) {
+        const char *flightMode = "SIMPLE mode";
         switch (b) {
             case SimpleMode::NONE:
                 LOGGER_WRITE_EVENT(LogEvent::SET_SIMPLE_OFF);
-                gcs().send_text(MAV_SEVERITY_INFO, "SIMPLE mode off");
+                gcs().send_text(MAV_SEVERITY_INFO, "%s off", flightMode);
                 break;
             case SimpleMode::SIMPLE:
                 LOGGER_WRITE_EVENT(LogEvent::SET_SIMPLE_ON);
-                gcs().send_text(MAV_SEVERITY_INFO, "SIMPLE mode on");
+                gcs().send_text(MAV_SEVERITY_INFO, "%s on", flightMode);
                 break;
             case SimpleMode::SUPERSIMPLE:
                 // initialise super simple heading
                 update_super_simple_bearing(true);
                 LOGGER_WRITE_EVENT(LogEvent::SET_SUPERSIMPLE_ON);
-                gcs().send_text(MAV_SEVERITY_INFO, "SUPERSIMPLE mode on");
+                gcs().send_text(MAV_SEVERITY_INFO, "SUPER%s on", flightMode);
                 break;
         }
         simple_mode = b;
