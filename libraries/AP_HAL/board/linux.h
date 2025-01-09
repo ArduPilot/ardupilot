@@ -301,6 +301,25 @@
     #define HAL_BOARD_TERRAIN_DIRECTORY "/home/pi/ardupilot/terrain"
     #define HAL_BOARD_STORAGE_DIRECTORY "/home/pi/ardupilot"
     #define HAL_DEFAULT_INS_FAST_SAMPLE 0
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PILOTPI
+    /*
+      PilotPi HAT support
+      website: https://blog.rctoysky.com/?p=690
+      schematic/layout: https://github.com/SalimTerryLi/PilotPi_PCB/
+      PX4 page: https://docs.px4.io/main/en/flight_controller/raspberry_pi_pilotpi.html
+    */
+    #define HAL_BOARD_STORAGE_DIRECTORY "/home/ardupilot/ardupilot/storage"
+    #define HAL_BOARD_LOG_DIRECTORY "/home/ardupilot/ardupilot/logs"
+    #define HAL_BOARD_TERRAIN_DIRECTORY "/home/ardupilot/ardupilot/terrain"
+    #define HAL_PARAM_DEFAULTS_PATH "/home/ardupilot/ardupilot/default.parm"
+    // We don't want any probing on the internal buses
+    #define HAL_LINUX_I2C_INTERNAL_BUS_MASK 0
+    #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+    // address of MS5611 is 0b1110110 | 0bCx with C = inverted CSB pins
+    #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(MS56XX, 1, 0b1110110 | 0b0, AP_Baro_MS56XX::BARO_MS5611)
+    #define HAL_MAG_PROBE PROBE_MAG_I2C(IST8310, 1, 0x0f, false, ROTATION_YAW_180)
+    #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensensev3, "icm42605", ROTATION_PITCH_180)
+    #define HAL_BATT_MONITOR_DEFAULT AP_BattMonitor::Type::ANALOG_VOLTAGE_ONLY
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
     
     //#define HAL_BARO_ALLOW_INIT_NO_BARO
