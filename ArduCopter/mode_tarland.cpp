@@ -3,7 +3,7 @@
 #if MODE_TARLAND_ENABLED
 
 #define MIN_DESCENT_ALT_OFF 1
-#define MIN_FOLLOW_DIST 1 
+#define MIN_FOLLOW_DIST 2 
 #define HOVER_ALT 40
 
 /**
