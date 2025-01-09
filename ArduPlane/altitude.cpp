@@ -756,12 +756,14 @@ void Plane::rangefinder_height_update(void)
         // If not using terrain data, we expect zero correction when our height above target is equal to our rangefinder measurement
         float correction = height_above_target() - rangefinder_state.height_estimate;
 
+        bool correction_from_terrain_data = false;
 #if AP_TERRAIN_AVAILABLE
         // if we are terrain following then correction is based on terrain data
         float terrain_altitude;
         if ((target_altitude.terrain_following || terrain_enabled_in_current_mode()) && 
             terrain.height_above_terrain(terrain_altitude, true)) {
             correction = terrain_altitude - rangefinder_state.height_estimate;
+            correction_from_terrain_data = true;
         }
 #endif    
 
@@ -778,7 +780,7 @@ void Plane::rangefinder_height_update(void)
         } else {
             rangefinder_state.correction = 0.8f*rangefinder_state.correction + 0.2f*correction;
             rangefinder_state.last_correction_time_ms = now;
-            if (fabsf(rangefinder_state.correction - rangefinder_state.initial_correction) > 30) {
+            if (correction_from_terrain_data && fabsf(rangefinder_state.correction - rangefinder_state.initial_correction) > 30) {
                 // the correction has changed by more than 30m, reset use of Lidar. We may have a bad lidar
                 if (rangefinder_state.in_use) {
                     gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder disengaged at %.2fm", (double)rangefinder_state.height_estimate);
