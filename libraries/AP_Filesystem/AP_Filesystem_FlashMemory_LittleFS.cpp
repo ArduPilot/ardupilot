@@ -346,7 +346,8 @@ struct dirent *AP_Filesystem_FlashMemory_LittleFS::readdir(void *ptr)
     if (retval == 0) {
         /* no more entries */
         return nullptr;
-    } else if (retval < 0) {
+    }
+    if (retval < 0) {
         // failure
         errno = errno_from_lfs_error(retval);
         return nullptr;
@@ -863,13 +864,12 @@ bool AP_Filesystem_FlashMemory_LittleFS::mount_filesystem() {
         }
     }
 
-#ifdef HAL_BOARD_STORAGE_DIRECTORY
     // try to create the root storage folder. Ignore the error code in case
     // the filesystem is corrupted or it already exists.
     if (strlen(HAL_BOARD_STORAGE_DIRECTORY) > 0) {
         lfs_mkdir(&fs, HAL_BOARD_STORAGE_DIRECTORY);
     }
-#endif
+
     // Force garbage collection to avoid expensive operations after boot
     lfs_fs_gc(&fs);
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Mounted flash 0x%x as littlefs", unsigned(id));
