@@ -51,7 +51,7 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 3), 'could not add p
   // @Values: 0:Disabled,1:Enabled
   // @User: Standard
 --]]
-SHIP_ENABLE     = bind_add_param('ENABLE', 1, 0)
+SHIP_ENABLE     = bind_add_param('ENABLE', 1, 1)
 
 --[[
   // @Param: SHIP_LAND_ANGLE
