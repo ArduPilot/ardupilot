@@ -100,6 +100,10 @@ bool ModeZigZag::init(bool ignore_checks)
     // initialize zigzag auto
     init_auto();
 
+    if (wp_nav->get_wp_radius() > ZIGZAG_WP_RADIUS_CM) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ZIGZAG: Check WP Radius %.0f>%d", wp_nav->get_wp_radius(), ZIGZAG_WP_RADIUS_CM);
+    }
+
     return true;
 }
 

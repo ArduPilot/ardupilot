@@ -101,6 +101,9 @@ public:
     /// true if origin.z and destination.z are alt-above-terrain, false if alt-above-ekf-origin
     bool origin_and_destination_are_terrain_alt() const { return _terrain_alt; }
 
+    /// get_wp_radius - return way point radius in cm during missions.
+    float get_wp_radius() const { return _wp_radius_cm; }
+
     /// set_wp_destination waypoint using location class
     ///     provide the next_destination if known
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
