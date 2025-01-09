@@ -375,6 +375,31 @@ void AP_ExternalAHRS::send_status_report(GCS_MAVLINK &link) const
                                        mag_var, 0, 0);
 }
 
+void AP_ExternalAHRS::set_data_sending_state(DATA_SENDING_STATE data_sending_state)
+{
+    if (!backend) {
+        return;
+    }
+
+    backend->set_data_sending_state(data_sending_state == DATA_SENDING_STATE::ENABLED ?
+                                    AP_ExternalAHRS::DATA_SENDING_STATE::ENABLED :
+                                    AP_ExternalAHRS::DATA_SENDING_STATE::DISABLED);
+}
+
+void AP_ExternalAHRS::set_gps_state(GPS_STATE gps_state)
+{
+    // set GNSS disable for auxillary function GPS_DISABLE
+    gnss_is_disabled = (gps_state == GPS_STATE::DISABLED);
+
+    if (!backend) {
+        return;
+    }
+
+    backend->set_gps_state(gps_state == GPS_STATE::ENABLED ?
+                           AP_ExternalAHRS::GPS_STATE::ENABLED :
+                           AP_ExternalAHRS::GPS_STATE::DISABLED);
+}
+
 void AP_ExternalAHRS::update(void)
 {
     if (backend) {

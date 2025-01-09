@@ -137,4 +137,18 @@ void AP_AHRS_External::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVe
     ekfNavVelGainScaler = 0.5;
 }
 
+void AP_AHRS_External::set_data_sending_state(DATA_SENDING_STATE state)
+{
+    AP::externalAHRS().set_data_sending_state(state == DATA_SENDING_STATE::ENABLED ?
+                                              AP_ExternalAHRS::DATA_SENDING_STATE::ENABLED :
+                                              AP_ExternalAHRS::DATA_SENDING_STATE::DISABLED);
+}
+
+void AP_AHRS_External::set_gps_state(GPS_STATE state)
+{
+    AP::externalAHRS().set_gps_state(state == GPS_STATE::ENABLED ?
+                                     AP_ExternalAHRS::GPS_STATE::ENABLED :
+                                     AP_ExternalAHRS::GPS_STATE::DISABLED);
+}
+
 #endif
