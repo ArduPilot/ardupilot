@@ -223,7 +223,7 @@ fi
 
 heading "${green}Installing rosinstall tools${reset}"
 
-sudo apt install ${PYTHON_V}-rosinstall ${PYTHON_V}-rosinstall-generator ${PYTHON_V}-wstool ${PYTHON_V}-catkin-tools -y
+sudo apt install ${PYTHON_V}-rosinstall ${PYTHON_V}-rosinstall-generator ${PYTHON_V}-wstool ${PYTHON_V}-catkin-tools ninja-build stow -y
 
 heading "${green}Installing Ardupilot-ROS workspace${reset}"
 
@@ -235,9 +235,17 @@ if maybe_prompt_user "Add ardupilot-ws to your home folder [N/y]?" ; then
         catkin init
         pushd src
         git clone https://github.com/ArduPilot/ardupilot_ros.git
+        git clone https://github.com/GT-RAIL/robot_pose_publisher.git
         popd
         sudo apt update
-        rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y
+        wstool init src
+        wstool merge -t src https://raw.githubusercontent.com/cartographer-project/cartographer_ros/master/cartographer_ros.rosinstall
+        wstool update -t src
+        bash $ROS_WS_ROOT/src/cartographer/scripts/install_abseil.sh
+        sudo bash $ROS_WS_ROOT/src/cartographer/scripts/install_proto3.sh
+        dirs -c && pushd $ROS_WS_ROOT
+        rosdep update
+        rosdep install --from-paths src --ignore-src --skip-keys="libabsl-dev" --rosdistro=${ROS_DISTRO} -y
         catkin build
         popd
     else
@@ -251,6 +259,9 @@ fi
 
 if maybe_prompt_user "Add ardupilot_gazebo to your home folder [N/y]?" ; then
     if [ ! -d $AP_GZ_ROOT ]; then
+        #sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+        #echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+        #sudo apt-get update
         sudo apt install gz-garden rapidjson-dev
         mkdir -p $AP_GZ_ROOT/src
         pushd $AP_GZ_ROOT/src
