@@ -1309,7 +1309,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RNGFND_LND_ORNT", 36, ParametersG2, rangefinder_land_orient, ROTATION_PITCH_270),
 #endif
-    
+
+    // @Param: ILCK_OPTIONS
+    // @DisplayName: Interlock Options
+    // @Description: A bitmask that determines what an RCx_OPTION = MOTOR_INTERLOCK applies to
+    // @User: Standard
+    // @Bitmask: 0: Arm, 1: Disarm, 2: Rudder Arming (reqires 0), 3: Rudder disarm (requires 1), 4: Emergency Stop
+    AP_GROUPINFO("ILCK_OPTIONS", 37, ParametersG2, interlock_options, 19),
+
     AP_GROUPEND
 };
 
