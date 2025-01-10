@@ -59,7 +59,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @DisplayName: AHRS GPS gain
     // @Description: This controls how much to use the GPS to correct the attitude. This should never be set to zero for a plane as it would result in the plane losing control in turns. For a plane please use the default value of 1.0.
     // @Range: 0.0 1.0
-    // @Increment: .01
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS, gps_gain, 1.0f),
 
@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @DisplayName: Yaw P
     // @Description: This controls the weight the compass or GPS has on the heading. A higher value means the heading will track the yaw source (GPS or compass) more rapidly.
     // @Range: 0.1 0.4
-    // @Increment: .01
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("YAW_P", 4,    AP_AHRS, _kp_yaw, 0.2f),
 
@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @DisplayName: AHRS RP_P
     // @Description: This controls how fast the accelerometers correct the attitude
     // @Range: 0.1 0.4
-    // @Increment: .01
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("RP_P",  5,    AP_AHRS, _kp, 0.2f),
 
@@ -133,7 +133,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @DisplayName: AHRS Velocity Complementary Filter Beta Coefficient
     // @Description: This controls the time constant for the cross-over frequency used to fuse AHRS (airspeed and heading) and GPS data to estimate ground velocity. Time constant is 0.1/beta. A larger time constant will use GPS data less and a small time constant will use air data less.
     // @Range: 0.001 0.5
-    // @Increment: .01
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("COMP_BETA",  10, AP_AHRS, beta, 0.1f),
 
