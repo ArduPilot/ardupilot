@@ -498,14 +498,18 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
 ///     cmd.index is updated with it's new position in the mission
 bool AP_Mission::add_cmd(Mission_Command& cmd)
 {
+    // Home is always the index 0.
+    // Commands should be added after home.
+    const uint16_t index = MAX(_cmd_total, AP_MISSION_FIRST_REAL_COMMAND);
+
     // attempt to write the command to storage
-    bool ret = write_cmd_to_storage(_cmd_total, cmd);
+    bool ret = write_cmd_to_storage(index, cmd);
 
     if (ret) {
         // update command's index
-        cmd.index = _cmd_total;
+        cmd.index = index;
         // increment total number of commands
-        _cmd_total.set_and_save(_cmd_total + 1);
+        _cmd_total.set_and_save(index + 1);
     }
 
     return ret;
@@ -516,8 +520,8 @@ bool AP_Mission::add_cmd(Mission_Command& cmd)
 ///     returns true if successfully replaced, false on failure
 bool AP_Mission::replace_cmd(uint16_t index, const Mission_Command& cmd)
 {
-    // sanity check index
-    if (index >= (unsigned)_cmd_total) {
+    // sanity check index, can't replace home or a waypoint which does not exist
+    if ((index == 0) || index >= (unsigned)_cmd_total) {
         return false;
     }
 
@@ -704,11 +708,19 @@ bool AP_Mission::restart_current_nav_cmd()
 // returns false on any issue at all.
 bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet)
 {
+    // Cannot set home
+    if (index < AP_MISSION_FIRST_REAL_COMMAND) {
+        return false;
+    }
+
     // this is the on-storage format
     AP_Mission::Mission_Command cmd {};
 
+    // Missions start at 1
+    const uint16_t mission_index = MAX(num_commands(), AP_MISSION_FIRST_REAL_COMMAND);
+
     // can't handle request for anything bigger than the mission size+1...
-    if (index > num_commands()) {
+    if (index > mission_index) {
         return false;
     }
 
@@ -719,7 +731,7 @@ bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet
 
     // A request to set the 'next' item after the end is how we add an extra
     //  item to the list, thus allowing us to write entire missions if needed.
-    if (index == num_commands()) {
+    if (index == mission_index) {
         return add_cmd(cmd);
     }
 

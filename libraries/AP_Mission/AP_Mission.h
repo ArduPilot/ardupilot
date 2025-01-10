@@ -631,11 +631,6 @@ public:
     ///     true is return if successful
     bool read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const;
 
-    /// write_cmd_to_storage - write a command to storage
-    ///     cmd.index is used to calculate the storage location
-    ///     true is returned if successful
-    bool write_cmd_to_storage(uint16_t index, const Mission_Command& cmd);
-
     /// write_home_to_storage - writes the special purpose cmd 0 (home) to storage
     ///     home is taken directly from ahrs
     void write_home_to_storage();
@@ -947,6 +942,11 @@ private:
     bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd);
     bool start_command_fence(const AP_Mission::Mission_Command& cmd);
+
+    /// write_cmd_to_storage - write a command to storage
+    ///     cmd.index is used to calculate the storage location
+    ///     true is returned if successful
+    bool write_cmd_to_storage(uint16_t index, const Mission_Command& cmd);
 
     /*
       handle format conversion of storage format to allow us to update
