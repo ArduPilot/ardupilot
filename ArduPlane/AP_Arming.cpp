@@ -250,6 +250,9 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
 
 bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
 {
+    if(!plane.interlock_option_allowed(InterlockOptions::Arm)) {
+            return false;
+    }
     if (method == AP_Arming::Method::RUDDER) {
         const AP_Arming::RudderArming arming_rudder = get_rudder_arming_type();
 
@@ -260,6 +263,11 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
             // checks may be bothered by the message being emitted.
             // check_failed(true, "Rudder arming disabled");
             return false;
+        }
+        if(!plane.interlock_option_allowed(InterlockOptions::RudderArm)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Interlock %s %s", "RudderArm", "denied");
+                check_failed(true, "Interlock rudder arm denied");
+                return false;
         }
 
         // if throttle is not down, then pilot cannot rudder arm/disarm
@@ -344,6 +352,11 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
         // option must be enabled:
         if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
             gcs().send_text(MAV_SEVERITY_INFO, "Rudder disarm: disabled");
+            return false;
+        }
+        if(!plane.interlock_option_allowed(InterlockOptions::RudderDisarm)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Interlock %s %s", "Rudder disarm", "denied");
+            check_failed(true, "Interlock Rudder disarm denied");
             return false;
         }
     }

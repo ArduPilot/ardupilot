@@ -1066,6 +1066,8 @@ Plane::Plane(void)
 {
     // C++11 doesn't allow in-class initialisation of bitfields
     auto_state.takeoff_complete = true;
+    // Default to regular behavior, arm/disarm/estop are allowed. If MOTOR_INTERLOCK RC option is defined this will be updated in RC_CHAnnel::init
+    interlock_allowed();
 }
 
 Plane plane;
