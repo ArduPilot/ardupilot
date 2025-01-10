@@ -139,7 +139,7 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @Description: Servo mount roll angle output leads the vehicle angle by this amount of time based on current roll rate. Increase until the servo is responsive but does not overshoot
     // @Units: s
     // @Range: 0.0 0.2
-    // @Increment: .005
+    // @Increment: 0.005
     // @User: Standard
     AP_GROUPINFO("_LEAD_RLL", 12, AP_Mount_Params, roll_stb_lead, 0.0f),
 
@@ -148,7 +148,7 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @Description: Servo mount pitch angle output leads the vehicle angle by this amount of time based on current pitch rate. Increase until the servo is responsive but does not overshoot
     // @Units: s
     // @Range: 0.0 0.2
-    // @Increment: .005
+    // @Increment: 0.005
     // @User: Standard
     AP_GROUPINFO("_LEAD_PTCH", 13, AP_Mount_Params, pitch_stb_lead, 0.0f),
 
