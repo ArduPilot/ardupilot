@@ -204,6 +204,11 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         sitl_model->set_ie24(&_sitl->ie24_sim);
         return &_sitl->ie24_sim;
 #endif // HAL_BUILD_AP_PERIPH
+#if AP_SIM_VOLZ_ENABLED
+    } else if (streq(name, "volz")) {
+        sitl_model->set_volz(&_sitl->volz_sim);
+        return &_sitl->volz_sim;
+#endif  // AP_SIM_VOLZ_ENABLED
     } else if (streq(name, "megasquirt")) {
         if (efi_ms != nullptr) {
             AP_HAL::panic("Only one megasquirt at a time");
