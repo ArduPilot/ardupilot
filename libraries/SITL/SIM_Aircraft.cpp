@@ -122,6 +122,16 @@ float Aircraft::ground_height_difference() const
     return local_ground_level;
 }
 
+float Aircraft::ambient_temperature_degC() const
+{
+    // FIXME: AP_Baro_SITL should be getting temperature from the
+    // simulated aircraft, not the other way around!
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)    // Periph does not instantiate Baro
+    return AP::baro().get_temperature();
+#endif
+    return 25.0;
+}
+
 void Aircraft::set_precland(SIM_Precland *_precland) {
     precland = _precland;
     precland->set_default_location(home.lat * 1.0e-7f, home.lng * 1.0e-7f, static_cast<int16_t>(get_home_yaw()));
@@ -1129,6 +1139,12 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     if (fetteconewireesc) {
         fetteconewireesc->update(*this);
     }
+
+#if AP_SIM_VOLZ_ENABLED
+    if (volz) {
+        volz->update(*this);
+    }
+#endif  // AP_SIM_VOLZ_ENABLED
 
 #if AP_SIM_SHIP_ENABLED
     sitl->models.shipsim.update();
