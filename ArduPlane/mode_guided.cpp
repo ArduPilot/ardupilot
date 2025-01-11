@@ -6,7 +6,7 @@
  */
 const AP_Param::GroupInfo ModeGuided::var_info[] = {
 
-    // @Param: _TIMEOUT
+    // @Param: TIMEOUT
     // @DisplayName: Guided mode timeout
     // @Description: Guided mode timeout after which vehicle will return to guided loiter if no updates are received from caller. Only applicable during any combination of velocity, acceleration, angle control, and/or angular rate control
     // @Units: s
