@@ -93,16 +93,12 @@ MAV_MISSION_RESULT MissionItemProtocol_Waypoints::get_item(const GCS_MAVLINK &_l
     if (!AP_Mission::mission_cmd_to_mavlink_int(cmd, ret_packet)) {
         return MAV_MISSION_ERROR;
     }
+    ret_packet.mission_type = MAV_MISSION_TYPE_MISSION;
 
     // set packet's current field to 1 if this is the command being executed
     if (cmd.id == (uint16_t)mission.get_current_nav_cmd().index) {
         ret_packet.current = 1;
-    } else {
-        ret_packet.current = 0;
     }
-
-    // set auto continue to 1
-    ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
 
     return MAV_MISSION_ACCEPTED;
 }

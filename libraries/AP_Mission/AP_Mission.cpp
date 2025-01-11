@@ -736,16 +736,9 @@ bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet
         return false;
     }
 
-    // minimal placeholder values during read-from-storage
-    tmp.target_system = 1;     // unused sysid
-    tmp.target_component =  1; // unused compid
-
-    // 0=home, higher number/s = mission item number.
-    tmp.seq = index;
-
     // retrieve mission from eeprom
     AP_Mission::Mission_Command cmd {};
-    if (!read_cmd_from_storage(tmp.seq, cmd)) {
+    if (!read_cmd_from_storage(index, cmd)) {
         return false;
     }
     // convert into mavlink-ish format for lua and friends.
@@ -756,13 +749,7 @@ bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet
     // set packet's current field to 1 if this is the command being executed
     if (cmd.id == (uint16_t)get_current_nav_cmd().index) {
         tmp.current = 1;
-    } else {
-        tmp.current = 0;
     }
-
-    // set auto continue to 1, becasue that's what's done elsewhere.
-    tmp.autocontinue = 1;     // 1 (true), 0 (false)
-    tmp.command = cmd.id;
 
     ret_packet = tmp;
 
@@ -1571,18 +1558,14 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
 //  NOTE: callers to this method current fill parts of "packet" in before calling this method, so do NOT attempt to zero the entire packet in here
 bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_int_t& packet)
 {
-    // command's position in mission list and mavlink id
-    packet.seq = cmd.index;
-    packet.command = cmd.id;
-
-    // set defaults
-    packet.current = 0;     // 1 if we are passing back the mission command that is currently being executed
-    packet.param1 = 0;
-    packet.param2 = 0;
-    packet.param3 = 0;
-    packet.param4 = 0;
-    packet.frame = 0;
-    packet.autocontinue = 1;
+    // Make sure return packed is zeroed
+    // Strictly params 1 to 4 and alt should be defaulted to NaN
+    // x and y should be defaulted to INT32_MAX
+    packet = {
+        seq: cmd.index,
+        command: cmd.id,
+        autocontinue: 1,
+    };
 
     // command specific conversions from mission command to mavlink packet
     switch (cmd.id) {

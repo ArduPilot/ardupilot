@@ -154,13 +154,7 @@ void MissionItemProtocol::handle_mission_request_int(GCS_MAVLINK &_link,
         return;
     }
 
-    mavlink_mission_item_int_t ret_packet{};
-
-    ret_packet.target_system = msg.sysid;
-    ret_packet.target_component = msg.compid;
-    ret_packet.seq = packet.seq;
-    ret_packet.mission_type = packet.mission_type;
-
+    mavlink_mission_item_int_t ret_packet;
     const MAV_MISSION_RESULT result_code = get_item(_link, msg, packet, ret_packet);
 
     if (result_code != MAV_MISSION_ACCEPTED) {
@@ -168,6 +162,9 @@ void MissionItemProtocol::handle_mission_request_int(GCS_MAVLINK &_link,
         send_mission_ack(_link, msg, result_code);
         return;
     }
+
+    ret_packet.target_system = msg.sysid;
+    ret_packet.target_component = msg.compid;
 
     _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM_INT, (const char*)&ret_packet);
 }
@@ -189,17 +186,15 @@ void MissionItemProtocol::handle_mission_request(GCS_MAVLINK &_link,
     request_int.seq = packet.seq;
     request_int.mission_type = packet.mission_type;
 
-    mavlink_mission_item_int_t item_int{};
-    item_int.target_system = msg.sysid;
-    item_int.target_component = msg.compid;
-    item_int.mission_type = packet.mission_type;
-    item_int.seq = packet.seq;
-
+    mavlink_mission_item_int_t item_int;
     MAV_MISSION_RESULT ret = get_item(_link, msg, request_int, item_int);
     if (ret != MAV_MISSION_ACCEPTED) {
         send_mission_ack(_link, msg, ret);
         return;
     }
+
+    item_int.target_system = msg.sysid;
+    item_int.target_component = msg.compid;
 
     mavlink_mission_item_t ret_packet{};
     ret = AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(item_int, ret_packet);

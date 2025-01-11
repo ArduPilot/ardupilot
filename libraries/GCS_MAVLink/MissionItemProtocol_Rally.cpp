@@ -117,7 +117,15 @@ bool MissionItemProtocol_Rally::get_item_as_mission_item(uint16_t seq,
     }
 
     // Default to relative to home
-    ret_packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+    ret_packet = {
+        x: rallypoint.lat,
+        y: rallypoint.lng,
+        z: float(rallypoint.alt),
+        seq: seq,
+        command: MAV_CMD_NAV_RALLY_POINT,
+        frame: MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        mission_type: MAV_MISSION_TYPE_RALLY,
+    };
 
     if (rallypoint.alt_frame_valid == 1) {
         switch (Location::AltFrame(rallypoint.alt_frame)) {
@@ -138,12 +146,6 @@ bool MissionItemProtocol_Rally::get_item_as_mission_item(uint16_t seq,
                 break;
         }
     }
-
-    ret_packet.command = MAV_CMD_NAV_RALLY_POINT;
-    ret_packet.x = rallypoint.lat;
-    ret_packet.y = rallypoint.lng;
-    ret_packet.z = rallypoint.alt;
-    ret_packet.mission_type = MAV_MISSION_TYPE_RALLY;
 
     return true;
 }
