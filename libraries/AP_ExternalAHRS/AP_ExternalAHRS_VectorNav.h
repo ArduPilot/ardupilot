@@ -49,9 +49,8 @@ public:
 
 protected:
 
-    uint8_t num_gps_sensors(void) const override {
-        return 1;
-    }
+    uint8_t num_gps_sensors(void) const override;
+
 private:
     AP_HAL::UARTDriver *uart;
     int8_t port_num;
