@@ -103,6 +103,8 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
     def move_target(self, test_config: TestInfo):
 
         self.target.dt = 1/test_config["target_pos_sensor"]['update_rate']
+        self.target.an = test_config['acceleration'][0]
+        self.target.at = test_config["acceleration"][1]
         self.target_state = self.target.move(self.target_state[0:3], self.target_state[3:6])
 
         self.target_state_noisy =  self.target_state + self.target.position_error(test_config["target_pos_sensor"]['error'], self.target_state)
@@ -288,7 +290,7 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
             target_timestamp = [obj["time"] for obj in target_traj]
             drone_timestamp = [obj["time"] for obj in self.drone_traj]
 
-            drone_end_i = np.abs(drone_timestamp - target_timestamp[-1]).argmin()
+            drone_end_i = np.abs(np.array(drone_timestamp) - target_timestamp[-1]).argmin()
 
             drone_loc = Location(self.drone_traj[drone_end_i]["lat"]*1e-7, self.drone_traj[drone_end_i]["lng"]*1e-7)
 
