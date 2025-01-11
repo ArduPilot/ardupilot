@@ -127,7 +127,7 @@ void Storage::_storage_open(void)
  */
 void Storage::_save_backup(void)
 {
-#if HAL_OS_POSIX_IO
+#if HAL_USE_FATFS
     // allow for fallback to microSD or littlefs flash based storage
     // create the backup directory if need be
     int ret;
