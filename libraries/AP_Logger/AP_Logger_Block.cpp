@@ -926,7 +926,7 @@ void AP_Logger_Block::write_log_page()
 
 void AP_Logger_Block::flash_test()
 {
-    const uint32_t pages_to_check = 128;
+    uint32_t pages_to_check = 128;
     for (uint32_t i=1; i<=pages_to_check; i++) {
         if ((i-1) % df_PagePerBlock == 0) {
             printf("Block erase %u\n", get_block(i));
@@ -962,6 +962,19 @@ void AP_Logger_Block::flash_test()
                 i, bad_bytes, df_PageSize, buffer[first_bad_byte]);
         }
     }
+
+    // speed test
+    pages_to_check = 4096;  // 1mB / 8mB
+    for (uint32_t i=1; i<=pages_to_check; i++) {
+        if ((i-1) % df_PagePerBlock == 0) {
+            SectorErase(get_block(i));
+        }
+    }
+    uint32_t now_ms = AP_HAL::millis();
+    for (uint32_t i=1; i<=pages_to_check; i++) {
+        BufferToPage(i);
+    }
+    printf("Flash speed test: %ukB/s\n", unsigned((pages_to_check * df_PageSize * 1000) / (1024 * (AP_HAL::millis() - now_ms))));
 }
 
 #endif // HAL_LOGGING_BLOCK_ENABLED
