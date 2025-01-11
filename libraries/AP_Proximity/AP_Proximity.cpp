@@ -23,7 +23,8 @@
 #include "AP_Proximity_RangeFinder.h"
 #include "AP_Proximity_MAV.h"
 #include "AP_Proximity_LightWareSF40C.h"
-#include "AP_Proximity_LightWareSF45B.h"
+#include "AP_Proximity_LightWareSF45B_Serial.h"
+#include "AP_Proximity_LightWareSF45B_I2C.h"
 #include "AP_Proximity_SITL.h"
 #include "AP_Proximity_AirSimSITL.h"
 #include "AP_Proximity_Cygbot_D1.h"
@@ -31,7 +32,6 @@
 #include "AP_Proximity_Scripting.h"
 #include "AP_Proximity_LD06.h"
 #include "AP_Proximity_MR72_CAN.h"
-
 
 #include <AP_Logger/AP_Logger.h>
 
@@ -197,11 +197,11 @@ void AP_Proximity::init()
             }
             break;
 #endif
-#if AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED
+#if AP_PROXIMITY_LIGHTWARE_SF45B_SERIAL_ENABLED
         case Type::SF45B:
-            if (AP_Proximity_LightWareSF45B::detect(serial_instance)) {
+            if (AP_Proximity_LightWareSF45B_Serial::detect(serial_instance)) {
                 state[instance].instance = instance;
-                drivers[instance] = NEW_NOTHROW AP_Proximity_LightWareSF45B(*this, state[instance], params[instance], serial_instance);
+                drivers[instance] = NEW_NOTHROW AP_Proximity_LightWareSF45B_Serial(*this, state[instance], params[instance], serial_instance);
                 serial_instance++;
             }
             break;
@@ -250,6 +250,23 @@ void AP_Proximity::init()
                 state[instance].instance = instance;
                 drivers[instance] = NEW_NOTHROW AP_Proximity_LD06(*this, state[instance], params[instance], serial_instance);
                 serial_instance++;
+            }
+            break;
+#endif
+#if AP_PROXIMITY_LIGHTWARE_SF45B_I2C_ENABLED
+        case Type::SF45B_I2C:
+            uint8_t addr = PROXIMITY_SF45B_I2C_ADDRESS;
+            if (params[instance].address != 0) {
+                addr = params[instance].address;
+            }
+            FOREACH_I2C(i) {
+                drivers[instance] = AP_Proximity_LightWareSF45B_I2C::detect(*this, state[instance], params[instance],
+                                                                    hal.i2c_mgr->get_device(i, addr));
+
+                if (drivers[instance] != nullptr) {
+                    state[instance].instance = instance;
+                    break;
+                }
             }
             break;
 #endif
