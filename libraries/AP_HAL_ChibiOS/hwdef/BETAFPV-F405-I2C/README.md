@@ -10,13 +10,15 @@ The BETAFPV F405 AIO is a flight controller produced by [BETAFPV](https://betafp
  - BEC output: 5V, 2A@4V
  - Barometer: BMP280
  - OSD: AT7456E
- - 5 UARTS: (UART1, UART3, UART4, UART5, UART6)
+ - 5 UARTS: (UART1, UART4, UART5, UART6)
  - 5 PWM outputs (4 motor outputs used internally for integrated 4-in-1 ESC and 1 integrated LED)
  - Integrated 4-in-1 BlueJay ESC
 
+This version supports a compass via the TX3 (SCL) and RX3 (SDA) pins, but requires a hardware mod - see https://betafpv.com/products/f4-2-3s-20a-aio-fc-v1?_pos=1&_sid=a0000be76&_ss=r
+
 ## Pinout
 
-![BETAFPV F405 AIO Board](betafpv_f405_pinout.jpg "BETAFPV F405 AIO")
+![BETAFPV F405 AIO Board](../BETAFPV-F405/betafpv_f405_pinout.jpg "BETAFPV F405 AIO")
 
 ## UART Mapping
 
@@ -25,11 +27,10 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |Name|Pin|Function|
 |:-|:-|:-|
 |SERIAL0|COMPUTER|USB|
-|SERIAL1|RX1/TX1|UART1 (GPS, DMA-enabled)|
-|SERIAL3|TX3/RX3|UART3 (ELRS, internal - can be freed up through board modifications, see https://betafpv.com/products/f4-2-3s-20a-aio-fc-v1?_pos=1&_sid=a0000be76&_ss=r)
+|SERIAL1|RX1/TX1|UART1 (RX, DMA-enabled)|
 |SERIAL4|TX4/RX4|UART4 (MSP DisplayPort)|
 |SERIAL5|RX5|UART5 (SBUS, inverted and connected to RX-only)|
-|SERIAL6|TX6/RX6|UART6 (Spare, DMA-enabled)|
+|SERIAL6|TX6/RX6|UART6 (GPS, DMA-enabled)|
 
 ## RC Input
 
@@ -74,8 +75,8 @@ The BETAFPV F405 AIO does not have a builtin compass.
 
 ## GPIO Pin / Relay
 
-The board has an IO pin on RELAY2 (GPIO pin 81) which can be enabled by setting BRD_ALT_CONFIG to 1.
-This then turns UART6_TX into a relay which can be used for controlling an external LED (e.g. on the Pavo 20 Pro)
+The board has an IO pin on RELAY2 (GPIO pin 81).
+This then turns Buzz+ into a relay which can be used for controlling an external LED (e.g. on the Pavo 20 Pro)
 
 ## NeoPixel LED
 
