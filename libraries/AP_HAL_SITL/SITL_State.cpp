@@ -392,9 +392,24 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         }
     }
 
+#if AP_SIM_VOLZ_ENABLED
+    // update simulation input based on data received via "serial" to
+    // Volz servos:
+    if (_sitl->volz_sim.enabled()) {
+        _sitl->volz_sim.update_sitl_input_pwm(input);
+        for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
+            if (input.servos[i] != 0 && input.servos[i] < 1000) {
+                AP_HAL::panic("Bad input servo value (%u)", input.servos[i]);
+            }
+        }
+    }
+#endif
+
     const float engine_mul = _sitl->engine_mul.get();
     const uint32_t engine_fail = _sitl->engine_fail.get();
 
+    float throttle = 0.0f;
+    
     // apply engine multiplier to motor defined by the SIM_ENGINE_FAIL parameter
     for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
         if (engine_fail & (1<<i)) {
