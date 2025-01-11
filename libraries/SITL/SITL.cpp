@@ -710,6 +710,12 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_GROUPINFO("OSD_ROWS",     54, SIM,  osd_rows, 16),
 #endif
 
+#if AP_SIM_VOLZ_ENABLED
+    // @Group: VOLZ_
+    // @Path: ./SIM_Volz.cpp
+    AP_SUBGROUPINFO(volz_sim, "VOLZ_", 55, SIM, Volz),
+#endif
+
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK

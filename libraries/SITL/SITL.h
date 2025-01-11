@@ -32,6 +32,7 @@
 #include "SIM_GPS.h"
 #include "SIM_DroneCANDevice.h"
 #include "SIM_ADSB_Sagetech_MXS.h"
+#include "SIM_Volz.h"
 
 namespace SITL {
 
@@ -512,6 +513,9 @@ public:
 #endif
     IntelligentEnergy24 ie24_sim;
     FETtecOneWireESC fetteconewireesc_sim;
+#if AP_SIM_VOLZ_ENABLED
+    Volz volz_sim;
+#endif  // AP_SIM_VOLZ_ENABLED
 #if AP_TEST_DRONECAN_DRIVERS
     DroneCANDevice dronecan_sim;
 #endif

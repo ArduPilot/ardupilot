@@ -408,8 +408,6 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     const float engine_mul = _sitl->engine_mul.get();
     const uint32_t engine_fail = _sitl->engine_fail.get();
 
-    float throttle = 0.0f;
-    
     // apply engine multiplier to motor defined by the SIM_ENGINE_FAIL parameter
     for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
         if (engine_fail & (1<<i)) {
