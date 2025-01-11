@@ -14,6 +14,8 @@ The BETAFPV F405 AIO is a flight controller produced by [BETAFPV](https://betafp
  - 5 PWM outputs (4 motor outputs used internally for integrated 4-in-1 ESC and 1 integrated LED)
  - Integrated 4-in-1 BlueJay ESC
 
+This version supports a compass via the TX3 (SCL) and RX3 (SDA) pins, but requires a hardware mod - see https://betafpv.com/products/f4-2-3s-20a-aio-fc-v1?_pos=1&_sid=a0000be76&_ss=r
+
 ## Pinout
 
 ![BETAFPV F405 AIO Board](../BETAFPV-F405/betafpv_f405_pinout.jpg "BETAFPV F405 AIO")
@@ -27,7 +29,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |SERIAL0|COMPUTER|USB|
 |SERIAL1|RX1/TX1|UART1 (RX, DMA-enabled)|
 |SERIAL4|TX4/RX4|UART4 (MSP DisplayPort)|
-|SERIAL5|RX5|UART5 (SBUS, RX-only)|
+|SERIAL5|RX5|UART5 (SBUS, inverted and connected to RX-only)|
 |SERIAL6|TX6/RX6|UART6 (GPS, DMA-enabled)|
 
 ## RC Input
@@ -73,8 +75,8 @@ The BETAFPV F405 AIO does not have a builtin compass.
 
 ## GPIO Pin / Relay
 
-The board has an IO pin on RELAY2 (GPIO pin 81) which can be enabled by setting BRD_ALT_CONFIG to 1.
-This then turns UART6_TX into a relay which can be used for controlling an external LED (e.g. on the Pavo 20 Pro)
+The board has an IO pin on RELAY2 (GPIO pin 81).
+This then turns Buzz+ into a relay which can be used for controlling an external LED (e.g. on the Pavo 20 Pro)
 
 ## NeoPixel LED
 
