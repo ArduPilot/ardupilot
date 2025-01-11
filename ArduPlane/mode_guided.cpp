@@ -1,6 +1,29 @@
 #include "mode.h"
 #include "Plane.h"
 
+/*
+  mode guided parameters
+ */
+const AP_Param::GroupInfo ModeGuided::var_info[] = {
+
+    // @Param: TIMEOUT
+    // @DisplayName: Guided mode timeout
+    // @Description: Guided mode timeout after which vehicle will return to guided loiter if no updates are received from caller. Only applicable during any combination of velocity, acceleration, angle control, and/or angular rate control
+    // @Units: s
+    // @Range: 0.01 5
+    // @User: Advanced
+    AP_GROUPINFO("TIMEOUT", 1, ModeGuided, guided_timeout, 3.0),
+
+    AP_GROUPEND
+};
+
+ModeGuided::ModeGuided() :
+    Mode()
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
+
 bool ModeGuided::_enter()
 {
     plane.guided_throttle_passthru = false;
@@ -36,9 +59,9 @@ void ModeGuided::update()
     }
 #endif
 
-    // Received an external msg that guides roll in the last 3 seconds?
+    // Received an external msg that guides roll recently?
     if (plane.guided_state.last_forced_rpy_ms.x > 0 &&
-            millis() - plane.guided_state.last_forced_rpy_ms.x < 3000) {
+            millis() - plane.guided_state.last_forced_rpy_ms.x < get_timeout_ms()) {
         plane.nav_roll_cd = constrain_int32(plane.guided_state.forced_rpy_cd.x, -plane.roll_limit_cd, plane.roll_limit_cd);
         plane.update_load_factor();
 
@@ -76,7 +99,7 @@ void ModeGuided::update()
     }
 
     if (plane.guided_state.last_forced_rpy_ms.y > 0 &&
-            millis() - plane.guided_state.last_forced_rpy_ms.y < 3000) {
+            millis() - plane.guided_state.last_forced_rpy_ms.y < get_timeout_ms()) {
         plane.nav_pitch_cd = constrain_int32(plane.guided_state.forced_rpy_cd.y, plane.pitch_limit_min*100, plane.aparm.pitch_limit_max.get()*100);
     } else {
         plane.calc_nav_pitch();
@@ -89,8 +112,8 @@ void ModeGuided::update()
 
     }  else if (plane.aparm.throttle_cruise > 1 &&
             plane.guided_state.last_forced_throttle_ms > 0 &&
-            millis() - plane.guided_state.last_forced_throttle_ms < 3000) {
-        // Received an external msg that guides throttle in the last 3 seconds?
+            millis() - plane.guided_state.last_forced_throttle_ms < get_timeout_ms()) {
+        // Received an external msg that guides throttle recently?
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.guided_state.forced_throttle);
 
     } else {
@@ -157,4 +180,9 @@ void ModeGuided::update_target_altitude()
         {
         Mode::update_target_altitude();
     }
+}
+
+uint32_t ModeGuided::get_timeout_ms() const
+{
+    return constrain_float(guided_timeout, 0.01, 5.0) * 1000;
 }
