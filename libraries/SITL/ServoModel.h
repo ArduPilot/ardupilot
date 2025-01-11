@@ -28,6 +28,7 @@
 
 class ServoModel {
 public:
+    float angle() const { return filter1p.get(); }
     float filter_angle(uint16_t pwm, float dt);
     float filter_range(uint16_t pwm, float dt);
     void set_pwm_range(uint16_t _pwm_min, uint16_t _pwm_max);

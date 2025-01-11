@@ -339,6 +339,10 @@ class VehicleInfo(object):
                 "waf_target": "bin/arduplane",
                 "default_params_filename": ["models/plane.parm", "default_params/plane-dspoilers.parm"]
             },
+            "plane-redundant": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["models/plane.parm", "default_params/plane-redundant.parm"]
+            },
             "plane-soaring": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": ["models/plane.parm", "default_params/plane-soaring.parm"]
