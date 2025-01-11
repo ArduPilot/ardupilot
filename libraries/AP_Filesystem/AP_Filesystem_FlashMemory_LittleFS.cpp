@@ -108,6 +108,11 @@ int AP_Filesystem_FlashMemory_LittleFS::open(const char *pathname, int flags, bo
         .size = sizeof(fp->mtime)
     };
     fp->filename = strdup(pathname);
+    if (fp->filename == nullptr) {
+        errno = ENOMEM;
+        free_fd(fd);
+        return -1;
+    }
 
     int retval = lfs_file_opencfg(&fs, &fp->file, pathname, lfs_flags_from_flags(flags), &fp->cfg);
 
