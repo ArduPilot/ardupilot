@@ -249,21 +249,47 @@ int32_t AP_Filesystem_9P2000::read(int fd, void *buf, uint32_t count)
         return -1;
     }
 
-    // Send read command
-    const uint16_t tag = fs.request_read(file[fd].fileId, file[fd].ofs, count);
+    // Don't try and read too much in one go
+    const uint32_t max_read = fs.max_read_len();
 
-    // Wait for the reply
-    if (!wait_for_tag(fs, tag)) {
-        return -1;
-    }
+    uint32_t total = 0;
+    do {
+        const uint32_t read_count = MIN(count - total, max_read);
 
-    const int read = fs.file_read_result(tag, buf);
-    if (read < 0) {
-        return -1;
-    }
+        // Send read command
+        const uint16_t tag = fs.request_read(file[fd].fileId, file[fd].ofs, read_count);
 
-    file[fd].ofs += read;
-    return read;
+        // Wait for the reply
+        if (!wait_for_tag(fs, tag)) {
+            // May have been able to do a partial read
+            if (total > 0) {
+                break;
+            }
+            return -1;
+        }
+
+        const int read = fs.file_read_result(tag, buf);
+        if (read <= 0) {
+            if (total > 0) {
+                break;
+            }
+            return -1;
+        }
+
+        file[fd].ofs += read;
+        total += read;
+
+        // failed to read the expected amount, don't try again
+        if ((uint32_t)read != read_count) {
+            break;
+        }
+
+        // Increment the buffer
+        buf = (void *)(((uint8_t *)buf) + read);
+
+    } while (count > total);
+
+    return total;
 }
 
 int32_t AP_Filesystem_9P2000::write(int fd, const void *buf, uint32_t count)
@@ -287,23 +313,50 @@ int32_t AP_Filesystem_9P2000::write(int fd, const void *buf, uint32_t count)
         return -1;
     }
 
-    // Send write command
-    const uint16_t tag = fs.request_write(file[fd].fileId, file[fd].ofs, count, buf);
+    // Don't try and write too much in one go
+    const uint32_t max_write = fs.max_write_len();
 
-    // Wait for the reply
-    if (!wait_for_tag(fs, tag)) {
-        return -1;
-    }
+    uint32_t total = 0;
+    do {
+        const uint32_t write_count = MIN(count - total, max_write);
 
-    const int32_t written = fs.write_result(tag);
-    if (written < 0) {
-        return -1;
-    }
+        // Send write command
+        const uint16_t tag = fs.request_write(file[fd].fileId, file[fd].ofs, write_count, buf);
+
+        // Wait for the reply
+        if (!wait_for_tag(fs, tag)) {
+            // May have been able to do a partial write
+            if (total > 0) {
+                break;
+            }
+            return -1;
+        }
+
+        const int32_t written = fs.write_result(tag);
+        if (written <= 0) {
+            if (total > 0) {
+                break;
+            }
+            return -1;
+        }
+
+        // Increment the file offset and size
+        file[fd].ofs += written;
+        file[fd].size = MAX(file[fd].size, file[fd].ofs);
+        total += written;
+
+        // failed to write the expected amount, don't try again
+        if ((uint32_t)written != write_count) {
+            break;
+        }
+
+        // Increment the buffer
+        buf = (void *)(((uint8_t *)buf) + written);
+
+    } while (count > total);
 
     // Return length written
-    file[fd].ofs += written;
-    file[fd].size = MAX(file[fd].size, file[fd].ofs);
-    return written;
+    return total;
 }
 
 int32_t AP_Filesystem_9P2000::lseek(int fd, int32_t offset, int seek_from)
