@@ -599,7 +599,7 @@ Vector3p AP_Follow::generateGPSNoise(double mean, double stddev) {
     // Create a random number generator
     std::random_device rd;  // Seed for the random number engine
     std::mt19937 gen(rd()); // Standard Mersenne Twister engine
-    std::normal_distribution<> dist(mean, stddev);
+    std::normal_distribution<> dist(mean, stddev/3);
 
     // Create a 3x1 vector and fill it with random numbers
     Vector3p randomVector;
