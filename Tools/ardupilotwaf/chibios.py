@@ -655,6 +655,8 @@ def pre_build(bld):
     load_env_vars(bld.env)
     if bld.env.HAL_NUM_CAN_IFACES:
         bld.get_board().with_can = True
+    if bld.env.WITH_LITTLEFS:
+        bld.get_board().with_littlefs = True
     hwdef_h = os.path.join(bld.env.BUILDROOT, 'hwdef.h')
     if not os.path.exists(hwdef_h):
         print("Generating hwdef.h")
