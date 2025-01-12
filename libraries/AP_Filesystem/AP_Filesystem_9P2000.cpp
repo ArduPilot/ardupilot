@@ -72,7 +72,7 @@ bool AP_Filesystem_9P2000::open_fileId(NineP2000& fs, const uint32_t fileId, con
 uint32_t AP_Filesystem_9P2000::get_file_id(NineP2000& fs, const char *name, const NineP2000::walkType type) const
 {
     // Navigate to the given path
-    const uint16_t tag = fs.request_walk(name);
+    const uint16_t tag = fs.request_walk(name, type);
 
     // Wait for the reply
     if (!wait_for_tag(fs, tag)) {
@@ -80,7 +80,7 @@ uint32_t AP_Filesystem_9P2000::get_file_id(NineP2000& fs, const char *name, cons
     }
 
     // Grab reply, should be none zero
-    return fs.walk_result(tag, type);
+    return fs.walk_result(tag);
 }
 
 bool AP_Filesystem_9P2000::create_file(NineP2000& fs, const char *fname, bool is_dir)
@@ -172,7 +172,8 @@ int AP_Filesystem_9P2000::open(const char *fname, int flags, bool allow_absolute
     }
 
     // Request stats to get length for seek commands
-    const uint16_t tag = fs.request_stat(fid);
+    struct stat stats;
+    const uint16_t tag = fs.request_stat(fid, &stats);
     if (tag == fs.NOTAG) {
         return -1;
     }
@@ -184,8 +185,7 @@ int AP_Filesystem_9P2000::open(const char *fname, int flags, bool allow_absolute
     }
 
     // Decode stats and open file
-    struct stat stats;
-    if (!fs.stat_result(tag, &stats) || !open_fileId(fs, fid, flags)) {
+    if (!fs.stat_result(tag) || !open_fileId(fs, fid, flags)) {
         fs.free_file_id(fid);
         errno = ENOENT;
         return -1;
@@ -257,7 +257,7 @@ int32_t AP_Filesystem_9P2000::read(int fd, void *buf, uint32_t count)
         const uint32_t read_count = MIN(count - total, max_read);
 
         // Send read command
-        const uint16_t tag = fs.request_read(file[fd].fileId, file[fd].ofs, read_count);
+        const uint16_t tag = fs.request_file_read(file[fd].fileId, file[fd].ofs, read_count, buf);
 
         // Wait for the reply
         if (!wait_for_tag(fs, tag)) {
@@ -268,7 +268,7 @@ int32_t AP_Filesystem_9P2000::read(int fd, void *buf, uint32_t count)
             return -1;
         }
 
-        const int read = fs.file_read_result(tag, buf);
+        const int read = fs.read_result(tag, false);
         if (read <= 0) {
             if (total > 0) {
                 break;
@@ -410,7 +410,7 @@ int AP_Filesystem_9P2000::stat(const char *name, struct stat *stbuf)
     }
 
     // Request stat
-    const uint16_t tag = fs.request_stat(fid);
+    const uint16_t tag = fs.request_stat(fid, stbuf);
     if (tag == fs.NOTAG) {
         return -1;
     }
@@ -422,7 +422,7 @@ int AP_Filesystem_9P2000::stat(const char *name, struct stat *stbuf)
     }
 
     // Get result
-    const int ret = fs.stat_result(tag, stbuf) ? 0 : -1;
+    const int ret = fs.stat_result(tag) ? 0 : -1;
 
     // Return file handle
     fs.free_file_id(fid);
@@ -587,7 +587,7 @@ struct dirent *AP_Filesystem_9P2000::readdir(void *dirp)
 
     // Read the next item, use large count which will be shortened
     // Because the file stat includes names we can't be sure how long it is.
-    const uint16_t tag = fs.request_read(dir[idx].fileId, dir[idx].ofs, UINT32_MAX);
+    const uint16_t tag = fs.request_dir_read(dir[idx].fileId, dir[idx].ofs, &dir[idx].de);
 
     // Wait for the reply
     if (!wait_for_tag(fs, tag)) {
@@ -595,8 +595,8 @@ struct dirent *AP_Filesystem_9P2000::readdir(void *dirp)
     }
 
     // Grab reply, should be none zero
-    const uint32_t size = fs.dir_read_result(tag, dir[idx].de);
-    if (size == 0) {
+    const int32_t size = fs.read_result(tag, true);
+    if (size <= 0) {
         // Got to the last item (or read failed)
         return nullptr;
     }
