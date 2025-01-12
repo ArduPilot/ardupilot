@@ -40,7 +40,7 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
 
     R = 6378137.0  # Radius of earth in meters
 
-    log_folder_path = os.path.expanduser("~/UAV_Landing/target_pos_error")
+    log_folder_path = os.path.expanduser("~/UAV_Landing/hor_clearance_5")
 
     sea_states: List[SeaState] = SimulationEnvironment.sea_states
 
@@ -530,7 +530,7 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
         #1554
         #2450
         #2742
-        for i in range(0, len(test_configs), 1):
+        for i in range(13, len(test_configs), 1):
 
             fun = self.create_function(test_configs[i]['test_name'], f"test-{test_configs[i]['test_name']}",self.test_landing_on_moving_target)
             ret.append(Test(fun, kwargs={
@@ -548,9 +548,13 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
     def print_test_config(self):
         '''Prints test config'''
 
-        test_configs = SimulationEnvironment.specific_test_case()
+        test_configs = SimulationEnvironment.generate_test_configs()
 
-        print(test_configs)
+        print(f"Total test cases {len(test_configs)}")
+
+        # test_configs = SimulationEnvironment.specific_test_case()
+
+        print(test_configs[0])
 
     def check_test_configs(self):
         '''Check the no of test configs to be tested'''
@@ -559,30 +563,49 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
         target_pos_error = []
         gps_freq = []
         target_pos_update_latency = []
+        drone_pos_error = []
+        drone_pos_update_rate = []
+        drone_pos_update_latency = []
         wind_spd = []
         wind_dir = []
         wind_turb = []
         dist_from_target = []
+        drone_alt = []
 
         for config in test_configs:
 
-            target_pos_error.append(config['target_pos_error']["sigma"])
-            gps_freq.append(config['target_pos_update_rate'])
-            target_pos_update_latency.append(config['target_pos_update_latency'])
+            target_pos_error.append(config['drone_pos_sensor']["error"]["sigma"])
+            gps_freq.append(config['drone_pos_sensor']['update_rate'])
+            target_pos_update_latency.append(config['drone_pos_sensor']['update_latency'])
+
+            drone_pos_error.append(config['drone_pos_sensor']["error"]["sigma"])
+            drone_pos_update_rate.append(config['drone_pos_sensor']['update_rate'])
+            drone_pos_update_latency.append(config['drone_pos_sensor']['update_latency'])
 
             wind_spd.append(config['wind_speed']['sea_state'])
             wind_dir.append(config['wind_speed']['dir'])
             wind_turb.append(config['wind_speed']['turbulence'])
             dist_from_target.append(config['target_distance_from_drone'])
 
+            drone_alt.append(config['drone_alt'])
+
         target_pos_error = list(set(target_pos_error))
-        expected_target_pos_error = 2
+        expected_target_pos_error = 5
 
         gps_freq = list(set(gps_freq))
         expected_gps_freq = 2
 
         target_pos_update_latency = list(set(target_pos_update_latency))
-        expected_gps_lat = 3
+        expected_gps_lat = 2
+
+        drone_pos_error = list(set(drone_pos_error))
+        expected_drone_pos_error = 5
+
+        drone_pos_update_rate = list(set(drone_pos_update_rate))
+        expected_drone_pos_update_rate = 2
+
+        drone_pos_update_latency = list(set(drone_pos_update_latency))
+        expected_drone_pos_update_latency = 2
 
         wind_spd = list(set(wind_spd))
         expected_wind_spd = 6
@@ -594,15 +617,22 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
         expected_wind_turb = 1
 
         dist_from_target = list(set(dist_from_target))
-        expected_dist_from_target = 4
+        expected_dist_from_target = 2
 
+        drone_alt = list(set(drone_alt))
+        expected_drone_alt = 2
+ 
         if(len(target_pos_error) != expected_target_pos_error or
            len(gps_freq) != expected_gps_freq or
            len(target_pos_update_latency) != expected_gps_lat or
+           len(drone_pos_error) != expected_drone_pos_error or
+           len(drone_pos_update_rate) != expected_drone_pos_update_rate or
+           len(drone_pos_update_latency) != expected_drone_pos_update_latency or
            len(wind_spd) != expected_wind_spd or
            len(wind_dir) != expected_wind_dir or
            len(wind_turb) != expected_wind_turb or
-           len(dist_from_target)) != expected_dist_from_target:
+           len(dist_from_target) != expected_dist_from_target or
+           len(drone_alt) != expected_drone_alt) :
             print(f"target_pos_error expected {expected_target_pos_error} got {len(target_pos_error)}")
             print(f"gps_freq expected {expected_gps_freq} got {len(gps_freq)}")
             print(f"target_pos_update_latency expected {expected_gps_lat} got {len(target_pos_update_latency)}")
@@ -610,35 +640,44 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
             print(f"wind_dir expected {expected_wind_dir} got {len(wind_dir)}")
             print(f"wind_turb expected {expected_wind_turb} got {len(wind_turb)}")
             print(f"distance_from_target expected {expected_dist_from_target} got {len(dist_from_target)}")
+            print(f"drone_alt expected {expected_drone_alt} got {len(drone_alt)}")
             raise NotAchievedException("There is a mismatch in test config")
 
     def test_wind_params(self):
         '''Test wind param setting'''
-        sigma = 0.5,
-        gps_freq = 1
+        sigma = 0.5
+        gps_freq = 5
         target_pos_update_latency = 0.2
         dist_from_target = 25
         sea_state = 2
         wind_dir = 180
         wind_turb = 0.2
+        alt = 20
+
+        pos_error = {
+            'type': "Gaussian",
+            'sigma': sigma,
+            'mu': 0
+        }
+        pos_sensor = {
+            'error': pos_error,
+            'update_latency': target_pos_update_latency,
+            'update_rate': gps_freq
+        }
 
         test_config: TestInfo = {
             'test_name': "",
-            'acceleration': np.array([0,0]),
+            'acceleration': np.array([0,0,0]),
             'velocity': np.array([5, 0, 0]),
-            'target_pos_error':{
-                'type': "Gaussian",
-                'sigma': sigma,
-                'mu': 0
-            },
-            'target_pos_update_rate': gps_freq,
-            'target_pos_update_latency': target_pos_update_latency,
+            'target_pos_sensor': pos_sensor,
+            'drone_pos_sensor': pos_sensor,
             'target_distance_from_drone': dist_from_target,
             'wind_speed':{
                 'sea_state': sea_state,
                 'dir': wind_dir,
                 'turbulence': wind_turb
-            }
+            },
+            'drone_alt': alt
         }
 
         self.test_landing_on_moving_target(test_config)
