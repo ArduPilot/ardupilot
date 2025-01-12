@@ -744,6 +744,13 @@ bool NineP2000::open_result(const uint16_t tag)
     return true;
 }
 
+// Return the maximum length that can be read in a single packet
+// This is only valid if the file system is mounted as bufferlength is negotiated
+uint32_t NineP2000::max_read_len() const {
+    const uint16_t data_offset = sizeof(Message::header) + sizeof(Message::Rread);
+    return bufferLen - data_offset;
+}
+
 // Read a directory or file, return tag, NOTAG if failed
 uint16_t NineP2000::request_read(const uint32_t id, const uint64_t offset, uint32_t count)
 {
@@ -767,8 +774,7 @@ uint16_t NineP2000::request_read(const uint32_t id, const uint64_t offset, uint3
     request[tag].expectedType = Type::Rread;
 
     // Limit count so as not to request a message over the max length for response
-    const uint16_t maxLen = bufferLen - (sizeof(Message::header) + sizeof(Message::Rread));
-    count = MIN(count, maxLen);
+    count = MIN(count, max_read_len());
 
     // Fill in message
     send.header.type = (uint8_t)Type::Tread;
@@ -946,6 +952,13 @@ bool NineP2000::stat_result(const uint16_t tag, struct stat *stbuf)
     clear_tag(tag);
 
     return true;
+}
+
+// Return the maximum length that can be written in a single packet
+// This is only valid if the file system is mounted as bufferlength is negotiated
+uint32_t NineP2000::max_write_len() const {
+    const uint16_t data_offset = sizeof(Message::header) + sizeof(Message::Twrite);
+    return bufferLen - data_offset;
 }
 
 // Request write for given file id, return tag

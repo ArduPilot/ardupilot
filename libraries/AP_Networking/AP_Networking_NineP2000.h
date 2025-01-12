@@ -93,6 +93,14 @@ public:
     // Magic value for invalid tag
     static constexpr uint16_t NOTAG = 0xFFFF;
 
+    // Return the maximum length that can be read in a single packet
+    // This is only valid if the file system is mounted as bufferlength is negotiated
+    uint32_t max_read_len() const;
+
+    // Return the maximum length that can be written in a single packet
+    // This is only valid if the file system is mounted as bufferlength is negotiated
+    uint32_t max_write_len() const;
+
 private:
     void loop();
     bool connected;
