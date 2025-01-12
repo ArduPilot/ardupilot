@@ -40,6 +40,7 @@ class Board:
 
     def __init__(self):
         self.with_can = False
+        self.with_littlefs = False
 
     def configure(self, cfg):
         cfg.env.TOOLCHAIN = cfg.options.toolchain or self.toolchain
@@ -680,6 +681,7 @@ class sitl(Board):
         super().__init__()
 
         self.with_can = True
+        self.with_littlefs = True
 
     def configure_env(self, cfg, env):
         super(sitl, self).configure_env(cfg, env)
