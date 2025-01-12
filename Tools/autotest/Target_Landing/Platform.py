@@ -184,7 +184,8 @@ class Platform:
                 mu = noise_info['mu']
                 sigma = noise_info['sigma']
                 # SD is divided by 2 because 95% lies below 2 SD
-                pos_error = (sigma/2)*np.random.randn(3,) + mu
+                # and 99% of values lie between 3 SD
+                pos_error = (sigma/3)*np.random.randn(3,) + mu
                 vel_error = (0.5/2)*np.random.randn(3,)
                 pos_error[0:2] = self.meters_to_lat_lng(pos_error[0], pos_error[1], lat=target_state[0])
         
