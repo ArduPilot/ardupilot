@@ -895,6 +895,23 @@ private:
     void update_quicktune(void);
 #endif
 
+    /*
+    // plane interlock state
+    struct {
+        // allow for an interlock RC switch to prevent arming unless High
+        bool arm_allowed;
+        // allow for an interlock RC switch to prevent arming unless High
+        bool disarm_allowed;
+        // allow for an interlock RC switch to prevent emergency stop unless High
+        bool estop_allowed;
+        // allow for an interlock RC switch to prevent/allow rudder arming unless High
+        bool rudder_arm_allowed;
+        // allow for an interlock RC switch to prevent/allow rudder disarm unless High
+        bool rudder_disarm_allowed;
+    } interlock;
+    */
+    int16_t interlock_denied;
+
     // Attitude.cpp
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
@@ -1103,6 +1120,16 @@ private:
     void update_flight_stage();
     void set_flight_stage(AP_FixedWing::FlightStage fs);
     bool flight_option_enabled(FlightOptions flight_option) const;
+
+    // Interlock Option Enabled if the ILCK_OPTION bit for the action is set in the parameters
+    bool interlock_option_enabled(InterlockOptions interlock_action) { return g2.interlock_options & interlock_action; };
+    // Interlock Option Enabled if the option is set AND the interlock button has been pressed/activated by the pilot for the action
+    bool interlock_option_allowed(InterlockOptions interlock_action) { return interlock_action & ~interlock_denied; };
+
+    // Interlock allowed - arm/disarm/estop are all allowed - so nothing will be denied
+    void interlock_allowed() { interlock_denied = 0; };
+    // Interlock denied - arm/disarm/estop are disallowed for the options selected in ILCK_OPTIONS
+    void interlock_disallowed() { interlock_denied  = g2.interlock_options; };
 
     // navigation.cpp
     void loiter_angle_reset(void);

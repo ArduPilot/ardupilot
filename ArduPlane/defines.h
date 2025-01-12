@@ -188,3 +188,11 @@ enum class FenceAutoEnable : uint8_t {
     AutoDisableFloorOnly=2,
     WhenArmed=3
 };
+
+enum InterlockOptions {
+    Arm   = (1 << 0),
+    Disarm = (1 << 1),
+    RudderArm = (1 << 2),
+    RudderDisarm = (1 << 3),
+    EStop = (1 << 4),
+};

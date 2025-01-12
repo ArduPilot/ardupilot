@@ -208,6 +208,10 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
         // want to startup with reverse thrust
         break;
 
+    case AUX_FUNC::MOTOR_INTERLOCK:
+        plane.interlock_disallowed();
+        break;
+
     default:
         // handle in parent class
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -474,6 +478,72 @@ bool RC_Channel_Plane::do_aux_function(const AuxFuncTrigger &trigger)
         break;
 #endif
 
+    case AUX_FUNC::MOTOR_INTERLOCK:
+        // If the interlock switch/channel is OFF/LOW then arm/disarm/estop are allowed
+        // This gives us a. Default behavior is no change from not having an interlock b. it matches Copter/Heli c
+        // This might mean the channel needs to be reversed in the controller or RCx_REVERSED.
+        switch(ch_flag) {
+        case AuxSwitchPos::LOW:
+            plane.interlock_allowed();
+            break;
+        case AuxSwitchPos::MIDDLE:
+        case AuxSwitchPos::HIGH:
+            plane.interlock_disallowed();
+            break;
+        }
+        break;
+
+    case AUX_FUNC::ARM_EMERGENCY_STOP:
+        switch (ch_flag) {
+        case AuxSwitchPos::HIGH:
+            if(plane.interlock_option_allowed(InterlockOptions::Arm)) {
+                // request arm, disable emergency motor stop
+                SRV_Channels::set_emergency_stop(false);
+                AP::arming().arm(AP_Arming::Method::AUXSWITCH, true);
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Interlock %s %s", "Arm", "denied");
+            }
+            break;
+        case AuxSwitchPos::MIDDLE:
+            if(plane.interlock_option_allowed(InterlockOptions::EStop)) {
+                // disable emergency motor stop
+                SRV_Channels::set_emergency_stop(false);
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Interlock %s %s", "EStop OFF", "denied");
+            }
+            break;
+        case AuxSwitchPos::LOW:
+            if(plane.interlock_option_allowed(InterlockOptions::EStop)) {
+                SRV_Channels::set_emergency_stop(true);
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Interlock %s %s", "EStop ON", "denied");
+            }
+            break;
+        }
+        break;
+
+
+    case AUX_FUNC::MOTOR_ESTOP:
+        switch (ch_flag) {
+        case AuxSwitchPos::HIGH:
+            if(plane.interlock_option_allowed(InterlockOptions::EStop)) {
+                SRV_Channels::set_emergency_stop(true);
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Interlock %s %s", "EStop ON", "denied");
+            }
+            break;
+        case AuxSwitchPos::MIDDLE:
+            // nothing
+            break;
+        case AuxSwitchPos::LOW:
+            if(plane.interlock_option_allowed(InterlockOptions::EStop)) {
+                SRV_Channels::set_emergency_stop(false);
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Interlock %s %s", "EStop OFF", "denied");
+            }
+            break;
+        }
+        break;
     default:
         return RC_Channel::do_aux_function(trigger);
     }
