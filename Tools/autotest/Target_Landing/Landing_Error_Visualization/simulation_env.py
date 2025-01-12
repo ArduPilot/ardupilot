@@ -82,17 +82,17 @@ class SimulationEnvironment:
     ship_speed = 7.72 # 15 Knots
     drone_speed = 15
     
-    drone_alts = [40]
+    drone_alts = [50, 100]
 
-    initial_distance_from_target = [100]
+    initial_distance_from_target = [50, 75]
 
     winds: Dict[str, any] = {
-                    # "sea_states": np.array([0, 1, 2, 3, 4, 5]),
-                    # "wind_direction": np.array([0,90,180,270]),
-                    # "turbulence": np.array([0.2])
-                    "sea_states": np.array([0]),
-                    "wind_direction": np.array([0]),
-                    "turbulence": np.array([0])
+                    "sea_states": np.array([0, 1, 2, 3, 4, 5]),
+                    "wind_direction": np.array([0,90,180,270]),
+                    "turbulence": np.array([0.2])
+                    # "sea_states": np.array([0]),
+                    # "wind_direction": np.array([0]),
+                    # "turbulence": np.array([0])
                     # Low turbulence (0.0-0.3): Stable, predictable wind
                     # Medium turbulence (0.3-0.7): Occasional gusts
                     # High turbulence (0.7-1.0): Frequent, strong gusts
@@ -164,7 +164,7 @@ class SimulationEnvironment:
         winds: Dict[str, any] = SimulationEnvironment.winds
         drone_alts = SimulationEnvironment.drone_alts
 
-        ship_traj = "circle" # circle or constant velocity
+        ship_traj = "constant_velocity" # circle or constant_velocity
 
         test_configs: List[TestInfo] = []
 
@@ -207,7 +207,7 @@ class SimulationEnvironment:
                                                 "turbulence": winds['turbulence'][turb]
                                             },
                                             "velocity": ship_vel,
-                                            "acceleration": np.array([0, 0, 0]),
+                                            "acceleration": ship_acc,
                                             "target_pos_sensor": target_pos_sensor,
                                             "drone_pos_sensor": drone_pos_sensor,
                                             "target_distance_from_drone": dist,
