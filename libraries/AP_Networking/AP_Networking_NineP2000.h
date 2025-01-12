@@ -383,11 +383,8 @@ private:
         };
     } request[8];
 
-    // Receive buffer
-    Message receive;
-
-    // Send buffer
-    Message send;
+    // Send/Receive buffer
+    Message buffer;
 
     // Buffer length must be negotiated.
     uint16_t bufferLen;

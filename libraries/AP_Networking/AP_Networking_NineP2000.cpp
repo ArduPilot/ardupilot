@@ -84,7 +84,7 @@ void NineP2000::loop()
             sock->set_blocking(false);
 
             // Clear message and file tracking
-            memset(&receive, 0, sizeof(receive));
+            memset(&request, 0, sizeof(request));
             memset(&fileIds, 0, sizeof(fileIds));
 
             // Restart connection process
@@ -104,7 +104,10 @@ bool NineP2000::mounted()
 // Deal with incoming data
 bool NineP2000::update()
 {
-    const auto len = sock->recv(receive.buffer, sizeof(receive.buffer), 0);
+    // Use semaphore for thread safety
+    WITH_SEMAPHORE(request_sem);
+
+    const auto len = sock->recv(buffer.buffer, sizeof(buffer.buffer), 0);
     if (len == 0) {
         // Zero means disconnected
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "9P2000: closed connection");
@@ -124,20 +127,17 @@ bool NineP2000::update()
 void NineP2000::parse(const uint32_t len)
 {
     // Need at least the length the of the massage
-    if (len < receive.header.length) {
+    if (len < buffer.header.length) {
         return;
     }
 
     // Ignore any messages longer than the negotiated max length
-    if (receive.header.length > bufferLen) {
+    if (buffer.header.length > bufferLen) {
         return;
     }
 
-    // Use semaphore for thread safety
-    WITH_SEMAPHORE(request_sem);
-
     // Deal with each message type
-    const Type msg_type = (Type)receive.header.type;
+    const Type msg_type = (Type)buffer.header.type;
     switch (msg_type) {
         case Type::Rversion: {
             if (state != State::Version) {
@@ -165,7 +165,7 @@ void NineP2000::parse(const uint32_t len)
         case Type::Rclunk: {
             // Note that there is no timeout, so we could leak a tag and a file id
             // Clear the tag and file ID so they can be used again
-            const uint16_t tag = receive.header.tag;
+            const uint16_t tag = buffer.header.tag;
 
             // Check tag is valid
             if ((tag >= ARRAY_SIZE(request)) || !request[tag].pending) {
@@ -201,7 +201,7 @@ void NineP2000::parse(const uint32_t len)
             }
 
             // Check tag is valid
-            const uint16_t tag = receive.header.tag;
+            const uint16_t tag = buffer.header.tag;
             if ((tag >= ARRAY_SIZE(request)) || !request[tag].pending) {
                 INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                 return;
@@ -224,11 +224,11 @@ void NineP2000::parse(const uint32_t len)
 
                 case Type::Ropen:
                     // If we got a valid response the open worked
-                    request[tag].open.result = receive.header.length == (sizeof(Message::header) + sizeof(Message::Ropen));
+                    request[tag].open.result = buffer.header.length == (sizeof(Message::header) + sizeof(Message::Ropen));
                     break;
 
                 case Type::Rcreate:
-                    request[tag].create.result = receive.header.length == (sizeof(Message::header) + sizeof(Message::Rcreate));
+                    request[tag].create.result = buffer.header.length == (sizeof(Message::header) + sizeof(Message::Rcreate));
                     break;
 
                 case Type::Rread: {
@@ -241,14 +241,14 @@ void NineP2000::parse(const uint32_t len)
                 }
 
                 case Type::Rwrite: {
-                    if (receive.header.length == (sizeof(Message::header) + sizeof(Message::Rwrite))) {
-                        request[tag].write.count = receive.Rwrite.count;
+                    if (buffer.header.length == (sizeof(Message::header) + sizeof(Message::Rwrite))) {
+                        request[tag].write.count = buffer.Rwrite.count;
                     }
                     break;
                 }
 
                 case Type::Rremove:
-                    request[tag].remove.result = receive.header.length == sizeof(Message::header);
+                    request[tag].remove.result = buffer.header.length == sizeof(Message::header);
                     break;
 
                 case Type::Rstat:
@@ -256,7 +256,7 @@ void NineP2000::parse(const uint32_t len)
                     break;
 
                 case Type::Rwstat:
-                    request[tag].rwstat.result = receive.header.length == sizeof(Message::header);
+                    request[tag].rwstat.result = buffer.header.length == sizeof(Message::header);
                     break;
 
                 default:
@@ -288,13 +288,13 @@ void NineP2000::parse(const uint32_t len)
     }
 
     // Parsed full length of message
-    if (receive.header.length >= len) {
+    if (buffer.header.length >= len) {
         return;
     }
 
     // Try parsing the remainder
-    const uint16_t remaining = len - receive.header.length;
-    memmove(&receive.buffer[0], &receive.buffer[receive.header.length], remaining);
+    const uint16_t remaining = len - buffer.header.length;
+    memmove(&buffer.buffer[0], &buffer.buffer[buffer.header.length], remaining);
 
     parse(remaining);
 }
@@ -326,18 +326,18 @@ void NineP2000::request_version()
     state = State::Version;
     bufferLen = 32; // Assume a minimum message length
 
-    send.header.type = (uint8_t)Type::Tversion;
-    send.header.tag = NOTAG;
-    send.header.length = sizeof(Message::header) + sizeof(Message::Tversion);
-    send.Tversion.msize = sizeof(Message);
+    buffer.header.type = (uint8_t)Type::Tversion;
+    buffer.header.tag = NOTAG;
+    buffer.header.length = sizeof(Message::header) + sizeof(Message::Tversion);
+    buffer.Tversion.msize = sizeof(Message);
 
-    if (!add_string(send, "9P2000")) {
+    if (!add_string(buffer, "9P2000")) {
         // This should never fail, bufferLen is 32, there is room for the string
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return;
     }
 
-    sock->send(send.buffer, send.header.length);
+    sock->send(buffer.buffer, buffer.header.length);
 }
 
 // handle version response
@@ -345,17 +345,17 @@ void NineP2000::handle_version()
 {
     // Should be at least the min length, string increases total length
     const uint32_t version_len = sizeof(Message::header) + sizeof(Message::Rversion);
-    if (receive.header.length < version_len) {
+    if (buffer.header.length < version_len) {
         return;
     }
 
-    if (receive.header.tag != NOTAG) {
+    if (buffer.header.tag != NOTAG) {
         // tag should always be NOTAG, throw a error?
         return;
     }
 
     // Message length should be equal to or less than the value requested
-    if (receive.Rversion.msize > sizeof(Message)) {
+    if (buffer.Rversion.msize > sizeof(Message)) {
         return;
     }
 
@@ -381,23 +381,23 @@ void NineP2000::handle_version()
     max_len = MAX(max_len, sizeof(Message::Twalk) + sizeof(uint16_t));
     max_len = MAX(max_len, sizeof(Message::Rwalk) + sizeof(qid_t));
 
-    if (receive.Rversion.msize < (sizeof(Message::header) + max_len)) {
+    if (buffer.Rversion.msize < (sizeof(Message::header) + max_len)) {
         return;
     }
 
     // Get and check string length
-    const size_t expected_string_len = receive.header.length - version_len;
-    if (receive.Rversion.version_string_len != expected_string_len) {
+    const size_t expected_string_len = buffer.header.length - version_len;
+    if (buffer.Rversion.version_string_len != expected_string_len) {
         return;
     }
 
     // String should match what was requested
-    if (strncmp("9P2000", (char*)&send.buffer[version_len], expected_string_len) != 0) {
+    if (strncmp("9P2000", (char*)&buffer.buffer[version_len], expected_string_len) != 0) {
         return;
     }
 
     // Limit to the agreed message length
-    bufferLen = receive.Rversion.msize;
+    bufferLen = buffer.Rversion.msize;
 
     // Try and attach
     request_attach();
@@ -408,39 +408,39 @@ void NineP2000::request_attach()
 {
     state = State::Attach;
 
-    send.header.type = (uint8_t)Type::Tattach;
-    send.header.tag = ARRAY_SIZE(request); // Use a tag that will not be used in normal operation
-    send.header.length = sizeof(Message::header) + sizeof(Message::Tattach);
+    buffer.header.type = (uint8_t)Type::Tattach;
+    buffer.header.tag = ARRAY_SIZE(request); // Use a tag that will not be used in normal operation
+    buffer.header.length = sizeof(Message::header) + sizeof(Message::Tattach);
 
     // Use zero file id, no auth
-    send.Tattach.fid = 0;
-    send.Tattach.afid = 0;
+    buffer.Tattach.fid = 0;
+    buffer.Tattach.afid = 0;
 
     // User name ArduPilot, no aname.
-    if (!add_string(send, "ArduPilot") || !add_string(send, "")) {
+    if (!add_string(buffer, "ArduPilot") || !add_string(buffer, "")) {
         // Negotiated a message length too small for this message!?
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return;
     }
 
-    sock->send(send.buffer, send.header.length);
+    sock->send(buffer.buffer, buffer.header.length);
 }
 
 // Handle attach response
 void NineP2000::handle_attach()
 {
     // Fixed length message, header and qid
-    if (receive.header.length != (sizeof(Message::header) + sizeof(Message::Rattach))) {
+    if (buffer.header.length != (sizeof(Message::header) + sizeof(Message::Rattach))) {
         return;
     }
 
     // tag should match the request
-    if (receive.header.tag != ARRAY_SIZE(request)) {
+    if (buffer.header.tag != ARRAY_SIZE(request)) {
         return;
     }
 
     // Expecting a directory
-    if (receive.Rattach.qid.type != qidType::QTDIR) {
+    if (buffer.Rattach.qid.type != qidType::QTDIR) {
         return;
     }
 
@@ -557,18 +557,18 @@ uint16_t NineP2000::request_walk(const char* path, const walkType type)
     }
 
     // Fill in message
-    send.header.type = (uint8_t)Type::Twalk;
-    send.header.tag = tag;
-    send.header.length = sizeof(Message::header) + sizeof(Message::Twalk);
+    buffer.header.type = (uint8_t)Type::Twalk;
+    buffer.header.tag = tag;
+    buffer.header.length = sizeof(Message::header) + sizeof(Message::Twalk);
 
     // Start at root
-    send.Twalk.fid = 0;
+    buffer.Twalk.fid = 0;
 
     // End at new id
-    send.Twalk.newfid = id;
+    buffer.Twalk.newfid = id;
 
     // Zero steps to start with
-    send.Twalk.nwname = 0;
+    buffer.Twalk.nwname = 0;
 
     // Step through path and add strings
     const uint16_t len = strlen(path);
@@ -579,7 +579,7 @@ uint16_t NineP2000::request_walk(const char* path, const walkType type)
         if (split || last) {
             // Should check total length of message is still valid
             const uint16_t name_len = i - name_start + (split ? 0 : 1);
-            const uint32_t new_len = send.header.length + sizeof(name_len) + name_len;
+            const uint32_t new_len = buffer.header.length + sizeof(name_len) + name_len;
 
             // Check total message length is still valid
             if (new_len > bufferLen) {
@@ -588,15 +588,15 @@ uint16_t NineP2000::request_walk(const char* path, const walkType type)
             }
 
             // Add string length
-            memcpy(&send.buffer[send.header.length], &name_len, sizeof(name_len));
-            send.header.length += sizeof(name_len);
+            memcpy(&buffer.buffer[buffer.header.length], &name_len, sizeof(name_len));
+            buffer.header.length += sizeof(name_len);
 
             // Add string itself
-            memcpy(&send.buffer[send.header.length], &path[name_start], name_len);
-            send.header.length += name_len;
+            memcpy(&buffer.buffer[buffer.header.length], &path[name_start], name_len);
+            buffer.header.length += name_len;
 
             // Increment number of names
-            send.Twalk.nwname += 1;
+            buffer.Twalk.nwname += 1;
 
             // Next section starts after this one
             name_start = i + 1;
@@ -610,7 +610,7 @@ uint16_t NineP2000::request_walk(const char* path, const walkType type)
     request[tag].walk.type = type;
 
     // Send command
-    sock->send(send.buffer, send.header.length);
+    sock->send(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -618,11 +618,11 @@ uint16_t NineP2000::request_walk(const char* path, const walkType type)
 void NineP2000::handle_error(Request& result)
 {
     // null terminate string and print directly out of buffer
-    const uint16_t len = receive.Rerror.ename_string_len;
+    const uint16_t len = buffer.Rerror.ename_string_len;
     const uint32_t string_start = sizeof(Message::header) + sizeof(Message::Rerror);
-    receive.buffer[string_start + MIN(len, 100)] = 0;
+    buffer.buffer[string_start + MIN(len, 100)] = 0;
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "9P2000: error: %s", (char*)&receive.buffer[string_start]);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "9P2000: error: %s", (char*)&buffer.buffer[string_start]);
 
     // Set the appropiate fail response for the expected message
     switch (result.expectedType) {
@@ -668,7 +668,7 @@ void NineP2000::handle_rwalk(Request& result)
 {
     WITH_SEMAPHORE(request_sem);
 
-    const uint16_t num_ids = receive.Rwalk.nwqid;
+    const uint16_t num_ids = buffer.Rwalk.nwqid;
 
     // Zero length walk means we must be root
     if (num_ids == 0) {
@@ -684,7 +684,7 @@ void NineP2000::handle_rwalk(Request& result)
     const uint16_t id_offset = sizeof(Message::header) + sizeof(Message::Rwalk) + (num_ids - 1) * sizeof(qid_t);
 
     // Make sure the message is long enough
-    if (receive.header.length != (id_offset + sizeof(qid_t))) {
+    if (buffer.header.length != (id_offset + sizeof(qid_t))) {
         free_file_id(result.walk.fileId);
         result.walk.fileId = 0;
         return;
@@ -694,7 +694,7 @@ void NineP2000::handle_rwalk(Request& result)
     if (result.walk.type != walkType::Any) {
 
         // Read in last id
-        const qid_t &qid = (qid_t&)receive.buffer[id_offset];
+        const qid_t &qid = (qid_t&)buffer.buffer[id_offset];
 
         const uint8_t expected_type = (result.walk.type == walkType::Directory) ? qidType::QTDIR : qidType::QTFILE;
         if (qid.type != expected_type) {
@@ -751,12 +751,12 @@ void NineP2000::free_file_id(const uint32_t id)
     request[tag].clunk.fileId = id;
 
     // Fill in message
-    send.header.type = (uint8_t)Type::Tclunk;
-    send.header.tag = tag;
-    send.header.length = sizeof(Message::header) + sizeof(Message::Tclunk);
-    send.Tclunk.fid = id;
+    buffer.header.type = (uint8_t)Type::Tclunk;
+    buffer.header.tag = tag;
+    buffer.header.length = sizeof(Message::header) + sizeof(Message::Tclunk);
+    buffer.Tclunk.fid = id;
 
-    sock->send(send.buffer, send.header.length);
+    sock->send(buffer.buffer, buffer.header.length);
 }
 
 // Request read of given file or directory with given flags
@@ -793,13 +793,13 @@ uint16_t NineP2000::request_open(const uint32_t id, const int flags)
     }
 
     // Fill in message
-    send.header.type = (uint8_t)Type::Topen;
-    send.header.tag = tag;
-    send.header.length = sizeof(Message::header) + sizeof(Message::Topen);
-    send.Topen.fid = id;
-    send.Topen.mode = mode;
+    buffer.header.type = (uint8_t)Type::Topen;
+    buffer.header.tag = tag;
+    buffer.header.length = sizeof(Message::header) + sizeof(Message::Topen);
+    buffer.Topen.fid = id;
+    buffer.Topen.mode = mode;
 
-    sock->send(send.buffer, send.header.length);
+    sock->send(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -852,17 +852,17 @@ uint16_t NineP2000::request_dir_read(const uint32_t id, const uint64_t offset, s
     request[tag].read.dir = de;
 
     // Fill in message
-    send.header.type = (uint8_t)Type::Tread;
-    send.header.tag = tag;
-    send.header.length = sizeof(Message::header) + sizeof(Message::Tread);
-    send.Tread.fid = id;
-    send.Tread.offset = offset;
+    buffer.header.type = (uint8_t)Type::Tread;
+    buffer.header.tag = tag;
+    buffer.header.length = sizeof(Message::header) + sizeof(Message::Tread);
+    buffer.Tread.fid = id;
+    buffer.Tread.offset = offset;
 
     // We don't know how long the directory entry will be as it has variable length strings
     // Just read max length for now
-    send.Tread.count = max_read_len();
+    buffer.Tread.count = max_read_len();
 
-    sock->send(send.buffer, send.header.length);
+    sock->send(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -878,17 +878,17 @@ void NineP2000::handle_dir_Rread(Request& result)
 
     // Should at least contain header count and stat
     const uint16_t stat_end = sizeof(Message::header) + sizeof(Message::Rread) + sizeof(stat_t);
-    if (receive.header.length < stat_end) {
+    if (buffer.header.length < stat_end) {
         return;
     }
 
-    const stat_t &info = (stat_t&)receive.buffer[sizeof(Message::header) + sizeof(Message::Rread)];
+    const stat_t &info = (stat_t&)buffer.buffer[sizeof(Message::header) + sizeof(Message::Rread)];
 
     // Length feild does not include itself
     const uint16_t stat_len = info.msg_size + sizeof(stat_t::msg_size);
 
     // Make sure there is room for the whole stat now we know the full size
-    if (receive.header.length < (sizeof(Message::Rread) + stat_len)) {
+    if (buffer.header.length < (sizeof(Message::Rread) + stat_len)) {
         return;
     }
 
@@ -901,10 +901,10 @@ void NineP2000::handle_dir_Rread(Request& result)
 
     // Copy name, comes after the stat
     uint16_t name_len = 0;
-    memcpy(&name_len, &receive.buffer[stat_end], sizeof(name_len));
+    memcpy(&name_len, &buffer.buffer[stat_end], sizeof(name_len));
 
     memset(result.read.dir->d_name, 0, sizeof(result.read.dir->d_name));
-    strncpy(result.read.dir->d_name, (char*)&receive.buffer[stat_end + sizeof(name_len)], MIN(sizeof(result.read.dir->d_name), name_len));
+    strncpy(result.read.dir->d_name, (char*)&buffer.buffer[stat_end + sizeof(name_len)], MIN(sizeof(result.read.dir->d_name), name_len));
 
     // Fill in file flags
     if (info.qid.type == qidType::QTFILE) {
@@ -941,14 +941,14 @@ uint16_t NineP2000::request_file_read(const uint32_t id, const uint64_t offset, 
     request[tag].read.count = count;
 
     // Fill in message
-    send.header.type = (uint8_t)Type::Tread;
-    send.header.tag = tag;
-    send.header.length = sizeof(Message::header) + sizeof(Message::Tread);
-    send.Tread.fid = id;
-    send.Tread.offset = offset;
-    send.Tread.count = count;
+    buffer.header.type = (uint8_t)Type::Tread;
+    buffer.header.tag = tag;
+    buffer.header.length = sizeof(Message::header) + sizeof(Message::Tread);
+    buffer.Tread.fid = id;
+    buffer.Tread.offset = offset;
+    buffer.Tread.count = count;
 
-    sock->send(send.buffer, send.header.length);
+    sock->send(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -964,14 +964,14 @@ void NineP2000::handle_file_Rread(Request& result)
     }
 
     // Not expecting to get more data than was asked for
-    if (receive.Rread.count > uint32_t(result.read.count)) {
+    if (buffer.Rread.count > uint32_t(result.read.count)) {
         result.read.count = -1;
         return;
     }
-    result.read.count = receive.Rread.count;
+    result.read.count = buffer.Rread.count;
 
     // Copy result
-    memcpy(result.read.buf, &receive.buffer[sizeof(Message::header) + sizeof(Message::Rread)], result.read.count);
+    memcpy(result.read.buf, &buffer.buffer[sizeof(Message::header) + sizeof(Message::Rread)], result.read.count);
 }
 
 // Fill in a directory item based on the read result, returns none zero if success
@@ -1020,12 +1020,12 @@ uint16_t NineP2000::request_stat(const uint32_t id, struct stat *stbuf)
     request[tag].stat.stbuf = stbuf;
 
     // Fill in message
-    send.header.type = (uint8_t)Type::Tstat;
-    send.header.tag = tag;
-    send.header.length = sizeof(Message::header) + sizeof(Message::Tstat);
-    send.Tstat.fid = id;
+    buffer.header.type = (uint8_t)Type::Tstat;
+    buffer.header.tag = tag;
+    buffer.header.length = sizeof(Message::header) + sizeof(Message::Tstat);
+    buffer.Tstat.fid = id;
 
-    sock->send(send.buffer, send.header.length);
+    sock->send(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -1039,14 +1039,14 @@ void NineP2000::handle_Rstat(Request& result)
     memset(result.stat.stbuf, 0, sizeof(*result.stat.stbuf));
 
     // length in bytes
-    result.stat.stbuf->st_size = receive.Rstat.stat.length;
+    result.stat.stbuf->st_size = buffer.Rstat.stat.length;
 
     // Access and modification timestamps
-    result.stat.stbuf->st_atime = receive.Rstat.stat.atime;
-    result.stat.stbuf->st_mtime = receive.Rstat.stat.mtime;
+    result.stat.stbuf->st_atime = buffer.Rstat.stat.atime;
+    result.stat.stbuf->st_mtime = buffer.Rstat.stat.mtime;
 
     // Fill in file flags
-    const uint8_t &mode = receive.Rstat.stat.qid.type;
+    const uint8_t &mode = buffer.Rstat.stat.qid.type;
     if (mode == qidType::QTFILE) {
         result.stat.stbuf->st_mode |= S_IFREG;
     } else if (mode == qidType::QTDIR) {
@@ -1106,16 +1106,16 @@ uint16_t NineP2000::request_write(const uint32_t id, const uint64_t offset, uint
     request[tag].expectedType = Type::Rwrite;
 
     // Fill in message
-    send.header.type = (uint8_t)Type::Twrite;
-    send.header.tag = tag;
-    send.header.length = data_offset + count;
-    send.Twrite.fid = id;
-    send.Twrite.offset = offset;
-    send.Twrite.count = count;
+    buffer.header.type = (uint8_t)Type::Twrite;
+    buffer.header.tag = tag;
+    buffer.header.length = data_offset + count;
+    buffer.Twrite.fid = id;
+    buffer.Twrite.offset = offset;
+    buffer.Twrite.count = count;
 
-    memcpy(&send.buffer[data_offset], buf, count);
+    memcpy(&buffer.buffer[data_offset], buf, count);
 
-    sock->send(send.buffer, send.header.length);
+    sock->send(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -1165,10 +1165,10 @@ uint16_t NineP2000::request_create(const uint32_t id, const char*name, const boo
     request[tag].expectedType = Type::Rcreate;
 
     // Fill in message
-    send.header.type = (uint8_t)Type::Tcreate;
-    send.header.tag = tag;
-    send.header.length = sizeof(Message::header) + sizeof(Message::Tcreate);
-    send.Tcreate.fid = id;
+    buffer.header.type = (uint8_t)Type::Tcreate;
+    buffer.header.tag = tag;
+    buffer.header.length = sizeof(Message::header) + sizeof(Message::Tcreate);
+    buffer.Tcreate.fid = id;
 
     // Give everyone rwx permissions
     const uint32_t perm = 0777 | (dir ? (qidType::QTDIR << 24) : 0);
@@ -1177,20 +1177,20 @@ uint16_t NineP2000::request_create(const uint32_t id, const char*name, const boo
     // permissions and mode come after the variable length string
     const uint8_t tail_len = sizeof(perm) + sizeof(mode);
 
-    if (!add_string(send, name) || ((send.header.length + tail_len) > bufferLen)) {
+    if (!add_string(buffer, name) || ((buffer.header.length + tail_len) > bufferLen)) {
         // Ran out of room in the message
         clear_tag(tag);
         return NOTAG;
     }
 
     // Fill in tail now string length is set
-    memcpy(&send.buffer[send.header.length], &perm, sizeof(perm));
-    send.header.length += sizeof(perm);
-    memcpy(&send.buffer[send.header.length], &mode, sizeof(mode));
-    send.header.length += sizeof(mode);
+    memcpy(&buffer.buffer[buffer.header.length], &perm, sizeof(perm));
+    buffer.header.length += sizeof(perm);
+    memcpy(&buffer.buffer[buffer.header.length], &mode, sizeof(mode));
+    buffer.header.length += sizeof(mode);
 
 
-    sock->send(send.buffer, send.header.length);
+    sock->send(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -1234,13 +1234,13 @@ uint16_t NineP2000::request_remove(const uint32_t id)
     request[tag].expectedType = Type::Rremove;
 
     // Fill in message
-    send.header.type = (uint8_t)Type::Tremove;
-    send.header.tag = tag;
-    send.header.length = sizeof(Message::header) + sizeof(Message::Tremove);
+    buffer.header.type = (uint8_t)Type::Tremove;
+    buffer.header.tag = tag;
+    buffer.header.length = sizeof(Message::header) + sizeof(Message::Tremove);
 
-    send.Tremove.fid = id;
+    buffer.Tremove.fid = id;
 
-    sock->send(send.buffer, send.header.length);
+    sock->send(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -1285,29 +1285,29 @@ uint16_t NineP2000::request_rename(const uint32_t id, const char*name)
     request[tag].expectedType = Type::Rwstat;
 
     // Fill in message
-    send.header.type = (uint8_t)Type::Twstat;
-    send.header.tag = tag;
-    send.header.length = sizeof(Message::header) + sizeof(Message::Twstat);
+    buffer.header.type = (uint8_t)Type::Twstat;
+    buffer.header.tag = tag;
+    buffer.header.length = sizeof(Message::header) + sizeof(Message::Twstat);
 
-    send.Twstat.fid = id;
-    send.Twstat.nstat = 1;
+    buffer.Twstat.fid = id;
+    buffer.Twstat.nstat = 1;
 
     // Max values indicate don't change.
-    memset(&send.Twstat.stat, 0xFF, sizeof(send.Twstat.stat));
+    memset(&buffer.Twstat.stat, 0xFF, sizeof(buffer.Twstat.stat));
 
     // Add new name
-    if (!add_string(send, name) ||
+    if (!add_string(buffer, name) ||
         // Don't change other names
-        !add_string(send, "") ||
-        !add_string(send, "") ||
-        !add_string(send, "")) {
+        !add_string(buffer, "") ||
+        !add_string(buffer, "") ||
+        !add_string(buffer, "")) {
 
         // Ran out of room in the message
         clear_tag(tag);
         return NOTAG;
     }
 
-    sock->send(send.buffer, send.header.length);
+    sock->send(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -1353,31 +1353,31 @@ uint16_t NineP2000::request_set_mtime(const uint32_t id, const uint32_t mtime)
     request[tag].expectedType = Type::Rwstat;
 
     // Fill in message
-    send.header.type = (uint8_t)Type::Twstat;
-    send.header.tag = tag;
-    send.header.length = sizeof(Message::header) + sizeof(Message::Twstat);
+    buffer.header.type = (uint8_t)Type::Twstat;
+    buffer.header.tag = tag;
+    buffer.header.length = sizeof(Message::header) + sizeof(Message::Twstat);
 
-    send.Twstat.fid = id;
-    send.Twstat.nstat = 1;
+    buffer.Twstat.fid = id;
+    buffer.Twstat.nstat = 1;
 
     // Max values indicate don't change.
-    memset(&send.Twstat.stat, 0xFF, sizeof(Message::Twstat.stat));
+    memset(&buffer.Twstat.stat, 0xFF, sizeof(Message::Twstat.stat));
 
     // Set mtime
-    send.Twstat.stat.mtime = mtime;
+    buffer.Twstat.stat.mtime = mtime;
 
     // Don't change names
-    if (!add_string(send, "") ||
-        !add_string(send, "") ||
-        !add_string(send, "") ||
-        !add_string(send, "")) {
+    if (!add_string(buffer, "") ||
+        !add_string(buffer, "") ||
+        !add_string(buffer, "") ||
+        !add_string(buffer, "")) {
 
         // Ran out of room in the message
         clear_tag(tag);
         return NOTAG;
     }
 
-    sock->send(send.buffer, send.header.length);
+    sock->send(buffer.buffer, buffer.header.length);
 
     return tag;
 }
