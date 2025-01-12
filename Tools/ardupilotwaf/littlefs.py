@@ -19,7 +19,7 @@ def littlefs(bld, **kw):
         name='littlefs',
         source=['modules/littlefs/lfs.c', 'modules/littlefs/lfs_util.c', 'modules/littlefs/bd/lfs_filebd.c'],
         target='littlefs',
-        defines=['LFS_NO_DEBUG'],
+        defines=['LFS_NO_DEBUG', 'LFS_NO_WARN', 'LFS_NO_ERROR', 'LFS_NO_ASSERT'],
         cflags=['-Wno-format', '-Wno-format-extra-args', '-Wno-shadow', '-Wno-unused-function', '-Wno-missing-declarations']
     )
     return bld.stlib(**kw)
