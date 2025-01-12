@@ -179,7 +179,7 @@ void NineP2000::parse(const uint32_t len)
                 return;
             }
 
-            clear_file_id(request[tag].fileId);
+            clear_file_id(request[tag].clunk.fileId);
             clear_tag(tag);
             break;
         }
@@ -213,8 +213,56 @@ void NineP2000::parse(const uint32_t len)
                 return;
             }
 
-            // Valid tag, fill in message
-            memcpy(&request[tag].result.buffer, &receive.buffer, sizeof(request[tag].result.buffer));
+            switch (msg_type) {
+                case Type::Rerror:
+                    handle_error(request[tag]);
+                    break;
+
+                case Type::Rwalk:
+                    handle_rwalk(request[tag]);
+                    break;
+
+                case Type::Ropen:
+                    // If we got a valid response the open worked
+                    request[tag].open.result = receive.header.length == (sizeof(Message::header) + sizeof(Message::Ropen));
+                    break;
+
+                case Type::Rcreate:
+                    request[tag].create.result = receive.header.length == (sizeof(Message::header) + sizeof(Message::Rcreate));
+                    break;
+
+                case Type::Rread: {
+                    if (request[tag].read.is_dir) {
+                        handle_dir_Rread(request[tag]);
+                    } else {
+                        handle_file_Rread(request[tag]);
+                    }
+                    break;
+                }
+
+                case Type::Rwrite: {
+                    if (receive.header.length == (sizeof(Message::header) + sizeof(Message::Rwrite))) {
+                        request[tag].write.count = receive.Rwrite.count;
+                    }
+                    break;
+                }
+
+                case Type::Rremove:
+                    request[tag].remove.result = receive.header.length == sizeof(Message::header);
+                    break;
+
+                case Type::Rstat:
+                    handle_Rstat(request[tag]);
+                    break;
+
+                case Type::Rwstat:
+                    request[tag].rwstat.result = receive.header.length == sizeof(Message::header);
+                    break;
+
+                default:
+                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                    break;
+            }
 
             // No longer pending
             request[tag].pending = false;
@@ -312,6 +360,7 @@ void NineP2000::handle_version()
     }
 
     // Make sure size is sufficient to fit all fixed length messages
+    // Max len should be 55, with header of 7 we need at least 62 bytes
     size_t max_len = sizeof(Message::Tversion) + sizeof(uint16_t);
     max_len = MAX(max_len, sizeof(Message::Rversion));
     max_len = MAX(max_len, sizeof(Message::Tattach) + 2 * sizeof(uint16_t));
@@ -430,6 +479,13 @@ bool NineP2000::tag_response(const uint16_t tag)
     return request[tag].active && !request[tag].pending;
 }
 
+// Return true if there is a response for the given tag with type
+bool NineP2000::tag_response_type(const uint16_t tag, const Type type)
+{
+    WITH_SEMAPHORE(request_sem);
+    return tag_response(tag) && (request[tag].expectedType == type);
+}
+
 // Called when a command is timed out
 void NineP2000::clear_tag(const uint16_t tag)
 {
@@ -481,7 +537,7 @@ bool NineP2000::valid_file_id(const uint32_t fileId)
 }
 
 // Walk to a new file or directory, return tag, NOTAG if failed
-uint16_t NineP2000::request_walk(const char* path)
+uint16_t NineP2000::request_walk(const char* path, const walkType type)
 {
     WITH_SEMAPHORE(request_sem);
 
@@ -549,8 +605,9 @@ uint16_t NineP2000::request_walk(const char* path)
 
     // Make tag as active
     request[tag].pending = true;
-    request[tag].fileId = id;
     request[tag].expectedType = Type::Rwalk;
+    request[tag].walk.fileId = id;
+    request[tag].walk.type = type;
 
     // Send command
     sock->send(send.buffer, send.header.length);
@@ -558,76 +615,110 @@ uint16_t NineP2000::request_walk(const char* path)
     return tag;
 }
 
-void NineP2000::print_if_error(Message &msg)
+void NineP2000::handle_error(Request& result)
 {
-    // Nothing to do if not error
-    if (msg.header.type != (uint8_t)Type::Rerror) {
-        return;
-    }
-
     // null terminate string and print directly out of buffer
-    const uint16_t len = msg.Rerror.ename_string_len;
+    const uint16_t len = receive.Rerror.ename_string_len;
     const uint32_t string_start = sizeof(Message::header) + sizeof(Message::Rerror);
-    msg.buffer[string_start + MIN(len, 100)] = 0;
+    receive.buffer[string_start + MIN(len, 100)] = 0;
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "9P2000: error: %s", (char*)&msg.buffer[string_start]);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "9P2000: error: %s", (char*)&receive.buffer[string_start]);
+
+    // Set the appropiate fail response for the expected message
+    switch (result.expectedType) {
+        case Type::Rwalk:
+            result.walk.fileId = 0;
+            break;
+
+        case Type::Ropen:
+            result.open.result = false;
+            break;
+
+        case Type::Rcreate:
+            result.create.result = false;
+            break;
+
+        case Type::Rread:
+            result.read.count = -1;
+            break;
+
+        case Type::Rwrite:
+            result.write.count = -1;
+            break;
+
+        case Type::Rremove:
+            result.remove.result = false;
+            break;
+
+        case Type::Rstat:
+            result.stat.result = false;
+            break;
+
+        case Type::Rwstat:
+            result.rwstat.result = false;
+            break;
+
+        default:
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            break;
+    }
 }
 
-uint32_t NineP2000::walk_result(const uint16_t tag, const walkType type)
+void NineP2000::handle_rwalk(Request& result)
 {
     WITH_SEMAPHORE(request_sem);
 
-    // Make sure the tag is valid and there is a waiting response
-    if (!tag_response(tag)) {
-        clear_tag(tag);
-        return 0;
-    }
-
-    // Should be a walk response
-    Message &msg = request[tag].result;
-    if (msg.header.type != (uint8_t)Type::Rwalk) {
-        print_if_error(msg);
-        clear_tag(tag);
-        return 0;
-    }
-
-    const uint16_t num_ids = msg.Rwalk.nwqid;
+    const uint16_t num_ids = receive.Rwalk.nwqid;
 
     // Zero length walk means we must be root
     if (num_ids == 0) {
-        const uint32_t fileId = request[tag].fileId;
-        clear_tag(tag);
         // Root must be a dir
-        if (type != walkType::Directory) {
-            free_file_id(fileId);
-            return 0;
+        if (result.walk.type != walkType::Directory) {
+            free_file_id(result.walk.fileId);
+            result.walk.fileId = 0;
+            return;
         }
-        return fileId;
     }
 
     // Calculate the offset of the last id
     const uint16_t id_offset = sizeof(Message::header) + sizeof(Message::Rwalk) + (num_ids - 1) * sizeof(qid_t);
 
     // Make sure the message is long enough
-    if (msg.header.length != (id_offset + sizeof(qid_t))) {
+    if (receive.header.length != (id_offset + sizeof(qid_t))) {
+        free_file_id(result.walk.fileId);
+        result.walk.fileId = 0;
+        return;
+    }
+
+    // Expecting the correct type
+    if (result.walk.type != walkType::Any) {
+
+        // Read in last id
+        const qid_t &qid = (qid_t&)receive.buffer[id_offset];
+
+        const uint8_t expected_type = (result.walk.type == walkType::Directory) ? qidType::QTDIR : qidType::QTFILE;
+        if (qid.type != expected_type) {
+            free_file_id(result.walk.fileId);
+            result.walk.fileId = 0;
+            return;
+        }
+    }
+
+    // Got this far then fileId is valid, wait for the caller to pickup the result
+}
+
+uint32_t NineP2000::walk_result(const uint16_t tag)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // Make sure the tag is valid and there is a waiting response
+    if (!tag_response_type(tag, Type::Rwalk)) {
         clear_tag(tag);
         return 0;
     }
 
-    // Expecting the correct type
-    const uint32_t fileId = request[tag].fileId;
-    if (type != walkType::Any) {
-
-        // Read in last id
-        const qid_t &qid = (qid_t&)msg.buffer[id_offset];
-
-        const uint8_t expected_type = (type == walkType::Directory) ? qidType::QTDIR : qidType::QTFILE;
-        if (qid.type != expected_type) {
-            clear_tag(tag);
-            free_file_id(fileId);
-            return 0;
-        }
-    }
+    // Get file id
+    const uint32_t fileId = request[tag].walk.fileId;
 
     // success, return id
     clear_tag(tag);
@@ -656,8 +747,8 @@ void NineP2000::free_file_id(const uint32_t id)
 
     // Mark tag as active
     request[tag].pending = true;
-    request[tag].fileId = id;
     request[tag].expectedType = Type::Rclunk;
+    request[tag].clunk.fileId = id;
 
     // Fill in message
     send.header.type = (uint8_t)Type::Tclunk;
@@ -687,7 +778,6 @@ uint16_t NineP2000::request_open(const uint32_t id, const int flags)
 
     // Mark tag as active
     request[tag].pending = true;
-    request[tag].fileId = id;
     request[tag].expectedType = Type::Ropen;
 
     // Translate flags to mode
@@ -714,34 +804,21 @@ uint16_t NineP2000::request_open(const uint32_t id, const int flags)
     return tag;
 }
 
-
-// Fill in a directory item based on the read result, returns none zero if success
+// Get open result, returns true if successful
 bool NineP2000::open_result(const uint16_t tag)
 {
     WITH_SEMAPHORE(request_sem);
 
     // Make sure the tag is valid and there is a waiting response
-    if (!tag_response(tag)) {
+    if (!tag_response_type(tag, Type::Ropen)) {
         clear_tag(tag);
         return false;
     }
 
-    // Should be a open response
-    Message &msg = request[tag].result;
-    if (msg.header.type != (uint8_t)Type::Ropen) {
-        print_if_error(msg);
-        clear_tag(tag);
-        return false;
-    }
-
-    // Should be the correct length
-    if (msg.header.length != (sizeof(Message::header) + sizeof(Message::Ropen))) {
-        clear_tag(tag);
-        return false;
-    }
+    const bool ret = request[tag].open.result;
 
     clear_tag(tag);
-    return true;
+    return ret;
 }
 
 // Return the maximum length that can be read in a single packet
@@ -751,8 +828,8 @@ uint32_t NineP2000::max_read_len() const {
     return bufferLen - data_offset;
 }
 
-// Read a directory or file, return tag, NOTAG if failed
-uint16_t NineP2000::request_read(const uint32_t id, const uint64_t offset, uint32_t count)
+// Read a directory, return tag, NOTAG if failed
+uint16_t NineP2000::request_dir_read(const uint32_t id, const uint64_t offset, struct dirent *de)
 {
     WITH_SEMAPHORE(request_sem);
 
@@ -770,11 +847,98 @@ uint16_t NineP2000::request_read(const uint32_t id, const uint64_t offset, uint3
 
     // Mark tag as active
     request[tag].pending = true;
-    request[tag].fileId = id;
     request[tag].expectedType = Type::Rread;
+    request[tag].read.is_dir = true;
+    request[tag].read.dir = de;
 
-    // Limit count so as not to request a message over the max length for response
-    count = MIN(count, max_read_len());
+    // Fill in message
+    send.header.type = (uint8_t)Type::Tread;
+    send.header.tag = tag;
+    send.header.length = sizeof(Message::header) + sizeof(Message::Tread);
+    send.Tread.fid = id;
+    send.Tread.offset = offset;
+
+    // We don't know how long the directory entry will be as it has variable length strings
+    // Just read max length for now
+    send.Tread.count = max_read_len();
+
+    sock->send(send.buffer, send.header.length);
+
+    return tag;
+}
+
+void NineP2000::handle_dir_Rread(Request& result)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // Need a place to put the result
+    if (result.read.dir == nullptr) {
+        return;
+    }
+
+    // Should at least contain header count and stat
+    const uint16_t stat_end = sizeof(Message::header) + sizeof(Message::Rread) + sizeof(stat_t);
+    if (receive.header.length < stat_end) {
+        return;
+    }
+
+    const stat_t &info = (stat_t&)receive.buffer[sizeof(Message::header) + sizeof(Message::Rread)];
+
+    // Length feild does not include itself
+    const uint16_t stat_len = info.msg_size + sizeof(stat_t::msg_size);
+
+    // Make sure there is room for the whole stat now we know the full size
+    if (receive.header.length < (sizeof(Message::Rread) + stat_len)) {
+        return;
+    }
+
+    // Check file mode
+    if ((info.qid.type != qidType::QTFILE) && (info.qid.type != qidType::QTDIR)) {
+        return;
+    }
+
+    // All checks done, now we can update the directory entry
+
+    // Copy name, comes after the stat
+    uint16_t name_len = 0;
+    memcpy(&name_len, &receive.buffer[stat_end], sizeof(name_len));
+
+    memset(result.read.dir->d_name, 0, sizeof(result.read.dir->d_name));
+    strncpy(result.read.dir->d_name, (char*)&receive.buffer[stat_end + sizeof(name_len)], MIN(sizeof(result.read.dir->d_name), name_len));
+
+    // Fill in file flags
+    if (info.qid.type == qidType::QTFILE) {
+        result.read.dir->d_type = DT_REG;
+    } else{
+        result.read.dir->d_type = DT_DIR;
+    }
+
+    result.read.count = stat_len;
+}
+
+// Read a file, return tag, NOTAG if failed
+uint16_t NineP2000::request_file_read(const uint32_t id, const uint64_t offset, const uint32_t count, void *buf)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // ID invalid
+    if (!valid_file_id(id)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return NOTAG;
+    }
+
+    // See if there are any tags free
+    const uint16_t tag = get_free_tag();
+    if (tag == NOTAG) {
+        return NOTAG;
+    }
+
+    // Mark tag as active
+    request[tag].pending = true;
+    request[tag].expectedType = Type::Rread;
+    request[tag].read.is_dir = false;
+    request[tag].read.buf = buf;
+    request[tag].read.count = count;
 
     // Fill in message
     send.header.type = (uint8_t)Type::Tread;
@@ -789,98 +953,52 @@ uint16_t NineP2000::request_read(const uint32_t id, const uint64_t offset, uint3
     return tag;
 }
 
-// Fill in a directory item based on the read result, returns none zero if success
-uint32_t NineP2000::dir_read_result(const uint16_t tag, struct dirent &de)
+void NineP2000::handle_file_Rread(Request& result)
 {
     WITH_SEMAPHORE(request_sem);
 
-    // Make sure the tag is valid and there is a waiting response
-    if (!tag_response(tag)) {
-        clear_tag(tag);
-        return 0;
+    // Need a place to put the result
+    if (result.read.buf == nullptr) {
+        result.read.count = -1;
+        return;
     }
 
-    // Should be a read response
-    Message &msg = request[tag].result;
-    if (msg.header.type != (uint8_t)Type::Rread) {
-        print_if_error(msg);
-        clear_tag(tag);
-        return 0;
+    // Not expecting to get more data than was asked for
+    if (receive.Rread.count > uint32_t(result.read.count)) {
+        result.read.count = -1;
+        return;
     }
-
-    // Should at least contain header count and stat
-    const uint16_t stat_end = sizeof(Message::header) + sizeof(Message::Rread) + sizeof(stat_t);
-    if (msg.header.length < stat_end) {
-        clear_tag(tag);
-        return 0;
-    }
-
-    const stat_t &info = (stat_t&)msg.buffer[sizeof(Message::header) + sizeof(Message::Rread)];
-
-    // Length feild does not include itself
-    const uint16_t stat_len = info.msg_size + sizeof(stat_t::msg_size);
-
-    // Make sure there is room for the whole stat now we know the full size
-    if (msg.header.length < (sizeof(Message::Rread) + stat_len)) {
-        clear_tag(tag);
-        return 0;
-    }
-
-    // Copy name, comes after the stat
-    uint16_t name_len = 0;
-    memcpy(&name_len, &msg.buffer[stat_end], sizeof(name_len));
-
-    memset(de.d_name, 0, sizeof(de.d_name));
-    strncpy(de.d_name, (char*)&msg.buffer[stat_end + sizeof(name_len)], MIN(sizeof(de.d_name), name_len));
-
-    // Fill in file flags
-    const uint8_t &mode = info.qid.type;
-    if (mode == qidType::QTFILE) {
-        de.d_type = DT_REG;
-    } else if (mode == qidType::QTDIR) {
-        de.d_type = DT_DIR;
-    } else {
-        // Invalid type
-        clear_tag(tag);
-        return 0;
-    }
-
-    // Return the size of the stat object so the directory offset can be updated
-    clear_tag(tag);
-    return stat_len;
-}
-
-// Return the number of bytes read, -1 for error
-int32_t NineP2000::file_read_result(const uint16_t tag, void *buf)
-{
-    WITH_SEMAPHORE(request_sem);
-
-    // Make sure the tag is valid and there is a waiting response
-    if (!tag_response(tag)) {
-        clear_tag(tag);
-        return -1;
-    }
-
-    // Should be a read response
-    Message &msg = request[tag].result;
-    if (msg.header.type != (uint8_t)Type::Rread) {
-        print_if_error(msg);
-        clear_tag(tag);
-        return -1;
-    }
+    result.read.count = receive.Rread.count;
 
     // Copy result
-    const uint32_t count = msg.Rread.count;
-    memcpy(buf, &msg.buffer[sizeof(Message::header) + sizeof(Message::Rread)], msg.Rread.count);
+    memcpy(result.read.buf, &receive.buffer[sizeof(Message::header) + sizeof(Message::Rread)], result.read.count);
+}
 
-    // Finished with tag
+// Fill in a directory item based on the read result, returns none zero if success
+int32_t NineP2000::read_result(const uint16_t tag, const bool is_dir)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // Make sure the tag is valid and there is a waiting response
+    if (!tag_response_type(tag, Type::Rread)) {
+        clear_tag(tag);
+        return -1;
+    }
+
+    // Should be for the expected type
+    if (request[tag].read.is_dir != is_dir) {
+        clear_tag(tag);
+        return -1;
+    }
+
+    const int32_t count = request[tag].read.count;
+
     clear_tag(tag);
-
     return count;
 }
 
 // Request stat for a given file id
-uint16_t NineP2000::request_stat(const uint32_t id)
+uint16_t NineP2000::request_stat(const uint32_t id, struct stat *stbuf)
 {
     WITH_SEMAPHORE(request_sem);
 
@@ -898,8 +1016,8 @@ uint16_t NineP2000::request_stat(const uint32_t id)
 
     // Mark tag as active
     request[tag].pending = true;
-    request[tag].fileId = id;
     request[tag].expectedType = Type::Rstat;
+    request[tag].stat.stbuf = stbuf;
 
     // Fill in message
     send.header.type = (uint8_t)Type::Tstat;
@@ -912,46 +1030,47 @@ uint16_t NineP2000::request_stat(const uint32_t id)
     return tag;
 }
 
-bool NineP2000::stat_result(const uint16_t tag, struct stat *stbuf)
+// Handle a stat response
+void NineP2000::handle_Rstat(Request& result)
+{
+    WITH_SEMAPHORE(request_sem);
+
+    // Clear stats
+    memset(result.stat.stbuf, 0, sizeof(*result.stat.stbuf));
+
+    // length in bytes
+    result.stat.stbuf->st_size = receive.Rstat.stat.length;
+
+    // Access and modification timestamps
+    result.stat.stbuf->st_atime = receive.Rstat.stat.atime;
+    result.stat.stbuf->st_mtime = receive.Rstat.stat.mtime;
+
+    // Fill in file flags
+    const uint8_t &mode = receive.Rstat.stat.qid.type;
+    if (mode == qidType::QTFILE) {
+        result.stat.stbuf->st_mode |= S_IFREG;
+    } else if (mode == qidType::QTDIR) {
+        result.stat.stbuf->st_mode |= S_IFDIR;
+    }
+
+    result.stat.result = true;
+}
+
+// Get stat result, returns true if successful
+bool NineP2000::stat_result(const uint16_t tag)
 {
     WITH_SEMAPHORE(request_sem);
 
     // Make sure the tag is valid and there is a waiting response
-    if (!tag_response(tag)) {
+    if (!tag_response_type(tag, Type::Rstat)) {
         clear_tag(tag);
         return false;
     }
 
-    // Should be a stat response
-    Message &msg = request[tag].result;
-    if (msg.header.type != (uint8_t)Type::Rstat) {
-        print_if_error(msg);
-        clear_tag(tag);
-        return false;
-    }
+    const bool ret = request[tag].stat.result;
 
-    // Clear stats
-    memset(stbuf, 0, sizeof(*stbuf));
-
-    // length in bytes
-    stbuf->st_size = msg.Rstat.stat.length;
-
-    // Access and modification timestamps
-    stbuf->st_atime = msg.Rstat.stat.atime;
-    stbuf->st_mtime = msg.Rstat.stat.mtime;
-
-    // Fill in file flags
-    const uint8_t &mode = msg.Rstat.stat.qid.type;
-    if (mode == qidType::QTFILE) {
-        stbuf->st_mode |= S_IFREG;
-    } else if (mode == qidType::QTDIR) {
-        stbuf->st_mode |= S_IFDIR;
-    }
-
-    // Finished with tag
     clear_tag(tag);
-
-    return true;
+    return ret;
 }
 
 // Return the maximum length that can be written in a single packet
@@ -984,7 +1103,6 @@ uint16_t NineP2000::request_write(const uint32_t id, const uint64_t offset, uint
 
     // Mark tag as active
     request[tag].pending = true;
-    request[tag].fileId = id;
     request[tag].expectedType = Type::Rwrite;
 
     // Fill in message
@@ -1007,25 +1125,22 @@ int32_t NineP2000::write_result(const uint16_t tag)
     WITH_SEMAPHORE(request_sem);
 
     // Make sure the tag is valid and there is a waiting response
-    if (!tag_response(tag)) {
+    if (!tag_response_type(tag, Type::Rwrite)) {
         clear_tag(tag);
         return -1;
     }
 
-    // Should be a write response
-    Message &msg = request[tag].result;
-    if (msg.header.type != (uint8_t)Type::Rwrite) {
-        print_if_error(msg);
+    // Should be a create response
+    if (request[tag].expectedType != Type::Rwrite) {
         clear_tag(tag);
         return -1;
     }
 
-    uint32_t count = msg.Rwrite.count;
+    const int32_t ret = request[tag].write.count;
 
-    // Finished with tag
     clear_tag(tag);
 
-    return count;
+    return ret;
 }
 
 // Request create for given directory id, return tag
@@ -1047,7 +1162,6 @@ uint16_t NineP2000::request_create(const uint32_t id, const char*name, const boo
 
     // Mark tag as active
     request[tag].pending = true;
-    request[tag].fileId = id;
     request[tag].expectedType = Type::Rcreate;
 
     // Fill in message
@@ -1086,23 +1200,16 @@ bool NineP2000::create_result(const uint16_t tag)
     WITH_SEMAPHORE(request_sem);
 
     // Make sure the tag is valid and there is a waiting response
-    if (!tag_response(tag)) {
+    if (!tag_response_type(tag, Type::Rcreate)) {
         clear_tag(tag);
         return false;
     }
 
-    // Should be a create response
-    Message &msg = request[tag].result;
-    if (msg.header.type != (uint8_t)Type::Rcreate) {
-        print_if_error(msg);
-        clear_tag(tag);
-        return false;
-    }
+    const bool ret = request[tag].create.result;
 
-    // Finished with tag
     clear_tag(tag);
 
-    return true;
+    return ret;
 }
 
 // Request remove for given id, return tag
@@ -1124,7 +1231,6 @@ uint16_t NineP2000::request_remove(const uint32_t id)
 
     // Mark tag as active
     request[tag].pending = true;
-    request[tag].fileId = id;
     request[tag].expectedType = Type::Rremove;
 
     // Fill in message
@@ -1145,23 +1251,16 @@ bool NineP2000::remove_result(const uint16_t tag)
     WITH_SEMAPHORE(request_sem);
 
     // Make sure the tag is valid and there is a waiting response
-    if (!tag_response(tag)) {
+    if (!tag_response_type(tag, Type::Rremove)) {
         clear_tag(tag);
         return false;
     }
 
-    // Should be a remove response
-    Message &msg = request[tag].result;
-    if (msg.header.type != (uint8_t)Type::Rremove) {
-        print_if_error(msg);
-        clear_tag(tag);
-        return false;
-    }
+    const bool ret = request[tag].remove.result;
 
-    // Finished with tag
     clear_tag(tag);
 
-    return true;
+    return ret;
 }
 
 // Request rename for given id, return tag
@@ -1183,7 +1282,6 @@ uint16_t NineP2000::request_rename(const uint32_t id, const char*name)
 
     // Mark tag as active
     request[tag].pending = true;
-    request[tag].fileId = id;
     request[tag].expectedType = Type::Rwstat;
 
     // Fill in message
@@ -1220,23 +1318,17 @@ bool NineP2000::stat_update_result(const uint16_t tag)
     WITH_SEMAPHORE(request_sem);
 
     // Make sure the tag is valid and there is a waiting response
-    if (!tag_response(tag)) {
+    if (!tag_response_type(tag, Type::Rwstat)) {
         clear_tag(tag);
         return false;
     }
 
-    // Should be a remove response
-    Message &msg = request[tag].result;
-    if (msg.header.type != (uint8_t)Type::Rwstat) {
-        print_if_error(msg);
-        clear_tag(tag);
-        return false;
-    }
+    const bool ret = request[tag].rwstat.result;
 
     // Finished with tag
     clear_tag(tag);
 
-    return true;
+    return ret;
 }
 
 // Request mtime update for given id, return tag
@@ -1258,7 +1350,6 @@ uint16_t NineP2000::request_set_mtime(const uint32_t id, const uint32_t mtime)
 
     // Mark tag as active
     request[tag].pending = true;
-    request[tag].fileId = id;
     request[tag].expectedType = Type::Rwstat;
 
     // Fill in message

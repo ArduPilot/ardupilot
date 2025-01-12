@@ -26,9 +26,6 @@ public:
     // Called when a command is timed out
     void clear_tag(const uint16_t tag);
 
-    // Walk to a new file or directory, return tag, NOTAG if failed
-    uint16_t request_walk(const char* path);
-
     // Destination of walk
     enum walkType {
         File,
@@ -36,8 +33,11 @@ public:
         Any,
     };
 
+    // Walk to a new file or directory, return tag, NOTAG if failed
+    uint16_t request_walk(const char* path, const walkType type);
+
     // Check if the walk result is valid for a directory or file
-    uint32_t walk_result(const uint16_t tag, const walkType type);
+    uint32_t walk_result(const uint16_t tag);
 
     // Return the file id to the server for re-use
     void free_file_id(const uint32_t id);
@@ -48,20 +48,20 @@ public:
     // Return true if open success
     bool open_result(const uint16_t tag);
 
-    // Read a directory or file, return tag, NOTAG if failed
-    uint16_t request_read(const uint32_t id, const uint64_t offset, const uint32_t count);
+    // Request read of a file, return tag, NOTAG if failed
+    uint16_t request_file_read(const uint32_t id, const uint64_t offset, const uint32_t count, void *buf);
 
-    // Fill in a directory item based on the read result, returns none zero if success
-    uint32_t dir_read_result(const uint16_t tag, struct dirent &de);
+    // Request read of a directory, return tag, NOTAG if failed
+    uint16_t request_dir_read(const uint32_t id, const uint64_t offset, struct dirent *de);
 
-    // Return the number of bytes read, -1 for error
-    int32_t file_read_result(const uint16_t tag, void *buf);
+    // Get result of read request, Return the number of bytes read, -1 for error
+    int32_t read_result(const uint16_t tag, const bool is_dir);
 
     // Request stat for a given file id, return tag, NOTAG if failed
-    uint16_t request_stat(const uint32_t id);
+    uint16_t request_stat(const uint32_t id, struct stat *stbuf);
 
-    // Fill in stat pointer based on result
-    bool stat_result(const uint16_t tag, struct stat *stbuf);
+    // Get stat result
+    bool stat_result(const uint16_t tag);
 
     // Request write for given file id, return tag
     uint16_t request_write(const uint32_t id, const uint64_t offset, uint32_t count, const void *buf);
@@ -297,30 +297,6 @@ private:
         ORCLOSE = 0x40,
     };
 
-    // Receive buffer
-    Message receive;
-
-    // Send buffer
-    Message send;
-
-    // Buffer length must be negotiated.
-    uint16_t bufferLen;
-
-    // Add a string to a message
-    bool add_string(Message &msg, const char *str) const WARN_IF_UNUSED;
-
-    // Request version and message size
-    void request_version();
-
-    // Handle version response
-    void handle_version();
-
-    // Request attach
-    void request_attach();
-
-    // Handle attach response
-    void handle_attach();
-
     enum class Type: uint8_t {
         Tversion = 100,
         Rversion = 101,
@@ -354,13 +330,97 @@ private:
     // Object for holding responses
     // Tag is used as index into array
     // Array length is the max number of concurrent operations
-    struct {
+    struct Request {
         bool active;
         bool pending;
         Type expectedType;
-        uint32_t fileId;
-        Message result;
+
+        // Union stores variables useful for each message type
+        union {
+            struct {
+                uint32_t fileId;
+                walkType type;
+            } walk;
+
+            struct {
+                uint32_t fileId;
+            } clunk;
+
+            struct {
+                bool result;
+            } open;
+
+            struct {
+                bool is_dir;
+                int32_t count;
+                union {
+                    struct dirent *dir;
+                    void *buf;
+                };
+            } read;
+
+            struct {
+                bool result;
+                struct stat *stbuf;
+            } stat;
+
+            struct {
+                bool result;
+            } remove;
+
+            struct {
+                bool result;
+            } rwstat;
+
+            struct {
+                bool result;
+            } create;
+
+            struct {
+                int32_t count;
+            } write;
+
+        };
     } request[8];
+
+    // Receive buffer
+    Message receive;
+
+    // Send buffer
+    Message send;
+
+    // Buffer length must be negotiated.
+    uint16_t bufferLen;
+
+    // Add a string to a message
+    bool add_string(Message &msg, const char *str) const WARN_IF_UNUSED;
+
+    // Request version and message size
+    void request_version();
+
+    // Handle version response
+    void handle_version();
+
+    // Request attach
+    void request_attach();
+
+    // Handle attach response
+    void handle_attach();
+
+    // Handle walk response
+    void handle_rwalk(Request& result);
+
+    // Handle directory read response
+    void handle_dir_Rread(Request& result);
+
+    // Handle file read response
+    void handle_file_Rread(Request& result);
+
+    // Handle a stat response
+    void handle_Rstat(Request& result);
+
+    // Return true if there is a response for the given tag with type
+    bool tag_response_type(const uint16_t tag, const Type type);
 
     // Active file IDs, cannot used concurrently
     // 0 is always root and means unused
@@ -382,7 +442,7 @@ private:
     uint16_t get_free_tag();
 
     // Decode error messaged print
-    void print_if_error(Message &msg);
+    void handle_error(Request& result);
 
     // Semaphore should be take any time the request array is used
     HAL_Semaphore request_sem;
