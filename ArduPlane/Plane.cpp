@@ -514,6 +514,10 @@ void Plane::update_control_mode(void)
     update_fly_forward();
 
     control_mode->update();
+
+#if MODE_AUTOLAND_ENABLED
+    mode_autoland.check_takeoff_direction();
+#endif
 }
 
 
