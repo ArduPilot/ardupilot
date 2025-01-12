@@ -1164,14 +1164,18 @@ bool Plane::verify_loiter_heading(bool init)
         return true;
     }
 #endif
+
+#if MODE_AUTOLAND_ENABLED
+    if (control_mode == &mode_autoland) {
+        // autoland mode has its own lineup criterion
+        return mode_autoland.landing_lined_up();
+    }
+#endif
+
     //Get the lat/lon of next Nav waypoint after this one:
     AP_Mission::Mission_Command next_nav_cmd;
-    bool in_autoland_mode = false;
-#if MODE_AUTOLAND_ENABLED
-    in_autoland_mode = plane.control_mode-> mode_number() == Mode::Number::AUTOLAND;
-#endif
     if (! mission.get_next_nav_cmd(mission.get_current_nav_index() + 1,
-                                   next_nav_cmd) && !in_autoland_mode) {
+                                   next_nav_cmd)) {
         //no next waypoint to shoot for -- go ahead and break out of loiter
         return true;
     }
@@ -1180,11 +1184,6 @@ bool Plane::verify_loiter_heading(bool init)
         loiter.sum_cd = 0;
     }
 
-#if MODE_AUTOLAND_ENABLED
-    if (plane.control_mode-> mode_number() == Mode::Number::AUTOLAND){
-        return plane.mode_loiter.isHeadingLinedUp( plane.mode_autoland.loiter_WP,plane.mode_autoland.land_start_WP);
-    } 
-#endif
     return plane.mode_loiter.isHeadingLinedUp(next_WP_loc, next_nav_cmd.content.location);
 }
 

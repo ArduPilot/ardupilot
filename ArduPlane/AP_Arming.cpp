@@ -322,12 +322,7 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
     delay_arming = true;
 
 #if MODE_AUTOLAND_ENABLED
-    //capture heading for autoland mode if option is set and using a compass
-    if (plane.ahrs.use_compass() && plane.mode_autoland.autoland_option_is_set(ModeAutoLand::AutoLandOption::AUTOLAND_DIR_ON_ARM)) {
-        plane.takeoff_state.initial_direction.heading = wrap_360(plane.ahrs.yaw_sensor * 0.01f);
-        plane.takeoff_state.initial_direction.initialized = true;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Autoland direction= %u",int(plane.takeoff_state.initial_direction.heading));
-    }
+    plane.mode_autoland.arm_check();
 #endif
 
     send_arm_disarm_statustext("Throttle armed");

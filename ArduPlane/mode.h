@@ -217,6 +217,11 @@ public:
 
     void stabilize_quaternion();
 
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
+
 protected:
 
     // ACRO controller state
@@ -318,6 +323,11 @@ public:
 
     void run() override;
 
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
+    
 protected:
 
     bool _enter() override;
@@ -533,6 +543,10 @@ public:
 
     void run() override;
 
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
 };
 
 class ModeInitializing : public Mode
@@ -813,11 +827,6 @@ public:
     bool is_vtol_man_throttle() const override { return true; }
     virtual bool is_vtol_man_mode() const override { return true; }
 
-#if MODE_AUTOLAND_ENABLED   
-    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
-    bool allows_autoland_direction_capture() const override { return true; }
-#endif
-
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
@@ -924,6 +933,12 @@ public:
     
     void check_takeoff_direction(void);
 
+    // return true when lined up correctly from the LOITER_TO_ALT
+    bool landing_lined_up(void);
+
+    // see if we should capture the direction
+    void arm_check(void);
+
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -931,12 +946,16 @@ public:
     AP_Int16 final_wp_dist;
     AP_Int16 landing_dir_off;
     AP_Int8  options;
-    Location land_start_WP;
-    Location loiter_WP;
-    
+
     // Bitfields of AUTOLAND_OPTIONS
     enum class AutoLandOption {
         AUTOLAND_DIR_ON_ARM     = (1U << 0), // set dir for autoland on arm if compass in use.
+    };
+
+    enum class AutoLandStage {
+        LOITER,
+        BASE_LEG,
+        LANDING
     };
 
     bool autoland_option_is_set(AutoLandOption option) const {
@@ -946,7 +965,7 @@ public:
 protected:
     bool _enter() override;
     AP_Mission::Mission_Command cmd[3];
-    uint8_t stage;
+    AutoLandStage stage;
     void set_autoland_direction(void);
 };
 #endif
