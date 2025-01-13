@@ -4025,3 +4025,24 @@ function visual_odom:healthy() end
 -- visual odometry quality as a percentage from 1 to 100 or 0 if unknown
 ---@return integer
 function visual_odom:quality() end
+
+-- Returns the number of detected obstacles via ADS-B
+-- the ADS-B Must be enabled.
+---@return integer -- number of obstacles
+function avoid:num_obstacles() end-- Returns a Location userdata for the last position of the obstacle observed.
+
+---@param instance integer -- instance number
+---@return Location_ud --ADSB location
+function avoid:get_obstacle_loc(instance) end-- Returns a Vector3f that contains the velocity as obtained from ADS-B.
+
+---@param instance integer -- instance number
+---@return Vector3f_ud -- 3D velocity in m/s, in NED format
+function avoid:get_obstacle_vel(instance) end-- Obstacle id as obtained from ADS-B.
+
+---@param instance integer -- instance number
+---@return int32_t_ud
+function avoid:get_obstacle_id(instance) end-- ADS-B message time.
+
+---@param instance integer -- instance number
+---@return int32_t_ud
+function avoid:get_obstacle_time(instance) end
