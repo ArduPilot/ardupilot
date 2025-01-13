@@ -11,7 +11,6 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
-#include <SRV_Channel/SRV_Channel.h>
 
 class AP_Mount_Servo : public AP_Mount_Backend
 {
@@ -22,8 +21,7 @@ public:
         requires_stabilization(requires_stab),
         _roll_idx(SRV_Channel::k_none),
         _tilt_idx(SRV_Channel::k_none),
-        _pan_idx(SRV_Channel::k_none),
-        _open_idx(SRV_Channel::k_none)
+        _pan_idx(SRV_Channel::k_none)
     {
     }
 
@@ -59,10 +57,10 @@ private:
     const bool requires_stabilization;
 
     // SRV_Channel - different id numbers are used depending upon the instance number
+    // _open_idx shited to AP_Mount Backend to support funtionality for all mounts 
     SRV_Channel::Aux_servo_function_t    _roll_idx;  // SRV_Channel mount roll function index
     SRV_Channel::Aux_servo_function_t    _tilt_idx;  // SRV_Channel mount tilt function index
     SRV_Channel::Aux_servo_function_t    _pan_idx;   // SRV_Channel mount pan  function index
-    SRV_Channel::Aux_servo_function_t    _open_idx;  // SRV_Channel mount open function index
 
     Vector3f _angle_bf_output_rad;  // final body frame output angle in radians
 };

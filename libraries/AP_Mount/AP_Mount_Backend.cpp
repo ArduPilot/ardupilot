@@ -19,6 +19,14 @@ extern const AP_HAL::HAL& hal;
 // Default init function for every mount
 void AP_Mount_Backend::init()
 {
+    // assigning the correct servo mount function 
+    if (_instance == 0) {
+        _open_idx = SRV_Channel::k_mount_open;
+    } else {
+        // this must be the 2nd mount
+        _open_idx = SRV_Channel::k_mount2_open;
+    }
+
     // setting default target sysid from parameters
     _target_sysid = _params.sysid_default.get();
 
@@ -802,6 +810,15 @@ void AP_Mount_Backend::update_angle_target_from_rate(const MountTarget& rate_rad
         angle_rad.yaw = constrain_float(angle_rad.yaw, radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
     }
 }
+
+void AP_Mount_Backend::actuate_mount_open_servo()
+{
+    auto mount_mode = get_mode();
+    const int mount_open = (mount_mode == MAV_MOUNT_MODE_RETRACT) ? 0 : 1;
+    SRV_Channels::move_servo((SRV_Channel::Aux_servo_function_t)_open_idx, mount_open, 0, 1);
+    return;
+}
+
 
 // helper function to provide GIMBAL_DEVICE_FLAGS for use in GIMBAL_DEVICE_ATTITUDE_STATUS message
 uint16_t AP_Mount_Backend::get_gimbal_device_flags() const

@@ -28,6 +28,7 @@
 #include <AP_Common/Location.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Camera/AP_Camera_shareddefs.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include "AP_Mount.h"
 
 class AP_Mount_Backend
@@ -37,7 +38,8 @@ public:
     AP_Mount_Backend(class AP_Mount &frontend, class AP_Mount_Params &params, uint8_t instance) :
         _frontend(frontend),
         _params(params),
-        _instance(instance)
+        _instance(instance),
+        _open_idx(SRV_Channel::k_none)
     {}
 
     // init - performs any required initialisation for this instance
@@ -282,6 +284,9 @@ protected:
     // assumes a 50hz update rate
     void update_angle_target_from_rate(const MountTarget& rate_rad, MountTarget& angle_rad) const;
 
+    // actuate the deploy/retract servo for the mount
+    void actuate_mount_open_servo();
+
     // helper function to provide GIMBAL_DEVICE_FLAGS for use in GIMBAL_DEVICE_ATTITUDE_STATUS message
     uint16_t get_gimbal_device_flags() const;
 
@@ -320,6 +325,10 @@ private:
 #endif
 
     bool _yaw_lock;                 // yaw_lock used in RC_TARGETING mode. True if the gimbal's yaw target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
+
+    // Servo functionality for deploying/retracting the mounts
+    SRV_Channel::Aux_servo_function_t    _open_idx;  // SRV_Channel mount open function index
+
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     struct {
