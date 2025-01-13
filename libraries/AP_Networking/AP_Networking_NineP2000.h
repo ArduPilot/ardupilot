@@ -105,7 +105,8 @@ private:
     void loop();
     bool connected;
 
-    bool update();
+    bool update_send();
+    bool update_receive();
     void parse(const uint32_t len);
 
     // State of connection process
@@ -140,7 +141,9 @@ private:
 
     // Message shape
     union PACKED Message {
-        uint8_t buffer[1024];
+        // This is the TCP maximum segment size (on most systems)
+        // Limiting the max packet length to it means packets don't need to be re-assembled.
+        uint8_t buffer[1460*4];
 
         struct PACKED {
             // Header is used on all messages
@@ -440,6 +443,10 @@ private:
 
     // Decode error messaged print
     void handle_error(Request& result);
+
+    // Buffer for outgoing data
+    ByteBuffer *writebuffer;
+    uint8_t writebuffer_readbuffer[1460];
 
     // Semaphore should be take any time the request array is used
     HAL_Semaphore request_sem;

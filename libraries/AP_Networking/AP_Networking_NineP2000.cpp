@@ -43,13 +43,20 @@ const AP_Param::GroupInfo NineP2000::var_info[] = {
 void NineP2000::init()
 {
     sock = NEW_NOTHROW SocketAPM(false);
-    if (sock != nullptr) {
-        sock->set_blocking(true);
 
-        if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&NineP2000::loop, void), "9P2000", 1024, AP_HAL::Scheduler::PRIORITY_STORAGE, 0)) {
-            AP_BoardConfig::allocation_error("9P2000 thread");
+    const uint32_t bufferSize = 32768;
+    writebuffer = NEW_NOTHROW ByteBuffer(bufferSize);
+    if ((sock != nullptr) && (writebuffer != nullptr)) {
+        sock->set_blocking(true);
+        writebuffer->set_size_best(bufferSize);
+
+        // Need a reasonable size buffer before starting the thread
+        if ((writebuffer->get_size() > 256) &&
+            hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&NineP2000::loop, void), "9P2000", 1024, AP_HAL::Scheduler::PRIORITY_STORAGE, 0)) {
+            return;
         }
     }
+    AP_BoardConfig::allocation_error("9P2000");
 
 }
 
@@ -87,11 +94,14 @@ void NineP2000::loop()
             memset(&request, 0, sizeof(request));
             memset(&fileIds, 0, sizeof(fileIds));
 
+            // Reset write buffer
+            writebuffer->clear();
+
             // Restart connection process
             request_version();
 
         }
-        active = update();
+        active = update_send() | update_receive();
     }
 }
 
@@ -101,11 +111,44 @@ bool NineP2000::mounted()
     return connected && (state == State::Mounted);
 }
 
+// Write from buffer into socket
+bool NineP2000::update_send()
+{
+    WITH_SEMAPHORE(request_sem);
+
+    if (writebuffer->available() == 0) {
+        return false;
+    }
+
+    uint32_t write = writebuffer->peekbytes(writebuffer_readbuffer, sizeof(writebuffer_readbuffer));
+    if (write == 0) {
+        return false;
+    }
+
+    ssize_t written = sock->send(writebuffer_readbuffer, write);
+    if ((written <= 0) && (errno == ENOTCONN)) {
+        // Send failed, disconnect
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "9P2000: closed connection");
+        delete sock;
+        sock = nullptr;
+        return false;
+    }
+
+    writebuffer->advance(written);
+
+    return writebuffer->available() > 0;
+}
+
 // Deal with incoming data
-bool NineP2000::update()
+bool NineP2000::update_receive()
 {
     // Use semaphore for thread safety
     WITH_SEMAPHORE(request_sem);
+
+    // Send may have resulted in a disconnect
+    if (sock == nullptr) {
+        return false;
+    }
 
     const auto len = sock->recv(buffer.buffer, sizeof(buffer.buffer), 0);
     if (len == 0) {
@@ -305,8 +348,8 @@ bool NineP2000::add_string(Message &msg, const char *str) const
     const size_t offset = msg.header.length;
 
     const uint16_t len = strlen(str);
-
-    if ((offset + sizeof(len) + len) > MIN(bufferLen, sizeof(Message))) {
+    const uint32_t space = MIN(bufferLen, writebuffer->space());
+    if ((offset + sizeof(len) + len) > space) {
         // This would be a huge file name!
         return false;
     }
@@ -337,7 +380,7 @@ void NineP2000::request_version()
         return;
     }
 
-    sock->send(buffer.buffer, buffer.header.length);
+    writebuffer->write(buffer.buffer, buffer.header.length);
 }
 
 // handle version response
@@ -423,7 +466,7 @@ void NineP2000::request_attach()
         return;
     }
 
-    sock->send(buffer.buffer, buffer.header.length);
+    writebuffer->write(buffer.buffer, buffer.header.length);
 }
 
 // Handle attach response
@@ -541,6 +584,12 @@ uint16_t NineP2000::request_walk(const char* path, const walkType type)
 {
     WITH_SEMAPHORE(request_sem);
 
+    // Check there is room for the constant size part of the message
+    const uint32_t length = sizeof(Message::header) + sizeof(Message::Twalk);
+    if (writebuffer->space() < length) {
+        return NOTAG;
+    }
+
     // See if there are any tags free
     const uint16_t tag = get_free_tag();
     if (tag == NOTAG) {
@@ -559,7 +608,7 @@ uint16_t NineP2000::request_walk(const char* path, const walkType type)
     // Fill in message
     buffer.header.type = (uint8_t)Type::Twalk;
     buffer.header.tag = tag;
-    buffer.header.length = sizeof(Message::header) + sizeof(Message::Twalk);
+    buffer.header.length = length;
 
     // Start at root
     buffer.Twalk.fid = 0;
@@ -582,7 +631,8 @@ uint16_t NineP2000::request_walk(const char* path, const walkType type)
             const uint32_t new_len = buffer.header.length + sizeof(name_len) + name_len;
 
             // Check total message length is still valid
-            if (new_len > bufferLen) {
+            const uint32_t space = MIN(bufferLen, writebuffer->space());
+            if (new_len > space) {
                 clear_tag(tag);
                 return NOTAG;
             }
@@ -610,7 +660,7 @@ uint16_t NineP2000::request_walk(const char* path, const walkType type)
     request[tag].walk.type = type;
 
     // Send command
-    sock->send(buffer.buffer, buffer.header.length);
+    writebuffer->write(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -735,6 +785,12 @@ void NineP2000::free_file_id(const uint32_t id)
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
 
+    // Check there is room for the message
+    const uint32_t length = sizeof(Message::header) + sizeof(Message::Tclunk);
+    if (length > writebuffer->space()) {
+        return;
+    }
+
     // See if there are any tags free
     const uint16_t tag = get_free_tag();
     if (tag == NOTAG) {
@@ -756,13 +812,19 @@ void NineP2000::free_file_id(const uint32_t id)
     buffer.header.length = sizeof(Message::header) + sizeof(Message::Tclunk);
     buffer.Tclunk.fid = id;
 
-    sock->send(buffer.buffer, buffer.header.length);
+    writebuffer->write(buffer.buffer, buffer.header.length);
 }
 
 // Request read of given file or directory with given flags
 uint16_t NineP2000::request_open(const uint32_t id, const int flags)
 {
     WITH_SEMAPHORE(request_sem);
+
+    // Check there is room for the message
+    const uint32_t length = sizeof(Message::header) + sizeof(Message::Topen);
+    if (length > writebuffer->space()) {
+        return NOTAG;
+    }
 
     // See if there are any tags free
     const uint16_t tag = get_free_tag();
@@ -795,11 +857,11 @@ uint16_t NineP2000::request_open(const uint32_t id, const int flags)
     // Fill in message
     buffer.header.type = (uint8_t)Type::Topen;
     buffer.header.tag = tag;
-    buffer.header.length = sizeof(Message::header) + sizeof(Message::Topen);
+    buffer.header.length = length;
     buffer.Topen.fid = id;
     buffer.Topen.mode = mode;
 
-    sock->send(buffer.buffer, buffer.header.length);
+    writebuffer->write(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -839,6 +901,12 @@ uint16_t NineP2000::request_dir_read(const uint32_t id, const uint64_t offset, s
         return NOTAG;
     }
 
+    // Check there is room for the message
+    const uint32_t length = sizeof(Message::header) + sizeof(Message::Tread);
+    if (length > writebuffer->space()) {
+        return NOTAG;
+    }
+
     // See if there are any tags free
     const uint16_t tag = get_free_tag();
     if (tag == NOTAG) {
@@ -854,7 +922,7 @@ uint16_t NineP2000::request_dir_read(const uint32_t id, const uint64_t offset, s
     // Fill in message
     buffer.header.type = (uint8_t)Type::Tread;
     buffer.header.tag = tag;
-    buffer.header.length = sizeof(Message::header) + sizeof(Message::Tread);
+    buffer.header.length = length;
     buffer.Tread.fid = id;
     buffer.Tread.offset = offset;
 
@@ -862,7 +930,7 @@ uint16_t NineP2000::request_dir_read(const uint32_t id, const uint64_t offset, s
     // Just read max length for now
     buffer.Tread.count = max_read_len();
 
-    sock->send(buffer.buffer, buffer.header.length);
+    writebuffer->write(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -927,6 +995,12 @@ uint16_t NineP2000::request_file_read(const uint32_t id, const uint64_t offset, 
         return NOTAG;
     }
 
+    // Check there is room for the message
+    const uint32_t length = sizeof(Message::header) + sizeof(Message::Tread);
+    if (length > writebuffer->space()) {
+        return NOTAG;
+    }
+
     // See if there are any tags free
     const uint16_t tag = get_free_tag();
     if (tag == NOTAG) {
@@ -943,12 +1017,12 @@ uint16_t NineP2000::request_file_read(const uint32_t id, const uint64_t offset, 
     // Fill in message
     buffer.header.type = (uint8_t)Type::Tread;
     buffer.header.tag = tag;
-    buffer.header.length = sizeof(Message::header) + sizeof(Message::Tread);
+    buffer.header.length = length;
     buffer.Tread.fid = id;
     buffer.Tread.offset = offset;
     buffer.Tread.count = count;
 
-    sock->send(buffer.buffer, buffer.header.length);
+    writebuffer->write(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -1008,6 +1082,12 @@ uint16_t NineP2000::request_stat(const uint32_t id, struct stat *stbuf)
         return NOTAG;
     }
 
+    // Check there is room for the message
+    const uint32_t length = sizeof(Message::header) + sizeof(Message::Tstat);
+    if (length > writebuffer->space()) {
+        return NOTAG;
+    }
+
     // See if there are any tags free
     const uint16_t tag = get_free_tag();
     if (tag == NOTAG) {
@@ -1022,10 +1102,10 @@ uint16_t NineP2000::request_stat(const uint32_t id, struct stat *stbuf)
     // Fill in message
     buffer.header.type = (uint8_t)Type::Tstat;
     buffer.header.tag = tag;
-    buffer.header.length = sizeof(Message::header) + sizeof(Message::Tstat);
+    buffer.header.length = length;
     buffer.Tstat.fid = id;
 
-    sock->send(buffer.buffer, buffer.header.length);
+    writebuffer->write(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -1091,15 +1171,21 @@ uint16_t NineP2000::request_write(const uint32_t id, const uint64_t offset, uint
         return NOTAG;
     }
 
+    // Limit write to max packet size
+    const uint16_t data_offset = sizeof(Message::header) + sizeof(Message::Twrite);
+    count = MIN(count, uint32_t(bufferLen - data_offset));
+
+    // Check there is room for the message
+    const uint32_t length = data_offset + count;
+    if (length > writebuffer->space()) {
+        return NOTAG;
+    }
+
     // See if there are any tags free
     const uint16_t tag = get_free_tag();
     if (tag == NOTAG) {
         return NOTAG;
     }
-
-    // Limit write to max packet size
-    const uint16_t data_offset = sizeof(Message::header) + sizeof(Message::Twrite);
-    count = MIN(count, uint32_t(bufferLen - data_offset));
 
     // Mark tag as active
     request[tag].pending = true;
@@ -1108,14 +1194,14 @@ uint16_t NineP2000::request_write(const uint32_t id, const uint64_t offset, uint
     // Fill in message
     buffer.header.type = (uint8_t)Type::Twrite;
     buffer.header.tag = tag;
-    buffer.header.length = data_offset + count;
+    buffer.header.length = length;
     buffer.Twrite.fid = id;
     buffer.Twrite.offset = offset;
     buffer.Twrite.count = count;
 
     memcpy(&buffer.buffer[data_offset], buf, count);
 
-    sock->send(buffer.buffer, buffer.header.length);
+    writebuffer->write(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -1177,7 +1263,7 @@ uint16_t NineP2000::request_create(const uint32_t id, const char*name, const boo
     // permissions and mode come after the variable length string
     const uint8_t tail_len = sizeof(perm) + sizeof(mode);
 
-    if (!add_string(buffer, name) || ((buffer.header.length + tail_len) > bufferLen)) {
+    if (!add_string(buffer, name) || ((buffer.header.length + tail_len) > MIN(bufferLen, writebuffer->space()))) {
         // Ran out of room in the message
         clear_tag(tag);
         return NOTAG;
@@ -1189,8 +1275,7 @@ uint16_t NineP2000::request_create(const uint32_t id, const char*name, const boo
     memcpy(&buffer.buffer[buffer.header.length], &mode, sizeof(mode));
     buffer.header.length += sizeof(mode);
 
-
-    sock->send(buffer.buffer, buffer.header.length);
+    writebuffer->write(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -1223,6 +1308,12 @@ uint16_t NineP2000::request_remove(const uint32_t id)
         return NOTAG;
     }
 
+    // Check there is room for the message
+    const uint32_t length = sizeof(Message::header) + sizeof(Message::Tremove);
+    if (length > writebuffer->space()) {
+        return NOTAG;
+    }
+
     // See if there are any tags free
     const uint16_t tag = get_free_tag();
     if (tag == NOTAG) {
@@ -1236,11 +1327,11 @@ uint16_t NineP2000::request_remove(const uint32_t id)
     // Fill in message
     buffer.header.type = (uint8_t)Type::Tremove;
     buffer.header.tag = tag;
-    buffer.header.length = sizeof(Message::header) + sizeof(Message::Tremove);
+    buffer.header.length = length;
 
     buffer.Tremove.fid = id;
 
-    sock->send(buffer.buffer, buffer.header.length);
+    writebuffer->write(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -1274,6 +1365,12 @@ uint16_t NineP2000::request_rename(const uint32_t id, const char*name)
         return NOTAG;
     }
 
+    // Check there is room for constant lenght part of the message, assume all four strings are zero length
+    const uint32_t length = sizeof(Message::header) + sizeof(Message::Twstat);
+    if ((length + (4 * 2)) > writebuffer->space()) {
+        return NOTAG; 
+    }
+
     // See if there are any tags free
     const uint16_t tag = get_free_tag();
     if (tag == NOTAG) {
@@ -1287,7 +1384,7 @@ uint16_t NineP2000::request_rename(const uint32_t id, const char*name)
     // Fill in message
     buffer.header.type = (uint8_t)Type::Twstat;
     buffer.header.tag = tag;
-    buffer.header.length = sizeof(Message::header) + sizeof(Message::Twstat);
+    buffer.header.length = length;
 
     buffer.Twstat.fid = id;
     buffer.Twstat.nstat = 1;
@@ -1307,7 +1404,7 @@ uint16_t NineP2000::request_rename(const uint32_t id, const char*name)
         return NOTAG;
     }
 
-    sock->send(buffer.buffer, buffer.header.length);
+    writebuffer->write(buffer.buffer, buffer.header.length);
 
     return tag;
 }
@@ -1342,6 +1439,12 @@ uint16_t NineP2000::request_set_mtime(const uint32_t id, const uint32_t mtime)
         return NOTAG;
     }
 
+    // Check there is room for constant lenght part of the message, assume all four strings are zero length
+    const uint32_t length = sizeof(Message::header) + sizeof(Message::Twstat);
+    if ((length + (4 * 2)) > writebuffer->space()) {
+        return NOTAG; 
+    }
+
     // See if there are any tags free
     const uint16_t tag = get_free_tag();
     if (tag == NOTAG) {
@@ -1355,7 +1458,7 @@ uint16_t NineP2000::request_set_mtime(const uint32_t id, const uint32_t mtime)
     // Fill in message
     buffer.header.type = (uint8_t)Type::Twstat;
     buffer.header.tag = tag;
-    buffer.header.length = sizeof(Message::header) + sizeof(Message::Twstat);
+    buffer.header.length = length;
 
     buffer.Twstat.fid = id;
     buffer.Twstat.nstat = 1;
@@ -1377,7 +1480,7 @@ uint16_t NineP2000::request_set_mtime(const uint32_t id, const uint32_t mtime)
         return NOTAG;
     }
 
-    sock->send(buffer.buffer, buffer.header.length);
+    writebuffer->write(buffer.buffer, buffer.header.length);
 
     return tag;
 }
