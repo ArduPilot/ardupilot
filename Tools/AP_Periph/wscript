@@ -85,6 +85,7 @@ def build(bld):
                      'AP_Relay',
                      'AP_MultiHeap',
                      'AP_DAC'
+                     'AP_Servo_Telem',
                      ]
 
     bld.ap_stlib(

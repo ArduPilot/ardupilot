@@ -200,6 +200,7 @@ void AP_Periph_FW::sim_update_actuator(uint8_t actuator_id)
     }
     sim_actuator.last_send_ms = now_ms;
 
+#if !AP_PERIPH_VOLZ_SEND_COM_VOLZ_SERVO_ACTUATORSTATUS_ENABLED
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         if ((sim_actuator.mask & (1U<<i)) == 0) {
             continue;
@@ -222,6 +223,7 @@ void AP_Periph_FW::sim_update_actuator(uint8_t actuator_id)
                          &buffer[0],
                          total_size);
     }
+#endif  // AP_PERIPH_VOLZ_SEND_COM_VOLZ_SERVO_ACTUATORSTATUS_ENABLED
 }
 #endif // AP_SIM_ENABLED
 
