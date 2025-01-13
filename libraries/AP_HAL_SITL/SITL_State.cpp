@@ -106,10 +106,8 @@ void SITL_State::_sitl_setup()
         _sitl->rcin_port = _rcin_port;
     }
 
-    if (_synthetic_clock_mode) {
-        // start with non-zero clock
-        hal.scheduler->stop_clock(1);
-    }
+    // start with non-zero clock
+    hal.scheduler->stop_clock(1);
 }
 
 
@@ -284,7 +282,6 @@ void SITL_State::_fdm_input_local(void)
 
     set_height_agl();
 
-    _synthetic_clock_mode = true;
     _update_count++;
 }
 
