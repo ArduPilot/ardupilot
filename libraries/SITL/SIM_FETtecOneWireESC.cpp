@@ -384,7 +384,7 @@ void FETtecOneWireESC::consume_bytes(uint8_t count)
 
 void FETtecOneWireESC::update_input()
 {
-    const ssize_t n = read_from_autopilot((char*)&u.buffer[buflen], ARRAY_SIZE(u.buffer) - buflen - 1);
+    const ssize_t n = read_from_autopilot((char*)&u.buffer[buflen], ARRAY_SIZE(u.buffer) - buflen);
     if (n < 0) {
         // TODO: do better here
         if (errno != EAGAIN && errno != EWOULDBLOCK && errno != 0) {
