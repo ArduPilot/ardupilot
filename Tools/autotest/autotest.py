@@ -40,8 +40,6 @@ from vehicle_test_suite import Test
 
 tester = None
 
-build_opts = None
-
 
 def buildlogs_dirpath():
     """Return BUILDLOGS directory path."""
@@ -426,8 +424,6 @@ def run_step(step):
 
     if opts.Werror:
         build_opts['extra_configure_args'].append("--Werror")
-
-    build_opts = build_opts
 
     vehicle_binary = None
     board = "sitl"
