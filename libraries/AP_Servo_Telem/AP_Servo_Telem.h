@@ -51,7 +51,7 @@ public:
             PCB_TEMP           = 1 << 8,
             STATUS             = 1 << 9,
         };
-        uint16_t valid_types;
+        uint16_t present_types;
 
         // return true if the requested types of data are available
         bool present(const uint16_t type_mask) const volatile;
