@@ -766,7 +766,6 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(strace_options)
 
     cmd.append(binary)
-    cmd.append("-S")
     if opts.wipe_eeprom:
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
