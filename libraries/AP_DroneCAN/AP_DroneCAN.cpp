@@ -1393,10 +1393,10 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
         .force = msg.force,
         .speed = msg.speed,
         .duty_cycle = msg.power_rating_pct,
-        .valid_types = AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
-                       AP_Servo_Telem::TelemetryData::Types::FORCE |
-                       AP_Servo_Telem::TelemetryData::Types::SPEED |
-                       AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE
+        .present_types = AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
+                         AP_Servo_Telem::TelemetryData::Types::FORCE |
+                         AP_Servo_Telem::TelemetryData::Types::SPEED |
+                         AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE
     };
 
     servo_telem->update_telem_data(msg.actuator_id, telem_data);
@@ -1422,13 +1422,13 @@ void AP_DroneCAN::handle_himark_servoinfo(const CanardRxTransfer& transfer, cons
         .motor_temperature_cdeg = int16_t(((msg.motor_temp * 0.2) - 40) * 100),
         .pcb_temperature_cdeg = int16_t(((msg.pcb_temp * 0.2) - 40) * 100),
         .status_flags = msg.error_status,
-        .valid_types = AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION |
-                       AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
-                       AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
-                       AP_Servo_Telem::TelemetryData::Types::CURRENT |
-                       AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP |
-                       AP_Servo_Telem::TelemetryData::Types::PCB_TEMP |
-                       AP_Servo_Telem::TelemetryData::Types::STATUS
+        .present_types = AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION |
+                         AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
+                         AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
+                         AP_Servo_Telem::TelemetryData::Types::CURRENT |
+                         AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP |
+                         AP_Servo_Telem::TelemetryData::Types::PCB_TEMP |
+                         AP_Servo_Telem::TelemetryData::Types::STATUS
     };
 
     servo_telem->update_telem_data(msg.servo_id, telem_data);
@@ -1449,11 +1449,11 @@ void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, 
         .current = msg.current * 0.025,
         .duty_cycle = uint8_t(msg.motor_pwm * (100.0/255.0)),
         .motor_temperature_cdeg = int16_t((msg.motor_temperature - 50) * 100),
-        .valid_types = AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
-                       AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
-                       AP_Servo_Telem::TelemetryData::Types::CURRENT |
-                       AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE |
-                       AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP
+        .present_types = AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
+                         AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
+                         AP_Servo_Telem::TelemetryData::Types::CURRENT |
+                         AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE |
+                         AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP
     };
 
     servo_telem->update_telem_data(msg.actuator_id, telem_data);
