@@ -399,12 +399,12 @@ void AP_Volz_Protocol::update()
                 .current = telem.data[i].primary_current,
                 .motor_temperature_cdeg = int16_t(telem.data[i].motor_temp_deg * 100),
                 .pcb_temperature_cdeg = int16_t(telem.data[i].pcb_temp_deg * 100),
-                .valid_types = AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION |
-                               AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
-                               AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
-                               AP_Servo_Telem::TelemetryData::Types::CURRENT |
-                               AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP |
-                               AP_Servo_Telem::TelemetryData::Types::PCB_TEMP
+                .present_types = AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION |
+                                 AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
+                                 AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
+                                 AP_Servo_Telem::TelemetryData::Types::CURRENT |
+                                 AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP |
+                                 AP_Servo_Telem::TelemetryData::Types::PCB_TEMP
             };
 
             servo_telem->update_telem_data(i, telem_data);
