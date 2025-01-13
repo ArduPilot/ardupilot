@@ -31,22 +31,10 @@ AP_Servo_Telem::AP_Servo_Telem()
     _singleton = this;
 }
 
-// return true if the data is stale
-bool AP_Servo_Telem::TelemetryData::stale(uint32_t now_ms) const volatile
-{
-    return (last_update_ms == 0) || ((now_ms - last_update_ms) > 5000);
-}
-
 // return true if the requested types of data are available
 bool AP_Servo_Telem::TelemetryData::present(const uint16_t type_mask) const volatile
 {
     return (valid_types & type_mask) != 0;
-}
-
-// return true if the requested types of data are available and not stale
-bool AP_Servo_Telem::TelemetryData::valid(const uint16_t type_mask) const volatile
-{
-    return present(type_mask) && !stale(AP_HAL::millis());
 }
 
 // record an update to the telemetry data together with timestamp

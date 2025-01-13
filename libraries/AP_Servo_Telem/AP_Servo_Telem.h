@@ -53,14 +53,8 @@ public:
         };
         uint16_t valid_types;
 
-        // return true if the data is stale
-        bool stale(uint32_t now_ms) const volatile;
-
         // return true if the requested types of data are available
         bool present(const uint16_t type_mask) const volatile;
-
-        //  return true if the requested type of data is available and not stale
-        bool valid(const uint16_t type_mask) const volatile;
     };
 
     // update at 10Hz to log telemetry
