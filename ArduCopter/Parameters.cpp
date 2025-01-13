@@ -58,7 +58,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     // @Units: Hz
     // @Range: 0 10
-    // @Increment: .5
+    // @Increment: 0.5
     GSCALAR(throttle_filt,  "PILOT_THR_FILT",     0),
 
     // @Param: PILOT_TKOFF_ALT
@@ -109,7 +109,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: RTL cone slope
     // @Description: Defines a cone above home which determines maximum climb
     // @Range: 0.5 10.0
-    // @Increment: .1
+    // @Increment: 0.1
     // @Values: 0:Disabled,1:Shallow,3:Steep
     // @User: Standard
     GSCALAR(rtl_cone_slope,   "RTL_CONE_SLOPE",     RTL_CONE_SLOPE_DEFAULT),
