@@ -34,7 +34,7 @@ AP_Servo_Telem::AP_Servo_Telem()
 // return true if the requested types of data are available
 bool AP_Servo_Telem::TelemetryData::present(const uint16_t type_mask) const volatile
 {
-    return (valid_types & type_mask) != 0;
+    return (present_types & type_mask) != 0;
 }
 
 // record an update to the telemetry data together with timestamp
@@ -46,7 +46,7 @@ void AP_Servo_Telem::update_telem_data(const uint8_t servo_index, const Telemetr
     // can only get slightly more up-to-date information that perhaps they were expecting or might
     // read data that has just gone stale - both of these are safe and avoid the overhead of locking
 
-    if (servo_index >= ARRAY_SIZE(_telem_data) || (new_data.valid_types == 0)) {
+    if (servo_index >= ARRAY_SIZE(_telem_data) || (new_data.present_types == 0)) {
         return;
     }
     active_mask |= 1U << servo_index;
@@ -84,7 +84,7 @@ void AP_Servo_Telem::update_telem_data(const uint8_t servo_index, const Telemetr
         telemdata.status_flags = new_data.status_flags;
     }
 
-    telemdata.valid_types |= new_data.valid_types;
+    telemdata.present_types |= new_data.present_types;
     telemdata.last_update_ms = AP_HAL::millis();
 }
 
