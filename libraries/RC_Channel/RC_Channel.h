@@ -317,6 +317,9 @@ public:
 
     AuxSwitchPos get_aux_switch_pos() const;
 
+    // aux position for stick gestures used by RunCam menus etc
+    AuxSwitchPos get_stick_gesture_pos() const;
+
     // wrapper function around do_aux_function which allows us to log
     bool run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source);
 
