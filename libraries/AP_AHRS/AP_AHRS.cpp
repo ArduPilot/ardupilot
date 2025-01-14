@@ -39,6 +39,12 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
+
+#include <AP_Mission/AP_Mission_config.h>
+#if AP_MISSION_ENABLED
+#include <AP_Mission/AP_Mission.h>
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -2984,6 +2990,14 @@ bool AP_AHRS::set_home(const Location &loc)
     pd.home_lat = loc.lat;
     pd.home_lon = loc.lng;
     pd.home_alt_cm = loc.alt;
+
+#if AP_MISSION_ENABLED
+    // Save home to mission
+    AP_Mission *mission = AP::mission();
+    if (mission != nullptr) {
+        mission->write_home_to_storage();
+    }
+#endif
 
     return true;
 }
