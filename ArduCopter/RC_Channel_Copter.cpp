@@ -228,7 +228,7 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
                 }
 
                 // do not allow saving the first waypoint with zero throttle
-                if ((copter.mode_auto.mission.num_commands() == 0) && (copter.channel_throttle->get_control_in() == 0)) {
+                if (!copter.mode_auto.mission.present() && (copter.channel_throttle->get_control_in() == 0)) {
                     break;
                 }
 
@@ -236,7 +236,7 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
                 AP_Mission::Mission_Command cmd  = {};
 
                 // if the mission is empty save a takeoff command
-                if (copter.mode_auto.mission.num_commands() == 0) {
+                if (!copter.mode_auto.mission.present()) {
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
                     cmd.id = MAV_CMD_NAV_TAKEOFF;
                     cmd.content.location.alt = MAX(copter.current_loc.alt,100);
