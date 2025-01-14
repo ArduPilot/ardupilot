@@ -151,7 +151,8 @@ segv_*out
 /ArduSub/scripts/
 /ArduSub/repl/
 persistent.dat
-dumpstack_*out
+dumpstack*out
+dumpcore*out
 build.tmp.binaries/
 tasklist.json
 modules/esp_idf
