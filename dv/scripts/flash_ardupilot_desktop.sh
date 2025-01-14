@@ -2,7 +2,7 @@
 
 set -ex
 
-python3 ./Tools/scripts/uploader.py --baud-flightstack 115200,921600,57600  --baud-bootloader 115200 ./build/CubeOrangePlus-dv/bin/arducopter.apj
+python3 ./Tools/scripts/uploader.py --baud-flightstack 921600,115200,57600  --baud-bootloader 115200 ./build/CubeOrangePlus-dv/bin/arducopter.apj
 
 sleep 7
 
