@@ -2300,7 +2300,7 @@ class TestSuite(ABC):
     def reboot_check_valgrind_log(self):
         valgrind_log = util.valgrind_log_filepath(binary=self.binary,
                                                   model=self.frame)
-        if os.path.getsize(valgrind_log) > 0:
+        if os.path.isfile(valgrind_log) and (os.path.getsize(valgrind_log) > 0):
             backup_valgrind_log = ("%s-%s" % (str(int(time.time())), valgrind_log))
             shutil.move(valgrind_log, backup_valgrind_log)
 
