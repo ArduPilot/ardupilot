@@ -658,7 +658,7 @@ void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
 // current mission state.
 MISSION_STATE GCS_MAVLINK::mission_state(const AP_Mission &mission) const
 {
-    if (mission.num_commands() < 2) {  // 1 means just home is present
+    if (!mission.present()) {
         return MISSION_STATE_NO_MISSION;
     }
     switch (mission.state()) {
