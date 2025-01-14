@@ -148,7 +148,7 @@ void AP_Periph_FW::init()
     serial_options.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
     gps.set_default_type_for_gps1(HAL_GPS1_TYPE_DEFAULT);
     if (gps.get_type(0) != AP_GPS::GPS_Type::GPS_TYPE_NONE && g.gps_port >= 0) {
         serial_manager.set_protocol_and_baud(g.gps_port, AP_SerialManager::SerialProtocol_GPS, AP_SERIALMANAGER_GPS_BAUD);
@@ -158,7 +158,7 @@ void AP_Periph_FW::init()
 #endif
         gps.init();
     }
-#endif
+#endif  // AP_PERIPH_GPS_ENABLED
 
 #ifdef HAL_PERIPH_ENABLE_MAG
     compass.init();
@@ -422,7 +422,7 @@ void AP_Periph_FW::update()
         }
 #endif
 #if 0
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
         hal.serial(0)->printf("GPS status: %u\n", (unsigned)gps.status());
 #endif
 #ifdef HAL_PERIPH_ENABLE_MAG
