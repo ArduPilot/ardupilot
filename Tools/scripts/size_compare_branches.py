@@ -157,6 +157,7 @@ class SizeCompareBranches(object):
             'RADIX2HD',
             'canzero',
             'CUAV-Pixhack-v3',  # uses USE_BOOTLOADER_FROM_BOARD
+            'kha_eth',  # no hwdef-bl.dat
         ])
 
         # blacklist all linux boards for bootloader build:
