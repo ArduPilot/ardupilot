@@ -631,11 +631,6 @@ public:
     ///     true is return if successful
     bool read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const;
 
-    /// write_cmd_to_storage - write a command to storage
-    ///     cmd.index is used to calculate the storage location
-    ///     true is returned if successful
-    bool write_cmd_to_storage(uint16_t index, const Mission_Command& cmd);
-
     /// write_home_to_storage - writes the special purpose cmd 0 (home) to storage
     ///     home is taken directly from ahrs
     void write_home_to_storage();
@@ -810,6 +805,11 @@ private:
     ///
     /// private methods
     ///
+
+    /// write_cmd_to_storage - write a command to storage
+    ///     cmd.index is used to calculate the storage location
+    ///     true is returned if successful
+    bool write_cmd_to_storage(uint16_t index, const Mission_Command& cmd);
 
     /// complete - mission is marked complete and clean-up performed including calling the mission_complete_fn
     void complete();
