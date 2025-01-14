@@ -507,6 +507,9 @@ public:
         return _commands_max;
     }
 
+    // Present - returns true if there is a mission currently loaded, ignoring home which is stored in index 0
+    bool present() const { return _cmd_total > 1; }
+
     /// start - resets current commands to point to the beginning of the mission
     ///     To-Do: should we validate the mission first and return true/false?
     void start();
