@@ -978,7 +978,10 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd
     }
 
     // remember when the mission last changed
-    _last_change_time_ms = AP_HAL::millis();
+    if (index != 0) {
+        // Update of home location is not a true change
+        _last_change_time_ms = AP_HAL::millis();
+    }
 
     // return success
     return true;
