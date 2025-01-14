@@ -5,7 +5,7 @@
 bool ModeAuto::_enter()
 {
     // fail to enter auto if no mission commands
-    if (mission.num_commands() <= 1) {
+    if (!mission.present()) {
         gcs().send_text(MAV_SEVERITY_NOTICE, "No Mission. Can't set AUTO.");
         return false;
     }
@@ -47,7 +47,7 @@ void ModeAuto::update()
     // check if mission exists (due to being cleared while disarmed in AUTO,
     // if no mission, then stop...needs mode change out of AUTO, mission load,
     // and change back to AUTO to run a mission at this point
-    if (!hal.util->get_soft_armed() && mission.num_commands() <= 1) {
+    if (!hal.util->get_soft_armed() && !mission.present()) {
         start_stop();
     }
     // start or update mission
