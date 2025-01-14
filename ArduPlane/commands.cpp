@@ -163,8 +163,5 @@ bool Plane::set_home_persistently(const Location &loc)
         return false;
     }
 
-    // Save Home to EEPROM
-    mission.write_home_to_storage();
-
     return true;
 }
