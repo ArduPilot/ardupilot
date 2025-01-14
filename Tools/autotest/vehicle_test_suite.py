@@ -3625,6 +3625,16 @@ class TestSuite(ABC):
             if bytes1[i] != bytes2[i]:
                 raise NotAchievedException("differ at offset %u" % i)
 
+    def assert_home_position_not_set(self):
+        try:
+            self.poll_home_position()
+        except NotAchievedException:
+            return
+
+        # if home.lng != 0: etc
+
+        raise NotAchievedException("Home is set when it shouldn't be")
+
     def HIGH_LATENCY2(self):
         '''test sending of HIGH_LATENCY2'''
 
@@ -8360,8 +8370,8 @@ class TestSuite(ABC):
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
                 raise NotAchievedException(
-                    "Did not see failure-to-arm messages (statustext=%s command_ack=%s" %
-                    (seen_statustext, seen_command_ack))
+                    f"Did not see failure-to-arm messages ({seen_statustext=} {expected_statustext=} {seen_command_ack=})"
+                )
             if now - arm_last_send > 1:
                 arm_last_send = now
                 self.send_mavlink_run_prearms_command()
