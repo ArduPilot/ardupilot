@@ -971,6 +971,11 @@ void AP_Mission::write_home_to_storage()
     home_cmd.id = MAV_CMD_NAV_WAYPOINT;
     home_cmd.content.location = AP::ahrs().get_home();
     write_cmd_to_storage(0,home_cmd);
+
+    // Make sure command total reflects that home has been added
+    if (_cmd_total < 1) {
+        _cmd_total.set_and_save(1);
+    }
 }
 
 MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_int_t& packet)
