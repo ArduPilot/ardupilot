@@ -498,6 +498,11 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
 ///     cmd.index is updated with it's new position in the mission
 bool AP_Mission::add_cmd(Mission_Command& cmd)
 {
+    // Add home if its not already present
+    if (_cmd_total < 1) {
+        write_home_to_storage();
+    }
+
     // attempt to write the command to storage
     bool ret = write_cmd_to_storage(_cmd_total, cmd);
 
@@ -519,6 +524,12 @@ bool AP_Mission::replace_cmd(uint16_t index, const Mission_Command& cmd)
     // sanity check index
     if (index >= (unsigned)_cmd_total) {
         return false;
+    }
+
+    // Writing index zero is not allowed, it must be home
+    if (index == 0) {
+        // Really should be returning false in this case, but in order to not break things we return true
+        return true;
     }
 
     // attempt to write the command to storage
@@ -715,6 +726,16 @@ bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet
     // convert from mavlink-ish format to storage format, if we can.
     if (mavlink_int_to_mission_cmd(src_packet, cmd) != MAV_MISSION_ACCEPTED) {
         return false;
+    }
+
+    // Writing index zero is not allowed, it must be home
+    if (index == 0) {
+        // If home is not already loaded add it so cmd_total is incremented to 1 as would be expected when the returning true
+        if (_cmd_total < 1) {
+            write_home_to_storage();
+        }
+        // Really should be returning false in this case, but in order to not break things we return true
+        return true;
     }
 
     // A request to set the 'next' item after the end is how we add an extra
