@@ -346,7 +346,7 @@ void AP_Periph_FW::handle_param_executeopcode(CanardInstance* canard_instance, C
         AP_Param::erase_all();
         AP_Param::load_all();
         AP_Param::setup_sketch_defaults();
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
         AP_Param::setup_object_defaults(&gps, gps.var_info);
 #endif
 #ifdef HAL_PERIPH_ENABLE_BATTERY
@@ -474,7 +474,7 @@ void AP_Periph_FW::handle_allocation_response(CanardInstance* canard_instance, C
         canardSetLocalNodeID(canard_instance, msg.node_id);
         printf("IF%d Node ID allocated: %d\n", dronecan.dna_interface, msg.node_id);
 
-#if defined(HAL_PERIPH_ENABLE_GPS) && (HAL_NUM_CAN_IFACES >= 2) && GPS_MOVING_BASELINE
+#if AP_PERIPH_GPS_ENABLED && (HAL_NUM_CAN_IFACES >= 2) && GPS_MOVING_BASELINE
         if (g.gps_mb_only_can_port) {
             // we need to assign the unallocated port to be used for Moving Baseline only
             gps_mb_can_port = (dronecan.dna_interface+1)%HAL_NUM_CAN_IFACES;
@@ -840,7 +840,7 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         handle_arming_status(canard_instance, transfer);
         break;
 
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
     case UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_ID:
         handle_RTCMStream(canard_instance, transfer);
         break;
@@ -850,7 +850,7 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         handle_MovingBaselineData(canard_instance, transfer);
         break;
 #endif
-#endif // HAL_PERIPH_ENABLE_GPS
+#endif // AP_PERIPH_GPS_ENABLED
 
 #if AP_UART_MONITOR_ENABLED
     case UAVCAN_TUNNEL_TARGETTED_ID:
@@ -963,7 +963,7 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
         *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_SIGNATURE;
         return true;
 #endif
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
     case UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_SIGNATURE;
         return true;
@@ -973,7 +973,7 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
         *out_data_type_signature = ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE;
         return true;
 #endif
-#endif // HAL_PERIPH_ENABLE_GPS
+#endif // AP_PERIPH_GPS_ENABLED
 
 #if AP_UART_MONITOR_ENABLED
     case UAVCAN_TUNNEL_TARGETTED_ID:
@@ -1885,7 +1885,7 @@ void AP_Periph_FW::can_update()
 #ifdef HAL_PERIPH_ENABLE_MAG
         can_mag_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
         can_gps_update();
 #endif
 #if AP_UART_MONITOR_ENABLED

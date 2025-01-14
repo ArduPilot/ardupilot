@@ -952,7 +952,7 @@ class sitl_periph_universal(sitl_periph):
             CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_universal"',
             APJ_BOARD_ID = 100,
 
-            HAL_PERIPH_ENABLE_GPS = 1,
+            AP_PERIPH_GPS_ENABLED = 1,
             HAL_PERIPH_ENABLE_AIRSPEED = 1,
             HAL_PERIPH_ENABLE_MAG = 1,
             HAL_PERIPH_ENABLE_BARO = 1,
@@ -984,7 +984,7 @@ class sitl_periph_gps(sitl_periph):
             CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_gps"',
             APJ_BOARD_ID = 101,
 
-            HAL_PERIPH_ENABLE_GPS = 1,
+            AP_PERIPH_GPS_ENABLED = 1,
         )
 
 class sitl_periph_battmon(sitl_periph):

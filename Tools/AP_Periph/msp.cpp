@@ -45,7 +45,7 @@ void AP_Periph_FW::msp_sensor_update(void)
     if (msp.port.uart == nullptr) {
         return;
     }
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
     send_msp_GPS();
 #endif
 #ifdef HAL_PERIPH_ENABLE_BARO
@@ -60,7 +60,7 @@ void AP_Periph_FW::msp_sensor_update(void)
 }
 
 
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
 /*
   send MSP GPS packet
  */
@@ -122,7 +122,7 @@ void AP_Periph_FW::send_msp_GPS(void)
 
     send_msp_packet(MSP2_SENSOR_GPS, &p, sizeof(p));
 }
-#endif // HAL_PERIPH_ENABLE_GPS
+#endif // AP_PERIPH_GPS_ENABLED
 
 
 #ifdef HAL_PERIPH_ENABLE_BARO
