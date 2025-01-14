@@ -797,15 +797,23 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         handle_begin_firmware_update(canard_instance, transfer);
         break;
 
-    case UAVCAN_PROTOCOL_RESTARTNODE_ID:
-        printf("RestartNode\n");
-        hal.scheduler->delay(10);
-        prepare_reboot();
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        NVIC_SystemReset();
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        HAL_SITL::actually_reboot();
-#endif
+    case UAVCAN_PROTOCOL_RESTARTNODE_ID: {
+            printf("RestartNode\n");
+            uavcan_protocol_RestartNodeResponse pkt {
+                ok: true,
+            };
+            uint8_t buffer[UAVCAN_PROTOCOL_RESTARTNODE_RESPONSE_MAX_SIZE];
+            uint16_t total_size = uavcan_protocol_RestartNodeResponse_encode(&pkt, buffer, !canfdout());
+            canard_respond(canard_instance,
+                    transfer,
+                    UAVCAN_PROTOCOL_RESTARTNODE_SIGNATURE,
+                    UAVCAN_PROTOCOL_RESTARTNODE_ID,
+                    &buffer[0],
+                    total_size);
+
+            // schedule a reboot to occur
+            reboot_request_ms = AP_HAL::millis();
+        }
         break;
 
     case UAVCAN_PROTOCOL_PARAM_GETSET_ID:
@@ -1949,6 +1957,16 @@ void AP_Periph_FW::can_update()
 #endif // HAL_PERIPH_CAN_MIRROR
 
         }
+    }
+
+    // if there is a reboot scheduled, do it 1 second after request to allow the acknowledgement to be sent
+    if (reboot_request_ms != 0 && (AP_HAL::millis() - reboot_request_ms > 1000)) {
+        prepare_reboot();
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+        NVIC_SystemReset();
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        HAL_SITL::actually_reboot();
+#endif
     }
 }
 

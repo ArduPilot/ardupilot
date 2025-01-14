@@ -602,6 +602,8 @@ public:
     AP_AHRS ahrs;
 #endif
 
+    uint32_t reboot_request_ms = 0;
+
     HAL_Semaphore canard_broadcast_semaphore;
 };
 
