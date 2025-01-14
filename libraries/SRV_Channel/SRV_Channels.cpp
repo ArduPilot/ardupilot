@@ -370,6 +370,7 @@ void SRV_Channels::init(uint32_t motor_mask, AP_HAL::RCOutput::output_mode mode)
 #endif
 #ifndef HAL_BUILD_AP_PERIPH
     hal.rcout->set_dshot_rate(_singleton->dshot_rate, AP::scheduler().get_loop_rate_hz());
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&SRV_Channels::enable_aux_servos, void));
 #endif
 }
 
