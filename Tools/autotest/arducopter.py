@@ -12243,16 +12243,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
-    def assert_home_position_not_set(self):
-        try:
-            self.poll_home_position()
-        except NotAchievedException:
-            return
-
-        # if home.lng != 0: etc
-
-        raise NotAchievedException("Home is set when it shouldn't be")
-
     def REQUIRE_LOCATION_FOR_ARMING(self):
         '''check AP_Arming::Option::REQUIRE_LOCATION_FOR_ARMING works'''
         self.context_push()

@@ -6947,6 +6947,31 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.delay_sim_time(1000)
 
+    def REQUIRE_POSITION_FOR_ARMING(self):
+        '''check DriveOption::REQUIRE_POSITION_FOR_ARMING works'''
+        self.context_push()
+        self.set_parameters({
+            "SIM_GPS1_NUMSATS": 3,  # EKF does not like < 6
+            "AHRS_GPS_USE": 0,  # stop DCM supplying home
+        })
+        self.reboot_sitl()
+        self.change_mode('MANUAL')
+        self.wait_prearm_sys_status_healthy()
+        self.assert_home_position_not_set()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
+        self.change_mode('GUIDED')
+        self.assert_prearm_failure("waiting for home", other_prearm_failures_fatal=False)
+
+        self.change_mode('MANUAL')
+        self.set_parameters({
+            "DRIVE_OPTIONS": 1,
+        })
+        self.assert_prearm_failure("waiting for home", other_prearm_failures_fatal=False)
+        self.context_pop()
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -7045,6 +7070,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.ClearMission,
             self.JammingSimulation,
             self.BatteryInvalid,
+            self.REQUIRE_POSITION_FOR_ARMING,
         ])
         return ret
 
