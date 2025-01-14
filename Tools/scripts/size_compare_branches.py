@@ -365,13 +365,14 @@ class SizeCompareBranches(object):
             # need special configuration directive
             bootloader_waf_configure_args = copy.copy(waf_configure_args)
             bootloader_waf_configure_args.append('--bootloader')
-            # hopefully temporary hack so you can build bootloader
-            # after building other vehicles without a clean:
-            dsdl_generated_path = os.path.join('build', board, "modules", "DroneCAN", "libcanard", "dsdlc_generated")
-            self.progress("HACK: Removing (%s)" % dsdl_generated_path)
-            if source_dir is not None:
-                dsdl_generated_path = os.path.join(source_dir, dsdl_generated_path)
-            shutil.rmtree(dsdl_generated_path, ignore_errors=True)
+            if not self.boards_by_name[board].is_ap_periph:
+                # hopefully temporary hack so you can build bootloader
+                # after building other vehicles without a clean:
+                dsdl_generated_path = os.path.join('build', board, "modules", "DroneCAN", "libcanard", "dsdlc_generated")
+                self.progress("HACK: Removing (%s)" % dsdl_generated_path)
+                if source_dir is not None:
+                    dsdl_generated_path = os.path.join(source_dir, dsdl_generated_path)
+                shutil.rmtree(dsdl_generated_path, ignore_errors=True)
             self.run_waf(bootloader_waf_configure_args, show_output=False, source_dir=source_dir)
             self.run_waf([v], show_output=False, source_dir=source_dir)
         self.run_program("rsync", ["rsync", "-ap", "build/", outdir], cwd=source_dir)
@@ -384,12 +385,13 @@ class SizeCompareBranches(object):
             if vehicle == 'AP_Periph':
                 if not board_info.is_ap_periph:
                     continue
+            elif vehicle == 'bootloader':
+                # we generally build bootloaders
+                pass
             else:
                 if board_info.is_ap_periph:
                     continue
-                # the bootloader target isn't an autobuild target, so
-                # it gets special treatment here:
-                if vehicle != 'bootloader' and vehicle.lower() not in [x.lower() for x in board_info.autobuild_targets]:
+                if vehicle.lower() not in [x.lower() for x in board_info.autobuild_targets]:
                     continue
             vehicles_to_build.append(vehicle)
 
