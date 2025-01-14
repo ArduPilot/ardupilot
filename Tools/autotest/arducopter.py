@@ -377,6 +377,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1500)
         self.save_wp()
 
+        # Disarm and reset before testing mission
+        self.land_and_disarm()
+        self.set_rc(3, 1000)
+        self.change_mode('LOITER')
+
         # save the stored mission to file
         mavproxy = self.start_mavproxy()
         num_wp = self.save_mission_to_file_using_mavproxy(
@@ -386,9 +391,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not num_wp:
             raise NotAchievedException("save_mission_to_file failed")
 
+        self.arm_vehicle()
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
         self.change_mode('AUTO')
-        self.set_current_waypoint(1)
+        # Raise throttle in auto to trigger takeoff
+        self.set_rc(3, 1500)
         self.wait_waypoint(0, num_wp-1, timeout=500)
         self.progress("test: MISSION COMPLETE: passed!")
         self.land_and_disarm()
