@@ -440,6 +440,19 @@ void ParametersG2::FWD_BATT_CMP::update()
 // Apply throttle scale to min and max limits
 void ParametersG2::FWD_BATT_CMP::apply_min_max(int8_t &min_throttle, int8_t &max_throttle) const
 {
+    // Cut off throttle if FWD_BAT_IDX battery resting voltage is below
+    // FWD_THR_CUTOFF_V (if set), to preserve battery life for the electronics
+    // and actuators. Only applies when the battery monitor is working and the
+    // current mode does auto-throttle.
+    if (is_positive(batt_voltage_throttle_cutoff) &&
+        plane.control_mode->does_auto_throttle() && AP::battery().healthy(batt_idx) &&
+        (AP::battery().voltage_resting_estimate(batt_idx) < batt_voltage_throttle_cutoff)) {
+        min_throttle = 0;
+        max_throttle = 0;
+
+        return;
+    }
+
     // return if not enabled
     if (!enabled) {
         return;

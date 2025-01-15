@@ -1309,7 +1309,16 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RNGFND_LND_ORNT", 36, ParametersG2, rangefinder_land_orient, ROTATION_PITCH_270),
 #endif
-    
+
+    // @Param: FWD_BAT_THR_CUT
+    // @DisplayName: Forward throttle cutoff battery voltage
+    // @Description: The estimated battery resting voltage below which the throttle is cut in auto-throttle modes. Measured on the battery used for forward throttle compensation (FWD_BAT_IDX). If set to zero, the throttle will not be cut due to low voltage, allowing the motor(s) to continue running until the battery is depleted. This should be set to the minimum operating voltage of you motor(s) or to a voltage level where minimal thrust is produced, to conserve the remaining battery power for the electronics and actuators.
+    // @Range: 0 35
+    // @Units: V
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FWD_BAT_THR_CUT", 37, ParametersG2, fwd_batt_cmp.batt_voltage_throttle_cutoff, 0.0f),
+
     AP_GROUPEND
 };
 

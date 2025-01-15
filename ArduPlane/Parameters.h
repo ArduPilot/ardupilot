@@ -556,6 +556,7 @@ public:
 
         AP_Float batt_voltage_max;
         AP_Float batt_voltage_min;
+        AP_Float batt_voltage_throttle_cutoff;
         AP_Int8  batt_idx;
 
     private:
