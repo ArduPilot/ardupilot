@@ -1333,6 +1333,11 @@ public:
 
 #endif // AP_SCRIPTING_ENABLED
 
+    bool tkoff_option_is_set(AP_FixedWing::TakeoffOption option) const {
+        return (aparm.takeoff_options & int32_t(option)) != 0;
+    }
+   
+
 };
 
 extern Plane plane;

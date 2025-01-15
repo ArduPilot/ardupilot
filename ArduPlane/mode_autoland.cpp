@@ -28,12 +28,19 @@ const AP_Param::GroupInfo ModeAutoLand::var_info[] = {
 
     // @Param: DIR_OFF
     // @DisplayName: Landing direction offset from takeoff
-    // @Description: The captured takeoff direction (at arming,if TKOFF_OPTION bit1 is set, or after ground course is established in autotakeoffs)is offset by this amount to create a different landing direction and approach.
+    // @Description: The captured takeoff direction after ground course is established in autotakeoffsis offset by this amount to create a different landing direction and approach.However,if TKOFF_OPTION bit1 is set, the takeoff(landing) direction is captured immediately via compass heading upon arming, then this offset is NOT applied.
     // @Range: -360 360
     // @Increment: 1
     // @Units: deg
     // @User: Standard
     AP_GROUPINFO("DIR_OFF", 3, ModeAutoLand, landing_dir_off, 0),
+
+    // @Param: OPTIONS
+    // @DisplayName: Autoland mode options
+    // @Description: Enables optional autoland mode behaviors
+    // @Bitmask: 1: When set if there is a healthy compass in use the compass heading will be captured at arming and used for the AUTOLAND mode's initial takeoff direction instead of capturing ground course in NAV_TAKEOFF or Mode TAKEOFF or other modes.
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 4, ModeAutoLand, options, 0),
 
     AP_GROUPEND
 };
@@ -45,81 +52,100 @@ ModeAutoLand::ModeAutoLand() :
 }
 
 bool ModeAutoLand::_enter()
-{   
+{
     //must be flying to enter
-    if (!plane.is_flying()) { 
-        gcs().send_text(MAV_SEVERITY_WARNING, "Must already be flying!"); 
+    if (!plane.is_flying()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Must already be flying!");
         return false;
     }
-    
-    //takeoff direction must be set and must not be a quadplane, otherwise since flying switch to RTL so this can be used as FS action
+
+    // autoland not available for quadplanes as capture of takeoff direction
+    // doesn't make sense
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.available() && !quadplane.option_is_set(QuadPlane::OPTION::ALLOW_FW_LAND)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Option not set to allow fixed wing autoland"); 
-        return false; 
+    if (quadplane.available()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "autoland not available");
+        return false;
     }
 #endif
+
     if (!plane.takeoff_state.initial_direction.initialized) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Takeoff initial direction not set,must use autotakeoff");
+        gcs().send_text(MAV_SEVERITY_WARNING, "Takeoff initial direction not set");
         return false;
     }
 
-    plane.prev_WP_loc = plane.current_loc;
     plane.set_target_altitude_current();
+    plane.auto_state.next_wp_crosstrack = true;
+
+    plane.prev_WP_loc = plane.current_loc;
+
+    // In flight stage normal for approach
+    plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
+
+    const Location &home = ahrs.get_home();
+
+#ifndef HAL_LANDING_DEEPSTALL_ENABLED
+    if (plane.landing.get_type() == AP_Landing::TYPE_DEEPSTALL) {
+        // Deep stall landings require only a landing location, they do there own loiter to alt and approach
+        cmd_land.id = MAV_CMD_NAV_LAND;
+        cmd_land.content.location = home;
+
+        // p1 gives the altitude from which to start the deep stall above the location alt
+        cmd_land.p1 = final_wp_alt;
+        plane.start_command(cmd_land);
+
+        stage = AutoLandStage::LANDING;
+        return true;
+    }
+#endif // HAL_LANDING_DEEPSTALL_ENABLED
 
     /*
-      landing is in 3 steps:
-        1) a base leg waypoint
-        2) a land start WP, with crosstrack
-        3) the landing WP, with crosstrack
+      Glide slope landing is in 3 steps:
+        1) a loitering to alt waypoint centered on base leg
+        2) exiting and proceeeing to a final approach land start WP, with crosstrack
+        3) the landing WP at home, with crosstrack
 
       the base leg point is 90 degrees off from the landing leg
      */
-    const Location &home = ahrs.get_home();
 
     /*
       first calculate the starting waypoint we will use when doing the
       NAV_LAND. This is offset by final_wp_dist from home, in a
       direction 180 degrees from takeoff direction
      */
-    Location land_start_WP = home;
-    land_start_WP.offset_bearing(wrap_360(plane.takeoff_state.initial_direction.heading + 180), final_wp_dist);
-    land_start_WP.set_alt_m(final_wp_alt, Location::AltFrame::ABOVE_HOME);
-    land_start_WP.change_alt_frame(Location::AltFrame::ABSOLUTE);
+    land_start = home;
+    land_start.offset_bearing(plane.takeoff_state.initial_direction.heading, -final_wp_dist);
+    land_start.set_alt_m(final_wp_alt, Location::AltFrame::ABOVE_HOME);
+    land_start.change_alt_frame(Location::AltFrame::ABSOLUTE);
 
     /*
-      now create the initial target waypoint for the base leg. We
+      now create the initial target waypoint for the loitering to alt centered on base leg waypoint. We
       choose if we will do a right or left turn onto the landing based
       on where we are when we enter the landing mode
      */
-    const float bearing_to_current_deg = wrap_180(degrees(land_start_WP.get_bearing(plane.current_loc)));
-    const float bearing_err_deg = wrap_180(wrap_180(plane.takeoff_state.initial_direction.heading) - bearing_to_current_deg);
-    const float bearing_offset_deg = bearing_err_deg > 0? -90 : 90;
-    const float base_leg_length = final_wp_dist * 0.333;
-    cmd[0].id = MAV_CMD_NAV_WAYPOINT;
-    cmd[0].content.location = land_start_WP;
-    cmd[0].content.location.offset_bearing(plane.takeoff_state.initial_direction.heading + bearing_offset_deg, base_leg_length);
-    // set a 1m acceptance radius, we want to fly all the way to this waypoint
-    cmd[0].p1 = 1;
+    const float bearing_to_current_deg = degrees(land_start.get_bearing(plane.current_loc));
+    const float bearing_err_deg = wrap_180(plane.takeoff_state.initial_direction.heading - bearing_to_current_deg);
+    const float bearing_offset_deg = (bearing_err_deg > 0) ? -90 : 90;
 
-    /*
-      create the WP for the start of the landing
-     */
-    cmd[1].content.location = land_start_WP;
-    cmd[1].id = MAV_CMD_NAV_WAYPOINT;
+    // Try and minimize loiter radius by using the smaller of the waypoint loiter radius or 1/3 of the final WP distance
+    const float loiter_radius = MIN(final_wp_dist * 0.333, fabsf(plane.aparm.loiter_radius));
 
-    // and the land WP
-    cmd[2].id = MAV_CMD_NAV_LAND;
-    cmd[2].content.location = home;
+    // corrected_loiter_radius is the radius the vehicle will actually fly, this gets larger as altitude increases.
+    // Strictly this gets the loiter radius at the current altitude, really we want the loiter radius at final_wp_alt.
+    const float corrected_loiter_radius = plane.nav_controller->loiter_radius(loiter_radius);
 
-    // start first leg
-    stage = 0;
-    plane.start_command(cmd[0]);
+    cmd_loiter.id = MAV_CMD_NAV_LOITER_TO_ALT;
+    cmd_loiter.p1 = loiter_radius;
+    cmd_loiter.content.location = land_start;
+    cmd_loiter.content.location.offset_bearing(plane.takeoff_state.initial_direction.heading + bearing_offset_deg, corrected_loiter_radius);
+    cmd_loiter.content.location.loiter_ccw = bearing_err_deg>0? 1 :0;
 
-    // don't crosstrack initially
-    plane.auto_state.crosstrack = false;
-    plane.auto_state.next_wp_crosstrack = true;
+    // land WP at home
+    cmd_land.id = MAV_CMD_NAV_LAND;
+    cmd_land.content.location = home;
 
+    // start first leg toward the base leg loiter to alt point
+    stage = AutoLandStage::LOITER;
+    plane.start_command(cmd_loiter);
     return true;
 }
 
@@ -129,30 +155,87 @@ void ModeAutoLand::update()
     plane.calc_nav_pitch();
     plane.set_offset_altitude_location(plane.prev_WP_loc, plane.next_WP_loc);
     if (plane.landing.is_throttle_suppressed()) {
-       // if landing is considered complete throttle is never allowed, regardless of landing type
-       SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
+        // if landing is considered complete throttle is never allowed, regardless of landing type
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
     } else {
-       plane.calc_throttle();
+        plane.calc_throttle();
     }
 }
 
 void ModeAutoLand::navigate()
 {
-    if (stage == 2) {
-        // we are on final landing leg
-        plane.set_flight_stage(AP_FixedWing::FlightStage::LAND);
-        plane.verify_command(cmd[stage]);
-        return;
-    }
+    switch (stage) {
+    case AutoLandStage::LOITER:
+        // check if we have arrived and completed loiter at base leg waypoint
+        if (plane.verify_loiter_to_alt(cmd_loiter)) {
+            stage = AutoLandStage::LANDING;
+            plane.start_command(cmd_land);
+            // Crosstrack from the land start location
+            plane.prev_WP_loc = land_start;
 
-    // see if we have completed the leg
-    if (plane.verify_nav_wp(cmd[stage])) {
-        stage++;
-        plane.prev_WP_loc = plane.next_WP_loc;
-        plane.auto_state.next_turn_angle = 90;
-        plane.start_command(cmd[stage]);
+        }
+        break;
+
+    case AutoLandStage::LANDING:
+        plane.set_flight_stage(AP_FixedWing::FlightStage::LAND);
+        plane.verify_command(cmd_land);
+        // make sure we line up
         plane.auto_state.crosstrack = true;
-        plane.auto_state.next_wp_crosstrack = true;
+        break;
     }
 }
+
+/*
+  Takeoff direction is initialized after arm when sufficient altitude
+  and ground speed is obtained, then captured takeoff direction +
+  offset used as landing direction in AUTOLAND
+*/
+void ModeAutoLand::check_takeoff_direction()
+{
+#if HAL_QUADPLANE_ENABLED
+    // we don't allow fixed wing autoland for quadplanes
+    if (quadplane.available()) {
+        return;
+    }
 #endif
+
+    if (plane.takeoff_state.initial_direction.initialized) {
+        return;
+    }
+    //set autoland direction to GPS course over ground
+    if (plane.control_mode->allows_autoland_direction_capture() &&
+        plane.is_flying() &&
+        hal.util->get_soft_armed() &&
+        plane.gps.ground_speed() > GPS_GND_CRS_MIN_SPD) {
+        set_autoland_direction(plane.gps.ground_course() + landing_dir_off);
+    }
+}
+
+// Sets autoland direction using ground course + offest parameter
+void ModeAutoLand::set_autoland_direction(const float heading)
+{
+    plane.takeoff_state.initial_direction.heading = wrap_360(heading);
+    plane.takeoff_state.initial_direction.initialized = true;
+    gcs().send_text(MAV_SEVERITY_INFO, "Autoland direction= %u",int(plane.takeoff_state.initial_direction.heading));
+}
+
+/*
+  return true when the LOITER_TO_ALT is lined up ready for the landing, used in commands_logic verify loiter to alt
+ */
+bool ModeAutoLand::landing_lined_up(void)
+{
+    // use the line between the center of the LOITER_TO_ALT on the base leg and the
+    // start of the landing leg (land_start_WP)
+    return plane.mode_loiter.isHeadingLinedUp(cmd_loiter.content.location, cmd_land.content.location);
+}
+
+// possibly capture heading on arming for autoland mode if option is set and using a compass
+void ModeAutoLand::arm_check(void)
+{
+    if (plane.ahrs.use_compass() && autoland_option_is_set(ModeAutoLand::AutoLandOption::AUTOLAND_DIR_ON_ARM)) {
+        set_autoland_direction(plane.ahrs.yaw_sensor * 0.01);
+    }
+}
+
+#endif // MODE_AUTOLAND_ENABLED
+
