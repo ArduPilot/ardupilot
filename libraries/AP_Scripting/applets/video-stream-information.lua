@@ -2,7 +2,7 @@
     Populate the VIDEO_STREAM_INFORMATION message based on user parameters
  --]]
 
-local PARAM_TABLE_KEY = 87
+local PARAM_TABLE_KEY = 90
 local PARAM_TABLE_PREFIX = "VID1_"
 
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
@@ -21,10 +21,10 @@ function bind_add_param(name, idx, default_value)
     return Parameter(PARAM_TABLE_PREFIX .. name)
 end
 
- -- setup script specific parameters
- assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 15), 'could not add param table')
+-- setup script specific parameters
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 15), 'could not add param table')
 
- --[[
+--[[
   // @Param: VID1_CAMMODEL
   // @DisplayName: Camera1 Video Stream Camera Model
   // @Description: Video stream camera model
