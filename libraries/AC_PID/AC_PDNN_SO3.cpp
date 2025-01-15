@@ -220,26 +220,26 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         _h_z_5 = expf(-L_z_5*L_z_5/(2*_b_z*_b_z));//z方向第5个隐藏层输出
 
         //计算权重更新律
-        float _gamma_x = 100.0f;
-        _dot_W_x_1 = _gamma_x * _e_Omega.x * _h_x_1;//x方向第1个权重更新律
-        _dot_W_x_2 = _gamma_x * _e_Omega.x * _h_x_2;//x方向第2个权重更新律
-        _dot_W_x_3 = _gamma_x * _e_Omega.x * _h_x_3;//x方向第3个权重更新律
-        _dot_W_x_4 = _gamma_x * _e_Omega.x * _h_x_4;//x方向第4个权重更新律
-        _dot_W_x_5 = _gamma_x * _e_Omega.x * _h_x_5;//x方向第5个权重更新律
+        float _gamma_x = 100.0f;float c_R = 0.1f;
+        _dot_W_x_1 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_1;//x方向第1个权重更新律
+        _dot_W_x_2 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_2;//x方向第2个权重更新律
+        _dot_W_x_3 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_3;//x方向第3个权重更新律
+        _dot_W_x_4 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_4;//x方向第4个权重更新律
+        _dot_W_x_5 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_5;//x方向第5个权重更新律
 
         float _gamma_y = 100.0f;
-        _dot_W_y_1 = _gamma_y * _e_Omega.y * _h_y_1;//y方向第1个权重更新律
-        _dot_W_y_2 = _gamma_y * _e_Omega.y * _h_y_2;//y方向第2个权重更新律
-        _dot_W_y_3 = _gamma_y * _e_Omega.y * _h_y_3;//y方向第3个权重更新律
-        _dot_W_y_4 = _gamma_y * _e_Omega.y * _h_y_4;//y方向第4个权重更新律
-        _dot_W_y_5 = _gamma_y * _e_Omega.y * _h_y_5;//y方向第5个权重更新律
+        _dot_W_y_1 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_1;//y方向第1个权重更新律
+        _dot_W_y_2 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_2;//y方向第2个权重更新律
+        _dot_W_y_3 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_3;//y方向第3个权重更新律
+        _dot_W_y_4 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_4;//y方向第4个权重更新律
+        _dot_W_y_5 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_5;//y方向第5个权重更新律
 
         float _gamma_z = 10.0f;
-        _dot_W_z_1 = _gamma_z * _e_Omega.z * _h_z_1;//z方向第1个权重更新律
-        _dot_W_z_2 = _gamma_z * _e_Omega.z * _h_z_2;//z方向第2个权重更新律
-        _dot_W_z_3 = _gamma_z * _e_Omega.z * _h_z_3;//z方向第3个权重更新律
-        _dot_W_z_4 = _gamma_z * _e_Omega.z * _h_z_4;//z方向第4个权重更新律
-        _dot_W_z_5 = _gamma_z * _e_Omega.z * _h_z_5;//z方向第5个权重更新律
+        _dot_W_z_1 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_1;//z方向第1个权重更新律
+        _dot_W_z_2 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_2;//z方向第2个权重更新律
+        _dot_W_z_3 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_3;//z方向第3个权重更新律
+        _dot_W_z_4 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_4;//z方向第4个权重更新律
+        _dot_W_z_5 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_5;//z方向第5个权重更新律
 
         //计算当前权重（求积分）
         if (is_positive(dt)) { //检查时间步长是否有效
@@ -284,15 +284,16 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         //~~~~~x方向
         float _eta_x = 0.05f; //定义自适应律参数，eta越大越平滑
         float _s_x = 0.002f;  //定义缩放因子
-        if (_e_Omega.x * _pdnn_output.x > 0 )
+        float c_R = 0.1f;
+        if ((_e_Omega.x + c_R * _e_R.x) * _pdnn_output.x > 0 )
         {
-            _dot_J_x = -(_J_x * _J_x) / _eta_x * _e_Omega.x * _pdnn_output.x;
+            _dot_J_x = -(_J_x * _J_x) / _eta_x * (_e_Omega.x + c_R * _e_R.x) * _pdnn_output.x;
         }
-        if (_e_Omega.x * _pdnn_output.x <= 0 )
+        if ((_e_Omega.x + c_R * _e_R.x) * _pdnn_output.x <= 0 )
         {
             if (_J_x < _J_max)
             {
-                _dot_J_x = -(_J_x * _J_x) / _eta_x * _e_Omega.x * _pdnn_output.x;
+                _dot_J_x = -(_J_x * _J_x) / _eta_x * (_e_Omega.x + c_R * _e_R.x) * _pdnn_output.x;
             }
             else
             {
@@ -309,15 +310,15 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         //~~~~~~y方向
         float _eta_y = 0.05f; //定义自适应律参数，eta越大越平滑
         float _s_y = 0.002f;  //定义缩放因子
-        if (_e_Omega.y * _pdnn_output.y > 0 )
+        if ((_e_Omega.y + c_R * _e_R.y) * _pdnn_output.y > 0 )
         {
-            _dot_J_y = -(_J_y * _J_y) / _eta_y * _e_Omega.y * _pdnn_output.y;
+            _dot_J_y = -(_J_y * _J_y) / _eta_y * (_e_Omega.y + c_R * _e_R.y) * _pdnn_output.y;
         }
-        if (_e_Omega.y * _pdnn_output.y <= 0 )
+        if ((_e_Omega.y + c_R * _e_R.y) * _pdnn_output.y <= 0 )
         {
             if (_J_y < _J_max)
             {
-                _dot_J_y = -(_J_y * _J_y) / _eta_y * _e_Omega.y * _pdnn_output.y;
+                _dot_J_y = -(_J_y * _J_y) / _eta_y * (_e_Omega.y + c_R * _e_R.y) * _pdnn_output.y;
             }
             else
             {
@@ -334,15 +335,15 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         //~~~~~~z方向
         float _eta_z = 0.05f; //定义自适应律参数，eta越大越平滑
         float _s_z = 0.002f;  //定义缩放因子
-        if (_e_Omega.y * _pdnn_output.z > 0 )
+        if ((_e_Omega.z + c_R * _e_R.z) * _pdnn_output.z > 0 )
         {
-            _dot_J_z = -(_J_z * _J_z) / _eta_z * _e_Omega.y * _pdnn_output.z;
+            _dot_J_z = -(_J_z * _J_z) / _eta_z * (_e_Omega.z + c_R * _e_R.z) * _pdnn_output.z;
         }
-        if (_e_Omega.y * _pdnn_output.z <= 0 )
+        if ((_e_Omega.z + c_R * _e_R.z) * _pdnn_output.z <= 0 )
         {
             if (_J_z < _J_max)
             {
-                _dot_J_z = -(_J_z * _J_z) / _eta_z * _e_Omega.y * _pdnn_output.z;
+                _dot_J_z = -(_J_z * _J_z) / _eta_z * (_e_Omega.z + c_R * _e_R.z) * _pdnn_output.z;
             }
             else
             {

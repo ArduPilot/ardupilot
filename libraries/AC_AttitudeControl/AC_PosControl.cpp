@@ -1167,8 +1167,8 @@ void AC_PosControl::update_z_controller()
     fd = -_U_x.dot(_R_body_to_ned_meas.colz());                  //colz是拷贝取值，fd=U_x * Re3
     float fd_nor;
     fd_nor = fd/66.67f;                                         // fd_nor = fd/f_max，除以预设的无人机最大推力进行归一化
-    float test_msg_1 = _pdnn_pos.get_phi().y;
-    float test_msg_2 = _pdnn_pos.get_m().y; 
+    float test_msg_1 = _pdnn_pos.get_phi().x;
+    float test_msg_2 = _pdnn_pos.get_m().x; 
     current_DIYwrench = get_DIYwrench(test_msg_1, test_msg_2); //用于ROS2推力话题 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

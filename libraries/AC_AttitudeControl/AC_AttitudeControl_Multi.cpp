@@ -513,7 +513,7 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, floa
 
     Vector3f Md = _pdnn_att.update_all(_Rc, _R_body_to_ned_meas, Omega, dt, _Rc_active); //pdnn几何姿态控制器，输出为3*1扭矩
     float test_msg_3 = _pdnn_att.get_phi().x;
-    float test_msg_4 = _pdnn_att.get_e_Omega().x;
+    float test_msg_4 = _pdnn_att.get_J().x;
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     _motors.set_roll(Md.x/13.3f);  //发送控制力矩给Mixer
