@@ -460,7 +460,7 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
     fence_requires_gps = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
 #endif
 
-    if (mode_requires_gps || copter.option_is_enabled(Copter::FlightOption::REQUIRE_POSITION_FOR_ARMING)) {
+    if (mode_requires_gps || require_location == RequireLocation::YES) {
         if (!copter.position_ok()) {
             // vehicle level position estimate checks
             check_failed(display_failure, "Need Position Estimate");
