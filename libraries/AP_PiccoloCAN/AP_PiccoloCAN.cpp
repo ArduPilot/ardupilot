@@ -380,14 +380,14 @@ void AP_PiccoloCAN::update()
                     .duty_cycle = servo.dutyCycle(),
                     .motor_temperature_cdeg = int16_t(servo.temperature() * 100),
                     .status_flags = err.errors,
-                    .valid_types = AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION |
-                                   AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
-                                   AP_Servo_Telem::TelemetryData::Types::SPEED |
-                                   AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
-                                   AP_Servo_Telem::TelemetryData::Types::CURRENT |
-                                   AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE |
-                                   AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP |
-                                   AP_Servo_Telem::TelemetryData::Types::STATUS
+                    .present_types = AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION |
+                                     AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
+                                     AP_Servo_Telem::TelemetryData::Types::SPEED |
+                                     AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
+                                     AP_Servo_Telem::TelemetryData::Types::CURRENT |
+                                     AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE |
+                                     AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP |
+                                     AP_Servo_Telem::TelemetryData::Types::STATUS
                 };
 
                 servo_telem->update_telem_data(ii, telem_data);

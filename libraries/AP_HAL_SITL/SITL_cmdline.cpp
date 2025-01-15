@@ -209,7 +209,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     float speedup = 1.0f;
     float sim_rate_hz = 0;
     _instance = 0;
-    _synthetic_clock_mode = false;
     // default to CMAC
     const char *home_str = nullptr;
     const char *model_str = nullptr;
@@ -422,7 +421,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _set_param_default(gopt.optarg);
             break;
         case 'S':
-            _synthetic_clock_mode = true;
+            printf("Ignoring stale command-line parameter '-S'");
             break;
         case 'O':
             home_str = gopt.optarg;
@@ -586,7 +585,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             sitl_model->set_instance(_instance);
             sitl_model->set_autotest_dir(autotest_dir);
             sitl_model->set_config(config);
-            _synthetic_clock_mode = true;
             break;
         }
     }

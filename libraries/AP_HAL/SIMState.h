@@ -99,8 +99,6 @@ private:
     uint16_t _irlock_port;
     float _current;
 
-    bool _synthetic_clock_mode;
-
     bool _use_rtscts;
     bool _use_fg_view;
     

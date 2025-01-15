@@ -1466,14 +1466,7 @@ void AP_BLHeli::read_telemetry_packet(void)
     const uint8_t motor_idx = motor_map[last_telem_esc];
     // we have received valid data, mark the ESC as now active
     hal.rcout->set_active_escs_mask(1<<motor_idx);
-
-    uint8_t normalized_motor_idx = motor_idx - chan_offset;
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_dshot()) {
-        normalized_motor_idx = motor_idx;
-    }
-#endif
-    update_rpm(normalized_motor_idx, new_rpm);
+    update_rpm(motor_idx, new_rpm);
 
     TelemetryData t {
         .temperature_cdeg = int16_t(buf[0] * 100),
@@ -1482,7 +1475,7 @@ void AP_BLHeli::read_telemetry_packet(void)
         .consumption_mah = float(uint16_t((buf[5]<<8) | buf[6])),
     };
 
-    update_telem_data(normalized_motor_idx, t,
+    update_telem_data(motor_idx, t,
         AP_ESC_Telem_Backend::TelemetryType::CURRENT
             | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
             | AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION

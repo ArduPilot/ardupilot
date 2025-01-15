@@ -51,16 +51,10 @@ public:
             PCB_TEMP           = 1 << 8,
             STATUS             = 1 << 9,
         };
-        uint16_t valid_types;
-
-        // return true if the data is stale
-        bool stale(uint32_t now_ms) const volatile;
+        uint16_t present_types;
 
         // return true if the requested types of data are available
         bool present(const uint16_t type_mask) const volatile;
-
-        //  return true if the requested type of data is available and not stale
-        bool valid(const uint16_t type_mask) const volatile;
     };
 
     // update at 10Hz to log telemetry
@@ -69,6 +63,9 @@ public:
     // record an update to the telemetry data together with timestamp
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(const uint8_t servo_index, const TelemetryData& new_data);
+
+    // Fill in telem structure if telem is available, return false if not
+    bool get_telem(const uint8_t servo_index, TelemetryData& telem) const volatile;
 
 private:
 
