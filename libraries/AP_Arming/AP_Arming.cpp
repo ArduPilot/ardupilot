@@ -85,6 +85,26 @@
   #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMDISARM
 #endif
 
+// find a default value for ARMING_NEED_POS parameter, and determine
+// whether the parameter should be shown:
+#ifndef AP_ARMING_NEED_LOC_PARAMETER_ENABLED
+// determine whether ARMING_NEED_POS is shown:
+#if APM_BUILD_COPTER_OR_HELI
+#define AP_ARMING_NEED_LOC_PARAMETER_ENABLED 1
+#else
+#define AP_ARMING_NEED_LOC_PARAMETER_ENABLED 0
+#endif  // build types
+#endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
+
+// if ARMING_NEED_POS is shown, determine what its default should be:
+#if AP_ARMING_NEED_LOC_PARAMETER_ENABLED
+#if APM_BUILD_COPTER_OR_HELI
+#define AP_ARMING_NEED_LOC_DEFAULT 0
+#else
+#error "Unable to find value for AP_ARMING_NEED_LOC_DEFAULT"
+#endif  // APM_BUILD_TYPE
+#endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
+
 #ifndef PREARM_DISPLAY_PERIOD
 # define PREARM_DISPLAY_PERIOD 30
 #endif
@@ -165,6 +185,15 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CRSDP_IGN", 11, AP_Arming, crashdump_ack.acked, 0),
 #endif  // AP_ARMING_CRASHDUMP_ACK_ENABLED
+
+#if AP_ARMING_NEED_LOC_PARAMETER_ENABLED
+    // @Param: NEED_LOC
+    // @DisplayName: Require vehicle location
+    // @Description: Require that the vehicle have an absolute position before it arms.  This can help ensure that the vehicle can Return To Launch.
+    // @User: Advanced
+    // @Values{Copter}: 0:Do not require location,1:Require Location
+    AP_GROUPINFO("NEED_LOC", 12, AP_Arming, require_location, float(AP_ARMING_NEED_LOC_DEFAULT)),
+#endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
 
     AP_GROUPEND
 };

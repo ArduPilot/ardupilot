@@ -155,6 +155,12 @@ public:
     static bool method_is_GCS(Method method) {
         return (method == Method::MAVLINK || method == Method::DDS);
     }
+
+    enum class RequireLocation : uint8_t {
+        NO = 0,
+        YES = 1,
+    };
+
 protected:
 
     // Parameters
@@ -165,6 +171,7 @@ protected:
     AP_Int32                _required_mission_items;
     AP_Int32                _arming_options;
     AP_Int16                magfield_error_threshold;
+    AP_Enum<RequireLocation> require_location;
 
     // internal members
     bool                    armed;
