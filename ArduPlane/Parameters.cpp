@@ -88,23 +88,23 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(stab_pitch_down, "STAB_PITCH_DOWN",   2.0f),
 
-    // @Param: GLIDE_SLOPE_MIN
-    // @DisplayName: Glide slope minimum
-    // @Description: This controls the minimum altitude change for a waypoint before a glide slope will be used instead of an immediate altitude change. The default value is 15 meters, which helps to smooth out waypoint missions where small altitude changes happen near waypoints. If you don't want glide slopes to be used in missions then you can set this to zero, which will disable glide slope calculations. Otherwise you can set it to a minimum number of meters of altitude error to the destination waypoint before a glide slope will be used to change altitude.
+    // @Param: ALT_SLOPE_MIN
+    // @DisplayName: Altitude slope minimum
+    // @Description: This controls the minimum altitude change for a waypoint before an altitude slope will be used instead of an immediate altitude change. The default value is 15 meters, which helps to smooth out waypoint missions where small altitude changes happen near waypoints. If you don't want altitude slopes to be used in missions then you can set this to zero, which will disable altitude slope calculations. Otherwise you can set it to a minimum number of meters of altitude error to the destination waypoint before an altitude slope will be used to change altitude.
     // @Range: 0 1000
     // @Increment: 1
     // @Units: m
     // @User: Advanced
-    GSCALAR(glide_slope_min, "GLIDE_SLOPE_MIN", 15),
+    GSCALAR(alt_slope_min, "ALT_SLOPE_MIN", 15),
 
-    // @Param: GLIDE_SLOPE_THR
-    // @DisplayName: Glide slope threshold
-    // @Description: This controls the height above the glide slope the plane may be before rebuilding a glide slope. This is useful for smoothing out an autotakeoff
+    // @Param: ALT_SLOPE_MAXHGT
+    // @DisplayName: Altitude slope maximum height
+    // @Description: This controls the height above the altitude slope the plane may be before rebuilding it. This is useful for smoothing out an auto-takeoff.
     // @Range: 0 100
     // @Increment: 1
     // @Units: m
     // @User: Advanced
-    GSCALAR(glide_slope_threshold, "GLIDE_SLOPE_THR", 5.0),
+    GSCALAR(alt_slope_max_height, "ALT_SLOPE_MAXHGT", 5.0),
 
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing
