@@ -949,7 +949,7 @@ bool AP_Arming::servo_checks(bool report) const
 
         // check functions using PWM are enabled
         if (SRV_Channels::get_disabled_channel_mask() & 1U<<i) {
-            const SRV_Channel::Aux_servo_function_t ch_function = c->get_function();
+            const SRV_Channel::Function ch_function = c->get_function();
 
             // motors, e-stoppable functions, neopixels and ProfiLEDs may be digital outputs and thus can be disabled
             // scripting can use its functions as labels for LED setup
