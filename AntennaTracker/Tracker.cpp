@@ -23,7 +23,7 @@
 #include "version.h"
 #undef FORCE_VERSION_H_INCLUDE
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros, _prio) SCHED_TASK_CLASS(Tracker, &tracker, func, _interval_ticks, _max_time_micros, _prio)
+#define SCHED_TASK(func, rate_hz, _max_time_micros, _prio) SCHED_TASK_CLASS(Tracker, &tracker, func, rate_hz, _max_time_micros, _prio)
 
 /*
   All entries in this table must be ordered by priority.
