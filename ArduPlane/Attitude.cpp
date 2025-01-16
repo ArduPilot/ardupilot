@@ -659,7 +659,12 @@ void Plane::update_load_factor(void)
     }
 #endif
 
-    float max_load_factor = sq(smoothed_airspeed / MAX(aparm.airspeed_min, 1));
+    float stall_airspeed_1g = is_positive(aparm.airspeed_stall)
+                                  ? aparm.airspeed_stall
+                                  : aparm.airspeed_min;
+
+    float max_load_factor =
+        sq(smoothed_airspeed / MAX(stall_airspeed_1g, 1));
 
     if (max_load_factor <= 1) {
         // our airspeed is below the minimum airspeed. Limit roll to
@@ -671,7 +676,7 @@ void Plane::update_load_factor(void)
         // load limit. Limit our roll to a bank angle that will keep
         // the load within what the airframe can handle. We always
         // allow at least 25 degrees of roll however, to ensure the
-        // aircraft can be manoeuvred with a bad airspeed estimate. At
+        // aircraft can be manoeuvered with a bad airspeed estimate. At
         // 25 degrees the load factor is 1.1 (10%)
         int32_t roll_limit = degrees(acosf(1.0f / max_load_factor))*100;
         if (roll_limit < 2500) {
