@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+def build(bld):
+
+    if bld.env.BOARD != 'linux':
+        return
+
+    # Turn off the normal AHRS so we can define a custom one
+    bld.env.DEFINES += ['AP_AHRS_ENABLED=0']
+
+    # Turn off other things that are expecting a complete AHRS
+    bld.env.DEFINES += ['AP_FRSKY_SPORT_PASSTHROUGH_ENABLED=0', 'AP_AIRSPEED_ENABLED=0']
+
+    bld.ap_program(
+        use='ap',
+        program_groups=['examples'],
+    )
+
