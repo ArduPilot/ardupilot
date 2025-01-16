@@ -327,7 +327,7 @@ void AP_PiccoloCAN::update()
 
             uint16_t output = 0;
 
-            SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(ii);
+            SRV_Channel::Function function = SRV_Channels::channel_function(ii);
 
             if (SRV_Channels::get_output_pwm(function, output)) {
                 _servos[ii].command = output;
@@ -343,7 +343,7 @@ void AP_PiccoloCAN::update()
 
             uint16_t output = 0;
             
-            SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(ii);
+            SRV_Channel::Function motor_function = SRV_Channels::get_motor_function(ii);
 
             if (SRV_Channels::get_output_pwm(motor_function, output)) {
                 _escs[ii].command = output;
@@ -637,7 +637,7 @@ bool AP_PiccoloCAN::is_servo_channel_active(uint8_t chan)
         return false;
     }
 
-    SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(chan);
+    SRV_Channel::Function function = SRV_Channels::channel_function(chan);
 
     // Ignore if the servo channel does not have a function assigned
     if (function <= SRV_Channel::k_none) {
@@ -664,7 +664,7 @@ bool AP_PiccoloCAN::is_esc_channel_active(uint8_t chan)
     }
 
     // Check if a motor function is assigned for this motor channel
-    SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(chan);
+    SRV_Channel::Function motor_function = SRV_Channels::get_motor_function(chan);
 
     if (SRV_Channels::function_assigned(motor_function)) {
         return true;
