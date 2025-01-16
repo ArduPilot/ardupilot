@@ -122,6 +122,12 @@ void AP_Airspeed::update_calibration(uint8_t i, const Vector3f &vground, int16_t
         return;
     }
 
+    if (param[i].use == 2 && !is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)) {
+        // special case for gliders with airspeed sensors behind the
+        // propeller. We don't want to calibrate in this case
+        return;
+    }
+
     // set state.z based on current ratio, this allows the operator to
     // override the current ratio in flight with autocal, which is
     // very useful both for testing and to force a reasonable value.
