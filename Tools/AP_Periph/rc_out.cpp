@@ -48,12 +48,12 @@ void AP_Periph_FW::rcout_init()
 
 #if HAL_PWM_COUNT > 0
     for (uint8_t i=0; i<HAL_PWM_COUNT; i++) {
-        servo_channels.set_default_function(i, SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i));
+        servo_channels.set_default_function(i, SRV_Channel::Function(SRV_Channel::k_rcin1 + i));
     }
 #endif
 
     for (uint8_t i=0; i<SERVO_OUT_RCIN_MAX; i++) {
-        SRV_Channels::set_angle(SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i), 1000);
+        SRV_Channels::set_angle(SRV_Channel::Function(SRV_Channel::k_rcin1 + i), 1000);
     }
 
     uint32_t esc_mask = 0;
@@ -113,7 +113,7 @@ void AP_Periph_FW::rcout_esc(int16_t *rc, uint8_t num_channels)
 void AP_Periph_FW::rcout_srv_unitless(uint8_t actuator_id, const float command_value)
 {
 #if HAL_PWM_COUNT > 0
-    const SRV_Channel::Aux_servo_function_t function = SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + actuator_id - 1);
+    const SRV_Channel::Function function = SRV_Channel::Function(SRV_Channel::k_rcin1 + actuator_id - 1);
     SRV_Channels::set_output_norm(function, command_value);
 
     rcout_has_new_data_to_update = true;
@@ -126,7 +126,7 @@ void AP_Periph_FW::rcout_srv_unitless(uint8_t actuator_id, const float command_v
 void AP_Periph_FW::rcout_srv_PWM(uint8_t actuator_id, const float command_value)
 {
 #if HAL_PWM_COUNT > 0
-    const SRV_Channel::Aux_servo_function_t function = SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + actuator_id - 1);
+    const SRV_Channel::Function function = SRV_Channel::Function(SRV_Channel::k_rcin1 + actuator_id - 1);
     SRV_Channels::set_output_pwm(function, uint16_t(command_value+0.5));
 
     rcout_has_new_data_to_update = true;
@@ -204,7 +204,7 @@ void AP_Periph_FW::sim_update_actuator(uint8_t actuator_id)
         if ((sim_actuator.mask & (1U<<i)) == 0) {
             continue;
         }
-        const SRV_Channel::Aux_servo_function_t function = SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i);
+        const SRV_Channel::Function function = SRV_Channel::Function(SRV_Channel::k_rcin1 + i);
         uavcan_equipment_actuator_Status pkt {};
         pkt.actuator_id = i;
         // assume 45 degree angle for simulation
