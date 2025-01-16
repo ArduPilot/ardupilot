@@ -378,18 +378,18 @@ singleton AP_SerialLED method send boolean uint8_t 1 16
 include SRV_Channel/SRV_Channel.h
 singleton SRV_Channels depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RC_OUT))
 singleton SRV_Channels rename SRV_Channels
-singleton SRV_Channels method find_channel boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint8_t'Null
-singleton SRV_Channels method set_output_pwm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
+singleton SRV_Channels method find_channel boolean SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint8_t'Null
+singleton SRV_Channels method set_output_pwm void SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
 singleton SRV_Channels method set_output_pwm_chan void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t'skip_check
 singleton SRV_Channels method set_output_pwm_chan_timeout void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t'skip_check uint16_t'skip_check
 singleton SRV_Channels method set_output_pwm_chan_timeout depends (!defined(HAL_BUILD_AP_PERIPH))
-singleton SRV_Channels method set_output_scaled void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float'skip_check
-singleton SRV_Channels method get_output_pwm boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'Null
+singleton SRV_Channels method set_output_scaled void SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float'skip_check
+singleton SRV_Channels method get_output_pwm boolean SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'Null
 singleton SRV_Channels method get_output_pwm_chan boolean uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t'Null
-singleton SRV_Channels method get_output_scaled float SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1
-singleton SRV_Channels method set_output_norm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float -1 1
-singleton SRV_Channels method set_angle void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
-singleton SRV_Channels method set_range void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
+singleton SRV_Channels method get_output_scaled float SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1
+singleton SRV_Channels method set_output_norm void SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float -1 1
+singleton SRV_Channels method set_angle void SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
+singleton SRV_Channels method set_range void SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
 singleton SRV_Channels method get_emergency_stop boolean
 singleton SRV_Channels manual get_safety_state SRV_Channels_get_safety_state 0 1
 
