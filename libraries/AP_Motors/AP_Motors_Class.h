@@ -52,6 +52,18 @@
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
 
+class AP_MotorMask16 {
+public:
+    AP_MotorMask16() {}
+    AP_MotorMask16(const short int value) { mask = value; }
+    bool operator &(uint16_t value) const { return mask & value; }
+    void operator =(uint16_t value) { mask = value; }
+    void operator |=(uint16_t value) { mask |= value; }
+    uint16_t mask;
+};
+
+typedef AP_MotorMask16 AP_MotorMask;
+
 /// @class      AP_Motors
 class AP_Motors {
 public:
