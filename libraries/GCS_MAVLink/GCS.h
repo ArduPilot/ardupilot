@@ -373,9 +373,6 @@ public:
     void send_simstate() const;
     void send_sim_state() const;
     void send_ahrs();
-#if AP_MAVLINK_BATTERY2_ENABLED
-    void send_battery2();
-#endif
     void send_opticalflow();
     virtual void send_attitude() const;
     virtual void send_attitude_quaternion() const;

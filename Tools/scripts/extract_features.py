@@ -248,7 +248,6 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED', 'GCS_MAVLINK::handle_send_autopilot_version'),
             ('AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED', 'GCS_MAVLINK::handle_command_request_autopilot_capabilities'),  # noqa
             ('AP_MAVLINK_MSG_RELAY_STATUS_ENABLED', 'GCS_MAVLINK::send_relay_status'),
-            ('AP_MAVLINK_BATTERY2_ENABLED', 'GCS_MAVLINK::send_battery2'),
             ('AP_MAVLINK_MSG_DEVICE_OP_ENABLED', 'GCS_MAVLINK::handle_device_op_write'),
             ('AP_MAVLINK_SERVO_RELAY_ENABLED', 'GCS_MAVLINK::handle_servorelay_message'),
             ('AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED', 'GCS_MAVLINK::handle_serial_control'),

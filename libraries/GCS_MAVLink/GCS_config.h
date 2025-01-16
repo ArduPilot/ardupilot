@@ -13,14 +13,6 @@
 #define HAL_MAVLINK_BINDINGS_ENABLED HAL_GCS_ENABLED
 #endif
 
-// CODE_REMOVAL
-// BATTERY2 is slated to be removed:
-// ArduPilot 4.6 stops compiling support in
-// ArduPilot 4.7 removes the code entirely
-#ifndef AP_MAVLINK_BATTERY2_ENABLED
-#define AP_MAVLINK_BATTERY2_ENABLED 0
-#endif
-
 #ifndef HAL_HIGH_LATENCY2_ENABLED
 #define HAL_HIGH_LATENCY2_ENABLED 1
 #endif

@@ -172,6 +172,7 @@ BUILD_OPTIONS = [
     Feature('Compass', 'HMC5843', 'AP_COMPASS_HMC5843_ENABLED', 'Enable HMC5843 compasses', 1, None),
     Feature('Compass', 'ICM20948', 'AP_COMPASS_ICM20948_ENABLED', 'Enable AK09916 on ICM20948 compasses', 1, "AK09916"),
     Feature('Compass', 'IST8308', 'AP_COMPASS_IST8308_ENABLED', 'Enable IST8308 compasses', 1, None),
+    Feature('Compass', 'IIS2MDC', 'AP_COMPASS_IIS2MDC_ENABLED', 'Enable IIS2MDC compasses', 0, None),
     Feature('Compass', 'IST8310', 'AP_COMPASS_IST8310_ENABLED', 'Enable IST8310 compasses', 1, None),
     Feature('Compass', 'LIS3MDL', 'AP_COMPASS_LIS3MDL_ENABLED', 'Enable LIS3MDL compasses', 1, None),
     Feature('Compass', 'LSM303D', 'AP_COMPASS_LSM303D_ENABLED', 'Enable LSM303D compasses', 1, None),
@@ -370,7 +371,6 @@ BUILD_OPTIONS = [
     Feature('MAVLink', 'MAVLINK_VERSION_REQUEST', 'AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED', 'Enable Old AUTOPILOT_VERSION_REQUEST mesage', 0, None),  # noqa
     Feature('MAVLink', 'REQUEST_AUTOPILOT_CAPA', 'AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED', 'Enable Old REQUEST_AUTOPILOT_CAPABILITIES command', 0, None),  # noqa
     Feature('MAVLink', 'MAV_MSG_RELAY_STATUS', 'AP_MAVLINK_MSG_RELAY_STATUS_ENABLED', 'Enable Send RELAY_STATUS message', 0, 'RELAY'),  # noqa
-    Feature('MAVLink', 'AP_MAVLINK_BATTERY2_ENABLED', 'AP_MAVLINK_BATTERY2_ENABLED', 'Enable Send old BATTERY2 message', 0, None),  # noqa
     Feature('MAVLink', 'MAV_DEVICE_OP', 'AP_MAVLINK_MSG_DEVICE_OP_ENABLED', 'Enable DeviceOp MAVLink messages', 0, None),  # noqa
     Feature('MAVLink', 'MAV_SERVO_RELAY', 'AP_MAVLINK_SERVO_RELAY_ENABLED', 'Enable ServoRelay MAVLink messages', 0, 'SERVORELAY_EVENTS'),  # noqa
     Feature('MAVLink', 'MAV_MSG_SERIAL_CONTROL', 'AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED', 'Enable Serial Control MAVLink messages', 0, None),  # noqa
