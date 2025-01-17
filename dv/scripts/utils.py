@@ -99,15 +99,21 @@ def get_git_revision(some_master):
 def flash_bootloader(some_master):
     print("Sending MAV_CMD_FLASH_BOOTLOADER ...")
 
+    now = time.time()
+
     some_master.mav.command_long_send(
         some_master.target_system, some_master.target_component,
         mavutil.mavlink.MAV_CMD_FLASH_BOOTLOADER, 1,
         *[0, 0, 0, 0, 290876, 0, 0]
     )
 
-    print("Listening to status text ...")
+    print("Listening to ack and status text ...")
     while True:
-        msg = some_master.recv_match(blocking=True, timeout=5)
+        if time.time() - now > 10:
+            print("Timeout expired, exiting ...")
+            return False
+
+        msg = some_master.recv_match(blocking=True, timeout=1)
         if msg is not None:
             if msg.get_msgId() == mavutil.mavlink.MAVLINK_MSG_ID_STATUSTEXT:
                 print(msg.to_dict()["text"])
@@ -116,6 +122,20 @@ def flash_bootloader(some_master):
                 print(msgd)
                 # TODO, OLSLO, handle automatic exit from here.
                 # mavutil.mavlink.MAV_RESULT_ACCEPTED
+                print("OK")
+                break
+
+    print("Listening to status text few more seconds...")
+    now = time.time()
+    while True:
+        if time.time() - now > 5:
+            print("Timeout expired, exiting ...")
+            break
+
+        msg = some_master.recv_match(blocking=True, timeout=1)
+        if msg is not None:
+            if msg.get_msgId() == mavutil.mavlink.MAVLINK_MSG_ID_STATUSTEXT:
+                print(msg.to_dict()["text"])
 
     return True
 

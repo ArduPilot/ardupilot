@@ -1,23 +1,20 @@
 #!/usr/bin/env python3
 
-import sys, os, argparse
+import sys
 
-from pymavlink import mavutil
+from utils import get_serial_master
 
 import utils
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser("request_flash_bootloader.py")
-    parser.add_argument('connection', type=str, default="/dev/ttyACM0:115200", help='connection')
+    port = "/dev/ttyTHS1"
+    if len(sys.argv) > 1:
+        port = sys.argv[1]
 
-    args = parser.parse_args()
-    print(args)
-
-    device, baud = args.connection.split(":")
-
-    some_master = mavutil.mavlink_connection(device, baud=int(baud))
-    print(some_master.wait_heartbeat())
+    some_master = get_serial_master(port)
+    assert some_master is not None
+    print("OK")
 
     res = utils.flash_bootloader(some_master)
 
