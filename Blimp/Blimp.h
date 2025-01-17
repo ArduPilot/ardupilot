@@ -64,7 +64,7 @@
 
 #include "GCS_MAVLink_Blimp.h"
 #include "GCS_Blimp.h"
-#include "AP_Arming.h"
+#include "AP_Arming_Blimp.h"
 
 #include <AP_Mount/AP_Mount.h>
 
