@@ -245,7 +245,7 @@ void Tiltrotor::continuous_update(void)
         }
         if (!quadplane.motor_test.running) {
             // the motors are all the way forward, start using them for fwd thrust
-            const uint16_t mask = is_zero(current_throttle)?0U:tilt_mask.get();
+            const uint32_t mask = is_zero(current_throttle) ? 0U : tilt_mask.get();
             motors->output_motor_mask(current_throttle, mask, plane.rudder_dt);
         }
         return;
@@ -365,7 +365,7 @@ void Tiltrotor::binary_update(void)
 
         float new_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01f;
         if (current_tilt >= 1) {
-            const uint16_t mask = is_zero(new_throttle)?0U:tilt_mask.get();
+            const uint32_t mask = is_zero(new_throttle) ? 0 : tilt_mask.get();
             // the motors are all the way forward, start using them for fwd thrust
             motors->output_motor_mask(new_throttle, mask, plane.rudder_dt);
         }
