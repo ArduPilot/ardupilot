@@ -19,6 +19,7 @@
 #include "AP_CANManager.h"
 
 #include <AP_DroneCAN/AP_DroneCAN.h>
+#include <AP_CYPHAL/AP_CYPHAL.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 
 // table of user settable CAN bus parameters
@@ -42,7 +43,11 @@ const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
     // index 3 was KDECAN
 
     // index 4 was CANTester
-
+#if HAL_ENABLE_CYPHAL_DRIVERS
+    // @Group: UC1_
+    // @Path: ../AP_CYPHAL/AP_CYPHAL.cpp
+    AP_SUBGROUPPTR(_cyphal, "UC1_", 15, AP_CANManager::CANDriver_Params, AP_CYPHAL),
+#endif
 #if HAL_PICCOLO_CAN_ENABLE
     // @Group: PC_
     // @Path: ../AP_PiccoloCAN/AP_PiccoloCAN.cpp

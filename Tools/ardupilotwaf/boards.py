@@ -482,22 +482,28 @@ class Board:
             ]
 
         if self.with_can:
-            # for both AP_Perip and main fw enable deadlines
-            env.DEFINES.update(CANARD_ENABLE_DEADLINE = 1)
+    # for both AP_Periph and main firmware, enable deadlines
+            env.DEFINES.update(CANARD_ENABLE_DEADLINE=1)
 
             if not cfg.env.AP_PERIPH:
                 env.AP_LIBRARIES += [
+                    'AP_CYPHAL',
+                    'modules/cyphal/libcanard/libcanard/*.c',
+                    'modules/cyphal/o1heap/o1heap/*.c',
+
                     'AP_DroneCAN',
-                    'modules/DroneCAN/libcanard/*.c',
-                    ]
+                    'modules/DroneCAN/libcanard/*.c'
+                ]
+
                 if cfg.options.enable_dronecan_tests:
-                    env.DEFINES.update(AP_TEST_DRONECAN_DRIVERS = 1)
+                    env.DEFINES.update(AP_TEST_DRONECAN_DRIVERS=1)
 
                 env.DEFINES.update(
-                    DRONECAN_CXX_WRAPPERS = 1,
-                    USE_USER_HELPERS = 1,
+                    DRONECAN_CXX_WRAPPERS=1,
+                    USE_USER_HELPERS=1,
                     CANARD_ALLOCATE_SEM=1
                 )
+
 
 
 

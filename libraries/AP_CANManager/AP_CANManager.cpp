@@ -43,6 +43,8 @@
 #include <AP_Common/sorting.h>
 #include <AP_Logger/AP_Logger.h>
 
+#include <AP_CYPHAL/AP_CYPHAL.h>
+
 #define LOG_TAG "CANMGR"
 #define LOG_BUFFER_SIZE 1024
 
@@ -213,6 +215,19 @@ void AP_CANManager::init()
             AP_Param::load_object_from_eeprom((AP_DroneCAN*)_drivers[drv_num], AP_DroneCAN::var_info);
             break;
 #endif
+#if HAL_ENABLE_CYPHAL_DRIVERS
+        case AP_CAN::Protocol::Cyphal:
+            _drivers[drv_num] = _drv_param[drv_num]._cyphal = NEW_NOTHROW AP_Cyphal(drv_num);
+
+            if (_drivers[drv_num] == nullptr) {
+                AP_BoardConfig::allocation_error("Cyphal %d", i + 1);
+                continue;
+            }
+
+            AP_Param::load_object_from_eeprom((AP_Cyphal*)_drivers[drv_num], AP_Cyphal::var_info);
+            break;
+#endif
+
 #if HAL_PICCOLO_CAN_ENABLE
         case AP_CAN::Protocol::PiccoloCAN:
             _drivers[drv_num] = _drv_param[drv_num]._piccolocan = NEW_NOTHROW AP_PiccoloCAN;

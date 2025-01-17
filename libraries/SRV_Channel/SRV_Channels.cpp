@@ -30,6 +30,7 @@
   #include <AP_CANManager/AP_CANManager.h>
   #include <AP_DroneCAN/AP_DroneCAN.h>
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
+    #include <AP_CYPHAL/AP_CYPHAL.h>
 #endif
 
 #if NUM_SERVO_CHANNELS == 0
@@ -539,6 +540,16 @@ void SRV_Channels::push()
                 ap_pcan->update();
                 break;
             }
+#endif
+#if HAL_ENABLE_CYPHAL_DRIVERS
+        case AP_CAN::Protocol::Cyphal: {
+            AP_Cyphal *ap_cyphal = AP_Cyphal::get_cyphal(i);
+            if (ap_cyphal == nullptr) {
+                continue;
+            }
+            ap_cyphal->update();
+            break;
+        }
 #endif
             case AP_CAN::Protocol::None:
             default:

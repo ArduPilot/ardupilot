@@ -1218,15 +1218,13 @@ bool AP_Arming::can_checks(bool report)
                         check_failed(ARMING_CHECK_SYSTEM, report, "PiccoloCAN: %s", fail_msg);
                         return false;
                     }
-
 #else
                     check_failed(ARMING_CHECK_SYSTEM, report, "PiccoloCAN not enabled");
                     return false;
 #endif
                     break;
                 }
-                case AP_CAN::Protocol::DroneCAN:
-                {
+                case AP_CAN::Protocol::DroneCAN: {
 #if HAL_ENABLE_DRONECAN_DRIVERS
                     AP_DroneCAN *ap_dronecan = AP_DroneCAN::get_dronecan(i);
                     if (ap_dronecan != nullptr && !ap_dronecan->prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
@@ -1236,11 +1234,20 @@ bool AP_Arming::can_checks(bool report)
 #endif
                     break;
                 }
+                case AP_CAN::Protocol::Cyphal: {
+#if HAL_ENABLE_CYPHAL_DRIVERS
+                    AP_Cyphal *ap_cyphal = AP_Cyphal::get_cyphal(i);
+                    if (ap_cyphal != nullptr && !ap_cyphal->prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+                        check_failed(ARMING_CHECK_SYSTEM, report, "Cyphal: %s", fail_msg);
+                        return false;
+                    }
+#endif
+                    break;
+                }
                 case AP_CAN::Protocol::USD1:
                 case AP_CAN::Protocol::TOFSenseP:
                 case AP_CAN::Protocol::NanoRadar:
-                case AP_CAN::Protocol::Benewake:
-                {
+                case AP_CAN::Protocol::Benewake: {
                     for (uint8_t j = i; j; j--) {
                         if (AP::can().get_driver_type(i) == AP::can().get_driver_type(j-1)) {
                             check_failed(ARMING_CHECK_SYSTEM, report, "Same rfnd on different CAN ports");
@@ -1262,6 +1269,7 @@ bool AP_Arming::can_checks(bool report)
     return true;
 }
 #endif  // HAL_MAX_CAN_PROTOCOL_DRIVERS && HAL_CANMANAGER_ENABLED
+
 
 
 #if AP_FENCE_ENABLED

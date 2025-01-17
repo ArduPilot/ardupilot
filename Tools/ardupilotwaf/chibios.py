@@ -475,12 +475,16 @@ def setup_canmgr_build(cfg):
     the build based on the presence of CAN pins in hwdef.dat except for AP_Periph builds'''
     env = cfg.env
     env.AP_LIBRARIES += [
+        'AP_CYPHAL',
+        'modules/cyphal/libcanard/libcanard/*.c',
+        'modules/cyphal/o1heap/o1heap/*.c',
+
         'AP_DroneCAN',
         'modules/DroneCAN/libcanard/*.c',
-        ]
+    ]
     env.INCLUDES += [
         cfg.srcnode.find_dir('modules/DroneCAN/libcanard').abspath(),
-        ]
+    ]
     env.CFLAGS += ['-DHAL_CAN_IFACES=2']
 
     if not env.AP_PERIPH:
@@ -490,7 +494,7 @@ def setup_canmgr_build(cfg):
             'CANARD_ENABLE_DEADLINE=1',
             'CANARD_MULTI_IFACE=1',
             'CANARD_ALLOCATE_SEM=1'
-            ]
+        ]
 
     cfg.get_board().with_can = True
 
