@@ -1609,58 +1609,72 @@ void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
 }
 #endif
 
-//Autoscroll message is the same as in minimosd-extra.
-//Thanks to night-ghost for the approach.
 void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 {
     AP_Notify * notify = AP_Notify::get_singleton();
     if (notify) {
         int32_t visible_time = AP_HAL::millis() - notify->get_text_updated_millis();
-        if (visible_time < osd->msgtime_s *1000) {
-            char buffer[NOTIFY_TEXT_BUFFER_SIZE];
-            strncpy(buffer, notify->get_text(), sizeof(buffer));
-            int16_t len = strnlen(buffer, sizeof(buffer));
+        if (visible_time < osd->msgtime_s *1000) 
+            draw_buffer(x, y, notify->get_text(), visible_time);
+    }
+}
 
-            for (int16_t i=0; i<len; i++) {
-                //converted to uppercase,
-                //because we do not have small letter chars inside used font
-                buffer[i] = toupper(buffer[i]);
-                //normalize whitespace
-                if (isspace(buffer[i])) {
-                    buffer[i] = ' ';
-                }
-            }
 
-            int16_t start_position = 0;
-            //scroll if required
-            //scroll pattern: wait, scroll to the left, wait, scroll to the right
-            if (len > message_visible_width) {
-                int16_t chars_to_scroll = len - message_visible_width;
-                int16_t total_cycles = 2*message_scroll_delay + 2*chars_to_scroll;
-                int16_t current_cycle = (visible_time / message_scroll_time_ms) % total_cycles;
+void AP_OSD_Screen::draw_message_permanent(uint8_t x, uint8_t y)
+{
+    AP_Notify * notify = AP_Notify::get_singleton();
+    if (notify) {
+        int32_t visible_time = AP_HAL::millis();
+        draw_buffer(x, y, notify->get_text(true), visible_time);
+    }
+}
 
-                //calculate scroll start_position
-                if (current_cycle < total_cycles/2) {
-                    //move to the left
-                    start_position = current_cycle - message_scroll_delay;
-                } else {
-                    //move to the right
-                    start_position = total_cycles - current_cycle;
-                }
-                start_position = constrain_int16(start_position, 0, chars_to_scroll);
-                int16_t end_position = start_position + message_visible_width;
+//Autoscroll message is the same as in minimosd-extra.
+//Thanks to night-ghost for the approach.
+void AP_OSD_Screen::draw_buffer(uint8_t x, uint8_t y, const char *input_buffer, int32_t visible_time)
+{
+    char buffer[NOTIFY_TEXT_BUFFER_SIZE];
+    strncpy(buffer, input_buffer, sizeof(buffer));
+    int16_t len = strnlen(buffer, sizeof(buffer));
 
-                //ensure array boundaries
-                start_position = MIN(start_position, int(sizeof(buffer)-1));
-                end_position = MIN(end_position, int(sizeof(buffer)-1));
-
-                //trim invisible part
-                buffer[end_position] = 0;
-            }
-
-            backend->write(x, y, buffer + start_position);
+    for (int16_t i=0; i<len; i++) {
+        //converted to uppercase,
+        //because we do not have small letter chars inside used font
+        buffer[i] = toupper(buffer[i]);
+        //normalize whitespace
+        if (isspace(buffer[i])) {
+            buffer[i] = ' ';
         }
     }
+
+    int16_t start_position = 0;
+    //scroll if required
+    //scroll pattern: wait, scroll to the left, wait, scroll to the right
+    if (len > message_visible_width) {
+        int16_t chars_to_scroll = len - message_visible_width;
+        int16_t total_cycles = 2*message_scroll_delay + 2*chars_to_scroll;
+        int16_t current_cycle = (visible_time / message_scroll_time_ms) % total_cycles;
+
+        //calculate scroll start_position
+        if (current_cycle < total_cycles/2) {
+            //move to the left
+            start_position = current_cycle - message_scroll_delay;
+        } else {
+            //move to the right
+            start_position = total_cycles - current_cycle;
+        }
+        start_position = constrain_int16(start_position, 0, chars_to_scroll);
+        int16_t end_position = start_position + message_visible_width;
+
+        //ensure array boundaries
+        start_position = MIN(start_position, int(sizeof(buffer)-1));
+        end_position = MIN(end_position, int(sizeof(buffer)-1));
+
+        //trim invisible part
+        buffer[end_position] = 0;
+    }
+
+    backend->write(x, y, buffer + start_position);
 }
 
 // draw a arrow at the given angle, and print the given magnitude
@@ -2543,6 +2557,7 @@ void AP_OSD_Screen::draw(void)
 #endif
 
     DRAW_SETTING(message);
+    DRAW_SETTING(message_permanent);
     DRAW_SETTING(horizon);
     DRAW_SETTING(compass);
     DRAW_SETTING(altitude);

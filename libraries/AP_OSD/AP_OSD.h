@@ -186,6 +186,7 @@ private:
     AP_OSD_Setting sats{true, 1, 3};
     AP_OSD_Setting fltmode{true, 2, 8};
     AP_OSD_Setting message{true, 2, 6};
+    AP_OSD_Setting message_permanent{true, 2, 5};
     AP_OSD_Setting gspeed{true, 2, 14};
     AP_OSD_Setting horizon{true, 14, 8};
     AP_OSD_Setting home{true, 14, 1};
@@ -275,6 +276,7 @@ private:
     void draw_sats(uint8_t x, uint8_t y);
     void draw_fltmode(uint8_t x, uint8_t y);
     void draw_message(uint8_t x, uint8_t y);
+    void draw_message_permanent(uint8_t x, uint8_t y);
     void draw_gspeed(uint8_t x, uint8_t y);
     void draw_horizon(uint8_t x, uint8_t y);
     void draw_home(uint8_t x, uint8_t y);
@@ -296,6 +298,7 @@ private:
     void draw_pluscode(uint8_t x, uint8_t y);
 #endif
     //helper functions
+    void draw_buffer(uint8_t x, uint8_t y, const char *input_buffer, int32_t visible_time);
     void draw_speed(uint8_t x, uint8_t y, float angle_rad, float magnitude);
     void draw_distance(uint8_t x, uint8_t y, float distance);
     char get_arrow_font_index (int32_t angle_cd);

@@ -528,11 +528,16 @@ void AP_Notify::set_flight_mode_str(const char *str)
     _flight_mode_str[sizeof(_flight_mode_str)-1] = 0;
 }
 
-void AP_Notify::send_text(const char *str)
+void AP_Notify::send_text(const char *str, bool permanent)
 {
-    strncpy(_send_text, str, sizeof(_send_text));
-    _send_text[sizeof(_send_text)-1] = 0;
-    _send_text_updated_millis = AP_HAL::millis();
+    if (permanent){
+        strncpy(_permanent_text, str, sizeof(_permanent_text));
+        _permanent_text[sizeof(_permanent_text)-1] = 0;
+    } else {
+        strncpy(_send_text, str, sizeof(_send_text));
+        _send_text[sizeof(_send_text)-1] = 0;
+        _send_text_updated_millis = AP_HAL::millis();
+    }
 }
 
 #if AP_SCRIPTING_ENABLED

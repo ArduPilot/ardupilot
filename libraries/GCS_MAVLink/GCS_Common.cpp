@@ -2354,7 +2354,7 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
 #endif
     AP_Notify *notify = AP_Notify::get_singleton();
     if (notify) {
-        notify->send_text(first_piece_of_text);
+        notify->send_text(first_piece_of_text, severity == MAV_SEVERITY_ENUM_END);
     }
 
     // push the messages out straight away until the vehicle states
@@ -3520,8 +3520,9 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
     }
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
+    bool use_prefix = packet.severity != MAV_SEVERITY_ENUM_END;
 
-    send_text(MAV_SEVERITY_INFO, "%s", text);
+    send_text((MAV_SEVERITY)packet.severity, "%s", text + (use_prefix? 0: offset));
 
     logger->Write_Message(text);
 #endif

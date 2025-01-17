@@ -207,8 +207,8 @@ public:
     const char* get_flight_mode_str() const { return _flight_mode_str; }
 
     // send text to display
-    void send_text(const char *str);
-    const char* get_text() const { return _send_text; }
+    void send_text(const char *str, bool permanent = false);
+    const char* get_text(bool permanent = false) const { return permanent? _permanent_text :_send_text; }
     uint32_t get_text_updated_millis() const {return _send_text_updated_millis; }
  
 #if AP_SCRIPTING_ENABLED
@@ -251,6 +251,7 @@ private:
     AP_Int8 _led_len;
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
+    char _permanent_text[NOTIFY_TEXT_BUFFER_SIZE];
     uint32_t _send_text_updated_millis; // last time text changed
     char _flight_mode_str[5];
 
