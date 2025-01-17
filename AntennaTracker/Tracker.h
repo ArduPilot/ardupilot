@@ -51,7 +51,7 @@
 #include "GCS_MAVLink_Tracker.h"
 #include "GCS_Tracker.h"
 
-#include "AP_Arming.h"
+#include "AP_Arming_Tracker.h"
 
 #include "mode.h"
 
