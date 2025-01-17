@@ -92,6 +92,7 @@
 
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
   #include <AP_DroneCAN/AP_DroneCAN.h>
+  #include <AP_CYPHAL/AP_CYPHAL.h>
 #endif
 
 #include <AP_BattMonitor/AP_BattMonitor_config.h>

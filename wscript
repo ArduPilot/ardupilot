@@ -763,7 +763,7 @@ def _build_dynamic_sources(bld):
             export_includes=[
                 bld.bldnode.make_node('modules/cyphal/libcanard/dsdlc_generated/include').abspath(),
                 bld.srcnode.find_dir('modules/cyphal/libcanard/').abspath(),
-                bld.srcnode.find_dir('libraries/AP_CYPHAL/canard/').abspath(),
+                bld.srcnode.find_dir('modules/cyphal/o1heap/o1heap').abspath(),
             ]
         )
     elif bld.env.AP_PERIPH:
