@@ -1,7 +1,7 @@
 /*
   additional arming checks for plane
  */
-#include "AP_Arming.h"
+#include "AP_Arming_Plane.h"
 #include "Plane.h"
 
 #include "qautotune.h"

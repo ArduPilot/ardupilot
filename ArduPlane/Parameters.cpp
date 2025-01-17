@@ -782,7 +782,7 @@ const AP_Param::Info Plane::var_info[] = {
 #endif
 
     // @Group: ARMING_
-    // @Path: AP_Arming.cpp,../libraries/AP_Arming/AP_Arming.cpp
+    // @Path: AP_Arming_Plane.cpp,../libraries/AP_Arming/AP_Arming.cpp
     GOBJECT(arming,                 "ARMING_", AP_Arming_Plane),
 
 #if AP_RELAY_ENABLED
