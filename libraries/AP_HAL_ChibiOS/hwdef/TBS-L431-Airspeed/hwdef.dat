@@ -1,0 +1,24 @@
+include ../TBS-L431/hwdef.inc
+
+USE_BOOTLOADER_FROM_BOARD TBS-L431-Periph
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+# ---------------------- I2C bus ------------------------
+I2C_ORDER I2C1
+
+PA9 I2C1_SCL I2C1
+PA10 I2C1_SDA I2C1
+
+define HAL_I2C_CLEAR_ON_TIMEOUT 0
+define HAL_I2C_INTERNAL_MASK 1
+
+# ------------------ I2C airspeed -------------------------
+define HAL_PERIPH_ENABLE_AIRSPEED
+
+# 10" DLVR sensor by default
+define HAL_AIRSPEED_TYPE_DEFAULT 9  
+define AIRSPEED_MAX_SENSORS 1
+
