@@ -9,7 +9,7 @@ import param_manip
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser("param_set.py")
-    parser.add_argument('connection', type=str, default="/dev/ttyACM2:115200", help='connection')
+    parser.add_argument('connection', type=str, default="/dev/ttyACM0:115200", help='connection')
     parser.add_argument('param_id', type=str)
     parser.add_argument('param_value', type=float)
     parser.add_argument('-r', '--reboot', action=argparse.BooleanOptionalAction)
