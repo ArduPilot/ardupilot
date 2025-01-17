@@ -81,7 +81,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	AP_SUBGROUPINFO(params[0], "1_", 25, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 1_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_USD1_Serial.cpp
     AP_SUBGROUPVARPTR(drivers[0], "1_",  57, RangeFinder, backend_var_info[0]),
 
 #if RANGEFINDER_MAX_INSTANCES > 1
@@ -90,7 +90,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[1], "2_", 27, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 2_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_USD1_Serial.cpp
     AP_SUBGROUPVARPTR(drivers[1], "2_",  58, RangeFinder, backend_var_info[1]),
 #endif
 
@@ -100,7 +100,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[2], "3_", 29, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 3_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_USD1_Serial.cpp
     AP_SUBGROUPVARPTR(drivers[2], "3_",  59, RangeFinder, backend_var_info[2]),
 #endif
 
@@ -110,7 +110,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[3], "4_", 31, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 4_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_USD1_Serial.cpp
     AP_SUBGROUPVARPTR(drivers[3], "4_",  60, RangeFinder, backend_var_info[3]),
 #endif
 
@@ -120,7 +120,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[4], "5_", 33, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 5_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_USD1_Serial.cpp
     AP_SUBGROUPVARPTR(drivers[4], "5_",  34, RangeFinder, backend_var_info[4]),
 #endif
 
@@ -130,7 +130,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[5], "6_", 35, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 6_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_USD1_Serial.cpp
     AP_SUBGROUPVARPTR(drivers[5], "6_",  36, RangeFinder, backend_var_info[5]),
 #endif
 
@@ -140,7 +140,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[6], "7_", 37, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 7_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_USD1_Serial.cpp
     AP_SUBGROUPVARPTR(drivers[6], "7_",  38, RangeFinder, backend_var_info[6]),
 #endif
 
@@ -150,7 +150,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[7], "8_", 39, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 8_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_USD1_Serial.cpp
     AP_SUBGROUPVARPTR(drivers[7], "8_",  40, RangeFinder, backend_var_info[7]),
 #endif
 
@@ -160,7 +160,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[8], "9_", 41, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 9_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_USD1_Serial.cpp
     AP_SUBGROUPVARPTR(drivers[8], "9_",  42, RangeFinder, backend_var_info[8]),
 #endif
 
@@ -170,7 +170,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[9], "A_", 43, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: A_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_USD1_Serial.cpp
     AP_SUBGROUPVARPTR(drivers[9], "A_",  44, RangeFinder, backend_var_info[9]),
 #endif
 
