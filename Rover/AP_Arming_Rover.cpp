@@ -1,4 +1,4 @@
-#include "AP_Arming.h"
+#include "AP_Arming_Rover.h"
 #include "Rover.h"
 
 // perform pre_arm_rc_checks checks
