@@ -173,7 +173,8 @@ bool AP_RangeFinder_USD1_Serial::get_reading(float &reading_m)
                     // evaluate checksum
                     if (((_linebuf[1] + _linebuf[2] + _linebuf[3] + _linebuf[4]) & 0xFF) == _linebuf[5]) {
                         // if checksum passed, check snr
-                        const uint16_t snr = _linebuf[4];
+                        const uint8_t snr = _linebuf[4];
+                        state.snr = snr;
                         if (snr_min !=0 && snr < uint16_t(snr_min.get())) {
                             // too low signal strength
                             return true;

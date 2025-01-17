@@ -461,6 +461,7 @@ struct PACKED log_RFND {
     uint8_t status;
     uint8_t orient;
     int8_t quality;
+    uint8_t snr;
 };
 
 /*
@@ -1187,7 +1188,7 @@ LOG_STRUCTURE_FROM_MOUNT \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
-      "RFND", "QBfBBb", "TimeUS,Instance,Dist,Stat,Orient,Quality", "s#m--%", "F-0---", true }, \
+      "RFND", "QBfBBbB", "TimeUS,Instance,Dist,Stat,Orient,Quality,SNR", "s#m--%-", "F-0----", true }, \
     { LOG_DMS_MSG, sizeof(log_DMS), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     LOG_STRUCTURE_FROM_BEACON                                       \

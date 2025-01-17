@@ -866,6 +866,7 @@ void RangeFinder::Log_RFND() const
                 status       : (uint8_t)s->status(),
                 orient       : s->orientation(),
                 quality      : s->signal_quality_pct(),
+                snr          : s->signal_to_noise_ratio(),
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
