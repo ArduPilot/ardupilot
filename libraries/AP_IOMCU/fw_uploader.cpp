@@ -60,13 +60,17 @@
 
 extern const AP_HAL::HAL &hal;
 
+#ifndef HAL_IOMCU_BOOTLOADER_BAUDRATE
+#define HAL_IOMCU_BOOTLOADER_BAUDRATE 115200
+#endif
+
 /*
   upload a firmware to the IOMCU
  */
 bool AP_IOMCU::upload_fw(void)
 {
     // set baudrate for bootloader
-    uart.begin(115200, 256, 256);
+    uart.begin(HAL_IOMCU_BOOTLOADER_BAUDRATE, 256, 256);
 
     bool ret = false;
 
@@ -84,11 +88,11 @@ bool AP_IOMCU::upload_fw(void)
         return false;
     }
 
-    uint32_t bl_rev;
-    ret = get_info(INFO_BL_REV, bl_rev);
-
-    if (!ret) {
-        debug("Err: failed to contact bootloader");
+    uint32_t bl_rev, unused;
+    if (!get_info(INFO_BL_REV, bl_rev) ||
+        !get_info(INFO_BOARD_ID, unused) ||
+        !get_info(INFO_FLASH_SIZE, unused)) {
+        debug("Err: failed to get bootloader info");
         return false;
     }
     if (bl_rev > BL_REV) {
