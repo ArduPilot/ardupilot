@@ -18,6 +18,8 @@ public:
         return NEW_NOTHROW AP_RangeFinder_USD1_Serial(_state, _params);
     }
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
@@ -47,6 +49,7 @@ private:
     bool     _version_known;
     uint8_t  _header;
     uint8_t  _version;
+    AP_Int32 snr_min;
 };
 
 #endif  // AP_RANGEFINDER_USD1_SERIAL_ENABLED

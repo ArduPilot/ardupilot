@@ -22,6 +22,22 @@
 #define USD1_HDR 254   // Header Byte from USD1_Serial (0xFE)
 #define USD1_HDR_V0 72 // Header Byte for beta V0 of USD1_Serial (0x48)
 
+
+/*
+  constructor
+*/
+const AP_Param::GroupInfo AP_RangeFinder_USD1_Serial::var_info[] = {
+    // @Param: SNR_MIN
+    // @DisplayName: Minimum signal strength
+    // @Description: Minimum signal strength (SNR) to accept distance
+    // @Range: 0 65535
+    // @User: Advanced
+    AP_GROUPINFO("SNR_MIN", 1, AP_RangeFinder_USD1_Serial, snr_min, 0),
+
+    AP_GROUPEND
+};
+
+
 /*
    detect USD1_Serial Firmware Version
 */
@@ -149,7 +165,13 @@ bool AP_RangeFinder_USD1_Serial::get_reading(float &reading_m)
                 } else {
                     // evaluate checksum
                     if (((_linebuf[1] + _linebuf[2] + _linebuf[3] + _linebuf[4]) & 0xFF) == _linebuf[5]) {
-                        // if checksum passed, parse data for Firmware Version #1
+                        // if checksum passed, check snr
+                        const uint16_t snr = _linebuf[4];
+                        if (snr_min !=0 && snr < uint16_t(snr_min.get())) {
+                            // too low signal strength
+                            return true;
+                        }
+                        // checksum and signal strength passed, parse data for Firmware Version #1
                         sum += _linebuf[3]*256 + _linebuf[2];
                         count++;
                     }
