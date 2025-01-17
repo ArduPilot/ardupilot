@@ -120,7 +120,7 @@
 #if HAL_ADSB_ENABLED
 #include "avoidance_adsb.h"
 #endif
-#include "AP_Arming.h"
+#include "AP_Arming_Plane.h"
 #include "pullup.h"
 
 /*
