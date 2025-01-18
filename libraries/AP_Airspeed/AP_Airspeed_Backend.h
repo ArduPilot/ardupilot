@@ -30,7 +30,7 @@
 
 class AP_Airspeed_Backend {
 public:
-    AP_Airspeed_Backend(AP_Airspeed &frontend, uint8_t instance);
+    AP_Airspeed_Backend(AP_Airspeed &frontend, class AP_Airspeed::airspeed_state &state, class AP_Airspeed_Params &params);
     virtual ~AP_Airspeed_Backend() {}
 
     // probe and initialise the sensor
@@ -64,7 +64,7 @@ protected:
     uint8_t get_bus(void) const;
     bool bus_is_configured(void) const;
     uint8_t get_instance(void) const {
-        return instance;
+        return state.instance;
     }
 
     // see if voltage correction should be disabled
@@ -74,7 +74,7 @@ protected:
 
     AP_Airspeed::pitot_tube_order get_tube_order(void) const {
 #ifndef HAL_BUILD_AP_PERIPH
-        return AP_Airspeed::pitot_tube_order(frontend.param[instance].tube_order.get());
+        return AP_Airspeed::pitot_tube_order(params.tube_order.get());
 #else
         return AP_Airspeed::pitot_tube_order::PITOT_TUBE_ORDER_AUTO;
 #endif
@@ -84,21 +84,35 @@ protected:
     HAL_Semaphore sem;
 
     float get_airspeed_ratio(void) const {
-        return frontend.get_airspeed_ratio(instance);
+        return frontend.get_airspeed_ratio(state.instance);
     }
 
     // some sensors use zero offsets
     void set_use_zero_offset(void) {
         frontend.state[instance].cal.state = AP_Airspeed::CalibrationState::NOT_REQUIRED_ZERO_OFFSET;
 #ifndef HAL_BUILD_AP_PERIPH
-        frontend.param[instance].offset.set(0.0);
+        params.offset.set(0.0);
+#endif
+    }
+
+    // set to no zero cal, which makes sense for some sensors
+    void set_skip_cal(void) {
+#ifndef HAL_BUILD_AP_PERIPH
+        params.skip_cal.set(1);
+#endif
+    }
+
+    // set zero offset
+    void set_offset(float ofs) {
+#ifndef HAL_BUILD_AP_PERIPH
+        params.offset.set(ofs);
 #endif
     }
 
     // set use
     void set_use(int8_t use) {
 #ifndef HAL_BUILD_AP_PERIPH
-        frontend.param[instance].use.set(use);
+        params.use.set(use);
 #endif
     }
 
@@ -121,7 +135,8 @@ protected:
     
 private:
     AP_Airspeed &frontend;
-    uint8_t instance;
+    AP_Airspeed::airspeed_state &state;
+    AP_Airspeed_Params &params;
 };
 
 #endif  // AP_AIRSPEED_ENABLED
