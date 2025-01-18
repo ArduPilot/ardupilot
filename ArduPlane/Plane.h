@@ -497,9 +497,6 @@ private:
         // filtered sink rate for landing
         float sink_rate;
 
-        // time when we first pass min GPS speed on takeoff
-        uint32_t takeoff_speed_time_ms;
-
         // distance to next waypoint
         float wp_distance;
 
