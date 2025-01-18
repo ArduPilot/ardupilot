@@ -346,95 +346,98 @@ void AP_Airspeed::allocate()
 #else
     // look for sensors based on type parameters
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        auto &_state = state[i];
+        auto &_param = param[i];
+        _state.instance = i;
 #if AP_AIRSPEED_AUTOCAL_ENABLE
-        state[i].calibration.init(param[i].ratio);
-        state[i].last_saved_ratio = param[i].ratio;
+        _state.calibration.init(_param.ratio);
+        _state.last_saved_ratio = _param.ratio;
 #endif
 
         // Set the enable automatically to false and set the probability that the airspeed is healhy to start with
-        state[i].failures.health_probability = 1.0f;
+        _state.failures.health_probability = 1.0f;
 
-        switch ((enum airspeed_type)param[i].type.get()) {
+        switch ((enum airspeed_type)_param.type.get()) {
         case TYPE_NONE:
             // nothing to do
             break;
 #if AP_AIRSPEED_MS4525_ENABLED
         case TYPE_I2C_MS4525:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_MS4525(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_MS4525(*this, _state, _param);
             break;
 #endif  // AP_AIRSPEED_MS4525_ENABLED
 #if AP_AIRSPEED_SITL_ENABLED
         case TYPE_SITL:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_SITL(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_SITL(*this, _state, _param);
             break;
 #endif  // AP_AIRSPEED_SITL_ENABLED
 #if AP_AIRSPEED_ANALOG_ENABLED
         case TYPE_ANALOG:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_Analog(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_Analog(*this, _state, _param);
             break;
 #endif  // AP_AIRSPEED_ANALOG_ENABLED
 #if AP_AIRSPEED_MS5525_ENABLED
         case TYPE_I2C_MS5525:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_AUTO);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, _state, _param, AP_Airspeed_MS5525::MS5525_ADDR_AUTO);
             break;
 #endif  // AP_AIRSPEED_MS5525_ENABLED
 #if AP_AIRSPEED_MS5525_ENABLED
         case TYPE_I2C_MS5525_ADDRESS_1:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_1);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, _state, _param, AP_Airspeed_MS5525::MS5525_ADDR_1);
             break;
 #endif  // AP_AIRSPEED_MS5525_ENABLED
 #if AP_AIRSPEED_MS5525_ENABLED
         case TYPE_I2C_MS5525_ADDRESS_2:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_2);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, _state, _param, AP_Airspeed_MS5525::MS5525_ADDR_2);
             break;
 #endif  // AP_AIRSPEED_MS5525_ENABLED
 #if AP_AIRSPEED_SDP3X_ENABLED
         case TYPE_I2C_SDP3X:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_SDP3X(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_SDP3X(*this, _state, _param);
             break;
 #endif  // AP_AIRSPEED_SDP3X_ENABLED
 #if AP_AIRSPEED_DLVR_ENABLED
         case TYPE_I2C_DLVR_5IN:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 5);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, _state, _param, 5);
             break;
         case TYPE_I2C_DLVR_10IN:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 10);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, _state, _param, 10);
             break;
         case TYPE_I2C_DLVR_20IN:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 20);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, _state, _param, 20);
             break;
         case TYPE_I2C_DLVR_30IN:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 30);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, _state, _param, 30);
             break;
         case TYPE_I2C_DLVR_60IN:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 60);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, _state, _param, 60);
             break;
 #endif  // AP_AIRSPEED_DLVR_ENABLED
 #if AP_AIRSPEED_ASP5033_ENABLED
         case TYPE_I2C_ASP5033:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_ASP5033(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_ASP5033(*this, _state, _param);
             break;
 #endif  // AP_AIRSPEED_ASP5033_ENABLED
 #if AP_AIRSPEED_DRONECAN_ENABLED
         case TYPE_UAVCAN:
-            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
+            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, _state, _param, uint32_t(_param.bus_id.get()));
             break;
 #endif  // AP_AIRSPEED_DRONECAN_ENABLED
 #if AP_AIRSPEED_NMEA_ENABLED
         case TYPE_NMEA_WATER:
 #if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
-            sensor[i] = NEW_NOTHROW AP_Airspeed_NMEA(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_NMEA(*this, _state, _param);
 #endif
             break;
 #endif  // AP_AIRSPEED_NMEA_ENABLED
 #if AP_AIRSPEED_MSP_ENABLED
         case TYPE_MSP:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_MSP(*this, i, 0);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_MSP(*this, _state, _param, 0);
             break;
 #endif  // AP_AIRSPEED_MSP_ENABLED
 #if AP_AIRSPEED_EXTERNAL_ENABLED
         case TYPE_EXTERNAL:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_External(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_External(*this, _state, _param);
             break;
 #endif  // AP_AIRSPEED_EXTERNAL_ENABLED
 #if AP_AIRSPEED_AUAV_ENABLED
@@ -463,8 +466,10 @@ void AP_Airspeed::allocate()
     // we need a 2nd pass for DroneCAN sensors so we can match order by DEVID
     // the 2nd pass accepts any devid
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        if (sensor[i] == nullptr && (enum airspeed_type)param[i].type.get() == TYPE_UAVCAN) {
-            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, 0);
+        auto &_state = state[i];
+        auto &_param = param[i];
+        if (sensor[i] == nullptr && (enum airspeed_type)_param.type.get() == TYPE_UAVCAN) {
+            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, _state, _param, 0);
             if (sensor[i] != nullptr) {
                 num_sensors = i+1;
             }
@@ -479,7 +484,8 @@ void AP_Airspeed::allocate()
         if (sensor[i] == nullptr) {
             // note we use set() not set_and_save() to allow a sensor to be temporarily
             // removed for one boot without losing its slot
-            param[i].bus_id.set(0);
+            auto &_param = param[i];
+            _param.bus_id.set(0);
         }
     }
 }

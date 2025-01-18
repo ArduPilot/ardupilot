@@ -1596,7 +1596,7 @@ INCLUDE common.ld
                     (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
             n = len(devlist)+1
             devlist.append('HAL_AIRSPEED_PROBE%u' % n)
-            args = ['*this', str(idx)] + dev[1:]
+            args = ['*this', f"state[{str(idx)}]", f"param[{str(idx)}]"] + dev[1:]
             f.write(
                 '#define HAL_AIRSPEED_PROBE%u %s ADD_BACKEND(AP_Airspeed_%s::probe(%s))\n'
                 % (n, wrapper, driver, ','.join(args)))
