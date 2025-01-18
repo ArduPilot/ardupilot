@@ -641,7 +641,7 @@ void AP_Airspeed_Backend::update()
 #endif
 
     state.healthy = get_differential_pressure(state.raw_pressure);
-    float airspeed_pressure = state.raw_pressure - frontend.get_offset(state.instance);
+    float airspeed_pressure = state.raw_pressure - get_offset();
 
     // remember raw pressure for logging
     state.corrected_pressure = airspeed_pressure;
@@ -811,7 +811,7 @@ void AP_Airspeed_Backend::Log_Airspeed(uint64_t now)
             diffpressure  : state.raw_pressure,
             temperature   : (int16_t)(temperature * 100.0f),
             rawpressure   : state.corrected_pressure,
-            offset        : frontend.get_offset(state.instance),
+            offset        : get_offset(),
             use           : frontend.use(state.instance),
             healthy       : state.healthy,
             health_prob   : state.failures.health_probability,

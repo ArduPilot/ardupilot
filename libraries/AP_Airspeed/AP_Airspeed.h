@@ -355,9 +355,6 @@ private:
     void update_calibration(uint8_t i, float raw_pressure);
     void update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
     void send_airspeed_calibration(const Vector3f &vg);
-    // return the current calibration offset
-    float get_offset(uint8_t i) const;
-    float get_offset(void) const { return get_offset(primary); }
 
     void check_sensor_failures();
     void check_sensor_ahrs_wind_max_failures(uint8_t i);

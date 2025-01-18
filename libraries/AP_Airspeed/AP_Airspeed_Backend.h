@@ -116,6 +116,15 @@ protected:
 #endif
     }
 
+    // return the current calibration offset
+    float get_offset() const {
+#ifndef HAL_BUILD_AP_PERIPH
+        return params.offset;
+#else
+        return 0.0;
+#endif
+    }
+
     // set use
     void set_use(int8_t use) {
 #ifndef HAL_BUILD_AP_PERIPH
