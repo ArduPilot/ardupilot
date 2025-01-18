@@ -875,6 +875,7 @@ private:
         QRTL            = 1U << 9,
         QLAND           = 1U << 10,
         QLOITER         = 1U << 11,
+        AUTOLAND        = 1U << 12,
     };
     struct TerrainLookupTable{
        Mode::Number mode_num;
