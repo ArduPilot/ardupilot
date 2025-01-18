@@ -36,6 +36,9 @@ public:
     // probe and initialise the sensor
     virtual bool init(void) = 0;
 
+    // method called by the frontend in the main thread:
+    void update();
+
     // return the current differential_pressure in Pascal
     virtual bool get_differential_pressure(float &pressure) {return false;}
 
@@ -66,6 +69,8 @@ protected:
     uint8_t get_instance(void) const {
         return state.instance;
     }
+
+    float get_pressure();
 
     // see if voltage correction should be disabled
     bool disable_voltage_correction(void) const {
