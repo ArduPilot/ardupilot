@@ -343,8 +343,6 @@ private:
 
     uint32_t _log_bit = -1;     // stores which bit in LOG_BITMASK is used to indicate we should log airspeed readings
 
-    void read(uint8_t i);
-
     // get the health probability
     float get_health_probability(uint8_t i) const {
         return state[i].failures.health_probability;
