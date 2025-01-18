@@ -641,8 +641,7 @@ void AP_Airspeed_Backend::update()
 #endif
 
     float raw_pressure = 0;
-    state[i].healthy = sensor[i]->get_differential_pressure(raw_pressure);
-
+    state.healthy = get_differential_pressure(raw_pressure);
     float airspeed_pressure = raw_pressure - frontend.get_offset(state.instance);
 
     // remember raw pressure for logging
