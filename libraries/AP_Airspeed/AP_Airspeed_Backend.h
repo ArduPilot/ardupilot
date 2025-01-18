@@ -70,8 +70,6 @@ protected:
         return state.instance;
     }
 
-    float get_pressure();
-
     // see if voltage correction should be disabled
     bool disable_voltage_correction(void) const {
         return (frontend._options.get() & AP_Airspeed::OptionsMask::DISABLE_VOLTAGE_CORRECTION) != 0;
