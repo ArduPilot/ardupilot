@@ -946,10 +946,15 @@ public:
     AP_Int16 final_wp_dist;
     AP_Int16 landing_dir_off;
     AP_Int8  options;
+    bool reached_altitude;
+    bool done_climb;
 
     // Bitfields of AUTOLAND_OPTIONS
     enum class AutoLandOption {
         AUTOLAND_DIR_ON_ARM     = (1U << 0), // set dir for autoland on arm if compass in use.
+        AUTOLAND_CLIMB_LVL_ALT  = (1U << 1), // climb straight to above LEVEL_ALT before first turn.
+        AUTOLAND_CLIMB_WP_ALT   = (1U << 2), // climb straight to above final_wp_alt before first turn.
+        AUTOLAND_CLIMB_RTL_ALT  = (1U << 3), // climb straight to above RTL_ALTITUDE before first turn.
     };
 
     enum class AutoLandStage {
@@ -968,6 +973,7 @@ protected:
     Location land_start;
     AutoLandStage stage;
     void set_autoland_direction(const float heading);
+    void check_altitude (void);
 };
 #endif
 #if HAL_SOARING_ENABLED

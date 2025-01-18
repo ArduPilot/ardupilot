@@ -38,7 +38,7 @@ const AP_Param::GroupInfo ModeAutoLand::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Autoland mode options
     // @Description: Enables optional autoland mode behaviors
-    // @Bitmask: 1: When set if there is a healthy compass in use the compass heading will be captured at arming and used for the AUTOLAND mode's initial takeoff direction instead of capturing ground course in NAV_TAKEOFF or Mode TAKEOFF or other modes.
+    // @Bitmask: 0: When set if there is a healthy compass in use the compass heading will be captured at arming and used for the AUTOLAND mode's initial takeoff direction instead of capturing ground course in NAV_TAKEOFF or Mode TAKEOFF or other modes., 1:Climb to TKOFF_LVL_ALT before turning upon mode entry., 2: Climb to AUTOLAND_WP_ALT before turning upon mode entry (overrides bit 1)., 3: Climb to RTL_ALTITUDE before turning upon mode entry (overrides bits 1 and 2).
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 4, ModeAutoLand, options, 0),
 
@@ -144,6 +144,8 @@ bool ModeAutoLand::_enter()
     cmd_land.content.location = home;
 
     // start first leg toward the base leg loiter to alt point
+    reached_altitude = false;
+    done_climb = false;
     stage = AutoLandStage::LOITER;
     plane.start_command(cmd_loiter);
     return true;
@@ -152,14 +154,39 @@ bool ModeAutoLand::_enter()
 void ModeAutoLand::update()
 {
     plane.calc_nav_roll();
+
+    // Constrain the roll limit if climb before turn options are set when below that altitude,
+    //that way if something goes wrong the plane will
+    // eventually turn back and go to landing waypoint instead of going perfectly straight. This also leaves
+    // some leeway for fighting wind.
+    check_altitude();
+    uint16_t roll_limit_cd;
+    if (!done_climb) {
+        roll_limit_cd = MIN(plane.roll_limit_cd, plane.g.level_roll_limit*100);
+        plane.nav_roll_cd = constrain_int16(plane.nav_roll_cd, -roll_limit_cd, roll_limit_cd);
+        // set RTL alt as target if needed
+        if (autoland_option_is_set(ModeAutoLand::AutoLandOption::AUTOLAND_CLIMB_RTL_ALT)) {
+            plane.target_altitude.amsl_cm = plane.home.alt + plane.get_RTL_altitude_cm();
+        }
+    }
+    // climb is done, use glide slope to loiter point,once there loiter and land control altitude
+    if (!done_climb && reached_altitude) {
+        plane.prev_WP_loc = plane.current_loc;
+        plane.setup_glide_slope();
+        done_climb = true;
+    }
+
     plane.calc_nav_pitch();
-    plane.set_offset_altitude_location(plane.prev_WP_loc, plane.next_WP_loc);
+
+
     if (plane.landing.is_throttle_suppressed()) {
         // if landing is considered complete throttle is never allowed, regardless of landing type
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
     } else {
         plane.calc_throttle();
     }
+
+
 }
 
 void ModeAutoLand::navigate()
@@ -235,6 +262,21 @@ void ModeAutoLand::arm_check(void)
     if (plane.ahrs.use_compass() && autoland_option_is_set(ModeAutoLand::AutoLandOption::AUTOLAND_DIR_ON_ARM)) {
         set_autoland_direction(plane.ahrs.yaw_sensor * 0.01);
     }
+}
+
+// climb before turn options
+void ModeAutoLand::check_altitude(void)
+{
+    const uint16_t altitude = plane.relative_ground_altitude(false,false);
+    if (autoland_option_is_set(ModeAutoLand::AutoLandOption::AUTOLAND_CLIMB_RTL_ALT) && altitude < (plane.g.RTL_altitude - 2)) {
+        return;
+    } else if (autoland_option_is_set(ModeAutoLand::AutoLandOption::AUTOLAND_CLIMB_WP_ALT) && altitude < (final_wp_alt -2)) {
+        return;
+    } else if (autoland_option_is_set(ModeAutoLand::AutoLandOption::AUTOLAND_CLIMB_LVL_ALT) && altitude < (plane.mode_takeoff.level_alt -2)) {
+        return;
+    }
+    reached_altitude = true;
+    return;
 }
 
 #endif // MODE_AUTOLAND_ENABLED

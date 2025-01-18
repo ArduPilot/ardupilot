@@ -66,6 +66,9 @@ void Plane::setup_glide_slope(void)
       the new altitude as quickly as possible.
      */
     switch (control_mode->mode_number()) {
+#if MODE_AUTOLAND_ENABLED
+    case Mode::Number::AUTOLAND:
+#endif
     case Mode::Number::RTL:
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
