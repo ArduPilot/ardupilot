@@ -815,7 +815,7 @@ void AP_Airspeed_Backend::Log_Airspeed(uint64_t now)
             use           : frontend.use(state.instance),
             healthy       : state.healthy,
             health_prob   : state.failures.health_probability,
-            test_ratio    : frontend.get_test_ratio(state.instance),
+            test_ratio    : state.failures.test_ratio,
             primary       : frontend.get_primary()
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));

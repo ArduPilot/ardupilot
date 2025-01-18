@@ -344,14 +344,6 @@ private:
 
     uint32_t _log_bit = -1;     // stores which bit in LOG_BITMASK is used to indicate we should log airspeed readings
 
-    // get the consistency test ratio
-    float get_test_ratio(uint8_t i) const {
-        return state[i].failures.test_ratio;
-    }
-    float get_test_ratio(void) const {
-        return get_test_ratio(primary);
-    }
-
     void update_calibration(uint8_t i, float raw_pressure);
     void update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
     void send_airspeed_calibration(const Vector3f &vg);
