@@ -61,6 +61,10 @@ public:
     virtual bool get_hygrometer(uint32_t &last_sample_ms, float &temperature, float &humidity) { return false; }
 #endif
 
+#if HAL_LOGGING_ENABLED
+    void Log_Airspeed(uint64_t now);
+#endif  // HAL_LOGGING_ENABLED
+
 protected:
     int8_t get_pin(void) const;
     float get_psi_range(void) const;

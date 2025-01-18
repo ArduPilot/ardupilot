@@ -640,16 +640,15 @@ void AP_Airspeed_Backend::update()
     bool prev_healthy = state.healthy;
 #endif
 
-    float raw_pressure = 0;
-    state.healthy = get_differential_pressure(raw_pressure);
-    float airspeed_pressure = raw_pressure - frontend.get_offset(state.instance);
+    state.healthy = get_differential_pressure(state.raw_pressure);
+    float airspeed_pressure = state.raw_pressure - frontend.get_offset(state.instance);
 
     // remember raw pressure for logging
     state.corrected_pressure = airspeed_pressure;
 
 #ifndef HAL_BUILD_AP_PERIPH
     if (state.cal.start_ms != 0) {
-        frontend.update_calibration(state.instance, raw_pressure);
+        frontend.update_calibration(state.instance, state.raw_pressure);
     }
 
     // filter before clamping positive
@@ -794,24 +793,30 @@ void AP_Airspeed::Log_Airspeed()
         if (!enabled(i) || sensor[i] == nullptr) {
             continue;
         }
+        sensor[i]->Log_Airspeed(now);
+    }
+}
+
+void AP_Airspeed_Backend::Log_Airspeed(uint64_t now)
+{
         float temperature;
-        if (!get_temperature(i, temperature)) {
+        if (!get_temperature(temperature)) {
             temperature = 0;
         }
         const struct log_ARSP pkt{
             LOG_PACKET_HEADER_INIT(LOG_ARSP_MSG),
             time_us       : now,
-            instance      : i,
-            airspeed      : get_raw_airspeed(i),
-            diffpressure  : get_differential_pressure(i),
+            instance      : state.instance,
+            airspeed      : state.raw_airspeed,
+            diffpressure  : state.raw_pressure,
             temperature   : (int16_t)(temperature * 100.0f),
-            rawpressure   : get_corrected_pressure(i),
-            offset        : get_offset(i),
-            use           : use(i),
-            healthy       : healthy(i),
-            health_prob   : get_health_probability(i),
-            test_ratio    : get_test_ratio(i),
-            primary       : get_primary()
+            rawpressure   : state.corrected_pressure,
+            offset        : frontend.get_offset(state.instance),
+            use           : frontend.use(state.instance),
+            healthy       : state.healthy,
+            health_prob   : state.failures.health_probability,
+            test_ratio    : frontend.get_test_ratio(state.instance),
+            primary       : frontend.get_primary()
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
 
@@ -821,23 +826,22 @@ void AP_Airspeed::Log_Airspeed()
             float temperature;
             float humidity;
         } hygrometer;
-        if (sensor[i]->get_hygrometer(hygrometer.sample_ms, hygrometer.temperature, hygrometer.humidity) &&
-            hygrometer.sample_ms != state[i].last_hygrometer_log_ms) {
+        if (get_hygrometer(hygrometer.sample_ms, hygrometer.temperature, hygrometer.humidity) &&
+            hygrometer.sample_ms != state.last_hygrometer_log_ms) {
             AP::logger().WriteStreaming("HYGR",
                                         "TimeUS,Id,Humidity,Temp",
                                         "s#%O",
                                         "F---",
                                         "QBff",
                                         AP_HAL::micros64(),
-                                        i,
+                                        state.instance,
                                         hygrometer.humidity,
                                         hygrometer.temperature);
-            state[i].last_hygrometer_log_ms = hygrometer.sample_ms;
+            state.last_hygrometer_log_ms = hygrometer.sample_ms;
         }
-#endif
-    }
+#endif  // AP_AIRSPEED_HYGROMETER_ENABLE
 }
-#endif
+#endif  // HAL_LOGGING_ENABLED
 
 bool AP_Airspeed::use(uint8_t i) const
 {
