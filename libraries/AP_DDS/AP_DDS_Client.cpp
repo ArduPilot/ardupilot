@@ -154,8 +154,8 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
 
     // @Param: _MAX_RETRY
     // @DisplayName: DDS ping max attempts
-    // @Description: The maximum number of times the DDS client will attempt to ping the XRCE agent before exiting.
-    // @Range: 1 100
+    // @Description: The maximum number of times the DDS client will attempt to ping the XRCE agent before exiting. Set to 0 to allow unlimited retries.
+    // @Range: 0 100
     // @RebootRequired: True
     // @Increment: 1
     // @User: Standard
@@ -1180,6 +1180,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
  */
 void AP_DDS_Client::main_loop(void)
 {
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s initializing...", msg_prefix);
     if (!init_transport()) {
         return;
     }
@@ -1192,9 +1193,16 @@ void AP_DDS_Client::main_loop(void)
         }
 
         // check ping
-        if (!uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_retry)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s No ping response, exiting", msg_prefix);
-            return;
+        if (ping_max_retry == 0) {
+            if (!uxr_ping_agent(comm, ping_timeout_ms)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s No ping response, retrying", msg_prefix);
+                continue;
+            }
+        } else {
+            if (!uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_retry)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s No ping response, exiting", msg_prefix);
+                continue;
+            }
         }
 
         // create session
