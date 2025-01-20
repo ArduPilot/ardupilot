@@ -1165,6 +1165,7 @@ class chibios(Board):
             '-fno-builtin-vprintf',
             '-fno-builtin-vfprintf',
             '-fno-builtin-puts',
+            '-fno-math-errno',
             '-mno-thumb-interwork',
             '-mthumb',
             '--specs=nano.specs',
