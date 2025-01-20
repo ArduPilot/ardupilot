@@ -37,6 +37,7 @@
 #include <AP_SerialManager/AP_SerialManager_config.h>
 #include <AP_Relay/AP_Relay_config.h>
 #include <AP_Servo_Telem/AP_Servo_Telem_config.h>
+#include <AP_Mount/AP_Mount_config.h>
 
 #ifndef DRONECAN_SRV_NUMBER
 #define DRONECAN_SRV_NUMBER NUM_SERVO_CHANNELS
@@ -167,10 +168,12 @@ public:
     Canard::Publisher<uavcan_equipment_indication_BeepCommand> buzzer{canard_iface};
     Canard::Publisher<uavcan_equipment_gnss_RTCMStream> rtcm_stream{canard_iface};
 
+#if HAL_MOUNT_XACTI_ENABLED
     // xacti specific publishers
     Canard::Publisher<com_xacti_CopterAttStatus> xacti_copter_att_status{canard_iface};
     Canard::Publisher<com_xacti_GimbalControlData> xacti_gimbal_control_data{canard_iface};
     Canard::Publisher<com_xacti_GnssStatus> xacti_gnss_status{canard_iface};
+#endif  // HAL_MOUNT_XACTI_ENABLED
 
 #if AP_RELAY_DRONECAN_ENABLED
     // Hardpoint for relay
