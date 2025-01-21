@@ -57,7 +57,7 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
     int16_t nbytes = uart->available();
 
     /* Adding the parameters to log the data */
-    uint16_t reading_24Gz_cm, reading_60Gz_cm, reading_Int_cm;
+    uint16_t reading_24Gz_cm, reading_60Gz_cm, reading_Int_cm, reading_lpf_cm;
     uint8_t snr_24, snr_60, snr_Int;
 
     while (nbytes-- > PACKET_SIZE)
@@ -191,29 +191,30 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
                 state.status = RangeFinder::Status::OutOfRangeHigh;
                 reading_m = MAX(656, max_distance_cm() * 0.01 + 1);
             }
-            /* Adding a check to ignore sudden jumps in height from Radar*/
-            else if(state.status == RangeFinder::Status::Good && 
-                   (reading_m - current_dist_reading_m > CHANGE_HEIGHT_THRESHOLD ||
-                   reading_m - current_dist_reading_m < -CHANGE_HEIGHT_THRESHOLD)){
-            state.status = RangeFinder::Status::NoData;
-            has_data = false;
-        }
             else
             {
                 state.status = RangeFinder::Status::NoData;
             }
         }
+        /* Adding a check to ignore sudden jumps in height from Radar*/
+        else if (state.status == RangeFinder::Status::Good &&
+                (reading_m - current_dist_reading_m > CHANGE_HEIGHT_THRESHOLD ||
+                 reading_m - current_dist_reading_m < -CHANGE_HEIGHT_THRESHOLD)) {
+            state.status = RangeFinder::Status::NoData;
+            has_data = false;
+        }
         else
         {
             reading_m = get_avg_reading(reading_m);
             state.status = RangeFinder::Status::Good;
+            reading_lpf_cm = reading_m*100;
         }
 
         /* Logging Point Start */
 #if HAL_LOGGING_ENABLED
         if (has_data)
         {
-            Log_LRD1_Pro(reading_24Gz_cm, reading_60Gz_cm, reading_Int_cm, snr_24, snr_60, snr_Int);
+            Log_LRD1_Pro(reading_24Gz_cm, reading_60Gz_cm, reading_Int_cm, reading_lpf_cm, snr_24, snr_60, snr_Int);
         }
 #endif
     }
@@ -225,7 +226,7 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
     Write rangefinder packet for logging
 */
 void AP_RangeFinder_Ainstein_LRD1_Pro::Log_LRD1_Pro(
-    uint16_t s_24, uint16_t s_60, uint16_t s_int,
+    uint16_t s_24, uint16_t s_60, uint16_t s_int, uint16_t s_lpf,
     uint8_t snr_24, uint8_t snr_60, uint8_t snr_int) const
 {
     const struct log_LRD1 pkt = {
@@ -234,6 +235,7 @@ void AP_RangeFinder_Ainstein_LRD1_Pro::Log_LRD1_Pro(
         dist_24_cm : s_24,
         dist_60_cm : s_60,
         dist_int_cm : s_int,
+        dist_lpf_cm : s_lpf,
         snr_24 : snr_24,
         snr_60 : snr_60,
         snr_int : snr_int,

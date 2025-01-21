@@ -470,6 +470,7 @@ struct PACKED log_LRD1
   uint16_t dist_24_cm;  // Distance from 24GHz Freq (>5m)
   uint16_t dist_60_cm;  // Distance from 60GHz Freq (<5m)
   uint16_t dist_int_cm; // Distance from integrating 24 and 60 Ghz
+  uint16_t dist_lpf_cm; // Distance Distance reported after low pass filter
   uint8_t snr_24;       // Signal to Noise Ratio 24 Ghz
   uint8_t snr_60;       // Signal to Noise Ratio 60 Ghz
   uint8_t snr_int;      // Signal to Noise Ratio Integrated signal
@@ -1269,7 +1270,7 @@ LOG_STRUCTURE_FROM_CAMERA \
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QBCBB", "TimeUS,Instance,Dist,Stat,Orient", "s#m--", "F-B--", true }, \
     { LOG_LRD1_MSG, sizeof(log_LRD1), \
-      "LRD1", "QCCCBBB", "TimeUS,Dis24,Dis60,DisInt,Snr24,Snr60,SnrInt", "smmm---", "FBBB---", true }, \
+      "LRD1", "QCCCCBBB", "TimeUS,Dis24,Dis60,DisInt,DisLpf,Snr24,Snr60,SnrInt", "smmmm---", "FHHHH---", true }, \
     { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     LOG_STRUCTURE_FROM_BEACON                                       \
