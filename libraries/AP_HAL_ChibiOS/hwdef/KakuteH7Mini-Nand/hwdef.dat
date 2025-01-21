@@ -11,3 +11,6 @@ IMU BMI270 SPI:bmi270 ROTATION_PITCH_180_YAW_90
 
 undef HAL_LOGGING_DATAFLASH_ENABLED
 DATAFLASH littlefs:w25nxx
+
+# KakuteH7Mini disables due to smaller flash chip; allow the enabled default
+undef AP_SCRIPTING_ENABLED
