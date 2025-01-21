@@ -152,6 +152,15 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Path: ../AC_Autorotation/RSC_Autorotation.cpp
     AP_SUBGROUPINFO(_main_rotor.autorotation, "RSC_AROT_", 33, AP_MotorsHeli, RSC_Autorotation),
 
+    // @Param: COL_LAND_OFSET
+    // @DisplayName: Offset of Collective Blade Pitch when Landed
+    // @Description: Offset of the collective blade pitch angle when landed in degrees for non-manual collective modes (i.e. modes that use altitude hold).
+    // @Range: -2 2
+    // @Units: deg
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("COL_LAND_OFSET", 34, AP_MotorsHeli, _collective_land_offset_deg, 0.0),
+
     AP_GROUPEND
 };
 
@@ -349,7 +358,7 @@ void AP_MotorsHeli::output_logic()
         case SpoolState::GROUND_IDLE: {
             // Motors should be stationary or at ground idle.
             // set limits flags
-            if (_heliflags.land_complete && !using_leaky_integrator()) {
+            if ((_heliflags.land_complete || _heliflags.land_complete_maybe) && !using_leaky_integrator()) {
                 set_limit_flag_pitch_roll_yaw(true);
             } else {
                 set_limit_flag_pitch_roll_yaw(false);
@@ -371,7 +380,7 @@ void AP_MotorsHeli::output_logic()
             // Servos should exhibit normal flight behavior.
 
             // set limits flags
-            if (_heliflags.land_complete && !using_leaky_integrator()) {
+            if ((_heliflags.land_complete || _heliflags.land_complete_maybe) && !using_leaky_integrator()) {
                 set_limit_flag_pitch_roll_yaw(true);
             } else {
                 set_limit_flag_pitch_roll_yaw(false);
@@ -393,7 +402,7 @@ void AP_MotorsHeli::output_logic()
             // Servos should exhibit normal flight behavior.
 
             // set limits flags
-            if (_heliflags.land_complete && !using_leaky_integrator()) {
+            if ((_heliflags.land_complete || _heliflags.land_complete_maybe) && !using_leaky_integrator()) {
                 set_limit_flag_pitch_roll_yaw(true);
             } else {
                 set_limit_flag_pitch_roll_yaw(false);
@@ -413,7 +422,7 @@ void AP_MotorsHeli::output_logic()
             // Servos should exhibit normal flight behavior.
 
             // set limits flags
-            if (_heliflags.land_complete && !using_leaky_integrator()) {
+            if ((_heliflags.land_complete || _heliflags.land_complete_maybe) && !using_leaky_integrator()) {
                 set_limit_flag_pitch_roll_yaw(true);
             } else {
                 set_limit_flag_pitch_roll_yaw(false);
