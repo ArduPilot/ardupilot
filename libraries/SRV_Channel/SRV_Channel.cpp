@@ -64,6 +64,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Param: FUNCTION
     // @DisplayName: Servo output function
     // @Description: Function assigned to this servo. Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function
+    // @SortValues: AlphabeticalZeroAtTop
     // @Values: -1:GPIO
     // @Values{Plane, Copter, Rover}: -1:GPIO
     // @Values: 0:Disabled
