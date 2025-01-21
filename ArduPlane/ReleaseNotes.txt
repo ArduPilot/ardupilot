@@ -1,5 +1,39 @@
 ArduPilot Plane Release Notes:
 ------------------------------------------------------------------
+Release 4.6.0-beta3
+
+Changes from 4.6.0-beta2
+
+1) Board specfic changes
+
+- AEROFOX-H7 support
+- AET-H743-Basic support
+- ESP32 memory initialisation fix
+- MicoAir743AIO and MicoAir743v2 support
+- OrqaF405Pro supports ICM42688 IMU
+- TBS Lucid Pro support
+
+2) Plane related enhancements and bug fixes
+
+- RC aux channel option for C++ QuikTune
+- TECs uses external HAGL (if available) for landing
+
+3) DDS/ROS2 pre-arm check and copter takeoff service
+
+4) Bug Fixes and minor enhancements
+
+- BATTx_OPTIONS param desc fixed
+- BLHeli telemetry ESC index fixed on boards with IOMCU
+- CAN manager logging critical race condition fixed (only occurred if CAN_LOGLEVEL was 1 or higher)
+- DShot EDTv2 logging fixed
+- ICM45686 IMU FIFO read rate fixed (could read unnecessarily quickly)
+- LDRobot LD06 proximity driver prevents possible read buffer overrun
+- LDRobot LD06 proximity driver averages over 2deg slices (was 12 deg)
+- RunCam/OSD menu movements obey RC channel reversal
+- Topotek camera gimbal pitch rate control direction fixed
+- TradHeli AutoTune rate and accel limiting fixed
+- VTOL-quiktune script gets QUIK_ANGLE_MAX to prevent bad oscillation if tuning algorithm fails
+------------------------------------------------------------------
 Release 4.6.0-beta2 11 Dec 2024
 
 Changes from 4.6.0-beta1
