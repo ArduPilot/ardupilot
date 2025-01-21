@@ -3035,7 +3035,9 @@ function load_trick(id)
    local pc = path_composer(name, paths)
    gcs:send_text(MAV_SEVERITY.INFO, string.format("Loaded trick%u '%s'", id, name))
    command_table[id] = PathFunction(pc, name)
-   logger:log_file_content(filename)
+   if logger.log_file_content then
+      logger:log_file_content(filename)
+   end
 
    calculate_timestamps(command_table[id])
 end
