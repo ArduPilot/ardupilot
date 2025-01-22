@@ -530,7 +530,7 @@ class AutoTestCopterTargetLanding(AutoTestCopter):
         #1554
         #2450
         #2742
-        for i in range(13, len(test_configs), 1):
+        for i in range(0, len(test_configs), 1):
 
             fun = self.create_function(test_configs[i]['test_name'], f"test-{test_configs[i]['test_name']}",self.test_landing_on_moving_target)
             ret.append(Test(fun, kwargs={

@@ -36,7 +36,7 @@ class ErrorAnalysis(TypedDict):
     has_landed: str
     landing_error: float
 
-log_file_path = "~/UAV_Landing/test-10Kn"
+log_file_path = "~/UAV_Landing/hor_clearance_5"
 
 def load_data(folder_path, folder):
         
@@ -44,6 +44,8 @@ def load_data(folder_path, folder):
         target_noisy_file = os.path.join(folder_path, folder, "target_noisy.csv")
         target_file = os.path.join(folder_path, folder, "target.csv")
         drone_file = os.path.join(folder_path, folder, "drone.csv")
+
+
         
         # Load data
         target_state_noisy = np.loadtxt(target_noisy_file, delimiter=",", dtype=float, usecols=(1,2,3,4,5), skiprows=1)
@@ -66,13 +68,15 @@ def calculate_landing_error():
 
     error_analysis_file = os.path.join(data_folder_path, "error_analysis.csv")
     error_analysis: List[ErrorAnalysis] = []
-    # for config in test_configs:
-    for i in range(0, 400, 1):
-        
-        config = test_configs[i]
+    print(f"Total test configs {len(test_configs)}")
+    for config in test_configs:
         folder_name = config["test_name"]
 
-        if not os.path.exists(os.path.join(data_folder_path, folder_name)):
+
+        if (not os.path.exists(os.path.join(data_folder_path, folder_name)) or 
+        (not os.path.exists(os.path.join(data_folder_path, folder_name, "target_noisy.csv"))) or
+        (not os.path.exists(os.path.join(data_folder_path, folder_name, "drone.csv"))) or 
+        (not os.path.exists(os.path.join(data_folder_path, folder_name, "target.csv")))):
              continue
         
         time, time_gps, target_state, target_state_noisy, drone_position, drone_position_raw = load_data(data_folder_path, folder_name)
@@ -183,7 +187,6 @@ def compute_landing_correlations(simulation_data):
     df = df.dropna()
     print(len(df))
     plt.figure(figsize=(10, 8))
-    plt.hist(df)
     plt.xlabel("Landing error, m")
     plt.ylabel("Frequency")
     plt.title("Landing error - Histogram")
@@ -212,23 +215,26 @@ def compute_landing_correlations(simulation_data):
 def plot_landing_error(sim_data: List[ErrorAnalysis]):
      
     parameters = ["wind_speed", "wind_dir", "target_pos_error_sigma", "target_pos_update_rate", 
-                    "target_pos_update_latency", "drone_pos_error_sigma",  "drone_pos_update_rate", 
-                    "drone_pos_update_latency"]
+                    "target_pos_update_latency"]
          
     sim_data_df = pd.DataFrame(sim_data, columns=["wind_speed", "wind_dir", "target_pos_error_sigma", "target_pos_update_rate", 
                     "target_pos_update_latency", "drone_pos_error_sigma",  "drone_pos_update_rate", 
-                    "drone_pos_update_latency", "landing_error", "landing_off_x", "landing_off_y"]) 
+                    "drone_pos_update_latency", "landing_error", "landing_off_x", "landing_off_y", "has_landed"]) 
 
-    sim_data_df = sim_data_df[sim_data_df["landing_error"] <= 25]
+    print(sim_data_df.shape)
+    # sim_data_df = sim_data_df[(sim_data_df["has_landed"] == True) & (sim_data_df["landing_error"] <= 25)]
+    print(sim_data_df["landing_error"].mean())
+    print(sim_data_df["landing_error"].median())
     print(sim_data_df.shape)
 
     # Overall Landing error
 
-    plt.figure()
+    plt.figure(figsize=(4,3))
+    plt.rcParams.update({'font.size': 20})
     plt.title("Landing Error")
     plt.scatter(sim_data_df["landing_off_x"], sim_data_df["landing_off_y"])
     plt.scatter(0,0,marker="*")
-    plot_square(2)
+    plot_square(2.5)
     plot_square(5)
     plot_square(10)
     plt.axis("equal")
@@ -239,21 +245,23 @@ def plot_landing_error(sim_data: List[ErrorAnalysis]):
     fig = plt.figure()
     for i, param in enumerate(parameters):
           
-        subplt = plt.subplot(4,2, i+1)
+        subplt = plt.subplot(3,2, i+1)
         # plt.rcParams.update({'font.size': 20})
         # fig = plt.figure(figsize=(4,3))
         # fig = plt.subplot()
         fig.suptitle('Effect of real world scenarios on landing error', fontsize=16)
         values = get_bins(param)
-
-        for value in values:
+        error_mean = np.empty(len(values))
+        for j,value in enumerate(values):
 
             df = sim_data_df[sim_data_df[param] == value]
-            plt.scatter(df["landing_off_x"], df["landing_off_y"], label=value)
+            error_mean[j] = df["landing_error"].mean()
+            # plt.scatter(df["landing_off_x"], df["landing_off_y"], label=value)
 
-        plot_square(2)
-        plot_square(5)
-        plot_square(10)
+        # plot_square(2.5)
+        # plot_square(5)
+        # plot_square(10)
+        plt.plot(values, error_mean)
         plt.legend(loc="upper right")
         plt.xlabel(get_xlabel(param))
         plt.xlim([-6, 6])
@@ -392,8 +400,9 @@ def visualize_logs():
     
     data_folder_path = os.path.expanduser(log_file_path)
 
-    for config in test_configs:
-        
+    # for config in test_configs:
+    for i in range(112, 113,1):
+        config = test_configs[i]
         folder = config["test_name"]
         if not os.path.exists(os.path.join(data_folder_path, folder)):
              continue
@@ -407,7 +416,7 @@ def visualize_logs():
         drone_pos_m = visualizer.get_drone_pos_neu_m()
         target_pos_m = visualizer.get_target_pos_neu_m()
         target_pos_noisy_m = visualizer._get_position_NEU(target_state_noisy[:,0:3])
-        drone_pos_raw_m = visualizer._get_position_NEU(drone_position_raw[:,0:3])
+        # drone_pos_raw_m = visualizer._get_position_NEU(drone_position_raw[:,0:3])
         
         # # XY Position Plot
         # plt.figure(figsize=(10,8))
@@ -428,39 +437,44 @@ def visualize_logs():
         # plt.grid(True)
         # plt.savefig(os.path.join(save_path, f"{folder}-xy-pos.png"))
         
-        # # Drone Altitude Plot
-        # plt.figure(figsize=(10,8))
-        # plt.plot(drone_pos_m[:, 2], linewidth=1.5)
-        # plt.title("Drone Altitude, m")
-        # plt.grid(True)
-        # plt.savefig(os.path.join(save_path, f"{folder}-drone-alt.png"))
+        # Drone Altitude Plot
+        plt.figure(figsize=(10,8))
+        plt.rcParams.update({'font.size': 20})
+        plt.plot(drone_pos_m[:, 2], linewidth=1.5)
+        plt.title("Drone Altitude, m")
+        plt.grid(True)
+        plt.savefig(os.path.join(save_path, f"{folder}-drone-alt.png"))
         
-        # # 3D Trajectory Plot
-        # fig = plt.figure(figsize=(10,8))
-        # ax = fig.add_subplot(111, projection='3d')
-        # ax.plot(drone_pos_m[:, 0], drone_pos_m[:, 1], drone_pos_m[:, 2], linewidth=1.5, label="Drone Position")
-        # ax.plot(target_pos_m[:, 0], target_pos_m[:, 1], target_pos_m[:, 2], linewidth=1.5, label="Target Position")
-        # ax.plot(target_pos_noisy_m[:, 0], target_pos_noisy_m[:, 1], target_pos_noisy_m[:, 2], linewidth=1.5, label="Target Position - Noisy")
-        # ax.set_title("Trajectories")
-        # ax.legend()
-        # ax.grid(True)
-        # plt.savefig(os.path.join(save_path, f"{folder}-3d-traj.png"))
+        # 3D Trajectory Plot
+        fig = plt.figure(figsize=(4,3))
+        plt.rcParams.update({'font.size': 16})
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot(drone_pos_m[:, 0], drone_pos_m[:, 1], drone_pos_m[:, 2], linewidth=1.5, label="Drone Position")
+        ax.plot(target_pos_m[:, 0], target_pos_m[:, 1], target_pos_m[:, 2], linewidth=1.5, label="Target Position")
+        ax.plot(target_pos_noisy_m[:, 0], target_pos_noisy_m[:, 1], target_pos_noisy_m[:, 2], linewidth=1.5, label="Target Position - Noisy")
+        ax.set_title("Trajectories")
+        ax.legend()
+        ax.grid(True)
+        plt.xlabel("x (m)")
+        plt.ylabel("y, (m)")
+        ax.set_zlabel("z, (m)")
+        plt.savefig(os.path.join(save_path, f"{folder}-3d-traj.png"))
 
         # With respect to time
 
-        plt.figure(figsize=(10,8))
+        # plt.figure(figsize=(10,8))
         # Scatter plot for drone and target positions
-        plt.scatter(time, drone_pos_m[:, 0], s=30, c='blue', label="Drone Position", marker='o')
-        plt.scatter(time, drone_pos_raw_m[:,0],  s=30, c='red', label="Drone Position Raw", marker='o')
+        # plt.scatter(time, drone_pos_m[:, 0], s=30, c='blue', label="Drone Position", marker='o')
+        # plt.scatter(time, drone_pos_raw_m[:,0],  s=30, c='red', label="Drone Position Raw", marker='o')
         # plt.scatter(time, target_pos_m[:, 0], s=30, c='green', label="Target Position", marker='o')
         # plt.scatter(time_gps, target_pos_noisy_m[:, 0], s=30, c='red', label="Target Position - Noisy", marker='^')
 
         # Labels and title
-        plt.xlabel('t, s')
-        plt.ylabel('x, m')
-        plt.title("X Position")
-        plt.legend()
-        plt.grid(True)
+        # plt.xlabel('t, s')
+        # plt.ylabel('x, m')
+        # plt.title("X Position")
+        # plt.legend()
+        # plt.grid(True)
         plt.show()
 
        

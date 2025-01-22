@@ -82,7 +82,7 @@ class SimulationEnvironment:
     ship_speed = 7.72 # 15 Knots
     drone_speed = 15
     
-    drone_alts = [50, 100]
+    drone_alts = [50, 75]
 
     initial_distance_from_target = [50, 75]
 
