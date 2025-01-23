@@ -54,7 +54,18 @@
 #undef AP_MOTORS_MAX_NUM_MOTORS
 #define AP_MOTORS_MAX_NUM_MOTORS NUM_SERVO_CHANNELS
 #endif
+
+// various Motors backends will not compile if we don't have 16 motors
+// available (eg. AP_Motors6DOF).  Until we stop compiling those
+// backends in when there aren't enough motors to support those
+// backends we will support a minimum of 12 motors, the limit before
+// we moved to 32 motor support:
+#if AP_MOTORS_MAX_NUM_MOTORS < 12
+#undef AP_MOTORS_MAX_NUM_MOTORS
+#define AP_MOTORS_MAX_NUM_MOTORS 12
 #endif
+
+#endif  // defined (AP_MOTORS_MAX_NUM_MOTORS)
 
 #ifndef AP_MOTORS_FRAME_DEFAULT_ENABLED
 #define AP_MOTORS_FRAME_DEFAULT_ENABLED 1
