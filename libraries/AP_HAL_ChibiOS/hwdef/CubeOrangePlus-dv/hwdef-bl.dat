@@ -2,3 +2,6 @@ include ../CubeOrangePlus/hwdef-bl.dat
 
 # enable OpenDroneID
 define AP_OPENDRONEID_ENABLED 1
+
+# order of UARTs (and USB). Here we enable USB and Telem1 ports only.
+SERIAL_ORDER OTG1 USART2
