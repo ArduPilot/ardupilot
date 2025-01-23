@@ -249,7 +249,7 @@ public:
 #endif
 #endif // HAL_PERIPH_ENABLE_RPM
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY
+#if AP_PERIPH_BATTERY_ENABLED
     void handle_battery_failsafe(const char* type_str, const int8_t action) { }
     AP_BattMonitor battery_lib{0, FUNCTOR_BIND_MEMBER(&AP_Periph_FW::handle_battery_failsafe, void, const char*, const int8_t), nullptr};
     struct {
@@ -379,7 +379,7 @@ public:
     Parameters_RCIN g_rcin;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
+#if AP_PERIPH_BATTERY_BALANCE_ENABLED
     void batt_balance_update();
     BattBalance battery_balance;
 #endif

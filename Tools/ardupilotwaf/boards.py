@@ -958,7 +958,7 @@ class sitl_periph_universal(sitl_periph):
             HAL_PERIPH_ENABLE_BARO = 1,
             HAL_PERIPH_ENABLE_IMU = 1,
             HAL_PERIPH_ENABLE_RANGEFINDER = 1,
-            HAL_PERIPH_ENABLE_BATTERY = 1,
+            AP_PERIPH_BATTERY_ENABLED = 1,
             HAL_PERIPH_ENABLE_EFI = 1,
             HAL_PERIPH_ENABLE_RPM = 1,
             HAL_PERIPH_ENABLE_RPM_STREAM = 1,
@@ -997,7 +997,7 @@ class sitl_periph_battmon(sitl_periph):
             CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_battmon"',
             APJ_BOARD_ID = 101,
 
-            HAL_PERIPH_ENABLE_BATTERY = 1,
+            AP_PERIPH_BATTERY_ENABLED = 1,
         )
 
 class esp32(Board):
