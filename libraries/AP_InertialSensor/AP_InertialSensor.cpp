@@ -1891,14 +1891,10 @@ void AP_InertialSensor::HarmonicNotch::update_params(uint8_t instance, bool conv
 }
 #endif
 
-// notify IMUs of the new primaries
-void AP_InertialSensor::set_primary_gyro(uint8_t instance)
+// notify IMUs of the new primary
+void AP_InertialSensor::set_primary(uint8_t instance)
 {
-    _primary_gyro = instance;
-}
-void AP_InertialSensor::set_primary_accel(uint8_t instance)
-{
-    _primary_accel = instance;
+    _primary = instance;
 }
 
 /*
@@ -1974,7 +1970,7 @@ void AP_InertialSensor::update(void)
             if (_gyro_healthy[i] && _use(i)) {
                 _first_usable_gyro = i;
 #if !AP_AHRS_ENABLED
-                _primary_gyro = _first_usable_gyro;
+                _primary = _first_usable_gyro;
 #endif
                 break;
             }
@@ -1982,9 +1978,6 @@ void AP_InertialSensor::update(void)
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_accel_healthy[i] && _use(i)) {
                 _first_usable_accel = i;
-#if !AP_AHRS_ENABLED
-                _primary_accel = _first_usable_accel;
-#endif
                 break;
             }
         }
