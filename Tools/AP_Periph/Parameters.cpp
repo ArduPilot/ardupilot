@@ -250,7 +250,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #endif
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY
+#if AP_PERIPH_BATTERY_ENABLED
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
     GOBJECT(battery_lib, "BATT", AP_BattMonitor),
@@ -637,7 +637,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(g_rcin, "RC",  Parameters_RCIN),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
+#if AP_PERIPH_BATTERY_BALANCE_ENABLED
     // @Group: BAL
     // @Path: batt_balance.cpp
     GOBJECT(battery_balance, "BAL",  BattBalance),

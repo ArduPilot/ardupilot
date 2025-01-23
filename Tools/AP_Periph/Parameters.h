@@ -204,7 +204,7 @@ public:
     AP_Int16 sysid_this_mav;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY
+#if AP_PERIPH_BATTERY_ENABLED
     AP_Int32 battery_hide_mask;
 #endif
 

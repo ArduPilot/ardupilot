@@ -177,7 +177,7 @@ void AP_Periph_FW::init()
     }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY
+#if AP_PERIPH_BATTERY_ENABLED
     battery_lib.init();
 #endif
 
@@ -485,7 +485,7 @@ void AP_Periph_FW::update()
 #endif
     }
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY
+#if AP_PERIPH_BATTERY_ENABLED
     if (now - battery.last_read_ms >= 100) {
         // update battery at 10Hz
         battery.last_read_ms = now;
@@ -497,7 +497,7 @@ void AP_Periph_FW::update()
     rcin_update();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
+#if AP_PERIPH_BATTERY_BALANCE_ENABLED
     batt_balance_update();
 #endif
     
