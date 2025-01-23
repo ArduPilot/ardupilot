@@ -959,6 +959,7 @@ class sitl_periph_universal(sitl_periph):
             HAL_PERIPH_ENABLE_IMU = 1,
             HAL_PERIPH_ENABLE_RANGEFINDER = 1,
             AP_PERIPH_BATTERY_ENABLED = 1,
+            AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
             HAL_PERIPH_ENABLE_EFI = 1,
             HAL_PERIPH_ENABLE_RPM = 1,
             HAL_PERIPH_ENABLE_RPM_STREAM = 1,
@@ -998,6 +999,7 @@ class sitl_periph_battmon(sitl_periph):
             APJ_BOARD_ID = 101,
 
             AP_PERIPH_BATTERY_ENABLED = 1,
+            AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
         )
 
 class esp32(Board):
