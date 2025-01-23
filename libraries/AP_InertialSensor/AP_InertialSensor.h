@@ -283,9 +283,8 @@ public:
     // Returns newly calculated trim values if calculated
     bool get_new_trim(Vector3f &trim_rad);
 
-    // notify IMUs of the new primaries
-    void set_primary_gyro(uint8_t instance);
-    void set_primary_accel(uint8_t instance);
+    // notify IMUs of the new primary
+    void set_primary(uint8_t instance);
 
 #if HAL_INS_ACCELCAL_ENABLED
     // initialise and register accel calibrator
@@ -667,9 +666,8 @@ private:
     uint8_t _first_usable_gyro;
     uint8_t _first_usable_accel;
 
-    // primary accel and gyro
-    uint8_t _primary_gyro;
-    uint8_t _primary_accel;
+    // primary instance
+    uint8_t _primary;
 
     // mask of accels and gyros which we will be actively using
     // and this should wait for in wait_for_sample()

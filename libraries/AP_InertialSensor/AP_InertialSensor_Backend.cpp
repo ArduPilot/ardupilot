@@ -235,7 +235,7 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
         // currently active IMU we reset the inactive notch filters so
         // that if we switch IMUs we're not left with old data
         if (!notch.params.hasOption(HarmonicNotchFilterParams::Options::EnableOnAllIMUs) &&
-            instance != _imu._primary_gyro) {
+            instance != _imu._primary) {
             inactive = true;
         }
         if (inactive) {
@@ -471,7 +471,7 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
     }
 
 #if AP_AHRS_ENABLED
-    const bool log_because_primary_gyro = _imu.raw_logging_option_set(AP_InertialSensor::RAW_LOGGING_OPTION::PRIMARY_GYRO_ONLY) && (instance == AP::ahrs().get_primary_gyro_index());
+    const bool log_because_primary_gyro = _imu.raw_logging_option_set(AP_InertialSensor::RAW_LOGGING_OPTION::PRIMARY_GYRO_ONLY) && (instance == _imu._primary);
 #else
     const bool log_because_primary_gyro = false;
 #endif
@@ -811,9 +811,9 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
 void AP_InertialSensor_Backend::update_primary()
 {
     // timing changes need to be made in the bus thread in order to take effect which is
-    // why they are actioned here. Currently the _primary_gyro and _primary_accel can never
+    // why they are actioned here. Currently the primary gyro and  primary accel can never
     // be different for a particular IMU
-    const bool is_new_primary = (gyro_instance == _imu._primary_gyro);
+    const bool is_new_primary = (gyro_instance == _imu._primary);
     uint32_t now_us = AP_HAL::micros();
     if (is_primary != is_new_primary
         || AP_HAL::timeout_expired(last_primary_update_us, now_us, PRIMARY_UPDATE_TIMEOUT_US)) {

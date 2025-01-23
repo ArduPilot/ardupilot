@@ -196,7 +196,7 @@ void AP_InertialSensor::write_notch_log_messages() const
 
         // ask the HarmonicNotchFilter object for primary gyro to
         // log the actual notch centers
-        notch.filter[_primary_gyro].log_notch_centers(i, now_us);
+        notch.filter[_primary].log_notch_centers(i, now_us);
     }
 }
 #endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
