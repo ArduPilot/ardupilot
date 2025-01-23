@@ -6,6 +6,7 @@
 #include <Filter/DerivativeFilter.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Logger/AP_Logger_config.h>
+#include <SRV_Channel/SRV_Channel_config.h>
 
 // offsets for motors in motor_out and _motor_filtered arrays
 #define AP_MOTORS_MOT_1 0U
@@ -46,6 +47,12 @@
 #define AP_MOTORS_MAX_NUM_MOTORS 32
 #else
 #define AP_MOTORS_MAX_NUM_MOTORS 12
+#endif
+
+// doesn't make sense to have more motors than servo channels, so clamp:
+#if NUM_SERVO_CHANNELS < AP_MOTORS_MAX_NUM_MOTORS
+#undef AP_MOTORS_MAX_NUM_MOTORS
+#define AP_MOTORS_MAX_NUM_MOTORS NUM_SERVO_CHANNELS
 #endif
 #endif
 
