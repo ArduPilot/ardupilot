@@ -156,14 +156,38 @@
 #define AP_RELAY_ENABLED 0
 #endif
 
+/*
+ * sanity checks that hwdefs are up-to-date in terms of how they are
+ * trying to configure the peripheral:
+ */
 #ifdef HAL_PERIPH_ENABLE_GPS
 #error "Change 'define HAL_PERIPH_ENABLE_GPS' to 'define AP_PERIPH_GPS_ENABLED 1'"
 #endif
+#ifdef HAL_PERIPH_ENABLE_BATTERY
+#error "Change 'define HAL_PERIPH_ENABLE_BATTERY' to 'define AP_PERIPH_BATTERY_ENABLED 1'"
+#endif
+#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
+#error "Change 'define HAL_PERIPH_ENABLE_BATTERY_BALANCE' to 'define AP_PERIPH_BATTERY_BALANCE_ENABLED 1'"
+#endif
 
+/*
+ * defaults for various AP_Periph features:
+ */
+#ifndef AP_PERIPH_BATTERY_ENABLED
+#define AP_PERIPH_BATTERY_ENABLED 0
+#endif
+#ifndef AP_PERIPH_BATTERY_BALANCE_ENABLED
+#define AP_PERIPH_BATTERY_BALANCE_ENABLED 0
+#endif
 #ifndef AP_PERIPH_GPS_ENABLED
 #define AP_PERIPH_GPS_ENABLED 0
 #endif
 
+/*
+ * turning on of ArduPilot features based on which AP_Periph features
+ * are enabled:
+ */
+#define AP_BATTERY_ENABLED AP_PERIPH_BATTERY_ENABLED
 #define AP_GPS_ENABLED AP_PERIPH_GPS_ENABLED
 
 /*
@@ -350,7 +374,6 @@
 #define AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED 0
 #endif
 
-#define AP_BATTERY_ENABLED defined(HAL_PERIPH_ENABLE_BATTERY)
 #define AP_AHRS_ENABLED defined(HAL_PERIPH_ENABLE_AHRS)
 #define AP_COMPASS_ENABLED defined(HAL_PERIPH_ENABLE_MAG)
 #define AP_BARO_ENABLED defined(HAL_PERIPH_ENABLE_BARO)

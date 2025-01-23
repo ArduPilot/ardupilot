@@ -59,7 +59,7 @@ define HAL_MSP_ENABLED 1
 define AP_PERIPH_MSP_PORT_DEFAULT 1
 
 # ------------------ BATTERY Monitor -----------------------
-define HAL_PERIPH_ENABLE_BATTERY
+define AP_PERIPH_BATTERY_ENABLED 1
 
 define HAL_USE_ADC TRUE
 define STM32_ADC_USE_ADC1 TRUE
