@@ -2559,11 +2559,6 @@ class TestSuite(ABC):
     def get_sim_parameter_documentation_get_whitelist(self):
         # common parameters
         ret = set([
-            "SIM_FTOWESC_ENA",
-            "SIM_FTOWESC_POW",
-            "SIM_IE24_ENABLE",
-            "SIM_IE24_ERROR",
-            "SIM_IE24_STATE",
             "SIM_IMUT1_ACC1_X",
             "SIM_IMUT1_ACC1_Y",
             "SIM_IMUT1_ACC1_Z",
@@ -2704,8 +2699,6 @@ class TestSuite(ABC):
             "SIM_MAG1_OFS_Z",
             "SIM_PARA_ENABLE",
             "SIM_PARA_PIN",
-            "SIM_RICH_CTRL",
-            "SIM_RICH_ENABLE",
             "SIM_SHIP_DSIZE",
             "SIM_SHIP_ENABLE",
             "SIM_SHIP_OFS_X",
