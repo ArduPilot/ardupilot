@@ -140,7 +140,7 @@ jobs:
   build-test:
     runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-ros:latest
+      image: andrewkwolek/ardupilot-dev-ros:latest
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
     steps:
