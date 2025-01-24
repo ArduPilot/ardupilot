@@ -189,7 +189,7 @@ void AP_Periph_FW::rcout_update()
 */
 void AP_Periph_FW::sim_update_actuator(uint8_t actuator_id)
 {
-    sim_actuator.mask |= 1U << actuator_id;
+    sim_actuator.mask |= 1U << (actuator_id - 1);
 
     // send status at 10Hz
     const uint32_t period_ms = 100;
@@ -204,7 +204,7 @@ void AP_Periph_FW::sim_update_actuator(uint8_t actuator_id)
         if ((sim_actuator.mask & (1U<<i)) == 0) {
             continue;
         }
-        const SRV_Channel::Aux_servo_function_t function = SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + actuator_id - 1);
+        const SRV_Channel::Aux_servo_function_t function = SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i);
         uavcan_equipment_actuator_Status pkt {};
         pkt.actuator_id = i;
         // assume 45 degree angle for simulation
