@@ -322,6 +322,7 @@ local function f2i (x) return x | x end
 checkerror(msgf2i, f2i, math.huge)     -- +inf
 checkerror(msgf2i, f2i, -math.huge)    -- -inf
 checkerror(msgf2i, f2i, 0/0)           -- NaN
+checkerror(msgf2i, f2i, uint32_t(1)/uint32_t(0)) -- division by zero
 
 if floatbits < intbits then
   -- conversion tests when float cannot represent all integers
