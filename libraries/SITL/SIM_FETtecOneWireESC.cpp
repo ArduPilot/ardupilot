@@ -64,7 +64,7 @@ const AP_Param::GroupInfo FETtecOneWireESC::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ENA", 1, FETtecOneWireESC, _enabled, 0),
 
-    // @Param: PWOF
+    // @Param: POW
     // @DisplayName: Power off FETtec ESC mask
     // @Description: Allows you to turn power off to the simulated ESCs.  Bits correspond to the ESC ID, *NOT* their servo channel.
     // @User: Advanced
