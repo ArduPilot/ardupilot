@@ -38,7 +38,7 @@ ArduPilot `AP_DDS` client library.
 
 The packages depend on:
 
-- [ROS 2 Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html)
+- [ROS 2 jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debians.html)
 
 
 ## Install Ubuntu
@@ -49,7 +49,7 @@ The packages depend on:
 mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
 ```
 
-The ROS 2 tutorials contain more details regarding [ROS 2 workspaces](https://docs.ros.org/en/humble/Tutorials/Workspace/Creating-A-Workspace.html).
+The ROS 2 tutorials contain more details regarding [ROS 2 workspaces](https://docs.ros.org/en/jazzy/Tutorials/Workspace/Creating-A-Workspace.html).
 
 #### 2. Get the `ros2.repos` file
 
@@ -63,7 +63,7 @@ vcs import --recursive < ros2.repos
 
 ```bash
 cd ~/ros2_ws
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 sudo apt update
 rosdep update
 rosdep install --rosdistro ${ROS_DISTRO} --from-paths src
@@ -71,12 +71,12 @@ rosdep install --rosdistro ${ROS_DISTRO} --from-paths src
 
 #### 4. Build
 
-Check that the [ROS environment](https://docs.ros.org/en/humble/Tutorials/Beginner-CLI-Tools/Configuring-ROS2-Environment.html#check-environment-variables) is configured correctly:
+Check that the [ROS environment](https://docs.ros.org/en/jazzy/Tutorials/Beginner-CLI-Tools/Configuring-ROS2-Environment.html#check-environment-variables) is configured correctly:
 
 ```bash
 ROS_VERSION=2
 ROS_PYTHON_VERSION=3
-ROS_DISTRO=humble
+ROS_DISTRO=jazzy
 ```
 
 ```bash
