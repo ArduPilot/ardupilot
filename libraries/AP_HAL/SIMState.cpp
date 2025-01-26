@@ -274,6 +274,10 @@ void SIMState::fdm_input_local(void)
  */
 void SIMState::_simulator_servos(struct sitl_input &input)
 {
+    if (_sitl == nullptr) {
+        return;
+    }
+
     // output at chosen framerate
     uint32_t now = AP_HAL::micros();
 
@@ -288,7 +292,7 @@ void SIMState::_simulator_servos(struct sitl_input &input)
     // give 5 seconds to calibrate airspeed sensor at 0 wind speed
     if (wind_start_delay_micros == 0) {
         wind_start_delay_micros = now;
-    } else if (_sitl && (now - wind_start_delay_micros) > 5000000 ) {
+    } else if ((now - wind_start_delay_micros) > 5000000) {
         // The EKF does not like step inputs so this LPF keeps it happy.
         wind_speed =     _sitl->wind_speed_active     = (0.95f*_sitl->wind_speed_active)     + (0.05f*_sitl->wind_speed);
         wind_direction = _sitl->wind_direction_active = (0.95f*_sitl->wind_direction_active) + (0.05f*_sitl->wind_direction);
@@ -317,7 +321,7 @@ void SIMState::_simulator_servos(struct sitl_input &input)
 
     input.wind.speed = wind_speed;
     input.wind.direction = wind_direction;
-    input.wind.turbulence = _sitl?_sitl->wind_turbulance:0;
+    input.wind.turbulence = _sitl->wind_turbulance;
     input.wind.dir_z = wind_dir_z;
 
     for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
@@ -328,12 +332,11 @@ void SIMState::_simulator_servos(struct sitl_input &input)
         }
     }
 
-    if (_sitl != nullptr) {
+    {
         // FETtec ESC simulation support.  Input signals of 1000-2000
         // are positive thrust, 0 to 1000 are negative thrust.  Deeper
         // changes required to support negative thrust - potentially
         // adding a field to input.
-        if (_sitl != nullptr) {
             if (_sitl->fetteconewireesc_sim.enabled()) {
                 _sitl->fetteconewireesc_sim.update_sitl_input_pwm(input);
                 for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
@@ -342,7 +345,6 @@ void SIMState::_simulator_servos(struct sitl_input &input)
                     }
                 }
             }
-        }
     }
 
 #if AP_SIM_VOLZ_ENABLED
@@ -360,8 +362,8 @@ void SIMState::_simulator_servos(struct sitl_input &input)
 
     float voltage = 0;
     _current = 0;
-    
-    if (_sitl != nullptr) {
+
+    {
         if (_sitl->state.battery_voltage <= 0) {
         } else {
             // FDM provides voltage and current
