@@ -169,6 +169,9 @@
 #ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
 #error "Change 'define HAL_PERIPH_ENABLE_BATTERY_BALANCE' to 'define AP_PERIPH_BATTERY_BALANCE_ENABLED 1'"
 #endif
+#ifdef HAL_PERIPH_ENABLE_AHRS
+#error "Change 'define HAL_PERIPH_ENABLE_AHRS' to 'define AP_PERIPH_AHRS_ENABLED 1'"
+#endif
 
 /*
  * defaults for various AP_Periph features:
@@ -182,6 +185,9 @@
 #ifndef AP_PERIPH_GPS_ENABLED
 #define AP_PERIPH_GPS_ENABLED 0
 #endif
+#ifndef AP_PERIPH_AHRS_ENABLED
+#define AP_PERIPH_AHRS_ENABLED 0
+#endif
 
 /*
  * turning on of ArduPilot features based on which AP_Periph features
@@ -189,6 +195,7 @@
  */
 #define AP_BATTERY_ENABLED AP_PERIPH_BATTERY_ENABLED
 #define AP_GPS_ENABLED AP_PERIPH_GPS_ENABLED
+#define AP_AHRS_ENABLED AP_PERIPH_AHRS_ENABLED
 
 /*
  * GPS Backends - we selectively turn backends on.
@@ -374,7 +381,6 @@
 #define AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED 0
 #endif
 
-#define AP_AHRS_ENABLED defined(HAL_PERIPH_ENABLE_AHRS)
 #define AP_COMPASS_ENABLED defined(HAL_PERIPH_ENABLE_MAG)
 #define AP_BARO_ENABLED defined(HAL_PERIPH_ENABLE_BARO)
 #define AP_RANGEFINDER_ENABLED defined(HAL_PERIPH_ENABLE_RANGEFINDER)
