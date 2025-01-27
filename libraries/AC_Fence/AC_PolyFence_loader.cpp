@@ -225,7 +225,7 @@ bool AC_PolyFence_loader::breached() const
 
 // check if a position (expressed as lat/lng) is within the boundary
 //   returns true if location is outside the boundary
-bool AC_PolyFence_loader::breached(const Location& loc, float margin, bool& inside_margin) const
+bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_fence) const
 {
     if (!loaded() || total_fence_count() == 0) {
         return false;
@@ -237,25 +237,41 @@ bool AC_PolyFence_loader::breached(const Location& loc, float margin, bool& insi
 
     const uint16_t num_inclusion = _num_loaded_circle_inclusion_boundaries + _num_loaded_inclusion_boundaries;
     uint16_t num_inclusion_outside = 0;
-    inside_margin = false;
+    distance_outside_fence = -FLT_MAX;
 
     // check we are inside each inclusion zone:
     for (uint8_t i=0; i<_num_loaded_inclusion_boundaries; i++) {
         const InclusionBoundary &boundary = _loaded_inclusion_boundary[i];
+        ftype distance;
+        bool valid_distance = Polygon_closest_distance_point(boundary.points_lla, boundary.count, pos, distance);
         if (Polygon_outside(pos, boundary.points_lla, boundary.count)) {
             num_inclusion_outside++;
-        } else if (Polygon_closest_distance_point(boundary.points_lla, boundary.count, pos) < margin) {
-            inside_margin = true;
+            if (valid_distance) {
+                if (is_positive(distance_outside_fence)) {
+                    distance_outside_fence = MIN(distance_outside_fence, distance);
+                } else {
+                    distance_outside_fence = distance;
+                }
+            }
+        } else if (valid_distance) {
+            distance_outside_fence = MAX(distance_outside_fence, -distance);
         }
     }
 
     // check we are outside each exclusion zone:
     for (uint8_t i=0; i<_num_loaded_exclusion_boundaries; i++) {
         const ExclusionBoundary &boundary = _loaded_exclusion_boundary[i];
+        ftype distance;
+        bool valid_distance = Polygon_closest_distance_point(boundary.points_lla, boundary.count, pos, distance);
         if (!Polygon_outside(pos, boundary.points_lla, boundary.count)) {
+            if (valid_distance) {
+                distance_outside_fence = distance;
+            } else {
+                distance_outside_fence = 0.0f;
+            }
             return true;
-        } else if (Polygon_closest_distance_point(boundary.points_lla, boundary.count, pos) < margin) {
-            inside_margin = true;
+        } else if (valid_distance) {
+            distance_outside_fence = MAX(distance_outside_fence, -distance);
         }
     }
 
@@ -265,10 +281,9 @@ bool AC_PolyFence_loader::breached(const Location& loc, float margin, bool& insi
         circle_center.lat = circle.point.x;
         circle_center.lng = circle.point.y;
         const float diff_cm = loc.get_distance(circle_center)*100.0f;
+        distance_outside_fence = MAX(distance_outside_fence, circle.radius - diff_cm/100.0f);
         if (diff_cm < circle.radius * 100.0f) {
             return true;
-        } else if (diff_cm < (circle.radius + margin) * 100.0f) {
-            inside_margin = true;
         }
     }
 
@@ -278,10 +293,9 @@ bool AC_PolyFence_loader::breached(const Location& loc, float margin, bool& insi
         circle_center.lat = circle.point.x;
         circle_center.lng = circle.point.y;
         const float diff_cm = loc.get_distance(circle_center)*100.0f;
+        distance_outside_fence = MAX(distance_outside_fence, diff_cm/100.0f - circle.radius);
         if (diff_cm > circle.radius * 100.0f) {
             num_inclusion_outside++;
-        } else if (diff_cm > (circle.radius - margin) * 100.0f) {
-            inside_margin = true;
         }
     }
 
@@ -298,6 +312,11 @@ bool AC_PolyFence_loader::breached(const Location& loc, float margin, bool& insi
         if (num_inclusion_outside > 0) {
             return true;
         }
+    }
+
+    // if no value was found, reset to 0
+    if (is_equal(distance_outside_fence, -FLT_MAX)) {
+        distance_outside_fence = 0.0f;
     }
 
     // no fence breached
@@ -1647,7 +1666,7 @@ bool AC_PolyFence_loader::get_inclusion_circle(uint8_t index, Vector2f &center_p
 void AC_PolyFence_loader::handle_msg(GCS_MAVLINK &link, const mavlink_message_t& msg) {};
 
 bool AC_PolyFence_loader::breached() const { return false; }
-bool AC_PolyFence_loader::breached(const Location& loc, float margin, bool& inside_margin) const { return false; }
+bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_fence) const { return false; }
 
 uint16_t AC_PolyFence_loader::max_items() const { return 0; }
 
