@@ -56,9 +56,16 @@ public:
     // mission when approaching a waypoint
     virtual float turn_distance(float wp_radius, float turn_angle) const = 0;
 
-    // return the target loiter radius for the current location that
-    // will not cause excessive airframe loading
-    virtual float loiter_radius(const float radius) const = 0;
+    // return true if the loiter radius is achievable at the current indicated
+    // airspeed and altitude AMSL, or at the given ones if specified
+    virtual bool is_loiter_achievable(float radius,
+        float indicated_airspeed = NAN, float altitude_amsl = NAN) const = 0;
+
+    // return the provided loiter radius if its achievable, and if not, the
+    // smallest radius that can be achieved at the current indicated airspeed
+    // and altitude AMSL, or at the given ones if specified
+    virtual float calc_corrected_loiter_radius(float original_radius,
+        float indicated_airspeed = NAN, float altitude_amsl = NAN) const = 0;
 
     // update the internal state of the navigation controller, given
     // the previous and next waypoints. This is the step function for
