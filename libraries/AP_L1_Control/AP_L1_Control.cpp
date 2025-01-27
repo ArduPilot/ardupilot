@@ -142,36 +142,9 @@ float AP_L1_Control::turn_distance(float wp_radius, float turn_angle) const
     return distance_90 * turn_angle / 90.0f;
 }
 
-float AP_L1_Control::loiter_radius(const float radius) const
+float AP_L1_Control::corrected_loiter_radius(float original_radius) const
 {
-    // prevent an insane loiter bank limit
-    float sanitized_bank_limit = constrain_float(_nav_roll_max_deg(), 0.0f, 89.0f);
-    float lateral_accel_sea_level = tanf(radians(sanitized_bank_limit)) * GRAVITY_MSS;
-
-    float nominal_velocity_sea_level = 0.0f;
-    if(_tecs != nullptr) {
-        nominal_velocity_sea_level =  _tecs->get_target_airspeed();
-    }
-
-    float eas2tas_sq = sq(_ahrs.get_EAS2TAS());
-
-    if (is_zero(sanitized_bank_limit) || is_zero(nominal_velocity_sea_level) ||
-        is_zero(lateral_accel_sea_level)) {
-        // Missing a sane input for calculating the limit, or the user has
-        // requested a straight scaling with altitude. This will always vary
-        // with the current altitude, but will at least protect the airframe
-        return radius * eas2tas_sq;
-    } else {
-        float sea_level_radius = sq(nominal_velocity_sea_level) / lateral_accel_sea_level;
-        if (sea_level_radius > radius) {
-            // If we've told the plane that its sea level radius is unachievable fallback to
-            // straight altitude scaling
-            return radius * eas2tas_sq;
-        } else {
-            // select the requested radius, or the required altitude scale, whichever is safer
-            return MAX(sea_level_radius * eas2tas_sq, radius);
-        }
-    }
+    return MAX(original_radius, _calc_min_turn_radius());
 }
 
 bool AP_L1_Control::reached_loiter_target(void)
@@ -197,6 +170,17 @@ void AP_L1_Control::_prevent_indecision(float &Nu)
         // oscillating in our decision about which way to go
         Nu = _last_Nu;
     }
+}
+
+/*
+  calculate the minimum achievable turn radius based on the current target
+  airspeed and navigation roll limit (assuming steady, coordinated, level turn)
+ */
+float AP_L1_Control::_calc_min_turn_radius() const
+{
+    float tas_at_alt = _tecs->get_target_airspeed() * _ahrs.get_EAS2TAS();
+
+    return sq(tas_at_alt) / (GRAVITY_MSS * tanf(radians(_nav_roll_max_deg())));
 }
 
 /*
