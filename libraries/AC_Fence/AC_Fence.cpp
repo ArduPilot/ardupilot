@@ -536,12 +536,11 @@ bool AC_Fence::check_fence_alt_max()
     AP::ahrs().get_relative_position_D_home(alt);
     const float _curr_alt = -alt; // translate Down to Up
 
+    // record distance above/below breach
+    _alt_max_breach_distance = _curr_alt - _alt_max;
+
     // check if we are over the altitude fence
     if (_curr_alt >= _alt_max) {
-
-        // record distance above breach
-        _alt_max_breach_distance = _curr_alt - _alt_max;
-
         // check for a new breach or a breach of the backup fence
         if (!(_breached_fences & AC_FENCE_TYPE_ALT_MAX) ||
             (!is_zero(_alt_max_backup) && _curr_alt >= _alt_max_backup)) {
@@ -568,7 +567,6 @@ bool AC_Fence::check_fence_alt_max()
     if ((_breached_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
         clear_breach(AC_FENCE_TYPE_ALT_MAX);
         _alt_max_backup = 0.0f;
-        _alt_max_breach_distance = 0.0f;
     }
 
     return false;
@@ -589,11 +587,12 @@ bool AC_Fence::check_fence_alt_min()
     AP::ahrs().get_relative_position_D_home(alt);
     const float _curr_alt = -alt; // translate Down to Up
 
+    // record distance above/below breach
+    _alt_min_breach_distance = _alt_min - _curr_alt;
+
     // check if we are under the altitude fence
     if (_curr_alt <= _alt_min) {
 
-        // record distance below breach
-        _alt_min_breach_distance = _alt_min - _curr_alt;
 
         // check for a new breach or a breach of the backup fence
         if (!(_breached_fences & AC_FENCE_TYPE_ALT_MIN) ||
@@ -621,7 +620,6 @@ bool AC_Fence::check_fence_alt_min()
     if ((_breached_fences & AC_FENCE_TYPE_ALT_MIN) != 0) {
         clear_breach(AC_FENCE_TYPE_ALT_MIN);
         _alt_min_backup = 0.0f;
-        _alt_min_breach_distance = 0.0f;
     }
 
     return false;
@@ -670,15 +668,15 @@ bool AC_Fence::check_fence_polygon()
 
     Location loc;
     bool have_location = AP::ahrs().get_location(loc);
-    bool inside_margin = false;
 
-    if (have_location && _poly_loader.breached(loc, _margin, inside_margin)) {
+    if (have_location && _poly_loader.breached(loc, _polygon_breach_distance)) {
         if (!was_breached) {
             record_breach(AC_FENCE_TYPE_POLYGON);
             return true;
         }
         return false;
-    } else if (option_enabled(OPTIONS::MARGIN_BREACH) && inside_margin) {
+    } else if (option_enabled(OPTIONS::MARGIN_BREACH)
+               && _polygon_breach_distance < 0 && fabsf(_polygon_breach_distance) < _margin) {
         record_margin_breach(AC_FENCE_TYPE_POLYGON);
     } else {
         clear_margin_breach(AC_FENCE_TYPE_POLYGON);
@@ -707,11 +705,11 @@ bool AC_Fence::check_fence_circle()
         _home_distance = home.length();
     }
 
+    // record distance outside/inside the fence
+    _circle_breach_distance = _home_distance - _circle_radius;
+
     // check if we are outside the fence
     if (_home_distance >= _circle_radius) {
-
-        // record distance outside the fence
-        _circle_breach_distance = _home_distance - _circle_radius;
 
         // check for a new breach or a breach of the backup fence
         if (!(_breached_fences & AC_FENCE_TYPE_CIRCLE) ||
@@ -735,7 +733,6 @@ bool AC_Fence::check_fence_circle()
     if (_breached_fences & AC_FENCE_TYPE_CIRCLE) {
         clear_breach(AC_FENCE_TYPE_CIRCLE);
         _circle_radius_backup = 0.0f;
-        _circle_breach_distance = 0.0f;
     }
 
     return false;
@@ -941,10 +938,11 @@ void AC_Fence::clear_margin_breach(uint8_t fence_type)
 }
 
 /// get_breach_distance - returns maximum distance in meters outside
+/// negative values mean distance in meters inside
 /// of the given fences.  fence_type is a bitmask here.
 float AC_Fence::get_breach_distance(uint8_t fence_type) const
 {
-    float max = 0.0f;
+    float max = -FLT_MAX;
 
     if (fence_type & AC_FENCE_TYPE_ALT_MAX) {
         max = MAX(_alt_max_breach_distance, max);
@@ -954,6 +952,9 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const
     }
     if (fence_type & AC_FENCE_TYPE_CIRCLE) {
         max = MAX(_circle_breach_distance, max);
+    }
+    if (fence_type & AC_FENCE_TYPE_POLYGON) {
+        max = MAX(_polygon_breach_distance, max);
     }
     return max;
 }
