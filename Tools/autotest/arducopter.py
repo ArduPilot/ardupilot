@@ -12535,6 +12535,55 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_heading(original_heading)
             self.wait_disarmed()
 
+    def CompassLearnCopyFromEKF(self):
+        '''test compass learning whereby we copy learnt offsets from the EKF'''
+        self.reboot_sitl()
+        self.context_push()
+        self.set_parameters({
+            "SIM_MAG1_OFS_X": 1100,
+        })
+        self.assert_prearm_failure("Check mag field", other_prearm_failures_fatal=False)
+        self.context_pop()
+        self.wait_ready_to_arm()
+        self.takeoff(30, mode='ALT_HOLD')
+        # prevent EKF switching to good compass:
+        self.set_parameters({
+            'COMPASS_USE2': 0,
+            'COMPASS_USE3': 0,
+        })
+        self.assert_parameter_value("COMPASS_OFS_X", 20, epsilon=30)
+        new_compass_ofs_x = 200
+        self.set_parameters({
+            "SIM_MAG1_OFS_X": new_compass_ofs_x,
+        })
+        self.set_parameter("COMPASS_LEARN", 2)  # 2 is Copy-from-EKF
+
+        # commence silly flying to try to give the EKF as much
+        # information as possible for it to converge its estimation;
+        # there's a 5e-6 check before we consider the offsets good!
+        self.set_rc(4, 1450)
+        self.set_rc(1, 1450)
+        for i in range(0, 5):  # we descend through all of this:
+            self.change_mode('LOITER')
+            self.delay_sim_time(10)
+            self.change_mode('ALT_HOLD')
+            self.change_mode('FLIP')
+
+        self.set_parameter('ANGLE_MAX', 7000)
+        self.change_mode('ALT_HOLD')
+        for j in 1000, 2000:
+            for i in 1, 2, 4:
+                self.set_rc(i, j)
+                self.delay_sim_time(10)
+        self.set_rc(1, 1500)
+        self.set_rc(2, 1500)
+        self.set_rc(4, 1500)
+
+        self.do_RTL()
+        self.assert_parameter_value("COMPASS_OFS_X", new_compass_ofs_x, epsilon=30)
+        self.reboot_sitl()
+        self.assert_parameter_value("COMPASS_OFS_X", new_compass_ofs_x, epsilon=30)
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -12645,6 +12694,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.CommonOrigin,
             self.TestTetherStuck,
             self.ScriptingFlipMode,
+            self.CompassLearnCopyFromEKF,
         ])
         return ret
 
