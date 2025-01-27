@@ -10634,6 +10634,63 @@ Also, ignores heartbeats not from our target system'''
                             self.set_rc(interlock_channel, 1000)
                             raise NotAchievedException("Motor interlock was changed while disarmed")
                 self.set_rc(interlock_channel, 1000)
+            elif self.is_plane():
+                self.start_subtest("Test arming failure with interlock enabled")
+
+                interlock_channel = 9
+                self.set_parameter("RC%u_OPTION" % interlock_channel, 32)
+                # enable all plane interlock optons, 31 turns on all flags
+                self.set_parameter("ILCK_OPTIONS", 31)
+                # interlock must be help high to disable arm/disarm/interlock
+                self.reboot_sitl() # needed for CAM1_TYPE to take effect
+                if self.log_name() ==  "QuadPlane":
+                    self.send_cmd_do_set_mode("QLOITER")
+
+                self.set_rc(interlock_channel, 2000)
+                try:
+                    self.arm_motors_with_rc_input()
+                except NotAchievedException:
+                    pass
+                if self.armed():
+                    raise NotAchievedException(
+                        "Armed with RC input when interlock enabled")
+                try:
+                    self.arm_motors_with_switch(arming_switch)
+                except NotAchievedException:
+                    pass
+                if self.armed():
+                    raise NotAchievedException("Armed with switch when interlock enabled")
+                self.disarm_vehicle()
+
+                self.progress("arm with mavproxy")
+                mavproxy = self.start_mavproxy()
+                try:
+                    self.mavproxy_arm_vehicle(mavproxy)
+                except AutoTestTimeoutException:
+                    pass
+                if self.armed():
+                    raise NotAchievedException("Armed with mavproxy with interlock enabled")
+                # Now arm and make sure we can't disarm withouth interlock
+                self.set_rc(interlock_channel, 1000)
+                self.mavproxy_arm_vehicle(mavproxy)
+                self.set_rc(interlock_channel, 2000)
+                try:
+                    self.mavproxy_disarm_vehicle(mavproxy)
+                except AutoTestTimeoutException:
+                    pass
+                if self.armed():
+                    raise NotAchievedException("DisArmed with mavproxy with interlock enabled")
+                self.set_rc(interlock_channel, 2000)
+                self.stop_mavproxy(mavproxy)
+
+                self.wait_heartbeat()
+                self.set_rc(arming_switch, 1000)
+                self.set_rc(interlock_channel, 1000)
+                self.set_parameter("RC%u_OPTION" % interlock_channel, 0)
+                # enable all plane interlock optons, 31 turns on all flags
+                self.set_parameter("ILCK_OPTIONS", 19)
+                # interlock must be help high to disable arm/disarm/interlock
+                self.reboot_sitl() # needed to disable the interlock channel
 
         self.start_subtest("Test all mode arming")
         self.wait_ready_to_arm()
