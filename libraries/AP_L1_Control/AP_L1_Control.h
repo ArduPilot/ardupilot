@@ -95,6 +95,15 @@ private:
     // reference to the fixed wing parameters object
     const AP_FixedWing &_aparm;
 
+    enum class NavMode {
+        NONE,
+        WAYPOINT,
+        LOITER,
+        HEADING_HOLD,
+        LEVEL_FLIGHT
+    };
+    NavMode _current_nav_mode = NavMode::NONE;
+
     // lateral acceration in m/s required to fly to the
     // L1 reference point (+ve to right)
     float _latAccDem;
