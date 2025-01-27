@@ -144,7 +144,8 @@ jobs:
         ros-version: [humble, jazzy]
     runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-ros-${{ matrix.ros-version }}:latest
+      image: ardupilot/ardupilot-dev-ros:latest
+      options: --build-arg ROS-VERSION=${{ matrix.ros-version}}
     steps:
       # git checkout the PR
       - uses: actions/checkout@v4
