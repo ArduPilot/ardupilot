@@ -320,7 +320,7 @@ public:
 
     enum LearnType {
         LEARN_NONE=0,
-        LEARN_INTERNAL=1,
+        // LEARN_INTERNAL=1,
         LEARN_EKF=2,
         LEARN_INFLIGHT=3
     };
