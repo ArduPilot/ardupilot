@@ -205,6 +205,10 @@ void AP_L1_Control::_prevent_indecision(float &Nu)
 // update L1 control for waypoint navigation
 void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &next_WP, float dist_min)
 {
+    // Update nav. mode
+    if (_current_nav_mode != NavMode::WAYPOINT) {
+        _current_nav_mode = NavMode::WAYPOINT;
+    }
 
     Location _current_loc;
     float Nu;
@@ -349,6 +353,11 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
 // update L1 control for loitering
 void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_t loiter_direction)
 {
+    // Update nav. mode
+    if (_current_nav_mode != NavMode::LOITER) {
+        _current_nav_mode = NavMode::LOITER;
+    }
+
     const float radius_unscaled = radius;
 
     Location _current_loc;
@@ -489,6 +498,11 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
 // update L1 control for heading hold navigation
 void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
 {
+    // Update nav. mode
+    if (_current_nav_mode != NavMode::HEADING_HOLD) {
+        _current_nav_mode = NavMode::HEADING_HOLD;
+    }
+
     // Calculate normalised frequency for tracking loop
     const float omegaA = 4.4428f/_L1_period; // sqrt(2)*pi/period
     // Calculate additional damping gain
@@ -531,6 +545,11 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
 // update L1 control for level flight on current heading
 void AP_L1_Control::update_level_flight(void)
 {
+    // Update nav. mode
+    if (_current_nav_mode != NavMode::LEVEL_FLIGHT) {
+        _current_nav_mode = NavMode::LEVEL_FLIGHT;
+    }
+
     // copy to _target_bearing_cd and _nav_bearing
     _target_bearing_cd = _ahrs.yaw_sensor;
     _nav_bearing = _ahrs.get_yaw_rad();
