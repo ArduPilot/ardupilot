@@ -3940,6 +3940,15 @@ function fence:get_breaches() end
 ---| 8 # Minimum altitude
 function fence:get_margin_breaches() end
 
+-- Returns the distance in meters to the nearest fence given by the type bitmask
+---@param fence_type integer
+---| 1 # Maximim altitude
+---| 2 # Circle
+---| 4 # Polygon
+---| 8 # Minimum altitude
+---@return number -- distance
+function fence:get_breach_distance(fence_type) end
+
 -- desc
 ---@class (exact) stat_t_ud
 local stat_t_ud = {}
