@@ -141,14 +141,13 @@ public:
 
     //  breached() - returns true if the vehicle has breached any fence
     bool breached() const WARN_IF_UNUSED;
-    //  breached(Location&, float margin, bool& inside_margin) - returns true if location is outside the boundary
-    //  sets if loc is inside the margin specified
-    bool breached(const Location& loc, float margin, bool& inside_margin) const WARN_IF_UNUSED;
+    //  returns true if location is outside the boundary also returns the minimum distance to the fence
+    bool breached(const Location& loc, float& distance_outside_fence) const WARN_IF_UNUSED;
     //  breached(Location&) - returns true if location is outside the boundary
     bool breached(const Location& loc) const WARN_IF_UNUSED
     {
-        bool inside_margin;
-        return breached(loc, 0.0f, inside_margin);
+        float distance_outside_fence;
+        return breached(loc, distance_outside_fence);
     }
 
     // returns true if a polygonal include fence could be returned
