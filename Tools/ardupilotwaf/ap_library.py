@@ -329,7 +329,6 @@ def write_compilation_database(bld):
         root = database_file.read_json()
     except IOError:
         root = []
-    compile_cmd_db = dict((x['file'], x) for x in root)
     for task in bld.compilation_database_tasks:
         try:
             cmd = task.last_cmd
@@ -342,8 +341,10 @@ def write_compilation_database(bld):
             "arguments": cmd,
             "file": filename,
         }
-        compile_cmd_db[filename] = entry
-    root = list(compile_cmd_db.values())
+        # check if the entry is already in the database
+        if entry in root:
+            continue
+        root.append(entry)
     database_file.write_json(root)
 
 def target_list_changed(bld, targets):
