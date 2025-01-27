@@ -156,6 +156,11 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Values{Plane, Copter, Rover}: 138:Alarm,139:Alarm Inverted
     // @Values: 140:RCIN1Scaled,141:RCIN2Scaled,142:RCIN3Scaled,143:RCIN4Scaled,144:RCIN5Scaled,145:RCIN6Scaled,146:RCIN7Scaled,147:RCIN8Scaled,148:RCIN9Scaled,149:RCIN10Scaled,150:RCIN11Scaled,151:RCIN12Scaled,152:RCIN13Scaled,153:RCIN14Scaled,154:RCIN15Scaled,155:RCIN16Scaled
     // @Values{Plane, Copter, Rover}: 140:RCIN1Scaled,141:RCIN2Scaled,142:RCIN3Scaled,143:RCIN4Scaled,144:RCIN5Scaled,145:RCIN6Scaled,146:RCIN7Scaled,147:RCIN8Scaled,148:RCIN9Scaled,149:RCIN10Scaled,150:RCIN11Scaled,151:RCIN12Scaled,152:RCIN13Scaled,153:RCIN14Scaled,154:RCIN15Scaled,155:RCIN16Scaled
+    // @Values{Plane, Copter}: 160:Motor13,161:Motor14,162:Motor15,163:Motor16
+    // @Values{Plane, Copter}: 164:Motor17,165:Motor18,166:Motor19,167:Motor20
+    // @Values{Plane, Copter}: 168:Motor21,169:Motor22,170:Motor23,171:Motor24
+    // @Values{Plane, Copter}: 172:Motor25,173:Motor26,174:Motor27,175:Motor28
+    // @Values{Plane, Copter}: 176:Motor29,177:Motor30,178:Motor31,179:Motor32
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FUNCTION",  5, SRV_Channel, function, 0),
@@ -306,7 +311,8 @@ uint16_t SRV_Channel::get_limit_pwm(Limit limit) const
 bool SRV_Channel::is_motor(SRV_Channel::Aux_servo_function_t function)
 {
     return ((function >= SRV_Channel::k_motor1 && function <= SRV_Channel::k_motor8) ||
-            (function >= SRV_Channel::k_motor9 && function <= SRV_Channel::k_motor12));
+            (function >= SRV_Channel::k_motor9 && function <= SRV_Channel::k_motor12) ||
+            (function >= SRV_Channel::k_motor13 && function <= SRV_Channel::k_motor32));
 }
 
 // return true if function is for anything that should be stopped in a e-stop situation, ie is dangerous
@@ -332,6 +338,7 @@ bool SRV_Channel::should_e_stop(SRV_Channel::Aux_servo_function_t function)
     case Aux_servo_function_t::k_motor10:
     case Aux_servo_function_t::k_motor11:
     case Aux_servo_function_t::k_motor12:
+    case Aux_servo_function_t::k_motor13 ... Aux_servo_function_t::k_motor32:
     case Aux_servo_function_t::k_engine_run_enable:
         return true;
     default:
@@ -380,6 +387,8 @@ int8_t SRV_Channel::get_motor_num(void) const
         return int8_t(uint16_t(k_function) - k_motor1);
     case k_motor9 ... k_motor12:
         return 8 + int8_t(uint16_t(k_function) - k_motor9);
+    case k_motor13 ... k_motor32:
+        return 12 + int8_t(uint16_t(k_function) - k_motor13);
     default:
         break;
     }
