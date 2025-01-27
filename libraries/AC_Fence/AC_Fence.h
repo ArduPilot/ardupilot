@@ -253,13 +253,15 @@ private:
     float           _alt_min_backup;        // backup altitude lower limit in meters used to refire the breach if the vehicle continues to move further away
     float           _circle_radius_backup;  // backup circle fence radius in meters used to refire the breach if the vehicle continues to move further away
 
-    // breach distances
+    // breach distances - negative means distance to fence
     float           _alt_max_breach_distance;   // distance above the altitude max
     float           _alt_min_breach_distance;   // distance below the altitude min
     float           _circle_breach_distance;    // distance beyond the circular fence
+    float           _polygon_breach_distance;   // distance beyond the polygon fence
 
     // other internal variables
     float           _home_distance;         // distance from home in meters (provided by main code)
+    float           _fence_distance;        // distance to the nearest fence
 
     // breach information
     uint8_t         _breached_fences;       // bitmask holding the fence types that were breached (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)
