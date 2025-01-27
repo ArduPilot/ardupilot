@@ -372,7 +372,6 @@ private:
 
     // sensors.cpp
     void update_compass(void);
-    void compass_save(void);
     void update_wheel_encoder();
 #if AP_RANGEFINDER_ENABLED
     void read_rangefinders(void);
