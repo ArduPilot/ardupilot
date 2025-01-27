@@ -26,3 +26,8 @@
 #ifndef AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
 #define AP_OSD_LINK_STATS_EXTENSIONS_ENABLED 0      // Disabled by default to save flash, enable via custom build server
 #endif
+
+#ifndef AP_OSD_SCREEN_CONCURRENTLY_ENABLED
+#define AP_OSD_SCREEN_CONCURRENTLY_ENABLED 0        // Disabled by default to save flash, enable via custom build server
+#endif
+
