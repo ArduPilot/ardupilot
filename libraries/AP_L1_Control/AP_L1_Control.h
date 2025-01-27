@@ -125,10 +125,11 @@ private:
 
     // integral feedback to correct crosstrack error. Used to ensure xtrack converges to zero.
     // For tuning purposes it's helpful to clear the integrator when it changes so a _prev is used
+    void _update_xtrack_integral(float error, float max_abs_error, float clamp);
+    uint32_t _last_update_xtrack_i_us;
     float _L1_xtrack_i = 0;
     AP_Float _L1_xtrack_i_gain;
     float _L1_xtrack_i_gain_prev = 0;
-    uint32_t _last_update_waypoint_us;
     bool _data_is_stale = true;
 
     AP_Float _loiter_bank_limit;
