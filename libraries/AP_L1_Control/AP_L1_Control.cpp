@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
 // S. Park, J. Deyst, and J. P. How, "A New Nonlinear Guidance Logic for Trajectory Tracking,"
 // Proceedings of the AIAA Guidance, Navigation and Control
 // Conference, Aug 2004. AIAA-2004-4900.
-// Modified to use PD control for circle tracking to enable loiter radius less than L1 length
+// Modified to use PID control for circle tracking to enable loiter radius less than L1 length
 // Modified to enable period and damping of guidance loop to be set explicitly
 // Modified to provide explicit control over capture angle
 
@@ -202,11 +202,45 @@ void AP_L1_Control::_prevent_indecision(float &Nu)
     }
 }
 
+void AP_L1_Control::_update_xtrack_integral(float error, float max_abs_error, float clamp)
+{
+    uint32_t now_us = AP_HAL::micros();
+    float dt = (now_us - _last_update_xtrack_i_us) * 1.0e-6f;
+    if (dt > 1) {
+        // Controller hasn't been called for an extended period of
+        // time. Reset it.
+        _L1_xtrack_i = 0.0f;
+    }
+    dt = MIN(dt, 0.1);
+    _last_update_xtrack_i_us = now_us;
+
+    // Reset integral error component if gain parameter has changed. This allows
+    // for much easier tuning by having it re-converge each time it changes.
+    if (!is_positive(_L1_xtrack_i_gain) ||
+        !is_equal(_L1_xtrack_i_gain.get(), _L1_xtrack_i_gain_prev)) {
+        _L1_xtrack_i = 0;
+        _L1_xtrack_i_gain_prev = _L1_xtrack_i_gain;
+
+        return;
+    }
+
+    // Return if error is too large
+    if (fabsf(error) >= max_abs_error) {
+        return;
+    }
+
+    // Compute integral error component to converge to a crosstrack of zero, and
+    // clamp it
+    _L1_xtrack_i += error * _L1_xtrack_i_gain * dt;
+    _L1_xtrack_i = constrain_float(_L1_xtrack_i, -clamp, clamp);
+}
+
 // update L1 control for waypoint navigation
 void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &next_WP, float dist_min)
 {
     // Update nav. mode
     if (_current_nav_mode != NavMode::WAYPOINT) {
+        _L1_xtrack_i = 0.0f; // Reset integral component on nav. mode change
         _current_nav_mode = NavMode::WAYPOINT;
     }
 
@@ -214,18 +248,6 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
     float Nu;
     float xtrackVel;
     float ltrackVel;
-
-    uint32_t now = AP_HAL::micros();
-    float dt = (now - _last_update_waypoint_us) * 1.0e-6f;
-    if (dt > 1) {
-        // controller hasn't been called for an extended period of
-        // time.  Reinitialise it.
-        _L1_xtrack_i = 0.0f;
-    }
-    if (dt > 0.1) {
-        dt = 0.1;
-    }
-    _last_update_waypoint_us = now;
 
     // Calculate L1 gain required for specified damping
     float K_L1 = 4.0f * _L1_damping * _L1_damping;
@@ -314,18 +336,10 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
         sine_Nu1 = constrain_float(sine_Nu1, -0.7071f, 0.7071f);
         float Nu1 = asinf(sine_Nu1);
 
-        // compute integral error component to converge to a crosstrack of zero when traveling
-        // straight but reset it when disabled or if it changes. That allows for much easier
-        // tuning by having it re-converge each time it changes.
-        if (_L1_xtrack_i_gain <= 0 || !is_equal(_L1_xtrack_i_gain.get(), _L1_xtrack_i_gain_prev)) {
-            _L1_xtrack_i = 0;
-            _L1_xtrack_i_gain_prev = _L1_xtrack_i_gain;
-        } else if (fabsf(Nu1) < radians(5)) {
-            _L1_xtrack_i += Nu1 * _L1_xtrack_i_gain * dt;
-
-            // an AHRS_TRIM_X=0.1 will drift to about 0.08 so 0.1 is a good worst-case to clip at
-            _L1_xtrack_i = constrain_float(_L1_xtrack_i, -0.1f, 0.1f);
-        }
+        // Update the integral term up to 5º of error
+        // An AHRS_TRIM_X=0.1 will drift to about 0.08 so 0.1 is a good
+        // worst-case to clip at
+        _update_xtrack_integral(Nu1, radians(5), 0.1f);
 
         // to converge to zero we must push Nu1 harder
         Nu1 += _L1_xtrack_i;
@@ -355,6 +369,7 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
 {
     // Update nav. mode
     if (_current_nav_mode != NavMode::LOITER) {
+        _L1_xtrack_i = 0.0f; // Reset integral component on nav. mode change
         _current_nav_mode = NavMode::LOITER;
     }
 
@@ -366,7 +381,7 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     // stable at high altitude
     radius = loiter_radius(fabsf(radius));
 
-    // Calculate guidance gains used by PD loop (used during circle tracking)
+    // Calculate guidance gains used by PID loop (used during circle tracking)
     float omega = (6.2832f / _L1_period);
     float Kx = omega * omega;
     float Kv = 2.0f * _L1_damping * omega;
@@ -434,22 +449,27 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     // keep crosstrack error for reporting
     _crosstrack_error = xtrackErrCirc;
 
-    // Calculate PD control correction to circle waypoint_ahrs.roll
-    float latAccDemCircPD = (xtrackErrCirc * Kx + xtrackVelCirc * Kv);
+    // Correct errors up to half the radius. Clamping to a value of 4
+    // produces good results, allowing for precise 50 m radius loiters at a
+    // speed of 22 m/s
+    _update_xtrack_integral(_crosstrack_error, radius / 2, 4.0f);
+
+    // Calculate PID control correction to circle waypoint_ahrs.roll
+    float latAccDemCircPID = xtrackErrCirc * Kx + xtrackVelCirc * Kv  + _L1_xtrack_i;
 
     // Calculate tangential velocity
     float velTangent = xtrackVelCap * float(loiter_direction);
 
-    // Prevent PD demand from turning the wrong way by limiting the command when flying the wrong way
+    // Prevent PID demand from turning the wrong way by limiting the command when flying the wrong way
     if (ltrackVelCap < 0.0f && velTangent < 0.0f) {
-        latAccDemCircPD =  MAX(latAccDemCircPD, 0.0f);
+        latAccDemCircPID =  MAX(latAccDemCircPID, 0.0f);
     }
 
     // Calculate centripetal acceleration demand
     float latAccDemCircCtr = velTangent * velTangent / MAX((0.5f * radius), (radius + xtrackErrCirc));
 
-    // Sum PD control and centripetal acceleration to calculate lateral manoeuvre demand
-    float latAccDemCirc = loiter_direction * (latAccDemCircPD + latAccDemCircCtr);
+    // Sum PID control and centripetal acceleration to calculate lateral manoeuvre demand
+    float latAccDemCirc = loiter_direction * (latAccDemCircPID + latAccDemCircCtr);
 
     // Perform switchover between 'capture' and 'circle' modes at the
     // point where the commands cross over to achieve a seamless transfer
