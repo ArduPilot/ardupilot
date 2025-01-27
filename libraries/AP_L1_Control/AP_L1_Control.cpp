@@ -30,14 +30,6 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("XTRACK_I",   2, AP_L1_Control, _L1_xtrack_i_gain, 0.02),
 
-    // @Param: LIM_BANK
-    // @DisplayName: Loiter Radius Bank Angle Limit
-    // @Description: The sealevel bank angle limit for a continuous loiter. (Used to calculate airframe loading limits at higher altitudes). Setting to 0, will instead just scale the loiter radius directly
-    // @Units: deg
-    // @Range: 0 89
-    // @User: Advanced
-    AP_GROUPINFO("LIM_BANK",   3, AP_L1_Control, _loiter_bank_limit, 0.0f),
-
     AP_GROUPEND
 };
 
@@ -144,36 +136,16 @@ float AP_L1_Control::turn_distance(float wp_radius, float turn_angle) const
     return distance_90 * turn_angle / 90.0f;
 }
 
-float AP_L1_Control::loiter_radius(const float radius) const
+float AP_L1_Control::_calc_min_turn_radius() const
 {
-    // prevent an insane loiter bank limit
-    float sanitized_bank_limit = constrain_float(_loiter_bank_limit, 0.0f, 89.0f);
-    float lateral_accel_sea_level = tanf(radians(sanitized_bank_limit)) * GRAVITY_MSS;
+    float tas_at_alt = _tecs.get_target_airspeed() * _ahrs.get_EAS2TAS();
 
-    float nominal_velocity_sea_level = 0.0f;
-    if(_tecs != nullptr) {
-        nominal_velocity_sea_level =  _tecs->get_target_airspeed();
-    }
+    return sq(tas_at_alt) / (GRAVITY_MSS * tanf(radians(_aparm.roll_limit)));
+}
 
-    float eas2tas_sq = sq(_ahrs.get_EAS2TAS());
-
-    if (is_zero(sanitized_bank_limit) || is_zero(nominal_velocity_sea_level) ||
-        is_zero(lateral_accel_sea_level)) {
-        // Missing a sane input for calculating the limit, or the user has
-        // requested a straight scaling with altitude. This will always vary
-        // with the current altitude, but will at least protect the airframe
-        return radius * eas2tas_sq;
-    } else {
-        float sea_level_radius = sq(nominal_velocity_sea_level) / lateral_accel_sea_level;
-        if (sea_level_radius > radius) {
-            // If we've told the plane that its sea level radius is unachievable fallback to
-            // straight altitude scaling
-            return radius * eas2tas_sq;
-        } else {
-            // select the requested radius, or the required altitude scale, whichever is safer
-            return MAX(sea_level_radius * eas2tas_sq, radius);
-        }
-    }
+float AP_L1_Control::calc_corrected_loiter_radius(float original_radius) const
+{
+    return MAX(original_radius, _calc_min_turn_radius());
 }
 
 bool AP_L1_Control::reached_loiter_target(void)

@@ -17,13 +17,15 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Navigation/AP_Navigation.h>
 #include <AP_TECS/AP_TECS.h>
+#include <AP_Vehicle/AP_FixedWing.h>
 #include <AP_Common/Location.h>
 
 class AP_L1_Control : public AP_Navigation {
 public:
-    AP_L1_Control(const AP_AHRS &ahrs, const AP_TECS &tecs)
+    AP_L1_Control(const AP_AHRS &ahrs, const AP_TECS &tecs, const AP_FixedWing &aparm)
         : _ahrs(ahrs)
         , _tecs(tecs)
+        , _aparm(aparm)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
@@ -48,8 +50,8 @@ public:
     int32_t target_bearing_cd(void) const override;
     float turn_distance(float wp_radius) const override;
     float turn_distance(float wp_radius, float turn_angle) const override;
-    float loiter_radius (const float loiter_radius) const override;
     void update_waypoint(const class Location &prev_WP, const class Location &next_WP, float dist_min = 0.0f) override;
+    float calc_corrected_loiter_radius(float original_radius) const override;
     void update_loiter(const class Location &center_WP, float radius, int8_t loiter_direction) override;
     void update_heading_hold(int32_t navigation_heading_cd) override;
     void update_level_flight(void) override;
@@ -80,6 +82,9 @@ private:
 
     // reference to the TECS object
     const AP_TECS &_tecs;
+
+    // reference to the fixed wing parameters object
+    const AP_FixedWing &_aparm;
 
     // lateral acceration in m/s required to fly to the
     // L1 reference point (+ve to right)
@@ -122,7 +127,9 @@ private:
     uint32_t _last_update_waypoint_us;
     bool _data_is_stale = true;
 
-    AP_Float _loiter_bank_limit;
+    // calculate minimum achievable turn radius based on current indicated
+    // airspeed and altitude AMSL (assuming steady, coordinated, level turn)
+    float _calc_min_turn_radius() const;
 
     // remember reached_loiter_target decision
     struct {
