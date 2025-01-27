@@ -1095,7 +1095,6 @@ private:
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     void airspeed_ratio_update(void);
 #endif
-    void compass_save(void);
     void update_logging10(void);
     void update_logging25(void);
     void update_control_mode(void);

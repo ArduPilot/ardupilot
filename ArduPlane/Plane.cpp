@@ -114,7 +114,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Scheduler, &plane.scheduler, update_logging,         0.2,    100, 111),
 #endif
-    SCHED_TASK(compass_save,          0.1,    200, 114),
 #if HAL_LOGGING_ENABLED
     SCHED_TASK(Log_Write_FullRate,        400,    300, 117),
     SCHED_TASK(update_logging10,        10,    300, 120),
@@ -403,18 +402,6 @@ void Plane::three_hz_loop()
 #if AP_FENCE_ENABLED
     fence_check();
 #endif
-}
-
-void Plane::compass_save()
-{
-    if (AP::compass().available() &&
-        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
-        !hal.util->get_soft_armed()) {
-        /*
-          only save offsets when disarmed
-         */
-        compass.save_offsets();
-    }
 }
 
 #if AP_AIRSPEED_AUTOCAL_ENABLE
