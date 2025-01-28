@@ -218,6 +218,10 @@ void ModeCircle::update_circling()
         const float angle_dt = angular_rate_rad * rover.G_Dt;
         target.yaw_rad = wrap_PI(target.yaw_rad + angle_dt);
         angle_total_rad += angle_dt;
+    } else if (_distance_to_destination > config.radius / 2.0) {
+        // pause the circle target until the vehicle can catch up. Stops vehicle from trying
+        // to cut the circle when it can't keep up
+        target.yaw_rad = wrap_PI(target.yaw_rad);
     } else {
         init_target_yaw_rad();
     }
