@@ -1563,7 +1563,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
     case AUX_FUNC::COMPASS_LEARN:
         if (ch_flag == AuxSwitchPos::HIGH) {
             Compass &compass = AP::compass();
-            compass.set_learn_type(Compass::LEARN_INFLIGHT, false);
+            compass.set_learn_type(Compass::LearnType::INFLIGHT, false);
         }
         break;
 
