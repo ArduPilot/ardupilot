@@ -20,7 +20,8 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_VIEWPRO_DATALEN_MAX   (AP_MOUNT_VIEWPRO_PACKETLEN_MAX-AP_MOUNT_VIEWPRO_PACKETLEN_MIN) // max bytes for data portion of packet
 #define AP_MOUNT_VIEWPRO_HEALTH_TIMEOUT_MS 1000 // state will become unhealthy if no attitude is received within this timeout
 #define AP_MOUNT_VIEWPRO_UPDATE_INTERVAL_MS 100 // resend angle or rate targets to gimbal at this interval
-#define AP_MOUNT_VIEWPRO_ZOOM_SPEED     0x07    // hard-coded zoom speed (fast)
+#define AP_MOUNT_VIEWPRO_EO_ZOOM_SPEED     0x07    // hard-coded zoom speed (fast)
+#define AP_MOUNT_VIEWPRO_IR_ZOOM_SPEED     1 
 #define AP_MOUNT_VIEWPRO_ZOOM_MAX       10      // hard-coded absolute zoom times max
 #define AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT  (65536.0 / 360.0)   // scalar to convert degrees to the viewpro angle scaling
 #define AP_MOUNT_VIEWPRO_OUTPUT_TO_DEG  (360.0 / 65536.0)   // scalar to convert viewpro angle scaling to degrees
@@ -349,9 +350,19 @@ void AP_Mount_Viewpro::process_packet()
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,  "%s recording %s", send_text_prefix, _recording ? "ON" : "OFF");
         }
 
-        // get optical zoom times
-        _zoom_times = UINT16_VALUE(_msg_buff[_msg_buff_data_start+39], _msg_buff[_msg_buff_data_start+40]) * 0.1;
-
+        switch (_image_sensor) {
+            default:   
+            case ImageSensor::EO1:
+            case ImageSensor::EO1_IR_PIP:
+                //optical zoom times
+                _zoom_times = UINT16_VALUE(_msg_buff[_msg_buff_data_start+39], _msg_buff[_msg_buff_data_start+40]) * 0.1;
+                break;
+            case ImageSensor::IR:
+            case ImageSensor::IR_EO1_PIP:
+                //ir zoom times
+                _zoom_times = ((_msg_buff[_msg_buff_data_start+29] >> 3) & 0x0F) + 1;
+                break;
+        }        
         // get laser rangefinder distance
         _rangefinder_dist_m = UINT16_VALUE(_msg_buff[_msg_buff_data_start+33], _msg_buff[_msg_buff_data_start+34]) * 0.1;
         break;
@@ -737,13 +748,32 @@ bool AP_Mount_Viewpro::set_zoom(ZoomType zoom_type, float zoom_value)
 
     // zoom rate
     if (zoom_type == ZoomType::RATE) {
+        uint8_t zoom_speed = 1;
         CameraCommand zoom_cmd = CameraCommand::STOP_FOCUS_AND_ZOOM;
-        if (zoom_value < 0) {
-            zoom_cmd = CameraCommand::ZOOM_OUT;
-        } else if (zoom_value > 0) {
-            zoom_cmd = CameraCommand::ZOOM_IN;
+        
+        switch (_image_sensor) {
+            default:   
+            case ImageSensor::EO1:
+            case ImageSensor::EO1_IR_PIP:
+                if (zoom_value < 0) {
+                    zoom_cmd = CameraCommand::ZOOM_OUT;
+                } else if (zoom_value > 0) {
+                    zoom_cmd = CameraCommand::ZOOM_IN;
+                }
+                zoom_speed = AP_MOUNT_VIEWPRO_EO_ZOOM_SPEED;
+                break;
+            case ImageSensor::IR:
+            case ImageSensor::IR_EO1_PIP:
+                if (zoom_value < 0) {
+                    zoom_cmd = CameraCommand::IR_ZOOM_IN;
+                } else if (zoom_value > 0) {
+                    zoom_cmd = CameraCommand::IR_ZOOM_OUT;
+                }
+                zoom_speed = AP_MOUNT_VIEWPRO_IR_ZOOM_SPEED;
+                break;    
         }
-        return send_camera_command(_image_sensor, zoom_cmd, AP_MOUNT_VIEWPRO_ZOOM_SPEED);
+        
+        return send_camera_command(_image_sensor, zoom_cmd, zoom_speed);
     }
 
     // zoom percentage

@@ -160,7 +160,9 @@ private:
         START_RECORD = 0x14,
         STOP_RECORD = 0x15,
         AUTO_FOCUS = 0x19,
-        MANUAL_FOCUS = 0x1A
+        MANUAL_FOCUS = 0x1A,
+        IR_ZOOM_OUT = 0x1B,
+        IR_ZOOM_IN = 0x1C
     };
 
     // C1 rangefinder commands
