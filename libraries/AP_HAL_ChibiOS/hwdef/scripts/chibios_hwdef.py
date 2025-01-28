@@ -2980,13 +2980,19 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
     def romfs_add_dir(self, subdirs, relative_to_base=False):
         '''add a filesystem directory to ROMFS'''
+        if self.is_bootloader_fw():
+            # FIXME: why were we called?!
+            return
         for dirname in subdirs:
             if relative_to_base:
                 romfs_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', dirname)
             else:
                 romfs_dir = os.path.join(os.path.dirname(self.hwdef[0]), dirname)
-            if not self.is_bootloader_fw() and os.path.exists(romfs_dir):
-                for root, d, files in os.walk(romfs_dir):
+            if not os.path.exists(romfs_dir):
+                continue
+
+            if True:
+                for root, dirs, files in os.walk(romfs_dir):
                     for f in files:
                         if fnmatch.fnmatch(f, '*~'):
                             # skip editor backup files
