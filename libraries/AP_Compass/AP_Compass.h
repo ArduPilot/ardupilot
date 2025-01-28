@@ -226,7 +226,7 @@ public:
 #endif  // AP_COMPASS_DIAGONALS_ENABLED
 
     // learn offsets accessor
-    bool learn_offsets_enabled() const { return _learn == LEARN_INFLIGHT; }
+    bool learn_offsets_enabled() const { return _learn == LearnType::INFLIGHT; }
 
     /// return true if the compass should be used for yaw calculations
     bool use_for_yaw(uint8_t i) const;
@@ -318,24 +318,24 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    enum LearnType {
-        LEARN_NONE=0,
-        // LEARN_INTERNAL=1,
-        LEARN_EKF=2,
-        LEARN_INFLIGHT=3
+    enum class LearnType {
+        NONE          = 0,
+        // INTERNAL   = 1,
+        COPY_FROM_EKF = 2,
+        INFLIGHT      = 3,
     };
 
     // return the chosen learning type
-    enum LearnType get_learn_type(void) const {
-        return (enum LearnType)_learn.get();
+    LearnType get_learn_type(void) const {
+        return (LearnType)_learn.get();
     }
 
     // set the learning type
-    void set_learn_type(enum LearnType type, bool save) {
+    void set_learn_type(LearnType type, bool save) {
         if (save) {
-            _learn.set_and_save((int8_t)type);
+            _learn.set_and_save(type);
         } else {
-            _learn.set((int8_t)type);
+            _learn.set(type);
         }
     }
     
@@ -520,7 +520,7 @@ private:
     uint8_t     _unreg_compass_count;
 
     // settable parameters
-    AP_Int8 _learn;
+    AP_Enum<LearnType> _learn;
 
     // board orientation from AHRS
     enum Rotation _board_orientation = ROTATION_NONE;
