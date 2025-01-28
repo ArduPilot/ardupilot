@@ -442,6 +442,33 @@ void Sub::failsafe_terrain_check()
     }
 }
 
+// dead reckoning alert and failsafe
+void Sub::failsafe_deadreckon_check()
+{
+    // update dead reckoning state
+    const char* dr_prefix_str = "Dead Reckoning";
+
+    // get EKF filter status
+    bool ekf_dead_reckoning = inertial_nav.get_filter_status().flags.dead_reckoning;
+    if (dead_reckoning.active != ekf_dead_reckoning) {
+        dead_reckoning.active = ekf_dead_reckoning;
+        if (dead_reckoning.active) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"%s started", dr_prefix_str);
+        } else {
+            dead_reckoning.start_ms = 0;
+            dead_reckoning.timeout = false;
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"%s stopped", dr_prefix_str);
+        }
+    }
+
+    if (g2.failsafe_dr_enable <= 0) {
+        failsafe.deadreckon = false;
+    } else if (dead_reckoning.active) {
+        set_mode(Mode::Number::SURFACE, ModeReason::DEADRECKON_FAILSAFE);
+        AP_Notify::events.failsafe_mode_change = 1;
+    }
+}
+
 // This gets called if mission items are in ALT_ABOVE_TERRAIN frame
 // Terrain failure occurs when terrain data is not found, or rangefinder is not enabled or healthy
 // set terrain data status (found or not found)

@@ -371,6 +371,9 @@ public:
     AP_Float backup_origin_lat;
     AP_Float backup_origin_lon;
     AP_Float backup_origin_alt;
+
+    // AP_Int8 failsafe_dr_timeout;
+    AP_Int8 failsafe_dr_enable;
 };
 
 extern const AP_Param::Info        var_info[];

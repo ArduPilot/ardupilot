@@ -229,6 +229,7 @@ private:
         uint8_t internal_temperature : 1; // true if temperature is over threshold
         uint8_t crash                : 1; // true if we are crashed
         uint8_t sensor_health        : 1; // true if at least one sensor has triggered a failsafe (currently only used for depth in depth enabled modes)
+        uint8_t deadreckon           : 1; // true if a dead reckoning failsafe has triggered
     } failsafe;
 
     bool any_failsafe_triggered() const {
@@ -243,8 +244,16 @@ private:
             || failsafe.internal_temperature
             || failsafe.crash
             || failsafe.sensor_health
+            || failsafe.deadreckon
         );
     }
+
+    // dead reckoning state
+    struct {
+        bool active;        // true if dead reckoning (position estimate using estimated airspeed, no position or velocity source)
+        bool timeout;       // true if dead reckoning has timedout and EKF's position and velocity estimate should no longer be trusted
+        uint32_t start_ms;  // system time that EKF began deadreckoning
+    } dead_reckoning;
 
     // sensor health for logging
     struct {
@@ -305,7 +314,7 @@ private:
     // Navigation Yaw control
     // auto flight mode's yaw mode
     uint8_t auto_yaw_mode;
-    
+
     // Parameter to set yaw rate only
     bool yaw_rate_only;
 
@@ -455,6 +464,7 @@ private:
     void failsafe_pilot_input_check(void);
     void set_neutral_controls(void);
     void failsafe_terrain_check();
+    void failsafe_deadreckon_check();
     void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();
     void mainloop_failsafe_enable();

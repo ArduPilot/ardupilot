@@ -251,6 +251,9 @@ void Sub::three_hz_loop()
 
     failsafe_internal_temperature_check();
 
+    // check for deadreckoning failsafe
+    failsafe_deadreckon_check();
+
     // check if we've lost contact with the ground station
     failsafe_gcs_check();
 

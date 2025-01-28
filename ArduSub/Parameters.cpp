@@ -735,6 +735,20 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ORIGIN_ALT", 21, ParametersG2, backup_origin_alt, 0),
 
+    // @Param: FS_DR_ENABLE
+    // @DisplayName: DeadReckon Failsafe Action
+    // @Description: Failsafe action taken immediately as deadreckoning starts. Deadreckoning starts when EKF loses position and velocity source and relies only on wind estimates
+    // @Values: 0: Disabled/NoAction, 1: Warn only, 2: Surface
+    // @User: Standard
+    AP_GROUPINFO("FS_DR_ENABLE", 22, ParametersG2, failsafe_dr_enable, FS_DR_WARN_ONLY),
+
+    // @Param: FS_DR_TIMEOUT
+    // @DisplayName: DeadReckon Failsafe Timeout
+    // @Description: DeadReckoning is available for this many seconds after losing position and/or velocity source.  After this timeout elapses the EKF failsafe will trigger in modes requiring a position estimate
+    // @Range: 0 120
+    // @User: Standard
+    // AP_GROUPINFO("FS_DR_TIMEOUT", 23, ParametersG2, failsafe_dr_timeout, 120),
+
     AP_GROUPEND
 };
 

@@ -135,6 +135,11 @@ enum LoggingParameters {
 #define FS_PILOT_INPUT_WARN_ONLY   1
 #define FS_PILOT_INPUT_DISARM      2
 
+// Dead reckoning failsafe actions
+#define FS_DR_NONE          0   // Do nothing
+#define FS_DR_WARN_ONLY     1   // Only send warning to gcs
+#define FS_DR_SURFACE       2   // Attempt to surface
+
 // Amount of time to attempt recovery of valid rangefinder data before
 // initiating terrain failsafe action
 #define FS_TERRAIN_RECOVER_TIMEOUT_MS 10000
