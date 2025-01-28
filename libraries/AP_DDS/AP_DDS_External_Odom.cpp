@@ -66,7 +66,7 @@ void AP_DDS_External_Odom::convert_transform(const geometry_msgs_msg_Transform& 
 
     // In AP, q1 is the quaternion's scalar component.
     // In ROS, w is the quaternion's scalar component.
-    // https://docs.ros.org/en/humble/Tutorials/Intermediate/Tf2/Quaternion-Fundamentals.html#components-of-a-quaternion
+    // https://docs.ros.org/en/jazzy/Tutorials/Intermediate/Tf2/Quaternion-Fundamentals.html#components-of-a-quaternion
     rotation.q1 = ros_transform.rotation.w;
     rotation.q2 = ros_transform.rotation.x;
     rotation.q3 = -ros_transform.rotation.y;
