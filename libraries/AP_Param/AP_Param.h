@@ -1090,6 +1090,9 @@ public:
     void set(eclass v) {
         AP_Int8::set(int8_t(v));
     }
+    void set_and_save(eclass v) {
+        AP_Int8::set_and_save(int8_t(v));
+    }
 };
 
 template<typename eclass>
@@ -1101,5 +1104,8 @@ public:
     }
     void set(eclass v) {
         AP_Int16::set(int16_t(v));
+    }
+    void set_and_save(eclass v) {
+        AP_Int16::set_and_save(int16_t(v));
     }
 };
