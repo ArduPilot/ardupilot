@@ -1661,6 +1661,8 @@ INCLUDE common.ld
     def write_UART_config(self, f):
         '''write UART config defines'''
         serial_list = self.get_config('SERIAL_ORDER', required=False, aslist=True)
+        if 'IOMCU_UART' in self.config and self.config['IOMCU_UART'][0] not in serial_list:
+            serial_list.append(self.config['IOMCU_UART'][0])
         if serial_list is None:
             return
         while len(serial_list) < 3: # enough ports for CrashCatcher UART discovery
@@ -1698,11 +1700,15 @@ INCLUDE common.ld
                 self.error("Need io_firmware.bin in ROMFS for IOMCU")
 
             self.write_defaulting_define(f, 'HAL_WITH_IO_MCU', 1)
-            f.write('#define HAL_UART_IOMCU_IDX %u\n' % len(serial_list))
-            f.write(
-                '#define HAL_UART_IO_DRIVER ChibiOS::UARTDriver uart_io(HAL_UART_IOMCU_IDX)\n'
-            )
-            serial_list.append(self.config['IOMCU_UART'][0])
+            
+            if self.config['IOMCU_UART'][0]:
+                # get index of serial port in serial_list
+                index = serial_list.index(self.config['IOMCU_UART'][0])
+                f.write('#define HAL_UART_IOMCU_IDX %u\n' % int(index))
+                f.write(
+                    '#define HAL_UART_IO_DRIVER constexpr ChibiOS::UARTDriver &uart_io = serial%sDriver;\n' % (index)
+                )
+
             f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n') # make the assumption that IO gurantees servo monitoring
             # all IOMCU capable boards have SBUS out
             f.write('#define AP_FEATURE_SBUS_OUT 1\n')
@@ -1849,8 +1855,6 @@ INCLUDE common.ld
 #endif
 ''')
         num_ports = len(devlist)
-        if 'IOMCU_UART' in self.config:
-            num_ports -= 1
         if num_ports > 10:
             self.error("Exceeded max num SERIALs of 10 (%u)" % num_ports)
         f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_ports)
