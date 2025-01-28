@@ -7,13 +7,13 @@ import sys
 try:
     import em
 except ImportError:
-    print("you need to install empy with 'python -m pip install empy==3.3.4'")
+    print("you need to install empy with 'python3 -m pip install empy==3.3.4'")
     sys.exit(1)
 
 try:
     import pexpect
 except ImportError:
-    print("you need to install pexpect with 'python -m pip install pexpect'")
+    print("you need to install pexpect with 'python3 -m pip install pexpect'")
     sys.exit(1)
     
 

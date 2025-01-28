@@ -5,7 +5,7 @@ Wrapper around elf_diff (https://github.com/noseglasses/elf_diff)
 to create a html report comparing an ArduPilot build across two
 branches
 
-pip3 install --user elf_diff weasyprint
+python3 -m pip install --user elf_diff weasyprint
 
 AP_FLAKE8_CLEAN
 
