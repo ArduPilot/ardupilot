@@ -27,6 +27,8 @@ void MissionItemProtocol::init_send_requests(GCS_MAVLINK &_link,
 
     mission_item_warning_sent = false;
     mission_request_warning_sent = false;
+    mission_request_int_fallback_to_mission_request = false;
+    mission_request_int_warning_sent = false;
 }
 
 void MissionItemProtocol::handle_mission_clear_all(const GCS_MAVLINK &_link,
@@ -310,7 +312,7 @@ void MissionItemProtocol::handle_mission_item(const mavlink_message_t &msg, cons
         return;
     }
     // if we have enough space, then send the next WP request immediately
-    if (HAVE_PAYLOAD_SPACE(link->get_chan(), MISSION_REQUEST)) {
+    if (mission_request_int_fallback_to_mission_request ? HAVE_PAYLOAD_SPACE(link->get_chan(), MISSION_REQUEST) : HAVE_PAYLOAD_SPACE(link->get_chan(), MISSION_REQUEST_INT)) {
         queued_request_send();
     } else {
         link->send_message(next_item_ap_message_id());
@@ -363,13 +365,24 @@ void MissionItemProtocol::queued_request_send()
         INTERNAL_ERROR(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
         return;
     }
-    CHECK_PAYLOAD_SIZE2_VOID(link->get_chan(), MISSION_REQUEST);
-    mavlink_msg_mission_request_send(
-        link->get_chan(),
-        dest_sysid,
-        dest_compid,
-        request_i,
-        mission_type());
+    if (mission_request_int_fallback_to_mission_request) {
+        CHECK_PAYLOAD_SIZE2_VOID(link->get_chan(), MISSION_REQUEST);
+        mavlink_msg_mission_request_int_send(
+            link->get_chan(),
+            dest_sysid,
+            dest_compid,
+            request_i,
+            mission_type());
+    } else {
+        CHECK_PAYLOAD_SIZE2_VOID(link->get_chan(), MISSION_REQUEST_INT);
+        mavlink_msg_mission_request_send(
+            link->get_chan(),
+            dest_sysid,
+            dest_compid,
+            request_i,
+            mission_type());
+}
+    
     timelast_request_ms = AP_HAL::millis();
 }
 
@@ -403,8 +416,15 @@ void MissionItemProtocol::update()
     // resend request if we haven't gotten one:
     const uint32_t wp_recv_timeout_ms = 1000U + link->get_stream_slowdown_ms();
     if (tnow - timelast_request_ms > wp_recv_timeout_ms) {
+        if (not mission_request_int_fallback_to_mission_request) {
+            mission_request_int_fallback_to_mission_request = true;
+        }
         timelast_request_ms = tnow;
         link->send_message(next_item_ap_message_id());
+    } else if ((mission_request_int_fallback_to_mission_request)
+               && (not mission_request_int_warning_sent)) {
+        mission_request_int_warning_sent = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "This GCS ignores MISSION_REQUEST_INT; MISSION_REQUEST support will soon end!");
     }
 }
 
