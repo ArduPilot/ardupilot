@@ -284,11 +284,6 @@ public:
     // return the motor number of a channel, or -1 if not a motor
     int8_t get_motor_num(void) const;
 
-    // set and save function for channel. Used in upgrade of parameters in plane
-    void function_set_and_save(Function f) {
-        function.set_and_save(int8_t(f));
-    }
-
     // set and save function for reversed. Used in upgrade of parameters in plane
     void reversed_set_and_save_ifchanged(bool r) {
         reversed.set_and_save_ifchanged(r?1:0);
