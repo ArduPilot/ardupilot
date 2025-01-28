@@ -1611,7 +1611,7 @@ void AP_Periph_FW::can_start()
         }
     }
     if (!has_uavcan_at_1MHz) {
-        g.can_protocol[0].set_and_save(uint8_t(AP_CAN::Protocol::DroneCAN));
+        g.can_protocol[0].set_and_save(AP_CAN::Protocol::DroneCAN);
         g.can_baudrate[0].set_and_save(1000000);
     }
 #endif // HAL_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz
