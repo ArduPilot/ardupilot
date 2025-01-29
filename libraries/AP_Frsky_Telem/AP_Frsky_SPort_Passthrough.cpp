@@ -235,7 +235,6 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
         break;
     case TERRAIN:
         {
-            packet_ready = false;
 #if AP_TERRAIN_AVAILABLE
             const AP_Terrain *terrain = AP::terrain();
             packet_ready = terrain && terrain->enabled();
