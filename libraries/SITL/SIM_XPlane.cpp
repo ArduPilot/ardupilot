@@ -206,6 +206,7 @@ bool XPlane::load_dref_map(const char *map_json)
     }
     AP_JSON::value *obj = AP_JSON::load_json(fname);
     if (obj == nullptr) {
+        free((void*)fname);
         return false;
     }
 
