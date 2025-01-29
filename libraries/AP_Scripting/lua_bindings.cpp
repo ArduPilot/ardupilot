@@ -1235,6 +1235,48 @@ int lua_GCS_command_int(lua_State *L)
 
     return 1;
 }
+
+/*
+  implement gcs:command_long() access to MAV_CMD_xxx commands
+ */
+int lua_GCS_command_long(lua_State *L)
+{
+    GCS *_gcs = check_GCS(L);
+    binding_argcheck(L, 3);
+
+    const uint16_t command = get_uint16_t(L, 2);
+    if (!lua_istable(L, 3)) {
+        // must have parameter table
+        return 0;
+    }
+
+    mavlink_command_long_t pkt {};
+
+    pkt.command = command;
+
+    float *params = &pkt.param1;
+
+    // extract the 7 parameters as floats
+    for (uint8_t i=0; i<7; i++) {
+        char pname[3] { 'p' , char('1' + i), 0 };
+        lua_pushstring(L, pname);
+        lua_gettable(L, 3);
+        if (lua_isnumber(L, -1)) {
+            params[i] = lua_tonumber(L, -1);
+        }
+        lua_pop(L, 1);
+    }
+    
+    // call the interface with scheduler lock
+    WITH_SEMAPHORE(AP::scheduler().get_semaphore());
+
+    auto result = _gcs->lua_command_long_packet(pkt);
+
+    // Return the resulting MAV_RESULT
+    lua_pushinteger(L, result);
+
+    return 1;
+}
 #endif
 
 #if HAL_ENABLE_DRONECAN_DRIVERS
