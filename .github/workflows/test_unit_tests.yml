@@ -43,6 +43,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # Remove change on other workflows
       - '.github/workflows/test_environment.yml'
   pull_request:
@@ -88,6 +89,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # Remove change on other workflows
       - '.github/workflows/test_environment.yml'
   workflow_dispatch:
