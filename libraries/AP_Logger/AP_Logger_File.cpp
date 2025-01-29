@@ -67,7 +67,7 @@ void AP_Logger_File::ensure_log_directory_exists()
         ret = AP::FS().mkdir(_log_directory);
     }
     if (ret == -1 && errno != EEXIST) {
-        printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to create log directory %s : %s", _log_directory, strerror(errno));
     }
 }
 
