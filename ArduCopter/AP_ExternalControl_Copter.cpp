@@ -33,6 +33,27 @@ bool AP_ExternalControl_Copter::set_global_position(const Location& loc)
     return copter.set_target_location(loc);
 }
 
+/*
+  sets actuator output.
+*/
+bool AP_ExternalControl_Copter::set_actuator_output(const float actuator[], uint8_t num_motors)
+{
+    if (!ready_for_external_control()) {
+        return false;
+    }
+
+    if (actuator == nullptr) {
+        return false;
+    }
+
+    if (num_motors > AP_MOTORS_MAX_NUM_MOTORS) {
+        return false;
+    }
+
+    copter.mode_guided.set_actuator_mode(actuator, num_motors);
+    return true;
+}
+
 bool AP_ExternalControl_Copter::ready_for_external_control()
 {
     return copter.flightmode->in_guided_mode() && copter.motors->armed();

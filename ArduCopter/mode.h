@@ -1103,6 +1103,7 @@ public:
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool in_guided_mode() const override { return true; }
     bool move_vehicle_on_ekf_reset() const override;
+    void output_to_motors() override;
 
     bool requires_terrain_failsafe() const override { return true; }
 
@@ -1132,6 +1133,7 @@ public:
     bool set_pos_vel_NED_m(const Vector3p& pos_ned_m, const Vector3f& vel_ned_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
     bool set_pos_vel_accel_NED_m(const Vector3p& pos_ned_m, const Vector3f& vel_ned_ms, const Vector3f& accel_ned_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
 
+    void set_actuator_mode(const float actuator[], uint8_t num_motors);
     // get position, velocity and acceleration targets
     const Vector3p& get_target_pos_NED_m() const;
     const Vector3f& get_target_vel_NED_ms() const;
@@ -1149,6 +1151,7 @@ public:
     bool limit_check();
 
     bool is_taking_off() const override;
+    bool can_set_auto_arm(const float actuator_values[], uint8_t num_motors);
     
     bool set_speed_NE_ms(float speed_ne_ms) override;
     bool set_speed_up_ms(float speed_up_ms) override;
@@ -1166,6 +1169,7 @@ public:
         VelAccel,
         Accel,
         Angle,
+        Actuator,
     };
 
     SubMode submode() const { return guided_mode; }
@@ -1221,11 +1225,13 @@ private:
     void pos_control_start();
     void accel_control_start();
     void velaccel_control_start();
+    void motor_control_start();
     void posvelaccel_control_start();
     void takeoff_run();
     void pos_control_run();
     void accel_control_run();
     void velaccel_control_run();
+    void motor_control_run();
     void pause_control_run();
     void posvelaccel_control_run();
     void set_yaw_state_rad(bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_angle);
