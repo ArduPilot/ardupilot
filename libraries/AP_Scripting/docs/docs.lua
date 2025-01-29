@@ -2981,6 +2981,12 @@ function gcs:last_seen() end
 ---@return integer -- MAV_RESULT
 function gcs:run_command_int(command, params) end
 
+-- call a MAVLink MAV_CMD_xxx command via command_long interface
+---@param command integer -- MAV_CMD_xxx
+---@param params table -- parameters of p1, p2, p3, p4, p5, p6 and p7. Any not specified taken as zero
+---@return integer -- MAV_RESULT
+function gcs:run_command_long(command, params) end
+
 -- The relay library provides access to controlling relay outputs.
 relay = {}
 
