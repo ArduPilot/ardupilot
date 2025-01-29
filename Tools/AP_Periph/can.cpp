@@ -352,7 +352,7 @@ void AP_Periph_FW::handle_param_executeopcode(CanardInstance* canard_instance, C
 #if AP_PERIPH_BATTERY_ENABLED
         AP_Param::setup_object_defaults(&battery, battery_lib.var_info);
 #endif
-#ifdef HAL_PERIPH_ENABLE_MAG
+#if AP_PERIPH_MAG_ENABLED
         AP_Param::setup_object_defaults(&compass, compass.var_info);
 #endif
 #ifdef HAL_PERIPH_ENABLE_BARO
@@ -1882,7 +1882,7 @@ void AP_Periph_FW::can_update()
     if (!hal.run_in_maintenance_mode())
 #endif
     {
-#ifdef HAL_PERIPH_ENABLE_MAG
+#if AP_PERIPH_MAG_ENABLED
         can_mag_update();
 #endif
 #if AP_PERIPH_GPS_ENABLED
