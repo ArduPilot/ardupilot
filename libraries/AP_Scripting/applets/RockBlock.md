@@ -26,7 +26,10 @@ The script adds the following parameters:
 
 ## RCK_FORCEHL
 
-Automatically enables High Latency mode if not already enabled
+Mode of operation:
+- 0 = start disabled, can be enabled via MAV_CMD_CONTROL_HIGH_LATENCY
+- 1 = start enabled, can be disabled via MAV_CMD_CONTROL_HIGH_LATENCY
+- 2 = enabled on loss of telemetry (GCS) link for 5 seconds
 
 ## RCK_PERIOD
 
