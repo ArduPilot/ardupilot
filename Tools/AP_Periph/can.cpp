@@ -1616,15 +1616,45 @@ void AP_Periph_FW::can_start()
     }
 #endif // HAL_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz
 
+    {
+        /*
+          support termination parameters, and also a hardware switch
+          to force termination and an LED to indicate if termination
+          is active
+         */
 #ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM
-    palWriteLine(HAL_GPIO_PIN_GPIO_CAN1_TERM, g.can_terminate[0]);
+        bool can1_term = g.can_terminate[0];
+# ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM_SWITCH
+        can1_term |= palReadLine(HAL_GPIO_PIN_GPIO_CAN1_TERM_SWITCH);
+# endif
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN1_TERM, can1_term);
+# ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM_LED
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN1_TERM_LED, can1_term? HAL_LED_ON : !HAL_LED_ON);
+# endif
 #endif
+
 #ifdef HAL_GPIO_PIN_GPIO_CAN2_TERM
-    palWriteLine(HAL_GPIO_PIN_GPIO_CAN2_TERM, g.can_terminate[1]);
+        bool can2_term = g.can_terminate[1];
+# ifdef HAL_GPIO_PIN_GPIO_CAN2_TERM_SWITCH
+        can2_term |= palReadLine(HAL_GPIO_PIN_GPIO_CAN2_TERM_SWITCH);
+# endif
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN2_TERM, can2_term);
+# ifdef HAL_GPIO_PIN_GPIO_CAN2_TERM_LED
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN2_TERM_LED, can2_term? HAL_LED_ON : !HAL_LED_ON);
+# endif
 #endif
+
 #ifdef HAL_GPIO_PIN_GPIO_CAN3_TERM
-    palWriteLine(HAL_GPIO_PIN_GPIO_CAN3_TERM, g.can_terminate[2]);
+        bool can3_term = g.can_terminate[2];
+# ifdef HAL_GPIO_PIN_GPIO_CAN3_TERM_SWITCH
+        can3_term |= palReadLine(HAL_GPIO_PIN_GPIO_CAN3_TERM_SWITCH);
+# endif
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN3_TERM, can3_term);
+# ifdef HAL_GPIO_PIN_GPIO_CAN3_TERM_LED
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN3_TERM_LED, can3_term? HAL_LED_ON : !HAL_LED_ON);
+# endif
 #endif
+    }
 
     for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
