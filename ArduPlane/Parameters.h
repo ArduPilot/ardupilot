@@ -587,6 +587,10 @@ public:
     // orientation of rangefinder to use for landing
     AP_Int8 rangefinder_land_orient;
 #endif
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    AP_SystemID systemid;
+#endif
 };
 
 extern const AP_Param::Info var_info[];

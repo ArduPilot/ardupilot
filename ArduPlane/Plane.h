@@ -122,6 +122,7 @@
 #endif
 #include "AP_Arming.h"
 #include "pullup.h"
+#include "systemid.h"
 
 /*
   main APM:Plane class
@@ -178,6 +179,9 @@ public:
 #endif
 #if AP_PLANE_GLIDER_PULLUP_ENABLED
     friend class GliderPullup;
+#endif
+#if AP_PLANE_SYSTEMID_ENABLED
+    friend class AP_SystemID;
 #endif
 
     Plane(void);
@@ -949,7 +953,7 @@ private:
 
     // Log.cpp
     void Log_Write_FullRate(void);
-    void Log_Write_Attitude(void);
+    void Log_Write_Attitude(bool from_sysid=false);
     void Log_Write_Control_Tuning();
     void Log_Write_OFG_Guided();
     void Log_Write_Guided(void);

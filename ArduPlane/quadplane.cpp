@@ -969,16 +969,25 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
             }
         }
 
+        // note this is actually in deg/s for some SID_AXIS values for yaw
+        Vector3f offset_deg;
+
+#if AP_PLANE_SYSTEMID_ENABLED
+        auto &systemid = plane.g2.systemid;
+        systemid.update();
+        offset_deg = systemid.get_attitude_offset_deg();
+#endif
+
         if (use_yaw_target) {
-            attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd,
-                                                               plane.nav_pitch_cd,
-                                                               yaw_target_cd,
+            attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd + offset_deg.x*100,
+                                                               plane.nav_pitch_cd + offset_deg.y*100,
+                                                               yaw_target_cd + offset_deg.z*100,
                                                                true);
         } else {
             // use euler angle attitude control
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                          plane.nav_pitch_cd,
-                                                                          yaw_rate_cds);
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd + offset_deg.x*100,
+                                                                          plane.nav_pitch_cd + offset_deg.y*100,
+                                                                          yaw_rate_cds + offset_deg.z*100);
         }
     } else {
         // use the fixed wing desired rates
@@ -1013,6 +1022,9 @@ void QuadPlane::hold_stabilize(float throttle_in)
             // tailsitters in forward flight should not use angle boost
             should_boost = false;
         }
+#if AP_PLANE_SYSTEMID_ENABLED
+        throttle_in += plane.g2.systemid.get_throttle_offset();
+#endif
         attitude_control->set_throttle_out(throttle_in, should_boost, 0);
     }
 }

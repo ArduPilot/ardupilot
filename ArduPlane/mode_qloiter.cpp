@@ -133,10 +133,18 @@ void ModeQLoiter::run()
     // Pilot input, use yaw rate time constant
     quadplane.set_pilot_yaw_rate_time_constant();
 
+    Vector3f target { plane.nav_roll_cd*0.01, plane.nav_pitch_cd*0.01, quadplane.get_desired_yaw_rate_cds() * 0.01 };
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    auto &systemid = plane.g2.systemid;
+    systemid.update();
+    target += systemid.get_attitude_offset_deg();
+#endif
+
     // call attitude controller with conservative smoothing gain of 4.0f
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                  plane.nav_pitch_cd,
-                                                                  quadplane.get_desired_yaw_rate_cds());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target.x*100,
+                                                                  target.y*100,
+                                                                  target.z*100);
 
     if (plane.control_mode == &plane.mode_qland) {
         if (poscontrol.get_state() < QuadPlane::QPOS_LAND_FINAL && quadplane.check_land_final()) {
