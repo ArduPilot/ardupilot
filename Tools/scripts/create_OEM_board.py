@@ -64,7 +64,7 @@ class OEMCreate:
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(description='ArduPilot IMU Filter Tester Tool. Input one log file from ')
+    parser = argparse.ArgumentParser(description='ArduPilot OEM board creator')
     parser.add_argument('board_name', default=None, help='board to inherit from')
     parser.add_argument('oem_board_name', default=None, help='new board name')
 
