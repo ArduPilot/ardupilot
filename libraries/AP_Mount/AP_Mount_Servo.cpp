@@ -33,6 +33,11 @@ void AP_Mount_Servo::update()
     // change to RC_TARGETING mode if RC input has changed
     set_rctargeting_on_rcinput_change();
 
+#if AP_MOUNT_AUTO_RETRACT_ENABLED
+    // auto deploy/retract mount based on altitude
+    do_auto_deploy_retract();
+#endif // AP_MOUNT_AUTO_RETRACT_ENABLED
+
     auto mount_mode = get_mode();
     switch (mount_mode) {
         // move mount to a "retracted position" or to a position where a fourth servo can retract the entire mount into the fuselage
