@@ -9,6 +9,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
@@ -74,6 +75,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
