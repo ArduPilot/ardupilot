@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AP_Mount/AP_Mount_config.h>
+
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 
@@ -32,4 +34,9 @@ public:
     AP_Int8     sysid_default;      // target sysid for mount to follow
     AP_Int32    dev_id;             // Device id taking into account bus
     AP_Int8     options;            // mount options bitmask
+
+#if AP_MOUNT_AUTO_RETRACT_ENABLED
+    AP_Int16    deploy_alt;         // mount servo deployment altitude in metres
+    AP_Int16    retract_alt;        // mount servo retract altitude in metres
+#endif // AP_MOUNT_AUTO_RETRACT_ENABLED
 };

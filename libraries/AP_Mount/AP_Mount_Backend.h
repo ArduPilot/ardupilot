@@ -301,6 +301,12 @@ protected:
         MountTarget rate_rads;      // rate target in rad/s
     } mnt_target;
 
+
+#if AP_MOUNT_AUTO_RETRACT_ENABLED
+    // set the mount mode to retracted or default
+    void do_auto_deploy_retract();
+#endif // AP_MOUNT_AUTO_RETRACT_ENABLED
+
 private:
 
     // get pilot input (in the range -1 to +1) received through RC
@@ -340,6 +346,13 @@ private:
     bool _target_sysid_location_set;// true if _target_sysid has been set
 
     uint32_t _last_warning_ms;      // system time of last warning sent to GCS
+
+#if AP_MOUNT_AUTO_RETRACT_ENABLED
+    struct {
+        bool initialised;
+        int16_t last_hagl_m; // track the altitude at the previous update
+    } _auto_retract;
+#endif // AP_MOUNT_AUTO_RETRACT_ENABLED
 
     // structure holding the last RC inputs
     struct {

@@ -173,6 +173,26 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 16, AP_Mount_Params, options, 0),
 
+#if AP_MOUNT_AUTO_RETRACT_ENABLED
+    // @Param: _DEPLOY_ALT
+    // @DisplayName: Mount servo deployment altitude
+    // @Description: Altitude above ground level (AGL) where the mount will be deployed. If a) this is zero, b) RETRACT_ALT is zero, or c) this is less than RETRACT_ALT, then altitude is not used for deploying the mount. If set, mount starts in RETRACTED mode.
+    // @Units: m
+    // @Range: 0 32767
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_DEPLOY_ALT", 17, AP_Mount_Params, deploy_alt, 0),
+
+    // @Param: _RETRACT_ALT
+    // @DisplayName: Mount servo retract altitude
+    // @Description: Altitude above ground level (AGL) where the mount will be retracted. If zero then altitude is not used for retracting the mount.
+    // @Units: m
+    // @Range: 0 32767
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_RETRACT_ALT", 18, AP_Mount_Params, retract_alt, 0),
+#endif // AP_MOUNT_AUTO_RETRACT_ENABLED
+
     AP_GROUPEND
 };
 
