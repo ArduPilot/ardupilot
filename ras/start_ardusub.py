@@ -29,12 +29,12 @@ class AutoSubRoutine:
         # Mission name unique w/ datetime stamp
         self.mission_name = f"UUV Baseline Mission - Tsunami - {date.today()}"
 
-        self.mission_date = f"{date.now()}"
+        # self.mission_date = f"{date.now()}"
 
         # Start empty dictionary with mission name
-        self.sim_dict = {
-            "mission_name": self.mission_name,
-        }
+        self.sim_list = [
+            {"mission_name": self.mission_name}
+        ]
 
         # Recorder module start time
         self.start_time = time.time()
@@ -53,6 +53,12 @@ class AutoSubRoutine:
 
         # Track all received message types for the current run
         self.received_message_types = set()
+
+        self.current_entry = {}
+
+        # Store previous entries to carry data over if message type
+        # is not sent when other messsages are received
+        self.previous_entry = {}
 
         # Create the connection
         #   If using a companion computer
@@ -92,8 +98,9 @@ class AutoSubRoutine:
         # Set battery parameters (Matching Lithium-ion (14.8V, 18Ah) BlueROV2 battery)
         # Parameter types are as follows:
         #   INT8, INT16, INT32 or REAL32
-        # self.set_param('FRAME_CONFIG', 4, 'REAL32')
         self.set_param('BATT_CAPACITY', 18000, 'REAL32')
+        
+        # Battery failsafe parameters
         # self.set_param('BATT_LOW_MAH', 1800, 'REAL32')
         # self.set_param('BATT_FS_LOW_ACT', 3, 'REAL32')
 
@@ -112,13 +119,8 @@ class AutoSubRoutine:
         # #     mavutil.mavlink.MAV_PARAM_TYPE_REAL32
         # # )
 
-        # # Read param set ACK
-        # ack = self.sub.recv_match(type='PARAM_VALUE', blocking=True).to_dict()
-        # print('name: %s\tvalue: %d' %
-        #     (ack['param_id'], ack['param_value']))
-
         # Buffer to not send command too early
-        time.sleep(1)
+        time.sleep(self.msg_freq)
         
         # List for waypionts
         waypoints = []
@@ -279,21 +281,21 @@ class AutoSubRoutine:
     def request_and_record(self):
         """
         Listen for all MAVLink messages output by ArduSub and
-        update sim_dict dictionary and timer while filling missing keys with 0
+        update sim_list dictionary and timer while filling missing keys with 0
         if mavpackettype is not recieved at constant interval.
         """
 
+        # Recorder start time
+        start_time = time.time()
+        
         # Store previous entries to carry data over if message type
         # is not sent when other messsages are received
-        previous_entry = {}
-
-        start_time = time.time()
+        self.previous_entry = {}
 
         # Flag to get one final reading before stopping recording session
         loop = True
         
         while not self.stop_record.is_set():
-            print(self.sim_dict, "\n")
             try:
                 # Calculate elapsed time and format as h:m:s
                 elapsed_time = int(time.time() - start_time)
@@ -302,7 +304,7 @@ class AutoSubRoutine:
                 formatted_time = f'{hours:02}:{minutes:02}:{seconds:02}'
 
                 # Create new entries with timestamp for time series format
-                current_entry = {}
+                self.current_entry = {"timestamp": formatted_time}
 
                 # Track which keys were updated
                 updated_keys = set()
@@ -321,37 +323,32 @@ class AutoSubRoutine:
                     message_content.pop('mavpackettype', None)
 
                     # Add message received to current entry and update keys
-                    current_entry[packet_type] = message_content
+                    self.current_entry[packet_type] = message_content
                     updated_keys.add(packet_type)
 
                     # Add packet type to set
                     self.received_message_types.add(packet_type)
 
-                # Fill missing keys with 0
-                # for message_type in self.received_message_types:
-                #     if message_type not in updated_keys:
-                #         current_entry[message_type] = math.nan
-
                 # Place previous entry into entry if no message has arrived at
                 #   defined message frequency
-                # TODO: Replace previous entry values with NaN if there is no entry at
-                #       time step
-                if previous_entry:
+                # TODO: Further turn list into time-series format
+                if self.previous_entry:
                     for message_type in self.received_message_types:
                         if message_type not in updated_keys:
-                            current_entry[message_type] = math.nan
+                            self.current_entry[message_type] = math.nan
+
 
                 # Add the current timestamp entry to the time-series data
-                self.sim_dict[formatted_time] = current_entry
+                self.sim_list.append(self.current_entry)
 
                 # Copy current message content over to previous entry dict to store
-                previous_entry = current_entry.copy()
+                self.previous_entry = self.current_entry.copy()
 
                 # Control msg frequency
                 time.sleep(self.msg_freq)
 
                 # Flag to stop recording if mission complete
-                if self.sim_dict[formatted_time]['MISSION_CURRENT']['mission_state'] == self.finish_flag:
+                if self.current_entry['MISSION_CURRENT']['mission_state'] == self.finish_flag:
                     break
 
             except Exception as e:
@@ -363,7 +360,14 @@ class AutoSubRoutine:
                 else:
                     break
                 
-        print('Stopping recorder...')
+        print('Stopping recorder.. cleaning output...')
+
+        # Remove empty first time stamp if any
+        # TODO: Further sync so that there is no empty timestamp
+
+        self.clean_and_convert()
+
+        print(self.sim_list)
 
         self.stop_recording_and_post()
 
@@ -379,13 +383,15 @@ class AutoSubRoutine:
         # Specify MongoDB collection
         # collection = self.db["ardusub_tsunami_mission_baseline_data"]
 
-        # TODO: Loop to correctly format latitude, longitude, and temperature
-        #         to floating point values
-        # Latitude and Longitude are incorrectly formatted wherever 
-        #   lat/latitude/lon/lng/longitude are read
-        for entry in self.sim_dict:
+
+    def clean_and_convert(self):
+        """
+        Clean empty timestamp and convert lat/lng/long/latitude/longitude to floating point values
+        """
+
+        for entry in self.sim_list:
             if entry == {'timestamp': '00:00:00'}:
-                data.remove(entry)
+                self.sim_list.remove(entry)
             for key, value in list(entry.items()):
                 if isinstance(value, dict):
                     for sub_key, sub_value in list(value.items()):
@@ -400,14 +406,11 @@ class AutoSubRoutine:
                                 if str_value.startswith('-'): 
                                     value[sub_key] = float(str_value[:3] + "." + str_value[3:])
                                 else:
-                                    value[sub_key] = float(str_value[:2] + "." + str_value[2:])
-
-        with open(f'{self.mission_name}.txt', 'w') as converted_file: 
-            converted_file.write(json.dumps(self.sim_dict))
+                                    value[sub_key] = float(str_value[:2] + "." + str_value[2:])            
 
 
 if __name__ == "__main__":
-    launch = AutoSubRoutine('missions/short_wp_test.txt')
+    launch = AutoSubRoutine('short_wp_test.txt')
 
     # Potential user input
     vehicle_mode = 'AUTO'
@@ -418,20 +421,9 @@ if __name__ == "__main__":
     message_queue = multiprocessing.Process(target=launch.queue_messages)
     record_messages = multiprocessing.Process(target=launch.request_and_record)
 
-    # Start processes (ArduPilot will always run as baskground task)
+    # Start processes (ArduPilot sim_vehicle.py will always run as baskground task)
     message_queue.start()
     record_messages.start()
-
-    # TODO: Add flag that tells processes to join after certain condition is passed
-    #       since ArduSub is a constand process in itself
-
-    # try:
-    #     # TODO: Add function that works for flag
-    # except KeyboardInterrupt:
-    #     pass
-    # finally:
-    #     # Put dictionary into txt file
-    #     launch.stop_recording_and_post()
 
     # Join processes to end
     message_queue.join()
