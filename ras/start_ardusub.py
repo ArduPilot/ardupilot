@@ -383,29 +383,24 @@ class AutoSubRoutine:
         #         to floating point values
         # Latitude and Longitude are incorrectly formatted wherever 
         #   lat/latitude/lon/lng/longitude are read
-        for index, (timestamp, entry) in enumerate(self.sim_dict.items()):
-            if index == 0:
-                continue
-            
-            # try:
-            # values = json.loads(string)
-            if isinstance(entry, dict):
-                for key, value in entry.items():
-                    if isinstance(value, dict):  # If the value is a nested dictionary
-                        for sub_key, sub_value in value.items():
-                            # Check for lat/long keys and process them
-                            if sub_key in (
-                                "lat",
-                                "lon",
-                                "lng",
-                                "latitude",
-                                "longitude"
-                                ) and isinstance(sub_value, int):
-                                    str_value = str(sub_value)
-                                    if str_value.startswith('-'): 
-                                        value[sub_key] = float(str_value[:3] + "." + str_value[3:])
-                                    else:
-                                        value[sub_key] = float(str_value[:2] + "." + str_value[2:])
+        for entry in self.sim_dict:
+            if entry == {'timestamp': '00:00:00'}:
+                data.remove(entry)
+            for key, value in list(entry.items()):
+                if isinstance(value, dict):
+                    for sub_key, sub_value in list(value.items()):
+                        if sub_key in (
+                            "lat",
+                            "lon",
+                            "lng",
+                            "latitude",
+                            "longitude"
+                            ) and isinstance(sub_value, int):
+                                str_value = str(sub_value)
+                                if str_value.startswith('-'): 
+                                    value[sub_key] = float(str_value[:3] + "." + str_value[3:])
+                                else:
+                                    value[sub_key] = float(str_value[:2] + "." + str_value[2:])
 
         with open(f'{self.mission_name}.txt', 'w') as converted_file: 
             converted_file.write(json.dumps(self.sim_dict))
