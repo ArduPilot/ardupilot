@@ -32,6 +32,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Common/ExpandingString.h>
 
 const AP_Param::GroupInfo AP_AIS::var_info[] = {
 
@@ -177,14 +178,14 @@ void AP_AIS::update()
                 }
 
                 // combine packets
-                char multi[AIVDM_PAYLOAD_SIZE*_incoming.total];
-                strncpy(multi,_AIVDM_buffer[msg_parts[0]].payload,AIVDM_PAYLOAD_SIZE);
+                ExpandingString s;
+                s.append(_AIVDM_buffer[msg_parts[0]].payload, strlen(_AIVDM_buffer[msg_parts[0]].payload));
                 for (uint8_t i = 1; i < _incoming.total - 1; i++) {
-                    strncat(multi,_AIVDM_buffer[msg_parts[i]].payload,sizeof(multi));
+                    s.append(_AIVDM_buffer[msg_parts[i]].payload, strlen(_AIVDM_buffer[msg_parts[i]].payload));
                 }
-                strncat(multi,_incoming.payload,sizeof(multi));
+                s.append(_incoming.payload, strlen(_incoming.payload));
 #if HAL_LOGGING_ENABLED
-                const bool decoded = payload_decode(multi);
+                const bool decoded = payload_decode(s.get_string());
 #endif
                 for (uint8_t i = 0; i < _incoming.total; i++) {
 #if HAL_LOGGING_ENABLED
