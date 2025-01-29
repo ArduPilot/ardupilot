@@ -410,7 +410,7 @@ class AutoSubRoutine:
 
 
 if __name__ == "__main__":
-    launch = AutoSubRoutine('short_wp_test.txt')
+    launch = AutoSubRoutine('missions/short_wp_test.txt')
 
     # Potential user input
     vehicle_mode = 'AUTO'
