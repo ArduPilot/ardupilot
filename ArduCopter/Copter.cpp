@@ -451,6 +451,8 @@ AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, c
             }
             if (mode_guided_custom[i] == nullptr) {
                 // Allocation failure
+                free((void*)full_name_copy);
+                free((void*)short_name_copy);
                 return nullptr;
             }
 
