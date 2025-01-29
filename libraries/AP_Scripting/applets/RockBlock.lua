@@ -102,7 +102,8 @@ local function MAVLinkProcessor()
         COMMAND_INT = 75,
         HIGH_LATENCY2 = 235,
         MISSION_ITEM_INT = 73,
-        SET_MODE = 11
+        SET_MODE = 11,
+        MISSION_SET_CURRENT = 41
     }
 
     -- private fields
@@ -121,6 +122,7 @@ local function MAVLinkProcessor()
     _crc_extra[235] = 0xb3
     _crc_extra[73] = 0x26
     _crc_extra[11] = 0x59
+    _crc_extra[41] = 0x1c
     
     local _messages = {}
     _messages[75] = { -- COMMAND_INT
@@ -155,6 +157,9 @@ local function MAVLinkProcessor()
     }
     _messages[11] = { -- SET_MODE
         { "custom_mode", "<I4" }, { "target_system", "<B" }, { "base_mode", "<B" },
+    }
+    _messages[41] = { -- MISSION_SET_CURRENT
+        { "seq", "<I2" }, { "target_system", "<B" }, { "target_component", "<B" },
     }
     function self.getSeqID() return _txseqid end
 
@@ -269,53 +274,25 @@ local function MAVLinkProcessor()
                 end
             elseif _mavresult.msgid == self.SET_MODE then
                 vehicle:set_mode(_mavresult.custom_mode)
-            elseif _mavresult.msgid == self.COMMAND_LONG or _mavresult.msgid ==
-                self.COMMAND_INT then
-                if _mavresult.command == 400 then -- MAV_CMD_COMPONENT_ARM_DISARM
-                    if _mavresult.param1 == 1 then
-                        arming:arm()
-                    elseif _mavresult.param1 == 0 then
-                        arming:disarm()
-                    end
-                elseif _mavresult.command == 176 then -- MAV_CMD_DO_SET_MODE
-                    vehicle:set_mode(_mavresult.param2)
-                elseif _mavresult.command == 20 then -- MAV_CMD_NAV_RETURN_TO_LAUNCH (Mode RTL) may vary depending on frame
-                    if FWVersion:type() == 2 then -- copter
-                        vehicle:set_mode(6)
-                    elseif FWVersion:type() == 3 then -- plane
-                        vehicle:set_mode(11)
-                    elseif FWVersion:type() == 1 then -- rover
-                        vehicle:set_mode(11)
-                    end
-                elseif _mavresult.command == 21 then -- MAV_CMD_NAV_LAND (Mode LAND) may vary depending on frame
-                    if FWVersion:type() == 2 then -- copter
-                        vehicle:set_mode(9)
-                    elseif FWVersion:type() == 12 then -- blimp
-                        vehicle:set_mode(0)
-                    end
-                elseif _mavresult.command == 22 then -- MAV_CMD_NAV_TAKEOFF
-                    vehicle:start_takeoff(_mavresult.param7)
-                elseif _mavresult.command == 84 then -- MAV_CMD_NAV_VTOL_TAKEOFF
-                    vehicle:start_takeoff(_mavresult.param7)
-                elseif _mavresult.command == 85 then -- MAV_CMD_NAV_VTOL_LAND (Mode QLAND)
-                    vehicle:set_mode(20)
-                elseif _mavresult.command == 300 then -- MAV_CMD_MISSION_START --mode auto and then start mission
-                    if FWVersion:type() == 2 then -- copter
-                        vehicle:set_mode(3)
-                    elseif FWVersion:type() == 3 then -- plane
-                        vehicle:set_mode(10)
-                    elseif FWVersion:type() == 1 then -- rover
-                        vehicle:set_mode(10)
-                    elseif FWVersion:type() == 7 then -- sub
-                        vehicle:set_mode(3)
-                    end
-                elseif _mavresult.command == 2600 then -- MAV_CMD_CONTROL_HIGH_LATENCY
-                    if _mavresult.param1 == 1 then
-                        gcs:enable_high_latency_connections(true)
-                    else
-                        gcs:enable_high_latency_connections(false)
-                    end
-                end
+            elseif _mavresult.msgid == self.COMMAND_LONG then
+                gcs:run_command_long(_mavresult.command, { p1 = _mavresult.param1,
+                                                           p2 = _mavresult.param2,
+                                                           p3 = _mavresult.param3,
+                                                           p4 = _mavresult.param4,
+                                                           p5 = _mavresult.param5,
+                                                           p6 = _mavresult.param6,
+                                                           p7 = _mavresult.param7})               
+            elseif _mavresult.msgid == self.COMMAND_INT then
+                gcs:run_command_int(_mavresult.command, { p1 = _mavresult.param1,
+                                                          p2 = _mavresult.param2,
+                                                          p3 = _mavresult.param3,
+                                                          p4 = _mavresult.param4,
+                                                          x = _mavresult.x,
+                                                          y = _mavresult.y,
+                                                          z = _mavresult.z,
+                                                          frame = _mavresult.frame })
+            elseif _mavresult.msgid == self.MISSION_SET_CURRENT then
+                mission:set_current_cmd(_mavresult.seq)
             end
             _mavbuffer = ""
             return true
