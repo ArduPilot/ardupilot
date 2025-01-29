@@ -425,6 +425,20 @@ MAV_RESULT GCS::lua_command_int_packet(const mavlink_command_int_t &packet)
 
     return ch->handle_command_int_packet(packet, msg);
 }
+
+MAV_RESULT GCS::lua_command_long_packet(const mavlink_command_long_t &packet)
+{
+    // for now we assume channel 0. In the future we may create a dedicated channel
+    auto *ch = chan(0);
+    if (ch == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    // we need a dummy message for some calls
+    mavlink_message_t msg {};
+
+    return ch->try_command_long_as_command_int(packet, msg);
+}
+
 #endif // AP_SCRIPTING_ENABLED
 
 #endif  // HAL_GCS_ENABLED
