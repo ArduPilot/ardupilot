@@ -181,6 +181,9 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
 #if MODE_AUTOLAND_ENABLED
     case AUX_FUNC::AUTOLAND:
 #endif
+#if AP_PLANE_SYSTEMID_ENABLED
+    case AUX_FUNC::SYSTEMID:
+#endif
         break;
     case AUX_FUNC::SOARING:
 #if HAL_QUADPLANE_ENABLED
@@ -467,6 +470,16 @@ bool RC_Channel_Plane::do_aux_function(const AuxFuncTrigger &trigger)
 #if AP_QUICKTUNE_ENABLED
     case AUX_FUNC::QUICKTUNE:
         plane.quicktune.update_switch_pos(ch_flag);
+        break;
+#endif
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    case AUX_FUNC::SYSTEMID:
+        if (ch_flag == AuxSwitchPos::HIGH) {
+            plane.g2.systemid.start();
+        } else if (ch_flag == AuxSwitchPos::LOW) {
+            plane.g2.systemid.stop();
+        }
         break;
 #endif
 
