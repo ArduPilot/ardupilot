@@ -536,6 +536,25 @@ float Aircraft::perpendicular_distance_to_rangefinder_surface() const
 
 float Aircraft::rangefinder_range() const
 {
+    float altitude = perpendicular_distance_to_rangefinder_surface();
+
+    // sensor position offset in body frame
+    const Vector3f relPosSensorBF = sitl->rngfnd_pos_offset;
+
+    // n.b. the following code is assuming rotation-pitch-270:
+    // adjust altitude for position of the sensor on the vehicle if position offset is non-zero
+    if (!relPosSensorBF.is_zero()) {
+        // get a rotation matrix following DCM conventions (body to earth)
+        Matrix3f rotmat;
+        sitl->state.quaternion.rotation_matrix(rotmat);
+        // rotate the offset into earth frame
+        const Vector3f relPosSensorEF = rotmat * relPosSensorBF;
+        // correct the altitude at the sensor
+        altitude -= relPosSensorEF.z;
+    }
+
+    const auto orientation = (Rotation)sitl->sonar_rot.get();
+#if SITL_RANGEFINDER_AS_OBJECT_SENSOR
 
     float roll = sitl->state.rollDeg;
     float pitch = sitl->state.pitchDeg;
@@ -563,25 +582,6 @@ float Aircraft::rangefinder_range() const
         }
     }
 
-    float altitude = perpendicular_distance_to_rangefinder_surface();
-
-    // sensor position offset in body frame
-    const Vector3f relPosSensorBF = sitl->rngfnd_pos_offset;
-
-    // n.b. the following code is assuming rotation-pitch-270:
-    // adjust altitude for position of the sensor on the vehicle if position offset is non-zero
-    if (!relPosSensorBF.is_zero()) {
-        // get a rotation matrix following DCM conventions (body to earth)
-        Matrix3f rotmat;
-        sitl->state.quaternion.rotation_matrix(rotmat);
-        // rotate the offset into earth frame
-        const Vector3f relPosSensorEF = rotmat * relPosSensorBF;
-        // correct the altitude at the sensor
-        altitude -= relPosSensorEF.z;
-    }
-
-    const auto orientation = (Rotation)sitl->sonar_rot.get();
-#if SITL_RANGEFINDER_AS_OBJECT_SENSOR
     /*
       rover and copter using SITL rangefinders as obstacle sensors
      */
