@@ -160,7 +160,7 @@ void AP_Periph_FW::init()
     }
 #endif  // AP_PERIPH_GPS_ENABLED
 
-#ifdef HAL_PERIPH_ENABLE_MAG
+#if AP_PERIPH_MAG_ENABLED
     compass.init();
 #endif
 
@@ -425,7 +425,7 @@ void AP_Periph_FW::update()
 #if AP_PERIPH_GPS_ENABLED
         hal.serial(0)->printf("GPS status: %u\n", (unsigned)gps.status());
 #endif
-#ifdef HAL_PERIPH_ENABLE_MAG
+#if AP_PERIPH_MAG_ENABLED
         const Vector3f &field = compass.get_field();
         hal.serial(0)->printf("MAG (%d,%d,%d)\n", int(field.x), int(field.y), int(field.z));
 #endif

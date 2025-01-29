@@ -227,7 +227,7 @@ public:
     AP_NMEA_Output nmea;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_MAG
+#if AP_PERIPH_MAG_ENABLED
     Compass compass;
 #endif
 
@@ -449,7 +449,7 @@ public:
 #ifdef HAL_PERIPH_ENABLE_EFI
     uint32_t last_efi_update_ms;
 #endif
-#ifdef HAL_PERIPH_ENABLE_MAG
+#if AP_PERIPH_MAG_ENABLED
     uint32_t last_mag_update_ms;
 #endif
 #if AP_PERIPH_GPS_ENABLED
