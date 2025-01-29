@@ -1294,8 +1294,9 @@ public:
     virtual uint8_t sysid_this_mav() const = 0;
 
 #if AP_SCRIPTING_ENABLED
-    // lua access to command_int
+    // lua access to command_int and command_long
     MAV_RESULT lua_command_int_packet(const mavlink_command_int_t &packet);
+    MAV_RESULT lua_command_long_packet(const mavlink_command_long_t &packet);
 #endif
 
     // Sequence number should be incremented when available modes changes
