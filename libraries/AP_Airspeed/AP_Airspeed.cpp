@@ -52,6 +52,7 @@
 #include "AP_Airspeed_DroneCAN.h"
 #include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed_MSP.h"
+#include "AP_Airspeed_AUAV.h"
 #include "AP_Airspeed_External.h"
 #include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
@@ -439,6 +440,21 @@ void AP_Airspeed::allocate()
         case TYPE_EXTERNAL:
 #if AP_AIRSPEED_EXTERNAL_ENABLED
             sensor[i] = NEW_NOTHROW AP_Airspeed_External(*this, i);
+#endif
+            break;
+        case TYPE_AUAV_5IN:
+#if AP_AIRSPEED_AUAV_ENABLED
+            sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 5);
+#endif
+            break;
+        case TYPE_AUAV_10IN:
+#if AP_AIRSPEED_AUAV_ENABLED
+            sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 10);
+#endif
+            break;
+        case TYPE_AUAV_30IN:
+#if AP_AIRSPEED_AUAV_ENABLED
+            sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 30);
 #endif
             break;
         }
