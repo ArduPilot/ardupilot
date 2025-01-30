@@ -146,21 +146,25 @@ void AP_AIS::update()
             } else if (_incoming.num == _incoming.total) {
                 // last part of a multi part message
                 uint8_t index = 0;
-                uint8_t msg_parts[_incoming.num - 1];
+
+                // We have the last part, need to find preceding fragments
+                const uint8_t parts = _incoming.num - 1;
+
+                uint8_t msg_parts[parts];
                 for  (uint8_t i = 0; i < AIVDM_BUFFER_SIZE; i++) {
                     // look for the rest of the message from the start of the buffer
                     // we assume the message has be received in the correct order
                     if (_AIVDM_buffer[i].num == (index + 1) && _AIVDM_buffer[i].total == _incoming.total && _AIVDM_buffer[i].ID == _incoming.ID) {
                         msg_parts[index] = i;
                         index++;
-                        if (index >= _incoming.num) {
+                        if (index >= parts) {
                             break;
                         }
                     }
                 }
 
                 // did we find the right number?
-                if (_incoming.num != index) {
+                if (parts != index) {
                     // could not find all of the message, save messages
 #if HAL_LOGGING_ENABLED
                     if (log_unsupported) {
@@ -180,14 +184,14 @@ void AP_AIS::update()
                 // combine packets
                 ExpandingString s;
                 s.append(_AIVDM_buffer[msg_parts[0]].payload, strlen(_AIVDM_buffer[msg_parts[0]].payload));
-                for (uint8_t i = 1; i < _incoming.total - 1; i++) {
+                for (uint8_t i = 1; i < index; i++) {
                     s.append(_AIVDM_buffer[msg_parts[i]].payload, strlen(_AIVDM_buffer[msg_parts[i]].payload));
                 }
                 s.append(_incoming.payload, strlen(_incoming.payload));
 #if HAL_LOGGING_ENABLED
                 const bool decoded = payload_decode(s.get_string());
 #endif
-                for (uint8_t i = 0; i < _incoming.total; i++) {
+                for (uint8_t i = 0; i < index; i++) {
 #if HAL_LOGGING_ENABLED
                     // unsupported type, log and discard
                     if (!decoded && log_unsupported) {
