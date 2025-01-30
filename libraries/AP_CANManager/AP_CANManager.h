@@ -187,7 +187,7 @@ private:
       handler for CAN frames from the registered callback, sending frames
       out as CAN_FRAME messages
     */
-    void can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame);
+    void can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame, AP_HAL::CANIface::CanIOFlags flags);
 
     struct {
         mavlink_channel_t chan;
@@ -216,7 +216,7 @@ private:
     /*
       handler for CAN frames for logging
     */
-    void can_logging_callback(uint8_t bus, const AP_HAL::CANFrame &frame);
+    void can_logging_callback(uint8_t bus, const AP_HAL::CANFrame &frame, AP_HAL::CANIface::CanIOFlags flags);
     void check_logging_enable(void);
 #endif
 };
