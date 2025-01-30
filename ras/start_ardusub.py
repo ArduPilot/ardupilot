@@ -381,7 +381,7 @@ class AutoSubRoutine:
         # Specify MongoDB collection
         # collection = self.db["ardusub_tsunami_mission_baseline_data"]
 
-        with open(f"{self.mission_name}.txt", "w") as file:
+        with open(f"{self.mission_name}.json", "w") as file:
             json.dump(self.sim_list, file)
 
 
