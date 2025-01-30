@@ -231,7 +231,7 @@ public:
     Compass compass;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BARO
+#if AP_PERIPH_BARO_ENABLED
     AP_Baro baro;
 #endif
 
@@ -457,7 +457,7 @@ public:
     uint32_t last_gps_yaw_ms;
 #endif
     uint32_t last_relposheading_ms;
-#ifdef HAL_PERIPH_ENABLE_BARO
+#if AP_PERIPH_BARO_ENABLED
     uint32_t last_baro_update_ms;
 #endif
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
