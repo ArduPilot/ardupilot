@@ -41,7 +41,7 @@ COMPASS QMC5883L I2C:0:0xd false ROTATION_PITCH_180_YAW_90
 
 
 # --------------------- Barometer ---------------------------
-define HAL_PERIPH_ENABLE_BARO
+define AP_PERIPH_BARO_ENABLED 1
 define HAL_BARO_ALLOW_INIT_NO_BARO
 
 BARO SPL06 I2C:0:0x76
