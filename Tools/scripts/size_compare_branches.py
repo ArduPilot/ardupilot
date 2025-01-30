@@ -170,6 +170,7 @@ class SizeCompareBranches(object):
         # grep 'class.*[(]linux' Tools/ardupilotwaf/boards.py  | perl -pe "s/class (.*)\(linux\).*/            '\\1',/"
         return [
             'navigator',
+            'navigator64',
             'erleboard',
             'navio',
             'navio2',
