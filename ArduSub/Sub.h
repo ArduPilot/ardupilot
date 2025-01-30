@@ -250,10 +250,20 @@ private:
 
     // dead reckoning state
     struct {
-        bool active;        // true if dead reckoning (position estimate using estimated airspeed, no position or velocity source)
-        bool timeout;       // true if dead reckoning has timedout and EKF's position and velocity estimate should no longer be trusted
-        uint32_t start_ms;  // system time that EKF began deadreckoning
+        bool active;            // true if dead reckoning (position estimate using estimated airspeed, no position or velocity source)
+        bool timeout;           // true if dead reckoning has timedout and EKF's position and velocity estimate should no longer be trusted
+        uint32_t start_ms = 0;  // system time that EKF began deadreckoning
     } dead_reckoning;
+
+    struct {
+        enum {
+            READY,
+            ACTIVE,
+            DONE
+        } status = READY;        // true if deadreckoning has been forced
+        uint32_t force_start_ms; // system time that began forcing deadreckoning
+        uint32_t init_ms = 0;
+    } dr_forced;
 
     // sensor health for logging
     struct {
@@ -465,6 +475,7 @@ private:
     void set_neutral_controls(void);
     void failsafe_terrain_check();
     void failsafe_deadreckon_check();
+    void force_deadreckon_failsafe(const char* prefix_str, bool& force_deadreckon);
     void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();
     void mainloop_failsafe_enable();

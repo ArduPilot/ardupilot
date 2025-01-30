@@ -1,5 +1,5 @@
 """
-ArduSub routine module to set parameters, load in pre-defined mission file, arm 
+ArduSub routine module to set parameters, load in pre-defined mission file, arm
 throttles, and set the sub into 'AUTO' mode to carry out mission.
 
 Some comments taken directly from ArduSub docs.
@@ -25,7 +25,7 @@ class AutoSubRoutine:
     """
 
     def __init__(self, mission_file): #TODO: import python script with pre-defined dictionary
-        
+
         # Mission name unique w/ datetime stamp
         self.mission_name = f"UUV Baseline Mission - Tsunami - {date.today()}"
 
@@ -40,10 +40,10 @@ class AutoSubRoutine:
         # Set predefined mission
         self.mission = mission_file
 
-        # MISSION_CURRENT.mission_state pymavlink packet 
+        # MISSION_CURRENT.mission_state pymavlink packet
         #   flag to signal that mission has finished.
         #   Options:
-        #       
+        #
         self.finish_flag = 5
 
         # Set simulation timer
@@ -90,14 +90,14 @@ class AutoSubRoutine:
     def ready_sub(self, mode):
         """
         Set ArduSub parameters, send specific commands, arm sub to prep for mode initialization,
-        launch custom mode to start sub. 
+        launch custom mode to start sub.
         """
 
         # Set battery parameters (Matching Lithium-ion (14.8V, 18Ah) BlueROV2 battery)
         # Parameter types are as follows:
         #   INT8, INT16, INT32 or REAL32
         self.set_param('BATT_CAPACITY', 18000, 'REAL32')
-        
+
         # Battery failsafe parameters
         # self.set_param('BATT_LOW_MAH', 1800, 'REAL32')
         # self.set_param('BATT_FS_LOW_ACT', 3, 'REAL32')
@@ -119,13 +119,13 @@ class AutoSubRoutine:
 
         # Buffer to not send command too early
         time.sleep(self.msg_freq)
-        
+
         # List for waypionts
         waypoints = []
 
         with open(self.mission, 'r') as f:
             lines = f.readlines()
-        
+
         # Skip file header
         lines = lines[1:]
 
@@ -157,7 +157,7 @@ class AutoSubRoutine:
                 alt  # Altitude
             )
             print(f"Loaded {itr}: lat={lat}, lon={lon}, alt={alt}")
-        
+
         # Buffer to not send command too early
         time.sleep(2)
 
@@ -169,7 +169,7 @@ class AutoSubRoutine:
             self.sub.target_component,
             len(waypoints)
         )
-        
+
         # Buffer to not send command too early
         time.sleep(2)
 
@@ -194,7 +194,7 @@ class AutoSubRoutine:
 
         print('ArduSub underway...')
 
-    
+
     def set_param(self, param_name, param_value, data_type):
         """
         Set parameter to specific value or flag if no parameter uses
@@ -204,14 +204,14 @@ class AutoSubRoutine:
             parameter_name (str): Parameter name to be set
             parameter_value (int/float): Desired parameter value
             value_type (str): Desired parameter data type from ArduPilot compatible
-                              data types: INT8, INT16, INT32 or REAL32             
+                              data types: INT8, INT16, INT32 or REAL32
         """
 
         param = param_name.encode('utf-8')
-        
+
         # Set a parameter value TEMPORARILY to RAM. It will be reset to default on system reboot.
         # Send the ACTION MAV_ACTION_STORAGE_WRITE to PERMANENTLY write the RAM contents to EEPROM.
-        # The parameter variable type is described by MAV_PARAM_TYPE in 
+        # The parameter variable type is described by MAV_PARAM_TYPE in
         # http://mavlink.org/messages/common.
         if data_type == 'INT8':
             self.sub.mav.param_set_send(
@@ -250,7 +250,7 @@ class AutoSubRoutine:
             return
 
         # Read param set ACK
-        # IMPORTANT: The receiving component should acknowledge the new parameter value 
+        # IMPORTANT: The receiving component should acknowledge the new parameter value
         # by sending a param_value message to all communication partners.
         # This will also ensure that multiple GCS all have an up-to-date list of all parameters.
         # If the sending GCS did not receive a PARAM_VALUE message within its timeout time,
@@ -285,14 +285,14 @@ class AutoSubRoutine:
 
         # Recorder start time
         start_time = time.time()
-        
+
         # Store previous entries to carry data over if message type
         # is not sent when other messsages are received
         self.previous_entry = {}
 
         # Flag to get one final reading before stopping recording session
         loop = True
-        
+
         while not self.stop_record.is_set():
             try:
                 # Calculate elapsed time and format as h:m:s
@@ -351,13 +351,13 @@ class AutoSubRoutine:
 
             except Exception as e:
                 print(f'Error receiving message: {e}')
-                
+
                 # Grab one final group of messages before stopping recording session
                 if loop:
                     loop = False
                 else:
                     break
-                
+
         print('Stopping recorder.. cleaning output...')
 
         # Remove empty first time stamp if any
@@ -404,10 +404,10 @@ class AutoSubRoutine:
                             "longitude"
                             ) and isinstance(sub_value, int):
                                 str_value = str(sub_value)
-                                if str_value.startswith('-'): 
+                                if str_value.startswith('-'):
                                     value[sub_key] = float(str_value[:3] + "." + str_value[3:])
                                 else:
-                                    value[sub_key] = float(str_value[:2] + "." + str_value[2:])            
+                                    value[sub_key] = float(str_value[:2] + "." + str_value[2:])
 
 
 if __name__ == "__main__":

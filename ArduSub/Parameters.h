@@ -374,6 +374,8 @@ public:
 
     // AP_Int8 failsafe_dr_timeout;
     AP_Int8 failsafe_dr_enable;
+    AP_Int32 failsafe_dr_timeout;
+    AP_Int8 failsafe_dr_force;
 };
 
 extern const AP_Param::Info        var_info[];

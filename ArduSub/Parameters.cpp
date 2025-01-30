@@ -747,7 +747,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: DeadReckoning is available for this many seconds after losing position and/or velocity source.  After this timeout elapses the EKF failsafe will trigger in modes requiring a position estimate
     // @Range: 0 120
     // @User: Standard
-    // AP_GROUPINFO("FS_DR_TIMEOUT", 23, ParametersG2, failsafe_dr_timeout, 120),
+    AP_GROUPINFO("FS_DR_TIMEOUT", 23, ParametersG2, failsafe_dr_timeout, 120),
+
+    // @Param: FS_DR_FORCE
+    // @DisplayName: Force DeadReckon Failsafe
+    // @Description: Force a deadreckoning failsafe to be triggered after 20 seconds by having the EKF report deadreckoning is enabled in the three_hz_loop.
+    // @Values: 0: Disabled/Do not force, 1: Enable/Force
+    // @User: Advanced
+    AP_GROUPINFO("FS_DR_FORCE", 24, ParametersG2, failsafe_dr_force, FS_DR_NONE),
 
     AP_GROUPEND
 };

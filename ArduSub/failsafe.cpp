@@ -442,29 +442,79 @@ void Sub::failsafe_terrain_check()
     }
 }
 
+// forcing the deadreckoning failsafe
+void Sub::force_deadreckon_failsafe(const char* prefix_str, bool& force_deadreckon)
+{
+    static const auto TEN_SECONDS_MS = 10000;
+    gps.force_disable(dr_forced.status == dr_forced.ACTIVE);
+    auto now = AP_HAL::millis();
+
+
+
+    // gcs().send_text(
+    //     MAV_SEVERITY_INFO,
+    //     "%s: %dms since mission start (%s) ----- %dms since deadreckoning began",
+    //     prefix_str,
+    //     dr_forced.init_ms > 0 ? now - dr_forced.init_ms : 0,
+    //     mission.state() == mission.MISSION_RUNNING ? "true" : "false",
+    //     dead_reckoning.start_ms > 0 ? now - dead_reckoning.start_ms : 0
+    // );
+    //
+    // if (g2.failsafe_dr_force > 0 && mission.state() == mission.MISSION_RUNNING) {
+    //     if (dr_forced.init_ms == 0) {
+    //         dr_forced.status = dr_forced.READY;
+    //         dr_forced.init_ms = now;
+    //     }
+    //
+    //     if (dr_forced.status == dr_forced.ACTIVE && (now - dead_reckoning.start_ms) > TEN_SECONDS_MS) {
+    //         dr_forced.status = dr_forced.DONE;
+    //         force_deadreckon = false;
+    //         set_mode(Mode::Number::AUTO, ModeReason::DEADRECKON_FAILSAFE);
+    //     } else if (dr_forced.status == dr_forced.ACTIVE) {
+    //         force_deadreckon = true;
+    //     }
+    //
+    //     if (dr_forced.status == dr_forced.READY && (now - dr_forced.init_ms) > TEN_SECONDS_MS) {
+    //         gcs().send_text(MAV_SEVERITY_NOTICE, "%s: dr_forced active", prefix_str);
+    //         dr_forced.status = dr_forced.ACTIVE;
+    //         force_deadreckon = true;
+    //     }
+    // }
+}
+
 // dead reckoning alert and failsafe
 void Sub::failsafe_deadreckon_check()
 {
     // update dead reckoning state
     const char* dr_prefix_str = "Dead Reckoning";
+    bool was_dr = failsafe.deadreckon;
 
     // get EKF filter status
     bool ekf_dead_reckoning = inertial_nav.get_filter_status().flags.dead_reckoning;
+    force_deadreckon_failsafe(dr_prefix_str, ekf_dead_reckoning);
+    // gcs().send_text(MAV_SEVERITY_NOTICE, "%s: ekf_dead_reckoning: %d", dr_prefix_str, ekf_dead_reckoning);
+
+    // Change dead_reckoning mode based on ekf dead_reckoning mode
     if (dead_reckoning.active != ekf_dead_reckoning) {
         dead_reckoning.active = ekf_dead_reckoning;
         if (dead_reckoning.active) {
+            dead_reckoning.start_ms = AP_HAL::millis();
             gcs().send_text(MAV_SEVERITY_CRITICAL,"%s started", dr_prefix_str);
         } else {
             dead_reckoning.start_ms = 0;
-            dead_reckoning.timeout = false;
             gcs().send_text(MAV_SEVERITY_CRITICAL,"%s stopped", dr_prefix_str);
         }
     }
 
     if (g2.failsafe_dr_enable <= 0) {
         failsafe.deadreckon = false;
-    } else if (dead_reckoning.active) {
+    } else if (dead_reckoning.active && !was_dr) {
+        // Deadreckoning became active, surface...
         set_mode(Mode::Number::SURFACE, ModeReason::DEADRECKON_FAILSAFE);
+        AP_Notify::events.failsafe_mode_change = 1;
+    } else if(!dead_reckoning.active && was_dr) {
+        // Deadreckoning became inactive, continue as originally planned.
+        set_mode(Mode::Number::AUTO, ModeReason::DEADRECKON_FAILSAFE);
         AP_Notify::events.failsafe_mode_change = 1;
     }
 }

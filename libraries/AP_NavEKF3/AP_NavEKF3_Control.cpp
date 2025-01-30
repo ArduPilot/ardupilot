@@ -794,7 +794,7 @@ void  NavEKF3_core::updateFilterStatus(void)
                                             (imuSampleTime_ms - lastTasFailTime_ms) < 1000 &&
                                             (imuSampleTime_ms - lastTasPassTime_ms) > 3000;
     status.flags.initalized = status.flags.initalized || healthy();
-    status.flags.dead_reckoning = (PV_AidingMode != AID_NONE) && doingWindRelNav && !((doingFlowNav && gndOffsetValid) || doingNormalGpsNav || doingBodyVelNav);
+    status.flags.dead_reckoning = !doingNormalGpsNav;
 
     filterStatus.value = status.value;
 }

@@ -27,6 +27,7 @@ bool ModeAuto::init(bool ignore_checks) {
     guided_limit_clear();
 
     // start/resume the mission (based on MIS_RESTART parameter)
+    gcs().send_text(MAV_SEVERITY_INFO, "sub.mission.start_or_resume()...");
     sub.mission.start_or_resume();
     return true;
 }
@@ -378,7 +379,7 @@ void ModeAuto::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps
 
 // sets the desired yaw rate
 void ModeAuto::set_yaw_rate(float turn_rate_dps)
-{    
+{
     // set sub to desired yaw rate
     sub.yaw_look_at_heading_slew = MIN(turn_rate_dps, AUTO_YAW_SLEW_RATE);    // deg / sec
 
