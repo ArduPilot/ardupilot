@@ -18,6 +18,8 @@
 #define AP_HEATER_IMU_INSTANCE 0
 #endif
 
+#define PRIMARY_UPDATE_TIMEOUT_US 200000UL    // continue to notify the primary at 5Hz
+
 const extern AP_HAL::HAL& hal;
 
 AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
@@ -222,7 +224,6 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
     save_gyro_window(instance, gyro, filter_phase++);
 
     Vector3f gyro_filtered = gyro;
-
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // apply the harmonic notch filters
     for (auto &notch : _imu.harmonic_notches) {
@@ -230,15 +231,13 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
             continue;
         }
         bool inactive = notch.is_inactive();
-#if AP_AHRS_ENABLED
         // by default we only run the expensive notch filters on the
         // currently active IMU we reset the inactive notch filters so
         // that if we switch IMUs we're not left with old data
         if (!notch.params.hasOption(HarmonicNotchFilterParams::Options::EnableOnAllIMUs) &&
-            instance != AP::ahrs().get_primary_gyro_index()) {
+            instance != _imu._primary) {
             inactive = true;
         }
-#endif
         if (inactive) {
             // while inactive we reset the filter so when it activates the first output
             // will be the first input sample
@@ -371,6 +370,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 
     // 5us
     log_gyro_raw(instance, sample_us, gyro, _imu._gyro_filtered[instance]);
+    update_primary();
 }
 
 /*
@@ -458,6 +458,7 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
     }
 
     log_gyro_raw(instance, sample_us, gyro, _imu._gyro_filtered[instance]);
+    update_primary();
 }
 
 void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &raw_gyro, const Vector3f &filtered_gyro)
@@ -470,7 +471,7 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
     }
 
 #if AP_AHRS_ENABLED
-    const bool log_because_primary_gyro = _imu.raw_logging_option_set(AP_InertialSensor::RAW_LOGGING_OPTION::PRIMARY_GYRO_ONLY) && (instance == AP::ahrs().get_primary_gyro_index());
+    const bool log_because_primary_gyro = _imu.raw_logging_option_set(AP_InertialSensor::RAW_LOGGING_OPTION::PRIMARY_GYRO_ONLY) && (instance == _imu._primary);
 #else
     const bool log_because_primary_gyro = false;
 #endif
@@ -807,6 +808,21 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
     update_gyro_filters(instance);
 }
 
+void AP_InertialSensor_Backend::update_primary()
+{
+    // timing changes need to be made in the bus thread in order to take effect which is
+    // why they are actioned here. Currently the primary gyro and  primary accel can never
+    // be different for a particular IMU
+    const bool is_new_primary = (gyro_instance == _imu._primary);
+    uint32_t now_us = AP_HAL::micros();
+    if (is_primary != is_new_primary
+        || AP_HAL::timeout_expired(last_primary_update_us, now_us, PRIMARY_UPDATE_TIMEOUT_US)) {
+        set_primary(is_new_primary);
+        is_primary = is_new_primary;
+        last_primary_update_us = now_us;
+    }
+}
+
 /*
   propagate filter changes from front end to backend
  */
@@ -849,7 +865,6 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance) /* front end */
 
     update_accel_filters(instance);
 }
-
 
 /*
   propagate filter changes from front end to backend

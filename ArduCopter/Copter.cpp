@@ -962,7 +962,6 @@ Copter::Copter(void)
     flight_modes(&g.flight_mode1),
     pos_variance_filt(FS_EKF_FILT_DEFAULT),
     vel_variance_filt(FS_EKF_FILT_DEFAULT),
-    hgt_variance_filt(FS_EKF_FILT_DEFAULT),
     flightmode(&mode_stabilize),
     simple_cos_yaw(1.0f),
     super_simple_cos_yaw(1.0),

@@ -263,7 +263,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(battery_hide_mask, "BATT_HIDE_MASK", HAL_PERIPH_BATT_HIDE_MASK_DEFAULT),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_MAG
+#if AP_PERIPH_MAG_ENABLED
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass,         "COMPASS_",     Compass),

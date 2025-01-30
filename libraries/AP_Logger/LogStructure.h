@@ -636,6 +636,8 @@ struct PACKED log_VER {
     uint16_t _APJ_BOARD_ID;
     uint8_t build_type;
     uint8_t filter_version;
+    uint32_t iomcu_mcu_id;
+    uint32_t iomcu_cpu_id;
 };
 
 
@@ -1122,6 +1124,8 @@ struct PACKED log_VER {
 // @Field: BU: Build vehicle type
 // @FieldValueEnum: BU: APM_BUILD
 // @Field: FV: Filter version
+// @Field: IMI: IOMCU MCU ID
+// @Field: ICI: IOMCU CPU ID
 
 // @LoggerMessage: MOTB
 // @Description: Motor mixer information
@@ -1252,7 +1256,7 @@ LOG_STRUCTURE_FROM_AIS \
     { LOG_SCRIPTING_MSG, sizeof(log_Scripting), \
       "SCR",   "QNIii", "TimeUS,Name,Runtime,Total_mem,Run_mem", "s#sbb", "F-F--", true }, \
     { LOG_VER_MSG, sizeof(log_VER), \
-      "VER",   "QBHBBBBIZHBB", "TimeUS,BT,BST,Maj,Min,Pat,FWT,GH,FWS,APJ,BU,FV", "s-----------", "F-----------", false }, \
+      "VER",   "QBHBBBBIZHBBII", "TimeUS,BT,BST,Maj,Min,Pat,FWT,GH,FWS,APJ,BU,FV,IMI,ICI", "s-------------", "F-------------", false }, \
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt), \
       "MOTB", "QfffffB",  "TimeUS,LiftMax,BatVolt,ThLimit,ThrAvMx,ThrOut,FailFlags", "s------", "F------" , true }
 

@@ -122,7 +122,7 @@ BARO DPS310 I2C:0:0x76
 # enable builtin GPS, mag and baro
 # also allow for airspeed on i2c port, and rangefinder on MSP port
 define AP_PERIPH_GPS_ENABLED 1
-define HAL_PERIPH_ENABLE_MAG
+define AP_PERIPH_MAG_ENABLED 1
 define HAL_PERIPH_ENABLE_BARO
 define HAL_PERIPH_ENABLE_AIRSPEED
 define HAL_PERIPH_ENABLE_RANGEFINDER

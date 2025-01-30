@@ -6834,7 +6834,6 @@ void GCS::update_passthru(void)
     WITH_SEMAPHORE(_passthru.sem);
     uint32_t now = AP_HAL::millis();
     uint32_t baud1, baud2;
-    uint8_t parity1 = 0, parity2 = 0;
     bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s,
                                                     baud1, baud2);
     if (enabled && !_passthru.enabled) {
@@ -6844,8 +6843,8 @@ void GCS::update_passthru(void)
         _passthru.last_port1_data_ms = now;
         _passthru.baud1 = baud1;
         _passthru.baud2 = baud2;
-        _passthru.parity1 = parity1 = _passthru.port1->get_parity();
-        _passthru.parity2 = parity2 = _passthru.port2->get_parity();
+        _passthru.parity1 = _passthru.port1->get_parity();
+        _passthru.parity2 = _passthru.port2->get_parity();
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru enabled");
         if (!_passthru.timer_installed) {
             _passthru.timer_installed = true;
@@ -6865,11 +6864,11 @@ void GCS::update_passthru(void)
             _passthru.port2->begin(baud2);
         }
         // Restore original parity
-        if (_passthru.parity1 != parity1) {
-            _passthru.port1->configure_parity(parity1);
+        if (_passthru.parity1 != _passthru.port1->get_parity()) {
+            _passthru.port1->configure_parity(_passthru.parity1);
         }
-        if (_passthru.parity2 != parity2) {
-            _passthru.port2->configure_parity(parity2);
+        if (_passthru.parity2 != _passthru.port2->get_parity()) {
+            _passthru.port2->configure_parity(_passthru.parity2);
         }
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru disabled");
     } else if (enabled &&
@@ -6890,11 +6889,11 @@ void GCS::update_passthru(void)
             _passthru.port2->begin(baud2);
         }
         // Restore original parity
-        if (_passthru.parity1 != parity1) {
-            _passthru.port1->configure_parity(parity1);
+        if (_passthru.parity1 != _passthru.port1->get_parity()) {
+            _passthru.port1->configure_parity(_passthru.parity1);
         }
-        if (_passthru.parity2 != parity2) {
-            _passthru.port2->configure_parity(parity2);
+        if (_passthru.parity2 != _passthru.port2->get_parity()) {
+            _passthru.port2->configure_parity(_passthru.parity2);
         }
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru timed out");
     }

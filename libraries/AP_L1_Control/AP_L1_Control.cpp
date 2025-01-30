@@ -7,7 +7,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @Param: PERIOD
     // @DisplayName: L1 control period
-    // @Description: Period in seconds of L1 tracking loop. This parameter is the primary control for agressiveness of turns in auto mode. This needs to be larger for less responsive airframes. The default is quite conservative, but for most RC aircraft will lead to reasonable flight. For smaller more agile aircraft a value closer to 15 is appropriate, or even as low as 10 for some very agile aircraft. When tuning, change this value in small increments, as a value that is much too small (say 5 or 10 below the right value) can lead to very radical turns, and a risk of stalling.
+    // @Description: Period in seconds of L1 tracking loop. This parameter is the primary control for aggressiveness of turns in auto mode. This needs to be larger for less responsive airframes. The default is quite conservative, but for most RC aircraft will lead to reasonable flight. For smaller more agile aircraft a value closer to 15 is appropriate, or even as low as 10 for some very agile aircraft. When tuning, change this value in small increments, as a value that is much too small (say 5 or 10 below the right value) can lead to very radical turns, and a risk of stalling.
     // @Units: s
     // @Range: 1 60
     // @Increment: 1
@@ -41,13 +41,13 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     AP_GROUPEND
 };
 
-//Bank angle command based on angle between aircraft velocity vector and reference vector to path.
-//S. Park, J. Deyst, and J. P. How, "A New Nonlinear Guidance Logic for Trajectory Tracking,"
-//Proceedings of the AIAA Guidance, Navigation and Control
-//Conference, Aug 2004. AIAA-2004-4900.
-//Modified to use PD control for circle tracking to enable loiter radius less than L1 length
-//Modified to enable period and damping of guidance loop to be set explicitly
-//Modified to provide explicit control over capture angle
+// Bank angle command based on angle between aircraft velocity vector and reference vector to path.
+// S. Park, J. Deyst, and J. P. How, "A New Nonlinear Guidance Logic for Trajectory Tracking,"
+// Proceedings of the AIAA Guidance, Navigation and Control
+// Conference, Aug 2004. AIAA-2004-4900.
+// Modified to use PD control for circle tracking to enable loiter radius less than L1 length
+// Modified to enable period and damping of guidance loop to be set explicitly
+// Modified to provide explicit control over capture angle
 
 
 /*
@@ -238,7 +238,7 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
     // update _target_bearing_cd
     _target_bearing_cd = _current_loc.get_bearing_to(next_WP);
 
-    //Calculate groundspeed
+    // Calculate groundspeed
     float groundSpeed = _groundspeed_vector.length();
 
     // check if we are moving in the direction of the front of the vehicle
@@ -276,14 +276,14 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
     // calculate distance to target track, for reporting
     _crosstrack_error = A_air % AB;
 
-    //Determine if the aircraft is behind a +-135 degree degree arc centred on WP A
-    //and further than L1 distance from WP A. Then use WP A as the L1 reference point
-    //Otherwise do normal L1 guidance
+    // Determine if the aircraft is behind a +-135 degree degree arc centred on WP A
+    // and further than L1 distance from WP A. Then use WP A as the L1 reference point
+    // Otherwise do normal L1 guidance
     float WP_A_dist = A_air.length();
     float alongTrackDist = A_air * AB;
     if (WP_A_dist > _L1_dist && alongTrackDist/MAX(WP_A_dist, 1.0f) < -0.7071f)
     {
-        //Calc Nu to fly To WP A
+        // Calc Nu to fly To WP A
         Vector2f A_air_unit = (A_air).normalized(); // Unit vector from WP A to aircraft
         xtrackVel = _groundspeed_vector % (-A_air_unit); // Velocity across line
         ltrackVel = _groundspeed_vector * (-A_air_unit); // Velocity along line
@@ -298,15 +298,15 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
         ltrackVel = _groundspeed_vector * (-B_air_unit); // Velocity along line
         Nu = atan2f(xtrackVel,ltrackVel);
         _nav_bearing = atan2f(-B_air_unit.y , -B_air_unit.x); // bearing (radians) from AC to L1 point
-    } else { //Calc Nu to fly along AB line
+    } else { // Calc Nu to fly along AB line
 
-        //Calculate Nu2 angle (angle of velocity vector relative to line connecting waypoints)
+        // Calculate Nu2 angle (angle of velocity vector relative to line connecting waypoints)
         xtrackVel = _groundspeed_vector % AB; // Velocity cross track
         ltrackVel = _groundspeed_vector * AB; // Velocity along track
         float Nu2 = atan2f(xtrackVel,ltrackVel);
-        //Calculate Nu1 angle (Angle to L1 reference point)
+        // Calculate Nu1 angle (Angle to L1 reference point)
         float sine_Nu1 = _crosstrack_error/MAX(_L1_dist, 0.1f);
-        //Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
+        // Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
         sine_Nu1 = constrain_float(sine_Nu1, -0.7071f, 0.7071f);
         float Nu1 = asinf(sine_Nu1);
 
@@ -333,7 +333,7 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
     _prevent_indecision(Nu);
     _last_Nu = Nu;
 
-    //Limit Nu to +-(pi/2)
+    // Limit Nu to +-(pi/2)
     Nu = constrain_float(Nu, -1.5708f, +1.5708f);
     _latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
 
@@ -365,7 +365,7 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     // Calculate L1 gain required for specified damping (used during waypoint capture)
     float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
-    //Get current position and velocity
+    // Get current position and velocity
     if (_ahrs.get_location(_current_loc) == false) {
         // if no GPS loc available, maintain last nav/target_bearing
         _data_is_stale = true;
@@ -374,7 +374,7 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
 
     Vector2f _groundspeed_vector = _ahrs.groundspeed_vector();
 
-    //Calculate groundspeed
+    // Calculate groundspeed
     float groundSpeed = MAX(_groundspeed_vector.length() , 1.0f);
 
 
@@ -387,7 +387,7 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     // 0.3183099 = 1/pi
     _L1_dist = 0.3183099f * _L1_damping * _L1_period * groundSpeed;
 
-    //Calculate the NE position of the aircraft relative to WP A
+    // Calculate the NE position of the aircraft relative to WP A
     const Vector2f A_air = center_WP.get_distance_NE(_current_loc);
 
     // Calculate the unit vector from WP A to aircraft
@@ -405,7 +405,7 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
         }
     }
 
-    //Calculate Nu to capture center_WP
+    // Calculate Nu to capture center_WP
     float xtrackVelCap = A_air_unit % _groundspeed_vector; // Velocity across line - perpendicular to radial inbound to WP
     float ltrackVelCap = - (_groundspeed_vector * A_air_unit); // Velocity along line - radial inbound to WP
     float Nu = atan2f(xtrackVelCap,ltrackVelCap);
@@ -413,25 +413,25 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     _prevent_indecision(Nu);
     _last_Nu = Nu;
 
-    Nu = constrain_float(Nu, -M_PI_2, M_PI_2); //Limit Nu to +- Pi/2
+    Nu = constrain_float(Nu, -M_PI_2, M_PI_2); // Limit Nu to +- Pi/2
 
-    //Calculate lat accln demand to capture center_WP (use L1 guidance law)
+    // Calculate lat accln demand to capture center_WP (use L1 guidance law)
     float latAccDemCap = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
 
-    //Calculate radial position and velocity errors
+    // Calculate radial position and velocity errors
     float xtrackVelCirc = -ltrackVelCap; // Radial outbound velocity - reuse previous radial inbound velocity
     float xtrackErrCirc = A_air.length() - radius; // Radial distance from the loiter circle
 
     // keep crosstrack error for reporting
     _crosstrack_error = xtrackErrCirc;
 
-    //Calculate PD control correction to circle waypoint_ahrs.roll
+    // Calculate PD control correction to circle waypoint_ahrs.roll
     float latAccDemCircPD = (xtrackErrCirc * Kx + xtrackVelCirc * Kv);
 
-    //Calculate tangential velocity
+    // Calculate tangential velocity
     float velTangent = xtrackVelCap * float(loiter_direction);
 
-    //Prevent PD demand from turning the wrong way by limiting the command when flying the wrong way
+    // Prevent PD demand from turning the wrong way by limiting the command when flying the wrong way
     if (ltrackVelCap < 0.0f && velTangent < 0.0f) {
         latAccDemCircPD =  MAX(latAccDemCircPD, 0.0f);
     }
@@ -439,7 +439,7 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     // Calculate centripetal acceleration demand
     float latAccDemCircCtr = velTangent * velTangent / MAX((0.5f * radius), (radius + xtrackErrCirc));
 
-    //Sum PD control and centripetal acceleration to calculate lateral manoeuvre demand
+    // Sum PD control and centripetal acceleration to calculate lateral manoeuvre demand
     float latAccDemCirc = loiter_direction * (latAccDemCircPD + latAccDemCircCtr);
 
     // Perform switchover between 'capture' and 'circle' modes at the
@@ -475,7 +475,7 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
         _WPcircle = true;
         _last_loiter.reached_loiter_target_ms = now_ms;
         _bearing_error = 0.0f; // bearing error (radians), +ve to left of track
-        _nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians)from AC to L1 point
+        _nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
     }
 
     _last_loiter.radius = radius_unscaled;
@@ -506,7 +506,7 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
 
     Vector2f _groundspeed_vector = _ahrs.groundspeed_vector();
 
-    //Calculate groundspeed
+    // Calculate groundspeed
     float groundSpeed = _groundspeed_vector.length();
 
     // Calculate time varying control parameters
