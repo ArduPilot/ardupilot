@@ -161,7 +161,8 @@ void ModeSystemId::exit()
 // should be called at 100hz or more
 void ModeSystemId::run()
 {
-    float target_roll, target_pitch;
+    float target_roll = 0.0f;
+    float target_pitch = 0.0f;
     float target_yaw_rate = 0.0f;
     float pilot_throttle_scaled = 0.0f;
     float target_climb_rate = 0.0f;
