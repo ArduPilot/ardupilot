@@ -1600,7 +1600,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         expected_radius = REALLY_BAD_FUDGE_FACTOR * want_radius
         self.set_parameters({
             "RTL_RADIUS": want_radius,
-            "NAVL1_LIM_BANK": 60,
             "FENCE_ACTION": 1, # AC_FENCE_ACTION_RTL_AND_LAND == 1. mavutil.mavlink.FENCE_ACTION_RTL == 4
         })
 
@@ -4101,7 +4100,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FENCE_ACTION": 6,
             "FENCE_TYPE": 4,
             "RTL_RADIUS": want_radius,
-            "NAVL1_LIM_BANK": 60,
         })
         home_loc = self.mav.location()
         locs = [
@@ -4176,7 +4174,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FENCE_TYPE": 2,
             "FENCE_RADIUS": 300,
             "RTL_RADIUS": want_radius,
-            "NAVL1_LIM_BANK": 60,
         })
 
         self.clear_fence()
@@ -5500,7 +5497,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.set_parameter("NAVL1_LIM_BANK", 50)
 
         self.wait_current_waypoint(2)
 
