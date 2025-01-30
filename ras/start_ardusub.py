@@ -29,8 +29,6 @@ class AutoSubRoutine:
         # Mission name unique w/ datetime stamp
         self.mission_name = f"UUV Baseline Mission - Tsunami - {date.today()}"
 
-        # self.mission_date = f"{date.now()}"
-
         # Start empty dictionary with mission name
         self.sim_list = [
             {"mission_name": self.mission_name}
@@ -382,6 +380,9 @@ class AutoSubRoutine:
 
         # Specify MongoDB collection
         # collection = self.db["ardusub_tsunami_mission_baseline_data"]
+
+        with open(f"{self.mission_name}.txt", "w") as file:
+            json.dump(self.sim_list, file)
 
 
     def clean_and_convert(self):
