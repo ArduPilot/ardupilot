@@ -114,7 +114,7 @@ public:
     float get_temperature_from_altitude(float alt) const;
     float get_altitude_from_pressure(float pressure) const;
 
-    // EAS2TAS for SITL
+    // EAS2TAS at the given altitude AMSL
     static float get_EAS2TAS_for_alt_amsl(float alt_amsl);
 
 #if AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED
