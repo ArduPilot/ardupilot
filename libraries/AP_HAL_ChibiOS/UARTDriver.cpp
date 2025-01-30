@@ -545,7 +545,7 @@ void UARTDriver::dma_rx_enable(void)
     dmamode |= STM32_DMA_CR_CHSEL(sdef.dma_rx_channel_id);
     dmamode |= STM32_DMA_CR_PL(0);
 #if defined(STM32H7)
-    dmamode |= 1<<20;   // TRBUFF See 2.3.1 in the H743 errata
+    dmamode |= DMA_SxCR_TRBUFF;   // TRBUFF See 2.3.1 in the H743 errata
 #endif
     rx_bounce_idx ^= 1;
     stm32_cacheBufferInvalidate(rx_bounce_buf[rx_bounce_idx], RX_BOUNCE_BUFSIZE);
@@ -901,7 +901,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         dmamode |= STM32_DMA_CR_CHSEL(sdef.dma_tx_channel_id);
         dmamode |= STM32_DMA_CR_PL(0);
 #if defined(STM32H7)
-        dmamode |= 1<<20;   // TRBUFF See 2.3.1 in the H743 errata
+        dmamode |= DMA_SxCR_TRBUFF;   // TRBUFF See 2.3.1 in the H743 errata
 #endif
         dmaStreamSetMode(txdma, dmamode | STM32_DMA_CR_DIR_M2P |
                         STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
