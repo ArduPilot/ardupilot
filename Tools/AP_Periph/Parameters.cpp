@@ -269,7 +269,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(compass,         "COMPASS_",     Compass),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BARO
+#if AP_PERIPH_BARO_ENABLED
     // Baro driver
     // @Group: BARO
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp

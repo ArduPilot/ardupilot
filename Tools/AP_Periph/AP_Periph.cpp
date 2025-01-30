@@ -164,7 +164,7 @@ void AP_Periph_FW::init()
     compass.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BARO
+#if AP_PERIPH_BARO_ENABLED
     baro.init();
 #endif
 
@@ -429,7 +429,7 @@ void AP_Periph_FW::update()
         const Vector3f &field = compass.get_field();
         hal.serial(0)->printf("MAG (%d,%d,%d)\n", int(field.x), int(field.y), int(field.z));
 #endif
-#ifdef HAL_PERIPH_ENABLE_BARO
+#if AP_PERIPH_BARO_ENABLED
         hal.serial(0)->printf("BARO H=%u P=%.2f T=%.2f\n", baro.healthy(), baro.get_pressure(), baro.get_temperature());
 #endif
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER

@@ -355,7 +355,7 @@ void AP_Periph_FW::handle_param_executeopcode(CanardInstance* canard_instance, C
 #if AP_PERIPH_MAG_ENABLED
         AP_Param::setup_object_defaults(&compass, compass.var_info);
 #endif
-#ifdef HAL_PERIPH_ENABLE_BARO
+#if AP_PERIPH_BARO_ENABLED
         AP_Param::setup_object_defaults(&baro, baro.var_info);
 #endif
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
@@ -1894,7 +1894,7 @@ void AP_Periph_FW::can_update()
 #if AP_PERIPH_BATTERY_ENABLED
         can_battery_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_BARO
+#if AP_PERIPH_BARO_ENABLED
         can_baro_update();
 #endif
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
