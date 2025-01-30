@@ -21,7 +21,7 @@
 
 class AP_L1_Control : public AP_Navigation {
 public:
-    AP_L1_Control(AP_AHRS &ahrs, const AP_TECS *tecs)
+    AP_L1_Control(const AP_AHRS &ahrs, const AP_TECS &tecs)
         : _ahrs(ahrs)
         , _tecs(tecs)
     {
@@ -76,10 +76,10 @@ public:
 
 private:
     // reference to the AHRS object
-    AP_AHRS &_ahrs;
+    const AP_AHRS &_ahrs;
 
-    // pointer to the SpdHgtControl object
-    const AP_TECS *_tecs;
+    // reference to the TECS object
+    const AP_TECS &_tecs;
 
     // lateral acceration in m/s required to fly to the
     // L1 reference point (+ve to right)
