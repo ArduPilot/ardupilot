@@ -475,7 +475,7 @@ private:
     void set_neutral_controls(void);
     void failsafe_terrain_check();
     void failsafe_deadreckon_check();
-    void force_deadreckon_failsafe(const char* prefix_str, bool& force_deadreckon);
+    void maybe_force_deadreckoning(const char* prefix_str, uint32_t const& now);
     void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();
     void mainloop_failsafe_enable();
