@@ -356,6 +356,11 @@ void AP_Vehicle::setup()
 #endif
 
 #if AP_SERIALMANAGER_ENABLED
+#if HAL_WITH_IO_MCU
+    if (BoardConfig.io_enabled()) {
+        serial_manager.set_protocol_and_baud(HAL_UART_IOMCU_IDX, AP_SerialManager::SerialProtocol_IOMCU, 0);
+    }
+#endif
     // initialise serial ports
     serial_manager.init();
 #endif
