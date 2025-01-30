@@ -458,7 +458,7 @@ bool AP_CANManager::handle_can_forward(mavlink_channel_t chan, const mavlink_com
 
     if (can_forward.callback_id == 0 &&
         !hal.can[bus]->register_frame_callback(
-            FUNCTOR_BIND_MEMBER(&AP_CANManager::can_frame_callback, void, uint8_t, const AP_HAL::CANFrame &), can_forward.callback_id)) {
+            FUNCTOR_BIND_MEMBER(&AP_CANManager::can_frame_callback, void, uint8_t, const AP_HAL::CANFrame &, AP_HAL::CANIface::CanIOFlags), can_forward.callback_id)) {
         // failed to register the callback
         return false;
     }
@@ -550,7 +550,7 @@ void AP_CANManager::process_frame_buffer(void)
         }
         const int16_t retcode = hal.can[frame.bus]->send(frame.frame,
                                                          AP_HAL::micros64() + timeout_us,
-                                                         AP_HAL::CANIface::IsMAVCAN);
+                                                         AP_HAL::CANIface::IsForwardedFrame);
         if (retcode == 0) {
             // no space in the CAN output slots, try again later
             break;
@@ -654,7 +654,7 @@ void AP_CANManager::handle_can_filter_modify(const mavlink_message_t &msg)
   handler for CAN frames from the registered callback, sending frames
   out as CAN_FRAME or CANFD_FRAME messages
  */
-void AP_CANManager::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame)
+void AP_CANManager::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame, AP_HAL::CANIface::CanIOFlags flags)
 {
     WITH_SEMAPHORE(can_forward.sem);
     if (bus != can_forward.callback_bus) {
@@ -713,7 +713,7 @@ void AP_CANManager::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &fram
 /*
   handler for CAN frames for frame logging
  */
-void AP_CANManager::can_logging_callback(uint8_t bus, const AP_HAL::CANFrame &frame)
+void AP_CANManager::can_logging_callback(uint8_t bus, const AP_HAL::CANFrame &frame, AP_HAL::CANIface::CanIOFlags flags)
 {
 #if HAL_CANFD_SUPPORTED
     if (frame.canfd) {
@@ -754,7 +754,7 @@ void AP_CANManager::check_logging_enable(void)
         }
         if (enabled && logging_id == 0) {
             can->register_frame_callback(
-                FUNCTOR_BIND_MEMBER(&AP_CANManager::can_logging_callback, void, uint8_t, const AP_HAL::CANFrame &),
+                FUNCTOR_BIND_MEMBER(&AP_CANManager::can_logging_callback, void, uint8_t, const AP_HAL::CANFrame &, AP_HAL::CANIface::CanIOFlags),
                 logging_id);
         } else if (!enabled && logging_id != 0) {
             can->unregister_frame_callback(logging_id);
