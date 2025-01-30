@@ -178,7 +178,7 @@ void AP_L1_Control::_prevent_indecision(float &Nu)
  */
 float AP_L1_Control::_calc_min_turn_radius() const
 {
-    float tas_at_alt = _tecs->get_target_airspeed() * _ahrs.get_EAS2TAS();
+    float tas_at_alt = _tecs.get_target_airspeed() * _ahrs.get_EAS2TAS();
 
     return sq(tas_at_alt) / (GRAVITY_MSS * tanf(radians(_nav_roll_max_deg())));
 }

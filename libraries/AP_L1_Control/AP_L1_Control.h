@@ -22,7 +22,7 @@
 
 class AP_L1_Control : public AP_Navigation {
 public:
-    AP_L1_Control(AP_AHRS &ahrs, const AP_TECS *tecs, const AP_FixedWing &aparm)
+    AP_L1_Control(const AP_AHRS &ahrs, const AP_TECS &tecs, const AP_FixedWing &aparm)
         : _ahrs(ahrs)
         , _tecs(tecs)
         , _aparm(aparm)
@@ -78,10 +78,10 @@ public:
 
 private:
     // reference to the AHRS object
-    AP_AHRS &_ahrs;
+    const AP_AHRS &_ahrs;
 
-    // pointer to the SpdHgtControl object
-    const AP_TECS *_tecs;
+    // reference to the TECS object
+    const AP_TECS &_tecs;
 
     // reference to the fixed-wing parameters object
     const AP_FixedWing &_aparm;
