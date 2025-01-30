@@ -836,6 +836,35 @@ void can_start()
     if (stm32_was_watchdog_reset()) {
         node_status.vendor_specific_status_code = uint8_t(check_fw_result_t::FAIL_REASON_WATCHDOG);
     }
+
+    {
+        /*
+          support termination solder bridge or switch and optional LED
+         */
+#if defined(HAL_GPIO_PIN_GPIO_CAN1_TERM) && defined(HAL_GPIO_PIN_GPIO_CAN1_TERM_SWITCH)
+        const bool can1_term = palReadLine(HAL_GPIO_PIN_GPIO_CAN1_TERM_SWITCH);
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN1_TERM, can1_term);
+# ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM_LED
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN1_TERM_LED, can1_term? HAL_LED_ON : !HAL_LED_ON);
+# endif
+#endif
+
+#if defined(HAL_GPIO_PIN_GPIO_CAN2_TERM) && defined(HAL_GPIO_PIN_GPIO_CAN2_TERM_SWITCH)
+        const bool can2_term = palReadLine(HAL_GPIO_PIN_GPIO_CAN2_TERM_SWITCH);
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN2_TERM, can2_term);
+# ifdef HAL_GPIO_PIN_GPIO_CAN2_TERM_LED
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN2_TERM_LED, can2_term? HAL_LED_ON : !HAL_LED_ON);
+# endif
+#endif
+
+#if defined(HAL_GPIO_PIN_GPIO_CAN3_TERM) && defined(HAL_GPIO_PIN_GPIO_CAN3_TERM_SWITCH)
+        const bool can3_term = palReadLine(HAL_GPIO_PIN_GPIO_CAN3_TERM_SWITCH);
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN3_TERM, can3_term);
+# ifdef HAL_GPIO_PIN_GPIO_CAN3_TERM_LED
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN3_TERM_LED, can3_term? HAL_LED_ON : !HAL_LED_ON);
+# endif
+#endif
+    }
 }
 
 
