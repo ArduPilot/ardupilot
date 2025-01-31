@@ -458,7 +458,7 @@ bool AP_GPS_NMEA::_term_complete()
                 _last_3D_velocity_ms = now;
                 state.location.lat = ag.lat*1.0e7;
                 state.location.lng = ag.lng*1.0e7;
-                state.undulation   = -ag.undulation;
+                state.undulation   = ag.undulation;
                 state.have_undulation = true;
                 set_alt_amsl_cm(state, ag.alt*1.0e2);
                 state.velocity = ag.vel_NED;

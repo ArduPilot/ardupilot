@@ -382,7 +382,7 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
         loc.lng = msg.longitude_deg_1e8 / 10;
         const int32_t alt_amsl_cm = msg.height_msl_mm / 10;
         interim_state.have_undulation = true;
-        interim_state.undulation = (msg.height_msl_mm - msg.height_ellipsoid_mm) * 0.001;
+        interim_state.undulation = (msg.height_ellipsoid_mm - msg.height_msl_mm) * 0.001;
         interim_state.location = loc;
         set_alt_amsl_cm(interim_state, alt_amsl_cm);
 
