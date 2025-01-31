@@ -1193,6 +1193,10 @@ bool AP_IOMCU::healthy(void)
  */
 void AP_IOMCU::shutdown(void)
 {
+    if (!initialised) {
+        // we're not initialised yet, so cannot shutdown
+        return;
+    }
     do_shutdown = true;
     while (!done_shutdown) {
         hal.scheduler->delay(1);
