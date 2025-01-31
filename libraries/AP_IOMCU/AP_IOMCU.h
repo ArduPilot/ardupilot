@@ -17,6 +17,11 @@
 typedef uint32_t eventmask_t;
 typedef struct ch_thread thread_t;
 
+#ifndef AP_IOMCU_FW_FLASH_SIZE
+#define AP_IOMCU_FW_FLASH_SIZE (0x10000 - 0x1000)
+#endif
+
+
 class AP_IOMCU
 #ifdef HAL_WITH_ESC_TELEM
   : public AP_ESC_Telem_Backend

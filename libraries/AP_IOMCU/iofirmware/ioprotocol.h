@@ -21,7 +21,13 @@
 
 //#define IOMCU_DEBUG
 
-struct PACKED IOPacket {
+struct 
+#if defined(STM32H7)
+__attribute__((aligned(32), packed))
+#else
+PACKED
+#endif
+IOPacket  {
     uint8_t 	count:6;
     uint8_t 	code:2;
     uint8_t 	crc;

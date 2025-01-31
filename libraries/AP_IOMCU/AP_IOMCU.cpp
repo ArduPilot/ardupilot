@@ -79,8 +79,8 @@ void AP_IOMCU::init(void)
 {
     // uart runs at 1.5MBit
     uart.begin(1500*1000, 128, 128);
-#ifdef HAL_IOMCU_UART_OPTIONS
-    uart.set_options(HAL_IOMCU_UART_OPTIONS);
+#ifdef AP_IOMCU_UART_OPTIONS
+    uart.set_options(AP_IOMCU_UART_OPTIONS);
 #endif
     uart.set_unbuffered_writes(true);
 
@@ -1096,14 +1096,11 @@ void AP_IOMCU::send_rc_protocols()
 /*
   check ROMFS firmware against CRC on IOMCU, and if incorrect then upload new firmware
  */
-#ifndef HAL_IOMCU_FW_FLASH_SIZE
-#define HAL_IOMCU_FW_FLASH_SIZE (0x10000 - 0x1000)
-#endif
 
 bool AP_IOMCU::check_crc(void)
 {
     // flash size minus 4k bootloader
-	const uint32_t flash_size = HAL_IOMCU_FW_FLASH_SIZE;
+	const uint32_t flash_size = AP_IOMCU_FW_FLASH_SIZE;
     const char *path = AP_BoardConfig::io_dshot() ? dshot_fw_name : fw_name;
 
     fw = AP_ROMFS::find_decompress(path, fw_size);
