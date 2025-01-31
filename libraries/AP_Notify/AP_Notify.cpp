@@ -421,9 +421,6 @@ void AP_Notify::add_backends(void)
 // ChibiOS noise makers
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     ADD_BACKEND(NEW_NOTHROW Buzzer());
-#if AP_NOTIFY_TONEALARM_ENABLED
-    ADD_BACKEND(NEW_NOTHROW AP_ToneAlarm());
-#endif
 
 // ESP32 noise makers
 #elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
@@ -445,18 +442,18 @@ void AP_Notify::add_backends(void)
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
     ADD_BACKEND(NEW_NOTHROW Buzzer());
-
-  #else // other linux
-    ADD_BACKEND(NEW_NOTHROW AP_ToneAlarm());
   #endif
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    ADD_BACKEND(NEW_NOTHROW AP_ToneAlarm());
     ADD_BACKEND(NEW_NOTHROW Buzzer());
 #ifdef WITH_SITL_RGBLED
     ADD_BACKEND(NEW_NOTHROW SITL_SFML_LED());
 #endif
 #endif // Noise makers
+
+#if AP_NOTIFY_TONEALARM_ENABLED
+    ADD_BACKEND(NEW_NOTHROW AP_ToneAlarm());
+#endif
 
 }
 
