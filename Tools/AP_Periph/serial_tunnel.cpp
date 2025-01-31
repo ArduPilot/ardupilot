@@ -48,7 +48,7 @@ int8_t AP_Periph_FW::get_default_tunnel_serial_port(void) const
         uart_num = g.gps_port;
     }
 #endif
-#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+#if AP_PERIPH_RANGEFINDER_ENABLED
     if (uart_num == -1) {
         uart_num = g.rangefinder_port[0];
     }
