@@ -288,9 +288,6 @@ class Board:
                 '-Werror=implicit-fallthrough',
                 '-cl-single-precision-constant',
             ]
-            env.CXXFLAGS += [
-                '-cl-single-precision-constant',
-            ]
         else:
             env.CFLAGS += [
                 '-Wno-format-contains-nul',
@@ -424,6 +421,7 @@ class Board:
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
                 '-Werror=implicit-fallthrough',
+                '-cl-single-precision-constant',
             ]
         else:
             env.CXXFLAGS += [
