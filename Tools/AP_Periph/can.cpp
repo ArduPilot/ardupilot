@@ -361,7 +361,7 @@ void AP_Periph_FW::handle_param_executeopcode(CanardInstance* canard_instance, C
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
         AP_Param::setup_object_defaults(&airspeed, airspeed.var_info);
 #endif
-#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+#if AP_PERIPH_RANGEFINDER_ENABLED
         AP_Param::setup_object_defaults(&rangefinder, rangefinder.var_info);
 #endif
     }
@@ -1930,7 +1930,7 @@ void AP_Periph_FW::can_update()
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
         can_airspeed_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+#if AP_PERIPH_RANGEFINDER_ENABLED
         can_rangefinder_update();
 #endif
 #ifdef HAL_PERIPH_ENABLE_PROXIMITY
