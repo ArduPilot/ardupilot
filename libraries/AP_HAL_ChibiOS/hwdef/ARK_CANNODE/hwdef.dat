@@ -125,7 +125,7 @@ define HAL_WITH_ESC_TELEM 1
 define AP_SERIALLED_ENABLED 1
 
 # Rangefinder
-define HAL_PERIPH_ENABLE_RANGEFINDER
+define AP_PERIPH_RANGEFINDER_ENABLED 1
 # disable rangefinder by default
 define AP_PERIPH_RANGEFINDER_PORT_DEFAULT -1
 
