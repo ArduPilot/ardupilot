@@ -60,8 +60,12 @@
 
 extern const AP_HAL::HAL &hal;
 
-#ifndef HAL_IOMCU_BOOTLOADER_BAUDRATE
-#define HAL_IOMCU_BOOTLOADER_BAUDRATE 115200
+#ifndef AP_IOMCU_BOOTLOADER_BAUDRATE
+#define AP_IOMCU_BOOTLOADER_BAUDRATE 115200
+#endif
+
+#ifndef AP_IOMCU_CHIBIOS_BOOTLOADER
+#define AP_IOMCU_CHIBIOS_BOOTLOADER 0
 #endif
 
 /*
@@ -70,7 +74,7 @@ extern const AP_HAL::HAL &hal;
 bool AP_IOMCU::upload_fw(void)
 {
     // set baudrate for bootloader
-    uart.begin(HAL_IOMCU_BOOTLOADER_BAUDRATE, 256, 256);
+    uart.begin(AP_IOMCU_BOOTLOADER_BAUDRATE, 256, 256);
 
     bool ret = false;
 
@@ -88,10 +92,17 @@ bool AP_IOMCU::upload_fw(void)
         return false;
     }
 
-    uint32_t bl_rev, unused;
-    if (!get_info(INFO_BL_REV, bl_rev) ||
-        !get_info(INFO_BOARD_ID, unused) ||
-        !get_info(INFO_FLASH_SIZE, unused)) {
+    uint32_t bl_rev;
+#if AP_IOMCU_CHIBIOS_BOOTLOADER
+    uint32_t unused;
+#endif
+
+    if (!get_info(INFO_BL_REV, bl_rev)
+#if AP_IOMCU_CHIBIOS_BOOTLOADER
+    || !get_info(INFO_BOARD_ID, unused) ||
+    !get_info(INFO_FLASH_SIZE, unused)
+#endif
+    ) {
         debug("Err: failed to get bootloader info");
         return false;
     }
@@ -100,6 +111,17 @@ bool AP_IOMCU::upload_fw(void)
         return false;
     }
     debug("found bootloader revision: %u", unsigned(bl_rev));
+
+#if AP_IOMCU_CHIBIOS_BOOTLOADER
+    if (bl_rev > 2) {
+        // verify the CRC of the IO firmware
+        if (verify_rev3(fw_size)) {
+            // already up to date, no need to update, just reboot
+            reboot();
+            return true;
+        }
+    }
+#endif
 
     ret = erase();
     if (!ret) {
@@ -285,7 +307,12 @@ bool AP_IOMCU::erase()
     debug("erase...");
     send(PROTO_CHIP_ERASE);
     send(PROTO_EOC);
-    return get_sync(10000);
+// The timeout for erase is increased for larger flash sizes on the IOMCU
+#if AP_IOMCU_FW_FLASH_SIZE > 1024*1024 // 1MB
+    return get_sync(20000); // 20s timeout for erase
+#else
+    return get_sync(10000); // 10s timeout for erase
+#endif
 }
 
 /*
@@ -421,12 +448,19 @@ bool AP_IOMCU::verify_rev3(uint32_t fw_size_local)
     /* compare the CRC sum from the IO with the one calculated */
     if (sum != crc) {
         debug("CRC wrong: received: 0x%x, expected: 0x%x", (unsigned)crc, (unsigned)sum);
+#if AP_IOMCU_CHIBIOS_BOOTLOADER
+        get_sync();
+#endif
         return false;
     }
 
     crc_is_ok = true;
 
+#if AP_IOMCU_CHIBIOS_BOOTLOADER
+    return get_sync();
+#else
     return true;
+#endif
 }
 
 /*
