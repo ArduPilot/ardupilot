@@ -1,27 +1,58 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL_SITL/AP_HAL_SITL.h>
 
 #include <AP_Math/chirp.h>
 #include <APM_Control/AP_RollController.h>
 #include <APM_Control/AP_PitchController.h>
 #include <AP_Vehicle/AP_FixedWing.h>
+
+#include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
+
 #include <stdio.h>
 #include <errno.h>
-#include <AP_Scheduler/AP_Scheduler.h>
+
+#include <SITL/SITL.h>
 
 /* run with:
-    ./waf configure --board linux
+    ./waf configure --board sitl
     ./waf build --targets examples/AP_FW_Controller_test
-    ./build/linux/examples/AP_FW_Controller_test
+    ./build/sitl/examples/AP_FW_Controller_test
 */
 
 void setup();
 void loop();
+void microsleep(uint32_t usec);
+float calc_speed_scaler();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+// Sim backend allows us to inject values into the AHRS
+SITL::SIM sim;
+
 // Need a scheduler so the controllers can get DT
 AP_Scheduler scheduler;
+
+// Controllers use AHRS, it also needs some supporting libs
+AP_AHRS ahrs;
+AP_InertialSensor ins;
+Compass compass;
+AP_GPS gps;
+AP_Baro baro;
+AP_ExternalAHRS ext_ahrs;
+AP_Logger logger;
+
+const struct AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
+    AP_GROUPEND
+};
+GCS_Dummy _gcs;
 
 // When using stop clock the normal hal scheduler sleeps don't work.
 // We need to sleep to clear print buffer, so microsleep implementation is copied here
@@ -65,56 +96,10 @@ float scaling_speed = 15;
 enum class Axis {
     Roll = 0,
     Pitch = 1,
-} test_axis = Axis::Roll;
-bool override_have_airspeed = true;
-float override_airspeed = 10;
-float override_roll = 0;
-float override_pitch = 0;
+};
+Axis test_axis = Axis::Roll;
 bool ground_mode = false;
 bool disable_integrator = false;
-
-// Define the AHRS functions we need
-AP_AHRS::AP_AHRS(uint8_t flags) :
-    _ekf_flags(flags)
-{
-    _singleton = this;
-}
-
-// This is a dirty hack so we can set private values inside the ahrs
-void AP_AHRS::update(bool skip_ins_update)
-{
-    roll = override_roll;
-    pitch = override_pitch;
-    update_cd_values();
-
-    state.airspeed = override_airspeed;
-    state.airspeed_ok = override_have_airspeed;
-}
-
-// Copys of the functions we need out of AP_AHRS.cpp
-bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
-{
-    airspeed_ret = state.airspeed;
-    return state.airspeed_ok;
-}
-float AP_AHRS::get_EAS2TAS(void) const
-{
-    if (is_positive(state.EAS2TAS)) {
-        return state.EAS2TAS;
-    }
-    return 1.0;
-}
-
-// singleton instance
-AP_AHRS *AP_AHRS::_singleton;
-
-namespace AP {
-AP_AHRS &ahrs() {
-    return *AP_AHRS::get_singleton();
-}
-}
-
-AP_AHRS ahrs;
 
 // Calculate the airspeed scaler based on airspeed and the configured param
 // Method from `Plane::calc_speed_scaler`
@@ -140,6 +125,12 @@ float calc_speed_scaler()
 // setup function
 void setup()
 {
+    // Default values for user provided configuration
+    bool override_have_airspeed = true;
+    float override_airspeed = 10;
+    float override_roll = 0;
+    float override_pitch = 0;
+
     // Read in user provided configuration
     uint8_t argc;
     char * const *argv;
@@ -193,6 +184,16 @@ void setup()
         }
     }
 
+    // Set the configured values into the AHRS
+    ahrs.set_ekf_type(AP_AHRS::EKFType::SIM);
+    sim.state.airspeed = override_airspeed;
+    ahrs.set_wind_estimation_enabled(override_have_airspeed);
+    sim.state.quaternion.from_euler(override_roll, override_pitch, 0.0);
+    ahrs.update(true);
+
+    // Delay so GCS print clears
+    hal.scheduler->delay(1);
+
     ::printf("FixedWing controller test - ");
     switch (test_axis) {
         case Axis::Roll:
@@ -204,9 +205,6 @@ void setup()
             break;
     }
     ::printf(" - ground_mode: %i, disable_integrator: %i\n", ground_mode, disable_integrator);
-
-    // Set the configured values into the AHRS
-    ahrs.update();
 
     // Set default values for the params used by the controllers
     params.airspeed_min.set(9);
@@ -265,7 +263,7 @@ void loop(void)
     }
 
     // Print results
-    ::printf("%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%u,%u,%u,%u\n",
+    ::printf("%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%u,%u,%u,%u\n",
         waveform_time_s,
         angle_error_cd * 0.01,
         output,
@@ -286,7 +284,7 @@ void loop(void)
 
     if (chirp.completed()) {
         // Sleep gives the print buffer a chance to keep up
-        microsleep(10000);
+        microsleep(100);
         exit(1);
     }
 
@@ -294,6 +292,22 @@ void loop(void)
     waveform_time_us += dt_us;
     hal.scheduler->stop_clock(waveform_time_us);
 
+    microsleep(5);
+
 }
 
-AP_HAL_MAIN();
+AP_HAL::HAL::FunCallbacks callbacks(setup, loop);
+extern "C" {
+    int AP_MAIN(int argc, char* const argv[]);
+    int AP_MAIN(int argc, char* const argv[]) {
+
+        // Turn off Serial 1 because it blocks annoyingly
+        HAL_SITL& hal_sitl = (HAL_SITL&)AP_HAL::get_HAL_mutable();
+
+        // Duplicate string so it can be freed
+        hal_sitl.get_sitl_state()->_serial_path[0] = strdup("none");
+
+        hal.run(argc, argv, &callbacks);
+        return 0;
+    }
+}
