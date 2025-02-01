@@ -23,6 +23,11 @@ if __name__ == '__main__':
         next(csv_file, None)
         next(csv_file, None)
         next(csv_file, None)
+        next(csv_file, None)
+        next(csv_file, None)
+        next(csv_file, None)
+        next(csv_file, None)
+        next(csv_file, None)
 
         csv_data = [row for row in csv_reader]
 

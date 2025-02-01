@@ -3,17 +3,19 @@
 
 def build(bld):
 
-    if bld.env.BOARD != 'linux':
+    if bld.env.BOARD != 'sitl':
         return
 
-    # Turn off the normal AHRS so we can define a custom one
-    bld.env.DEFINES += ['AP_AHRS_ENABLED=0']
-
-    # Turn off other things that are expecting a complete AHRS
-    bld.env.DEFINES += ['AP_FRSKY_SPORT_PASSTHROUGH_ENABLED=0', 'AP_AIRSPEED_ENABLED=0']
+    bld.ap_stlib(
+        name='AP_FW_Controller_test_libs',
+        ap_vehicle='UNKNOWN',
+        ap_libraries=bld.ap_common_vehicle_libraries() + [
+            'SITL', 'APM_Control', 'AP_AdvancedFailsafe',
+        ],
+    )
 
     bld.ap_program(
-        use='ap',
+        use='AP_FW_Controller_test_libs',
         program_groups=['examples'],
     )
 
