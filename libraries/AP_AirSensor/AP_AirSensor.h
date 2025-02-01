@@ -89,9 +89,6 @@ private:
 
     static AP_AirSensor *_singleton;
     State state[AP_AIR_SENSOR_MAX_SENSORS];
-    // TODO params
-
-
     AP_AirSensor_Params params[AP_AIR_SENSOR_MAX_SENSORS];
     AP_AirSensor_Backend *sensors[AP_AIR_SENSOR_MAX_SENSORS];
     uint8_t _num_sensors;
