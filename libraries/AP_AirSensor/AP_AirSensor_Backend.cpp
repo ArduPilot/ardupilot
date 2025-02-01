@@ -23,13 +23,11 @@ AP_AirSensor_Backend::AP_AirSensor_Backend(AP_AirSensor& frontend, AP_AirSensor:
 {
     // _backend_type = (AP_Proximity::Type )_params.type.get(); // TODO
     _backend_type = AP_AirSensor::Type::SCRIPTING;
-
 }
 
 void AP_AirSensor_Backend::set_status(AP_AirSensor::Status status)
 {
     _state.status = status;
 }
-
 
 #endif // AP_AIRSENSOR_ENABLED

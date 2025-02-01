@@ -1,30 +1,22 @@
-/*
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
-#include "AP_AirSensor.h"
-
-#if AP_AIRSENSOR_ENABLED
+#include "AP_AirSensor_Params.h"
 
 // table of user settable parameters
-// const AP_Param::GroupInfo AP_AirSensor_Params::var_info[] = {
-// };
+const AP_Param::GroupInfo AP_AirSensor_Params::var_info[] = {
 
-AP_AirSensor_Params::AP_AirSensor_Params(void)
-{
-    // AP_Param::setup_object_defaults(this, var_info);
-    
+    // 0 should not be used
+
+    // @Param: _TYPE
+    // @DisplayName: Air Sensor type
+    // @Description: What type of air sensor is connected
+    // @SortValues: AlphabeticalZeroAtTop
+    // @Values: 0:None,1:Scripting
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO_FLAGS("_TYPE",   1, AP_AirSensor_Params, type, 0, AP_PARAM_FLAG_ENABLE),
+
+    AP_GROUPEND
+};
+
+AP_AirSensor_Params::AP_AirSensor_Params(void) {
+    AP_Param::setup_object_defaults(this, var_info);
 }
-
-#endif // AP_AIRSENSOR_ENABLED

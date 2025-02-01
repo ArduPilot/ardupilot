@@ -23,10 +23,12 @@
 
 class AP_AirSensor_Scripting: public AP_AirSensor_Backend {
 public:
-   bool init() override { return true; }
-   void update() override;
+    // constructor
+    using AP_AirSensor_Backend::AP_AirSensor_Backend;
+    bool init() override { return true; }
+    void update() override;
 
-   // TODO add a getter like "bool get_wind(Vector3f& wind_uvw) const" - see AP_Proximity_Scripting get_upward_distance
+    // TODO add a getter like "bool get_wind(Vector3f& wind_uvw) const" - see AP_Proximity_Scripting get_upward_distance
     bool get_wind(Vector3f& wind_uvw) const override;
 
 #if AP_SCRIPTING_ENABLED

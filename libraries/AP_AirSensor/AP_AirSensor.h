@@ -22,16 +22,9 @@
 #include <inttypes.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#include "AP_AirSensor_Params.h"
 
 class AP_AirSensor_Backend;
-
-class AP_AirSensor_Params {
-public:
-    // Constructor
-    AP_AirSensor_Params(void);
-    AP_Int8  type; // TODO forcing scripting for now as default type.
-    // static const struct AP_Param::GroupInfo var_info[];
-};
 
 /// @class AP_AirSensor
 /// Air data sensing class that provides a common interface for 1D AP_Airspeed probes
@@ -52,7 +45,9 @@ public:
 
     enum class Type {
         NONE,
+#if AP_AIRSENSOR_SCRIPTING_ENABLED
         SCRIPTING
+#endif
     };
 
     enum class Status {
@@ -80,6 +75,10 @@ public:
 
     // Returns status of first good sensor. If no good sensor found, returns status of last instance sensor 
     Status get_status() const;
+
+    // return sensor type of a given instance
+    Type get_type(uint8_t instance) const;
+
 private:
 
     void allocate();

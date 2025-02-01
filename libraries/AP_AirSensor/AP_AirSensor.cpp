@@ -55,11 +55,11 @@ void AP_AirSensor::allocate()
             case AP_AirSensor::Type::NONE:
                 // nothing to do
                 break;
-            case AP_AirSensor::Type::SCRIPTING:
 #if AP_AIRSENSOR_SCRIPTING_ENABLED
-            sensors[i] = NEW_NOTHROW AP_AirSensor_Scripting(*this, state[i]); // TODO pass in params[i]
-#endif
+            case AP_AirSensor::Type::SCRIPTING:
+                sensors[i] = NEW_NOTHROW AP_AirSensor_Scripting(*this, state[i]); // TODO pass in params[i]
                 break;
+#endif
             default:
                 break;
                 // TODO
@@ -68,7 +68,7 @@ void AP_AirSensor::allocate()
         if (sensors[i] && !sensors[i]->init()) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AirSensor %zu init failed", i + 1);
             delete sensors[i];
-            sensor[i] = nullptr;
+            sensors[i] = nullptr;
         }
         if (sensors[i] != nullptr) {
             _num_sensors = i+1;
@@ -82,8 +82,17 @@ AP_AirSensor_Backend *AP_AirSensor::get_backend(uint8_t id) const
     if (!valid_instance(id)) {
         return nullptr;
     }
-    return drivers[id];
+    return sensors[id];
 }
+
+AP_AirSensor::Type AP_AirSensor::get_type(uint8_t instance) const
+{
+    if (instance < AP_AIR_SENSOR_MAX_SENSORS) {
+        return (Type)((uint8_t)params[instance].type);
+    }
+    return Type::NONE;
+}
+
 
 // return true if the given instance exists
 bool AP_AirSensor::valid_instance(uint8_t i) const
@@ -92,7 +101,7 @@ bool AP_AirSensor::valid_instance(uint8_t i) const
         return false;
     }
 
-    if (drivers[i] == nullptr) {
+    if (sensors[i] == nullptr) {
         return false;
     }
     return true;
