@@ -284,6 +284,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(serial_manager, "SERIAL", 31, AP_Vehicle, AP_SerialManager),
 #endif
 
+// #if AP_AIRSENSOR_ENABLED
+//     // @Group: ARSPD
+//     // @Path: ../AP_AirSensor/AP_AirSensor.cpp
+//     AP_SUBGROUPINFO(airsensor, "ASNS", 32, AP_Vehicle, AP_AirSensor),
+// #endif
+
     AP_GROUPEND
 };
 
@@ -434,6 +440,17 @@ void AP_Vehicle::setup()
 #endif
 #endif  // AP_AIRSPEED_ENABLED
 
+#if AP_AIRSENSOR_ENABLED
+    airsensor.init();
+    // if (airsensor.enabled()) {
+    //     airspeed.calibrate(true);
+    // } 
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    // else {
+    //     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No air sensor");
+    // }
+#endif
+#endif  // AP_AIRSENSOR_ENABLED
 
 #if AP_SRV_CHANNELS_ENABLED
     AP::srv().init();
@@ -671,6 +688,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if AP_ARMING_ENABLED
     SCHED_TASK(update_arming,          1,     50, 253),
+#endif
+#if AP_AIRSENSOR_ENABLED
+    SCHED_TASK_CLASS(AP_AirSensor,  &vehicle.airsensor,      update,                  10, 100, 254),
 #endif
 };
 

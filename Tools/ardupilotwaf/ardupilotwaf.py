@@ -26,6 +26,7 @@ COMMON_VEHICLE_DEPENDENT_CAN_LIBRARIES = [
 ]
 
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
+    'AP_AirSensor',
     'AP_Airspeed',
     'AP_AccelCal',
     'AP_ADC',

@@ -126,3 +126,14 @@ classDiagram
     AP_AirSensor *-- State : "state"
     AP_AirSensor *-- "AIR_SENSOR_MAX_SENSORS" AP_AirSensorBackend
 ```
+
+# Scripting
+
+The scripting support is intended to allow for quick adoption of new air sensors.
+This is similar to the following drivers:
+* AP_Camera_Scripting
+* AP_EFI_Scripting
+* AP_Mount_Scripting
+* AP_Proximity_Scripting
+* AP_BattMonitor_Scripting
+* AP_MotorsMatrix_6DoF_Scripting
