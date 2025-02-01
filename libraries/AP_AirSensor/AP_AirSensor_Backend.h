@@ -22,7 +22,7 @@
 class AP_AirSensor_Backend {
 public:
     AP_AirSensor_Backend() = delete;
-	AP_AirSensor_Backend(AP_AirSensor &frontend, AP_AirSensor::State &state);
+	AP_AirSensor_Backend(AP_AirSensor &frontend, AP_AirSensor::State &state, AP_AirSensor_Params &params);
     virtual bool init() = 0;
     virtual ~AP_AirSensor_Backend() {}
     virtual void update() = 0;
@@ -47,6 +47,8 @@ protected:
 
 private:
     AP_AirSensor::Type _backend_type;
+
     AP_AirSensor &_frontend;
-    AP_AirSensor::State &_state;   // reference to this instances state
+    AP_AirSensor::State &_state; // reference to this instances state
+    AP_AirSensor_Params &_params; // parameters for this backend
 };

@@ -17,12 +17,12 @@
 
 #if AP_AIRSENSOR_ENABLED
 
-AP_AirSensor_Backend::AP_AirSensor_Backend(AP_AirSensor& frontend, AP_AirSensor::State& state) :
+AP_AirSensor_Backend::AP_AirSensor_Backend(AP_AirSensor& frontend, AP_AirSensor::State& state, AP_AirSensor_Params& params) :
     _frontend(frontend),
-    _state(state)
+    _state(state),
+    _params(params)
 {
-    // _backend_type = (AP_Proximity::Type )_params.type.get();
-    _backend_type = AP_AirSensor::Type::SCRIPTING;
+    _backend_type = (AP_AirSensor::Type )_params.type.get();
 }
 
 void AP_AirSensor_Backend::set_status(AP_AirSensor::Status status)

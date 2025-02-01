@@ -1079,7 +1079,7 @@ ap_object AP_AirSensor_Backend depends AP_AIRSENSOR_ENABLED == 1
 ap_object AP_AirSensor_Backend method handle_script_3d_msg boolean Vector3f
 ap_object AP_AirSensor_Backend method type uint8_t
 
-singleton AP_AirSensor rename airsensor
+singleton AP_AirSensor rename air_sensor
 -- singleton AP_AirSensor method get_status uint8_t
 singleton AP_AirSensor method num_sensors uint8_t
 singleton AP_AirSensor method get_backend AP_AirSensor_Backend uint8_t'skip_check

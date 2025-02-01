@@ -68,7 +68,7 @@ void AP_AirSensor::allocate()
                 break;
 #if AP_AIRSENSOR_SCRIPTING_ENABLED
             case AP_AirSensor::Type::SCRIPTING:
-                sensors[i] = NEW_NOTHROW AP_AirSensor_Scripting(*this, state[i]); // TODO pass in params[i]
+                sensors[i] = NEW_NOTHROW AP_AirSensor_Scripting(*this, state[i], params[i]);
                 break;
 #endif
             default:
