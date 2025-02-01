@@ -4115,6 +4115,11 @@ function AP_AirSensor_Backend_ud:type() end
 ---@return boolean
 function AP_AirSensor_Backend_ud:handle_script_3d_msg(vector_3d) end
 
+-- get angle of attack
+---@param aoa number
+---@return number|nil -- temperature if available
+function AP_AirSensor_Backend_ud:get_aoa() end
+
 -- desc
 air_sensor = {}
 

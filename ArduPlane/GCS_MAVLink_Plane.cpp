@@ -624,6 +624,9 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
 #if AP_AIRSPEED_ENABLED
     MSG_AIRSPEED,
 #endif
+#if AP_AIRSPEED3D_ENABLED
+    MSG_AIRSPEED3D,
+#endif
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,

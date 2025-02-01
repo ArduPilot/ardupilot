@@ -41,15 +41,6 @@ bool AP_AirSensor_Scripting::get_wind(Vector3f& wind_uvw) const {
 }
 
 #if AP_SCRIPTING_ENABLED
-bool AP_AirSensor_Scripting::handle_script_uvw_msg(float wind_u, float wind_v, float wind_w) {
-    _last_update_ms = AP_HAL::millis();
-    _wind_uvw = {
-        wind_u,
-        wind_v,
-        wind_w
-    };
-    return true;
-}
 bool AP_AirSensor_Scripting::handle_script_3d_msg(const Vector3f &wind_uvw) {
     _last_update_ms = AP_HAL::millis();
     _wind_uvw = wind_uvw;

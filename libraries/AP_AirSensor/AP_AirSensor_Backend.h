@@ -26,12 +26,13 @@ public:
     virtual bool init() = 0;
     virtual ~AP_AirSensor_Backend() {}
     virtual void update() = 0;
-    // get measured wind vector
+    // get measured wind vector [m/s]
     virtual bool get_wind(Vector3f& wind_uvw) const { return false; }
+    // get measured angle of attack [rad]
+    virtual bool get_aoa(float& a) const;
 
 #if AP_SCRIPTING_ENABLED
     // this is in body frame
-    virtual bool handle_script_uvw_msg(float wind_u, float wind_v, float wind_w) { return false; }
     virtual bool handle_script_3d_msg(const Vector3f &wind_uvw) { return false; }
 #endif
 

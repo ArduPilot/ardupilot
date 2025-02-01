@@ -56,7 +56,12 @@ void AP_AirSensor::init()
 
 void AP_AirSensor::update()
 {
-    // TODO
+    for (uint8_t i=0; i<_num_sensors; i++) {
+        if (!valid_instance(i)) {
+            continue;
+        }
+        sensors[i]->update();
+    }
 }
 
 void AP_AirSensor::allocate()

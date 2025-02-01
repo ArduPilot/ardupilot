@@ -33,7 +33,6 @@ public:
 
 #if AP_SCRIPTING_ENABLED
     // this is in body frame
-    bool handle_script_uvw_msg(float wind_u, float wind_v, float wind_w) override;
     bool handle_script_3d_msg(const Vector3f &wind_uvw) override;
 #endif
 private:

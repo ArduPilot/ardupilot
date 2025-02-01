@@ -25,6 +25,15 @@ AP_AirSensor_Backend::AP_AirSensor_Backend(AP_AirSensor& frontend, AP_AirSensor:
     _backend_type = (AP_AirSensor::Type )_params.type.get();
 }
 
+bool AP_AirSensor_Backend::get_aoa(float& a) const {
+    Vector3f wind;
+    if (get_wind(wind)) {
+        a = atan2(wind.y, wind.x);
+        return true;
+    }
+    return false;
+}
+
 void AP_AirSensor_Backend::set_status(AP_AirSensor::Status status)
 {
     _state.status = status;

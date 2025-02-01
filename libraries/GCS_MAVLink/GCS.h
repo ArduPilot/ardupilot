@@ -368,6 +368,7 @@ public:
     // Send per instance airspeed message
     // last index is used to rotate through sensors
     void send_airspeed();
+    void send_airspeed3d();
     uint8_t last_airspeed_idx;
 #endif
     void send_simstate() const;
