@@ -3469,6 +3469,11 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
             send_text(MAV_SEVERITY_WARNING,"deadlock passed");
             return MAV_RESULT_ACCEPTED;
         }
+        if (is_equal(packet.param4, 101.0f)) {
+            // the capital-U and ~ here are actually important for
+            // testing a MissionPlanner bug!
+            AP_BoardConfig::config_error("YOU~RE WELCOME!");
+        }
 #endif  // AP_MAVLINK_FAILURE_CREATION_ENABLED
 
 #if HAL_ENABLE_DFU_BOOT
