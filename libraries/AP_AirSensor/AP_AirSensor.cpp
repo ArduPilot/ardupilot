@@ -22,8 +22,21 @@
 #include "AP_AirSensor_Scripting.h"
 
 // table of user settable parameters
-// const AP_Param::GroupInfo AP_AirSensor::var_info[] = {
-// };
+const AP_Param::GroupInfo AP_AirSensor::var_info[] = {
+    // 0 is reserved for possible addition of an ENABLED parameter
+
+    // @Group: 1
+    // @Path: AP_Proximity_Params.cpp
+    AP_SUBGROUPINFO(params[0], "1", 1, AP_AirSensor, AP_AirSensor_Params),
+
+#if AP_AIR_SENSOR_MAX_SENSORS > 1
+    // @Group: 2
+    // @Path: AP_Proximity_Params.cpp
+    // TODO change to the correct number
+    AP_SUBGROUPINFO(params[1], "2", 99, AP_AirSensor, AP_AirSensor_Params),
+#endif
+};
+static_assert(AP_AIR_SENSOR_MAX_SENSORS < 2, "Add more parameter groups before adding more sensors!");
 
 AP_AirSensor::AP_AirSensor()
 {
@@ -49,8 +62,6 @@ void AP_AirSensor::update()
 void AP_AirSensor::allocate()
 {
     for (size_t i = 0; i < AP_AIR_SENSOR_MAX_SENSORS; i++) {
-        // TODO this overrides to use scripting for now.
-        params[i].type.set((int8_t)AP_AirSensor::Type::SCRIPTING);
         switch ((AP_AirSensor::Type)params[i].type.get()) {
             case AP_AirSensor::Type::NONE:
                 // nothing to do
@@ -104,8 +115,7 @@ bool AP_AirSensor::valid_instance(uint8_t i) const
     if (sensors[i] == nullptr) {
         return false;
     }
-    return true;
-    // return (Type)params[i].type.get() != Type::None; // TODO
+    return (Type)params[i].type.get() != Type::NONE; // TODO
 }
 
 AP_AirSensor *AP_AirSensor::_singleton;

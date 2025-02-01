@@ -284,11 +284,11 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(serial_manager, "SERIAL", 31, AP_Vehicle, AP_SerialManager),
 #endif
 
-// #if AP_AIRSENSOR_ENABLED
-//     // @Group: ARSPD
-//     // @Path: ../AP_AirSensor/AP_AirSensor.cpp
-//     AP_SUBGROUPINFO(airsensor, "ASNS", 32, AP_Vehicle, AP_AirSensor),
-// #endif
+#if AP_AIRSENSOR_ENABLED
+    // @Group: ARSPD
+    // @Path: ../AP_AirSensor/AP_AirSensor.cpp
+    AP_SUBGROUPINFO(airsensor, "ASNS", 32, AP_Vehicle, AP_AirSensor),
+#endif
 
     AP_GROUPEND
 };

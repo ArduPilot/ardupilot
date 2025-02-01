@@ -23,6 +23,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include "AP_AirSensor_Params.h"
+#include <AP_Param/AP_Param.h>
 
 class AP_AirSensor_Backend;
 
@@ -33,7 +34,7 @@ class AP_AirSensor
 {
 public:
     friend class AP_AirSensor_Backend;  
-    // static const struct AP_Param::GroupInfo var_info[];
+    static const struct AP_Param::GroupInfo var_info[];
 
     AP_AirSensor();
 

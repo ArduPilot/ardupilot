@@ -21,7 +21,7 @@ AP_AirSensor_Backend::AP_AirSensor_Backend(AP_AirSensor& frontend, AP_AirSensor:
     _frontend(frontend),
     _state(state)
 {
-    // _backend_type = (AP_Proximity::Type )_params.type.get(); // TODO
+    // _backend_type = (AP_Proximity::Type )_params.type.get();
     _backend_type = AP_AirSensor::Type::SCRIPTING;
 }
 
