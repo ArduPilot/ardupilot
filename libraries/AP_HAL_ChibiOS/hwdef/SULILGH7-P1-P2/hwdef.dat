@@ -14,7 +14,7 @@ OSCILLATOR_HZ 16000000
 STM32_ST_USE_TIMER 2
 
 # board ID for firmware load                      
-APJ_BOARD_ID 2005
+APJ_BOARD_ID  AP_HW_SULILGH7-P1-P2
 
 FLASH_RESERVE_START_KB 128                          
 
@@ -71,6 +71,7 @@ PE7 UART7_RX UART7
 # SBUS/CRSF
 PE1 UART8_TX UART8
 PE0 UART8_RX UART8 
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_RCIN
 
 # Ethernet
 PC1 ETH_MDC              ETH1

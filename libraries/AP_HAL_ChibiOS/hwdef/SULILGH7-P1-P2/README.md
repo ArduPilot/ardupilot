@@ -42,7 +42,16 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 | SERIAL8 | OTG-SLCAN| USB      |
 
 ## RC Input
-The remote control signal should be connected to the SBUS RC IN port or DSM/PPM RC Port.It will support ALL unidirectional RC protocols.
+The RCIN pin, which by default is mapped to a timer input, can be used for all ArduPilot supported receiver protocols, except CRSF/ELRS and SRXL2 which require a true UART connection. However, FPort, when connected in this manner, will only provide RC without telemetry.
+
+To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL5 (UART8) would need to be used for receiver connections. Below are setups using Serial5.
+
+*  :ref:`SERIAL5_PROTOCOL<SERIAL5_PROTOCOL>`  should be set to “23”.
+* FPort would require [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options) be set to “15”.
+* CRSF would require  :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` be set to “0”.
+* SRXL2 would require  :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>`  be set to “4” and connects only the TX pin.
+
+Any UART can also be used for RC system connections in ArduPilot and is compatible with all protocols except PPM. See :ref:`Radio Control Systems <common-rc-systems>` for details.
 
 ## PWM Output
 The SULILLGH7-P1/P2 flight controller supports up to 16 PWM outputs. 
@@ -95,3 +104,9 @@ The P1/P2 flight controller has 2 analog inputs.
 - ADC Pin12 -> ADC 6.6V Sense
 - ADC Pin13 -> ADC 3.3V Sense
 - RSSI input pin = 103
+
+## Loading Firmware
+
+The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of xxxxxx.apj firmware files with any ArduPilot compatible ground station.
+
+Firmware for these boards can be found [here](https://firmware.ardupilot.org/) in sub-folders labeled “SULIGH7-P1-P2”.
