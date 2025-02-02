@@ -896,7 +896,6 @@ private:
     float relative_ground_altitude(bool use_rangefinder_if_available);
     float relative_ground_altitude(bool use_rangefinder_if_available, bool use_terrain_if_available);
     void set_target_altitude_current(void);
-    void set_target_altitude_current_adjusted(void);
     void set_target_altitude_location(const Location &loc);
     int32_t relative_target_altitude_cm(void);
     void change_target_altitude(int32_t change_cm);

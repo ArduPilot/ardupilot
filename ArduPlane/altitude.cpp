@@ -209,17 +209,6 @@ void Plane::set_target_altitude_current(void)
 }
 
 /*
-  set the target altitude to the current altitude, with ALT_OFFSET adjustment
- */
-void Plane::set_target_altitude_current_adjusted(void)
-{
-    set_target_altitude_current();
-
-    // use adjusted_altitude_cm() to take account of ALTITUDE_OFFSET
-    target_altitude.amsl_cm = adjusted_altitude_cm();
-}
-
-/*
   set target altitude based on a location structure
  */
 void Plane::set_target_altitude_location(const Location &loc)
