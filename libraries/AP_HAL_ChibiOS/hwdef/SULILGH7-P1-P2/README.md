@@ -104,3 +104,9 @@ The P1/P2 flight controller has 2 analog inputs.
 - ADC Pin12 -> ADC 6.6V Sense
 - ADC Pin13 -> ADC 3.3V Sense
 - RSSI input pin = 103
+
+## Loading Firmware
+
+The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of xxxxxx.apj firmware files with any ArduPilot compatible ground station.
+
+Firmware for these boards can be found [here](https://firmware.ardupilot.org/) in sub-folders labeled “SULIGH7-P1-P2”.
