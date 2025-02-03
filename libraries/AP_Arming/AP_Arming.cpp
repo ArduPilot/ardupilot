@@ -89,7 +89,7 @@
 // whether the parameter should be shown:
 #ifndef AP_ARMING_NEED_LOC_PARAMETER_ENABLED
 // determine whether ARMING_NEED_POS is shown:
-#if APM_BUILD_COPTER_OR_HELI
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Rover)
 #define AP_ARMING_NEED_LOC_PARAMETER_ENABLED 1
 #else
 #define AP_ARMING_NEED_LOC_PARAMETER_ENABLED 0
@@ -98,7 +98,7 @@
 
 // if ARMING_NEED_POS is shown, determine what its default should be:
 #if AP_ARMING_NEED_LOC_PARAMETER_ENABLED
-#if APM_BUILD_COPTER_OR_HELI
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Rover)
 #define AP_ARMING_NEED_LOC_DEFAULT 0
 #else
 #error "Unable to find value for AP_ARMING_NEED_LOC_DEFAULT"
