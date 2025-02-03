@@ -6460,7 +6460,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "COMPASS_OFS_X": 1100,
         })
-        self.set_parameter("COMPASS_LEARN", 3)  # 3 is in-flight learning
+        self.send_set_parameter("COMPASS_LEARN", 3)  # 3 is in-flight learning
         self.wait_parameter_value("COMPASS_LEARN", 0)
         self.assert_parameter_value("COMPASS_OFS_X", old_compass_ofs_x, epsilon=30)
         self.fly_home_land_and_disarm()
