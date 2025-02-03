@@ -6947,7 +6947,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.delay_sim_time(1000)
 
-    def REQUIRE_POSITION_FOR_ARMING(self):
+    def REQUIRE_LOCATION_FOR_ARMING(self):
         '''check DriveOption::REQUIRE_POSITION_FOR_ARMING works'''
         self.context_push()
         self.set_parameters({
@@ -6966,7 +6966,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.change_mode('MANUAL')
         self.set_parameters({
-            "DRIVE_OPTIONS": 1,
+            "ARMING_NEED_LOC": 1,
         })
         self.assert_prearm_failure("waiting for home", other_prearm_failures_fatal=False)
         self.context_pop()
@@ -7070,7 +7070,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.ClearMission,
             self.JammingSimulation,
             self.BatteryInvalid,
-            self.REQUIRE_POSITION_FOR_ARMING,
+            self.REQUIRE_LOCATION_FOR_ARMING,
         ])
         return ret
 
