@@ -192,6 +192,7 @@ public:
         TYPE_MSP=14,
         TYPE_I2C_ASP5033=15,
         TYPE_EXTERNAL=16,
+        TYPE_I2C_ND210=17,
         TYPE_SITL=100,
     };
 
@@ -216,7 +217,7 @@ public:
 #if AP_AIRSPEED_EXTERNAL_ENABLED
     void handle_external(const AP_ExternalAHRS::airspeed_data_message_t &pkt);
 #endif
-    
+
     enum class CalibrationState {
         NOT_STARTED,
         IN_PROGRESS,
