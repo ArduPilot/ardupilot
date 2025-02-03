@@ -1966,7 +1966,7 @@ void AP_Periph_FW::can_update()
 #ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
         temperature_sensor_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+#if AP_PERIPH_RPM_STREAM_ENABLED
         rpm_sensor_send();
 #endif
     }

@@ -225,7 +225,7 @@ public:
     AP_Int8 temperature_msg_rate;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+#if AP_PERIPH_RPM_STREAM_ENABLED
     AP_Int16 rpm_msg_rate;
 #endif
 
