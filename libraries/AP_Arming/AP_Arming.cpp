@@ -191,7 +191,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @DisplayName: Require vehicle location
     // @Description: Require that the vehicle have an absolute position before it arms.  This can help ensure that the vehicle can Return To Launch.
     // @User: Advanced
-    // @Values{Copter}: 0:Do not require location,1:Require Location
+    // @Values{Copter,Rover}: 0:Do not require location,1:Require Location
     AP_GROUPINFO("NEED_LOC", 12, AP_Arming, require_location, float(AP_ARMING_NEED_LOC_DEFAULT)),
 #endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
 
