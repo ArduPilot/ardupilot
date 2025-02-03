@@ -625,7 +625,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(networking_periph, "NET_", Networking_Periph),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RPM
+#if AP_PERIPH_RPM_ENABLED
     // @Group: RPM
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
@@ -701,7 +701,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Standard
     GSCALAR(options, "OPTIONS", AP_PERIPH_PROBE_CONTINUOUS),
 
-#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+#if AP_PERIPH_RPM_STREAM_ENABLED
     // @Param: RPM_MSG_RATE
     // @DisplayName: RPM sensor message rate
     // @Description: This is the rate RPM sensor data is sent in Hz. Zero means no send. Each sensor with a set ID is sent in turn.

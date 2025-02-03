@@ -961,8 +961,9 @@ class sitl_periph_universal(sitl_periph):
             AP_PERIPH_BATTERY_ENABLED = 1,
             AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
             HAL_PERIPH_ENABLE_EFI = 1,
-            HAL_PERIPH_ENABLE_RPM = 1,
-            HAL_PERIPH_ENABLE_RPM_STREAM = 1,
+            AP_PERIPH_RPM_ENABLED = 1,
+            AP_PERIPH_RPM_STREAM_ENABLED = 1,
+            AP_RPM_STREAM_ENABLED = 1,
             HAL_PERIPH_ENABLE_RC_OUT = 1,
             HAL_PERIPH_ENABLE_ADSB = 1,
             HAL_PERIPH_ENABLE_SERIAL_OPTIONS = 1,
@@ -996,6 +997,8 @@ class sitl_periph_gps(sitl_periph):
             AP_PERIPH_RANGEFINDER_ENABLED = 0,
             AP_PERIPH_RTC_ENABLED = 0,
             AP_PERIPH_RCIN_ENABLED = 0,
+            AP_PERIPH_RPM_ENABLED = 0,
+            AP_PERIPH_RPM_STREAM_ENABLED = 0,
         )
 
 class sitl_periph_battmon(sitl_periph):
@@ -1017,6 +1020,8 @@ class sitl_periph_battmon(sitl_periph):
             AP_PERIPH_MAG_ENABLED = 0,
             AP_PERIPH_RTC_ENABLED = 0,
             AP_PERIPH_RCIN_ENABLED = 0,
+            AP_PERIPH_RPM_ENABLED = 0,
+            AP_PERIPH_RPM_STREAM_ENABLED = 0,
         )
 
 class esp32(Board):
