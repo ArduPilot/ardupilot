@@ -183,31 +183,6 @@
 #endif
 
 /*
- * defaults for various AP_Periph features:
- */
-#ifndef AP_PERIPH_BATTERY_ENABLED
-#define AP_PERIPH_BATTERY_ENABLED 0
-#endif
-#ifndef AP_PERIPH_BATTERY_BALANCE_ENABLED
-#define AP_PERIPH_BATTERY_BALANCE_ENABLED 0
-#endif
-#ifndef AP_PERIPH_GPS_ENABLED
-#define AP_PERIPH_GPS_ENABLED 0
-#endif
-#ifndef AP_PERIPH_AHRS_ENABLED
-#define AP_PERIPH_AHRS_ENABLED 0
-#endif
-#ifndef AP_PERIPH_MAG_ENABLED
-#define AP_PERIPH_MAG_ENABLED 0
-#endif
-#ifndef AP_PERIPH_BARO_ENABLED
-#define AP_PERIPH_BARO_ENABLED 0
-#endif
-#ifndef AP_PERIPH_RANGEFINDER_ENABLED
-#define AP_PERIPH_RANGEFINDER_ENABLED 0
-#endif
-
-/*
  * turning on of ArduPilot features based on which AP_Periph features
  * are enabled:
  */
