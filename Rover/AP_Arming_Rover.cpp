@@ -34,7 +34,9 @@ bool AP_Arming_Rover::rc_calibration_checks(const bool display_failure)
 // performs pre_arm gps related checks and returns true if passed
 bool AP_Arming_Rover::gps_checks(bool display_failure)
 {
-    if (!rover.control_mode->requires_position() && !rover.control_mode->requires_velocity()) {
+    if (!require_location &&
+        !rover.control_mode->requires_position() &&
+        !rover.control_mode->requires_velocity()) {
         // we don't care!
         return true;
     }
