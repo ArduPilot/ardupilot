@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AP_Periph_config.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <canard.h>
 #include <AP_Param/AP_Param.h>
