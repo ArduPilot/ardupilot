@@ -188,6 +188,10 @@
 #define HAL_REQUIRES_BDSHOT_SUPPORT (defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT)
 #endif
 
+#ifndef AP_NOTIFY_TONEALARM_ENABLED
+#define AP_NOTIFY_TONEALARM_ENABLED 0
+#endif
+
 // support for Extended DShot Telemetry v2 is enabled only if any kind of such telemetry
 // can in principle arrive, either from servo outputs or from IOMCU
 
