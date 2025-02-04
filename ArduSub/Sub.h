@@ -263,9 +263,6 @@ private:
     // Stores initial bearing when armed
     int32_t initial_armed_bearing;
 
-    // Throttle variables
-    int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
-
     // Loiter control
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
     uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
@@ -394,6 +391,7 @@ private:
     void update_batt_compass(void);
     void ten_hz_logging_loop();
     void twentyfive_hz_logging();
+    void loop_rate_logging();
     void three_hz_loop();
     void one_hz_loop();
     void update_turn_counter();
@@ -406,6 +404,7 @@ private:
     float get_roi_yaw();
     float get_look_ahead_yaw();
     float get_pilot_desired_climb_rate(float throttle_control);
+    float get_pilot_desired_horizontal_rate(RC_Channel *channel) const;
     void rotate_body_frame_to_NE(float &x, float &y);
 #if HAL_LOGGING_ENABLED
     // methods for AP_Vehicle:

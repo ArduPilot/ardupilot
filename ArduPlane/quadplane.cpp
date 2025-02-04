@@ -4257,19 +4257,15 @@ float QuadPlane::get_land_airspeed(void)
     if (qstate == QPOS_APPROACH ||
         plane.control_mode == &plane.mode_rtl) {
         const float cruise_speed = plane.aparm.airspeed_cruise;
+        // assume cruise speed, but try to do better:
         float approach_speed = cruise_speed;
         float tecs_land_airspeed = plane.TECS_controller.get_land_airspeed();
         if (is_positive(tecs_land_airspeed)) {
             approach_speed = tecs_land_airspeed;
-        } else {
-            if (qstate == QPOS_APPROACH) {
-                // default to half way between min airspeed and cruise
-                // airspeed when on the approach
-                approach_speed = 0.5*(cruise_speed+plane.aparm.airspeed_min);
-            } else {
-                // otherwise cruise
-                approach_speed = cruise_speed;
-            }
+        } else if (qstate == QPOS_APPROACH) {
+            // default to half way between min airspeed and cruise
+            // airspeed when on the approach
+            approach_speed = 0.5*(cruise_speed+plane.aparm.airspeed_min);
         }
         const float time_to_pos1 = (plane.auto_state.wp_distance - stopping_distance(sq(approach_speed))) / MAX(approach_speed, 5);
         /*
