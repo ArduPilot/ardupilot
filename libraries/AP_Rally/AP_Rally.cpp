@@ -11,6 +11,7 @@
 #include <AC_Avoidance/AC_Avoidance_config.h>
 #include <AC_Avoidance/AP_OAPathPlanner.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <GCS_MAVLink/GCS.h>
 
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
@@ -252,12 +253,16 @@ bool AP_Rally::find_nearest_rally_or_home_with_dijkstras(const Location &current
         // object avoidance is not required or unrecoverable error during calculation
         if (!searching_for_path_home) {
             // display warning message to user and advance to next rally
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Rally: failed to calc path to rally point %u", (unsigned)_find_with_dijkstras.rally_index + 1);
+            if (oa_ret == AP_OAPathPlanner::OA_ERROR) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Rally: failed to calc path to rally point %u", (unsigned)_find_with_dijkstras.rally_index + 1);
+            }
             _find_with_dijkstras.rally_index++;
             return false;
         }
         // display warning message to user, complete calculation and break to send results to user
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Rally: failed to calc path home");
+        if (oa_ret == AP_OAPathPlanner::OA_ERROR) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Rally: failed to calc path home");
+        }
         break;
     case AP_OAPathPlanner::OA_PROCESSING:
         // still calculating path length
@@ -270,9 +275,12 @@ bool AP_Rally::find_nearest_rally_or_home_with_dijkstras(const Location &current
             _find_with_dijkstras.shortest_path_valid = true;
         }
         if (!searching_for_path_home) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Rally: %4.0fm to rally point %u", (double)path_length, (unsigned)_find_with_dijkstras.rally_index + 1);
             // advance to the next rally point
             _find_with_dijkstras.rally_index++;
             return false;
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Rally: %4.0fm to home", (double)path_length);
         }
         // the path home has been calculated so the search is complete
         // break to return results
