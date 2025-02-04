@@ -287,6 +287,7 @@ class Board:
                 '-Wno-gnu-variable-sized-type-not-at-end',
                 '-Werror=implicit-fallthrough',
                 '-cl-single-precision-constant',
+                '-Wno-vla-cxx-extension',
             ]
         else:
             env.CFLAGS += [
@@ -419,6 +420,7 @@ class Board:
 
                 '-Wno-gnu-designator',
                 '-Wno-mismatched-tags',
+                '-Wno-vla-cxx-extension',
                 '-Wno-gnu-variable-sized-type-not-at-end',
                 '-Werror=implicit-fallthrough',
                 '-cl-single-precision-constant',
