@@ -624,6 +624,8 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20, 225),
 #if HAL_WITH_ESC_TELEM
+    // This update function is responsible for checking timeouts and invalidating the ESC telemetry data.
+    // Be mindful of this if you are planning to reduce the frequency from 100Hz.
     SCHED_TASK_CLASS(AP_ESC_Telem, &vehicle.esc_telem,      update,                  100,  50, 230),
 #endif
 #if AP_SERVO_TELEM_ENABLED

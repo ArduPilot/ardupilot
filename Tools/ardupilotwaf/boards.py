@@ -288,9 +288,6 @@ class Board:
                 '-Werror=implicit-fallthrough',
                 '-cl-single-precision-constant',
             ]
-            env.CXXFLAGS += [
-                '-cl-single-precision-constant',
-            ]
         else:
             env.CFLAGS += [
                 '-Wno-format-contains-nul',
@@ -424,6 +421,7 @@ class Board:
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
                 '-Werror=implicit-fallthrough',
+                '-cl-single-precision-constant',
             ]
         else:
             env.CXXFLAGS += [
@@ -957,7 +955,7 @@ class sitl_periph_universal(sitl_periph):
             AP_PERIPH_MAG_ENABLED = 1,
             AP_PERIPH_BARO_ENABLED = 1,
             HAL_PERIPH_ENABLE_IMU = 1,
-            HAL_PERIPH_ENABLE_RANGEFINDER = 1,
+            AP_PERIPH_RANGEFINDER_ENABLED = 1,
             AP_PERIPH_BATTERY_ENABLED = 1,
             AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
             HAL_PERIPH_ENABLE_EFI = 1,

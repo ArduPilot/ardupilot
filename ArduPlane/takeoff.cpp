@@ -285,7 +285,7 @@ void Plane::takeoff_calc_throttle() {
     const float current_baro_alt = barometer.get_altitude();
     const bool below_lvl_alt = current_baro_alt < auto_state.baro_takeoff_alt + mode_takeoff.level_alt;
     // Set the minimum throttle limit.
-    const bool use_throttle_range = (aparm.takeoff_options & (uint32_t)AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
+    const bool use_throttle_range = tkoff_option_is_set(AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
     if (!use_throttle_range // We don't want to employ a throttle range.
         || !ahrs.using_airspeed_sensor() // We don't have an airspeed sensor.
         || below_lvl_alt // We are below TKOFF_LVL_ALT.

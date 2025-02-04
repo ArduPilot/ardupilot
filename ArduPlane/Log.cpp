@@ -102,13 +102,19 @@ void Plane::Log_Write_Control_Tuning()
         synthetic_airspeed = logger.quiet_nan();
     }
 
+    int16_t pitch = ahrs.pitch_sensor - g.pitch_trim * 100;
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.show_vtol_view()) {
+        pitch = quadplane.ahrs_view->pitch_sensor;
+    }
+#endif      
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
         time_us         : AP_HAL::micros64(),
         nav_roll_cd     : (int16_t)nav_roll_cd,
         roll            : (int16_t)ahrs.roll_sensor,
         nav_pitch_cd    : (int16_t)nav_pitch_cd,
-        pitch           : (int16_t)ahrs.pitch_sensor,
+        pitch           : pitch,
         throttle_out    : SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
         rudder_out      : SRV_Channels::get_output_scaled(SRV_Channel::k_rudder),
         throttle_dem    : TECS_controller.get_throttle_demand(),
@@ -312,8 +318,8 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: TimeUS: Time since system startup
 // @Field: NavRoll: desired roll
 // @Field: Roll: achieved roll
-// @Field: NavPitch: desired pitch
-// @Field: Pitch: achieved pitch
+// @Field: NavPitch: desired pitch assuming pitch trims are already applied
+// @Field: Pitch: achieved pitch assuming pitch trims are already applied,ie "0deg" is level flight trimmed pitch attitude as shown on artifical horizon level line.
 // @Field: ThO: scaled output throttle
 // @Field: RdO: scaled output rudder
 // @Field: ThD: demanded speed-height-controller throttle

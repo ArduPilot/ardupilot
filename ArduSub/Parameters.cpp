@@ -175,6 +175,15 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(pilot_speed_dn,     "PILOT_SPEED_DN",   0),
 
+    // @Param: PILOT_SPEED
+    // @DisplayName: Pilot maximum horizontal speed
+    // @Description: The maximum horizontal velocity the pilot may request in cm/s
+    // @Units: cm/s
+    // @Range: 10 500
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(pilot_speed,     "PILOT_SPEED",   PILOT_SPEED_DEFAULT),
+
     // @Param: PILOT_ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
     // @Description: The vertical acceleration used when pilot is controlling the altitude

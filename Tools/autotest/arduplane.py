@@ -4339,6 +4339,65 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def AUTOTUNE(self):
         '''Test AutoTune mode'''
+        self.run_autotune()
+
+        # Values that are set to constants
+        # If these are changed then the expected tune paramters should also change
+        self.check_parameter_value("RLL2SRV_TCONST", 0.5, 0)
+        self.check_parameter_value("RLL2SRV_RMAX", 75, 0)
+        self.check_parameter_value("RLL_RATE_IMAX", 0.666, 0.01) # allow some small error to acount for floating point stuff
+        self.check_parameter_value("RLL_RATE_FLTT", 3.183, 0.01)
+        self.check_parameter_value("RLL_RATE_FLTE", 0, 0)
+        self.check_parameter_value("RLL_RATE_FLTD", 10.0, 0)
+        self.check_parameter_value("RLL_RATE_SMAX", 150.0, 0)
+
+        self.check_parameter_value("PTCH2SRV_TCONST", 0.75, 0)
+        self.check_parameter_value("PTCH2SRV_RMAX_UP", 75, 0)
+        self.check_parameter_value("PTCH2SRV_RMAX_DN", 75, 0)
+        self.check_parameter_value("PTCH_RATE_IMAX", 0.666, 0.01)
+        self.check_parameter_value("PTCH_RATE_FLTT", 2.122, 0.01)
+        self.check_parameter_value("PTCH_RATE_FLTE", 0, 0)
+        self.check_parameter_value("PTCH_RATE_FLTD", 10, 0)
+        self.check_parameter_value("PTCH_RATE_SMAX", 150, 0)
+
+        # Check tunned values, targets derived from running tests multiple times and taking average
+        # Expect within 2%
+        # Note that I is not checked directly, its value is derived from P, FF, and TCONST which are all checked.
+        self.check_parameter_value("RLL_RATE_P", 1.222702146, 2)
+        self.check_parameter_value("RLL_RATE_D", 0.070284024, 2)
+        self.check_parameter_value("RLL_RATE_FF", 0.229291457, 2)
+
+        self.check_parameter_value("PTCH_RATE_FF", 0.503520715, 5)
+
+        # There seem to be multiple solutions for pitch. I'm not sure why this is.
+        # Each value is quite consistent becasue of the fixed steps that autotune takes
+        try:
+            # Expect this about 84% of the time
+            self.check_parameter_value("PTCH_RATE_P", 1.746079683, 2)
+        except ValueError:
+            try:
+                # 12%
+                self.check_parameter_value("PTCH_RATE_P", 1.343138218, 2)
+            except ValueError:
+                # 4%
+                self.check_parameter_value("PTCH_RATE_P", 2.26990366, 2)
+
+        try:
+            # 64%
+            self.check_parameter_value("PTCH_RATE_D", 0.108, 2)
+        except ValueError:
+            try:
+                # 28%
+                self.check_parameter_value("PTCH_RATE_D", 0.141, 2)
+            except ValueError:
+                try:
+                    # 4%
+                    self.check_parameter_value("PTCH_RATE_D", 0.049, 2)
+                except ValueError:
+                    # 4%
+                    self.check_parameter_value("PTCH_RATE_D", 0.0836, 2)
+
+    def run_autotune(self):
         self.takeoff(100)
         self.change_mode('AUTOTUNE')
         self.context_collect('STATUSTEXT')
@@ -4354,6 +4413,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 self.progress("Got %s" % str(m))
                 if axis == "Roll":
                     axis = "Pitch"
+                    # Center sticks to allow roll to return to nuetral before starting pitch
+                    self.set_rc(1, 1500)
+                    self.set_rc(2, 1500)
+                    self.delay_sim_time(15)
+
+                    # Reset toggle value so the initial input is in a consistent directon
+                    rc_value = 1000
+
                 elif axis == "Pitch":
                     break
                 else:
@@ -4399,7 +4466,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "RLL_RATE_FLTT": 20,
             "PTCH_RATE_FLTT": 20,
         })
-        self.AUTOTUNE()
+        self.run_autotune()
 
     def LandingDrift(self):
         '''Circuit with baro drift'''
@@ -6460,7 +6527,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "COMPASS_OFS_X": 1100,
         })
-        self.set_parameter("COMPASS_LEARN", 3)  # 3 is in-flight learning
+        self.send_set_parameter("COMPASS_LEARN", 3)  # 3 is in-flight learning
         self.wait_parameter_value("COMPASS_LEARN", 0)
         self.assert_parameter_value("COMPASS_OFS_X", old_compass_ofs_x, epsilon=30)
         self.fly_home_land_and_disarm()

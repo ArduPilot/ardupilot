@@ -178,6 +178,9 @@
 #ifdef HAL_PERIPH_ENABLE_BARO
 #error "Change 'define HAL_PERIPH_ENABLE_BARO' to 'define AP_PERIPH_BARO_ENABLED 1'"
 #endif
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+#error "Change 'define HAL_PERIPH_ENABLE_RANGEFINDER' to 'define AP_PERIPH_RANGEFINDER_ENABLED 1'"
+#endif
 
 /*
  * defaults for various AP_Periph features:
@@ -200,6 +203,9 @@
 #ifndef AP_PERIPH_BARO_ENABLED
 #define AP_PERIPH_BARO_ENABLED 0
 #endif
+#ifndef AP_PERIPH_RANGEFINDER_ENABLED
+#define AP_PERIPH_RANGEFINDER_ENABLED 0
+#endif
 
 /*
  * turning on of ArduPilot features based on which AP_Periph features
@@ -210,6 +216,7 @@
 #define AP_AHRS_ENABLED AP_PERIPH_AHRS_ENABLED
 #define AP_COMPASS_ENABLED AP_PERIPH_MAG_ENABLED
 #define AP_BARO_ENABLED AP_PERIPH_BARO_ENABLED
+#define AP_RANGEFINDER_ENABLED AP_PERIPH_RANGEFINDER_ENABLED
 
 /*
  * GPS Backends - we selectively turn backends on.
@@ -395,7 +402,6 @@
 #define AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED 0
 #endif
 
-#define AP_RANGEFINDER_ENABLED defined(HAL_PERIPH_ENABLE_RANGEFINDER)
 #define AP_RPM_ENABLED defined(HAL_PERIPH_ENABLE_RPM)
 #define AP_RCPROTOCOL_ENABLED defined(HAL_PERIPH_ENABLE_RCIN)
 #define AP_RTC_ENABLED defined(HAL_PERIPH_ENABLE_RTC)

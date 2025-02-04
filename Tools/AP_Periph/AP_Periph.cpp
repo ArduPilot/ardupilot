@@ -235,7 +235,7 @@ void AP_Periph_FW::init()
 
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+#if AP_PERIPH_RANGEFINDER_ENABLED
     bool have_rangefinder = false;
     for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         if ((rangefinder.get_type(i) != RangeFinder::Type::NONE) && (g.rangefinder_port[i] >= 0)) {
@@ -432,7 +432,7 @@ void AP_Periph_FW::update()
 #if AP_PERIPH_BARO_ENABLED
         hal.serial(0)->printf("BARO H=%u P=%.2f T=%.2f\n", baro.healthy(), baro.get_pressure(), baro.get_temperature());
 #endif
-#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+#if AP_PERIPH_RANGEFINDER_ENABLED
         hal.serial(0)->printf("Num RNG sens %u\n", rangefinder.num_sensors());
         for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
             AP_RangeFinder_Backend *backend = rangefinder.get_backend(i);

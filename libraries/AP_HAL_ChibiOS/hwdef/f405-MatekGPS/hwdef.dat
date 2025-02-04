@@ -175,7 +175,7 @@ define HAL_MSP_ENABLED 1
 define AP_PERIPH_MSP_PORT_DEFAULT 4
 
 # ----------------- rangefinder,ADSB ----------------------
-define HAL_PERIPH_ENABLE_RANGEFINDER
+define AP_PERIPH_RANGEFINDER_ENABLED 1
 
 # disable rangefinder by default
 define AP_PERIPH_RANGEFINDER_PORT_DEFAULT -1

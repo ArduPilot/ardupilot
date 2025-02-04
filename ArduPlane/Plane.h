@@ -347,10 +347,6 @@ private:
     // time of last mode change
     uint32_t last_mode_change_ms;
 
-    // Used to maintain the state of the previous control switch position
-    // This is set to 254 when we need to re-read the switch
-    uint8_t oldSwitchPosition = 254;
-
     // This is used to enable the inverted flight feature
     bool inverted_flight;
 
@@ -758,8 +754,6 @@ private:
     // A starting value used to check the status of a conditional command.
     // For example in a delay command the condition_start records that start time for the delay
     uint32_t condition_start;
-    // A value used in condition commands.  For example the rate at which to change altitude.
-    int16_t condition_rate;
 
     // 3D Location vectors
     // Location structure defined in AP_Common
@@ -808,8 +802,6 @@ private:
 
     float relative_altitude;
 
-    // loop performance monitoring:
-    AP::PerfInfo perf_info;
     struct {
         uint32_t last_trim_check;
         uint32_t last_trim_save;
@@ -904,7 +896,6 @@ private:
     float relative_ground_altitude(bool use_rangefinder_if_available);
     float relative_ground_altitude(bool use_rangefinder_if_available, bool use_terrain_if_available);
     void set_target_altitude_current(void);
-    void set_target_altitude_current_adjusted(void);
     void set_target_altitude_location(const Location &loc);
     int32_t relative_target_altitude_cm(void);
     void change_target_altitude(int32_t change_cm);
@@ -1042,13 +1033,10 @@ private:
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
 
     // control_modes.cpp
-    void read_control_switch();
-    uint8_t readSwitch(void) const;
     void autotune_start(void);
     void autotune_restore(void);
     void autotune_enable(bool enable);
     bool fly_inverted(void);
-    bool mode_allows_autotuning(void);
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
     Mode *mode_from_mode_num(const enum Mode::Number num);
     bool current_mode_requires_mission() const override {
@@ -1077,7 +1065,6 @@ private:
     bool trigger_land_abort(const float climb_to_alt_m);
     void get_osd_roll_pitch_rad(float &roll, float &pitch) const override;
     float tecs_hgt_afe(void);
-    void efi_update(void);
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
@@ -1113,7 +1100,6 @@ private:
     void calc_gndspeed_undershoot();
     void update_loiter(uint16_t radius);
     void update_loiter_update_nav(uint16_t radius);
-    void update_cruise();
     void update_fbwb_speed_height(void);
     void setup_turn_angle(void);
     bool reached_loiter_target(void);
@@ -1168,7 +1154,6 @@ private:
     float apply_throttle_limits(float throttle_in);
     void set_throttle(void);
     void set_takeoff_expected(void);
-    void set_servos_old_elevons(void);
     void set_servos_flaps(void);
     void set_landing_gear(void);
     void dspoiler_update(void);
@@ -1196,7 +1181,6 @@ private:
     // parachute.cpp
     void parachute_check();
 #if HAL_PARACHUTE_ENABLED
-    void do_parachute(const AP_Mission::Mission_Command& cmd);
     void parachute_release();
     bool parachute_manual_release();
 #endif
