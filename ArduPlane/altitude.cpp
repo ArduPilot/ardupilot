@@ -796,7 +796,7 @@ bool Plane::terrain_disabled()
 const Plane::TerrainLookupTable Plane::Terrain_lookup[] = {
     {Mode::Number::FLY_BY_WIRE_B, terrain_bitmask::FLY_BY_WIRE_B},
     {Mode::Number::CRUISE, terrain_bitmask::CRUISE},
-    {Mode::Number::AUTO, terrain_bitmask::AUTO},
+    //{Mode::Number::AUTO, terrain_bitmask::AUTO}, not used by code
     {Mode::Number::RTL, terrain_bitmask::RTL},
     {Mode::Number::AVOID_ADSB, terrain_bitmask::AVOID_ADSB},
     {Mode::Number::GUIDED, terrain_bitmask::GUIDED},

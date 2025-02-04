@@ -866,7 +866,7 @@ private:
         ALL             = 1U << 0,
         FLY_BY_WIRE_B   = 1U << 1,
         CRUISE          = 1U << 2,
-        AUTO            = 1U << 3,
+        //AUTO            = 1U << 3, this has no effect in the code
         RTL             = 1U << 4,
         AVOID_ADSB      = 1U << 5,
         GUIDED          = 1U << 6,
