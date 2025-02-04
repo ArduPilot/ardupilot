@@ -237,7 +237,8 @@ bool XPlane::load_dref_map(const char *map_json)
         const char *label = i->first.c_str();
         const auto &d = i->second;
         if (strchr(label, '/') != nullptr) {
-            const char *type_s = d.get("type").to_str().c_str();
+            const auto str = d.get("type").to_str();
+            const char *type_s = str.c_str();
             if (strcmp(type_s, "angle") == 0) {
                 add_dref(label, DRefType::ANGLE, d);
             } else if (strcmp(type_s, "range") == 0) {
