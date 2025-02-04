@@ -155,9 +155,19 @@ void MissionItemProtocol::handle_mission_request_int(GCS_MAVLINK &_link,
     }
 
     mavlink_mission_item_int_t ret_packet;
-    const MAV_MISSION_RESULT result_code = get_item(_link, msg, packet, ret_packet);
-
+    const MAV_MISSION_RESULT result_code = get_item(packet.seq, ret_packet);
     if (result_code != MAV_MISSION_ACCEPTED) {
+        if (result_code == MAV_MISSION_INVALID_SEQUENCE) {
+            // try to educate the GCS on the actual size of the mission:
+            const mavlink_channel_t chan = _link.get_chan();
+            if (HAVE_PAYLOAD_SPACE(chan, MISSION_COUNT)) {
+                mavlink_msg_mission_count_send(chan,
+                                               msg.sysid,
+                                               msg.compid,
+                                               item_count(),
+                                               mission_type());
+            }
+        }
         // send failure message
         send_mission_ack(_link, msg, result_code);
         return;
@@ -179,15 +189,8 @@ void MissionItemProtocol::handle_mission_request(GCS_MAVLINK &_link,
         return;
     }
 
-    // convert into a MISSION_REQUEST_INT and reuse its handling code
-    mavlink_mission_request_int_t request_int;
-    request_int.target_system = packet.target_system;
-    request_int.target_component = packet.target_component;
-    request_int.seq = packet.seq;
-    request_int.mission_type = packet.mission_type;
-
     mavlink_mission_item_int_t item_int;
-    MAV_MISSION_RESULT ret = get_item(_link, msg, request_int, item_int);
+    MAV_MISSION_RESULT ret = get_item(packet.seq, item_int);
     if (ret != MAV_MISSION_ACCEPTED) {
         send_mission_ack(_link, msg, ret);
         return;
