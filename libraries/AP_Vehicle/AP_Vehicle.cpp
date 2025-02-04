@@ -284,6 +284,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(serial_manager, "SERIAL", 31, AP_Vehicle, AP_SerialManager),
 #endif
 
+#if AP_NETWORKING_FILESYSTEM_ENABLED
+    // @Group: NET_9P2K_
+    // @Path: ../AP_Networking/AP_Networking_NineP2000.cpp
+    AP_SUBGROUPINFO(networking.NineP2000_client, "NET_9P2K_", 32, AP_Vehicle, NineP2000),
+#endif
+
     AP_GROUPEND
 };
 

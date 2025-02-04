@@ -9,6 +9,7 @@
 #include "AP_Networking_address.h"
 #include "AP_Networking_Backend.h"
 #include "AP_Networking_CAN.h"
+#include "AP_Networking_NineP2000.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
@@ -165,6 +166,11 @@ public:
         return (param.options.get() & int32_t(option)) != 0;
     }
 
+#if AP_NETWORKING_FILESYSTEM_ENABLED
+    // Get the 9P2000 client
+    NineP2000& get_filesystem() { return NineP2000_client; }
+#endif
+
 private:
     static AP_Networking *singleton;
 
@@ -279,6 +285,10 @@ private:
         HAL_Semaphore sem;
     };
 #endif // AP_NETWORKING_REGISTER_PORT_ENABLED
+
+#if AP_NETWORKING_FILESYSTEM_ENABLED
+    NineP2000 NineP2000_client;
+#endif
 
 private:
     uint32_t announce_ms;
