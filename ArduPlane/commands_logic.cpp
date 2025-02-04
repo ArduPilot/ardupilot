@@ -265,8 +265,6 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_LOITER_TO_ALT:
         return verify_loiter_to_alt(cmd);
 
-    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        return verify_RTL();
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
         return verify_continue_and_change_alt();
@@ -786,22 +784,6 @@ bool Plane::verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd)
     return result;
 }
 
-bool Plane::verify_RTL()
-{
-    if (g.rtl_radius < 0) {
-        loiter.direction = -1;
-    } else {
-        loiter.direction = 1;
-    }
-    update_loiter(abs(g.rtl_radius));
-	if (auto_state.wp_distance <= (uint32_t)MAX(get_wp_radius(),0) || 
-        reached_loiter_target()) {
-			gcs().send_text(MAV_SEVERITY_INFO,"Reached RTL location");
-			return true;
-    } else {
-        return false;
-	}
-}
 
 bool Plane::verify_continue_and_change_alt()
 {
