@@ -25,7 +25,6 @@ Airspeed_Calibration::Airspeed_Calibration()
     , Q0(0.01f)
     , Q1(0.0000005f)
     , state(0, 0, 0)
-    , DT(1)
 {
 }
 

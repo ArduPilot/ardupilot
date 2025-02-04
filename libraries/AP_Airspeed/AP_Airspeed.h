@@ -63,7 +63,6 @@ private:
     const float Q0; // process noise matrix top left and middle element
     const float Q1; // process noise matrix bottom right element
     Vector3f state; // state vector
-    const float DT; // time delta
 };
 
 class AP_Airspeed
