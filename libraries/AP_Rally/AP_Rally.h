@@ -126,9 +126,9 @@ private:
             PROCESSING,
             COMPLETED
         } state;                    // state of search for shortest path
-        bool home_dist_calced;      // true once path length to home has been calculated
         uint8_t rally_index;        // rally point index used for while iteratively searching for shortest path using Dijkstra's
         float shortest_path_length; // shortest path length to rally point or home
+        bool shortest_path_valid;   // true if shortest_path_length has a valid distance
         Location shortest_path_loc; // Location of home or rally point with shortest path length distance
     } _find_with_dijkstras;
 };

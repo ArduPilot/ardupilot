@@ -214,27 +214,31 @@ bool AP_Rally::find_nearest_rally_or_home_with_dijkstras(const Location &current
     // initialise state
     if (_find_with_dijkstras.state != FindWithDijkstras::State::PROCESSING) {
         _find_with_dijkstras.state = FindWithDijkstras::State::PROCESSING;
-        _find_with_dijkstras.home_dist_calced = false;
+        _find_with_dijkstras.shortest_path_valid = false;
         _find_with_dijkstras.rally_index = 0;
     }
 
     // get destination location (e.g. home or next rally point)
     Location search_loc;
-    if (!_find_with_dijkstras.home_dist_calced) {
-        // calculating path length to home
-        search_loc = AP::ahrs().get_home();
-    } else {
+    bool searching_for_path_home = false;
+    if (_find_with_dijkstras.rally_index < get_rally_total()) {
         // calculating path length to a rally point
         RallyLocation rallyloc;
         if (!get_rally_point_with_index(_find_with_dijkstras.rally_index, rallyloc)) {
-            // unexpected failure to get rally point, fall back to calc_best_rally_or_home_location
+            // unexpected failure to get rally point, return home location
+            // this should never happen
             _find_with_dijkstras.state = FindWithDijkstras::State::COMPLETED;
             ret = calc_best_rally_or_home_location(current_loc, rtl_home_alt_amsl_cm);
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             return true;
         }
 
         // convert rally location to Location
         search_loc = rally_location_to_location(rallyloc);
+    } else {
+        // calculating path length to home
+        search_loc = AP::ahrs().get_home();
+        searching_for_path_home = true;
     }
 
     // get path length to search_loc
@@ -246,42 +250,45 @@ bool AP_Rally::find_nearest_rally_or_home_with_dijkstras(const Location &current
     case AP_OAPathPlanner::OA_NOT_REQUIRED:
     case AP_OAPathPlanner::OA_ERROR:
         // object avoidance is not required or unrecoverable error during calculation
-        // fall back to calc_best_rally_or_home_location
-        _find_with_dijkstras.state = FindWithDijkstras::State::COMPLETED;
-        ret = calc_best_rally_or_home_location(current_loc, rtl_home_alt_amsl_cm);
-        return true;
+        if (!searching_for_path_home) {
+            // display warning message to user and advance to next rally
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Rally: failed to calc path to rally point %u", (unsigned)_find_with_dijkstras.rally_index + 1);
+            _find_with_dijkstras.rally_index++;
+            return false;
+        }
+        // display warning message to user, complete calculation and break to send results to user
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Rally: failed to calc path home");
+        break;
     case AP_OAPathPlanner::OA_PROCESSING:
         // still calculating path length
         return false;
     case AP_OAPathPlanner::OA_SUCCESS:
-        if (!_find_with_dijkstras.home_dist_calced) {
-            // path length to home calculated, default to this being shortest path
-            _find_with_dijkstras.home_dist_calced = true;
+        // path length calculated, update shortest path
+        if (!_find_with_dijkstras.shortest_path_valid || path_length < _find_with_dijkstras.shortest_path_length) {
             _find_with_dijkstras.shortest_path_loc = search_loc;
             _find_with_dijkstras.shortest_path_length = path_length;
-        } else {
-            // path length to a rally point calculated
-            if (path_length < _find_with_dijkstras.shortest_path_length) {
-                _find_with_dijkstras.shortest_path_loc = search_loc;
-                _find_with_dijkstras.shortest_path_length = path_length;
-            }
-
+            _find_with_dijkstras.shortest_path_valid = true;
+        }
+        if (!searching_for_path_home) {
             // advance to the next rally point
             _find_with_dijkstras.rally_index++;
+            return false;
         }
-
-        // if home and all rally points have been checked then complete
-        if (_find_with_dijkstras.home_dist_calced && _find_with_dijkstras.rally_index >= get_rally_total()) {
-            _find_with_dijkstras.state = FindWithDijkstras::State::COMPLETED;
-            ret = _find_with_dijkstras.shortest_path_loc;
-            return true;
-        }
-        return false;
+        // the path home has been calculated so the search is complete
+        // break to return results
+        break;
     }
 
-    // we should never get here but just in case, raise internal error and keep processing
-    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-    return false;
+    // we should only reach here if the search has completed
+    _find_with_dijkstras.state = FindWithDijkstras::State::COMPLETED;
+    if (_find_with_dijkstras.shortest_path_valid) {
+        ret = _find_with_dijkstras.shortest_path_loc;
+        return true;
+    }
+
+    // fall back to using closest rally point or home location
+    ret = calc_best_rally_or_home_location(current_loc, rtl_home_alt_amsl_cm);
+    return true;
 #else
     ret = calc_best_rally_or_home_location(current_loc, rtl_home_alt_amsl_cm);
     return true;
