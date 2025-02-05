@@ -524,14 +524,14 @@ void AP_OAPathPlanner::handle_path_length_requests()
 
     // ask dijkstras to calculate the path and path length
     float path_length_m = 0;
-    bool ret = _oadijkstra->get_path_length(path_length_request_local.origin, path_length_request_local.destination, path_length_m);
+    const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->get_path_length(path_length_request_local.origin, path_length_request_local.destination, path_length_m);
 
     // access reply buffer
     {
         WITH_SEMAPHORE(path_length_reply_sem);
         path_length_reply = {
             destination : path_length_request_local.destination,
-            ret_state : (ret ? OA_SUCCESS : OA_ERROR),
+            ret_state : map_dijkstra_state_to_oa_retstate(dijkstra_state),
             path_length_m : path_length_m,
             result_time_ms : AP_HAL::millis()
         };
