@@ -109,11 +109,12 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
     uint16_t oldest_i = 0;
 
     // see if we have that grid
+    const auto now_ms = AP_HAL::millis();
     for (uint16_t i=0; i<cache_size; i++) {
         if (TERRAIN_LATLON_EQUAL(cache[i].grid.lat,info.grid_lat) &&
             TERRAIN_LATLON_EQUAL(cache[i].grid.lon,info.grid_lon) &&
             cache[i].grid.spacing == grid_spacing) {
-            cache[i].last_access_ms = AP_HAL::millis();
+            cache[i].last_access_ms = now_ms;
             return cache[i];
         }
         if (cache[i].last_access_ms < cache[oldest_i].last_access_ms) {
@@ -134,7 +135,7 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
     grid.grid.lat_degrees = info.lat_degrees;
     grid.grid.lon_degrees = info.lon_degrees;
     grid.grid.version = TERRAIN_GRID_FORMAT_VERSION;
-    grid.last_access_ms = AP_HAL::millis();
+    grid.last_access_ms = now_ms;
 
     // mark as waiting for disk read
     grid.state = GRID_CACHE_DISKWAIT;
