@@ -416,17 +416,7 @@ void AP_OAPathPlanner::handle_avoidance_requests()
                                                                                       destination_new,
                                                                                       next_destination_new,
                                                                                       dest_to_next_dest_clear);
-        switch (dijkstra_state) {
-        case AP_OADijkstra::DIJKSTRA_STATE_NOT_REQUIRED:
-            res = OA_NOT_REQUIRED;
-            break;
-        case AP_OADijkstra::DIJKSTRA_STATE_ERROR:
-            res = OA_ERROR;
-            break;
-        case AP_OADijkstra::DIJKSTRA_STATE_SUCCESS:
-            res = OA_SUCCESS;
-            break;
-        }
+        res = map_dijkstra_state_to_oa_retstate(dijkstra_state);
         path_planner_used = OAPathPlannerUsed::Dijkstras;
 #endif
         break;
@@ -463,17 +453,7 @@ void AP_OAPathPlanner::handle_avoidance_requests()
                                                                                       destination_new,
                                                                                       next_destination_new,
                                                                                       dest_to_next_dest_clear);
-        switch (dijkstra_state) {
-        case AP_OADijkstra::DIJKSTRA_STATE_NOT_REQUIRED:
-            res = OA_NOT_REQUIRED;
-            break;
-        case AP_OADijkstra::DIJKSTRA_STATE_ERROR:
-            res = OA_ERROR;
-            break;
-        case AP_OADijkstra::DIJKSTRA_STATE_SUCCESS:
-            res = OA_SUCCESS;
-            break;
-        }
+        res = map_dijkstra_state_to_oa_retstate(dijkstra_state);
         path_planner_used = OAPathPlannerUsed::Dijkstras;
 #endif
         break;
