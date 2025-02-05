@@ -174,7 +174,7 @@ public:
     void send_relposheading_msg();
     void can_baro_update();
     void can_airspeed_update();
-#ifdef HAL_PERIPH_ENABLE_IMU
+#if AP_PERIPH_IMU_ENABLED
     void can_imu_update();
 #endif
 
@@ -235,7 +235,7 @@ public:
     AP_Baro baro;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_IMU
+#if AP_PERIPH_IMU_ENABLED
     AP_InertialSensor imu;
 #endif
 

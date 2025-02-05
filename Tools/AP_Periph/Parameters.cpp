@@ -724,7 +724,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #endif
 
 
-#ifdef HAL_PERIPH_ENABLE_IMU
+#if AP_PERIPH_IMU_ENABLED
     // @Param: IMU_SAMPLE_RATE
     // @DisplayName: IMU Sample Rate
     // @Description: IMU Sample Rate

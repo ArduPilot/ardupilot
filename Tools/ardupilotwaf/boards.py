@@ -956,7 +956,7 @@ class sitl_periph_universal(sitl_periph):
             HAL_PERIPH_ENABLE_AIRSPEED = 1,
             AP_PERIPH_MAG_ENABLED = 1,
             AP_PERIPH_BARO_ENABLED = 1,
-            HAL_PERIPH_ENABLE_IMU = 1,
+            AP_PERIPH_IMU_ENABLED = 1,
             AP_PERIPH_RANGEFINDER_ENABLED = 1,
             AP_PERIPH_BATTERY_ENABLED = 1,
             AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,

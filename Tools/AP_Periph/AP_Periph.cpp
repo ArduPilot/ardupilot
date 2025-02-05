@@ -168,7 +168,7 @@ void AP_Periph_FW::init()
     baro.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_IMU
+#if AP_PERIPH_IMU_ENABLED
     if (g.imu_sample_rate) {
         imu.init(g.imu_sample_rate);
         if (imu.get_accel_count() > 0 || imu.get_gyro_count() > 0) {
