@@ -55,7 +55,7 @@ public:
     // this calculation takes time and should only be run from a background thread
     // returns true on success and fills in path_length argument
     // called by AP_OAPathPlanner::get_path_length()
-    bool get_path_length(const Location &origin, const Location& destination, float& path_length);
+    AP_OADijkstra_State get_path_length(const Location &origin, const Location& destination, float& path_length);
 
 private:
 

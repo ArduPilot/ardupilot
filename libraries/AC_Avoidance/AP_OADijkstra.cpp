@@ -171,14 +171,32 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
 // this calculation takes time and should only be run from a background thread
 // returns true on success and fills in path_length argument
 // called by AP_OAPathPlanner::get_path_length()
-bool AP_OADijkstra::get_path_length(const Location &origin, const Location& destination, float& path_length)
+AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::get_path_length(const Location &origin, const Location& destination, float& path_length)
 {
+    // check static data (e.g. fences)
     AP_OADijkstra_Common::ErrorId error_id;
+    switch (_static_data.update(error_id)) {
+    case AP_OADijkstra_StaticData::UpdateState::NOT_REQUIRED:
+        return DIJKSTRA_STATE_NOT_REQUIRED;
+    case AP_OADijkstra_StaticData::UpdateState::READY:
+    case AP_OADijkstra_StaticData::UpdateState::UPDATED:
+        // all static data is already up-to-date
+        break;
+    case AP_OADijkstra_StaticData::UpdateState::ERROR:
+        return DIJKSTRA_STATE_ERROR;
+    }
+
+    // no avoidance required if origin and destination are the same
+    if (origin.same_latlon_as(destination)) {
+        return DIJKSTRA_STATE_NOT_REQUIRED;
+    }
+
+    // calculate path length
     if (_calcpath.calc_shortest_path(origin, destination, _secondary_path, error_id)) {
         path_length = _secondary_path.length_cm * 0.01;
-        return true;
+        return AP_OADijkstra_State::DIJKSTRA_STATE_SUCCESS;
     }
-    return false;
+    return (error_id == AP_OADijkstra_Common::ErrorId::DIJKSTRA_ERROR_FENCE_DISABLED) ? AP_OADijkstra_State::DIJKSTRA_STATE_NOT_REQUIRED : AP_OADijkstra_State::DIJKSTRA_STATE_ERROR;
 }
 
 #endif // AP_FENCE_ENABLED
