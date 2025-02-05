@@ -12542,6 +12542,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'COMPASS_USE3': 0,
         })
         self.assert_parameter_value("COMPASS_OFS_X", 20, epsilon=30)
+        # set the parameter so it gets reset at context pop time:
+        self.set_parameter("COMPASS_OFS_X", 20)
         new_compass_ofs_x = 200
         self.set_parameters({
             "SIM_MAG1_OFS_X": new_compass_ofs_x,
