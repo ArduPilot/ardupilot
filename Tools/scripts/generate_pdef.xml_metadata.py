@@ -16,7 +16,14 @@ import shutil
 import subprocess
 
 VEHICLE_TYPES = ["Copter", "Plane", "Rover", "ArduSub", "Tracker"]  # Add future vehicle types here
-RSYNC_USERNAME = 'amilcar'
+
+RSYNC_USERNAME = os.environ.get('RSYNC_USERNAME')
+if not RSYNC_USERNAME:
+    raise ValueError("RSYNC_USERNAME environment variable not set")
+
+RSYNC_PASSWORD = os.environ.get('RSYNC_PASSWORD')
+if not RSYNC_PASSWORD:
+    raise ValueError("RSYNC_PASSWORD environment variable not set")
 
 # Store the current working directory
 old_cwd = os.getcwd()
@@ -27,8 +34,6 @@ def get_vehicle_tags(vehicle_type):
     Returns a list of tag names.
     """
     try:
-        # Change to the ArduPilot directory
-        os.chdir('../ardupilot/')
         tags_output = subprocess.check_output(['git', 'tag', '--list', f'{vehicle_type}-[0-9]\\.[0-9]\\.[0-9]'], text=True)
         return tags_output.splitlines()
     except Exception as e: # pylint: disable=broad-exception-caught
@@ -49,43 +54,40 @@ def generate_vehicle_versions():
     return vehicle_versions
 
 def create_one_pdef_xml_file(vehicle_type: str, dst_dir: str, git_tag: str):
-    os.chdir('../ardupilot')
     subprocess.run(['git', 'checkout', git_tag], check=True)
-    # subprocess.run(['git', 'pull'], check=True)
     subprocess.run(['Tools/autotest/param_metadata/param_parse.py', '--vehicle', vehicle_type, '--format', 'xml'], check=True)
-    # Return to the old working directory
-    os.chdir(old_cwd)
 
     if not os.path.exists(dst_dir):
         os.makedirs(dst_dir)
 
-    # Insert an XML comment on line 3 in the ../ardupilot/apm.pdef.xml file to indicate
-    # the tag used to generate the file and the current date
-    with open('../ardupilot/apm.pdef.xml', 'r', encoding='utf-8') as f:
+    with open('apm.pdef.xml', 'r', encoding='utf-8') as f:
         lines = f.readlines()
+
+    # Insert an XML comment on line 3 in the apm.pdef.xml file
+    # with the tag used to generate the file and the current date
     lines.insert(2, f'<!-- Generated from git tag {git_tag} on {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} -->\n')
-    with open('../ardupilot/apm.pdef.xml', 'w', encoding='utf-8') as f:
+
+    with open('apm.pdef.xml', 'w', encoding='utf-8') as f:
         f.writelines(lines)
-    shutil.copy('../ardupilot/apm.pdef.xml', f'{dst_dir}/apm.pdef.xml')
+    shutil.copy('apm.pdef.xml', f'{dst_dir}/apm.pdef.xml')
 
 # Function to sync files using rsync
 def sync_to_remote(vehicle_dir: str) -> None:
     src_dir = f'{vehicle_dir}/'
-    dst_user = RSYNC_USERNAME
     dst_host = 'firmware.ardupilot.org'
     dst_path = f'param_versioned/{vehicle_dir}/'
 
-    # Construct the rsync command
+    # Construct the rsync command with rsync:// URL format
     rsync_cmd = [
         'rsync',
         '-avz',
         '--progress',
-        '--password-file=.rsync_pass',
         src_dir,
-        f'{dst_user}@{dst_host}::{dst_path}'
+        f'rsync://{RSYNC_USERNAME}@{dst_host}/{dst_path}'
     ]
 
     print(f'Synchronizing {src_dir} to {dst_path}...')
+    # RSYNC_PASSWORD environment variable will be automatically used by rsync
     print(rsync_cmd)
     subprocess.run(rsync_cmd, check=True)
 
