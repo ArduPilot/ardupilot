@@ -213,7 +213,7 @@ public:
     AP_Int8 efi_port;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_IMU
+#if AP_PERIPH_IMU_ENABLED
     AP_Int16 imu_sample_rate;
 #endif
 
