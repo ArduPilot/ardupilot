@@ -11802,6 +11802,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def Ch6TuningLoitMaxXYSpeed(self):
+        '''test loiter can be changed via Ch6 tuning knob'''
+        self.set_parameters({
+            "RC6_OPTION": 219,  # RC6 used for tuning
+            "TUNE": 60,  # 60 is x/y loiter speed
+            "TUNE_MIN": 0.02,  # 20cm/s
+            "TUNE_MAX": 1000,  # 10m/s
+            "AUTO_OPTIONS": 3,
+        })
+        self.set_rc(6, 2000)
+
+        self.takeoff(mode='LOITER')
+
+        self.set_rc(2, 1000)
+
+        self.wait_groundspeed(9.5, 10.5, minimum_duration=5)
+
+        self.set_rc(6, 1500)
+        self.wait_groundspeed(4.5, 5.5, minimum_duration=5)
+
+        self.set_rc(6, 2000)
+        self.wait_groundspeed(9.5, 10.5, minimum_duration=5)
+
+        self.set_rc(6, 1300)
+        self.wait_groundspeed(2.5, 3.5, minimum_duration=5)
+
+        self.set_rc(2, 1500)
+
+        self.do_RTL()
+
     def PILOT_THR_BHV(self):
         '''test the PILOT_THR_BHV parameter'''
         self.start_subtest("Test default behaviour, no disarm on land")
@@ -12771,6 +12801,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ScriptingFlipMode,
             self.CompassLearnCopyFromEKF,
             self.AHRSAutoTrim,
+            self.Ch6TuningLoitMaxXYSpeed,
         ])
         return ret
 
