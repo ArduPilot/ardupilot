@@ -106,6 +106,9 @@ private:
     // helper function to map OABendyType to OAPathPlannerUsed
     OAPathPlannerUsed map_bendytype_to_pathplannerused(AP_OABendyRuler::OABendyType bendy_type);
 
+    // helper function to map Dijkstras return state to OA_RetState
+    OA_RetState map_dijkstra_state_to_oa_retstate(AP_OADijkstra::AP_OADijkstra_State dijkstra_state);
+
     // an avoidance request from the navigation code
     struct avoidance_info {
         Location current_loc;

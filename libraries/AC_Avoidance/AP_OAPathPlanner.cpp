@@ -189,6 +189,20 @@ AP_OAPathPlanner::OAPathPlannerUsed AP_OAPathPlanner::map_bendytype_to_pathplann
     }
 }
 
+// helper function to map Dijkstras return state to OA_RetState
+AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::map_dijkstra_state_to_oa_retstate(AP_OADijkstra::AP_OADijkstra_State dijkstra_state)
+{
+    switch (dijkstra_state) {
+    case AP_OADijkstra::AP_OADijkstra_State::DIJKSTRA_STATE_NOT_REQUIRED:
+        return OA_NOT_REQUIRED;
+    case AP_OADijkstra::AP_OADijkstra_State::DIJKSTRA_STATE_ERROR:
+        return OA_ERROR;
+    case AP_OADijkstra::AP_OADijkstra_State::DIJKSTRA_STATE_SUCCESS:
+        return OA_SUCCESS;
+    }
+    return OA_ERROR;
+}
+
 // provides an alternative target location if path planning around obstacles is required
 // returns true and updates result_origin, result_destination, result_next_destination with an intermediate path
 // result_dest_to_next_dest_clear is set to true if the path from result_destination to result_next_destination is clear (only supported by Dijkstras)
