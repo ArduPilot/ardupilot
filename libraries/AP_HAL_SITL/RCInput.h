@@ -9,7 +9,7 @@
 
 class HALSITL::RCInput : public AP_HAL::RCInput {
 public:
-    explicit RCInput(SITL_State *sitlState): _sitlState(sitlState) {}
+    explicit RCInput() {}
     void init() override;
     bool new_input() override;
     uint8_t num_channels() override;
@@ -17,10 +17,6 @@ public:
     uint8_t read(uint16_t* periods, uint8_t len) override;
 
     const char *protocol() const override { return "SITL"; }
-
-private:
-    SITL_State *_sitlState;
-    bool using_rc_protocol;
 };
 
 #endif
