@@ -14,7 +14,7 @@
  */
 
 /*
- * IRLock.h - IRLock Base Class for Ardupilot
+ * AP_IRLock.h - IRLock Base Class for Ardupilot
  *
  *  Created on: Nov 10, 2014
  *      Author: MLandes
