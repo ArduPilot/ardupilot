@@ -5,6 +5,10 @@
  *      Author: MLandes
  */
 
+#include "AP_IRLock_config.h"
+
+#if AP_IRLOCK_ENABLED
+
 #include "AP_IRLock.h"
 
 // retrieve body frame unit vector in direction of target
@@ -23,3 +27,5 @@ bool AP_IRLock::get_unit_vector_body(Vector3f& ret) const
     ret /= ret.length();
     return true;
 }
+
+#endif  // AP_IRLOCK_ENABLED

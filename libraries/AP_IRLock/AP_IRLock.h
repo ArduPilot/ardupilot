@@ -21,6 +21,10 @@
  */
 #pragma once
 
+#include "AP_IRLock_config.h"
+
+#if AP_IRLOCK_ENABLED
+
 #include <AP_Math/AP_Math.h>
 
 class AP_IRLock
@@ -65,3 +69,5 @@ protected:
 
     irlock_target_info _target_info;
 };
+
+#endif  // AP_IRLOCK_ENABLED
