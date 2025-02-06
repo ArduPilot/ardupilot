@@ -7,7 +7,7 @@
 #pragma once
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include "IRLock.h"
+#include "AP_IRLock.h"
 #include <SITL/SITL.h>
 
 class AP_IRLock_SITL : public IRLock
