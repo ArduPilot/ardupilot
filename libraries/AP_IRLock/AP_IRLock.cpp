@@ -1,5 +1,5 @@
 /*
- * IRLock.cpp
+ * AP_IRLock.cpp
  *
  *  Created on: Nov 12, 2014
  *      Author: MLandes
