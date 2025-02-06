@@ -209,6 +209,7 @@ public:
         k_motor30               = 177,
         k_motor31               = 178,
         k_motor32               = 179,
+        k_cam_zoom              = 180,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Function;
 
