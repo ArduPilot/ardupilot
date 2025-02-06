@@ -7,7 +7,7 @@
 #include "AP_IRLock.h"
 #include <AP_HAL/AP_HAL.h>
 
-class AP_IRLock_I2C : public IRLock
+class AP_IRLock_I2C : public AP_IRLock
 {
 public:
     // init - initialize sensor library

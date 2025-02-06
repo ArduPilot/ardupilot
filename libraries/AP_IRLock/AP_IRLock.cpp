@@ -9,7 +9,7 @@
 
 // retrieve body frame unit vector in direction of target
 // returns true if data is available
-bool IRLock::get_unit_vector_body(Vector3f& ret) const
+bool AP_IRLock::get_unit_vector_body(Vector3f& ret) const
 {
     // return false if we have no target
     if (!_flags.healthy) {

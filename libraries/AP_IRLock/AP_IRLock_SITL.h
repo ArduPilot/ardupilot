@@ -10,7 +10,7 @@
 #include "AP_IRLock.h"
 #include <SITL/SITL.h>
 
-class AP_IRLock_SITL : public IRLock
+class AP_IRLock_SITL : public AP_IRLock
 {
 public:
     // init - initialize sensor library
