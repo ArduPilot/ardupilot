@@ -155,7 +155,7 @@ bool AP_RangeFinder_LightWareI2C::sf20_send_and_expect(const char* send_msg, con
   send a native command and fill a reply into a buffer. Used for
   version string
  */
-void AP_RangeFinder_LightWareI2C::sf20_get_version(const char* send_msg, const char *reply_prefix, char reply[15])
+void AP_RangeFinder_LightWareI2C::sf20_get_version(const char* send_msg, const char *reply_prefix, char *reply, uint8_t reply_len)
 {
     const size_t expected_reply_len = 16;
     uint8_t rx_bytes[expected_reply_len + 1];
@@ -181,7 +181,7 @@ void AP_RangeFinder_LightWareI2C::sf20_get_version(const char* send_msg, const c
         // give a bit of time for the remaining bytes to be available
         hal.scheduler->delay(1);
     }
-    memcpy(reply, &rx_bytes[2], 14);
+    memcpy(reply, &rx_bytes[2], reply_len);
 }
 
 /* Driver first attempts to initialize the sf20.
@@ -242,7 +242,8 @@ bool AP_RangeFinder_LightWareI2C::sf20_init()
     // version strings for reporting
     char version[15] {};
 
-    sf20_get_version("?P\r\n", "p:", version);
+    // -1 here preserves null termination on the version string:
+    sf20_get_version("?P\r\n", "p:", version, ARRAY_SIZE(version)-1);
 
     if (version[0]) {
         DEV_PRINTF("SF20 Lidar version %s\n", version);
