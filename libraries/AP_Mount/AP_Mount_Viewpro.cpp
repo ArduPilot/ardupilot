@@ -635,7 +635,7 @@ bool AP_Mount_Viewpro::send_tracking_command(TrackingCommand cmd, uint8_t value)
 }
 
 // send camera command2 and corresponding parameter values
-bool AP_Mount_Viewpro::send_tracking_command2(TrackingCommand2 cmd, uint16_t param1, uint16_t param2)
+bool AP_Mount_Viewpro::send_tracking_command2(TrackingCommand2 cmd, int16_t param1, int16_t param2)
 {
     // fill in packet
     const E2Packet e2_packet {
@@ -838,13 +838,13 @@ bool AP_Mount_Viewpro::set_tracking(TrackingType tracking_type, const Vector2f& 
         break;
     case TrackingType::TRK_POINT: {
         return (send_tracking_command(TrackingCommand::START, 0) &&
-                send_tracking_command2(TrackingCommand2::SET_POINT, (p1.x - 0.5) * 960, (p1.y - 0.5) * 540));
+                send_tracking_command2(TrackingCommand2::SET_POINT, (p1.x - 0.5) * 2.0 * 960, (p1.y - 0.5) * 2.0 * 540));
         break;
     }
     case TrackingType::TRK_RECTANGLE:
         return (send_tracking_command(TrackingCommand::START, 0) &&
-                send_tracking_command2(TrackingCommand2::SET_RECT_TOPLEFT, (p1.x - 0.5) * 960, (p1.y - 0.5) * 540) &&
-                send_tracking_command2(TrackingCommand2::SET_RECT_BOTTOMRIGHT, (p2.x - 0.5) * 960, (p2.y - 0.5) * 540));
+                send_tracking_command2(TrackingCommand2::SET_RECT_TOPLEFT, (p1.x - 0.5) * 2.0 * 960, (p1.y - 0.5) * 2.0 * 540) &&
+                send_tracking_command2(TrackingCommand2::SET_RECT_BOTTOMRIGHT, (p2.x - 0.5) * 2.0 * 960, (p2.y - 0.5) * 2.0 * 540));
         break;
     }
 
