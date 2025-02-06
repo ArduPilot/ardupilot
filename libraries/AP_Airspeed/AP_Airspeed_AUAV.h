@@ -65,7 +65,6 @@ private:
     float D_TC50L; // Diff coeffs
 
     float pressure_digital;
-    float pressure_abs_L;
     float temp_C;
     const float range_inH2O;
 };
