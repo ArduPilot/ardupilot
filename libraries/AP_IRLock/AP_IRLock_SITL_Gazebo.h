@@ -10,7 +10,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_IRLock.h"
 
-class AP_IRLock_SITL_Gazebo : public IRLock
+class AP_IRLock_SITL_Gazebo : public AP_IRLock
 {
 public:
     AP_IRLock_SITL_Gazebo();

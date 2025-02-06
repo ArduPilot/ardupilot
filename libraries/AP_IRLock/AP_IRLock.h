@@ -23,7 +23,7 @@
 
 #include <AP_Math/AP_Math.h>
 
-class IRLock
+class AP_IRLock
 {
 public:
     // init - initialize sensor library
