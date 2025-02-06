@@ -599,18 +599,13 @@ int lua_get_i2c_device(lua_State *L) {
         return luaL_argerror(L, 1, "no i2c devices available");
     }
 
-    scripting->_i2c_dev[scripting->num_i2c_devices] = NEW_NOTHROW AP_HAL::OwnPtr<AP_HAL::I2CDevice>;
+    scripting->_i2c_dev[scripting->num_i2c_devices] = hal.i2c_mgr->get_device_ptr(bus, address, bus_clock, use_smbus);
+
     if (scripting->_i2c_dev[scripting->num_i2c_devices] == nullptr) {
         return luaL_argerror(L, 1, "i2c device nullptr");
     }
 
-    *scripting->_i2c_dev[scripting->num_i2c_devices] = std::move(hal.i2c_mgr->get_device(bus, address, bus_clock, use_smbus));
-
-    if (scripting->_i2c_dev[scripting->num_i2c_devices] == nullptr || scripting->_i2c_dev[scripting->num_i2c_devices]->get() == nullptr) {
-        return luaL_argerror(L, 1, "i2c device nullptr");
-    }
-
-    *new_AP_HAL__I2CDevice(L) = scripting->_i2c_dev[scripting->num_i2c_devices]->get();
+    *new_AP_HAL__I2CDevice(L) = scripting->_i2c_dev[scripting->num_i2c_devices];
 
     scripting->num_i2c_devices++;
 
