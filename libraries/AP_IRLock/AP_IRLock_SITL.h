@@ -6,7 +6,10 @@
  */
 #pragma once
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include "AP_IRLock_config.h"
+
+#if AP_IRLOCK_SITL_ENABLED
+
 #include "AP_IRLock.h"
 #include <SITL/SITL.h>
 
@@ -23,4 +26,5 @@ private:
     SITL::SIM          *_sitl;                 // sitl instance pointer
     uint32_t _last_timestamp = 0;
 };
-#endif // CONFIG_HAL_BOARD
+
+#endif  // AP_IRLOCK_SITL_ENABLED
