@@ -5,7 +5,7 @@
  *      Author: MLandes
  */
 
-#include "IRLock.h"
+#include "AP_IRLock.h"
 
 // retrieve body frame unit vector in direction of target
 // returns true if data is available

@@ -8,7 +8,7 @@
 
 #include <AP_HAL/utility/Socket_native.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include "IRLock.h"
+#include "AP_IRLock.h"
 
 class AP_IRLock_SITL_Gazebo : public IRLock
 {
