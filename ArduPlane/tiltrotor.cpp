@@ -400,6 +400,11 @@ void Tiltrotor::update(void)
 // Write tiltrotor specific log
 void Tiltrotor::write_log()
 {
+    // Only valid on a tiltrotor
+    if (!enabled()) {
+        return;
+    }
+
     struct log_tiltrotor pkt {
         LOG_PACKET_HEADER_INIT(LOG_TILT_MSG),
         time_us      : AP_HAL::micros64(),
