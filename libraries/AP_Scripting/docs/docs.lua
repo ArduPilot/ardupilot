@@ -3892,13 +3892,13 @@ function dirlist(directoryname) end
 ---@return integer -- error number
 function remove(filename) end
 
--- desc
+-- MAVLink message interface can send and receive binary messages
 mavlink = {}
 
--- initializes mavlink
----@param num_rx_msgid uint32_t_ud|integer|number
----@param msg_queue_length uint32_t_ud|integer|number
-function mavlink:init(num_rx_msgid, msg_queue_length) end
+-- Initializes scripting MAVLink bufffer, check for items in the buffer with `receive_chan`
+---@param msg_queue_length uint32_t_ud|integer|number -- Larger que allows script to deal with bursts of incomming messages or check for received messages less often
+---@param num_rx_msgid uint32_t_ud|integer|number -- Number of unique messages to be received, register ids with `register_rx_msgid`
+function mavlink:init(msg_queue_length, num_rx_msgid) end
 
 -- marks mavlink message for receive, message id can be get using mavlink_msgs.get_msgid("MSG_NAME")
 ---@param msg_id number
