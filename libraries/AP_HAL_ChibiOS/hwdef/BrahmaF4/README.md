@@ -1,7 +1,7 @@
 
 # Brahma F4 Flight Controller
 
-Brahma F4 is a flight controller manufactured by [Darkmatter®](https://thedarkmatter.in)
+ F4 is a flight controller manufactured by [Darkmatter®](https://thedarkmatter.in)
 
 ## Features
 

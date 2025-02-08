@@ -9,7 +9,7 @@ USB_STRING_PRODUCT "BrahmaF4"
 MCU STM32F4xx STM32F405xx
 
 # board ID for firmware load
-APJ_BOARD_ID 7701
+APJ_BOARD_ID 1184
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
