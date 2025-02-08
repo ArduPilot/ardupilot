@@ -2175,7 +2175,6 @@ void GCS_MAVLINK::send_raw_imu()
 #if AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED
 void GCS_MAVLINK::send_highres_imu()
 {
-    // static const uint16_t HIGHRES_IMU_UPDATED_NONE = 0x00;
     static const uint16_t HIGHRES_IMU_UPDATED_XACC = 0x01;
     static const uint16_t HIGHRES_IMU_UPDATED_YACC = 0x02;
     static const uint16_t HIGHRES_IMU_UPDATED_ZACC = 0x04;
@@ -2189,7 +2188,6 @@ void GCS_MAVLINK::send_highres_imu()
     static const uint16_t HIGHRES_IMU_UPDATED_DIFF_PRESSURE = 0x400;
     static const uint16_t HIGHRES_IMU_UPDATED_PRESSURE_ALT = 0x800;
     static const uint16_t HIGHRES_IMU_UPDATED_TEMPERATURE = 0x1000;
-    static const uint16_t HIGHRES_IMU_UPDATED_ALL = 0xFFFF;
 
     const AP_InertialSensor &ins = AP::ins();
     const Vector3f& accel = ins.get_accel();
@@ -2214,8 +2212,7 @@ void GCS_MAVLINK::send_highres_imu()
             HIGHRES_IMU_UPDATED_XGYRO | HIGHRES_IMU_UPDATED_YGYRO | HIGHRES_IMU_UPDATED_ZGYRO), 
         .id = ins.get_first_usable_accel(),
     };
-    
-    
+
 #if AP_COMPASS_ENABLED
     const Compass &compass = AP::compass();
     if (compass.get_count() >= 1) {
@@ -2236,14 +2233,6 @@ void GCS_MAVLINK::send_highres_imu()
     reply.fields_updated |= (HIGHRES_IMU_UPDATED_ABS_PRESSURE | HIGHRES_IMU_UPDATED_DIFF_PRESSURE |
         HIGHRES_IMU_UPDATED_PRESSURE_ALT | HIGHRES_IMU_UPDATED_TEMPERATURE);
 #endif
-    static const uint16_t all_flags = (HIGHRES_IMU_UPDATED_XACC | HIGHRES_IMU_UPDATED_YACC | HIGHRES_IMU_UPDATED_ZACC |
-        HIGHRES_IMU_UPDATED_XGYRO | HIGHRES_IMU_UPDATED_YGYRO | HIGHRES_IMU_UPDATED_ZGYRO | 
-        HIGHRES_IMU_UPDATED_XMAG | HIGHRES_IMU_UPDATED_YMAG | HIGHRES_IMU_UPDATED_ZMAG |
-        HIGHRES_IMU_UPDATED_ABS_PRESSURE | HIGHRES_IMU_UPDATED_DIFF_PRESSURE |
-        HIGHRES_IMU_UPDATED_PRESSURE_ALT | HIGHRES_IMU_UPDATED_TEMPERATURE);
-    if (reply.fields_updated == all_flags) {
-        reply.fields_updated |= HIGHRES_IMU_UPDATED_ALL;
-    }
 
     mavlink_msg_highres_imu_send_struct(chan, &reply);
 }
