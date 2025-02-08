@@ -55,27 +55,38 @@ int lua_mavlink_init(lua_State *L) {
     const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
 
     binding_argcheck(L, 2+arg_offset);
-    WITH_SEMAPHORE(AP::scripting()->mavlink_data.sem);
     // get the depth of receive queue
     const uint32_t queue_size = get_uint32(L, 1+arg_offset, 0, 25);
     // get number of msgs to accept
     const uint32_t num_msgs = get_uint32(L, 2+arg_offset, 0, 25);
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
-    if (data.rx_buffer == nullptr) {
-        data.rx_buffer = NEW_NOTHROW ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
+    bool failed = false;
+    {
+        WITH_SEMAPHORE(data.sem);
         if (data.rx_buffer == nullptr) {
-            return luaL_error(L, "Failed to allocate mavlink rx buffer");
+            data.rx_buffer = NEW_NOTHROW ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
         }
-    }
-    if (data.accept_msg_ids == nullptr) {
-        data.accept_msg_ids = NEW_NOTHROW uint32_t[num_msgs];
         if (data.accept_msg_ids == nullptr) {
-            return luaL_error(L, "Failed to allocate mavlink rx registry");
+            data.accept_msg_ids = NEW_NOTHROW uint32_t[num_msgs];
         }
-        data.accept_msg_ids_size = num_msgs;
-        memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
+        if ((data.rx_buffer == nullptr) || (data.accept_msg_ids == nullptr)) {
+            delete data.rx_buffer;
+            delete[] data.accept_msg_ids;
+            data.rx_buffer = nullptr;
+            data.accept_msg_ids = nullptr;
+            data.accept_msg_ids_size = 0;
+            failed = true;
+        } else {
+            data.accept_msg_ids_size = num_msgs;
+            memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
+        }
+    } // release semaphore here as luaL_error will NOT do that!
+
+    if (failed) {
+        return luaL_error(L, "out of memory");
     }
+
     return 0;
 }
 
