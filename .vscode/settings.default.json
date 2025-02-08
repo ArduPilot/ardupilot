@@ -1,5 +1,0 @@
-{
-    "cSpell.language": "en-GB",
-    "astyle.astylerc": "${workspaceFolder}/Tools/CodeStyle/astylerc",
-    "Lua.runtime.version": "Lua 5.3"
-}
