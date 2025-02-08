@@ -985,7 +985,13 @@ class sitl_periph_gps(sitl_periph):
             CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_gps"',
             APJ_BOARD_ID = 101,
 
+            AP_PERIPH_BATTERY_ENABLED = 0,
             AP_PERIPH_GPS_ENABLED = 1,
+            AP_PERIPH_IMU_ENABLED = 0,
+            AP_PERIPH_MAG_ENABLED = 0,
+            AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
+            AP_PERIPH_BARO_ENABLED = 0,
+            AP_PERIPH_RANGEFINDER_ENABLED = 0,
         )
 
 class sitl_periph_battmon(sitl_periph):
@@ -1000,6 +1006,11 @@ class sitl_periph_battmon(sitl_periph):
 
             AP_PERIPH_BATTERY_ENABLED = 1,
             AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
+            AP_PERIPH_BARO_ENABLED = 0,
+            AP_PERIPH_RANGEFINDER_ENABLED = 0,
+            AP_PERIPH_GPS_ENABLED = 0,
+            AP_PERIPH_IMU_ENABLED = 0,
+            AP_PERIPH_MAG_ENABLED = 0,
         )
 
 class esp32(Board):
