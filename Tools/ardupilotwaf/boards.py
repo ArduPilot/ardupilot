@@ -973,6 +973,7 @@ class sitl_periph_universal(sitl_periph):
             AP_EXTENDED_ESC_TELEM_ENABLED = 1,
             AP_TERRAIN_AVAILABLE = 1,
             HAL_GYROFFT_ENABLED = 0,
+            AP_PERIPH_RTC_ENABLED = 0,
         )
 
 class sitl_periph_gps(sitl_periph):
@@ -992,6 +993,7 @@ class sitl_periph_gps(sitl_periph):
             AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
             AP_PERIPH_BARO_ENABLED = 0,
             AP_PERIPH_RANGEFINDER_ENABLED = 0,
+            AP_PERIPH_RTC_ENABLED = 0,
         )
 
 class sitl_periph_battmon(sitl_periph):
@@ -1011,6 +1013,7 @@ class sitl_periph_battmon(sitl_periph):
             AP_PERIPH_GPS_ENABLED = 0,
             AP_PERIPH_IMU_ENABLED = 0,
             AP_PERIPH_MAG_ENABLED = 0,
+            AP_PERIPH_RTC_ENABLED = 0,
         )
 
 class esp32(Board):
