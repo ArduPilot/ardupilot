@@ -101,7 +101,7 @@ int lua_mavlink_receive_chan(lua_State *L) {
     ObjectBuffer<struct AP_Scripting::mavlink_msg> *rx_buffer = AP::scripting()->mavlink_data.rx_buffer;
 
     if (rx_buffer == nullptr) {
-        return luaL_error(L, "Never subscribed to a message");
+        return luaL_error(L, "RX not initialized");
     }
 
     if (rx_buffer->pop(msg)) {
@@ -142,7 +142,7 @@ int lua_mavlink_register_rx_msgid(lua_State *L) {
     }
 
     if (i >= data.accept_msg_ids_size) {
-        return luaL_error(L, "Out of MAVLink ID's to monitor");
+        return luaL_error(L, "no registrations free");
     }
 
     {
