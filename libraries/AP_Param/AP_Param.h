@@ -173,7 +173,7 @@
 #define GOBJECTN(v, pname, name, class)      { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info : class::var_info},      0,                                                  Parameters::k_param_ ## pname,      AP_PARAM_GROUP }
 #define PARAM_VEHICLE_INFO                   { "",   (const void *)&AP_PARAM_VEHICLE_NAME,         {group_info : AP_Vehicle::var_info}, 0,                                                  Parameters::k_param_vehicle,        AP_PARAM_GROUP }
 #define AP_VAREND                            { "",   nullptr,                                      {group_info : nullptr },             0,                                                  0,                                  AP_PARAM_NONE }
-
+#define AP_GROUP_ELEM_IDX(subgrp_idx, grp_idx) (grp_idx << 6 | subgrp_idx)
 
 enum ap_var_type {
     AP_PARAM_NONE    = 0,
@@ -1090,6 +1090,9 @@ public:
     void set(eclass v) {
         AP_Int8::set(int8_t(v));
     }
+    void set_and_save(eclass v) {
+        AP_Int8::set_and_save(int8_t(v));
+    }
 };
 
 template<typename eclass>
@@ -1101,5 +1104,8 @@ public:
     }
     void set(eclass v) {
         AP_Int16::set(int16_t(v));
+    }
+    void set_and_save(eclass v) {
+        AP_Int16::set_and_save(int16_t(v));
     }
 };

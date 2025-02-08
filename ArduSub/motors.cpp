@@ -127,7 +127,7 @@ bool Sub::handle_do_motor_test(mavlink_command_int_t command) {
 
     if (is_equal(throttle_type, (float)MOTOR_TEST_THROTTLE_PERCENT)) {
         throttle = constrain_float(throttle, 0.0f, 100.0f);
-        throttle = channel_throttle->get_radio_min() + throttle / 100.0f * (channel_throttle->get_radio_max() - channel_throttle->get_radio_min());
+        throttle = channel_throttle->get_radio_min() + throttle * 0.01f * (channel_throttle->get_radio_max() - channel_throttle->get_radio_min());
         return motors.output_test_num(motor_number, throttle); // true if motor output is set
     }
 

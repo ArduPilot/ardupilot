@@ -23,6 +23,7 @@
 #include "AP_Compass_BMM150.h"
 #include "AP_Compass_BMM350.h"
 #include "AP_Compass_HMC5843.h"
+#include "AP_Compass_IIS2MDC.h"
 #include "AP_Compass_IST8308.h"
 #include "AP_Compass_IST8310.h"
 #include "AP_Compass_LSM303D.h"
@@ -55,7 +56,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef COMPASS_LEARN_DEFAULT
-#define COMPASS_LEARN_DEFAULT Compass::LEARN_NONE
+#define COMPASS_LEARN_DEFAULT Compass::LearnType::NONE
 #endif
 
 #ifndef AP_COMPASS_OFFSETS_MAX_DEFAULT
@@ -116,9 +117,9 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: LEARN
     // @DisplayName: Learn compass offsets automatically
     // @Description: Enable or disable the automatic learning of compass offsets. You can enable learning either using a compass-only method that is suitable only for fixed wing aircraft or using the offsets learnt by the active EKF state estimator. If this option is enabled then the learnt offsets are saved when you disarm the vehicle. If InFlight learning is enabled then the compass with automatically start learning once a flight starts (must be armed). While InFlight learning is running you cannot use position control modes.
-    // @Values: 0:Disabled,1:Internal-Learning,2:EKF-Learning,3:InFlight-Learning
+    // @Values: 0:Disabled,2:EKF-Learning,3:InFlight-Learning
     // @User: Advanced
-    AP_GROUPINFO("LEARN",  3, Compass, _learn, COMPASS_LEARN_DEFAULT),
+    AP_GROUPINFO("LEARN",  3, Compass, _learn, float(COMPASS_LEARN_DEFAULT)),
 #endif
 
 #ifndef HAL_BUILD_AP_PERIPH
@@ -529,7 +530,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: DISBLMSK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
-    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350
+    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,22:IIS2MDC
     // @User: Advanced
     AP_GROUPINFO("DISBLMSK", 33, Compass, _driver_type_mask, 0),
 
@@ -1171,6 +1172,26 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
 #endif  // AP_COMPASS_QMC5883P_ENABLED
 
+#if AP_COMPASS_IIS2MDC_ENABLED
+    //external i2c bus
+    FOREACH_I2C_EXTERNAL(i) {
+        ADD_BACKEND(DRIVER_IIS2MDC, AP_Compass_IIS2MDC::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IIS2MDC_I2C_ADDR),
+                    true, HAL_COMPASS_IIS2MDC_ORIENTATION_EXTERNAL));
+    }
+
+    // internal i2c bus
+#if !defined(HAL_SKIP_AUTO_INTERNAL_I2C_PROBE)
+    if (all_external) {
+        // only probe IIS2MDC on internal if we are treating internals as externals
+        FOREACH_I2C_INTERNAL(i) {
+            ADD_BACKEND(DRIVER_IIS2MDC, AP_Compass_IIS2MDC::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IIS2MDC_I2C_ADDR),
+                        all_external,
+                        all_external?HAL_COMPASS_IIS2MDC_ORIENTATION_EXTERNAL:HAL_COMPASS_IIS2MDC_ORIENTATION_INTERNAL));
+        }
+    }
+#endif
+#endif  // AP_COMPASS_QMC5883P_ENABLED
+
 #ifndef HAL_BUILD_AP_PERIPH
     // AK09916 on ICM20948
 #if AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
@@ -1772,11 +1793,11 @@ Compass::read(void)
         any_healthy |= _state[i].healthy;
     }
 #if COMPASS_LEARN_ENABLED
-    if (_learn == LEARN_INFLIGHT && !learn_allocated) {
+    if (_learn == LearnType::INFLIGHT && !learn_allocated) {
         learn_allocated = true;
         learn = NEW_NOTHROW CompassLearn(*this);
     }
-    if (_learn == LEARN_INFLIGHT && learn != nullptr) {
+    if (_learn == LearnType::INFLIGHT && learn != nullptr) {
         learn->update();
     }
 #endif
@@ -1964,7 +1985,7 @@ Compass::use_for_yaw(uint8_t i) const
     // when we are doing in-flight compass learning the state
     // estimator must not use the compass. The learning code turns off
     // inflight learning when it has converged
-    return _use_for_yaw[Priority(i)] && _learn.get() != LEARN_INFLIGHT;
+    return _use_for_yaw[Priority(i)] && _learn != LearnType::INFLIGHT;
 }
 
 /*

@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY
+#if AP_PERIPH_BATTERY_ENABLED
 
 /*
   battery support
@@ -124,5 +124,4 @@ void AP_Periph_FW::can_battery_send_cells(uint8_t instance)
     delete [] buffer;
 }
 
-#endif // HAL_PERIPH_ENABLE_BATTERY
-
+#endif // AP_PERIPH_BATTERY_ENABLED

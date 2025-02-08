@@ -7,7 +7,7 @@
 #include <AP_Logger/AP_Logger_config.h>
 
 #ifndef HAL_UART_STATS_ENABLED
-#define HAL_UART_STATS_ENABLED !defined(HAL_NO_UARTDRIVER)
+#define HAL_UART_STATS_ENABLED AP_HAL_UARTDRIVER_ENABLED
 #endif
 
 #ifndef AP_UART_MONITOR_ENABLED

@@ -362,6 +362,9 @@ public:
         k_param_takeoff_throttle_idle,
 
         k_param_pullup = 270,
+        k_param_quicktune,
+        k_param_mode_autoland, 
+
     };
 
     AP_Int16 format_version;

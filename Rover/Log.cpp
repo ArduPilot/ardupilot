@@ -79,10 +79,6 @@ void Rover::Log_Write_Depth()
                             (double)(s->distance()),
                             temp_C);
     }
-#if AP_RANGEFINDER_ENABLED
-    // send water depth and temp to ground station
-    gcs().send_message(MSG_WATER_DEPTH);
-#endif
 }
 #endif
 

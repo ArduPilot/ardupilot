@@ -67,8 +67,8 @@
 // Local modules
 #include "defines.h"
 #include "config.h"
-#include "GCS_Mavlink.h"
-#include "RC_Channel.h"         // RC Channel Library
+#include "GCS_MAVLink_Sub.h"
+#include "RC_Channel_Sub.h"         // RC Channel Library
 #include "Parameters.h"
 #include "AP_Arming_Sub.h"
 #include "GCS_Sub.h"
@@ -145,15 +145,15 @@ private:
     AP_LeakDetector leak_detector;
 
     struct {
-        bool enabled:1;
-        bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
-        int16_t alt_cm;     // tilt compensated altitude (in cm) from rangefinder
-        int16_t min_cm;     // min rangefinder distance (in cm)
-        int16_t max_cm;     // max rangefinder distance (in cm)
+        bool enabled;
+        bool alt_healthy; // true if we can trust the altitude from the rangefinder
+        float alt;     // tilt compensated altitude from rangefinder
+        float min;     // min rangefinder distance
+        float max;     // max rangefinder distance
         uint32_t last_healthy_ms;
         float inertial_alt_cm;                  // inertial alt at time of last rangefinder sample
         float rangefinder_terrain_offset_cm;    // terrain height above EKF origin
-        LowPassFilterFloat alt_cm_filt;         // altitude filter
+        LowPassFilterFloat alt_filt;         // altitude filter
     } rangefinder_state = { false, false, 0, 0, 0, 0, 0, 0 };
 
 #if AP_RPM_ENABLED
@@ -262,9 +262,6 @@ private:
 
     // Stores initial bearing when armed
     int32_t initial_armed_bearing;
-
-    // Throttle variables
-    int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
 
     // Loiter control
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
@@ -394,6 +391,7 @@ private:
     void update_batt_compass(void);
     void ten_hz_logging_loop();
     void twentyfive_hz_logging();
+    void loop_rate_logging();
     void three_hz_loop();
     void one_hz_loop();
     void update_turn_counter();
@@ -406,6 +404,7 @@ private:
     float get_roi_yaw();
     float get_look_ahead_yaw();
     float get_pilot_desired_climb_rate(float throttle_control);
+    float get_pilot_desired_horizontal_rate(RC_Channel *channel) const;
     void rotate_body_frame_to_NE(float &x, float &y);
 #if HAL_LOGGING_ENABLED
     // methods for AP_Vehicle:

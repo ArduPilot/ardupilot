@@ -18,7 +18,7 @@
 
 #define HAL_FORWARD_OTG2_SERIAL_LOCK_KEY 0x23565283UL
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(HAL_NO_UARTDRIVER)
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_HAL_UARTDRIVER_ENABLED
 
 #include <hal.h>
 #include "UARTDriver.h"
@@ -191,7 +191,7 @@ void UARTDriver::thread_rx_init(void)
                                               uart_rx_thread,
                                               nullptr);
         if (uart_rx_thread_ctx == nullptr) {
-            AP_HAL::panic("Could not create UART RX thread\n");
+            AP_HAL::panic("Could not create UART RX thread");
         }
     }
 }
@@ -209,7 +209,7 @@ void UARTDriver::thread_init(void)
                                               uart_thread_trampoline,
                                               this);
         if (uart_thread_ctx == nullptr) {
-            AP_HAL::panic("Could not create UART TX thread\n");
+            AP_HAL::panic("Could not create UART TX thread");
         }
     }
 }

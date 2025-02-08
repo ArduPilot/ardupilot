@@ -77,7 +77,7 @@ for FrSky SPort Passthrough
 #define WIND_ANGLE_LIMIT            0x7F
 #define WIND_SPEED_OFFSET           7
 #define WIND_APPARENT_ANGLE_OFFSET  15
-#define WIND_APPARENT_SPEED_OFFSET  23
+#define WIND_APPARENT_SPEED_OFFSET  22
 // for waypoint data
 #define WP_NUMBER_LIMIT             2047
 #define WP_DISTANCE_LIMIT           1023000
@@ -235,7 +235,6 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
         break;
     case TERRAIN:
         {
-            packet_ready = false;
 #if AP_TERRAIN_AVAILABLE
             const AP_Terrain *terrain = AP::terrain();
             packet_ready = terrain && terrain->enabled();
@@ -696,7 +695,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
     attiandrng |= ((uint16_t)roundf((pitch * RAD_TO_DEG * 100 + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
     // rangefinder measurement in cm
 #if AP_RANGEFINDER_ENABLED
-    attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
+    attiandrng |= prep_number(_rng ? _rng->distance_orient(ROTATION_PITCH_270)*100 : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
 #else
     attiandrng |= prep_number(0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
 #endif
@@ -781,7 +780,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_wind(void)
         // true wind speed in dm/s
         value |= prep_number(roundf(windvane->get_true_wind_speed() * 10), 2, 1) << WIND_SPEED_OFFSET;
         // apparent wind angle in 3 degree increments -180,180 (signed)
-        value |= prep_number(roundf(degrees(windvane->get_apparent_wind_direction_rad()) * (1.0f/3.0f)), 2, 0);
+        value |= prep_number(roundf(degrees(windvane->get_apparent_wind_direction_rad()) * (1.0f/3.0f)), 2, 0) << WIND_APPARENT_ANGLE_OFFSET;
         // apparent wind speed in dm/s
         value |= prep_number(roundf(windvane->get_apparent_wind_speed() * 10), 2, 1) << WIND_APPARENT_SPEED_OFFSET;
     }

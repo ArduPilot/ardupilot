@@ -61,6 +61,7 @@ class ValidateBoardList(object):
             52, # TARGET_HW_PX4_FMU_V6 and Reserved "PX4 [BL] FMU v6.x"
             53, # TARGET_HW_PX4_FMU_V6X and Reserved "PX4 [BL] FMU v6X.x"
             57, # TARGET_HW_ARK_FMU_V6X and Reserved "ARK [BL] FMU v6X.x"
+            59, # TARGET_HW_ARK_FPV and Reserved "ARK [BL] FPV"
             80, # TARGET_HW_ARK_CAN_FLOW and Reserved "ARK CAN FLOW"
             20, # TARGET_HW_UVIFY_CORE and AP_HW_F4BY
         ])

@@ -18,9 +18,6 @@ define HAL_STORAGE_SIZE 800
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
-# enable watchdog
-define HAL_WATCHDOG_ENABLED_DEFAULT true
-
 # crystal frequency
 OSCILLATOR_HZ 8000000
 
@@ -53,7 +50,7 @@ PB7 I2C1_SDA I2C1
 # an I2C baro (DPS310)
 BARO DPS280 I2C:0:0x77
 
-define HAL_PERIPH_ENABLE_BARO
+define AP_PERIPH_BARO_ENABLED 1
 
 PA0 VSENSE50  ADC1 SCALE(3)
 PA1 VSENSE3v3 ADC1 SCALE(2)

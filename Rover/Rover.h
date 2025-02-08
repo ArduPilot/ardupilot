@@ -58,19 +58,19 @@
 #endif
 
 // Local modules
-#include "AP_Arming.h"
+#include "AP_Arming_Rover.h"
 #include "sailboat.h"
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
 #include "afs_rover.h"
 #endif
 #include "Parameters.h"
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Rover.h"
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
 #if AC_PRECLAND_ENABLED
 #include <AC_PrecLand/AC_PrecLand.h>
 #endif
-#include "RC_Channel.h"                  // RC Channel Library
+#include "RC_Channel_Rover.h"                  // RC Channel Library
 
 #include "mode.h"
 
@@ -372,7 +372,6 @@ private:
 
     // sensors.cpp
     void update_compass(void);
-    void compass_save(void);
     void update_wheel_encoder();
 #if AP_RANGEFINDER_ENABLED
     void read_rangefinders(void);

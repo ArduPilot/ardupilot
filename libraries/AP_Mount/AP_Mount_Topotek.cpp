@@ -845,7 +845,7 @@ void AP_Mount_Topotek::send_rate_target(const MountTarget& rate_rads)
 
     // convert and constrain rates
     const uint8_t roll_angle_speed = constrain_int16(degrees(rate_rads.roll) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
-    const uint8_t pitch_angle_speed = constrain_int16(degrees(rate_rads.pitch) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
+    const uint8_t pitch_angle_speed = constrain_int16(-degrees(rate_rads.pitch) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
     const uint8_t yaw_angle_speed = constrain_int16(degrees(rate_rads.yaw) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
 
     // send stop rotation command three times if target roll, pitch and yaw are zero

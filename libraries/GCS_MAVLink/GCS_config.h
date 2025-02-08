@@ -13,14 +13,6 @@
 #define HAL_MAVLINK_BINDINGS_ENABLED HAL_GCS_ENABLED
 #endif
 
-// CODE_REMOVAL
-// BATTERY2 is slated to be removed:
-// ArduPilot 4.6 stops compiling support in
-// ArduPilot 4.7 removes the code entirely
-#ifndef AP_MAVLINK_BATTERY2_ENABLED
-#define AP_MAVLINK_BATTERY2_ENABLED 0
-#endif
-
 #ifndef HAL_HIGH_LATENCY2_ENABLED
 #define HAL_HIGH_LATENCY2_ENABLED 1
 #endif
@@ -51,7 +43,7 @@
 #endif
 
 #ifndef HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
-#define HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED ((AP_FILESYSTEM_FATFS_ENABLED || AP_FILESYSTEM_POSIX_ENABLED) && BOARD_FLASH_SIZE > 1024)
+#define HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED ((AP_FILESYSTEM_FATFS_ENABLED || AP_FILESYSTEM_LITTLEFS_ENABLED || AP_FILESYSTEM_POSIX_ENABLED) && BOARD_FLASH_SIZE > 1024)
 #endif
 
 #ifndef AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
@@ -69,18 +61,6 @@
 // ArduPilot 4.8 removes the code entirely
 #ifndef AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED
 #define AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED 0
-#endif
-
-// CODE_REMOVAL
-// ArduPilot 4.5 sends deprecation warnings for MOUNT_CONTROL/MOUNT_CONFIGURE
-// ArduPilot 4.6 stops compiling them in
-// ArduPilot 4.7 removes the code entirely
-#ifndef AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
-#define AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED 0
-#endif
-
-#ifndef AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
-#define AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED 0
 #endif
 
 // this is for both read and write messages:

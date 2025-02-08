@@ -268,6 +268,8 @@ class TestBuildOptions(object):
             'AP_OPTICALFLOW_ONBOARD_ENABLED',  # only instantiated on Linux
             'HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL',  # entirely elided if no user
             'AP_PLANE_BLACKBOX_LOGGING',  # entirely elided if no user
+            'AP_COMPASS_AK8963_ENABLED',  # probed on a board-by-board basis, not on CubeOrange for example
+            'AP_COMPASS_LSM303D_ENABLED',  # probed on a board-by-board basis, not on CubeOrange for example
         ])
         if target.lower() != "copter":
             feature_define_whitelist.add('MODE_ZIGZAG_ENABLED')
@@ -287,6 +289,8 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_WINCH_PWM_ENABLED')
             feature_define_whitelist.add(r'AP_MOTORS_FRAME_.*_ENABLED')
             feature_define_whitelist.add('AP_COPTER_ADVANCED_FAILSAFE_ENABLED')
+            feature_define_whitelist.add('AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED')
+            feature_define_whitelist.add('AP_COPTER_AHRS_AUTO_TRIM_ENABLED')
 
         if target.lower() != "plane":
             # only on Plane:
@@ -302,6 +306,9 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED')
             feature_define_whitelist.add('HAL_QUADPLANE_ENABLED')
             feature_define_whitelist.add('AP_BATTERY_WATT_MAX_ENABLED')
+            feature_define_whitelist.add('MODE_AUTOLAND_ENABLED')
+            feature_define_whitelist.add('AP_PLANE_GLIDER_PULLUP_ENABLED')
+            feature_define_whitelist.add('AP_QUICKTUNE_ENABLED')
 
         if target.lower() not in ["plane", "copter"]:
             feature_define_whitelist.add('HAL_ADSB_ENABLED')

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include "AC_PrecLand_config.h"
 
 #define LOG_IDS_FROM_PRECLAND \
     LOG_PRECLAND_MSG
@@ -39,6 +40,10 @@ struct PACKED log_Precland {
     uint8_t estimator;
 };
 
+#if AC_PRECLAND_ENABLED
 #define LOG_STRUCTURE_FROM_PRECLAND                                     \
     { LOG_PRECLAND_MSG, sizeof(log_Precland),                           \
       "PL",    "QBBfffffffIIB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasMS,EKFOutl,Est", "s--mmnnmmms--","F--BBBBBBBC--" , true },
+#else
+#define LOG_STRUCTURE_FROM_PRECLAND
+#endif

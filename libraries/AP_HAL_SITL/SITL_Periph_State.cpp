@@ -123,10 +123,15 @@ void SITL_State::init(int argc, char * const argv[]) {
 void SITL_State::wait_clock(uint64_t wait_time_usec)
 {
     while (AP_HAL::micros64() < wait_time_usec) {
-        struct sitl_input input {};
-        sitl_model->update(input); // delays up to 1 millisecond
-        sim_update();
-        update_voltage_current(input, 0);
+        if (hal.scheduler->in_main_thread() ||
+            Scheduler::from(hal.scheduler)->semaphore_wait_hack_required()) {
+            struct sitl_input input {};
+            sitl_model->update(input); // delays up to 1 millisecond
+            sim_update();
+            update_voltage_current(input, 0);
+        } else {
+            usleep(1000);
+        }
     }
 }
 

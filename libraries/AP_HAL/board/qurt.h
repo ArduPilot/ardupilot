@@ -73,6 +73,12 @@
 
 #define HAL_WITH_ESC_TELEM 1
 
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 1
+#endif
+
+#define HAL_OS_LITTLEFS_IO 0
+
 /*
   battery monitoring setup, comes in via ESCs
  */

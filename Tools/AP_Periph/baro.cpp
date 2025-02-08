@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_BARO
+#if AP_PERIPH_BARO_ENABLED
 
 /*
   barometer support
@@ -60,4 +60,4 @@ void AP_Periph_FW::can_baro_update(void)
     }
 }
 
-#endif // HAL_PERIPH_ENABLE_BARO
+#endif // AP_PERIPH_BARO_ENABLED
