@@ -43,9 +43,6 @@ local FOLT_ENABLE = bind_add_param("ENABLE", 1, 1)
 --]]
 local FOLT_MAV_CHAN = bind_add_param("MAV_CHAN", 2, 0)
 
--- initialize MAVLink rx with number of messages, and buffer depth
-mavlink:init(2, 5)
-
 -- send FOLLOW_TARGET message
 local function send_follow_target_msg()
 
