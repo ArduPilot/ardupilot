@@ -105,10 +105,7 @@ int lua_mavlink_receive_chan(lua_State *L) {
     }
 
     if (rx_buffer->pop(msg)) {
-        luaL_Buffer b;
-        luaL_buffinit(L, &b);
-        luaL_addlstring(&b, (char *)&msg.msg, sizeof(msg.msg));
-        luaL_pushresult(&b);
+        lua_pushlstring(L, (char *)&msg.msg, sizeof(msg.msg));
         lua_pushinteger(L, msg.chan);
         *new_uint32_t(L) = msg.timestamp_ms;
         return 3;
