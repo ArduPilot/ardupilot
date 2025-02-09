@@ -187,6 +187,9 @@
 #ifdef HAL_PERIPH_ENABLE_RTC
 #error "Change 'define HAL_PERIPH_ENABLE_RTC' to 'define AP_PERIPH_RTC_ENABLED 1'"
 #endif
+#ifdef HAL_PERIPH_ENABLE_RCIN
+#error "Change 'define HAL_PERIPH_ENABLE_RCIN' to 'define AP_PERIPH_RCIN_ENABLED 1'"
+#endif
 
 /*
  * defaults for various AP_Periph features:
@@ -218,6 +221,9 @@
 #ifndef AP_PERIPH_RTC_ENABLED
 #define AP_PERIPH_RTC_ENABLED 0
 #endif
+#ifndef AP_PERIPH_RCIN_ENABLED
+#define AP_PERIPH_RCIN_ENABLED 0
+#endif
 
 /*
  * turning on of ArduPilot features based on which AP_Periph features
@@ -232,6 +238,7 @@
 #define AP_INERTIALSENSOR_ENABLED AP_PERIPH_IMU_ENABLED
 #define AP_INERTIALSENSOR_ALLOW_NO_SENSORS AP_PERIPH_IMU_ENABLED
 #define AP_RTC_ENABLED AP_PERIPH_RTC_ENABLED
+#define AP_RCPROTOCOL_ENABLED AP_PERIPH_RCIN_ENABLED
 
 /*
  * GPS Backends - we selectively turn backends on.
@@ -422,7 +429,6 @@
 #endif
 
 #define AP_RPM_ENABLED defined(HAL_PERIPH_ENABLE_RPM)
-#define AP_RCPROTOCOL_ENABLED defined(HAL_PERIPH_ENABLE_RCIN)
 #define AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED 0
 
 #ifndef AP_BOOTLOADER_ALWAYS_ERASE
