@@ -257,7 +257,7 @@ protected:
     bool servo_checks(bool report) const;
     bool rc_checks_copter_sub(bool display_failure, const class RC_Channel *channels[4]) const;
 
-    bool visodom_checks(bool report) const;
+    virtual bool visodom_checks(bool report);
     bool disarm_switch_checks(bool report) const;
 
     // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_CHECK is zero or arming forced
