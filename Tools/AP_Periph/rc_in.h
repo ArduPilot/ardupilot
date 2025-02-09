@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef HAL_PERIPH_ENABLE_RCIN
+#if AP_PERIPH_RCIN_ENABLED
 
 class Parameters_RCIN {
 public:

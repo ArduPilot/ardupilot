@@ -369,7 +369,7 @@ public:
     void rcout_handle_safety_state(uint8_t safety_state);
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RCIN
+#if AP_PERIPH_RCIN_ENABLED
     void rcin_init();
     void rcin_update();
     void can_send_RCInput(uint8_t quality, uint16_t *values, uint8_t nvalues, bool in_failsafe, bool quality_valid);

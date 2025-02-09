@@ -181,7 +181,7 @@ void AP_Periph_FW::init()
     battery_lib.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RCIN
+#if AP_PERIPH_RCIN_ENABLED
     rcin_init();
 #endif
 
@@ -493,7 +493,7 @@ void AP_Periph_FW::update()
     }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RCIN
+#if AP_PERIPH_RCIN_ENABLED
     rcin_update();
 #endif
 
