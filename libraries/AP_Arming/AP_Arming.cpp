@@ -1986,7 +1986,7 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
 
 #if HAL_VISUALODOM_ENABLED
 // check visual odometry is working
-bool AP_Arming::visodom_checks(bool display_failure) const
+bool AP_Arming::visodom_checks(bool display_failure)
 {
     if (!check_enabled(Check::VISION)) {
         return true;

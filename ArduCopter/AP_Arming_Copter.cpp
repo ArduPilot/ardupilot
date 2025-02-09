@@ -406,6 +406,29 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     return true;
 }
 
+#if HAL_VISUALODOM_ENABLED
+// performs pre_arm visodom related checks and returns true if passed
+bool AP_Arming_Copter::visodom_checks(bool display_failure)
+{
+    bool location_required = require_location == RequireLocation::YES;
+#if AP_FENCE_ENABLED
+    // check if fence requires GPS/position
+    location_required |= (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
+#endif
+
+    // check if flight mode requires GPS/position
+    location_required |= copter.flightmode->requires_GPS() || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE);
+
+    // return true if position is not required
+    if (!location_required) {
+        return true;
+    }
+    // call parent visodom checks
+    return AP_Arming::visodom_checks(display_failure);
+
+}
+#endif
+
 // check ekf attitude is acceptable
 bool AP_Arming_Copter::pre_arm_ekf_attitude_check()
 {

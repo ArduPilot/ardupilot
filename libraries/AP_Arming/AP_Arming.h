@@ -9,6 +9,7 @@
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"
 #include "AP_Proximity/AP_Proximity_config.h"
+#include "AP_VisualOdom/AP_VisualOdom_config.h"
 
 class AP_Arming {
 public:
@@ -267,7 +268,9 @@ protected:
     bool servo_checks(bool report) const;
     bool rc_checks_copter_sub(bool display_failure, const class RC_Channel *channels[4]) const;
 
-    bool visodom_checks(bool report) const;
+#if HAL_VISUALODOM_ENABLED
+    virtual bool visodom_checks(bool report);
+#endif
     bool disarm_switch_checks(bool report) const;
 
     // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_CHECK is zero or arming forced

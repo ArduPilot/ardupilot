@@ -40,6 +40,9 @@ protected:
     bool gps_checks(bool display_failure) override;
     bool barometer_checks(bool display_failure) override;
     bool board_voltage_checks(bool display_failure) override;
+#if HAL_VISUALODOM_ENABLED
+    bool visodom_checks(bool display_failure) override;
+#endif
 
     // NOTE! the following check functions *DO NOT* call into AP_Arming!
     bool parameter_checks(bool display_failure);
