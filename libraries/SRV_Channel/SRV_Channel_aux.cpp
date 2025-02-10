@@ -200,6 +200,10 @@ void SRV_Channel::aux_servo_function_setup(void)
         // fixed wing throttle
         set_range(100);
         break;
+    case k_cam_zoom:
+    case k_cam_focus:
+        set_range(1000);
+        break;
     default:
         break;
     }
