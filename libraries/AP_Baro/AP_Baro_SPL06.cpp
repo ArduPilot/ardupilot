@@ -74,33 +74,34 @@ extern const AP_HAL::HAL &hal;
 #define SPL06_PRESSURE_RESULT_BIT_SHIFT        (1<<2)  // necessary for pressure oversampling > 8
 #define SPL06_TEMPERATURE_RESULT_BIT_SHIFT     (1<<3)  // necessary for temperature oversampling > 8
 
-
 // Here comes the main configuration for the sensor
 
 // Take care of measurement time, it may be longer than the MODE_POLLING_RATE, so not all measurements will fit/be done in one cycle
-// Advised cfg register values are: pressure 0x26, temp 0xA0 for high precision and rate in background mode
 
-
-// HIGH Precision mode (5cm, 4 per sec rate, 200uA power)
-#define SPL06_PRESSURE_OVERSAMPLING            64     
-#define SPL06_TEMPERATURE_OVERSAMPLING         4
-#define SPL06_PRESSURE_MEASURE_RATE            4 
-#define SPL06_TEMPERATURE_MEASURE_RATE         1
-
-// // STANDARD Precision mode (10cm, 2 per sec rate, 30uA power)
-// #define SPL06_PRESSURE_OVERSAMPLING            16     
+// // USER Precision mode 
+// #define SPL06_PRESSURE_OVERSAMPLING            32     
+// #define SPL06_PRESSURE_MEASURE_RATE            4 
 // #define SPL06_TEMPERATURE_OVERSAMPLING         1
-// #define SPL06_PRESSURE_MEASURE_RATE            2  
-// #define SPL06_TEMPERATURE_MEASURE_RATE         1
+// #define SPL06_TEMPERATURE_MEASURE_RATE         4
+
+// // HIGH Precision mode (5cm, 4 per sec rate, 200uA power)
+// #define SPL06_PRESSURE_OVERSAMPLING            64     
+// #define SPL06_PRESSURE_MEASURE_RATE            4 
+// #define SPL06_TEMPERATURE_OVERSAMPLING         1
+// #define SPL06_TEMPERATURE_MEASURE_RATE         4
+
+
+// STANDARD Precision mode (10cm, 2 per sec rate, 30uA power)
+#define SPL06_PRESSURE_OVERSAMPLING            16     
+#define SPL06_PRESSURE_MEASURE_RATE            2  
+#define SPL06_TEMPERATURE_OVERSAMPLING         1
+#define SPL06_TEMPERATURE_MEASURE_RATE         2 //(2 or 1 depands on docs used
 
 // // Low Power mode (5 pascals, 1 per sec rate, 6uA power)
 // #define SPL06_PRESSURE_OVERSAMPLING            2     
+// #define SPL06_PRESSURE_MEASURE_RATE            1 
 // #define SPL06_TEMPERATURE_OVERSAMPLING         1
-// #define SPL06_PRESSURE_MEASURE_RATE            4 
 // #define SPL06_TEMPERATURE_MEASURE_RATE         1
-
-
-
 
 #define SPL06_BACKGROUND_MODE_POLLING_RATE	   20 * AP_USEC_PER_MSEC
 #define SPL06_COMMAND_MODE_POLLING_RATE	       20 * AP_USEC_PER_MSEC
