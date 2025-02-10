@@ -15,7 +15,7 @@ MAV_TYPE GCS_Rover::frame_type() const
     return MAV_TYPE_GROUND_ROVER;
 }
 
-MAV_MODE GCS_MAVLINK_Rover::base_mode() const
+uint8_t GCS_MAVLINK_Rover::base_mode() const
 {
     uint8_t _base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
@@ -49,7 +49,7 @@ MAV_MODE GCS_MAVLINK_Rover::base_mode() const
     // indicate we have set a custom mode
     _base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    return (MAV_MODE)_base_mode;
+    return _base_mode;
 }
 
 uint32_t GCS_Rover::custom_mode() const
