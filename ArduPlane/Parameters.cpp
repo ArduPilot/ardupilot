@@ -1279,6 +1279,17 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GUIDED_TIMEOUT", 40, ParametersG2, guided_timeout, 3.0f),
 
+#if AP_RANGEFINDER_ENABLED
+    // @Param: RNGFND_LND_DIST
+    // @DisplayName: Rangefinder landing engagement distance
+    // @Description: The horizontal distance to the landing point at which the rangefinder engages when RNGFND_LANDING is enabled. This is useful for landing on platforms or small plateaus, and to avoid interference from uneven terrain or obstacles on approach. A value of 0 engages the rangefinder as soon as it reports valid readings within its range limits. Very small values are not recommended unless required by the landing scenario, as they can force large slope corrections near the ground, increase auto-abort frequency if LAND_ABORT_DEG is set, and provide no slope-correction benefit if the rangefinder is engaged after flare.
+    // @Range: 0 500
+    // @Units: m
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RNGFND_LND_DIST", 41, ParametersG2, rangefinder_land_engage_dist_m, 0),
+#endif
+
     AP_GROUPEND
 };
 
