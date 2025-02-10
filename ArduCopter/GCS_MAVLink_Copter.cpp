@@ -26,7 +26,7 @@ MAV_TYPE GCS_Copter::frame_type() const
     return mav_type;
 }
 
-MAV_MODE GCS_MAVLINK_Copter::base_mode() const
+uint8_t GCS_MAVLINK_Copter::base_mode() const
 {
     uint8_t _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
     // work out the base_mode. This value is not very useful
@@ -56,7 +56,7 @@ MAV_MODE GCS_MAVLINK_Copter::base_mode() const
     // indicate we have set a custom mode
     _base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    return (MAV_MODE)_base_mode;
+    return _base_mode;
 }
 
 uint32_t GCS_Copter::custom_mode() const
