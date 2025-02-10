@@ -2788,7 +2788,7 @@ void GCS_MAVLINK::handle_set_mode(const mavlink_message_t &msg)
     mavlink_set_mode_t packet;
     mavlink_msg_set_mode_decode(&msg, &packet);
 
-    const MAV_MODE _base_mode = (MAV_MODE)packet.base_mode;
+    const uint8_t _base_mode = (uint8_t)packet.base_mode;
     const uint32_t _custom_mode = packet.custom_mode;
 
     _set_mode_common(_base_mode, _custom_mode);
@@ -2797,11 +2797,11 @@ void GCS_MAVLINK::handle_set_mode(const mavlink_message_t &msg)
 /*
   code common to both SET_MODE mavlink message and command long set_mode msg
 */
-MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE _base_mode, const uint32_t _custom_mode)
+MAV_RESULT GCS_MAVLINK::_set_mode_common(const uint8_t _base_mode, const uint32_t _custom_mode)
 {
     // only accept custom modes because there is no easy mapping from Mavlink flight modes to AC flight modes
 #if AP_VEHICLE_ENABLED
-    if (uint32_t(_base_mode) & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
+    if ((_base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) != 0) {
         if (!AP::vehicle()->set_mode(_custom_mode, ModeReason::GCS_COMMAND)) {
             // often we should be returning DENIED rather than FAILED
             // here.  Perhaps a "has_mode" callback on AP_::vehicle()
@@ -2812,7 +2812,7 @@ MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE _base_mode, const uint32
     }
 #endif
 
-    if (_base_mode == (MAV_MODE)MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
+    if (_base_mode == MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
         // set the safety switch position. Must be in a command by itself
         if (_custom_mode == 0) {
             // turn safety off (pwm outputs flow to the motors)
@@ -4845,7 +4845,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavl
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_int_t &packet)
 {
-    const MAV_MODE _base_mode = (MAV_MODE)packet.param1;
+    const uint8_t _base_mode = (uint8_t)packet.param1;
     const uint32_t _custom_mode = (uint32_t)packet.param2;
 
     return _set_mode_common(_base_mode, _custom_mode);
