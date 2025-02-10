@@ -633,7 +633,7 @@ float Plane::rangefinder_correction(void)
     }
 
     // for now we only support the rangefinder for landing 
-    bool using_rangefinder = (g.rangefinder_landing && flight_stage == AP_FixedWing::FlightStage::LAND);
+    bool using_rangefinder = (g.rangefinder_landing && rangefinder_state.in_use);
     if (!using_rangefinder) {
         return 0;
     }
@@ -729,9 +729,18 @@ void Plane::rangefinder_height_update(void)
                 flightstage_good_for_rangefinder_landing = true;
             }
 #endif
+
+            // Check if the aircraft is within RNGFND_LND_DIST meters from the
+            // landing point to engage it
+            bool is_within_engagement_distance =
+                (g2.rangefinder_land_engagement_distance <= 0) ||
+                (flight_stage == AP_FixedWing::FlightStage::LAND &&
+                 (auto_state.wp_distance <= g2.rangefinder_land_engagement_distance));
+
             if (!rangefinder_state.in_use &&
                 flightstage_good_for_rangefinder_landing &&
-                g.rangefinder_landing) {
+                g.rangefinder_landing &&
+                is_within_engagement_distance) {
                 rangefinder_state.in_use = true;
                 gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
             }
@@ -897,7 +906,7 @@ float Plane::get_landing_height(bool &rangefinder_active)
 #if AP_RANGEFINDER_ENABLED
     // possibly correct with rangefinder
     height -= rangefinder_correction();
-    rangefinder_active = g.rangefinder_landing && rangefinder_state.in_range;
+    rangefinder_active = g.rangefinder_landing && rangefinder_state.in_use;
 #endif
 
     return height;
