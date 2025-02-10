@@ -106,7 +106,7 @@ protected:
     uint8_t _retries;
     uint8_t _address;
     char *pname;
-
+    uint32_t _timeout_ms;
 };
 
 class I2CDeviceManager : public AP_HAL::I2CDeviceManager
