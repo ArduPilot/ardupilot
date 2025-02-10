@@ -34,7 +34,7 @@
 #if HAL_WITH_ESC_TELEM
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #endif
-#ifdef HAL_PERIPH_ENABLE_RTC
+#if AP_PERIPH_RTC_ENABLED
 #include <AP_RTC/AP_RTC.h>
 #endif
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
@@ -429,7 +429,7 @@ public:
     Networking_Periph networking_periph;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RTC
+#if AP_PERIPH_RTC_ENABLED
     AP_RTC rtc;
 #endif
 
