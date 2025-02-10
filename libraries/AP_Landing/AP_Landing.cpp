@@ -370,6 +370,24 @@ bool AP_Landing::is_flaring(void) const
     }
 }
 
+// return true if the landing is at the pre-flare stage or later
+bool AP_Landing::is_on_final(void) const
+{
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_on_final();
+#if HAL_LANDING_DEEPSTALL_ENABLED
+    case TYPE_DEEPSTALL:
+#endif
+    default:
+        return false;
+    }
+}
+
 // return true while the aircraft is performing a landing approach
 // when true the vehicle will:
 //   - disable ground steering
