@@ -36,7 +36,7 @@ private:
 protected:
 
     // Periph information:
-    MAV_MODE base_mode() const override { return (MAV_MODE)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
+    uint8_t base_mode() const override { return MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
     MAV_STATE vehicle_system_status() const override { return MAV_STATE_CALIBRATING; }
 
     void send_nav_controller_output() const override {};
