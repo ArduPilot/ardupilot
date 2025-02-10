@@ -178,6 +178,9 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::FW_AUTOTUNE:
     case AUX_FUNC::VFWD_THR_OVERRIDE:
     case AUX_FUNC::PRECISION_LOITER:
+#if AP_PLANE_SYSTEMID_ENABLED
+    case AUX_FUNC::SYSTEMID:
+#endif
         break;
 
     case AUX_FUNC::SOARING:
@@ -447,6 +450,16 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
     case AUX_FUNC::PRECISION_LOITER:
         // handled by lua scripting, just ignore here
         break;
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    case AUX_FUNC::SYSTEMID:
+        if (ch_flag == AuxSwitchPos::HIGH) {
+            plane.g2.systemid.start();
+        } else if (ch_flag == AuxSwitchPos::LOW) {
+            plane.g2.systemid.stop();
+        }
+        break;
+#endif
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);

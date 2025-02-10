@@ -3,8 +3,14 @@
 #if HAL_LOGGING_ENABLED
 
 // Write an attitude packet
-void Plane::Log_Write_Attitude(void)
+void Plane::Log_Write_Attitude(bool from_sysid)
 {
+#if AP_PLANE_SYSTEMID_ENABLED
+    if (!from_sysid && g2.systemid.is_running()) {
+        // will be logged directly from systemid.cpp
+        return;
+    }
+#endif
     Vector3f targets;       // Package up the targets into a vector for commonality with Copter usage of Log_Wrote_Attitude
     targets.x = nav_roll_cd;
     targets.y = nav_pitch_cd;
