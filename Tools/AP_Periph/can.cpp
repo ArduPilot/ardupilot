@@ -358,7 +358,7 @@ void AP_Periph_FW::handle_param_executeopcode(CanardInstance* canard_instance, C
 #if AP_PERIPH_BARO_ENABLED
         AP_Param::setup_object_defaults(&baro, baro.var_info);
 #endif
-#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+#if AP_PERIPH_AIRSPEED_ENABLED
         AP_Param::setup_object_defaults(&airspeed, airspeed.var_info);
 #endif
 #if AP_PERIPH_RANGEFINDER_ENABLED
@@ -1927,7 +1927,7 @@ void AP_Periph_FW::can_update()
 #if AP_PERIPH_BARO_ENABLED
         can_baro_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+#if AP_PERIPH_AIRSPEED_ENABLED
         can_airspeed_update();
 #endif
 #if AP_PERIPH_RANGEFINDER_ENABLED

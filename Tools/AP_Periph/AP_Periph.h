@@ -294,7 +294,7 @@ public:
     } adsb;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+#if AP_PERIPH_AIRSPEED_ENABLED
     AP_Airspeed airspeed;
 #endif
 
@@ -460,7 +460,7 @@ public:
 #if AP_PERIPH_BARO_ENABLED
     uint32_t last_baro_update_ms;
 #endif
-#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+#if AP_PERIPH_AIRSPEED_ENABLED
     uint32_t last_airspeed_update_ms;
 #endif
 #if AP_PERIPH_GPS_ENABLED
