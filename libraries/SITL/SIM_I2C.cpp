@@ -21,11 +21,12 @@
 #include <GCS_MAVLink/GCS.h>
 #include <SITL/SITL.h>
 
+#include "SIM_I2C.h"
+
 #include "SIM_Airspeed_DLVR.h"
 #include "SIM_BattMonitor_SMBus_Generic.h"
 #include "SIM_BattMonitor_SMBus_Maxell.h"
 #include "SIM_BattMonitor_SMBus_Rotoye.h"
-#include "SIM_I2C.h"
 #include "SIM_ICM40609.h"
 #include "SIM_INA3221.h"
 #include "SIM_IS31FL3195.h"
@@ -36,6 +37,7 @@
 #include "SIM_MS5611.h"
 #include "SIM_QMC5883L.h"
 #include "SIM_Temperature_MCP9600.h"
+#include "SIM_Temperature_SHT3x.h"
 #include "SIM_Temperature_TSYS01.h"
 #include "SIM_Temperature_TSYS03.h"
 #include "SIM_TeraRangerI2C.h"
@@ -75,6 +77,9 @@ static SIM_BattMonitor_SMBus_Generic smbus_generic;
 #if AP_SIM_AIRSPEED_DLVR_ENABLED
 static Airspeed_DLVR airspeed_dlvr;
 #endif
+#if AP_SIM_TEMPERATURE_SHT3X_ENABLED
+static SHT3x sht3x;
+#endif  // AP_SIM_TEMPERATURE_SHT3X_ENABLED
 #if AP_SIM_TEMPERATURE_TSYS01_ENABLED
 static TSYS01 tsys01;
 #endif
@@ -132,6 +137,9 @@ struct i2c_device_at_address {
 #endif
 #if AP_SIM_ICM40609_ENABLED
     { 1, 0x01, icm40609 },
+#endif
+#if AP_SIM_TEMPERATURE_SHT3X_ENABLED
+    { 1, 0x44, sht3x },
 #endif
 #if AP_SIM_TOSHIBALED_ENABLED
     { 1, 0x55, toshibaled },
