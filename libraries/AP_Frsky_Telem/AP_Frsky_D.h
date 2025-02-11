@@ -4,6 +4,10 @@
 
 #if AP_FRSKY_D_TELEM_ENABLED
 
+#define FAST_FRAME_INTERVAL     300
+#define MID_FRAME_INTERVAL      1500
+#define SLOW_FRAME_INTERVAL     3000
+
 class AP_Frsky_D : public AP_Frsky_Backend
 {
 
@@ -26,8 +30,9 @@ private:
     void send_uint16(uint16_t id, uint16_t data);
 
     struct {
-        uint32_t last_200ms_frame;
-        uint32_t last_1000ms_frame;
+        uint32_t last_fast_frame;
+        uint32_t last_mid_frame;
+        uint32_t last_slow_frame;
     } _D;
 
 };
