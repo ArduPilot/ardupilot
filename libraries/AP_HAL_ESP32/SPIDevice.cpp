@@ -60,9 +60,6 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDeviceDesc &_device_desc)
     set_device_bus(bus.bus);
     set_device_address(_device_desc.device);
     set_speed(AP_HAL::Device::SPEED_LOW);
-    esp_rom_gpio_pad_select_gpio(device_desc.cs);
-    gpio_set_direction(device_desc.cs, GPIO_MODE_OUTPUT);
-    gpio_set_level(device_desc.cs, 1);
 
     spi_device_interface_config_t cfg_low;
     memset(&cfg_low, 0, sizeof(cfg_low));
@@ -116,7 +113,7 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
 #ifdef SPIDEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
-    if (!send || !recv) {
+    if ((send_len == recv_len && send == recv) || !send || !recv) {
         // simplest cases
         transfer_fullduplex(send, recv, recv_len?recv_len:send_len);
         return true;
@@ -226,6 +223,15 @@ SPIDeviceManager::get_device(const char *name)
         }
         busp->next = buses;
         busp->bus = desc.bus;
+        // deassert all CSes on the bus
+        for (i = 0; i<ARRAY_SIZE(device_desc); i++) {
+            SPIDeviceDesc &curr_desc = device_desc[i];
+            if (desc.bus == curr_desc.bus) {
+                esp_rom_gpio_pad_select_gpio(curr_desc.cs);
+                gpio_set_direction(curr_desc.cs, GPIO_MODE_OUTPUT);
+                gpio_set_level(curr_desc.cs, 1);
+            }
+        }
         buses = busp;
     }
 

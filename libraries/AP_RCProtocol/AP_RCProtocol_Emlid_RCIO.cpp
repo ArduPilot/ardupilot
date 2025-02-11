@@ -1,7 +1,8 @@
-#include <AP_HAL/AP_HAL.h>
+#include "AP_RCProtocol_config.h"
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
+#if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
+
+#include "AP_RCProtocol_Emlid_RCIO.h"
 
 #include <cstdio>
 #include <unistd.h>
@@ -10,61 +11,51 @@
 
 #include <AP_Common/AP_Common.h>
 
-#include "RCInput_Navio2.h"
-
-using namespace Linux;
-
-extern const AP_HAL::HAL& hal;
-
 #define RCIN_SYSFS_PATH "/sys/kernel/rcio/rcin"
 
-void RCInput_Navio2::init()
+void AP_RCProtocol_Emlid_RCIO::init()
 {
     for (size_t i = 0; i < ARRAY_SIZE(channels); i++) {
         channels[i] = open_channel(i);
         if (channels[i] < 0) {
-            AP_HAL::panic("[RCInput_Navio2]: failed to open channels");
+            AP_HAL::panic("AP_RCProtocol_Emlid_RCIO: failed to open channels");
         }
     }
 }
 
-void RCInput_Navio2::_timer_tick(void)
+void AP_RCProtocol_Emlid_RCIO::update(void)
 {
     if (AP_HAL::micros() - _last_timestamp < 10000) {
         return;
     }
 
-    char buffer[12];
+    if (!init_done) {
+        init();
+        init_done = true;
+    }
 
+    uint16_t periods[CHANNEL_COUNT]{};
+
+    char buffer[12];
     for (size_t i = 0; i < ARRAY_SIZE(channels); i++) {
         if (::pread(channels[i], buffer, sizeof(buffer) - 1, 0) <= 0) {
             /* We ignore error in order not to spam the console */
             continue;
         }
-
         buffer[sizeof(buffer) - 1]  = '\0';
         periods[i] = atoi(buffer);
     }
 
-    _update_periods(periods, ARRAY_SIZE(periods));
+    add_input(ARRAY_SIZE(periods), periods, false);
 
     _last_timestamp = AP_HAL::micros();
 }
 
-RCInput_Navio2::RCInput_Navio2()
-{
-
-}
-
-RCInput_Navio2::~RCInput_Navio2()
-{
-}
-
-int RCInput_Navio2::open_channel(int channel)
+int AP_RCProtocol_Emlid_RCIO::open_channel(int channel)
 {
     char *channel_path;
     if (asprintf(&channel_path, "%s/ch%d", RCIN_SYSFS_PATH, channel) == -1) {
-        AP_HAL::panic("[RCInput_Navio2]: not enough memory");
+        AP_HAL::panic("AP_RCProtocol_Emlid_RCIO: not enough memory");
     }
 
     int fd = ::open(channel_path, O_RDONLY|O_CLOEXEC);
@@ -74,5 +65,4 @@ int RCInput_Navio2::open_channel(int channel)
     return fd;
 }
 
-
-#endif
+#endif  // AP_RCPROTOCOL_EMLID_RCIO_ENABLED

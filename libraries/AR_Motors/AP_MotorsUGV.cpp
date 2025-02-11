@@ -132,6 +132,11 @@ void AP_MotorsUGV::init(uint8_t frtype)
 {
     _frame_type = frame_type(frtype);
 
+    // setup for omni vehicles
+    if (_frame_type != FRAME_TYPE_UNDEFINED) {
+        setup_omni();
+    }
+    
     // setup servo output
     setup_servo_output();
 
@@ -141,10 +146,6 @@ void AP_MotorsUGV::init(uint8_t frtype)
     // set safety output
     setup_safety_output();
 
-    // setup for omni vehicles
-    if (_frame_type != FRAME_TYPE_UNDEFINED) {
-        setup_omni();
-    }
 }
 
 bool AP_MotorsUGV::get_legacy_relay_index(int8_t &index1, int8_t &index2, int8_t &index3, int8_t &index4) const

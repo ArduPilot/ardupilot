@@ -9869,6 +9869,47 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.reboot_sitl()
 
+    def RTL_ALT_FINAL(self):
+        '''Test RTL with RTL_ALT_FINAL'''
+        self.progress("arm the vehicle and takeoff in Guided")
+        self.takeoff(20, mode='GUIDED')
+
+        # Set home current location, this gives a large home vs orgin difference
+        self.set_home(self.mav.location())
+
+        self.progress("fly 50m North (or whatever)")
+        self.fly_guided_move_local(50, 0, 50)
+        target_alt = 10
+        self.set_parameter('RTL_ALT_FINAL', target_alt * 100)
+
+        self.progress("Waiting RTL to reach Home and hold")
+        self.change_mode('RTL')
+
+        # Expecting to return and hold 10m above home
+        tstart = self.get_sim_time()
+        reachedHome = False
+        while self.get_sim_time_cached() < tstart + 250:
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            alt = m.relative_alt / 1000.0 # mm -> m
+            home_distance = self.distance_to_home(use_cached_home=True)
+            home = math.sqrt((alt-target_alt)**2 + home_distance**2) < 2
+            if home and not reachedHome:
+                reachedHome = True
+                self.progress("Reached home - holding")
+                self.delay_sim_time(20)
+                continue
+
+            if reachedHome:
+                if not home:
+                    raise NotAchievedException("Should still be at home")
+                if not self.armed():
+                    raise NotAchievedException("Should still be armed")
+                break
+
+        self.progress("Hold at home successful - landing")
+        self.change_mode("LAND")
+        self.wait_landed_and_disarmed()
+
     def SMART_RTL(self):
         '''Check SMART_RTL'''
         self.progress("arm the vehicle and takeoff in Guided")
@@ -11802,6 +11843,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def Ch6TuningLoitMaxXYSpeed(self):
+        '''test loiter can be changed via Ch6 tuning knob'''
+        self.set_parameters({
+            "RC6_OPTION": 219,  # RC6 used for tuning
+            "TUNE": 60,  # 60 is x/y loiter speed
+            "TUNE_MIN": 0.02,  # 20cm/s
+            "TUNE_MAX": 1000,  # 10m/s
+            "AUTO_OPTIONS": 3,
+        })
+        self.set_rc(6, 2000)
+
+        self.takeoff(mode='LOITER')
+
+        self.set_rc(2, 1000)
+
+        self.wait_groundspeed(9.5, 10.5, minimum_duration=5)
+
+        self.set_rc(6, 1500)
+        self.wait_groundspeed(4.5, 5.5, minimum_duration=5)
+
+        self.set_rc(6, 2000)
+        self.wait_groundspeed(9.5, 10.5, minimum_duration=5)
+
+        self.set_rc(6, 1300)
+        self.wait_groundspeed(2.5, 3.5, minimum_duration=5)
+
+        self.set_rc(2, 1500)
+
+        self.do_RTL()
+
     def PILOT_THR_BHV(self):
         '''test the PILOT_THR_BHV parameter'''
         self.start_subtest("Test default behaviour, no disarm on land")
@@ -12684,6 +12755,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GSF,
             self.GSF_reset,
             self.AP_Avoidance,
+            self.RTL_ALT_FINAL,
             self.SMART_RTL,
             self.SMART_RTL_EnterLeave,
             self.SMART_RTL_Repeat,
@@ -12771,6 +12843,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ScriptingFlipMode,
             self.CompassLearnCopyFromEKF,
             self.AHRSAutoTrim,
+            self.Ch6TuningLoitMaxXYSpeed,
         ])
         return ret
 
