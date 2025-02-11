@@ -196,6 +196,9 @@
 #ifdef HAL_PERIPH_ENABLE_RPM_STREAM
 #error "Change 'define HAL_PERIPH_ENABLE_RPM_STREAM' to 'define AP_PERIPH_RPM_STREAM_ENABLED 1'"
 #endif
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+#error "Change 'define HAL_PERIPH_ENABLE_AIRSPEED' to 'define AP_PERIPH_AIRSPEED_ENABLED 1'"
+#endif
 
 /*
  * defaults for various AP_Periph features:
@@ -235,6 +238,9 @@
 #endif
 #ifndef AP_PERIPH_RPM_STREAM_ENABLED
 #define AP_PERIPH_RPM_STREAM_ENABLED AP_PERIPH_RPM_ENABLED
+#endif
+#ifndef AP_PERIPH_AIRSPEED_ENABLED
+#define AP_PERIPH_AIRSPEED_ENABLED 0
 #endif
 
 /*
