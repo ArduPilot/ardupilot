@@ -2181,13 +2181,17 @@ void GCS_MAVLINK::send_highres_imu()
     static const uint16_t HIGHRES_IMU_UPDATED_XGYRO = 0x08;
     static const uint16_t HIGHRES_IMU_UPDATED_YGYRO = 0x10;
     static const uint16_t HIGHRES_IMU_UPDATED_ZGYRO = 0x20;
+#if AP_COMPASS_ENABLED
     static const uint16_t HIGHRES_IMU_UPDATED_XMAG = 0x40;
     static const uint16_t HIGHRES_IMU_UPDATED_YMAG = 0x80;
     static const uint16_t HIGHRES_IMU_UPDATED_ZMAG = 0x100;
+#endif  // AP_COMPASS_ENABLED
+#if AP_BARO_ENABLED
     static const uint16_t HIGHRES_IMU_UPDATED_ABS_PRESSURE = 0x200;
     static const uint16_t HIGHRES_IMU_UPDATED_DIFF_PRESSURE = 0x400;
     static const uint16_t HIGHRES_IMU_UPDATED_PRESSURE_ALT = 0x800;
     static const uint16_t HIGHRES_IMU_UPDATED_TEMPERATURE = 0x1000;
+#endif  // AP_BARO_ENABLED
 
     const AP_InertialSensor &ins = AP::ins();
     const Vector3f& accel = ins.get_accel();
