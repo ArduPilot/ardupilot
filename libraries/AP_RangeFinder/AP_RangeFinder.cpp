@@ -62,6 +62,7 @@
 #include "AP_RangeFinder_JRE_Serial.h"
 #include "AP_RangeFinder_Ainstein_LR_D1.h"
 #include "AP_RangeFinder_RDS02UF.h"
+#include "AP_RangeFinder_URM09.h" 
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -606,6 +607,22 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case Type::RDS02UF:
         serial_create_fn = AP_RangeFinder_RDS02UF::create;
         break;
+#endif
+#if AP_RANGEFINDER_URM09_ENABLED
+    case Type::URM_I2C: {
+        uint8_t addr = AP_RANGE_FINDER_URM09_DEFAULT_ADDR;
+        if (params[instance].address != 0) {
+            addr = params[instance].address;
+        }
+        FOREACH_I2C(i) {
+            if (_add_backend(AP_RangeFinder_URM09::detect(state[instance], params[instance],
+                                                                  hal.i2c_mgr->get_device(i, addr)),
+                             instance)) {
+                break;
+            }
+        }
+        break;
+    }
 #endif
     case Type::NONE:
         break;
