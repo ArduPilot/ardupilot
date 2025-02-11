@@ -5,7 +5,7 @@ define STM32_ADC_USE_ADC1 FALSE
 define HAL_DISABLE_ADC_DRIVER TRUE
 
 # ------------------ I2C airspeed -------------------------
-define HAL_PERIPH_ENABLE_AIRSPEED
+define AP_PERIPH_AIRSPEED_ENABLED 1
 
 # 10" DLVR sensor by default
 define HAL_AIRSPEED_TYPE_DEFAULT 9  
