@@ -50,7 +50,7 @@ extern const AP_HAL::HAL &hal;
 #define SPA06_REG_CALIB_COEFFS_END             0x24
 
 #define SPL06_OVERSAMPLING_TO_REG_VALUE(n)     (ffs(n)-1)
-#define SPL06_MESSURE_RATE_TO_REG_VALUE(n)     (ffs(n)-1)
+#define SPL06_MEASURE_RATE_TO_REG_VALUE(n)     (ffs(n)-1)
 
 // TEMPERATURE_CFG_REG
 #define SPL06_TEMP_USE_EXT_SENSOR              (1<<7)
@@ -175,8 +175,8 @@ bool AP_Baro_SPL06::_init()
 
 #if AP_BARO_SPL06_BACKGROUND_ENABLE
     //set rate and oversampling
-	_dev->write_register(SPL06_REG_TEMPERATURE_CFG, SPL06_MESSURE_RATE_TO_REG_VALUE(SPL06_TEMPERATURE_MEASURE_RATE) |  SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING) | SPL06_TEMP_USE_EXT_SENSOR , true);    
-	_dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_MESSURE_RATE_TO_REG_VALUE(SPL06_PRESSURE_MEASURE_RATE) | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
+	_dev->write_register(SPL06_REG_TEMPERATURE_CFG, SPL06_MEASURE_RATE_TO_REG_VALUE(SPL06_TEMPERATURE_MEASURE_RATE) |  SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING) | SPL06_TEMP_USE_EXT_SENSOR , true);    
+	_dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_MEASURE_RATE_TO_REG_VALUE(SPL06_PRESSURE_MEASURE_RATE) | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
 
 	//  Manufacturer advised cfg register values for high precision and rate in background mode
     // _dev->write_register(SPL06_REG_TEMPERATURE_CFG, 0xA0, true);    
@@ -203,7 +203,7 @@ bool AP_Baro_SPL06::_init()
     _dev->set_device_type(DEVTYPE_BARO_SPL06);
     set_bus_id(_instance, _dev->get_bus_id());
     
-    // Request start temp messurement
+    // Request start temp measurement
     _timer_counter = -1;
 #if AP_BARO_SPL06_BACKGROUND_ENABLE
     _dev->register_periodic_callback(SPL06_BACKGROUND_MODE_POLLING_RATE, FUNCTOR_BIND_MEMBER(&AP_Baro_SPL06::_timer, void));
