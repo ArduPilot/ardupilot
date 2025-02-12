@@ -173,7 +173,10 @@ def _git_head_hash(ctx, path, short=False):
         git_version_file_path = os.path.join(ctx.top_dir, "GIT_VERSION_"+git_repo_name)
         if os.path.exists(git_version_file_path):
             with open(git_version_file_path, "r") as ff:
-                return ff.read()
+                git_version = ff.read()
+                if len(git_version) != 8:
+                    raise e
+                return git_version
         else:
             raise e
 
