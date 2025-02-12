@@ -157,6 +157,10 @@ def git_submodule_post_fun(bld):
     bld.add_post_fun(_post_fun)
 
 def _git_head_hash(ctx, path, short=False):
+    git_version_file_path = os.path.join(path, "GIT_VERSION")
+    if os.path.exists(git_version_file_path):
+        with open(git_version_file_path, "r") as ff:
+            return ff.read()
     cmd = [ctx.env.get_flat('GIT'), 'rev-parse']
     if short:
         cmd.append('--short=8')
