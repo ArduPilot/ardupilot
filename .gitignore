@@ -168,3 +168,5 @@ venv.bak/
 autotest_result_*_junit.xml
 
 *.log
+
+GIT_VERSION_*

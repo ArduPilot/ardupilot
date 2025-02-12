@@ -31,7 +31,7 @@ post_mode should be set to POST_LAZY. Example::
         ...
 """
 
-from waflib import Context, Logs, Task, Utils
+from waflib import Context, Logs, Task, Utils, Errors
 from waflib.Configure import conf
 from waflib.TaskGen import before_method, feature, taskgen_method
 
@@ -161,8 +161,24 @@ def _git_head_hash(ctx, path, short=False):
     if short:
         cmd.append('--short=8')
     cmd.append('HEAD')
-    out = ctx.cmd_and_log(cmd, quiet=Context.BOTH, cwd=path)
-    return out.strip()
+    try:
+        out = ctx.cmd_and_log(cmd, quiet=Context.BOTH, cwd=path)
+        return out.strip()
+    except Errors.WafError as e:
+        # Catch when git rev-parse fails with this particular code when called outside git repo
+        # Re raise anything else
+        if e.returncode != 128:
+            raise e
+        git_repo_name = path.split("/")[-1]
+        git_version_file_path = os.path.join(ctx.top_dir, "GIT_VERSION_"+git_repo_name)
+        if os.path.exists(git_version_file_path):
+            with open(git_version_file_path, "r") as ff:
+                git_version = ff.read()
+                if len(git_version) != 8:
+                    raise e
+                return git_version
+        else:
+            raise e
 
 @conf
 def git_submodule_head_hash(self, name, short=False):
