@@ -20,7 +20,7 @@
 //
 #include "AP_GPS_UBLOX.h"
 
-#define SUPPORT_LX_RTK_DUAL_PATCH       20240314_20250211_unhealth_gps_patch_branch
+// Test CI CD 0212 #define SUPPORT_LX_RTK_DUAL_PATCH       20240314_20250211_unhealth_gps_patch_branch
 
 #if AP_GPS_UBLOX_ENABLED
 
