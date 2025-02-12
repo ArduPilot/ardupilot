@@ -161,16 +161,3 @@ void RCInput::_timer_tick(void)
     // note, we rely on the vehicle code checking new_input()
     // and a timeout for the last valid input to handle failsafe
 }
-
-/*
-  start a bind operation, if supported
- */
-bool RCInput::rc_bind(int dsmMode)
-{
-#if AP_RCPROTOCOL_ENABLED
-    // ask AP_RCProtocol to start a bind
-    AP::RC().start_bind();
-#endif
-
-    return true;
-}
