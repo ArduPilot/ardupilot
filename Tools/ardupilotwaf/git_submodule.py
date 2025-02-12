@@ -157,7 +157,8 @@ def git_submodule_post_fun(bld):
     bld.add_post_fun(_post_fun)
 
 def _git_head_hash(ctx, path, short=False):
-    git_version_file_path = os.path.join(path, "GIT_VERSION")
+    git_repo_name = path.split("/")[-1]
+    git_version_file_path = os.path.join(ctx.top_dir, "GIT_VERSION_"+git_repo_name)
     if os.path.exists(git_version_file_path):
         with open(git_version_file_path, "r") as ff:
             return ff.read()
