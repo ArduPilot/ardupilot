@@ -48,7 +48,7 @@ public:
     } baro_type_t;
 
     // initialise the barometer object, loading backend drivers
-    void init(void);
+    __INITFUNC__ void init(void);
 
     // update the barometer object, asking backends to push data to
     // the frontend
