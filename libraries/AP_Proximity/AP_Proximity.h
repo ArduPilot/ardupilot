@@ -102,7 +102,7 @@ public:
     };
 
     // detect and initialise any available proximity sensors
-    void init();
+    __INITFUNC__ void init();
 
     // update state of all proximity sensors. Should be called at high rate from main loop
     void update();
