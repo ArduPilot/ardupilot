@@ -174,7 +174,7 @@ public:
     uint8_t num_instances(void) const { return _num_instances; }
 
     // detect and initialise any available battery monitors
-    void init();
+    __INITFUNC__ void init();
 
     /// Read the battery voltage and current for all batteries.  Should be called at 10hz
     void read();
