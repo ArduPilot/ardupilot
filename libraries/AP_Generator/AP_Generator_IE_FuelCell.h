@@ -15,7 +15,7 @@ public:
     using AP_Generator_Backend::AP_Generator_Backend;
 
     // Initialize the fuel cell driver
-    void init(void) override;
+    __INITFUNC__ void init(void) override;
 
     // Check if readings are healthy
     bool healthy(void) const override { return _healthy; }
