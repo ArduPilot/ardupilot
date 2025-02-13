@@ -1124,7 +1124,7 @@ private:
 #endif
 
     // system.cpp
-    void init_ardupilot() override;
+    __INITFUNC__ void init_ardupilot() override;
     bool set_mode(Mode& new_mode, const ModeReason reason);
     bool set_mode(const uint8_t mode, const ModeReason reason) override;
     bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason);
