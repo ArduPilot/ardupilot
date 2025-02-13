@@ -59,7 +59,7 @@ AP_Generator::AP_Generator()
     _singleton = this;
 }
 
-void AP_Generator::init()
+__INITFUNC__ void AP_Generator::init()
 {
     // Select backend
     switch (type()) {

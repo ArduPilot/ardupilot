@@ -13,7 +13,7 @@ class AP_Generator_IE_2400 : public AP_Generator_IE_FuelCell
 
 public:
 
-    void init(void) override;
+    __INITFUNC__ void init(void) override;
 
     AP_BattMonitor::Failsafe update_failsafes() const override;
 
