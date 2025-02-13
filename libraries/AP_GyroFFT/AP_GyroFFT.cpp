@@ -200,7 +200,7 @@ AP_GyroFFT::AP_GyroFFT()
 }
 
 // initialize the FFT parameters and engine
-void AP_GyroFFT::init(uint16_t loop_rate_hz)
+__INITFUNC__ void AP_GyroFFT::init(uint16_t loop_rate_hz)
 {
     // if FFT analysis is not enabled we don't want to allocate any of the associated resources
     if (!_enable) {
