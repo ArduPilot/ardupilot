@@ -24,7 +24,7 @@ if not Path("AP_Declination.h").is_file():
 
 def write_table(f,name, table):
     '''write one table'''
-    f.write("const float AP_Declination::%s[%u][%u] = {\n" %
+    f.write("__EXTFLASHFUNC__ const float AP_Declination::%s[%u][%u] = {\n" %
                 (name, NUM_LAT, NUM_LON))
     for i in range(NUM_LAT):
         f.write("    {")
