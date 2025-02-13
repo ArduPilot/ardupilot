@@ -75,7 +75,7 @@ public:
     ///
     /// @param style	The initialisation startup style.
     ///
-    void init(uint16_t sample_rate_hz);
+    __INITFUNC__ void init(uint16_t sample_rate_hz);
 
     // get accel/gyro instance numbers that a backend will get when they register
     bool get_accel_instance(uint8_t &instance) const;
