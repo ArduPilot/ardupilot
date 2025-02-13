@@ -365,7 +365,7 @@ public:
 
 protected:
 
-    virtual void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos);
+    __INITFUNC__ virtual void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos);
 
     // virtual function to be overridden my subclasses
     virtual bool do_aux_function(const AuxFuncTrigger &trigger);
@@ -474,7 +474,7 @@ public:
     // constructor
     RC_Channels(void);
 
-    void init(void);
+    __INITFUNC__ void init(void);
 
     // get singleton instance
     static RC_Channels *get_singleton() {
