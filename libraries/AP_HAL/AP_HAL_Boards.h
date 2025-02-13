@@ -378,6 +378,13 @@
 #define __EXTFLASHFUNC__
 #endif
 
+// Use __INITFUNC__ to mark functions which are only called once, at
+// boot.  On some boards we choose to put such functions into areas of
+// flash memory which are slower than others.
+#ifndef __INITFUNC__
+#define __INITFUNC__ __EXTFLASHFUNC__
+#endif
+
 #ifndef HAL_ENABLE_DFU_BOOT
 #define HAL_ENABLE_DFU_BOOT 0
 #endif
