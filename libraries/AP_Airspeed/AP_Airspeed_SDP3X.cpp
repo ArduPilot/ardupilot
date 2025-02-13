@@ -52,7 +52,7 @@ bool AP_Airspeed_SDP3X::_send_command(uint16_t cmd)
 }
 
 // probe and initialise the sensor
-bool AP_Airspeed_SDP3X::init()
+__INITFUNC__ bool AP_Airspeed_SDP3X::init()
 {
     const uint8_t addresses[3] = { SDP3XD0_I2C_ADDR,
                                    SDP3XD1_I2C_ADDR,
