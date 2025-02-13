@@ -26362,7 +26362,6 @@ return update, 1000
             "FlyMissionTwice": "See https://github.com/ArduPilot/ardupilot/pull/18561",
             "SMART_RTL_EnterLeave": "Causes a panic",
             "SMART_RTL_Repeat": "Currently fails due to issue with loop detection",
-            "RTLStoppingDistanceSpeed": "Currently fails due to vehicle going off-course",
             "ScriptingOSD": "Requires SFML which is not available in CI",
         }
 
