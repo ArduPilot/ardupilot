@@ -325,36 +325,48 @@ void AP_AccelCal::update_status() {
         return;
     }
 
-    for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
-        if (cal->get_status() == ACCEL_CAL_FAILED) {
-            _status = ACCEL_CAL_FAILED;         //fail if even one of the calibration has
-            return;
-        }
-    }
+    // accumulate counts of all calibrator statuses:
+    uint8_t calibrator_count = 0;
+    uint8_t statuses[ACCELCAL_NUM_STATES] {};
 
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
-        if (cal->get_status() == ACCEL_CAL_COLLECTING_SAMPLE) {
-            _status = ACCEL_CAL_COLLECTING_SAMPLE;          // move to Collecting sample state if all the callibrators have
-            return;
-        }
+        statuses[cal->get_status()]++;
+        calibrator_count++;
     }
 
-    for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
-        if (cal->get_status() == ACCEL_CAL_WAITING_FOR_ORIENTATION) {
-            _status = ACCEL_CAL_WAITING_FOR_ORIENTATION;    // move to waiting for user ack for orientation confirmation
-            return;
-        }
+    // adjust our state based on the aggregate calibrator state:
+
+    // fail if even one of the calibration has:
+    if (statuses[ACCEL_CAL_FAILED] != 0) {
+        _status = ACCEL_CAL_FAILED;
+        return;
     }
 
-    for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
-        if (cal->get_status() == ACCEL_CAL_NOT_STARTED) {
-            _status = ACCEL_CAL_NOT_STARTED;    // we haven't started if all the calibrators haven't
-            return;
-        }
+    // move to Collecting sample state if all the callibrators have:
+    if (statuses[ACCEL_CAL_COLLECTING_SAMPLE] == calibrator_count) {
+        _status = ACCEL_CAL_COLLECTING_SAMPLE;
+        return;
     }
 
-    _status = ACCEL_CAL_SUCCESS;    // we have succeeded calibration if all the calibrators have
-    return;
+    // move to waiting-for-orientation state if all the callibrators have:
+    if (statuses[ACCEL_CAL_WAITING_FOR_ORIENTATION] == calibrator_count) {
+        _status = ACCEL_CAL_WAITING_FOR_ORIENTATION;
+        return;
+    }
+
+    // we haven't started if all the calibrators haven't
+    if (statuses[ACCEL_CAL_NOT_STARTED] != 0) {
+        _status = ACCEL_CAL_NOT_STARTED;
+        return;
+    }
+
+    // we have succeeded calibration if all the calibrators have
+    if (statuses[ACCEL_CAL_SUCCESS] == calibrator_count) {
+        _status = ACCEL_CAL_SUCCESS;
+        return;
+    }
+
+    // some sort of mixed status....
 }
 
 bool AP_AccelCal::client_active(uint8_t client_num)
