@@ -307,11 +307,13 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             addr = params[instance].address;
         }
         FOREACH_I2C(i) {
+            auto *device_ptr = hal.i2c_mgr->get_device_ptr(i, addr);
             if (_add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(state[instance], params[instance],
-                                                                  hal.i2c_mgr->get_device(i, addr)),
+                                                                  device_ptr),
                              instance)) {
                 break;
             }
+            delete device_ptr;
         }
         break;
     }
