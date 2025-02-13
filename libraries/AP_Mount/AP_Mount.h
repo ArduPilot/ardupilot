@@ -128,7 +128,7 @@ public:
     };
 
     // init - detect and initialise all mounts
-    void init();
+    __INITFUNC__ void init();
 
     // update - give mount opportunity to update servos.  should be called at 10hz or higher
     void update();
