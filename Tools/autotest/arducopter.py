@@ -12726,6 +12726,55 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.do_land()
         self.set_rc(9, 1000)
 
+    def RTLStoppingDistanceSpeed(self):
+        '''test stopping distance unaffected by RTL speed'''
+        self.upload_simple_relhome_mission([
+            #                                              N  E   U
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,          0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,       200, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0,  0),
+        ])
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+        })
+        self.context_push()
+        self.set_parameters({
+            'RTL_SPEED': 100,  # cm/s
+        })
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_current_waypoint(2)
+
+        self.progress("Waiting for vehicle to get up to speed")
+        wpnav_speed = self.get_parameter('WPNAV_SPEED')
+        self.wait_groundspeed(wpnav_speed/100-0.1, wpnav_speed/100+0.1)
+
+        rtl_start_pos = self.get_local_position_NED()
+
+        # we accelerate so hard we can miss the zero value!
+        self.context_set_message_rate_hz('VFR_HUD', 50)
+
+        # note that there's going to be a significant latency involved
+        # between taking rtl_start_pos and entering RTL, but we're
+        # really interested in deviation to the east/west, and we are
+        # travelling due North, ...
+        self.change_mode('RTL')
+
+        self.progress("Waiting for vehicle to stop")
+        self.wait_groundspeed(-0.3, 0.3)
+        rtl_stopping_point_pos = self.get_local_position_NED()
+
+        self.progress("Checking vehicle deviation from track")
+        y_delta = abs(rtl_start_pos.y - rtl_stopping_point_pos.y)
+        self.progress(f"deviated {y_delta}m from track")
+        if y_delta > 0.2:
+            raise NotAchievedException(f"RTL deviated from track {y_delta}m")
+        self.context_pop()
+        self.change_mode('LOITER')
+        self.do_RTL()
+
     def do_land(self):
         self.change_mode('LAND')
         self.wait_disarmed()
@@ -12779,6 +12828,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
             self.WPNAV_SPEED,
+            self.RTLStoppingDistanceSpeed,
             self.WPNAV_SPEED_UP,
             self.WPNAV_SPEED_DN,
             self.DO_WINCH,
@@ -12927,6 +12977,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "CompassMot": "Cuases an arithmetic exception in the EKF",
             "SMART_RTL_EnterLeave": "Causes a panic",
             "SMART_RTL_Repeat": "Currently fails due to issue with loop detection",
+            "RTLStoppingDistanceSpeed": "Currently fails due to vehicle going off-course",
         }
 
 
