@@ -128,7 +128,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
 
     // @Param: 3DMASK
     // @DisplayName: BLHeli bitmask of 3D channels
-    // @Description: Mask of channels which are dynamically reversible. This is used to configure ESCs in '3D' mode, allowing for the motor to spin in either direction. Do not use for channels selected with SERVO_BLH_RVMASK.
+    // @Description: Mask of channels which are dynamically reversible. This is used to configure ESCs in '3D' mode, allowing for the motor to spin in either direction. Note that setting an ESC as reversible with this option on AM32 will result in the forward direction of the ESC changing. You can combine with parameter with the SERVO_BLH_RVMASK parameter to maintain the same direction when the ESC is in 3D mode as it has in unidirectional (non-3D) mode.
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16, 16:Channel 17, 17: Channel 18, 18: Channel 19, 19: Channel 20, 20: Channel 21, 21: Channel 22, 22: Channel 23, 23: Channel 24, 24: Channel 25, 25: Channel 26, 26: Channel 27, 27: Channel 28, 28: Channel 29, 29: Channel 30, 30: Channel 31, 31: Channel 32
     // @User: Advanced
     // @RebootRequired: True
@@ -143,9 +143,10 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("BDMASK",  11, AP_BLHeli, channel_bidir_dshot_mask, 0),
 #endif
+
     // @Param: RVMASK
     // @DisplayName: BLHeli bitmask of reversed channels
-    // @Description: Mask of channels which are reversed. This is used to configure ESCs to reverse motor direction for unidirectional rotation. Do not use for channels selected with SERVO_BLH_3DMASK.
+    // @Description: Mask of channels which are reversed. This is used to configure ESCs to reverse motor direction. Note that when combined with SERVO_BLH_3DMASK this will change what direction is considered to be forward.
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16, 16:Channel 17, 17: Channel 18, 18: Channel 19, 19: Channel 20, 20: Channel 21, 21: Channel 22, 22: Channel 23, 23: Channel 24, 24: Channel 25, 25: Channel 26, 26: Channel 27, 27: Channel 28, 28: Channel 29, 29: Channel 30, 30: Channel 31, 31: Channel 32
     // @User: Advanced
     // @RebootRequired: True
