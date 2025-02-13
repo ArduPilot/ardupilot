@@ -11,7 +11,7 @@ public:
 
 protected:
 
-    void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos) override;
+    __INITFUNC__ void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos) override;
     bool do_aux_function(const AuxFuncTrigger &trigger) override;
 
 private:
