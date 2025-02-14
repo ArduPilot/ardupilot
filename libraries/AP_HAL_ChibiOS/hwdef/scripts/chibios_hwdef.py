@@ -3023,64 +3023,54 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.romfs_wildcard(a[1])
         elif a[0] == 'ROMFS_DIRECTORY':
             self.romfs_add_dir([a[1]], relative_to_base=True)
-        elif a[0] == 'undef':
-            for u in a[1:]:
-                self.progress("Removing %s" % u)
-                self.config.pop(u, '')
-                self.bytype.pop(u, '')
-                self.bylabel.pop(u, '')
-                self.alttype.pop(u, '')
-                self.altlabel.pop(u, '')
-                self.intdefines.pop(u, '')
-                for dev in self.spidev:
-                    if u == dev[0]:
-                        self.spidev.remove(dev)
-                # also remove all occurences of defines in previous lines if any
-                for line in self.alllines[:]:
-                    if line.startswith('define') and u == line.split()[1] or line.startswith('STM32_') and u == line.split()[0]:  # noqa
-                        self.alllines.remove(line)
-                newpins = []
-                for pin in self.allpins:
-                    if pin.type == u or pin.label == u or pin.portpin == u:
-                        if pin.label is not None:
-                            self.bylabel.pop(pin.label, '')
-                        self.portmap[pin.port][pin.pin] = self.generic_pin(pin.port, pin.pin, None, 'INPUT', [], self.mcu_type, self.mcu_series, self.get_ADC1_chan, self.get_ADC2_chan, self.get_ADC3_chan, self.af_labels)  # noqa
-                        continue
-                    newpins.append(pin)
-                self.allpins = newpins
-                if u == 'IMU':
-                    self.imu_list = []
-                if u == 'COMPASS':
-                    self.compass_list = []
-                if u == 'BARO':
-                    self.baro_list = []
-                if u == 'DATAFLASH':
-                    self.dataflash_list = []
-                if u == 'AIRSPEED':
-                    self.airspeed_list = []
-                if u == 'ROMFS':
-                    self.romfs = {}
-        elif a[0] == 'env':
-            self.progress("Adding environment %s" % ' '.join(a[1:]))
-            if len(a[1:]) < 2:
-                self.error("Bad env line for %s" % a[0])
-            name = a[1]
-            value = ' '.join(a[2:])
-            if name == 'AP_PERIPH' and value != "1":
-                raise ValueError("AP_PERIPH may only have value 1")
-            self.env_vars[name] = value
-        elif a[0] == 'define':
-            # extract numerical defines for processing by other parts of the script
-            result = re.match(r'define\s*([A-Z_0-9]+)\s+([0-9]+)', line)
-            if result:
-                (name, intvalue) = (result.group(1), int(result.group(2)))
-                if name in self.intdefines and self.intdefines[name] == intvalue:
-                    msg = f"{name} already in defines with same value"
-                    if depth == 0:
-                        print(msg)
-                        # raise ValueError(msg)
+        else:
+            super(ChibiOSHWDef, self).process_line(line, depth)
 
-                self.intdefines[name] = intvalue
+    def process_line_undef(self, line, depth, a):
+        for u in a[1:]:
+            self.progress("Removing %s" % u)
+            self.bytype.pop(u, '')
+            self.bylabel.pop(u, '')
+            self.alttype.pop(u, '')
+            self.altlabel.pop(u, '')
+            for dev in self.spidev:
+                if u == dev[0]:
+                    self.spidev.remove(dev)
+            # also remove all occurences of defines in previous lines if any
+            for line in self.alllines[:]:
+                if line.startswith('STM32_') and u == line.split()[0]:
+                    self.alllines.remove(line)
+            newpins = []
+            for pin in self.allpins:
+                if pin.type == u or pin.label == u or pin.portpin == u:
+                    if pin.label is not None:
+                        self.bylabel.pop(pin.label, '')
+                    self.portmap[pin.port][pin.pin] = self.generic_pin(pin.port, pin.pin, None, 'INPUT', [], self.mcu_type, self.mcu_series, self.get_ADC1_chan, self.get_ADC2_chan, self.get_ADC3_chan, self.af_labels)  # noqa
+                    continue
+                newpins.append(pin)
+            self.allpins = newpins
+            if u == 'IMU':
+                self.imu_list = []
+            if u == 'COMPASS':
+                self.compass_list = []
+            if u == 'BARO':
+                self.baro_list = []
+            if u == 'DATAFLASH':
+                self.dataflash_list = []
+            if u == 'AIRSPEED':
+                self.airspeed_list = []
+            if u == 'ROMFS':
+                self.romfs = {}
+
+        super(ChibiOSHWDef, self).process_line_undef(line, depth, a)
+
+    def process_line_env(self, line, depth, a):
+        name = a[1]
+        value = ' '.join(a[2:])
+        if name == 'AP_PERIPH' and value != "1":
+            raise ValueError("AP_PERIPH may only have value 1")
+
+        super(ChibiOSHWDef, self).process_line_env(line, depth, a)
 
     def process_file(self, filename, depth=0):
         '''process a hwdef.dat file'''
