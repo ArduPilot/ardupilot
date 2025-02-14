@@ -130,9 +130,9 @@ define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
 
 # GPS+MAG+BARO+Buzzer+NeoPixels
-define HAL_PERIPH_ENABLE_GPS
-define HAL_PERIPH_ENABLE_MAG
-define HAL_PERIPH_ENABLE_BARO
+define AP_PERIPH_GPS_ENABLED 1
+define AP_PERIPH_MAG_ENABLED 1
+define AP_PERIPH_BARO_ENABLED 1
 
 # do direct neopixel LED output to enable the 'rainbow' effect on
 # startup

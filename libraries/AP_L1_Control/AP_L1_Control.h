@@ -124,6 +124,14 @@ private:
 
     AP_Float _loiter_bank_limit;
 
+    // remember reached_loiter_target decision
+    struct {
+        uint32_t reached_loiter_target_ms;
+        float radius;
+        int8_t direction;
+        Location center_WP;
+    } _last_loiter;
+
     bool _reverse = false;
     float get_yaw() const;
     int32_t get_yaw_sensor() const;

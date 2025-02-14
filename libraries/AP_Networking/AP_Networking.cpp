@@ -9,6 +9,7 @@
 #include <AP_Math/crc.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_HAL/CANIface.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -89,7 +90,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Networking options
     // @Description: Networking options
-    // @Bitmask: 0:EnablePPP Ethernet gateway
+    // @Bitmask: 0:EnablePPP Ethernet gateway, 1:Enable CAN1 multicast endpoint, 2:Enable CAN2 multicast endpoint, 3:Enable CAN1 multicast bridged, 4:Enable CAN2 multicast bridged
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 9,  AP_Networking,    param.options, 0),
@@ -198,6 +199,20 @@ void AP_Networking::init()
     start_tests();
 #endif
 
+#if AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED
+    if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT) || option_is_set(OPTION::CAN1_MCAST_ENDPOINT)) {
+        // get mask of enabled buses
+        uint8_t bus_mask = 0;
+        if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT)) {
+            bus_mask |= (1U<<0);
+        }
+        if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT)) {
+            bus_mask |= (1U<<1);
+        }
+        mcast_server.start(bus_mask);
+    }
+#endif
+    
 #if AP_NETWORKING_REGISTER_PORT_ENABLED
     // init network mapped serialmanager ports
     ports_init();

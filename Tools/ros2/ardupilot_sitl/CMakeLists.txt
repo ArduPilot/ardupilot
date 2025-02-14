@@ -18,6 +18,9 @@ option(ARDUPILOT_DISABLE_WATCHDOG "Build with watchdog disabled" OFF)
 option(ARDUPILOT_ENABLE_DDS "Enable the DDS client" ON)
 option(ARDUPILOT_ENABLE_NETWORKING_TESTS "Enable the networking test code" OFF)
 option(ARDUPILOT_ENABLE_PPP "Enable PPP networking" OFF)
+set(ARDUPILOT_WAF_CONFIGURE_ARGS "" CACHE STRING "Arbitrary waf configure arguments")
+set(ARDUPILOT_WAF_BUILD_ARGS "" CACHE STRING  "Arbitrary waf build arguments")
+
 
 # NOTE: look for `waf` and set source and build directories to top level.
 # ${PROJECT_SOURCE_DIR} = ./Tools/ros2/ardupilot
@@ -45,11 +48,12 @@ add_custom_target(ardupilot_configure ALL
     ${WAF_ENABLE_DDS}
     ${WAF_ENABLE_NETWORKING_TESTS}
     ${WAF_ENABLE_PPP}
+    ${ARDUPILOT_WAF_CONFIGURE_ARGS}
   WORKING_DIRECTORY ${ARDUPILOT_ROOT}
 )
 
 add_custom_target(ardupilot_build ALL
-  ${WAF_COMMAND} build --enable-dds ${WAF_CONFIG}
+  ${WAF_COMMAND} build --enable-dds ${WAF_CONFIG} ${ARDUPILOT_WAF_BUILD_ARGS}
   WORKING_DIRECTORY ${ARDUPILOT_ROOT}
 )
 add_dependencies(ardupilot_build ardupilot_configure)

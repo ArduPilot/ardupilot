@@ -51,6 +51,7 @@ public:
         MANUAL =       19,  // Pass-through input with no stabilization
         MOTOR_DETECT = 20,  // Automatically detect motors orientation
         SURFTRAK =     21   // Track distance above seafloor (hold range)
+        // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
     // constructor
@@ -71,6 +72,9 @@ public:
     // return a string for this flightmode
     virtual const char *name() const = 0;
     virtual const char *name4() const = 0;
+
+    // returns a unique number specific to this mode
+    virtual Mode::Number number() const = 0;
 
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) { return false; }
@@ -202,6 +206,7 @@ protected:
 
     const char *name() const override { return "MANUAL"; }
     const char *name4() const override { return "MANU"; }
+    Mode::Number number() const override { return Mode::Number::MANUAL; }
 };
 
 
@@ -224,6 +229,7 @@ protected:
 
     const char *name() const override { return "ACRO"; }
     const char *name4() const override { return "ACRO"; }
+    Mode::Number number() const override { return Mode::Number::ACRO; }
 };
 
 
@@ -246,6 +252,7 @@ protected:
 
     const char *name() const override { return "STABILIZE"; }
     const char *name4() const override { return "STAB"; }
+    Mode::Number number() const override { return Mode::Number::STABILIZE; }
 };
 
 
@@ -272,6 +279,7 @@ protected:
 
     const char *name() const override { return "ALT_HOLD"; }
     const char *name4() const override { return "ALTH"; }
+    Mode::Number number() const override { return Mode::Number::ALT_HOLD; }
 };
 
 
@@ -293,6 +301,7 @@ protected:
 
     const char *name() const override { return "SURFTRAK"; }
     const char *name4() const override { return "STRK"; }
+    Mode::Number number() const override { return Mode::Number::SURFTRAK; }
 
 private:
 
@@ -342,6 +351,8 @@ protected:
 
     const char *name() const override { return "GUIDED"; }
     const char *name4() const override { return "GUID"; }
+    Mode::Number number() const override { return Mode::Number::GUIDED; }
+
     autopilot_yaw_mode get_default_auto_yaw_mode(bool rtl) const;
 
 private:
@@ -387,6 +398,7 @@ protected:
 
     const char *name() const override { return "AUTO"; }
     const char *name4() const override { return "AUTO"; }
+    Mode::Number number() const override { return Mode::Number::AUTO; }
 
 private:
     void auto_wp_run();
@@ -408,7 +420,7 @@ public:
 
     bool init(bool ignore_checks) override;
 
-    bool requires_GPS() const override { return false; }
+    bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
@@ -417,6 +429,11 @@ protected:
 
     const char *name() const override { return "POSHOLD"; }
     const char *name4() const override { return "POSH"; }
+    Mode::Number number() const override { return Mode::Number::POSHOLD; }
+
+private:
+
+    void control_horizontal();
 };
 
 
@@ -439,6 +456,7 @@ protected:
 
     const char *name() const override { return "CIRCLE"; }
     const char *name4() const override { return "CIRC"; }
+    Mode::Number number() const override { return Mode::Number::CIRCLE; }
 };
 
 class ModeSurface : public Mode
@@ -460,6 +478,7 @@ protected:
 
     const char *name() const override { return "SURFACE"; }
     const char *name4() const override { return "SURF"; }
+    Mode::Number number() const override { return Mode::Number::CIRCLE; }
 };
 
 
@@ -482,4 +501,5 @@ protected:
 
     const char *name() const override { return "MOTORDETECT"; }
     const char *name4() const override { return "DETE"; }
+    Mode::Number number() const override { return Mode::Number::MOTOR_DETECT; }
 };

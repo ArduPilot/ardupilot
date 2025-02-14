@@ -87,10 +87,10 @@ PA10 USART1_RX USART1 SPEED_HIGH
 env ROMFS_UNCOMPRESSED True
 
 # enable GPS and compass
-define HAL_PERIPH_ENABLE_GPS
+define AP_PERIPH_GPS_ENABLED 1
 define GPS_MAX_RATE_MS 200
-define HAL_PERIPH_ENABLE_MAG
-define HAL_PERIPH_ENABLE_BARO
+define AP_PERIPH_MAG_ENABLED 1
+define AP_PERIPH_BARO_ENABLED 1
 
 # disable dual GPS and GPS blending to save flash space
 define GPS_MAX_RECEIVERS 1

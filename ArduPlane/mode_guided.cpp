@@ -129,24 +129,29 @@ void ModeGuided::set_radius_and_direction(const float radius, const bool directi
 void ModeGuided::update_target_altitude()
 {
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
-    if (((plane.guided_state.target_alt_time_ms != 0) || plane.guided_state.target_alt > -0.001 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
+    // target altitude can be negative (e.g. flying below home altitude from the top of a mountain)
+    if (((plane.guided_state.target_alt_time_ms != 0) || plane.guided_state.target_location.alt != -1 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
         // offboard altitude demanded
         uint32_t now = AP_HAL::millis();
         float delta = 1e-3f * (now - plane.guided_state.target_alt_time_ms);
         plane.guided_state.target_alt_time_ms = now;
         // determine delta accurately as a float
-        float delta_amt_f = delta * plane.guided_state.target_alt_accel;
+        float delta_amt_f = delta * plane.guided_state.target_alt_rate;
         // then scale x100 to match last_target_alt and convert to a signed int32_t as it may be negative
         int32_t delta_amt_i = (int32_t)(100.0 * delta_amt_f); 
-        Location temp {};
-        temp.alt = plane.guided_state.last_target_alt + delta_amt_i; // ...to avoid floats here, 
-        if (is_positive(plane.guided_state.target_alt_accel)) {
-            temp.alt = MIN(plane.guided_state.target_alt, temp.alt);
-        } else {
-            temp.alt = MAX(plane.guided_state.target_alt, temp.alt);
+        // To calculate the required velocity (up or down), we need to target and current altitudes in the target frame
+        const Location::AltFrame target_frame = plane.guided_state.target_location.get_alt_frame();
+        int32_t target_alt_previous_cm;
+        if (plane.current_loc.initialised() && plane.guided_state.target_location.initialised() && 
+            plane.current_loc.get_alt_cm(target_frame, target_alt_previous_cm)) {
+            // create a new interim target location that that takes current_location and moves delta_amt_i in the right direction
+            int32_t temp_alt_cm = constrain_int32(plane.guided_state.target_location.alt, target_alt_previous_cm - delta_amt_i,  target_alt_previous_cm + delta_amt_i);
+            Location temp_location = plane.guided_state.target_location;
+            temp_location.set_alt_cm(temp_alt_cm, target_frame);
+
+            // incrementally step the altitude towards the target            
+            plane.set_target_altitude_location(temp_location);
         }
-        plane.guided_state.last_target_alt = temp.alt;
-        plane.set_target_altitude_location(temp);
     } else 
 #endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
         {

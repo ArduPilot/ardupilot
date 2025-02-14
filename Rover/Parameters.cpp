@@ -234,42 +234,42 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(rcmap,                 "RCMAP_",         RCMapper),
 
     // @Group: SR0_
-    // @Path: GCS_Mavlink.cpp
+    // @Path: GCS_MAVLink_Rover.cpp
     GOBJECTN(_gcs.chan_parameters[0], gcs0,        "SR0_",     GCS_MAVLINK_Parameters),
 
 #if MAVLINK_COMM_NUM_BUFFERS >= 2
     // @Group: SR1_
-    // @Path: GCS_Mavlink.cpp
+    // @Path: GCS_MAVLink_Rover.cpp
     GOBJECTN(_gcs.chan_parameters[1],  gcs1,       "SR1_",     GCS_MAVLINK_Parameters),
 #endif
 
 #if MAVLINK_COMM_NUM_BUFFERS >= 3
     // @Group: SR2_
-    // @Path: GCS_Mavlink.cpp
+    // @Path: GCS_MAVLink_Rover.cpp
     GOBJECTN(_gcs.chan_parameters[2],  gcs2,       "SR2_",     GCS_MAVLINK_Parameters),
 #endif
 
 #if MAVLINK_COMM_NUM_BUFFERS >= 4
     // @Group: SR3_
-    // @Path: GCS_Mavlink.cpp
+    // @Path: GCS_MAVLink_Rover.cpp
     GOBJECTN(_gcs.chan_parameters[3],  gcs3,       "SR3_",     GCS_MAVLINK_Parameters),
 #endif
 
 #if MAVLINK_COMM_NUM_BUFFERS >= 5
     // @Group: SR4_
-    // @Path: GCS_Mavlink.cpp
+    // @Path: GCS_MAVLink_Rover.cpp
     GOBJECTN(_gcs.chan_parameters[4],  gcs4,       "SR4_",     GCS_MAVLINK_Parameters),
 #endif
 
 #if MAVLINK_COMM_NUM_BUFFERS >= 6
     // @Group: SR5_
-    // @Path: GCS_Mavlink.cpp
+    // @Path: GCS_MAVLink_Rover.cpp
     GOBJECTN(_gcs.chan_parameters[5],  gcs5,       "SR5_",     GCS_MAVLINK_Parameters),
 #endif
 
 #if MAVLINK_COMM_NUM_BUFFERS >= 7
     // @Group: SR6_
-    // @Path: GCS_Mavlink.cpp
+    // @Path: GCS_MAVLink_Rover.cpp
     GOBJECTN(_gcs.chan_parameters[6],  gcs6,       "SR6_",     GCS_MAVLINK_Parameters),
 #endif
 
@@ -735,15 +735,15 @@ ParametersG2::ParametersG2(void)
 #if AP_BEACON_ENABLED
     beacon(),
 #endif
-    motors(wheel_rate_control),
     wheel_rate_control(wheel_encoder),
+    motors(wheel_rate_control),
     attitude_control(),
     smart_rtl(),
-#if MODE_DOCK_ENABLED
-    mode_dock_ptr(&rover.mode_dock),
-#endif
 #if HAL_PROXIMITY_ENABLED
     proximity(),
+#endif
+#if MODE_DOCK_ENABLED
+    mode_dock_ptr(&rover.mode_dock),
 #endif
 #if AP_AVOIDANCE_ENABLED
     avoid(),
@@ -752,9 +752,9 @@ ParametersG2::ParametersG2(void)
     follow(),
 #endif
     windvane(),
-    pos_control(attitude_control),
     wp_nav(attitude_control, pos_control),
-    sailboat()
+    sailboat(),
+    pos_control(attitude_control)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

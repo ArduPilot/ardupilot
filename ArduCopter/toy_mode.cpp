@@ -1079,9 +1079,9 @@ void ToyMode::arm_check_compass(void)
     if (offsets.length() > copter.compass.get_offsets_max() ||
         field < 200 || field > 800 ||
         !copter.compass.configured(unused_compass_configured_error_message, ARRAY_SIZE(unused_compass_configured_error_message))) {
-        if (copter.compass.get_learn_type() != Compass::LEARN_INFLIGHT) {
+        if (copter.compass.get_learn_type() != Compass::LearnType::INFLIGHT) {
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: enable compass learning");
-            copter.compass.set_learn_type(Compass::LEARN_INFLIGHT, false);
+            copter.compass.set_learn_type(Compass::LearnType::INFLIGHT, false);
         }
     }
 }

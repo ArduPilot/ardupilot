@@ -127,6 +127,7 @@ protected:
         ANALOG   = 0x08,
         NMEA     = 0x09,
         ASP5033  = 0x0A,
+        AUAV     = 0x0B,
     };
     
 private:

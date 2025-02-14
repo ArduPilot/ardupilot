@@ -100,12 +100,6 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps,
                            AP_HAL::UARTDriver *_port,
                            AP_GPS::GPS_Role _role) :
     AP_GPS_Backend(_gps, _params, _state, _port),
-    _next_message(STEP_PVT),
-    _ublox_port(255),
-    _unconfigured_messages(CONFIG_ALL),
-    _hardware_generation(UBLOX_UNKNOWN_HARDWARE_GENERATION),
-    next_fix(AP_GPS::NO_FIX),
-    noReceivedHdop(true),
     role(_role)
 {
     // stop any config strings that are pending

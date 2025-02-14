@@ -148,7 +148,7 @@ void AP_Periph_FW::init()
     serial_options.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
     gps.set_default_type_for_gps1(HAL_GPS1_TYPE_DEFAULT);
     if (gps.get_type(0) != AP_GPS::GPS_Type::GPS_TYPE_NONE && g.gps_port >= 0) {
         serial_manager.set_protocol_and_baud(g.gps_port, AP_SerialManager::SerialProtocol_GPS, AP_SERIALMANAGER_GPS_BAUD);
@@ -158,21 +158,30 @@ void AP_Periph_FW::init()
 #endif
         gps.init();
     }
-#endif
+#endif  // AP_PERIPH_GPS_ENABLED
 
-#ifdef HAL_PERIPH_ENABLE_MAG
+#if AP_PERIPH_MAG_ENABLED
     compass.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BARO
+#if AP_PERIPH_BARO_ENABLED
     baro.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY
+#if AP_PERIPH_IMU_ENABLED
+    if (g.imu_sample_rate) {
+        imu.init(g.imu_sample_rate);
+        if (imu.get_accel_count() > 0 || imu.get_gyro_count() > 0) {
+            hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Periph_FW::can_imu_update, void), "IMU_UPDATE", 16384, AP_HAL::Scheduler::PRIORITY_CAN, 0);
+        }
+    }
+#endif
+
+#if AP_PERIPH_BATTERY_ENABLED
     battery_lib.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RCIN
+#if AP_PERIPH_RCIN_ENABLED
     rcin_init();
 #endif
 
@@ -226,7 +235,7 @@ void AP_Periph_FW::init()
 
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+#if AP_PERIPH_RANGEFINDER_ENABLED
     bool have_rangefinder = false;
     for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         if ((rangefinder.get_type(i) != RangeFinder::Type::NONE) && (g.rangefinder_port[i] >= 0)) {
@@ -287,7 +296,7 @@ void AP_Periph_FW::init()
     nmea.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RPM
+#if AP_PERIPH_RPM_ENABLED
     rpm_sensor.init();
 #endif
 
@@ -413,17 +422,17 @@ void AP_Periph_FW::update()
         }
 #endif
 #if 0
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
         hal.serial(0)->printf("GPS status: %u\n", (unsigned)gps.status());
 #endif
-#ifdef HAL_PERIPH_ENABLE_MAG
+#if AP_PERIPH_MAG_ENABLED
         const Vector3f &field = compass.get_field();
         hal.serial(0)->printf("MAG (%d,%d,%d)\n", int(field.x), int(field.y), int(field.z));
 #endif
-#ifdef HAL_PERIPH_ENABLE_BARO
+#if AP_PERIPH_BARO_ENABLED
         hal.serial(0)->printf("BARO H=%u P=%.2f T=%.2f\n", baro.healthy(), baro.get_pressure(), baro.get_temperature());
 #endif
-#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+#if AP_PERIPH_RANGEFINDER_ENABLED
         hal.serial(0)->printf("Num RNG sens %u\n", rangefinder.num_sensors());
         for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
             AP_RangeFinder_Backend *backend = rangefinder.get_backend(i);
@@ -476,7 +485,7 @@ void AP_Periph_FW::update()
 #endif
     }
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY
+#if AP_PERIPH_BATTERY_ENABLED
     if (now - battery.last_read_ms >= 100) {
         // update battery at 10Hz
         battery.last_read_ms = now;
@@ -484,11 +493,11 @@ void AP_Periph_FW::update()
     }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RCIN
+#if AP_PERIPH_RCIN_ENABLED
     rcin_update();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
+#if AP_PERIPH_BATTERY_BALANCE_ENABLED
     batt_balance_update();
 #endif
     
@@ -513,7 +522,7 @@ void AP_Periph_FW::update()
     temperature_sensor.update();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RPM
+#if AP_PERIPH_RPM_ENABLED
     if (now - rpm_last_update_ms >= 100) {
         rpm_last_update_ms = now;
         rpm_sensor.update();
@@ -618,6 +627,7 @@ void AP_Periph_FW::prepare_reboot()
  */
 void AP_Periph_FW::reboot(bool hold_in_bootloader)
 {
+    prepare_reboot();
     hal.scheduler->reboot(hold_in_bootloader);
 }
 

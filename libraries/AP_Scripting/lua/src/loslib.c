@@ -106,6 +106,19 @@ static time_t l_checktime (lua_State *L, int arg) {
 ** it uses mkstemp.
 ** ===================================================================
 */
+
+#if defined(ARDUPILOT_BUILD)
+
+/* os lib is not available in ArduPilot, and tmpnam is not available on some
+   platforms, so define useless but harmless lua_tmpnam to avoid needing it */
+
+#define LUA_TMPNAMBUFSIZE 1
+
+/* always report error */
+#define lua_tmpnam(b, e) { e = 1; }
+
+#endif // defined(ARDUPILOT_BUILD)
+
 #if !defined(lua_tmpnam)	/* { */
 
 #if defined(LUA_USE_POSIX)	/* { */

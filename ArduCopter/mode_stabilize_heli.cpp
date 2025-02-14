@@ -31,7 +31,7 @@ void ModeStabilize_Heli::run()
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+    float target_yaw_rate = get_pilot_desired_yaw_rate();
 
     // get pilot's desired throttle
     pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());

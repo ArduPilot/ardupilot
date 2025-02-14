@@ -55,27 +55,38 @@ int lua_mavlink_init(lua_State *L) {
     const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
 
     binding_argcheck(L, 2+arg_offset);
-    WITH_SEMAPHORE(AP::scripting()->mavlink_data.sem);
     // get the depth of receive queue
     const uint32_t queue_size = get_uint32(L, 1+arg_offset, 0, 25);
     // get number of msgs to accept
     const uint32_t num_msgs = get_uint32(L, 2+arg_offset, 0, 25);
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
-    if (data.rx_buffer == nullptr) {
-        data.rx_buffer = NEW_NOTHROW ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
+    bool failed = false;
+    {
+        WITH_SEMAPHORE(data.sem);
         if (data.rx_buffer == nullptr) {
-            return luaL_error(L, "Failed to allocate mavlink rx buffer");
+            data.rx_buffer = NEW_NOTHROW ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
         }
-    }
-    if (data.accept_msg_ids == nullptr) {
-        data.accept_msg_ids = NEW_NOTHROW uint32_t[num_msgs];
         if (data.accept_msg_ids == nullptr) {
-            return luaL_error(L, "Failed to allocate mavlink rx registry");
+            data.accept_msg_ids = NEW_NOTHROW uint32_t[num_msgs];
         }
-        data.accept_msg_ids_size = num_msgs;
-        memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
+        if ((data.rx_buffer == nullptr) || (data.accept_msg_ids == nullptr)) {
+            delete data.rx_buffer;
+            delete[] data.accept_msg_ids;
+            data.rx_buffer = nullptr;
+            data.accept_msg_ids = nullptr;
+            data.accept_msg_ids_size = 0;
+            failed = true;
+        } else {
+            data.accept_msg_ids_size = num_msgs;
+            memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
+        }
+    } // release semaphore here as luaL_error will NOT do that!
+
+    if (failed) {
+        return luaL_error(L, "out of memory");
     }
+
     return 0;
 }
 
@@ -90,14 +101,11 @@ int lua_mavlink_receive_chan(lua_State *L) {
     ObjectBuffer<struct AP_Scripting::mavlink_msg> *rx_buffer = AP::scripting()->mavlink_data.rx_buffer;
 
     if (rx_buffer == nullptr) {
-        return luaL_error(L, "Never subscribed to a message");
+        return luaL_error(L, "RX not initialized");
     }
 
     if (rx_buffer->pop(msg)) {
-        luaL_Buffer b;
-        luaL_buffinit(L, &b);
-        luaL_addlstring(&b, (char *)&msg.msg, sizeof(msg.msg));
-        luaL_pushresult(&b);
+        lua_pushlstring(L, (char *)&msg.msg, sizeof(msg.msg));
         lua_pushinteger(L, msg.chan);
         *new_uint32_t(L) = msg.timestamp_ms;
         return 3;
@@ -134,7 +142,7 @@ int lua_mavlink_register_rx_msgid(lua_State *L) {
     }
 
     if (i >= data.accept_msg_ids_size) {
-        return luaL_error(L, "Out of MAVLink ID's to monitor");
+        return luaL_error(L, "no registrations free");
     }
 
     {
@@ -591,18 +599,13 @@ int lua_get_i2c_device(lua_State *L) {
         return luaL_argerror(L, 1, "no i2c devices available");
     }
 
-    scripting->_i2c_dev[scripting->num_i2c_devices] = NEW_NOTHROW AP_HAL::OwnPtr<AP_HAL::I2CDevice>;
+    scripting->_i2c_dev[scripting->num_i2c_devices] = hal.i2c_mgr->get_device_ptr(bus, address, bus_clock, use_smbus);
+
     if (scripting->_i2c_dev[scripting->num_i2c_devices] == nullptr) {
         return luaL_argerror(L, 1, "i2c device nullptr");
     }
 
-    *scripting->_i2c_dev[scripting->num_i2c_devices] = std::move(hal.i2c_mgr->get_device(bus, address, bus_clock, use_smbus));
-
-    if (scripting->_i2c_dev[scripting->num_i2c_devices] == nullptr || scripting->_i2c_dev[scripting->num_i2c_devices]->get() == nullptr) {
-        return luaL_argerror(L, 1, "i2c device nullptr");
-    }
-
-    *new_AP_HAL__I2CDevice(L) = scripting->_i2c_dev[scripting->num_i2c_devices]->get();
+    *new_AP_HAL__I2CDevice(L) = scripting->_i2c_dev[scripting->num_i2c_devices];
 
     scripting->num_i2c_devices++;
 
@@ -1004,11 +1007,23 @@ int SocketAPM_recv(lua_State *L) {
         return 0;
     }
 
-    // push to lua string
+    int retcount = 1;
+
+    // push data to lua string
     lua_pushlstring(L, (const char *)data, ret);
+
+    // also push the address and port if available
+    uint32_t ip_addr;
+    uint16_t port;
+    if (ud->last_recv_address(ip_addr, port)) {
+        *new_uint32_t(L) = ip_addr;
+        lua_pushinteger(L, port);
+        retcount += 2;
+    }
+
     free(data);
 
-    return 1;
+    return retcount;
 }
 
 /*
@@ -1035,6 +1050,31 @@ int SocketAPM_accept(lua_State *L) {
 
     // out of socket slots, return nil, caller can retry
     return 0;
+}
+
+/*
+  convert a uint32_t ipv4 address to a string
+ */
+int SocketAPM_ipv4_addr_to_string(lua_State *L) {
+    binding_argcheck(L, 1);
+    const uint32_t ip_addr = get_uint32(L, 1, 0, UINT32_MAX);
+    char buf[IP4_STR_LEN];
+    const char *ret = SocketAPM::inet_addr_to_str(ip_addr, buf, sizeof(buf));
+    if (ret == nullptr) {
+        return 0;
+    }
+    lua_pushlstring(L, (const char *)ret, strlen(ret));
+    return 1;
+}
+
+/*
+  convert a ipv4 string address to a uint32_t
+ */
+int SocketAPM_string_to_ipv4_addr(lua_State *L) {
+    binding_argcheck(L, 1);
+    const char *str = luaL_checkstring(L, 1);
+    *new_uint32_t(L) = SocketAPM::inet_str_to_addr(str);
+    return 1;
 }
 
 #endif // AP_NETWORKING_ENABLED
@@ -1128,7 +1168,7 @@ void lua_abort()
 #endif
 }
 
-#if HAL_GCS_ENABLED
+#if (HAL_GCS_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
 /*
   implement gcs:command_int() access to MAV_CMD_xxx commands
  */
@@ -1199,5 +1239,35 @@ int lua_GCS_command_int(lua_State *L)
     return 1;
 }
 #endif
+
+#if HAL_ENABLE_DRONECAN_DRIVERS
+/*
+  get FlexDebug from a DroneCAN node
+ */
+int lua_DroneCAN_get_FlexDebug(lua_State *L)
+{
+    binding_argcheck(L, 4);
+
+    const uint8_t bus = get_uint8_t(L, 1);
+    const uint8_t node_id = get_uint8_t(L, 2);
+    const uint16_t msg_id = get_uint16_t(L, 3);
+    uint32_t tstamp_us = get_uint32(L, 4, 0, UINT32_MAX);
+
+    const auto *dc = AP_DroneCAN::get_dronecan(bus);
+    if (dc == nullptr) {
+        return 0;
+    }
+    dronecan_protocol_FlexDebug msg;
+
+    if (!dc->get_FlexDebug(node_id, msg_id, tstamp_us, msg)) {
+        return 0;
+    }
+
+    *new_uint32_t(L) = tstamp_us;
+    lua_pushlstring(L, (const char *)msg.u8.data, msg.u8.len);
+
+    return 2;
+}
+#endif // HAL_ENABLE_DRONECAN_DRIVERS
 
 #endif  // AP_SCRIPTING_ENABLED

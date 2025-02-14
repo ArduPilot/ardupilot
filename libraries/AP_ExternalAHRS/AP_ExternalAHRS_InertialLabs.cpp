@@ -256,13 +256,13 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         switch (mtype) {
         case MessageType::GPS_INS_TIME_MS: {
             // this is the GPS tow timestamp in ms for when the IMU data was sampled
-            CHECK_SIZE(u.gps_time_ms);
-            gps_data.ms_tow = u.gps_time_ms;
+            CHECK_SIZE(u.gnss_time_ms);
+            gps_data.ms_tow = u.gnss_time_ms;
             break;
         }
         case MessageType::GPS_WEEK: {
-            CHECK_SIZE(u.gps_week);
-            gps_data.gps_week = u.gps_week;
+            CHECK_SIZE(u.gnss_week);
+            gps_data.gps_week = u.gnss_week;
             break;
         }
         case MessageType::ACCEL_DATA_HR: {
@@ -341,7 +341,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
         case MessageType::GNSS_EXTENDED_INFO: {
             CHECK_SIZE(u.gnss_extended_info);
-            gps_data.fix_type = u.gnss_extended_info.fix_type+1;
+            gps_data.fix_type = AP_GPS_FixType(u.gnss_extended_info.fix_type+1);
             gnss_data.spoof_status = u.gnss_extended_info.spoofing_status;
             break;
         }
@@ -1103,64 +1103,21 @@ void AP_ExternalAHRS_InertialLabs::get_filter_status(nav_filter_status &status) 
     status.flags.pred_horiz_pos_rel = status.flags.horiz_pos_abs;
     status.flags.pred_horiz_pos_abs = status.flags.horiz_pos_abs;
     status.flags.using_gps = (now - last_gps_ms < dt_limit_gps) &&
-        (state2.unit_status & (ILABS_UNIT_STATUS_GNSS_FAIL|ILABS_UNIT_STATUS2_GNSS_FUSION_OFF)) == 0;
+        ((state2.unit_status & ILABS_UNIT_STATUS_GNSS_FAIL) | (state2.unit_status2 & ILABS_UNIT_STATUS2_GNSS_FUSION_OFF)) == 0;
     status.flags.gps_quality_good = (now - last_gps_ms < dt_limit_gps) &&
         (state2.unit_status2 & ILABS_UNIT_STATUS2_GNSS_POS_VALID) != 0 &&
         (state2.unit_status & ILABS_UNIT_STATUS_GNSS_FAIL) == 0;
     status.flags.rejecting_airspeed = (state2.air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL);
 }
 
-// send an EKF_STATUS message to GCS
-void AP_ExternalAHRS_InertialLabs::send_status_report(GCS_MAVLINK &link) const
+// get variances
+bool AP_ExternalAHRS_InertialLabs::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
 {
-    // prepare flags
-    uint16_t flags = 0;
-    nav_filter_status filterStatus;
-    get_filter_status(filterStatus);
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (!filterStatus.flags.initalized) {
-        flags |= EKF_UNINITIALIZED;
-    }
-
-    // send message
-    const float vel_gate = 5;
-    const float pos_gate = 5;
-    const float hgt_gate = 5;
-    const float mag_var = 0;
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
-                                       state2.kf_vel_covariance.length()/vel_gate,
-                                       state2.kf_pos_covariance.xy().length()/pos_gate,
-                                       state2.kf_pos_covariance.z/hgt_gate,
-                                       mag_var, 0, 0);
+    velVar = state2.kf_vel_covariance.length() * vel_gate_scale;
+    posVar = state2.kf_pos_covariance.xy().length() * pos_gate_scale;
+    hgtVar = state2.kf_pos_covariance.z * hgt_gate_scale;
+    tasVar = 0;
+    return true;
 }
 
 #endif  // AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED

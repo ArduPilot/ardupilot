@@ -87,7 +87,7 @@ define HAL_DEVICE_THREAD_STACK 768
 define AP_PARAM_MAX_EMBEDDED_PARAM 256
 
 # MAG
-define HAL_PERIPH_ENABLE_MAG
+define AP_PERIPH_MAG_ENABLED 1
 
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime

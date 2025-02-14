@@ -63,8 +63,8 @@ private:
             0x3b, 0x30, 0x32, 0x3e, 0x36, 0x41, 0xc0, 0x28, 0x86, 0x8a, 0x8d, 0x50, 0x52,
             0x5a, 0x33, 0x3a, 0x40, 0x42, 0x54
         };
-        uint32_t gps_ins_time_ms; // ms since start of GPS week for IMU data
-        uint16_t gps_week;
+        uint32_t gnss_ins_time_ms; // ms since start of GPS week for IMU data
+        uint16_t gnss_week;
         vec3_32_t accel_data_hr; // g * 1e6
         vec3_32_t gyro_data_hr; // deg/s * 1e5
         struct PACKED {
@@ -92,7 +92,7 @@ private:
             int32_t lat; // deg*1e7
             int32_t lon; // deg*1e7
             int32_t alt; // m*100, AMSL
-        } gps_position;
+        } gnss_position;
         struct PACKED {
             int32_t hor_speed; // m/s*100
             uint16_t track_over_ground; // deg*100
@@ -128,8 +128,8 @@ private:
 
     uint32_t last_pkt_us;
     const uint16_t pkt_rate_hz = 200;
-    const uint16_t gps_rate_hz = 10;
-    const uint16_t gps_frequency = pkt_rate_hz / gps_rate_hz;
+    const uint16_t gnss_rate_hz = 10;
+    const uint16_t gnss_frequency = pkt_rate_hz / gnss_rate_hz;
     uint32_t packets_sent;
 };
 

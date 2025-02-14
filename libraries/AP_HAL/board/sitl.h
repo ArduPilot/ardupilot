@@ -96,3 +96,15 @@
 #endif
 
 #define HAL_SOLO_GIMBAL_ENABLED 1
+
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 1
+#endif
+
+#ifndef HAL_INS_RATE_LOOP
+#define HAL_INS_RATE_LOOP 1
+#endif
+
+#ifndef AP_NOTIFY_TONEALARM_ENABLED
+#define AP_NOTIFY_TONEALARM_ENABLED 1
+#endif

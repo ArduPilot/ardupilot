@@ -41,7 +41,7 @@ bool AP_AHRS_SIM::wind_estimate(Vector3f &wind) const
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_estimate(float &airspeed_ret) const
+bool AP_AHRS_SIM::airspeed_EAS(float &airspeed_ret) const
 {
     if (_sitl == nullptr) {
         return false;
@@ -52,9 +52,9 @@ bool AP_AHRS_SIM::airspeed_estimate(float &airspeed_ret) const
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_estimate(uint8_t index, float &airspeed_ret) const
+bool AP_AHRS_SIM::airspeed_EAS(uint8_t index, float &airspeed_ret) const
 {
-    return airspeed_estimate(airspeed_ret);
+    return airspeed_EAS(airspeed_ret);
 }
 
 bool AP_AHRS_SIM::get_quaternion(Quaternion &quat) const
@@ -170,13 +170,6 @@ void AP_AHRS_SIM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGain
     // same as EKF2 for no optical flow
     ekfGndSpdLimit = 400.0f;
     ekfNavVelGainScaler = 1.0f;
-}
-
-bool AP_AHRS_SIM::get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const
-{
-    magOffsets.zero();
-
-    return true;
 }
 
 void AP_AHRS_SIM::send_ekf_status_report(GCS_MAVLINK &link) const

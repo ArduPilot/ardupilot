@@ -1,7 +1,9 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
-#include <AP_Terrain/AP_Terrain.h>
+#include <AP_Terrain/AP_Terrain_config.h>
+#include <GCS_MAVLink/GCS_config.h>
+#include <AP_Scripting/AP_Scripting_config.h>
 
 #ifndef HAL_MOUNT_ENABLED
 #define HAL_MOUNT_ENABLED 1
@@ -50,6 +52,10 @@
 
 #ifndef HAL_MOUNT_VIEWPRO_ENABLED
 #define HAL_MOUNT_VIEWPRO_ENABLED AP_MOUNT_BACKEND_DEFAULT_ENABLED && BOARD_FLASH_SIZE > 1024
+#endif
+
+#ifndef HAL_MOUNT_CADDX_ENABLED
+#define HAL_MOUNT_CADDX_ENABLED AP_MOUNT_BACKEND_DEFAULT_ENABLED && BOARD_FLASH_SIZE > 1024
 #endif
 
 #ifndef AP_MOUNT_POI_TO_LATLONALT_ENABLED

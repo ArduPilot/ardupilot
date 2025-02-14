@@ -52,6 +52,7 @@
 #include "AP_Airspeed_DroneCAN.h"
 #include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed_MSP.h"
+#include "AP_Airspeed_AUAV.h"
 #include "AP_Airspeed_External.h"
 #include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
@@ -157,7 +158,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     
     // @Param: _OFF_PCNT
     // @DisplayName: Maximum offset cal speed error 
-    // @Description: The maximum percentage speed change in airspeed reports that is allowed due to offset changes between calibrations before a warning is issued. This potential speed error is in percent of ASPD_FBW_MIN. 0 disables. Helps warn of calibrations without pitot being covered.
+    // @Description: The maximum percentage speed change in airspeed reports that is allowed due to offset changes between calibrations before a warning is issued. This potential speed error is in percent of AIRSPEED_MIN. 0 disables. Helps warn of calibrations without pitot being covered.
     // @Range: 0.0 10.0
     // @Units: %
     // @User: Advanced
@@ -441,6 +442,21 @@ void AP_Airspeed::allocate()
             sensor[i] = NEW_NOTHROW AP_Airspeed_External(*this, i);
 #endif
             break;
+        case TYPE_AUAV_5IN:
+#if AP_AIRSPEED_AUAV_ENABLED
+            sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 5);
+#endif
+            break;
+        case TYPE_AUAV_10IN:
+#if AP_AIRSPEED_AUAV_ENABLED
+            sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 10);
+#endif
+            break;
+        case TYPE_AUAV_30IN:
+#if AP_AIRSPEED_AUAV_ENABLED
+            sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 30);
+#endif
+            break;
         }
         if (sensor[i] && !sensor[i]->init()) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i + 1);
@@ -526,7 +542,7 @@ void AP_Airspeed::calibrate(bool in_startup)
             continue;
         }
         if (sensor[i] == nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u not initalized, cannot cal", i+1);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u not initialized, cannot cal", i+1);
             continue;
         }
         state[i].cal.start_ms = AP_HAL::millis();

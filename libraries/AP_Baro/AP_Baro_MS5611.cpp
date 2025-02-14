@@ -486,29 +486,37 @@ void AP_Baro_MS56XX::_calculate_5637()
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
 void AP_Baro_MS56XX::_calculate_5837()
 {
-    int32_t dT, TEMP;
-    int64_t OFF, SENS;
+    int32_t dT, TEMP, T2;
+    int64_t OFF, OFF2, SENS, SENS2;
     int32_t raw_pressure = _D1;
     int32_t raw_temperature = _D2;
 
-    // note that MS5837 has no compensation for temperatures below -15C in the datasheet
-
-    dT = raw_temperature - (((uint32_t)_cal_reg.c5) << 8);
+    dT = raw_temperature - ((uint32_t)_cal_reg.c5 << 8);
     TEMP = 2000 + ((int64_t)dT * (int64_t)_cal_reg.c6) / 8388608;
     OFF = (int64_t)_cal_reg.c2 * (int64_t)65536 + ((int64_t)_cal_reg.c4 * (int64_t)dT) / (int64_t)128;
     SENS = (int64_t)_cal_reg.c1 * (int64_t)32768 + ((int64_t)_cal_reg.c3 * (int64_t)dT) / (int64_t)256;
 
+    int64_t aux = sq(TEMP - 2000);
     if (TEMP < 2000) {
-        // second order temperature compensation when under 20 degrees C
-        int32_t T2 = ((int64_t)3 * ((int64_t)dT * (int64_t)dT) / (int64_t)8589934592);
-        int64_t aux = (TEMP - 2000) * (TEMP - 2000);
-        int64_t OFF2 = 3 * aux / 2;
-        int64_t SENS2 = 5 * aux / 8;
+        // second order "low temperature" compensation when under 20 degrees C
+        T2 = (int64_t)3 * sq((int64_t)dT) / (int64_t)8589934592;
+        OFF2 = 3 * aux / 2;
+        SENS2 = 5 * aux / 8;
 
-        TEMP = TEMP - T2;
-        OFF = OFF - OFF2;
-        SENS = SENS - SENS2;
+        if (TEMP < -1500) {
+            // "very low temperature" compensation, when under -15 degrees C
+            OFF2 += 7 * sq(TEMP+1500);
+            SENS2 += 4 * sq(TEMP+1500);
+        }
+    } else {
+        // "high temperature" compensation, when at or over 20 degrees C
+        T2 = (int64_t)2 * sq((int64_t)dT) / (int64_t)137438953472;
+        OFF2 = aux / 16;
+        SENS2 = 0;
     }
+    TEMP = TEMP - T2;
+    OFF = OFF - OFF2;
+    SENS = SENS - SENS2;
 
     int32_t pressure = ((int64_t)raw_pressure * SENS / (int64_t)2097152 - OFF) / (int64_t)8192;
     pressure = pressure * 10; // MS5837 only reports to 0.1 mbar

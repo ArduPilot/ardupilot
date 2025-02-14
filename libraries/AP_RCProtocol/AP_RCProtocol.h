@@ -93,6 +93,9 @@ public:
 #if AP_RCPROTOCOL_RADIO_ENABLED
         RADIO = 19,
 #endif
+#if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
+        EMLID_RCIO = 21,
+#endif
         NONE    //last enum always is None
     };
 
@@ -128,11 +131,13 @@ public:
         _disabled_for_pulses |= (1U<<(uint8_t)protocol);
     }
 
+#if !defined(__clang__)
 // in the case we've disabled most backends then the "return true" in
 // the following method can never be reached, and the compiler gets
 // annoyed at that.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wswitch-unreachable"
+#endif
 
     // for protocols without strong CRCs we require 3 good frames to lock on
     bool requires_3_frames(enum rcprotocol_t p) {
@@ -198,12 +203,17 @@ public:
 #if AP_RCPROTOCOL_RADIO_ENABLED
         case RADIO:
 #endif
+#if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
+        case EMLID_RCIO:
+#endif
         case NONE:
             return false;
         }
         return false;
     }
+#if !defined(__clang__)
 #pragma GCC diagnostic pop
+#endif
 
     uint8_t num_channels();
     uint16_t read(uint8_t chan);

@@ -126,8 +126,9 @@ void i2c_init(_i2c_bus_t* bus)
         case 160: bus->delay = _i2c_delays[bus->speed][1]; break;
         case 240: bus->delay = _i2c_delays[bus->speed][2]; break;
         default : DEBUG("i2c I2C software implementation is not "
-                                      "supported for this CPU frequency: %d MHz\n",
-                               ets_get_cpu_frequency());
+                        "supported for this CPU frequency: %u MHz\n",
+                        (unsigned int)ets_get_cpu_frequency()
+                       );
             return;
     }
 

@@ -44,7 +44,7 @@ public:
 
     const char *name() const override { return _name; }
 
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
     static AP_GPS_Backend* probe(AP_GPS &_gps, AP_GPS::GPS_State &_state);
 
     static void handle_fix2_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_gnss_Fix2& msg);

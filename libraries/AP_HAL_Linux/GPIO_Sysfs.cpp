@@ -36,8 +36,8 @@ union gpio_params {
 #define GPIO_PATH_MAX (sizeof(GPIO_BASE_PATH) + sizeof(gpio_params) - 1)
 
 DigitalSource_Sysfs::DigitalSource_Sysfs(unsigned pin, int value_fd)
-    : _pin(pin)
-    , _value_fd(value_fd)
+    : _value_fd(value_fd)
+    , _pin(pin)
 {
 }
 

@@ -18,6 +18,7 @@ public:
         VELOCITY =      2,  // velocity mode
         LOITER =        3,  // loiter mode (position hold)
         RTL =           4,  // rtl
+        // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
     // constructor
@@ -51,6 +52,9 @@ public:
     // return a string for this flightmode
     virtual const char *name() const = 0;
     virtual const char *name4() const = 0;
+
+    // returns a unique number specific to this mode
+    virtual Mode::Number number() const = 0;
 
     virtual bool is_landing() const
     {
@@ -159,6 +163,8 @@ protected:
         return "MANU";
     }
 
+    Mode::Number number() const override { return Mode::Number::MANUAL; }
+
 private:
 
 };
@@ -200,6 +206,8 @@ protected:
     {
         return "VELY";
     }
+
+    Mode::Number number() const override { return Mode::Number::VELOCITY; }
 
 private:
 
@@ -244,6 +252,8 @@ protected:
         return "LOIT";
     }
 
+    Mode::Number number() const override { return Mode::Number::LOITER; }
+
 private:
     Vector3f target_pos;
     float target_yaw;
@@ -285,6 +295,8 @@ protected:
     {
         return "LAND";
     }
+
+    Mode::Number number() const override { return Mode::Number::LAND; }
 
 private:
 
@@ -328,4 +340,7 @@ protected:
     {
         return "RTL";
     }
+
+    Mode::Number number() const override { return Mode::Number::RTL; }
+
 };

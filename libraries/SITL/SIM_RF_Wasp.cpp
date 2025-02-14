@@ -113,5 +113,5 @@ void RF_Wasp::update(float range)
 
 uint32_t RF_Wasp::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
 {
-    return snprintf((char*)buffer, buflen, "%f\n", alt_cm/100.0f);
+    return snprintf((char*)buffer, buflen, "%f\n", alt_cm*0.01f);
 }

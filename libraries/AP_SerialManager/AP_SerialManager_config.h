@@ -19,7 +19,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Networking/AP_Networking_Config.h>
 #include <AP_InertialSensor/AP_InertialSensor_config.h>
 
@@ -112,8 +112,6 @@
 #define AP_SERIALMANAGER_GIMBAL_BAUD            115200
 #define AP_SERIALMANAGER_GIMBAL_BUFSIZE_RX      128
 #define AP_SERIALMANAGER_GIMBAL_BUFSIZE_TX      128
-
-#define AP_SERIALMANAGER_VOLZ_BAUD           115
 
 #define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX  128
 #define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX  128

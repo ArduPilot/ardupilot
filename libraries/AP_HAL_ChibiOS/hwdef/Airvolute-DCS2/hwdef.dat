@@ -12,7 +12,6 @@ OSCILLATOR_HZ 16000000
 # board ID for firmware load
 APJ_BOARD_ID 5200
 
-# the nucleo seems to have trouble with flashing the last sector?
 FLASH_SIZE_KB 2048
 
 # This is the STM32 timer that ChibiOS will use for the low level

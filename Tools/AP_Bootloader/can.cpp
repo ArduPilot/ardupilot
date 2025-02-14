@@ -50,7 +50,7 @@ static CANConfig cancfg = {
 // pipelining is not faster when using ChibiOS CAN driver
 #define FW_UPDATE_PIPELINE_LEN 1
 #else
-static ChibiOS::CANIface can_iface[HAL_NUM_CAN_IFACES];
+ChibiOS::CANIface can_iface[HAL_NUM_CAN_IFACES];
 #endif
 
 #ifndef CAN_APP_VERSION_MAJOR
@@ -276,7 +276,8 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
         }
     }
     if (!found) {
-        // not a current transfer
+        // not a current transfer, we may be getting long delays
+        fw_update.rtt_ms = MIN(3000, fw_update.rtt_ms+250);
         return;
     }
     if (uavcan_protocol_file_ReadResponse_decode(transfer, &fw_update.reads[idx].pkt)) {
@@ -429,7 +430,7 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
         // The allocator has confirmed part of unique ID, switching to the next stage and updating the timeout.
         node_id_allocation_unique_id_offset = msg.unique_id.len;
         send_next_node_id_allocation_request_at_ms -= UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS;
-    } else {
+    } else if (msg.node_id != CANARD_BROADCAST_NODE_ID) { // new ID valid? (if not we will time out and start over)
         // Allocation complete - copying the allocated node ID from the message
         canardSetLocalNodeID(ins, msg.node_id);
     }
@@ -835,6 +836,35 @@ void can_start()
     if (stm32_was_watchdog_reset()) {
         node_status.vendor_specific_status_code = uint8_t(check_fw_result_t::FAIL_REASON_WATCHDOG);
     }
+
+    {
+        /*
+          support termination solder bridge or switch and optional LED
+         */
+#if defined(HAL_GPIO_PIN_GPIO_CAN1_TERM) && defined(HAL_GPIO_PIN_GPIO_CAN1_TERM_SWITCH)
+        const bool can1_term = palReadLine(HAL_GPIO_PIN_GPIO_CAN1_TERM_SWITCH);
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN1_TERM, can1_term);
+# ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM_LED
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN1_TERM_LED, can1_term? HAL_LED_ON : !HAL_LED_ON);
+# endif
+#endif
+
+#if defined(HAL_GPIO_PIN_GPIO_CAN2_TERM) && defined(HAL_GPIO_PIN_GPIO_CAN2_TERM_SWITCH)
+        const bool can2_term = palReadLine(HAL_GPIO_PIN_GPIO_CAN2_TERM_SWITCH);
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN2_TERM, can2_term);
+# ifdef HAL_GPIO_PIN_GPIO_CAN2_TERM_LED
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN2_TERM_LED, can2_term? HAL_LED_ON : !HAL_LED_ON);
+# endif
+#endif
+
+#if defined(HAL_GPIO_PIN_GPIO_CAN3_TERM) && defined(HAL_GPIO_PIN_GPIO_CAN3_TERM_SWITCH)
+        const bool can3_term = palReadLine(HAL_GPIO_PIN_GPIO_CAN3_TERM_SWITCH);
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN3_TERM, can3_term);
+# ifdef HAL_GPIO_PIN_GPIO_CAN3_TERM_LED
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN3_TERM_LED, can3_term? HAL_LED_ON : !HAL_LED_ON);
+# endif
+#endif
+    }
 }
 
 
@@ -863,16 +893,13 @@ void can_update()
 }
 
 // printf to CAN LogMessage for debugging
-void can_printf(const char *fmt, ...)
+void can_vprintf(const char *fmt, va_list ap)
 {
     // only on H7 for now, where we have plenty of flash
 #if defined(STM32H7)
     uavcan_protocol_debug_LogMessage pkt {};
     uint8_t buffer[UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_MAX_SIZE];
-    va_list ap;
-    va_start(ap, fmt);
     uint32_t n = vsnprintf((char*)pkt.text.data, sizeof(pkt.text.data), fmt, ap);
-    va_end(ap);
     pkt.text.len = MIN(n, sizeof(pkt.text.data));
 
     uint32_t len = uavcan_protocol_debug_LogMessage_encode(&pkt, buffer, true);
@@ -885,6 +912,29 @@ void can_printf(const char *fmt, ...)
                      buffer,
                      len);
 #endif // defined(STM32H7)
+}
+
+// printf to CAN LogMessage for debugging
+void can_printf(const char *fmt, ...)
+{
+    // only on H7 for now, where we have plenty of flash
+#if defined(STM32H7)
+    va_list ap;
+    va_start(ap, fmt);
+    can_vprintf(fmt, ap);
+    va_end(ap);
+#endif // defined(STM32H7)
+}
+
+void can_printf_severity(uint8_t severity, const char *fmt, ...)
+{
+    // only on H7 for now, where we have plenty of flash
+#if defined(STM32H7)
+    va_list ap;
+    va_start(ap, fmt);
+    can_vprintf(fmt, ap);
+    va_end(ap);
+#endif
 }
 
 

@@ -1,6 +1,9 @@
-#include "AP_Mount_Xacti.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_XACTI_ENABLED
+
+#include "AP_Mount_Xacti.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
@@ -21,7 +24,6 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_XACTI_DEBUG 0
 #define debug(fmt, args ...) do { if (AP_MOUNT_XACTI_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xacti: " fmt, ## args); } } while (0)
 
-bool AP_Mount_Xacti::_subscribed = false;
 AP_Mount_Xacti::DetectedModules AP_Mount_Xacti::_detected_modules[];
 HAL_Semaphore AP_Mount_Xacti::_sem_registry;
 const char* AP_Mount_Xacti::send_text_prefix = "Xacti:";
@@ -135,20 +137,9 @@ void AP_Mount_Xacti::update()
             break;
         }
 
-        case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's RC inputs
-            MountTarget rc_target;
-            get_rc_target(mnt_target.target_type, rc_target);
-            switch (mnt_target.target_type) {
-            case MountTargetType::ANGLE:
-                mnt_target.angle_rad = rc_target;
-                break;
-            case MountTargetType::RATE:
-                mnt_target.rate_rads = rc_target;
-                break;
-            }
+        case MAV_MOUNT_MODE_RC_TARGETING:
+            update_mnt_target_from_rc_target();
             break;
-        }
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
@@ -361,7 +352,6 @@ void AP_Mount_Xacti::send_camera_information(mavlink_channel_t chan) const
     static const uint8_t vendor_name[32] = "Xacti";
     static uint8_t model_name[32] = "CX-GB100";
     const char cam_definition_uri[140] {};
-    const float NaN = nanf("0x4152");
 
     // capability flags
     const uint32_t flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
@@ -375,9 +365,9 @@ void AP_Mount_Xacti::send_camera_information(mavlink_channel_t chan) const
         vendor_name,            // vendor_name uint8_t[32]
         model_name,             // model_name uint8_t[32]
         _firmware_version.received ? _firmware_version.mav_ver : 0, // firmware version uint32_t
-        NaN,                    // focal_length float (mm)
-        NaN,                    // sensor_size_h float (mm)
-        NaN,                    // sensor_size_v float (mm)
+        NaNf,                   // focal_length float (mm)
+        NaNf,                   // sensor_size_h float (mm)
+        NaNf,                   // sensor_size_v float (mm)
         0,                      // resolution_h uint16_t (pix)
         0,                      // resolution_v uint16_t (pix)
         0,                      // lens_id uint8_t
@@ -390,15 +380,13 @@ void AP_Mount_Xacti::send_camera_information(mavlink_channel_t chan) const
 // send camera settings message to GCS
 void AP_Mount_Xacti::send_camera_settings(mavlink_channel_t chan) const
 {
-    const float NaN = nanf("0x4152");
-
     // send CAMERA_SETTINGS message
     mavlink_msg_camera_settings_send(
         chan,
         AP_HAL::millis(),   // time_boot_ms
         _recording_video ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE,   // camera mode (0:image, 1:video, 2:image survey)
         0,                  // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
 // get attitude as a quaternion.  returns true on success
@@ -428,25 +416,13 @@ void AP_Mount_Xacti::send_target_angles(float pitch_rad, float yaw_rad, bool yaw
 }
 
 // subscribe to Xacti DroneCAN messages
-void AP_Mount_Xacti::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+bool AP_Mount_Xacti::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    // return immediately if DroneCAN is unavailable
-    if (ap_dronecan == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s DroneCAN subscribe failed", send_text_prefix);
-        return;
-    }
+    const auto driver_index = ap_dronecan->get_driver_index();
 
-    _subscribed = true;
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_gimbal_attitude_status, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("gimbal_attitude_status_sub");
-        _subscribed = false;
-    }
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_gnss_status_req, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("gnss_status_req_sub");
-        _subscribed = false;
-    }
+    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_gimbal_attitude_status, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_gnss_status_req, driver_index) != nullptr)
+    ;
 }
 
 // register backend in detected modules array used to map DroneCAN port and node id to backend

@@ -286,6 +286,11 @@ public:
     void rcout_thread();
 
     /*
+      Force group trigger from all callers rather than just from the main thread
+    */
+    void force_trigger_groups(bool onoff) override { force_trigger = onoff; }
+
+    /*
      timer information
      */
     void timer_info(ExpandingString &str) override;
@@ -507,6 +512,8 @@ private:
     struct pwm_group *serial_group;
     thread_t *serial_thread;
     tprio_t serial_priority;
+    // mask of channels configured for serial output
+    uint32_t serial_chanmask;
 #endif // HAL_SERIAL_ESC_COMM_ENABLED
 
     static bool soft_serial_waiting() {
@@ -579,6 +586,8 @@ private:
     uint8_t _dshot_cycle;
     // virtual timer for post-push() pulses
     virtual_timer_t _dshot_rate_timer;
+    // force triggering of groups, this is used by the rate thread to ensure output occurs
+    bool force_trigger;
 
 #if HAL_DSHOT_ENABLED
     // dshot commands

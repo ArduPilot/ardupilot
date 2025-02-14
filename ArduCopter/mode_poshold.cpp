@@ -83,7 +83,7 @@ void ModePosHold::run()
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd());
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+    float target_yaw_rate = get_pilot_desired_yaw_rate();
 
     // get pilot desired climb rate (for alt-hold mode and take-off)
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
@@ -377,7 +377,7 @@ void ModePosHold::run()
         pitch_mode = RPMode::BRAKE_TO_LOITER;
         brake.to_loiter_timer = POSHOLD_BRAKE_TO_LOITER_TIMER;
         // init loiter controller
-        loiter_nav->init_target(inertial_nav.get_position_xy_cm());
+        loiter_nav->init_target(inertial_nav.get_position_xy_cm() - pos_control->get_pos_offset_cm().xy().tofloat());
         // set delay to start of wind compensation estimate updates
         wind_comp_start_timer = POSHOLD_WIND_COMP_START_TIMER;
     }
@@ -535,11 +535,7 @@ void ModePosHold::update_brake_angle_from_velocity(float &brake_angle, float vel
     }
 
     // calculate velocity-only based lean angle
-    if (velocity >= 0) {
-        lean_angle = -brake.gain * velocity * (1.0f + 500.0f / (velocity + 60.0f));
-    } else {
-        lean_angle = -brake.gain * velocity * (1.0f + 500.0f / (-velocity + 60.0f));
-    }
+    lean_angle = -brake.gain * velocity * (1.0f + 500.0f / (fabsf(velocity) + 60.0f));
 
     // do not let lean_angle be too far from brake_angle
     brake_angle = constrain_float(lean_angle, brake_angle - brake_rate, brake_angle + brake_rate);
@@ -592,7 +588,7 @@ void ModePosHold::update_wind_comp_estimate()
     }
 
     // limit acceleration
-    const float accel_lim_cmss = tanf(radians(POSHOLD_WIND_COMP_LEAN_PCT_MAX * copter.aparm.angle_max * 0.01f)) * 981.0f;
+    const float accel_lim_cmss = tanf(radians(POSHOLD_WIND_COMP_LEAN_PCT_MAX * copter.aparm.angle_max * 0.01f)) * (GRAVITY_MSS*100);
     const float wind_comp_ef_len = wind_comp_ef.length();
     if (!is_zero(accel_lim_cmss) && (wind_comp_ef_len > accel_lim_cmss)) {
         wind_comp_ef *= accel_lim_cmss / wind_comp_ef_len;

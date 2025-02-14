@@ -70,7 +70,7 @@ void Rover::init_ardupilot()
 
     init_rc_in();            // sets up rc channels deadzone
     g2.motors.init(get_frame_type());        // init motors including setting servo out channels ranges
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     // init wheel encoders
     g2.wheel_encoder.init();
@@ -125,6 +125,9 @@ void Rover::init_ardupilot()
 #if AP_MISSION_ENABLED
     // initialise mission library
     mode_auto.mission.init();
+#if HAL_LOGGING_ENABLED
+    mode_auto.mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
+#endif
 #endif
 
     // initialise AP_Logger library

@@ -111,9 +111,9 @@ void ModeAlthold::control_depth() {
     //we allow full control to the pilot, but as soon as there's no input, we handle being at surface/bottom
     if (fabsf(target_climb_rate_cm_s) < 0.05f)  {
         if (sub.ap.at_surface) {
-            position_control->set_pos_target_z_cm(MIN(position_control->get_pos_target_z_cm(), g.surface_depth - 5.0f)); // set target to 5 cm below surface level
+            position_control->set_pos_desired_z_cm(MIN(position_control->get_pos_desired_z_cm(), g.surface_depth - 5.0f)); // set target to 5 cm below surface level
         } else if (sub.ap.at_bottom) {
-            position_control->set_pos_target_z_cm(MAX(inertial_nav.get_position_z_up_cm() + 10.0f, position_control->get_pos_target_z_cm())); // set target to 10 cm above bottom
+            position_control->set_pos_desired_z_cm(MAX(inertial_nav.get_position_z_up_cm() + 10.0f, position_control->get_pos_desired_z_cm())); // set target to 10 cm above bottom
         }
     }
 

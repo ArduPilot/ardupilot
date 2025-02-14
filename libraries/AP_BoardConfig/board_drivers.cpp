@@ -415,6 +415,21 @@ void AP_BoardConfig::board_setup_uart()
         hal.serial(5)->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser_rtscts[5].get());
     }
 #endif
+#ifdef HAL_HAVE_RTSCTS_SERIAL6
+    if (hal.serial(6) != nullptr) {
+        hal.serial(6)->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser_rtscts[6].get());
+    }
+#endif
+#ifdef HAL_HAVE_RTSCTS_SERIAL7
+    if (hal.serial(7) != nullptr) {
+        hal.serial(7)->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser_rtscts[7].get());
+    }
+#endif
+#ifdef HAL_HAVE_RTSCTS_SERIAL8
+    if (hal.serial(8) != nullptr) {
+        hal.serial(8)->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser_rtscts[8].get());
+    }
+#endif
 #endif
 }
 

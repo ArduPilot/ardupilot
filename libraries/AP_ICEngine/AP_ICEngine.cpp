@@ -30,8 +30,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define AP_ICENGINE_START_CHAN_DEBOUNCE_MS          300
-
 const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // @Param: ENABLE
@@ -155,7 +153,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: ICE options
     // @Description: Options for ICE control. The Disable ignition in RC failsafe option will cause the ignition to be set off on any R/C failsafe. If Throttle while disarmed is set then throttle control will be allowed while disarmed for planes when in MANUAL mode. If disable while disarmed is set the engine will not start while the vehicle is disarmed unless overriden by the MAVLink DO_ENGINE_CONTROL command.
-    // @Bitmask: 0:Disable ignition in RC failsafe,1:Disable redline governor,2:Throttle while disarmed,3:Disable while disarmed,4:Crank direction Reverse
+    // @Bitmask: 0:Disable ignition in RC failsafe,1:Disable redline governor,2:Throttle control in MANUAL while disarmed with safety off,3:Disable while disarmed,4:Crank direction Reverse
     AP_GROUPINFO("OPTIONS", 15, AP_ICEngine, options, 0),
 
     // @Param: STARTCHN_MIN
@@ -180,6 +178,13 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // Hidden param used as a flag for param conversion
     // This allows one time conversion while allowing user to flash between versions with and without converted params
     AP_GROUPINFO_FLAGS("FMT_VER", 19, AP_ICEngine, param_format_version, 0, AP_PARAM_FLAG_HIDDEN),
+
+    // @Param: STRT_MX_RTRY
+    // @DisplayName: Maximum number of retries
+    // @Description: If set 0 then there is no limit to retrials. If set to a value greater than 0 then the engine will retry starting the engine this many times before giving up.
+    // @User: Standard
+    // @Range: 0 127
+    AP_GROUPINFO("STRT_MX_RTRY", 20, AP_ICEngine, max_crank_retry, 0),
 
     AP_GROUPEND
 };
@@ -234,7 +239,7 @@ void AP_ICEngine::param_conversion()
     // Conversion table giving the old on and off pwm parameter indexes and the function for both starter and ignition
     const struct convert_table {
         uint32_t element[2];
-        SRV_Channel::Aux_servo_function_t fuction;
+        SRV_Channel::Function fuction;
     } conversion_table[] = {
         { {450, 514}, SRV_Channel::k_starter },  // PWM_STRT_ON, PWM_STRT_OFF
         { {322, 386}, SRV_Channel::k_ignition }, // PWM_IGN_ON, PWM_IGN_OFF
@@ -275,6 +280,20 @@ void AP_ICEngine::param_conversion()
     }
 }
 
+// Handle incoming aux function
+void AP_ICEngine::do_aux_function(const RC_Channel::AuxFuncTrigger &trigger)
+{
+    // If triggered from RC apply start chan min
+    if (trigger.source == RC_Channel::AuxFuncTrigger::Source::RC) {
+        RC_Channel *chan = rc().channel(trigger.source_index);
+        if ((chan != nullptr) && (chan->get_radio_in() < start_chan_min_pwm)) {
+            return;
+        }
+    }
+
+    aux_pos = trigger.pos;
+}
+
 /*
   update engine state
  */
@@ -284,51 +303,20 @@ void AP_ICEngine::update(void)
         return;
     }
 
-    uint16_t cvalue = 1500;
-    RC_Channel *c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ICE_START_STOP);
-    if (c != nullptr && rc().has_valid_input()) {
-        // get starter control channel
-        cvalue = c->get_radio_in();
-
-        if (cvalue < start_chan_min_pwm) {
-            cvalue = start_chan_last_value;
-        }
-
-        // snap the input to either 1000, 1500, or 2000
-        // this is useful to compare a debounce changed value
-        // while ignoring tiny noise
-        if (cvalue >= RC_Channel::AUX_PWM_TRIGGER_HIGH) {
-            cvalue = 2000;
-        } else if ((cvalue > 800) && (cvalue <= RC_Channel::AUX_PWM_TRIGGER_LOW)) {
-            cvalue = 1300;
-        } else {
-            cvalue = 1500;
-        }
-    }
-
     bool should_run = false;
     uint32_t now = AP_HAL::millis();
 
 
-    // debounce timer to protect from spurious changes on start_chan rc input
-    // If the cached value is the same, reset timer
-    if (start_chan_last_value == cvalue) {
-        start_chan_last_ms = now;
-    } else if (now - start_chan_last_ms >= AP_ICENGINE_START_CHAN_DEBOUNCE_MS) {
-        // if it has changed, and stayed changed for the duration, then use that new value
-        start_chan_last_value = cvalue;
-    }
-
-    if (state == ICE_START_HEIGHT_DELAY && start_chan_last_value >= RC_Channel::AUX_PWM_TRIGGER_HIGH) {
+    if ((state == ICE_START_HEIGHT_DELAY) && (aux_pos == RC_Channel::AuxSwitchPos::HIGH)) {
         // user is overriding the height start delay and asking for
         // immediate start. Put into ICE_OFF so that the logic below
         // can start the engine now
         state = ICE_OFF;
     }
 
-    if (state == ICE_OFF && start_chan_last_value >= RC_Channel::AUX_PWM_TRIGGER_HIGH) {
+    if ((state == ICE_OFF) && (aux_pos == RC_Channel::AuxSwitchPos::HIGH)) {
         should_run = true;
-    } else if (start_chan_last_value <= RC_Channel::AUX_PWM_TRIGGER_LOW) {
+    } else if (aux_pos == RC_Channel::AuxSwitchPos::LOW) {
         should_run = false;
 
         // clear the single start flag now that we will be stopping the engine
@@ -379,6 +367,10 @@ void AP_ICEngine::update(void)
         if (should_run) {
             state = ICE_START_DELAY;
         }
+        crank_retry_ct = 0;
+        // clear the last uncommanded stop time, we only care about tracking
+        // the last one since the engine was started
+        last_uncommanded_stop_ms = 0;
         break;
 
     case ICE_START_HEIGHT_DELAY: {
@@ -402,8 +394,16 @@ void AP_ICEngine::update(void)
         if (!should_run) {
             state = ICE_OFF;
         } else if (now - starter_last_run_ms >= starter_delay*1000) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Starting engine");
-            state = ICE_STARTING;
+            // check if we should retry starting the engine
+            if (max_crank_retry <= 0 || crank_retry_ct < max_crank_retry) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Starting engine");
+                state = ICE_STARTING;
+                crank_retry_ct++;
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Engine max crank attempts reached");
+                // Mark the last run now so we don't send this message every loop
+                starter_last_run_ms = now;
+            }
         }
         break;
 
@@ -429,7 +429,14 @@ void AP_ICEngine::update(void)
                 rpm_value < rpm_threshold) {
                 // engine has stopped when it should be running
                 state = ICE_START_DELAY;
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Uncommanded engine stop");
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Uncommanded engine stop");
+                if (last_uncommanded_stop_ms != 0 &&
+                        now - last_uncommanded_stop_ms > 3*(starter_time + starter_delay)*1000) {
+                    // if it has been a long enough time since the last uncommanded stop
+                    // (3 times the time between start attempts) then reset the retry count
+                    crank_retry_ct = 0;
+                }
+                last_uncommanded_stop_ms = now;
             }
         }
 #endif
@@ -444,7 +451,7 @@ void AP_ICEngine::update(void)
                 // reset initial height while disarmed
                 initial_height = -pos.z;
             }
-        } else if (idle_percent <= 0 && !option_set(Options::THROTTLE_WHILE_DISARMED)) {
+        } else if (idle_percent <= 0 && !allow_throttle_while_disarmed()) {
             // force ignition off when disarmed
             state = ICE_OFF;
         }
@@ -526,7 +533,7 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
         idle_percent > percentage)
     {
         percentage = idle_percent;
-        if (option_set(Options::THROTTLE_WHILE_DISARMED) && !hal.util->get_soft_armed()) {
+        if (allow_throttle_while_disarmed() && !hal.util->get_soft_armed()) {
             percentage = MAX(percentage, base_throttle);
         }
         return true;
@@ -567,7 +574,7 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
 #endif // AP_RPM_ENABLED
 
     // if THROTTLE_WHILE_DISARMED is set then we use the base_throttle, allowing the pilot to control throttle while disarmed
-    if (option_set(Options::THROTTLE_WHILE_DISARMED) && !hal.util->get_soft_armed() &&
+    if (allow_throttle_while_disarmed() && !hal.util->get_soft_armed() &&
         base_throttle > percentage) {
         percentage = base_throttle;
         return true;
@@ -596,15 +603,13 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: already running");
         return false;
     }
-    RC_Channel *c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ICE_START_STOP);
-    if (c != nullptr && rc().has_valid_input()) {
-        // get starter control channel
-        uint16_t cvalue = c->get_radio_in();
-        if (cvalue >= start_chan_min_pwm && cvalue <= RC_Channel::AUX_PWM_TRIGGER_LOW) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: start control disabled");
-            return false;
-        }
+
+    // get starter control channel
+    if (aux_pos == RC_Channel::AuxSwitchPos::LOW) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: start control disabled by aux function");
+        return false;
     }
+
     if (height_delay > 0) {
         height_pending = true;
         initial_height = 0;

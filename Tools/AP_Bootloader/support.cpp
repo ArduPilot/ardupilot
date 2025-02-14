@@ -364,6 +364,17 @@ void thread_sleep_ms(uint32_t ms)
     }
 }
 
+void thread_sleep_us(uint32_t us)
+{
+    while (us > 0) {
+        // don't sleep more than 65 at a time, to cope with 16 bit
+        // timer
+        const uint32_t dt = us > 6500? 6500: us;
+        chThdSleepMicroseconds(dt);
+        us -= dt;
+    }
+}
+
 // generate a pulse sequence forever, for debugging
 void led_pulses(uint8_t npulses)
 {

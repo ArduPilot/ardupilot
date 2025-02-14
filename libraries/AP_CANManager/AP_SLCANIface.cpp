@@ -82,24 +82,7 @@ static uint8_t nibble2hex(uint8_t x)
 
 static uint8_t hex2nibble(char c)
 {
-    // Must go into RAM, not flash, because flash is slow
-    static uint8_t NumConversionTable[] = {
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9
-    };
-
-    static uint8_t AlphaConversionTable[] = {
-        10, 11, 12, 13, 14, 15
-    };
-
-    uint8_t out = 255;
-
-    if (c >= '0' && c <= '9') {
-        out = NumConversionTable[int(c) - int('0')];
-    } else if (c >= 'a' && c <= 'f') {
-        out = AlphaConversionTable[int(c) - int('a')];
-    } else if (c >= 'A' && c <= 'F') {
-        out = AlphaConversionTable[int(c) - int('A')];
-    }
+    uint8_t out = char_to_hex(c);
 
     if (out == 255) {
         hex2nibble_error = true;

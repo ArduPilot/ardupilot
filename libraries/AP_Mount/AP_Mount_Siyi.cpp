@@ -1,6 +1,9 @@
-#include "AP_Mount_Siyi.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_SIYI_ENABLED
+
+#include "AP_Mount_Siyi.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
@@ -121,20 +124,9 @@ void AP_Mount_Siyi::update()
             break;
         }
 
-        case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's RC inputs
-            MountTarget rc_target;
-            get_rc_target(mnt_target.target_type, rc_target);
-            switch (mnt_target.target_type) {
-            case MountTargetType::ANGLE:
-                mnt_target.angle_rad = rc_target;
-                break;
-            case MountTargetType::RATE:
-                mnt_target.rate_rads = rc_target;
-                break;
-            }
+        case MAV_MOUNT_MODE_RC_TARGETING:
+            update_mnt_target_from_rc_target();
             break;
-        }
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
@@ -1092,8 +1084,8 @@ void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
         model_name,             // model_name uint8_t[32]
         fw_version,             // firmware version uint32_t
         focal_length_mm,        // focal_length float (mm)
-        0,                      // sensor_size_h float (mm)
-        0,                      // sensor_size_v float (mm)
+        NaNf,                   // sensor_size_h float (mm)
+        NaNf,                   // sensor_size_v float (mm)
         0,                      // resolution_h uint16_t (pix)
         0,                      // resolution_v uint16_t (pix)
         0,                      // lens_id uint8_t
@@ -1107,7 +1099,6 @@ void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
 void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
 {
     const uint8_t mode_id = (_config_info.record_status == RecordingStatus::ON) ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE;
-    const float NaN = nanf("0x4152");
     const float zoom_mult_max = get_zoom_mult_max();
     float zoom_pct = 0.0;
     if (is_positive(zoom_mult_max)) {
@@ -1120,14 +1111,13 @@ void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
         AP_HAL::millis(),   // time_boot_ms
         mode_id,            // camera mode (0:image, 1:video, 2:image survey)
         zoom_pct,           // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
 // send camera thermal range message to GCS
 void AP_Mount_Siyi::send_camera_thermal_range(mavlink_channel_t chan) const
 {
-    const float NaN = nanf("0x4152");
     const uint32_t now_ms = AP_HAL::millis();
     bool timeout = now_ms - _thermal.last_update_ms > AP_MOUNT_SIYI_THERM_TIMEOUT_MS;
 
@@ -1137,12 +1127,12 @@ void AP_Mount_Siyi::send_camera_thermal_range(mavlink_channel_t chan) const
         now_ms,             // time_boot_ms
         _instance + 1,      // video stream id (assume one-to-one mapping with camera id)
         _instance + 1,      // camera device id
-        timeout ? NaN : _thermal.max_C,     // max in degC
-        timeout ? NaN : _thermal.max_pos.x, // max x position
-        timeout ? NaN : _thermal.max_pos.y, // max y position
-        timeout ? NaN : _thermal.min_C,     // min in degC
-        timeout ? NaN : _thermal.min_pos.x, // min x position
-        timeout ? NaN : _thermal.min_pos.y);// min y position
+        timeout ? NaNf : _thermal.max_C,     // max in degC
+        timeout ? NaNf : _thermal.max_pos.x, // max x position
+        timeout ? NaNf : _thermal.max_pos.y, // max y position
+        timeout ? NaNf : _thermal.min_C,     // min in degC
+        timeout ? NaNf : _thermal.min_pos.x, // min x position
+        timeout ? NaNf : _thermal.min_pos.y);// min y position
 }
 #endif
 

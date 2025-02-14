@@ -140,7 +140,8 @@ public:
     bool Write_Message(const char *message);
     bool Write_MessageF(const char *fmt, ...);
     bool Write_Mission_Cmd(const AP_Mission &mission,
-                               const AP_Mission::Mission_Command &cmd);
+                           const AP_Mission::Mission_Command &cmd,
+                           LogMessages id);
     bool Write_Mode(uint8_t mode, const ModeReason reason);
     bool Write_Parameter(const char *name, float value, float default_val);
     bool Write_Parameter(const AP_Param *ap,

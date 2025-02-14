@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_TemperatureSensor_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Temperature Sensor Type
     // @Description: Enables temperature sensors
-    // @Values: 0:Disabled, 1:TSYS01, 2:MCP9600, 3:MAX31865, 4:TSYS03, 5:Analog, 6:DroneCAN
+    // @Values: 0:Disabled, 1:TSYS01, 2:MCP9600, 3:MAX31865, 4:TSYS03, 5:Analog, 6:DroneCAN, 7:MLX90614
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_TemperatureSensor_Params, type, (float)Type::NONE, AP_PARAM_FLAG_ENABLE),

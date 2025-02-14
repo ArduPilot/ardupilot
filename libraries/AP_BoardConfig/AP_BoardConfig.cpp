@@ -152,6 +152,30 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: Enable flow control on serial 5. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
     AP_GROUPINFO("SER5_RTSCTS",    25, AP_BoardConfig, state.ser_rtscts[5], 2),
 #endif
+
+#ifdef HAL_HAVE_RTSCTS_SERIAL6
+    // @Param: SER6_RTSCTS
+    // @CopyFieldsFrom: BRD_SER1_RTSCTS
+    // @DisplayName: Serial 6 flow control
+    // @Description: Enable flow control on serial 6. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    AP_GROUPINFO("SER6_RTSCTS",    30, AP_BoardConfig, state.ser_rtscts[6], 2),
+#endif
+
+#ifdef HAL_HAVE_RTSCTS_SERIAL7
+    // @Param: SER7_RTSCTS
+    // @CopyFieldsFrom: BRD_SER1_RTSCTS
+    // @DisplayName: Serial 7 flow control
+    // @Description: Enable flow control on serial 7. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    AP_GROUPINFO("SER7_RTSCTS",    31, AP_BoardConfig, state.ser_rtscts[7], 2),
+#endif
+
+#ifdef HAL_HAVE_RTSCTS_SERIAL8
+    // @Param: SER8_RTSCTS
+    // @CopyFieldsFrom: BRD_SER8_RTSCTS
+    // @DisplayName: Serial 8 flow control
+    // @Description: Enable flow control on serial 8. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    AP_GROUPINFO("SER8_RTSCTS",    32, AP_BoardConfig, state.ser_rtscts[8], 2),
+#endif
 #endif
 
     // @Param: SAFETY_DEFLT
@@ -281,7 +305,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Board options
     // @Description: Board specific option flags
-    // @Bitmask: 0:Enable hardware watchdog, 1:Disable MAVftp, 2:Enable set of internal parameters, 3:Enable Debug Pins, 4:Unlock flash on reboot, 5:Write protect firmware flash on reboot, 6:Write protect bootloader flash on reboot, 7:Skip board validation, 8:Disable board arming gpio output change on arm/disarm
+    // @Bitmask: 0:Enable hardware watchdog, 1:Disable MAVftp, 2:Enable set of internal parameters, 3:Enable Debug Pins, 4:Unlock flash on reboot, 5:Write protect firmware flash on reboot, 6:Write protect bootloader flash on reboot, 7:Skip board validation, 8:Disable board arming gpio output change on arm/disarm, 9:Use safety pins as profiled
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 19, AP_BoardConfig, _options, HAL_BRD_OPTIONS_DEFAULT),
 
@@ -370,6 +394,10 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("IO_DSHOT", 28, AP_BoardConfig, state.io_dshot, 0),
 #endif
+
+    // index 30 used by SER6_RTSCTS
+    // index 31 used by SER7_RTSCTS
+    // index 32 used by SER8_RTSCTS
     AP_GROUPEND
 };
 

@@ -140,6 +140,9 @@ void Sub::init_ardupilot()
 
     // initialise mission library
     mission.init();
+#if HAL_LOGGING_ENABLED
+    mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
+#endif
 
     // initialise AP_Logger library
 #if HAL_LOGGING_ENABLED

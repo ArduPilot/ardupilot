@@ -23,8 +23,8 @@
 
 AP_ExternalAHRS_backend::AP_ExternalAHRS_backend(AP_ExternalAHRS *_frontend,
                                                  AP_ExternalAHRS::state_t &_state) :
-    frontend(*_frontend),
-    state(_state)
+    state(_state),
+    frontend(*_frontend)
 {}
 
 

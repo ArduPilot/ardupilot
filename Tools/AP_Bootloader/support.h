@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AP_HAL_ChibiOS/AP_HAL_ChibiOS.h>
+
 #define LED_ACTIVITY	1
 #define LED_BOOTLOADER	2
 
@@ -48,6 +50,7 @@ void led_off(unsigned led);
 void led_toggle(unsigned led);
 
 void thread_sleep_ms(uint32_t ms);
+void thread_sleep_us(uint32_t us);
 
 void custom_startup(void);
 

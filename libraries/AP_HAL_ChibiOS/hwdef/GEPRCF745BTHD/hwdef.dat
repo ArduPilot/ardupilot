@@ -169,7 +169,9 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
 # save some flash
 include ../include/minimize_fpv_osd.inc
-
+# disable parachute to save flash
+define HAL_PARACHUTE_ENABLED 0
+include ../include/no_bootloader_DFU.inc
 
 #only enable BMP280 Baro
 define AP_BARO_BACKEND_DEFAULT_ENABLED 0

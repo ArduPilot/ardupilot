@@ -63,10 +63,10 @@ public:
     bool is_esc_channel_active(uint8_t chan);
 
     // return true if a particular servo has been detected on the CAN interface
-    bool is_servo_present(uint8_t chan, uint64_t timeout_ms = 2000);
+    bool is_servo_present(uint8_t chan, uint32_t timeout_us = 2000000);
 
     // return true if a particular ESC has been detected on the CAN interface
-    bool is_esc_present(uint8_t chan, uint64_t timeout_ms = 2000);
+    bool is_esc_present(uint8_t chan, uint32_t timeout_us = 2000000);
 
     // return true if a particular servo is enabled
     bool is_servo_enabled(uint8_t chan);
@@ -83,10 +83,10 @@ private:
     void loop();
 
     // write frame on CAN bus, returns true on success
-    bool write_frame(AP_HAL::CANFrame &out_frame, uint64_t timeout);
+    bool write_frame(AP_HAL::CANFrame &out_frame, uint32_t timeout_us);
 
     // read frame on CAN bus, returns true on succses
-    bool read_frame(AP_HAL::CANFrame &recv_frame, uint64_t timeout);
+    bool read_frame(AP_HAL::CANFrame &recv_frame, uint32_t timeout_us);
 
     // send ESC commands over CAN
     void send_esc_messages(void);
@@ -131,7 +131,6 @@ private:
     AP_Int16 _ecu_id;       //!< ECU Node ID
     AP_Int16 _ecu_hz;       //!< ECU update rate (Hz)
 
-    HAL_Semaphore _telem_sem;
 };
 
 #endif // HAL_PICCOLO_CAN_ENABLE

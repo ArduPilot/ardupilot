@@ -243,7 +243,7 @@ void AP_Relay::convert_params()
 #endif
 
     // Find old default param
-    int8_t default_state = 0; // off was the old behaviour
+    AP_Relay_Params::DefaultState default_state = AP_Relay_Params::DefaultState::OFF; // off was the old behaviour
     const bool have_default = AP_Param::get_param_by_index(this, 4, AP_PARAM_INT8, &default_state);
 
     // grab the old values if they were set
@@ -300,7 +300,7 @@ void AP_Relay::convert_params()
             new_fun = AP_Relay_Params::FUNCTION::RELAY;
 
         }
-        _params[i].function.set_and_save(int8_t(new_fun));
+        _params[i].function.set_and_save(new_fun);
 
 
         // Set the default state
@@ -353,7 +353,11 @@ void AP_Relay::init()
             continue;
         }
 
-        if (function == AP_Relay_Params::FUNCTION::RELAY) {
+        bool use_default_param = (function == AP_Relay_Params::FUNCTION::RELAY);
+#ifdef HAL_BUILD_AP_PERIPH
+        use_default_param |= (function >= AP_Relay_Params::FUNCTION::DroneCAN_HARDPOINT_0 && function <= AP_Relay_Params::FUNCTION::DroneCAN_HARDPOINT_15);
+#endif
+        if (use_default_param) {
             // relay by instance number, set the state to match our output
             const AP_Relay_Params::DefaultState default_state = _params[instance].default_state;
             if ((default_state == AP_Relay_Params::DefaultState::OFF) ||

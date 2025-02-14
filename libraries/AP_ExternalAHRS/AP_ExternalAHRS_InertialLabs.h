@@ -37,7 +37,7 @@ public:
     bool initialised(void) const override;
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
     void get_filter_status(nav_filter_status &status) const override;
-    void send_status_report(class GCS_MAVLINK &link) const override;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 
     // check for new data
     void update() override {
@@ -134,8 +134,8 @@ public:
     };
     
     union PACKED ILabsData {
-        uint32_t gps_time_ms; // ms since start of GPS week
-        uint16_t gps_week;
+        uint32_t gnss_time_ms; // ms since start of GNSS week
+        uint16_t gnss_week;
         vec3_32_t accel_data_hr; // g * 1e6
         vec3_32_t gyro_data_hr; // deg/s * 1e5
         struct PACKED {

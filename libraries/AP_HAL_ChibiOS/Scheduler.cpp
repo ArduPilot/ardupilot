@@ -752,7 +752,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
   be used to prevent watchdog reset during expected long delays
   A value of zero cancels the previous expected delay
 */
-void Scheduler::_expect_delay_ms(uint32_t ms)
+void Scheduler::expect_delay_ms(uint32_t ms)
 {
     if (!in_main_thread()) {
         // only for main thread
@@ -761,8 +761,6 @@ void Scheduler::_expect_delay_ms(uint32_t ms)
 
     // pat once immediately
     watchdog_pat();
-
-    WITH_SEMAPHORE(expect_delay_sem);
 
     if (ms == 0) {
         if (expect_delay_nesting > 0) {
@@ -787,18 +785,6 @@ void Scheduler::_expect_delay_ms(uint32_t ms)
         // also put our priority below timer thread if we are boosted
         boost_end();
     }
-}
-
-/*
-  this is _expect_delay_ms() with check that we are in the main thread
- */
-void Scheduler::expect_delay_ms(uint32_t ms)
-{
-    if (!in_main_thread()) {
-        // only for main thread
-        return;
-    }
-    _expect_delay_ms(ms);
 }
 
 // pat the watchdog

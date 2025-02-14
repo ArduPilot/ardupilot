@@ -125,7 +125,7 @@ public:
     typedef uint16_t CanIOFlags;
     static const CanIOFlags Loopback = 1;
     static const CanIOFlags AbortOnError = 2;
-    static const CanIOFlags IsMAVCAN = 4;
+    static const CanIOFlags IsForwardedFrame = 4;
 
     // Single Rx Frame with related info
     struct CanRxItem {
@@ -259,16 +259,24 @@ public:
     // return true if init was called and successful
     virtual bool is_initialized() const = 0;
 
-    FUNCTOR_TYPEDEF(FrameCb, void, uint8_t, const AP_HAL::CANFrame &);
+    FUNCTOR_TYPEDEF(FrameCb, void, uint8_t, const AP_HAL::CANFrame &, CanIOFlags);
 
     // register a frame callback function
-    virtual bool register_frame_callback(FrameCb cb);
+    virtual bool register_frame_callback(FrameCb cb, uint8_t &cb_id);
+    virtual void unregister_frame_callback(uint8_t cb_id);
 
 protected:
     virtual int8_t get_iface_num() const = 0;
     virtual bool add_to_rx_queue(const CanRxItem &rx_item) = 0;
 
-    FrameCb frame_callback;
+    struct {
+#ifndef HAL_BOOTLOADER_BUILD
+        HAL_Semaphore sem;
+#endif
+        // allow up to 3 callbacks per interface
+        FrameCb cb[3];
+    } callbacks;
+
     uint32_t bitrate_;
     OperatingMode mode_;
 };

@@ -130,6 +130,7 @@ class ExtractFeatures(object):
 
             ('AP_IBUS_TELEM_ENABLED', 'AP_IBus_Telem::init',),
 
+            ('MODE_AUTOLAND_ENABLED', 'ModeAutoLand::update'),
             ('MODE_{type}_ENABLED', r'Mode(?P<type>.+)::init',),
             ('MODE_GUIDED_NOGPS_ENABLED', r'ModeGuidedNoGPS::init',),
 
@@ -137,7 +138,8 @@ class ExtractFeatures(object):
             ('AP_CAMERA_{type}_ENABLED', 'AP_Camera_(?P<type>.*)::trigger_pic',),
             ('AP_CAMERA_SEND_FOV_STATUS_ENABLED', 'AP_Camera::send_camera_fov_status'),
             ('AP_CAMERA_SEND_THERMAL_RANGE_ENABLED', 'AP_Camera::send_camera_thermal_range'),
-            ('HAL_RUNCAM_ENABLED', 'AP_RunCam::AP_RunCam',),
+            ('AP_CAMERA_INFO_FROM_SCRIPT_ENABLED', 'AP_Camera_Backend::set_camera_information'),
+            ('AP_CAMERA_RUNCAM_ENABLED', 'AP_RunCam::AP_RunCam',),
 
             ('HAL_PROXIMITY_ENABLED', 'AP_Proximity::AP_Proximity',),
             ('AP_PROXIMITY_{type}_ENABLED', 'AP_Proximity_(?P<type>.*)::update',),
@@ -189,6 +191,7 @@ class ExtractFeatures(object):
             ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::_process_byte\b',),
             ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::process_pulse\b',),
 
+            ('AP_SERVO_TELEM_ENABLED', r'AP_Servo_Telem::update\b',),
             ('AP_VOLZ_ENABLED', r'AP_Volz_Protocol::init\b',),
             ('AP_DRONECAN_VOLZ_FEEDBACK_ENABLED', r'AP_DroneCAN::handle_actuator_status_Volz\b',),
             ('AP_ROBOTISSERVO_ENABLED', r'AP_RobotisServo::init\b',),
@@ -208,6 +211,7 @@ class ExtractFeatures(object):
             ('HAL_WITH_DSP', r'AP_HAL::DSP::find_peaks\b',),
             ('AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED', r'AP_InertialSensor::HarmonicNotch::update_params\b',),
             ('AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED', r'AP_InertialSensor::BatchSampler::init'),
+            ('AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED', r'FastRateBuffer::get_next_gyro_sample\b',),
             ('HAL_GYROFFT_ENABLED', r'AP_GyroFFT::AP_GyroFFT\b',),
             ('HAL_DISPLAY_ENABLED', r'Display::init\b',),
             ('HAL_NMEA_OUTPUT_ENABLED', r'AP_NMEA_Output::update\b',),
@@ -244,9 +248,6 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED', 'GCS_MAVLINK::handle_send_autopilot_version'),
             ('AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED', 'GCS_MAVLINK::handle_command_request_autopilot_capabilities'),  # noqa
             ('AP_MAVLINK_MSG_RELAY_STATUS_ENABLED', 'GCS_MAVLINK::send_relay_status'),
-            ('AP_MAVLINK_BATTERY2_ENABLED', 'GCS_MAVLINK::send_battery2'),
-            ('AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED', 'AP_Mount::handle_mount_control'),
-            ('AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED', 'AP_Mount::handle_mount_configure'),
             ('AP_MAVLINK_MSG_DEVICE_OP_ENABLED', 'GCS_MAVLINK::handle_device_op_write'),
             ('AP_MAVLINK_SERVO_RELAY_ENABLED', 'GCS_MAVLINK::handle_servorelay_message'),
             ('AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED', 'GCS_MAVLINK::handle_serial_control'),
@@ -254,6 +255,7 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED', r'GCS_MAVLINK::send_rc_channels_raw\b'),
             ('AP_MAVLINK_FTP_ENABLED', 'GCS_MAVLINK::ftp_worker'),
             ('AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED', 'Plane::handle_external_hagl'),
+            ('AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'AP_Camera::send_video_stream_information'),
 
             ('AP_DRONECAN_HIMARK_SERVO_SUPPORT', 'AP_DroneCAN::SRV_send_himark'),
             ('AP_DRONECAN_HOBBYWING_ESC_SUPPORT', 'AP_DroneCAN::hobbywing_ESC_update'),
@@ -262,6 +264,7 @@ class ExtractFeatures(object):
             ('AP_DRONECAN_SERIAL_ENABLED', 'AP_DroneCAN_Serial::update'),
             ('AP_SERIALMANAGER_IMUOUT_ENABLED', 'AP_InertialSensor::send_uart_data'),
             ('AP_NETWORKING_BACKEND_PPP', 'AP_Networking_PPP::init'),
+            ('AP_NETWORKING_CAN_MCAST_ENABLED', 'AP_Networking_CAN::start'),
             ('FORCE_APJ_DEFAULT_PARAMETERS', 'AP_Param::param_defaults_data'),
             ('HAL_BUTTON_ENABLED', 'AP_Button::update'),
             ('HAL_LOGGING_ENABLED', 'AP_Logger::init'),
@@ -270,14 +273,18 @@ class ExtractFeatures(object):
             ('AP_CUSTOMROTATIONS_ENABLED', 'AP_CustomRotations::init'),
             ('AP_OSD_LINK_STATS_EXTENSIONS_ENABLED', r'AP_OSD_Screen::draw_rc_tx_power'),
             ('HAL_ENABLE_DRONECAN_DRIVERS', r'AP_DroneCAN::init'),
-            ('AP_MAVLINK_MSG_HIL_GPS_ENABLED', r'mavlink_msg_hil_gps_decode'),
             ('AP_BARO_PROBE_EXTERNAL_I2C_BUSES', r'AP_Baro::_probe_i2c_barometers'),
             ('AP_RSSI_ENABLED', r'AP_RSSI::init'),
 
             ('AP_ROVER_ADVANCED_FAILSAFE_ENABLED', r'Rover::afs_fs_check'),
+            ('AP_COPTER_ADVANCED_FAILSAFE_ENABLED', r'Copter::afs_fs_check'),
+            ('AP_COPTER_AHRS_AUTO_TRIM_ENABLED', r'RC_Channels_Copter::auto_trim_run'),
 
             ('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED', r'GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands'),
             ('AP_SERIALMANAGER_REGISTER_ENABLED', r'AP_SerialManager::register_port'),
+            ('AP_QUICKTUNE_ENABLED', r'AP_Quicktune::update'),
+            ('AP_FILTER_ENABLED', r'AP_Filters::update'),
+            ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
         ]
 
     def progress(self, msg):

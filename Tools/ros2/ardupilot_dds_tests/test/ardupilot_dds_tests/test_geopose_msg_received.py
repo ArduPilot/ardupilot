@@ -13,7 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-"""Bring up ArduPilot SITL and check the GeoPose message is being published."""
+"""
+Bring up ArduPilot SITL and check the GeoPoseStamped message is being published.
+
+colcon test --packages-select ardupilot_dds_tests \
+--event-handlers=console_cohesion+ --pytest-args -k test_geopose_msg_received
+
+"""
 
 import launch_pytest
 import math
@@ -41,7 +47,7 @@ CMAC_ABS_ALT = 584
 CMAC_HEADING = 353
 
 
-def ros_quat_to_heading(quat):
+def ros_quat_to_heading_deg(quat):
     # By default, scipy follows scalar-last order – (x, y, z, w)
     rot = R.from_quat([quat.x, quat.y, quat.z, quat.w])
     r, p, y = rot.as_euler(seq="xyz", degrees=True)
@@ -57,10 +63,28 @@ def validate_position_cmac(position):
         and math.isclose(position.altitude, CMAC_ABS_ALT, abs_tol=1.0)
     )
 
+def wrap_360(angle):
+    if angle > 360:
+        angle -= 360.0
+        return wrap_360(angle)
+    if angle < 0:
+        angle += 360.0
+        return wrap_360(angle)
+    return angle
 
 def validate_heading_cmac(orientation):
-    """Return true if the vehicle is facing the right way for CMAC."""
-    return math.isclose(ros_quat_to_heading(orientation), CMAC_HEADING)
+    """
+    Return true if the vehicle is facing the right way for CMAC.
+
+    Per ROS REP-103, the quaternion should report 0 when the vehicle faces east,
+    and 90 degrees when facing north.
+    Because CMAC is NNW, we expect ~97 degees.
+    See this PR for more info:
+    * https://github.com/ros-infrastructure/rep/pull/407
+    """
+    # The following converts from compass bearing (locations.txt) to REP-103 heading.
+    CMAC_YAW_ENU_REP103 = wrap_360(-1 * CMAC_HEADING) + 90
+    return math.isclose(ros_quat_to_heading_deg(orientation), CMAC_YAW_ENU_REP103, abs_tol=5)
 
 
 class GeoPoseListener(rclpy.node.Node):
@@ -71,6 +95,7 @@ class GeoPoseListener(rclpy.node.Node):
         super().__init__("geopose_listener")
         self.msg_event_object = threading.Event()
         self.position_correct_event_object = threading.Event()
+        self.orientation_event_object = threading.Event()
 
         # Declare and acquire `topic` parameter
         self.declare_parameter("topic", TOPIC)
@@ -100,6 +125,9 @@ class GeoPoseListener(rclpy.node.Node):
 
         if validate_position_cmac(msg.pose.position):
             self.position_correct_event_object.set()
+
+        if validate_heading_cmac(msg.pose.orientation):
+            self.orientation_event_object.set()
 
 
 @launch_pytest.fixture
@@ -155,6 +183,8 @@ def test_dds_serial_geopose_msg_recv(launch_context, launch_sitl_copter_dds_seri
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
         pose_correct_flag = node.position_correct_event_object.wait(timeout=10.0)
         assert pose_correct_flag, f"Did not receive correct position."
+        orientation_correct_flag = node.orientation_event_object.wait(timeout=10.0)
+        assert orientation_correct_flag, f"Did not receive correct orientation."
     finally:
         rclpy.shutdown()
     yield

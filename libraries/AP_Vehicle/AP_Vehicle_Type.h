@@ -19,6 +19,7 @@
   Also note that code needs to support other APM_BUILD_DIRECTORY
   values for example sketches
  */
+// @LoggerEnum: APM_BUILD
 #define APM_BUILD_Rover      1
 #define APM_BUILD_ArduCopter     2
 #define APM_BUILD_ArduPlane      3
@@ -32,6 +33,7 @@
 #define APM_BUILD_AP_Bootloader  11
 #define APM_BUILD_Blimp      12
 #define APM_BUILD_Heli       13
+// @LoggerEnumEnd
 
 #ifdef APM_BUILD_DIRECTORY
 /*

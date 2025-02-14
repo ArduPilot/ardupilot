@@ -106,9 +106,9 @@ find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -delete
 
 # brew update randomly failing on CI, so ignore errors:
 brew update
-brew install --force --overwrite gawk curl coreutils wget
+brew install --force --overwrite gawk coreutils wget
 
-PIP=pip
+PIP="python3 -m pip"
 if maybe_prompt_user "Install python using pyenv [N/y]?" ; then
     echo "Checking pyenv..."
     {

@@ -4,7 +4,6 @@
 
 #include "AC_PrecLand.h"
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_AHRS/AP_AHRS.h>
 
 #include "AC_PrecLand_Backend.h"
@@ -226,7 +225,7 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
     _lag.set(constrain_float(_lag, 0.02f, 0.25f));  // must match LAG parameter range at line 124
 
     // calculate inertial buffer size from lag and minimum of main loop rate and update_rate_hz argument
-    const uint16_t inertial_buffer_size = MAX((uint16_t)roundf(_lag * MIN(update_rate_hz, AP::scheduler().get_loop_rate_hz())), 1);
+    const uint16_t inertial_buffer_size = MAX((uint16_t)roundf(_lag * update_rate_hz), 1);
 
     // instantiate ring buffer to hold inertial history, return on failure so no backends are created
     _inertial_history = NEW_NOTHROW ObjectArray<inertial_data_frame_s>(inertial_buffer_size);
