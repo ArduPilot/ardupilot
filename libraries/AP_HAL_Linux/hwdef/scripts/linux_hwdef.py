@@ -24,6 +24,13 @@ class LinuxHWDef(hwdef.HWDef):
             if d.startswith('define '):
                 f.write('#define %s\n' % d[7:])
 
+    def process_line(self, line, depth):
+        '''process one line of pin definition file'''
+        # keep all config lines for later use
+        self.all_lines.append(line)
+        self.alllines.append(line)
+        super(LinuxHWDef, self).process_line(line, depth)
+
 
 if __name__ == '__main__':
 
