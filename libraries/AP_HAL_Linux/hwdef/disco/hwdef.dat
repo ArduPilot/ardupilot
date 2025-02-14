@@ -60,3 +60,6 @@ define AP_RANGEFINDER_BEBOP_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED && de
 
 # AP_InertialSensor configuration
 define INVENSENSE_EXT_SYNC_ENABLE 1
+
+// AP_Airspeed configuration
+define PSI_RANGE_DEFAULT 0.05
