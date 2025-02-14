@@ -1,0 +1,4 @@
+# MPU9250 is restricted to 1MHz for non-data and interrupt registers
+#            NAME      BUS SUBDEV MODE       BPW CS_PIN         LOWSPD HIGHSPD
+LINUX_SPIDEV "mpu9250" 1   0      SPI_MODE_3 8   SPI_CS_KERNEL  1*MHZ  10*MHZ
+LINUX_SPIDEV "ms5611"  1   1      SPI_MODE_3 8   SPI_CS_KERNEL  1*MHZ  10*MHZ
