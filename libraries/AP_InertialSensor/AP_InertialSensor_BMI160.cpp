@@ -19,7 +19,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include <AP_HAL/utility/sparse-endian.h>
-#include <AP_HAL_Linux/GPIO.h>
 #include <AP_Math/AP_Math.h>
 
 #include "AP_InertialSensor_BMI160.h"
