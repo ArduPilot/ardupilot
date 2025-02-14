@@ -1,0 +1,5 @@
+# Intel Aero board
+
+define HAL_RCOUTPUT_TAP_DEVICE "/dev/ttyS1"
+
+define HAL_NUM_CAN_IFACES 1

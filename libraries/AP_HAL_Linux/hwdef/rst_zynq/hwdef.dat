@@ -1,0 +1,3 @@
+# Aerotenna Zynq board
+
+define HAL_OPTFLOW_PX4FLOW_I2C_BUS 0

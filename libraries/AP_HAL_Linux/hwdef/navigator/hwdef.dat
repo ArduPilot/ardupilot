@@ -1,0 +1,8 @@
+# BlueRobotics Navigator
+
+# I2C6 is the only i2c one exposed on a header
+define HAL_LINUX_I2C_EXTERNAL_BUS_MASK 1 << 6
+
+# We don't want any probing on the internal buses
+define HAL_LINUX_I2C_INTERNAL_BUS_MASK 0
+define AP_NOTIFY_NAVIGATOR_LED_ENABLED 1
