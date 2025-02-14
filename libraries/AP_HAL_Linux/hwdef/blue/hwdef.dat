@@ -14,3 +14,8 @@ define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 1
 define HAL_NUM_CAN_IFACES 1
 
 define HAL_LINUX_GPIO_BBB_ENABLED 1
+
+define HAL_BATT_VOLT_PIN                  0
+define HAL_BATT_CURR_PIN                  1
+define HAL_BATT_VOLT_SCALE                10.1f
+define HAL_BATT_CURR_SCALE                17.0f
