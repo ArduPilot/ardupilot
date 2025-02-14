@@ -15,3 +15,7 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/home/pi/ardupilot/terrain"
 define HAL_BOARD_STORAGE_DIRECTORY "/home/pi/ardupilot"
 
 define HAL_DEFAULT_INS_FAST_SAMPLE 0
+
+#            NAME      BUS SUBDEV MODE       BPW CS_PIN         LOWSPD HIGHSPD
+LINUX_SPIDEV "mpu9250" 0   1      SPI_MODE_0 8   SPI_CS_KERNEL  1*MHZ  11*MHZ
+LINUX_SPIDEV "ms5611"  0   0      SPI_MODE_0 8   SPI_CS_KERNEL  10*MHZ 10*MHZ

@@ -27,6 +27,26 @@ namespace Linux {
 class SPIBus;
 class SPIDesc;
 
+struct SPIDesc {
+    SPIDesc(const char *name_, uint16_t bus_, uint16_t subdev_, uint8_t mode_,
+            uint8_t bits_per_word_, int16_t cs_pin_, uint32_t lowspeed_,
+            uint32_t highspeed_)
+        : name(name_), bus(bus_), subdev(subdev_), mode(mode_)
+        , bits_per_word(bits_per_word_), cs_pin(cs_pin_), lowspeed(lowspeed_)
+        , highspeed(highspeed_)
+    {
+    }
+
+    const char *name;
+    uint16_t bus;
+    uint16_t subdev;
+    uint8_t mode;
+    uint8_t bits_per_word;
+    int16_t cs_pin;
+    uint32_t lowspeed;
+    uint32_t highspeed;
+};
+
 class SPIDevice : public AP_HAL::SPIDevice {
 public:
     SPIDevice(SPIBus &bus, SPIDesc &device_desc);

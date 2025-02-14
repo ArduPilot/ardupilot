@@ -7,6 +7,7 @@ AP_FLAKE8_CLEAN
 '''
 
 import argparse
+import shlex
 import sys
 import os
 
@@ -18,18 +19,84 @@ class LinuxHWDef(hwdef.HWDef):
 
     def __init__(self, quiet=False, outdir=None, hwdef=[]):
         super(LinuxHWDef, self).__init__(quiet=quiet, outdir=outdir, hwdef=hwdef)
+        # a list of LINUX_SPIDEV devices
+        self.linux_spidev = []
 
     def write_hwdef_header_content(self, f):
         for d in self.alllines:
             if d.startswith('define '):
                 f.write('#define %s\n' % d[7:])
 
+        self.write_SPI_config(f)
+
     def process_line(self, line, depth):
         '''process one line of pin definition file'''
         # keep all config lines for later use
         self.all_lines.append(line)
         self.alllines.append(line)
+
+        a = shlex.split(line, posix=False)
+        if a[0] == 'LINUX_SPIDEV':
+            self.process_line_linux_spidev(line, depth, a)
+
         super(LinuxHWDef, self).process_line(line, depth)
+
+    def process_line_undef(self, line, depth, a):
+        for u in a[1:]:
+            for dev in self.spidev:
+                if u == dev[0]:
+                    self.linux_spidev.remove(dev)
+
+        super(LinuxHWDef, self).process_line_undef(line, depth, a)
+
+    def process_line_linux_spidev(self, line, depth, a):
+        self.linux_spidev.append(a[1:])
+
+    def write_SPI_config_define_line_for_dev(self, define_name, dev, n):
+        '''return a #define line for a SPI config line used in a SPI device table'''
+        (name, bus, subdev, mode, bits_per_word, cs_pin, lowspeed, highspeed) = dev
+
+#        return f'#define {define_name} SPIDesc("name")\n'
+
+        # sck_pin = self.bylabel['SPI%s_SCK' % n]
+        # sck_line = 'PAL_LINE(GPIO%s,%uU)' % (sck_pin.port, sck_pin.pin)
+        # return f'#define {define_name} {{ &SPID{n}, {n}, STM32_SPI_SPI{n}_DMA_STREAMS, {sck_line} }}\n'
+
+    def write_SPI_device_table(self, f):
+        '''write SPI device table'''
+        if len(self.linux_spidev) == 0:
+            # until all are converted
+            return
+
+        f.write('\n// SPI device table\n')
+        devlist = []
+        for dev in self.linux_spidev:
+            if len(dev) != 8:
+                self.error(f"Badly formed LINUX_SPIDEV line {dev} {len(dev)=}")
+            (name, bus, subdev, mode, bits_per_word, cs_pin, lowspeed, highspeed) = dev
+            # if not bus.startswith('SPI') or bus not in self.spi_list:
+            #     self.error(f"Bad SPI {bus=} in SPIDEV line {dev}")
+            # if mode not in ['MODE0', 'MODE1', 'MODE2', 'MODE3']:
+            #     self.error("Bad MODE in SPIDEV line %s" % dev)
+            if not lowspeed.endswith('*MHZ') and not lowspeed.endswith('*KHZ'):
+                self.error("Bad lowspeed value %s in SPIDEV line %s" % (lowspeed, dev))
+            if not highspeed.endswith('*MHZ') and not highspeed.endswith('*KHZ'):
+                self.error("Bad highspeed value %s in SPIDEV line %s" %
+                           (highspeed, dev))
+            f.write(
+                f'#define HAL_SPI_DEVICE{len(devlist)+1} SPIDesc({name:12s}, {bus}, {subdev}, {mode}, {bits_per_word}, {cs_pin}, {lowspeed:6s}, {highspeed:6s})\n'  # noqa
+            )
+            devlist.append('HAL_SPI_DEVICE%u' % (len(devlist)+1))
+        f.write('#define HAL_SPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        f.write("\n")
+
+    def write_SPI_config(self, f):
+        '''write SPI config defines'''
+
+        if len(self.linux_spidev) == 0:
+            return
+
+        self.write_SPI_device_table(f)
 
 
 if __name__ == '__main__':
