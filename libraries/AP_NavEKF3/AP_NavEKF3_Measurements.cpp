@@ -260,7 +260,7 @@ void NavEKF3_core::tryChangeCompass(void)
         // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
         if (compass.healthy(tempIndex) && compass.use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
             magSelectIndex = tempIndex;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
             // reset the timeout flag and timer
             magTimeout = false;
             lastHealthyMagTime_ms = imuSampleTime_ms;
