@@ -1,0 +1,26 @@
+# Emlid Edge board
+
+define HAL_BOARD_LOG_DIRECTORY "/edge/ardupilot/logs"
+define HAL_BOARD_TERRAIN_DIRECTORY "/edge/ardupilot/terrain"
+define HAL_BOARD_STORAGE_DIRECTORY "/edge/ardupilot"
+
+define HAL_NUM_CAN_IFACES 1
+
+# heater support
+define HAL_IMU_TEMP_DEFAULT 55
+define HAL_HAVE_IMU_HEATER 1
+define HAL_UTILS_HEAT HAL_LINUX_HEAT_PWM
+define HAL_LINUX_HEAT_PWM_NUM  15
+define HAL_LINUX_HEAT_KP 20000
+define HAL_LINUX_HEAT_KI 6
+define HAL_LINUX_HEAT_PERIOD_NS 2040816
+
+# default to DroneCAN GPS:
+define HAL_GPS1_TYPE_DEFAULT 9
+
+define HAL_CAN_DRIVER_DEFAULT 1
+
+# this looks suspect:
+define AP_NOTIFY_RCOUTPUTRGBLEDINVERTED_LED_ENABLED 1
+
+define AP_RCPROTOCOL_EMLID_RCIO_ENABLED 1
