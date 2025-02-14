@@ -1762,8 +1762,6 @@ INCLUDE common.ld
                     dev[i] = self.parse_spi_device(dev[i])
                 elif dev[i].startswith("I2C:"):
                     (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
-                    if dev[i].startswith('hal.i2c_mgr'):
-                        dev[i] = 'std::move(%s)' % dev[i]
             n = len(devlist)+1
             devlist.append('HAL_BARO_PROBE%u' % n)
             args = ['*this'] + dev[1:]
@@ -1791,8 +1789,6 @@ INCLUDE common.ld
                     dev[i] = self.parse_spi_device(dev[i])
                 elif dev[i].startswith("I2C:"):
                     (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
-                    if dev[i].startswith('hal.i2c_mgr'):
-                        dev[i] = 'std::move(%s)' % dev[i]
             n = len(devlist)+1
             devlist.append('HAL_AIRSPEED_PROBE%u' % n)
             args = ['*this', str(idx)] + dev[1:]
