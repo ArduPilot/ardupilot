@@ -131,3 +131,7 @@
 
 // remove once ESP32 isn't so chronically slow
 #define AP_SCHEDULER_OVERTIME_MARGIN_US 50000UL
+
+#ifndef AP_NOTIFY_BUZZER_ENABLED
+#define AP_NOTIFY_BUZZER_ENABLED 1
+#endif
