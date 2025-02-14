@@ -20,3 +20,6 @@ define HAL_BATT_VOLT_PIN                  5
 define HAL_BATT_CURR_PIN                  6
 define HAL_BATT_VOLT_SCALE                10.1f
 define HAL_BATT_CURR_SCALE                17.0f
+
+# AP_InertialSensor configuration
+define INVENSENSE_DRDY_PIN BBB_P8_14
