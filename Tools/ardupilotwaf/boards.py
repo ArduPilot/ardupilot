@@ -1398,9 +1398,13 @@ class linux(Board):
             self.with_can = False
 
     def configure_env(self, cfg, env):
+        if hasattr(self, 'hwdef'):
+            cfg.env.HWDEF = self.hwdef
         if cfg.options.board == 'linux':
             self.with_can = True
         super(linux, self).configure_env(cfg, env)
+
+        cfg.load('linux')
 
         env.BOARD_CLASS = "LINUX"
 
@@ -1470,8 +1474,18 @@ class linux(Board):
                 HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
             )
 
+    def pre_build(self, bld):
+        '''pre-build hook that gets called before dynamic sources'''
+        from waflib.Context import load_tool
+        module = load_tool('linux', [], with_sys_path=True)
+        fun = getattr(module, 'pre_build', None)
+        if fun:
+            fun(bld)
+        super(linux, self).pre_build(bld)
+
     def build(self, bld):
         super(linux, self).build(bld)
+        bld.load('linux')
         if bld.options.upload:
             waflib.Options.commands.append('rsync')
             # Avoid infinite recursion
