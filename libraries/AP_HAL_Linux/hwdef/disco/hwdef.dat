@@ -42,8 +42,11 @@ define HAL_PARAM_DEFAULTS_PATH "/data/ftp/internal_000/ardupilot/disco.parm"
 
 # the disco has challenges with its magnetic setup
 define AP_COMPASS_OFFSETS_MAX_DEFAULT 2200
-define HAL_BATT_MONITOR_DEFAULT AP_BattMonitor::Type::BEBOP
+
 define HAL_GPIO_SCRIPT "/data/ftp/internal_000/ardupilot/gpio.sh"
+
+define AP_BATTERY_BEBOP_ENABLED AP_BATTERY_BACKEND_DEFAULT_ENABLED
+define HAL_BATT_MONITOR_DEFAULT AP_BattMonitor::Type::BEBOP
 
 define DEFAULT_NTF_LED_TYPES (Notify_LED_Board)
 define AP_NOTIFY_DISCO_LED_ENABLED 1

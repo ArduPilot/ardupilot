@@ -13,3 +13,8 @@ LINUX_SPIDEV "ublox"   0   0      SPI_MODE_0 8   SPI_CS_KERNEL  5*MHZ  5*MHZ
 define HAL_LINUX_GPIO_NAVIO_ENABLED 1
 
 define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS | Notify_LED_PCA9685LED_I2C_External)
+
+define HAL_BATT_VOLT_PIN                  2
+define HAL_BATT_CURR_PIN                  3
+define HAL_BATT_VOLT_SCALE                11.3f
+define HAL_BATT_CURR_SCALE                17.0f
