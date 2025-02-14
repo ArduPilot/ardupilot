@@ -35,6 +35,7 @@ class AP_ExternalAHRS {
 public:
     friend class AP_ExternalAHRS_backend;
     friend class AP_ExternalAHRS_VectorNav;
+    friend class AP_ExternalAHRS_AnelloX3;
 
     AP_ExternalAHRS();
 
@@ -62,6 +63,9 @@ public:
         // 8 reserved for SBG
         // 9 reserved for EulerNav
         // 10 reserved for Aeron
+#if AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
+         AnelloX3 = 11,
+#endif
     };
 
     static AP_ExternalAHRS *get_singleton(void) {
@@ -176,6 +180,7 @@ protected:
 
     enum class OPTIONS {
         VN_UNCOMP_IMU = 1U << 0,
+        X3_USE_MEMS_GYRO = 1U << 1,
     };
     bool option_is_set(OPTIONS option) const { return (options.get() & int32_t(option)) != 0; }
 
