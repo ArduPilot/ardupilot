@@ -1,5 +1,6 @@
 # Erle Robotics Brain 2
 
+define DEFAULT_NTF_LED_TYPES (Notify_LED_Board)
 define AP_NOTIFY_GPIO_LED_3_ENABLED 1
 define HAL_GPIO_A_LED_PIN        24
 define HAL_GPIO_B_LED_PIN        25
