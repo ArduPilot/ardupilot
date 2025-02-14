@@ -15,7 +15,7 @@
 
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 
-#ifdef HAL_PERIPH_ENABLE_RCIN
+#if AP_PERIPH_RCIN_ENABLED
 
 #ifndef AP_PERIPH_RC1_PORT_DEFAULT
 #define AP_PERIPH_RC1_PORT_DEFAULT -1
@@ -176,4 +176,4 @@ void AP_Periph_FW::can_send_RCInput(uint8_t quality, uint16_t *values, uint8_t n
                      total_size);
 }
 
-#endif  // HAL_PERIPH_ENABLE_RCIN
+#endif  // AP_PERIPH_RCIN_ENABLED

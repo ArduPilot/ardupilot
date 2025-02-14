@@ -122,7 +122,7 @@ private:
     void write_goal_topic();
     bool update_topic_goal(geographic_msgs_msg_GeoPointStamped& msg);
     geographic_msgs_msg_GeoPointStamped prev_goal_msg;
-# endif // AP_DDS_GOAL_PUB_ENABLED
+#endif // AP_DDS_GOAL_PUB_ENABLED
 
 #if AP_DDS_GEOPOSE_PUB_ENABLED
     geographic_msgs_msg_GeoPoseStamped geo_pose_topic;

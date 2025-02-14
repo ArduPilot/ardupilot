@@ -243,7 +243,7 @@ void AP_Relay::convert_params()
 #endif
 
     // Find old default param
-    int8_t default_state = 0; // off was the old behaviour
+    AP_Relay_Params::DefaultState default_state = AP_Relay_Params::DefaultState::OFF; // off was the old behaviour
     const bool have_default = AP_Param::get_param_by_index(this, 4, AP_PARAM_INT8, &default_state);
 
     // grab the old values if they were set
@@ -300,7 +300,7 @@ void AP_Relay::convert_params()
             new_fun = AP_Relay_Params::FUNCTION::RELAY;
 
         }
-        _params[i].function.set_and_save(int8_t(new_fun));
+        _params[i].function.set_and_save(new_fun);
 
 
         // Set the default state

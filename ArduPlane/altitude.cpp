@@ -66,6 +66,9 @@ void Plane::setup_glide_slope(void)
       the new altitude as quickly as possible.
      */
     switch (control_mode->mode_number()) {
+#if MODE_AUTOLAND_ENABLED
+    case Mode::Number::AUTOLAND:
+#endif
     case Mode::Number::RTL:
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
@@ -206,17 +209,6 @@ void Plane::set_target_altitude_current(void)
         target_altitude.terrain_following = false;        
     }
 #endif
-}
-
-/*
-  set the target altitude to the current altitude, with ALT_OFFSET adjustment
- */
-void Plane::set_target_altitude_current_adjusted(void)
-{
-    set_target_altitude_current();
-
-    // use adjusted_altitude_cm() to take account of ALTITUDE_OFFSET
-    target_altitude.amsl_cm = adjusted_altitude_cm();
 }
 
 /*
@@ -719,10 +711,10 @@ void Plane::rangefinder_height_update(void)
         // to misconfiguration or a faulty sensor
         if (rangefinder_state.in_range_count < 10) {
             if (!is_equal(distance, rangefinder_state.last_distance) &&
-                fabsf(rangefinder_state.initial_range - distance) > 0.05f * rangefinder.max_distance_cm_orient(rangefinder_orientation())*0.01f) {
+                fabsf(rangefinder_state.initial_range - distance) > 0.05f * rangefinder.max_distance_orient(rangefinder_orientation())) {
                 rangefinder_state.in_range_count++;
             }
-            if (fabsf(rangefinder_state.last_distance - distance) > rangefinder.max_distance_cm_orient(rangefinder_orientation())*0.01*0.2) {
+            if (fabsf(rangefinder_state.last_distance - distance) > rangefinder.max_distance_orient(rangefinder_orientation())*0.2) {
                 // changes by more than 20% of full range will reset counter
                 rangefinder_state.in_range_count = 0;
             }
@@ -817,6 +809,9 @@ const Plane::TerrainLookupTable Plane::Terrain_lookup[] = {
     {Mode::Number::QRTL, terrain_bitmask::QRTL},
     {Mode::Number::QLAND, terrain_bitmask::QLAND},
     {Mode::Number::QLOITER, terrain_bitmask::QLOITER},
+#endif
+#if MODE_AUTOLAND_ENABLED
+    {Mode::Number::AUTOLAND, terrain_bitmask::AUTOLAND},
 #endif
 };
 

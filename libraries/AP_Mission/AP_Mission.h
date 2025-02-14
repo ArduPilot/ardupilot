@@ -507,6 +507,9 @@ public:
         return _commands_max;
     }
 
+    // Present - returns true if there is a mission currently loaded, ignoring home which is stored in index 0
+    bool present() const { return _cmd_total > 1; }
+
     /// start - resets current commands to point to the beginning of the mission
     ///     To-Do: should we validate the mission first and return true/false?
     void start();
@@ -630,11 +633,6 @@ public:
     /// load_cmd_from_storage - load command from storage
     ///     true is return if successful
     bool read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const;
-
-    /// write_cmd_to_storage - write a command to storage
-    ///     cmd.index is used to calculate the storage location
-    ///     true is returned if successful
-    bool write_cmd_to_storage(uint16_t index, const Mission_Command& cmd);
 
     /// write_home_to_storage - writes the special purpose cmd 0 (home) to storage
     ///     home is taken directly from ahrs
@@ -810,6 +808,11 @@ private:
     ///
     /// private methods
     ///
+
+    /// write_cmd_to_storage - write a command to storage
+    ///     cmd.index is used to calculate the storage location
+    ///     true is returned if successful
+    bool write_cmd_to_storage(uint16_t index, const Mission_Command& cmd);
 
     /// complete - mission is marked complete and clean-up performed including calling the mission_complete_fn
     void complete();

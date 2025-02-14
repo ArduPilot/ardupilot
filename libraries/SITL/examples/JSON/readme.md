@@ -58,6 +58,7 @@ This is a example input frame, it should be preceded by and terminated with a ca
 {"timestamp":2500,"imu":{"gyro":[0,0,0],"accel_body":[0,0,0]},"position":[0,0,0],"attitude":[0,0,0],"velocity":[0,0,0]}
 ```
 The order of fields is not important.
+Note that the timestamp is the absolute physics time, not the timestep.
 
 It is possible to send optional fields to provide data for additional sensors, in most cases this will require setting the relevant sensor type param to the SITL driver.
 

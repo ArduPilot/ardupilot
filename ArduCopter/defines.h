@@ -51,7 +51,8 @@ enum tuning_func {
     TUNING_RATE_YAW_FILT =              56, // yaw rate input filter
     UNUSED =                            57, // was winch control
     TUNING_SYSTEM_ID_MAGNITUDE =        58, // magnitude of the system ID signal
-    TUNING_POS_CONTROL_ANGLE_MAX =      59  // position controller maximum angle
+    TUNING_POS_CONTROL_ANGLE_MAX =      59, // position controller maximum angle
+    TUNING_LOITER_MAX_XY_SPEED =        60, // maximum loiter horizontal speed
 };
 
 // Yaw behaviours during missions - possible values for WP_YAW_BEHAVIOR parameter
@@ -87,7 +88,8 @@ enum LoggingParameters {
      LOG_GUIDED_POSITION_TARGET_MSG,
      LOG_SYSIDD_MSG,
      LOG_SYSIDS_MSG,
-     LOG_GUIDED_ATTITUDE_TARGET_MSG
+     LOG_GUIDED_ATTITUDE_TARGET_MSG,
+     LOG_RATE_THREAD_DT_MSG
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)

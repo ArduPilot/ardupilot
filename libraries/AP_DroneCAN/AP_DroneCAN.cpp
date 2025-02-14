@@ -1393,10 +1393,10 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
         .force = msg.force,
         .speed = msg.speed,
         .duty_cycle = msg.power_rating_pct,
-        .valid_types = AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
-                       AP_Servo_Telem::TelemetryData::Types::FORCE |
-                       AP_Servo_Telem::TelemetryData::Types::SPEED |
-                       AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE
+        .present_types = AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
+                         AP_Servo_Telem::TelemetryData::Types::FORCE |
+                         AP_Servo_Telem::TelemetryData::Types::SPEED |
+                         AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE
     };
 
     servo_telem->update_telem_data(msg.actuator_id, telem_data);
@@ -1422,13 +1422,13 @@ void AP_DroneCAN::handle_himark_servoinfo(const CanardRxTransfer& transfer, cons
         .motor_temperature_cdeg = int16_t(((msg.motor_temp * 0.2) - 40) * 100),
         .pcb_temperature_cdeg = int16_t(((msg.pcb_temp * 0.2) - 40) * 100),
         .status_flags = msg.error_status,
-        .valid_types = AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION |
-                       AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
-                       AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
-                       AP_Servo_Telem::TelemetryData::Types::CURRENT |
-                       AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP |
-                       AP_Servo_Telem::TelemetryData::Types::PCB_TEMP |
-                       AP_Servo_Telem::TelemetryData::Types::STATUS
+        .present_types = AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION |
+                         AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
+                         AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
+                         AP_Servo_Telem::TelemetryData::Types::CURRENT |
+                         AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP |
+                         AP_Servo_Telem::TelemetryData::Types::PCB_TEMP |
+                         AP_Servo_Telem::TelemetryData::Types::STATUS
     };
 
     servo_telem->update_telem_data(msg.servo_id, telem_data);
@@ -1447,13 +1447,13 @@ void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, 
         .measured_position = ToDeg(msg.actual_position),
         .voltage = msg.voltage * 0.2,
         .current = msg.current * 0.025,
-        .duty_cycle = msg.motor_pwm * (100.0/255.0),
-        .motor_temperature_cdeg = (int16_t(msg.motor_temperature) - 50)) * 100,
-        .valid_types = AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
-                       AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
-                       AP_Servo_Telem::TelemetryData::Types::CURRENT |
-                       AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE |
-                       AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP
+        .duty_cycle = uint8_t(msg.motor_pwm * (100.0/255.0)),
+        .motor_temperature_cdeg = int16_t((msg.motor_temperature - 50) * 100),
+        .present_types = AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
+                         AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
+                         AP_Servo_Telem::TelemetryData::Types::CURRENT |
+                         AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE |
+                         AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP
     };
 
     servo_telem->update_telem_data(msg.actuator_id, telem_data);
@@ -1953,6 +1953,24 @@ void AP_DroneCAN::logging(void)
         return;
     }
     const auto &s = *stats;
+
+// @LoggerMessage: CANS
+// @Description: CAN Bus Statistics
+// @Field: TimeUS: Time since system startup
+// @Field: I: driver index
+// @Field: T: transmit success count
+// @Field: Trq: transmit request count
+// @Field: Trej: transmit reject count
+// @Field: Tov: transmit overflow count
+// @Field: Tto: transmit timeout count
+// @Field: Tab: transmit abort count
+// @Field: R: receive count
+// @Field: Rov: receive overflow count
+// @Field: Rer: receive error count
+// @Field: Bo: bus offset error count
+// @Field: Etx: ESC successful send count
+// @Field: Stx: Servo successful send count
+// @Field: Ftx: ESC/Servo failed-to-send count
     AP::logger().WriteStreaming("CANS",
                                 "TimeUS,I,T,Trq,Trej,Tov,Tto,Tab,R,Rov,Rer,Bo,Etx,Stx,Ftx",
                                 "s#-------------",

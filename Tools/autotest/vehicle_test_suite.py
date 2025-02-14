@@ -1715,8 +1715,8 @@ class FRSkySPort(FRSky):
             if not self.connect():
                 self.progress("Failed to connect")
                 return
-        self.check_poll()
         self.do_sport_read()
+        self.check_poll()
 
     def do_sport_read(self):
         self.buffer += self.do_read()
@@ -2300,7 +2300,7 @@ class TestSuite(ABC):
     def reboot_check_valgrind_log(self):
         valgrind_log = util.valgrind_log_filepath(binary=self.binary,
                                                   model=self.frame)
-        if os.path.getsize(valgrind_log) > 0:
+        if os.path.isfile(valgrind_log) and (os.path.getsize(valgrind_log) > 0):
             backup_valgrind_log = ("%s-%s" % (str(int(time.time())), valgrind_log))
             shutil.move(valgrind_log, backup_valgrind_log)
 
@@ -2559,18 +2559,6 @@ class TestSuite(ABC):
     def get_sim_parameter_documentation_get_whitelist(self):
         # common parameters
         ret = set([
-            "SIM_ACC_TRIM_X",
-            "SIM_ACC_TRIM_Y",
-            "SIM_ACC_TRIM_Z",
-            "SIM_ARSPD2_OFS",
-            "SIM_ARSPD2_RND",
-            "SIM_ARSPD_OFS",
-            "SIM_ARSPD_RND",
-            "SIM_FTOWESC_ENA",
-            "SIM_FTOWESC_POW",
-            "SIM_IE24_ENABLE",
-            "SIM_IE24_ERROR",
-            "SIM_IE24_STATE",
             "SIM_IMUT1_ACC1_X",
             "SIM_IMUT1_ACC1_Y",
             "SIM_IMUT1_ACC1_Z",
@@ -2711,8 +2699,6 @@ class TestSuite(ABC):
             "SIM_MAG1_OFS_Z",
             "SIM_PARA_ENABLE",
             "SIM_PARA_PIN",
-            "SIM_RICH_CTRL",
-            "SIM_RICH_ENABLE",
             "SIM_SHIP_DSIZE",
             "SIM_SHIP_ENABLE",
             "SIM_SHIP_OFS_X",
@@ -2721,9 +2707,6 @@ class TestSuite(ABC):
             "SIM_SHIP_PSIZE",
             "SIM_SHIP_SPEED",
             "SIM_SHIP_SYSID",
-            "SIM_SONAR_POS_X",
-            "SIM_SONAR_POS_Y",
-            "SIM_SONAR_POS_Z",
             "SIM_TA_ENABLE",
             "SIM_VIB_FREQ_X",
             "SIM_VIB_FREQ_Y",
@@ -3191,7 +3174,7 @@ class TestSuite(ABC):
                     # "name" was found in the XML, so was found in an
                     # @LoggerMessage markup line, but was *NOT* found
                     # in our bodgy parsing of the C++ code (in a
-                    # Log_Write call or in the static structures
+                    # Log_Write call or in the static structures)
                     raise NotAchievedException("documented field %s.%s not found in code" %
                                                (name, label))
         if len(missing) > 0:
@@ -3641,6 +3624,16 @@ class TestSuite(ABC):
         for i in range(0, tocheck):
             if bytes1[i] != bytes2[i]:
                 raise NotAchievedException("differ at offset %u" % i)
+
+    def assert_home_position_not_set(self):
+        try:
+            self.poll_home_position()
+        except NotAchievedException:
+            return
+
+        # if home.lng != 0: etc
+
+        raise NotAchievedException("Home is set when it shouldn't be")
 
     def HIGH_LATENCY2(self):
         '''test sending of HIGH_LATENCY2'''
@@ -5279,11 +5272,12 @@ class TestSuite(ABC):
                                                   ):
         '''returns a list of mission-item-ints from filepath'''
         # self.progress("filepath: %s" % filepath)
-        self.progress("Loading {loaderclass.itemstype()} (%s)" % os.path.basename(filepath))
         wploader = loaderclass(
             target_system=target_system,
             target_component=target_component
         )
+        itemstype = mavutil.mavlink.enums["MAV_MISSION_TYPE"][wploader.mav_mission_type()]
+        self.progress(f"Loading {itemstype} ({os.path.basename(filepath)}")
         wploader.load(filepath)
         return [self.wp_to_mission_item_int(x, wploader.mav_mission_type()) for x in wploader.wpoints]  # noqa:502
 
@@ -5618,7 +5612,7 @@ class TestSuite(ABC):
             16: 1500,
         }
 
-    def set_rc_from_map(self, _map, timeout=20):
+    def set_rc_from_map(self, _map, timeout=20, quiet=False):
         map_copy = _map.copy()
         for v in map_copy.values():
             if not isinstance(v, int):
@@ -5645,7 +5639,8 @@ class TestSuite(ABC):
                     bad_channels += " (ch=%u want=%u got=%u)" % (chan, map_copy[chan], chan_pwm)
                     break
             if len(bad_channels) == 0:
-                self.progress("RC values good")
+                if not quiet:
+                    self.progress("RC values good")
                 break
             self.progress("RC values bad:%s" % bad_channels)
             if not self.rc_thread.is_alive():
@@ -5825,8 +5820,8 @@ class TestSuite(ABC):
     def analog_rangefinder_parameters(self):
         return {
             "RNGFND1_TYPE": 1,
-            "RNGFND1_MIN_CM": 0,
-            "RNGFND1_MAX_CM": 4000,
+            "RNGFND1_MIN": 0,
+            "RNGFND1_MAX": 40.00,
             "RNGFND1_SCALING": 12.12,
             "RNGFND1_PIN": 0,
         }
@@ -6286,6 +6281,35 @@ class TestSuite(ABC):
         if len(want) == 0:
             return
         raise ValueError("Failed to set parameters (%s)" % want)
+
+    def check_parameter_value(self, name, expected_value, max_error_percent):
+        value = self.get_parameter_direct(name, verbose=False)
+
+        # Convert to ratio and find limits
+        error_ratio = max_error_percent / 100
+        limits = [expected_value * (1 + error_ratio), expected_value * (1 - error_ratio)]
+
+        # Ensure that min and max are always the corret way round
+        upper_limit = max(limits)
+        lower_limit = min(limits)
+
+        # Work out the true error percentage
+        error_percent = math.nan
+        if expected_value != 0:
+            error_percent = abs(1.0 - (value / expected_value)) * 100
+
+        # Check value is within limits
+        if (value > upper_limit) or (value < lower_limit):
+            raise ValueError("%s expected %f ± %f%% (%f to %f) got %s with %f%% error" % (
+                name,
+                expected_value,
+                max_error_percent,
+                lower_limit,
+                upper_limit,
+                value,
+                error_percent))
+
+        self.progress("%s: (%f) check passed %f%% error less than %f%%" % (name, value, error_percent, max_error_percent))
 
     def get_parameter(self, *args, **kwargs):
         return self.get_parameter_direct(*args, **kwargs)
@@ -7211,6 +7235,8 @@ class TestSuite(ABC):
             raise NotAchievedException("above max height (%f > %f)" %
                                        (m.distance, dist_max))
 
+        self.progress(f"Rangefinder distance {m.distance} is between {dist_min} and {dist_max}")
+
     def assert_distance_sensor_quality(self, quality):
         m = self.assert_receive_message('DISTANCE_SENSOR')
 
@@ -7875,6 +7901,12 @@ class TestSuite(ABC):
             **kwargs
         )
 
+    def get_local_position_NED(self):
+        '''return a Vector3 repreesenting vehicle position relative to
+        origin in metres, NED'''
+        pos = self.assert_receive_message('LOCAL_POSITION_NED', timeout=1)
+        return Vector3(pos.x, pos.y, pos.z)
+
     def distance_to_local_position(self, local_pos, timeout=30):
         (x, y, z_down) = local_pos  # alt is *up*
 
@@ -8345,8 +8377,8 @@ class TestSuite(ABC):
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
                 raise NotAchievedException(
-                    "Did not see failure-to-arm messages (statustext=%s command_ack=%s" %
-                    (seen_statustext, seen_command_ack))
+                    f"Did not see failure-to-arm messages ({seen_statustext=} {expected_statustext=} {seen_command_ack=})"
+                )
             if now - arm_last_send > 1:
                 arm_last_send = now
                 self.send_mavlink_run_prearms_command()
@@ -8492,10 +8524,8 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Waiting for EKF not having bits %u" % not_required_value)
         last_print_time = 0
         while timeout is None or self.get_sim_time_cached() < tstart + timeout:
-            m = self.mav.recv_match(type='EKF_STATUS_REPORT', blocking=True, timeout=timeout)
-            if m is None:
-                continue
-            current = m.flags
+            esr = self.assert_receive_message('EKF_STATUS_REPORT', timeout=timeout)
+            current = esr.flags
             if self.get_sim_time_cached() - last_print_time > 1:
                 self.progress("Wait EKF.flags: not required:%u current:%u" %
                               (not_required_value, current))
@@ -8503,6 +8533,7 @@ Also, ignores heartbeats not from our target system'''
             if current & not_required_value != not_required_value:
                 self.progress("GPS disable OK")
                 return
+        self.progress(f"Last EKF_STATUS_REPORT: {esr}")
         raise AutoTestTimeoutException("Failed to get EKF.flags=%u disabled" % not_required_value)
 
     def wait_text(self, *args, **kwargs):
@@ -9287,6 +9318,19 @@ Also, ignores heartbeats not from our target system'''
                                        (mavutil.mavlink.enums["MAV_MISSION_RESULT"][m.type].name),)
         self.progress("Upload of all %u items succeeded" % len(items))
 
+    def assert_fetch_mission_item_int(self, target_system, target_component, seq, mission_type):
+        self.mav.mav.mission_request_int_send(target_system,
+                                              target_component,
+                                              seq,
+                                              mission_type)
+        m = self.assert_receive_message(
+            'MISSION_ITEM_INT',
+            condition=f'MISSION_ITEM_INT.mission_type=={mission_type}',
+        )
+        if m is None:
+            raise NotAchievedException("Did not receive MISSION_ITEM_INT")
+        return m
+
     def download_using_mission_protocol(self, mission_type, verbose=False, timeout=10):
         '''mavlink2 required'''
         target_system = 1
@@ -9338,16 +9382,7 @@ Also, ignores heartbeats not from our target system'''
                 return items
             self.progress("Requesting item %u (remaining=%u)" %
                           (next_to_request, len(remaining_to_receive)))
-            self.mav.mav.mission_request_int_send(target_system,
-                                                  target_component,
-                                                  next_to_request,
-                                                  mission_type)
-            m = self.mav.recv_match(type='MISSION_ITEM_INT',
-                                    blocking=True,
-                                    timeout=5,
-                                    condition='MISSION_ITEM_INT.mission_type==%u' % mission_type)
-            if m is None:
-                raise NotAchievedException("Did not receive MISSION_ITEM_INT")
+            m = self.assert_fetch_mission_item_int(target_system, target_component, next_to_request, mission_type)
             if m.target_system != self.mav.source_system:
                 raise NotAchievedException("Wrong target system (want=%u got=%u)" %
                                            (self.mav.source_system, m.target_system))
@@ -13738,8 +13773,11 @@ switch value'''
 
     def FRSkySPort(self):
         '''Test FrSky SPort mode'''
-        self.set_parameter("SERIAL5_PROTOCOL", 4) # serial5 is FRSky sport
-        self.set_parameter("RPM1_TYPE", 10) # enable SITL RPM sensor
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 4, # serial5 is FRSky sport
+            "RPM1_TYPE": 10, # enable SITL RPM sensor
+            "GPS1_TYPE": 100,  # use simulated backend for consistent position
+        })
         port = self.spare_network_port()
         self.customise_SITL_commandline([
             "--serial5=tcp:%u" % port # serial5 spews to localhost port

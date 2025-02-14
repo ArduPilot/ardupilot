@@ -78,8 +78,8 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Param: ENGINE_MUL
     // @DisplayName: Engine failure thrust scaler
     // @Description: Thrust from Motors in SIM_ENGINE_FAIL will be multiplied by this factor
-    // @Units: ms
-    AP_GROUPINFO("ENGINE_MUL",     8, SIM,  engine_mul,  1),
+    // @Range: 0 1
+    AP_GROUPINFO("ENGINE_MUL",     8, SIM,  engine_mul,  0),
     // @Param: WIND_SPD
     // @DisplayName: Simulated Wind speed
     // @Description: Allows you to emulate wind in sim
@@ -236,6 +236,11 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("IMU_POS",       53, SIM,  imu_pos_offset, 0),
     AP_SUBGROUPEXTENSION("",      54, SIM,  var_ins),
+    // @Param: SONAR_POS
+    // @DisplayName: Sonar Offsets
+    // @Description: XYZ position of the sonar relative to the body frame origin
+    // @Units: m
+    // @Vector3Parameter: 1
     AP_GROUPINFO("SONAR_POS",     55, SIM,  rngfnd_pos_offset, 0),
     // @Param: FLOW_POS
     // @DisplayName: Opflow Pos
@@ -246,7 +251,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Param: ENGINE_FAIL
     // @DisplayName: Engine Fail Mask
     // @Description: mask of motors which SIM_ENGINE_MUL will be applied to
-    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8
+    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15, 15: Servo 16, 16: Servo 17, 17: Servo 18, 18: Servo 19, 19: Servo 20, 20: Servo 21, 21: Servo 22, 22: Servo 23, 23: Servo 24, 24: Servo 25, 25: Servo 26, 26: Servo 27, 27: Servo 28, 28: Servo 29, 29: Servo 30, 30: Servo 31, 31: Servo 32
     AP_GROUPINFO("ENGINE_FAIL",   58, SIM,  engine_fail,  0),
     AP_SUBGROUPINFO(models, "",   59, SIM, SIM::ModelParm),
     AP_SUBGROUPEXTENSION("",      60, SIM,  var_mag),
@@ -623,12 +628,15 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Description: Number of simulated IMUs to create
     AP_GROUPINFO("IMU_COUNT",    23, SIM,  imu_count,  2),
 
+    // @Group: FTOWESC_
     // @Path: ./SIM_FETtecOneWireESC.cpp
     AP_SUBGROUPINFO(fetteconewireesc_sim, "FTOWESC_", 30, SIM, FETtecOneWireESC),
 
+    // @Group: RICH_
     // @Path: ./SIM_RichenPower.cpp
     AP_SUBGROUPINFO(richenpower_sim, "RICH_", 31, SIM, RichenPower),
 
+    // @Group: IE24_
     // @Path: ./SIM_IntelligentEnergy24.cpp
     AP_SUBGROUPINFO(ie24_sim, "IE24_", 32, SIM, IntelligentEnergy24),
 
@@ -708,6 +716,12 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Description: Simulated OSD number of text rows
     // @Range: 10 100
     AP_GROUPINFO("OSD_ROWS",     54, SIM,  osd_rows, 16),
+#endif
+
+#if AP_SIM_VOLZ_ENABLED
+    // @Group: VOLZ_
+    // @Path: ./SIM_Volz.cpp
+    AP_SUBGROUPINFO(volz_sim, "VOLZ_", 55, SIM, Volz),
 #endif
 
 #ifdef SFML_JOYSTICK
@@ -1108,6 +1122,11 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("ACC3_SCAL",    24, SIM, accel_scale[2], 0),
 #endif
+    // @Param: ACC_TRIM
+    // @DisplayName: Accelerometer trim
+    // @Description: Trim applied to simulated accelerometer
+    // @User: Advanced
+    // @Vector3Parameter: 1
     AP_GROUPINFO("ACC_TRIM",     25, SIM, accel_trim, 0),
 
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
@@ -1365,6 +1384,12 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
     // @Group: RFL_
     // @Path: ./SIM_FlightAxis.cpp
     AP_SUBGROUPPTR(flightaxis_ptr, "RFL_", 5, SIM::ModelParm, FlightAxis),
+#endif
+
+#if AP_SIM_TETHER_ENABLED
+    // @Group: TETH_
+    // @Path: ./SIM_Tether.cpp
+    AP_SUBGROUPINFO(tether_sim, "TETH_", 6, SIM::ModelParm, TetherSim),
 #endif
 
     AP_GROUPEND

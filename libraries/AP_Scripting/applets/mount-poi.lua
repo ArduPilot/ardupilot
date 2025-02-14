@@ -51,8 +51,6 @@ local last_roi_switch_pos = 0           -- last known rc roi switch position.  U
 local success_count = 0                 -- count of the number of POI calculations (sent to GCS in CAMERA_FEEDBACK message)
 
 -- mavlink message definition
--- initialise mavlink rx with number of messages, and buffer depth
-mavlink.init(1, 10)
 local messages = {}
 messages[180] = { -- CAMERA_FEEDBACK
              { "time_usec", "<I8" },

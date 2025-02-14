@@ -231,6 +231,7 @@ public:
         k_param_pilot_speed_dn,
         k_param_rangefinder_signal_min,
         k_param_surftrak_depth,
+        k_param_pilot_speed,
 
         k_param_vehicle = 257, // vehicle common block of parameters
     };
@@ -267,9 +268,10 @@ public:
 
     // Waypoints
     //
-    AP_Int16        pilot_speed_up;        // maximum vertical ascending velocity the pilot may request
-    AP_Int16        pilot_speed_dn;        // maximum vertical descending velocity the pilot may request
-    AP_Int16        pilot_accel_z;               // vertical acceleration the pilot may request
+    AP_Int16        pilot_speed_up;             // maximum vertical ascending velocity the pilot may request
+    AP_Int16        pilot_speed_dn;             // maximum vertical descending velocity the pilot may request
+    AP_Int16        pilot_speed;                // maximum horizontal (xy) velocity the pilot may request
+    AP_Int16        pilot_accel_z;              // vertical acceleration the pilot may request
 
     // Throttle
     //

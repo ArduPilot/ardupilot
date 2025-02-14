@@ -196,5 +196,9 @@ void Copter::tuning()
     case TUNING_POS_CONTROL_ANGLE_MAX:
         pos_control->set_lean_angle_max_cd(tuning_value * 100.0);
         break;
+
+    case TUNING_LOITER_MAX_XY_SPEED:
+        loiter_nav->set_max_xy_speed(tuning_value);
+        break;
     }
 }

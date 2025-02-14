@@ -42,6 +42,14 @@
 #define HAL_BinarySemaphore ESP32::BinarySemaphore
 #endif
 
+#ifndef HAL_HAVE_HARDWARE_DOUBLE
+#define HAL_HAVE_HARDWARE_DOUBLE 0
+#endif
+
+#ifndef HAL_WITH_EKF_DOUBLE
+#define HAL_WITH_EKF_DOUBLE HAL_HAVE_HARDWARE_DOUBLE
+#endif
+
 #define HAL_NUM_CAN_IFACES 0
 #define HAL_MEM_CLASS HAL_MEM_CLASS_192
 
@@ -95,7 +103,7 @@
 // disble temp cal of gyros by default
 #define HAL_INS_TEMPERATURE_CAL_ENABLE 0
 
-//turn off a bunch of advanced plane scheduler table things. see ArduPlane.cpp
+//turn off a bunch of advanced plane scheduler table things. see Plane.cpp
 #define AP_ADVANCEDFAILSAFE_ENABLED 0
 #define AP_ICENGINE_ENABLED 0
 #define AP_OPTICALFLOW_ENABLED 0

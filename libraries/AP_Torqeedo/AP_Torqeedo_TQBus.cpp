@@ -875,7 +875,7 @@ void AP_Torqeedo_TQBus::send_motor_speed_cmd()
     } else {
         // convert throttle output to motor output in range -1000 to +1000
         // ToDo: convert PWM output to motor output so that SERVOx_MIN, MAX and TRIM take effect
-        _motor_speed_desired = constrain_int16(SRV_Channels::get_output_norm((SRV_Channel::Aux_servo_function_t)_params.servo_fn.get()) * 1000.0, -1000, 1000);
+        _motor_speed_desired = constrain_int16(SRV_Channels::get_output_norm((SRV_Channel::Function)_params.servo_fn.get()) * 1000.0, -1000, 1000);
     }
 
     // updated limited motor speed
@@ -1055,7 +1055,7 @@ void AP_Torqeedo_TQBus::update_esc_telem(float rpm, float voltage, float current
 #if HAL_WITH_ESC_TELEM
     // find servo output channel
     uint8_t telem_esc_index = 0;
-    IGNORE_RETURN(SRV_Channels::find_channel((SRV_Channel::Aux_servo_function_t)_params.servo_fn.get(), telem_esc_index));
+    IGNORE_RETURN(SRV_Channels::find_channel((SRV_Channel::Function)_params.servo_fn.get(), telem_esc_index));
 
     // fill in telemetry data structure
     AP_ESC_Telem_Backend::TelemetryData telem_dat {};

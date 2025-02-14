@@ -740,7 +740,7 @@ void AP_MotorsMulticopter::set_throttle_passthrough_for_esc_calibration(float th
 // output a thrust to all motors that match a given motor mask. This
 // is used to control tiltrotor motors in forward flight. Thrust is in
 // the range 0 to 1
-void AP_MotorsMulticopter::output_motor_mask(float thrust, uint16_t mask, float rudder_dt)
+void AP_MotorsMulticopter::output_motor_mask(float thrust, uint32_t mask, float rudder_dt)
 {
     const int16_t pwm_min = get_pwm_output_min();
     const int16_t pwm_range = get_pwm_output_max() - pwm_min;
@@ -806,7 +806,7 @@ bool AP_MotorsMulticopter::arming_checks(size_t buflen, char *buffer) const
             continue;
         }
         uint8_t chan;
-        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
+        SRV_Channel::Function function = SRV_Channels::get_motor_function(i);
         if (!SRV_Channels::find_channel(function, chan)) {
             hal.util->snprintf(buffer, buflen, "no SERVOx_FUNCTION set to Motor%u", i + 1);
             return false;

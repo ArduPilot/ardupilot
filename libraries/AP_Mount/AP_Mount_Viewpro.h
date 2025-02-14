@@ -160,7 +160,9 @@ private:
         START_RECORD = 0x14,
         STOP_RECORD = 0x15,
         AUTO_FOCUS = 0x19,
-        MANUAL_FOCUS = 0x1A
+        MANUAL_FOCUS = 0x1A,
+        IR_ZOOM_OUT = 0x1B,
+        IR_ZOOM_IN = 0x1C
     };
 
     // C1 rangefinder commands
@@ -371,7 +373,7 @@ private:
     bool send_tracking_command(TrackingCommand cmd, uint8_t value);
 
     // send camera command2 and corresponding parameter values
-    bool send_tracking_command2(TrackingCommand2 cmd, uint16_t param1, uint16_t param2);
+    bool send_tracking_command2(TrackingCommand2 cmd, int16_t param1, int16_t param2);
 
     // send vehicle attitude and position to gimbal
     bool send_m_ahrs();

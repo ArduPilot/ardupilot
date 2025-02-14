@@ -85,6 +85,26 @@
   #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMDISARM
 #endif
 
+// find a default value for ARMING_NEED_POS parameter, and determine
+// whether the parameter should be shown:
+#ifndef AP_ARMING_NEED_LOC_PARAMETER_ENABLED
+// determine whether ARMING_NEED_POS is shown:
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Rover)
+#define AP_ARMING_NEED_LOC_PARAMETER_ENABLED 1
+#else
+#define AP_ARMING_NEED_LOC_PARAMETER_ENABLED 0
+#endif  // build types
+#endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
+
+// if ARMING_NEED_POS is shown, determine what its default should be:
+#if AP_ARMING_NEED_LOC_PARAMETER_ENABLED
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Rover)
+#define AP_ARMING_NEED_LOC_DEFAULT 0
+#else
+#error "Unable to find value for AP_ARMING_NEED_LOC_DEFAULT"
+#endif  // APM_BUILD_TYPE
+#endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
+
 #ifndef PREARM_DISPLAY_PERIOD
 # define PREARM_DISPLAY_PERIOD 30
 #endif
@@ -165,6 +185,15 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CRSDP_IGN", 11, AP_Arming, crashdump_ack.acked, 0),
 #endif  // AP_ARMING_CRASHDUMP_ACK_ENABLED
+
+#if AP_ARMING_NEED_LOC_PARAMETER_ENABLED
+    // @Param: NEED_LOC
+    // @DisplayName: Require vehicle location
+    // @Description: Require that the vehicle have an absolute position before it arms.  This can help ensure that the vehicle can Return To Launch.
+    // @User: Advanced
+    // @Values{Copter,Rover}: 0:Do not require location,1:Require Location
+    AP_GROUPINFO("NEED_LOC", 12, AP_Arming, require_location, float(AP_ARMING_NEED_LOC_DEFAULT)),
+#endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
 
     AP_GROUPEND
 };
@@ -897,7 +926,7 @@ bool AP_Arming::mission_checks(bool report)
     // do not allow arming if there are no mission items and we are in
     // (e.g.) AUTO mode
     if (AP::vehicle()->current_mode_requires_mission() &&
-        (mission == nullptr || mission->num_commands() <= 1)) {
+        (mission == nullptr || !mission->present())) {
         check_failed(ARMING_CHECK_MISSION, report, "Mode requires mission");
         return false;
     }
@@ -949,7 +978,7 @@ bool AP_Arming::servo_checks(bool report) const
 
         // check functions using PWM are enabled
         if (SRV_Channels::get_disabled_channel_mask() & 1U<<i) {
-            const SRV_Channel::Aux_servo_function_t ch_function = c->get_function();
+            const SRV_Channel::Function ch_function = c->get_function();
 
             // motors, e-stoppable functions, neopixels and ProfiLEDs may be digital outputs and thus can be disabled
             // scripting can use its functions as labels for LED setup
@@ -1291,7 +1320,7 @@ bool AP_Arming::fence_checks(bool display_failure)
 }
 #endif  // AP_FENCE_ENABLED
 
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
 bool AP_Arming::camera_checks(bool display_failure)
 {
     if (check_enabled(ARMING_CHECK_CAMERA)) {
@@ -1309,7 +1338,7 @@ bool AP_Arming::camera_checks(bool display_failure)
     }
     return true;
 }
-#endif  // HAL_RUNCAM_ENABLED
+#endif  // AP_CAMERA_RUNCAM_ENABLED
 
 #if OSD_ENABLED
 bool AP_Arming::osd_checks(bool display_failure) const
@@ -1603,7 +1632,7 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if HAL_PROXIMITY_ENABLED
         &  proximity_checks(report)
 #endif
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
         &  camera_checks(report)
 #endif
 #if OSD_ENABLED

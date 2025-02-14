@@ -71,7 +71,7 @@ else
     echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
 fi
 
-pip3 -q install -U $PYTHON_PKGS
+python3 -m pip -q install -U $PYTHON_PKGS
 
 (
     cd /usr/lib/ccache

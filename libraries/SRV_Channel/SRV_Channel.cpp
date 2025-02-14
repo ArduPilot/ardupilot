@@ -64,6 +64,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Param: FUNCTION
     // @DisplayName: Servo output function
     // @Description: Function assigned to this servo. Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function
+    // @SortValues: AlphabeticalZeroAtTop
     // @Values: -1:GPIO
     // @Values{Plane, Copter, Rover}: -1:GPIO
     // @Values: 0:Disabled
@@ -156,6 +157,11 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Values{Plane, Copter, Rover}: 138:Alarm,139:Alarm Inverted
     // @Values: 140:RCIN1Scaled,141:RCIN2Scaled,142:RCIN3Scaled,143:RCIN4Scaled,144:RCIN5Scaled,145:RCIN6Scaled,146:RCIN7Scaled,147:RCIN8Scaled,148:RCIN9Scaled,149:RCIN10Scaled,150:RCIN11Scaled,151:RCIN12Scaled,152:RCIN13Scaled,153:RCIN14Scaled,154:RCIN15Scaled,155:RCIN16Scaled
     // @Values{Plane, Copter, Rover}: 140:RCIN1Scaled,141:RCIN2Scaled,142:RCIN3Scaled,143:RCIN4Scaled,144:RCIN5Scaled,145:RCIN6Scaled,146:RCIN7Scaled,147:RCIN8Scaled,148:RCIN9Scaled,149:RCIN10Scaled,150:RCIN11Scaled,151:RCIN12Scaled,152:RCIN13Scaled,153:RCIN14Scaled,154:RCIN15Scaled,155:RCIN16Scaled
+    // @Values{Plane, Copter}: 160:Motor13,161:Motor14,162:Motor15,163:Motor16
+    // @Values{Plane, Copter}: 164:Motor17,165:Motor18,166:Motor19,167:Motor20
+    // @Values{Plane, Copter}: 168:Motor21,169:Motor22,170:Motor23,171:Motor24
+    // @Values{Plane, Copter}: 172:Motor25,173:Motor26,174:Motor27,175:Motor28
+    // @Values{Plane, Copter}: 176:Motor29,177:Motor30,178:Motor31,179:Motor32
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FUNCTION",  5, SRV_Channel, function, 0),
@@ -303,36 +309,38 @@ uint16_t SRV_Channel::get_limit_pwm(Limit limit) const
 }
 
 // return true if function is for a multicopter motor
-bool SRV_Channel::is_motor(SRV_Channel::Aux_servo_function_t function)
+bool SRV_Channel::is_motor(SRV_Channel::Function function)
 {
     return ((function >= SRV_Channel::k_motor1 && function <= SRV_Channel::k_motor8) ||
-            (function >= SRV_Channel::k_motor9 && function <= SRV_Channel::k_motor12));
+            (function >= SRV_Channel::k_motor9 && function <= SRV_Channel::k_motor12) ||
+            (function >= SRV_Channel::k_motor13 && function <= SRV_Channel::k_motor32));
 }
 
 // return true if function is for anything that should be stopped in a e-stop situation, ie is dangerous
-bool SRV_Channel::should_e_stop(SRV_Channel::Aux_servo_function_t function)
+bool SRV_Channel::should_e_stop(SRV_Channel::Function function)
 {
     switch (function) {
-    case Aux_servo_function_t::k_heli_rsc:  
-    case Aux_servo_function_t::k_heli_tail_rsc:
-    case Aux_servo_function_t::k_motor1:
-    case Aux_servo_function_t::k_motor2:
-    case Aux_servo_function_t::k_motor3:
-    case Aux_servo_function_t::k_motor4:
-    case Aux_servo_function_t::k_motor5:
-    case Aux_servo_function_t::k_motor6:
-    case Aux_servo_function_t::k_motor7:
-    case Aux_servo_function_t::k_motor8:
-    case Aux_servo_function_t::k_starter:
-    case Aux_servo_function_t::k_throttle:
-    case Aux_servo_function_t::k_throttleLeft:
-    case Aux_servo_function_t::k_throttleRight:
-    case Aux_servo_function_t::k_boost_throttle:
-    case Aux_servo_function_t::k_motor9:
-    case Aux_servo_function_t::k_motor10:
-    case Aux_servo_function_t::k_motor11:
-    case Aux_servo_function_t::k_motor12:
-    case Aux_servo_function_t::k_engine_run_enable:
+    case Function::k_heli_rsc:  
+    case Function::k_heli_tail_rsc:
+    case Function::k_motor1:
+    case Function::k_motor2:
+    case Function::k_motor3:
+    case Function::k_motor4:
+    case Function::k_motor5:
+    case Function::k_motor6:
+    case Function::k_motor7:
+    case Function::k_motor8:
+    case Function::k_starter:
+    case Function::k_throttle:
+    case Function::k_throttleLeft:
+    case Function::k_throttleRight:
+    case Function::k_boost_throttle:
+    case Function::k_motor9:
+    case Function::k_motor10:
+    case Function::k_motor11:
+    case Function::k_motor12:
+    case Function::k_motor13 ... Function::k_motor32:
+    case Function::k_engine_run_enable:
         return true;
     default:
         return false;
@@ -341,26 +349,25 @@ bool SRV_Channel::should_e_stop(SRV_Channel::Aux_servo_function_t function)
 }
 
 // return true if function is for a control surface
-bool SRV_Channel::is_control_surface(SRV_Channel::Aux_servo_function_t function)
+bool SRV_Channel::is_control_surface(SRV_Channel::Function function)
 {
-    switch (function)
-    {
-    case SRV_Channel::Aux_servo_function_t::k_flap:  
-    case SRV_Channel::Aux_servo_function_t::k_flap_auto:
-    case SRV_Channel::Aux_servo_function_t::k_aileron:
-    case SRV_Channel::Aux_servo_function_t::k_dspoilerLeft1:
-    case SRV_Channel::Aux_servo_function_t::k_dspoilerLeft2:
-    case SRV_Channel::Aux_servo_function_t::k_dspoilerRight1:
-    case SRV_Channel::Aux_servo_function_t::k_dspoilerRight2:
-    case SRV_Channel::Aux_servo_function_t::k_elevator:
-    case SRV_Channel::Aux_servo_function_t::k_rudder:
-    case SRV_Channel::Aux_servo_function_t::k_flaperon_left:
-    case SRV_Channel::Aux_servo_function_t::k_flaperon_right:
-    case SRV_Channel::Aux_servo_function_t::k_elevon_left:
-    case SRV_Channel::Aux_servo_function_t::k_elevon_right:
-    case SRV_Channel::Aux_servo_function_t::k_vtail_left:
-    case SRV_Channel::Aux_servo_function_t::k_vtail_right:
-    case SRV_Channel::Aux_servo_function_t::k_airbrake:
+    switch (function) {
+    case Function::k_flap:
+    case Function::k_flap_auto:
+    case Function::k_aileron:
+    case Function::k_dspoilerLeft1:
+    case Function::k_dspoilerLeft2:
+    case Function::k_dspoilerRight1:
+    case Function::k_dspoilerRight2:
+    case Function::k_elevator:
+    case Function::k_rudder:
+    case Function::k_flaperon_left:
+    case Function::k_flaperon_right:
+    case Function::k_elevon_left:
+    case Function::k_elevon_right:
+    case Function::k_vtail_left:
+    case Function::k_vtail_right:
+    case Function::k_airbrake:
         return true;
 
     default:
@@ -380,6 +387,8 @@ int8_t SRV_Channel::get_motor_num(void) const
         return int8_t(uint16_t(k_function) - k_motor1);
     case k_motor9 ... k_motor12:
         return 8 + int8_t(uint16_t(k_function) - k_motor9);
+    case k_motor13 ... k_motor32:
+        return 12 + int8_t(uint16_t(k_function) - k_motor13);
     default:
         break;
     }

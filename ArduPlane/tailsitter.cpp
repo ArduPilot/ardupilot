@@ -336,7 +336,7 @@ void Tailsitter::output(void)
 
         if (!quadplane.assisted_flight) {
             // set AP_MotorsMatrix throttles for forward flight
-            motors->output_motor_mask(throttle, motor_mask, plane.rudder_dt);
+            motors->output_motor_mask(throttle, uint32_t(motor_mask.get()), plane.rudder_dt);
 
             // No tilt output unless forward gain is set
             float tilt_left = 0.0;
@@ -470,10 +470,10 @@ void Tailsitter::output(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
 
     // Check for saturated limits
-    bool tilt_lim = _is_vectored && ((fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft)) >= SERVO_MAX) || (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) >= SERVO_MAX));
-    bool roll_lim = _have_rudder && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_rudder)) >= SERVO_MAX);
-    bool pitch_lim = _have_elevator && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_elevator)) >= SERVO_MAX);
-    bool yaw_lim = _have_aileron && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_aileron)) >= SERVO_MAX);
+    bool tilt_lim = _is_vectored && ((fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Function::k_tiltMotorLeft)) >= SERVO_MAX) || (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Function::k_tiltMotorRight)) >= SERVO_MAX));
+    bool roll_lim = _have_rudder && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Function::k_rudder)) >= SERVO_MAX);
+    bool pitch_lim = _have_elevator && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Function::k_elevator)) >= SERVO_MAX);
+    bool yaw_lim = _have_aileron && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Function::k_aileron)) >= SERVO_MAX);
 
     // Mix elevons and V-tail, always giving full priority to pitch
     float elevator_mix = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) * (100.0 - plane.g.mixing_offset) * 0.01 * plane.g.mixing_gain;
@@ -763,15 +763,15 @@ void Tailsitter::speed_scaling(void)
         spd_scaler /= quadplane.ahrs.get_air_density_ratio();
     }
 
-    const SRV_Channel::Aux_servo_function_t functions[] = {
-        SRV_Channel::Aux_servo_function_t::k_aileron,
-        SRV_Channel::Aux_servo_function_t::k_elevator,
-        SRV_Channel::Aux_servo_function_t::k_rudder,
-        SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft,
-        SRV_Channel::Aux_servo_function_t::k_tiltMotorRight};
+    const SRV_Channel::Function functions[] = {
+        SRV_Channel::Function::k_aileron,
+        SRV_Channel::Function::k_elevator,
+        SRV_Channel::Function::k_rudder,
+        SRV_Channel::Function::k_tiltMotorLeft,
+        SRV_Channel::Function::k_tiltMotorRight};
     for (uint8_t i=0; i<ARRAY_SIZE(functions); i++) {
         float v = SRV_Channels::get_output_scaled(functions[i]);
-        if ((functions[i] == SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft) || (functions[i] == SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) {
+        if ((functions[i] == SRV_Channel::Function::k_tiltMotorLeft) || (functions[i] == SRV_Channel::Function::k_tiltMotorRight)) {
             // always apply throttle scaling to tilts
             v *= throttle_scaler;
         } else {

@@ -429,9 +429,9 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
     mavlink_msg_distance_sensor_send(
         chan,
         AP_HAL::millis(),                        // time since system boot TODO: take time of measurement
-        sensor->min_distance_cm(),               // minimum distance the sensor can measure in centimeters
-        sensor->max_distance_cm(),               // maximum distance the sensor can measure in centimeters
-        sensor->distance_cm(),                   // current distance reading
+        MIN(sensor->min_distance() * 100, 65535),// minimum distance the sensor can measure in centimeters
+        MIN(sensor->max_distance() * 100, 65535),// maximum distance the sensor can measure in centimeters
+        MIN(sensor->distance() * 100, 65535),    // current distance reading
         sensor->get_mav_distance_sensor_type(),  // type from MAV_DISTANCE_SENSOR enum
         instance,                                // onboard ID of the sensor == instance
         sensor->orientation(),                   // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
@@ -658,7 +658,7 @@ void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
 // current mission state.
 MISSION_STATE GCS_MAVLINK::mission_state(const AP_Mission &mission) const
 {
-    if (mission.num_commands() < 2) {  // 1 means just home is present
+    if (!mission.present()) {
         return MISSION_STATE_NO_MISSION;
     }
     switch (mission.state()) {
@@ -1070,9 +1070,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_TERRAIN_AVAILABLE
         { MAVLINK_MSG_ID_TERRAIN_REQUEST,       MSG_TERRAIN_REQUEST},
         { MAVLINK_MSG_ID_TERRAIN_REPORT,        MSG_TERRAIN_REPORT},
-#endif
-#if AP_MAVLINK_BATTERY2_ENABLED
-        { MAVLINK_MSG_ID_BATTERY2,              MSG_BATTERY2},
 #endif
 #if AP_CAMERA_ENABLED
         { MAVLINK_MSG_ID_CAMERA_FEEDBACK,       MSG_CAMERA_FEEDBACK},
@@ -2178,21 +2175,23 @@ void GCS_MAVLINK::send_raw_imu()
 #if AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED
 void GCS_MAVLINK::send_highres_imu()
 {
-    // static const uint16_t HIGHRES_IMU_UPDATED_NONE = 0x00;
     static const uint16_t HIGHRES_IMU_UPDATED_XACC = 0x01;
     static const uint16_t HIGHRES_IMU_UPDATED_YACC = 0x02;
     static const uint16_t HIGHRES_IMU_UPDATED_ZACC = 0x04;
     static const uint16_t HIGHRES_IMU_UPDATED_XGYRO = 0x08;
     static const uint16_t HIGHRES_IMU_UPDATED_YGYRO = 0x10;
     static const uint16_t HIGHRES_IMU_UPDATED_ZGYRO = 0x20;
+#if AP_COMPASS_ENABLED
     static const uint16_t HIGHRES_IMU_UPDATED_XMAG = 0x40;
     static const uint16_t HIGHRES_IMU_UPDATED_YMAG = 0x80;
     static const uint16_t HIGHRES_IMU_UPDATED_ZMAG = 0x100;
+#endif  // AP_COMPASS_ENABLED
+#if AP_BARO_ENABLED
     static const uint16_t HIGHRES_IMU_UPDATED_ABS_PRESSURE = 0x200;
     static const uint16_t HIGHRES_IMU_UPDATED_DIFF_PRESSURE = 0x400;
     static const uint16_t HIGHRES_IMU_UPDATED_PRESSURE_ALT = 0x800;
     static const uint16_t HIGHRES_IMU_UPDATED_TEMPERATURE = 0x1000;
-    static const uint16_t HIGHRES_IMU_UPDATED_ALL = 0xFFFF;
+#endif  // AP_BARO_ENABLED
 
     const AP_InertialSensor &ins = AP::ins();
     const Vector3f& accel = ins.get_accel();
@@ -2217,8 +2216,7 @@ void GCS_MAVLINK::send_highres_imu()
             HIGHRES_IMU_UPDATED_XGYRO | HIGHRES_IMU_UPDATED_YGYRO | HIGHRES_IMU_UPDATED_ZGYRO), 
         .id = ins.get_first_usable_accel(),
     };
-    
-    
+
 #if AP_COMPASS_ENABLED
     const Compass &compass = AP::compass();
     if (compass.get_count() >= 1) {
@@ -2239,14 +2237,6 @@ void GCS_MAVLINK::send_highres_imu()
     reply.fields_updated |= (HIGHRES_IMU_UPDATED_ABS_PRESSURE | HIGHRES_IMU_UPDATED_DIFF_PRESSURE |
         HIGHRES_IMU_UPDATED_PRESSURE_ALT | HIGHRES_IMU_UPDATED_TEMPERATURE);
 #endif
-    static const uint16_t all_flags = (HIGHRES_IMU_UPDATED_XACC | HIGHRES_IMU_UPDATED_YACC | HIGHRES_IMU_UPDATED_ZACC |
-        HIGHRES_IMU_UPDATED_XGYRO | HIGHRES_IMU_UPDATED_YGYRO | HIGHRES_IMU_UPDATED_ZGYRO | 
-        HIGHRES_IMU_UPDATED_XMAG | HIGHRES_IMU_UPDATED_YMAG | HIGHRES_IMU_UPDATED_ZMAG |
-        HIGHRES_IMU_UPDATED_ABS_PRESSURE | HIGHRES_IMU_UPDATED_DIFF_PRESSURE |
-        HIGHRES_IMU_UPDATED_PRESSURE_ALT | HIGHRES_IMU_UPDATED_TEMPERATURE);
-    if (reply.fields_updated == all_flags) {
-        reply.fields_updated |= HIGHRES_IMU_UPDATED_ALL;
-    }
 
     mavlink_msg_highres_imu_send_struct(chan, &reply);
 }
@@ -2790,24 +2780,6 @@ void GCS::setup_uarts()
 #endif
 }
 
-#if AP_BATTERY_ENABLED && AP_MAVLINK_BATTERY2_ENABLED
-// report battery2 state
-void GCS_MAVLINK::send_battery2()
-{
-    const AP_BattMonitor &battery = AP::battery();
-
-    if (battery.num_instances() > 1) {
-        float current;
-        if (battery.current_amps(current, 1)) {
-            current = constrain_float(current * 100,-INT16_MAX,INT16_MAX); // 10*mA
-        } else {
-            current = -1;
-        }
-        mavlink_msg_battery2_send(chan, battery.voltage(1)*1000, current);
-    }
-}
-#endif  // AP_BATTERY_ENABLED && AP_MAVLINK_BATTERY2_ENABLED
-
 /*
   handle a SET_MODE MAVLink message
  */
@@ -3110,7 +3082,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_int
     }
     const RC_Channel::AUX_FUNC aux_func = (RC_Channel::AUX_FUNC)packet.param1;
     const RC_Channel::AuxSwitchPos position = (RC_Channel::AuxSwitchPos)packet.param2;
-    if (!rc().run_aux_function(aux_func, position, RC_Channel::AuxFuncTriggerSource::MAVLINK)) {
+    if (!rc().run_aux_function(aux_func, position, RC_Channel::AuxFuncTrigger::Source::MAVLINK, chan)) {
         // note that this is not quite right; we could be more nuanced
         // about our return code here.
         return MAV_RESULT_FAILED;
@@ -3489,6 +3461,11 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
             WITH_SEMAPHORE(_deadlock_sem.sem);
             send_text(MAV_SEVERITY_WARNING,"deadlock passed");
             return MAV_RESULT_ACCEPTED;
+        }
+        if (is_equal(packet.param4, 101.0f)) {
+            // the capital-U and ~ here are actually important for
+            // testing a MissionPlanner bug!
+            AP_BoardConfig::config_error("YOU~RE WELCOME!");
         }
 #endif  // AP_MAVLINK_FAILURE_CREATION_ENABLED
 
@@ -4284,18 +4261,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 #endif
 
 #if HAL_MOUNT_ENABLED
-#if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
-    case MAVLINK_MSG_ID_MOUNT_CONFIGURE: // deprecated. Use MAV_CMD_DO_MOUNT_CONFIGURE
-        send_received_message_deprecation_warning("MOUNT_CONFIGURE");
-        handle_mount_message(msg);
-        break;
-#endif
-#if AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
-    case MAVLINK_MSG_ID_MOUNT_CONTROL: // deprecated. Use MAV_CMD_DO_MOUNT_CONTROL
-        send_received_message_deprecation_warning("MOUNT_CONTROL");
-        handle_mount_message(msg);
-        break;
-#endif
     case MAVLINK_MSG_ID_GIMBAL_REPORT:
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS:
@@ -5966,57 +5931,6 @@ void GCS_MAVLINK::send_generator_status() const
 }
 #endif
 
-#if AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
-void GCS_MAVLINK::send_water_depth() const
-{
-    if (!HAVE_PAYLOAD_SPACE(chan, WATER_DEPTH)) {
-        return;
-    }
-
-    RangeFinder *rangefinder = RangeFinder::get_singleton();
-
-    if (rangefinder == nullptr || !rangefinder->has_orientation(ROTATION_PITCH_270)){
-        return;
-    } 
-
-    // get position
-    const AP_AHRS &ahrs = AP::ahrs();
-    Location loc;
-    IGNORE_RETURN(ahrs.get_location(loc));
-
-    for (uint8_t i=0; i<rangefinder->num_sensors(); i++) {
-        const AP_RangeFinder_Backend *s = rangefinder->get_backend(i);
-        
-        if (s == nullptr || s->orientation() != ROTATION_PITCH_270 || !s->has_data()) {
-            continue;
-        }
-
-        // get temperature
-        float temp_C;
-        if (!s->get_temp(temp_C)) {
-            temp_C = 0.0f;
-        }
-
-        const bool sensor_healthy = (s->status() == RangeFinder::Status::Good);
-
-        mavlink_msg_water_depth_send(
-            chan,
-            AP_HAL::millis(),   // time since system boot TODO: take time of measurement
-            i,                  // rangefinder instance
-            sensor_healthy,     // sensor healthy
-            loc.lat,            // latitude of vehicle
-            loc.lng,            // longitude of vehicle
-            loc.alt * 0.01f,    // altitude of vehicle (MSL)
-            ahrs.get_roll(),    // roll in radians
-            ahrs.get_pitch(),   // pitch in radians
-            ahrs.get_yaw(),     // yaw in radians
-            s->distance(),    // distance in meters
-            temp_C);            // temperature in degC
-    }
-
-}
-#endif  // AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
-
 #if HAL_ADSB_ENABLED
 void GCS_MAVLINK::send_uavionix_adsb_out_status() const
 {
@@ -6233,13 +6147,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_BATTERY_STATUS:
         send_battery_status();
         break;
-
-#if AP_MAVLINK_BATTERY2_ENABLED
-    case MSG_BATTERY2:
-        CHECK_PAYLOAD_SIZE(BATTERY2);
-        send_battery2();
-        break;
-#endif
 #endif // AP_BATTERY_ENABLED
 
 #if AP_AHRS_ENABLED
@@ -6544,13 +6451,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_WINCH_STATUS:
         CHECK_PAYLOAD_SIZE(WINCH_STATUS);
         send_winch_status();
-        break;
-#endif
-
-#if AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
-    case MSG_WATER_DEPTH:
-        CHECK_PAYLOAD_SIZE(WATER_DEPTH);
-        send_water_depth();
         break;
 #endif
 
@@ -6932,7 +6832,6 @@ void GCS::update_passthru(void)
     WITH_SEMAPHORE(_passthru.sem);
     uint32_t now = AP_HAL::millis();
     uint32_t baud1, baud2;
-    uint8_t parity1 = 0, parity2 = 0;
     bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s,
                                                     baud1, baud2);
     if (enabled && !_passthru.enabled) {
@@ -6942,8 +6841,8 @@ void GCS::update_passthru(void)
         _passthru.last_port1_data_ms = now;
         _passthru.baud1 = baud1;
         _passthru.baud2 = baud2;
-        _passthru.parity1 = parity1 = _passthru.port1->get_parity();
-        _passthru.parity2 = parity2 = _passthru.port2->get_parity();
+        _passthru.parity1 = _passthru.port1->get_parity();
+        _passthru.parity2 = _passthru.port2->get_parity();
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru enabled");
         if (!_passthru.timer_installed) {
             _passthru.timer_installed = true;
@@ -6963,11 +6862,11 @@ void GCS::update_passthru(void)
             _passthru.port2->begin(baud2);
         }
         // Restore original parity
-        if (_passthru.parity1 != parity1) {
-            _passthru.port1->configure_parity(parity1);
+        if (_passthru.parity1 != _passthru.port1->get_parity()) {
+            _passthru.port1->configure_parity(_passthru.parity1);
         }
-        if (_passthru.parity2 != parity2) {
-            _passthru.port2->configure_parity(parity2);
+        if (_passthru.parity2 != _passthru.port2->get_parity()) {
+            _passthru.port2->configure_parity(_passthru.parity2);
         }
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru disabled");
     } else if (enabled &&
@@ -6988,11 +6887,11 @@ void GCS::update_passthru(void)
             _passthru.port2->begin(baud2);
         }
         // Restore original parity
-        if (_passthru.parity1 != parity1) {
-            _passthru.port1->configure_parity(parity1);
+        if (_passthru.parity1 != _passthru.port1->get_parity()) {
+            _passthru.port1->configure_parity(_passthru.parity1);
         }
-        if (_passthru.parity2 != parity2) {
-            _passthru.port2->configure_parity(parity2);
+        if (_passthru.parity2 != _passthru.port2->get_parity()) {
+            _passthru.port2->configure_parity(_passthru.parity2);
         }
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru timed out");
     }

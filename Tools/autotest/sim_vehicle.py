@@ -201,7 +201,7 @@ def under_wsl2():
 
 
 def wsl2_host_ip():
-    if not under_wsl2():
+    if not under_wsl2() or cmd_opts.no_wsl2_network:
         return None
 
     pipe = subprocess.Popen("ip route show default | awk '{print $3}'",
@@ -766,7 +766,6 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(strace_options)
 
     cmd.append(binary)
-    cmd.append("-S")
     if opts.wipe_eeprom:
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
@@ -1297,6 +1296,11 @@ group_sim.add_option("", "--no-extra-ports",
                      dest='no_extra_ports',
                      default=False,
                      help="Disable setup of UDP 14550 and 14551 output")
+group_sim.add_option("", "--no-wsl2-network",
+                     action='store_true',
+                     dest='no_wsl2_network',
+                     default=False,
+                     help="Disable setup of WSL2 network for output")
 group_sim.add_option("-Z", "--swarm",
                      type='string',
                      default=None,

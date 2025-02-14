@@ -156,6 +156,10 @@
 #define HAL_OS_SOCKETS 0
 #endif
 
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 0
+#endif
+
 #ifndef HAL_PARAM_DEFAULTS_PATH
 #define HAL_PARAM_DEFAULTS_PATH nullptr
 #endif
@@ -184,6 +188,10 @@
 #define HAL_REQUIRES_BDSHOT_SUPPORT (defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT)
 #endif
 
+#ifndef AP_NOTIFY_TONEALARM_ENABLED
+#define AP_NOTIFY_TONEALARM_ENABLED 0
+#endif
+
 // support for Extended DShot Telemetry v2 is enabled only if any kind of such telemetry
 // can in principle arrive, either from servo outputs or from IOMCU
 
@@ -206,8 +214,16 @@
 #define HAL_WITH_DSP HAL_GYROFFT_ENABLED
 #endif
 
+#ifndef AP_HAL_UARTDRIVER_ENABLED
+#define AP_HAL_UARTDRIVER_ENABLED 1
+#endif
+
 #ifndef HAL_OS_FATFS_IO
 #define HAL_OS_FATFS_IO 0
+#endif
+
+#ifndef HAL_OS_LITTLEFS_IO
+#define HAL_OS_LITTLEFS_IO 0
 #endif
 
 #ifndef HAL_BARO_DEFAULT
@@ -383,6 +399,10 @@
 
 #ifndef HAL_WITH_POSTYPE_DOUBLE
 #define HAL_WITH_POSTYPE_DOUBLE BOARD_FLASH_SIZE > 1024
+#endif
+
+#ifndef HAL_INS_RATE_LOOP
+#define HAL_INS_RATE_LOOP 0
 #endif
 
 #define HAL_GPIO_LED_OFF (!HAL_GPIO_LED_ON)

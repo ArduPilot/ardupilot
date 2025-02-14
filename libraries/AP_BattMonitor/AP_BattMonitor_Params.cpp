@@ -113,7 +113,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @DisplayName: Low battery failsafe action
     // @Description: What action the vehicle should perform if it hits a low battery failsafe
     // @Values{Plane}: 0:None,1:RTL,2:Land,3:Terminate,4:QLand,6:Loiter to QLand
-    // @Values{Copter}: 0:None,1:Land,2:RTL,3:SmartRTL or RTL,4:SmartRTL or Land,5:Terminate,6:Auto DO_LAND_START or RTL
+    // @Values{Copter}: 0:None,1:Land,2:RTL,3:SmartRTL or RTL,4:SmartRTL or Land,5:Terminate,6:Auto DO_LAND_START/DO_RETURN_PATH_START or RTL
     // @Values{Sub}: 0:None,2:Disarm,3:Enter surface mode
     // @Values{Rover}: 0:None,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold,5:Terminate
     // @Values{Tracker}: 0:None
@@ -125,7 +125,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @DisplayName: Critical battery failsafe action
     // @Description: What action the vehicle should perform if it hits a critical battery failsafe
     // @Values{Plane}: 0:None,1:RTL,2:Land,3:Terminate,4:QLand,5:Parachute,6:Loiter to QLand
-    // @Values{Copter}: 0:None,1:Land,2:RTL,3:SmartRTL or RTL,4:SmartRTL or Land,5:Terminate,6:Auto DO_LAND_START or RTL
+    // @Values{Copter}: 0:None,1:Land,2:RTL,3:SmartRTL or RTL,4:SmartRTL or Land,5:Terminate,6:Auto DO_LAND_START/DO_RETURN_PATH_START or RTL
     // @Values{Sub}: 0:None,2:Disarm,3:Enter surface mode
     // @Values{Rover}: 0:None,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold,5:Terminate
     // @Values{Tracker}: 0:None
@@ -156,7 +156,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Battery monitor options
     // @Description: This sets options to change the behaviour of the battery monitor
-    // @Bitmask: 0:Ignore DroneCAN SoC, 1:MPPT reports input voltage and current, 2:MPPT Powered off when disarmed, 3:MPPT Powered on when armed, 4:MPPT Powered off at boot, 5:MPPT Powered on at boot, 6:Send resistance compensated voltage to GCS, 7:Allow DroneCAN InfoAux to be from a different CAN node, 9:Sum monitor measures minimum voltage instead of average
+    // @Bitmask: 0:Ignore DroneCAN SoC, 1:MPPT reports input voltage and current, 2:MPPT Powered off when disarmed, 3:MPPT Powered on when armed, 4:MPPT Powered off at boot, 5:MPPT Powered on at boot, 6:Send resistance compensated voltage to GCS, 7:Allow DroneCAN InfoAux to be from a different CAN node, 8:Battery is for internal autopilot use only, 9:Sum monitor measures minimum voltage instead of average
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 21, AP_BattMonitor_Params, _options, 0),
 #endif // AP_BATTERY_OPTIONS_PARAM_ENABLED

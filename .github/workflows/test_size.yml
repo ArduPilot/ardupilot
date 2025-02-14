@@ -72,6 +72,7 @@ jobs:
             MatekF405,
             KakuteF7,
             MatekH743-bdshot,
+            MambaH743v4,  # for littlefs support
             Pixhawk1-1M,
             MatekF405-CAN,  # see special "build bootloader" code below
             DrotekP3Pro,  # see special "build bootloader" code below

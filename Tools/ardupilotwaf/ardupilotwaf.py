@@ -146,6 +146,24 @@ def get_legacy_defines(sketch_name, bld):
         'AP_BUILD_TARGET_NAME="' + sketch_name + '"',
     ]
 
+def set_double_precision_flags(flags):
+    # set up flags for double precision files:
+    # * remove all single precision constant flags
+    # * set define to allow double precision math in AP headers
+
+    flags = flags[:] # copy the list to avoid affecting other builds
+
+    # remove GCC and clang single precision constant flags
+    for opt in ('-fsingle-precision-constant', '-cl-single-precision-constant'):
+        while True: # might have multiple copies from different sources
+            try:
+                flags.remove(opt)
+            except ValueError:
+                break
+    flags.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+
+    return flags
+
 IGNORED_AP_LIBRARIES = [
     'doc',
     'AP_Scripting', # this gets explicitly included when it is needed and should otherwise never be globbed in
@@ -476,14 +494,7 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
         )
         filename = os.path.basename(f.abspath())
         if filename in DOUBLE_PRECISION_SOURCES:
-            t.env.CXXFLAGS = t.env.CXXFLAGS[:]
-            single_precision_option='-fsingle-precision-constant'
-            if single_precision_option in t.env.CXXFLAGS:
-                t.env.CXXFLAGS.remove(single_precision_option)
-            single_precision_option='-cl-single-precision-constant'
-            if single_precision_option in t.env.CXXFLAGS:
-                t.env.CXXFLAGS.remove(single_precision_option)
-            t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+            t.env.CXXFLAGS = set_double_precision_flags(t.env.CXXFLAGS)
 
 _versions = []
 

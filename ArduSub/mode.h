@@ -51,6 +51,7 @@ public:
         MANUAL =       19,  // Pass-through input with no stabilization
         MOTOR_DETECT = 20,  // Automatically detect motors orientation
         SURFTRAK =     21   // Track distance above seafloor (hold range)
+        // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
     // constructor
@@ -419,7 +420,7 @@ public:
 
     bool init(bool ignore_checks) override;
 
-    bool requires_GPS() const override { return false; }
+    bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
@@ -429,6 +430,10 @@ protected:
     const char *name() const override { return "POSHOLD"; }
     const char *name4() const override { return "POSH"; }
     Mode::Number number() const override { return Mode::Number::POSHOLD; }
+
+private:
+
+    void control_horizontal();
 };
 
 

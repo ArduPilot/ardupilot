@@ -31,22 +31,10 @@ AP_Servo_Telem::AP_Servo_Telem()
     _singleton = this;
 }
 
-// return true if the data is stale
-bool AP_Servo_Telem::TelemetryData::stale(uint32_t now_ms) const volatile
-{
-    return (last_update_ms == 0) || ((now_ms - last_update_ms) > 5000);
-}
-
 // return true if the requested types of data are available
 bool AP_Servo_Telem::TelemetryData::present(const uint16_t type_mask) const volatile
 {
-    return (valid_types & type_mask) != 0;
-}
-
-// return true if the requested types of data are available and not stale
-bool AP_Servo_Telem::TelemetryData::valid(const uint16_t type_mask) const volatile
-{
-    return present(type_mask) && !stale(AP_HAL::millis());
+    return (present_types & type_mask) != 0;
 }
 
 // record an update to the telemetry data together with timestamp
@@ -58,7 +46,7 @@ void AP_Servo_Telem::update_telem_data(const uint8_t servo_index, const Telemetr
     // can only get slightly more up-to-date information that perhaps they were expecting or might
     // read data that has just gone stale - both of these are safe and avoid the overhead of locking
 
-    if (servo_index >= ARRAY_SIZE(_telem_data) || (new_data.valid_types == 0)) {
+    if (servo_index >= ARRAY_SIZE(_telem_data) || (new_data.present_types == 0)) {
         return;
     }
     active_mask |= 1U << servo_index;
@@ -96,7 +84,7 @@ void AP_Servo_Telem::update_telem_data(const uint8_t servo_index, const Telemetr
         telemdata.status_flags = new_data.status_flags;
     }
 
-    telemdata.valid_types |= new_data.valid_types;
+    telemdata.present_types |= new_data.present_types;
     telemdata.last_update_ms = AP_HAL::millis();
 }
 
@@ -151,6 +139,23 @@ void AP_Servo_Telem::write_log()
 
 }
 #endif  // HAL_LOGGING_ENABLED
+
+// Fill in telem structure if telem is available, return false if not
+bool AP_Servo_Telem::get_telem(const uint8_t servo_index, TelemetryData& telem) const volatile
+{
+    // Check for valid index
+    if (servo_index >= ARRAY_SIZE(_telem_data)) {
+        return false;
+    }
+
+    // Check if data has ever been received for the servo index provided
+    if ((active_mask & (1U << servo_index)) == 0) {
+        return false;
+    }
+
+    telem = *const_cast<TelemetryData*>(&_telem_data[servo_index]);
+    return true;
+}
 
 // Get the AP_Servo_Telem singleton
 AP_Servo_Telem *AP_Servo_Telem::get_singleton()

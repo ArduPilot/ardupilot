@@ -16,7 +16,6 @@ from pymavlink import mavutil
 import vehicle_test_suite
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import AutoTestTimeoutException
-from vehicle_test_suite import PreconditionFailedException
 
 if sys.version_info[0] < 3:
     ConnectionResetError = AutoTestTimeoutException
@@ -196,8 +195,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 "SCR_ENABLE": 1,
                 "RNGFND1_TYPE": 36,
                 "RNGFND1_ORIENT": 25,
-                "RNGFND1_MIN_CM": 10,
-                "RNGFND1_MAX_CM": 5000,
+                "RNGFND1_MIN": 0.10,
+                "RNGFND1_MAX": 50.00,
             })
 
             self.install_example_script_context("rangefinder_quality_test.lua")
@@ -244,8 +243,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def Surftrak(self):
         """Test SURFTRAK mode"""
 
-        if self.get_parameter('RNGFND1_MAX_CM') != 3000.0:
-            raise PreconditionFailedException("RNGFND1_MAX_CM is not %g" % 3000.0)
+        self.assert_parameter_value('RNGFND1_MAX', 30)
 
         # Something closer to Bar30 noise
         self.context_push()
@@ -292,8 +290,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             "SCR_ENABLE": 1,
             "RNGFND1_TYPE": 36,
             "RNGFND1_ORIENT": 25,
-            "RNGFND1_MIN_CM": 10,
-            "RNGFND1_MAX_CM": 3000,
+            "RNGFND1_MIN": 0.10,
+            "RNGFND1_MAX": 30.00,
             "SCR_USER1": 2,                 # Configuration bundle
             "SCR_USER2": sea_floor_depth,   # Depth in meters
             "SCR_USER3": 101,               # Output log records
@@ -788,8 +786,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def TerrainMission(self):
         """Mission using surface tracking"""
 
-        if self.get_parameter('RNGFND1_MAX_CM') != 3000.0:
-            raise PreconditionFailedException("RNGFND1_MAX_CM is not %g" % 3000.0)
+        self.assert_parameter_value('RNGFND1_MAX', 30)
 
         filename = "terrain_mission.txt"
         self.progress("Executing mission %s" % filename)
@@ -995,6 +992,61 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 }, epsilon=10) # allow rounding
                 seen_3 = True
 
+    def wait_for_stop(self):
+        """Watch the sub slow down and stop"""
+        tstart = self.get_sim_time_cached()
+        lstart = self.mav.location()
+
+        dmax = 0
+        dprev = 0
+
+        while True:
+            self.delay_sim_time(1)
+
+            dcurr = self.get_distance(lstart, self.mav.location())
+
+            if dcurr - dmax < -0.2:
+                raise NotAchievedException("Bounced back from %.2fm to %.2fm" % (dmax, dcurr))
+            if dcurr > dmax:
+                dmax = dcurr
+
+            if abs(dcurr - dprev) < 0.1:
+                self.progress("Stopping distance %.2fm, less than %.2fs" % (dcurr, self.get_sim_time_cached() - tstart))
+                return
+
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("Took to long to stop")
+
+            dprev = dcurr
+
+    def PosHoldBounceBack(self):
+        """Test for bounce back in POSHOLD mode"""
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # dive a little
+        self.set_rc(Joystick.Throttle, 1300)
+        self.delay_sim_time(3)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.delay_sim_time(2)
+
+        # hold position
+        self.change_mode('POSHOLD')
+
+        for pilot_speed in range(50, 251, 100):
+            # set max speed
+            self.set_parameter('PILOT_SPEED', pilot_speed)
+
+            # try different stick values, resulting speed is ~ max_speed * effort * gain
+            for pwm in range(1700, 1901, 100):
+                self.progress('PILOT_SPEED %d, forward pwm %d' % (pilot_speed, pwm))
+                self.set_rc(Joystick.Forward, pwm)
+                self.delay_sim_time(3)
+                self.set_rc(Joystick.Forward, 1500)
+                self.wait_for_stop()
+
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -1027,6 +1079,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.BackupOrigin,
             self.FuseMag,
             self.INA3221,
+            self.PosHoldBounceBack,
         ])
 
         return ret

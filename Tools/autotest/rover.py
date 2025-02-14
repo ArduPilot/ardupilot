@@ -2306,6 +2306,47 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.test_gcs_fence_via_mavproxy(target_system=target_system,
                                          target_component=target_component)
 
+    def GCSFenceInvalidPoint(self):
+        '''Test fetch non-existant fencepoint'''
+        target_system = 1
+        target_component = 1
+
+        here = self.mav.location()
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # east
+                self.offset_location_ne(here, -50, 20), # bl
+                self.offset_location_ne(here, 50, 20), # br
+                self.offset_location_ne(here, 50, 40), # tr
+            ]),
+        ])
+        for i in 0, 1, 2:
+            self.assert_fetch_mission_item_int(target_system, target_component, i, mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+        self.progress("Requesting invalid point")
+        self.mav.mav.mission_request_int_send(
+            target_system,
+            target_component,
+            3,
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE
+        )
+        self.context_push()
+        self.context_collect('MISSION_COUNT')
+        m = self.assert_receive_mission_ack(
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+            want_type=mavutil.mavlink.MAV_MISSION_INVALID_SEQUENCE,
+        )
+        self.delay_sim_time(0.1)
+        found = False
+        for m in self.context_collection('MISSION_COUNT'):
+            if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_FENCE:
+                continue
+            if m.count != 3:
+                raise NotAchievedException("Unexpected count in MISSION_COUNT")
+            found = True
+        self.context_pop()
+        if not found:
+            raise NotAchievedException("Did not see correction for fencepoint count")
+
     # explode the write_type_to_storage method
     # FIXME: test converting invalid fences / minimally valid fences / normal fences
     # FIXME: show that uploading smaller items take up less space
@@ -2533,6 +2574,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if m.type != want_type:
             raise NotAchievedException("Expected ack type %u got %u" %
                                        (want_type, m.type))
+        return m
 
     def assert_filepath_content(self, filepath, want):
         with open(filepath) as f:
@@ -6121,7 +6163,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if not self.current_onboard_log_contains_message("DPTH"):
             raise NotAchievedException("Expected DPTH log message")
 
-        # self.context_pop()
+        self.progress("Ensuring we get WATER_DEPTH at 12Hz with 2 backends")
+        self.set_message_rate_hz('WATER_DEPTH', 12)
+        self.assert_message_rate_hz('WATER_DEPTH', 12)
 
     def EStopAtBoot(self):
         '''Ensure EStop prevents arming when asserted at boot time'''
@@ -6945,6 +6989,31 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.delay_sim_time(1000)
 
+    def REQUIRE_LOCATION_FOR_ARMING(self):
+        '''check DriveOption::REQUIRE_POSITION_FOR_ARMING works'''
+        self.context_push()
+        self.set_parameters({
+            "SIM_GPS1_NUMSATS": 3,  # EKF does not like < 6
+            "AHRS_GPS_USE": 0,  # stop DCM supplying home
+        })
+        self.reboot_sitl()
+        self.change_mode('MANUAL')
+        self.wait_prearm_sys_status_healthy()
+        self.assert_home_position_not_set()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
+        self.change_mode('GUIDED')
+        self.assert_prearm_failure("waiting for home", other_prearm_failures_fatal=False)
+
+        self.change_mode('MANUAL')
+        self.set_parameters({
+            "ARMING_NEED_LOC": 1,
+        })
+        self.assert_prearm_failure("waiting for home", other_prearm_failures_fatal=False)
+        self.context_pop()
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6988,6 +7057,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.Offboard,
             self.MAVProxyParam,
             self.GCSFence,
+            self.GCSFenceInvalidPoint,
             self.GCSMission,
             self.GCSRally,
             self.MotorTest,
@@ -7043,6 +7113,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.ClearMission,
             self.JammingSimulation,
             self.BatteryInvalid,
+            self.REQUIRE_LOCATION_FOR_ARMING,
         ])
         return ret
 

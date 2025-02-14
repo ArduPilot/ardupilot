@@ -2,7 +2,7 @@
 
 #include <AP_Common/AP_Common.h>
 
-#include "RC_Channel.h"
+#include "RC_Channel_Rover.h"
 #include <AC_Avoidance/AC_Avoid.h>
 #include "AC_Sprayer/AC_Sprayer.h"
 #include <AP_AIS/AP_AIS.h>

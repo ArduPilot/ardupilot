@@ -62,12 +62,15 @@ void AP_Volz_Protocol::init(void)
         return;
     }
 
-    const AP_SerialManager &serial_manager = AP::serialmanager();
+    AP_SerialManager &serial_manager = AP::serialmanager();
     port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Volz,0);
     if (port == nullptr) {
         // No port configured
         return;
     }
+
+    // update baud param in case user looks at it
+    serial_manager.set_and_default_baud(AP_SerialManager::SerialProtocol_Volz, 0, 115200);
 
     // Create thread to handle output
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Volz_Protocol::loop, void),
@@ -396,12 +399,12 @@ void AP_Volz_Protocol::update()
                 .current = telem.data[i].primary_current,
                 .motor_temperature_cdeg = int16_t(telem.data[i].motor_temp_deg * 100),
                 .pcb_temperature_cdeg = int16_t(telem.data[i].pcb_temp_deg * 100),
-                .valid_types = AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION |
-                               AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
-                               AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
-                               AP_Servo_Telem::TelemetryData::Types::CURRENT |
-                               AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP |
-                               AP_Servo_Telem::TelemetryData::Types::PCB_TEMP
+                .present_types = AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION |
+                                 AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
+                                 AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
+                                 AP_Servo_Telem::TelemetryData::Types::CURRENT |
+                                 AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP |
+                                 AP_Servo_Telem::TelemetryData::Types::PCB_TEMP
             };
 
             servo_telem->update_telem_data(i, telem_data);

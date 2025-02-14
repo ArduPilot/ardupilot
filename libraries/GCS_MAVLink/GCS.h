@@ -373,9 +373,6 @@ public:
     void send_simstate() const;
     void send_sim_state() const;
     void send_ahrs();
-#if AP_MAVLINK_BATTERY2_ENABLED
-    void send_battery2();
-#endif
     void send_opticalflow();
     virtual void send_attitude() const;
     virtual void send_attitude_quaternion() const;
@@ -403,7 +400,6 @@ public:
 #if AP_WINCH_ENABLED
     virtual void send_winch_status() const {};
 #endif
-    void send_water_depth() const;
     int8_t battery_remaining_pct(const uint8_t instance) const;
 
 #if HAL_HIGH_LATENCY2_ENABLED

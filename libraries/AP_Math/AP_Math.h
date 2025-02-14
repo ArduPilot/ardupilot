@@ -300,13 +300,18 @@ inline constexpr uint32_t usec_to_hz(uint32_t usec)
 
 /*
   linear interpolation based on a variable in a range
-  return value will be in the range [var_low,var_high]
+  return value will be in the range [output_low,output_high]
 
-  Either polarity is supported, so var_low can be higher than var_high
+  Either polarity is supported, so input_low can be higher than input_high
+
+  Read this as, "Take the value 'input_value' as a value between
+  'input_low' and 'input_high'.  Return a value between 'output_low'
+  and 'output_high' proportonal to the position of 'input_value'
+  between 'input_low' and 'input_high'"
  */
-float linear_interpolate(float low_output, float high_output,
-                         float var_value,
-                         float var_low, float var_high);
+float linear_interpolate(float output_low, float output_high,
+                         float input_value,
+                         float input_low, float input_high);
 
 /* cubic "expo" curve generator 
  * alpha range: [0,1] min to max expo

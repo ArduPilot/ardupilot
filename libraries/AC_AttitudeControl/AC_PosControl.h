@@ -339,6 +339,12 @@ public:
     // units are m, m/s and m/s/s in NED frame
     bool set_posvelaccel_offset(const Vector3f &pos_offset_NED, const Vector3f &vel_offset_NED, const Vector3f &accel_offset_NED);
     bool get_posvelaccel_offset(Vector3f &pos_offset_NED, Vector3f &vel_offset_NED, Vector3f &accel_offset_NED);
+
+    // get target velocity in m/s in NED frame
+    bool get_vel_target(Vector3f &vel_target_NED);
+
+    // get target acceleration in m/s/s in NED frame
+    bool get_accel_target(Vector3f &accel_target_NED);
 #endif
 
     /// set the horizontal position, velocity and acceleration offset targets in cm, cms and cm/s/s from EKF origin in NE frame

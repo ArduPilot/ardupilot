@@ -363,6 +363,8 @@ public:
 
         k_param_pullup = 270,
         k_param_quicktune,
+        k_param_mode_autoland, 
+
     };
 
     AP_Int16 format_version;
@@ -554,6 +556,7 @@ public:
 
         AP_Float batt_voltage_max;
         AP_Float batt_voltage_min;
+        AP_Float batt_voltage_throttle_cutoff;
         AP_Int8  batt_idx;
 
     private:
