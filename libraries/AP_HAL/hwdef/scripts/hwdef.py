@@ -183,41 +183,44 @@ class HWDef:
 
     def process_line(self, line, depth):
         '''process one line of pin definition file'''
-        self.all_lines.append(line)
         a = shlex.split(line, posix=False)
-        # keep all config lines for later use
-        self.alllines.append(line)
 
         if a[0] == 'undef':
-            for u in a[1:]:
-                self.progress("Removing %s" % u)
-                self.config.pop(u, '')
-                self.intdefines.pop(u, '')
-                # also remove all occurences of defines in previous lines if any
-                for line in self.alllines[:]:
-                    if line.startswith('define') and u == line.split()[1] or line.startswith('STM32_') and u == line.split()[0]:  # noqa
-                        self.alllines.remove(line)
-            return
+            return self.process_line_undef(line, depth, a)
 
         if a[0] == 'env':
-            self.progress("Adding environment %s" % ' '.join(a[1:]))
-            if len(a[1:]) < 2:
-                self.error("Bad env line for %s" % a[0])
-            name = a[1]
-            value = ' '.join(a[2:])
-            self.env_vars[name] = value
-
-            return
+            return self.process_line_env(line, depth, a)
 
         if a[0] == 'define':
-            # extract numerical defines for processing by other parts of the script
-            result = re.match(r'define\s*([A-Z_0-9]+)\s+([0-9]+)', line)
-            if result:
-                (name, intvalue) = (result.group(1), int(result.group(2)))
-                if name in self.intdefines and self.intdefines[name] == intvalue:
-                    msg = f"{name} already in defines with same value"
-                    if depth == 0:
-                        print(msg)
-                        # raise ValueError(msg)
+            return self.process_line_define(line, depth, a)
 
-                self.intdefines[name] = intvalue
+    def process_line_undef(self, line, depth, a):
+        for u in a[1:]:
+            self.progress("Removing %s" % u)
+            self.config.pop(u, '')
+            self.intdefines.pop(u, '')
+            # also remove all occurences of defines in previous lines if any
+            for line in self.alllines[:]:
+                if line.startswith('define') and u == line.split()[1]:
+                    self.alllines.remove(line)
+
+    def process_line_env(self, line, depth, a):
+        self.progress("Adding environment %s" % ' '.join(a[1:]))
+        if len(a[1:]) < 2:
+            self.error("Bad env line for %s" % a[0])
+        name = a[1]
+        value = ' '.join(a[2:])
+        self.env_vars[name] = value
+
+    def process_line_define(self, line, depth, a):
+        # extract numerical defines for processing by other parts of the script
+        result = re.match(r'define\s*([A-Z_0-9]+)\s+([0-9]+)', line)
+        if result:
+            (name, intvalue) = (result.group(1), int(result.group(2)))
+            if name in self.intdefines and self.intdefines[name] == intvalue:
+                msg = f"{name} already in defines with same value"
+                if depth == 0:
+                    print(msg)
+                    # raise ValueError(msg)
+
+            self.intdefines[name] = intvalue
