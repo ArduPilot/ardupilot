@@ -4202,3 +4202,53 @@ function crsf:get_menu_event(events) end
 ---@param data string -- binary encoded response payload
 ---@return boolean -- true if the repsonse was successfully sent, false otherwise
 function crsf:send_write_response(data) end
+
+-- handle for DroneCAN message operations
+---@class DroneCAN_Handle_ud
+local DroneCAN_Handle_ud = {}
+
+-- create a DroneCAN_Handle, needed for all other DroneCAN message operations
+-- use close() method when finished
+---@param bus_index number -- DroneCAN bus index, 0 for first bus
+---@return DroneCAN_Handle_ud
+function DroneCAN_Handle(bus_index) end
+
+-- return true if last message was used CANFD
+---@return boolean
+function DroneCAN_Handle_ud:canfd() end
+
+-- control if next sent message on this handle should be sent as CANFD
+---@param value boolean
+function DroneCAN_Handle_ud:canfd(value) end
+
+-- set the 64 bit DroneCAN signature for the message
+---@param value uint64_t_ud
+function DroneCAN_Handle_ud:signature(value) end
+
+-- set the DroneCAN data type of the message
+---@param value number
+function DroneCAN_Handle_ud:data_type(value) end
+
+-- subscribe to the current signature and data_type
+---@return boolean
+function DroneCAN_Handle_ud:subscribe() end
+
+-- close the handle
+function DroneCAN_Handle_ud:close() end
+
+-- check if a new message has arrived for a request or subscription
+---@return string payload -- payload of the message
+---@return nodeid number -- node ID the message came from
+function DroneCAN_Handle_ud:check_message() end
+
+-- make a DroneCAN request
+---@param target_node number -- node to send request to
+---@param payload string -- payload for message
+---@return boolean -- true if send succeeded
+function DroneCAN_Handle_ud:request(target_node, payload) end
+
+-- send a DroneCAN broadcast
+---@param payload string -- payload for message
+---@return boolean -- true if send succeeded
+function DroneCAN_Handle_ud:broadcast(payload) end
+
