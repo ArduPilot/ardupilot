@@ -203,6 +203,8 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 99:AUTO RTL
     // @Values{Copter, Rover, Plane, Blimp}: 100:KillIMU1, 101:KillIMU2
     // @Values{Copter, Rover, Plane}: 102:Camera Mode Toggle
+    // @Values{Copter, Rover, Plane, Blimp, Sub, Tracker}: 103: EKF lane switch attempt
+    // @Values{Copter, Rover, Plane, Blimp, Sub, Tracker}: 104: EKF yaw reset
     // @Values{Copter, Rover, Plane}: 105:GPS Disable Yaw
     // @Values{Rover, Plane}: 106:Disable Airspeed Use
     // @Values{Plane}: 107:Enable FW Autotune
