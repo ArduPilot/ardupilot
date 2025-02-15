@@ -92,7 +92,10 @@ bool AP_RangeFinder_URM09::start_reading()
     //register 8, val 1
     //uint8_t cmd[1] = {AP_RANGE_FINDER_URM09_CMD_DISTANCE_MEASURE};
     // send command to take reading
-    bool ret = _dev->write_register(AP_RANGE_FINDER_URM09_eCMD_INDEX, AP_RANGE_FINDER_URM09_CMD_DISTANCE_MEASURE);
+    uint8_t cmd[2] = {AP_RANGE_FINDER_URM09_eCMD_INDEX, AP_RANGE_FINDER_URM09_CMD_DISTANCE_MEASURE};
+    _dev->transfer(&cmd[0], 1,nullptr, 0);
+    bool ret = _dev->transfer(&cmd[1], 1,nullptr, 0);
+    //_dev->write_register(AP_RANGE_FINDER_URM09_eCMD_INDEX, AP_RANGE_FINDER_URM09_CMD_DISTANCE_MEASURE);
     return ret;
     //return _dev->transfer(cmd, sizeof(cmd), nullptr, 0);
 }
@@ -108,11 +111,19 @@ bool AP_RangeFinder_URM09::get_reading(uint16_t &reading_cm)
     //uint8_t dist = eDIST_H_INDEX;
     //bool ret = _dev->transfer(nullptr, 0, (uint8_t *) &val, sizeof(val));
     //bool ret = _dev->read((uint8_t *) &val, sizeof(val));
-    bool ret = _dev->read_registers(AP_RANGE_FINDER_URM09_eDIST_H_INDEX, (uint8_t *) &msb, 1);
+
+    uint8_t cmd[2] = {AP_RANGE_FINDER_URM09_eDIST_H_INDEX, AP_RANGE_FINDER_URM09_eDIST_L_INDEX};
+    _dev->transfer(&cmd[0], 1,nullptr, 0);
+    bool ret = _dev->transfer(nullptr, 0, (uint8_t *) &msb, sizeof(msb)); 
+    //_dev->read_registers(AP_RANGE_FINDER_URM09_eDIST_H_INDEX, (uint8_t *) &msb, 1);
     if(!ret){
         hal.console->printf("URM09: No data on High\n");
     }
-    ret = _dev->read_registers(AP_RANGE_FINDER_URM09_eDIST_L_INDEX, (uint8_t *) &lsb, 1);
+
+    // _dev->read_registers(AP_RANGE_FINDER_URM09_eDIST_L_INDEX, (uint8_t *) &lsb, 1);
+
+    _dev->transfer(&cmd[1], 1,nullptr, 0);
+    ret = _dev->transfer(nullptr, 0, (uint8_t *) &lsb, sizeof(lsb)); 
     if(!ret){
         hal.console->printf("URM09: No data on Low\n");
     }

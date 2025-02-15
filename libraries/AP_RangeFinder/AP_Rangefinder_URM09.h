@@ -9,7 +9,7 @@
 
 #include <AP_HAL/I2CDevice.h>
 
-#define AP_RANGE_FINDER_URM09_DEFAULT_ADDR   0x11
+#define AP_RANGE_FINDER_URM09_DEFAULT_ADDR            0x11
 #define AP_RANGE_FINDER_URM09_MEASURE_MODE_AUTOMATIC  0x80           ///< automatic mode
 #define AP_RANGE_FINDER_URM09_MEASURE_MODE_PASSIVE    0x00           ///< passive mode
 #define AP_RANGE_FINDER_URM09_CMD_DISTANCE_MEASURE    0x01           ///< passive mode configure registers
