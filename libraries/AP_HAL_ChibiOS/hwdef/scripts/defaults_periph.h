@@ -199,6 +199,9 @@
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
 #error "Change 'define HAL_PERIPH_ENABLE_AIRSPEED' to 'define AP_PERIPH_AIRSPEED_ENABLED 1'"
 #endif
+#ifdef HAL_PERIPH_ENABLE_NETWORKING
+#error "Change 'define HAL_PERIPH_ENABLE_NETWORKING' to 'define AP_PERIPH_NETWORKING_ENABLED 1'"
+#endif
 
 /*
  * defaults for various AP_Periph features:
@@ -241,6 +244,9 @@
 #endif
 #ifndef AP_PERIPH_AIRSPEED_ENABLED
 #define AP_PERIPH_AIRSPEED_ENABLED 0
+#endif
+#ifndef AP_PERIPH_NETWORKING_ENABLED
+#define AP_PERIPH_NETWORKING_ENABLED 0
 #endif
 
 /*
