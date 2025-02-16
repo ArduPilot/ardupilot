@@ -246,6 +246,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Plane}: 180:Test autotuned gains after tune is complete
     // @Values{Plane}: 181: QuickTune
     // @Values{Copter}: 182: In flight AHRS trim adjust
+    // @Values{Plane}: 183: AUTOLAND mode
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail

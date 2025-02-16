@@ -262,6 +262,7 @@ public:
         AUTOTUNE_TEST_GAINS = 180, // auto tune tuning switch to test or revert gains
         QUICKTUNE =          181,  //quicktune 3 position switch
         AHRS_AUTO_TRIM =     182,  // in-flight trim Copter AHRS using manual levelling
+        AUTOLAND =           183,  //Fixed Wing AUTOLAND Mode
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
