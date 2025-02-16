@@ -178,8 +178,10 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
 #if AP_QUICKTUNE_ENABLED
     case AUX_FUNC::QUICKTUNE:
 #endif
+#if MODE_AUTOLAND_ENABLED
+    case AUX_FUNC::AUTOLAND:
+#endif
         break;
-
     case AUX_FUNC::SOARING:
 #if HAL_QUADPLANE_ENABLED
     case AUX_FUNC::Q_ASSIST:
@@ -472,6 +474,13 @@ bool RC_Channel_Plane::do_aux_function(const AuxFuncTrigger &trigger)
     case AUX_FUNC::ICE_START_STOP:
         plane.g2.ice_control.do_aux_function(trigger);
         break;
+#endif
+
+#if MODE_AUTOLAND_ENABLED
+    case AUX_FUNC::AUTOLAND:
+        do_aux_function_change_mode(Mode::Number::AUTOLAND, ch_flag);
+        break;
+
 #endif
 
     default:
