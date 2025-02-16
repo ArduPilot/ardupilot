@@ -619,7 +619,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
   #endif
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_NETWORKING
+#if AP_PERIPH_NETWORKING_ENABLED
     // @Group: NET_
     // @Path: networking.cpp
     GOBJECT(networking_periph, "NET_", Networking_Periph),
