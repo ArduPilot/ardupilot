@@ -5,18 +5,21 @@ export PYTHONUNBUFFERED=1
 
 cd $HOME/APM || exit 1
 
+ARDUPILOT_ROOT="$PWD/APM"
+
 test -n "$FORCEBUILD" || {
-(cd APM && git fetch > /dev/null 2>&1)
+  pushd APM
+    git fetch > /dev/null 2>&1
+    newtags=$(git fetch --tags --force | wc -l)
+    oldhash=$(git rev-parse origin/master)
+    newhash=$(git rev-parse HEAD)
+  popd
 
-newtags=$(cd APM && git fetch --tags --force | wc -l)
-oldhash=$(cd APM && git rev-parse origin/master)
-newhash=$(cd APM && git rev-parse HEAD)
-
-if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
-    echo "$(date) no change $oldhash $newhash" >> build.log
-    exit 0
-fi
-echo "$(date) Build triggered $oldhash $newhash $newtags" >> build.log
+  if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
+      echo "$(date) no change $oldhash $newhash" >> build.log
+      exit 0
+  fi
+  echo "$(date) Build triggered $oldhash $newhash $newtags" >> build.log
 }
 
 ############################
@@ -54,10 +57,8 @@ set -x
 
 date
 
-oldhash=$(cd APM && git rev-parse HEAD)
-
-echo "Updating APM"
-pushd APM
+echo "Updating ArduPilot repository"
+pushd "$ARDUPILOT_ROOT"
 git checkout -f master
 git fetch origin
 git reset --hard origin/master
@@ -85,13 +86,11 @@ popd
 githash=$(cd APM && git rev-parse HEAD)
 hdate=$(date +"%Y-%m-%d-%H:%m")
 
-ARDUPILOT_ROOT="$PWD/APM"
-
-(cd APM && Tools/scripts/build_parameters.sh)
-
-(cd APM && Tools/scripts/build_log_message_documentation.sh)
-
-(cd APM && Tools/scripts/build_docs.sh)
+pushd $ARDUPILOT_ROOT
+Tools/scripts/build_parameters.sh
+Tools/scripts/build_log_message_documentation.sh
+Tools/scripts/build_docs.sh
+popd
 
 killall -9 JSBSim || /bin/true
 
