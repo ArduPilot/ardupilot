@@ -186,7 +186,7 @@ private:
     AP_OSD_Setting sats{true, 1, 3};
     AP_OSD_Setting fltmode{true, 2, 8};
     AP_OSD_Setting message{true, 2, 6};
-    AP_OSD_Setting message_permanent{true, 2, 5};
+    AP_OSD_Setting message_permanent{true, 0, 5};
     AP_OSD_Setting gspeed{true, 2, 14};
     AP_OSD_Setting horizon{true, 14, 8};
     AP_OSD_Setting home{true, 14, 1};
