@@ -629,7 +629,8 @@ def start_MAVProxy_SITL(atype,
                         options=[],
                         sitl_rcin_port=5501,
                         pexpect_timeout=60,
-                        logfile=sys.stdout):
+                        logfile=sys.stdout,
+                        state_basedir=None):
     """Launch mavproxy connected to a SITL instance."""
     if master is None:
         raise ValueError("Expected a master")
@@ -654,6 +655,8 @@ def start_MAVProxy_SITL(atype,
     cmd.extend(['--aircraft', aircraft])
     cmd.extend(options)
     cmd.extend(['--default-modules', 'misc,wp,rally,fence,param,arm,mode,rc,cmdlong,output'])
+    if state_basedir is not None:
+        cmd.extend(['--state-basedir', state_basedir])
 
     print("PYTHONPATH: %s" % str(env['PYTHONPATH']))
     print("Running: %s" % cmd_as_shell(cmd))

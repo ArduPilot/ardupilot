@@ -9083,6 +9083,7 @@ Also, ignores heartbeats not from our target system'''
             options=options,
             pexpect_timeout=pexpect_timeout,
             sitl_rcin_port=sitl_rcin_port,
+            state_basedir=self.buildlogs_dirpath(),
         )
         mavproxy.expect(r'Telemetry log: (\S+)\r\n')
         self.logfile = mavproxy.match.group(1)

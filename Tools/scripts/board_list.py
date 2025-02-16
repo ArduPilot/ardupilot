@@ -122,6 +122,7 @@ class BoardList(object):
         return ret
 
     def find_autobuild_boards(self, build_target=None):
+        return ["CubeOrange"]
         ret = []
         for board in self.boards:
             if board.is_ap_periph:

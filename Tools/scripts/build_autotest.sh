@@ -1,23 +1,12 @@
 #!/usr/bin/env bash
 
+set -e
+set -x
+
 export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/gcc/active/bin:$PATH
 export PYTHONUNBUFFERED=1
 
 cd $HOME/APM || exit 1
-
-test -n "$FORCEBUILD" || {
-(cd APM && git fetch > /dev/null 2>&1)
-
-newtags=$(cd APM && git fetch --tags --force | wc -l)
-oldhash=$(cd APM && git rev-parse origin/master)
-newhash=$(cd APM && git rev-parse HEAD)
-
-if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
-    echo "$(date) no change $oldhash $newhash" >> build.log
-    exit 0
-fi
-echo "$(date) Build triggered $oldhash $newhash $newtags" >> build.log
-}
 
 ############################
 # grab a lock file. Not atomic, but close :)
@@ -40,9 +29,29 @@ lock_file() {
 
 
 lock_file build.lck || {
+    echo "$(date) Build locked" >> build.log
     exit 1
 }
 
+if [ -e "$HOME/APM/FORCEBUILD" ]; then
+   unlink "$HOME/APM/FORCEBUILD"
+   FORCEBUILD=1
+fi
+
+test -n "$FORCEBUILD" || {
+pushd APM
+git fetch > /dev/null 2>&1
+newtags=$(git fetch --tags | wc -l)
+newhash=$(git rev-parse origin/master)
+oldhash=$(git rev-parse master)
+popd
+
+if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
+    echo "$(date) no change $oldhash $newhash" >> build.log
+    exit 0
+fi
+echo "$(date) Build triggered $oldhash $newhash $newtags (see $PWD/build.log)" >> build.log
+}
 
 #ulimit -m 500000
 #ulimit -s 500000
@@ -51,8 +60,6 @@ lock_file build.lck || {
 
 (
 date
-
-oldhash=$(cd APM && git rev-parse HEAD)
 
 echo "Updating APM"
 pushd APM
@@ -63,8 +70,6 @@ Tools/gittools/submodule-sync.sh
 git clean -f -f -x -d -d
 git tag autotest-$(date '+%Y-%m-%d-%H%M%S') -m "test tag `date`"
 popd
-
-rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
 
 echo "Updating MAVProxy"
 pushd MAVProxy
@@ -83,11 +88,7 @@ popd
 githash=$(cd APM && git rev-parse HEAD)
 hdate=$(date +"%Y-%m-%d-%H:%m")
 
-(cd APM && Tools/scripts/build_parameters.sh)
-
-(cd APM && Tools/scripts/build_log_message_documentation.sh)
-
-(cd APM && Tools/scripts/build_docs.sh)
+WEB_BOILERPLATE="$PWD/APM/Tools/autotest/web-firmware"
 
 killall -9 JSBSim || /bin/true
 
@@ -100,12 +101,80 @@ export BUILD_BINARIES_PATH=$HOME/build/tmp
 # exit on panic so we don't waste time waiting around
 export SITL_PANIC_EXIT=1
 
-timelimit 144000 python3 APM/Tools/autotest/autotest.py --autotest-server --timeout=143000 > buildlogs/autotest-output.txt 2>&1
+ARDUPILOT_ROOT="$PWD/APM"
+AUTOTEST="$ARDUPILOT_ROOT/Tools/autotest/autotest.py"
+export AUTOTEST_LOCKFILE="$PWD/autotest.lck"
 
-mkdir -p "buildlogs/history/$hdate"
+# we run the timelimit shell command to kill autotest if it behaves badly:
+TIMELIMIT_TIME_LIMIT=72000
+# we pass this into autotest.py to get it to time limit itself
+AUTOTEST_TIME_LIMIT=70000
 
-(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png *.bin *.BIN *.elf "history/$hdate/")
-echo $githash > "buildlogs/history/$hdate/githash.txt"
+if [ "x$BUILDLOGS" = "x" ]; then
+    BUILDLOGS="buildlogs"
+fi
+
+mkdir -p $BUILDLOGS
+
+pushd $BUILDLOGS
+
+  export BUILD_BINARIES_BUILDLOGS_DIR="$PWD"
+  export BUILD_BINARIES_HISTORY="$PWD/build_binaries_history.sqlite"
+
+  HISTORY_DIR="history/$hdate"
+  mkdir -p "$HISTORY_DIR"
+
+  # populate index.html etc from the repository:
+  rsync -aPH "$WEB_BOILERPLATE/" "$HISTORY_DIR"
+
+  # create a link so people can see what we're currently doing:
+  ln -sfn "$HISTORY_DIR" currently-building
+
+  pushd "$HISTORY_DIR"
+
+    echo $githash > "githash.txt"
+
+    # autotest.py honours BUILDLOGS
+    export BUILDLOGS="$PWD"
+
+    TIMELIMIT=""
+    if [ -n "$(which timelimit)" ]; then
+        TIMELIMIT="timelimit $TIMELIMIT_TIME_LIMIT"
+    fi
+    AUTOTEST_LOG="$PWD/autotest-output.txt"
+    echo "AutoTest log file is ($AUTOTEST_LOG)"
+    $TIMELIMIT "$AUTOTEST" --autotest-server --timeout=300000 > "$AUTOTEST_LOG" 2>&1 || true  # ignore test failure
+  popd
+
+  echo "Removing logs from final successful tests"
+  pushd $ARDUPILOT_ROOT
+  rm -rf logs/*
+  popd
+
+  pushd $ARDUPILOT_ROOT
+  ./Tools/scripts/build_parameters.sh
+  ./Tools/scripts/build_log_message_documentation.sh
+  ./Tools/scripts/build_docs.sh
+  popd
+
+  # copy Parameters and LogMessages from HISTORY down into top-level
+  # dir.  This shouldn't be required as the web server should be
+  # configured to take from the "latest" link.
+  pushd "$BUILDLOGS/$HISTORY_DIR"
+  for dir in "Parameters" "LogMessages"; do
+      SOURCE="$dir"
+      OUT="$BUILD_BINARIES_BUILDLOGS_DIR/$dir"
+
+      rsync -aP "$SOURCE/" "$OUT"
+  done
+  popd
+
+  # autotest is done, so update the link to the most-recent build
+  ln -sfn "$HISTORY_DIR" latest
+
+  # remove the "currently-building" link as we're not currently building
+  rm -f currently-building
+popd
 
 ) >> build.log 2>&1
 
