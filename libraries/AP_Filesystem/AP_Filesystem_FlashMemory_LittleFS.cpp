@@ -201,6 +201,10 @@ int AP_Filesystem_FlashMemory_LittleFS::fsync(int fd)
         return -1;
     }
 
+    if (fp->file.off != fs_cfg.block_size) {
+        debug("misaligned fsync: %lu\n", fp->file.off);
+    }
+
     LFS_CHECK(lfs_file_sync(&fs, &(fp->file)));
     return 0;
 }
