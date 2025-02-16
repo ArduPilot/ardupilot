@@ -110,7 +110,7 @@ void AP_Periph_FW::init()
 #endif
     serial_manager.init();
 
-#ifdef HAL_PERIPH_ENABLE_NETWORKING
+#if AP_PERIPH_NETWORKING_ENABLED
     networking_periph.init();
 #endif
 
@@ -535,7 +535,7 @@ void AP_Periph_FW::update()
 
     can_update();
 
-#ifdef HAL_PERIPH_ENABLE_NETWORKING
+#if AP_PERIPH_NETWORKING_ENABLED
     networking_periph.update();
 #endif
 

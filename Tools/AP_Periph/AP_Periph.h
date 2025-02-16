@@ -425,7 +425,7 @@ public:
     AP_Logger logger;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_NETWORKING
+#if AP_PERIPH_NETWORKING_ENABLED
     Networking_Periph networking_periph;
 #endif
 
