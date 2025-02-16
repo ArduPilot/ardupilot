@@ -777,6 +777,26 @@ int AP_Filesystem_FATFS::closedir(void *dirp_void)
     return 0;
 }
 
+// return number of bytes that should be written before fsync for optimal
+// streaming performance/robustness. if zero, any number can be written.
+// assume similar to old logging code that max-IO-size boundaries are good.
+uint32_t AP_Filesystem_FATFS::bytes_until_fsync(int fd)
+{
+    FS_CHECK_ALLOWED(0);
+    WITH_SEMAPHORE(sem);
+
+    // fileno_to_fatfs checks for fd out of bounds
+    FIL *fh = fileno_to_fatfs(fd);
+    if (fh == nullptr) {
+        return 0;
+    }
+
+    const uint32_t block_size = MAX_IO_SIZE;
+
+    uint32_t block_pos = fh->fptr % block_size;
+    return block_size - block_pos;
+}
+
 // return free disk space in bytes
 int64_t AP_Filesystem_FATFS::disk_free(const char *path)
 {

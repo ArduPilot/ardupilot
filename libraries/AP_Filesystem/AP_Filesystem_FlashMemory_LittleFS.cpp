@@ -412,6 +412,28 @@ int AP_Filesystem_FlashMemory_LittleFS::closedir(void *ptr)
     return 0;
 }
 
+// return number of bytes that should be written before fsync for optimal
+// streaming performance/robustness. if zero, any number can be written.
+// LittleFS needs to copy the block contents to a new one if fsync is called
+// in the middle of a block. LittleFS also is guaranteed to not remember any
+// file contents until fsync is called!
+uint32_t AP_Filesystem_FlashMemory_LittleFS::bytes_until_fsync(int fd)
+{
+    FS_CHECK_ALLOWED(0);
+    WITH_SEMAPHORE(fs_sem);
+
+    FileDescriptor* fp = lfs_file_from_fd(fd);
+    if (!mounted || fp == nullptr) {
+        return 0;
+    }
+
+    uint32_t write_amt = fs_cfg.block_size;
+    // calculate how much allowed if a full block would be written
+    sync_block(fd, fp->file.pos, write_amt);
+    return write_amt; // return that amount
+}
+
+
 int64_t AP_Filesystem_FlashMemory_LittleFS::disk_free(const char *path)
 {
     FS_CHECK_ALLOWED(-1);
