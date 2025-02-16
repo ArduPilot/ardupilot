@@ -64,16 +64,6 @@ static int lfs_flags_from_flags(int flags);
 
 const extern AP_HAL::HAL& hal;
 
-AP_Filesystem_FlashMemory_LittleFS* AP_Filesystem_FlashMemory_LittleFS::singleton;
-
-AP_Filesystem_FlashMemory_LittleFS::AP_Filesystem_FlashMemory_LittleFS()
-{
-    if (singleton) {
-        AP_HAL::panic("Too many AP_Filesystem_FlashMemory_LittleFS instances");
-    }
-    singleton = this;
-}
-
 int AP_Filesystem_FlashMemory_LittleFS::open(const char *pathname, int flags, bool allow_absolute_path)
 {
     FS_CHECK_ALLOWED(-1);
@@ -1258,20 +1248,6 @@ static int lfs_flags_from_flags(int flags)
     }
 
     return outflags;
-}
-
-// get_singleton for access from logging layer
-AP_Filesystem_FlashMemory_LittleFS *AP_Filesystem_FlashMemory_LittleFS::get_singleton(void)
-{
-    return singleton;
-}
-
-namespace AP
-{
-AP_Filesystem_FlashMemory_LittleFS &littlefs()
-{
-    return *AP_Filesystem_FlashMemory_LittleFS::get_singleton();
-}
 }
 
 #endif  // AP_FILESYSTEM_LITTLEFS_ENABLED
