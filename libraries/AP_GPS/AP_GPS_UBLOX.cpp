@@ -281,7 +281,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         return;
     }
 
-    if (_unconfigured_messages == CONFIG_RATE_SOL && havePvtMsg) {
+    if ((_unconfigured_messages & CONFIG_RATE_SOL) != 0 && havePvtMsg) {
         /*
           we don't need SOL if we have PVT and TIMEGPS. This is needed
           as F9P doesn't support the SOL message
@@ -498,6 +498,10 @@ AP_GPS_UBLOX::_request_next_config(void)
             const config_list *list = config_M10;
             const uint8_t list_length = ARRAY_SIZE(config_M10);
             Debug("Sending M10 settings");
+
+            // don't mix F9 and M10
+            _unconfigured_messages &= ~CONFIG_F9;
+
             if (!_configure_config_set(list, list_length, CONFIG_M10, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
                 _next_message--;
             }
@@ -1099,7 +1103,8 @@ AP_GPS_UBLOX::_parse_gps(void)
                                      int(active_config.fetch_index),
                                      unsigned(active_config.list[active_config.fetch_index].key),
                                      unsigned(active_config.done_mask));
-                            if (active_config.done_mask == (1U<<active_config.count)-1) {
+                            if (active_config.done_mask == (1U<<active_config.count)-1 ||
+                                active_config.fetch_index >= active_config.count) {
                                 // all done!
                                 _unconfigured_messages &= ~active_config.unconfig_bit;
                             }
