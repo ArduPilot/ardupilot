@@ -281,7 +281,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         return;
     }
 
-    if (_unconfigured_messages == CONFIG_RATE_SOL && havePvtMsg) {
+    if ((_unconfigured_messages & CONFIG_RATE_SOL) != 0 && havePvtMsg) {
         /*
           we don't need SOL if we have PVT and TIMEGPS. This is needed
           as F9P doesn't support the SOL message
@@ -456,7 +456,8 @@ AP_GPS_UBLOX::_request_next_config(void)
         break;
 
     case STEP_F9: {
-        if (_hardware_generation == UBLOX_F9) {
+        if (_hardware_generation == UBLOX_F9 ||
+            _hardware_generation == UBLOX_M10) {
             uint8_t cfg_count = populate_F9_gnss();
             // special handling of F9 config
             if (cfg_count > 0) {
@@ -473,7 +474,8 @@ AP_GPS_UBLOX::_request_next_config(void)
     }
 
     case STEP_F9_VALIDATE: {
-        if (_hardware_generation == UBLOX_F9) {
+        if (_hardware_generation == UBLOX_F9 ||
+            _hardware_generation == UBLOX_M10) {
             // GNSS takes 0.5s to reset
             if (AP_HAL::millis() - _f9_config_time < 500) {
                 _next_message--;
@@ -664,6 +666,17 @@ AP_GPS_UBLOX::read(void)
             _delay_time = 2000;
         }
     }
+
+#if 0
+    // this can be modified to force a particular config state for
+    // state machine config debugging
+    static bool done_force_config_error;
+    if (!_unconfigured_messages && !done_force_config_error) {
+        done_force_config_error = true;
+        _unconfigured_messages = CONFIG_F9 | CONFIG_RATE_SOL;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing config state 0x%04x", unsigned(_unconfigured_messages));
+    }
+#endif
 
     if(!_unconfigured_messages && gps._save_config && !_cfg_saved &&
        _num_cfg_save_tries < 5 && (millis_now - _last_cfg_sent_time) > 5000 &&
@@ -1091,6 +1104,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                         if (active_config.fetch_index == -1) {
                             CFG_Debug("NACK starting %u", unsigned(active_config.count));
                             active_config.fetch_index = 0;
+                            use_single_valget = true;
                         } else {
                             // the device does not support the config key we asked for,
                             // consider the bit as done
@@ -1099,7 +1113,8 @@ AP_GPS_UBLOX::_parse_gps(void)
                                      int(active_config.fetch_index),
                                      unsigned(active_config.list[active_config.fetch_index].key),
                                      unsigned(active_config.done_mask));
-                            if (active_config.done_mask == (1U<<active_config.count)-1) {
+                            if (active_config.done_mask == (1U<<active_config.count)-1 ||
+                                active_config.fetch_index >= active_config.count) {
                                 // all done!
                                 _unconfigured_messages &= ~active_config.unconfig_bit;
                             }
@@ -1444,6 +1459,9 @@ AP_GPS_UBLOX::_parse_gps(void)
                 // M10 does not support CONFIG_GNSS
                 _unconfigured_messages &= ~CONFIG_GNSS;
                 check_L1L5 = true;
+
+                // M10 does not support multi-valued VALGET
+                use_single_valget = true;
             }
             if (check_L1L5) {
                 // check if L1L5 in extension
@@ -1992,7 +2010,7 @@ AP_GPS_UBLOX::_configure_config_set(const config_list *list, uint8_t count, uint
     // -1) then if we get a NACK for VALGET we switch to fetching one
     // value at a time. This copes with the M10S which can only fetch
     // one value at a time
-    active_config.fetch_index = -1;
+    active_config.fetch_index = use_single_valget? 0 :-1;
 
     uint8_t buf[sizeof(ubx_cfg_valget)+count*sizeof(ConfigKey)];
     struct ubx_cfg_valget msg {};
