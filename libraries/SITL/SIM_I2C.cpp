@@ -38,6 +38,7 @@
 #include "SIM_Temperature_MCP9600.h"
 #include "SIM_Temperature_TSYS01.h"
 #include "SIM_Temperature_TSYS03.h"
+#include "SIM_TeraRangerI2C.h"
 #include "SIM_ToshibaLED.h"
 
 #include <signal.h>
@@ -108,12 +109,18 @@ static QMC5883L qmc5883l;
 #if AP_SIM_INA3221_ENABLED
 static INA3221 ina3221;
 #endif
+#if AP_SIM_TERARANGERI2C_ENABLED
+static TeraRangerI2C terarangeri2c;
+#endif
 
 struct i2c_device_at_address {
     uint8_t bus;
     uint8_t addr;
     I2CDevice &device;
 } i2c_devices[] {
+#if AP_SIM_TERARANGERI2C_ENABLED
+    { 0, 0x31, terarangeri2c },   // RNGFNDx_TYPE = 14, RNGFNDx_ADDR = 49
+#endif  // AP_SIM_TERARANGERI2C_ENABLED
 #if AP_SIM_MAXSONAR_I2C_XL_ENABLED
     { 0, 0x70, maxsonari2cxl },   // RNGFNDx_TYPE = 2, RNGFNDx_ADDR = 112
 #endif
