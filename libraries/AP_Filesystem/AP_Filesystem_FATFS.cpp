@@ -47,14 +47,6 @@ typedef struct {
 #define MAX_FILES 16
 static FAT_FILE *file_table[MAX_FILES];
 
-static bool isatty_(int fileno)
-{
-    if (fileno >= 0 && fileno <= 2) {
-        return true;
-    }
-    return false;
-}
-
 /*
   allocate a file descriptor
 */
@@ -65,9 +57,6 @@ static int new_file_descriptor(const char *pathname)
     FIL *fh;
 
     for (i=0; i<MAX_FILES; ++i) {
-        if (isatty_(i)) {
-            continue;
-        }
         if (file_table[i] == NULL) {
             stream = (FAT_FILE *) calloc(sizeof(FAT_FILE),1);
             if (stream == NULL) {
@@ -120,11 +109,6 @@ static int free_file_descriptor(int fileno)
     FAT_FILE *stream;
     FIL *fh;
 
-    if (isatty_( fileno )) {
-        errno = EBADF;
-        return -1;
-    }
-
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
     if (stream == nullptr) {
@@ -149,11 +133,6 @@ static FIL *fileno_to_fatfs(int fileno)
 {
     FAT_FILE *stream;
     FIL *fh;
-
-    if (isatty_(fileno)) {
-        errno = EBADF;
-        return nullptr;
-    }
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
@@ -538,9 +517,6 @@ off_t AP_Filesystem_FATFS::lseek(int fileno, off_t position, int whence)
         errno = EMFILE;
         return -1;
     }
-    if (isatty_(fileno)) {
-        return -1;
-    }
 
     if (whence == SEEK_END) {
         position += f_size(fh);
@@ -775,6 +751,26 @@ int AP_Filesystem_FATFS::closedir(void *dirp_void)
     }
     debug("closedir");
     return 0;
+}
+
+// return number of bytes that should be written before fsync for optimal
+// streaming performance/robustness. if zero, any number can be written.
+// assume similar to old logging code that max-IO-size boundaries are good.
+uint32_t AP_Filesystem_FATFS::bytes_until_fsync(int fd)
+{
+    FS_CHECK_ALLOWED(0);
+    WITH_SEMAPHORE(sem);
+
+    // fileno_to_fatfs checks for fd out of bounds
+    FIL *fh = fileno_to_fatfs(fd);
+    if (fh == nullptr) {
+        return 0;
+    }
+
+    const uint32_t block_size = MAX_IO_SIZE;
+
+    uint32_t block_pos = fh->fptr % block_size;
+    return block_size - block_pos;
 }
 
 // return free disk space in bytes

@@ -506,7 +506,7 @@ protected:
     bool accept_packet(const mavlink_status_t &status, const mavlink_message_t &msg) const;
     void set_ekf_origin(const Location& loc);
 
-    virtual MAV_MODE base_mode() const = 0;
+    virtual uint8_t base_mode() const = 0;
     MAV_STATE system_status() const;
     virtual MAV_STATE vehicle_system_status() const = 0;
 
@@ -794,7 +794,7 @@ private:
     };
     void log_mavlink_stats();
 
-    MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);
+    MAV_RESULT _set_mode_common(const uint8_t base_mode, const uint32_t custom_mode);
 
     // send a (textual) message to the GCS that a received message has
     // been deprecated

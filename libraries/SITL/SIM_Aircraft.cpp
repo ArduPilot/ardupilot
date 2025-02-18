@@ -619,6 +619,11 @@ float Aircraft::rangefinder_range() const
     // Add some noise on reading
     altitude += sitl->sonar_noise * rand_float();
 
+    // our starting positions can disagree with the terrain database:
+    if (altitude < 0) {
+        altitude = 0;
+    }
+
     return altitude;
 }
 

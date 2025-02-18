@@ -64,16 +64,6 @@ static int lfs_flags_from_flags(int flags);
 
 const extern AP_HAL::HAL& hal;
 
-AP_Filesystem_FlashMemory_LittleFS* AP_Filesystem_FlashMemory_LittleFS::singleton;
-
-AP_Filesystem_FlashMemory_LittleFS::AP_Filesystem_FlashMemory_LittleFS()
-{
-    if (singleton) {
-        AP_HAL::panic("Too many AP_Filesystem_FlashMemory_LittleFS instances");
-    }
-    singleton = this;
-}
-
 int AP_Filesystem_FlashMemory_LittleFS::open(const char *pathname, int flags, bool allow_absolute_path)
 {
     FS_CHECK_ALLOWED(-1);
@@ -201,6 +191,10 @@ int AP_Filesystem_FlashMemory_LittleFS::fsync(int fd)
         return -1;
     }
 
+    if (fp->file.off != fs_cfg.block_size) {
+        debug("misaligned fsync: %lu\n", fp->file.off);
+    }
+
     LFS_CHECK(lfs_file_sync(&fs, &(fp->file)));
     return 0;
 }
@@ -230,14 +224,13 @@ int32_t AP_Filesystem_FlashMemory_LittleFS::lseek(int fd, int32_t position, int 
         break;
     }
 
-    lfs_soff_t size = lfs_file_size(&fs, &(fp->file));
-    // emulate SEEK_SET past the end by truncating and filling with zeros
-    if (position > size && whence == SEEK_SET) {
-        LFS_CHECK(lfs_file_truncate(&fs, &(fp->file), position));
+    lfs_soff_t pos = lfs_file_seek(&fs, &(fp->file), position, lfs_whence);
+    if (pos < 0) {
+        errno = errno_from_lfs_error(pos);
+        return -1;
     }
 
-    LFS_CHECK(lfs_file_seek(&fs, &(fp->file), position, lfs_whence));
-    return 0;
+    return pos;
 }
 
 int AP_Filesystem_FlashMemory_LittleFS::stat(const char *name, struct stat *buf)
@@ -408,6 +401,28 @@ int AP_Filesystem_FlashMemory_LittleFS::closedir(void *ptr)
 
     return 0;
 }
+
+// return number of bytes that should be written before fsync for optimal
+// streaming performance/robustness. if zero, any number can be written.
+// LittleFS needs to copy the block contents to a new one if fsync is called
+// in the middle of a block. LittleFS also is guaranteed to not remember any
+// file contents until fsync is called!
+uint32_t AP_Filesystem_FlashMemory_LittleFS::bytes_until_fsync(int fd)
+{
+    FS_CHECK_ALLOWED(0);
+    WITH_SEMAPHORE(fs_sem);
+
+    FileDescriptor* fp = lfs_file_from_fd(fd);
+    if (!mounted || fp == nullptr) {
+        return 0;
+    }
+
+    uint32_t write_amt = fs_cfg.block_size;
+    // calculate how much allowed if a full block would be written
+    sync_block(fd, fp->file.pos, write_amt);
+    return write_amt; // return that amount
+}
+
 
 int64_t AP_Filesystem_FlashMemory_LittleFS::disk_free(const char *path)
 {
@@ -1233,20 +1248,6 @@ static int lfs_flags_from_flags(int flags)
     }
 
     return outflags;
-}
-
-// get_singleton for access from logging layer
-AP_Filesystem_FlashMemory_LittleFS *AP_Filesystem_FlashMemory_LittleFS::get_singleton(void)
-{
-    return singleton;
-}
-
-namespace AP
-{
-AP_Filesystem_FlashMemory_LittleFS &littlefs()
-{
-    return *AP_Filesystem_FlashMemory_LittleFS::get_singleton();
-}
 }
 
 #endif  // AP_FILESYSTEM_LITTLEFS_ENABLED

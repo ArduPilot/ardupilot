@@ -54,7 +54,7 @@ void AP_Periph_FW::msp_sensor_update(void)
 #if AP_PERIPH_MAG_ENABLED
     send_msp_compass();
 #endif
-#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+#if AP_PERIPH_AIRSPEED_ENABLED
     send_msp_airspeed();
 #endif
 }
@@ -178,7 +178,7 @@ void AP_Periph_FW::send_msp_compass(void)
 }
 #endif // AP_PERIPH_MAG_ENABLED
 
-#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+#if AP_PERIPH_AIRSPEED_ENABLED
 /*
   send MSP airspeed packet
  */
@@ -209,7 +209,7 @@ void AP_Periph_FW::send_msp_airspeed(void)
 
     send_msp_packet(MSP2_SENSOR_AIRSPEED, &p, sizeof(p));
 }
-#endif // HAL_PERIPH_ENABLE_AIRSPEED
+#endif // AP_PERIPH_AIRSPEED_ENABLED
 
 
 #endif // HAL_PERIPH_ENABLE_MSP

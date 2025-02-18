@@ -92,8 +92,8 @@
     #endif
 #endif
 
-#if defined(HAL_PERIPH_ENABLE_RPM_STREAM) && !defined(HAL_PERIPH_ENABLE_RPM)
-    #error "HAL_PERIPH_ENABLE_RPM_STREAM requires HAL_PERIPH_ENABLE_RPM"
+#if AP_PERIPH_RPM_STREAM_ENABLED && !AP_PERIPH_RPM_ENABLED
+    #error "AP_PERIPH_RPM_STREAM_ENABLED requires AP_PERIPH_RPM_ENABLED"
 #endif
 
 #ifndef AP_PERIPH_SAFETY_SWITCH_ENABLED
@@ -239,15 +239,15 @@ public:
     AP_InertialSensor imu;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RPM
+#if AP_PERIPH_RPM_ENABLED
     AP_RPM rpm_sensor;
     uint32_t rpm_last_update_ms;
-#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+#if AP_PERIPH_RPM_STREAM_ENABLED
     void rpm_sensor_send();
     uint32_t rpm_last_send_ms;
     uint8_t rpm_last_sent_index;
 #endif
-#endif // HAL_PERIPH_ENABLE_RPM
+#endif // AP_PERIPH_RPM_ENABLED
 
 #if AP_PERIPH_BATTERY_ENABLED
     void handle_battery_failsafe(const char* type_str, const int8_t action) { }
@@ -294,7 +294,7 @@ public:
     } adsb;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+#if AP_PERIPH_AIRSPEED_ENABLED
     AP_Airspeed airspeed;
 #endif
 
@@ -425,7 +425,7 @@ public:
     AP_Logger logger;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_NETWORKING
+#if AP_PERIPH_NETWORKING_ENABLED
     Networking_Periph networking_periph;
 #endif
 
@@ -460,7 +460,7 @@ public:
 #if AP_PERIPH_BARO_ENABLED
     uint32_t last_baro_update_ms;
 #endif
-#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+#if AP_PERIPH_AIRSPEED_ENABLED
     uint32_t last_airspeed_update_ms;
 #endif
 #if AP_PERIPH_GPS_ENABLED

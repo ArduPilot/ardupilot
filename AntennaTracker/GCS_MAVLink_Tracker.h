@@ -48,7 +48,7 @@ private:
 
     void send_global_position_int() override;
 
-    MAV_MODE base_mode() const override;
+    uint8_t base_mode() const override;
     MAV_STATE vehicle_system_status() const override;
 
     bool waypoint_receiving;

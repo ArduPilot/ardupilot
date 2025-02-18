@@ -14,7 +14,7 @@ MAV_TYPE GCS_Plane::frame_type() const
 #endif
 }
 
-MAV_MODE GCS_MAVLINK_Plane::base_mode() const
+uint8_t GCS_MAVLINK_Plane::base_mode() const
 {
     uint8_t _base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
@@ -101,7 +101,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     // indicate we have set a custom mode
     _base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    return (MAV_MODE)_base_mode;
+    return _base_mode;
 }
 
 uint32_t GCS_Plane::custom_mode() const

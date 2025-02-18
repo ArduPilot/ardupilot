@@ -85,7 +85,7 @@ define BOARD_PHY_RMII
 # auto-negotiation doesn't work, force 100MBit full duplex
 define STM32_MAC_PHY_LINK_TYPE MAC_LINK_100_FULLDUPLEX
 
-define HAL_PERIPH_ENABLE_NETWORKING
+define AP_PERIPH_NETWORKING_ENABLED 1
 define AP_NETWORKING_MAX_INSTANCES 4
 
 # allow load from USB

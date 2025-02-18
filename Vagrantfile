@@ -45,6 +45,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # and this is the default box that will be booted if no name is specified
   config.vm.boot_timeout = 1500
 
+  config.vm.define "autotest-server", primary: true do |autotest|
+    autotest.vm.box = "ubuntu/jammy64"
+    autotest.vm.provision :shell, path: "Tools/vagrant/initvagrant-autotest-server.sh"
+    autotest.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (autotest-server)"
+    end
+    autotest.vm.boot_timeout = 1200
+  end
+
   # LTS, EOL April, 2019:
   config.vm.define "trusty32", autostart: false do |trusty32|
     trusty32.vm.box = "ubuntu/trusty32"
