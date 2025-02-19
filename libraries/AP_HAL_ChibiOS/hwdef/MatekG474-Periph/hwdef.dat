@@ -46,7 +46,7 @@ define HAL_MSP_ENABLED 1
 
 
 # ----------- ADSB
-define HAL_PERIPH_ENABLE_ADSB
+define AP_PERIPH_ADSB_ENABLED 1
 
 
 # ----------- RC INPUT
