@@ -97,6 +97,9 @@ bool AP_RangeFinder_TeraRangerI2C::init(void)
         return false;
     }
 
+    // ask for a new reading for the timer to collect:
+    measure();
+
     dev->get_semaphore()->give();
 
     dev->set_retries(1);
