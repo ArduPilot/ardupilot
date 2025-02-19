@@ -337,7 +337,7 @@ void LoggerMessageWriter_WriteSysInfo::process() {
         FALLTHROUGH;
 
     case Stage::RC_PROTOCOL: {
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD != HAL_BOARD_LINUX
 #if AP_RCPROTOCOL_ENABLED
         const char *prot = AP::RC().detected_protocol_name();
 #else
