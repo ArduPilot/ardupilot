@@ -181,6 +181,9 @@
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
 #error "Change 'define HAL_PERIPH_ENABLE_RANGEFINDER' to 'define AP_PERIPH_RANGEFINDER_ENABLED 1'"
 #endif
+#ifdef HAL_PERIPH_ENABLE_EFI
+#error "Change 'define AP_PERIPH_EFI_ENABLED' to 'define AP_PERIPH_EFI_ENABLED 1'"
+#endif
 #ifdef HAL_PERIPH_ENABLE_IMU
 #error "Change 'define HAL_PERIPH_ENABLE_IMU' to 'define AP_PERIPH_IMU_ENABLED 1'"
 #endif
@@ -235,6 +238,9 @@
 #endif
 #ifndef AP_PERIPH_IMU_ENABLED
 #define AP_PERIPH_IMU_ENABLED 0
+#endif
+#ifndef AP_PERIPH_EFI_ENABLED
+#define AP_PERIPH_EFI_ENABLED 0
 #endif
 #ifndef AP_PERIPH_RTC_ENABLED
 #define AP_PERIPH_RTC_ENABLED 0
