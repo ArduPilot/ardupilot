@@ -376,7 +376,7 @@ singleton AP_SerialLED method set_RGB boolean uint8_t 1 16 int8_t -1 INT8_MAX ui
 singleton AP_SerialLED method send boolean uint8_t 1 16
 
 include SRV_Channel/SRV_Channel.h
-singleton SRV_Channels depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RC_OUT))
+singleton SRV_Channels depends (!defined(HAL_BUILD_AP_PERIPH) || AP_PERIPH_RC_OUT_ENABLED)
 singleton SRV_Channels rename SRV_Channels
 singleton SRV_Channels method find_channel boolean SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint8_t'Null
 singleton SRV_Channels method set_output_pwm void SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
