@@ -1948,7 +1948,7 @@ void AP_Periph_FW::can_update()
     #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
         pwm_hardpoint_update();
     #endif
-    #ifdef HAL_PERIPH_ENABLE_HWESC
+    #if AP_PERIPH_HOBBYWING_ESC_ENABLED
         hwesc_telem_update();
     #endif
 #ifdef HAL_PERIPH_ENABLE_ESC_APD
