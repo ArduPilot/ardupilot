@@ -40,8 +40,10 @@ static bool remount_needed;
 static HAL_Semaphore sem;
 
 typedef struct {
-    FIL *fh;
-    char *name;
+    // should be first member; it's the most used
+    FIL fobj;
+    // must be last member; it's extended to hold the name
+    char name[1]; // length 1 to always be null terminated
 } FAT_FILE;
 
 #define MAX_FILES 16
@@ -54,33 +56,20 @@ static int new_file_descriptor(const char *pathname)
 {
     int i;
     FAT_FILE *stream;
-    FIL *fh;
 
     for (i=0; i<MAX_FILES; ++i) {
         if (file_table[i] == NULL) {
-            stream = (FAT_FILE *) calloc(sizeof(FAT_FILE),1);
+            size_t namelen = strlen(pathname);
+            // null terminator is included in sizeof
+            stream = (FAT_FILE *) calloc(1, sizeof(FAT_FILE)+namelen);
             if (stream == NULL) {
                 errno = ENOMEM;
                 return -1;
             }
-            fh = (FIL *) calloc(sizeof(FIL),1);
-            if (fh == NULL) {
-                free(stream);
-                errno = ENOMEM;
-                return -1;
-            }
-            char *fname = (char *)malloc(strlen(pathname)+1);
-            if (fname == NULL) {
-                free(fh);
-                free(stream);
-                errno = ENOMEM;
-                return -1;
-            }
-            strcpy(fname, pathname);
-            stream->name = fname;
+            // null terminator doesn't need to be copied
+            memcpy(&stream->name[0], pathname, namelen);
 
             file_table[i]  = stream;
-            stream->fh = fh;
             return i;
         }
     }
@@ -107,22 +96,12 @@ static FAT_FILE *fileno_to_stream(int fileno)
 static int free_file_descriptor(int fileno)
 {
     FAT_FILE *stream;
-    FIL *fh;
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
     if (stream == nullptr) {
         return -1;
     }
-
-    fh = stream->fh;
-
-    if (fh != NULL) {
-        free(fh);
-    }
-
-    free(stream->name);
-    stream->name = NULL;
 
     file_table[fileno]  = NULL;
     free(stream);
@@ -132,7 +111,6 @@ static int free_file_descriptor(int fileno)
 static FIL *fileno_to_fatfs(int fileno)
 {
     FAT_FILE *stream;
-    FIL *fh;
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
@@ -140,12 +118,7 @@ static FIL *fileno_to_fatfs(int fileno)
         return nullptr;
     }
 
-    fh = stream->fh;
-    if (fh == NULL) {
-        errno = EBADF;
-        return nullptr;
-    }
-    return fh;
+    return &stream->fobj;
 }
 
 static int fatfs_to_errno(FRESULT Result)
@@ -241,7 +214,7 @@ static bool remount_file_system(void)
         if (!f) {
             continue;
         }
-        FIL *fh = f->fh;
+        FIL *fh = &f->fobj;
         FSIZE_t offset = fh->fptr;
         uint8_t flags = fh->flag & (FA_READ | FA_WRITE);
 
@@ -250,8 +223,8 @@ static bool remount_file_system(void)
             // the file may not have been created yet on the sdcard
             flags |= FA_OPEN_ALWAYS;
         }
-        FRESULT res = f_open(fh, f->name, flags);
-        debug("reopen %s flags=0x%x ofs=%u -> %d\n", f->name, unsigned(flags), unsigned(offset), int(res));
+        FRESULT res = f_open(fh, &f->name[0], flags);
+        debug("reopen %s flags=0x%x ofs=%u -> %d\n", &f->name[0], unsigned(flags), unsigned(offset), int(res));
         if (res == FR_OK) {
             f_lseek(fh, offset);
         }
