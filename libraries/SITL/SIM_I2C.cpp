@@ -21,24 +21,24 @@
 #include <GCS_MAVLink/GCS.h>
 #include <SITL/SITL.h>
 
-#include "SIM_I2C.h"
-#include "SIM_ToshibaLED.h"
-#include "SIM_MaxSonarI2CXL.h"
+#include "SIM_Airspeed_DLVR.h"
 #include "SIM_BattMonitor_SMBus_Generic.h"
 #include "SIM_BattMonitor_SMBus_Maxell.h"
 #include "SIM_BattMonitor_SMBus_Rotoye.h"
-#include "SIM_Airspeed_DLVR.h"
-#include "SIM_Temperature_TSYS01.h"
-#include "SIM_Temperature_TSYS03.h"
-#include "SIM_Temperature_MCP9600.h"
+#include "SIM_I2C.h"
 #include "SIM_ICM40609.h"
+#include "SIM_INA3221.h"
 #include "SIM_IS31FL3195.h"
-#include "SIM_LP5562.h"
 #include "SIM_LM2755.h"
+#include "SIM_LP5562.h"
+#include "SIM_MaxSonarI2CXL.h"
 #include "SIM_MS5525.h"
 #include "SIM_MS5611.h"
 #include "SIM_QMC5883L.h"
-#include "SIM_INA3221.h"
+#include "SIM_Temperature_MCP9600.h"
+#include "SIM_Temperature_TSYS01.h"
+#include "SIM_Temperature_TSYS03.h"
+#include "SIM_ToshibaLED.h"
 
 #include <signal.h>
 
