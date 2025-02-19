@@ -38,12 +38,12 @@ void AP_RCProtocol_IOMCU::update()
         );
 }
 
-void AP_RCProtocol_IOMCU::start_bind(int dsmMode)
+void AP_RCProtocol_IOMCU::start_bind()
 {
     if (!AP_BoardConfig::io_enabled()) {
         return;
     }
-    iomcu.bind_dsm(dsmMode);
+    iomcu.bind_dsm();
 }
 
 #endif // AP_RCPROTOCOL_IOMCU_ENABLED

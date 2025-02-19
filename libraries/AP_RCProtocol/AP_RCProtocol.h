@@ -225,7 +225,7 @@ public:
     uint16_t read(uint8_t chan);
     void read(uint16_t *pwm, uint8_t n);
     bool new_input();
-    void start_bind(int dsmMode);
+    void start_bind();
     int16_t get_RSSI(void) const;
     int16_t get_rx_link_quality(void) const;
 
