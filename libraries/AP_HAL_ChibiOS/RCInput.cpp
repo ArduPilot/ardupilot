@@ -214,13 +214,13 @@ void RCInput::_timer_tick(void)
 /*
   start a bind operation, if supported
  */
-bool RCInput::rc_bind(int dsmMode)
+bool RCInput::rc_bind()
 {
 #if HAL_WITH_IO_MCU
     {
         WITH_SEMAPHORE(rcin_mutex);
         if (AP_BoardConfig::io_enabled()) {
-            iomcu.bind_dsm(dsmMode);
+            iomcu.bind_dsm();
         }
     }
 #endif
