@@ -40,7 +40,7 @@ static bool remount_needed;
 static HAL_Semaphore sem;
 
 typedef struct {
-    FIL *fh;
+    FIL fobj; // should be first member; it's the most used
     char *name;
 } FAT_FILE;
 
@@ -54,33 +54,22 @@ static int new_file_descriptor(const char *pathname)
 {
     int i;
     FAT_FILE *stream;
-    FIL *fh;
 
     for (i=0; i<MAX_FILES; ++i) {
         if (file_table[i] == NULL) {
-            stream = (FAT_FILE *) calloc(sizeof(FAT_FILE),1);
+            stream = (FAT_FILE *) calloc(1, sizeof(FAT_FILE));
             if (stream == NULL) {
                 errno = ENOMEM;
                 return -1;
             }
-            fh = (FIL *) calloc(sizeof(FIL),1);
-            if (fh == NULL) {
+            stream->name = strdup(pathname);
+            if (stream->name == NULL) {
                 free(stream);
                 errno = ENOMEM;
                 return -1;
             }
-            char *fname = (char *)malloc(strlen(pathname)+1);
-            if (fname == NULL) {
-                free(fh);
-                free(stream);
-                errno = ENOMEM;
-                return -1;
-            }
-            strcpy(fname, pathname);
-            stream->name = fname;
 
             file_table[i]  = stream;
-            stream->fh = fh;
             return i;
         }
     }
@@ -107,7 +96,6 @@ static FAT_FILE *fileno_to_stream(int fileno)
 static int free_file_descriptor(int fileno)
 {
     FAT_FILE *stream;
-    FIL *fh;
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
@@ -115,16 +103,8 @@ static int free_file_descriptor(int fileno)
         return -1;
     }
 
-    fh = stream->fh;
-
-    if (fh != NULL) {
-        free(fh);
-    }
-
-    free(stream->name);
-    stream->name = NULL;
-
     file_table[fileno]  = NULL;
+    free(stream->name);
     free(stream);
     return fileno;
 }
@@ -132,7 +112,6 @@ static int free_file_descriptor(int fileno)
 static FIL *fileno_to_fatfs(int fileno)
 {
     FAT_FILE *stream;
-    FIL *fh;
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
@@ -140,12 +119,7 @@ static FIL *fileno_to_fatfs(int fileno)
         return nullptr;
     }
 
-    fh = stream->fh;
-    if (fh == NULL) {
-        errno = EBADF;
-        return nullptr;
-    }
-    return fh;
+    return &stream->fobj;
 }
 
 static int fatfs_to_errno(FRESULT Result)
@@ -241,7 +215,7 @@ static bool remount_file_system(void)
         if (!f) {
             continue;
         }
-        FIL *fh = f->fh;
+        FIL *fh = &f->fobj;
         FSIZE_t offset = fh->fptr;
         uint8_t flags = fh->flag & (FA_READ | FA_WRITE);
 
