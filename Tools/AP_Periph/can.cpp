@@ -525,15 +525,15 @@ void AP_Periph_FW::handle_arming_status(CanardInstance* canard_instance, CanardR
 
 
 
-#if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NOTIFY)
+#if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || AP_PERIPH_NOTIFY_ENABLED
 void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
 {
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
     notify.handle_rgb(red, green, blue);
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
     rcout_has_new_data_to_update = true;
 #endif // HAL_PERIPH_ENABLE_RC_OUT
-#endif // HAL_PERIPH_ENABLE_NOTIFY
+#endif // AP_PERIPH_NOTIFY_ENABLED
 
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY
     hal.rcout->set_serial_led_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY, -1, red, green, blue);
@@ -623,7 +623,7 @@ void AP_Periph_FW::handle_lightscommand(CanardInstance* canard_instance, CanardR
         uint8_t red = cmd.color.red<<3U;
         uint8_t green = (cmd.color.green>>1U)<<3U;
         uint8_t blue = cmd.color.blue<<3U;
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
         const int8_t brightness = notify.get_rgb_led_brightness_percent();
 #elif defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY)
         const int8_t brightness = g.led_brightness;
@@ -674,7 +674,7 @@ void AP_Periph_FW::handle_act_command(CanardInstance* canard_instance, CanardRxT
 }
 #endif // HAL_PERIPH_ENABLE_RC_OUT
 
-#if defined(HAL_PERIPH_ENABLE_NOTIFY)
+#if AP_PERIPH_NOTIFY_ENABLED
 void AP_Periph_FW::handle_notify_state(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     ardupilot_indication_NotifyState msg;
@@ -689,7 +689,7 @@ void AP_Periph_FW::handle_notify_state(CanardInstance* canard_instance, CanardRx
     vehicle_state = msg.vehicle_state;
     last_vehicle_state = AP_HAL::millis();
 }
-#endif // HAL_PERIPH_ENABLE_NOTIFY
+#endif // AP_PERIPH_NOTIFY_ENABLED
 
 #ifdef HAL_GPIO_PIN_SAFE_LED
 /*
@@ -824,7 +824,7 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         handle_param_executeopcode(canard_instance, transfer);
         break;
 
-#if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)
+#if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || AP_PERIPH_NOTIFY_ENABLED
     case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
         handle_beep_command(canard_instance, transfer);
         break;
@@ -858,7 +858,7 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         break;
 #endif
 
-#if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NOTIFY)
+#if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || AP_PERIPH_NOTIFY_ENABLED
     case UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_ID:
         handle_lightscommand(canard_instance, transfer);
         break;
@@ -874,7 +874,7 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         break;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
     case ARDUPILOT_INDICATION_NOTIFYSTATE_ID:
         handle_notify_state(canard_instance, transfer);
         break;
@@ -945,7 +945,7 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
     case UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_ID:
         *out_data_type_signature = UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_SIGNATURE;
         return true;
-#if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)
+#if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || AP_PERIPH_NOTIFY_ENABLED
     case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_SIGNATURE;
         return true;
@@ -958,7 +958,7 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
     case UAVCAN_EQUIPMENT_SAFETY_ARMINGSTATUS_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_SAFETY_ARMINGSTATUS_SIGNATURE;
         return true;
-#if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NOTIFY)
+#if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || AP_PERIPH_NOTIFY_ENABLED
     case UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_SIGNATURE;
         return true;
@@ -990,7 +990,7 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
         *out_data_type_signature = UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_SIGNATURE;
         return true;
 #endif
-#if defined(HAL_PERIPH_ENABLE_NOTIFY)
+#if AP_PERIPH_NOTIFY_ENABLED
     case ARDUPILOT_INDICATION_NOTIFYSTATE_ID:
         *out_data_type_signature = ARDUPILOT_INDICATION_NOTIFYSTATE_SIGNATURE;
         return true;
@@ -1936,7 +1936,7 @@ void AP_Periph_FW::can_update()
 #ifdef HAL_PERIPH_ENABLE_PROXIMITY
         can_proximity_update();
 #endif
-    #if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)
+    #if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || AP_PERIPH_NOTIFY_ENABLED
         can_buzzer_update();
     #endif
     #ifdef HAL_GPIO_PIN_SAFE_LED

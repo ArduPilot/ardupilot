@@ -300,7 +300,7 @@ void AP_Periph_FW::init()
     rpm_sensor.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
     notify.init();
 #endif
 
@@ -314,13 +314,13 @@ void AP_Periph_FW::init()
     start_ms = AP_HAL::millis();
 }
 
-#if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || defined(HAL_PERIPH_ENABLE_NOTIFY)
+#if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || AP_PERIPH_NOTIFY_ENABLED
 /*
   rotating rainbow pattern on startup
  */
 void AP_Periph_FW::update_rainbow()
 {
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
     if (notify.get_led_len() != 8) {
         return;
     }
@@ -332,7 +332,7 @@ void AP_Periph_FW::update_rainbow()
     uint32_t now = AP_HAL::millis();
     if (now - start_ms > 1500) {
         rainbow_done = true;
-#if defined (HAL_PERIPH_ENABLE_NOTIFY)
+#if AP_PERIPH_NOTIFY_ENABLED
         periph.notify.handle_rgb(0, 0, 0);
 #elif defined(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY)
         hal.rcout->set_serial_led_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY, -1, 0, 0, 0);
@@ -365,7 +365,7 @@ void AP_Periph_FW::update_rainbow()
     float brightness = 0.3;
     for (uint8_t n=0; n<8; n++) {
         uint8_t i = (step + n) % nsteps;
-#if defined (HAL_PERIPH_ENABLE_NOTIFY)
+#if AP_PERIPH_NOTIFY_ENABLED
         periph.notify.handle_rgb(
 #elif defined(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY)
         hal.rcout->set_serial_led_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY, n,
@@ -380,7 +380,7 @@ void AP_Periph_FW::update_rainbow()
     hal.rcout->serial_led_send(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY);
 #endif
 }
-#endif // HAL_PERIPH_ENABLE_NOTIFY
+#endif // AP_PERIPH_NOTIFY_ENABLED
 
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && CH_DBG_ENABLE_STACK_CHECK == TRUE
@@ -505,7 +505,7 @@ void AP_Periph_FW::update()
     if (now - fiftyhz_last_update_ms >= 20) {
         // update at 50Hz
         fiftyhz_last_update_ms = now;
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
         notify.update();
 #endif
 #if HAL_GCS_ENABLED
@@ -539,7 +539,7 @@ void AP_Periph_FW::update()
     networking_periph.update();
 #endif
 
-#if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || defined(HAL_PERIPH_ENABLE_NOTIFY)
+#if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || AP_PERIPH_NOTIFY_ENABLED
     update_rainbow();
 #endif
 #if AP_PERIPH_ADSB_ENABLED
