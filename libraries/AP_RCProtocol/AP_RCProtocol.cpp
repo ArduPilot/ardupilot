@@ -598,11 +598,11 @@ int16_t AP_RCProtocol::get_rx_link_quality(void) const
 /*
   ask for bind start on supported receivers (eg spektrum satellite)
  */
-void AP_RCProtocol::start_bind(int dsmMode)
+void AP_RCProtocol::start_bind()
 {
     for (uint8_t i = 0; i < ARRAY_SIZE(backend); i++) {
         if (backend[i] != nullptr) {
-            backend[i]->start_bind(dsmMode);
+            backend[i]->start_bind();
         }
     }
 }

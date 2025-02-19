@@ -39,7 +39,6 @@ public:
     uint8_t num_channels() const;
 
     // support for receivers that have FC initiated bind support
-    virtual void start_bind(int dsmMode) { start_bind(); }
     virtual void start_bind() {}
 
     // allow for backends that need regular polling

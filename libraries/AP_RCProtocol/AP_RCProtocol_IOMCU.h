@@ -13,7 +13,7 @@ public:
 
     void update() override;
 
-    void start_bind(int dsmMode) override;
+    void start_bind() override;
 
     bool active() const {
         return ever_seen_input && AP_HAL::micros() - last_iomcu_us < 400000;
