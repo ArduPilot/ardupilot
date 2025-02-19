@@ -178,6 +178,13 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // index 17
 
+    // @Param: POS_LOG
+    // @DisplayName: Store the position in the logs in POS and AHRS
+    // @Description: This controls if we want to store the position in the logs in POS and AHRS messages.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("POS_LOG",  17, AP_AHRS, _pos_logging, 0),
+
     AP_GROUPEND
 };
 
@@ -3145,9 +3152,10 @@ void AP_AHRS::Log_Write()
 #if HAL_NAVEKF3_AVAILABLE
     EKF3.Log_Write();
 #endif
-
-    Write_AHRS2();
-    Write_POS();
+    if (get_pos_logging_status() == 1){
+        Write_AHRS2();
+        Write_POS();
+    }
 
 #if AP_AHRS_SIM_ENABLED
     AP::sitl()->Log_Write_SIMSTATE();

@@ -611,6 +611,11 @@ public:
     // get access to an EKFGSF_yaw estimator
     const EKFGSF_yaw *get_yaw_estimator(void) const;
 
+    // Return the param for status to record Position
+    int8_t get_pos_logging_status(void) {
+        return _pos_logging;
+    }
+
 private:
 
     // optional view class
@@ -646,6 +651,7 @@ private:
 
     AP_Enum<GPSUse> _gps_use;
     AP_Int8 _gps_minsats;
+    AP_Int8 _pos_logging;
 
     enum class EKFType {
         NONE = 0
