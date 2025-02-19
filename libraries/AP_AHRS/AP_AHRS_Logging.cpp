@@ -14,6 +14,12 @@ void AP_AHRS::Write_AHRS2() const
     if (!get_secondary_attitude(euler) || !get_secondary_position(loc) || !get_secondary_quaternion(quat)) {
         return;
     }
+    // if we are not logging, zero out the location
+    if(!get_pos_logging_status()) {
+        loc.lat = 0;
+        loc.lng = 0;
+    }
+
     const struct log_AHRS pkt{
         LOG_PACKET_HEADER_INIT(LOG_AHR2_MSG),
         time_us : AP_HAL::micros64(),
@@ -85,6 +91,14 @@ void AP_AHRS::Write_POS() const
     }
     float home, origin;
     AP::ahrs().get_relative_position_D_home(home);
+
+    // if we are not logging, zero out the location
+    if(!get_pos_logging_status()) {
+        loc.lat = 0;
+        loc.lng = 0;
+        home = 0;        
+    }
+
     const struct log_POS pkt{
         LOG_PACKET_HEADER_INIT(LOG_POS_MSG),
         time_us        : AP_HAL::micros64(),

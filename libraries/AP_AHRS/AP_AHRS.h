@@ -612,8 +612,8 @@ public:
     const EKFGSF_yaw *get_yaw_estimator(void) const;
 
     // Return the param for status to record Position
-    int8_t get_pos_logging_status(void) {
-        return _pos_logging;
+    bool get_pos_logging_status(void) const {
+        return (_pos_logging !=0 )? true : false;
     }
 
 private:

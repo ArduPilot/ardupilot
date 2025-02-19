@@ -3152,10 +3152,9 @@ void AP_AHRS::Log_Write()
 #if HAL_NAVEKF3_AVAILABLE
     EKF3.Log_Write();
 #endif
-    if (get_pos_logging_status() == 1){
-        Write_AHRS2();
-        Write_POS();
-    }
+
+    Write_AHRS2();
+    Write_POS();
 
 #if AP_AHRS_SIM_ENABLED
     AP::sitl()->Log_Write_SIMSTATE();
