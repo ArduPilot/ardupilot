@@ -74,6 +74,7 @@ SECTIONS
         *(.ap_romfs*)
         /* moving GCS_MAVLink to ext_flash */
         lib/lib*.a:GCS*.*(.text* .rodata*)
+        lib/lib*.a:tables.*(.text* .rodata*) /* tables for AP_Declination */
         *(.extflash)
     } > ext_flash
 

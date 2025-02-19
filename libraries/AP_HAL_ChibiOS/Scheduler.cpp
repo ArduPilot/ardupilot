@@ -95,6 +95,14 @@ THD_WORKING_AREA(_monitor_thread_wa, MONITOR_THD_WA_SIZE);
 #define AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED 1
 #endif
 
+#if defined(STM32H7) && defined(IOMCU_FW)
+void AP_memory_guard_error(uint16_t error);
+void AP_memory_guard_error(uint16_t error) {
+    // simply fast reboot for now
+    hal.scheduler->reboot(false);
+}
+#endif
+
 Scheduler::Scheduler()
 {
 }
