@@ -472,7 +472,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(msp_port, "MSP_PORT", AP_PERIPH_MSP_PORT_DEFAULT),
 #endif
     
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),

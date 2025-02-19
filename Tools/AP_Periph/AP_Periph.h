@@ -77,18 +77,18 @@
 #define AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
     #if !defined(HAL_PERIPH_ENABLE_RC_OUT) && !defined(HAL_PERIPH_NOTIFY_WITHOUT_RCOUT)
-        #error "HAL_PERIPH_ENABLE_NOTIFY requires HAL_PERIPH_ENABLE_RC_OUT"
+        #error "AP_PERIPH_NOTIFY_ENABLED requires HAL_PERIPH_ENABLE_RC_OUT"
     #endif
     #ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
-        #error "You cannot enable HAL_PERIPH_ENABLE_NOTIFY and HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY at the same time. Notify already includes it"
+        #error "You cannot enable AP_PERIPH_NOTIFY_ENABLED and HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY at the same time. Notify already includes it"
     #endif
     #ifdef AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
-        #error "You cannot enable HAL_PERIPH_ENABLE_NOTIFY and any HAL_PERIPH_ENABLE_<device>_LED_WITHOUT_NOTIFY at the same time. Notify already includes them all"
+        #error "You cannot enable AP_PERIPH_NOTIFY_ENABLED and any HAL_PERIPH_ENABLE_<device>_LED_WITHOUT_NOTIFY at the same time. Notify already includes them all"
     #endif
     #ifdef HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY
-        #error "You cannot use HAL_PERIPH_ENABLE_NOTIFY and HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY at the same time. Notify already includes it. Set param OUTx_FUNCTION=120"
+        #error "You cannot use AP_PERIPH_NOTIFY_ENABLED and HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY at the same time. Notify already includes it. Set param OUTx_FUNCTION=120"
     #endif
 #endif
 
@@ -397,10 +397,10 @@ public:
 #endif
 #endif
 
-#if defined(HAL_PERIPH_ENABLE_NOTIFY) || defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY)
+#if AP_PERIPH_NOTIFY_ENABLED || defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY)
     void update_rainbow();
 #endif
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
     // notification object for LEDs, buzzers etc
     AP_Notify notify;
     uint64_t vehicle_state = 1; // default to initialisation
