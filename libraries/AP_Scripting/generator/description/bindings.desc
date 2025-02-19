@@ -193,7 +193,7 @@ userdata Quaternion method from_angular_velocity void Vector3f float'skip_check
 
 include AP_Notify/AP_Notify.h
 singleton AP_Notify rename notify
-singleton AP_Notify depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_NOTIFY))
+singleton AP_Notify depends (!defined(HAL_BUILD_AP_PERIPH) || AP_PERIPH_NOTIFY_ENABLED)
 singleton AP_Notify method play_tune void string
 singleton AP_Notify method handle_rgb void uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
 singleton AP_Notify method handle_rgb_id void uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
