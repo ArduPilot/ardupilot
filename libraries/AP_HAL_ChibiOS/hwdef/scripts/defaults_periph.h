@@ -187,6 +187,9 @@
 #ifdef HAL_PERIPH_ENABLE_RTC
 #error "Change 'define HAL_PERIPH_ENABLE_RTC' to 'define AP_PERIPH_RTC_ENABLED 1'"
 #endif
+#ifdef HAL_PERIPH_ENABLE_ADSB
+#error "Change 'define HAL_PERIPH_ENABLE_ADSB' to 'define AP_PERIPH_ADSB_ENABLED 1'"
+#endif
 #ifdef HAL_PERIPH_ENABLE_RCIN
 #error "Change 'define HAL_PERIPH_ENABLE_RCIN' to 'define AP_PERIPH_RCIN_ENABLED 1'"
 #endif
@@ -217,6 +220,9 @@
 #endif
 #ifndef AP_PERIPH_AHRS_ENABLED
 #define AP_PERIPH_AHRS_ENABLED 0
+#endif
+#ifndef AP_PERIPH_ADSB_ENABLED
+#define AP_PERIPH_ADSB_ENABLED 0
 #endif
 #ifndef AP_PERIPH_MAG_ENABLED
 #define AP_PERIPH_MAG_ENABLED 0
@@ -480,7 +486,7 @@
 #endif
 
 #ifndef HAL_MAVLINK_BINDINGS_ENABLED
-#define HAL_MAVLINK_BINDINGS_ENABLED defined(HAL_PERIPH_ENABLE_ADSB) || HAL_GCS_ENABLED
+#define HAL_MAVLINK_BINDINGS_ENABLED AP_PERIPH_ADSB_ENABLED || HAL_GCS_ENABLED
 #endif
 
 // for boards other than AP_Periph we are always expecting delays when
