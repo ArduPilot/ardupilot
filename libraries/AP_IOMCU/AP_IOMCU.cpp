@@ -1213,7 +1213,7 @@ void AP_IOMCU::bind_dsm()
         // only with ChibiOS IO firmware, and disarmed
         return;
     }
-    uint16_t reg = mode;
+    uint16_t reg = 0;
     write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM_BIND, 1, &reg);
 }
 
