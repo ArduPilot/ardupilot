@@ -165,7 +165,7 @@ void RCInput::_timer_tick(void)
 /*
   start a bind operation, if supported
  */
-bool RCInput::rc_bind(int dsmMode)
+bool RCInput::rc_bind()
 {
 #if AP_RCPROTOCOL_ENABLED
     // ask AP_RCProtocol to start a bind
