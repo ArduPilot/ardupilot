@@ -76,7 +76,7 @@ public:
     bool check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_channels);
 
     // Do DSM receiver binding
-    void bind_dsm(uint8_t mode);
+    void bind_dsm();
 
     // get the name of the RC protocol
     const char *get_rc_protocol(void);
