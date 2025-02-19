@@ -401,7 +401,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GARRAY(esc_number, 0, "ESC_NUMBER", 0),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
     // Servo driver
     // @Group: OUT
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
