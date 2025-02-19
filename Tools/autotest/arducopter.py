@@ -8924,8 +8924,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.fly_rangefinder_mavlink()
         self.fly_rangefinder_sitl()  # i.e. type 100
 
+        class I2CDriverToTest:
+            def __init__(self, name, rngfnd_type, rngfnd_addr=None):
+                self.name = name
+                self.rngfnd_type = rngfnd_type
+                self.rngfnd_addr = rngfnd_addr
+
         i2c_drivers = [
-            ("maxbotixi2cxl", 2),
+            I2CDriverToTest("maxbotixi2cxl", 2),
+            I2CDriverToTest("terarangeri2c", 14, rngfnd_addr=0x31),
         ]
         while len(i2c_drivers):
             do_drivers = i2c_drivers[0:9]
@@ -8933,14 +8940,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             count = 1
             p = {}
             for d in do_drivers:
-                (sim_name, rngfnd_param_value) = d
-                p["RNGFND%u_TYPE" % count] = rngfnd_param_value
+                p[f"RNGFND{count}_TYPE"] = d.rngfnd_type
+                if d.rngfnd_addr is not None:
+                    p[f"RNGFND{count}_ADDR"] = d.rngfnd_addr
                 count += 1
 
             self.set_parameters(p)
 
             self.reboot_sitl()
-            self.fly_rangefinder_drivers_fly([x[0] for x in do_drivers])
+            self.fly_rangefinder_drivers_fly([x.name for x in do_drivers])
 
     def RangeFinderDriversMaxAlt(self):
         '''test max-height behaviour'''
