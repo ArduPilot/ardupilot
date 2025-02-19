@@ -102,7 +102,7 @@ PA0 VSENSE ADC1 SCALE(2)
 
 # -------------------- Buzzer+NeoPixels --------------------
 define HAL_PERIPH_ENABLE_RC_OUT
-define HAL_PERIPH_ENABLE_NOTIFY
+define AP_PERIPH_NOTIFY_ENABLED 1
 
 # Enable the sensor voltage pin
 PC13 VDD_3V3_SENSORS_EN OUTPUT HIGH
