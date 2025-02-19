@@ -518,7 +518,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(node_stats, "STAT", AP_Stats),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_EFI
+#if AP_PERIPH_EFI_ENABLED
     // @Param: EFI_BAUDRATE
     // @DisplayName: EFI serial baudrate
     // @Description: EFI  serial baudrate.

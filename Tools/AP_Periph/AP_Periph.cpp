@@ -201,7 +201,7 @@ void AP_Periph_FW::init()
     adsb_init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_EFI
+#if AP_PERIPH_EFI_ENABLED
     if (efi.enabled() && g.efi_port >= 0) {
         auto *uart = hal.serial(g.efi_port);
         if (uart != nullptr) {
