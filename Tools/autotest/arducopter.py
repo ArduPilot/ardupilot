@@ -8894,6 +8894,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         i2c_drivers = [
             ("maxbotixi2cxl", 2),
+            ("terarangeri2c", 14),
         ]
         while len(i2c_drivers):
             do_drivers = i2c_drivers[0:9]
