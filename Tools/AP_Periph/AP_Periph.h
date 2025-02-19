@@ -192,7 +192,7 @@ public:
     void prepare_reboot();
     bool canfdout() const { return (g.can_fdmode == 1); }
 
-#ifdef HAL_PERIPH_ENABLE_EFI
+#if AP_PERIPH_EFI_ENABLED
     void can_efi_update();
 #endif
 
@@ -326,7 +326,7 @@ public:
     void hwesc_telem_update();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_EFI
+#if AP_PERIPH_EFI_ENABLED
     AP_EFI efi;
     uint32_t efi_update_ms;
 #endif
@@ -446,7 +446,7 @@ public:
 
     static const AP_Param::Info var_info[];
 
-#ifdef HAL_PERIPH_ENABLE_EFI
+#if AP_PERIPH_EFI_ENABLED
     uint32_t last_efi_update_ms;
 #endif
 #if AP_PERIPH_MAG_ENABLED

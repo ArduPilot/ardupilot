@@ -208,7 +208,7 @@ public:
     AP_Int32 battery_hide_mask;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_EFI
+#if AP_PERIPH_EFI_ENABLED
     AP_Int32 efi_baudrate;
     AP_Int8 efi_port;
 #endif
