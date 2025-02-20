@@ -1,5 +1,9 @@
 # Parrot Bebop multirotor
 
+# IMUs:
+IMU Invensense I2C:2:0x68 ROTATION_YAW_270
+define INS_MAX_INSTANCES 3
+
 define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/ardupilot/logs"
 define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/ardupilot/terrain"
 define HAL_BOARD_STORAGE_DIRECTORY "/data/ftp/internal_000/ardupilot"

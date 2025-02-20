@@ -1,5 +1,10 @@
 # Emlid Edge board
 
+# IMUs:
+IMU Invensense SPI:mpu60x0 ROTATION_YAW_90
+IMU Invensense SPI:mpu60x0ext ROTATION_YAW_90
+define INS_MAX_INSTANCES 3
+
 define HAL_BOARD_LOG_DIRECTORY "/edge/ardupilot/logs"
 define HAL_BOARD_TERRAIN_DIRECTORY "/edge/ardupilot/terrain"
 define HAL_BOARD_STORAGE_DIRECTORY "/edge/ardupilot"

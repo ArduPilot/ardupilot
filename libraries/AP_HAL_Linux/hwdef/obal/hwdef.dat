@@ -1,5 +1,9 @@
 # Open Board Architecture for Linux
 
+# IMUs:
+IMU Invensense SPI:mpu9250 ROTATION_NONE
+define INS_MAX_INSTANCES 3
+
 define HAL_BOARD_LOG_DIRECTORY "/home/pi/ardupilot/logs"
 define HAL_BOARD_TERRAIN_DIRECTORY "/home/pi/ardupilot/terrain"
 define HAL_BOARD_STORAGE_DIRECTORY "/home/pi/ardupilot"

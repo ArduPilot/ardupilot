@@ -1,5 +1,9 @@
 # BlueRobotics Navigator
 
+# IMUs:
+IMU Invensense SPI:icm20602 ROTATION_ROLL_180_YAW_270
+define INS_MAX_INSTANCES 3
+
 # I2C6 is the only i2c one exposed on a header
 define HAL_LINUX_I2C_EXTERNAL_BUS_MASK 1 << 6
 
