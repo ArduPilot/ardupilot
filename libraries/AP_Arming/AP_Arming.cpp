@@ -1464,6 +1464,27 @@ void AP_Arming::set_aux_auth_failed(uint8_t auth_id, const char* fail_msg)
     }
 }
 
+void AP_Arming::reset_all_aux_auths()
+{
+    WITH_SEMAPHORE(aux_auth_sem);
+
+    // clear all auxiliary authorisation ids
+    aux_auth_count = 0;
+    // clear any previous allocation errors
+    aux_auth_error = false;
+
+    // reset states for all auxiliary authorisation ids
+    for (uint8_t i = 0; i < aux_auth_count_max; i++) {
+        aux_auth_state[i] = AuxAuthStates::NO_RESPONSE;
+    }
+
+    // free up the failure message buffer
+    if (aux_auth_fail_msg != nullptr) {
+        free(aux_auth_fail_msg);
+        aux_auth_fail_msg = nullptr;
+    }
+}
+
 bool AP_Arming::aux_auth_checks(bool display_failure)
 {
     // handle error cases
