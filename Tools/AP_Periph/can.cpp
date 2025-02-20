@@ -1933,7 +1933,7 @@ void AP_Periph_FW::can_update()
 #if AP_PERIPH_RANGEFINDER_ENABLED
         can_rangefinder_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_PROXIMITY
+#if AP_PERIPH_PROXIMITY_ENABLED
         can_proximity_update();
 #endif
     #if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || AP_PERIPH_NOTIFY_ENABLED

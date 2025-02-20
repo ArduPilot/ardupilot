@@ -304,7 +304,7 @@ public:
     uint32_t last_rangefinder_sample_ms[RANGEFINDER_MAX_INSTANCES];
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PROXIMITY
+#if AP_PERIPH_PROXIMITY_ENABLED
     AP_Proximity proximity;
 #endif
 
