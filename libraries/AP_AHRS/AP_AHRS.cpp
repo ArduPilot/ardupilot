@@ -3652,6 +3652,50 @@ float AP_AHRS::get_air_density_ratio(void) const
     return 1.0 / sq(eas2tas);
 }
 
+void AP_AHRS::set_data_sending_state(DATA_SENDING_STATE data_sending_state)
+{
+    switch (active_EKF_type()) {
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+        return external.set_data_sending_state(data_sending_state == DATA_SENDING_STATE::DISABLED ?
+                                               AP_AHRS_Backend::DATA_SENDING_STATE::DISABLED :
+                                               AP_AHRS_Backend::DATA_SENDING_STATE::ENABLED);
+#endif
+    default:
+        break;
+    }
+}
+
+void AP_AHRS::set_gps_state(GPS_STATE gps_state)
+{
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+#if AP_GPS_ENABLED
+        AP::gps().force_disable(gps_state == GPS_STATE::DISABLED);
+#endif
+        return;
+#endif //HAL_NAVEKF2_AVAILABLE
+
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+#if AP_GPS_ENABLED
+        AP::gps().force_disable(gps_state == GPS_STATE::DISABLED);
+#endif
+        return;
+#endif //HAL_NAVEKF3_AVAILABLE
+
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+        return external.set_gps_state(gps_state == GPS_STATE::DISABLED ?
+                                      AP_AHRS_Backend::GPS_STATE::DISABLED :
+                                      AP_AHRS_Backend::GPS_STATE::ENABLED);
+#endif
+    default:
+        break;
+    }
+}
+
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;
 
