@@ -149,11 +149,6 @@ bool RC_Channels::has_active_overrides()
     return false;
 }
 
-bool RC_Channels::receiver_bind(const int dsmMode)
-{
-    return hal.rcin->rc_bind(dsmMode);
-}
-
 
 // support for auxiliary switches:
 // read_aux_switches - checks aux switch positions and invokes configured actions
