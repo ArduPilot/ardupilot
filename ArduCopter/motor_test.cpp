@@ -155,14 +155,8 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
         } else {
             // start test
             gcs().send_text(MAV_SEVERITY_INFO, "starting motor test");
-            ap.motor_test = true;
 
             EXPECT_DELAY_MS(3000);
-
-            // wait for rate thread to stop running due to motor test
-            while (using_rate_thread) {
-                hal.scheduler->delay(1);
-            }
 
             // enable and arm motors
             if (!motors->armed()) {
@@ -178,6 +172,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
 
             // turn on notify leds
             AP_Notify::flags.esc_calibration = true;
+            ap.motor_test = true;
         }
     }
 
@@ -209,9 +204,6 @@ void Copter::motor_test_stop()
 
     gcs().send_text(MAV_SEVERITY_INFO, "finished motor test");    
 
-    // flag test is complete
-    ap.motor_test = false;
-
     // disarm motors
     motors->armed(false);
     hal.util->set_soft_armed(false);
@@ -231,4 +223,7 @@ void Copter::motor_test_stop()
 
     // turn off notify leds
     AP_Notify::flags.esc_calibration = false;
+
+    // flag test is complete
+    ap.motor_test = false;
 }
