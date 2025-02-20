@@ -963,6 +963,7 @@ class sitl_periph_universal(sitl_periph):
             HAL_PERIPH_ENABLE_EFI = 1,
             AP_PERIPH_RPM_ENABLED = 1,
             AP_PERIPH_RPM_STREAM_ENABLED = 1,
+            AP_PERIPH_PROXIMITY_ENABLED = 0,
             AP_RPM_STREAM_ENABLED = 1,
             HAL_PERIPH_ENABLE_RC_OUT = 1,
             AP_PERIPH_ADSB_ENABLED = 1,
@@ -991,6 +992,7 @@ class sitl_periph_gps(sitl_periph):
 
             AP_PERIPH_BATTERY_ENABLED = 0,
             AP_PERIPH_ADSB_ENABLED = 0,
+            AP_PERIPH_PROXIMITY_ENABLED = 0,
             AP_PERIPH_GPS_ENABLED = 1,
             AP_PERIPH_IMU_ENABLED = 0,
             AP_PERIPH_MAG_ENABLED = 0,
@@ -1020,6 +1022,7 @@ class sitl_periph_battmon(sitl_periph):
             AP_PERIPH_ADSB_ENABLED = 0,
             AP_PERIPH_BARO_ENABLED = 0,
             AP_PERIPH_RANGEFINDER_ENABLED = 0,
+            AP_PERIPH_PROXIMITY_ENABLED = 0,
             AP_PERIPH_GPS_ENABLED = 0,
             AP_PERIPH_IMU_ENABLED = 0,
             AP_PERIPH_MAG_ENABLED = 0,

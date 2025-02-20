@@ -254,7 +254,7 @@ void AP_Periph_FW::init()
     }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PROXIMITY
+#if AP_PERIPH_PROXIMITY_ENABLED
     if (proximity.get_type(0) != AP_Proximity::Type::None && g.proximity_port >= 0) {
         auto *uart = hal.serial(g.proximity_port);
         if (uart != nullptr) {
