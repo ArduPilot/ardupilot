@@ -59,7 +59,7 @@ define HAL_EFI_ENABLED 1
 
 
 # ----------- proximity
-define HAL_PERIPH_ENABLE_PROXIMITY
+define AP_PERIPH_PROXIMITY_ENABLED 1
 define HAL_PROXIMITY_ENABLED 1
 
 
