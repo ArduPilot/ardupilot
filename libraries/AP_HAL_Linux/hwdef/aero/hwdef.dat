@@ -1,5 +1,9 @@
 # Intel Aero board
 
+# IMUs:
+IMU BMI160 SPI:bmi160
+define INS_MAX_INSTANCES 3
+
 define HAL_RCOUTPUT_TAP_DEVICE "/dev/ttyS1"
 
 define HAL_NUM_CAN_IFACES 1

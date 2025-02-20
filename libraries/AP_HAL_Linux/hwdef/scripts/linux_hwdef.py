@@ -28,6 +28,7 @@ class LinuxHWDef(hwdef.HWDef):
                 f.write('#define %s\n' % d[7:])
 
         self.write_SPI_config(f)
+        self.write_IMU_config(f)
 
     def process_line(self, line, depth):
         '''process one line of pin definition file'''
