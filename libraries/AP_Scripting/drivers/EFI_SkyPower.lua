@@ -736,9 +736,9 @@ local function engine_control(_driver)
           return
        end
        last_log_t = now
-       logger.write('EFSP','Thr,CLoad,TLoad,OilT,RPM,gRPM,gAmp,gCur,SErr,TLim,STRPM', 'ffffffffHHH',
+       logger.write('EFSP','Thr,CLoad,TLoad,OilT,RPM,gRPM,gAmp,gCur,gRun,SErr,TLim,STRPM', 'ffffffffBHHH',
                     last_throttle, current_load, target_load, temps.oilt, rpm,
-                    gen.rpm, gen.amps, gen.batt_current,
+                    gen.rpm, gen.amps, gen.batt_current, generator_must_run,
                     sensor_error_flags, thermal_limit_flags,
                     starter_rpm)
     end
