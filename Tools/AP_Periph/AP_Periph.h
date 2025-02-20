@@ -78,8 +78,8 @@
 #endif
 
 #if AP_PERIPH_NOTIFY_ENABLED
-    #if !defined(HAL_PERIPH_ENABLE_RC_OUT) && !defined(HAL_PERIPH_NOTIFY_WITHOUT_RCOUT)
-        #error "AP_PERIPH_NOTIFY_ENABLED requires HAL_PERIPH_ENABLE_RC_OUT"
+    #if !AP_PERIPH_RC_OUT_ENABLED && !defined(HAL_PERIPH_NOTIFY_WITHOUT_RCOUT)
+        #error "AP_PERIPH_NOTIFY_ENABLED requires AP_PERIPH_RC_OUT_ENABLED"
     #endif
     #ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
         #error "You cannot enable AP_PERIPH_NOTIFY_ENABLED and HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY at the same time. Notify already includes it"
@@ -97,7 +97,7 @@
 #endif
 
 #ifndef AP_PERIPH_SAFETY_SWITCH_ENABLED
-#define AP_PERIPH_SAFETY_SWITCH_ENABLED defined(HAL_PERIPH_ENABLE_RC_OUT)
+#define AP_PERIPH_SAFETY_SWITCH_ENABLED AP_PERIPH_RC_OUT_ENABLED
 #endif
 
 #ifndef HAL_PERIPH_CAN_MIRROR
@@ -340,7 +340,7 @@ public:
     void apd_esc_telem_update();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
     uint8_t get_motor_number(const uint8_t esc_number) const;

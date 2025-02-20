@@ -185,7 +185,7 @@ void AP_Periph_FW::init()
     rcin_init();
 #endif
 
-#if defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_RC_OUT)
+#if defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || AP_PERIPH_RC_OUT_ENABLED
     hal.rcout->init();
 #endif
 
@@ -193,7 +193,7 @@ void AP_Periph_FW::init()
     hal.rcout->set_serial_led_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY, HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY, AP_HAL::RCOutput::MODE_NEOPIXEL);
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
     rcout_init();
 #endif
 
@@ -452,7 +452,7 @@ void AP_Periph_FW::update()
         check_for_serial_reboot_cmd(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT);
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
         rcout_init_1Hz();
 #endif
 
@@ -604,7 +604,7 @@ void AP_Periph_FW::check_for_serial_reboot_cmd(const int8_t serial_index)
 // This is copied from AP_Vehicle::reboot(bool hold_in_bootloader) minus the actual reboot
 void AP_Periph_FW::prepare_reboot()
 {
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
         // force safety on
         hal.rcout->force_safety_on();
 #endif
