@@ -1151,6 +1151,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif
         { MAVLINK_MSG_ID_AVAILABLE_MODES, MSG_AVAILABLE_MODES},
         { MAVLINK_MSG_ID_AVAILABLE_MODES_MONITOR, MSG_AVAILABLE_MODES_MONITOR},
+        { MAVLINK_MSG_ID_CONTROL_STATUS, MSG_CONTROL_STATUS},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -1515,6 +1516,12 @@ void GCS_MAVLINK::update_send()
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
         initialise_message_intervals_from_config_files();
 #endif
+        // We evaluate SYSID_ENFORCE parameter to send or not CONTROL_STATUS. This message is what
+        // populates GCS UI for multi GCS control
+        if (sysid_enforce()) {
+            set_mavlink_message_id_interval(MAVLINK_MSG_ID_CONTROL_STATUS, 5000);
+        }
+
         deferred_messages_initialised = true;
     }
 
@@ -3195,6 +3202,79 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int
 
     send_message(id);
     return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT GCS_MAVLINK::handle_request_operator_control(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    // Param2 is 0: Release control, 1: Request control.
+    bool isRequestControl;
+    if (is_equal(packet.param2, 1.0f)) {
+        isRequestControl = true;
+    } else if (is_zero(packet.param2)) {
+        isRequestControl = false;
+    } else {
+        // Malformed packet, return denied
+        return MAV_RESULT_DENIED;
+    }
+
+    // Param3 is 0: Do not allow takeover, 1: Allow takeover.
+    bool setTakeoverAllowed;
+    if (is_equal(packet.param3, 1.0f)) {
+        setTakeoverAllowed = true;
+    } else if (is_zero(packet.param3)) {
+        setTakeoverAllowed = false;
+    } else {
+        // Malformed packet, return denied
+        return MAV_RESULT_DENIED;
+    }
+
+    if (isRequestControl) {
+        // This part would proceed the same if takeover is allowed, or if this is coming from the current GCS in control, 
+        // for example to modify takover allowed
+        if (control_takeover_allowed() || msg.sysid == sysid_my_gcs()) {
+            // Set takeover allowed, so other GCS can get control automatically or they need to ask first to current GCS in control
+            set_control_takeover_allowed(setTakeoverAllowed);
+            // Set current GCS in control if this is coming from a different GCS
+            if (msg.sysid != sysid_my_gcs()) {
+                set_sysid_my_gcs(msg.sysid);
+            }
+            // And send control status inmediatly to notify all GCS
+            send_control_status();
+            return MAV_RESULT_ACCEPTED;
+        // Else send a command to the current GCS in control, so current active operator can be prompted to allow takeover for the GCS asking
+        } else {
+            mavlink_msg_command_long_send(
+                chan,
+                sysid_my_gcs(),
+                0, // Should we retrieve here GCS compid and use it instead?
+                MAV_CMD_REQUEST_OPERATOR_CONTROL,
+                0,
+                msg.sysid, // Param1: Sysid of the GCS requesting control
+                1, // Param2: Release/request control. If we are here this should always be 1 (request). 0 would not make sense anyway 
+                packet.param3, // Param3: Allow takeover, this way the GCS in control can prompt the operator with the specific type of control request 
+                packet.param4, // Param4: Timeout in seconds before a request to a GCS to allow takeover is assumed to be rejected. This is used to display the timeout graphically on requestor and GCS in control.
+                0, 0, 0);
+            // We should answer result failed, see MAV_CMD_REQUEST_OPERATOR_CONTROL documentation for more information
+            return MAV_RESULT_FAILED;
+        }
+    // Release control
+    } else {
+        // Sanity check, double check that this is the GCS in control
+        if (msg.sysid == sysid_my_gcs()) {
+            // Set takeover allowed, so other GCS can get control automatically or they need to ask first to current GCS in control
+            set_control_takeover_allowed(true);
+            // As per Mavlink protocol, see MAV_CMD_REQUEST_OPERATOR_CONTROL, we should set sysid_my_gcs to 0, so CONTROL_STATUS emits 0
+            // (nobody in control), so other GCS can display properly lthe current control status of the vehicle. Should we be compliant here
+            // and set sysid_my_gcs to 0?
+            // set_sysid_my_gcs(0)
+            // Finally send a CONTROL_STATUS inmediately to notify the GCSs on the system
+            send_control_status();
+            return MAV_RESULT_ACCEPTED;
+        // A release control command should always be sent from the GCS in control. Return failed otherwise
+        } else {
+            return MAV_RESULT_FAILED;
+        }
+    }
 }
 
 bool GCS_MAVLINK::get_ap_message_interval(ap_message id, uint16_t &interval_ms) const
@@ -5603,6 +5683,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_REQUEST_MESSAGE:
         return handle_command_request_message(packet);
 
+    case MAV_CMD_REQUEST_OPERATOR_CONTROL:
+        return handle_request_operator_control(packet, msg);
     }
 
     return MAV_RESULT_UNSUPPORTED;
@@ -5953,6 +6035,18 @@ bool GCS_MAVLINK::send_relay_status() const
     return relay->send_relay_status(*this);
 }
 #endif  // AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
+
+void GCS_MAVLINK::send_control_status() const
+{
+    uint8_t flags = GCS_CONTROL_STATUS_FLAGS_SYSTEM_MANAGER;
+    flags |= control_takeover_allowed() ? GCS_CONTROL_STATUS_FLAGS_TAKEOVER_ALLOWED : 0;
+    mavlink_msg_control_status_send(
+        chan,
+        // System ID of the system currently in control of this MAV
+        sysid_my_gcs(),
+        // Flags: Automatic takeover allowed and this system controlling the rest of components of this system ID ( always true for an autopilot )
+        flags);
+}
 
 void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
 {
@@ -6483,6 +6577,9 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         ret = send_relay_status();
         break;
 #endif
+    case MSG_CONTROL_STATUS:
+        send_control_status();
+        break;
 
     case MSG_AVAILABLE_MODES:
         ret = send_available_modes();
@@ -6816,7 +6913,33 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
         return true;
     }
 
+    // Allow REQUEST_OPERATOR_CONTROL packets. This is needed for a GCS not in control
+    // to communicate with the vehicle, so it can forward the request to GCS in control.
+    if (is_control_request_packet(msg)) {
+        return true;
+    } 
+
     return false;
+}
+
+bool GCS_MAVLINK::is_control_request_packet(const mavlink_message_t &msg) const
+{
+    bool result = false;
+    if (msg.msgid == MAVLINK_MSG_ID_COMMAND_LONG) {
+        mavlink_command_long_t command;
+        mavlink_msg_command_long_decode(&msg, &command);
+        if (command.command == MAV_CMD_REQUEST_OPERATOR_CONTROL) {
+            result = true;
+        }
+    } 
+    if (msg.msgid == MAVLINK_MSG_ID_COMMAND_INT) {
+        mavlink_command_int_t command;
+        mavlink_msg_command_int_decode(&msg, &command);  
+        if (command.command == MAV_CMD_REQUEST_OPERATOR_CONTROL) {
+            result = true;
+        }        
+    }
+    return result;
 }
 
 /*
