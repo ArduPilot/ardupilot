@@ -265,7 +265,7 @@ public:
     AP_CAN::Protocol can_protocol_cached[HAL_NUM_CAN_IFACES];
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_MSP
+#if AP_PERIPH_MSP_ENABLED
     struct {
         AP_MSP msp;
         MSP::msp_port_t port;

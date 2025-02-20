@@ -173,7 +173,7 @@ public:
 #endif
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_MSP
+#if AP_PERIPH_MSP_ENABLED
     AP_Int8 msp_port;
 #endif
 

@@ -1954,7 +1954,7 @@ void AP_Periph_FW::can_update()
 #ifdef HAL_PERIPH_ENABLE_ESC_APD
         apd_esc_telem_update();
 #endif
-    #ifdef HAL_PERIPH_ENABLE_MSP
+    #if AP_PERIPH_MSP_ENABLED
         msp_sensor_update();
     #endif
     #if AP_PERIPH_RC_OUT_ENABLED
