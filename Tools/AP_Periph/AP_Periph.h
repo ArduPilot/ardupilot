@@ -384,7 +384,7 @@ public:
     BattBalance battery_balance;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+#if AP_PERIPH_SERIAL_OPTIONS_ENABLED
     SerialOptions serial_options;
 #endif
     
