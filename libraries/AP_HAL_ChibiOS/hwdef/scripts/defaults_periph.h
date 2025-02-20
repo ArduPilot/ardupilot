@@ -160,6 +160,9 @@
  * sanity checks that hwdefs are up-to-date in terms of how they are
  * trying to configure the peripheral:
  */
+#ifdef HAL_PERIPH_ENABLE_MSP
+#error "Change 'define HAL_PERIPH_ENABLE_MSP' to 'define AP_PERIPH_MSP_ENABLED 1'"
+#endif
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
 #error "Change 'define HAL_PERIPH_ENABLE_NOTIFY' to 'define AP_PERIPH_NOTIFY_ENABLED 1'"
 #endif
@@ -224,6 +227,9 @@
 /*
  * defaults for various AP_Periph features:
  */
+#ifndef AP_PERIPH_MSP_ENABLED
+#define AP_PERIPH_MSP_ENABLED 0
+#endif
 #ifndef AP_PERIPH_NOTIFY_ENABLED
 #define AP_PERIPH_NOTIFY_ENABLED 0
 #endif

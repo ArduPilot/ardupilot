@@ -50,7 +50,7 @@ undef HAL_CAN_POOL_SIZE
 define HAL_CAN_POOL_SIZE 12000
 
 # -------------------- MSP --------------------------------
-define HAL_PERIPH_ENABLE_MSP
+define AP_PERIPH_MSP_ENABLED 1
 define HAL_MSP_ENABLED 1
 define AP_PERIPH_MSP_PORT_DEFAULT 1
 
