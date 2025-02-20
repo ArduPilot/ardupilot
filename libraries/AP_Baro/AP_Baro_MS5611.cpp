@@ -111,9 +111,30 @@ bool AP_Baro_MS56XX::_init()
     case BARO_MS5611:
         prom_read_ok = _read_prom_5611(prom);
         break;
-    case BARO_MS5837:
+    case BARO_MS5837_30BA:
+    case BARO_MS5837_02BA:
         name = "MS5837";
         prom_read_ok = _read_prom_5637(prom);
+        // Check for MS5837 product ID from PROM Word 0 (bits 11:5)
+        if (prom_read_ok) {
+            uint8_t product_id = (prom[0] >> 5) & 0x7F; // Extract bits 11-5
+            switch (product_id) {
+            case 0b0000000: // MS5837-02BA01
+                name = "MS5837-02BA01";
+                _ms56xx_type = BARO_MS5837_02BA;
+                break;
+            case 0b0010101: // MS5837-02BA21
+                name = "MS5837-02BA21";
+                _ms56xx_type = BARO_MS5837_02BA;
+                break;
+            case 0b0011010: // MS5837-30BA26
+                name = "MS5837-30BA26";
+                _ms56xx_type = BARO_MS5837_30BA;
+                break;
+            default:
+                prom_read_ok = false; // Unsupported sensor type
+            }
+        }
         break;
     case BARO_MS5637:
         name = "MS5637";
@@ -152,8 +173,11 @@ bool AP_Baro_MS56XX::_init()
     case BARO_MS5611:
         devtype = DEVTYPE_BARO_MS5611;
         break;
-    case BARO_MS5837:
-        devtype = DEVTYPE_BARO_MS5837;
+    case BARO_MS5837_30BA:
+        devtype = DEVTYPE_BARO_MS5837_30BA;
+        break;
+    case BARO_MS5837_02BA:
+        devtype = DEVTYPE_BARO_MS5837_02BA; 
         break;
     case BARO_MS5637:
         devtype = DEVTYPE_BARO_MS5637;
@@ -163,7 +187,7 @@ bool AP_Baro_MS56XX::_init()
     _dev->set_device_type(devtype);
     set_bus_id(_instance, _dev->get_bus_id());
 
-    if (_ms56xx_type == BARO_MS5837) {
+    if (_ms56xx_type == BARO_MS5837_30BA || _ms56xx_type == BARO_MS5837_02BA) {
         _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
     }
 
@@ -365,8 +389,12 @@ void AP_Baro_MS56XX::update()
     case BARO_MS5637:
         _calculate_5637();
         break;
-    case BARO_MS5837:
-        _calculate_5837();
+    case BARO_MS5837_30BA:
+        _calculate_5837_30ba();
+        break;
+    case BARO_MS5837_02BA:
+        _calculate_5837_02ba();
+        break;
     }
 }
 
@@ -484,7 +512,7 @@ void AP_Baro_MS56XX::_calculate_5637()
 }
 
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
-void AP_Baro_MS56XX::_calculate_5837()
+void AP_Baro_MS56XX::_calculate_5837_30ba()
 {
     int32_t dT, TEMP, T2;
     int64_t OFF, OFF2, SENS, SENS2;
@@ -524,5 +552,32 @@ void AP_Baro_MS56XX::_calculate_5837()
 
     _copy_to_frontend(_instance, (float)pressure, temperature);
 }
+// Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
+void AP_Baro_MS56XX::_calculate_5837_02ba() {
+    int32_t dT = _D2 - ((int32_t)_cal_reg.c5 << 8);
+    int32_t TEMP = 2000 + ((dT * _cal_reg.c6) >> 23);
+
+    int64_t OFF = ((int64_t)_cal_reg.c2 << 17) + (((int64_t)_cal_reg.c4 * dT) >> 6);
+    int64_t SENS = ((int64_t)_cal_reg.c1 << 16) + (((int64_t)_cal_reg.c3 * dT) >> 7);
+
+    if (TEMP < 2000) {
+        // Second-order compensation
+        int32_t T2 = ((int64_t)11 * (int64_t)sq((int64_t)dT)) >> 35;
+        int64_t aux = sq(TEMP - 2000);
+        int64_t OFF2 = 31 * aux >> 3;
+        int64_t SENS2 = 63 * aux >> 5;
+
+        TEMP -= T2;
+        OFF -= OFF2;
+        SENS -= SENS2;
+    }
+
+    // Cast _D1 to int64_t before performing multiplication and shift
+    int64_t pressure = ((((int64_t)_D1 * SENS) >> 21) - OFF) >> 15;
+
+    // Update frontend with calculated values
+    _copy_to_frontend(_instance, (float)pressure, (float)TEMP / 100);
+}
+
 
 #endif  // AP_BARO_MS56XX_ENABLED

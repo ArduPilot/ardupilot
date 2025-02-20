@@ -37,7 +37,9 @@ public:
         BARO_MS5611 = 0,
         BARO_MS5607 = 1,
         BARO_MS5637 = 2,
-        BARO_MS5837 = 3
+        BARO_MS5837 = 3, // used for probing both 30BA and 02BA
+        BARO_MS5837_30BA = 3, // previously assumed variant
+        BARO_MS5837_02BA = 4 
     };
 
     static AP_Baro_Backend *probe_5611(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev) {
@@ -72,7 +74,8 @@ private:
     void _calculate_5611();
     void _calculate_5607();
     void _calculate_5637();
-    void _calculate_5837();
+    void _calculate_5837_30ba();
+    void _calculate_5837_02ba();
     bool _read_prom_5611(uint16_t prom[8]);
     bool _read_prom_5637(uint16_t prom[8]);
 
