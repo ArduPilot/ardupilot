@@ -181,6 +181,9 @@
 #ifdef HAL_PERIPH_ENABLE_BARO
 #error "Change 'define HAL_PERIPH_ENABLE_BARO' to 'define AP_PERIPH_BARO_ENABLED 1'"
 #endif
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#error "Change 'define HAL_PERIPH_ENABLE_RC_OUT' to 'define AP_PERIPH_RC_OUT_ENABLED 1'"
+#endif
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
 #error "Change 'define HAL_PERIPH_ENABLE_RANGEFINDER' to 'define AP_PERIPH_RANGEFINDER_ENABLED 1'"
 #endif
@@ -247,6 +250,9 @@
 #endif
 #ifndef AP_PERIPH_IMU_ENABLED
 #define AP_PERIPH_IMU_ENABLED 0
+#endif
+#ifndef AP_PERIPH_RC_OUT_ENABLED
+#define AP_PERIPH_RC_OUT_ENABLED 0
 #endif
 #ifndef AP_PERIPH_EFI_ENABLED
 #define AP_PERIPH_EFI_ENABLED 0
