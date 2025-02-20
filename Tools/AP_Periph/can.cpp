@@ -492,7 +492,7 @@ void AP_Periph_FW::handle_allocation_response(CanardInstance* canard_instance, C
 }
 
 
-#if defined(HAL_GPIO_PIN_SAFE_LED) || defined(HAL_PERIPH_ENABLE_RC_OUT)
+#if defined(HAL_GPIO_PIN_SAFE_LED) || AP_PERIPH_RC_OUT_ENABLED
 static uint8_t safety_state;
 
 /*
@@ -530,9 +530,9 @@ void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
 {
 #if AP_PERIPH_NOTIFY_ENABLED
     notify.handle_rgb(red, green, blue);
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
     rcout_has_new_data_to_update = true;
-#endif // HAL_PERIPH_ENABLE_RC_OUT
+#endif // AP_PERIPH_RC_OUT_ENABLED
 #endif // AP_PERIPH_NOTIFY_ENABLED
 
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY
@@ -639,7 +639,7 @@ void AP_Periph_FW::handle_lightscommand(CanardInstance* canard_instance, CanardR
 }
 #endif // AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
 void AP_Periph_FW::handle_esc_rawcommand(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     uavcan_equipment_esc_RawCommand cmd;
@@ -672,7 +672,7 @@ void AP_Periph_FW::handle_act_command(CanardInstance* canard_instance, CanardRxT
         }
     }
 }
-#endif // HAL_PERIPH_ENABLE_RC_OUT
+#endif // AP_PERIPH_RC_OUT_ENABLED
 
 #if AP_PERIPH_NOTIFY_ENABLED
 void AP_Periph_FW::handle_notify_state(CanardInstance* canard_instance, CanardRxTransfer* transfer)
@@ -830,7 +830,7 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         break;
 #endif
 
-#if defined(HAL_GPIO_PIN_SAFE_LED) || defined(HAL_PERIPH_ENABLE_RC_OUT)
+#if defined(HAL_GPIO_PIN_SAFE_LED) || AP_PERIPH_RC_OUT_ENABLED
     case ARDUPILOT_INDICATION_SAFETYSTATE_ID:
         handle_safety_state(canard_instance, transfer);
         break;
@@ -864,7 +864,7 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         break;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
     case UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID:
         handle_esc_rawcommand(canard_instance, transfer);
         break;
@@ -950,7 +950,7 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
         *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_SIGNATURE;
         return true;
 #endif
-#if defined(HAL_GPIO_PIN_SAFE_LED) || defined(HAL_PERIPH_ENABLE_RC_OUT)
+#if defined(HAL_GPIO_PIN_SAFE_LED) || AP_PERIPH_RC_OUT_ENABLED
     case ARDUPILOT_INDICATION_SAFETYSTATE_ID:
         *out_data_type_signature = ARDUPILOT_INDICATION_SAFETYSTATE_SIGNATURE;
         return true;
@@ -981,7 +981,7 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
         return true;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
     case UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_SIGNATURE;
         return true;
@@ -1704,7 +1704,7 @@ void AP_Periph_FW::can_start()
 }
 
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
 #if HAL_WITH_ESC_TELEM
 // try to map the ESC number to a motor number. This is needed
 // for when we have multiple CAN nodes, one for each ESC
@@ -1873,7 +1873,7 @@ void AP_Periph_FW::apd_esc_telem_update()
 
 }
 #endif // HAL_PERIPH_ENABLE_ESC_APD
-#endif // HAL_PERIPH_ENABLE_RC_OUT
+#endif // AP_PERIPH_RC_OUT_ENABLED
 
 void AP_Periph_FW::can_update()
 {
@@ -1957,7 +1957,7 @@ void AP_Periph_FW::can_update()
     #ifdef HAL_PERIPH_ENABLE_MSP
         msp_sensor_update();
     #endif
-    #ifdef HAL_PERIPH_ENABLE_RC_OUT
+    #if AP_PERIPH_RC_OUT_ENABLED
         rcout_update();
     #endif
     #if AP_PERIPH_EFI_ENABLED
