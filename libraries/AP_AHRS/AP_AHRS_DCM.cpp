@@ -1145,10 +1145,12 @@ bool AP_AHRS::set_home(const Location &loc)
     _home_is_set = true;
 
     Log_Write_Home_And_Origin();
-
-    // send new home and ekf origin to GCS
-    gcs().send_message(MSG_HOME);
-    gcs().send_message(MSG_ORIGIN);
+    
+    if(!get_pos_logging_status()) {
+        // send new home and ekf origin to GCS
+        gcs().send_message(MSG_HOME);
+        gcs().send_message(MSG_ORIGIN);
+    }
 
     AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
     pd.home_lat = loc.lat;

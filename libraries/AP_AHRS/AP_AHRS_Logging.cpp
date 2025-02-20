@@ -71,12 +71,21 @@ void AP_AHRS::Write_Attitude(const Vector3f &targets) const
 
 void AP_AHRS::Write_Origin(LogOriginType origin_type, const Location &loc) const
 {
+
+    int32_t lat = loc.lat;
+    int32_t lng = loc.lng;
+
+    if(!get_pos_logging_status()) {
+        lat = 0;
+        lng = 0;
+    }
+
     const struct log_ORGN pkt{
         LOG_PACKET_HEADER_INIT(LOG_ORGN_MSG),
         time_us     : AP_HAL::micros64(),
         origin_type : (uint8_t)origin_type,
-        latitude    : loc.lat,
-        longitude   : loc.lng,
+        latitude    : lat,
+        longitude   : lng,
         altitude    : loc.alt
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
