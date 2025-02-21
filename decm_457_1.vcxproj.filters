@@ -1,0 +1,295 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="ArduCopter">
+      <UniqueIdentifier>{bf446450-05c8-43d1-ab67-6066a542c6a0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ArduCopter\afs_copter.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\AP_Arming.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\AP_ExternalControl_Copter.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\AP_Rally.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\AP_State.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\Attitude.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\autoyaw.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\avoidance.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\avoidance_adsb.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\baro_ground_effect.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\commands.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\compassmot.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\Copter.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\crash_check.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\ekf_check.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\esc_calibration.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\events.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\failsafe.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\fence.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\GCS_Copter.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\GCS_Mavlink.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\heli.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\inertia.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\land_detector.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\landing_gear.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\Log.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_acro.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_acro_heli.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_althold.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_auto.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_autorotate.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_autotune.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_avoid_adsb.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_brake.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_circle.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_drift.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_flip.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_flowhold.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_follow.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_guided.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_guided_nogps.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_land.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_loiter.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_poshold.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_rtl.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_smart_rtl.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_sport.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_stabilize.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_stabilize_heli.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_systemid.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_throw.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_turtle.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\mode_zigzag.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\motor_test.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\motors.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\navigation.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\Parameters.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\precision_landing.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\radio.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\RC_Channel.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\sensors.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\standby.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\surface_tracking.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\system.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\takeoff.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\takeoff_check.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\terrain.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\toy_mode.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\tuning.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\UserCode.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+    <ClCompile Include="ArduCopter\UserParameters.cpp">
+      <Filter>ArduCopter</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ArduCopter\afs_copter.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\AP_Arming.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\AP_ExternalControl_Copter.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\AP_Rally.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\APM_Config.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\avoidance_adsb.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\config.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\Copter.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\defines.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\GCS_Copter.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\GCS_Mavlink.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\mode.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\Parameters.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\RC_Channel.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\toy_mode.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\UserParameters.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\UserVariables.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+    <ClInclude Include="ArduCopter\version.h">
+      <Filter>ArduCopter</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ArduCopter\Makefile.waf">
+      <Filter>ArduCopter</Filter>
+    </None>
+    <None Include="ArduCopter\wscript">
+      <Filter>ArduCopter</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ArduCopter\ReleaseNotes.txt">
+      <Filter>ArduCopter</Filter>
+    </Text>
+  </ItemGroup>
+</Project>

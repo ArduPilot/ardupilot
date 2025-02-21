@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{ac4e7a83-d181-48f1-bc50-26d393453102}</ProjectGuid>
+    <RootNamespace>decm4571</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="ArduCopter\afs_copter.cpp" />
+    <ClCompile Include="ArduCopter\AP_Arming.cpp" />
+    <ClCompile Include="ArduCopter\AP_ExternalControl_Copter.cpp" />
+    <ClCompile Include="ArduCopter\AP_Rally.cpp" />
+    <ClCompile Include="ArduCopter\AP_State.cpp" />
+    <ClCompile Include="ArduCopter\Attitude.cpp" />
+    <ClCompile Include="ArduCopter\autoyaw.cpp" />
+    <ClCompile Include="ArduCopter\avoidance.cpp" />
+    <ClCompile Include="ArduCopter\avoidance_adsb.cpp" />
+    <ClCompile Include="ArduCopter\baro_ground_effect.cpp" />
+    <ClCompile Include="ArduCopter\commands.cpp" />
+    <ClCompile Include="ArduCopter\compassmot.cpp" />
+    <ClCompile Include="ArduCopter\Copter.cpp" />
+    <ClCompile Include="ArduCopter\crash_check.cpp" />
+    <ClCompile Include="ArduCopter\ekf_check.cpp" />
+    <ClCompile Include="ArduCopter\esc_calibration.cpp" />
+    <ClCompile Include="ArduCopter\events.cpp" />
+    <ClCompile Include="ArduCopter\failsafe.cpp" />
+    <ClCompile Include="ArduCopter\fence.cpp" />
+    <ClCompile Include="ArduCopter\GCS_Copter.cpp" />
+    <ClCompile Include="ArduCopter\GCS_Mavlink.cpp" />
+    <ClCompile Include="ArduCopter\heli.cpp" />
+    <ClCompile Include="ArduCopter\inertia.cpp" />
+    <ClCompile Include="ArduCopter\landing_gear.cpp" />
+    <ClCompile Include="ArduCopter\land_detector.cpp" />
+    <ClCompile Include="ArduCopter\Log.cpp" />
+    <ClCompile Include="ArduCopter\mode.cpp" />
+    <ClCompile Include="ArduCopter\mode_acro.cpp" />
+    <ClCompile Include="ArduCopter\mode_acro_heli.cpp" />
+    <ClCompile Include="ArduCopter\mode_althold.cpp" />
+    <ClCompile Include="ArduCopter\mode_auto.cpp" />
+    <ClCompile Include="ArduCopter\mode_autorotate.cpp" />
+    <ClCompile Include="ArduCopter\mode_autotune.cpp" />
+    <ClCompile Include="ArduCopter\mode_avoid_adsb.cpp" />
+    <ClCompile Include="ArduCopter\mode_brake.cpp" />
+    <ClCompile Include="ArduCopter\mode_circle.cpp" />
+    <ClCompile Include="ArduCopter\mode_drift.cpp" />
+    <ClCompile Include="ArduCopter\mode_flip.cpp" />
+    <ClCompile Include="ArduCopter\mode_flowhold.cpp" />
+    <ClCompile Include="ArduCopter\mode_follow.cpp" />
+    <ClCompile Include="ArduCopter\mode_guided.cpp" />
+    <ClCompile Include="ArduCopter\mode_guided_nogps.cpp" />
+    <ClCompile Include="ArduCopter\mode_land.cpp" />
+    <ClCompile Include="ArduCopter\mode_loiter.cpp" />
+    <ClCompile Include="ArduCopter\mode_poshold.cpp" />
+    <ClCompile Include="ArduCopter\mode_rtl.cpp" />
+    <ClCompile Include="ArduCopter\mode_smart_rtl.cpp" />
+    <ClCompile Include="ArduCopter\mode_sport.cpp" />
+    <ClCompile Include="ArduCopter\mode_stabilize.cpp" />
+    <ClCompile Include="ArduCopter\mode_stabilize_heli.cpp" />
+    <ClCompile Include="ArduCopter\mode_systemid.cpp" />
+    <ClCompile Include="ArduCopter\mode_throw.cpp" />
+    <ClCompile Include="ArduCopter\mode_turtle.cpp" />
+    <ClCompile Include="ArduCopter\mode_zigzag.cpp" />
+    <ClCompile Include="ArduCopter\motors.cpp" />
+    <ClCompile Include="ArduCopter\motor_test.cpp" />
+    <ClCompile Include="ArduCopter\navigation.cpp" />
+    <ClCompile Include="ArduCopter\Parameters.cpp" />
+    <ClCompile Include="ArduCopter\precision_landing.cpp" />
+    <ClCompile Include="ArduCopter\radio.cpp" />
+    <ClCompile Include="ArduCopter\RC_Channel.cpp" />
+    <ClCompile Include="ArduCopter\sensors.cpp" />
+    <ClCompile Include="ArduCopter\standby.cpp" />
+    <ClCompile Include="ArduCopter\surface_tracking.cpp" />
+    <ClCompile Include="ArduCopter\system.cpp" />
+    <ClCompile Include="ArduCopter\takeoff.cpp" />
+    <ClCompile Include="ArduCopter\takeoff_check.cpp" />
+    <ClCompile Include="ArduCopter\terrain.cpp" />
+    <ClCompile Include="ArduCopter\toy_mode.cpp" />
+    <ClCompile Include="ArduCopter\tuning.cpp" />
+    <ClCompile Include="ArduCopter\UserCode.cpp" />
+    <ClCompile Include="ArduCopter\UserParameters.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ArduCopter\afs_copter.h" />
+    <ClInclude Include="ArduCopter\APM_Config.h" />
+    <ClInclude Include="ArduCopter\AP_Arming.h" />
+    <ClInclude Include="ArduCopter\AP_ExternalControl_Copter.h" />
+    <ClInclude Include="ArduCopter\AP_Rally.h" />
+    <ClInclude Include="ArduCopter\avoidance_adsb.h" />
+    <ClInclude Include="ArduCopter\config.h" />
+    <ClInclude Include="ArduCopter\Copter.h" />
+    <ClInclude Include="ArduCopter\defines.h" />
+    <ClInclude Include="ArduCopter\GCS_Copter.h" />
+    <ClInclude Include="ArduCopter\GCS_Mavlink.h" />
+    <ClInclude Include="ArduCopter\mode.h" />
+    <ClInclude Include="ArduCopter\Parameters.h" />
+    <ClInclude Include="ArduCopter\RC_Channel.h" />
+    <ClInclude Include="ArduCopter\toy_mode.h" />
+    <ClInclude Include="ArduCopter\UserParameters.h" />
+    <ClInclude Include="ArduCopter\UserVariables.h" />
+    <ClInclude Include="ArduCopter\version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ArduCopter\Makefile.waf" />
+    <None Include="ArduCopter\wscript" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ArduCopter\ReleaseNotes.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
