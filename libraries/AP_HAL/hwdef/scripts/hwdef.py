@@ -43,6 +43,7 @@ class HWDef:
 
         # sensor lists
         self.imu_list = []
+        self.compass_list = []
 
     def is_int(self, str):
         '''check if a string is an integer'''
@@ -200,6 +201,9 @@ class HWDef:
         elif a[0] == 'IMU':
             self.imu_list.append(a[1:])
 
+        elif a[0] == 'COMPASS':
+            self.compass_list.append(a[1:])
+
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:
             self.progress("Removing %s" % u)
@@ -211,6 +215,8 @@ class HWDef:
                     self.alllines.remove(line)
             if u == 'IMU':
                 self.imu_list = []
+            if u == 'COMPASS':
+                self.compass_list = []
 
     def process_line_env(self, line, depth, a):
         self.progress("Adding environment %s" % ' '.join(a[1:]))
@@ -306,3 +312,31 @@ class HWDef:
             if len(devlist) < 3:
                 self.write_defaulting_define(f, 'INS_MAX_INSTANCES', len(devlist))
             f.write('#define HAL_INS_PROBE_LIST %s\n\n' % ';'.join(devlist))
+
+    def write_MAG_config(self, f):
+        '''write MAG config defines'''
+        devlist = []
+        seen = set()
+        for dev in self.compass_list:
+            if self.seen_str(dev) in seen:
+                self.error("Duplicate MAG: %s" % self.seen_str(dev))
+            seen.add(self.seen_str(dev))
+            driver = dev[0]
+            probe = 'probe'
+            wrapper = ''
+            a = driver.split(':')
+            driver = a[0]
+            if len(a) > 1 and a[1].startswith('probe'):
+                probe = a[1]
+            for i in range(1, len(dev)):
+                if dev[i].startswith("SPI:"):
+                    dev[i] = self.parse_spi_device(dev[i])
+                elif dev[i].startswith("I2C:"):
+                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
+            n = len(devlist)+1
+            devlist.append('HAL_MAG_PROBE%u' % n)
+            f.write(
+                '#define HAL_MAG_PROBE%u %s ADD_BACKEND(DRIVER_%s, AP_Compass_%s::%s(%s))\n'
+                % (n, wrapper, driver, driver, probe, ','.join(dev[1:])))
+        if len(devlist) > 0:
+            f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
