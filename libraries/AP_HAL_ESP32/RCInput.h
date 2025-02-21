@@ -48,7 +48,7 @@ public:
     const char *protocol() const override { return last_protocol; }
 
     void _timer_tick(void);
-    bool rc_bind(int dsmMode) override;
+    bool rc_bind() override;
 
 private:
     uint16_t _rc_values[RC_INPUT_MAX_CHANNELS] = {0};

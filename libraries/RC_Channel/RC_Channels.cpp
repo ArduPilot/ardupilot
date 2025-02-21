@@ -149,9 +149,9 @@ bool RC_Channels::has_active_overrides()
     return false;
 }
 
-bool RC_Channels::receiver_bind(const int dsmMode)
+bool RC_Channels::receiver_bind()
 {
-    return hal.rcin->rc_bind(dsmMode);
+    return hal.rcin->rc_bind();
 }
 
 

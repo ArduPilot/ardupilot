@@ -3569,10 +3569,10 @@ MAV_RESULT GCS_MAVLINK::handle_flight_termination(const mavlink_command_int_t &p
  */
 MAV_RESULT GCS_MAVLINK::handle_START_RX_PAIR(const mavlink_command_int_t &packet)
 {
-    // initiate bind procedure. We accept the DSM type from either
+    // initiate bind procedure. We should accept the DSM type from either
     // param1 or param2 due to a past mixup with what parameter is the
-    // right one
-    if (!RC_Channels::receiver_bind(packet.param2>0?packet.param2:packet.param1)) {
+    // right one: receiver_bind(packet.param2>0?packet.param2:packet.param1)
+    if (!RC_Channels::receiver_bind()) {
         return MAV_RESULT_FAILED;
     }
     return MAV_RESULT_ACCEPTED;
