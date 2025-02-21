@@ -44,6 +44,7 @@ class HWDef:
         # sensor lists
         self.imu_list = []
         self.compass_list = []
+        self.baro_list = []
 
     def is_int(self, str):
         '''check if a string is an integer'''
@@ -204,6 +205,9 @@ class HWDef:
         elif a[0] == 'COMPASS':
             self.compass_list.append(a[1:])
 
+        elif a[0] == 'BARO':
+            self.baro_list.append(a[1:])
+
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:
             self.progress("Removing %s" % u)
@@ -217,6 +221,8 @@ class HWDef:
                 self.imu_list = []
             if u == 'COMPASS':
                 self.compass_list = []
+            if u == 'BARO':
+                self.baro_list = []
 
     def process_line_env(self, line, depth, a):
         self.progress("Adding environment %s" % ' '.join(a[1:]))
@@ -340,3 +346,32 @@ class HWDef:
                 % (n, wrapper, driver, driver, probe, ','.join(dev[1:])))
         if len(devlist) > 0:
             f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
+
+    def write_BARO_config(self, f):
+        '''write barometer config defines'''
+        devlist = []
+        seen = set()
+        for dev in self.baro_list:
+            if self.seen_str(dev) in seen:
+                self.error("Duplicate BARO: %s" % self.seen_str(dev))
+            seen.add(self.seen_str(dev))
+            driver = dev[0]
+            probe = 'probe'
+            wrapper = ''
+            a = driver.split(':')
+            driver = a[0]
+            if len(a) > 1 and a[1].startswith('probe'):
+                probe = a[1]
+            for i in range(1, len(dev)):
+                if dev[i].startswith("SPI:"):
+                    dev[i] = self.parse_spi_device(dev[i])
+                elif dev[i].startswith("I2C:"):
+                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
+            n = len(devlist)+1
+            devlist.append('HAL_BARO_PROBE%u' % n)
+            args = ['*this'] + dev[1:]
+            f.write(
+                '#define HAL_BARO_PROBE%u %s ADD_BACKEND(AP_Baro_%s::%s(%s))\n'
+                % (n, wrapper, driver, probe, ','.join(args)))
+        if len(devlist) > 0:
+            f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
