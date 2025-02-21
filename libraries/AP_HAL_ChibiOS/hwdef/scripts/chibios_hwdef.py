@@ -104,7 +104,6 @@ class ChibiOSHWDef(hwdef.HWDef):
         self.build_flags = []
 
         # sensor lists
-        self.compass_list = []
         self.baro_list = []
         self.airspeed_list = []
 
@@ -1573,34 +1572,6 @@ INCLUDE common.ld
 #endif
 ''')
 
-    def write_MAG_config(self, f):
-        '''write MAG config defines'''
-        devlist = []
-        seen = set()
-        for dev in self.compass_list:
-            if self.seen_str(dev) in seen:
-                self.error("Duplicate MAG: %s" % self.seen_str(dev))
-            seen.add(self.seen_str(dev))
-            driver = dev[0]
-            probe = 'probe'
-            wrapper = ''
-            a = driver.split(':')
-            driver = a[0]
-            if len(a) > 1 and a[1].startswith('probe'):
-                probe = a[1]
-            for i in range(1, len(dev)):
-                if dev[i].startswith("SPI:"):
-                    dev[i] = self.parse_spi_device(dev[i])
-                elif dev[i].startswith("I2C:"):
-                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
-            n = len(devlist)+1
-            devlist.append('HAL_MAG_PROBE%u' % n)
-            f.write(
-                '#define HAL_MAG_PROBE%u %s ADD_BACKEND(DRIVER_%s, AP_Compass_%s::%s(%s))\n'
-                % (n, wrapper, driver, driver, probe, ','.join(dev[1:])))
-        if len(devlist) > 0:
-            f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
-
     def write_BARO_config(self, f):
         '''write barometer config defines'''
         devlist = []
@@ -2932,8 +2903,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.wspidev.append(a[1:])
         elif a[0] == 'OSPIDEV':
             self.wspidev.append(a[1:])
-        elif a[0] == 'COMPASS':
-            self.compass_list.append(a[1:])
         elif a[0] == 'BARO':
             self.baro_list.append(a[1:])
         elif a[0] == 'DATAFLASH':
@@ -2972,8 +2941,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
                     continue
                 newpins.append(pin)
             self.allpins = newpins
-            if u == 'COMPASS':
-                self.compass_list = []
             if u == 'BARO':
                 self.baro_list = []
             if u == 'DATAFLASH':
