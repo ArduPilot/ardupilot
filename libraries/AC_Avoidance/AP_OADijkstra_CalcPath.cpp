@@ -135,7 +135,7 @@ bool AP_OADijkstra_CalcPath::calc_shortest_path(const Location &origin, const Lo
         return false;
     }
     path.num_pos = 0;
-    path.length_cm = 0;
+    path.length_cm = _short_path_data[nidx].distance_cm;
     while (true) {
         if (!path.pos.expand_to_hold(path.num_pos + 1)) {
             err_id = AP_OADijkstra_Common::ErrorId::DIJKSTRA_ERROR_OUT_OF_MEMORY;
@@ -155,7 +155,6 @@ bool AP_OADijkstra_CalcPath::calc_shortest_path(const Location &origin, const Lo
             }
             path.pos[path.num_pos] = next_pos;
             path.num_pos++;
-            path.length_cm += _short_path_data[nidx].distance_cm;
 
             // we are done if node is the source
             if (_short_path_data[nidx].id.id_type == AP_OAVisGraph::OATYPE_SOURCE) {
