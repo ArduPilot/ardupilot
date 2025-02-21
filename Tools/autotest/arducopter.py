@@ -12735,8 +12735,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     trim_x = self.get_parameter('AHRS_TRIM_X', verbose=False)
                     trim_y = self.get_parameter('AHRS_TRIM_Y', verbose=False)
                     self.progress(f"trim_x={trim_x} trim_y={trim_y}")
-                    if abs(trim_x) < 0.02 and abs(trim_y) < 0.02:
+                    if abs(trim_x) < 0.01 and abs(trim_y) < 0.01:
                         self.progress("Good AHRS trims")
+                        self.progress(f"vx={lpn.vx} vy={lpn.vy}")
                         if abs(lpn.vx) > 1 or abs(lpn.vy) > 1:
                             raise NotAchievedException("Velocity after trimming?!")
                         break
