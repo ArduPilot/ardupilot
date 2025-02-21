@@ -7,6 +7,10 @@ define INS_MAX_INSTANCES 3
 # Compasses:
 COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
 
+# Baros:
+BARO MS56XX I2C:1:0x77
+
+
 define AP_NOTIFY_GPIO_LED_3_ENABLED 1
 define HAL_GPIO_A_LED_PIN        24
 define HAL_GPIO_B_LED_PIN        25

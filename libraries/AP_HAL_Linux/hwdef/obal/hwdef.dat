@@ -9,6 +9,9 @@ COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
 # COMPASS QMC5883L I2C:1:0x0d true  ROTATION_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES 1
 
+# Baros:
+BARO BMP085 I2C:1:0x77
+
 
 define HAL_BOARD_LOG_DIRECTORY "/home/pi/ardupilot/logs"
 define HAL_BOARD_TERRAIN_DIRECTORY "/home/pi/ardupilot/terrain"
