@@ -29,6 +29,7 @@ class LinuxHWDef(hwdef.HWDef):
 
         self.write_SPI_config(f)
         self.write_IMU_config(f)
+        self.write_MAG_config(f)
 
     def process_line(self, line, depth):
         '''process one line of pin definition file'''
