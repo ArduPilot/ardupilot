@@ -85,7 +85,8 @@ extern const AP_HAL::HAL& hal;
 
 //#define CRSF_DEBUG
 //#define CRSF_DEBUG_CHARS
-#ifdef CRSF_DEBUG
+//#define CRSF_DEBUG_TELEM
+#if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_TELEM)
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
 static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
 {
@@ -127,7 +128,7 @@ static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
         return "LINK_STATSv3_TX";
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE:
-        return "UNKNOWN";
+        return "PARAM_WRITE";
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM_LEGACY:
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM:
         switch (subtype) {
@@ -447,6 +448,7 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
             process_link_stats_frame((uint8_t*)&_frame.payload);
             break;
         case CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
+        //case CRSF_FRAMETYPE_RC_CHANNELS_PACKED_11BIT:
             decode_variable_bit_channels((const uint8_t*)(&_frame.payload), _frame.length, CRSF_MAX_CHANNELS, _channels);
             _crsf_v3_active = true;
             rc_active = !_uart; // only accept RC data if we are not in standalone mode
@@ -461,7 +463,24 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
             break;
     }
 #if HAL_CRSF_TELEM_ENABLED
-    if (AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload)) {
+    if (AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload, _frame.length - 2U)) {
+#ifdef CRSF_DEBUG_TELEM
+        switch (_frame.type) {
+            case CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
+            case CRSF_FRAMETYPE_LINK_STATISTICS:
+            case CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
+            case CRSF_FRAMETYPE_LINK_STATISTICS_RX:
+            case CRSF_FRAMETYPE_LINK_STATISTICS_TX:
+                break;
+            default:
+                hal.console->printf("CRSF: received %s:", get_frame_type(_frame.type));
+                uint8_t* fptr = (uint8_t*)&_frame;
+                for (uint8_t i = 0; i < _frame.length + 2; i++) {
+                    hal.console->printf(" 0x%x", fptr[i]);
+                }
+                hal.console->printf("\n");
+        }
+#endif
         process_telemetry();
     }
     // process any pending baudrate changes before reading another frame
