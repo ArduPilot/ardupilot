@@ -9,6 +9,9 @@ define INS_MAX_INSTANCES 3
 // only external compasses
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 
+# Baros:
+BARO MS56XX SPI:ms5611
+
 
 define HAL_BOARD_LOG_DIRECTORY "/edge/ardupilot/logs"
 define HAL_BOARD_TERRAIN_DIRECTORY "/edge/ardupilot/terrain"
