@@ -104,7 +104,6 @@ class ChibiOSHWDef(hwdef.HWDef):
         self.build_flags = []
 
         # sensor lists
-        self.baro_list = []
         self.airspeed_list = []
 
         # dataflash config
@@ -1572,35 +1571,6 @@ INCLUDE common.ld
 #endif
 ''')
 
-    def write_BARO_config(self, f):
-        '''write barometer config defines'''
-        devlist = []
-        seen = set()
-        for dev in self.baro_list:
-            if self.seen_str(dev) in seen:
-                self.error("Duplicate BARO: %s" % self.seen_str(dev))
-            seen.add(self.seen_str(dev))
-            driver = dev[0]
-            probe = 'probe'
-            wrapper = ''
-            a = driver.split(':')
-            driver = a[0]
-            if len(a) > 1 and a[1].startswith('probe'):
-                probe = a[1]
-            for i in range(1, len(dev)):
-                if dev[i].startswith("SPI:"):
-                    dev[i] = self.parse_spi_device(dev[i])
-                elif dev[i].startswith("I2C:"):
-                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
-            n = len(devlist)+1
-            devlist.append('HAL_BARO_PROBE%u' % n)
-            args = ['*this'] + dev[1:]
-            f.write(
-                '#define HAL_BARO_PROBE%u %s ADD_BACKEND(AP_Baro_%s::%s(%s))\n'
-                % (n, wrapper, driver, probe, ','.join(args)))
-        if len(devlist) > 0:
-            f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
-
     def write_AIRSPEED_config(self, f):
         '''write airspeed config defines'''
         devlist = []
@@ -2903,8 +2873,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.wspidev.append(a[1:])
         elif a[0] == 'OSPIDEV':
             self.wspidev.append(a[1:])
-        elif a[0] == 'BARO':
-            self.baro_list.append(a[1:])
         elif a[0] == 'DATAFLASH':
             self.dataflash_list.append(a[1:])
         elif a[0] == 'AIRSPEED':
@@ -2941,8 +2909,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
                     continue
                 newpins.append(pin)
             self.allpins = newpins
-            if u == 'BARO':
-                self.baro_list = []
             if u == 'DATAFLASH':
                 self.dataflash_list = []
             if u == 'AIRSPEED':
