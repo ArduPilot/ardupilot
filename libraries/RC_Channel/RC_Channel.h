@@ -264,6 +264,8 @@ public:
         AHRS_AUTO_TRIM =     182,  // in-flight trim Copter AHRS using manual levelling
         AUTOLAND =           183,  //Fixed Wing AUTOLAND Mode
 
+        GPS_DISABLE_EK3 =    190, // disable GPS only for EKF3
+
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input
