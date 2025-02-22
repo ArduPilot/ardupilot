@@ -304,7 +304,7 @@ void *AP_Filesystem_FlashMemory_LittleFS::opendir(const char *pathdir)
     WITH_SEMAPHORE(fs_sem);
     ENSURE_MOUNTED_NULL();
 
-    DirEntry *result = new DirEntry;
+    DirEntry *result = NEW_NOTHROW DirEntry;
     if (!result) {
         errno = ENOMEM;
         return nullptr;
