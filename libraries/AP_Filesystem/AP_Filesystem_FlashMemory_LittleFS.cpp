@@ -424,8 +424,11 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::bytes_until_fsync(int fd)
     uint32_t file_pos = fp->file.pos;
     uint32_t block_size = fs_cfg.block_size;
 
-    // calculate how much allowed if a full block would be written
-    uint32_t nbytes = fs_cfg.block_size;
+    // first block exclusively stores data:
+    // https://github.com/littlefs-project/littlefs/issues/564#issuecomment-2555733922
+    if (file_pos < block_size) {
+        return block_size - file_pos; // so block_offset is exactly file_pos
+    }
 
     // see https://github.com/littlefs-project/littlefs/issues/564#issuecomment-2363032827
     // n = (N − w/8 ( popcount( N/(B − 2w/8) − 1) + 2))/(B − 2w/8))
@@ -437,21 +440,14 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::bytes_until_fsync(int fd)
     (N - (B - 2*sizeof(uint32_t)) * n - sizeof(uint32_t) * __builtin_popcount(n))
 
     uint32_t block_index = BLOCK_INDEX(file_pos, block_size);
+    // offset will be 4 (or bigger) through (block_size-1) as subsequent blocks
+    // start with one or more pointers; offset will never equal block_size
     uint32_t block_offset = BLOCK_OFFSET(file_pos, block_size, block_index);
-    if (block_size - block_offset <= nbytes) {
-        if (block_size == block_offset) {
-            // exactly at the end of the block, sync and then write all the data
-            AP::FS().fsync(fd);
-        } else {
-            // near the end of the block, fill in the remaining gap
-            nbytes = block_size - block_offset;
-        }
-    }
 
 #undef BLOCK_INDEX
 #undef BLOCK_OFFSET
 
-    return nbytes; // return that amount
+    return block_size - block_offset;
 }
 
 
