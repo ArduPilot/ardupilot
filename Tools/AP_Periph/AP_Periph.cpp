@@ -282,7 +282,7 @@ void AP_Periph_FW::init()
     }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_MSP
+#if AP_PERIPH_MSP_ENABLED
     if (g.msp_port >= 0) {
         msp_init(hal.serial(g.msp_port));
     }
