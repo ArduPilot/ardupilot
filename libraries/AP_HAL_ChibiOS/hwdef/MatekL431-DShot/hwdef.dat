@@ -34,5 +34,5 @@ define HAL_SUPPORT_RCOUT_SERIAL 1
 define HAL_WITH_ESC_TELEM 1
 
 # also enable relay output via hardpoint msgs
-define HAL_PERIPH_ENABLE_RELAY
+define AP_PERIPH_RELAY_ENABLED 1
 define AP_RELAY_ENABLED 1

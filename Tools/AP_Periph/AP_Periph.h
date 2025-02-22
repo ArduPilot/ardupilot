@@ -47,7 +47,7 @@
 #endif
 #include <AP_AHRS/AP_AHRS.h>
 
-#ifdef HAL_PERIPH_ENABLE_RELAY
+#if AP_PERIPH_RELAY_ENABLED
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     #error "Relay and PWM_HARDPOINT both use hardpoint message"
 #endif
@@ -437,7 +437,7 @@ public:
     GCS_Periph _gcs;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RELAY
+#if AP_PERIPH_RELAY_ENABLED
     AP_Relay relay;
 #endif
 

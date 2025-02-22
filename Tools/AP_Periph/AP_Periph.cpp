@@ -304,7 +304,7 @@ void AP_Periph_FW::init()
     notify.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RELAY
+#if AP_PERIPH_RELAY_ENABLED
     relay.init();
 #endif
 
