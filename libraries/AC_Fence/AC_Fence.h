@@ -28,6 +28,7 @@
 #define AC_FENCE_ACTION_SMART_RTL_OR_LAND           5       // SmartRTL, if that fails, Land
 #define AC_FENCE_ACTION_GUIDED                      6       // guided mode, with target waypoint as fence return point
 #define AC_FENCE_ACTION_GUIDED_THROTTLE_PASS        7       // guided mode, but pilot retains manual throttle control
+#define AC_FENCE_ACTION_AUTOLAND_OR_RTL             8       // fixed wing autoland,if enabled, or RTL
 
 // give up distance
 #define AC_FENCE_GIVE_UP_DISTANCE                   100.0f  // distance outside the fence at which we should give up and just land.  Note: this is not used by library directly but is intended to be used by the main code
