@@ -129,6 +129,7 @@ public:
     bool get_aux_auth_id(uint8_t& auth_id);
     void set_aux_auth_passed(uint8_t auth_id);
     void set_aux_auth_failed(uint8_t auth_id, const char* fail_msg);
+    void reset_all_aux_auths();
 #endif
 
     static const struct AP_Param::GroupInfo        var_info[];
