@@ -257,27 +257,41 @@ void NavEKF3_core::tryChangeCompass(void)
         if (tempIndex >= maxCount) {
             tempIndex -= maxCount;
         }
-        // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
-        if (compass.healthy(tempIndex) && compass.use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
-            magSelectIndex = tempIndex;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
-            // reset the timeout flag and timer
-            magTimeout = false;
-            lastHealthyMagTime_ms = imuSampleTime_ms;
-            // zero the learned magnetometer bias states
-            stateStruct.body_magfield.zero();
-            // clear the measurement buffer
-            storedMag.reset();
-            // clear the data waiting flag so that we do not use any data pending from the previous sensor
-            magDataToFuse = false;
-            // request a reset of the magnetic field states
-            magStateResetRequest = true;
-            // declare the field unlearned so that the reset request will be obeyed
-            magFieldLearned = false;
-            // reset body mag variances on next CovariancePrediction
-            needMagBodyVarReset = true;
-            return;
-        }
+        tryChangeCompass(tempIndex);
+    }
+}
+
+// try changing to a specific compass index
+void NavEKF3_core::tryChangeCompass(uint8_t mag_index)
+{
+    const auto &compass = dal.compass();
+    const uint8_t maxCount = compass.get_count();
+
+    if (mag_index >= maxCount) {
+        // we assume the passed index should be valid
+        return;
+    }
+
+     // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
+    if (compass.healthy(mag_index) && compass.use_for_yaw(mag_index) && mag_index != magSelectIndex) {
+        magSelectIndex = mag_index;
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
+        // reset the timeout flag and timer
+        magTimeout = false;
+        lastHealthyMagTime_ms = imuSampleTime_ms;
+        // zero the learned magnetometer bias states
+        stateStruct.body_magfield.zero();
+        // clear the measurement buffer
+        storedMag.reset();
+        // clear the data waiting flag so that we do not use any data pending from the previous sensor
+        magDataToFuse = false;
+        // request a reset of the magnetic field states
+        magStateResetRequest = true;
+        // declare the field unlearned so that the reset request will be obeyed
+        magFieldLearned = false;
+        // reset body mag variances on next CovariancePrediction
+        needMagBodyVarReset = true;
+        return;
     }
 }
 
@@ -313,7 +327,16 @@ void NavEKF3_core::readMagData()
     if (maxCount > 1) {
         bool fusionTimeout = magTimeout && !onGround && imuSampleTime_ms - ekfStartTime_ms > 30000 && !(frontend->_affinity & EKF_AFFINITY_MAG);
         bool sensorTimeout = !compass.healthy(magSelectIndex) && imuSampleTime_ms - lastMagRead_ms > frontend->magFailTimeLimit_ms;
-        if (fusionTimeout || sensorTimeout) {
+
+        // check if we have changed the primary compass in flight
+        // get_first_usable() returns the first compass that is healthy and ordered by priority set by user
+        const bool onground_and_changed_primary = onGround && (magSelectIndex != dal.compass().get_first_usable()) && !(frontend->_affinity & EKF_AFFINITY_MAG);
+
+        if (onground_and_changed_primary) {
+            // we are on ground lets change back to the primary compass if its healthy
+            // this is to prevent the EKF from using a compass that was not first in priority and might have changed due to a temporary fusion timeout
+            tryChangeCompass(dal.compass().get_first_usable());
+        } else if (fusionTimeout || sensorTimeout) {
             tryChangeCompass();
         }
     }
