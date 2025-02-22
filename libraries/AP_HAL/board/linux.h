@@ -13,7 +13,6 @@
 #define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,GET_I2C_DEVICE(bus, addr),##args))
 #define PROBE_IMU_I2C2(driver, bus, addr1, addr2, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.i2c_mgr->get_device(bus, addr1),hal.i2c_mgr->get_device(bus, addr2),##args))
 #define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
-#define PROBE_IMU_SPI2(driver, devname1, devname2, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname1),hal.spi->get_device(devname2),##args))
 
 #define PROBE_BARO_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(GET_I2C_DEVICE(bus, addr)),##args))
 #define PROBE_BARO_SPI(driver, devname, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(hal.spi->get_device(devname)),##args))
@@ -125,10 +124,6 @@
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
     // only external compasses
     #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
-    #define HAL_INS_PROBE_LIST PROBE_IMU_SPI2(Invensense, "rst_g", "rst_a", ROTATION_ROLL_180_YAW_90, ROTATION_ROLL_180_YAW_90)
-    #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
-    #define HAL_MAG_PROBE_LIST PROBE_MAG_SPI(LIS3MDL, lis3mdl, false, ROTATION_ROLL_180_YAW_90)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_NONE)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
