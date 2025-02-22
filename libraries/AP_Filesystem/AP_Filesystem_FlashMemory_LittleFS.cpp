@@ -421,10 +421,37 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::bytes_until_fsync(int fd)
         return 0;
     }
 
-    uint32_t write_amt = fs_cfg.block_size;
+    uint32_t file_pos = fp->file.pos;
+    uint32_t block_size = fs_cfg.block_size;
+
     // calculate how much allowed if a full block would be written
-    sync_block(fd, fp->file.pos, write_amt);
-    return write_amt; // return that amount
+    uint32_t nbytes = fs_cfg.block_size;
+
+    // see https://github.com/littlefs-project/littlefs/issues/564#issuecomment-2363032827
+    // n = (N − w/8 ( popcount( N/(B − 2w/8) − 1) + 2))/(B − 2w/8))
+    // off = N − ( B − 2w/8 ) n − w/8popcount( n )
+#define BLOCK_INDEX(N, B) \
+    (N - sizeof(uint32_t) * (__builtin_popcount(N/(B - 2 * sizeof(uint32_t)) -1) + 2))/(B - 2 * sizeof(uint32_t))
+
+#define BLOCK_OFFSET(N, B, n) \
+    (N - (B - 2*sizeof(uint32_t)) * n - sizeof(uint32_t) * __builtin_popcount(n))
+
+    uint32_t block_index = BLOCK_INDEX(file_pos, block_size);
+    uint32_t block_offset = BLOCK_OFFSET(file_pos, block_size, block_index);
+    if (block_size - block_offset <= nbytes) {
+        if (block_size == block_offset) {
+            // exactly at the end of the block, sync and then write all the data
+            AP::FS().fsync(fd);
+        } else {
+            // near the end of the block, fill in the remaining gap
+            nbytes = block_size - block_offset;
+        }
+    }
+
+#undef BLOCK_INDEX
+#undef BLOCK_OFFSET
+
+    return nbytes; // return that amount
 }
 
 
@@ -613,34 +640,6 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define W25NXX_TIMEOUT_PAGE_PROGRAM_US     700  // tPPmax = 700us
 #define W25NXX_TIMEOUT_BLOCK_ERASE_MS      10   // tBEmax = 10ms
 #define W25NXX_TIMEOUT_RESET_MS            500  // tRSTmax = 500ms
-
-bool AP_Filesystem_FlashMemory_LittleFS::sync_block(int _write_fd, uint32_t _write_offset, uint32_t& nbytes)
-{
-    // see https://github.com/littlefs-project/littlefs/issues/564#issuecomment-2363032827
-    // n = (N − w/8 ( popcount( N/(B − 2w/8) − 1) + 2))/(B − 2w/8))
-    // off = N − ( B − 2w/8 ) n − w/8popcount( n )
-#define BLOCK_INDEX(N, B) \
-    (N - sizeof(uint32_t) * (__builtin_popcount(N/(B - 2 * sizeof(uint32_t)) -1) + 2))/(B - 2 * sizeof(uint32_t))
-
-#define BLOCK_OFFSET(N, B, n) \
-    (N - (B - 2*sizeof(uint32_t)) * n - sizeof(uint32_t) * __builtin_popcount(n))
-
-    uint32_t blocksize = fs_cfg.block_size;
-    uint32_t block_index = BLOCK_INDEX(_write_offset, blocksize);
-    uint32_t block_offset = BLOCK_OFFSET(_write_offset, blocksize, block_index);
-    if (blocksize - block_offset <= nbytes) {
-        if (blocksize == block_offset) {
-            // exactly at the end of the block, sync and then write all the data
-            AP::FS().fsync(_write_fd);
-            return false;
-        } else {
-            // near the end of the block, fill in the remaining gap
-            nbytes = blocksize - block_offset;
-            return true;
-        }
-    }
-    return false;
-}
 
 bool AP_Filesystem_FlashMemory_LittleFS::is_busy()
 {
