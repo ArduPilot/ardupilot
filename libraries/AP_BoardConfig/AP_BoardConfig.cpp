@@ -206,7 +206,38 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: SAFETY_MASK
     // @DisplayName: Outputs which ignore the safety switch state
     // @Description: A bitmask which controls what outputs can move while the safety switch has not been pressed
-    // @Bitmask: 0:Output1,1:Output2,2:Output3,3:Output4,4:Output5,5:Output6,6:Output7,7:Output8,8:Output9,9:Output10,10:Output11,11:Output12,12:Output13,13:Output14
+    // @Bitmask: 0:Output1
+    // @Bitmask: 1:Output2
+    // @Bitmask: 2:Output3
+    // @Bitmask: 3:Output4
+    // @Bitmask: 4:Output5
+    // @Bitmask: 5:Output6
+    // @Bitmask: 6:Output7
+    // @Bitmask: 7:Output8
+    // @Bitmask: 8:Output9
+    // @Bitmask: 9:Output10
+    // @Bitmask: 10:Output11
+    // @Bitmask: 11:Output12
+    // @Bitmask: 12:Output13
+    // @Bitmask: 13:Output14
+    // @Bitmask: 14:Output15
+    // @Bitmask: 15:Output16
+    // @Bitmask: 16:Output17
+    // @Bitmask: 17:Output18
+    // @Bitmask: 18:Output19
+    // @Bitmask: 19:Output20
+    // @Bitmask: 20:Output21
+    // @Bitmask: 21:Output22
+    // @Bitmask: 22:Output23
+    // @Bitmask: 23:Output24
+    // @Bitmask: 24:Output25
+    // @Bitmask: 25:Output26
+    // @Bitmask: 26:Output27
+    // @Bitmask: 27:Output28
+    // @Bitmask: 28:Output29
+    // @Bitmask: 29:Output30
+    // @Bitmask: 30:Output31
+    // @Bitmask: 31:Output32
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("SAFETY_MASK", 7, AP_BoardConfig, state.ignore_safety_channels, 0),
