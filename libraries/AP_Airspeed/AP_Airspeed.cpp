@@ -493,19 +493,6 @@ void AP_Airspeed::allocate()
     }
 }
 
-// read the airspeed sensor
-float AP_Airspeed::get_pressure(uint8_t i)
-{
-    if (!enabled(i)) {
-        return 0;
-    }
-    float pressure = 0;
-    if (sensor[i]) {
-        state[i].healthy = sensor[i]->get_differential_pressure(pressure);
-    }
-    return pressure;
-}
-
 // get a temperature reading if possible
 bool AP_Airspeed::get_temperature(uint8_t i, float &temperature)
 {
@@ -637,13 +624,14 @@ void AP_Airspeed::read(uint8_t i)
 
 #ifndef HAL_BUILD_AP_PERIPH
     /*
-      get the healthy state before we call get_pressure() as
-      get_pressure() overwrites the healthy state
+      remember the old healthy state
      */
     bool prev_healthy = state[i].healthy;
 #endif
 
-    float raw_pressure = get_pressure(i);
+    float raw_pressure = 0;
+    state[i].healthy = sensor[i]->get_differential_pressure(raw_pressure);
+
     float airspeed_pressure = raw_pressure - get_offset(i);
 
     // remember raw pressure for logging
