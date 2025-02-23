@@ -717,8 +717,26 @@ private:
     // constrain earth field using WMM tables
     void MagTableConstrain(void);
 
+    // PosVel fusion sensor sources
+    enum class PosVelFusionSource : uint8_t {
+        NOT_FUSING = 0,
+        CONSTANT_MODE = 1,
+        BARO = 2,
+        GPS = 3,
+        EXTNAV = 4,
+        RNGFND = 5,
+    };
+
+    struct PosVelFusion {
+        Vector6 observations;   // Combined velocity (m/s) and position (m) observations: [velX, velY, velZ, posX, posY, posZ]
+        PosVelFusionSource fuseVelNE; // Source of horizontal velocity data, will be None if not available
+        PosVelFusionSource fuseVelD;   // Source of vertical velocity data, will be None if not available
+        PosVelFusionSource fusePosNE; // Source of horizontal position data, will be None if not available
+        PosVelFusionSource fuseHgt;    // Source of height data, will be None if not available
+    };
+
     // fuse selected position, velocity and height measurements
-    void FuseVelPosNED();
+    void FuseVelPosNED(PosVelFusion& PosVelFusionData);
 
     // fuse body frame velocity measurements
     void FuseBodyVel();
@@ -973,7 +991,7 @@ private:
     void correctEkfOriginHeight();
 
     // Select height data to be fused from the available baro, range finder and GPS sources
-    void selectHeightForFusion();
+    void selectHeightForFusion(PosVelFusion& PosVelFusionData);
 
     // zero attitude state covariances, but preserve variances
     void zeroAttCovOnly();
@@ -1090,10 +1108,6 @@ private:
     bool manoeuvring;               // boolean true when the flight vehicle is performing horizontal changes in velocity
     Vector6 innovVelPos;            // innovation output for a group of measurements
     Vector6 varInnovVelPos;         // innovation variance output for a group of measurements
-    Vector6 velPosObs;              // observations for combined velocity and positon group of measurements (3x1 m , 3x1 m/s)
-    bool fuseVelData;               // this boolean causes the velNED measurements to be fused
-    bool fusePosData;               // this boolean causes the posNE measurements to be fused
-    bool fuseHgtData;               // this boolean causes the hgtMea measurements to be fused
     Vector3F innovMag;              // innovation output from fusion of X,Y,Z compass measurements
     Vector3F varInnovMag;           // innovation variance output from fusion of X,Y,Z compass measurements
     ftype innovVtas;                // innovation output from fusion of airspeed measurements
@@ -1296,7 +1310,6 @@ private:
     ftype auxRngTestRatio;          // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2F flowGyroBias;          // bias error of optical flow sensor gyro output
     bool rangeDataToFuse;           // true when valid range finder height data has arrived at the fusion time horizon.
-    bool baroDataToFuse;            // true when valid baro height finder data has arrived at the fusion time horizon.
     bool gpsDataToFuse;             // true when valid GPS data has arrived at the fusion time horizon.
     bool magDataToFuse;             // true when valid magnetometer data has arrived at the fusion time horizon
     enum AidingMode {
@@ -1473,11 +1486,9 @@ private:
     uint32_t extNavMeasTime_ms;         // time external measurements were accepted for input to the data buffer (msec)
     uint32_t extNavLastPosResetTime_ms; // last time the external nav systen performed a position reset (msec)
     bool extNavDataToFuse;              // true when there is new external nav data to fuse
-    bool extNavUsedForPos;              // true when the external nav data is being used as a position reference.
     EKF_obs_buffer_t<ext_nav_vel_elements> storedExtNavVel;    // external navigation velocity data buffer
     ext_nav_vel_elements extNavVelDelayed;  // external navigation velocity data at the fusion time horizon.  Already corrected for sensor position
     uint32_t extNavVelMeasTime_ms;      // time external navigation velocity measurements were accepted for input to the data buffer (msec)
-    bool extNavVelToFuse;               // true when there is new external navigation velocity to fuse
     Vector3F extNavVelInnov;            // external nav velocity innovations
     Vector3F extNavVelVarInnov;         // external nav velocity innovation variances
     uint32_t extNavVelInnovTime_ms;     // system time that external nav velocity innovations were recorded (to detect timeouts)
