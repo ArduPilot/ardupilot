@@ -2430,6 +2430,10 @@ class TestSuite(ABC):
         if mark_context:
             self.context_get().reboot_sitl_was_done = True
 
+    def assert_armed(self):
+        if not self.armed():
+            raise NotAchievedException("Not armed")
+
     def reboot_sitl_mavproxy(self, required_bootcount=None):
         """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
