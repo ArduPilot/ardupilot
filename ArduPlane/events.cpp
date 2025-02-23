@@ -310,6 +310,11 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
                 already_landing = true;
             }
 #endif
+#if MODE_AUTOLAND_ENABLED
+            if (control_mode == &mode_autoland) {
+                already_landing = true;
+            }
+#endif
             if (!already_landing) {
                 // never stop a landing if we were already committed
                 if ((g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START) && plane.have_position && plane.mission.is_best_land_sequence(plane.current_loc)) {
