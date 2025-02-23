@@ -7,11 +7,15 @@
 
 #if AP_CUSTOMCONTROL_ENABLED
 
+#include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Math/vector3.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_AHRS/AP_AHRS_View.h>
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
+#include <AC_AttitudeControl/AC_AttitudeControl_Multi.h>
 #include <AP_Motors/AP_MotorsMulticopter.h>
+#include <Filter/LowPassFilter.h>
 
 #ifndef CUSTOMCONTROL_MAX_TYPES
 #define CUSTOMCONTROL_MAX_TYPES 4

@@ -120,14 +120,8 @@ const AP_Param::GroupInfo AC_CustomControl_INDI::var_info[] = {
 };
 
 // initialize in the constructor
-AC_CustomControl_INDI::AC_CustomControl_INDI(AC_CustomControl &frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl_Multi*& att_control, AP_MotorsMulticopter*& motors, float dt) :
-    AC_CustomControl_Backend(frontend, ahrs, att_control, motors, dt),
-    _p_angle_x(7.5),
-    _p_ang_rate_x(30),
-    _p_angle_y(7.5),
-    _p_ang_rate_y(30),
-    _p_angle_z(6),
-    _p_ang_rate_z(24)
+AC_CustomControl_INDI::AC_CustomControl_INDI(AC_CustomControl &frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl*& att_control, AP_MotorsMulticopter*& motors, float dt) :
+    AC_CustomControl_Backend(frontend, ahrs, att_control, motors, dt)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -274,7 +268,7 @@ void AC_CustomControl_INDI::indi_angular_accel(void)
 {
     // calculate angular acceleration
     Vector3f gyro_latest = _ahrs->get_gyro_latest();
-    Vector3f ang_acc_flt = _ang_acc_filter.apply((gyro_latest - _gyro_prev)/AP::scheduler().get_loop_period_s());
+    Vector3f ang_acc_flt = _ang_acc_filter.apply((gyro_latest - _gyro_prev)/AP::scheduler().get_loop_period_s(), AP::scheduler().get_loop_period_s());
     _gyro_prev = gyro_latest;
 
     Matrix3f moment_of_inertia_xyz (
@@ -288,8 +282,8 @@ void AC_CustomControl_INDI::indi_angular_accel(void)
     // mechanical yaw is not considered in arducopter current control allocation 
     // filter body z axis torque command to compansate for the mechanicaly yaw
     // this render rotor inertia information(_motor_moment_inertia_kgm2) unneccessary 
-    _yaw_rate_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), _yaw_rate_filter_cutoff);
-    _yaw_rate_filter.apply(_torque_cmd_body_Nm.z);
+    _yaw_rate_filter.set_cutoff_frequency(_yaw_rate_filter_cutoff);
+    _yaw_rate_filter.apply(_torque_cmd_body_Nm.z, AP::scheduler().get_loop_period_s());
     _torque_cmd_body_Nm.z = _yaw_rate_filter.get();
 }
 
@@ -321,7 +315,7 @@ void AC_CustomControl_INDI::get_motor_speed(void)
     float temp[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     for (uint8_t i=0; i < 4; i++) {
         uint8_t chan;
-        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
+        SRV_Channel::Function function = SRV_Channels::get_motor_function(i);
         SRV_Channels::find_channel(function, chan);
         temp[i] = esc_freq_hz[chan];
     }
@@ -386,8 +380,8 @@ void AC_CustomControl_INDI::calculate_torque_thrust_est(void)
     }
 
     // filter torque estimate
-    _torque_est_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), _torque_est_filter_cutoff);
-    _torque_est_body_Nm = _torque_est_filter.apply(Vector3f(cmd[0], cmd[1], cmd[2]));
+    _torque_est_filter.set_cutoff_frequency(_torque_est_filter_cutoff);
+    _torque_est_body_Nm = _torque_est_filter.apply(Vector3f(cmd[0], cmd[1], cmd[2]), AP::scheduler().get_loop_rate_hz());
 }
 
 #endif

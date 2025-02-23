@@ -16,7 +16,7 @@
 
 class AC_CustomControl_INDI : public AC_CustomControl_Backend {
 public:
-    AC_CustomControl_INDI(AC_CustomControl &frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl_Multi*& att_control, AP_MotorsMulticopter*& motors, float dt);
+    AC_CustomControl_INDI(AC_CustomControl &frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl*& att_control, AP_MotorsMulticopter*& motors, float dt);
 
 
     Vector3f update(void) override;
@@ -50,12 +50,12 @@ public:
 protected:
     // declare parameters here
     // attitude and angular velocity P controller
-    AC_P        _p_angle_x;
-    AC_P        _p_angle_y;
-    AC_P        _p_angle_z;
-    AC_P        _p_ang_rate_x;
-    AC_P        _p_ang_rate_y;
-    AC_P        _p_ang_rate_z;
+    AC_P        _p_angle_x{7.5};
+    AC_P        _p_angle_y{7.5};
+    AC_P        _p_angle_z{6};
+    AC_P        _p_ang_rate_x{30};
+    AC_P        _p_ang_rate_y{30};
+    AC_P        _p_ang_rate_z{24};
 
     AP_Float    _moment_inertia_xy_kgm2;        // moment of inertia of xy axis in kg.m²
     AP_Float    _moment_inertia_z_kgm2;         // moment of inertia of z axis in kg.m²

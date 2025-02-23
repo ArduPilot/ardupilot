@@ -83,7 +83,7 @@ const AP_Param::GroupInfo AC_CustomControl_ADRC::var_info[] = {
 };
 
 // initialize in the constructor
-AC_CustomControl_ADRC::AC_CustomControl_ADRC(AC_CustomControl &frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl_Multi*& att_control, AP_MotorsMulticopter*& motors, float dt) :
+AC_CustomControl_ADRC::AC_CustomControl_ADRC(AC_CustomControl &frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl*& att_control, AP_MotorsMulticopter*& motors, float dt) :
     AC_CustomControl_Backend(frontend, ahrs, att_control, motors, dt),
     _rate_roll_cont(100.0, dt),
     _rate_pitch_cont(100.0, dt),
