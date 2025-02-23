@@ -156,19 +156,19 @@ def _post_fun(bld):
 def git_submodule_post_fun(bld):
     bld.add_post_fun(_post_fun)
 
-def _git_head_hash(ctx, path, short=False):
+def _git_head_hash(ctx, path, short=False, hash_abbrev=8):
     cmd = [ctx.env.get_flat('GIT'), 'rev-parse']
     if short:
-        cmd.append('--short=8')
+        cmd.append(f'--short={hash_abbrev}')
     cmd.append('HEAD')
     out = ctx.cmd_and_log(cmd, quiet=Context.BOTH, cwd=path)
     return out.strip()
 
 @conf
-def git_submodule_head_hash(self, name, short=False):
+def git_submodule_head_hash(self, name, short=False, hash_abbrev=8):
     module_node = self.srcnode.make_node(os.path.join('modules', name))
-    return _git_head_hash(self, module_node.abspath(), short=short)
+    return _git_head_hash(self, module_node.abspath(), short=short, hash_abbrev=hash_abbrev)
 
 @conf
-def git_head_hash(self, short=False):
-    return _git_head_hash(self, self.srcnode.abspath(), short=short)
+def git_head_hash(self, short=False, hash_abbrev=8):
+    return _git_head_hash(self, self.srcnode.abspath(), short=short, hash_abbrev=hash_abbrev)
