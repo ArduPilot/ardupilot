@@ -302,10 +302,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             FALLTHROUGH;
         }
         case Failsafe_Action_RTL:
-#if MODE_AUTOLAND_ENABLED
-        case Failsafe_Action_AUTOLAND_OR_RTL:
-#endif
-                                              {
+        case Failsafe_Action_AUTOLAND_OR_RTL: {
             bool already_landing = flight_stage == AP_FixedWing::FlightStage::LAND;
 #if HAL_QUADPLANE_ENABLED
             if (control_mode == &mode_qland || control_mode == &mode_loiter_qland ||
@@ -322,10 +319,9 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
                 }
                 aparm.throttle_cruise.load();
 #if MODE_AUTOLAND_ENABLED
-             if (((Failsafe_Action)action == Failsafe_Action_AUTOLAND_OR_RTL) &&
- set_mode(mode_autoland, ModeReason::BATTERY_FAILSAFE)) {              
-                break;
-            }
+                if (((Failsafe_Action)action == Failsafe_Action_AUTOLAND_OR_RTL) && set_mode(mode_autoland, ModeReason::BATTERY_FAILSAFE)) {
+                    break;
+                }
 #endif
                 set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE);
             }
