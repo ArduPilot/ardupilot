@@ -42,6 +42,7 @@ void Plane::fence_check()
             case AC_FENCE_ACTION_GUIDED:
             case AC_FENCE_ACTION_GUIDED_THROTTLE_PASS:
             case AC_FENCE_ACTION_RTL_AND_LAND:
+            case AC_FENCE_ACTION_AUTOLAND_OR_RTL:
                 if (plane.control_mode_reason == ModeReason::FENCE_BREACHED &&
                     control_mode->is_guided_mode()) {
                     set_mode(*previous_mode, ModeReason::FENCE_RETURN_PREVIOUS_MODE);
@@ -80,17 +81,35 @@ void Plane::fence_check()
         switch (fence_act) {
         case AC_FENCE_ACTION_REPORT_ONLY:
             break;
+
         case AC_FENCE_ACTION_GUIDED:
         case AC_FENCE_ACTION_GUIDED_THROTTLE_PASS:
         case AC_FENCE_ACTION_RTL_AND_LAND:
-            if (fence_act == AC_FENCE_ACTION_RTL_AND_LAND) {
+#if MODE_AUTOLAND_ENABLED
+        case AC_FENCE_ACTION_AUTOLAND_OR_RTL:
+#endif
+            if (fence_act == AC_FENCE_ACTION_RTL_AND_LAND 
+#if MODE_AUTOLAND_ENABLED
+|| fence_act == AC_FENCE_ACTION_AUTOLAND_OR_RTL
+#endif
+                                               ) {
                 if (control_mode == &mode_auto &&
                     mission.get_in_landing_sequence_flag() &&
                     (g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START ||
                      g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START)) {
-                    // already landing
+                    // already in a DO_LAND_START sequence, do not do anything for breach
                     return;
                 }
+                if (flight_stage == AP_FixedWing::FlightStage::LAND) {
+                    // already landing in AUTOLAND or NAV_LAND, do not do anything for breach
+                    return;
+                }
+#if MODE_AUTOLAND_ENABLED
+
+                if (fence_act == AC_FENCE_ACTION_AUTOLAND_OR_RTL && (set_mode(mode_autoland, ModeReason::FENCE_BREACHED))) {
+                    break;
+                }
+#endif
                 set_mode(mode_rtl, ModeReason::FENCE_BREACHED);
             } else {
                 set_mode(mode_guided, ModeReason::FENCE_BREACHED);
