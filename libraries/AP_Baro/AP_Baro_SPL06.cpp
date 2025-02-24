@@ -107,16 +107,6 @@ AP_Baro_Backend *AP_Baro_SPL06::probe(AP_Baro &baro,
     return sensor;
 }
 
-static int32_t get_twos_complement(uint32_t raw, uint8_t length)
-{
-    if (raw & ((int)1 << (length - 1))) {
-        return ((int32_t)raw) - ((int32_t)1 << length);
-    }
-    else {
-        return raw;
-    }
-}
-
 bool AP_Baro_SPL06::_init()
 {
     if (!_dev) {
@@ -187,7 +177,7 @@ bool AP_Baro_SPL06::_init()
 
 #define READ_LENGTH 9
 
-    for (uint8_t i = 0; i < SPL06_CALIB_COEFFS_LEN; ) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(buf); ) {
         ssize_t chunk = MIN(READ_LENGTH, SPL06_CALIB_COEFFS_LEN - i);
         if (!_dev->read_registers(SPL06_REG_CALIB_COEFFS_START + i, buf + i, chunk)) {
             return false;
@@ -224,7 +214,7 @@ bool AP_Baro_SPL06::_init()
     // setup temperature and pressure measurements
     _dev->setup_checked_registers(3, 20);
 
-    uint8_t tmp_sensor = (type == Type::SPA06 ? 0 : SPL06_TEMP_USE_EXT_SENSOR);
+    const uint8_t tmp_sensor = (type == Type::SPA06 ? 0 : SPL06_TEMP_USE_EXT_SENSOR);
 #if AP_BARO_SPL06_BACKGROUND_ENABLE
     //set rate and oversampling
 	_dev->write_register(SPL06_REG_TEMPERATURE_CFG, tmp_sensor | SPL06_TEMP_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
