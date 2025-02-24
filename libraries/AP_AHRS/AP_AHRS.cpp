@@ -178,6 +178,13 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // index 17
 
+    // @Param: POS_LOG
+    // @DisplayName: Store the position in the logs in POS and AHRS
+    // @Description: This controls if we want to store the position in the logs in POS and AHRS messages.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("POS_LOG",  17, AP_AHRS, _pos_logging, 0),
+
     AP_GROUPEND
 };
 
