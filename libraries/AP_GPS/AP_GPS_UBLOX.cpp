@@ -1126,12 +1126,14 @@ AP_GPS_UBLOX::_parse_gps(void)
                     }
                     break;
                 case MSG_CFG_VALSET:
-                    CFG_Debug("NACK VALSET 0x%x 0x%x", (unsigned)_buffer.nack.msgID,
-                            unsigned(active_config.list[active_config.set_index].key));
-                    if (is_gnss_key(active_config.list[active_config.set_index].key)) {
-                        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %u: unable to configure band 0x%02x",
-                            unsigned(state.instance + 1), unsigned(active_config.list[active_config.set_index].key));
+                    if (active_config.list != nullptr) {
+                        CFG_Debug("NACK VALSET 0x%x 0x%x", (unsigned)_buffer.nack.msgID,
+                                  unsigned(active_config.list[active_config.set_index].key));
+                        if (is_gnss_key(active_config.list[active_config.set_index].key)) {
+                            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %u: unable to configure band 0x%02x",
+                                          unsigned(state.instance + 1), unsigned(active_config.list[active_config.set_index].key));
 
+                        }
                     }
                     break;
                 }
