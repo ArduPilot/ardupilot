@@ -1,4 +1,7 @@
 #include "AP_Scripting_config.h"
+
+#if AP_SCRIPTING_ENABLED
+
 #include "AP_Scripting_CRSFMenu.h"
 
 #if AP_CRSF_SCRIPTING
@@ -131,3 +134,4 @@ int lua_CRSF_param_data(lua_State *L)
 }
 
 #endif // AP_CRSF_SCRIPTING
+#endif // AP_SCRIPTING
