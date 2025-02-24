@@ -248,7 +248,12 @@ bool AP_Baro_SPL06::_init()
 
     _instance = _frontend.register_sensor();
 
-    _dev->set_device_type(DEVTYPE_BARO_SPL06);
+    if(type == Type::SPA06) {
+	    _dev->set_device_type(DEVTYPE_BARO_SPA06);
+    } else {
+	    _dev->set_device_type(DEVTYPE_BARO_SPL06);
+    }
+
     set_bus_id(_instance, _dev->get_bus_id());
     
     // request 50Hz update
