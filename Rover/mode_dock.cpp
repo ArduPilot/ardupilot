@@ -45,6 +45,24 @@ const AP_Param::GroupInfo ModeDock::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_STOP_DIST", 5, ModeDock, stopping_dist, 0.30f),
 
+    // @Param: _SLOW_DMAX
+    // @DisplayName: Maximum distance to start slowdown
+    // @Description: within dock_slow_dist_max and dock_slow_dist_min the weight of the slowdown increases linearly. approach slowdown is not applied when the vehicle is more than dock_slow_dist_max meters away.
+    // @Units: m
+    // @Range: 5.00 15.00
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("_SLOW_DMAX", 6, ModeDock, dock_slow_dist_max_m, 15.00f),
+
+    // @Param: _SLOW_DMIN
+    // @DisplayName: Minimum distance to start slowdown
+    // @Description: within dock_slow_dist_max and dock_slow_dist_min the weight of the slowdown increases linearly. once the vehicle reaches dock_slow_dist_min the slowdown weight becomes 1.
+    // @Units: m
+    // @Range: 5.00 15.00
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("_SLOW_DMIN", 7, ModeDock, dock_slow_dist_min_m, 5.00f),
+
     AP_GROUPEND
 };
 
@@ -220,8 +238,6 @@ float ModeDock::apply_slowdown(float desired_speed)
     float error_ratio = target_error_cm / _acceptable_pos_error_cm;
     error_ratio = constrain_float(error_ratio, 0.0f, 1.0f);
 
-    const float dock_slow_dist_max_m = 15.0f;
-    const float dock_slow_dist_min_m = 5.0f;
     // approach slowdown is not applied when the vehicle is more than dock_slow_dist_max meters away
     // within dock_slow_dist_max and dock_slow_dist_min the weight of the slowdown increases linearly
     // once the vehicle reaches dock_slow_dist_min the slowdown weight becomes 1
