@@ -906,7 +906,7 @@ void AC_Fence::record_margin_breach(uint8_t fence_type)
         if (option_enabled(OPTIONS::MARGIN_BREACH)
             && AP_HAL::timeout_expired(_last_margin_breach_notify_sent_ms, now, 1000U)) {
             _last_margin_breach_notify_sent_ms = now;
-            print_fence_message("outside margin", _breached_fence_margins | fence_type);
+            print_fence_message("close", _breached_fence_margins | fence_type);
         }
     }
 
@@ -930,7 +930,7 @@ void AC_Fence::clear_margin_breach(uint8_t fence_type)
         if (option_enabled(OPTIONS::MARGIN_BREACH)
             && AP_HAL::timeout_expired(_last_margin_breach_notify_sent_ms, now, 1000U)) {
             _last_margin_breach_notify_sent_ms = now;
-            print_fence_message("inside margin", fence_type);
+            print_fence_message("cleared margin breach", fence_type);
         }
     }
 
