@@ -8,7 +8,7 @@
 
 // simulated sensor rates in Hz. This matches a pixhawk1
 const uint16_t INS_SITL_SENSOR_A[] = { 1000, 1000 };
-const uint16_t INS_SITL_SENSOR_B[] = { 760, 800 };
+const uint16_t INS_SITL_SENSOR_B[] = { 840, 900 };
 
 #include <SITL/SITL.h>
 
