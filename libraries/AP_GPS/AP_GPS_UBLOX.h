@@ -887,6 +887,7 @@ private:
         int8_t fetch_index;
         int8_t set_index;
     } active_config;
+    bool use_single_valget;
 
 #if GPS_MOVING_BASELINE
     // config for moving baseline base
