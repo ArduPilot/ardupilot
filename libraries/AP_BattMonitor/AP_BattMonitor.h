@@ -26,7 +26,7 @@
 #define AP_BATT_MONITOR_RES_EST_TC_1        0.5f
 #define AP_BATT_MONITOR_RES_EST_TC_2        0.1f
 
-#if BOARD_FLASH_SIZE > 1024
+#if HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #define AP_BATT_MONITOR_CELLS_MAX           14
 #else
 #define AP_BATT_MONITOR_CELLS_MAX           12

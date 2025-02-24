@@ -26,6 +26,10 @@ define HAL_FLASH_PROTECTION 1
 
 EXT_FLASH_SIZE_MB 2
 
+# pin program size limit to 128kB.  If we don't do this then "flashram"
+#  (the ".ramfunc" space) overflows.
+define HAL_PROGRAM_SIZE_LIMIT_KB 128
+
 I2C_ORDER I2C1 I2C2
 
 # order of UARTs (and USB)
