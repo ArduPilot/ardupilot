@@ -1993,9 +1993,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("flying forward (east) until we hit fence")
         pitching_forward = True
         self.set_rc(2, 1100)
-        self.wait_statustext("Polygon fence outside margin")
+        self.wait_statustext("Polygon fence close")
 
-        self.wait_statustext("Circle and Polygon fences outside margin")
+        self.wait_statustext("Circle and Polygon fences close")
         self.progress("Waiting for fence breach")
         tstart = self.get_sim_time()
         while not self.mode_is("RTL"):
@@ -2008,7 +2008,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("Alt: %.02f  HomeDistance: %.02f (fence radius=%f)" %
                           (alt, home_distance, fence_radius))
 
-        self.wait_statustext("Circle fence inside margin")
+        self.wait_statustext("Circle fence cleared margin breach")
         self.progress("Waiting until we get home and disarm")
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() < tstart + timeout:
