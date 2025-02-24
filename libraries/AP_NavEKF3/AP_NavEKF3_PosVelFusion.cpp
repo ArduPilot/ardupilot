@@ -682,11 +682,6 @@ void NavEKF3_core::SelectVelPosFusion()
 // fuse selected position, velocity and height measurements
 void NavEKF3_core::FuseVelPosNED()
 {
-    // health is set bad until test passed
-    bool velCheckPassed = false; // boolean true if velocity measurements have passed innovation consistency checks
-    bool posCheckPassed = false; // boolean true if position measurements have passed innovation consistency check
-    bool hgtCheckPassed = false; // boolean true if height measurements have passed innovation consistency check
-
     // declare variables used to control access to arrays
     bool fuseData[6] {};
     uint8_t stateIndex;
@@ -813,6 +808,7 @@ void NavEKF3_core::FuseVelPosNED()
             ftype maxPosInnov2 = sq(MAX(0.01 * (ftype)frontend->_gpsPosInnovGate, 1.0))*(varInnovVelPos[3] + varInnovVelPos[4]);
 
             posTestRatio = (sq(innovVelPos[3]) + sq(innovVelPos[4])) / maxPosInnov2;
+            bool posCheckPassed = false; // boolean true if position measurements have passed innovation consistency check
             if (posTestRatio < 1.0f || (PV_AidingMode == AID_NONE)) {
                 posCheckPassed = true;
                 lastGpsPosPassTime_ms = imuSampleTime_ms;
@@ -820,7 +816,6 @@ void NavEKF3_core::FuseVelPosNED()
                 // Handle the special case where the glitch radius parameter has been set to a non-positive number.
                 // The innovation variance is increased to limit the state update to an amount corresponding
                 // to a test ratio of 1.
-                posCheckPassed = true;
                 lastGpsPosPassTime_ms = imuSampleTime_ms;
                 varInnovVelPos[3] *= posTestRatio;
                 varInnovVelPos[4] *= posTestRatio;
@@ -888,6 +883,7 @@ void NavEKF3_core::FuseVelPosNED()
                 varVelSum += varInnovVelPos[i];
             }
             velTestRatio = innovVelSumSq / (varVelSum * sq(MAX(0.01 * (ftype)frontend->_gpsVelInnovGate, 1.0)));
+            bool velCheckPassed = false; // boolean true if velocity measurements have passed innovation consistency checks
             if (velTestRatio < 1.0) {
                 velCheckPassed = true;
                 lastVelPassTime_ms = imuSampleTime_ms;
@@ -895,7 +891,6 @@ void NavEKF3_core::FuseVelPosNED()
                 // Handle the special case where the glitch radius parameter has been set to a non-positive number.
                 // The innovation variance is increased to limit the state update to an amount corresponding
                 // to a test ratio of 1.
-                posCheckPassed = true;
                 lastGpsPosPassTime_ms = imuSampleTime_ms;
                 for (uint8_t i = 0; i<=imax; i++) {
                     varInnovVelPos[i] *= velTestRatio;
@@ -936,6 +931,7 @@ void NavEKF3_core::FuseVelPosNED()
             // bias errors without rejecting the height sensor.
             const bool onGroundNotNavigating = (PV_AidingMode == AID_NONE) && onGround;
             const float maxTestRatio = onGroundNotNavigating ? 3.0f : 1.0f;
+            bool hgtCheckPassed = false; // boolean true if height measurements have passed innovation consistency check
             if (hgtTestRatio < maxTestRatio) {
                 hgtCheckPassed = true;
                 lastHgtPassTime_ms = imuSampleTime_ms;
@@ -943,7 +939,6 @@ void NavEKF3_core::FuseVelPosNED()
                 // Handle the special case where the glitch radius parameter has been set to a non-positive number.
                 // The innovation variance is increased to limit the state update to an amount corresponding
                 // to a test ratio of 1.
-                posCheckPassed = true;
                 lastGpsPosPassTime_ms = imuSampleTime_ms;
                 varInnovVelPos[5] *= hgtTestRatio;
                 hgtCheckPassed = true;
