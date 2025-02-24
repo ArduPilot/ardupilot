@@ -314,6 +314,7 @@ private:
     // example.
     Vector2f *_loaded_offsets_from_origin;
     Vector2l *_loaded_points_lla;
+    Location loaded_origin; // origin at the time the boundary was loaded
 
     class ExclusionCircle {
     public:
@@ -349,7 +350,7 @@ private:
     // the result into pos_cm.
     bool scale_latlon_from_origin(const Location &origin,
                                   const Vector2l &point,
-                                  Vector2f &pos_cm) WARN_IF_UNUSED;
+                                  Vector2f &pos_cm) const WARN_IF_UNUSED;
    
     // read_polygon_from_storage - reads vertex_count
     // latitude/longitude points from offset in permanent storage,
