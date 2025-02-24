@@ -643,7 +643,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(battery_balance, "BAL",  BattBalance),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+#if AP_PERIPH_SERIAL_OPTIONS_ENABLED
     // @Group: UART
     // @Path: serial_options.cpp
     GOBJECT(serial_options, "UART",  SerialOptions),

@@ -967,7 +967,7 @@ class sitl_periph_universal(sitl_periph):
             AP_RPM_STREAM_ENABLED = 1,
             AP_PERIPH_RC_OUT_ENABLED = 1,
             AP_PERIPH_ADSB_ENABLED = 1,
-            HAL_PERIPH_ENABLE_SERIAL_OPTIONS = 1,
+            AP_PERIPH_SERIAL_OPTIONS_ENABLED = 1,
             AP_AIRSPEED_ENABLED = 1,
             AP_BATTERY_ESC_ENABLED = 1,
             AP_PERIPH_MSP_ENABLED =0,
@@ -994,6 +994,7 @@ class sitl_periph_gps(sitl_periph):
             APJ_BOARD_ID = 101,
 
             AP_PERIPH_BATTERY_ENABLED = 0,
+            AP_PERIPH_SERIAL_OPTIONS_ENABLED = 0,
             AP_PERIPH_ADSB_ENABLED = 0,
             AP_PERIPH_GPS_ENABLED = 1,
             AP_PERIPH_RELAY_ENABLED = 0,
@@ -1026,6 +1027,7 @@ class sitl_periph_battmon(sitl_periph):
             APJ_BOARD_ID = 101,
 
             AP_PERIPH_BATTERY_ENABLED = 1,
+            AP_PERIPH_SERIAL_OPTIONS_ENABLED = 0,
             AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
             AP_PERIPH_RELAY_ENABLED = 0,
             AP_PERIPH_ADSB_ENABLED = 0,
