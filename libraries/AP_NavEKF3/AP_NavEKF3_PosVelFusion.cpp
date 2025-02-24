@@ -820,7 +820,6 @@ void NavEKF3_core::FuseVelPosNED()
                 // Handle the special case where the glitch radius parameter has been set to a non-positive number.
                 // The innovation variance is increased to limit the state update to an amount corresponding
                 // to a test ratio of 1.
-                posCheckPassed = true;
                 lastGpsPosPassTime_ms = imuSampleTime_ms;
                 varInnovVelPos[3] *= posTestRatio;
                 varInnovVelPos[4] *= posTestRatio;
