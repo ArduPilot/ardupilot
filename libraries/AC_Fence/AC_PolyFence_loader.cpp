@@ -231,9 +231,11 @@ bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_
         return false;
     }
 
-    Vector2l pos;
-    pos.x = loc.lat;
-    pos.y = loc.lng;
+    Vector2f scaled_pos;
+    Vector2l pos { loc.lat, loc.lng };
+    if (!scale_latlon_from_origin(loaded_origin, pos, scaled_pos)) {
+        return false;
+    }
 
     const uint16_t num_inclusion = _num_loaded_circle_inclusion_boundaries + _num_loaded_inclusion_boundaries;
     uint16_t num_inclusion_outside = 0;
@@ -242,8 +244,9 @@ bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_
     // check we are inside each inclusion zone:
     for (uint8_t i=0; i<_num_loaded_inclusion_boundaries; i++) {
         const InclusionBoundary &boundary = _loaded_inclusion_boundary[i];
-        ftype distance;
-        bool valid_distance = Polygon_closest_distance_point(boundary.points_lla, boundary.count, pos, distance);
+        float distance;
+        bool valid_distance = Polygon_closest_distance_point(boundary.points, boundary.count, scaled_pos, distance);
+        distance *= 0.01f; // convert back to meters
         if (Polygon_outside(pos, boundary.points_lla, boundary.count)) {
             num_inclusion_outside++;
             if (valid_distance) {
@@ -261,8 +264,9 @@ bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_
     // check we are outside each exclusion zone:
     for (uint8_t i=0; i<_num_loaded_exclusion_boundaries; i++) {
         const ExclusionBoundary &boundary = _loaded_exclusion_boundary[i];
-        ftype distance;
-        bool valid_distance = Polygon_closest_distance_point(boundary.points_lla, boundary.count, pos, distance);
+        float distance;
+        bool valid_distance = Polygon_closest_distance_point(boundary.points, boundary.count, scaled_pos, distance);
+        distance *= 0.01f; // convert back to meters
         if (!Polygon_outside(pos, boundary.points_lla, boundary.count)) {
             if (valid_distance) {
                 distance_outside_fence = distance;
@@ -349,7 +353,7 @@ bool AC_PolyFence_loader::format()
     return write_eos_to_storage(offset);
 }
 
-bool AC_PolyFence_loader::scale_latlon_from_origin(const Location &origin, const Vector2l &point, Vector2f &pos_cm)
+bool AC_PolyFence_loader::scale_latlon_from_origin(const Location &origin, const Vector2l &point, Vector2f &pos_cm) const
 {
     Location tmp_loc;
     tmp_loc.lat = point.x;
@@ -641,8 +645,7 @@ bool AC_PolyFence_loader::load_from_storage()
         return _load_time_ms != 0;
     }
 
-    Location ekf_origin{};
-    if (!AP::ahrs().get_origin(ekf_origin)) {
+    if (!AP::ahrs().get_origin(loaded_origin)) {
 //        Debug("fence load requires origin");
         return false;
     }
@@ -758,7 +761,7 @@ bool AC_PolyFence_loader::load_from_storage()
                 break;
             }
             storage_offset += 1; // skip vertex count
-            if (!read_polygon_from_storage(ekf_origin, storage_offset, index.count, next_storage_point, next_storage_point_lla)) {
+            if (!read_polygon_from_storage(loaded_origin, storage_offset, index.count, next_storage_point, next_storage_point_lla)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AC_Fence: polygon read failed");
                 storage_valid = false;
                 break;
@@ -777,7 +780,7 @@ bool AC_PolyFence_loader::load_from_storage()
                 break;
             }
             storage_offset += 1; // skip vertex count
-            if (!read_polygon_from_storage(ekf_origin, storage_offset, index.count, next_storage_point, next_storage_point_lla)) {
+            if (!read_polygon_from_storage(loaded_origin, storage_offset, index.count, next_storage_point, next_storage_point_lla)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AC_Fence: polygon read failed");
                 storage_valid = false;
                 break;
@@ -793,7 +796,7 @@ bool AC_PolyFence_loader::load_from_storage()
                 storage_valid = false;
                 break;
             }
-            if (!scale_latlon_from_origin(ekf_origin, circle.point, circle.pos_cm)) {
+            if (!scale_latlon_from_origin(loaded_origin, circle.point, circle.pos_cm)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AC_Fence: latlon read failed");
                 storage_valid = false;
                 break;
@@ -820,7 +823,7 @@ bool AC_PolyFence_loader::load_from_storage()
                 storage_valid = false;
                 break;
             }
-            if (!scale_latlon_from_origin(ekf_origin, circle.point, circle.pos_cm)){
+            if (!scale_latlon_from_origin(loaded_origin, circle.point, circle.pos_cm)){
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AC_Fence: latlon read failed");
                 storage_valid = false;
                 break;
@@ -858,7 +861,7 @@ bool AC_PolyFence_loader::load_from_storage()
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "PolyFence: latlon read failed");
                 break;
             }
-            if (!scale_latlon_from_origin(ekf_origin, *next_storage_point_lla, *next_storage_point)) {
+            if (!scale_latlon_from_origin(loaded_origin, *next_storage_point_lla, *next_storage_point)) {
                 storage_valid = false;
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "PolyFence: latlon read failed");
                 break;
