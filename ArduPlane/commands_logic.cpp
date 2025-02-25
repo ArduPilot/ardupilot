@@ -614,6 +614,24 @@ bool Plane::verify_takeoff()
 }
 
 /*
+  When enabled, if the previous waypoint is VTOL Takeoff set the flag to do the full rate climbout.
+  This will give a climbing transition and reach the cruise waypoint immediately as opposed to
+  calculating the glide slope based on proportion to the waypoint.
+ */
+bool Plane::should_do_full_rate_climbout() const
+{
+    AP_Mission::Mission_Command prev_cmd;
+
+    // If the feature is enabled and the previous command is takeoff we will do the full rate climbout.
+    if (plane.get_do_full_rate_climbout_enable() && plane.mission.is_takeoff_type_cmd(plane.mission.get_prev_nav_cmd_id())) {
+        return true;
+    }
+
+    // Default to off.
+    return false;
+}
+
+/*
   update navigation for normal mission waypoints. Return true when the
   waypoint is complete
  */

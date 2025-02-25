@@ -528,6 +528,9 @@ public:
     AP_Int8 takeoff_throttle_accel_count;
     AP_Int8 takeoff_timeout;
 
+    // Enable full rate climbout after takeoff is completed.
+    AP_Int8 enable_full_rate_climbout;
+
 #if AP_LANDINGGEAR_ENABLED
     AP_LandingGear landing_gear;
 #endif

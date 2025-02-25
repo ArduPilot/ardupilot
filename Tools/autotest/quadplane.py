@@ -2164,6 +2164,73 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 self.progress("Wind estimates correlated")
                 break
 
+    def FullRateClimbout(self):
+        '''test the full rate climbout after VTOL Takeoff functions'''
+
+        self.progress("Testing full rate climbout.")
+
+        def run_test(climbout_enabled):
+            filename = "mission.txt"
+            self.progress("Testing %s with flag %s" % (filename, bool(climbout_enabled)))
+            self.progress("Setting parameters.")
+
+            self.set_parameter("FR_CLMBOUT", climbout_enabled)
+
+            self.reboot_sitl()
+
+            # Load and fly mission.
+            self.progress(f"Flying mission {filename}")
+            self.load_mission(filename)
+            self.wait_ready_to_arm()
+
+            # Get the starting altitude to convert to agl.
+            starting_alt_m = self.get_altitude(relative=True)
+
+            self.arm_vehicle()
+            self.change_mode('AUTO')
+
+            self.progress("Waiting for Transition done")
+            self.wait_statustext("Transition done", timeout=60)
+
+            # Current altitude.
+            altitude_delta_m = self.get_altitude(relative=True) - starting_alt_m
+
+            ALTITUDE_CUTOFF_M = 35
+            is_over_alt_cutoff = (altitude_delta_m > ALTITUDE_CUTOFF_M)
+
+            # Should be under the cutoff when not doing full rate climb.
+            if not climbout_enabled and is_over_alt_cutoff:
+                raise NotAchievedException(
+                    f"Altitude too high for rate climbout feautre: {bool(climbout_enabled)} "
+                    f"file {filename}: {altitude_delta_m:.2f} > {ALTITUDE_CUTOFF_M:.2f}."
+                )
+
+            # Should be over the cutoff when doing full rate climb.
+            if climbout_enabled and not is_over_alt_cutoff:
+                raise NotAchievedException(
+                    f"Altitude too low for rate climbout feautre: {bool(climbout_enabled)} "
+                    f"file {filename}: {altitude_delta_m:.2f} < {ALTITUDE_CUTOFF_M:.2f}."
+                )
+
+            # Make sure the next waypoint glideslope is not affected.
+            CRUISE_WP_NUM = 2
+            self.wait_waypoint(CRUISE_WP_NUM - 1, CRUISE_WP_NUM, max_dist=120, timeout=100)
+
+            CRUISE_ALTITUDE_CUTOFF_M = 120
+            return self.wait_altitude(
+	            altitude_min=starting_alt_m,
+	            altitude_max=starting_alt_m + CRUISE_ALTITUDE_CUTOFF_M,
+	            relative=True,
+	            minimum_duration=10,
+	            timeout=11,
+	        )
+
+        for climbout_enabled in [0, 1]:  # disable and enable
+            run_test(climbout_enabled)
+            self.disarm_vehicle_expect_fail() # don't wait for landing to save test time.
+
+        self.progress("Full rate climbout OK")
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2216,5 +2283,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
             self.AHRSFlyForwardFlag,
+            self.FullRateClimbout,
         ])
         return ret

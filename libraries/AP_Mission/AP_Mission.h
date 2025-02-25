@@ -770,6 +770,9 @@ public:
 
     bool is_valid_index(const uint16_t index) const { return index < _cmd_total; }
 
+    // check if command is a takeoff type command.
+    bool is_takeoff_type_cmd(uint16_t id) const;
+
 #if AP_SDCARD_STORAGE_ENABLED
     bool failed_sdcard_storage(void) const {
         return _failed_sdcard_storage;
@@ -863,9 +866,6 @@ private:
 
     // check if command is a landing type command.  Asside the obvious, MAV_CMD_DO_PARACHUTE is considered a type of landing
     bool is_landing_type_cmd(uint16_t id) const;
-
-    // check if command is a takeoff type command.
-    bool is_takeoff_type_cmd(uint16_t id) const;
 
     // approximate the distance travelled to get to a landing.  DO_JUMP commands are observed in look forward.
     bool distance_to_landing(uint16_t index, float &tot_distance,Location current_loc);

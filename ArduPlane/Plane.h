@@ -994,6 +994,7 @@ private:
     void do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+    bool should_do_full_rate_climbout() const;
 #if HAL_QUADPLANE_ENABLED
     bool verify_landing_vtol_approach(const AP_Mission::Mission_Command& cmd);
 #endif
@@ -1090,6 +1091,9 @@ private:
     void update_flight_stage();
     void set_flight_stage(AP_FixedWing::FlightStage fs);
     bool flight_option_enabled(FlightOptions flight_option) const;
+
+    // Do a full rate climbout after VTOL Takeoff as if we were at the destination waypoint.
+    bool get_do_full_rate_climbout_enable() const { return g2.enable_full_rate_climbout == 1; }
 
     // navigation.cpp
     void loiter_angle_reset(void);

@@ -1319,6 +1319,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FWD_BAT_THR_CUT", 37, ParametersG2, fwd_batt_cmp.batt_voltage_throttle_cutoff, 0.0f),
 
+    // @Param: FR_CLMBOUT
+    // @DisplayName: Flag to enable, disable full rate climbout from takeoff
+    // @Description: This flag controls the ability to disable the glide slope and instead climbout at full rate once the Takeoff waypoint is completed.
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("FR_CLMBOUT", 38, ParametersG2, enable_full_rate_climbout, 0),
+
+
     AP_GROUPEND
 };
 

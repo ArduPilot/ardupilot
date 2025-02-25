@@ -86,7 +86,7 @@ void Plane::setup_glide_slope(void)
     case Mode::Number::AUTO:
 
         //climb without doing glide slope if option is enabled
-        if (!above_location_current(next_WP_loc) && plane.flight_option_enabled(FlightOptions::IMMEDIATE_CLIMB_IN_AUTO)) {
+        if (!above_location_current(next_WP_loc) && (plane.flight_option_enabled(FlightOptions::IMMEDIATE_CLIMB_IN_AUTO) || plane.should_do_full_rate_climbout())) {
             reset_offset_altitude();
             break;
         }
