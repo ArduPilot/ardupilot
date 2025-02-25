@@ -13,6 +13,11 @@ if [ $who != 'root' ]; then
     exit 1
 fi
 
+DISTRIBUTION_ID=$(lsb_release -i -s)
+if [ ${DISTRIBUTION_ID} == 'Ubuntu' ]; then
+  DISTRIBUTION_CODENAME=$(lsb_release -c -s)
+fi
+
 VAGRANT_USER=ubuntu
 if [ -e /home/vagrant ]; then
     # prefer vagrant user
@@ -32,8 +37,21 @@ if [ ! $IS_BENTO ]; then
     sudo resize2fs /dev/sda1
 fi
 
+DASHDASHLOGIN=""
+if [ ${DISTRIBUTION_CODENAME} == 'oracular' ]; then
+    # we run out of space in tmpfs /tmp while compiling wxpython, so
+    # do it elsewhere:
+cat <<"EOF" | sudo -H -u vagrant bash
+    mkdir -p $HOME/tmp
+    echo "export TMPDIR=$HOME/tmp" >>$HOME/.bashrc
+    echo "export TMPDIR=$HOME/tmp" >>$HOME/.profile
+EOF
+    export TMPDIR=/home/vagrant/tmp
+    DASHDASHLOGIN="--login"
+fi
+
 echo "calling pre-reqs script..."
-sudo -H -u $VAGRANT_USER /vagrant/Tools/environment_install/install-prereqs-ubuntu.sh -y
+sudo $DASHDASHLOGIN -H -u $VAGRANT_USER /vagrant/Tools/environment_install/install-prereqs-ubuntu.sh -y
 echo "...pre-reqs script done... initvagrant.sh continues."
 
 # valgrind support:
