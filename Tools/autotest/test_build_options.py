@@ -18,8 +18,6 @@ grep 'sabling.*saves' /tmp/tbo-out
 AP_FLAKE8_CLEAN
 """
 
-from __future__ import print_function
-
 import fnmatch
 import optparse
 import os

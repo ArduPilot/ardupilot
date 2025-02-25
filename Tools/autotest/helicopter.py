@@ -4,8 +4,6 @@ Fly Helicopter in SITL
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import print_function
-
 from arducopter import AutoTestCopter
 
 import vehicle_test_suite
