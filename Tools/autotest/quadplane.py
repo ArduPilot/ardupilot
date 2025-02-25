@@ -2164,6 +2164,90 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 self.progress("Wind estimates correlated")
                 break
 
+    def FullRateClimbout(self):
+        '''test the full rate climbout after VTOL Takeoff functions'''
+        # Set from examining the autotest with enable/disable flag.
+        ALTITUDE_CUTOFF_M = 35
+        CRUISE_ALTITUDE_CUTOFF = 120
+        WAIT_AFTER_CRUISE_DELAY_S = 10
+
+        # Mission planning items.
+        CRUISE_WP_NUM = 2
+
+        self.progress("Testing full rate climbout.")
+
+        def run_test(flag):
+            filename = "mission.txt"
+            self.progress("Testing %s with flag %s" % (filename, bool(flag)))
+            self.progress("Setting parameters.")
+
+            self.set_parameter("Q_FR_CLMBOUT", int(flag))
+
+            self.reboot_sitl()
+
+            # Load and fly mission.
+            self.progress(f"Flying mission {filename}")
+            self.load_mission(filename)
+            self.wait_ready_to_arm()
+
+            # Get the starting altitude to convert to agl.
+            starting_alt_m = self.mav.messages['VFR_HUD'].alt
+
+            self.arm_vehicle()
+            self.change_mode('AUTO')
+
+            self.progress("Waiting for Transition done")
+            self.wait_statustext("Transition done", timeout=60)
+
+            # Current altitude.
+            altitude_m = self.mav.messages['VFR_HUD'].alt - starting_alt_m
+
+            is_over_alt_cutoff = (altitude_m > ALTITUDE_CUTOFF_M)
+
+            # Should be under the cutoff when not doing full rate climb.
+            fail_test = False
+            if not flag and is_over_alt_cutoff:
+                notification_str = "too high"
+                sign_str = ">"
+                fail_test = True
+
+            if flag and not is_over_alt_cutoff:
+                notification_str = "too low"
+                sign_str = "<"
+                fail_test = True
+
+            if fail_test:
+                raise NotAchievedException(
+                    "Altitude %s for rate climbout feautre: %s file %s: %.2f %s %.2f."
+                    % (notification_str,
+                       bool(flag),
+                       filename,
+                       altitude_m,
+                       sign_str,
+                       ALTITUDE_CUTOFF_M))
+
+            # Make sure the next waypoint glideslope is not affected.
+            self.wait_waypoint(CRUISE_WP_NUM - 1, CRUISE_WP_NUM, max_dist=100, timeout=100)
+
+            # Wait n seconds for the climb.
+            self.delay_sim_time(WAIT_AFTER_CRUISE_DELAY_S, "waypoint altitude change")
+
+            # Check the altitude is under a limit.
+            cruise_altitude_m = self.mav.messages['VFR_HUD'].alt - starting_alt_m
+
+            # Should be under the cutoff when doing cruise climbs.
+            if not (cruise_altitude_m < CRUISE_ALTITUDE_CUTOFF):
+                raise NotAchievedException(
+                    "Cruise altitude too high for feature: %s, test_file: %s: %.2f exceeds %.2f."
+                    % (bool(flag), filename, cruise_altitude_m, CRUISE_ALTITUDE_CUTOFF))
+
+            self.disarm_vehicle_expect_fail() # don't wait for landing to save test time.
+
+        for flag in [0, 1]:  # disable and enable
+            run_test(flag)
+
+        self.progress("Full rate climbout OK")
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2216,5 +2300,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
             self.AHRSFlyForwardFlag,
+            self.FullRateClimbout,
         ])
         return ret
