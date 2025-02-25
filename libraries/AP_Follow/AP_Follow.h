@@ -177,7 +177,7 @@ private:
     bool _offsets_were_zero;        // true if offsets were originally zero and then initialised to the offset from lead vehicle
 
     // setup jitter correction with max transport lag of 3s
-    JitterCorrection _jitter{3000};
+    JitterCorrection _jitter{500};
 };
 
 namespace AP {
