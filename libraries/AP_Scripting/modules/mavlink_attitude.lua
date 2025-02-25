@@ -139,6 +139,10 @@ function MAVLinkAttitude.mavlink_attitude_receiver()
              local sysid = parsed_msg.sysid
              local attitude = {}
              attitude.timestamp_ms = jitter_correction.correct_offboard_timestamp_msec(parsed_msg.time_boot_ms, timestamp_ms:toint())
+             if attitude.timestamp_ms == nil then -- not sure why this can happen but it can, so need to let the caller know to not use the results
+                 return nil
+             end
+             attitude.delay_ms = millis():tofloat() - attitude.timestamp_ms   -- the latency/delay from when the message was sent
              attitude.roll = parsed_msg.roll
              attitude.pitch = parsed_msg.pitch
              attitude.yaw = parsed_msg.yaw
@@ -146,6 +150,22 @@ function MAVLinkAttitude.mavlink_attitude_receiver()
              attitude.pitchspeed = parsed_msg.pitchspeed
              attitude.yawspeed = parsed_msg.yawspeed
              if sysid == target_sysid then
+               -- Log ATI = Attitude In
+               -- Time = Timestamp received in ms
+               -- TimeJC = Timestamp received with Jitter Correction
+               -- Delay = Delay between message sent and received in ms
+               logger:write("ZATI",'Time,TimeJC,Delay,roll,ptch,yaw,rollspd,ptchspd,yawspd','iiiffffff','---rrrEEE','---------',
+                        parsed_msg.time_boot_ms,
+                        attitude.timestamp_ms,
+                        attitude.delay_ms,
+                        attitude.roll,
+                        attitude.pitch,
+                        attitude.yaw,
+                        attitude.rollspeed,
+                        attitude.pitchspeed,
+                        attitude.yawspeed
+                     )
+
                  return attitude
              end
           end
