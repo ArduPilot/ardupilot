@@ -6,7 +6,6 @@ Andrew Tridgell, October 2011
 
  AP_FLAKE8_CLEAN
 """
-from __future__ import print_function
 import atexit
 import fnmatch
 import copy

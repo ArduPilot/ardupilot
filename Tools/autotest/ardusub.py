@@ -7,7 +7,6 @@ Parameters are in-code defaults plus default_params/sub.parm
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import print_function
 import os
 import sys
 

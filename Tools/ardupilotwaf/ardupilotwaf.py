@@ -1,6 +1,5 @@
 # encoding: utf-8
 
-from __future__ import print_function
 from waflib import Build, ConfigSet, Configure, Context, Errors, Logs, Options, Utils, Task
 from waflib.Configure import conf
 from waflib.Scripting import run_command
