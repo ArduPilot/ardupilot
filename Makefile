@@ -36,6 +36,17 @@ endef
 
 $(foreach board,$(BOARD_LIST),$(foreach vehicle,$(VEHICLES),$(eval $(call target_template,$(board),$(vehicle)))))
 
+BOARDS := CUAV-7-Nano CUAVv5Nano PH4-mini
+SUNFISH_DIR := "build/sunfish/$(shell git describe --tags)"
+
+sunfish: $(BOARDS)
+	@mkdir -p "$(SUNFISH_DIR)"
+	@for board in $(BOARDS); do \
+		$(MAKE) $$board; \
+		mkdir -p "$(SUNFISH_DIR)/$$board"; \
+		cp build/$$board/bin/ardusub* $(SUNFISH_DIR)/$$board/; \
+	done
+
 help:
 	@echo "Ardupilot Building"
 	@echo "=================="
@@ -45,6 +56,15 @@ help:
 	@echo "The waf executable is at '$(WAF_BINARY)'."
 	@echo ""
 	@echo "For more detailed instructions see https://ardupilot.org/dev/docs/building-the-code.html"
+	@echo ""
+	@echo "Sunfish"
+	@echo "-------"
+	@echo ""
+	@echo "It's possible to generate a Sunfish release by running the command:"
+	@echo "    make sunfish"
+	@echo ""
+	@echo "This will build the firmware for $(BOARDS) and copy the binaries to"
+	@echo "the 'build/sunfish' directory."
 	@echo ""
 	@echo "Boards"
 	@echo "------"
