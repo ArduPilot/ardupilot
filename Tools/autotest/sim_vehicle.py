@@ -871,6 +871,11 @@ def start_mavproxy(opts, stuff):
     else:
         cmd.append("mavproxy.py")
 
+    if opts.valgrind:
+        cmd.extend(['--retries', '10'])
+    else:
+        cmd.extend(['--retries', '5'])
+
     if opts.mcast:
         cmd.extend(["--master", "mcast:"])
 
