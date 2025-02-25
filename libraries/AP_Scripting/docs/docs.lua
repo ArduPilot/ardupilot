@@ -414,7 +414,6 @@ function CAN:get_device(buffer_len) end
 ---@return ScriptingCANBuffer_ud|nil
 function CAN:get_device2(buffer_len) end
 
-
 -- get latest FlexDebug message from a CAN node
 ---@param bus number -- CAN bus number, 0 for first bus, 1 for 2nd
 ---@param node number -- CAN node
@@ -3851,27 +3850,41 @@ function precland:healthy() end
 -- desc
 follow = {}
 
--- desc
+-- get the SYSID_THISMAV of the target
+---@return integer
+function follow:get_target_sysid() end
+
+-- get target's heading in degrees (0 = north, 90 = east)
 ---@return number|nil
 function follow:get_target_heading_deg() end
 
--- desc
----@return Location_ud|nil
----@return Vector3f_ud|nil
-function follow:get_target_location_and_velocity_ofs() end
-
--- desc
----@return Location_ud|nil
----@return Vector3f_ud|nil
+-- get target's estimated location and velocity (in NED)
+---@return Location_ud|nil -- location
+---@return Vector3f_ud|nil -- velocity
 function follow:get_target_location_and_velocity() end
+
+-- get target's estimated location and velocity (in NED), with offsets added
+---@return Location_ud|nil -- location
+---@return Vector3f_ud|nil -- velocity
+function follow:get_target_location_and_velocity_ofs() end
 
 -- desc
 ---@return uint32_t_ud
 function follow:get_last_update_ms() end
 
--- desc
+-- true if we have a valid target location estimate
 ---@return boolean
 function follow:have_target() end
+
+-- combo function returning all follow values calcuted in a cycle
+---@return Vector3f_ud|nil -- dist_ned - distance to the target
+---@return Vector3f_ud|nil -- dist_with_offs - distance to the target with offsets
+---@return Vector3f_ud|nil -- target_vel_ned - proposed velocity of the target
+---@return Vector3f_ud|nil -- target_vel_ned_ofs - proposed velocity of the target with offsets
+---@return Location_ud|nil -- target_loc - location of the target
+---@return Location_ud|nil -- target_loc_ofs - location of the target with offsets
+---@return number|nil -- target_dist_ofs - distance to the target in meters
+function follow:get_target_info() end
 
 -- desc
 scripting = {}

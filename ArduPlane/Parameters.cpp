@@ -1319,6 +1319,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FWD_BAT_THR_CUT", 37, ParametersG2, fwd_batt_cmp.batt_voltage_throttle_cutoff, 0.0f),
 
+    // @Param: GUIDED_UPD_LIM
+    // @DisplayName: Guided Update Limit
+    // @Description: The maximum frequency that an guided mode commands sent by external system such as lua or mavlink can update roll, pitch and throttle.
+    // @Units: ms
+    // @User: Standard
+    AP_GROUPINFO("GUIDED_UPD_LIM", 38, ParametersG2, guided_update_frequency_limit, 3000),
+
     AP_GROUPEND
 };
 
