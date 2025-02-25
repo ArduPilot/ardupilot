@@ -129,6 +129,8 @@ AP_GPS_UBLOX::~AP_GPS_UBLOX()
 #if GPS_MOVING_BASELINE
     delete rtcm3_parser;
 #endif
+
+    delete config_GNSS;
 }
 
 #if GPS_MOVING_BASELINE
