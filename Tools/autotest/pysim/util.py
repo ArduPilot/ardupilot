@@ -427,7 +427,8 @@ def start_SITL(binary,
                lldb=False,
                enable_fgview=False,
                supplementary=False,
-               stdout_prefix=None):
+               stdout_prefix=None,
+               ):
 
     """Launch a SITL instance."""
     cmd = []
