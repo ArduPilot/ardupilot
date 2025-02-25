@@ -623,6 +623,19 @@ void Scheduler::check_low_memory_is_zero()
         }
 #pragma GCC diagnostic pop
     }
+
+#if 0
+    /*
+      enable this on H7 to make writes to the first 1k of RAM on H7
+      produce a hard fault and crash dump
+     */
+    mpuConfigureRegion(MPU_REGION_7,
+                       0x0,
+                       MPU_RASR_ATTR_AP_RO_RO |
+                       MPU_RASR_SIZE_1K |
+                       MPU_RASR_ENABLE);
+    mpuEnable(MPU_CTRL_PRIVDEFENA | MPU_CTRL_ENABLE);
+#endif
 }
 #endif // STM32H7
 
