@@ -1431,6 +1431,10 @@ class linux(Board):
             # default tool-chain for Linux-based boards:
             self.toolchain = 'arm-linux-gnueabihf'
 
+        # we should be able to do better here:
+        if cfg.env.WITH_CAN:
+            self.with_can = True
+
         super(linux, self).configure(cfg)
 
     def configure_env(self, cfg, env):
@@ -1544,10 +1548,7 @@ class navio2(linux):
     pass
 
 class edge(linux):
-    def __init__(self):
-        super().__init__()
-
-        self.with_can = True
+    pass
 
 class zynq(linux):
     pass
@@ -1556,22 +1557,13 @@ class ocpoc_zynq(linux):
     pass
 
 class bbbmini(linux):
-    def __init__(self):
-        super().__init__()
-
-        self.with_can = True
+    pass
 
 class blue(linux):
-    def __init__(self):
-        super().__init__()
-
-        self.with_can = True
+    pass
 
 class pocket(linux):
-    def __init__(self):
-        super().__init__()
-
-        self.with_can = True
+    pass
 
 class pxf(linux):
     pass
@@ -1598,10 +1590,7 @@ class pxfmini(linux):
     pass
 
 class aero(linux):
-    def __init__(self):
-        super().__init__()
-
-        self.with_can = True
+    pass
 
 class rst_zynq(linux):
     pass
@@ -1610,10 +1599,7 @@ class obal(linux):
     pass
 
 class canzero(linux):
-    def __init__(self):
-        super().__init__()
-
-        self.with_can = True
+    pass
 
 class SITL_static(sitl):
     def configure_env(self, cfg, env):
