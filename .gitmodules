@@ -45,3 +45,6 @@
 [submodule "modules/littlefs"]
 	path = modules/littlefs
 	url = https://github.com/ArduPilot/littlefs.git
+[submodule "modules/iq-module-communication-cpp"]
+	path = modules/iq-module-communication-cpp
+	url = https://github.com/iq-motion-control/iq-module-communication-cpp.git

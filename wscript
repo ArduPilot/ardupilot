@@ -797,6 +797,17 @@ def _build_dynamic_sources(bld):
             ]
         )
 
+    bld(
+        features='cxx c',
+        includes='modules/iq-module-communication-cpp/inc',
+        source=['modules/iq-module-communication-cpp/src/byte_queue.c', 'modules/iq-module-communication-cpp/src/crc_helper.c', 
+                'modules/iq-module-communication-cpp/src/generic_interface.cpp', 'modules/iq-module-communication-cpp/src/packet_finder.c',
+                'modules/iq-module-communication-cpp/inc/client_communication.cpp'],
+        cxxflags=['-Wno-suggest-override'],
+        target=['vertiqlib'],
+        export_includes=['modules/iq-module-communication-cpp/inc']
+    )
+
     if bld.env.ENABLE_DDS:
         bld.recurse("libraries/AP_DDS")
 
@@ -924,6 +935,8 @@ def build(bld):
 
     if bld.get_board().with_can:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['dronecan']
+
+    bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['vertiqlib']
 
     if bld.get_board().with_littlefs:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['littlefs']

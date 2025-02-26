@@ -199,6 +199,12 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(fetteconwire, "_FTW_",  25, SRV_Channels, AP_FETtecOneWire),
 #endif
 
+#if AP_IQUART_ENABLED
+    // @Group: _VIQ_
+    // @Path: ../AP_Vertiq/AP_Vertiq.cpp
+    AP_SUBGROUPINFO(vertiq, "_VIQ_",  45, SRV_Channels, AP_Vertiq),
+#endif
+
     // @Param: _DSHOT_RATE
     // @DisplayName: Servo DShot output rate
     // @Description: DShot output rate for all outputs as a multiple of the loop rate. 0 sets the output rate to be fixed at 1Khz for low loop rates. This value should never be set below 500Hz.
@@ -509,6 +515,10 @@ void SRV_Channels::push()
 
 #if AP_FETTEC_ONEWIRE_ENABLED
     fetteconwire.update();
+#endif
+
+#if AP_IQUART_ENABLED
+    vertiq.update();
 #endif
 
 #if AP_KDECAN_ENABLED
