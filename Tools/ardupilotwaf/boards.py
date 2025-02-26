@@ -1417,14 +1417,27 @@ class linux(Board):
         else:
             self.with_can = False
 
-    def configure_env(self, cfg, env):
+    def configure(self, cfg):
         if hasattr(self, 'hwdef'):
             cfg.env.HWDEF = self.hwdef
+
+        # load hwdef, extract toolchain from cfg.env:
+        cfg.load('linux')
+        if cfg.env.TOOLCHAIN:
+            self.toolchain = cfg.env.TOOLCHAIN
+        elif cfg.options.board == 'linux':
+            pass  # set in __init__
+        else:
+            # default tool-chain for Linux-based boards:
+            self.toolchain = 'arm-linux-gnueabihf'
+
+        super(linux, self).configure(cfg)
+
+    def configure_env(self, cfg, env):
+
         if cfg.options.board == 'linux':
             self.with_can = True
         super(linux, self).configure_env(cfg, env)
-
-        cfg.load('linux')
 
         env.BOARD_CLASS = "LINUX"
 
@@ -1517,8 +1530,6 @@ class linux(Board):
 
 
 class navigator(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(navigator, self).configure_env(cfg, env)
 
@@ -1527,8 +1538,6 @@ class navigator(linux):
         )
 
 class navigator64(linux):
-    toolchain = 'aarch64-linux-gnu'
-
     def configure_env(self, cfg, env):
         super(navigator64, self).configure_env(cfg, env)
 
@@ -1538,8 +1547,6 @@ class navigator64(linux):
 
 
 class erleboard(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(erleboard, self).configure_env(cfg, env)
 
@@ -1548,8 +1555,6 @@ class erleboard(linux):
         )
 
 class navio(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(navio, self).configure_env(cfg, env)
 
@@ -1558,8 +1563,6 @@ class navio(linux):
         )
 
 class navio2(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(navio2, self).configure_env(cfg, env)
 
@@ -1568,8 +1571,6 @@ class navio2(linux):
         )
 
 class edge(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def __init__(self):
         super().__init__()
 
@@ -1583,8 +1584,6 @@ class edge(linux):
         )
 
 class zynq(linux):
-    toolchain = 'arm-xilinx-linux-gnueabi'
-
     def configure_env(self, cfg, env):
         super(zynq, self).configure_env(cfg, env)
 
@@ -1593,8 +1592,6 @@ class zynq(linux):
         )
 
 class ocpoc_zynq(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(ocpoc_zynq, self).configure_env(cfg, env)
 
@@ -1603,8 +1600,6 @@ class ocpoc_zynq(linux):
         )
 
 class bbbmini(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def __init__(self):
         super().__init__()
 
@@ -1618,8 +1613,6 @@ class bbbmini(linux):
         )
 
 class blue(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def __init__(self):
         super().__init__()
 
@@ -1634,8 +1627,6 @@ class blue(linux):
         )
 
 class pocket(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def __init__(self):
         super().__init__()
 
@@ -1650,8 +1641,6 @@ class pocket(linux):
         )
 
 class pxf(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(pxf, self).configure_env(cfg, env)
 
@@ -1660,8 +1649,6 @@ class pxf(linux):
         )
 
 class bebop(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(bebop, self).configure_env(cfg, env)
 
@@ -1670,8 +1657,6 @@ class bebop(linux):
         )
 
 class vnav(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(vnav, self).configure_env(cfg, env)
 
@@ -1680,8 +1665,6 @@ class vnav(linux):
         )
         
 class disco(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(disco, self).configure_env(cfg, env)
 
@@ -1690,8 +1673,6 @@ class disco(linux):
         )
 
 class erlebrain2(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(erlebrain2, self).configure_env(cfg, env)
 
@@ -1700,8 +1681,6 @@ class erlebrain2(linux):
         )
 
 class bhat(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(bhat, self).configure_env(cfg, env)
 
@@ -1710,8 +1689,6 @@ class bhat(linux):
         )
 
 class dark(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(dark, self).configure_env(cfg, env)
 
@@ -1720,8 +1697,6 @@ class dark(linux):
         )
 
 class pxfmini(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(pxfmini, self).configure_env(cfg, env)
 
@@ -1743,8 +1718,6 @@ class aero(linux):
         )
 
 class rst_zynq(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(rst_zynq, self).configure_env(cfg, env)
 
@@ -1753,8 +1726,6 @@ class rst_zynq(linux):
         )
 
 class obal(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def configure_env(self, cfg, env):
         super(obal, self).configure_env(cfg, env)
 
@@ -1763,8 +1734,6 @@ class obal(linux):
         )
 
 class canzero(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
     def __init__(self):
         super().__init__()
 
