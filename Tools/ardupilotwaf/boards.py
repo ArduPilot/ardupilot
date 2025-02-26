@@ -583,13 +583,17 @@ Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
 def add_dynamic_boards_chibios():
     '''add boards based on existance of hwdef.dat in subdirectories for ChibiOS'''
-    dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
+    add_dynamic_boards_from_hwdef_dir(chibios, 'libraries/AP_HAL_ChibiOS/hwdef')
+
+def add_dynamic_boards_from_hwdef_dir(base_type, hwdef_dir):
+    '''add boards based on existance of hwdef.dat in subdirectory'''
+    dirname, dirlist, filenames = next(os.walk(hwdef_dir))
     for d in dirlist:
         if d in _board_classes.keys():
             continue
         hwdef = os.path.join(dirname, d, 'hwdef.dat')
         if os.path.exists(hwdef):
-            newclass = type(d, (chibios,), {'name': d})
+            newclass = type(d, (base_type,), {'name': d})
 
 def add_dynamic_boards_esp32():
     '''add boards based on existance of hwdef.dat in subdirectories for ESP32'''
