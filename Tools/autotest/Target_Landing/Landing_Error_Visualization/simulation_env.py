@@ -33,6 +33,11 @@ class TestInfo(TypedDict):
 
 class SimulationEnvironment:
 
+    variables = ["wind_speed", "wind_dir",
+                "target_pos_error_sigma", "target_pos_update_rate", "target_pos_update_latency",
+                 "drone_pos_error_sigma", "drone_pos_update_rate", "drone_pos_update_latency",
+                  "initial_distance_from_target", "drone_alt" ]
+
     sea_states: List[SeaState] = [
         # Wind speeds are in Km/hr
                 {

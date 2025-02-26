@@ -6,6 +6,7 @@ import seaborn as sns
 import pandas as pd
 import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
+import seaborn as sns
 
 from typing import Dict, List, TypedDict
 from numpy.typing import NDArray
@@ -68,7 +69,6 @@ def calculate_landing_error():
 
     error_analysis_file = os.path.join(data_folder_path, "error_analysis.csv")
     error_analysis: List[ErrorAnalysis] = []
-    print(f"Total test configs {len(test_configs)}")
     for config in test_configs:
         folder_name = config["test_name"]
 
@@ -77,9 +77,15 @@ def calculate_landing_error():
         (not os.path.exists(os.path.join(data_folder_path, folder_name, "target_noisy.csv"))) or
         (not os.path.exists(os.path.join(data_folder_path, folder_name, "drone.csv"))) or 
         (not os.path.exists(os.path.join(data_folder_path, folder_name, "target.csv")))):
+             print(f"File not found for {folder_name}")
              continue
         
-        time, time_gps, target_state, target_state_noisy, drone_position, drone_position_raw = load_data(data_folder_path, folder_name)
+        (time,
+         time_gps,
+         target_state,
+         target_state_noisy,
+         drone_position,
+         drone_position_raw) = load_data(data_folder_path, folder_name)
 
         visualizer = DataVisualizer(target_state, drone_position)
         
@@ -97,7 +103,8 @@ def calculate_landing_error():
         landing_off_y = actual_landing_pos[1] - desired_landing_pos[1] 
 
 
-        if actual_landing_pos[2] <= 1 or (actual_landing_pos[2] <= 10 and drone_position[-1, 2] > 1):
+        if (actual_landing_pos[2] <= 1 
+        or (actual_landing_pos[2] <= 10 and drone_position[-1, 2] > 1)):
              has_landed = True
 
 
@@ -130,7 +137,7 @@ def calculate_landing_error():
     # compute_landing_correlations(pd.DataFrame(error_analysis, columns=['wind_speed', 'wind_dir', 'target_pos_error_sigma', 'landing_error']))
 
     # plot_bar(error_analysis)
-    plot_landing_error(error_analysis)
+    # plot_landing_error(error_analysis)
 
     if os.path.exists(error_analysis_file):
         raise Exception("File already exists")
@@ -142,6 +149,8 @@ def calculate_landing_error():
                                     delimiter=",")
         writer.writeheader()
         writer.writerows(error_analysis)
+
+    return error_analysis
 
 
 def compute_landing_correlations(simulation_data):
@@ -211,27 +220,30 @@ def compute_landing_correlations(simulation_data):
 #     plt.legend()
 #     plt.xlabel(param)
 #     plt.ylabel("Frequency")
+def find_iqr_bounds(data: pd.DataFrame, param:str):
 
-def plot_landing_error(sim_data: List[ErrorAnalysis]):
-     
-    parameters = ["wind_speed", "wind_dir", "target_pos_error_sigma", "target_pos_update_rate", 
-                    "target_pos_update_latency"]
+    Q1 = data[param].quantile(0.25)
+    Q3 = data[param].quantile(0.75)
+
+    IQR = Q3 - Q1
+
+    lb = Q1 - 1.5*IQR
+    ub = Q3 + 1.5*IQR
+    return lb, ub
+
+def plot_error_boxplot(sim_data_df: pd.DataFrame, param: str):
          
-    sim_data_df = pd.DataFrame(sim_data, columns=["wind_speed", "wind_dir", "target_pos_error_sigma", "target_pos_update_rate", 
-                    "target_pos_update_latency", "drone_pos_error_sigma",  "drone_pos_update_rate", 
-                    "drone_pos_update_latency", "landing_error", "landing_off_x", "landing_off_y", "has_landed"]) 
+    # Create a box plot of 'age' categorized by 'gender'
+    sns.boxplot(x=param, y='landing_error', data=sim_data_df, 
+                color='skyblue', width=0.5)
 
-    print(sim_data_df.shape)
-    # sim_data_df = sim_data_df[(sim_data_df["has_landed"] == True) & (sim_data_df["landing_error"] <= 25)]
-    print(sim_data_df["landing_error"].mean())
-    print(sim_data_df["landing_error"].median())
-    print(sim_data_df.shape)
+    # Customize the plot
+    # plt.title('Box Plot of Landing error')
+    plt.xlabel(f"{get_pretty_name_for_environment(param)}, {get_environmet_variable_units(param)}")
+    plt.ylabel("Landing Error (m)")
 
-    # Overall Landing error
-
-    plt.figure(figsize=(4,3))
-    plt.rcParams.update({'font.size': 20})
-    plt.title("Landing Error")
+def plot_landing_error(sim_data_df: pd.DataFrame):
+     
     plt.scatter(sim_data_df["landing_off_x"], sim_data_df["landing_off_y"])
     plt.scatter(0,0,marker="*")
     plot_square(2.5)
@@ -241,42 +253,37 @@ def plot_landing_error(sim_data: List[ErrorAnalysis]):
     plt.xlim([-6, 6])
     plt.ylim([-6, 6])
 
+def get_pretty_name_for_environment(param: str):
 
-    fig = plt.figure()
-    for i, param in enumerate(parameters):
-          
-        subplt = plt.subplot(3,2, i+1)
-        # plt.rcParams.update({'font.size': 20})
-        # fig = plt.figure(figsize=(4,3))
-        # fig = plt.subplot()
-        fig.suptitle('Effect of real world scenarios on landing error', fontsize=16)
-        values = get_bins(param)
-        error_mean = np.empty(len(values))
-        for j,value in enumerate(values):
+    match param:
+        case "wind_speed":
+            return "Wind speed"
+        case "wind_dir":
+            return "Wind direction"
+        case "target_pos_error_sigma" | "drone_pos_error_sigma":
+            return "Position error"
+        case "target_pos_update_rate" | "drone_pos_update_rate":
+            return "Position update rate"
+        case "target_pos_update_latency" | "drone_pos_update_latency":
+            return "Position update latency"
+        case "initial_distance_from_target":
+            return "Initial distance from target"
+        case "drone_alt":
+            return "Drone hover altitude"
 
-            df = sim_data_df[sim_data_df[param] == value]
-            error_mean[j] = df["landing_error"].mean()
-            # plt.scatter(df["landing_off_x"], df["landing_off_y"], label=value)
-
-        # plot_square(2.5)
-        # plot_square(5)
-        # plot_square(10)
-        plt.plot(values, error_mean)
-        plt.legend(loc="upper right")
-        plt.xlabel(get_xlabel(param))
-        plt.xlim([-6, 6])
-        plt.ylim([-6, 6])
-        plt.axis("equal")
-        
-        # plot_parameter_specific_hist(sim_data_df, param, bins=get_bins(param))
-
-        plt.subplots_adjust(left=0.1,
-                        bottom=0.1, 
-                        right=0.9, 
-                        top=0.9, 
-                        wspace=0.4, 
-                        hspace=0.4)
-    plt.show()
+def get_environmet_variable_units(param:str):
+    
+    match param:
+        case "wind_speed":
+            return "m/s"
+        case "wind_dir":
+            return "deg"
+        case "target_pos_error_sigma" | "drone_pos_error_sigma" | "initial_distance_from_target" | "drone_alt":
+            return "m"
+        case "target_pos_update_rate" | "drone_pos_update_rate":
+            return "Hz"
+        case "target_pos_update_latency" | "drone_pos_update_latency":
+            return "ms"
 
 def plot_square(side):
 
@@ -391,8 +398,9 @@ def get_bins(param:str):
         case "drone_pos_update_latency":
             return SimulationEnvironment.drone_pos_sensor["update_latency"]
         case "initial_distance_from_target":
-            return [25, 50, 75, 100]
-
+            return SimulationEnvironment.initial_distance_from_target
+        case "drone_alt":
+            return SimulationEnvironment.drone_alts
 
 def visualize_logs():
     test_configs: List[TestInfo] = SimulationEnvironment.generate_test_configs()
@@ -551,7 +559,69 @@ def animate_trajectory(r1, r2, t):
     plt.tight_layout()
     plt.show()
 
+def analyze_failures(data: pd.DataFrame):
+
+    df = pd.DataFrame(columns=SimulationEnvironment.variables)
+
+    for var in SimulationEnvironment.variables:
+        df[var] = data[var]
+
+    return df
 
 if __name__ == "__main__":
     # visualize_logs()
-    calculate_landing_error()
+    landing_error_threshold = 20
+    error_analysis = calculate_landing_error()
+
+    # Find outliers in landing error
+    error_analysis_df = pd.DataFrame(error_analysis)
+    error_lb, error_ub = find_iqr_bounds(error_analysis_df, "landing_error")
+    error_outliers_df = error_analysis_df[(error_analysis_df["has_landed"] == True) & (error_analysis_df["landing_error"] > landing_error_threshold)] 
+
+    # Remove outliers
+    # error_analysis_df = error_analysis_df[error_analysis_df["landing_error"] < error_ub and error_analysis_df["landing_error"] > error_lb]
+
+    # Print the outliers in a csv file
+    outliers_info_df = analyze_failures(error_outliers_df)
+    outliers_info_df.to_csv(os.path.join(log_file_path, "outliers_causes.csv"))
+
+    # Print the failed landing in a csv file
+    failed_landing_df = error_analysis_df[error_analysis_df["has_landed"] == False]
+    failure_info_df = analyze_failures(failed_landing_df)
+    failure_info_df.to_csv(os.path.join(log_file_path, "failed_landing_causes.csv"))
+
+    # Analyze the landing error
+    successful_landing_df = error_analysis_df[(error_analysis_df["has_landed"] == True) & (error_analysis_df["landing_error"] <= landing_error_threshold)]
+
+    for variable in SimulationEnvironment.variables:
+
+        plt.rcParams.update({'font.size': 20})
+        plt.figure(figsize=(12,10))
+        plot_error_boxplot(successful_landing_df, variable)
+        plt.savefig(os.path.join(os.path.expanduser(log_file_path), "plots", f"{variable}_boxplot.png"))
+        plt.close()
+        # plt.show()
+
+        values = get_bins(variable)
+        plt.rcParams.update({'font.size': 20})
+        plt.figure(figsize=(20, 16))
+        for i in range(len(values)):
+            df = error_analysis_df[error_analysis_df[variable] == values[i]]
+            ax = plt.subplot(round(len(values)/2)+1, 2, i+1)
+            ax.set_title(f"{get_pretty_name_for_environment(variable)} - {values[i]}{get_environmet_variable_units(variable)}")
+            plot_landing_error(df)
+            ax.set_xlabel("Landing error x, (m)")
+            ax.set_ylabel("Landing error y, (m)")
+        
+        plt.tight_layout(pad=3.0)
+        # plt.suptitle(f"Landing error distribution due to {get_pretty_name_for_environment(variable)}")
+        plt.savefig(os.path.join(os.path.expanduser(log_file_path), "plots", f"{variable}_landing_error.png"))
+        plt.close()
+        # plt.show()
+
+
+    # Final report print in console
+    print(f"Total test cases {len(error_analysis)}")
+    print(f"No of outliers: {error_outliers_df.shape[0]}")
+    print(f"No of failed landings: {failed_landing_df.shape[0]}")
+    print(f"No of successful landings: {successful_landing_df.shape[0]}")
