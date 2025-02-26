@@ -193,6 +193,7 @@ class SizeCompareBranches(object):
             'obal',
             'SITL_x86_64_linux_gnu',
             'canzero',
+            'linux',
         ]
 
     def esp32_board_names(self):
