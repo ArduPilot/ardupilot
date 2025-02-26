@@ -12,7 +12,6 @@ import fnmatch
 import os
 import dma_resolver
 import shlex
-import pickle
 import re
 import shutil
 
@@ -2714,12 +2713,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         return True
 
-    def write_env_py(self, filename):
-        '''write out env.py for environment variables to control the build process'''
-        # CHIBIOS_BUILD_FLAGS is passed to the ChibiOS makefile
-        self.env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(self.build_flags)
-        pickle.dump(self.env_vars, open(filename, "wb"))
-
     def romfs_add(self, romfs_filename, filename):
         '''add a file to ROMFS'''
         self.romfs[romfs_filename] = filename
@@ -3109,6 +3102,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
         # exist in the same directory as the ldscript.ld file we generate.
         self.copy_common_linkerscript(self.outdir)
 
+        # CHIBIOS_BUILD_FLAGS is passed to the ChibiOS makefile
+        self.env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(self.build_flags)
         self.write_env_py(os.path.join(self.outdir, "env.py"))
 
 
