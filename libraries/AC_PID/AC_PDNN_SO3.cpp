@@ -371,19 +371,26 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     _pdnn_output_Omega.z = -_e_Omega.z * _kOmega_z;
     
     //计算几何控制项，这里惯性张量
-    //Matrix3f J;
-    //J.a.x=0.01f;J.a.y=0.0f;     J.a.z=0.0f;
-    //J.b.x=0.0f;      J.b.y=0.02f;J.b.z=0.0f;
-    //J.c.x=0.0f;      J.c.y=0.0f;     J.c.z=0.02f;
+    Matrix3f J;
+    J.a.x=0.01f;J.a.y=0.0f;     J.a.z=0.0f;
+    J.b.x=0.0f;      J.b.y=0.02f;J.b.z=0.0f;
+    J.c.x=0.0f;      J.c.y=0.0f;     J.c.z=0.02f;
+    Matrix3f J_inv;
+    J_inv = J;
+    J_inv.a.x = 1/J.a.x;J_inv.b.y = 1/J.b.y;J_inv.c.z = 1/J.c.z;
+    //额外增广项，以实现UPAS
+    Vector3f Aug;
+    Aug = J_inv * _Omega_hat * J * _Omega;
+
     _geomrtry_output = _Omega_hat * _R.transposed() * _R_c * _Omega_c  - _R.transposed() * _R_c * _dot_Omega_c;
 
     //(void)_geomrtry_output;
 
     //计算总输出，每个方向上乘以惯性张量
-    _pdnn_output.x = _J_x * (-_e_R.x * _kR - _e_Omega.x * _kOmega - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x); 
-    _pdnn_output.y = _J_y * (-_e_R.y * _kR - _e_Omega.y * _kOmega - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y);
-    _pdnn_output.z = _J_z * (-_e_R.z * _kR_z - _e_Omega.z * _kOmega_z - 1.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
-
+    _pdnn_output.x = _J_x * (-_e_R.x * _kR - _e_Omega.x * _kOmega - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + Aug.x); 
+    _pdnn_output.y = _J_y * (-_e_R.y * _kR - _e_Omega.y * _kOmega - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + Aug.y);
+    _pdnn_output.z = _J_z * (-_e_R.z * _kR_z - _e_Omega.z * _kOmega_z - 1.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
+  
 
     return _pdnn_output; //返回pdnn控制器输出
 }
