@@ -585,6 +585,10 @@ def add_dynamic_boards_chibios():
     '''add boards based on existance of hwdef.dat in subdirectories for ChibiOS'''
     add_dynamic_boards_from_hwdef_dir(chibios, 'libraries/AP_HAL_ChibiOS/hwdef')
 
+def add_dynamic_boards_linux():
+    '''add boards based on existance of hwdef.dat in subdirectories for '''
+    add_dynamic_boards_from_hwdef_dir(linux, 'libraries/AP_HAL_Linux/hwdef')
+
 def add_dynamic_boards_from_hwdef_dir(base_type, hwdef_dir):
     '''add boards based on existance of hwdef.dat in subdirectory'''
     dirname, dirlist, filenames = next(os.walk(hwdef_dir))
@@ -612,6 +616,7 @@ def add_dynamic_boards_esp32():
 def get_boards_names():
     add_dynamic_boards_chibios()
     add_dynamic_boards_esp32()
+    add_dynamic_boards_linux()
 
     return sorted(list(_board_classes.keys()), key=str.lower)
 
@@ -1525,76 +1530,6 @@ class linux(Board):
     def get_name(self):
         # get name of class
         return self.__class__.__name__
-
-
-class navigator(linux):
-    pass
-
-class navigator64(linux):
-    pass
-
-class erleboard(linux):
-    pass
-
-class navio(linux):
-    pass
-
-class navio2(linux):
-    pass
-
-class edge(linux):
-    pass
-
-class zynq(linux):
-    pass
-
-class ocpoc_zynq(linux):
-    pass
-
-class bbbmini(linux):
-    pass
-
-class blue(linux):
-    pass
-
-class pocket(linux):
-    pass
-
-class pxf(linux):
-    pass
-
-class bebop(linux):
-    pass
-
-class vnav(linux):
-    pass
-
-class disco(linux):
-    pass
-
-class erlebrain2(linux):
-    pass
-
-class bhat(linux):
-    pass
-
-class dark(linux):
-    pass
-
-class pxfmini(linux):
-    pass
-
-class aero(linux):
-    pass
-
-class rst_zynq(linux):
-    pass
-
-class obal(linux):
-    pass
-
-class canzero(linux):
-    pass
 
 class SITL_static(sitl):
     def configure_env(self, cfg, env):
