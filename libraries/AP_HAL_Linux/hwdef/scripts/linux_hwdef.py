@@ -32,6 +32,8 @@ class LinuxHWDef(hwdef.HWDef):
         self.write_MAG_config(f)
         self.write_BARO_config(f)
 
+        self.write_env_py(os.path.join(self.outdir, "env.py"))
+
     def process_line(self, line, depth):
         '''process one line of pin definition file'''
         # keep all config lines for later use
