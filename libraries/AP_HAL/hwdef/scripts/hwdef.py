@@ -6,6 +6,7 @@ AP_FLAKE8_CLEAN
 
 import filecmp
 import os
+import pickle
 import re
 import shlex
 import sys
@@ -375,3 +376,7 @@ class HWDef:
                 % (n, wrapper, driver, probe, ','.join(args)))
         if len(devlist) > 0:
             f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
+
+    def write_env_py(self, filename):
+        '''write out env.py for environment variables to control the build process'''
+        pickle.dump(self.env_vars, open(filename, "wb"))
