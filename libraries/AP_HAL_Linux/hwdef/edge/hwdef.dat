@@ -12,12 +12,14 @@ define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 # Baros:
 BARO MS56XX SPI:ms5611
 
+# CAN Support:
+env WITH_CAN 1
+define HAL_NUM_CAN_IFACES 1
+
 
 define HAL_BOARD_LOG_DIRECTORY "/edge/ardupilot/logs"
 define HAL_BOARD_TERRAIN_DIRECTORY "/edge/ardupilot/terrain"
 define HAL_BOARD_STORAGE_DIRECTORY "/edge/ardupilot"
-
-define HAL_NUM_CAN_IFACES 1
 
 # heater support
 define HAL_IMU_TEMP_DEFAULT 55

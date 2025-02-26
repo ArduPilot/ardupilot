@@ -15,6 +15,7 @@ BARO MS56XX I2C:2:0x76
 
 define HAL_RCOUTPUT_TAP_DEVICE "/dev/ttyS1"
 
+env WITH_CAN 1
 define HAL_NUM_CAN_IFACES 1
 
 #            NAME     BUS SUBDEV MODE       BPW CS_PIN         LOWSPD HIGHSPD
