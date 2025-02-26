@@ -1443,7 +1443,6 @@ class linux(Board):
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NONE',
             AP_SIM_ENABLED = 0,
         )
 
@@ -1530,45 +1529,19 @@ class linux(Board):
 
 
 class navigator(linux):
-    def configure_env(self, cfg, env):
-        super(navigator, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE='HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR',
-        )
+    pass
 
 class navigator64(linux):
-    def configure_env(self, cfg, env):
-        super(navigator64, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE='HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR',
-        )
-
+    pass
 
 class erleboard(linux):
-    def configure_env(self, cfg, env):
-        super(erleboard, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD',
-        )
+    pass
 
 class navio(linux):
-    def configure_env(self, cfg, env):
-        super(navio, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NAVIO',
-        )
+    pass
 
 class navio2(linux):
-    def configure_env(self, cfg, env):
-        super(navio2, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NAVIO2',
-        )
+    pass
 
 class edge(linux):
     def __init__(self):
@@ -1576,28 +1549,11 @@ class edge(linux):
 
         self.with_can = True
 
-    def configure_env(self, cfg, env):
-        super(edge, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_EDGE',
-        )
-
 class zynq(linux):
-    def configure_env(self, cfg, env):
-        super(zynq, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_ZYNQ',
-        )
+    pass
 
 class ocpoc_zynq(linux):
-    def configure_env(self, cfg, env):
-        super(ocpoc_zynq, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ',
-        )
+    pass
 
 class bbbmini(linux):
     def __init__(self):
@@ -1605,26 +1561,11 @@ class bbbmini(linux):
 
         self.with_can = True
 
-    def configure_env(self, cfg, env):
-        super(bbbmini, self).configure_env(cfg, env)
-        cfg.env.HAL_NUM_CAN_IFACES = 1
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BBBMINI',
-        )
-
 class blue(linux):
     def __init__(self):
         super().__init__()
 
         self.with_can = True
-
-    def configure_env(self, cfg, env):
-        super(blue, self).configure_env(cfg, env)
-        cfg.env.HAL_NUM_CAN_IFACES = 1
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BLUE',
-        )
 
 class pocket(linux):
     def __init__(self):
@@ -1632,77 +1573,29 @@ class pocket(linux):
 
         self.with_can = True
 
-    def configure_env(self, cfg, env):
-        super(pocket, self).configure_env(cfg, env)
-        cfg.env.HAL_NUM_CAN_IFACES = 1
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_POCKET',
-        )
-
 class pxf(linux):
-    def configure_env(self, cfg, env):
-        super(pxf, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_PXF',
-        )
+    pass
 
 class bebop(linux):
-    def configure_env(self, cfg, env):
-        super(bebop, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BEBOP',
-        )
+    pass
 
 class vnav(linux):
-    def configure_env(self, cfg, env):
-        super(vnav, self).configure_env(cfg, env)
+    pass
 
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_VNAV',
-        )
-        
 class disco(linux):
-    def configure_env(self, cfg, env):
-        super(disco, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_DISCO',
-        )
+    pass
 
 class erlebrain2(linux):
-    def configure_env(self, cfg, env):
-        super(erlebrain2, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2',
-        )
+    pass
 
 class bhat(linux):
-    def configure_env(self, cfg, env):
-        super(bhat, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BH',
-        )
+    pass
 
 class dark(linux):
-    def configure_env(self, cfg, env):
-        super(dark, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_DARK',
-        )
+    pass
 
 class pxfmini(linux):
-    def configure_env(self, cfg, env):
-        super(pxfmini, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_PXFMINI',
-        )
+    pass
 
 class aero(linux):
     def __init__(self):
@@ -1710,28 +1603,11 @@ class aero(linux):
 
         self.with_can = True
 
-    def configure_env(self, cfg, env):
-        super(aero, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_AERO',
-        )
-
 class rst_zynq(linux):
-    def configure_env(self, cfg, env):
-        super(rst_zynq, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ',
-        )
+    pass
 
 class obal(linux):
-    def configure_env(self, cfg, env):
-        super(obal, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_OBAL_V1',
-        )
+    pass
 
 class canzero(linux):
     def __init__(self):
@@ -1739,13 +1615,6 @@ class canzero(linux):
 
         self.with_can = True
 
-    def configure_env(self, cfg, env):
-        super(canzero, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_CANZERO',
-        )
-        
 class SITL_static(sitl):
     def configure_env(self, cfg, env):
         super(SITL_static, self).configure_env(cfg, env)
