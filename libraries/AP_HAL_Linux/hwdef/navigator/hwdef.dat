@@ -35,3 +35,6 @@ define HAL_BATT_CURR_PIN                  4
 define HAL_BATT_VOLT_SCALE                11.0f
 define HAL_BATT_CURR_SCALE                37.8788f
 define AP_BATT_CURR_AMP_OFFSET_DEFAULT    0.330f
+
+// FIXME: use of this define should go away:
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR

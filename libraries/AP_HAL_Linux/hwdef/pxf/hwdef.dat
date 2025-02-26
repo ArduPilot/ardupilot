@@ -34,3 +34,6 @@ define HAL_BATT_CURR_SCALE                17.0f
 
 # AP_InertialSensor configuration
 define INVENSENSE_DRDY_PIN BBB_P8_14
+
+// FIXME: use of this define should go away:
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_PXF
