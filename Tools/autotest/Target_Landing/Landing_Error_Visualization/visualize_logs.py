@@ -561,7 +561,9 @@ def animate_trajectory(r1, r2, t):
 
 def analyze_failures(data: pd.DataFrame):
 
-    df = pd.DataFrame(columns=SimulationEnvironment.variables)
+    cols = list(SimulationEnvironment.variables)
+    cols = cols.extend(["landing_off_x", "landing_off_y", "landing_error", "has_landed"])
+    df = pd.DataFrame(columns=cols)
 
     for var in SimulationEnvironment.variables:
         df[var] = data[var]
@@ -583,16 +585,17 @@ if __name__ == "__main__":
 
     # Print the outliers in a csv file
     outliers_info_df = analyze_failures(error_outliers_df)
-    outliers_info_df.to_csv(os.path.join(log_file_path, "outliers_causes.csv"))
+    error_outliers_df.to_csv(os.path.join(log_file_path, "outliers_causes.csv"))
 
     # Print the failed landing in a csv file
     failed_landing_df = error_analysis_df[error_analysis_df["has_landed"] == False]
     failure_info_df = analyze_failures(failed_landing_df)
-    failure_info_df.to_csv(os.path.join(log_file_path, "failed_landing_causes.csv"))
+    failed_landing_df.to_csv(os.path.join(log_file_path, "failed_landing_causes.csv"))
 
     # Analyze the landing error
     successful_landing_df = error_analysis_df[(error_analysis_df["has_landed"] == True) & (error_analysis_df["landing_error"] <= landing_error_threshold)]
 
+    print(SimulationEnvironment.variables)
     for variable in SimulationEnvironment.variables:
 
         plt.rcParams.update({'font.size': 20})
