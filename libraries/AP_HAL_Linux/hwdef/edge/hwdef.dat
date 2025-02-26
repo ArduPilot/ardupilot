@@ -56,3 +56,7 @@ define AP_BATT2_VOLT_PIN                  5
 define AP_BATT2_CURR_PIN                  4
 define AP_BATT2_VOLTDIVIDER_DEFAULT       18.62
 define AP_BATT2_CURR_AMP_PERVOLT_DEFAULT  62.98f
+
+
+// FIXME: use of this define should go away:
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_EDGE

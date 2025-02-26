@@ -11,6 +11,8 @@ define HAL_PROBE_EXTERNAL_I2C_COMPASSES 1
 # Baros:
 BARO BMP280 SPI:bmp280
 
+# CAN Support:
+define HAL_NUM_CAN_IFACES 1
 
 define DEFAULT_NTF_LED_TYPES (Notify_LED_Board)
 
@@ -27,7 +29,6 @@ define HAL_OPTFLOW_PX4FLOW_I2C_BUS 2
 
 define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 2
 
-define HAL_NUM_CAN_IFACES 1
 
 #            NAME      BUS SUBDEV MODE       BPW CS_PIN         LOWSPD HIGHSPD
 LINUX_SPIDEV "mpu9250" 2   1      SPI_MODE_3 8   SPI_CS_KERNEL  1*MHZ  11*MHZ
@@ -39,3 +40,7 @@ define HAL_BATT_VOLT_PIN                  1
 define HAL_BATT_CURR_PIN                  0
 define HAL_BATT_VOLT_SCALE                10.1f
 define HAL_BATT_CURR_SCALE                17.0f
+
+
+// FIXME: use of this define should go away:
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_POCKET

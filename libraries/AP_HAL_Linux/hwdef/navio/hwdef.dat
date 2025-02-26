@@ -30,3 +30,6 @@ define HAL_BATT_VOLT_SCALE                11.3f
 define HAL_BATT_CURR_SCALE                17.0f
 
 define UBLOX_SPEED_CHANGE  1
+
+// FIXME: use of this define should go away:
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_NAVIO
