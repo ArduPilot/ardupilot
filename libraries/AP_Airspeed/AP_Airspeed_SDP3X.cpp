@@ -62,7 +62,7 @@ __INITFUNC__ bool AP_Airspeed_SDP3X::init()
     bool ret = false;
 
     for (uint8_t i=0; i<ARRAY_SIZE(addresses) && !found; i++) {
-        _dev = hal.i2c_mgr->get_device(get_bus(), addresses[i]);
+        _dev = hal.i2c_mgr->get_device_ptr(get_bus(), addresses[i]);
         if (!_dev) {
             continue;
         }
