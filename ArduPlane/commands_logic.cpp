@@ -614,6 +614,31 @@ bool Plane::verify_takeoff()
 }
 
 /*
+  When enabled, if the previous waypoint is VTOL Takeoff set the flag to do the full rate climbout.
+  This will give a climbing transition and reach the cruise waypoint immediately as opposed to
+  calculating the glide slope based on proportion to the waypoint.
+ */
+#if HAL_QUADPLANE_ENABLED
+void Plane::maybe_do_full_rate_climbout()
+{
+    AP_Mission::Mission_Command prev_cmd;
+
+    // Check the previous mission item.
+    bool prev_read_success = (plane.mission.read_cmd_from_storage(
+        plane.mission.get_current_nav_index() - 1, prev_cmd));
+
+    // If the previous command is takeoff we will do the full rate climbout.
+    if (prev_read_success && quadplane.is_vtol_takeoff(prev_cmd.id)) {
+        quadplane.set_do_full_rate_climbout(true);
+        return;
+    }
+
+    // Default to off.
+    quadplane.set_do_full_rate_climbout(false);
+}
+#endif
+
+/*
   update navigation for normal mission waypoints. Return true when the
   waypoint is complete
  */
@@ -642,6 +667,10 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     } else {
         nav_controller->update_waypoint(current_loc, flex_next_WP_loc);
     }
+
+#if HAL_QUADPLANE_ENABLED
+    maybe_do_full_rate_climbout();
+#endif
 
     // see if the user has specified a maximum distance to waypoint
     // If override with p3 - then this is not used as it will overfly badly
