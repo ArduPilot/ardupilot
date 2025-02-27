@@ -64,7 +64,6 @@
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
-#include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_Landing/AP_Landing_config.h>
 
@@ -4262,6 +4261,17 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
+#if AP_TERRAIN_AVAILABLE
+    case MAVLINK_MSG_ID_TERRAIN_DATA:
+    case MAVLINK_MSG_ID_TERRAIN_CHECK: {
+        AP_Terrain *terrain = AP::terrain();
+        if (terrain != nullptr) {
+            terrain->handle_message(*this, msg);
+        }
+        break;
+    }
+#endif
+
 #if HAL_MOUNT_ENABLED
     case MAVLINK_MSG_ID_GIMBAL_REPORT:
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
@@ -6150,6 +6160,24 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_battery_status();
         break;
 #endif // AP_BATTERY_ENABLED
+
+#if AP_TERRAIN_AVAILABLE
+    case MSG_TERRAIN_REQUEST: {
+        CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
+        AP_Terrain *terrain = AP::terrain();
+        if (terrain != nullptr) {
+            terrain->send_request(*this);
+        }
+        break;
+    }
+    case MSG_TERRAIN_REPORT:
+        CHECK_PAYLOAD_SIZE(TERRAIN_REPORT);
+        AP_Terrain *terrain = AP::terrain();
+        if (terrain != nullptr) {
+            terrain->send_report(*this);
+        }
+        break;
+#endif
 
 #if AP_AHRS_ENABLED
     case MSG_EKF_STATUS_REPORT:

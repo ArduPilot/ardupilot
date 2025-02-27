@@ -248,17 +248,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         send_info();
         break;
 
-#if AP_TERRAIN_AVAILABLE
-    case MSG_TERRAIN_REQUEST:
-        CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
-        sub.terrain.send_request(chan);
-        break;
-    case MSG_TERRAIN_REPORT:
-        CHECK_PAYLOAD_SIZE(TERRAIN_REPORT);
-        sub.terrain.send_report(chan);
-        break;
-#endif
-
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
@@ -866,13 +855,6 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
 
         break;
     }
-
-    case MAVLINK_MSG_ID_TERRAIN_DATA:
-    case MAVLINK_MSG_ID_TERRAIN_CHECK:
-#if AP_TERRAIN_AVAILABLE
-        sub.terrain.handle_data(chan, msg);
-#endif
-        break;
 
     // This adds support for leak detectors in a separate enclosure
     // connected to a mavlink enabled subsystem
