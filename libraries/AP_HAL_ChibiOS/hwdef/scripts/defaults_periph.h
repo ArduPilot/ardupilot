@@ -229,6 +229,9 @@
 #ifdef HAL_PERIPH_ENABLE_NETWORKING
 #error "Change 'define HAL_PERIPH_ENABLE_NETWORKING' to 'define AP_PERIPH_NETWORKING_ENABLED 1'"
 #endif
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+#error "Change 'define HAL_PERIPH_ENABLE_PWM_HARDPOINT' to 'define AP_PERIPH_PWM_HARDPOINT_ENABLED 1'"
+#endif
 
 /*
  * defaults for various AP_Periph features:
@@ -301,6 +304,9 @@
 #endif
 #ifndef AP_PERIPH_NETWORKING_ENABLED
 #define AP_PERIPH_NETWORKING_ENABLED 0
+#endif
+#ifndef AP_PERIPH_PWM_HARDPOINT_ENABLED
+#define AP_PERIPH_PWM_HARDPOINT_ENABLED 0
 #endif
 
 /*
