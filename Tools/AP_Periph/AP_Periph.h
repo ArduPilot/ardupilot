@@ -57,8 +57,8 @@
 #endif
 #endif
 
-#if defined(HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE) && !AP_TEMPERATURE_SENSOR_ENABLED
-    #error "HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE requires AP_TEMPERATURE_SENSOR_ENABLED"
+#if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED && !AP_TEMPERATURE_SENSOR_ENABLED
+    #error "AP_PERIPH_DEVICE_TEMPERATURE_ENABLED requires AP_TEMPERATURE_SENSOR_ENABLED"
 #endif
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
@@ -390,7 +390,7 @@ public:
     
 #if AP_TEMPERATURE_SENSOR_ENABLED
     AP_TemperatureSensor temperature_sensor;
-#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+#if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
     void temperature_sensor_update();
     uint32_t temperature_last_send_ms;
     uint8_t temperature_last_sent_index;
