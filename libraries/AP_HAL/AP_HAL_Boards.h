@@ -417,3 +417,7 @@
 #endif
 
 #define HAL_GPIO_LED_OFF (!HAL_GPIO_LED_ON)
+
+#ifndef HAL_REBOOT_ON_MEMORY_ERRORS
+#define HAL_REBOOT_ON_MEMORY_ERRORS defined(IOMCU_FW)
+#endif
