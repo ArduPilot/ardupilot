@@ -193,6 +193,8 @@ protected:
 
     virtual bool gps_checks(bool report);
 
+    bool groundspeed_checks(bool report);
+
     bool battery_checks(bool report);
 
     bool hardware_safety_check(bool report);
