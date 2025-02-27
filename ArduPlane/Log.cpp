@@ -210,6 +210,7 @@ struct PACKED log_Status {
     bool is_still;
     uint8_t stage;
     bool impact;
+    bool throttle_supressed;
 };
 
 void Plane::Log_Write_Status()
@@ -225,6 +226,7 @@ void Plane::Log_Write_Status()
         ,is_still    : AP::ins().is_still()
         ,stage       : static_cast<uint8_t>(flight_stage)
         ,impact      : crash_state.impact_detected
+        ,throttle_supressed : throttle_suppressed
         };
 
     logger.WriteBlock(&pkt, sizeof(pkt));
@@ -382,8 +384,9 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Still: True when vehicle is not moving in any axis
 // @Field: Stage: Current stage of the flight
 // @Field: Hit: True if impact is detected
+// @Field: Sup: True if throttle is suppressed
     { LOG_STATUS_MSG, sizeof(log_Status),
-      "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit", "s--------", "F--------" , true },
+      "STAT", "QBfBBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit,Sup", "s---------", "F---------" , true },
 
 // @LoggerMessage: QTUN
 // @Description: QuadPlane vertical tuning message
