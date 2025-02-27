@@ -27,7 +27,8 @@ void AP_Mount_CADDX::update()
     bool resend_now = false;
 
     // update based on mount mode
-    switch (get_mode()) {
+    auto mount_mode = get_mode();
+    switch (mount_mode) {
         // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
         case MAV_MOUNT_MODE_RETRACT: {
             const Vector3f &target = _params.retract_angles.get();
