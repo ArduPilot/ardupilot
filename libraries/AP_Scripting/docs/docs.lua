@@ -4142,10 +4142,12 @@ function CRSFMenu_ud:name() end
 ---@return integer
 function CRSFMenu_ud:num_params() end
 
+-- add CRSF parameterto menu
 ---@param data string -- binary encoded parameter
 ---@return CRSFParameter_ud|nil
 function CRSFMenu_ud:add_parameter(data) end
 
+-- add CRSF menu
 ---@param name string -- menu name
 ---@return CRSFMenu_ud|nil
 function CRSFMenu_ud:add_menu(name) end
