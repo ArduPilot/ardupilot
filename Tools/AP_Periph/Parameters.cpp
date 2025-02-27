@@ -375,7 +375,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(adsb_port, "ADSB_PORT", HAL_PERIPH_ADSB_PORT_DEFAULT),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+#if AP_PERIPH_PWM_HARDPOINT_ENABLED
     // @Param: HARDPOINT_ID
     // @DisplayName: Hardpoint ID
     // @Description: Hardpoint ID

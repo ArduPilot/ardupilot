@@ -982,6 +982,7 @@ class sitl_periph_universal(sitl_periph):
             AP_PERIPH_RCIN_ENABLED = 0,
             AP_PERIPH_NETWORKING_ENABLED = 0,
             AP_PERIPH_NOTIFY_ENABLED = 0,
+            AP_PERIPH_PWM_HARDPOINT_ENABLED = 0,
         )
 
 class sitl_periph_gps(sitl_periph):
@@ -1016,6 +1017,7 @@ class sitl_periph_gps(sitl_periph):
             AP_PERIPH_HOBBYWING_ESC_ENABLED = 0,
             AP_PERIPH_NETWORKING_ENABLED = 0,
             AP_PERIPH_NOTIFY_ENABLED = 0,
+            AP_PERIPH_PWM_HARDPOINT_ENABLED =0,
         )
 
 class sitl_periph_battmon(sitl_periph):
@@ -1050,6 +1052,7 @@ class sitl_periph_battmon(sitl_periph):
             AP_PERIPH_HOBBYWING_ESC_ENABLED = 0,
             AP_PERIPH_NETWORKING_ENABLED = 0,
             AP_PERIPH_NOTIFY_ENABLED = 0,
+            AP_PERIPH_PWM_HARDPOINT_ENABLED = 0,
         )
 
 class esp32(Board):
