@@ -63,7 +63,7 @@ AC_PDNN_3D::AC_PDNN_3D(float initial_kP, float initial_kD, float initial_kP_z, f
 //  target and error are filtered
 //  the derivative is then calculated and filtered
 //  the integral is then updated if it does not increase in the direction of the limit vector
-Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurement, float dt)
+Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurement, const Vector3f &acc_desired,float dt)
 {
     // don't process inf or NaN //检查输入的有效性，避免处理空值NaN与无穷大inf的值
     if (target.is_nan() || target.is_inf() ||
@@ -72,6 +72,7 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     }
 
     _target = target; //_target 是一个私有成员变量，作为内部使用的值
+    _acc_desired = acc_desired; //_acc_desired 是一个私有成员变量，作为内部使用的值
     
     //设置默认RBF网络中心矩阵 Setting the centers of RBF c=Matrix5*2
     float _c_1_1 = -1.0f; float _c_1_2 = -0.5f; float _c_1_3 = 0.0f; float _c_1_4 = 0.5f; float _c_1_5 = 1.0f; 
@@ -104,14 +105,14 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     float _b_z = 1.0f;
     //Lyapunov矩阵P（通过MATLAB求解后在这里定义）
     float _P_x_1_1,_P_x_1_2,_P_x_2_1,_P_x_2_2;   
-    _P_x_1_1 = 4.3333f;  _P_x_1_2 = 0.0100f;           (void)_P_x_1_1; //标记为未使用，避免编译的时候报错
-    _P_x_2_1 = 3.3333f; _P_x_2_2 = 0.0120f;           (void)_P_x_2_1; //标记为未使用，避免编译的时候报错
+    _P_x_1_1 = 4.3333f;  _P_x_1_2 = 0.00100f;           (void)_P_x_1_1; //标记为未使用，避免编译的时候报错
+    _P_x_2_1 = 3.3333f; _P_x_2_2 = 0.00120f;           (void)_P_x_2_1; //标记为未使用，避免编译的时候报错
     float _P_y_1_1,_P_y_1_2,_P_y_2_1,_P_y_2_2;
-    _P_y_1_1 = 4.3333f;     _P_y_1_2 = 0.0100f;           (void)_P_y_1_1; //标记为未使用，避免编译的时候报错
-    _P_y_2_1 = 3.3333f; _P_y_2_2 = 0.0120f;           (void)_P_y_2_1; //标记为未使用，避免编译的时候报错
+    _P_y_1_1 = 4.3333f;     _P_y_1_2 = 0.00100f;           (void)_P_y_1_1; //标记为未使用，避免编译的时候报错
+    _P_y_2_1 = 3.3333f; _P_y_2_2 = 0.00120f;           (void)_P_y_2_1; //标记为未使用，避免编译的时候报错
     float _P_z_1_1,_P_z_1_2,_P_z_2_1,_P_z_2_2;
-    _P_z_1_1 = 4.3333f;    _P_z_1_2 = 0.0100f;           (void)_P_z_1_1; //标记为未使用，避免编译的时候报错
-    _P_z_2_1 = 3.3333f;_P_z_2_2 = 0.0120f;           (void)_P_z_2_1; //标记为未使用，避免编译的时候报错
+    _P_z_1_1 = 4.3333f;    _P_z_1_2 = 0.00100f;           (void)_P_z_1_1; //标记为未使用，避免编译的时候报错
+    _P_z_2_1 = 3.3333f;_P_z_2_2 = 0.00120f;           (void)_P_z_2_1; //标记为未使用，避免编译的时候报错
 
     
 
@@ -222,21 +223,21 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
         _h_z_5 = expf(-L_z_5*L_z_5/(2*_b_z*_b_z));//z方向第5个隐藏层输出
 
         //计算权重更新律
-        float _gamma_x = 1000.0f;
+        float _gamma_x = 10000.0f;
         _dot_W_x_1 = _gamma_x * (_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _h_x_1;//x方向第1个权重更新律
         _dot_W_x_2 = _gamma_x * (_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _h_x_2;//x方向第2个权重更新律
         _dot_W_x_3 = _gamma_x * (_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _h_x_3;//x方向第3个权重更新律
         _dot_W_x_4 = _gamma_x * (_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _h_x_4;//x方向第4个权重更新律
         _dot_W_x_5 = _gamma_x * (_error_m.x * _P_x_1_2 + _derivative_m.x * _P_x_2_2) * _h_x_5;//x方向第5个权重更新律
 
-        float _gamma_y = 1000.0f;
+        float _gamma_y = 10000.0f;
         _dot_W_y_1 = _gamma_y * (_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _h_y_1;//y方向第1个权重更新律
         _dot_W_y_2 = _gamma_y * (_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _h_y_2;//y方向第2个权重更新律
         _dot_W_y_3 = _gamma_y * (_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _h_y_3;//y方向第3个权重更新律
         _dot_W_y_4 = _gamma_y * (_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _h_y_4;//y方向第4个权重更新律
         _dot_W_y_5 = _gamma_y * (_error_m.y * _P_y_1_2 + _derivative_m.y * _P_y_2_2) * _h_y_5;//y方向第5个权重更新律
 
-        float _gamma_z = 100.0f;
+        float _gamma_z = 1000.0f;
         _dot_W_z_1 = _gamma_z * (_error_m.z * _P_z_1_2 + _derivative_m.z * _P_z_2_2) * _h_z_1;//z方向第1个权重更新律
         _dot_W_z_2 = _gamma_z * (_error_m.z * _P_z_1_2 + _derivative_m.z * _P_z_2_2) * _h_z_2;//z方向第2个权重更新律
         _dot_W_z_3 = _gamma_z * (_error_m.z * _P_z_1_2 + _derivative_m.z * _P_z_2_2) * _h_z_3;//z方向第3个权重更新律
@@ -331,7 +332,7 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
           _m_y += _dot_m_y * dt;
         }
         //~~~~~~z方向
-        float _eta_z = 0.5f; //定义自适应律参数，eta越大越平滑
+        float _eta_z = 2.0f; //定义自适应律参数，eta越大越平滑
         float _s_z = 0.002f;  //定义缩放因子
         if ((_error_m.z * _P_z_1_2 + _derivative_m.z * _P_z_2_2) * _pdnn_output.z > 0 )
         {
@@ -391,12 +392,12 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     _pdnn_output_P.z = _error.z * _kp_z;
 
     _pdnn_output_D.x = _error.x * _kd; //计算D项输出
-    _pdnn_output_D.y = _error.y * _kd;
+    _pdnn_output_D.y = _error.y * _kd; 
     _pdnn_output_D.z = _error.z * _kd_z;
 
-    _pdnn_output.x = _m_x * (-_error_m.x * _kp - 0.0f*_integrator.x - _derivative_m.x * _kd + _target.x * _kff - 1.0f*_phi_x); //计算总输出
-    _pdnn_output.y = _m_y * (-_error_m.y * _kp - 0.0f*_integrator.y - _derivative_m.y * _kd + _target.y * _kff -1.0f * _phi_y);
-    _pdnn_output.z = _m_z * (-_error_m.z * _kp_z - 0.0f*_integrator.z - _derivative_m.z * _kd_z - 9.80665f + _target.z * _kff -1.0f *_phi_z); //加入重力值9.80665, NED坐标系下为负数
+    _pdnn_output.x = _m_x * (-_error_m.x * _kp - 0.0f*_integrator.x - _derivative_m.x * _kd + _acc_desired.x - 1.0f*_phi_x); //计算总输出
+    _pdnn_output.y = _m_y * (-_error_m.y * _kp - 0.0f*_integrator.y - _derivative_m.y * _kd + _acc_desired.y -1.0f * _phi_y);
+    _pdnn_output.z = _m_z * (-_error_m.z * _kp_z - 0.0f*_integrator.z - _derivative_m.z * _kd_z - 9.80665f + _acc_desired.z -1.0f *_phi_z); //加入重力值9.80665, NED坐标系下为负数
 
     return _pdnn_output; //返回pdnn控制器输出
 

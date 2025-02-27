@@ -476,7 +476,7 @@ void AC_PosControl::init_xy_controller_stopping_point()
     init_xy_controller();
 
     get_stopping_point_xy_cm(_pos_desired.xy());
-    _pos_target.xy() = _pos_desired.xy() + _pos_offset.xy();
+    _pos_target.xy() = _pos_desired.xy();// + 0.0f*_pos_offset.xy();
     _vel_desired.xy().zero();
     _accel_desired.xy().zero();
 }
@@ -501,7 +501,7 @@ void AC_PosControl::soften_for_landing_xy()
     // decay position error to zero
     if (is_positive(_dt)) {
         _pos_target.xy() += (_inav.get_position_xy_cm().topostype() - _pos_target.xy()) * (_dt / (_dt + POSCONTROL_RELAX_TC));
-        _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy();
+        _pos_desired.xy() = _pos_target.xy();// - 0.0f*_pos_offset.xy();
     }
 
     // Prevent I term build up in xy velocity controller.
@@ -525,7 +525,7 @@ void AC_PosControl::init_xy_controller()
     _angle_max_override_cd = 0.0;
 
     _pos_target.xy() = _inav.get_position_xy_cm().topostype();
-    _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy();
+    _pos_desired.xy() = _pos_target.xy();// - 0.0f*_pos_offset.xy();
 
     _vel_target.xy() = _inav.get_velocity_xy_cms();
     _vel_desired.xy() = _vel_target.xy() - _vel_offset.xy();
@@ -622,14 +622,14 @@ void AC_PosControl::update_offsets_xy()
 void AC_PosControl::stop_pos_xy_stabilisation()
 {
     _pos_target.xy() = _inav.get_position_xy_cm().topostype();
-    _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy();
+    _pos_desired.xy() = _pos_target.xy();// - 0.0f*_pos_offset.xy();
 }
 
 /// stop_vel_xy_stabilisation - sets the target to the current position and velocity to the current velocity to remove any position and velocity corrections from the system
 void AC_PosControl::stop_vel_xy_stabilisation()
 {
     _pos_target.xy() =  _inav.get_position_xy_cm().topostype();
-    _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy();
+    _pos_desired.xy() = _pos_target.xy();// - _pos_offset.xy();
     
     _vel_target.xy() = _inav.get_velocity_xy_cms();;
     _vel_desired.xy() = _vel_target.xy() - _vel_offset.xy();
@@ -685,7 +685,7 @@ void AC_PosControl::update_xy_controller()
 
     // Position Controller
 
-    _pos_target.xy() = _pos_desired.xy() + _pos_offset.xy(); //对XY目标位置进行赋值：期望位置+偏移量补偿，这个_pos_target.xy()值是实时更新的
+    _pos_target.xy() = _pos_desired.xy();// + 0.0f * _pos_offset.xy(); //对XY目标位置进行赋值：期望位置+偏移量补偿，这个_pos_target.xy()值是实时更新的
 
     // determine the combined position of the actual position and the disturbance from system ID mode
     const Vector3f &curr_pos = _inav.get_position_neu_cm();  //通过 `inav` 系统获取无人机在北-东-上（NEU）坐标系中的位置，单位是厘米。
@@ -693,7 +693,7 @@ void AC_PosControl::update_xy_controller()
     comb_pos.xy() += _disturb_pos; //取得 `comb_pos` 的 x 和 y 分量，形成一个二维向量并在当前位置加上干扰的位置
 
     Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, comb_pos); //`_p_pos_xy` 是一个用于横向位置控制的P（比例）控制器。控制器输出目标速度
-    _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy(); //对XY期望位置进行再赋值：这个值也是实时更新的
+    _pos_desired.xy() = _pos_target.xy();// - _pos_offset.xy(); //对XY期望位置进行再赋值：这个值也是实时更新的
 
     // Velocity Controller
 
@@ -867,7 +867,7 @@ void AC_PosControl::init_z_controller_stopping_point()
     init_z_controller();
 
     get_stopping_point_z_cm(_pos_desired.z);
-    _pos_target.z = _pos_desired.z + _pos_offset.z;
+    _pos_target.z = _pos_desired.z;// + _pos_offset.z;
     _vel_desired.z = 0.0f;
     _accel_desired.z = 0.0f;
 }
@@ -896,7 +896,7 @@ void AC_PosControl::init_z_controller()
     init_offsets_z();
 
     _pos_target.z = _inav.get_position_z_up_cm();
-    _pos_desired.z = _pos_target.z - _pos_offset.z;
+    _pos_desired.z = _pos_target.z;// - 0.0f*_pos_offset.z;
 
     _vel_target.z = _inav.get_velocity_z_up_cms();
     _vel_desired.z = _vel_target.z - _vel_offset.z;
@@ -1070,35 +1070,99 @@ DIYWrench get_current_DIYwrench(){
      return current_DIYwrench;
 }
 ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY End~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+float AC_PosControl::pos_desired_x_set_update(float x_final,float max_pos_x, float rate, float frequency) //"x_final" is the final desired height, "rate" is the incresing height per second
+{   
+    //x_final为设置无人机最终期望NEU X 坐标（cm）
+    //max_pos_x 为最大 X 位移限制（cm）
+    //_pos_set_x为平滑后的期望位置（cm）
+    static bool initialized = false; // 标志是否已初始化，静态变量只会初始化一次
+    static float _pos_set_x = 0.0f;           // static 局部变量，值只初始化一次
+    static float _t = 0.0f;
+    // 设置时间步长
+    float _dt_ = 1.0f/frequency;
+    // 更新时间
+    _t += 1.0f/frequency;
 
-float AC_PosControl::pos_desired_z_set_update(float z_final, float rate, float frequncy)
+    if (!initialized) {
+        _pos_set_x = 0.0f;        // 只在第一次调用时初始化
+        initialized = true;
+    }                                
+       // **平滑更新位置**
+    // **指数衰减方式平滑逼近**
+    _pos_set_x = x_final - (x_final - _pos_set_x) * expf(-rate * _dt_);
+
+      // **添加位移限制**
+    if (_pos_set_x > max_pos_x) {
+        _pos_set_x = max_pos_x;  // 限制上界
+    }
+     if (_pos_set_x < -max_pos_x) {
+        _pos_set_x = -max_pos_x;  // 限制下界
+    }
+  return _pos_set_x;
+}
+
+float AC_PosControl::pos_desired_y_set_update(float y_final,float max_pos_y, float rate, float frequency) //"x_final" is the final desired height, "rate" is the incresing height per second
+{   
+    //y_final为设置无人机最终期望NEU Y 坐标（cm）
+    //max_pos_y 为最大 Y 位移限制（cm）
+    //_pos_set_y为平滑后的期望位置（cm）
+    static bool initialized = false; // 标志是否已初始化，静态变量只会初始化一次
+    static float _pos_set_y = 0.0f;           // static 局部变量，值只初始化一次
+    static float _t = 0.0f;
+    // 设置时间步长
+    float _dt_ = 1.0f/frequency;
+    // 更新时间
+    _t += 1.0f/frequency;
+
+    if (!initialized) {
+        _pos_set_y = 0.0f;        // 只在第一次调用时初始化
+        initialized = true;
+    }                                
+      // **平滑更新位置**
+   // **指数衰减方式平滑逼近**
+    _pos_set_y = y_final - (y_final - _pos_set_y) * expf(-rate * _dt_);
+     // **添加位移限制**
+    if (_pos_set_y > max_pos_y) {
+        _pos_set_y = max_pos_y;  // 限制上界
+    }
+     if (_pos_set_y < -max_pos_y) {
+        _pos_set_y = -max_pos_y;  // 限制下界
+    }
+  return _pos_set_y;
+}
+
+float AC_PosControl::pos_desired_z_set_update(float z_final,float max_alt, float rate, float frequency) //"z_final" is the final desired height, "rate" 是指数衰减率,越小越慢
 {   
     //z_final为设置无人机最终期望NEU高度（cm）
+    //max_alt 为最大高度限制（cm）
     //_pos_set_z为平滑后的期望NEU高度（cm）
     static bool initialized = false; // 标志是否已初始化，静态变量只会初始化一次
     static float _pos_set_z = 0.0f;           // static 局部变量，值只初始化一次
     static float _t = 0.0f;
+    // 设置时间步长
+    float _dt_ = 1.0f/frequency;
     // 更新时间
-    _t += 1.0f/frequncy;
+    _t += 1.0f/frequency;
 
     if (!initialized) {
         _pos_set_z = 0.0f;        // 只在第一次调用时初始化
         initialized = true;
     }                                
-    if (_pos_set_z < z_final && _t > 5.0f){  //一秒后才开始更新
-        _pos_set_z += rate / frequncy;                  //位置控制刷新频率为100hz，所以每秒升高z厘米对应每此循环应该除以100份
-    } else if( (_pos_set_z >= z_final)) {
-      _pos_set_z =  z_final; 
+     // **添加高度限制**
+    if (z_final > max_alt && _t>3.0f) {
+        _pos_set_z = max_alt - (max_alt - _pos_set_z) *  expf(-rate * _dt_);  // 限制最大高度
+    }
+    else if(_t>3.0f) {   // **指数衰减方式平滑逼近**
+        _pos_set_z = z_final - (z_final - _pos_set_z) * expf(-rate * _dt_);
     }
   return _pos_set_z;
-
 }
 
-float AC_PosControl::disturb(float frequncy)
+float AC_PosControl::disturb(float frequency)
 {
     static float _t = 0.0f;
     // 更新时间
-    _t += 1.0f/frequncy;
+    _t += 1.0f/frequency;
 
     // 计算扰动值
     float disturbance_value = 0.0f+ 0.0f* sinf(0.5f * _t) + 0.0f* cosf(0.7f * _t);
@@ -1134,7 +1198,7 @@ void AC_PosControl::update_z_controller()
     // update the position, velocity and acceleration offsets
     update_offsets_z(); //更新偏移量
     update_terrain();  //更新地形高度
-    _pos_target.z = _pos_desired.z + _pos_offset.z + _pos_terrain;
+    _pos_target.z = _pos_desired.z;// + _pos_offset.z + _pos_terrain;
 
     // calculate the target velocity correction
     float pos_target_zf = _pos_target.z; //赋值给局部变量
@@ -1148,14 +1212,18 @@ void AC_PosControl::update_z_controller()
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnn控制器~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     const Vector3f &pos_meas_neu = _inav.get_position_neu_cm();  //通过 `inav` 系统获取无人机在北-东-上（NEU）坐标系中的位置，单位是厘米。mocap中这里考虑替换为mocap位置反馈
     Vector3f pos_meas_ned = pos_meas_neu;   
-    pos_meas_ned.z = -pos_meas_neu.z;                        //转化测量位置为ned 
+    pos_meas_ned.z = -pos_meas_neu.z;                        //转化测量位置为ned
     Vector3f _pos_desired_3f;                                //转换数据类型为Vector3f
-    _pos_desired_3f.x = _pos_desired.x;                      //转换数据类型为Vector3f
-    _pos_desired_3f.y = _pos_desired.y;                      //转换数据类型为Vector3f                
-    _pos_desired_3f.z = - pos_desired_z_set_update(500.0f, 40.0f, 400.0f);   //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
-    
-    _U_x = _pdnn_pos.update_all(_pos_desired_3f, pos_meas_ned, _dt); //调用pdnn控制器循环
-    _U_x.y += disturb(400.0f); //加一个持续激励的扰动
+    _pos_desired_3f.x = pos_desired_x_set_update(_pos_desired.x,400.0f, 1.0f, 400.0f);     //转换数据类型为Vector3f,update函数为平滑轨迹函数
+    _pos_desired_3f.y = pos_desired_y_set_update(_pos_desired.y,400.0f, 1.0f, 400.0f);     //转换数据类型为Vector3f,update函数为平滑轨迹函数                
+    _pos_desired_3f.z = - pos_desired_z_set_update(_pos_desired.z,400.0f, 0.5f, 400.0f);   //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
+    Vector3f _acc_desired_3f;
+    _acc_desired_3f.x = 0.0f;
+    _acc_desired_3f.y = 0.0f;
+    _acc_desired_3f.z = 0.0f;
+
+    _U_x = _pdnn_pos.update_all(_pos_desired_3f, pos_meas_ned,_acc_desired_3f, _dt); //调用pdnn控制器循环
+    //_U_x.y += disturb(400.0f); //加一个持续激励的扰动
 
     _R_body_to_ned_meas = _ahrs.get_rotation_body_to_ned(); //获取旋转矩阵测量值 body to NED，并传递给_R_body_to_ned_meas
     //_R_body_to_neu_meas = _R_body_to_ned_meas;
@@ -1167,8 +1235,8 @@ void AC_PosControl::update_z_controller()
     fd = -_U_x.dot(_R_body_to_ned_meas.colz());                  //colz是拷贝取值，fd=U_x * Re3
     float fd_nor;
     fd_nor = fd/66.67f;                                         // fd_nor = fd/f_max，除以预设的无人机最大推力进行归一化
-    float test_msg_1 = _pdnn_pos.get_phi().x;
-    float test_msg_2 = _pdnn_pos.get_m().x; 
+    float test_msg_1 = _pos_desired_3f.z;
+    float test_msg_2 = _pdnn_pos.get_phi().x; 
     current_DIYwrench = get_DIYwrench(test_msg_1, test_msg_2); //用于ROS2推力话题 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1298,7 +1366,7 @@ void AC_PosControl::init_terrain()
 // init_pos_terrain_cm - initialises the current terrain altitude and target altitude to pos_offset_terrain_cm
 void AC_PosControl::init_pos_terrain_cm(float pos_terrain_cm)
 {
-    _pos_desired.z -= (pos_terrain_cm - _pos_terrain);
+   // _pos_desired.z -= (pos_terrain_cm - _pos_terrain);
     _pos_terrain_target = pos_terrain_cm;
     _pos_terrain = pos_terrain_cm;
 }
@@ -1670,7 +1738,7 @@ void AC_PosControl::handle_ekf_xy_reset()
 
         // To zero real position shift during relative position modes like Loiter, PosHold, Guided velocity and accleration control.
         _pos_target.xy() = (_inav.get_position_xy_cm() + _p_pos_xy.get_error()).topostype();
-        _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy();
+        _pos_desired.xy() = _pos_target.xy();// - 0.0f *_pos_offset.xy();
         _vel_target.xy() = _inav.get_velocity_xy_cms() + _pid_vel_xy.get_error();
         _vel_desired.xy() = _vel_target.xy() - _vel_offset.xy();
 
@@ -1698,7 +1766,7 @@ void AC_PosControl::handle_ekf_z_reset()
 
         // To zero real position shift during relative position modes like Loiter, PosHold, Guided velocity and accleration control.
         _pos_target.z = _inav.get_position_z_up_cm() + _p_pos_z.get_error();
-        _pos_desired.z = _pos_target.z - (_pos_offset.z + _pos_terrain);
+        _pos_desired.z = _pos_target.z;// - (_pos_offset.z + _pos_terrain);
         _vel_target.z = _inav.get_velocity_z_up_cms() + _pid_vel_z.get_error();
         _vel_desired.z = _vel_target.z - (_vel_offset.z + _vel_terrain);
 

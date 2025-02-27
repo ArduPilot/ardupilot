@@ -23,7 +23,7 @@ public:
     // target and error are filtered
     // the derivative is then calculated and filtered
     //计算和更新 PDNN 控制器的输出
-    Vector3f update_all(const Vector3f &target, const Vector3f &measurement, float dt);
+    Vector3f update_all(const Vector3f &target, const Vector3f &measurement,const Vector3f &acc_desired,float dt);
 
     void update_i(float dt, float _ki, float _c1, float _kimax, bool limit); //更新 PID 控制器的积分项
 
@@ -84,6 +84,7 @@ public:
 
     // internal variables
     Vector3f    _target;        // target value to enable filtering
+    Vector3f    _acc_desired;   // _acc_desired value to enable filtering
     Vector3f    _error;         // error value to enable filtering
     Vector3f    _error_m;         //位置误差（米）
     Vector3f    _error_ori;      //原始误差

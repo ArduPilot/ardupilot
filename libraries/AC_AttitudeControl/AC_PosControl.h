@@ -42,8 +42,8 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加pdnn~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #define POSCONTROL_PDNN_XY_P                  5.0f    // horizontal pdnn controller P gain default
 #define POSCONTROL_PDNN_XY_D                  5.0f    // horizontal pdnn controller D gain default
-#define POSCONTROL_PDNN_Z_P                  5.0f    // veritical pdnn controller P gain default
-#define POSCONTROL_PDNN_Z_D                  5.0f    // veritical pdnn controller D gain default
+#define POSCONTROL_PDNN_Z_P                   5.0f    // veritical pdnn controller P gain default
+#define POSCONTROL_PDNN_Z_D                   5.0f    // veritical pdnn controller D gain default
 //在头文件中定义pdnn控制器构造函数的初始化默认值，是因为cpp文件中if编译需要工作空间先build copter
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -124,12 +124,18 @@ public:
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~初始化期望旋转矩阵Rc~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     void init_Rc();
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~平滑期望高度函数~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    float pos_desired_z_set_update(float z_final, float rate, float frequncy);
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~平滑期望X位置函数~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    float pos_desired_x_set_update(float x_final, float max_pos_x, float rate, float frequency);
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~扰动函数~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    float disturb(float frequncy);
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~平滑期望Y位置函数~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    float pos_desired_y_set_update(float y_final, float max_pos_y, float rate, float frequency);
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~平滑期望高度函数~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    float pos_desired_z_set_update(float z_final, float max_alt, float rate, float frequency);
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~扰动函数~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    float disturb(float frequency);
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     /// input_accel_xy - calculate a jerk limited path from the current position, velocity and acceleration to an input acceleration.
