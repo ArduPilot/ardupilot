@@ -74,7 +74,12 @@ def ExtractDataLog(logfile):
         if msg is None:
             break
 
-        if msg.get_type() == 'BAT' and msg.Instance == args.batidx-1 and msg.VoltR > 1:
+        if (
+            msg.get_type() == 'BAT'
+            and (getattr(msg, 'Inst', None) == args.batidx - 1
+                 or getattr(msg, 'Instance', None) == args.batidx - 1)
+            and msg.VoltR > 1
+        ):
             current = msg.Curr
             voltR = msg.VoltR
             if last_voltR is not None and voltR > last_voltR:
