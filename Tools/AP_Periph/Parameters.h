@@ -221,7 +221,7 @@ public:
     AP_Int8 can_mirror_ports;
 #endif // HAL_PERIPH_CAN_MIRROR
 
-#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+#if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
     AP_Int8 temperature_msg_rate;
 #endif
 

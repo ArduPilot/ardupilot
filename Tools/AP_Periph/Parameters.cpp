@@ -683,7 +683,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(relay,                 "RELAY", AP_Relay),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+#if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
     // @Param: TEMP_MSG_RATE
     // @DisplayName: Temperature sensor message rate
     // @Description: This is the rate Temperature sensor data is sent in Hz. Zero means no send. Each sensor with source DroneCAN is sent in turn.
