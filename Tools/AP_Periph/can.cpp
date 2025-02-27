@@ -1945,7 +1945,7 @@ void AP_Periph_FW::can_update()
     #ifdef HAL_GPIO_PIN_SAFE_BUTTON
         can_safety_button_update();
     #endif
-    #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+    #if AP_PERIPH_PWM_HARDPOINT_ENABLED
         pwm_hardpoint_update();
     #endif
     #if AP_PERIPH_HOBBYWING_ESC_ENABLED

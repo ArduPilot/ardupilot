@@ -265,7 +265,7 @@ void AP_Periph_FW::init()
     }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+#if AP_PERIPH_PWM_HARDPOINT_ENABLED
     pwm_hardpoint_init();
 #endif
 

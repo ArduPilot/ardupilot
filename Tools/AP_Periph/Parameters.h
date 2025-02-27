@@ -144,7 +144,7 @@ public:
     AP_Int8 adsb_port;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+#if AP_PERIPH_PWM_HARDPOINT_ENABLED
     AP_Int16 hardpoint_id;
     AP_Int8 hardpoint_rate;
 #endif
