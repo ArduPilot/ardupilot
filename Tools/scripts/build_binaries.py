@@ -8,8 +8,6 @@ based on build_binaries.sh by Andrew Tridgell, March 2013
 AP_FLAKE8_CLEAN
 """
 
-from __future__ import print_function
-
 import datetime
 import optparse
 import os

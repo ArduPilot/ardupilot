@@ -170,7 +170,7 @@ define HAL_AIRSPEED_TYPE_DEFAULT 1
 define AIRSPEED_MAX_SENSORS 1
 
 # -------------------- MSP --------------------------------
-define HAL_PERIPH_ENABLE_MSP
+define AP_PERIPH_MSP_ENABLED 1
 define HAL_MSP_ENABLED 1
 define AP_PERIPH_MSP_PORT_DEFAULT 4
 
@@ -211,7 +211,7 @@ define HAL_BATT2_VOLT_SCALE 11.0
 
 
 # -------------------- Buzzer+NeoPixels --------------d------
-define HAL_PERIPH_ENABLE_RC_OUT
+define AP_PERIPH_RC_OUT_ENABLED 1
 define AP_PERIPH_NOTIFY_ENABLED 1
 
 define DEFAULT_NTF_LED_TYPES 455

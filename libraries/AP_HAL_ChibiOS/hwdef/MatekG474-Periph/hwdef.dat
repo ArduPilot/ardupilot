@@ -41,7 +41,7 @@ define HAL_BATT_MONITOR_DEFAULT 21
 
 
 # ----------- MSP
-define HAL_PERIPH_ENABLE_MSP
+define AP_PERIPH_MSP_ENABLED 1
 define HAL_MSP_ENABLED 1
 
 
@@ -59,7 +59,7 @@ define HAL_EFI_ENABLED 1
 
 
 # ----------- proximity
-define HAL_PERIPH_ENABLE_PROXIMITY
+define AP_PERIPH_PROXIMITY_ENABLED 1
 define HAL_PROXIMITY_ENABLED 1
 
 

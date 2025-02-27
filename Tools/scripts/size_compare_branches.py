@@ -193,6 +193,7 @@ class SizeCompareBranches(object):
             'obal',
             'SITL_x86_64_linux_gnu',
             'canzero',
+            'linux',
         ]
 
     def esp32_board_names(self):
@@ -219,11 +220,15 @@ class SizeCompareBranches(object):
     def run_program(self, prefix, cmd_list, show_output=True, env=None, show_output_on_error=True, show_command=None, cwd="."):
         if show_command is None:
             show_command = True
+
+        cmd = " ".join(cmd_list)
+        if cwd is None:
+            cwd = "."
+        command_debug = f"Running ({cmd}) in ({cwd})"
+        process_failure_content = command_debug + "\n"
         if show_command:
-            cmd = " ".join(cmd_list)
-            if cwd is None:
-                cwd = "."
-            self.progress(f"Running ({cmd}) in ({cwd})")
+            self.progress(command_debug)
+
         p = subprocess.Popen(
             cmd_list,
             stdin=None,
@@ -246,12 +251,11 @@ class SizeCompareBranches(object):
             x = filter(lambda x : chr(x) in string.printable, x)
             x = "".join([chr(c) for c in x])
             output += x
+            process_failure_content += x
             x = x.rstrip()
             some_output = "%s: %s" % (prefix, x)
             if show_output:
                 print(some_output)
-            else:
-                output += some_output
         (_, status) = returncode
         if status != 0:
             if not show_output and show_output_on_error:
@@ -262,7 +266,7 @@ class SizeCompareBranches(object):
                           str(returncode))
             try:
                 path = pathlib.Path(self.tmpdir, f"process-failure-{int(time.time())}")
-                path.write_text(output)
+                path.write_text(process_failure_content)
                 self.progress("Wrote process failure file (%s)" % path)
             except Exception:
                 self.progress("Writing process failure file failed")

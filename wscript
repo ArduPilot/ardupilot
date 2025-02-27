@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-from __future__ import print_function
-
 import os.path
 import os
 import sys

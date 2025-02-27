@@ -1,5 +1,16 @@
 # hwdef for Pixhawk firecape
 
+# IMUs:
+IMU Invensense SPI:mpu9250 ROTATION_ROLL_180_YAW_270
+define INS_MAX_INSTANCES 3
+
+# Compasses
+COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES 1
+
+# Baros:
+BARO MS56XX SPI:ms5611
+
 define AP_NOTIFY_TONEALARM_ENABLED 1
 
 define AP_NOTIFY_GPIO_LED_3_ENABLED 1
@@ -23,3 +34,6 @@ define HAL_BATT_CURR_SCALE                17.0f
 
 # AP_InertialSensor configuration
 define INVENSENSE_DRDY_PIN BBB_P8_14
+
+// FIXME: use of this define should go away:
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_PXF

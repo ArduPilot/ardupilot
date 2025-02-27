@@ -6,6 +6,7 @@ AP_FLAKE8_CLEAN
 
 import filecmp
 import os
+import pickle
 import re
 import shlex
 import sys
@@ -40,6 +41,11 @@ class HWDef:
 
         # boolean indicating whether we have read and processed self.hwdef
         self.processed_hwdefs = False
+
+        # sensor lists
+        self.imu_list = []
+        self.compass_list = []
+        self.baro_list = []
 
     def is_int(self, str):
         '''check if a string is an integer'''
@@ -194,6 +200,15 @@ class HWDef:
         if a[0] == 'define':
             return self.process_line_define(line, depth, a)
 
+        elif a[0] == 'IMU':
+            self.imu_list.append(a[1:])
+
+        elif a[0] == 'COMPASS':
+            self.compass_list.append(a[1:])
+
+        elif a[0] == 'BARO':
+            self.baro_list.append(a[1:])
+
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:
             self.progress("Removing %s" % u)
@@ -203,6 +218,12 @@ class HWDef:
             for line in self.alllines[:]:
                 if line.startswith('define') and u == line.split()[1]:
                     self.alllines.remove(line)
+            if u == 'IMU':
+                self.imu_list = []
+            if u == 'COMPASS':
+                self.compass_list = []
+            if u == 'BARO':
+                self.baro_list = []
 
     def process_line_env(self, line, depth, a):
         self.progress("Adding environment %s" % ' '.join(a[1:]))
@@ -224,3 +245,138 @@ class HWDef:
                     # raise ValueError(msg)
 
             self.intdefines[name] = intvalue
+
+    def parse_spi_device(self, dev):
+        '''parse a SPI:xxx device item'''
+        a = dev.split(':')
+        if len(a) != 2:
+            self.error("Bad SPI device: %s" % dev)
+        return 'hal.spi->get_device("%s")' % a[1]
+
+    def parse_i2c_device(self, dev):
+        '''parse a I2C:xxx:xxx device item'''
+        a = dev.split(':')
+        if len(a) != 3:
+            self.error("Bad I2C device: %s" % dev)
+        busaddr = int(a[2], base=0)
+        if a[1] == 'ALL_EXTERNAL':
+            return ('FOREACH_I2C_EXTERNAL(b)', 'GET_I2C_DEVICE(b,0x%02x)' % (busaddr))
+        elif a[1] == 'ALL_INTERNAL':
+            return ('FOREACH_I2C_INTERNAL(b)', 'GET_I2C_DEVICE(b,0x%02x)' % (busaddr))
+        elif a[1] == 'ALL':
+            return ('FOREACH_I2C(b)', 'GET_I2C_DEVICE(b,0x%02x)' % (busaddr))
+        busnum = int(a[1])
+        return ('', 'GET_I2C_DEVICE(%u,0x%02x)' % (busnum, busaddr))
+
+    def seen_str(self, dev):
+        '''return string representation of device for checking for duplicates'''
+        ret = dev[:2]
+        if dev[-1].startswith("BOARD_MATCH("):
+            ret.append(dev[-1])
+        return str(ret)
+
+    def write_IMU_config(self, f):
+        '''write IMU config defines'''
+        devlist = []
+        wrapper = ''
+        seen = set()
+        for dev in self.imu_list:
+            if self.seen_str(dev) in seen:
+                self.error("Duplicate IMU: %s" % self.seen_str(dev))
+            seen.add(self.seen_str(dev))
+            driver = dev[0]
+            # get instance number if mentioned
+            instance = -1
+            aux_devid = -1
+            if dev[-1].startswith("INSTANCE:"):
+                instance = int(dev[-1][9:])
+                dev = dev[:-1]
+            if dev[-1].startswith("AUX:"):
+                aux_devid = int(dev[-1][4:])
+                dev = dev[:-1]
+            for i in range(1, len(dev)):
+                if dev[i].startswith("SPI:"):
+                    dev[i] = self.parse_spi_device(dev[i])
+                elif dev[i].startswith("I2C:"):
+                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
+            n = len(devlist)+1
+            devlist.append('HAL_INS_PROBE%u' % n)
+            if aux_devid != -1:
+                f.write('#define HAL_INS_PROBE%u %s ADD_BACKEND_AUX(AP_InertialSensor_%s::probe(*this,%s),%d)\n' %
+                        (n, wrapper, driver, ','.join(dev[1:]), aux_devid))
+            elif instance != -1:
+                f.write('#define HAL_INS_PROBE%u %s ADD_BACKEND_INSTANCE(AP_InertialSensor_%s::probe(*this,%s),%d)\n' %
+                        (n, wrapper, driver, ','.join(dev[1:]), instance))
+            elif dev[-1].startswith("BOARD_MATCH("):
+                f.write(
+                    '#define HAL_INS_PROBE%u %s ADD_BACKEND_BOARD_MATCH(%s, AP_InertialSensor_%s::probe(*this,%s))\n'
+                    % (n, wrapper, dev[-1], driver, ','.join(dev[1:-1])))
+            else:
+                f.write(
+                    '#define HAL_INS_PROBE%u %s ADD_BACKEND(AP_InertialSensor_%s::probe(*this,%s))\n'
+                    % (n, wrapper, driver, ','.join(dev[1:])))
+        if len(devlist) > 0:
+            if len(devlist) < 3:
+                self.write_defaulting_define(f, 'INS_MAX_INSTANCES', len(devlist))
+            f.write('#define HAL_INS_PROBE_LIST %s\n\n' % ';'.join(devlist))
+
+    def write_MAG_config(self, f):
+        '''write MAG config defines'''
+        devlist = []
+        seen = set()
+        for dev in self.compass_list:
+            if self.seen_str(dev) in seen:
+                self.error("Duplicate MAG: %s" % self.seen_str(dev))
+            seen.add(self.seen_str(dev))
+            driver = dev[0]
+            probe = 'probe'
+            wrapper = ''
+            a = driver.split(':')
+            driver = a[0]
+            if len(a) > 1 and a[1].startswith('probe'):
+                probe = a[1]
+            for i in range(1, len(dev)):
+                if dev[i].startswith("SPI:"):
+                    dev[i] = self.parse_spi_device(dev[i])
+                elif dev[i].startswith("I2C:"):
+                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
+            n = len(devlist)+1
+            devlist.append('HAL_MAG_PROBE%u' % n)
+            f.write(
+                '#define HAL_MAG_PROBE%u %s ADD_BACKEND(DRIVER_%s, AP_Compass_%s::%s(%s))\n'
+                % (n, wrapper, driver, driver, probe, ','.join(dev[1:])))
+        if len(devlist) > 0:
+            f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
+
+    def write_BARO_config(self, f):
+        '''write barometer config defines'''
+        devlist = []
+        seen = set()
+        for dev in self.baro_list:
+            if self.seen_str(dev) in seen:
+                self.error("Duplicate BARO: %s" % self.seen_str(dev))
+            seen.add(self.seen_str(dev))
+            driver = dev[0]
+            probe = 'probe'
+            wrapper = ''
+            a = driver.split(':')
+            driver = a[0]
+            if len(a) > 1 and a[1].startswith('probe'):
+                probe = a[1]
+            for i in range(1, len(dev)):
+                if dev[i].startswith("SPI:"):
+                    dev[i] = self.parse_spi_device(dev[i])
+                elif dev[i].startswith("I2C:"):
+                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
+            n = len(devlist)+1
+            devlist.append('HAL_BARO_PROBE%u' % n)
+            args = ['*this'] + dev[1:]
+            f.write(
+                '#define HAL_BARO_PROBE%u %s ADD_BACKEND(AP_Baro_%s::%s(%s))\n'
+                % (n, wrapper, driver, probe, ','.join(args)))
+        if len(devlist) > 0:
+            f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
+
+    def write_env_py(self, filename):
+        '''write out env.py for environment variables to control the build process'''
+        pickle.dump(self.env_vars, open(filename, "wb"))

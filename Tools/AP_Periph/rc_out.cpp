@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <AP_HAL/AP_HAL.h>
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
 #include "AP_Periph.h"
 #if AP_SIM_ENABLED
 #include <dronecan_msgs.h>
@@ -225,4 +225,4 @@ void AP_Periph_FW::sim_update_actuator(uint8_t actuator_id)
 }
 #endif // AP_SIM_ENABLED
 
-#endif // HAL_PERIPH_ENABLE_RC_OUT
+#endif // AP_PERIPH_RC_OUT_ENABLED

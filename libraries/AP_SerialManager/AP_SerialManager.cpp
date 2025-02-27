@@ -585,7 +585,9 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_PPP_BUFSIZE_TX);
                     break;
 #endif
-                    
+                case SerialProtocol_IOMCU:
+                    // nothing to do, AP_IOMCU handles this
+                    break;
                 default:
                     uart->begin(state[i].baudrate());
             }

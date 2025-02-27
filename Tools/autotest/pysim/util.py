@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 '''
 AP_FLAKE8_CLEAN
 '''

@@ -1,5 +1,16 @@
 # Parrot Disco fixed-wing
 
+# IMUs:
+IMU Invensense I2C:2:0x68 ROTATION_PITCH_180_YAW_90
+define INS_MAX_INSTANCES 3
+
+# Compasses
+COMPASS AK8963 I2C:1:0x0d ROTATION_NONE
+
+# Baros:
+BARO MS56XX I2C:1:0x77 AP_Baro_MS56XX::BARO_MS5607
+
+
 define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/ardupilot/logs"
 define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/ardupilot/terrain"
 define HAL_BOARD_STORAGE_DIRECTORY "/data/ftp/internal_000/ardupilot"
@@ -63,3 +74,7 @@ define INVENSENSE_EXT_SYNC_ENABLE 1
 
 // AP_Airspeed configuration
 define PSI_RANGE_DEFAULT 0.05
+
+
+// FIXME: use of this define should go away:
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_DISCO

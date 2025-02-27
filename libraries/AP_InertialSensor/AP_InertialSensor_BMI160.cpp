@@ -14,6 +14,11 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "AP_InertialSensor_config.h"
+
+#include "AP_InertialSensor_BMI160.h"
+
 #include <utility>
 
 #include <AP_HAL/AP_HAL.h>
@@ -21,7 +26,10 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
 
-#include "AP_InertialSensor_BMI160.h"
+// need the Linux GPIO header for the Linux Aero target (BMI160_INT1_GPIO)
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include <AP_HAL_Linux/GPIO.h>
+#endif
 
 /* Registers and bits definitions. The indented ones are the bits for the upper
  * register. */

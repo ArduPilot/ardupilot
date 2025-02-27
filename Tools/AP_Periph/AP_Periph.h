@@ -47,7 +47,7 @@
 #endif
 #include <AP_AHRS/AP_AHRS.h>
 
-#ifdef HAL_PERIPH_ENABLE_RELAY
+#if AP_PERIPH_RELAY_ENABLED
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     #error "Relay and PWM_HARDPOINT both use hardpoint message"
 #endif
@@ -78,8 +78,8 @@
 #endif
 
 #if AP_PERIPH_NOTIFY_ENABLED
-    #if !defined(HAL_PERIPH_ENABLE_RC_OUT) && !defined(HAL_PERIPH_NOTIFY_WITHOUT_RCOUT)
-        #error "AP_PERIPH_NOTIFY_ENABLED requires HAL_PERIPH_ENABLE_RC_OUT"
+    #if !AP_PERIPH_RC_OUT_ENABLED && !defined(HAL_PERIPH_NOTIFY_WITHOUT_RCOUT)
+        #error "AP_PERIPH_NOTIFY_ENABLED requires AP_PERIPH_RC_OUT_ENABLED"
     #endif
     #ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
         #error "You cannot enable AP_PERIPH_NOTIFY_ENABLED and HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY at the same time. Notify already includes it"
@@ -97,7 +97,7 @@
 #endif
 
 #ifndef AP_PERIPH_SAFETY_SWITCH_ENABLED
-#define AP_PERIPH_SAFETY_SWITCH_ENABLED defined(HAL_PERIPH_ENABLE_RC_OUT)
+#define AP_PERIPH_SAFETY_SWITCH_ENABLED AP_PERIPH_RC_OUT_ENABLED
 #endif
 
 #ifndef HAL_PERIPH_CAN_MIRROR
@@ -265,7 +265,7 @@ public:
     AP_CAN::Protocol can_protocol_cached[HAL_NUM_CAN_IFACES];
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_MSP
+#if AP_PERIPH_MSP_ENABLED
     struct {
         AP_MSP msp;
         MSP::msp_port_t port;
@@ -304,7 +304,7 @@ public:
     uint32_t last_rangefinder_sample_ms[RANGEFINDER_MAX_INSTANCES];
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PROXIMITY
+#if AP_PERIPH_PROXIMITY_ENABLED
     AP_Proximity proximity;
 #endif
 
@@ -340,7 +340,7 @@ public:
     void apd_esc_telem_update();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
     uint8_t get_motor_number(const uint8_t esc_number) const;
@@ -384,7 +384,7 @@ public:
     BattBalance battery_balance;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+#if AP_PERIPH_SERIAL_OPTIONS_ENABLED
     SerialOptions serial_options;
 #endif
     
@@ -437,7 +437,7 @@ public:
     GCS_Periph _gcs;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RELAY
+#if AP_PERIPH_RELAY_ENABLED
     AP_Relay relay;
 #endif
 

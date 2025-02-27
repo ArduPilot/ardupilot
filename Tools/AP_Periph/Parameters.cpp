@@ -401,7 +401,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GARRAY(esc_number, 0, "ESC_NUMBER", 0),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
     // Servo driver
     // @Group: OUT
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
@@ -461,7 +461,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(temperature_sensor,         "TEMP",     AP_TemperatureSensor),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_MSP
+#if AP_PERIPH_MSP_ENABLED
     // @Param: MSP_PORT
     // @DisplayName: MSP Serial Port
     // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to MSP
@@ -543,7 +543,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(efi, "EFI", AP_EFI),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PROXIMITY
+#if AP_PERIPH_PROXIMITY_ENABLED
     // @Param: PRX_BAUDRATE
     // @DisplayName: Proximity Sensor serial baudrate
     // @Description: Proximity Sensor serial baudrate.
@@ -575,7 +575,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
     GOBJECT(proximity, "PRX", AP_Proximity),
-#endif  // HAL_PERIPH_ENABLE_PROXIMITY
+#endif  // AP_PERIPH_PROXIMITY_ENABLED
 
 #if HAL_NMEA_OUTPUT_ENABLED
     // @Group: NMEA_
@@ -643,7 +643,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(battery_balance, "BAL",  BattBalance),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+#if AP_PERIPH_SERIAL_OPTIONS_ENABLED
     // @Group: UART
     // @Path: serial_options.cpp
     GOBJECT(serial_options, "UART",  SerialOptions),
@@ -677,7 +677,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(rtc,                   "RTC",    AP_RTC),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RELAY
+#if AP_PERIPH_RELAY_ENABLED
     // @Group: RELAY
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
     GOBJECT(relay,                 "RELAY", AP_Relay),

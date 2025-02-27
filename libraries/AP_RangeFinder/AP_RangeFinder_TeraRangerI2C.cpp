@@ -34,9 +34,9 @@ extern const AP_HAL::HAL& hal;
 
 AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(RangeFinder::RangeFinder_State &_state,
                                                            AP_RangeFinder_Params &_params,
-                                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
+                                                           AP_HAL::I2CDevice *i2c_dev)
     : AP_RangeFinder_Backend(_state, _params)
-    , dev(std::move(i2c_dev))
+    , dev(i2c_dev)
 {
 }
 
@@ -47,13 +47,13 @@ AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(RangeFinder::RangeFin
 */
 AP_RangeFinder_Backend *AP_RangeFinder_TeraRangerI2C::detect(RangeFinder::RangeFinder_State &_state,
 																AP_RangeFinder_Params &_params,
-                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
+                                                             AP_HAL::I2CDevice *i2c_dev)
 {
     if (!i2c_dev) {
         return nullptr;
     }
 
-    AP_RangeFinder_TeraRangerI2C *sensor = NEW_NOTHROW AP_RangeFinder_TeraRangerI2C(_state, _params, std::move(i2c_dev));
+    AP_RangeFinder_TeraRangerI2C *sensor = NEW_NOTHROW AP_RangeFinder_TeraRangerI2C(_state, _params, i2c_dev);
     if (!sensor) {
         return nullptr;
     }
@@ -96,6 +96,9 @@ bool AP_RangeFinder_TeraRangerI2C::init(void)
         dev->get_semaphore()->give();
         return false;
     }
+
+    // ask for a new reading for the timer to collect:
+    measure();
 
     dev->get_semaphore()->give();
 

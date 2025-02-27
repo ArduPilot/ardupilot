@@ -7,11 +7,14 @@
 # sim_vehicle.py --map --console # in the starting directory should start a Copter simulation
 # sim_vehicle.py --debug --gdb
 # sim_vehicle.py --debug --valgrind
-# time (cd /vagrant && ./waf configure --board=fmuv2 && ./waf build --target=bin/ardusub) # ~9 minutes
-# time (cd /vagrant && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~ minutes (after building fmuv2)
-# time (cd /vagrant && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)
-# time (cd /vagrant && ./Tools/autotest/sim_vehicle.py --map --console -v ArduPlane -f jsbsim) # should test JSBSim
-# time (cd /vagrant && ./Tools/autotest/autotest.py build.Rover test.Rover)
+#
+# Make testing rather faster:
+# time rsync -aPH /vagrant/ $HOME/ardupilot  # real	8m13.712s
+# time (cd $HOME/ardupilot && ./waf configure --board=fmuv2 && ./waf build --target=bin/ardusub) # ~9 minutes
+# time (cd $HOME/ardupilot && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~ minutes (after building fmuv2)
+# time (cd $HOME/ardupilot && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)
+# time (cd $HOME/ardupilot && ./Tools/autotest/sim_vehicle.py --map --console -v ArduPlane -f jsbsim) # should test JSBSim
+# time (cd $HOME/ardupilot && ./Tools/autotest/autotest.py build.Rover test.Rover)
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
@@ -311,5 +314,26 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.gui = true
     end
     noble.vm.boot_timeout = 1200
+  end
+
+  # 24.10 end of standard support ??
+  # note the use of "bento" here; Ubuntu stopped providing Vagrant
+  # images due to Hashicorp adopting the "Business Source License".
+  config.vm.define "oracular", autostart: false do |oracular|
+    oracular.vm.box = "alvistack/ubuntu-24.10"
+    oracular.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    oracular.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (oracular)"
+    end
+    oracular.vm.boot_timeout = 1200
+  end
+  config.vm.define "oracular-desktop", autostart: false do |oracular|
+    oracular.vm.box = "alvistack/ubuntu-24.10"
+    oracular.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    oracular.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (oracular-desktop)"
+      vb.gui = true
+    end
+    oracular.vm.boot_timeout = 1200
   end
 end

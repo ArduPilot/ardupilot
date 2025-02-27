@@ -35,6 +35,10 @@
 #define O_CLOEXEC 0
 #define HAL_STORAGE_SIZE (16384)
 
+#ifndef HAL_PROGRAM_SIZE_LIMIT_KB
+#define HAL_PROGRAM_SIZE_LIMIT_KB 2048
+#endif
+
 #ifdef __cplusplus
 // allow for static semaphores
 #include <AP_HAL_ESP32/Semaphores.h>

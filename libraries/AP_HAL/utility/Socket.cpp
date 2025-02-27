@@ -167,7 +167,9 @@ bool SOCKET_CLASS_NAME::connect(const char *address, uint16_t port)
         // for bi-directional UDP broadcast we need 2 sockets
         struct sockaddr_in send_addr;
         socklen_t send_len = sizeof(send_addr);
-        ret = CALL_PREFIX(getsockname)(fd, (struct sockaddr *)&send_addr, &send_len);
+        if (CALL_PREFIX(getsockname)(fd, (struct sockaddr *)&send_addr, &send_len) == -1) {
+            return false;
+        }
         fd_in = CALL_PREFIX(socket)(AF_INET, SOCK_DGRAM, 0);
         if (fd_in == -1) {
             goto fail_multi;
