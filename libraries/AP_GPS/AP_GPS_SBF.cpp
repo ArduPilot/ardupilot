@@ -31,12 +31,12 @@ extern const AP_HAL::HAL& hal;
 #define SBF_DEBUGGING 0
 
 #if SBF_DEBUGGING
+// INFO rather than debug because MP filters DEBUG
  # define Debug(fmt, args ...)                  \
 do {                                            \
-    hal.console->printf("%s:%d: " fmt "\n",     \
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s:%d: " fmt, \
                         __FUNCTION__, __LINE__, \
                         ## args);               \
-    hal.scheduler->delay(1);                    \
 } while(0)
 #else
  # define Debug(fmt, args ...)
