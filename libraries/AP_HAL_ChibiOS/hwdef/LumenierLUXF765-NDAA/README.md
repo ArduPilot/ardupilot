@@ -66,7 +66,7 @@ Serial1 (USART1) is DMA capable and can be used for CRSF.
    </tr>
    <tr>
    <td>3</td>
-   <td>AT756E</td>
+   <td>AT7456E</td>
    </tr>
    <tr>
    <td>4</td>
@@ -335,9 +335,9 @@ All connectors are JST SH 1.0mm pitch EXCEPT for the CANbus port, which is JST G
 
 ## PWM Output
 
-The Lumenier LUX F7865 NDAA supports 12 PWM outputs. 
+The Lumenier LUX F765 NDAA supports 12 PWM outputs. 
 The 8 main PWM outputs are labeled M1 through M8.
-The 4 auxilliary outputs are labeled S1 through S4. 
+The 4 auxiliary outputs are labeled S1 through S4. 
 
 The 8 main PWM outputs are in 2 groups:
 
