@@ -6851,6 +6851,50 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.takeoff()
         self.fly_home_land_and_disarm()
 
+    def mavlink_AIRSPEED(self):
+        '''check receiving of two airspeed sensors'''
+        self.set_parameters({
+            "ARSPD_PIN": 2,
+            "ARSPD_RATIO": 0,
+            "ARSPD2_RATIO": 4,
+            "ARSPD2_TYPE": 3,  # MS5525
+            "ARSPD2_BUS": 1,
+            "ARSPD2_AUTOCAL": 1,
+        })
+        self.reboot_sitl()
+
+        self.start_subtest('Ensure we get both instances')
+        self.wait_message_field_values('AIRSPEED', {
+            "id": 0,
+            "flags": mavutil.mavlink.AIRSPEED_SENSOR_USING,
+        })
+        self.wait_message_field_values('AIRSPEED', {
+            "id": 1,
+            "flags": 0,
+        })
+
+        self.wait_ready_to_arm()
+        self.takeoff()
+
+        self.start_subtest("Now testing failure of sensor 1 - fail to many m/s")
+        self.set_parameter("SIM_ARSPD_FAIL", 60)
+
+        # airspeed sensor never becomes unhealthy - we just stop using
+        # it as EKF3 starts to reject:
+        self.wait_message_field_values('AIRSPEED', {
+            "id": 0,
+            "flags": 0,
+        })
+        # ArduPilot's airspeed redundancy is only available through
+        # EKF3 affinity:
+        self.progress("Checking we're not using second airspeed sensor")
+        self.wait_message_field_values('AIRSPEED', {
+            "id": 1,
+            "flags": 0,
+        })
+        self.set_parameter("SIM_ARSPD_FAIL", 0)
+        self.fly_home_land_and_disarm()
+
     def Volz(self):
         '''test Volz serially-connected'''
         volz_motor_mask = ((1 << 0) | (1 << 1) | (1 << 3) | (1 << 8) | (1 << 9) | (1 << 11))
@@ -7133,6 +7177,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.GliderPullup,
             self.BadRollChannelDefined,
             self.VolzMission,
+            self.mavlink_AIRSPEED,
             self.Volz,
             self.LoggedNamedValueFloat,
             self.AdvancedFailsafeBadBaro,
