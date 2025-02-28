@@ -401,6 +401,15 @@ void NavEKF3_core::Log_Write(uint64_t time_us)
     Log_Write_XKFS(time_us);
     Log_Write_Quaternion(time_us);
 
+    AP::logger().WriteStreaming(
+        "PBDG",
+        "TimeUS," "Flags",
+        "s"       "-",   // units
+        "F"       "-",   // multipliers
+        "Q"       "H",   // storage type
+        AP_HAL::micros64(),
+        17
+    );
 
 #if EK3_FEATURE_BEACON_FUSION
     // write range beacon fusion debug packet if the range value is non-zero
