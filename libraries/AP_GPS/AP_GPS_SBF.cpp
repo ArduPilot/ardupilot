@@ -321,6 +321,14 @@ AP_GPS_SBF::parse(uint8_t temp)
                                      // indicates not enough bytes to do a crc
                 break;
             }
+            if (sbf_msg.length > 256) {
+                // no SBF packet is this big!  serial corruption may
+                // cause the length to get very large; 24320 has been
+                // seen (0x5F00).  Discard and go back to looking for
+                // preamble.
+                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+                crc_error_counter++; // this is a probable serial corruption
+            }
             break;
         case sbf_msg_parser_t::DATA:
             if (sbf_msg.read < sizeof(sbf_msg.data)) {
