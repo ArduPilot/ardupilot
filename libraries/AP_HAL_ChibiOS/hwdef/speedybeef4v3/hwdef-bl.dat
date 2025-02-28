@@ -5,7 +5,7 @@
 MCU STM32F4xx STM32F405xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1082
+APJ_BOARD_ID AP_HW_SPEEDYBEEF4V3
 
 # crystal frequency
 OSCILLATOR_HZ 8000000

@@ -9,7 +9,7 @@ include ../FlywooF405S-AIO/hwdef-bl.dat
 undef APJ_BOARD_ID
 
 # board ID for firmware load
-APJ_BOARD_ID 1180
+APJ_BOARD_ID AP_HW_FlywooF405HD_AIOv2
 
 #required to prevent ELRS from changing modes at boot
 PA10 USART1_RX USART1 OUTPUT HIGH

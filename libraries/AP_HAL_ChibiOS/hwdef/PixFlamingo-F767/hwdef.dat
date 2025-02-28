@@ -4,7 +4,7 @@ MCU STM32F7xx STM32F767xx
 
 
 # board ID for firmware load
-APJ_BOARD_ID 1131
+APJ_BOARD_ID AP_HW_PixFlamingoF767_V1
 
 # crystal frequency
 OSCILLATOR_HZ 24000000

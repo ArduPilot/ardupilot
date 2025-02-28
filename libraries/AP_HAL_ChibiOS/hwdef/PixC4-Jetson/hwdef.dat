@@ -12,7 +12,7 @@ OSCILLATOR_HZ 16000000
 define HAL_CHIBIOS_ARCH_FMUV5 1
 
 # board ID for firmware load
-APJ_BOARD_ID 1032
+APJ_BOARD_ID AP_HW_H31_PIXC4_JETSON
 
 # bootloader takes first sector
 FLASH_RESERVE_START_KB 128

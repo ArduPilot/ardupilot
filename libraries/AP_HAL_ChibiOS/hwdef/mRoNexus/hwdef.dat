@@ -8,7 +8,7 @@
 MCU STM32H7xx STM32H743xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1015
+APJ_BOARD_ID AP_HW_MRO_NEXUS
 
 # crystal frequency
 OSCILLATOR_HZ 25000000

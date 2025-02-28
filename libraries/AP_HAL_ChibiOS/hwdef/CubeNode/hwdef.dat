@@ -9,7 +9,7 @@ define CORE_CM7
 define SMPS_PWR
 
 # board ID for firmware load
-APJ_BOARD_ID 1079
+APJ_BOARD_ID AP_HW_CUBENODE
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

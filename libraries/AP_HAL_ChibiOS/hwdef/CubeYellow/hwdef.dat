@@ -24,7 +24,7 @@ define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
 OSCILLATOR_HZ 24000000
 
 # board ID for firmware load
-APJ_BOARD_ID 120
+APJ_BOARD_ID AP_HW_CUBEYELLOW
 
 # with 2M flash we can afford to optimize for speed
 env OPTIMIZE -O2
