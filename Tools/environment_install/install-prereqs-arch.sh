@@ -1,149 +1,185 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
+# Configuration flags
 ASSUME_YES=false
+QUIET=false
 
-OPTIND=1  # Reset in case getopts has been used previously in the shell.
-while getopts "y" opt; do
+# Parse command-line options
+OPTIND=1
+while getopts "yq" opt; do
     case "$opt" in
-        \?)
-            exit 1
-            ;;
-        y)  ASSUME_YES=true
-            ;;
+        y)  ASSUME_YES=true ;;
+        q)  QUIET=true ;;
+        *)  exit 1 ;;
     esac
 done
 
-# Automatic selection of the CONFIG FILE according to the SHELL.
-if [[ "$SHELL" == "/bin/bash" ]]; then
-	CONFIG_FILE="$HOME"/.bashrc
-elif [[ "$SHELL" == "/bin/zsh" ]]; then
-	CONFIG_FILE="$HOME"/.zshrc
-else
-	CONFIG_FILE="/dev/null"
-fi
+# Get configuration file with shell detection
+case "$(basename "$SHELL")" in
+    bash) CONFIG_FILE="$HOME/.bashrc" ;;
+    zsh)  CONFIG_FILE="$HOME/.zshrc"  ;;
+    *)    CONFIG_FILE="/dev/null"     ;;
+esac
 
-# Required Packages
-BASE_PKGS="base-devel ccache git gsfonts tk wget gcc"
-SITL_PKGS="python-pip python-setuptools python-wheel python-numpy python-scipy opencv python-wxpython"
-PX4_PKGS="lib32-glibc zip zlib ncurses"
+# Development Packages
+BASE_PKGS=(base-devel gcc ccache git wget gsfonts tk)
+SITL_PKGS=(python-pip python-setuptools python-wheel python-numpy python-scipy opencv python-wxpython)
+PX4_PKGS=(lib32-glibc zip zlib ncurses)
+PYTHON_PKGS=(future lxml pymavlink MAVProxy opencv-python pexpect argparse matplotlib pyparsing geocoder pyserial empy==3.3.4 dronecan packaging setuptools wheel)
 
-PYTHON_PKGS="future lxml pymavlink MAVProxy opencv-python pexpect argparse matplotlib pyparsing geocoder pyserial empy==3.3.4 dronecan packaging setuptools wheel"
-
-# GNU Tools for ARM Embedded Processors
-# (see https://launchpad.net/gcc-arm-embedded/)
+# GNU Toolchain for ARM Embedded Processors (see https://launchpad.net/gcc-arm-embedded/)
 ARM_ROOT="gcc-arm-none-eabi-10-2020-q4-major"
 ARM_TARBALL="$ARM_ROOT-x86_64-linux.tar.bz2"
 ARM_TARBALL_URL="https://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL"
-ARM_TARBALL_CHECKSUM="21134caa478bbf5352e239fbc6e2da3038f8d2207e089efc96c3b55f1edcd618" 
+ARM_TARBALL_CHECKSUM="21134caa478bbf5352e239fbc6e2da3038f8d2207e089efc96c3b55f1edcd618"
 
-# Main Directories for Script, Tools and Build Root
+# Main directories
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-ARDUPILOT_TOOLS_DIR="$(echo "$SCRIPT_DIR" | rev | cut -f2- -d'/' | rev)/autotest"
-OPT_DIR="/opt"
+ARDUPILOT_TOOLS_DIR="${SCRIPT_DIR%/environment_install}/autotest"
+VENV_DIR="$HOME/venv-ardupilot"
+ARM_TOOLCHAIN_DIR="/opt/$ARM_ROOT"
+CCACHE_DIR="/usr/lib/ccache"
 
-function maybe_prompt_user() {
-    if $ASSUME_YES; then
-        return 0
-    else
-        read -rp "$1"
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            return 0
-        else
-            return 1
-        fi
-    fi
+# Helper functions
+maybe_prompt() {
+    if $ASSUME_YES; then return 0; fi
+    read -rp "$1"
+    [[ $REPLY =~ ^[Yy]$ ]]
 }
 
-sudo usermod -a -G uucp "$USER"
+add_config_entry() {
+    local line="$1" prompt="$2"
+    if ! grep -Fxq "$line" "$CONFIG_FILE"; then
+        if maybe_prompt "$prompt [N/y]?"; then
+            echo "$line" >> "$CONFIG_FILE"
+            echo "Added to $CONFIG_FILE"
+            return 0
+        fi
+        echo "Skipped: $prompt"
+        return 0
+    fi
+    echo "Already configured: $prompt"
+    return 0
+}
 
-sudo pacman -Syu --noconfirm --needed $BASE_PKGS $SITL_PKGS $PX4_PKGS
+# Main execution
+echo "=== ArduPilot Development Environment Setup ==="
 
-python3 -m venv --system-site-packages "$HOME"/venv-ardupilot
-
-# activate it:
-SOURCE_VENV="source $HOME/venv-ardupilot/bin/activate"
-$SOURCE_VENV
-
-DO_PYTHON_VENV_ENV=false
-if maybe_prompt_user "Make ArduPilot venv default for python [N/y]?" ; then
-    DO_PYTHON_VENV_ENV=true
+# User group setup
+if ! groups "$USER" | grep -q '\buucp\b'; then
+    echo "Adding user to uucp group..."
+    sudo usermod -aG uucp "$USER"
 fi
 
-if $DO_PYTHON_VENV_ENV; then
-    echo "$SOURCE_VENV" >> "$CONFIG_FILE"
+# System packages installation
+echo "Installing system packages..."
+PACMAN_OPTS=(--needed)
+if "$QUIET"; then
+    PACMAN_OPTS+=(--color=auto --quiet --noconfirm)
 else
-    echo "Please use << $SOURCE_VENV >> to activate the ArduPilot venv."
+    PACMAN_OPTS+=(--color=always)
+fi
+sudo pacman -Syu "${PACMAN_OPTS[@]}" "${BASE_PKGS[@]}" "${SITL_PKGS[@]}" "${PX4_PKGS[@]}"
+
+# Python virtual environment setup
+if [[ ! -d "$VENV_DIR" ]]; then
+    echo "Creating Python virtual environment..."
+    if ! python3 -m venv --system-site-packages "$VENV_DIR"; then
+        echo "FATAL: Failed to create virtual environment"
+        exit 1
+    fi
 fi
 
-python3 -m pip -q install -U $PYTHON_PKGS
+# Install Python packages within the virtual environment
+echo "Installing Python packages..."
+PIP_OPTS=(-U --no-warn-script-location)
+"$QUIET" && PIP_OPTS+=(-q)
+"$VENV_DIR"/bin/python3 -m pip install "${PIP_OPTS[@]}" --upgrade pip
+"$VENV_DIR"/bin/python3 -m pip install "${PIP_OPTS[@]}" "${PYTHON_PKGS[@]}"
 
-(
-    cd /usr/lib/ccache
-    if [ ! -f arm-none-eabi-g++ ]; then
-       sudo ln -s /usr/bin/ccache arm-none-eabi-g++
+# CCache setup
+echo "Configuring C Cache symlinks for build optimizations..."
+for compiler in arm-none-eabi-g++ arm-none-eabi-gcc; do
+    if [[ ! -f "$CCACHE_DIR/$compiler" ]]; then
+        sudo ln -sf /usr/bin/ccache "$CCACHE_DIR/$compiler"
     fi
-    if [ ! -f arm-none-eabi-g++ ]; then
-        sudo ln -s /usr/bin/ccache arm-none-eabi-gcc
+done
+
+# ARM toolchain installation
+echo "Setting up ARM toolchain..."
+
+# Download with verification
+if [[ ! -f "/opt/$ARM_TARBALL" ]] || \
+    [[ $(sudo sha256sum "/opt/$ARM_TARBALL" | awk '{print $1}') != "$ARM_TARBALL_CHECKSUM" ]]; then
+    echo "Downloading ARM toolchain..."
+    WGET_OPTS=(-O "/opt/$ARM_TARBALL")
+    if "$QUIET"; then
+        WGET_OPTS+=(--quiet)
+    else
+        WGET_OPTS+=(--progress=dot:giga)
     fi
+    if ! sudo wget "${WGET_OPTS[@]}" "$ARM_TARBALL_URL"; then
+        echo "FATAL: Unable to download the toolchain tarball!"
+        sudo rm -f "/opt/$ARM_TARBALL"
+        exit 1
+    fi
+fi
+
+# Post-download verification
+ACTUAL_CHECKSUM=$(sudo sha256sum "/opt/$ARM_TARBALL" | awk '{print $1}')
+if [[ "$ACTUAL_CHECKSUM" != "$ARM_TARBALL_CHECKSUM" ]]; then
+    echo "FATAL: Checksum mismatch after download!"
+    sudo rm -f "/opt/$ARM_TARBALL"
+    exit 1
+fi
+
+# Secure extraction
+if [[ ! -d "$ARM_TOOLCHAIN_DIR" ]]; then
+    echo "Extracting toolchain..."
+    TAR_OPTS=(--extract --file="/opt/$ARM_TARBALL" --directory="/opt")
+    "$QUIET" || TAR_OPTS+=(--checkpoint="$(("$(stat -c %s "/opt/$ARM_TARBALL")"/1048576))" --checkpoint-action=.)
+    sudo tar "${TAR_OPTS[@]}"
+fi
+
+# Extraction validation
+if [[ ! -d "$ARM_TOOLCHAIN_DIR/bin" ]]; then
+    echo "FATAL: Extraction failed - invalid tarball structure"
+    exit 1
+fi
+
+# Validate ARM toolchain functionality
+sudo chmod -R 755 "$ARM_TOOLCHAIN_DIR"
+if ! "$ARM_TOOLCHAIN_DIR/bin/arm-none-eabi-gcc" --version &>/dev/null; then
+    echo "FATAL: ARM toolchain failed"
+    exit 1
+else
+    echo "ARM toolchain installed!"
+    sudo rm "/opt/$ARM_TARBALL"
+fi
+
+# Environment configuration
+CONFIG_ENTRIES=(
+    "export PATH=$ARM_TOOLCHAIN_DIR/bin:\$PATH|Add ARM toolchain to PATH"
+    "export PATH=$ARDUPILOT_TOOLS_DIR:\$PATH|Add ArduPilot test tools to PATH"
+    "source $VENV_DIR/bin/activate|Auto-activate Python virtual environment"
 )
 
-if [ ! -d $OPT_DIR/$ARM_ROOT ]; then
-    (
-        cd $OPT_DIR;
+for entry in "${CONFIG_ENTRIES[@]}"; do
+    IFS='|' read -r line prompt <<< "$entry"
+    add_config_entry "$line" "$prompt"
+done
 
-        # Check if file exists and verify checksum
-        DOWNLOAD_REQUIRED=false
-        if [ -e "$ARM_TARBALL" ]; then
-            echo "File exists. Verifying checksum..."
+# Repository submodules initialization
+echo "Initializing repository submodules..."
+GIT_OPTS=(--init --recursive)
+"$QUIET" && GIT_OPTS+=(--quiet)
+git -C "${SCRIPT_DIR%/Tools/environment_install}" submodule update "${GIT_OPTS[@]}"
 
-            # Calculate the checksum of the existing file
-            ACTUAL_CHECKSUM=$(sha256sum "$ARM_TARBALL" | awk '{ print $1 }')
-
-            # Compare the actual checksum with the expected one
-            if [ "$ACTUAL_CHECKSUM" == "$ARM_TARBALL_CHECKSUM" ]; then
-                echo "Checksum valid. No need to redownload."
-            else
-                echo "Checksum invalid. Redownloading the file..."
-                DOWNLOAD_REQUIRED=true
-                sudo rm $ARM_TARBALL
-            fi
-        else
-            echo "File does not exist. Downloading..."
-            DOWNLOAD_REQUIRED=true
-        fi
-
-        if $DOWNLOAD_REQUIRED; then
-            sudo wget -O "$ARM_TARBALL" --progress=dot:giga $ARM_TARBALL_URL
-        fi
-
-        sudo tar xjf ${ARM_TARBALL}
-    )
-fi
-
-PRELOAD_BUILDTOOLS="export PATH=$OPT_DIR/$ARM_ROOT/bin:\$PATH";
-if ! grep -Fxq "$PRELOAD_BUILDTOOLS" "$CONFIG_FILE" ; then
-    if maybe_prompt_user "Add $OPT_DIR/$ARM_ROOT/bin to your PATH [N/y]?" ; then
-        echo "$PRELOAD_BUILDTOOLS" >> "$CONFIG_FILE"
-        $PRELOAD_BUILDTOOLS
-    else
-        echo "Skipping adding $OPT_DIR/$ARM_ROOT/bin to PATH."
-    fi
-fi
-
-PRELOAD_ARDUTOOLS="export PATH=$ARDUPILOT_TOOLS_DIR:\$PATH";
-if  ! grep -Fxq "$PRELOAD_ARDUTOOLS" "$CONFIG_FILE" ; then
-    if maybe_prompt_user "Add $ARDUPILOT_TOOLS_DIR to your PATH [N/y]?" ; then
-        echo "$PRELOAD_ARDUTOOLS" >> "$CONFIG_FILE"
-        $PRELOAD_ARDUTOOLS
-    else
-        echo "Skipping adding $ARDUPILOT_TOOLS_DIR to PATH."
-    fi
-fi
-
-(
-    cd "$SCRIPT_DIR"
-    git submodule update --init --recursive
-)
-
-echo "Done. Please log out and log in again."
+# Final instructions
+echo -e "\n=== Setup complete ==="
+echo "Recommended actions:"
+echo "1. Reload your shell config: source ${CONFIG_FILE}"
+echo "2. Verify ARM toolchain in environment: which arm-none-eabi-gcc"
+echo "3. Activate Python virtual environment: source ${VENV_DIR}/bin/activate"
+echo "4. Log out and back in for group changes to take effect"
