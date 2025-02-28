@@ -1,5 +1,15 @@
 # Emlid NaviO
 
+# IMUs:
+IMU Invensense SPI:mpu9250 ROTATION_NONE
+define INS_MAX_INSTANCES 3
+
+// Compasses:
+COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES 1
+
+BARO MS56XX I2C:1:0x77
+
 define AP_NOTIFY_GPIO_LED_3_ENABLED 1
 define HAL_GPIO_A_LED_PIN 0
 define HAL_GPIO_B_LED_PIN 1
@@ -20,3 +30,6 @@ define HAL_BATT_VOLT_SCALE                11.3f
 define HAL_BATT_CURR_SCALE                17.0f
 
 define UBLOX_SPEED_CHANGE  1
+
+// FIXME: use of this define should go away:
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_NAVIO

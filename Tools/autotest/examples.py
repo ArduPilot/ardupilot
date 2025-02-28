@@ -4,9 +4,6 @@ Contains functions used to test the ArduPilot examples
 AP_FLAKE8_CLEAN
 """
 
-from __future__ import print_function
-
-
 import os
 import pexpect
 import signal

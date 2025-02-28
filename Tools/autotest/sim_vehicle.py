@@ -9,7 +9,6 @@ based on sim_vehicle.sh by Andrew Tridgell, October 2011
 AP_FLAKE8_CLEAN
 
 """
-from __future__ import print_function
 
 import atexit
 import datetime
@@ -871,6 +870,11 @@ def start_mavproxy(opts, stuff):
         cmd.append("mavproxy.exe")
     else:
         cmd.append("mavproxy.py")
+
+    if opts.valgrind:
+        cmd.extend(['--retries', '10'])
+    else:
+        cmd.extend(['--retries', '5'])
 
     if opts.mcast:
         cmd.extend(["--master", "mcast:"])

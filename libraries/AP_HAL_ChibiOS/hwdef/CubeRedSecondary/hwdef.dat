@@ -157,8 +157,4 @@ define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_RCIN
 
 define AP_NETWORKING_BACKEND_PPP 1
 
-# only use pulse input for PPM, other protocols
-# are on serial
-define HAL_RCIN_PULSE_PPM_ONLY
-
 define MAV_SYSTEM_ID 3

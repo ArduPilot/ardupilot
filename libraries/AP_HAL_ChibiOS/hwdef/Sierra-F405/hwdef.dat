@@ -101,7 +101,7 @@ define STM32_ADC_USE_ADC1 TRUE
 PA0 VSENSE ADC1 SCALE(2)
 
 # -------------------- Buzzer+NeoPixels --------------------
-define HAL_PERIPH_ENABLE_RC_OUT
+define AP_PERIPH_RC_OUT_ENABLED 1
 define AP_PERIPH_NOTIFY_ENABLED 1
 
 # Enable the sensor voltage pin

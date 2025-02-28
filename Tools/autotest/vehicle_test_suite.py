@@ -4,7 +4,6 @@ Common base class for each of the autotest suites
 AP_FLAKE8_CLEAN
 
 '''
-from __future__ import print_function
 
 import abc
 import copy

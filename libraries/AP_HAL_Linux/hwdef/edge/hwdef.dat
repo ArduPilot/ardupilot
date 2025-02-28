@@ -1,10 +1,25 @@
 # Emlid Edge board
 
+# IMUs:
+IMU Invensense SPI:mpu60x0 ROTATION_YAW_90
+IMU Invensense SPI:mpu60x0ext ROTATION_YAW_90
+define INS_MAX_INSTANCES 3
+
+# Compasses:
+// only external compasses
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
+# Baros:
+BARO MS56XX SPI:ms5611
+
+# CAN Support:
+env WITH_CAN 1
+define HAL_NUM_CAN_IFACES 1
+
+
 define HAL_BOARD_LOG_DIRECTORY "/edge/ardupilot/logs"
 define HAL_BOARD_TERRAIN_DIRECTORY "/edge/ardupilot/terrain"
 define HAL_BOARD_STORAGE_DIRECTORY "/edge/ardupilot"
-
-define HAL_NUM_CAN_IFACES 1
 
 # heater support
 define HAL_IMU_TEMP_DEFAULT 55
@@ -43,3 +58,7 @@ define AP_BATT2_VOLT_PIN                  5
 define AP_BATT2_CURR_PIN                  4
 define AP_BATT2_VOLTDIVIDER_DEFAULT       18.62
 define AP_BATT2_CURR_AMP_PERVOLT_DEFAULT  62.98f
+
+
+// FIXME: use of this define should go away:
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_EDGE

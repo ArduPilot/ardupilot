@@ -22,6 +22,8 @@
 #include "hal.h"
 #include "analog.h"
 
+#ifdef HAL_DISABLE_ADC_DRIVER
+
 #if HAL_USE_ADC != TRUE
 #error "HAL_USE_ADC must be set"
 #endif
@@ -157,3 +159,40 @@ OSAL_IRQ_HANDLER(STM32_ADC1_HANDLER) {
 
     OSAL_IRQ_EPILOGUE();
 }
+
+#else
+#include <AP_HAL/AP_HAL.h>
+
+extern const AP_HAL::HAL& hal;
+
+AP_HAL::AnalogSource *vrssi;
+
+void adc_init(void)
+{
+    vrssi = hal.analogin->channel(HAL_IOMCU_RSSI_ADC_CHANNEL);
+}
+
+/*
+  unused stub methods
+ */
+void adc_enable_vrssi(void) {}
+void adc_disable_vrssi(void) {}
+void adc_sample_channels() {}
+
+/*
+  capture VSERVO in mV
+ */
+uint16_t adc_vservo(void)
+{
+    return hal.analogin->servorail_voltage() * 1000;
+}
+
+/*
+  capture VRSSI in mV
+ */
+uint16_t adc_vrssi(void)
+{
+    return vrssi->voltage_average() * 1000;
+}
+
+#endif // HAL_DISABLE_ADC_DRIVER

@@ -304,7 +304,7 @@ void *AP_Filesystem_FlashMemory_LittleFS::opendir(const char *pathdir)
     WITH_SEMAPHORE(fs_sem);
     ENSURE_MOUNTED_NULL();
 
-    DirEntry *result = new DirEntry;
+    DirEntry *result = NEW_NOTHROW DirEntry;
     if (!result) {
         errno = ENOMEM;
         return nullptr;
@@ -395,9 +395,13 @@ int AP_Filesystem_FlashMemory_LittleFS::closedir(void *ptr)
     // means we didn't successfully open the directory and lock.
     fs_sem.give();
 
-    LFS_CHECK(lfs_dir_close(&fs, &pair->dir));
-
+    int retval = lfs_dir_close(&fs, &pair->dir);
     delete pair;
+
+    if (retval < 0) {
+        errno = errno_from_lfs_error(retval);
+        return -1;
+    }
 
     return 0;
 }

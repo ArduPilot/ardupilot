@@ -3,7 +3,7 @@ So you are responsible for opening and close the file descriptor.
 
 $Id: fdpexpect.py 505 2007-12-26 21:33:50Z noah $
 """
-from __future__ import print_function
+
 import os
 
 from pexpect import ExceptionPexpect, spawn

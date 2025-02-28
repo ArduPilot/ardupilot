@@ -246,12 +246,12 @@ static int read_numeral (LexState *ls, SemInfo *seminfo) {
 
 
 /*
-** skip a sequence '[=*[' or ']=*]'; if sequence is well formed, return
-** its number of '='s; otherwise, return a negative number (-1 iff there
-** are no '='s after initial bracket)
+** reads a sequence '[=*[' or ']=*]', leaving the last bracket.
+** If sequence is well formed, return its number of '='s + 2; otherwise,
+** return 1 if there is no '='s or 0 otherwise (an unfinished '[==...').
 */
-static int skip_sep (LexState *ls) {
-  int count = 0;
+static size_t skip_sep (LexState *ls) {
+  size_t count = 0;
   int s = ls->current;
   lua_assert(s == '[' || s == ']');
   save_and_next(ls);
@@ -259,11 +259,14 @@ static int skip_sep (LexState *ls) {
     save_and_next(ls);
     count++;
   }
-  return (ls->current == s) ? count : (-count) - 1;
+  return (ls->current == s) ? count + 2
+         : (count == 0) ? 1
+         : 0;
+
 }
 
 
-static void read_long_string (LexState *ls, SemInfo *seminfo, int sep) {
+static void read_long_string (LexState *ls, SemInfo *seminfo, size_t sep) {
   int line = ls->linenumber;  /* initial line (for error message) */
   save_and_next(ls);  /* skip 2nd '[' */
   if (currIsNewline(ls))  /* string starts with a newline? */
@@ -297,8 +300,8 @@ static void read_long_string (LexState *ls, SemInfo *seminfo, int sep) {
     }
   } endloop:
   if (seminfo)
-    seminfo->ts = luaX_newstring(ls, luaZ_buffer(ls->buff) + (2 + sep),
-                                     luaZ_bufflen(ls->buff) - 2*(2 + sep));
+    seminfo->ts = luaX_newstring(ls, luaZ_buffer(ls->buff) + sep,
+                                     luaZ_bufflen(ls->buff) - 2 * sep);
 }
 
 
@@ -446,9 +449,9 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         /* else is a comment */
         next(ls);
         if (ls->current == '[') {  /* long comment? */
-          int sep = skip_sep(ls);
+          size_t sep = skip_sep(ls);
           luaZ_resetbuffer(ls->buff);  /* 'skip_sep' may dirty the buffer */
-          if (sep >= 0) {
+          if (sep >= 2) {
             read_long_string(ls, NULL, sep);  /* skip long comment */
             luaZ_resetbuffer(ls->buff);  /* previous call may dirty the buff. */
             break;
@@ -460,12 +463,12 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         break;
       }
       case '[': {  /* long string or simply '[' */
-        int sep = skip_sep(ls);
-        if (sep >= 0) {
+        size_t sep = skip_sep(ls);
+        if (sep >= 2) {
           read_long_string(ls, seminfo, sep);
           return TK_STRING;
         }
-        else if (sep != -1)  /* '[=...' missing second bracket */
+        else if (sep == 0)  /* '[=...' missing second bracket */
           lexerror(ls, "invalid long string delimiter", TK_STRING);
         return '[';
       }

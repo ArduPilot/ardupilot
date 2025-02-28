@@ -12,7 +12,6 @@ import fnmatch
 import os
 import dma_resolver
 import shlex
-import pickle
 import re
 import shutil
 
@@ -104,9 +103,6 @@ class ChibiOSHWDef(hwdef.HWDef):
         self.build_flags = []
 
         # sensor lists
-        self.imu_list = []
-        self.compass_list = []
-        self.baro_list = []
         self.airspeed_list = []
 
         # dataflash config
@@ -986,6 +982,12 @@ class ChibiOSHWDef(hwdef.HWDef):
         else:
             self.env_vars['IOMCU_FW'] = 0
 
+        # check if heater pin defined
+        if 'HEATER' in self.bylabel.keys():
+            self.env_vars['IOMCU_FW_WITH_HEATER'] = 1
+        else:
+            self.env_vars['IOMCU_FW_WITH_HEATER'] = 0
+
         if self.get_config('PERIPH_FW', required=False):
             self.env_vars['PERIPH_FW'] = self.get_config('PERIPH_FW')
         else:
@@ -1574,137 +1576,6 @@ INCLUDE common.ld
 #endif
 ''')
 
-    def parse_spi_device(self, dev):
-        '''parse a SPI:xxx device item'''
-        a = dev.split(':')
-        if len(a) != 2:
-            self.error("Bad SPI device: %s" % dev)
-        return 'hal.spi->get_device("%s")' % a[1]
-
-    def parse_i2c_device(self, dev):
-        '''parse a I2C:xxx:xxx device item'''
-        a = dev.split(':')
-        if len(a) != 3:
-            self.error("Bad I2C device: %s" % dev)
-        busaddr = int(a[2], base=0)
-        if a[1] == 'ALL_EXTERNAL':
-            return ('FOREACH_I2C_EXTERNAL(b)', 'GET_I2C_DEVICE(b,0x%02x)' % (busaddr))
-        elif a[1] == 'ALL_INTERNAL':
-            return ('FOREACH_I2C_INTERNAL(b)', 'GET_I2C_DEVICE(b,0x%02x)' % (busaddr))
-        elif a[1] == 'ALL':
-            return ('FOREACH_I2C(b)', 'GET_I2C_DEVICE(b,0x%02x)' % (busaddr))
-        busnum = int(a[1])
-        return ('', 'GET_I2C_DEVICE(%u,0x%02x)' % (busnum, busaddr))
-
-    def seen_str(self, dev):
-        '''return string representation of device for checking for duplicates'''
-        ret = dev[:2]
-        if dev[-1].startswith("BOARD_MATCH("):
-            ret.append(dev[-1])
-        return str(ret)
-
-    def write_IMU_config(self, f):
-        '''write IMU config defines'''
-        devlist = []
-        wrapper = ''
-        seen = set()
-        for dev in self.imu_list:
-            if self.seen_str(dev) in seen:
-                self.error("Duplicate IMU: %s" % self.seen_str(dev))
-            seen.add(self.seen_str(dev))
-            driver = dev[0]
-            # get instance number if mentioned
-            instance = -1
-            aux_devid = -1
-            if dev[-1].startswith("INSTANCE:"):
-                instance = int(dev[-1][9:])
-                dev = dev[:-1]
-            if dev[-1].startswith("AUX:"):
-                aux_devid = int(dev[-1][4:])
-                dev = dev[:-1]
-            for i in range(1, len(dev)):
-                if dev[i].startswith("SPI:"):
-                    dev[i] = self.parse_spi_device(dev[i])
-                elif dev[i].startswith("I2C:"):
-                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
-            n = len(devlist)+1
-            devlist.append('HAL_INS_PROBE%u' % n)
-            if aux_devid != -1:
-                f.write('#define HAL_INS_PROBE%u %s ADD_BACKEND_AUX(AP_InertialSensor_%s::probe(*this,%s),%d)\n' %
-                        (n, wrapper, driver, ','.join(dev[1:]), aux_devid))
-            elif instance != -1:
-                f.write('#define HAL_INS_PROBE%u %s ADD_BACKEND_INSTANCE(AP_InertialSensor_%s::probe(*this,%s),%d)\n' %
-                        (n, wrapper, driver, ','.join(dev[1:]), instance))
-            elif dev[-1].startswith("BOARD_MATCH("):
-                f.write(
-                    '#define HAL_INS_PROBE%u %s ADD_BACKEND_BOARD_MATCH(%s, AP_InertialSensor_%s::probe(*this,%s))\n'
-                    % (n, wrapper, dev[-1], driver, ','.join(dev[1:-1])))
-            else:
-                f.write(
-                    '#define HAL_INS_PROBE%u %s ADD_BACKEND(AP_InertialSensor_%s::probe(*this,%s))\n'
-                    % (n, wrapper, driver, ','.join(dev[1:])))
-        if len(devlist) > 0:
-            if len(devlist) < 3:
-                f.write('#define INS_MAX_INSTANCES %u\n' % len(devlist))
-            f.write('#define HAL_INS_PROBE_LIST %s\n\n' % ';'.join(devlist))
-
-    def write_MAG_config(self, f):
-        '''write MAG config defines'''
-        devlist = []
-        seen = set()
-        for dev in self.compass_list:
-            if self.seen_str(dev) in seen:
-                self.error("Duplicate MAG: %s" % self.seen_str(dev))
-            seen.add(self.seen_str(dev))
-            driver = dev[0]
-            probe = 'probe'
-            wrapper = ''
-            a = driver.split(':')
-            driver = a[0]
-            if len(a) > 1 and a[1].startswith('probe'):
-                probe = a[1]
-            for i in range(1, len(dev)):
-                if dev[i].startswith("SPI:"):
-                    dev[i] = self.parse_spi_device(dev[i])
-                elif dev[i].startswith("I2C:"):
-                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
-            n = len(devlist)+1
-            devlist.append('HAL_MAG_PROBE%u' % n)
-            f.write(
-                '#define HAL_MAG_PROBE%u %s ADD_BACKEND(DRIVER_%s, AP_Compass_%s::%s(%s))\n'
-                % (n, wrapper, driver, driver, probe, ','.join(dev[1:])))
-        if len(devlist) > 0:
-            f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
-
-    def write_BARO_config(self, f):
-        '''write barometer config defines'''
-        devlist = []
-        seen = set()
-        for dev in self.baro_list:
-            if self.seen_str(dev) in seen:
-                self.error("Duplicate BARO: %s" % self.seen_str(dev))
-            seen.add(self.seen_str(dev))
-            driver = dev[0]
-            probe = 'probe'
-            wrapper = ''
-            a = driver.split(':')
-            driver = a[0]
-            if len(a) > 1 and a[1].startswith('probe'):
-                probe = a[1]
-            for i in range(1, len(dev)):
-                if dev[i].startswith("SPI:"):
-                    dev[i] = self.parse_spi_device(dev[i])
-                elif dev[i].startswith("I2C:"):
-                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
-            n = len(devlist)+1
-            devlist.append('HAL_BARO_PROBE%u' % n)
-            args = ['*this'] + dev[1:]
-            f.write(
-                '#define HAL_BARO_PROBE%u %s ADD_BACKEND(AP_Baro_%s::%s(%s))\n'
-                % (n, wrapper, driver, probe, ','.join(args)))
-        if len(devlist) > 0:
-            f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
-
     def write_AIRSPEED_config(self, f):
         '''write airspeed config defines'''
         devlist = []
@@ -1796,6 +1667,8 @@ INCLUDE common.ld
     def write_UART_config(self, f):
         '''write UART config defines'''
         serial_list = self.get_config('SERIAL_ORDER', required=False, aslist=True)
+        if 'IOMCU_UART' in self.config and self.config['IOMCU_UART'][0] not in serial_list:
+            serial_list.append(self.config['IOMCU_UART'][0])
         if serial_list is None:
             return
         while len(serial_list) < 3: # enough ports for CrashCatcher UART discovery
@@ -1833,11 +1706,15 @@ INCLUDE common.ld
                 self.error("Need io_firmware.bin in ROMFS for IOMCU")
 
             self.write_defaulting_define(f, 'HAL_WITH_IO_MCU', 1)
-            f.write('#define HAL_UART_IOMCU_IDX %u\n' % len(serial_list))
-            f.write(
-                '#define HAL_UART_IO_DRIVER ChibiOS::UARTDriver uart_io(HAL_UART_IOMCU_IDX)\n'
-            )
-            serial_list.append(self.config['IOMCU_UART'][0])
+            
+            if self.config['IOMCU_UART'][0]:
+                # get index of serial port in serial_list
+                index = serial_list.index(self.config['IOMCU_UART'][0])
+                f.write('#define HAL_UART_IOMCU_IDX %u\n' % int(index))
+                f.write(
+                    '#define HAL_UART_IO_DRIVER constexpr ChibiOS::UARTDriver &uart_io = serial%sDriver;\n' % (index)
+                )
+
             f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n') # make the assumption that IO gurantees servo monitoring
             # all IOMCU capable boards have SBUS out
             f.write('#define AP_FEATURE_SBUS_OUT 1\n')
@@ -1984,8 +1861,6 @@ INCLUDE common.ld
 #endif
 ''')
         num_ports = len(devlist)
-        if 'IOMCU_UART' in self.config:
-            num_ports -= 1
         if num_ports > 10:
             self.error("Exceeded max num SERIALs of 10 (%u)" % num_ports)
         f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_ports)
@@ -2848,12 +2723,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         return True
 
-    def write_env_py(self, filename):
-        '''write out env.py for environment variables to control the build process'''
-        # CHIBIOS_BUILD_FLAGS is passed to the ChibiOS makefile
-        self.env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(self.build_flags)
-        pickle.dump(self.env_vars, open(filename, "wb"))
-
     def romfs_add(self, romfs_filename, filename):
         '''add a file to ROMFS'''
         self.romfs[romfs_filename] = filename
@@ -3007,12 +2876,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.wspidev.append(a[1:])
         elif a[0] == 'OSPIDEV':
             self.wspidev.append(a[1:])
-        elif a[0] == 'IMU':
-            self.imu_list.append(a[1:])
-        elif a[0] == 'COMPASS':
-            self.compass_list.append(a[1:])
-        elif a[0] == 'BARO':
-            self.baro_list.append(a[1:])
         elif a[0] == 'DATAFLASH':
             self.dataflash_list.append(a[1:])
         elif a[0] == 'AIRSPEED':
@@ -3049,12 +2912,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
                     continue
                 newpins.append(pin)
             self.allpins = newpins
-            if u == 'IMU':
-                self.imu_list = []
-            if u == 'COMPASS':
-                self.compass_list = []
-            if u == 'BARO':
-                self.baro_list = []
             if u == 'DATAFLASH':
                 self.dataflash_list = []
             if u == 'AIRSPEED':
@@ -3255,6 +3112,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
         # exist in the same directory as the ldscript.ld file we generate.
         self.copy_common_linkerscript(self.outdir)
 
+        # CHIBIOS_BUILD_FLAGS is passed to the ChibiOS makefile
+        self.env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(self.build_flags)
         self.write_env_py(os.path.join(self.outdir, "env.py"))
 
 

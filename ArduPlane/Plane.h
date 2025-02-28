@@ -1232,6 +1232,7 @@ private:
 #if HAL_QUADPLANE_ENABLED
         Failsafe_Action_Loiter_alt_QLand = 6,
 #endif
+        Failsafe_Action_AUTOLAND_OR_RTL = 7,
     };
 
     // list of priorities, highest priority first
