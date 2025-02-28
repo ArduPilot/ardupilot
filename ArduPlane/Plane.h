@@ -775,7 +775,7 @@ private:
         int32_t amsl_cm;
 
         // Altitude difference between previous and current waypoint in
-        // centimeters. Used for glide slope handling
+        // centimeters. Used for altitude slope handling
         int32_t offset_cm;
 
 #if AP_TERRAIN_AVAILABLE
@@ -892,7 +892,7 @@ private:
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
     void adjust_altitude_target();
-    void setup_glide_slope(void);
+    void setup_alt_slope(void);
     int32_t get_RTL_altitude_cm() const;
     float relative_ground_altitude(bool use_rangefinder_if_available);
     float relative_ground_altitude(bool use_rangefinder_if_available, bool use_terrain_if_available);

@@ -50,9 +50,9 @@ void Plane::check_home_alt_change(void)
 }
 
 /*
-  setup for a gradual glide slope to the next waypoint, if appropriate
+  setup for a gradual altitude slope to the next waypoint, if appropriate
  */
-void Plane::setup_glide_slope(void)
+void Plane::setup_alt_slope(void)
 {
     // establish the distance we are travelling to the next waypoint,
     // for calculating out rate of change of altitude
@@ -84,8 +84,7 @@ void Plane::setup_glide_slope(void)
         break;
 
     case Mode::Number::AUTO:
-
-        //climb without doing glide slope if option is enabled
+        // climb without doing slope if option is enabled
         if (!above_location_current(next_WP_loc) && plane.flight_option_enabled(FlightOptions::IMMEDIATE_CLIMB_IN_AUTO)) {
             reset_offset_altitude();
             break;
@@ -193,7 +192,7 @@ void Plane::set_target_altitude_current(void)
     // target altitude
     target_altitude.amsl_cm = current_loc.alt;
 
-    // reset any glide slope offset
+    // reset any altitude slope offset
     reset_offset_altitude();
 
 #if AP_TERRAIN_AVAILABLE
@@ -308,14 +307,15 @@ void Plane::set_target_altitude_proportion(const Location &loc, float proportion
     set_target_altitude_location(loc);
     proportion = constrain_float(proportion, 0.0f, 1.0f);
     change_target_altitude(-target_altitude.offset_cm*proportion);
-    //rebuild the glide slope if we are above it and supposed to be climbing
-    if(g.glide_slope_threshold > 0) {
-        if(target_altitude.offset_cm > 0 && calc_altitude_error_cm() < -100 * g.glide_slope_threshold) {
+
+    // rebuild the altitude slope if we are above it and supposed to be climbing
+    if (g.alt_slope_max_height > 0) {
+        if (target_altitude.offset_cm > 0 && calc_altitude_error_cm() < -100 * g.alt_slope_max_height) {
             set_target_altitude_location(loc);
             set_offset_altitude_location(current_loc, loc);
             change_target_altitude(-target_altitude.offset_cm*proportion);
-            //adjust the new target offset altitude to reflect that we are partially already done
-            if(proportion > 0.0f)
+            // adjust the new target offset altitude to reflect that we are partially already done
+            if (proportion > 0.0f)
                 target_altitude.offset_cm = ((float)target_altitude.offset_cm)/proportion;
         }
     }
@@ -405,7 +405,7 @@ void Plane::check_fbwb_altitude(void)
 }
 
 /*
-  reset the altitude offset used for glide slopes
+  reset the altitude offset used for altitude slopes
  */
 void Plane::reset_offset_altitude(void)
 {
@@ -414,10 +414,9 @@ void Plane::reset_offset_altitude(void)
 
 
 /*
-  reset the altitude offset used for glide slopes, based on difference
-  between altitude at a destination and a specified start altitude. If
-  destination is above the starting altitude then the result is
-  positive.
+  reset the altitude offset used for slopes, based on difference between
+  altitude at a destination and a specified start altitude. If destination is
+  above the starting altitude then the result is positive.
  */
 void Plane::set_offset_altitude_location(const Location &start_loc, const Location &destination_loc)
 {
@@ -438,20 +437,19 @@ void Plane::set_offset_altitude_location(const Location &start_loc, const Locati
 #endif
 
     if (flight_stage != AP_FixedWing::FlightStage::LAND) {
-        // if we are within GLIDE_SLOPE_MIN meters of the target altitude
-        // then reset the offset to not use a glide slope. This allows for
-        // more accurate flight of missions where the aircraft may lose or
-        // gain a bit of altitude near waypoint turn points due to local
-        // terrain changes
-        if (g.glide_slope_min <= 0 ||
-            labs(target_altitude.offset_cm)*0.01f < g.glide_slope_min) {
+        // if we are within ALT_SLOPE_MIN meters of the target altitude then
+        // reset the offset to not use an altitude slope. This allows for more
+        // accurate flight of missions where the aircraft may lose or gain a bit
+        // of altitude near waypoint turn points due to local terrain changes
+        if (g.alt_slope_min <= 0 ||
+            labs(target_altitude.offset_cm)*0.01f < g.alt_slope_min) {
             target_altitude.offset_cm = 0;
         }
     }
 }
 
 /*
-  return true if current_loc is above loc. Used for glide slope
+  return true if current_loc is above loc. Used for altitude slope
   calculations.
 
   "above" is simple if we are not terrain following, as it just means
