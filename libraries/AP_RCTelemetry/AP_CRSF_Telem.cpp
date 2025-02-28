@@ -1783,7 +1783,7 @@ AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::add_menu(const char* m
     for (; tail->next_menu != nullptr; tail = tail->next_menu) {
     }
 
-    ScriptedMenu* menu = new ScriptedMenu(menu_name, size, parent_menu);
+    ScriptedMenu* menu = NEW_NOTHROW ScriptedMenu(menu_name, size, parent_menu);
     menu->id = tail->id == 0 ? SCRIPTED_MENU_START_ID : tail->id + MAX_SCRIPTED_MENU_SIZE + 1;
     tail->next_menu = menu;
 
