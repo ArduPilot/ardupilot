@@ -1152,8 +1152,19 @@ AP_InertialSensor::detect_backends(void)
 // backend count. Its important the IMUs are listed in order of precedence globally
 // (i.e. INSTANCE:0 IMUs are listed before INSTANCE:1 IMUs) and locally (i.e. IMUs
 // on the same bus are listed in order of detection precedence)
+// if External AHRS is enabled, we need to adjust the instance number since External AHRS is made the first IMU
 
-#define ADD_BACKEND_INSTANCE(x, instance) if (instance == _backend_count) { ADD_BACKEND(x); }
+#define ADD_BACKEND_INSTANCE(x, instance) do { \
+        uint8_t adjusted_instance = instance; \
+        if (HAL_EXTERNAL_AHRS_ENABLED) { \
+            if (AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU) >= 0) { \
+                adjusted_instance += 1; \
+            } \
+        } \
+        if (adjusted_instance == _backend_count) { \
+            ADD_BACKEND(x); \
+        } \
+} while (0)
 
 // Can be used by adding AUX:<devid> keyword in hwdef.
 // AUX:<devid> keyword is used to check for the presence of the sensor
