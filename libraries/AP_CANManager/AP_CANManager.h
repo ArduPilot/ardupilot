@@ -34,6 +34,8 @@
 
 #include "AP_CAN.h"
 
+class AP_CANManager_RawSerial;
+
 class CANSensor;
 
 class AP_CANManager

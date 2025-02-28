@@ -19,6 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "AP_CANManager.h"
+#include "AP_CANManager_RawSerial.h"
 
 #if HAL_CANMANAGER_ENABLED
 
@@ -183,7 +184,9 @@ void AP_CANManager::init()
             log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "Failed to initialise CAN Interface %d", i+1);
             continue;
         }
-
+#if AP_CAN_RAW_SERIAL_ENABLED
+        AP_CANManager_RawSerial::check_and_init(i);
+#endif
         log_text(AP_CANManager::LOG_INFO, LOG_TAG, "CAN Interface %d initialized well", i + 1);
 
         if (_drivers[drv_num] != nullptr) {
