@@ -729,7 +729,7 @@ singleton AP::crsf_telem() depends AP_CRSF_SCRIPTING
 singleton AP::crsf_telem() literal
 singleton AP::crsf_telem() rename crsf
 singleton AP::crsf_telem() manual add_menu lua_CRSF_add_root_menu 1 1
-singleton AP::crsf_telem() manual get_menu_event lua_CRSF_get_menu_event 3 1
+singleton AP::crsf_telem() manual get_menu_event lua_CRSF_get_menu_event 1 3
 singleton AP::crsf_telem() manual send_write_response lua_CRSF_send_response 1 1
 
 include AP_DroneCAN/AP_DroneCAN.h
