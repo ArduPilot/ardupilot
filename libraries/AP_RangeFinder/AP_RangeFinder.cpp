@@ -203,7 +203,7 @@ void RangeFinder::convert_params(void)
   finders here. For now we won't allow for hot-plugging of
   rangefinders.
  */
-void RangeFinder::init(enum Rotation orientation_default)
+__INITFUNC__ void RangeFinder::init(enum Rotation orientation_default)
 {
     convert_params();
 
@@ -260,7 +260,7 @@ void RangeFinder::update(void)
 #endif
 }
 
-bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance, uint8_t serial_instance)
+__INITFUNC__ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance, uint8_t serial_instance)
 {
     if (!backend) {
         return false;
@@ -282,7 +282,7 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance
 /*
   detect if an instance of a rangefinder is connected. 
  */
-void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
+__INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 {
     AP_RangeFinder_Backend_Serial *(*serial_create_fn)(RangeFinder::RangeFinder_State&, AP_RangeFinder_Params&) = nullptr;
 
