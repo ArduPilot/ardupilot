@@ -1203,29 +1203,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
-    def test_takeoff_check_mode(self, mode, user_takeoff=False):
-        # stabilize check
-        self.progress("Motor takeoff check in %s" % mode)
-        self.change_mode(mode)
-        self.zero_throttle()
-        self.wait_ready_to_arm()
-        self.context_push()
-        self.context_collect('STATUSTEXT')
-        self.arm_vehicle()
-        if user_takeoff:
-            self.run_cmd(
-                mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-                p7=10,
-            )
-        else:
-            self.set_rc(3, 1700)
-        # we may never see ourselves as armed in a heartbeat
-        self.wait_statustext("Takeoff blocked: ESC RPM out of range", check_context=True)
-        self.context_pop()
-        self.zero_throttle()
-        self.disarm_vehicle()
-        self.wait_disarmed()
-
     # Tests the motor failsafe
     def TakeoffCheck(self):
         '''Test takeoff check'''
@@ -1245,6 +1222,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.test_takeoff_check_mode("POSHOLD")
         # self.test_takeoff_check_mode("SPORT")
 
+        self.start_subtest("Check TKOFF_RPM_MAX works")
         self.set_parameters({
             "AHRS_EKF_TYPE": 10,
             'SIM_ESC_TELEM': 1,

@@ -547,6 +547,22 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("APPROACH_DIST", 39, QuadPlane, approach_distance, 0),
     
+#if HAL_WITH_ESC_TELEM
+    // @Param: TKOFF_RPM_MIN
+    // @DisplayName: Takeoff Check RPM minimum
+    // @Description: Takeoff is not permitted until motors report at least this RPM.  Set to zero to disable check
+    // @Range: 0 10000
+    // @User: Standard
+    AP_GROUPINFO("TKOFF_RPM_MIN", 40, QuadPlane, takeoff_rpm_min, 0),
+
+    // @Param: TKOFF_RPM_MAX
+    // @DisplayName: Takeoff Check RPM maximum
+    // @Description: Takeoff is not permitted until motors report no more than this RPM.  Set to zero to disable check
+    // @Range: 0 10000
+    // @User: Standard
+    AP_GROUPINFO("TKOFF_RPM_MAX", 41, QuadPlane, takeoff_rpm_max, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -3042,28 +3058,37 @@ void QuadPlane::takeoff_controller(void)
 
     uint32_t now = AP_HAL::millis();
     const auto spool_state = motors->get_desired_spool_state();
-    if (plane.control_mode == &plane.mode_guided && guided_takeoff
-        && tiltrotor.enabled() && !tiltrotor.fully_up() &&
-        spool_state != AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
-        // waiting for motors to tilt up
-        takeoff_start_time_ms = now;
-        return;
-    }
-
-    // don't takeoff up until rudder is re-centered after rudder arming
-    if (plane.arming.last_arm_method() == AP_Arming::Method::RUDDER &&
-        (takeoff_last_run_ms == 0 ||
-         now - takeoff_last_run_ms > 1000) &&
-        !plane.seen_neutral_rudder &&
-        spool_state <= AP_Motors::DesiredSpoolState::GROUND_IDLE) {
-        // start motor spinning if not spinning already so user sees it is armed
-        set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        takeoff_start_time_ms = now;
-        if (now - plane.takeoff_state.rudder_takeoff_warn_ms > TAKEOFF_RUDDER_WARNING_TIMEOUT) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Takeoff waiting for rudder release");
-            plane.takeoff_state.rudder_takeoff_warn_ms = now;
+    // Don't allow takeoff until it is safe to do so
+    if (spool_state != AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
+        // Waiting for motors to tilt up
+        if (plane.control_mode == &plane.mode_guided && guided_takeoff
+            && tiltrotor.enabled() && !tiltrotor.fully_up()) {
+            takeoff_start_time_ms = now;
+            return;
         }
-        return;
+#if HAL_WITH_ESC_TELEM
+        // Waiting for motors to reach the expected RPM
+        if (!plane.motors_takeoff_check(takeoff_rpm_min, takeoff_rpm_max)) {
+            // start motors spinning if not spinning already so RPM check can work
+            set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+            takeoff_start_time_ms = now;
+            return;
+        }
+#endif
+        // Waiting for stick to be re-centered after rudder arming
+        if (plane.arming.last_arm_method() == AP_Arming::Method::RUDDER &&
+            (takeoff_last_run_ms == 0 ||
+            now - takeoff_last_run_ms > 1000) &&
+            !plane.seen_neutral_rudder) {
+            // start motor spinning if not spinning already so user sees it is armed
+            set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+            takeoff_start_time_ms = now;
+            if (now - plane.takeoff_state.rudder_takeoff_warn_ms > TAKEOFF_RUDDER_WARNING_TIMEOUT) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Takeoff waiting for rudder release");
+                plane.takeoff_state.rudder_takeoff_warn_ms = now;
+            }
+            return;
+        }
     }
 
 

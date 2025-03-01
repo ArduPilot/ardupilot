@@ -623,6 +623,12 @@ private:
     // AHRS alt for land abort and package place, meters
     float land_descend_start_alt;
 
+#if HAL_WITH_ESC_TELEM
+    // optionally block auto takeoff until all motors are spinning as expected
+    AP_Int16 takeoff_rpm_min;
+    AP_Int16 takeoff_rpm_max;
+#endif
+
     // min alt for navigation in takeoff
     AP_Float takeoff_navalt_min;
     uint32_t takeoff_last_run_ms;
