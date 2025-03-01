@@ -667,7 +667,7 @@ bool AC_Fence::check_fence_polygon()
     const bool was_breached = _breached_fences & AC_FENCE_TYPE_POLYGON;
 
     Location loc;
-    bool have_location = AP::ahrs().get_location(loc);
+    const bool have_location = AP::ahrs().get_location(loc);
 
     if (have_location && _poly_loader.breached(loc, _polygon_breach_distance)) {
         if (!was_breached) {
