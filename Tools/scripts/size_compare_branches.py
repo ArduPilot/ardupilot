@@ -189,7 +189,6 @@ class SizeCompareBranches(object):
             'dark',
             'pxfmini',
             'aero',
-            'rst_zynq',
             'obal',
             'SITL_x86_64_linux_gnu',
             'canzero',
