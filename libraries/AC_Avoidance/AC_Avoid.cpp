@@ -47,6 +47,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FLAGS("ENABLE", 1,  AC_Avoid, _enabled, AC_AVOID_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
+#if AP_ALT_HOLD_AVOIDANCE_ENABLED
     // @Param{Copter}: ANGLE_MAX
     // @DisplayName: Avoidance max lean angle in non-GPS flight modes
     // @Description: Max lean angle used to avoid obstacles while in non-GPS modes
@@ -54,8 +55,8 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Increment: 10
     // @Range: 0 4500
     // @User: Standard
-    AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
-
+    AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 0, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+#endif
     // @Param{Copter}: DIST_MAX
     // @DisplayName: Avoidance distance maximum in non-GPS flight modes
     // @Description: Distance from object at which obstacle avoidance will begin in non-GPS modes
@@ -493,6 +494,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 #endif
 }
 
+#if AP_ALT_HOLD_AVOIDANCE_ENABLED
 // adjust roll-pitch to push vehicle away from objects
 // roll and pitch value are in centi-degrees
 void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
@@ -540,6 +542,7 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
     roll = rp_out.x;
     pitch = rp_out.y;
 }
+#endif // AP_ALT_HOLD_AVOIDANCE_ENABLED
 
 /*
  * Note: This method is used to limit velocity horizontally only 
@@ -1474,6 +1477,7 @@ float AC_Avoid::get_stopping_distance(float kP, float accel_cmss, float speed_cm
     }
 }
 
+#if AP_ALT_HOLD_AVOIDANCE_ENABLED
 // convert distance (in meters) to a lean percentage (in 0~1 range) for use in manual flight modes
 float AC_Avoid::distance_to_lean_pct(float dist_m)
 {
@@ -1527,6 +1531,7 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
     }
 #endif // HAL_PROXIMITY_ENABLED
 }
+#endif // AP_ALT_HOLD_AVOIDANCE_ENABLED
 
 // singleton instance
 AC_Avoid *AC_Avoid::_singleton;
