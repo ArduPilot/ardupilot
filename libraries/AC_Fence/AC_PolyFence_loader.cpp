@@ -993,6 +993,9 @@ bool AC_PolyFence_loader::validate_fence(const AC_PolyFenceItem *new_items, uint
             // TODO: ensure return point is within all fences and
             // outside all exclusion zones
             break;
+        default:
+            gcs().send_text(MAV_SEVERITY_WARNING, "Fence unsupported point type");
+            return false;
         }
 
         if (validate_latlon) {
@@ -1131,6 +1134,9 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
                 return false;
             }
             break;
+        default:
+            gcs().send_text(MAV_SEVERITY_WARNING, "Fence unsupported point type");
+            return false;
         }
     }
     if (!write_eos_to_storage(offset)) {

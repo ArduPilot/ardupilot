@@ -1290,6 +1290,7 @@ public:
     void enable_high_latency_connections(bool enabled);
     bool get_high_latency_status();
 #endif // HAL_HIGH_LATENCY2_ENABLED
+    uint8_t sysid_my_gcs() {return _chan[0]->sysid_my_gcs();}
 
     virtual uint8_t sysid_this_mav() const = 0;
 
