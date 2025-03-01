@@ -12815,6 +12815,35 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('LOITER')
         self.do_RTL()
 
+    def PreArmGroundSpeedChecks(self):
+        '''check ground speed'''
+        self.reboot_sitl()  # need EKF in a relatively consistent initial state
+        self.wait_ready_to_arm()
+        self.context_push()
+
+        global bias
+        bias = 2
+        global last_change
+        last_change = self.get_sim_time_cached()
+
+        def hook(msg, m):
+            global bias
+            global last_change
+            if m.get_type() != 'HEARTBEAT':
+                return
+            self.send_mavlink_run_prearms_command()
+            now = self.get_sim_time_cached()
+            if now - last_change < 5:
+                return
+            last_change = now
+            bias = -bias
+            self.set_parameter('SIM_ACC1_BIAS_Y', bias)
+
+        self.install_message_hook_context(hook)
+        self.assert_prearm_failure("GPS vs AHRS speed mismatch", other_prearm_failures_fatal=False, timeout=120)
+        self.context_pop()
+        self.reboot_sitl()
+
     def do_land(self):
         self.change_mode('LAND')
         self.wait_disarmed()
@@ -12922,6 +12951,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GuidedWeatherVane,
             self.Clamp,
             self.GripperReleaseOnThrustLoss,
+            self.PreArmGroundSpeedChecks,
             self.REQUIRE_LOCATION_FOR_ARMING,
             self.LoggingFormat,
             self.MissionRTLYawBehaviour,
