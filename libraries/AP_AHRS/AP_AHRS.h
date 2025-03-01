@@ -683,6 +683,19 @@ public:
     // get access to an EKFGSF_yaw estimator
     const EKFGSF_yaw *get_yaw_estimator(void) const;
 
+    enum class DATA_SENDING_STATE {
+        ENABLED,
+        DISABLED
+    };
+    // enable/disable sending data to autopilot. Can be used to simulate AHRS failure.
+    void set_data_sending_state(DATA_SENDING_STATE data_sending_state);
+
+    enum class GPS_STATE {
+        ENABLED,
+        DISABLED
+    };
+    void set_gps_state(GPS_STATE gps_state);
+
 private:
 
     // roll/pitch/yaw euler angles, all in radians
