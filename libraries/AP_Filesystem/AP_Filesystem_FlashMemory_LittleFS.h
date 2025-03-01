@@ -49,8 +49,6 @@ public:
     // set modification time on a file
     bool set_mtime(const char *filename, const uint32_t mtime_sec) override;
 
-    bool sync_block(int _write_fd, uint32_t _write_offset, uint32_t& nbytes);
-
     bool retry_mount(void) override;
     void unmount(void) override;
     // format flash.  This is async, monitor get_format_status for progress
