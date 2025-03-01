@@ -95,6 +95,16 @@ public:
     // attitude/steering.
     virtual void update_level_flight(void) = 0;
 
+    // update the internal state of the navigation controller when
+    // the vehicle has been commanded with a path following setpoint, which
+    // includes the closest point on the path, the unit tangent to the path,
+    // and the curvature. This is the step function for navigation control when
+    // path following. This function is called at regular intervals
+    // (typically 10Hz). The main flight code will call an output function
+    // (such as nav_roll_cd()) after this function to ask for the new required
+    // navigation attitude/steering.
+    virtual void follow_path(const Location &location_on_path, const Vector2f& unit_path_tangent, float path_curvature, int8_t direction) {}
+
     // return true if we have reached the target loiter location. This
     // may be a fuzzy decision, depending on internal navigation
     // parameters. For example the controller may return true only
