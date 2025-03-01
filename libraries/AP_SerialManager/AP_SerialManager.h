@@ -87,6 +87,9 @@ public:
         SerialProtocol_PPP = 48,
         SerialProtocol_IBUS_Telem = 49,                // i-BUS telemetry data, ie via sensor port of FS-iA6B
         SerialProtocol_IOMCU = 50,                     // IOMCU 
+        SerialProtocol_RawSerialCAN0 = 51,             // Raw CAN frames over serial protocol from bus 0
+        SerialProtocol_RawSerialCAN1 = 52,             // Raw CAN frames over serial protocol from bus 1
+        SerialProtocol_RawSerialCAN2 = 53,             // Raw CAN frames over serial protocol from bus 2
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
