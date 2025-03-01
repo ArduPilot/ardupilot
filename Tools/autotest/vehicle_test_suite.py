@@ -5504,8 +5504,20 @@ class TestSuite(ABC):
         self.progress("check %s upload/download: upload %u items" %
                       (itype, len(items),))
         self.upload_using_mission_protocol(mission_type, items)
+        upload_opaque_id = self.get_cached_message('MISSION_ACK').opaque_id
+        if upload_opaque_id == 0:
+            raise NotAchievedException("Expected non-zero upload opaque_id")
+        self.progress("Upload opaque_id=%s" % upload_opaque_id)
         self.progress("check %s upload/download: download items" % itype)
         downloaded_items = self.download_using_mission_protocol(mission_type)
+        download_opaque_id = self.get_cached_message('MISSION_COUNT').opaque_id
+        if download_opaque_id == 0:
+            raise NotAchievedException("Expected non-zero download opaque_id")
+        if upload_opaque_id != download_opaque_id:
+            raise NotAchievedException(
+                "Expected upload id and download id to be same; upload=%s download=%s" %
+                (upload_opaque_id, download_opaque_id))
+
         if len(items) != len(downloaded_items):
             raise NotAchievedException("Did not download same number of items as uploaded want=%u got=%u" %
                                        (len(items), len(downloaded_items)))

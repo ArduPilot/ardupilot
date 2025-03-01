@@ -616,7 +616,8 @@ void GCS_MAVLINK::handle_mission_request_list(const mavlink_message_t &msg)
                                      msg.sysid,
                                      msg.compid,
                                      MAV_MISSION_UNSUPPORTED,
-                                     packet.mission_type);
+                                     packet.mission_type,
+                                     0);
         return;
     }
 
@@ -675,6 +676,25 @@ MISSION_STATE GCS_MAVLINK::mission_state(const AP_Mission &mission) const
     return MISSION_STATE_UNKNOWN;
 }
 
+// returns the opaque ID used for identifying a mission (or fence, or
+// rally) on the vehicle.  Returns 0 on failure.
+uint32_t GCS_MAVLINK::opaque_id_for_mission_type(MAV_MISSION_TYPE type) const
+{
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    MissionItemProtocol *prot = gcs().get_prot_for_mission_type(type);
+    if (prot == nullptr) {
+        return 0;
+    }
+
+    uint32_t opaque_id = 0;
+    UNUSED_RESULT(prot->opaque_id(opaque_id));
+
+    return opaque_id;
+#else
+    return 0;
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+}
+
 void GCS_MAVLINK::send_mission_current(const class AP_Mission &mission, uint16_t seq)
 {
     auto num_commands = mission.num_commands();
@@ -694,7 +714,11 @@ void GCS_MAVLINK::send_mission_current(const class AP_Mission &mission, uint16_t
         seq,
         num_commands, // total
         mission_state(mission), // mission_state
-        mission_mode);  // mission_mode
+        mission_mode,  // mission_mode
+        opaque_id_for_mission_type(MAV_MISSION_TYPE_MISSION),
+        opaque_id_for_mission_type(MAV_MISSION_TYPE_FENCE),
+        opaque_id_for_mission_type(MAV_MISSION_TYPE_RALLY)
+        );
 }
 
 #if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
@@ -750,7 +774,8 @@ void GCS_MAVLINK::handle_mission_count(const mavlink_message_t &msg)
                                      msg.sysid,
                                      msg.compid,
                                      MAV_MISSION_UNSUPPORTED,
-                                     packet.mission_type);
+                                     packet.mission_type,
+                                     0);
         return;
     }
 
