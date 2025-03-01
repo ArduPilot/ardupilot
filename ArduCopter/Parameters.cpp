@@ -815,6 +815,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SYSID_ENFORCE", 11, ParametersG2, sysid_enforce, 0),
 
+    // @Param: ALLOW_TAKEOVER
+    // @DisplayName: Allow takeover
+    // @Description: This controls if a GCS requesting control will be granted control automatically or the current GCS in control will need to be asked first
+    // @Values: 0:NotAllowed,1:Allowed
+    // @User: Advanced
+    AP_GROUPINFO("ALLOW_TAKEOVER", 12, ParametersG2, control_takeover_allowed, 1),
+
     // 12 was AP_Stats
 
     // 13 was AP_Gripper
