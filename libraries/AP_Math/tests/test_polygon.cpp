@@ -304,28 +304,6 @@ TEST(Polygon, obc)
     TEST_POLYGON_POINTS(OBC_boundary, OBC_test_points);
 }
 
-static const Vector2f PROX_boundary[] = {
-    Vector2f{938.315063f,388.662872f},
-    Vector2f{545.622803f,1317.25f},
-    Vector2f{-833.382812f,2011.96423f},
-    Vector2f{-2011.96411f,833.382996f},
-    Vector2f{-875.159241f,-362.502838f},
-    Vector2f{-153.222916f,-369.912689f},
-    Vector2f{153.222931f,-369.912689f},
-    Vector2f{369.91272f,-153.222855f},
-
-    // closing point so we can call Polygon_outside(...):
-    Vector2f{938.315063f,388.662872f},
-};
-
-
-static const struct {
-    Vector2f point;
-    bool outside;
-} PROX_test_points[] = {
-    { Vector2f{0.0f,0.0f}, false },
-};
-
 TEST(Polygon, prox)
 {
     TEST_POLYGON_POINTS(PROX_boundary, PROX_test_points);
