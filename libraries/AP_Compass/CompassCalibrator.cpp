@@ -521,7 +521,9 @@ void CompassCalibrator::thin_samples()
     while (i != _samples_collected) {
         if (!accept_sample(_sample_buffer[i], i)) {
             // throw sample away
-            _sample_buffer[i] = _sample_buffer[_samples_collected-1];
+            if (i != _samples_collected-1) {  // do not copy over ourselves!
+                _sample_buffer[i] = _sample_buffer[_samples_collected-1];
+            }
             _samples_collected--;
             _samples_thinned++;
             continue;
