@@ -1216,13 +1216,13 @@ void AP_IOMCU::soft_reboot(void)
 /*
   request bind on a DSM radio
  */
-void AP_IOMCU::bind_dsm(uint8_t mode)
+void AP_IOMCU::bind_dsm()
 {
     if (!is_chibios_backend || AP::arming().is_armed()) {
         // only with ChibiOS IO firmware, and disarmed
         return;
     }
-    uint16_t reg = mode;
+    uint16_t reg = 0;  // this is unused by the IOMCU
     write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM_BIND, 1, &reg);
 }
 
