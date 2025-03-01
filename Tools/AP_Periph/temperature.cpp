@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+#if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
 
 #include <dronecan_msgs.h>
 
@@ -51,4 +51,4 @@ void AP_Periph_FW::temperature_sensor_update(void)
     }
 }
 
-#endif // HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+#endif // AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
