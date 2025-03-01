@@ -655,12 +655,9 @@ AP_GPS_UBLOX::read(void)
     if (millis_now - _last_config_time >= _delay_time) {
         _request_next_config();
         _last_config_time = millis_now;
-        if (_unconfigured_messages) { // send the updates faster until fully configured
-            if (!havePvtMsg && (_unconfigured_messages & CONFIG_REQUIRED_INITIAL)) {
-                _delay_time = 300;
-            } else {
-                _delay_time = 750;
-            }
+        if (_unconfigured_messages) {
+            // send the updates faster until fully configured
+            _delay_time = 200;
         } else {
             _delay_time = 2000;
         }
