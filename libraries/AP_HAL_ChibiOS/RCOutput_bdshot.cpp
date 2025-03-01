@@ -515,8 +515,11 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
     // although it should be possible to start the next DMAR transaction concurrently with receiving 
     // telemetry, in practice it seems to interfere with the DMA engine
     if (group->shared_up_dma && group->bdshot.enabled) {
-        // next dshot pulse can go out now
-        chEvtSignalI(group->dshot_waiter, DSHOT_CASCADE);
+        auto *waiter = group->dshot_waiter;
+        if (waiter != nullptr) {
+            // next dshot pulse can go out now
+            chEvtSignalI(waiter, DSHOT_CASCADE);
+        }
     }
 #endif
     // if using input capture DMA and sharing the UP and CH channels then clean up
@@ -541,7 +544,10 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
     }
 
     // tell the waiting process we've done the DMA
-    chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
+    auto *waiter = group->dshot_waiter;
+    if (waiter != nullptr) {
+        chEvtSignalI(waiter, group->dshot_event_mask);
+    }
 #ifdef HAL_GPIO_LINE_GPIO56
     TOGGLE_PIN_DEBUG(56);
 #endif

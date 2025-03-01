@@ -1842,10 +1842,11 @@ __RAMFUNC__ void RCOutput::dma_unlock(virtual_timer_t* vt, void *p)
     pwm_group *group = (pwm_group *)p;
 
     group->dshot_state = DshotState::IDLE;
-    if (group->dshot_waiter != nullptr) {
+    auto *waiter = group->dshot_waiter;
+    if (waiter != nullptr) {
         // tell the waiting process we've done the DMA. Note that
         // dshot_waiter can be null if we have cancelled the send
-        chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
+        chEvtSignalI(waiter, group->dshot_event_mask);
     }
     chSysUnlockFromISR();
 }
