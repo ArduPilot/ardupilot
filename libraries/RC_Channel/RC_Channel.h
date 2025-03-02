@@ -603,7 +603,11 @@ public:
     */
     bool get_pwm(uint8_t channel, uint16_t &pwm) const;
 
+    // returns time in ms when latest input from either rc receiver or rc override was received
     uint32_t last_input_ms() const { return last_update_ms; };
+
+    // returns time in ms when latest input from rc receiver was received, does not include overrides
+    uint32_t last_rc_receiver_input_ms() const { return last_rc_receiver_update_ms; }
 
     // method for other parts of the system (e.g. Button and mavlink)
     // to trigger auxiliary functions
@@ -654,7 +658,8 @@ private:
     // this static arrangement is to avoid static pointers in AP_Param tables
     static RC_Channel *channels;
 
-    uint32_t last_update_ms;
+    uint32_t last_update_ms; // time in ms when latest input from either rc receiver or rc override was received
+    uint32_t last_rc_receiver_update_ms; // time in ms when latest input from rc receiver was received, does not include overrides
     bool has_new_overrides;
     bool _has_had_rc_receiver; // true if we have had a direct detach RC receiver, does not include overrides
     bool _has_had_override; // true if we have had an override on any channel
