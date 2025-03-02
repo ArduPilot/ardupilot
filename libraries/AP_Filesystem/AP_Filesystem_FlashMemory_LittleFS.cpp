@@ -806,6 +806,13 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     fs_cfg.prog_size = page_size;
     fs_cfg.block_size = flash_block_size * LFS_FLASH_BLOCKS_PER_BLOCK;
     fs_cfg.block_count = flash_block_count / LFS_FLASH_BLOCKS_PER_BLOCK;
+
+    // larger metadata blocks mean less frequent compaction operations, but each
+    // takes longer. however, the total time spent compacting for a given file
+    // size still goes down with larger metadata blocks. 4096 was chosen to
+    // minimize both frequency and log buffer utilization.
+    fs_cfg.metadata_max = 4096;
+    fs_cfg.compact_thresh = 4096*0.88f;
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
     fs_cfg.metadata_max = page_size * 2;
     fs_cfg.compact_thresh = fs_cfg.metadata_max * 0.88f;
