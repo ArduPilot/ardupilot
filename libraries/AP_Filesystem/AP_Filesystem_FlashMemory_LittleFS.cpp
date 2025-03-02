@@ -1022,9 +1022,10 @@ bool AP_Filesystem_FlashMemory_LittleFS::init_flash()
 }
 
 #ifdef AP_LFS_DEBUG
-static uint32_t block_writes;
+static uint32_t page_writes;
 static uint32_t last_write_msg_ms;
 static uint32_t page_reads;
+static uint32_t block_erases;
 #endif
 int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
     lfs_block_t block, lfs_off_t off, void* buffer, lfs_size_t size
@@ -1098,12 +1099,13 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_prog(
         }
 
 #ifdef AP_LFS_DEBUG
-        block_writes++;
+        page_writes++;
         if (AP_HAL::millis() - last_write_msg_ms > 5000) {
-            debug("LFS: writes %lukB/s, pages %lu/s (reads %lu/s)",
-                (block_writes*fs_cfg.prog_size)/(5*1024), block_writes/5, page_reads/5);
-            block_writes = 0;
+            debug("LFS: writes %lukB/s, pages %lu/s (reads %lu/s, block erases %lu/s)",
+                (page_writes*fs_cfg.prog_size)/(5*1024), page_writes/5, page_reads/5, block_erases/5);
+            page_writes = 0;
             page_reads = 0;
+            block_erases = 0;
             last_write_msg_ms = AP_HAL::millis();
         }
 #endif
@@ -1142,6 +1144,10 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_erase(lfs_block_t block) {
         if (!write_enable()) {
             return LFS_ERR_IO;
         }
+
+#ifdef AP_LFS_DEBUG
+        block_erases++;
+#endif
 
         WITH_SEMAPHORE(dev_sem);
 
