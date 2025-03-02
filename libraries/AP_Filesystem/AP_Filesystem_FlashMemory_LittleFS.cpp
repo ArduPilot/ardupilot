@@ -617,6 +617,7 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_ID_WINBOND_W25N01GV      0xEFAA21
 #define JEDEC_ID_WINBOND_W25N02KV      0xEFAA22
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
+#define JEDEC_ID_GIGA_GD25Q16E         0xC84015
 
 /* Hardware-specific constants */
 
@@ -767,6 +768,7 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
 #else
     case JEDEC_ID_WINBOND_W25Q16:
     case JEDEC_ID_MICRON_M25P16:
+    case JEDEC_ID_GIGA_GD25Q16E:
         flash_block_count = 32;   /* 128K */
         break;
 
