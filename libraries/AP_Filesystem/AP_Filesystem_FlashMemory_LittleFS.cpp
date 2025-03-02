@@ -1055,6 +1055,8 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
             WITH_SEMAPHORE(dev_sem);
             send_command_addr(JEDEC_PAGE_DATA_READ, address / fs_cfg.read_size);
         }
+        // position address within the internal buffer for the actual read
+        address %= fs_cfg.read_size;
 #endif
         if (!wait_until_device_is_ready()) {
             return LFS_ERR_IO;
@@ -1063,7 +1065,7 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
         WITH_SEMAPHORE(dev_sem);
 
         dev->set_chip_select(true);
-        send_command_addr(JEDEC_READ_DATA, address % fs_cfg.read_size);
+        send_command_addr(JEDEC_READ_DATA, address);
         dev->transfer(nullptr, 0, static_cast<uint8_t*>(buffer)+read_off, size);
         dev->set_chip_select(false);
 
