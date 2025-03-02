@@ -3085,8 +3085,14 @@ Please run: Tools/scripts/build_bootloaders.py %s
                 self.config.pop(u, '')
                 self.bytype.pop(u, '')
                 self.bylabel.pop(u, '')
+                # remove alt config definitions
+                for alt in sorted(self.altmap.keys()):
+                    for pp in sorted(self.altmap[alt].keys()):
+                        p = self.altmap[alt][pp]
+                        if p.portpin == u:
+                            del self.altmap[alt][pp]
+                            del self.altlabel[p.label]
                 self.alttype.pop(u, '')
-                self.altlabel.pop(u, '')
                 self.intdefines.pop(u, '')
                 for dev in self.spidev:
                     if u == dev[0]:
