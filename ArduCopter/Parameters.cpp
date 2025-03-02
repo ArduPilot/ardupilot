@@ -1133,7 +1133,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: TKOFF_SLEW_TIME
     // @DisplayName: Slew time of throttle during take-off
-    // @Description: Time to slew the throttle from minimum to maximum while checking for a succsessful takeoff.
+    // @Description: Time to slew the throttle from minimum to maximum while checking for a successful takeoff.
     // @Units: s
     // @Range: 0.25 5.0
     // @User: Standard
