@@ -731,73 +731,72 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
 
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
     uint32_t id = buf[1] << 16 | buf[2] << 8 | buf[3];
-
 #else
     uint32_t id = buf[0] << 16 | buf[1] << 8 | buf[2];
 #endif
 
     // Let's specify the terminology here.
     //
-    // 1 block = smallest unit that we can _erase_ in a single operation
-    // 1 page = smallest unit that we can read or program in a single operation
+    // 1 block = smallest unit that we _erase_ in a single operation
+    // 1 page = smallest unit that we read or program in a single operation
     //
-    // So, for instance, if we have 4K sectors on the flash chip and we can
-    // always erase a single 4K sector, the LFS block size will be 4096 bytes,
+    // regardless of what the flash chip documentation refers to as a "block"
 
-    // irrespectively of what the flash chip documentation refers to as a "block"
-    /* Most flash chips are programmable in chunks of 256 bytes and erasable in
-     * blocks of 4K so we start with these defaults */
-    uint16_t page_size = 256;
-    flash_block_size = 4096;
-    flash_block_count = 0;
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+    // these NAND chips have 2048 byte pages and 128K erase blocks
+    lfs_size_t page_size = 2048;
+    flash_block_size = 131072;
+#else
+    // typical JEDEC-ish NOR flash chips have 256 byte pages and 64K blocks.
+    // many also support smaller erase sizes like 4K "sectors", but the largest
+    // block size is fastest to erase in bytes per second by 3-5X so we use
+    // that. be aware that worst case erase time can be seconds!
+    lfs_size_t page_size = 256;
+    flash_block_size = 65536;
+#endif
 
     switch (id) {
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
     case JEDEC_ID_WINBOND_W25N01GV:
-        /* 128M, programmable in chunks of 2048 bytes, erasable in blocks of 128K */
-        page_size = 2048;
-        flash_block_size = 131072;
-        flash_block_count = 1024;
+        flash_block_count = 1024;   /* 128MiB */
         break;
     case JEDEC_ID_WINBOND_W25N02KV:
-        /* 256M, programmable in chunks of 2048 bytes, erasable in blocks of 128K */
-        page_size = 2048;
-        flash_block_size = 131072;
-        flash_block_count = 2048;
+        flash_block_count = 2048;   /* 256MiB */
         break;
 #else
     case JEDEC_ID_WINBOND_W25Q16:
     case JEDEC_ID_MICRON_M25P16:
     case JEDEC_ID_GIGA_GD25Q16E:
-        flash_block_count = 32;   /* 128K */
+        flash_block_count = 32;     /* 2MiB */
         break;
 
     case JEDEC_ID_WINBOND_W25Q32:
     case JEDEC_ID_WINBOND_W25X32:
     case JEDEC_ID_MACRONIX_MX25L3206E:
-        flash_block_count = 64;   /* 256K */
+        flash_block_count = 64;     /* 4MiB */
         break;
 
     case JEDEC_ID_MICRON_N25Q064:
     case JEDEC_ID_WINBOND_W25Q64:
     case JEDEC_ID_MACRONIX_MX25L6406E:
-        flash_block_count = 128;  /* 512K */
+        flash_block_count = 128;    /* 8MiB */
         break;
 
     case JEDEC_ID_MICRON_N25Q128:
     case JEDEC_ID_WINBOND_W25Q128:
     case JEDEC_ID_WINBOND_W25Q128_2:
     case JEDEC_ID_CYPRESS_S25FL128L:
-        flash_block_count = 256;  /* 1M */
+        flash_block_count = 256;    /* 16MiB */
         break;
 
     case JEDEC_ID_WINBOND_W25Q256:
     case JEDEC_ID_MACRONIX_MX25L25635E:
-        flash_block_count = 512;  /* 2M */
+        flash_block_count = 512;    /* 32MiB */
         use_32bit_address = true;
         break;
 #endif
     default:
+        flash_block_count = 0;
         hal.scheduler->delay(2000);
         printf("Unknown SPI Flash 0x%08x\n", id);
         return 0;
@@ -1154,7 +1153,7 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_erase(lfs_block_t block) {
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
         send_command_addr(JEDEC_BLOCK_ERASE, lfs_block_to_raw_flash_page_index(block, fblock));
 #else
-        send_command_addr(JEDEC_SECTOR4_ERASE, lfs_block_and_offset_to_raw_flash_address(block, 0, fblock));
+        send_command_addr(JEDEC_BLOCK_ERASE, lfs_block_and_offset_to_raw_flash_address(block, 0, fblock));
 #endif
 
         // sleep so that other processes get the CPU cycles that the 4ms erase cycle needs.
