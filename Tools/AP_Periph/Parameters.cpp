@@ -722,6 +722,11 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Advanced
     GSCALAR(esc_extended_telem_rate, "ESC_EXT_TLM_RATE", AP_PERIPH_ESC_TELEM_RATE_DEFAULT / 10),
 #endif
+#ifdef HAL_PERIPH_ENABLE_OPTICALFLOW
+    // @Group: OF
+    // @Path: ../libraries/AP_OpticalFlow/AP_OpticalFlow.cpp
+    GOBJECT(of, "FLOW",   AP_OpticalFlow),
+#endif   // HAL_PERIPH_ENABLE_OPTICALFLOW
 
 
 #if AP_PERIPH_IMU_ENABLED
