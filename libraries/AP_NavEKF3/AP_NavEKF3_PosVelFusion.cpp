@@ -699,11 +699,6 @@ void NavEKF3_core::FuseVelPosNED()
     // so we might as well take advantage of the computational efficiencies
     // associated with sequential fusion
     if (fuseVelData || fusePosData || fuseHgtData) {
-        // calculate additional error in GPS position caused by manoeuvring
-        ftype posErr = frontend->gpsPosVarAccScale * accNavMag;
-
-        // To-Do: this posErr should come from external nav when fusing external nav position
-
         // estimate the GPS Velocity, GPS horiz position and height measurement variances.
         // Use different errors if operating without external aiding using an assumed position or velocity of zero
         if (PV_AidingMode == AID_NONE) {
@@ -742,6 +737,8 @@ void NavEKF3_core::FuseVelPosNED()
                 R_OBS[3] = sq(constrain_ftype(extNavDataDelayed.posErr, 0.01f, 10.0f));
 #endif
             } else {
+                // calculate additional error in GPS position caused by manoeuvring
+                const ftype posErr = frontend->gpsPosVarAccScale * accNavMag;
                 R_OBS[3] = sq(constrain_ftype(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
             }
             R_OBS[4] = R_OBS[3];
