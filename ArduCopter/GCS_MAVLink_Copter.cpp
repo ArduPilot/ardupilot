@@ -336,17 +336,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 {
     switch(id) {
 
-#if AP_TERRAIN_AVAILABLE
-    case MSG_TERRAIN_REQUEST:
-        CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
-        copter.terrain.send_request(chan);
-        break;
-    case MSG_TERRAIN_REPORT:
-        CHECK_PAYLOAD_SIZE(TERRAIN_REPORT);
-        copter.terrain.send_report(chan);
-        break;
-#endif
-
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
         send_wind();
@@ -1514,6 +1503,7 @@ void GCS_MAVLINK_Copter::handle_message(const mavlink_message_t &msg)
         copter.terrain.handle_data(chan, msg);
         break;
 #endif
+
 #if TOY_MODE_ENABLED
     case MAVLINK_MSG_ID_NAMED_VALUE_INT:
         copter.g2.toy_mode.handle_message(msg);

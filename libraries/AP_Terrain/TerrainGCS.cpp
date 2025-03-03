@@ -36,8 +36,12 @@ extern const AP_HAL::HAL& hal;
 /*
   request any missing 4x4 grids from a block, given a grid_cache
  */
-bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcache)
+bool AP_Terrain::request_missing(GCS_MAVLINK &link, struct grid_cache &gcache)
 {
+    if (!HAVE_PAYLOAD_SPACE(link.get_chan(), TERRAIN_REQUEST)) {
+        return false;
+    }
+
     struct grid_block &grid = gcache.grid;
 
     if (options.get() & uint16_t(Options::DisableDownload)) {
@@ -61,16 +65,17 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
         return false;
     }
 
-    if (!HAVE_PAYLOAD_SPACE(chan, TERRAIN_REQUEST)) {
-        // not enough buffer space
-        return false;
-    }
-
     /*
       ask the GCS to send a set of 4x4 grids
      */
-    mavlink_msg_terrain_request_send(chan, grid.lat, grid.lon, grid_spacing, bitmap_mask & ~grid.bitmap);
-    last_request_time_ms[chan] = AP_HAL::millis();
+    const mavlink_terrain_request_t packet {
+        bitmap_mask & ~grid.bitmap,
+        grid.lat,
+        grid.lon,
+        (uint16_t)grid_spacing
+    };
+    mavlink_msg_terrain_request_send_struct(link.get_chan(), &packet);
+    last_request_time_ms[link.get_chan()] = AP_HAL::millis();
 
     return true;
 }
@@ -78,21 +83,21 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
 /*
   request any missing 4x4 grids from a block
  */
-bool AP_Terrain::request_missing(mavlink_channel_t chan, const struct grid_info &info)
+bool AP_Terrain::request_missing(GCS_MAVLINK &link, const struct grid_info &info)
 {
     // find the grid
     struct grid_cache &gcache = find_grid_cache(info);
-    return request_missing(chan, gcache);
+    return request_missing(link, gcache);
 }
 
 /*
   send any pending cache requests
  */
-bool AP_Terrain::send_cache_request(mavlink_channel_t chan)
+bool AP_Terrain::send_cache_request(GCS_MAVLINK &link)
 {
     for (uint16_t i=0; i<cache_size; i++) {
         if (cache[i].state >= GRID_CACHE_VALID) {
-            if (request_missing(chan, cache[i])) {
+            if (request_missing(link, cache[i])) {
                 return true;
             }
         }
@@ -103,7 +108,7 @@ bool AP_Terrain::send_cache_request(mavlink_channel_t chan)
 /*
   send any pending terrain request to the GCS
  */
-void AP_Terrain::send_request(mavlink_channel_t chan)
+void AP_Terrain::send_request(GCS_MAVLINK &link)
 {
     if (!allocate()) {
         // not enabled
@@ -122,7 +127,7 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     }
 
     // did we request recently?
-    if (AP_HAL::millis() - last_request_time_ms[chan] < 2000) {
+    if (AP_HAL::millis() - last_request_time_ms[link.get_chan()] < 2000) {
         // too soon to request again
         return;
     }
@@ -131,7 +136,7 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     struct grid_info info;
     calculate_grid_info(loc, info);
 
-    if (request_missing(chan, info)) {
+    if (request_missing(link, info)) {
         return;
     }
 
@@ -139,13 +144,13 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     // mission items, rally items, squares surrounding our current
     // location, favourite holiday destination, scripting, height
     // reference location, ....
-    if (send_cache_request(chan)) {
+    if (send_cache_request(link)) {
         return;
     }
 
     // request the current loc last to ensure it has highest last
     // access time
-    if (request_missing(chan, info)) {
+    if (request_missing(link, info)) {
         return;
     }
 }
@@ -193,12 +198,15 @@ void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded) const
 /*
    handle terrain messages from GCS
  */
-void AP_Terrain::handle_data(mavlink_channel_t chan, const mavlink_message_t &msg)
+void AP_Terrain::handle_message(GCS_MAVLINK &link, const mavlink_message_t &msg)
 {
-    if (msg.msgid == MAVLINK_MSG_ID_TERRAIN_DATA) {
-        handle_terrain_data(msg);
-    } else if (msg.msgid == MAVLINK_MSG_ID_TERRAIN_CHECK) {
-        handle_terrain_check(chan, msg);
+    switch (msg.msgid) {
+    case MAVLINK_MSG_ID_TERRAIN_DATA:
+        return handle_terrain_data(msg);
+    case MAVLINK_MSG_ID_TERRAIN_CHECK:
+        return handle_terrain_check(link, msg);
+    // default:
+        // shouldn't have been called
     }
 }
 
@@ -218,9 +226,13 @@ void AP_Terrain::send_report(mavlink_channel_t chan)
 /* 
    send a TERRAIN_REPORT for a location
  */
-void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate)
+void AP_Terrain::send_terrain_report(GCS_MAVLINK &link, const Location &loc, bool extrapolate)
 {
 #if HAL_GCS_ENABLED
+    if (!HAVE_PAYLOAD_SPACE(link.get_chan(), TERRAIN_REPORT)) {
+        return;
+    }
+
     float terrain_height = 0;
     uint16_t spacing = 0;
     if (height_amsl(loc, terrain_height)) {
@@ -242,20 +254,31 @@ void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc
                                         terrain_height, current_height,
                                         pending, loaded);
     }
+    const mavlink_terrain_report_t packet {
+        loc.lat,
+        loc.lng,
+        terrain_height,
+        current_height,
+        spacing,
+        pending,
+        loaded
+    };
+
+    mavlink_msg_terrain_report_send_struct(link.get_chan(), &packet);
 #endif
 }
 
 /* 
    handle TERRAIN_CHECK messages from GCS
  */
-void AP_Terrain::handle_terrain_check(mavlink_channel_t chan, const mavlink_message_t &msg)
+void AP_Terrain::handle_terrain_check(GCS_MAVLINK &link, const mavlink_message_t &msg)
 {
     mavlink_terrain_check_t packet;
     mavlink_msg_terrain_check_decode(&msg, &packet);
     Location loc;
     loc.lat = packet.lat;
     loc.lng = packet.lon;
-    send_terrain_report(chan, loc, false);
+    send_terrain_report(link, loc, false);
 }
 
 /* 
