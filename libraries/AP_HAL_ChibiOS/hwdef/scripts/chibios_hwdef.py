@@ -1606,7 +1606,7 @@ INCLUDE common.ld
 
     def write_DATAFLASH_config(self, f):
         '''write dataflash config defines'''
-        # DATAFLASH block|littlefs:<w25nxx>
+        # DATAFLASH block|littlefs:<w25nxx|jedec_nor>
         seen = set()
         for dev in self.dataflash_list:
             if not self.has_dataflash_spi():
@@ -1617,14 +1617,18 @@ INCLUDE common.ld
             a = dev[0].split(':')
             if a[0].startswith('block'):
                 if len(a) > 1 and a[1].startswith('w25nxx'):
-                    f.write('#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25NXX')
-                f.write('#define HAL_LOGGING_DATAFLASH_ENABLED TRUE')
+                    f.write('#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25NXX\n')
+                elif len(a) > 1 and a[1].startswith('jedec_nor'):
+                    f.write('#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_Flash_JEDEC\n')
+                f.write('#define HAL_LOGGING_DATAFLASH_ENABLED TRUE\n')
             elif a[0].startswith('littlefs'):
                 f.write('#define USE_POSIX\n')
                 f.write('#define HAL_OS_LITTLEFS_IO TRUE\n')
                 f.write('#define HAL_OS_POSIX_IO TRUE\n')
                 if len(a) > 1 and a[1].startswith('w25nxx'):
-                    f.write('#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_W25NXX')
+                    f.write('#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_W25NXX\n')
+                elif len(a) > 1 and a[1].startswith('jedec_nor'):
+                    f.write('#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_JEDEC_NOR\n')
                 self.build_flags.append('USE_FATFS=no')
                 self.env_vars['WITH_LITTLEFS'] = "1"
 

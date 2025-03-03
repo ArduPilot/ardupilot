@@ -24,8 +24,8 @@ FLASH_RESERVE_START_KB 128
 STORAGE_FLASH_PAGE 14
 define HAL_STORAGE_SIZE 32768
 
-# enable logging to dataflash
-define HAL_LOGGING_DATAFLASH_ENABLED 1
+# enable littlefs on 16MiB W25Q128 dataflash
+DATAFLASH littlefs:jedec_nor
 
 # one I2C bus
 I2C_ORDER I2C1
@@ -160,5 +160,3 @@ define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define DEFAULT_NTF_LED_TYPES 257
-
-define AP_SCRIPTING_ENABLED 0
