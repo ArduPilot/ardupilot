@@ -16,7 +16,7 @@ define CH_CFG_ST_RESOLUTION 16
 
 MCU_CLOCKRATE_MHZ 480
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_CBU_StampH743
 
 FLASH_RESERVE_START_KB 128
