@@ -2,6 +2,10 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include "AP_Periph.h"
 
+#if AP_PERIPH_VOLZ_ENABLED
+#include <AP_Volz_Protocol/AP_Volz_Protocol.h>
+#endif  // AP_PERIPH_VOLZ_ENABLED
+
 extern const AP_HAL::HAL &hal;
 
 #ifndef HAL_PERIPH_LED_BRIGHT_DEFAULT
@@ -736,6 +740,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(imu, "INS", AP_InertialSensor),
 #endif
+
+#if AP_PERIPH_VOLZ_ENABLED
+    // @Group: VOLZ_
+    // @Path: ../libraries/AP_Volz/AP_Volz.cpp
+    GOBJECT(volz_protocol, "VOLZ_",   AP_Volz_Protocol),
+#endif  // AP_PERIPH_VOLZ_ENABLED
 
     AP_VAREND
 };

@@ -1020,6 +1020,21 @@ class sitl_periph_gps(sitl_periph):
             AP_PERIPH_PWM_HARDPOINT_ENABLED =0,
         )
 
+class sitl_periph_volz(sitl_periph):
+    def configure_env(self, cfg, env):
+        cfg.env.AP_PERIPH = 1
+        super(sitl_periph_volz, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            HAL_BUILD_AP_PERIPH = 1,
+            PERIPH_FW = 1,
+            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_volz"',
+            APJ_BOARD_ID = 101,
+
+            AP_PERIPH_GPS_ENABLED = 0,
+            AP_PERIPH_VOLZ_ENABLED = 1,
+            SIM_VOLZ_ENABLED = 1,
+        )
+
 class sitl_periph_battmon(sitl_periph):
     def configure_env(self, cfg, env):
         cfg.env.AP_PERIPH = 1
