@@ -17,13 +17,17 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Navigation/AP_Navigation.h>
 #include <AP_TECS/AP_TECS.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_Vehicle/AP_FixedWing.h>
 #include <AP_Common/Location.h>
 
 class AP_L1_Control : public AP_Navigation {
 public:
-    AP_L1_Control(AP_AHRS &ahrs, const AP_TECS *tecs)
+    AP_L1_Control(const AP_AHRS &ahrs, const AP_TECS &tecs, const AP_FixedWing &aparm)
         : _ahrs(ahrs)
         , _tecs(tecs)
+        , _baro(*AP_Baro::get_singleton())
+        , _aparm(aparm)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
@@ -48,8 +52,12 @@ public:
     int32_t target_bearing_cd(void) const override;
     float turn_distance(float wp_radius) const override;
     float turn_distance(float wp_radius, float turn_angle) const override;
-    float loiter_radius (const float loiter_radius) const override;
     void update_waypoint(const class Location &prev_WP, const class Location &next_WP, float dist_min = 0.0f) override;
+    bool is_loiter_achievable(float radius, float indicated_airspeed,
+                              float altitude_amsl) const override;
+    float calc_corrected_loiter_radius(float original_radius,
+                                       float indicated_airspeed,
+                                       float altitude_amsl) const override;
     void update_loiter(const class Location &center_WP, float radius, int8_t loiter_direction) override;
     void update_heading_hold(int32_t navigation_heading_cd) override;
     void update_level_flight(void) override;
@@ -76,10 +84,25 @@ public:
 
 private:
     // reference to the AHRS object
-    AP_AHRS &_ahrs;
+    const AP_AHRS &_ahrs;
 
-    // pointer to the SpdHgtControl object
-    const AP_TECS *_tecs;
+    // reference to the TECS object
+    const AP_TECS &_tecs;
+
+    // reference to the barometer object
+    const AP_Baro &_baro;
+
+    // reference to the fixed wing parameters object
+    const AP_FixedWing &_aparm;
+
+    enum class NavMode {
+        NONE,
+        WAYPOINT,
+        LOITER,
+        HEADING_HOLD,
+        LEVEL_FLIGHT
+    };
+    NavMode _current_nav_mode = NavMode::NONE;
 
     // lateral acceration in m/s required to fly to the
     // L1 reference point (+ve to right)
@@ -116,13 +139,16 @@ private:
 
     // integral feedback to correct crosstrack error. Used to ensure xtrack converges to zero.
     // For tuning purposes it's helpful to clear the integrator when it changes so a _prev is used
+    void _update_xtrack_integral(float error, float max_abs_error, float clamp);
+    uint32_t _last_update_xtrack_i_us;
     float _L1_xtrack_i = 0;
     AP_Float _L1_xtrack_i_gain;
     float _L1_xtrack_i_gain_prev = 0;
-    uint32_t _last_update_waypoint_us;
     bool _data_is_stale = true;
 
-    AP_Float _loiter_bank_limit;
+    // calculate minimum achievable turn radius based on indicated airspeed and
+    // altitude AMSL (assuming steady, coordinated, level turn)
+    float _calc_min_turn_radius(float ias = NAN, float altitude_amsl = NAN) const;
 
     // remember reached_loiter_target decision
     struct {
