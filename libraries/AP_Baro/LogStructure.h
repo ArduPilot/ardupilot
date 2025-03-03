@@ -33,9 +33,7 @@ struct PACKED log_BARO {
     float   drift_offset;
     float   ground_temp;
     uint8_t healthy;
-#if (HAL_BARO_WIND_COMP_ENABLED || AP_BARO_THST_COMP_ENABLED)
     float   corrected_pressure;
-#endif
 };
 
 // @LoggerMessage: BARD
