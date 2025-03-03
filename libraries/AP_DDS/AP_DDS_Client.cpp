@@ -1682,7 +1682,6 @@ void AP_DDS_Client::update()
 #if AP_DDS_NAVSATFIX_PUB_ENABLED
     for (uint8_t gps_instance = 0; gps_instance < GPS_MAX_INSTANCES; gps_instance++) {
         if (update_topic(nav_sat_fix_topic, gps_instance)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Update Instance %u", gps_instance);
             write_nav_sat_fix_topic();
         }
     }
