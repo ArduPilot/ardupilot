@@ -590,6 +590,9 @@ public:
 #if AP_RANGEFINDER_ENABLED
     // orientation of rangefinder to use for landing
     AP_Int8 rangefinder_land_orient;
+
+    // distance to engage the rangefinder for landing
+    AP_Float rangefinder_land_engagement_distance;
 #endif
 };
 
