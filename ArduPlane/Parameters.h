@@ -574,6 +574,8 @@ public:
     AP_Follow follow;
 #endif
 
+    AP_Int32        guided_update_frequency_limit;
+
     AP_Float        fs_ekf_thresh;
 
     // min initial climb in RTL
