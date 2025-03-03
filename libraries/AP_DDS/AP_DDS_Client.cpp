@@ -209,7 +209,6 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
 
     auto &gps = AP::gps();
     WITH_SEMAPHORE(gps.get_semaphore());
-
     if (!gps.is_healthy(instance)) {
         msg.status.status = -1; // STATUS_NO_FIX
         msg.status.service = 0; // No services supported
@@ -219,12 +218,11 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
 
     // No update is needed
     const auto last_fix_time_ms = gps.last_fix_time_ms(instance);
-    if (last_nav_sat_fix_time_ms == last_fix_time_ms) {
+    if (last_nav_sat_fix_time_ms[instance] == last_fix_time_ms) {
         return false;
     } else {
-        last_nav_sat_fix_time_ms = last_fix_time_ms;
+        last_nav_sat_fix_time_ms[instance] = last_fix_time_ms;
     }
-
 
     update_topic(msg.header.stamp);
     static_assert(GPS_MAX_RECEIVERS <= 9, "GPS_MAX_RECEIVERS is greater than 9");
@@ -1682,9 +1680,10 @@ void AP_DDS_Client::update()
     }
 #endif // AP_DDS_TIME_PUB_ENABLED
 #if AP_DDS_NAVSATFIX_PUB_ENABLED
-    constexpr uint8_t gps_instance = 0;
-    if (update_topic(nav_sat_fix_topic, gps_instance)) {
-        write_nav_sat_fix_topic();
+    for (uint8_t gps_instance = 0; gps_instance < GPS_MAX_INSTANCES; gps_instance++) {
+        if (update_topic(nav_sat_fix_topic, gps_instance)) {
+            write_nav_sat_fix_topic();
+        }
     }
 #endif // AP_DDS_NAVSATFIX_PUB_ENABLED
 #if AP_DDS_BATTERY_STATE_PUB_ENABLED
