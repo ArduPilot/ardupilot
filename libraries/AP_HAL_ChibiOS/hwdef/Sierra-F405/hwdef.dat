@@ -12,7 +12,7 @@ STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 15360
 
 # board ID for firmware load
-APJ_BOARD_ID 1052
+APJ_BOARD_ID AP_HW_SierraF405
 
 env AP_PERIPH 1
 

@@ -12,7 +12,7 @@ APP_START_OFFSET_KB 4
 FLASH_SIZE_KB 256
 
 # board ID for firmware load
-APJ_BOARD_ID 5301
+APJ_BOARD_ID AP_HW_Sierra-TrueNavPro-G4
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

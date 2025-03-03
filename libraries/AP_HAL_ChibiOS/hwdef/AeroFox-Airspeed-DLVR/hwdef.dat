@@ -1,7 +1,7 @@
 include ../f103-periph/hwdef.inc
 
 # board ID for firmware load
-APJ_BOARD_ID 1104
+APJ_BOARD_ID AP_HW_AEROFOX_AIRSPEED_DLVR
 
 define HAL_AIRSPEED_BUS_DEFAULT 0
 

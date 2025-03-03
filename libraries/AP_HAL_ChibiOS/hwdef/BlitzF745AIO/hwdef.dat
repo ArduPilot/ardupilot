@@ -9,7 +9,7 @@ DEFAULTGPIO OUTPUT LOW PULLDOWN
 MCU STM32F7xx STM32F745xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1117
+APJ_BOARD_ID AP_HW_BLITZF7AIO
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000

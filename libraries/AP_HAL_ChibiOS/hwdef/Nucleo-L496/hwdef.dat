@@ -13,7 +13,7 @@ STORAGE_FLASH_PAGE 18
 define HAL_STORAGE_SIZE 800
 
 # board ID for firmware load
-APJ_BOARD_ID 1047
+APJ_BOARD_ID AP_HW_NucleoL496
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

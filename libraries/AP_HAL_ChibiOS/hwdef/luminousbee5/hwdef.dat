@@ -9,7 +9,7 @@ MCU_CLOCKRATE_MHZ 480
 MCU STM32H7xx STM32H743xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1029
+APJ_BOARD_ID AP_HW_luminousbee5
 
 # crystal frequency
 OSCILLATOR_HZ 24000000

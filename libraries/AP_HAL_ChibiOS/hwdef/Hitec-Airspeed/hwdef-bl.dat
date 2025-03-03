@@ -10,7 +10,7 @@ FLASH_BOOTLOADER_LOAD_KB 22
 APP_START_OFFSET_KB 4
 
 # board ID for firmware load
-APJ_BOARD_ID 1046
+APJ_BOARD_ID AP_HW_HITEC_AIRSPEED
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

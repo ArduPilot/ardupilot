@@ -1,6 +1,6 @@
 include ../f103-periph/hwdef-bl.inc
 
 # board ID for firmware load
-APJ_BOARD_ID 1104
+APJ_BOARD_ID AP_HW_AEROFOX_AIRSPEED_DLVR
 
 

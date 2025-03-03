@@ -1,7 +1,7 @@
 include ../PixPilot-V6/hwdef-bl.dat
 
 undef APJ_BOARD_ID
-APJ_BOARD_ID 1097
+APJ_BOARD_ID AP_HW_PixSurveyA2
 
 undef PC2 PC13 PE4
 

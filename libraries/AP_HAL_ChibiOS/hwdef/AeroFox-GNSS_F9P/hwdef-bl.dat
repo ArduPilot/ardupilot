@@ -1,7 +1,7 @@
 # hw definition file AeroFox_GNSS_F9P CAN node
 # MCU class and specific type
 MCU STM32L431 STM32L431xx
-APJ_BOARD_ID 1109
+APJ_BOARD_ID AP_HW_AEROFOX_GNSS_F9P
 
 OSCILLATOR_HZ 8000000
 

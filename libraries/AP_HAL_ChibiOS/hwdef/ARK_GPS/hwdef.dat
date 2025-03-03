@@ -6,7 +6,7 @@
 MCU STM32F4xx STM32F412Rx
 
 # board ID for firmware load
-APJ_BOARD_ID 81
+APJ_BOARD_ID TARGET_HW_ARK_CAN_GPS
 
 env AP_PERIPH 1
 

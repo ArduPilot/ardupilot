@@ -11,7 +11,7 @@ OSCILLATOR_HZ 16000000
 STM32_ST_USE_TIMER 2
 
 # board ID for firmware load
-APJ_BOARD_ID 53
+APJ_BOARD_ID TARGET_HW_PX4_FMU_V6X
 
 # enable board sub-type detection for FMUV6
 define HAL_CHIBIOS_ARCH_FMUV6 1

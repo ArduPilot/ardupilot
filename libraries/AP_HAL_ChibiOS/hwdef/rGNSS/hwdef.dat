@@ -12,7 +12,7 @@ STORAGE_FLASH_PAGE 16
 define HAL_STORAGE_SIZE 800
 
 # board ID for firmware load
-APJ_BOARD_ID 1103
+APJ_BOARD_ID AP_HW_rGNSS
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

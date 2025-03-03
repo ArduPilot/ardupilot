@@ -13,7 +13,7 @@ define STM32_HSE_BYPASS
 define SMPS_EXT
 
 # board ID for firmware load
-APJ_BOARD_ID 1124
+APJ_BOARD_ID AP_HW_mRoCZOEM_revG
 
 FLASH_SIZE_KB 2048
 

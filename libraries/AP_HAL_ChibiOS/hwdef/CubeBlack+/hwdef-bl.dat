@@ -5,7 +5,7 @@
 include ../fmuv3/hwdef-bl.dat
 
 # board ID for firmware load
-APJ_BOARD_ID 1003
+APJ_BOARD_ID AP_HW_CUBEBLACKPLUS
 
 # USB setup
 USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
