@@ -23,7 +23,6 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include <AP_HAL/I2CDevice.h>
 #include <utility>
 
@@ -33,8 +32,10 @@ class AP_Airspeed_AUAV : public AP_Airspeed_Backend
 {
 public:
     AP_Airspeed_AUAV(AP_Airspeed &frontend, uint8_t _instance, const float _range_inH2O);
-    ~AP_Airspeed_AUAV(void) {}
-    
+    ~AP_Airspeed_AUAV(void) {
+        delete _dev;
+    }
+
     // probe and initialise the sensor
     bool init() override;
 
@@ -54,7 +55,7 @@ private:
 
     uint32_t last_sample_time_ms;
     uint32_t measurement_started_ms;
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice *_dev;
 
     float DLIN_A;
     float DLIN_B;

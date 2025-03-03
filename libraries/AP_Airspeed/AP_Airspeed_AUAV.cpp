@@ -49,7 +49,7 @@ AP_Airspeed_AUAV::AP_Airspeed_AUAV(AP_Airspeed &_frontend, uint8_t _instance, co
 // probe for a sensor
 bool AP_Airspeed_AUAV::probe(uint8_t bus, uint8_t address)
 {
-    _dev = hal.i2c_mgr->get_device(bus, address);
+    _dev = hal.i2c_mgr->get_device_ptr(bus, address);
     if (!_dev) {
         return false;
     }

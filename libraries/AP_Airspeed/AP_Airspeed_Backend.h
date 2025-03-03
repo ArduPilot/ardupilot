@@ -31,8 +31,8 @@
 class AP_Airspeed_Backend {
 public:
     AP_Airspeed_Backend(AP_Airspeed &frontend, uint8_t instance);
-    virtual ~AP_Airspeed_Backend();
-    
+    virtual ~AP_Airspeed_Backend() {}
+
     // probe and initialise the sensor
     virtual bool init(void) = 0;
 

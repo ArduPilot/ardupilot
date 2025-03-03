@@ -211,7 +211,7 @@ void AP_Airspeed::set_fixedwing_parameters(const AP_FixedWing *_fixed_wing_param
 }
 
 // macro for use by HAL_INS_PROBE_LIST
-#define GET_I2C_DEVICE(bus, address) hal.i2c_mgr->get_device(bus, address)
+#define GET_I2C_DEVICE(bus, address) hal.i2c_mgr->get_device_ptr(bus, address)
 
 bool AP_Airspeed::add_backend(AP_Airspeed_Backend *backend)
 {
