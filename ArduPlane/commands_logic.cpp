@@ -344,7 +344,7 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
         loiter.direction = 1;
     }
 
-    setup_glide_slope();
+    setup_alt_slope();
     setup_turn_angle();
 }
 
