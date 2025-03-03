@@ -105,5 +105,5 @@
 #endif
 
 #ifndef AP_BARO_THST_COMP_ENABLED
-#define AP_BARO_THST_COMP_ENABLED 1
+#define AP_BARO_THST_COMP_ENABLED 0
 #endif
