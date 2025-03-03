@@ -77,6 +77,20 @@ public:
         return _TAS_dem_adj / _ahrs.get_EAS2TAS();
     }
 
+    // Return stall airspeed, adjusted for bank angle. This is based on
+    // AIRSPEED_MIN as a very conservative estimate if AIRSPEED_STALL is not
+    // set.
+    float get_stall_airspeed(void) const {
+        return _TASmin / _ahrs.get_EAS2TAS();
+    }
+
+    // Return stall airspeed on level flight. This is based on AIRSPEED_MIN as a
+    // very conservative estimate if AIRSPEED_STALL is not set.
+    float get_stall_airspeed_1g(void) const {
+        return is_positive(aparm.airspeed_stall) ? aparm.airspeed_stall
+                                                 : aparm.airspeed_min;
+    }
+
     // return maximum climb rate
     float get_max_climbrate(void) const {
         return _maxClimbRate;
