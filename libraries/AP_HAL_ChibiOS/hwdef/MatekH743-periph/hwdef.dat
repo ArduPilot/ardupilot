@@ -8,7 +8,7 @@ undef HAL_OS_FATFS_IO
 undef OSD_ENABLED
 undef SDMMC1
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_MATEKH743
 
 # setup build for a peripheral firmware

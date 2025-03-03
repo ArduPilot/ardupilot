@@ -10,7 +10,7 @@ FLASH_RESERVE_START_KB 25
 STORAGE_FLASH_PAGE 23
 define HAL_STORAGE_SIZE 800
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID 1000
 
 # setup build for a peripheral firmware

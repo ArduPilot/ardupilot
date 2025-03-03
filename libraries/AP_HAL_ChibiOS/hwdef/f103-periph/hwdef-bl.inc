@@ -9,7 +9,7 @@ FLASH_BOOTLOADER_LOAD_KB 23
 # reserve some space for params
 APP_START_OFFSET_KB 2
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID 1000
 
 # setup build for a peripheral firmware

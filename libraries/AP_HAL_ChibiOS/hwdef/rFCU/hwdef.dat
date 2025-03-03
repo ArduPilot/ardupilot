@@ -11,7 +11,7 @@ DEFAULTGPIO OUTPUT LOW PULLDOWN
 # crystal frequency
 OSCILLATOR_HZ 16000000
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_rFCU
 
 FLASH_SIZE_KB 2048

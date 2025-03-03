@@ -15,7 +15,7 @@ define HAL_STORAGE_SIZE 1800
 STM32_ST_USE_TIMER 15
 define CH_CFG_ST_RESOLUTION 16
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_MatekG474
 
 # crystal frequency

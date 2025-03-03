@@ -11,7 +11,7 @@ undef IOMCU_UART
 define AP_ADVANCEDFAILSAFE_ENABLED 0
 
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_CUBERED_PERIPH
 
 # setup build for a peripheral firmware

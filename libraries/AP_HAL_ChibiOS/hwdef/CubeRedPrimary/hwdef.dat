@@ -16,7 +16,7 @@ define SMPS_PWR
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_CUBERED_PRIMARY
 
 FLASH_SIZE_KB 2048

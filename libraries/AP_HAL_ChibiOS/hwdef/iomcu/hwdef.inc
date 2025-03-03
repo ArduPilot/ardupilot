@@ -4,7 +4,7 @@
 
 FLASH_RESERVE_START_KB 4
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID 3
 
 # crystal frequency

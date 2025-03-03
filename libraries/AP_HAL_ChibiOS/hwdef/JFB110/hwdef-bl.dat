@@ -1,7 +1,7 @@
 # hw definition file for processing by chibios_hwdef.py
 # for the JFB110 hardware
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_JFB110
 
 # MCU class and specific type
