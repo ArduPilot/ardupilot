@@ -959,6 +959,7 @@ class sitl_periph_universal(sitl_periph):
             AP_PERIPH_BARO_ENABLED = 1,
             AP_PERIPH_IMU_ENABLED = 1,
             AP_PERIPH_RANGEFINDER_ENABLED = 1,
+            AP_PERIPH_DEVICE_TEMPERATURE_ENABLED = 0,
             AP_PERIPH_BATTERY_ENABLED = 1,
             AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
             AP_PERIPH_EFI_ENABLED = 1,
@@ -996,6 +997,7 @@ class sitl_periph_gps(sitl_periph):
             APJ_BOARD_ID = 101,
 
             AP_PERIPH_BATTERY_ENABLED = 0,
+            AP_PERIPH_DEVICE_TEMPERATURE_ENABLED = 0,
             AP_PERIPH_SERIAL_OPTIONS_ENABLED = 0,
             AP_PERIPH_ADSB_ENABLED = 0,
             AP_PERIPH_PROXIMITY_ENABLED = 0,
@@ -1031,6 +1033,7 @@ class sitl_periph_battmon(sitl_periph):
             APJ_BOARD_ID = 101,
 
             AP_PERIPH_BATTERY_ENABLED = 1,
+            AP_PERIPH_DEVICE_TEMPERATURE_ENABLED = 0,
             AP_PERIPH_SERIAL_OPTIONS_ENABLED = 0,
             AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
             AP_PERIPH_RELAY_ENABLED = 0,

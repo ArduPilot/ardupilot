@@ -1963,7 +1963,7 @@ void AP_Periph_FW::can_update()
     #if AP_PERIPH_EFI_ENABLED
         can_efi_update();
     #endif
-#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+#if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
         temperature_sensor_update();
 #endif
 #if AP_PERIPH_RPM_STREAM_ENABLED
