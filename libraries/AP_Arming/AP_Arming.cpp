@@ -717,9 +717,9 @@ bool AP_Arming::groundspeed_checks(bool report)
         return true;
     }
     // check only the first GPS:
-    const float gps_groundspeed = AP::gps().ground_speed();
-    const float ahrs_groundspeed = AP::ahrs().groundspeed();
-    if (fabsf(gps_groundspeed - ahrs_groundspeed) > 1.0f) {
+    const Vector2f gps_groundspeed = AP::gps().velocity().xy();
+    const Vector2f ahrs_groundspeed = AP::ahrs().groundspeed_vector();
+    if ((gps_groundspeed - ahrs_groundspeed).length_squared() > 1.0) {
         check_failed(ARMING_CHECK_GPS, report, "GPS vs AHRS speed mismatch (%0.1f/%0.1f)", gps_groundspeed, ahrs_groundspeed);
         return false;
     }
