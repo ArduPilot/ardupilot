@@ -75,7 +75,7 @@ public:
     // dynamic pressure in Pascal. Divide by 100 for millibars or hectopascals
     const Vector3f& get_dynamic_pressure(uint8_t instance) const { return sensors[instance].dynamic_pressure; }
 #endif
-#if AP_BARO_THST_COMP_ENABLED
+#if (HAL_BARO_WIND_COMP_ENABLED || AP_BARO_THST_COMP_ENABLED)
     float get_corrected_pressure(uint8_t instance) const { return sensors[instance].corrected_pressure; }
 #endif
 
@@ -304,6 +304,8 @@ private:
 #endif
 #if AP_BARO_THST_COMP_ENABLED
         AP_Float mot_scale;             // thrust-based pressure scaling
+#endif
+#if (HAL_BARO_WIND_COMP_ENABLED || AP_BARO_THST_COMP_ENABLED)
         float corrected_pressure;
 #endif
     } sensors[BARO_MAX_INSTANCES];
