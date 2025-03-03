@@ -23,12 +23,6 @@
 
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 
-#if HAL_WITH_IO_MCU
-#include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_IOMCU/AP_IOMCU.h>
-extern AP_IOMCU iomcu;
-#endif
-
 #include <AP_Math/AP_Math.h>
 
 #include <GCS_MAVLink/GCS.h>
@@ -127,11 +121,6 @@ void RCInput::_timer_tick(void)
     if (!_init) {
         return;
     }
-#if AP_HAVE_GCS_SEND_TEXT
-    const char *rc_protocol = nullptr;
-    RCSource source = last_source;
-#endif
-
 #if AP_RCPROTOCOL_ENABLED
     AP_RCProtocol &rcprot = AP::RC();
 
@@ -155,20 +144,7 @@ void RCInput::_timer_tick(void)
     }
 #endif
 
-#endif  // AP_RCPROTOCOL_ENABLED
-
-#if HAL_WITH_IO_MCU
-    uint32_t now = AP_HAL::millis();
-    const bool have_iocmu_rc = (_rcin_last_iomcu_ms != 0 && now - _rcin_last_iomcu_ms < 400);
-    if (!have_iocmu_rc) {
-        _rcin_last_iomcu_ms = 0;
-    }
-#elif AP_RCPROTOCOL_ENABLED
-    const bool have_iocmu_rc = false;
-#endif
-
-#if AP_RCPROTOCOL_ENABLED
-    if (rcprot.new_input() && !have_iocmu_rc) {
+    if (rcprot.new_input()) {
         WITH_SEMAPHORE(rcin_mutex);
         _rcin_timestamp_last_signal = AP_HAL::micros();
         _num_channels = rcprot.num_channels();
@@ -176,60 +152,12 @@ void RCInput::_timer_tick(void)
         rcprot.read(_rc_values, _num_channels);
         _rssi = rcprot.get_RSSI();
         _rx_link_quality = rcprot.get_rx_link_quality();
-#if AP_HAVE_GCS_SEND_TEXT
-        rc_protocol = rcprot.protocol_name();
-        source = rcprot.using_uart() ? RCSource::RCPROT_BYTES : RCSource::RCPROT_PULSES;
-#endif
     }
-#endif // AP_RCPROTOCOL_ENABLED
 
-#if HAL_WITH_IO_MCU
-    {
-        WITH_SEMAPHORE(rcin_mutex);
-        if (AP_BoardConfig::io_enabled() &&
-            iomcu.check_rcinput(last_iomcu_us, _num_channels, _rc_values, RC_INPUT_MAX_CHANNELS)) {
-            _rcin_timestamp_last_signal = last_iomcu_us;
-            _rcin_last_iomcu_ms = now;
-#if AP_HAVE_GCS_SEND_TEXT
-            rc_protocol = iomcu.get_rc_protocol();
-            _rssi = iomcu.get_RSSI();
-            source = RCSource::IOMCU;
-#endif
-        }
-    }
-#endif
-
-#if AP_HAVE_GCS_SEND_TEXT
-    if (rc_protocol && (rc_protocol != last_protocol || source != last_source)) {
-        last_protocol = rc_protocol;
-        last_source = source;
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s(%u)", last_protocol, unsigned(source));
-    }
-#endif
+#endif  // AP_RCPROTOCOL_ENABLED
 
     // note, we rely on the vehicle code checking new_input()
     // and a timeout for the last valid input to handle failsafe
 }
 
-/*
-  start a bind operation, if supported
- */
-bool RCInput::rc_bind(int dsmMode)
-{
-#if HAL_WITH_IO_MCU
-    {
-        WITH_SEMAPHORE(rcin_mutex);
-        if (AP_BoardConfig::io_enabled()) {
-            iomcu.bind_dsm(dsmMode);
-        }
-    }
-#endif
-
-#if AP_RCPROTOCOL_ENABLED
-    // ask AP_RCProtocol to start a bind
-    AP::RC().start_bind();
-#endif
-
-    return true;
-}
 #endif //#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
