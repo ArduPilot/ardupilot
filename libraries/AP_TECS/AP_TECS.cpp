@@ -411,6 +411,10 @@ void AP_TECS::_update_speed(float DT)
     _TASmax   = MIN(_TASmax, aparm.airspeed_max * EAS2TAS);
     _TASmin   = aparm.airspeed_min * EAS2TAS;
 
+    if (_landing.is_on_final() && is_positive(aparm.airspeed_stall)) {
+        _TASmin = aparm.airspeed_stall * EAS2TAS;
+    }
+
     if (aparm.stall_prevention) {
         // when stall prevention is active we raise the minimum
         // airspeed based on aerodynamic load factor
@@ -1156,7 +1160,7 @@ void AP_TECS::_initialise_states(float hgt_afe)
         _pitch_measured_lpf.reset(_ahrs.get_pitch());
 
     } else if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
-        
+
         if (!_flag_throttle_forced) {
             // Calculate the takeoff target height offset before _hgt_dem_in_raw gets reset below.
             // Prevent the offset from becoming negative.
@@ -1180,7 +1184,7 @@ void AP_TECS::_initialise_states(float hgt_afe)
         _max_sink_scaler = 1.0f;
         _pitch_demand_lpf.reset(_ahrs.get_pitch());
         _pitch_measured_lpf.reset(_ahrs.get_pitch());
-        
+
 
         if (!_flag_have_reset_after_takeoff) {
             _flags.reset          = true;
@@ -1394,7 +1398,7 @@ void AP_TECS::_update_throttle_limits() {
     } else {
         _flag_throttle_forced = false;
     }
-    
+
     // Reset the external throttle limits.
     // Caller will have to reset them in the next iteration.
     _THRminf_ext = -1.0f;
@@ -1489,7 +1493,7 @@ void AP_TECS::_update_pitch_limits(const int32_t ptchMinCO_cd) {
     // Apply external limits.
     _PITCHmaxf = MIN(_PITCHmaxf, _PITCHmaxf_ext);
     _PITCHminf = MAX(_PITCHminf, _PITCHminf_ext);
-    
+
     // Reset the external pitch limits.
     _PITCHminf_ext = -90.0f;
     _PITCHmaxf_ext = 90.0f;
