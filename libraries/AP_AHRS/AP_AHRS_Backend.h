@@ -292,4 +292,17 @@ public:
     virtual void set_terrain_hgt_stable(bool stable) {}
 
     virtual void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const = 0;
+
+    enum class DATA_SENDING_STATE {
+        ENABLED,
+        DISABLED
+    };
+    // enable/disable sending data to autopilot. Can be used to simulate AHRS failure.
+    virtual void set_data_sending_state(DATA_SENDING_STATE state) {};
+
+    enum class GPS_STATE {
+        ENABLED,
+        DISABLED
+    };
+    virtual void set_gps_state(GPS_STATE state) {};
 };
