@@ -171,6 +171,9 @@ public:
     bool sys_status_enabled() const;
     bool sys_status_failed() const;
 
+    // Send the currnet fence to GCS on all active MAVLink channels
+    bool broadcast_fence();
+
     AC_PolyFence_loader &polyfence();
     const AC_PolyFence_loader &polyfence() const;
 
