@@ -274,6 +274,9 @@ public:
      */
     virtual bool get_wp_distance_m(float &distance) const { return false; }
 
+    // return the lat/lon/alt etc of waypoint location:
+    virtual bool get_wp_location(Location &loc) const { return false; }
+
     /*
       get the current wp bearing in degrees
       return false if failed or n/a

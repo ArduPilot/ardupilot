@@ -8,6 +8,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Terrain/AP_Terrain.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -53,7 +54,7 @@ bool AP_Mount_Backend::has_pitch_control() const
 bool AP_Mount_Backend::valid_mode(MAV_MOUNT_MODE mode) const
 {
     switch (mode) {
-    case MAV_MOUNT_MODE_RETRACT...MAV_MOUNT_MODE_HOME_LOCATION:
+    case MAV_MOUNT_MODE_RETRACT...MAV_MOUNT_MODE_WPNEXT_OFFSET:
         return true;
     case MAV_MOUNT_MODE_ENUM_END:
         return false;
@@ -174,6 +175,19 @@ void AP_Mount_Backend::clear_roi_target()
         set_mode(default_mode);
     }
 }
+
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+// set_roi_target_wpnext_offset - point towards next waypoint with a
+// given attitude offset
+void AP_Mount_Backend::set_roi_target_wpnext_offset(const Vector3f &rpy)
+{
+    // set the target gps location
+    _roi_wpnext_rpy = rpy;
+
+    // set the mode to GPS tracking mode
+    set_mode(MAV_MOUNT_MODE_WPNEXT_OFFSET);
+}
+#endif
 
 // set_sys_target - sets system that mount should attempt to point towards
 void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
@@ -811,6 +825,7 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
     switch (_mode) {
     case MAV_MOUNT_MODE_RETRACT:
     case MAV_MOUNT_MODE_NEUTRAL:
+    case MAV_MOUNT_MODE_WPNEXT_OFFSET:
         // these modes always use body-frame yaw (aka follow)
         yaw_lock_state = false;
         break;
@@ -858,6 +873,37 @@ bool AP_Mount_Backend::get_angle_target_to_home(MountTarget& angle_rad) const
     }
     return get_angle_target_to_location(AP::ahrs().get_home(), angle_rad);
 }
+
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+// get angle targets (in radians) to next waypoint, with offsets previously supplied
+// returns true on success, false on failure
+bool AP_Mount_Backend::get_angle_target_to_wpnext_offset(MountTarget& angle_rad) const
+{
+    Location wp_loc;
+
+    if (!AP::vehicle()->get_wp_location(wp_loc)) {
+        return false;
+    }
+
+    if (!get_angle_target_to_location(wp_loc, angle_rad)) {
+        return false;
+    }
+
+    // now add the offsets, wrapping as required:
+    angle_rad.roll += radians(_roi_wpnext_rpy[0]);
+    angle_rad.pitch += radians(_roi_wpnext_rpy[1]);
+    angle_rad.yaw += radians(_roi_wpnext_rpy[2]);
+    angle_rad.roll = wrap_PI(angle_rad.roll);
+    angle_rad.pitch = wrap_PI(angle_rad.pitch);
+    if (angle_rad.yaw_is_ef) {
+        angle_rad.yaw = wrap_2PI(angle_rad.yaw);
+    } else {
+        angle_rad.yaw = wrap_PI(angle_rad.yaw);
+    }
+
+    return true;
+}
+#endif
 
 // get angle targets (in radians) to a vehicle with sysid of  _target_sysid
 // returns true on success, false on failure
