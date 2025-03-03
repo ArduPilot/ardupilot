@@ -154,5 +154,8 @@ define AP_BARO_SPL06_BACKGROUND_ENABLE 1
 # 4S version has no baro
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
+# enable baro thrust scaling
+define AP_BARO_THST_COMP_ENABLED 1
+
 include ../include/minimize_fpv_osd.inc
 AUTOBUILD_TARGETS Copter
