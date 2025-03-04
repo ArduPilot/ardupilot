@@ -53,7 +53,7 @@
 #endif
 #include <AP_Relay/AP_Relay.h>
 #if !AP_RELAY_ENABLED
-    #error "HAL_PERIPH_ENABLE_RELAY requires AP_RELAY_ENABLED"
+    #error "AP_PERIPH_RELAY_ENABLED requires AP_RELAY_ENABLED"
 #endif
 #endif
 
