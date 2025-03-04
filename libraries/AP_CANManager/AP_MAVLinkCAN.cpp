@@ -16,8 +16,11 @@
 #include "AP_MAVLinkCAN.h"
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Common/sorting.h>
+#if AP_NETWORKING_CAN_MCAST_ENABLED
+#include <AP_Networking/AP_Networking.h>
+#endif
 
-#if HAL_CANMANAGER_ENABLED && HAL_GCS_ENABLED
+#if AP_MAVLINK_CAN_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -49,6 +52,11 @@ bool AP_MAVLinkCAN::handle_can_forward(mavlink_channel_t chan, const mavlink_com
           the client is changing which bus they are monitoring, unregister from the previous bus
          */
         hal.can[can_forward.callback_bus]->unregister_frame_callback(can_forward.callback_id);
+#if AP_NETWORKING_CAN_MCAST_ENABLED
+        if (AP::network().is_can_mcast_mavcan_bridged(can_forward.callback_bus)) {
+            AP::network().get_mcast_can().unregister_frame_callback(can_forward.callback_bus);
+        }
+#endif
         can_forward.callback_id = 0;
     }
 
@@ -59,6 +67,12 @@ bool AP_MAVLinkCAN::handle_can_forward(mavlink_channel_t chan, const mavlink_com
         return false;
     }
 
+#if AP_NETWORKING_CAN_MCAST_ENABLED
+    if (AP::network().is_can_mcast_mavcan_bridged(bus)) {
+        AP::network().get_mcast_can().register_frame_callback(bus,
+            FUNCTOR_BIND_MEMBER(&AP_MAVLinkCAN::can_frame_callback, void, uint8_t, const AP_HAL::CANFrame &, AP_HAL::CANIface::CanIOFlags));
+    }
+#endif
     can_forward.callback_bus = bus;
     can_forward.last_callback_enable_ms = AP_HAL::millis();
     can_forward.chan = chan;
@@ -151,6 +165,11 @@ void AP_MAVLinkCAN::process_frame_buffer()
             // no space in the CAN output slots, try again later
             break;
         }
+#if AP_NETWORKING_CAN_MCAST_ENABLED
+        if (AP::network().is_can_mcast_mavcan_bridged(frame.bus)) {
+            AP::network().get_mcast_can().can_frame_callback(frame.bus, frame.frame);
+        }
+#endif
         // retcode == 1 means sent, -1 means a frame that can't be
         // sent. Either way we should remove from the queue
         frame_buffer->pop();
@@ -304,4 +323,4 @@ void AP_MAVLinkCAN::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &fram
     }
 }
 
-#endif // HAL_CANMANAGER_ENABLED && HAL_GCS_ENABLED
+#endif // AP_MAVLINK_CAN_ENABLED
