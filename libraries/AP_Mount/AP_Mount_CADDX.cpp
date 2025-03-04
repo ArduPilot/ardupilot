@@ -63,6 +63,7 @@ void AP_Mount_CADDX::update()
                 mnt_target.rate_rads = rc_target;
                 break;
             }
+            resend_now = true;
             break;
         }
 
