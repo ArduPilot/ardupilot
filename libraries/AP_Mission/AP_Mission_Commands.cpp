@@ -268,9 +268,9 @@ bool AP_Mission::command_do_set_repeat_dist(const AP_Mission::Mission_Command& c
     return true;
 }
 
+#if HAL_SPRAYER_ENABLED
 bool AP_Mission::start_command_do_sprayer(const AP_Mission::Mission_Command& cmd)
 {
-#if HAL_SPRAYER_ENABLED
     AC_Sprayer *sprayer = AP::sprayer();
     if (sprayer == nullptr) {
         return false;
@@ -283,14 +283,12 @@ bool AP_Mission::start_command_do_sprayer(const AP_Mission::Mission_Command& cmd
     }
 
     return true;
-#else
-    return false;
-#endif // HAL_SPRAYER_ENABLED
 }
+#endif // HAL_SPRAYER_ENABLED
 
+#if AP_SCRIPTING_ENABLED
 bool AP_Mission::start_command_do_scripting(const AP_Mission::Mission_Command& cmd)
 {
-#if AP_SCRIPTING_ENABLED
     AP_Scripting *scripting = AP_Scripting::get_singleton();
     if (scripting == nullptr) {
         return false;
@@ -299,14 +297,12 @@ bool AP_Mission::start_command_do_scripting(const AP_Mission::Mission_Command& c
     scripting->handle_mission_command(cmd);
 
     return true;
-#else
-    return false;
-#endif // AP_SCRIPTING_ENABLED
 }
+#endif // AP_SCRIPTING_ENABLED
 
+#if HAL_MOUNT_ENABLED
 bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd)
 {
-#if HAL_MOUNT_ENABLED
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
         return false;
@@ -343,14 +339,14 @@ bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Miss
         return true;
     }
 
-#endif // HAL_MOUNT_ENABLED
     // if we got this far then message is not handled
     return false;
 }
+#endif // HAL_MOUNT_ENABLED
 
+#if AP_FENCE_ENABLED
 bool AP_Mission::start_command_fence(const AP_Mission::Mission_Command& cmd)
 {
-#if AP_FENCE_ENABLED
     AC_Fence* fence = AP::fence();
 
     if (fence == nullptr) {
@@ -370,8 +366,8 @@ bool AP_Mission::start_command_fence(const AP_Mission::Mission_Command& cmd)
         fence->print_fence_message("disabled", AC_FENCE_TYPE_ALT_MIN);
         return true;
     }
-#endif // AP_FENCE_ENABLED
     return false;
 }
+#endif // AP_FENCE_ENABLED
 
 #endif  // AP_MISSION_ENABLED
