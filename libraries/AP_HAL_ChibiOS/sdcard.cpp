@@ -41,7 +41,7 @@ static SDCConfig sdcconfig = {
 };
 #elif HAL_USE_MMC_SPI
 MMCDriver MMCD1;
-static AP_HAL::OwnPtr<AP_HAL::SPIDevice> device;
+static AP_HAL::SPIDevice *device;
 static MMCConfig mmcconfig;
 static SPIConfig lowspeed;
 static SPIConfig highspeed;
@@ -114,18 +114,19 @@ bool sdcard_init()
 
     sdcard_running = true;
 
-    device = AP_HAL::get_HAL().spi->get_device("sdcard");
-    if (!device) {
-        printf("No sdcard SPI device found\n");
-        sdcard_running = false;
-        return false;
+    if (device == nullptr) {
+        device = AP_HAL::get_HAL().spi->get_device_ptr("sdcard");
+        if (!device) {
+            printf("No sdcard SPI device found\n");
+            sdcard_running = false;
+            return false;
+        }
     }
     device->set_slowdown(sd_slowdown);
 
     mmcObjectInit(&MMCD1, MMCD1.buffer);
 
-    mmcconfig.spip =
-            static_cast<ChibiOS::SPIDevice*>(device.get())->get_driver();
+    mmcconfig.spip = (static_cast<ChibiOS::SPIDevice*>(device))->get_driver();
     mmcconfig.hscfg = &highspeed;
     mmcconfig.lscfg = &lowspeed;
 
@@ -220,7 +221,7 @@ void spiStopHook(SPIDriver *spip)
 __RAMFUNC__ void spiAcquireBusHook(SPIDriver *spip)
 {
     if (sdcard_running) {
-        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device.get());
+        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device);
         devptr->acquire_bus(true, true);
     }
 }
@@ -228,7 +229,7 @@ __RAMFUNC__ void spiAcquireBusHook(SPIDriver *spip)
 __RAMFUNC__ void spiReleaseBusHook(SPIDriver *spip)
 {
     if (sdcard_running) {
-        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device.get());
+        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device);
         devptr->acquire_bus(false, true);
     }
 }
