@@ -33,7 +33,7 @@ void AP_TemperatureSensor_SHT3x::init()
     constexpr char name[] = "SHT3x";
     (void)name;  // sometimes this is unused (e.g. HAL_GCS_ENABLED false)
 
-    _dev = std::move(hal.i2c_mgr->get_device(_params.bus, _params.bus_address));
+    _dev = hal.i2c_mgr->get_device_ptr(_params.bus, _params.bus_address);
     if (!_dev) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s device is null!", name);
         return;
