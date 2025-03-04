@@ -19,7 +19,7 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include "AP_CANManager_config.h"
 
-#if HAL_CANMANAGER_ENABLED && HAL_GCS_ENABLED
+#if AP_MAVLINK_CAN_ENABLED
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/CANIface.h>
