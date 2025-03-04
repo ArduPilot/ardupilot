@@ -392,7 +392,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(hardpoint_rate, "HARDPOINT_RATE", 100),
 #endif
 
-#if AP_PERIPH_HOBBYWING_ESC_ENABLED || defined(HAL_PERIPH_ENABLE_ESC_APD)
+#if AP_PERIPH_HOBBYWING_ESC_ENABLED || AP_PERIPH_ESC_APD_ENABLED
     // @Param: ESC_NUMBER
     // @DisplayName: ESC number
     // @Description: This is the ESC number to report as in UAVCAN ESC telemetry feedback packets.
@@ -589,11 +589,11 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(kdecan, "KDE_",   AP_KDECAN),
 #endif
 
-#if defined(HAL_PERIPH_ENABLE_ESC_APD)
+#if AP_PERIPH_ESC_APD_ENABLED
     GARRAY(pole_count, 0, "ESC_NUM_POLES", 22),
 #endif
 
-#if defined(HAL_PERIPH_ENABLE_ESC_APD)
+#if AP_PERIPH_ESC_APD_ENABLED
     // @Param: ESC_APD_SERIAL_1
     // @DisplayName: ESC APD Serial 1
     // @Description: Which serial port to use for APD ESC data

@@ -335,7 +335,7 @@ public:
     AP_KDECAN kdecan;
 #endif
     
-#ifdef HAL_PERIPH_ENABLE_ESC_APD
+#if AP_PERIPH_ESC_APD_ENABLED
     ESC_APD_Telem *apd_esc_telem[APD_ESC_INSTANCES];
     void apd_esc_telem_update();
 #endif
