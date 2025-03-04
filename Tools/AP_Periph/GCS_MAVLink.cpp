@@ -84,4 +84,29 @@ MAV_RESULT GCS_MAVLINK_Periph::handle_preflight_reboot(const mavlink_command_int
 #endif
 }
 
+#if AP_MAVLINK_CAN_ENABLED
+/*
+  handle MAV_CMD_CAN_FORWARD
+ */
+MAV_RESULT GCS_MAVLINK_Periph::handle_can_forward(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    return mavcan.handle_can_forward(chan, packet, msg) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+}
+
+/*
+  handle CAN_FRAME messages
+ */
+void GCS_MAVLINK_Periph::handle_can_frame(const mavlink_message_t &msg)
+{
+    mavcan.handle_can_frame(msg);
+}
+
+/*
+  handle CAN filter modification messages
+ */
+void GCS_MAVLINK_Periph::handle_can_filter_modify(const mavlink_message_t &msg)
+{
+    mavcan.handle_can_filter_modify(msg);
+}
+#endif // AP_MAVLINK_CAN_ENABLED
 #endif // #if HAL_GCS_ENABLED
