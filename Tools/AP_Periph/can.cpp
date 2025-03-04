@@ -1839,7 +1839,7 @@ void AP_Periph_FW::esc_telem_extended_update(const uint32_t &now_ms)
 }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_ESC_APD
+#if AP_PERIPH_ESC_APD_ENABLED
 void AP_Periph_FW::apd_esc_telem_update()
 {
     for(uint8_t i = 0; i < ARRAY_SIZE(apd_esc_telem); i++) {
@@ -1872,7 +1872,7 @@ void AP_Periph_FW::apd_esc_telem_update()
     }
 
 }
-#endif // HAL_PERIPH_ENABLE_ESC_APD
+#endif // AP_PERIPH_ESC_APD_ENABLED
 #endif // AP_PERIPH_RC_OUT_ENABLED
 
 void AP_Periph_FW::can_update()
@@ -1951,7 +1951,7 @@ void AP_Periph_FW::can_update()
     #if AP_PERIPH_HOBBYWING_ESC_ENABLED
         hwesc_telem_update();
     #endif
-#ifdef HAL_PERIPH_ENABLE_ESC_APD
+#if AP_PERIPH_ESC_APD_ENABLED
         apd_esc_telem_update();
 #endif
     #if AP_PERIPH_MSP_ENABLED
