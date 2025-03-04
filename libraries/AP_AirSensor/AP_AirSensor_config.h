@@ -1,0 +1,26 @@
+#pragma once
+
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_Airspeed/AP_Airspeed_config.h>
+#include <AP_WindVane/AP_WindVane_config.h>
+#include <AP_Scripting/AP_Scripting_config.h>
+
+#ifndef AP_AIRSENSOR_ENABLED
+#define AP_AIRSENSOR_ENABLED 1
+#endif
+
+#ifndef AP_AIRSENSOR_AIRSPEED_ENABLED
+#define AP_AIRSENSOR_AIRSPEED_ENABLED (AP_AIRSENSOR_ENABLED && AP_AIRSPEED_ENABLED)
+#endif
+
+#ifndef AP_AIRSENSOR_WINDVANE_ENABLED
+#define AP_AIRSENSOR_WINDVANE_ENABLED (AP_AIRSENSOR_ENABLED && AP_WINDVANE_ENABLED)
+#endif
+
+#ifndef AP_AIRSENSOR_SCRIPTING_ENABLED
+#define AP_AIRSENSOR_SCRIPTING_ENABLED (AP_AIRSENSOR_ENABLED && AP_SCRIPTING_ENABLED)
+#endif
+
+#ifndef AP_AIR_SENSOR_MAX_SENSORS
+#define AP_AIR_SENSOR_MAX_SENSORS 1
+#endif

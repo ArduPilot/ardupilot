@@ -4101,3 +4101,37 @@ function AP_Servo_Telem_Data_ud:measured_position() end
 -- get commanded position
 ---@return number|nil -- comanded position in degrees or nil if not available
 function AP_Servo_Telem_Data_ud:command_position() end
+
+-- Proximity backend methods
+---@class (exact) AP_AirSensor_Backend_ud
+local AP_AirSensor_Backend_ud = {}
+
+-- type of backend
+---@return integer
+function AP_AirSensor_Backend_ud:type() end
+
+-- send 3d object as 3d vector
+---@param vector_3d Vector3f_ud
+---@return boolean
+function AP_AirSensor_Backend_ud:handle_script_3d_msg(vector_3d) end
+
+-- get angle of attack
+---@param aoa number
+---@return number|nil -- temperature if available
+function AP_AirSensor_Backend_ud:get_aoa() end
+
+-- desc
+air_sensor = {}
+
+-- get backend based on air sensor instance provided
+---@param instance integer
+---@return AP_AirSensor_Backend_ud|nil
+function air_sensor:get_backend(instance) end
+
+-- desc
+---@return integer
+function air_sensor:num_sensors() end
+
+-- desc
+---@return integer
+function air_sensor:get_status() end
