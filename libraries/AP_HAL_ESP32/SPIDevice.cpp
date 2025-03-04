@@ -17,7 +17,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include "Scheduler.h"
 #include "Semaphores.h"
 #include <stdio.h>
@@ -184,8 +183,8 @@ bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
     return bus.adjust_timer(h, period_usec);
 }
 
-AP_HAL::OwnPtr<AP_HAL::SPIDevice>
-SPIDeviceManager::get_device(const char *name)
+AP_HAL::SPIDevice *
+SPIDeviceManager::get_device_ptr(const char *name)
 {
 #ifdef SPIDEBUG
     printf("%s:%d %s\n", __PRETTY_FUNCTION__, __LINE__, name);
@@ -197,7 +196,7 @@ SPIDeviceManager::get_device(const char *name)
         }
     }
     if (i == ARRAY_SIZE(device_desc)) {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
+        return nullptr;
     }
     SPIDeviceDesc &desc = device_desc[i];
 
@@ -239,6 +238,6 @@ SPIDeviceManager::get_device(const char *name)
     printf("%s:%d 444\n", __PRETTY_FUNCTION__, __LINE__);
 #endif
 
-    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(NEW_NOTHROW SPIDevice(*busp, desc));
+    return NEW_NOTHROW SPIDevice(*busp, desc);
 }
 
