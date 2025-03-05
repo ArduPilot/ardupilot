@@ -35,6 +35,7 @@ enum class PiccoloCAN_MessageGroup : uint8_t {
     ECU_OUT = 0x08,         //!< Messages *from* an ECU
     ECU_IN = 0x09,          //!< Message *to* an ECU
 
+    BATTERY = 0x1A,         //!< Battery / generator messages
     SYSTEM = 0x19,          //!< System messages (e.g. bootloader)
 };
 
@@ -42,6 +43,7 @@ enum class PiccoloCAN_MessageGroup : uint8_t {
 enum class PiccoloCAN_ActuatorType : uint8_t {
     SERVO = 0x00,
     ESC = 0x20,
+    CORTEX = 0x35,
 };
 
 

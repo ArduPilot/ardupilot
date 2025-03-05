@@ -107,6 +107,8 @@ private:
     bool handle_ecu_message(AP_HAL::CANFrame &frame);
 #endif
 
+    bool handle_cortex_message(AP_HAL::CANFrame &frame);
+
     bool _initialized;
     char _thread_name[16];
     uint8_t _driver_index;

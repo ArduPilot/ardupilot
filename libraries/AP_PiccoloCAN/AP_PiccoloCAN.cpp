@@ -256,6 +256,9 @@ void AP_PiccoloCAN::loop()
                 case PiccoloCAN_ActuatorType::ESC:
                     handle_esc_message(rxFrame);
                     break;
+                case PiccoloCAN_ActuatorType::CORTEX:
+                    // TODO: Handle the Cortex / ESC crossover messages
+                    break;
                 default:
                     // Unknown actuator type
                     break;
@@ -266,6 +269,9 @@ void AP_PiccoloCAN::loop()
             #if AP_EFI_CURRAWONG_ECU_ENABLED
                 handle_ecu_message(rxFrame);
             #endif
+                break;
+            case PiccoloCAN_MessageGroup::BATTERY:
+                handle_cortex_message(rxFrame);
                 break;
             default:
                 break;
@@ -626,6 +632,15 @@ bool AP_PiccoloCAN::handle_ecu_message(AP_HAL::CANFrame &frame)
     return false;
 }
 #endif // AP_EFI_CURRAWONG_ECU_ENABLED
+
+
+bool AP_PiccoloCAN::handle_cortex_message(AP_HAL::CANFrame &frame)
+{
+    // TODO - Implement this...
+
+    return false;
+}
+
 
 /**
  * Check if a given servo channel is "active" (has been configured for Piccolo control output)
