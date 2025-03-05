@@ -489,6 +489,9 @@ class WaitAndMaintain(object):
         self.last_progress_print = 0
         self.progress_print_interval = progress_print_interval
         self.comparator = comparator
+        if self.minimum_duration is not None:
+            if self.timeout < self.minimum_duration:
+                raise ValueError("timeout less than min duration")
 
         self.fn = fn
         self.fn_interval = fn_interval
@@ -700,6 +703,17 @@ class WaitAndMaintainArmed(WaitAndMaintain):
 
     def announce_start_text(self):
         return "Ensuring vehicle remains armed"
+
+
+class WaitAndMaintainDisarmed(WaitAndMaintain):
+    def get_current_value(self):
+        return self.test_suite.armed()
+
+    def get_target_value(self):
+        return False
+
+    def announce_start_text(self):
+        return "Ensuring vehicle remains disarmed"
 
 
 class WaitAndMaintainServoChannelValue(WaitAndMaintain):
