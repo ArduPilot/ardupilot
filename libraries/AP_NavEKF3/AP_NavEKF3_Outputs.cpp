@@ -6,7 +6,7 @@
 #include <GCS_MAVLink/GCS.h>
 
 // Check basic filter health metrics and return a consolidated health status
-bool NavEKF3_core::healthy(void) const
+bool NavEKF3_core::healthy(bool requires_position) const
 {
     uint16_t faultInt;
     getFilterFaults(faultInt);
@@ -26,6 +26,17 @@ bool NavEKF3_core::healthy(void) const
     float horizErrSq = sq(innovVelPos[3]) + sq(innovVelPos[4]);
     if (onGround && (PV_AidingMode == AID_NONE) && ((horizErrSq > 1.0f) || (fabsF(hgtInnovFiltState) > 1.0f))) {
         return false;
+    }
+
+    if (requires_position) {
+        // additional checks when position is required, used by pre-arm checks
+        const float max_vel_innovation = 2.0;
+        if (onGround && PV_AidingMode == AID_ABSOLUTE &&
+            frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS) &&
+            (sq(innovVelPos[0])+sq(innovVelPos[1])) > sq(max_vel_innovation)) {
+            // more than 2 m/s horizontal velocity innovation on the ground
+            return false;
+        }
     }
 
     // all OK

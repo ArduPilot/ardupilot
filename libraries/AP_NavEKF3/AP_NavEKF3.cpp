@@ -1148,7 +1148,7 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
         return false;
     }
     for (uint8_t i = 0; i < num_cores; i++) {
-        if (!core[i].healthy()) {
+        if (!core[i].healthy(requires_position)) {
             const char *failure = core[i].prearm_failure_reason();
             if (failure != nullptr) {
                 dal.snprintf(failure_msg, failure_msg_len, failure);
