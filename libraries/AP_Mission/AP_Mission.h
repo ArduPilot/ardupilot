@@ -738,7 +738,7 @@ public:
         CONTINUE_AFTER_LAND      =  2,  // continue running mission (do not disarm) after land if takeoff is next waypoint
     };
     bool option_is_set(Option option) const {
-        return (_options.get() & (uint16_t)option) != 0;
+        return (_options.get() & (1U<<uint16_t(option))) != 0;
     }
 
     bool continue_after_land_check_for_takeoff(void);
