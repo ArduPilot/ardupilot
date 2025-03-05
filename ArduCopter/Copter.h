@@ -840,6 +840,7 @@ private:
     // fence.cpp
 #if AP_FENCE_ENABLED
     void fence_check();
+    void fence_run_checks() override;
 #endif
 
     // heli.cpp
