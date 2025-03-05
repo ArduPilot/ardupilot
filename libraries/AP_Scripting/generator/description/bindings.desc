@@ -62,6 +62,7 @@ singleton AP_AHRS method initialised boolean
 singleton AP_AHRS method get_posvelyaw_source_set uint8_t
 singleton AP_AHRS method get_quaternion boolean Quaternion'Null
 singleton AP_AHRS method handle_external_position_estimate boolean Location float'skip_check uint32_t'skip_check
+singleton AP_AHRS method handle_external_position_estimate depends AP_AHRS_EXTERNAL_ENABLED
 
 include AP_Arming/AP_Arming.h
 
