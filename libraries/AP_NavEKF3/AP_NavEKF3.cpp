@@ -1156,6 +1156,10 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
             }
             return false;
         }
+        // run per-core pre-arm checks
+        if (!core[i].pre_arm_check(requires_position, failure_msg, failure_msg_len)) {
+            return false;
+        }
     }
     return true;
 }
