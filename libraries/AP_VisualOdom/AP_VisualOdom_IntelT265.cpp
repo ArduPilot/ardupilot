@@ -50,6 +50,14 @@ void AP_VisualOdom_IntelT265::handle_pose_estimate(uint64_t remote_time_us, uint
         }
     }
 
+    // handle external request to align position and yaw
+    if (ext_align_request.align) {
+        align_yaw(pos, attitude, ext_align_request.yaw_rad);
+        align_position(pos, ext_align_request.pos_ned, true, true);
+        ext_align_request.align = false;
+        force_update_reset_timestamp_ms();
+    }
+
     // rotate position and attitude to align with vehicle
     rotate_and_correct_position(pos);
     rotate_attitude(att);
@@ -249,6 +257,15 @@ void AP_VisualOdom_IntelT265::align_position(const Vector3f &sensor_pos, const V
     if (align_z) {
         _pos_correction.z += (new_pos.z - pos_orig.z);
     }
+}
+
+// align position to the given position expressed in meters offset from EKF origin
+// and the given yaw expressed in radians from North
+void AP_VisualOdom_IntelT265::align_position_and_yaw(const Vector3f& pos_ned, float yaw_rad)
+{
+    // record new position and yaw
+    // offsets will be adjusted on the next update from the sensor
+    ext_align_request = {pos_ned, yaw_rad, true};
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
