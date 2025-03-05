@@ -1710,11 +1710,6 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
 {
 #if AP_RC_CHANNEL_ENABLED
     if (method == AP_Arming::Method::RUDDER) {
-        if (get_rudder_arming_type() == AP_Arming::RudderArming::IS_DISABLED) {
-            //parameter disallows rudder arming/disabling
-            return false;
-        }
-
         // only permit arming if the vehicle isn't being commanded to
         // move via RC input
         const auto c = rc().get_throttle_channel();
@@ -1814,6 +1809,17 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 {
     if (armed) { //already armed
         return false;
+    }
+
+    if (method == Method::RUDDER) {
+        switch (get_rudder_arming_type()) {
+        case AP_Arming::RudderArming::IS_DISABLED:
+            //parameter disallows rudder arming/disabling
+            return false;
+        case AP_Arming::RudderArming::ARMONLY:
+        case AP_Arming::RudderArming::ARMDISARM:
+            break;
+        }
     }
 
     running_arming_checks = true;  // so we show Arm: rather than Disarm: in messages
