@@ -103,12 +103,12 @@ void Plane::navigate()
     auto_state.wp_proportion = current_loc.line_path_proportion(prev_WP_loc, next_WP_loc);
     TECS_controller.set_path_proportion(auto_state.wp_proportion);
 
-    // update total loiter angle
-    loiter_angle_update();
-
     // control mode specific updates to navigation demands
     // ---------------------------------------------------
     control_mode->navigate();
+
+    // update total loiter angle
+    loiter_angle_update();
 }
 
 // method intended for use in calc_airspeed_errors only
