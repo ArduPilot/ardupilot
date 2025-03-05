@@ -6682,6 +6682,23 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.takeoff()
         self.fly_home_land_and_disarm()
 
+    def RudderArmingWithArmingChecksZero(self):
+        '''check we can't arm with rudder even if checks are disabled'''
+        self.set_parameters({
+            "ARMING_RUDDER": 0,
+            "ARMING_CHECK": 0,
+            "RC4_REVERSED": 0,
+        })
+        self.reboot_sitl()
+        self.delay_sim_time(5)
+        self.set_rc(4, 2000)
+        w = vehicle_test_suite.WaitAndMaintainDisarmed(
+            self,
+            minimum_duration=30,
+            timeout=60,
+        )
+        w.run()
+
     def Volz(self):
         '''test Volz serially-connected'''
         volz_motor_mask = ((1 << 0) | (1 << 1) | (1 << 3) | (1 << 8) | (1 << 9) | (1 << 11))
@@ -6965,6 +6982,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.BadRollChannelDefined,
             self.VolzMission,
             self.Volz,
+            self.RudderArmingWithArmingChecksZero,
         ]
 
     def disabled_tests(self):
