@@ -710,6 +710,24 @@ bool AP_Arming::gps_checks(bool report)
 }
 #endif  // AP_GPS_ENABLED
 
+bool AP_Arming::groundspeed_checks(bool report)
+{
+#if AP_GPS_ENABLED
+    if (!check_enabled(ARMING_CHECK_GPS)) {
+        return true;
+    }
+    // check only the first GPS:
+    const Vector2f gps_groundspeed = AP::gps().velocity().xy();
+    const Vector2f ahrs_groundspeed = AP::ahrs().groundspeed_vector();
+    if ((gps_groundspeed - ahrs_groundspeed).length_squared() > 1.0) {
+        check_failed(ARMING_CHECK_GPS, report, "GPS vs AHRS speed mismatch (%0.1f/%0.1f)", gps_groundspeed, ahrs_groundspeed);
+        return false;
+    }
+#endif  // AP_GPS_ENABLED
+    return true;
+}
+
+
 #if AP_BATTERY_ENABLED
 bool AP_Arming::battery_checks(bool report)
 {
@@ -1625,6 +1643,7 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if AP_GPS_ENABLED
         &  gps_checks(report)
 #endif
+        &  groundspeed_checks(report)
 #if AP_BATTERY_ENABLED
         &  battery_checks(report)
 #endif
