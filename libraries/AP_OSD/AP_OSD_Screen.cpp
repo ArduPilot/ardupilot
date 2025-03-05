@@ -1634,7 +1634,8 @@ void AP_OSD_Screen::draw_message_permanent(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_buffer(uint8_t x, uint8_t y, const char *input_buffer, int32_t visible_time)
 {
     char buffer[NOTIFY_TEXT_BUFFER_SIZE];
-    strncpy(buffer, input_buffer, sizeof(buffer));
+    strncpy(buffer, input_buffer, sizeof(buffer) - 1);
+    buffer[sizeof(buffer) - 1] = '\0';
     int16_t len = strnlen(buffer, sizeof(buffer));
 
     for (int16_t i=0; i<len; i++) {
