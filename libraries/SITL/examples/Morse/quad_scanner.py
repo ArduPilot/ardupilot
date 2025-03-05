@@ -19,6 +19,12 @@ This model assumes an X frame quadcopter, so you will need:
 '''
 from morse.builder import *
 
+# try to import bpy (no need to install the package as it is used by morse.builder)
+try:
+    import bpy
+except ImportError:
+    print("Import Error Detected")
+
 # use the ATRV rover
 vehicle = Quadrotor()
 vehicle.properties(Object = True, Graspable = False, Label = "Vehicle")
@@ -81,10 +87,23 @@ engines.add_stream('socket')
 # CPU load a lot
 env = Environment('land-1/trees', fastmode=False)
 
-env.set_camera_location([10.0, -10.0, 10.0])
-env.set_camera_rotation([1.0470, 0, 0.7854])
+# Keep camera position as default
+env.set_camera_location([0, 0, 0])
+env.set_camera_rotation([0, 0, 0])
 env.select_display_camera(camera)
 env.set_camera_clip(clip_end=1000)
 
 # startup at CMAC. A location is needed for the magnetometer
 env.properties(longitude = 149.165230, latitude = -35.363261, altitude = 584.0)
+env.create()
+
+#adding 3rd person camera control(translational units : m , rotational units : radians)
+cam_transform={"trans":{"X":-1, "Y":0, "Z":+0.1}, "rot":{"X":0.9, "Y":0, "Z":-1.57}}
+if bpy:
+    objs=bpy.data.objects
+    cam=bpy.data.objects['CameraFP']
+    rob=bpy.data.objects['vehicle']
+    cam.parent=rob
+    robLoc=rob.location
+    cam.location = (robLoc[0]+cam_transform['trans']['X'], robLoc[1]+cam_transform['trans']['Y'], robLoc[2]+cam_transform['trans']['Z'])
+    cam.rotation_euler = (cam_transform['rot']['X'], cam_transform['rot']['Y'], cam_transform['rot']['Z'])
