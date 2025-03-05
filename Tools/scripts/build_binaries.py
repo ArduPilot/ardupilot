@@ -409,12 +409,17 @@ is bob we will attempt to checkout bob-AVR'''
                     framesuffix = ""
                 else:
                     framesuffix = "-%s" % frame
+
+                old_githash = self.run_git(["rev-parse", "HEAD"]).rstrip()
+
                 if not self.checkout(vehicle, tag, board, frame, submodule_update=False):
                     msg = ("Failed checkout of %s %s %s %s" %
                            (vehicle, board, tag, frame,))
                     self.progress(msg)
                     self.error_strings.append(msg)
                     continue
+
+                new_githash = self.run_git(["rev-parse", "HEAD"]).rstrip()
 
                 self.progress("Building %s %s %s binaries %s" %
                               (vehicle, tag, board, frame))
@@ -435,10 +440,13 @@ is bob we will attempt to checkout bob-AVR'''
                 if self.skip_board_waf(board):
                     continue
 
-                if os.path.exists(self.buildroot):
+                changed_git_hash = (new_githash != old_githash)
+
+                if changed_git_hash and os.path.exists(self.buildroot):
                     shutil.rmtree(self.buildroot)
 
-                self.remove_tmpdir()
+                if changed_git_hash:
+                    self.remove_tmpdir()
 
                 githash = self.run_git(["rev-parse", "HEAD"]).rstrip()
 
