@@ -311,6 +311,12 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
     plane.mode_autoland.arm_check();
 #endif
 
+    if (method == AP_Arming::Method::RUDDER) {
+        // initialise the timer used to warn the user they're holding
+        // their stick over:
+        plane.takeoff_state.rudder_takeoff_warn_ms = AP_HAL::millis();
+    }
+
     send_arm_disarm_statustext("Throttle armed");
 
     return true;
