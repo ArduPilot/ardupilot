@@ -735,9 +735,9 @@ public:
       disarm and mission logic should stop
      */
     enum class Option {
-        CLEAR_ON_BOOT            =  0,  // clear mission on vehicle boot
-        FAILSAFE_TO_BEST_LANDING =  1,  // on failsafe, find fastest path along mission home
-        CONTINUE_AFTER_LAND      =  2,  // continue running mission (do not disarm) after land if takeoff is next waypoint
+        CLEAR_ON_BOOT            = (1U<<0), // clear mission on vehicle boot
+        FAILSAFE_TO_BEST_LANDING = (1U<<1), // on failsafe, find fastest path along mission home
+        CONTINUE_AFTER_LAND      = (1U<<2), // continue running mission (do not disarm) after land if takeoff is next waypoint
     };
     bool option_is_set(Option option) const {
         return (_options.get() & (uint16_t)option) != 0;
