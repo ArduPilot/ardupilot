@@ -13,18 +13,23 @@ Compared with previous autopilots, it has better performance and higher reliabil
 ![NarinFC-H7](./images/NarinFC_Header.jpg "NarinFC")
 
 ## Features/Specifications
+
 ![Basic Parameters](./images/1.Basic_Parameters.png "Basic Parameters")
 
 ## Where to Buy
+
 [VOLOLAND CO., LTD](https://vololand.com "VOLOLAND CO., LTD")
 
 ## Outline Dimensions
+
 ![Outline Dimensions](./images/2.Outline_Dimensions.png "Outline Dimensions")
 
 ## Wiring Diagram
+
 ![Wire Diagram](./images/3.Wire_Diagram.png "Wire Diagram")
 
 ## UART Mapping (Port Diagram & Pin outs)
+
   - SERIAL0 = console = USB (MAVLink2)
   - SERIAL1 = Telemetry1 (MAVlink2 default)= USART2 DMA-enabled
   - SERIAL2 = Telemetry2 (MAVlink2 default)= USART6 DMA-enabled
@@ -33,6 +38,7 @@ Compared with previous autopilots, it has better performance and higher reliabil
   - SERIAL5 = USER = UART8 (not available except on custom carrier boards) DMA-enabled
   - SERIAL6 = USER = UART7
   - SERIAL7 = USB2 (Default protocol is MAVLink2)
+    
   Serial protocols can be adjusted to personal preferences.
   
 ![Port Diagram & Pin outs](./images/4.Port_Diagram_Pin_outs_Diagram-A.png "Port Diagram-A")
@@ -76,6 +82,8 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 #### 6. PWM & RC_IN
 
+The NarinFC-H7 supports up to 14 PWM outputs. All outputs support DShot and BiDirDshot. Outputs are grouped and all outputs within their group must be the same protocol.
+
 ![PWM Out](./images/4.6.PWM_Out_M1-M14.png "PWM Out")
   
   - 2.54mm pitch Dupont connector
@@ -110,11 +118,13 @@ Compared with previous autopilots, it has better performance and higher reliabil
 ## PWM Output
 
 The NarinFC-H7 supports up to 14 PWM outputs. All 14 outputs support all normal PWM output formats.All outputs, except 13 and 14, also support DShot.
+
 The 14 PWM outputs are in 4 groups:
   - Outputs 1, 2, 3 and 4 in group1 (these also support Bi-dir DShot if the Bi-Dir firmware version is used)
   - Outputs 5, 6, 7 and 8 in group2
   - Outputs 9, 10, 11 and 12 in group3
   - Outputs 13 and 14 in group4（NO DMA)
+
 ALL outputs within the same group need to use the same output rate and protocol. If any output in a group uses DShot then all channels in that group must use DShot.
 
 ## Battery Monitor
@@ -141,6 +151,9 @@ Any UART can be used for RC system connections in ArduPilot also, and is compati
 The power rail associated with this connector position is powered via USB or PMU.
 
 ## Loading Firmware
+
+This board comes with ArduPilot firmware pre-installed and other vehicle/revision Ardupilot firmware can be loaded using most Ground Control Stations.
+
 Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled “NarinFC-H7”.
 
 The board comes pre-installed with an NarinFC-H7 bootloader, allowing the loading of *.apj firmware files with any ArduPilot compatible ground station.
