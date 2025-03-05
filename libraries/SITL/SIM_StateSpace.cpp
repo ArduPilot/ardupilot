@@ -75,20 +75,20 @@ void StateSpace::update(const struct sitl_input &input)
         case HELI_FRAME: {
 
             float servos_raw[16];
-            float swash1 = (input.servos[0]-1000) / 1000.0f;
-            float swash2 = (input.servos[1]-1000) / 1000.0f;
-            float swash3 = (input.servos[2]-1000) / 1000.0f;
+            float swash_roll = (input.servos[0]-1000) / 1000.0f;
+            float swash_pitch = (input.servos[1]-1000) / 1000.0f;
+            float swash_coll = (input.servos[2]-1000) / 1000.0f;
             float tail_rotor = (input.servos[3] - 1000) / 1000.0f;
             float rsc = constrain_float((input.servos[7]-1000) / 1000.0f, 0, 1);
 
             // roll command
-            servos_raw[0] = 1.283f * (swash1 - swash2);
+            servos_raw[0] = 2.0f * swash_roll - 1.0f;
             // pitch command
-            servos_raw[1] = 1.48f * ((swash1 + swash2) / 2.0f - swash3);
+            servos_raw[1] = 2.0f * swash_pitch - 1.0f;
             // collective adjusted for coll_min(1460) to coll_max(1740) as 0 to 1 with 1500 being zero thrust
-            servos_raw[2] = 3.51 * ((swash1 + swash2 + swash3) / 3.0f - 0.5f);
+            servos_raw[2] = swash_coll;
             // yaw command
-            servos_raw[3]  = 1.45 * (2.0f * tail_rotor - 1.0f);  // yaw
+            servos_raw[3]  = 2.0f * tail_rotor - 1.0f;  // yaw
 
             // this adds time delay for roll and pitch inputs
             if ((uint16_t)model.time_delay_rp == 0 || is_zero(dt)) {
