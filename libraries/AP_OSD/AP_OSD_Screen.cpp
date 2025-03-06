@@ -1172,13 +1172,6 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @Description: Index of the ESC to use for displaying ESC information. 0 means use the ESC with the highest value.
     // @Range: 0 32
     AP_GROUPINFO("ESC_IDX", 10, AP_OSD_Screen, esc_index, 0),
-#if HAL_WITH_MSP_DISPLAYPORT
-    // @Param: TXT_SCALE
-    // @DisplayName: Scales OSD element positions based on the the overlay text resolution (MSP DisplayPort only)
-    // @Description: Scales OSD element positions based on the the overlay text resolution (MSP DisplayPort only)
-    // @Values: 0:Disable,1:Enabled
-    // @User: Standard
-    AP_GROUPINFO("TXT_SCALE", 11, AP_OSD_Screen, txt_scale, 0),
 #endif
 
     AP_GROUPEND
@@ -1190,8 +1183,8 @@ uint8_t AP_OSD_AbstractScreen::symbols_lookup_table[AP_OSD_NUM_SYMBOLS];
 // Symbol indexes to acces _symbols[index][set]
 #define SYM_M 0
 #define SYM_KM 1
-#define SYM_FT 2
 #define SYM_MI 3
+#define SYM_FT 2
 #define SYM_ALT_M 4
 #define SYM_ALT_FT 5
 #define SYM_BATT_FULL 6
@@ -1433,26 +1426,6 @@ float AP_OSD_AbstractScreen::u_scale(enum unit_type unit, float value)
     };
     uint8_t units = constrain_int16(osd->units, 0, AP_OSD::UNITS_LAST-1);
     return value * scale[units][unit] + (offsets[units]?offsets[units][unit]:0);
-}
-
-uint8_t  AP_OSD_AbstractScreen::scale_x(uint8_t x) const
-{
-#if HAL_WITH_MSP_DISPLAYPORT
-    if (get_txt_scale() && get_txt_resolution() == SCALE_50x18) {
-        return x*50/30;
-    }
-#endif
-    return x;
-}
-
-uint8_t  AP_OSD_AbstractScreen::scale_y(uint8_t x) const
-{
-#if HAL_WITH_MSP_DISPLAYPORT
-    if (get_txt_scale() && get_txt_resolution() == SCALE_50x18) {
-        return x*18/16;
-    }
-#endif
-    return x;
 }
 
 char AP_OSD_Screen::get_arrow_font_index(int32_t angle_cd)
@@ -2578,7 +2551,7 @@ void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
 }
 #endif
 
-#define DRAW_SETTING(n) if (n.enabled) draw_ ## n(scale_x(n.xpos), scale_y(n.ypos))
+#define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 #if HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT
 void AP_OSD_Screen::draw(void)

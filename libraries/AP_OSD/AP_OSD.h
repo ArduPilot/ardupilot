@@ -71,7 +71,8 @@ public:
     AP_Int8 xpos;
     AP_Int8 ypos;
 
-    AP_OSD_Setting(bool enabled = 0, uint8_t x = 0, uint8_t y = 0);
+    AP_OSD_Setting(bool enabled = 0, uint8_t x = 0, uint8_t y = 0,
+                   uint8_t x_hd = 0, uint8_t y_hd = 0);
 
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -80,6 +81,10 @@ private:
     const float default_enabled;
     const float default_xpos;
     const float default_ypos;
+#if HAL_WITH_MSP_DISPLAYPORT
+    const float default_xpos_hd;
+    const float default_ypos_hd;
+#endif
 };
 
 class AP_OSD;
@@ -193,29 +198,29 @@ private:
         RESTING_CELL,
     };
 
-    AP_OSD_Setting altitude{true, 23, 8};
-    AP_OSD_Setting bat_volt{true, 24, 1};
-    AP_OSD_Setting rssi{true, 1, 1};
+    AP_OSD_Setting altitude{true, 23, 8, 38, 9};
+    AP_OSD_Setting bat_volt{true, 24, 1, 40, 1};
+    AP_OSD_Setting rssi{true, 1, 1, 1, 1};
     AP_OSD_Setting link_quality{false,1,1};
     AP_OSD_Setting restvolt{false, 24, 2};
     AP_OSD_Setting avgcellvolt{false, 24, 3};
     AP_OSD_Setting avgcellrestvolt{false, 24, 4};
-    AP_OSD_Setting current{true, 25, 2};
-    AP_OSD_Setting batused{true, 23, 3};
-    AP_OSD_Setting sats{true, 1, 3};
-    AP_OSD_Setting fltmode{true, 2, 8};
-    AP_OSD_Setting message{true, 2, 6};
-    AP_OSD_Setting gspeed{true, 2, 14};
-    AP_OSD_Setting horizon{true, 14, 8};
-    AP_OSD_Setting home{true, 14, 1};
-    AP_OSD_Setting throttle{true, 24, 11};
-    AP_OSD_Setting heading{true, 13, 2};
-    AP_OSD_Setting compass{true, 15, 3};
+    AP_OSD_Setting current{true, 25, 2, 42, 2};
+    AP_OSD_Setting batused{true, 23, 3, 38, 3};
+    AP_OSD_Setting sats{true, 1, 3, 2, 3};
+    AP_OSD_Setting fltmode{true, 2, 8, 3, 9};
+    AP_OSD_Setting message{true, 2, 6, 3, 7};
+    AP_OSD_Setting gspeed{true, 2, 14, 3, 16};
+    AP_OSD_Setting horizon{true, 14, 8, 23, 9};
+    AP_OSD_Setting home{true, 14, 1, 23, 1};
+    AP_OSD_Setting throttle{true, 24, 11, 40, 12};
+    AP_OSD_Setting heading{true, 13, 2, 22, 1};
+    AP_OSD_Setting compass{true, 15, 3, 25, 3};
     AP_OSD_Setting wind{false, 2, 12};
     AP_OSD_Setting aspeed{false, 2, 13};
     AP_OSD_Setting aspd1;
     AP_OSD_Setting aspd2;
-    AP_OSD_Setting vspeed{true, 24, 9};
+    AP_OSD_Setting vspeed{true, 24, 9, 40, 10};
 #if AP_RPM_ENABLED
     AP_OSD_Setting rrpm{false, 2, 2};
 #endif
@@ -224,8 +229,8 @@ private:
     AP_OSD_Setting esc_rpm{false, 22, 12};
     AP_OSD_Setting esc_amps{false, 24, 14};
 #endif
-    AP_OSD_Setting gps_latitude{true, 9, 13};
-    AP_OSD_Setting gps_longitude{true, 9, 14};
+    AP_OSD_Setting gps_latitude{true, 9, 13, 15, 14};
+    AP_OSD_Setting gps_longitude{true, 9, 14, 15, 16};
     AP_OSD_Setting roll_angle;
     AP_OSD_Setting pitch_angle;
     AP_OSD_Setting temp;
@@ -277,7 +282,6 @@ private:
     // Per screen HD resolution options (currently supported only by DisplayPort)
     AP_Int8 txt_resolution;
     AP_Int8 font_index;
-    AP_Int8 txt_scale;
 #endif
 #if HAL_WITH_ESC_TELEM
     AP_Int8 esc_index;
