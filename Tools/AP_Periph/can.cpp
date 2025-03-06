@@ -540,7 +540,7 @@ void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
     hal.rcout->serial_led_send(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY);
 #endif // HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY
 
-#ifdef HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY
+#if AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED
     {
         const uint8_t i2c_address = 0x38;
         static AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
@@ -558,9 +558,9 @@ void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
         v = 0x80 | blue >> 3; // blue
         dev->transfer(&v, 1, nullptr, 0);
     }
-#endif // HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY
+#endif // AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED
 
-#ifdef HAL_PERIPH_ENABLE_NCP5623_BGR_LED_WITHOUT_NOTIFY
+#if AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED
     {
         const uint8_t i2c_address = 0x38;
         static AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
@@ -578,8 +578,8 @@ void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
         v = 0x80 | red >> 3; // red
         dev->transfer(&v, 1, nullptr, 0);
     }
-#endif // HAL_PERIPH_ENABLE_NCP5623_BGR_LED_WITHOUT_NOTIFY
-#ifdef HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY
+#endif // AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED
+#if AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED
     {
 #define TOSHIBA_LED_PWM0    0x01    // pwm0 register
 #define TOSHIBA_LED_ENABLE  0x04    // enable register
@@ -604,7 +604,7 @@ void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
         };
         dev_toshiba->transfer(val, sizeof(val), nullptr, 0);
     }
-#endif // HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY
+#endif // AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED
 }
 
 /*
