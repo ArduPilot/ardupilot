@@ -1201,11 +1201,11 @@ public:
 
     // last time traffic was seen from my designated GCS.  traffic
     // includes heartbeats and some manual control messages.
-    uint32_t sysid_myggcs_last_seen_time_ms() const {
+    uint32_t sysid_mygcs_last_seen_time_ms() const {
         return _sysid_mygcs_last_seen_time_ms;
     }
     // called when valid traffic has been seen from our GCS
-    void sysid_myggcs_seen(uint32_t seen_time_ms) {
+    void sysid_mygcs_seen(uint32_t seen_time_ms) {
         _sysid_mygcs_last_seen_time_ms = seen_time_ms;
     }
 
