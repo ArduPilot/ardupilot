@@ -300,8 +300,8 @@ singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM
 singleton GCS method send_named_float void string float'skip_check
 singleton GCS method frame_type MAV_TYPE'enum
 singleton GCS method get_hud_throttle int16_t
-singleton GCS method sysid_myggcs_last_seen_time_ms uint32_t
-singleton GCS method sysid_myggcs_last_seen_time_ms rename last_seen
+singleton GCS method sysid_mygcs_last_seen_time_ms uint32_t
+singleton GCS method sysid_mygcs_last_seen_time_ms rename last_seen
 
 singleton GCS method get_high_latency_status boolean
 singleton GCS method get_high_latency_status depends HAL_HIGH_LATENCY2_ENABLED == 1
