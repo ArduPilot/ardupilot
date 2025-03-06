@@ -4,10 +4,21 @@
 
 #if AP_FENCE_ENABLED
 
-// fence_check - ask fence library to check for breaches and initiate the response
-void Plane::fence_check()
+// async fence checking io callback at 1Khz
+void Plane::fence_run_checks()
 {
-    const uint8_t orig_breaches = fence.get_breaches();
+    const uint32_t now = AP_HAL::millis();
+
+    if (!AP_HAL::timeout_expired(fence_breaches.last_check_ms, now, 333U)) { // 3Hz update rate
+        return;
+    }
+
+    if (fence_breaches.have_updates) {
+        return; // wait for the main loop to pick up the new breaches before checking again
+    }
+
+    fence_breaches.last_check_ms = now;
+    orig_breaches = fence.get_breaches();
     const bool armed = arming.is_armed();
 
     uint16_t mission_id = plane.mission.get_current_nav_cmd().id;
@@ -20,8 +31,16 @@ void Plane::fence_check()
                          || (plane.is_land_command(mission_id) && plane.mission.state() == AP_Mission::MISSION_RUNNING);
 
     // check for new breaches; new_breaches is bitmask of fence types breached
-    const uint8_t new_breaches = fence.check(landing_or_landed);
+    fence_breaches.new_breaches = fence.check(landing_or_landed);
+    fence_breaches.have_updates = true; // new breach status latched so main loop will now pick it up
+}
 
+// fence_check - ask fence library to check for breaches and initiate the response
+void Plane::fence_check()
+{
+    if (!fence_breaches.have_updates) {
+        return;
+    }
     /*
       if we are either disarmed or we are currently not in breach and
       we are not flying then clear the state associated with the
@@ -29,8 +48,10 @@ void Plane::fence_check()
       machine to reset at the end of a fence breach action such as an
       RTL and autoland
      */
+    const bool armed = arming.is_armed();
+
     if (plane.previous_mode_reason == ModeReason::FENCE_BREACHED) {
-        if (!armed || ((new_breaches == 0 && orig_breaches == 0) && !plane.is_flying())) {
+        if (!armed || ((fence_breaches.new_breaches == 0 && orig_breaches == 0) && !plane.is_flying())) {
             plane.previous_mode_reason = ModeReason::UNKNOWN;
         }
     }
@@ -52,29 +73,29 @@ void Plane::fence_check()
                 // No returning to a previous mode, unless our action allows it
                 break;
         }
-        return;
+        goto fence_check_complete;
     }
 
     // we still don't do anything when disarmed, but we do check for fence breaches.
     // fence pre-arm check actually checks if any fence has been breached
     // that's not ever going to be true if we don't call check on AP_Fence while disarmed
     if (!armed) {
-        return;
+        goto fence_check_complete;
     }
 
     // Never trigger a fence breach in the final stage of landing
     if (landing.is_expecting_impact()) {
-        return;
+        goto fence_check_complete;
     }
 
     if (in_fence_recovery()) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
-        return;
+        goto fence_check_complete;
     }
 
-    if (new_breaches) {
-        fence.print_fence_message("breached", new_breaches);
+    if (fence_breaches.new_breaches) {
+        fence.print_fence_message("breached", fence_breaches.new_breaches);
 
         // if the user wants some kind of response and motors are armed
         const uint8_t fence_act = fence.get_action();
@@ -89,7 +110,7 @@ void Plane::fence_check()
                 (g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START ||
                     g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START)) {
                 // already landing
-                return;
+                goto fence_check_complete;
             }
 #if MODE_AUTOLAND_ENABLED
             if (control_mode == &mode_autoland) {
@@ -146,12 +167,15 @@ void Plane::fence_check()
             break;
         }
 
-        LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(new_breaches));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(fence_breaches.new_breaches));
     } else if (orig_breaches && fence.get_breaches() == 0) {
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence breach cleared");
         // record clearing of breach
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode::ERROR_RESOLVED);
     }
+
+fence_check_complete:
+    fence_breaches.have_updates = false;
 }
 
 bool Plane::fence_stickmixing(void) const
