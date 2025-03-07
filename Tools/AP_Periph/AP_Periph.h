@@ -113,6 +113,15 @@
 #undef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
 #endif
 
+#ifndef HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF
+    // When enabled, can_printf() strings longer than the droneCAN max text length (90 chars)
+    // are split into multiple packets instead of truncating the string. This is
+    // especially helpful with HAL_GCS_ENABLED where libraries use the mavlink
+    // send_text() method where we support strings up to 256 chars by splitting them
+    // up into multiple 50 char mavlink packets.
+    #define HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF (HAL_PROGRAM_SIZE_LIMIT_KB >= 1024)
+#endif
+
 #include "Parameters.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
