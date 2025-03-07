@@ -48,6 +48,7 @@ enum frame_types {
 
     void update_rotor_dynamics(Vector3f gyros, Vector2f ctrl_pos, Vector2f &tpp_angle, float dt);
     float update_rpm(float curr_rpm, float throttle, float nom_rpm, float dt);
+    void Log_Write_SimData(float dlong, float dlat, float dthr, float dped);
 
     struct servos_stored {
         float servo1;
@@ -115,6 +116,10 @@ enum frame_types {
         float Mflg = 0;
         float hover_lean = 0;
         float nominal_rpm = 0;
+        float coll_max = 0;
+        float coll_min = 0;
+        float coll_hover = 0;
+        float thr_hover = 0;
 
     } default_model;
 
@@ -122,7 +127,8 @@ enum frame_types {
 
 private:
     // input data
-    float hover_coll = 5.0f;
+    float hover_coll = 0.5f;
+
 
     // variables
     Vector2f _tpp_angle;

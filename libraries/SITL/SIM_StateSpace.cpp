@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 namespace SITL {
 
@@ -73,7 +74,9 @@ void StateSpace::update(const struct sitl_input &input)
 
     switch (frame_type) {
         case HELI_FRAME: {
-
+            if (model.coll_max - model.coll_min > 0.0f) {
+                hover_coll = (model.coll_hover - model.coll_min) / (model.coll_max - model.coll_min);
+            }
             float servos_raw[16];
             float swash_roll = (input.servos[0]-1000) / 1000.0f;
             float swash_pitch = (input.servos[1]-1000) / 1000.0f;
@@ -81,14 +84,18 @@ void StateSpace::update(const struct sitl_input &input)
             float tail_rotor = (input.servos[3] - 1000) / 1000.0f;
             float rsc = constrain_float((input.servos[7]-1000) / 1000.0f, 0, 1);
 
+            // the factor of 0.9 comes from the swashplate factor for pitch and roll
             // roll command
-            servos_raw[0] = 2.0f * swash_roll - 1.0f;
+            servos_raw[0] = (2.0f * swash_roll - 1.0f) / 0.9f;
             // pitch command
-            servos_raw[1] = 2.0f * swash_pitch - 1.0f;
+            servos_raw[1] = (2.0f * swash_pitch - 1.0f) / 0.9f;
             // collective adjusted for coll_min(1460) to coll_max(1740) as 0 to 1 with 1500 being zero thrust
             servos_raw[2] = swash_coll;
             // yaw command
-            servos_raw[3]  = 2.0f * tail_rotor - 1.0f;  // yaw
+            // scale factor of 1.25 is used because default servo range is 1100-1900
+            servos_raw[3]  = (2.0f * tail_rotor - 1.0f) * 1.25f;  // yaw
+
+            Log_Write_SimData(servos_raw[1], servos_raw[0], servos_raw[2], servos_raw[3]);
 
             // this adds time delay for roll and pitch inputs
             if ((uint16_t)model.time_delay_rp == 0 || is_zero(dt)) {
@@ -155,11 +162,11 @@ void StateSpace::update(const struct sitl_input &input)
             // rotational acceleration, in rad/s/s, in body frame
             rot_accel.x = _tpp_angle.x * model.Lb1s + model.Lu * velocity_air_bf.x + model.Lv * velocity_air_bf.y;
             rot_accel.y = _tpp_angle.y * model.Ma1s + model.Mu * velocity_air_bf.x + model.Mv * velocity_air_bf.y;
-            rot_accel.z = model.Nv * velocity_air_bf.y + model.Nr * gyro.z + sq(rpm[0]/model.nominal_rpm) * model.Nped * _yaw_in + model.Nw * velocity_air_bf.z + sq(rpm[0]/model.nominal_rpm) * model.Ncol * (_coll_in - 0.5f);
+            rot_accel.z = model.Nv * velocity_air_bf.y + model.Nr * gyro.z + sq(rpm[0]/model.nominal_rpm) * model.Nped * _yaw_in + model.Nw * velocity_air_bf.z + sq(rpm[0]/model.nominal_rpm) * model.Ncol * (_coll_in - hover_coll);
 
             float lateral_y_thrust = GRAVITY_MSS * _tpp_angle.x + model.Yv * velocity_air_bf.y + model.Yp * gyro.x - model.hover_lean * 0.01745 * GRAVITY_MSS;
             float lateral_x_thrust = -1.0f * GRAVITY_MSS * _tpp_angle.y + model.Xu * velocity_air_bf.x;
-            float vertical_thrust = model.Zcol * _coll_in * sq(rpm[0]/model.nominal_rpm) + velocity_air_bf.z * model.Zw;
+            float vertical_thrust = (model.Zcol * (_coll_in - hover_coll) - GRAVITY_MSS) * sq(rpm[0]/model.nominal_rpm) + velocity_air_bf.z * model.Zw;
             accel_body = Vector3f(lateral_x_thrust, lateral_y_thrust, vertical_thrust);
 
             break;
@@ -170,7 +177,7 @@ void StateSpace::update(const struct sitl_input &input)
             float servos_raw[16];
             float servos_adj[16];
             // A scale factor has to be used to make the motors class inputs match the calculated inputs from the servos.
-            float servo_sf = 0.893;
+            float servo_sf = 1.0;
             servos_adj[0]= (input.servos[0] - 1000) * servo_sf + 1000;
             servos_adj[1]= (input.servos[1] - 1000) * servo_sf + 1000;
             servos_adj[2]= (input.servos[2] - 1000) * servo_sf + 1000;
@@ -184,6 +191,8 @@ void StateSpace::update(const struct sitl_input &input)
             servos_raw[1] = (servos_adj[2] - servos_adj[3]) * 0.001f;
             servos_raw[2] = (servos_adj[0] + servos_adj[1] + servos_adj[2] + servos_adj[3]) * 0.00025f - 1.0f;
             servos_raw[3] = ((servos_adj[0] + servos_adj[1]) * 0.5f - (servos_adj[2] + servos_adj[3]) * 0.5f) * 0.001f;
+
+            Log_Write_SimData(servos_raw[1], servos_raw[0], servos_raw[2], servos_raw[3]);
 
             // this adds time delay for roll and pitch inputs
             if ((uint16_t)model.time_delay_rp == 0 || is_zero(dt)) {
@@ -258,7 +267,7 @@ void StateSpace::update(const struct sitl_input &input)
 
             float lateral_y_thrust = (model.Yv)*(velocity_air_bf.y)+(model.Ylat)*(Dlatlag);
             float lateral_x_thrust = (model.Xu)*(velocity_air_bf.x)+(model.Xlon)*Dlonlag;
-            float thrust = model.Zcol * Dcollag + (model.Zw * velocity_air_bf.z) + 0.1f * model.Zcol;
+            float thrust = model.Zcol * (Dcollag - model.thr_hover) - GRAVITY_MSS + (model.Zw * velocity_air_bf.z);
             accel_body = Vector3f(lateral_x_thrust, lateral_y_thrust, thrust);
 
             float Dlatlag_dot = (-model.Lag)*(Dlatlag)+(model.Lag)*(_roll_in);
@@ -471,6 +480,7 @@ void StateSpace::load_frame_params(const char *model_json)
         // Multi specific derivatives
         FRAME_VAR(Lag),
         FRAME_VAR(Lead),
+        FRAME_VAR(thr_hover),
 
         // Heli specific derivatives
         FRAME_VAR(Lb1s),
@@ -484,6 +494,9 @@ void StateSpace::load_frame_params(const char *model_json)
         FRAME_VAR(Mflg),
         FRAME_VAR(hover_lean),
         FRAME_VAR(nominal_rpm),
+        FRAME_VAR(coll_max),
+        FRAME_VAR(coll_min),
+        FRAME_VAR(coll_hover),
     };
 
     for (uint8_t i=0; i<ARRAY_SIZE(vars); i++) {
@@ -509,4 +522,26 @@ void StateSpace::parse_float(AP_JSON::value val, const char* label, float &param
     param = val.get<double>();
 }
 
+void StateSpace::Log_Write_SimData(float dlong, float dlat, float dthr, float dped)
+{
+    // @LoggerMessage: SIMD
+    // @Description: Sim data packet
+    // @Vehicles: Copter
+    // @Field: TimeUS: Time since system startup
+    // @Field: dlng: longitudinal input
+    // @Field: dlat: lateral input
+    // @Field: dthr: throttle input
+    // @Field: dped: pedal input
+    AP::logger().WriteStreaming(
+        "SIMD",
+        "TimeUS,dlng,dlat,dthr,dped",
+        "s----",
+        "F0000",
+        "Qffff",
+        AP_HAL::micros64(),
+        dlong,
+        dlat,
+        dthr,
+        dped);
+}
 } // namespace SITL
