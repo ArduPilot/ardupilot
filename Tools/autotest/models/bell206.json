@@ -10,6 +10,9 @@
     # General Aircraft Data
     "hover_lean": -3.2,
     "nominal_rpm": 395,
+    "coll_max": 12,
+    "coll_min": -2,
+    "coll_hover": 5,
 
 
     # Stability and Control Derivatives

@@ -25,6 +25,8 @@
     # Time Delay
     "time_delay_rp" : 0,
     "time_delay_ped" : 14,
-    "time_delay_col" : 26
+    "time_delay_col" : 26,
+
+    "thr_hover": 0.39
 
 }
