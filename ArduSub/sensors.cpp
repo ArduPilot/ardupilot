@@ -74,13 +74,7 @@ void Sub::read_rangefinder()
             rangefinder_state.enabled && wp_nav.rangefinder_used(),
             rangefinder_state.alt_healthy,
             rangefinder_state.rangefinder_terrain_offset_cm);
-#else
-    rangefinder_state.enabled = false;
-    rangefinder_state.alt_healthy = false;
-    rangefinder_state.alt_cm = 0;
-    rangefinder_state.inertial_alt_cm = 0;
-    rangefinder_state.rangefinder_terrain_offset_cm = 0;
-#endif
+#endif  // AP_RANGEFINDER_ENABLED
 }
 
 // return true if rangefinder_alt can be used
