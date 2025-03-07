@@ -45,3 +45,6 @@ define HAL_BATT_CURR_SCALE                17.0f
 
 // FIXME: use of this define should go away:
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_POCKET
+
+# AnalogIn_IIO configuration:
+define IIO_VOLTAGE_SCALING 3.0*1.8/4095.0
