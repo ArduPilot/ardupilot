@@ -226,13 +226,17 @@ void AP_Proximity::init()
             drivers[instance] = NEW_NOTHROW AP_Proximity_Scripting(*this, state[instance], params[instance]);
         break;
 #endif
-#if AP_PROXIMITY_MR72_ENABLED || AP_PROXIMITY_HEXSOONRADAR_ENABLED
+#if AP_PROXIMITY_MR72_DRIVER_ENABLED
+#if AP_PROXIMITY_MR72_ENABLED
         case Type::MR72:
+#endif  // AP_PROXIMITY_MR72_ENABLED
+#if AP_PROXIMITY_HEXSOONRADAR_ENABLED
         case Type::Hexsoon_Radar:
+#endif  // AP_PROXIMITY_HEXSOONRADAR_ENABLED
             state[instance].instance = instance;
             drivers[instance] = NEW_NOTHROW AP_Proximity_MR72_CAN(*this, state[instance], params[instance]);
             break;
-# endif
+#endif  // AP_PROXIMITY_MR72_DRIVER_ENABLED
 #if AP_PROXIMITY_SITL_ENABLED
         case Type::SITL:
             state[instance].instance = instance;

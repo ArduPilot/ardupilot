@@ -14,7 +14,7 @@
  */
 #include "AP_Proximity_config.h"
 
-#if AP_PROXIMITY_MR72_ENABLED || AP_PROXIMITY_HEXSOONRADAR_ENABLED
+#if AP_PROXIMITY_MR72_DRIVER_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -121,4 +121,4 @@ bool AP_Proximity_MR72_CAN::parse_distance_message(AP_HAL::CANFrame &frame)
     return true;
 }
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif  // AP_PROXIMITY_MR72_DRIVER_ENABLED
