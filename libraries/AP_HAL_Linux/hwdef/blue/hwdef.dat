@@ -42,3 +42,6 @@ define RELAY4_PIN_DEFAULT 113
 
 // FIXME: use of this define should go away:
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_BLUE
+
+# AnalogIn_IIO configuration:
+define IIO_VOLTAGE_SCALING 1.8/4095.0
