@@ -129,7 +129,7 @@ class ExtractFeatures(object):
             ('HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL', 'AP_Frsky_SPort_Passthrough::set_telem_data'),
 
             ('AP_IBUS_TELEM_ENABLED', 'AP_IBus_Telem::init',),
-
+            ('AP_FOLLOW_ENABLED', 'AP_Follow::AP_Follow',),
             ('MODE_AUTOLAND_ENABLED', 'ModeAutoLand::update'),
             ('MODE_{type}_ENABLED', r'Mode(?P<type>.+)::init',),
             ('MODE_GUIDED_NOGPS_ENABLED', r'ModeGuidedNoGPS::init',),
