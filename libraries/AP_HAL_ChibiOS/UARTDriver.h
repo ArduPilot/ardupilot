@@ -50,9 +50,6 @@ public:
     uint32_t txspace() override;
     void _rx_timer_tick(void);
     void _tx_timer_tick(void);
-#if HAL_FORWARD_OTG2_SERIAL
-    void fwd_otg2_serial(void);
-#endif
 
     // control optional features
     bool set_options(uint16_t options) override;
