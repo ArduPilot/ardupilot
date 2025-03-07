@@ -16,8 +16,6 @@
  */
 #include <AP_HAL/AP_HAL.h>
 
-#define HAL_FORWARD_OTG2_SERIAL_LOCK_KEY 0x23565283UL
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_HAL_UARTDRIVER_ENABLED
 
 #include <hal.h>
@@ -1179,76 +1177,7 @@ void UARTDriver::_rx_timer_tick(void)
     if (_wait.thread_ctx && _readbuf.available() >= _wait.n) {
         chEvtSignal(_wait.thread_ctx, EVT_DATA);
     }
-#if HAL_FORWARD_OTG2_SERIAL
-    if (sdef.get_index() == HAL_FORWARD_OTG2_SERIAL) {
-        fwd_otg2_serial();
-    }
-#endif
 }
-
-// forward data from a serial port to the USB
-// Used for connecting to Secondary Autopilot to communicate over
-// USB, for firmware updates, configuration etc
-#if HAL_FORWARD_OTG2_SERIAL
-void UARTDriver::fwd_otg2_serial()
-{
-    if (lock_read_key == HAL_FORWARD_OTG2_SERIAL_LOCK_KEY &&
-        lock_write_key == HAL_FORWARD_OTG2_SERIAL_LOCK_KEY &&
-        SDU2.config->usbp->state == USB_ACTIVE &&
-        hal.analogin->power_status_flags() & MAV_POWER_STATUS_USB_CONNECTED) {
-        // forward read data to USB
-        if (_readbuf.available() > 0) {
-            ByteBuffer::IoVec vec[2];
-            const auto n_vec = _readbuf.peekiovec(vec, _readbuf.available());
-            for (int i = 0; i < n_vec; i++) {
-                int ret = 0;
-                ret = chnWriteTimeout(&SDU2, vec[i].data, vec[i].len, TIME_IMMEDIATE);
-                if (ret < 0) {
-                    break;
-                }
-                _readbuf.advance(ret);
-                /* We wrote less than we asked for, stop */
-                if ((unsigned)ret != vec[i].len) {
-                    break;
-                }
-            }
-        }
-        {
-            // Do the same for write data
-            WITH_SEMAPHORE(_write_mutex);
-            ByteBuffer::IoVec vec[2];
-            const auto n_vec = _writebuf.reserve(vec, _writebuf.space());
-            for (int i = 0; i < n_vec; i++) {
-                int ret = 0;
-                ret = chnReadTimeout(&SDU2, vec[i].data, vec[i].len, TIME_IMMEDIATE);
-                if (ret < 0) {
-                    break;
-                }
-                _writebuf.commit(ret);
-                /* We read less than we asked for, stop */
-                if ((unsigned)ret != vec[i].len) {
-                    break;
-                }
-            }
-            if (_writebuf.available() > 0) {
-                // we have data to write, so trigger the write thread
-                chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
-            }
-        }
-    } else if (hal.analogin->power_status_flags() & MAV_POWER_STATUS_USB_CONNECTED) {
-        // lock the read and write keys
-        lock_port(HAL_FORWARD_OTG2_SERIAL_LOCK_KEY, HAL_FORWARD_OTG2_SERIAL_LOCK_KEY);
-        // flush the write and read buffer
-        _readbuf.clear();
-        _writebuf.clear();
-    } else if (lock_read_key == HAL_FORWARD_OTG2_SERIAL_LOCK_KEY &&
-            lock_write_key == HAL_FORWARD_OTG2_SERIAL_LOCK_KEY) {
-        _readbuf.clear();
-        _writebuf.clear();
-        lock_port(0,0); // unlock the port
-    }
-}
-#endif
 
 // regular serial read
 void UARTDriver::read_bytes_NODMA()
