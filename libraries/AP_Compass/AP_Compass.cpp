@@ -1118,7 +1118,11 @@ void Compass::add_backend(Compass::DriverType driver_type, AP_Compass_Backend *b
 void Compass::_probe_external_i2c_compasses(void)
 {
 #if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
+#if AP_FEATURE_BOARD_DETECT
     bool all_external = (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2);
+#else
+    const bool all_external = false;
+#endif  // AP_FEATURE_BOARD_DETECT
     (void)all_external;  // in case all backends using this are compiled out
 #endif  // AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
 
@@ -1130,14 +1134,18 @@ void Compass::_probe_external_i2c_compasses(void)
     }
 
 #if AP_COMPASS_HMC5843_INTERNAL_BUS_PROBING_ENABLED
-    if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_AEROFC) {
+#if AP_FEATURE_BOARD_DETECT
+    if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_AEROFC)
+#endif  // AP_FEATURE_BOARD_DETECT
+    {
         // internal i2c bus
         FOREACH_I2C_INTERNAL(i) {
             probe_i2c_dev(DRIVER_HMC5843, AP_Compass_HMC5843::probe, i, HAL_COMPASS_HMC5843_I2C_ADDR, all_external, all_external?ROTATION_ROLL_180:ROTATION_YAW_270);
             RETURN_IF_NO_SPACE;
         }
+#if AP_FEATURE_BOARD_DETECT
     }
-#endif  // AP_COMPASS_KMC5843_INTERNAL_BUS_PROBING_ENABLED
+#endif  // AP_COMPASS_HMC5843_INTERNAL_BUS_PROBING_ENABLED
 #endif  // AP_COMPASS_HMC5843_ENABLED
 
 #if AP_COMPASS_QMC5883L_ENABLED
@@ -1276,12 +1284,16 @@ void Compass::_probe_external_i2c_compasses(void)
 
 #if AP_COMPASS_IST8310_EXTERNAL_BUS_PROBING_ENABLED || AP_COMPASS_IST8310_INTERNAL_BUS_PROBING_ENABLED
     // IST8310 on external and internal bus
+#if AP_FEATURE_BOARD_DETECT
     if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV6) {
+#endif  // AP_FEATURE_BOARD_DETECT
         enum Rotation default_rotation = AP_COMPASS_IST8310_DEFAULT_ROTATION;
 
+#if AP_FEATURE_BOARD_DETECT
         if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_AEROFC) {
             default_rotation = ROTATION_PITCH_180_YAW_90;
         }
+#endif  // AP_FEATURE_BOARD_DETECT
         // probe all 4 possible addresses
         const uint8_t ist8310_addr[] = { 0x0C, 0x0D, 0x0E, 0x0F };
 
@@ -1299,7 +1311,9 @@ void Compass::_probe_external_i2c_compasses(void)
             }
 #endif  // AP_COMPASS_IST8310_INTERNAL_BUS_PROBING_ENABLED
         }
+#if AP_FEATURE_BOARD_DETECT
     }
+#endif  // AP_FEATURE_BOARD_DETECT
 #endif  // AP_COMPASS_IST8310_EXTERNAL_BUS_PROBING_ENABLED || AP_COMPASS_IST8310_INTERNAL_BUS_PROBING_ENABLED
 
 #if AP_COMPASS_IST8308_ENABLED
