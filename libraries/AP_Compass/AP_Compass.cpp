@@ -1050,7 +1050,11 @@ void Compass::add_backend(Compass::DriverType driver_type, AP_Compass_Backend *b
 void Compass::_probe_external_i2c_compasses(void)
 {
 #if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
+#if AP_FEATURE_BOARD_DETECT
     bool all_external = (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2);
+#else
+    const bool all_external = false;
+#endif  // AP_FEATURE_BOARD_DETECT
     (void)all_external;  // in case all backends using this are compiled out
 #endif  // AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
 
@@ -1191,7 +1195,10 @@ void Compass::_probe_external_i2c_compasses(void)
 
 #if AP_COMPASS_IST8310_EXTERNAL_BUS_PROBING_ENABLED || AP_COMPASS_IST8310_INTERNAL_BUS_PROBING_ENABLED
     // IST8310 on external and internal bus
-    if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV6) {
+#if AP_FEATURE_BOARD_DETECT
+    if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV6)
+#endif  // AP_FEATURE_BOARD_DETECT
+    {
         const enum Rotation default_rotation = AP_COMPASS_IST8310_DEFAULT_ROTATION;
 
         // probe all 4 possible addresses
