@@ -1158,9 +1158,7 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
     // will error off if the GCS tries to fetch points.  This number
     // should be correct for a "compatible" fence, however.
     uint16_t new_total = 0;
-    if (total_vertex_count < 3) {
-        new_total = 0;
-    } else {
+    if (total_vertex_count >= 3) {
         new_total = total_vertex_count+2;
     }
     _total.set_and_save(new_total);
