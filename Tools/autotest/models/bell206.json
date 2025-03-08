@@ -18,6 +18,8 @@
     # Stability and Control Derivatives
     "Ma1s": 5.648,
     "Lb1s": 30.52,
+    "Xa1s": -9.81,
+    "Yb1s": 9.81,
     "Mu": 0.006,
     "Mv":  0.0,
     "Lu":  0.0,
