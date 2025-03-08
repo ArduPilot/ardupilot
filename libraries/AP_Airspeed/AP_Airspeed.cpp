@@ -521,11 +521,12 @@ void AP_Airspeed::calibrate(bool in_startup)
         if (!enabled(i)) {
             continue;
         }
-        if (state[i].use_zero_offset) {
-            param[i].offset.set(0);
+        if (state[i].cal.state == CalibrationState::NOT_REQUIRED_ZERO_OFFSET) {
             continue;
         }
         if (in_startup && param[i].skip_cal) {
+            // Skip startup calibration, use saved value.
+            state[i].cal.state = CalibrationState::SUCCESS;
             continue;
         }
         if (sensor[i] == nullptr) {
@@ -594,10 +595,16 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
 AP_Airspeed::CalibrationState AP_Airspeed::get_calibration_state() const
 {
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (!enabled(i)) {
+            continue;
+        }
+
         switch (state[i].cal.state) {
         case CalibrationState::SUCCESS:
-        case CalibrationState::NOT_STARTED:
+        case CalibrationState::NOT_REQUIRED_ZERO_OFFSET:
             continue;
+        case CalibrationState::NOT_STARTED:
+            return CalibrationState::NOT_STARTED;
         case CalibrationState::IN_PROGRESS:
             return CalibrationState::IN_PROGRESS;
         case CalibrationState::FAILED:
@@ -886,7 +893,8 @@ bool AP_Airspeed::healthy(uint8_t i) const {
     bool ok = state[i].healthy && sensor[i] != nullptr;
 #ifndef HAL_BUILD_AP_PERIPH
     // sanity check the offset parameter.  Zero is permitted if we are skipping calibration.
-    ok &= (fabsf(param[i].offset) > 0 || state[i].use_zero_offset || param[i].skip_cal);
+    const bool allowZeroOffset = (state[i].cal.state == CalibrationState::NOT_REQUIRED_ZERO_OFFSET) || param[i].skip_cal;
+    ok &= allowZeroOffset || !is_zero(param[i].offset);
 #endif
     return ok;
 }
@@ -923,6 +931,18 @@ float AP_Airspeed::get_corrected_pressure(uint8_t i) const {
         return 0.0;
     }
     return state[i].corrected_pressure;
+}
+
+// return the current calibration offset
+float AP_Airspeed::get_offset(uint8_t i) const {
+#ifndef HAL_BUILD_AP_PERIPH
+    if (state[i].cal.state == CalibrationState::NOT_REQUIRED_ZERO_OFFSET) {
+        return 0.0;
+    }
+    return param[i].offset;
+#else
+    return 0.0;
+#endif
 }
 
 #if AP_AIRSPEED_HYGROMETER_ENABLE

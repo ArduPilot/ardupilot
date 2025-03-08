@@ -218,13 +218,15 @@ public:
 #if AP_AIRSPEED_EXTERNAL_ENABLED
     void handle_external(const AP_ExternalAHRS::airspeed_data_message_t &pkt);
 #endif
-    
+
     enum class CalibrationState {
         NOT_STARTED,
+        NOT_REQUIRED_ZERO_OFFSET,
         IN_PROGRESS,
         SUCCESS,
         FAILED
     };
+
     // get aggregate calibration state for the Airspeed library:
     CalibrationState get_calibration_state() const;
 
@@ -250,10 +252,9 @@ private:
         float   filtered_pressure;
         float	corrected_pressure;
         uint32_t last_update_ms;
-        bool use_zero_offset;
         bool	healthy;
 
-        // state of runtime calibration
+        // Pre-flight offset calibration
         struct {
             uint32_t start_ms;
             float    sum;
@@ -263,6 +264,7 @@ private:
         } cal;
 
 #if AP_AIRSPEED_AUTOCAL_ENABLE
+        // In flight ratio calibration
         Airspeed_Calibration calibration;
         float last_saved_ratio;
         uint8_t counter;
@@ -314,13 +316,7 @@ private:
     void update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
     void send_airspeed_calibration(const Vector3f &vg);
     // return the current calibration offset
-    float get_offset(uint8_t i) const {
-#ifndef HAL_BUILD_AP_PERIPH
-        return param[i].offset;
-#else
-        return 0.0;
-#endif
-    }
+    float get_offset(uint8_t i) const;
     float get_offset(void) const { return get_offset(primary); }
 
     void check_sensor_failures();
