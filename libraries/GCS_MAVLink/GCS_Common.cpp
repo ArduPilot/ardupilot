@@ -1467,6 +1467,7 @@ void GCS_MAVLINK_InProgress::check_tasks()
             const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
             switch (airspeed->get_calibration_state()) {
             case AP_Airspeed::CalibrationState::NOT_STARTED:
+            case AP_Airspeed::CalibrationState::NOT_REQUIRED_ZERO_OFFSET:
                 // we shouldn't get here
                 task.conclude(MAV_RESULT_FAILED);
                 break;
