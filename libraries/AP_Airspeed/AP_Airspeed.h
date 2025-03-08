@@ -230,6 +230,9 @@ public:
     // get aggregate calibration state for the Airspeed library:
     CalibrationState get_calibration_state() const;
 
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool arming_checks(size_t buflen, char *buffer) const;
+
 private:
     static AP_Airspeed *_singleton;
 
