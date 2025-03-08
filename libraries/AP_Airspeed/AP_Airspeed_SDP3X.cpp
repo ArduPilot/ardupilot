@@ -136,13 +136,9 @@ __INITFUNC__ bool AP_Airspeed_SDP3X::init()
         return false;
     }
 
-    /*
-      this sensor uses zero offset and skips cal
-     */
+    // this sensor uses zero offset
     set_use_zero_offset();
-    set_skip_cal();
-    set_offset(0);
-    
+
     _dev->set_device_type(uint8_t(DevType::SDP3X));
     set_bus_id(_dev->get_bus_id());
 
