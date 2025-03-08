@@ -524,10 +524,20 @@ void AP_Airspeed::calibrate(bool in_startup)
         if (state[i].cal.state == CalibrationState::NOT_REQUIRED_ZERO_OFFSET) {
             continue;
         }
-        if (in_startup && param[i].skip_cal) {
-            // Skip startup calibration, use saved value.
-            state[i].cal.state = CalibrationState::SUCCESS;
-            continue;
+        if (in_startup) {
+            switch ((AP_Airspeed_Params::SkipCalType)param[i].skip_cal.get()) {
+                case AP_Airspeed_Params::SkipCalType::None:
+                    break;
+
+                case AP_Airspeed_Params::SkipCalType::NoCalRequired:
+                    // Skip startup calibration, use saved value.
+                    state[i].cal.state = CalibrationState::SUCCESS;
+                    continue;
+
+                case AP_Airspeed_Params::SkipCalType::SkipBootCal:
+                    // Skip startup calibration, calibration state remains NOT_STARTED.
+                    continue;
+            }
         }
         if (sensor[i] == nullptr) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u not initialized, cannot cal", i+1);
@@ -893,7 +903,8 @@ bool AP_Airspeed::healthy(uint8_t i) const {
     bool ok = state[i].healthy && sensor[i] != nullptr;
 #ifndef HAL_BUILD_AP_PERIPH
     // sanity check the offset parameter.  Zero is permitted if we are skipping calibration.
-    const bool allowZeroOffset = (state[i].cal.state == CalibrationState::NOT_REQUIRED_ZERO_OFFSET) || param[i].skip_cal;
+    const bool allowZeroOffset = (state[i].cal.state == CalibrationState::NOT_REQUIRED_ZERO_OFFSET) ||
+        ((AP_Airspeed_Params::SkipCalType)param[i].skip_cal == AP_Airspeed_Params::SkipCalType::NoCalRequired);
     ok &= allowZeroOffset || !is_zero(param[i].offset);
 #endif
     return ok;
@@ -960,8 +971,27 @@ bool AP_Airspeed::get_hygrometer(uint8_t i, uint32_t &last_sample_ms, float &tem
 bool AP_Airspeed::arming_checks(size_t buflen, char *buffer) const
 {
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        if (enabled(i) && use(i) && !healthy(i)) {
-            hal.util->snprintf(buffer, buflen, " %d not healthy", i + 1);
+        if (!enabled(i) || !use(i)) {
+            continue;
+        }
+
+        switch (state[i].cal.state) {
+            case CalibrationState::SUCCESS:
+            case CalibrationState::NOT_REQUIRED_ZERO_OFFSET:
+                break;
+
+            case CalibrationState::NOT_STARTED:
+            case CalibrationState::FAILED:
+                hal.util->snprintf(buffer, buflen, "%d need pre-flight calibration", i + 1);
+                return false;
+
+            case CalibrationState::IN_PROGRESS:
+                hal.util->snprintf(buffer, buflen, "%d pre-flight calibration in progress", i + 1);
+                return false;
+        }
+
+        if (!healthy(i)) {
+            hal.util->snprintf(buffer, buflen, "%d not healthy", i + 1);
             return false;
         }
     }

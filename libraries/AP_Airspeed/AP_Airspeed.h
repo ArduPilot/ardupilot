@@ -31,7 +31,19 @@ public:
 #ifndef HAL_BUILD_AP_PERIPH
     AP_Int8  use;
     AP_Int8  pin;
-    AP_Int8  skip_cal;
+
+    enum class SkipCalType : int8_t {
+        // Do not skip boot calibration, this is the default
+        None = 0,
+
+        // Skip boot calibration, use saved offset, no calibration is required (but can be performed manually)
+        NoCalRequired = 1,
+
+        // Skip boot calibration, require manual calibration once per boot
+        SkipBootCal = 2,
+    };
+    AP_Enum<SkipCalType> skip_cal;
+
     AP_Int8  tube_order;
 #endif
     AP_Int8  type;
