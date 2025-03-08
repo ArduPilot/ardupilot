@@ -955,6 +955,21 @@ bool AP_Airspeed::get_hygrometer(uint8_t i, uint32_t &last_sample_ms, float &tem
 }
 #endif // AP_AIRSPEED_HYGROMETER_ENABLE
 
+// returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+#ifndef HAL_BUILD_AP_PERIPH
+bool AP_Airspeed::arming_checks(size_t buflen, char *buffer) const
+{
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (enabled(i) && use(i) && !healthy(i)) {
+            hal.util->snprintf(buffer, buflen, " %d not healthy", i + 1);
+            return false;
+        }
+    }
+
+    return true;
+}
+#endif
+
 #else  // build type is not appropriate; provide a dummy implementation:
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
 
@@ -967,6 +982,7 @@ bool AP_Airspeed::enabled(uint8_t i) const { return false; }
 bool AP_Airspeed::healthy(uint8_t i) const { return false; }
 float AP_Airspeed::get_airspeed(uint8_t i) const { return 0.0; }
 float AP_Airspeed::get_differential_pressure(uint8_t i) const { return 0.0; }
+bool AP_Airspeed::arming_checks(size_t buflen, char *buffer) const { return true; }
 
 #if AP_AIRSPEED_MSP_ENABLED
 void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}
