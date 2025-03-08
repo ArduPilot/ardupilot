@@ -892,8 +892,8 @@ bool AP_Airspeed::healthy(uint8_t i) const {
     }
     bool ok = state[i].healthy && sensor[i] != nullptr;
 #ifndef HAL_BUILD_AP_PERIPH
-    // sanity check the offset parameter.  Zero is permitted if we are skipping calibration.
-    ok &= !is_zero(param[i].offset) || (state[i].cal.state == CalibrationState::NOT_REQUIRED_ZERO_OFFSET) || param[i].skip_cal;
+    // sanity check the offset parameter
+    ok &= !is_zero(param[i].offset) || (state[i].cal.state == CalibrationState::NOT_REQUIRED_ZERO_OFFSET);
 #endif
     return ok;
 }
