@@ -14,6 +14,83 @@
  */
 /*
   State Space simulator class
+
+  States
+  u, v, w - longitudinal, lateral, and vertical body frame velocity
+  p, q, r - roll, pitch, and yaw body frame angular rates
+  a1s, b1s - rotor longitudinal and lateral flapping
+  dlatlag, dlonlag, dpedlag, dverlag - lagged states for control inputs
+
+  Derivatives (all are shown for completeness but may not be in equation)
+  Xu, Xv, Xw, Xp, Xq, Xr - longitudinal axis stability derivatives
+  Yu, Yv, Yw, Yp, Yq, Yr - lateral axis stability derivatives
+  Zu, Zv, Zw, Zp, Zq, Zr - vertical axis stability derivatives
+
+  Lu, Lv, Lw, Lp, Lq, Lr - roll axis stability derivatives
+  Mu, Mv, Mw, Mp, Mq, Mr - pitch axis stability derivatives
+  Nu, Nv, Nw, Np, Nq, Nr - yaw axis stability derivatives
+
+  Xlat, Xlon, Xped, Xvert - longitudinal axis control derivatives
+  Ylat, Ylon, Yped, Yvert - lateral axis control derivatives
+  Zlat, Zlon, Zped, Zvert - vertical axis control derivatives
+
+  Llat, Llon, Lped, Lvert - roll axis control derivatives
+  Mlat, Mlon, Mped, Mvert - pitch axis control derivatives
+  Nlat, Nlon, Nped, Nvert - yaw axis control derivatives
+
+  helicopter specific derivatives
+  Xa1s, Yb1s - aircraft longitudinal and lateral axis rotor flapping derivatives
+  Ma1s, Lb1s - aircraft pitch and roll axis rotor flapping derivatives
+  Mfb1s, Lfa1s- rotor pitch and roll axis coupling derivative
+  Mfln, Mflt, Lfln, Lflt - rotor control input derivatives
+  tf - rotor flapping time constant
+
+  multirotor specific terms
+  Lag - lag cutoff frequency for motor response
+  Lead - lead cutoff frequency for torque response
+
+The multirotor state space equations of motion are given below
+  
+    roll accel = Lv * v + Lp * p + Llat * Dlatlag
+    pitch accel = Mu * u + Mq * q + Mlon * Dlonlag
+    yaw accel = Nr * r + (Nped - Lag * Lead) * Dpedlag + Lag * Lead * _yaw_in
+
+    lateral accel = Yv * v + Ylat * Dlatlag
+    longitudinal accel = Xu * u + Xlon * Dlonlag
+    vertical accel = Zcol * (Dcollag - hover throttle) - 9.81 + Zw * w
+
+equations for lagged control inputs for modeling motor response
+    Dlatlag_dot = -Lag * Dlatlag + Lag * _roll_in
+    Dlonlag_dot = -Lag * Dlonlag + Lag * _pitch_in
+    Dcollag_dot = -Lag * Dcollag + Lag * _throttle_in
+    Dpedlag_dot = -Lag * Dpedlag + Lag * _yaw_in
+
+The Helicopter state space equations of motion are given below
+
+the helicopter can be modeled in two ways however any combination of these models could be used as the equations
+in the code include all of the terms from both model methods for modeling a helicopter
+
+Without a rotor model
+    roll accel = Lu * u + Lv * v + Lq * q + Lp * p + Lr * r + Llon * _pitch_in + Llat * _roll_in
+    pitch accel = Mu * u + Mv * v + Mq * q + Mp * p + Mlon * _pitch_in + Mlat * _roll_in
+    yaw accel = Nv * v + Nw * w + Nr * r + Ncol * (_coll_in - hover_coll) + Nped * _yaw_in
+
+    lateral accel = Yv * v + Yp * p + Ylat * _roll_in - hover_lean * 9.81
+    longitudinal accel = Xu * u + Xlon * _pitch_in
+    vertical accel = Zcol * (_coll_in - hover coll) - 9.81 + Zw * w
+
+With a rotor model
+    roll accel = Lu * u + Lv * v + Lb1s * b1s
+    pitch accel = Mu * u + Mv * v + Ma1s * a1s
+    yaw accel = Nv * v + Nw * w + Nr * r + Ncol * (_coll_in - hover_coll) + Nped * _yaw_in
+
+    lateral accel = Yv * v + Yp * p  + Yb1s * b1s - hover_lean * 9.81
+    longitudinal accel = Xu * u + Xa1s * a1s
+    vertical accel = Zcol * (_coll_in - hover coll) - 9.81 + Zw * w
+
+    b1s_dot = - p - b1s / tf +  (Lfa1s * a1s + Lflt * roll_in + Lfln * pitch_in) / tf
+    a1s_dot = - q - a1s / tf + (Mfb1s * b1s + Mflt * roll_in + Mfln * pitch_in) / tf
+
 */
 
 #include "SIM_StateSpace.h"
@@ -160,12 +237,12 @@ void StateSpace::update(const struct sitl_input &input)
             update_rotor_dynamics(gyro, ctrl_pos, _tpp_angle, dt);
 
             // rotational acceleration, in rad/s/s, in body frame
-            rot_accel.x = _tpp_angle.x * model.Lb1s + model.Lu * velocity_air_bf.x + model.Lv * velocity_air_bf.y;
-            rot_accel.y = _tpp_angle.y * model.Ma1s + model.Mu * velocity_air_bf.x + model.Mv * velocity_air_bf.y;
+            rot_accel.x = _tpp_angle.x * model.Lb1s + model.Lu * velocity_air_bf.x + model.Lv * velocity_air_bf.y + model.Llon * _pitch_in + model.Llat * _roll_in + model.Lq * gyro.y + model.Lp * gyro.x;
+            rot_accel.y = _tpp_angle.y * model.Ma1s + model.Mu * velocity_air_bf.x + model.Mv * velocity_air_bf.y + model.Mlon * _pitch_in + model.Mlat * _roll_in + model.Mq * gyro.y + model.Mp * gyro.x;
             rot_accel.z = model.Nv * velocity_air_bf.y + model.Nr * gyro.z + sq(rpm[0]/model.nominal_rpm) * model.Nped * _yaw_in + model.Nw * velocity_air_bf.z + sq(rpm[0]/model.nominal_rpm) * model.Ncol * (_coll_in - hover_coll);
 
-            float lateral_y_thrust = GRAVITY_MSS * _tpp_angle.x + model.Yv * velocity_air_bf.y + model.Yp * gyro.x - model.hover_lean * 0.01745 * GRAVITY_MSS;
-            float lateral_x_thrust = -1.0f * GRAVITY_MSS * _tpp_angle.y + model.Xu * velocity_air_bf.x;
+            float lateral_y_thrust = model.Yb1s * _tpp_angle.x + model.Yv * velocity_air_bf.y + model.Yp * gyro.x - model.hover_lean * 0.01745 * GRAVITY_MSS + model.Ylat * _roll_in;
+            float lateral_x_thrust = model.Xa1s * _tpp_angle.y + model.Xu * velocity_air_bf.x + model.Xlon * _pitch_in;
             float vertical_thrust = (model.Zcol * (_coll_in - hover_coll) - GRAVITY_MSS) * sq(rpm[0]/model.nominal_rpm) + velocity_air_bf.z * model.Zw;
             accel_body = Vector3f(lateral_x_thrust, lateral_y_thrust, vertical_thrust);
 
@@ -262,7 +339,7 @@ void StateSpace::update(const struct sitl_input &input)
 
             // rotational acceleration (in rad/s/s?) in body frame
             rot_accel.x = (model.Lv)*(velocity_air_bf.y)+(model.Llat)*(Dlatlag)+(model.Lp)*(gyro.x);
-            rot_accel.y = (model.Mu)*(velocity_air_bf.x)+(model.Mlon)*(Dlonlag);
+            rot_accel.y = (model.Mu)*(velocity_air_bf.x)+(model.Mlon)*(Dlonlag)+(model.Mq)*(gyro.y);
             rot_accel.z = (model.Nr)*(gyro.z)+((model.Nped)-(model.Lag*model.Lead))*(Dpedlag)+(model.Lag*model.Lead)*(_yaw_in);
 
             float lateral_y_thrust = (model.Yv)*(velocity_air_bf.y)+(model.Ylat)*(Dlatlag);
@@ -454,13 +531,14 @@ void StateSpace::load_frame_params(const char *model_json)
         // common 6DOF state space derivatives
         FRAME_VAR(Lu),
         FRAME_VAR(Lv),
+        FRAME_VAR(Lp),
+        FRAME_VAR(Lr),
         FRAME_VAR(Mu),
         FRAME_VAR(Mv),
+        FRAME_VAR(Mq),
         FRAME_VAR(Nr),
         FRAME_VAR(Nw),
         FRAME_VAR(Nv),
-        FRAME_VAR(Lr),
-        FRAME_VAR(Lp),
         FRAME_VAR(Xu),
         FRAME_VAR(Yv),
         FRAME_VAR(Yp),
@@ -469,8 +547,10 @@ void StateSpace::load_frame_params(const char *model_json)
         FRAME_VAR(Xlon),
         FRAME_VAR(Ylat),
         FRAME_VAR(Zcol),
-        FRAME_VAR(Llat),
         FRAME_VAR(Mlon),
+        FRAME_VAR(Mlat),
+        FRAME_VAR(Llon),
+        FRAME_VAR(Llat),
         FRAME_VAR(Nped),
         FRAME_VAR(Ncol),
         FRAME_VAR(time_delay_rp),

@@ -81,11 +81,16 @@ enum frame_types {
 
         float Ma1s = 0;
         float Lb1s = 0;
+        float Xa1s = 0;
+        float Yb1s = 0;
         float Mu = 0;
         float Mv = 0;
+        float Mq = 0;
+        float Mp = 0;
         float Lu = 0;
         float Lv = 0;
         float Lp = 0;
+        float Lq = 0;
         float Lr = 0;
         float Xu = 0;
         float Yv = 0;
@@ -96,8 +101,10 @@ enum frame_types {
         float Nw = 0;
         float Nv = 0;
         float Ncol = 0;
-        float Llat = 0;
         float Mlon = 0;
+        float Mlat = 0;
+        float Llon = 0;
+        float Llat = 0;
         float Nped = 0;
         float Xlon = 0;
         float Ylat = 0;
