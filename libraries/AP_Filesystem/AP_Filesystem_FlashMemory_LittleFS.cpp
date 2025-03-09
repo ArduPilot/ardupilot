@@ -1040,10 +1040,6 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
     uint32_t address;
     lfs_off_t read_off = 0;
 
-    if (dead) {
-        return LFS_ERR_IO;
-    }
-
     address = lfs_block_and_offset_to_raw_flash_address(block, off);
 
     EXPECT_DELAY_MS((25*size)/(fs_cfg.read_size*1000));
@@ -1090,10 +1086,6 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_prog(
 ) {
     uint32_t address;
     lfs_off_t prog_off = 0;
-
-    if (dead) {
-        return LFS_ERR_IO;
-    }
 
     EXPECT_DELAY_MS((250*size)/(fs_cfg.read_size*1000));
 
@@ -1142,10 +1134,6 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_prog(
 }
 
 int AP_Filesystem_FlashMemory_LittleFS::_flashmem_erase(lfs_block_t block) {
-    if (dead) {
-        return LFS_ERR_IO;
-    }
-
     for (lfs_off_t fblock = 0; fblock < LFS_FLASH_BLOCKS_PER_BLOCK; fblock++) {
 
         if (!write_enable()) {
