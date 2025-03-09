@@ -20,6 +20,7 @@
 #include "AP_DAC.h"
 #include "AP_DAC_Params.h"
 #include "AP_DAC_TIx3204.h"
+#include "AP_DAC_MCP40D1x.h"
 
 const AP_Param::GroupInfo AP_DAC::var_info[] = {
 
@@ -48,6 +49,10 @@ void AP_DAC::init()
             backends[i] = new AP_DAC_TIx3204(params[i]);
             break;
 
+        case AP_DAC_Params::Type::MCP40D1x:
+            backends[i] = new AP_DAC_MCP40D1x(params[i]);
+            break;
+
         case AP_DAC_Params::Type::NONE:
             break;
         }
@@ -69,6 +74,15 @@ bool AP_DAC::set_voltage(uint8_t instance, uint8_t channel, float voltage)
         return false;
     }
     return backends[instance]->set_voltage(channel, voltage);
+}
+
+bool AP_DAC::update()
+{
+    for (uint8_t i = 0; i < AP_DAC_MAX_INSTANCES; i++) {
+        if (backends[i] != nullptr) {
+            backends[i]->update();
+        }
+    }
 }
 
 #endif // AP_DAC_ENABLED

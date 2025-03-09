@@ -30,6 +30,9 @@ public:
     // initialise backend
     virtual void init(void) = 0;
 
+    // update backend
+    virtual void update(void) {};
+
     // set voltage for a channel
     virtual bool set_voltage(uint8_t chan, float v) = 0;
 
