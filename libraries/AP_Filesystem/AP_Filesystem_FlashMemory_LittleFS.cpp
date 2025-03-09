@@ -998,11 +998,12 @@ bool AP_Filesystem_FlashMemory_LittleFS::write_enable()
 
 bool AP_Filesystem_FlashMemory_LittleFS::init_flash()
 {
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-    // reset the device
     if (!wait_until_device_is_ready()) {
         return false;
     }
+
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+    // reset the device
     {
         WITH_SEMAPHORE(dev_sem);
         uint8_t b = JEDEC_DEVICE_RESET;
