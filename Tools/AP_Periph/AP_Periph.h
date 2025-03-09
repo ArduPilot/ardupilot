@@ -46,6 +46,7 @@
 #include <SITL/SITL.h>
 #endif
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_DAC/AP_DAC.h>
 
 #if AP_PERIPH_RELAY_ENABLED
 #if AP_PERIPH_PWM_HARDPOINT_ENABLED
@@ -598,6 +599,10 @@ public:
 #endif
 #if AP_AHRS_ENABLED
     AP_AHRS ahrs;
+#endif
+
+#if AP_DAC_ENABLED
+    AP_DAC dac;
 #endif
 
     uint32_t reboot_request_ms = 0;
