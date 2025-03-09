@@ -3,7 +3,7 @@
  */
 #include "AP_DAC_config.h"
 
-#if AP_DAC_ENABLED
+#if AP_DAC_TIX3204_ENABLED
 
 #include "AP_DAC.h"
 #include "AP_DAC_TIx3204.h"
@@ -115,4 +115,4 @@ bool AP_DAC_TIx3204::register_write(uint8_t reg, uint16_t val)
     return dev->transfer(buf, sizeof(buf), nullptr, 0);
 }
 
-#endif // AP_DAC_ENABLED
+#endif // AP_DAC_TIX3204_ENABLED

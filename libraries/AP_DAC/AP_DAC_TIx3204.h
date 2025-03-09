@@ -1,3 +1,7 @@
+#include "AP_DAC_config.h"
+
+#if AP_DAC_TIX3204_ENABLED
+#include "AP_DAC_Backend.h"
 
 class AP_DAC_TIx3204 : public AP_DAC_Backend
 {
@@ -19,3 +23,5 @@ private:
 
     bool configured[4];
 };
+
+#endif // AP_DAC_TIX3204_ENABLED
