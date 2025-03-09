@@ -1,3 +1,7 @@
+#include "AP_DAC_config.h"
+
+#if AP_DAC_ENABLED
+#include "AP_DAC_Backend.h"
 
 class AP_DAC_MCP40D1x : public AP_DAC_Backend
 {
@@ -16,8 +20,10 @@ public:
 private:
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
 
-    bool register_read(uint8_t reg, uint16_t &val);
-    bool register_write(uint8_t reg, uint16_t val);
+    bool register_read(uint8_t reg, uint8_t &val);
+    bool register_write(uint8_t reg, uint8_t val);
 
     bool configured[4];
 };
+
+#endif // AP_DAC_ENABLED

@@ -49,7 +49,7 @@ void AP_DAC_MCP40D1x::init(void)
 
 void AP_DAC_MCP40D1x::update(void)
 {
-    set_voltage(0, volts);
+    set_voltage(0, params.voltage);
 }
 // set voltage for a channel
 bool AP_DAC_MCP40D1x::set_voltage(uint8_t chan, float v)
