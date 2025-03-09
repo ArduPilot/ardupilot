@@ -217,6 +217,7 @@ private:
     // statistics
     uint32_t _tx_stats_bytes;
     uint32_t _rx_stats_bytes;
+    uint32_t _rx_stats_dropped_bytes;
 
     // we remember config options from set_options to apply on sdStart()
     uint32_t _cr1_options;
@@ -287,6 +288,7 @@ protected:
     // Getters for cumulative tx and rx counts
     uint32_t get_total_tx_bytes() const override { return _tx_stats_bytes; }
     uint32_t get_total_rx_bytes() const override { return _rx_stats_bytes; }
+    uint32_t get_total_dropped_rx_bytes() const override { return _rx_stats_dropped_bytes; }
 #if CH_CFG_USE_EVENTS == TRUE
     uint32_t _rx_stats_framing_errors;
     uint32_t _rx_stats_overrun_errors;
