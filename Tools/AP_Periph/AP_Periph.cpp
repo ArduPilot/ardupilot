@@ -160,6 +160,10 @@ void AP_Periph_FW::init()
     }
 #endif  // AP_PERIPH_GPS_ENABLED
 
+#if AP_DAC_ENABLED
+    dac.init();
+#endif
+
 #if AP_PERIPH_MAG_ENABLED
     compass.init();
 #endif
@@ -454,6 +458,10 @@ void AP_Periph_FW::update()
 
 #if AP_PERIPH_RC_OUT_ENABLED
         rcout_init_1Hz();
+#endif
+
+#if AP_DAC_ENABLED
+        dac.update();
 #endif
 
         GCS_SEND_MESSAGE(MSG_HEARTBEAT);
