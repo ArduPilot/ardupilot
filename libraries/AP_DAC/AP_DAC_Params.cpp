@@ -18,14 +18,34 @@
 
 #if AP_DAC_ENABLED
 
+#ifndef AP_DAC_DEFAULT_BUS
+#define AP_DAC_DEFAULT_BUS 0
+#endif
+
+#ifndef AP_DAC_DEFAULT_ADDR
+#define AP_DAC_DEFAULT_ADDR 0
+#endif
+
+#ifndef AP_DAC_DEFAULT_VREF
+#define AP_DAC_DEFAULT_VREF 3.3
+#endif
+
+#ifndef AP_DAC_DEFAULT_VOLT
+#define AP_DAC_DEFAULT_VOLT 3.3
+#endif
+
+#ifndef AP_DAC_DEFAULT_TYPE
+#define AP_DAC_DEFAULT_TYPE int8_t(Type::NONE)
+#endif
+
 const AP_Param::GroupInfo AP_DAC_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: DAC Type
     // @Description: DAC Type
-    // @Values: 0:Disabled, 1:TIx3204
+    // @Values: 0:Disabled, 1:TIx3204, 2:MCP401x
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO_FLAGS("TYPE", 1, AP_DAC_Params, type, float(Type::NONE), AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("TYPE", 1, AP_DAC_Params, type, AP_DAC_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),
 
     // @Param: BUS
     // @DisplayName: I2C bus
@@ -33,7 +53,7 @@ const AP_Param::GroupInfo AP_DAC_Params::var_info[] = {
     // @Range: 0 3
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("BUS", 2, AP_DAC_Params, bus, 0),
+    AP_GROUPINFO("BUS", 2, AP_DAC_Params, bus, AP_DAC_DEFAULT_BUS),
 
     // @Param: ADDR
     // @DisplayName: I2C address
@@ -41,15 +61,22 @@ const AP_Param::GroupInfo AP_DAC_Params::var_info[] = {
     // @Range: 0 127
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("ADDR", 3, AP_DAC_Params, bus_address, 0),
+    AP_GROUPINFO("ADDR", 3, AP_DAC_Params, bus_address, AP_DAC_DEFAULT_ADDR),
 
     // @Param: VREF
     // @DisplayName: Voltage reference
     // @Description: Voltage reference
     // @Range: 0 1000
     // @User: Standard
-    AP_GROUPINFO("VREF", 4, AP_DAC_Params, voltage_reference, 3.3),
+    AP_GROUPINFO("VREF", 4, AP_DAC_Params, voltage_reference, AP_DAC_DEFAULT_VREF),
     
+    // @Param: VOLTS
+    // @DisplayName: Voltage
+    // @Description: Voltage
+    // @Range: 0 1000
+    // @User: Standard
+    AP_GROUPINFO("VOLTS", 5, AP_DAC_Params, voltage, AP_DAC_DEFAULT_VOLT),
+
     AP_GROUPEND
 };
 

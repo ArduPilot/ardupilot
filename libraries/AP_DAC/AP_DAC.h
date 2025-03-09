@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  digitial to analog support, for control of an analog output voltage
+  digital to analog support, for control of an analog output voltage
  */
 #pragma once
 
@@ -24,15 +24,8 @@
 #include "AP_DAC_Params.h"
 #include "AP_DAC_Backend.h"
 
-// declare backend class
-class AP_DAC_TIx3204;
-
-#define DAC_TYPE_TIx3204 1
-
 class AP_DAC
 {
-    friend class AP_DAC_TIx3204;
-
 public:
     // Constructor
     AP_DAC();
@@ -41,6 +34,9 @@ public:
 
     // detect and initialise any available DACs
     void init();
+
+    // update all of the backends
+    void update();
 
     // set voltage for a channel
     bool set_voltage(uint8_t instance, uint8_t chan, float v);

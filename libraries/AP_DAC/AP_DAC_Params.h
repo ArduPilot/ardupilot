@@ -16,6 +16,7 @@
 #pragma once
 
 #include <AP_Param/AP_Param.h>
+#include "AP_DAC_config.h"
 
 class AP_DAC_Params {
 public:
@@ -28,11 +29,17 @@ public:
     // DAC types
     enum class Type : uint8_t {
         NONE      = 0,
+#if AP_DAC_TIX3204_ENABLED
         TIx3204   = 1,
+#endif
+#if AP_DAC_MCP40D1X_ENABLED
+        MCP40D1x   = 2,
+#endif
     };
 
     AP_Enum<Type> type;             // 0=disabled, others see frontend enum TYPE
     AP_Int8 bus;                    // I2C bus number
     AP_Int8 bus_address;            // I2C address
     AP_Float voltage_reference;
+    AP_Float voltage;
 };
