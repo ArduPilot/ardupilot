@@ -737,7 +737,13 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(imu, "INS", AP_InertialSensor),
 #endif
 
-    AP_VAREND
+#if AP_DAC_ENABLED
+    // @Group: DAC
+    // @Path: ../libraries/AP_DAC/AP_DAC.cpp
+    GOBJECT(dac, "DAC", AP_DAC),
+#endif
+
+AP_VAREND
 };
 
 
