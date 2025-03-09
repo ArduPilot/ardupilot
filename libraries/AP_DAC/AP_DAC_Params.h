@@ -29,10 +29,12 @@ public:
     enum class Type : uint8_t {
         NONE      = 0,
         TIx3204   = 1,
+        MCP40D1x   = 2,
     };
 
     AP_Enum<Type> type;             // 0=disabled, others see frontend enum TYPE
     AP_Int8 bus;                    // I2C bus number
     AP_Int8 bus_address;            // I2C address
     AP_Float voltage_reference;
+    AP_Float voltage;
 };

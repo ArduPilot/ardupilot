@@ -28,6 +28,7 @@
 class AP_DAC_TIx3204;
 
 #define DAC_TYPE_TIx3204 1
+#define DAC_TYPE_MCP40D1x 2
 
 class AP_DAC
 {
@@ -41,6 +42,9 @@ public:
 
     // detect and initialise any available DACs
     void init();
+
+    // update all of the backends
+    void update();
 
     // set voltage for a channel
     bool set_voltage(uint8_t instance, uint8_t chan, float v);
