@@ -1078,8 +1078,12 @@ void AP_Vehicle::one_Hz_update(void)
     scripting.update();
 #endif
 
-#if HAL_LOGGING_ENABLED
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+    // Log data rates of physical and virtual serial ports
     hal.util->uart_log();
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    serial_manager.registered_ports_log();
+#endif
 #endif
 
 }
