@@ -803,7 +803,7 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     }
 
     fs_cfg.read_size = page_size;
-    fs_cfg.prog_size = page_size;
+    fs_cfg.prog_size = page_size; // we assume this is equal to read_size!
     fs_cfg.block_size = flash_block_size * LFS_FLASH_BLOCKS_PER_BLOCK;
     fs_cfg.block_count = flash_block_count / LFS_FLASH_BLOCKS_PER_BLOCK;
 
@@ -1037,15 +1037,16 @@ static uint32_t block_erases;
 int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
     lfs_block_t block, lfs_off_t off, void* buffer, lfs_size_t size
 ) {
-    uint32_t address;
-    lfs_off_t read_off = 0;
-
-    address = lfs_block_and_offset_to_raw_flash_address(block, off);
-
     EXPECT_DELAY_MS((25*size)/(fs_cfg.read_size*1000));
 
-    while (size > 0) {
-        uint32_t read_size = MIN(size, fs_cfg.read_size);
+    // LittleFS always calls us with off aligned to read_size and size a
+    // multiple of read_size
+    const uint32_t page_size = fs_cfg.read_size;
+    uint32_t num_pages = size / page_size;
+    uint32_t address = (block * fs_cfg.block_size) + off;
+    uint8_t* p = static_cast<uint8_t*>(buffer);
+
+    while (num_pages--) {
 #ifdef AP_LFS_DEBUG
         page_reads++;
 #endif
@@ -1057,7 +1058,7 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
         }
         {
             WITH_SEMAPHORE(dev_sem);
-            send_command_addr(JEDEC_PAGE_DATA_READ, address / fs_cfg.read_size);
+            send_command_addr(JEDEC_PAGE_DATA_READ, address / page_size);
         }
 #endif
         if (!wait_until_device_is_ready()) {
@@ -1068,17 +1069,15 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
 
         dev->set_chip_select(true);
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-        // position address within the internal buffer for the actual read
-        send_command_addr(JEDEC_READ_DATA, address % fs_cfg.read_size);
+        send_command_addr(JEDEC_READ_DATA, 0); // read one page internal buffer
 #else
         send_command_addr(JEDEC_READ_DATA, address);
 #endif
-        dev->transfer(nullptr, 0, static_cast<uint8_t*>(buffer)+read_off, size);
+        dev->transfer(nullptr, 0, p, page_size);
         dev->set_chip_select(false);
 
-        size -= read_size;
-        address += read_size;
-        read_off += read_size;
+        address += page_size;
+        p += page_size;
     }
     return LFS_ERR_OK;
 }
@@ -1087,15 +1086,16 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
 int AP_Filesystem_FlashMemory_LittleFS::_flashmem_prog(
     lfs_block_t block, lfs_off_t off, const void* buffer, lfs_size_t size
 ) {
-    uint32_t address;
-    lfs_off_t prog_off = 0;
-
     EXPECT_DELAY_MS((250*size)/(fs_cfg.read_size*1000));
 
-    address = lfs_block_and_offset_to_raw_flash_address(block, off);
+    // LittleFS always calls us with off aligned to prog_size and size a
+    // multiple of prog_size (which we set equal to read_size)
+    const uint32_t page_size = fs_cfg.read_size;
+    uint32_t num_pages = size / page_size;
+    uint32_t address = (block * fs_cfg.block_size) + off;
+    const uint8_t* p = static_cast<const uint8_t*>(buffer);
 
-    while (size > 0) {
-        uint32_t prog_size = MIN(size, fs_cfg.prog_size);
+    while (num_pages--) {
         if (!write_enable()) {
             return LFS_ERR_IO;
         }
@@ -1104,7 +1104,7 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_prog(
         page_writes++;
         if (AP_HAL::millis() - last_write_msg_ms > 5000) {
             debug("LFS: writes %lukB/s, pages %lu/s (reads %lu/s, block erases %lu/s)",
-                (page_writes*fs_cfg.prog_size)/(5*1024), page_writes/5, page_reads/5, block_erases/5);
+                (page_writes*page_size)/(5*1024), page_writes/5, page_reads/5, block_erases/5);
             page_writes = 0;
             page_reads = 0;
             block_erases = 0;
@@ -1117,21 +1117,21 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_prog(
         /* First we need to write into the data buffer at column address zero,
         * then we need to issue PROGRAM_EXECUTE to commit the internal buffer */
         dev->set_chip_select(true);
-        send_command_page(JEDEC_PAGE_WRITE, address % fs_cfg.prog_size);
-        dev->transfer(static_cast<const uint8_t*>(buffer)+prog_off, prog_size, nullptr, 0);
+        send_command_page(JEDEC_PAGE_WRITE, 0);
+        dev->transfer(p, page_size, nullptr, 0);
         dev->set_chip_select(false);
-        send_command_addr(JEDEC_PROGRAM_EXECUTE, address / fs_cfg.prog_size);
-        // this simply means the data is in the internal cache, it will take some period to
-        // propagate to the flash itself
+        send_command_addr(JEDEC_PROGRAM_EXECUTE, address / page_size);
 #else
         dev->set_chip_select(true);
         send_command_addr(JEDEC_PAGE_WRITE, address);
-        dev->transfer(static_cast<const uint8_t*>(buffer)+prog_off, prog_size, nullptr, 0);
+        dev->transfer(p, page_size, nullptr, 0);
         dev->set_chip_select(false);
 #endif
-        size -= prog_size;
-        address += prog_size;
-        prog_off += prog_size;
+        // writing simply means the data is in the internal cache, it will take
+        // some period to propagate to the flash itself
+
+        address += page_size;
+        p += page_size;
     }
     return LFS_ERR_OK;
 }
