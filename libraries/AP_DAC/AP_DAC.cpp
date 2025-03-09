@@ -76,7 +76,7 @@ bool AP_DAC::set_voltage(uint8_t instance, uint8_t channel, float voltage)
     return backends[instance]->set_voltage(channel, voltage);
 }
 
-bool AP_DAC::update()
+void AP_DAC::update()
 {
     for (uint8_t i = 0; i < AP_DAC_MAX_INSTANCES; i++) {
         if (backends[i] != nullptr) {
