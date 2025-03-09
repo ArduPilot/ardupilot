@@ -310,6 +310,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 
     if (clear_buffers) {
+        _rx_stats_dropped_bytes += _readbuf.available();
         _readbuf.clear();
     }
 
@@ -615,8 +616,9 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
         /*
           we have data to copy out
          */
-        uart_drv->_readbuf.write(uart_drv->rx_bounce_buf[bounce_idx], len);
+        const uint32_t written = uart_drv->_readbuf.write(uart_drv->rx_bounce_buf[bounce_idx], len);
         uart_drv->_rx_stats_bytes += len;
+        uart_drv->_rx_stats_dropped_bytes += len - written;
         uart_drv->receive_timestamp_update();
     }
 
@@ -733,6 +735,7 @@ bool UARTDriver::_discard_input()
         return false;
     }
 
+    _rx_stats_dropped_bytes += _readbuf.available();
     _readbuf.clear();
 
     if (!_rts_is_active) {
@@ -1138,8 +1141,9 @@ void UARTDriver::_rx_timer_tick(void)
         if (!enabled) {
             uint8_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(rxdma);
             if (len != 0) {
-                _readbuf.write(rx_bounce_buf[rx_bounce_idx], len);
+                const uint32_t written = _readbuf.write(rx_bounce_buf[rx_bounce_idx], len);
                 _rx_stats_bytes += len;
+                _rx_stats_dropped_bytes += len - written;
 
                 receive_timestamp_update();
                 if (_rts_is_active) {
@@ -1716,13 +1720,14 @@ void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint
 {
     const uint32_t tx_bytes = stats.tx.update(_tx_stats_bytes);
     const uint32_t rx_bytes = stats.rx.update(_rx_stats_bytes);
+    const uint32_t rx_dropped_bytes = stats.rx_dropped.update(_rx_stats_dropped_bytes);
 
     if (sdef.is_usb) {
         str.printf("OTG%u  ", unsigned(sdef.instance));
     } else {
         str.printf("UART%u ", unsigned(sdef.instance));
     }
-    str.printf("TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u"
+    str.printf("TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u RXDRP=%8u"
 #if CH_CFG_USE_EVENTS == TRUE
                 " FE=%lu OE=%lu NE=%lu"
 #endif
@@ -1733,6 +1738,7 @@ void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint
                unsigned(rx_bytes),
                unsigned((tx_bytes * 10000) / dt_ms),
                unsigned((rx_bytes * 10000) / dt_ms),
+               unsigned(rx_dropped_bytes),
 #if CH_CFG_USE_EVENTS == TRUE
                _rx_stats_framing_errors,
                _rx_stats_overrun_errors,
