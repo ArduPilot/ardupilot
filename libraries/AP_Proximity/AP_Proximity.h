@@ -87,11 +87,13 @@ public:
 #if AP_PROXIMITY_LD06_ENABLED
         LD06 = 16,
 #endif
+#if AP_PROXIMITY_MR72_DRIVER_ENABLED
 #if AP_PROXIMITY_MR72_ENABLED
         MR72 = 17,
 #endif
 #if AP_PROXIMITY_HEXSOONRADAR_ENABLED
         Hexsoon_Radar = 18,
+#endif
 #endif
     };
 
