@@ -69,8 +69,6 @@ private:
 
     // The configuration of the filesystem
     struct lfs_config fs_cfg;
-    lfs_size_t flash_block_size;
-    lfs_size_t flash_block_count;
 
     // Maximum number of files that may be open at the same time
     static constexpr int MAX_OPEN_FILES = 16;
@@ -107,8 +105,6 @@ private:
     void free_all_fds();
     FileDescriptor* lfs_file_from_fd(int fd) const;
 
-    uint32_t lfs_block_and_offset_to_raw_flash_address(lfs_block_t block, lfs_off_t off = 0, lfs_off_t flash_block = 0);
-    uint32_t lfs_block_to_raw_flash_page_index(lfs_block_t block, lfs_off_t flash_block = 0);
     uint32_t find_block_size_and_count();
     bool init_flash() WARN_IF_UNUSED;
     bool write_enable() WARN_IF_UNUSED;
