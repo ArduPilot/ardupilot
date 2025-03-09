@@ -1718,6 +1718,12 @@ INCLUDE common.ld
                 f.write(
                     '#define HAL_UART_IO_DRIVER constexpr ChibiOS::UARTDriver &uart_io = serial%sDriver;\n' % (index)
                 )
+                f.write(
+                    '#define DEFAULT_SERIAL%s_PROTOCOL 50\n' % (index)
+                )
+                f.write(
+                    '#define DEFAULT_SERIAL%s_BAUD 0\n' % (index)
+                )
 
             f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n') # make the assumption that IO gurantees servo monitoring
             # all IOMCU capable boards have SBUS out
