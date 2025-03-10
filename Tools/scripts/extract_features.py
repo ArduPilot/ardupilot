@@ -385,18 +385,29 @@ class ExtractFeatures(BuildScriptBase):
         """Return prefix for progress messages."""
         return 'EF'
 
+    # a list of problematic defines we don't have fixes for ATM; these
+    # are never detected, so are always reported as not compiled in:
+    UNDETECTABLE_DEFINES = frozenset([
+        'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # this define changes single method body, hard to detect?
+        'AP_PLANE_BLACKBOX_LOGGING', # no visible signature
+        'AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED',  # no visible signature
+        'AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED',  # no visible signature
+    ])
+
+    # defines whose value 2 means "enabled with dummy methods on some
+    # vehicles"; a features list only says compiled-in or not, so it
+    # can not distinguish 2 from 0 or 1:
+    TRISTATE_DEFINES = frozenset([
+        'AP_AIS_ENABLED',
+        'AP_FENCE_ENABLED',
+        'AP_TEMPERATURE_SENSOR_ENABLED',
+    ])
+
     def validate_features_list(self):
         '''ensures that every define present in build_options.py could be
         found by in our features list'''
-        # a list of problematic defines we don't have fixes for ATM:
-        whitelist = frozenset([
-            'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # this define changes single method body, hard to detect?
-            'AP_PLANE_BLACKBOX_LOGGING', # no visible signature
-            'AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED',  # no visible signature
-            'AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED',  # no visible signature
-        ])
         for option in build_options.BUILD_OPTIONS:
-            if option.define in whitelist:
+            if option.define in ExtractFeatures.UNDETECTABLE_DEFINES:
                 continue
             matched = False
             for (define, _) in self.features:
