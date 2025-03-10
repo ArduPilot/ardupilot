@@ -34,6 +34,13 @@ public:
     }
 
     /*
+      Sets actuator output.
+     */
+    virtual bool set_actuator_output(float actuator[]) WARN_IF_UNUSED {
+        return false;
+    }
+
+    /*
         Arm the vehicle
     */
     virtual bool arm(AP_Arming::Method method, bool do_arming_checks) WARN_IF_UNUSED;
