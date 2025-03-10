@@ -22,7 +22,6 @@ def build(bld):
             'AP_SmartRTL',
             'AP_WheelEncoder',
             'AP_Winch',
-            'AP_Follow',
             'AP_LTM_Telem',
             'AP_Devo_Telem',
             'AC_AutoTune',

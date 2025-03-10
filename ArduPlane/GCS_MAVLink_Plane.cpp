@@ -793,10 +793,6 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
 #if HAL_ADSB_ENABLED
     plane.avoidance_adsb.handle_msg(msg);
 #endif
-#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
-    // pass message to follow library
-    plane.g2.follow.handle_msg(msg);
-#endif
     GCS_MAVLINK::packetReceived(status, msg);
 }
 

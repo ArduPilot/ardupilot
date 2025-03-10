@@ -277,6 +277,7 @@ class ExtractFeatures(object):
             ('HAL_ENABLE_DRONECAN_DRIVERS', r'AP_DroneCAN::init'),
             ('AP_BARO_PROBE_EXTERNAL_I2C_BUSES', r'AP_Baro::_probe_i2c_barometers'),
             ('AP_RSSI_ENABLED', r'AP_RSSI::init'),
+            ('AP_FOLLOW_ENABLED', 'AP_Follow::AP_Follow'),
 
             ('AP_ROVER_ADVANCED_FAILSAFE_ENABLED', r'Rover::afs_fs_check'),
             ('AP_COPTER_ADVANCED_FAILSAFE_ENABLED', r'Copter::afs_fs_check'),
