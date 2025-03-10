@@ -3491,6 +3491,40 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
             // testing a MissionPlanner bug!
             AP_BoardConfig::config_error("YOU~RE WELCOME!");
         }
+        if (is_equal(packet.param4, 102.0f)) {
+            // attempt to write to address 0x5 (in the bottom 1kB on H7)
+            // which we either memory-protect or check for
+            // non-zeroness.  We don't want to use 0x0 as that *even
+            // more magic*.  So choose an offset which looks like
+            // we're dereferencing nullptr:
+            uint8_t *foo = (uint8_t*)0x05;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+            *foo = 0xab;
+#pragma GCC diagnostic pop
+
+            return MAV_RESULT_ACCEPTED;
+        }
+        if (is_equal(packet.param4, 103.0f)) {
+            // attempt to read from address 0x5 (in the bottom 1kB on
+            // H7) which we either memory-protect or check for
+            // non-zeroness.  We don't want to use 0x0 as that *even
+            // more magic*.  So choose an offset which looks like
+            // we're dereferencing nullptr:
+            uint8_t *foo = (uint8_t*)0x05;
+
+            // we use send_text here to ensure we don't get elided.
+            // String is kept short for space reasons.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+            send_text(MAV_SEVERITY_INFO, "x: %u", (unsigned)*foo);
+#pragma GCSS diagnostic pop
+
+            return MAV_RESULT_ACCEPTED;
+        }
 #endif  // AP_MAVLINK_FAILURE_CREATION_ENABLED
 
 #if HAL_ENABLE_DFU_BOOT
