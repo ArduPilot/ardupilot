@@ -205,6 +205,7 @@ class SizeCompareBranches(object):
             'esp32nick',
             'esp32s3devkit',
             'esp32s3empty',
+            'esp32s3m5stampfly',
             'esp32icarous',
             'esp32diy',
         ]

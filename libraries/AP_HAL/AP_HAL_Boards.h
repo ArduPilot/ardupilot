@@ -73,6 +73,7 @@
 #define HAL_BOARD_SUBTYPE_ESP32_NICK            6006
 #define HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT        6007
 #define HAL_BOARD_SUBTYPE_ESP32_S3EMPTY         6008
+#define HAL_BOARD_SUBTYPE_ESP32_S3M5STAMPFLY    6009
 // @LoggerEnumEnd
 
 /* InertialSensor driver types */
