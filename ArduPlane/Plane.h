@@ -996,6 +996,7 @@ private:
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 #if HAL_QUADPLANE_ENABLED
     bool verify_landing_vtol_approach(const AP_Mission::Mission_Command& cmd);
+    void maybe_do_full_rate_climbout();
 #endif
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);

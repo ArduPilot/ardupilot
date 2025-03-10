@@ -547,6 +547,13 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("APPROACH_DIST", 39, QuadPlane, approach_distance, 0),
     
+    // @Param: FR_CLMBOUT
+    // @DisplayName: Flag to enable, disable full rate climbout from takeoff
+    // @Description: This flag controls the ability to disable the glide slope and instead climbout at full rate once the VTOL Takeoff waypoint altitude is achieved.
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("FR_CLMBOUT", 40, QuadPlane, enable_full_rate_climbout, 0),
+
     AP_GROUPEND
 };
 

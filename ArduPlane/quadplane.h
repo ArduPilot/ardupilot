@@ -192,6 +192,11 @@ public:
     // Get pilot throttle input with deadzone, this will return 50% throttle in failsafe!
     float get_throttle_input() const;
 
+    // Do a full rate climbout after VTOL Takeoff as if we were at the destination waypoint.
+    bool get_do_full_rate_climbout_enable() const { return enable_full_rate_climbout == 1; }
+    bool get_do_full_rate_climbout() const { return _do_full_rate_climbout; }
+    void set_do_full_rate_climbout(bool flag) { _do_full_rate_climbout = flag; }
+
 private:
     AP_AHRS &ahrs;
 
@@ -395,6 +400,11 @@ private:
 
     // limit applied to back pitch to prevent wing producing excessive lift
     AP_Float q_bck_pitch_lim;
+
+    // This flag controls the ability to disable the glide slope and instead climbout at full rate
+    // once the VTOL Takeoff waypoint altitude is achieved.
+    AP_Int8 enable_full_rate_climbout;
+    bool _do_full_rate_climbout;  // set by the code
 
     // which fwd throttle handling method is active
     enum class ActiveFwdThr : uint8_t {

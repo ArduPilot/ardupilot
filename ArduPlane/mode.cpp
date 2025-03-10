@@ -201,7 +201,22 @@ void Mode::update_target_altitude()
     } else if (plane.target_altitude.offset_cm != 0 && 
                !plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc)) {
         // control climb/descent rate
+#if HAL_QUADPLANE_ENABLED
+        // On climbout we will give the ability to do a full rate climb after the VTOL Takeoff. We
+        // will set the glide slope proportion to the destination to achieve this.
+        if (quadplane.get_do_full_rate_climbout_enable() && quadplane.get_do_full_rate_climbout()) {
+            // Set us to the completed portion to get full rate climb. Here, 0 is completed, see
+            // the docstring for set_target_altitude_proportion.
+            plane.set_target_altitude_proportion(plane.next_WP_loc, 0.0f);
+
+            // Always reset the flag.
+            quadplane.set_do_full_rate_climbout(false);
+        } else {
+            plane.set_target_altitude_proportion(plane.next_WP_loc, 1.0f-plane.auto_state.wp_proportion);
+        }
+#else
         plane.set_target_altitude_proportion(plane.next_WP_loc, 1.0f-plane.auto_state.wp_proportion);
+#endif
 
         // stay within the range of the start and end locations in altitude
         plane.constrain_target_altitude_location(plane.next_WP_loc, plane.prev_WP_loc);
