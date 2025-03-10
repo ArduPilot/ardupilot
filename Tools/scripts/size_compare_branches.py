@@ -139,6 +139,7 @@ class SizeCompareBranches(object):
         self.bootloader_blacklist = set([
             'CubeOrange-SimOnHardWare',
             'CubeOrangePlus-SimOnHardWare',
+            'CubeRedSecondary-IO',
             'fmuv2',
             'fmuv3-bdshot',
             'iomcu',
