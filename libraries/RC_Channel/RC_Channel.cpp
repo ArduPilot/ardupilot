@@ -1597,10 +1597,10 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 #if AP_GPS_ENABLED
     case AUX_FUNC::GPS_DISABLE:
         AP::gps().force_disable(ch_flag == AuxSwitchPos::HIGH);
-#if HAL_EXTERNAL_AHRS_ENABLED
-        AP::externalAHRS().set_gps_state(ch_flag == AuxSwitchPos::HIGH ?
-                                         AP_ExternalAHRS::GpsState::DISABLED :
-                                         AP_ExternalAHRS::GpsState::ENABLED);
+#if AP_AHRS_ENABLED
+        AP::ahrs().set_gps_state(ch_flag == AuxSwitchPos::HIGH ?
+                                 AP_AHRS::GpsState::DISABLED :
+                                 AP_AHRS::GpsState::ENABLED);
 #endif
         break;
 
