@@ -513,13 +513,24 @@ void CompassCalibrator::thin_samples()
         _sample_buffer[j] = temp;
     }
 
-    // remove any samples that are close together
-    for (uint16_t i=0; i < _samples_collected; i++) {
+    // remove any samples that are close together.  There are two
+    // cases here - where we throw a sample away and when we keep the
+    // sample.  In the former case we MUST move the end-offset
+    // (_samples_collected) towards the loop iterator (i).  In the
+    // lattter case we MUST move the loop iterator forward (towards
+    // _samples_collected).
+    uint16_t i = 0;
+    while (i != _samples_collected) {
         if (!accept_sample(_sample_buffer[i], i)) {
-            _sample_buffer[i] = _sample_buffer[_samples_collected-1];
+            // throw sample away
+            if (i != _samples_collected-1) {  // do not copy over outselves!
+                _sample_buffer[i] = _sample_buffer[_samples_collected-1];
+            }
             _samples_collected--;
             _samples_thinned++;
+            continue;
         }
+        i++;
     }
 
     update_completion_mask();
