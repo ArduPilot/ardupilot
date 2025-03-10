@@ -334,20 +334,20 @@ int16_t RC_Channel::get_control_mid() const
   return an "angle in centidegrees" (normally -4500 to 4500) from
   the current radio_in value using the specified dead_zone
  */
-int16_t RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) const
+float RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) const
 {
     int16_t radio_trim_high = _trim + _dead_zone;
     int16_t radio_trim_low  = _trim - _dead_zone;
 
-    int16_t reverse_mul = (reversed?-1:1);
+    float reverse_mul = (reversed?-1:1);
 
     // don't allow out of range values
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
 
     if (r_in > radio_trim_high && radio_max != radio_trim_high) {
-        return reverse_mul * ((int32_t)high_in * (int32_t)(r_in - radio_trim_high)) / (int32_t)(radio_max  - radio_trim_high);
+        return reverse_mul * ((float)high_in * (float)(r_in - radio_trim_high)) / (float)(radio_max  - radio_trim_high);
     } else if (r_in < radio_trim_low && radio_trim_low != radio_min) {
-        return reverse_mul * ((int32_t)high_in * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_trim_low - radio_min);
+        return reverse_mul * ((float)high_in * (float)(r_in - radio_trim_low)) / (float)(radio_trim_low - radio_min);
     } else {
         return 0;
     }
@@ -357,7 +357,7 @@ int16_t RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) co
   return an "angle in centidegrees" (normally -4500 to 4500) from
   the current radio_in value using the specified dead_zone
  */
-int16_t RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
+float RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
 {
     return pwm_to_angle_dz_trim(_dead_zone, radio_trim);
 }
@@ -366,7 +366,7 @@ int16_t RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
   return an "angle in centidegrees" (normally -4500 to 4500) from
   the current radio_in value
  */
-int16_t RC_Channel::pwm_to_angle() const
+float RC_Channel::pwm_to_angle() const
 {
     return pwm_to_angle_dz(dead_zone);
 }
@@ -376,7 +376,7 @@ int16_t RC_Channel::pwm_to_angle() const
   convert a pulse width modulation value to a value in the configured
   range, using the specified deadzone
  */
-int16_t RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
+float RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
 {
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
 
@@ -387,7 +387,7 @@ int16_t RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
     int16_t radio_trim_low  = radio_min + _dead_zone;
 
     if (r_in > radio_trim_low) {
-        return (((int32_t)(high_in) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
+        return (((float)(high_in) * (float)(r_in - radio_trim_low)) / (float)(radio_max - radio_trim_low));
     }
     return 0;
 }
@@ -396,13 +396,13 @@ int16_t RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
   convert a pulse width modulation value to a value in the configured
   range
  */
-int16_t RC_Channel::pwm_to_range() const
+float RC_Channel::pwm_to_range() const
 {
     return pwm_to_range_dz(dead_zone);
 }
 
 
-int16_t RC_Channel::get_control_in_zero_dz(void) const
+float RC_Channel::get_control_in_zero_dz(void) const
 {
     if (type_in == ControlType::RANGE) {
         return pwm_to_range_dz(0);
