@@ -120,13 +120,13 @@ void ModeTakeoff::update()
 
             /*
               don't lock in the takeoff loiter location until we reach
-              a ground speed of AIRSPEED_MIN*0.3 to cope with aircraft
+              a ground speed of GPS_GND_CRS_MIN_SPD to cope with aircraft
               with no compass or poor compass. If flying in a very
               strong headwind then the is_flying() check above will
               eventually trigger
              */
             if (!plane.throttle_suppressed &&
-                groundspeed > plane.aparm.airspeed_min*0.3) {
+                groundspeed > GPS_GND_CRS_MIN_SPD) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Takeoff to %.0fm for %.1fm heading %.1f deg",
                                 alt, dist, direction);
                 plane.takeoff_state.start_time_ms = millis();
