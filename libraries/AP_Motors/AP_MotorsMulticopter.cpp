@@ -133,7 +133,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: THST_HOVER
     // @DisplayName: Thrust Hover Value
     // @Description: Motor thrust needed to hover expressed as a number from 0 to 1
-    // @Range: 0.2 0.8
+    // @Range: 0.125 0.6875
     // @User: Advanced
     AP_GROUPINFO("THST_HOVER", 21, AP_MotorsMulticopter, _throttle_hover, AP_MOTORS_THST_HOVER_DEFAULT),
 
