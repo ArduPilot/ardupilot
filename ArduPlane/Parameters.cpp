@@ -1319,6 +1319,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FWD_BAT_THR_CUT", 37, ParametersG2, fwd_batt_cmp.batt_voltage_throttle_cutoff, 0.0f),
 
+#if AP_RANGEFINDER_ENABLED
+    // @Param: RNGFND_LND_DIST
+    // @DisplayName: Rangefinder landing engagement distance
+    // @Description: The distance at which the rangefinder engages for landing. The default value of 0 enables the rangefinder as soon as it is in range. Values between 0 and RNGFNDx_MAX can be used to activate the rangefinder at a shorter distance for landing, while still allowing it to measure up to its maximum distance for other purposes.
+    // @User: Standard
+    AP_GROUPINFO("RNGFND_LND_DIST", 38, ParametersG2, rangefinder_land_engagement_distance, 0),
+#endif
+
     AP_GROUPEND
 };
 
