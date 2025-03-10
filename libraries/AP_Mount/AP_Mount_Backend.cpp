@@ -911,4 +911,64 @@ void AP_Mount_Backend::send_warning_to_GCS(const char* warning_str)
     _last_warning_ms = now_ms;
 }
 
+#if AP_MOUNT_AUTO_RETRACT_ENABLED
+void AP_Mount_Backend::do_auto_deploy_retract() {
+    const int16_t retract_hagl_m = _params.retract_alt.get();
+    const int16_t deploy_hagl_m = _params.deploy_alt.get();
+
+    if (!_auto_retract.initialised) {
+        if ((retract_hagl_m > 0) && (deploy_hagl_m > 0) && (deploy_hagl_m > retract_hagl_m)) {
+            // if we've got a valid auto-deploy alt then we start retracted
+            _mode = MAV_MOUNT_MODE_RETRACT;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Auto-retract start retracted");
+        }
+        _auto_retract.initialised = true;
+    }
+
+    const auto &ahrs = AP::ahrs();
+    float height_above_ground_m;
+    bool got_height = false;
+
+#if AP_TERRAIN_AVAILABLE
+    AP_Terrain *terrain = AP_Terrain::get_singleton();
+    got_height = (terrain != nullptr) && terrain->height_above_terrain(height_above_ground_m, true);
+#endif // AP_TERRAIN_AVAILABLE
+
+    if (!got_height) {
+        if (!ahrs.get_hagl(height_above_ground_m)) {
+            ahrs.get_relative_position_D_home(height_above_ground_m);
+            height_above_ground_m *= -1; // invert from NED coordinate system
+        }
+    }
+
+    height_above_ground_m = constrain_float(height_above_ground_m, 0, INT16_MAX);
+    const int16_t hagl_m = static_cast<int16_t>(height_above_ground_m);
+
+    if ((retract_hagl_m > 0) && (hagl_m <= retract_hagl_m)) {
+        if (_mode != MAV_MOUNT_MODE_RETRACT) {
+            _mode = MAV_MOUNT_MODE_RETRACT;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Auto-retract");
+        }
+    } else {
+        const bool do_deploy = (
+            (_mode == MAV_MOUNT_MODE_RETRACT) &&                                     // currently retracted
+            (deploy_hagl_m > 0) && (deploy_hagl_m > retract_hagl_m) &&               // valid deploy alt
+            (hagl_m >= deploy_hagl_m) && (_auto_retract.last_hagl_m < deploy_hagl_m) // transitioned above deploy alt
+        );
+        
+        if (do_deploy) {
+            // we don't auto-deploy unless we have a valid auto-retract alt set
+            if (retract_hagl_m <= 0) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mount: Not auto-deployed as RETRACT_ALT param not set!");
+            } else {
+                _mode = static_cast<MAV_MOUNT_MODE>(_params.default_mode.get());
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Auto-deploy to default mode (%d)", _mode);
+            }
+        }
+    }
+
+    _auto_retract.last_hagl_m = hagl_m;
+}
+#endif // AP_MOUNT_AUTO_RETRACT_ENABLED
+
 #endif // HAL_MOUNT_ENABLED

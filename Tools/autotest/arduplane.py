@@ -6795,6 +6795,187 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if abs(m.Pos - m.PosCmd) > 20:
                 break
 
+    def MountAutoDeploy(self):
+        '''Test Mount Auto-deploy'''
+
+        RETRACT_PWM = 1000
+        DEPLOY_PWM = 2000
+
+        self.set_parameter('MNT1_TYPE', 1) # Servo mount
+        self.set_parameter('MNT1_RETRACT_ALT', 200)
+        self.set_parameter('MNT1_DEPLOY_ALT', 250)
+        self.set_parameter('SERVO10_FUNCTION', 9) # k_mount_open
+        self.set_parameter('SERVO10_MIN', RETRACT_PWM)
+        self.set_parameter('SERVO10_MAX', DEPLOY_PWM)
+
+        self.reboot_sitl()
+
+        # grab home position:
+        self.mav.recv_match(type='HOME_POSITION', blocking=True)
+        home = self.mav.location()
+
+        # === Test auto deploy/retract in oscillating flight pattern ===
+        # If we're using auto deploy/retract, we expect to start in RETRACTED mode
+        self.assert_servo_channel_value(10, RETRACT_PWM)
+
+        self.context_collect("STATUSTEXT")
+        # Takeoff uses relative alt
+        self.takeoff(alt=300)
+
+        self.wait_statustext("Mount: Auto-deploy to default mode", check_context=True)
+        self.context_clear_collection("STATUSTEXT")
+        self.assert_servo_channel_value(10, DEPLOY_PWM)
+
+        # Check for retract message #1
+        self.context_collect("STATUSTEXT")
+        # This uses AMSL
+        self.change_altitude(home.alt+100)
+        self.wait_statustext("Mount: Auto-retract", check_context=True)
+        self.assert_servo_channel_value(10, RETRACT_PWM)
+        self.context_clear_collection("STATUSTEXT")
+
+        # Check for deploy message #2
+        self.context_collect("STATUSTEXT")
+        self.change_altitude(home.alt+300)
+        self.wait_statustext("Mount: Auto-deploy to default mode", check_context=True)
+        self.assert_servo_channel_value(10, DEPLOY_PWM)
+        self.context_clear_collection("STATUSTEXT")
+
+        # Check for retract message #2
+        self.context_collect("STATUSTEXT")
+        self.change_altitude(home.alt+100)
+        self.wait_statustext("Mount: Auto-retract", check_context=True)
+        self.assert_servo_channel_value(10, RETRACT_PWM)
+        self.context_clear_collection("STATUSTEXT")
+
+        # === Test manual deployment below deploy height but above retract height ===
+        # Manually deploy before deploy height
+        self.change_altitude(home.alt+225)
+        # Deploy using RETRACT_MOUNT1 aux function
+        self.run_auxfunc(27, 0)
+        self.delay_sim_time(2)
+        self.assert_servo_channel_value(10, DEPLOY_PWM)
+        self.context_collect("STATUSTEXT")
+        self.change_altitude(home.alt+300)
+
+        # Check that no auto deploy message was published
+        try:
+            self.wait_statustext("Mount: Auto-deploy to default mode", check_context=True)
+            raise PreconditionFailedException()
+        except AutoTestTimeoutException:
+            pass
+
+        self.context_clear_collection("STATUSTEXT")
+
+        # === Test manual retract while above deploy height ===
+        # Manually retract above deploy height
+        self.context_collect("STATUSTEXT")
+        # Retract using RETRACT_MOUNT1 aux function
+        self.run_auxfunc(27, 2)
+        self.delay_sim_time(2)
+        self.assert_servo_channel_value(10, RETRACT_PWM)
+
+        # Check that no auto deploy message was published
+        try:
+            self.wait_statustext("Mount: Auto-deploy to default mode", check_context=True)
+            raise PreconditionFailedException()
+        except AutoTestTimeoutException:
+            pass
+
+        self.context_clear_collection("STATUSTEXT")
+
+        # === Test manual deploy while below retract height ===
+        # Manually deploy below retract height
+        self.change_altitude(home.alt+100)
+        self.context_collect("STATUSTEXT")
+        # Deploy using RETRACT_MOUNT1 aux function
+        self.run_auxfunc(27, 0)
+        self.delay_sim_time(2)
+
+        # Check that servo is retracted and auto retract message was published
+        self.assert_servo_channel_value(10, RETRACT_PWM)
+        self.wait_statustext("Mount: Auto-retract", check_context=True)
+        self.context_stop_collecting("STATUSTEXT")
+
+        self.disarm_vehicle(force=True)
+
+    def MountNoAutoDeploy(self):
+        '''Test Mount no Auto-deploy with no Auto-retract set'''
+
+        RETRACT_PWM = 1000
+        DEPLOY_PWM = 2000
+
+        self.set_parameter('MNT1_TYPE', 1) # Servo mount
+        self.set_parameter('MNT1_RETRACT_ALT', 0)
+        self.set_parameter('MNT1_DEPLOY_ALT', 150)
+        self.set_parameter('SERVO10_FUNCTION', 9) # k_mount_open
+        self.set_parameter('SERVO10_MIN', RETRACT_PWM)
+        self.set_parameter('SERVO10_MAX', DEPLOY_PWM)
+
+        self.reboot_sitl()
+
+        # Retract using RETRACT_MOUNT1 aux function
+        self.run_auxfunc(27, 2)
+        self.delay_sim_time(2)
+        self.assert_servo_channel_value(10, RETRACT_PWM)
+
+        # grab home position:
+        self.mav.recv_match(type='HOME_POSITION', blocking=True)
+        home = self.mav.location()
+
+        # Takeoff uses relative alt
+        self.takeoff(alt=100)
+
+        self.context_collect("STATUSTEXT")
+
+        self.change_altitude(home.alt+200)
+        # Check that the mount was not auto deployed
+        self.wait_statustext("Mount: Not auto-deployed as RETRACT_ALT param not", check_context=True)
+        self.context_stop_collecting("STATUSTEXT")
+        self.delay_sim_time(2)
+        self.assert_servo_channel_value(10, RETRACT_PWM)
+
+        self.disarm_vehicle(force=True)
+
+    def MountAutoRetractOnly(self):
+        '''Test Mount Auto-retract with no Auto-deploy set'''
+
+        RETRACT_PWM = 1000
+        DEPLOY_PWM = 2000
+
+        self.set_parameter('MNT1_TYPE', 1) # Servo mount
+        self.set_parameter('MNT1_RETRACT_ALT', 50)
+        self.set_parameter('MNT1_DEPLOY_ALT', 0)
+        self.set_parameter('SERVO10_FUNCTION', 9) # k_mount_open
+        self.set_parameter('SERVO10_MIN', RETRACT_PWM)
+        self.set_parameter('SERVO10_MAX', DEPLOY_PWM)
+
+        self.reboot_sitl()
+
+        # grab home position:
+        self.mav.recv_match(type='HOME_POSITION', blocking=True)
+        home = self.mav.location()
+
+        self.assert_servo_channel_value(10, RETRACT_PWM)
+
+        # Takeoff uses relative alt
+        self.takeoff(alt=100)
+
+        # Deploy using RETRACT_MOUNT1 aux function
+        self.run_auxfunc(27, 0)
+        self.delay_sim_time(2)
+        self.assert_servo_channel_value(10, DEPLOY_PWM)
+
+        self.context_collect("STATUSTEXT")
+
+        self.change_altitude(home.alt+30)
+        # Check that the mount was not auto deployed
+        self.wait_statustext("Mount: Auto-retract", check_context=True)
+        self.context_stop_collecting("STATUSTEXT")
+        self.assert_servo_channel_value(10, RETRACT_PWM)
+
+        self.disarm_vehicle(force=True)
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -6953,6 +7134,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.BadRollChannelDefined,
             self.VolzMission,
             self.Volz,
+            self.MountAutoDeploy,
+            self.MountNoAutoDeploy,
+            self.MountAutoRetractOnly,
         ]
 
     def disabled_tests(self):
