@@ -30,6 +30,8 @@ import threading
 import time
 import board_list
 
+from extract_features import ExtractFeatures
+
 
 class SizeCompareBranchesResult(object):
     '''object to return results from a comparison'''
@@ -46,7 +48,7 @@ class SizeCompareBranches(object):
 
     def __init__(self,
                  branch=None,
-                 master_branch="master",
+                 master_branch=None,
                  board=["MatekF405-Wing"],
                  vehicle=["plane"],
                  bin_dir=None,
@@ -62,10 +64,21 @@ class SizeCompareBranches(object):
                  extra_hwdef_branch=[],
                  extra_hwdef_master=[],
                  parallel_copies=None,
-                 jobs=None):
+                 jobs=None,
+                 double_build=False,
+                 ):
 
         if branch is None:
             branch = self.find_current_git_branch_or_sha1()
+
+        if double_build:
+            if master_branch is not None:
+                raise ValueError("master branch not applicable for double-build")
+            if extra_hwdef_branch:
+                raise ValueError("extra_hwdef_branch not  double-build")
+        else:
+            if master_branch is None:
+                master_branch = "master"
 
         self.master_branch = master_branch
         self.branch = branch
@@ -84,6 +97,7 @@ class SizeCompareBranches(object):
         self.show_unchanged = show_unchanged
         self.parallel_copies = parallel_copies
         self.jobs = jobs
+        self.double_build = double_build
 
         if self.bin_dir is None:
             self.bin_dir = self.find_bin_dir()
@@ -505,6 +519,25 @@ class SizeCompareBranches(object):
             self.vehicles_to_build = vehicles_to_build
             self.extra_hwdef_file = extra_hwdef_file
 
+    def run_tasks(self, tasks, extract_features=False):
+        if self.parallel_copies is not None:
+            task_results = []
+            self.run_build_tasks_in_parallel(tasks)
+            for task in tasks:
+                task_results.append(self.gather_results_for_task(task, extract_features=extract_features))
+            return task_results
+
+        # traditional build everything in sequence:
+        task_results = []
+        for task in tasks:
+            self.run_build_task(task)
+            task_results.append(self.gather_results_for_task(task, extract_features=extract_features))
+
+            # progress CSV:
+            with open("/tmp/some.csv", "w") as f:
+                f.write(self.csv_for_results(self.compare_task_results(task_results, no_elf_diff=True)))
+        return task_results
+
     def run_all(self):
         '''run tests for boards and vehicles passed in constructor'''
 
@@ -512,7 +545,7 @@ class SizeCompareBranches(object):
         self.tmpdir = tmpdir
 
         self.master_commit = self.master_branch
-        if self.use_merge_base:
+        if self.use_merge_base and not self.double_build:
             self.master_commit = self.find_git_branch_merge_base(self.branch, self.master_branch)
             self.progress("Using merge base (%s)" % self.master_commit)
 
@@ -523,14 +556,15 @@ class SizeCompareBranches(object):
 
             vehicles_to_build = self.vehicles_to_build_for_board_info(board_info)
 
-            outdir_1 = os.path.join(tmpdir, "out-master-%s" % (board,))
-            tasks.append(SizeCompareBranches.Task(
-                board,
-                self.master_commit,
-                outdir_1,
-                vehicles_to_build,
-                self.extra_hwdef_master,
-            ))
+            if self.master_branch:
+                outdir_1 = os.path.join(tmpdir, "out-master-%s" % (board,))
+                tasks.append(SizeCompareBranches.Task(
+                    board,
+                    self.master_commit,
+                    outdir_1,
+                    vehicles_to_build,
+                    self.extra_hwdef_master,
+                ))
             outdir_2 = os.path.join(tmpdir, "out-branch-%s" % (board,))
             tasks.append(SizeCompareBranches.Task(
                 board,
@@ -539,25 +573,52 @@ class SizeCompareBranches(object):
                 vehicles_to_build,
                 self.extra_hwdef_branch,
             ))
+
         self.tasks = tasks
+        task_results = self.run_tasks(tasks, extract_features=self.double_build)
+        del self.tasks
 
-        if self.parallel_copies is not None:
-            self.run_build_tasks_in_parallel(tasks)
-            task_results = []
-            for task in tasks:
-                task_results.append(self.gather_results_for_task(task))
-        else:
-            # traditional build everything in sequence:
-            task_results = []
-            for task in tasks:
-                self.run_build_task(task)
-                task_results.append(self.gather_results_for_task(task))
+        if self.double_build:
+            new_tasks = []
+            for result in task_results:
+                outdir_branch_db = os.path.join(tmpdir, "out-branch-db-%s" % (board,))
+                for v in result["vehicle"]:
+                    features = result["vehicle"][v]["features"]
+                    eh_filepath = self.create_extra_hwdef_filepath_for_features(features)
+                    new_tasks.append(SizeCompareBranches.Task(
+                        result["board"],
+                        result["branch"],
+                        outdir_branch_db,
+                        [v],
+                        [eh_filepath],
+                    ))
+            self.tasks = new_tasks  # used for gather_results
 
-                # progress CSV:
-                with open("/tmp/some.csv", "w") as f:
-                    f.write(self.csv_for_results(self.compare_task_results(task_results, no_elf_diff=True)))
+            new_task_results = self.run_tasks(new_tasks)
+            for n in new_task_results:
+                n["db"] = True
+            task_results.extend(new_task_results)
+            del self.tasks
 
         return self.compare_task_results(task_results)
+
+    def create_extra_hwdef_filepath_for_features(self, features):
+        '''create a temporary file containing hwdef lines
+        corresponding to a features list file'''
+        out = ""
+        for line in features.split("\n"):
+            if line.isspace() or not len(line):
+                continue
+            value = "1"
+            if line.startswith('!'):
+                line = line[1:]
+                value = "0"
+            out += f"#undef {line}\n"
+            out += f"#define {line} {value}\n"
+            out += "\n"
+        path = pathlib.Path(self.tmpdir, f"extra-hwdef-{int(time.time())}")
+        path.write_text(out)
+        return str(path.absolute())
 
     def elf_diff_results(self, result_master, result_branch):
         master_branch = result_master["branch"]
@@ -603,6 +664,14 @@ class SizeCompareBranches(object):
             board = res["board"]
             if board not in pairs:
                 pairs[board] = {}
+
+            if self.double_build:
+                if "db" in res:
+                    pairs[board]["branch"] = res
+                else:
+                    pairs[board]["master"] = res
+                continue
+
             if res["branch"] == self.master_commit:
                 pairs[board]["master"] = res
             elif res["branch"] == self.branch:
@@ -706,7 +775,7 @@ class SizeCompareBranches(object):
             jobs=jobs,
         )
 
-    def gather_results_for_task(self, task):
+    def gather_results_for_task(self, task, extract_features=False):
         result = {
             "board": task.board,
             "branch": task.commitish,
@@ -739,6 +808,10 @@ class SizeCompareBranches(object):
             elf_dir = os.path.join(elf_basedir, task.board, elf_dirname)
             v["elf_dir"] = elf_dir
             v["elf_filename"] = self.vehicle_map[vehicle]
+
+            if extract_features:
+                p = os.path.join(v["elf_dir"], v["elf_filename"])
+                v["features"] = ExtractFeatures(p).create_string()
 
         return result
 
@@ -781,7 +854,7 @@ if __name__ == '__main__':
     parser.add_option("",
                       "--master-branch",
                       type="string",
-                      default="master",
+                      default=None,
                       help="master branch to use")
     parser.add_option("",
                       "--no-merge-base",
@@ -858,6 +931,10 @@ if __name__ == '__main__':
                       type=int,
                       default=None,
                       help="Passed to waf configure -j; number of build jobs.  If running with --parallel-copies, this is divided by the number of remaining threads before being passed.")  # noqa
+    parser.add_option("",
+                      "--double-build",
+                      action="store_true",
+                      help="extract features from built binary, rebuild using those features")
     cmd_opts, cmd_args = parser.parse_args()
 
     vehicle = []
@@ -890,5 +967,6 @@ if __name__ == '__main__':
         show_unchanged=not cmd_opts.hide_unchanged,
         parallel_copies=cmd_opts.parallel_copies,
         jobs=cmd_opts.jobs,
+        double_build=cmd_opts.double_build,
     )
     x.run()
