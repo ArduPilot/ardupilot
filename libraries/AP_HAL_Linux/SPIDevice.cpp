@@ -342,8 +342,8 @@ bool SPIDevice::adjust_periodic_callback(
 }
 
 
-AP_HAL::OwnPtr<AP_HAL::SPIDevice>
-SPIDeviceManager::get_device(const char *name)
+AP_HAL::SPIDevice *
+SPIDeviceManager::get_device_ptr(const char *name)
 {
     SPIDesc *desc = nullptr;
 
@@ -356,7 +356,7 @@ SPIDeviceManager::get_device(const char *name)
     }
 
     if (!desc) {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
+        return nullptr;
     }
 
     /* Find if bus already exists */
@@ -393,13 +393,13 @@ const char* SPIDeviceManager::get_device_name(uint8_t idx)
 }
 
 /* Create a new device increasing the bus reference */
-AP_HAL::OwnPtr<AP_HAL::SPIDevice>
+AP_HAL::SPIDevice *
 SPIDeviceManager::_create_device(SPIBus &b, SPIDesc &desc) const
 {
     // Ensure bus is open
     b.open(desc.subdev);
 
-    auto dev = AP_HAL::OwnPtr<AP_HAL::SPIDevice>(NEW_NOTHROW SPIDevice(b, desc));
+    auto *dev = NEW_NOTHROW SPIDevice(b, desc);
     if (!dev) {
         return nullptr;
     }

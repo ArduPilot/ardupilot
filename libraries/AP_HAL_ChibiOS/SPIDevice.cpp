@@ -18,7 +18,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include "Util.h"
 #include "Scheduler.h"
@@ -445,8 +444,8 @@ bool SPIDevice::set_chip_select(bool set) {
 /*
   return a SPIDevice given a string device name
  */
-AP_HAL::OwnPtr<AP_HAL::SPIDevice>
-SPIDeviceManager::get_device(const char *name)
+AP_HAL::SPIDevice *
+SPIDeviceManager::get_device_ptr(const char *name)
 {
     /* Find the bus description in the table */
     uint8_t i;
@@ -456,7 +455,7 @@ SPIDeviceManager::get_device(const char *name)
         }
     }
     if (i == ARRAY_SIZE(device_table)) {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
+        return nullptr;
     }
 
     SPIDesc &desc = device_table[i];
@@ -480,7 +479,7 @@ SPIDeviceManager::get_device(const char *name)
         buses = busp;
     }
 
-    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(NEW_NOTHROW SPIDevice(*busp, desc));
+    return NEW_NOTHROW SPIDevice(*busp, desc);
 }
 
 void SPIDeviceManager::set_register_rw_callback(const char* name, AP_HAL::Device::RegisterRWCb cb)

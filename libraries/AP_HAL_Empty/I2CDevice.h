@@ -20,7 +20,6 @@
 
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/I2CDevice.h>
-#include <AP_HAL/utility/OwnPtr.h>
 
 namespace Empty {
 

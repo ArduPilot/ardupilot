@@ -23,7 +23,6 @@
 
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/I2CDevice.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include "AP_HAL_ChibiOS.h"
 
 #if HAL_USE_I2C == TRUE
