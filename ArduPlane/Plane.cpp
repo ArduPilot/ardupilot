@@ -558,7 +558,15 @@ void Plane::set_flight_stage(AP_FixedWing::FlightStage fs)
         return;
     }
 
-    landing.handle_flight_stage_change(fs == AP_FixedWing::FlightStage::LAND);
+    const bool is_landing = (fs == AP_FixedWing::FlightStage::LAND);
+
+    landing.handle_flight_stage_change(is_landing);
+
+#if AP_LANDINGGEAR_ENABLED
+    if (is_landing) {
+        plane.g2.landing_gear.deploy_for_landing();
+    }
+#endif
 
     if (fs == AP_FixedWing::FlightStage::ABORT_LANDING) {
         gcs().send_text(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
