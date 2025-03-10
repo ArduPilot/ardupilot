@@ -299,8 +299,8 @@ jobs:
           EF_BASE_BRANCH_BINARY="$GITHUB_WORKSPACE/base_branch_bin/$EF_BINARY_NAME"
           EF_PR_BRANCH_BINARY="$GITHUB_WORKSPACE/pr_bin/$EF_BINARY_NAME"
 
-          Tools/scripts/extract_features.py "$EF_BASE_BRANCH_BINARY" -nm "${BIN_PREFIX}nm" >features-base_branch.txt
-          Tools/scripts/extract_features.py "$EF_PR_BRANCH_BINARY" -nm "${BIN_PREFIX}nm" >features-pr.txt
+          Tools/scripts/extract_features.py "$EF_BASE_BRANCH_BINARY" --nm "${BIN_PREFIX}nm" >features-base_branch.txt
+          Tools/scripts/extract_features.py "$EF_PR_BRANCH_BINARY" --nm "${BIN_PREFIX}nm" >features-pr.txt
           diff -u features-base_branch.txt features-pr.txt || true
           diff_output=$(diff -u features-base_branch.txt features-pr.txt || true)
           echo "### Features Diff Output" >> $GITHUB_STEP_SUMMARY
