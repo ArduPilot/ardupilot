@@ -111,6 +111,7 @@ void AP_DroneCAN_Serial::update(void)
         if (targetted->broadcast(pkt)) {
             WITH_SEMAPHORE(p.sem);
             p.writebuffer->advance(n);
+            p.tx_stats_bytes += n;
             p.last_send_ms = now_ms;
         }
     }
@@ -132,7 +133,9 @@ void AP_DroneCAN_Serial::handle_tunnel_targetted(AP_DroneCAN *dronecan,
         if (p.idx == msg.serial_id && transfer.source_node_id == p.node) {
             WITH_SEMAPHORE(p.sem);
             if (p.readbuffer != nullptr) {
-                p.readbuffer->write(msg.buffer.data, msg.buffer.len);
+                const uint32_t written = p.readbuffer->write(msg.buffer.data, msg.buffer.len);
+                p.rx_stats_bytes += msg.buffer.len;
+                p.rx_stats_dropped_bytes += msg.buffer.len - written;
                 p.last_recv_us = AP_HAL::micros64();
             }
             break;
@@ -191,6 +194,7 @@ bool AP_DroneCAN_Serial::Port::_discard_input()
 {
     WITH_SEMAPHORE(sem);
     if (readbuffer != nullptr) {
+        rx_stats_dropped_bytes += readbuffer->available();
         readbuffer->clear();
     }
     return true;

@@ -158,6 +158,10 @@ public:
 
         // serial index number
         uint8_t idx;
+
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+        AP_HAL::UARTDriver::StatsTracker stats;
+#endif
     };
 
     // get a state from serial index
@@ -188,6 +192,12 @@ public:
 
     // register an externally managed port
     void register_port(RegisteredPort *port);
+
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+    // Log UART message for each registered serial port
+    void registered_ports_log();
+    uint32_t registered_ports_last_log_ms;
+#endif
 
 #endif // AP_SERIALMANAGER_REGISTER_ENABLED
 
