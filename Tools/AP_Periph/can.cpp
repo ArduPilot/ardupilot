@@ -824,7 +824,7 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         handle_param_executeopcode(canard_instance, transfer);
         break;
 
-#if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || AP_PERIPH_NOTIFY_ENABLED
+#if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NOTIFY_ENABLED
     case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
         handle_beep_command(canard_instance, transfer);
         break;
@@ -945,7 +945,7 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
     case UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_ID:
         *out_data_type_signature = UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_SIGNATURE;
         return true;
-#if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || AP_PERIPH_NOTIFY_ENABLED
+#if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NOTIFY_ENABLED
     case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_SIGNATURE;
         return true;
@@ -1936,7 +1936,7 @@ void AP_Periph_FW::can_update()
 #if AP_PERIPH_PROXIMITY_ENABLED
         can_proximity_update();
 #endif
-    #if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || AP_PERIPH_NOTIFY_ENABLED
+    #if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NOTIFY_ENABLED
         can_buzzer_update();
     #endif
     #ifdef HAL_GPIO_PIN_SAFE_LED
