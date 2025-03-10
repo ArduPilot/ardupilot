@@ -162,6 +162,9 @@ void Copter::failsafe_gcs_check()
 // failsafe_gcs_on_event - actions to take when GCS contact is lost
 void Copter::failsafe_gcs_on_event(void)
 {
+    // Set gcs allow_override true here, so other gcs can take control automatically, vehicle no longer has active controlling GCS
+    copter.g2.control_takeover_allowed.set_and_save(true);
+    
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_OCCURRED);
     RC_Channels::clear_overrides();
 

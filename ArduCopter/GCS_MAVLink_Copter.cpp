@@ -317,9 +317,21 @@ uint8_t GCS_MAVLINK_Copter::sysid_my_gcs() const
 {
     return copter.g.sysid_my_gcs;
 }
+void GCS_MAVLINK_Copter::set_sysid_my_gcs(uint8_t sysid) const
+{
+    copter.g.sysid_my_gcs.set_and_save(sysid);
+}
 bool GCS_MAVLINK_Copter::sysid_enforce() const
 {
     return copter.g2.sysid_enforce;
+}
+bool GCS_MAVLINK_Copter::control_takeover_allowed() const
+{
+    return copter.g2.control_takeover_allowed;
+}
+void GCS_MAVLINK_Copter::set_control_takeover_allowed(bool takeoverAllowed) const
+{
+    return copter.g2.control_takeover_allowed.set_and_save(takeoverAllowed);
 }
 
 uint32_t GCS_MAVLINK_Copter::telem_delay() const

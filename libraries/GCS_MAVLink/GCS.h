@@ -271,7 +271,10 @@ public:
     uint16_t cap_message_interval(uint16_t interval_ms) const;
 
     virtual uint8_t sysid_my_gcs() const = 0;
+    virtual void set_sysid_my_gcs(uint8_t sysid) const = 0;
     virtual bool sysid_enforce() const { return false; }
+    virtual bool control_takeover_allowed() const = 0;
+    virtual void set_control_takeover_allowed(bool takeoverAllowed) const = 0;
 
     // NOTE: param_name here must point to a 16+1 byte buffer - so do
     // NOT try to pass in a static-char-* unless it does have that
@@ -618,6 +621,8 @@ protected:
     bool get_ap_message_interval(ap_message id, uint16_t &interval_ms) const;
     MAV_RESULT handle_command_request_message(const mavlink_command_int_t &packet);
 
+    MAV_RESULT handle_request_operator_control(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+
     MAV_RESULT handle_START_RX_PAIR(const mavlink_command_int_t &packet);
 
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet);
@@ -806,9 +811,13 @@ private:
     MAV_RESULT handle_servorelay_message(const mavlink_command_int_t &packet);
     bool send_relay_status() const;
 
+    void send_control_status() const;
+
     static bool command_long_stores_location(const MAV_CMD command);
 
     bool calibrate_gyros();
+
+    bool is_control_request_packet(const mavlink_message_t &msg) const;
 
     /// The stream we are communicating over
     AP_HAL::UARTDriver *_port;
