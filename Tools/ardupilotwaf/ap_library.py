@@ -29,12 +29,16 @@ vehicle-related headers and fails the build if they do.
 import os
 import re
 
-from waflib import Errors, Task, Utils, Logs
+from waflib import Build, Errors, Task, Utils, Logs
 from waflib.Configure import conf
 from waflib.TaskGen import after_method, before_method, feature
 from waflib.Tools import c_preproc
 
 import ardupilotwaf as ap
+
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
+import extract_features_v2
 
 UTILITY_SOURCE_EXTS = ['utility/' + glob for glob in ap.SOURCE_EXTS]
 
@@ -164,6 +168,39 @@ def dynamic_post(self):
         return
     self.source = Utils.to_list(self.source)
     self.source.extend(self.bld.bldnode.ant_glob(self.dynamic_source))
+
+# Files to exclude from linking (full paths relative to build directory)
+_excluded_from_linking = [
+    'libraries/AP_Common/AP_FeatureValidator.*o'
+]
+
+@feature('cxxstlib', 'cxxprogram')
+@after_method('process_use')
+def exclude_files_from_linking(self):
+    """
+    Removes specific object files from the link step
+    """
+    if not hasattr(self, 'link_task') or not self.link_task:
+        return
+    print('link: excluding files from linking')
+    # Create a list of inputs excluding the specified files
+    filtered_inputs = []
+    for input_file in self.link_task.inputs:
+        input_path = input_file.path_from(self.bld.bldnode)
+        for excluded_file in _excluded_from_linking:
+            # check if the input file matches the excluded file
+            exclude_file = False
+            for excluded_pattern in _excluded_from_linking:
+                if re.match(excluded_pattern, input_path):
+                    exclude_file = True
+                    Logs.debug('link: excluding %s from link (matched %s)' % (input_path, excluded_pattern))
+                    break
+            
+            if not exclude_file:
+                filtered_inputs.append(input_file)
+    
+    # Update the link_task inputs with the filtered list
+    self.link_task.inputs = filtered_inputs
 
 class ap_library_check_headers(Task.Task):
     color = 'PINK'
@@ -372,6 +409,16 @@ def remove_target_list(cfg):
         os.remove(target_list_file.abspath())
     except OSError:
         pass
+
+@conf
+def generate_feature_cpp(cfg):
+    feature_cpp = cfg.bldnode.make_node(f'{cfg.env.BOARD}/AP_FeatureValidator.cpp').abspath()
+    Logs.info('Generating AP_FeatureValidator.cpp for detecting features during compile time')
+    extract_features_v2.generate_cpp_file(feature_cpp)
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_Common'] = [feature_cpp]
+    # AP_FeatureValidator.cpp must not be removed on "waf clean"
+    cfg.env.append_unique(Build.CFG_FILES, [feature_cpp])
+
 
 @feature('cxxprogram', 'cxxstlib')
 @after_method('propagate_uselib_vars')

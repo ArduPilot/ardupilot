@@ -676,6 +676,7 @@ def configure(cfg):
     cfg.env.CXXFLAGS += ['-include', 'ap_config.h']
 
     cfg.remove_target_list()
+    cfg.generate_feature_cpp()
     _collect_autoconfig_files(cfg)
 
     if cfg.env.DEBUG and cfg.env.VS_LAUNCH:

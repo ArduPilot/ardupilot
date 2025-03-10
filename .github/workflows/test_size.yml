@@ -265,6 +265,33 @@ jobs:
             ls -l "$PLANE_BINARY"
           fi
 
+      - name: extract features v2 checks
+        shell: bash
+        run: |
+          cd pr/
+          echo "Checking if feature headers need to be updated in build_options.py..."
+          python3 Tools/scripts/extract_features_v2.py check-features-headers
+          if [ $? -ne 0 ]; then
+            echo "Error running header validation script"
+            exit 1
+          fi
+          
+          # Check if headers are missing or incorrect
+          output=$(python3 Tools/scripts/extract_features_v2.py check-features-headers 2>&1)
+          if echo "$output" | grep -q "Features with missing headers: [1-9]"; then
+            echo "ERROR: Missing feature headers detected in build_options.py"
+            echo "$output"
+            echo "Please run 'python3 Tools/scripts/extract_features_v2.py check-features-headers' locally and commit the changes"
+            exit 1
+          elif echo "$output" | grep -q "Features with incorrect headers: [1-9]"; then
+            echo "ERROR: Incorrect feature headers detected in build_options.py"
+            echo "$output"
+            echo "Please run 'python3 Tools/scripts/extract_features_v2.py check-features-headers' locally and commit the changes"
+            exit 1
+          else
+            echo "No header changes required in build_options.py"
+          fi
+
       - name: Full size compare with base branch
         shell: bash
         run: |

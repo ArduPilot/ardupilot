@@ -34,10 +34,14 @@ to bld.bldnode for the binary file. Otherwise, size information won't be
 printed for that target.
 '''
 import sys
+import os
 
 from waflib import Context, Logs, Node
 from waflib.Configure import conf
 from waflib.TaskGen import before_method, feature
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
+import extract_features_v2
 
 MAX_TARGETS = 20
 
@@ -163,7 +167,24 @@ def _build_summary(bld):
                 'NORMAL',
                 '\033[0;31;1mNote: Some targets were suppressed. Use --summary-all if you want information of all targets.',
             )
-
+    
+    # Generate feature.txt with all enabled/disabled features
+    feature_txt_path = os.path.join(bld.bldnode.abspath(), "feature.txt")
+    # Find the AP_FeatureValidator.o file using glob - account for numbered object files (e.g. AP_FeatureValidator.cpp.*.o)
+    validator_file = bld.bldnode.ant_glob('AP_FeatureValidator.cpp.*.o')
+    if validator_file and bld.env.NM:
+        validator_file = validator_file[0].abspath()
+        nm_cmd = bld.env.NM
+        if isinstance(nm_cmd, list) and len(nm_cmd) > 0:
+            extract_features_v2.extract_features(validator_file, nm_cmd, feature_txt_path)
+        else:
+            Logs.warn("Warning: NM command is not properly defined, skipping feature extraction")
+    else:
+        if not validator_file:
+            Logs.warn("Warning: Could not find AP_FeatureValidator object file to extract features")
+        if not bld.env.NM:
+            Logs.warn("Warning: NM tool not found, skipping feature extraction")
+    
     if hasattr(bld, 'extra_build_summary'):
         bld.extra_build_summary(bld, sys.modules[__name__])
 
@@ -278,11 +299,14 @@ information about the first %d targets will be printed.
 
 def configure(cfg):
     size_name = 'size'
+    nm_name = 'nm'
 
     if cfg.env.TOOLCHAIN != 'native':
         size_name = cfg.env.TOOLCHAIN + '-' + size_name
-
+    if cfg.env.TOOLCHAIN != 'native':
+        nm_name = cfg.env.TOOLCHAIN + '-' + nm_name
     cfg.find_program(size_name, var='SIZE', mandatory=False)
+    cfg.find_program(nm_name, var='NM', mandatory=False)
 
     if not cfg.env.BUILD_SUMMARY_HEADER:
         cfg.env.BUILD_SUMMARY_HEADER = [
