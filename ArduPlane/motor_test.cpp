@@ -83,7 +83,8 @@ MAV_RESULT QuadPlane::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t m
         return MAV_RESULT_FAILED;
     }
 
-    if (motors->armed()) {
+    // Must be disarmed to start a motor test but allow changes during a test
+    if (!motor_test.running && motors->armed()) {
         gcs().send_text(MAV_SEVERITY_INFO, "Must be disarmed for motor test");
         return MAV_RESULT_FAILED;
     }
