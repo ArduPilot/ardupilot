@@ -425,7 +425,7 @@ void AP_ADSB_uAvionix_UCP::send_Transponder_Control()
     }
 
 #if AP_ADSB_UAVIONIX_EMERGENCY_STATUS_ON_LOST_LINK
-    const uint32_t last_gcs_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    const uint32_t last_gcs_ms = gcs().sysid_mygcs_last_seen_time_ms();
     const bool gcs_lost_comms = (last_gcs_ms != 0) && (AP_HAL::millis() - last_gcs_ms > AP_ADSB_UAVIONIX_GCS_LOST_COMMS_LONG_TIMEOUT_MS);
     msg.emergencyState = gcs_lost_comms ? ADSB_EMERGENCY_STATUS::ADSB_EMERGENCY_UAS_LOST_LINK : ADSB_EMERGENCY_STATUS::ADSB_EMERGENCY_NONE;
 #else
