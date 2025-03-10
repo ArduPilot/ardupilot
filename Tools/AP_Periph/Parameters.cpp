@@ -213,7 +213,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Advanced
     GSCALAR(serial_number, "BRD_SERIAL_NUM", 0),
 
-#ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
+#if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED
     // @Param: BUZZER_VOLUME
     // @DisplayName: Buzzer volume
     // @Description: Control the volume of the buzzer

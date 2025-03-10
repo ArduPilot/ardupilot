@@ -113,7 +113,7 @@ public:
     AP_Int8 can_slcan_cport;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
+#if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED
     AP_Int8 buzz_volume;
 #endif
 #ifdef AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
