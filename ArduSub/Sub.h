@@ -458,7 +458,10 @@ private:
     void failsafe_terrain_on_event();
     void mainloop_failsafe_enable();
     void mainloop_failsafe_disable();
+#if AP_FENCE_ENABLED
     void fence_check();
+    void fence_run_checks() override;
+#endif
     bool set_mode(Mode::Number mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, const ModeReason reason) override;
     uint8_t get_mode() const override { return (uint8_t)control_mode; }
