@@ -243,8 +243,6 @@ private:
 
     AP_Airspeed_Params param[AIRSPEED_MAX_SENSORS];
 
-    CalibrationState calibration_state[AIRSPEED_MAX_SENSORS];
-
     struct airspeed_state {
         float   raw_airspeed;
         float   airspeed;
@@ -261,6 +259,7 @@ private:
             float    sum;
             uint16_t count;
             uint16_t read_count;
+            CalibrationState state;
         } cal;
 
 #if AP_AIRSPEED_AUTOCAL_ENABLE
