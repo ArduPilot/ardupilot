@@ -14,30 +14,40 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+/*
+ * Binds a port and waits for UDP packets.  Packets contain a 64-bit
+ * timestamp, a sequence number and 8 16-bit channels.  For some
+ * reason it swaps channel ordering from AETR to ETAR (ie. switches
+ * around first 3 received channels).
+ *
+ * Note that this protocol isn't actually *used* by ArduPilot on Solo!
+ */
+
 #pragma once
 
-#include <unistd.h>
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_SOLOLINK_ENABLED
+
+#include "AP_RCProtocol_Backend.h"
 
 #include <AP_HAL/utility/Socket_native.h>
-#include <AP_HAL/utility/sparse-endian.h>
 
-#include "RCInput.h"
-
-#ifndef AP_SOCKET_NATIVE_ENABLED
-#error "need native"
-#endif
-
-namespace Linux {
-
-class RCInput_SoloLink : public RCInput
+class AP_RCProtocol_SoloLink : public AP_RCProtocol_Backend
 {
 public:
-    RCInput_SoloLink();
 
-    void init() override;
-    void _timer_tick() override;
+    using AP_RCProtocol_Backend::AP_RCProtocol_Backend;
+
+    void update() override;
 
 private:
+
+    void init();
+
+    void thread_main();
+
     static const unsigned int PACKET_LEN = 26;
     static const unsigned int PORT = 5005;
 
@@ -56,6 +66,8 @@ private:
     uint64_t _last_usec = 0;
     uint16_t _last_seq = 0;
     union packet _packet;
+
+    bool init_done;  // eg. whether we have created timer thread entry
 };
 
-}
+#endif  // AP_RCPROTOCOL_SOLOLINK_ENABLED

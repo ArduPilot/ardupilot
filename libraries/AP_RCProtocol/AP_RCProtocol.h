@@ -99,6 +99,9 @@ public:
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
         EMLID_RCIO = 21,
 #endif
+#if AP_RCPROTOCOL_SOLOLINK_ENABLED
+        SOLOLINK = 22,
+#endif
         NONE    //last enum always is None
     };
 
@@ -211,6 +214,9 @@ public:
 #endif  // AP_RCPROTOCOL_IOMCU_ENABLED
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
         case EMLID_RCIO:
+#endif
+#if AP_RCPROTOCOL_SOLOLINK_ENABLED
+        case SOLOLINK:
 #endif
         case NONE:
             return false;

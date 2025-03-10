@@ -14,11 +14,24 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "RCInput_SoloLink.h"
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_SOLOLINK_ENABLED
+
+#include "AP_RCProtocol_SoloLink.h"
+
+#include <AP_HAL/utility/Socket_native.h>
+#include <AP_HAL/utility/sparse-endian.h>
+
+#ifndef AP_SOCKET_NATIVE_ENABLED
+#error "need native"
+#endif
 
 #include <errno.h>
 #include <inttypes.h>
 #include <stdio.h>
+
+#include <GCS_MAVLink/GCS.h>
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -31,14 +44,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-using namespace Linux;
-
-RCInput_SoloLink::RCInput_SoloLink()
-{
-    memset(&_packet, 0, sizeof(_packet));
-}
-
-void RCInput_SoloLink::init()
+void AP_RCProtocol_SoloLink::init()
 {
     if (!_socket.bind("0.0.0.0", PORT)) {
         AP_HAL::panic("failed to bind UDP socket");
@@ -50,7 +56,7 @@ void RCInput_SoloLink::init()
     return;
 }
 
-bool RCInput_SoloLink::_check_hdr(ssize_t len)
+bool AP_RCProtocol_SoloLink::_check_hdr(ssize_t len)
 {
     if (len < (ssize_t) sizeof(_packet)) {
         hal.console->printf("RCInput: Packet too small (%zd), doesn't contain full frame\n",
@@ -75,20 +81,36 @@ bool RCInput_SoloLink::_check_hdr(ssize_t len)
     return true;
 }
 
-/* TODO: this should be a PollerThread or at least stop using a SchedThread */
-void RCInput_SoloLink::_timer_tick(void)
+void AP_RCProtocol_SoloLink::update()
 {
+    if (!init_done) {
+        init_done = true;
+        if (!hal.scheduler->thread_create(
+                FUNCTOR_BIND_MEMBER(&AP_RCProtocol_SoloLink::thread_main, void),
+                "RCSoloLink",
+                512,
+                AP_HAL::Scheduler::PRIORITY_RCIN,
+                1)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Failed to create RC thread");
+        }
+    }
+}
+
+void AP_RCProtocol_SoloLink::thread_main(void)
+{
+    init();
+
     do {
         uint16_t channels[8];
         ssize_t r;
 
         r = _socket.recv(&_packet.buf, sizeof(_packet), 20);
         if (r < 0) {
-            break;
+            continue;
         }
 
         if (!_check_hdr(r)) {
-            break;
+            continue;
         }
 
         channels[0] = le16toh(_packet.channel[1]);
@@ -100,7 +122,12 @@ void RCInput_SoloLink::_timer_tick(void)
         }
 
 
-
-        _update_periods(channels, 8);
+        add_input(
+            ARRAY_SIZE(channels),
+            channels,
+            false  // in_failsafe
+         );
     } while (true);
 }
+
+#endif  // AP_RCPROTOCOL_SOLOLINK_ENABLED

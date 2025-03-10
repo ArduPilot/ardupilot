@@ -41,6 +41,7 @@
 #include "AP_RCProtocol_UDP.h"
 #include "AP_RCProtocol_FDM.h"
 #include "AP_RCProtocol_Radio.h"
+#include "AP_RCProtocol_SoloLink.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -123,7 +124,10 @@ void AP_RCProtocol::init()
 #endif  // AP_RCPROTOCOL_IOMCU_ENABLED
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
     backend[AP_RCProtocol::EMLID_RCIO] = NEW_NOTHROW AP_RCProtocol_Emlid_RCIO(*this);
-#endif
+#endif  // AP_RCPROTOCOL_EMLID_RCIO_ENABLED
+#if AP_RCPROTOCOL_SOLOLINK_ENABLED
+    backend[AP_RCProtocol::SOLOLINK] = NEW_NOTHROW AP_RCProtocol_SoloLink(*this);
+#endif  // AP_RCPROTOCOL_SOLOLINK_ENABLED
 }
 
 AP_RCProtocol::~AP_RCProtocol()
@@ -480,7 +484,12 @@ void AP_RCProtocol::announce_detected()
     case AP_RCProtocol::IOMCU:
         src = "IOMCU";
         break;
-#endif
+#endif  // AP_RCPROTOCOL_IOMCU_ENABLED
+#if AP_RCPROTOCOL_SOLOLINK_ENABLED
+    case AP_RCProtocol::SOLOLINK:
+        src = "(SoloLink)";
+        break;
+#endif  // AP_RCPROTOCOL_SOLOLINK_ENABLED
     default:
         src = using_uart() ? "Bytes" : "Pulses";
     }
@@ -527,7 +536,10 @@ bool AP_RCProtocol::new_input()
 #endif  // AP_RCPROTOCOL_IOMCU_ENABLED
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
         AP_RCProtocol::EMLID_RCIO,
-#endif
+#endif  // AP_RCPROTOCOL_EMLID_RCIO_ENABLED
+#if AP_RCPROTOCOL_SOLOLINK_ENABLED
+        AP_RCProtocol::SOLOLINK,
+#endif  // AP_RCPROTOCOL_SOLOLINK_ENABLED
     };
     for (const auto protocol : pollable) {
         if (!detect_async_protocol(protocol)) {
@@ -702,7 +714,11 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
     case EMLID_RCIO:
         return "Emlid RCIO";
-#endif
+#endif  // AP_RCPROTOCOL_EMLID_RCIO_ENABLED
+#if AP_RCPROTOCOL_SOLOLINK_ENABLED
+    case SOLOLINK:
+        return "SoloLink";
+#endif  // AP_RCPROTOCOL_SOLOLINK_ENABLED
     case NONE:
         break;
     }

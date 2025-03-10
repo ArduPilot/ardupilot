@@ -700,6 +700,14 @@ class sitl(Board):
         cfg.define('AP_OPENDRONEID_ENABLED', 1)
         cfg.define('AP_SIGNED_FIRMWARE', 0)
 
+        # choose *one* of these as they bind the same port:
+        env.DEFINES.update(
+            AP_RCPROTOCOL_UDP_ENABLED = 'AP_RCPROTOCOL_BACKEND_DEFAULT_ENABLED'
+        )
+        env.DEFINES.update(
+            AP_RCPROTOCOL_SOLOLINK_ENABLED = '0',
+        )
+
         cfg.define('AP_NOTIFY_LP5562_BUS', 2)
         cfg.define('AP_NOTIFY_LP5562_ADDR', 0x30)
 
