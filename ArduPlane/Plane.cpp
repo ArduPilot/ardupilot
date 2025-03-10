@@ -410,7 +410,10 @@ void Plane::three_hz_loop()
  */
 void Plane::airspeed_ratio_update(void)
 {
-    if (!airspeed.enabled() ||
+    if (!hal.util->get_soft_armed() ||
+        !ahrs.get_fly_forward() ||
+        !is_flying() ||
+        !airspeed.enabled() ||
         gps.status() < AP_GPS::GPS_OK_FIX_3D ||
         gps.ground_speed() < 4) {
         // don't calibrate when not moving

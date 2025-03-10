@@ -5,8 +5,8 @@ MCU STM32F4xx STM32F405xx
 
 HAL_CHIBIOS_ARCH_F405 1
 
-# board ID for firmware load
-APJ_BOARD_ID 1011
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_SUCCEXF4
 
 # crystal frequency
 OSCILLATOR_HZ 8000000

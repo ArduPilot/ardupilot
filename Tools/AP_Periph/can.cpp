@@ -540,7 +540,7 @@ void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
     hal.rcout->serial_led_send(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY);
 #endif // HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY
 
-#ifdef HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY
+#if AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED
     {
         const uint8_t i2c_address = 0x38;
         static AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
@@ -558,9 +558,9 @@ void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
         v = 0x80 | blue >> 3; // blue
         dev->transfer(&v, 1, nullptr, 0);
     }
-#endif // HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY
+#endif // AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED
 
-#ifdef HAL_PERIPH_ENABLE_NCP5623_BGR_LED_WITHOUT_NOTIFY
+#if AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED
     {
         const uint8_t i2c_address = 0x38;
         static AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
@@ -578,8 +578,8 @@ void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
         v = 0x80 | red >> 3; // red
         dev->transfer(&v, 1, nullptr, 0);
     }
-#endif // HAL_PERIPH_ENABLE_NCP5623_BGR_LED_WITHOUT_NOTIFY
-#ifdef HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY
+#endif // AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED
+#if AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED
     {
 #define TOSHIBA_LED_PWM0    0x01    // pwm0 register
 #define TOSHIBA_LED_ENABLE  0x04    // enable register
@@ -604,7 +604,7 @@ void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
         };
         dev_toshiba->transfer(val, sizeof(val), nullptr, 0);
     }
-#endif // HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY
+#endif // AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED
 }
 
 /*
@@ -824,7 +824,7 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         handle_param_executeopcode(canard_instance, transfer);
         break;
 
-#if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || AP_PERIPH_NOTIFY_ENABLED
+#if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NOTIFY_ENABLED
     case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
         handle_beep_command(canard_instance, transfer);
         break;
@@ -945,7 +945,7 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
     case UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_ID:
         *out_data_type_signature = UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_SIGNATURE;
         return true;
-#if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || AP_PERIPH_NOTIFY_ENABLED
+#if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NOTIFY_ENABLED
     case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_SIGNATURE;
         return true;
@@ -1839,7 +1839,7 @@ void AP_Periph_FW::esc_telem_extended_update(const uint32_t &now_ms)
 }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_ESC_APD
+#if AP_PERIPH_ESC_APD_ENABLED
 void AP_Periph_FW::apd_esc_telem_update()
 {
     for(uint8_t i = 0; i < ARRAY_SIZE(apd_esc_telem); i++) {
@@ -1872,7 +1872,7 @@ void AP_Periph_FW::apd_esc_telem_update()
     }
 
 }
-#endif // HAL_PERIPH_ENABLE_ESC_APD
+#endif // AP_PERIPH_ESC_APD_ENABLED
 #endif // AP_PERIPH_RC_OUT_ENABLED
 
 void AP_Periph_FW::can_update()
@@ -1933,10 +1933,10 @@ void AP_Periph_FW::can_update()
 #if AP_PERIPH_RANGEFINDER_ENABLED
         can_rangefinder_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_PROXIMITY
+#if AP_PERIPH_PROXIMITY_ENABLED
         can_proximity_update();
 #endif
-    #if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || AP_PERIPH_NOTIFY_ENABLED
+    #if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NOTIFY_ENABLED
         can_buzzer_update();
     #endif
     #ifdef HAL_GPIO_PIN_SAFE_LED
@@ -1945,13 +1945,13 @@ void AP_Periph_FW::can_update()
     #ifdef HAL_GPIO_PIN_SAFE_BUTTON
         can_safety_button_update();
     #endif
-    #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+    #if AP_PERIPH_PWM_HARDPOINT_ENABLED
         pwm_hardpoint_update();
     #endif
     #if AP_PERIPH_HOBBYWING_ESC_ENABLED
         hwesc_telem_update();
     #endif
-#ifdef HAL_PERIPH_ENABLE_ESC_APD
+#if AP_PERIPH_ESC_APD_ENABLED
         apd_esc_telem_update();
 #endif
     #if AP_PERIPH_MSP_ENABLED
@@ -1963,7 +1963,7 @@ void AP_Periph_FW::can_update()
     #if AP_PERIPH_EFI_ENABLED
         can_efi_update();
     #endif
-#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+#if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
         temperature_sensor_update();
 #endif
 #if AP_PERIPH_RPM_STREAM_ENABLED

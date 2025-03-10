@@ -1785,7 +1785,7 @@ uint8_t GCS_MAVLINK_Copter::send_available_mode(uint8_t index) const
 
 #if MODE_AUTO_ENABLED
     // Auto RTL is odd
-    // Have to deal with is separately becase its number and name can change depending on if were in it or not
+    // Have to deal with is separately because its number and name can change depending on if were in it or not
     if (index_zero == 0) {
         mode_number = (uint8_t)Mode::Number::AUTO_RTL;
         name = "AUTO RTL";

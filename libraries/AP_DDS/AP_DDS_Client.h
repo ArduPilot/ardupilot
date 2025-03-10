@@ -15,6 +15,7 @@
 #endif // AP_DDS_TIME_PUB_ENABLED
 #if AP_DDS_NAVSATFIX_PUB_ENABLED
 #include "sensor_msgs/msg/NavSatFix.h"
+#include <AP_GPS/AP_GPS_config.h>
 #endif // AP_DDS_NAVSATFIX_PUB_ENABLED
 #if AP_DDS_NEEDS_TRANSFORMS
 #include "tf2_msgs/msg/TFMessage.h"
@@ -172,7 +173,7 @@ private:
 #if AP_DDS_NAVSATFIX_PUB_ENABLED
     sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
     // The last ms timestamp AP_DDS wrote a NavSatFix message
-    uint64_t last_nav_sat_fix_time_ms;
+    uint64_t last_nav_sat_fix_time_ms[GPS_MAX_INSTANCES];
     //! @brief Serialize the current nav_sat_fix state and publish to the IO stream(s)
     void write_nav_sat_fix_topic();
     bool update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance) WARN_IF_UNUSED;

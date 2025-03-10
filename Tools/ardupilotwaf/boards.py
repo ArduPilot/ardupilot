@@ -959,11 +959,13 @@ class sitl_periph_universal(sitl_periph):
             AP_PERIPH_BARO_ENABLED = 1,
             AP_PERIPH_IMU_ENABLED = 1,
             AP_PERIPH_RANGEFINDER_ENABLED = 1,
+            AP_PERIPH_DEVICE_TEMPERATURE_ENABLED = 0,
             AP_PERIPH_BATTERY_ENABLED = 1,
             AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
             AP_PERIPH_EFI_ENABLED = 1,
             AP_PERIPH_RPM_ENABLED = 1,
             AP_PERIPH_RPM_STREAM_ENABLED = 1,
+            AP_PERIPH_PROXIMITY_ENABLED = 0,
             AP_RPM_STREAM_ENABLED = 1,
             AP_PERIPH_RC_OUT_ENABLED = 1,
             AP_PERIPH_ADSB_ENABLED = 1,
@@ -981,6 +983,13 @@ class sitl_periph_universal(sitl_periph):
             AP_PERIPH_RCIN_ENABLED = 0,
             AP_PERIPH_NETWORKING_ENABLED = 0,
             AP_PERIPH_NOTIFY_ENABLED = 0,
+            AP_PERIPH_PWM_HARDPOINT_ENABLED = 0,
+            AP_PERIPH_ESC_APD_ENABLED = 0,
+            AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED = 0,
+            AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED = 0,
+            AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED = 0,
+            AP_PERIPH_BUZZER_ENABLED = 0,
+            AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED = 0,
         )
 
 class sitl_periph_gps(sitl_periph):
@@ -994,8 +1003,10 @@ class sitl_periph_gps(sitl_periph):
             APJ_BOARD_ID = 101,
 
             AP_PERIPH_BATTERY_ENABLED = 0,
+            AP_PERIPH_DEVICE_TEMPERATURE_ENABLED = 0,
             AP_PERIPH_SERIAL_OPTIONS_ENABLED = 0,
             AP_PERIPH_ADSB_ENABLED = 0,
+            AP_PERIPH_PROXIMITY_ENABLED = 0,
             AP_PERIPH_GPS_ENABLED = 1,
             AP_PERIPH_RELAY_ENABLED = 0,
             AP_PERIPH_IMU_ENABLED = 0,
@@ -1014,6 +1025,13 @@ class sitl_periph_gps(sitl_periph):
             AP_PERIPH_HOBBYWING_ESC_ENABLED = 0,
             AP_PERIPH_NETWORKING_ENABLED = 0,
             AP_PERIPH_NOTIFY_ENABLED = 0,
+            AP_PERIPH_PWM_HARDPOINT_ENABLED = 0,
+            AP_PERIPH_ESC_APD_ENABLED = 0,
+            AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED = 0,
+            AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED = 0,
+            AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED = 0,
+            AP_PERIPH_BUZZER_ENABLED = 0,
+            AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED = 0,
         )
 
 class sitl_periph_battmon(sitl_periph):
@@ -1027,12 +1045,14 @@ class sitl_periph_battmon(sitl_periph):
             APJ_BOARD_ID = 101,
 
             AP_PERIPH_BATTERY_ENABLED = 1,
+            AP_PERIPH_DEVICE_TEMPERATURE_ENABLED = 0,
             AP_PERIPH_SERIAL_OPTIONS_ENABLED = 0,
             AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
             AP_PERIPH_RELAY_ENABLED = 0,
             AP_PERIPH_ADSB_ENABLED = 0,
             AP_PERIPH_BARO_ENABLED = 0,
             AP_PERIPH_RANGEFINDER_ENABLED = 0,
+            AP_PERIPH_PROXIMITY_ENABLED = 0,
             AP_PERIPH_GPS_ENABLED = 0,
             AP_PERIPH_MSP_ENABLED = 0,
             AP_PERIPH_IMU_ENABLED = 0,
@@ -1047,6 +1067,13 @@ class sitl_periph_battmon(sitl_periph):
             AP_PERIPH_HOBBYWING_ESC_ENABLED = 0,
             AP_PERIPH_NETWORKING_ENABLED = 0,
             AP_PERIPH_NOTIFY_ENABLED = 0,
+            AP_PERIPH_PWM_HARDPOINT_ENABLED = 0,
+            AP_PERIPH_ESC_APD_ENABLED = 0,
+            AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED = 0,
+            AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED = 0,
+            AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED = 0,
+            AP_PERIPH_BUZZER_ENABLED = 0,
+            AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED = 0,
         )
 
 class esp32(Board):

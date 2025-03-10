@@ -272,10 +272,6 @@
 #define HAL_SUPPORT_RCOUT_SERIAL 0
 #endif
 
-#ifndef HAL_FORWARD_OTG2_SERIAL
-#define HAL_FORWARD_OTG2_SERIAL 0
-#endif
-
 #ifndef HAL_HAVE_DUAL_USB_CDC
 #define HAL_HAVE_DUAL_USB_CDC 0
 #endif
@@ -417,3 +413,7 @@
 #endif
 
 #define HAL_GPIO_LED_OFF (!HAL_GPIO_LED_ON)
+
+#ifndef HAL_REBOOT_ON_MEMORY_ERRORS
+#define HAL_REBOOT_ON_MEMORY_ERRORS defined(IOMCU_FW)
+#endif

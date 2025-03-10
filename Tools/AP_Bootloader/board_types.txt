@@ -301,6 +301,7 @@ AP_HW_FlywooH743Pro                  1181
 AP_HW_CBU_StampH743_LC               1182
 AP_HW_NarinH7                        1183
 AP_HW_BrahmaF4                       1184
+AP_HW_X-MAV-AP-F405Mini              1185
 
 AP_HW_JFB200                         1200
 
@@ -400,6 +401,7 @@ AP_HW_TBS_L431_PERIPH                5252
 
 # IDs 5270-5279 reserved for SpeedyBee
 AP_HW_SpeedyBeeF405WINGV2            5270
+AP_HW_SpeedyBeeF405AIO               5271
 
 #IDs 5301-5399 reserved for Sierra Aerospace
 AP_HW_Sierra-TrueNavPro-G4           5301
@@ -436,6 +438,9 @@ AP_HW_DroneBuild_G2                  5701
 AP_HW_DroneerF405                    5800
 
 # IDs 6000-6099 reserved for SpektreWorks
+AP_HW_sw-spar-f407                   6000
+AP_HW_sw-boom-f407                   6001
+AP_HW_sw-nav-f405                    6002
 
 # IDs 6100-6109 reserved for MFE
 AP_HW_MFE_PDB_CAN                            6100

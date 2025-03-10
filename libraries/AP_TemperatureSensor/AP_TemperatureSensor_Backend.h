@@ -30,7 +30,7 @@ public:
     AP_TemperatureSensor_Backend(AP_TemperatureSensor &front, AP_TemperatureSensor::TemperatureSensor_State &state, AP_TemperatureSensor_Params &params);
 
     // initialise
-    virtual void init() {};
+    __INITFUNC__ virtual void init() {};
 
     // update the latest temperature
     virtual void update() = 0;

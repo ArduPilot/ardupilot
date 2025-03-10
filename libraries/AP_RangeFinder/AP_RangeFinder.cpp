@@ -203,7 +203,7 @@ void RangeFinder::convert_params(void)
   finders here. For now we won't allow for hot-plugging of
   rangefinders.
  */
-void RangeFinder::init(enum Rotation orientation_default)
+__INITFUNC__ void RangeFinder::init(enum Rotation orientation_default)
 {
     convert_params();
 
@@ -260,7 +260,7 @@ void RangeFinder::update(void)
 #endif
 }
 
-bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance, uint8_t serial_instance)
+__INITFUNC__ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance, uint8_t serial_instance)
 {
     if (!backend) {
         return false;
@@ -282,7 +282,7 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance
 /*
   detect if an instance of a rangefinder is connected. 
  */
-void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
+__INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 {
     AP_RangeFinder_Backend_Serial *(*serial_create_fn)(RangeFinder::RangeFinder_State&, AP_RangeFinder_Params&) = nullptr;
 
@@ -579,11 +579,16 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         _add_backend(NEW_NOTHROW AP_RangeFinder_TOFSenseP_CAN(state[instance], params[instance]), instance);
         break;
 #endif
-#if AP_RANGEFINDER_NRA24_CAN_ENABLED
+#if AP_RANGEFINDER_NRA24_CAN_DRIVER_ENABLED
+  #if AP_RANGEFINDER_NRA24_CAN_ENABLED
     case Type::NRA24_CAN:
+  #endif
+  #if AP_RANGEFINDER_HEXSOONRADAR_ENABLED
+    case Type::HEXSOON_RADAR:
+  #endif
         _add_backend(NEW_NOTHROW AP_RangeFinder_NRA24_CAN(state[instance], params[instance]), instance);
         break;
-#endif
+#endif  // AP_RANGEFINDER_NRA24_CAN_DRIVER_ENABLED
 #if AP_RANGEFINDER_TOFSENSEF_I2C_ENABLED
     case Type::TOFSenseF_I2C: {
         uint8_t addr = TOFSENSEP_I2C_DEFAULT_ADDR;
@@ -889,8 +894,14 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
         }
 #endif  // AP_RANGEFINDER_ANALOG_ENABLED || AP_RANGEFINDER_PWM_ENABLED
 
-#if AP_RANGEFINDER_NRA24_CAN_ENABLED
-        case Type::NRA24_CAN: {
+#if AP_RANGEFINDER_NRA24_CAN_DRIVER_ENABLED
+  #if AP_RANGEFINDER_NRA24_CAN_ENABLED
+        case Type::NRA24_CAN:
+  #endif
+  #if AP_RANGEFINDER_HEXSOONRADAR_ENABLED
+        case Type::HEXSOON_RADAR:
+  #endif
+        {
             if (drivers[i]->status() == Status::NoData) {
                 // This sensor stops sending data if there is no relative motion. This will mostly happen during takeoff, before arming
                 // To avoid pre-arm failure, return true even though there is no data.
@@ -899,7 +910,7 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
             }
             break;
         }
-#endif
+#endif // AP_RANGEFINDER_NRA24_CAN_DRIVER_ENABLED 
 
         default:
             break;

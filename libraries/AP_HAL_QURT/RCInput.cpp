@@ -5,12 +5,9 @@ using namespace QURT;
 
 void RCInput::init()
 {
+#if AP_RCPROTOCOL_ENABLED
     AP::RC().init();
-}
-
-const char *RCInput::protocol() const
-{
-    return AP::RC().protocol_name();
+#endif  // AP_RCPROTOCOL_ENABLED
 }
 
 bool RCInput::new_input()
@@ -43,6 +40,7 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
 
 void RCInput::_timer_tick(void)
 {
+#if AP_RCPROTOCOL_ENABLED
     auto &rcprot = AP::RC();
 
     WITH_SEMAPHORE(mutex);
@@ -55,4 +53,5 @@ void RCInput::_timer_tick(void)
         rcprot.read(values, num_chan);
         updated = true;
     }
+#endif  // AP_RCPROTOCOL_ENABLED
 }

@@ -93,6 +93,9 @@ public:
 #if AP_RCPROTOCOL_RADIO_ENABLED
         RADIO = 19,
 #endif
+#if AP_RCPROTOCOL_IOMCU_ENABLED
+        IOMCU = 20,
+#endif  // AP_RCPROTOCOL_IOMCU_ENABLED
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
         EMLID_RCIO = 21,
 #endif
@@ -203,6 +206,9 @@ public:
 #if AP_RCPROTOCOL_RADIO_ENABLED
         case RADIO:
 #endif
+#if AP_RCPROTOCOL_IOMCU_ENABLED
+        case IOMCU:
+#endif  // AP_RCPROTOCOL_IOMCU_ENABLED
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
         case EMLID_RCIO:
 #endif
@@ -219,12 +225,15 @@ public:
     uint16_t read(uint8_t chan);
     void read(uint16_t *pwm, uint8_t n);
     bool new_input();
-    void start_bind(void);
+    void start_bind();
     int16_t get_RSSI(void) const;
     int16_t get_rx_link_quality(void) const;
 
-    // return protocol name as a string
-    const char *protocol_name(void) const;
+    // return detected protocol.  In the case that backend can provide
+    // information on what *it* is decoding that will be returned by
+    // this method.  As opposed to "protocol_name" which will be the
+    // backend name e.g. "IOMCU".
+    const char *detected_protocol_name() const;
 
     // return detected protocol
     enum rcprotocol_t protocol_detected(void) const {
@@ -290,6 +299,10 @@ private:
 
     // allowed RC protocols mask (first bit means "all")
     uint32_t rc_protocols_mask;
+
+    rcprotocol_t _last_detected_protocol;
+    bool _last_detected_using_uart;
+    void announce_detected();
 
 #endif  // AP_RCPROTCOL_ENABLED
 

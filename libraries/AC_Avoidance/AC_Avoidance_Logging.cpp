@@ -2,6 +2,7 @@
 
 #if HAL_LOGGING_ENABLED
 
+#include <AP_AHRS/AP_AHRS.h>
 #include "AC_Avoid.h"
 #include "AP_OADijkstra.h"
 #include "AP_OABendyRuler.h"

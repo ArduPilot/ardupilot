@@ -6,7 +6,7 @@ MCU STM32G474 STM32G474xx
 # crystal frequency
 OSCILLATOR_HZ 8000000
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_MatekG474
 
 # setup build for a peripheral firmware

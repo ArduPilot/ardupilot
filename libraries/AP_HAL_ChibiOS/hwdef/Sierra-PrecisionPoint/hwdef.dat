@@ -12,8 +12,8 @@ FLASH_RESERVE_START_KB 64
 STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 8192
 
-# board ID for firmware load
-APJ_BOARD_ID 1095
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_Sierra-PrecisionPoint
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

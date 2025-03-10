@@ -36,7 +36,7 @@ public:
     virtual int16_t get_rssi(void) { return -1; }
     virtual int16_t get_rx_link_quality(void) { return -1; }
     /* Return string describing method RC input protocol */
-    virtual const char *protocol() const = 0;
+    virtual const char *protocol() const { return nullptr; }
 
     /**
      * Overrides: these are really grody and don't belong here but we need
@@ -46,9 +46,6 @@ public:
      *  v == 0  -> do not override this channel
      *  v > 0   -> set v as override.
      */
-
-    /* execute receiver bind */
-    virtual bool rc_bind(int dsmMode) { return false; }
 
     /* enable or disable pulse input for RC input. This is used to
        reduce load when we are decoding R/C via a UART */

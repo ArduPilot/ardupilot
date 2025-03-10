@@ -1,7 +1,7 @@
 #pragma once
 #include "AP_Proximity_config.h"
 
-#if AP_PROXIMITY_MR72_ENABLED || AP_PROXIMITY_HEXSOONRADAR_ENABLED
+#if AP_PROXIMITY_MR72_DRIVER_ENABLED
 
 #include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
@@ -48,4 +48,4 @@ private:
     MultiCAN* multican_MR72;            // Allows for multiple CAN rangefinders on a single bus
 };
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif  // AP_PROXIMITY_MR72_DRIVER_ENABLED

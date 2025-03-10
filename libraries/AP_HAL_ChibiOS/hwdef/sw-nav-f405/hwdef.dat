@@ -11,8 +11,8 @@ FLASH_SIZE_KB 1024
 STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 15360
 
-# board ID for firmware load
-APJ_BOARD_ID 6002
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_sw-nav-f405
 
 define CAN_APP_NODE_NAME "sw-nav-f405"
 

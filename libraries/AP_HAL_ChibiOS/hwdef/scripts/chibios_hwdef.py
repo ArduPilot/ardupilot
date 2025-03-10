@@ -982,6 +982,12 @@ class ChibiOSHWDef(hwdef.HWDef):
         else:
             self.env_vars['IOMCU_FW'] = 0
 
+        # check if heater pin defined
+        if 'HEATER' in self.bylabel.keys():
+            self.env_vars['IOMCU_FW_WITH_HEATER'] = 1
+        else:
+            self.env_vars['IOMCU_FW_WITH_HEATER'] = 0
+
         if self.get_config('PERIPH_FW', required=False):
             self.env_vars['PERIPH_FW'] = self.get_config('PERIPH_FW')
         else:
@@ -1600,7 +1606,7 @@ INCLUDE common.ld
 
     def write_DATAFLASH_config(self, f):
         '''write dataflash config defines'''
-        # DATAFLASH block|littlefs:<w25nxx>
+        # DATAFLASH block|littlefs:<w25nxx|jedec_nor>
         seen = set()
         for dev in self.dataflash_list:
             if not self.has_dataflash_spi():
@@ -1611,14 +1617,18 @@ INCLUDE common.ld
             a = dev[0].split(':')
             if a[0].startswith('block'):
                 if len(a) > 1 and a[1].startswith('w25nxx'):
-                    f.write('#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25NXX')
-                f.write('#define HAL_LOGGING_DATAFLASH_ENABLED TRUE')
+                    f.write('#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25NXX\n')
+                elif len(a) > 1 and a[1].startswith('jedec_nor'):
+                    f.write('#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_Flash_JEDEC\n')
+                f.write('#define HAL_LOGGING_DATAFLASH_ENABLED TRUE\n')
             elif a[0].startswith('littlefs'):
                 f.write('#define USE_POSIX\n')
                 f.write('#define HAL_OS_LITTLEFS_IO TRUE\n')
                 f.write('#define HAL_OS_POSIX_IO TRUE\n')
                 if len(a) > 1 and a[1].startswith('w25nxx'):
-                    f.write('#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_W25NXX')
+                    f.write('#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_W25NXX\n')
+                elif len(a) > 1 and a[1].startswith('jedec_nor'):
+                    f.write('#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_JEDEC_NOR\n')
                 self.build_flags.append('USE_FATFS=no')
                 self.env_vars['WITH_LITTLEFS'] = "1"
 
@@ -1661,6 +1671,8 @@ INCLUDE common.ld
     def write_UART_config(self, f):
         '''write UART config defines'''
         serial_list = self.get_config('SERIAL_ORDER', required=False, aslist=True)
+        if 'IOMCU_UART' in self.config and self.config['IOMCU_UART'][0] not in serial_list:
+            serial_list.append(self.config['IOMCU_UART'][0])
         if serial_list is None:
             return
         while len(serial_list) < 3: # enough ports for CrashCatcher UART discovery
@@ -1698,11 +1710,15 @@ INCLUDE common.ld
                 self.error("Need io_firmware.bin in ROMFS for IOMCU")
 
             self.write_defaulting_define(f, 'HAL_WITH_IO_MCU', 1)
-            f.write('#define HAL_UART_IOMCU_IDX %u\n' % len(serial_list))
-            f.write(
-                '#define HAL_UART_IO_DRIVER ChibiOS::UARTDriver uart_io(HAL_UART_IOMCU_IDX)\n'
-            )
-            serial_list.append(self.config['IOMCU_UART'][0])
+            
+            if self.config['IOMCU_UART'][0]:
+                # get index of serial port in serial_list
+                index = serial_list.index(self.config['IOMCU_UART'][0])
+                f.write('#define HAL_UART_IOMCU_IDX %u\n' % int(index))
+                f.write(
+                    '#define HAL_UART_IO_DRIVER constexpr ChibiOS::UARTDriver &uart_io = serial%sDriver;\n' % (index)
+                )
+
             f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n') # make the assumption that IO gurantees servo monitoring
             # all IOMCU capable boards have SBUS out
             f.write('#define AP_FEATURE_SBUS_OUT 1\n')
@@ -1849,8 +1865,6 @@ INCLUDE common.ld
 #endif
 ''')
         num_ports = len(devlist)
-        if 'IOMCU_UART' in self.config:
-            num_ports -= 1
         if num_ports > 10:
             self.error("Exceeded max num SERIALs of 10 (%u)" % num_ports)
         f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_ports)
