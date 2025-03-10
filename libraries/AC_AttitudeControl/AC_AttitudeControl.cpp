@@ -284,10 +284,14 @@ bool AC_AttitudeControl::limit_target_thrust_angle(float thrust_angle_max_cd)
     Quaternion attitude_body;
     _ahrs.get_quat_body_to_ned(attitude_body);
     
-    Vector3f gyro = _ahrs.get_gyro_latest();
+    const Vector3f gyro = _ahrs.get_gyro_latest();
 
     // angle_delta is the estimated rotation that the aircraft will experience during the correction
-    Vector3f angle_delta = Vector3f{gyro.x / get_angle_roll_p().kP(), gyro.y / get_angle_pitch_p().kP(), gyro.z / get_angle_yaw_p().kP() };
+    const Vector3f angle_delta {
+        gyro.x / get_angle_roll_p().kP(),
+        gyro.y / get_angle_pitch_p().kP(),
+        gyro.z / get_angle_yaw_p().kP()
+    };
 
     // attitude_update represents a quaternion rotation representing the expected rotation in the next time_constant
     Quaternion attitude_update;
@@ -298,7 +302,7 @@ bool AC_AttitudeControl::limit_target_thrust_angle(float thrust_angle_max_cd)
     const Vector3f thrust_vector_up{0.0f, 0.0f, -1.0f};
     
     // Rotating [0,0,-1] by attitude_body expresses (gets a view of) the thrust vector in the inertial frame
-    Vector3f thrust_vec = attitude_body * thrust_vector_up;
+    const Vector3f thrust_vec {attitude_body * thrust_vector_up};
 
     // the dot product is used to calculate the current lean angle
     float thrust_correction_angle = acosf(constrain_float(thrust_vec * thrust_vector_up, -1.0f, 1.0f));
@@ -308,7 +312,7 @@ bool AC_AttitudeControl::limit_target_thrust_angle(float thrust_angle_max_cd)
     }
 
     // the cross product of the current thrust vector and vertical thrust vector defines the rotation vector
-    Vector3f thrust_vec_cross = thrust_vec % thrust_vector_up;
+    Vector3f thrust_vec_cross {thrust_vec % thrust_vector_up};
 
     // Normalize the thrust rotation vector
     if (thrust_vec_cross.is_zero()) {
