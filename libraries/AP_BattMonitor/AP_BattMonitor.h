@@ -88,38 +88,7 @@ public:
     };
 
     // Battery monitor driver types
-    enum class Type {
-        NONE                           = 0,
-        ANALOG_VOLTAGE_ONLY            = 3,
-        ANALOG_VOLTAGE_AND_CURRENT     = 4,
-        SOLO                           = 5,
-        BEBOP                          = 6,
-        SMBus_Generic                  = 7,
-        UAVCAN_BatteryInfo             = 8,
-        BLHeliESC                      = 9,
-        Sum                            = 10,
-        FuelFlow                       = 11,
-        FuelLevel_PWM                  = 12,
-        SUI3                           = 13,
-        SUI6                           = 14,
-        NeoDesign                      = 15,
-        MAXELL                         = 16,
-        GENERATOR_ELEC                 = 17,
-        GENERATOR_FUEL                 = 18,
-        Rotoye                         = 19,
-        // 20 was MPPT_PacketDigital
-        INA2XX                         = 21,
-        LTC2946                        = 22,
-        Torqeedo                       = 23,
-        FuelLevel_Analog               = 24,
-        Analog_Volt_Synthetic_Current  = 25,
-        INA239_SPI                     = 26,
-        EFI                            = 27,
-        AD7091R5                       = 28,
-        Scripting                      = 29,
-        INA3221                        = 30,
-        ANALOG_CURRENT_ONLY            = 31,
-    };
+    using Type = AP_BattMonitor_Params::Type;
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
 
@@ -226,11 +195,11 @@ public:
     int8_t get_highest_failsafe_priority(void) const { return _highest_failsafe_priority; };
 
     /// configured_type - returns battery monitor type as configured in parameters
-    enum Type configured_type(uint8_t instance) const {
+    Type configured_type(uint8_t instance) const {
         return (Type)_params[instance]._type.get();
     }
     /// allocated_type - returns battery monitor type as allocated
-    enum Type allocated_type(uint8_t instance) const {
+    Type allocated_type(uint8_t instance) const {
         return state[instance].type;
     }
 
