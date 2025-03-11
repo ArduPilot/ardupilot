@@ -61,9 +61,6 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 
 define HAL_NO_GPIO_IRQ
 
-# avoid RCIN thread to save memory
-define HAL_NO_RCIN_THREAD
-
 define DISABLE_SERIAL_ESC_COMM TRUE
 
 define DMA_RESERVE_SIZE 0
