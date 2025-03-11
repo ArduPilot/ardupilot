@@ -68,8 +68,6 @@ define HAL_NO_RCOUT_THREAD
 #defined to turn off undef warnings
 define __FPU_PRESENT 0
 
-define HAL_USE_RTC FALSE
-
 define DMA_RESERVE_SIZE 0
 
 
