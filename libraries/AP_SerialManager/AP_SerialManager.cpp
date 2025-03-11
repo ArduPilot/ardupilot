@@ -827,8 +827,8 @@ void AP_SerialManager::disable_passthru(void)
 void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol protocol, uint32_t baudrate)
 {
     if (sernum < SERIALMANAGER_NUM_PORTS) {
-        state[sernum].protocol.set(protocol);
-        state[sernum].baud.set(baudrate);
+        state[sernum].protocol.set_and_default(protocol);
+        state[sernum].baud.set_and_default(baudrate);
     }
 }
 
