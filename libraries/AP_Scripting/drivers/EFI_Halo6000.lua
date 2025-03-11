@@ -259,14 +259,14 @@ local function engine_control()
 
     -- send a frame with checksum
     function self.write_frame_checksum(msg)
-       local sum = 0
-       for i=0, 7 do
-          sum = sum + msg:data(i)
-       end
-       sum = sum % 0xff
-       msg:data(7, sum)
-       msg:dlc(8)
-       driver1:write_frame(msg, 10000)
+        local sum = 0
+        for i = 0, 6 do
+        sum = sum + msg:data(i)
+        end
+        local checksum = (0 - sum) % 0x100
+        msg:data(7, checksum)
+        msg:dlc(8)
+        driver1:write_frame(msg, 10000)
     end
 
     -- send an engine start command
