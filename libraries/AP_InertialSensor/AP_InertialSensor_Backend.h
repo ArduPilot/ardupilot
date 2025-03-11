@@ -237,9 +237,6 @@ protected:
     // return true if the sensors are still converging and sampling rates could change significantly
     bool sensors_converging() const;
 
-    // set accelerometer max absolute offset for calibration
-    void _set_accel_max_abs_offset(uint8_t instance, float offset);
-
     // get accelerometer raw sample rate.
     float _accel_raw_sample_rate(uint8_t instance) const {
         return _imu._accel_raw_sample_rates[instance];
