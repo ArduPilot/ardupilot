@@ -17,6 +17,41 @@
 
 #include "Sub.h"
 
+#define FORCE_VERSION_H_INCLUDE
+#include "version.h"
+#undef FORCE_VERSION_H_INCLUDE
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+/*
+  constructor for main Sub class
+ */
+Sub::Sub()
+    :
+          control_mode(Mode::Number::MANUAL),
+          motors(MAIN_LOOP_RATE),
+          auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
+          inertial_nav(ahrs),
+          ahrs_view(ahrs, ROTATION_NONE),
+          attitude_control(ahrs_view, aparm, motors),
+          pos_control(ahrs_view, inertial_nav, motors, attitude_control),
+          wp_nav(inertial_nav, ahrs_view, pos_control, attitude_control),
+          loiter_nav(inertial_nav, ahrs_view, pos_control, attitude_control),
+          circle_nav(inertial_nav, ahrs_view, pos_control),
+          param_loader(var_info),
+          flightmode(&mode_manual),
+          auto_mode(Auto_WP),
+          guided_mode(Guided_WP)
+{
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+    failsafe.pilot_input = true;
+#endif
+    if (_singleton != nullptr) {
+        AP_HAL::panic("Can only be one Sub");
+    }
+    _singleton = this;
+}
+
 #define SCHED_TASK(func, rate_hz, max_time_micros, priority) SCHED_TASK_CLASS(Sub, &sub, func, rate_hz, max_time_micros, priority)
 #define FAST_TASK(func) FAST_TASK_CLASS(Sub, &sub, func)
 
@@ -483,5 +518,10 @@ bool Sub::ensure_ekf_origin()
 
     return true;
 }
+
+Sub *Sub::_singleton = nullptr;
+
+Sub sub;
+AP_Vehicle& vehicle = sub;
 
 AP_HAL_MAIN_CALLBACKS(&sub);
