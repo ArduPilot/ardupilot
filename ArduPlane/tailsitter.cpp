@@ -562,6 +562,9 @@ bool Tailsitter::transition_vtol_complete(void) const
     const float trans_angle = get_transition_angle_vtol();
     if (labs(plane.ahrs.pitch_sensor) > trans_angle*100) {
         gcs().send_text(MAV_SEVERITY_INFO, "Transition VTOL done");
+        // clear inverted flight flag to make behaviour consistent
+        // with other quadplane types
+        plane.inverted_flight = false;
         return true;
     }
     int32_t roll_cd = labs(plane.ahrs.roll_sensor);
