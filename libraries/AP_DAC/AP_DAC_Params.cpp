@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_DAC_Params::var_info[] = {
     // @Description: Voltage
     // @Range: 0 1000
     // @User: Standard
-    AP_GROUPINFO("VOLTS", 4, AP_DAC_Params, voltage, AP_DAC_DEFAULT_VOLT),
+    AP_GROUPINFO("VOLTS", 5, AP_DAC_Params, voltage, AP_DAC_DEFAULT_VOLT),
 
     AP_GROUPEND
 };
