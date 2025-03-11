@@ -79,6 +79,7 @@ public:
     void check_if_need_to_abort(const AP_FixedWing::Rangefinder_State &rangefinder_state);
     bool request_go_around(void);
     bool is_flaring(void) const;
+    bool is_on_final(void) const;
     bool is_on_approach(void) const;
     bool is_ground_steering_allowed(void) const;
     bool is_throttle_suppressed(void) const;
@@ -206,6 +207,7 @@ private:
     void type_slope_log(void) const;
     bool type_slope_is_complete(void) const;
     bool type_slope_is_flaring(void) const;
+    bool type_slope_is_on_final(void) const;
     bool type_slope_is_on_approach(void) const;
     bool type_slope_is_expecting_impact(void) const;
     bool type_slope_is_throttle_suppressed(void) const;
