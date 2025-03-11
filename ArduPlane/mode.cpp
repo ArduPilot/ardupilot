@@ -156,6 +156,12 @@ bool Mode::enter()
             bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
             quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
         }
+
+        if (is_vtol_mode() && !quadplane.tailsitter.enabled()) {
+            // if flying inverted and entering a VTOL mode cancel
+            // inverted flight
+            plane.inverted_flight = false;
+        }
 #endif
     }
 
