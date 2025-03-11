@@ -11,7 +11,8 @@ PA0 BATT_CURRENT_SENS  ADC1 SCALE(1)
 
 define HAL_BATT_MONITOR_DEFAULT  31
 define HAL_BATT_CURR_PIN 5
-define HAL_BATT_CURR_SCALE 12.0
+define HAL_BATT_CURR_SCALE 91.0
+define AP_BATT_CURR_AMP_OFFSET_DEFAULT 2.24
 # disable voltage, needs to be defined for support to get compile in
 define HAL_BATT_VOLT_PIN -1
 define HAL_BATT_VOLT_SCALE 0
