@@ -4352,59 +4352,59 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         # Values that are set to constants
         # If these are changed then the expected tune paramters should also change
-        self.check_parameter_value("RLL2SRV_TCONST", 0.5, 0)
-        self.check_parameter_value("RLL2SRV_RMAX", 75, 0)
-        self.check_parameter_value("RLL_RATE_IMAX", 0.666, 0.01) # allow some small error to acount for floating point stuff
-        self.check_parameter_value("RLL_RATE_FLTT", 3.183, 0.01)
-        self.check_parameter_value("RLL_RATE_FLTE", 0, 0)
-        self.check_parameter_value("RLL_RATE_FLTD", 10.0, 0)
-        self.check_parameter_value("RLL_RATE_SMAX", 150.0, 0)
+        self.assert_parameter_value_pct("RLL2SRV_TCONST", 0.5, 0)
+        self.assert_parameter_value_pct("RLL2SRV_RMAX", 75, 0)
+        self.assert_parameter_value_pct("RLL_RATE_IMAX", 0.666, 0.01) # allow some small error to acount for floating point stuff  # noqa:E501
+        self.assert_parameter_value_pct("RLL_RATE_FLTT", 3.183, 0.01)
+        self.assert_parameter_value_pct("RLL_RATE_FLTE", 0, 0)
+        self.assert_parameter_value_pct("RLL_RATE_FLTD", 10.0, 0)
+        self.assert_parameter_value_pct("RLL_RATE_SMAX", 150.0, 0)
 
-        self.check_parameter_value("PTCH2SRV_TCONST", 0.75, 0)
-        self.check_parameter_value("PTCH2SRV_RMAX_UP", 75, 0)
-        self.check_parameter_value("PTCH2SRV_RMAX_DN", 75, 0)
-        self.check_parameter_value("PTCH_RATE_IMAX", 0.666, 0.01)
-        self.check_parameter_value("PTCH_RATE_FLTT", 2.122, 0.01)
-        self.check_parameter_value("PTCH_RATE_FLTE", 0, 0)
-        self.check_parameter_value("PTCH_RATE_FLTD", 10, 0)
-        self.check_parameter_value("PTCH_RATE_SMAX", 150, 0)
+        self.assert_parameter_value_pct("PTCH2SRV_TCONST", 0.75, 0)
+        self.assert_parameter_value_pct("PTCH2SRV_RMAX_UP", 75, 0)
+        self.assert_parameter_value_pct("PTCH2SRV_RMAX_DN", 75, 0)
+        self.assert_parameter_value_pct("PTCH_RATE_IMAX", 0.666, 0.01)
+        self.assert_parameter_value_pct("PTCH_RATE_FLTT", 2.122, 0.01)
+        self.assert_parameter_value_pct("PTCH_RATE_FLTE", 0, 0)
+        self.assert_parameter_value_pct("PTCH_RATE_FLTD", 10, 0)
+        self.assert_parameter_value_pct("PTCH_RATE_SMAX", 150, 0)
 
         # Check tunned values, targets derived from running tests multiple times and taking average
         # Expect within 2%
         # Note that I is not checked directly, its value is derived from P, FF, and TCONST which are all checked.
-        self.check_parameter_value("RLL_RATE_P", 1.222702146, 2)
-        self.check_parameter_value("RLL_RATE_D", 0.070284024, 2)
-        self.check_parameter_value("RLL_RATE_FF", 0.229291457, 2)
+        self.assert_parameter_value_pct("RLL_RATE_P", 1.222702146, 2)
+        self.assert_parameter_value_pct("RLL_RATE_D", 0.070284024, 2)
+        self.assert_parameter_value_pct("RLL_RATE_FF", 0.229291457, 2)
 
-        self.check_parameter_value("PTCH_RATE_FF", 0.503520715, 5)
+        self.assert_parameter_value_pct("PTCH_RATE_FF", 0.503520715, 5)
 
         # There seem to be multiple solutions for pitch. I'm not sure why this is.
         # Each value is quite consistent becasue of the fixed steps that autotune takes
         try:
             # Expect this about 84% of the time
-            self.check_parameter_value("PTCH_RATE_P", 1.746079683, 2)
+            self.assert_parameter_value_pct("PTCH_RATE_P", 1.746079683, 2)
         except ValueError:
             try:
                 # 12%
-                self.check_parameter_value("PTCH_RATE_P", 1.343138218, 2)
+                self.assert_parameter_value_pct("PTCH_RATE_P", 1.343138218, 2)
             except ValueError:
                 # 4%
-                self.check_parameter_value("PTCH_RATE_P", 2.26990366, 2)
+                self.assert_parameter_value_pct("PTCH_RATE_P", 2.26990366, 2)
 
         try:
             # 64%
-            self.check_parameter_value("PTCH_RATE_D", 0.108, 2)
+            self.assert_parameter_value_pct("PTCH_RATE_D", 0.108, 2)
         except ValueError:
             try:
                 # 28%
-                self.check_parameter_value("PTCH_RATE_D", 0.141, 2)
+                self.assert_parameter_value_pct("PTCH_RATE_D", 0.141, 2)
             except ValueError:
                 try:
                     # 4%
-                    self.check_parameter_value("PTCH_RATE_D", 0.049, 2)
+                    self.assert_parameter_value_pct("PTCH_RATE_D", 0.049, 2)
                 except ValueError:
                     # 4%
-                    self.check_parameter_value("PTCH_RATE_D", 0.0836, 2)
+                    self.assert_parameter_value_pct("PTCH_RATE_D", 0.0836, 2)
 
     def run_autotune(self):
         self.takeoff(100)
