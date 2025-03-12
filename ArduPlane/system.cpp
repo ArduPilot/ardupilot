@@ -141,7 +141,7 @@ void Plane::init_ardupilot()
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
-    gcs().sysid_myggcs_seen(AP_HAL::millis());
+    gcs().sysid_mygcs_seen(AP_HAL::millis());
 
     // don't initialise aux rc output until after quadplane is setup as
     // that can change initial values of channels
@@ -352,7 +352,7 @@ bool Plane::set_mode_by_number(const Mode::Number new_mode_number, const ModeRea
 
 void Plane::check_long_failsafe()
 {
-    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    const uint32_t gcs_last_seen_ms = gcs().sysid_mygcs_last_seen_time_ms();
     const uint32_t tnow = millis();
     // only act on changes
     // -------------------

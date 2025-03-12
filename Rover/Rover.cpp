@@ -348,7 +348,7 @@ void Rover::gcs_failsafe_check(void)
         return;
     }
 
-    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    const uint32_t gcs_last_seen_ms = gcs().sysid_mygcs_last_seen_time_ms();
     if (gcs_last_seen_ms == 0) {
         // we've never seen the GCS, so we never failsafe for not seeing it
         return;
