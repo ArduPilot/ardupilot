@@ -812,7 +812,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
             if cmd_opts.count > 1 and not os.path.isabs(file):
                 # we are in a subdirectory when using -n
                 file = os.path.join("..", file)
-            
+
             if path is not None:
                 path += "," + str(file)
             else:
