@@ -161,7 +161,7 @@ define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
 # IMU
-IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180
+IMU Invensensev3 SPI:icm42688 ROTATION_PITCH_180
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
 # DPS310 integrated on I2C2 bus, multiple possible choices for external barometer
