@@ -983,7 +983,7 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
         // disable yaw time constant for 1:1 match of desired rates
         disable_yaw_rate_time_constant();
 
-        attitude_control->input_rate_bf_roll_pitch_yaw_2(bf_input_cd.x, bf_input_cd.y, bf_input_cd.z);
+        attitude_control->input_rate_bf_roll_pitch_yaw_no_shaping(bf_input_cd.x, bf_input_cd.y, bf_input_cd.z);
     }
 }
 
