@@ -12,8 +12,6 @@
 #endif
 #include <stdio.h>
 
-#define SENSOR_RATE_DEBUG 0
-
 #ifndef AP_HEATER_IMU_INSTANCE
 #define AP_HEATER_IMU_INSTANCE 0
 #endif
