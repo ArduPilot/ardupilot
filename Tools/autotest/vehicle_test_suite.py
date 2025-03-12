@@ -6271,7 +6271,7 @@ class TestSuite(ABC):
 
         # Check value is within limits
         if (value > upper_limit) or (value < lower_limit):
-            raise ValueError("%s expected %f ± %f%% (%f to %f) got %s with %f%% error" % (
+            raise ValueError("%s expected %f +/- %f%% (%f to %f) got %s with %f%% error" % (
                 name,
                 expected_value,
                 max_error_percent,
