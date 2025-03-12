@@ -221,6 +221,11 @@ public:
     // Command an angular velocity with angular velocity smoothing using rate loops only with integrated rate error stabilization
     virtual void input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
+    // set the body frame target rates to the specified rates, used by the
+    // quadplane code when we want to slave the VTOL controller rates to
+    // the fixed wing rates
+    void input_rate_bf_roll_pitch_yaw_no_shaping(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
+
     // Command an angular step (i.e change) in body frame angle
     virtual void input_angle_step_bf_roll_pitch_yaw(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
 
