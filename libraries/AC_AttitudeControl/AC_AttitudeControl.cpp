@@ -625,6 +625,33 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, 
     _ang_vel_body = ang_vel_body;
 }
 
+/*
+  set the body frame target rates to the specified rates, used by the
+  quadplane code when we want to slave the VTOL controller rates to
+  the fixed wing rates
+ */
+void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_no_shaping(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
+{
+    // Convert from centidegrees on public interface to radians
+    const float roll_rate_rads = radians(roll_rate_bf_cds * 0.01f);
+    const float pitch_rate_rads = radians(pitch_rate_bf_cds * 0.01f);
+    const float yaw_rate_rads = radians(yaw_rate_bf_cds * 0.01f);
+
+    _ang_vel_target.x = roll_rate_rads;
+    _ang_vel_target.y = pitch_rate_rads;
+    _ang_vel_target.z = yaw_rate_rads;
+
+    // Update the unused targets attitude based on current attitude to condition mode change
+    _ahrs.get_quat_body_to_ned(_attitude_target);
+    _attitude_target.to_euler(_euler_angle_target);
+
+    // Convert body-frame angular velocity into euler angle derivative of desired attitude
+    ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
+
+    // finally update the attitude target
+    _ang_vel_body = _ang_vel_target;
+}
+
 // Command an angular step (i.e change) in body frame angle
 // Used to command a step in angle without exciting the orthogonal axis during autotune
 void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd)
