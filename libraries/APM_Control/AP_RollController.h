@@ -20,4 +20,5 @@ private:
     float get_airspeed() const override;
     bool is_underspeed(const float aspeed) const override;
     float get_measured_rate() const override;
+    float last_desired_rate;
 };
