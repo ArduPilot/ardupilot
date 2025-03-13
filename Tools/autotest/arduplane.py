@@ -3702,6 +3702,36 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         if (not (m.onboard_control_sensors_health & fence_bit)):
             raise NotAchievedException("Fence breach not cleared")
 
+        self.progress("Fly above ceiling and check there is a breach and switch to AUTOLAND mode")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "FENCE_ACTION": 8,   # Set action to AUTOLAND if possible
+        })
+
+        self.set_rc(3, 2000)
+        self.set_rc(2, 1000)
+
+        self.wait_statustext("Max Alt fence breached", timeout=10, check_context=True)
+        self.wait_mode(26) # AUTOLAND,need pymavlink .43 to use text name
+        self.assert_fence_sys_status(True, True, False)
+
+        self.set_rc(3, 1500)
+        self.set_rc(2, 1500)
+
+        self.progress("Wait for cruise alt reached")
+        self.wait_altitude(
+            cruise_alt-5,
+            cruise_alt+5,
+            relative=True,
+            timeout=30,
+        )
+
+        self.progress("Check fence breach cleared")
+        self.assert_fence_sys_status(True, True, True)
+
+        self.context_pop()
+        self.change_mode('FBWA')
         self.progress("Fly below floor and check for breach")
         self.set_rc(2, 2000)
         self.wait_statustext("Min Alt fence breached", timeout=10, check_context=True)
@@ -4227,7 +4257,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.wait_text("Autoland direction", check_context=True)
         self.wait_waypoint(2, 2, max_dist=100)
-        self.change_mode(26)
+        self.change_mode(26) # AUTOLAND need .43 pymavlink to use text name
         self.wait_disarmed(400)
         self.progress("Check the landed heading matches takeoff plus offset")
         self.wait_heading(218, accuracy=5, timeout=1)
