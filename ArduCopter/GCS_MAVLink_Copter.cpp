@@ -154,6 +154,7 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
 
     switch (guided_mode) {
     case ModeGuided::SubMode::Angle:
+    case ModeGuided::SubMode::Actuator:
         // we don't have a local target when in angle mode
         return;
     case ModeGuided::SubMode::TakeOff:

@@ -1070,6 +1070,7 @@ public:
     bool is_autopilot() const override { return true; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool in_guided_mode() const override { return true; }
+    void output_to_motors() override;
 
     bool requires_terrain_failsafe() const override { return true; }
 
@@ -1096,6 +1097,7 @@ public:
     void set_accel(const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     void set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_actuator_mode(float actuator[]);
     bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
     bool set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
 
@@ -1116,6 +1118,7 @@ public:
     bool limit_check();
 
     bool is_taking_off() const override;
+    bool can_set_auto_arm(float actuator_values[]);
     
     bool set_speed_xy(float speed_xy_cms) override;
     bool set_speed_up(float speed_up_cms) override;
@@ -1133,6 +1136,7 @@ public:
         VelAccel,
         Accel,
         Angle,
+        Actuator,
     };
 
     SubMode submode() const { return guided_mode; }
@@ -1188,11 +1192,13 @@ private:
     void pos_control_start();
     void accel_control_start();
     void velaccel_control_start();
+    void motor_control_start();
     void posvelaccel_control_start();
     void takeoff_run();
     void pos_control_run();
     void accel_control_run();
     void velaccel_control_run();
+    void motor_control_run();
     void pause_control_run();
     void posvelaccel_control_run();
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
