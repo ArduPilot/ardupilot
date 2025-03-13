@@ -554,7 +554,9 @@ class Board:
             self.embed_ROMFS_files(bld)
 
     def build(self, bld):
+        git_hash_ext = bld.git_head_hash(short=True, hash_abbrev=16)
         bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
+        bld.ap_version_append_str('GIT_VERSION_EXTENDED', git_hash_ext)
         bld.ap_version_append_int('GIT_VERSION_INT', int("0x" + bld.git_head_hash(short=True), base=16))
         bld.ap_version_append_str('AP_BUILD_ROOT', bld.srcnode.abspath())
         import time
