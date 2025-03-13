@@ -211,7 +211,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::LOCAL_AIRSPEED_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
         .topic_name = "rt/ap/airspeed",
-        .type_name = "geometry_msgs::msg::dds_::Vector3Stamped_",
+        .type_name = "ardupilot_msgs::msg::dds_::Airspeed_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
             .reliability = UXR_RELIABILITY_BEST_EFFORT,
