@@ -739,7 +739,13 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
 
     chan -= chan_offset;
 
-    period[chan] = period_us;
+    if (corked) {
+        // when corked we put the updated period in a separate array which is
+        // copied to period[] when we push
+        period_corked[chan] = period_us;
+    } else {
+        period[chan] = period_us;
+    }
 
     if (chan < num_fmu_channels) {
         active_fmu_channels = MAX(chan+1, active_fmu_channels);
@@ -1343,6 +1349,7 @@ void RCOutput::cork(void)
 void RCOutput::push(void)
 {
     corked = false;
+    memcpy(period, period_corked, sizeof(period));
     push_local();
 #if HAL_WITH_IO_MCU
     if (iomcu_enabled) {
