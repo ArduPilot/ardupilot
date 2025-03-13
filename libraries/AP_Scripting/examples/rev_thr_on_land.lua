@@ -73,7 +73,6 @@ local COUNT_IN_RANGE_ = 0
 local RCMAP_THROTTLE_  = Parameter("RCMAP_THROTTLE")
 local THROT_CHANNEL_ = assert(rc:get_channel(RCMAP_THROTTLE_:get()))
 local REV_THRUST_AUX_SW_ = assert(rc:find_channel_for_option(64))
-local REV_THRUST_SW_LOW_PWM_ = 1000
 local REV_THRUST_SW_HIGH_PWM_ = 2000
 local TIME_SEC_ = 0
 local CALLBACK_TIME_ = 200
