@@ -96,8 +96,10 @@ const AP_Param::GroupInfo AP_Airspeed_Params::var_info[] = {
 
     // @Param: SKIP_CAL
     // @DisplayName: Skip airspeed offset calibration on startup
-    // @Description: This parameter allows you to skip airspeed offset calibration on startup, instead using the offset from the last calibration. This may be desirable if the offset variance between flights for your sensor is low and you want to avoid having to cover the pitot tube on each boot.
-    // @Values: 0:Disable,1:Enable
+    // @Description: This parameter allows you to skip airspeed offset calibration on startup, instead using the offset from the last calibration or requiring a manual calibration. This may be desirable if the offset variance between flights for your sensor is low and you want to avoid having to cover the pitot tube on each boot.
+    // @Values: 0:Disable
+    // @Values: 1:Do not require offset calibration before flight. Manual calibration should be performed during initial setup.
+    // @Values: 2:Do not calibrate on start up. Manual calibration must be performed once per boot.
     // @User: Advanced
     AP_GROUPINFO("SKIP_CAL", 8, AP_Airspeed_Params, skip_cal, 0),
 #endif // HAL_BUILD_AP_PERIPH
