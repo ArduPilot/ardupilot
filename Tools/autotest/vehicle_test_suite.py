@@ -6281,7 +6281,8 @@ class TestSuite(ABC):
             return
         raise ValueError("Failed to set parameters (%s)" % want)
 
-    def check_parameter_value(self, name, expected_value, max_error_percent):
+    # FIXME: modify assert_parameter_value to take epsilon_pct instead:
+    def assert_parameter_value_pct(self, name, expected_value, max_error_percent):
         value = self.get_parameter_direct(name, verbose=False)
 
         # Convert to ratio and find limits
@@ -6299,7 +6300,7 @@ class TestSuite(ABC):
 
         # Check value is within limits
         if (value > upper_limit) or (value < lower_limit):
-            raise ValueError("%s expected %f ± %f%% (%f to %f) got %s with %f%% error" % (
+            raise ValueError("%s expected %f +/- %f%% (%f to %f) got %s with %f%% error" % (
                 name,
                 expected_value,
                 max_error_percent,
