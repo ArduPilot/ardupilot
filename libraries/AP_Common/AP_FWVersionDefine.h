@@ -54,7 +54,10 @@ const AP_FWVersion AP_FWVersion::fwver{
     .fw_type = FW_TYPE,
 #ifdef BUILD_DATE_YEAR
     // encode build date in os_sw_version
-   .os_sw_version = (BUILD_DATE_YEAR*100*100) + (BUILD_DATE_MONTH*100) + BUILD_DATE_DAY,
+   .os_sw_version = static_cast<uint64_t>(BUILD_DATE_YEAR)*10000 + 
+                 static_cast<uint64_t>(BUILD_DATE_MONTH)*100 + 
+                 static_cast<uint64_t>(BUILD_DATE_DAY),
+
 #else
    .os_sw_version = 0,
 #endif

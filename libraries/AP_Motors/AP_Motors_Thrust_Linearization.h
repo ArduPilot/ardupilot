@@ -25,9 +25,11 @@ public:
 
     // Update_lift_max_from_batt_voltage - used for voltage compensation
     void update_lift_max_from_batt_voltage();
+    void update_lift_max_not_batt();
 
     // return gain scheduling gain based on voltage and air density
     float get_compensation_gain() const;
+    float get_compensation_gain_not_batt() const;
 
     // Get spin min parameter value
     float get_spin_min() const { return spin_min.get(); }
@@ -43,6 +45,7 @@ public:
 
     // Get lift max
     float get_lift_max() const { return lift_max; }
+    float get_lift_max_not_batt() const { return lift_max_not_batt; }
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -57,6 +60,7 @@ protected:
 
 private:
     float               lift_max;          // maximum lift ratio from battery voltage
+    float               lift_max_not_batt;
     float               throttle_limit;    // ratio of throttle limit between hover and maximum
     LowPassFilterFloat  batt_voltage_filt; // filtered battery voltage expressed as a percentage (0 ~ 1.0) of batt_voltage_max
 

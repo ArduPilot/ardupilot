@@ -84,6 +84,18 @@ void operator delete[](void * ptr)
     if (ptr) free(ptr);
 }
 
+// C++14 sized deallocation operators
+/*
+void operator delete(void *p, std::size_t) noexcept
+{
+    if (p) free(p);
+}
+
+void operator delete[](void *p, std::size_t) noexcept
+{
+    if (p) free(p);
+}
+*/
 #if defined(CYGWIN_BUILD) && CONFIG_HAL_BOARD == HAL_BOARD_SITL
 /*
   wrapper around malloc to ensure all memory is initialised as zero

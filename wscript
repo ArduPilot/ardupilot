@@ -558,6 +558,7 @@ def configure(cfg):
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
     cfg.load('dronecangen')
+    cfg.load('cyphalgen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -785,6 +786,17 @@ def _build_dynamic_sources(bld):
                 bld.srcnode.find_dir('libraries/AP_DroneCAN/canard/').abspath(),
                 ]
             )
+        bld(
+            features='cyphalgen',
+            source=bld.srcnode.ant_glob('modules/cyphal/public_regulated_data_types/reg', dir=True, src=False),
+            output_dir='modules/cyphal/nunavut_out',
+            name='cyphal',
+            export_includes=[
+                bld.bldnode.make_node('modules/cyphal/nunavut_out').abspath(),
+            ]
+        )
+
+
     elif bld.env.AP_PERIPH:
         bld(
             features='dronecangen',
@@ -924,6 +936,8 @@ def build(bld):
 
     if bld.get_board().with_can:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['dronecan']
+        bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['cyphal']
+
 
     if bld.get_board().with_littlefs:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['littlefs']

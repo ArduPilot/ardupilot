@@ -1,0 +1,28 @@
+---
+Checks: >-
+  boost-*,
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  cppcoreguidelines-*,
+  google-*,
+  hicpp-*,
+  llvm-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -google-readability-todo,
+  -readability-avoid-const-params-in-decls,
+  -readability-identifier-length,
+  -llvm-header-guard,
+  -modernize-macro-to-enum,
+CheckOptions:
+  - key:   readability-function-cognitive-complexity.Threshold
+    value: '199'
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*'
+AnalyzeTemporaryDtors: false
+FormatStyle: file
+...

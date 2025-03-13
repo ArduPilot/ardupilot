@@ -4,6 +4,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #define AP_MOTORS_BATT_VOLT_FILT_HZ 0.5 // battery voltage filtered at 0.5hz
@@ -162,9 +163,9 @@ void Thrust_Linearization::update_lift_max_from_batt_voltage()
         lift_max = 1.0;
         return;
     }
-
+    
     batt_voltage_min.set(MAX(batt_voltage_min, batt_voltage_max * 0.6));
-
+    
     // constrain resting voltage estimate (resting voltage is actual voltage with sag removed based on current draw and resistance)
     _batt_voltage = constrain_float(_batt_voltage, batt_voltage_min, batt_voltage_max);
 
@@ -182,6 +183,55 @@ void Thrust_Linearization::update_lift_max_from_batt_voltage()
 #endif
 }
 
+void Thrust_Linearization::update_lift_max_not_batt(){
+    #if AP_BATTERY_ENABLED
+    // sanity check battery_voltage_min is not too small
+    // if disabled or misconfigured exit immediately
+    float _batt_voltage = motors.has_option(AP_Motors::MotorOptions::BATT_RAW_VOLTAGE) ? AP::battery().voltage(batt_idx) : AP::battery().voltage_resting_estimate(batt_idx);
+
+    if ((batt_voltage_max <= 0) || (batt_voltage_min >= batt_voltage_max) || (_batt_voltage < 0.25 * batt_voltage_min)) {
+        batt_voltage_filt.reset(1.0);
+        lift_max_not_batt = 1.0;
+        return;
+    }
+
+    batt_voltage_min.set(MAX(batt_voltage_min, batt_voltage_max * 0.6));
+
+    // constrain resting voltage estimate (resting voltage is actual voltage with sag removed based on current draw and resistance)
+    _batt_voltage = constrain_float(_batt_voltage, batt_voltage_min, batt_voltage_max);
+
+    if (!motors.has_option(AP_Motors::MotorOptions::BATT_RAW_VOLTAGE)) {
+        // filter at 0.5 Hz
+        batt_voltage_filt.apply(_batt_voltage / batt_voltage_max, motors.get_dt());
+    } else {
+        // reset is equivalent to no filtering
+        batt_voltage_filt.reset(_batt_voltage / batt_voltage_max);
+    }
+
+    // calculate lift max
+    float thrust_curve_expo = constrain_float(curve_expo, -1.0, 1.0);
+    lift_max_not_batt =(1 - thrust_curve_expo) + thrust_curve_expo;
+    #endif
+}
+
+float Thrust_Linearization::get_compensation_gain_not_batt() const
+{
+    if (get_lift_max_not_batt() <= 0.0) {
+        return 1.0;
+    }
+
+    float ret = 1.0 / get_lift_max_not_batt();
+
+#if AP_MOTORS_DENSITY_COMP == 1
+    // air density ratio is increasing in density / decreasing in altitude
+    const float air_density_ratio = AP::ahrs().get_air_density_ratio();
+    if (air_density_ratio > 0.3 && air_density_ratio < 1.5) {
+        ret *= 1.0 / constrain_float(air_density_ratio, 0.5, 1.25);
+    }
+#endif
+    return ret;
+}
+
 // return gain scheduling gain based on voltage and air density
 float Thrust_Linearization::get_compensation_gain() const
 {
@@ -190,7 +240,7 @@ float Thrust_Linearization::get_compensation_gain() const
         return 1.0;
     }
 
-    float ret = 1.0 / get_lift_max();
+    float ret = 1.0 * get_lift_max();
 
 #if AP_MOTORS_DENSITY_COMP == 1
     // air density ratio is increasing in density / decreasing in altitude

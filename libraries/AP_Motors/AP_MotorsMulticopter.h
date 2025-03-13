@@ -175,6 +175,12 @@ protected:
     // time to spool motors to min throttle
     AP_Float            _spool_up_time;
     AP_Float            _spool_down_time;
+    AP_Float            _w_ars;
+    AP_Float            _t_ars;
+    AP_Int8             _debug_flag;
+    AP_Int8             _scaller_flag;
+
+    AP_Int32            _q_ars;
 
     // scaling for booster motor throttle
     AP_Float            _boost_scale;

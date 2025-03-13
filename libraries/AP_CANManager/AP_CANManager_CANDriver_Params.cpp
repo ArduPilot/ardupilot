@@ -20,6 +20,7 @@
 
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
+#include <AP_Cyphal/AP_Cyphal.h>
 
 // table of user settable CAN bus parameters
 const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
@@ -28,7 +29,7 @@ const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
     // @DisplayName: Enable use of specific protocol over virtual driver
     // @Description: Enabling this option starts selected protocol that will use this virtual driver
     // @SortValues: AlphabeticalZeroAtTop
-    // @Values: 0:Disabled,1:DroneCAN,4:PiccoloCAN,6:EFI_NWPMU,7:USD1,8:KDECAN,10:Scripting,11:Benewake,12:Scripting2,13:TOFSenseP,14:RadarCAN (NanoRadar/Hexsoon)
+    // @Values: 0:Disabled,1:DroneCAN,4:PiccoloCAN,5:Cyphal,6:EFI_NWPMU,7:USD1,8:KDECAN,10:Scripting,11:Benewake,12:Scripting2,13:TOFSenseP,14:RadarCAN (NanoRadar/Hexsoon)
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("PROTOCOL", 1, AP_CANManager::CANDriver_Params, _driver_type, float(AP_CAN::Protocol::DroneCAN)),
@@ -38,10 +39,13 @@ const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
     // @Path: ../AP_DroneCAN/AP_DroneCAN.cpp
     AP_SUBGROUPPTR(_uavcan, "UC_", 2, AP_CANManager::CANDriver_Params, AP_DroneCAN),
 #endif
-
+    // @Group: CYP_
+    // @Path: ../AP_Cyphal/AP_Cyphal.cpp
+    AP_SUBGROUPPTR(_cyphal,"CYP_",7, AP_CANManager::CANDriver_Params, AP_Cyphal),
     // index 3 was KDECAN
 
     // index 4 was CANTester
+
 
 #if HAL_PICCOLO_CAN_ENABLE
     // @Group: PC_

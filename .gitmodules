@@ -45,3 +45,12 @@
 [submodule "modules/littlefs"]
 	path = modules/littlefs
 	url = https://github.com/ArduPilot/littlefs.git
+[submodule "modules/cyphal/nunavut"]
+    path = modules/cyphal/nunavut
+	url = https://github.com/failway/nunavut.git
+[submodule "modules/cyphal/public_regulated_data_types"]
+	path = modules/cyphal/public_regulated_data_types
+	url = https://github.com/OpenCyphal/public_regulated_data_types.git
+[submodule "modules/cyphal/zubax_dsdl"]
+	path = modules/cyphal/zubax_dsdl
+	url = https://github.com/Zubax/zubax_dsdl.git

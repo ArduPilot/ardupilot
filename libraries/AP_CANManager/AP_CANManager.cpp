@@ -25,6 +25,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
+#include <AP_Cyphal/AP_Cyphal.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
@@ -201,18 +202,37 @@ void AP_CANManager::init()
 
         // Allocate the set type of Driver
         switch (drv_type[drv_num]) {
+
 #if HAL_ENABLE_DRONECAN_DRIVERS
-        case AP_CAN::Protocol::DroneCAN:
-            _drivers[drv_num] = _drv_param[drv_num]._uavcan = NEW_NOTHROW AP_DroneCAN(drv_num);
+    case AP_CAN::Protocol::DroneCAN:
+        AP::logger().Write_MessageF("CAN: creating DroneCAN driver %d", drv_num + 1);
+        _drivers[drv_num] = _drv_param[drv_num]._uavcan = NEW_NOTHROW AP_DroneCAN(drv_num);
 
-            if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::allocation_error("uavcan %d", i + 1);
-                continue;
-            }
+        if (_drivers[drv_num] == nullptr) {
+            AP_BoardConfig::allocation_error("uavcan %d", i + 1);
+            continue;
+        }
 
-            AP_Param::load_object_from_eeprom((AP_DroneCAN*)_drivers[drv_num], AP_DroneCAN::var_info);
-            break;
+        AP_Param::load_object_from_eeprom((AP_DroneCAN*)_drivers[drv_num], AP_DroneCAN::var_info);
+        break;
 #endif
+
+    case AP_CAN::Protocol::Cyphal:
+        AP::logger().Write_MessageF("CAN: creating Cyphal driver %d", drv_num + 1);
+        _drivers[drv_num] = _drv_param[drv_num]._cyphal = NEW_NOTHROW AP_Cyphal(drv_num);
+
+        if (_drivers[drv_num] == nullptr) {
+            AP::logger().Write_MessageF("CAN: failed to alloc Cyphal %d", drv_num + 1);
+            AP_BoardConfig::allocation_error("Cyphal %d", drv_num + 1);
+            continue;
+        }
+
+        AP::logger().Write_MessageF("CAN: Cyphal %d created", drv_num + 1);
+        AP_Param::load_object_from_eeprom((AP_Cyphal*)_drivers[drv_num], AP_Cyphal::var_info);
+        break;
+
+
+
 #if HAL_PICCOLO_CAN_ENABLE
         case AP_CAN::Protocol::PiccoloCAN:
             _drivers[drv_num] = _drv_param[drv_num]._piccolocan = NEW_NOTHROW AP_PiccoloCAN;
