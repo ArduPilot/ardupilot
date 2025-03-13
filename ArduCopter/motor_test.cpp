@@ -82,10 +82,14 @@ void Copter::motor_test_output()
         }
 
         // sanity check throttle values
-        if (pwm >= RC_Channel::RC_MIN_LIMIT_PWM && pwm <= RC_Channel::RC_MAX_LIMIT_PWM) {
-            // turn on motor to specified pwm value
-            motors->output_test_seq(motor_test_seq, pwm);
-        } else {
+        if (pwm < RC_Channel::RC_MIN_LIMIT_PWM || pwm > RC_Channel::RC_MAX_LIMIT_PWM) {
+            motor_test_stop();
+            return;
+        }
+
+        // turn on motor to specified pwm value
+        if (!motors->output_test_seq(motor_test_seq, pwm)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Motor Test: cancelled");
             motor_test_stop();
         }
     }
@@ -102,7 +106,7 @@ bool Copter::mavlink_motor_control_check(const GCS_MAVLINK &gcs_chan, bool check
     }
 
     // Check Motor test is allowed
-    char failure_msg[50] {};
+    char failure_msg[100] {};
     if (!motors->motor_test_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
         gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"%s: %s", mode, failure_msg);
         return false;
@@ -158,6 +162,12 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
             ap.motor_test = true;
 
             EXPECT_DELAY_MS(3000);
+
+            // wait for rate thread to stop running due to motor test
+            while (using_rate_thread) {
+                hal.scheduler->delay(1);
+            }
+
             // enable and arm motors
             if (!motors->armed()) {
                 motors->output_min();  // output lowest possible value to motors

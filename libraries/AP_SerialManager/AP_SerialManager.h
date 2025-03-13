@@ -86,6 +86,7 @@ public:
         // Reserving Serial Protocol 47 for SerialProtocol_IQ
         SerialProtocol_PPP = 48,
         SerialProtocol_IBUS_Telem = 49,                // i-BUS telemetry data, ie via sensor port of FS-iA6B
+        SerialProtocol_IOMCU = 50,                     // IOMCU 
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
@@ -130,6 +131,8 @@ public:
     // accessors for AP_Periph to set baudrate and type
     void set_protocol_and_baud(uint8_t sernum, enum SerialProtocol protocol, uint32_t baudrate);
 
+    void set_and_default_baud(enum SerialProtocol protocol, uint8_t instance, uint32_t _baud);
+
     static uint32_t map_baudrate(int32_t rate);
 
     // parameter var table
@@ -155,6 +158,10 @@ public:
 
         // serial index number
         uint8_t idx;
+
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+        AP_HAL::UARTDriver::StatsTracker stats;
+#endif
     };
 
     // get a state from serial index
@@ -175,6 +182,8 @@ public:
      */
     class RegisteredPort : public AP_HAL::UARTDriver {
     public:
+        uint32_t bw_in_bytes_per_second() const override { return state.baudrate()/10; }
+        uint32_t get_baud_rate() const override { return state.baudrate(); }
         RegisteredPort *next;
         UARTState state;
     };
@@ -183,6 +192,12 @@ public:
 
     // register an externally managed port
     void register_port(RegisteredPort *port);
+
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+    // Log UART message for each registered serial port
+    void registered_ports_log();
+    uint32_t registered_ports_last_log_ms;
+#endif
 
 #endif // AP_SERIALMANAGER_REGISTER_ENABLED
 

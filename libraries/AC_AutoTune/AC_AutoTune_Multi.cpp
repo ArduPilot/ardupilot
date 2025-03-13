@@ -644,7 +644,7 @@ void AC_AutoTune_Multi::twitching_test_angle(float angle, float rate, float angl
 }
 
 // twitching_measure_acceleration - measure rate of change of measurement
-void AC_AutoTune_Multi::twitching_measure_acceleration(float &accel_average, float rate, float rate_max) const
+void AC_AutoTune_Multi::twitching_measure_acceleration(float &accel_average, float rate, float &rate_max) const
 {
     if (rate_max < rate) {
         rate_max = rate;
@@ -1254,23 +1254,22 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
             attitude_control->input_rate_bf_roll_pitch_yaw(0.0, 0.0, 0.0);
         }
     } else {
-        attitude_control->input_rate_bf_roll_pitch_yaw_2(0.0, 0.0, 0.0);
         // Testing rate P and D gains so will set body-frame rate targets.
         // Rate controller will use existing body-frame rates and convert to motor outputs
         // for all axes except the one we override here.
         switch (test_axis) {
         case AxisType::ROLL:
             // override body-frame roll rate
-            attitude_control->rate_bf_roll_target(dir_sign * target_rate + start_rate);
+            attitude_control->input_rate_step_bf_roll_pitch_yaw(dir_sign * target_rate + start_rate, 0.0f, 0.0f);
             break;
         case AxisType::PITCH:
             // override body-frame pitch rate
-            attitude_control->rate_bf_pitch_target(dir_sign * target_rate + start_rate);
+            attitude_control->input_rate_step_bf_roll_pitch_yaw(0.0f, dir_sign * target_rate + start_rate, 0.0f);
             break;
         case AxisType::YAW:
         case AxisType::YAW_D:
             // override body-frame yaw rate
-            attitude_control->rate_bf_yaw_target(dir_sign * target_rate + start_rate);
+            attitude_control->input_rate_step_bf_roll_pitch_yaw(0.0f, 0.0f, dir_sign * target_rate + start_rate);
             break;
         }
     }

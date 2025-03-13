@@ -2,7 +2,6 @@
 
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
-#define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
 
 // arm_motors_check - checks for pilot input to arm or disarm the blimp
@@ -29,7 +28,7 @@ void Blimp::arm_motors_check()
     if (yaw_in > 900) {
 
         // increase the arming counter to a maximum of 1 beyond the auto trim counter
-        if (arming_counter <= AUTO_TRIM_DELAY) {
+        if (arming_counter < ARM_DELAY) {
             arming_counter++;
         }
 
@@ -39,13 +38,6 @@ void Blimp::arm_motors_check()
             if (!arming.arm(AP_Arming::Method::RUDDER)) {
                 arming_counter = 0;
             }
-        }
-
-        // arm the motors and configure for flight
-        if (arming_counter == AUTO_TRIM_DELAY && motors->armed() && control_mode == Mode::Number::MANUAL) {
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim start");
-            auto_trim_counter = 250;
-            auto_trim_started = false;
         }
 
         // full left and rudder disarming is enabled
@@ -78,8 +70,10 @@ void Blimp::motors_output()
     // output any servo channels
     SRV_Channels::calc_pwm();
 
+    auto &srv = AP::srv();
+
     // cork now, so that all channel outputs happen at once
-    SRV_Channels::cork();
+    srv.cork();
 
     // update output on any aux channels, for manual passthru
     SRV_Channels::output_ch_all();
@@ -88,5 +82,5 @@ void Blimp::motors_output()
     motors->output();
 
     // push all channels
-    SRV_Channels::push();
+    srv.push();
 }

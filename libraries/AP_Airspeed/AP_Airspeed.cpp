@@ -28,7 +28,7 @@
 // This could be removed once the build system allows for APM_BUILD_TYPE in header files
 // Note that this is also defined in AP_Airspeed_Params.cpp
 #ifndef AP_AIRSPEED_DUMMY_METHODS_ENABLED
-#define AP_AIRSPEED_DUMMY_METHODS_ENABLED ((APM_BUILD_COPTER_OR_HELI && BOARD_FLASH_SIZE <= 1024) || \
+#define AP_AIRSPEED_DUMMY_METHODS_ENABLED ((APM_BUILD_COPTER_OR_HELI && HAL_PROGRAM_SIZE_LIMIT_KB <= 1024) || \
                                             APM_BUILD_TYPE(APM_BUILD_AntennaTracker) || APM_BUILD_TYPE(APM_BUILD_Blimp))
 #endif
 
@@ -52,6 +52,7 @@
 #include "AP_Airspeed_DroneCAN.h"
 #include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed_MSP.h"
+#include "AP_Airspeed_AUAV.h"
 #include "AP_Airspeed_External.h"
 #include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
@@ -157,7 +158,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     
     // @Param: _OFF_PCNT
     // @DisplayName: Maximum offset cal speed error 
-    // @Description: The maximum percentage speed change in airspeed reports that is allowed due to offset changes between calibrations before a warning is issued. This potential speed error is in percent of ASPD_FBW_MIN. 0 disables. Helps warn of calibrations without pitot being covered.
+    // @Description: The maximum percentage speed change in airspeed reports that is allowed due to offset changes between calibrations before a warning is issued. This potential speed error is in percent of AIRSPEED_MIN. 0 disables. Helps warn of calibrations without pitot being covered.
     // @Range: 0.0 10.0
     // @Units: %
     // @User: Advanced
@@ -210,7 +211,7 @@ void AP_Airspeed::set_fixedwing_parameters(const AP_FixedWing *_fixed_wing_param
 }
 
 // macro for use by HAL_INS_PROBE_LIST
-#define GET_I2C_DEVICE(bus, address) hal.i2c_mgr->get_device(bus, address)
+#define GET_I2C_DEVICE(bus, address) hal.i2c_mgr->get_device_ptr(bus, address)
 
 bool AP_Airspeed::add_backend(AP_Airspeed_Backend *backend)
 {
@@ -441,6 +442,21 @@ void AP_Airspeed::allocate()
             sensor[i] = NEW_NOTHROW AP_Airspeed_External(*this, i);
 #endif
             break;
+        case TYPE_AUAV_5IN:
+#if AP_AIRSPEED_AUAV_ENABLED
+            sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 5);
+#endif
+            break;
+        case TYPE_AUAV_10IN:
+#if AP_AIRSPEED_AUAV_ENABLED
+            sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 10);
+#endif
+            break;
+        case TYPE_AUAV_30IN:
+#if AP_AIRSPEED_AUAV_ENABLED
+            sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 30);
+#endif
+            break;
         }
         if (sensor[i] && !sensor[i]->init()) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i + 1);
@@ -475,19 +491,6 @@ void AP_Airspeed::allocate()
             param[i].bus_id.set(0);
         }
     }
-}
-
-// read the airspeed sensor
-float AP_Airspeed::get_pressure(uint8_t i)
-{
-    if (!enabled(i)) {
-        return 0;
-    }
-    float pressure = 0;
-    if (sensor[i]) {
-        state[i].healthy = sensor[i]->get_differential_pressure(pressure);
-    }
-    return pressure;
 }
 
 // get a temperature reading if possible
@@ -526,14 +529,14 @@ void AP_Airspeed::calibrate(bool in_startup)
             continue;
         }
         if (sensor[i] == nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u not initalized, cannot cal", i+1);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u not initialized, cannot cal", i+1);
             continue;
         }
         state[i].cal.start_ms = AP_HAL::millis();
         state[i].cal.count = 0;
         state[i].cal.sum = 0;
         state[i].cal.read_count = 0;
-        calibration_state[i] = CalibrationState::IN_PROGRESS;
+        state[i].cal.state = CalibrationState::IN_PROGRESS;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Airspeed %u calibration started", i+1);
     }
 #endif // HAL_BUILD_AP_PERIPH
@@ -555,7 +558,7 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
         state[i].cal.read_count > 15) {
         if (state[i].cal.count == 0) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Airspeed %u unhealthy", i + 1);
-            calibration_state[i] = CalibrationState::FAILED;
+            state[i].cal.state = CalibrationState::FAILED;
         } else {
             float calibrated_offset = state[i].cal.sum / state[i].cal.count;
             // check if new offset differs too greatly from last calibration, indicating pitot uncovered in wind
@@ -568,7 +571,7 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
                 }
             }
             param[i].offset.set_and_save(calibrated_offset);
-            calibration_state[i] = CalibrationState::SUCCESS;
+            state[i].cal.state = CalibrationState::SUCCESS;
             if (_options & AP_Airspeed::OptionsMask::REPORT_OFFSET ){
                  GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u calibrated, offset = %4.0f", i + 1, calibrated_offset);
             } else {
@@ -591,7 +594,7 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
 AP_Airspeed::CalibrationState AP_Airspeed::get_calibration_state() const
 {
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        switch (calibration_state[i]) {
+        switch (state[i].cal.state) {
         case CalibrationState::SUCCESS:
         case CalibrationState::NOT_STARTED:
             continue;
@@ -621,13 +624,14 @@ void AP_Airspeed::read(uint8_t i)
 
 #ifndef HAL_BUILD_AP_PERIPH
     /*
-      get the healthy state before we call get_pressure() as
-      get_pressure() overwrites the healthy state
+      remember the old healthy state
      */
     bool prev_healthy = state[i].healthy;
 #endif
 
-    float raw_pressure = get_pressure(i);
+    float raw_pressure = 0;
+    state[i].healthy = sensor[i]->get_differential_pressure(raw_pressure);
+
     float airspeed_pressure = raw_pressure - get_offset(i);
 
     // remember raw pressure for logging

@@ -26,7 +26,7 @@
 #define AP_BATT_MONITOR_RES_EST_TC_1        0.5f
 #define AP_BATT_MONITOR_RES_EST_TC_2        0.1f
 
-#if BOARD_FLASH_SIZE > 1024
+#if HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #define AP_BATT_MONITOR_CELLS_MAX           14
 #else
 #define AP_BATT_MONITOR_CELLS_MAX           12
@@ -70,6 +70,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_INA239;
     friend class AP_BattMonitor_LTC2946;
     friend class AP_BattMonitor_AD7091R5;
+    friend class AP_BattMonitor_INA3221;
 
     friend class AP_BattMonitor_Torqeedo;
     friend class AP_BattMonitor_FuelLevel_Analog;
@@ -116,6 +117,7 @@ public:
         EFI                            = 27,
         AD7091R5                       = 28,
         Scripting                      = 29,
+        INA3221                        = 30,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
@@ -172,7 +174,7 @@ public:
     uint8_t num_instances(void) const { return _num_instances; }
 
     // detect and initialise any available battery monitors
-    void init();
+    __INITFUNC__ void init();
 
     /// Read the battery voltage and current for all batteries.  Should be called at 10hz
     void read();

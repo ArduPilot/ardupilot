@@ -16,9 +16,7 @@
  */
 #include <AP_HAL/AP_HAL.h>
 
-#define HAL_FORWARD_OTG2_SERIAL_LOCK_KEY 0x23565283UL
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(HAL_NO_UARTDRIVER)
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_HAL_UARTDRIVER_ENABLED
 
 #include <hal.h>
 #include "UARTDriver.h"
@@ -103,8 +101,8 @@ static const eventmask_t EVT_TRANSMIT_UNBUFFERED = EVENT_MASK(3);
 #endif
 
 UARTDriver::UARTDriver(uint8_t _serial_num) :
-serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
+serial_num(_serial_num),
 _baudrate(57600)
 {
     osalDbgAssert(serial_num < UART_MAX_DRIVERS, "too many SERIALn drivers");
@@ -191,7 +189,7 @@ void UARTDriver::thread_rx_init(void)
                                               uart_rx_thread,
                                               nullptr);
         if (uart_rx_thread_ctx == nullptr) {
-            AP_HAL::panic("Could not create UART RX thread\n");
+            AP_HAL::panic("Could not create UART RX thread");
         }
     }
 }
@@ -209,7 +207,7 @@ void UARTDriver::thread_init(void)
                                               uart_thread_trampoline,
                                               this);
         if (uart_thread_ctx == nullptr) {
-            AP_HAL::panic("Could not create UART TX thread\n");
+            AP_HAL::panic("Could not create UART TX thread");
         }
     }
 }
@@ -295,9 +293,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
       thrashing of the heap once we are up. The ttyACM0 driver may not
       connect for some time after boot
      */
-    while (_in_rx_timer) {
-        hal.scheduler->delay(1);
-    }
+    WITH_SEMAPHORE(rx_sem);
     if (rxS != _readbuf.get_size()) {
         _rx_initialised = false;
         _readbuf.set_size_best(rxS);
@@ -314,6 +310,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 
     if (clear_buffers) {
+        _rx_stats_dropped_bytes += _readbuf.available();
         _readbuf.clear();
     }
 
@@ -359,9 +356,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     /*
       allocate the write buffer
      */
-    while (_in_tx_timer) {
-        hal.scheduler->delay(1);
-    }
+    WITH_SEMAPHORE(tx_sem);
     if (txS != _writebuf.get_size()) {
         _tx_initialised = false;
         _writebuf.set_size_best(txS);
@@ -549,7 +544,7 @@ void UARTDriver::dma_rx_enable(void)
     dmamode |= STM32_DMA_CR_CHSEL(sdef.dma_rx_channel_id);
     dmamode |= STM32_DMA_CR_PL(0);
 #if defined(STM32H7)
-    dmamode |= 1<<20;   // TRBUFF See 2.3.1 in the H743 errata
+    dmamode |= DMA_SxCR_TRBUFF;   // TRBUFF See 2.3.1 in the H743 errata
 #endif
     rx_bounce_idx ^= 1;
     stm32_cacheBufferInvalidate(rx_bounce_buf[rx_bounce_idx], RX_BOUNCE_BUFSIZE);
@@ -621,8 +616,9 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
         /*
           we have data to copy out
          */
-        uart_drv->_readbuf.write(uart_drv->rx_bounce_buf[bounce_idx], len);
+        const uint32_t written = uart_drv->_readbuf.write(uart_drv->rx_bounce_buf[bounce_idx], len);
         uart_drv->_rx_stats_bytes += len;
+        uart_drv->_rx_stats_dropped_bytes += len - written;
         uart_drv->receive_timestamp_update();
     }
 
@@ -640,9 +636,9 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
 
 void UARTDriver::_end()
 {
-    while (_in_rx_timer) hal.scheduler->delay(1);
+    WITH_SEMAPHORE(rx_sem);
+    WITH_SEMAPHORE(tx_sem);
     _rx_initialised = false;
-    while (_in_tx_timer) hal.scheduler->delay(1);
     _tx_initialised = false;
 
     if (sdef.is_usb) {
@@ -739,6 +735,7 @@ bool UARTDriver::_discard_input()
         return false;
     }
 
+    _rx_stats_dropped_bytes += _readbuf.available();
     _readbuf.clear();
 
     if (!_rts_is_active) {
@@ -905,12 +902,15 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         dmamode |= STM32_DMA_CR_CHSEL(sdef.dma_tx_channel_id);
         dmamode |= STM32_DMA_CR_PL(0);
 #if defined(STM32H7)
-        dmamode |= 1<<20;   // TRBUFF See 2.3.1 in the H743 errata
+        dmamode |= DMA_SxCR_TRBUFF;   // TRBUFF See 2.3.1 in the H743 errata
 #endif
         dmaStreamSetMode(txdma, dmamode | STM32_DMA_CR_DIR_M2P |
                         STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
         dmaStreamEnable(txdma);
         uint32_t timeout_us = ((1000000UL * (tx_len+2) * 10) / _baudrate) + 500;
+        // prevent very long timeouts at low baudrates which could cause another thread
+        // using begin() to block
+        timeout_us = MIN(timeout_us, 100000UL);
         chSysUnlock();
         // wait for the completion or timeout handlers to signal that we are done
         eventmask_t mask = chEvtWaitAnyTimeout(EVT_TRANSMIT_DMA_COMPLETE, chTimeUS2I(timeout_us));
@@ -1109,7 +1109,7 @@ void UARTDriver::_rx_timer_tick(void)
         return;
     }
 
-    _in_rx_timer = true;
+    WITH_SEMAPHORE(rx_sem);
 
 #if HAL_UART_STATS_ENABLED && CH_CFG_USE_EVENTS == TRUE
     if (!sdef.is_usb) {
@@ -1141,8 +1141,9 @@ void UARTDriver::_rx_timer_tick(void)
         if (!enabled) {
             uint8_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(rxdma);
             if (len != 0) {
-                _readbuf.write(rx_bounce_buf[rx_bounce_idx], len);
+                const uint32_t written = _readbuf.write(rx_bounce_buf[rx_bounce_idx], len);
                 _rx_stats_bytes += len;
+                _rx_stats_dropped_bytes += len - written;
 
                 receive_timestamp_update();
                 if (_rts_is_active) {
@@ -1162,7 +1163,6 @@ void UARTDriver::_rx_timer_tick(void)
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
         if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
-            _in_rx_timer = false;
             return;
         }
 #endif
@@ -1181,77 +1181,7 @@ void UARTDriver::_rx_timer_tick(void)
     if (_wait.thread_ctx && _readbuf.available() >= _wait.n) {
         chEvtSignal(_wait.thread_ctx, EVT_DATA);
     }
-#if HAL_FORWARD_OTG2_SERIAL
-    if (sdef.get_index() == HAL_FORWARD_OTG2_SERIAL) {
-        fwd_otg2_serial();
-    }
-#endif
-    _in_rx_timer = false;
 }
-
-// forward data from a serial port to the USB
-// Used for connecting to Secondary Autopilot to communicate over
-// USB, for firmware updates, configuration etc
-#if HAL_FORWARD_OTG2_SERIAL
-void UARTDriver::fwd_otg2_serial()
-{
-    if (lock_read_key == HAL_FORWARD_OTG2_SERIAL_LOCK_KEY &&
-        lock_write_key == HAL_FORWARD_OTG2_SERIAL_LOCK_KEY &&
-        SDU2.config->usbp->state == USB_ACTIVE &&
-        hal.analogin->power_status_flags() & MAV_POWER_STATUS_USB_CONNECTED) {
-        // forward read data to USB
-        if (_readbuf.available() > 0) {
-            ByteBuffer::IoVec vec[2];
-            const auto n_vec = _readbuf.peekiovec(vec, _readbuf.available());
-            for (int i = 0; i < n_vec; i++) {
-                int ret = 0;
-                ret = chnWriteTimeout(&SDU2, vec[i].data, vec[i].len, TIME_IMMEDIATE);
-                if (ret < 0) {
-                    break;
-                }
-                _readbuf.advance(ret);
-                /* We wrote less than we asked for, stop */
-                if ((unsigned)ret != vec[i].len) {
-                    break;
-                }
-            }
-        }
-        {
-            // Do the same for write data
-            WITH_SEMAPHORE(_write_mutex);
-            ByteBuffer::IoVec vec[2];
-            const auto n_vec = _writebuf.reserve(vec, _writebuf.space());
-            for (int i = 0; i < n_vec; i++) {
-                int ret = 0;
-                ret = chnReadTimeout(&SDU2, vec[i].data, vec[i].len, TIME_IMMEDIATE);
-                if (ret < 0) {
-                    break;
-                }
-                _writebuf.commit(ret);
-                /* We read less than we asked for, stop */
-                if ((unsigned)ret != vec[i].len) {
-                    break;
-                }
-            }
-            if (_writebuf.available() > 0) {
-                // we have data to write, so trigger the write thread
-                chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
-            }
-        }
-    } else if (hal.analogin->power_status_flags() & MAV_POWER_STATUS_USB_CONNECTED) {
-        // lock the read and write keys
-        lock_port(HAL_FORWARD_OTG2_SERIAL_LOCK_KEY, HAL_FORWARD_OTG2_SERIAL_LOCK_KEY);
-        // flush the write and read buffer
-        _readbuf.clear();
-        _writebuf.clear();
-    } else if (lock_read_key == HAL_FORWARD_OTG2_SERIAL_LOCK_KEY &&
-            lock_write_key == HAL_FORWARD_OTG2_SERIAL_LOCK_KEY) {
-        _readbuf.clear();
-        _writebuf.clear();
-        lock_port(0,0); // unlock the port
-    }
-}
-#endif
 
 // regular serial read
 void UARTDriver::read_bytes_NODMA()
@@ -1305,14 +1235,13 @@ void UARTDriver::_tx_timer_tick(void)
         return;
     }
 
-    _in_tx_timer = true;
-
     if (hd_tx_active) {
+        WITH_SEMAPHORE(tx_sem);
         hd_tx_active &= ~chEvtGetAndClearFlags(&hd_listener);
         if (!hd_tx_active) {
             /*
-                half-duplex transmit has finished. We now re-enable the
-                HDSEL bit for receive
+              half-duplex transmit has finished. We now re-enable the
+              HDSEL bit for receive
             */
             SerialDriver *sd = (SerialDriver*)(sdef.serial);
             sdStop(sd);
@@ -1325,7 +1254,6 @@ void UARTDriver::_tx_timer_tick(void)
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
         if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
-            _in_tx_timer = false;
             return;
         }
 #endif
@@ -1338,18 +1266,16 @@ void UARTDriver::_tx_timer_tick(void)
 
     // half duplex we do reads in the write thread
     if (half_duplex) {
-        _in_rx_timer = true;
+        WITH_SEMAPHORE(rx_sem);
         read_bytes_NODMA();
         if (_wait.thread_ctx && _readbuf.available() >= _wait.n) {
             chEvtSignal(_wait.thread_ctx, EVT_DATA);
         }
-        _in_rx_timer = false;
     }
 
     // now do the write
+    WITH_SEMAPHORE(tx_sem);
     write_pending_bytes();
-
-    _in_tx_timer = false;
 }
 
 /*
@@ -1794,13 +1720,14 @@ void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint
 {
     const uint32_t tx_bytes = stats.tx.update(_tx_stats_bytes);
     const uint32_t rx_bytes = stats.rx.update(_rx_stats_bytes);
+    const uint32_t rx_dropped_bytes = stats.rx_dropped.update(_rx_stats_dropped_bytes);
 
     if (sdef.is_usb) {
         str.printf("OTG%u  ", unsigned(sdef.instance));
     } else {
         str.printf("UART%u ", unsigned(sdef.instance));
     }
-    str.printf("TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u"
+    str.printf("TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u RXDRP=%8u"
 #if CH_CFG_USE_EVENTS == TRUE
                 " FE=%lu OE=%lu NE=%lu"
 #endif
@@ -1811,6 +1738,7 @@ void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint
                unsigned(rx_bytes),
                unsigned((tx_bytes * 10000) / dt_ms),
                unsigned((rx_bytes * 10000) / dt_ms),
+               unsigned(rx_dropped_bytes),
 #if CH_CFG_USE_EVENTS == TRUE
                _rx_stats_framing_errors,
                _rx_stats_overrun_errors,

@@ -5,8 +5,6 @@ AP_FLAKE8_CLEAN
 
 '''
 
-from __future__ import print_function
-
 import copy
 import math
 import operator
@@ -2306,6 +2304,47 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.test_gcs_fence_via_mavproxy(target_system=target_system,
                                          target_component=target_component)
 
+    def GCSFenceInvalidPoint(self):
+        '''Test fetch non-existant fencepoint'''
+        target_system = 1
+        target_component = 1
+
+        here = self.mav.location()
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # east
+                self.offset_location_ne(here, -50, 20), # bl
+                self.offset_location_ne(here, 50, 20), # br
+                self.offset_location_ne(here, 50, 40), # tr
+            ]),
+        ])
+        for i in 0, 1, 2:
+            self.assert_fetch_mission_item_int(target_system, target_component, i, mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+        self.progress("Requesting invalid point")
+        self.mav.mav.mission_request_int_send(
+            target_system,
+            target_component,
+            3,
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE
+        )
+        self.context_push()
+        self.context_collect('MISSION_COUNT')
+        m = self.assert_receive_mission_ack(
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+            want_type=mavutil.mavlink.MAV_MISSION_INVALID_SEQUENCE,
+        )
+        self.delay_sim_time(0.1)
+        found = False
+        for m in self.context_collection('MISSION_COUNT'):
+            if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_FENCE:
+                continue
+            if m.count != 3:
+                raise NotAchievedException("Unexpected count in MISSION_COUNT")
+            found = True
+        self.context_pop()
+        if not found:
+            raise NotAchievedException("Did not see correction for fencepoint count")
+
     # explode the write_type_to_storage method
     # FIXME: test converting invalid fences / minimally valid fences / normal fences
     # FIXME: show that uploading smaller items take up less space
@@ -2533,6 +2572,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if m.type != want_type:
             raise NotAchievedException("Expected ack type %u got %u" %
                                        (want_type, m.type))
+        return m
 
     def assert_filepath_content(self, filepath, want):
         with open(filepath) as f:
@@ -6121,7 +6161,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if not self.current_onboard_log_contains_message("DPTH"):
             raise NotAchievedException("Expected DPTH log message")
 
-        # self.context_pop()
+        self.progress("Ensuring we get WATER_DEPTH at 12Hz with 2 backends")
+        self.set_message_rate_hz('WATER_DEPTH', 12)
+        self.assert_message_rate_hz('WATER_DEPTH', 12)
 
     def EStopAtBoot(self):
         '''Ensure EStop prevents arming when asserted at boot time'''
@@ -6807,7 +6849,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Test jamming simulation works'''
         self.wait_ready_to_arm()
         start_loc = self.assert_receive_message('GPS_RAW_INT')
-        self.set_parameter("SIM_GPS_JAM", 1)
+        self.set_parameter("SIM_GPS1_JAM", 1)
 
         class Requirement():
             def __init__(self, field, min_value):
@@ -6844,6 +6886,131 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             if len(requirements) == 0 and low_sats_seen and seen_bad_loc:
                 break
+
+    def BatteryInvalid(self):
+        '''check Battery prearms report useful data to user'''
+        self.start_subtest("Changing battery types makes no difference")
+        self.set_parameter("BATT_MONITOR", 0)
+        self.assert_prearm_failure("Battery 1 unhealthy", other_prearm_failures_fatal=False)
+        self.set_parameter("BATT_MONITOR", 4)
+        self.wait_ready_to_arm()
+
+        self.start_subtest("No battery monitor should be armable")
+        self.set_parameter("BATT_MONITOR", 0)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.set_parameter("BATT_MONITOR", 4)
+        self.assert_prearm_failure("Battery 1 unhealthy", other_prearm_failures_fatal=False)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.start_subtest("Invalid backend should have a clear error")
+        self.set_parameter("BATT_MONITOR", 98)
+        self.reboot_sitl()
+        self.assert_prearm_failure("Battery 1 unhealthy", other_prearm_failures_fatal=False)
+
+        self.start_subtest("Switching from an invalid backend to a valid backend should require a reboot")
+        self.set_parameter("BATT_MONITOR", 4)
+        self.assert_prearm_failure("Battery 1 unhealthy", other_prearm_failures_fatal=False)
+
+        self.start_subtest("Switching to None should NOT require a reboot")
+        self.set_parameter("BATT_MONITOR", 0)
+        self.wait_ready_to_arm()
+
+    # this method modified from cmd_addpoly in the MAVProxy code:
+    def generate_polyfence(self, centre_loc, command, radius, count, rotation=0):
+        '''adds a number of waypoints equally spaced around a circle
+
+        '''
+        if count < 3:
+            raise ValueError("Invalid count (%s)" % str(count))
+        if radius <= 0:
+            raise ValueError("Invalid radius (%s)" % str(radius))
+
+        latlon = (centre_loc.lat, centre_loc.lng)
+
+        items = []
+        for i in range(0, count):
+            (lat, lon) = mavextra.gps_newpos(latlon[0],
+                                             latlon[1],
+                                             360/float(count)*i + rotation,
+                                             radius)
+
+            m = mavutil.mavlink.MAVLink_mission_item_int_message(
+                1,  # target system
+                1,  # target component
+                0,    # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL,    # frame
+                command,    # command
+                0,    # current
+                0,    # autocontinue
+                count, # param1,
+                0.0,  # param2,
+                0.0,  # param3
+                0.0,  # param4
+                int(lat*1e7),  # x (latitude)
+                int(lon*1e7),  # y (longitude)
+                0,                     # z (altitude)
+                mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+            )
+            items.append(m)
+
+        return items
+
+    def SDPolyFence(self):
+        '''test storage of fence on SD card'''
+        self.set_parameters({
+            'BRD_SD_FENCE': 32767,
+        })
+        self.reboot_sitl()
+
+        home = self.home_position_as_mav_location()
+        fence = self.generate_polyfence(
+            home,
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+            radius=100,
+            count=100,
+        )
+
+        for bearing in range(0, 359, 60):
+            x = self.offset_location_heading_distance(home, bearing, 100)
+            fence.extend(self.generate_polyfence(
+                x,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
+                radius=100,
+                count=100,
+            ))
+
+        self.correct_wp_seq_numbers(fence)
+        self.check_fence_upload_download(fence)
+
+        self.delay_sim_time(1000)
+
+    def REQUIRE_LOCATION_FOR_ARMING(self):
+        '''check DriveOption::REQUIRE_POSITION_FOR_ARMING works'''
+        self.context_push()
+        self.set_parameters({
+            "SIM_GPS1_NUMSATS": 3,  # EKF does not like < 6
+            "AHRS_GPS_USE": 0,  # stop DCM supplying home
+        })
+        self.reboot_sitl()
+        self.change_mode('MANUAL')
+        self.wait_prearm_sys_status_healthy()
+        self.assert_home_position_not_set()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
+        self.change_mode('GUIDED')
+        self.assert_prearm_failure("waiting for home", other_prearm_failures_fatal=False)
+
+        self.change_mode('MANUAL')
+        self.set_parameters({
+            "ARMING_NEED_LOC": 1,
+        })
+        self.assert_prearm_failure("waiting for home", other_prearm_failures_fatal=False)
+        self.context_pop()
+        self.reboot_sitl()
 
     def tests(self):
         '''return list of all tests'''
@@ -6888,6 +7055,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.Offboard,
             self.MAVProxyParam,
             self.GCSFence,
+            self.GCSFenceInvalidPoint,
             self.GCSMission,
             self.GCSRally,
             self.MotorTest,
@@ -6896,6 +7064,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.DataFlash,
             self.SkidSteer,
             self.PolyFence,
+            self.SDPolyFence,
             self.PolyFenceAvoidance,
             self.PolyFenceObjectAvoidanceAuto,
             self.PolyFenceObjectAvoidanceGuided,
@@ -6941,6 +7110,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.RCDuplicateOptionsExist,
             self.ClearMission,
             self.JammingSimulation,
+            self.BatteryInvalid,
+            self.REQUIRE_LOCATION_FOR_ARMING,
         ])
         return ret
 

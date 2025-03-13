@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-from __future__ import print_function
-
 import os.path
 import os
 import sys
@@ -155,6 +153,11 @@ def options(opt):
         action='store_true',
         default=False,
         help='Add debug symbolds to build.')
+
+    g.add_option('--vs-launch',
+        action='store_true',
+        default=False,
+        help='Generate wscript environment variable to .vscode/setting.json for Visual Studio Code')
     
     g.add_option('--disable-watchdog',
         action='store_true',
@@ -303,6 +306,11 @@ submodules at specific revisions.
     g.add_option('--enable-dronecan-tests', action='store_true',
                  default=False,
                  help="Enables DroneCAN tests in sitl")
+
+    g.add_option('--sitl-littlefs', action='store_true',
+                 default=False,
+                 help="Enable littlefs for filesystem access on SITL (under construction)")
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -429,6 +437,11 @@ configuration in order to save typing.
                  default=0,
                  help='zero time on boot in microseconds')
 
+    g.add_option('--enable-iomcu-profiled-support',
+                    action='store_true',
+                    default=False,
+                    help='enable iomcu profiled support')
+
     g.add_option('--enable-new-checking',
         action='store_true',
         default=False,
@@ -497,6 +510,7 @@ def configure(cfg):
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.VS_LAUNCH = cfg.options.vs_launch
     cfg.env.DEBUG_SYMBOLS = cfg.options.debug_symbols
     cfg.env.COVERAGE = cfg.options.coverage
     cfg.env.FORCE32BIT = cfg.options.force_32bit
@@ -506,6 +520,9 @@ def configure(cfg):
     cfg.env.ENABLE_STATS = cfg.options.enable_stats
     cfg.env.SAVE_TEMPS = cfg.options.save_temps
 
+    extra_hwdef = cfg.options.extra_hwdef
+    if extra_hwdef is not None and not os.path.exists(extra_hwdef):
+        raise FileNotFoundError(f"extra-hwdef file NOT found: '{cfg.options.extra_hwdef}'")
     cfg.env.HWDEF_EXTRA = cfg.options.extra_hwdef
     if cfg.env.HWDEF_EXTRA:
         cfg.env.HWDEF_EXTRA = os.path.abspath(cfg.env.HWDEF_EXTRA)
@@ -557,6 +574,16 @@ def configure(cfg):
     if cfg.options.enable_benchmarks:
         cfg.load('gbenchmark')
     cfg.load('gtest')
+
+    if cfg.env.BOARD == "sitl":
+        cfg.start_msg('Littlefs')
+
+        if cfg.options.sitl_littlefs:
+            cfg.end_msg('enabled')
+        else:
+            cfg.end_msg('disabled', color='YELLOW')
+
+    cfg.load('littlefs')
     cfg.load('static_linking')
     cfg.load('build_summary')
 
@@ -598,6 +625,13 @@ def configure(cfg):
         cfg.end_msg('enabled')
     else:
         cfg.end_msg('disabled', color='YELLOW')
+
+    if cfg.env.DEBUG:
+        cfg.start_msg('VS Code launch')
+        if cfg.env.VS_LAUNCH:
+            cfg.end_msg('enabled')
+        else:
+            cfg.end_msg('disabled', color='YELLOW')
 
     cfg.start_msg('Coverage build')
     if cfg.env.COVERAGE:
@@ -643,6 +677,11 @@ def configure(cfg):
 
     cfg.remove_target_list()
     _collect_autoconfig_files(cfg)
+
+    if cfg.env.DEBUG and cfg.env.VS_LAUNCH:
+        import vscode_helper
+        vscode_helper.init_launch_json_if_not_exist(cfg)
+        vscode_helper.update_openocd_cfg(cfg)
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
@@ -886,6 +925,10 @@ def build(bld):
     if bld.get_board().with_can:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['dronecan']
 
+    if bld.get_board().with_littlefs:
+        bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['littlefs']
+        bld.littlefs()
+
     _build_cmd_tweaks(bld)
 
     if bld.env.SUBMODULE_UPDATE:
@@ -903,6 +946,10 @@ def build(bld):
     _build_recursion(bld)
 
     _build_post_funs(bld)
+
+    if bld.env.DEBUG and bld.env.VS_LAUNCH:
+        import vscode_helper
+        vscode_helper.update_settings(bld)
 
 ardupilotwaf.build_command('check',
     program_group_list='all',

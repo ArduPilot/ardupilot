@@ -102,8 +102,9 @@ define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
 
 # default the 2nd interface to SLCAN
 define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
-ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_highpolh.bin
-ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_cube_dshot_highpolh.bin
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_cube_highpolh.bin
 
+define AP_IOMCU_PROFILED_SUPPORT_ENABLED 1
 # enable support for dshot on iomcu
 define HAL_WITH_IO_MCU_DSHOT 1

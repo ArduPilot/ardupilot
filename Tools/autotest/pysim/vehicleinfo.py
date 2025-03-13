@@ -129,6 +129,31 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-dodecahexa.parm" ],
             },
+            "dotriaconta_octaquad_x": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-dotriaconta_octaquad_x.parm",
+                ],
+                "frame_example_script": "MotorMatrix_dotriaconta_octaquad_x.lua",
+            },
+            "hexadeca-octa": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-hexadeca_octa.parm"
+                ],
+                "frame_example_script": "MotorMatrix_hexadeca_octa.lua",
+            },
+            "hexadeca-octa-cwx": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-hexadeca_octa.parm",
+                    "default_params/copter-hexadeca_octa_cwx.parm"
+                ],
+                "frame_example_script": "MotorMatrix_hexadeca_octa_cw_x.lua",
+            },
             # SIM
             "IrisRos": {
                 "waf_target": "bin/arducopter",
@@ -338,6 +363,10 @@ class VehicleInfo(object):
             "plane-dspoilers": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": ["models/plane.parm", "default_params/plane-dspoilers.parm"]
+            },
+            "plane-redundant": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["models/plane.parm", "default_params/plane-redundant.parm"]
             },
             "plane-soaring": {
                 "waf_target": "bin/arduplane",

@@ -9,7 +9,6 @@ based on sim_vehicle.sh by Andrew Tridgell, October 2011
 AP_FLAKE8_CLEAN
 
 """
-from __future__ import print_function
 
 import atexit
 import datetime
@@ -201,7 +200,7 @@ def under_wsl2():
 
 
 def wsl2_host_ip():
-    if not under_wsl2():
+    if not under_wsl2() or cmd_opts.no_wsl2_network:
         return None
 
     pipe = subprocess.Popen("ip route show default | awk '{print $3}'",
@@ -766,7 +765,6 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(strace_options)
 
     cmd.append(binary)
-    cmd.append("-S")
     if opts.wipe_eeprom:
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
@@ -873,6 +871,11 @@ def start_mavproxy(opts, stuff):
     else:
         cmd.append("mavproxy.py")
 
+    if opts.valgrind:
+        cmd.extend(['--retries', '10'])
+    else:
+        cmd.extend(['--retries', '5'])
+
     if opts.mcast:
         cmd.extend(["--master", "mcast:"])
 
@@ -964,6 +967,8 @@ def start_mavproxy(opts, stuff):
         cmd.extend(['--aircraft', opts.aircraft])
     if opts.moddebug:
         cmd.append('--moddebug=%u' % opts.moddebug)
+    if opts.mavcesium:
+        cmd.extend(["--load-module", "cesium"])
 
     if opts.fresh_params:
         # these were built earlier:
@@ -985,6 +990,17 @@ def start_mavproxy(opts, stuff):
 
     run_cmd_blocking("Run MavProxy", cmd, env=env)
     progress("MAVProxy exited")
+
+    if opts.gdb:
+        # in the case that MAVProxy exits (as opposed to being
+        # killed), restart it if we are running under GDB.  This
+        # allows ArduPilot to stop (eg. via a very early panic call)
+        # and have you debugging session not be killed.
+        while True:
+            progress("Running under GDB; restarting MAVProxy")
+            run_cmd_blocking("Run MavProxy", cmd, env=env)
+            progress("MAVProxy exited; sleeping 10")
+            time.sleep(10)
 
 
 vehicle_options_string = '|'.join(vinfo.options.keys())
@@ -1284,6 +1300,11 @@ group_sim.add_option("", "--no-extra-ports",
                      dest='no_extra_ports',
                      default=False,
                      help="Disable setup of UDP 14550 and 14551 output")
+group_sim.add_option("", "--no-wsl2-network",
+                     action='store_true',
+                     dest='no_wsl2_network',
+                     default=False,
+                     help="Disable setup of WSL2 network for output")
 group_sim.add_option("-Z", "--swarm",
                      type='string',
                      default=None,
@@ -1362,6 +1383,11 @@ group.add_option("", "--map",
                  default=False,
                  action='store_true',
                  help="load map module on startup")
+group.add_option("", "--mavcesium",
+                 default=False,
+                 action='store_true',
+                 help="load MAVCesium module on startup")
+
 group.add_option("", "--console",
                  default=False,
                  action='store_true',

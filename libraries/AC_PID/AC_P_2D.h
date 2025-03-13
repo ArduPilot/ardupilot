@@ -55,7 +55,7 @@ private:
     AP_Float    _kp;
 
     // internal variables
-    Vector2f _error;    // time step in seconds
+    Vector2f _error;    // error between target and measured
     float _error_max;   // error limit in positive direction
     float _D1_max;      // maximum first derivative of output
 

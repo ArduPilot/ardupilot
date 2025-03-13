@@ -116,7 +116,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: LAND_ARSPD
     // @DisplayName: Airspeed during landing approach (m/s)
-    // @Description: When performing an autonomus landing, this value is used as the goal airspeed during approach.  Max airspeed allowed is Trim Airspeed or AIRSPEED_MAX as defined by LAND_OPTIONS bitmask.  Note that this parameter is not useful if your platform does not have an airspeed sensor (use TECS_LAND_THR instead).  If negative then this value is halfway between AIRSPEED_MIN and TRIM_CRUISE_CM speed for fixed wing autolandings.
+    // @Description: When performing an autonomus landing, this value is used as the goal airspeed during approach.  Max airspeed allowed is Trim Airspeed or AIRSPEED_MAX as defined by LAND_OPTIONS bitmask.  Note that this parameter is not useful if your platform does not have an airspeed sensor (use TECS_LAND_THR instead).  If negative then this value is halfway between AIRSPEED_MIN and AIRSPEED_CRUISE speed for fixed wing autolandings.
     // @Range: -1 127
     // @Increment: 1
     // @User: Standard
@@ -328,7 +328,6 @@ void AP_TECS::update_50hz(void)
         _height_filter.dd_height = 0.0f;
         DT = 0.02f; // when first starting TECS, use most likely time constant
         _vdot_filter.reset();
-        _takeoff_start_ms = 0;
     }
     _update_50hz_last_usec = now;
 
@@ -416,9 +415,9 @@ void AP_TECS::_update_speed(float DT)
         // when stall prevention is active we raise the minimum
         // airspeed based on aerodynamic load factor
         if (is_positive(aparm.airspeed_stall)) {
-            _TASmin = MAX(_TASmin, aparm.airspeed_stall*EAS2TAS*_load_factor);
+            _TASmin = MAX(_TASmin, aparm.airspeed_stall*EAS2TAS*sqrtf(_load_factor));
         } else {
-            _TASmin *= _load_factor;
+            _TASmin *= sqrtf(_load_factor);
         }
     }
 
@@ -428,6 +427,9 @@ void AP_TECS::_update_speed(float DT)
 
     // Get measured airspeed or default to trim speed and constrain to range between min and max if
     // airspeed sensor data cannot be used
+
+    // Equivalent airspeed
+    float _EAS;
     if (!use_airspeed || !_ahrs.airspeed_estimate(_EAS)) {
         // If no airspeed available use average of min and max
         _EAS = constrain_float(aparm.airspeed_cruise.get(), (float)aparm.airspeed_min.get(), (float)aparm.airspeed_max.get());
@@ -749,10 +751,10 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         const float nomThr = aparm.throttle_cruise * 0.01f;
         const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
         // Use the demanded rate of change of total energy as the feed-forward demand, but add
-        // additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
+        // additional component which scales with (1/(cos(bank angle)**2) - 1) to compensate for induced
         // drag increase during turns.
-        const float cosPhi = sqrtf((rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y));
-        STEdot_dem = STEdot_dem + _rollComp * (1.0f/constrain_float(cosPhi * cosPhi, 0.1f, 1.0f) - 1.0f);
+        const float cosPhi_squared = (rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y);
+        STEdot_dem = STEdot_dem + _rollComp * (1.0f/constrain_float(cosPhi_squared, 0.1f, 1.0f) - 1.0f);
         const float ff_throttle = nomThr + STEdot_dem / K_thr2STE;
 
         // Calculate PD + FF throttle
@@ -903,10 +905,10 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge, float pi
     // Calculate additional throttle for turn drag compensation including throttle nudging
     const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
     // Use the demanded rate of change of total energy as the feed-forward demand, but add
-    // additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
+    // additional component which scales with (1/(cos(bank angle)**2) - 1) to compensate for induced
     // drag increase during turns.
-    float cosPhi = sqrtf((rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y));
-    float STEdot_dem = _rollComp * (1.0f/constrain_float(cosPhi * cosPhi, 0.1f, 1.0f) - 1.0f);
+    const float cosPhi_squared = (rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y);
+    float STEdot_dem = _rollComp * (1.0f/constrain_float(cosPhi_squared, 0.1f, 1.0f) - 1.0f);
     _throttle_dem = _throttle_dem + STEdot_dem / (_STEdot_max - _STEdot_min) * (_THRmaxf - _THRminf);
 
     constrain_throttle();
@@ -1110,11 +1112,11 @@ void AP_TECS::_update_pitch(void)
 #endif
 }
 
-void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
+void AP_TECS::_initialise_states(float hgt_afe)
 {
+    // Initialise states and variables if DT > 0.2 second or TECS is getting overriden or in climbout.
     _flags.reset = false;
 
-    // Initialise states and variables if DT > 0.2 second or in climbout
     if (_DT > 0.2f || _need_reset) {
         _SKE_weighting        = 1.0f;
         _integTHR_state       = 0.0f;
@@ -1122,7 +1124,6 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _integKE              = 0.0f;
         _last_throttle_dem    = aparm.throttle_cruise * 0.01f;
         _last_pitch_dem       = _ahrs.get_pitch();
-        _hgt_afe              = hgt_afe;
         _hgt_dem_in_prev      = hgt_afe;
         _hgt_dem_lpf          = hgt_afe;
         _hgt_dem_rate_ltd     = hgt_afe;
@@ -1132,7 +1133,6 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _DT                   = 0.02f; // when first starting TECS, use the most likely time constant
         _lag_comp_hgt_offset  = 0.0f;
         _post_TO_hgt_offset   = 0.0f;
-        _takeoff_start_ms = 0;
         _use_synthetic_airspeed_once = false;
 
         _flags.underspeed            = false;
@@ -1156,7 +1156,16 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _pitch_measured_lpf.reset(_ahrs.get_pitch());
 
     } else if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
-        _PITCHminf            = CentiDegreesToRadians(ptchMinCO_cd);
+        
+        if (!_flag_throttle_forced) {
+            // Calculate the takeoff target height offset before _hgt_dem_in_raw gets reset below.
+            // Prevent the offset from becoming negative.
+            _post_TO_hgt_offset = MAX(MIN(_climb_rate_limit * _hgt_dem_tconst, _hgt_dem_in_raw - hgt_afe), 0);
+        } else {
+            // If throttle is externally forced, this mechanism of adding energy is unnecessary.
+            _post_TO_hgt_offset = 0;
+        }
+
         _hgt_afe              = hgt_afe;
         _hgt_dem_lpf          = hgt_afe;
         _hgt_dem_rate_ltd     = hgt_afe;
@@ -1166,12 +1175,12 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _hgt_dem_in_raw       = hgt_afe;
         _flags.underspeed     = false;
         _flags.badDescent     = false;
-        _post_TO_hgt_offset   = _climb_rate_limit * _hgt_dem_tconst; // Replacement prevents oscillating hgt_rate_dem.
         _TAS_dem_adj = _TAS_dem;
         _max_climb_scaler = 1.0f;
         _max_sink_scaler = 1.0f;
         _pitch_demand_lpf.reset(_ahrs.get_pitch());
         _pitch_measured_lpf.reset(_ahrs.get_pitch());
+        
 
         if (!_flag_have_reset_after_takeoff) {
             _flags.reset          = true;
@@ -1250,77 +1259,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Update the throttle limits.
     _update_throttle_limits();
 
-    // work out the maximum and minimum pitch
-    // if TECS_PITCH_{MAX,MIN} isn't set then use
-    // LIM_PITCH_{MAX,MIN}. Don't allow TECS_PITCH_{MAX,MIN} to be
-    // larger than LIM_PITCH_{MAX,MIN}
-    if (_pitch_max == 0) {
-        _PITCHmaxf = aparm.pitch_limit_max;
-    } else {
-        _PITCHmaxf = MIN(_pitch_max, aparm.pitch_limit_max);
-    }
-
-    if (_pitch_min >= 0) {
-        _PITCHminf = aparm.pitch_limit_min;
-    } else {
-        _PITCHminf = MAX(_pitch_min, aparm.pitch_limit_min);
-    }
-
-    // apply temporary pitch limit and clear
-    if (_pitch_max_limit < 90) {
-        _PITCHmaxf = constrain_float(_PITCHmaxf, -90, _pitch_max_limit);
-        _PITCHminf = constrain_float(_PITCHminf, -_pitch_max_limit, _PITCHmaxf);
-        _pitch_max_limit = 90;
-    }
-
-    if (!_landing.is_on_approach()) {
-        // reset land pitch min when not landing
-        _land_pitch_min = _PITCHminf;
-    }
-
-    // calculate the expected pitch angle from the demanded climb rate and airspeed for use during approach and flare
-    if (_landing.is_flaring()) {
-        // smoothly move the min pitch to the required minimum at touchdown
-        float p; // 0 at start of flare, 1 at finish
-        if (!_flare_initialised) {
-            p = 0.0f;
-        } else if (_hgt_at_start_of_flare > _flare_holdoff_hgt) {
-            p = constrain_float((_hgt_at_start_of_flare - _hgt_afe) / _hgt_at_start_of_flare, 0.0f, 1.0f);
-        } else {
-            p = 1.0f;
-        }
-        const float pitch_limit_deg = (1.0f - p) * _pitch_min_at_flare_entry + p * 0.01f * _landing.get_pitch_cd();
-
-        // in flare use min pitch from LAND_PITCH_DEG
-        _PITCHminf = MAX(_PITCHminf, pitch_limit_deg);
-
-        // and use max pitch from TECS_LAND_PMAX
-        if (_land_pitch_max != 0) {
-            // note that this allows a flare pitch outside the normal TECS auto limits
-            _PITCHmaxf = _land_pitch_max;
-        }
-    } else if (_landing.is_on_approach()) {
-        _PITCHminf = MAX(_PITCHminf, aparm.pitch_limit_min);
-        _pitch_min_at_flare_entry = _PITCHminf;
-        _flare_initialised = false;
-    } else {
-        _flare_initialised = false;
-    }
-
-    if (_landing.is_on_approach()) {
-        // don't allow the lower bound of pitch to decrease, nor allow
-        // it to increase rapidly. This prevents oscillation of pitch
-        // demand while in landing approach based on rapidly changing
-        // time to flare estimate
-        if (_land_pitch_min <= -90) {
-            _land_pitch_min = _PITCHminf;
-        }
-        const float flare_pitch_range = 20;
-        const float delta_per_loop = (flare_pitch_range/_landTimeConst) * _DT;
-        _PITCHminf = MIN(_PITCHminf, _land_pitch_min+delta_per_loop);
-        _land_pitch_min = MAX(_land_pitch_min, _PITCHminf);
-        _PITCHminf = MAX(_land_pitch_min, _PITCHminf);
-    }
+    _update_pitch_limits(ptchMinCO_cd);
 
     if (flight_stage == AP_FixedWing::FlightStage::TAKEOFF || flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
         if (!_flags.reached_speed_takeoff && _TAS_state >= _TASmin && _TASmin > 0) {
@@ -1330,15 +1269,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         }
     }
 
-    // convert to radians
-    _PITCHmaxf = radians(_PITCHmaxf);
-    _PITCHminf = radians(_PITCHminf);
-
-    // don't allow max pitch to go below min pitch
-    _PITCHmaxf = MAX(_PITCHmaxf, _PITCHminf);
-
     // initialise selected states and variables if DT > 1 second or in climbout
-    _initialise_states(ptchMinCO_cd, hgt_afe);
+    _initialise_states(hgt_afe);
 
     // Calculate Specific Total Energy Rate Limits
     _update_STE_rate_lim();
@@ -1445,59 +1377,155 @@ void AP_TECS::set_throttle_max(const float thr_max) {
 
 void AP_TECS::_update_throttle_limits() {
 
-    // Configure max throttle.
-
-    // Read the maximum throttle limit.
-    _THRmaxf  = aparm.throttle_max * 0.01f;
-    // If more max throttle is allowed during takeoff, use it.
-    if (aparm.takeoff_throttle_max*0.01f > _THRmaxf
-        && (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)
-        ) {
-        _THRmaxf  = aparm.takeoff_throttle_max * 0.01f;
-    }
-    // In any case, constrain to the external safety limits.
-    _THRmaxf = MIN(_THRmaxf, _THRmaxf_ext);
-
-    // Configure min throttle.
-
-    // If less min throttle is allowed during takeoff, use it.
-    bool use_takeoff_throttle = _flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING;
-    const bool use_throttle_range = (aparm.takeoff_options & (uint32_t)AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
-    use_takeoff_throttle = use_takeoff_throttle && (use_throttle_range == 1) && (aparm.takeoff_throttle_min != 0);
-    if ( use_takeoff_throttle ) { 
-        _THRminf = MIN(_THRminf, aparm.takeoff_throttle_min * 0.01f);
-    }
-    else { // Otherwise, during normal situations let regular limit.
-        _THRminf = aparm.throttle_min * 0.01f;
-    }
-    // Raise min to force max throttle for TKOFF_THR_MAX_T after a takeoff.
-    if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
-        const uint32_t now = AP_HAL::millis();
-        if (_takeoff_start_ms == 0) {
-            _takeoff_start_ms = now;
-        }
-        const uint32_t dt = now - _takeoff_start_ms;
-        if (dt*0.001 < aparm.takeoff_throttle_max_t) {
-            _THRminf = _THRmaxf;
-        }
-    } else {
-        _takeoff_start_ms = 0;
-    }
-    // If we are flaring, allow the throttle to go to 0.
-    if (_landing.is_flaring()) {
-        _THRminf = 0;
-    }
-    // In any case, constrain to the external safety limits.
-    _THRminf = MAX(_THRminf, _THRminf_ext);
+    // Configure max throttle; constrain to the external safety limits.
+    _THRmaxf = MIN(1.0f, _THRmaxf_ext);
+    // Configure min throttle; constrain to the external safety limits.
+    _THRminf = MAX(-1.0f, _THRminf_ext);
 
     // Allow a minimum of 1% throttle range, primarily to prevent TECS numerical errors.
-    if (_THRmaxf < 1) {
-        _THRmaxf = MAX(_THRmaxf, _THRminf + 0.01f);
+    const float thr_eps = 0.01;
+    if (fabsf(_THRminf-_THRmaxf) < thr_eps) {
+        _flag_throttle_forced = true;
+        if (_THRmaxf < 1) {
+            _THRmaxf = MAX(_THRmaxf, _THRminf + 0.01f);
+        } else {
+            _THRminf = MIN(_THRminf, _THRmaxf - 0.01f);
+        }
     } else {
-        _THRminf = MIN(_THRminf, _THRmaxf - 0.01f);
+        _flag_throttle_forced = false;
     }
     
     // Reset the external throttle limits.
+    // Caller will have to reset them in the next iteration.
     _THRminf_ext = -1.0f;
     _THRmaxf_ext = 1.0f;
+}
+
+void AP_TECS::set_pitch_min(const float pitch_min) {
+    // Don't change the limit if it is already covered.
+    if (pitch_min > _PITCHminf_ext) {
+        _PITCHminf_ext = pitch_min;
+    }
+}
+
+void AP_TECS::set_pitch_max(const float pitch_max) {
+    // Don't change the limit if it is already covered.
+    if (pitch_max < _PITCHmaxf_ext) {
+        _PITCHmaxf_ext = pitch_max;
+    }
+}
+
+void AP_TECS::_update_pitch_limits(const int32_t ptchMinCO_cd) {
+    // If TECS_PITCH_{MAX,MIN} isn't set then use LIM_PITCH_{MAX,MIN}.
+    // Don't allow TECS_PITCH_{MAX,MIN} to be larger than LIM_PITCH_{MAX,MIN}.
+    if (_pitch_max == 0) {
+        _PITCHmaxf = aparm.pitch_limit_max;
+    } else {
+        _PITCHmaxf = _pitch_max;
+    }
+
+    if (_pitch_min == 0) {
+        _PITCHminf = aparm.pitch_limit_min;
+    } else {
+        _PITCHminf = _pitch_min;
+    }
+
+    if (!_landing.is_on_approach()) {
+        // reset land pitch min when not landing
+        _land_pitch_min = _PITCHminf;
+    }
+
+    // calculate the expected pitch angle from the demanded climb rate and airspeed for use during approach and flare
+    if (_landing.is_flaring()) {
+        // smoothly move the min pitch to the required minimum at touchdown
+        float p; // 0 at start of flare, 1 at finish
+        if (!_flare_initialised) {
+            p = 0.0f;
+        } else if (_hgt_at_start_of_flare > _flare_holdoff_hgt) {
+            p = constrain_float((_hgt_at_start_of_flare - _hgt_afe) / _hgt_at_start_of_flare, 0.0f, 1.0f);
+        } else {
+            p = 1.0f;
+        }
+        const float pitch_limit_deg = (1.0f - p) * _pitch_min_at_flare_entry + p * 0.01f * _landing.get_pitch_cd();
+
+        // in flare use min pitch from LAND_PITCH_DEG
+        _PITCHminf = MAX(_PITCHminf, pitch_limit_deg);
+
+        // and use max pitch from TECS_LAND_PMAX
+        if (_land_pitch_max != 0) {
+            // note that this allows a flare pitch outside the normal TECS auto limits
+            _PITCHmaxf = _land_pitch_max;
+        }
+    } else if (_landing.is_on_approach()) {
+        _PITCHminf = MAX(_PITCHminf, aparm.pitch_limit_min);
+        _pitch_min_at_flare_entry = _PITCHminf;
+        _flare_initialised = false;
+    } else {
+        _flare_initialised = false;
+    }
+
+    if (_landing.is_on_approach()) {
+        // don't allow the lower bound of pitch to decrease, nor allow
+        // it to increase rapidly. This prevents oscillation of pitch
+        // demand while in landing approach based on rapidly changing
+        // time to flare estimate
+        if (_land_pitch_min <= -90) {
+            _land_pitch_min = _PITCHminf;
+        }
+        const float flare_pitch_range = 20;
+        const float delta_per_loop = (flare_pitch_range/_landTimeConst) * _DT;
+        _PITCHminf = MIN(_PITCHminf, _land_pitch_min+delta_per_loop);
+        _land_pitch_min = MAX(_land_pitch_min, _PITCHminf);
+        _PITCHminf = MAX(_land_pitch_min, _PITCHminf);
+    }
+
+    // Apply TAKEOFF minimum pitch
+    if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF
+        || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)
+    {
+        _PITCHminf = CentiDegreesToRadians(ptchMinCO_cd);
+    }
+
+    // Apply external limits.
+    _PITCHmaxf = MIN(_PITCHmaxf, _PITCHmaxf_ext);
+    _PITCHminf = MAX(_PITCHminf, _PITCHminf_ext);
+    
+    // Reset the external pitch limits.
+    _PITCHminf_ext = -90.0f;
+    _PITCHmaxf_ext = 90.0f;
+
+    // convert to radians
+    _PITCHmaxf = radians(_PITCHmaxf);
+    _PITCHminf = radians(_PITCHminf);
+
+    // don't allow max pitch to go below min pitch
+    _PITCHmaxf = MAX(_PITCHmaxf, _PITCHminf);
+}
+
+void AP_TECS::offset_altitude(const float alt_offset)
+{
+    // Convention: When alt_offset is positive it means that the altitude of
+    // home has increased. Thus, the relative altitude of the vehicle has
+    // decreased.
+    //
+    // Assumption: This method is called more often and before
+    // `update_pitch_throttle()`. This is necessary to ensure that new height
+    // demands which incorporate the home change are compatible with the
+    // (now updated) internal height state.
+
+    _flare_hgt_dem_ideal    -= alt_offset;
+    _flare_hgt_dem_adj      -= alt_offset;
+    _hgt_at_start_of_flare  -= alt_offset;
+    _hgt_dem_in_prev        -= alt_offset;
+    _hgt_dem_lpf            -= alt_offset;
+    _hgt_dem_rate_ltd       -= alt_offset;
+    _hgt_dem_prev           -= alt_offset;
+    _height_filter.height   -= alt_offset;
+
+    // The following variables are updated anew in every call of
+    // `update_pitch_throttle()`. There's no need to update those.
+    // _hgt_dem
+    // _hgt_dem_in_raw
+    // _hgt_dem_in
+    // Energies
 }

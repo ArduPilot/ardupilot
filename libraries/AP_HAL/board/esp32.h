@@ -17,6 +17,8 @@
 #include "esp32s3devkit.h" //Nick K. on discord
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3EMPTY
 #include "esp32s3empty.h"
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3M5STAMPFLY
+#include "esp32s3m5stampfly.h" // https://shop.m5stack.com/products/m5stamp-fly-with-m5stamps3
 #else
 #error "Invalid CONFIG_HAL_BOARD_SUBTYPE for esp32"
 #endif
@@ -35,11 +37,23 @@
 #define O_CLOEXEC 0
 #define HAL_STORAGE_SIZE (16384)
 
+#ifndef HAL_PROGRAM_SIZE_LIMIT_KB
+#define HAL_PROGRAM_SIZE_LIMIT_KB 2048
+#endif
+
 #ifdef __cplusplus
 // allow for static semaphores
 #include <AP_HAL_ESP32/Semaphores.h>
 #define HAL_Semaphore ESP32::Semaphore
 #define HAL_BinarySemaphore ESP32::BinarySemaphore
+#endif
+
+#ifndef HAL_HAVE_HARDWARE_DOUBLE
+#define HAL_HAVE_HARDWARE_DOUBLE 0
+#endif
+
+#ifndef HAL_WITH_EKF_DOUBLE
+#define HAL_WITH_EKF_DOUBLE HAL_HAVE_HARDWARE_DOUBLE
 #endif
 
 #define HAL_NUM_CAN_IFACES 0
@@ -51,6 +65,10 @@
 
 #define __LITTLE_ENDIAN  1234
 #define __BYTE_ORDER     __LITTLE_ENDIAN
+
+// ArduPilot uses __RAMFUNC__ to place functions in fast instruction RAM
+#define __RAMFUNC__ IRAM_ATTR
+
 
 // whenver u get ... error: "xxxxxxx" is not defined, evaluates to 0 [-Werror=undef]  just define it below as 0
 #define CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY 0
@@ -91,7 +109,7 @@
 // disble temp cal of gyros by default
 #define HAL_INS_TEMPERATURE_CAL_ENABLE 0
 
-//turn off a bunch of advanced plane scheduler table things. see ArduPlane.cpp
+//turn off a bunch of advanced plane scheduler table things. see Plane.cpp
 #define AP_ADVANCEDFAILSAFE_ENABLED 0
 #define AP_ICENGINE_ENABLED 0
 #define AP_OPTICALFLOW_ENABLED 0
@@ -119,3 +137,7 @@
 
 // remove once ESP32 isn't so chronically slow
 #define AP_SCHEDULER_OVERTIME_MARGIN_US 50000UL
+
+#ifndef AP_NOTIFY_BUZZER_ENABLED
+#define AP_NOTIFY_BUZZER_ENABLED 1
+#endif

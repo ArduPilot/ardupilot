@@ -30,11 +30,12 @@ private:
 protected:
 
     // dummy information:
-    MAV_MODE base_mode() const override { return (MAV_MODE)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
+    uint8_t base_mode() const override { return (uint8_t)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
     MAV_STATE vehicle_system_status() const override { return MAV_STATE_CALIBRATING; }
 
     void send_nav_controller_output() const override {};
     void send_pid_tuning() override {};
+    uint8_t send_available_mode(uint8_t index) const override { return 0; }
 };
 
 /*

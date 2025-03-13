@@ -29,7 +29,7 @@ To see all current options, use the `-s` argument:
 ros2 launch ardupilot_sitl sitl.launch.py -s
 ```
 
-#### `ardupilot_dds_test`
+#### `ardupilot_dds_tests`
 
 A `colcon` package for testing communication between `micro_ros_agent` and the
 ArduPilot `AP_DDS` client library.
@@ -191,7 +191,7 @@ install MAVProxy if it is not available on the container.
 
 
 ```bash
-pip install -U MAVProxy
+python3 -m pip install -U MAVProxy
 ```
 
 

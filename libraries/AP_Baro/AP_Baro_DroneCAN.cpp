@@ -21,18 +21,13 @@ AP_Baro_DroneCAN::AP_Baro_DroneCAN(AP_Baro &baro) :
     AP_Baro_Backend(baro)
 {}
 
-void AP_Baro_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+bool AP_Baro_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_dronecan == nullptr) {
-        return;
-    }
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_pressure, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("pressure_sub");
-    }
+    const auto driver_index = ap_dronecan->get_driver_index();
 
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_temperature, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("temperature_sub");
-    }
+    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_pressure, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_temperature, driver_index) != nullptr)
+    ;
 }
 
 AP_Baro_Backend* AP_Baro_DroneCAN::probe(AP_Baro &baro)

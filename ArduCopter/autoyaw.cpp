@@ -149,6 +149,18 @@ void Mode::AutoYaw::set_yaw_angle_rate(float yaw_angle_d, float yaw_rate_ds)
     set_mode(Mode::ANGLE_RATE);
 }
 
+// set_yaw_angle_offset - sets the yaw look at heading for auto mode, as an offset from the current yaw angle
+void Mode::AutoYaw::set_yaw_angle_offset(const float yaw_angle_offset_d)
+{
+    _last_update_ms = millis();
+
+    _yaw_angle_cd = wrap_360_cd(_yaw_angle_cd + (yaw_angle_offset_d * 100.0));
+    _yaw_rate_cds = 0.0f;
+
+    // set yaw mode
+    set_mode(Mode::ANGLE_RATE);
+}
+
 // set_roi - sets the yaw to look at roi for auto mode
 void Mode::AutoYaw::set_roi(const Location &roi_location)
 {
@@ -314,7 +326,7 @@ AC_AttitudeControl::HeadingCommand Mode::AutoYaw::get_heading()
     _pilot_yaw_rate_cds = 0.0;
     if (!copter.failsafe.radio && copter.flightmode->use_pilot_yaw()) {
         // get pilot's desired yaw rate
-        _pilot_yaw_rate_cds = copter.flightmode->get_pilot_desired_yaw_rate(copter.channel_yaw->norm_input_dz());
+        _pilot_yaw_rate_cds = copter.flightmode->get_pilot_desired_yaw_rate();
         if (!is_zero(_pilot_yaw_rate_cds)) {
             auto_yaw.set_mode(AutoYaw::Mode::PILOT_RATE);
         }

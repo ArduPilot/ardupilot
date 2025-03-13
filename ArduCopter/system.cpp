@@ -160,6 +160,9 @@ void Copter::init_ardupilot()
 #if MODE_AUTO_ENABLED
     // initialise mission library
     mode_auto.mission.init();
+#if HAL_LOGGING_ENABLED
+    mode_auto.mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
+#endif
 #endif
 
 #if MODE_SMARTRTL_ENABLED
@@ -197,7 +200,6 @@ void Copter::init_ardupilot()
 
     pos_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
     vel_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
-    hgt_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
 
     // flag that initialisation has completed
     ap.initialised = true;
@@ -344,7 +346,6 @@ void Copter::update_auto_armed()
  */
 bool Copter::should_log(uint32_t mask)
 {
-    ap.logging_started = logger.logging_started();
     return logger.should_log(mask);
 }
 #endif
@@ -505,7 +506,6 @@ void Copter::allocate_motors(void)
     // upgrade parameters. This must be done after allocating the objects
     convert_pid_parameters();
 #if FRAME_CONFIG == HELI_FRAME
-    convert_tradheli_parameters();
     motors->heli_motors_param_conversions();
 #endif
 

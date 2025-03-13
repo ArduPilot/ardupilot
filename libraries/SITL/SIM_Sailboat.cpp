@@ -42,9 +42,9 @@ namespace SITL {
 
 Sailboat::Sailboat(const char *frame_str) :
     Aircraft(frame_str),
+    sail_area(1.0),
     steering_angle_max(35),
-    turning_circle(1.8),
-    sail_area(1.0)
+    turning_circle(1.8)
 {
     motor_connected = (strcmp(frame_str, "sailboat-motor") == 0);
     skid_steering = strstr(frame_str, "skid") != nullptr;

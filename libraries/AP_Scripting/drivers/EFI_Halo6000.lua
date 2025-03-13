@@ -338,7 +338,7 @@ local function engine_control()
     
     -- return the instance
     return self
-end -- end function engine_control(_driver)
+end -- end function engine_control()
 
 local engine1 = engine_control()
 

@@ -35,9 +35,9 @@ ZYPPER="sudo zypper in --no-recommends"
 if $ASSUME_YES; then
     ZYPPER="sudo zypper in -y --no-recommends"
 fi
-PIP3=pip3
+PIP3="python3 -m pip"
 if $QUIET; then
-    PIP3="pip3 -q"
+    PIP3="$PIP3 -q"
 fi
 
 function package_is_installed() {
@@ -88,7 +88,7 @@ sudo usermod -a -G dialout "$USER"
 
 $ZYPPER $BASE_PKGS $SITL_PKGS || echo "Check zypper output for errors"
 
-python3 -m venv --system-site-packages "$HOME"/venv-ardupilot
+python3 -m venv "$HOME"/venv-ardupilot
 
 SHELL_LOGIN=".profile"
 # activate it:
@@ -102,6 +102,8 @@ if ! grep -Fxq "$SOURCE_LINE" ~/.bashrc; then
 
     if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
         echo $SOURCE_LINE >> ~/.bashrc
+    else
+        echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
     fi
 fi
 

@@ -6,17 +6,20 @@
  */
 #pragma once
 
+// @LoggerEnum: HAL_BOARD
 #define HAL_BOARD_SITL     3
-#define HAL_BOARD_SMACCM   4  // unused
-#define HAL_BOARD_PX4      5  // unused
+// #define HAL_BOARD_SMACCM   4  // unused
+// #define HAL_BOARD_PX4      5  // unused
 #define HAL_BOARD_LINUX    7
-#define HAL_BOARD_VRBRAIN  8
+// #define HAL_BOARD_VRBRAIN  8
 #define HAL_BOARD_CHIBIOS  10
-#define HAL_BOARD_F4LIGHT  11 // reserved
+// #define HAL_BOARD_F4LIGHT  11 // reserved
 #define HAL_BOARD_ESP32	   12
 #define HAL_BOARD_QURT     13
 #define HAL_BOARD_EMPTY    99
+// @LoggerEnumEnd
 
+// @LoggerEnum: HAL_BOARD_SUBTYPE
 /* Default board subtype is -1 */
 #define HAL_BOARD_SUBTYPE_NONE -1
 
@@ -70,6 +73,8 @@
 #define HAL_BOARD_SUBTYPE_ESP32_NICK            6006
 #define HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT        6007
 #define HAL_BOARD_SUBTYPE_ESP32_S3EMPTY         6008
+#define HAL_BOARD_SUBTYPE_ESP32_S3M5STAMPFLY    6009
+// @LoggerEnumEnd
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
@@ -134,8 +139,6 @@
     #include <AP_HAL/board/linux.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_EMPTY
     #include <AP_HAL/board/empty.h>
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    #include <AP_HAL/board/vrbrain.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 	#include <AP_HAL/board/chibios.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
@@ -150,8 +153,20 @@
 #error "No CONFIG_HAL_BOARD_SUBTYPE set"
 #endif
 
+// HAL_PROGRAM_SIZE_LIMIT_KB is the amount of space we have for
+// instructions.  on ChibiOS this is the sum of onboard and external
+// flash.  BOARD_FLASH_SIZE is reserved for use in the HAL backends
+// (usually only ChibiOS) and should not be used in general code.
+#ifndef HAL_PROGRAM_SIZE_LIMIT_KB
+#error HAL_PROGRAM_SIZE_LIMIT_KB must be defined
+#endif
+
 #ifndef HAL_OS_SOCKETS
 #define HAL_OS_SOCKETS 0
+#endif
+
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 0
 #endif
 
 #ifndef HAL_PARAM_DEFAULTS_PATH
@@ -182,6 +197,10 @@
 #define HAL_REQUIRES_BDSHOT_SUPPORT (defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT)
 #endif
 
+#ifndef AP_NOTIFY_TONEALARM_ENABLED
+#define AP_NOTIFY_TONEALARM_ENABLED 0
+#endif
+
 // support for Extended DShot Telemetry v2 is enabled only if any kind of such telemetry
 // can in principle arrive, either from servo outputs or from IOMCU
 
@@ -191,12 +210,8 @@
 #define AP_EXTENDED_DSHOT_TELEM_V2_ENABLED HAL_REQUIRES_BDSHOT_SUPPORT
 #endif
 
-#ifndef BOARD_FLASH_SIZE
-#define BOARD_FLASH_SIZE 2048
-#endif
-
 #ifndef HAL_GYROFFT_ENABLED
-#define HAL_GYROFFT_ENABLED (BOARD_FLASH_SIZE > 1024)
+#define HAL_GYROFFT_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
 #endif
 
 // enable AP_GyroFFT library only if required:
@@ -204,8 +219,16 @@
 #define HAL_WITH_DSP HAL_GYROFFT_ENABLED
 #endif
 
+#ifndef AP_HAL_UARTDRIVER_ENABLED
+#define AP_HAL_UARTDRIVER_ENABLED 1
+#endif
+
 #ifndef HAL_OS_FATFS_IO
 #define HAL_OS_FATFS_IO 0
+#endif
+
+#ifndef HAL_OS_LITTLEFS_IO
+#define HAL_OS_LITTLEFS_IO 0
 #endif
 
 #ifndef HAL_BARO_DEFAULT
@@ -248,10 +271,6 @@
 
 #ifndef HAL_SUPPORT_RCOUT_SERIAL
 #define HAL_SUPPORT_RCOUT_SERIAL 0
-#endif
-
-#ifndef HAL_FORWARD_OTG2_SERIAL
-#define HAL_FORWARD_OTG2_SERIAL 0
 #endif
 
 #ifndef HAL_HAVE_DUAL_USB_CDC
@@ -360,13 +379,20 @@
 #define __EXTFLASHFUNC__
 #endif
 
+// Use __INITFUNC__ to mark functions which are only called once, at
+// boot.  On some boards we choose to put such functions into areas of
+// flash memory which are slower than others.
+#ifndef __INITFUNC__
+#define __INITFUNC__ __EXTFLASHFUNC__
+#endif
+
 #ifndef HAL_ENABLE_DFU_BOOT
 #define HAL_ENABLE_DFU_BOOT 0
 #endif
 
 
 #ifndef HAL_ENABLE_SENDING_STATS
-#define HAL_ENABLE_SENDING_STATS BOARD_FLASH_SIZE >= 256
+#define HAL_ENABLE_SENDING_STATS HAL_PROGRAM_SIZE_LIMIT_KB >= 256
 #endif
 
 #ifndef HAL_GPIO_LED_ON
@@ -380,7 +406,15 @@
 #endif
 
 #ifndef HAL_WITH_POSTYPE_DOUBLE
-#define HAL_WITH_POSTYPE_DOUBLE BOARD_FLASH_SIZE > 1024
+#define HAL_WITH_POSTYPE_DOUBLE HAL_PROGRAM_SIZE_LIMIT_KB > 1024
+#endif
+
+#ifndef HAL_INS_RATE_LOOP
+#define HAL_INS_RATE_LOOP 0
 #endif
 
 #define HAL_GPIO_LED_OFF (!HAL_GPIO_LED_ON)
+
+#ifndef HAL_REBOOT_ON_MEMORY_ERRORS
+#define HAL_REBOOT_ON_MEMORY_ERRORS defined(IOMCU_FW)
+#endif

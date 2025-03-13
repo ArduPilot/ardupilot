@@ -507,6 +507,9 @@ public:
         return _commands_max;
     }
 
+    // Present - returns true if there is a mission currently loaded, ignoring home which is stored in index 0
+    bool present() const { return _cmd_total > 1; }
+
     /// start - resets current commands to point to the beginning of the mission
     ///     To-Do: should we validate the mission first and return true/false?
     void start();
@@ -631,11 +634,6 @@ public:
     ///     true is return if successful
     bool read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const;
 
-    /// write_cmd_to_storage - write a command to storage
-    ///     cmd.index is used to calculate the storage location
-    ///     true is returned if successful
-    bool write_cmd_to_storage(uint16_t index, const Mission_Command& cmd);
-
     /// write_home_to_storage - writes the special purpose cmd 0 (home) to storage
     ///     home is taken directly from ahrs
     void write_home_to_storage();
@@ -735,9 +733,9 @@ public:
       disarm and mission logic should stop
      */
     enum class Option {
-        CLEAR_ON_BOOT            =  0,  // clear mission on vehicle boot
-        FAILSAFE_TO_BEST_LANDING =  1,  // on failsafe, find fastest path along mission home
-        CONTINUE_AFTER_LAND      =  2,  // continue running mission (do not disarm) after land if takeoff is next waypoint
+        CLEAR_ON_BOOT            = (1U<<0), // clear mission on vehicle boot
+        FAILSAFE_TO_BEST_LANDING = (1U<<1), // on failsafe, find fastest path along mission home
+        CONTINUE_AFTER_LAND      = (1U<<2), // continue running mission (do not disarm) after land if takeoff is next waypoint
     };
     bool option_is_set(Option option) const {
         return (_options.get() & (uint16_t)option) != 0;
@@ -778,6 +776,10 @@ public:
     }
 #endif
 
+#if HAL_LOGGING_ENABLED
+    void set_log_start_mission_item_bit(uint32_t bit) { log_start_mission_item_bit = bit; }
+#endif
+
 private:
     static AP_Mission *_singleton;
 
@@ -806,6 +808,11 @@ private:
     ///
     /// private methods
     ///
+
+    /// write_cmd_to_storage - write a command to storage
+    ///     cmd.index is used to calculate the storage location
+    ///     true is returned if successful
+    bool write_cmd_to_storage(uint16_t index, const Mission_Command& cmd);
 
     /// complete - mission is marked complete and clean-up performed including calling the mission_complete_fn
     void complete();
@@ -865,7 +872,7 @@ private:
 
     // Approximate the distance traveled to return to the mission path. DO_JUMP commands are observed in look forward.
     // Stop searching once reaching a landing or do-land-start
-    bool distance_to_mission_leg(uint16_t index, float &rejoin_distance, uint16_t &rejoin_index, const Location& current_loc);
+    bool distance_to_mission_leg(uint16_t index, uint16_t &search_remaining, float &rejoin_distance, uint16_t &rejoin_index, const Location& current_loc);
 
     // calculate the location of a resume cmd wp
     bool calc_rewind_pos(Mission_Command& rewind_cmd);
@@ -949,6 +956,11 @@ private:
       format to take advantage of new packing
      */
     void format_conversion(uint8_t tag_byte, const Mission_Command &cmd, PackedContent &packed_content) const;
+
+#if HAL_LOGGING_ENABLED
+    // if not -1, this bit in LOG_BITMASK specifies whether to log a message each time we start a command:
+    uint32_t log_start_mission_item_bit = -1;
+#endif
 };
 
 namespace AP

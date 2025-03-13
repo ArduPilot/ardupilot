@@ -56,6 +56,18 @@ extern const AP_HAL::HAL& hal;
 #define HAL_LOGGER_ARM_PERSIST 15
 #endif
 
+#ifndef HAL_LOGGER_MIN_MB_FREE
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+#define HAL_LOGGER_MIN_MB_FREE 10
+#else
+#define HAL_LOGGER_MIN_MB_FREE 2
+#endif
+#else
+#define HAL_LOGGER_MIN_MB_FREE 500
+#endif
+#endif
+
 #ifndef HAL_LOGGING_BACKENDS_DEFAULT
 # if HAL_LOGGING_FILESYSTEM_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::FILESYSTEM
@@ -135,9 +147,9 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @DisplayName: Old logs on the SD card will be deleted to maintain this amount of free space
     // @Description: Set this such that the free space is larger than your largest typical flight log
     // @Units: MB
-    // @Range: 10 1000
+    // @Range: 2 1000
     // @User: Standard
-    AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, 500),
+    AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, HAL_LOGGER_MIN_MB_FREE),
 
     // @Param: _FILE_RATEMAX
     // @DisplayName: Maximum logging rate for file backend
@@ -833,7 +845,7 @@ uint16_t AP_Logger::get_max_num_logs() {
 }
 
 /* we're started if any of the backends are started */
-bool AP_Logger::logging_started(void) {
+bool AP_Logger::logging_started(void) const {
     for (uint8_t i=0; i< _next_backend; i++) {
         if (backends[i]->logging_started()) {
             return true;
@@ -896,9 +908,10 @@ void AP_Logger::Write_Parameter(const char *name, float value)
 }
 
 void AP_Logger::Write_Mission_Cmd(const AP_Mission &mission,
-                                            const AP_Mission::Mission_Command &cmd)
+                                  const AP_Mission::Mission_Command &cmd,
+                                  LogMessages id)
 {
-    FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd));
+    FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd, id));
 }
 
 #if HAL_RALLY_ENABLED

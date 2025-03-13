@@ -18,9 +18,6 @@
 #include <AP_Math/AP_Math.h>
 #include "AP_HAL.h"
 #include "DSP.h"
-#ifndef HAL_NO_UARTDRIVER
-#include <GCS_MAVLink/GCS.h>
-#endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <assert.h>
 #endif
@@ -34,11 +31,11 @@ extern const AP_HAL::HAL &hal;
 #define SQRT_2_3 0.816496580927726f
 #define SQRT_6   2.449489742783178f
 
-DSP::FFTWindowState::FFTWindowState(uint16_t window_size, uint16_t sample_rate, uint8_t sliding_window_size)
-    : _window_size(window_size),
+DSP::FFTWindowState::FFTWindowState(uint16_t window_size, uint16_t sample_rate, uint8_t sliding_window_size) :
+    _bin_resolution((float)sample_rate / (float)window_size),
     _bin_count(window_size / 2),
     _num_stored_freqs(window_size / 2 + 1),
-    _bin_resolution((float)sample_rate / (float)window_size),
+    _window_size(window_size),
     _sliding_window_size(sliding_window_size),
     _current_slice(0)
 {
@@ -286,6 +283,11 @@ float DSP::calculate_jains_estimator(const FFTWindowState* fft, const float* rea
     float y1 = real_fft[k_max-1];
     float y2 = real_fft[k_max];
     float y3 = real_fft[k_max+1];
+
+    if (is_zero(y2) || is_zero(y1)) {
+        return 0.0f;
+    }
+
     float d = 0.0f;
 
     if (y1 > y3) {

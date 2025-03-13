@@ -7,8 +7,8 @@ FLASH_RESERVE_START_KB 0
 # two sectors for bootloader, two for storage
 FLASH_BOOTLOADER_LOAD_KB 64
 
-# board ID for firmware load
-APJ_BOARD_ID 82
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_ARK_CAN_RTK_GPS
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

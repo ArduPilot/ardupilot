@@ -39,6 +39,7 @@
 
 #include "SIM_StratoBlimp.h"
 #include "SIM_Glider.h"
+#include "SIM_FlightAxis.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -77,8 +78,8 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Param: ENGINE_MUL
     // @DisplayName: Engine failure thrust scaler
     // @Description: Thrust from Motors in SIM_ENGINE_FAIL will be multiplied by this factor
-    // @Units: ms
-    AP_GROUPINFO("ENGINE_MUL",     8, SIM,  engine_mul,  1),
+    // @Range: 0 1
+    AP_GROUPINFO("ENGINE_MUL",     8, SIM,  engine_mul,  0),
     // @Param: WIND_SPD
     // @DisplayName: Simulated Wind speed
     // @Description: Allows you to emulate wind in sim
@@ -86,7 +87,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("WIND_SPD",       9, SIM,  wind_speed,  0),
     // @Param: WIND_DIR
-    // @DisplayName: Simulated Wind direction
+    // @DisplayName: Direction simulated wind is coming from
     // @Description: Allows you to set wind direction (true deg) in sim
     // @Units: deg
     // @User: Advanced
@@ -235,6 +236,11 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("IMU_POS",       53, SIM,  imu_pos_offset, 0),
     AP_SUBGROUPEXTENSION("",      54, SIM,  var_ins),
+    // @Param: SONAR_POS
+    // @DisplayName: Sonar Offsets
+    // @Description: XYZ position of the sonar relative to the body frame origin
+    // @Units: m
+    // @Vector3Parameter: 1
     AP_GROUPINFO("SONAR_POS",     55, SIM,  rngfnd_pos_offset, 0),
     // @Param: FLOW_POS
     // @DisplayName: Opflow Pos
@@ -245,7 +251,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Param: ENGINE_FAIL
     // @DisplayName: Engine Fail Mask
     // @Description: mask of motors which SIM_ENGINE_MUL will be applied to
-    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8
+    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15, 15: Servo 16, 16: Servo 17, 17: Servo 18, 18: Servo 19, 19: Servo 20, 20: Servo 21, 21: Servo 22, 22: Servo 23, 23: Servo 24, 24: Servo 25, 25: Servo 26, 26: Servo 27, 27: Servo 28, 28: Servo 29, 29: Servo 30, 30: Servo 31, 31: Servo 32
     AP_GROUPINFO("ENGINE_FAIL",   58, SIM,  engine_fail,  0),
     AP_SUBGROUPINFO(models, "",   59, SIM, SIM::ModelParm),
     AP_SUBGROUPEXTENSION("",      60, SIM,  var_mag),
@@ -622,12 +628,15 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Description: Number of simulated IMUs to create
     AP_GROUPINFO("IMU_COUNT",    23, SIM,  imu_count,  2),
 
+    // @Group: FTOWESC_
     // @Path: ./SIM_FETtecOneWireESC.cpp
     AP_SUBGROUPINFO(fetteconewireesc_sim, "FTOWESC_", 30, SIM, FETtecOneWireESC),
 
+    // @Group: RICH_
     // @Path: ./SIM_RichenPower.cpp
     AP_SUBGROUPINFO(richenpower_sim, "RICH_", 31, SIM, RichenPower),
 
+    // @Group: IE24_
     // @Path: ./SIM_IntelligentEnergy24.cpp
     AP_SUBGROUPINFO(ie24_sim, "IE24_", 32, SIM, IntelligentEnergy24),
 
@@ -659,45 +668,6 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Units: us
     // @User: Advanced
     AP_GROUPINFO("TIME_JITTER",  37, SIM,  loop_time_jitter_us, 0),
-
-    // user settable parameters for the 1st barometer
-    // @Param: BARO_RND
-    // @DisplayName: Baro Noise
-    // @Description: Amount of (evenly-distributed) noise injected into the 1st baro
-    // @Units: m
-    // @User: Advanced
-
-    // @Param: BARO_GLITCH
-    // @DisplayName: Baro Glitch
-    // @Description: Glitch for 1st baro
-    // @Units: m
-    // @User: Advanced
-
-    // user settable parameters for the 2nd barometer
-    // @Param: BAR2_RND
-    // @DisplayName: Baro2 Noise
-    // @Description: Amount of (evenly-distributed) noise injected into the 2nd baro
-    // @Units: m
-    // @User: Advanced
-
-    // @Param: BAR2_GLITCH
-    // @DisplayName: Baro2 Glitch
-    // @Description: Glitch for 2nd baro
-    // @Units: m
-    // @User: Advanced
-
-    // user settable parameters for the 3rd barometer
-    // @Param: BAR3_RND
-    // @DisplayName: Baro3 Noise
-    // @Description: Amount of (evenly-distributed) noise injected into the 3rd baro
-    // @Units: m
-    // @User: Advanced
-
-    // @Param: BAR3_GLITCH
-    // @DisplayName: Baro3 Glitch
-    // @Description: Glitch for 2nd baro
-    // @Units: m
-    // @User: Advanced
 
     // @Param: ESC_TELEM
     // @DisplayName: Simulated ESC Telemetry
@@ -748,6 +718,12 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_GROUPINFO("OSD_ROWS",     54, SIM,  osd_rows, 16),
 #endif
 
+#if AP_SIM_VOLZ_ENABLED
+    // @Group: VOLZ_
+    // @Path: ./SIM_Volz.cpp
+    AP_SUBGROUPINFO(volz_sim, "VOLZ_", 55, SIM, Volz),
+#endif
+
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK
@@ -759,181 +735,38 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 #if HAL_SIM_GPS_ENABLED
 // GPS SITL parameters
 const AP_Param::GroupInfo SIM::var_gps[] = {
-    // @Param: GPS_DISABLE
-    // @DisplayName: GPS 1 disable
-    // @Description: Disables GPS 1
-    // @Values: 0:Enable, 1:GPS Disabled
-    // @User: Advanced
-    AP_GROUPINFO("GPS_DISABLE",    1, SIM,  gps_disable[0], 0),
-    // @Param: GPS_LAG_MS
-    // @DisplayName: GPS 1 Lag
-    // @Description: GPS 1 lag
-    // @Units: ms
-    // @User: Advanced
-    AP_GROUPINFO("GPS_LAG_MS",     2, SIM,  gps_delay_ms[0], 100),
-    // @Param: GPS_TYPE
-    // @DisplayName: GPS 1 type
-    // @Description: Sets the type of simulation used for GPS 1
-    // @Values: 0:None, 1:UBlox, 5:NMEA, 6:SBP, 7:File, 8:Nova, 9:SBP2, 11:Trimble, 19:MSP
-    // @User: Advanced
-    AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  GPS::Type::UBLOX),
-    // @Param: GPS_BYTELOSS
-    // @DisplayName: GPS Byteloss
-    // @Description: Percent of bytes lost from GPS 1
-    // @Units: %
-    // @User: Advanced
-    AP_GROUPINFO("GPS_BYTELOSS",   4, SIM,  gps_byteloss[0],  0),
-    // @Param: GPS_NUMSATS
-    // @DisplayName: GPS 1 Num Satellites
-    // @Description: Number of satellites GPS 1 has in view
-    AP_GROUPINFO("GPS_NUMSATS",    5, SIM,  gps_numsats[0],   10),
-    // @Param: GPS_GLITCH
-    // @DisplayName: GPS 1 Glitch
-    // @Description: Glitch offsets of simulated GPS 1 sensor
-    // @Vector3Parameter: 1
-    // @User: Advanced
-    AP_GROUPINFO("GPS_GLITCH",     6, SIM,  gps_glitch[0],  0),
-    // @Param: GPS_HZ
-    // @DisplayName: GPS 1 Hz
-    // @Description: GPS 1 Update rate
-    // @Units: Hz
-    AP_GROUPINFO("GPS_HZ",         7, SIM,  gps_hertz[0],  5),
-    // @Param: GPS_DRIFTALT
-    // @DisplayName: GPS 1 Altitude Drift
-    // @Description: GPS 1 altitude drift error
-    // @Units: m
-    // @User: Advanced
-    AP_GROUPINFO("GPS_DRIFTALT",   8, SIM,  gps_drift_alt[0], 0),
-    // @Param: GPS_POS
-    // @DisplayName: GPS 1 Position
-    // @Description: GPS 1 antenna phase center position relative to the body frame origin
-    // @Units: m
-    // @Vector3Parameter: 1
-    AP_GROUPINFO("GPS_POS",        9, SIM,  gps_pos_offset[0], 0),
-    // @Param: GPS_NOISE
-    // @DisplayName: GPS 1 Noise
-    // @Description: Amplitude of the GPS1 altitude error
-    // @Units: m
-    // @User: Advanced
-    AP_GROUPINFO("GPS_NOISE",     10, SIM,  gps_noise[0], 0),
-    // @Param: GPS_LOCKTIME
-    // @DisplayName: GPS 1 Lock Time
-    // @Description: Delay in seconds before GPS1 acquires lock
-    // @Units: s
-    // @User: Advanced
-    AP_GROUPINFO("GPS_LOCKTIME",  11, SIM,  gps_lock_time[0], 0),
-    // @Param: GPS_ALT_OFS
-    // @DisplayName: GPS 1 Altitude Offset
-    // @Description: GPS 1 Altitude Error
-    // @Units: m
-    AP_GROUPINFO("GPS_ALT_OFS",   12, SIM,  gps_alt_offset[0], 0),
-    // @Param: GPS_HDG
-    // @DisplayName: GPS 1 Heading
-    // @Description: Enable GPS1 output of NMEA heading HDT sentence or UBLOX_RELPOSNED
-    // @Values: 0:Disabled, 1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO("GPS_HDG",       13, SIM,  gps_hdg_enabled[0], SIM::GPS_HEADING_NONE),
-    // @Param: GPS_ACC
-    // @DisplayName: GPS 1 Accuracy
-    // @Description: GPS 1 Accuracy
-    // @User: Advanced
-    AP_GROUPINFO("GPS_ACC",       14, SIM,  gps_accuracy[0], 0.3),
-    // @Param: GPS_VERR
-    // @DisplayName: GPS 1 Velocity Error
-    // @Description: GPS 1 Velocity Error Offsets in NED
-    // @Vector3Parameter: 1
-    // @User: Advanced
-    AP_GROUPINFO("GPS_VERR",      15, SIM,  gps_vel_err[0], 0),
-    // @Param: GPS_JAM
-    // @DisplayName: GPS jamming enable
-    // @Description: Enable simulated GPS jamming
-    // @User: Advanced
-    // @Values: 0:Disabled, 1:Enabled
-    AP_GROUPINFO("GPS_JAM",       16, SIM,  gps_jam[0], 0),
-    // @Param: GPS2_DISABLE
-    // @DisplayName: GPS 2 disable
-    // @Description: Disables GPS 2
-    // @Values: 0:Enable, 1:GPS Disabled
-    // @User: Advanced
-    AP_GROUPINFO("GPS2_DISABLE",  30, SIM,  gps_disable[1], 1),
-    // @Param: GPS2_LAG_MS
-    // @DisplayName: GPS 2 Lag
-    // @Description: GPS 2 lag in ms
-    // @Units: ms
-    // @User: Advanced
-    AP_GROUPINFO("GPS2_LAG_MS",   31, SIM,  gps_delay_ms[1], 100),
-    // @Param: GPS2_TYPE
-    // @CopyFieldsFrom: SIM_GPS_TYPE
-    // @DisplayName: GPS 2 type
-    // @Description: Sets the type of simulation used for GPS 2
-    AP_GROUPINFO("GPS2_TYPE",     32, SIM,  gps_type[1],  GPS::Type::UBLOX),
-    // @Param: GPS2_BYTELOS
-    // @DisplayName: GPS 2 Byteloss
-    // @Description: Percent of bytes lost from GPS 2
-    // @Units: %
-    // @User: Advanced
-    AP_GROUPINFO("GPS2_BYTELOS",  33, SIM,  gps_byteloss[1],  0),
-    // @Param: GPS2_NUMSATS
-    // @DisplayName: GPS 2 Num Satellites
-    // @Description: Number of satellites GPS 2 has in view
-    AP_GROUPINFO("GPS2_NUMSATS",  34, SIM,  gps_numsats[1],   10),
-    // @Param: GPS2_GLTCH
-    // @DisplayName: GPS 2 Glitch
-    // @Description: Glitch offsets of simulated GPS 2 sensor
-    // @Vector3Parameter: 1
-    // @User: Advanced
-    AP_GROUPINFO("GPS2_GLTCH",    35, SIM,  gps_glitch[1],  0),
-    // @Param: GPS2_HZ
-    // @DisplayName: GPS 2 Hz
-    // @Description: GPS 2 Update rate
-    // @Units: Hz
-    AP_GROUPINFO("GPS2_HZ",       36, SIM,  gps_hertz[1],  5),
-    // @Param: GPS2_DRFTALT
-    // @DisplayName: GPS 2 Altitude Drift
-    // @Description: GPS 2 altitude drift error
-    // @Units: m
-    // @User: Advanced
-    AP_GROUPINFO("GPS2_DRFTALT",  37, SIM,  gps_drift_alt[1], 0),
-    // @Param: GPS2_POS
-    // @DisplayName: GPS 2 Position
-    // @Description: GPS 2 antenna phase center position relative to the body frame origin
-    // @Units: m
-    // @Vector3Parameter: 1
-    AP_GROUPINFO("GPS2_POS",      38, SIM,  gps_pos_offset[1], 0),
-    // @Param: GPS2_NOISE
-    // @DisplayName: GPS 2 Noise
-    // @Description: Amplitude of the GPS2 altitude error
-    // @Units: m
-    // @User: Advanced
-    AP_GROUPINFO("GPS2_NOISE",    39, SIM,  gps_noise[1], 0),
-    // @Param: GPS2_LCKTIME
-    // @DisplayName: GPS 2 Lock Time
-    // @Description: Delay in seconds before GPS2 acquires lock
-    // @Units: s
-    // @User: Advanced
-    AP_GROUPINFO("GPS2_LCKTIME",  40, SIM,  gps_lock_time[1], 0),
-    // @Param: GPS2_ALT_OFS
-    // @DisplayName: GPS 2 Altitude Offset
-    // @Description: GPS 2 Altitude Error
-    // @Units: m
-    AP_GROUPINFO("GPS2_ALT_OFS",  41, SIM,  gps_alt_offset[1], 0),
-    // @Param: GPS2_HDG
-    // @DisplayName: GPS 2 Heading
-    // @Description: Enable GPS2 output of NMEA heading HDT sentence or UBLOX_RELPOSNED
-    // @Values: 0:Disabled, 1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO("GPS2_HDG",      42, SIM,  gps_hdg_enabled[1], SIM::GPS_HEADING_NONE),
-    // @Param: GPS2_ACC
-    // @DisplayName: GPS 2 Accuracy
-    // @Description: GPS 2 Accuracy
-    // @User: Advanced
-    AP_GROUPINFO("GPS2_ACC",      43, SIM,  gps_accuracy[1], 0.3),
-    // @Param: GPS2_VERR
-    // @DisplayName: GPS 2 Velocity Error
-    // @Description: GPS 2 Velocity Error Offsets in NED
-    // @Vector3Parameter: 1
-    // @User: Advanced
-    AP_GROUPINFO("GPS2_VERR",     44, SIM,  gps_vel_err[1], 0),
+    //  1 was GPS_DISABLE
+    //  2 was GPS_LAG_MS
+    //  3 was GPS_TYPE
+    //  4 was GPS_BYTELOSS
+    //  5 was GPS_NUMSATS
+    //  6 was GPS_GLITCH
+    //  7 was GPS_HZ
+    //  8 was GPS_DRIFTALT
+    //  9 was GPS_POS
+    // 10 was GPS_NOISE
+    // 11 was GPS_LOCKTIME
+    // 12 was GPS_ALT_OFS
+    // 13 was GPS_HDG
+    // 14 was GPS_ACC
+    // 15 was GPS_VERR
+    // 16 was GPS_JAM
+
+    // 30 was GPS2_DISABLE
+    // 31 was GPS2_LAG_MS
+    // 32 was GPS2_TYPE
+    // 33 was GPS2_BYTELOSS
+    // 34 was GPS2_NUMSATS
+    // 35 was GPS2_GLITCH
+    // 36 was GPS2_HZ
+    // 37 was GPS2_DRIFTALT
+    // 38 was GPS2_POS
+    // 39 was GPS2_NOISE
+    // 40 was GPS2_LOCKTIME
+    // 41 was GPS2_ALT_OFS
+    // 42 was GPS2_HDG
+    // 43 was GPS2_ACC
+    // 44 was GPS2_VERR
 
     // @Param: INIT_LAT_OFS
     // @DisplayName: Initial Latitude Offset
@@ -953,14 +786,30 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @Description: Log number for GPS:update_file()
     AP_GROUPINFO("GPS_LOG_NUM",   48, SIM,  gps_log_num, 0),
 
-    // @Param: GPS2_JAM
-    // @DisplayName: GPS jamming enable
-    // @Description: Enable simulated GPS jamming
-    // @User: Advanced
-    // @Values: 0:Disabled, 1:Enabled
-    AP_GROUPINFO("GPS2_JAM",      49, SIM,  gps_jam[1], 0),
+    // 49 was GPS2_JAM
 
-    AP_GROUPEND
+#if AP_SIM_MAX_GPS_SENSORS > 0
+     // @Group: GPS1_
+    // @Path: ./SIM_GPS.cpp
+    AP_SUBGROUPINFO(gps[0], "GPS1_", 50, SIM, GPSParms),
+#endif
+#if AP_SIM_MAX_GPS_SENSORS > 1
+    // @Group: GPS2_
+    // @Path: ./SIM_GPS.cpp
+    AP_SUBGROUPINFO(gps[1], "GPS2_", 51, SIM, GPSParms),
+#endif
+#if AP_SIM_MAX_GPS_SENSORS > 2
+    // @Group: GPS3_
+    // @Path: ./SIM_GPS.cpp
+    AP_SUBGROUPINFO(gps[2], "GPS3_", 52, SIM, GPSParms),
+#endif
+#if AP_SIM_MAX_GPS_SENSORS > 3
+    // @Group: GPS4_
+    // @Path: ./SIM_GPS.cpp
+    AP_SUBGROUPINFO(gps[3], "GPS4_", 53, SIM, GPSParms),
+#endif
+
+   AP_GROUPEND
 };
 #endif  // HAL_SIM_GPS_ENABLED
 
@@ -1273,6 +1122,11 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("ACC3_SCAL",    24, SIM, accel_scale[2], 0),
 #endif
+    // @Param: ACC_TRIM
+    // @DisplayName: Accelerometer trim
+    // @Description: Trim applied to simulated accelerometer
+    // @User: Advanced
+    // @Vector3Parameter: 1
     AP_GROUPINFO("ACC_TRIM",     25, SIM, accel_trim, 0),
 
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
@@ -1526,6 +1380,18 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
     AP_SUBGROUPINFO(slung_payload_sim, "SLUP_", 4, SIM::ModelParm, SlungPayloadSim),
 #endif
 
+#if AP_SIM_FLIGHTAXIS_ENABLED
+    // @Group: RFL_
+    // @Path: ./SIM_FlightAxis.cpp
+    AP_SUBGROUPPTR(flightaxis_ptr, "RFL_", 5, SIM::ModelParm, FlightAxis),
+#endif
+
+#if AP_SIM_TETHER_ENABLED
+    // @Group: TETH_
+    // @Path: ./SIM_Tether.cpp
+    AP_SUBGROUPINFO(tether_sim, "TETH_", 6, SIM::ModelParm, TetherSim),
+#endif
+
     AP_GROUPEND
 };
     
@@ -1755,7 +1621,7 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
             post_location.offset(x*10+3, y*10+2);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             if (postfile != nullptr) {
-                ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm/100.0);
+                ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm*0.01);
             }
 #endif
             Vector2f post_position_cm;
@@ -1769,8 +1635,8 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
                 if (intersectionsfile != nullptr) {
                     Location intersection_point = location;
-                    intersection_point.offset(intersection_point_cm.x/100.0,
-                                              intersection_point_cm.y/100.0);
+                    intersection_point.offset(intersection_point_cm.x*0.01,
+                                              intersection_point_cm.y*0.01);
                     ::fprintf(intersectionsfile,
                               "map icon %f %f barrell\n",
                               intersection_point.lat*1e-7,
@@ -1792,8 +1658,8 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
     }
 #endif
 
-    // ::fprintf(stderr, "Distance @%f = %fm\n", angle, min_dist_cm/100.0f);
-    return min_dist_cm / 100.0f;
+    // ::fprintf(stderr, "Distance @%f = %fm\n", angle, min_dist_cm*0.01f);
+    return min_dist_cm * 0.01f;
 }
 
 } // namespace SITL

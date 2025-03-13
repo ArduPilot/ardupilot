@@ -105,7 +105,7 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
     }
 
     // disable compass learning both for calibration and after completion
-    _learn.set_and_save(0);
+    _learn.set_and_save(LearnType::NONE);
 
     return true;
 }

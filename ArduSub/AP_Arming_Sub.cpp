@@ -179,7 +179,7 @@ bool AP_Arming_Sub::disarm(const AP_Arming::Method method, bool do_disarm_checks
     auto &ahrs = AP::ahrs();
 
     // save compass offsets learned by the EKF if enabled
-    if (ahrs.use_compass() && AP::compass().get_learn_type() == Compass::LEARN_EKF) {
+    if (ahrs.use_compass() && AP::compass().get_learn_type() == Compass::LearnType::COPY_FROM_EKF) {
         for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
             Vector3f magOffsets;
             if (ahrs.getMagOffsets(i, magOffsets)) {

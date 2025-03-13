@@ -1,7 +1,7 @@
 include ../MatekL431/hwdef.inc
 
 # enable GPS and compass
-define HAL_PERIPH_ENABLE_GPS
+define AP_PERIPH_GPS_ENABLED 1
 define GPS_MAX_RATE_MS 200
 
 define GPS_MAX_RECEIVERS 1
@@ -12,7 +12,7 @@ define HAL_PERIPH_GPS_PORT_DEFAULT 2
 # allow for F9P GPS modules with moving baseline
 define GPS_MOVING_BASELINE 1
 
-define HAL_PERIPH_ENABLE_MAG
+define AP_PERIPH_MAG_ENABLED 1
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 
 define HAL_COMPASS_MAX_SENSORS 1
@@ -50,7 +50,7 @@ undef HAL_CAN_POOL_SIZE
 define HAL_CAN_POOL_SIZE 12000
 
 # -------------------- MSP --------------------------------
-define HAL_PERIPH_ENABLE_MSP
+define AP_PERIPH_MSP_ENABLED 1
 define HAL_MSP_ENABLED 1
 define AP_PERIPH_MSP_PORT_DEFAULT 1
 

@@ -39,6 +39,7 @@
 #if AP_ROBOTISSERVO_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -268,6 +269,9 @@ void AP_RobotisServo::send_command(uint8_t id, uint16_t reg, uint32_t value, uin
     txpacket[PKT_INSTRUCTION] = INST_WRITE;
     txpacket[PKT_INSTRUCTION+1] = DXL_LOBYTE(reg);
     txpacket[PKT_INSTRUCTION+2] = DXL_HIBYTE(reg);
+
+    // Register values are transmitted as little-endian.
+    value = htole32(value);
     memcpy(&txpacket[PKT_INSTRUCTION+3], &value, MIN(len,4));
 
     send_packet(txpacket);

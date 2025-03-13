@@ -90,7 +90,7 @@ class SPIDeviceManager : public AP_HAL::SPIDeviceManager
 public:
     friend class SPIDevice;
 
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override;
+    AP_HAL::SPIDevice *get_device_ptr(const char *name) override;
 
 private:
     SPIBus *buses;

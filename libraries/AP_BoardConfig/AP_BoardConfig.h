@@ -158,7 +158,8 @@ public:
         WRITE_PROTECT_FLASH = (1<<5),
         WRITE_PROTECT_BOOTLOADER = (1<<6),
         SKIP_BOARD_VALIDATION = (1<<7),
-        DISABLE_ARMING_GPIO = (1<<8)
+        DISABLE_ARMING_GPIO = (1<<8),
+        IO_SAFETY_PINS_AS_PROFILED = (1<<9),
     };
 
     //return true if arming gpio output is disabled
@@ -200,6 +201,12 @@ public:
         return _singleton?(_singleton->_options & ALLOW_SET_INTERNAL_PARM)!=0:false;
     }
     
+#if HAL_WITH_IO_MCU
+    static bool use_safety_as_led(void) {
+        return _singleton?(_singleton->_options & IO_SAFETY_PINS_AS_PROFILED)!=0:false;
+    }
+#endif
+
     // handle press of safety button. Return true if safety state
     // should be toggled
     bool safety_button_handle_pressed(uint8_t press_count);
@@ -239,7 +246,7 @@ private:
         AP_Int16 safety_option;
         AP_Int32 ignore_safety_channels;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        AP_Int8 ser_rtscts[6];
+        AP_Int8 ser_rtscts[9];
         AP_Int8 sbus_out_rate;
 #endif
         AP_Int8 board_type;

@@ -4,7 +4,7 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_AOCODA-RC-H743DUAL
 
 # crystal frequency, setup to use external oscillator
@@ -218,7 +218,4 @@ define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # enable logging to dataflash
-define HAL_LOGGING_DATAFLASH_ENABLED 1
-define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25NXX
-
-
+DATAFLASH littlefs:w25nxx

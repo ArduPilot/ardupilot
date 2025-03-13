@@ -10,14 +10,14 @@
 #define HAL_GYROFFT_ENABLED 0
 #endif
 
+// bootloaders use serial directly:
+#ifndef AP_HAL_UARTDRIVER_ENABLED
+#define AP_HAL_UARTDRIVER_ENABLED 0
+#endif
+
 // bootloaders don't talk to the GCS:
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 0
-#endif
-
-// by default bootloaders don't use INS:
-#ifndef AP_INERTIALSENSOR_ENABLED
-#define AP_INERTIALSENSOR_ENABLED 0
 #endif
 
 #define HAL_MAX_CAN_PROTOCOL_DRIVERS 0
@@ -62,3 +62,8 @@
 #define STM32_DMA_REQUIRED 1
 #endif
 
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 0
+#endif
+
+#define AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED 0

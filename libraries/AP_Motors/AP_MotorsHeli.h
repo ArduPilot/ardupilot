@@ -81,9 +81,6 @@ public:
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
     float get_rsc_setpoint() const { return _main_rotor._rsc_setpoint.get() * 0.01f; }
 
-    // arot_man_enabled - gets contents of manual_autorotation_enabled parameter
-    bool arot_man_enabled() const { return (_main_rotor._rsc_arot_man_enable.get() == 1) ? true : false; }
-
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     virtual void set_desired_rotor_speed(float desired_speed);
 
@@ -121,19 +118,28 @@ public:
     // support passing init_targets_on_arming flag to greater code
     bool init_targets_on_arming() const override { return _heliflags.init_targets_on_arming; }
 
-    // set_in_autorotation - allows main code to set when aircraft is in autorotation.
-    void set_in_autorotation(bool autorotation) { _heliflags.in_autorotation = autorotation; }
+    // helper for vehicle code to request autorotation states in the RSC.
+    void set_autorotation_active(bool tf) { _main_rotor.autorotation.set_active(tf, false); }
 
-    // get_in_autorotation - allows main code to determine when aircraft is in autorotation.
-    bool get_in_autorotation() { return _heliflags.in_autorotation; }
+    // helper to force the RSC autorotation state to deactivated
+    void force_deactivate_autorotation(void) { _main_rotor.autorotation.set_active(false, true); }
 
-    // set_enable_bailout - allows main code to set when RSC can immediately ramp engine instantly
-    void set_enable_bailout(bool bailout) { _heliflags.enable_bailout = bailout; }
+    // true if RSC is actively autorotating or bailing out
+    bool in_autorotation(void) const { return _main_rotor.in_autorotation(); }
+
+    // true if bailing out autorotation
+    bool autorotation_bailout(void) const { return _main_rotor.autorotation.bailing_out(); }
+
+    // true if the autorotation functionality within the rsc has been enabled
+    bool rsc_autorotation_enabled(void) const { return _main_rotor.autorotation.enabled(); }
 
     // set land complete flag
     void set_land_complete(bool landed) { _heliflags.land_complete = landed; }
-	
-	//return zero lift collective position
+
+    // function to calculate and set the normalised collective position given a desired blade pitch angle (deg)
+    void set_coll_from_ang(float col_ang_deg);
+
+    //return zero lift collective position
     float get_coll_mid() const { return _collective_zero_thrust_pct; }
 
     // enum for heli optional features
@@ -154,7 +160,7 @@ public:
     void _output_test_seq(uint8_t motor_seq, int16_t pwm) override {};
 
     // Helper function for param conversions to be done in motors class
-    virtual void heli_motors_param_conversions(void) { return; }
+    virtual void heli_motors_param_conversions(void);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -248,8 +254,6 @@ protected:
         uint8_t rotor_runup_complete    : 1;    // true if the rotors have had enough time to wind up
         uint8_t init_targets_on_arming  : 1;    // 0 if targets were initialized, 1 if targets were not initialized after arming
         uint8_t save_rsc_mode           : 1;    // used to determine the rsc mode needs to be saved while disarmed
-        uint8_t in_autorotation         : 1;    // true if aircraft is in autorotation
-        uint8_t enable_bailout          : 1;    // true if allowing RSC to quickly ramp up engine
         uint8_t servo_test_running      : 1;    // true if servo_test is running
         uint8_t land_complete           : 1;    // true if aircraft is landed
         uint8_t takeoff_collective      : 1;    // true if collective is above 30% between H_COL_MID and H_COL_MAX

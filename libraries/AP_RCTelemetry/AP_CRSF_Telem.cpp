@@ -93,6 +93,7 @@ void AP_CRSF_Telem::setup_wfq_scheduler(void)
     add_scheduler_entry(50, 100);   // heartbeat        10Hz
     add_scheduler_entry(5, 20);     // parameters       50Hz (generally not active unless requested by the TX)
     add_scheduler_entry(50, 200);   // baro_vario        5Hz
+    add_scheduler_entry(50, 200);   // vario             5Hz
     add_scheduler_entry(50, 120);   // Attitude and compass 8Hz
     add_scheduler_entry(200, 1000); // VTX parameters    1Hz
     add_scheduler_entry(1300, 500); // battery           2Hz
@@ -975,7 +976,7 @@ int8_t AP_CRSF_Telem::get_vertical_speed_packed()
 // prepare vario data
 void AP_CRSF_Telem::calc_baro_vario()
 {
-    _telem.bcast.baro_vario.altitude_packed = get_altitude_packed();
+    _telem.bcast.baro_vario.altitude_packed = htobe16(get_altitude_packed());
     _telem.bcast.baro_vario.vertical_speed_packed = get_vertical_speed_packed();
 
     _telem_size = sizeof(BaroVarioFrame);
@@ -987,7 +988,7 @@ void AP_CRSF_Telem::calc_baro_vario()
 // prepare vario data
 void AP_CRSF_Telem::calc_vario()
 {
-    _telem.bcast.vario.v_speed = int16_t(get_vspeed_ms() * 100.0f);
+    _telem.bcast.vario.v_speed = htobe16(int16_t(get_vspeed_ms() * 100.0f));
     _telem_size = sizeof(VarioFrame);
     _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VARIO;
 
@@ -1288,8 +1289,13 @@ void AP_CRSF_Telem::calc_parameter() {
 class BufferChunker {
 public:
     BufferChunker(uint8_t* buf, uint16_t chunk_size, uint16_t start_chunk) :
-        _buf(buf), _idx(0), _start_chunk(start_chunk), _chunk_size(chunk_size), _chunk(0), _bytes(0) {
-    }
+        _buf(buf),
+        _idx(0),
+        _bytes(0),
+        _chunk(0),
+        _start_chunk(start_chunk),
+        _chunk_size(chunk_size)
+    { }
 
     // accumulate a string, writing to the underlying buffer as required
     void put_string(const char* str, uint16_t str_len) {

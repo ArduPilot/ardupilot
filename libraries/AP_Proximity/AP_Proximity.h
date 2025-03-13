@@ -90,6 +90,9 @@ public:
 #if AP_PROXIMITY_MR72_ENABLED
         MR72 = 17,
 #endif
+#if AP_PROXIMITY_HEXSOONRADAR_ENABLED
+        Hexsoon_Radar = 18,
+#endif
     };
 
     enum class Status {
@@ -99,7 +102,7 @@ public:
     };
 
     // detect and initialise any available proximity sensors
-    void init();
+    __INITFUNC__ void init();
 
     // update state of all proximity sensors. Should be called at high rate from main loop
     void update();

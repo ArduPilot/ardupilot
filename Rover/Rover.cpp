@@ -121,7 +121,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if HAL_SPRAYER_ENABLED
     SCHED_TASK_CLASS(AC_Sprayer,          &rover.g2.sprayer,       update,          3,  90,  99),
 #endif
-    SCHED_TASK(compass_save,            0.1,  200, 105),
 #if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Logger,           &rover.logger,           periodic_tasks, 50,  300, 108),
 #endif
@@ -435,7 +434,7 @@ void Rover::one_second_loop(void)
     set_control_channels();
 
     // cope with changes to aux functions
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);

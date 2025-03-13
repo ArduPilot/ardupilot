@@ -61,8 +61,9 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
     // @Param: LOOP_RATE
     // @DisplayName: Scheduling main loop rate
     // @Description: This controls the rate of the main control loop in Hz. This should only be changed by developers. This only takes effect on restart. Values over 400 are considered highly experimental.
-    // @Values: 50:50Hz,100:100Hz,200:200Hz,250:250Hz,300:300Hz,400:400Hz
+    // @Range: 50 400
     // @RebootRequired: True
+    // @Units: Hz
     // @User: Advanced
     AP_GROUPINFO("LOOP_RATE",  1, AP_Scheduler, _loop_rate_hz, SCHEDULER_DEFAULT_LOOP_RATE),
 
@@ -446,6 +447,11 @@ void AP_Scheduler::update_logging()
 // Write a performance monitoring packet
 void AP_Scheduler::Log_Write_Performance()
 {
+    uint64_t rtc = 0;
+#if AP_RTC_ENABLED
+    UNUSED_RESULT(AP::rtc().get_utc_usec(rtc));
+#endif
+
     const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
@@ -463,6 +469,7 @@ void AP_Scheduler::Log_Write_Performance()
         i2c_count        : pd.i2c_count,
         i2c_isr_count    : pd.i2c_isr_count,
         extra_loop_us    : extra_loop_us,
+        rtc              : rtc,
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }

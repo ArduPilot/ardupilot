@@ -157,13 +157,24 @@ public:
     enum class OPTION {
         PPP_ETHERNET_GATEWAY=(1U<<0),
 #if AP_NETWORKING_CAN_MCAST_ENABLED
-        CAN1_MCAST_GATEWAY=(1U<<1),
-        CAN2_MCAST_GATEWAY=(1U<<2),
+        CAN1_MCAST_ENDPOINT=(1U<<1),
+        CAN2_MCAST_ENDPOINT=(1U<<2),
+#if AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED
+        CAN1_MCAST_BRIDGED=(1U<<3),
+        CAN2_MCAST_BRIDGED=(1U<<4),
+#endif
 #endif
     };
     bool option_is_set(OPTION option) const {
         return (param.options.get() & int32_t(option)) != 0;
     }
+
+#if AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED
+    bool is_can_mcast_ep_bridged(uint8_t bus) const {
+        return (option_is_set(OPTION::CAN1_MCAST_BRIDGED) && bus == 0) ||
+               (option_is_set(OPTION::CAN2_MCAST_BRIDGED) && bus == 1);
+    }
+#endif
 
 private:
     static AP_Networking *singleton;
@@ -276,7 +287,19 @@ private:
         bool have_received;
         bool close_on_recv_error;
         uint32_t last_udp_srv_recv_time_ms;
+
+        // statistics
+        uint32_t tx_stats_bytes;
+        uint32_t rx_stats_bytes;
+
         HAL_Semaphore sem;
+
+    protected:
+#if HAL_UART_STATS_ENABLED
+        // Getters for cumulative tx and rx counts
+        uint32_t get_total_tx_bytes() const override { return tx_stats_bytes; }
+        uint32_t get_total_rx_bytes() const override { return rx_stats_bytes; }
+#endif
     };
 #endif // AP_NETWORKING_REGISTER_PORT_ENABLED
 
@@ -289,12 +312,14 @@ private:
         TEST_TCP_CLIENT = (1U<<1),
         TEST_TCP_DISCARD = (1U<<2),
         TEST_TCP_REFLECT = (1U<<3),
+        TEST_CONNECTOR_LOOPBACK = (1U<<4),
     };
     void start_tests(void);
     void test_UDP_client(void);
     void test_TCP_client(void);
     void test_TCP_discard(void);
     void test_TCP_reflect(void);
+    void test_connector_loopback(void);
 #endif // AP_NETWORKING_TESTS_ENABLED
 
 #if AP_NETWORKING_REGISTER_PORT_ENABLED

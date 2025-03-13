@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1073
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MAMBAH743_V4
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -20,14 +20,12 @@ define CH_CFG_ST_RESOLUTION 16
 
 # leave 1 sectors free
 FLASH_RESERVE_START_KB 384
+env OPTIMIZE -O2
 
 # use last 2 pages for flash storage
 # H743 has 16 pages of 128k each
 STORAGE_FLASH_PAGE 1
 define HAL_STORAGE_SIZE 32768
-
-# enable logging to dataflash
-define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 # one I2C bus
 I2C_ORDER I2C1 I2C2
@@ -38,7 +36,6 @@ SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 UART5 USART6 UART7 UART8
 # buzzer
 PE3 BUZZER OUTPUT LOW PULLDOWN GPIO(80)
 define HAL_BUZZER_PIN 80
-define AP_NOTIFY_TONEALARM_ENABLED 1
 
 # PA10 IO-debug-console
 PA11 OTG_FS_DM OTG1
@@ -182,7 +179,7 @@ IMU BMI270 SPI:bmi270 ROTATION_PITCH_180
 IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180
 IMU Invensensev3 SPI:icm42688_2 ROTATION_ROLL_180_YAW_270
 
-define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25NXX
+DATAFLASH littlefs:w25nxx
 
 # DPS280 or SPL06 integrated on I2C bus
 BARO DPS280 I2C:0:0x76
@@ -194,5 +191,3 @@ define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define DEFAULT_NTF_LED_TYPES 257
-
-define AP_SCRIPTING_ENABLED 0

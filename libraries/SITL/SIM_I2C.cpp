@@ -22,21 +22,27 @@
 #include <SITL/SITL.h>
 
 #include "SIM_I2C.h"
-#include "SIM_ToshibaLED.h"
-#include "SIM_MaxSonarI2CXL.h"
+
+#include "SIM_Airspeed_DLVR.h"
+#include "SIM_AS5600.h"
+#include "SIM_BattMonitor_SMBus_Generic.h"
 #include "SIM_BattMonitor_SMBus_Maxell.h"
 #include "SIM_BattMonitor_SMBus_Rotoye.h"
-#include "SIM_Airspeed_DLVR.h"
-#include "SIM_Temperature_TSYS01.h"
-#include "SIM_Temperature_TSYS03.h"
-#include "SIM_Temperature_MCP9600.h"
 #include "SIM_ICM40609.h"
+#include "SIM_INA3221.h"
 #include "SIM_IS31FL3195.h"
-#include "SIM_LP5562.h"
 #include "SIM_LM2755.h"
+#include "SIM_LP5562.h"
+#include "SIM_MaxSonarI2CXL.h"
 #include "SIM_MS5525.h"
 #include "SIM_MS5611.h"
 #include "SIM_QMC5883L.h"
+#include "SIM_Temperature_MCP9600.h"
+#include "SIM_Temperature_SHT3x.h"
+#include "SIM_Temperature_TSYS01.h"
+#include "SIM_Temperature_TSYS03.h"
+#include "SIM_TeraRangerI2C.h"
+#include "SIM_ToshibaLED.h"
 
 #include <signal.h>
 
@@ -58,20 +64,41 @@ static IgnoredI2CDevice ignored;
 #if AP_SIM_TOSHIBALED_ENABLED
 static ToshibaLED toshibaled;
 #endif
+#if AP_SIM_MAXSONAR_I2C_XL_ENABLED
 static MaxSonarI2CXL maxsonari2cxl;
 static MaxSonarI2CXL maxsonari2cxl_2;
+#endif
+#if AP_SIM_BATT_MONITOR_SMBUS_MAXELL_ENABLED
 static Maxell maxell;
+#endif
+#if AP_SIM_BATT_MONITOR_SMBUS_ROTOYE_ENABLED
 static Rotoye rotoye;
+#endif
 static SIM_BattMonitor_SMBus_Generic smbus_generic;
+#if AP_SIM_AIRSPEED_DLVR_ENABLED
 static Airspeed_DLVR airspeed_dlvr;
+#endif
+#if AP_SIM_TEMPERATURE_SHT3X_ENABLED
+static SHT3x sht3x;
+#endif  // AP_SIM_TEMPERATURE_SHT3X_ENABLED
+#if AP_SIM_TEMPERATURE_TSYS01_ENABLED
 static TSYS01 tsys01;
+#endif
 #if AP_SIM_TSYS03_ENABLED
 static TSYS03 tsys03;
 #endif
+#if AP_SIM_TEMPERATURE_MCP9600_ENABLED
 static MCP9600 mcp9600;
+#endif
+#if AP_SIM_ICM40609_ENABLED
 static ICM40609 icm40609;
+#endif
+#if AP_SIM_MS5525_ENABLED
 static MS5525 ms5525;
+#endif
+#if AP_SIM_MS5611_ENABLED
 static MS5611 ms5611;
+#endif
 #if AP_SIM_LP5562_ENABLED
 static LP5562 lp5562;
 #endif
@@ -85,28 +112,67 @@ static IS31FL3195 is31fl3195;
 #if AP_SIM_COMPASS_QMC5883L_ENABLED
 static QMC5883L qmc5883l;
 #endif
+#if AP_SIM_INA3221_ENABLED
+static INA3221 ina3221;
+#endif
+#if AP_SIM_TERARANGERI2C_ENABLED
+static TeraRangerI2C terarangeri2c;
+#endif
+#if AP_SIM_AS5600_ENABLED
+static AS5600 as5600;  // AoA sensor
+#endif  // AP_SIM_AS5600_ENABLED
 
 struct i2c_device_at_address {
     uint8_t bus;
     uint8_t addr;
     I2CDevice &device;
 } i2c_devices[] {
+#if AP_SIM_TERARANGERI2C_ENABLED
+    { 0, 0x31, terarangeri2c },   // RNGFNDx_TYPE = 14, RNGFNDx_ADDR = 49
+#endif  // AP_SIM_TERARANGERI2C_ENABLED
+#if AP_SIM_MAXSONAR_I2C_XL_ENABLED
     { 0, 0x70, maxsonari2cxl },   // RNGFNDx_TYPE = 2, RNGFNDx_ADDR = 112
+#endif
+#if AP_SIM_TEMPERATURE_MCP9600_ENABLED
     { 0, 0x60, mcp9600 }, // 0x60 is low address
+#endif
+#if AP_SIM_MAXSONAR_I2C_XL_ENABLED
     { 0, 0x71, maxsonari2cxl_2 }, // RNGFNDx_TYPE = 2, RNGFNDx_ADDR = 113
+#endif
+#if AP_SIM_ICM40609_ENABLED
     { 1, 0x01, icm40609 },
+#endif
+#if AP_SIM_TEMPERATURE_SHT3X_ENABLED
+    { 1, 0x44, sht3x },
+#endif
 #if AP_SIM_TOSHIBALED_ENABLED
     { 1, 0x55, toshibaled },
 #endif
     { 1, 0x38, ignored }, // NCP5623
     { 1, 0x39, ignored }, // NCP5623C
+#if AP_SIM_AS5600_ENABLED
+    { 1, 0x36, as5600 },
+#endif
     { 1, 0x40, ignored }, // KellerLD
+#if AP_SIM_MS5525_ENABLED
     { 1, 0x76, ms5525 },  // MS5525: ARSPD_TYPE = 4
+#endif
+#if AP_SIM_INA3221_ENABLED
+    { 1, 0x42, ina3221 },
+#endif
+#if AP_SIM_TEMPERATURE_TSYS01_ENABLED
     { 1, 0x77, tsys01 },
+#endif
+#if AP_SIM_BATT_MONITOR_SMBUS_ROTOYE_ENABLED
     { 1, 0x0B, rotoye },        // Rotoye: BATTx_MONITOR 19, BATTx_I2C_ADDR 13
+#endif
+#if AP_SIM_BATT_MONITOR_SMBUS_MAXELL_ENABLED
     { 2, 0x0B, maxell },        // Maxell: BATTx_MONITOR 16, BATTx_I2C_ADDR 13
+#endif
     { 3, 0x0B, smbus_generic},  // BATTx_MONITOR 7, BATTx_I2C_ADDR 13
+#if AP_SIM_AIRSPEED_DLVR_ENABLED
     { 2, 0x28, airspeed_dlvr }, // ARSPD_TYPE = 7 5inch H2O sensor
+#endif
 #if AP_SIM_LP5562_ENABLED
     { 2, 0x30, lp5562 },        // LP5562 RGB LED driver
 #endif
@@ -119,7 +185,9 @@ struct i2c_device_at_address {
 #if AP_SIM_TSYS03_ENABLED
     { 2, 0x40, tsys03 },
 #endif
+#if AP_SIM_MS5611_ENABLED
     { 2, 0x77, ms5611 },        // MS5611: BARO_PROBE_EXT = 2
+#endif
 #if AP_SIM_COMPASS_QMC5883L_ENABLED
     { 2, 0x0D, qmc5883l },
 #endif

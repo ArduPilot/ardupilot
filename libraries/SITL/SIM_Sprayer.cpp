@@ -76,7 +76,7 @@ void Sprayer::update(const struct sitl_input &input)
         if (pump_demand < 0) { // never updated
             pump_demand = 0;
         }
-        const float pump_max_change = pump_slew_rate / 100.0f * dt;
+        const float pump_max_change = pump_slew_rate * 0.01f * dt;
         last_pump_output =
             constrain_float(pump_demand, last_pump_output - pump_max_change, last_pump_output + pump_max_change);
         last_pump_output = constrain_float(last_pump_output, 0, 1);

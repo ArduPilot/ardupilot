@@ -27,6 +27,7 @@
 #include <AP_RPM/AP_RPM_config.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_Relay/AP_Relay_config.h>
+#include <RC_Channel/RC_Channel.h>
 
 #if AP_ICENGINE_TCA9554_STARTER_ENABLED
 #include "AP_ICEngine_TCA9554.h"
@@ -69,6 +70,9 @@ public:
     // do we have throttle while disarmed enabled?
     bool allow_throttle_while_disarmed(void) const;
 
+    // Handle incoming aux function trigger
+    void do_aux_function(const RC_Channel::AuxFuncTrigger &trigger);
+
 #if AP_RELAY_ENABLED
     // Needed for param conversion from relay numbers to functions
     bool get_legacy_ignition_relay_index(int8_t &num);
@@ -95,7 +99,7 @@ private:
 
     // min pwm on start channel for engine stop
     AP_Int16 start_chan_min_pwm;
-    
+
 #if AP_RPM_ENABLED
     // which RPM instance to use
     AP_Int8 rpm_instance;
@@ -107,6 +111,10 @@ private:
     // delay between start attempts (seconds)
     AP_Float starter_delay;
 
+    // max crank retry
+    AP_Int8 max_crank_retry;
+    int8_t crank_retry_ct;
+    
 #if AP_RPM_ENABLED
     // RPM above which engine is considered to be running
     AP_Int32 rpm_threshold;
@@ -117,6 +125,9 @@ private:
 
     // time when we last ran the starter
     uint32_t starter_last_run_ms;
+
+    // time when we last had an uncommanded engine stop
+    uint32_t last_uncommanded_stop_ms;
 
     // throttle percentage for engine start
     AP_Int8 start_percent;
@@ -162,9 +173,8 @@ private:
         return (options & uint16_t(option)) != 0;
     }
 
-    // start_chan debounce
-    uint16_t start_chan_last_value = 1500;
-    uint32_t start_chan_last_ms;
+    // Last aux function value
+    RC_Channel::AuxSwitchPos aux_pos = RC_Channel::AuxSwitchPos::MIDDLE;
 
 #if AP_ICENGINE_TCA9554_STARTER_ENABLED
     AP_ICEngine_TCA9554 tca9554_starter;

@@ -14,12 +14,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-#include <AP_Filesystem/AP_Filesystem_config.h>
-
-#ifndef AP_TERRAIN_AVAILABLE
-#define AP_TERRAIN_AVAILABLE AP_FILESYSTEM_FILE_READING_ENABLED
-#endif
+#include "AP_Terrain_config.h"
 
 #if AP_TERRAIN_AVAILABLE
 
@@ -114,6 +109,9 @@ public:
     void send_request(mavlink_channel_t chan);
 
     // handle terrain data and reports from GCS
+    // send a terrain report for the current location, extrapolating height as we do for navigation:
+    void send_report(mavlink_channel_t chan);
+    // send a terrain report or Location loc
     void send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate);
     void handle_data(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_terrain_check(mavlink_channel_t chan, const mavlink_message_t &msg);

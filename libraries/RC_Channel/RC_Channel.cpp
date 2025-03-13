@@ -203,6 +203,8 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 99:AUTO RTL
     // @Values{Copter, Rover, Plane, Blimp}: 100:KillIMU1, 101:KillIMU2
     // @Values{Copter, Rover, Plane}: 102:Camera Mode Toggle
+    // @Values{Copter, Rover, Plane, Blimp, Sub, Tracker}: 103: EKF lane switch attempt
+    // @Values{Copter, Rover, Plane, Blimp, Sub, Tracker}: 104: EKF yaw reset
     // @Values{Copter, Rover, Plane}: 105:GPS Disable Yaw
     // @Values{Rover, Plane}: 106:Disable Airspeed Use
     // @Values{Plane}: 107:Enable FW Autotune
@@ -242,6 +244,9 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 178:FlightMode Pause/Resume
     // @Values{Plane}: 179:ICEngine start / stop
     // @Values{Copter, Plane}: 180:Test autotuned gains after tune is complete
+    // @Values{Plane}: 181: QuickTune
+    // @Values{Copter}: 182: AHRS AutoTrim
+    // @Values{Plane}: 183: AUTOLAND mode
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -251,7 +256,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Rover}: 211:Walking Height
     // @Values{Copter, Rover, Plane}: 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw
     // @Values{Copter}: 219:Transmitter Tuning
-    // @Values{Copter, Rover, Plane}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
+    // @Values{Copter, Rover, Plane}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8, 308:Scripting9, 309:Scripting10, 310:Scripting11, 311:Scripting12, 312:Scripting13, 313:Scripting14, 314:Scripting15, 315:Scripting16
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE|AP_PARAM_FRAME_BLIMP),
 
@@ -684,6 +689,14 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::SCRIPTING_6:
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
+    case AUX_FUNC::SCRIPTING_9:
+    case AUX_FUNC::SCRIPTING_10:
+    case AUX_FUNC::SCRIPTING_11:
+    case AUX_FUNC::SCRIPTING_12:
+    case AUX_FUNC::SCRIPTING_13:
+    case AUX_FUNC::SCRIPTING_14:
+    case AUX_FUNC::SCRIPTING_15:
+    case AUX_FUNC::SCRIPTING_16:
 #endif
 #if AP_VIDEOTX_ENABLED
     case AUX_FUNC::VTX_POWER:
@@ -741,7 +754,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
     case AUX_FUNC::MOTOR_ESTOP:
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
     case AUX_FUNC::RUNCAM_CONTROL:
     case AUX_FUNC::RUNCAM_OSD_CONTROL:
 #endif
@@ -770,7 +783,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
 #if AP_AHRS_ENABLED
     case AUX_FUNC::AHRS_TYPE:
-        run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
+        run_aux_function(ch_option, ch_flag, AuxFuncTrigger::Source::INIT, ch_in);
         break;
 #endif
     default:
@@ -848,7 +861,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #endif
     { AUX_FUNC::SAILBOAT_MOTOR_3POS,"SailboatMotor"},
     { AUX_FUNC::SURFACE_TRACKING,"SurfaceTracking"},
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
     { AUX_FUNC::RUNCAM_CONTROL,"RunCamControl"},
     { AUX_FUNC::RUNCAM_OSD_CONTROL,"RunCamOSDControl"},
 #endif
@@ -968,7 +981,7 @@ bool RC_Channel::read_aux()
 #endif
 
     // debounced; undertake the action:
-    run_aux_function(_option, new_position, AuxFuncTriggerSource::RC);
+    run_aux_function(_option, new_position, AuxFuncTrigger::Source::RC, ch_in);
     return true;
 }
 
@@ -1168,7 +1181,7 @@ bool RC_Channel::do_aux_function_camera_lens(const AuxSwitchPos ch_flag)
 }
 #endif // AP_CAMERA_ENABLED
 
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
 void RC_Channel::do_aux_function_runcam_control(const AuxSwitchPos ch_flag)
 {
     AP_RunCam *runcam = AP::runcam();
@@ -1393,12 +1406,20 @@ void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const
 }
 #endif  // HAL_MOUNT_ENABLED
 
-bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source)
+bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTrigger::Source source, uint16_t source_index)
 {
 #if AP_SCRIPTING_ENABLED
     rc().set_aux_cached(ch_option, pos);
 #endif
-    const bool ret = do_aux_function(ch_option, pos);
+
+    const AuxFuncTrigger trigger {
+        func: ch_option,
+        pos: pos,
+        source: source,
+        source_index: source_index,
+    };
+
+    const bool ret = do_aux_function(trigger);
 
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: AUXF
@@ -1409,18 +1430,20 @@ bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncT
     // @Field: pos: switch position when function triggered
     // @FieldValueEnum: pos: RC_Channel::AuxSwitchPos
     // @Field: source: source of auxiliary function invocation
-    // @FieldValueEnum: source: RC_Channel::AuxFuncTriggerSource
+    // @FieldValueEnum: source: RC_Channel::AuxFuncTrigger::Source
+    // @Field: index: index within source. 0 indexed. Invalid for scripting.
     // @Field: result: true if function was successful
     AP::logger().Write(
         "AUXF",
-        "TimeUS,function,pos,source,result",
-        "s#---",
-        "F----",
-        "QHBBB",
+        "TimeUS,function,pos,source,index,result",
+        "s#----",
+        "F-----",
+        "QHBBHB",
         AP_HAL::micros64(),
         uint16_t(ch_option),
         uint8_t(pos),
         uint8_t(source),
+        source_index,
         uint8_t(ret)
     );
 #endif
@@ -1428,8 +1451,11 @@ bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncT
     return ret;
 }
 
-bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 {
+    const AUX_FUNC &ch_option = trigger.func;
+    const AuxSwitchPos &ch_flag = trigger.pos;
+
     switch (ch_option) {
 #if AP_FENCE_ENABLED
     case AUX_FUNC::FENCE:
@@ -1473,7 +1499,7 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         break;
 #endif  // AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
 
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
     case AUX_FUNC::RUNCAM_CONTROL:
         do_aux_function_runcam_control(ch_flag);
         break;
@@ -1541,7 +1567,7 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
     case AUX_FUNC::COMPASS_LEARN:
         if (ch_flag == AuxSwitchPos::HIGH) {
             Compass &compass = AP::compass();
-            compass.set_learn_type(Compass::LEARN_INFLIGHT, false);
+            compass.set_learn_type(Compass::LearnType::INFLIGHT, false);
         }
         break;
 
@@ -1863,6 +1889,14 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
     case AUX_FUNC::SCRIPTING_6:
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
+    case AUX_FUNC::SCRIPTING_9:
+    case AUX_FUNC::SCRIPTING_10:
+    case AUX_FUNC::SCRIPTING_11:
+    case AUX_FUNC::SCRIPTING_12:
+    case AUX_FUNC::SCRIPTING_13:
+    case AUX_FUNC::SCRIPTING_14:
+    case AUX_FUNC::SCRIPTING_15:
+    case AUX_FUNC::SCRIPTING_16:
 #endif
         break;
 
@@ -1887,6 +1921,7 @@ void RC_Channel::init_aux()
     if (!read_3pos_switch(position)) {
         position = AuxSwitchPos::LOW;
     }
+
     init_aux_function((AUX_FUNC)option.get(), position);
 }
 
@@ -1921,12 +1956,26 @@ RC_Channel::AuxSwitchPos RC_Channel::get_aux_switch_pos() const
     return position;
 }
 
-// return switch position value as LOW, MIDDLE, HIGH
-// if reading the switch fails then it returns LOW
-RC_Channel::AuxSwitchPos RC_Channels::get_channel_pos(const uint8_t rcmapchan) const
+// return stick gesture pos as LOW, MIDDLE, HIGH
+// this function uses different threshold values to RC_Chanel::get_aux_switch_pos()
+// to avoid glitching on the stick travel and also always honours channel reversal
+RC_Channel::AuxSwitchPos RC_Channel::get_stick_gesture_pos() const
 {
-    const RC_Channel* chan = rc().channel(rcmapchan-1);
-    return chan != nullptr ? chan->get_aux_switch_pos() : RC_Channel::AuxSwitchPos::LOW;
+    const uint16_t in = get_radio_in();
+    if (in <= 900 || in >= 2200) {
+        return RC_Channel::AuxSwitchPos::LOW;
+    }
+
+    // switch is reversed if 'reversed' option set on channel and switches reverse is allowed by RC_OPTIONS
+    bool switch_reversed = get_reverse();
+
+    if (in < RC_Channel::AUX_PWM_TRIGGER_LOW) {
+        return switch_reversed ? RC_Channel::AuxSwitchPos::HIGH : RC_Channel::AuxSwitchPos::LOW;
+    }
+    if (in > RC_Channel::AUX_PWM_TRIGGER_HIGH) {
+        return switch_reversed ? RC_Channel::AuxSwitchPos::LOW : RC_Channel::AuxSwitchPos::HIGH;
+    }
+    return RC_Channel::AuxSwitchPos::MIDDLE;
 }
 
 RC_Channel *RC_Channels::find_channel_for_option(const RC_Channel::AUX_FUNC option)

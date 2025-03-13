@@ -107,7 +107,7 @@ void EFI_MegaSquirt::update()
         if (crc == crc2) {
             send_table();
         } else {
-            printf("BAD EFI CRC: 0x%08x 0x%08x\n", crc, crc2);
+            printf("BAD EFI CRC: 0x%08x 0x%08x\n", (unsigned int)crc, (unsigned int)crc2);
         }
         ofs = 0;
     }

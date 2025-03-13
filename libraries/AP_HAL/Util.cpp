@@ -9,6 +9,8 @@
 #else
 #include <time.h>
 #endif
+#include <AP_InternalError/AP_InternalError.h>
+#include <AP_Math/AP_Math.h>
 
 /* Helper class implements AP_HAL::Print so we can use utility/vprintf */
 class BufferPrinter : public AP_HAL::BetterStream {
@@ -77,4 +79,43 @@ void AP_HAL::Util::set_soft_armed(const bool b)
             persistent_data.armed = b;
         }
     }
+}
+
+extern const AP_HAL::HAL& hal;
+#include <stdio.h>
+// stack overflow hook for low level RTOS code, C binding
+void AP_stack_overflow(const char *thread_name)
+{
+#if HAL_REBOOT_ON_MEMORY_ERRORS
+    (void)thread_name;
+    hal.scheduler->reboot(false);
+#else
+    static bool done_stack_overflow;
+    INTERNAL_ERROR(AP_InternalError::error_t::stack_overflow);
+    if (!done_stack_overflow) {
+        // we don't want to record the thread name more than once, as
+        // first overflow can trigger a 2nd
+        strncpy_noterm(hal.util->persistent_data.thread_name4, thread_name, 4);
+        done_stack_overflow = true;
+    }
+    hal.util->persistent_data.fault_type = 42; // magic value
+    if (!hal.util->get_soft_armed()) {
+        AP_HAL::panic("stack overflow %s", thread_name);
+    }
+#endif
+}
+
+// hook for memory guard errors with --enable-memory-guard
+void AP_memory_guard_error(uint32_t size)
+{
+#if HAL_REBOOT_ON_MEMORY_ERRORS
+    (void)size;
+    hal.scheduler->reboot(false);
+#else
+    INTERNAL_ERROR(AP_InternalError::error_t::mem_guard);
+    if (!hal.util->get_soft_armed()) {
+        ::printf("memory guard error size=%u\n", unsigned(size));
+        AP_HAL::panic("memory guard size=%u", unsigned(size));
+    }
+#endif
 }

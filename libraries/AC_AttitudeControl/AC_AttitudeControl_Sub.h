@@ -83,9 +83,39 @@ protected:
     float get_throttle_avg_max(float throttle_in);
 
     AP_MotorsMulticopter& _motors_multi;
-    AC_PID                _pid_rate_roll;
-    AC_PID                _pid_rate_pitch;
-    AC_PID                _pid_rate_yaw;
+
+    // Roll and Pitch rate PIDs share the same defaults:
+    const AC_PID::Defaults rp_defaults {
+        AC_PID::Defaults{
+            .p         = AC_ATC_SUB_RATE_RP_P,
+            .i         = AC_ATC_SUB_RATE_RP_I,
+            .d         = AC_ATC_SUB_RATE_RP_D,
+            .ff        = 0.0f,
+            .imax      = AC_ATC_SUB_RATE_RP_IMAX,
+            .filt_T_hz = AC_ATC_SUB_RATE_RP_FILT_HZ,
+            .filt_E_hz = 0.0,
+            .filt_D_hz = AC_ATC_SUB_RATE_RP_FILT_HZ,
+            .srmax     = 0,
+            .srtau     = 1.0
+        }
+    };
+    AC_PID                _pid_rate_roll { rp_defaults };
+    AC_PID                _pid_rate_pitch { rp_defaults };
+
+    AC_PID                _pid_rate_yaw {
+        AC_PID::Defaults{
+            .p         = AC_ATC_SUB_RATE_YAW_P,
+            .i         = AC_ATC_SUB_RATE_YAW_I,
+            .d         = AC_ATC_SUB_RATE_YAW_D,
+            .ff        = 0.0f,
+            .imax      = AC_ATC_SUB_RATE_YAW_IMAX,
+            .filt_T_hz = AC_ATC_SUB_RATE_YAW_FILT_HZ,
+            .filt_E_hz = 0.0f,
+            .filt_D_hz = AC_ATC_SUB_RATE_YAW_FILT_HZ,
+            .srmax     = 0,
+            .srtau     = 1.0
+        }
+    };
 
     AP_Float              _thr_mix_man;     // throttle vs attitude control prioritisation used when using manual throttle (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)

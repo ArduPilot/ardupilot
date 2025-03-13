@@ -53,7 +53,6 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(update_tracking,        50,    1000, 15),
     SCHED_TASK(update_GPS,             10,    4000, 20),
     SCHED_TASK(update_compass,         10,    1500, 25),
-    SCHED_TASK(compass_save,            0.02,  200, 30),
     SCHED_TASK_CLASS(AP_BattMonitor,    &tracker.battery,   read,           10, 1500, 35),
     SCHED_TASK_CLASS(AP_Baro,          &tracker.barometer,  update,         10, 1500, 40),
     SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_receive, 50, 1700, 45),
@@ -82,7 +81,7 @@ void Tracker::one_second_loop()
     mavlink_system.sysid = g.sysid_this_mav;
 
     // update assigned functions and enable auxiliary servos
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     // updated armed/disarmed status LEDs
     update_armed_disarmed();

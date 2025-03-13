@@ -456,14 +456,15 @@ bool CanardInterface::add_11bit_driver(CANSensor *sensor)
 }
 
 // handler for outgoing frames for auxillary drivers
-bool CanardInterface::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us)
+bool CanardInterface::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us)
 {
+    const uint64_t tx_deadline_us = AP_HAL::micros64() + timeout_us;
     bool ret = false;
     for (uint8_t iface = 0; iface < num_ifaces; iface++) {
         if (ifaces[iface] == NULL) {
             continue;
         }
-        ret |= ifaces[iface]->send(out_frame, timeout_us, 0) > 0;
+        ret |= ifaces[iface]->send(out_frame, tx_deadline_us, 0) > 0;
     }
     return ret;
 }

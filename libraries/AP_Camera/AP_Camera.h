@@ -23,6 +23,7 @@ class AP_Camera_Mount;
 class AP_Camera_MAVLink;
 class AP_Camera_MAVLinkCamV2;
 class AP_Camera_Scripting;
+class AP_RunCam;
 
 /// @class	Camera
 /// @brief	Object managing a Photo or video camera
@@ -37,6 +38,7 @@ class AP_Camera {
     friend class AP_Camera_MAVLink;
     friend class AP_Camera_MAVLinkCamV2;
     friend class AP_Camera_Scripting;
+    friend class AP_RunCam;
 
 public:
 
@@ -72,6 +74,9 @@ public:
 #endif
 #if AP_CAMERA_SCRIPTING_ENABLED
         SCRIPTING = 7,  // Scripting backend
+#endif
+#if AP_CAMERA_RUNCAM_ENABLED
+        RUNCAM = 8,  // RunCam backend
 #endif
     };
 
@@ -186,6 +191,14 @@ public:
     bool change_setting(uint8_t instance, CameraSetting setting, float value);
 #endif
 
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+    void set_camera_information(mavlink_camera_information_t camera_info);
+    void set_camera_information(uint8_t instance, mavlink_camera_information_t camera_info);
+
+    void set_stream_information(mavlink_video_stream_information_t camera_info);
+    void set_stream_information(uint8_t instance, mavlink_video_stream_information_t camera_info);
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+
     // Return true and the relay index if relay camera backend is selected, used for conversion to relay functions
     bool get_legacy_relay_index(int8_t &index) const;
 
@@ -208,6 +221,11 @@ protected:
 
     // parameters for backends
     AP_Camera_Params _params[AP_CAMERA_MAX_INSTANCES];
+#if AP_CAMERA_RUNCAM_ENABLED
+    // var info pointer for RunCam
+    static const struct AP_Param::GroupInfo *_backend_var_info[AP_CAMERA_MAX_INSTANCES];
+    uint8_t _runcam_instances;
+#endif
 
 private:
 
@@ -228,6 +246,10 @@ private:
 
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan);
+
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    void send_video_stream_information(mavlink_channel_t chan);
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan);

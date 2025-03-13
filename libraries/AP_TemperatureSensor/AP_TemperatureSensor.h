@@ -27,6 +27,7 @@ class AP_TemperatureSensor_MCP9600;
 class AP_TemperatureSensor_MAX31865;
 class AP_TemperatureSensor_TSYS03;
 class AP_TemperatureSensor_Analog;
+class AP_TemperatureSensor_MLX90614;
 
 class AP_TemperatureSensor
 {
@@ -37,6 +38,7 @@ class AP_TemperatureSensor
     friend class AP_TemperatureSensor_TSYS03;
     friend class AP_TemperatureSensor_Analog;
     friend class AP_TemperatureSensor_DroneCAN;
+    friend class AP_TemperatureSensor_MLX90614;
 
 public:
 
@@ -51,11 +53,12 @@ public:
     uint8_t num_instances(void) const { return _num_instances; }
 
     // detect and initialise any available temperature sensors
-    void init();
+    __INITFUNC__ void init();
 
     // Update the temperature for all temperature sensors
     void update();
 
+    // return temperature from sensor - in degrees Celsius
     bool get_temperature(float &temp, const uint8_t instance = AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE) const;
 
     bool healthy(const uint8_t instance = AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE) const;

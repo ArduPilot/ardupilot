@@ -55,5 +55,5 @@ uint32_t RF_LightWareSerial::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, ui
         alt_cm = 13000;  // from datasheet
     }
 
-    return snprintf((char*)buffer, buflen, "%0.2f\r", alt_cm / 100.0f); // note tragic lack of snprintf return checking
+    return snprintf((char*)buffer, buflen, "%0.2f\r", alt_cm * 0.01f); // note tragic lack of snprintf return checking
 }

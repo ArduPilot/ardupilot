@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 '''
 Rsync apm.pdef.xml files for different versions of the ArduPilot firmware

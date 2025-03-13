@@ -49,10 +49,7 @@ public:
     void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
 
 #if ENABLE_HEAP
-    // heap functions, note that a heap once alloc'd cannot be dealloc'd
-    virtual void *allocate_heap_memory(size_t size) override;
-    virtual void *heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size) override;
-    virtual void *std_realloc(void *ptr, size_t new_size) override;
+    void *std_realloc(void *ptr, uint32_t new_size) override;
 #endif // ENABLE_HEAP
 
     /*
@@ -141,10 +138,6 @@ private:
 #if AP_BOOTLOADER_FLASHING_ENABLED
     FlashBootloader flash_bootloader() override;
 #endif
-
-#if ENABLE_HEAP
-    static memory_heap_t scripting_heap;
-#endif // ENABLE_HEAP
 
     // stm32F4 and F7 have 20 total RTC backup registers. We use the first one for boot type
     // flags, so 19 available for persistent data

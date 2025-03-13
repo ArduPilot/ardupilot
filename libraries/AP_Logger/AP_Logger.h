@@ -28,13 +28,13 @@ enum class LogEvent : uint8_t {
     AUTO_ARMED = 15,
     LAND_COMPLETE_MAYBE = 17,
     LAND_COMPLETE = 18,
-    NOT_LANDED = 28,
     LOST_GPS = 19,
     FLIP_START = 21,
     FLIP_END = 22,
     SET_HOME = 25,
     SET_SIMPLE_ON = 26,
     SET_SIMPLE_OFF = 27,
+    NOT_LANDED = 28,
     SET_SUPERSIMPLE_ON = 29,
     AUTOTUNE_INITIALISED = 30,
     AUTOTUNE_OFF = 31,
@@ -262,8 +262,6 @@ public:
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);
     void Write_MessageF(const char *fmt, ...);
-    void Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct,
-                           float pos_cmd, float voltage, float current, float mot_temp, float pcb_temp, uint8_t error);
     void Write_Compass();
     void Write_Mode(uint8_t mode, const ModeReason reason);
 
@@ -273,8 +271,15 @@ public:
                        uint8_t source_component,
                        MAV_RESULT result,
                        bool was_command_long=false);
+    void Write_MISE(const AP_Mission &mission, const AP_Mission::Mission_Command &cmd) {
+        Write_Mission_Cmd(mission, cmd, LOG_MISE_MSG);
+    }
+    void Write_CMD(const AP_Mission &mission, const AP_Mission::Mission_Command &cmd) {
+        Write_Mission_Cmd(mission, cmd, LOG_CMD_MSG);
+    }
     void Write_Mission_Cmd(const AP_Mission &mission,
-                               const AP_Mission::Mission_Command &cmd);
+                           const AP_Mission::Mission_Command &cmd,
+                           LogMessages id);
     void Write_RallyPoint(uint8_t total,
                           uint8_t sequence,
                           const class RallyLocation &rally_point);
@@ -294,7 +299,7 @@ public:
     // returns true if logging of a message should be attempted
     bool should_log(uint32_t mask) const;
 
-    bool logging_started(void);
+    bool logging_started(void) const;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only AP_Logger_File support this:
@@ -372,7 +377,7 @@ public:
     void handle_log_send();
     bool in_log_download() const;
 
-    float quiet_nanf() const { return nanf("0x4152"); } // "AR"
+    float quiet_nanf() const { return NaNf; } // "AR"
     double quiet_nan() const { return nan("0x4152445550490a"); } // "ARDUPI"
 
     // returns true if msg_type is associated with a message
@@ -407,7 +412,8 @@ public:
         return _log_start_count;
     }
 
-    // add a filename to list of files to log. The name must be a constant string, not allocated
+    // add a filename to list of files to log. The name is copied internally so
+    // the pointer passed can be freed after return.
     void log_file_content(const char *name);
 
 protected:
