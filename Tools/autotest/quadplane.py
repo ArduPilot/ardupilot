@@ -8,6 +8,7 @@ AP_FLAKE8_CLEAN
 import os
 import numpy
 import math
+import copy
 
 from pymavlink import mavutil
 from pymavlink.rotmat import Vector3
@@ -2163,6 +2164,43 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 self.progress("Wind estimates correlated")
                 break
 
+    def DoRepositionTerrain(self):
+        '''test handling of DO_REPOSITION with terrain alt'''
+        # this location is chosen to be fairly flat, but at a different terrain height to home
+        self.install_terrain_handlers_context()
+        self.start_subtest("test reposition with terrain alt")
+        self.wait_ready_to_arm()
+
+        dest = copy.copy(SITL_START_LOCATION)
+        dest.alt = 45
+
+        self.set_parameters({
+            'Q_GUIDED_MODE': 1,
+        })
+
+        self.takeoff(30, mode='GUIDED')
+
+        # fly to higher ground
+        self.send_do_reposition(dest, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        self.wait_location(
+            dest,
+            accuracy=200,
+            timeout=600,
+            height_accuracy=10,
+        )
+        self.delay_sim_time(20)
+
+        self.wait_altitude(
+            dest.alt-10,  # NOTE: reuse of alt from abovE
+            dest.alt+10,  # use a 10m buffer as the plane needs to go up and down a bit to maintain terrain distance
+            minimum_duration=10,
+            timeout=30,
+            relative=False,
+            altitude_source="TERRAIN_REPORT.current_height"
+        )
+        self.change_mode("QLAND")
+        self.mav.motors_disarmed_wait()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2215,5 +2253,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
             self.AHRSFlyForwardFlag,
+            self.DoRepositionTerrain,
         ])
         return ret
