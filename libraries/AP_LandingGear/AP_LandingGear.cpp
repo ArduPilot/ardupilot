@@ -140,6 +140,10 @@ void AP_LandingGear::init()
             deploy();
             break;
     }
+
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+    SRV_Channels::set_range(SRV_Channel::k_tie_down_release, 1);
+#endif
 }
 
 /// set landing gear position to retract, deploy or deploy-and-keep-deployed
@@ -339,5 +343,26 @@ void AP_LandingGear::deploy_for_landing()
         deploy();
     }
 }
+
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+// support for tie-down clamps:
+static constexpr auto tie_down_function = SRV_Channel::k_tie_down_release;
+void AP_LandingGear::tie_down_secure()
+{
+    if (!SRV_Channels::function_assigned(tie_down_function)) {
+        return;
+    }
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Secure tie down");
+    SRV_Channels::set_output_scaled(tie_down_function, 1);
+}
+void AP_LandingGear::tie_down_release()
+{
+    if (!SRV_Channels::function_assigned(tie_down_function)) {
+        return;
+    }
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Release tie down");
+    SRV_Channels::set_output_scaled(tie_down_function, 0);
+}
+#endif
 
 #endif
