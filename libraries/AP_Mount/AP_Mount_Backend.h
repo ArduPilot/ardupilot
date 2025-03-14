@@ -29,6 +29,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Camera/AP_Camera_shareddefs.h>
 #include "AP_Mount.h"
+#include <AP_RTC/JitterCorrection.h>
 
 class AP_Mount_Backend
 {
@@ -338,6 +339,8 @@ private:
     uint8_t _target_sysid;          // sysid to track
     Location _target_sysid_location;// sysid target location
     bool _target_sysid_location_set;// true if _target_sysid has been set
+    uint32_t _target_sysid_update_ms;// timestamp when the target_sysid_location was last updated
+    JitterCorrection _jitter{3000}; // setup jitter correction for target sysid updates with max transport lag of 3s
 
     uint32_t _last_warning_ms;      // system time of last warning sent to GCS
 
