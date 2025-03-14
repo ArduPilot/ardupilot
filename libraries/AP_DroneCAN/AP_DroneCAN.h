@@ -58,6 +58,10 @@
 #define AP_DRONECAN_HOBBYWING_ESC_SUPPORT (HAL_PROGRAM_SIZE_LIMIT_KB>1024)
 #endif
 
+#ifndef AP_DRONECAN_XCKJ_ESC_SUPPORT
+#define AP_DRONECAN_XCKJ_ESC_SUPPORT (BOARD_FLASH_SIZE>1024)
+#endif
+
 #ifndef AP_DRONECAN_HIMARK_SERVO_SUPPORT
 #define AP_DRONECAN_HIMARK_SERVO_SUPPORT (HAL_PROGRAM_SIZE_LIMIT_KB>1024)
 #endif
@@ -151,6 +155,7 @@ public:
         USE_HOBBYWING_ESC         = (1U<<7),
         ENABLE_STATS              = (1U<<8),
         ENABLE_FLEX_DEBUG         = (1U<<9),
+        USE_XCKJ_ESC              = (1U<<10),
     };
 
     // check if a option is set
@@ -411,6 +416,35 @@ private:
     void handle_hobbywing_StatusMsg2(const CanardRxTransfer& transfer, const com_hobbywing_esc_StatusMsg2& msg);
 #endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
 
+#if AP_DRONECAN_XCKJ_ESC_SUPPORT
+#define XCKJ_MAX_ESC 8
+    struct {
+        uint32_t last_GetId_Time_Ms;
+        uint8_t throt_chan[XCKJ_MAX_ESC];
+    }xckj;
+    void xckj_ESC_update();
+
+
+    void SRV_send_esc_xckj();
+    Canard::Publisher<com_xckj_esc_ThrotGroup1> esc_xckj_throtgroup1{canard_iface};
+    Canard::Publisher<com_xckj_esc_ThrotGroup2> esc_xckj_throtgroup2{canard_iface};
+
+    Canard::Publisher<com_xckj_esc_OperateId> esc_xckj_OperateId{canard_iface};
+    Canard::ObjCallback<AP_DroneCAN, com_xckj_esc_OperateId> esc_xckj_OperateId_cb{this, &AP_DroneCAN::handle_xckj_OperateId};
+    Canard::Subscriber<com_xckj_esc_OperateId> esc_xckj_OperateId_listener{esc_xckj_OperateId_cb, _driver_index};
+
+    Canard::ObjCallback<AP_DroneCAN, com_xckj_esc_AutoUpMsg1> esc_xckj_AutoUpMsg1_cb{this, &AP_DroneCAN::handle_xckj_AutoUpMsg1};
+    Canard::Subscriber<com_xckj_esc_AutoUpMsg1> esc_xckj_AutoUpMsg1_listener{esc_xckj_AutoUpMsg1_cb, _driver_index};
+
+    Canard::ObjCallback<AP_DroneCAN, com_xckj_esc_AutoUpMsg2> esc_xckj_AutoUpMsg2_cb{this, &AP_DroneCAN::handle_xckj_AutoUpMsg2};
+    Canard::Subscriber<com_xckj_esc_AutoUpMsg2> esc_xckj_AutoUpMsg2_listener{esc_xckj_AutoUpMsg2_cb, _driver_index};
+
+    bool xckj_find_esc_index(uint8_t node_id, uint8_t& esc_index) const;
+    void handle_xckj_OperateId(const CanardRxTransfer& transfer, const com_xckj_esc_OperateId& msg);
+    void handle_xckj_AutoUpMsg1(const CanardRxTransfer& transfer, const com_xckj_esc_AutoUpMsg1& msg);
+    void handle_xckj_AutoUpMsg2(const CanardRxTransfer& transfer, const com_xckj_esc_AutoUpMsg2& msg);
+#endif // AP_DRONECAN_XCKJ_ESC_SUPPORT
+
 #if AP_DRONECAN_HIMARK_SERVO_SUPPORT && AP_SERVO_TELEM_ENABLED
     void handle_himark_servoinfo(const CanardRxTransfer& transfer, const com_himark_servo_ServoInfo &msg);
 #endif
@@ -446,3 +480,4 @@ private:
 };
 
 #endif // #if HAL_ENABLE_DRONECAN_DRIVERS
+
