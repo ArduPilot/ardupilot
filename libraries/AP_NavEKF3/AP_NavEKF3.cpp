@@ -739,8 +739,8 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Optional EKF behaviour
-    // @Description: This controls optional EKF behaviour. Setting JammingExpected will change the EKF nehaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad
-    // @Bitmask: 0:JammingExpected
+    // @Description: This controls optional EKF behaviour. Setting JammingExpected will change the EKF nehaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent likely bad GPS data from being fused. The DisableSetLatLng option disables processing of SetLatLng commands provided by an external estimator. The DisableGPSAtStartup option allows for easier GPS denied testing to ensure that no GPS data is processed before an AUX function to disable GPS can be processed.
+    // @Bitmask: 0:JammingExpected,2:DisableSetLatLng,5:DisableGPSAtStartup
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
 
@@ -788,6 +788,14 @@ bool NavEKF3::InitialiseFilter(void)
     }
 #endif
 
+    if (option_is_enabled(Option::DisableGPSAtStartup)) {
+        // this is equivalent to the auxillary function for GPS
+        // disable being active at startup. Useful for GPS-denied
+        // testing to ensure no use is made of the GPS while still
+        // allowing GPS on EKF2
+        _gps_disabled = true;
+    }
+    
     if (core == nullptr) {
 
         // don't run multiple filters for 1 IMU
@@ -1426,6 +1434,10 @@ bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timesta
 #if EK3_FEATURE_POSITION_RESET
     dal.log_SetLatLng(loc, posAccuracy, timestamp_ms);
 
+    if (option_is_enabled(Option::DisableSetLatLng)) {
+        return false;
+    }
+    
     if (!core) {
         return false;
     }
@@ -2090,4 +2102,11 @@ const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
         return core[primary].get_yawEstimator();
     }
     return nullptr;
+}
+
+// force GPS disable on EKF3 only
+void NavEKF3::force_gps_disable(bool gps_disable)
+{
+    AP::dal().log_event3(gps_disable?AP_DAL::Event::EK3GPSDisable:AP_DAL::Event::EK3GPSEnable);
+    _gps_disabled = gps_disable;
 }
