@@ -1096,30 +1096,13 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
         case AC_PolyFenceType::CIRCLE_INCLUSION:
         case AC_PolyFenceType::CIRCLE_EXCLUSION: {
             total_vertex_count++; // useful to make number of lines in QGC file match FENCE_TOTAL
-            const bool store_as_int = (new_item.radius - int(new_item.radius) < 0.001);
-            AC_PolyFenceType store_type = new_item.type;
-            if (store_as_int) {
-                if (new_item.type == AC_PolyFenceType::CIRCLE_INCLUSION) {
-                    store_type = AC_PolyFenceType::CIRCLE_INCLUSION_INT;
-                } else {
-                    store_type = AC_PolyFenceType::CIRCLE_EXCLUSION_INT;
-                }
-            }
-
-            if (!write_type_to_storage(offset, store_type)) {
+            if (!write_type_to_storage(offset, new_item.type)) {
                 return false;
             }
             if (!write_latlon_to_storage(offset, new_item.loc)) {
                 return false;
             }
-            // store the radius.  If the radius is very close to an
-            // integer then we store it as an integer so users moving
-            // from 4.1 back to 4.0 might be less-disrupted.
-            if (store_as_int) {
-                fence_storage.write_uint32(offset, new_item.radius);
-            } else {
-                fence_storage.write_float(offset, new_item.radius);
-            }
+            fence_storage.write_float(offset, new_item.radius);
             offset += 4;
             break;
         }
