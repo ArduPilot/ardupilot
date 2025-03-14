@@ -603,6 +603,7 @@ void Scheduler::_io_thread(void* arg)
  */
 void Scheduler::check_low_memory_is_zero()
 {
+#ifndef HAL_CHIBIOS_ENABLE_ASSERTS
     const uint32_t *lowmem = nullptr;
     // we start at address 0x1 as reading address zero causes a fault
     for (uint16_t i=1; i<256; i++) {
@@ -623,6 +624,18 @@ void Scheduler::check_low_memory_is_zero()
         }
 #pragma GCC diagnostic pop
     }
+#else
+    /*
+      enable this on H7 to make writes to the first 1k of RAM on H7
+      produce a hard fault and crash dump
+     */
+    mpuConfigureRegion(MPU_REGION_7,
+                       0x0,
+                       MPU_RASR_ATTR_AP_NA_NA |
+                       MPU_RASR_SIZE_1K |
+                       MPU_RASR_ENABLE);
+    mpuEnable(MPU_CTRL_PRIVDEFENA | MPU_CTRL_ENABLE);
+#endif
 }
 #endif // STM32H7
 
