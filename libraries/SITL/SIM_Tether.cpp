@@ -75,6 +75,13 @@ const AP_Param::GroupInfo TetherSim::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SPGCNST",   6, TetherSim,  tether_spring_constant, 100),
 
+    // @Param: DMPCNST
+    // @DisplayName: Tether Damping Constant
+    // @Description: Damping constant for the tether to simulate resistance based on change in stretch
+    // @Range: 0 255
+    // @User: Advanced
+    AP_GROUPINFO("DMPCNST",   7, TetherSim,  tether_damping_constant, 10),
+
     AP_GROUPEND
 };
 
@@ -266,33 +273,40 @@ void TetherSim::update_tether_force(const Location& veh_pos, float dt)
         // Calculate the stretch beyond the maximum length
         float stretch = MAX(tether_length - max_line_length, 0.0f);
 
-        // Apply a spring-like penalty force proportional to the stretch
-        float penalty_force_magnitude = tether_spring_constant * stretch;
+        // Calculate the stretch rate beyond the maximum length
+        float stretch_rate = (stretch - prev_stretch)/dt;
+
+        // Apply a spring and damping penalty force proportional to the stretch
+        float penalty_force_magnitude = tether_spring_constant * stretch + tether_damping_constant * stretch_rate;
 
         // Direction of force is along the tether, pulling toward the anchor
-        veh_forces_ef = tether_vector.normalized() * penalty_force_magnitude;
+        veh_forces_teth = tether_vector.normalized() * penalty_force_magnitude;
 
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Tether: Exceeded maximum length.");
 
-        return;
-    }
+        prev_stretch = stretch;
 
-    if (tether_stuck) {
+    } else if (tether_stuck) {
 
         // Calculate the stretch beyond the maximum length
         float stretch = MAX(tether_length - tether_not_stuck_length, 0.0f);
 
+        // Calculate the stretch rate beyond the maximum length
+        float stretch_rate = (stretch - prev_stretch)/dt;
+
         // Apply a spring-like penalty force proportional to the stretch
-        float penalty_force_magnitude = tether_spring_constant * stretch;
+        float penalty_force_magnitude = tether_spring_constant * stretch + tether_damping_constant * stretch_rate;
 
         // Direction of force is directly along the tether, towards the tether anchor point
-        veh_forces_ef = tether_vector.normalized() * penalty_force_magnitude;
+        veh_forces_teth = tether_vector.normalized() * penalty_force_magnitude;
 
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Tether: Stuck.");
 
-        return;
+        prev_stretch = stretch;
+
     } else {
         tether_not_stuck_length = tether_length;
+        veh_forces_teth.zero();
     }
 
     // Step 3: Calculate the weight of the tether being lifted
@@ -302,8 +316,8 @@ void TetherSim::update_tether_force(const Location& veh_pos, float dt)
     // Step 4: Calculate the tension force
     Vector3f tension_force_NED = tether_vector.normalized() * tether_weight_force;
 
-    // Step 5: Apply the force to the vehicle
-    veh_forces_ef = tension_force_NED;
+    // Step 5: Apply the total force to the vehicle
+    veh_forces_ef = veh_forces_teth + tension_force_NED;
 }
 
 #endif
