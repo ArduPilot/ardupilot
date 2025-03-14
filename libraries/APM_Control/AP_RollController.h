@@ -66,6 +66,7 @@ private:
     float ff_scale = 1.0;
 
     AP_PIDInfo _pid_info;
+    float last_desired_rate;
 
     float _get_rate_out(float desired_rate, float scaler, bool disable_integrator, bool ground_mode);
 };

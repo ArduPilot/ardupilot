@@ -262,12 +262,25 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
     angle_err_deg = angle_err * 0.01;
     float desired_rate = angle_err_deg/ gains.tau;
 
+    /*
+      prevent indecision in the roll controller when target roll is
+      close to 180 degrees from the current roll
+     */
+    const float indecision_threshold_deg = 160;
+    if (fabsf(angle_err_deg) > indecision_threshold_deg) {
+        if (desired_rate * last_desired_rate < 0) {
+            desired_rate = -desired_rate;
+        }
+    }
+
     // Limit the demanded roll rate
     if (gains.rmax_pos && desired_rate < -gains.rmax_pos) {
         desired_rate = - gains.rmax_pos;
     } else if (gains.rmax_pos && desired_rate > gains.rmax_pos) {
         desired_rate = gains.rmax_pos;
     }
+
+    last_desired_rate = desired_rate;
 
     return _get_rate_out(desired_rate, scaler, disable_integrator, ground_mode);
 }
