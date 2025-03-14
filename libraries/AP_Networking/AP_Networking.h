@@ -162,6 +162,8 @@ public:
 #if AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED
         CAN1_MCAST_BRIDGED=(1U<<3),
         CAN2_MCAST_BRIDGED=(1U<<4),
+        CAN1_MCAST_MAVCAN_BRIDGED=(1U<<5),
+        CAN2_MCAST_MAVCAN_BRIDGED=(1U<<6),
 #endif
 #endif
     };
@@ -173,6 +175,13 @@ public:
     bool is_can_mcast_ep_bridged(uint8_t bus) const {
         return (option_is_set(OPTION::CAN1_MCAST_BRIDGED) && bus == 0) ||
                (option_is_set(OPTION::CAN2_MCAST_BRIDGED) && bus == 1);
+    }
+    bool is_can_mcast_mavcan_bridged(uint8_t bus) const {
+        return (option_is_set(OPTION::CAN1_MCAST_MAVCAN_BRIDGED) && bus == 0) ||
+               (option_is_set(OPTION::CAN2_MCAST_MAVCAN_BRIDGED) && bus == 1);
+    }
+    AP_Networking_CAN& get_mcast_can() {
+        return mcast_server;
     }
 #endif
 
