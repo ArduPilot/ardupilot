@@ -116,7 +116,6 @@ void AP_Logger::handle_log_request_data(GCS_MAVLINK &link, const mavlink_message
         if (_log_sending_link->get_chan() != link.get_chan()) {
             link.send_text(MAV_SEVERITY_INFO, "Log download in progress");
         }
-        return;
     }
 
     mavlink_log_request_data_t packet;
