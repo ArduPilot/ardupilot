@@ -303,6 +303,10 @@ public:
     // This function required for tradheli. Tradheli initializes targets when going from unarmed to armed state.
     // This function is overriden in motors_heli class.   Always true for multicopters.
     virtual bool init_targets_on_arming() const { return true; }
+    // use leaking integrator management scheme is always false for multirotors
+    virtual bool using_leaky_integrator() const { return false; }
+    // use heading error correction which is always true for multirotors
+    virtual bool using_hdg_error_correction() const { return true; }
 
     // returns true if the configured PWM type is digital and should have fixed endpoints
     bool is_digital_pwm_type() const;
