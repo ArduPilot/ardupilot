@@ -506,6 +506,9 @@ class SizeCompareBranches(object):
             self.vehicles_to_build = vehicles_to_build
             self.extra_hwdef_file = extra_hwdef_file
 
+        def __str__(self):
+            return f"Task({self.board}, {self.commitish}, {self.outdir}, {self.vehicles_to_build}, {self.extra_hwdef_file})"
+
     def run_all(self):
         '''run tests for boards and vehicles passed in constructor'''
 
