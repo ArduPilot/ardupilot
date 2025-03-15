@@ -4251,14 +4251,25 @@ bool QuadPlane::use_fw_attitude_controllers(void) const
     if (available() &&
         motors->armed() &&
         motors->get_desired_spool_state() >= AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED &&
-        in_vtol_mode() &&
         !tailsitter.enabled() &&
         poscontrol.get_state() != QPOS_AIRBRAKE &&
         !force_fw_control_recovery) {
-        // we want the desired rates for fixed wing slaved to the
-        // multicopter rates
-        return false;
+
+        if (in_vtol_mode()) {
+            // in VTOL modes always slave fixed wing to VTOL rate control
+            return false;
+        }
+
+        if (transition->use_multirotor_control_in_fwd_transition()) {
+            /*
+              special case for vectored yaw tiltrotors in forward
+              transition, keep multicopter control until we reach
+              target transition airspeed. This condition needs to
+            */
+            return false;
+        }
     }
+
     return true;
 }
 
