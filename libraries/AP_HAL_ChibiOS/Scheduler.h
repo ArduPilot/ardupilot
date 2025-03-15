@@ -84,6 +84,13 @@
 #define MONITOR_THD_WA_SIZE 1024
 #endif
 
+// MEMCHECK_ENABLED checks the bottom 1kB of RAM on H7 to ensure it is
+// always zero.  We have a compile-time option to enforce no-access to
+// that bottom 1kB, and if that is enabled we must not run this memory
+// check!
+#define MEMCHECK_ENABLED (defined(STM32H7) && !AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED)
+
+
 /* Scheduler implementation: */
 class ChibiOS::Scheduler : public AP_HAL::Scheduler {
 public:
@@ -189,7 +196,7 @@ private:
     void _run_io(void);
     static void thread_create_trampoline(void *ctx);
 
-#if defined STM32H7
+#if MEMCHECK_ENABLED
     void check_low_memory_is_zero();
 #endif
 

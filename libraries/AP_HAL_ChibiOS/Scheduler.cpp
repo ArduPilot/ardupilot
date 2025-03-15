@@ -595,7 +595,7 @@ void Scheduler::_io_thread(void* arg)
     }
 }
 
-#if defined(STM32H7)
+#if MEMCHECK_ENABLED
 /*
   the H7 has 64k of ITCM memory at address zero. We reserve 1k of it
   to prevent nullptr being valid. This function checks that memory is
@@ -624,7 +624,7 @@ void Scheduler::check_low_memory_is_zero()
 #pragma GCC diagnostic pop
     }
 }
-#endif // STM32H7
+#endif // MEMCHECK_ENABLED
 
 void Scheduler::_storage_thread(void* arg)
 {
@@ -633,21 +633,21 @@ void Scheduler::_storage_thread(void* arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(10000);
     }
-#if defined STM32H7
+#if MEMCHECK_ENABLED
     uint16_t memcheck_counter=0;
-#endif
+#endif  // MEMCHECK_ENABLED
     while (true) {
         sched->delay_microseconds(1000);
 
         // process any pending storage writes
         hal.storage->_timer_tick();
 
-#if defined STM32H7
+#if MEMCHECK_ENABLED
         if (memcheck_counter++ % 500 == 0) {
             // run check at 2Hz
             sched->check_low_memory_is_zero();
         }
-#endif
+#endif  // MEMCHECK_ENABLED
     }
 }
 
