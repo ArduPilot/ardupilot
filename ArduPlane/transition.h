@@ -58,6 +58,8 @@ public:
 
     virtual bool allow_stick_mixing() const { return true; }
 
+    virtual bool use_multirotor_control_in_fwd_transition() const { return false; }
+
 protected:
 
     // refences for convenience
