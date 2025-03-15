@@ -224,6 +224,7 @@ public:
         LOWEHEISER_STARTER = 111,  // allows for manually running starter
         AHRS_TYPE =          112, // change AHRS_EKF_TYPE
         RETRACT_MOUNT2 =     113, // Retract Mount2
+        AHRS_START_STOP =    114, // Start/Stop data from AHRS. Can be used to simulate AHRS failure.
 
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
