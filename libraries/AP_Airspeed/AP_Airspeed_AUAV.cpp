@@ -21,14 +21,6 @@
 #if AP_AIRSPEED_AUAV_ENABLED
 
 #define AUAV_AIRSPEED_I2C_ADDR 0x26
-
-// the sensor supports a 2nd channel (2nd I2C address) for absolute pressure
-// we could use this as a baro driver but don't yet
-#define AUAV_AIRSPEED_I2C_ADDR_ABSOLUTE 0x27
-
-// max measurement time for 8x averaging differential is 16.2ms
-#define MEASUREMENT_TIME_MAX_MS 17
-
 #define MEASUREMENT_TIMEOUT_MS 200
 
 #include <AP_Common/AP_Common.h>
@@ -69,8 +61,7 @@ bool AP_Airspeed_AUAV::probe(uint8_t bus, uint8_t address)
 
     // Don't fill in values yet as the compensation coefficients are not configured
     float PComp, temperature;
-    return sensor.collect(PComp, temperature);
-
+    return sensor.collect(PComp, temperature) == AUAV_Pressure_sensor::Status::Normal;
 }
 
 // probe and initialise the sensor
@@ -85,17 +76,9 @@ bool AP_Airspeed_AUAV::init()
     _dev->set_device_type(uint8_t(DevType::AUAV));
     set_bus_id(_dev->get_bus_id());
 
-
-    WITH_SEMAPHORE(_dev->get_semaphore());
-
-    if (!sensor.read_coefficients()) {
-        return false;
-    }
-
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AUAV AIRSPEED[%u]: Found bus %u addr 0x%02x", get_instance(), _dev->bus_num(), _dev->get_bus_address());
 
     // drop to 2 retries for runtime
-    _dev->set_retries(2);
     _dev->register_periodic_callback(20000,
                                      FUNCTOR_BIND_MEMBER(&AP_Airspeed_AUAV::_timer, void));
     return true;
@@ -104,7 +87,9 @@ bool AP_Airspeed_AUAV::init()
 // start a measurement
 bool AUAV_Pressure_sensor::measure()
 {
-    uint8_t cmd = 0xAE; // start average8, max 16.2ms measurement time
+    uint8_t cmd = 0xAE; // start average8
+    // Differential: max 16.2ms measurement time 
+    // Absolute: 37ms
     if (dev->transfer(&cmd, 1, nullptr, 0)) {
         return true;
     }
@@ -115,19 +100,21 @@ bool AUAV_Pressure_sensor::measure()
 // Return true if successful
 // pressure corrected but not scaled to the correct units
 // temperature in degrees centigrade
-bool AUAV_Pressure_sensor::collect(float &PComp, float &temperature)
+AUAV_Pressure_sensor::Status AUAV_Pressure_sensor::collect(float &PComp, float &temperature)
 {
     uint8_t inbuf[7];
     if (!dev->read((uint8_t *)&inbuf, sizeof(inbuf))) {
-        return false;
+        return Status::Fault;
     }
     const uint8_t status = inbuf[0];
 
-    // power on, not busy, differential normal, not out of range
+    // power on, not busy, reading normal, not out of range
     const uint8_t healthy_status = type == Type::Differential ? 0x50 :  0x40;
     if (status != healthy_status) {
-        // not ready or error
-        return false;
+        if ((status & (1U << 5)) != 0) {
+            return Status::Busy;
+        }
+        return Status::Fault;
     }
     const int32_t Tref_Counts = 7576807; // temperature counts at 25C
     const float TC50Scale = 100.0f * 100.0f * 167772.2f; // scale TC50 to 1.0% FS0
@@ -171,77 +158,173 @@ bool AUAV_Pressure_sensor::collect(float &PComp, float &temperature)
     const float PCorrt = Pnfso - Tcorr; // corrected P: float, [0 to +1.0)
     PComp = PCorrt * (float)0xFFFFFF;
 
+    return Status::Normal;
+}
+
+bool AUAV_Pressure_sensor::read_register(uint8_t cmd, uint16_t &result)
+{
+    const uint8_t healthy_status = type == Type::Differential ? 0x50 :  0x40;
+
+    uint8_t raw_bytes[3];
+    if (!dev->transfer(&cmd,1,(uint8_t *)&raw_bytes, sizeof(raw_bytes))) {
+        return false;
+    }
+    if (raw_bytes[0] != healthy_status) {
+        return false;
+    }
+    result = ((uint16_t)raw_bytes[1] << 8) | (uint16_t)raw_bytes[2];
     return true;
 }
 
-bool AUAV_Pressure_sensor::read_register(uint8_t cmd, uint32_t &result)
+void AUAV_Pressure_sensor::read_coefficients()
 {
-    // The first byte of the 3 seems to be the sensor status, we discard that here
-    uint8_t raw_bytes1[3];
-    if (!dev->transfer(&cmd,1,(uint8_t *)&raw_bytes1, sizeof(raw_bytes1))) {
-        return false;
-    }
-    uint8_t raw_bytes2[3];
-    uint8_t cmd2 = cmd + 1;
-    if (!dev->transfer(&cmd2,1,(uint8_t *)&raw_bytes2, sizeof(raw_bytes2))) {
-        return false;
-    }
-    result = ((uint32_t)raw_bytes1[1] << 24) | ((uint32_t)raw_bytes1[2] << 16) | ((uint32_t)raw_bytes2[1] << 8) | (uint32_t)raw_bytes2[2];
-    return true;
-}
-
-bool AUAV_Pressure_sensor::read_coefficients()
-{
-    uint32_t i32A, i32B, i32C, i32D, i32TC50HLE;
-
     const uint8_t cmd_start = type == Type::Differential ? 0x2B : 0x2F;
-    if (!read_register(cmd_start + 0, i32A) ||
-        !read_register(cmd_start + 2, i32B) ||
-        !read_register(cmd_start + 4, i32C) ||
-        !read_register(cmd_start + 6, i32D) ||
-        !read_register(cmd_start + 8, i32TC50HLE)) {
-        return false;
+
+    // Differential can happily run through these in one call, Absolute gets stuck, no idea why.
+    // Space them out anyway to be inline with the spec
+
+    switch (stage) {
+    case CoefficientStage::A_high: {
+        uint16_t high;
+        if (!read_register(cmd_start + 0, high)) {
+            return;
+        }
+        LIN_A = (float)(high << 16)/(float)(0x7FFFFFFF);
+        stage = CoefficientStage::A_low;
+        break;
     }
 
-    LIN_A = ((float)(i32A))/((float)(0x7FFFFFFF));
-    LIN_B = (float)(i32B)/(float)(0x7FFFFFFF);
-    LIN_C = (float)(i32C)/(float)(0x7FFFFFFF);
-    LIN_D = (float)(i32D)/(float)(0x7FFFFFFF);
+    case CoefficientStage::A_low: {
+        uint16_t low;
+        if (!read_register(cmd_start + 1, low)) {
+            return;
+        }
+        LIN_A += (float)(low)/(float)(0x7FFFFFFF);
+        stage = CoefficientStage::B_high;
+        break;
+    }
 
-    const int8_t i8TC50H = (i32TC50HLE >> 24) & 0xFF; // 55 H
-    const int8_t i8TC50L = (i32TC50HLE >> 16) & 0xFF; // 55 L
-    const int8_t i8Es = (i32TC50HLE ) & 0xFF; // 56 L
-    Es = (float)(i8Es)/(float)(0x7F);
-    TC50H = (float)(i8TC50H)/(float)(0x7F);
-    TC50L = (float)(i8TC50L)/(float)(0x7F);
+    case CoefficientStage::B_high: {
+        uint16_t high;
+        if (!read_register(cmd_start + 2, high)) {
+            return;
+        }
+        LIN_B = (float)(high << 16)/(float)(0x7FFFFFFF);
+        stage = CoefficientStage::B_low;
+        break;
+    }
 
-    return true;
+    case CoefficientStage::B_low: {
+        uint16_t low;
+        if (!read_register(cmd_start + 3, low)) {
+            return;
+        }
+        LIN_B += (float)(low)/(float)(0x7FFFFFFF);
+        stage = CoefficientStage::C_high;
+        break;
+    }
+
+    case CoefficientStage::C_high: {
+        uint16_t high;
+        if (!read_register(cmd_start + 4, high)) {
+            return;
+        }
+        LIN_C = (float)(high << 16)/(float)(0x7FFFFFFF);
+        stage = CoefficientStage::C_low;
+        break;
+    }
+
+    case CoefficientStage::C_low: {
+        uint16_t low;
+        if (!read_register(cmd_start + 5, low)) {
+            return;
+        }
+        LIN_C += (float)(low)/(float)(0x7FFFFFFF);
+        stage = CoefficientStage::D_high;
+        break;
+    }
+
+    case CoefficientStage::D_high: {
+        uint16_t high;
+        if (!read_register(cmd_start + 6, high)) {
+            return;
+        }
+        LIN_D = (float)(high << 16)/(float)(0x7FFFFFFF);
+        stage = CoefficientStage::D_low;
+        break;
+    }
+
+    case CoefficientStage::D_low: {
+        uint16_t low;
+        if (!read_register(cmd_start + 7, low)) {
+            return;
+        }
+        LIN_D += (float)(low)/(float)(0x7FFFFFFF);
+        stage = CoefficientStage::E_high;
+        break;
+    }
+
+    case CoefficientStage::E_high: {
+        uint16_t TC50HL;
+        if (!read_register(cmd_start + 8, TC50HL)) {
+            return;
+        }
+        const int8_t i8TC50H = (TC50HL >> 8) & 0xFF;
+        const int8_t i8TC50L = TC50HL & 0xFF;
+        TC50H = (float)(i8TC50H)/(float)(0x7F);
+        TC50L = (float)(i8TC50L)/(float)(0x7F);
+        stage = CoefficientStage::E_low;
+        break;
+    }
+
+    case CoefficientStage::E_low: {
+        uint16_t es;
+        if (!read_register(cmd_start + 9, es)) {
+            return;
+        }
+        Es = (float)(es & 0xFF)/(float)(0x7F);
+        stage = CoefficientStage::Done;
+
+        // Drop to 2 retry's for runtime
+        dev->set_retries(2);
+        break;
+    }
+
+    case CoefficientStage::Done:
+        break;
+    }
 }
 
-// 50Hz timer
 void AP_Airspeed_AUAV::_timer()
 {
-    const uint32_t now_ms = AP_HAL::millis();
-    if (measurement_started_ms == 0) {
-        // Request a new measurement
-        if (sensor.measure()) {
-            measurement_started_ms = now_ms;
-        }
+    if (sensor.stage != AUAV_Pressure_sensor::CoefficientStage::Done) {
+        sensor.read_coefficients();
         return;
     }
 
-    if ((now_ms - measurement_started_ms) > MEASUREMENT_TIME_MAX_MS) {
+    if (measurement_requested) {
+        // Read in result of last measurement
         float Pcomp;
-        if (sensor.collect(Pcomp, temp_C)) {
+        switch (sensor.collect(Pcomp, temp_C)) {
+        case AUAV_Pressure_sensor::Status::Normal:
             // Calculate pressure and update last read time
-            last_sample_time_ms = now_ms;
+            last_sample_time_ms = AP_HAL::millis();
 
             // Convert to correct units and apply range
             pressure = 248.8f*1.25f*((Pcomp-8388608)/16777216.0f) * 2 * range_inH2O;
+            break;
+
+        case AUAV_Pressure_sensor::Status::Busy:
+            // Don't request a new measurement
+            return;
+
+        case AUAV_Pressure_sensor::Status::Fault:
+            break;
         }
-        // Request a new measurement
-        measurement_started_ms = sensor.measure() ? now_ms : 0;
     }
+
+    // Request a new measurement
+    measurement_requested = sensor.measure();
 }
 
 // return the current differential_pressure in Pascal
