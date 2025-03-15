@@ -55,8 +55,9 @@ public:
         DEVTYPE_BARO_BMP390   = 0x14,
         DEVTYPE_BARO_BMP581   = 0x15,
         DEVTYPE_BARO_SPA06    = 0x16,
+        DEVTYPE_BARO_AUAV     = 0x17,
     };
-    
+
 protected:
     // reference to frontend object
     AP_Baro &_frontend;
