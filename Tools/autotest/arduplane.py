@@ -209,7 +209,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Testing LOITER for %u turns" % num_circles)
         self.change_mode('LOITER')
 
-        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+        m = self.assert_receive_message('VFR_HUD')
         initial_alt = m.alt
         self.progress("Initial altitude %u\n" % initial_alt)
 
@@ -219,7 +219,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             num_circles -= 1
             self.progress("Loiter %u circles left" % num_circles)
 
-        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+        m = self.assert_receive_message('VFR_HUD')
         final_alt = m.alt
         self.progress("Final altitude %u initial %u\n" %
                       (final_alt, initial_alt))
@@ -236,7 +236,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Testing CIRCLE for %u turns" % num_circles)
         self.change_mode('CIRCLE')
 
-        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+        m = self.assert_receive_message('VFR_HUD')
         initial_alt = m.alt
         self.progress("Initial altitude %u\n" % initial_alt)
 
@@ -246,7 +246,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             num_circles -= 1
             self.progress("CIRCLE %u circles left" % num_circles)
 
-        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+        m = self.assert_receive_message('VFR_HUD')
         final_alt = m.alt
         self.progress("Final altitude %u initial %u\n" %
                       (final_alt, initial_alt))
@@ -266,7 +266,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
         self.set_rc(4, 1500)
         while self.get_sim_time_cached() < tstart + timeout:
-            m = self.mav.recv_match(type='ATTITUDE', blocking=True)
+            m = self.assert_receive_message('ATTITUDE')
             roll = math.degrees(m.roll)
             pitch = math.degrees(m.pitch)
             self.progress("Roll=%.1f Pitch=%.1f" % (roll, pitch))
@@ -508,7 +508,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
         self.wait_distance(50, accuracy=20)
 
-        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+        m = self.assert_receive_message('VFR_HUD')
         initial_alt = m.alt
         self.progress("Initial altitude %u\n" % initial_alt)
 
@@ -544,7 +544,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.wait_distance(100, accuracy=20)
         self.progress("Circuit complete")
 
-        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+        m = self.assert_receive_message('VFR_HUD')
         final_alt = m.alt
         self.progress("Final altitude %u initial %u\n" %
                       (final_alt, initial_alt))
@@ -621,9 +621,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if self.get_sim_time_cached() - tstart > 120:
                 raise NotAchievedException("Did not move to correct terrain alt")
 
-            m = self.mav.recv_match(type='TERRAIN_REPORT',
-                                    blocking=True,
-                                    timeout=1)
+            m = self.assert_receive_message('TERRAIN_REPORT')
             tr = m
             terrain_height_achieved = m.current_height
             self.progress("terrain_alt=%f want=%f" %
@@ -640,9 +638,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if achieve_start is not None:
                 if self.get_sim_time_cached() - achieve_start > 10:
                     break
-        m = self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                                blocking=True,
-                                timeout=1)
+        m = self.assert_receive_message('GLOBAL_POSITION_INT')
         self.progress("TR: %s" % tr)
         self.progress("GPI: %s" % m)
         min_delta = 4
@@ -693,11 +689,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.wait_heartbeat()
 
         self.progress("getting base position")
-        gpi = self.mav.recv_match(
-            type='GLOBAL_POSITION_INT',
-            blocking=True,
-            timeout=5
-        )
+        gpi = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
         loc = mavutil.location(gpi.lat*1e-7, gpi.lon*1e-7, 0, 0)
 
         self.progress("set new position with no GPS")
@@ -718,11 +710,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         while self.get_sim_time() < tstart + 3:
             self.wait_heartbeat()
 
-        gpi2 = self.mav.recv_match(
-            type='GLOBAL_POSITION_INT',
-            blocking=True,
-            timeout=5
-        )
+        gpi2 = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
         loc2 = mavutil.location(gpi2.lat*1e-7, gpi2.lon*1e-7, 0, 0)
         dist = self.get_distance(loc, loc2)
 
@@ -974,7 +962,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not achieve groundspeed delta")
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            m = self.assert_receive_message('VFR_HUD')
             delta = abs(m.airspeed - m.groundspeed)
             want_delta = 5
             self.progress("groundspeed and airspeed should be different (have=%f want=%f)" % (delta, want_delta))
@@ -1159,7 +1147,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def ThrottleFailsafe(self):
         '''Fly throttle failsafe'''
         self.change_mode('MANUAL')
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.assert_receive_message('SYS_STATUS')
         receiver_bit = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER
         self.progress("Testing receiver enabled")
         if (not (m.onboard_control_sensors_enabled & receiver_bit)):
@@ -1299,7 +1287,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
 
         self.progress("Checking fence is not present before being configured")
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.assert_receive_message('SYS_STATUS')
         self.progress("Got (%s)" % str(m))
         if (m.onboard_control_sensors_enabled & fence_bit):
             raise NotAchievedException("Fence enabled before being configured")
@@ -1316,10 +1304,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             7: 2000,
         }) # Turn fence on with aux function
 
-        m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
-        self.progress("Got (%s)" % str(m))
-        if m is None:
-            raise NotAchievedException("Got FENCE_STATUS unexpectedly")
+        m = self.assert_receive_message('FENCE_STATUS', timeout=2, verbose=True)
 
         self.progress("Checking fence is initially OK")
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
@@ -1407,7 +1392,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def assert_fence_sys_status(self, present, enabled, health):
         self.delay_sim_time(1)
         self.do_timesync_roundtrip()
-        m = self.assert_receive_message('SYS_STATUS', timeout=1)
+        m = self.assert_receive_message('SYS_STATUS')
         tests = [
             ("present", present, m.onboard_control_sensors_present),
             ("enabled", enabled, m.onboard_control_sensors_enabled),
@@ -1435,7 +1420,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             got_radius = self.get_distance(loc, here)
             average_radius = 0.95*average_radius + 0.05*got_radius
             on_radius = abs(got_radius - want_radius) < epsilon
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            m = self.assert_receive_message('VFR_HUD')
             heading = m.heading
             on_string = "off"
             got_angle = ""
@@ -2385,10 +2370,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(12, 1000)
         self.delay_sim_time(1) # let the switch get polled
         self.test_adsb_send_threatening_adsb_message(here)
-        m = self.mav.recv_match(type='COLLISION', blocking=True, timeout=4)
-        self.progress("Got (%s)" % str(m))
-        if m is not None:
-            raise NotAchievedException("Got collision message when I shouldn't have")
+        m = self.assert_not_receive_message('COLLISION', timeout=4)
 
     def GuidedRequest(self, target_system=1, target_component=1):
         '''Test handling of MISSION_ITEM in guided mode'''
@@ -2899,7 +2881,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
             self.mav.mav.terrain_check_send(lat_int, lng_int)
 
-            report = self.mav.recv_match(type='TERRAIN_REPORT', blocking=True, timeout=60)
+            report = self.assert_receive_message('TERRAIN_REPORT', timeout=60)
             self.progress(self.dump_message_verbose(report))
             if report.spacing != 0:
                 break
@@ -3451,7 +3433,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # current airspeed then changing the airspeed demand
             # to a higher value and waiting for the TECS speed
             # loop to diverge
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            m = self.assert_receive_message('VFR_HUD')
             self.set_parameter("SIM_ARSPD_FAIL", m.airspeed)
             self.run_cmd(
                 mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
@@ -3680,13 +3662,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
         # Grab Home Position
-        self.mav.recv_match(type='HOME_POSITION', blocking=True)
+        self.assert_receive_message('HOME_POSITION')
         self.set_rc(7, 1000) # Turn fence off with aux function, does not impact later auto-enable
 
         self.wait_ready_to_arm()
 
         self.progress("Check fence disabled at boot")
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.assert_receive_message('SYS_STATUS')
         if (m.onboard_control_sensors_enabled & fence_bit):
             raise NotAchievedException("Fence is enabled at boot")
 
@@ -3701,7 +3683,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext("Max Alt fence breached", timeout=10, check_context=True)
         self.wait_mode('RTL')
 
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.assert_receive_message('SYS_STATUS')
         if (m.onboard_control_sensors_health & fence_bit):
             raise NotAchievedException("Fence ceiling not breached")
 
@@ -3716,7 +3698,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_altitude(cruise_alt, relative=True)
 
         self.progress("Check fence breach cleared")
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.assert_receive_message('SYS_STATUS')
         if (not (m.onboard_control_sensors_health & fence_bit)):
             raise NotAchievedException("Fence breach not cleared")
 
@@ -3724,7 +3706,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(2, 2000)
         self.wait_statustext("Min Alt fence breached", timeout=10, check_context=True)
         self.wait_mode("RTL")
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.assert_receive_message('SYS_STATUS')
         if (m.onboard_control_sensors_health & fence_bit):
             raise NotAchievedException("Fence floor not breached")
 
@@ -3733,7 +3715,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Fly above floor and check fence is enabled")
         self.set_rc(3, 2000)
         self.change_altitude(75, relative=True)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.assert_receive_message('SYS_STATUS')
         if (not (m.onboard_control_sensors_enabled & fence_bit)):
             raise NotAchievedException("Fence Floor not enabled")
 
@@ -3744,13 +3726,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.delay_sim_time(2)
 
         self.progress("Check fence is disabled")
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.assert_receive_message('SYS_STATUS')
         if (m.onboard_control_sensors_enabled & fence_bit):
             raise NotAchievedException("Fence disable with switch failed")
 
         self.progress("Fly below floor and check for no breach")
         self.change_altitude(40, relative=True)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.assert_receive_message('SYS_STATUS')
         if (not (m.onboard_control_sensors_health & fence_bit)):
             raise NotAchievedException("Fence floor breached")
 
@@ -3801,7 +3783,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
 
         self.progress("Checking fence is not present before being configured")
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.assert_receive_message('SYS_STATUS')
         self.progress("Got (%s)" % str(m))
         if (m.onboard_control_sensors_enabled & fence_bit):
             raise NotAchievedException("Fence enabled before being configured")
@@ -3818,10 +3800,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             7: 2000,
         }) # Turn fence on with aux function
 
-        m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
-        self.progress("Got (%s)" % str(m))
-        if m is None:
-            raise NotAchievedException("Got FENCE_STATUS unexpectedly")
+        m = self.assert_receive_message('FENCE_STATUS', timeout=2, verbose=True)
 
         self.progress("Checking fence is initially OK")
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
@@ -3868,7 +3847,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         if not enable:
             self.progress("Checking fence is not present before being configured")
-            m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+            m = self.assert_receive_message('SYS_STATUS')
             self.progress("Got (%s)" % str(m))
             if (m.onboard_control_sensors_enabled & fence_bit):
                 raise NotAchievedException("Fence enabled before being configured")
@@ -3887,10 +3866,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
         )
 
-        m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
-        self.progress("Got (%s)" % str(m))
-        if m is None:
-            raise NotAchievedException("Got FENCE_STATUS unexpectedly")
+        m = self.assert_receive_message('FENCE_STATUS', timeout=2, verbose=True)
 
         self.progress("Checking fence is initially OK")
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
@@ -3935,10 +3911,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
         )
 
-        m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
-        self.progress("Got (%s)" % str(m))
-        if m is None:
-            raise NotAchievedException("Got FENCE_STATUS unexpectedly")
+        m = self.assert_receive_message('FENCE_STATUS', timeout=2, verbose=True)
 
         self.progress("Waiting for RTL")
         tstart = self.get_sim_time()
@@ -5467,7 +5440,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         highest_error = 0
         while True:
-            m = self.mav.recv_match(type='NAMED_VALUE_FLOAT', blocking=True, timeout=2)
+            m = self.mav.recv_match(type='NAMED_VALUE_FLOAT', timeout=2, blocking=True)
             if not m:
                 break
             if m.name != 'PERR':
@@ -5602,10 +5575,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 32767, # z (thrust)
                 32767, # r (yaw)
                 0) # button mask
-            m = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=1)
-            print("m=%s" % str(m))
-            if m is None:
-                continue
+            m = self.assert_receive_message('ATTITUDE', verbose=True)
             p = math.degrees(m.roll)
             self.progress("roll=%f want<=%f" % (p, want_roll_degrees))
             if p <= want_roll_degrees:

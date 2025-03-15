@@ -108,10 +108,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 altitude range
         """
         tstart = self.get_sim_time_cached()
-        previous_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        previous_altitude = self.assert_receive_message('VFR_HUD').alt
         self.progress('Altitude to be watched: %f' % (previous_altitude))
         while True:
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            m = self.assert_receive_message('VFR_HUD')
             if self.get_sim_time_cached() - tstart > timeout:
                 self.progress('Altitude hold done: %f' % (previous_altitude))
                 return
@@ -126,9 +126,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.change_mode('ALT_HOLD')
 
-        msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
-        if msg is None:
-            raise NotAchievedException("Did not get GLOBAL_POSITION_INT")
+        msg = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
         pwm = 1300
         if msg.relative_alt/1000.0 < -6.0:
             # need to go up, not down!
@@ -227,13 +225,13 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def watch_distance_maintained(self, delta=0.3, timeout=5.0):
         """Watch and wait for the rangefinder reading to be maintained"""
         tstart = self.get_sim_time_cached()
-        previous_distance = self.mav.recv_match(type='RANGEFINDER', blocking=True).distance
+        previous_distance = self.assert_receive_message('RANGEFINDER').distance
         self.progress('Distance to be watched: %.2f' % previous_distance)
         while True:
-            m = self.mav.recv_match(type='RANGEFINDER', blocking=True)
             if self.get_sim_time_cached() - tstart > timeout:
                 self.progress('Distance hold done: %f' % previous_distance)
                 return
+            m = self.assert_receive_message('RANGEFINDER')
             if abs(m.distance - previous_distance) > delta:
                 raise NotAchievedException(
                     "Distance not maintained: want %.2f (+/- %.2f) got=%.2f" %
@@ -452,7 +450,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1500)
         self.delay_sim_time(3)
         # start the test itself, go through some modes and check if anything changes
-        previous_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        previous_altitude = self.assert_receive_message('VFR_HUD').alt
         self.change_mode('ALT_HOLD')
         self.delay_sim_time(2)
         self.change_mode('POSHOLD')
@@ -471,7 +469,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.delay_sim_time(2)
         self.change_mode('MANUAL')
         self.disarm_vehicle()
-        final_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        final_altitude = self.assert_receive_message('VFR_HUD').alt
         if abs(previous_altitude - final_altitude) > delta:
             raise NotAchievedException(
                 "Changing modes affected depth with no throttle input!, started at {}, ended at {}"
@@ -493,9 +491,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.delay_sim_time(2)
 
         # Save starting point
-        msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
-        if msg is None:
-            raise NotAchievedException("Did not get GLOBAL_POSITION_INT")
+        self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
         start_pos = self.mav.location()
         # Hold in perfect conditions
         self.progress("Testing position hold in perfect conditions")
@@ -609,8 +605,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        startpos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                                       blocking=True)
+        startpos = self.assert_receive_message('GLOBAL_POSITION_INT')
 
         lat = 5
         lon = 5
@@ -640,8 +635,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         while True:
             if self.get_sim_time_cached() - tstart > 200:
                 raise NotAchievedException("Did not move far enough")
-            pos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                                      blocking=True)
+            pos = self.assert_receive_message('GLOBAL_POSITION_INT')
             delta = self.get_distance_int(startpos, pos)
             self.progress("delta=%f (want >10)" % delta)
             if delta > 10:
