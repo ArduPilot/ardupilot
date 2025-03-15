@@ -42,17 +42,38 @@ public:
     // Return true if successful
     bool measure() WARN_IF_UNUSED;
 
+    enum class Status {
+        Normal, // Happy, valid reading
+        Busy, // Busy, try reading again later
+        Fault, // Something bad has happened
+    };
+
     // read the values from the sensor
-    // Return true if successful
+    // Return status
     // pressure corrected but not scaled to the correct units
     // temperature in degrees centigrade
-    bool collect(float &PComp, float &temperature) WARN_IF_UNUSED;
+    Status collect(float &PComp, float &temperature) WARN_IF_UNUSED;
+
+    // Read coefficients in stages
+    enum class CoefficientStage {
+        A_high,
+        A_low,
+        B_high,
+        B_low,
+        C_high,
+        C_low,
+        D_high,
+        D_low,
+        E_high,
+        E_low,
+        Done,
+    } stage;
 
     // Read extended compensation coefficients from sensor
-    bool read_coefficients();
+    void read_coefficients();
 
     // Read 4 bytes compensation coefficient
-    bool read_register(uint8_t cmd, uint32_t &result);
+    bool read_register(uint8_t cmd, uint16_t &result);
 
 private:
     AP_HAL::I2CDevice *&dev;
@@ -93,7 +114,7 @@ private:
     void _timer();
 
     uint32_t last_sample_time_ms;
-    uint32_t measurement_started_ms;
+    bool measurement_requested;
     AP_HAL::I2CDevice *_dev;
 
     AUAV_Pressure_sensor sensor { _dev, AUAV_Pressure_sensor::Type::Differential };
