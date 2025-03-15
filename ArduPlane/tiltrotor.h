@@ -143,6 +143,8 @@ public:
 
     bool show_vtol_view() const override;
 
+    bool use_multirotor_control_in_fwd_transition() const override;
+
 private:
 
     Tiltrotor& tiltrotor;
