@@ -166,12 +166,12 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Param: 0_BAUD
     // @DisplayName: Serial0 baud rate
     // @Description: The baud rate used on the USB console. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000,2000:2000000
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000,2000:2000000,12500:12500000
     // @User: Standard
     AP_GROUPINFO("0_BAUD",  0, AP_SerialManager, state[0].baud, DEFAULT_SERIAL0_BAUD/1000),
 
     // @Param: 0_PROTOCOL
-    // @DisplayName: Console protocol selection
+    // @DisplayName: Serial0 protocol selection
     // @Description: Control what protocol to use on the console. 
     // @Values: 1:MAVLink1, 2:MAVLink2
     // @User: Standard
@@ -181,7 +181,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
 #if HAL_HAVE_SERIAL1
     // @Param: 1_PROTOCOL
-    // @DisplayName: Telem1 protocol selection
+    // @DisplayName: Serial1 protocol selection
     // @Description: Control what protocol to use on the Telem1 port. Note that the Frsky options require external converter hardware. See the wiki for details.
     // @SortValues: AlphabeticalZeroAtTop
     // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:Gimbal, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry, 18:OpticalFlow, 19:RobotisServo, 20:NMEA Output, 21:WindVane, 22:SLCAN, 23:RCIN, 24:EFI Serial, 25:LTM, 26:RunCam, 27:HottTelem, 28:Scripting, 29:Crossfire VTX, 30:Generator, 31:Winch, 32:MSP, 33:DJI FPV, 34:AirSpeed, 35:ADSB, 36:AHRS, 37:SmartAudio, 38:FETtecOneWire, 39:Torqeedo, 40:AIS, 41:CoDevESC, 42:DisplayPort, 43:MAVLink High Latency, 44:IRC Tramp, 45:DDS XRCE, 46:IMUDATA, 48:PPP, 49:i-BUS Telemetry
@@ -190,9 +190,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("1_PROTOCOL",  1, AP_SerialManager, state[1].protocol, DEFAULT_SERIAL1_PROTOCOL),
 
     // @Param: 1_BAUD
-    // @DisplayName: Telem1 Baud Rate
+    // @DisplayName: Serial1 Baud Rate
     // @Description: The baud rate used on the Telem1 port. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000,2000:2000000
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000,2000:2000000,12500:12500000
     // @User: Standard
     AP_GROUPINFO("1_BAUD", 2, AP_SerialManager, state[1].baud, DEFAULT_SERIAL1_BAUD),
 #endif
@@ -200,13 +200,13 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 #if HAL_HAVE_SERIAL2
     // @Param: 2_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
-    // @DisplayName: Telemetry 2 protocol selection
+    // @DisplayName: Serial2 protocol selection
     // @Description: Control what protocol to use on the Telem2 port. Note that the Frsky options require external converter hardware. See the wiki for details.
     AP_GROUPINFO("2_PROTOCOL",  3, AP_SerialManager, state[2].protocol, DEFAULT_SERIAL2_PROTOCOL),
 
     // @Param: 2_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
-    // @DisplayName: Telemetry 2 Baud Rate
+    // @DisplayName: Serial2 Baud Rate
     // @Description: The baud rate of the Telem2 port. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     AP_GROUPINFO("2_BAUD", 4, AP_SerialManager, state[2].baud, DEFAULT_SERIAL2_BAUD),
 #endif
@@ -214,14 +214,14 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 #if HAL_HAVE_SERIAL3
     // @Param: 3_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
-    // @DisplayName: Serial 3 (GPS) protocol selection
-    // @Description: Control what protocol Serial 3 (GPS) should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
+    // @DisplayName: Serial3 (GPS) protocol selection
+    // @Description: Control what protocol Serial3 (GPS) should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
     AP_GROUPINFO("3_PROTOCOL",  5, AP_SerialManager, state[3].protocol, DEFAULT_SERIAL3_PROTOCOL),
 
     // @Param: 3_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
-    // @DisplayName: Serial 3 (GPS) Baud Rate
-    // @Description: The baud rate used for the Serial 3 (GPS). Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @DisplayName: Serial3 (GPS) Baud Rate
+    // @Description: The baud rate used for the Serial3 (GPS). Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     AP_GROUPINFO("3_BAUD", 6, AP_SerialManager, state[3].baud, DEFAULT_SERIAL3_BAUD),
 #endif
 
@@ -234,7 +234,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
     // @Param: 4_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
-    // @DisplayName: Serial 4 Baud Rate
+    // @DisplayName: Serial4 Baud Rate
     // @Description: The baud rate used for Serial4. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     AP_GROUPINFO("4_BAUD", 8, AP_SerialManager, state[4].baud, DEFAULT_SERIAL4_BAUD),
 #endif
@@ -248,7 +248,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
     // @Param: 5_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
-    // @DisplayName: Serial 5 Baud Rate
+    // @DisplayName: Serial5 Baud Rate
     // @Description: The baud rate used for Serial5. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     AP_GROUPINFO("5_BAUD", 10, AP_SerialManager, state[5].baud, DEFAULT_SERIAL5_BAUD),
 #endif
@@ -264,7 +264,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
     // @Param: 6_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
-    // @DisplayName: Serial 6 Baud Rate
+    // @DisplayName: Serial6 Baud Rate
     // @Description: The baud rate used for Serial6. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     AP_GROUPINFO("6_BAUD", 13, AP_SerialManager, state[6].baud, DEFAULT_SERIAL6_BAUD),
 #endif
@@ -282,7 +282,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 #if HAL_HAVE_SERIAL2
     // @Param: 2_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
-    // @DisplayName: Telem2 options
+    // @DisplayName: Serial2 options
     AP_GROUPINFO("2_OPTIONS",  15, AP_SerialManager, state[2].options, DEFAULT_SERIAL2_OPTIONS),
 #endif
 
@@ -345,7 +345,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
     // @Param: 7_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
-    // @DisplayName: Serial 7 Baud Rate
+    // @DisplayName: Serial7 Baud Rate
     // @Description: The baud rate used for Serial7. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     AP_GROUPINFO("7_BAUD", 24, AP_SerialManager, state[7].baud, DEFAULT_SERIAL7_BAUD),
 
@@ -364,7 +364,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
     // @Param: 8_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
-    // @DisplayName: Serial 8 Baud Rate
+    // @DisplayName: Serial8 Baud Rate
     // @Description: The baud rate used for Serial8. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     AP_GROUPINFO("8_BAUD", 27, AP_SerialManager, state[8].baud, DEFAULT_SERIAL8_BAUD),
 
@@ -383,7 +383,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
     // @Param: 9_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
-    // @DisplayName: Serial 9 Baud Rate
+    // @DisplayName: Serial9 Baud Rate
     // @Description: The baud rate used for Serial8. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     AP_GROUPINFO("9_BAUD", 30, AP_SerialManager, state[9].baud, DEFAULT_SERIAL9_BAUD),
 
@@ -756,6 +756,7 @@ uint32_t AP_SerialManager::map_baudrate(int32_t rate)
     case 921:  return 921600;
     case 1500:  return 1500000;
     case 2000:  return 2000000;
+    case 12500: return 12500000;
     }
 
     if (rate > 2000) {
