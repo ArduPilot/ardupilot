@@ -563,6 +563,7 @@ private:
     // these values are for the local channels. Non-local channels are handled by IOMCU
     uint32_t en_mask;
     uint16_t period[max_channels];
+    uint16_t period_corked[max_channels];
 
     // handling of bi-directional dshot
     struct {
