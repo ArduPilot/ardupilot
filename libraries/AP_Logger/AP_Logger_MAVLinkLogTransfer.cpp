@@ -195,7 +195,7 @@ void AP_Logger::handle_log_send()
     WITH_SEMAPHORE(_log_send_sem);
 
     if (end_log_transfer_pending_ms != 0 &&
-        AP_HAL::millis() - end_log_transfer_pending_ms > 2000) {
+        AP_HAL::millis() - end_log_transfer_pending_ms > 1000) {
         end_log_transfer_pending_ms = 0;
         end_log_transfer();
         return;
