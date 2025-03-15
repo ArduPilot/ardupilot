@@ -109,9 +109,15 @@ void AP_MotorsTri::output_to_motors()
             break;
     }
 
-    rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[AP_MOTORS_MOT_1]));
-    rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[AP_MOTORS_MOT_2]));
-    rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[AP_MOTORS_MOT_4]));
+    if (motor_enabled_mask(AP_MOTORS_MOT_1)) {
+        rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[AP_MOTORS_MOT_1]));
+    }
+    if (motor_enabled_mask(AP_MOTORS_MOT_2)) {
+        rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[AP_MOTORS_MOT_2]));
+    }
+    if (motor_enabled_mask(AP_MOTORS_MOT_4)) {
+        rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[AP_MOTORS_MOT_4]));
+    }
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
