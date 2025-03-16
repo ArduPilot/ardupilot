@@ -901,6 +901,7 @@ void AC_Fence::record_margin_breach(uint8_t fence_type)
     // if we haven't already breached a margin limit, update the breach time
     if (!(_breached_fence_margins & fence_type)) {
         const uint32_t now = AP_HAL::millis();
+        _margin_breach_time = now;
 
         // emit a message indicated we're newly-breached, but not too often
         if (option_enabled(OPTIONS::MARGIN_BREACH)
