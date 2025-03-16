@@ -239,7 +239,7 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
     // additional plane specific checks
     if (check_enabled(ARMING_CHECK_INS)) {
         char failure_msg[50] = {};
-        if (!AP::ahrs().pre_arm_check(true, failure_msg, sizeof(failure_msg))) {
+        if (!AP::ahrs().pre_arm_check(true, failure_msg, sizeof(failure_msg), true)) {
             check_failed(ARMING_CHECK_INS, display_failure, "AHRS: %s", failure_msg);
             return false;
         }
