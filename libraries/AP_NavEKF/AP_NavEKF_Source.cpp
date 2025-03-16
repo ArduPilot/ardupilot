@@ -323,7 +323,7 @@ void AP_NavEKF_Source::mark_configured()
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
 // requires_position should be true if vertical or horizontal position configuration should be checked
-bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
+bool AP_NavEKF_Source::pre_arm_check(bool requires_position, bool requires_height, char *failure_msg, uint8_t failure_msg_len) const
 {
     auto &dal = AP::dal();
     bool baro_required = false;
@@ -383,6 +383,27 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
                 return false;
             }
 
+            // check velz
+            switch ((SourceZ)_source_set[i].velz.get()) {
+            case SourceZ::NONE:
+                break;
+            case SourceZ::GPS:
+                gps_required = true;
+                break;
+            case SourceZ::EXTNAV:
+                visualodom_required = true;
+                break;
+            case SourceZ::BARO:
+            case SourceZ::RANGEFINDER:
+            case SourceZ::BEACON:
+            default:
+                // invalid velz value
+                hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_VELZ", (int)i+1);
+                return false;
+            }
+        }
+
+        if (requires_height || requires_position) {
             // check posz
             switch ((SourceZ)_source_set[i].posz.get()) {
             case SourceZ::BARO:
@@ -405,25 +426,6 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
             default:
                 // invalid posz value
                 hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_POSZ", (int)i+1);
-                return false;
-            }
-
-            // check velz
-            switch ((SourceZ)_source_set[i].velz.get()) {
-            case SourceZ::NONE:
-                break;
-            case SourceZ::GPS:
-                gps_required = true;
-                break;
-            case SourceZ::EXTNAV:
-                visualodom_required = true;
-                break;
-            case SourceZ::BARO:
-            case SourceZ::RANGEFINDER:
-            case SourceZ::BEACON:
-            default:
-                // invalid velz value
-                hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_VELZ", (int)i+1);
                 return false;
             }
         }
