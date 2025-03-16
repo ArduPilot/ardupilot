@@ -1021,6 +1021,7 @@ singleton AC_Fence rename fence
 singleton AC_Fence method get_breaches uint8_t
 singleton AC_Fence method get_breach_time uint32_t
 singleton AC_Fence method get_margin_breaches uint8_t
+singleton AC_Fence method get_margin_breach_time uint32_t
 singleton AC_Fence method get_breach_distance float uint8_t'skip_check
 
 include AP_Filesystem/AP_Filesystem.h depends AP_FILESYSTEM_FILE_READING_ENABLED
