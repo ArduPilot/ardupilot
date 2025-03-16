@@ -2261,7 +2261,8 @@ bool AP_AHRS::healthy(void) const
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
 // requires_position should be true if horizontal position configuration should be checked
-bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
+// requires_height should be true if height configuration should be checked
+bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len, bool requires_height) const
 {
     bool ret = true;
     if (!healthy()) {
@@ -2322,7 +2323,7 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
             hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 not started");
             return false;
         }
-        return EKF3.pre_arm_check(requires_position, failure_msg, failure_msg_len) && ret;
+        return EKF3.pre_arm_check(requires_position, requires_height, failure_msg, failure_msg_len) && ret;
 #endif
     }
 
