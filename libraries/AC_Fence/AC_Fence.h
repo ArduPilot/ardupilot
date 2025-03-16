@@ -134,6 +134,9 @@ public:
     /// get_breaches - returns bitmask of the fence types that have had their margins breached
     uint8_t get_margin_breaches() const { return _breached_fence_margins; }
 
+    /// get_margin_breach_time - returns time the fence margin was breached
+    uint32_t get_margin_breach_time() const { return _margin_breach_time; }
+
     /// get_breach_distance - returns maximum distance in meters outside
     /// of the given fences.  fence_type is a bitmask here.
     float get_breach_distance(uint8_t fence_type) const;
@@ -268,6 +271,7 @@ private:
     uint8_t         _breached_fences;       // bitmask holding the fence types that were breached (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)
     uint8_t         _breached_fence_margins; // bitmask holding the fence types that have margin breaches (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)
     uint32_t        _breach_time;           // time of last breach in milliseconds
+    uint32_t        _margin_breach_time;    // time of last margin breach in milliseconds
     uint16_t        _breach_count;          // number of times we have breached the fence
     uint32_t _last_breach_notify_sent_ms;  // last time we sent a message about newly-breaching the fences
     uint32_t _last_margin_breach_notify_sent_ms;  // last time we sent a message about newly-breaching the fences
