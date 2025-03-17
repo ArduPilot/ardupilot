@@ -5278,24 +5278,41 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_home(const mavlink_command_int_t &
 #if AP_AHRS_POSITION_RESET_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_int_external_position_estimate(const mavlink_command_int_t &packet)
 {
-    if ((packet.frame != MAV_FRAME_GLOBAL && packet.frame != MAV_FRAME_GLOBAL_INT) || !isnan(packet.z)) {
+    gcs().send_text(MAV_SEVERITY_INFO, "I work1");
+    if ((packet.frame != MAV_FRAME_GLOBAL && packet.frame != MAV_FRAME_GLOBAL_INT) ||
+        !isnan(packet.z)) {
         return MAV_RESULT_DENIED;
     }
-    uint32_t ts = (uint32_t)packet.param1;      
-    float pos_accuracy = packet.param3;        
-    int32_t lat = packet.x;                     
-    int32_t lon = packet.y;                     
+
+    mavlink_command_int_t p2 = packet;
+    p2.z = 0;
+
+    gcs().send_text(MAV_SEVERITY_INFO, "I work2");
 
     Location loc;
-    loc.lat = lat;
-    loc.lng = lon;
-    loc.alt = 0;  
+    if (!location_from_command_t(p2, loc)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "DENIED");
+        return MAV_RESULT_DENIED;
+    }
 
-    bool ok = AP::ahrs().handle_external_position_estimate(loc, pos_accuracy, ts);
-    return ok ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+    uint32_t timestamp_ms = static_cast<uint32_t>(p2.param1 * 1000); 
+
+    const uint32_t processing_ms = static_cast<uint32_t>(p2.param2 * 1000);
+
+    const float pos_accuracy = p2.param3;
+    gcs().send_text(MAV_SEVERITY_INFO, "I STILL WORK!!!");
+    if (timestamp_ms > processing_ms) {
+        timestamp_ms -= processing_ms;
+    }
+
+    if (!AP::ahrs().handle_external_position_estimate(loc, pos_accuracy, timestamp_ms)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    gcs().send_text(MAV_SEVERITY_INFO, "External position received: lat=%d, lon=%d, ts=%u", loc.lat, loc.lng, timestamp_ms);
+    return MAV_RESULT_ACCEPTED;
 }
 #endif // AP_AHRS_POSITION_RESET_ENABLED
-
 #if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_int_external_wind_estimate(const mavlink_command_int_t &packet)
 {
