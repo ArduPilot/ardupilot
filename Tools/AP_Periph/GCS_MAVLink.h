@@ -18,11 +18,13 @@
 #include <AP_CANManager/AP_MAVLinkCAN.h>
 #if HAL_GCS_ENABLED
 
+class GCS_Periph;
 /*
  *  GCS backend used for many examples and tools
  */
 class GCS_MAVLINK_Periph : public GCS_MAVLINK
 {
+    friend GCS_Periph;
 public:
 
     using GCS_MAVLINK::GCS_MAVLINK;
@@ -62,6 +64,7 @@ public:
 
     using GCS::GCS;
 
+    void request_can_forward();
 protected:
 
     uint8_t sysid_this_mav() const override;

@@ -1506,6 +1506,10 @@ void AP_Periph_FW::process1HzTasks(uint64_t timestamp_usec)
     }
 #endif
 
+#if AP_MAVLINK_CAN_ENABLED
+    // request can forward
+    _gcs.request_can_forward();
+#endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (hal.run_in_maintenance_mode()) {
         node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_MAINTENANCE;
