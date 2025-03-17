@@ -1220,7 +1220,7 @@ void AP_CRSF_Telem::calc_parameter() {
         _telem.ext.param_entry.payload[idx++] = 0; // parent folder
         _telem.ext.param_entry.payload[idx++] = ParameterType::FOLDER; // type
         // name
-        strncpy((char*)&_telem.ext.param_entry.payload[idx], "Parameters", ARRAY_SIZE(_telem.ext.param_entry.payload) - idx);
+        strncpy((char*)&_telem.ext.param_entry.payload[idx], "Parameters", ARRAY_SIZE(_telem.ext.param_entry.payload) - idx - 1);
         idx += strlen("Parameters");
         _telem.ext.param_entry.payload[idx++] = 0; // null terminator
         // write out all of the ids we are going to send
@@ -1248,7 +1248,7 @@ void AP_CRSF_Telem::calc_parameter() {
         _telem.ext.param_entry.payload[idx++] = menu->parent_id; // parent folder
         _telem.ext.param_entry.payload[idx++] = ParameterType::FOLDER; // type
         // name
-        const uint8_t namelen = ARRAY_SIZE(_telem.ext.param_entry.payload) - idx;
+        const uint8_t namelen = ARRAY_SIZE(_telem.ext.param_entry.payload) - idx - 1;
         strncpy((char*)&_telem.ext.param_entry.payload[idx], menu->name, namelen);
         idx += strnlen(menu->name, namelen);
         _telem.ext.param_entry.payload[idx++] = 0; // null terminator
