@@ -354,7 +354,7 @@ static const AP_RCProtocol::SerialConfig serial_configs[] {
 #endif
 };
 
-static_assert(ARRAY_SIZE(serial_configs) > 1, "must have at least one serial config");
+static_assert(ARRAY_SIZE(serial_configs) > 0, "must have at least one serial config");
 
 void AP_RCProtocol::check_added_uart(void)
 {
