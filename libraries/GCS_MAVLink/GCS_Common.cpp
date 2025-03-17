@@ -5278,30 +5278,21 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_home(const mavlink_command_int_t &
 #if AP_AHRS_POSITION_RESET_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_int_external_position_estimate(const mavlink_command_int_t &packet)
 {
-    if ((packet.frame != MAV_FRAME_GLOBAL && packet.frame != MAV_FRAME_GLOBAL_INT) ||
-        !isnan(packet.z)) {
-        // we only support global frame without altitude
+    if ((packet.frame != MAV_FRAME_GLOBAL && packet.frame != MAV_FRAME_GLOBAL_INT) || !isnan(packet.z)) {
         return MAV_RESULT_DENIED;
     }
+    uint32_t ts = (uint32_t)packet.param1;      
+    float pos_accuracy = packet.param3;        
+    int32_t lat = packet.x;                     
+    int32_t lon = packet.y;                     
 
-    // cope with the NaN when convering to Location
     Location loc;
-    mavlink_command_int_t p2 = packet;
-    p2.z = 0;
+    loc.lat = lat;
+    loc.lng = lon;
+    loc.alt = 0;  
 
-    if (!location_from_command_t(p2, loc)) {
-        return MAV_RESULT_DENIED;
-    }
-    uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(uint64_t(p2.param1*1e6), PAYLOAD_SIZE(chan, COMMAND_INT));
-    const uint32_t processing_ms = p2.param2*1e3;
-    const float pos_accuracy = p2.param3;
-    if (timestamp_ms > processing_ms) {
-        timestamp_ms -= processing_ms;
-    }
-    if (!AP::ahrs().handle_external_position_estimate(loc, pos_accuracy, timestamp_ms)) {
-        return MAV_RESULT_FAILED;
-    }
-    return MAV_RESULT_ACCEPTED;
+    bool ok = AP::ahrs().handle_external_position_estimate(loc, pos_accuracy, ts);
+    return ok ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
 }
 #endif // AP_AHRS_POSITION_RESET_ENABLED
 
