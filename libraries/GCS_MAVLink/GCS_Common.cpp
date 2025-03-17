@@ -5306,6 +5306,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_position_estimate(const mavl
     }
 
     if (!AP::ahrs().handle_external_position_estimate(loc, pos_accuracy, timestamp_ms)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "It's time to fail!!");
         return MAV_RESULT_FAILED;
     }
 

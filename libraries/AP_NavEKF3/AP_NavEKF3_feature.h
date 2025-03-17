@@ -34,7 +34,7 @@
 #endif
 
 #ifndef EK3_FEATURE_POSITION_RESET
-#define EK3_FEATURE_POSITION_RESET EK3_FEATURE_ALL || AP_AHRS_POSITION_RESET_ENABLED
+#define EK3_FEATURE_POSITION_RESET 1
 #endif
 
 // rangefinder measurements if available

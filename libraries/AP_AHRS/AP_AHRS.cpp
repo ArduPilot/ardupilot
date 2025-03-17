@@ -1524,8 +1524,10 @@ bool AP_AHRS::set_origin(const Location &loc)
 bool AP_AHRS::handle_external_position_estimate(const Location &loc, float pos_accuracy, uint32_t timestamp_ms)
 {
 #if HAL_NAVEKF3_AVAILABLE
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 is available");
     return EKF3.setLatLng(loc, pos_accuracy, timestamp_ms);
 #endif
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 is NOT available");
     return false;
 }
 #endif
