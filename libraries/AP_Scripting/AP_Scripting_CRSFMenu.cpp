@@ -4,7 +4,7 @@
 
 #include "AP_Scripting_CRSFMenu.h"
 
-#if AP_CRSF_SCRIPTING
+#if AP_CRSF_SCRIPTING_ENABLED
 
 #include <AP_Scripting/lua_generated_bindings.h>
 
@@ -29,6 +29,10 @@ int lua_CRSF_new_menu(lua_State *L)
 
     AP_CRSF_Telem::ScriptedMenu* menu = AP::crsf_telem()->add_menu(name);
 
+    if (menu == nullptr) {
+        return luaL_error(L, "No menu named: %s", name);
+    }
+
     new (ud) CRSFMenu(menu);
     luaL_getmetatable(L, "CRSFMenu");
     lua_setmetatable(L, -2);
@@ -39,8 +43,7 @@ int lua_CRSF_new_menu(lua_State *L)
 int lua_CRSF_get_menu_event(lua_State *L)
 {
     binding_argcheck(L, 2);
-    const uint8_t raw_events = get_uint8_t(L, 2);
-    const uint8_t events = static_cast<uint8_t>(raw_events);
+    const uint8_t events = get_uint8_t(L, 2);
     uint8_t param = 0;
     AP_CRSF_Telem::ScriptedPayload payload {};
     const uint8_t data = static_cast<uint8_t>(AP::crsf_telem()->get_menu_event(
@@ -133,5 +136,5 @@ int lua_CRSF_param_data(lua_State *L)
     return 1;
 }
 
-#endif // AP_CRSF_SCRIPTING
+#endif // AP_CRSF_SCRIPTING_ENABLED
 #endif // AP_SCRIPTING

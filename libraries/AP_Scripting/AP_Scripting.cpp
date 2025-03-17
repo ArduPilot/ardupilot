@@ -363,9 +363,9 @@ void AP_Scripting::thread(void) {
         _serialdevice.clear();
 #endif
 
-#if AP_CRSF_SCRIPTING
+#if AP_CRSF_SCRIPTING_ENABLED
         AP::crsf_telem()->clear_menus();
-#endif
+#endif // AP_CRSF_SCRIPTING_ENABLED
         
         // Clear blocked commands
         {

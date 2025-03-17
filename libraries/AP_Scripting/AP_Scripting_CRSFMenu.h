@@ -3,7 +3,7 @@
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include "lua/src/lua.hpp"
 
-#if AP_CRSF_SCRIPTING
+#if AP_CRSF_SCRIPTING_ENABLED
 
 int lua_CRSF_new_menu(lua_State *L);
 int lua_CRSF_get_menu_event(lua_State *L);
@@ -43,4 +43,4 @@ public:
     AP_CRSF_Telem::ScriptedMenu* menu;
 };
 
-#endif
+#endif // AP_CRSF_SCRIPTING_ENABLED
