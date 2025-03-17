@@ -83,6 +83,28 @@ bool AP_MAVLinkCAN::handle_can_forward(mavlink_channel_t chan, const mavlink_com
 }
 
 /*
+    request can forward
+*/
+bool AP_MAVLinkCAN::request_can_forward(mavlink_channel_t chan, uint8_t bus, uint8_t system_id, uint8_t component_id)
+{
+    mavlink_command_int_t packet;
+    packet.param1 = bus;
+    packet.target_component = component_id;
+    packet.target_system = system_id;
+    packet.command = MAV_CMD_CAN_FORWARD;
+    if (!HAVE_PAYLOAD_SPACE(chan, MAVLINK_MSG_ID_COMMAND_INT)) {
+        return false;
+    }
+    mavlink_msg_command_int_send_struct(chan, &packet);
+    // call handle_can_forward to set up the callback
+    mavlink_message_t msg;
+    msg.sysid = system_id;
+    msg.compid = component_id;
+    requested_forward = true;
+    return handle_can_forward(chan, packet, msg);
+}
+
+/*
   handle a CAN_FRAME packet
  */
 void AP_MAVLinkCAN::handle_can_frame(const mavlink_message_t &msg)
@@ -276,10 +298,11 @@ void AP_MAVLinkCAN::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &fram
         // we are not registered for forwarding this bus, discard frame
         return;
     }
-    if (can_forward.frame_counter++ == 100) {
+    if (can_forward.frame_counter++ == 100 && !requested_forward) {
         // check every 100 frames for disabling CAN_FRAME send
         // we stop sending after 5s if the client stops
-        // sending MAV_CMD_CAN_FORWARD requests
+        // sending MAV_CMD_CAN_FORWARD requests, only if we
+        // didn't initially requested forwarding
         if (can_forward.callback_id != 0 &&
             AP_HAL::millis() - can_forward.last_callback_enable_ms > 5000) {
             hal.can[bus]->unregister_frame_callback(can_forward.callback_id);

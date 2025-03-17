@@ -42,6 +42,9 @@ public:
     // Handle CAN filter modification
     void handle_can_filter_modify(const mavlink_message_t &msg);
 
+    // request can forward
+    bool request_can_forward(mavlink_channel_t chan, uint8_t bus, uint8_t system_id, uint8_t component_id);
+
 private:
     // Callback for receiving CAN frames from CAN bus and sending to GCS
     void can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame, AP_HAL::CANIface::CanIOFlags flags);
@@ -70,6 +73,9 @@ private:
     
     // Frame buffer for queuing frames
     ObjectBuffer<BufferFrame> *frame_buffer;
+
+    // Request to forward CAN frames
+    bool requested_forward;
 };
 
 #endif // HAL_CANMANAGER_ENABLED && HAL_GCS_ENABLED
