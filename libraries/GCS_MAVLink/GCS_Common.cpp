@@ -5309,8 +5309,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_position_estimate(const mavl
         return MAV_RESULT_FAILED;
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO, "External position received: lat=%d, lon=%d, ts=%u", loc.lat, loc.lng, timestamp_ms);
+    gcs().send_text(MAV_SEVERITY_INFO, "External position received: YES");
     return MAV_RESULT_ACCEPTED;
+    gcs().send_text(MAV_SEVERITY_INFO, "External position received: YES");
 }
 #endif // AP_AHRS_POSITION_RESET_ENABLED
 #if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
