@@ -713,11 +713,11 @@ ap_object ScriptingCANBuffer method read_frame boolean AP_HAL::CANFrame'Null
 ap_object ScriptingCANBuffer method add_filter boolean uint32_t'skip_check uint32_t'skip_check
 
 include AP_Scripting/AP_Scripting_CRSFMenu.h
-userdata CRSFParameter depends AP_CRSF_SCRIPTING
+userdata CRSFParameter depends AP_CRSF_SCRIPTING_ENABLED
 userdata CRSFParameter method id uint8_t'skip_check
 userdata CRSFParameter manual data lua_CRSF_param_data 0 1
 
-userdata CRSFMenu depends AP_CRSF_SCRIPTING
+userdata CRSFMenu depends AP_CRSF_SCRIPTING_ENABLED
 userdata CRSFMenu creation lua_CRSF_new_menu 1
 userdata CRSFMenu method id uint8_t'skip_check
 userdata CRSFMenu method name string
@@ -725,7 +725,7 @@ userdata CRSFMenu method num_params uint8_t'skip_check
 userdata CRSFMenu manual add_parameter lua_CRSF_add_parameter 1 1
 userdata CRSFMenu manual add_menu lua_CRSF_add_menu 1 1
 
-singleton AP::crsf_telem() depends AP_CRSF_SCRIPTING
+singleton AP::crsf_telem() depends AP_CRSF_SCRIPTING_ENABLED
 singleton AP::crsf_telem() literal
 singleton AP::crsf_telem() rename crsf
 singleton AP::crsf_telem() manual add_menu lua_CRSF_add_root_menu 1 1
