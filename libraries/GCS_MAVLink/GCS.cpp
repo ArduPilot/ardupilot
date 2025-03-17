@@ -119,6 +119,24 @@ void GCS::send_named_float(const char *name, float value) const
 
     gcs().send_to_active_channels(MAVLINK_MSG_ID_NAMED_VALUE_FLOAT,
                                   (const char *)&packet);
+
+#if HAL_LOGGING_ENABLED
+// @LoggerMessage: NVF
+// @Description: Named Value Float messages; messages sent to GCS via NAMED_VALUE_FLOAT
+// @Field: TimeUS: Time since system startup
+// @Field: Name: Name of float
+// @Field: Value: Value of float
+    AP::logger().WriteStreaming(
+        "NVF",
+        "TimeUS," "Name," "Value",
+        "s"       "#"     "-",
+        "F"       "-"     "-",
+        "Q"       "N"     "f",
+        AP_HAL::micros64(),
+        name,
+        value
+    );
+#endif  // HAL_LOGGING_ENABLED
 }
 
 #if HAL_HIGH_LATENCY2_ENABLED
