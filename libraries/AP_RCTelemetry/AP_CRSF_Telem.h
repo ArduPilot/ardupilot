@@ -184,7 +184,7 @@ public:
 
     const static uint8_t PARAMETER_MENU_ID = 1; // id of the parameter menu
 
-#if AP_CRSF_SCRIPTING
+#if AP_CRSF_SCRIPTING_ENABLED
     // scripted CRSF menus
     // menus follow the predefined ardupilot parameter menu
     // to avoid a lot of id shuffling at most 10 menus each with at most 20 parameters are allowed
