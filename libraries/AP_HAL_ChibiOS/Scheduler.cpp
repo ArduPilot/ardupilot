@@ -681,6 +681,20 @@ void Scheduler::restore_interrupts(void *state)
 /*
   trampoline for thread create
 */
+void Scheduler::task_create_thread_trampoline(void *ctx)
+{
+    AP_HAL::Scheduler::Task &t = *((AP_HAL::Scheduler::Task*)ctx);
+    while (true) {
+        // the body returns us a delay after which the body should be
+        // called again
+        const uint32_t delay_us = t.update();
+        hal.scheduler->delay_microseconds(delay_us);
+    }
+}
+
+/*
+  trampoline for thread create
+*/
 void Scheduler::thread_create_trampoline(void *ctx)
 {
     AP_HAL::MemberProc *t = (AP_HAL::MemberProc *)ctx;
@@ -743,6 +757,30 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         free(tproc);
         return false;
     }
+    return true;
+}
+
+/*
+  create a new task
+*/
+bool Scheduler::task_create(
+        AP_HAL::Scheduler::Task &task,
+        const char *name,
+        uint32_t stack_size,
+        priority_base base,
+        int8_t priority)
+{
+    const uint8_t thread_priority = calculate_thread_priority(base, priority);
+
+    thread_t *thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(stack_size),
+                                               name,
+                                               thread_priority,
+                                               task_create_thread_trampoline,
+                                               &task);
+    if (thread_ctx == nullptr) {
+        return false;
+    }
+
     return true;
 }
 
