@@ -638,6 +638,9 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     // depending on the pass by flag either go to waypoint in regular manner or
     // fly past it for set distance along the line of waypoints
     Location flex_next_WP_loc = next_WP_loc;
+    if (next_WP_loc.get_alt_frame() == Location::AltFrame::ABOVE_HOME) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
 
     uint8_t cmd_passby = HIGHBYTE(cmd.p1); // distance in meters to pass beyond the wp
     uint8_t cmd_acceptance_distance = LOWBYTE(cmd.p1); // radius in meters to accept reaching the wp
