@@ -103,16 +103,16 @@ void AP_SystemID::start()
         gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: No axis selected");
         return;
     }
+    if (!plane.quadplane.enabled()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: only for quadplane");
+        return;
+    }
     if (!plane.control_mode->supports_systemid()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Not supported in mode %s", plane.control_mode->name());
         return;
     }
     if (!hal.util->get_soft_armed()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: must be armed");
-        return;
-    }
-    if (!plane.quadplane.enabled()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: only for quadplane");
         return;
     }
 
@@ -234,7 +234,7 @@ void AP_SystemID::update()
             attitude_control->actuator_yaw_sysid(waveform_sample);
             break;
         case AxisType::MIX_THROTTLE:
-            throttle_offset += waveform_sample;
+            throttle_offset = waveform_sample;
             break;
     }
 

@@ -25,7 +25,7 @@ public:
         return attitude_offset_deg;
     }
     float get_throttle_offset(void) const {
-        return throttle_offset;
+        return running ? throttle_offset : 0.0;
     }
 
     bool is_running() const {
