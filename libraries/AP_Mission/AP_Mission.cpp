@@ -903,6 +903,7 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_DO_RETURN_PATH_START:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_GO_AROUND:
+    case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_VTOL_LAND:
@@ -1225,6 +1226,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_DO_GO_AROUND:                          // MAV ID: 191
+        break;
+
+    case MAV_CMD_DO_SET_ROI_LOCATION:                   // MAV ID: 195
+    case MAV_CMD_DO_SET_ROI_NONE:                       // MAV ID: 197
+        cmd.p1 = packet.param1;                         // gimbal device id
         break;
 
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
@@ -1739,6 +1745,11 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_DO_GO_AROUND:                          // MAV ID: 191
+        break;
+
+    case MAV_CMD_DO_SET_ROI_LOCATION:                   // MAV ID: 195
+    case MAV_CMD_DO_SET_ROI_NONE:                       // MAV ID: 197
+        packet.param1 = cmd.p1;                         // gimbal device id
         break;
 
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
@@ -2776,6 +2787,10 @@ const char *AP_Mission::Mission_Command::type() const
         return "DigiCamCtrl";
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         return "SetCamTrigDst";
+    case MAV_CMD_DO_SET_ROI_LOCATION:
+        return "SetROILocation";
+    case MAV_CMD_DO_SET_ROI_NONE:
+        return "SetROINone";
     case MAV_CMD_DO_SET_ROI:
         return "SetROI";
     case MAV_CMD_DO_SET_REVERSE:
