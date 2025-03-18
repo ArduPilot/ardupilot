@@ -241,7 +241,19 @@ void AP_SystemID::update()
     // reduce control in XY axis when in position controlled modes
     plane.quadplane.pos_control->set_xy_control_scale_factor(xy_control_mul);
 
-    log_data();
+    if (log_subsample <= 0) {
+        log_data();
+        if (plane.should_log(MASK_LOG_ATTITUDE_FAST) && plane.should_log(MASK_LOG_ATTITUDE_MED)) {
+            log_subsample = 1;
+        } else if (plane.should_log(MASK_LOG_ATTITUDE_FAST)) {
+            log_subsample = 2;
+        } else if (plane.should_log(MASK_LOG_ATTITUDE_MED)) {
+            log_subsample = 4;
+        } else {
+            log_subsample = 8;
+        }
+    }
+    log_subsample -= 1;
 }
 
 // @LoggerMessage: SIDD
