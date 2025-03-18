@@ -284,7 +284,6 @@ void AP_SystemID::log_data() const
                                     delta_velocity.z * dt_vel_inv);
 
         // log attitude controller at the same rate
-        plane.Log_Write_Attitude(true);
         plane.quadplane.Log_Write_AttRate();
     }
 #endif // HAL_LOGGING_ENABLED
