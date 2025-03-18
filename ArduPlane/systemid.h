@@ -55,6 +55,8 @@ private:
 
     void set_bf_feedforward(bool value);
     void log_data() const;
+    int8_t log_subsample;       // Subsample multiple for logging.
+
 
     AP_Enum<AxisType> axis;               // Controls which axis are being excited. Set to non-zero to display other parameters
     AP_Float waveform_magnitude;// Magnitude of chirp waveform
