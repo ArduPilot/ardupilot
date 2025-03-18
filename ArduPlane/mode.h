@@ -931,6 +931,8 @@ public:
 
     bool does_auto_throttle() const override { return true; }
     
+    bool is_landing() const override;
+    
     void check_takeoff_direction(void);
 
     // return true when lined up correctly from the LOITER_TO_ALT

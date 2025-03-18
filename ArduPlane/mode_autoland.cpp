@@ -305,5 +305,11 @@ void ModeAutoLand::arm_check(void)
     }
 }
 
+bool ModeAutoLand::is_landing() const
+{
+    return (plane.flight_stage == AP_FixedWing::FlightStage::LAND);
+}
+
+
 #endif // MODE_AUTOLAND_ENABLED
 
