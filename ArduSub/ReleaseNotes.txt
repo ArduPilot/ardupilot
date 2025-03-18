@@ -1,5 +1,8 @@
 APM:Sub Release Notes:
 
+Sub-4.5.3 18-March-2025
+ - Fix range on Servo Camera servos not being set
+
 Sub-4.5.2 10-March-2025
  - Add support for PWM_TYPE_ANGLE
  - Add support for servo control of camera focus and zoom
