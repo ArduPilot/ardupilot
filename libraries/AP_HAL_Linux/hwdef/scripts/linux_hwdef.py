@@ -48,7 +48,7 @@ class LinuxHWDef(hwdef.HWDef):
 
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:
-            for dev in self.spidev:
+            for dev in self.linux_spidev:
                 if u == dev[0]:
                     self.linux_spidev.remove(dev)
 
