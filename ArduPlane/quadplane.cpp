@@ -903,7 +903,8 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
     bool use_yaw_target = false;
 
     float yaw_target_cd = 0.0;
-    if (!use_multicopter_control && transition->update_yaw_target(yaw_target_cd)) {
+    if (!use_multicopter_control && transition->update_yaw_target(yaw_target_cd) &&
+        !force_fw_control_recovery) {
         use_multicopter_control = true;
         use_yaw_target = true;
     }
@@ -4264,7 +4265,9 @@ bool QuadPlane::use_fw_attitude_controllers(void) const
             /*
               special case for vectored yaw tiltrotors in forward
               transition, keep multicopter control until we reach
-              target transition airspeed. This condition needs to
+              target transition airspeed. This can result in loss of
+              yaw control on some tilt-vectored airframes without
+              strong VTOL yaw control
             */
             return false;
         }
