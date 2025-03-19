@@ -19,12 +19,32 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_GPS/AP_GPS.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
 #include "MissionItemProtocol_Fence.h"
 
 extern const AP_HAL::HAL& hal;
+
+#ifndef MAV_SYSID_DEFAULT
+#if APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
+#define MAV_SYSID_DEFAULT 2
+#else
+#define MAV_SYSID_DEFAULT 1
+#endif  // APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
+#endif  // defined(MAV_SYSID_DEFAULT)
+
+const AP_Param::GroupInfo GCS::var_info[] {
+    // @Param: _SYSID
+    // @DisplayName: MAVLink system ID of this vehicle
+    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network
+    // @Range: 1 255
+    // @User: Advanced
+    AP_GROUPINFO("_SYSID",    1,     GCS,  sysid,  MAV_SYSID_DEFAULT),
+
+    AP_GROUPEND
+};
 
 void GCS::get_sensor_status_flags(uint32_t &present,
                                   uint32_t &enabled,
