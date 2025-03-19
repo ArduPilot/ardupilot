@@ -46,7 +46,7 @@ public:
 
         k_param_gcs0 = 100,         // stream rates for SERIAL0
         k_param_gcs1,               // stream rates for SERIAL1
-        k_param_sysid_this_mav,
+        k_param_sysid_this_mav_old,
         k_param_sysid_my_gcs,
         k_param_serial0_baud,       // deprecated
         k_param_serial1_baud,       // deprecated
@@ -133,13 +133,13 @@ public:
         k_param_logger = 253, // 253 - Logging Group
 
         k_param_vehicle = 257, // vehicle common block of parameters
+        k_param__gcs = 258,
     };
 
     AP_Int16 format_version;
 
     // Telemetry control
     //
-    AP_Int16 sysid_this_mav;
     AP_Int16 sysid_my_gcs;
     AP_Int16 sysid_target;
 
