@@ -4,11 +4,6 @@
 
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 
-uint8_t GCS_Rover::sysid_this_mav() const
-{
-    return rover.g.sysid_this_mav;
-}
-
 bool GCS_Rover::simple_input_active() const
 {
     if (rover.control_mode != &rover.mode_simple) {
