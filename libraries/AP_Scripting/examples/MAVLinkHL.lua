@@ -347,7 +347,7 @@ local function MAVLinkProcessor()
 
         -- create the header. Assume componentid of 1
         local header = string.pack('<BBBBBB', PROTOCOL_MARKER_V1, #payload,
-                                   _txseqid, param:get('SYSID_THISMAV'), 1,
+                                   _txseqid, param:get('MAV_SYSID'), 1,
                                    msgid)
 
         -- generate the CRC

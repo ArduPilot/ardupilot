@@ -284,7 +284,7 @@ ACRO_ROLL_RATE = Parameter("ACRO_ROLL_RATE")
 ACRO_YAW_RATE = Parameter('ACRO_YAW_RATE')
 AIRSPEED_MIN = Parameter("AIRSPEED_MIN")
 SCALING_SPEED = Parameter("SCALING_SPEED")
-SYSID_THISMAV = Parameter("SYSID_THISMAV")
+MAV_SYSID = Parameter("MAV_SYSID")
 
 GRAVITY_MSS = 9.80665
 
@@ -2162,7 +2162,7 @@ function log_position(logname, loc, quat)
                 'BHILLffff',
                 '#--DU----',
                 '---GG----',
-                SYSID_THISMAV:get(),
+                MAV_SYSID:get(),
                 gps_week,
                 gps_week_ms,
                 loc:lat(),
@@ -2357,7 +2357,7 @@ function handle_speed_adjustment()
       return
    end
    -- gcs:send_text(MAV_SEVERITY.INFO, string.format("NVF: name='%s' value=%f sysid=%d tbm=%f", name, remote_timestamp, sysid, time_boot_ms))
-   if name == "PATHT" and sysid ~= SYSID_THISMAV:get() then
+   if name == "PATHT" and sysid ~= MAV_SYSID:get() then
       local remote_t = time_boot_ms * 0.001
       local dt = local_t - remote_t
       local rem_patht = current_task.fn:timestamp_to_patht(remote_timestamp)
