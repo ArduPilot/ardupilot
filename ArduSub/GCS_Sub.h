@@ -25,8 +25,6 @@ public:
 
 protected:
 
-    uint8_t sysid_this_mav() const override;
-
     // minimum amount of time (in microseconds) that must remain in
     // the main scheduler loop before we are allowed to send any
     // mavlink messages.  We want to prioritise the main flight
