@@ -1167,11 +1167,15 @@ public:
             AP_HAL::panic("GCS must be singleton");
 #endif
         }
+
+        AP_Param::setup_object_defaults(this, var_info);
     };
 
     static class GCS *get_singleton() {
         return _singleton;
     }
+
+    static const struct AP_Param::GroupInfo        var_info[];
 
     virtual uint32_t custom_mode() const = 0;
     virtual MAV_TYPE frame_type() const = 0;
@@ -1302,7 +1306,7 @@ public:
     bool get_high_latency_status();
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
-    virtual uint8_t sysid_this_mav() const = 0;
+    uint8_t sysid_this_mav() const { return sysid; }
 
 #if AP_SCRIPTING_ENABLED
     // lua access to command_int
@@ -1327,6 +1331,9 @@ protected:
     GCS_MAVLINK_Parameters chan_parameters[MAVLINK_COMM_NUM_BUFFERS];
     uint8_t _num_gcs;
     GCS_MAVLINK *_chan[MAVLINK_COMM_NUM_BUFFERS];
+
+    // parameters
+    AP_Int16                 sysid;
 
 private:
 
