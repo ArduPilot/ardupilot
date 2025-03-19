@@ -1433,7 +1433,7 @@ bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timesta
     }
     if (ret == false) {
         num_cores = 1;                 
-        new_core0 = new NavEKF3_core[num_cores];
+        new_core0 = new NavEKF3_core(this, dal);
         ret |= new_core0[0].setLatLng(loc, posAccuracy, timestamp_ms);
       }
     // return true if any core accepts the new origin
