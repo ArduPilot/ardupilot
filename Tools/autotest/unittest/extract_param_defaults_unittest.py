@@ -252,10 +252,12 @@ class TestOutputParams(unittest.TestCase):
         output_params(defaults, 'qgcs', -1, 7)
 
         # Check if the print function was called with the correct parameters
-        expected_calls = [unittest.mock.call("\n# # Vehicle-Id Component-Id Name Value Type\n"),
-                          unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM1', 1.0, 9)),
-                          unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM2', 2.0, 9)),
-                          unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'MAV_SYSID', 3.0, 9))]
+        expected_calls = [
+            unittest.mock.call("\n# # Vehicle-Id Component-Id Name Value Type\n"),
+            unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'MAV_SYSID', 3.0, 9)),
+            unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM1', 1.0, 9)),
+            unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM2', 2.0, 9)),
+        ]
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
     @patch('extract_param_defaults.print')
