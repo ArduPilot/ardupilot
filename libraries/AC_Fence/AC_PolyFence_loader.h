@@ -171,7 +171,7 @@ public:
     // load polygon points stored in eeprom into
     // _loaded_offsets_from_origin and perform validation.  returns
     // true if load successfully completed
-    bool load_from_eeprom() WARN_IF_UNUSED;
+    bool load_from_storage() WARN_IF_UNUSED;
 
     // allow threads to lock against AHRS update
     HAL_Semaphore &get_loaded_fence_semaphore(void) {

@@ -603,7 +603,7 @@ uint16_t AC_PolyFence_loader::sum_of_polygon_point_counts_and_returnpoint()
     return ret;
 }
 
-bool AC_PolyFence_loader::load_from_eeprom()
+bool AC_PolyFence_loader::load_from_storage()
 {
     if (!check_indexed()) {
         return false;
@@ -1618,7 +1618,7 @@ void AC_PolyFence_loader::update()
         }
     }
 #endif
-    if (!load_from_eeprom()) {
+    if (!load_from_storage()) {
         return;
     }
 }
