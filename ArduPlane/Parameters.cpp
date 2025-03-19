@@ -14,12 +14,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
 
-    // @Param: SYSID_THISMAV
-    // @DisplayName: MAVLink system ID of this vehicle
-    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network
-    // @Range: 1 255
-    // @User: Advanced
-    GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
+    // SYSID_THISMAV was here
 
     // @Param: SYSID_MYGCS
     // @DisplayName: Ground station MAVLink system ID
@@ -1050,6 +1045,12 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(quicktune, "QWIK_",  AP_Quicktune),
 #endif
 
+#if HAL_GCS_ENABLED
+    // @Group: MAV
+    // @Path: ../libraries/GCS_MAVLink/GCS.cpp
+    GOBJECT(_gcs,           "MAV",  GCS),
+#endif
+
     AP_VAREND
 };
 
@@ -1589,4 +1590,15 @@ void Plane::load_parameters(void)
     };
 
     AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
+
+#if HAL_GCS_ENABLED
+    // Move parameters into new GCS_ parameter namespace
+    // PARAMETER_CONVERSION - Added: Mar-2025 for ArduPilot-4.7
+    {
+        const AP_Param::ConversionInfo gcs_conversion_info[] {
+            { Parameters::k_param_sysid_this_mav_old, 0, AP_PARAM_INT16,  "MAV_SYSID" },
+        };
+        AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
+    }
+#endif  // HAL_GCS_ENABLED
 }
