@@ -65,12 +65,7 @@ const struct AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
 
 uint8_t GCS_MAVLINK_Periph::sysid_my_gcs() const
 {
-    return periph.g.sysid_this_mav;
-}
-
-uint8_t GCS_Periph::sysid_this_mav() const
-{
-    return periph.g.sysid_this_mav;
+    mavlink_system.sysid = gcs().sysid_this_mav();
 }
 
 MAV_RESULT GCS_MAVLINK_Periph::handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
