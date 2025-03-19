@@ -649,7 +649,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         mavlink_manual_control_t packet;
         mavlink_msg_manual_control_decode(&msg, &packet);
 
-        if (packet.target != sub.g.sysid_this_mav) {
+        if (packet.target != gcs().sysid_this_mav()) {
             break; // only accept control aimed at us
         }
 
