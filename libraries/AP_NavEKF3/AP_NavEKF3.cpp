@@ -1431,9 +1431,13 @@ bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timesta
     for (uint8_t i=0; i<num_cores; i++) {
         ret |= core[i].setLatLng(loc, posAccuracy, timestamp_ms);
     }
+    if (ret == false) {
+        num_cores = 1;                 
+        new_core = new NavEKF3_core[num_cores];
+        ret |= new_core[0].setLatLng(loc, posAccuracy, timestamp_ms);
+      }
     // return true if any core accepts the new origin
-    gcs().send_text(MAV_SEVERITY_INFO, "No one core accepted origin!");
-    return true;
+    return ret;
 #else
     gcs().send_text(MAV_SEVERITY_INFO, "EKF3 did not work");
     return false;
