@@ -28,8 +28,6 @@ public:
     bool simple_input_active() const override;
     bool supersimple_input_active() const override;
 
-    uint8_t sysid_this_mav() const override;
-
 protected:
 
 
