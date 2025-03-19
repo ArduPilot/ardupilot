@@ -48,7 +48,7 @@ public:
         k_param_can_protocol0,
         k_param_can_protocol1,
         k_param_can_protocol2,
-        k_param_sysid_this_mav,
+        k_param_sysid_this_mav_old,
         k_param_serial_manager,
         k_param_gps_mb_only_can_port,
         k_param_scripting,
@@ -198,10 +198,6 @@ public:
 
 #if HAL_LOGGING_ENABLED
     AP_Int32        log_bitmask;
-#endif
-
-#if HAL_GCS_ENABLED
-    AP_Int16 sysid_this_mav;
 #endif
 
 #if AP_PERIPH_BATTERY_ENABLED
