@@ -277,7 +277,7 @@ void Sub::three_hz_loop()
 void Sub::one_hz_loop()
 {
     // sync MAVLink system ID
-    mavlink_system.sysid = g.sysid_this_mav;
+    mavlink_system.sysid = gcs().sysid_this_mav();
 
     bool arm_check = arming.pre_arm_checks(false);
     ap.pre_arm_check = arm_check;
