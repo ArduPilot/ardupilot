@@ -28,8 +28,6 @@ public:
 
 protected:
 
-    uint8_t sysid_this_mav() const override;
-
     GCS_MAVLINK_Rover *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                AP_HAL::UARTDriver &uart) override {
         return NEW_NOTHROW GCS_MAVLINK_Rover(params, uart);
