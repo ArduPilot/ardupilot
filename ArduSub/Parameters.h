@@ -54,7 +54,7 @@ public:
         k_param_gcs1,
         k_param_gcs2,
         k_param_gcs3,
-        k_param_sysid_this_mav,
+        k_param_sysid_this_mav_old,
         k_param_sysid_my_gcs,
 
         // Hardware/Software configuration
@@ -234,13 +234,13 @@ public:
         k_param_pilot_speed,
 
         k_param_vehicle = 257, // vehicle common block of parameters
+        k_param__gcs = 258,
     };
 
     AP_Int16        format_version;
 
     // Telemetry control
     //
-    AP_Int16        sysid_this_mav;
     AP_Int16        sysid_my_gcs;
 
     AP_Float        throttle_filt;
