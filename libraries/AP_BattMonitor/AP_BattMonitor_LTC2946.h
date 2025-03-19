@@ -22,7 +22,7 @@ public:
     virtual void read() override;
     
 private:
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
+    AP_HAL::I2CDevice *dev;
 
     bool read_word(const uint8_t reg, uint16_t& data) const;
     void timer(void);

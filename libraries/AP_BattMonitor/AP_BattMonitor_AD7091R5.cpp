@@ -131,7 +131,7 @@ void AP_BattMonitor_AD7091R5::init()
     if (_first) {
         _first = false;
         // probe i2c device
-        _dev = hal.i2c_mgr->get_device(AD7091R5_I2C_BUS, AD7091R5_I2C_ADDR);
+        _dev = hal.i2c_mgr->get_device_ptr(AD7091R5_I2C_BUS, AD7091R5_I2C_ADDR);
 
         if (_dev) {
             WITH_SEMAPHORE(_dev->get_semaphore());
