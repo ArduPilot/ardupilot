@@ -130,7 +130,7 @@ public:
         //
         k_param_gcs0 = 110,
         k_param_gcs1,
-        k_param_sysid_this_mav,
+        k_param_sysid_this_mav_old,
         k_param_sysid_my_gcs,
         k_param_telem_delay,
         k_param_gcs2,
@@ -200,6 +200,7 @@ public:
         k_param_logger = 253, // 253 - Logging Group
 
         k_param_vehicle = 257, // vehicle common block of parameters
+        k_param__gcs = 258,
 
         // the k_param_* space is 9-bits in size
     };
@@ -208,7 +209,6 @@ public:
 
     // Telemetry control
     //
-    AP_Int16        sysid_this_mav;
     AP_Int16        sysid_my_gcs;
     AP_Int8         telem_delay;
 

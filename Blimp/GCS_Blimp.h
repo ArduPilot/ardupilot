@@ -25,8 +25,6 @@ public:
 
     bool vehicle_initialised() const override;
 
-    uint8_t sysid_this_mav() const override;
-
 protected:
 
     // minimum amount of time (in microseconds) that must remain in
