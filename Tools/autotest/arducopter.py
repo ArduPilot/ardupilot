@@ -12225,13 +12225,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_CLAMP_CH": clamp_ch,
         })
 
-        self.takeoff(1, mode='LOITER')
-
         self.context_push()
         self.context_collect('STATUSTEXT')
         self.progress("Ensure can't take off with clamp in place")
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=2000)
         self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
+        self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_rc(3, 2000)
         self.wait_altitude(0, 5, minimum_duration=5, relative=True)
@@ -12289,6 +12288,79 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
 
         self.reboot_sitl()  # because we set home
+
+    def TakeoffClampRelease(self):
+        '''check automated docking clamp release'''
+        self.context_push()
+        clamp_ch = 11
+        rc_clamp_ch = 9
+        clamp_release_rc_option = 184
+        clamp_release_servo_function = 181
+        self.set_parameters({
+            "SIM_CLAMP_CH": clamp_ch,
+            f"SERVO{clamp_ch}_FUNCTION": clamp_release_servo_function,
+            f"RC{rc_clamp_ch}_OPTION": clamp_release_rc_option,
+        })
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+
+        self.start_subtest("grab with aux function")
+        self.run_auxfunc(clamp_release_rc_option, 2)
+        self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
+        self.run_auxfunc(clamp_release_rc_option, 0)
+        self.wait_statustext("SITL: Clamp: released vehicle", check_context=True)
+
+        self.start_subtest("grab with RC")
+        self.set_rc(rc_clamp_ch, 2000)
+        self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
+        self.set_rc(rc_clamp_ch, 1000)
+        self.wait_statustext("SITL: Clamp: released vehicle", check_context=True)
+
+        self.start_subtest("should not be able to take off without the option bit set")
+        self.run_auxfunc(clamp_release_rc_option, 2)
+        self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('STABILIZE')
+        self.set_rc(3, 2000)
+        self.wait_altitude(0, 5, minimum_duration=5, relative=True)
+        self.zero_throttle()
+        self.delay_sim_time(1)
+        self.disarm_vehicle()
+
+        self.progress("Setting flight options bit")
+        current_value = int(self.get_parameter("FLIGHT_OPTIONS"))
+        current_value |= 16  # enable clamp release
+        self.set_parameter("FLIGHT_OPTIONS", current_value)
+
+        self.start_subtest("should be able to take off with the option bit set")
+        self.takeoff(10, mode='GUIDED')
+        self.do_RTL()
+        self.zero_throttle()
+
+        self.start_subtest("should be able to take off in auto mode with option bit set")
+        self.run_auxfunc(clamp_release_rc_option, 0)
+        self.run_auxfunc(clamp_release_rc_option, 2)
+        self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+        })
+        self.change_mode('AUTO')
+        self.arm_vehicle()
+        self.wait_altitude(0, 5, minimum_duration=5, relative=True)
+        self.wait_disarmed()
+
+        # once take-off is complete the clamp un-grabs, so we should
+        # be able to grab again on landing
+        self.run_auxfunc(clamp_release_rc_option, 2)
+        self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def GripperReleaseOnThrustLoss(self):
         '''tests that gripper is released on thrust loss if option set'''
@@ -12917,6 +12989,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.CompassLearnCopyFromEKF,
             self.AHRSAutoTrim,
             self.Ch6TuningLoitMaxXYSpeed,
+            self.TakeoffClampRelease,
         ])
         return ret
 

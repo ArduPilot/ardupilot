@@ -727,7 +727,10 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
 #if HAL_GENERATOR_ENABLED
     case AUX_FUNC::LOWEHEISER_THROTTLE:
-#endif
+#endif  // HAL_GENERATOR_ENABLED
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+    case AUX_FUNC::TIE_DOWN_RELEASE:
+#endif  // AP_TIE_DOWN_CLAMPS_ENABLED
         break;
 
 #if HAL_ADSB_ENABLED
@@ -1001,7 +1004,10 @@ bool RC_Channel::init_position_on_first_radio_read(AUX_FUNC func) const
 #endif
 #if HAL_PARACHUTE_ENABLED
     case AUX_FUNC::PARACHUTE_RELEASE:
-#endif
+#endif  // HAL_PARACHUTE_ENABLED
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+    case AUX_FUNC::TIE_DOWN_RELEASE:
+#endif  // AP_TIE_DOWN_CLAMPS_ENABLED
 
         // we do not want to process 
         return true;
@@ -1451,6 +1457,26 @@ bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncT
     return ret;
 }
 
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+void RC_Channel::do_aux_function_tie_down_release(const AuxSwitchPos ch_flag)
+{
+    AP_LandingGear *lg = AP_LandingGear::get_singleton();
+    if (lg == nullptr) {
+        return;
+    }
+    switch (ch_flag) {
+    case AuxSwitchPos::LOW:
+        lg->tie_down_release();
+        break;
+    case AuxSwitchPos::MIDDLE:
+        break;
+    case AuxSwitchPos::HIGH:
+        lg->tie_down_secure();
+        break;
+    }
+}
+#endif  // AP_TIE_DOWN_CLAMPS_ENABLED
+
 bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 {
     const AUX_FUNC &ch_option = trigger.func;
@@ -1590,7 +1616,13 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         }
         break;
     }
+
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+    case AUX_FUNC::TIE_DOWN_RELEASE:
+        do_aux_function_tie_down_release(ch_flag);
+        break;
 #endif
+#endif  // AP_LANDINGGEAR_ENABLED
 
 #if AP_GPS_ENABLED
     case AUX_FUNC::GPS_DISABLE:
