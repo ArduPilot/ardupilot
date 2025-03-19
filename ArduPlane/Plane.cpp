@@ -352,7 +352,7 @@ void Plane::one_second_loop()
     }
 
     // sync MAVLink system ID
-    mavlink_system.sysid = g.sysid_this_mav;
+    mavlink_system.sysid = gcs().sysid_this_mav();
 
     AP::srv().enable_aux_servos();
 
