@@ -366,7 +366,7 @@ define HAL_BATT_CURR_SCALE %.1f
         dma_noshare[timer[1] + '_UP'] =  timer[1] + '_UP'
         f.write("%s %s_%s %s PWM(%s) GPIO(%s)" % (motor[1], timer[1], timer[2], timer[1], motor[0], 49+int(motor[0])))
         # on H7 we can reasonably safely assign bi-dir channel
-        if mcuclass == "H7" and (int(timer[2][2:]) == 1 or int(timer[2][2:]) == 3):
+        if not timer[2][2:].endswith("N") and mcuclass == "H7" and (int(timer[2][2:]) == 1 or int(timer[2][2:]) == 3):
             f.write(" BIDIR # M%s\n" % (motor[0]))
         else:
             f.write("       # M%s\n" % (motor[0]))
