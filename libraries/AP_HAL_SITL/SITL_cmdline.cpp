@@ -115,7 +115,7 @@ void SITL_State::_usage(void)
            "\t--sim-port-out PORT      set port num for simulator out\n"
            "\t--irlock-port PORT       set port num for irlock\n"
            "\t--start-time TIMESTR     set simulation start time in UNIX timestamp\n"
-           "\t--sysid ID               set SYSID_THISMAV\n"
+           "\t--sysid ID               set MAV_SYSID\n"
            "\t--slave number           set the number of JSON slaves\n"
         );
 }
@@ -516,9 +516,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
                 fprintf(stderr, "You must specify a SYSID greater than 0 and less than 256\n");
                 exit(1);
             }
-            temp_cmdline_param = {"SYSID_THISMAV", static_cast<float>(sysid)};
+            temp_cmdline_param = {"MAV_SYSID", static_cast<float>(sysid)};
             cmdline_param.push(temp_cmdline_param);
-            printf("Setting SYSID_THISMAV=%d\n", sysid);
+            printf("Setting MAV_SYSID=%d\n", sysid);
             break;
         }
 #if STORAGE_USE_POSIX
