@@ -52,14 +52,12 @@ protected:
 
     AP_Float balloon_burst_amsl;
     AP_Float balloon_rate;
+    AP_Float mass;
 
     /*
       parameters that define the glider model
      */
     const struct Model {
-        // total vehicle mass
-        float mass = 9.07441; // kg
-
         // reference area
         float Sref = 0.92762; // m^2
 

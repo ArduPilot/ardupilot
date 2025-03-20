@@ -63,6 +63,12 @@ const AP_Param::GroupInfo Glider::var_info[] = {
     // @Units: m/s
     AP_GROUPINFO("BLN_RATE",  2, Glider, balloon_rate, 5.5),
 
+    // @Param: MASS
+    // @DisplayName: glider mass
+    // @Description: glider mass
+    // @Units: kg
+    AP_GROUPINFO("MASS",  3, Glider, mass, 9.07441),
+    
     AP_GROUPEND
 };
 
@@ -276,7 +282,7 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
         rot_accel = getTorque(aileron, elevator, rudder, force);
     }
 
-    accel_body = force / model.mass;
+    accel_body = force / mass;
 
     if (on_ground()) {
         // add some ground friction
@@ -371,8 +377,8 @@ bool Glider::update_balloon(float balloon, Vector3f &force, Vector3f &rot_accel)
     Vector3f tether_pos_bf{-1.0f,0.0f,0.0f}; // tether attaches to vehicle tail approx 1m behind c.g.
     const float omega = model.tetherPogoFreq * M_2PI; // rad/sec
     const  float zeta = 0.7f;
-    float tether_stiffness = model.mass * sq(omega); // N/m
-    float tether_damping = 2.0f * zeta * omega / model.mass; // N/(m/s)
+    float tether_stiffness = mass * sq(omega); // N/m
+    float tether_damping = 2.0f * zeta * omega / mass; // N/(m/s)
     // NED relative position vector from tether attachment on plane to balloon attachment
     Vector3f relative_position = balloon_position - (position.tofloat() + (dcm * tether_pos_bf));
     const float separation_distance = relative_position.length();
@@ -395,7 +401,7 @@ bool Glider::update_balloon(float balloon, Vector3f &force, Vector3f &rot_accel)
         tension_force += constrain_float(separation_speed * tether_damping, 0.0f, 0.05f * tension_force);
     }
 
-    if (carriage_state == carriageState::WAITING_FOR_PICKUP && tension_force > 1.2f * model.mass * GRAVITY_MSS && balloon > 0.01f) {
+    if (carriage_state == carriageState::WAITING_FOR_PICKUP && tension_force > 1.2f * mass * GRAVITY_MSS && balloon > 0.01f) {
         carriage_state = carriageState::WAITING_FOR_RELEASE;
     }
 
@@ -422,7 +428,7 @@ bool Glider::update_balloon(float balloon, Vector3f &force, Vector3f &rot_accel)
     } else {
         // tether is either slack awaiting pickup or released
         rot_accel.zero();
-        force = dcm.transposed() * Vector3f(0.0f, 0.0f, -GRAVITY_MSS * model.mass);
+        force = dcm.transposed() * Vector3f(0.0f, 0.0f, -GRAVITY_MSS * mass);
     }
 
     // balloon is active
