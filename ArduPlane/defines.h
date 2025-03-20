@@ -10,7 +10,7 @@
 
 #define TAKEOFF_RUDDER_WARNING_TIMEOUT 3000 //ms that GCS warning about not returning arming rudder to neutral repeats
 
-#define GPS_GND_CRS_MIN_SPD 5 // m/s, used to set when intial_direction.heading is captured in NAV_TAKEOFF and Mode TAKEOFF
+#define GPS_GND_CRS_MIN_SPD 5 // m/s, used to set when intial_direction.heading is captured,deciding to heading lock in cruise mode, or steer_state.hold_course_cd
 
 // failsafe
 // ----------------------

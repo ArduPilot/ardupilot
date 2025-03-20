@@ -394,7 +394,7 @@ bool AC_Fence::pre_arm_check_polygon(char *failure_msg, const uint8_t failure_ms
     }
 
     if (!_poly_loader.check_inclusion_circle_margin(_margin)) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "Polygon fence margin is less than inclusion circle radius");
+        hal.util->snprintf(failure_msg, failure_msg_len, "Polygon fence margin is greater than inclusion circle radius");
         return false;
     }
 
@@ -409,7 +409,7 @@ bool AC_Fence::pre_arm_check_circle(char *failure_msg, const uint8_t failure_msg
         return false;
     }
     if (_circle_radius < _margin) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "Circle FENCE_MARGIN is less than FENCE_RADIUS");
+        hal.util->snprintf(failure_msg, failure_msg_len, "Circle FENCE_MARGIN is greater than FENCE_RADIUS");
         return false;
     }
 

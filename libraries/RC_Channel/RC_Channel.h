@@ -48,7 +48,7 @@ public:
 
     // calculate an angle given dead_zone and trim. This is used by the quadplane code
     // for hover throttle
-    int16_t     pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t trim) const;
+    float       pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t trim) const;
 
     // return a normalised input for a channel, in range -1 to 1,
     // centered around the channel trim. Ignore deadzone.
@@ -85,7 +85,7 @@ public:
     float    stick_mixing(const float servo_in);
 
     // get control input with zero deadzone
-    int16_t    get_control_in_zero_dz(void) const;
+    float      get_control_in_zero_dz(void) const;
 
     int16_t    get_radio_min() const {return radio_min.get();}
 
@@ -424,11 +424,11 @@ private:
     uint16_t override_value;
     uint32_t last_override_time;
 
-    int16_t pwm_to_angle() const;
-    int16_t pwm_to_angle_dz(uint16_t dead_zone) const;
+    float pwm_to_angle() const;
+    float pwm_to_angle_dz(uint16_t dead_zone) const;
 
-    int16_t pwm_to_range() const;
-    int16_t pwm_to_range_dz(uint16_t dead_zone) const;
+    float pwm_to_range() const;
+    float pwm_to_range_dz(uint16_t dead_zone) const;
 
     bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
     bool read_6pos_switch(int8_t& position) WARN_IF_UNUSED;

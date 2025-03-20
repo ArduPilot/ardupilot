@@ -375,7 +375,6 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
     auto_state.takeoff_altitude_rel_cm = next_WP_loc.alt - home.alt;
     next_WP_loc.lat = home.lat + 10;
     next_WP_loc.lng = home.lng + 10;
-    auto_state.takeoff_speed_time_ms = 0;
     auto_state.takeoff_complete = false; // set flag to use gps ground course during TO. IMU will be doing yaw drift correction.
     auto_state.height_below_takeoff_to_level_off_cm = 0;
     // Flag also used to override "on the ground" throttle disable
@@ -551,21 +550,15 @@ bool Plane::verify_takeoff()
     trust_ahrs_yaw |= ahrs.dcm_yaw_initialised();
 #endif
     if (trust_ahrs_yaw && steer_state.hold_course_cd == -1) {
-        const float min_gps_speed = GPS_GND_CRS_MIN_SPD;
-        if (auto_state.takeoff_speed_time_ms == 0 && 
-            gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
-            gps.ground_speed() > min_gps_speed &&
+        // once we reach sufficient speed for good GPS course
+        // estimation we save our current GPS ground course
+        // corrected for summed yaw to set the take off
+        // course. This keeps wings level until we are ready to
+        // rotate, and also allows us to cope with arbitrary
+        // compass errors for auto takeoff
+        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
+            gps.ground_speed() > GPS_GND_CRS_MIN_SPD &&
             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-            auto_state.takeoff_speed_time_ms = millis();
-        }
-        if (auto_state.takeoff_speed_time_ms != 0 &&
-            millis() - auto_state.takeoff_speed_time_ms >= 2000) {
-            // once we reach sufficient speed for good GPS course
-            // estimation we save our current GPS ground course
-            // corrected for summed yaw to set the take off
-            // course. This keeps wings level until we are ready to
-            // rotate, and also allows us to cope with arbitrary
-            // compass errors for auto takeoff
             float takeoff_course = wrap_PI(radians(gps.ground_course())) - steer_state.locked_course_err;
             takeoff_course = wrap_PI(takeoff_course);
             steer_state.hold_course_cd = wrap_360_cd(degrees(takeoff_course)*100);

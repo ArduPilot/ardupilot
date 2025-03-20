@@ -109,7 +109,7 @@ void ModeGuided::navigate()
 bool ModeGuided::handle_guided_request(Location target_loc)
 {
     // add home alt if needed
-    if (target_loc.relative_alt) {
+    if (target_loc.relative_alt && !target_loc.terrain_alt) {
         target_loc.alt += plane.home.alt;
         target_loc.relative_alt = 0;
     }

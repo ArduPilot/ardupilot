@@ -521,12 +521,23 @@ void AP_Airspeed::calibrate(bool in_startup)
         if (!enabled(i)) {
             continue;
         }
-        if (state[i].use_zero_offset) {
-            param[i].offset.set(0);
+        if (state[i].cal.state == CalibrationState::NOT_REQUIRED_ZERO_OFFSET) {
             continue;
         }
-        if (in_startup && param[i].skip_cal) {
-            continue;
+        if (in_startup) {
+            switch ((AP_Airspeed_Params::SkipCalType)param[i].skip_cal.get()) {
+                case AP_Airspeed_Params::SkipCalType::None:
+                    break;
+
+                case AP_Airspeed_Params::SkipCalType::NoCalRequired:
+                    // Skip startup calibration, use saved value.
+                    state[i].cal.state = CalibrationState::SUCCESS;
+                    continue;
+
+                case AP_Airspeed_Params::SkipCalType::SkipBootCal:
+                    // Skip startup calibration, calibration state remains NOT_STARTED.
+                    continue;
+            }
         }
         if (sensor[i] == nullptr) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u not initialized, cannot cal", i+1);
@@ -594,10 +605,16 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
 AP_Airspeed::CalibrationState AP_Airspeed::get_calibration_state() const
 {
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (!enabled(i)) {
+            continue;
+        }
+
         switch (state[i].cal.state) {
         case CalibrationState::SUCCESS:
-        case CalibrationState::NOT_STARTED:
+        case CalibrationState::NOT_REQUIRED_ZERO_OFFSET:
             continue;
+        case CalibrationState::NOT_STARTED:
+            return CalibrationState::NOT_STARTED;
         case CalibrationState::IN_PROGRESS:
             return CalibrationState::IN_PROGRESS;
         case CalibrationState::FAILED:
@@ -886,7 +903,9 @@ bool AP_Airspeed::healthy(uint8_t i) const {
     bool ok = state[i].healthy && sensor[i] != nullptr;
 #ifndef HAL_BUILD_AP_PERIPH
     // sanity check the offset parameter.  Zero is permitted if we are skipping calibration.
-    ok &= (fabsf(param[i].offset) > 0 || state[i].use_zero_offset || param[i].skip_cal);
+    const bool allowZeroOffset = (state[i].cal.state == CalibrationState::NOT_REQUIRED_ZERO_OFFSET) ||
+        ((AP_Airspeed_Params::SkipCalType)param[i].skip_cal == AP_Airspeed_Params::SkipCalType::NoCalRequired);
+    ok &= allowZeroOffset || !is_zero(param[i].offset);
 #endif
     return ok;
 }
@@ -925,6 +944,18 @@ float AP_Airspeed::get_corrected_pressure(uint8_t i) const {
     return state[i].corrected_pressure;
 }
 
+// return the current calibration offset
+float AP_Airspeed::get_offset(uint8_t i) const {
+#ifndef HAL_BUILD_AP_PERIPH
+    if (state[i].cal.state == CalibrationState::NOT_REQUIRED_ZERO_OFFSET) {
+        return 0.0;
+    }
+    return param[i].offset;
+#else
+    return 0.0;
+#endif
+}
+
 #if AP_AIRSPEED_HYGROMETER_ENABLE
 bool AP_Airspeed::get_hygrometer(uint8_t i, uint32_t &last_sample_ms, float &temperature, float &humidity) const
 {
@@ -934,6 +965,40 @@ bool AP_Airspeed::get_hygrometer(uint8_t i, uint32_t &last_sample_ms, float &tem
     return sensor[i]->get_hygrometer(last_sample_ms, temperature, humidity);
 }
 #endif // AP_AIRSPEED_HYGROMETER_ENABLE
+
+// returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+#ifndef HAL_BUILD_AP_PERIPH
+bool AP_Airspeed::arming_checks(size_t buflen, char *buffer) const
+{
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (!enabled(i) || !use(i)) {
+            continue;
+        }
+
+        switch (state[i].cal.state) {
+            case CalibrationState::SUCCESS:
+            case CalibrationState::NOT_REQUIRED_ZERO_OFFSET:
+                break;
+
+            case CalibrationState::NOT_STARTED:
+            case CalibrationState::FAILED:
+                hal.util->snprintf(buffer, buflen, "%d need pre-flight calibration", i + 1);
+                return false;
+
+            case CalibrationState::IN_PROGRESS:
+                hal.util->snprintf(buffer, buflen, "%d pre-flight calibration in progress", i + 1);
+                return false;
+        }
+
+        if (!healthy(i)) {
+            hal.util->snprintf(buffer, buflen, "%d not healthy", i + 1);
+            return false;
+        }
+    }
+
+    return true;
+}
+#endif
 
 #else  // build type is not appropriate; provide a dummy implementation:
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
@@ -947,6 +1012,7 @@ bool AP_Airspeed::enabled(uint8_t i) const { return false; }
 bool AP_Airspeed::healthy(uint8_t i) const { return false; }
 float AP_Airspeed::get_airspeed(uint8_t i) const { return 0.0; }
 float AP_Airspeed::get_differential_pressure(uint8_t i) const { return 0.0; }
+bool AP_Airspeed::arming_checks(size_t buflen, char *buffer) const { return true; }
 
 #if AP_AIRSPEED_MSP_ENABLED
 void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}

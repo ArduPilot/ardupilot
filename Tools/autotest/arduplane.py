@@ -3702,6 +3702,36 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         if (not (m.onboard_control_sensors_health & fence_bit)):
             raise NotAchievedException("Fence breach not cleared")
 
+        self.progress("Fly above ceiling and check there is a breach and switch to AUTOLAND mode")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "FENCE_ACTION": 8,   # Set action to AUTOLAND if possible
+        })
+
+        self.set_rc(3, 2000)
+        self.set_rc(2, 1000)
+
+        self.wait_statustext("Max Alt fence breached", timeout=10, check_context=True)
+        self.wait_mode(26) # AUTOLAND,need pymavlink .43 to use text name
+        self.assert_fence_sys_status(True, True, False)
+
+        self.set_rc(3, 1500)
+        self.set_rc(2, 1500)
+
+        self.progress("Wait for cruise alt reached")
+        self.wait_altitude(
+            cruise_alt-5,
+            cruise_alt+5,
+            relative=True,
+            timeout=30,
+        )
+
+        self.progress("Check fence breach cleared")
+        self.assert_fence_sys_status(True, True, True)
+
+        self.context_pop()
+        self.change_mode('FBWA')
         self.progress("Fly below floor and check for breach")
         self.set_rc(2, 2000)
         self.wait_statustext("Min Alt fence breached", timeout=10, check_context=True)
@@ -4227,7 +4257,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.wait_text("Autoland direction", check_context=True)
         self.wait_waypoint(2, 2, max_dist=100)
-        self.change_mode(26)
+        self.change_mode(26) # AUTOLAND need .43 pymavlink to use text name
         self.wait_disarmed(400)
         self.progress("Check the landed heading matches takeoff plus offset")
         self.wait_heading(218, accuracy=5, timeout=1)
@@ -4322,59 +4352,59 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         # Values that are set to constants
         # If these are changed then the expected tune paramters should also change
-        self.check_parameter_value("RLL2SRV_TCONST", 0.5, 0)
-        self.check_parameter_value("RLL2SRV_RMAX", 75, 0)
-        self.check_parameter_value("RLL_RATE_IMAX", 0.666, 0.01) # allow some small error to acount for floating point stuff
-        self.check_parameter_value("RLL_RATE_FLTT", 3.183, 0.01)
-        self.check_parameter_value("RLL_RATE_FLTE", 0, 0)
-        self.check_parameter_value("RLL_RATE_FLTD", 10.0, 0)
-        self.check_parameter_value("RLL_RATE_SMAX", 150.0, 0)
+        self.assert_parameter_value_pct("RLL2SRV_TCONST", 0.5, 0)
+        self.assert_parameter_value_pct("RLL2SRV_RMAX", 75, 0)
+        self.assert_parameter_value_pct("RLL_RATE_IMAX", 0.666, 0.01) # allow some small error to acount for floating point stuff  # noqa:E501
+        self.assert_parameter_value_pct("RLL_RATE_FLTT", 3.183, 0.01)
+        self.assert_parameter_value_pct("RLL_RATE_FLTE", 0, 0)
+        self.assert_parameter_value_pct("RLL_RATE_FLTD", 10.0, 0)
+        self.assert_parameter_value_pct("RLL_RATE_SMAX", 150.0, 0)
 
-        self.check_parameter_value("PTCH2SRV_TCONST", 0.75, 0)
-        self.check_parameter_value("PTCH2SRV_RMAX_UP", 75, 0)
-        self.check_parameter_value("PTCH2SRV_RMAX_DN", 75, 0)
-        self.check_parameter_value("PTCH_RATE_IMAX", 0.666, 0.01)
-        self.check_parameter_value("PTCH_RATE_FLTT", 2.122, 0.01)
-        self.check_parameter_value("PTCH_RATE_FLTE", 0, 0)
-        self.check_parameter_value("PTCH_RATE_FLTD", 10, 0)
-        self.check_parameter_value("PTCH_RATE_SMAX", 150, 0)
+        self.assert_parameter_value_pct("PTCH2SRV_TCONST", 0.75, 0)
+        self.assert_parameter_value_pct("PTCH2SRV_RMAX_UP", 75, 0)
+        self.assert_parameter_value_pct("PTCH2SRV_RMAX_DN", 75, 0)
+        self.assert_parameter_value_pct("PTCH_RATE_IMAX", 0.666, 0.01)
+        self.assert_parameter_value_pct("PTCH_RATE_FLTT", 2.122, 0.01)
+        self.assert_parameter_value_pct("PTCH_RATE_FLTE", 0, 0)
+        self.assert_parameter_value_pct("PTCH_RATE_FLTD", 10, 0)
+        self.assert_parameter_value_pct("PTCH_RATE_SMAX", 150, 0)
 
         # Check tunned values, targets derived from running tests multiple times and taking average
         # Expect within 2%
         # Note that I is not checked directly, its value is derived from P, FF, and TCONST which are all checked.
-        self.check_parameter_value("RLL_RATE_P", 1.222702146, 2)
-        self.check_parameter_value("RLL_RATE_D", 0.070284024, 2)
-        self.check_parameter_value("RLL_RATE_FF", 0.229291457, 2)
+        self.assert_parameter_value_pct("RLL_RATE_P", 1.222702146, 2)
+        self.assert_parameter_value_pct("RLL_RATE_D", 0.070284024, 2)
+        self.assert_parameter_value_pct("RLL_RATE_FF", 0.229291457, 2)
 
-        self.check_parameter_value("PTCH_RATE_FF", 0.503520715, 5)
+        self.assert_parameter_value_pct("PTCH_RATE_FF", 0.503520715, 5)
 
         # There seem to be multiple solutions for pitch. I'm not sure why this is.
         # Each value is quite consistent becasue of the fixed steps that autotune takes
         try:
             # Expect this about 84% of the time
-            self.check_parameter_value("PTCH_RATE_P", 1.746079683, 2)
+            self.assert_parameter_value_pct("PTCH_RATE_P", 1.746079683, 2)
         except ValueError:
             try:
                 # 12%
-                self.check_parameter_value("PTCH_RATE_P", 1.343138218, 2)
+                self.assert_parameter_value_pct("PTCH_RATE_P", 1.343138218, 2)
             except ValueError:
                 # 4%
-                self.check_parameter_value("PTCH_RATE_P", 2.26990366, 2)
+                self.assert_parameter_value_pct("PTCH_RATE_P", 2.26990366, 2)
 
         try:
             # 64%
-            self.check_parameter_value("PTCH_RATE_D", 0.108, 2)
+            self.assert_parameter_value_pct("PTCH_RATE_D", 0.108, 2)
         except ValueError:
             try:
                 # 28%
-                self.check_parameter_value("PTCH_RATE_D", 0.141, 2)
+                self.assert_parameter_value_pct("PTCH_RATE_D", 0.141, 2)
             except ValueError:
                 try:
                     # 4%
-                    self.check_parameter_value("PTCH_RATE_D", 0.049, 2)
+                    self.assert_parameter_value_pct("PTCH_RATE_D", 0.049, 2)
                 except ValueError:
                     # 4%
-                    self.check_parameter_value("PTCH_RATE_D", 0.0836, 2)
+                    self.assert_parameter_value_pct("PTCH_RATE_D", 0.0836, 2)
 
     def run_autotune(self):
         self.takeoff(100)
@@ -5489,6 +5519,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
              "AUTOLAND_WP_ALT" : 55,
              "AUTOLAND_WP_DIST" : 400
             })
+        self.wait_ready_to_arm()
         self.scripting_restart()
         self.wait_text("Scripting: restarted", check_context=True)
 
@@ -5829,39 +5860,61 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def MAV_CMD_GUIDED_CHANGE_ALTITUDE(self):
         '''test handling of MAV_CMD_GUIDED_CHANGE_ALTITUDE'''
+        target_alt = 750
+        # this location is chosen to be fairly flat, but at a different terrain height to home
+        higher_ground = mavutil.location(-35.35465024, 149.13974996, target_alt, 0)
         self.install_terrain_handlers_context()
         self.start_subtest("set home relative altitude")
         self.takeoff(30, relative=True)
         self.change_mode('GUIDED')
+
+        # remember home
+        home_loc = self.home_position_as_mav_location()
+        height_diff = target_alt - home_loc.alt
+
+        # fly to higher ground
+        self.send_do_reposition(higher_ground, frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+        self.wait_location(
+            higher_ground,
+            accuracy=200,
+            timeout=600,
+            height_accuracy=10,
+        )
+
         for alt in 50, 70:
             self.run_cmd_int(
                 mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
-                p7=alt,
+                p7=alt+height_diff,
                 frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
             )
-            self.wait_altitude(alt-1, alt+1, timeout=30, relative=True)
+            self.wait_altitude(target_alt+alt-1, target_alt+alt+1, timeout=30, minimum_duration=10, relative=False)
 
         # test for #24535
         self.start_subtest("switch to loiter and resume guided maintains home relative altitude")
         self.change_mode('LOITER')
-        self.delay_sim_time(5)
+        self.delay_sim_time(1)
         self.change_mode('GUIDED')
         self.wait_altitude(
-            alt-3,  # NOTE: reuse of alt from above loop!
-            alt+3,
+            height_diff+alt-3,  # NOTE: reuse of alt from above loop!
+            height_diff+alt+3,
             minimum_duration=10,
             timeout=30,
             relative=True,
         )
         # test that this works if switching between RELATIVE (HOME) and GLOBAL(AMSL)
         self.start_subtest("set global/AMSL altitude, switch to loiter and resume guided")
-        alt = 625
+        alt = target_alt+30
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
             p7=alt,
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
         )
-        self.wait_altitude(alt-3, alt+3, timeout=30, relative=False)
+        self.wait_altitude(alt-3, alt+3, timeout=30, relative=False, minimum_duration=10)
+
+        # let it settle so LOITER captures a constant altitude
+        self.delay_sim_time(10)
+
+        # now switch to LOITER then back to GUIDED
         self.change_mode('LOITER')
         self.delay_sim_time(5)
         self.change_mode('GUIDED')
@@ -5872,6 +5925,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             timeout=30,
             relative=False,
         )
+
         # test that this works if switching between RELATIVE (HOME) and terrain
         self.start_subtest("set terrain altitude, switch to loiter and resume guided")
         self.change_mode('GUIDED')
@@ -5882,6 +5936,34 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
         )
         self.wait_altitude(
+            alt-10,  # NOTE: reuse of alt from abovE
+            alt+10,  # use a 10m buffer as the plane needs to go up and down a bit to maintain terrain distance
+            minimum_duration=10,
+            timeout=30,
+            relative=False,
+            altitude_source="TERRAIN_REPORT.current_height"
+        )
+
+        alt = 150
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
+            p7=alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+        )
+        self.wait_altitude(
+            alt-10,  # NOTE: reuse of alt from abovE
+            alt+10,  # use a 10m buffer as the plane needs to go up and down a bit to maintain terrain distance
+            minimum_duration=10,
+            timeout=30,
+            relative=False,
+            altitude_source="TERRAIN_REPORT.current_height"
+        )
+        self.delay_sim_time(30)
+
+        self.change_mode('LOITER')
+        self.delay_sim_time(1)
+        self.change_mode('GUIDED')
+        self.wait_altitude(
             alt-5,  # NOTE: reuse of alt from abovE
             alt+5,  # use a 5m buffer as the plane needs to go up and down a bit to maintain terrain distance
             minimum_duration=10,
@@ -5889,12 +5971,59 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             relative=False,
             altitude_source="TERRAIN_REPORT.current_height"
         )
-        self.change_mode('LOITER')
-        self.delay_sim_time(5)
-        self.change_mode('GUIDED')
+
+        self.start_subtest("test flyto with relative alt")
+        dest = copy.copy(higher_ground)
+        dest.alt = higher_ground.alt + 100 - home_loc.alt
+        self.progress("dest.alt=%.1f" % dest.alt)
+        self.send_do_reposition(dest, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT)
+        self.wait_location(
+            dest,
+            accuracy=200,
+            timeout=600,
+            height_accuracy=10,
+        )
         self.wait_altitude(
-            alt-5,  # NOTE: reuse of alt from abovE
-            alt+5,  # use a 5m buffer as the plane needs to go up and down a bit to maintain terrain distance
+            dest.alt-5,
+            dest.alt+5,
+            minimum_duration=10,
+            timeout=30,
+            relative=True
+        )
+
+        self.start_subtest("test flyto with absolute alt")
+        dest = copy.copy(higher_ground)
+        dest.alt = higher_ground.alt + 60
+        self.progress("dest.alt=%.1f" % dest.alt)
+        self.send_do_reposition(dest, frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+        self.wait_location(
+            dest,
+            accuracy=200,
+            timeout=600,
+            height_accuracy=10,
+        )
+        self.wait_altitude(
+            dest.alt-5,
+            dest.alt+5,
+            minimum_duration=10,
+            timeout=30,
+            relative=False
+        )
+
+        self.start_subtest("test flyto with terrain alt")
+        dest = copy.copy(higher_ground)
+        dest.alt = 130
+        self.progress("dest.alt=%.1f" % dest.alt)
+        self.send_do_reposition(dest, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        self.wait_location(
+            dest,
+            accuracy=200,
+            timeout=600,
+            height_accuracy=10,
+        )
+        self.wait_altitude(
+            dest.alt-10,
+            dest.alt+10,
             minimum_duration=10,
             timeout=30,
             relative=False,
@@ -6547,6 +6676,27 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self._MAV_CMD_EXTERNAL_WIND_ESTIMATE(self.run_cmd)
         self._MAV_CMD_EXTERNAL_WIND_ESTIMATE(self.run_cmd_int)
 
+    def LoggedNamedValueFloat(self):
+        '''ensure that sent named value floats are logged'''
+        self.context_push()
+        self.install_example_script_context('simple_loop.lua')
+        self.set_parameters({
+            'SCR_ENABLE': 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.wait_statustext('hello, world')
+        m = self.assert_received_message_field_values('NAMED_VALUE_FLOAT', {
+            "name": "Lua Float",
+        })
+        dfreader = self.dfreader_for_current_onboard_log()
+        self.context_pop()
+
+        m = dfreader.recv_match(type='NVF')
+        if m is None:
+            raise NotAchievedException("Did not find NVF message")
+        self.progress(f"Received NVF with value {m.Value}")
+
     def GliderPullup(self):
         '''test pullup of glider after ALTITUDE_WAIT'''
         self.start_subtest("test glider pullup")
@@ -6923,6 +7073,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.BadRollChannelDefined,
             self.VolzMission,
             self.Volz,
+            self.LoggedNamedValueFloat,
         ]
 
     def disabled_tests(self):
