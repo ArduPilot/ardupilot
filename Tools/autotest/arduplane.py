@@ -7074,6 +7074,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.VolzMission,
             self.Volz,
             self.LoggedNamedValueFloat,
+            self.AdvancedFailsafeBadBaro,
         ]
 
     def disabled_tests(self):
