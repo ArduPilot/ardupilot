@@ -12584,6 +12584,28 @@ switch value'''
         if ex is not None:
             raise ex
 
+    def AdvancedFailsafeBadBaro(self):
+        '''ensure GPS can be used as a fallback in case of baro dying'''
+        self.set_parameters({
+            "AFS_ENABLE": 1,
+            "SYSID_MYGCS": self.mav.source_system,
+            "AFS_AMSL_LIMIT": 1000,
+            "AFS_QNH_PRESSURE": 1000,
+            "AFS_AMSL_ERR_GPS": 10,
+        })
+        self.wait_ready_to_arm()
+        self.start_subtest("Ensuring breaking baros doesn't terminate")
+        self.set_parameters({
+            "SIM_BARO_DISABLE": 1,
+            "SIM_BAR2_DISABLE": 1,
+        })
+        self.delay_sim_time(10)
+        self.start_subtest("Ensuring breaking GPS does now terminate")
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+        })
+        self.wait_statustext("Terminating due to fence breach")
+
     def drain_mav_seconds(self, seconds):
         tstart = self.get_sim_time_cached()
         while self.get_sim_time_cached() - tstart < seconds:
