@@ -37,13 +37,13 @@ The Lumenier LUX F765 NDAA flight controller is sold by
 ## UART Mapping
 
  - SERIAL0 -> USB
- - SERIAL1 -> USART1 (RCinput, DMA enabled)
+ - SERIAL1 -> USART1 (Telem1, DMA enabled)
  - SERIAL2 -> UART5  (Telem2, DMA enabled)
  - SERIAL3 -> USART3 (GPS1, TX DMA enabled)
  - SERIAL4 -> UART8  (GPS2)
  - SERIAL5 -> USART2 (ESC Telemetry)
  - SERIAL6 -> UART4  (DisplayPort)
- - SERIAL7 -> UART7  (Spare)
+ - SERIAL7 -> UART7  (RCinput, DMA enabled)
  - SERIAL8 -> USART6 (Spare)
 
 ## SPI Mapping
@@ -351,8 +351,8 @@ The auxiliary PWM outputs are grouped as follows:
 
 ## RC Input
 
-Bi-directional RC inputs like CRSF/ELRS are supported on USART1 (telem1).
-USART1 (telem1) will also support all unidirectional RC protocols. 
+Bi-directional RC inputs like CRSF/ELRS are supported on UART7 (Serial7).
+UART7 (Serial7) will also support all unidirectional RC protocols. 
 
 ## OSD Support
 
