@@ -1619,7 +1619,7 @@ void AP_GPS::handle_gps_rtcm_data(mavlink_channel_t chan, const mavlink_message_
  */
 bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm_data_t &pkt)
 {
-    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+    if (static_cast<int>(chan) >= MAVLINK_COMM_NUM_BUFFERS) {
         return false;
     }
     if (rtcm.parsers[chan] == nullptr) {

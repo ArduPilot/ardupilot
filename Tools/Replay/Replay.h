@@ -107,4 +107,7 @@ private:
     bool parse_param_line(char *line, char **vname, float &value);
     void load_param_file(const char *filename);
     void usage();
+
+    void Write_Format(const struct LogStructure &s);
+    void write_EKF_formats(void);
 };

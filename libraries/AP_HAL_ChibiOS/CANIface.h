@@ -156,7 +156,7 @@ public:
     static uint8_t next_interface;
 
     // Initialise CAN Peripheral
-    bool init(const uint32_t bitrate, const OperatingMode mode) override;
+    __INITFUNC__ bool init(const uint32_t bitrate, const OperatingMode mode) override;
 
     // Put frame into Tx FIFO returns negative on error, 0 on buffer full, 
     // 1 on successfully pushing a frame into FIFO

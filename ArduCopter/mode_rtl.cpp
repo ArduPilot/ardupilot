@@ -312,7 +312,7 @@ void ModeRTL::descent_run()
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've reached within 20cm of final altitude
-    _state_complete = labs(rtl_path.descent_target.alt - copter.current_loc.alt) < 20;
+    _state_complete = labs(rtl_path.descent_target.alt - copter.inertial_nav.get_position_z_up_cm()) < 20;
 }
 
 // land_start - initialise controllers to loiter over home
@@ -388,6 +388,9 @@ void ModeRTL::build_path()
 
     // descent target is below return target at rtl_alt_final
     rtl_path.descent_target = Location(rtl_path.return_target.lat, rtl_path.return_target.lng, g.rtl_alt_final, Location::AltFrame::ABOVE_HOME);
+
+    // Target altitude is passed directly to the position controller so must be relative to origin
+    rtl_path.descent_target.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
 
     // set land flag
     rtl_path.land = g.rtl_alt_final <= 0;

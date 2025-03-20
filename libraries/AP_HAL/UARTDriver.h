@@ -7,7 +7,7 @@
 #include <AP_Logger/AP_Logger_config.h>
 
 #ifndef HAL_UART_STATS_ENABLED
-#define HAL_UART_STATS_ENABLED !defined(HAL_NO_UARTDRIVER)
+#define HAL_UART_STATS_ENABLED AP_HAL_UARTDRIVER_ENABLED
 #endif
 
 #ifndef AP_UART_MONITOR_ENABLED
@@ -171,6 +171,7 @@ public:
         };
         ByteTracker tx;
         ByteTracker rx;
+        ByteTracker rx_dropped;
     };
 
     // request information on uart I/O for this uart, for @SYS/uarts.txt
@@ -259,6 +260,7 @@ protected:
     // Getters for cumulative tx and rx counts
     virtual uint32_t get_total_tx_bytes() const { return 0; }
     virtual uint32_t get_total_rx_bytes() const { return 0; }
+    virtual uint32_t get_total_dropped_rx_bytes() const { return 0; }
 #endif
 
 private:

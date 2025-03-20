@@ -36,7 +36,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef AP_VOLZ_ENABLED
-#define AP_VOLZ_ENABLED BOARD_FLASH_SIZE > 1024
+#define AP_VOLZ_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #endif
 
 #if AP_VOLZ_ENABLED
@@ -88,7 +88,6 @@ private:
 
     // Loop in thread to output to uart
     void loop();
-    uint8_t sent_count;
 
     void init(void);
 
@@ -119,6 +118,8 @@ private:
     // Reading of telem packets
     void read_telem();
     void process_response(const CMD &cmd);
+
+    uint8_t sent_count;
 
     struct {
         CMD_ID types[3] {

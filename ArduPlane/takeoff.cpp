@@ -22,12 +22,19 @@ bool Plane::auto_takeoff_check(void)
         return false;
     }
 
-    // Reset states if process has been interrupted
-    if (takeoff_state.last_check_ms && (now - takeoff_state.last_check_ms) > 200) {
-        memset(&takeoff_state, 0, sizeof(takeoff_state));
-        return false;
-    }
-
+    // Reset states if process has been interrupted, except initial_direction.initialized if set
+#if MODE_AUTOLAND_ENABLED
+    bool takeoff_dir_initialized = takeoff_state.initial_direction.initialized;
+    float takeoff_dir = takeoff_state.initial_direction.heading;
+#endif
+     if (takeoff_state.last_check_ms && (now - takeoff_state.last_check_ms) > 200) {
+         memset(&takeoff_state, 0, sizeof(takeoff_state));
+#if MODE_AUTOLAND_ENABLED
+         takeoff_state.initial_direction.initialized = takeoff_dir_initialized; //restore dir init state
+         takeoff_state.initial_direction.heading = takeoff_dir;
+#endif
+         return false;
+     }
     takeoff_state.last_check_ms = now;
     
     //check if waiting for rudder neutral after rudder arm
@@ -278,7 +285,7 @@ void Plane::takeoff_calc_throttle() {
     const float current_baro_alt = barometer.get_altitude();
     const bool below_lvl_alt = current_baro_alt < auto_state.baro_takeoff_alt + mode_takeoff.level_alt;
     // Set the minimum throttle limit.
-    const bool use_throttle_range = (aparm.takeoff_options & (uint32_t)AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
+    const bool use_throttle_range = tkoff_option_is_set(AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
     if (!use_throttle_range // We don't want to employ a throttle range.
         || !ahrs.using_airspeed_sensor() // We don't have an airspeed sensor.
         || below_lvl_alt // We are below TKOFF_LVL_ALT.

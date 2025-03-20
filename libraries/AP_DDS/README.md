@@ -51,11 +51,13 @@ graph LR
 ```
 
 
-## Installing Build Dependencies
+## Installation
 
-While DDS support in Ardupilot is mostly through git submodules, another tool needs to be available on your system: Micro XRCE DDS Gen.
+While DDS support in Ardupilot is mostly through git submodules,
+you must install Micro XRCE DDS Gen and create a workspace.
 
-Follow the wiki [here](https://ardupilot.org/dev/docs/ros2.html#installation-ubuntu) to set up your environment.
+Follow the wiki [here](https://ardupilot.org/dev/docs/ros2.html)
+to set up your environment.
 
 ### Serial Only: Set up serial for SITL with DDS
 
@@ -94,35 +96,12 @@ param set DDS_ENABLE 0
 REBOOT
 ```
 
-## Setup ROS 2 and micro-ROS
-
-Follow the steps to use the microROS Agent
-
-- Install ROS Humble (as described here)
-
-  - https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html
-
-- Install geographic_msgs
-  ```console
-  sudo apt install ros-humble-geographic-msgs
-  ```
-
-- Install and run the microROS agent (as described here). Make sure to use the `humble` branch.
-  - Follow [the instructions](https://micro.ros.org/docs/tutorials/core/first_application_linux/) for the following:
-
-    - Do "Installing ROS 2 and the micro-ROS build system"
-      - Skip the docker run command, build it locally instead
-    - Skip "Creating a new firmware workspace"
-    - Skip "Building the firmware"
-    - Do "Creating the micro-ROS agent"
-    - Source your ROS workspace
-
 ## Using the ROS 2 CLI to Read Ardupilot Data
 
-After your setups are complete, do the following:
+After your setup is complete, do the following:
 - Source the ROS 2 installation
   ```console
-  source /opt/ros/humble/setup.bash
+  source install/setup.bash
   ```
 
 Next, follow the associated section for your chosen transport, and finally you can use the ROS 2 CLI.
@@ -169,6 +148,8 @@ $ ros2 node list
 /ardupilot_dds
 ```
 
+Depending on what's configured, you will see something similar to this:
+
 ```bash
 $ ros2 topic list -v
 Published topics:
@@ -192,6 +173,8 @@ Subscribed topics:
  * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
  * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
 ```
+
+For a full list of interfaces, see [here](https://ardupilot.org/dev/docs/ros2-interfaces.html).
 
 ```bash
 $ ros2 topic hz /ap/time

@@ -47,7 +47,6 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Camera/AP_RunCam.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_Hott_Telem/AP_Hott_Telem.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
@@ -177,6 +176,8 @@ public:
     virtual bool start_takeoff(const float alt) { return false; }
     // Method to control vehicle position for use by external control
     virtual bool set_target_location(const Location& target_loc) { return false; }
+    // Get target location for use by external control
+    virtual bool get_target_location(Location& target_loc) { return false; }
 #endif // AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 #if AP_SCRIPTING_ENABLED
     /*
@@ -196,8 +197,6 @@ public:
     virtual void set_rudder_offset(float rudder_pct, bool run_yaw_rate_controller) {}
     virtual bool nav_scripting_enable(uint8_t mode) {return false;}
 
-    // get target location (for use by scripting)
-    virtual bool get_target_location(Location& target_loc) { return false; }
     virtual bool update_target_location(const Location &old_loc, const Location &new_loc) { return false; }
 
     // circle mode controls (only used by scripting with Copter)
@@ -373,9 +372,6 @@ protected:
     AP_RSSI rssi;
 #endif
 
-#if HAL_RUNCAM_ENABLED
-    AP_RunCam runcam;
-#endif
 #if HAL_GYROFFT_ENABLED
     AP_GyroFFT gyro_fft;
 #endif

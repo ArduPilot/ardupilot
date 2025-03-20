@@ -39,5 +39,5 @@ void SlewCalculator2D::update(const Vector2f& sample, float dt)
 // get last oscillation slew rate
 float SlewCalculator2D::get_slew_rate() const
 {
-    return safe_sqrt(sq(xlimiter.get_slew_rate()) + sq(xlimiter.get_slew_rate()));
+    return safe_sqrt(sq(xlimiter.get_slew_rate()) + sq(ylimiter.get_slew_rate()));
 }

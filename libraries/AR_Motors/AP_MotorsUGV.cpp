@@ -132,6 +132,11 @@ void AP_MotorsUGV::init(uint8_t frtype)
 {
     _frame_type = frame_type(frtype);
 
+    // setup for omni vehicles
+    if (_frame_type != FRAME_TYPE_UNDEFINED) {
+        setup_omni();
+    }
+    
     // setup servo output
     setup_servo_output();
 
@@ -141,10 +146,6 @@ void AP_MotorsUGV::init(uint8_t frtype)
     // set safety output
     setup_safety_output();
 
-    // setup for omni vehicles
-    if (_frame_type != FRAME_TYPE_UNDEFINED) {
-        setup_omni();
-    }
 }
 
 bool AP_MotorsUGV::get_legacy_relay_index(int8_t &index1, int8_t &index2, int8_t &index3, int8_t &index4) const
@@ -206,7 +207,7 @@ void AP_MotorsUGV::setup_servo_output()
 
     // omni motors set in power percent so -100 ... 100
     for (uint8_t i=0; i<AP_MOTORS_NUM_MOTORS_MAX; i++) {
-        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
+        SRV_Channel::Function function = SRV_Channels::get_motor_function(i);
         SRV_Channels::set_angle(function, 100);
     }
 
@@ -520,7 +521,7 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
     }
     // check all omni motor outputs have been configured
     for (uint8_t i=0; i<_motors_num; i++) {
-        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
+        SRV_Channel::Function function = SRV_Channels::get_motor_function(i);
         if (!SRV_Channels::function_assigned(function)) {
             if (report) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: servo function %u unassigned", function);
@@ -681,7 +682,7 @@ void AP_MotorsUGV::add_omni_motor_num(int8_t motor_num)
     // ensure a valid motor number is provided
     if (motor_num >= 0 && motor_num < AP_MOTORS_NUM_MOTORS_MAX) {
         uint8_t chan;
-        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
+        SRV_Channel::Function function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
         if (!SRV_Channels::find_channel(function, chan)) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
@@ -975,7 +976,7 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
 }
 
 // output throttle value to main throttle channel, left throttle or right throttle.  throttle should be scaled from -100 to 100
-void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt)
+void AP_MotorsUGV::output_throttle(SRV_Channel::Function function, float throttle, float dt)
 {
     // sanity check servo function
     if (function != SRV_Channel::k_throttle && function != SRV_Channel::k_throttleLeft && function != SRV_Channel::k_throttleRight && function != SRV_Channel::k_motor1 && function != SRV_Channel::k_motor2 && function != SRV_Channel::k_motor3 && function!= SRV_Channel::k_motor4) {
@@ -1110,7 +1111,7 @@ float AP_MotorsUGV::get_scaled_throttle(float throttle) const
 }
 
 // use rate controller to achieve desired throttle
-float AP_MotorsUGV::get_rate_controlled_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt)
+float AP_MotorsUGV::get_rate_controlled_throttle(SRV_Channel::Function function, float throttle, float dt)
 {
     // require non-zero dt
     if (!is_positive(dt)) {

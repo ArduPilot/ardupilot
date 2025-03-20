@@ -341,6 +341,11 @@ bool AP_Networking::Port::send_receive(void)
         if (ret > 0) {
             WITH_SEMAPHORE(sem);
             readbuffer->write(buf, ret);
+
+            // Cant track dropped read packets because we only read in what there is space for
+            // The socket buffer becomes full and data is lost there
+            rx_stats_bytes += ret;
+
             active = true;
             have_received = true;
         }
@@ -413,6 +418,7 @@ bool AP_Networking::Port::send_receive(void)
         if (ret > 0) {
             WITH_SEMAPHORE(sem);
             writebuffer->advance(ret);
+            tx_stats_bytes += ret;
             active = true;
         } else if (errno == ENOTCONN &&
             (type == NetworkPortType::TCP_CLIENT || type == NetworkPortType::TCP_SERVER)) {

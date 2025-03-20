@@ -26,10 +26,10 @@ public:
 
     bool enabled;                          // not to be confused with rangefinder enabled, this state is to be set by the vehicle.
     bool alt_healthy;                      // true if we can trust the altitude from the rangefinder
-    int16_t alt_cm;                        // tilt compensated altitude (in cm) from rangefinder
+    int32_t alt_cm;                        // tilt compensated altitude (in cm) from rangefinder
     float inertial_alt_cm;                 // inertial alt at time of last rangefinder sample
     LowPassFilterFloat alt_cm_filt {0.5};  // altitude filter
-    int16_t alt_cm_glitch_protected;       // last glitch protected altitude
+    int32_t alt_cm_glitch_protected;       // last glitch protected altitude
     int8_t glitch_count;                   // non-zero number indicates rangefinder is glitching
     uint32_t glitch_cleared_ms;            // system time glitch cleared
     float terrain_offset_cm;               // filtered terrain offset (e.g. terrain's height above EKF origin)

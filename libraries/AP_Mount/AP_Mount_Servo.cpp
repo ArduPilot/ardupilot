@@ -203,6 +203,6 @@ void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
 // move_servo - moves servo with the given id to the specified angle.  all angles are in degrees * 10
 void AP_Mount_Servo::move_servo(uint8_t function_idx, int16_t angle, int16_t angle_min, int16_t angle_max)
 {
-	SRV_Channels::move_servo((SRV_Channel::Aux_servo_function_t)function_idx, angle, angle_min, angle_max);
+	SRV_Channels::move_servo((SRV_Channel::Function)function_idx, angle, angle_min, angle_max);
 }
 #endif // HAL_MOUNT_SERVO_ENABLED

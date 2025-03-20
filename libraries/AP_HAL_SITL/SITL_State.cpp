@@ -106,10 +106,8 @@ void SITL_State::_sitl_setup()
         _sitl->rcin_port = _rcin_port;
     }
 
-    if (_synthetic_clock_mode) {
-        // start with non-zero clock
-        hal.scheduler->stop_clock(1);
-    }
+    // start with non-zero clock
+    hal.scheduler->stop_clock(1);
 }
 
 
@@ -284,7 +282,6 @@ void SITL_State::_fdm_input_local(void)
 
     set_height_agl();
 
-    _synthetic_clock_mode = true;
     _update_count++;
 }
 
@@ -330,7 +327,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     // give 5 seconds to calibrate airspeed sensor at 0 wind speed
     if (wind_start_delay_micros == 0) {
         wind_start_delay_micros = now;
-    } else if (_sitl && (now - wind_start_delay_micros) > 5000000 ) {
+    } else if ((now - wind_start_delay_micros) > 5000000 ) {
         // The EKF does not like step inputs so this LPF keeps it happy.
         uint32_t dt_us = now - last_wind_update_us;
         if (dt_us > 1000) {
@@ -382,37 +379,47 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         }
     }
 
-    if (_sitl != nullptr) {
-        // FETtec ESC simulation support.  Input signals of 1000-2000
-        // are positive thrust, 0 to 1000 are negative thrust.  Deeper
-        // changes required to support negative thrust - potentially
-        // adding a field to input.
-        if (_sitl != nullptr) {
-            if (_sitl->fetteconewireesc_sim.enabled()) {
-                _sitl->fetteconewireesc_sim.update_sitl_input_pwm(input);
-                for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
-                    if (input.servos[i] != 0 && input.servos[i] < 1000) {
-                        AP_HAL::panic("Bad input servo value (%u)", input.servos[i]);
-                    }
-                }
+    // FETtec ESC simulation support.  Input signals of 1000-2000
+    // are positive thrust, 0 to 1000 are negative thrust.  Deeper
+    // changes required to support negative thrust - potentially
+    // adding a field to input.
+    if (_sitl->fetteconewireesc_sim.enabled()) {
+        _sitl->fetteconewireesc_sim.update_sitl_input_pwm(input);
+        for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
+            if (input.servos[i] != 0 && input.servos[i] < 1000) {
+                AP_HAL::panic("Bad input servo value (%u)", input.servos[i]);
             }
         }
     }
 
-    float engine_mul = _sitl?_sitl->engine_mul.get():1;
-    uint8_t engine_fail = _sitl?_sitl->engine_fail.get():0;
-    float throttle = 0.0f;
-    
-    if (engine_fail >= ARRAY_SIZE(input.servos)) {
-        engine_fail = 0;
+#if AP_SIM_VOLZ_ENABLED
+    // update simulation input based on data received via "serial" to
+    // Volz servos:
+    if (_sitl->volz_sim.enabled()) {
+        _sitl->volz_sim.update_sitl_input_pwm(input);
+        for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
+            if (input.servos[i] != 0 && input.servos[i] < 1000) {
+                AP_HAL::panic("Bad input servo value (%u)", input.servos[i]);
+            }
+        }
     }
+#endif
+
+    const float engine_mul = _sitl->engine_mul.get();
+    const uint32_t engine_fail = _sitl->engine_fail.get();
+
     // apply engine multiplier to motor defined by the SIM_ENGINE_FAIL parameter
-    if (_vehicle != Rover) {
-        input.servos[engine_fail] = ((input.servos[engine_fail]-1000) * engine_mul) + 1000;
-    } else {
-        input.servos[engine_fail] = static_cast<uint16_t>(((input.servos[engine_fail] - 1500) * engine_mul) + 1500);
+    for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
+        if (engine_fail & (1<<i)) {
+            if (_vehicle != Rover) {
+                input.servos[i] = ((input.servos[i]-1000) * engine_mul) + 1000;
+            } else {
+                input.servos[i] = static_cast<uint16_t>(((input.servos[i] - 1500) * engine_mul) + 1500);
+            }
+        }
     }
 
+    float throttle = 0.0f;
     if (_vehicle == ArduPlane) {
         float forward_throttle = constrain_float((input.servos[2] - 1000) / 1000.0f, 0.0f, 1.0f);
         // do a little quadplane dance
@@ -461,9 +468,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
             throttle /= running_motors;
         }
     }
-    if (_sitl) {
-        _sitl->throttle = throttle;
-    }
+    _sitl->throttle = throttle;
 
     update_voltage_current(input, throttle);
 }

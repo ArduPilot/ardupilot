@@ -29,7 +29,7 @@ public:
     using AP_Generator_Backend::AP_Generator_Backend;
 
     // init should be called at vehicle startup to get the generator library ready
-    void init(void) override;
+    __INITFUNC__ void init(void) override;
     // update should be called regularly to update the generator state
     void update(void) override;
 

@@ -102,13 +102,19 @@ void Plane::Log_Write_Control_Tuning()
         synthetic_airspeed = logger.quiet_nan();
     }
 
+    int16_t pitch = ahrs.pitch_sensor - g.pitch_trim * 100;
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.show_vtol_view()) {
+        pitch = quadplane.ahrs_view->pitch_sensor;
+    }
+#endif      
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
         time_us         : AP_HAL::micros64(),
         nav_roll_cd     : (int16_t)nav_roll_cd,
         roll            : (int16_t)ahrs.roll_sensor,
         nav_pitch_cd    : (int16_t)nav_pitch_cd,
-        pitch           : (int16_t)ahrs.pitch_sensor,
+        pitch           : pitch,
         throttle_out    : SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
         rudder_out      : SRV_Channels::get_output_scaled(SRV_Channel::k_rudder),
         throttle_dem    : TECS_controller.get_throttle_demand(),
@@ -204,6 +210,7 @@ struct PACKED log_Status {
     bool is_still;
     uint8_t stage;
     bool impact;
+    bool throttle_supressed;
 };
 
 void Plane::Log_Write_Status()
@@ -219,6 +226,7 @@ void Plane::Log_Write_Status()
         ,is_still    : AP::ins().is_still()
         ,stage       : static_cast<uint8_t>(flight_stage)
         ,impact      : crash_state.impact_detected
+        ,throttle_supressed : throttle_suppressed
         };
 
     logger.WriteBlock(&pkt, sizeof(pkt));
@@ -312,8 +320,8 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: TimeUS: Time since system startup
 // @Field: NavRoll: desired roll
 // @Field: Roll: achieved roll
-// @Field: NavPitch: desired pitch
-// @Field: Pitch: achieved pitch
+// @Field: NavPitch: desired pitch assuming pitch trims are already applied
+// @Field: Pitch: achieved pitch assuming pitch trims are already applied,ie "0deg" is level flight trimmed pitch attitude as shown on artifical horizon level line.
 // @Field: ThO: scaled output throttle
 // @Field: RdO: scaled output rudder
 // @Field: ThD: demanded speed-height-controller throttle
@@ -376,8 +384,9 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Still: True when vehicle is not moving in any axis
 // @Field: Stage: Current stage of the flight
 // @Field: Hit: True if impact is detected
+// @Field: Sup: True if throttle is suppressed
     { LOG_STATUS_MSG, sizeof(log_Status),
-      "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit", "s--------", "F--------" , true },
+      "STAT", "QBfBBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit,Sup", "s---------", "F---------" , true },
 
 // @LoggerMessage: QTUN
 // @Description: QuadPlane vertical tuning message

@@ -503,7 +503,6 @@ private:
 
 #if AP_RC_CHANNEL_ENABLED
     Event map_rc_input_to_event() const;
-    RC_Channel::AuxSwitchPos get_channel_pos(const class RC_Channel &chan) const;
 #endif
 
     uint8_t _selected_param = 1;

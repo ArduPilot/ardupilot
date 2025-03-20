@@ -66,6 +66,8 @@ public:
 
     void convert_parameters(void);
 
+    void reset(void);
+
     void do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
     bool verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
             const int32_t auto_state_takeoff_altitude_rel_cm, bool &throttle_suppressed);
@@ -97,7 +99,10 @@ public:
 
     // accessor functions for the params and states
     static const struct AP_Param::GroupInfo var_info[];
-    
+
+    // Return the landing type
+    Landing_Type get_type() const { return (Landing_Type)type.get(); }
+
     int16_t get_pitch_cd(void) const { return pitch_deg*100; }
     float get_flare_sec(void) const { return flare_sec; }
     int8_t get_disarm_delay(void) const { return disarm_delay; }

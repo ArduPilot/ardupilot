@@ -3,8 +3,6 @@
 #include "AP_InertialSensor_config.h"
 
 // Gyro and Accelerometer calibration criteria
-#define AP_INERTIAL_SENSOR_ACCEL_TOT_MAX_OFFSET_CHANGE  4.0f
-#define AP_INERTIAL_SENSOR_ACCEL_MAX_OFFSET             250.0f
 #define AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ     5.0f    // accel vibration floor filter hz
 #define AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ           2.0f    // accel vibration filter hz
 #define AP_INERTIAL_SENSOR_ACCEL_PEAK_DETECT_TIMEOUT_MS 500     // peak-hold detector timeout
@@ -75,7 +73,7 @@ public:
     ///
     /// @param style	The initialisation startup style.
     ///
-    void init(uint16_t sample_rate_hz);
+    __INITFUNC__ void init(uint16_t sample_rate_hz);
 
     // get accel/gyro instance numbers that a backend will get when they register
     bool get_accel_instance(uint8_t &instance) const;
@@ -282,6 +280,9 @@ public:
 
     // Returns newly calculated trim values if calculated
     bool get_new_trim(Vector3f &trim_rad);
+
+    // notify IMUs of the new primary
+    void set_primary(uint8_t instance);
 
 #if HAL_INS_ACCELCAL_ENABLED
     // initialise and register accel calibrator
@@ -605,9 +606,6 @@ private:
     INS_PARAM_WRAPPER(_gyro_offset);
     INS_PARAM_WRAPPER(_accel_pos);
 
-    // accelerometer max absolute offsets to be used for calibration
-    float _accel_max_abs_offsets[INS_MAX_INSTANCES];
-
     // accelerometer and gyro raw sample rate in units of Hz
     float  _accel_raw_sample_rates[INS_MAX_INSTANCES];
     float  _gyro_raw_sample_rates[INS_MAX_INSTANCES];
@@ -659,9 +657,12 @@ private:
     bool _gyro_cal_ok[INS_MAX_INSTANCES];
     bool _accel_id_ok[INS_MAX_INSTANCES];
 
-    // primary accel and gyro
+    // first usable gyro and accel
     uint8_t _first_usable_gyro;
     uint8_t _first_usable_accel;
+
+    // primary instance
+    uint8_t _primary;
 
     // mask of accels and gyros which we will be actively using
     // and this should wait for in wait_for_sample()
@@ -823,6 +824,8 @@ public:
     void update_backend_filters();
     // are rate loop samples enabled for this instance?
     bool is_rate_loop_gyro_enabled(uint8_t instance) const;
+    // is dynamic fifo enabled for this instance
+    bool is_dynamic_fifo_enabled(uint8_t instance) const;
     // endif AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 };
 

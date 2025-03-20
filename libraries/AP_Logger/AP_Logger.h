@@ -412,7 +412,8 @@ public:
         return _log_start_count;
     }
 
-    // add a filename to list of files to log. The name must be a constant string, not allocated
+    // add a filename to list of files to log. The name is copied internally so
+    // the pointer passed can be freed after return.
     void log_file_content(const char *name);
 
 protected:

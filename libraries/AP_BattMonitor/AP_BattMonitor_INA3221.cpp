@@ -67,15 +67,13 @@ uint8_t AP_BattMonitor_INA3221::address_driver_count;
 
 const AP_Param::GroupInfo AP_BattMonitor_INA3221::var_info[] = {
 
-    // Param indexes must be between 56 and 61 to avoid conflict with other battery monitor param tables loaded by pointer
-
     // @Param: I2C_BUS
     // @DisplayName: Battery monitor I2C bus number
     // @Description: Battery monitor I2C bus number
     // @Range: 0 3
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("I2C_BUS", 56, AP_BattMonitor_INA3221, i2c_bus, HAL_BATTMON_INA3221_BUS),
+    AP_GROUPINFO("I2C_BUS", 22, AP_BattMonitor_INA3221, i2c_bus, HAL_BATTMON_INA3221_BUS),
 
     // @Param: I2C_ADDR
     // @DisplayName: Battery monitor I2C address
@@ -83,7 +81,7 @@ const AP_Param::GroupInfo AP_BattMonitor_INA3221::var_info[] = {
     // @Range: 0 127
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("I2C_ADDR", 57, AP_BattMonitor_INA3221, i2c_address, HAL_BATTMON_INA3221_ADDR),
+    AP_GROUPINFO("I2C_ADDR", 23, AP_BattMonitor_INA3221, i2c_address, HAL_BATTMON_INA3221_ADDR),
 
     // @Param: CHANNEL
     // @DisplayName: INA3221 channel
@@ -91,7 +89,9 @@ const AP_Param::GroupInfo AP_BattMonitor_INA3221::var_info[] = {
     // @Range: 1 3
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("CHANNEL", 58, AP_BattMonitor_INA3221, channel, 1),
+    AP_GROUPINFO("CHANNEL", 24, AP_BattMonitor_INA3221, channel, 1),
+
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
 
     AP_GROUPEND
 };
@@ -207,10 +207,11 @@ void AP_BattMonitor_INA3221::init()
     }
 
     AddressDriver *d = &address_driver[address_driver_count];
-    d->dev = std::move(hal.i2c_mgr->get_device(i2c_bus, i2c_address, 100000, true, 20));
+    d->dev = hal.i2c_mgr->get_device_ptr(i2c_bus, i2c_address, 100000, true, 20);
     if (!d->dev) {
         return;
     }
+
     d->bus = i2c_bus;
     d->address = i2c_address;
 

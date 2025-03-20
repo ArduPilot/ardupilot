@@ -761,6 +761,10 @@ void AnalogIn::_timer_tick(void)
         // note min/max swap due to inversion
         _mcu_voltage_min = 3.3 * VREFINT_CAL / float(_mcu_vrefint_max+0.001);
         _mcu_voltage_max = 3.3 * VREFINT_CAL / float(_mcu_vrefint_min+0.001);
+        
+        // reset min and max
+        _mcu_vrefint_max = 0;
+        _mcu_vrefint_min = 0;
     }
 #endif
 }

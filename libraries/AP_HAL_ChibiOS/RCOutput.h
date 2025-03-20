@@ -512,6 +512,8 @@ private:
     struct pwm_group *serial_group;
     thread_t *serial_thread;
     tprio_t serial_priority;
+    // mask of channels configured for serial output
+    uint32_t serial_chanmask;
 #endif // HAL_SERIAL_ESC_COMM_ENABLED
 
     static bool soft_serial_waiting() {
@@ -561,6 +563,7 @@ private:
     // these values are for the local channels. Non-local channels are handled by IOMCU
     uint32_t en_mask;
     uint16_t period[max_channels];
+    uint16_t period_corked[max_channels];
 
     // handling of bi-directional dshot
     struct {

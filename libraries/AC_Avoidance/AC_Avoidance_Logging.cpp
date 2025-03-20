@@ -2,10 +2,12 @@
 
 #if HAL_LOGGING_ENABLED
 
+#include <AP_AHRS/AP_AHRS.h>
 #include "AC_Avoid.h"
 #include "AP_OADijkstra.h"
 #include "AP_OABendyRuler.h"
 #include <AP_Logger/AP_Logger.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #if AP_OAPATHPLANNER_BENDYRULER_ENABLED
 void AP_OABendyRuler::Write_OABendyRuler(const uint8_t type, const bool active, const float target_yaw, const float target_pitch, const bool resist_chg, const float margin, const Location &final_dest, const Location &oa_dest) const

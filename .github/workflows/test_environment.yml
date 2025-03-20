@@ -40,8 +40,6 @@ jobs:
             name: bookworm
           - os: debian
             name: bullseye
-          - os: debian
-            name: buster
     steps:
       - name: Install Git
         timeout-minutes: 30

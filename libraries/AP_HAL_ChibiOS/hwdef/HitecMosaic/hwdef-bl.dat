@@ -6,8 +6,8 @@ MCU STM32F303 STM32F303xC
 FLASH_RESERVE_START_KB 0
 FLASH_BOOTLOADER_LOAD_KB 26
 
-# board ID for firmware load
-APJ_BOARD_ID 1016
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_HITEC_MOSAIC
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -22,7 +22,6 @@ FLASH_SIZE_KB 256
 
 # order of UARTs
 SERIAL_ORDER
-define HAL_USE_UART FALSE
 
 PA6 LED_BOOTLOADER OUTPUT LOW
 define HAL_LED_ON 1

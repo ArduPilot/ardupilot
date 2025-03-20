@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_PROXIMITY
+#if AP_PERIPH_PROXIMITY_ENABLED
 
 /*
   proximity support
@@ -72,4 +72,4 @@ void AP_Periph_FW::can_proximity_update()
     }
 }
 
-#endif // HAL_PERIPH_ENABLE_PROXIMITY
+#endif // AP_PERIPH_PROXIMITY_ENABLED

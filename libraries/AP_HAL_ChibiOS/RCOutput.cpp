@@ -40,9 +40,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Common/ExpandingString.h>
-#ifndef HAL_NO_UARTDRIVER
 #include <GCS_MAVLink/GCS.h>
-#endif
 
 #if AP_SIM_ENABLED
 #include <AP_HAL/SIMState.h>
@@ -739,7 +737,13 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
 
     chan -= chan_offset;
 
-    period[chan] = period_us;
+    if (corked) {
+        // when corked we put the updated period in a separate array which is
+        // copied to period[] when we push
+        period_corked[chan] = period_us;
+    } else {
+        period[chan] = period_us;
+    }
 
     if (chan < num_fmu_channels) {
         active_fmu_channels = MAX(chan+1, active_fmu_channels);
@@ -903,7 +907,7 @@ bool RCOutput::mode_requires_dma(enum output_mode mode) const
 
 void RCOutput::print_group_setup_error(pwm_group &group, const char* error_string)
 {
-#ifndef HAL_NO_UARTDRIVER
+#if AP_HAVE_GCS_SEND_TEXT
     uint8_t min_chan = UINT8_MAX;
     uint8_t max_chan = 0;
     for (uint8_t j = 0; j < 4; j++) {
@@ -921,7 +925,7 @@ void RCOutput::print_group_setup_error(pwm_group &group, const char* error_strin
     } else {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Chan %i to %i, %s: %s",min_chan+1,max_chan+1,get_output_mode_string(group.current_mode),error_string);
     }
-#endif
+#endif  // AP_HAVE_GCS_SEND_TEXT
 }
 
 /*
@@ -1329,9 +1333,6 @@ bool RCOutput::get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len)
  */
 void RCOutput::cork(void)
 {
-    if (corked) {
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-    }
     corked = true;
 #if HAL_WITH_IO_MCU
     if (iomcu_enabled) {
@@ -1349,6 +1350,7 @@ void RCOutput::push(void)
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
     corked = false;
+    memcpy(period, period_corked, sizeof(period));
     push_local();
 #if HAL_WITH_IO_MCU
     if (iomcu_enabled) {
@@ -1793,6 +1795,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 #ifdef HAL_GPIO_LINE_GPIO54
     TOGGLE_PIN_DEBUG(54);
 #endif
+
 #if STM32_DMA_SUPPORTS_DMAMUX
     dmaSetRequestSource(group.dma, group.dma_up_channel);
 #endif
@@ -1919,6 +1922,11 @@ void RCOutput::dma_cancel(pwm_group& group)
 
   While serial output is active normal output to the channel group is
   suspended.
+
+  chanmask could refer to more than one group so it is assumed that
+  this function is always called before outputting to the group
+  implied by chan, but that DMA channels are setup only once
+  until serial_end() has been called
 */
 #if HAL_SERIAL_ESC_COMM_ENABLED
 bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t chanmask)
@@ -1928,7 +1936,7 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t cha
     chanmask >>= chan_offset;
     pwm_group *new_serial_group = nullptr;
 
-    // find the channel group
+    // find the channel group for the next output
     for (auto &group : pwm_group_list) {
         if (group.current_mode == MODE_PWM_BRUSHED) {
             // can't do serial output with brushed motors
@@ -1945,6 +1953,7 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t cha
         }
     }
 
+    // couldn't find a group, shutdown everything
     if (!new_serial_group) {
         if (in_soft_serial()) {
             // shutdown old group
@@ -1956,22 +1965,23 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t cha
     // stop further dshot output before we reconfigure the DMA
     serial_group = new_serial_group;
 
-    // setup the groups for serial output. We ask for a bit width of 1, which gets modified by the
+    // setup the unconfigured groups for serial output. We ask for a bit width of 1, which gets modified by the
     // we setup all groups so they all are setup with the right polarity, and to make switching between
     // channels in blheli pass-thru fast
     for (auto &group : pwm_group_list) {
-        if (group.ch_mask & chanmask) {
+        if ((group.ch_mask & chanmask) && !(group.ch_mask & serial_chanmask)) {
             if (!setup_group_DMA(group, baudrate, 10, false, DSHOT_BUFFER_LENGTH, 10, false)) {
                 serial_end();
                 return false;
             }
         }
     }
-
     // run the thread doing serial IO at highest priority. This is needed to ensure we don't
     // lose bytes when we switch between output and input
     serial_thread = chThdGetSelfX();
     serial_priority  = chThdGetSelfX()->realprio;
+    // mask of channels currently configured
+    serial_chanmask |= chanmask;
     chThdSetPriority(HIGHPRIO);
 
     // remember the bit period for serial_read_byte()
@@ -2006,7 +2016,6 @@ void RCOutput::fill_DMA_buffer_byte(dmar_uint_t *buffer, uint8_t stride, uint8_t
         b >>= 1;
     }
 }
-
 
 /*
   send one serial byte, blocking call, should be called with the DMA lock held
@@ -2234,11 +2243,15 @@ void RCOutput::serial_end(void)
         irq.waiter = nullptr;
         for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
             pwm_group &group = pwm_group_list[i];
-            set_group_mode(group);
-            set_freq_group(group);
+            // re-configure groups that were previous configured
+            if (group.ch_mask & serial_chanmask) {
+                dma_cancel(group);  // this ensures the DMA is in a sane state
+                set_group_mode(group);
+            }
         }
     }
     serial_group = nullptr;
+    serial_chanmask = 0;
 }
 #endif // HAL_SERIAL_ESC_COMM_ENABLED
 

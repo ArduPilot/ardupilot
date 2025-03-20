@@ -495,7 +495,7 @@ void ModePosHold::run()
 // poshold_update_pilot_lean_angle - update the pilot's filtered lean angle with the latest raw input received
 void ModePosHold::update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw)
 {
-    // if raw input is large or reversing the vehicle's lean angle immediately set the fitlered angle to the new raw angle
+    // if raw input is large or reversing the vehicle's lean angle immediately set the filtered angle to the new raw angle
     if ((lean_angle_filtered > 0 && lean_angle_raw < 0) || (lean_angle_filtered < 0 && lean_angle_raw > 0) || (fabsf(lean_angle_raw) > POSHOLD_STICK_RELEASE_SMOOTH_ANGLE)) {
         lean_angle_filtered = lean_angle_raw;
     } else {

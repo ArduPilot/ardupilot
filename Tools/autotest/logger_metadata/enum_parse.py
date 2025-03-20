@@ -4,8 +4,6 @@
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import print_function
-
 import argparse
 import os
 import re
@@ -168,7 +166,7 @@ class EnumDocco(object):
                         continue
 
                     # // @LoggerEnum: NAME  -  can be used around for #define sets
-                    m = re.match(r".*@LoggerEnum: *([\w]+)", line)
+                    m = re.match(r".*@LoggerEnum: *([\w:]+)", line)
                     if m is not None:
                         enum_name = m.group(1)
                         debug("%s: %s" % (source_file, enum_name))
@@ -180,6 +178,9 @@ class EnumDocco(object):
 
                     continue
                 if state == "inside":
+                    if re.match(r"\s*enum.*$", line):
+                        # Allow @LoggerEnum around Enum for name override
+                        continue
                     if re.match(r"\s*$", line):
                         continue
                     if re.match(r"#if", line):

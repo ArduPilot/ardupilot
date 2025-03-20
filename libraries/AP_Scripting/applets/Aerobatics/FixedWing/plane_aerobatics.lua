@@ -8,7 +8,6 @@
 ---@diagnostic disable: param-type-mismatch
 ---@diagnostic disable: undefined-field
 ---@diagnostic disable: missing-parameter
----@diagnostic disable: cast-local-type
 ---@diagnostic disable: need-check-nil
 ---@diagnostic disable: undefined-global
 ---@diagnostic disable: inject-field
@@ -659,8 +658,8 @@ end
 --[[
    create a class that inherits from a base class
 --]]
-local function inheritsFrom(baseClass, _name)
-    local new_class = { name = _name }
+local function inheritsFrom(baseClass, name_in)
+    local new_class = { name = name_in }
     local class_mt = { __index = new_class }
 
     function new_class:create()
@@ -1658,10 +1657,8 @@ end
 --[[
    perform a rudder over maneuver
 --]]
-function rudder_over(_direction, _min_speed)
+function rudder_over(direction, min_speed)
    local self = {}
-   local direction = _direction
-   local min_speed = _min_speed
    local reached_speed = false
    local kick_started = false
    local pitch2_done = false
@@ -1822,12 +1819,10 @@ end
 --[[
    takeoff controller
 --]]
-function takeoff_controller(_distance, _thr_slew)
+function takeoff_controller(distance, thr_slew)
    local self = {}
    local start_time = 0
    local start_pos = nil
-   local thr_slew = _thr_slew
-   local distance = _distance
    local all_done = false
    local initial_yaw_deg = math.deg(ahrs:get_yaw())
    local yaw_correction_tconst = 1.0
@@ -2245,11 +2240,9 @@ end
    milliseconds means we lose accuracy over time. At 9 hours we have
    an accuracy of about 1 millisecond
 --]]
-local function JitterCorrection(_max_lag_ms, _convergence_loops)
+local function JitterCorrection(max_lag_ms, convergence_loops)
    local self = {}
 
-   local max_lag_ms = _max_lag_ms
-   local convergence_loops = _convergence_loops
    local link_offset_ms = 0
    local min_sample_ms = 0
    local initialised = false
@@ -2316,8 +2309,8 @@ local function mavlink_receiver()
 
    msg_map[NAMED_VALUE_FLOAT_msgid] = "NAMED_VALUE_FLOAT"
 
-   -- initialise mavlink rx with number of messages, and buffer depth
-   mavlink.init(1, 10)
+   -- initialize MAVLink rx with buffer depth and number of rx message IDs to register
+   mavlink.init(10, 1)
 
    -- register message id to receive
    mavlink.register_rx_msgid(NAMED_VALUE_FLOAT_msgid)
@@ -3042,7 +3035,9 @@ function load_trick(id)
    local pc = path_composer(name, paths)
    gcs:send_text(MAV_SEVERITY.INFO, string.format("Loaded trick%u '%s'", id, name))
    command_table[id] = PathFunction(pc, name)
-   logger:log_file_content(filename)
+   if logger.log_file_content then
+      logger:log_file_content(filename)
+   end
 
    calculate_timestamps(command_table[id])
 end

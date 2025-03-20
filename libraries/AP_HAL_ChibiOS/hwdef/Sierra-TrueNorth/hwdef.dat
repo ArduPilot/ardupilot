@@ -15,8 +15,8 @@ define HAL_STORAGE_SIZE 800
 STM32_ST_USE_TIMER 15
 define CH_CFG_ST_RESOLUTION 16
 
-# board ID for firmware load
-APJ_BOARD_ID 1093
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_Sierra-TrueNorth
 
 # crystal frequency
 OSCILLATOR_HZ 16000000
@@ -63,7 +63,7 @@ define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
 env ROMFS_UNCOMPRESSED True
 
 # enable compass and airspeed
-define HAL_PERIPH_ENABLE_MAG
+define AP_PERIPH_MAG_ENABLED 1
 define HAL_COMPASS_MAX_SENSORS 1  
 
 # PWM, WS2812 LED

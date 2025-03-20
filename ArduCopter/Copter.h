@@ -87,12 +87,12 @@
  #include <AC_Autorotation/AC_Autorotation.h> // Autorotation controllers
 #endif
 
-#include "RC_Channel.h"         // RC Channel Library
+#include "RC_Channel_Copter.h"         // RC Channel Library
 
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Copter.h"
 #include "GCS_Copter.h"
 #include "AP_Rally.h"           // Rally point library
-#include "AP_Arming.h"
+#include "AP_Arming_Copter.h"
 
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #if AP_EXTERNAL_CONTROL_ENABLED
@@ -162,6 +162,10 @@
 
 #if AP_OAPATHPLANNER_ENABLED && !AP_FENCE_ENABLED
   #error AP_OAPathPlanner relies on AP_FENCE_ENABLED which is disabled
+#endif
+
+#if MODE_AUTOROTATE_ENABLED && !AP_RPM_ENABLED
+  #error AC_Autorotation relies on AP_RPM_ENABLED which is disabled
 #endif
 
 #if HAL_ADSB_ENABLED
@@ -334,7 +338,6 @@ private:
     // thus failsafes should be triggered on filtered values in order to avoid transient errors 
     LowPassFilterFloat pos_variance_filt;
     LowPassFilterFloat vel_variance_filt;
-    LowPassFilterFloat hgt_variance_filt;
     bool variances_valid;
     uint32_t last_ekf_check_us;
 
@@ -496,10 +499,6 @@ private:
     // arm_time_ms - Records when vehicle was armed. Will be Zero if we are disarmed.
     uint32_t arm_time_ms;
 
-    // Used to exit the roll and pitch auto trim function
-    uint8_t auto_trim_counter;
-    bool auto_trim_started = false;
-
     // Camera
 #if AP_CAMERA_ENABLED
     AP_Camera camera{MASK_LOG_CAMERA};
@@ -632,7 +631,6 @@ private:
         DISABLE_THRUST_LOSS_CHECK     = (1<<0),   // 1
         DISABLE_YAW_IMBALANCE_WARNING = (1<<1),   // 2
         RELEASE_GRIPPER_ON_THRUST_LOSS = (1<<2),  // 4
-        REQUIRE_POSITION_FOR_ARMING =   (1<<3),   // 8
     };
 
     // type of fast rate attitude controller in operation
@@ -974,7 +972,6 @@ private:
     void convert_prx_parameters();
 #endif
     void convert_lgr_parameters(void);
-    void convert_tradheli_parameters(void) const;
 
     // precision_landing.cpp
     void init_precland();
@@ -1001,11 +998,6 @@ private:
 
     // takeoff_check.cpp
     void takeoff_check();
-
-    // RC_Channel.cpp
-    void save_trim();
-    void auto_trim();
-    void auto_trim_cancel();
 
     // system.cpp
     void init_ardupilot() override;

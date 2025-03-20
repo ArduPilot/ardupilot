@@ -58,8 +58,8 @@ define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
 
 # Note that APJ is "ArduPilot JSON Firmware Format".
 
-# board ID for firmware load
-APJ_BOARD_ID 9
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_CUBE_F4
 
 # Now you need to say what crystal frequency you have for this
 # board. All of the clocks are scaled against this. Typical values are

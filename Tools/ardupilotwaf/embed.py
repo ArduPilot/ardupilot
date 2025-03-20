@@ -44,6 +44,8 @@ def embed_file(out, f, idx, embedded_name, uncompressed):
         # decompressed data will be null terminated at runtime, nothing to do here
         null_terminate = False
 
+    if len(b) == 0:
+        raise ValueError(f"Zero-length ROMFS contents ({embedded_name}) not permitted")
     write_encode(out, ",".join(str(c) for c in b))
     if null_terminate:
         write_encode(out, ",0")
