@@ -5519,6 +5519,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
              "AUTOLAND_WP_ALT" : 55,
              "AUTOLAND_WP_DIST" : 400
             })
+        self.wait_ready_to_arm()
         self.scripting_restart()
         self.wait_text("Scripting: restarted", check_context=True)
 
