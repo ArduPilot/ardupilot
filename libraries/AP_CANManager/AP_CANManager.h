@@ -60,7 +60,7 @@ public:
         LOG_DEBUG,
     };
 
-    void init(void);
+    __INITFUNC__ void init(void);
 
     // register a new driver
     bool register_driver(AP_CAN::Protocol dtype, AP_CANDriver *driver);

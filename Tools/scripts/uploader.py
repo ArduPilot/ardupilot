@@ -52,9 +52,6 @@
 
 # AP_FLAKE8_CLEAN
 
-# for python2.7 compatibility
-from __future__ import print_function
-
 import sys
 import argparse
 import binascii

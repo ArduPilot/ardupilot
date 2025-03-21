@@ -139,6 +139,7 @@ class SizeCompareBranches(object):
         self.bootloader_blacklist = set([
             'CubeOrange-SimOnHardWare',
             'CubeOrangePlus-SimOnHardWare',
+            'CubeRedSecondary-IO',
             'fmuv2',
             'fmuv3-bdshot',
             'iomcu',
@@ -193,6 +194,7 @@ class SizeCompareBranches(object):
             'obal',
             'SITL_x86_64_linux_gnu',
             'canzero',
+            'linux',
         ]
 
     def esp32_board_names(self):
@@ -203,6 +205,7 @@ class SizeCompareBranches(object):
             'esp32nick',
             'esp32s3devkit',
             'esp32s3empty',
+            'esp32s3m5stampfly',
             'esp32icarous',
             'esp32diy',
         ]
@@ -219,11 +222,15 @@ class SizeCompareBranches(object):
     def run_program(self, prefix, cmd_list, show_output=True, env=None, show_output_on_error=True, show_command=None, cwd="."):
         if show_command is None:
             show_command = True
+
+        cmd = " ".join(cmd_list)
+        if cwd is None:
+            cwd = "."
+        command_debug = f"Running ({cmd}) in ({cwd})"
+        process_failure_content = command_debug + "\n"
         if show_command:
-            cmd = " ".join(cmd_list)
-            if cwd is None:
-                cwd = "."
-            self.progress(f"Running ({cmd}) in ({cwd})")
+            self.progress(command_debug)
+
         p = subprocess.Popen(
             cmd_list,
             stdin=None,
@@ -246,12 +253,11 @@ class SizeCompareBranches(object):
             x = filter(lambda x : chr(x) in string.printable, x)
             x = "".join([chr(c) for c in x])
             output += x
+            process_failure_content += x
             x = x.rstrip()
             some_output = "%s: %s" % (prefix, x)
             if show_output:
                 print(some_output)
-            else:
-                output += some_output
         (_, status) = returncode
         if status != 0:
             if not show_output and show_output_on_error:
@@ -262,7 +268,7 @@ class SizeCompareBranches(object):
                           str(returncode))
             try:
                 path = pathlib.Path(self.tmpdir, f"process-failure-{int(time.time())}")
-                path.write_text(output)
+                path.write_text(process_failure_content)
                 self.progress("Wrote process failure file (%s)" % path)
             except Exception:
                 self.progress("Writing process failure file failed")
@@ -492,6 +498,17 @@ class SizeCompareBranches(object):
         for ex in self.failure_exceptions:
             print("Thread failure: %s" % str(ex))
 
+    class Task():
+        def __init__(self, board : str, commitish : str, outdir : str, vehicles_to_build : str, extra_hwdef_file : str):
+            self.board = board
+            self.commitish = commitish
+            self.outdir = outdir
+            self.vehicles_to_build = vehicles_to_build
+            self.extra_hwdef_file = extra_hwdef_file
+
+        def __str__(self):
+            return f"Task({self.board}, {self.commitish}, {self.outdir}, {self.vehicles_to_build}, {self.extra_hwdef_file})"
+
     def run_all(self):
         '''run tests for boards and vehicles passed in constructor'''
 
@@ -511,9 +528,21 @@ class SizeCompareBranches(object):
             vehicles_to_build = self.vehicles_to_build_for_board_info(board_info)
 
             outdir_1 = os.path.join(tmpdir, "out-master-%s" % (board,))
-            tasks.append((board, self.master_commit, outdir_1, vehicles_to_build, self.extra_hwdef_master))
+            tasks.append(SizeCompareBranches.Task(
+                board,
+                self.master_commit,
+                outdir_1,
+                vehicles_to_build,
+                self.extra_hwdef_master,
+            ))
             outdir_2 = os.path.join(tmpdir, "out-branch-%s" % (board,))
-            tasks.append((board, self.branch, outdir_2, vehicles_to_build, self.extra_hwdef_branch))
+            tasks.append(SizeCompareBranches.Task(
+                board,
+                self.branch,
+                outdir_2,
+                vehicles_to_build,
+                self.extra_hwdef_branch,
+            ))
         self.tasks = tasks
 
         if self.parallel_copies is not None:
@@ -669,33 +698,29 @@ class SizeCompareBranches(object):
         return f.name
 
     def run_build_task(self, task, source_dir=None, jobs=None):
-        (board, commitish, outdir, vehicles_to_build, extra_hwdef_file) = task
-
         self.progress(f"Building {task}")
-        shutil.rmtree(outdir, ignore_errors=True)
+        shutil.rmtree(task.outdir, ignore_errors=True)
         self.build_branch_into_dir(
-            board,
-            commitish,
-            vehicles_to_build,
-            outdir,
+            task.board,
+            task.commitish,
+            task.vehicles_to_build,
+            task.outdir,
             source_dir=source_dir,
-            extra_hwdef=self.extra_hwdef_file(extra_hwdef_file),
+            extra_hwdef=self.extra_hwdef_file(task.extra_hwdef_file),
             jobs=jobs,
         )
 
     def gather_results_for_task(self, task):
-        (board, commitish, outdir, vehicles_to_build, extra_hwdef_file) = task
-
         result = {
-            "board": board,
-            "branch": commitish,
+            "board": task.board,
+            "branch": task.commitish,
             "vehicle": {},
         }
 
         have_source_trees = self.parallel_copies is not None and len(self.tasks) <= self.parallel_copies
 
-        for vehicle in vehicles_to_build:
-            if vehicle == 'bootloader' and board in self.bootloader_blacklist:
+        for vehicle in task.vehicles_to_build:
+            if vehicle == 'bootloader' and task.board in self.bootloader_blacklist:
                 continue
 
             result["vehicle"][vehicle] = {}
@@ -706,16 +731,16 @@ class SizeCompareBranches(object):
             if vehicle == 'bootloader':
                 # elfs for bootloaders are in the bootloader directory...
                 elf_dirname = "bootloader"
-            elf_basedir = outdir
+            elf_basedir = task.outdir
             if have_source_trees:
                 try:
-                    v["source_path"] = pathlib.Path(outdir, "scb_sourcepath.txt").read_text()
+                    v["source_path"] = pathlib.Path(task.outdir, "scb_sourcepath.txt").read_text()
                     elf_basedir = os.path.join(v["source_path"], 'build')
                     self.progress("Have source trees")
                 except FileNotFoundError:
                     pass
-            v["bin_dir"] = os.path.join(elf_basedir, board, "bin")
-            elf_dir = os.path.join(elf_basedir, board, elf_dirname)
+            v["bin_dir"] = os.path.join(elf_basedir, task.board, "bin")
+            elf_dir = os.path.join(elf_basedir, task.board, elf_dirname)
             v["elf_dir"] = elf_dir
             v["elf_filename"] = self.vehicle_map[vehicle]
 

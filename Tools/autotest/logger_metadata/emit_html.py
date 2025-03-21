@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import emitter
 
 class HTMLEmitter(emitter.Emitter):

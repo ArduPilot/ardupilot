@@ -196,6 +196,54 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
     }
 }
 
+static const LogStructure EKF2_log_structures[] = {
+    { LOG_FORMAT_UNITS_MSG, sizeof(log_Format_Units), \
+      "FMTU", "QBNN",      "TimeUS,FmtType,UnitIds,MultIds","s---", "F---" },   \
+    LOG_STRUCTURE_FROM_NAVEKF2                  \
+};
+
+/*
+  write format and units structure format to the log for a LogStructure
+ */
+void Replay::Write_Format(const struct LogStructure &s)
+{
+    struct log_Format pkt {};
+
+    pkt.head1 = HEAD_BYTE1;
+    pkt.head2 = HEAD_BYTE2;
+    pkt.msgid = LOG_FORMAT_MSG;
+    pkt.type = s.msg_type;
+    pkt.length = s.msg_len;
+    strncpy_noterm(pkt.name, s.name, sizeof(pkt.name));
+    strncpy_noterm(pkt.format, s.format, sizeof(pkt.format));
+    strncpy_noterm(pkt.labels, s.labels, sizeof(pkt.labels));
+
+    AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
+
+    struct log_Format_Units pkt2 {};
+    pkt2.head1 = HEAD_BYTE1;
+    pkt2.head2 = HEAD_BYTE2;
+    pkt2.msgid = LOG_FORMAT_UNITS_MSG;
+    pkt2.time_us = AP_HAL::micros64();
+    pkt2.format_type = s.msg_type;
+    strncpy_noterm(pkt2.units, s.units, sizeof(pkt2.units));
+    strncpy_noterm(pkt2.multipliers, s.multipliers, sizeof(pkt2.multipliers));
+    
+    AP::logger().WriteCriticalBlock(&pkt2, sizeof(pkt2));
+}
+
+/*
+  write all EKF2 formats out at the start. This allows --force-ekf2 to
+  work even when EKF2 was not compiled into the original replay log
+  firmware
+ */
+void Replay::write_EKF_formats(void)
+{
+    for (const auto &f : EKF2_log_structures) {
+        Write_Format(f);
+    }
+}
+
 void Replay::setup()
 {
     ::printf("Starting\n");
@@ -238,6 +286,10 @@ void Replay::setup()
     if (!reader.open_log(filename)) {
         ::printf("open(%s): %m\n", filename);
         exit(1);
+    }
+
+    if (replay_force_ekf2) {
+        write_EKF_formats();
     }
 }
 

@@ -13,8 +13,8 @@ env AP_PERIPH 1
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board ID for firmware load
-APJ_BOARD_ID 1043
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_HERE3PLUS
 
 FLASH_SIZE_KB 2048
 

@@ -86,6 +86,7 @@ public:
         // Reserving Serial Protocol 47 for SerialProtocol_IQ
         SerialProtocol_PPP = 48,
         SerialProtocol_IBUS_Telem = 49,                // i-BUS telemetry data, ie via sensor port of FS-iA6B
+        SerialProtocol_IOMCU = 50,                     // IOMCU 
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
@@ -157,6 +158,10 @@ public:
 
         // serial index number
         uint8_t idx;
+
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+        AP_HAL::UARTDriver::StatsTracker stats;
+#endif
     };
 
     // get a state from serial index
@@ -187,6 +192,12 @@ public:
 
     // register an externally managed port
     void register_port(RegisteredPort *port);
+
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+    // Log UART message for each registered serial port
+    void registered_ports_log();
+    uint32_t registered_ports_last_log_ms;
+#endif
 
 #endif // AP_SERIALMANAGER_REGISTER_ENABLED
 

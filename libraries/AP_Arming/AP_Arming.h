@@ -101,6 +101,9 @@ public:
     bool is_armed() const;
     bool is_armed_and_safety_off() const;
 
+    // Returns the time since boot (in microseconds) that we armed. Returns 0 if disarmed.
+    uint64_t arm_time_us() const { return is_armed() ? last_arm_time_us : 0; }
+
     // get bitmask of enabled checks
     uint32_t get_enabled_checks() const;
 
@@ -129,6 +132,7 @@ public:
     bool get_aux_auth_id(uint8_t& auth_id);
     void set_aux_auth_passed(uint8_t auth_id);
     void set_aux_auth_failed(uint8_t auth_id, const char* fail_msg);
+    void reset_all_aux_auths();
 #endif
 
     static const struct AP_Param::GroupInfo        var_info[];
@@ -315,6 +319,8 @@ private:
     // vehicle has been disarmed at least once.
     Method _last_disarm_method = Method::UNKNOWN;
     Method _last_arm_method = Method::UNKNOWN;
+
+    uint64_t last_arm_time_us; // last time we successfully armed
 
     uint32_t last_prearm_display_ms;  // last time we send statustexts for prearm failures
     bool running_arming_checks;  // true if the arming checks currently being performed are being done because the vehicle is trying to arm the vehicle

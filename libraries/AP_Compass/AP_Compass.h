@@ -23,16 +23,8 @@
 #define AP_COMPASS_MOT_COMP_CURRENT     0x02
 #define AP_COMPASS_MOT_COMP_PER_MOTOR   0x03
 
-// setup default mag orientation for some board types
 #ifndef MAG_BOARD_ORIENTATION
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-# define MAG_BOARD_ORIENTATION ROTATION_YAW_90
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI)
-# define MAG_BOARD_ORIENTATION ROTATION_YAW_270
-#else
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
-#endif
+#define MAG_BOARD_ORIENTATION ROTATION_NONE
 #endif
 
 #ifndef COMPASS_MOT_ENABLED
@@ -98,7 +90,7 @@ public:
     /// @returns    True if the compass was initialized OK, false if it was not
     ///             found or is not functioning.
     ///
-    void init();
+    __INITFUNC__ void init();
 
     /// Read the compass and update the mag_ variables.
     ///

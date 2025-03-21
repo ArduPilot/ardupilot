@@ -51,10 +51,8 @@ public:
     int16_t get_rx_link_quality(void) override {
         return _rx_link_quality;
     }
-    const char *protocol() const override { return last_protocol; }
 
     void _timer_tick(void);
-    bool rc_bind(int dsmMode) override;
 
 private:
     uint16_t _rc_values[RC_INPUT_MAX_CHANNELS] = {0};
@@ -65,18 +63,7 @@ private:
     int16_t _rssi = -1;
     int16_t _rx_link_quality = -1;
     uint32_t _rcin_timestamp_last_signal;
-#if HAL_WITH_IO_MCU
-    uint32_t _rcin_last_iomcu_ms;
-#endif
     bool _init;
-    const char *last_protocol;
-
-    enum class RCSource {
-        NONE = 0,
-        IOMCU = 1,
-        RCPROT_PULSES = 2,
-        RCPROT_BYTES = 3,
-    } last_source;
 
     bool pulse_input_enabled;
 
@@ -86,9 +73,5 @@ private:
 
 #if HAL_USE_EICU == TRUE
     ChibiOS::SoftSigReaderInt sig_reader;
-#endif
-
-#if HAL_WITH_IO_MCU
-    uint32_t last_iomcu_us;
 #endif
 };

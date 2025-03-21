@@ -44,7 +44,7 @@
 #endif
 
 #ifndef AP_DRONECAN_SEND_GPS
-#define AP_DRONECAN_SEND_GPS (BOARD_FLASH_SIZE > 1024)
+#define AP_DRONECAN_SEND_GPS (HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
 #endif
 
 #define AP_DRONECAN_SW_VERS_MAJOR 1
@@ -55,15 +55,15 @@
 
 
 #ifndef AP_DRONECAN_HOBBYWING_ESC_SUPPORT
-#define AP_DRONECAN_HOBBYWING_ESC_SUPPORT (BOARD_FLASH_SIZE>1024)
+#define AP_DRONECAN_HOBBYWING_ESC_SUPPORT (HAL_PROGRAM_SIZE_LIMIT_KB>1024)
 #endif
 
 #ifndef AP_DRONECAN_HIMARK_SERVO_SUPPORT
-#define AP_DRONECAN_HIMARK_SERVO_SUPPORT (BOARD_FLASH_SIZE>1024)
+#define AP_DRONECAN_HIMARK_SERVO_SUPPORT (HAL_PROGRAM_SIZE_LIMIT_KB>1024)
 #endif
 
 #ifndef AP_DRONECAN_SERIAL_ENABLED
-#define AP_DRONECAN_SERIAL_ENABLED AP_SERIALMANAGER_REGISTER_ENABLED && (BOARD_FLASH_SIZE>1024)
+#define AP_DRONECAN_SERIAL_ENABLED AP_SERIALMANAGER_REGISTER_ENABLED && (HAL_PROGRAM_SIZE_LIMIT_KB>1024)
 #endif
 
 #ifndef AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
@@ -90,7 +90,7 @@ public:
     static AP_DroneCAN *get_dronecan(uint8_t driver_index);
     bool prearm_check(char* fail_msg, uint8_t fail_msg_len) const;
 
-    void init(uint8_t driver_index, bool enable_filters) override;
+    __INITFUNC__ void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
 
     // add an 11 bit auxillary driver

@@ -34,15 +34,10 @@ extern const AP_HAL::HAL &hal;
 #define MS4525D0_I2C_ADDR2 0x36
 #define MS4525D0_I2C_ADDR3 0x46
 
-AP_Airspeed_MS4525::AP_Airspeed_MS4525(AP_Airspeed &_frontend, uint8_t _instance) :
-    AP_Airspeed_Backend(_frontend, _instance)
-{
-}
-
 // probe for a sensor
 bool AP_Airspeed_MS4525::probe(uint8_t bus, uint8_t address)
 {
-    _dev = hal.i2c_mgr->get_device(bus, address);
+    _dev = hal.i2c_mgr->get_device_ptr(bus, address);
     if (!_dev) {
         return false;
     }

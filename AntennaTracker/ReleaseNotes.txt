@@ -1,6 +1,41 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
-Release 4.6.0-beta3
+Release 4.6.0-beta4 14-Feb-2025
+
+Changes from 4.6.0-beta3
+
+1) Board specfic changes
+
+- BETAFPV F405 supports DPS310 baro
+- BETAFPV F405 board variants added
+
+2) Driver enhancements
+
+- CADDX camera gimbal support
+- UltraMotion CAN servo support
+
+3) Copter specific fixes and minor enhancements
+
+- SysId mode uninitialised variables fixed
+- ARMING_OPTIONS gets "Require position for arming" (was in FLIGHT_OPTIONS)
+
+4) Bug Fixes and minor enhancements
+
+- AM32 ESC passthrough fixed
+- BMP581 baro initialisation fix
+- DDS/ROS2 driver waits indefinitely until companion computer running ROS2 starts
+- Lua script potential deadlock fix when initialising mavlink in script
+- Mcast and HW CAN bridging disabled by default
+- Plane's TILT log message only logged on tilt-rotors
+- ROMFS race condition when opening files that caused apparent script corruption fixed
+- Serial flow control support on UARTS 6 to 8
+- Serial passthrough fix to restore parity upon completion
+- Serial protocol parameter fix to include I-Bus Telemetry
+- uAvionix ping200X driver fixes
+- Video stream information lua script param index fixed (avoids param conflict with other scripts)
+- ViewPro object tracking fixed
+------------------------------------------------------------------
+Release 4.6.0-beta3 21-Jan-2025
 
 Changes from 4.6.0-beta2
 

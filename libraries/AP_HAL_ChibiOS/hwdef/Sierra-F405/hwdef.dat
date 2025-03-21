@@ -11,8 +11,8 @@ FLASH_SIZE_KB 1024
 STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 15360
 
-# board ID for firmware load
-APJ_BOARD_ID 1052
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_SierraF405
 
 env AP_PERIPH 1
 
@@ -26,8 +26,6 @@ STDOUT_SERIAL SD1
 STDOUT_BAUDRATE 57600
 
 define HAL_NO_GPIO_IRQ
-
-define HAL_USE_RTC FALSE
 
 define DMA_RESERVE_SIZE 0
 
@@ -101,8 +99,8 @@ define STM32_ADC_USE_ADC1 TRUE
 PA0 VSENSE ADC1 SCALE(2)
 
 # -------------------- Buzzer+NeoPixels --------------------
-define HAL_PERIPH_ENABLE_RC_OUT
-define HAL_PERIPH_ENABLE_NOTIFY
+define AP_PERIPH_RC_OUT_ENABLED 1
+define AP_PERIPH_NOTIFY_ENABLED 1
 
 # Enable the sensor voltage pin
 PC13 VDD_3V3_SENSORS_EN OUTPUT HIGH

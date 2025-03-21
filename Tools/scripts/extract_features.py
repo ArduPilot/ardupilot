@@ -145,6 +145,8 @@ class ExtractFeatures(object):
             ('AP_PROXIMITY_{type}_ENABLED', 'AP_Proximity_(?P<type>.*)::update',),
             ('AP_PROXIMITY_CYGBOT_ENABLED', 'AP_Proximity_Cygbot_D1::update',),
             ('AP_PROXIMITY_LIGHTWARE_{type}_ENABLED', 'AP_Proximity_LightWare(?P<type>.*)::update',),
+            ('AP_PROXIMITY_HEXSOONRADAR_ENABLED', 'AP_Proximity_MR72_CAN::update',),
+            ('AP_PROXIMITY_MR72_ENABLED', 'AP_Proximity_MR72_CAN::update',),
 
             ('HAL_PARACHUTE_ENABLED', 'AP_Parachute::update',),
             ('AP_FENCE_ENABLED', r'AC_Fence::check\b',),
@@ -216,6 +218,7 @@ class ExtractFeatures(object):
             ('HAL_DISPLAY_ENABLED', r'Display::init\b',),
             ('HAL_NMEA_OUTPUT_ENABLED', r'AP_NMEA_Output::update\b',),
             ('HAL_BARO_WIND_COMP_ENABLED', r'AP_Baro::wind_pressure_correction\b',),
+            ('AP_BARO_THST_COMP_ENABLED', r'AP_Baro::thrust_pressure_correction\b',),
             ('AP_TEMPCALIBRATION_ENABLED', r'AP_TempCalibration::apply_calibration',),
 
             ('HAL_PICCOLO_CAN_ENABLE', r'AP_PiccoloCAN::update',),
@@ -256,6 +259,7 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_FTP_ENABLED', 'GCS_MAVLINK::ftp_worker'),
             ('AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED', 'Plane::handle_external_hagl'),
             ('AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'AP_Camera::send_video_stream_information'),
+            ('AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'GCS_MAVLINK::send_flight_information'),
 
             ('AP_DRONECAN_HIMARK_SERVO_SUPPORT', 'AP_DroneCAN::SRV_send_himark'),
             ('AP_DRONECAN_HOBBYWING_ESC_SUPPORT', 'AP_DroneCAN::hobbywing_ESC_update'),
@@ -275,6 +279,7 @@ class ExtractFeatures(object):
             ('HAL_ENABLE_DRONECAN_DRIVERS', r'AP_DroneCAN::init'),
             ('AP_BARO_PROBE_EXTERNAL_I2C_BUSES', r'AP_Baro::_probe_i2c_barometers'),
             ('AP_RSSI_ENABLED', r'AP_RSSI::init'),
+            ('AP_FOLLOW_ENABLED', 'AP_Follow::AP_Follow'),
 
             ('AP_ROVER_ADVANCED_FAILSAFE_ENABLED', r'Rover::afs_fs_check'),
             ('AP_COPTER_ADVANCED_FAILSAFE_ENABLED', r'Copter::afs_fs_check'),
@@ -285,6 +290,7 @@ class ExtractFeatures(object):
             ('AP_QUICKTUNE_ENABLED', r'AP_Quicktune::update'),
             ('AP_FILTER_ENABLED', r'AP_Filters::update'),
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
+            ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
         ]
 
     def progress(self, msg):
@@ -506,7 +512,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(prog='extract_features.py', description='Extract ArduPilot features from binaries')
     parser.add_argument('firmware_file', help='firmware binary')
-    parser.add_argument('-nm', type=str, default="arm-none-eabi-nm", help='nm binary to use.')
+    parser.add_argument('--nm', type=str, default="arm-none-eabi-nm", help='nm binary to use.')
     args = parser.parse_args()
     # print(args.firmware_file, args.nm)
 

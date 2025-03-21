@@ -458,7 +458,7 @@ AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, c
                 return nullptr;
             }
 
-            // Registration sucsessful, notify the GCS that it should re-request the avalable modes
+            // Registration successful, notify the GCS that it should re-request the available modes
             gcs().available_modes_changed();
 
             return &mode_guided_custom[i]->state;

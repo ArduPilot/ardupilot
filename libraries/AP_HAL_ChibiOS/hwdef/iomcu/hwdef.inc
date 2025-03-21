@@ -4,7 +4,7 @@
 
 FLASH_RESERVE_START_KB 4
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID 3
 
 # crystal frequency
@@ -115,7 +115,6 @@ define AP_HAL_SHARED_DMA_ENABLED 0
 #defined to turn off undef warnings
 define __FPU_PRESENT 0
 
-define HAL_USE_RTC FALSE
 define HAL_NO_FLASH_SUPPORT TRUE
 define AP_HAL_UARTDRIVER_ENABLED 0
 define HAL_LOGGING_ENABLED 0

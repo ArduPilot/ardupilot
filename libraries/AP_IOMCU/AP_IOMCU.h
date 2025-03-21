@@ -17,6 +17,11 @@
 typedef uint32_t eventmask_t;
 typedef struct ch_thread thread_t;
 
+#ifndef AP_IOMCU_FW_FLASH_SIZE
+#define AP_IOMCU_FW_FLASH_SIZE (0x10000 - 0x1000)
+#endif
+
+
 class AP_IOMCU
 #ifdef HAL_WITH_ESC_TELEM
   : public AP_ESC_Telem_Backend
@@ -71,7 +76,7 @@ public:
     bool check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_channels);
 
     // Do DSM receiver binding
-    void bind_dsm(uint8_t mode);
+    void bind_dsm();
 
     // get the name of the RC protocol
     const char *get_rc_protocol(void);

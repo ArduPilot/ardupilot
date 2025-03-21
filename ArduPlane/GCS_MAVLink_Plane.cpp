@@ -14,7 +14,7 @@ MAV_TYPE GCS_Plane::frame_type() const
 #endif
 }
 
-MAV_MODE GCS_MAVLINK_Plane::base_mode() const
+uint8_t GCS_MAVLINK_Plane::base_mode() const
 {
     uint8_t _base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
@@ -101,7 +101,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     // indicate we have set a custom mode
     _base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    return (MAV_MODE)_base_mode;
+    return _base_mode;
 }
 
 uint32_t GCS_Plane::custom_mode() const
@@ -759,7 +759,7 @@ bool GCS_MAVLINK_Plane::handle_guided_request(AP_Mission::Mission_Command &cmd)
 void GCS_MAVLINK_Plane::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 {
     plane.next_WP_loc.alt = cmd.content.location.alt;
-    if (cmd.content.location.relative_alt) {
+    if (cmd.content.location.relative_alt && !cmd.content.location.terrain_alt) {
         plane.next_WP_loc.alt += plane.home.alt;
     }
     plane.next_WP_loc.relative_alt = false;
@@ -792,10 +792,6 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
 {
 #if HAL_ADSB_ENABLED
     plane.avoidance_adsb.handle_msg(msg);
-#endif
-#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
-    // pass message to follow library
-    plane.g2.follow.handle_msg(msg);
 #endif
     GCS_MAVLINK::packetReceived(status, msg);
 }
@@ -878,7 +874,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
 #endif
 
         // add home alt if needed
-        if (requested_position.relative_alt) {
+        if (requested_position.relative_alt && !requested_position.terrain_alt) {
             requested_position.alt += plane.home.alt;
             requested_position.relative_alt = 0;
         }
@@ -1558,6 +1554,13 @@ MAV_VTOL_STATE GCS_MAVLINK_Plane::vtol_state() const
 MAV_LANDED_STATE GCS_MAVLINK_Plane::landed_state() const
 {
     if (plane.is_flying()) {
+        if (plane.is_taking_off()) {
+            return MAV_LANDED_STATE_TAKEOFF;
+        }
+        if (plane.is_landing()) {
+            return MAV_LANDED_STATE_LANDING;
+        }
+
         // note that Q-modes almost always consider themselves as flying
         return MAV_LANDED_STATE_IN_AIR;
     }

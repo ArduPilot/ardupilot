@@ -10,6 +10,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>
 #include "pullup.h"
+#include "systemid.h"
 
 #ifndef AP_QUICKTUNE_ENABLED
 #define AP_QUICKTUNE_ENABLED HAL_QUADPLANE_ENABLED
@@ -167,6 +168,11 @@ public:
     virtual bool supports_quicktune() const { return false; }
 #endif
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support systemid?
+    virtual bool supports_systemid() const { return false; }
+#endif
+    
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -697,6 +703,11 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support systemid?
+    bool supports_systemid() const override { return true; }
+#endif
+    
 protected:
 private:
 
@@ -721,6 +732,11 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support systemid?
+    bool supports_systemid() const override { return true; }
+#endif
+    
 protected:
 
     bool _enter() override;
@@ -749,6 +765,11 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support systemid?
+    bool supports_systemid() const override { return true; }
+#endif
+    
 protected:
 
     bool _enter() override;
@@ -931,6 +952,8 @@ public:
 
     bool does_auto_throttle() const override { return true; }
     
+    bool is_landing() const override;
+    
     void check_takeoff_direction(void);
 
     // return true when lined up correctly from the LOITER_TO_ALT
@@ -946,7 +969,7 @@ public:
     AP_Int16 final_wp_dist;
     AP_Int16 landing_dir_off;
     AP_Int8  options;
-    AP_Int16 climb_min;
+    AP_Int16 terrain_alt_min;
 
     // Bitfields of AUTOLAND_OPTIONS
     enum class AutoLandOption {
@@ -968,7 +991,6 @@ protected:
     AP_Mission::Mission_Command cmd_climb;
     AP_Mission::Mission_Command cmd_loiter;
     AP_Mission::Mission_Command cmd_land;
-    uint32_t entry_alt;
     Location land_start;
     AutoLandStage stage;
     void set_autoland_direction(const float heading);

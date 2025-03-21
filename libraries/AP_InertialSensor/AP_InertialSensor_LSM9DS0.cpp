@@ -523,8 +523,6 @@ void AP_InertialSensor_LSM9DS0::start(void)
         set_gyro_orientation(gyro_instance, _rotation_g);
     }
     set_accel_orientation(accel_instance, _rotation_a);
-    
-    _set_accel_max_abs_offset(accel_instance, 5.0f);
 
     /* start the timer process to read samples */
     _dev_gyro->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_LSM9DS0::_poll_data, void));

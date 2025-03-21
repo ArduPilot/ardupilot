@@ -1,0 +1,27 @@
+# Aerotenna Zynq board
+
+# IMUs
+IMU RST SPI:rst_g SPI:rst_a ROTATION_ROLL_180_YAW_90 ROTATION_ROLL_180_YAW_90
+
+# Compasses:
+COMPASS LIS3MDL SPI:lis3mdl  false ROTATION_ROLL_180_YAW_90
+
+# Baros:
+BARO MS56XX SPI:ms5611
+
+define DEFAULT_NTF_LED_TYPES (Notify_LED_ToshibaLED_I2C_External)
+
+define HAL_OPTFLOW_PX4FLOW_I2C_BUS 0
+
+#            NAME      BUS SUBDEV MODE       BPW CS_PIN         LOWSPD HIGHSPD
+LINUX_SPIDEV "rst_g"   0   0      SPI_MODE_3 8   SPI_CS_KERNEL  1*MHZ  10*MHZ
+LINUX_SPIDEV "lis3mdl" 0   1      SPI_MODE_3 8   SPI_CS_KERNEL  1*MHZ  10*MHZ
+LINUX_SPIDEV "rst_a"   0   2      SPI_MODE_3 8   SPI_CS_KERNEL  1*MHZ  10*MHZ
+LINUX_SPIDEV "ms5611"  0   3      SPI_MODE_3 8   SPI_CS_KERNEL  1*MHZ  10*MHZ
+
+# AP_InertialSensor configuration:
+define AP_INERTIALSENSOR_RST_ENABLED 1
+
+
+// FIXME: use of this define should go away:
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ

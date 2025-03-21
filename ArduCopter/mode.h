@@ -132,6 +132,7 @@ public:
     virtual bool in_guided_mode() const { return false; }
     virtual bool logs_attitude() const { return false; }
     virtual bool allows_save_trim() const { return false; }
+    virtual bool allows_auto_trim() const { return false; }
     virtual bool allows_autotune() const { return false; }
     virtual bool allows_flip() const { return false; }
     virtual bool crash_check_enabled() const { return true; }
@@ -485,6 +486,8 @@ public:
     }
     bool allows_autotune() const override { return true; }
     bool allows_flip() const override { return true; }
+    bool allows_auto_trim() const override { return true; }
+    bool allows_save_trim() const override { return true; }
 #if FRAME_CONFIG == HELI_FRAME
     bool allows_inverted() const override { return true; };
 #endif
@@ -1313,6 +1316,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
+    bool allows_auto_trim() const override { return true; }
 
 #if FRAME_CONFIG == HELI_FRAME
     bool allows_inverted() const override { return true; };
@@ -1362,6 +1366,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
+    bool allows_auto_trim() const override { return true;}
 
 protected:
 
@@ -1651,6 +1656,7 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool allows_save_trim() const override { return true; }
+    bool allows_auto_trim() const override { return true; }
     bool allows_autotune() const override { return true; }
     bool allows_flip() const override { return true; }
 
@@ -1752,7 +1758,7 @@ private:
     float time_const_freq;      // Time at constant frequency before chirp starts
     int8_t log_subsample;       // Subsample multiple for logging.
     Vector2f target_vel;        // target velocity for position controller modes
-    Vector2f target_pos;       // target positon
+    Vector2f target_pos;       // target position
     Vector2f input_vel_last;    // last cycle input velocity
     // System ID states
     enum class SystemIDModeState {

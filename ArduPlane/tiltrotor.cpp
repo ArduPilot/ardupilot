@@ -119,7 +119,7 @@ void Tiltrotor::setup()
 
     // check if there are any permanent VTOL motors
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
-        if (motors->is_motor_enabled(i) && ((tilt_mask & (1U<<1)) == 0)) {
+        if (motors->is_motor_enabled(i) && !is_motor_tilting(i)) {
             // enabled motor not set in tilt mask
             _have_vtol_motor = true;
             break;

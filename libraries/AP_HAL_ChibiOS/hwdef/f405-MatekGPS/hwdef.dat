@@ -11,8 +11,8 @@ FLASH_SIZE_KB 1024
 STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 15360
 
-# board ID for firmware load
-APJ_BOARD_ID 1014
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MATEKF405_GPS
 
 env AP_PERIPH 1
 
@@ -38,8 +38,6 @@ define PORT_INT_REQUIRED_STACK 64
 # debug (disabled to allow for PA14 LED above), to enable debugging disable the use of PA14 above
 #PA13 JTMS-SWDIO SWD
 #PA14 JTCK-SWCLK SWD
-
-define HAL_USE_RTC FALSE
 
 define DMA_RESERVE_SIZE 0
 
@@ -163,14 +161,14 @@ BARO DPS310 I2C:0:0x76
 
 
 # ------------------ I2C airspeed -------------------------
-define HAL_PERIPH_ENABLE_AIRSPEED
+define AP_PERIPH_AIRSPEED_ENABLED 1
 
 # MS4525 sensor by default
 define HAL_AIRSPEED_TYPE_DEFAULT 1   
 define AIRSPEED_MAX_SENSORS 1
 
 # -------------------- MSP --------------------------------
-define HAL_PERIPH_ENABLE_MSP
+define AP_PERIPH_MSP_ENABLED 1
 define HAL_MSP_ENABLED 1
 define AP_PERIPH_MSP_PORT_DEFAULT 4
 
@@ -211,7 +209,7 @@ define HAL_BATT2_VOLT_SCALE 11.0
 
 
 # -------------------- Buzzer+NeoPixels --------------d------
-define HAL_PERIPH_ENABLE_RC_OUT
-define HAL_PERIPH_ENABLE_NOTIFY
+define AP_PERIPH_RC_OUT_ENABLED 1
+define AP_PERIPH_NOTIFY_ENABLED 1
 
 define DEFAULT_NTF_LED_TYPES 455

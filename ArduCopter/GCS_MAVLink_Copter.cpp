@@ -26,7 +26,7 @@ MAV_TYPE GCS_Copter::frame_type() const
     return mav_type;
 }
 
-MAV_MODE GCS_MAVLINK_Copter::base_mode() const
+uint8_t GCS_MAVLINK_Copter::base_mode() const
 {
     uint8_t _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
     // work out the base_mode. This value is not very useful
@@ -56,7 +56,7 @@ MAV_MODE GCS_MAVLINK_Copter::base_mode() const
     // indicate we have set a custom mode
     _base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    return (MAV_MODE)_base_mode;
+    return _base_mode;
 }
 
 uint32_t GCS_Copter::custom_mode() const
@@ -639,10 +639,6 @@ void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
         copter.avoidance_adsb.handle_msg(msg);
     }
 #endif
-#if MODE_FOLLOW_ENABLED
-    // pass message to follow library
-    copter.g2.follow.handle_msg(msg);
-#endif
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
@@ -771,16 +767,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
 
     case MAV_CMD_DO_CHANGE_SPEED:
         return handle_MAV_CMD_DO_CHANGE_SPEED(packet);
-
-#if MODE_FOLLOW_ENABLED
-    case MAV_CMD_DO_FOLLOW:
-        // param1: sysid of target to follow
-        if ((packet.param1 > 0) && (packet.param1 <= 255)) {
-            copter.g2.follow.set_target_sysid((uint8_t)packet.param1);
-            return MAV_RESULT_ACCEPTED;
-        }
-        return MAV_RESULT_DENIED;
-#endif
 
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
@@ -1785,7 +1771,7 @@ uint8_t GCS_MAVLINK_Copter::send_available_mode(uint8_t index) const
 
 #if MODE_AUTO_ENABLED
     // Auto RTL is odd
-    // Have to deal with is separately becase its number and name can change depending on if were in it or not
+    // Have to deal with is separately because its number and name can change depending on if were in it or not
     if (index_zero == 0) {
         mode_number = (uint8_t)Mode::Number::AUTO_RTL;
         name = "AUTO RTL";

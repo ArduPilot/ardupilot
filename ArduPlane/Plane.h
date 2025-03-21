@@ -122,6 +122,7 @@
 #endif
 #include "AP_Arming_Plane.h"
 #include "pullup.h"
+#include "systemid.h"
 
 /*
   main APM:Plane class
@@ -180,6 +181,9 @@ public:
 #endif
 #if AP_PLANE_GLIDER_PULLUP_ENABLED
     friend class GliderPullup;
+#endif
+#if AP_PLANE_SYSTEMID_ENABLED
+    friend class AP_SystemID;
 #endif
 
     Plane(void);
@@ -497,9 +501,6 @@ private:
         // filtered sink rate for landing
         float sink_rate;
 
-        // time when we first pass min GPS speed on takeoff
-        uint32_t takeoff_speed_time_ms;
-
         // distance to next waypoint
         float wp_distance;
 
@@ -668,7 +669,7 @@ private:
     int32_t nav_pitch_cd;
 
     // the aerodynamic load factor. This is calculated from the demanded
-    // roll before the roll is clipped, using 1/sqrt(cos(nav_roll))
+    // roll before the roll is clipped, using 1/cos(nav_roll)
     float aerodynamic_load_factor = 1.0f;
 
     // a smoothed airspeed estimate, used for limiting roll angle
@@ -775,7 +776,7 @@ private:
         int32_t amsl_cm;
 
         // Altitude difference between previous and current waypoint in
-        // centimeters. Used for glide slope handling
+        // centimeters. Used for altitude slope handling
         int32_t offset_cm;
 
 #if AP_TERRAIN_AVAILABLE
@@ -892,7 +893,7 @@ private:
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
     void adjust_altitude_target();
-    void setup_glide_slope(void);
+    void setup_alt_slope(void);
     int32_t get_RTL_altitude_cm() const;
     float relative_ground_altitude(bool use_rangefinder_if_available);
     float relative_ground_altitude(bool use_rangefinder_if_available, bool use_terrain_if_available);
@@ -1124,7 +1125,7 @@ private:
 #endif
 
     // system.cpp
-    void init_ardupilot() override;
+    __INITFUNC__ void init_ardupilot() override;
     bool set_mode(Mode& new_mode, const ModeReason reason);
     bool set_mode(const uint8_t mode, const ModeReason reason) override;
     bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason);
@@ -1232,6 +1233,7 @@ private:
 #if HAL_QUADPLANE_ENABLED
         Failsafe_Action_Loiter_alt_QLand = 6,
 #endif
+        Failsafe_Action_AUTOLAND_OR_RTL = 7,
     };
 
     // list of priorities, highest priority first
