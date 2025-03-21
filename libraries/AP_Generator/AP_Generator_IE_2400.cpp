@@ -453,6 +453,18 @@ bool AP_Generator_IE_2400::check_for_warning_code(char* msg_txt, uint8_t msg_len
     return true;
 }
 
+// Check if we should notify on any change of fuel cell state
+void AP_Generator_IE_2400::check_status(const uint32_t now)
+{
+    if (ErrorCode(_err_code) == ErrorCode::REDUCED_POWER) {
+        if (now - _last_low_power_warning_ms > 5000) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Fuel cell: reduced power; conditioning needed?");
+            _last_low_power_warning_ms = now;
+        }
+    }
+    return AP_Generator_IE_FuelCell::check_status(now);
+}
+
 #if HAL_LOGGING_ENABLED
 // log generator status to the onboard log
 void AP_Generator_IE_2400::log_write()
