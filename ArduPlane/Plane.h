@@ -122,6 +122,7 @@
 #endif
 #include "AP_Arming_Plane.h"
 #include "pullup.h"
+#include "systemid.h"
 
 /*
   main APM:Plane class
@@ -180,6 +181,9 @@ public:
 #endif
 #if AP_PLANE_GLIDER_PULLUP_ENABLED
     friend class GliderPullup;
+#endif
+#if AP_PLANE_SYSTEMID_ENABLED
+    friend class AP_SystemID;
 #endif
 
     Plane(void);

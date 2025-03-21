@@ -290,6 +290,7 @@ class ExtractFeatures(object):
             ('AP_QUICKTUNE_ENABLED', r'AP_Quicktune::update'),
             ('AP_FILTER_ENABLED', r'AP_Filters::update'),
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
+            ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
         ]
 
     def progress(self, msg):
