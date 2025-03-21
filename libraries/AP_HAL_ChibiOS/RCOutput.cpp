@@ -1971,7 +1971,8 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t cha
     // channels in blheli pass-thru fast
     for (auto &group : pwm_group_list) {
         if ((group.ch_mask & chanmask) && !(group.ch_mask & serial_chanmask)) {
-            if (!setup_group_DMA(group, baudrate, 10, false, DSHOT_BUFFER_LENGTH, 10, false)) {
+            const uint32_t pulse_time_us = 1000000UL * 10 / baudrate;
+            if (!setup_group_DMA(group, baudrate, 10, false, DSHOT_BUFFER_LENGTH, pulse_time_us, false)) {
                 serial_end();
                 return false;
             }
@@ -2053,6 +2054,7 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
     memset(serial_group->dma_buffer, 0, DSHOT_BUFFER_LENGTH);
     while (len--) {
         if (!serial_write_byte(*bytes++)) {
+            hal.console->printf("serial_write_bytes() failed!\n");
             serial_group->dma_handle->unlock();
             return false;
         }
@@ -2069,6 +2071,14 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
 #endif // DISABLE_DSHOT
 }
 
+#define BAD_BYTE 0xFFFF
+#define BYTE_BITS 10
+#define BYTE_TIME(bitus) (bitus *  (BYTE_BITS + 2))   // timeout should come well after the next start bit
+#define START_BIT_TIMEOUT 2000 // 2ms
+
+ByteBuffer RCOutput::serial_buffer{64};
+HAL_BinarySemaphore RCOutput::serial_sem;
+
 /*
   irq handler for bit transition in serial_read_byte()
   This implements a one byte soft serial reader
@@ -2083,22 +2093,35 @@ void RCOutput::serial_bit_irq(void)
     palWriteLine(HAL_GPIO_LINE_GPIO55, bit);
 #endif
 
-    if (irq.nbits == 0 || bit == irq.last_bit) {
+    chSysLockFromISR();
+
+    // value of completed byte (includes start and stop bits)
+    uint16_t byteval = 0;
+
+    // packets are 8N1 so 0 for start bit, 8 bits of data and 1 for stop bit
+    // start and stop bits are always different so there should always be
+    // a transition between bytes of data
+    if (irq.nbits == 0 ||
+        // bit transition but previous is the same as current, should never happen
+        bit == irq.last_bit) {
         // start of byte, should be low
         if (bit != 0) {
-            irq.byteval = 0x200;
+            byteval = 0x200;
             send_signal = true;
         } else {
+            // new start bit
             irq.nbits = 1;
             irq.byte_start_tick = now;
             irq.bitmask = 0;
+            // start bit has been seen so start the ticker for the end of the byte
+            chVTSetI(&irq.serial_timeout, chTimeUS2I(BYTE_TIME(irq.bit_time_tick)), serial_byte_timeout, irq.waiter);
         }
     } else {
         uint16_t dt = now - irq.byte_start_tick;
         uint8_t bitnum = (dt+(irq.bit_time_tick/2)) / irq.bit_time_tick;
 
-        if (bitnum > 10) {
-            bitnum = 10;
+        if (bitnum > BYTE_BITS) {
+            bitnum = BYTE_BITS;
         }
         if (!bit) {
             // set the bits that we've processed
@@ -2106,9 +2129,10 @@ void RCOutput::serial_bit_irq(void)
         }
         irq.nbits = bitnum;
 
-        if (irq.nbits == 10) {
+        if (irq.nbits == BYTE_BITS) {
             send_signal = true;
-            irq.byteval = irq.bitmask & 0x3FF;
+            // we have enough bits, transition should be to stop bit
+            byteval = irq.bitmask & 0x3FF;
             irq.bitmask = 0;
             irq.nbits = 1;
             irq.byte_start_tick = now;
@@ -2117,11 +2141,19 @@ void RCOutput::serial_bit_irq(void)
     irq.last_bit = bit;
 
     if (send_signal) {
-        chSysLockFromISR();
-        chVTResetI(&irq.serial_timeout);
-        chEvtSignalI(irq.waiter, serial_event_mask);
+        if ((byteval & 0x201) != 0x200) {
+            // wrong start/stop bits
+            byteval = BAD_BYTE;
+        } else {
+            // seen the last bit so setup the timeout for the next byte
+            chVTSetI(&irq.serial_timeout, chTimeUS2I(BYTE_TIME(irq.bit_time_tick)), serial_byte_timeout, irq.waiter);
+        }
+        serial_buffer.write((uint8_t*)&byteval, 2);
         chSysUnlockFromISR();
+        serial_sem.signal_ISR();
+        return;
     }
+    chSysUnlockFromISR();
 }
 
 /*
@@ -2130,9 +2162,19 @@ void RCOutput::serial_bit_irq(void)
 void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
 {
     chSysLockFromISR();
-    irq.timed_out = true;
-    chEvtSignalI((thread_t *)ctx, serial_event_mask);
+    uint16_t byteval = irq.bitmask | 0x200;
+    // we can accept a byte with a timeout if the last bit was 1
+    // and the start bit is set correctly
+    if (irq.last_bit == 0) {
+        byteval = BAD_BYTE;
+    } else if ((byteval & 0x201) != 0x200) {
+        // wrong start/stop bits
+        byteval = BAD_BYTE;
+    }
+
+    serial_buffer.write((uint8_t*)&byteval, 2);
     chSysUnlockFromISR();
+    serial_sem.signal_ISR();
 }
 
 /*
@@ -2140,28 +2182,30 @@ void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
 */
 bool RCOutput::serial_read_byte(uint8_t &b)
 {
-    irq.timed_out = false;
-    chVTSet(&irq.serial_timeout, chTimeMS2I(10), serial_byte_timeout, irq.waiter);
-    bool timed_out = ((chEvtWaitAny(serial_event_mask) & serial_event_mask) == 0) || irq.timed_out;
+    while (true) {
+        // consumer/producer pattern
+        if (serial_buffer.is_empty()) {
+            if (!serial_sem.wait(START_BIT_TIMEOUT)) {
+                return false;  // no data after 2ms
+            }
+        }
 
-    uint16_t byteval = irq.byteval;
+        chSysLock();
+        if (serial_buffer.is_empty()) {
+            chSysUnlock();
+            continue;
+        }
 
-    if (timed_out) {
-        // we can accept a byte with a timeout if the last bit was 1
-        // and the start bit is set correctly
-        if (irq.last_bit == 0) {
+        uint16_t byteval;
+        serial_buffer.read((uint8_t*)&byteval, 2);
+        chSysUnlock();
+
+        if (byteval == BAD_BYTE) {
             return false;
         }
-        byteval = irq.bitmask | 0x200;
+        b = uint8_t(byteval>>1);
+        return true;
     }
-
-    if ((byteval & 0x201) != 0x200) {
-        // wrong start/stop bits
-        return false;
-    }
-
-    b = uint8_t(byteval>>1);
-    return true;
 }
 
 /*
@@ -2195,11 +2239,11 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 
     chVTObjectInit(&irq.serial_timeout);
     chEvtGetAndClearEvents(serial_event_mask);
+    serial_buffer.clear();
 
     irq.line = group.pal_lines[group.serial.chan];
     irq.nbits = 0;
     irq.bitmask = 0;
-    irq.byteval = 0;
     irq.bit_time_tick = serial_group->serial.bit_time_us;
     irq.last_bit = 0;
     irq.waiter = chThdGetSelfX();
@@ -2220,8 +2264,8 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
             break;
         }
     }
-
-    ((GPIO *)hal.gpio)->_attach_interrupt(line, nullptr, 0);
+    chVTReset(&irq.serial_timeout);
+    palDisableLineEvent(line);
     irq.waiter = nullptr;
 
     palSetLineMode(line, restore_mode);
@@ -2236,7 +2280,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 */
 void RCOutput::serial_end(void)
 {
-    if (in_soft_serial()) {
+    if (in_soft_serial() || true) {
         if (serial_thread == chThdGetSelfX()) {
             chThdSetPriority(serial_priority);
             serial_thread = nullptr;
@@ -2245,7 +2289,7 @@ void RCOutput::serial_end(void)
         for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
             pwm_group &group = pwm_group_list[i];
             // re-configure groups that were previous configured
-            if (group.ch_mask & serial_chanmask) {
+            if ((group.ch_mask & serial_chanmask) || true) {
                 dma_cancel(group);  // this ensures the DMA is in a sane state
                 set_group_mode(group);
             }

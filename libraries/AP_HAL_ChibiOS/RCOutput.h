@@ -491,9 +491,6 @@ private:
         // bitmask of bits so far (includes start and stop bits)
         uint16_t bitmask;
 
-        // value of completed byte (includes start and stop bits)
-        uint16_t byteval;
-
         // expected time per bit in micros
         uint16_t bit_time_tick;
 
@@ -505,9 +502,13 @@ private:
 
         // timeout for byte read
         virtual_timer_t serial_timeout;
-        bool timed_out;
     } irq;
 
+    // ring buffer to hold soft serial input
+    static ByteBuffer serial_buffer;
+    // binary semaphore to mediate consumer/producer access to the serial buffer
+    static HAL_BinarySemaphore serial_sem;
+  
     // the group being used for serial output
     struct pwm_group *serial_group;
     thread_t *serial_thread;
