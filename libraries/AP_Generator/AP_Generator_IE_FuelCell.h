@@ -101,7 +101,7 @@ protected:
     virtual void decode_latest_term(void) = 0;
 
     // Check if we should notify on any change of fuel cell state
-    void check_status(const uint32_t now);
+    virtual void check_status(const uint32_t now);
 
     // Check error codes and populate message with error code
     virtual bool check_for_err_code(char* msg_txt, uint8_t msg_len) const = 0;
