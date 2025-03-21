@@ -257,6 +257,7 @@ private:
     uint32_t last_telem_byte_read_us;
     int8_t last_control_port;
 
+    void serial_end();
     bool msp_process_byte(uint8_t c);
     void blheli_crc_update(uint8_t c);
     bool blheli_4way_process_byte(uint8_t c);
@@ -282,7 +283,7 @@ private:
     void BL_SendCMDRunRestartBootloader(void);
     uint8_t BL_SendCMDSetBuffer(const uint8_t *buf, uint16_t nbytes);
     bool BL_WriteA(uint8_t cmd, const uint8_t *buf, uint16_t nbytes, uint32_t timeout);
-    uint8_t BL_WriteFlash(const uint8_t *buf, uint16_t n);
+    bool BL_WriteFlash(const uint8_t *buf, uint16_t n);
     bool BL_VerifyFlash(const uint8_t *buf, uint16_t n);
     void blheli_process_command(void);
     void run_connection_test(uint8_t chan);

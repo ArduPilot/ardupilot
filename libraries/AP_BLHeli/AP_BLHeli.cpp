@@ -46,6 +46,11 @@
 extern const AP_HAL::HAL& hal;
 
 #define debug(fmt, args ...) do { if (debug_level) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: " fmt, ## args); } } while (0)
+#ifdef BLHELI_DEBUG
+#define debug_console(fmt, args ...) do { hal.console->printf(fmt "\n", ## args); } while (0)
+#else
+#define debug_console(fmt, args ...) do {} while(0)
+#endif
 
 // key for locking UART for exclusive use. This prevents any other writes from corrupting
 // the MSP protocol on hal.console
@@ -389,9 +394,8 @@ void AP_BLHeli::msp_process_command(void)
 
     case MSP_REBOOT:
         debug("MSP: ignoring reboot command, end serial comms");
-        hal.rcout->serial_end();
+        serial_end();
         blheli.connected[blheli.chan] = false;
-        serial_start_ms = 0;
         break;
 
     case MSP_UID:
@@ -539,8 +543,7 @@ void AP_BLHeli::msp_process_command(void)
             break;
         default:
             n = 0;
-            hal.rcout->serial_end();
-            serial_start_ms = 0;
+            serial_end();
             break;
         }
         // doing the serial setup here avoids delays when doing it on demand and makes
@@ -621,10 +624,16 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
         return false;
     }
     EXPECT_DELAY_MS(1000);
+    hal.scheduler->delay_microseconds(100);
     if (!hal.rcout->serial_setup_output(motor_map[blheli.chan], 19200, motor_mask)) {
+        debug("serial_setup_output() failed\n");
         blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
     }
+    // ensure that the next write does not go out immediately in case the receiving side is not yet
+    // ready
+    hal.scheduler->delay_microseconds(100);
+
     if (serial_start_ms == 0) {
         serial_start_ms = AP_HAL::millis();
     }
@@ -633,6 +642,7 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
     blheli.buf[len] = crc;
     blheli.buf[len+1] = crc>>8;
     if (!hal.rcout->serial_write_bytes(blheli.buf, len+(send_crc?2:0))) {
+        debug("serial_write_bytes() failed\n");
         blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
     }
@@ -840,16 +850,19 @@ uint8_t AP_BLHeli::BL_SendCMDSetBuffer(const uint8_t *buf, uint16_t nbytes)
 {
     uint8_t sCMD[] = {CMD_SET_BUFFER, 0, uint8_t(nbytes>>8), uint8_t(nbytes&0xff)};
     if (!BL_SendBuf(sCMD, 4)) {
+        debug_console("BL_SendCMDSetBuffer send cmd failed");
         return false;
     }
-    uint8_t ack;
-    if ((ack = BL_GetACK()) != brNONE) {
-        debug("BL_SendCMDSetBuffer ack failed 0x%02x", ack);
+    uint8_t ack = BL_GetACK();
+    // generally no ack returned for CMD_SET_BUFFER when flashing firmware
+    if (ack != brNONE && ack != brSUCCESS) {
+        debug_console("BL_SendCMDSetBuffer ack failed 0x%02x", ack);
         blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
     }
+
     if (!BL_SendBuf(buf, nbytes)) {
-        debug("BL_SendCMDSetBuffer send failed");
+        debug_console("BL_SendCMDSetBuffer send failed");
         blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
     }
@@ -860,6 +873,7 @@ bool AP_BLHeli::BL_WriteA(uint8_t cmd, const uint8_t *buf, uint16_t nbytes, uint
 {
     if (BL_SendCMDSetAddress()) {
         if (!BL_SendCMDSetBuffer(buf, nbytes)) {
+            debug_console("BL_SendCMDSetBuffer failed\n");
             blheli.ack = ACK_D_GENERAL_ERROR;
             return false;
         }
@@ -869,11 +883,12 @@ bool AP_BLHeli::BL_WriteA(uint8_t cmd, const uint8_t *buf, uint16_t nbytes, uint
         }
         return (BL_GetACK(timeout_ms) == brSUCCESS);
     }
+    debug_console("BL_SendCMDSetAddress failed\n");
     blheli.ack = ACK_D_GENERAL_ERROR;
     return false;
 }
 
-uint8_t AP_BLHeli::BL_WriteFlash(const uint8_t *buf, uint16_t n)
+bool AP_BLHeli::BL_WriteFlash(const uint8_t *buf, uint16_t n)
 {
     return BL_WriteA(CMD_PROG_FLASH, buf, n, 500);
 }
@@ -951,8 +966,7 @@ void AP_BLHeli::blheli_process_command(void)
         msp.escMode = PROTOCOL_NONE;
         uint8_t b = 0;
         blheli_send_reply(&b, 1);
-        hal.rcout->serial_end();
-        serial_start_ms = 0;
+        serial_end();
         if (motors_disabled) {
             motors_disabled = false;
             SRV_Channels::set_disabled_channel_mask(motors_disabled_mask);
@@ -1078,7 +1092,11 @@ void AP_BLHeli::blheli_process_command(void)
         case imSIL_BLB:
         case imATM_BLB:
         case imARM_BLB: {
-            BL_WriteFlash(buf, nbytes);
+            if (!BL_WriteFlash(buf, nbytes)) {
+                // For reasons unknown BL_WriteFlash can bork the DMA engine, make some attempt to get
+                // back to a sane state if this happens
+                serial_end();
+            }
             break;
         }
         case imSK: {
@@ -1174,8 +1192,7 @@ bool AP_BLHeli::process_input(uint8_t b)
     if (msp.escMode == PROTOCOL_4WAY && blheli.state == BLHELI_IDLE && b == '$') {
         debug("Change to MSP mode");
         msp.escMode = PROTOCOL_NONE;
-        hal.rcout->serial_end();
-        serial_start_ms = 0;
+        serial_end();
     }
     if (msp.escMode != PROTOCOL_4WAY && msp.state == MSP_IDLE && b == '/') {
         debug("Change to BLHeli mode");
@@ -1268,10 +1285,9 @@ void AP_BLHeli::run_connection_test(uint8_t chan)
             break;
         }
     }
-    hal.rcout->serial_end();
+    serial_end();
     SRV_Channels::set_disabled_channel_mask(motors_disabled_mask);
     motors_disabled = false;
-    serial_start_ms = 0;
     blheli.chan = saved_chan;
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: Test %s", passed?"PASSED":"FAILED");
     debug_uart = nullptr;
@@ -1297,8 +1313,7 @@ void AP_BLHeli::update(void)
         // we're not processing requests any more, shutdown serial
         // output
         if (serial_start_ms) {
-            hal.rcout->serial_end();
-            serial_start_ms = 0;
+            serial_end();
         }
         if (motors_disabled) {
             motors_disabled = false;
@@ -1322,6 +1337,12 @@ void AP_BLHeli::update(void)
             run_connection_test(run_test.get() - 1);
         }
     }
+}
+
+void AP_BLHeli::serial_end()
+{
+    hal.rcout->serial_end(motor_mask);
+    serial_start_ms = 0;
 }
 
 /*
