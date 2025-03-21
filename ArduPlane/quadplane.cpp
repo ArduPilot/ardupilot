@@ -875,11 +875,12 @@ void QuadPlane::run_esc_calibration(void)
  */
 void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 {
-    bool use_multicopter_control = in_vtol_mode() && !tailsitter.in_vtol_transition();
+    bool use_multicopter_control = in_vtol_mode() && !tailsitter.in_vtol_transition() && !force_fw_control_recovery;
     bool use_yaw_target = false;
 
     float yaw_target_cd = 0.0;
-    if (!use_multicopter_control && transition->update_yaw_target(yaw_target_cd)) {
+    if (!use_multicopter_control && transition->update_yaw_target(yaw_target_cd) &&
+        !force_fw_control_recovery) {
         use_multicopter_control = true;
         use_yaw_target = true;
     }
@@ -968,7 +969,7 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
         // disable yaw time constant for 1:1 match of desired rates
         disable_yaw_rate_time_constant();
 
-        attitude_control->input_rate_bf_roll_pitch_yaw_2(bf_input_cd.x, bf_input_cd.y, bf_input_cd.z);
+        attitude_control->input_rate_bf_roll_pitch_yaw_no_shaping(bf_input_cd.x, bf_input_cd.y, bf_input_cd.z);
     }
 }
 
@@ -1955,7 +1956,40 @@ void QuadPlane::motors_output(bool run_rate_controller)
         if (now - last_att_control_ms > 100) {
             // relax if have been inactive
             relax_attitude_control();
+            /*
+              when starting the VTOL motors force use of the fixed
+              wing controller for attitude control if we are outside
+              of the Q_ANGLE_MAX limit. We keep it forced until we
+              have recovered to within the limit
+
+              This avoids an issue with the attitude controller
+              limiting the rate of recovery and also an issue with the
+              quaternion controller trying to fix the attitude in a
+              way that is bad for fixed wing aircraft (eg. putting
+              nose down when inverted, leading to rapid loss of
+              height)
+
+              we don't do this in QACRO or tailsitter modes, as this
+              type of attitude is expected
+            */
+            if (!tailsitter.enabled() &&
+                plane.control_mode != &plane.mode_qacro &&
+                (abs(ahrs.roll_sensor) > aparm.angle_max ||
+                 abs(ahrs.pitch_sensor) > aparm.angle_max)) {
+                force_fw_control_recovery = true;
+            }
         }
+        if (force_fw_control_recovery) {
+            // see if we have recovered attitude
+            if (abs(ahrs.roll_sensor) <= aparm.angle_max &&
+                abs(ahrs.pitch_sensor) <= aparm.angle_max) {
+                force_fw_control_recovery = false;
+                // reset the attitude target to the new attitude so
+                // the VTOL controller doesn't pull us back
+                attitude_control->reset_target_and_rate(false);
+            }
+        }
+
         // run low level rate controllers that only require IMU data and set loop time
         const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
         motors->set_dt(last_loop_time_s);
@@ -3615,6 +3649,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         speed              = 1U<<2, // true if assistance due to low airspeed
         alt                = 1U<<3, // true if assistance due to low altitude
         angle              = 1U<<4, // true if assistance due to attitude error
+        fw_force           = 1U<<5, // true if forcing use of fixed wing controllers
     };
 
     uint8_t assist_flags = 0;
@@ -3632,6 +3667,9 @@ void QuadPlane::Log_Write_QControl_Tuning()
     }
     if (assist.in_angle_assist()) {
         assist_flags |= (uint8_t)log_assistance_flags::angle;
+    }
+    if (force_fw_control_recovery) {
+        assist_flags |= (uint8_t)log_assistance_flags::fw_force;
     }
 
     struct log_QControl_Tuning pkt = {
@@ -4208,13 +4246,27 @@ bool QuadPlane::use_fw_attitude_controllers(void) const
     if (available() &&
         motors->armed() &&
         motors->get_desired_spool_state() >= AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED &&
-        in_vtol_mode() &&
         !tailsitter.enabled() &&
-        poscontrol.get_state() != QPOS_AIRBRAKE) {
-        // we want the desired rates for fixed wing slaved to the
-        // multicopter rates
-        return false;
+        poscontrol.get_state() != QPOS_AIRBRAKE &&
+        !force_fw_control_recovery) {
+
+        if (in_vtol_mode()) {
+            // in VTOL modes always slave fixed wing to VTOL rate control
+            return false;
+        }
+
+        if (transition->use_multirotor_control_in_fwd_transition()) {
+            /*
+              special case for vectored yaw tiltrotors in forward
+              transition, keep multicopter control until we reach
+              target transition airspeed. This can result in loss of
+              yaw control on some tilt-vectored airframes without
+              strong VTOL yaw control
+            */
+            return false;
+        }
     }
+
     return true;
 }
 

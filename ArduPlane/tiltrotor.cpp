@@ -742,10 +742,18 @@ void Tiltrotor::update_yaw_target(void)
     transition_yaw_set_ms = now;
 }
 
+
+/*
+  control use of multirotor rate control in forward transition
+ */
+bool Tiltrotor_Transition::use_multirotor_control_in_fwd_transition() const
+{
+    return tiltrotor.is_vectored() && transition_state <= TRANSITION_TIMER;
+}
+
 bool Tiltrotor_Transition::update_yaw_target(float& yaw_target_cd)
 {
-    if (!(tiltrotor.is_vectored() &&
-        transition_state <= TRANSITION_TIMER)) {
+    if (!use_multirotor_control_in_fwd_transition()) {
         return false;
     }
     tiltrotor.update_yaw_target();
