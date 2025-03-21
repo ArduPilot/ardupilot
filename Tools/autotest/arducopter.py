@@ -5925,6 +5925,69 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # self.install_messageprinter_handlers_context(['SIMSTATE', 'GLOBAL_POSITION_INT'])
         self.wait_disarmed(timeout=200)
 
+    def ExternalPositionEstimate(self):
+        """Degrade GPS navigation auto switch to enable external position input."""
+
+        # configure EKF to consume EXTERNAL_POSITION_ESTIMATE as a alternative to GPS
+        self.set_parameters({
+            "EK3_OPTIONS": 48, # SetLatLngFusion and SetLatLngOffset option activated
+        })
+        self.reboot_sitl()
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+
+        self.takeoff()
+
+        self.set_rc(2, 1300)
+
+        tstart = self.get_sim_time()
+        gpsdisabled = False
+        gpsdisabled_time = None
+        max_divergence = 0
+        while True:
+            self.progress("set new position from SIM truth")
+            loc = self.get_location('SIMSTATE')
+            if gpsdisabled and self.get_sim_time_cached() - gpsdisabled_time > 5:
+                # navigating on the external position estimates alone
+                max_divergence = max(max_divergence, self.get_distance(loc, self.get_location()))
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_EXTERNAL_POSITION_ESTIMATE,
+                p1=self.get_sim_time()-1.0, # transmit time
+                p2=1.0, # processing delay
+                p3=50, # accuracy
+                p5=int(loc.lat * 1e7),
+                p6=int(loc.lng * 1e7),
+                p7=float("NaN"),    # alt
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+                want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+            )
+            # stay clear of the EKF's rate limit
+            self.delay_sim_time(0.25, reason="rate-limit estimates")
+            if (self.get_sim_time() - tstart > 60):
+                # re-enable GPS
+                self.set_parameters({
+                    "SIM_GPS1_ENABLE": 1,
+                })
+                break
+            elif (self.get_sim_time() - tstart > 30 and not gpsdisabled):
+                # disable GPS for 30 seconds
+                self.set_parameters({
+                    "SIM_GPS1_ENABLE": 0,
+                })
+                gpsdisabled = True
+                gpsdisabled_time = self.get_sim_time()
+
+        self.progress("Max divergence without GPS: %.1fm" % max_divergence)
+        if max_divergence > 15:
+            raise NotAchievedException("Position diverged %.1fm from truth without GPS" % max_divergence)
+
+        # continue moving while GPS use restarts
+        self.delay_sim_time(10, reason="waiting for GPS use to resume")
+
+        # center controls and RTL
+        self.set_rc(2, 1500)
+        self.do_RTL(timeout=200)
+
     def BodyFrameOdom(self):
         """Disable GPS navigation, enable input of VISION_POSITION_DELTA."""
 
@@ -19152,6 +19215,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_NAV_LOITER_UNLIM,
              self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
              self.MAV_CMD_NAV_VTOL_LAND,
+             self.ExternalPositionEstimate,
              self.clear_roi,
              self.ReadOnlyDefaults,
              self.DefaultsCommaList,
