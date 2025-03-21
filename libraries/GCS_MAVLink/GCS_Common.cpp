@@ -5809,7 +5809,7 @@ void GCS_MAVLINK::send_sys_status()
     float battery_current;
     const int8_t battery_remaining = battery_remaining_pct(AP_BATT_PRIMARY_INSTANCE);
 
-    if (battery.healthy() && battery.current_amps(battery_current)) {
+    if (battery.healthy(AP_BATT_PRIMARY_INSTANCE) && battery.current_amps(battery_current, AP_BATT_PRIMARY_INSTANCE)) {
         battery_current = constrain_float(battery_current * 100,-INT16_MAX,INT16_MAX);
     } else {
         battery_current = -1;
@@ -5838,7 +5838,7 @@ void GCS_MAVLINK::send_sys_status()
         0,
 #endif
 #if AP_BATTERY_ENABLED
-        battery.gcs_voltage() * 1000,  // mV
+        battery.gcs_voltage(AP_BATT_PRIMARY_INSTANCE) * 1000,  // mV
         battery_current,        // in 10mA units
         battery_remaining,      // in %
 #else
