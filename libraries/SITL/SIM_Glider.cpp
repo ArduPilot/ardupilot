@@ -68,6 +68,30 @@ const AP_Param::GroupInfo Glider::var_info[] = {
     // @Description: glider mass
     // @Units: kg
     AP_GROUPINFO("MASS",  3, Glider, mass, 9.07441),
+
+    // @Param: INIT_SPD
+    // @DisplayName: initial release speed
+    // @Description: initial release speed, if zero then dropped nose down at zero speed. You must use AHRS_EKF_TYPE=10 to support this option
+    // @Units: m/s
+    AP_GROUPINFO("INIT_SPD",  4, Glider, release_init.speed, 0),
+
+    // @Param: INIT_YAW
+    // @DisplayName: initial release yaw
+    // @Description: initial release yaw, only if SIM_GLD_INIT_SPD is > 0
+    // @Units: deg
+    AP_GROUPINFO("INIT_YAW",  5, Glider, release_init.yaw_deg, 0),
+
+    // @Param: INIT_PIT
+    // @DisplayName: initial release pitch
+    // @Description: initial release pitch, only if SIM_GLD_INIT_SPD is > 0
+    // @Units: deg
+    AP_GROUPINFO("INIT_PIT",  6, Glider, release_init.pitch_deg, 0),
+
+    // @Param: INIT_RLL
+    // @DisplayName: initial release roll
+    // @Description: initial release roll, only if SIM_GLD_INIT_SPD is > 0
+    // @Units: deg
+    AP_GROUPINFO("INIT_RLL",  7, Glider, release_init.roll_deg, 0),
     
     AP_GROUPEND
 };
@@ -261,6 +285,17 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
             carriage_state = carriageState::RELEASED;
             use_smoothing = false;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "released at %.0f m AMSL\n", (0.01f * home.alt) - position.z);
+            if (release_init.speed > 0) {
+                /*
+                  hack to simulate glider drops at other than nose
+                  down attitudes. Note that you will need
+                  AHRS_EKF_TYPE=10 or the EKF will get very unhappy
+                  with this change
+                 */
+                dcm.from_euler(radians(release_init.roll_deg), radians(release_init.pitch_deg), radians(release_init.yaw_deg));
+                velocity_ef = Vector3f(release_init.speed, 0, 0);
+                velocity_ef = dcm * velocity_ef;
+            }
         }
     } else if (carriage_state == carriageState::WAITING_FOR_PICKUP) {
         // Don't allow the balloon to drag sideways until the pickup
