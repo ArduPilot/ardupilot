@@ -724,6 +724,27 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_SUBGROUPINFO(volz_sim, "VOLZ_", 55, SIM, Volz),
 #endif
 
+    // @Param: VICON_P_SD
+    // @DisplayName: SITL vicon position standard deviation for gaussian noise
+    // @Description: SITL vicon position standard deviation for gaussian noise
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("VICON_P_SD",  56, SIM,  vicon_pos_stddev, 0.0f),
+
+    // @Param: VICON_V_SD
+    // @DisplayName: SITL vicon velocity standard deviation for gaussian noise
+    // @Description: SITL vicon velocity standard deviation for gaussian noise
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("VICON_V_SD",  57, SIM,  vicon_vel_stddev, 0.0f),
+
+    // @Param: VICON_RATE
+    // @DisplayName: SITL vicon rate
+    // @Description: SITL vicon rate
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("VICON_RATE",  58, SIM,  vicon_rate_hz, 50),
+
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK

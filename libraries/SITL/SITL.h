@@ -538,11 +538,14 @@ public:
 
     // vicon parameters
     AP_Vector3f vicon_glitch;   // glitch in meters in vicon's local NED frame
+    AP_Float vicon_pos_stddev;       // noise in meters in vicon's local NED frame
+    AP_Float vicon_vel_stddev;       // noise in m/s in vicon's local NED frame
     AP_Int8 vicon_fail;         // trigger vicon failure
     AP_Int16 vicon_yaw;         // vicon local yaw in degrees
     AP_Int16 vicon_yaw_error;   // vicon yaw error in degrees (added to reported yaw sent to vehicle)
     AP_Int8 vicon_type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
     AP_Vector3f vicon_vel_glitch;   // velocity glitch in m/s in vicon's local frame
+    AP_Int16 vicon_rate_hz;     // vicon data rate in Hz
 
     // get the rangefinder reading for the desired instance, returns -1 for no data
     float get_rangefinder(uint8_t instance);
