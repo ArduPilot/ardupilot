@@ -223,7 +223,6 @@ private:
     uint32_t _cr1_options;
     uint32_t _cr2_options;
     uint32_t _cr3_options;
-    uint16_t _last_options;
 
     // half duplex control. After writing we throw away bytes for 4 byte widths to
     // prevent reading our own bytes back
