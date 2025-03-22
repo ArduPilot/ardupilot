@@ -291,6 +291,8 @@ class ExtractFeatures(object):
             ('AP_FILTER_ENABLED', r'AP_Filters::update'),
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
+
+            ('HAL_UART_DEBUG_LOGGING_ENABLED', r'AP_HAL::UARTDriver::log_data'),
         ]
 
     def progress(self, msg):
