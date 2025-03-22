@@ -263,9 +263,11 @@ protected:
     virtual uint32_t get_total_dropped_rx_bytes() const { return 0; }
 #endif
 
-private:
     // option bits for port
     uint16_t _last_options;
+
+private:
+    uint8_t index;
 
 #if AP_UART_MONITOR_ENABLED
     ByteBuffer *_monitor_read_buffer;
