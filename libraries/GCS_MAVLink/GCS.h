@@ -707,11 +707,11 @@ protected:
     /*
       handle MAV_CMD_CAN_FORWARD and CAN_FRAME messages for CAN over MAVLink
      */
-    void can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &);
-#if HAL_CANMANAGER_ENABLED
-    MAV_RESULT handle_can_forward(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+#if AP_MAVLINK_CAN_ENABLED
+    virtual MAV_RESULT handle_can_forward(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+    virtual void handle_can_filter_modify(const mavlink_message_t &msg);
+    virtual void handle_can_frame(const mavlink_message_t &msg);
 #endif
-    void handle_can_frame(const mavlink_message_t &msg) const;
 
     void handle_optical_flow(const mavlink_message_t &msg);
 
