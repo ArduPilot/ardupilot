@@ -5,6 +5,7 @@
 #include "AP_HAL_Namespace.h"
 #include "utility/BetterStream.h"
 #include <AP_Logger/AP_Logger_config.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 #ifndef HAL_UART_STATS_ENABLED
 #define HAL_UART_STATS_ENABLED AP_HAL_UARTDRIVER_ENABLED
@@ -13,6 +14,10 @@
 #ifndef AP_UART_MONITOR_ENABLED
 #define AP_UART_MONITOR_ENABLED 0
 #endif
+
+#ifndef HAL_UART_DEBUG_LOGGING_ENABLED
+#define HAL_UART_DEBUG_LOGGING_ENABLED AP_HAL_UARTDRIVER_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB > 2048
+#endif  // HAL_UART_DEBUG_LOGGING_ENABLED
 
 class ExpandingString;
 class ByteBuffer;
@@ -41,6 +46,10 @@ public:
       be used
      */
     void begin_locked(uint32_t baud, uint16_t rxSpace, uint16_t txSpace, uint32_t write_key);
+
+#if HAL_UART_DEBUG_LOGGING_ENABLED
+    void set_instance(uint8_t _instance) { instance = _instance; }
+#endif  // HAL_UART_DEBUG_LOGGING_ENABLED
 
     /*
       single and multi-byte write methods
@@ -100,6 +109,7 @@ public:
         OPTION_MAVLINK_NO_FORWARD = (1U<<10), // don't forward MAVLink data to or from this device
         OPTION_NOFIFO             = (1U<<11), // disable hardware FIFO
         OPTION_NOSTREAMOVERRIDE   = (1U<<12), // don't allow GCS to override streamrates
+        OPTION_LOGGING            = (1U<<13), // enable raw logging
     };
 
     enum flow_control {
@@ -263,6 +273,15 @@ protected:
     virtual uint32_t get_total_dropped_rx_bytes() const { return 0; }
 #endif
 
+#if HAL_UART_DEBUG_LOGGING_ENABLED
+    void log_read_data(const uint8_t *data, uint16_t length) {
+        log_data(data, length, false);
+    }
+    void log_written_data(const uint8_t *data, uint16_t length) {
+        log_data(data, length, true);
+    }
+#endif  // HAL_UART_DEBUG_LOGGING_ENABLED
+
     // option bits for port
     uint16_t _last_options;
 
@@ -271,4 +290,25 @@ private:
 #if AP_UART_MONITOR_ENABLED
     ByteBuffer *_monitor_read_buffer;
 #endif
+
+#if HAL_UART_DEBUG_LOGGING_ENABLED
+    void log_data(const uint8_t *data, uint16_t length, bool is_written_data);
+    HAL_Semaphore loginfo_creation_sem;  // protects creation of background thread
+    uint8_t instance;
+
+    // support raw serial logging
+    struct LogInfo {
+        struct LogInfo *next;
+        int fd = -1;
+        ByteBuffer buf{16000};
+        uint8_t instance;
+    };
+    struct LogInfo *loginfo;  // log info for *this* backend
+
+    static LogInfo *backend_loginfos;  // linked list of all backend log infos
+    static bool log_thread_created;
+    static void logging_loop(void);
+    void logging_start(void);
+#endif  // HAL_UART_DEBUG_LOGGING_ENABLED
+
 };
