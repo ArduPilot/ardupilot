@@ -282,7 +282,6 @@ protected:
     uint16_t _last_options;
 
 private:
-    uint8_t index;
 
 #if AP_UART_MONITOR_ENABLED
     ByteBuffer *_monitor_read_buffer;
