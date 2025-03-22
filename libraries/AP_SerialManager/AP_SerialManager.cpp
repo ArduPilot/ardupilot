@@ -444,6 +444,9 @@ void AP_SerialManager::init()
     // initialise serial ports
     for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
         auto *uart = hal.serial(i);
+#if HAL_UART_DEBUG_LOGGING_ENABLED
+        uart->set_instance(i);
+#endif  // HAL_UART_DEBUG_LOGGING_ENABLED
 
         state[i].idx = i;
 
