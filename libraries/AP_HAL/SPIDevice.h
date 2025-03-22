@@ -68,9 +68,9 @@ public:
 
 class SPIDeviceManager {
 public:
-    virtual OwnPtr<SPIDevice> get_device(const char *name)
-    {
-        return nullptr;
+    virtual SPIDevice *get_device_ptr(const char *name) = 0;
+    OwnPtr<SPIDevice> get_device(const char *name) {
+        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(get_device_ptr(name));
     }
 
     /* Return the number of SPI devices currently registered. */

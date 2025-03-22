@@ -29,6 +29,9 @@ jobs:
         with:
           submodules: 'recursive'
 
+      - name: Register lua problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/Lua.json"
+
       - name: Lua Linter
         shell: bash
         run: |
@@ -39,8 +42,8 @@ jobs:
       - name: Language server check
         shell: bash
         run: |
-          python -m pip install github-release-downloader
-          python ./Tools/scripts/run_lua_language_check.py
+          python3 -m pip install github-release-downloader
+          python3 ./Tools/scripts/run_lua_language_check.py
 
       - name: Generate docs md
         shell: bash

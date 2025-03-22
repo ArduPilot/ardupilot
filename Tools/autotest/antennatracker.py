@@ -5,8 +5,6 @@ AP_FLAKE8_CLEAN
 
 '''
 
-from __future__ import print_function
-
 import math
 import operator
 import os

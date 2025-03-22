@@ -9,6 +9,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
@@ -74,6 +75,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
@@ -156,7 +158,7 @@ jobs:
           NAME_DASHED=${WORKFLOWNAME//+( )/_}
           echo "cache-key=${NAME_DASHED}" >> $GITHUB_OUTPUT
 
-      - uses: cygwin/cygwin-install-action@master
+      - uses: cygwin/cygwin-install-action@v5
         with:
           packages: cygwin64 gcc-g++=10.2.0-1 ccache python37 python37-future python37-lxml python37-pip python37-setuptools python37-wheel git procps gettext
           add-to-path: false
@@ -187,7 +189,6 @@ jobs:
           PATH: /usr/bin:$(cygpath ${SYSTEMROOT})/system32
         shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
         run: >-
-          ln -sf /usr/bin/python3.7 /usr/bin/python && ln -sf /usr/bin/pip3.7 /usr/bin/pip &&
           python3 -m pip install --progress-bar off empy==3.3.4 pexpect &&
           python3 -m pip install --progress-bar off dronecan --upgrade &&
           cp /usr/bin/ccache /usr/local/bin/ &&

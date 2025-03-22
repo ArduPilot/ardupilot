@@ -53,12 +53,11 @@ public:
 
     enum Rotation orientation() const { return (Rotation)params.orientation.get(); }
     float distance() const { return state.distance_m; }
-    uint16_t distance_cm() const { return state.distance_m*100.0f; }
     int8_t signal_quality_pct() const  WARN_IF_UNUSED { return state.signal_quality_pct; }
     uint16_t voltage_mv() const { return state.voltage_mv; }
-    virtual int16_t max_distance_cm() const { return params.max_distance_cm; }
-    virtual int16_t min_distance_cm() const { return params.min_distance_cm; }
-    int16_t ground_clearance_cm() const { return params.ground_clearance_cm; }
+    virtual float max_distance() const { return params.max_distance; }
+    virtual float min_distance() const { return params.min_distance; }
+    float ground_clearance() const { return params.ground_clearance; }
     MAV_DISTANCE_SENSOR get_mav_distance_sensor_type() const;
     RangeFinder::Status status() const;
     RangeFinder::Type type() const { return (RangeFinder::Type)params.type.get(); }

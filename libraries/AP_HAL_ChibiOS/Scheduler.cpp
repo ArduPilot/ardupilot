@@ -595,7 +595,7 @@ void Scheduler::_io_thread(void* arg)
     }
 }
 
-#if defined(STM32H7)
+#if MEMCHECK_ENABLED
 /*
   the H7 has 64k of ITCM memory at address zero. We reserve 1k of it
   to prevent nullptr being valid. This function checks that memory is
@@ -624,7 +624,7 @@ void Scheduler::check_low_memory_is_zero()
 #pragma GCC diagnostic pop
     }
 }
-#endif // STM32H7
+#endif // MEMCHECK_ENABLED
 
 void Scheduler::_storage_thread(void* arg)
 {
@@ -633,21 +633,21 @@ void Scheduler::_storage_thread(void* arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(10000);
     }
-#if defined STM32H7
+#if MEMCHECK_ENABLED
     uint16_t memcheck_counter=0;
-#endif
+#endif  // MEMCHECK_ENABLED
     while (true) {
         sched->delay_microseconds(1000);
 
         // process any pending storage writes
         hal.storage->_timer_tick();
 
-#if defined STM32H7
+#if MEMCHECK_ENABLED
         if (memcheck_counter++ % 500 == 0) {
             // run check at 2Hz
             sched->check_low_memory_is_zero();
         }
-#endif
+#endif  // MEMCHECK_ENABLED
     }
 }
 
@@ -752,7 +752,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
   be used to prevent watchdog reset during expected long delays
   A value of zero cancels the previous expected delay
 */
-void Scheduler::_expect_delay_ms(uint32_t ms)
+void Scheduler::expect_delay_ms(uint32_t ms)
 {
     if (!in_main_thread()) {
         // only for main thread
@@ -761,8 +761,6 @@ void Scheduler::_expect_delay_ms(uint32_t ms)
 
     // pat once immediately
     watchdog_pat();
-
-    WITH_SEMAPHORE(expect_delay_sem);
 
     if (ms == 0) {
         if (expect_delay_nesting > 0) {
@@ -787,18 +785,6 @@ void Scheduler::_expect_delay_ms(uint32_t ms)
         // also put our priority below timer thread if we are boosted
         boost_end();
     }
-}
-
-/*
-  this is _expect_delay_ms() with check that we are in the main thread
- */
-void Scheduler::expect_delay_ms(uint32_t ms)
-{
-    if (!in_main_thread()) {
-        // only for main thread
-        return;
-    }
-    _expect_delay_ms(ms);
 }
 
 // pat the watchdog

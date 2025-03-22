@@ -284,9 +284,7 @@ struct PACKED log_NKT {
     float delVelDT_max;
 };
 
-#if !HAL_NAVEKF2_AVAILABLE
-#define LOG_STRUCTURE_FROM_NAVEKF2
-#else
+#if HAL_NAVEKF2_AVAILABLE
 #define LOG_STRUCTURE_FROM_NAVEKF2        \
     { LOG_NKF0_MSG, sizeof(log_NKF0), \
       "NKF0","QBBccCCcccccccc","TimeUS,C,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s#-m---mmmmmmmm", "F--B---BBBBBBBB" , true }, \
@@ -303,4 +301,6 @@ struct PACKED log_NKT {
     { LOG_NKQ_MSG, sizeof(log_NKQ), "NKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#----", "F-0000" , true }, \
     { LOG_NKT_MSG, sizeof(log_NKT),   \
       "NKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000", true },
+#else
+#define LOG_STRUCTURE_FROM_NAVEKF2
 #endif

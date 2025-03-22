@@ -5,10 +5,10 @@ AP_FLAKE8_CLEAN
 
 '''
 
-from __future__ import print_function
 import os
 import numpy
 import math
+import copy
 
 from pymavlink import mavutil
 from pymavlink.rotmat import Vector3
@@ -363,6 +363,20 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def QAUTOTUNE(self):
         '''test Plane QAutoTune mode'''
 
+        # adjust tune so QAUTOTUNE can cope
+        self.set_parameters({
+            "Q_A_RAT_RLL_P" : 0.15,
+            "Q_A_RAT_RLL_I" : 0.25,
+            "Q_A_RAT_RLL_D" : 0.002,
+            "Q_A_RAT_PIT_P" : 0.15,
+            "Q_A_RAT_PIT_I" : 0.25,
+            "Q_A_RAT_PIT_D" : 0.002,
+            "Q_A_RAT_YAW_P" : 0.18,
+            "Q_A_RAT_YAW_I" : 0.018,
+            "Q_A_ANG_RLL_P" : 4.5,
+            "Q_A_ANG_PIT_P" : 4.5,
+            })
+
         # this is a list of all parameters modified by QAUTOTUNE.  Set
         # them so that when the context is popped we get the original
         # values back:
@@ -489,7 +503,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
         self.set_rc(4, 1500)
         while self.get_sim_time_cached() < tstart + timeout:
-            m = self.mav.recv_match(type='ATTITUDE', blocking=True)
+            m = self.assert_receive_message('ATTITUDE')
             roll = math.degrees(m.roll)
             pitch = math.degrees(m.pitch)
             self.progress("Roll=%.1f Pitch=%.1f" % (roll, pitch))
@@ -532,8 +546,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         tstart = self.get_sim_time()
         self.progress("Hovering for %u seconds" % hover_time)
         while self.get_sim_time_cached() < tstart + hover_time:
-            self.mav.recv_match(type='ATTITUDE', blocking=True)
-        vfr_hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            self.assert_receive_message('ATTITUDE')
+        vfr_hud = self.assert_receive_message('VFR_HUD')
         tend = self.get_sim_time()
 
         self.do_RTL()
@@ -646,7 +660,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.progress("Hovering for %u seconds" % hover_time)
             tstart = self.get_sim_time()
             while self.get_sim_time_cached() < tstart + hover_time:
-                self.mav.recv_match(type='ATTITUDE', blocking=True)
+                self.assert_receive_message('ATTITUDE')
             tend = self.get_sim_time()
 
             self.do_RTL()
@@ -753,8 +767,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                              "Q_WVANE_ENABLE": 1,
                              "Q_WVANE_GAIN": 1,
                              "STICK_MIXING": 0,
-                             "Q_FWD_THR_USE": 2,
-                             "SIM_ENGINE_FAIL": 2}) # we want to fail the forward thrust motor only
+                             "Q_FWD_THR_USE": 2})
 
         self.takeoff(10, mode="QLOITER")
         self.set_rc(2, 1000)
@@ -764,14 +777,14 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         if fwd_thr_pwm < 1150 :
             raise NotAchievedException("fwd motor pwm command low, want >= 1150 got %f" % (fwd_thr_pwm))
         # check that pitch is on limit
-        m = self.mav.recv_match(type='ATTITUDE', blocking=True)
+        m = self.assert_receive_message('ATTITUDE')
         pitch = math.degrees(m.pitch)
         if abs(pitch + 3.0) > 0.5 :
             raise NotAchievedException("pitch should be -3.0 +- 0.5 deg, got %f" % (pitch))
         self.set_rc(2, 1500)
         self.delay_sim_time(5)
         loc1 = self.mav.location()
-        self.set_parameter("SIM_ENGINE_MUL", 0) # simulate a complete loss of forward motor thrust
+        self.set_parameter("SIM_ENGINE_FAIL", 1 << 2) # simulate a complete loss of forward motor thrust
         self.delay_sim_time(20)
         self.change_mode('QLAND')
         self.wait_disarmed(timeout=60)
@@ -1064,7 +1077,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.context_collect("STATUSTEXT")
         self.progress("Starting QLAND")
         self.change_mode("QLAND")
-        self.wait_statustext("Rangefinder engaged")
+        self.wait_statustext("Rangefinder engaged", check_context=True)
         self.wait_disarmed(timeout=100)
 
     def setup_ICEngine_vehicle(self):
@@ -1220,6 +1233,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.start_subtest("Check start chan control disable")
             old_start_channel_value = self.get_rc_channel_value(rc_engine_start_chan)
             self.set_rc(rc_engine_start_chan, 1000)
+            self.delay_sim_time(1) # Make sure the RC change has registered
             self.context_collect('STATUSTEXT')
             method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=1, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
             self.wait_statustext("start control disabled", check_context=True)
@@ -1411,6 +1425,84 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed(timeout=120)
 
+    def VTOLQuicktune_CPP(self):
+        '''VTOL Quicktune in C++'''
+        self.set_parameters({
+            "RC7_OPTION": 181,
+            "QWIK_ENABLE" : 1,
+            "QWIK_DOUBLE_TIME" : 5, # run faster for autotest
+        })
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        # reduce roll/pitch gains by 2
+        gain_mul = 0.5
+        soften_params = ['Q_A_RAT_RLL_P', 'Q_A_RAT_RLL_I', 'Q_A_RAT_RLL_D',
+                         'Q_A_RAT_PIT_P', 'Q_A_RAT_PIT_I', 'Q_A_RAT_PIT_D',
+                         'Q_A_RAT_YAW_P', 'Q_A_RAT_YAW_I']
+
+        original_values = self.get_parameters(soften_params)
+
+        softened_values = {}
+        for p in original_values.keys():
+            softened_values[p] = original_values[p] * gain_mul
+        self.set_parameters(softened_values)
+
+        self.wait_ready_to_arm()
+        self.change_mode("QLOITER")
+        self.set_rc(7, 1000)
+        self.arm_vehicle()
+        self.takeoff(20, 'QLOITER')
+
+        # use rc switch to start tune
+        self.set_rc(7, 1500)
+
+        self.wait_text("Quicktune: starting tune", check_context=True)
+        for axis in ['Roll', 'Pitch', 'Yaw']:
+            self.wait_text("Starting %s tune" % axis, check_context=True)
+            self.wait_text("Quicktune: %s D done" % axis, check_context=True, timeout=120)
+            self.wait_text("Quicktune: %s P done" % axis, check_context=True, timeout=120)
+            self.wait_text("Quicktune: %s done" % axis, check_context=True, timeout=120)
+
+        new_values = self.get_parameters(soften_params)
+        for p in original_values.keys():
+            threshold = 0.8 * original_values[p]
+            self.progress("tuned param %s %.4f need %.4f" % (p, new_values[p], threshold))
+            if new_values[p] < threshold:
+                raise NotAchievedException(
+                    "parameter %s %.4f not increased over %.4f" %
+                    (p, new_values[p], threshold))
+
+        self.progress("ensure we are not overtuned")
+        self.set_parameters({
+            'SIM_ENGINE_MUL': 0.9,
+            'SIM_ENGINE_FAIL': 1 << 0,
+        })
+
+        self.delay_sim_time(5)
+
+        # and restore it
+        self.set_parameter('SIM_ENGINE_MUL', 1)
+
+        for i in range(5):
+            self.wait_heartbeat()
+
+        if self.statustext_in_collections("ABORTING"):
+            raise NotAchievedException("tune has aborted, overtuned")
+
+        self.progress("using aux fn for save tune")
+
+        # to test aux function method, use aux fn for save
+        self.run_auxfunc(181, 2)
+        self.wait_text("Quicktune: saved", check_context=True)
+        self.change_mode("QLAND")
+
+        self.wait_disarmed(timeout=120)
+        self.set_parameter("QWIK_ENABLE", 0)
+        self.context_pop()
+        self.reboot_sitl()
+
     def PrecisionLanding(self):
         '''VTOL precision landing'''
 
@@ -1432,7 +1524,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "RNGFND1_TYPE": 100,
             "RNGFND1_PIN" : 0,
             "RNGFND1_SCALING" : 12.2,
-            "RNGFND1_MAX_CM" : 5000,
+            "RNGFND1_MAX" : 50.00,
             "RNGFND_LANDING" : 1,
         })
 
@@ -2072,6 +2164,43 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 self.progress("Wind estimates correlated")
                 break
 
+    def DoRepositionTerrain(self):
+        '''test handling of DO_REPOSITION with terrain alt'''
+        # this location is chosen to be fairly flat, but at a different terrain height to home
+        self.install_terrain_handlers_context()
+        self.start_subtest("test reposition with terrain alt")
+        self.wait_ready_to_arm()
+
+        dest = copy.copy(SITL_START_LOCATION)
+        dest.alt = 45
+
+        self.set_parameters({
+            'Q_GUIDED_MODE': 1,
+        })
+
+        self.takeoff(30, mode='GUIDED')
+
+        # fly to higher ground
+        self.send_do_reposition(dest, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        self.wait_location(
+            dest,
+            accuracy=200,
+            timeout=600,
+            height_accuracy=10,
+        )
+        self.delay_sim_time(20)
+
+        self.wait_altitude(
+            dest.alt-10,  # NOTE: reuse of alt from abovE
+            dest.alt+10,  # use a 10m buffer as the plane needs to go up and down a bit to maintain terrain distance
+            minimum_duration=10,
+            timeout=30,
+            relative=False,
+            altitude_source="TERRAIN_REPORT.current_height"
+        )
+        self.change_mode("QLAND")
+        self.mav.motors_disarmed_wait()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2104,6 +2233,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
             self.VTOLQuicktune,
+            self.VTOLQuicktune_CPP,
             self.PrecisionLanding,
             self.ShipLanding,
             Test(self.MotorTest, kwargs={  # tests motors 4 and 2
@@ -2123,5 +2253,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
             self.AHRSFlyForwardFlag,
+            self.DoRepositionTerrain,
         ])
         return ret

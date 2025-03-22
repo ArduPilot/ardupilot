@@ -101,6 +101,10 @@ bool Mode::enter()
     plane.target_altitude.terrain_following_pending = false;
 #endif
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    plane.g2.systemid.stop();
+#endif
+
     // disable auto mode servo idle during altitude wait command
     plane.auto_state.idle_mode = false;
 
@@ -141,6 +145,10 @@ bool Mode::enter()
 
         // Make sure the flight stage is correct for the new mode
         plane.update_flight_stage();
+        
+        // reset landing state
+        plane.landing.reset();
+
 
 #if HAL_QUADPLANE_ENABLED
         if (quadplane.enabled()) {

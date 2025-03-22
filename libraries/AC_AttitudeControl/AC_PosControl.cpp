@@ -678,6 +678,7 @@ void AC_PosControl::update_xy_controller()
 
     // add velocity feed-forward scaled to compensate for optical flow measurement induced EKF noise
     vel_target *= ahrsControlScaleXY;
+    vel_target *= _xy_control_scale_factor;
 
     _vel_target.xy() = vel_target;
     _vel_target.xy() += _vel_desired.xy() + _vel_offset.xy();
@@ -693,6 +694,9 @@ void AC_PosControl::update_xy_controller()
     
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
     accel_target *= ahrsControlScaleXY;
+    accel_target *= _xy_control_scale_factor;
+
+    _xy_control_scale_factor = 1.0;
 
     // pass the correction acceleration to the target acceleration output
     _accel_target.xy() = accel_target;
@@ -1206,6 +1210,28 @@ bool AC_PosControl::get_posvelaccel_offset(Vector3f &pos_offset_NED, Vector3f &v
     vel_offset_NED.z = -_vel_offset_target.z * 0.01;
     accel_offset_NED.xy() = _accel_offset_target.xy() * 0.01;
     accel_offset_NED.z = -_accel_offset_target.z * 0.01;
+    return true;
+}
+
+// get target velocity in m/s in NED frame
+bool AC_PosControl::get_vel_target(Vector3f &vel_target_NED)
+{
+    if (!is_active_xy() || !is_active_z()) {
+        return false;
+    }
+    vel_target_NED.xy() = _vel_target.xy() * 0.01;
+    vel_target_NED.z = -_vel_target.z * 0.01;
+    return true;
+}
+
+// get target acceleration in m/s/s in NED frame
+bool AC_PosControl::get_accel_target(Vector3f &accel_target_NED)
+{
+    if (!is_active_xy() || !is_active_z()) {
+        return false;
+    }
+    accel_target_NED.xy() = _accel_target.xy() * 0.01;
+    accel_target_NED.z = -_accel_target.z * 0.01;
     return true;
 }
 #endif

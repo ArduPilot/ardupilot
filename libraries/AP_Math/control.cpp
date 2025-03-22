@@ -387,6 +387,8 @@ bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max)
             if (accel_cross.limit_length(accel_max)) {
                 accel_dir = 0.0;
             } else {
+                // limit_length can't absolutely guarantee this subtraction
+                // won't be slightly negative, so safe_sqrt is used
                 float accel_max_dir = safe_sqrt(sq(accel_max) - accel_cross.length_squared());
                 accel_dir = constrain_float(accel_dir, -accel_max_dir, accel_max_dir);
             }

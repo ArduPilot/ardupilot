@@ -61,27 +61,26 @@ bool MissionItemProtocol_Fence::get_item_as_mission_item(uint16_t seq,
         return false;
     }
 
-    ret_packet.command = ret_cmd;
-    ret_packet.param1 = p1;
-    ret_packet.x = fenceitem.loc.x;
-    ret_packet.y = fenceitem.loc.y;
-    ret_packet.z = 0;
-    ret_packet.mission_type = MAV_MISSION_TYPE_FENCE;
+    ret_packet = {
+        param1: p1,
+        x: fenceitem.loc.x,
+        y: fenceitem.loc.y,
+        z: 0,
+        seq: seq,
+        command: uint16_t(ret_cmd),
+        mission_type: MAV_MISSION_TYPE_FENCE,
+    };
 
     return true;
 }
 
-MAV_MISSION_RESULT MissionItemProtocol_Fence::get_item(const GCS_MAVLINK &_link,
-                                                       const mavlink_message_t &msg,
-                                                       const mavlink_mission_request_int_t &packet,
-                                                       mavlink_mission_item_int_t &ret_packet)
+MAV_MISSION_RESULT MissionItemProtocol_Fence::get_item(uint16_t seq, mavlink_mission_item_int_t &ret_packet)
 {
-    const auto num_stored_items = _fence.polyfence().num_stored_items();
-    if (packet.seq > num_stored_items) {
+    if (seq >= _fence.polyfence().num_stored_items()) {
         return MAV_MISSION_INVALID_SEQUENCE;
     }
 
-    if (!get_item_as_mission_item(packet.seq, ret_packet)) {
+    if (!get_item_as_mission_item(seq, ret_packet)) {
         return MAV_MISSION_ERROR;
     }
 

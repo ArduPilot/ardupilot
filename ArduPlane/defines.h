@@ -10,6 +10,8 @@
 
 #define TAKEOFF_RUDDER_WARNING_TIMEOUT 3000 //ms that GCS warning about not returning arming rudder to neutral repeats
 
+#define GPS_GND_CRS_MIN_SPD 5 // m/s, used to set when intial_direction.heading is captured,deciding to heading lock in cruise mode, or steer_state.hold_course_cd
+
 // failsafe
 // ----------------------
 enum failsafe_state {
@@ -45,6 +47,7 @@ enum failsafe_action_long {
     FS_ACTION_LONG_GLIDE = 2,
     FS_ACTION_LONG_PARACHUTE = 3,
     FS_ACTION_LONG_AUTO = 4,
+    FS_ACTION_LONG_AUTOLAND = 5,
 };
 
 // type of stick mixing enabled
@@ -61,8 +64,8 @@ enum class RtlAutoland {
     RTL_THEN_DO_LAND_START = 1,
     RTL_IMMEDIATE_DO_LAND_START = 2,
     NO_RTL_GO_AROUND = 3,
+    DO_RETURN_PATH_START = 4,
 };
-    
 
 // PID broadcast bitmask
 enum tuning_pid_bits {

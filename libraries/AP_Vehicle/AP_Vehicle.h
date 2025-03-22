@@ -47,10 +47,10 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Camera/AP_RunCam.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_Hott_Telem/AP_Hott_Telem.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
+#include <AP_Servo_Telem/AP_Servo_Telem.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_Networking/AP_Networking.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
@@ -176,6 +176,8 @@ public:
     virtual bool start_takeoff(const float alt) { return false; }
     // Method to control vehicle position for use by external control
     virtual bool set_target_location(const Location& target_loc) { return false; }
+    // Get target location for use by external control
+    virtual bool get_target_location(Location& target_loc) { return false; }
 #endif // AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 #if AP_SCRIPTING_ENABLED
     /*
@@ -195,8 +197,6 @@ public:
     virtual void set_rudder_offset(float rudder_pct, bool run_yaw_rate_controller) {}
     virtual bool nav_scripting_enable(uint8_t mode) {return false;}
 
-    // get target location (for use by scripting)
-    virtual bool get_target_location(Location& target_loc) { return false; }
     virtual bool update_target_location(const Location &old_loc, const Location &new_loc) { return false; }
 
     // circle mode controls (only used by scripting with Copter)
@@ -372,9 +372,6 @@ protected:
     AP_RSSI rssi;
 #endif
 
-#if HAL_RUNCAM_ENABLED
-    AP_RunCam runcam;
-#endif
 #if HAL_GYROFFT_ENABLED
     AP_GyroFFT gyro_fft;
 #endif
@@ -413,6 +410,10 @@ protected:
 
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
+#endif
+
+#if AP_SERVO_TELEM_ENABLED
+    AP_Servo_Telem servo_telem;
 #endif
 
 #if AP_OPENDRONEID_ENABLED
@@ -517,6 +518,13 @@ protected:
     // Check if this mode can be entered from the GCS
     bool block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_list, uint8_t mode_list_length) const;
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+    // update the harmonic notch
+    void update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch);
+    // run notch update at either loop rate or 200Hz
+    void update_dynamic_notch_at_specified_rate();
+#endif // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+
 private:
 
 #if AP_SCHEDULER_ENABLED
@@ -531,13 +539,7 @@ private:
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // update the harmonic notch for throttle based notch
     void update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch);
-
-    // update the harmonic notch
-    void update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch);
-
-    // run notch update at either loop rate or 200Hz
-    void update_dynamic_notch_at_specified_rate();
-#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+#endif // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
     // decimation for 1Hz update
     uint8_t one_Hz_counter;

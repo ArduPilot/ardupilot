@@ -101,6 +101,8 @@ public:
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
 
+        // Mode number 30 reserved for "offboard" for external/lua control.
+
         // Mode number 127 reserved for the "drone show mode" in the Skybrush
         // fork at https://github.com/skybrush-io/ardupilot
     };
@@ -130,6 +132,7 @@ public:
     virtual bool in_guided_mode() const { return false; }
     virtual bool logs_attitude() const { return false; }
     virtual bool allows_save_trim() const { return false; }
+    virtual bool allows_auto_trim() const { return false; }
     virtual bool allows_autotune() const { return false; }
     virtual bool allows_flip() const { return false; }
     virtual bool crash_check_enabled() const { return true; }
@@ -483,6 +486,8 @@ public:
     }
     bool allows_autotune() const override { return true; }
     bool allows_flip() const override { return true; }
+    bool allows_auto_trim() const override { return true; }
+    bool allows_save_trim() const override { return true; }
 #if FRAME_CONFIG == HELI_FRAME
     bool allows_inverted() const override { return true; };
 #endif
@@ -1311,6 +1316,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
+    bool allows_auto_trim() const override { return true; }
 
 #if FRAME_CONFIG == HELI_FRAME
     bool allows_inverted() const override { return true; };
@@ -1360,6 +1366,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
+    bool allows_auto_trim() const override { return true;}
 
 protected:
 
@@ -1649,6 +1656,7 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool allows_save_trim() const override { return true; }
+    bool allows_auto_trim() const override { return true; }
     bool allows_autotune() const override { return true; }
     bool allows_flip() const override { return true; }
 
@@ -1750,7 +1758,7 @@ private:
     float time_const_freq;      // Time at constant frequency before chirp starts
     int8_t log_subsample;       // Subsample multiple for logging.
     Vector2f target_vel;        // target velocity for position controller modes
-    Vector2f target_pos;       // target positon
+    Vector2f target_pos;       // target position
     Vector2f input_vel_last;    // last cycle input velocity
     // System ID states
     enum class SystemIDModeState {
@@ -2031,46 +2039,21 @@ protected:
 
 private:
 
-    // --- Internal variables ---
-    float _initial_rpm;             // Head speed recorded at initiation of flight mode (RPM)
-    float _target_head_speed;       // The terget head main rotor head speed.  Normalised by main rotor set point
-    float _desired_v_z;             // Desired vertical
-    int32_t _pitch_target;          // Target pitch attitude to pass to attitude controller
-    uint32_t _entry_time_start_ms;  // Time remaining until entry phase moves on to glide phase
-    float _hs_decay;                // The head accerleration during the entry phase
+    uint32_t _entry_time_start_ms;  // time remaining until entry phase moves on to glide phase
+    uint32_t _last_logged_ms;       // used for timing slow rate autorotation log
 
-    enum class Autorotation_Phase {
+    enum class Phase {
+        ENTRY_INIT,
         ENTRY,
-        SS_GLIDE,
+        GLIDE_INIT,
+        GLIDE,
+        FLARE_INIT,
         FLARE,
+        TOUCH_DOWN_INIT,
         TOUCH_DOWN,
-        LANDED } phase_switch;
-
-    enum class Navigation_Decision {
-        USER_CONTROL_STABILISED,
-        STRAIGHT_AHEAD,
-        INTO_WIND,
-        NEAREST_RALLY} nav_pos_switch;
-
-    // --- Internal flags ---
-    struct controller_flags {
-            bool entry_initial             : 1;
-            bool ss_glide_initial          : 1;
-            bool flare_initial             : 1;
-            bool touch_down_initial        : 1;
-            bool landed_initial            : 1;
-            bool straight_ahead_initial    : 1;
-            bool level_initial             : 1;
-            bool break_initial             : 1;
-            bool bad_rpm                   : 1;
-    } _flags;
-
-    struct message_flags {
-            bool bad_rpm                   : 1;
-    } _msg_flags;
-
-    //--- Internal functions ---
-    void warning_message(uint8_t message_n);    //Handles output messages to the terminal
+        LANDED_INIT,
+        LANDED,
+    } current_phase;
 
 };
 #endif

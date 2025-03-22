@@ -200,7 +200,6 @@ void Copter::init_ardupilot()
 
     pos_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
     vel_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
-    hgt_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
 
     // flag that initialisation has completed
     ap.initialised = true;
@@ -507,7 +506,6 @@ void Copter::allocate_motors(void)
     // upgrade parameters. This must be done after allocating the objects
     convert_pid_parameters();
 #if FRAME_CONFIG == HELI_FRAME
-    convert_tradheli_parameters();
     motors->heli_motors_param_conversions();
 #endif
 

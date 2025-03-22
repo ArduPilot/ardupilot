@@ -36,13 +36,15 @@
 #include <dronecan_msgs.h>
 #include <AP_SerialManager/AP_SerialManager_config.h>
 #include <AP_Relay/AP_Relay_config.h>
+#include <AP_Servo_Telem/AP_Servo_Telem_config.h>
+#include <AP_Mount/AP_Mount_config.h>
 
 #ifndef DRONECAN_SRV_NUMBER
 #define DRONECAN_SRV_NUMBER NUM_SERVO_CHANNELS
 #endif
 
 #ifndef AP_DRONECAN_SEND_GPS
-#define AP_DRONECAN_SEND_GPS (BOARD_FLASH_SIZE > 1024)
+#define AP_DRONECAN_SEND_GPS (HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
 #endif
 
 #define AP_DRONECAN_SW_VERS_MAJOR 1
@@ -53,15 +55,15 @@
 
 
 #ifndef AP_DRONECAN_HOBBYWING_ESC_SUPPORT
-#define AP_DRONECAN_HOBBYWING_ESC_SUPPORT (BOARD_FLASH_SIZE>1024)
+#define AP_DRONECAN_HOBBYWING_ESC_SUPPORT (HAL_PROGRAM_SIZE_LIMIT_KB>1024)
 #endif
 
 #ifndef AP_DRONECAN_HIMARK_SERVO_SUPPORT
-#define AP_DRONECAN_HIMARK_SERVO_SUPPORT (BOARD_FLASH_SIZE>1024)
+#define AP_DRONECAN_HIMARK_SERVO_SUPPORT (HAL_PROGRAM_SIZE_LIMIT_KB>1024)
 #endif
 
 #ifndef AP_DRONECAN_SERIAL_ENABLED
-#define AP_DRONECAN_SERIAL_ENABLED AP_SERIALMANAGER_REGISTER_ENABLED && (BOARD_FLASH_SIZE>1024)
+#define AP_DRONECAN_SERIAL_ENABLED AP_SERIALMANAGER_REGISTER_ENABLED && (HAL_PROGRAM_SIZE_LIMIT_KB>1024)
 #endif
 
 #ifndef AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
@@ -88,7 +90,7 @@ public:
     static AP_DroneCAN *get_dronecan(uint8_t driver_index);
     bool prearm_check(char* fail_msg, uint8_t fail_msg_len) const;
 
-    void init(uint8_t driver_index, bool enable_filters) override;
+    __INITFUNC__ void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
 
     // add an 11 bit auxillary driver
@@ -166,10 +168,12 @@ public:
     Canard::Publisher<uavcan_equipment_indication_BeepCommand> buzzer{canard_iface};
     Canard::Publisher<uavcan_equipment_gnss_RTCMStream> rtcm_stream{canard_iface};
 
+#if HAL_MOUNT_XACTI_ENABLED
     // xacti specific publishers
     Canard::Publisher<com_xacti_CopterAttStatus> xacti_copter_att_status{canard_iface};
     Canard::Publisher<com_xacti_GimbalControlData> xacti_gimbal_control_data{canard_iface};
     Canard::Publisher<com_xacti_GnssStatus> xacti_gnss_status{canard_iface};
+#endif  // HAL_MOUNT_XACTI_ENABLED
 
 #if AP_RELAY_DRONECAN_ENABLED
     // Hardpoint for relay
@@ -329,8 +333,10 @@ private:
     Canard::ObjCallback<AP_DroneCAN, ardupilot_equipment_trafficmonitor_TrafficReport> traffic_report_cb{this, &AP_DroneCAN::handle_traffic_report};
     Canard::Subscriber<ardupilot_equipment_trafficmonitor_TrafficReport> traffic_report_listener{traffic_report_cb, _driver_index};
 
+#if AP_SERVO_TELEM_ENABLED
     Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_actuator_Status> actuator_status_cb{this, &AP_DroneCAN::handle_actuator_status};
     Canard::Subscriber<uavcan_equipment_actuator_Status> actuator_status_listener{actuator_status_cb, _driver_index};
+#endif
 
     Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_esc_Status> esc_status_cb{this, &AP_DroneCAN::handle_ESC_status};
     Canard::Subscriber<uavcan_equipment_esc_Status> esc_status_listener{esc_status_cb, _driver_index};
@@ -343,6 +349,10 @@ private:
     Canard::ObjCallback<AP_DroneCAN, uavcan_protocol_debug_LogMessage> debug_cb{this, &AP_DroneCAN::handle_debug};
     Canard::Subscriber<uavcan_protocol_debug_LogMessage> debug_listener{debug_cb, _driver_index};
 
+#if AP_DRONECAN_HIMARK_SERVO_SUPPORT && AP_SERVO_TELEM_ENABLED
+    Canard::ObjCallback<AP_DroneCAN, com_himark_servo_ServoInfo> himark_servo_ServoInfo_cb{this, &AP_DroneCAN::handle_himark_servoinfo};
+    Canard::Subscriber<com_himark_servo_ServoInfo> himark_servo_ServoInfo_cb_listener{himark_servo_ServoInfo_cb, _driver_index};
+#endif
 #if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
     Canard::ObjCallback<AP_DroneCAN, com_volz_servo_ActuatorStatus> volz_servo_ActuatorStatus_cb{this, &AP_DroneCAN::handle_actuator_status_Volz};
     Canard::Subscriber<com_volz_servo_ActuatorStatus> volz_servo_ActuatorStatus_listener{volz_servo_ActuatorStatus_cb, _driver_index};
@@ -401,15 +411,19 @@ private:
     void handle_hobbywing_StatusMsg2(const CanardRxTransfer& transfer, const com_hobbywing_esc_StatusMsg2& msg);
 #endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
 
-#if AP_DRONECAN_HIMARK_SERVO_SUPPORT
+#if AP_DRONECAN_HIMARK_SERVO_SUPPORT && AP_SERVO_TELEM_ENABLED
     void handle_himark_servoinfo(const CanardRxTransfer& transfer, const com_himark_servo_ServoInfo &msg);
 #endif
-    
+
     // incoming button handling
     void handle_button(const CanardRxTransfer& transfer, const ardupilot_indication_Button& msg);
     void handle_traffic_report(const CanardRxTransfer& transfer, const ardupilot_equipment_trafficmonitor_TrafficReport& msg);
+#if AP_SERVO_TELEM_ENABLED
     void handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);
+#endif
+#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
     void handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg);
+#endif
     void handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg);
 #if AP_EXTENDED_ESC_TELEM_ENABLED
     void handle_esc_ext_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_StatusExtended& msg);

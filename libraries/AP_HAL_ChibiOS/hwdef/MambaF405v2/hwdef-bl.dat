@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1019
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MAMBA405
 
 # crystal frequency
 OSCILLATOR_HZ 8000000

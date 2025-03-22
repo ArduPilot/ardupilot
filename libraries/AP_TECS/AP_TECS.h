@@ -154,6 +154,9 @@ public:
         _need_reset = true;
     }
 
+    // Apply an altitude offset, to compensate for changes in home alt.
+    void offset_altitude(const float alt_offset);
+
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -216,9 +219,6 @@ private:
     AP_Float _pitch_ff_k;
     AP_Float _accel_gf;
 
-    // temporary _pitch_max_limit. Cleared on each loop. Clear when >= 90
-    int8_t _pitch_max_limit = 90;
-    
     // current height estimate (above field elevation)
     float _height;
 

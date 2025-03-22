@@ -80,7 +80,7 @@ void AP_TemperatureSensor_MAX31865::init()
         name[10] = 0;
     }
 
-    _dev = std::move(hal.spi->get_device(name));
+    _dev = hal.spi->get_device_ptr(name);
     if (!_dev) {
         return;
     }

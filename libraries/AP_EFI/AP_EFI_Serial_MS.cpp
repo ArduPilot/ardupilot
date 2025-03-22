@@ -101,41 +101,41 @@ bool AP_EFI_Serial_MS::read_incoming_realtime_data()
                 offset++;
                 break;
             case ADVANCE_MSB:
-                internal_state.cylinder_status.ignition_timing_deg = (float)((data << 8) + read_byte_CRC32())/10.0f;
+                internal_state.cylinder_status.ignition_timing_deg = (float)((data << 8) + read_byte_CRC32())*0.1f;
                 offset++;
                 break;
             case ENGINE_BM:
                 break;
             case BAROMETER_MSB:
-                internal_state.atmospheric_pressure_kpa = (float)((data << 8) + read_byte_CRC32())/10.0f;
+                internal_state.atmospheric_pressure_kpa = (float)((data << 8) + read_byte_CRC32())*0.1f;
                 offset++;
                 break;
             case MAP_MSB:
-                internal_state.intake_manifold_pressure_kpa = (float)((data << 8) + read_byte_CRC32())/10.0f;
+                internal_state.intake_manifold_pressure_kpa = (float)((data << 8) + read_byte_CRC32())*0.1f;
                 offset++;
                 break;
             case MAT_MSB:
-                temp_float = (float)((data << 8) + read_byte_CRC32())/10.0f;
+                temp_float = (float)((data << 8) + read_byte_CRC32())*0.1f;
                 offset++;
                 internal_state.intake_manifold_temperature = degF_to_Kelvin(temp_float);
                 break;
             case CHT_MSB:
-                temp_float = (float)((data << 8) + read_byte_CRC32())/10.0f;
+                temp_float = (float)((data << 8) + read_byte_CRC32())*0.1f;
                 offset++;
                 internal_state.cylinder_status.cylinder_head_temperature = degF_to_Kelvin(temp_float);
                 break;
             case TPS_MSB:
-                temp_float = (float)((data << 8) + read_byte_CRC32())/10.0f;
+                temp_float = (float)((data << 8) + read_byte_CRC32())*0.1f;
                 offset++;
                 internal_state.throttle_position_percent = roundf(temp_float);
                 break;
             case AFR1_MSB:
-                temp_float = (float)((data << 8) + read_byte_CRC32())/10.0f;
+                temp_float = (float)((data << 8) + read_byte_CRC32())*0.1f;
                 offset++;
                 internal_state.cylinder_status.lambda_coefficient = temp_float;
                 break;
             case DWELL_MSB:
-                temp_float = (float)((data << 8) + read_byte_CRC32())/10.0f;
+                temp_float = (float)((data << 8) + read_byte_CRC32())*0.1f;
                 internal_state.spark_dwell_time_ms = temp_float;
                 offset++;
                 break;

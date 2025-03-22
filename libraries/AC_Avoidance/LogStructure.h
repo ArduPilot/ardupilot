@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include "AC_Avoidance_config.h"
 
 #define LOG_IDS_FROM_AVOIDANCE \
     LOG_OA_BENDYRULER_MSG, \
@@ -106,6 +107,7 @@ struct PACKED log_OD_Visgraph {
   int32_t Lon;
 };
 
+#if AP_AVOIDANCE_ENABLED
 #define LOG_STRUCTURE_FROM_AVOIDANCE \
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
       "OABR","QBBHHHBfLLiLLi","TimeUS,Type,Act,DYaw,Yaw,DP,RChg,Mar,DLt,DLg,DAlt,OLt,OLg,OAlt", "s--ddd-mDUmDUm", "F-------GGBGGB" , true }, \
@@ -115,3 +117,6 @@ struct PACKED log_OD_Visgraph {
       "SA",  "QBffffffB","TimeUS,State,DVelX,DVelY,DVelZ,MVelX,MVelY,MVelZ,Back", "s-nnnnnn-", "F--------", true }, \
      { LOG_OD_VISGRAPH_MSG, sizeof(log_OD_Visgraph), \
       "OAVG", "QBBLL", "TimeUS,version,point_num,Lat,Lon", "s--DU", "F--GG", true},
+#else
+#define LOG_STRUCTURE_FROM_AVOIDANCE
+#endif // AP_AVOIDANCE_ENABLED

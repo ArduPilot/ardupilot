@@ -8,7 +8,7 @@
  *  Code in this file implements the navigation commands
  */
 bool ModeAuto::init(bool ignore_checks) {
-     if (!sub.position_ok() || sub.mission.num_commands() < 2) {
+     if (!sub.position_ok() || !sub.mission.present()) {
         return false;
     }
 

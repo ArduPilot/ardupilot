@@ -36,7 +36,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef AP_VOLZ_ENABLED
-#define AP_VOLZ_ENABLED BOARD_FLASH_SIZE > 1024
+#define AP_VOLZ_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #endif
 
 #if AP_VOLZ_ENABLED
@@ -44,8 +44,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <SRV_Channel/SRV_Channel_config.h>
-#include <AP_Logger/AP_Logger_config.h>
-
+#include <AP_Servo_Telem/AP_Servo_Telem_config.h>
 
 class AP_Volz_Protocol {
 public:
@@ -89,7 +88,6 @@ private:
 
     // Loop in thread to output to uart
     void loop();
-    uint8_t sent_count;
 
     void init(void);
 
@@ -110,7 +108,7 @@ private:
     AP_Int16 range;
     bool initialised;
 
-#if HAL_LOGGING_ENABLED
+#if AP_SERVO_TELEM_ENABLED
     // Request telem data, cycling through each servo and telem item
     void request_telem();
 
@@ -120,6 +118,8 @@ private:
     // Reading of telem packets
     void read_telem();
     void process_response(const CMD &cmd);
+
+    uint8_t sent_count;
 
     struct {
         CMD_ID types[3] {
@@ -143,7 +143,6 @@ private:
             int16_t motor_temp_deg;
             int16_t pcb_temp_deg;
         } data[NUM_SERVO_CHANNELS];
-        uint32_t last_log_ms;
     } telem;
 #endif
 

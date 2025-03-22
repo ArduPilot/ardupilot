@@ -20,6 +20,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Arming/AP_Arming.h>
 
 #include "lua_scripts.h"
 
@@ -316,6 +317,10 @@ void AP_Scripting::thread(void) {
             // clear data in serial buffers that the script wasn't ready to
             // receive
             _serialdevice.clear();
+#endif
+#if AP_ARMING_ENABLED && AP_ARMING_AUX_AUTH_ENABLED
+            // Clear any dangling pre-arms from previous script loads
+            AP_Arming::get_singleton()->reset_all_aux_auths();
 #endif
             // run won't return while scripting is still active
             lua->run();

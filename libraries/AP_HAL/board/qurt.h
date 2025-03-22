@@ -8,6 +8,10 @@
 #define HAL_STORAGE_SIZE            32768
 #define HAL_STORAGE_SIZE_AVAILABLE  HAL_STORAGE_SIZE
 
+#ifndef HAL_PROGRAM_SIZE_LIMIT_KB
+#define HAL_PROGRAM_SIZE_LIMIT_KB 2048
+#endif
+
 // only include if compiling C++ code
 #ifdef __cplusplus
 #include <AP_HAL_QURT/Semaphores.h>
@@ -72,6 +76,12 @@
 #define USE_LIBC_REALLOC 1
 
 #define HAL_WITH_ESC_TELEM 1
+
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 1
+#endif
+
+#define HAL_OS_LITTLEFS_IO 0
 
 /*
   battery monitoring setup, comes in via ESCs

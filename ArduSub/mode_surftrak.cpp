@@ -67,9 +67,9 @@ bool ModeSurftrak::set_rangefinder_target_cm(float target_cm)
         sub.gcs().send_text(MAV_SEVERITY_WARNING, "wrong mode, rangefinder target not set");
     } else if (sub.inertial_nav.get_position_z_up_cm() >= sub.g.surftrak_depth) {
         sub.gcs().send_text(MAV_SEVERITY_WARNING, "descend below %f meters to set rangefinder target", sub.g.surftrak_depth * 0.01f);
-    } else if (target_cm < (float)sub.rangefinder_state.min_cm) {
+    } else if (target_cm < sub.rangefinder_state.min*100) {
         sub.gcs().send_text(MAV_SEVERITY_WARNING, "rangefinder target below minimum, ignored");
-    } else if (target_cm > (float)sub.rangefinder_state.max_cm) {
+    } else if (target_cm > sub.rangefinder_state.max*100) {
         sub.gcs().send_text(MAV_SEVERITY_WARNING, "rangefinder target above maximum, ignored");
     } else {
         success = true;

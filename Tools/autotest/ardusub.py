@@ -7,7 +7,6 @@ Parameters are in-code defaults plus default_params/sub.parm
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import print_function
 import os
 import sys
 
@@ -16,7 +15,6 @@ from pymavlink import mavutil
 import vehicle_test_suite
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import AutoTestTimeoutException
-from vehicle_test_suite import PreconditionFailedException
 
 if sys.version_info[0] < 3:
     ConnectionResetError = AutoTestTimeoutException
@@ -110,10 +108,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 altitude range
         """
         tstart = self.get_sim_time_cached()
-        previous_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        previous_altitude = self.assert_receive_message('VFR_HUD').alt
         self.progress('Altitude to be watched: %f' % (previous_altitude))
         while True:
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            m = self.assert_receive_message('VFR_HUD')
             if self.get_sim_time_cached() - tstart > timeout:
                 self.progress('Altitude hold done: %f' % (previous_altitude))
                 return
@@ -128,9 +126,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.change_mode('ALT_HOLD')
 
-        msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
-        if msg is None:
-            raise NotAchievedException("Did not get GLOBAL_POSITION_INT")
+        msg = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
         pwm = 1300
         if msg.relative_alt/1000.0 < -6.0:
             # need to go up, not down!
@@ -196,8 +192,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 "SCR_ENABLE": 1,
                 "RNGFND1_TYPE": 36,
                 "RNGFND1_ORIENT": 25,
-                "RNGFND1_MIN_CM": 10,
-                "RNGFND1_MAX_CM": 5000,
+                "RNGFND1_MIN": 0.10,
+                "RNGFND1_MAX": 50.00,
             })
 
             self.install_example_script_context("rangefinder_quality_test.lua")
@@ -229,13 +225,13 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def watch_distance_maintained(self, delta=0.3, timeout=5.0):
         """Watch and wait for the rangefinder reading to be maintained"""
         tstart = self.get_sim_time_cached()
-        previous_distance = self.mav.recv_match(type='RANGEFINDER', blocking=True).distance
+        previous_distance = self.assert_receive_message('RANGEFINDER').distance
         self.progress('Distance to be watched: %.2f' % previous_distance)
         while True:
-            m = self.mav.recv_match(type='RANGEFINDER', blocking=True)
             if self.get_sim_time_cached() - tstart > timeout:
                 self.progress('Distance hold done: %f' % previous_distance)
                 return
+            m = self.assert_receive_message('RANGEFINDER')
             if abs(m.distance - previous_distance) > delta:
                 raise NotAchievedException(
                     "Distance not maintained: want %.2f (+/- %.2f) got=%.2f" %
@@ -244,8 +240,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def Surftrak(self):
         """Test SURFTRAK mode"""
 
-        if self.get_parameter('RNGFND1_MAX_CM') != 3000.0:
-            raise PreconditionFailedException("RNGFND1_MAX_CM is not %g" % 3000.0)
+        self.assert_parameter_value('RNGFND1_MAX', 30)
 
         # Something closer to Bar30 noise
         self.context_push()
@@ -292,8 +287,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             "SCR_ENABLE": 1,
             "RNGFND1_TYPE": 36,
             "RNGFND1_ORIENT": 25,
-            "RNGFND1_MIN_CM": 10,
-            "RNGFND1_MAX_CM": 3000,
+            "RNGFND1_MIN": 0.10,
+            "RNGFND1_MAX": 30.00,
             "SCR_USER1": 2,                 # Configuration bundle
             "SCR_USER2": sea_floor_depth,   # Depth in meters
             "SCR_USER3": 101,               # Output log records
@@ -455,7 +450,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1500)
         self.delay_sim_time(3)
         # start the test itself, go through some modes and check if anything changes
-        previous_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        previous_altitude = self.assert_receive_message('VFR_HUD').alt
         self.change_mode('ALT_HOLD')
         self.delay_sim_time(2)
         self.change_mode('POSHOLD')
@@ -474,7 +469,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.delay_sim_time(2)
         self.change_mode('MANUAL')
         self.disarm_vehicle()
-        final_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        final_altitude = self.assert_receive_message('VFR_HUD').alt
         if abs(previous_altitude - final_altitude) > delta:
             raise NotAchievedException(
                 "Changing modes affected depth with no throttle input!, started at {}, ended at {}"
@@ -496,9 +491,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.delay_sim_time(2)
 
         # Save starting point
-        msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
-        if msg is None:
-            raise NotAchievedException("Did not get GLOBAL_POSITION_INT")
+        self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
         start_pos = self.mav.location()
         # Hold in perfect conditions
         self.progress("Testing position hold in perfect conditions")
@@ -612,8 +605,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        startpos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                                       blocking=True)
+        startpos = self.assert_receive_message('GLOBAL_POSITION_INT')
 
         lat = 5
         lon = 5
@@ -643,8 +635,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         while True:
             if self.get_sim_time_cached() - tstart > 200:
                 raise NotAchievedException("Did not move far enough")
-            pos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                                      blocking=True)
+            pos = self.assert_receive_message('GLOBAL_POSITION_INT')
             delta = self.get_distance_int(startpos, pos)
             self.progress("delta=%f (want >10)" % delta)
             if delta > 10:
@@ -788,8 +779,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def TerrainMission(self):
         """Mission using surface tracking"""
 
-        if self.get_parameter('RNGFND1_MAX_CM') != 3000.0:
-            raise PreconditionFailedException("RNGFND1_MAX_CM is not %g" % 3000.0)
+        self.assert_parameter_value('RNGFND1_MAX', 30)
 
         filename = "terrain_mission.txt"
         self.progress("Executing mission %s" % filename)
@@ -947,6 +937,134 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG)
 
+    def INA3221(self):
+        '''test INA3221 driver'''
+        self.set_parameters({
+            "BATT2_MONITOR": 30,
+            "BATT3_MONITOR": 30,
+            "BATT4_MONITOR": 30,
+        })
+        self.reboot_sitl()
+        self.set_parameters({
+            "BATT2_I2C_ADDR": 0x42, # address defined in libraries/SITL/SIM_I2C.cpp
+            "BATT2_I2C_BUS": 1,
+            "BATT2_CHANNEL": 1,
+
+            "BATT3_I2C_ADDR": 0x42,
+            "BATT3_I2C_BUS": 1,
+            "BATT3_CHANNEL": 2,
+
+            "BATT4_I2C_ADDR": 0x42,
+            "BATT4_I2C_BUS": 1,
+            "BATT4_CHANNEL": 3,
+        })
+        self.reboot_sitl()
+
+        seen_1 = False
+        seen_3 = False
+        tstart = self.get_sim_time()
+        while not (seen_1 and seen_3):
+            m = self.assert_receive_message('BATTERY_STATUS')
+            if self.get_sim_time() - tstart > 10:
+                # expected to take under 1 simulated second, but don't hang if
+                # e.g. the driver gets stuck
+                raise NotAchievedException("INA3221 status timeout")
+            if m.id == 1:
+                self.assert_message_field_values(m, {
+                    # values close to chip limits
+                    "voltages[0]": int(25 * 1000), # millivolts
+                    "current_battery": int(160 * 100), # centi-amps
+                }, epsilon=10) # allow rounding
+                seen_1 = True
+            # id 2 is the first simulated battery current/voltage
+            if m.id == 3:
+                self.assert_message_field_values(m, {
+                    # values different from above to test channel switching
+                    "voltages[0]": int(3.14159 * 1000), # millivolts
+                    "current_battery": int(2.71828 * 100), # centi-amps
+                }, epsilon=10) # allow rounding
+                seen_3 = True
+
+    def wait_for_stop(self):
+        """Watch the sub slow down and stop"""
+        tstart = self.get_sim_time_cached()
+        lstart = self.mav.location()
+
+        dmax = 0
+        dprev = 0
+
+        while True:
+            self.delay_sim_time(1)
+
+            dcurr = self.get_distance(lstart, self.mav.location())
+
+            if dcurr - dmax < -0.2:
+                raise NotAchievedException("Bounced back from %.2fm to %.2fm" % (dmax, dcurr))
+            if dcurr > dmax:
+                dmax = dcurr
+
+            if abs(dcurr - dprev) < 0.1:
+                self.progress("Stopping distance %.2fm, less than %.2fs" % (dcurr, self.get_sim_time_cached() - tstart))
+                return
+
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("Took to long to stop")
+
+            dprev = dcurr
+
+    def PosHoldBounceBack(self):
+        """Test for bounce back in POSHOLD mode"""
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # dive a little
+        self.set_rc(Joystick.Throttle, 1300)
+        self.delay_sim_time(3)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.delay_sim_time(2)
+
+        # hold position
+        self.change_mode('POSHOLD')
+
+        for pilot_speed in range(50, 251, 100):
+            # set max speed
+            self.set_parameter('PILOT_SPEED', pilot_speed)
+
+            # try different stick values, resulting speed is ~ max_speed * effort * gain
+            for pwm in range(1700, 1901, 100):
+                self.progress('PILOT_SPEED %d, forward pwm %d' % (pilot_speed, pwm))
+                self.set_rc(Joystick.Forward, pwm)
+                self.delay_sim_time(3)
+                self.set_rc(Joystick.Forward, 1500)
+                self.wait_for_stop()
+
+        self.disarm_vehicle()
+
+    def SHT3X(self):
+        '''test for the SHT3X temperature/hygro driver'''
+        self.set_parameters({
+            'TEMP1_TYPE': 8,
+            'TEMP1_ADDR': 0x44,
+            'TEMP_LOG': 1,
+        })
+        self.reboot_sitl()
+        self.context_push()
+        self.set_parameter('LOG_DISARMED', 1)
+        self.delay_sim_time(10)
+        self.context_pop()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='TEMP')
+            if m is None:
+                break
+            self.progress(m)
+            if m.Temp > 15 or m.Temp < 30:
+                # success!
+                break
+        if m is None:
+            raise NotAchievedException("Did not get good TEMP message")
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -978,6 +1096,9 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.SetGlobalOrigin,
             self.BackupOrigin,
             self.FuseMag,
+            self.INA3221,
+            self.PosHoldBounceBack,
+            self.SHT3X,
         ])
 
         return ret

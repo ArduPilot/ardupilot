@@ -118,7 +118,7 @@ public:
         k_param_terrain,
         k_param_terrain_follow,
         k_param_stab_pitch_down_cd_old, // deprecated
-        k_param_glide_slope_min,
+        k_param_alt_slope_min,
         k_param_stab_pitch_down,
         k_param_terrain_lookahead,
         k_param_fbwa_tdrag_chan, // unused - moved to RC option
@@ -134,7 +134,7 @@ public:
         k_param_trim_rc_at_start, // unused
         k_param_hil_mode_unused,  // unused
         k_param_land_disarm_delay,  // unused - moved to AP_Landing
-        k_param_glide_slope_threshold,
+        k_param_alt_slope_max_height,
         k_param_rudder_only,
         k_param_gcs3,            // 93
         k_param_gcs_pid_mask,
@@ -362,6 +362,9 @@ public:
         k_param_takeoff_throttle_idle,
 
         k_param_pullup = 270,
+        k_param_quicktune,
+        k_param_mode_autoland, 
+
     };
 
     AP_Int16 format_version;
@@ -464,8 +467,8 @@ public:
     AP_Int32 terrain_follow;
     AP_Int16 terrain_lookahead;
 #endif
-    AP_Int16 glide_slope_min;
-    AP_Float glide_slope_threshold;
+    AP_Int16 alt_slope_min;
+    AP_Float alt_slope_max_height;
     AP_Int8 rangefinder_landing;
     AP_Int8 flap_slewrate;
 #if HAL_WITH_IO_MCU
@@ -553,6 +556,7 @@ public:
 
         AP_Float batt_voltage_max;
         AP_Float batt_voltage_min;
+        AP_Float batt_voltage_throttle_cutoff;
         AP_Int8  batt_idx;
 
     private:
@@ -586,6 +590,10 @@ public:
 #if AP_RANGEFINDER_ENABLED
     // orientation of rangefinder to use for landing
     AP_Int8 rangefinder_land_orient;
+#endif
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    AP_SystemID systemid;
 #endif
 };
 

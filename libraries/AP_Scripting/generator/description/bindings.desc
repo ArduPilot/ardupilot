@@ -62,6 +62,7 @@ singleton AP_AHRS method initialised boolean
 singleton AP_AHRS method get_posvelyaw_source_set uint8_t
 singleton AP_AHRS method get_quaternion boolean Quaternion'Null
 singleton AP_AHRS method handle_external_position_estimate boolean Location float'skip_check uint32_t'skip_check
+singleton AP_AHRS method handle_external_position_estimate depends AP_AHRS_EXTERNAL_ENABLED
 
 include AP_Arming/AP_Arming.h
 
@@ -114,7 +115,7 @@ singleton AP_BattMonitor method handle_scripting depends AP_BATTERY_SCRIPTING_EN
 
 include AP_GPS/AP_GPS.h
 
-singleton AP_GPS depends (AP_GPS_ENABLED && (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_GPS)))
+singleton AP_GPS depends AP_GPS_ENABLED
 singleton AP_GPS rename gps
 singleton AP_GPS enum NO_GPS NO_FIX GPS_OK_FIX_2D GPS_OK_FIX_3D GPS_OK_FIX_3D_DGPS GPS_OK_FIX_3D_RTK_FLOAT GPS_OK_FIX_3D_RTK_FIXED
 singleton AP_GPS method num_sensors uint8_t
@@ -193,7 +194,7 @@ userdata Quaternion method from_angular_velocity void Vector3f float'skip_check
 
 include AP_Notify/AP_Notify.h
 singleton AP_Notify rename notify
-singleton AP_Notify depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_NOTIFY))
+singleton AP_Notify depends (!defined(HAL_BUILD_AP_PERIPH) || AP_PERIPH_NOTIFY_ENABLED)
 singleton AP_Notify method play_tune void string
 singleton AP_Notify method handle_rgb void uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
 singleton AP_Notify method handle_rgb_id void uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
@@ -252,10 +253,18 @@ singleton RangeFinder rename rangefinder
 singleton RangeFinder method num_sensors uint8_t
 singleton RangeFinder method has_orientation boolean Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method distance_cm_orient deprecate Use distance_orient (in metres)
+singleton RangeFinder method distance_orient float Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method signal_quality_pct_orient int8_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
-singleton RangeFinder method max_distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
-singleton RangeFinder method min_distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method max_distance_cm_orient int32_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method max_distance_cm_orient deprecate Use max_distance_orient (in metres)
+singleton RangeFinder method min_distance_cm_orient int32_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method min_distance_cm_orient deprecate Use min_distance_orient (in metres)
 singleton RangeFinder method ground_clearance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method ground_clearance_cm_orient deprecate Use ground_clearance_orient (in metres)
+singleton RangeFinder method max_distance_orient float Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method min_distance_orient float Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method ground_clearance_orient float Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method status_orient uint8_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method has_data_orient boolean Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method get_pos_offset_orient Vector3f Rotation'enum ROTATION_NONE ROTATION_MAX-1
@@ -368,19 +377,20 @@ singleton AP_SerialLED method set_RGB boolean uint8_t 1 16 int8_t -1 INT8_MAX ui
 singleton AP_SerialLED method send boolean uint8_t 1 16
 
 include SRV_Channel/SRV_Channel.h
-singleton SRV_Channels depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RC_OUT))
+singleton SRV_Channels depends (!defined(HAL_BUILD_AP_PERIPH) || AP_PERIPH_RC_OUT_ENABLED)
 singleton SRV_Channels rename SRV_Channels
-singleton SRV_Channels method find_channel boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint8_t'Null
-singleton SRV_Channels method set_output_pwm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
+singleton SRV_Channels method find_channel boolean SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint8_t'Null
+singleton SRV_Channels method set_output_pwm void SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
 singleton SRV_Channels method set_output_pwm_chan void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t'skip_check
 singleton SRV_Channels method set_output_pwm_chan_timeout void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t'skip_check uint16_t'skip_check
 singleton SRV_Channels method set_output_pwm_chan_timeout depends (!defined(HAL_BUILD_AP_PERIPH))
-singleton SRV_Channels method set_output_scaled void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float'skip_check
-singleton SRV_Channels method get_output_pwm boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'Null
-singleton SRV_Channels method get_output_scaled float SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1
-singleton SRV_Channels method set_output_norm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float -1 1
-singleton SRV_Channels method set_angle void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
-singleton SRV_Channels method set_range void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
+singleton SRV_Channels method set_output_scaled void SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float'skip_check
+singleton SRV_Channels method get_output_pwm boolean SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'Null
+singleton SRV_Channels method get_output_pwm_chan boolean uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t'Null
+singleton SRV_Channels method get_output_scaled float SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1
+singleton SRV_Channels method set_output_norm void SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float -1 1
+singleton SRV_Channels method set_angle void SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
+singleton SRV_Channels method set_range void SRV_Channel::Function'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
 singleton SRV_Channels method get_emergency_stop boolean
 singleton SRV_Channels manual get_safety_state SRV_Channels_get_safety_state 0 1
 
@@ -397,7 +407,7 @@ singleton RC_Channels rename rc
 singleton RC_Channels scheduler-semaphore
 singleton RC_Channels method get_pwm boolean uint8_t 1 NUM_RC_CHANNELS uint16_t'Null
 singleton RC_Channels method find_channel_for_option RC_Channel RC_Channel::AUX_FUNC'enum 0 UINT16_MAX
-singleton RC_Channels method run_aux_function boolean RC_Channel::AUX_FUNC'enum 0 UINT16_MAX RC_Channel::AuxSwitchPos'enum RC_Channel::AuxSwitchPos::LOW RC_Channel::AuxSwitchPos::HIGH RC_Channel::AuxFuncTriggerSource::SCRIPTING'literal
+singleton RC_Channels method run_aux_function boolean RC_Channel::AUX_FUNC'enum 0 UINT16_MAX RC_Channel::AuxSwitchPos'enum RC_Channel::AuxSwitchPos::LOW RC_Channel::AuxSwitchPos::HIGH RC_Channel::AuxFuncTrigger::Source::SCRIPTING'literal 0'literal
 singleton RC_Channels method has_valid_input boolean
 singleton RC_Channels method lua_rc_channel RC_Channel uint8_t 1 NUM_RC_CHANNELS
 singleton RC_Channels method lua_rc_channel rename get_channel
@@ -420,7 +430,7 @@ singleton serial manual find_serial lua_serial_find_serial 1 1
 singleton serial manual find_simulated_device lua_serial_find_simulated_device 2 1 depends AP_SCRIPTING_SERIALDEVICE_ENABLED
 
 include AP_Baro/AP_Baro.h
-singleton AP_Baro depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BARO))
+singleton AP_Baro depends AP_BARO_ENABLED
 singleton AP_Baro rename baro
 singleton AP_Baro method get_pressure float
 singleton AP_Baro method get_temperature float
@@ -747,7 +757,7 @@ singleton AP::fwversion() field fw_hash_str string read
 singleton AP::fwversion() field fw_hash_str rename hash
 
 include AP_Follow/AP_Follow.h
-singleton AP_Follow depends AP_FOLLOW_ENABLED && (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI)
+singleton AP_Follow depends AP_FOLLOW_ENABLED && (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI||APM_BUILD_TYPE(APM_BUILD_Rover))
 singleton AP_Follow rename follow
 singleton AP_Follow method have_target boolean
 singleton AP_Follow method get_last_update_ms uint32_t
@@ -767,12 +777,15 @@ singleton AC_PrecLand method get_target_location boolean Location'Null
 include AC_AttitudeControl/AC_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl method get_rpy_srate void float'Ref float'Ref float'Ref
+singleton AC_AttitudeControl method get_att_error_angle_deg float
 
 include AC_AttitudeControl/AC_PosControl.h depends APM_BUILD_COPTER_OR_HELI
 singleton AC_PosControl depends APM_BUILD_COPTER_OR_HELI
 singleton AC_PosControl rename poscontrol
 singleton AC_PosControl method set_posvelaccel_offset boolean Vector3f Vector3f Vector3f
 singleton AC_PosControl method get_posvelaccel_offset boolean Vector3f'Null Vector3f'Null Vector3f'Null
+singleton AC_PosControl method get_vel_target boolean Vector3f'Null
+singleton AC_PosControl method get_accel_target boolean Vector3f'Null
 
 include APM_Control/AR_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_Rover)
 singleton AR_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_Rover)
@@ -825,6 +838,7 @@ userdata mavlink_video_stream_information_t field count uint8_t'skip_check read 
 userdata mavlink_video_stream_information_t field type uint8_t'skip_check read write
 userdata mavlink_video_stream_information_t field name'array 32 uint8_t'skip_check read write
 userdata mavlink_video_stream_information_t field uri'array 160 uint8_t'skip_check read write
+userdata mavlink_video_stream_information_t field encoding uint8_t'skip_check read write
 
 include AP_Camera/AP_Camera.h
 singleton AP_Camera depends AP_CAMERA_ENABLED && (AP_CAMERA_SCRIPTING_ENABLED == 1)
@@ -1037,3 +1051,23 @@ include AP_TemperatureSensor/AP_TemperatureSensor.h
 singleton AP_TemperatureSensor depends AP_TEMPERATURE_SENSOR_ENABLED
 singleton AP_TemperatureSensor rename temperature_sensor
 singleton AP_TemperatureSensor method get_temperature boolean float'Null uint8_t'skip_check
+
+include AP_Servo_Telem/AP_Servo_Telem.h depends AP_SERVO_TELEM_ENABLED
+include AP_Servo_Telem/AP_Servo_Telem_config.h
+singleton AP_Servo_Telem depends AP_SERVO_TELEM_ENABLED
+singleton AP_Servo_Telem rename servo_telem
+singleton AP_Servo_Telem method get_telem boolean uint8_t'skip_check AP_Servo_Telem::TelemetryData'Null
+
+userdata AP_Servo_Telem::TelemetryData depends AP_SERVO_TELEM_ENABLED
+userdata AP_Servo_Telem::TelemetryData rename AP_Servo_Telem_Data
+userdata AP_Servo_Telem::TelemetryData field command_position float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION
+userdata AP_Servo_Telem::TelemetryData field measured_position float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION
+userdata AP_Servo_Telem::TelemetryData field force float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::FORCE
+userdata AP_Servo_Telem::TelemetryData field speed float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::SPEED
+userdata AP_Servo_Telem::TelemetryData field voltage float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::VOLTAGE
+userdata AP_Servo_Telem::TelemetryData field current float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::CURRENT
+userdata AP_Servo_Telem::TelemetryData field duty_cycle uint8_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE
+userdata AP_Servo_Telem::TelemetryData field motor_temperature_cdeg int16_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP
+userdata AP_Servo_Telem::TelemetryData field pcb_temperature_cdeg int16_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::PCB_TEMP
+userdata AP_Servo_Telem::TelemetryData field status_flags uint8_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::STATUS
+userdata AP_Servo_Telem::TelemetryData field last_update_ms uint32_t'skip_check read

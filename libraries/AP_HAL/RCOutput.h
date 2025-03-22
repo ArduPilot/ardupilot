@@ -377,6 +377,11 @@ public:
     virtual void write_gpio(uint8_t chan, bool active) {};
 
     /*
+      Force group trigger from all callers rather than just from the main thread
+    */
+    virtual void force_trigger_groups(bool onoff) {};
+
+    /*
      * calculate the prescaler required to achieve the desire bitrate
      */
     static uint32_t calculate_bitrate_prescaler(uint32_t timer_clock, uint32_t target_frequency, bool at_least_freq = false);

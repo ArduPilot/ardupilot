@@ -72,7 +72,7 @@ public:
 
     SPIDeviceManager();
 
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override;
+    AP_HAL::SPIDevice *get_device_ptr(const char *name) override;
 
     static SPIDesc device_table[];
     static SPIBus *buses;

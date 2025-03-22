@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 '''
 AP_FLAKE8_CLEAN
 '''
@@ -416,7 +414,6 @@ def start_SITL(binary,
                gdb=False,
                gdb_no_tui=False,
                wipe=False,
-               synthetic_clock=True,
                home=None,
                model=None,
                speedup=1,
@@ -516,8 +513,6 @@ def start_SITL(binary,
     if not supplementary:
         if wipe:
             cmd.append('-w')
-        if synthetic_clock:
-            cmd.append('-S')
         if home is not None:
             cmd.extend(['--home', home])
         cmd.extend(['--model', model])

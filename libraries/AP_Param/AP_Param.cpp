@@ -1616,7 +1616,7 @@ void AP_Param::load_defaults_file_from_filesystem(const char *default_file, bool
 #endif
     } else {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        AP_HAL::panic("Failed to load defaults from %s\n", default_file);
+        AP_HAL::panic("Failed to load defaults from %s", default_file);
 #else
         printf("Failed to load defaults from %s\n", default_file);
 #endif

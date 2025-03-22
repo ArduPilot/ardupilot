@@ -113,14 +113,14 @@ logger = {}
 ---@param format string -- type format string, see https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Logger/README.md
 ---@param units string -- units string
 ---@param multipliers string -- multipliers string
----@param ... integer|number|uint32_t_ud|string -- data to be logged, type to match format string
+---@param ... integer|number|uint32_t_ud|string|boolean -- data to be logged, type to match format string
 function logger:write(name, labels, format, units, multipliers, ...) end
 
 -- write value to data flash log with given types and names, timestamp will be automatically added
 ---@param name string -- up to 4 characters
 ---@param labels string -- comma separated value labels, up to 58 characters
 ---@param format string -- type format string, see https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Logger/README.md
----@param ... integer|number|uint32_t_ud|string -- data to be logged, type to match format string
+---@param ... integer|number|uint32_t_ud|string|boolean -- data to be logged, type to match format string
 function logger:write(name, labels, format, ...) end
 
 -- log a files content to onboard log
@@ -1395,9 +1395,6 @@ function camera:take_picture(instance) end
 ---@class (exact) AP_Camera__camera_state_t_ud
 local AP_Camera__camera_state_t_ud = {}
 
----@return AP_Camera__camera_state_t_ud
-function AP_Camera__camera_state_t() end
-
 -- get field
 ---@return Vector2f_ud
 function AP_Camera__camera_state_t_ud:tracking_p1() end
@@ -1685,6 +1682,14 @@ function mavlink_video_stream_information_t_ud:uri(index) end
 ---@param index integer
 ---@param value integer
 function mavlink_video_stream_information_t_ud:uri(index, value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:encoding() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:encoding(value) end
 
 -- Populate the fields of the VIDEO_STREAM_INFORMATION message
 ---@param instance integer
@@ -2550,6 +2555,11 @@ function SRV_Channels:set_output_pwm_chan_timeout(chan, pwm, timeout_ms) end
 ---@param pwm integer -- pwm value
 function SRV_Channels:set_output_pwm_chan(chan, pwm) end
 
+-- Get the pwm for a given servo output channel
+---@param chan integer -- servo channel number (zero indexed)
+---@return integer|nil -- output pwm if available
+function SRV_Channels:get_output_pwm_chan(chan) end
+
 -- Set the pwm for a given servo output function
 ---@param function_num integer -- servo function number (See SERVOx_FUNCTION parameters)
 ---@param pwm integer -- pwm value
@@ -3147,29 +3157,53 @@ function rangefinder:status_orient(orientation) end
 -- desc
 ---@param orientation integer
 ---@return integer
+---@deprecated -- Use ground_clearance_orient (in metres)
 function rangefinder:ground_clearance_cm_orient(orientation) end
 
 -- desc
 ---@param orientation integer
 ---@return integer
+---@deprecated -- Use min_distance_orient (in metres)
 function rangefinder:min_distance_cm_orient(orientation) end
 
 -- desc
 ---@param orientation integer
 ---@return integer
+---@deprecated -- Use max_distance_orient (in metres)
 function rangefinder:max_distance_cm_orient(orientation) end
 
 -- desc
 ---@param orientation integer
 ---@return integer
+---@deprecated -- Use distance_orient (in metres)
 function rangefinder:distance_cm_orient(orientation) end
+
+-- Configured distance between rangefinder of a particular orientation and the vehicle's side which would rest on the ground.  Usually used for a downward-facing rangefinder to give ground clearance.
+---@param orientation integer
+---@return number
+function rangefinder:ground_clearance_orient(orientation) end
+
+-- Configured minimum distance the rangefinder in supplied orientation can measure
+---@param orientation integer
+---@return number
+function rangefinder:min_distance_orient(orientation) end
+
+-- Configured maximum distance the rangefinder in supplied orientation can measure
+---@param orientation integer
+---@return number
+function rangefinder:max_distance_orient(orientation) end
+
+-- Distance rangefinder in supplied orientation is currently measuring
+---@param orientation integer
+---@return number
+function rangefinder:distance_orient(orientation) end
 
 -- Current distance measurement signal quality for range finder at this orientation
 ---@param orientation integer
 ---@return integer
 function rangefinder:signal_quality_pct_orient(orientation) end
 
--- desc
+-- Returns true if there is a rangefinder measuring in supplied orientation
 ---@param orientation integer
 ---@return boolean
 function rangefinder:has_orientation(orientation) end
@@ -3748,6 +3782,10 @@ AC_AttitudeControl = {}
 ---@return number -- yaw slew rate
 function AC_AttitudeControl:get_rpy_srate() end
 
+-- Return the angle between the target thrust vector and the current thrust vector in degrees.
+---@return number -- attitude error
+function AC_AttitudeControl:get_att_error_angle_deg() end
+
 -- desc
 AR_AttitudeControl = {}
 
@@ -3771,6 +3809,14 @@ function poscontrol:set_posvelaccel_offset(pos_offset_NED, vel_offset_NED, accel
 ---@return Vector3f_ud|nil
 ---@return Vector3f_ud|nil
 function poscontrol:get_posvelaccel_offset() end
+
+-- get position controller's target velocity in m/s in NED frame
+---@return Vector3f_ud|nil
+function poscontrol:get_vel_target() end
+
+-- get position controller's target acceleration in m/s/s in NED frame
+---@return Vector3f_ud|nil
+function poscontrol:get_accel_target() end
 
 -- desc
 AR_PosControl = {}
@@ -3846,13 +3892,13 @@ function dirlist(directoryname) end
 ---@return integer -- error number
 function remove(filename) end
 
--- desc
+-- MAVLink message interface can send and receive binary messages
 mavlink = {}
 
--- initializes mavlink
----@param num_rx_msgid uint32_t_ud|integer|number
----@param msg_queue_length uint32_t_ud|integer|number
-function mavlink:init(num_rx_msgid, msg_queue_length) end
+-- Initializes scripting MAVLink bufffer, check for items in the buffer with `receive_chan`
+---@param msg_queue_length uint32_t_ud|integer|number -- Larger que allows script to deal with bursts of incomming messages or check for received messages less often
+---@param num_rx_msgid uint32_t_ud|integer|number -- Number of unique messages to be received, register ids with `register_rx_msgid`
+function mavlink:init(msg_queue_length, num_rx_msgid) end
 
 -- marks mavlink message for receive, message id can be get using mavlink_msgs.get_msgid("MSG_NAME")
 ---@param msg_id number
@@ -3990,7 +4036,6 @@ function networking:get_netmask_active() end
 function networking:get_ip_active() end
 
 -- visual odometry object
---@class visual_odom
 visual_odom = {}
 
 -- visual odometry health
@@ -4000,3 +4045,59 @@ function visual_odom:healthy() end
 -- visual odometry quality as a percentage from 1 to 100 or 0 if unknown
 ---@return integer
 function visual_odom:quality() end
+
+-- servo telemetry class
+servo_telem = {}
+
+-- get servo telem for the given servo number
+---@param servo_index integer -- 0 indexed servo number
+---@return AP_Servo_Telem_Data_ud|nil
+function servo_telem:get_telem(servo_index) end
+
+-- Servo telemtry userdata object
+---@class AP_Servo_Telem_Data_ud
+local AP_Servo_Telem_Data_ud = {}
+
+-- Get timestamp of last telem update
+---@return uint32_t_ud -- milliseconds since boot
+function AP_Servo_Telem_Data_ud:last_update_ms() end
+
+-- Get type spesfic status flags
+---@return integer|nil -- flags or nil if not available
+function AP_Servo_Telem_Data_ud:status_flags() end
+
+-- Get pcb temprature in centidegrees
+---@return integer|nil -- temperature in centidegrees or nil if not available
+function AP_Servo_Telem_Data_ud:pcb_temperature_cdeg() end
+
+-- Get motor temprature in centidegrees
+---@return integer|nil -- temperature in centidegrees or nil if not available
+function AP_Servo_Telem_Data_ud:motor_temperature_cdeg() end
+
+-- Get duty cycle
+---@return integer|nil -- duty cycle 0% to 100% or nil if not available
+function AP_Servo_Telem_Data_ud:duty_cycle() end
+
+-- get current
+---@return number|nil -- current in amps or nil if not available
+function AP_Servo_Telem_Data_ud:current() end
+
+-- get voltage
+---@return number|nil -- voltage in volts or nil if not available
+function AP_Servo_Telem_Data_ud:voltage() end
+
+-- get speed
+---@return number|nil -- speed in degrees per second or nil if not available
+function AP_Servo_Telem_Data_ud:speed() end
+
+-- get force
+---@return number|nil -- force in newton meters or nil if not available
+function AP_Servo_Telem_Data_ud:force() end
+
+-- get measured position
+---@return number|nil -- measured position in degrees or nil if not available
+function AP_Servo_Telem_Data_ud:measured_position() end
+
+-- get commanded position
+---@return number|nil -- comanded position in degrees or nil if not available
+function AP_Servo_Telem_Data_ud:command_position() end

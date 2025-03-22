@@ -350,7 +350,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @DisplayName: Throttle expo strength
     // @Description: Amount of curvature in throttle curve: 0 is linear, 1 is cubic
     // @Range: 0 1
-    // @Increment: .1
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("THROTTLE_EXPO", 10, QuadPlane, throttle_expo, 0.2),
 
@@ -585,30 +585,6 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
   conversion table for quadplane parameters
  */
 const AP_Param::ConversionInfo q_conversion_table[] = {
-    { Parameters::k_param_quadplane, 4044, AP_PARAM_FLOAT, "Q_P_POSZ_P" },     //  Q_PZ_P
-    { Parameters::k_param_quadplane, 4045, AP_PARAM_FLOAT, "Q_P_POSXY_P"},     //  Q_PXY_P
-    { Parameters::k_param_quadplane, 4046, AP_PARAM_FLOAT, "Q_P_VELXY_P"},     //  Q_VXY_P
-    { Parameters::k_param_quadplane, 78,   AP_PARAM_FLOAT, "Q_P_VELXY_I"},     //  Q_VXY_I
-    { Parameters::k_param_quadplane, 142,  AP_PARAM_FLOAT, "Q_P_VELXY_IMAX"},  //  Q_VXY_IMAX
-    { Parameters::k_param_quadplane, 206,  AP_PARAM_FLOAT, "Q_P_VELXY_FLTE"},  //  Q_VXY_FILT_HZ
-    { Parameters::k_param_quadplane, 4047, AP_PARAM_FLOAT, "Q_P_VELZ_P"},      //  Q_VZ_P
-    { Parameters::k_param_quadplane, 4048, AP_PARAM_FLOAT, "Q_P_ACCZ_P"},      //  Q_AZ_P
-    { Parameters::k_param_quadplane, 80,   AP_PARAM_FLOAT, "Q_P_ACCZ_I"},      //  Q_AZ_I
-    { Parameters::k_param_quadplane, 144,  AP_PARAM_FLOAT, "Q_P_ACCZ_D"},      //  Q_AZ_D
-    { Parameters::k_param_quadplane, 336,  AP_PARAM_FLOAT, "Q_P_ACCZ_IMAX"},   //  Q_AZ_IMAX
-    { Parameters::k_param_quadplane, 400,  AP_PARAM_FLOAT, "Q_P_ACCZ_FLTD"},   //  Q_AZ_FILT
-    { Parameters::k_param_quadplane, 464,  AP_PARAM_FLOAT, "Q_P_ACCZ_FF"},     //  Q_AZ_FF
-    { Parameters::k_param_quadplane, 276,  AP_PARAM_FLOAT, "Q_LOIT_SPEED"},    //  Q_WP_LOIT_SPEED
-    { Parameters::k_param_quadplane, 468,  AP_PARAM_FLOAT, "Q_LOIT_BRK_JERK" },//  Q_WP_LOIT_JERK
-    { Parameters::k_param_quadplane, 532,  AP_PARAM_FLOAT, "Q_LOIT_ACC_MAX" }, //  Q_WP_LOIT_MAXA
-    { Parameters::k_param_quadplane, 596,  AP_PARAM_FLOAT, "Q_LOIT_BRK_ACCEL" },// Q_WP_LOIT_MINA
-    { Parameters::k_param_q_attitude_control, 385,  AP_PARAM_FLOAT, "Q_A_RAT_RLL_FLTD" },// Q_A_RAT_RLL_FILT
-    { Parameters::k_param_q_attitude_control, 386,  AP_PARAM_FLOAT, "Q_A_RAT_PIT_FLTD" },// Q_A_RAT_PIT_FILT
-    { Parameters::k_param_q_attitude_control, 387,  AP_PARAM_FLOAT, "Q_A_RAT_YAW_FLTE" },// Q_A_RAT_YAW_FILT
-    { Parameters::k_param_q_attitude_control, 449,  AP_PARAM_FLOAT, "Q_A_RAT_RLL_FF" },  // Q_A_RAT_RLL_FF
-    { Parameters::k_param_q_attitude_control, 450,  AP_PARAM_FLOAT, "Q_A_RAT_PIT_FF" },  // Q_A_RAT_PIT_FF
-    { Parameters::k_param_q_attitude_control, 451,  AP_PARAM_FLOAT, "Q_A_RAT_YAW_FF" },  // Q_A_RAT_YAW_FILT
-
     // tailsitter params have moved but retain the same names
     { Parameters::k_param_quadplane, 48,  AP_PARAM_INT8,  "Q_TAILSIT_ANGLE" },
     { Parameters::k_param_quadplane, 61,  AP_PARAM_INT8,  "Q_TAILSIT_ANG_VT" },
@@ -960,16 +936,25 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
             }
         }
 
+        // note this is actually in deg/s for some SID_AXIS values for yaw
+        Vector3f offset_deg;
+
+#if AP_PLANE_SYSTEMID_ENABLED
+        auto &systemid = plane.g2.systemid;
+        systemid.update();
+        offset_deg = systemid.get_attitude_offset_deg();
+#endif
+
         if (use_yaw_target) {
-            attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd,
-                                                               plane.nav_pitch_cd,
-                                                               yaw_target_cd,
+            attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd + offset_deg.x*100,
+                                                               plane.nav_pitch_cd + offset_deg.y*100,
+                                                               yaw_target_cd + offset_deg.z*100,
                                                                true);
         } else {
             // use euler angle attitude control
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                          plane.nav_pitch_cd,
-                                                                          yaw_rate_cds);
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd + offset_deg.x*100,
+                                                                          plane.nav_pitch_cd + offset_deg.y*100,
+                                                                          yaw_rate_cds + offset_deg.z*100);
         }
     } else {
         // use the fixed wing desired rates
@@ -1004,6 +989,9 @@ void QuadPlane::hold_stabilize(float throttle_in)
             // tailsitters in forward flight should not use angle boost
             should_boost = false;
         }
+#if AP_PLANE_SYSTEMID_ENABLED
+        throttle_in += plane.g2.systemid.get_throttle_offset();
+#endif
         attitude_control->set_throttle_out(throttle_in, should_boost, 0);
     }
 }
@@ -1773,11 +1761,17 @@ void QuadPlane::update(void)
         const bool motors_active = in_vtol_mode() || assisted_flight;
         if (motors_active && (motors->get_spool_state() != AP_Motors::SpoolState::SHUT_DOWN)) {
             // log ANG at main loop rate
-            if (show_vtol_view()) {
-                attitude_control->Write_ANG();
+            bool sysid_running = false;
+#if AP_PLANE_SYSTEMID_ENABLED
+            sysid_running = plane.g2.systemid.is_running();
+#endif
+            if (!sysid_running) {
+                if (show_vtol_view()) {
+                    attitude_control->Write_ANG();
+                }
+                // log RATE at main loop rate
+                attitude_control->Write_Rate(*pos_control);
             }
-            // log RATE at main loop rate
-            attitude_control->Write_Rate(*pos_control);
 
             // log CTRL and MOTB at 10 Hz
             if (now - last_ctrl_log_ms > 100) {
@@ -4281,19 +4275,15 @@ float QuadPlane::get_land_airspeed(void)
     if (qstate == QPOS_APPROACH ||
         plane.control_mode == &plane.mode_rtl) {
         const float cruise_speed = plane.aparm.airspeed_cruise;
+        // assume cruise speed, but try to do better:
         float approach_speed = cruise_speed;
         float tecs_land_airspeed = plane.TECS_controller.get_land_airspeed();
         if (is_positive(tecs_land_airspeed)) {
             approach_speed = tecs_land_airspeed;
-        } else {
-            if (qstate == QPOS_APPROACH) {
-                // default to half way between min airspeed and cruise
-                // airspeed when on the approach
-                approach_speed = 0.5*(cruise_speed+plane.aparm.airspeed_min);
-            } else {
-                // otherwise cruise
-                approach_speed = cruise_speed;
-            }
+        } else if (qstate == QPOS_APPROACH) {
+            // default to half way between min airspeed and cruise
+            // airspeed when on the approach
+            approach_speed = 0.5*(cruise_speed+plane.aparm.airspeed_min);
         }
         const float time_to_pos1 = (plane.auto_state.wp_distance - stopping_distance(sq(approach_speed))) / MAX(approach_speed, 5);
         /*
@@ -4770,6 +4760,13 @@ float QuadPlane::get_throttle_input() const
 bool QuadPlane::allow_forward_throttle_in_vtol_mode() const
 {
     return in_vtol_mode() && motors->armed() && (motors->get_desired_spool_state() != AP_Motors::DesiredSpoolState::SHUT_DOWN);
+}
+
+void QuadPlane::Log_Write_AttRate()
+{
+    attitude_control->Write_ANG();
+    attitude_control->Write_Rate(*pos_control);
+
 }
 
 #endif  // HAL_QUADPLANE_ENABLED
