@@ -763,6 +763,10 @@ ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
         update_rts_line();
     }
 
+#if HAL_UART_DEBUG_LOGGING_ENABLED
+    log_read_data(buffer, count);
+#endif
+
     return ret;
 }
 
@@ -772,6 +776,10 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
     if (!_tx_initialised) {
 		return 0;
 	}
+
+#if HAL_UART_DEBUG_LOGGING_ENABLED
+    log_written_data(buffer, size);
+#endif
 
     WITH_SEMAPHORE(_write_mutex);
 
