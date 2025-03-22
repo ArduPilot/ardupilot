@@ -10,6 +10,7 @@ import math
 import operator
 import os
 import pathlib
+import subprocess
 import sys
 import time
 
@@ -6886,6 +6887,52 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def UART_raw_logging(self):
+        '''test raw logging of UART data'''
+        expected_log_filepath = "uart1_000.log"
+        if os.path.exists(expected_log_filepath):
+            os.unlink(expected_log_filepath)
+        self.set_parameter("SERIAL1_OPTIONS", 8192)
+        self.reboot_sitl()
+        if os.path.exists(expected_log_filepath):
+            raise NotAchievedException("Log started to exist when it shouldn't")
+        mavproxy = self.start_mavproxy()
+        self.delay_sim_time(10)
+        self.stop_mavproxy(mavproxy)
+
+        if not os.path.exists(expected_log_filepath):
+            raise NotAchievedException(f"{expected_log_filepath} does not exist")
+
+        self.start_subtest("check the mavlink log decoder on raw log")
+        decoder_filepath = util.reltopdir("Tools/scripts/uart_rawlog_to_tlog.py")
+        input_filepath = os.path.join(os.getcwd(), expected_log_filepath)
+        tlog_filepath = input_filepath + ".tlog"
+        subprocess.check_call([
+            decoder_filepath,
+            input_filepath,
+            "-o",
+            tlog_filepath
+        ])
+        if not os.path.exists(tlog_filepath):
+            raise NotAchievedException(f"{tlog_filepath} did not exist after running tool")
+
+        self.start_subtest("Check output is a tlog")
+        p = subprocess.Popen(["mavlogdump.py", tlog_filepath],
+                             stdin=None,
+                             close_fds=True,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+        found_ATTITUDE = False
+        while True:
+            line = p.stdout.readline().decode('ascii')
+            if line is None:
+                break
+            if "ATTITUDE" in line:
+                found_ATTITUDE = True
+                break
+        if not found_ATTITUDE:
+            raise NotAchievedException("Did not find ATTITUDE in dump")
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6986,6 +7033,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.JammingSimulation,
             self.BatteryInvalid,
             self.REQUIRE_LOCATION_FOR_ARMING,
+            self.UART_raw_logging,
         ])
         return ret
 
