@@ -201,7 +201,7 @@ public:
       the channel and any other channels that were stopped by
       serial_setup_output()
      */
-    virtual void serial_end(void) {}
+    virtual void serial_end(uint32_t chanmask) {}
     
     /*
       output modes. Allows for support of PWM, oneshot and dshot 
