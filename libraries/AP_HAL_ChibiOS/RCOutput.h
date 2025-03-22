@@ -162,7 +162,7 @@ public:
       the channel and any other channels that were stopped by
       serial_setup_output()
      */
-    void serial_end(void) override;
+    void serial_end(uint32_t chanmask) override;
 #endif
 
     /*
@@ -491,9 +491,6 @@ private:
         // bitmask of bits so far (includes start and stop bits)
         uint16_t bitmask;
 
-        // value of completed byte (includes start and stop bits)
-        uint16_t byteval;
-
         // expected time per bit in micros
         uint16_t bit_time_tick;
 
@@ -505,13 +502,19 @@ private:
 
         // timeout for byte read
         virtual_timer_t serial_timeout;
-        bool timed_out;
     } irq;
 
+    // ring buffer to hold soft serial input
+    static ByteBuffer serial_buffer;
+    // binary semaphore to mediate consumer/producer access to the serial buffer
+    static HAL_BinarySemaphore serial_sem;
+  
     // the group being used for serial output
     struct pwm_group *serial_group;
     thread_t *serial_thread;
+    // preserved state
     tprio_t serial_priority;
+    iomode_t serial_mode;
     // mask of channels configured for serial output
     uint32_t serial_chanmask;
 #endif // HAL_SERIAL_ESC_COMM_ENABLED
