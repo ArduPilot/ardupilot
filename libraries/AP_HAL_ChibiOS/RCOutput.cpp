@@ -1925,12 +1925,16 @@ void RCOutput::dma_cancel(pwm_group& group)
   until serial_end() has been called
 */
 #if HAL_SERIAL_ESC_COMM_ENABLED
+#define BYTE_BITS 10
+
 bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t chanmask)
 {
+    osalDbgAssert(hal.scheduler->in_main_thread(), "serial_setup_output(): not called from main thread");
     // account for IOMCU channels
     chan -= chan_offset;
     chanmask >>= chan_offset;
     pwm_group *new_serial_group = nullptr;
+    uint8_t new_serial_chan = 0;
 
     // find the channel group for the next output
     for (auto &group : pwm_group_list) {
@@ -1942,24 +1946,40 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t cha
             new_serial_group = &group;
             for (uint8_t j=0; j<4; j++) {
                 if (group.chan[j] == chan) {
-                    group.serial.chan = j;
+                    new_serial_chan = j;
                 }
             }
             break;
         }
     }
-
+#if 0
+    // check for no-op
+    if (in_soft_serial() && chanmask == serial_chanmask
+        && new_serial_group == serial_group
+        && new_serial_chan == serial_group->serial.chan) {
+        return true;
+    }
+#endif
     // couldn't find a group, shutdown everything
     if (!new_serial_group) {
         if (in_soft_serial()) {
             // shutdown old group
-            serial_end();
+            serial_end(chanmask);
         }
         return false;
     }
 
+    // preserve the original thread priority and line state
+    if (!in_soft_serial()) {
+        serial_priority = chThdGetSelfX()->realprio;
+        // keep a record of the line mode so that it can be reliably restored after input
+        // not resetting the linemode properly after input is absolutely fatal
+        serial_mode = palReadLineMode(new_serial_group->pal_lines[new_serial_chan]);
+    }
+
     // stop further dshot output before we reconfigure the DMA
     serial_group = new_serial_group;
+    serial_group->serial.chan = new_serial_chan;
 
     // setup the unconfigured groups for serial output. We ask for a bit width of 1, which gets modified by the
     // we setup all groups so they all are setup with the right polarity, and to make switching between
@@ -1968,7 +1988,7 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t cha
         if ((group.ch_mask & chanmask) && !(group.ch_mask & serial_chanmask)) {
             const uint32_t pulse_time_us = 1000000UL * 10 / baudrate;
             if (!setup_group_DMA(group, baudrate, 10, false, DSHOT_BUFFER_LENGTH, pulse_time_us, false)) {
-                serial_end();
+                serial_end(chanmask);
                 return false;
             }
         }
@@ -1976,7 +1996,6 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t cha
     // run the thread doing serial IO at highest priority. This is needed to ensure we don't
     // lose bytes when we switch between output and input
     serial_thread = chThdGetSelfX();
-    serial_priority  = chThdGetSelfX()->realprio;
     // mask of channels currently configured
     serial_chanmask |= chanmask;
     chThdSetPriority(HIGHPRIO);
@@ -2005,10 +2024,10 @@ void RCOutput::fill_DMA_buffer_byte(dmar_uint_t *buffer, uint8_t stride, uint8_t
     buffer[0] = BIT_0;
 
     // stop bit
-    buffer[9*stride] = BIT_1;
+    buffer[(BYTE_BITS-1)*stride] = BIT_1;
 
     // 8 data bits
-    for (uint8_t i = 0; i < 8; i++) {
+    for (uint8_t i = 0; i < (BYTE_BITS-2); i++) {
         buffer[(1 + i) * stride] = (b & 1) ? BIT_1 : BIT_0;
         b >>= 1;
     }
@@ -2021,12 +2040,13 @@ bool RCOutput::serial_write_byte(uint8_t b)
 {
     chEvtGetAndClearEvents(serial_event_mask);
 
-    fill_DMA_buffer_byte(serial_group->dma_buffer+serial_group->serial.chan, 4, b, serial_group->bit_width_mul*10);
+    memset(serial_group->dma_buffer, 0, DSHOT_BUFFER_LENGTH);
+    fill_DMA_buffer_byte(serial_group->dma_buffer+serial_group->serial.chan, 4, b, serial_group->bit_width_mul*BYTE_BITS);
 
     serial_group->in_serial_dma = true;
 
     // start sending the pulses out
-    send_pulses_DMAR(*serial_group, 10*4*sizeof(uint32_t));
+    send_pulses_DMAR(*serial_group, BYTE_BITS*4*sizeof(uint32_t));
 
     // wait for the event
     eventmask_t mask = chEvtWaitAnyTimeout(serial_event_mask, chTimeMS2I(2));
@@ -2045,12 +2065,16 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
     if (!in_soft_serial()) {
         return false;
     }
+#if AP_HAL_SHARED_DMA_ENABLED
+    // first make sure we have the DMA channel before anything else
+    osalDbgAssert(!serial_group->dma_handle->is_locked(), "DMA handle is already locked");
     serial_group->dma_handle->lock();
-    memset(serial_group->dma_buffer, 0, DSHOT_BUFFER_LENGTH);
+#endif
     while (len--) {
         if (!serial_write_byte(*bytes++)) {
-            hal.console->printf("serial_write_bytes() failed!\n");
+#if AP_HAL_SHARED_DMA_ENABLED
             serial_group->dma_handle->unlock();
+#endif
             return false;
         }
     }
@@ -2058,8 +2082,9 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
     // add a small delay for last word of output to have completely
     // finished
     hal.scheduler->delay_microseconds(25);
-
+#if AP_HAL_SHARED_DMA_ENABLED
     serial_group->dma_handle->unlock();
+#endif
     return true;
 #else
     return false;
@@ -2067,7 +2092,6 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
 }
 
 #define BAD_BYTE 0xFFFF
-#define BYTE_BITS 10
 #define BYTE_TIME(bitus) (bitus *  (BYTE_BITS + 2))   // timeout should come well after the next start bit
 #define START_BIT_TIMEOUT 2000 // 2ms
 
@@ -2220,8 +2244,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 #else
     uint32_t gpio_mode = PAL_STM32_MODE_INPUT | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_LOWEST;
 #endif
-    // restore the line to what it was before
-    iomode_t restore_mode = palReadLineMode(line);
+
     uint16_t i = 0;
 
 #if RCOU_SERIAL_TIMING_DEBUG
@@ -2241,7 +2264,6 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     irq.bitmask = 0;
     irq.bit_time_tick = serial_group->serial.bit_time_us;
     irq.last_bit = 0;
-    irq.waiter = chThdGetSelfX();
 
 #if RCOU_SERIAL_TIMING_DEBUG
     palWriteLine(HAL_GPIO_LINE_GPIO54, 1);
@@ -2251,6 +2273,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 #if RCOU_SERIAL_TIMING_DEBUG
         palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
 #endif
+        palSetLineMode(line, serial_mode);
         return false;
     }
 
@@ -2261,10 +2284,9 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     }
     chVTReset(&irq.serial_timeout);
     palDisableLineEvent(line);
-    irq.waiter = nullptr;
+    palSetLineMode(line, serial_mode);
 
-    palSetLineMode(line, restore_mode);
-#if RCOU_SERIAL_TIMING_DEBUG
+    #if RCOU_SERIAL_TIMING_DEBUG
     palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
 #endif
     return i;
@@ -2273,21 +2295,24 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 /*
   end serial output
 */
-void RCOutput::serial_end(void)
+void RCOutput::serial_end(uint32_t chanmask)
 {
-    if (in_soft_serial() || true) {
+    osalDbgAssert(hal.scheduler->in_main_thread(), "serial_end(): not called from main thread");
+    chanmask >>= chan_offset;
+    // restore settings as best we can
+    if (in_soft_serial()) {
         if (serial_thread == chThdGetSelfX()) {
             chThdSetPriority(serial_priority);
             serial_thread = nullptr;
         }
-        irq.waiter = nullptr;
-        for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
-            pwm_group &group = pwm_group_list[i];
-            // re-configure groups that were previous configured
-            if ((group.ch_mask & serial_chanmask) || true) {
-                dma_cancel(group);  // this ensures the DMA is in a sane state
-                set_group_mode(group);
-            }
+        palSetLineMode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
+    }
+    irq.waiter = nullptr;
+    for (auto &group : pwm_group_list) {
+        // re-configure groups that were previous configured
+        if ((group.ch_mask & chanmask)) {
+            dma_cancel(group);  // this ensures the DMA is in a sane state
+            set_group_mode(group);  // stops the timer
         }
     }
     serial_group = nullptr;
