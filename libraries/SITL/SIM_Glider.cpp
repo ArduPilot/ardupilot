@@ -63,6 +63,36 @@ const AP_Param::GroupInfo Glider::var_info[] = {
     // @Units: m/s
     AP_GROUPINFO("BLN_RATE",  2, Glider, balloon_rate, 5.5),
 
+    // @Param: MASS
+    // @DisplayName: glider mass
+    // @Description: glider mass
+    // @Units: kg
+    AP_GROUPINFO("MASS",  3, Glider, mass, 9.07441),
+
+    // @Param: INIT_SPD
+    // @DisplayName: initial release speed
+    // @Description: initial release speed, if zero then dropped nose down at zero speed. You must use AHRS_EKF_TYPE=10 to support this option
+    // @Units: m/s
+    AP_GROUPINFO("INIT_SPD",  4, Glider, release_init.speed, 0),
+
+    // @Param: INIT_YAW
+    // @DisplayName: initial release yaw
+    // @Description: initial release yaw, only if SIM_GLD_INIT_SPD is > 0
+    // @Units: deg
+    AP_GROUPINFO("INIT_YAW",  5, Glider, release_init.yaw_deg, 0),
+
+    // @Param: INIT_PIT
+    // @DisplayName: initial release pitch
+    // @Description: initial release pitch, only if SIM_GLD_INIT_SPD is > 0
+    // @Units: deg
+    AP_GROUPINFO("INIT_PIT",  6, Glider, release_init.pitch_deg, 0),
+
+    // @Param: INIT_RLL
+    // @DisplayName: initial release roll
+    // @Description: initial release roll, only if SIM_GLD_INIT_SPD is > 0
+    // @Units: deg
+    AP_GROUPINFO("INIT_RLL",  7, Glider, release_init.roll_deg, 0),
+    
     AP_GROUPEND
 };
 
@@ -255,6 +285,17 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
             carriage_state = carriageState::RELEASED;
             use_smoothing = false;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "released at %.0f m AMSL\n", (0.01f * home.alt) - position.z);
+            if (release_init.speed > 0) {
+                /*
+                  hack to simulate glider drops at other than nose
+                  down attitudes. Note that you will need
+                  AHRS_EKF_TYPE=10 or the EKF will get very unhappy
+                  with this change
+                 */
+                dcm.from_euler(radians(release_init.roll_deg), radians(release_init.pitch_deg), radians(release_init.yaw_deg));
+                velocity_ef = Vector3f(release_init.speed, 0, 0);
+                velocity_ef = dcm * velocity_ef;
+            }
         }
     } else if (carriage_state == carriageState::WAITING_FOR_PICKUP) {
         // Don't allow the balloon to drag sideways until the pickup
@@ -276,7 +317,7 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
         rot_accel = getTorque(aileron, elevator, rudder, force);
     }
 
-    accel_body = force / model.mass;
+    accel_body = force / mass;
 
     if (on_ground()) {
         // add some ground friction
@@ -371,8 +412,8 @@ bool Glider::update_balloon(float balloon, Vector3f &force, Vector3f &rot_accel)
     Vector3f tether_pos_bf{-1.0f,0.0f,0.0f}; // tether attaches to vehicle tail approx 1m behind c.g.
     const float omega = model.tetherPogoFreq * M_2PI; // rad/sec
     const  float zeta = 0.7f;
-    float tether_stiffness = model.mass * sq(omega); // N/m
-    float tether_damping = 2.0f * zeta * omega / model.mass; // N/(m/s)
+    float tether_stiffness = mass * sq(omega); // N/m
+    float tether_damping = 2.0f * zeta * omega / mass; // N/(m/s)
     // NED relative position vector from tether attachment on plane to balloon attachment
     Vector3f relative_position = balloon_position - (position.tofloat() + (dcm * tether_pos_bf));
     const float separation_distance = relative_position.length();
@@ -395,7 +436,7 @@ bool Glider::update_balloon(float balloon, Vector3f &force, Vector3f &rot_accel)
         tension_force += constrain_float(separation_speed * tether_damping, 0.0f, 0.05f * tension_force);
     }
 
-    if (carriage_state == carriageState::WAITING_FOR_PICKUP && tension_force > 1.2f * model.mass * GRAVITY_MSS && balloon > 0.01f) {
+    if (carriage_state == carriageState::WAITING_FOR_PICKUP && tension_force > 1.2f * mass * GRAVITY_MSS && balloon > 0.01f) {
         carriage_state = carriageState::WAITING_FOR_RELEASE;
     }
 
@@ -422,7 +463,7 @@ bool Glider::update_balloon(float balloon, Vector3f &force, Vector3f &rot_accel)
     } else {
         // tether is either slack awaiting pickup or released
         rot_accel.zero();
-        force = dcm.transposed() * Vector3f(0.0f, 0.0f, -GRAVITY_MSS * model.mass);
+        force = dcm.transposed() * Vector3f(0.0f, 0.0f, -GRAVITY_MSS * mass);
     }
 
     // balloon is active
