@@ -11,7 +11,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow_config.h>
 
 // define for when to include all features
-#define EK3_FEATURE_ALL APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) || APM_BUILD_TYPE(APM_BUILD_Replay)
+#define EK3_FEATURE_ALL 1
 
 // body odomotry (which includes wheel encoding) on rover or 2M boards
 #ifndef EK3_FEATURE_BODY_ODOM
@@ -34,7 +34,7 @@
 #endif
 
 #ifndef EK3_FEATURE_POSITION_RESET
-#define EK3_FEATURE_POSITION_RESET 1 || AP_AHRS_POSITION_RESET_ENABLED
+#define EK3_FEATURE_POSITION_RESET EK3_FEATURE_ALL || AP_AHRS_POSITION_RESET_ENABLED
 #endif
 
 // rangefinder measurements if available
