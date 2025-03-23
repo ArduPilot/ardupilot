@@ -2262,6 +2262,7 @@ void NavEKF3_core::moveEKFOrigin(void)
 {
     // only move origin when we have a origin and we're using GPS
     if (!frontend->common_origin_valid || !filterStatus.flags.using_gps) {
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, "Failing at AP_NavEKF3_core.cpp: common_origin_valid = false");
         return;
     }
 

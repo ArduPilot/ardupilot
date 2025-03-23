@@ -697,6 +697,7 @@ bool NavEKF3_core::setOrigin(const Location &loc)
 {
     // if the origin is valid reject setting a new origin
     if (validOrigin) {
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, "Origin is already valid: return false at AP_NavEKF3_Control.cpp");
         return false;
     }
 

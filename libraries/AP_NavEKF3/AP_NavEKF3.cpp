@@ -1423,6 +1423,7 @@ bool NavEKF3::setOriginLLH(const Location &loc)
 
 bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
 {
+    gcs().send_text(MAV_SEVERITY_EMERGENCY, "I'm first! AP_NavEKF3.cpp");
 #if EK3_FEATURE_POSITION_RESET
     dal.log_SetLatLng(loc, posAccuracy, timestamp_ms);
 
@@ -1433,9 +1434,15 @@ bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timesta
     for (uint8_t i=0; i<num_cores; i++) {
         ret |= core[i].setLatLng(loc, posAccuracy, timestamp_ms);
     }
+    if (ret == false) {
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, "Failing at AP_NavEKF3.cpp: No ret!");
+    } else {
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, "Not failing at AP_NavEKF3.cpp");
+    }
     // return true if any core accepts the new origin
     return ret;
 #else
+    gcs().send_text(MAV_SEVERITY_EMERGENCY, "Failing at AP_NavEKF3.cpp: Macros is not defined!");
     return false;
 #endif // EK3_FEATURE_POSITION_RESET
 }
