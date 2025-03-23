@@ -854,7 +854,7 @@ uint8_t AP_BLHeli::BL_SendCMDSetBuffer(const uint8_t *buf, uint16_t nbytes)
         debug_console("BL_SendCMDSetBuffer send cmd failed");
         return false;
     }
-    uint8_t ack = BL_GetACK();
+    uint8_t ack = BL_GetACK(5); // match betaflight timing
     // generally no ack returned for CMD_SET_BUFFER when flashing firmware
     if (ack != brNONE && ack != brSUCCESS) {
         debug_console("BL_SendCMDSetBuffer ack failed 0x%02x", ack);
