@@ -115,7 +115,7 @@ private:
     uint64_t last_gps_global_origin_time_ms;
     //! @brief Serialize the current gps global origin and publish to the IO stream(s)
     void write_gps_global_origin_topic();
-    static void update_topic(geographic_msgs_msg_GeoPointStamped& msg);
+    static bool update_topic(geographic_msgs_msg_GeoPointStamped& msg);
 # endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
 #if AP_DDS_GOAL_PUB_ENABLED
