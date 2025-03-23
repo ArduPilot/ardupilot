@@ -190,6 +190,8 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
 // Returns true if the set was successful
 bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
 {
+    PV_AidingMode = 0;
+    validOrigin = true;
     gcs().send_text(MAV_SEVERITY_EMERGENCY, "I'm second! AP_NavEKF3_PosVelFusion.cpp");
     if ((imuSampleTime_ms - lastGpsPosPassTime_ms) < frontend->deadReckonDeclare_ms ||
         (PV_AidingMode == AID_NONE)
