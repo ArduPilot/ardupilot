@@ -2181,7 +2181,7 @@ void RCOutput::serial_bit_irq(void)
 void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
 {
     chSysLockFromISR();
-    uint16_t byteval = irq.bitmask | 0x200;
+    uint16_t byteval = irq.bitmask | (((1U<<BYTE_BITS)-1) & ~((1U<<irq.nbits)-1));
     // we can accept a byte with a timeout if the last bit was 1
     // and the start bit is set correctly
     if (irq.last_bit == 0) {
