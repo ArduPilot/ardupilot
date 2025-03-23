@@ -203,6 +203,10 @@ class TestBuildOptions(object):
                 feature_define_whitelist = set([
                     'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
                     'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # no symbol
+                    'AP_PROXIMITY_HEXSOONRADAR_ENABLED',  # this shares symbols with AP_PROXIMITY_MR72_ENABLED
+                    'AP_PROXIMITY_MR72_ENABLED',    # this shares symbols with AP_PROXIMITY_HEXSOONRADAR_ENABLED
+                    'AP_RANGEFINDER_NRA24_CAN_ENABLED',
+                    'AP_RANGEFINDER_HEXSOONRADAR_ENABLED',
                 ])
                 if define in compiled_in_feature_defines:
                     error = f"feature gated by {define} still compiled into ({target}); extract_features.py bug?"
