@@ -11,7 +11,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow_config.h>
 
 // define for when to include all features
-#define EK3_FEATURE_ALL 1
+#define EK3_FEATURE_ALL APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) || APM_BUILD_TYPE(APM_BUILD_Replay)
 
 // body odomotry (which includes wheel encoding) on rover or 2M boards
 #ifndef EK3_FEATURE_BODY_ODOM
