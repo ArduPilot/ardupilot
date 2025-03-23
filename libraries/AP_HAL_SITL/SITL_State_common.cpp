@@ -113,6 +113,11 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         sitl_model->set_adsb(adsb);
         return adsb;
 #endif  // AP_SIM_ADSB_ENABLED
+#if AP_SIM_CAP_REPLAY_ENABLED
+    } else if (streq(name, "capreplay")) {
+        capreplay = NEW_NOTHROW SITL::CapReplay(arg);
+        return capreplay;
+#endif  // AP_SIM_CAP_REPLAY_ENABLED
     } else if (streq(name, "frsky-d")) {
         if (frsky_d != nullptr) {
             AP_HAL::panic("Only one frsky_d at a time");
@@ -315,6 +320,11 @@ void SITL_State_Common::sim_update(void)
         adsb->update(*sitl_model);
     }
 #endif  // AP_SIM_ADSB_ENABLED
+#if AP_SIM_CAP_REPLAY_ENABLED
+    if (capreplay != nullptr) {
+        capreplay->update();
+    }
+#endif  // AP_SIM_CAP_REPLAY_ENABLED
 #if AP_SIM_VICON_ENABLED
     if (vicon != nullptr) {
         Quaternion attitude;
