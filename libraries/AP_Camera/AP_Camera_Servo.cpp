@@ -10,8 +10,8 @@ extern const AP_HAL::HAL& hal;
 void AP_Camera_Servo::init()
 {
     // set the zoom and focus to the trim point
-    SRV_Channels::set_output_scaled(SRV_Channel::k_cam_zoom, 500);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_cam_focus, 500);
+    SRV_Channels::set_output_scaled_to_trim(SRV_Channel::k_cam_zoom);
+    SRV_Channels::set_output_scaled_to_trim(SRV_Channel::k_cam_focus);
 }
 
 // update - should be called at 50hz
