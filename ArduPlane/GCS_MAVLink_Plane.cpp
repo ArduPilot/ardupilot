@@ -849,6 +849,11 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
         }
         return MAV_RESULT_FAILED;
 
+#if AP_RANGEFINDER_ENABLED
+    case MAV_CMD_DO_SET_REL_ALT_FROM_DIST_SENSOR:
+        return handle_command_DO_SET_REL_ALT_FROM_DIST_SENSOR(packet);
+#endif
+
     case MAV_CMD_MISSION_START:
         if (!is_zero(packet.param1) || !is_zero(packet.param2)) {
             // first-item/last item not supported
@@ -1009,6 +1014,18 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_DO_VTOL_TRANSITION(const mavlink_co
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
+}
+#endif
+
+#if AP_RANGEFINDER_ENABLED
+MAV_RESULT GCS_MAVLINK_Plane::handle_command_DO_SET_REL_ALT_FROM_DIST_SENSOR(
+    const mavlink_command_int_t &packet) {
+    if (plane.do_set_rel_alt_from_dist_sensor(packet.param1, packet.param2,
+                                              packet.param3, packet.param4)) {
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    return MAV_RESULT_FAILED;
 }
 #endif
 

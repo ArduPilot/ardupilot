@@ -191,6 +191,16 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
+#if AP_RANGEFINDER_ENABLED
+    case MAV_CMD_DO_SET_REL_ALT_FROM_DIST_SENSOR:
+        do_set_rel_alt_from_dist_sensor(
+            cmd.content.set_rel_alt_from_dist_sensor.measurement_span,
+            cmd.content.set_rel_alt_from_dist_sensor.measurement_type,
+            cmd.content.set_rel_alt_from_dist_sensor.max_sensor_deviation_deg,
+            cmd.content.set_rel_alt_from_dist_sensor.max_mean_abs_deviation_cm);
+        break;
+#endif
+
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         do_nav_script_time(cmd);
@@ -320,6 +330,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_VTOL_TRANSITION:
     case MAV_CMD_DO_ENGINE_CONTROL:
+    case MAV_CMD_DO_SET_REL_ALT_FROM_DIST_SENSOR:
         return true;
 
     default:
@@ -1338,3 +1349,71 @@ bool Plane::in_auto_mission_id(uint16_t command) const
     return control_mode == &mode_auto && mission.get_current_nav_id() == command;
 }
 
+#if AP_RANGEFINDER_ENABLED
+bool Plane::do_set_rel_alt_from_dist_sensor(
+    const AP_Mission::Mission_Command &cmd) {
+    return do_set_rel_alt_from_dist_sensor(
+        cmd.content.set_rel_alt_from_dist_sensor.measurement_span,
+        cmd.content.set_rel_alt_from_dist_sensor.measurement_type,
+        cmd.content.set_rel_alt_from_dist_sensor.max_sensor_deviation_deg,
+        cmd.content.set_rel_alt_from_dist_sensor.max_mean_abs_deviation_cm);
+}
+
+bool Plane::do_set_rel_alt_from_dist_sensor(float measurement_span,
+                                            uint8_t measurement_type,
+                                            float max_sensor_deviation_deg,
+                                            float max_mean_abs_deviation_cm) {
+    float average_distance_m = 0.0f;
+    bool success = false;
+
+    float max_mean_abs_deviation_m = max_mean_abs_deviation_cm / 100.0f;
+
+    switch (measurement_type) {
+    case 0: // Based on past travel distance
+        success = rangefinder.calc_avg_distance_from_past_travel(
+            ROTATION_PITCH_270, measurement_span, average_distance_m,
+            max_sensor_deviation_deg, max_mean_abs_deviation_m);
+        break;
+    case 1: // Based on past timespan
+        success = rangefinder.calc_avg_distance_from_past_timespan(
+            ROTATION_PITCH_270, measurement_span, average_distance_m,
+            max_sensor_deviation_deg, max_mean_abs_deviation_m);
+        break;
+    case 2: // Based on past sample count
+        success = rangefinder.calc_avg_distance_from_past_samples(
+            ROTATION_PITCH_270, (uint16_t)measurement_span, average_distance_m,
+            max_sensor_deviation_deg, max_mean_abs_deviation_m);
+        break;
+    default:
+        gcs().send_text(MAV_SEVERITY_WARNING,
+                        "Unknown measurement type for distance sensor");
+        return false;
+    }
+
+    if (!success) {
+        gcs().send_text(MAV_SEVERITY_WARNING,
+                        "Failed to calculate HAGL with distance sensor");
+        return false;
+    }
+
+    float current_rel_alt_m;
+    AP::ahrs().get_relative_position_D_home(current_rel_alt_m);
+    current_rel_alt_m = -current_rel_alt_m;
+
+    float alt_adjustment_m = current_rel_alt_m - average_distance_m;
+    Location alt_adjusted_home = AP::ahrs().get_home();
+    alt_adjusted_home.alt +=
+        (int32_t)(alt_adjustment_m * 100.0f /* convert to cm */);
+
+    if (!AP::ahrs().set_home(alt_adjusted_home)) {
+        gcs().send_text(MAV_SEVERITY_WARNING,
+                        "Failed to set home with adjusted altitude");
+        return false;
+    }
+
+    gcs().send_text(MAV_SEVERITY_INFO,
+                    "Set rel. alt. from distance sensor: %.2fm (%+.2fm)",
+                    average_distance_m, alt_adjustment_m);
+    return true;
+}
+#endif // AP_RANGEFINDER_ENABLED

@@ -1013,6 +1013,12 @@ private:
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
     bool do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
+#if AP_RANGEFINDER_ENABLED
+    bool do_set_rel_alt_from_dist_sensor(const AP_Mission::Mission_Command& cmd);
+    bool do_set_rel_alt_from_dist_sensor(
+        float measurement_span, uint8_t measurement_type,
+        float max_sensor_deviation_deg, float max_mean_abs_deviation_cm);
+#endif
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
