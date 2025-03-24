@@ -131,6 +131,9 @@ void AP_RangeFinder_HC_SR04::update(void)
     // update range_valid state based on distance measured
     update_status();
 
+    // update sample history
+    update_history();
+
     // consider sending new ping
     if (now - last_ping_ms > 67) { // read ~@15Hz - recommended 60ms delay from datasheet
         last_ping_ms = now;

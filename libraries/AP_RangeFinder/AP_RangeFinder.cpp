@@ -63,12 +63,14 @@
 #include "AP_RangeFinder_Ainstein_LR_D1.h"
 #include "AP_RangeFinder_RDS02UF.h"
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -829,6 +831,247 @@ bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
         return false;
     }
     return backend->get_temp(temp);
+}
+
+#ifdef AP_AHRS_ENABLED
+
+bool RangeFinder::calc_avg_distance_from_past_travel(
+    Rotation orientation, float horizontal_distance_m,
+    float &average_distance_m, float max_att_deviation_deg,
+    float max_mean_abs_deviation_m) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (!_check_backend_sample_history(backend)) {
+        return false;
+    }
+
+    uint16_t sample_count = 0;
+    float accumulated_distance_m = 0.0f;
+
+    for (uint8_t i = 0; i < backend->sample_history_size(); ++i) {
+        uint16_t sample_history_index = (backend->last_sample_history_index() -
+                                         i + RANGEFINDER_SAMPLE_HISTORY_SIZE) %
+                                        RANGEFINDER_SAMPLE_HISTORY_SIZE;
+
+        accumulated_distance_m +=
+            backend->sample_history()[sample_history_index].hor_loc_delta_dm *
+            0.1f;
+        ++sample_count;
+
+        if (accumulated_distance_m >= horizontal_distance_m) {
+            break;
+        }
+    }
+
+    if (accumulated_distance_m <
+        horizontal_distance_m - 0.01f /* cope with %.1f rounding */) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,
+                      "Rangefinder: only %.1fm of %.1fm in sample history",
+                      accumulated_distance_m, horizontal_distance_m);
+    }
+
+    return _calc_avg_distance(backend, sample_count, max_att_deviation_deg,
+                              max_mean_abs_deviation_m, average_distance_m);
+}
+
+bool RangeFinder::calc_avg_distance_from_past_timespan(
+    Rotation orientation, float time_span_s, float &average_distance_m,
+    float max_att_deviation_deg, float max_mean_abs_deviation_m) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (!_check_backend_sample_history(backend)) {
+        return false;
+    }
+
+    uint16_t sample_count = 0;
+    uint32_t current_time_ms = AP_HAL::millis();
+    uint32_t time_threshold_ms = current_time_ms - (time_span_s * 1000.0f);
+    uint32_t oldest_sample_time_ms = current_time_ms;
+
+    for (uint8_t i = 0; i < backend->sample_history_size(); ++i) {
+        uint16_t sample_history_index = (backend->last_sample_history_index() -
+                                         i + RANGEFINDER_SAMPLE_HISTORY_SIZE) %
+                                        RANGEFINDER_SAMPLE_HISTORY_SIZE;
+
+        uint32_t sample_time_ms =
+            backend->sample_history()[sample_history_index].timestamp_ms;
+
+        if (sample_time_ms < time_threshold_ms) {
+            break;
+        }
+
+        oldest_sample_time_ms = sample_time_ms;
+        ++sample_count;
+    }
+
+    if (oldest_sample_time_ms >
+        time_threshold_ms - 0.01f /* cope with %.1f rounding */ ) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,
+                      "Rangefinder: only %.1fs of %.1fs in sample history",
+                      (current_time_ms - oldest_sample_time_ms) / 1000.0f,
+                      time_span_s);
+    }
+
+    return _calc_avg_distance(backend, sample_count, max_att_deviation_deg,
+                              max_mean_abs_deviation_m, average_distance_m);
+}
+
+#endif // AP_AHRS_ENABLED
+
+bool RangeFinder::calc_avg_distance_from_past_samples(
+    Rotation orientation, uint16_t sample_num, float &average_distance_m,
+    float max_att_deviation_deg, float max_mean_abs_deviation_m) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (!_check_backend_sample_history(backend)) {
+        return false;
+    }
+
+    uint16_t sample_count =
+        MIN(sample_num, (uint16_t)backend->sample_history_size());
+
+    if (sample_count < sample_num) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,
+                      "Rangefinder: only %u of %u requested samples available",
+                      sample_count, sample_num);
+    }
+
+    return _calc_avg_distance(backend, sample_count, max_att_deviation_deg,
+                              max_mean_abs_deviation_m, average_distance_m);
+}
+
+bool RangeFinder::_check_backend_sample_history(
+    const AP_RangeFinder_Backend *backend) const
+{
+    if (backend == nullptr || !backend->has_data()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                      "No rangefinder with the requested orientation");
+        return false;
+    }
+
+    if (backend->sample_history_size() == 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                      "Rangefinder: no samples in history");
+        return false;
+    }
+
+    return true;
+}
+
+
+bool RangeFinder::_calc_avg_distance(const AP_RangeFinder_Backend *backend,
+                                     uint16_t sample_count,
+                                     float max_att_deviation_deg,
+                                     float max_mean_abs_deviation_m,
+                                     float &average_distance_m) const
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,
+                  "Rangefinder: calculating average distance from %u samples",
+                  sample_count);
+
+    uint16_t valid_samples = 0;
+    float valid_distances[RANGEFINDER_SAMPLE_HISTORY_SIZE];
+
+    float sum = 0.0f;
+    float sum_weights = 0.0f;
+
+#if AP_AHRS_ENABLED
+    float max_att_deviation_rad = (max_att_deviation_deg >= 0.0f)
+                                      ? radians(max_att_deviation_deg)
+                                      : -1.0f;
+#endif
+
+    uint8_t status_rejected_count = 0;
+    uint8_t attitude_rejected_count = 0;
+    uint8_t signal_quality_rejected_count = 0;
+
+    for (uint16_t i = 0; i < sample_count; ++i) {
+        uint16_t idx = (backend->last_sample_history_index() - i +
+                        RANGEFINDER_SAMPLE_HISTORY_SIZE) %
+                       RANGEFINDER_SAMPLE_HISTORY_SIZE;
+        auto &sample = backend->sample_history()[idx];
+
+        if (backend->status(sample.distance_m) != Status::Good) {
+            ++status_rejected_count;
+            continue;
+        }
+
+#if AP_AHRS_ENABLED
+        if (is_positive(max_att_deviation_rad) &&
+            sample.attitude_deviation_rad > max_att_deviation_rad) {
+            ++attitude_rejected_count;
+            continue;
+        }
+#endif
+
+        // weight the sample if a quality percentage is available
+        float sample_weight = sample.signal_quality_pct > 0
+                                  ? (sample.signal_quality_pct / 100.0f)
+                                  : 1.0f;
+
+        if (is_zero(sample_weight)) {
+            ++signal_quality_rejected_count;
+            continue;
+        }
+
+#if AP_AHRS_ENABLED
+        // correct measured distance for attitude deviation
+        valid_distances[valid_samples] =
+            sample.distance_m * cosf(sample.attitude_deviation_rad);
+#else
+        // no attitude correction available
+        valid_distances[valid_samples] = sample.distance_m;
+#endif
+
+        sum += valid_distances[valid_samples] * sample_weight;
+        sum_weights += sample_weight;
+
+        ++valid_samples;
+    }
+
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Rangefinder: %u valid distance samples",
+                  valid_samples);
+
+    if (valid_samples == 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                      "Rangefinder: no samples were valid");
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Rangefinder: %u samples out of range",
+                      status_rejected_count);
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,
+                      "Rangefinder: %u samples over max. att. deviation",
+                      attitude_rejected_count);
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,
+                      "Rangefinder: %u samples with 0%% quality",
+                      signal_quality_rejected_count);
+
+        return false;
+    }
+
+    if (valid_samples < RANGEFINDER_MIN_SAMPLE_NUM_FOR_AVG) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,
+                      "Rangefinder: only %u valid sample(s)", valid_samples);
+    }
+
+    float mean = sum / sum_weights;
+
+    if (max_mean_abs_deviation_m >= 0.0f) {
+        float sum_abs_deviation = 0.0f;
+        for (uint16_t i = 0; i < valid_samples; ++i) {
+            sum_abs_deviation += fabsf(valid_distances[i] - mean);
+        }
+
+        float mean_abs_deviation_m = sum_abs_deviation / valid_samples;
+
+        if (mean_abs_deviation_m > max_mean_abs_deviation_m) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                          "Rangefinder: mean absolute deviation %.2fm > %.2fm",
+                          mean_abs_deviation_m, max_mean_abs_deviation_m);
+            return false;
+        }
+    }
+
+    average_distance_m = mean;
+    return true;
 }
 
 #if HAL_LOGGING_ENABLED

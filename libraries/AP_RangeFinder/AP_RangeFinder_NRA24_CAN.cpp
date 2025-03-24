@@ -14,6 +14,7 @@ void AP_RangeFinder_NRA24_CAN::update(void)
         // update range_valid state based on distance measured
         state.last_reading_ms = AP_HAL::millis();
         update_status();
+        update_history();
     } else if (AP_HAL::millis() - state.last_reading_ms > read_timeout_ms()) {
         if (AP_HAL::millis() - last_heartbeat_ms > read_timeout_ms()) {
             // no heartbeat, must be disconnected

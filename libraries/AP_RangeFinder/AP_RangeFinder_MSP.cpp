@@ -65,6 +65,7 @@ void AP_RangeFinder_MSP::update(void)
     } else {
         state.distance_m = distance_cm * 0.01f;
         update_status();
+        update_history();
     }
 }
 

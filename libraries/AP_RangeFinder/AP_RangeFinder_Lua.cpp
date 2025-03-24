@@ -53,6 +53,7 @@ bool AP_RangeFinder_Lua::handle_script_msg(float dist_m) {
     _state_pending.signal_quality_pct = RangeFinder::SIGNAL_QUALITY_UNKNOWN;
     _state_pending.voltage_mv = 0;
     update_status(_state_pending);
+    update_history(_state_pending);
 
     return true;
 }

@@ -96,6 +96,7 @@ void AP_RangeFinder_PulsedLightLRF::timer(void)
                 state.distance_m = _distance_cm * 0.01f;
                 state.last_reading_ms = AP_HAL::millis();
                 update_status();                
+                update_history();
             }
             last_distance_cm = _distance_cm;
         } else {
