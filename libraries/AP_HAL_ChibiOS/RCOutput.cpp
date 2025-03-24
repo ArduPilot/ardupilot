@@ -2274,7 +2274,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
         palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
 #endif
         palSetLineMode(line, serial_mode);
-        return false;
+        return 0;
     }
 
     for (i=0; i<len; i++) {
@@ -2282,11 +2282,15 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
             break;
         }
     }
-    chVTReset(&irq.serial_timeout);
-    palDisableLineEvent(line);
-    palSetLineMode(line, serial_mode);
 
-    #if RCOU_SERIAL_TIMING_DEBUG
+    chSysLock();
+    palDisableLineEventI(line);
+    chEvtGetAndClearEvents(serial_event_mask);
+    chVTReset(&irq.serial_timeout);
+    palSetLineMode(line, serial_mode);
+    chSysUnlock();
+
+#if RCOU_SERIAL_TIMING_DEBUG
     palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
 #endif
     return i;
