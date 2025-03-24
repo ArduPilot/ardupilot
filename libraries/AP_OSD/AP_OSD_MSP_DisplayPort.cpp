@@ -32,6 +32,9 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
 
 extern const AP_HAL::HAL &hal;
 constexpr uint8_t AP_OSD_MSP_DisplayPort::symbols[AP_OSD_NUM_SYMBOLS];
+#if AP_MSP_INAV_FONTS_ENABLED
+constexpr uint8_t AP_OSD_MSP_DisplayPort::ap_to_inav_symbols_map[256][2];
+#endif
 
 // initialise backend
 bool AP_OSD_MSP_DisplayPort::init(void)
@@ -83,7 +86,48 @@ void AP_OSD_MSP_DisplayPort::clear(void)
 
 void AP_OSD_MSP_DisplayPort::write(uint8_t x, uint8_t y, const char* text)
 {
-    _displayport->msp_displayport_write_string(x, y, 0, text);
+#if AP_MSP_INAV_FONTS_ENABLED
+    const AP_MSP *msp = AP::msp();
+    if (msp && msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_INAV_SYMBOLS)) {
+        uint8_t idx = 0;
+        uint8_t buf_idx = 0;
+        uint8_t last_inav_table = 0xFF; // 0xFF == unknown
+        uint8_t x_offset = 0;
+        const uint8_t max_idx = MIN((uint8_t)(strlen(text)-1), DISPLAYPORT_WRITE_BUFFER_MAX_LEN-2);
+        uint8_t inav_symbol;
+        uint8_t inav_table;
+        while (text[idx] != 0 && idx <= max_idx)
+        {
+            // transcode
+            inav_symbol = ap_to_inav_symbols_map[(uint8_t)text[idx]][0];
+            inav_table = ap_to_inav_symbols_map[(uint8_t)text[idx]][1];
+            
+            if (last_inav_table == 0xFF) {
+                last_inav_table = inav_table;
+            }
+
+            if (inav_table != last_inav_table)
+            {
+                displayport_write_buffer[buf_idx] = 0x00; // add a terminator
+                _displayport->msp_displayport_write_string(x + x_offset, y, false, displayport_write_buffer, last_inav_table);
+                x_offset += buf_idx;
+                buf_idx = 0;
+                last_inav_table = inav_table;
+            }
+
+            displayport_write_buffer[buf_idx++] = inav_symbol;
+
+            if (idx == max_idx) {
+                // flush when we detect end of string
+                displayport_write_buffer[buf_idx] = 0x00; // add a terminator
+                _displayport->msp_displayport_write_string(x+x_offset, y, false, displayport_write_buffer, inav_table);
+            }
+            idx++;
+        }
+    return;
+    }
+#endif
+    _displayport->msp_displayport_write_string(x, y, false, text, 0);
 }
 
 uint8_t AP_OSD_MSP_DisplayPort::format_string_for_osd(char* buff, uint8_t size, bool decimal_packed, const char *fmt, va_list ap)
@@ -108,7 +152,7 @@ void AP_OSD_MSP_DisplayPort::init_symbol_set(uint8_t *lookup_table, const uint8_
 {
     const AP_MSP *msp = AP::msp();
     // do we use backend specific symbols table?
-    if (msp && msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_BTFL_SYMBOLS)) {
+    if (msp && msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_BTFL_SYMBOLS)&& !msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_INAV_SYMBOLS)) {
         memcpy(lookup_table, symbols, size);
     } else {
         memcpy(lookup_table, AP_OSD_Backend::symbols, size);
