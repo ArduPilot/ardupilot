@@ -757,6 +757,16 @@ void SRV_Channels::set_output_to_trim(SRV_Channel::Function function)
     }
 }
 
+void SRV_Channels::set_output_scaled_to_trim(SRV_Channel::Function function)
+{
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        if (channels[i].function == function) {
+            channels[i].set_output_pwm(channels[i].servo_trim);
+            set_output_scaled(function, channels[i].range_from_pwm() * channels[i].high_out);
+        }
+    }
+}
+
 /*
   get the normalised output for a channel function from the pwm value
   of the first matching channel
