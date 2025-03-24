@@ -30,11 +30,10 @@ extern const AP_HAL::HAL &hal;
 
 #define SEG_INIT                0
 #define SEG_ACCEL_MAX           4
-#define SEG_TURN_IN             7
 #define SEG_ACCEL_END           7
 #define SEG_SPEED_CHANGE_END    14
 #define SEG_CONST               15
-#define SEG_TURN_OUT            15
+#define SEG_DECEL_START         15
 #define SEG_DECEL_END           22
 
 // constructor
@@ -496,8 +495,8 @@ bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, floa
     const float time_to_destination = get_time_remaining();
     if (fast_waypoint 
         && is_zero(next_leg.get_time_elapsed()) // The next leg has not started
-        && (get_time_elapsed() >= time_turn_out()) // The current leg has started the deceleration phase
-        && (get_time_remaining() <= next_leg.time_turn_in()) // The current leg will finish before completion of the acceleration phase of the next leg
+        && (get_time_elapsed() >= time_decel_start()) // The current leg has started the deceleration phase
+        && (get_time_remaining() <= next_leg.time_accel_end()) // The current leg will finish before completion of the acceleration phase of the next leg
         ) {
 
         // Calculate the position, velocity and acceleration at the turn mid point
@@ -605,22 +604,24 @@ bool SCurve::braking() const
     return time >= segment[SEG_CONST].end_time;
 }
 
-// return time offset used to initiate the turn onto leg
-float SCurve::time_turn_in() const
+// return time offset for the start of the constant speed section and end of the acceleration section
+// used to initiate the turn onto leg
+float SCurve::time_accel_end() const
 {
     if (num_segs != segments_max) {
         return 0.0;
     }
-    return segment[SEG_TURN_IN].end_time;
+    return segment[SEG_ACCEL_END].end_time;
 }
 
-// return time offset used to initiate the turn from leg
-float SCurve::time_turn_out() const
+// return time offset for the end of the constant speed section and start of the deceleration section
+// used to initiate the turn from leg
+float SCurve::time_decel_start() const
 {
     if (num_segs != segments_max) {
         return 0.0;
     }
-    return segment[SEG_TURN_OUT].end_time;
+    return segment[SEG_DECEL_START].end_time;
 }
 
 // increment the internal time

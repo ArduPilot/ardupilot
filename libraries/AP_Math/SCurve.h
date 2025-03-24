@@ -133,10 +133,10 @@ private:
     bool braking() const WARN_IF_UNUSED;
 
     // return time offset used to initiate the turn onto leg
-    float time_turn_in() const WARN_IF_UNUSED;
+    float time_accel_end() const WARN_IF_UNUSED;
 
     // return time offset used to initiate the turn from leg
-    float time_turn_out() const WARN_IF_UNUSED;
+    float time_decel_start() const WARN_IF_UNUSED;
 
     // increment the internal time
     void advance_time(float dt);
