@@ -672,6 +672,19 @@ uint32_t UARTDriver::get_usb_baud() const
     return 0;
 }
 
+/*
+    get the requested usb parity.  Valid if get_usb_baud() returned non-zero.
+*/
+uint8_t UARTDriver::get_usb_parity() const
+{
+#if HAL_USE_SERIAL_USB
+    if (sdef.is_usb) {
+        return ::get_usb_parity(sdef.endpoint_id);
+    }
+#endif
+    return 0;
+}
+
 uint32_t UARTDriver::_available()
 {
     if (!_rx_initialised || _uart_owner_thd != chThdGetSelfX()) {
@@ -1405,6 +1418,7 @@ void UARTDriver::configure_parity(uint8_t v)
         // not possible
         return;
     }
+    UARTDriver::parity = v;
 #if HAL_USE_SERIAL == TRUE
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);

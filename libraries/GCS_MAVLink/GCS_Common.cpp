@@ -6541,6 +6541,7 @@ void GCS::update_passthru(void)
     WITH_SEMAPHORE(_passthru.sem);
     uint32_t now = AP_HAL::millis();
     uint32_t baud1, baud2;
+    uint8_t parity1 = 0, parity2 = 0;
     bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s,
                                                     baud1, baud2);
     if (enabled && !_passthru.enabled) {
@@ -6550,6 +6551,8 @@ void GCS::update_passthru(void)
         _passthru.last_port1_data_ms = now;
         _passthru.baud1 = baud1;
         _passthru.baud2 = baud2;
+        _passthru.parity1 = parity1 = _passthru.port1->get_parity();
+        _passthru.parity2 = parity2 = _passthru.port2->get_parity();
         gcs().send_text(MAV_SEVERITY_INFO, "Passthru enabled");
         if (!_passthru.timer_installed) {
             _passthru.timer_installed = true;
@@ -6567,6 +6570,13 @@ void GCS::update_passthru(void)
         if (_passthru.baud2 != baud2) {
             _passthru.port2->end();
             _passthru.port2->begin(baud2);
+        }
+        // Restore original parity
+        if (_passthru.parity1 != parity1) {
+            _passthru.port1->configure_parity(parity1);
+        }
+        if (_passthru.parity2 != parity2) {
+            _passthru.port2->configure_parity(parity2);
         }
         gcs().send_text(MAV_SEVERITY_INFO, "Passthru disabled");
     } else if (enabled &&
@@ -6586,12 +6596,19 @@ void GCS::update_passthru(void)
             _passthru.port2->end();
             _passthru.port2->begin(baud2);
         }
+        // Restore original parity
+        if (_passthru.parity1 != parity1) {
+            _passthru.port1->configure_parity(parity1);
+        }
+        if (_passthru.parity2 != parity2) {
+            _passthru.port2->configure_parity(parity2);
+        }
         gcs().send_text(MAV_SEVERITY_INFO, "Passthru timed out");
     }
 }
 
 /*
-  called at 1kHz to handle pass-thru between SERIA0_PASSTHRU port and hal.console
+  called at 1kHz to handle pass-thru between SERIAL_PASS1 and SERIAL_PASS2 ports
  */
 void GCS::passthru_timer(void)
 {
@@ -6604,7 +6621,7 @@ void GCS::passthru_timer(void)
     if (_passthru.start_ms != 0) {
         uint32_t now = AP_HAL::millis();
         if (now - _passthru.start_ms < 1000) {
-            // delay for 1s so the reply for the SERIAL0_PASSTHRU param set can be seen by GCS
+            // delay for 1s so the reply for the SERIAL_PASS2 param set can be seen by GCS
             return;
         }
         _passthru.start_ms = 0;
@@ -6618,19 +6635,35 @@ void GCS::passthru_timer(void)
     _passthru.port1->lock_port(lock_key, lock_key);
     _passthru.port2->lock_port(lock_key, lock_key);
 
-    // Check for requested Baud rates over USB
+    // Check for requested Baud rates and parity over USB
     uint32_t baud = _passthru.port1->get_usb_baud();
-    if (_passthru.baud2 != baud && baud != 0) {
-        _passthru.baud2 = baud;
-        _passthru.port2->end();
-        _passthru.port2->begin_locked(baud, 0, 0, lock_key);
+    uint8_t parity = _passthru.port1->get_usb_parity();
+    if (baud != 0) { // port1 is USB
+        if (_passthru.baud2 != baud) {
+            _passthru.baud2 = baud;
+            _passthru.port2->end();
+            _passthru.port2->begin_locked(baud, 0, 0, lock_key);
+        }
+
+        if (_passthru.parity2 != parity) {
+            _passthru.parity2 = parity;
+            _passthru.port2->configure_parity(parity);
+        }
     }
 
     baud = _passthru.port2->get_usb_baud();
-    if (_passthru.baud1 != baud && baud != 0) {
-        _passthru.baud1 = baud;
-        _passthru.port1->end();
-        _passthru.port1->begin_locked(baud, 0, 0, lock_key);
+    parity = _passthru.port2->get_usb_parity();
+    if (baud != 0) { // port2 is USB
+        if (_passthru.baud1 != baud) {
+            _passthru.baud1 = baud;
+            _passthru.port1->end();
+            _passthru.port1->begin_locked(baud, 0, 0, lock_key);
+        }
+
+        if (_passthru.parity1 != parity) {
+            _passthru.parity1 = parity;
+            _passthru.port1->configure_parity(parity);
+        }
     }
 
     uint8_t buf[64];

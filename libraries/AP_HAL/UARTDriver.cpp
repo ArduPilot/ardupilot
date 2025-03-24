@@ -163,3 +163,9 @@ uint64_t AP_HAL::UARTDriver::receive_time_constraint_us(uint16_t nbytes)
 {
     return AP_HAL::micros64();
 }
+
+uint8_t AP_HAL::UARTDriver::get_parity(void)
+{
+    return AP_HAL::UARTDriver::parity;
+}
+

@@ -38,6 +38,7 @@ public:
     bool is_initialized() override;
     bool tx_pending() override;
     uint32_t get_usb_baud() const override;
+    uint8_t get_usb_parity() const override;
 
     // disable TX/RX pins for unusued uart
     void disable_rxtx(void) const override;
