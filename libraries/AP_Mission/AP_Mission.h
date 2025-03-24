@@ -203,6 +203,14 @@ public:
         bool allow_disarmed_start; // allow starting the engine while disarmed
     };
 
+    // DO_SET_REL_ALT_FROM_DIST_SENSOR support
+    struct PACKED Set_Rel_Alt_From_Dist_Sensor_Command {
+        float measurement_span; // distance measurement span
+        uint8_t measurement_type; // measurement type (0=m, 1=s, 2=samples)
+        float max_sensor_deviation_deg; // max. acceptable angle from vertical
+        uint8_t max_mean_abs_deviation_cm; // max. acceptable MAD of readings
+    };
+
     // NAV_SET_YAW_SPEED support
     struct PACKED Set_Yaw_Speed {
         float angle_deg;        // target angle in degrees (0=north, 90=east)
@@ -359,6 +367,9 @@ public:
 
         // DO_ENGINE_CONTROL
         Do_Engine_Control do_engine_control;
+
+        // DO_SET_REL_ALT_FROM_DIST_SENSOR
+        Set_Rel_Alt_From_Dist_Sensor_Command set_rel_alt_from_dist_sensor;
 
         // navigation delay
         Navigation_Delay_Command nav_delay;

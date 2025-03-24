@@ -1353,6 +1353,13 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.do_engine_control.allow_disarmed_start = (((uint32_t)packet.param4) & ENGINE_CONTROL_OPTIONS_ALLOW_START_WHILE_DISARMED) != 0;
         break;
 
+    case MAV_CMD_DO_SET_REL_ALT_FROM_DIST_SENSOR:       // MAV ID: 225
+        cmd.content.set_rel_alt_from_dist_sensor.measurement_span = packet.param1;
+        cmd.content.set_rel_alt_from_dist_sensor.measurement_type = packet.param2;
+        cmd.content.set_rel_alt_from_dist_sensor.max_sensor_deviation_deg = packet.param3;
+        cmd.content.set_rel_alt_from_dist_sensor.max_mean_abs_deviation_cm = packet.param4;
+        break;
+
 #if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED
     case MAV_CMD_NAV_PAYLOAD_PLACE:
         cmd.p1 = packet.param1*100; // copy max-descend parameter (m->cm)
@@ -1872,6 +1879,13 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         if (cmd.content.do_engine_control.allow_disarmed_start) {
             packet.param4 = ENGINE_CONTROL_OPTIONS_ALLOW_START_WHILE_DISARMED;
         }
+        break;
+
+    case MAV_CMD_DO_SET_REL_ALT_FROM_DIST_SENSOR:       // MAV ID: 225
+        packet.param1 = cmd.content.set_rel_alt_from_dist_sensor.measurement_span;
+        packet.param2 = cmd.content.set_rel_alt_from_dist_sensor.measurement_type;
+        packet.param3 = cmd.content.set_rel_alt_from_dist_sensor.max_sensor_deviation_deg;
+        packet.param4 = cmd.content.set_rel_alt_from_dist_sensor.max_mean_abs_deviation_cm;
         break;
 
 #if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED
@@ -2858,6 +2872,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "VTOLTransition";
     case MAV_CMD_DO_ENGINE_CONTROL:
         return "EngineControl";
+    case MAV_CMD_DO_SET_REL_ALT_FROM_DIST_SENSOR:
+        return "SetRelAltFromDistSensor";
     case MAV_CMD_CONDITION_YAW:
         return "CondYaw";
     case MAV_CMD_DO_RETURN_PATH_START:
