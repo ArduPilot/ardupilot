@@ -61,9 +61,13 @@ bool AP_Camera_Servo::trigger_pic()
 
 bool AP_Camera_Servo::set_zoom(ZoomType zoom_type, float zoom_value)
 {
-    if (zoom_type == ZoomType::RATE) {
-        zoom_current_rate = zoom_value;
-        return true;
+    switch (zoom_type) {
+        case ZoomType::RATE:
+            zoom_current_rate = zoom_value;
+            return true;
+        case ZoomType::PCT:
+            SRV_Channels::set_output_scaled(SRV_Channel::k_cam_zoom, zoom_value * 0.01);
+            return true;
     }
     return false;
 }
@@ -71,9 +75,15 @@ bool AP_Camera_Servo::set_zoom(ZoomType zoom_type, float zoom_value)
 // set focus specified as rate
 SetFocusResult AP_Camera_Servo::set_focus(FocusType focus_type, float focus_value)
 {
-    if (focus_type == FocusType::RATE) {
-        focus_current_rate = focus_value;
-        return SetFocusResult::ACCEPTED;
+    switch (focus_type) {
+        case FocusType::RATE:
+            focus_current_rate = focus_value;
+            return SetFocusResult::ACCEPTED;
+        case FocusType::PCT:
+            SRV_Channels::set_output_scaled(SRV_Channel::k_cam_focus, focus_value * 0.01);
+            return SetFocusResult::ACCEPTED;
+        case FocusType::AUTO:
+            return SetFocusResult::UNSUPPORTED;
     }
     return SetFocusResult::UNSUPPORTED;
 }
