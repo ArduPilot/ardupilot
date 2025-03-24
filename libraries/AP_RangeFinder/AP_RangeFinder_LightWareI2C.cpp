@@ -470,6 +470,7 @@ void AP_RangeFinder_LightWareI2C::legacy_timer(void)
         // update range_valid state based on distance measured
         update_status();
         state.last_reading_ms = AP_HAL::millis();
+        update_history();
     } else {
         set_status(RangeFinder::Status::NoData);
     }
@@ -481,6 +482,7 @@ void AP_RangeFinder_LightWareI2C::sf20_timer(void)
         // update range_valid state based on distance measured
         update_status();
         state.last_reading_ms = AP_HAL::millis();
+        update_history();
     } else {
         set_status(RangeFinder::Status::NoData);
     }
