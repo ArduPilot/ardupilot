@@ -429,7 +429,12 @@ void Plane::reset_offset_altitude(void)
  */
 void Plane::set_offset_altitude_location(const Location &start_loc, const Location &destination_loc)
 {
-    target_altitude.offset_cm = destination_loc.alt - start_loc.alt;
+    ftype alt_difference_m = 0;
+    if (destination_loc.get_alt_distance(start_loc, alt_difference_m)) {
+        target_altitude.offset_cm = alt_difference_m * 100;
+    } else {
+        target_altitude.offset_cm = 0;
+    }
 
 #if AP_TERRAIN_AVAILABLE
     /*
