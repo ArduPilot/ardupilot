@@ -89,6 +89,7 @@ void AP_RangeFinder_DroneCAN::update()
         state.distance_m = _distance_cm * 0.01f;
         state.last_reading_ms = _last_reading_ms;
         update_status();
+        update_history();
         new_data = false;
     } else if (_status != RangeFinder::Status::Good) {
         //handle additional states received by measurement handler

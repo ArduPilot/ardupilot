@@ -150,6 +150,7 @@ void AP_RangeFinder_TOFSenseF_I2C::update(void)
         state.distance_m = distance_mm * 0.001f;
         new_distance = false;
         update_status();
+        update_history();
     } else if (AP_HAL::millis() - state.last_reading_ms > 300) {
         // if no updates for 0.3 seconds set no-data
         set_status(RangeFinder::Status::NoData);
