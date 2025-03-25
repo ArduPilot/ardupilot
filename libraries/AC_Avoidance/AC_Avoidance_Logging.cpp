@@ -12,10 +12,17 @@
 #if AP_OAPATHPLANNER_BENDYRULER_ENABLED
 void AP_OABendyRuler::Write_OABendyRuler(const uint8_t type, const bool active, const float target_yaw, const float target_pitch, const bool resist_chg, const float margin, const Location &final_dest, const Location &oa_dest) const
 {
-    int32_t oa_dest_alt, final_alt;
-    const bool got_oa_dest = oa_dest.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, oa_dest_alt);
-    const bool got_final_dest = final_dest.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, final_alt);
-    
+    auto &logger = AP::logger();
+
+    float oa_dest_alt;
+    if (!oa_dest.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, oa_dest_alt)) {
+        oa_dest_alt = logger.quiet_nanf();
+    }
+    float final_alt;
+    if (!final_dest.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, final_alt)) {
+        final_alt = logger.quiet_nanf();
+    }
+
     const struct log_OABendyRuler pkt{
         LOG_PACKET_HEADER_INIT(LOG_OA_BENDYRULER_MSG),
         time_us     : AP_HAL::micros64(),
@@ -28,12 +35,12 @@ void AP_OABendyRuler::Write_OABendyRuler(const uint8_t type, const bool active, 
         margin      : margin,
         final_lat   : final_dest.lat,
         final_lng   : final_dest.lng,
-        final_alt   : got_final_dest ? final_alt : final_dest.alt,
+        final_alt   : final_alt,
         oa_lat      : oa_dest.lat,
         oa_lng      : oa_dest.lng,
-        oa_alt      : got_oa_dest ? oa_dest_alt : oa_dest.alt
+        oa_alt      : oa_dest_alt
     };
-    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+    logger.WriteBlock(&pkt, sizeof(pkt));
 }
 #endif  // AP_OAPATHPLANNER_BENDYRULER_ENABLED
 
