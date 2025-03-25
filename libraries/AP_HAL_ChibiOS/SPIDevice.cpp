@@ -292,6 +292,7 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     if (!bus.semaphore.check_owner()) {
         return false;
     }
+    // callers should prefer transfer_fullduplex() to relying on this semantic
     if ((send_len == recv_len && send == recv) || !send || !recv) {
         // simplest cases, needed for DMA
         return do_transfer(send, recv, recv_len?recv_len:send_len);
@@ -322,6 +323,14 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t
         memcpy(recv, buf, len);
     }
     return ret;
+}
+
+bool SPIDevice::transfer_fullduplex(uint8_t *send_recv, uint32_t len)
+{
+    if (!bus.semaphore.check_owner()) {
+        return false;
+    }
+    return do_transfer(send_recv, send_recv, len);
 }
 
 AP_HAL::Semaphore *SPIDevice::get_semaphore()

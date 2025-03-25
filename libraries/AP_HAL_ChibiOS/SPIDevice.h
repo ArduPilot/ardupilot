@@ -103,6 +103,9 @@ public:
     bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                              uint32_t len) override;
 
+    /* See AP_HAL::SPIDevice::transfer_fullduplex() */
+    bool transfer_fullduplex(uint8_t *send_recv, uint32_t len) override;
+
     /*
         Links the bank select callback to the spi bus, so that even when
         used outside of the driver bank selection can be done.
