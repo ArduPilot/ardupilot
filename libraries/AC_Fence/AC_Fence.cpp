@@ -786,6 +786,11 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
         return 0;
     }
 
+    // take lock inside critical section
+    if (!_poly_loader.get_loaded_fence_semaphore().take_nonblocking()) {
+        return 0;
+    }
+
     // disable the (temporarily) disabled fences
     enable(false, disabled_fences, false);
 
@@ -820,12 +825,15 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
     if (_manual_recovery_start_ms != 0) {
         // we ignore any fence breaches during the manual recovery period which is about 10 seconds
         if ((AP_HAL::millis() - _manual_recovery_start_ms) < AC_FENCE_MANUAL_RECOVERY_TIME_MIN) {
+            _poly_loader.get_loaded_fence_semaphore().give();
             return 0;
         }
         // recovery period has passed so reset manual recovery time
         // and continue with fence breach checks
         _manual_recovery_start_ms = 0;
     }
+
+    _poly_loader.get_loaded_fence_semaphore().give();
 
     // return any new breaches that have occurred
     return ret;
