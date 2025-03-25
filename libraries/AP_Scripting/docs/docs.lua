@@ -3791,7 +3791,7 @@ AR_AttitudeControl = {}
 
 -- return attitude controller slew rates for rovers
 ---@return number -- steering slew rate
----@return number -- spees slew rate
+---@return number -- speed slew rate
 function AR_AttitudeControl:get_srate() end
 
 -- copter position controller
