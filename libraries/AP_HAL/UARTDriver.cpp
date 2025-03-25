@@ -356,8 +356,15 @@ void AP_HAL::UARTDriver::logging_loop(void)
                 // short writes are unlikely and are ignored (only FS full errors)
                 AP::FS().write(loginfo.fd, p, n);
                 loginfo.buf.advance(n);
+                loginfo.bytes_requiring_fsync = true;
             }
-            AP::FS().fsync(loginfo.fd);
+            const auto now_ms = AP_HAL::millis();
+            if (loginfo.bytes_requiring_fsync > 0 &&
+                now_ms - loginfo.last_fsync_ms > 1000) {
+                AP::FS().fsync(loginfo.fd);
+                loginfo.bytes_requiring_fsync = false;
+                loginfo.last_fsync_ms = now_ms;
+            }
         }
     }
 }

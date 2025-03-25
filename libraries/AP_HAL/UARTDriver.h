@@ -302,6 +302,8 @@ private:
         int fd = -1;
         ByteBuffer buf{16000};
         uint8_t instance;
+        bool bytes_requiring_fsync;
+        uint32_t last_fsync_ms;
     };
     struct LogInfo *loginfo;  // log info for *this* backend
 
