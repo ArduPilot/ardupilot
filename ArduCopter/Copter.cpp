@@ -689,7 +689,6 @@ void Copter::ten_hz_logging_loop()
         AP::ins().Write_Vibration();
     }
     if (should_log(MASK_LOG_CTUN)) {
-        attitude_control->control_monitor_log();
 #if HAL_PROXIMITY_ENABLED
         g2.proximity.log();  // Write proximity sensor distances
 #endif
