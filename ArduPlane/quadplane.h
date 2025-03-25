@@ -551,8 +551,8 @@ private:
         uint8_t motor_count;          // number of motors to cycle
     } motor_test;
 
-    // time of last control log message
-    uint32_t last_ctrl_log_ms;
+    // time of last MOTB log message
+    uint32_t last_motb_log_ms;
 
     // time of last QTUN log message
     uint32_t last_qtun_log_ms;
