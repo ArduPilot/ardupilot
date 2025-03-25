@@ -103,10 +103,6 @@ void AP_SystemID::start()
         gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: No axis selected");
         return;
     }
-    if (!plane.quadplane.enabled()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: only for quadplane");
-        return;
-    }
     if (!plane.control_mode->supports_systemid()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Not supported in mode %s", plane.control_mode->name());
         return;
@@ -119,7 +115,9 @@ void AP_SystemID::start()
     attitude_offset_deg.zero();
     throttle_offset = 0;
 
-    restore.att_bf_feedforward = plane.quadplane.attitude_control->get_bf_feedforward();
+    if (plane.quadplane.enabled()) {
+        restore.att_bf_feedforward = plane.quadplane.attitude_control->get_bf_feedforward();
+    }
 
     waveform_time = 0;
     time_const_freq = 2.0 / frequency_start; // Two full cycles at the starting frequency
@@ -155,15 +153,17 @@ void AP_SystemID::stop()
         attitude_offset_deg.zero();
         throttle_offset = 0;
 
-        auto *attitude_control = plane.quadplane.attitude_control;
-        attitude_control->bf_feedforward(restore.att_bf_feedforward);
-        attitude_control->rate_bf_roll_sysid(0);
-        attitude_control->rate_bf_pitch_sysid(0);
-        attitude_control->rate_bf_yaw_sysid(0);
-        plane.quadplane.pos_control->set_xy_control_scale_factor(1);
+        if (plane.quadplane.enabled()) {
+            auto *attitude_control = plane.quadplane.attitude_control;
+            attitude_control->bf_feedforward(restore.att_bf_feedforward);
+            attitude_control->rate_bf_roll_sysid(0);
+            attitude_control->rate_bf_pitch_sysid(0);
+            attitude_control->rate_bf_yaw_sysid(0);
+            plane.quadplane.pos_control->set_xy_control_scale_factor(1);
 
-        // re-initialise the XY controller so we take current position as target
-        plane.quadplane.pos_control->init_xy_controller();
+            // re-initialise the XY controller so we take current position as target
+            plane.quadplane.pos_control->init_xy_controller();
+        }
 
         gcs().send_text(MAV_SEVERITY_INFO, "SystemID stopped");
     }
@@ -204,42 +204,80 @@ void AP_SystemID::update()
             attitude_offset_deg.z = waveform_sample;
             break;
         case AxisType::RECOVER_ROLL:
-            attitude_offset_deg.x = waveform_sample;
-            attitude_control->bf_feedforward(false);
+            if (plane.quadplane.enabled() && plane.quadplane.in_vtol_mode()) {
+                attitude_offset_deg.x = waveform_sample;
+                attitude_control->bf_feedforward(false);
+            } else {
+
+            }
             break;
         case AxisType::RECOVER_PITCH:
-            attitude_offset_deg.y = waveform_sample;
-            attitude_control->bf_feedforward(false);
+            if (plane.quadplane.enabled() && plane.quadplane.in_vtol_mode()) {
+                attitude_offset_deg.y = waveform_sample;
+                attitude_control->bf_feedforward(false);
+            } else {
+
+            }
             break;
         case AxisType::RECOVER_YAW:
-            attitude_offset_deg.z = waveform_sample;
-            attitude_control->bf_feedforward(false);
+            if (plane.quadplane.enabled() && plane.quadplane.in_vtol_mode()) {
+                attitude_offset_deg.z = waveform_sample;
+                attitude_control->bf_feedforward(false);
+            } else {
+
+            }
             break;
         case AxisType::RATE_ROLL:
-            attitude_control->rate_bf_roll_sysid(radians(waveform_sample));
+            if (plane.quadplane.enabled() && plane.quadplane.in_vtol_mode()) {
+                attitude_control->rate_bf_roll_sysid(radians(waveform_sample));
+            } else {
+                plane.rollController.rate_bf_sysid(waveform_sample);
+            }
             break;
         case AxisType::RATE_PITCH:
-            attitude_control->rate_bf_pitch_sysid(radians(waveform_sample));
+            if (plane.quadplane.enabled() && plane.quadplane.in_vtol_mode()) {
+                attitude_control->rate_bf_pitch_sysid(radians(waveform_sample));
+            } else {
+                plane.pitchController.rate_bf_sysid(waveform_sample);
+            }
             break;
         case AxisType::RATE_YAW:
-            attitude_control->rate_bf_yaw_sysid(radians(waveform_sample));
+            if (plane.quadplane.enabled() && plane.quadplane.in_vtol_mode()) {
+                attitude_control->rate_bf_yaw_sysid(radians(waveform_sample));
+            } else {
+                plane.yawController.rate_bf_sysid(waveform_sample);
+            }
             break;
         case AxisType::MIX_ROLL:
-            attitude_control->actuator_roll_sysid(waveform_sample);
+            if (plane.quadplane.enabled() && plane.quadplane.in_vtol_mode()) {
+                attitude_control->actuator_roll_sysid(waveform_sample);
+            } else {
+                plane.rollController.actuator_sysid(waveform_sample);
+            }
             break;
         case AxisType::MIX_PITCH:
-            attitude_control->actuator_pitch_sysid(waveform_sample);
+            if (plane.quadplane.enabled() && plane.quadplane.in_vtol_mode()) {
+                attitude_control->actuator_pitch_sysid(waveform_sample);
+            } else {
+                plane.pitchController.actuator_sysid(waveform_sample);
+            }
             break;
         case AxisType::MIX_YAW:
-            attitude_control->actuator_yaw_sysid(waveform_sample);
+        if (plane.quadplane.enabled() && plane.quadplane.in_vtol_mode()) {
+                attitude_control->actuator_yaw_sysid(waveform_sample);
+            } else {
+                plane.yawController.actuator_sysid(waveform_sample);
+            }
             break;
         case AxisType::MIX_THROTTLE:
             throttle_offset = waveform_sample;
             break;
     }
 
-    // reduce control in XY axis when in position controlled modes
-    plane.quadplane.pos_control->set_xy_control_scale_factor(xy_control_mul);
+    if (plane.quadplane.enabled() && plane.quadplane.in_vtol_mode()) {
+        // reduce control in XY axis when in position controlled modes
+        plane.quadplane.pos_control->set_xy_control_scale_factor(xy_control_mul);
+    }
 
     if (log_subsample <= 0) {
         log_data();
@@ -295,8 +333,10 @@ void AP_SystemID::log_data() const
                                     delta_velocity.y * dt_vel_inv,
                                     delta_velocity.z * dt_vel_inv);
 
-        // log attitude controller at the same rate
-        plane.quadplane.Log_Write_AttRate();
+        if (plane.quadplane.enabled() && plane.quadplane.in_vtol_mode()) {
+            // log attitude controller at the same rate
+            plane.quadplane.Log_Write_AttRate();
+        }
     }
 #endif // HAL_LOGGING_ENABLED
 }
