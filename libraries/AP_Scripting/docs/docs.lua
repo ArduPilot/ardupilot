@@ -4094,3 +4094,14 @@ function AP_Servo_Telem_Data_ud:measured_position() end
 -- get commanded position
 ---@return number|nil -- comanded position in degrees or nil if not available
 function AP_Servo_Telem_Data_ud:command_position() end
+
+-- simulator specific bindings
+sim = {}
+
+-- set pose of simulated vehicle. Requires AHRS_EKF_TYPE=10
+---@param instance integer -- 0 for first vehicle
+---@param loc Location_ud
+---@param orient Quaternion_ud
+---@param velocity_bf Vector3f_ud -- body frame velocity
+---@return boolean
+function sim:set_pose(instance, loc, orient, velocity_bf) end
