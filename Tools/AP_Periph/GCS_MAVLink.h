@@ -58,9 +58,8 @@ public:
 
 protected:
 
-    GCS_MAVLINK_Periph *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-                                               AP_HAL::UARTDriver &uart) override {
-        return NEW_NOTHROW GCS_MAVLINK_Periph(params, uart);
+    GCS_MAVLINK_Periph *new_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) override {
+        return NEW_NOTHROW GCS_MAVLINK_Periph(uart);
     }
 
 private:
