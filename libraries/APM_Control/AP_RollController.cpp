@@ -208,8 +208,16 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
     } else if (gains.rmax_pos && desired_rate > gains.rmax_pos) {
         desired_rate = gains.rmax_pos;
     }
+    desired_rate += _sysid_ang_vel_body;
+    _sysid_ang_vel_body = 0.0;
 
-    return _get_rate_out(desired_rate, scaler, disable_integrator, get_airspeed(), ground_mode);
+    float act_out = _get_rate_out(desired_rate, scaler, disable_integrator, get_airspeed(), ground_mode);
+
+    act_out += _actuator_sysid;
+
+    _actuator_sysid = 0.0;
+
+    return act_out;
 }
 
 /*

@@ -25,6 +25,12 @@ public:
     // desired_rate is in deg/sec. scaler is the surface speed scaler
     float get_rate_out(float desired_rate, float scaler, bool disable_integrator);
 
+    // Set system identification angular velocity in degrees/s
+    void rate_bf_sysid(float rate) { _sysid_ang_vel_body = rate; }
+
+    // Set system identification actuator
+    void actuator_sysid(float command) { _actuator_sysid = command; }
+
     void reset_I();
 
     void reset_rate_PID();
@@ -54,6 +60,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    float _sysid_ang_vel_body;
+    float _actuator_sysid;
     const AP_FixedWing &aparm;
     AP_Float _K_A;
     AP_Float _K_I;

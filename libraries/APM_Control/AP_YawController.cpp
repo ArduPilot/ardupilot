@@ -313,6 +313,8 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     if (underspeed) {
         limit_I = true;
     }
+    desired_rate += _sysid_ang_vel_body;
+    _sysid_ang_vel_body = 0.0;
 
     // the P and I elements are scaled by sq(scaler). To use an
     // unmodified AC_PID object we scale the inputs and calculate FF separately
@@ -363,6 +365,10 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
         // let autotune have a go at the values
         autotune->update(pinfo, scaler, angle_err_deg);
     }
+
+
+    out += _actuator_sysid;
+    _actuator_sysid = 0.0;
 
     // output is scaled to notional centidegrees of deflection
     return constrain_float(out * 100, -4500, 4500);
