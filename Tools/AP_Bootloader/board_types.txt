@@ -401,6 +401,12 @@ AP_HW_ZeroOne_GNSS                   5602
 AP_HW_DroneBuild_G1                  5700
 AP_HW_DroneBuild_G2                  5701
 
+#IDs 5800-5809 reserved for Droneer
+AP_HW_DroneerF405                    5800
+
+#IDs 5810-5819 reserved for Brother Hobby
+AP_HW_BrotherHobbyH743               5810
+
 # IDs 6000-6099 reserved for SpektreWorks
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
