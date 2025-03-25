@@ -163,6 +163,13 @@ public:
       serial_setup_output()
      */
     void serial_end(uint32_t chanmask) override;
+
+    /*
+      reset serial output. This re-initializes the DMA configuration to that configured by
+      serial_setup_output()
+     */
+    void serial_reset(uint32_t chanmask) override;
+
 #endif
 
     /*

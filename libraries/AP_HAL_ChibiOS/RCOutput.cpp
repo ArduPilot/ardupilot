@@ -2298,7 +2298,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 
 /*
   end serial output
-*/
+ */
 void RCOutput::serial_end(uint32_t chanmask)
 {
     osalDbgAssert(hal.scheduler->in_main_thread(), "serial_end(): not called from main thread");
@@ -2321,6 +2321,23 @@ void RCOutput::serial_end(uint32_t chanmask)
     }
     serial_group = nullptr;
     serial_chanmask = 0;
+}
+
+/*
+  reset serial output
+ */
+void RCOutput::serial_reset(uint32_t chanmask)
+{
+    osalDbgAssert(hal.scheduler->in_main_thread(), "serial_reset(): not called from main thread");
+    chanmask >>= chan_offset;
+    // reset settings as best we can
+    if (in_soft_serial()) {
+        palSetLineMode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
+        dma_cancel(*serial_group);
+        chEvtGetAndClearEvents(serial_event_mask);
+        pwmStop(serial_group->pwm_drv);
+        pwmStart(serial_group->pwm_drv, &serial_group->pwm_cfg);
+    }
 }
 #endif // HAL_SERIAL_ESC_COMM_ENABLED
 
