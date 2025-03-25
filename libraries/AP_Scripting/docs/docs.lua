@@ -3818,13 +3818,6 @@ function poscontrol:get_vel_target() end
 ---@return Vector3f_ud|nil
 function poscontrol:get_accel_target() end
 
--- desc
-AR_PosControl = {}
-
--- return position controller slew rates for rovers
----@return number -- velocity slew rate
-function AR_PosControl:get_srate() end
-
 -- precision landing access
 precland = {}
 
