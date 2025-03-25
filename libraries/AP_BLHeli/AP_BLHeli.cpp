@@ -849,6 +849,10 @@ void AP_BLHeli::BL_SendCMDRunRestartBootloader(void)
 uint8_t AP_BLHeli::BL_SendCMDSetBuffer(const uint8_t *buf, uint16_t nbytes)
 {
     uint8_t sCMD[] = {CMD_SET_BUFFER, 0, uint8_t(nbytes>>8), uint8_t(nbytes&0xff)};
+    if (nbytes == 0) {
+        // set high byte
+        sCMD[2] = 1;
+    }
     if (!BL_SendBuf(sCMD, 4)) {
         debug_console("BL_SendCMDSetBuffer send cmd failed");
         return false;
@@ -1094,8 +1098,9 @@ void AP_BLHeli::blheli_process_command(void)
         case imARM_BLB: {
             if (!BL_WriteFlash(buf, nbytes)) {
                 // For reasons unknown BL_WriteFlash can bork the DMA engine, make some attempt to get
-                // back to a sane state if this happens
-                serial_end();
+                // back to a sane state if this happens. We can't call serial_end() as that will 
+                // restart dshot output
+                hal.rcout->serial_reset(motor_mask);
             }
             break;
         }
