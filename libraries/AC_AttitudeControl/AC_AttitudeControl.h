@@ -614,35 +614,7 @@ protected:
 
     static AC_AttitudeControl *_singleton;
 
-protected:
-    /*
-      state of control monitoring
-    */
-    struct {
-        float rms_roll_P;
-        float rms_roll_D;
-        float rms_pitch_P;
-        float rms_pitch_D;
-        float rms_yaw;
-    } _control_monitor;
-
-    // update state in ControlMonitor
-    void control_monitor_filter_pid(float value, float &rms_P);
-    void control_monitor_update(void);
-
 public:
-    // log a CTRL message
-    void control_monitor_log(void) const;
-
-    // return current RMS controller filter for each axis
-    float control_monitor_rms_output_roll(void) const;
-    float control_monitor_rms_output_roll_P(void) const;
-    float control_monitor_rms_output_roll_D(void) const;
-    float control_monitor_rms_output_pitch_P(void) const;
-    float control_monitor_rms_output_pitch_D(void) const;
-    float control_monitor_rms_output_pitch(void) const;
-    float control_monitor_rms_output_yaw(void) const;
-
     // structure for angle and/or rate target
     enum class HeadingMode {
         Angle_Only,
