@@ -204,6 +204,12 @@ public:
     virtual void serial_end(uint32_t chanmask) {}
     
     /*
+      reset serial output. This re-initializes the DMA configuration to that configured by
+      serial_setup_output()
+     */
+    virtual void serial_reset(uint32_t chanmask) {}
+
+     /*
       output modes. Allows for support of PWM, oneshot and dshot 
     */
     // this enum is used by BLH_OTYPE and ESC_PWM_TYPE on AP_Periph
