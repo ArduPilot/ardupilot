@@ -86,7 +86,8 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Landing gear auto retract/deploy options
-    // @Description: Options to retract or deploy landing gear in Auto or Guided mode
+    // @Description{Copter}: Options to retract or deploy landing gear in Auto or Guided mode
+    // @Description{Plane}: Options to retract or deploy landing gear in Auto, Takeoff and Autoland modes
     // @Bitmask: 0:Retract after Takeoff,1:Deploy during Land
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 9, AP_LandingGear, _options, 3),
