@@ -29,6 +29,7 @@
 
 #define DEG_TO_RAD      (M_PI / 180.0f)
 #define RAD_TO_DEG      (180.0f / M_PI)
+#define DEG_TO_QUAD     (1.0f / 90.0f)
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
