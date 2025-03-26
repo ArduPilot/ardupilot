@@ -16,13 +16,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // SYSID_THISMAV was here
 
-    // @Param: SYSID_MYGCS
-    // @DisplayName: Ground station MAVLink system ID
-    // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
-    // @Range: 1 255
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
+    // SYSID_MYGCS was here
 
     // AP_SerialManager was here
 
@@ -1034,13 +1028,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #endif
 
     // 3 was used by prototype for servo_channels
-    
-    // @Param: SYSID_ENFORCE
-    // @DisplayName: GCS sysid enforcement
-    // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
-    // @Values: 0:NotEnforced,1:Enforced
-    // @User: Advanced
-    AP_GROUPINFO("SYSID_ENFORCE", 4, ParametersG2, sysid_enforce, 0),
+
+    // 4 was used by SYSID_ENFORCE
 
     // AP_Stats was 5
 
