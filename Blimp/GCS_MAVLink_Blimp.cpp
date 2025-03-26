@@ -172,11 +172,6 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
     }
 }
 
-uint32_t GCS_MAVLINK_Blimp::telem_delay() const
-{
-    return (uint32_t)(blimp.g.telem_delay);
-}
-
 bool GCS_Blimp::vehicle_initialised() const
 {
     return blimp.ap.initialised;
