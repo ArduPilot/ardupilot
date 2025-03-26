@@ -280,6 +280,7 @@ void AP_Scheduler::run(uint32_t time_available)
                   task.name,
                   (unsigned)time_taken,
                   (unsigned)_task_time_allowed);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "overrun task[%u] (%u/%u)", (unsigned)i, (unsigned)time_taken, (unsigned)_task_time_allowed);
         }
 
         perf_info.update_task_info(i, time_taken, overrun);
