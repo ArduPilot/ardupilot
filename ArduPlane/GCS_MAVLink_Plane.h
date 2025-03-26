@@ -15,8 +15,6 @@ public:
 
 protected:
 
-    uint32_t telem_delay() const override;
-
 #if HAL_LOGGING_ENABLED
     uint32_t log_radio_bit() const override { return MASK_LOG_PM; }
 #endif

@@ -403,11 +403,6 @@ void GCS_MAVLINK_Plane::send_pid_tuning()
 #endif
 }
 
-uint32_t GCS_MAVLINK_Plane::telem_delay() const
-{
-    return (uint32_t)(plane.g.telem_delay);
-}
-
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 {
