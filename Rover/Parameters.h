@@ -84,7 +84,7 @@ public:
         k_param_sysid_my_gcs_old,
         k_param_serial0_baud_old,   // unused
         k_param_serial1_baud_old,   // unused
-        k_param_telem_delay,
+        k_param_telem_delay_old,
         k_param_skip_gyro_cal,      // unused
         k_param_gcs2_unused,        // unused in ArduPilot-4.7
         k_param_serial2_baud_old,   // unused
@@ -240,10 +240,6 @@ public:
     AP_Int32    log_bitmask;
     AP_Int8     reset_switch_chan;
     AP_Int8     initial_mode;
-
-    // Telemetry control
-    //
-    AP_Int8     telem_delay;
 
     // navigation parameters
     //
