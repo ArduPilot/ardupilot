@@ -349,7 +349,7 @@ void RCOutput::dshot_collect_dma_locks(rcout_timer_t cycle_start_us, rcout_timer
             if (!mask) {
                 dma_cancel(group);
             }
-            group.dshot_waiter = nullptr;
+            osalDbgAssert(group.dshot_waiter == nullptr, "Dshot waiter was not reset");
 #ifdef HAL_WITH_BIDIR_DSHOT
             // if using input capture DMA then clean up
             if (group.bdshot.enabled) {
@@ -1835,12 +1835,12 @@ __RAMFUNC__ void RCOutput::dma_unlock(virtual_timer_t* vt, void *p)
 {
     chSysLockFromISR();
     pwm_group *group = (pwm_group *)p;
-
     group->dshot_state = DshotState::IDLE;
     if (group->dshot_waiter != nullptr) {
         // tell the waiting process we've done the DMA. Note that
-        // dshot_waiter can be null if we have cancelled the send
+        // dshot_waiter can be null if we have just cancelled the send
         chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
+        group->dshot_waiter = nullptr;
     }
     chSysUnlockFromISR();
 }
@@ -1899,6 +1899,7 @@ void RCOutput::dma_cancel(pwm_group& group)
     chEvtGetAndClearEventsI(group.dshot_event_mask | DSHOT_CASCADE);
 
     group.dshot_state = DshotState::IDLE;
+    group.dshot_waiter = nullptr;
     chSysUnlock();
 }
 
