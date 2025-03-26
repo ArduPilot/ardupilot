@@ -523,7 +523,7 @@ void AP_RCProtocol_CRSF::decode_variable_bit_channels(const uint8_t* payload, ui
     }
 
     // calculate the number of channels packed
-    uint8_t numOfChannels = MIN(uint8_t(((frame_length - 2) * 8 - CRSF_SUBSET_RC_STARTING_CHANNEL_BITS) / channelBits), CRSF_MAX_CHANNELS);
+    uint8_t numOfChannels = MIN(uint8_t(((frame_length - 2) * 8 - CRSF_SUBSET_RC_STARTING_CHANNEL_BITS) / channelBits), nchannels);
 
     // unpack the channel data
     uint8_t bitsMerged = 0;
@@ -541,10 +541,10 @@ void AP_RCProtocol_CRSF::decode_variable_bit_channels(const uint8_t* payload, ui
             bitsMerged += 8;
         }
         // check for corrupt frame
-        if (uint8_t(channel_data->starting_channel + n) >= CRSF_MAX_CHANNELS) {
+        if (uint8_t(channel_data->starting_channel + n) >= nchannels) {
             return;
         }
-        _channels[channel_data->starting_channel + n] =
+        values[channel_data->starting_channel + n] =
             uint16_t(channelScale * float(uint16_t(readValue & channelMask)) + 988);
         readValue >>= channelBits;
         bitsMerged -= channelBits;
