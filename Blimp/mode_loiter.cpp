@@ -3,9 +3,6 @@
  * Init and run calls for loiter flight mode
  */
 
-//Number of seconds of movement that the target position can be ahead of actual position.
-#define POS_LAG 1
-
 bool ModeLoiter::init(bool ignore_checks)
 {
     target_pos = blimp.pos_ned;
@@ -22,27 +19,45 @@ void ModeLoiter::run()
     Vector3f pilot;
     float pilot_yaw;
     get_pilot_input(pilot, pilot_yaw);
-    pilot.x *= g.max_pos_xy * dt;
-    pilot.y *= g.max_pos_xy * dt;
-    pilot.z *= g.max_pos_z * dt;
-    pilot_yaw *= g.max_pos_yaw * dt;
-
     if (g.simple_mode == 0) {
         //If simple mode is disabled, input is in body-frame, thus needs to be rotated.
         blimp.rotate_BF_to_NE(pilot.xy());
     }
+    pilot.x *= loiter->max_pos_x * dt;
+    pilot.y *= loiter->max_pos_y * dt;
+    pilot.z *= loiter->max_pos_z * dt;
+    pilot_yaw *= loiter->max_pos_yaw * dt;
 
-    if (fabsf(target_pos.x-blimp.pos_ned.x) < (g.max_pos_xy*POS_LAG)) {
+    // This keeps the target position from getting too far away from the blimp's actual position.
+    Vector4b close;
+    close.x = fabsf(target_pos.x-blimp.pos_ned.x) < (loiter->max_pos_x*blimp.loiter->pos_lag);
+    close.y = fabsf(target_pos.y-blimp.pos_ned.y) < (loiter->max_pos_y*blimp.loiter->pos_lag);
+    close.z = fabsf(target_pos.z-blimp.pos_ned.z) < (loiter->max_pos_z*blimp.loiter->pos_lag);
+    close.yaw = fabsf(wrap_PI(target_yaw-ahrs.get_yaw())) < (loiter->max_pos_yaw*blimp.loiter->pos_lag);
+
+    Vector4b targ_negative;
+    targ_negative.x = (target_pos.x > blimp.pos_ned.x) && (pilot.x < 0);
+    targ_negative.y = (target_pos.y > blimp.pos_ned.y) && (pilot.y < 0);
+
+    Vector4b targ_positive;
+    targ_positive.x = (target_pos.x < blimp.pos_ned.x) && (pilot.x > 0);
+    targ_positive.y = (target_pos.y < blimp.pos_ned.y) && (pilot.y > 0);
+
+
+    if ((close.x && close.y && close.z && close.yaw)) {
         target_pos.x += pilot.x;
-    }
-    if (fabsf(target_pos.y-blimp.pos_ned.y) < (g.max_pos_xy*POS_LAG)) {
+        target_pos.y += pilot.y;
+        target_pos.z += pilot.z;
+        target_yaw = wrap_PI(target_yaw + pilot_yaw);
+    } else if ((close.x && close.z && (targ_negative.y || targ_positive.y)) ||
+               (close.y && close.z && (targ_negative.x || targ_positive.x))) {
+        target_pos.x += pilot.x;
         target_pos.y += pilot.y;
     }
-    if (fabsf(target_pos.z-blimp.pos_ned.z) < (g.max_pos_z*POS_LAG)) {
-        target_pos.z += pilot.z;
-    }
-    if (fabsf(wrap_PI(target_yaw-ahrs.get_yaw())) < (g.max_pos_yaw*POS_LAG)) {
-        target_yaw = wrap_PI(target_yaw + pilot_yaw);
+
+    if (!blimp.motors->armed()) {
+        target_pos = blimp.pos_ned;
+        target_yaw = blimp.ahrs.get_yaw();
     }
 
     blimp.loiter->run(target_pos, target_yaw, Vector4b{false,false,false,false});
