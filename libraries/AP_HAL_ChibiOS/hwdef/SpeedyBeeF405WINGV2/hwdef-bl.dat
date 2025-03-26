@@ -1,0 +1,7 @@
+include ../SpeedyBeeF405WING/hwdef-bl.dat
+
+# board ID for firmware load
+undef APJ_BOARD_ID
+APJ_BOARD_ID AP_HW_SpeedyBeeF405WINGV2
+
+DEFAULTGPIO OUTPUT LOW PULLDOWN
