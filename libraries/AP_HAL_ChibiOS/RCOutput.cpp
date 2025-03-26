@@ -1867,9 +1867,11 @@ __RAMFUNC__ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
     chSysLockFromISR();
     dmaStreamDisable(group->dma);
 #if HAL_SERIAL_ESC_COMM_ENABLED
-    if (group->in_serial_dma && soft_serial_waiting()) {
-        // tell the waiting process we've done the DMA
-        chEvtSignalI(irq.waiter, serial_event_mask);
+    if (soft_serial_waiting()) {
+        if (group->in_serial_dma) {
+            // tell the waiting process we've done the DMA
+            chEvtSignalI(irq.waiter, serial_event_mask);
+        }
     } else
 #endif
     {
@@ -2038,6 +2040,8 @@ void RCOutput::fill_DMA_buffer_byte(dmar_uint_t *buffer, uint8_t stride, uint8_t
     }
 }
 
+#define BYTE_TIME(bitus) (bitus *  (BYTE_BITS + 2))   // timeout should come well after the next start bit
+
 /*
   send one serial byte, blocking call, should be called with the DMA lock held
 */
@@ -2053,12 +2057,17 @@ bool RCOutput::serial_write_byte(uint8_t b)
     // start sending the pulses out
     send_pulses_DMAR(*serial_group, BYTE_BITS*4*sizeof(uint32_t));
 
-    // wait for the event
-    eventmask_t mask = chEvtWaitAnyTimeout(serial_event_mask, chTimeMS2I(2));
+    // wait for the event, timing out as necessary
+    eventmask_t mask = chEvtWaitOneTimeout(serial_event_mask, chTimeUS2I(BYTE_TIME(serial_group->serial.bit_time_us)));
 
+    // in the event of a timeout reset the timeout and keep
+    // going since we have probably just missed the final event
+    if ((mask & serial_event_mask) == 0) {
+        dma_cancel(*serial_group);
+    }
     serial_group->in_serial_dma = false;
 
-    return (mask & serial_event_mask) != 0;
+    return true;
 }
 
 /*
@@ -2097,7 +2106,6 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
 }
 
 #define BAD_BYTE 0xFFFF
-#define BYTE_TIME(bitus) (bitus *  (BYTE_BITS + 2))   // timeout should come well after the next start bit
 #define START_BIT_TIMEOUT 2000 // 2ms
 
 ByteBuffer RCOutput::serial_buffer{64};
@@ -2294,7 +2302,13 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     chVTReset(&irq.serial_timeout);
     palSetLineMode(line, serial_mode);
     chSysUnlock();
-
+    // belt-and-braces reset to put DMA in a sane state for the write that will
+    // almost certainly follow this read. without this the DMA seems to get left in a state
+    // which bit shifts the DMA output on the first write. when that happens typically
+    // a CRC error will occur but some tools seem unable to cope with the appropriate retry.
+    dma_cancel(*serial_group);
+    pwmStop(serial_group->pwm_drv);
+    pwmStart(serial_group->pwm_drv, &serial_group->pwm_cfg);
 #if RCOU_SERIAL_TIMING_DEBUG
     palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
 #endif
