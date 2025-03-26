@@ -313,15 +313,6 @@ void GCS_MAVLINK_Copter::send_winch_status() const
 }
 #endif
 
-uint8_t GCS_MAVLINK_Copter::sysid_my_gcs() const
-{
-    return copter.g.sysid_my_gcs;
-}
-bool GCS_MAVLINK_Copter::sysid_enforce() const
-{
-    return copter.g2.sysid_enforce;
-}
-
 uint32_t GCS_MAVLINK_Copter::telem_delay() const
 {
     return (uint32_t)(copter.g.telem_delay);

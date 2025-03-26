@@ -208,7 +208,7 @@ public:
         k_param_gcs0_unused = 110,   // unused in ArduPilot-4.7
         k_param_gcs1_unused,         // unused in ArduPilot-4.7
         k_param_sysid_this_mav_old,
-        k_param_sysid_my_gcs,
+        k_param_sysid_my_gcs_old,
         k_param_serial1_baud_old, // deprecated
         k_param_telem_delay,
         k_param_gcs2_unused,         // unused in ArduPilot-4.7
@@ -391,7 +391,6 @@ public:
 
     // Telemetry control
     //
-    AP_Int16        sysid_my_gcs;
     AP_Int8         telem_delay;
 
     AP_Float        throttle_filt;
@@ -532,9 +531,6 @@ public:
     // proximity (aka object avoidance) library
     AP_Proximity proximity;
 #endif
-
-    // whether to enforce acceptance of packets only from sysid_my_gcs
-    AP_Int8 sysid_enforce;
 
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // advanced failsafe library
