@@ -21,9 +21,6 @@ protected:
 
     MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet) override;
 
-    uint8_t sysid_my_gcs() const override;
-    bool sysid_enforce() const override;
-
     bool params_ready() const override;
     void send_banner() override;
 
