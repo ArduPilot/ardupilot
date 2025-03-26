@@ -34,6 +34,9 @@ public:
         return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
     }
 
+    // Get lag in seconds.
+    bool get_lag(float &lag_sec) const override;
+
     // Methods
     bool read() override WARN_IF_UNUSED;
 
