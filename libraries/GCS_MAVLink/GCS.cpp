@@ -43,6 +43,57 @@ const AP_Param::GroupInfo GCS::var_info[] {
     // @User: Advanced
     AP_GROUPINFO("_SYSID",    1,     GCS,  sysid,  MAV_SYSID_DEFAULT),
 
+#if MAVLINK_COMM_NUM_BUFFERS > 0
+    // @Group: 1
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[0], "1", 11, GCS, _chan_var_info[0]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 1
+    // @Group: 2
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[1], "2", 12, GCS, _chan_var_info[1]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    // @Group: 3
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[2], "3", 13, GCS, _chan_var_info[2]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+    // @Group: 4
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[3], "4", 14, GCS, _chan_var_info[3]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 4
+    // @Group: 5
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[4], "5", 15, GCS, _chan_var_info[4]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 5
+    // @Group: 6
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[5], "6", 16, GCS, _chan_var_info[5]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 6
+    // @Group: 7
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[6], "7", 17, GCS, _chan_var_info[6]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 7
+    // @Group: 8
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[7], "8", 18, GCS, _chan_var_info[7]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 8
+    // @Group: 9
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[8], "9", 19, GCS, _chan_var_info[8]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 9
+    // @Group: 10
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[9], "10", 20, GCS, _chan_var_info[9]),
+#endif
+
     AP_GROUPEND
 };
 
