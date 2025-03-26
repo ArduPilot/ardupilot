@@ -413,11 +413,6 @@ void Rover::send_wheel_encoder_distance(const mavlink_channel_t chan)
     }
 }
 
-uint32_t GCS_MAVLINK_Rover::telem_delay() const
-{
-    return static_cast<uint32_t>(rover.g.telem_delay);
-}
-
 bool GCS_Rover::vehicle_initialised() const
 {
     return rover.control_mode != &rover.mode_initializing;
