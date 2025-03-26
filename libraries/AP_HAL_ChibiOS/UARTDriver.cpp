@@ -704,7 +704,7 @@ uint8_t UARTDriver::get_usb_parity() const
 
 uint32_t UARTDriver::_available()
 {
-    if (!_rx_initialised || _uart_owner_thd != chThdGetSelfX()) {
+    if (!_rx_initialised) {
         return 0;
     }
     if (sdef.is_usb) {
@@ -728,9 +728,6 @@ uint32_t UARTDriver::txspace()
 
 bool UARTDriver::_discard_input()
 {
-    if (_uart_owner_thd != chThdGetSelfX()){
-        return false;
-    }
     if (!_rx_initialised) {
         return false;
     }
@@ -747,9 +744,6 @@ bool UARTDriver::_discard_input()
 
 ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
 {
-    if (_uart_owner_thd != chThdGetSelfX()){
-        return -1;
-    }
     if (!_rx_initialised) {
         return -1;
     }
