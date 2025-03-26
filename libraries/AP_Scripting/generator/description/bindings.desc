@@ -1071,3 +1071,14 @@ userdata AP_Servo_Telem::TelemetryData field motor_temperature_cdeg int16_t'skip
 userdata AP_Servo_Telem::TelemetryData field pcb_temperature_cdeg int16_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::PCB_TEMP
 userdata AP_Servo_Telem::TelemetryData field status_flags uint8_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::STATUS
 userdata AP_Servo_Telem::TelemetryData field last_update_ms uint32_t'skip_check read
+
+userdata DroneCAN_Handle depends HAL_ENABLE_DRONECAN_DRIVERS
+userdata DroneCAN_Handle creation DroneCAN_Handle::new_handle 1
+userdata DroneCAN_Handle method close void
+userdata DroneCAN_Handle manual broadcast DroneCAN_Handle::broadcast 1 1
+userdata DroneCAN_Handle manual request DroneCAN_Handle::request 2 1
+userdata DroneCAN_Handle method subscribe boolean
+userdata DroneCAN_Handle manual check_message DroneCAN_Handle::check_message 0 2
+userdata DroneCAN_Handle field data_type uint16_t'skip_check write
+userdata DroneCAN_Handle field signature uint64_t write
+userdata DroneCAN_Handle field canfd boolean read write
