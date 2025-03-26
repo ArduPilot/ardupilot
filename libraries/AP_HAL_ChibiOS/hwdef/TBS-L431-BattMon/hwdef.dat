@@ -50,7 +50,7 @@ define AP_DAC_DEFAULT_VREF 20
 define AP_DAC_DEFAULT_BUS  0
 define AP_DAC_DEFAULT_VOLT 10
 define AP_DAC_DEFAULT_TYPE AP_DAC_TYPE_MCP40D1x
-define AP_DAC_CONVERSION_EQ(vo,vr) ((127.0/10000.0) * (0.8 * 21000 * 866 + 0.8 * 21000 * 169000 - (vo - 1.0) * 866 * 169000)/((vo - 1.0) * 169000 - 0.8 * 21000))
+define AP_DAC_MCP40D1X_CONVERSION_EQ(vo,vr) ((127.0/10000.0) * (0.8 * 21000 * 866 + 0.8 * 21000 * 169000 - ((vo) - 1.0) * 866 * 169000)/(((vo) - 1.0) * 169000 - 0.8 * 21000))
 
 # ---------------------- I2C bus ------------------------
 I2C_ORDER I2C1
