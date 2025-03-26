@@ -43,10 +43,6 @@ const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES
 };
 
-const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-    AP_GROUPEND
-};
-
 class Arming : public AP_Arming {
 public:
     Arming() : AP_Arming() {}
