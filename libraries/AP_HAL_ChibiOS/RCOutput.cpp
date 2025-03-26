@@ -1976,9 +1976,7 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t cha
         return false;
     }
 
-    // preserve the original thread priority and line state
     if (!in_soft_serial()) {
-        serial_priority = chThdGetSelfX()->realprio;
         // keep a record of the line mode so that it can be reliably restored after input
         // not resetting the linemode properly after input is absolutely fatal
         serial_mode = palReadLineMode(new_serial_group->pal_lines[new_serial_chan]);
@@ -2000,12 +1998,8 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t cha
             }
         }
     }
-    // run the thread doing serial IO at highest priority. This is needed to ensure we don't
-    // lose bytes when we switch between output and input
-    serial_thread = chThdGetSelfX();
     // mask of channels currently configured
     serial_chanmask |= chanmask;
-    chThdSetPriority(HIGHPRIO);
 
     // remember the bit period for serial_read_byte()
     serial_group->serial.bit_time_us = 1000000UL / baudrate;
@@ -2084,8 +2078,23 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
     osalDbgAssert(!serial_group->dma_handle->is_locked(), "DMA handle is already locked");
     serial_group->dma_handle->lock();
 #endif
+
+    // run the thread doing serial IO at highest priority. This is needed to ensure we don't
+    // lose bytes when we switch between output and input. Since we always check for acks after
+    // a write we reset the priority after the read.
+    serial_priority = chThdSetPriority(HIGHPRIO);
+
+    // belt-and-braces reset to put DMA in a sane state for the write that will
+    // almost certainly follow this read. without this the DMA seems to get left in a state
+    // which bit shifts the DMA output on the first write. when that happens typically
+    // a CRC error will occur but some tools seem unable to cope with the appropriate retry.
+    dma_cancel(*serial_group);
+    pwmStop(serial_group->pwm_drv);
+    pwmStart(serial_group->pwm_drv, &serial_group->pwm_cfg);
+
     while (len--) {
         if (!serial_write_byte(*bytes++)) {
+            chThdSetPriority(serial_priority);
 #if AP_HAL_SHARED_DMA_ENABLED
             serial_group->dma_handle->unlock();
 #endif
@@ -2286,6 +2295,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 #if RCOU_SERIAL_TIMING_DEBUG
         palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
 #endif
+        chThdSetPriority(serial_priority);
         palSetLineMode(line, serial_mode);
         return 0;
     }
@@ -2302,13 +2312,8 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     chVTReset(&irq.serial_timeout);
     palSetLineMode(line, serial_mode);
     chSysUnlock();
-    // belt-and-braces reset to put DMA in a sane state for the write that will
-    // almost certainly follow this read. without this the DMA seems to get left in a state
-    // which bit shifts the DMA output on the first write. when that happens typically
-    // a CRC error will occur but some tools seem unable to cope with the appropriate retry.
-    dma_cancel(*serial_group);
-    pwmStop(serial_group->pwm_drv);
-    pwmStart(serial_group->pwm_drv, &serial_group->pwm_cfg);
+    chThdSetPriority(serial_priority);
+
 #if RCOU_SERIAL_TIMING_DEBUG
     palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
 #endif
@@ -2324,10 +2329,6 @@ void RCOutput::serial_end(uint32_t chanmask)
     chanmask >>= chan_offset;
     // restore settings as best we can
     if (in_soft_serial()) {
-        if (serial_thread == chThdGetSelfX()) {
-            chThdSetPriority(serial_priority);
-            serial_thread = nullptr;
-        }
         palSetLineMode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
     }
     irq.waiter = nullptr;
