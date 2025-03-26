@@ -496,7 +496,7 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_TwistStamped& msg)
 }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
 #if AP_DDS_AIRSPEED_PUB_ENABLED
-bool AP_DDS_Client::update_topic(geometry_msgs_msg_Vector3Stamped& msg)
+bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Airspeed& msg)
 {
     update_topic(msg.header.stamp);
     STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
@@ -515,9 +515,10 @@ bool AP_DDS_Client::update_topic(geometry_msgs_msg_Vector3Stamped& msg)
     Vector3f true_airspeed_vec_bf;
     bool is_airspeed_available {false};
     if (ahrs.airspeed_vector_true(true_airspeed_vec_bf)) {
-        msg.vector.x = true_airspeed_vec_bf[0];
-        msg.vector.y = -true_airspeed_vec_bf[1];
-        msg.vector.z = -true_airspeed_vec_bf[2];
+        msg.true_airspeed.x = true_airspeed_vec_bf[0];
+        msg.true_airspeed.y = -true_airspeed_vec_bf[1];
+        msg.true_airspeed.z = -true_airspeed_vec_bf[2];
+        msg.eas_2_tas = ahrs.get_EAS2TAS();
         is_airspeed_available = true;
     }
     return is_airspeed_available;
@@ -1557,9 +1558,9 @@ void AP_DDS_Client::write_tx_local_airspeed_topic()
     WITH_SEMAPHORE(csem);
     if (connected) {
         ucdrBuffer ub {};
-        const uint32_t topic_size = geometry_msgs_msg_Vector3Stamped_size_of_topic(&tx_local_airspeed_topic, 0);
+        const uint32_t topic_size = ardupilot_msgs_msg_Airspeed_size_of_topic(&tx_local_airspeed_topic, 0);
         uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::LOCAL_AIRSPEED_PUB)].dw_id, &ub, topic_size);
-        const bool success = geometry_msgs_msg_Vector3Stamped_serialize_topic(&ub, &tx_local_airspeed_topic);
+        const bool success = ardupilot_msgs_msg_Airspeed_serialize_topic(&ub, &tx_local_airspeed_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
             // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
