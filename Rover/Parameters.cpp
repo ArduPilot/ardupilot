@@ -35,13 +35,7 @@ const AP_Param::Info Rover::var_info[] = {
 
     // SYSID_THISMAV was here
 
-    // @Param: SYSID_MYGCS
-    // @DisplayName: MAVLink ground station ID
-    // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
-    // @Range: 1 255
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",      255),
+    // SYSID_MYGCS was here
 
     // @Param: TELEM_DELAY
     // @DisplayName: Telemetry startup delay
@@ -366,12 +360,7 @@ const AP_Param::Info Rover::var_info[] = {
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // 1 was AP_Stats
 
-    // @Param: SYSID_ENFORCE
-    // @DisplayName: GCS sysid enforcement
-    // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
-    // @Values: 0:NotEnforced,1:Enforced
-    // @User: Advanced
-    AP_GROUPINFO("SYSID_ENFORCE", 2, ParametersG2, sysid_enforce, 0),
+    // 2 was SYSID_ENFORCE
 
     // @Group: SERVO
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
