@@ -645,8 +645,10 @@ __RAMFUNC__ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
 
     if (soft_serial_waiting()) {
 #if HAL_SERIAL_ESC_COMM_ENABLED
-        // tell the waiting process we've done the DMA
-        chEvtSignalI(irq.waiter, serial_event_mask);
+        if (group->in_serial_dma) {
+            // tell the waiting process we've done the DMA
+            chEvtSignalI(irq.waiter, serial_event_mask);
+        }
 #endif
     } else if (!group->in_serial_dma && group->bdshot.enabled) {
         group->dshot_state = DshotState::SEND_COMPLETE;
