@@ -645,7 +645,6 @@ protected:
     void handle_named_value(const mavlink_message_t &msg) const;
 
     bool telemetry_delayed() const;
-    virtual uint32_t telem_delay() const = 0;
 
     MAV_RESULT handle_command_run_prearm_checks(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_flash_bootloader(const mavlink_command_int_t &packet);
@@ -1290,6 +1289,7 @@ public:
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
     uint8_t sysid_this_mav() const { return sysid; }
+    uint32_t telem_delay() const { return mav_telem_delay; }
 
 #if AP_SCRIPTING_ENABLED
     // lua access to command_int
@@ -1318,6 +1318,7 @@ protected:
     AP_Int16                 sysid;
     AP_Int16                 mav_mygcs_sysid;
     AP_Int8                  mav_mygcs_enforce;
+    AP_Int8                  mav_telem_delay;
 
 private:
 
