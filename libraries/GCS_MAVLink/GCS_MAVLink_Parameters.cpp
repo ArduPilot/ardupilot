@@ -143,7 +143,9 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_MCU_STATUS,
 #endif
     MSG_MEMINFO,
+#if !APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
     MSG_CURRENT_WAYPOINT,
+#endif
 #if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
     MSG_GPS_RAW,
 #endif
@@ -161,9 +163,14 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_FENCE_STATUS,
 #endif
     MSG_POSITION_TARGET_GLOBAL_INT,
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    MSG_NAMED_FLOAT
+#endif  // APM_BUILD_TYPE(APM_BUILD_ArduSub)
 };
 static const ap_message STREAM_POSITION_msgs[] = {
+#if AP_AHRS_ENABLED
     MSG_LOCATION,
+#endif  // AP_AHRS_ENABLED
     MSG_LOCAL_POSITION
 };
 static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
@@ -179,11 +186,15 @@ static const ap_message STREAM_RC_CHANNELS_msgs[] = {
 #endif
 };
 static const ap_message STREAM_EXTRA1_msgs[] = {
+#if AP_AHRS_ENABLED
     MSG_ATTITUDE,
+#endif  // AP_AHRS_ENABLED
 #if AP_SIM_ENABLED
     MSG_SIMSTATE,
 #endif
+#if AP_AHRS_ENABLED
     MSG_AHRS2,
+#endif  // AP_AHRS_ENABLED
 #if AP_RPM_ENABLED
     MSG_RPM,
 #endif
@@ -197,6 +208,15 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
 #if HAL_WITH_ESC_TELEM
     MSG_ESC_TELEMETRY,
 #endif
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    MSG_WHEEL_DISTANCE,
+#endif  // APM_BUILD_TYPE(APM_BUILD_Rover)
+#if HAL_GENERATOR_ENABLED
+    MSG_GENERATOR_STATUS,
+#endif
+#if AP_WINCH_ENABLED
+    MSG_WINCH_STATUS,
+#endif
 #if HAL_EFI_ENABLED
     MSG_EFI_STATUS,
 #endif
@@ -205,13 +225,21 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
 #endif
 };
 static const ap_message STREAM_EXTRA2_msgs[] = {
+#if !APM_BUILD_TYPE(APM_BUILD_AntennaTracker) && AP_AHRS_ENABLED
+
     MSG_VFR_HUD
+#endif
 };
 static const ap_message STREAM_EXTRA3_msgs[] = {
+#if AP_AHRS_ENABLED
     MSG_AHRS,
+#endif  // AP_AHRS_ENABLED
     MSG_WIND,
 #if AP_RANGEFINDER_ENABLED
     MSG_RANGEFINDER,
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    MSG_WATER_DEPTH,
+#endif  // APM_BUILD_TYPE(APM_BUILD_Rover)
 #endif
     MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,
@@ -233,7 +261,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_MAG_CAL_PROGRESS,
 #endif
     MSG_EKF_STATUS_REPORT,
+#if !APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
     MSG_VIBRATION,
+#endif
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM,
