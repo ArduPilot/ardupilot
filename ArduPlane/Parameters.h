@@ -163,7 +163,7 @@ public:
         k_param_sysid_this_mav_old,
         k_param_sysid_my_gcs_old,
         k_param_serial1_baud_old,   // deprecated
-        k_param_telem_delay,
+        k_param_telem_delay_old,
         k_param_serial0_baud_old,   // deprecated
         k_param_gcs2_unused,               // unused in ArduPilot-4.7
         k_param_serial2_baud_old,   // deprecated
@@ -369,10 +369,6 @@ public:
     };
 
     AP_Int16 format_version;
-
-    // Telemetry control
-    //
-    AP_Int8 telem_delay;
 
     AP_Enum<RtlAutoland> rtl_autoland;
 
