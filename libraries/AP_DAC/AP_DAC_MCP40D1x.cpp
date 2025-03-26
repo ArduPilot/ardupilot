@@ -18,8 +18,8 @@
 #define REG_MCP40D1x_NOP 0x00
 #define REG_MCP40D1x_WIPER_DEFAULT 0x3F
 
-#ifndef AP_DAC_CONVERSION_EQ
-#define AP_DAC_CONVERSION_EQ(vo,vr) (vo * 127 / vr)
+#ifndef AP_DAC_MCP40D1X_CONVERSION_EQ
+#define AP_DAC_MCP40D1X_CONVERSION_EQ(vo,vr) (vo * 127 / vr)
 #endif
 
 extern const AP_HAL::HAL &hal;
@@ -49,12 +49,6 @@ void AP_DAC_MCP40D1x::init(void)
         delete dev;
         return;
     }
-
-    if (wiper_default != REG_MCP40D1x_WIPER_DEFAULT) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "MCP40D1x not read 0x%x at %u:%x", unsigned(wiper_default), unsigned(params.bus), unsigned(params.bus_address));
-    } else {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MCP40D1x found");
-    }
     initialized = true;
 }
 
@@ -72,7 +66,7 @@ bool AP_DAC_MCP40D1x::set_voltage(uint8_t chan, float v)
     }
 
     // convert voltage to 7-bit value
-    uint8_t wiper = uint8_t(roundf(AP_DAC_CONVERSION_EQ(v, params.voltage_reference)));
+    uint8_t wiper = uint8_t(roundf(AP_DAC_MCP40D1X_CONVERSION_EQ(v, params.voltage_reference)));
     if (wiper > 127) {
         wiper = 127;
     }
