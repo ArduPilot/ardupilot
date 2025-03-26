@@ -4088,14 +4088,14 @@ class TestSuite(ABC):
             )
             m = self.assert_receive_message('LOG_DATA', timeout=2)
             if m.count == 0:
-                raise NotAchievedException("xZero bytes read (ofs=%u)" % (ofs,))
+                raise NotAchievedException(f"xZero bytes read ({m}) of {bytes_to_fetch} requested")
             if m.count > bytes_to_fetch:
                 raise NotAchievedException("Read too many bytes?!")
             stuff = m.data[0:m.count]
             stuff.extend(backwards_data_downloaded)
             backwards_data_downloaded = stuff
             bytes_read += m.count
-            # self.progress("Read %u bytes at offset %u" % (m.count, m.ofs))
+            # self.progress(f"Read {m.count}/{bytes_to_fetch} bytes at offset {m.ofs}")
             if time.time() - last_print > 10:
                 last_print = time.time()
                 self.progress("xRead %u/%u" % (bytes_read, bytes_to_read))
