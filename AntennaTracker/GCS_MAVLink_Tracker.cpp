@@ -247,11 +247,6 @@ void GCS_MAVLINK_Tracker::mavlink_check_target(const mavlink_message_t &msg)
     tracker.target_set = true;
 }
 
-uint8_t GCS_MAVLINK_Tracker::sysid_my_gcs() const
-{
-    return tracker.g.sysid_my_gcs;
-}
-
 MAV_RESULT GCS_MAVLINK_Tracker::_handle_command_preflight_calibration_baro(const mavlink_message_t &msg)
 {
     MAV_RESULT ret = GCS_MAVLINK::_handle_command_preflight_calibration_baro(msg);

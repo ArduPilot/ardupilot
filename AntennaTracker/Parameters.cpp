@@ -14,13 +14,7 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // SYSID_THISMAV was here
 
-    // @Param: SYSID_MYGCS
-    // @DisplayName: Ground station MAVLink system ID
-    // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
-    // @Range: 1 255
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
+    // SYSID_MYGCS was here
 
     // @Param: SYSID_TARGET
     // @DisplayName: Target vehicle's MAVLink system ID
