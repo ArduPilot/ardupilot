@@ -318,7 +318,7 @@ def IMUfit(logfile):
                 stype = m.group(2)
                 p = int(m.group(3))
                 axis = m.group(4)
-                if stop_capture[imu]:
+                if stop_capture[imu] or c.enable[imu] == 2:
                     continue
                 if stype == 'ACC':
                     c.set_acoeff(imu, axis, p, msg.Value/SCALE_FACTOR)
