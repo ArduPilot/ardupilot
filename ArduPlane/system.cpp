@@ -175,6 +175,8 @@ void Plane::init_ardupilot()
     g2.ice_control.init();
 #endif
 
+    //Code added by Cole, initialize AS5600 sensor
+    aoa_sensor.init();
 }
 
 #if AP_FENCE_ENABLED
