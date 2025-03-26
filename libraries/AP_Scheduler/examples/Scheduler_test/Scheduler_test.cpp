@@ -11,9 +11,6 @@
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <stdio.h>
 
-const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
-    AP_GROUPEND
-};
 GCS_Dummy _gcs;
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
