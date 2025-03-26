@@ -172,15 +172,6 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
     }
 }
 
-uint8_t GCS_MAVLINK_Blimp::sysid_my_gcs() const
-{
-    return blimp.g.sysid_my_gcs;
-}
-bool GCS_MAVLINK_Blimp::sysid_enforce() const
-{
-    return blimp.g2.sysid_enforce;
-}
-
 uint32_t GCS_MAVLINK_Blimp::telem_delay() const
 {
     return (uint32_t)(blimp.g.telem_delay);

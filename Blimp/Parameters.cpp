@@ -31,13 +31,7 @@ const AP_Param::Info Blimp::var_info[] = {
 
     // SYSID_THISMAV was here
 
-    // @Param: SYSID_MYGCS
-    // @DisplayName: My ground station number
-    // @Description: Allows restricting radio overrides to only come from my ground station
-    // @Range: 1 255
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(sysid_my_gcs,   "SYSID_MYGCS",     255),
+    // SYSID_MYGCS was here
 
     // @Param: PILOT_THR_FILT
     // @DisplayName: Throttle filter cutoff
@@ -726,12 +720,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DEV_OPTIONS", 7, ParametersG2, dev_options, 0),
 
-    // @Param: SYSID_ENFORCE
-    // @DisplayName: GCS sysid enforcement
-    // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
-    // @Values: 0:NotEnforced,1:Enforced
-    // @User: Advanced
-    AP_GROUPINFO("SYSID_ENFORCE", 11, ParametersG2, sysid_enforce, 0),
+    // 11 was SYSID_ENFORCE
 
     // 12 was AP_Stats
 
