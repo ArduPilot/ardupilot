@@ -10,10 +10,6 @@ public:
 
 protected:
 
-    uint32_t telem_delay() const override {
-        return 0;
-    };
-
     MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet) override;
 
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
