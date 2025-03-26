@@ -2194,6 +2194,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.fly_home_land_and_disarm()
 
     def deadreckoning_main(self, disable_airspeed_sensor=False):
+        self.set_parameter("EK3_OPTIONS", 1)
+        self.set_parameter("AHRS_OPTIONS", 3)
+        self.set_parameter("LOG_REPLAY", 1)
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.gpi = None
@@ -2211,7 +2214,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if self.simstate is None:
                 return
             divergence = self.get_distance_int(self.gpi, self.simstate)
-            max_allowed_divergence = 200
+            if disable_airspeed_sensor:
+                max_allowed_divergence = 300
+            else:
+                max_allowed_divergence = 150
             if (time.time() - self.last_print > 1 or
                     divergence > self.max_divergence):
                 self.progress("position-estimate-divergence=%fm" % (divergence,))
@@ -2246,15 +2252,42 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
             )
             self.wait_location(loc, accuracy=100)
-            self.progress("Stewing")
-            self.delay_sim_time(20)
+            self.progress("Orbit with GPS and learn wind")
+            # allow longer to learn wind if there is no airspeed sensor
+            if disable_airspeed_sensor:
+                self.delay_sim_time(60)
+            else:
+                self.delay_sim_time(20)
             self.set_parameter("SIM_GPS_DISABLE", 1)
-            self.progress("Roasting")
+            self.progress("Continue orbit without GPS")
             self.delay_sim_time(20)
             self.change_mode("RTL")
             self.wait_distance_to_home(100, 200, timeout=200)
+            # go into LOITER to create additonal time for a GPS re-enable test
+            self.change_mode("LOITER")
             self.set_parameter("SIM_GPS_DISABLE", 0)
+            t_enabled = self.get_sim_time()
+            # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
+            # to prevent bad GPS being used when coming back after loss of lock due to interence.
+            self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS, 0, timeout=15)
+            if self.get_sim_time() < (t_enabled+9):
+                raise NotAchievedException("GPS use re-started too quickly")
+            # wait for EKF and vehicle position to stabilise, then test response to jamming
+            self.delay_sim_time(20)
+
+            self.set_parameter("AHRS_OPTIONS", 1)
+            self.set_parameter("SIM_GPS_JAM", 1)
             self.delay_sim_time(10)
+            self.set_parameter("SIM_GPS_JAM", 0)
+            t_enabled = self.get_sim_time()
+            # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
+            # to prevent bad GPS being used when coming back after loss of lock due to interence.
+            # The EKF_STATUS_REPORT does not tell us when the good to align check passes, so the minimum time
+            # value of 3.0 seconds is an arbitrary value set on inspection of dataflash logs from this test
+            self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS, 0, timeout=15)
+            time_since_jamming_stopped = self.get_sim_time() - t_enabled
+            if time_since_jamming_stopped < 3:
+                raise NotAchievedException("GPS use re-started %f sec after jamming stopped" % time_since_jamming_stopped)
             self.set_rc(3, 1000)
             self.fly_home_land_and_disarm()
             self.progress("max-divergence: %fm" % (self.max_divergence,))
