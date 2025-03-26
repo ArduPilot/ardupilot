@@ -128,18 +128,18 @@ public:
 
         // 110: Telemetry control
         //
-        k_param_gcs0 = 110,
-        k_param_gcs1,
+        k_param_gcs0_unused = 110,        // unused in ArduPilot-4.7
+        k_param_gcs1_unused,              // unused in ArduPilot-4.7
         k_param_sysid_this_mav_old,
         k_param_sysid_my_gcs,
         k_param_telem_delay,
-        k_param_gcs2,
+        k_param_gcs2_unused,              // unused in ArduPilot-4.7
         k_param_serial_manager_old,
-        k_param_gcs3,
+        k_param_gcs3_unused,              // unused in ArduPilot-4.7
         k_param_gcs_pid_mask,
-        k_param_gcs4,
-        k_param_gcs5,
-        k_param_gcs6,
+        k_param_gcs4_unused,              // unused in ArduPilot-4.7
+        k_param_gcs5_unused,              // unused in ArduPilot-4.7
+        k_param_gcs6_unused,              // unused in ArduPilot-4.7
 
         //
         // 135 : reserved for Solo until features merged with master
