@@ -50,10 +50,10 @@ public:
         k_param_sitl, // Simulation
 
         // Telemetry
-        k_param_gcs0 = 10,
-        k_param_gcs1,
-        k_param_gcs2,
-        k_param_gcs3,
+        k_param_gcs0_unused = 10,      // unused in ArduPilot-4.7
+        k_param_gcs1_unused,           // unused in ArduPilot-4.7
+        k_param_gcs2_unused,           // unused in ArduPilot-4.7
+        k_param_gcs3_unused,           // unused in ArduPilot-4.7
         k_param_sysid_this_mav_old,
         k_param_sysid_my_gcs,
 
@@ -222,9 +222,9 @@ public:
         // RC_Mapper Library
         k_param_rcmap, // Disabled
 
-        k_param_gcs4,
-        k_param_gcs5,
-        k_param_gcs6,
+        k_param_gcs4_unused,           // unused in ArduPilot-4.7
+        k_param_gcs5_unused,           // unused in ArduPilot-4.7
+        k_param_gcs6_unused,           // unused in ArduPilot-4.7
 
         k_param_cam_slew_limit = 237, // deprecated
         k_param_lights_steps,
