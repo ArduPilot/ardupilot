@@ -7,7 +7,7 @@ from itertools import chain
 from dataclasses import dataclass, astuple
 
 from pymavlink.dialects.v20 import (
-    common, icarous, cubepilot, uAvionix, ardupilotmega
+    common, icarous, cubepilot, uAvionix, ardupilotmega, development
 )
 
 class MAVLinkDialect(StrEnum):
@@ -18,6 +18,7 @@ class MAVLinkDialect(StrEnum):
     CUBEPILOT = 'cubepilot'
     UAVIONIX = 'uAvionix'
     ARDUPILOTMEGA = 'ardupilotmega'
+    DEVELOPMENT = 'development'
     UNKNOWN = 'UNKNOWN'
 
 
@@ -152,7 +153,8 @@ class MAVLinkDetector:
     ARDUPILOT_URL = 'https://github.com/ArduPilot/ardupilot/tree/{branch}/{source}'
     EXPORT_FILETYPES = {
         'csv': 'csv',
-        'markdown': 'md'
+        'markdown': 'md',
+        'rst': 'rst',
     }
 
     MARKDOWN_INTRO = (
@@ -169,6 +171,9 @@ class MAVLinkDetector:
         ' least shows that the autopilot is aware it exists, and will try'
         ' to do something meaningful with it.{unsupported}{stream_groups}'
     )
+
+    # Convert markdown hyperlinks into rst syntax
+    RST_INTRO = MARKDOWN_INTRO.replace('[', '`').replace('](', ' <').replace(')', '>`_')
 
     VEHICLES = ('AntennaTracker', 'ArduCopter', 'ArduPlane', 'ArduSub', 'Rover')
 
@@ -193,7 +198,12 @@ class MAVLinkDetector:
             folder = file.parent.stem
             if folder in exclude_libraries:
                 continue
-            text = file.read_text()
+
+            try:
+                text = file.read_text()
+            except FileNotFoundError:  # Broken symlink
+                continue
+
             source = f'{folder}/{file.name}'
             if file == self.COMMON_FILE:
                 for mavlink, ap_message in self.find_requestable_messages(text):
@@ -262,7 +272,11 @@ class MAVLinkDetector:
     def get_stream_groups(self, vehicle):
         stream_groups = ['stream_groups']
 
-        text = (self.BASE_DIR / vehicle / self.STREAM_GROUP_FILE).read_text()
+        try:
+            text = (self.BASE_DIR / vehicle / self.STREAM_GROUP_FILE).read_text()
+        except FileNotFoundError:  # No stream groups
+            return []
+
         for group_name, message_data in self.STREAM_GROUPS.findall(text):
             stream_groups.extend(sorted(
                 MAVLinkMessage(self._ap_to_mavlink.get(ap_message, ap_message),
@@ -422,6 +436,74 @@ class MAVLinkDetector:
 
                     print(name, source, dialect, sep=' | ', file=file)
 
+    def export_rst(self, file, iterable, branch='master', header=None, 
+                        use_intro=True, **extra_kwargs):
+        if header == 'ardupilot_wiki':
+            header = '\n'.join((
+                '.. _mavlink_support:',
+                '',
+                '===============',
+                'MAVLink Support',
+                '===============',
+                '\n',
+            ))
+
+        if header:
+            print(header, file=file)
+
+        if use_intro:
+            commands = stream_groups = unsupported = ''
+            if extra_kwargs['include_commands']:
+                commands = ' (and commands)'
+            if extra_kwargs['include_unsupported']:
+                unsupported = (
+                    '\n\nKnown :ref:`unsupported messages <mavlink_missing_messages>`'
+                    f'{commands} are shown at the end.'
+                )
+            if extra_kwargs['include_stream_groups']:
+                stream_groups = (
+                    '\n\nThe autopilot includes a set of :ref:`mavlink_stream_groups`'
+                    ' for convenience, which allow configuring the stream rates of'
+                    ' groups of requestable messages by setting parameter values. '
+                    'It is also possible to manually request messages, and request'
+                    ' individual messages be streamed at a specified rate.'
+                )
+            vehicle = self.vehicle.replace('ALL', 'ArduPilot')
+             
+            print(self.RST_INTRO.format(
+                vehicle=vehicle, commands=commands, 
+                stream_groups=stream_groups, unsupported=unsupported
+            ), '\n', file=file)
+            
+        for data in iterable:
+            match data:
+                case str() as type_:
+                    reference = f'mavlink_{type_}'
+                    heading = type_.title().replace('_', ' ')
+                    source_header = (
+                        'Code Source' if type_ != 'stream_groups' else
+                        'Stream Group Parameter'
+                    )
+                    print(f'\n.. _{reference}:\n\n{heading}\n{"="*len(heading)}\n',
+                          self.get_description(type_).replace('`','``'),
+                          '\n.. csv-table::',
+                          f'  :header: MAVLink Message, {source_header}, MAVLink Dialect\n\n',
+                          sep='\n', file=file)
+                case MAVLinkMessage() as message:
+                    name, source, dialect = message.as_tuple()
+                    if dialect != MAVLinkDialect.UNKNOWN:
+                        msg_url = self.MAVLINK_URL.format(dialect=dialect,
+                                                          message_name=name.split(':')[0])
+                        name = f'`{name} <{msg_url}>`_'
+                    if source != 'UNSUPPORTED' and not source.startswith('SRn'):
+                        folder = source.split('/')[0]
+                        base = 'libraries/' if folder not in self.VEHICLES else '' 
+                        code_url = self.ARDUPILOT_URL.format(branch=branch,
+                                                             source=base+source)
+                        source = f'`{source} <{code_url}>`_'
+
+                    print(f'  {name}', source, dialect, sep=', ', file=file)
+
 
 if __name__ == '__main__':
     from inspect import signature
@@ -431,6 +513,7 @@ if __name__ == '__main__':
     default_vehicle = detector_init_params['vehicle'].default
     vehicle_options = [default_vehicle, *MAVLinkDetector.VEHICLES]
     default_exclusions = detector_init_params['exclude_libraries'].default
+    format_options = [*MAVLinkDetector.EXPORT_FILETYPES, 'none']
 
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parse_opts = parser.add_argument_group('parsing options')
@@ -449,7 +532,7 @@ if __name__ == '__main__':
     export_opts.add_argument('-q', '--quiet', action='store_true',
                              help='Disable printout, only export a file.')
     export_opts.add_argument('-f', '--format', default='markdown',
-                             choices=['csv', 'markdown', 'none'],
+                             choices=format_options,
                              help='Desired format for the exported file.')
     export_opts.add_argument('-b', '--branch',
                              help=('The branch to link to in markdown mode.'
