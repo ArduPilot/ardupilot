@@ -8,7 +8,6 @@ public:
 
     using GCS_MAVLINK::GCS_MAVLINK;
 
-    uint8_t sysid_my_gcs() const override;
 protected:
 
     uint32_t telem_delay() const override {
