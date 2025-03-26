@@ -116,6 +116,7 @@ public:
 
     // saveable rate of each stream
     AP_Int16        streamRates[GCS_MAVLINK_NUM_STREAM_RATES];
+    AP_Int8         enableMavLink2Signing;
 };
 
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
@@ -611,6 +612,7 @@ protected:
 
     virtual void handle_message(const mavlink_message_t &msg);
     void handle_set_gps_global_origin(const mavlink_message_t &msg);
+    AP_Int8 enableMavLink2Signing;
     void handle_setup_signing(const mavlink_message_t &msg) const;
     virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 #if AP_MAVLINK_FAILURE_CREATION_ENABLED

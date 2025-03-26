@@ -611,6 +611,14 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("ADSB",   9, GCS_MAVLINK_Parameters, streamRates[9],  5),
+
+    // @Param: SIGNING
+    // @DisplayName: Enable MAVLINK2 signing
+    // @Description: Enable MAVLINK2 signing for this specific channel
+    // @Values: 0:Disabled, 1:Enabled
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO("SIGNING", 10, GCS_MAVLINK_Parameters, enableMavLink2Signing, 1),
     AP_GROUPEND
 };
 

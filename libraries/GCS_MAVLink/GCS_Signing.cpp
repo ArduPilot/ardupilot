@@ -133,7 +133,7 @@ static bool accept_unsigned_callback(const mavlink_status_t *status, uint32_t ms
 void GCS_MAVLINK::load_signing_key(void)
 {
     struct SigningKey key;
-    if (!signing_key_load(key)) {
+    if (!signing_key_load(key) || !enableMavLink2Signing) {
         return;
     }
     memcpy(signing.secret_key, key.secret_key, 32);
