@@ -413,16 +413,6 @@ void Rover::send_wheel_encoder_distance(const mavlink_channel_t chan)
     }
 }
 
-uint8_t GCS_MAVLINK_Rover::sysid_my_gcs() const
-{
-    return rover.g.sysid_my_gcs;
-}
-
-bool GCS_MAVLINK_Rover::sysid_enforce() const
-{
-    return rover.g2.sysid_enforce;
-}
-
 uint32_t GCS_MAVLINK_Rover::telem_delay() const
 {
     return static_cast<uint32_t>(rover.g.telem_delay);

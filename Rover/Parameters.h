@@ -81,7 +81,7 @@ public:
         k_param_gcs0_unused = 110,  // unused in ArduPilot-4.7
         k_param_gcs1_unused,        // unused in ArduPilot-4.7
         k_param_sysid_this_mav_old,
-        k_param_sysid_my_gcs,
+        k_param_sysid_my_gcs_old,
         k_param_serial0_baud_old,   // unused
         k_param_serial1_baud_old,   // unused
         k_param_telem_delay,
@@ -243,7 +243,6 @@ public:
 
     // Telemetry control
     //
-    AP_Int16    sysid_my_gcs;
     AP_Int8     telem_delay;
 
     // navigation parameters
@@ -291,9 +290,6 @@ public:
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
-
-    // whether to enforce acceptance of packets only from sysid_my_gcs
-    AP_Int8 sysid_enforce;
 
     // RC input channels
     RC_Channels_Rover rc_channels;
