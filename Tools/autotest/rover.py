@@ -770,7 +770,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def RCOverridesCancel(self):
         '''Test RC overrides Cancel'''
-        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
+        self.set_parameter("MAV_MYGCS_SYSID", self.mav.source_system)
         self.change_mode('MANUAL')
         self.wait_ready_to_arm()
         self.zero_throttle()
@@ -841,7 +841,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def RCOverrides(self):
         '''Test RC overrides'''
-        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
+        self.set_parameter("MAV_MYGCS_SYSID", self.mav.source_system)
         self.set_parameter("RC12_OPTION", 46)
         self.reboot_sitl()
 
@@ -1074,7 +1074,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def MANUAL_CONTROL(self):
         '''Test mavlink MANUAL_CONTROL'''
         self.set_parameters({
-            "SYSID_MYGCS": self.mav.source_system,
+            "MAV_MYGCS_SYSID": self.mav.source_system,
             "RC12_OPTION": 46, # enable/disable rc overrides
         })
         self.reboot_sitl()
@@ -1231,8 +1231,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.mavproxy_do_set_mode_via_command_long(mavproxy, "MANUAL")
         self.stop_mavproxy(mavproxy)
 
-    def SYSID_ENFORCE(self):
-        '''Test enforcement of SYSID_MYGCS'''
+    def MAV_MYGCS_ENFRCE(self):
+        '''Test enforcement of MAV_MYGCS_SYSID'''
         '''Run the same arming code with correct then incorrect SYSID'''
 
         if self.mav.source_system != self.mav.mav.srcSystem:
@@ -1242,8 +1242,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         old_srcSystem = self.mav.mav.srcSystem
         ex = None
         try:
-            self.set_parameter("SYSID_MYGCS", self.mav.source_system)
-            self.set_parameter("SYSID_ENFORCE", 1, add_to_context=False)
+            self.set_parameter("MAV_MYGCS_SYSID", self.mav.source_system)
+            self.set_parameter("MAV_MYGCS_ENFRCE", 1, add_to_context=False)
 
             self.change_mode('MANUAL')
 
@@ -1267,7 +1267,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 success = True
             self.mav.mav.srcSystem = old_srcSystem
             if not success:
-                raise NotAchievedException("Managed to arm with SYSID_ENFORCE set")
+                raise NotAchievedException("Managed to arm with MAV_MYGCS_ENFRCE set")
 
             # should be able to arm from the vehicle's own components:
             self.progress("Attempting to arm vehicle from vehicle component")
@@ -1286,7 +1286,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.print_exception_caught(e)
             ex = e
         self.mav.mav.srcSystem = old_srcSystem
-        self.set_parameter("SYSID_ENFORCE", 0, add_to_context=False)
+        self.set_parameter("MAV_MYGCS_ENFRCE", 0, add_to_context=False)
         self.context_pop()
         if ex is not None:
             raise ex
@@ -1768,7 +1768,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_gcs_failsafe(self, side=60, timeout=360):
-        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
+        self.set_parameter("MAV_MYGCS_SYSID", self.mav.source_system)
         self.set_parameter("FS_ACTION", 1)
         self.set_parameter("FS_THR_ENABLE", 0)  # disable radio FS as it inhibt GCS one's
 
@@ -6914,7 +6914,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.SET_MESSAGE_INTERVAL,
             self.MESSAGE_INTERVAL_COMMAND_INT,
             self.REQUEST_MESSAGE,
-            self.SYSID_ENFORCE,
+            self.MAV_MYGCS_ENFRCE,
             self.SET_ATTITUDE_TARGET,
             self.SET_ATTITUDE_TARGET_heading,
             self.SET_POSITION_TARGET_LOCAL_NED,
