@@ -585,9 +585,13 @@ void AP_TECS::_update_height_demand(void)
             }
             const float hgt_dem_alpha = _DT / MAX(_DT + _hgt_dem_tconst, _DT);
             if (max_climb_condition && _hgt_dem > _hgt_dem_prev) {
-                    _max_climb_scaler *= (1.0f - hgt_dem_alpha);
+                float est_max_climb_scaler = constrain_float((_climb_rate * 1.1f) / _maxClimbRate,0.0f,1.0f);
+                
+                _max_climb_scaler += (est_max_climb_scaler-_max_climb_scaler) * hgt_dem_alpha;
             } else if (max_descent_condition && _hgt_dem < _hgt_dem_prev) {
-                _max_sink_scaler *= (1.0f - hgt_dem_alpha);
+                float est_max_sink_scaler = constrain_float((-_climb_rate * 1.1f) / _maxSinkRate,0.0f,1.0f);
+                
+                _max_sink_scaler += (est_max_sink_scaler-_max_sink_scaler) * hgt_dem_alpha;
             } else {
                 _max_climb_scaler = _max_climb_scaler * (1.0f - hgt_dem_alpha) + hgt_dem_alpha;
                 _max_sink_scaler  =  _max_sink_scaler * (1.0f - hgt_dem_alpha) + hgt_dem_alpha;
