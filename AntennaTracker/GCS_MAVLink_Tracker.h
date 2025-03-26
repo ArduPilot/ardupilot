@@ -9,8 +9,6 @@ public:
 
     using GCS_MAVLINK::GCS_MAVLINK;
 
-    uint8_t sysid_my_gcs() const override;
-
 protected:
 
     // telem_delay is not used by Tracker but is pure virtual, thus
