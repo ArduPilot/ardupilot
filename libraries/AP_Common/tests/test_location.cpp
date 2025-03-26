@@ -21,9 +21,6 @@ public:
     AP_Terrain terrain;
 };
 
-const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
-    AP_GROUPEND
-};
 GCS_Dummy _gcs;
 
 static DummyVehicle vehicle;
