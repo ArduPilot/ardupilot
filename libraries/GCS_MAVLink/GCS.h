@@ -270,6 +270,8 @@ public:
     // NOTE! The streams enum below and the
     // set of AP_Int16 stream rates _must_ be
     // kept in the same order
+    // ... and "default_rates[..]" in GCS_MAVLINK_Parameters.cpp
+    // should also be kept in mind.
     enum streams : uint8_t {
         STREAM_RAW_SENSORS,
         STREAM_EXTENDED_STATUS,
