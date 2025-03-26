@@ -131,7 +131,7 @@ public:
         k_param_gcs0_unused = 110,        // unused in ArduPilot-4.7
         k_param_gcs1_unused,              // unused in ArduPilot-4.7
         k_param_sysid_this_mav_old,
-        k_param_sysid_my_gcs,
+        k_param_sysid_my_gcs_old,
         k_param_telem_delay,
         k_param_gcs2_unused,              // unused in ArduPilot-4.7
         k_param_serial_manager_old,
@@ -209,7 +209,6 @@ public:
 
     // Telemetry control
     //
-    AP_Int16        sysid_my_gcs;
     AP_Int8         telem_delay;
 
     AP_Float        throttle_filt;
@@ -280,9 +279,6 @@ public:
 
     // altitude at which nav control can start in takeoff
     AP_Float wp_navalt_min;
-
-    // whether to enforce acceptance of packets only from sysid_my_gcs
-    AP_Int8 sysid_enforce;
 
     // developer options
     AP_Int32 dev_options;
