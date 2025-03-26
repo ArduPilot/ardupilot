@@ -171,6 +171,17 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     AP_GROUPINFO("ESC_INDEX", 22, AP_BattMonitor_Params, _esc_telem_outbound_index, 0),
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
+    // @Param: CRT_TIMER
+    // @DisplayName: Critical voltage timeout
+    // @Description: This is the timeout in milli-seconds before a critical voltage event will be triggered. For aircraft with low C batteries it may be necessary to raise this in order to cope with critical voltage on long takeoffs. A value of zero disables critical voltage errors.
+    // @Units: ms
+    // @Increment: 1
+    // @Range: 0 120000
+    // @User: Advanced
+    AP_GROUPINFO("CRT_TIMER", 23, AP_BattMonitor_Params, _crt_voltage_timeout, 0),
+#endif // HAL_BUILD_AP_PERIPH
+
     AP_GROUPEND
 
 };
