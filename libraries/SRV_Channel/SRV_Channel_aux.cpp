@@ -215,6 +215,10 @@ void SRV_Channels::update_aux_servo_function(void)
     if (!channels) {
         return;
     }
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+    WITH_SEMAPHORE(mask_semaphore);
+#endif
     function_mask.clearall();
 
     for (uint16_t i = 0; i < SRV_Channel::k_nr_aux_servo_functions; i++) {
@@ -510,6 +514,9 @@ SRV_Channels::function_assigned(SRV_Channel::Function function)
     if (!initialised) {
         update_aux_servo_function();
     }
+#if CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+    WITH_SEMAPHORE(mask_semaphore);
+#endif
     return function_mask.get(uint16_t(function));
 }
 
@@ -561,6 +568,9 @@ bool SRV_Channels::set_aux_channel_default(SRV_Channel::Function function, uint8
     channels[channel].type_setup = false;
     channels[channel].function.set_and_default(function);
     channels[channel].aux_servo_function_setup();
+#if CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+    WITH_SEMAPHORE(mask_semaphore);
+#endif
     function_mask.set((uint16_t)function);
     if (SRV_Channel::valid_function(function)) {
         functions[function].channel_mask |= 1U<<channel;
@@ -582,6 +592,9 @@ bool SRV_Channels::find_channel(SRV_Channel::Function function, uint8_t &chan)
     }
 
     // Get the index of the first set bit, returns 0 if no bits are set
+#if CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+    WITH_SEMAPHORE(mask_semaphore);
+#endif
     const int first_chan = __builtin_ffs(functions[function].channel_mask);
     if (first_chan == 0) {
         return false;
@@ -608,6 +621,9 @@ void SRV_Channels::set_output_scaled(SRV_Channel::Function function, float value
 {
     if (SRV_Channel::valid_function(function)) {
         functions[function].output_scaled = value;
+#if CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+        WITH_SEMAPHORE(mask_semaphore);
+#endif
         SRV_Channel::have_pwm_mask &= ~functions[function].channel_mask;
     }
 }
@@ -647,6 +663,9 @@ uint32_t SRV_Channels::get_output_channel_mask(SRV_Channel::Function function)
     if (!initialised) {
         update_aux_servo_function();
     }
+#if CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+    WITH_SEMAPHORE(mask_semaphore);
+#endif
     if (SRV_Channel::valid_function(function)) {
         return functions[function].channel_mask;
     }
@@ -683,6 +702,9 @@ void SRV_Channels::set_default_function(uint8_t chan, SRV_Channel::Function func
         const SRV_Channel::Function old = channels[chan].function;
         channels[chan].function.set_default(function);
         if (old != channels[chan].function && channels[chan].function == function) {
+#if CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+            WITH_SEMAPHORE(mask_semaphore);
+#endif
             function_mask.set((uint16_t)function);
         }
     }

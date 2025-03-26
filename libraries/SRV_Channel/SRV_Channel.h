@@ -624,6 +624,12 @@ private:
     static Bitmask<SRV_Channel::k_nr_aux_servo_functions> function_mask;
     static bool initialised;
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+    // Prevents access to function_mask, functions[].channel_mask, and invalid_mask while they are being rebuilt
+    // (the race cannot happen on ChibiOS because the rebuild happens on the main thread and no callers can preempt it)
+    static HAL_Semaphore mask_semaphore;
+#endif
+
     // this static arrangement is to avoid having static objects in AP_Param tables
     static SRV_Channel *channels;
     static SRV_Channels *_singleton;
