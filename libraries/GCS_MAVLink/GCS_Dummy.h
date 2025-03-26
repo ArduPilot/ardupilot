@@ -25,7 +25,6 @@ private:
 
     uint32_t telem_delay() const override { return 0; }
     bool try_send_message(enum ap_message id) override { return true; }
-    uint8_t sysid_my_gcs() const override { return 1; }
 
 protected:
 

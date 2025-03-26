@@ -260,9 +260,6 @@ public:
     // cap the MAVLink message rate. It can't be greater than 0.8 * SCHED_LOOP_RATE
     uint16_t cap_message_interval(uint16_t interval_ms) const;
 
-    virtual uint8_t sysid_my_gcs() const = 0;
-    virtual bool sysid_enforce() const { return false; }
-
     // NOTE: param_name here must point to a 16+1 byte buffer - so do
     // NOT try to pass in a static-char-* unless it does have that
     // length!
@@ -1186,6 +1183,9 @@ public:
         return _statustext_queue;
     }
 
+    uint8_t sysid_mygcs() const { return uint8_t(mav_mygcs_sysid); }
+    bool mygcs_enforce() const { return bool(mav_mygcs_enforce); }
+
     // last time traffic was seen from my designated GCS.  traffic
     // includes heartbeats and some manual control messages.
     uint32_t sysid_mygcs_last_seen_time_ms() const {
@@ -1316,6 +1316,8 @@ protected:
 
     // parameters
     AP_Int16                 sysid;
+    AP_Int16                 mav_mygcs_sysid;
+    AP_Int8                  mav_mygcs_enforce;
 
 private:
 

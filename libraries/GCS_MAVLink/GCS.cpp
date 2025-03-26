@@ -43,6 +43,21 @@ const AP_Param::GroupInfo GCS::var_info[] {
     // @User: Advanced
     AP_GROUPINFO("_SYSID",    1,     GCS,  sysid,  MAV_SYSID_DEFAULT),
 
+    // @Param: _MYGCS_SYSID
+    // @DisplayName: My ground station number
+    // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
+    // @Range: 1 255
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_MYGCS_SYSID",    2,      GCS, mav_mygcs_sysid, 255),
+
+    // @Param: _MYGCS_ENFRCE
+    // @DisplayName: GCS sysid enforcement
+    // @Description: Allows restricting radio overrides to only come from my ground station
+    // @Values: 0:NotEnforced,1:Enforced
+    // @User: Advanced
+    AP_GROUPINFO("_MYGCS_ENFRCE",    3,      GCS, mav_mygcs_enforce, 0),
+
 #if MAVLINK_COMM_NUM_BUFFERS > 0
     // @Group: 1
     // @Path: GCS_MAVLink_Parameters.cpp
