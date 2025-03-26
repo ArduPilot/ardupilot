@@ -34,6 +34,8 @@ protected:
     // Index starts at 1
     uint8_t send_available_mode(uint8_t index) const override;
 
+    bool try_send_message(enum ap_message id) override;
+
 private:
 
     void packetReceived(const mavlink_status_t &status, const mavlink_message_t &msg) override;
