@@ -1773,10 +1773,9 @@ void QuadPlane::update(void)
                 attitude_control->Write_Rate(*pos_control);
             }
 
-            // log CTRL and MOTB at 10 Hz
-            if (now - last_ctrl_log_ms > 100) {
-                last_ctrl_log_ms = now;
-                attitude_control->control_monitor_log();
+            // log MOTB at 10 Hz
+            if (now - last_motb_log_ms > 100) {
+                last_motb_log_ms = now;
                 motors->Log_Write();
             }
         }

@@ -25,7 +25,6 @@
 #include "RCInput_PRU.h"
 #include "RCInput_RPI.h"
 #include "RCInput_SoloLink.h"
-#include "RCInput_UART.h"
 #include "RCInput_UDP.h"
 #include "RCInput_Multi.h"
 #include "RCInput_ZYNQ.h"

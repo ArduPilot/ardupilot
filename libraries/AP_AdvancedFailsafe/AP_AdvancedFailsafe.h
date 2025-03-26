@@ -175,6 +175,8 @@ private:
     bool option_is_set(Option option) const {
         return (options.get() & int16_t(option)) != 0;
     }
+
+    bool gps_altitude_ok() const;
 };
 
 namespace AP {
