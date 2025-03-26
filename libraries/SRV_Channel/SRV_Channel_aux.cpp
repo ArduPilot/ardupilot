@@ -215,23 +215,39 @@ void SRV_Channels::update_aux_servo_function(void)
     if (!channels) {
         return;
     }
-    function_mask.clearall();
 
-    for (uint16_t i = 0; i < SRV_Channel::k_nr_aux_servo_functions; i++) {
-        functions[i].channel_mask = 0;
-    }
-    invalid_mask = 0;
-
-    // set auxiliary ranges
+    // We build up new masks and set them at the end so that they are never
+    // in the middle of rebuilding if another thread tries to read them.
+    Bitmask<SRV_Channel::k_nr_aux_servo_functions> new_function_mask;
+    uint32_t new_invalid_mask = 0;
+    // Build up the new function and invalid masks, and set auxiliary ranges
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (!channels[i].valid_function()) {
-            invalid_mask |= 1U<<i;
+            new_invalid_mask |= 1U<<i;
             continue;
         }
         const uint16_t function = channels[i].function.get();
         channels[i].aux_servo_function_setup();
-        function_mask.set(function);
-        functions[function].channel_mask |= 1U<<i;
+        new_function_mask.set(function);
+    }
+    function_mask = new_function_mask;
+    invalid_mask = new_invalid_mask;
+
+    // Set the channel masks for each function
+    // This nested loop runs worst case O(NUM_SERVO_CHANNELS^2), but this only
+    // runs once per second.
+    for (uint16_t i = 0; i < SRV_Channel::k_nr_aux_servo_functions; i++) {
+        if (!new_function_mask.get(i)) {
+            functions[i].channel_mask = 0;
+            continue;
+        }
+        SRV_Channel::servo_mask_t new_mask = 0;
+        for (uint8_t j = 0; j < NUM_SERVO_CHANNELS; j++) {
+            if (channels[j].function.get() == i) {
+                new_mask |= 1U<<j;
+            }
+        }
+        functions[i].channel_mask = new_mask;
     }
     initialised = true;
 }

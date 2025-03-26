@@ -354,8 +354,6 @@ void Plane::one_second_loop()
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
 
-    AP::srv().enable_aux_servos();
-
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;
