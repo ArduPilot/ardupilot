@@ -513,7 +513,6 @@ private:
   
     // the group being used for serial output
     struct pwm_group *serial_group;
-    thread_t *serial_thread;
     // preserved state
     tprio_t serial_priority;
     iomode_t serial_mode;
