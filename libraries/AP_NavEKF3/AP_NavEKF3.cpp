@@ -740,7 +740,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @Param: OPTIONS
     // @DisplayName: Optional EKF behaviour
     // @Description: This controls optional EKF behaviour. Setting JammingExpected will change the EKF nehaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad
-    // @Bitmask: 0:JammingExpected
+    // @Bitmask: 0:JammingExpected, 1: Disable lane switching
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
 
@@ -941,10 +941,27 @@ void NavEKF3::UpdateFilter(void)
         runCoreSelection = (imuSampleTime_us - lastUnhealthyTime_us) > 1E7;
     }
 
+    const uint8_t user_primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
+    bool laneSwitchEnabled = true;
+    if (option_is_enabled(Option::DisableLaneSwitch)) {
+        if (!core[primary].healthy()) {
+            // current primary is unhealthy, allow lane switch despite the option. Flying in this state is dangerous
+            laneSwitchEnabled = true;
+        } else {
+            // current primary is healthy
+            laneSwitchEnabled = false;
+
+            if (primary != user_primary && core[user_primary].healthy()) {
+                // switch back to the user-selected core if it's healthy
+                primary = user_primary;
+            }
+    }
+}
+
     const bool armed  = dal.get_armed();
 
     // core selection is only available after the vehicle is armed, else forced to lane 0 if its healthy
-    if (runCoreSelection && armed) {
+    if (runCoreSelection && armed && laneSwitchEnabled) {
         // update this instance's error scores for all active cores and get the primary core's error score
         float primaryErrorScore = updateCoreErrorScores();
 
@@ -996,10 +1013,9 @@ void NavEKF3::UpdateFilter(void)
             primary = newPrimaryIndex;
             lastLaneSwitch_ms = dal.millis();
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 lane switch %u", primary);
-        }       
+        }
     }
 
-    const uint8_t user_primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
     if (primary != user_primary && core[user_primary].healthy() && !armed) {
         // when on the ground and disarmed force the selected primary
         // core. This avoids us ending with with a lottery for which
@@ -1025,6 +1041,10 @@ void NavEKF3::UpdateFilter(void)
 void NavEKF3::checkLaneSwitch(void)
 {
     dal.log_event3(AP_DAL::Event::checkLaneSwitch);
+
+    if (option_is_enabled(Option::DisableLaneSwitch)) {
+        return;
+    }
 
     uint32_t now = dal.millis();
     if (lastLaneSwitch_ms != 0 && now - lastLaneSwitch_ms < 5000) {
