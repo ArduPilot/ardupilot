@@ -463,6 +463,14 @@ bool AP_Arming::ins_checks(bool report)
 {
     if (check_enabled(ARMING_CHECK_INS)) {
         const AP_InertialSensor &ins = AP::ins();
+        // run the gyro and accel consistency checks before all
+        // others, as these record the first time they are consistent.
+        // We can't wait for the other checks to pass before starting
+        // that timer, or we may emit a "gyros inconsistent" message
+        // the first time the prearm checks are run with the "display"
+        // flag set.
+        const bool gyros_consistent = ins_gyros_consistent(ins);
+        const bool accels_consistent = ins_accels_consistent(ins);
         if (!ins.get_gyro_health_all()) {
             check_failed(ARMING_CHECK_INS, report, "Gyros not healthy");
             return false;
@@ -487,13 +495,13 @@ bool AP_Arming::ins_checks(bool report)
         }
 
         // check all accelerometers point in roughly same direction
-        if (!ins_accels_consistent(ins)) {
+        if (!accels_consistent) {
             check_failed(ARMING_CHECK_INS, report, "Accels inconsistent");
             return false;
         }
 
         // check all gyros are giving consistent readings
-        if (!ins_gyros_consistent(ins)) {
+        if (!gyros_consistent) {
             check_failed(ARMING_CHECK_INS, report, "Gyros inconsistent");
             return false;
         }
