@@ -36,10 +36,9 @@ protected:
         return 250;
     }
 
-    GCS_MAVLINK_Blimp *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-            AP_HAL::UARTDriver &uart) override
+    GCS_MAVLINK_Blimp *new_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) override
     {
-        return NEW_NOTHROW GCS_MAVLINK_Blimp(params, uart);
+        return NEW_NOTHROW GCS_MAVLINK_Blimp(uart);
     }
 
 };
