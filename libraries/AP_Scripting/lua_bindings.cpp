@@ -10,6 +10,7 @@
 #endif
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AC_Fence/AC_Fence.h>
 
 #include "lua_bindings.h"
 
@@ -1269,5 +1270,43 @@ int lua_DroneCAN_get_FlexDebug(lua_State *L)
     return 2;
 }
 #endif // HAL_ENABLE_DRONECAN_DRIVERS
+
+#if AP_FENCE_ENABLED
+int AC_Fence_load(lua_State *L)
+{
+    AC_Fence * fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
+        return luaL_argerror(L, 1, "fence not supported on this firmware");
+    }
+
+    const uint8_t args = lua_gettop(L) - 1;
+    if (args < 3) {
+        return luaL_argerror(L, args, "requires at least 3 arguments");
+    }
+
+    class AC_PolyFenceItem new_items[args];
+
+    for (uint8_t i=0; i<args; i++) {
+        AC_PolyFenceItem *item = check_AC_PolyFenceItem(L,i-args);
+        memcpy(&new_items[i],item,sizeof(AC_PolyFenceItem));
+    }
+    if (!fence->polyfence().write_fence(new_items,args)) {
+        return luaL_error(L, "failed to load fence");
+    }
+
+    return 0;
+}
+
+int AC_Fence_broadcast(lua_State *L)
+{
+    AC_Fence * fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
+        return luaL_argerror(L, 1, "fence not supported on this firmware");
+    }
+    bool ret = fence->broadcast_fence();
+    lua_pushboolean(L, ret);
+    return 1;
+}
+#endif
 
 #endif  // AP_SCRIPTING_ENABLED

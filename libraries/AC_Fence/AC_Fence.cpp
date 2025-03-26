@@ -945,8 +945,68 @@ bool AC_Fence::sys_status_failed() const
     return false;
 }
 
-AC_PolyFence_loader &AC_Fence::polyfence()
+// Send the currnet fence to GCS on all active MAVLink channels
+bool AC_Fence::broadcast_fence()
 {
+    for (uint8_t i=0; i<_poly_loader.num_stored_items(); i++) {
+
+        AC_PolyFenceItem fenceitem;
+        if (!_poly_loader.get_item(i, fenceitem)) {
+            return false;
+        }
+
+        MAV_CMD ret_cmd = MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION; // initialised to avoid compiler warning
+        float p1 = 0;
+        switch (fenceitem.type) {
+        case AC_PolyFenceType::POLYGON_INCLUSION:
+            ret_cmd = MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION;
+            p1 = fenceitem.vertex_count;
+            break;
+        case AC_PolyFenceType::POLYGON_EXCLUSION:
+            ret_cmd = MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION;
+            p1 = fenceitem.vertex_count;
+            break;
+        case AC_PolyFenceType::RETURN_POINT:
+            ret_cmd = MAV_CMD_NAV_FENCE_RETURN_POINT;
+            break;
+        case AC_PolyFenceType::CIRCLE_EXCLUSION:
+        case AC_PolyFenceType::CIRCLE_EXCLUSION_INT:
+            ret_cmd = MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION;
+            p1 = fenceitem.radius;
+            break;
+        case AC_PolyFenceType::CIRCLE_INCLUSION:
+        case AC_PolyFenceType::CIRCLE_INCLUSION_INT:
+            ret_cmd = MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION;
+            p1 = fenceitem.radius;
+            break;
+        case AC_PolyFenceType::END_OF_STORAGE:
+            return false;
+        }
+
+        mavlink_mission_item_int_t ret_packet {
+            param1: p1,
+            param2: 0,
+            param3: 0,
+            param4: 0,
+            x: fenceitem.loc.x,
+            y: fenceitem.loc.y,
+            z: 0,
+            seq: i,
+            command: uint16_t(ret_cmd),
+            target_system: gcs().sysid_my_gcs(),
+            target_component: MAV_COMP_ID_MISSIONPLANNER,
+            frame: 0,
+            current: 0,
+            autocontinue: 0,
+            mission_type: MAV_MISSION_TYPE_FENCE
+        };
+
+        gcs().send_to_active_channels(MAVLINK_MSG_ID_MISSION_ITEM_INT, (const char *)&ret_packet);
+    }
+    return true;
+}
+
+AC_PolyFence_loader &AC_Fence::polyfence() {
     return _poly_loader;
 }
 const AC_PolyFence_loader &AC_Fence::polyfence() const

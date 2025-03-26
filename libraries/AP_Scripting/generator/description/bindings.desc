@@ -192,6 +192,9 @@ userdata Quaternion method to_axis_angle void Vector3f
 userdata Quaternion method from_axis_angle  void Vector3f float'skip_check
 userdata Quaternion method from_angular_velocity void Vector3f float'skip_check
 
+userdata Vector2l field x int32_t read write -INT32_MAX INT32_MAX
+userdata Vector2l field y int32_t read write -INT32_MAX INT32_MAX
+
 include AP_Notify/AP_Notify.h
 singleton AP_Notify rename notify
 singleton AP_Notify depends (!defined(HAL_BUILD_AP_PERIPH) || AP_PERIPH_NOTIFY_ENABLED)
@@ -1000,6 +1003,14 @@ singleton AC_Fence depends AP_FENCE_ENABLED
 singleton AC_Fence rename fence
 singleton AC_Fence method get_breaches uint8_t
 singleton AC_Fence method get_breach_time uint32_t
+singleton AC_Fence manual send AC_Fence_broadcast 0 1
+singleton AC_Fence manual load AC_Fence_load 3 1
+
+include AC_Fence/AC_PolyFence_loader.h depends AP_FENCE_ENABLED
+userdata AC_PolyFenceItem field type AC_PolyFenceType'enum read write AC_PolyFenceType::CIRCLE_INCLUSION AC_PolyFenceType::POLYGON_INCLUSION
+userdata AC_PolyFenceItem field loc Vector2l read write
+userdata AC_PolyFenceItem field vertex_count uint8_t read write 0 UINT8_MAX
+userdata AC_PolyFenceItem field radius float read write 0 FLT_MAX
 
 include AP_Filesystem/AP_Filesystem.h depends AP_FILESYSTEM_FILE_READING_ENABLED
 include AP_Filesystem/AP_Filesystem_config.h
