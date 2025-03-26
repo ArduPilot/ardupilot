@@ -225,7 +225,7 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
         hal.gpio->write(_manual_pin, mode==AFS_MANUAL);
     }
 
-    const uint32_t last_heartbeat_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    const uint32_t last_heartbeat_ms = gcs().sysid_mygcs_last_seen_time_ms();
     uint32_t now = AP_HAL::millis();
     bool gcs_link_ok = ((now - last_heartbeat_ms) < (_gcs_fail_time_seconds*1000.0f));
     bool gps_lock_ok = ((now - AP::gps().last_fix_time_ms()) < 3000);

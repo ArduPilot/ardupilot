@@ -4081,7 +4081,7 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
         }
     }
 
-    gcs().sysid_myggcs_seen(tnow);
+    gcs().sysid_mygcs_seen(tnow);
 
 }
 #endif  // AP_RC_CHANNEL_ENABLED
@@ -4200,7 +4200,7 @@ void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg) const
     // if the heartbeat is from our GCS then we don't failsafe for
     // now...
     if (msg.sysid == sysid_my_gcs()) {
-        gcs().sysid_myggcs_seen(AP_HAL::millis());
+        gcs().sysid_mygcs_seen(AP_HAL::millis());
     }
 }
 
@@ -7207,7 +7207,7 @@ void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
 
     // a manual control message is considered to be a 'heartbeat'
     // from the ground station for failsafe purposes
-    gcs().sysid_myggcs_seen(tnow);
+    gcs().sysid_mygcs_seen(tnow);
 }
 #endif  // AP_RC_CHANNEL_ENABLED
 
