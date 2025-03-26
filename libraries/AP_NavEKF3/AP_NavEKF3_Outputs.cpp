@@ -254,34 +254,34 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
         // correct for the IMU offset (EKF calculations are at the IMU)
         posNE = (outputDataNew.position.xy() + posOffsetNED.xy() + public_origin.get_distance_NE_ftype(EKF_origin)).tofloat();
         return true;
-
-    } else {
-        // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
-        if(validOrigin) {
-            auto &gps = dal.gps();
-            if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
-                // If the origin has been set and we have GPS, then return the GPS position relative to the origin
-                const Location &gpsloc = gps.location(selected_gps);
-                posNE = public_origin.get_distance_NE_ftype(gpsloc).tofloat();
-                return false;
-#if EK3_FEATURE_BEACON_FUSION
-            } else if (rngBcn.alignmentStarted) {
-                // If we are attempting alignment using range beacon data, then report the position
-                posNE.x = rngBcn.receiverPos.x;
-                posNE.y = rngBcn.receiverPos.y;
-                return false;
-#endif
-            } else {
-                // If no GPS fix is available, all we can do is provide the last known position
-                posNE = outputDataNew.position.xy().tofloat();
-                return false;
-            }
-        } else {
-            // If the origin has not been set, then we have no means of providing a relative position
-            posNE.zero();
-            return false;
-        }
     }
+
+    // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
+    if (!validOrigin) {
+        // If the origin has not been set, then we have no means of providing a relative position
+        posNE.zero();
+        return false;
+    }
+
+    auto &gps = dal.gps();
+    if (gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D) {
+        // If the origin has been set and we have GPS, then return the GPS position relative to the origin
+        const Location &gpsloc = gps.location(selected_gps);
+        posNE = public_origin.get_distance_NE_ftype(gpsloc).tofloat();
+        return false;
+    }
+
+#if EK3_FEATURE_BEACON_FUSION
+    if (rngBcn.alignmentStarted) {
+        // If we are attempting alignment using range beacon data, then report the position
+        posNE.x = rngBcn.receiverPos.x;
+        posNE.y = rngBcn.receiverPos.y;
+        return false;
+    }
+#endif
+
+    // If no GPS fix is available, all we can do is provide the last known position
+    posNE = outputDataNew.position.xy().tofloat();
     return false;
 }
 
