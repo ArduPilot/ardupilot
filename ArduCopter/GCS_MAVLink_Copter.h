@@ -17,8 +17,6 @@ public:
 
 protected:
 
-    uint32_t telem_delay() const override;
-
     MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet) override;
 
     bool params_ready() const override;
