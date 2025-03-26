@@ -91,9 +91,6 @@ void ReplayVehicle::load_parameters(void)
     AP_Param::load_all();
 }
 
-const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
-    AP_GROUPEND
-};
 GCS_Dummy _gcs;
 
 #if AP_ADVANCEDFAILSAFE_ENABLED
