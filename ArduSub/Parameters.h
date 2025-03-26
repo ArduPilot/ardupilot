@@ -55,7 +55,7 @@ public:
         k_param_gcs2_unused,           // unused in ArduPilot-4.7
         k_param_gcs3_unused,           // unused in ArduPilot-4.7
         k_param_sysid_this_mav_old,
-        k_param_sysid_my_gcs,
+        k_param_sysid_my_gcs_old,
 
         // Hardware/Software configuration
         k_param_BoardConfig = 20, // Board configuration (Pixhawk/Linux/etc)
@@ -241,8 +241,6 @@ public:
 
     // Telemetry control
     //
-    AP_Int16        sysid_my_gcs;
-
     AP_Float        throttle_filt;
 
 #if AP_RANGEFINDER_ENABLED
