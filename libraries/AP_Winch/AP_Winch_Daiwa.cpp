@@ -118,7 +118,7 @@ void AP_Winch_Daiwa::read_data_from_winch()
     while (nbytes-- > 0) {
         int16_t b = uart->read();
 
-        if ((b >= '0' && b <= '9') || (b >= 'A' && b <= 'F') || (b >= 'a' && b <= 'f')) {
+        if (ishexa(b)) {
             // add digits to buffer
             buff[buff_len] = b;
             buff_len++;
