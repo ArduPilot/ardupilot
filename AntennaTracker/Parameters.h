@@ -47,7 +47,7 @@ public:
         k_param_gcs0_unused = 100,  // unused in ArduPilot-4.7
         k_param_gcs1_unused,        // unused in ArduPilot-4.7
         k_param_sysid_this_mav_old,
-        k_param_sysid_my_gcs,
+        k_param_sysid_my_gcs_old,
         k_param_serial0_baud,       // deprecated
         k_param_serial1_baud,       // deprecated
         k_param_imu,
@@ -140,7 +140,6 @@ public:
 
     // Telemetry control
     //
-    AP_Int16 sysid_my_gcs;
     AP_Int16 sysid_target;
 
     AP_Float yaw_slew_time;
