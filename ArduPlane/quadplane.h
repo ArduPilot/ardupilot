@@ -443,6 +443,9 @@ private:
     // when did we last run the attitude controller?
     uint32_t last_att_control_ms;
 
+    // last time we were in position2
+    uint32_t last_pos2_ms;
+
     // transition logic
     Transition *transition = nullptr;
 
