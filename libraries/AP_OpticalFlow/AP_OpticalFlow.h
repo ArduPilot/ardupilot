@@ -85,6 +85,10 @@ public:
     // bodyRate - returns the IMU-adjusted movement in rad/s
     const Vector2f& bodyRate() const { return _state.bodyRate; }
 
+    // integral_dt - time (in seconds) over which flowRate and
+    // bodyRate were calculated.
+    float integral_dt() const { return _state.integral_dt; }
+
     // last_update() - returns system time of last sensor update
     uint32_t last_update() const { return _last_update_ms; }
 
@@ -95,6 +99,7 @@ public:
         uint8_t  surface_quality;   // image quality (below TBD you can't trust the dx,dy values returned)
         Vector2f flowRate;          // optical flow angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
         Vector2f bodyRate;          // body inertial angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
+        float integral_dt;       // time over white flowRate and bodyRate were calculated
     };
 
     // return a 3D vector defining the position offset of the sensors focal point in metres relative to the body frame origin

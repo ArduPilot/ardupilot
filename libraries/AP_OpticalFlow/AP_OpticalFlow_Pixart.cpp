@@ -354,6 +354,7 @@ void AP_OpticalFlow_Pixart::update(void)
         _applyYaw(state.flowRate);
 
         state.bodyRate = integral.gyro / dt;
+        state.integral_dt = dt;
 
         integral.sum.zero();
         integral.sum_us = 0;

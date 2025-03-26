@@ -34,7 +34,8 @@ void AP_OpticalFlow_SITL::update(void)
 
     // update at the requested rate
     uint32_t now = AP_HAL::millis();
-    if (now - last_flow_ms < 1000*(1.0f/_sitl->flow_rate)) {
+    const uint32_t dt = now - last_flow_ms;
+    if (dt < 1000*(1.0f/_sitl->flow_rate)) {
         return;
     }
     last_flow_ms = now;
@@ -93,6 +94,7 @@ void AP_OpticalFlow_SITL::update(void)
     // Note - these are instantaneous values. The sensor sums these values across the interval from the last
     // poll to provide a delta angle across the interface.
     state.bodyRate = Vector2f(gyro.x, gyro.y);
+    state.integral_dt = dt;
 
     optflow_data[next_optflow_index++] = state;
     if (next_optflow_index >= optflow_delay+1) {

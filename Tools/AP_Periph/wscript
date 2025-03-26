@@ -84,6 +84,7 @@ def build(bld):
                      'GCS_MAVLink',
                      'AP_Relay',
                      'AP_MultiHeap',
+                     'AP_OpticalFlow',
                      ]
 
     bld.ap_stlib(
