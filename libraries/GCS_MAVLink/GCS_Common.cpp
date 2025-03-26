@@ -3742,7 +3742,7 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
     char text[text_len] = { 'G','C','S',':'};
     uint8_t offset = strlen(text);
 
-    if (msg.sysid != sysid_my_gcs()) {
+    if (msg.sysid != gcs().sysid_mygcs()) {
         offset = hal.util->snprintf(text,
                                     max_prefix_len,
                                     "SRC=%u/%u:",
@@ -4034,7 +4034,7 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 // control of switch position and RC PWM values.
 void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
 {
-    if(msg.sysid != sysid_my_gcs()) {
+    if(msg.sysid != gcs().sysid_mygcs()) {
         return; // Only accept control from our gcs
     }
 
@@ -4197,7 +4197,7 @@ void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg) const
 {
     // if the heartbeat is from our GCS then we don't failsafe for
     // now...
-    if (msg.sysid == sysid_my_gcs()) {
+    if (msg.sysid == gcs().sysid_mygcs()) {
         gcs().sysid_mygcs_seen(AP_HAL::millis());
     }
 }
@@ -6940,7 +6940,7 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
 }
 
 /*
-  return true if we will accept this packet. Used to implement SYSID_ENFORCE
+  return true if we will accept this packet. Used to implement MAV_MYGCS_ENFRCE
  */
 bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
                                 const mavlink_message_t &msg) const
@@ -6951,7 +6951,7 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
         return true;
     }
 
-    if (msg.sysid == sysid_my_gcs()) {
+    if (msg.sysid == gcs().sysid_mygcs()) {
         return true;
     }
 
@@ -6960,7 +6960,7 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
         return true;
     }
 
-    if (!sysid_enforce()) {
+    if (!gcs().mygcs_enforce()) {
         return true;
     }
 
@@ -7203,7 +7203,7 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
 
 void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
 {
-    if (msg.sysid != sysid_my_gcs()) {
+    if (msg.sysid != gcs().sysid_mygcs()) {
         return; // only accept control from our gcs
     }
 
