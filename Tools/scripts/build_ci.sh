@@ -444,6 +444,15 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "clang_scan_build" ]; then
+        install_mavproxy
+        install_pymavlink
+        unset BUILDROOT
+        echo "Running SITL clang-scan-build test"
+        ./Tools/autotest/autotest.py clang-scan-build
+        continue
+    fi
+
     if [ "$t" == "validate_board_list" ]; then
         echo "Validating board list"
         ./Tools/autotest/validate_board_list.py
