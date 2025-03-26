@@ -5560,6 +5560,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
     case MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE:
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    case MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET:
+#endif
         return handle_command_mount(packet, msg);
 #endif  // HAL_MOUNT_ENABLED
 

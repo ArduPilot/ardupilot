@@ -5274,6 +5274,60 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.run_cmd_do_set_mode("ACRO")
         self.wait_disarmed()
 
+
+    def MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET(self):
+        '''check the MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET mission item'''
+        # setup mount parameters
+        self.setup_servo_mount()
+        self.reboot_sitl() # to handle MNT_TYPE changing
+
+        alt = 50
+
+        loc = self.mav.location()
+
+        items = [
+            self.mission_item_home(),
+            self.mission_item_copter_takeoff(alt=50),
+        ]
+
+        loc = self.offset_location_ne(loc, 100, 0)
+        items.append(self.mission_item_do_cmd_roi_set_wpnext_offset(p=0))
+        items.append(self.mission_item_waypoint(loc.lat, loc.lng, alt))
+
+        loc = self.offset_location_ne(loc, 100, 0)
+        items.append(self.mission_item_do_cmd_roi_set_wpnext_offset(p=-45))
+        items.append(self.mission_item_waypoint(loc.lat, loc.lng, alt))
+
+        loc = self.offset_location_ne(loc, 100, 0)
+        items.append(self.mission_item_do_cmd_roi_set_wpnext_offset(y=45))
+        items.append(self.mission_item_waypoint(loc.lat, loc.lng, alt))
+
+        # now RTL
+        items.append(self.mission_item_rtl())
+
+        self.renumber_mission_items(items)
+        self.check_mission_upload_download(items)
+
+        self.set_parameter('AUTO_OPTIONS', 3)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+
+        self.wait_current_waypoint(3)
+        # the 30 here is because the vehicle is pitching down and the
+        # gimbal is compensating
+        self.wait_mount_roll_pitch_yaw_deg(r=0, p=30, y=0)
+
+        self.wait_current_waypoint(5)
+        # the -15 here is because the vehicle is pitching down and the
+        # gimbal is compensating, and is being asked to pitch down 45 degrees
+        self.wait_mount_roll_pitch_yaw_deg(r=0, p=-15, y=0)
+
+        self.wait_current_waypoint(7)
+        self.wait_mount_roll_pitch_yaw_deg(y=45)
+
+        self.wait_disarmed()
+
     def constrained_mount_pitch(self, pitch_angle_deg, mount_instance=1):
         PITCH_MIN = self.get_parameter("MNT%u_PITCH_MIN" % mount_instance)
         PITCH_MAX = self.get_parameter("MNT%u_PITCH_MAX" % mount_instance)
@@ -5346,13 +5400,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SERVO%u_FUNCTION" % yaw_servo: 6, # yaw
         })
 
+    # FIXME: change this to use wait_and_maintain
+    def wait_mount_roll_pitch_yaw_deg(self, r=None, p=None, y=None, timeout=20):
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not get rpy")
+            got_r, got_p, got_y = self.get_mount_roll_pitch_yaw_deg()
+            self.progress("want=(%s, %s, %s)" % (r, p , y))
+            self.progress("got=(%s, %s, %s)" % (got_r, got_p , got_y))
+            passed = True
+            for (want, got) in [(r, got_r), (p, got_p), (y, got_y)]:
+                if want is None:
+                    continue
+                if abs(want - got) > 5:
+                    passed = False
+                    break
+            if passed:
+                self.progress("achieved mount rpy")
+                break
+
     def get_mount_roll_pitch_yaw_deg(self):
-        '''return mount (aka gimbal) roll, pitch and yaw angles in degrees'''
+        '''return mount (aka gimbal) roll, pitch and yaw angles in degrees - in body frame'''
         # wait for gimbal attitude message
         m = self.assert_receive_message('GIMBAL_DEVICE_ATTITUDE_STATUS', timeout=5)
+        return self.eulers_in_degrees_from_GIMBAL_DEVICE_ATTITUDE_STATUS(m)
+
+    def eulers_in_degrees_from_GIMBAL_DEVICE_ATTITUDE_STATUS(self, m):
+        # convert quaternion to euler angles and return
 
         yaw_is_absolute = m.flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_LOCK
-        # convert quaternion to euler angles and return
         q = quaternion.Quaternion(m.q)
         euler = q.euler
         return math.degrees(euler[0]), math.degrees(euler[1]), math.degrees(euler[2]), yaw_is_absolute
@@ -11093,6 +11170,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_DO_MOUNT_CONTROL,
              self.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
              self.AutoYawDO_MOUNT_CONTROL,
+             self.MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET,
              self.Button,
              self.ShipTakeoff,
              self.RangeFinder,

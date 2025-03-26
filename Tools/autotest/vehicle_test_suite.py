@@ -4260,6 +4260,107 @@ class TestSuite(ABC):
 
         return ret
 
+    def renumber_mission_items(self, items):
+        '''make item's seq sequential starting from zero'''
+        count = 0
+        for item in items:
+            item.seq = count
+            count += 1
+
+    def mission_item_copter_takeoff(self, alt=30, target_system=1, target_component=1):
+        '''returns a mission_item_int which can be used as takeoff in a mission'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            1, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            0, # current
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            int(1.0000 * 1e7), # latitude
+            int(1.0000 * 1e7), # longitude
+            alt, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
+    def mission_item_rtl(self, target_system=1, target_component=1):
+        '''returns a mission_item_int which can be used as RTL in a mission'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            1, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+            0, # current
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            0, # latitude
+            0, # longitude
+            0.0000, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
+    def mission_item_do_cmd_roi_set_wpnext_offset(self, r=0, p=0, y=0, target_system=1, target_component=1):
+        return self.mav.mav.mission_item_encode(
+            target_system,
+            target_component,
+            0,  # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET,
+            0, # current
+            0, # autocontinue
+            0,  # param1
+            0,  # param2
+            0,  # param3
+            0,  # param4
+            r,  # param5
+            p,  # param6
+            y   # param7
+        )
+
+    def mission_item_waypoint(self, lat, lng, alt, target_system=1, target_component=1):
+        '''returns a mission_item_int which can be used as waypoint in a mission'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            0, # current
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            int(lat*1e7), # latitude
+            int(lng*1e7), # longitude
+            alt, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
+    def mission_item_home(self, target_system=1, target_component=1):
+        '''returns a mission_item_int which can be used as home in a mission'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            0, # current
+            0, # autocontinue
+            3, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            int(1.0000 * 1e7), # latitude
+            int(2.0000 * 1e7), # longitude
+            31.0000, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
     def upload_simple_relhome_mission(self, items, target_system=1, target_component=1):
         mission = self.create_simple_relhome_mission(
             items,

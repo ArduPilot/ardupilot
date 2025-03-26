@@ -385,6 +385,10 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_AUX_FUNCTION:
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+    case MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET:
+    case MAV_CMD_DO_SET_ROI_NONE:
+#endif
     case MAV_CMD_JUMP_TAG:
     case MAV_CMD_IMAGE_START_CAPTURE:
     case MAV_CMD_IMAGE_STOP_CAPTURE:
@@ -480,6 +484,12 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
         return command_do_set_repeat_dist(cmd);
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
         return start_command_do_gimbal_manager_pitchyaw(cmd);
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+    case MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET:
+        return start_command_do_set_roi_wpnext_offset(cmd);
+    case MAV_CMD_DO_SET_ROI_NONE:
+        return start_command_do_set_roi_none();
+#endif
     case MAV_CMD_JUMP_TAG:
         _jump_tag.tag = cmd.content.jump.target;
         _jump_tag.age = 1;
@@ -1448,6 +1458,18 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.video_stop_capture.video_stream_id = packet.param1;
         break;
 
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+    case MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET:
+        cmd.content.wpnext_offset.roll_offset_deg = packet.x;
+        cmd.content.wpnext_offset.pitch_offset_deg = packet.y;
+        cmd.content.wpnext_offset.yaw_offset_deg = packet.z;
+        break;
+
+    case MAV_CMD_DO_SET_ROI_NONE:
+        // no arguments
+        break;
+#endif
+
     default:
         // unrecognised command
         return MAV_MISSION_UNSUPPORTED;
@@ -1964,6 +1986,14 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_VIDEO_STOP_CAPTURE:
         packet.param1 = cmd.content.video_stop_capture.video_stream_id;
         break;
+
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+    case MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET:
+        packet.x = cmd.content.wpnext_offset.roll_offset_deg;
+        packet.y = cmd.content.wpnext_offset.pitch_offset_deg;
+        packet.z = cmd.content.wpnext_offset.yaw_offset_deg;
+        break;
+#endif
 
     default:
         // unrecognised command
@@ -2899,6 +2929,12 @@ const char *AP_Mission::Mission_Command::type() const
         return "VideoStartCapture";
     case MAV_CMD_VIDEO_STOP_CAPTURE:
         return "VideoStopCapture";
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+    case MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET:
+        return "ROIWPNextOffset";
+    case MAV_CMD_DO_SET_ROI_NONE:
+        return "ROINone";
+#endif
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Mission command with ID %u has no string", id);

@@ -922,6 +922,11 @@ void Copter::update_altitude()
 }
 
 // vehicle specific waypoint info helpers
+bool Copter::get_wp_location(Location &loc) const
+{
+    return flightmode->get_wp(loc);
+}
+
 bool Copter::get_wp_distance_m(float &distance) const
 {
     // see GCS_MAVLINK_Copter::send_nav_controller_output()

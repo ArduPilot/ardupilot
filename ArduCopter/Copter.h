@@ -726,6 +726,7 @@ private:
     void read_AHRS(void);
     void update_altitude();
     bool get_wp_distance_m(float &distance) const override;
+    bool get_wp_location(Location &loc) const override;
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
     bool get_rate_ef_targets(Vector3f& rate_ef_targets) const override;
