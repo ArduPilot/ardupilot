@@ -22,11 +22,6 @@
 
 #if HAL_GCS_ENABLED
 
-uint8_t GCS_MAVLINK_Periph::sysid_my_gcs() const
-{
-    mavlink_system.sysid = gcs().sysid_this_mav();
-}
-
 MAV_RESULT GCS_MAVLINK_Periph::handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     hal.scheduler->delay(10);
