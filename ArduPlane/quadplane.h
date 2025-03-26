@@ -106,6 +106,12 @@ public:
     */
     bool in_transition(void) const;
 
+    /*
+      return true if we are in a fwd transition for a SLT quadplane
+      and in an auto-throttle mode
+     */
+    bool in_slt_fwd_transition(void) const;
+
     bool handle_do_vtol_transition(enum MAV_VTOL_STATE state) const;
 
     bool do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);

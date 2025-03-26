@@ -357,6 +357,7 @@ public:
         k_param_acro_yaw_rate,
         k_param_takeoff_throttle_max_t,
         k_param_autotune_options,
+        k_param_takeoff_throttle_min,
     };
 
     AP_Int16 format_version;

@@ -98,6 +98,9 @@ public:
         _integTHR_state = 0.0;
     }
 
+    // reset throttle integrator to give trim throttle
+    void reset_throttle_I_cruise(void);
+
     // return landing sink rate
     float get_land_sinkrate(void) const {
         return _land_sink;
@@ -214,6 +217,9 @@ private:
 
     // throttle demand in the range from -1.0 to 1.0, usually positive unless reverse thrust is enabled via _THRminf < 0
     float _throttle_dem;
+
+    // pre-integrator throttle demand
+    float _throttle_dem_pre_integ;
 
     // pitch angle demand in radians
     float _pitch_dem;

@@ -148,6 +148,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @Increment: 0.5
     // @User: Standard
     ASCALAR(takeoff_throttle_max_t,     "TKOFF_THR_MAX_T",  4),
+
+    // @Param: TKOFF_THR_MIN
+    // @DisplayName: Takeoff minimum throttle
+    // @Description: The minimum throttle to use in takeoffs in AUTO and TAKEOFF flight modes, when TKOFF_OPTIONS bit 0 is set. Also, the minimum throttle to use in a quadpane forward transition. This can be useful to ensure faster takeoffs or transitions on aircraft where the normal throttle control leads to a slow takeoff or transition. It is used when it is larger than THR_MIN, otherwise THR_MIN is used instead.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    ASCALAR(takeoff_throttle_min,       "TKOFF_THR_MIN",    60),
     
     // @Param: TKOFF_TDRAG_ELEV
     // @DisplayName: Takeoff tail dragger elevator

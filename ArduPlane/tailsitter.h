@@ -189,6 +189,8 @@ public:
 
     bool allow_weathervane() override;
 
+    bool in_fwd_transition() const override;
+
 private:
 
     enum {

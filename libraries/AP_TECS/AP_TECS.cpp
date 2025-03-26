@@ -799,6 +799,8 @@ void AP_TECS::_update_throttle_with_airspeed(void)
             _last_throttle_dem = _throttle_dem;
         }
 
+        _throttle_dem_pre_integ = _throttle_dem;
+
         // Sum the components.
         _throttle_dem = _throttle_dem + _integTHR_state;
 
@@ -914,6 +916,10 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge, float pi
     float cosPhi = sqrtf((rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y));
     float STEdot_dem = _rollComp * (1.0f/constrain_float(cosPhi * cosPhi, 0.1f, 1.0f) - 1.0f);
     _throttle_dem = _throttle_dem + STEdot_dem / (_STEdot_max - _STEdot_min) * (_THRmaxf - _THRminf);
+
+    // integrator not used without airspeed, but store pre-integrator
+    // value anyway in case we enable airspeed
+    _throttle_dem_pre_integ = _throttle_dem;
 }
 
 void AP_TECS::_detect_bad_descent(void)
@@ -1195,6 +1201,16 @@ void AP_TECS::_update_STE_rate_lim(void)
     _STEdot_max = _climb_rate_limit * GRAVITY_MSS;
     _STEdot_min = - _minSinkRate * GRAVITY_MSS;
     _STEdot_neg_max = - _maxSinkRate * GRAVITY_MSS;
+}
+
+// reset throttle integrator to give trim throttle
+// used when overriding throttle
+void AP_TECS::reset_throttle_I_cruise(void)
+{
+    // get the last throttle output without the integrator
+    const float nomThr = aparm.throttle_cruise * 0.01f;
+    // set integrator so that we would have gotten cruise throttle
+    _integTHR_state = nomThr - _throttle_dem_pre_integ;
 }
 
 

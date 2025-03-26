@@ -517,7 +517,7 @@ float Plane::apply_throttle_limits(float throttle_in)
 
     const bool use_takeoff_throttle_max =
 #if HAL_QUADPLANE_ENABLED
-        quadplane.in_transition() ||
+        quadplane.in_slt_fwd_transition() ||
 #endif
         (flight_stage == AP_FixedWing::FlightStage::TAKEOFF) ||
         (flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING);
@@ -538,7 +538,21 @@ float Plane::apply_throttle_limits(float throttle_in)
     throttle_watt_limiter(min_throttle, max_throttle);
 #endif
 
-    return constrain_float(throttle_in, min_throttle, max_throttle);
+    /*
+      apply TKOFF_THR_MIN if enabled and in an auto-throttle forward
+      transition
+     */
+    if (use_takeoff_throttle_max) {
+        const auto tmin_thr = aparm.takeoff_throttle_min;
+        if (tmin_thr > throttle_in) {
+            throttle_in = MAX(throttle_in, tmin_thr);
+            plane.TECS_controller.reset_throttle_I_cruise();
+        }
+    }
+
+    auto throttle = constrain_float(throttle_in, min_throttle, max_throttle);
+
+    return throttle;
 }
 
 /*
