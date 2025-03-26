@@ -20,6 +20,84 @@
 
 const struct AP_Param::GroupInfo *GCS::_chan_var_info[MAVLINK_COMM_NUM_BUFFERS];
 
+// tradition has different vehicles use different default stream rates.  This may not be the case forever, but for now we maintain this behaviour:
+
+#ifndef AP_MAV_DEFAULT_STREAM_RATE_RAW_SENS
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#define AP_MAV_DEFAULT_STREAM_RATE_RAW_SENS 2
+#define AP_MAV_DEFAULT_STREAM_RATE_EXT_STAT 2
+#define AP_MAV_DEFAULT_STREAM_RATE_RC_CHAN 2
+#define AP_MAV_DEFAULT_STREAM_RATE_RAW_CTRL 0
+#define AP_MAV_DEFAULT_STREAM_RATE_POSITION 3
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA1 10
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA2 10
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA3 3
+#define AP_MAV_DEFAULT_STREAM_RATE_PARAMS 0
+#define AP_MAV_DEFAULT_STREAM_RATE_ADSB 0
+#elif APM_BUILD_TYPE(APM_BUILD_AntennaTracker) || APM_BUILD_TYPE(APM_BUILD_Rover)
+#define AP_MAV_DEFAULT_STREAM_RATE_RAW_SENS 1
+#define AP_MAV_DEFAULT_STREAM_RATE_EXT_STAT 1
+#define AP_MAV_DEFAULT_STREAM_RATE_RC_CHAN 1
+#define AP_MAV_DEFAULT_STREAM_RATE_RAW_CTRL 1
+#define AP_MAV_DEFAULT_STREAM_RATE_POSITION 1
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA1 1
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA2 1
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA3 1
+#define AP_MAV_DEFAULT_STREAM_RATE_PARAMS 10
+#define AP_MAV_DEFAULT_STREAM_RATE_ADSB 0
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#define AP_MAV_DEFAULT_STREAM_RATE_RAW_SENS 1
+#define AP_MAV_DEFAULT_STREAM_RATE_EXT_STAT 1
+#define AP_MAV_DEFAULT_STREAM_RATE_RC_CHAN 1
+#define AP_MAV_DEFAULT_STREAM_RATE_RAW_CTRL 1
+#define AP_MAV_DEFAULT_STREAM_RATE_POSITION 1
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA1 1
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA2 1
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA3 1
+#define AP_MAV_DEFAULT_STREAM_RATE_PARAMS 10
+#define AP_MAV_DEFAULT_STREAM_RATE_ADSB 5
+#elif APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Blimp) || APM_BUILD_TYPE(APM_BUILD_Replay)
+#define AP_MAV_DEFAULT_STREAM_RATE_RAW_SENS 0
+#define AP_MAV_DEFAULT_STREAM_RATE_EXT_STAT 0
+#define AP_MAV_DEFAULT_STREAM_RATE_RC_CHAN 0
+#define AP_MAV_DEFAULT_STREAM_RATE_RAW_CTRL 0
+#define AP_MAV_DEFAULT_STREAM_RATE_POSITION 0
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA1 0
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA2 0
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA3 0
+#define AP_MAV_DEFAULT_STREAM_RATE_PARAMS 0
+#define AP_MAV_DEFAULT_STREAM_RATE_ADSB 0
+#elif APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#define AP_MAV_DEFAULT_STREAM_RATE_RAW_SENS 0
+#define AP_MAV_DEFAULT_STREAM_RATE_EXT_STAT 0
+#define AP_MAV_DEFAULT_STREAM_RATE_RC_CHAN 0
+#define AP_MAV_DEFAULT_STREAM_RATE_RAW_CTRL 0
+#define AP_MAV_DEFAULT_STREAM_RATE_POSITION 0
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA1 0
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA2 0
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA3 0
+#define AP_MAV_DEFAULT_STREAM_RATE_PARAMS 0
+#define AP_MAV_DEFAULT_STREAM_RATE_ADSB 0
+#else
+#error Need to set streamrates
+#endif  // APM_BUILD_TYPE
+#endif  // AP_MAV_DEFAULT_STREAM_RATE
+
+static const uint8_t default_rates[] {
+    AP_MAV_DEFAULT_STREAM_RATE_RAW_SENS,
+    AP_MAV_DEFAULT_STREAM_RATE_EXT_STAT,
+    AP_MAV_DEFAULT_STREAM_RATE_RC_CHAN,
+    AP_MAV_DEFAULT_STREAM_RATE_RAW_CTRL,
+    AP_MAV_DEFAULT_STREAM_RATE_POSITION,
+    AP_MAV_DEFAULT_STREAM_RATE_EXTRA1,
+    AP_MAV_DEFAULT_STREAM_RATE_EXTRA2,
+    AP_MAV_DEFAULT_STREAM_RATE_EXTRA3,
+    AP_MAV_DEFAULT_STREAM_RATE_PARAMS,
+    AP_MAV_DEFAULT_STREAM_RATE_ADSB,
+};
+
+#define DRATE(x) (float(default_rates[x]))
+
 /*
   default stream rates to 1Hz
  */
@@ -32,7 +110,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_RAW_SENS", 1, GCS_MAVLINK, streamRates[0],  1),
+    AP_GROUPINFO("_RAW_SENS", 1, GCS_MAVLINK, streamRates[0], DRATE(0)),
 
     // @Param: _EXT_STAT
     // @DisplayName: Extended status stream rate
@@ -42,7 +120,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_EXT_STAT", 2, GCS_MAVLINK, streamRates[1],  1),
+    AP_GROUPINFO("_EXT_STAT", 2, GCS_MAVLINK, streamRates[1], DRATE(1)),
 
     // @Param: _RC_CHAN
     // @DisplayName: RC Channel stream rate
@@ -52,7 +130,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_RC_CHAN",  3, GCS_MAVLINK, streamRates[2],  1),
+    AP_GROUPINFO("_RC_CHAN",  3, GCS_MAVLINK, streamRates[2], DRATE(2)),
 
     // @Param: _RAW_CTRL
     // @DisplayName: Raw Control stream rate
@@ -62,7 +140,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_RAW_CTRL", 4, GCS_MAVLINK, streamRates[3],  1),
+    AP_GROUPINFO("_RAW_CTRL", 4, GCS_MAVLINK, streamRates[3], DRATE(3)),
 
     // @Param: _POSITION
     // @DisplayName: Position stream rate
@@ -72,7 +150,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_POSITION", 5, GCS_MAVLINK, streamRates[4],  1),
+    AP_GROUPINFO("_POSITION", 5, GCS_MAVLINK, streamRates[4], DRATE(4)),
 
     // @Param: _EXTRA1
     // @DisplayName: Extra data type 1 stream rate
@@ -82,7 +160,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_EXTRA1",   6, GCS_MAVLINK, streamRates[5],  1),
+    AP_GROUPINFO("_EXTRA1",   6, GCS_MAVLINK, streamRates[5], DRATE(5)),
 
     // @Param: _EXTRA2
     // @DisplayName: Extra data type 2 stream rate
@@ -91,7 +169,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_EXTRA2",   7, GCS_MAVLINK, streamRates[6],  1),
+    AP_GROUPINFO("_EXTRA2",   7, GCS_MAVLINK, streamRates[6], DRATE(6)),
 
     // @Param: _EXTRA3
     // @DisplayName: Extra data type 3 stream rate
@@ -101,7 +179,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_EXTRA3",   8, GCS_MAVLINK, streamRates[7],  1),
+    AP_GROUPINFO("_EXTRA3",   8, GCS_MAVLINK, streamRates[7], DRATE(7)),
 
     // @Param: _PARAMS
     // @DisplayName: Parameter stream rate
@@ -111,7 +189,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_PARAMS",   9, GCS_MAVLINK, streamRates[8],  10),
+    AP_GROUPINFO("_PARAMS",   9, GCS_MAVLINK, streamRates[8], DRATE(8)),
 
     // @Param: _ADSB
     // @DisplayName: ADSB stream rate
@@ -121,9 +199,10 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_ADSB",   10, GCS_MAVLINK, streamRates[9],  5),
+    AP_GROUPINFO("_ADSB",   10, GCS_MAVLINK, streamRates[9], DRATE(9)),
     AP_GROUPEND
 };
+#undef DRATE
 
 static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU,
