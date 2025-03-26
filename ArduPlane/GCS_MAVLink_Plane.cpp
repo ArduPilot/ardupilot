@@ -401,15 +401,6 @@ void GCS_MAVLINK_Plane::send_pid_tuning()
         send_pid_info(pid_info, PID_TUNING_ACCZ, pid_info->actual);
     }
 #endif
- }
-
-uint8_t GCS_MAVLINK_Plane::sysid_my_gcs() const
-{
-    return plane.g.sysid_my_gcs;
-}
-bool GCS_MAVLINK_Plane::sysid_enforce() const
-{
-    return plane.g2.sysid_enforce;
 }
 
 uint32_t GCS_MAVLINK_Plane::telem_delay() const

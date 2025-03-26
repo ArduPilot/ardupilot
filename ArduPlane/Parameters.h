@@ -161,7 +161,7 @@ public:
         k_param_gcs0_unused = 110,         // unused in ArduPilot-4.7
         k_param_gcs1_unused,               // unused in ArduPilot-4.7
         k_param_sysid_this_mav_old,
-        k_param_sysid_my_gcs,
+        k_param_sysid_my_gcs_old,
         k_param_serial1_baud_old,   // deprecated
         k_param_telem_delay,
         k_param_serial0_baud_old,   // deprecated
@@ -372,7 +372,6 @@ public:
 
     // Telemetry control
     //
-    AP_Int16 sysid_my_gcs;
     AP_Int8 telem_delay;
 
     AP_Enum<RtlAutoland> rtl_autoland;
@@ -505,9 +504,6 @@ public:
     
     // control over servo output ranges
     SRV_Channels servo_channels;
-
-    // whether to enforce acceptance of packets only from sysid_my_gcs
-    AP_Int8 sysid_enforce;
 
 #if HAL_SOARING_ENABLED
     // ArduSoar parameters
