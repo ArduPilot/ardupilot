@@ -3145,7 +3145,7 @@ MAV_RESULT GCS_MAVLINK::set_message_interval(uint32_t msg_id, int32_t interval_u
             // at.
             interval_ms = 0;
         }
-    } else if (interval_us == -1) {
+    } else if (interval_us < 0) {
         // minus-one is "stop sending"
         interval_ms = 0;
     } else if (interval_us < 1000) {
