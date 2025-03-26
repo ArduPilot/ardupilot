@@ -58,6 +58,15 @@ const AP_Param::GroupInfo GCS::var_info[] {
     // @User: Advanced
     AP_GROUPINFO("_MYGCS_ENFRCE",    3,      GCS, mav_mygcs_enforce, 0),
 
+    // @Param: _TELEM_DELAY
+    // @DisplayName: Telemetry startup delay
+    // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
+    // @User: Advanced
+    // @Units: s
+    // @Range: 0 30
+    // @Increment: 1
+    AP_GROUPINFO("_TELEM_DELAY",    4,      GCS, mav_telem_delay, 0),
+
 #if MAVLINK_COMM_NUM_BUFFERS > 0
     // @Group: 1
     // @Path: GCS_MAVLink_Parameters.cpp
