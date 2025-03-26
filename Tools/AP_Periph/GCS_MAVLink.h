@@ -15,13 +15,16 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
+#include <AP_CANManager/AP_MAVLinkCAN.h>
 #if HAL_GCS_ENABLED
 
+class GCS_Periph;
 /*
  *  GCS backend used for many examples and tools
  */
 class GCS_MAVLINK_Periph : public GCS_MAVLINK
 {
+    friend GCS_Periph;
 public:
 
     using GCS_MAVLINK::GCS_MAVLINK;
@@ -32,7 +35,12 @@ private:
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return true; }
     MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     uint8_t sysid_my_gcs() const override;
-
+#if AP_MAVLINK_CAN_ENABLED
+    MAV_RESULT handle_can_forward(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
+    void handle_can_filter_modify(const mavlink_message_t &msg) override;
+    void handle_can_frame(const mavlink_message_t &msg) override;
+    AP_MAVLinkCAN mavcan;
+#endif
 protected:
 
     // Periph information:
@@ -56,6 +64,7 @@ public:
 
     using GCS::GCS;
 
+    void request_can_forward();
 protected:
 
     uint8_t sysid_this_mav() const override;
