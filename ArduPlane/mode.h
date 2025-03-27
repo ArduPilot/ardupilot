@@ -9,6 +9,7 @@
 #include "quadplane.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>
+#include "systemid.h"
 
 class AC_PosControl;
 class AC_AttitudeControl_Multi;
@@ -141,6 +142,11 @@ public:
     // true if voltage correction should be applied to throttle
     bool use_battery_compensation() const;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support systemid?
+    virtual bool supports_systemid() const { return false; }
+#endif
+    
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -599,6 +605,11 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support systemid?
+    bool supports_systemid() const override { return true; }
+#endif
+    
 protected:
 private:
 
@@ -623,6 +634,11 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support systemid?
+    bool supports_systemid() const override { return true; }
+#endif
+    
 protected:
 
     bool _enter() override;
@@ -648,6 +664,11 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support systemid?
+    bool supports_systemid() const override { return true; }
+#endif
+    
 protected:
 
     bool _enter() override;

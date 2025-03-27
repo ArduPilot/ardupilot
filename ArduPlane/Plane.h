@@ -122,6 +122,7 @@
 #include "avoidance_adsb.h"
 #endif
 #include "AP_Arming.h"
+#include "systemid.h"
 
 /*
   main APM:Plane class
@@ -174,6 +175,9 @@ public:
 
 #if AP_EXTERNAL_CONTROL_ENABLED
     friend class AP_ExternalControl_Plane;
+#endif
+#if AP_PLANE_SYSTEMID_ENABLED
+    friend class AP_SystemID;
 #endif
 
     Plane(void);
@@ -900,7 +904,7 @@ private:
     uint32_t last_log_fast_ms;
 
     void Log_Write_FullRate(void);
-    void Log_Write_Attitude(void);
+    void Log_Write_Attitude(bool from_sysid=false);
     void Log_Write_Control_Tuning();
     void Log_Write_OFG_Guided();
     void Log_Write_Guided(void);

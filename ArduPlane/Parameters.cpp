@@ -1266,6 +1266,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(precland, "PLND_", 35, ParametersG2, AC_PrecLand),
 #endif
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // @Group: SID
+    // @Path: systemid.cpp
+    AP_SUBGROUPINFO(systemid, "SID", 37, ParametersG2, AP_SystemID),
+#endif
+    
     AP_GROUPEND
 };
 
