@@ -608,7 +608,8 @@ public:
     /*
       used by scripting to control simulated aircraft position
      */
-    bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef);
+    bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat,
+                  const Vector3f &velocity_ef, const Vector3f &gyro_rads);
 };
 
 } // namespace SITL
