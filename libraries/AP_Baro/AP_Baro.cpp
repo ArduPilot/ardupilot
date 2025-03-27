@@ -601,6 +601,15 @@ void AP_Baro::init(void)
     case AP_BoardConfig::PX4_BOARD_AUAV21:
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
+    case AP_BoardConfig::PX4_BOARD_MINDPXV2:
+    case AP_BoardConfig::VRX_BOARD_BRAIN51:
+    case AP_BoardConfig::VRX_BOARD_BRAIN52:
+    case AP_BoardConfig::VRX_BOARD_BRAIN52E:
+    case AP_BoardConfig::VRX_BOARD_CORE10:
+    case AP_BoardConfig::VRX_BOARD_UBRAIN51:
+    case AP_BoardConfig::VRX_BOARD_UBRAIN52:
+    case AP_BoardConfig::PX4_BOARD_FMUV5:
+    case AP_BoardConfig::PX4_BOARD_FMUV6:
 #if AP_BARO_MS56XX_ENABLED
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
@@ -612,13 +621,6 @@ void AP_Baro::init(void)
 #if AP_BARO_MS56XX_ENABLED
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME))));
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-#endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_MINDPXV2:
-#if AP_BARO_MS56XX_ENABLED
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
 #endif
@@ -647,31 +649,11 @@ void AP_Baro::init(void)
 #endif  // AP_BARO_MS56XX_ENABLED
         break;
 
-    case AP_BoardConfig::VRX_BOARD_BRAIN51:
-    case AP_BoardConfig::VRX_BOARD_BRAIN52:
-    case AP_BoardConfig::VRX_BOARD_BRAIN52E:
-    case AP_BoardConfig::VRX_BOARD_CORE10:
-    case AP_BoardConfig::VRX_BOARD_UBRAIN51:
-    case AP_BoardConfig::VRX_BOARD_UBRAIN52:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-#endif  // AP_BARO_MS56XX_ENABLED
-        break;
-
     case AP_BoardConfig::PX4_BOARD_PCNC1:
 #if AP_BARO_ICM20789_ENABLED
         ADD_BACKEND(AP_Baro_ICM20789::probe(*this,
                                             std::move(GET_I2C_DEVICE(1, 0x63)),
                                             std::move(hal.spi->get_device(HAL_INS_MPU60x0_NAME))));
-#endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_FMUV5:
-    case AP_BoardConfig::PX4_BOARD_FMUV6:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
 #endif
         break;
 

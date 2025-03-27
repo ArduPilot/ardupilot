@@ -99,6 +99,7 @@ public:
         k_param_esc_extended_telem_rate,
         k_param_imu_sample_rate,
         k_param_imu,
+        k_param_dac,
     };
 
     AP_Int16 format_version;
@@ -116,7 +117,7 @@ public:
 #if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED
     AP_Int8 buzz_volume;
 #endif
-#ifdef AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
+#if AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
     AP_Int8 led_brightness;
 #endif
 #if AP_PERIPH_BARO_ENABLED

@@ -283,7 +283,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(baro_enable, "BARO_ENABLE", AP_PERIPH_BARO_ENABLE_DEFAULT),
 #endif
 
-#ifdef AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
+#if AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
     // @Param: LED_BRIGHTNESS
     // @DisplayName: LED Brightness
     // @Description: Select the RGB LED brightness level.
@@ -737,7 +737,13 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(imu, "INS", AP_InertialSensor),
 #endif
 
-    AP_VAREND
+#if AP_DAC_ENABLED
+    // @Group: DAC
+    // @Path: ../libraries/AP_DAC/AP_DAC.cpp
+    GOBJECT(dac, "DAC", AP_DAC),
+#endif
+
+AP_VAREND
 };
 
 

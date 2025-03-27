@@ -3791,7 +3791,7 @@ AR_AttitudeControl = {}
 
 -- return attitude controller slew rates for rovers
 ---@return number -- steering slew rate
----@return number -- spees slew rate
+---@return number -- speed slew rate
 function AR_AttitudeControl:get_srate() end
 
 -- copter position controller
@@ -3817,13 +3817,6 @@ function poscontrol:get_vel_target() end
 -- get position controller's target acceleration in m/s/s in NED frame
 ---@return Vector3f_ud|nil
 function poscontrol:get_accel_target() end
-
--- desc
-AR_PosControl = {}
-
--- return position controller slew rates for rovers
----@return number -- velocity slew rate
-function AR_PosControl:get_srate() end
 
 -- precision landing access
 precland = {}
@@ -4101,3 +4094,14 @@ function AP_Servo_Telem_Data_ud:measured_position() end
 -- get commanded position
 ---@return number|nil -- comanded position in degrees or nil if not available
 function AP_Servo_Telem_Data_ud:command_position() end
+
+-- simulator specific bindings
+sim = {}
+
+-- set pose of simulated vehicle. Requires AHRS_EKF_TYPE=10
+---@param instance integer -- 0 for first vehicle
+---@param loc Location_ud
+---@param orient Quaternion_ud
+---@param velocity_bf Vector3f_ud -- body frame velocity
+---@return boolean
+function sim:set_pose(instance, loc, orient, velocity_bf) end
