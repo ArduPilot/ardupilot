@@ -108,7 +108,7 @@ AP_BattMonitor_Analog::AP_BattMonitor_Analog(AP_BattMonitor &mon,
 void
 AP_BattMonitor_Analog::read()
 {
-    if (_params._type != AP_BattMonitor::Type::ANALOG_CURRENT_ONLY) {
+    if (_state.type != AP_BattMonitor::Type::ANALOG_CURRENT_ONLY) {
         // this copes with changing the pin at runtime
         _state.healthy = _volt_pin_analog_source->set_pin(_volt_pin);
 
@@ -142,8 +142,8 @@ AP_BattMonitor_Analog::read()
 bool AP_BattMonitor_Analog::has_current() const
 {
     return (_curr_pin_analog_source != nullptr) &&
-        (_params._type == AP_BattMonitor::Type::ANALOG_VOLTAGE_AND_CURRENT ||
-         _params._type == AP_BattMonitor::Type::ANALOG_CURRENT_ONLY);
+        (_state.type == AP_BattMonitor::Type::ANALOG_VOLTAGE_AND_CURRENT ||
+         _state.type == AP_BattMonitor::Type::ANALOG_CURRENT_ONLY);
 }
 
 #endif  // AP_BATTERY_ANALOG_ENABLED
