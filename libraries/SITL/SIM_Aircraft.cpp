@@ -1337,7 +1337,7 @@ void Aircraft::update_eas_airspeed()
 /*
   set pose on the aircraft, called from scripting
  */
-bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef)
+bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef, const Vector3f &gyro_rads)
 {
     if (instance >= MAX_SIM_INSTANCES || instances[instance] == nullptr) {
         return false;
@@ -1353,6 +1353,7 @@ bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion 
     aircraft.smoothing.rotation_b2e = aircraft.dcm;
     aircraft.smoothing.velocity_ef = velocity_ef;
     aircraft.smoothing.location = loc;
+    aircraft.gyro = gyro_rads;
 
     return true;
 }
@@ -1360,8 +1361,8 @@ bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion 
 /*
   wrapper for scripting access
  */
-bool SITL::SIM::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef)
+bool SITL::SIM::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef, const Vector3f &gyro_rads)
 {
-    return Aircraft::set_pose(instance, loc, quat, velocity_ef);
+    return Aircraft::set_pose(instance, loc, quat, velocity_ef, gyro_rads);
 }
 
