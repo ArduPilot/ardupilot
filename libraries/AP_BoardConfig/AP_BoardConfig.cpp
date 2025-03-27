@@ -73,6 +73,9 @@
 #ifndef BOARD_CONFIG_BOARD_VOLTAGE_MIN
 #define BOARD_CONFIG_BOARD_VOLTAGE_MIN 4.3f
 #endif
+#ifndef BOARD_CONFIG_BOARD_VOLTAGE_MAX
+#define BOARD_CONFIG_BOARD_VOLTAGE_MAX 5.8f
+#endif
 
 #ifndef HAL_BRD_OPTIONS_DEFAULT
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -300,6 +303,15 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("VBUS_MIN",    15,     AP_BoardConfig,  _vbus_min,  BOARD_CONFIG_BOARD_VOLTAGE_MIN),
+
+    // @Param: VBUS_MAX
+    // @DisplayName: Autopilot board voltage requirement
+    // @Description: Maximum voltage on the autopilot power rail to allow the aircraft to arm. 0 to disable the check.
+    // @Units: V
+    // @Range: 4.0 5.8
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("VBUS_MAX",    26,     AP_BoardConfig,  _vbus_max,  BOARD_CONFIG_BOARD_VOLTAGE_MAX),
 
 #endif
 
