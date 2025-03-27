@@ -4103,5 +4103,6 @@ sim = {}
 ---@param loc Location_ud
 ---@param orient Quaternion_ud
 ---@param velocity_bf Vector3f_ud -- body frame velocity
+---@param gyro_rads Vector3f_ud -- gyro body rate in rad/s
 ---@return boolean
-function sim:set_pose(instance, loc, orient, velocity_bf) end
+function sim:set_pose(instance, loc, orient, velocity_bf, gyro_rads) end

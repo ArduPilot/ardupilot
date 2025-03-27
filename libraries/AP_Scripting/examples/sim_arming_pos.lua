@@ -24,7 +24,10 @@ local SIM_APOS_VEL_Z = bind_add_param('VEL_Z', 7, 0)
 local SIM_APOS_RLL = bind_add_param('RLL', 8, 0)
 local SIM_APOS_PIT = bind_add_param('PIT', 9, 0)
 local SIM_APOS_YAW = bind_add_param('YAW', 10, 0)
-local SIM_APOS_MODE = bind_add_param('MODE', 11, -1)
+local SIM_APOS_GX = bind_add_param('GX', 11, 0)
+local SIM_APOS_GY = bind_add_param('GY', 12, 0)
+local SIM_APOS_GZ = bind_add_param('GZ', 13, 0)
+local SIM_APOS_MODE = bind_add_param('MODE', 14, -1)
 
 local was_armed = false
 
@@ -53,7 +56,12 @@ local function update()
         loc:offset(SIM_APOS_POS_N:get(), SIM_APOS_POS_E:get())
         loc:alt(loc:alt() - SIM_APOS_POS_D:get()*100)
 
-        sim:set_pose(0, loc, quat, vel)
+        local gyro = Vector3f()
+        gyro:x(math.rad(SIM_APOS_GX:get()))
+        gyro:y(math.rad(SIM_APOS_GY:get()))
+        gyro:z(math.rad(SIM_APOS_GZ:get()))
+
+        sim:set_pose(0, loc, quat, vel, gyro)
 
         if SIM_APOS_MODE:get() >= 0 then
             vehicle:set_mode(SIM_APOS_MODE:get())
