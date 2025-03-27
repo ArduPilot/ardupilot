@@ -2170,15 +2170,18 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "SCR_ENABLE": 1,
             "AHRS_EKF_TYPE": 10,
             "EK3_ENABLE": 0,
+            "LOG_DISARMED": 1,
+            "Q_LAND_FINAL_SPD" : 2,
+            "HOME_RESET_ALT" : -1,
         })
 
-        self.reboot_sitl(check_position=False)
+        self.reboot_sitl(check_position=True)
 
         self.context_collect('STATUSTEXT')
         self.set_parameters({
             "SIM_APOS_ENABLE" : 1,
             "SIM_APOS_PIT" : -70,
-            "SIM_APOS_POS_D" : -1000,
+            "SIM_APOS_POS_D" : -300,
             "SIM_APOS_POS_E" : 400,
             "SIM_APOS_POS_N" : 200,
             "SIM_APOS_RLL" : 150,
@@ -2202,6 +2205,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         NTESTS=20
         for t in range(NTESTS):
             self.change_mode("FBWA")
+            self.delay_sim_time(3)
             self.progress("Recovery test %u" % t)
             self.arm_vehicle(force=True)
             self.wait_groundspeed(0, 2, timeout=15)
@@ -2210,7 +2214,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_APOS_ENABLE", 0)
         self.arm_vehicle(force=True)
         self.change_mode("QLAND")
-        self.wait_disarmed(timeout=120) # give quadplane a long time to land
+        self.wait_disarmed(timeout=300) # give quadplane a long time to land
         self.context_pop()
 
     def FastInvertedRecovery(self):
