@@ -9,11 +9,24 @@
 #include <AP_ExternalControl/AP_ExternalControl.h>
 
 // These are the Goal Interface constants. Because microxrceddsgen does not expose
-// them in the generated code, they are manually maintained
-// Position ignore flags
-static constexpr uint16_t TYPE_MASK_IGNORE_LATITUDE = 1;
-static constexpr uint16_t TYPE_MASK_IGNORE_LONGITUDE = 2;
-static constexpr uint16_t TYPE_MASK_IGNORE_ALTITUDE = 4;
+// them in the generated code, they are manually maintained.
+
+//! @todo(srmainwaring) make an enum class and use templates to enable as bitfield
+// see: https://accu.org/journals/overload/24/132/williams_2228/
+typedef enum AP_DDS_PositionTargetTypeMask {
+    TYPE_MASK_IGNORE_LATITUDE = 1,
+    TYPE_MASK_IGNORE_LONGITUDE = 2,
+    TYPE_MASK_IGNORE_ALTITUDE = 4,
+    TYPE_MASK_IGNORE_VX = 8,
+    TYPE_MASK_IGNORE_VY = 16,
+    TYPE_MASK_IGNORE_VZ = 32,
+    TYPE_MASK_IGNORE_AFX = 64,
+    TYPE_MASK_IGNORE_AFY = 128,
+    TYPE_MASK_IGNORE_AFZ = 256,
+    TYPE_MASK_FORCE_SET = 512,
+    TYPE_MASK_YAW_IGNORE = 1024,
+    TYPE_MASK_YAW_RATE_IGNORE = 2048,
+} AP_DDS_PositionTargetTypeMask;
 
 bool AP_DDS_External_Control::handle_global_position_control(ardupilot_msgs_msg_GlobalPosition& cmd_pos)
 {
@@ -31,19 +44,68 @@ bool AP_DDS_External_Control::handle_global_position_control(ardupilot_msgs_msg_
             return false;
         }
 
-        constexpr uint32_t MASK_POS_IGNORE =
-            TYPE_MASK_IGNORE_LATITUDE |
-            TYPE_MASK_IGNORE_LONGITUDE |
-            TYPE_MASK_IGNORE_ALTITUDE;
+        const uint16_t TYPE_MASK_LAST_BYTE = 0xF000;
 
-        if (!(cmd_pos.type_mask & MASK_POS_IGNORE)) {
+        // position setpoint mask
+        const uint16_t position_mask =
+            (TYPE_MASK_IGNORE_VX | TYPE_MASK_IGNORE_VY | TYPE_MASK_IGNORE_VZ |
+             TYPE_MASK_IGNORE_AFX | TYPE_MASK_IGNORE_AFY | TYPE_MASK_IGNORE_AFZ |
+             TYPE_MASK_YAW_IGNORE | TYPE_MASK_YAW_RATE_IGNORE |
+             TYPE_MASK_LAST_BYTE) ^ 0xFFFF;
+
+        // path setpoint mask
+        const uint16_t path_mask =
+            (TYPE_MASK_YAW_IGNORE | TYPE_MASK_YAW_RATE_IGNORE |
+             TYPE_MASK_LAST_BYTE) ^ 0xFFFF;
+
+        // position control
+        if (((cmd_pos.type_mask | TYPE_MASK_LAST_BYTE) ^ 0xFFFF) == position_mask) {
             Location loc(cmd_pos.latitude * 1E7, cmd_pos.longitude * 1E7, alt_cm, alt_frame);
             if (!external_control->set_global_position(loc)) {
                 return false; // Don't try sending other commands if this fails
             }
         }
 
-        // TODO add velocity and accel handling
+        // path guidance
+        if (((cmd_pos.type_mask | TYPE_MASK_LAST_BYTE) ^ 0xFFFF) == path_mask) {
+            Location position_on_path(cmd_pos.latitude * 1E7, cmd_pos.longitude * 1E7, alt_cm, alt_frame);
+
+            // convert velocty and acceleration setpoints from ENU to NED
+            Vector2f vel(
+                float(cmd_pos.velocity.linear.y),
+                float(cmd_pos.velocity.linear.x));
+            Vector2f accel(
+                float(cmd_pos.acceleration_or_force.linear.y),
+                float(cmd_pos.acceleration_or_force.linear.x));
+            Vector2f unit_vel;
+
+            float path_curvature{0.0};
+            bool dir_is_ccw{false};
+
+            if (!vel.is_zero()) {
+                unit_vel = vel.normalized();
+
+                if (!accel.is_zero()) {
+                    // curvature is determined from the acceleration normal
+                    // to the planar velocity and the equation for uniform
+                    // circular motion: a = v^2 / r.
+                    float accel_proj = accel.dot(unit_vel);
+                    Vector2f accel_lat = accel - unit_vel * accel_proj;
+                    Vector2f accel_lat_unit = accel_lat.normalized();
+
+                    path_curvature = accel_lat.length() / vel.length_squared();
+
+                    // % is cross product, direction: cw:= 1, ccw:= -1
+                    float dir = accel_lat_unit % unit_vel;
+                    dir_is_ccw = dir < 0.0;
+                }
+            }
+
+            if (external_control->set_path_position_tangent_and_curvature(
+                    position_on_path, unit_vel, path_curvature, dir_is_ccw)) {
+                return false;
+            }
+        }
 
         return true;
     }
@@ -124,6 +186,5 @@ bool AP_DDS_External_Control::convert_alt_frame(const uint8_t frame_in,  Locatio
     }
     return true;
 }
-
 
 #endif // AP_DDS_ENABLED
