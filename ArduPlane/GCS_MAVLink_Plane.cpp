@@ -874,11 +874,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
 #endif
 
         // add home alt if needed
-        if (requested_position.relative_alt && !requested_position.terrain_alt) {
-            requested_position.alt += plane.home.alt;
-            requested_position.relative_alt = 0;
-        }
-
         plane.set_guided_WP(requested_position);
 
         // Loiter radius for planes. Positive radius in meters, direction is controlled by Yaw (param4) value, parsed above
