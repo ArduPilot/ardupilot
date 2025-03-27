@@ -1763,6 +1763,61 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed(timeout=60)
 
+    def TransitionAbortTailsitter(self):
+        '''Test tailsitter transition logic even when aborting a transition.'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('quadplane-copter_tailsitter'),
+            model="quadplane-copter_tailsitter",
+            wipe=True,
+        )
+        self.reboot_sitl()
+
+        self.change_mode('QLOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.wait_altitude(50, 70, relative=True)
+        self.context_collect('STATUSTEXT')
+
+        self.change_mode('FBWA')
+        self.set_rc(3, 1500)
+        self.wait_statustext('Transition FW done')
+        self.context_clear_collection('STATUSTEXT')
+        self.delay_sim_time(5)
+        # Go back to QLOITER, wait for a complete transition.
+        self.progress('*** First VTOL transition.')
+        self.change_mode("QLOITER")
+        self.wait_statustext('Transition VTOL done', check_context=True)
+        self.delay_sim_time(10) # Wait for the lateral velocity to die down.
+        self.context_clear_collection('STATUSTEXT')
+
+        # Switch to FBWA.
+        self.change_mode("FBWA")
+        self.wait_statustext('Transition FW done', check_context=True)
+        self.delay_sim_time(10) # Wait for the transition to settle.
+        # Go back to QLOITER, but don't let it complete the transition.
+        self.progress('*** Second VTOL transition, intentionally interrupted.')
+        self.send_cmd_do_set_mode("QLOITER")
+        self.delay_sim_time(0.5)
+
+        # Try it once more, this should result in a good transition too.
+        # Switch to FBWA.
+        self.change_mode("FBWA")
+        # self.wait_statustext('Transition FW done', check_context=True)
+        self.context_clear_collection('STATUSTEXT')
+        self.delay_sim_time(5)
+        # Go back to QLOITER as usual.
+        self.progress('*** Third VTOL transition.')
+        self.change_mode("QLOITER")
+        self.wait_attitude(despitch=30, timeout=2, tolerance=15) # Ensure the aircraft pitches up.
+        self.wait_statustext('Transition VTOL done', check_context=True)
+        failmsg = self.statustext_in_collections('Transition VTOL done, timeout')
+        if failmsg is not None:
+            raise NotAchievedException("Transition to VTOL did not complete correctly.")
+
+        self.disarm_vehicle(force=True)
+
     def MAV_CMD_NAV_TAKEOFF(self):
         '''test issuing takeoff command via mavlink'''
         self.change_mode('GUIDED')
@@ -2343,6 +2398,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.mavlink_MAV_CMD_DO_VTOL_TRANSITION,
             self.TransitionMinThrottle,
             self.BackTransitionMinThrottle,
+            self.TransitionAbortTailsitter,
             self.MAV_CMD_NAV_TAKEOFF,
             self.Q_GUIDED_MODE,
             self.DCMClimbRate,
