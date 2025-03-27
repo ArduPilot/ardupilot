@@ -1993,6 +1993,18 @@ void QuadPlane::motors_output(bool run_rate_controller)
                 // reset the attitude target to the new attitude so
                 // the VTOL controller doesn't pull us back
                 attitude_control->reset_target_and_rate(false);
+
+                if (plane.ahrs.groundspeed() > wp_nav->get_default_speed_xy()*0.01) {
+                    /* if moving at high speed also reset position
+                       controller and height controller
+
+                       this avoids an issue where the position
+                       controller may limit pitch after a strong
+                       acceleration event
+                    */
+                    pos_control->init_z_controller();
+                    pos_control->init_xy_controller();
+                }
             }
         }
 
