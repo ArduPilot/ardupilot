@@ -295,6 +295,14 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED')
             feature_define_whitelist.add('AP_COPTER_AHRS_AUTO_TRIM_ENABLED')
 
+        if target.lower() in ['antennatracker', 'blimp', 'sub', 'plane', 'copter']:
+            # plane has a dependency for AP_Follow which is not
+            # declared in build_options.py; we don't compile follow
+            # support for Follow into Plane unless scripting is also
+            # enabled.  Copter manages to elide everything is
+            # MODE_FOLLOW isn't enabled.
+            feature_define_whitelist.add('AP_FOLLOW_ENABLED')
+
         if target.lower() != "plane":
             # only on Plane:
             feature_define_whitelist.add('AP_ICENGINE_ENABLED')
