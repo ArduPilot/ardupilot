@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_Networking_IPV4::var_info[] = {
 
     // @Param: 2
     // @DisplayName: IPv4 Address 3rd byte
-    // @Description: IPv4 address. Example: xxx.xxx.13.xxx
+    // @Description: IPv4 address. Example: xxx.xxx.144.xxx
     // @Range: 0 255
     // @RebootRequired: True
     AP_GROUPINFO("2", 3,  AP_Networking_IPV4, addr[2], 0),
