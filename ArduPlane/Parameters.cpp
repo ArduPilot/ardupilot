@@ -1034,6 +1034,10 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(mode_autoland, "AUTOLAND_", ModeAutoLand),
 #endif
 
+    // @Group: GUIDED_
+    // @Path: mode_guided.cpp
+    GOBJECT(mode_guided, "GUIDED_", ModeGuided),
+
 #if AP_PLANE_GLIDER_PULLUP_ENABLED
     // @Group: PUP_
     // @Path: pullup.cpp
