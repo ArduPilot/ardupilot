@@ -15,6 +15,7 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_POI_REQUEST_TIMEOUT_MS 30000   // POI calculations continue to be updated for this many seconds after last request
 #define AP_MOUNT_POI_RESULT_TIMEOUT_MS  3000    // POI calculations valid for 3 seconds
 #define AP_MOUNT_POI_DIST_M_MAX         10000   // POI calculations limit of 10,000m (10km)
+#define AP_MOUNT_SYSID_TIMEOUT_MS       600     // SYSID position estimate timeout after .6 second, which from testing seems "good"
 
 // Default init function for every mount
 void AP_Mount_Backend::init()
@@ -407,6 +408,8 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
     // global_position_int.alt is *UP*, so is location.
     _target_sysid_location.set_alt_cm(packet.alt*0.1, Location::AltFrame::ABSOLUTE);
     _target_sysid_location_set = true;
+    // keep track of when we last received the update
+    _target_sysid_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
 
     return true;
 }
@@ -868,6 +871,10 @@ bool AP_Mount_Backend::get_angle_target_to_sysid(MountTarget& angle_rad) const
         return false;
     }
     if (!_target_sysid) {
+        return false;
+    }
+    // don't update the angle if we haven't received a recent update from the target
+    if(AP_HAL::millis() - _target_sysid_update_ms > AP_MOUNT_SYSID_TIMEOUT_MS) {
         return false;
     }
     return get_angle_target_to_location(_target_sysid_location, angle_rad);
