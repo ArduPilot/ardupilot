@@ -111,6 +111,9 @@ private:
     // get desired maximum acceleration along track
     float get_accel_along_track() const WARN_IF_UNUSED { return accel_max; }
 
+    // get desired maximum acceleration along track
+    float get_accel_z_max() const WARN_IF_UNUSED { return accel_z_max; }
+
     // return the change in position from origin to destination
     const Vector3f& get_track() const WARN_IF_UNUSED { return track; };
 
@@ -130,10 +133,10 @@ private:
     bool braking() const WARN_IF_UNUSED;
 
     // return time offset used to initiate the turn onto leg
-    float time_turn_in() const WARN_IF_UNUSED;
+    float time_accel_end() const WARN_IF_UNUSED;
 
     // return time offset used to initiate the turn from leg
-    float time_turn_out() const WARN_IF_UNUSED;
+    float time_decel_start() const WARN_IF_UNUSED;
 
     // increment the internal time
     void advance_time(float dt);
@@ -194,6 +197,7 @@ private:
     float snap_max;     // maximum snap magnitude
     float jerk_max;     // maximum jerk magnitude
     float accel_max;    // maximum acceleration magnitude
+    float accel_z_max;    // maximum acceleration magnitude
     float vel_max;      // maximum velocity magnitude
     float time;         // time that defines position on the path
     float position_sq;  // position (squared) on the path at the last time step (used to detect finish)
