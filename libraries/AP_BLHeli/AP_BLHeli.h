@@ -261,6 +261,7 @@ private:
     bool msp_process_byte(uint8_t c);
     void blheli_crc_update(uint8_t c);
     bool blheli_4way_process_byte(uint8_t c);
+    uint8_t blheli_chan_to_output_chan(uint8_t motor);
     void msp_send_ack(uint8_t cmd);
     void msp_send_reply(uint8_t cmd, const uint8_t *buf, uint8_t len);
     void putU16(uint8_t *b, uint16_t v);
