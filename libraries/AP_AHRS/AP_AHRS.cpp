@@ -1871,13 +1871,15 @@ bool AP_AHRS::get_relative_position_D_origin(float &posD) const
 /*
   return relative position from home in meters
 */
-void AP_AHRS::get_relative_position_D_home(float &posD) const
+bool AP_AHRS::get_relative_position_D_home(float &posD) const
 {
     if (!_home_is_set) {
         // fall back to an altitude derived from barometric pressure
         // differences vs a calibrated ground pressure:
         posD = -AP::baro().get_altitude();
-        return;
+        // note that the Baro library currently lies about its success
+        // in providing an altitude.  Not all vehicles have barometers.
+        return true;
     }
 
     Location originLLH;
@@ -1889,15 +1891,15 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
         if (_gps_use == GPSUse::EnableWithHeight &&
             gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             posD = (_home.alt - gps.location().alt) * 0.01;
-            return;
+            return true;
         }
 #endif
         posD = -AP::baro().get_altitude();
-        return;
+        return true;
     }
 
     posD = originD - ((originLLH.alt - _home.alt) * 0.01f);
-    return;
+    return true;
 }
 /*
   canonicalise _ekf_type, forcing it to be 0, 2 or 3

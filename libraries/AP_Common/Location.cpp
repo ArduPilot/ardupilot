@@ -101,7 +101,7 @@ Location::AltFrame Location::get_alt_frame() const
     return AltFrame::ABSOLUTE;
 }
 
-/// get altitude in desired frame
+/// get altitude in desired frame.  Must not change ret_alt_cm unless true is returned!
 bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -205,6 +205,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
     }
     return false;  // LCOV_EXCL_LINE  - not reachable
 }
+//  Must not change ret_alt_cm unless true is returned!
 bool Location::get_alt_m(AltFrame desired_frame, float &ret_alt) const
 {
     int32_t ret_alt_cm;

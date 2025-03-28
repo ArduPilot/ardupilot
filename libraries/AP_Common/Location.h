@@ -41,6 +41,7 @@ public:
     }
 
     // get altitude (in cm) in the desired frame
+    // does not modify ret_alt_cm unless true is returned
     // returns false on failure to get altitude in the desired frame which can only happen if the original frame or desired frame is:
     // - above-terrain and the terrain database can't supply terrain height amsl
     // - above-home and home is not set

@@ -278,7 +278,7 @@ public:
 
     // return the relative position down from home or origin
     // baro will be used for the _home relative one if the EKF isn't
-    void get_relative_position_D_home(float &posD) const;
+    bool get_relative_position_D_home(float &posD) const;
     bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED;
 
     // return location corresponding to vector relative to the
