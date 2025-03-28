@@ -1971,6 +1971,11 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t cha
         return false;
     }
 
+#if RCOU_SERIAL_TIMING_DEBUG
+    hal.gpio->pinMode(54, 1);
+    hal.gpio->pinMode(55, 1);
+#endif
+
     if (!in_soft_serial()) {
         // keep a record of the line mode so that it can be reliably restored after input
         // not resetting the linemode properly after input is absolutely fatal
@@ -2216,12 +2221,12 @@ void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
 /*
   read a byte from a port, using serial parameters from serial_setup_output()
 */
-bool RCOutput::serial_read_byte(uint8_t &b)
+bool RCOutput::serial_read_byte(uint8_t &b, uint32_t timeout_us)
 {
     while (true) {
         // consumer/producer pattern
         if (serial_buffer.is_empty()) {
-            if (!serial_sem.wait(START_BIT_TIMEOUT)) {
+            if (!serial_sem.wait(timeout_us)) {
                 return false;  // no data after 2ms
             }
         }
@@ -2246,8 +2251,11 @@ bool RCOutput::serial_read_byte(uint8_t &b)
 
 /*
   read a byte from a port, using serial parameters from serial_setup_output()
+  timeout_us is the maximum time to wait for input - it is important to timeout
+  at this level rather than doing multiple reads as its possible to miss acks
+  in the thin slice of time during re-setup.
 */
-uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
+uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeout_us)
 {
     if (!in_soft_serial()) {
         return 0;
@@ -2261,14 +2269,6 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 #else
     uint32_t gpio_mode = PAL_STM32_MODE_INPUT | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_LOWEST;
 #endif
-
-    uint16_t i = 0;
-
-#if RCOU_SERIAL_TIMING_DEBUG
-    hal.gpio->pinMode(54, 1);
-    hal.gpio->pinMode(55, 1);
-#endif
-
     // assume GPIO mappings for PWM outputs start at 50
     palSetLineMode(line, gpio_mode);
 
@@ -2282,21 +2282,25 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     irq.bit_time_tick = serial_group->serial.bit_time_us;
     irq.last_bit = 0;
 
-#if RCOU_SERIAL_TIMING_DEBUG
-    palWriteLine(HAL_GPIO_LINE_GPIO54, 1);
-#endif
-
     if (!((GPIO *)hal.gpio)->_attach_interrupt(line, serial_bit_irq, AP_HAL::GPIO::INTERRUPT_BOTH)) {
-#if RCOU_SERIAL_TIMING_DEBUG
-        palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
-#endif
         chThdSetPriority(serial_priority);
         palSetLineMode(line, serial_mode);
         return 0;
     }
 
+#if RCOU_SERIAL_TIMING_DEBUG
+    palToggleLine(HAL_GPIO_LINE_GPIO54);
+#endif
+
+    uint16_t i = 0;
+    uint32_t start_us = AP_HAL::micros();
+
     for (i=0; i<len; i++) {
-        if (!serial_read_byte(buf[i])) {
+        uint32_t spent_us = AP_HAL::micros() - start_us;
+        if (spent_us > timeout_us) {
+            break;
+        }
+        if (!serial_read_byte(buf[i], timeout_us)) {
             break;
         }
     }
@@ -2310,7 +2314,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     chThdSetPriority(serial_priority);
 
 #if RCOU_SERIAL_TIMING_DEBUG
-    palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
+    palToggleLine(HAL_GPIO_LINE_GPIO54);
 #endif
     return i;
 }
