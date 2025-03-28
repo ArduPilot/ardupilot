@@ -173,6 +173,15 @@ AP_BLHeli::AP_BLHeli(void)
     last_control_port = -1;
 }
 
+// map an incoming BLHeli motor request to the appropriate 
+// output channel for use in serial output
+uint8_t AP_BLHeli::blheli_chan_to_output_chan(uint8_t motor)
+{
+    uint8_t chan = 0;
+    SRV_Channels::find_channel(SRV_Channel::Function(motor + uint16_t(SRV_Channel::k_motor1)), chan);
+    return chan;
+}
+
 /*
   process one byte of serial input for MSP protocol
  */
@@ -492,7 +501,7 @@ void AP_BLHeli::msp_process_command(void)
         uint8_t buf[16] {};
         for (uint8_t i = 0; i < num_motors; i++) {
             // if we have a mix of reversible and normal report a PWM of zero, this allows BLHeliSuite to conect
-            uint16_t v = mixed_type ? 0 : hal.rcout->read(motor_map[i]);
+            uint16_t v = mixed_type ? 0 : hal.rcout->read(blheli_chan_to_output_chan(i));
             putU16(&buf[2*i], v);
             debug("MOTOR %u val: %u",i,v);
         }
@@ -519,7 +528,7 @@ void AP_BLHeli::msp_process_command(void)
                 debug("MSP_SET_MOTOR %u %u", i, v);
                 // map from a MSP value to a value in the range 1000 to 2000
                 uint16_t pwm = (v < 1000)?0:v;
-                hal.rcout->write(motor_map[i], pwm);
+                hal.rcout->write(blheli_chan_to_output_chan(i), pwm);
             }
             hal.rcout->push();
         } else {
@@ -550,7 +559,7 @@ void AP_BLHeli::msp_process_command(void)
         // doing the serial setup here avoids delays when doing it on demand and makes
         // BLHeliSuite considerably more reliable
         EXPECT_DELAY_MS(1000);
-        if (!hal.rcout->serial_setup_output(motor_map[0], 19200, motor_mask)) {
+        if (!hal.rcout->serial_setup_output(blheli_chan_to_output_chan(0), 19200, motor_mask)) {
             msp_send_ack(ACK_D_GENERAL_ERROR);
             break;
         } else {
@@ -626,7 +635,7 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
     }
     EXPECT_DELAY_MS(1000);
     hal.scheduler->delay_microseconds(100);
-    if (!hal.rcout->serial_setup_output(motor_map[blheli.chan], 19200, motor_mask)) {
+    if (!hal.rcout->serial_setup_output(blheli_chan_to_output_chan(blheli.chan), 19200, motor_mask)) {
         debug("serial_setup_output() failed\n");
         blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
@@ -640,8 +649,8 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
     }
     memcpy(blheli.buf, buf, len);
     uint16_t crc = BL_CRC(buf, len);
-    blheli.buf[len] = crc;
-    blheli.buf[len+1] = crc>>8;
+    blheli.buf[len] = uint8_t(crc & 0xFF);
+    blheli.buf[len+1] = uint8_t(crc>>8);
     if (!hal.rcout->serial_write_bytes(blheli.buf, len+(send_crc?2:0))) {
         debug("serial_write_bytes() failed\n");
         blheli.ack = ACK_D_GENERAL_ERROR;
@@ -658,10 +667,11 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
  */
 bool AP_BLHeli::BL_ReadBuf(uint8_t *buf, uint16_t len)
 {
-    bool check_crc = isMcuConnected() && len > 0;
+    bool check_crc = isMcuConnected();
     uint16_t req_bytes = len+(check_crc?3:1);
     EXPECT_DELAY_MS(1000);
-    uint16_t n = hal.rcout->serial_read_bytes(blheli.buf, req_bytes);
+    // byte time is 520us so 1000 per byte should be more than enough
+    uint16_t n = hal.rcout->serial_read_bytes(blheli.buf, req_bytes, req_bytes * 1000);
     debug("BL_ReadBuf %u -> %u", len, n);
     if (req_bytes != n) {
         debug("short read");
@@ -697,12 +707,9 @@ bool AP_BLHeli::BL_ReadBuf(uint8_t *buf, uint16_t len)
 uint8_t AP_BLHeli::BL_GetACK(uint16_t timeout_ms)
 {
     uint8_t ack;
-    uint32_t start_ms = AP_HAL::millis();
-    EXPECT_DELAY_MS(1000);
-    while (AP_HAL::millis() - start_ms < timeout_ms) {
-        if (hal.rcout->serial_read_bytes(&ack, 1) == 1) {
-            return ack;
-        }
+    EXPECT_DELAY_MS(timeout_ms);
+    if (hal.rcout->serial_read_bytes(&ack, 1, timeout_ms * 1000) == 1) {
+        return ack;
     }
     // return brNONE, meaning no ACK received in the timeout
     return brNONE;
@@ -753,7 +760,7 @@ bool AP_BLHeli::BL_ReadA(uint8_t cmd, uint8_t *buf, uint16_t n)
  */
 bool AP_BLHeli::BL_ConnectEx(void)
 {
-    debug("BL_ConnectEx %u/%u at %u", blheli.chan, num_motors, motor_map[blheli.chan]);
+    debug("BL_ConnectEx %u/%u at %u", blheli.chan, num_motors, blheli_chan_to_output_chan(blheli.chan));
     setDisconnected();
     const uint8_t BootInit[] = {0,0,0,0,0,0,0,0,0,0,0,0,0x0D,'B','L','H','e','l','i',0xF4,0x7D};
     if (!BL_SendBuf(BootInit, 21)) {
@@ -884,9 +891,14 @@ bool AP_BLHeli::BL_WriteA(uint8_t cmd, const uint8_t *buf, uint16_t nbytes, uint
         }
         uint8_t sCMD[] = {cmd, 0x01};
         if (!BL_SendBuf(sCMD, 2)) {
+            debug_console("BL_SendBuf failed\n");
             return false;
         }
-        return (BL_GetACK(timeout_ms) == brSUCCESS);
+        uint8_t ack = BL_GetACK(timeout_ms);
+        if (ack != brSUCCESS) {
+            debug_console("BL_GetACK failed 0x%x\n", ack);
+        }
+        return (ack == brSUCCESS);
     }
     debug_console("BL_SendCMDSetAddress failed\n");
     blheli.ack = ACK_D_GENERAL_ERROR;
@@ -1101,6 +1113,7 @@ void AP_BLHeli::blheli_process_command(void)
                 // For reasons unknown BL_WriteFlash can bork the DMA engine, make some attempt to get
                 // back to a sane state if this happens. We can't call serial_end() as that will 
                 // restart dshot output
+                debug_console("cmd_DeviceWrite failed 0x%x: %u bytes", blheli.address, nbytes);
                 hal.rcout->serial_reset(motor_mask);
             }
             break;
@@ -1454,13 +1467,13 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
 #endif
     // add motors from channel mask
     for (uint8_t i=0; i<16 && num_motors < max_motors; i++) {
-        if (mask & (1U<<i)) {
+        if (digital_mask & (1U<<i)) {
             motor_map[num_motors] = i;
             num_motors++;
         }
     }
     motor_mask = mask;
-    debug("ESC: %u motors mask=0x%08lx", num_motors, mask);
+    debug("ESC: %u motors mask=0x%08lx", num_motors, digital_mask);
 
     // check if we have a combination of reversible and normal
     mixed_type = (mask != (mask & channel_reversible_mask.get())) && (channel_reversible_mask.get() != 0);
