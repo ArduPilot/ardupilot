@@ -683,6 +683,9 @@ public:
     // get access to an EKFGSF_yaw estimator
     const EKFGSF_yaw *get_yaw_estimator(void) const;
 
+    // AUX switch support for disabling GPS only in EKF3
+    void gps_disable_ek3(bool gps_disable);
+
 private:
 
     // roll/pitch/yaw euler angles, all in radians
