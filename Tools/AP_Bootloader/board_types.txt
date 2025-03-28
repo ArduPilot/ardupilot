@@ -437,6 +437,9 @@ AP_HW_DroneBuild_G2                  5701
 #IDs 5800-5809 reserved for Droneer
 AP_HW_DroneerF405                    5800
 
+#IDs 5810-5819 reserved for Brother Hobby
+AP_HW_BrotherHobbyH743               5810
+
 # IDs 6000-6099 reserved for SpektreWorks
 AP_HW_sw-spar-f407                   6000
 AP_HW_sw-boom-f407                   6001
