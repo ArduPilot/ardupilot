@@ -528,7 +528,8 @@
     MASK_LOG_PID | \
     MASK_LOG_COMPASS | \
     MASK_LOG_CAMERA | \
-    MASK_LOG_MOTBATT
+    MASK_LOG_MOTBATT | \
+    MASK_LOG_PID
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
