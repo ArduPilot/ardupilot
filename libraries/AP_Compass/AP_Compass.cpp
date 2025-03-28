@@ -39,6 +39,7 @@
 #include "AP_Compass_MMC5xx3.h"
 #include "AP_Compass_MAG3110.h"
 #include "AP_Compass_RM3100.h"
+#include "AP_Compass_MMC5603.h"
 #if AP_COMPASS_MSP_ENABLED
 #include "AP_Compass_MSP.h"
 #endif
@@ -1312,6 +1313,20 @@ void Compass::_probe_external_i2c_compasses(void)
     }
 #endif
 #endif  // AP_COMPASS_MMC3416_ENABLED
+
+#if AP_COMPASS_MMC5603_ENABLED
+    // external i2c bus
+    FOREACH_I2C_EXTERNAL(i) {
+        ADD_BACKEND(DRIVER_MMC5603, AP_Compass_MMC5603::probe(GET_I2C_DEVICE(i, HAL_COMPASS_MMC5603_I2C_ADDR),
+                    true, ROTATION_NONE));
+    }
+#if !defined(HAL_SKIP_AUTO_INTERNAL_I2C_PROBE)
+    FOREACH_I2C_INTERNAL(i) {
+        ADD_BACKEND(DRIVER_MMC5603, AP_Compass_MMC5603::probe(GET_I2C_DEVICE(i, HAL_COMPASS_MMC5603_I2C_ADDR),
+                    all_external, ROTATION_NONE));
+    }
+#endif
+#endif  // AP_COMPASS_MMC5603_ENABLED
 
 #if AP_COMPASS_RM3100_ENABLED
 #ifdef HAL_COMPASS_RM3100_I2C_ADDR
