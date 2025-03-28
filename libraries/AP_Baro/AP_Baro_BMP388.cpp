@@ -245,7 +245,7 @@ bool AP_Baro_BMP388::read_registers(uint8_t reg, uint8_t *data, uint8_t len)
     uint8_t b[len+2];
     b[0] = reg | 0x80;
     memset(&b[1], 0, len+1);
-    if (!dev->transfer(b, len+2, b, len+2)) {
+    if (!dev->transfer_fullduplex(b, len+2)) {
         return false;
     }
     memcpy(data, &b[2], len);

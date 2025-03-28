@@ -112,7 +112,7 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
 #ifdef SPIDEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
-    if ((send_len == recv_len && send == recv) || !send || !recv) {
+    if (!send || !recv) {
         // simplest cases
         transfer_fullduplex(send, recv, recv_len?recv_len:send_len);
         return true;
@@ -129,6 +129,11 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
         memcpy(recv, &buf[send_len], recv_len);
     }
     return true;
+}
+
+bool SPIDevice::transfer_fullduplex(uint8_t *send_recv, uint32_t len)
+{
+    return transfer_fullduplex(send_recv, send_recv, len);
 }
 
 bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t len)

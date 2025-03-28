@@ -52,6 +52,9 @@ public:
         abort();
     }
 
+    bool transfer_fullduplex(uint8_t *send_recv, uint32_t len) override {
+        abort();
+    }
 
     AP_HAL::Semaphore *get_semaphore() override;
 

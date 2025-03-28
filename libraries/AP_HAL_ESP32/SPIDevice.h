@@ -69,6 +69,8 @@ public:
                   uint8_t *recv, uint32_t recv_len) override;
     bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                              uint32_t len) override;
+    /* See AP_HAL::SPIDevice::transfer_fullduplex() */
+    bool transfer_fullduplex(uint8_t *send_recv, uint32_t len) override;
     AP_HAL::Semaphore *get_semaphore() override;
     AP_HAL::Device::PeriodicHandle register_periodic_callback(
         uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;

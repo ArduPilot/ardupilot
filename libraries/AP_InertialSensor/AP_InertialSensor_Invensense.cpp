@@ -771,7 +771,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
                 goto check_registers;
             }
             memset(rx, 0, n * MPU_SAMPLE_SIZE);
-            if (!_dev->transfer(rx, n * MPU_SAMPLE_SIZE, rx, n * MPU_SAMPLE_SIZE)) {
+            if (!_dev->transfer_fullduplex(rx, n * MPU_SAMPLE_SIZE)) {
                 if (!hal.scheduler->in_expected_delay()) {
                     debug("MPU60x0: error in fifo read %u bytes\n", n * MPU_SAMPLE_SIZE);
                 }
