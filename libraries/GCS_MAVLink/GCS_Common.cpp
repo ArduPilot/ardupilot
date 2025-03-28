@@ -419,6 +419,89 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         quality);                                // Signal quality of the sensor. 0 = unknown/unset signal quality, 1 = invalid signal, 100 = perfect signal.
 }
 #endif  // AP_RANGEFINDER_ENABLED
+void GCS_MAVLINK::update_send_AP_LIMBCH_Query1(uint8_t char_length, uint8_t id_code, uint16_t reserved_2_3, uint16_t store_def, uint32_t reserved_6_9, uint16_t engine_state, uint16_t engine_rpm, uint32_t reserved_14_17, uint16_t warmup_time_remaining, uint32_t reserved_20_23, uint16_t idle_position, uint16_t interference_count, uint16_t air_intake, uint16_t air_pressure, uint16_t rpm_error_count, uint16_t injection_time, uint16_t ignition_angle, uint16_t reserved_38_39, uint16_t throttle_position_voltage, uint16_t battery_voltage, uint16_t afr_sensor_voltage, uint16_t engine_temp_voltage, uint16_t intake_temp_voltage, uint16_t external_pressure_voltage, uint16_t intake_pressure_voltage, uint16_t intake_quantity_voltage, int16_t afr_value, uint16_t reserved_58_73, uint16_t throttle_position, uint16_t engine_cooling_temp, uint16_t ecu_battery_voltage, uint16_t intake_temp, uint16_t intake_pressure, uint16_t sensor_status, uint8_t checksum) {
+    
+   
+    // mavlink_msg_temp_send(chan, 0x0a,0x0b,0x0c,0x0d);//四个变量，测试使用。方便在串口助手里面找到。
+    // gcs().send_text(MAV_SEVERITY_INFO, "mavlink_msg_temp_send(chan, 0x0a,0x0b,0x0c,0x0d); ");
+    mavlink_msg_engine_telemetry_one_send(
+        MAVLINK_COMM_0,
+        char_length,
+        id_code,
+        reserved_2_3,
+        store_def,
+        reserved_6_9,
+        engine_state,
+        engine_rpm,
+        reserved_14_17,
+        warmup_time_remaining,
+        reserved_20_23,
+        idle_position,
+        interference_count,
+        air_intake,
+        air_pressure,
+        rpm_error_count,
+        injection_time,
+        ignition_angle,
+        reserved_38_39,
+        throttle_position_voltage,
+        battery_voltage,
+        afr_sensor_voltage,
+        engine_temp_voltage,
+        intake_temp_voltage,
+        external_pressure_voltage,
+        intake_pressure_voltage,
+        intake_quantity_voltage,
+        afr_value,
+        reserved_58_73,
+        throttle_position,
+        engine_cooling_temp,
+        ecu_battery_voltage,
+        intake_temp,
+        intake_pressure,
+        sensor_status,
+        checksum
+    );
+   
+    // gcs().send_text(MAV_SEVERITY_INFO, "mavlink_msg_engine_telemetry_one_send 111111111111111");
+}
+void GCS_MAVLINK::
+update_send_AP_LIMBCH_Query2(uint8_t char_length, uint8_t id_code, uint64_t reserved_2_9, uint16_t intake_injection, uint16_t intake_correction_injection, uint16_t base_curve_injection, uint16_t intake_pressure_injection, uint16_t base_injection, uint16_t intake_correction_injection_2, uint16_t idle_position_injection, uint16_t warmup_curve_injection, uint16_t acceleration_injection, uint16_t intake_valve_time, uint16_t race_mode_injection, uint16_t afr_control_injection, uint16_t ignition_curve_advance, uint16_t intake_temp_advance, uint16_t intake_pressure_advance, uint16_t engine_temp_advance, uint16_t acceleration_advance, uint16_t race_mode_advance, uint32_t total_storage_time, uint32_t total_rotations, uint16_t fuel_consumption, uint16_t error_count, uint32_t reserved_58_99, uint16_t checksum) {
+    
+    
+    mavlink_msg_engine_telemetry_two_send(
+        MAVLINK_COMM_0,
+        char_length,
+        id_code,
+        reserved_2_9,
+        intake_injection,
+        intake_correction_injection,
+        base_curve_injection,
+        intake_pressure_injection,
+        base_injection,
+        intake_correction_injection_2,
+        idle_position_injection,
+        warmup_curve_injection,
+        acceleration_injection,
+        intake_valve_time,
+        race_mode_injection,
+        afr_control_injection,
+        ignition_curve_advance,
+        intake_temp_advance,
+        intake_pressure_advance,
+        engine_temp_advance,
+        acceleration_advance,
+        race_mode_advance,
+        total_storage_time,
+        total_rotations,
+        fuel_consumption,
+        error_count,
+        reserved_58_99,
+        checksum
+    );
+    // gcs().send_text(MAV_SEVERITY_INFO, "mavlink_msg_engine_telemetry_two_send 2222222222222");
+}
+
 
 // send any and all distance_sensor messages.  This starts by sending
 // any distance sensors not used by a Proximity sensor, then sends the

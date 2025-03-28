@@ -201,6 +201,10 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(check_vibration,       10,     50,  87),
     SCHED_TASK(gpsglitch_check,       10,     50,  90),
     SCHED_TASK(takeoff_check,         50,     50,  91),
+    SCHED_TASK(send_request1,           1,    100,  100),
+    SCHED_TASK(send_request2,           1,    100,  110),
+    SCHED_TASK(accepting_request1,           10,    100,  120),
+    SCHED_TASK(accepting_request2,           10,    100,  125),
 #if AP_LANDINGGEAR_ENABLED
     SCHED_TASK(landinggear_update,    10,     75,  93),
 #endif
@@ -267,6 +271,92 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Stats,             &copter.g2.stats,            update,           1, 100, 171),
 #endif
 };
+void Copter::send_request1(void)
+ {
+    ap_limbach_query1.send_request();
+ }
+ void Copter::send_request2(void)
+ {
+    ap_limbach_query2.send_request();
+ }
+ void Copter::accepting_request1(void)
+ {
+    [[maybe_unused]] Query1Msg query1msg = ap_limbach_query1.accepting_request();
+   
+    gcs_ma->update_send_AP_LIMBCH_Query1( 
+        query1msg.char_length,                    // 字符长度
+        query1msg.id_code,                        // 识别码
+        query1msg.reserved_2_3,                   // 预留位
+        query1msg.store_def,                      // 存储定义
+        query1msg.reserved_6_9,                   // 预留位
+        query1msg.engine_state,                   // 发动机运行状态
+        query1msg.engine_rpm,                     // 发动机转速
+        query1msg.reserved_14_17,                 // 预留位
+        query1msg.warmup_time_remaining,          // 距暖车结束时间
+        query1msg.reserved_20_23,                 // 预留位
+        query1msg.idle_position,                  // 怠速位置设置
+        query1msg.interference_count,             // 干扰脉冲计数
+        query1msg.air_intake,                     // 进气量
+        query1msg.air_pressure,                   // 进气压力
+        query1msg.rpm_error_count,                // 转速出错计数
+        query1msg.injection_time,                 // 喷射时间
+        query1msg.ignition_angle,                 // 点火提前角
+        query1msg.reserved_38_39,                 // 预留位
+        query1msg.throttle_position_voltage,      // 节气门位置传感器电压
+        query1msg.battery_voltage,                // 电池电量传感器电压
+        query1msg.afr_sensor_voltage,             // 空燃比传感器电压
+        query1msg.engine_temp_voltage,            // 发动机温度传感器电压
+        query1msg.intake_temp_voltage,            // 进气温度传感器电压
+        query1msg.external_pressure_voltage,      // 外界气压传感器电压
+        query1msg.intake_pressure_voltage,        // 进气压力传感器电压
+        query1msg.intake_quantity_voltage,        // 进气量传感器电压
+        query1msg.afr_value,                      // 空燃比
+        query1msg.reserved_58_73,                 // 预留位
+        query1msg.throttle_position,              // 节气门位置
+        query1msg.engine_cooling_temp,            // 发动机温度（冷却液温度 1）
+        query1msg.ecu_battery_voltage,            // 蓄电池电压（ECU 工作电压）
+        query1msg.intake_temp,                    // 进气温度
+        query1msg.intake_pressure,                // 进气压力
+        query1msg.sensor_status,                  // 传感器状况
+        query1msg.checksum                        // 检验字节);
+    );
+ }
+ void Copter::accepting_request2(void)
+ {
+   
+    [[maybe_unused]] Query2Msg query2msg = ap_limbach_query2.accepting_request();
+
+    gcs_ma->update_send_AP_LIMBCH_Query2(
+        query2msg.char_length,                    // 字符长度
+        query2msg.id_code,                        // 识别码
+        query2msg.reserved_2_9,                   // 预留位
+        query2msg.intake_injection,               // 进气量决定的喷射量
+        query2msg.intake_correction_injection,    // 进气量修正曲线决定的喷射量
+        query2msg.base_curve_injection,           // 基本特性曲线决定的喷射量
+        query2msg.intake_pressure_injection,      // 进气管负压曲线决定的喷射量
+        query2msg.base_injection,                 // 喷射的基本量
+        query2msg.intake_correction_injection_2,  // 进气修正后的喷射量
+        query2msg.idle_position_injection,        // 怠速位置传感器决定的喷射量
+        query2msg.warmup_curve_injection,         // 暖机过程曲线决定的喷射量
+        query2msg.acceleration_injection,         // 加速时决定的喷射量
+        query2msg.intake_valve_time,              // 进气门的开合时间
+        query2msg.race_mode_injection,            // RACE 模式决定的喷射量
+        query2msg.afr_control_injection,          // 空燃比控制器决定的喷射量
+        query2msg.ignition_curve_advance,         // 点火时间曲线决定的点火提前角
+        query2msg.intake_temp_advance,            // 进气温度曲线决定的点火提前角
+        query2msg.intake_pressure_advance,        // 进气压力曲线决定的点火提前角
+        query2msg.engine_temp_advance,            // 发动机温度曲线决定的点火提前角
+        query2msg.acceleration_advance,           // 加速时决定的点火提前角
+        query2msg.race_mode_advance,              // RACE 模式决定的点火提前角
+        query2msg.total_storage_time,             // 26 次存储内总时间
+        query2msg.total_rotations,                // 旋转总数
+        query2msg.fuel_consumption,               // 燃油消耗（0.1l/h）
+        query2msg.error_count,                    // 出错存储器中的错误数量
+        query2msg.reserved_58_99,                 // 预留位
+        query2msg.checksum                        // 检验字节
+    );
+
+ }
 
 void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                                  uint8_t &task_count,

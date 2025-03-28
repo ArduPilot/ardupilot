@@ -72,7 +72,8 @@
 #include <AC_PrecLand/AC_PrecLand_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Winch/AP_Winch_config.h>
-
+#include<AP_Limbach/AP_Limbach_Query1.h>
+#include<AP_Limbach/AP_Limbach_Query2.h>
 // Configuration
 #include "defines.h"
 #include "config.h"
@@ -331,7 +332,10 @@ private:
     AP_ExternalControl_Copter external_control;
 #endif
 
-
+    AP_Limbach_Query1 ap_limbach_query1;
+    AP_Limbach_Query2 ap_limbach_query2;
+    GCS_MAVLINK *gcs_ma;
+   
     // system time in milliseconds of last recorded yaw reset from ekf
     uint32_t ekfYawReset_ms;
     int8_t ekf_primary_core;
@@ -721,7 +725,10 @@ private:
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
     bool get_rate_ef_targets(Vector3f& rate_ef_targets) const override;
-
+    void send_request1(void);
+    void accepting_request1();
+    void send_request2(void);
+    void accepting_request2();
     // Attitude.cpp
     void update_throttle_hover();
     float get_pilot_desired_climb_rate(float throttle_control);

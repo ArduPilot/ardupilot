@@ -218,7 +218,8 @@ void Copter::init_ardupilot()
     pos_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
     vel_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
     hgt_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
-
+    ap_limbach_query1.init(serial_manager);
+    ap_limbach_query2.init(serial_manager);
     // flag that initialisation has completed
     ap.initialised = true;
 }

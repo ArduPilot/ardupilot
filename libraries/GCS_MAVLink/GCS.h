@@ -25,7 +25,8 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RangeFinder/AP_RangeFinder_config.h>
 #include <AP_Winch/AP_Winch_config.h>
-
+#include<AP_Limbach/AP_Limbach_Query1.h>
+#include<AP_Limbach/AP_Limbach_Query2.h>
 #include "ap_message.h"
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
@@ -351,7 +352,10 @@ public:
     void send_rc_channels() const;
     void send_rc_channels_raw() const;
     void send_raw_imu();
-
+    void update_send_AP_LIMBCH_Query1(uint8_t char_length, uint8_t id_code, uint16_t reserved_2_3, uint16_t store_def, uint32_t reserved_6_9, uint16_t engine_state, uint16_t engine_rpm, uint32_t reserved_14_17, uint16_t warmup_time_remaining, uint32_t reserved_20_23, uint16_t idle_position, uint16_t interference_count, uint16_t air_intake, uint16_t air_pressure, uint16_t rpm_error_count, uint16_t injection_time, uint16_t ignition_angle, uint16_t reserved_38_39, uint16_t throttle_position_voltage, uint16_t battery_voltage, uint16_t afr_sensor_voltage, uint16_t engine_temp_voltage, uint16_t intake_temp_voltage, uint16_t external_pressure_voltage, uint16_t intake_pressure_voltage, uint16_t intake_quantity_voltage, int16_t afr_value, uint16_t reserved_58_73, uint16_t throttle_position, uint16_t engine_cooling_temp, uint16_t ecu_battery_voltage, uint16_t intake_temp, uint16_t intake_pressure, uint16_t sensor_status, uint8_t checksum) ;
+    void update_send_AP_LIMBCH_Query2(uint8_t char_length, uint8_t id_code, uint64_t reserved_2_9, uint16_t intake_injection, uint16_t intake_correction_injection, uint16_t base_curve_injection, uint16_t intake_pressure_injection, uint16_t base_injection, uint16_t intake_correction_injection_2, uint16_t idle_position_injection, uint16_t warmup_curve_injection, uint16_t acceleration_injection, uint16_t intake_valve_time, uint16_t race_mode_injection, uint16_t afr_control_injection, uint16_t ignition_curve_advance, uint16_t intake_temp_advance, uint16_t intake_pressure_advance, uint16_t engine_temp_advance, uint16_t acceleration_advance, uint16_t race_mode_advance, uint32_t total_storage_time, uint32_t total_rotations, uint16_t fuel_consumption, uint16_t error_count, uint32_t reserved_58_99, uint16_t checksum) ;
+    AP_Limbach_Query1 ap_limbach_query1;
+    AP_Limbach_Query2 ap_limbach_query2;
     void send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature, int16_t temperature_press_diff));
     void send_scaled_pressure();
     void send_scaled_pressure2();
