@@ -274,6 +274,7 @@ void AP_RangeFinder_Bebop::update(void)
     state.distance_m = _altitude;
     state.last_reading_ms = AP_HAL::millis();
     update_status();
+    update_history();
 }
 
 /*

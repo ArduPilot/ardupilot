@@ -87,6 +87,7 @@ void AP_RangeFinder_MAVLink::update(void)
         state.distance_m = distance;
         state.signal_quality_pct = signal_quality;
         update_status();
+        update_history();
     }
 }
 
