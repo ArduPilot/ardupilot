@@ -52,6 +52,7 @@ class ExtractFeatures(object):
             ('HAL_ADSB_ENABLED', 'AP_ADSB::AP_ADSB',),
             ('HAL_ADSB_{type}_ENABLED', r'AP_ADSB_(?P<type>.*)::update',),
             ('HAL_ADSB_UCP_ENABLED', 'AP_ADSB_uAvionix_UCP::update',),
+            ('HAL_ADSB_UCP_SET_CONFIG', 'AP_ADSB_uAvionix_UCP::update_Transponder_Config',),
 
             ('AP_COMPASS_{type}_ENABLED', r'AP_Compass_(?P<type>.*)::read\b',),
             ('AP_COMPASS_ICM20948_ENABLED', r'AP_Compass_AK09916::probe_ICM20948',),
