@@ -636,7 +636,7 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
     EXPECT_DELAY_MS(1000);
     hal.scheduler->delay_microseconds(100);
     if (!hal.rcout->serial_setup_output(blheli_chan_to_output_chan(blheli.chan), 19200, motor_mask)) {
-        debug("serial_setup_output() failed\n");
+        debug_console("serial_setup_output() failed\n");
         blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
     }
@@ -652,7 +652,7 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
     blheli.buf[len] = uint8_t(crc & 0xFF);
     blheli.buf[len+1] = uint8_t(crc>>8);
     if (!hal.rcout->serial_write_bytes(blheli.buf, len+(send_crc?2:0))) {
-        debug("serial_write_bytes() failed\n");
+        debug_console("serial_write_bytes() failed\n");
         blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
     }
