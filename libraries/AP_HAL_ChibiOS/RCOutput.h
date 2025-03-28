@@ -155,7 +155,7 @@ public:
       read a byte from a port, using serial parameters from serial_setup_output()
       return the number of bytes read
      */
-    uint16_t serial_read_bytes(uint8_t *buf, uint16_t len) override;
+    uint16_t serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeout_us) override;
 
     /*
       stop serial output. This restores the previous output mode for
@@ -762,9 +762,11 @@ private:
     void _set_profiled_clock(pwm_group *grp, uint8_t idx, uint8_t led);
     void _set_profiled_blank_frame(pwm_group *grp, uint8_t idx, uint8_t led);
 #if AP_HAL_SHARED_DMA_ENABLED
-    // serial output support
+    /*
+      serial output support
+     */
     bool serial_write_byte(uint8_t b);
-    bool serial_read_byte(uint8_t &b);
+    bool serial_read_byte(uint8_t &b, uint32_t timeout_us);
     void fill_DMA_buffer_byte(dmar_uint_t *buffer, uint8_t stride, uint8_t b , uint32_t bitval);
     static void serial_bit_irq(void);
     static void serial_byte_timeout(virtual_timer_t* vt, void *ctx);
