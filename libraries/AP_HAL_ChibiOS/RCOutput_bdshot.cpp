@@ -121,7 +121,7 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
             // when switching from output to input
 #if defined(STM32F1)
             // on F103 the line mode has to be managed manually
-            // PAL_MODE_STM32_ALTERNATE_PUSHPULL is 50Mhz, similar to the medieum speed on other MCUs
+            // PAL_MODE_STM32_ALTERNATE_PUSHPULL is 50Mhz, similar to the medium speed on other MCUs
             palSetLineMode(group.pal_lines[i], PAL_MODE_STM32_ALTERNATE_PUSHPULL);
 #else
             palSetLineMode(group.pal_lines[i], PAL_MODE_ALTERNATE(group.alt_functions[i])
