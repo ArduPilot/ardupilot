@@ -368,7 +368,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
 
     input.wind.speed = wind_speed;
     input.wind.direction = wind_direction;
-    input.wind.turbulence = _sitl?_sitl->wind_turbulance:0;
+    input.wind.turbulence = _sitl->wind_turbulance;
     input.wind.dir_z = wind_dir_z;
 
     for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
