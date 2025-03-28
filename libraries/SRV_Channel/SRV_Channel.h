@@ -38,6 +38,12 @@ class SRV_Channel {
 public:
     friend class SRV_Channels;
 
+    enum class Type {
+        AUX = 16,
+        ANGLE = 17,
+        RANGE = 18,
+    };
+
     // constructor
     SRV_Channel(void);
 
@@ -297,12 +303,15 @@ public:
         return function.configured();
     }
 
-    // convert a scaled value (either range or angle depending on setup) to a pwm
-    uint16_t pwm_from_scaled_value(float scaled_value) const;
-
     // specify that small rc input changes should be ignored during passthrough
     // used by DO_SET_SERVO commands
     void ignore_small_rcin_changes() { ign_small_rcin_changes = true; }
+
+    // convert a 0..range_max to a pwm
+    uint16_t pwm_from_range(float scaled_value) const;
+
+    // convert a -angle_max..angle_max to a pwm
+    uint16_t pwm_from_angle(float scaled_value) const;
 
 private:
     AP_Int16 servo_min;
@@ -315,23 +324,13 @@ private:
     // a pending output value as PWM
     uint16_t output_pwm;
 
-    // true for angle output type
-    bool type_angle:1;
-
-    // set_range() or set_angle() has been called
-    bool type_setup:1;
+    Type type = Type::RANGE;
 
     // the hal channel number
     uint8_t ch_num;
 
     // high point of angle or range output
     uint16_t high_out;
-
-    // convert a 0..range_max to a pwm
-    uint16_t pwm_from_range(float scaled_value) const;
-
-    // convert a -angle_max..angle_max to a pwm
-    uint16_t pwm_from_angle(float scaled_value) const;
 
     // convert a scaled output to a pwm value
     void calc_pwm(float output_scaled);
