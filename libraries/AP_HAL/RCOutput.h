@@ -194,7 +194,7 @@ public:
       read a series of bytes from a port, using serial parameters from serial_setup_output()
       return the number of bytes read. This is a blocking call
      */
-    virtual uint16_t serial_read_bytes(uint8_t *buf, uint16_t len) { return 0; }
+    virtual uint16_t serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeout_us) { return 0; }
     
     /*
       stop serial output. This restores the previous output mode for
