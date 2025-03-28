@@ -49,9 +49,6 @@ AP_Baro baro;
 AP_ExternalAHRS ext_ahrs;
 AP_Logger logger;
 
-const struct AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-    AP_GROUPEND
-};
 GCS_Dummy _gcs;
 
 // When using stop clock the normal hal scheduler sleeps don't work.

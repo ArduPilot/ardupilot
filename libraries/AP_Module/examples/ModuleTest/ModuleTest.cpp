@@ -10,9 +10,6 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 
-const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
-    AP_GROUPEND
-};
 GCS_Dummy _gcs;
 
 void setup();

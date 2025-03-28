@@ -57,7 +57,7 @@ Deadreckoning will only be activated while the vehicle is in autonomous modes (e
 ## Testing that it does not require RC (in SITL):
   - set FS_OPTIONS's "Continue if in Guided on RC failsafe" bit
   - set FS_GCS_ENABLE = 1 (to enable GCS failsafe otherwise RC failsafe will trigger anyway)
-  - optionally set SYSID_MYGCS = 77 (or almost any other unused system id) to trick the above check so that GCS failsafe can really be disabled
+  - optionally set MAV_MYGCS_SYSID = 77 (or almost any other unused system id) to trick the above check so that GCS failsafe can really be disabled
   - set SIM_RC_FAIL = 1 (to simulate RC failure, note vehicle keeps flying)
   - set SIM_RC_FAIL = 0 (to simulate RC recovery)
 

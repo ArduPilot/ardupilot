@@ -633,7 +633,7 @@ class SITLLaunch:
             DeclareLaunchArgument(
                 "sysid",
                 default_value="",
-                description="Set SYSID_THISMAV.",
+                description="Set MAV_SYSID.",
             ),
         ]
 

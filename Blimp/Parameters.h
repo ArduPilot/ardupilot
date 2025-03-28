@@ -130,9 +130,9 @@ public:
         //
         k_param_gcs0 = 110,
         k_param_gcs1,
-        k_param_sysid_this_mav,
-        k_param_sysid_my_gcs,
-        k_param_telem_delay,
+        k_param_sysid_this_mav_old,
+        k_param_sysid_my_gcs_old,
+        k_param_telem_delay_old,
         k_param_gcs2,
         k_param_serial_manager_old,
         k_param_gcs3,
@@ -200,17 +200,12 @@ public:
         k_param_logger = 253, // 253 - Logging Group
 
         k_param_vehicle = 257, // vehicle common block of parameters
+        k_param__gcs = 258,
 
         // the k_param_* space is 9-bits in size
     };
 
     AP_Int16        format_version;
-
-    // Telemetry control
-    //
-    AP_Int16        sysid_this_mav;
-    AP_Int16        sysid_my_gcs;
-    AP_Int8         telem_delay;
 
     AP_Float        throttle_filt;
     AP_Int16        throttle_behavior;
@@ -280,9 +275,6 @@ public:
 
     // altitude at which nav control can start in takeoff
     AP_Float wp_navalt_min;
-
-    // whether to enforce acceptance of packets only from sysid_my_gcs
-    AP_Int8 sysid_enforce;
 
     // developer options
     AP_Int32 dev_options;

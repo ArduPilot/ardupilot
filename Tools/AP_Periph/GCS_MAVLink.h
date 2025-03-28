@@ -28,10 +28,8 @@ public:
 
 private:
 
-    uint32_t telem_delay() const override { return 0; }
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return true; }
     MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
-    uint8_t sysid_my_gcs() const override;
 
 protected:
 
@@ -58,11 +56,8 @@ public:
 
 protected:
 
-    uint8_t sysid_this_mav() const override;
-
-    GCS_MAVLINK_Periph *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-                                               AP_HAL::UARTDriver &uart) override {
-        return NEW_NOTHROW GCS_MAVLINK_Periph(params, uart);
+    GCS_MAVLINK_Periph *new_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) override {
+        return NEW_NOTHROW GCS_MAVLINK_Periph(uart);
     }
 
 private:

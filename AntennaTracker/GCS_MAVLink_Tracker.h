@@ -9,15 +9,7 @@ public:
 
     using GCS_MAVLINK::GCS_MAVLINK;
 
-    uint8_t sysid_my_gcs() const override;
-
 protected:
-
-    // telem_delay is not used by Tracker but is pure virtual, thus
-    // this implementation.  it probably *should* be used by Tracker,
-    // as currently Tracker may brick XBees
-    uint32_t telem_delay() const override { return 0; }
-
 
     MAV_RESULT handle_command_component_arm_disarm(const mavlink_command_int_t &packet) override;
     MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg) override;
@@ -33,6 +25,8 @@ protected:
     // Send the mode with the given index (not mode number!) return the total number of modes
     // Index starts at 1
     uint8_t send_available_mode(uint8_t index) const override;
+
+    bool try_send_message(enum ap_message id) override;
 
 private:
 
