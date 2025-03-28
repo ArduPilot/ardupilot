@@ -1222,12 +1222,19 @@ void AP_DroneCAN::gnss_send_yaw()
 // SafetyState send
 void AP_DroneCAN::safety_state_send()
 {
-    uint32_t now = AP_HAL::millis();
-    if (now - _last_safety_state_ms < 500) {
-        // update at 2Hz
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t armed_change_age_ms = (now_ms - hal.util->get_last_armed_change());
+    const uint32_t interval_ms = (armed_change_age_ms <= 1000) ? 100 : 500;
+    const bool arm_just_changed = (armed_change_age_ms <= 2);
+
+    if (!arm_just_changed && (now_ms - _last_safety_state_ms < interval_ms)) {
+        // when to send packets:
+        // - steady-state 2Hz
+        // - on-change immediately (if <=2ms ago)
+        // - on-change 10Hz for 1000ms
         return;
     }
-    _last_safety_state_ms = now;
+    _last_safety_state_ms = now_ms;
 
     { // handle SafetyState
         ardupilot_indication_SafetyState safety_msg;
