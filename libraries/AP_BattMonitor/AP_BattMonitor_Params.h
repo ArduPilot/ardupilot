@@ -12,6 +12,39 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_BattMonitor_Params);
 
+    enum class Type {
+        NONE                           = 0,
+        ANALOG_VOLTAGE_ONLY            = 3,
+        ANALOG_VOLTAGE_AND_CURRENT     = 4,
+        SOLO                           = 5,
+        BEBOP                          = 6,
+        SMBus_Generic                  = 7,
+        UAVCAN_BatteryInfo             = 8,
+        BLHeliESC                      = 9,
+        Sum                            = 10,
+        FuelFlow                       = 11,
+        FuelLevel_PWM                  = 12,
+        SUI3                           = 13,
+        SUI6                           = 14,
+        NeoDesign                      = 15,
+        MAXELL                         = 16,
+        GENERATOR_ELEC                 = 17,
+        GENERATOR_FUEL                 = 18,
+        Rotoye                         = 19,
+        // 20 was MPPT_PacketDigital
+        INA2XX                         = 21,
+        LTC2946                        = 22,
+        Torqeedo                       = 23,
+        FuelLevel_Analog               = 24,
+        Analog_Volt_Synthetic_Current  = 25,
+        INA239_SPI                     = 26,
+        EFI                            = 27,
+        AD7091R5                       = 28,
+        Scripting                      = 29,
+        INA3221                        = 30,
+        ANALOG_CURRENT_ONLY            = 31,
+    };
+
     // low voltage sources (used for BATT_LOW_TYPE parameter)
     enum BattMonitor_LowVoltage_Source {
         BattMonitor_LowVoltageSource_Raw            = 0,
@@ -44,7 +77,7 @@ public:
 #if AP_BATTERY_WATT_MAX_ENABLED
     AP_Int16 _watt_max;                 /// max battery power allowed. Reduce max throttle to reduce current to satisfy t    his limit
 #endif
-    AP_Int8  _type;                     /// 0=disabled, 3=voltage only, 4=voltage and current
+    AP_Enum<Type>  _type;                     /// 0=disabled, 3=voltage only, 4=voltage and current
     AP_Int8  _low_voltage_timeout;      /// timeout in seconds before a low voltage event will be triggered
     AP_Int8  _failsafe_voltage_source;  /// voltage type used for detection of low voltage event
     AP_Int8  _failsafe_low_action;      /// action to preform on a low battery failsafe
