@@ -299,8 +299,18 @@ float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool di
         float roll_prop = (roll_wrapped - roll_limit_margin) / (float)(9000 - roll_limit_margin);
         desired_rate *= (1 - roll_prop);
     }
+    
+    desired_rate += _sysid_ang_vel_body;
+    _sysid_ang_vel_body = 0.0;
 
-    return _get_rate_out(desired_rate, scaler, disable_integrator, aspeed, ground_mode);
+    float act_out = _get_rate_out(desired_rate, scaler, disable_integrator, aspeed, ground_mode);
+
+    act_out += _actuator_sysid;
+
+    _actuator_sysid = 0.0;
+
+    return act_out;
+
 }
 
 /*
