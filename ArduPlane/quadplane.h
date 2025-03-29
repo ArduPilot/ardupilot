@@ -638,6 +638,9 @@ private:
     // should we force use of fixed wing controller for attitude upset recovery?
     bool force_fw_control_recovery;
 
+    // are we in spin recovery?
+    bool in_spin_recovery;
+
     /*
       return true if current mission item is a vtol takeoff
      */
