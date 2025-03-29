@@ -47,6 +47,11 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps,
     AP_GPS_Backend(_gps, _params, _state, _port)
 {
 
+    if (port == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has no port", state.instance);
+        return;
+    }
+
     const uint16_t gsofmsgreq[5] = {
         AP_GSOF::POS_TIME,
         AP_GSOF::POS,
