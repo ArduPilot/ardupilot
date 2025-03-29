@@ -10,6 +10,9 @@
 #if AP_PLANE_SYSTEMID_ENABLED
 
 #include <AP_Math/chirp.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/vector3.h>
+#include <AP_Math/vector2.h>
 
 class AP_SystemID {
 
