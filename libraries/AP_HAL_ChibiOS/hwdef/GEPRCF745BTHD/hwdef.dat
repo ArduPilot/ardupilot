@@ -177,7 +177,7 @@ include ../include/no_bootloader_DFU.inc
 define AP_BARO_BACKEND_DEFAULT_ENABLED 0
 undef define AP_BARO_BMP280_ENABLED
 define AP_BARO_BMP280_ENABLED 1
-define AP_BARO_MS56XX_ENABLED 1
+define AP_BARO_MS5611_ENABLED 1
 
 # need to probe external baros even 'though we're minimised to allow custom build options:
 undef AP_BARO_PROBE_EXTERNAL_I2C_BUSES
