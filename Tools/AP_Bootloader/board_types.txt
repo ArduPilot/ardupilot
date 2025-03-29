@@ -399,6 +399,7 @@ AP_HW_TM-SYS-Airspeed                5244
 AP_HW_TBS_LUCID_H7                   5250
 AP_HW_TBS_LUCID_PRO                  5251
 AP_HW_TBS_L431_PERIPH                5252
+AP_HW_TBS_LUCID_H7_WING              5253
 
 # IDs 5270-5279 reserved for SpeedyBee
 AP_HW_SpeedyBeeF405WINGV2            5270
