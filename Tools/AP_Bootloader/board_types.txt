@@ -363,6 +363,12 @@ AP_HW_UAV-DEV-Sensorboard-G4         5226
 # IDs 5250-5269 reserved for Team Black Sheep
 AP_HW_TBS_LUCID_H7                   5250
 AP_HW_TBS_LUCID_PRO                  5251
+AP_HW_TBS_L431_PERIPH                5252
+AP_HW_TBS_LUCID_H7_WING              5253
+
+# IDs 5270-5279 reserved for SpeedyBee
+AP_HW_SpeedyBeeF405WINGV2            5270
+AP_HW_SpeedyBeeF405AIO               5271
 
 #IDs 5301-5399 reserved for Sierra Aerospace
 AP_HW_Sierra-TrueNavPro-G4           5301
