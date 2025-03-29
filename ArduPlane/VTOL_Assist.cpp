@@ -140,4 +140,94 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
     return force_assist || speed_assist || alt_error.is_active() || angle_error.is_active();
 }
 
+/*
+  check if we are in VTOL recovery
+*/
+bool VTOL_Assist::check_VTOL_recovery(void)
+{
+    const bool allow_fw_recovery =
+        !option_is_set(OPTION::FW_FORCE_DISABLED) &&
+        !quadplane.tailsitter.enabled() &&
+        plane.control_mode != &plane.mode_qacro;
+    if (!allow_fw_recovery) {
+        quadplane.force_fw_control_recovery = false;
+        quadplane.in_spin_recovery = false;
+        return false;
+    }
+
+    // see if the attitude is outside twice the Q_ANGLE_MAX
+    const auto &ahrs = plane.ahrs;
+    const int16_t angle_max_cd = quadplane.aparm.angle_max;
+    if ((abs(ahrs.roll_sensor) > 2*angle_max_cd ||
+         abs(ahrs.pitch_sensor) > 2*angle_max_cd)) {
+            // we are 2x the angle limits trigger fw recovery
+        quadplane.force_fw_control_recovery = true;
+    }
+
+    if (quadplane.force_fw_control_recovery) {
+        // stop fixed wing recovery if inside Q_ANGLE_MAX
+        if ((abs(ahrs.roll_sensor) <= angle_max_cd &&
+             abs(ahrs.pitch_sensor) <= angle_max_cd)) {
+            quadplane.force_fw_control_recovery = false;
+            quadplane.attitude_control->reset_target_and_rate(false);
+
+            if (ahrs.groundspeed() > quadplane.wp_nav->get_default_speed_xy()*0.01) {
+                /* if moving at high speed also reset position
+                   controller and height controller
+
+                   this avoids an issue where the position
+                   controller may limit pitch after a strong
+                   acceleration event
+                */
+                quadplane.pos_control->init_z_controller();
+                quadplane.pos_control->init_xy_controller();
+            }
+        }
+    }
+
+    if (!option_is_set(OPTION::SPIN_DISABLED) &&
+        quadplane.force_fw_control_recovery) {
+        // additionally check for needing spin recovery
+        const auto &gyro = plane.ahrs.get_gyro();
+        quadplane.in_spin_recovery =
+            fabsf(gyro.z) > radians(10) &&
+            fabsf(gyro.x) > radians(30) &&
+            fabsf(gyro.y) > radians(30) &&
+            gyro.x * gyro.z < 0 &&
+            plane.ahrs.pitch_sensor < -4500;
+    } else {
+        quadplane.in_spin_recovery = false;
+    }
+    
+    return quadplane.force_fw_control_recovery;
+}
+
+
+/* if we are in a spin then counter with rudder and elevator
+
+   if roll rate and yaw rate are opposite and yaw rate is
+   significant then put in full rudder to counter the yaw rate
+   for spin recovery
+*/
+void VTOL_Assist::output_spin_recovery(void)
+{
+    if (!quadplane.in_spin_recovery) {
+        return;
+    }
+    if (quadplane.motors->get_desired_spool_state() !=
+        AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
+        // if we and no longer running the VTOL motors we need to
+        // clear the spin flag
+        quadplane.in_spin_recovery = false;
+        return;
+    }
+    const Vector3f &gyro = plane.ahrs.get_gyro();
+
+    // put in opposite rudder to counter yaw, and neutral
+    // elevator until we're out of the spin
+    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, gyro.z > 0 ? -SERVO_MAX : SERVO_MAX);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, 0);
+}
+
+
 #endif  // HAL_QUADPLANE_ENABLED

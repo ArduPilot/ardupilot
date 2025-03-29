@@ -24,6 +24,8 @@ void ModeQHover::update()
  */
 void ModeQHover::run()
 {
+    quadplane.assist.check_VTOL_recovery();
+
     const uint32_t now = AP_HAL::millis();
     if (quadplane.tailsitter.in_vtol_transition(now)) {
         // Tailsitters in FW pull up phase of VTOL transition run FW controllers
@@ -47,6 +49,9 @@ void ModeQHover::run()
 
     // Center rudder
     output_rudder_and_steering(0.0);
+
+    // possibly apply spin recovery
+    quadplane.assist.output_spin_recovery();
 }
 
 #endif

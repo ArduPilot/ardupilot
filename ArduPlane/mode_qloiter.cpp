@@ -32,6 +32,13 @@ void ModeQLoiter::update()
 // run quadplane loiter controller
 void ModeQLoiter::run()
 {
+    if (quadplane.assist.check_VTOL_recovery()) {
+        // use QHover to recover from extreme attitudes, this allows
+        // for the fixed wing controller to handle the recovery
+        plane.mode_qhover.run();
+        return;
+    }
+
     const uint32_t now = AP_HAL::millis();
 
 #if AC_PRECLAND_ENABLED
