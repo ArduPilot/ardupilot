@@ -56,6 +56,12 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps,
                          AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _params, _state, _port)
 {
+
+    if (port == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has no port", state.instance);
+        return;
+    }
+
     // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_Overview.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257COverview%257C_____0
     static_assert(ARRAY_SIZE(gsofmsgreq) <= 10, "The maximum number of outputs allowed with GSOF is 10.");
 
