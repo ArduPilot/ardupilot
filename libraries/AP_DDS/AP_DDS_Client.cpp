@@ -519,6 +519,10 @@ bool AP_DDS_Client::update_topic(geometry_msgs_msg_Vector3Stamped& msg)
         msg.vector.y = -true_airspeed_vec_bf[1];
         msg.vector.z = -true_airspeed_vec_bf[2];
         is_airspeed_available = true;
+    } else {
+        msg.vector.x = NAN;
+        msg.vector.y = NAN;
+        msg.vector.z = NAN;
     }
     return is_airspeed_available;
 }
@@ -1555,6 +1559,7 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
 void AP_DDS_Client::write_tx_local_airspeed_topic()
 {
     WITH_SEMAPHORE(csem);
+    last_airspeed_time_ms = cur_time_ms;
     if (connected) {
         ucdrBuffer ub {};
         const uint32_t topic_size = geometry_msgs_msg_Vector3Stamped_size_of_topic(&tx_local_airspeed_topic, 0);
@@ -1712,10 +1717,13 @@ void AP_DDS_Client::update()
     }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
 #if AP_DDS_AIRSPEED_PUB_ENABLED
-    if (cur_time_ms - last_airspeed_time_ms > DELAY_AIRSPEED_TOPIC_MS) {
-        last_airspeed_time_ms = cur_time_ms;
+    if (cur_time_ms - last_airspeed_time_ms > DELAY_AIRSPEED_TOPIC_HEALTHY_MS) {
         if (update_topic(tx_local_airspeed_topic)) {
             write_tx_local_airspeed_topic();
+        } else {
+            if (cur_time_ms - last_airspeed_time_ms > DELAY_AIRSPEED_TOPIC_UNHEALTHY_MS) {
+                write_tx_local_airspeed_topic();
+            }
         }
     }
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
