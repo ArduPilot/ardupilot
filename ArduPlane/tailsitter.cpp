@@ -338,6 +338,9 @@ void Tailsitter::output(void)
             // set AP_MotorsMatrix throttles for forward flight
             motors->output_motor_mask(throttle, uint32_t(motor_mask.get()), plane.rudder_dt);
 
+            // Ensure any none-overridden motors are zeroed
+            motors->output_min();
+
             // No tilt output unless forward gain is set
             float tilt_left = 0.0;
             float tilt_right = 0.0;
