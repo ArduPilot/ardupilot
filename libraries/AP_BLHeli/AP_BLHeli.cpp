@@ -42,6 +42,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -173,11 +174,12 @@ AP_BLHeli::AP_BLHeli(void)
 }
 
 // map an incoming BLHeli motor request to the appropriate 
-// output channel for use in serial output
+// output channel for use in serial output so that motor numbers
+// are observed
 uint8_t AP_BLHeli::blheli_chan_to_output_chan(uint8_t motor)
 {
-    uint8_t chan = 0;
-    SRV_Channels::find_channel(SRV_Channel::Function(motor + uint16_t(SRV_Channel::k_motor1)), chan);
+    uint8_t chan = 0;   // 0 means motor 1 and is ok as a fallback
+    SRV_Channels::find_channel(SRV_Channels::get_motor_function(motor), chan);
     return chan;
 }
 
@@ -469,12 +471,34 @@ void AP_BLHeli::msp_process_command(void)
 
     case MSP_BATTERY_STATE: {
         debug("MSP_BATTERY_STATE");
-        uint8_t buf[8];
-        buf[0] = 4; // cell count
-        putU16(&buf[1], 1500); // mAh
-        buf[3] = 16; // V
-        putU16(&buf[4], 1500); // mAh
-        putU16(&buf[6], 1); // A
+        // ESC configurator seems to care a lot about the battery state,
+        // try and at least provide something believable
+        uint8_t buf[11] {};
+#if AP_BATTERY_ENABLED
+        AP_BattMonitor &battery = AP::battery();
+        float v;
+#if HAL_WITH_ESC_TELEM
+        if (!AP::esc_telem().get_voltage(blheli_chan_to_output_chan(blheli.chan), v)) {
+            v = battery.voltage();
+        }        
+#else
+            v = battery.voltage();
+#endif
+        buf[0] = battery.healthy() ? uint8_t(roundf(v / 3.85)) : 0; // cell count, 0 means no battery
+        putU16(&buf[1], uint16_t(battery.pack_capacity_mah())); // capacity in mAh
+        buf[3] = uint8_t(roundf(v * 10.0)); // legacy V in 0.1V steps
+
+        float cons = 0;
+        UNUSED_RESULT(battery.consumed_mah(cons));
+        putU16(&buf[4], uint16_t(roundf(cons))); // mAh used
+
+        float amps = 0.0;
+        UNUSED_RESULT(battery.current_amps(amps));
+        putU16(&buf[6], uint16_t(roundf(amps * 100.0))); // A in 0.01A steps
+        buf[8] = battery.healthy(); // alerts/state
+        // We are advertising MSP v1.42 which means supporting the new voltage field
+        putU16(&buf[9], uint16_t(roundf(v * 100.0))); // Voltage in 0.01V steps
+#endif
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
         break;
     }
@@ -857,7 +881,7 @@ uint8_t AP_BLHeli::BL_SendCMDSetBuffer(const uint8_t *buf, uint16_t nbytes)
 {
     uint8_t sCMD[] = {CMD_SET_BUFFER, 0, uint8_t(nbytes>>8), uint8_t(nbytes&0xff)};
     if (nbytes == 0) {
-        // set high byte
+        // set high byte since 0 bytes == 256 bytes in this protocol
         sCMD[2] = 1;
     }
     if (!BL_SendBuf(sCMD, 4)) {
@@ -867,13 +891,13 @@ uint8_t AP_BLHeli::BL_SendCMDSetBuffer(const uint8_t *buf, uint16_t nbytes)
     uint8_t ack = BL_GetACK(5); // match betaflight timing
     // generally no ack returned for CMD_SET_BUFFER when flashing firmware
     if (ack != brNONE && ack != brSUCCESS) {
-        debug_console("BL_SendCMDSetBuffer ack failed 0x%02x", ack);
+        debug("BL_SendCMDSetBuffer ack failed 0x%02x", ack);
         blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
     }
 
     if (!BL_SendBuf(buf, nbytes)) {
-        debug_console("BL_SendCMDSetBuffer send failed");
+        debug("BL_SendCMDSetBuffer send failed");
         blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
     }
