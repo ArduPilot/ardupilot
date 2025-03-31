@@ -1,5 +1,61 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Release 4.6.0-beta5 31-Mar-2025
+
+Changes from 4.6.0-beta4
+
+1) Board specfic changes
+
+- MFT-SEMA100 compass orientation fix
+- SpeedyBee F405 AIO support
+
+2) Driver bug fixes and enhancements
+
+- Bdshot locking issue fix for slow boards that could cause the flight controller to crash
+- BMP280 barometer error handling during init improved
+- CADDX gimbal RC update rate fixed
+- Hexsoon 77G and 24G radar support
+- IE FuelCell generator data rate increased
+- IIS2MDC compass support
+- LD19/LD06 proximity sensor data length sanity check fix
+- RC output cork/push fix to avoid potential motor knocking
+- SBF MosaicX5 packets with invalid length ignored
+- SPL06 barometer accuracy improvements
+- Ublox M10 configuration fix
+
+3) Plane specific fixes and enhancements
+
+- Tiltrotor motor check fixed used in throttle control handover from VTOL to forward flight
+- Improved QAssist and VTOL mode recovery from bad attitudes
+- Fixed rudder output in VTOL modes
+- Added fix for indecision in the roll controller close to inverted
+- Ensure tiltrotors use consistent fixed wing and VTOL rates
+- Clear inverted control flag on Q-mode entry
+- Auto-deploy landing gear on all fixed wing landings when enabled
+- Prevent learning bad ARSP_RATIO values when not flying
+
+4) Rover specific fixes and enhancements
+
+- Lua bindings for Follow mode
+- WATER_DEPTH mavlink message rate fix
+
+5) Parameter description improvements
+
+- ADSB_LIST_ALT param desc improved
+- Alphabetised type params for CAN, Mount, OptFlow, Proximity, Rangefinder, Serial Manager
+- Copter's battery failsafe action gets "Brake or Land"
+- LOG_FILE_BUFSIZE units fixed
+- MOT_THST_HOVER range fixed
+- SERIALx_BAUD value added for PPP networking
+
+6) Bug Fixes and minor enhancements
+
+- Arming check for EKF3 velocity innovations
+- Copter's LOG_BITMASK includes PIDs by default
+- DO_SET_ROI_LOCATION mission command support
+- MCU min/max voltage logging fix
+- MIS_OPTION parameter handling fixed
+------------------------------------------------------------------
 Release 4.6.0-beta4 14-Feb-2025
 
 Changes from 4.6.0-beta3
