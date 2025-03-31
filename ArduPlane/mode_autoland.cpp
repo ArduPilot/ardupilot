@@ -224,7 +224,7 @@ void ModeAutoLand::navigate()
         plane.update_loiter(cmd_climb.p1);
 
         ftype dist;
-        if (plane.reached_loiter_target() || !cmd_climb.content.location.get_alt_distance(plane.current_loc, dist) || (dist < fast_climb_extra_alt)) {
+        if (plane.reached_loiter_target() || !cmd_climb.content.location.get_height_above(plane.current_loc, dist) || (dist < fast_climb_extra_alt)) {
             // Reached destination or Climb is done, move onto loiter
             plane.auto_state.next_wp_crosstrack = true;
             stage = AutoLandStage::LOITER;
