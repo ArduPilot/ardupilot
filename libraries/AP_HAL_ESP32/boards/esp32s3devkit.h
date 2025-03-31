@@ -88,16 +88,16 @@
 //
 // two different pin numbering schemes, both are ok, but only one at a time:
 #define HAL_ESP32_ADC_PINS_OPTION1 {\
-	{ADC1_CHANNEL_4, 11, 1},\
-	{ADC1_CHANNEL_3, 11, 2},\
-	{ADC1_CHANNEL_1, 11, 3},\
-	{ADC1_CHANNEL_0, 11, 4}\
+	{ADC_CHANNEL_4, 11, 1},\
+	{ADC_CHANNEL_3, 11, 2},\
+	{ADC_CHANNEL_1, 11, 3},\
+	{ADC_CHANNEL_0, 11, 4}\
 }
 #define HAL_ESP32_ADC_PINS_OPTION2 {\
-	{ADC1_GPIO35_CHANNEL, 11, 35},\
-	{ADC1_GPIO34_CHANNEL, 11, 34},\
-	{ADC1_GPIO39_CHANNEL, 11, 39},\
-	{ADC1_GPIO36_CHANNEL, 11, 36}\
+	{ADC_GPIO35_CHANNEL, 11, 35},\
+	{ADC_GPIO34_CHANNEL, 11, 34},\
+	{ADC_GPIO39_CHANNEL, 11, 39},\
+	{ADC_GPIO36_CHANNEL, 11, 36}\
 }
 // pick one:
 //#define HAL_ESP32_ADC_PINS HAL_ESP32_ADC_PINS_OPTION1
