@@ -1001,7 +1001,8 @@ void Aircraft::smooth_sensors(void)
  */
 float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx)
 {
-    return servo_filter[idx].filter_angle(input.servos[idx], frame_time_us * 1.0e-6);
+    uint16_t pwm = input.servos[idx] == 0 ? 1500 : input.servos[idx];
+    return servo_filter[idx].filter_angle(pwm, frame_time_us * 1.0e-6);
 }
 
 /*
