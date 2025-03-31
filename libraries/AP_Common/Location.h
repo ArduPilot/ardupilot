@@ -75,7 +75,7 @@ public:
     ftype get_distance(const Location &loc2) const;
 
     // return the altitude difference in meters taking into account alt frame.
-    bool get_alt_distance(const Location &loc2, ftype &distance) const WARN_IF_UNUSED;
+    bool get_alt_difference(const Location &loc2, ftype &distance) const WARN_IF_UNUSED;
 
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
     // NOT CONSIDERING ALT FRAME!

@@ -274,7 +274,7 @@ ftype Location::get_distance(const Location &loc2) const
 }
 
 // return the altitude difference in meters taking into account alt frame.
-bool Location::get_alt_distance(const Location &loc2, ftype &distance) const
+bool Location::get_alt_difference(const Location &loc2, ftype &distance) const
 {
     int32_t alt1, alt2;
     if (!get_alt_cm(AltFrame::ABSOLUTE, alt1) || !loc2.get_alt_cm(AltFrame::ABSOLUTE, alt2)) {
@@ -450,7 +450,7 @@ bool Location::same_alt_as(const Location &loc2) const
     }
 
     ftype alt_diff;
-    bool have_diff = this->get_alt_distance(loc2, alt_diff);
+    bool have_diff = this->get_alt_difference(loc2, alt_diff);
 
     const ftype tolerance = FLT_EPSILON;
     return have_diff && (fabsF(alt_diff) < tolerance);
