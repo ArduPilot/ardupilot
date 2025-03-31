@@ -837,6 +837,14 @@ void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...) const
     va_end(arg_list);
 }
 
+void GCS_MAVLINK::send_text2sysid(MAV_SEVERITY severity, uint8_t sysid, const char *fmt, ...) const
+{
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    gcs().send_textv(severity, fmt, arg_list, sysid);
+    va_end(arg_list);
+}
+
 float GCS_MAVLINK::telemetry_radio_rssi()
 {
     if (AP_HAL::millis() - last_radio_status.received_ms > 5000) {
@@ -3744,7 +3752,18 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
     char text[text_len] = { 'G','C','S',':'};
     uint8_t offset = strlen(text);
 
-    if (msg.sysid != sysid_my_gcs()) {
+    if (msg.sysid == 254) {
+                    offset = hal.util->snprintf(text,
+                                    max_prefix_len,
+                                    "CC:");
+        offset = MIN(offset, max_prefix_len);
+	memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
+    	send_text2sysid(MAV_SEVERITY_INFO, msg.sysid, "%s", text);
+	logger->Write_Message(text);
+	return
+    }
+
+    if (msg.sysid != sysid_my_gcs() && msg.sysid != 254) {
         offset = hal.util->snprintf(text,
                                     max_prefix_len,
                                     "SRC=%u/%u:",
@@ -3754,7 +3773,6 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
     }
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
-
     logger->Write_Message(text);
 #endif
 }
