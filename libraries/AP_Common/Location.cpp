@@ -273,7 +273,10 @@ ftype Location::get_distance(const Location &loc2) const
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
-// return the altitude difference in meters taking into account alt frame.
+// return the altitude difference in meters taking into account alt
+// frame.  if loc2 is below this location then "distance" will be
+// positive.  ie. this method returns how far above loc2 this location
+// is.
 bool Location::get_alt_difference(const Location &loc2, ftype &distance) const
 {
     int32_t alt1, alt2;
