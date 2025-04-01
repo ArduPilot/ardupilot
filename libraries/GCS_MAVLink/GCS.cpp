@@ -43,20 +43,20 @@ const AP_Param::GroupInfo GCS::var_info[] {
     // @User: Advanced
     AP_GROUPINFO("_SYSID",    1,     GCS,  sysid,  MAV_SYSID_DEFAULT),
 
-    // @Param: _MYGCS_SYSID
+    // @Param: _GCS_SYSID
     // @DisplayName: My ground station number
     // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
     // @Range: 1 255
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("_MYGCS_SYSID",    2,      GCS, mav_mygcs_sysid, 255),
+    AP_GROUPINFO("_GCS_SYSID",    2,      GCS, mav_gcs_sysid, 255),
 
-    // @Param: _MYGCS_ENFRCE
-    // @DisplayName: GCS sysid enforcement
-    // @Description: Allows restricting radio overrides to only come from my ground station
-    // @Values: 0:NotEnforced,1:Enforced
+    // @Param: _OPTIONS
+    // @DisplayName: MAVLink Options
+    // @Description: Alters various behaviour of the MAVLink interface
+    // @Bitmask: 0:Accept MAVLink only from SYSID_GCS
     // @User: Advanced
-    AP_GROUPINFO("_MYGCS_ENFRCE",    3,      GCS, mav_mygcs_enforce, 0),
+    AP_GROUPINFO("_OPTIONS",    3,      GCS, mav_options, 0),
 
     // @Param: _TELEM_DELAY
     // @DisplayName: Telemetry startup delay
