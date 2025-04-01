@@ -815,8 +815,8 @@ void Blimp::load_parameters(void)
     {
         static const AP_Param::ConversionInfo gcs_conversion_info[] {
             { Parameters::k_param_sysid_this_mav_old, 0, AP_PARAM_INT16,  "MAV_SYSID" },
-            { Parameters::k_param_sysid_my_gcs_old, 0, AP_PARAM_INT16, "MAV_MYGCS_SYSID" },
-            { Parameters::k_param_g2,  11, AP_PARAM_INT8, "MAV_MYGCS_ENFRCE" },
+            { Parameters::k_param_sysid_my_gcs_old, 0, AP_PARAM_INT16, "MAV_GCS_SYSID" },
+            { Parameters::k_param_g2,  11, AP_PARAM_INT8, "MAV_OPTIONS" },
             { Parameters::k_param_telem_delay_old,  0, AP_PARAM_INT8, "MAV_TELEM_DELAY" },
         };
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
