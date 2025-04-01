@@ -223,6 +223,8 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
 // init sets up INS board orientation
 void AP_AHRS::init()
 {
+    update_orientation();
+
     // EKF1 is no longer supported - handle case where it is selected
     if (_ekf_type.get() == 1) {
         AP_BoardConfig::config_error("EKF1 not available");
