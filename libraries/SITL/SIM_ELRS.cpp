@@ -25,7 +25,7 @@ ELRS::ELRS(const uint8_t portNumber, HALSITL::SITL_State_Common *sitl_state) :
     // Mirror MAVLink buffer sizes
     mavlinkInputBuffer(2048),
     mavlinkOutputBuffer(2048),
-    // 255 is typically used by the GCS, for RC override to work in ArduPilot `MAV_MYGCS_SYSID` must be set to this value (255 is the default)
+    // 255 is typically used by the GCS, for RC override to work in ArduPilot `MAV_GCS_SYSID` must be set to this value (255 is the default)
     this_system_id(255),
     // Strictly this is not a valid source component ID
     this_component_id(MAV_COMPONENT::MAV_COMP_ID_ALL),
