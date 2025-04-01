@@ -195,6 +195,9 @@ void AP_InertialSensor_SITL::generate_accel()
     }
 
     accel_accum /= nsamples;
+
+    accel_accum.rotate(sitl->imu_orientation);
+
     _rotate_and_correct_accel(accel_instance, accel_accum);
     _notify_new_accel_raw_sample(accel_instance, accel_accum, AP_HAL::micros64());
 
@@ -298,6 +301,9 @@ void AP_InertialSensor_SITL::generate_gyro()
 #endif
     }
     gyro_accum /= nsamples;
+
+    gyro_accum.rotate(sitl->imu_orientation);
+
     _rotate_and_correct_gyro(gyro_instance, gyro_accum);
     _notify_new_gyro_raw_sample(gyro_instance, gyro_accum, AP_HAL::micros64());
 }
