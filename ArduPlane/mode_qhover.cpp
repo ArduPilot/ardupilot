@@ -47,6 +47,9 @@ void ModeQHover::run()
     plane.stabilize_roll();
     plane.stabilize_pitch();
 
+    // Center rudder
+    output_rudder_and_steering(0.0);
+
     // possibly apply spin recovery
     quadplane.assist.output_spin_recovery();
 }

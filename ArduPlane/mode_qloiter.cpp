@@ -169,6 +169,9 @@ void ModeQLoiter::run()
     // Stabilize with fixed wing surfaces
     plane.stabilize_roll();
     plane.stabilize_pitch();
+
+    // Center rudder
+    output_rudder_and_steering(0.0);
 }
 
 #endif
