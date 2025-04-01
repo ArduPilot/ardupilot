@@ -2161,6 +2161,58 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 self.progress("Wind estimates correlated")
                 break
 
+    def QLoiterRecovery(self):
+        '''test QLOITER recovery from bad attitude'''
+        self.context_push()
+        self.install_example_script_context("sim_arming_pos.lua")
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "AHRS_EKF_TYPE": 10,
+            "EK3_ENABLE": 0,
+        })
+
+        self.reboot_sitl(check_position=False)
+
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "SIM_APOS_ENABLE" : 1,
+            "SIM_APOS_PIT" : -70,
+            "SIM_APOS_POS_D" : -1000,
+            "SIM_APOS_POS_E" : 400,
+            "SIM_APOS_POS_N" : 200,
+            "SIM_APOS_RLL" : 150,
+            "SIM_APOS_VEL_X" : 40.0,
+            "SIM_APOS_VEL_Y" : 0.0,
+            "SIM_APOS_VEL_Z" : 0.0,
+            "SIM_APOS_YAW" : 250,
+            "SIM_APOS_GX" : 0,
+            "SIM_APOS_GY" : 0,
+            "SIM_APOS_GZ" : 0,
+            "SIM_APOS_MODE" : 19, # QLOITER
+            })
+
+        self.scripting_restart()
+        self.wait_text("Loaded arm pose", check_context=True)
+        self.wait_ready_to_arm()
+
+        # try to climb once in QLOITER
+        self.set_rc(3, 2000)
+
+        NTESTS=20
+        for t in range(NTESTS):
+            self.change_mode("FBWA")
+            self.progress("Recovery test %u" % t)
+            self.arm_vehicle(force=True)
+            self.wait_groundspeed(0, 2, timeout=15)
+            self.disarm_vehicle(force=True)
+
+        self.set_parameter("SIM_APOS_ENABLE", 0)
+        self.arm_vehicle(force=True)
+        self.change_mode("QLAND")
+        self.wait_disarmed(timeout=120) # give quadplane a long time to land
+        self.context_pop()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2213,5 +2265,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
             self.AHRSFlyForwardFlag,
+            self.QLoiterRecovery,
         ])
         return ret
