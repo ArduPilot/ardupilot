@@ -12529,7 +12529,7 @@ switch value'''
                 self.assert_no_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
             self.set_parameters({
                 "AFS_ENABLE": 1,
-                "MAV_MYGCS_SYSID": self.mav.source_system,
+                "MAV_GCS_SYSID": self.mav.source_system,
             })
             self.drain_mav()
             self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
@@ -12603,7 +12603,7 @@ switch value'''
         '''ensure GPS can be used as a fallback in case of baro dying'''
         self.set_parameters({
             "AFS_ENABLE": 1,
-            "MAV_MYGCS_SYSID": self.mav.source_system,
+            "MAV_GCS_SYSID": self.mav.source_system,
             "AFS_AMSL_LIMIT": 1000,
             "AFS_QNH_PRESSURE": 1000,
             "AFS_AMSL_ERR_GPS": 10,
