@@ -448,7 +448,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
     switch (msg.msgid) {
 
     case MAVLINK_MSG_ID_MANUAL_CONTROL: {     // MAV ID: 69
-        if (msg.sysid != gcs().sysid_mygcs()) {
+        if (msg.sysid != gcs().sysid_gcs()) {
             break;    // Only accept control from our gcs
         }
         mavlink_manual_control_t packet;
@@ -484,7 +484,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
     }
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: {     // MAV ID: 70
-        if (msg.sysid != gcs().sysid_mygcs()) {
+        if (msg.sysid != gcs().sysid_gcs()) {
             break;    // Only accept control from our gcs
         }
 
