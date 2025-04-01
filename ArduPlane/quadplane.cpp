@@ -238,6 +238,14 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ASSIST_ANGLE", 45, QuadPlane, assist.angle, 30),
 
+    // @Param: ASSIST_OPTIONS
+    // @DisplayName: Quadplane assistance options
+    // @Description: Options for special QAssist features
+    // @Bitmask: 0: Disable force fixed wing controller recovery
+    // @Bitmask: 1: Disable quadplane spin recovery
+    // @User: Standard
+    AP_GROUPINFO("ASSIST_OPTIONS", 47, QuadPlane, assist.options, 0),
+    
     // 47: TILT_TYPE
     // 48: TAILSIT_ANGLE
     // 61: TAILSIT_ANG_VT
@@ -1962,51 +1970,10 @@ void QuadPlane::motors_output(bool run_rate_controller)
         if (now - last_att_control_ms > 100) {
             // relax if have been inactive
             relax_attitude_control();
-            /*
-              when starting the VTOL motors force use of the fixed
-              wing controller for attitude control if we are outside
-              of the Q_ANGLE_MAX limit. We keep it forced until we
-              have recovered to within the limit
-
-              This avoids an issue with the attitude controller
-              limiting the rate of recovery and also an issue with the
-              quaternion controller trying to fix the attitude in a
-              way that is bad for fixed wing aircraft (eg. putting
-              nose down when inverted, leading to rapid loss of
-              height)
-
-              we don't do this in QACRO or tailsitter modes, as this
-              type of attitude is expected
-            */
-            if (!tailsitter.enabled() &&
-                plane.control_mode != &plane.mode_qacro &&
-                (abs(ahrs.roll_sensor) > aparm.angle_max ||
-                 abs(ahrs.pitch_sensor) > aparm.angle_max)) {
-                force_fw_control_recovery = true;
-            }
         }
-        if (force_fw_control_recovery) {
-            // see if we have recovered attitude
-            if (abs(ahrs.roll_sensor) <= aparm.angle_max &&
-                abs(ahrs.pitch_sensor) <= aparm.angle_max) {
-                force_fw_control_recovery = false;
-                // reset the attitude target to the new attitude so
-                // the VTOL controller doesn't pull us back
-                attitude_control->reset_target_and_rate(false);
 
-                if (plane.ahrs.groundspeed() > wp_nav->get_default_speed_xy()*0.01) {
-                    /* if moving at high speed also reset position
-                       controller and height controller
-
-                       this avoids an issue where the position
-                       controller may limit pitch after a strong
-                       acceleration event
-                    */
-                    pos_control->init_z_controller();
-                    pos_control->init_xy_controller();
-                }
-            }
-        }
+        // see if we need to be in VTOL recovery
+        assist.check_VTOL_recovery();
 
         // run low level rate controllers that only require IMU data and set loop time
         const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
@@ -3668,6 +3635,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         alt                = 1U<<3, // true if assistance due to low altitude
         angle              = 1U<<4, // true if assistance due to attitude error
         fw_force           = 1U<<5, // true if forcing use of fixed wing controllers
+        spin_recovery      = 1U<<6, // true if recovering from a spin
     };
 
     uint8_t assist_flags = 0;
@@ -3688,6 +3656,9 @@ void QuadPlane::Log_Write_QControl_Tuning()
     }
     if (force_fw_control_recovery) {
         assist_flags |= (uint8_t)log_assistance_flags::fw_force;
+    }
+    if (in_spin_recovery) {
+        assist_flags |= (uint8_t)log_assistance_flags::spin_recovery;
     }
 
     struct log_QControl_Tuning pkt = {
@@ -4234,7 +4205,7 @@ bool QuadPlane::in_vtol_airbrake(void) const
 // return true if we should show VTOL view
 bool QuadPlane::show_vtol_view() const
 {
-    return available() && transition->show_vtol_view();
+    return available() && transition->show_vtol_view() && !force_fw_control_recovery;
 }
 
 // return true if we should show VTOL view
@@ -4672,6 +4643,9 @@ void QuadPlane::mode_enter(void)
 
     q_fwd_throttle = 0.0f;
     q_fwd_pitch_lim_cd = 100.0f * q_fwd_pitch_lim;
+
+    force_fw_control_recovery = false;
+    in_spin_recovery = false;
 }
 
 // Set attitude control yaw rate time constant to pilot input command model value
