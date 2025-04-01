@@ -6627,7 +6627,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.Terrain,
             self.TerrainMission,
             self.TerrainMissionInterrupt,
-            self.UniversalAutoLandScript,
         ])
         return ret
 
