@@ -246,7 +246,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ASSIST_OPTIONS", 47, QuadPlane, assist.options, 0),
     
-    // 47: TILT_TYPE
+    // 47: TILT_TYPE // was AP_Int8, re-used by AP_Int16 ASSIST_OPTIONS
     // 48: TAILSIT_ANGLE
     // 61: TAILSIT_ANG_VT
     // 49: TILT_RATE_DN
