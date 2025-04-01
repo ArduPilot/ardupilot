@@ -411,6 +411,10 @@ void AP_TECS::_update_speed(float DT)
     _TASmax   = MIN(_TASmax, aparm.airspeed_max * EAS2TAS);
     _TASmin   = aparm.airspeed_min * EAS2TAS;
 
+    if (_landing.is_on_final() && is_positive(aparm.airspeed_stall)) {
+        _TASmin = aparm.airspeed_stall * EAS2TAS;
+    }
+
     if (aparm.stall_prevention) {
         // when stall prevention is active we raise the minimum
         // airspeed based on aerodynamic load factor

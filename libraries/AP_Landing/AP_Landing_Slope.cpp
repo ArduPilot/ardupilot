@@ -390,6 +390,12 @@ bool AP_Landing::type_slope_is_flaring(void) const
     return (type_slope_stage == SlopeStage::FINAL);
 }
 
+bool AP_Landing::type_slope_is_on_final(void) const
+{
+    return (type_slope_stage == SlopeStage::PREFLARE ||
+            type_slope_stage == SlopeStage::FINAL);
+}
+
 bool AP_Landing::type_slope_is_on_approach(void) const
 {
     return (type_slope_stage == SlopeStage::APPROACH ||
@@ -398,8 +404,7 @@ bool AP_Landing::type_slope_is_on_approach(void) const
 
 bool AP_Landing::type_slope_is_expecting_impact(void) const
 {
-    return (type_slope_stage == SlopeStage::PREFLARE ||
-            type_slope_stage == SlopeStage::FINAL);
+    return type_slope_is_on_final();
 }
 
 bool AP_Landing::type_slope_is_complete(void) const
