@@ -586,6 +586,11 @@ public:
     // This gives more realistic data rates for testing links
     void set_stop_MAVLink_sim_state() { stop_MAVLink_sim_state = true; }
     bool stop_MAVLink_sim_state;
+
+    /*
+      used by scripting to control simulated aircraft position
+     */
+    bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef);
 };
 
 } // namespace SITL

@@ -44,6 +44,8 @@ extern const AP_HAL::HAL& hal;
 extern const HAL_SITL& hal_sitl;
 #endif
 
+Aircraft *Aircraft::instances[MAX_SIM_INSTANCES];
+
 /*
   parent class for all simulator types
  */
@@ -676,6 +678,8 @@ void Aircraft::update_model(const struct sitl_input &input)
  */
 void Aircraft::update_dynamics(const Vector3f &rot_accel)
 {
+    WITH_SEMAPHORE(pose_sem);
+
     // update eas2tas and air density
 #if AP_AHRS_ENABLED
     eas2tas = AP::ahrs().get_EAS2TAS();
@@ -1329,3 +1333,35 @@ void Aircraft::update_eas_airspeed()
         airspeed_pitot *= cosf((pitot_aoa - max_pitot_aoa) * gain_factor);
     }
 }
+
+/*
+  set pose on the aircraft, called from scripting
+ */
+bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef)
+{
+    if (instance >= MAX_SIM_INSTANCES || instances[instance] == nullptr) {
+        return false;
+    }
+    auto &aircraft = *instances[instance];
+    WITH_SEMAPHORE(aircraft.pose_sem);
+
+    quat.rotation_matrix(aircraft.dcm);
+    aircraft.velocity_ef = velocity_ef;
+    aircraft.location = loc;
+    aircraft.position = aircraft.home.get_distance_NED_double(loc);
+    aircraft.smoothing.position = aircraft.position;
+    aircraft.smoothing.rotation_b2e = aircraft.dcm;
+    aircraft.smoothing.velocity_ef = velocity_ef;
+    aircraft.smoothing.location = loc;
+
+    return true;
+}
+
+/*
+  wrapper for scripting access
+ */
+bool SITL::SIM::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef)
+{
+    return Aircraft::set_pose(instance, loc, quat, velocity_ef);
+}
+

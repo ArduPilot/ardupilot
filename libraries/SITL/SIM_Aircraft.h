@@ -43,6 +43,8 @@
 #include "SIM_GPIO_LED_3.h"
 #include "SIM_GPIO_LED_RGB.h"
 
+#define MAX_SIM_INSTANCES 16
+
 namespace SITL {
 
 /*
@@ -66,6 +68,9 @@ public:
      */
     void set_instance(uint8_t _instance) {
         instance = _instance;
+        if (instance < MAX_SIM_INSTANCES) {
+            instances[instance] = this;
+        }
     }
 
     /*
@@ -168,6 +173,11 @@ public:
     float get_battery_temperature() const { return battery.get_temperature(); }
 
     ADSB *adsb;
+
+    /*
+      used by scripting to control simulated aircraft position
+     */
+    static bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef);
 
 protected:
     SIM *sitl;
@@ -396,6 +406,8 @@ private:
     GPIO_LED_RGB sim_ledrgb{8, 9, 10};  // pins to match sitl.h
 #endif
 
+    static Aircraft *instances[MAX_SIM_INSTANCES];
+    HAL_Semaphore pose_sem;
 };
 
 } // namespace SITL
