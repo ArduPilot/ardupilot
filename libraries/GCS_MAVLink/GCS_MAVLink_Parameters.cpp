@@ -217,6 +217,7 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_AIRSPEED,
 #endif
 };
+
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
     MSG_POWER_STATUS,
@@ -248,17 +249,20 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_NAMED_FLOAT
 #endif  // APM_BUILD_TYPE(APM_BUILD_ArduSub)
 };
+
 static const ap_message STREAM_POSITION_msgs[] = {
 #if AP_AHRS_ENABLED
     MSG_LOCATION,
 #endif  // AP_AHRS_ENABLED
     MSG_LOCAL_POSITION
 };
+
 static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
     MSG_SERVO_OUT,
 #endif  // #if APM_BUILD_TYPE(APM_BUILD_Rover)
 };
+
 static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
     MSG_RC_CHANNELS,
@@ -266,6 +270,7 @@ static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_RC_CHANNELS_RAW, // only sent on a mavlink1 connection
 #endif
 };
+
 static const ap_message STREAM_EXTRA1_msgs[] = {
 #if AP_AHRS_ENABLED
     MSG_ATTITUDE,
@@ -305,12 +310,14 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_HYGROMETER,
 #endif
 };
+
 static const ap_message STREAM_EXTRA2_msgs[] = {
 #if !APM_BUILD_TYPE(APM_BUILD_AntennaTracker) && AP_AHRS_ENABLED
 
     MSG_VFR_HUD
 #endif
 };
+
 static const ap_message STREAM_EXTRA3_msgs[] = {
 #if AP_AHRS_ENABLED
     MSG_AHRS,
@@ -346,10 +353,12 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_VIBRATION,
 #endif
 };
+
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM,
     MSG_AVAILABLE_MODES
 };
+
 static const ap_message STREAM_ADSB_msgs[] = {
     MSG_ADSB_VEHICLE,
 #if AP_AIS_ENABLED
