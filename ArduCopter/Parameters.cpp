@@ -1305,11 +1305,14 @@ void Copter::load_parameters(void)
     AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
 
 #if HAL_GCS_ENABLED
-    // Move parameters into new GCS_ parameter namespace
+    // Move parameters into new MAV_ parameter namespace
     // PARAMETER_CONVERSION - Added: Mar-2025 for ArduPilot-4.7
     {
         const AP_Param::ConversionInfo gcs_conversion_info[] {
             { Parameters::k_param_sysid_this_mav_old, 0, AP_PARAM_INT16,  "MAV_SYSID" },
+            { Parameters::k_param_sysid_my_gcs_old, 0, AP_PARAM_INT16, "MAV_MYGCS_SYSID" },
+            { Parameters::k_param_g2,  11, AP_PARAM_INT8, "MAV_MYGCS_ENFRCE" },
+            { Parameters::k_param_telem_delay_old,  0, AP_PARAM_INT8, "MAV_TELEM_DELAY" },
         };
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
     }
@@ -1405,7 +1408,7 @@ void Copter::convert_prx_parameters()
 {
     // convert PRX to PRX1_ parameters for Copter-4.3
     // PARAMETER_CONVERSION - Added: Aug-2022
-    const AP_Param::ConversionInfo prx_conversion_info[] = {
+    static const AP_Param::ConversionInfo prx_conversion_info[] = {
         { Parameters::k_param_g2, 72, AP_PARAM_INT8, "PRX1_TYPE" },
         { Parameters::k_param_g2, 136, AP_PARAM_INT8, "PRX1_ORIENT" },
         { Parameters::k_param_g2, 200, AP_PARAM_INT16, "PRX1_YAW_CORR" },
