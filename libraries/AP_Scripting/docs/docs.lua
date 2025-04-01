@@ -2971,7 +2971,7 @@ function gcs:get_high_latency_status() end
 ---@param text string
 function gcs:send_text(severity, text) end
 
--- Return the system time when a gcs with id of MAV_MYGCS_SYSID was last seen
+-- Return the system time when a gcs with id of MAV_GCS_SYSID was last seen
 ---@return uint32_t_ud -- system time in milliseconds
 function gcs:last_seen() end
 

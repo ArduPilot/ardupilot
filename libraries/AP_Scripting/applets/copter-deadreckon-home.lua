@@ -47,7 +47,7 @@
 -- Testing that it does not require RC (in SITL):
 --   a. set FS_OPTIONS's "Continue if in Guided on RC failsafe" bit
 --   b. set FS_GCS_ENABLE = 1 (to enable GCS failsafe otherwise RC failsafe will trigger anyway)
---   c. optionally set MAV_MYGCS_SYSID = 77 (or almost any other unused system id) to trick the above check so that GCS failsafe can really be disabled
+--   c. optionally set MAV_GCS_SYSID = 77 (or almost any other unused system id) to trick the above check so that GCS failsafe can really be disabled
 --   d. set SIM_RC_FAIL = 1 (to simulate RC failure, note vehicle keeps flying)
 --   e. set SIM_RC_FAIL = 0 (to simulate RC recovery)
 --
