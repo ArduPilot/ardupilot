@@ -1184,17 +1184,16 @@ public:
         return _statustext_queue;
     }
 
-    uint8_t sysid_mygcs() const { return uint8_t(mav_mygcs_sysid); }
-    bool mygcs_enforce() const { return bool(mav_mygcs_enforce); }
+    uint8_t sysid_gcs() const { return uint8_t(mav_gcs_sysid); }
 
     // last time traffic was seen from my designated GCS.  traffic
     // includes heartbeats and some manual control messages.
     uint32_t sysid_mygcs_last_seen_time_ms() const {
-        return _sysid_mygcs_last_seen_time_ms;
+        return _sysid_gcs_last_seen_time_ms;
     }
     // called when valid traffic has been seen from our GCS
     void sysid_mygcs_seen(uint32_t seen_time_ms) {
-        _sysid_mygcs_last_seen_time_ms = seen_time_ms;
+        _sysid_gcs_last_seen_time_ms = seen_time_ms;
     }
 
     void send_to_active_channels(uint32_t msgid, const char *pkt);
@@ -1239,6 +1238,13 @@ public:
     void init();
     void setup_console();
     void setup_uarts();
+
+    enum class Option {
+      GCS_SYSID_ENFORCE = (1U << 0),
+    };
+    bool option_is_enabled(Option option) const {
+        return (mav_options & (uint16_t)option) != 0;
+    }
 
     bool out_of_time() const;
 
@@ -1318,8 +1324,8 @@ protected:
 
     // parameters
     AP_Int16                 sysid;
-    AP_Int16                 mav_mygcs_sysid;
-    AP_Int8                  mav_mygcs_enforce;
+    AP_Int16                 mav_gcs_sysid;
+    AP_Enum16<Option>        mav_options;
     AP_Int8                  mav_telem_delay;
 
 private:
@@ -1340,7 +1346,7 @@ private:
     void update_sensor_status_flags();
 
     // time we last saw traffic from our GCS
-    uint32_t _sysid_mygcs_last_seen_time_ms;
+    uint32_t _sysid_gcs_last_seen_time_ms;
 
     void service_statustext(void);
 #if HAL_MEM_CLASS <= HAL_MEM_CLASS_192 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
