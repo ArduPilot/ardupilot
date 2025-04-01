@@ -560,6 +560,24 @@ void Plane::set_flight_stage(AP_FixedWing::FlightStage fs)
 
     landing.handle_flight_stage_change(fs == AP_FixedWing::FlightStage::LAND);
 
+    const bool is_landing = (fs == AP_FixedWing::FlightStage::LAND);
+
+    landing.handle_flight_stage_change(is_landing);
+
+#if AP_LANDINGGEAR_ENABLED
+    if (is_landing) {
+        plane.g2.landing_gear.deploy_for_landing();
+    }
+
+    const bool is_takeoff_complete = (flight_stage == AP_FixedWing::FlightStage::TAKEOFF &&
+                                      fs == AP_FixedWing::FlightStage::NORMAL);
+    if (is_takeoff_complete &&
+        arming.is_armed_and_safety_off() &&
+        is_flying()) {
+            g2.landing_gear.retract_after_takeoff();
+    }
+#endif
+    
     if (fs == AP_FixedWing::FlightStage::ABORT_LANDING) {
         gcs().send_text(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
                         int(auto_state.takeoff_altitude_rel_cm/100));

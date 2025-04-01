@@ -1158,7 +1158,6 @@ private:
     void set_takeoff_expected(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);
-    void set_landing_gear(void);
     void dspoiler_update(void);
     void airbrake_update(void);
     void landing_neutral_control_surface_servos(void);
