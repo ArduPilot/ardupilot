@@ -5667,7 +5667,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''test handling of MAV_CMD_GUIDED_CHANGE_ALTITUDE'''
         target_alt = 750
         # this location is chosen to be fairly flat, but at a different terrain height to home
-        higher_ground = mavutil.location(-35.35465024,149.13974996, target_alt, 0)
+        higher_ground = mavutil.location(-35.35465024, 149.13974996, target_alt, 0)
         self.install_terrain_handlers_context()
         self.start_subtest("set home relative altitude")
         self.takeoff(30, relative=True)
@@ -5685,7 +5685,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             timeout=600,
             height_accuracy=10,
         )
-        
+
         for alt in 50, 70:
             self.run_cmd_int(
                 mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
@@ -5834,7 +5834,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             relative=False,
             altitude_source="TERRAIN_REPORT.current_height"
         )
-        
 
         self.delay_sim_time(5)
         self.fly_home_land_and_disarm()
