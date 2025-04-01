@@ -289,6 +289,12 @@ void Tailsitter::output(void)
         return;
     }
 
+    if (!hal.util->get_soft_armed() ||
+        SRV_Channels::get_emergency_stop()) {
+        // Ensure motors stop on disarm
+        motors->output_min();
+    }
+
     float tilt_left = 0.0f;
     float tilt_right = 0.0f;
 
