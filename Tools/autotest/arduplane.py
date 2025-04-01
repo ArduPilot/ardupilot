@@ -1336,7 +1336,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FS_GCS_ENABL": 1,
             "FS_LONG_ACTN": 1,
             "RTL_AUTOLAND": 1,
-            "MAV_MYGCS_SYSID": self.mav.source_system,
+            "MAV_GCS_SYSID": self.mav.source_system,
         })
         self.takeoff()
         self.change_mode('LOITER')
@@ -5645,7 +5645,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def MANUAL_CONTROL(self):
         '''test MANUAL_CONTROL mavlink message'''
-        self.set_parameter("MAV_MYGCS_SYSID", self.mav.source_system)
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
 
         self.progress("Takeoff")
         self.takeoff(alt=50)
@@ -6269,7 +6269,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def _MAV_CMD_DO_FLIGHTTERMINATION(self, command):
         self.set_parameters({
             "AFS_ENABLE": 1,
-            "MAV_MYGCS_SYSID": self.mav.source_system,
+            "MAV_GCS_SYSID": self.mav.source_system,
             "AFS_TERM_ACTION": 42,
         })
         self.wait_ready_to_arm()
