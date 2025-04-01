@@ -395,6 +395,12 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Description: Ground behavior of aircraft (tailsitter, no movement, forward only)
     AP_GROUPINFO("GND_BEHAV",   41, SIM,  gnd_behav, -1),
 
+    // @Param: IMU_ORIENT
+    // @CopyFieldsFrom: AHRS_ORIENTATION
+    // @DisplayName: IMU orientation
+    // @Description: Simulated orientation of the IMUs
+    AP_GROUPINFO("IMU_ORIENT",   42, SIM,  imu_orientation, 0),
+    
     // sailboat wave and tide simulation parameters
 
     // @Param: WAVE_ENABLE

@@ -434,6 +434,8 @@ public:
 
     AP_Int8 gnd_behav;
 
+    AP_Enum<Rotation> imu_orientation;
+
     struct {
         AP_Int8 enable;     // 0: disabled, 1: roll and pitch, 2: roll, pitch and heave
         AP_Float length;    // m
