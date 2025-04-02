@@ -2382,14 +2382,14 @@ void GCS_MAVLINK::send_airspeed()
         uint8_t flags = 0;
         // Set unhealthy flag
         if (!airspeed->healthy(index)) {
-            flags |= 1U << AIRSPEED_SENSOR_FLAGS::AIRSPEED_SENSOR_UNHEALTHY;
+            flags |= AIRSPEED_SENSOR_FLAGS::AIRSPEED_SENSOR_UNHEALTHY;
         }
 
 #if AP_AHRS_ENABLED
         // Set using flag if the AHRS is using this sensor
         const AP_AHRS &ahrs = AP::ahrs();
         if (ahrs.using_airspeed_sensor() && (ahrs.get_active_airspeed_index() == index)) {
-            flags |= 1U << AIRSPEED_SENSOR_FLAGS::AIRSPEED_SENSOR_USING;
+            flags |= AIRSPEED_SENSOR_FLAGS::AIRSPEED_SENSOR_USING;
         }
 #endif
 
