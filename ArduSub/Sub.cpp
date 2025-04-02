@@ -13,8 +13,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// ArduSub scheduling, originally copied from ArduCopter
-
 #include "Sub.h"
 
 #define FORCE_VERSION_H_INCLUDE
