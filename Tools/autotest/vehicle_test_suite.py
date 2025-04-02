@@ -4368,12 +4368,25 @@ class TestSuite(ABC):
             enum_name = m.fieldenums_by_name.get(fieldname, None)
             if enum_name is not None:
                 enum = mavutil.mavlink.enums[enum_name]
-                if value not in enum:
-                    raise ValueError("Expected value %s not in enum %s" % (value, enum_name))
-                if got not in enum:
-                    raise ValueError("Received value %s not in enum %s" % (value, enum_name))
-                value_string = "%s (%s)" % (value, enum[value].name)
-                got_string = "%s (%s)" % (got, enum[got].name)
+                if getattr(enum, "bitmask", None):
+                    value_strings = []
+                    value_copy = value
+                    shift_value = 1
+                    while value_copy != 0:
+                        if value_copy & 0x1:
+                            value_strings.append(enum[shift_value].name)
+                        else:
+                            value_strings.append("!" + enum[shift_value].name)
+                        shift_value += 1
+                        value_copy = value_copy >> 1
+                    value_string = f"{value_string} {'|'.join(value_strings)}"
+                else:
+                    if value not in enum:
+                        raise ValueError(f"Expected value {value} not in enum {enum}")
+                    if got not in enum:
+                        raise ValueError(f"Received value {got} not in enum {enum}")
+                    value_string = "{value} ({enum[value].name})"
+                    got_string = "{got} ({enum[got].name})"
 
             if not self.message_has_field_values_field_values_equal(
                     fieldname, value, got, epsilon=epsilon
