@@ -366,6 +366,15 @@ static const ap_message STREAM_ADSB_msgs[] = {
 #endif
 };
 
+// convenience macros for defining which ap_message ids are in which streams:
+#define MAV_STREAM_ENTRY(stream_name)           \
+    {                                           \
+        GCS_MAVLINK::stream_name,               \
+        stream_name ## _msgs,                   \
+        ARRAY_SIZE(stream_name ## _msgs)        \
+    }
+#define MAV_STREAM_TERMINATOR { (streams)0, nullptr, 0 }
+
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
     MAV_STREAM_ENTRY(STREAM_EXTENDED_STATUS),
