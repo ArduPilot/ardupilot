@@ -18,8 +18,6 @@ PA12 OTG_FS_DP OTG1
 # supports upto 8MBits/s
 CANFD_SUPPORTED 8
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
 
 # system timer
 STM32_ST_USE_TIMER 5

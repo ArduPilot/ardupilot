@@ -26,8 +26,6 @@ env USE_ALT_RAM_MAP 1
 # flash size
 FLASH_SIZE_KB 2048
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
 
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART3 OTG2
