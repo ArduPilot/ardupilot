@@ -9,7 +9,7 @@ import shutil
 VEHICLES = ['AntennaTracker', 'Copter', 'Plane', 'Rover', 'Sub']
 
 # beta directories that may contain stable builds
-BETA_DIRS = ['beta-4.3']
+BETA_DIRS = []
 
 def make_stable(basedir, vehicle):
     '''make stable version for a vehicle'''
