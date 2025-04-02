@@ -4380,7 +4380,10 @@ class TestSuite(ABC):
                         shift_value += 1
                         value_copy = value_copy >> 1
                     value_string = f"{value_string} {'|'.join(value_strings)}"
-                else:
+                elif enum_name != 'AIRSPEED_SENSOR_FLAGS':
+                    # once the ".bitmask" attribute on enumerations
+                    # becomes uniquitous the check the
+                    # AIRSPEED_SENSOR_FLAGS can be removed.
                     if value not in enum:
                         raise ValueError(f"Expected value {value} not in enum {enum}")
                     if got not in enum:
