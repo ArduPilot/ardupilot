@@ -7,8 +7,6 @@ MCU STM32H7xx STM32H757xx
 define CORE_CM7
 define SMPS_PWR
 
-env OPTIMIZE -Os
-
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
