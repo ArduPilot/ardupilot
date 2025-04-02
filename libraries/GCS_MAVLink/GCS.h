@@ -76,15 +76,6 @@ bool check_payload_size(mavlink_channel_t chan, uint16_t max_payload_len);
 // channel "chan".
 #define CHECK_PAYLOAD_SIZE2_VOID(chan, id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return
 
-// convenience macros for defining which ap_message ids are in which streams:
-#define MAV_STREAM_ENTRY(stream_name)           \
-    {                                           \
-        GCS_MAVLINK::stream_name,               \
-        stream_name ## _msgs,                   \
-        ARRAY_SIZE(stream_name ## _msgs)        \
-    }
-#define MAV_STREAM_TERMINATOR { (streams)0, nullptr, 0 }
-
 // code generation; avoid each subclass duplicating these two methods
 // and just changing the name.  These methods allow retrieval of
 // objects specific to the vehicle's subclass, which the vehicle can
