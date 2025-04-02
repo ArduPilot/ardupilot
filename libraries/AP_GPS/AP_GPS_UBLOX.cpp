@@ -20,6 +20,8 @@
 //
 #include "AP_GPS_UBLOX.h"
 
+// Test CI CD 0212 #define SUPPORT_LX_RTK_DUAL_PATCH       20240314_20250211_unhealth_gps_patch_branch
+
 #if AP_GPS_UBLOX_ENABLED
 
 #include "AP_GPS.h"
@@ -1632,6 +1634,9 @@ AP_GPS_UBLOX::_parse_gps(void)
                                           static_cast<uint32_t>(RELPOSNED::refObsMiss) |
                                           static_cast<uint32_t>(RELPOSNED::carrSolnFloat);
 
+#ifdef  SUPPORT_LX_RTK_DUAL_PATCH       
+            state.gps_yaw_configured = true; // ++ LXX YAW config  patch 20221015  in MSG_RELPOSNED:  ++ 
+#endif            
             _check_new_itow(_buffer.relposned.iTOW);
             if (_buffer.relposned.iTOW != _last_relposned_itow+200) {
                 // useful for looking at packet loss on links
@@ -2295,6 +2300,21 @@ bool AP_GPS_UBLOX::is_healthy(void) const
     }
 #endif
 #if GPS_MOVING_BASELINE
+    
+#ifdef  SUPPORT_LX_RTK_DUAL_PATCH             
+ if (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) { 
+     // since  GPS_AUTO_CONFIG =0    //  _hardware_generation is not available 
+        return true;                                       
+    }       
+else if ((role == AP_GPS::GPS_ROLE_MB_BASE ||
+           role == AP_GPS::GPS_ROLE_MB_ROVER) 
+          && _hardware_generation ==  LX_RTK_DUAL)
+    return true;   // in case GPS_AUTO_CONFIG enabled  
+#endif 
+
+
+
+    
     if ((role == AP_GPS::GPS_ROLE_MB_BASE ||
         role == AP_GPS::GPS_ROLE_MB_ROVER) &&
         !supports_F9_config()) {
