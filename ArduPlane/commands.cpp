@@ -85,6 +85,13 @@ void Plane::set_guided_WP(const Location &loc)
     // ---------------------
     next_WP_loc = loc;
 
+    // Plane can cope with next_WP_loc being in either terrain or
+    // absolute altitude, but *not* home altitude:
+    if (next_WP_loc.relative_alt && !next_WP_loc.terrain_alt) {
+        next_WP_loc.alt += plane.home.alt;
+        next_WP_loc.relative_alt = 0;
+    }
+
     // used to control FBW and limit the rate of climb
     // -----------------------------------------------
     set_target_altitude_current();
