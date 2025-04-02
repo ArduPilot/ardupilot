@@ -765,7 +765,7 @@ if __name__ == '__main__':
     tags = cmd_opts.tags
     if len(tags) == 0:
         # FIXME: wedge this defaulting into parser somehow
-        tags = ["stable", "beta-4.3", "beta", "latest"]
+        tags = ["stable", "beta", "latest"]
 
     bb = build_binaries(tags)
     bb.run()
