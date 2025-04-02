@@ -283,6 +283,14 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HDEM_TCONST", 33, AP_TECS, _hgt_dem_tconst, 3.0f),
 
+    // @Param: WEIGHT_SLEW
+    // @DisplayName: Slew limit to apply to speed weight changes
+    // @Description: Slew limit to apply to speed weighting to avoid step changes for quadplanes in particular after transition completes. A value of 2 means the speed weight can change full range on each loop.
+    // @Range: 0.0 2.0
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("WEIGHT_SLEW", 34, AP_TECS, _spdWeightSlewLimit, 2.0f),
+
     AP_GROUPEND
 };
 
@@ -964,6 +972,17 @@ void AP_TECS::_update_pitch(void)
             _SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
         }
     }
+
+    // Slew limit SKE weighting. This is initialized at zero for quadplanes since they start in a
+    // VTOL mode. If not we would need to delay at the start of takeoff to get the user desired
+    // weighting.
+    // weighting = prev + diff ==> diff = weighting - prev
+    float SKE_weighting_diff = _SKE_weighting - _SKE_weighting_prev;
+    if (fabsf(SKE_weighting_diff) > 0.01f) {
+        SKE_weighting_diff = constrain_float(SKE_weighting_diff, -1.0f*_spdWeightSlewLimit, _spdWeightSlewLimit);
+        _SKE_weighting = _SKE_weighting_prev + SKE_weighting_diff;
+    }
+    _SKE_weighting_prev = _SKE_weighting;
 
     float SPE_weighting = 2.0f - _SKE_weighting;
 
