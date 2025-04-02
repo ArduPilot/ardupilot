@@ -21,9 +21,6 @@ FLASH_SIZE_KB 2048
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5
 
-#optimize for space
-env OPTIMIZE -Os
-
 FLASH_RESERVE_START_KB 128
 
 define HAL_STORAGE_SIZE 32768
