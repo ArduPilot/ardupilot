@@ -6192,7 +6192,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         }, epsilon=10)
 
         def check_altitude(mav, m):
-            global initial_airspeed_threshold_reached
             m_type = m.get_type()
             if m_type != 'GLOBAL_POSITION_INT':
                 return

@@ -280,13 +280,11 @@ close_list = []
 
 def pexpect_autoclose(p):
     """Mark for autoclosing."""
-    global close_list
     close_list.append(p)
 
 
 def pexpect_close(p):
     """Close a pexpect child."""
-    global close_list
 
     ex = None
     if p is None:
@@ -318,7 +316,6 @@ def pexpect_close(p):
 
 def pexpect_close_all():
     """Close all pexpect children."""
-    global close_list
     for p in close_list[:]:
         pexpect_close(p)
 
@@ -353,7 +350,6 @@ def kill_screen_gdb():
 
 
 def kill_mac_terminal():
-    global windowID
     for window in windowID:
         cmd = ("osascript -e \'tell application \"Terminal\" to close "
                "(window(get index of window id %s))\'" % window)
@@ -546,7 +542,6 @@ def start_SITL(binary,
     pexpect_logfile = PSpawnStdPrettyPrinter(prefix=pexpect_logfile_prefix)
 
     if (gdb or lldb) and sys.platform == "darwin" and os.getenv('DISPLAY'):
-        global windowID
         # on MacOS record the window IDs so we can close them later
         atexit.register(kill_mac_terminal)
         child = None
@@ -640,7 +635,6 @@ def start_MAVProxy_SITL(atype,
     if old is not None:
         env['PYTHONPATH'] += os.path.pathsep + old
 
-    global close_list
     cmd = []
     cmd.append(mavproxy_cmd())
     cmd.extend(['--master', master])
@@ -665,7 +659,6 @@ def start_MAVProxy_SITL(atype,
 def start_PPP_daemon(ips, sockaddr):
     """Start pppd for networking"""
 
-    global close_list
     cmd = "sudo pppd socket %s debug noauth nodetach %s" % (sockaddr, ips)
     cmd = cmd.split()
     print("Running: %s" % cmd_as_shell(cmd))
