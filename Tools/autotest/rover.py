@@ -6146,7 +6146,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         def heartbeat_on_mav2(mav, m):
             '''send a heartbeat on mav2 whenever we get one on mav'''
-            global mav2
             if mav == mav2:
                 return
             if m.get_type() == 'HEARTBEAT':
@@ -6192,7 +6191,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 break
 
         def printmessage(mav, m):
-            global mav2
             if mav == mav2:
                 return
 

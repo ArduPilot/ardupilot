@@ -608,7 +608,6 @@ def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
 def run_in_terminal_window(name, cmd, **kw):
 
     """Execute the run_in_terminal_window.sh command for cmd"""
-    global windowID
     runme = [os.path.join(autotest_dir, "run_in_terminal_window.sh"), name]
     runme.extend(cmd)
     progress_cmd("Run " + name, runme)
@@ -908,7 +907,6 @@ def start_mavproxy(opts, stuff):
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
-        global tracker_serial0
         # tracker_serial0 is set when we start the tracker...
         extra_cmd += ("module load map;"
                       "tracker set port %s; "
