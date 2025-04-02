@@ -866,7 +866,8 @@ void Tailsitter_Transition::update()
     }
 
     case TRANSITION_ANGLE_WAIT_VTOL:
-        // nothing to do, this is handled in the fixed wing attitude controller
+        // We are here by accident.
+        restart();
         break;
 
     case TRANSITION_DONE:
