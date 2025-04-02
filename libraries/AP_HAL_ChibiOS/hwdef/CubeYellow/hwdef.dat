@@ -26,8 +26,6 @@ OSCILLATOR_HZ 24000000
 # board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_CUBEYELLOW
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
 
 # on some boards you will need to also set the various PLL values. See
 # the defaults in common/mcuconf.h, and use the define mechanism

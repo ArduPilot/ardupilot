@@ -13,7 +13,6 @@ define HAL_STORAGE_SIZE 32768
 # bootloader takes first sector
 FLASH_RESERVE_START_KB 128
 
-env OPTIMIZE -O2
 
 # crystal frequency
 OSCILLATOR_HZ 8000000

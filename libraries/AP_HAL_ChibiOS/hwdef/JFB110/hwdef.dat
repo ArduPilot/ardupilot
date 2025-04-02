@@ -34,7 +34,6 @@ define CONFIG_HAL_BOARD HAL_BOARD_CHIBIOS
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5
 #define HAL_CHIBIOS_ARCH_FMUV5 1
 
-env OPTIMIZE -O2
 
 # order of UARTs (and USB)
 # SERIAL    | 0  |  1  |  2  |  3   |  4  |  5   |  6  |  7   |  8  |

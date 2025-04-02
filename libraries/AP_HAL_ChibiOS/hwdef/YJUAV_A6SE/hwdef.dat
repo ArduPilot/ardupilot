@@ -9,7 +9,6 @@ OSCILLATOR_HZ 16000000
 # board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_YJUAV_A6SE
 
-env OPTIMIZE -O2
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5

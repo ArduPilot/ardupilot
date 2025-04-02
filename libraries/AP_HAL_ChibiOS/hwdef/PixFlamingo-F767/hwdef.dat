@@ -21,7 +21,6 @@ STM32_ST_USE_TIMER 2
 FLASH_SIZE_KB 2048
 
 FLASH_RESERVE_START_KB 96 
-env OPTIMIZE -O2
 
 # serial port for stdout disabled, use USB console
 # STDOUT_SERIAL SD7
