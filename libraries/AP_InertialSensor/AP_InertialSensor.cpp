@@ -1514,7 +1514,7 @@ bool AP_InertialSensor::pre_arm_check_gyro_backend_rate_hz(char* fail_msg, uint1
             continue;
         }
         const auto rate_hz = _backends[i]->get_gyro_backend_rate_hz();
-        if (rate_hz < threshold) {
+        if (rate_hz < threshold && (AP_HAL::Device::devid_get_devtype(_gyro_id(i)) != AP_InertialSensor_Backend::DEVTYPE_SERIAL)) {
             hal.util->snprintf(fail_msg, fail_msg_len, "Gyro %d rate %dHz < loop ratex1.8 %dHz",
                                i, int(rate_hz), int(threshold));
             return false;
