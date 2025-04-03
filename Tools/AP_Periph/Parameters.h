@@ -100,6 +100,10 @@ public:
         k_param_imu_sample_rate,
         k_param_imu,
         k_param_dac,
+        k_param_mavcan_bus,
+        k_param_mavcan_sysid,
+        k_param_mavcan_compid,
+        k_param_mavcan_chan,
     };
 
     AP_Int16 format_version;
@@ -242,6 +246,14 @@ public:
     AP_Int8 can_terminate[HAL_NUM_CAN_IFACES];
 
     AP_Int8 node_stats;
+
+#if AP_MAVLINK_CAN_ENABLED
+    AP_Int8 mavcan_bus;
+    AP_Int8 mavcan_sysid;
+    AP_Int8 mavcan_compid;
+    AP_Int8 mavcan_chan;
+#endif
+
     Parameters() {}
 };
 

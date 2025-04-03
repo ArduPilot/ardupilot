@@ -743,6 +743,35 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(dac, "DAC", AP_DAC),
 #endif
 
+#if AP_MAVLINK_CAN_ENABLED
+    // @Param: MAVCAN_BUS
+    // @DisplayName: CAN Bus index to use for MAVCAN
+    // @Description: CAN Bus index to use for MAVCAN
+    // @Values: 0:Disabled,1:CAN1,2:CAN2
+    // @User: Advanced
+    GSCALAR(mavcan_bus, "MAVCAN_BUS", 1),
+
+    // @Param: MAVCAN_SYSID
+    // @DisplayName: MAVLink System ID for CAN_FORWARD request
+    // @Description: MAVLink System ID for CAN_FORWARD request
+    // @Range: 0 255
+    // @User: Advanced
+    GSCALAR(mavcan_sysid, "MAVCAN_SYSID", 1),
+
+    // @Param: MAVCAN_COMPID
+    // @DisplayName: MAVLink Component ID CAN_FORWARD request
+    // @Description: MAVLink Component ID CAN_FORWARD request
+    // @Range: 0 255
+    // @User: Advanced
+    GSCALAR(mavcan_compid, "MAVCAN_COMPID", 1),
+
+    // @Param: MAVCAN_CHAN
+    // @DisplayName: MAVLink Channel ID for CAN_FORWARD request
+    // @Description: MAVLink Channel ID for CAN_FORWARD request
+    // @Range: 0 255
+    // @User: Advanced
+    GSCALAR(mavcan_chan, "MAVCAN_CHAN", 0),
+#endif
 AP_VAREND
 };
 

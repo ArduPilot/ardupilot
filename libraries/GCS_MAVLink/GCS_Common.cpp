@@ -4122,23 +4122,39 @@ MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_int_t &pack
 }
 #endif  // COMPASS_CAL_ENABLED
 
-#if HAL_CANMANAGER_ENABLED
+#if AP_MAVLINK_CAN_ENABLED
 /*
   handle MAV_CMD_CAN_FORWARD
  */
 MAV_RESULT GCS_MAVLINK::handle_can_forward(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
+#if HAL_CANMANAGER_ENABLED
     return AP::can().handle_can_forward(chan, packet, msg) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif
 }
 
 /*
   handle CAN_FRAME messages
  */
-void GCS_MAVLINK::handle_can_frame(const mavlink_message_t &msg) const
+void GCS_MAVLINK::handle_can_frame(const mavlink_message_t &msg)
 {
+#if HAL_CANMANAGER_ENABLED
     AP::can().handle_can_frame(msg);
+#endif
 }
-#endif  // HAL_CANMANAGER_ENABLED
+
+/*
+  handle CAN filter modification messages
+ */
+void GCS_MAVLINK::handle_can_filter_modify(const mavlink_message_t &msg)
+{
+#if HAL_CANMANAGER_ENABLED
+    AP::can().handle_can_filter_modify(msg);
+#endif
+}
+#endif  // AP_MAVLINK_CAN_ENABLED
 
 void GCS_MAVLINK::handle_distance_sensor(const mavlink_message_t &msg)
 {
@@ -4486,16 +4502,13 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         handle_named_value(msg);
         break;
 
-#if HAL_CANMANAGER_ENABLED
+#if AP_MAVLINK_CAN_ENABLED
     case MAVLINK_MSG_ID_CAN_FRAME:
     case MAVLINK_MSG_ID_CANFD_FRAME:
         handle_can_frame(msg);
         break;
-#endif
-
-#if HAL_CANMANAGER_ENABLED
     case MAVLINK_MSG_ID_CAN_FILTER_MODIFY:
-        AP::can().handle_can_filter_modify(msg);
+        handle_can_filter_modify(msg);
         break;
 #endif
 
@@ -5473,7 +5486,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_battery_reset(packet);
 #endif
 
-#if HAL_CANMANAGER_ENABLED
+#if AP_MAVLINK_CAN_ENABLED
     case MAV_CMD_CAN_FORWARD:
         return handle_can_forward(packet, msg);
 #endif
