@@ -86,7 +86,8 @@ extern const AP_HAL::HAL& hal;
 //#define CRSF_DEBUG
 //#define CRSF_DEBUG_CHARS
 //#define CRSF_DEBUG_TELEM
-#if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_TELEM)
+//#define CRSF_DEBUG_PARAMS
+#if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_TELEM) || defined(CRSF_DEBUG_PARAMS)
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
 static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
 {
@@ -398,22 +399,33 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
     uart->write((uint8_t*)frame, frame->length + 2);
     uart->flush();
 
-#ifdef CRSF_DEBUG
-    hal.console->printf("CRSF: writing %s:", get_frame_type(frame->type, frame->payload[0]));
-    for (uint8_t i = 0; i < frame->length + 2; i++) {
-        uint8_t val = ((uint8_t*)frame)[i];
-#ifdef CRSF_DEBUG_CHARS
-        if (val >= 32 && val <= 126) {
-            hal.console->printf(" 0x%x '%c'", val, (char)val);
-        } else {
+#if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_PARAMS)
+#ifdef CRSF_DEBUG_PARAMS
+    switch (frame->type) {
+        case CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
+        case CRSF_FRAMETYPE_PARAMETER_READ:
+        case CRSF_FRAMETYPE_PARAMETER_WRITE:
+        case CRSF_FRAMETYPE_COMMAND:
 #endif
-            hal.console->printf(" 0x%x", val);
+
+        hal.console->printf("CRSF: writing %s:", get_frame_type(frame->type, frame->payload[0]));
+        for (uint8_t i = 0; i < frame->length + 2; i++) {
+            uint8_t val = ((uint8_t*)frame)[i];
 #ifdef CRSF_DEBUG_CHARS
+            if (val >= 32 && val <= 126) {
+                hal.console->printf(" 0x%x '%c'", val, (char)val);
+            } else {
+#endif
+                hal.console->printf(" 0x%x", val);
+#ifdef CRSF_DEBUG_CHARS
+            }
+#endif
         }
-#endif
+        hal.console->printf("\n");
+#ifdef CRSF_DEBUG_PARAMS
     }
-    hal.console->printf("\n");
 #endif
+#endif // defined(CRSF_DEBUG) || defined(CRSF_DEBUG_PARAMS)
 }
 
 bool AP_RCProtocol_CRSF::decode_crsf_packet()
@@ -464,7 +476,7 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
     }
 #if HAL_CRSF_TELEM_ENABLED
     if (AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload, _frame.length - 2U)) {
-#ifdef CRSF_DEBUG_TELEM
+#if defined(CRSF_DEBUG_TELEM) || defined(CRSF_DEBUG_PARAMS)
         switch (_frame.type) {
             case CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
             case CRSF_FRAMETYPE_LINK_STATISTICS:
@@ -472,7 +484,14 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
             case CRSF_FRAMETYPE_LINK_STATISTICS_RX:
             case CRSF_FRAMETYPE_LINK_STATISTICS_TX:
                 break;
+#ifdef CRSF_DEBUG_PARAMS
+            case CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
+            case CRSF_FRAMETYPE_PARAMETER_READ:
+            case CRSF_FRAMETYPE_PARAMETER_WRITE:
+            case CRSF_FRAMETYPE_COMMAND:
+#else
             default:
+#endif
                 hal.console->printf("CRSF: received %s:", get_frame_type(_frame.type));
                 uint8_t* fptr = (uint8_t*)&_frame;
                 for (uint8_t i = 0; i < _frame.length + 2; i++) {
@@ -480,7 +499,7 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
                 }
                 hal.console->printf("\n");
         }
-#endif
+#endif // defined(CRSF_DEBUG_TELEM) || defined(CRSF_DEBUG_PARAMS)
         process_telemetry();
     }
     // process any pending baudrate changes before reading another frame
