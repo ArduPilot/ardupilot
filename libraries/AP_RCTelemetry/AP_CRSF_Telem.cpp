@@ -525,7 +525,6 @@ bool AP_CRSF_Telem::_process_frame(AP_RCProtocol_CRSF::FrameType frame_type, voi
     // this means we are connected to an RC receiver and can send telemetry
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_RC_CHANNELS_PACKED_11BIT:
     // the EVO sends battery frames and we should send telemetry back to populate the OSD
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BATTERY_SENSOR:
         _enable_telemetry = true;
@@ -1670,6 +1669,9 @@ bool AP_CRSF_Telem::send_write_response(uint8_t length, const char* data)
         case ScriptedParameterEvents::PARAMETER_READ:
             // respond with parameter entry updated with the new data
             spw.param->data = (const char*)hal.util->std_realloc((char*)spw.param->data, length);
+            if (spw.param->data == nullptr) {
+                return false;
+            }
             memcpy((char*)spw.param->data, data, length);
             spw.param->length = length;
             send_response(spw);
