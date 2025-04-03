@@ -829,7 +829,7 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     // @Param: MAG_MOT
     // @DisplayName: Magnetic interference from motors
     // @Description: Motor-induced magnetometer disturbance per amp.
-    // @Units: mag/Amp
+    // @Units: Gauss/A
     // @User: Advanced
     AP_GROUPINFO("MAG_MOT",        2, SIM,  mag_mot, 0),
     // @Param: MAG_DELAY
