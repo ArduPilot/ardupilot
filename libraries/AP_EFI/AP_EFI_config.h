@@ -3,6 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_CANManager/AP_CANSensor.h>
 #include <AP_Scripting/AP_Scripting_config.h>
+#include <AP_Generator/AP_Generator_config.h>
 
 #ifndef HAL_EFI_ENABLED
 #define HAL_EFI_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 1024
@@ -22,6 +23,10 @@
 
 #ifndef AP_EFI_MAV_ENABLED
 #define AP_EFI_MAV_ENABLED AP_EFI_BACKEND_DEFAULT_ENABLED
+#endif
+
+#ifndef AP_EFI_LOWEHEISER_ENABLED
+#define AP_EFI_LOWEHEISER_ENABLED AP_EFI_BACKEND_DEFAULT_ENABLED && AP_GENERATOR_LOWEHEISER_ENABLED
 #endif
 
 #ifndef AP_EFI_NWPWU_ENABLED
