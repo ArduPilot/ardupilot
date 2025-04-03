@@ -1,38 +1,68 @@
 
 
-# PixSurveyA2-IND Flight Controller
+## PixSurveyA2-IND Flight Controller
 
 The PixSurveyA2-IND flight controller is sold by a range of resellers listed on the makeflyeasy(http://www.makeflyeasy.com)
 
 ## Features
 
-- STM32H743VIT6 microcontroller
-- STM32F103C8T6 IOMCU microcontroller
-- Three IMUs: two IIM-42652(SPI), one ICM42688-P(SPI)
-    - Internal heater for IMUs temperature control
-    - Internal Soft Rubber Damping Ball isolation for All interna IMUs
-- 2x barometers, BMP388(SPI)
-- builtin RAMTRON(SPI)
-- microSD card slot
-- 5 UARTs
-- USB(Type-C)
-- PPM/SBus RCinput compatible with unidirectional RC protocols
-- 14 PWM outputs
-- 2X I2C ports
-- 2X FDCAN ports
-- SBus output
-- Internal Buzzer
-- 2x Power Module inputs, one analog and one CAN
-- Input for servo rail power from independent BEC
-- External safety Switch input
+• STM32H743VIT6 microcontroller
+
+•STM32F103C8T6 IOMCU microcontroller
+
+•	Three IMUs, two IIM-42652(SPI), one ICM42688-P(SPI)
+
+•	internal heater for IMUs temperature control
+
+•	internal Soft Rubber Damping Ball isolation for All interna IMUs
+
+•	Two barometers, BMP388(SPI)
+
+•	builtin RAMTRON(SPI)
+
+•	microSD card slot
+
+•	5 UARTs
+
+•	USB(Type-C)
+
+•	PPM & S.Bus input
+
+•	14 PWM outputs
+
+•	two I2C ports and two FDCAN ports
+
+•	one S.Bus output
+
+•	internal Buzzer
+
+• two voltage & current monitoring, one analog and one CAN
+
+•	servo rail BEC independent power input for servos
+ 
+•	external safety Switch
 
 
-## Connectors/Pinout
+## Picture
 
 ![PixSurveyA2-IND](PixSurveyA2-IND-1.png "PixSurveyA2-IND-1")
 
+## Pinout
+
+UART Mapping
+============
+
+ - SERIAL0 -> console (primary mavlink, usually USB)
+- SERIAL1 -> USART2 (Telem1,MAVLINK2) (DMA capable)
+- SERIAL2 -> USART3 (Telem2, MAVLink2) (DMA capable)
+ - SERIAL3 -> UART4 (GPS1) (TX is DMA capable)
+  - SERIAL4 -> UART8 (GPS2) (RX is DMA capable)
+ - SERIAL5 -> UART7   (USER)
+ 
+ Connector pin assignments
+=========================
 POWER_CAN1 port
---------------
+--------------------
 <table border="1" class="docutils">
    <tbody>
    <tr>
@@ -73,6 +103,7 @@ POWER_CAN1 port
    </tbody>
    </table>
 
+   
 TELEM1, TELEM2 ports
 --------------------
 
@@ -107,7 +138,7 @@ TELEM1, TELEM2 ports
    </table>
 
 I2C1, I2C2 ports
-----------------
+---------------
 
    <table border="1" class="docutils">
    <tbody>
@@ -140,7 +171,7 @@ I2C1, I2C2 ports
    </table>
 
 CAN1, CAN2 ports
-----------------
+---------------
 
    <table border="1" class="docutils">
    <tbody>
@@ -173,7 +204,7 @@ CAN1, CAN2 ports
    </table>
 
 Safety and buzzer port
-----------------------
+-----------
 
    <table border="1" class="docutils">
    <tbody>
@@ -247,7 +278,7 @@ GPS1/I2C1, GPS2/I2C2 ports
    </table>
 
 Serial5 port
-------------
+--------------------
 
    <table border="1" class="docutils">
    <tbody>
@@ -278,9 +309,9 @@ Serial5 port
    </tr>
    </tbody>
    </table>
-
- Power2 port
-------------
+   
+ Power2 ADC ports
+--------------------
 
    <table border="1" class="docutils">
    <tbody>
@@ -322,47 +353,36 @@ Serial5 port
    </tbody>
    </table>
 
-## UART Mapping
- Default protocols are shown below and can be changed by the user.
-- SERIAL0 -> console (primary mavlink, usually USB)
-- SERIAL1 -> USART2 (Telem1,MAVLINK2) (DMA capable)
-- SERIAL2 -> USART3 (Telem2, MAVLink2) (DMA capable)
-- SERIAL3 -> UART4 (GPS1) (TX is DMA capable)
-- SERIAL4 -> UART8 (GPS2) (RX is DMA capable)
-- SERIAL5 -> UART7   (USER)
 
-## RC Input
+RC Input
+--------
 
-All compatible unidirectional RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin.
+All compatible RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin.
 
-For example, if using SERIAL2:
-* Set :ref:`SERIAL2_PROTOCOL<>SERIAL2_PROTOCOL` to "23"
-* FPort requires connection to Telem2 TX and :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` set to "7". See :ref:`common-FPort-receivers`.
-* CRSF also requires a Telem2 TX and RX connection, and automatically provides telemetry.
-* SRXL2 requires a connection to Telem2 TX and automatically provides telemetry. Set :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` to “4”.
+Battery Monitor Settings
+========================
 
-## Battery Monitor Settings
 These should already be set by default. However, if lost or changed:
 
-* :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
-* :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 13
-* :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 4
-* :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 18
-* :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 24 (will need to be adjusted for whichever current sensor is attached)
+Enable Battery monitor with these parameter settings :
+ - `BATT2_MONITOR<BATT_MONITOR>` 4
 
+Then reboot.
 
-## DroneCAN capability
+- `BATT2_VOLT_PIN<BATT2_VOLT_PIN>` 13
 
-There are 6 FD CAN connectors which allow connection to two independent CAN buses. Each of these can have multiple CAN peripheral devices connected. There is also a separate CAN POWER port for easy use of CAN-PMUs.
+- `BATT2_CURR_PIN<BATT2_CURR_PIN>` 4
 
-## Firmware
-Firmware for the PixSurveyA2-IND can be found `here <https://firmware.ardupilot.org>`_ in sub-folders labeled “PixSurveyA2-IND".
+- `BATT2_VOLT_MULT<BATT2_VOLT_MULT>` 18.0
 
-## Loading Firmware
-The PixSurveyA2-IND comes with ArduPilot firmware pre-installed. You can update the firmware using any ArduPilot ground station software. Updates should be done with the
-\*.apj firmware files.
+- `BATT2_AMP_PERVLT<BATT2_AMP_PERVLT>` 24.0
 
-## Where to Buy
+DroneCAN capability
+===================
+There are 6 CAN ports which allow connecting two independant CAN bus outputs. Each of these can have multiple CAN peripheral devices connected. There are also two separate CAN POWER ports for easy access to CAN-PMU.
+
+Where to Buy
+============
 
 `makeflyeasy <http://www.makeflyeasy.com>`_
 
