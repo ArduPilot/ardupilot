@@ -52,6 +52,9 @@ bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;
 bool SRV_Channels::emergency_stop;
 Bitmask<SRV_Channel::k_nr_aux_servo_functions> SRV_Channels::function_mask;
+#if CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+HAL_Semaphore SRV_Channels::mask_semaphore;
+#endif
 SRV_Channels::srv_function SRV_Channels::functions[SRV_Channel::k_nr_aux_servo_functions];
 SRV_Channels::slew_list *SRV_Channels::_slew;
 
