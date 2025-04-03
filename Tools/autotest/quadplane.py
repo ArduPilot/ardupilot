@@ -2535,6 +2535,23 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Recovery AltChange too high %.1f > %.1f" % (alt_change, max_alt_change))
         self.fly_home_land_and_disarm()
 
+    def RudderArmedTakeoffRequiresNeutralThrottle(self):
+        '''check rudder must be neutral before VTOL takeoff allowed'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 0, 0, 0),
+        ])
+        self.upload_simple_relhome_mission
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.set_rc(4, 2000)
+        self.wait_armed()
+        self.wait_altitude(-1, 1, relative=True, minimum_duration=10)
+        self.set_rc(4, 1500)
+        self.wait_altitude(5, 1000, relative=True)
+        self.zero_throttle()
+        self.wait_disarmed(timeout=60)
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2591,5 +2608,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.QLoiterRecovery,
             self.FastInvertedRecovery,
             self.CruiseRecovery,
+            self.RudderArmedTakeoffRequiresNeutralThrottle,
         ])
         return ret
