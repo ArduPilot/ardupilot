@@ -7,9 +7,8 @@ build generated bindings from bindings.desc for AP_Scripting
 from waflib.TaskGen import after_method, before_method, feature
 import os
 
-# these are only used for binding generation, not compilation of the library
+# this is only used for binding generation, not compilation of the library
 BINDING_CFLAGS="-std=c99 -Wno-error=missing-field-initializers -Wall -Werror -Wextra"
-BINDING_CC="gcc"
 
 def configure(cfg):
     cfg.env.AP_LIB_EXTRA_SOURCES['AP_Scripting'] = ['lua_generated_bindings.cpp']
@@ -30,8 +29,7 @@ def build(bld):
         # build gen-bindings compiler
         source=main_c,
         target=[gen_bindings],
-        # we should have configure tests for finding the native compiler
-        rule="%s %s -o %s %s" % (BINDING_CC, BINDING_CFLAGS, gen_bindings_rel, main_c_rel),
+        rule="%s %s -o %s %s" % (bld.env["CC_NAME"], BINDING_CFLAGS, gen_bindings_rel, main_c_rel),
         group='dynamic_sources',
     )
 
