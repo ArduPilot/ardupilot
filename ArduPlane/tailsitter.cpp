@@ -611,7 +611,7 @@ bool Tailsitter::in_vtol_transition(uint32_t now) const
     if (transition->transition_state == Tailsitter_Transition::TRANSITION_ANGLE_WAIT_VTOL) {
         return true;
     }
-    if ((now != 0) && ((now - transition->last_vtol_mode_ms) > 1000)) {
+    if ((now != 0) && ((now - transition->last_vtol_mode_ms) > 2000)) {
         // only just come out of forward flight
         return true;
     }
