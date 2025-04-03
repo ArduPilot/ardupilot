@@ -295,9 +295,6 @@ void Sub::one_hz_loop()
         motors.update_throttle_range();
     }
 
-    // update assigned functions and enable auxiliary servos
-    AP::srv().enable_aux_servos();
-
 #if HAL_LOGGING_ENABLED
     // log terrain data
     terrain_logging();
