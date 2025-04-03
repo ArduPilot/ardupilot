@@ -702,6 +702,10 @@ void Frame::current_and_voltage(float &voltage, float &current)
         battery->init_voltage(param_voltage);
         last_param_voltage = param_voltage;
     }
+    const float param_capacity = AP::sitl()->batt_capacity_ah;
+    if (!is_equal(battery->get_capacity(), param_capacity)) {
+        battery->init_capacity(param_capacity);
+    }
     voltage = battery->get_voltage();
     current = 0;
     for (uint8_t i=0; i<num_motors; i++) {
