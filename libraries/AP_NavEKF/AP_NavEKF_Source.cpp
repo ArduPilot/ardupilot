@@ -288,6 +288,20 @@ void AP_NavEKF_Source::align_inactive_sources()
         }
     }
     visual_odom->align_position_to_ahrs(align_posxy, align_posz);
+
+    // consider aligning yaw:
+    if ((getYawSource() == SourceYaw::COMPASS) ||
+        (getYawSource() == SourceYaw::GPS) ||
+        (getYawSource() == SourceYaw::GPS_COMPASS_FALLBACK) ||
+        (getYawSource() == SourceYaw::GSF)) {
+        for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
+            if (_source_set[i].yaw == SourceYaw::EXTNAV) {
+                // ExtNav could potentially be used, so align it
+                visual_odom->request_align_yaw_to_ahrs();
+                break;
+            }
+        }
+    }
 #endif
 }
 
