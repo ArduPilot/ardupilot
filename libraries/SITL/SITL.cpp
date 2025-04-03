@@ -826,6 +826,11 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     // @Description: Scaling factor for simulated vibration from motors
     // @User: Advanced
     AP_GROUPINFO("MAG_RND",        1, SIM,  mag_noise,   0),
+    // @Param: MAG_MOT
+    // @DisplayName: Magnetic interference from motors
+    // @Description: Motor-induced magnetometer disturbance per amp.
+    // @Units: mag/Amp
+    // @User: Advanced
     AP_GROUPINFO("MAG_MOT",        2, SIM,  mag_mot, 0),
     // @Param: MAG_DELAY
     // @DisplayName: Mag measurement delay
