@@ -10,20 +10,24 @@
 
 AP_CRSF_Telem::ScriptedParameter* CRSFMenu::add_parameter(uint8_t length, const char* data)
 {
+    if (menu == nullptr) {
+        return nullptr;
+    }
     return menu->add_parameter(length, data);
 }
 
 AP_CRSF_Telem::ScriptedMenu* CRSFMenu::add_menu(const char* menu_name)
-{ 
+{
+    if (menu == nullptr) {
+        return nullptr;
+    }
     return menu->add_menu(menu_name, 2, menu->id);
 }
 
 int lua_CRSF_new_menu(lua_State *L)
 {
-    const int args = lua_gettop(L);
-    if (args != 1) {
-        return luaL_argerror(L, args, "wrong number of arguments");
-    }
+    binding_argcheck(L, 1);
+
     const char * name = luaL_checkstring(L, 1);
     void *ud = lua_newuserdata(L, sizeof(CRSFMenu));
 
@@ -43,6 +47,7 @@ int lua_CRSF_new_menu(lua_State *L)
 int lua_CRSF_get_menu_event(lua_State *L)
 {
     binding_argcheck(L, 2);
+
     const uint8_t events = get_uint8_t(L, 2);
     uint8_t param = 0;
     AP_CRSF_Telem::ScriptedPayload payload {};
@@ -64,6 +69,7 @@ int lua_CRSF_get_menu_event(lua_State *L)
 int lua_CRSF_send_response(lua_State *L)
 {
     binding_argcheck(L, 2);
+
     size_t len = 0;
     const char * payload= luaL_checklstring(L, 2, &len);
     const bool data = static_cast<bool>(AP::crsf_telem()->send_write_response(
@@ -77,6 +83,7 @@ int lua_CRSF_send_response(lua_State *L)
 int lua_CRSF_add_parameter(lua_State *L)
 {
     binding_argcheck(L, 2);
+
     CRSFMenu* ud = check_CRSFMenu(L, 1);
     size_t len = 0;
     const char * data = luaL_checklstring(L, 2, &len);
@@ -96,6 +103,7 @@ int lua_CRSF_add_parameter(lua_State *L)
 int lua_CRSF_add_menu(lua_State *L)
 {
     binding_argcheck(L, 2);
+
     CRSFMenu* ud = check_CRSFMenu(L, 1);
     const char * name = luaL_checkstring(L, 2);
     AP_CRSF_Telem::ScriptedMenu* menu = ud->add_menu(name);
@@ -113,6 +121,7 @@ int lua_CRSF_add_menu(lua_State *L)
 int lua_CRSF_add_root_menu(lua_State *L)
 {
     binding_argcheck(L, 2);
+
     const char * name = luaL_checkstring(L, 2);
     AP_CRSF_Telem::ScriptedMenu* menu = AP::crsf_telem()->add_menu(name);
 
@@ -130,6 +139,7 @@ int lua_CRSF_add_root_menu(lua_State *L)
 int lua_CRSF_param_data(lua_State *L)
 {
     binding_argcheck(L, 1);
+
     CRSFParameter * ud = check_CRSFParameter(L, 1);
     AP_CRSF_Telem::ScriptedParameter* param = ud->get_parameter();
     lua_pushlstring(L, param->data, param->length);
