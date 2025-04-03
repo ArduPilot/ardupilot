@@ -460,7 +460,6 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
             process_link_stats_frame((uint8_t*)&_frame.payload);
             break;
         case CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
-        //case CRSF_FRAMETYPE_RC_CHANNELS_PACKED_11BIT:
             decode_variable_bit_channels((const uint8_t*)(&_frame.payload), _frame.length, CRSF_MAX_CHANNELS, _channels);
             _crsf_v3_active = true;
             rc_active = !_uart; // only accept RC data if we are not in standalone mode
