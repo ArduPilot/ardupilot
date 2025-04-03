@@ -107,6 +107,7 @@ known_units = {
              'Gauss'   : 'gauss'                 , # Gauss is not an SI unit, but 1 tesla = 10000 gauss so a simple replacement is not possible here
              'Gauss/s' : 'gauss per second'      , # Gauss is not an SI unit, but 1 tesla = 10000 gauss so a simple replacement is not possible here
              'mGauss'  : 'milligauss'            , # Gauss is not an SI unit, but 1 tesla = 10000 gauss so a simple replacement is not possible here
+             'Gauss/A' : 'gauss per Ampere'      , # Gauss is not an SI unit, but 1 tesla = 10000 gauss so a simple replacement is not possible here
 # pressure
              'Pa'      : 'pascal'                ,
              'hPa'     : 'hectopascal'           ,
