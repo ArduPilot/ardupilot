@@ -295,6 +295,7 @@ protected:
         uint8_t status_read_ins; // read status of the chip, gets us if busy writing/erasing
         bool legacy_status_polling; // check if legacy status polling supported or not
         bool is_xip_supported; // is execution in place or 0-4-4 mode supported
+        bool is_dtr_supported; // is double transfer rate supported
         uint8_t fast_read_mode_clocks;
         xip_entry_methods entry_method;
     } _desc;
