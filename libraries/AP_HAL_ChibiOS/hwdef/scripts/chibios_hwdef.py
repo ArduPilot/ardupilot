@@ -1671,6 +1671,10 @@ INCLUDE common.ld
     def write_UART_config(self, f):
         '''write UART config defines'''
         serial_list = self.get_config('SERIAL_ORDER', required=False, aslist=True)
+        hide_iomcu_uart = False
+        if 'IOMCU_UART' in self.config:
+            hide_iomcu_uart = self.config['IOMCU_UART'][0] not in serial_list
+
         if 'IOMCU_UART' in self.config and self.config['IOMCU_UART'][0] not in serial_list:
             serial_list.append(self.config['IOMCU_UART'][0])
         if serial_list is None:
@@ -1682,10 +1686,16 @@ INCLUDE common.ld
         # write out which serial ports we actually have
         nports = 0
         for idx, serial in enumerate(serial_list):
+            if hide_iomcu_uart and self.config['IOMCU_UART'][0] == serial:
+                # IOMCU UART is not to be displayed in the serial parameters
+                f.write('#define HAL_HAVE_SERIAL%u 1\n' % idx)
+                f.write('#define HAL_HAVE_SERIAL%u_PARAMS 0\n' % idx)
+                continue
             if serial == 'EMPTY':
                 f.write('#define HAL_HAVE_SERIAL%u 0\n' % idx)
             else:
                 f.write('#define HAL_HAVE_SERIAL%u 1\n' % idx)
+                f.write('#define HAL_HAVE_SERIAL%u_PARAMS 1\n' % idx)
                 nports = nports + 1
         f.write('#define HAL_NUM_SERIAL_PORTS %u\n' % nports)
 
