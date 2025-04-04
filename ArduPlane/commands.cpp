@@ -33,16 +33,15 @@ void Plane::set_next_WP(const Location &loc)
         next_WP_loc.lng = current_loc.lng;
         // additionally treat zero altitude as current altitude
         if (next_WP_loc.alt == 0) {
-            next_WP_loc.alt = current_loc.alt;
-            next_WP_loc.relative_alt = false;
-            next_WP_loc.terrain_alt = false;
+            next_WP_loc.set_alt_cm(current_loc.alt, Location::AltFrame::ABSOLUTE);
         }
     }
 
+    fix_terrain_WP(next_WP_loc, __LINE__);
+
     // convert relative alt to absolute alt
-    if (next_WP_loc.relative_alt) {
-        next_WP_loc.relative_alt = false;
-        next_WP_loc.alt += home.alt;
+    if (!next_WP_loc.terrain_alt) {
+        next_WP_loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
     }
 
     // are we already past the waypoint? This happens when we jump
@@ -84,6 +83,8 @@ void Plane::set_guided_WP(const Location &loc)
     // Load the next_WP slot
     // ---------------------
     next_WP_loc = loc;
+
+    fix_terrain_WP(next_WP_loc, __LINE__);
 
     // used to control FBW and limit the rate of climb
     // -----------------------------------------------
