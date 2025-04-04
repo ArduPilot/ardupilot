@@ -2620,6 +2620,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(climbeff);
     DRAW_SETTING(eff);
     DRAW_SETTING(callsign);
+    backend->write(12, 2, false, "%s", "ZANOZA");
     DRAW_SETTING(current2);
 
 #if AP_OSD_EXTENDED_LNK_STATS
