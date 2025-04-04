@@ -291,6 +291,7 @@ void Plane::change_target_altitude(int32_t change_cm)
     }
 #endif
 }
+
 /*
   change target altitude by a proportion of the target altitude offset
   (difference in height to next WP from previous WP). proportion
@@ -319,6 +320,25 @@ void Plane::set_target_altitude_proportion(const Location &loc, float proportion
                 target_altitude.offset_cm = ((float)target_altitude.offset_cm)/proportion;
         }
     }
+}
+
+/*
+  change target altitude along a path between two terrain altitudes
+  in prev_WP_loc and next_WP_loc using plane.auto_state.wp_proportion
+  next_WP_loc must be using terrain_alt
+
+  prev_theight must be the height of the terrain in meters at
+  prev_WP_loc
+ */
+void Plane::set_target_altitude_proportion_terrain(float prev_theight)
+{
+    const float p = constrain_float(plane.auto_state.wp_proportion, 0, 1);
+    float prev_WP_height_abs = prev_WP_loc.alt*0.01;
+    float prev_WP_height_terrain = prev_WP_height_abs - prev_theight;
+    Location loc = next_WP_loc;
+    loc.alt = linear_interpolate(prev_WP_height_terrain*100, next_WP_loc.alt,
+                                 p, 0, 1);
+    set_target_altitude_location(loc);
 }
 
 /*
