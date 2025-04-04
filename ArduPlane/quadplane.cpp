@@ -1478,6 +1478,14 @@ void SLT_Transition::update()
     // the tilt will decrease rapidly)
     if (quadplane.tiltrotor.fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
         if (transition_state == TRANSITION_TIMER) {
+            float throttle;
+            if (plane.quadplane.tiltrotor.get_forward_throttle(throttle)) {
+                // Reset the TECS minimum throttle to match throttle of forward thrust motors
+                // and set the throttle channel slew rate limiter to prevent a sudden drop in throttle
+                plane.TECS_controller.set_throttle_min(throttle, true);
+                SRV_Channels::set_slew_last_scaled_output(SRV_Channel::k_throttle, throttle * 100);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle * 100);
+            }
             gcs().send_text(MAV_SEVERITY_INFO, "Transition FW done");
         }
         transition_state = TRANSITION_DONE;
@@ -1584,15 +1592,24 @@ void SLT_Transition::update()
         
     case TRANSITION_TIMER: {
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-        // after airspeed is reached we degrade throttle over the
-        // transition time, but continue to stabilize
+        // after airspeed is reached we degrade throttle over the transition time, but continue
+        // to stabilize and wait for any required forward tilt to complete and the timer to expire
         const uint32_t transition_timer_ms = now - transition_low_airspeed_ms;
         const float trans_time_ms = constrain_float(quadplane.transition_time_ms,500,30000);
-        if (transition_timer_ms > unsigned(trans_time_ms)) {
+        const bool tilt_fwd_complete = !quadplane.tiltrotor.enabled() || quadplane.tiltrotor.tilt_angle_achieved();
+        if (transition_timer_ms > unsigned(trans_time_ms) && tilt_fwd_complete) {
             transition_state = TRANSITION_DONE;
             in_forced_transition = false;
             transition_start_ms = 0;
             transition_low_airspeed_ms = 0;
+            float throttle;
+            if (plane.quadplane.tiltrotor.get_forward_throttle(throttle)) {
+                // Reset the TECS minimum throttle to match throttle of forward thrust motors
+                // and set the throttle channel slew rate limiter to prevent a sudden drop in throttle
+                plane.TECS_controller.set_throttle_min(throttle, true);
+                SRV_Channels::set_slew_last_scaled_output(SRV_Channel::k_throttle, throttle * 100);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle * 100);
+            }
             gcs().send_text(MAV_SEVERITY_INFO, "Transition done");
         }
 
