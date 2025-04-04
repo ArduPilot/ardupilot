@@ -815,8 +815,8 @@ void AP_TECS::_update_throttle_with_airspeed(void)
 
 #if HAL_LOGGING_ENABLED
         if (AP::logger().should_log(_log_bitmask)){
-            AP::logger().WriteStreaming("TEC3","TimeUS,KED,PED,KEDD,PEDD,TEE,TEDE,FFT,Imin,Imax,I,Emin,Emax,L,H",
-                                        "Qffffffffffffff",
+            AP::logger().WriteStreaming("TEC3","TimeUS,KED,PED,KEDD,PEDD,TEE,TEDE,FFT,Imin,Imax,I,Emin,Emax",
+                                        "Qffffffffffff",
                                         AP_HAL::micros64(),
                                         (double)_SKEdot,
                                         (double)_SPEdot,
@@ -829,9 +829,7 @@ void AP_TECS::_update_throttle_with_airspeed(void)
                                         (double)integ_max,
                                         (double)_integTHR_state,
                                         (double)SPE_err_min,
-                                        (double)SPE_err_max,
-                                        (double)_THRminf_ext,
-                                        (double)_THRmaxf_ext);
+                                        (double)SPE_err_max);
         }
 #endif
     }
