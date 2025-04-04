@@ -85,6 +85,7 @@ PC0 BATT_CURRENT_SENS2 ADC2 SCALE(1)    # analog pin 10
 # VTX Power control - should be high at startup to ensure power
 PC15 VTX_PWR OUTPUT HIGH GPIO(81)
 define RELAY2_PIN_DEFAULT 81
+define RELAY2_FUNCTION 1
 
 # define default battery setup
 define HAL_BATT_VOLT_PIN 13

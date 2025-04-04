@@ -17,6 +17,7 @@ PB3 TIM2_CH2 TIM2 PWM(7) GPIO(56)
 # VTX Power control - should be high at startup to ensure power
 PC5 VTX_PWR OUTPUT HIGH GPIO(81)
 define RELAY2_PIN_DEFAULT 81
+define RELAY2_FUNCTION 1
 
 PB11 USART3_RX USART3 NODMA
 

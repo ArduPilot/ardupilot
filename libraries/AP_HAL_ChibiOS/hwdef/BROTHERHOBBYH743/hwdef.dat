@@ -158,6 +158,7 @@ PD2 SDMMC1_CMD SDMMC1
 # VTX Power control - should be high at startup to ensure power
 PD10 VTX_PWR OUTPUT HIGH GPIO(81)
 define RELAY2_PIN_DEFAULT 81
+define RELAY2_FUNCTION 1
 
 # CAM switch
 PD11 CAM_SW OUTPUT HIGH GPIO(82)
