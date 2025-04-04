@@ -186,7 +186,6 @@ bool Mode::is_vtol_man_throttle() const
 void Mode::update_target_altitude()
 {
     Location target_location;
-    float prev_theight;
 
     if (plane.landing.is_flaring()) {
         // during a landing flare, use TECS_LAND_SINK as a target sink
@@ -211,13 +210,9 @@ void Mode::update_target_altitude()
         plane.set_target_altitude_location(plane.next_WP_loc);
 #if AP_TERRAIN_AVAILABLE
     } else if (plane.next_WP_loc.terrain_alt &&
-               plane.next_WP_loc.relative_alt &&
-               !plane.prev_WP_loc.relative_alt &&
-               !plane.prev_WP_loc.terrain_alt &&
-               plane.terrain.height_amsl(plane.prev_WP_loc, prev_theight)) {
-        // special case for target as terrain relative, and
-        // prev_WP_loc absolute
-        plane.set_target_altitude_proportion_terrain(prev_theight);
+               plane.set_target_altitude_proportion_terrain()) {
+        // special case for target as terrain relative handled inside
+        // set_target_altitude_proportion_terrain
 #endif
     } else if (plane.target_altitude.offset_cm != 0 &&
                !plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc)) {
