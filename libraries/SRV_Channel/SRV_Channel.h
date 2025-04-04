@@ -424,6 +424,9 @@ public:
     // limit slew rate to given limit in percent per second
     static void set_slew_rate(SRV_Channel::Function function, float slew_rate, uint16_t range, float dt);
 
+    // update channels last_scaled_output to match value
+    static void set_slew_last_scaled_output(SRV_Channel::Function function, float value);
+
     // call output_ch() on all channels
     static void output_ch_all(void);
 
