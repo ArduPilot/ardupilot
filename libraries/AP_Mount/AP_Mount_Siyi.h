@@ -271,6 +271,9 @@ private:
     void request_gimbal_attitude() { send_packet(SiyiCommandId::ACQUIRE_GIMBAL_ATTITUDE, nullptr, 0); }
     void request_rangefinder_distance() { send_packet(SiyiCommandId::READ_RANGEFINDER, nullptr, 0); }
 
+    // convert a rate in radians/sec to a scalar that can be sent to the gimbal (e.g. -100 to +100)
+    float get_rate_scalar(float rate_rads) const;
+
     // rotate gimbal.  pitch_rate and yaw_rate are scalars in the range -100 ~ +100
     // yaw_is_ef should be true if gimbal should maintain an earth-frame target (aka lock)
     void rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool yaw_is_ef);
@@ -366,6 +369,20 @@ private:
         const char* model_name;
     };
     static const HWInfo hardware_lookup_table[];
+
+    // rate mapping from radians/sec to scalars that can be sent to the gimbal (e.g. -100 to +100)
+    struct RateMapping {
+        float desired_rate_rads;
+        float rate_scalar;
+    };
+    static const RateMapping rate_mapping[];
+
+    // pitch and yaw controller
+    struct RateControl {
+        float integrator;       // rate control integrator
+        float rate_prev;        // previous target rate (used for acceleration limiting)
+        bool rate_limited;      // true if rate was acceleration limited
+    } _pitch_control, _yaw_control;
 
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
     // thermal variables
