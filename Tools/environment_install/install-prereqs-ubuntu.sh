@@ -286,7 +286,7 @@ elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
 elif [ ${RELEASE_CODENAME} != 'mantic' ] &&
      [ ${RELEASE_CODENAME} != 'noble' ] && 
      [ ${RELEASE_CODENAME} != 'oracular' ]; then
-    SITL_PKGS+=" python-argparse"
+    SITL_PKGS+=" python3-argparse"
 fi
 
 # Check for graphical package for MAVProxy
