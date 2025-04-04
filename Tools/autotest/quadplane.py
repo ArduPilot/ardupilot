@@ -2456,82 +2456,161 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.location_offset_ne(loc2, 250, 0)
         loc2.alt = 150
 
-        self.progress(f"Flying to loc1 at {loc1.alt:.1f} from {start_alt:.1f}")
-        self.send_do_reposition(loc1, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        loc3 = copy.copy(loc2)
+        loc3.alt = 100
 
-        self.wait_location(
-            loc1,
-            accuracy=10,
-            timeout=600,
-            height_accuracy=10,
-        )
-        self.delay_sim_time(10)
-        self.wait_altitude(
-            loc1.alt-5,
-            loc1.alt+5,
-            minimum_duration=10,
-            timeout=30,
-            relative=False,
-            altitude_source="TERRAIN_REPORT.current_height"
-        )
-        self.progress(f"terrain_height range {terrain_height_min:.1f} {terrain_height_max:.1f}")
-        if terrain_height_min < min(start_alt, loc1.alt) - 10 or terrain_height_max > max(start_alt, loc1.alt)+10:
-            raise NotAchievedException(f"terrain range breach {start_alt:.1f} {terrain_height_min:.1f} {terrain_height_max:.1f}")  # noqa:E501
+        positions = [
+            ("Loc1", loc1),
+            ("Loc2", loc2),
+            ("Loc1", loc1),
+            ("Loc3", loc3),
+            ("Loc1", loc1),
+            ("Loc3", loc3),
+            ("Loc1", loc1),
+            ("Loc3", loc3),
+            ("Loc2", loc2),
+            ("Loc3", loc3),
+            ("Loc2", loc2),
+        ]
+        for (name, loc) in positions:
+            start_alt = self.assert_receive_message('TERRAIN_REPORT').current_height
+            terrain_height_min = start_alt
+            terrain_height_max = start_alt
 
-        start_alt = self.assert_receive_message('TERRAIN_REPORT').current_height
-        terrain_height_min = start_alt
-        terrain_height_max = start_alt
+            self.progress(f"Flying to {name} at {loc.alt:.1f} from {start_alt:.1f}")
+            self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
 
-        self.progress(f"Flying to loc2 at {loc2.alt:.1f} from {start_alt:.1f}")
-        self.send_do_reposition(loc2, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
-
-        self.wait_location(
-            loc2,
-            accuracy=10,
-            timeout=600,
-            height_accuracy=10,
-        )
-        self.delay_sim_time(10)
-        self.wait_altitude(
-            loc2.alt-5,
-            loc2.alt+5,
-            minimum_duration=10,
-            timeout=30,
-            relative=False,
-            altitude_source="TERRAIN_REPORT.current_height"
-        )
-        self.progress(f"terrain_height range {terrain_height_min:.1f} {terrain_height_max:.1f}")
-        if terrain_height_min < min(start_alt, loc2.alt) - 10 or terrain_height_max > max(start_alt, loc2.alt)+10:
-            raise NotAchievedException(f"terrain range breach {start_alt:.1f} {terrain_height_min:.1f} {terrain_height_max:.1f}")  # NOQA:E501
-
-        start_alt = self.assert_receive_message('TERRAIN_REPORT').current_height
-        terrain_height_min = start_alt
-        terrain_height_max = start_alt
-
-        self.progress(f"Flying back to loc1 at {loc1.alt:.1f} from {start_alt:.1f}")
-        self.send_do_reposition(loc1, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
-
-        self.wait_location(
-            loc1,
-            accuracy=10,
-            timeout=600,
-            height_accuracy=10,
-        )
-        self.delay_sim_time(10)
-        self.wait_altitude(
-            loc1.alt-5,
-            loc1.alt+5,
-            minimum_duration=10,
-            timeout=30,
-            relative=False,
-            altitude_source="TERRAIN_REPORT.current_height"
-        )
-        self.progress(f"terrain_height range {terrain_height_min:.1f} {terrain_height_max:.1f}")
-        if terrain_height_min < min(start_alt, loc1.alt) - 10 or terrain_height_max > max(start_alt, loc1.alt)+10:
-            raise NotAchievedException(f"terrain range breach {start_alt:.1f} {terrain_height_min:.1f} {terrain_height_max:.1f}")  # NOQA:E501
+            self.wait_location(
+                loc,
+                accuracy=10,
+                timeout=600,
+                height_accuracy=10,
+            )
+            self.delay_sim_time(10)
+            self.wait_altitude(
+                loc.alt-5,
+                loc.alt+5,
+                minimum_duration=10,
+                timeout=30,
+                relative=False,
+                altitude_source="TERRAIN_REPORT.current_height"
+            )
+            self.wait_groundspeed(0, 2)
+            self.wait_altitude(
+                loc.alt-5,
+                loc.alt+5,
+                minimum_duration=10,
+                timeout=30,
+                relative=False,
+                altitude_source="TERRAIN_REPORT.current_height"
+            )
+            min_alt_ok = min(start_alt, loc.alt) - 10
+            max_alt_ok = max(start_alt, loc.alt) + 10
+            self.progress(f"theight {terrain_height_min:.0f} to {terrain_height_max:.0f} accept {min_alt_ok:.0f}:{max_alt_ok:.0f}") # noqa:E501
+            if terrain_height_min < min_alt_ok or terrain_height_max > max_alt_ok:
+                raise NotAchievedException(f"terrain range breach {start_alt:.1f} {terrain_height_min:.1f} {terrain_height_max:.1f}")  # noqa:E501
 
         self.change_mode("QLAND")
         self.mav.motors_disarmed_wait()
+
+    def DoRepositionTerrain2(self):
+        '''test handling of DO_REPOSITION terrain alt2'''
+        self.install_terrain_handlers_context()
+        self.start_subtest("test reposition terrain alt2")
+
+        takeoff_loc = mavutil.location(-35.28243788, 149.00502473, 583.7)
+        self.customise_SITL_commandline(
+            ["--home", f"{takeoff_loc.lat},{takeoff_loc.lng},{takeoff_loc.alt},0"]
+        )
+        self.reboot_sitl(check_position=False)
+        self.wait_ready_to_arm()
+
+        dest = copy.copy(takeoff_loc)
+        dest.alt = 45
+
+        self.set_parameters({
+            'Q_GUIDED_MODE': 1,
+        })
+
+        self.takeoff(75, mode='GUIDED', timeout=60)
+
+        # remember the range of heights we go through in the tests
+        start_alt = self.assert_receive_message('TERRAIN_REPORT').current_height
+        terrain_height_min = start_alt
+        terrain_height_max = start_alt
+
+        def terrain_height_range(mav, m):
+            if m.get_type() == 'TERRAIN_REPORT':
+                nonlocal terrain_height_min, terrain_height_max
+                terrain_height_min = min(terrain_height_min, m.current_height)
+                terrain_height_max = max(terrain_height_max, m.current_height)
+
+        self.install_message_hook_context(terrain_height_range)
+
+        loc1 = mavutil.location(-35.27502040, 148.98635977, 75)
+        loc2 = mavutil.location(-35.28505202, 148.98604378, 75)
+
+        loc3 = mavutil.location(-35.27502040, 148.98635977, 120)
+        loc4 = mavutil.location(-35.28505202, 148.98604378, 120)
+
+        loc5 = mavutil.location(-35.28505202, 148.98604378, 100)
+
+        positions = [
+            ("Loc1", loc1),
+            ("Loc2", loc2),
+            ("Loc1", loc1),
+            ("Loc2", loc2),
+            ("Loc1", loc1),
+            ("Loc4", loc4),
+            ("Loc3", loc3),
+            ("Loc2", loc2),
+            ("Loc5", loc5),
+            ("Loc1", loc1),
+            ("Loc5", loc5),
+            ("Loc1", loc1),
+        ]
+        for (name, loc) in positions:
+            start_alt = self.assert_receive_message('TERRAIN_REPORT').current_height
+            terrain_height_min = start_alt
+            terrain_height_max = start_alt
+
+            self.progress(f"Flying to {name} at {loc.alt:.1f} from {start_alt:.1f}")
+            self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+
+            self.wait_location(
+                loc,
+                accuracy=10,
+                timeout=600,
+                height_accuracy=10,
+            )
+            self.delay_sim_time(10)
+            self.wait_altitude(
+                loc.alt-5,
+                loc.alt+5,
+                minimum_duration=10,
+                timeout=30,
+                relative=False,
+                altitude_source="TERRAIN_REPORT.current_height"
+            )
+
+            self.wait_groundspeed(0, 2)
+            self.wait_altitude(
+                loc.alt-5,
+                loc.alt+5,
+                minimum_duration=10,
+                timeout=30,
+                relative=False,
+                altitude_source="TERRAIN_REPORT.current_height"
+            )
+            min_alt_ok = min(start_alt, loc.alt) - 10
+            max_alt_ok = max(start_alt, loc.alt) + 25
+            self.progress(f"theight {terrain_height_min:.0f} to {terrain_height_max:.0f} accept {min_alt_ok:.0f}:{max_alt_ok:.0f}") # noqa:E501
+            if terrain_height_min < min_alt_ok or terrain_height_max > max_alt_ok:
+                raise NotAchievedException(f"terrain range breach {start_alt:.1f} {terrain_height_min:.1f} {terrain_height_max:.1f}") # noqa:E501
+
+        self.change_mode("QLAND")
+        self.mav.motors_disarmed_wait()
+        self.reset_SITL_commandline()
 
     def tests(self):
         '''return list of all tests'''
@@ -2585,9 +2664,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
             self.AHRSFlyForwardFlag,
+            self.DoRepositionTerrain,
+            self.DoRepositionTerrain2,
             self.QLoiterRecovery,
             self.FastInvertedRecovery,
             self.CruiseRecovery,
-            self.DoRepositionTerrain,
         ])
         return ret
