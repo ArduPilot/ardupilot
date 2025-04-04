@@ -894,15 +894,6 @@ void NavEKF3_core::calcOutputStates()
         posOffsetNED.zero();
     }
 
-    // Detect fixed wing launch acceleration using latest data from IMU to enable early startup of filter functions
-    // that use launch acceleration to detect start of flight
-    if (!inFlight && !dal.get_takeoff_expected() && assume_zero_sideslip()) {
-        const ftype launchDelVel = imuDataNew.delVel.x + GRAVITY_MSS * imuDataNew.delVelDT * Tbn_temp.c.x;
-        if (launchDelVel > GRAVITY_MSS * imuDataNew.delVelDT) {
-            dal.set_takeoff_expected();
-        }
-    }
-
     // store INS states in a ring buffer that with the same length and time coordinates as the IMU data buffer
     if (runUpdates) {
         // store the states at the output time horizon
