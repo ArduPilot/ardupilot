@@ -74,6 +74,7 @@ PA8 VBUS INPUT
 # VTX Power control - should be high at startup to ensure power
 PB11 VTX_PWR OUTPUT HIGH GPIO(81)
 define RELAY2_PIN_DEFAULT 81
+define RELAY2_FUNCTION 1
 
 # define default battery setup
 define HAL_BATT_MONITOR_DEFAULT 4
