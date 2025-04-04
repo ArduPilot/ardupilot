@@ -886,15 +886,15 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
 bool Plane::set_target_location(const Location &target_loc)
 {
     Location loc{target_loc};
+    fix_terrain_WP(loc, __LINE__);
 
     if (plane.control_mode != &plane.mode_guided) {
         // only accept position updates when in GUIDED mode
         return false;
     }
-    // add home alt if needed
-    if (loc.relative_alt) {
-        loc.alt += plane.home.alt;
-        loc.relative_alt = 0;
+    // convert to absolute
+    if (!loc.terrain_alt) {
+        loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
     }
     plane.set_guided_WP(loc);
     return true;
@@ -941,6 +941,8 @@ bool Plane::update_target_location(const Location &old_loc, const Location &new_
         return false;
     }
     next_WP_loc = new_loc;
+
+    fix_terrain_WP(next_WP_loc, __LINE__);
 
 #if HAL_QUADPLANE_ENABLED
     if (control_mode == &mode_qland || control_mode == &mode_qloiter) {
