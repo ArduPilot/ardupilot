@@ -92,6 +92,8 @@ public:
     // return thrust for motor motor_num, returns true if value is valid false otherwise
     bool                get_thrust(uint8_t motor_num, float& thr_out) const override;
 
+    bool                get_raw_motor_throttle(uint8_t motor_num, float& thr_out) const override;
+
 #if HAL_LOGGING_ENABLED
     // 10hz logging of voltage scaling and max trust
     void                Log_Write() override;

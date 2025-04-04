@@ -782,4 +782,27 @@ bool Tiltrotor::tilt_over_max_angle(void) const
     return (current_tilt > MIN(tilt_threshold, get_forward_flight_tilt()));
 }
 
+// throttle of forward flight motors including any tilting motors
+bool Tiltrotor::get_forward_throttle(float &throttle) const
+{
+    if (_is_vectored) {
+        float throttle_sum = 0.0f;
+        uint8_t num_vectored_motors = 0;
+        for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
+            if (is_motor_tilting(i)) {
+                float thr_out;
+                if (motors->get_raw_motor_throttle(i, thr_out)) {
+                    throttle_sum += thr_out;
+                    num_vectored_motors ++;
+                }
+            }
+        }
+        if (num_vectored_motors > 0) {
+            throttle = throttle_sum / (float)num_vectored_motors;
+            return true;
+        }
+    }
+    return false;
+}
+
 #endif  // HAL_QUADPLANE_ENABLED

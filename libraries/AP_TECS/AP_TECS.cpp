@@ -264,7 +264,13 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PTCH_FF_K", 30, AP_TECS, _pitch_ff_k, 0.0),
 
-    // 31 previously used by TECS_LAND_PTRIM
+    // @Param: THR_ERATE
+    // @DisplayName: Forward throttle external limit slew rate
+    // @Description: The forward throttle lower limit controlled by TECS when set externally will be reduced at this rate. Set to a non positive value to hold the lower limit for one frame only
+    // @Units: ms
+    // @Range: 0 1.0
+    // @User: Advanced
+    AP_GROUPINFO("THR_ERATE", 31, AP_TECS, _thr_min_ext_rate, 0.2),
 
     // @Param: FLARE_HGT
     // @DisplayName: Flare holdoff height
@@ -1358,11 +1364,15 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 }
 
 // set minimum throttle override, [-1, -1] range
-// it is applicable for one control cycle only
-void AP_TECS::set_throttle_min(const float thr_min) {
+// if reset_output is true the output slew limiter will also be reset to respect the lower limit
+// its decay is controlled by TECS_THR_ERATE
+void AP_TECS::set_throttle_min(const float thr_min, bool reset_output) {
     // Don't change the limit if it is already covered.
     if (thr_min > _THRminf_ext) {
         _THRminf_ext = thr_min;
+        if (reset_output) {
+            _throttle_dem = MAX(_throttle_dem, _THRminf_ext);
+        }
     }
 }
 
@@ -1397,7 +1407,12 @@ void AP_TECS::_update_throttle_limits() {
     
     // Reset the external throttle limits.
     // Caller will have to reset them in the next iteration.
-    _THRminf_ext = -1.0f;
+    if (is_positive(_thr_min_ext_rate)) {
+        _THRminf_ext -= _thr_min_ext_rate * _DT;
+        _THRminf_ext = MAX(_THRminf_ext, -1.0f);
+    } else {
+        _THRminf_ext = -1.0f;
+    }
     _THRmaxf_ext = 1.0f;
 }
 
