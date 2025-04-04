@@ -108,10 +108,10 @@ void ModeGuided::navigate()
 
 bool ModeGuided::handle_guided_request(Location target_loc)
 {
+    plane.fix_terrain_WP(target_loc, __LINE__);
     // add home alt if needed
-    if (target_loc.relative_alt && !target_loc.terrain_alt) {
-        target_loc.alt += plane.home.alt;
-        target_loc.relative_alt = 0;
+    if (!target_loc.terrain_alt) {
+        target_loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
     }
 
     plane.set_guided_WP(target_loc);
