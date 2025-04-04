@@ -1064,14 +1064,14 @@ bool AP_AHRS_DCM::get_location(Location &loc) const
     loc.lng = _last_lng;
     const auto &baro = AP::baro();
     const auto &gps = AP::gps();
+    int32_t alt_cm;
     if (_gps_use == GPSUse::EnableWithHeight &&
         gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        loc.alt = gps.location().alt;
+        alt_cm = gps.location().alt;
     } else {
-        loc.alt = baro.get_altitude() * 100 + AP::ahrs().get_home().alt;
+        alt_cm = baro.get_altitude() * 100 + AP::ahrs().get_home().alt;
     }
-    loc.relative_alt = 0;
-    loc.terrain_alt = 0;
+    loc.set_alt_cm(alt_cm, Location::AltFrame::ABSOLUTE);
     loc.offset(_position_offset_north, _position_offset_east);
     if (_have_position) {
         const uint32_t now = AP_HAL::millis();
