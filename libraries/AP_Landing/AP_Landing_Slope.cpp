@@ -189,6 +189,11 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
 
 void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm)
 {
+    // don't adjust slope if rangefinder hasn't been engaged yet
+    if (!rangefinder_state.in_use) {
+        return;
+    }
+
     // check the rangefinder correction for a large change. When found, recalculate the glide slope. This is done by
     // determining the slope from your current location to the land point then following that back up to the approach
     // altitude and moving the prev_wp to that location. From there
