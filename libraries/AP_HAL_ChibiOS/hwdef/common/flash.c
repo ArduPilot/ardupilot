@@ -318,7 +318,17 @@ void stm32_flash_lock(void)
 #endif
 }
 
-#if (defined(STM32H7) && HAL_FLASH_PROTECTION) || defined(HAL_FLASH_SET_NRST_MODE)
+
+static void stm32_flash_opt_clear_errors(void)
+{
+#if defined(STM32H7)
+    FLASH->OPTCCR = FLASH_OPTCCR_CLR_OPTCHANGEERR;
+#elif defined(FLASH_SR_OPERR)
+    FLASH->SR |= FLASH_SR_OPERR;
+#endif
+}
+
+// #if (defined(STM32H7) && HAL_FLASH_PROTECTION) || defined(HAL_FLASH_SET_NRST_MODE) || defined(HAL_FLASH_SET_BOR_LEVEL)
 static void stm32_flash_wait_opt_idle(void)
 {
     __DSB();
@@ -330,15 +340,6 @@ static void stm32_flash_wait_opt_idle(void)
     while (FLASH->SR & FLASH_SR_BSY) {
         // nop
     }
-#endif
-}
-
-static void stm32_flash_opt_clear_errors(void)
-{
-#if defined(STM32H7)
-    FLASH->OPTCCR = FLASH_OPTCCR_CLR_OPTCHANGEERR;
-#else
-    FLASH->SR |= FLASH_SR_OPERR;
 #endif
 }
 
@@ -374,12 +375,14 @@ static bool stm32_flash_lock_options(void)
     if (FLASH->OPTSR_CUR & FLASH_OPTSR_OPTCHANGEERR) {
         return false;
     }
-#else
+#elif defined(FLASH_CR_LOCK)
+    FLASH->CR |= FLASH_CR_LOCK;
+#elif defined(FLASH_CR_OPTLOCK)
     FLASH->CR |= FLASH_CR_OPTLOCK;
 #endif
     return true;
 }
-#endif
+// #endif
 
 /*
   get the memory address of a page
@@ -1147,21 +1150,73 @@ void stm32_flash_unprotect_flash()
  */
 void stm32_flash_set_NRST_MODE(uint8_t nrst_mode)
 {
-    if ((FLASH->OPTR & FLASH_OPTR_NRST_MODE_Msk) == (((uint32_t)nrst_mode)<<FLASH_OPTR_NRST_MODE_Pos)) {
+#if defined(FLASH_OPTR_NRST_MODE_Msk)
+    stm32_flash_set_options(FLASH_OPTR_NRST_MODE_Msk, FLASH_OPTR_NRST_MODE_Pos, bor_level);
+#else
+    #error "Setting Flash Option NRST_MODE is not supported by this device"
+#endif
+}
+#endif // HAL_FLASH_SET_NRST_MODE
+
+#if defined(HAL_FLASH_SET_BOR_LEVEL)
+// Set's Flash Option BOR_LEV which controls the Brownout Reset voltage.
+// Only values of 0, 1, 2, 3 are valid.
+void stm32_flash_set_BOR_level(uint8_t bor_level)
+{
+#if defined(FLASH_OPTSR_BOR_LEV_Msk)
+    stm32_flash_set_options(FLASH_OPTSR_BOR_LEV_Msk, FLASH_OPTSR_BOR_LEV_Pos, bor_level);
+#elif defined(FLASH_OPTCR_BOR_LEV_Msk)
+    stm32_flash_set_options(FLASH_OPTCR_BOR_LEV_Msk, FLASH_OPTCR_BOR_LEV_Pos, bor_level);
+    FLASH_OPTCR_BOR_LEV_Pos
+#elif defined(FLASH_OPTR_BOR_LEV_Msk)
+    stm32_flash_set_options(FLASH_OPTR_BOR_LEV_Msk, FLASH_OPTR_BOR_LEV_Pos, bor_level);
+#else
+    #error "Setting Flash Option BOR_LEV is not supported by this device"
+#endif
+}
+#endif // HAL_FLASH_SET_BOR_LEVEL
+
+void stm32_flash_set_options(const uint32_t mask, const uint32_t pos, const uint32_t value)
+{
+#if defined(STM32H7)
+    if ((FLASH->OPTSR_CUR & mask) == (((uint32_t)value)<<pos))
+#elif defined(STM32F1) || defined(STM32F3) || defined(STM32L1)
+    if ((FLASH->OBR & mask) == (((uint32_t)value)<<pos))
+#elif defined(FLASH_OPTCR_OPTSTART) || defined(FLASH_OPTCR_OPTSTRT)
+    if ((FLASH->OPTCR & mask) == (((uint32_t)value)<<pos))
+#elif defined(FLASH_CR_OPTSTRT)
+    if ((FLASH->OPTR & mask) == (((uint32_t)value)<<pos))
+#else
+    #error "Setting Flash Options are not supported by this device"
+#endif
+    {
         // already set correctly
         return;
     }
+
     stm32_flash_unlock();
     stm32_flash_opt_clear_errors();
     if (stm32_flash_unlock_options()) {
-        FLASH->OPTR = (FLASH->OPTR & ~FLASH_OPTR_NRST_MODE_Msk) | (((uint32_t)nrst_mode)<<FLASH_OPTR_NRST_MODE_Pos);
+#if defined(STM32H7)
+        FLASH->OPTSR_PRG = (FLASH->OPTSR_CUR & ~mask) | (((uint32_t)value)<<pos);
+        FLASH->OPTCR |= FLASH_OPTCR_OPTSTART;
+#elif defined(FLASH_CR_STRT) && (defined(STM32F1) || defined(STM32F3) || defined(STM32L1))
+        FLASH->OBR = (FLASH->OBR & ~mask) | (((uint32_t)value)<<pos);
+        FLASH->CR |= FLASH_CR_STRT;
+#elif defined(FLASH_OPTCR_OPTSTRT)
+        FLASH->OPTCR = (FLASH->OPTCR & ~mask) | (((uint32_t)value)<<pos);
+        FLASH->CR |= FLASH_OPTCR_OPTSTRT;
+#elif defined(FLASH_CR_OPTSTRT)
+        FLASH->OPTR = (FLASH->OPTR & ~mask) | (((uint32_t)value)<<pos);
         FLASH->CR |= FLASH_CR_OPTSTRT;
+#else
+    #error "Setting Flash Options are not supported by this device"
+#endif
         stm32_flash_wait_opt_idle();
         stm32_flash_lock_options();
     }
     stm32_flash_lock();
 }
-#endif // HAL_FLASH_SET_NRST_MODE
 
 #ifndef HAL_BOOTLOADER_BUILD
 /*

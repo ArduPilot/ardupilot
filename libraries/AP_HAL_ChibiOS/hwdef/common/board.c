@@ -303,6 +303,10 @@ void __late_init(void) {
   // ensure NRST_MODE is set correctly
   stm32_flash_set_NRST_MODE(HAL_FLASH_SET_NRST_MODE);
 #endif
+
+#ifdef HAL_FLASH_SET_BOR_LEVEL
+  stm32_flash_set_BOR_level(HAL_FLASH_SET_BOR_LEVEL);
+#endif
 }
 
 #if HAL_USE_SDC || defined(__DOXYGEN__)
