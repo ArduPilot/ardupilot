@@ -161,11 +161,14 @@ void Tracker::disarm_servos()
  */
 void Tracker::prepare_servos()
 {
+    auto &srv = AP::srv();
+
     start_time_ms = AP_HAL::millis();
     SRV_Channels::set_output_limit(SRV_Channel::k_tracker_yaw, SRV_Channel::Limit::TRIM);
     SRV_Channels::set_output_limit(SRV_Channel::k_tracker_pitch, SRV_Channel::Limit::TRIM);
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
+    srv.push();
 }
 
 void Tracker::set_mode(Mode &newmode, const ModeReason reason)
