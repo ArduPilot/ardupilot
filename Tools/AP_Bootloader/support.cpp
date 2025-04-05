@@ -96,6 +96,7 @@ void flash_init(void)
            flash_base_page < num_pages) {
         reserved += stm32_flash_getpagesize(flash_base_page);
         flash_base_page++;
+        num_pages--;
     }
     /*
       reduce num_pages to account for FLASH_RESERVE_END_KB
@@ -553,7 +554,7 @@ void port_setbaud(uint32_t baudrate)
 void check_ecc_errors(void)
 {
     __disable_fault_irq();
-    // stm32_flash_corrupt(0x8043200);
+    // stm32_flash_corrupt(0x81c3200);
     auto *dma = dmaStreamAlloc(STM32_DMA_STREAM_ID(1, 1), 0, nullptr, nullptr);
 
     uint32_t *buf = (uint32_t*)malloc_dma(ECC_CHECK_CHUNK_SIZE);
@@ -584,9 +585,28 @@ void check_ecc_errors(void)
     if (ofs < BOARD_FLASH_SIZE*1024) {
         // we must have ECC errors in flash
         flash_set_keep_unlocked(true);
+#if defined(FLASH_RESERVE_END_KB) && FLASH_RESERVE_END_KB > 0
+        uint8_t total_num_pages = stm32_flash_getnumpages();
+        // check if the error happened in the reserved area (most likely parameter storage)
+        if (ofs >= (BOARD_FLASH_SIZE - FLASH_RESERVE_END_KB)*1024) {
+            // simply erase the sector containing the error
+            uint32_t erase_ofs = 0;
+            for (uint32_t i=flash_base_page; i<total_num_pages; i++) {
+                if (ofs < erase_ofs + stm32_flash_getpagesize(i)) {
+                    stm32_flash_erasepage(i-1);
+                    break;
+                }
+                erase_ofs += stm32_flash_getpagesize(i);
+            }
+        } else {
+#endif
+        // erase only the firmware region of the flash
         for (uint32_t i=0; i<num_pages; i++) {
-            stm32_flash_erasepage(flash_base_page+i);
+            stm32_flash_erasepage(flash_base_page + i);
         }
+#if defined(FLASH_RESERVE_END_KB) && FLASH_RESERVE_END_KB > 0
+        }
+#endif
         flash_set_keep_unlocked(false);
     }
     __enable_fault_irq();
