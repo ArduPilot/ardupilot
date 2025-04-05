@@ -19,12 +19,107 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_GPS/AP_GPS.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
 #include "MissionItemProtocol_Fence.h"
 
 extern const AP_HAL::HAL& hal;
+
+#ifndef MAV_SYSID_DEFAULT
+#if APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
+#define MAV_SYSID_DEFAULT 2
+#else
+#define MAV_SYSID_DEFAULT 1
+#endif  // APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
+#endif  // defined(MAV_SYSID_DEFAULT)
+
+const AP_Param::GroupInfo GCS::var_info[] {
+    // @Param: _SYSID
+    // @DisplayName: MAVLink system ID of this vehicle
+    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network
+    // @Range: 1 255
+    // @User: Advanced
+    AP_GROUPINFO("_SYSID",    1,     GCS,  sysid,  MAV_SYSID_DEFAULT),
+
+    // @Param: _GCS_SYSID
+    // @DisplayName: My ground station number
+    // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
+    // @Range: 1 255
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_GCS_SYSID",    2,      GCS, mav_gcs_sysid, 255),
+
+    // @Param: _OPTIONS
+    // @DisplayName: MAVLink Options
+    // @Description: Alters various behaviour of the MAVLink interface
+    // @Bitmask: 0:Accept MAVLink only from SYSID_GCS
+    // @User: Advanced
+    AP_GROUPINFO("_OPTIONS",    3,      GCS, mav_options, 0),
+
+    // @Param: _TELEM_DELAY
+    // @DisplayName: Telemetry startup delay
+    // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
+    // @User: Advanced
+    // @Units: s
+    // @Range: 0 30
+    // @Increment: 1
+    AP_GROUPINFO("_TELEM_DELAY",    4,      GCS, mav_telem_delay, 0),
+
+#if MAVLINK_COMM_NUM_BUFFERS > 0
+    // @Group: 1
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[0], "1", 11, GCS, _chan_var_info[0]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 1
+    // @Group: 2
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[1], "2", 12, GCS, _chan_var_info[1]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    // @Group: 3
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[2], "3", 13, GCS, _chan_var_info[2]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+    // @Group: 4
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[3], "4", 14, GCS, _chan_var_info[3]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 4
+    // @Group: 5
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[4], "5", 15, GCS, _chan_var_info[4]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 5
+    // @Group: 6
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[5], "6", 16, GCS, _chan_var_info[5]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 6
+    // @Group: 7
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[6], "7", 17, GCS, _chan_var_info[6]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 7
+    // @Group: 8
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[7], "8", 18, GCS, _chan_var_info[7]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 8
+    // @Group: 9
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[8], "9", 19, GCS, _chan_var_info[8]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 9
+    // @Group: 10
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[9], "10", 20, GCS, _chan_var_info[9]),
+#endif
+
+    AP_GROUPEND
+};
 
 void GCS::get_sensor_status_flags(uint32_t &present,
                                   uint32_t &enabled,

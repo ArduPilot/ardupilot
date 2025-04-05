@@ -320,7 +320,7 @@ void Sub::failsafe_gcs_check()
 
     uint32_t tnow = AP_HAL::millis();
 
-    // Check if we have gotten a GCS heartbeat recently (GCS sysid must match SYSID_MYGCS parameter)
+    // Check if we have gotten a GCS heartbeat recently (GCS sysid must match MAV_GCS_SYSID parameter)
     const uint32_t gcs_timeout_ms = uint32_t(constrain_float(g.failsafe_gcs_timeout * 1000.0f, 0.0f, UINT32_MAX));
     if (tnow - gcs_last_seen_ms < gcs_timeout_ms) {
         // Log event if we are recovering from previous gcs failsafe
@@ -338,7 +338,7 @@ void Sub::failsafe_gcs_check()
     // Send a warning every 30 seconds
     if (tnow - failsafe.last_gcs_warn_ms > 30000) {
         failsafe.last_gcs_warn_ms = tnow;
-        gcs().send_text(MAV_SEVERITY_WARNING, "MYGCS: %u, heartbeat lost", g.sysid_my_gcs.get());
+        gcs().send_text(MAV_SEVERITY_WARNING, "MYGCS: %u, heartbeat lost", unsigned(gcs().sysid_gcs()));
     }
 
     // do nothing if we have already triggered the failsafe action, or if the motors are disarmed

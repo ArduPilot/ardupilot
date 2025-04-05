@@ -205,13 +205,13 @@ public:
 
         // 110: Telemetry control
         //
-        k_param_gcs0 = 110,
-        k_param_gcs1,
-        k_param_sysid_this_mav,
-        k_param_sysid_my_gcs,
+        k_param_gcs0_unused = 110,   // unused in ArduPilot-4.7
+        k_param_gcs1_unused,         // unused in ArduPilot-4.7
+        k_param_sysid_this_mav_old,
+        k_param_sysid_my_gcs_old,
         k_param_serial1_baud_old, // deprecated
-        k_param_telem_delay,
-        k_param_gcs2,
+        k_param_telem_delay_old,     // used for conversion in ArduPilot-4.7
+        k_param_gcs2_unused,         // unused in ArduPilot-4.7
         k_param_serial2_baud_old, // deprecated
         k_param_serial2_protocol, // deprecated
         k_param_serial_manager_old,
@@ -220,11 +220,11 @@ public:
         k_param_ch11_option_old,
         k_param_ch12_option_old,
         k_param_takeoff_trigger_dz_old,
-        k_param_gcs3,
+        k_param_gcs3_unused,         // unused in ArduPilot-4.7
         k_param_gcs_pid_mask,    // 126
-        k_param_gcs4,
-        k_param_gcs5,
-        k_param_gcs6,
+        k_param_gcs4_unused,         // unused in ArduPilot-4.7
+        k_param_gcs5_unused,         // unused in ArduPilot-4.7
+        k_param_gcs6_unused,         // unused in ArduPilot-4.7
 
         //
         // 135 : reserved for Solo until features merged with master
@@ -381,18 +381,13 @@ public:
         k_param_vehicle = 257, // vehicle common block of parameters
         k_param_throw_altitude_min,
         k_param_throw_altitude_max,
+        k_param__gcs,
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
 
     AP_Int16        format_version;
-
-    // Telemetry control
-    //
-    AP_Int16        sysid_this_mav;
-    AP_Int16        sysid_my_gcs;
-    AP_Int8         telem_delay;
 
     AP_Float        throttle_filt;
     AP_Int16        throttle_behavior;
@@ -532,9 +527,6 @@ public:
     // proximity (aka object avoidance) library
     AP_Proximity proximity;
 #endif
-
-    // whether to enforce acceptance of packets only from sysid_my_gcs
-    AP_Int8 sysid_enforce;
 
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // advanced failsafe library

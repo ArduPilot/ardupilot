@@ -13,11 +13,7 @@ public:
 
     using GCS_MAVLINK::GCS_MAVLINK;
 
-    uint8_t sysid_my_gcs() const override;
-
 protected:
-
-    uint32_t telem_delay() const override;
 
 #if HAL_LOGGING_ENABLED
     uint32_t log_radio_bit() const override { return MASK_LOG_PM; }
@@ -26,8 +22,6 @@ protected:
 #if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
     void handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg) override;
 #endif
-
-    bool sysid_enforce() const override;
 
     MAV_RESULT handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;

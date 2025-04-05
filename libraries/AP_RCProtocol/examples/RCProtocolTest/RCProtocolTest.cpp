@@ -535,9 +535,6 @@ void loop()
     printf("Test count %u - %u failures\n", unsigned(test_count), unsigned(test_failures));
 }
 
-const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
-    AP_GROUPEND
-};
 GCS_Dummy _gcs;
 
 AP_HAL_MAIN();
