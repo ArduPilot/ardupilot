@@ -34,7 +34,7 @@ typedef Matrix3<float> Matrix3F;
 typedef Quaternion QuaternionF;
 #endif
 
-// define AP_Param types AP_Vector3f and Ap_Matrix3f
+// define AP_Param type AP_Vector3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
 /*
