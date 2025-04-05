@@ -2651,6 +2651,16 @@ function vehicle:set_steering_and_throttle(steering, throttle) end
 ---@return number|nil
 function vehicle:get_steering_and_throttle() end
 
+-- returns target (desired) and actual steering rate
+---@return number|nil
+---@return number|nil
+function get_steering_rate_pid_info() end
+
+--returns target (desired) and actual speed
+---@return number|nil
+---@return number|nil
+function get_throttle_speed_pid_info() end
+
 -- desc
 ---@param rate_dps number
 ---@return boolean
