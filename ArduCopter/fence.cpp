@@ -4,29 +4,57 @@
 
 #if AP_FENCE_ENABLED
 
-// fence_check - ask fence library to check for breaches and initiate the response
-// called at 1hz
-void Copter::fence_check()
+// async fence checking io callback at 1Khz
+void Copter::fence_run_checks()
 {
-    const uint8_t orig_breaches = fence.get_breaches();
+    const uint32_t now = AP_HAL::millis();
 
+    if (!AP_HAL::timeout_expired(fence_breaches.last_check_ms, now, 40U)) { // 25Hz update rate
+        return;
+    }
+
+    if (fence_breaches.have_updates) {
+        return; // wait for the main loop to pick up the new breaches before checking again
+    }
+
+    fence_breaches.last_check_ms = now;
+    const uint8_t orig_breaches = fence.get_breaches();
     bool is_landing_or_landed = flightmode->is_landing() || ap.land_complete  || !motors->armed();
 
     // check for new breaches; new_breaches is bitmask of fence types breached
-    const uint8_t new_breaches = fence.check(is_landing_or_landed);
+    fence_breaches.new_breaches = fence.check(is_landing_or_landed);
+
+    if (!fence_breaches.new_breaches && orig_breaches && fence.get_breaches() == 0) {
+        if (!copter.ap.land_complete) {
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence breach cleared");
+        }
+        // record clearing of breach
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode::ERROR_RESOLVED);
+    }
+    fence_breaches.have_updates = true; // new breache status latched so main loop will now pick it up
+}
+
+// fence_check - ask fence library to check for breaches and initiate the response
+// called at 25hz
+void Copter::fence_check()
+{
+    // only take action if there is a new breach
+    if (!fence_breaches.have_updates) {
+        return;
+    }
 
     // we still don't do anything when disarmed, but we do check for fence breaches.
     // fence pre-arm check actually checks if any fence has been breached 
     // that's not ever going to be true if we don't call check on AP_Fence while disarmed.
     if (!motors->armed()) {
+        fence_breaches.have_updates = false; // fence checking can now be processed again
         return;
     }
 
-    // if there is a new breach take action
-    if (new_breaches) {
+    if (fence_breaches.new_breaches) {
 
         if (!copter.ap.land_complete) {
-            fence.print_fence_message("breached", new_breaches);
+            fence.print_fence_message("breached", fence_breaches.new_breaches);
         }
 
         // if the user wants some kind of response and motors are armed
@@ -41,7 +69,7 @@ void Copter::fence_check()
             } else {
 
                 // if more than 100m outside the fence just force a land
-                if (fence.get_breach_distance(new_breaches) > AC_FENCE_GIVE_UP_DISTANCE) {
+                if (fence.get_breach_distance(fence_breaches.new_breaches) > AC_FENCE_GIVE_UP_DISTANCE) {
                     set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
                 } else {
                     switch (fence_act) {
@@ -81,15 +109,9 @@ void Copter::fence_check()
             }
         }
 
-        LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(new_breaches));
-
-    } else if (orig_breaches && fence.get_breaches() == 0) {
-        if (!copter.ap.land_complete) {
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence breach cleared");
-        }
-        // record clearing of breach
-        LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode::ERROR_RESOLVED);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(fence_breaches.new_breaches));
     }
+    fence_breaches.have_updates = false; // fence checking can now be processed again
 }
 
 #endif
