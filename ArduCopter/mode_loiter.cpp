@@ -203,6 +203,11 @@ void ModeLoiter::run()
 
     // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加Rc期望旋转矩阵的update循环调用~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    pos_control->update_Rc();
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 }
 
 uint32_t ModeLoiter::wp_distance() const

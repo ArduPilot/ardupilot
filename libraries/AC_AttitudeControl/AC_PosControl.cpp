@@ -1216,7 +1216,7 @@ void AC_PosControl::update_z_controller()
     Vector3f _pos_desired_3f;                                //转换数据类型为Vector3f
     _pos_desired_3f.x = pos_desired_x_set_update(_pos_desired.x,400.0f, 1.0f, 400.0f);     //转换数据类型为Vector3f,update函数为平滑轨迹函数
     _pos_desired_3f.y = pos_desired_y_set_update(_pos_desired.y,400.0f, 1.0f, 400.0f);     //转换数据类型为Vector3f,update函数为平滑轨迹函数                
-    _pos_desired_3f.z = - pos_desired_z_set_update(_pos_desired.z,100.0f, 0.5f, 400.0f);   //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
+    _pos_desired_3f.z = - pos_desired_z_set_update(_pos_desired.z,400.0f, 0.5f, 400.0f);   //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
     Vector3f _acc_desired_3f;
     _acc_desired_3f.x = 0.0f;
     _acc_desired_3f.y = 0.0f;
