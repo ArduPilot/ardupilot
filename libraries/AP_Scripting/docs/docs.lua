@@ -4047,7 +4047,7 @@ servo_telem = {}
 ---@return AP_Servo_Telem_Data_ud|nil
 function servo_telem:get_telem(servo_index) end
 
--- Servo telemtry userdata object
+-- Servo telemetry userdata object
 ---@class AP_Servo_Telem_Data_ud
 local AP_Servo_Telem_Data_ud = {}
 
@@ -4059,11 +4059,11 @@ function AP_Servo_Telem_Data_ud:last_update_ms() end
 ---@return integer|nil -- flags or nil if not available
 function AP_Servo_Telem_Data_ud:status_flags() end
 
--- Get pcb temprature in centidegrees
+-- Get pcb temperature in centidegrees
 ---@return integer|nil -- temperature in centidegrees or nil if not available
 function AP_Servo_Telem_Data_ud:pcb_temperature_cdeg() end
 
--- Get motor temprature in centidegrees
+-- Get motor temperature in centidegrees
 ---@return integer|nil -- temperature in centidegrees or nil if not available
 function AP_Servo_Telem_Data_ud:motor_temperature_cdeg() end
 
@@ -4106,3 +4106,74 @@ sim = {}
 ---@param gyro_rads Vector3f_ud -- gyro body rate in rad/s
 ---@return boolean
 function sim:set_pose(instance, loc, orient, velocity_bf, gyro_rads) end
+
+-- CRSF menu parameter userdata object
+---@class (exact) CRSFParameter_ud
+local CRSFParameter_ud = {}
+
+-- create a menu parameter userdata object
+---@return CRSFParameter_ud
+function CRSFParameter() end
+
+-- get id of the parameter
+---@return integer
+function CRSFParameter_ud:id() end
+
+-- get contents of the parameter as a packed string
+---@return string
+function CRSFParameter_ud:data() end
+
+-- CRSF menu userdata object
+---@class (exact) CRSFMenu_ud
+local CRSFMenu_ud = {}
+
+-- create a presized menu userdata object
+---@param size integer -- number of parameters in the menu
+---@return CRSFMenu_ud
+function CRSFMenu(size) end
+
+-- get id of the menu
+---@return integer
+function CRSFMenu_ud:id() end
+
+-- get name of the menu
+---@return string
+function CRSFMenu_ud:name() end
+
+-- get the number of parameters in the menu
+---@return integer
+function CRSFMenu_ud:num_params() end
+
+-- add a CRSF parameter to the menu
+---@param data string -- binary encoded parameter
+---@return CRSFParameter_ud|nil -- the newly created parameter
+function CRSFMenu_ud:add_parameter(data) end
+
+-- add a CRSF menu to the menu
+---@param name string -- menu name for the added menu
+---@return CRSFMenu_ud|nil -- the newly created menu
+function CRSFMenu_ud:add_menu(name) end
+
+-- CRSF menu class
+crsf = {}
+
+-- add a CRSF menu
+---@param name string -- name of the menu to be added
+---@return CRSFMenu_ud|nil -- the newly cerated CRSF menu
+function crsf:add_menu(name) end
+
+-- get pending CRSF menu event and associated data
+---@param events integer -- bitmask of events of interest
+---| '1' # PARAMETER READ
+---| '2' # PARAMETER WRITE
+---@return integer -- parameter id of the event
+---@return string -- binary encoded response payload
+---@return integer -- bitmask of triggered events
+---| '1' # PARAMETER READ
+---| '2' # PARAMETER WRITE
+function crsf:get_menu_event(events) end
+
+-- send a CRSF parameter request response
+---@param data string -- binary encoded response payload
+---@return boolean -- true if the repsonse was successfully sent, false otherwise
+function crsf:send_write_response(data) end

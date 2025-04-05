@@ -121,6 +121,7 @@ class ExtractFeatures(object):
             ('HAL_{type}_TELEM_ENABLED', r'AP_(?P<type>.*)_Telem::init',),
             ('AP_{type}_TELEM_ENABLED', r'AP_(?P<type>.*)_Telem::init',),
             ('HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED', 'AP_CRSF_Telem::calc_text_selection',),
+            ('AP_CRSF_SCRIPTING_ENABLED', 'AP_CRSF_Telem::get_menu_event',),
             ('AP_LTM_TELEM_ENABLED', 'AP_LTM_Telem::init',),
             ('HAL_HIGH_LATENCY2_ENABLED', 'GCS_MAVLINK::handle_control_high_latency',),
 

@@ -27,4 +27,3 @@ private:
     enum ap_var_type vtype;
     AP_Param *vp;
 };
-
