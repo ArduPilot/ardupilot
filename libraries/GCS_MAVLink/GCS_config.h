@@ -119,4 +119,13 @@
 
 #ifndef AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
 #define AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED HAL_GCS_ENABLED && AP_ARMING_ENABLED
-#endif
+#endif  // AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
+
+// deprecated 2025-02, replaced by MAV_CMD_DO_SET_GLOBAL_ORIGIN
+// ArduPilot 4.8 starts to warn if anyone uses this
+// ArduPilot 4.9 continues to warn if anyone uses this
+// ArduPilot 4.10 compiles support out
+// ArduPilot 4.11 removes the code
+#ifndef AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
+#define AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED 1
+#endif  // AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED

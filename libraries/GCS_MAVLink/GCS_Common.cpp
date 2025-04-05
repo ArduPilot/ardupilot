@@ -3823,11 +3823,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_int_t &packe
 #if AP_AHRS_ENABLED
 // sets ekf_origin if it has not been set.
 //  should only be used when there is no GPS to provide an absolute position
-void GCS_MAVLINK::set_ekf_origin(const Location& loc)
+MAV_RESULT GCS_MAVLINK::set_ekf_origin(const Location& loc)
 {
     // check location is valid
+    if (loc.is_zero()) {
+        return MAV_RESULT_DENIED;
+    }
     if (!loc.check_latlng()) {
-        return;
+        return MAV_RESULT_DENIED;
     }
 
     AP_AHRS &ahrs = AP::ahrs();
@@ -3835,11 +3838,11 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
     // check if EKF origin has already been set
     Location ekf_origin;
     if (ahrs.get_origin(ekf_origin)) {
-        return;
+        return MAV_RESULT_FAILED;
     }
 
     if (!ahrs.set_origin(loc)) {
-        return;
+        return MAV_RESULT_FAILED;
     }
 
     // send ekf origin to GCS
@@ -3847,8 +3850,10 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
         // try again later
         send_message(MSG_ORIGIN);
     }
+    return MAV_RESULT_ACCEPTED;
 }
 
+#if AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
 void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t &msg)
 {
     mavlink_set_gps_global_origin_t packet;
@@ -3860,12 +3865,16 @@ void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t &msg)
         return;
     }
 
-    Location ekf_origin {};
-    ekf_origin.lat = packet.latitude;
-    ekf_origin.lng = packet.longitude;
-    ekf_origin.alt = packet.altitude / 10;
+    const Location ekf_origin {
+        packet.latitude,
+        packet.longitude,
+        int32_t(packet.altitude * 0.1f),  // mm -> cm
+        Location::AltFrame::ABSOLUTE
+    };
     set_ekf_origin(ekf_origin);
 }
+#endif  // AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
+
 #endif  // AP_AHRS_ENABLED
 
 /*
@@ -4249,7 +4258,7 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         handle_common_param_message(msg);
         break;
 
-#if AP_AHRS_ENABLED
+#if AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
     case MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN:
         handle_set_gps_global_origin(msg);
         break;
@@ -4713,6 +4722,18 @@ void GCS_MAVLINK::send_sim_state() const
 }
 #endif
 
+#if AP_AHRS_ENABLED
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_global_origin(const mavlink_command_int_t &packet)
+{
+    Location global_origin;
+    if (!location_from_command_t(packet, global_origin)) {
+        return MAV_RESULT_DENIED;
+    }
+
+    return set_ekf_origin(global_origin);
+}
+#endif  // AP_AHRS_ENABLED
+
 #if AP_BOOTLOADER_FLASHING_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_int_t &packet)
 {
@@ -5154,6 +5175,7 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
     // case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_DO_REPOSITION:
     case MAV_CMD_EXTERNAL_POSITION_ESTIMATE:
+    case MAV_CMD_DO_SET_GLOBAL_ORIGIN:
         return true;
     default:
         return false;
@@ -5534,6 +5556,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         }
         return  MAV_RESULT_FAILED;
 #endif
+
+#if AP_AHRS_ENABLED
+    case MAV_CMD_DO_SET_GLOBAL_ORIGIN:
+        return handle_command_do_set_global_origin(packet);
+#endif  // AP_AHRS_ENABLED
 
 #if AP_RC_CHANNEL_ENABLED
     case MAV_CMD_DO_AUX_FUNCTION:
