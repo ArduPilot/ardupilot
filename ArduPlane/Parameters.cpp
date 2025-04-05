@@ -1589,4 +1589,10 @@ void Plane::load_parameters(void)
     };
 
     AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
+
+    static const AP_Param::ConversionInfo stale_parameters[] {
+        // unused since 2018 / Plane-3.9.0.  Config error if set in ArduPilot-4.7
+        { Parameters::k_param_software_type, 0, AP_PARAM_INT8, nullptr }
+    };
+    AP_Param::assert_not_in_storage(stale_parameters, ARRAY_SIZE(stale_parameters));
 }

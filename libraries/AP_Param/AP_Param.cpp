@@ -2037,6 +2037,18 @@ void AP_Param::convert_old_parameters_scaled(const struct ConversionInfo *conver
     flush();
 }
 
+void AP_Param::assert_not_in_storage(const ConversionInfo *table, uint8_t table_size)
+{
+    for (uint8_t i=0; i<table_size; i++) {
+        const auto &info = table[i];
+        uint8_t old_value[type_size(info.type)];
+        AP_Param *ap = (AP_Param *)&old_value[0];
+        if (find_old_parameter(&info, ap)) {
+            AP_BoardConfig::config_error("Stale parameters in storage; wipe storage and reload");
+        }
+    }
+}
+
 // move all parameters from a class to a new location
 // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
 void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
