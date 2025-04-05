@@ -1,0 +1,29 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from ardupilot_msgs/srv/RallySet.srv
+// generated code does not contain a copyright notice
+
+#include "ardupilot_msgs/msg/Rally.idl"
+
+module ardupilot_msgs {
+  module srv {
+    struct RallySet_Request {
+      @verbatim (language="comment", text=
+        "This service appends a Rally Point to the list or clears the whole list." "\n"
+        "Rally Point.")
+      ardupilot_msgs::msg::Rally rally;
+
+      @verbatim (language="comment", text=
+        "True to clear the whole list (rally entry is ignored).")
+      boolean clear;
+    };
+    @verbatim (language="comment", text=
+      "True if the action is successful.")
+    struct RallySet_Response {
+      boolean success;
+
+      @verbatim (language="comment", text=
+        "Size of Rally Points list.")
+      uint8 size;
+    };
+  };
+};
