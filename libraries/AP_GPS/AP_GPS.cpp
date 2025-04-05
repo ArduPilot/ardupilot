@@ -1297,6 +1297,11 @@ bool AP_GPS::get_first_external_instance(uint8_t& instance) const
 void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt, const uint8_t instance)
 {
     if (get_type(instance) == GPS_TYPE_EXTERNAL_AHRS && drivers[instance] != nullptr) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (pkt.longitude == 0 && pkt.latitude == 0) {
+            AP_HAL::panic("Invalid location passed to AP_GPS::handle_external");
+        }
+#endif
         drivers[instance]->handle_external(pkt);
     }
 }
