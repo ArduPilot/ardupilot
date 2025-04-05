@@ -150,6 +150,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
 void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
 {
+    float angle_max = aparm.angle_max/10;  // convert from deg*100 to deg*10
     // Act based on the function assigned to this button
     switch (get_button(_button)->function(shift)) {
     case JSButton::button_function_t::k_arm_toggle:
@@ -345,16 +346,16 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         }
         break;
     case JSButton::button_function_t::k_trim_roll_inc:
-        rollTrim = constrain_float(rollTrim+10,-200,200);
+        rollTrim = constrain_float(rollTrim+10,-angle_max,angle_max);
         break;
     case JSButton::button_function_t::k_trim_roll_dec:
-        rollTrim = constrain_float(rollTrim-10,-200,200);
+        rollTrim = constrain_float(rollTrim-10,-angle_max,angle_max);
         break;
     case JSButton::button_function_t::k_trim_pitch_inc:
-        pitchTrim = constrain_float(pitchTrim+10,-200,200);
+        pitchTrim = constrain_float(pitchTrim+10,-angle_max,angle_max);
         break;
     case JSButton::button_function_t::k_trim_pitch_dec:
-        pitchTrim = constrain_float(pitchTrim-10,-200,200);
+        pitchTrim = constrain_float(pitchTrim-10,-angle_max,angle_max);
         break;
     case JSButton::button_function_t::k_input_hold_set:
         if(!motors.armed()) {
