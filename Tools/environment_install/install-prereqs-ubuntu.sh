@@ -62,10 +62,10 @@ RELEASE_CODENAME=$(lsb_release -c -s)
 
 # translate Mint-codenames to Ubuntu-codenames based on https://www.linuxmint.com/download_all.php
 case ${RELEASE_CODENAME} in
-    wilma)
+    wilma | xia)
         RELEASE_CODENAME='noble'
         ;;
-    vanessa)
+    vanessa | vera | victoria | virginia)
         RELEASE_CODENAME='jammy'
         ;;
     una | uma | ulyssa | ulyana | jolnir)
