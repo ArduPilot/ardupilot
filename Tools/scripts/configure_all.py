@@ -70,8 +70,8 @@ if args.start is not None:
 
 def is_ap_periph(board):
     hwdef = os.path.join('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % board)
-    ch = chibios_hwdef.ChibiOSHWDef()
-    ch.process_file(hwdef)
+    ch = chibios_hwdef.ChibiOSHWDef(hwdef)
+    ch.process_hwdefs()
     return ch.is_periph_fw()
 
 if args.copy_hwdef_incs_to_directory is not None:
