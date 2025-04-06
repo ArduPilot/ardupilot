@@ -472,6 +472,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Units: us
     AP_GROUPINFO("LOOP_DELAY",  55, SIM,  loop_delay, 0),
 
+    // @Group: BZ_
     // @Path: ./SIM_Buzzer.cpp
     AP_SUBGROUPINFO(buzzer_sim, "BZ_", 56, SIM, Buzzer),
 
