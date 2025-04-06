@@ -772,6 +772,16 @@ def _build_dynamic_sources(bld):
             bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
             ],
             )
+        bld.stlib(
+            name='ascon',
+            target='ascon',
+            source=['modules/mavlink/pymavlink/generator/C/include_v2.0/aead.c','modules/mavlink/pymavlink/generator/C/include_v2.0/printstate.c'],    # update to your actual path
+            #includes=['modules/mavlink/pymavlink/generator/C/include_v2.0/'],
+            export_includes=[
+            bld.bldnode.make_node('modules/mavlink/pymavlink/generator/C/include_v2.0/').abspath(),
+            bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
+            ],
+            )
 
     if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and not bld.env.AP_PERIPH:
         bld(
@@ -907,6 +917,8 @@ def _load_pre_build(bld):
         brd.pre_build(bld)    
 
 def build(bld):
+
+
     config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
     bld.env.CCDEPS = config_hash
     bld.env.CXXDEPS = config_hash
@@ -919,6 +931,7 @@ def build(bld):
         use=['mavlink'],
         cxxflags=['-include', 'ap_config.h'],
     )
+    bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['ascon']
 
     _load_pre_build(bld)
 
@@ -928,7 +941,6 @@ def build(bld):
     if bld.get_board().with_littlefs:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['littlefs']
         bld.littlefs()
-
     _build_cmd_tweaks(bld)
 
     if bld.env.SUBMODULE_UPDATE:
