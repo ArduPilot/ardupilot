@@ -40,6 +40,7 @@ PC9  TIM8_CH4 TIM8 PWM(8) GPIO(57)
 # VTX Power control - should be high at startup to ensure power
 PB11 VTX_PWR OUTPUT HIGH GPIO(81)
 define RELAY2_PIN_DEFAULT 81
+define RELAY2_FUNCTION 1
 
 define HAL_BATT_MONITOR_DEFAULT 4
 

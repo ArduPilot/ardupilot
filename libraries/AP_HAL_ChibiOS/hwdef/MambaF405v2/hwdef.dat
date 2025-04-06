@@ -93,6 +93,7 @@ define HAL_BUZZER_PIN 80
 # Camera control
 PB9 CAM_C OUTPUT LOW GPIO(81)
 define RELAY2_PIN_DEFAULT 81
+define RELAY2_FUNCTION 1
 
 # Note that this board needs PULLUP on I2C pins
 PB6 I2C1_SCL I2C1 PULLUP

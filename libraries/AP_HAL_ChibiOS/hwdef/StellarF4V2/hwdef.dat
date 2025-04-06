@@ -149,6 +149,7 @@ define DEFAULT_NTF_LED_TYPES 257
 # CAM switch
 PC14 CAM_SW OUTPUT GPIO(81) LOW
 define RELAY1_PIN_DEFAULT 81
+define RELAY1_FUNCTION 1
 
 # Prioritize DMA allocation for important peripherals
 DMA_PRIORITY TIM8* SPI1* USART2*

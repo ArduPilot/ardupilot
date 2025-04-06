@@ -130,10 +130,12 @@ PC8 TIM8_CH3 TIM8 GPIO(77) ALARM
 # Not included on NDAAF7 - placeholder
 # PB2 VTX_PWR OUTPUT HIGH GPIO(81)
 # define RELAY2_PIN_DEFAULT 81
+define RELAY2_FUNCTION 1
 
 # Camera switch control - should be high at startup to ensure Camera 1 selected
 PE10 CAM_CTRL OUTPUT HIGH GPIO(82)
 define RELAY3_PIN_DEFAULT 82
+define RELAY3_FUNCTION 1
 
 define AP_HAL_SHARED_DMA_ENABLED 1
 DMA_PRIORITY TIM2* TIM4* SPI1* USART1* UART7* UART5* ADC* TIM1* TIM3*

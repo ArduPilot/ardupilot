@@ -137,6 +137,7 @@ SPIDEV osd      SPI2 DEVID4 MAX7456_CS  MODE0 10*MHZ 10*MHZ
 # bluetooth power switch, turn it off to prevent rf interference
 PE13 EVENT_OUT OUTPUT LOW PUSHPULL GPIO(82)
 define RELAY3_PIN_DEFAULT 82
+define RELAY3_FUNCTION 1
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
