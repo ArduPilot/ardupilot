@@ -5,7 +5,6 @@ undef PE0
 undef PE1
 undef PC12
 undef AP_PERIPH_IMU_ENABLED
-undef HAL_GCS_ENABLED
 
 # disable IMU
 def AP_PERIPH_IMU_ENABLED 0

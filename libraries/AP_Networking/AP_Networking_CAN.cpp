@@ -59,6 +59,28 @@ AP_HAL::CANIface *AP_Networking_CAN::get_caniface(uint8_t bus) const
 #endif
 }
 
+
+/*
+  register a callback for for sending CAN_FRAME messages.
+  On success the returned callback_id can be used to unregister the callback
+ */
+bool AP_Networking_CAN::register_frame_callback(uint8_t bus, FrameCb _cb)
+{
+    if (cb[bus] == nullptr) {
+        cb[bus] = _cb;
+        return true;
+    }
+    return false;
+}
+
+/*
+  unregister a callback for for sending CAN_FRAME messages
+ */
+void AP_Networking_CAN::unregister_frame_callback(uint8_t bus)
+{
+    cb[bus] = nullptr;
+}
+
 /*
   start the CAN multicast server
  */
@@ -204,6 +226,13 @@ void AP_Networking_CAN::mcast_server(void)
                                                  AP_HAL::CANIface::IsForwardedFrame);
                 }
 
+                // run the callbacks
+                {
+                    WITH_SEMAPHORE(cb_sem);
+                    if (cb[bus] != nullptr) {
+                        (cb[bus])(bus, frame, AP_HAL::CANIface::IsForwardedFrame);
+                    }
+                }
                 // we either sent it or there was an error, either way we discard the frame
                 frame_buffers[bus]->pop();
             }
