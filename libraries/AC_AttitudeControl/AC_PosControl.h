@@ -19,7 +19,7 @@
 
 #include <AP_Logger/LogStructure.h>
 
-// position controller default definitions
+// position controller default definitions               //在这里可以设定各种速度和加速度限制!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define POSCONTROL_ACCEL_XY                     100.0f  // default horizontal acceleration in cm/s/s.  This is overwritten by waypoint and loiter controllers
 #define POSCONTROL_JERK_XY                      5.0f    // default horizontal jerk m/s/s/s
 
