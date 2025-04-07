@@ -115,9 +115,11 @@ void AP_SystemID::start()
     attitude_offset_deg.zero();
     throttle_offset = 0;
 
+#if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.enabled()) {
         restore.att_bf_feedforward = plane.quadplane.attitude_control->get_bf_feedforward();
     }
+#endif
 
     waveform_time = 0;
     time_const_freq = 2.0 / frequency_start; // Two full cycles at the starting frequency
@@ -153,6 +155,7 @@ void AP_SystemID::stop()
         attitude_offset_deg.zero();
         throttle_offset = 0;
 
+#if HAL_QUADPLANE_ENABLED
         if (plane.quadplane.enabled()) {
             auto *attitude_control = plane.quadplane.attitude_control;
             attitude_control->bf_feedforward(restore.att_bf_feedforward);
@@ -164,7 +167,7 @@ void AP_SystemID::stop()
             // re-initialise the XY controller so we take current position as target
             plane.quadplane.pos_control->init_NE_controller();
         }
-
+#endif
         gcs().send_text(MAV_SEVERITY_INFO, "SystemID stopped");
     }
 }
@@ -188,7 +191,11 @@ void AP_SystemID::update()
     waveform_sample = chirp_input.update(waveform_time, waveform_magnitude);
     waveform_freq_rads = chirp_input.get_frequency_rads();
 
-    auto *attitude_control = plane.quadplane.attitude_control;
+#if HAL_QUADPLANE_ENABLED
+    if (plane.quadplane.enabled()) {
+        auto *attitude_control = plane.quadplane.attitude_control;
+    }
+#endif
 
     switch (start_axis) {
         case AxisType::NONE:
@@ -274,10 +281,12 @@ void AP_SystemID::update()
             break;
     }
 
+#if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.enabled() && plane.quadplane.in_vtol_mode()) {
         // reduce control in NE axis when in position controlled modes
         plane.quadplane.pos_control->set_NE_control_scale_factor(xy_control_mul);
     }
+#endif
 
     if (log_subsample <= 0) {
         log_data();
@@ -333,10 +342,12 @@ void AP_SystemID::log_data() const
                                     delta_velocity.y * dt_vel_inv,
                                     delta_velocity.z * dt_vel_inv);
 
+#if HAL_QUADPLANE_ENABLED
         if (plane.quadplane.enabled() && plane.quadplane.in_vtol_mode()) {
             // log attitude controller at the same rate
             plane.quadplane.Log_Write_AttRate();
         }
+#endif
     }
 #endif // HAL_LOGGING_ENABLED
 }
