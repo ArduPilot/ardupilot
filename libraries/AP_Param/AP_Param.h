@@ -880,14 +880,14 @@ namespace AP {
 
 /// Template class for scalar variables.
 ///
-/// Objects of this type have a value, and can be treated in many ways as though they
-/// were the value.
+/// Objects of this type have a value, though the infrastructure to actually
+/// treat them as a value is delegated to a type-specialized subclass.
 ///
 /// @tparam T			The scalar type of the variable
 /// @tparam PT			The AP_PARAM_* type
 ///
 template<typename T, ap_var_type PT>
-class AP_ParamT : public AP_Param
+class AP_ParamTBase : public AP_Param
 {
 public:
     static const ap_var_type        vtype = PT;
@@ -930,15 +930,7 @@ public:
     /// updated correctly.
     void set_and_save_ifchanged(const T &v);
 
-    /// Conversion to T returns a reference to the value.
-    ///
-    /// This allows the class to be used in many situations where the value would be legal.
-    ///
-    operator const T &() const {
-        return _value;
-    }
-
-    /// AP_ParamT types can implement AP_Param::cast_to_float
+    /// AP_ParamTBase types can implement AP_Param::cast_to_float
     ///
     float cast_to_float(void) const;
 
@@ -946,11 +938,25 @@ protected:
     T _value;
 };
 
+template<typename T, ap_var_type PT>
+class AP_ParamT : public AP_ParamTBase<T, PT>
+{
+public:
+    /// Conversion to T returns a reference to the value. A reference is
+    /// necessary as some users expect to pass a reference around.
+    ///
+    /// This allows the class to be used in many situations where the value
+    /// would be legal.
+    ///
+    operator const T &() const {
+        return this->_value;
+    }
+};
 
-/// Template class for non-scalar variables.
+/// Template class for non-scalar variables, intended for non-C types.
 ///
-/// Objects of this type have a value, and can be treated in many ways as though they
-/// were the value.
+/// Objects of this type have an object value, and can be treated in many ways
+/// as though they were the value.
 ///
 /// @tparam T			The scalar type of the variable
 /// @tparam PT			AP_PARAM_* type
@@ -990,9 +996,11 @@ public:
     void set_and_save_ifchanged(const T &v);
 
 
-    /// Conversion to T returns a reference to the value.
+    /// Conversion to T returns a reference to the value. A reference is
+    /// necessary as some users expect to pass a reference around.
     ///
-    /// This allows the class to be used in many situations where the value would be legal.
+    /// This allows the class to be used in many situations where the value
+    /// would be legal.
     ///
     operator const T &() const {
         return _value;
