@@ -215,7 +215,7 @@ void AP_SystemID::update()
                 attitude_offset_deg.x = waveform_sample;
                 attitude_control->bf_feedforward(false);
             } else {
-
+                // This is the same as Input Roll since there is no command model
             }
             break;
         case AxisType::RECOVER_PITCH:
@@ -223,7 +223,7 @@ void AP_SystemID::update()
                 attitude_offset_deg.y = waveform_sample;
                 attitude_control->bf_feedforward(false);
             } else {
-
+                // This is the same as Input Pitch since there is no command model
             }
             break;
         case AxisType::RECOVER_YAW:
@@ -231,7 +231,7 @@ void AP_SystemID::update()
                 attitude_offset_deg.z = waveform_sample;
                 attitude_control->bf_feedforward(false);
             } else {
-
+                // This is the same as Input Yaw since there is no command model
             }
             break;
         case AxisType::RATE_ROLL:
