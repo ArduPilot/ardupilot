@@ -226,7 +226,7 @@ class ap_library_check_headers(Task.Task):
                 if rel_p.endswith(m):
                     found = True
                     break
-            
+
             if found:
                 continue
 
@@ -384,7 +384,7 @@ def dry_run_compilation_database(self):
     use = self.use
     if isinstance(use, str):
         use = [use]
-    # if targets have not changed and neither has configuration, 
+    # if targets have not changed and neither has configuration,
     # we can skip compilation database generation
     if not target_list_changed(bld, targets + use):
         Logs.info('Targets have not changed, skipping compilation database compile_commands.json generation')

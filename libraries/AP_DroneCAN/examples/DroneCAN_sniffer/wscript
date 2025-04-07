@@ -4,7 +4,7 @@ from waflib.TaskGen import after_method, before_method, feature
 
 def build(bld):
     vehicle = bld.path.name
-    
+
     bld.ap_stlib(
         name=vehicle + '_libs',
         ap_vehicle='UNKNOWN',

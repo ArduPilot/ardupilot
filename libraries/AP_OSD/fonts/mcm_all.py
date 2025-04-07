@@ -22,4 +22,3 @@ convert('clarity_medium.mcm', 'font1.bin')
 convert('bfstyle.mcm', 'font2.bin')
 convert('bold.mcm', 'font3.bin')
 convert('digital.mcm', 'font4.bin')
-

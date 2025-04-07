@@ -16,7 +16,7 @@ except ImportError:
 if monocypher.__version__ != "3.1.3.2":
     Logs.error("must use monocypher 3.1.3.2, please run: python3 -m pip install pymonocypher==3.1.3.2")
     return None
-    
+
 key_len = 32
 sig_len = 64
 sig_version = 30437

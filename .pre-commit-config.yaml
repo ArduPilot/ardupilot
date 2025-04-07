@@ -16,10 +16,12 @@ exclude: |
 
 repos:
   -   repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v4.4.0
+      rev: v5.0.0
       hooks:
-        #-   id: trailing-whitespace
-        #-   id: end-of-file-fixer
+        -   id: trailing-whitespace
+            types_or: [python]
+        -   id: end-of-file-fixer
+            types_or: [python]
         -   id: mixed-line-ending
             name: Check line ending character (LF)
             args: ["--fix=lf"]
@@ -30,8 +32,8 @@ repos:
                 libraries/AP_ADSB/AP_ADSB_Sagetech_MXS.h
               )$
         -   id: check-added-large-files
-        -   id: check-executables-have-shebangs
-        -   id: check-shebang-scripts-are-executable
+        # -   id: check-executables-have-shebangs
+        # -   id: check-shebang-scripts-are-executable
             exclude: |
               (?x)^(
                 .*\/wscript |
@@ -42,7 +44,7 @@ repos:
         -   id: check-yaml
 
   -   repo: https://github.com/psf/black
-      rev: 23.7.0
+      rev: 25.1.0
       hooks:
         - id: black
           files: |

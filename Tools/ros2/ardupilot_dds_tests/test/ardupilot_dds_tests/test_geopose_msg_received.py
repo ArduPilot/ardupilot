@@ -63,6 +63,7 @@ def validate_position_cmac(position):
         and math.isclose(position.altitude, CMAC_ABS_ALT, abs_tol=1.0)
     )
 
+
 def wrap_360(angle):
     if angle > 360:
         angle -= 360.0
@@ -71,6 +72,7 @@ def wrap_360(angle):
         angle += 360.0
         return wrap_360(angle)
     return angle
+
 
 def validate_heading_cmac(orientation):
     """

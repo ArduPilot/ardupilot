@@ -110,7 +110,7 @@ def pos_from_file_offset(lat_degrees, lon_degrees, file_offset):
                                   grid_idx_y * TERRAIN_GRID_BLOCK_SPACING_Y * float(GRID_SPACING))
 
     return (lat_e7, lon_e7)
-            
+
 class GridBlock(object):
     def __init__(self, lat_int, lon_int, lat, lon):
         '''
@@ -334,7 +334,7 @@ class DataFile(object):
             ofs += TERRAIN_GRID_BLOCK_SIZE_Y*2
 
         return err
-    
+
 def pos_range(filename):
     '''return min/max of lat/lon in a file'''
     fh = open(filename, 'rb')
