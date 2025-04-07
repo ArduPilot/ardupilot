@@ -451,10 +451,11 @@ AP_HW_sw-boom-f407                   6001
 AP_HW_sw-nav-f405                    6002
 
 # IDs 6100-6109 reserved for MFE
-AP_HW_MFE_PDB_CAN                            6100
-AP_HW_MFE_POS3_CAN                          6101
-AP_HW_MFE_RTK_CAN                             6102
-AP_HW_MFE_AirSpeed_CAN                     6103
+AP_HW_MFE_PDB_CAN                    6100
+AP_HW_MFE_POS3_CAN                   6101
+AP_HW_MFE_RTK_CAN                    6102
+AP_HW_MFE_AirSpeed_CAN               6103
+AP_HW_PixSurveyA2-IND                6104
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
