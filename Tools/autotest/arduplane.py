@@ -7,6 +7,7 @@ AP_FLAKE8_CLEAN
 import copy
 import math
 import os
+import pathlib
 import signal
 
 from pymavlink import quaternion
@@ -7089,6 +7090,89 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         ])
         return ret
 
+    def VolzPeriph(self):
+        '''test Volz support in AP_Periph'''
+
+        self.progress("Building Volz peripheral")
+        volz_builddir = util.reltopdir('build-VolzPeriph')
+        board = 'sitl_periph_volz'
+        util.build_SITL(
+            'bin/AP_Periph',
+            board=board,
+            clean=False,
+            configure=True,
+            debug=True,
+            extra_configure_args=[
+                '--out', volz_builddir,
+            ],
+            extra_defines={
+                "AP_SERVO_TELEM_ENABLED": 1,
+                "HAL_PERIPH_ENABLE_RC_OUT": 1,
+                "HAL_PWM_COUNT": 32,
+                "HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS": 1,
+            },
+        )
+
+        self.progress("Building Plane with AP_DRONECAN_VOLZ_FEEDBACK_ENABLED support")
+        volz_plane_builddir = util.reltopdir('build-VolzPlane')
+        util.build_SITL(
+            'bin/arduplane',
+            clean=False,
+            configure=True,
+            debug=True,
+            extra_configure_args=[
+                '--enable-Volz_DroneCAN',
+                '--out', volz_plane_builddir,
+            ],
+            # extra_defines={
+            #     'AP_DRONECAN_VOLZ_FEEDBACK_ENABLED': 1,
+            # },
+        )
+
+        self.progress("Running Volz peripheral")
+        volz_rundir = util.reltopdir('run-VolzPeriph')
+        if not os.path.exists(volz_rundir):
+            os.mkdir(volz_rundir)
+        binary_path = pathlib.Path(volz_builddir, board, 'bin', 'AP_Periph')
+        volz1 = util.start_SITL(
+            binary_path,
+            cwd=volz_rundir,
+            stdout_prefix="volz1",
+            supplementary=True,
+            gdb=self.gdb,
+            valgrind=self.valgrind,
+            customisations=[
+                '-I', '1',
+                '--serial5=sim:volz',
+            ],
+            param_defaults={
+                "VOLZ_MASK": 11,
+                "SIM_VOLZ_MASK": 11,
+                "SIM_VOLZ_ENA": 1,
+                "SERIAL5_PROTOCOL": 14,  # 14 is Volz
+            },
+        )
+        self.expect_list_add(volz1)
+
+        self.set_parameters({
+            "CAN_P1_DRIVER": 1,
+        })
+
+        self.progress("Running Volz Plane")
+
+        binary_path = pathlib.Path(volz_plane_builddir, 'sitl', 'bin', 'arduplane')
+        self.customise_SITL_commandline([], binary=binary_path)
+
+        self.set_parameters({
+            "CAN_D1_UC_SRV_BM": 11,
+            #            "CAN_D1_UC_OPTION": 64,  # himark message
+            "SIM_SPEEDUP": 1,
+        })
+        self.delay_sim_time(100000)
+
+        self.expect_list_remove(volz1)
+        util.pexpect_close(volz1)
+
     def tests1b(self):
         return [
             self.TerrainLoiter,
@@ -7180,6 +7264,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.Volz,
             self.LoggedNamedValueFloat,
             self.AdvancedFailsafeBadBaro,
+            self.VolzPeriph,
         ]
 
     def disabled_tests(self):

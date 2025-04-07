@@ -547,6 +547,10 @@ void AP_Periph_FW::update()
     networking_periph.update();
 #endif
 
+#if AP_PERIPH_VOLZ_ENABLED
+    volz_update();
+#endif  // AP_PERIPH_VOLZ_ENABLED
+
 #if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || AP_PERIPH_NOTIFY_ENABLED
     update_rainbow();
 #endif

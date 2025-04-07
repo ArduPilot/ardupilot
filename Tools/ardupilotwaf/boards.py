@@ -1018,6 +1018,41 @@ class sitl_periph_gps(sitl_periph):
             AP_PERIPH_GPS_ENABLED = 1,
         )
 
+class sitl_periph_volz(sitl_periph):
+    def configure_env(self, cfg, env):
+        cfg.env.AP_PERIPH = 1
+        super(sitl_periph_volz, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            HAL_BUILD_AP_PERIPH = 1,
+            PERIPH_FW = 1,
+            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_volz"',
+            APJ_BOARD_ID = 101,
+
+            AP_PERIPH_ADSB_ENABLED = 0,
+            AP_PERIPH_AIRSPEED_ENABLED = 0,
+            AP_PERIPH_BARO_ENABLED = 0,
+            AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
+            AP_PERIPH_BATTERY_ENABLED = 1,
+            AP_PERIPH_EFI_ENABLED = 0,
+            AP_PERIPH_GPS_ENABLED = 0,
+            AP_PERIPH_HOBBYWING_ESC_ENABLED = 0,
+            AP_PERIPH_IMU_ENABLED = 0,
+            AP_PERIPH_MAG_ENABLED = 0,
+            AP_PERIPH_MSP_ENABLED = 0,
+            AP_PERIPH_NETWORKING_ENABLED = 0,
+            AP_PERIPH_NOTIFY_ENABLED = 0,
+            AP_PERIPH_RANGEFINDER_ENABLED = 0,
+            AP_PERIPH_RCIN_ENABLED = 0,
+            AP_PERIPH_RC_OUT_ENABLED = 1,
+            AP_PERIPH_RELAY_ENABLED = 0,
+            AP_PERIPH_RPM_ENABLED = 0,
+            AP_PERIPH_RPM_STREAM_ENABLED = 0,
+            AP_PERIPH_RTC_ENABLED = 0,
+            AP_PERIPH_VOLZ_ENABLED = 1,
+
+            SIM_VOLZ_ENABLED = 1,
+        )
+
 class sitl_periph_battmon(sitl_periph):
     def configure_env(self, cfg, env):
         cfg.env.AP_PERIPH = 1

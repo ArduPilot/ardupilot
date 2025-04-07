@@ -55,6 +55,7 @@ public:
 
         // return true if the requested types of data are available
         bool present(const uint16_t type_mask) const volatile;
+        bool stale(uint32_t now_ms) const volatile;
     };
 
     // update at 10Hz to log telemetry

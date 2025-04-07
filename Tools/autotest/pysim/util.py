@@ -341,6 +341,8 @@ def make_safe_filename(text):
 
 
 def valgrind_log_filepath(binary, model):
+    if model is None:
+        model = 'None'
     return make_safe_filename('%s-%s-valgrind.log' % (os.path.basename(binary), model,))
 
 
@@ -407,6 +409,7 @@ class PSpawnStdPrettyPrinter(object):
 def start_SITL(binary,
                valgrind=False,
                callgrind=False,
+               cwd=None,
                gdb=False,
                gdb_no_tui=False,
                wipe=False,
@@ -415,6 +418,7 @@ def start_SITL(binary,
                speedup=1,
                sim_rate_hz=None,
                defaults_filepath=[],
+               param_defaults=None,  # dictionary
                unhide_parameters=False,
                gdbserver=False,
                breakpoints=[],
@@ -425,11 +429,13 @@ def start_SITL(binary,
                supplementary=False,
                stdout_prefix=None):
 
-    if model is None and not supplementary:
-        raise ValueError("model must not be None")
-
     """Launch a SITL instance."""
     cmd = []
+    # pexpect doesn't like pathlib:
+    if cwd is not None:
+        cwd = str(cwd)
+    if not isinstance(binary, str):
+        binary = str(binary)
     if (callgrind or valgrind) and os.path.exists('/usr/bin/valgrind'):
         # we specify a prefix for vgdb-pipe because on Vagrant virtual
         # machines the pipes are created on the mountpoint for the
@@ -506,12 +512,20 @@ def start_SITL(binary,
         defaults_filepath = [defaults_filepath]
     defaults = [reltopdir(path) for path in defaults_filepath]
 
+    if param_defaults is not None:
+        text = "".join([f"{name} {value}\n" for (name, value) in param_defaults.items()])
+        filepath = tempfile.NamedTemporaryFile(mode="w", delete=False)
+        print(text, file=filepath)
+        filepath.close()
+        defaults.append(str(filepath.name))
+
     if not supplementary:
         if wipe:
             cmd.append('-w')
         if home is not None:
             cmd.extend(['--home', home])
-        cmd.extend(['--model', model])
+        if model is not None:
+            cmd.extend(['--model', model])
         if speedup is not None and speedup != 1:
             ntf = tempfile.NamedTemporaryFile(mode="w", delete=False)
             print(f"SIM_SPEEDUP {speedup}", file=ntf)
@@ -550,7 +564,7 @@ def start_SITL(binary,
         runme = [os.path.join(autotest_dir, "run_in_terminal_window.sh"), 'mactest']
         runme.extend(cmd)
         print(cmd)
-        out = subprocess.Popen(runme, stdout=subprocess.PIPE).communicate()[0]
+        out = subprocess.Popen(runme, stdout=subprocess.PIPE, cwd=cwd).communicate()[0]
         out = out.decode('utf-8')
         p = re.compile('tab 1 of window id (.*)')
 
@@ -570,7 +584,7 @@ def start_SITL(binary,
             print("Cannot find %s process terminal" % binary)
         child = FakeMacOSXSpawn()
     elif gdb and not os.getenv('DISPLAY'):
-        subprocess.Popen(cmd)
+        subprocess.Popen(cmd, cwd=cwd)
         atexit.register(kill_screen_gdb)
         # we are expected to return a pexpect wrapped around the
         # stdout of the ArduPilot binary.  Not going to happen until
@@ -585,7 +599,7 @@ def start_SITL(binary,
 
         first = cmd[0]
         rest = cmd[1:]
-        child = pexpect.spawn(first, rest, logfile=pexpect_logfile, encoding=ENCODING, timeout=5)
+        child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding=ENCODING, timeout=5, cwd=cwd)
         pexpect_autoclose(child)
     if gdb or lldb:
         # if we run GDB we do so in an xterm.  "Waiting for

@@ -101,6 +101,8 @@ public:
         k_param_imu,
         k_param_dac,
         k_param__gcs,
+        k_param_volz_protocol,
+        k_param_volz_port,
     };
 
     AP_Int16 format_version;
