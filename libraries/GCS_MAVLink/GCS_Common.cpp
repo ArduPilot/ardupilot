@@ -156,6 +156,10 @@ bool GCS_MAVLINK::init(uint8_t instance)
         return false;
     }
 
+    // fill in the device ID (a parameter which allows a user to
+    // understand what their MAVn_ parameters actually correspond to)
+    devid.set(uartstate->get_device_id());
+
     // PARAMETER_CONVERSION - Added: May-2025 for ArduPilot-4.7
     // convert parameters; we used to use bits in the UARTDriver to
     // remember whether the mavlink connection on that interface was
