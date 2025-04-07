@@ -1527,7 +1527,7 @@ class FRSkySPort(FRSky):
             0x020F: "CURR", # current dA
             0x011F: "VSPD", # vertical speed cm/s
             0x021F: "VFAS", # battery 1 voltage cV
-            # 0x800: "GPS", ## comments as duplicated dictrionary key
+            # 0x800: "GPS", ## comments as duplicated dictionary key
             0x050E: "RPM1",
 
             0x34: "DOWNLINK1_ID",
@@ -3815,7 +3815,7 @@ class TestSuite(ABC):
                                 timeout=2)
         if m is not None:
             raise NotAchievedException("Received extra LOG_ENTRY?!")
-        # shouldbe: m = self.assert_not_receive_message('LOG_ENTRY', timeout=2)
+        # should be: m = self.assert_not_receive_message('LOG_ENTRY', timeout=2)
 
         return logs
 
@@ -4298,7 +4298,7 @@ class TestSuite(ABC):
         self.assert_mission_count(0)
 
     def log_list(self):
-        '''return a list of log files present in POSIX-style loging dir'''
+        '''return a list of log files present in POSIX-style logging dir'''
         ret = sorted(glob.glob("logs/00*.BIN"))
         self.progress("log list: %s" % str(ret))
         return ret
@@ -4684,7 +4684,7 @@ class TestSuite(ABC):
         #  print(f"{m_type} OK")
 
     def LoggingFormat(self):
-        '''ensure formats are emmitted appropriately'''
+        '''ensure formats are emitted appropriately'''
 
         self.context_push()
         self.set_parameter('LOG_FILE_DSRMROT', 1)
@@ -6273,7 +6273,7 @@ class TestSuite(ABC):
         error_ratio = max_error_percent / 100
         limits = [expected_value * (1 + error_ratio), expected_value * (1 - error_ratio)]
 
-        # Ensure that min and max are always the corret way round
+        # Ensure that min and max are always the correct way round
         upper_limit = max(limits)
         lower_limit = min(limits)
 
@@ -6895,7 +6895,7 @@ class TestSuite(ABC):
     def assert_no_capability(self, capability):
         if self.capable(capability):
             name = mavutil.mavlink.enums["MAV_PROTOCOL_CAPABILITY"][capability].name
-            raise NotAchievedException("AutoPilot has feature %s (when it shouln't)" % (name,))
+            raise NotAchievedException("AutoPilot has feature %s (when it shouldn't)" % (name,))
 
     def get_autopilot_capabilities(self):
         # Cannot use run_cmd otherwise the respond is lost during the wait for ACK
@@ -8549,7 +8549,7 @@ Also, ignores heartbeats not from our target system'''
         # Statustexts are often triggered by something we've just
         # done, so we have to be careful not to read any traffic that
         # isn't checked for being our statustext.  That doesn't work
-        # well with getting the curent simulation time (which requires
+        # well with getting the current simulation time (which requires
         # a new SYSTEM_TIME message), so we install a message hook
         # which checks all incoming messages.
         self.progress("Waiting for text : %s" % text.lower())
@@ -9191,7 +9191,7 @@ Also, ignores heartbeats not from our target system'''
         return self.use_map
 
     def init(self):
-        """Initilialize autotest feature."""
+        """Initialize autotest feature."""
         self.mavproxy_logfile = self.open_mavproxy_logfile()
 
         if self.frame is None:
@@ -11270,14 +11270,14 @@ Also, ignores heartbeats not from our target system'''
         # non strict string matching because of catching text issue....
         self.context_collect('STATUSTEXT')
         self.set_rc(9, 1000)
-        self.wait_text("Gripper load releas", check_context=True)
+        self.wait_text("Gripper load release", check_context=True)
         self.progress("Grabbing load")
         self.set_rc(9, 2000)
         self.wait_text("Gripper load grabb", check_context=True)
         self.context_clear_collection('STATUSTEXT')
         self.progress("Releasing load")
         self.set_rc(9, 1000)
-        self.wait_text("Gripper load releas", check_context=True)
+        self.wait_text("Gripper load release", check_context=True)
         self.progress("Grabbing load")
         self.set_rc(9, 2000)
         self.wait_text("Gripper load grabb", check_context=True)
@@ -11290,7 +11290,7 @@ Also, ignores heartbeats not from our target system'''
             p1=1,
             p2=mavutil.mavlink.GRIPPER_ACTION_RELEASE
         )
-        self.wait_text("Gripper load releas", check_context=True)
+        self.wait_text("Gripper load release", check_context=True)
         self.progress("Grabbing load")
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_DO_GRIPPER,
@@ -11306,7 +11306,7 @@ Also, ignores heartbeats not from our target system'''
             p1=1,
             p2=mavutil.mavlink.GRIPPER_ACTION_RELEASE
         )
-        self.wait_text("Gripper load releas", check_context=True)
+        self.wait_text("Gripper load release", check_context=True)
 
         self.progress("Grabbing load")
         self.run_cmd_int(
@@ -11516,7 +11516,7 @@ Also, ignores heartbeats not from our target system'''
             testpos(self, targetpos, test_alt, frame_name, frame)
 
             if test_heading:
-                self.start_subtest("Testing Yaw targetting in %s" % frame_name)
+                self.start_subtest("Testing Yaw targeting in %s" % frame_name)
                 self.progress("Changing Latitude and Heading")
                 targetpos.lat += 0.0001
                 if test_alt:
@@ -11584,7 +11584,7 @@ Also, ignores heartbeats not from our target system'''
                 self.wait_heading(0, minimum_duration=5, timeout=timeout)
 
             if test_yaw_rate:
-                self.start_subtest("Testing Yaw Rate targetting in %s" % frame_name)
+                self.start_subtest("Testing Yaw Rate targeting in %s" % frame_name)
 
                 def send_yaw_rate(rate, target=None):
                     self.mav.mav.set_position_target_global_int_send(
@@ -11847,7 +11847,7 @@ Also, ignores heartbeats not from our target system'''
             )
 
             if test_heading:
-                self.start_subtest("Testing Yaw targetting in %s" % frame_name)
+                self.start_subtest("Testing Yaw targeting in %s" % frame_name)
 
                 def send_yaw_target(yaw, mav_frame):
                     self.mav.mav.set_position_target_global_int_send(
@@ -11944,7 +11944,7 @@ Also, ignores heartbeats not from our target system'''
                 )
 
             if test_yaw_rate:
-                self.start_subtest("Testing Yaw Rate targetting in %s" % frame_name)
+                self.start_subtest("Testing Yaw Rate targeting in %s" % frame_name)
 
                 def send_yaw_rate(rate, mav_frame):
                     self.mav.mav.set_position_target_global_int_send(
@@ -12189,7 +12189,7 @@ one specified in the vehicle constructor)'''
 
     def wait_for_mode_switch_poll(self):
         '''look for a transition from boot-up-mode (e.g. the flightmode
-specificied in Copter's constructor) to the one specified by the mode
+specified in Copter's constructor) to the one specified by the mode
 switch value'''
         want = self.initial_mode_switch_mode()
         if want is None:
@@ -12508,7 +12508,7 @@ switch value'''
             mav = self.mav
         m = mav.recv_match(type=message, blocking=True, timeout=timeout)
         if m is not None:
-            raise PreconditionFailedException("Receiving %s messags" % message)
+            raise PreconditionFailedException("Receiving %s messages" % message)
 
     def PIDTuning(self):
         '''Test PID Tuning'''
@@ -13591,7 +13591,7 @@ switch value'''
             condition="BATTERY_STATUS.id==0"
         )
         battery_status_voltage_v = batt.voltages[0] * 0.001 # mV -> V
-        self.progress("BATTERY_STATUS volatge==%f frsky==%f" % (battery_status_voltage_v, voltage_v))
+        self.progress("BATTERY_STATUS voltage==%f frsky==%f" % (battery_status_voltage_v, voltage_v))
         if self.compare_number_percent(battery_status_voltage_v, voltage_v, 10):
             return True
         return False
