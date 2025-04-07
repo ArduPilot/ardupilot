@@ -80,7 +80,7 @@ DO NOT EDIT
                     elif field == 'Units':
                         abreviated_units = param.__dict__[field]
                         if abreviated_units != '':
-                            units = known_units[abreviated_units]   # use the known_units dictionary to convert the abreviated unit into a full textual one
+                            units = known_units[abreviated_units]   # use the known_units dictionary to convert the abbreviated unit into a full textual one
                             t += "<li>%s: %s</li>\n" % (field, cescape(units))
                     else:
                         t += "<li>%s: %s</li>\n" % (field, cescape(param.__dict__[field]))

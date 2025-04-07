@@ -765,7 +765,7 @@ class AutoTestHelicopter(AutoTestCopter):
             "SERVO%u_FUNCTION" % roll_servo: 8,  # pitch
             "SERVO%u_FUNCTION" % open_servo: 9,  # mount open
             "MNT1_OPTIONS": 2,  # retract
-            "MNT1_DEFLT_MODE": 3,  # RC targettting
+            "MNT1_DEFLT_MODE": 3,  # RC targeting
             "MNT1_ROLL_MIN": -roll_limit,
             "MNT1_ROLL_MAX": roll_limit,
         })
