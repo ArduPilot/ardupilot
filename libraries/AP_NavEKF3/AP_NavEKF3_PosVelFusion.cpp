@@ -256,6 +256,79 @@ void NavEKF3_core::ResetPositionNE(ftype posN, ftype posE)
     lastPosReset_ms = imuSampleTime_ms;
 }
 
+#if EK3_FEATURE_POSITION_RESET
+// Sets the EKF's NE horizontal wind velocity states and their corresponding variances from a supplied velocity NE
+// The altitude element of the location is not used. If accuracy is not known should be passed as NaN.
+// Returns true if the set was successful
+bool NavEKF3_core::setWindNE(const Vector2f &wind_vel, float windAccuracy, uint32_t timestamp_ms)
+{
+    if ((imuSampleTime_ms - lastGpsPosPassTime_ms) < frontend->deadReckonDeclare_ms ||
+        (PV_AidingMode == AID_NONE)
+        || !validOrigin) {
+        return false;
+    }
+
+    // Store the wind velocities before the reset so that we can record the reset delta
+    windResetNE.x = stateStruct.wind_vel.x;
+    windResetNE.y = stateStruct.wind_vel.y;
+
+    // reset the corresponding covariances
+    zeroRows(P,22,23);
+    zeroCols(P,22,23);
+
+    // handle unknown accuracy
+    if (isnan(windAccuracy)) {
+        windAccuracy = 0.0f; // will be ignored due to MAX below
+    }
+
+    // set the variances using the wind processing noise parameter
+    P[22][22] = P[23][23] = sq(MAX(windAccuracy,frontend->_windVelProcessNoise));
+
+    // Correct the position for time delay relative to fusion time horizon assuming a constant velocity
+    // Limit time stamp to a range between current time and 5 seconds ago
+    // const uint32_t timeStampConstrained_ms = MAX(MIN(timestamp_ms, imuSampleTime_ms), imuSampleTime_ms - 5000);
+    // const int32_t delta_ms = int32_t(imuDataDelayed.time_ms - timeStampConstrained_ms);
+    // const ftype delaySec = 1E-3F * ftype(delta_ms);
+    // const Vector2F newPosNE = EKF_origin.get_distance_NE_ftype(loc) + stateStruct.velocity.xy() * delaySec;
+    ResetWindNE(wind_vel.x, wind_vel.y);
+
+    return true;
+}
+#endif // EK3_FEATURE_POSITION_RESET
+
+// reset the stateStruct's NE wind velocity to the specified wind velocity
+//    windResetNE is updated to hold the change in position
+//    storedOutput, outputDataNew and outputDataDelayed are updated with the change in position
+//    lastWindReset_ms is updated with the time of the reset
+void NavEKF3_core::ResetWindNE(ftype windN, ftype windE)
+{
+    // Store the position before the reset so that we can record the reset delta
+    const Vector2F windOrig = stateStruct.wind_vel;
+
+    // Set the wind states to the new velocity
+    stateStruct.wind_vel.x = windN;
+    stateStruct.wind_vel.y = windE;
+
+    // Calculate the velocity change due to the reset
+    windResetNE.x = stateStruct.wind_vel.x - windOrig.x;
+    windResetNE.y = stateStruct.wind_vel.y - windOrig.y;
+
+    // TODO: there's no wind in Output element, should it be there?
+
+    // Add the offset to the output observer states
+    // for (uint8_t i=0; i<imu_buffer_length; i++) {
+    //     storedOutput[i].wind_vel.x += windResetNE.x;
+    //     storedOutput[i].wind_vel.y += windResetNE.y;
+    // }
+
+    // outputDataNew.wind_vel.x += windResetNE.x;
+    // outputDataNew.wind_vel.y += windResetNE.y;
+    // outputDataDelayed.wind_vel.x += windResetNE.x;
+    // outputDataDelayed.wind_vel.y += windResetNE.y;
+
+    // store the time of the reset
+    lastWindReset_ms = imuSampleTime_ms;
+}
 // reset the stateStruct's D position
 //    posResetD is updated to hold the change in position
 //    storedOutput, outputDataNew and outputDataDelayed are updated with the change in position

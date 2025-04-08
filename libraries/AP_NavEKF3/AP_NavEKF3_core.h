@@ -235,6 +235,11 @@ public:
     // Returns true if the set was successful
     bool setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms);
 
+    // Set the EKF's NE horizontal position states and their corresponding variances from a supplied WGS-84 location and uncertainty
+    // The altitude element of the location is not used.
+    // Returns true if the set was successful
+    bool setWindNE(const Vector2f &wind_vel, float windAccuracy, uint32_t timestamp_ms);
+
     // Popoluates the WMM data structure with the field at the given location
     void setEarthFieldFromLocation(const Location &loc);
 
@@ -850,6 +855,9 @@ private:
     // reset the stateStruct's NE position to the specified position
     void ResetPositionNE(ftype posN, ftype posE);
 
+    // reset the stateStruct's NE position to the specified position
+    void ResetWindNE(ftype windN, ftype windE);
+
     // reset the stateStruct's D position
     void ResetPositionD(ftype posD);
 
@@ -1206,6 +1214,8 @@ private:
     bool lastMagOffsetsValid;       // True when lastMagOffsets has been initialized
     Vector2F posResetNE;            // Change in North/East position due to last in-flight reset in metres. Returned by getLastPosNorthEastReset
     uint32_t lastPosReset_ms;       // System time at which the last position reset occurred. Returned by getLastPosNorthEastReset
+    Vector2F windResetNE;            // Change in North/East position due to last in-flight reset in metres. Returned by getLastPosNorthEastReset
+    uint32_t lastWindReset_ms;       // System time at which the last position reset occurred. Returned by getLastPosNorthEastReset
     Vector2F velResetNE;            // Change in North/East velocity due to last in-flight reset in metres/sec. Returned by getLastVelNorthEastReset
     uint32_t lastVelReset_ms;       // System time at which the last velocity reset occurred. Returned by getLastVelNorthEastReset
     ftype posResetD;                // Change in Down position due to last in-flight reset in metres. Returned by getLastPosDowntReset

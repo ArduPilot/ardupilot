@@ -1440,6 +1440,25 @@ bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timesta
 #endif // EK3_FEATURE_POSITION_RESET
 }
 
+bool NavEKF3::setWindNE(const Vector2f &wind_vel, float velAccuracy, uint32_t timestamp_ms)
+{
+#if EK3_FEATURE_POSITION_RESET
+    // TODO: Replay logging
+    // dal.log_SetLatLng(loc, posAccuracy, timestamp_ms);
+
+    if (!core) {
+        return false;
+    }
+    bool ret = false;
+    for (uint8_t i=0; i<num_cores; i++) {
+        ret |= core[i].setWindNE(wind_vel, velAccuracy, timestamp_ms);
+    }
+    // return true if any core accepts the new origin
+    return ret;
+#else
+    return false;
+#endif // EK3_FEATURE_POSITION_RESET
+}
 
 // return estimated height above ground level
 // return false if ground height is not being estimated.
