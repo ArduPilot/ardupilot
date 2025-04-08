@@ -23,9 +23,7 @@ public:
 
 private:
 
-    uint32_t telem_delay() const override { return 0; }
     bool try_send_message(enum ap_message id) override { return true; }
-    uint8_t sysid_my_gcs() const override { return 1; }
 
 protected:
 
@@ -52,11 +50,8 @@ public:
 
 protected:
 
-    uint8_t sysid_this_mav() const override { return 1; }
-
-    GCS_MAVLINK_Dummy *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-                                               AP_HAL::UARTDriver &uart) override {
-        return NEW_NOTHROW GCS_MAVLINK_Dummy(params, uart);
+    GCS_MAVLINK_Dummy *new_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) override {
+        return NEW_NOTHROW GCS_MAVLINK_Dummy(uart);
     }
 
 private:

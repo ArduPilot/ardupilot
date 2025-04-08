@@ -277,6 +277,22 @@ ftype Location::get_distance(const Location &loc2) const
 // return the altitude difference in meters taking into account alt frame.
 bool Location::get_alt_distance(const Location &loc2, ftype &distance) const
 {
+    if (get_alt_frame() == loc2.get_alt_frame()) {
+        switch (get_alt_frame()) {
+        case AltFrame::ABSOLUTE:
+        case AltFrame::ABOVE_HOME:
+        case AltFrame::ABOVE_ORIGIN:
+            // all of these use the same reference
+            distance = (alt - loc2.alt) * 0.01;
+            return true;
+        case AltFrame::ABOVE_TERRAIN:
+            // 1m above terrain here is not the same as 1m above
+            // terrain at loc2, so convert both to absolute and then
+            // subtract.
+            break;
+        }
+    }
+
     int32_t alt1, alt2;
     if (!get_alt_cm(AltFrame::ABSOLUTE, alt1) || !loc2.get_alt_cm(AltFrame::ABSOLUTE, alt2)) {
         return false;

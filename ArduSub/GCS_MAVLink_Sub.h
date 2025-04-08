@@ -8,12 +8,7 @@ public:
 
     using GCS_MAVLINK::GCS_MAVLINK;
 
-    uint8_t sysid_my_gcs() const override;
 protected:
-
-    uint32_t telem_delay() const override {
-        return 0;
-    };
 
     MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet) override;
 
