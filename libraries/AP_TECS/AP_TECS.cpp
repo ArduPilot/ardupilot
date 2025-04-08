@@ -264,6 +264,8 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PTCH_FF_K", 30, AP_TECS, _pitch_ff_k, 0.0),
 
+    // 31 previously used by AP_Int8 TECS_LAND_PTRIM which was removed in November 2022
+
     // @Param: THR_ERATE
     // @DisplayName: Forward throttle external limit slew rate
     // @Description: The forward throttle lower limit controlled by TECS when set externally will be reduced at this rate. Set to a non positive value to hold the lower limit for one frame only
