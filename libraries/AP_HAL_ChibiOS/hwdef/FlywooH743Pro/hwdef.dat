@@ -143,6 +143,7 @@ PA8 TIM1_CH1 TIM1 PWM(13) GPIO(62) # S13
 # VTX Power control - should be high at startup to ensure power
 PD10 VTX_PWR OUTPUT HIGH GPIO(81)
 define RELAY2_PIN_DEFAULT 81
+define RELAY2_FUNCTION 1
 
 # Camera switch control - should be high at startup to ensure Camera 1 selected
 PD11 CAM_CTRL OUTPUT HIGH GPIO(82)

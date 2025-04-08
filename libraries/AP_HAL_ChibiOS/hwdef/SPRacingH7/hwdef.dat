@@ -79,6 +79,7 @@ PC5 BATT_CURRENT_SENS2 ADC1 SCALE(1)    # analog pin 8
 # VTX Power control - should be high at startup to ensure power
 PB01 VTX_PWR OUTPUT HIGH GPIO(81)
 define RELAY2_PIN_DEFAULT 81
+define RELAY2_FUNCTION 1
 
 PC4 RSSI_IN ADC1
 define BOARD_RSSI_ANA_PIN 0
