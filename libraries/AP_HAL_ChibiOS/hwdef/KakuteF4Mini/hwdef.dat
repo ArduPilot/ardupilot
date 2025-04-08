@@ -42,3 +42,6 @@ define HAL_PARACHUTE_ENABLED 0
 
 undef DEFAULT_NTF_LED_TYPES
 define DEFAULT_NTF_LED_TYPES 257
+
+# KakuteF4Mini has never had a parachute, so we don't need to warn about it
+undef AP_PARACHUTE_UNAVAILABLE_ENABLED

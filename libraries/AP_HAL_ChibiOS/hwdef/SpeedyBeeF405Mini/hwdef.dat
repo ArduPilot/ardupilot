@@ -151,5 +151,9 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 3
 # Motor order implies Betaflight/X for standard ESCs
 define HAL_FRAME_TYPE_DEFAULT 12
 
+# defines to transition minimize-fpv-osd boards to parachute-not-compiled-in:
+define HAL_PARACHUTE_ENABLED 0
+define AP_PARACHUTE_UNAVAILABLE_ENABLED 1
+
 include ../include/minimize_fpv_osd.inc
 

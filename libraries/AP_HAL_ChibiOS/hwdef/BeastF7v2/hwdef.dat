@@ -58,3 +58,7 @@ IMU BMI270 SPI:bmi270 ROTATION_ROLL_180_YAW_225
 
 # v2 has no BARO
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
+
+# defines to transition minimize-fpv-osd boards to parachute-not-compiled-in:
+define HAL_PARACHUTE_ENABLED 0
+define AP_PARACHUTE_UNAVAILABLE_ENABLED 1

@@ -1,16 +1,21 @@
+#include "AP_Parachute_config.h"
+
+#if HAL_PARACHUTE_ENABLED || AP_PARACHUTE_UNAVAILABLE_ENABLED
+
 #include "AP_Parachute.h"
 
-#if HAL_PARACHUTE_ENABLED
+/*
+ *  This is not standard parameter conversion code; it is
+ *  compatability code we are using to remove parachute support from
+ *  1MB boards without leaving users that *are* using parachutes on
+ *  1MB boards with a sneakily broken parachute system.  We enable
+ *  just enough of the parachute library to check if the enable
+ *  parameter is set; if it is we throw a config error, making the
+ *  vehicle non-flyable.
+ */
+// PARAMETER_CONVERSION - Added: Feb-2024
 
-#include <AP_Relay/AP_Relay.h>
-#include <AP_Math/AP_Math.h>
-#include <RC_Channel/RC_Channel.h>
-#include <SRV_Channel/SRV_Channel.h>
-#include <AP_Notify/AP_Notify.h>
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Logger/AP_Logger.h>
-#include <GCS_MAVLink/GCS.h>
-#include <AP_Arming/AP_Arming.h>
+#include <AP_Param/AP_Param.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -23,6 +28,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FLAGS("ENABLED", 0, AP_Parachute, _enabled, 0, AP_PARAM_FLAG_ENABLE),
 
+#if HAL_PARACHUTE_ENABLED
     // @Param: TYPE
     // @DisplayName: Parachute release mechanism type (relay or servo)
     // @Description: Parachute release mechanism type (relay number in versions prior to 4.5, or servo). Values 0-3 all are relay. Relay number used for release is set by RELAYx_FUNCTION in 4.5 or later. 
@@ -82,9 +88,23 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Bitmask: 0:hold open forever after release,1:skip disarm before parachute release
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 7, AP_Parachute, _options, AP_PARACHUTE_OPTIONS_DEFAULT),
+#endif  // HAL_PARACHUTE_ENABLED
 
     AP_GROUPEND
 };
+
+#endif  // HAL_PARACHUTE_ENABLED || AP_PARACHUTE_UNAVAILABLE_ENABLED
+
+#if HAL_PARACHUTE_ENABLED
+
+#include <AP_Relay/AP_Relay.h>
+#include <AP_Math/AP_Math.h>
+#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
+#include <AP_Notify/AP_Notify.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 /// enabled - enable or disable parachute release
 void AP_Parachute::enabled(bool on_off)
@@ -266,6 +286,10 @@ bool AP_Parachute::get_legacy_relay_index(int8_t &index) const
 }
 #endif
 
+#endif // HAL_PARACHUTE_ENABLED
+
+#if HAL_PARACHUTE_ENABLED || AP_PARACHUTE_UNAVAILABLE_ENABLED
+
 // singleton instance
 AP_Parachute *AP_Parachute::_singleton;
 
@@ -277,4 +301,5 @@ AP_Parachute *parachute()
 }
 
 }
-#endif // HAL_PARACHUTE_ENABLED
+
+#endif  // HAL_PARACHUTE_ENABLED || AP_PARACHUTE_UNAVAILABLE_ENABLED

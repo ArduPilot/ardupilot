@@ -682,7 +682,7 @@ private:
             FUNCTOR_BIND_MEMBER(&Plane::exit_mission_callback, void)};
 
 
-#if HAL_PARACHUTE_ENABLED
+#if HAL_PARACHUTE_ENABLED || AP_PARACHUTE_UNAVAILABLE_ENABLED
     AP_Parachute parachute;
 #endif
 

@@ -521,7 +521,7 @@ private:
 #endif
 
     // Parachute release
-#if HAL_PARACHUTE_ENABLED
+#if HAL_PARACHUTE_ENABLED || AP_PARACHUTE_UNAVAILABLE_ENABLED
     AP_Parachute parachute;
 #endif
 
