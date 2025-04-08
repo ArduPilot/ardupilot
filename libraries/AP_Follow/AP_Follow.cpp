@@ -214,31 +214,27 @@ bool AP_Follow::get_target_position_and_velocity(Vector3p &pos_ned, Vector3f &ve
 }
 
 // get distance vector to target (in meters) and target's velocity all in NED frame
-// FIXME: use the target_position_ned vector!
 bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_offs, Vector3f &vel_ned)
 {
-    // get our location
-    Location current_loc;
-    if (!AP::ahrs().get_location(current_loc)) {
+    Vector3f current_position_NED;
+    if (!AP::ahrs().get_relative_position_NED_origin(current_position_NED)) {
         clear_dist_and_bearing_to_target();
-         return false;
+        return false;
     }
-
-    // get target location and velocity
-    Location target_loc;
-    Vector3f veh_vel;
-    if (!get_target_location_and_velocity(target_loc, veh_vel)) {
+    Vector3p target_position_NED;
+    Vector3f veh_vel;  // NED
+    if (!get_target_position_and_velocity(target_position_NED, veh_vel)) {
         clear_dist_and_bearing_to_target();
         return false;
     }
 
-    // change to altitude above home
-    if (target_loc.relative_alt == 1) {
-        current_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME);
-    }
+    // convert from Vector3p to Vector3f as they can't be subtracted:
+    Vector3f target_position_NED_f;
+    target_position_NED_f.x = target_position_NED.x;
+    target_position_NED_f.y = target_position_NED.y;
+    target_position_NED_f.z = target_position_NED.z;
 
-    // calculate difference
-    const Vector3f dist_vec = current_loc.get_distance_NED(target_loc);
+    const Vector3f dist_vec = target_position_NED_f - current_position_NED;
 
     // fail if too far
     if (is_positive(_dist_max.get()) && (dist_vec.length() > _dist_max)) {
