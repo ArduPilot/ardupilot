@@ -129,7 +129,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _ALT_TYPE
     // @DisplayName: Follow altitude type
     // @Description: Follow altitude type
-    // @Values: 0:absolute, 1:relative
+    // @Values: 0:absolute, 1:relative (assume target's home is at the same altitude as this vehicle's)
     // @User: Standard
     AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALT_TYPE_DEFAULT),
 #endif
