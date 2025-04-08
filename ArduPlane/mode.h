@@ -170,8 +170,11 @@ public:
 #endif
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    // does this mode support systemid?
-    virtual bool supports_systemid() const { return false; }
+    // does this mode support quadplane vtol systemid?
+    virtual bool supports_vtol_systemid() const { return false; }
+
+    // does this mode support plane or quadplane fixed wing systemid?
+    virtual bool supports_fw_systemid() const { return false; }
 #endif
     
 protected:
@@ -533,8 +536,8 @@ public:
     void run() override;
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    // does this mode support systemid?
-    bool supports_systemid() const override { return true; }
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
 #endif
 
 #if MODE_AUTOLAND_ENABLED   
@@ -604,8 +607,8 @@ public:
     void run() override;
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    // does this mode support systemid?
-    bool supports_systemid() const override { return true; }
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
 #endif
 
 #if MODE_AUTOLAND_ENABLED   
@@ -720,8 +723,8 @@ public:
     void run() override;
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    // does this mode support systemid?
-    bool supports_systemid() const override { return true; }
+    // does this mode support quadplane vtol systemid?
+    bool supports_vtol_systemid() const override { return true; }
 #endif
     
 protected:
@@ -749,8 +752,8 @@ public:
     void run() override;
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    // does this mode support systemid?
-    bool supports_systemid() const override { return true; }
+    // does this mode support quadplane vtol systemid?
+    bool supports_vtol_systemid() const override { return true; }
 #endif
     
 protected:
@@ -782,8 +785,8 @@ public:
     void run() override;
 
 #if AP_PLANE_SYSTEMID_ENABLED
-    // does this mode support systemid?
-    bool supports_systemid() const override { return true; }
+    // does this mode support quadplane vtol systemid?
+    bool supports_vtol_systemid() const override { return true; }
 #endif
     
 protected:
