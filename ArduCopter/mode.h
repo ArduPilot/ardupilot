@@ -37,12 +37,12 @@ private:
 #if AC_PAYLOAD_PLACE_ENABLED
 class PayloadPlace {
 public:
+    void init(float _descent_max_cm);
     void run();
     void start_descent();
     bool verify();
 
     enum class State : uint8_t {
-        FlyToLocation,
         Descent_Start,
         Descent,
         Release,
@@ -55,10 +55,17 @@ public:
 
     // these are set by the Mission code:
     State state = State::Descent_Start; // records state of payload place
-    float descent_max_cm;
+
+    // these methods are called by some of the above methods, but may
+    // be useful separately:
+    void init_horizontal_control();
+    void run_horizontal_control();
+    void init_vertical_control();
+    void run_vertical_control();
 
 private:
 
+    float descent_max_cm;
     uint32_t descent_established_time_ms; // milliseconds
     uint32_t place_start_time_ms; // milliseconds
     float descent_thrust_level;
@@ -577,6 +584,7 @@ public:
     bool requires_terrain_failsafe() const override { return true; }
 
     void payload_place_start();
+    void payload_place_run();
 
     // for GCS_MAVLink to call:
     bool do_guided(const AP_Mission::Mission_Command& cmd);
@@ -733,6 +741,13 @@ private:
     // Delay Mission Scripting Command
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
     uint32_t condition_start;
+
+    enum class PayloadPlaceState {
+        FlyToLocation = 0,
+        Placing = 1,
+        Done = 2,
+    };
+    PayloadPlaceState payload_place_state = PayloadPlaceState::FlyToLocation;
 
     // Land within Auto state
     enum class State {
