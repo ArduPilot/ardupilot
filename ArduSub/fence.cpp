@@ -6,7 +6,7 @@
 
 // fence_check - ask fence library to check for breaches and initiate the response
 // async fence checking io callback at 1Khz
-void Sub::fence_run_checks()
+void Sub::fence_checks_async()
 {
     const uint32_t now = AP_HAL::millis();
     // ignore any fence activity when not armed
