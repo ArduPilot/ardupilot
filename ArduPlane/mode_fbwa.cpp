@@ -38,15 +38,6 @@ void ModeFBWA::update()
 
 void ModeFBWA::run()
 {
-    // note this is actually in deg/s for some SID_AXIS values for yaw
-    Vector3f offset_deg;
-#if AP_PLANE_SYSTEMID_ENABLED
-    auto &systemid = plane.g2.systemid;
-    systemid.update();
-    offset_deg = systemid.get_attitude_offset_deg();
-#endif
-    plane.nav_roll_cd += offset_deg.x * 100.0f;
-    plane.nav_pitch_cd += offset_deg.y * 100.0f;
     // Run base class function and then output throttle
     Mode::run();
 
