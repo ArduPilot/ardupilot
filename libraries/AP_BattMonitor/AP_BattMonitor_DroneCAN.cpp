@@ -74,8 +74,16 @@ AP_BattMonitor_DroneCAN* AP_BattMonitor_DroneCAN::get_dronecan_backend(AP_DroneC
             continue;
         }
         AP_BattMonitor_DroneCAN* driver = (AP_BattMonitor_DroneCAN*)batt.drivers[i];
-        if (driver->_ap_dronecan == ap_dronecan && driver->_node_id == node_id && match_battery_id(i, battery_id)) {
-            return driver;
+        if (driver->_ap_dronecan == ap_dronecan && match_battery_id(i, battery_id)) {
+            if (driver->_node_id == node_id) {
+                return driver;
+            } else if (!driver->_interim_state.healthy && driver->option_is_set(AP_BattMonitor_Params::Options::AllowDynamicNodeUpdate)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: Node change from %d to %d for Id %d",
+                    (unsigned)i+1, driver->_node_id, node_id, battery_id);
+                driver->_node_id = node_id;
+                driver->init();
+                return driver;
+            }
         }
     }
     // find empty uavcan driver
