@@ -123,8 +123,17 @@ void Plane::stabilize_roll()
         nav_roll_cd += 18000;
         if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
+float roll_out = stabilize_roll_get_roll_out();
 
-    const float roll_out = stabilize_roll_get_roll_out();
+#if AP_PLANE_SYSTEMID_ENABLED
+    if (control_mode->supports_fw_systemid()) {
+        Vector3f offset;
+        auto &systemid = plane.g2.systemid;
+        offset = systemid.get_output_offset();
+        roll_out += offset.x;
+    }
+#endif 
+
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, roll_out);
 }
 
@@ -177,7 +186,17 @@ void Plane::stabilize_pitch()
         return;
     }
 
-    const float pitch_out = stabilize_pitch_get_pitch_out();
+    float pitch_out = stabilize_pitch_get_pitch_out();
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    if (control_mode->supports_fw_systemid()) {
+        Vector3f offset;
+        auto &systemid = plane.g2.systemid;
+        offset = systemid.get_output_offset();
+        pitch_out += offset.y;
+    }
+#endif 
+
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitch_out);
 }
 
@@ -401,6 +420,18 @@ void Plane::stabilize()
         quadplane.transition->set_FW_roll_pitch(nav_pitch_cd, nav_roll_cd);
     }
 #endif
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    if (control_mode->supports_fw_systemid()) {
+        Vector3f offset_deg;
+        auto &systemid = plane.g2.systemid;
+        systemid.update();
+        offset_deg = systemid.get_attitude_offset_deg();
+
+        plane.nav_roll_cd += offset_deg.x * 100.0f;
+        plane.nav_pitch_cd += offset_deg.y * 100.0f;
+    }
+#endif    
 
     if (now - last_stabilize_ms > 2000) {
         // if we haven't run the rate controllers for 2 seconds then reset
