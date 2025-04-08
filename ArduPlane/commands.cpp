@@ -86,8 +86,11 @@ void Plane::set_guided_WP(const Location &loc)
     next_WP_loc = loc;
 
     // used to control FBW and limit the rate of climb
+    // cannot be applied in Guided as this prevents the guided set altitude from working correctly
     // -----------------------------------------------
-    set_target_altitude_current();
+    if (!control_mode->is_guided_mode()) {
+        set_target_altitude_current();
+    }
 
     setup_alt_slope();
     setup_turn_angle();

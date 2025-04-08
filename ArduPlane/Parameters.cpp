@@ -1270,6 +1270,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(systemid, "SID", 38, ParametersG2, AP_SystemID),
 #endif
     
+    // @Param: GUIDED_TIMEOUT
+    // @DisplayName: Guided Timeout
+    // @Description: The maximum amount of to use the input guided mode commands sent by external system such as lua or mavlink that can update roll, pitch and throttle. If no update is received after this timeout, control reverts to standard navigation. 
+    // @Units: s
+    // @User: Standard
+    AP_GROUPINFO("GUIDED_TIMEOUT", 39, ParametersG2, guided_timeout, 3),
+
     AP_GROUPEND
 };
 
