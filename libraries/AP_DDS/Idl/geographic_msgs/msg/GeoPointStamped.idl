@@ -1,0 +1,16 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from geographic_msgs/msg/GeoPointStamped.msg
+// generated code does not contain a copyright notice
+
+#include "geographic_msgs/msg/GeoPoint.idl"
+#include "std_msgs/msg/Header.idl"
+
+module geographic_msgs {
+  module msg {
+    struct GeoPointStamped {
+      std_msgs::msg::Header header;
+
+      geographic_msgs::msg::GeoPoint position;
+    };
+  };
+};

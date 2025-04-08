@@ -1,0 +1,6 @@
+# servo winch type
+# winch connected to servo output channel 9
+# rc input chnanel 9 used by pilot to control winch
+WINCH_TYPE 1
+SERVO9_FUNCTION 88
+RC9_OPTION 45

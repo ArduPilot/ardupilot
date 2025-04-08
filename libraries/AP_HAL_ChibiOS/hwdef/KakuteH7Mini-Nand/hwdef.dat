@@ -1,0 +1,13 @@
+# KakuteH7Mini Nand with larger flash chip
+
+include ../KakuteH7Mini/hwdef.dat
+
+undef mpu6000
+undef IMU
+
+SPIDEV bmi270    SPI4 DEVID1 MPU6000_CS    MODE3  1*MHZ  4*MHZ
+
+IMU BMI270 SPI:bmi270 ROTATION_PITCH_180_YAW_90
+
+undef DATAFLASH # larger flash chip is NAND and uses a different driver
+DATAFLASH littlefs:w25nxx

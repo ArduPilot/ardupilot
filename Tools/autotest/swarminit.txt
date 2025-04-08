@@ -1,0 +1,6 @@
+#instance=East,North,Up(Offset in meters),Absolute Heading
+1=20,20,0,90
+2=40,0,0,45
+3=-20,-20,0,225
+4=-80,0,20,0
+5=0,-100,-10,0

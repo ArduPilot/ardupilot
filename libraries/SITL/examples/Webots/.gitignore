@@ -1,0 +1,11 @@
+*.so
+*.o
+*.d
+*.wbproj
+.webots_*.wbproj
+/controllers/ardupilot_SITL_ROVER/ardupilot_SITL_ROVER
+/controllers/ardupilot_SITL_QUAD/ardupilot_SITL_QUAD
+/controllers/ardupilot_SITL_TRICOPTER/ardupilot_SITL_TRICOPTER
+/controllers/ardupilot_SITL_Supervisor/ardupilot_SITL_Supervisor
+/plugins/physics/sitl_physics_env/build
+

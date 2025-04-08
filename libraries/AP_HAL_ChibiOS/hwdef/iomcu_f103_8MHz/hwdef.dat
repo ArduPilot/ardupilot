@@ -1,0 +1,13 @@
+
+# MCU class and specific type
+MCU STM32F103 STM32F103xB
+
+include ../iomcu/hwdef.inc
+
+undef OSCILLATOR_HZ
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# directly define DMA channels
+DMA_NOMAP 1

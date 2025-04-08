@@ -1,0 +1,9 @@
+# setup for ProfiLED
+OUT1_FUNCTION 132
+OUT2_FUNCTION 129
+NTF_LED_TYPES 512
+NTF_LED_BRIGHT 2
+NTF_LED_LEN 4
+
+# disable baro by default
+BARO_ENABLE 0

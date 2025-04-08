@@ -1,0 +1,16 @@
+# Bi-directional dshot version of MatekF405
+
+include ../MatekF405-Wing/hwdef.dat
+
+undef PB7 PB6 PB0 PB1 PC8 PC9
+
+PB7  TIM4_CH2  TIM4 PWM(1) GPIO(50)
+PB6  TIM4_CH1  TIM4 PWM(2) GPIO(51) BIDIR
+PB0  TIM3_CH3  TIM3 PWM(3) GPIO(52) BIDIR
+PB1  TIM3_CH4  TIM3 PWM(4) GPIO(53)
+
+# Can only do bdshot on M1-4, so give up DMA channel on M5/M6 to get full DMA on USART3
+PC8  TIM8_CH3  TIM8 PWM(5) GPIO(54) NODMA
+PC9  TIM8_CH4  TIM8 PWM(6) GPIO(55) NODMA
+
+DMA_NOSHARE TIM3_UP

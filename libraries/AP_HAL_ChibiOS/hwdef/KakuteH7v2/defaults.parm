@@ -1,0 +1,10 @@
+# setup for LEDs on chan9
+SERVO9_FUNCTION 120
+# Default VTX power to on
+RELAY2_DEFAULT 1
+# UART1 for DJI Goggles
+SERIAL1_PROTOCOL 33
+# UART3 for VTX
+SERIAL3_PROTOCOL 37
+
+

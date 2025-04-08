@@ -1,0 +1,8 @@
+<testsuites>
+    <testsuite>
+${{tests:
+			${result}
+}}
+	</testsuite>
+
+</testsuites>

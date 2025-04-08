@@ -1,0 +1,67 @@
+# KakuteH7 v2 with flash chip for logging
+
+include ../KakuteH7-bdshot/hwdef.dat
+
+undef sdcard
+undef mpu6000
+undef IMU
+undef HAL_OS_FATFS_IO
+undef PA3 PA0 PA2 PC8 PC9 PD8 PD9 PD0 PD1 PC6 PC7 PE7 PE8
+
+MCU_CLOCKRATE_MHZ 480
+
+# Holybro documentation:
+# UART6 - RX
+# UART1 - DJI RX
+# UART4 - GPS
+# UART3 - VTX
+
+# USART3 (VTX)
+PD8 USART3_TX USART3 NODMA
+PD9 USART3_RX USART3 NODMA
+
+# UART4 (GPS)
+PD0 UART4_RX UART4
+PD1 UART4_TX UART4
+
+# UART6 (RX)
+PC7 USART6_RX USART6
+PC6 USART6_TX USART6
+
+# UART7 (ESC Telemetry)
+PE7 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA
+
+PA0  TIM5_CH1 TIM5 PWM(5) GPIO(54) BIDIR
+PA2  TIM5_CH3 TIM5 PWM(6) GPIO(55) BIDIR
+PC8  TIM8_CH3 TIM8 PWM(7) GPIO(56) BIDIR
+PC9  TIM8_CH4 TIM8 PWM(8) GPIO(57)
+
+# VTX Power control - should be high at startup to ensure power
+PB11 VTX_PWR OUTPUT HIGH GPIO(81)
+define RELAY2_PIN_DEFAULT 81
+
+define HAL_BATT_MONITOR_DEFAULT 4
+
+# second battery sensor on second ESC connector
+PA1 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
+PC4 BATT2_CURRENT_SENS ADC1 SCALE(1)
+
+# second battery setup (note external current sensor required)
+define HAL_BATT2_VOLT_PIN 17
+define HAL_BATT2_CURR_PIN 4
+define HAL_BATT2_VOLT_SCALE 11.0
+define HAL_BATT2_CURR_SCALE 59.5
+define HAL_BATT2_MONITOR_DEFAULT 4
+
+SPIDEV dataflash SPI1 DEVID1 SDCARD_CS      MODE3 104*MHZ 104*MHZ
+SPIDEV bmi270    SPI4 DEVID1 mpu6000_CS      MODE3  1*MHZ  10*MHZ # Clock is 100Mhz so highest clock <= 10Mhz is 100Mhz/16
+
+IMU BMI270 SPI:bmi270 ROTATION_ROLL_180
+
+DMA_PRIORITY TIM3* TIM2* TIM5* TIM8* SPI4* SPI1*
+DMA_NOSHARE *UP SPI1*
+
+# Motor order implies Betaflight/X for standard ESCs
+define HAL_FRAME_TYPE_DEFAULT 12
+DATAFLASH littlefs:w25nxx

@@ -1,0 +1,49 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H757
+
+# MCU class and specific type
+MCU STM32H7xx STM32H757xx
+
+define CORE_CM7
+define SMPS_PWR
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CUBERED_SECONDARY
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+define HAL_LED_ON 0
+
+PD10 LED_BOOTLOADER OUTPUT
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+define STM32_SERIAL_USE_UART8 TRUE
+define HAL_USE_SERIAL TRUE
+
+PE1 UART8_TX UART8
+PE0 UART8_RX UART8
+
+# order of UARTs (and USB)
+SERIAL_ORDER UART7
+define BOOTLOADER_DEBUG SD8
+define BOOTLOADER_BAUDRATE 2000000
+
+# we need to stay in bootloader longer than primary
+# because we need to have primary mcu up before we can
+# flash secondary
+define HAL_BOOTLOADER_TIMEOUT 10000

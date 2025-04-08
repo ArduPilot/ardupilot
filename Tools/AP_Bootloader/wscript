@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+def build(bld):
+    if not bld.env.BOOTLOADER:
+        return
+
+    if bld.env.EXT_FLASH_SIZE_MB:
+        flashiface_lib = ['AP_HAL', 'AP_FlashIface', 'AP_HAL_Empty']
+    else:
+        flashiface_lib = []
+
+    bld.ap_stlib(
+        name= 'AP_Bootloader_libs',
+        use=['dronecan'],
+        dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
+        ap_vehicle='AP_Bootloader',
+        ap_libraries= flashiface_lib + [
+        'AP_Math',
+        'AP_CheckFirmware',
+        'AP_HAL',
+        'AP_Networking',
+        'AP_ROMFS',
+        'AP_Common',
+        ])
+
+    # build external libcanard library
+    bld.stlib(source='../../modules/DroneCAN/libcanard/canard.c',
+              name='libcanard',
+              use=['dronecan'],
+              target='libcanard')
+
+    bld.ap_program(
+        use=['AP_Bootloader_libs', 'libcanard', 'dronecan'],
+        program_groups='bootloader'
+    )

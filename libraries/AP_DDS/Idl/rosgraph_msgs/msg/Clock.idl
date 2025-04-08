@@ -1,0 +1,17 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from rosgraph_msgs/msg/Clock.msg
+// generated code does not contain a copyright notice
+
+#include "builtin_interfaces/msg/Time.idl"
+
+module rosgraph_msgs {
+  module msg {
+    @verbatim (language="comment", text=
+      "This message communicates the current time." "\n"
+      "" "\n"
+      "For more information, see https://design.ros2.org/articles/clock_and_time.html.")
+    struct Clock {
+      builtin_interfaces::msg::Time clock;
+    };
+  };
+};

@@ -1,0 +1,327 @@
+name: test size
+
+on:
+  pull_request:
+    paths-ignore:  # ignore autotest stuffs
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - './.dir-locals.el'
+      - './.dockerignore'
+      - './.editorconfig'
+      - './.flake8'
+      - './.gitattributes'
+      - './.github'
+      - './.gitignore'
+      - './.pre-commit-config.yaml'
+      - './.pydevproject'
+      - './.valgrind-suppressions'
+      - './.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      - 'Makefile'
+      # Remove some directories check
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      # Remove generic tools
+      - 'Tools/CHDK-Script/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/simulink/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # remove non CHIBIOS HAL
+      - 'libraries/AP_HAL_SITL/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_Linux/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
+  workflow_dispatch:
+
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.3
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        toolchain: [
+            chibios,
+        ]
+        config: [
+            Durandal,
+            MatekF405,
+            KakuteF7,
+            MatekH743-bdshot,
+            MambaH743v4,  # for littlefs support
+            Pixhawk1-1M,
+            MatekF405-CAN,  # see special "build bootloader" code below
+            DrotekP3Pro,  # see special "build bootloader" code below
+            Hitec-Airspeed,  # see special code for Periph below (3 places!)
+            f103-GPS  # see special code for Periph below (3 places!)
+        ]
+        include:
+          - config: disco
+            toolchain: armhf
+        exclude:
+          - config: disco
+            toolchain: chibios
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          path: base_branch
+          submodules: 'recursive'
+      # Put ccache into github cache for faster build
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
+      - name: ccache cache files
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-  # restore ccache from either previous build on this branch or on base branch
+      - name: setup ccache
+        run: |
+          . base_branch/.github/workflows/ccache.env
+      - name: Build ${{ github.event.pull_request.base.ref }} ${{matrix.config}} ${{ matrix.toolchain }}
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+        shell: bash
+        run: |
+          set -ex
+          # set up some variables based on what sort of build we're doing:
+          BOOTLOADER=0
+          AP_PERIPH=0
+          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
+             [ "${{matrix.config}}" = "f103-GPS" ]; then
+            AP_PERIPH=1
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ] ||
+               [ "${{matrix.config}}" = "DrotekP3Pro" ]; then
+            BOOTLOADER=1
+          fi
+          if [ $BOOTLOADER -eq 1 ]; then
+             BIN_SRC="build/${{matrix.config}}/bootloader"
+          else
+             BIN_SRC="build/${{matrix.config}}/bin"
+          fi
+
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+
+          # build the base branch
+          cd base_branch
+          # configure:
+          if [ $BOOTLOADER -eq 1 ]; then
+            ./waf configure --board ${{matrix.config}} --bootloader
+          else
+            ./waf configure --board ${{matrix.config}}
+          fi
+          # build:
+          if [ $AP_PERIPH -eq 1 ]; then
+            ./waf AP_Periph
+          elif [ $BOOTLOADER -eq 1 ]; then
+            ./waf bootloader
+          else
+            ./waf
+          fi
+          mkdir -p $GITHUB_WORKSPACE/base_branch_bin
+
+          cp -r $BIN_SRC/* $GITHUB_WORKSPACE/base_branch_bin/
+
+          # build a set of binaries without symbols so we can check if
+          #  the binaries have changed.
+          echo [`date`] Building ${{ github.event.pull_request.base.ref }} with no versions
+
+          NO_VERSIONS_DIR="$GITHUB_WORKSPACE/base_branch_bin_no_versions"
+          mkdir "$NO_VERSIONS_DIR"
+
+          # export some environment variables designed to get
+          #            repeatable builds from the same source:
+          export CHIBIOS_GIT_VERSION="12345678"
+          export GIT_VERSION="abcdef"
+          export GIT_VERSION_INT="15"
+
+          if [ $AP_PERIPH -eq 1 ]; then
+            ./waf AP_Periph
+          elif [ $BOOTLOADER -eq 1 ]; then
+            ./waf bootloader
+          else
+            ./waf
+          fi
+          cp -r $BIN_SRC/* "$NO_VERSIONS_DIR"
+
+          echo [`date`] Built ${{ github.event.pull_request.base.ref }} with no versions
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: 'pr'
+
+      - name: Build PR rebased ${{matrix.config}} ${{ matrix.toolchain }}
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+        shell: bash
+        run: |
+          set -ex
+          # set up some variables based on what sort of build we're doing:
+          BOOTLOADER=0
+          AP_PERIPH=0
+          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
+             [ "${{matrix.config}}" = "f103-GPS" ]; then
+            AP_PERIPH=1
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ] ||
+               [ "${{matrix.config}}" = "DrotekP3Pro" ]; then
+            BOOTLOADER=1
+          fi
+          if [ $BOOTLOADER -eq 1 ]; then
+             BIN_SRC="build/${{matrix.config}}/bootloader"
+          else
+             BIN_SRC="build/${{matrix.config}}/bin"
+          fi
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          cd pr/
+          git config user.email "ardupilot-ci@ardupilot.org"
+          git config user.name "ArduPilot CI"
+          git remote add target_repo https://github.com/${{github.event.pull_request.base.repo.full_name}}
+          git fetch --no-tags --prune --progress target_repo ${{ github.event.pull_request.base.ref }}
+          git rebase target_repo/${{ github.event.pull_request.base.ref }}
+          git submodule update --init --recursive --depth=1
+          # configure
+          if [ $BOOTLOADER -eq 1 ]; then
+            ./waf configure --board ${{matrix.config}} --bootloader
+          else
+            ./waf configure --board ${{matrix.config}}
+          fi
+          # build
+          if [ $AP_PERIPH -eq 1 ]; then
+            ./waf AP_Periph
+          elif [ $BOOTLOADER -eq 1 ]; then
+            ./waf bootloader
+          else
+            ./waf
+          fi
+          mkdir $GITHUB_WORKSPACE/pr_bin
+          cp -r $BIN_SRC/* $GITHUB_WORKSPACE/pr_bin/
+
+          # build a set of binaries without symbols so we can check if
+          #  the binaries have changed.
+          echo [`date`] Building PR with no versions
+
+          NO_VERSIONS_DIR="$GITHUB_WORKSPACE/pr_bin_no_versions"
+          mkdir "$NO_VERSIONS_DIR"
+
+          # export some environment variables designed to get
+          #            repeatable builds from the same source:
+          export CHIBIOS_GIT_VERSION="12345678"
+          export GIT_VERSION="abcdef"
+          export GIT_VERSION_INT="15"
+
+          if [ $AP_PERIPH -eq 1 ]; then
+            ./waf AP_Periph
+          elif [ $BOOTLOADER -eq 1 ]; then
+            ./waf bootloader
+          else
+            ./waf
+          fi
+          cp -r $BIN_SRC/* "$NO_VERSIONS_DIR"
+
+          echo [`date`] Built PR with no versions
+
+          # build MatekF405 Plane without quadplane
+          if [ "${{matrix.config}}" = "MatekF405" ]; then
+            PLANE_BINARY="build/MatekF405/bin/arduplane.bin"
+            echo "normal size"
+            ls -l "$PLANE_BINARY"
+            EXTRA_HWDEF="/tmp/extra-options.def"
+            echo "define HAL_QUADPLANE_ENABLED 0" >"$EXTRA_HWDEF"
+            ./waf configure --board ${{matrix.config}} --extra-hwdef="$EXTRA_HWDEF"
+            ./waf plane
+            rm "$EXTRA_HWDEF"
+            echo "non-quadplane size:"
+            ls -l "$PLANE_BINARY"
+          fi
+
+      - name: Full size compare with base branch
+        shell: bash
+        run: |
+          cd pr/
+          Tools/scripts/build_tests/pretty_diff_size.py -m $GITHUB_WORKSPACE/base_branch_bin -s $GITHUB_WORKSPACE/pr_bin
+
+      - name: Feature compare with  ${{ github.event.pull_request.base.ref }}
+        shell: bash
+        run: |
+          set -ex
+          cd pr/
+          BIN_PREFIX="arm-none-eabi-"
+          if [ "${{matrix.toolchain}}" = "armhf" ]; then
+             BIN_PREFIX="arm-linux-gnueabihf-"
+          fi
+          BOOTLOADER=0
+          AP_PERIPH=0
+          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
+             [ "${{matrix.config}}" = "f103-GPS" ]; then
+            AP_PERIPH=1
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ] ||
+               [ "${{matrix.config}}" = "DrotekP3Pro" ]; then
+            BOOTLOADER=1
+          fi
+          if [ $AP_PERIPH -eq 1 ]; then
+              EF_BINARY_NAME="AP_Periph"
+          elif [ $BOOTLOADER -eq 1 ]; then
+              EF_BINARY_NAME="AP_Bootloader"
+          else
+              EF_BINARY_NAME="arduplane"
+          fi
+          EF_BASE_BRANCH_BINARY="$GITHUB_WORKSPACE/base_branch_bin/$EF_BINARY_NAME"
+          EF_PR_BRANCH_BINARY="$GITHUB_WORKSPACE/pr_bin/$EF_BINARY_NAME"
+
+          Tools/scripts/extract_features.py "$EF_BASE_BRANCH_BINARY" --nm "${BIN_PREFIX}nm" >features-base_branch.txt
+          Tools/scripts/extract_features.py "$EF_PR_BRANCH_BINARY" --nm "${BIN_PREFIX}nm" >features-pr.txt
+          diff -u features-base_branch.txt features-pr.txt || true
+          diff_output=$(diff -u features-base_branch.txt features-pr.txt || true)
+          echo "### Features Diff Output" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$diff_output" ]; then
+            echo '```diff' >> $GITHUB_STEP_SUMMARY
+            echo "$diff_output" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No differences found." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Checksum compare with ${{ github.event.pull_request.base.ref }}
+        shell: bash
+        run: |
+          diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.elf --exclude=*.apj || true
+          diff_output=$(diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.elf --exclude=*.apj || true || true)
+          echo "### Checksum Diff Output" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$diff_output" ]; then
+            echo '```diff' >> $GITHUB_STEP_SUMMARY
+            echo "$diff_output" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No differences found." >> $GITHUB_STEP_SUMMARY
+          fi

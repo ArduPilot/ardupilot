@@ -1,0 +1,60 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H743 bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CUBEORANGE_PERIPH
+
+FLASH_SIZE_KB 2048
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+define HAL_LED_ON 0
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7
+
+# UART7 maps to SERIAL5.
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+# Pin for PWM Voltage Selection
+PB4 PWM_VOLT_SEL OUTPUT HIGH
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Add CS pins to ensure they are high in bootloader
+PC1 MAG_CS CS
+PC2 MPU_CS CS
+PC13 GYRO_EXT_CS CS
+PC14 BARO_EXT_CS CS
+PC15 ACCEL_EXT_CS CS
+PD7 BARO_CS CS
+PE4 MPU_EXT_CS CS
+PD10 FRAM_CS CS SPEED_VERYLOW
+
+# the first CAN bus
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+
+# This defines the pins for the 2nd CAN interface, if available.
+PB6 CAN2_TX CAN2
+PB12 CAN2_RX CAN2
+

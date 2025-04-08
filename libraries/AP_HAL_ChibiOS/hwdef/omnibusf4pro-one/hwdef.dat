@@ -1,0 +1,9 @@
+include ../omnibusf4pro/hwdef.dat
+
+define HAL_COMPASS_MAX_SENSORS 1
+
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

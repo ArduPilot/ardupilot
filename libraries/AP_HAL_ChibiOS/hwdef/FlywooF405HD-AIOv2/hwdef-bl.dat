@@ -1,0 +1,15 @@
+
+# hw definition file for processing by chibios_hwdef.py
+# for FLYWOOF405HD_AIOv2 hardware.
+# thanks to betaflight for pin information
+
+include ../FlywooF405S-AIO/hwdef-bl.dat
+
+#undefine items to be changed
+undef APJ_BOARD_ID
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_FlywooF405HD_AIOv2
+
+#required to prevent ELRS from changing modes at boot
+PA10 USART1_RX USART1 OUTPUT HIGH

@@ -1,0 +1,44 @@
+#compdef arducopter arducopter-heli arduplane ardurover ardusub antennatracker
+#autoload
+
+_ap_bin() {
+  typeset -A opt_args
+  local context state line curcontext="$curcontext"
+
+  _arguments -C \
+    '(- 1 *)'{-h,--help}'[display this help information]' \
+    '(-w --wipe)'{-w,--wipe}'[wipe eeprom]' \
+    '(-u --unhide-groups)'{-u,--unhide-groups}'[parameter enumeration ignores AP_PARAM_FLAG_ENABLE]' \
+    '(-s --speedup)'{-s,--speedup}'[set simulation speedup]:float' \
+    '(-r --rate)'{-r,--rate}'[set SITL framerate]:float' \
+    '(-C --console)'{-C,--console}'[use console instead of TCP ports]' \
+    '(-I --instance)'{-I,--instance}'[set instance of SITL (adds 10*instance to all port numbers)]:int:' \
+    '(-O --home)'{-O,--home}'[set start location (lat,lng,alt,yaw)]:int:' \
+    '(-M --model)'{-M,--model}'[set simulation model]' \
+    '--config[set additional simulation config string]:CONFIG' \
+    '(-F --fg)'{-F,--fg}'[set Flight Gear view address, defaults to 127.0.0.1]:ADDRESS' \
+    '--enable-fgview[disable Flight Gear view]' \
+    '--gimbal[enable simulated MAVLink gimbal]' \
+    '--autotest-dir[set directory for additional files]:DIR:' \
+    '--defaults[set path to defaults file]:PATH:' \
+    '--serial0[set device string for SERIAL0]:DEVICE:' \
+    '--serial1[set device string for SERIAL1]:DEVICE:' \
+    '--serial2[set device string for SERIAL2]:DEVICE:' \
+    '--serial3[set device string for SERIAL3]:DEVICE:' \
+    '--serial4[set device string for SERIAL4]:DEVICE:' \
+    '--serial5[set device string for SERIAL5]:DEVICE:' \
+    '--serial6[set device string for SERIAL6]:DEVICE:' \
+    '--serial7[set device string for SERIAL7]:DEVICE:' \
+    '--serial8[set device string for SERIAL8]:DEVICE:' \
+    '--serial9[set device string for SERIAL9]:DEVICE:' \
+    '--rtscts[enable rtscts on serial ports (default false)]' \
+    '--base-port[set port num for base port(default 5670) must be before -I option]:PORT:' \
+    '--rc-in-port[set port num for rc in]:PORT:' \
+    '--sim-address[set address string for simulator]:STRING:' \
+    '--sim-port-in[set port num for simulator in]:PORT:' \
+    '--sim-port-out[set port num for simulator out]:PORT:' \
+    '--irlock-port[set port num for irlock]:PORT:' \
+  && ret=0
+}
+
+_ap_bin "$@"

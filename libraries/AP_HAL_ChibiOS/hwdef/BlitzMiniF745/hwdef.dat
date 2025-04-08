@@ -1,0 +1,11 @@
+include ../BlitzF745/hwdef.dat
+
+APJ_BOARD_ID AP_HW_BlitzF7Mini
+
+undef IMU
+undef PE9 PE11 PE13 PE14 PC9
+
+IMU Invensensev3 SPI:imu1 ROTATION_ROLL_180_YAW_135
+
+# LEDs
+PC9 TIM8_CH4 TIM8 PWM(5) GPIO(54) # M5

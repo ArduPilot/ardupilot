@@ -1,0 +1,29 @@
+# hw definition file for processing by chibios_pins.py
+# JHEMCU GSF405A by V-22
+# With F405 MCU, MPU6000 IMU and MAX7456 series OSD
+# Based on Mamba F405 hwdef from jeanphilippehell
+# thanks to betaflight for pin information (https://github.com/betaflight/unified-targets/blob/master/configs/default/JHEF-JHEF405PRO.config)
+# Version of JHEMCU GSF405A target to use external RX on USART2
+
+include ../JHEMCU-GSF405A/hwdef.dat
+
+undef PD5 PD6 PB10 PB11 PA3 PA2
+undef DEFAULT_SERIAL1_PROTOCOL
+
+# USART2 - SBUS pad
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+# default Serial2 to RCIN
+define DEFAULT_SERIAL2_PROTOCOL 23
+
+# USART3 
+PB10 USART3_TX USART3 NODMA
+PB11 USART3_RX USART3 NODMA
+
+# Motor outputs on AIO ESC
+PA3 TIM2_CH4 TIM2 PWM(3) GPIO(52)
+PA2 TIM2_CH3 TIM2 PWM(4) GPIO(53) BIDIR 
+
+DMA_PRIORITY SPI1* SPI3* TIM1_CH2 TIM2_UP TIM3_UP
+DMA_NOSHARE USART2*
+AUTOBUILD_TARGETS Copter

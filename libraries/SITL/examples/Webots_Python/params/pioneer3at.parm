@@ -1,0 +1,12 @@
+FRAME_CLASS      1          # Rover
+
+SERVO1_FUNCTION  73         # (Throttle Left)
+SERVO2_FUNCTION  73         
+SERVO3_FUNCTION  74         # (Throttle Right)
+SERVO4_FUNCTION  74         
+
+AHRS_EKF_TYPE    10         # Use sim AHRS
+ARMING_CHECK	 1045534    # No RC requirements
+MOT_THST_EXPO    0          # No motor exponential
+SCHED_LOOP_RATE  300        
+INS_GYR_CAL      0

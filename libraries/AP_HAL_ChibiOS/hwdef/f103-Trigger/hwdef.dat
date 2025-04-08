@@ -1,0 +1,25 @@
+# PWM input to Hardpoint output trigger firmware
+
+include ../f103-periph/hwdef.inc
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+
+# PWM input to hardpoint out
+define AP_PERIPH_PWM_HARDPOINT_ENABLED 1
+
+define HAL_PWM_HARDPOINT_ID_DEFAULT 101
+
+# we need 10us resolution for PWM capture
+undef CH_CFG_ST_FREQUENCY
+define CH_CFG_ST_FREQUENCY 100000
+
+# use USART1_RX as input for PWM trigger
+undef PA10
+PA10 PWM_TRIGGER INPUT PULLDOWN GPIO(77)
+define PWM_HARDPOINT_PIN 77
+
+# no I2C
+undef I2C_ORDER
+undef I2C1

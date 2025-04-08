@@ -1,0 +1,87 @@
+# hw definition file for f405 Matek CAN GPS
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
+FLASH_SIZE_KB 1024
+
+# store parameters in pages 2 and 3
+STORAGE_FLASH_PAGE 2
+define HAL_STORAGE_SIZE 15360
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_sw-nav-f405
+
+define CAN_APP_NODE_NAME "sw-nav-f405"
+
+env AP_PERIPH 1
+
+define STM32_ST_USE_TIMER 5
+define CH_CFG_ST_RESOLUTION 32
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# status light, normally disabled so as to not confuse nav light functionality
+#PC4 LED OUTPUT LOW GPIO(0)
+#define HAL_LED_ON 1
+
+## debug
+#PA13 JTMS-SWDIO SWD
+#PA14 JTCK-SWCLK SWD
+
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+# keep ROMFS uncompressed although we do have the runtime ram needed
+env ROMFS_UNCOMPRESSED True
+
+# i2c
+I2C_ORDER I2C1
+
+PB7 I2C1_SDA I2C1
+PB6 I2C1_SCL I2C1
+
+# can
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PA15 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+# disable serial
+define HAL_USE_SERIAL FALSE
+define AP_HAL_UARTDRIVER_ENABLED 0
+
+define HAL_USE_ADC FALSE
+
+# compass
+define AP_PERIPH_MAG_ENABLED 1
+
+COMPASS MMC3416 I2C:0:0x30 false ROTATION_NONE
+
+define HAL_COMPASS_MAX_SENSORS 1
+
+# notify led
+define AP_PERIPH_NOTIFY_ENABLED 1
+define AP_PERIPH_RC_OUT_ENABLED 1
+
+define DEFAULT_NTF_LED_TYPES 131072 # discrete rgb led (1 << 17)
+
+define AP_NOTIFY_DISCRETE_RGB_ENABLED 1
+PA3 LED_CTRL_VIS OUTPUT HIGH GPIO(1) # vis light power
+PA1 LED_COLOR OUTPUT LOW GPIO(2)     # red/green
+PA2 LED_WHITE OUTPUT LOW GPIO(3)     # white
+PB0 LED_IR OUTPUT LOW GPIO(4)        # IR
+
+define DISCRETE_RGB_RED_PIN 3
+define DISCRETE_RGB_GREEN_PIN 2
+define DISCRETE_RGB_BLUE_PIN 4
+define DISCRETE_RGB_POLARITY true
+
+define HAL_RCIN_THREAD_ENABLED 1
+define HAL_SCHEDULER_LOOP_DELAY_ENABLED 1
+define HAL_MONITOR_THREAD_ENABLED 1
+
+# don't build on firmware.ardupilot.org
+AUTOBUILD_TARGETS None

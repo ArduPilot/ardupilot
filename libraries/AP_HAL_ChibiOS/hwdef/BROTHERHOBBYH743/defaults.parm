@@ -1,0 +1,5 @@
+# Default VTX power to on
+RELAY2_DEFAULT 1
+
+# Default CAM to first camera
+RELAY3_DEFAULT 0

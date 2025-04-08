@@ -1,0 +1,8 @@
+# hw definition file for processing by chibios_pins.py
+# for omnibusf4 AIO (no current sensor onboard) bootloader
+
+include ../omnibusf4pro/hwdef-bl.dat
+undef APJ_BOARD_ID
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_OMNIBUSF4

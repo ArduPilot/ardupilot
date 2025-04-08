@@ -1,0 +1,74 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H743 bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H757xx
+
+
+# USB setup
+USB_STRING_MANUFACTURER "ArduPilot"
+USB_STRING_PRODUCT "%BOARD%"
+
+define CORE_CM7
+define SMPS_PWR
+
+
+# crystal frequency
+OSCILLATOR_HZ 25000000
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_H757I_EVAL
+
+FLASH_SIZE_KB 2048
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# EXT_FLASH_SIZE_MB 32
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+define HAL_LED_ON 1
+
+PK3 LED OUTPUT LOW
+PK4 LED_BOOTLOADER OUTPUT
+PK5 LED_ACTIVITY OUTPUT
+
+PB15 USART1_RX USART1
+PB14 USART1_TX USART1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# the first CAN bus
+# PA11 CAN1_RX CAN1
+# PA12 CAN1_TX CAN1
+# PC8 GPIO CAN_SLEEP OUTPUT LOW
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART1
+
+# QSPI Flash
+PF8 QUADSPI_BK1_IO0 QUADSPI1
+PF9 QUADSPI_BK1_IO1 QUADSPI1
+PF7 QUADSPI_BK1_IO2 QUADSPI1
+PF6 QUADSPI_BK1_IO3 QUADSPI1
+PG6 QUADSPI_BK1_NCS QUADSPI1
+PB2 QUADSPI_CLK QUADSPI1
+
+# IFace     Device Name     Bus      QSPI Mode     Clk Freq  Size (Pow2)  NCS Delay
+QSPIDEV       mt25q       QUADSPI1      MODE1       120*MHZ      24            8
+
+PB13 VBUS INPUT OPENDRAIN
+
+
+define BOOTLOADER_DEBUG SD1

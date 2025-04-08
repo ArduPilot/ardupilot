@@ -1,0 +1,32 @@
+{
+    "problemMatcher": [
+        {
+            "owner": "Luacheck-problem-matcher",
+            "fileLocation": [ "relative", "${GITHUB_WORKSPACE}" ],
+            "pattern": [
+                {
+                    "regexp": "^( *)(.+.lua):(\\d+):(\\d+): (.*)$",
+                    "file": 2,
+                    "line": 3,
+                    "column": 4,
+                    "message": 5
+                }
+            ]
+        },
+        {
+            "owner": "Lua-language-server-problem-matcher",
+            "pattern": [
+                {
+                    "regexp": "^(.+.lua):(\\d+):(\\d+)",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3
+                },
+                {
+                    "regexp": "^(.*)",
+                    "message": 1
+                }
+            ]
+        }
+    ]
+}

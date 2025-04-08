@@ -1,0 +1,23 @@
+[flake8]
+extend-ignore =
+    # H301: one import per line
+    H301,
+    # H306: imports not in alphabetical order (time, os)
+    H306,
+    # E226: missing whitespace around arithmetic operator
+    E226,
+    # E261 at least two spaces before inline comment
+    E261,
+    # W504 line break after binary operator
+    W504,
+    # E203 whitespace before ':'
+    E203,
+    # E221 multiple spaces before operator
+    E221
+
+extend-exclude =
+    build,
+    modules,
+    .git
+
+max-line-length = 127

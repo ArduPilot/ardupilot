@@ -1,0 +1,3 @@
+# adds default support for board versions with ICM20602
+
+include ../MatekF405/hwdef-bl.dat

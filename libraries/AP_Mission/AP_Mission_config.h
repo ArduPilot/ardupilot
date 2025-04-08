@@ -1,0 +1,9 @@
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_MISSION_ENABLED
+#define AP_MISSION_ENABLED 1
+#endif
+
+#ifndef AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED
+#define AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED 1
+#endif

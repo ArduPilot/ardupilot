@@ -1,0 +1,6 @@
+include ../f103-periph/hwdef-bl.inc
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_AEROFOX_AIRSPEED_DLVR
+
+

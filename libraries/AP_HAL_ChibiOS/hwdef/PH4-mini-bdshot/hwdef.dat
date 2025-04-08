@@ -1,0 +1,16 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Holybro PH4-mini hardware.
+
+include ../PH4-mini/hwdef.dat
+
+undef PD8 PD9 PA10 PE11
+
+# This resolve DMA problem
+PD8 USART3_TX USART3 NODMA
+PD9 USART3_RX USART3 NODMA
+
+# This gives bi-dir dshot on the first four channels and regular dshot on the next two
+PA10 TIM1_CH3 TIM1 PWM(2) GPIO(51) BIDIR
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52) BIDIR
+
+DMA_PRIORITY TIM1_CH3 TIM1_CH2 TIM1_UP SDMMC* USART2* ADC* SPI* TIM*

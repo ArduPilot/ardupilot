@@ -1,0 +1,25 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from sensor_msgs/msg/Joy.msg
+// generated code does not contain a copyright notice
+
+#include "std_msgs/msg/Header.idl"
+
+module sensor_msgs {
+  module msg {
+    @verbatim (language="comment", text=
+      "Reports the state of a joystick's axes and buttons.")
+    struct Joy {
+      @verbatim (language="comment", text=
+        "The timestamp is the time at which data is received from the joystick.")
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "The axes measurements from a joystick.")
+      sequence<float> axes;
+
+      @verbatim (language="comment", text=
+        "The buttons measurements from a joystick.")
+      sequence<int32> buttons;
+    };
+  };
+};

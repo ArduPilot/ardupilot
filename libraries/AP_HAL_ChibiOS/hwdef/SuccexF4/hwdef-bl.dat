@@ -1,0 +1,45 @@
+# hw definition file for processing by chibios_pins.py
+# for SuccexF4 bootloader
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_SUCCEXF4
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 1024
+
+# don't allow bootloader to use more than 16k
+FLASH_USE_MAX_KB 16
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# LEDs
+PB5 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 64
+
+
+# order of UARTs
+SERIAL_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+
+
+# Add CS pins to ensure they are high in bootloader
+PA4 ICM20689_1_CS CS
+PC3 ICM20689_2_CS CS
+PB12 AT7456E_CS CS
+PA15 FLASH_CS CS

@@ -1,0 +1,19 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Holybro Pixhawk4 hardware.
+
+include ../fmuv5/hwdef.dat
+
+# red and blue LEDs swapped vs fmuv5
+# red LED marked as B/E
+undef PB1
+PB1 LED_RED OUTPUT OPENDRAIN GPIO(92)
+# blue LED marked as ACT
+undef PC7
+PC7 LED_BLUE OUTPUT GPIO(90) HIGH
+
+# setup for supplied power brick
+undef HAL_BATT_VOLT_SCALE
+define HAL_BATT_VOLT_SCALE 18.182
+undef HAL_BATT_CURR_SCALE
+define HAL_BATT_CURR_SCALE 36.364
+

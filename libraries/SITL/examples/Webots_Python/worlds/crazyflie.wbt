@@ -1,0 +1,51 @@
+#VRML_SIM R2023a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/robots/bitcraze/crazyflie/protos/Crazyflie.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/floors/protos/Floor.proto"
+
+WorldInfo {
+  title "Crazyflie Ardupilot"
+  basicTimeStep 2
+  FPS 20
+}
+Viewpoint {
+  orientation -0.16896949154992233 0.7737576492025086 0.6105312532753491 0.687001624474616
+  position -0.398945807007221 -0.19824950788611448 0.29284320157231725
+  follow "Crazyflie"
+  followSmoothness 0.01
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+Floor {
+}
+Crazyflie {
+  controller "ardupilot_vehicle_controller"
+  controllerArgs [
+    "--motors"
+    "m1_motor, m3_motor, m4_motor, m2_motor"
+    "--reversed-motors"
+    "1, 2"
+    "--camera-fps"
+    "10"
+    "--camera"
+    "camera"
+    "--accel"
+    "accelerometer"
+    "--imu"
+    "inertial unit"
+    "--gyro"
+    "gyro"
+    "--gps"
+    "gps"
+    "--motor-cap"
+    "100"
+  ]
+  extensionSlot [
+    Accelerometer {
+    }
+  ]
+}

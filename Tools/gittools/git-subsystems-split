@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
+GIT_DIR=$(git rev-parse --git-dir)
+GIT_ROOT=$(git rev-parse --show-toplevel)
+
+MSG_FILE="$GIT_DIR/SUBSYSTEMS_SPLIT_MSG"
+
+usage() {
+    cat >&$1 <<EOF
+git subsystems-split [OPTIONS]
+
+Ardupilot's git extension.
+
+Split HEAD commit into commits separated by subsystems (vehicles, libraries and
+folders in the project's root). Basically, reset and call commit-subsystems.
+
+If neither --copy or --edit is passed, then subsystems-split will try to make
+the original commit's message into a template for commit-subsystems.
+
+Options:
+    --copy
+    Make all commits have exactly the same message as the HEAD commit.
+
+    --edit
+    Edit the commit message as a template for commit-subsystems.
+EOF
+}
+
+option_copy=false
+option_edit=false
+
+while [[ -n "$1" ]]; do
+    opt="$1"
+    case "$opt" in
+    -h|--help)
+        usage 1
+        exit 0
+        ;;
+    --copy)
+        option_copy=true
+        ;;
+    --edit)
+        option_edit=true
+        ;;
+    *)
+        usage 2
+        exit 1
+        ;;
+    esac
+    shift
+done
+
+if $option_copy && $option_edit; then
+    echo "Options --copy and --edit can't be combined." >&2
+    exit 1
+fi
+
+author_name=$(git log -n 1 --format=%an)
+author_email=$(git log -n 1 --format=%ae)
+author="$author_name <$author_email>"
+git log -n 1 --format=%B > "$MSG_FILE"
+
+if $option_edit; then
+    if [[ -z $EDITOR ]]; then
+        echo "Environment variable EDITOR is required for option --edit." >&2
+        exit 1
+    fi
+    ($EDITOR "$MSG_FILE")
+elif ! $option_copy; then
+    if head -n 1 "$MSG_FILE" | grep "^[^: ]\+\s*:" -q; then
+        sed '1 s,^[^: ]\+\s*,$subsystem,' -i "$MSG_FILE"
+    else
+        buff_file="$(mktemp)"
+        awk '
+            NR == 1 {
+                l=sub(/^\s\+/, "", $line);
+                print "$subsystem: " \
+                      tolower(substr($l, 1, 1)) \
+                      substr($l, 2);
+            }
+            NR != 1
+            ' "$MSG_FILE" > "$buff_file"
+        mv "$buff_file" "$MSG_FILE"
+        rm "$buff_file"
+    fi
+fi
+
+HEAD=$(git rev-parse HEAD)
+git reset HEAD~1 --soft
+if ! "$SCRIPT_DIR/git-commit-subsystems" -F "$MSG_FILE" --author="$author"; then
+    echo "Error on calling git-commit-subsystems." >&2
+    git reset $HEAD
+    exit 1
+fi

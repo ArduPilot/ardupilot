@@ -1,0 +1,18 @@
+# hw definition file for processing by chibios_hwdef.py
+# for The CUBE Green hardware in a 3DR Solo
+# this is based on the CubeBlack hwdef, with Solo's required parameter defaults
+# The CUBE green is identical to a CUBE Black, but uses 5v signalling for the Solo ESC issues
+# do not use this hwdef with any configuration other than a 3DR Solo with a Green Cube running Copter 4.
+
+include ../CubeBlack/hwdef.dat
+
+undef AP_NOTIFY_OREOLED_ENABLED
+define AP_NOTIFY_OREOLED_ENABLED 1
+
+undef HAL_SOLO_GIMBAL_ENABLED
+define HAL_SOLO_GIMBAL_ENABLED HAL_MOUNT_ENABLED
+
+undef AP_BATTERY_SMBUS_SOLO_ENABLED
+define AP_BATTERY_SMBUS_SOLO_ENABLED AP_BATTERY_SMBUS_ENABLED
+
+AUTOBUILD_TARGETS Copter

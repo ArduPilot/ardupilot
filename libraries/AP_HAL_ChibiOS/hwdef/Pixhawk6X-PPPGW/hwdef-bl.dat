@@ -1,0 +1,35 @@
+include ../Pixhawk6X/hwdef-bl.dat
+
+undef UART7
+undef UART2
+undef UART3
+
+# setup build for a peripheral bootloader
+env AP_PERIPH 1
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_PIXHAWK6X_PERIPH
+
+# CAN bus
+PD0  CAN1_RX CAN1
+PD1  CAN1_TX CAN1
+
+PC1 ETH_MDC              ETH1
+PA2 ETH_MDIO             ETH1
+PC4 ETH_RMII_RXD0        ETH1
+PC5 ETH_RMII_RXD1        ETH1
+PG13 ETH_RMII_TXD0       ETH1
+PG12 ETH_RMII_TXD1       ETH1
+PB11 ETH_RMII_TX_EN      ETH1
+PA7 ETH_RMII_CRS_DV      ETH1
+PA1 ETH_RMII_REF_CLK     ETH1
+
+PG15 Ethernet_PWR_EN OUTPUT HIGH # disable power on ethernet
+
+define BOARD_PHY_ID  MII_LAN8742A_ID
+define BOARD_PHY_RMII
+
+include ../include/network_bootloader.inc
+
+# allow load from USB
+SERIAL_ORDER OTG1

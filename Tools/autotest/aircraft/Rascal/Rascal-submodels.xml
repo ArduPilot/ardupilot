@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<PropertyList>
+
+  <submodel>
+    <name>trajectory marker</name>
+    <model>Aircraft/Rascal/Models/Trajectory-Marker.xml</model>
+    <trigger>/sim/multiplay/generic/int[1]</trigger>
+    <speed>0</speed>
+    <repeat>true</repeat>
+    <delay>0.75</delay>
+    <count>-1</count>
+    <x-offset>-0.5</x-offset>
+    <y-offset>0.0</y-offset>
+    <z-offset>-0.08</z-offset>
+    <yaw-offset>0.0</yaw-offset>
+    <pitch-offset>0.0</pitch-offset>
+    <eda>1000000000.00</eda>
+    <life>600</life>
+    <buoyancy>32</buoyancy>
+    <wind>false</wind>
+    <aero-stabilised>false</aero-stabilised>
+  </submodel>
+
+</PropertyList>

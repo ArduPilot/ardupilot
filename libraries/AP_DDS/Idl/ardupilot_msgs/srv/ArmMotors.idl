@@ -1,0 +1,20 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from ardupilot_msgs/srv/ArmMotors.srv
+// generated code does not contain a copyright notice
+
+
+module ardupilot_msgs {
+  module srv {
+    struct ArmMotors_Request {
+      @verbatim (language="comment", text=
+        "This service requests the vehicle to arm or disarm its motors." "\n"
+        "Set true to arm motors, false to disarm motors.")
+      boolean arm;
+    };
+    @verbatim (language="comment", text=
+      "True if arming/disarming request for motors was successful , false otherwise. ")
+    struct ArmMotors_Response {
+      boolean result;
+    };
+  };
+};

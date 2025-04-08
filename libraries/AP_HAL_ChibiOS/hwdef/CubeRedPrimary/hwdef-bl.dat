@@ -1,0 +1,81 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H757
+
+# MCU class and specific type
+MCU STM32H7xx STM32H757xx
+
+# USB setup
+USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
+USB_PRODUCT 0x1059
+USB_STRING_MANUFACTURER "CubePilot"
+USB_STRING_PRODUCT "CubeRed-BL"
+
+define CORE_CM7
+define SMPS_PWR
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CUBERED_PRIMARY
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+define HAL_LED_ON 0
+
+PG5 LED_BOOTLOADER OUTPUT
+
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# primary <-> secondary 
+PE7    UART7_RX    UART7
+PE8    UART7_TX    UART7
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART2
+# USART2 USART6 USART3 UART8 UART7 UART4
+
+define STM32_SERIAL_USE_USART2 TRUE
+define STM32_SERIAL_USE_UART7 TRUE
+define HAL_USE_SERIAL TRUE
+
+define BOOTLOADER_DEBUG SD2
+define BOOTLOADER_FORWARD_OTG2_SERIAL SD7
+define BOOTLOADER_FORWARD_OTG2_SERIAL_BAUDRATE 2000000
+define BOOTLOADER_FORWARD_OTG2_SERIAL_SWAP TRUE
+define HAL_HAVE_DUAL_USB_CDC 1
+
+# reserve 256 bytes for comms between app and bootloader
+RAM_RESERVE_START 256
+
+# QSPI Flash
+PD11 QUADSPI_BK1_IO0 QUADSPI1
+PD12 QUADSPI_BK1_IO1 QUADSPI1
+PE2  QUADSPI_BK1_IO2 QUADSPI1
+PD13 QUADSPI_BK1_IO3 QUADSPI1
+PB10 QUADSPI_BK1_NCS QUADSPI1
+PB2  QUADSPI_CLK QUADSPI1
+
+EXT_FLASH_SIZE_MB 32
+INT_FLASH_PRIMARY 1
+
+# IFace     Device Name     Bus         QSPI Mode     Clk Freq  Size (Pow2)  NCS Delay
+QSPIDEV     w25q-dtr       QUADSPI1      MODE1         100*MHZ      31            1
+
+# disable peripheral and sensor power in the bootloader
+PG0 VDD_3V3_SENSORS_EN OUTPUT LOW
+PF2 nVDD_5V_PERIPH_EN OUTPUT LOW

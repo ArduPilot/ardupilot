@@ -1,0 +1,60 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Qiotek ZealotH743
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_QioTekZealotH743
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 2
+
+#define LED pins
+PE2 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # red
+PE1 LED_ACTIVITY OUTPUT OPENDRAIN HIGH # green
+PE0 LED_RED OUTPUT OPENDRAIN HIGH # blue
+
+define HAL_LED_ON 1
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7
+
+# UART7 is debug
+PE7 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA9  VBUS INPUT
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 32768
+
+define BOOTLOADER_DEBUG SD7
+
+# Add CS pins to ensure they are high in bootloader
+PB2  IMU1_CS       CS
+PE10 IMU2_CS       CS
+PE12 IMU3_CS       CS
+PA10 FRAM_CS       CS
+PA15 ADIS1647X_CS  CS
+PA8  AT7456_CS     CS
+PE3  MS5611_CS     CS
+PD7  DPS310_CS     CS
+PC10 FLASH_CS      CS

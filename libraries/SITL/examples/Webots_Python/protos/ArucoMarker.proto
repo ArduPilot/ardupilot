@@ -1,0 +1,57 @@
+# VRML_SIM R2022b utf8
+# template language: javascript
+
+PROTO ArucoMarker [
+  field SFVec3f     translation       0 0 0
+  field SFRotation  rotation          0 0 1 0
+  field SFString    name              "aruco"                               # Defines the name of the aruco board.
+  field SFFloat     size              0.1                                   # Defines size of the markers.
+  field SFString{"0", "1", "2", "3", "4", "5", "6", "7", "8"}
+                    markerId          "0"                                   # Defines the marker id.
+]
+{
+Solid {
+  translation IS translation
+  rotation IS rotation
+  name IS name
+  children [
+    # marker slightly in front of the border
+    Transform {
+      translation 0 0 1e-3
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 1 1 1
+            metalness 0
+            roughness 0.6
+
+            %< let markerTexture = "textures/aruco_" + fields.markerId.value + ".png"; >%
+            baseColorMap ImageTexture {
+              url "%<= markerTexture >%"
+            }
+
+          }
+
+          geometry Plane {
+            size %<= fields.size.value >% %<= fields.size.value >%
+          }
+        }
+      ]
+    }
+
+
+    # while boarder
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 1 1
+        metalness 0
+        roughness 0.6
+      }
+      geometry Plane {
+        size %<= fields.size.value * 8/6 >% %<= fields.size.value * 8/6 >%
+      }
+    }
+
+  ]
+}
+}

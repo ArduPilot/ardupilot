@@ -1,0 +1,11 @@
+# setup for Neopixel
+OUT7_FUNCTION 120
+NTF_LED_BRIGHT 2
+NTF_LED_LEN 8
+
+# setup for PORT
+#| PORT0  | PORT1  | PORT2  |  GPS  |  MSP  |
+#| USART1 | USART2 | USART3 | UART4 | UART5 |
+GPS_PORT 3
+MSP_PORT 4
+

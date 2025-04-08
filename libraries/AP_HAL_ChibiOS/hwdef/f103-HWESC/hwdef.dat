@@ -1,0 +1,4 @@
+include ../f103-periph/hwdef.inc
+
+
+define AP_PERIPH_HOBBYWING_ESC_ENABLED 1

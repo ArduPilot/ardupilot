@@ -1,0 +1,23 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from rcl_interfaces/msg/Parameter.msg
+// generated code does not contain a copyright notice
+
+#include "rcl_interfaces/msg/ParameterValue.idl"
+
+module rcl_interfaces {
+  module msg {
+    @verbatim (language="comment", text=
+      "This is the message to communicate a parameter. It is an open struct with an enum in" "\n"
+      "the descriptor to select which value is active.")
+    struct Parameter {
+      @verbatim (language="comment", text=
+        "The full name of the parameter.")
+      string name;
+
+      @verbatim (language="comment", text=
+        "The parameter's value which can be one of several types, see" "\n"
+        "`ParameterValue.msg` and `ParameterType.msg`.")
+      rcl_interfaces::msg::ParameterValue value;
+    };
+  };
+};

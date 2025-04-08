@@ -1,0 +1,22 @@
+{
+    "__comment": "inspired by https://github.com/microsoft/vscode-python/issues/3828#issuecomment-575439587",
+    "problemMatcher": [
+        {
+            "owner": "python-problem-matcher",
+            "pattern": [
+                {
+                    "regexp": "^.*File \\\"([^\\\"]|.*)\\\", line (\\d+).*",
+                    "file": 1,
+                    "line": 2
+                },
+                {
+                    "regexp": "^.*raise.*$"
+                },
+                {
+                    "regexp": "^\\s*(.*)\\s*$",
+                    "message": 1
+                }
+            ]
+        }
+    ]
+}

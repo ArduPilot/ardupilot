@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+rm -rf html
+svn cleanup
+svn update html
+
+#junkFiles=$(find html -regex ".*\.\(map\|md5\)")
+#svn remove --force $junkFiles
+#svn commit
+
+doxygen Doxyfile
+
+find html -regex ".*\.\(map\|md5\)" -exec rm {} \;
+svn add --force html/*
+
+for imageExt in png
+do
+	imageFiles=$(find html -name *.$imageExt)
+	echo image files: $imageFiles
+	svn propset svn:mime-type image/$imageExt $imageFiles
+done
+
+for textExt in html css
+do
+	textFiles=$(find html -name *.$textExt)
+	echo text files: $textFiles
+	svn propset svn:mime-type text/$textExt $textFiles
+done
+
+svn commit

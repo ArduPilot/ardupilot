@@ -1,0 +1,61 @@
+###########################################################################################################################################################
+# mRo Control Zero F7 Flight Controller
+# STM32F777IIK6
+# 8x PWM / IO - DMA capable, buffered and level shiftable - 3.3v (default) / 5v Logic
+# Front and Rear Connectors: 30pin Molex PicoClasp
+# 3x IMUs (BMI088 6DOF, ICM20602 6DOF, ICM20948 9DOF)
+# DPS310 Baro, FRAM (256Bb), SDCARD Socket, TC2030 JTAG
+# 5x UARTs (2x with hardware flow control), 2x CAN, 1x SPI, 1x I2C
+# Onboard 3 color LED and buzzer
+# Uncased Weight and Dimensions:
+# Weight: 5.3g (.19oz)
+# Width:  20mm (.79in)
+# Length: 32mm (1.26in)
+# M10058 - Initial Release
+###########################################################################################################################################################
+
+# MCU class and specific type
+MCU STM32F7xx STM32F777xx
+
+# USB setup
+USB_STRING_MANUFACTURER "mRo"
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MRO_CONTROL_ZERO
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 96
+
+PB11 LED_BOOTLOADER OUTPUT
+
+# define all 3 to make LED output White.
+PB1 LED_ACTIVITY OUTPUT
+PB3 LED_ACTIVITY2 OUTPUT
+# PB11 LED_ACTIVITY3 OUTPUT
+
+define HAL_LED_ON 0
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Add CS pins to ensure they are high in bootloader
+PC2 ICM_20602_CS CS
+PD7 BARO_CS CS
+PD10 FRAM_CS CS SPEED_VERYLOW NODMA
+PE15 ICM_20948_CS CS
+PF10 BMI088_GYRO_CS CS
+PF6 BMI088_ACCEL_CS CS

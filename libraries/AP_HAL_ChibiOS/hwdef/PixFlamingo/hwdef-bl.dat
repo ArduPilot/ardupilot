@@ -1,0 +1,48 @@
+# MCU class and specific type
+MCU STM32L4xx  STM32L4R5xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_PixFlamingoL4R5_V1
+
+USB_STRING_MANUFACTURER "Dheeran labs"
+USB_STRING_PRODUCT "PixFlamingo"
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 5
+
+APP_START_OFFSET_KB 8
+
+# flash size
+FLASH_SIZE_KB 2048
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 
+
+HAL_BOOTLOADER_TIMEOUT 1000
+
+PE7 LED_BOOTLOADER OUTPUT LOW
+PB2 LED_ACTIVITY OUTPUT
+define HAL_LED_ON 1
+
+PA9 VBUS INPUT
+
+PA11 USB_OTG_FS_DM OTG1
+PA12 USB_OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# location of application code
+FLASH_BOOTLOADER_LOAD_KB 20 
+
+# bootloader loads at start of flash
+FLASH_RESERVE_START_KB 0
+
+# Add CS pins to ensure they are high in bootloader
+PD0 IMU1_CS CS
+PE0 GYRO_CS CS
+PB5 BARO_CS CS
+PD7 MAG_CS CS

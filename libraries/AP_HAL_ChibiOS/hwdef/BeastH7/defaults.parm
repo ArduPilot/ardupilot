@@ -1,0 +1,9 @@
+# setup for LEDs on chan5
+SERVO5_FUNCTION 120
+# disable compass
+COMPASS_USE 0
+COMPASS_USE2 0
+COMPASS_USE3 0
+# setup SERIAL3 for RCIN
+SERIAL3_BAUD 115
+

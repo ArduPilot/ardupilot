@@ -1,0 +1,172 @@
+#pragma once
+
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include <SRV_Channel/SRV_Channel_config.h>
+#include "AP_ESC_Telem_Backend.h"
+
+#if HAL_WITH_ESC_TELEM
+
+#ifndef ESC_TELEM_MAX_ESCS
+    #define ESC_TELEM_MAX_ESCS NUM_SERVO_CHANNELS
+#endif
+static_assert(ESC_TELEM_MAX_ESCS > 0, "Cannot have 0 ESC telemetry instances");
+
+#define ESC_TELEM_DATA_TIMEOUT_MS 5000UL
+#define ESC_RPM_DATA_TIMEOUT_US 1000000UL
+
+class AP_ESC_Telem {
+public:
+    friend class AP_ESC_Telem_Backend;
+
+    AP_ESC_Telem();
+
+    /* Do not allow copies */
+    CLASS_NO_COPY(AP_ESC_Telem);
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+    static AP_ESC_Telem *get_singleton();
+
+    // get an individual ESC's slewed rpm if available, returns true on success
+    bool get_rpm(uint8_t esc_index, float& rpm) const;
+
+    // get an individual ESC's raw rpm if available
+    bool get_raw_rpm(uint8_t esc_index, float& rpm) const;
+
+    // get raw telemetry data, used by IOMCU
+    const volatile AP_ESC_Telem_Backend::TelemetryData& get_telem_data(uint8_t esc_index) const {
+        return _telem_data[esc_index];
+    }
+
+    // return the average motor RPM
+    float get_average_motor_rpm(uint32_t servo_channel_mask) const;
+
+    // return the average motor RPM
+    float get_average_motor_rpm() const { return get_average_motor_rpm(0xFFFFFFFF); }
+
+    // determine whether all the motors in servo_channel_mask are running
+    bool are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm) const;
+
+    // get an individual ESC's temperature in centi-degrees if available, returns true on success
+    bool get_temperature(uint8_t esc_index, int16_t& temp) const;
+
+    // get an individual motor's temperature in centi-degrees if available, returns true on success
+    bool get_motor_temperature(uint8_t esc_index, int16_t& temp) const;
+
+    // get the highest ESC temperature in centi-degrees if available, returns true if there is valid data for at least one ESC
+    bool get_highest_temperature(int16_t& temp) const;
+
+    // get an individual ESC's current in Ampere if available, returns true on success
+    bool get_current(uint8_t esc_index, float& amps) const;
+
+    // get an individual ESC's usage time in seconds if available, returns true on success
+    bool get_usage_seconds(uint8_t esc_index, uint32_t& usage_sec) const;
+
+    // get an individual ESC's voltage in Volt if available, returns true on success
+    bool get_voltage(uint8_t esc_index, float& volts) const;
+
+    // get an individual ESC's consumption in milli-Ampere.hour if available, returns true on success
+    bool get_consumption_mah(uint8_t esc_index, float& consumption_mah) const;
+
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    // get an individual ESC's input duty cycle if available, returns true on success
+    bool get_input_duty(uint8_t esc_index, uint8_t& input_duty) const;
+
+    // get an individual ESC's output duty cycle if available, returns true on success
+    bool get_output_duty(uint8_t esc_index, uint8_t& output_duty) const;
+
+    // get an individual ESC's status flags if available, returns true on success
+    bool get_flags(uint8_t esc_index, uint32_t& flags) const;
+
+    // get an individual ESC's percentage of output power if available, returns true on success
+    bool get_power_percentage(uint8_t esc_index, uint8_t& power_percentage) const;
+#endif
+
+    // return the average motor frequency in Hz for dynamic filtering
+    float get_average_motor_frequency_hz(uint32_t servo_channel_mask) const { return get_average_motor_rpm(servo_channel_mask) * (1.0f / 60.0f); };
+
+    // return the average motor frequency in Hz for dynamic filtering
+    float get_average_motor_frequency_hz() const { return get_average_motor_frequency_hz(0xFFFFFFFF); }
+
+    // return all of the motor frequencies in Hz for dynamic filtering
+    uint8_t get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) const;
+
+    // get the number of ESCs that sent valid telemetry data in the last ESC_TELEM_DATA_TIMEOUT_MS
+    uint8_t get_num_active_escs() const;
+
+    // get mask of ESCs that sent valid telemetry data in the last
+    // ESC_TELEM_DATA_TIMEOUT_MS
+    uint32_t get_active_esc_mask() const;
+
+    // return an active ESC with the highest RPM for the purposes of reporting (e.g. in the OSD)
+    uint8_t get_max_rpm_esc() const;
+
+    // return the last time telemetry data was received in ms for the given ESC or 0 if never
+    uint32_t get_last_telem_data_ms(uint8_t esc_index) const {
+        if (esc_index >= ESC_TELEM_MAX_ESCS) {return 0;}
+        return _telem_data[esc_index].last_update_ms;
+    }
+
+    // send telemetry data to mavlink
+    void send_esc_telemetry_mavlink(uint8_t mav_chan);
+
+    // update at 10Hz to log telemetry
+    void update();
+
+    // is rpm telemetry configured for the provided channel mask
+    bool is_telemetry_active(uint32_t servo_channel_mask) const;
+
+    // callback to update the rpm in the frontend, should be called by the driver when new data is available
+    // can also be called from scripting
+    void update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate);
+
+    // callback to update the data in the frontend, should be called by the driver when new data is available
+    void update_telem_data(const uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, const uint16_t data_mask);
+
+#if AP_SCRIPTING_ENABLED
+    /*
+      set RPM scale factor from script
+     */
+    void set_rpm_scale(const uint8_t esc_index, const float scale_factor);
+#endif
+
+private:
+
+    // helper that validates RPM data
+    static bool rpm_data_within_timeout (const volatile AP_ESC_Telem_Backend::RpmData &instance, const uint32_t timeout_us);
+    static bool was_rpm_data_ever_reported (const volatile AP_ESC_Telem_Backend::RpmData &instance);
+
+#if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+    // helpers that aggregate data in EDTv2 messages
+    static uint16_t merge_edt2_status(uint16_t old_status, uint16_t new_status);
+    static uint16_t merge_edt2_stress(uint16_t old_stress, uint16_t new_stress);
+#endif
+
+    // rpm data
+    volatile AP_ESC_Telem_Backend::RpmData _rpm_data[ESC_TELEM_MAX_ESCS];
+    // telemetry data
+    volatile AP_ESC_Telem_Backend::TelemetryData _telem_data[ESC_TELEM_MAX_ESCS];
+
+    uint32_t _last_telem_log_ms[ESC_TELEM_MAX_ESCS];
+    uint32_t _last_rpm_log_us[ESC_TELEM_MAX_ESCS];
+    uint8_t next_idx;
+
+#if AP_SCRIPTING_ENABLED
+    // allow for scaling of RPMs via lua scripts
+    float rpm_scale_factor[ESC_TELEM_MAX_ESCS];
+    uint32_t rpm_scale_mask;
+#endif
+    
+    bool _have_data;
+
+    AP_Int8 mavlink_offset;
+
+    static AP_ESC_Telem *_singleton;
+};
+
+namespace AP {
+    AP_ESC_Telem &esc_telem();
+};
+
+#endif // HAL_WITH_ESC_TELEM

@@ -1,0 +1,31 @@
+# Example parameter configuration file is for a Quadcopter with ESCs connected to Telem2
+
+# FETtec OneWire ESCs are connected on Telem2 port
+SERIAL2_PROTOCOL 38
+SERIAL2_OPTIONS 0
+
+# Use the full digital range supported by the ESCs
+MOT_PWM_MAX 2000
+MOT_PWM_MIN 1000
+
+# Make sure the correct functions get routed out
+SERVO1_FUNCTION 33
+SERVO2_FUNCTION 34
+SERVO3_FUNCTION 35
+SERVO4_FUNCTION 36
+
+# Activate FETtec OneWire support
+SERVO_FTW_MASK 15
+SERVO_FTW_RVMASK 0
+SERVO_FTW_POLES 14
+
+# Use RPM telemetry data to dynamically configure one notch filter per motor
+INS_HNTCH_ENABLE 1
+INS_HNTCH_MODE 3
+INS_HNTCH_OPTS 2
+INS_HNTCH_REF 1
+INS_HNTCH_FREQ 60
+INS_HNTCH_BW 30
+
+# Use ESC telemetry data as a "virtual" battery monitor
+BATT2_MONITOR 9

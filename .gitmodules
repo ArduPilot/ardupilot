@@ -1,0 +1,47 @@
+[submodule "modules/waf"]
+	path = modules/waf
+	url = https://github.com/ArduPilot/waf.git
+[submodule "modules/gbenchmark"]
+	path = modules/gbenchmark
+	url = https://github.com/google/benchmark.git
+[submodule "modules/mavlink"]
+	path = modules/mavlink
+	url = https://github.com/ArduPilot/mavlink
+[submodule "gtest"]
+	path = modules/gtest
+	url = https://github.com/ArduPilot/googletest
+[submodule "modules/ChibiOS"]
+	path = modules/ChibiOS
+	url = https://github.com/ArduPilot/ChibiOS.git
+[submodule "modules/gsoap"]
+	path = modules/gsoap
+	url = https://github.com/ArduPilot/gsoap
+[submodule "modules/DroneCAN/DSDL"]
+	path = modules/DroneCAN/DSDL
+	url = https://github.com/DroneCAN/DSDL.git
+[submodule "modules/CrashDebug"]
+	path = modules/CrashDebug
+	url = https://github.com/ardupilot/CrashDebug
+[submodule "modules/DroneCAN/pydronecan"]
+	path = modules/DroneCAN/pydronecan
+	url = https://github.com/DroneCAN/pydronecan
+[submodule "modules/DroneCAN/dronecan_dsdlc"]
+	path = modules/DroneCAN/dronecan_dsdlc
+	url = https://github.com/DroneCAN/dronecan_dsdlc
+[submodule "modules/DroneCAN/libcanard"]
+	path = modules/DroneCAN/libcanard
+	url = https://github.com/DroneCAN/libcanard
+[submodule "modules/Micro-XRCE-DDS-Client"]
+	path = modules/Micro-XRCE-DDS-Client
+	url = https://github.com/ardupilot/Micro-XRCE-DDS-Client.git
+	branch = master
+[submodule "modules/Micro-CDR"]
+	path = modules/Micro-CDR
+	url = https://github.com/ardupilot/Micro-CDR.git
+	branch = master
+[submodule "modules/lwip"]
+	path = modules/lwip
+	url = https://github.com/ArduPilot/lwip.git
+[submodule "modules/littlefs"]
+	path = modules/littlefs
+	url = https://github.com/ArduPilot/littlefs.git

@@ -1,0 +1,214 @@
+This file is for new developers to try their first git commit on!
+
+Follow the instructions in the APM wiki to get your name added to the
+list below
+
+----------------
+Test Developer ...
+
+Chris Anderson
+Phil Cole after following the instructions explicitly.
+Craig Elder was here.
+Andreas Antonopoulos wuz'ere
+Robert Lefebvre, unconfuzzled his clone.
+Olivier check test
+Phil Rowse was here :)
+Nils Hogberg (Vizual54) testing
+Linus Penzlien
+Hazy
+Benoit GRUSON
+Dario Lindo Andres
+George Zogopoulos Papaliakos, struggling with Git
+Hao Zhou
+Shingo Matsuura (assignment)
+Murata Katsutoshi, Yoseijyuku-Sei.
+Hiroshi Kitaoka
+Yu Kuwahara (assignment)(2nd trial)
+Ikegami Atsushi
+Eiji Aoki
+Kazutaka Ozawa
+Kunihiro Yoshida
+Yasuhide Horiuchi
+Tatsuya Yamaguchi
+Kenji Koseki
+Shinya Oda
+Sohan Anisetty
+Kouichi Nakajima
+Yuki Yoshioka
+Takanobu Minoshima
+Yuki Miyama
+Masahiro Saegusa
+Fumikatsu Murozaki
+Yuta Yoshinuma
+Yasuyuki Suzuki
+Koji Hosaka
+Mitsuhiro Komiya
+Eduardo Caceres (eduherminio)
+steven test
+Fnoop hello :)
+Yuichiro Shibata
+Tsuyoshi Kawamura (retry)
+Natsuki Matsuda
+Isamu Tamura(retry 4)
+Sumiaki Takemoto
+Kinuyo Irie
+Gregory Dzhezyan
+Rahul Nunna
+Ryutaro Yoshida
+Carlos Bravo (MAC)
+Hiro test
+Shinya Fujimura
+Hiroyuki Kuratsune
+Noriyoshi Tanaka
+Takeshi Matsumoto
+Makito Seki
+Kamia Umefune
+Ryunosuke Kuninobu
+Kenta Asaishi
+LZM
+Isamu Ishiguro
+Naoya Sato
+Brian Ankeny
+Opemipo Ogunkola saying Hi from Nigeria!
+Nishchay Agrawal
+Akash Nair
+Borys Tymchenko (spsancti)
+Mahtab Sandhu(ma8sa)
+Vedarth Sharma (Working on rtl)
+Kim Nguyen
+Shaunaq Narindra
+Adhita Selvaraj
+Guilherme Sousa
+Thomas Hehn (tomsal)
+Anastasia Solari (solarblue)
+Quan Nguyen
+Kotaro Iochi
+Masaru Kitamura
+Hiroyuki Yano
+Nobuyuki Arai
+Ikumi Motoshige
+Hiroshi Iwamoto
+Cafoo
+Kieth Mine (cubicrootk)
+ahmed elshweikh
+Marc Francis Say
+Clarisse Crespo
+Reginald Steven Rivera
+Dimitri Vasilkov
+Daisuke "hine" IMAI
+Tomoshi Wagata(wagatan
+Seiichi Takayama
+Yuya Fujiwara @ 17:17 May-19
+Yuuji Awata
+Harutsugu Sato
+ShingoKANEKO
+Tom Pittenger
+Pedro Villegas
+Christian Llanes (llanesc)
+Ameer Hussain
+sal-mo
+Koji Ohse(Homework)
+Giacomo Ornati
+Shusaku Yamaura
+Takuya Ohgi
+Eiichi Matsushita(anzukintoki)
+Ryosuke Takatsuka
+toshikazu kojima
+Kenji Izutsu
+John Wilbraham
+Hideaki Matsuo(Homework)
+Ansh Kumar Sharma
+Arjun Chauhan
+Jimmy Jacobson was successful in following the directions!
+Daksh Bhatia
+Biswajit Ghosh
+Kyle "Shelley" McILroy
+Sajjad Rahnama (Iran, Rasht 1398/06/07)
+kenhuyang
+Bhavya
+Nick Restivo - Hello from Georgia Tech! (10/8/2019)
+Randy Mackay from Xiamen
+Andrew Michelmore in an attempt to fly
+prajesh_pixelburn
+Gautham P Krishnan
+Vishal Raj from india(beginner)
+nnaka
+Gokul P  :)
+Rahul Ghangas
+Gabsxk
+Ahmed Majuid
+Tejprakash Sharma
+Bhaskar Dutt
+Marek Lukasiewicz
+Jacob Gruver
+Jawed Alam
+Vinicius Juvinski
+Devansh Chawla
+Drew Sandlin
+Andres Ruiz
+Krishna Prasad - Hello World!
+Diego Couto - Let's do This!
+Notorious7 (just_curious)
+Tristan Minifie 19/10/2020
+Percy Fung 3/11/2020
+Mehmet Recep Aşkar (ya allah bismillah)
+Mouna ALBACCOUCH
+Josh Henderson SR71
+Steven Grady is trying his best
+Manny Rodriguez was here March 30th, 2021 -- Texas!
+Vineet Tambe will change the world one day! 05/04/2021
+Sezer Yıldırım its a classic
+Traxius1 was here! :D
+xianglunkai
+Mike Lyons
+Miloš Petrašinović (mpetrasinovic)
+Takeshi Yamada
+Diego Borrajo
+Lee Yong Ler (Retry)
+Chenghao Tan
+RuffaloLavoisier (Jeon sunghwan) was here.
+Giovanni Rasera - Ciao Mondo from Italy - 2022
+Karmanov Semyon
+Ava Falkner
+Emre Can Suiçmez
+Yacine Thabet - 57
+Greg Poulos
+Torre Orazio
+seba czapnik
+Ramy Gad
+Matthew R. Cunningham
+Mehmet Keten
+prathap devendran (Tamil) india, 11-23
+Taqwaisneeded
+FreeName
+Anchit
+maggie
+Abdullah Saleem
+Hiroshi Kaneda
+Abe Takuya
+Masahiro Suzuki
+Hideyuki Fujikawa
+Ryoga Kamimura
+HIROSHI Suto
+Yasuhiro Setoguchi
+Shinji Ichimura
+masahiko Ito
+Kei Kabutomori
+Hiroaki Kawasaki
+Kazuhide Juta
+Ryoichi Shiohama
+Masaki Shibuya
+Aryan Roshan trying his first commit
+Amr
+Tsuyoshi Arakawa
+Naveen Kumar Kilaparthi
+Amr Attia
+Alessandro Martini
+Eren Mert YİĞİT
+Prashant Powar
+Barış Kaya :)
+Mohammed -Amine- Lamghari
+Yuji Sakamoto
+Cameron Cho
+Zhou Su
+Mohammad Izaan this side
