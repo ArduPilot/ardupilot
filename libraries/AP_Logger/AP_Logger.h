@@ -581,6 +581,11 @@ private:
     // start page of log data
     uint32_t _log_data_page;
 
+    // a timer we use to terminate log transfer after fully satisfying
+    // a log transfer.  This avoids us starting a new log when a
+    // client is filling gaps:
+    uint32_t end_log_transfer_pending_ms;
+
     GCS_MAVLINK *_log_sending_link;
     HAL_Semaphore _log_send_sem;
 
