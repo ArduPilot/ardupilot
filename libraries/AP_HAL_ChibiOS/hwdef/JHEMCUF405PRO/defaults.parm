@@ -1,0 +1,5 @@
+# setup for LEDs on chan9
+SERVO9_FUNCTION 120
+
+# Buzzer pin
+NTF_BUZZ_PIN 80

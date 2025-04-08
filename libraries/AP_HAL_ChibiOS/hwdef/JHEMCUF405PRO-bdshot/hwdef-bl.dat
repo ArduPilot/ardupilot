@@ -1,0 +1,4 @@
+# hw definition file for processing by chibios_hwdef.py
+# for JHEMCUF405PRO hardware.
+
+include ../JHEMCUF405PRO/hwdef-bl.dat
