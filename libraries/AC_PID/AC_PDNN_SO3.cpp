@@ -57,7 +57,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Neural Networks变量声明和定义~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //设置默认RBF网络中心矩阵 Setting the centers of RBF c=Matrix5*2
     float _c_1_1 = -1.0f; float _c_1_2 = -0.5f; float _c_1_3 = 0.0f; float _c_1_4 = 0.5f; float _c_1_5 = 1.0f; 
-    float _c_2_1 = -1.0f; float _c_2_2 = -0.5f; float _c_2_3 = 0.0f; float _c_2_4 = 0.5f; float _c_2_5 = 1.0f; 
+    float _c_2_1 = -10.0f; float _c_2_2 = -5.0f; float _c_2_3 = 0.0f; float _c_2_4 = 5.0f; float _c_2_5 = 10.0f; 
     //定义 特定方向 第j个 隐藏层对应的RBF网络中心（可以理解为上面RBF网络中心矩阵的第j列）
     Vector2f _c_x_1, _c_x_2, _c_x_3, _c_x_4, _c_x_5; //x方向
     _c_x_1.x = _c_1_1; _c_x_1.y = _c_2_1;//第1个隐藏层中心2*1向量
@@ -81,9 +81,9 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     _c_z_5.x = _c_1_5; _c_z_5.y = _c_2_5;//第5个隐藏层中心2*1向量
 
     //设置RBF网络的宽度 Setting the width of the RBF network
-    float _b_x = 0.6f;   
-    float _b_y = 0.6f;  
-    float _b_z = 0.6f;
+    float _b_x = 2.0f;   
+    float _b_y = 2.0f;  
+    float _b_z = 2.0f;
     
     // reset input filter to value received //无人机重启pdnn姿态控制时的初始化
     if (_reset) { //初始化逻辑
@@ -220,7 +220,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         _h_z_5 = expf(-L_z_5*L_z_5/(2*_b_z*_b_z));//z方向第5个隐藏层输出
 
         //计算权重更新律
-        float _gamma_x = 100.0f;float c_R = 0.1f;
+        float _gamma_x = 100.0f;float c_R = 0.6f;
         _dot_W_x_1 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_1;//x方向第1个权重更新律
         _dot_W_x_2 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_2;//x方向第2个权重更新律
         _dot_W_x_3 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_3;//x方向第3个权重更新律
@@ -280,11 +280,11 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~自适应律~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
-        float _J_max = 0.04f; //定义自适应参数上限
+        float _J_max = 0.03f; //定义自适应参数上限
         //~~~~~x方向
-        float _eta_x = 0.05f; //定义自适应律参数，eta越大越平滑
-        float _s_x = 0.002f;  //定义缩放因子
-        float c_R = 0.1f;
+        float _eta_x = 0.001f; //定义自适应律参数，eta越大越平滑
+        float _s_x = 0.02f;  //定义缩放因子
+        float c_R = 0.6f;
         if ((_e_Omega.x + c_R * _e_R.x) * _pdnn_output.x > 0 )
         {
             _dot_J_x = -(_J_x * _J_x) / _eta_x * (_e_Omega.x + c_R * _e_R.x) * _pdnn_output.x;
@@ -308,8 +308,8 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         }
 
         //~~~~~~y方向
-        float _eta_y = 0.05f; //定义自适应律参数，eta越大越平滑
-        float _s_y = 0.002f;  //定义缩放因子
+        float _eta_y = 0.001f; //定义自适应律参数，eta越大越平滑
+        float _s_y = 0.02f;  //定义缩放因子
         if ((_e_Omega.y + c_R * _e_R.y) * _pdnn_output.y > 0 )
         {
             _dot_J_y = -(_J_y * _J_y) / _eta_y * (_e_Omega.y + c_R * _e_R.y) * _pdnn_output.y;
@@ -334,7 +334,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
 
         //~~~~~~z方向
         float _eta_z = 0.05f; //定义自适应律参数，eta越大越平滑
-        float _s_z = 0.002f;  //定义缩放因子
+        float _s_z = 0.02f;  //定义缩放因子
         if ((_e_Omega.z + c_R * _e_R.z) * _pdnn_output.z > 0 )
         {
             _dot_J_z = -(_J_z * _J_z) / _eta_z * (_e_Omega.z + c_R * _e_R.z) * _pdnn_output.z;
@@ -389,7 +389,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     //计算总输出，每个方向上乘以惯性张量
     _pdnn_output.x = _J_x * (-_e_R.x * _kR - _e_Omega.x * _kOmega - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
     _pdnn_output.y = _J_y * (-_e_R.y * _kR - _e_Omega.y * _kOmega - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
-    _pdnn_output.z = _J_z * (-_e_R.z * _kR_z - _e_Omega.z * _kOmega_z - 1.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
+    _pdnn_output.z = _J_z * (-_e_R.z * _kR_z - _e_Omega.z * _kOmega_z - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
   
 
     return _pdnn_output; //返回pdnn控制器输出

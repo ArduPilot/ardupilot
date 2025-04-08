@@ -555,6 +555,16 @@ void AC_AttitudeControl_Heli::set_Rc(const Matrix3f& Rc, bool Rc_active) {
     _Rc = Rc;  // 将传递的目标旋转矩阵保存到姿态控制模块的内部变量
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~传输到位置控制器的getter~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Vector3f AC_AttitudeControl_Heli::get_phi() const
+{   
+    Vector3f _phi;
+    _phi.x = _phi_x;
+    _phi.y = _phi_y;
+    _phi.z = _phi_z;
+    return _phi;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1

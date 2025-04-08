@@ -1292,6 +1292,10 @@ void AC_PosControl::update_z_controller()
     }
 
      //current_DIYwrench = get_DIYwrench(_U_x); //用于ROS2推力话题
+
+    Write_PSCD(_pdnn_pos.get_phi().x, _pdnn_pos.get_m().x, _attitude_control.get_phi().x, //发送给姿态控制,
+                   _attitude_control.get_phi().y, -_vel_target.z, -_inav.get_velocity_z_up_cms(),
+                   -_accel_desired.z, -_accel_target.z, -get_z_accel_cmss());
 }
 
 
@@ -1595,9 +1599,9 @@ void AC_PosControl::write_log()
     }
 
     if (is_active_z()) {
-        Write_PSCD(-_pos_desired.z, -_pos_target.z, -_inav.get_position_z_up_cm(),
-                   -_vel_desired.z, -_vel_target.z, -_inav.get_velocity_z_up_cms(),
-                   -_accel_desired.z, -_accel_target.z, -get_z_accel_cmss());
+        //Write_PSCD(_pdnn_pos.get_phi().x, _pdnn_pos.get_m().x, _attitude_control.get_phi().x, //发送给姿态控制,
+                   //_attitude_control.get_phi().y, -_vel_target.z, -_inav.get_velocity_z_up_cms(),
+                   //-_accel_desired.z, -_accel_target.z, -get_z_accel_cmss());
 
         // log down and terrain offsets if they are being used
         if (!is_zero(_pos_offset.z)) {

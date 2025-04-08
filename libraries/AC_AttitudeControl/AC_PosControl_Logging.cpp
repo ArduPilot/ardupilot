@@ -13,15 +13,15 @@ void AC_PosControl::Write_PSCx(LogMessages id, float pos_desired, float pos_targ
     const struct log_PSCx pkt{
         LOG_PACKET_HEADER_INIT(id),
             time_us         : AP_HAL::micros64(),
-            pos_desired   : pos_desired * 0.01f,
-            pos_target    : pos_target * 0.01f,
-            pos           : pos * 0.01f,
-            vel_desired   : vel_desired * 0.01f,
-            vel_target    : vel_target * 0.01f,
-            vel           : vel * 0.01f,
-            accel_desired : accel_desired * 0.01f,
-            accel_target  : accel_target * 0.01f,
-            accel         : accel * 0.01f
+            pos_desired   : pos_desired * 1.0f,
+            pos_target    : pos_target * 1.0f,
+            pos           : pos * 1.0f,
+            vel_desired   : vel_desired * 1.0f,
+            vel_target    : vel_target * 1.0f,
+            vel           : vel * 1.0f,
+            accel_desired : accel_desired * 1.0f,
+            accel_target  : accel_target * 1.0f,
+            accel         : accel * 1.0f
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }

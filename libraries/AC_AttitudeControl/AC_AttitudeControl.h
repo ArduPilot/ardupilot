@@ -340,6 +340,9 @@ public:
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Rc stter纯虚函数~~~~~~~~~~~~~~~~~~~~
     virtual void set_Rc(const Matrix3f& Rc, bool Rc_active) = 0; //=0表示纯虚函数，需要在所有派生类(AC_AttitudeContro_Sub)中添加对应实现
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~getter纯虚函数~~~~~~~~~~~~~~~~~~~~用于AC_PosControl中获取姿态控制数据
+   virtual Vector3f get_phi() const = 0; //获取神经网络输出
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // get throttle passed into attitude controller (i.e. throttle_in provided to set_throttle_out)
     float get_throttle_in() const { return _throttle_in; }

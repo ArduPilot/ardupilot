@@ -377,6 +377,15 @@ void AC_AttitudeControl_Multi::set_Rc(const Matrix3f& Rc, bool Rc_active) {
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Vector3f AC_AttitudeControl_Multi::get_phi() const
+{   
+    Vector3f _phi;
+    _phi.x = _phi_x;
+    _phi.y = _phi_y;
+    _phi.z = _phi_z;
+    return _phi;
+}
+
 void AC_AttitudeControl_Multi::set_throttle_mix_max(float ratio) //设置油门与姿态控制之间的混合优先级（几何控制不需要）
 {
     ratio = constrain_float(ratio, 0.0f, 1.0f);
@@ -501,7 +510,7 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, floa
     //_motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
 
     //_pd_scale_used = _pd_scale;
-     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnnSO3控制器~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnnSO3控制器~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     _R_body_to_ned_meas = _ahrs.get_rotation_body_to_ned(); //获取旋转矩阵测量值 body to NED，并传递给_R_body_to_ned_meas
     //_R_body_to_neu_meas = _R_body_to_ned_meas;
     //_R_body_to_neu_meas.a.z = -_R_body_to_ned_meas.a.z; // 转换为旋转矩阵测量值 body to NEU （翻转第三列）
@@ -512,18 +521,24 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, floa
     //Omega.z = -gyro.z; //可以翻转NED下gyro的Z轴，实现NED -> NEU的角速度测量值转换
 
     Vector3f Md = _pdnn_att.update_all(_Rc, _R_body_to_ned_meas, Omega, dt, _Rc_active); //pdnn几何姿态控制器，输出为3*1扭矩
-    float test_msg_3 = _pdnn_att.get_phi().x;
-    float test_msg_4 = _pdnn_att.get_J().x;
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+   
     _motors.set_roll(Md.x/13.3f);  //发送控制力矩给Mixer
     _motors.set_roll_ff(0.0f); //设置为无前馈
     _motors.set_pitch(Md.y/13.3f);
     _motors.set_pitch_ff(0.0f);
     _motors.set_yaw(Md.z/13.3f); //因为Mixer是基于NED配置，所以这里如果是用到NEU，需要再将NEU下的力矩翻转到NED发送给mixer
     _motors.set_yaw_ff(0.0f);
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~getter传出数据到位置控制以在位置控制中输出到log~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    _phi_x = _pdnn_att.get_phi().x;
+    _phi_y = _pdnn_att.get_phi().y;
+    _phi_z = _pdnn_att.get_phi().z;
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     //~~~~~~~~~~~~~~~~~~~测试ROS2 Topic~~~~~~~~~~~~~~~~~~~~~
+    float test_msg_3 = _pdnn_att.get_phi().x;
+    float test_msg_4 = _pdnn_att.get_J().x;
     current_log_out_1 = get_log_out_1(test_msg_3, test_msg_4); //用于ROS2推力话题 
 
     control_monitor_update();
