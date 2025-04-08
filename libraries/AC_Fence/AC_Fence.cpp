@@ -675,7 +675,7 @@ bool AC_Fence::check_fence_polygon()
             return true;
         }
         return false;
-    } else if (option_enabled(OPTIONS::MARGIN_BREACH)
+    } else if (option_enabled(OPTIONS::NOTIFY_MARGIN_BREACH)
                && _polygon_breach_distance < 0 && fabsf(_polygon_breach_distance) < _margin) {
         record_margin_breach(AC_FENCE_TYPE_POLYGON);
     } else {
@@ -907,20 +907,24 @@ void AC_Fence::record_breach(uint8_t fence_type)
 void AC_Fence::record_margin_breach(uint8_t fence_type)
 {
     // if we haven't already breached a margin limit, update the breach time
-    if (!(_breached_fence_margins & fence_type)) {
-        const uint32_t now = AP_HAL::millis();
-        _margin_breach_time = now;
+    const uint32_t now = AP_HAL::millis();
 
-        // emit a message indicated we're newly-breached, but not too often
-        if (option_enabled(OPTIONS::MARGIN_BREACH)
-            && AP_HAL::timeout_expired(_last_margin_breach_notify_sent_ms, now, 1000U)) {
-            _last_margin_breach_notify_sent_ms = now;
-            print_fence_message("close", _breached_fence_margins | fence_type);
-        }
+    if (!(_breached_fence_margins & fence_type)) {
+        _margin_breach_time = now;
     }
 
     // update bitmask
     _breached_fence_margins |= fence_type;
+
+    // emit a message indicated we're newly-breached, but not too often
+    if (option_enabled(OPTIONS::NOTIFY_MARGIN_BREACH)
+        && AP_HAL::timeout_expired(_last_margin_breach_notify_sent_ms, now, 1000U)) {
+        _last_margin_breach_notify_sent_ms = now;
+        char msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        ExpandingString e(msg, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1);
+        AC_Fence::get_fence_names(_breached_fence_margins, e);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "%s in %.1fm", e.get_writeable_string(), fabsf(get_breach_distance(_breached_fence_margins)));
+    }
 }
 
 /// clear_breach - update breach bitmask
@@ -933,12 +937,7 @@ void AC_Fence::clear_breach(uint8_t fence_type)
 void AC_Fence::clear_margin_breach(uint8_t fence_type)
 {
     if (_breached_fence_margins & fence_type) {
-        const uint32_t now = AP_HAL::millis();
-
-        // emit a message indicated we're newly-breached, but not too often
-        if (option_enabled(OPTIONS::MARGIN_BREACH)
-            && AP_HAL::timeout_expired(_last_margin_breach_notify_sent_ms, now, 1000U)) {
-            _last_margin_breach_notify_sent_ms = now;
+        if (option_enabled(OPTIONS::NOTIFY_MARGIN_BREACH)) {
             print_fence_message("cleared margin breach", fence_type);
         }
     }
