@@ -237,7 +237,7 @@ void AP_SystemID::update()
             }
             break;
         case AxisType::RECOVER_YAW:
-            if (plane.control_mode->supports_vtol_systemid()l) {
+            if (plane.control_mode->supports_vtol_systemid()) {
 #if HAL_QUADPLANE_ENABLED
                 attitude_offset_deg.z = waveform_sample;
                 attitude_control->bf_feedforward(false);
@@ -252,7 +252,7 @@ void AP_SystemID::update()
                 attitude_control->rate_bf_roll_sysid(radians(waveform_sample));
 #endif
             } else {
-                plane.rollController.rate_bf_sysid(waveform_sample);
+                rate_offset_dps.x = waveform_sample;
             }
             break;
         case AxisType::RATE_PITCH:
@@ -261,7 +261,7 @@ void AP_SystemID::update()
                 attitude_control->rate_bf_pitch_sysid(radians(waveform_sample));
 #endif
             } else {
-                plane.pitchController.rate_bf_sysid(waveform_sample);
+                rate_offset_dps.y = waveform_sample;
             }
             break;
         case AxisType::RATE_YAW:
@@ -279,7 +279,7 @@ void AP_SystemID::update()
                 attitude_control->actuator_roll_sysid(waveform_sample);
 #endif
             } else {
-                plane.rollController.actuator_sysid(waveform_sample);
+                output_offset.x = waveform_sample;
             }
             break;
         case AxisType::MIX_PITCH:
@@ -288,7 +288,7 @@ void AP_SystemID::update()
                 attitude_control->actuator_pitch_sysid(waveform_sample);
 #endif
             } else {
-                plane.pitchController.actuator_sysid(waveform_sample);
+                output_offset.y = waveform_sample;
             }
             break;
         case AxisType::MIX_YAW:
