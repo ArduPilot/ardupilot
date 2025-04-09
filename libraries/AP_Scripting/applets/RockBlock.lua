@@ -289,6 +289,7 @@ local function MAVLinkProcessor()
                     loc:alt(_mavresult.z * 100)
                     if _mavresult.frame == 10 then -- MAV_FRAME_GLOBAL_TERRAIN_ALT
                         loc:terrain_alt(true)
+                        loc:relative_alt(true)
                     elseif _mavresult.frame == 3 then -- MAV_FRAME_GLOBAL_RELATIVE_ALT
                         loc:relative_alt(true)
                     end

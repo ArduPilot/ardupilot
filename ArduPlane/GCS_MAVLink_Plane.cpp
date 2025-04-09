@@ -508,12 +508,17 @@ bool GCS_MAVLINK_Plane::handle_guided_request(AP_Mission::Mission_Command &cmd)
  */
 void GCS_MAVLINK_Plane::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 {
-    plane.next_WP_loc.alt = cmd.content.location.alt;
-    if (cmd.content.location.relative_alt && !cmd.content.location.terrain_alt) {
-        plane.next_WP_loc.alt += plane.home.alt;
+    plane.fix_terrain_WP(cmd.content.location, __LINE__);
+
+    if (cmd.content.location.terrain_alt) {
+        plane.next_WP_loc.set_alt_cm(cmd.content.location.alt, Location::AltFrame::ABOVE_TERRAIN);
+    } else {
+        // convert to absolute alt
+        float abs_alt_m;
+        if (cmd.content.location.get_alt_m(Location::AltFrame::ABSOLUTE, abs_alt_m)) {
+            plane.next_WP_loc.set_alt_m(abs_alt_m, Location::AltFrame::ABSOLUTE);
+        }
     }
-    plane.next_WP_loc.relative_alt = false;
-    plane.next_WP_loc.terrain_alt = cmd.content.location.terrain_alt;
     plane.reset_offset_altitude();
 }
 
@@ -595,6 +600,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     if (!location_from_command_t(packet, requested_position)) {
         return MAV_RESULT_DENIED;
     }
+    plane.fix_terrain_WP(requested_position, __LINE__);
 
     if (isnan(packet.param4) || is_zero(packet.param4)) {
         requested_position.loiter_ccw = 0;
@@ -623,10 +629,9 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
         plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
 #endif
 
-        // add home alt if needed
-        if (requested_position.relative_alt && !requested_position.terrain_alt) {
-            requested_position.alt += plane.home.alt;
-            requested_position.relative_alt = 0;
+        // convert to absolute alt
+        if (!requested_position.terrain_alt) {
+            requested_position.change_alt_frame(Location::AltFrame::ABSOLUTE);
         }
 
         plane.set_guided_WP(requested_position);
