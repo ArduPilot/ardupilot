@@ -130,7 +130,7 @@ float roll_out = stabilize_roll_get_roll_out();
         Vector3f offset;
         auto &systemid = plane.g2.systemid;
         offset = systemid.get_output_offset();
-        roll_out += offset.x;
+        roll_out += offset.x * 4500.0f;
     }
 #endif 
 
@@ -193,7 +193,7 @@ void Plane::stabilize_pitch()
         Vector3f offset;
         auto &systemid = plane.g2.systemid;
         offset = systemid.get_output_offset();
-        pitch_out += offset.y;
+        pitch_out += offset.y * 4500.0f;
     }
 #endif 
 
@@ -385,7 +385,16 @@ void Plane::stabilize_yaw()
     /*
       now calculate rudder for the rudder
      */
-    const float rudder_output = calc_nav_yaw_coordinated();
+    float rudder_output = calc_nav_yaw_coordinated();
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    if (control_mode->supports_fw_systemid()) {
+        Vector3f offset;
+        auto &systemid = plane.g2.systemid;
+        offset = systemid.get_output_offset();
+        rudder_output += offset.z * 4500.0f;
+    }
+#endif 
 
     if (!ground_steering) {
         // Not doing ground steering, output rudder on steering channel
@@ -423,11 +432,12 @@ void Plane::stabilize()
 
 #if AP_PLANE_SYSTEMID_ENABLED
     if (control_mode->supports_fw_systemid()) {
-        Vector3f offset_deg;
         auto &systemid = plane.g2.systemid;
+        // systemid is updated here for all other calls
         systemid.update();
-        offset_deg = systemid.get_attitude_offset_deg();
 
+        Vector3f offset_deg;
+        offset_deg = systemid.get_attitude_offset_deg();
         plane.nav_roll_cd += offset_deg.x * 100.0f;
         plane.nav_pitch_cd += offset_deg.y * 100.0f;
     }

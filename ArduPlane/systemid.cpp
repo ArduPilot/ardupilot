@@ -110,8 +110,9 @@ void AP_SystemID::start()
     if (plane.control_mode->supports_fw_systemid() && (start_axis == AxisType::RECOVER_ROLL 
                                                         || start_axis == AxisType::RECOVER_PITCH
                                                         || start_axis == AxisType::RECOVER_YAW
-                                                        || start_axis == AxisType::RATE_YAW
-                                                        || start_axis == AxisType::MIX_YAW)) {
+                                                        || start_axis == AxisType::RATE_ROLL
+                                                        || start_axis == AxisType::RATE_PITCH
+                                                        || start_axis == AxisType::RATE_YAW)) {
         gcs().send_text(MAV_SEVERITY_WARNING, "SystemID: Axis not supported in Plane");
         return;
     }
@@ -252,7 +253,7 @@ void AP_SystemID::update()
                 attitude_control->rate_bf_roll_sysid(radians(waveform_sample));
 #endif
             } else {
-                rate_offset_dps.x = waveform_sample;
+                // Not incorporated into plane
             }
             break;
         case AxisType::RATE_PITCH:
@@ -261,7 +262,7 @@ void AP_SystemID::update()
                 attitude_control->rate_bf_pitch_sysid(radians(waveform_sample));
 #endif
             } else {
-                rate_offset_dps.y = waveform_sample;
+                // Not incorporated into plane
             }
             break;
         case AxisType::RATE_YAW:
@@ -297,7 +298,7 @@ void AP_SystemID::update()
                 attitude_control->actuator_yaw_sysid(waveform_sample);
 #endif
             } else {
-                // Not incorporated into plane
+                output_offset.z = waveform_sample;
             }
             break;
         case AxisType::MIX_THROTTLE:
