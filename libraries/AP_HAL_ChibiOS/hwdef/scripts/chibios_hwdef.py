@@ -2898,8 +2898,15 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.progress("Removing %s" % u)
             self.bytype.pop(u, '')
             self.bylabel.pop(u, '')
+            # remove alt config definitions
+            for alt in sorted(self.altmap.keys()):
+                for pp in sorted(self.altmap[alt].keys()):
+                    p = self.altmap[alt][pp]
+                    if p.portpin == u:
+                        del self.altmap[alt][pp]
+                        if p.label in self.altlabel.keys():
+                            del self.altlabel[p.label]
             self.alttype.pop(u, '')
-            self.altlabel.pop(u, '')
             for dev in self.spidev:
                 if u == dev[0]:
                     self.spidev.remove(dev)
