@@ -165,11 +165,8 @@ int32_t ModeFollow::wp_bearing() const
  */
 bool ModeFollow::get_wp(Location &loc) const
 {
-    float dist = g2.follow.get_distance_to_target();
-    float bearing = g2.follow.get_bearing_to_target();
-    loc = copter.current_loc;
-    loc.offset_bearing(bearing, dist);
-    return true;
+    Vector3f vel;
+    return g2.follow.get_target_location_and_velocity_ofs(loc, vel);
 }
 
 #endif // MODE_FOLLOW_ENABLED
