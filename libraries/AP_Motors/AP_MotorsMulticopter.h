@@ -92,6 +92,9 @@ public:
     // return thrust for motor motor_num, returns true if value is valid false otherwise
     bool                get_thrust(uint8_t motor_num, float& thr_out) const override;
 
+    // convert actuator output (0~1) range to pwm range
+    int16_t             output_to_pwm(float _actuator_output);
+
 #if HAL_LOGGING_ENABLED
     // 10hz logging of voltage scaling and max trust
     void                Log_Write() override;
@@ -123,9 +126,6 @@ protected:
 
     // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
     virtual float       get_current_limit_max_throttle();
-
-    // convert actuator output (0~1) range to pwm range
-    int16_t             output_to_pwm(float _actuator_output);
 
     // adds slew rate limiting to actuator output if MOT_SLEW_TIME > 0 and not shutdown
     void                set_actuator_with_slew(float& actuator_output, float input);
