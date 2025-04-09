@@ -161,8 +161,8 @@ void AP_Follow::clear_offsets_if_required()
 {
     if (_offsets_were_zero) {
         _offset.set(Vector3f());
+        _offsets_were_zero = false;
     }
-    _offsets_were_zero = false;
 }
 
 // get target's estimated location
