@@ -106,7 +106,6 @@ private:
 
     // internal variables
     bool        _deployed;              // true if the landing gear has been deployed, initialized false
-    bool        _have_changed;          // have we changed the servo state?
 
     int16_t     _last_height_above_ground;
     
