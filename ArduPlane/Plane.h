@@ -1165,6 +1165,7 @@ private:
     void servos_twin_engine_mix();
     void force_flare();
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
+    float get_throttle_slewrate() const;
     void throttle_slew_limit();
     bool suppress_throttle(void);
     void update_throttle_hover();
