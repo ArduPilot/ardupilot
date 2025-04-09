@@ -43,6 +43,9 @@ bool ModeGuided::init(bool ignore_checks)
 
     // clear pause state when entering guided mode
     _paused = false;
+   //新增起飞逻辑，arming后起飞到目标高度cm
+   do_user_takeoff_start(400.0f);
+
 
     return true;
 }
@@ -95,6 +98,8 @@ void ModeGuided::run()
         angle_control_run();
         break;
     }
+
+    copter.set_auto_armed(true); //这里可以始终确保在guidedmode可以arming
  }
 
 // returns true if the Guided-mode-option is set (see GUID_OPTIONS)

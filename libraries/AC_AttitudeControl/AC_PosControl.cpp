@@ -476,7 +476,7 @@ void AC_PosControl::init_xy_controller_stopping_point()
     init_xy_controller();
 
     get_stopping_point_xy_cm(_pos_desired.xy());
-    _pos_target.xy() = _pos_desired.xy();// + 0.0f*_pos_offset.xy();
+    _pos_target.xy() = _pos_desired.xy() + _pos_offset.xy();
     _vel_desired.xy().zero();
     _accel_desired.xy().zero();
 }
@@ -501,7 +501,7 @@ void AC_PosControl::soften_for_landing_xy()
     // decay position error to zero
     if (is_positive(_dt)) {
         _pos_target.xy() += (_inav.get_position_xy_cm().topostype() - _pos_target.xy()) * (_dt / (_dt + POSCONTROL_RELAX_TC));
-        _pos_desired.xy() = _pos_target.xy();// - 0.0f*_pos_offset.xy();
+        _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy();
     }
 
     // Prevent I term build up in xy velocity controller.
@@ -525,7 +525,7 @@ void AC_PosControl::init_xy_controller()
     _angle_max_override_cd = 0.0;
 
     _pos_target.xy() = _inav.get_position_xy_cm().topostype();
-    _pos_desired.xy() = _pos_target.xy();// - 0.0f*_pos_offset.xy();
+    _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy();
 
     _vel_target.xy() = _inav.get_velocity_xy_cms();
     _vel_desired.xy() = _vel_target.xy() - _vel_offset.xy();
@@ -622,14 +622,14 @@ void AC_PosControl::update_offsets_xy()
 void AC_PosControl::stop_pos_xy_stabilisation()
 {
     _pos_target.xy() = _inav.get_position_xy_cm().topostype();
-    _pos_desired.xy() = _pos_target.xy();// - 0.0f*_pos_offset.xy();
+    _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy();
 }
 
 /// stop_vel_xy_stabilisation - sets the target to the current position and velocity to the current velocity to remove any position and velocity corrections from the system
 void AC_PosControl::stop_vel_xy_stabilisation()
 {
     _pos_target.xy() =  _inav.get_position_xy_cm().topostype();
-    _pos_desired.xy() = _pos_target.xy();// - _pos_offset.xy();
+    _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy();
     
     _vel_target.xy() = _inav.get_velocity_xy_cms();;
     _vel_desired.xy() = _vel_target.xy() - _vel_offset.xy();
@@ -685,7 +685,7 @@ void AC_PosControl::update_xy_controller()
 
     // Position Controller
 
-    _pos_target.xy() = _pos_desired.xy();// + 0.0f * _pos_offset.xy(); //对XY目标位置进行赋值：期望位置+偏移量补偿，这个_pos_target.xy()值是实时更新的
+    _pos_target.xy() = _pos_desired.xy() +  _pos_offset.xy(); //对XY目标位置进行赋值：期望位置+偏移量补偿，这个_pos_target.xy()值是实时更新的
 
     // determine the combined position of the actual position and the disturbance from system ID mode
     const Vector3f &curr_pos = _inav.get_position_neu_cm();  //通过 `inav` 系统获取无人机在北-东-上（NEU）坐标系中的位置，单位是厘米。
@@ -693,7 +693,7 @@ void AC_PosControl::update_xy_controller()
     comb_pos.xy() += _disturb_pos; //取得 `comb_pos` 的 x 和 y 分量，形成一个二维向量并在当前位置加上干扰的位置
 
     Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, comb_pos); //`_p_pos_xy` 是一个用于横向位置控制的P（比例）控制器。控制器输出目标速度
-    _pos_desired.xy() = _pos_target.xy();// - _pos_offset.xy(); //对XY期望位置进行再赋值：这个值也是实时更新的
+    _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy(); //对XY期望位置进行再赋值：这个值也是实时更新的
 
     // Velocity Controller
 
@@ -867,7 +867,7 @@ void AC_PosControl::init_z_controller_stopping_point()
     init_z_controller();
 
     get_stopping_point_z_cm(_pos_desired.z);
-    _pos_target.z = _pos_desired.z;// + _pos_offset.z;
+    _pos_target.z = _pos_desired.z + _pos_offset.z;
     _vel_desired.z = 0.0f;
     _accel_desired.z = 0.0f;
 }
@@ -896,7 +896,7 @@ void AC_PosControl::init_z_controller()
     init_offsets_z();
 
     _pos_target.z = _inav.get_position_z_up_cm();
-    _pos_desired.z = _pos_target.z;// - 0.0f*_pos_offset.z;
+    _pos_desired.z = _pos_target.z - _pos_offset.z;
 
     _vel_target.z = _inav.get_velocity_z_up_cms();
     _vel_desired.z = _vel_target.z - _vel_offset.z;
@@ -1198,7 +1198,7 @@ void AC_PosControl::update_z_controller()
     // update the position, velocity and acceleration offsets
     update_offsets_z(); //更新偏移量
     update_terrain();  //更新地形高度
-    _pos_target.z = _pos_desired.z;// + _pos_offset.z + _pos_terrain;
+    _pos_target.z = _pos_desired.z + _pos_offset.z + _pos_terrain;
 
     // calculate the target velocity correction
     float pos_target_zf = _pos_target.z; //赋值给局部变量
@@ -1207,7 +1207,7 @@ void AC_PosControl::update_z_controller()
     _vel_target.z *= AP::ahrs().getControlScaleZ(); //光流补偿缩放因子
 
     _pos_target.z = pos_target_zf; //局部变量的赋值还原
-    //_pos_desired.z = _pos_target.z - (_pos_offset.z + _pos_terrain); //重新计算期望位置
+    _pos_desired.z = _pos_target.z - (_pos_offset.z + _pos_terrain); //重新计算期望位置
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnn控制器~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     const Vector3f &pos_meas_neu = _inav.get_position_neu_cm();  //通过 `inav` 系统获取无人机在北-东-上（NEU）坐标系中的位置，单位是厘米。mocap中这里考虑替换为mocap位置反馈
@@ -1370,7 +1370,7 @@ void AC_PosControl::init_terrain()
 // init_pos_terrain_cm - initialises the current terrain altitude and target altitude to pos_offset_terrain_cm
 void AC_PosControl::init_pos_terrain_cm(float pos_terrain_cm)
 {
-   // _pos_desired.z -= (pos_terrain_cm - _pos_terrain);
+    _pos_desired.z -= (pos_terrain_cm - _pos_terrain);
     _pos_terrain_target = pos_terrain_cm;
     _pos_terrain = pos_terrain_cm;
 }
@@ -1599,7 +1599,7 @@ void AC_PosControl::write_log()
     }
 
     if (is_active_z()) {
-        //Write_PSCD(_pdnn_pos.get_phi().x, _pdnn_pos.get_m().x, _attitude_control.get_phi().x, //发送给姿态控制,
+        //Write_PSCD(_pdnn_pos.get_phi().x, _pdnn_pos.get_m().x, _attitude_control.get_phi().x, //这一段放到了updatez循环中以寻求400hz刷新
                    //_attitude_control.get_phi().y, -_vel_target.z, -_inav.get_velocity_z_up_cms(),
                    //-_accel_desired.z, -_accel_target.z, -get_z_accel_cmss());
 
@@ -1742,7 +1742,7 @@ void AC_PosControl::handle_ekf_xy_reset()
 
         // To zero real position shift during relative position modes like Loiter, PosHold, Guided velocity and accleration control.
         _pos_target.xy() = (_inav.get_position_xy_cm() + _p_pos_xy.get_error()).topostype();
-        _pos_desired.xy() = _pos_target.xy();// - 0.0f *_pos_offset.xy();
+        _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy();
         _vel_target.xy() = _inav.get_velocity_xy_cms() + _pid_vel_xy.get_error();
         _vel_desired.xy() = _vel_target.xy() - _vel_offset.xy();
 
@@ -1770,7 +1770,7 @@ void AC_PosControl::handle_ekf_z_reset()
 
         // To zero real position shift during relative position modes like Loiter, PosHold, Guided velocity and accleration control.
         _pos_target.z = _inav.get_position_z_up_cm() + _p_pos_z.get_error();
-        _pos_desired.z = _pos_target.z;// - (_pos_offset.z + _pos_terrain);
+        _pos_desired.z = _pos_target.z - (_pos_offset.z + _pos_terrain);
         _vel_target.z = _inav.get_velocity_z_up_cms() + _pid_vel_z.get_error();
         _vel_desired.z = _vel_target.z - (_vel_offset.z + _vel_terrain);
 
