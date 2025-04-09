@@ -91,6 +91,7 @@ userdata BattMonitorScript_State field current_amps float'skip_check write
 userdata BattMonitorScript_State field consumed_mah float'skip_check write
 userdata BattMonitorScript_State field consumed_wh float'skip_check write
 userdata BattMonitorScript_State field temperature float'skip_check write
+userdata BattMonitorScript_State field state_of_health_pct uint8_t'skip_check write
 
 singleton AP_BattMonitor rename battery
 singleton AP_BattMonitor depends AP_BATTERY_ENABLED
