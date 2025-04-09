@@ -52,7 +52,7 @@ void Plane::fence_check()
 
     if (plane.previous_mode_reason == ModeReason::FENCE_BREACHED) {
         if (!armed || ((fence_breaches.new_breaches == 0 && orig_breaches == 0) && !plane.is_flying())) {
-            plane.previous_mode_reason = ModeReason::UNKNOWN;
+            plane.previous_mode_reason = ModeReason::FENCE_REENABLE;
         }
     }
 
@@ -72,6 +72,16 @@ void Plane::fence_check()
             default:
                 // No returning to a previous mode, unless our action allows it
                 break;
+        }
+        /*
+          clear mode reasons if they are FENCE_BREACHED to allow AUX
+          switch fence disable/enable to re-enable the fence after a breach
+         */
+        if (plane.previous_mode_reason == ModeReason::FENCE_BREACHED) {
+            plane.previous_mode_reason = ModeReason::FENCE_REENABLE;
+        }
+        if (plane.control_mode_reason == ModeReason::FENCE_BREACHED) {
+            plane.control_mode_reason = ModeReason::FENCE_REENABLE;
         }
         goto fence_check_complete;
     }
@@ -193,6 +203,11 @@ bool Plane::fence_stickmixing(void) const
 
 bool Plane::in_fence_recovery() const
 {
+    if (control_mode == &mode_auto && !mission.get_in_landing_sequence_flag()) {
+        // the user may have changed target WP to be outside the
+        // landing sequence
+        return false;
+    }
     const bool current_mode_breach = plane.control_mode_reason == ModeReason::FENCE_BREACHED;
     const bool previous_mode_breach = plane.previous_mode_reason ==  ModeReason::FENCE_BREACHED;
     const bool previous_mode_complete = (plane.control_mode_reason == ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL) ||
