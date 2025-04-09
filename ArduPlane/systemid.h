@@ -27,9 +27,6 @@ public:
     const Vector3f &get_attitude_offset_deg(void) const {
         return attitude_offset_deg;
     }
-    const Vector3f &get_rate_offset_dps(void) const {
-        return rate_offset_dps;
-    }
     const Vector3f &get_output_offset(void) const {
         return output_offset;
     }
@@ -92,7 +89,6 @@ private:
 
     // current attitude offset
     Vector3f attitude_offset_deg;
-    Vector3f rate_offset_dps;
     Vector3f output_offset;
     float throttle_offset;
 
