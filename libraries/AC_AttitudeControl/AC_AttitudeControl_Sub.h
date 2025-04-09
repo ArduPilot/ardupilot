@@ -51,7 +51,11 @@ public:
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~getter纯虚函数~~~~~~~~~~~~~~~~~~~~用于AC_PosControl中获取姿态控制数据
     Vector3f get_phi() const override; //获取神经网络输出
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+    Vector3f get_J() const override; //获取自适应参数
+    Vector3f get_e_R() const override; //获取旋转矩阵误差
+    Vector3f get_e_Omega() const override; //获取角速度误差
+    float get_Psi_R() const override; //获取几何控制姿态误差标量函数
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 
     // calculate total body frame throttle required to produce the given earth frame throttle
 	float get_throttle_boosted(float throttle_in);
@@ -130,11 +134,14 @@ protected:
      //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~声明内部成员变量~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Matrix3f    _Rc;      //解算后的期望旋转矩阵
-        //声明神经网络输出
+    //声明神经网络输出
     float _phi_x,_phi_y,_phi_z;
 
     //声明自适应参数
-    float _m_x, _m_y, _m_z;
-
+    float _J_x, _J_y, _J_z;
+    // internal variables
+    Vector3f    _e_R;         // 旋转矩阵误差        
+    Vector3f    _e_Omega;         //角加速度误差
+    float       _Psi_R;        // 旋转矩阵误差的斜对称矩阵   
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 };

@@ -97,6 +97,9 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         _e_R.y = _e_R_hat.a.z;
         _e_R.z = _e_R_hat.b.x;
 
+        //Psi_R姿态误差标量函数初始化
+        _Psi_R = (1.0f-(_R_c.transposed() * _R).a.x + 1.0f - (_R_c.transposed() * _R).b.y + 1.0f - (_R_c.transposed() * _R).c.z) * 0.5f;
+
         //防止微分爆炸，初始化微分项
         _dot_R_c.zero();
         _dot_Omega_c.zero();
@@ -148,6 +151,9 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         _e_R.x = -_e_R_hat.b.z; //斜对称矩阵.V逆运算，对_e_R进行赋值得到旋转矩阵误差_e_R，注意是一个Vector3f
         _e_R.y = _e_R_hat.a.z;
         _e_R.z = _e_R_hat.b.x;
+       
+        //更新Psi_R姿态误差标量函数
+        _Psi_R = (1.0f-(_R_c.transposed() * _R).a.x + 1.0f - (_R_c.transposed() * _R).b.y + 1.0f - (_R_c.transposed() * _R).c.z) * 0.5f;
 
         //计算_R_c微分项，这里暂时不考虑滤波
         if (is_positive(dt)) { //检查时间步长是否有效
@@ -467,6 +473,10 @@ Vector3f AC_PDNN_SO3::get_J() const
     return _J;
 }
 
+float AC_PDNN_SO3::get_Psi_R() const
+{
+    return _Psi_R;
+}
 
 // save_gains - save gains to eeprom
 void AC_PDNN_SO3::save_gains()

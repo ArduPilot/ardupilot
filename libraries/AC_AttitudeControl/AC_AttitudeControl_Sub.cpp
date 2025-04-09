@@ -379,6 +379,7 @@ void AC_AttitudeControl_Sub::set_Rc(const Matrix3f& Rc, bool Rc_active) {
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~传输到位置控制器的getter~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Vector3f AC_AttitudeControl_Sub::get_phi() const
 {   
     Vector3f _phi;
@@ -386,6 +387,26 @@ Vector3f AC_AttitudeControl_Sub::get_phi() const
     _phi.y = _phi_y;
     _phi.z = _phi_z;
     return _phi;
+}
+Vector3f AC_AttitudeControl_Sub::get_J() const
+{   
+    Vector3f _J;
+    _J.x = _J_x;
+    _J.y = _J_y;
+    _J.z = _J_z;
+    return _J;
+}
+Vector3f AC_AttitudeControl_Sub::get_e_R() const
+{   
+   return _e_R;
+}
+Vector3f AC_AttitudeControl_Sub::get_e_Omega() const
+{   
+   return _e_Omega;
+}
+float AC_AttitudeControl_Sub::get_Psi_R() const
+{   
+   return _Psi_R;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

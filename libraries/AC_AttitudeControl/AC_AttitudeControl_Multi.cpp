@@ -376,7 +376,7 @@ void AC_AttitudeControl_Multi::set_Rc(const Matrix3f& Rc, bool Rc_active) {
     _Rc_active = Rc_active;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~传输到位置控制器的getter~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Vector3f AC_AttitudeControl_Multi::get_phi() const
 {   
     Vector3f _phi;
@@ -385,6 +385,28 @@ Vector3f AC_AttitudeControl_Multi::get_phi() const
     _phi.z = _phi_z;
     return _phi;
 }
+Vector3f AC_AttitudeControl_Multi::get_J() const
+{   
+    Vector3f _J;
+    _J.x = _J_x;
+    _J.y = _J_y;
+    _J.z = _J_z;
+    return _J;
+}
+Vector3f AC_AttitudeControl_Multi::get_e_R() const
+{   
+   return _e_R;
+}
+Vector3f AC_AttitudeControl_Multi::get_e_Omega() const
+{   
+   return _e_Omega;
+}
+float AC_AttitudeControl_Multi::get_Psi_R() const
+{   
+   return _Psi_R;
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void AC_AttitudeControl_Multi::set_throttle_mix_max(float ratio) //设置油门与姿态控制之间的混合优先级（几何控制不需要）
 {
@@ -534,6 +556,16 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, floa
     _phi_x = _pdnn_att.get_phi().x;
     _phi_y = _pdnn_att.get_phi().y;
     _phi_z = _pdnn_att.get_phi().z;
+    _J_x = _pdnn_att.get_J().x;
+    _J_y = _pdnn_att.get_J().y;
+    _J_z = _pdnn_att.get_J().z;
+    _e_R.x =  _pdnn_att.get_e_R().x;
+    _e_R.y =  _pdnn_att.get_e_R().y;
+    _e_R.z =  _pdnn_att.get_e_R().z;
+    _e_Omega.x = _pdnn_att.get_e_Omega().x;
+    _e_Omega.y = _pdnn_att.get_e_Omega().y;
+    _e_Omega.z = _pdnn_att.get_e_Omega().z;
+    _Psi_R = _pdnn_att.get_Psi_R();
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     //~~~~~~~~~~~~~~~~~~~测试ROS2 Topic~~~~~~~~~~~~~~~~~~~~~

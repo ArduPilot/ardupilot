@@ -32,6 +32,7 @@ public:
     Vector3f get_dot_Omega_c() const; //获取期望角速度导数
     Vector3f get_phi() const; //获取神经网络输出
     Vector3f get_J() const; //获取自适应参数
+    float    get_Psi_R() const; //获取几何控制姿态误差标量函数
 
     void reset() { _reset = true; } //重置检查
   
@@ -76,6 +77,7 @@ public:
     Vector3f    _Omega_c;      //期望角速度
     Matrix3f    _Omega_c_hat;      //期望角速度的斜对称矩阵
     Vector3f    _e_R;         // 旋转矩阵误差
+    float       _Psi_R;        // 旋转矩阵误差的斜对称矩阵  
     Matrix3f    _e_R_hat;     // 旋转矩阵误差的斜对称矩阵           
     Vector3f    _e_Omega;         //角加速度误差
     Matrix3f    _dot_R_c;     // 期望旋转矩阵的导数

@@ -672,7 +672,7 @@ void AC_PosControl::update_xy_controller()
         init_xy_controller();             //重新初始化横向位置控制器
         if (has_good_timing()) {          //检查时间同步
             // call internal error because initialisation has not been done
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control); //逻辑：如果不活跃，且初始化后，时间同步正常，则报错有内部错误
+            //INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control); //逻辑：如果不活跃，且初始化后，时间同步正常，则报错有内部错误
         }
     }
     _last_update_xy_ticks = AP::scheduler().ticks32(); //更新最后一次控制器调用时间，ticks32() 是一个方法，返回系统当前的32位时间戳，其返回值用于计算时间间隔dt_ticks
@@ -1190,7 +1190,7 @@ void AC_PosControl::update_z_controller()
         init_z_controller(); //重新初始化垂直控制器
         if (has_good_timing()) {  //检查时间同步
             // call internal error because initialisation has not been done
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control); ////逻辑：如果不活跃，且初始化后，时间同步正常，则报错有内部错误
+            //INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control); ////逻辑：如果不活跃，且初始化后，时间同步正常，则报错有内部错误
         }
     }
     _last_update_z_ticks = AP::scheduler().ticks32(); ////更新最后一次控制器调用时间，ticks32() 是一个方法，返回系统当前的32位时间戳，其返回值用于计算时间间隔dt_ticks
@@ -1292,10 +1292,20 @@ void AC_PosControl::update_z_controller()
     }
 
      //current_DIYwrench = get_DIYwrench(_U_x); //用于ROS2推力话题
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~写入log~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Write_PSCD(_pdnn_pos.get_phi().x, _pdnn_pos.get_m().x, _attitude_control.get_phi().x, //发送给姿态控制,
-                   _attitude_control.get_phi().y, -_vel_target.z, -_inav.get_velocity_z_up_cms(),
-                   -_accel_desired.z, -_accel_target.z, -get_z_accel_cmss());
+     Write_PSCN(_attitude_control.get_phi().x, _attitude_control.get_phi().y, _attitude_control.get_phi().z, //发送给姿态控制,
+                  _attitude_control.get_J().x, _attitude_control.get_J().y, _attitude_control.get_J().z,
+                  _attitude_control.get_e_R().x, _attitude_control.get_e_R().y, _attitude_control.get_e_R().z);
+
+    Write_PSCE(_attitude_control.get_e_Omega().x, _attitude_control.get_e_Omega().y, _attitude_control.get_e_Omega().z,
+                   _attitude_control.get_Psi_R(), _attitude_control.get_Psi_R(), _inav.get_velocity_neu_cms().y,
+                   _accel_desired.y, _accel_target.y, _attitude_control.get_Psi_R());
+    
+    Write_PSCD(_attitude_control.get_phi().x, _attitude_control.get_phi().y, _attitude_control.get_phi().z, //发送给姿态控制,
+                  _attitude_control.get_J().x, _attitude_control.get_J().y, _attitude_control.get_J().z,
+                  _attitude_control.get_e_R().x, _attitude_control.get_e_R().x, _attitude_control.get_e_R().x);
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 }
 
 
@@ -1584,12 +1594,12 @@ void AC_PosControl::write_log()
     if (is_active_xy()) {
         float accel_x, accel_y;
         lean_angles_to_accel_xy(accel_x, accel_y);
-        Write_PSCN(_pos_desired.x, _pos_target.x, _inav.get_position_neu_cm().x,
-                   _vel_desired.x, _vel_target.x, _inav.get_velocity_neu_cms().x,
-                   _accel_desired.x, _accel_target.x, accel_x);
-        Write_PSCE(_pos_desired.y, _pos_target.y, _inav.get_position_neu_cm().y,
-                   _vel_desired.y, _vel_target.y, _inav.get_velocity_neu_cms().y,
-                   _accel_desired.y, _accel_target.y, accel_y);
+        //Write_PSCN(_pos_desired.x, _pos_target.x, _inav.get_position_neu_cm().x,
+                   //_vel_desired.x, _vel_target.x, _inav.get_velocity_neu_cms().x,
+                   //_accel_desired.x, _accel_target.x, accel_x);
+        //Write_PSCE(_pos_desired.y, _pos_target.y, _inav.get_position_neu_cm().y,
+                   //_vel_desired.y, _vel_target.y, _inav.get_velocity_neu_cms().y,
+                   //_accel_desired.y, _accel_target.y, accel_y);
 
         // log offsets if they are being used
         if (!_pos_offset.xy().is_zero()) {
