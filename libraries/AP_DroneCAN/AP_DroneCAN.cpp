@@ -129,7 +129,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: DroneCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:HobbyWingESC,8:EnableStats,9:EnableFlexDebug
+    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:HobbyWingESC,8:EnableStats,9:EnableFlexDebug,10:XiongCaiESC
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_DroneCAN, _options, 0),
     
@@ -425,6 +425,13 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     esc_hobbywing_raw.set_priority(CANARD_TRANSFER_PRIORITY_HIGH);
 #endif
 
+#if AP_DRONECAN_XCKJ_ESC_SUPPORT
+    esc_xckj_throtgroup1.set_timeout_ms(2);
+    esc_xckj_throtgroup1.set_priority(CANARD_TRANSFER_PRIORITY_HIGH - 1);
+    esc_xckj_throtgroup2.set_timeout_ms(2);
+    esc_xckj_throtgroup2.set_priority(CANARD_TRANSFER_PRIORITY_HIGH - 1);
+#endif
+
 #if AP_DRONECAN_HIMARK_SERVO_SUPPORT
     himark_out.set_timeout_ms(2);
     himark_out.set_priority(CANARD_TRANSFER_PRIORITY_HIGH);
@@ -552,6 +559,10 @@ void AP_DroneCAN::loop(void)
 #if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
         hobbywing_ESC_update();
 #endif
+
+#if AP_DRONECAN_XCKJ_ESC_SUPPORT
+        xckj_ESC_update();
+#endif
         if (_SRV_armed_mask != 0) {
             // we have active servos
             uint32_t now = AP_HAL::micros();
@@ -661,6 +672,91 @@ void AP_DroneCAN::handle_hobbywing_StatusMsg2(const CanardRxTransfer& transfer, 
 
 }
 #endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+
+#if AP_DRONECAN_XCKJ_ESC_SUPPORT
+void AP_DroneCAN::xckj_ESC_update(void)
+{
+    if (hal.util->get_soft_armed()) {
+        // don't update ID database while disarmed, as it can cause some  ESCs to stutter
+        return;
+    }
+    uint32_t now = AP_HAL::millis();
+    if (now - xckj.last_GetId_Time_Ms >= 1000U) {
+        xckj.last_GetId_Time_Ms = now;
+        com_xckj_esc_OperateId msg;
+        msg.payload.len = 3;
+        msg.payload.data[0] = 2;
+        msg.payload.data[1] = 0;
+        msg.payload.data[2] = 0;
+        esc_xckj_OperateId.broadcast(msg);
+    }
+}
+
+/*
+  handle xckj OperateId reply. This gets us the mapping between CAN NodeID and throttle channel
+ */
+void AP_DroneCAN::handle_xckj_OperateId(const CanardRxTransfer& transfer, const com_xckj_esc_OperateId& msg)
+{
+    if ((msg.payload.len == 3) && (msg.payload.data[0] == 3) &&
+        (msg.payload.data[1] == transfer.source_node_id)) {
+        // throttle channel is 2nd payload byte
+        const uint8_t thr_channel = msg.payload.data[2];
+        if (thr_channel > 0 && thr_channel <= XCKJ_MAX_ESC) {
+            xckj.throt_chan[thr_channel - 1] = transfer.source_node_id;
+        }
+    }
+}
+
+/*
+  find the ESC index given a CAN node ID
+ */
+bool AP_DroneCAN::xckj_find_esc_index(uint8_t node_id, uint8_t& esc_index) const
+{
+    for (uint8_t i = 0; i < XCKJ_MAX_ESC; i++) {
+        if (xckj.throt_chan[i] == node_id) {
+            const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+            esc_index = i + esc_offset;
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+  handle xckj AutoUpMsg1 reply
+ */
+void AP_DroneCAN::handle_xckj_AutoUpMsg1(const CanardRxTransfer& transfer, const com_xckj_esc_AutoUpMsg1& msg)
+{
+    uint8_t esc_index;
+    if (xckj_find_esc_index(transfer.source_node_id, esc_index)) {
+        update_rpm(esc_index, msg.rpm * 0.1f);
+        TelemetryData t{
+            .current = msg.current * 0.1f,
+        };
+        update_telem_data(esc_index, t, AP_ESC_Telem_Backend::TelemetryType::CURRENT);
+    }
+}
+
+/*
+  handle xckj StatusMsg2 reply
+ */
+void AP_DroneCAN::handle_xckj_AutoUpMsg2(const CanardRxTransfer& transfer, const com_xckj_esc_AutoUpMsg2& msg)
+{
+    uint8_t esc_index;
+    if (xckj_find_esc_index(transfer.source_node_id, esc_index)) {
+        TelemetryData t{
+            .temperature_cdeg = int16_t(msg.MOS_T - 40),
+            .voltage = msg.voltage * 0.1f,
+            .motor_temp_cdeg = int16_t(msg.Motor_T - 40),
+        };
+        update_telem_data(esc_index, t,
+            AP_ESC_Telem_Backend::TelemetryType::VOLTAGE |
+            AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE |
+            AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE);
+    }
+
+}
+#endif // AP_DRONECAN_XCKJ_ESC_SUPPORT
 
 void AP_DroneCAN::send_node_status(void)
 {
@@ -926,6 +1022,78 @@ void AP_DroneCAN::SRV_send_esc_hobbywing(void)
 }
 #endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
 
+#if AP_DRONECAN_XCKJ_ESC_SUPPORT
+/*
+  support for xckj DroneCAN ESCs
+ */
+void AP_DroneCAN::SRV_send_esc_xckj(void)
+{
+    com_xckj_esc_ThrotGroup1 throtgroup1_msg;
+    com_xckj_esc_ThrotGroup2 throtgroup2_msg;
+
+    uint8_t active_esc_num = 0, max_esc_num = 0;
+    uint8_t k = 0;
+
+    // esc offset allows for efficient packing of higher ESC numbers in RawCommand
+    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+
+    // find out how many esc we have enabled and if they are active at all
+    for (uint8_t i = esc_offset; i < DRONECAN_SRV_NUMBER; i++) {
+        if ((((uint32_t)1) << i) & _ESC_armed_mask) {
+            max_esc_num = i + 1;
+            if (_SRV_conf[i].esc_pending) {
+                active_esc_num++;
+            }
+        }
+    }
+
+    // if at least one is active (update) we need to send to all
+    if (active_esc_num > 0) {
+        k = 0;
+        const bool armed = hal.util->get_soft_armed();
+        for (uint8_t i = esc_offset; k < 8; i++) {
+            if (k < 4) {
+                if (armed && ((((uint32_t)1U) << i) & _ESC_armed_mask)) {
+                    throtgroup1_msg.command.data[k] = scale_esc_output(i);
+                }
+                else {
+                    throtgroup1_msg.command.data[k] = static_cast<unsigned>(0);
+                }
+            }
+            else if (max_esc_num > esc_offset + 4) {
+                if (armed && ((((uint32_t)1U) << i) & _ESC_armed_mask)) {
+                    throtgroup2_msg.command.data[k - 4] = scale_esc_output(i);
+                }
+                else {
+                    throtgroup2_msg.command.data[k - 4] = static_cast<unsigned>(0);
+                }
+            }
+            k++;
+        }
+
+        throtgroup1_msg.command.len = 4;
+        if (esc_xckj_throtgroup1.broadcast(throtgroup1_msg)) {
+            _esc_send_count++;
+        }
+        else {
+            _fail_send_count++;
+        }
+        if (max_esc_num > esc_offset + 4) {
+            throtgroup2_msg.command.len = 4;
+            if (esc_xckj_throtgroup2.broadcast(throtgroup2_msg)) {
+                _esc_send_count++;
+            }
+            else {
+                _fail_send_count++;
+            }
+        }
+        // immediately push data to CAN bus
+        canard_iface.processTx(true);
+    }
+}
+#endif // AP_DRONECAN_XCKJ_ESC_SUPPORT
+
+
 void AP_DroneCAN::SRV_push_servos()
 {
     WITH_SEMAPHORE(SRV_sem);
@@ -958,14 +1126,23 @@ void AP_DroneCAN::SRV_push_servos()
 
     if (_ESC_armed_mask != 0) {
         // push ESCs as fast as we can
-#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
-        if (option_is_set(Options::USE_HOBBYWING_ESC)) {
-            SRV_send_esc_hobbywing();
-        } else
-#endif
-        {
-            SRV_send_esc();
+#if AP_DRONECAN_XCKJ_ESC_SUPPORT
+        if (option_is_set(Options::USE_XCKJ_ESC)){
+            SRV_send_esc_xckj();
         }
+        else{ 
+#endif               
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+            if (option_is_set(Options::USE_HOBBYWING_ESC)) {
+                SRV_send_esc_hobbywing();
+            } else
+#endif
+            {
+                SRV_send_esc();
+            }
+#if AP_DRONECAN_XCKJ_ESC_SUPPORT
+        }
+#endif        
     }
 }
 
@@ -2011,3 +2188,4 @@ bool AP_DroneCAN::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint32_t ti
 }
 
 #endif // HAL_NUM_CAN_IFACES
+
