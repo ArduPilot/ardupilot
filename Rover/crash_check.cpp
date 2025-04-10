@@ -27,7 +27,7 @@ void Rover::crash_check()
     // TODO : Check if min vel can be calculated
     // min_vel = ( CRASH_CHECK_THROTTLE_MIN * g.speed_cruise) / g.throttle_cruise;
 
-    if (!is_balancebot()) {
+    if (!is_balancebot() && !is_boat()) {
         if (!crashed && ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN) ||        // Check velocity
             (fabsf(ahrs.get_gyro().z) >= CRASH_CHECK_VEL_MIN) ||  // Check turn speed
             (fabsf(g2.motors.get_throttle()) < CRASH_CHECK_THROTTLE_MIN))) {
