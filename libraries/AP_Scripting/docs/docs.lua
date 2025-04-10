@@ -3924,6 +3924,10 @@ fence = {}
 ---@return uint32_t_ud system_time milliseconds
 function fence:get_breach_time() end
 
+-- Returns the time at which the current margin breach started
+---@return uint32_t_ud system_time milliseconds
+function fence:get_margin_breach_time() end
+
 -- Returns the type bitmask of any breached fences
 ---@return integer fence_type bitmask
 ---| 1 # Maximim altitude
@@ -3931,6 +3935,23 @@ function fence:get_breach_time() end
 ---| 4 # Polygon
 ---| 8 # Minimum altitude
 function fence:get_breaches() end
+
+-- Returns the type bitmask of any fence whose margins have been crossed
+---@return integer fence_type bitmask
+---| 1 # Maximim altitude
+---| 2 # Circle
+---| 4 # Polygon
+---| 8 # Minimum altitude
+function fence:get_margin_breaches() end
+
+-- Returns the distance in meters to the nearest fence given by the type bitmask
+---@param fence_type integer
+---| 1 # Maximim altitude
+---| 2 # Circle
+---| 4 # Polygon
+---| 8 # Minimum altitude
+---@return number -- distance
+function fence:get_breach_distance(fence_type) end
 
 -- desc
 ---@class (exact) stat_t_ud

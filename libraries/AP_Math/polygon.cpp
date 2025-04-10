@@ -17,6 +17,7 @@
  */
 
 #include "AP_Math.h"
+#include "float.h"
 
 #pragma GCC optimize("O2")
 
@@ -124,7 +125,6 @@ template bool Polygon_complete<int32_t>(const Vector2l *V, unsigned n);
 template bool Polygon_outside<float>(const Vector2f &P, const Vector2f *V, unsigned n);
 template bool Polygon_complete<float>(const Vector2f *V, unsigned n);
 
-
 /*
   determine if the polygon of N verticies defined by points V is
   intersected by a line from point p1 to point p2
@@ -200,17 +200,31 @@ float Polygon_closest_distance_line(const Vector2f *V, unsigned N, const Vector2
   return the closest distance that point p comes to an edge of closed
   polygon V, defined by N points
  */
-float Polygon_closest_distance_point(const Vector2f *V, unsigned N, const Vector2f &p)
+bool Polygon_closest_distance_point(const Vector2f *V, unsigned N, const Vector2f &p, float& closest)
 {
     float closest_sq = FLT_MAX;
-    for (uint8_t i=0; i<N-1; i++) {
+    const bool complete = Polygon_complete(V, N);
+    if (complete) {
+        // the last point is the same as the first point; treat as if
+        // the last point wasn't passed in
+        N--;
+    }
+    if (N < 3) {    // not a polygon
+        return false;
+    }
+    for (uint8_t i=0; i<N; i++) {
         const Vector2f &v1 = V[i];
-        const Vector2f &v2 = V[i+1];
+        const Vector2f &v2 = V[(i+1) % N];
 
         float dist_sq = Vector2f::closest_distance_between_line_and_point_squared(v1, v2, p);
         if (dist_sq < closest_sq) {
             closest_sq = dist_sq;
         }
     }
-    return sqrtf(closest_sq);
+    if (is_equal(closest_sq, FLT_MAX)) {
+        closest = 0.0f;
+        return false;
+    }
+    closest = sqrtf(closest_sq);
+    return true;
 }

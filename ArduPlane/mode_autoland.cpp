@@ -177,7 +177,7 @@ bool ModeAutoLand::_enter()
 #if AP_TERRAIN_AVAILABLE
     // Update loiter location to be relative terrain if enabled
     if (plane.terrain_enabled_in_current_mode()) {
-        cmd_loiter.content.location.terrain_alt = 1;
+        cmd_loiter.content.location.set_alt_m(final_wp_alt, Location::AltFrame::ABOVE_TERRAIN);
     };
 #endif
     // land WP at home

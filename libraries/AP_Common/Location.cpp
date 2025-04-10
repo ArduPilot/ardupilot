@@ -90,6 +90,11 @@ bool Location::change_alt_frame(AltFrame desired_frame)
 Location::AltFrame Location::get_alt_frame() const
 {
     if (terrain_alt) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (!relative_alt) {
+            AP_HAL::panic("terrain loc must be relative_alt1");
+        }
+#endif
         return AltFrame::ABOVE_TERRAIN;
     }
     if (origin_alt) {
@@ -107,6 +112,9 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!initialised()) {
         AP_HAL::panic("Should not be called on invalid location: Location cannot be (0, 0, 0)");
+    }
+    if (terrain_alt && !relative_alt) {
+        AP_HAL::panic("terrain loc must be relative_alt2");
     }
 #endif
     Location::AltFrame frame = get_alt_frame();
