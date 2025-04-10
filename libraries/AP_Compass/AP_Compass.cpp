@@ -1313,6 +1313,20 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
 #endif  // AP_COMPASS_MMC3416_ENABLED
 
+#if AP_COMPASS_MMC5XX3_ENABLED
+    // external i2c bus
+    FOREACH_I2C_EXTERNAL(i) {
+        ADD_BACKEND(DRIVER_MMC5XX3, AP_Compass_MMC5XX3::probe(GET_I2C_DEVICE(i, HAL_COMPASS_MMC5xx3_I2C_ADDR),
+                    true, ROTATION_NONE));
+    }
+#if !defined(HAL_SKIP_AUTO_INTERNAL_I2C_PROBE)
+    FOREACH_I2C_INTERNAL(i) {
+        ADD_BACKEND(DRIVER_MMC5XX3, AP_Compass_MMC5XX3::probe(GET_I2C_DEVICE(i, HAL_COMPASS_MMC5xx3_I2C_ADDR),
+                    all_external, ROTATION_NONE));
+    }
+#endif
+#endif  // AP_COMPASS_MMC5XX3_ENABLED (MMC5983MA)
+
 #if AP_COMPASS_RM3100_ENABLED
 #ifdef HAL_COMPASS_RM3100_I2C_ADDR
     const uint8_t rm3100_addresses[] = { HAL_COMPASS_RM3100_I2C_ADDR };
