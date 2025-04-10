@@ -17,7 +17,7 @@
  *       RC_Channels.cpp - class containing an array of RC_Channel objects
  *
  */
-
+#include <GCS_MAVLink/GCS.h>
 #include "RC_Channel_config.h"
 
 #if AP_RC_CHANNEL_ENABLED
