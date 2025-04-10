@@ -136,11 +136,17 @@ public:
     // set land complete flag
     void set_land_complete(bool landed) { _heliflags.land_complete = landed; }
 
+    // Return collective hover position as an angle in deg
+    float get_hover_coll_ang(void) const;
+
     // function to calculate and set the normalised collective position given a desired blade pitch angle (deg)
     void set_coll_from_ang(float col_ang_deg);
 
     //return zero lift collective position
     float get_coll_mid() const { return _collective_zero_thrust_pct; }
+
+    // return the zero lift collective angle in deg
+    float get_coll_zero_thrust_pitch() const { return _collective_zero_thrust_deg; }
 
     // enum for heli optional features
     enum class HeliOption {
