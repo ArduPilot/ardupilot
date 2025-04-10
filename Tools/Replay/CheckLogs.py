@@ -52,7 +52,7 @@ def create_html_results():
     error_count = 0
 
     git_version = run_cmd('git log --pretty=oneline HEAD~1..HEAD', output=True)
-    
+
     f = open("replay_results.html", "w")
     f.write(
 '''<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
@@ -80,7 +80,7 @@ Git version: %s
 
     line_count = 0
     line_errors = 0
-    
+
     for line in infile:
         line = line.strip()
         line_count += 1

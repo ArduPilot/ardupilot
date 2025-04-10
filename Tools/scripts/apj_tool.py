@@ -24,7 +24,7 @@ def to_bytes(s):
         return bytes(s, 'ascii')
     else:
         return bytes(s)
-    
+
 class embedded_defaults(object):
     '''class to manipulate embedded defaults in a firmware'''
     def __init__(self, filename):
@@ -126,7 +126,7 @@ class embedded_defaults(object):
             self.offset += i
             self.max_len, self.length = struct.unpack("<HH", self.firmware[self.offset+16:self.offset+20])
             return True
-    
+
     def contents(self):
         '''return current contents'''
         contents = self.firmware[self.offset+20:self.offset+20+self.length]
@@ -171,7 +171,7 @@ class embedded_defaults(object):
             sys.exit(1)
         param_name = to_bytes(v[0].upper())
         param_value = to_bytes(v[1])
-        
+
         contents = self.contents()
         lines = contents.strip().split(b'\n')
         changed = False
@@ -210,7 +210,7 @@ class embedded_defaults(object):
             f = open(binfile,'wb')
             f.write(self.firmware)
             f.close()
-    
+
 
 def defaults_contents(firmware, ofs, length):
     '''return current defaults contents'''

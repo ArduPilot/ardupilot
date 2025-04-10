@@ -15,7 +15,7 @@ try:
 except ImportError:
     print("you need to install pexpect with 'python3 -m pip install pexpect'")
     sys.exit(1)
-    
+
 
 def build(bld):
     targets = bld.ap_periph_boards()

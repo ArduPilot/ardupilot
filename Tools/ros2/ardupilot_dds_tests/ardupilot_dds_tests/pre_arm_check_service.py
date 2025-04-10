@@ -58,6 +58,7 @@ class CopterPreArm(Node):
             time.sleep(1)
         return armable
 
+
 def main(args=None):
     """Node entry point."""
     rclpy.init(args=args)

@@ -117,7 +117,7 @@ def step(sleep_dt=None):
 def physics_step(pwm_in):
 
   control_pwm(pwm_in)
-  
+
   step(sleep_dt=0)
   # p.setRealTimeSimulation(1)
   global time_now
@@ -136,7 +136,7 @@ def physics_step(pwm_in):
 
   # get gyro vector in body frame
   gyro = dcm.transposed() * vector_to_AP(angular)
-  
+
   # calculate acceleration
   global last_velocity
   if last_velocity is None:

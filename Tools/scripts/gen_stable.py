@@ -67,7 +67,7 @@ def make_stable_from_beta(basedir, vehicle, beta_dir):
         print('Creating %s' % new_dir)
         old_dir = os.path.join(beta_dir, b)
         shutil.copytree(old_dir, new_dir)
-        
+
 
 def make_all_stable(basedir):
     '''make stable directory for all vehicles'''
