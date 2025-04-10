@@ -81,7 +81,7 @@ define HAL_LOGGING_DATAFLASH_ENABLED 1
 IMU Invensense SPI:mpu6000_cs ROTATION_YAW_180
 
 # one baro
-BARO MS56XX I2C:0:0x77
+BARO MS5611 I2C:0:0x77
 
 # no builtin compasses
 define ALLOW_ARM_NO_COMPASS

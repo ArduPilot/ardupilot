@@ -22,7 +22,7 @@ IMU LSM9DS0 SPI:lsm9ds0_g SPI:lsm9ds0_am ROTATION_ROLL_180 ROTATION_ROLL_180_YAW
 
 # define the barometers to probe with BARO lines. These follow the
 # same format as IMU lines
-BARO MS56XX SPI:ms5611
+BARO MS5611 SPI:ms5611
 
 # probe for two mags.
 # note that the number of arguments and meanings for compass driver
