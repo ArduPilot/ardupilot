@@ -7973,6 +7973,51 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("position delta=%f (want <%f)" % (delta, max_delta))
             if delta < max_delta:
                 break
+
+        self.start_subtest("Trying relative-follow mode")
+        self.change_mode('LOITER')
+        self.set_parameter('FOLL_ALT_TYPE', 1)  # use relative-home data
+        new_loc = self.mav.location()
+        new_loc_offset_n = -40
+        new_loc_offset_e = 60
+        new_loc.alt += 1
+        self.location_offset_ne(new_loc, new_loc_offset_n, new_loc_offset_e)
+        expected_loc = copy.copy(new_loc)
+        self.location_offset_ne(expected_loc, -foll_ofs_x, 0)
+        if self.mavproxy is not None:
+            self.mavproxy.send("map icon %f %f hoop\n" %
+                               (expected_loc.lat, expected_loc.lng))
+        self.progress("expected_loc: %s" % str(expected_loc))
+        self.progress("new_loc: %s" % str(new_loc))
+        self.change_mode('FOLLOW')
+        last_sent = 0
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 60:
+                raise NotAchievedException("Did not FOLLOW")
+            if now - last_sent > 0.5:
+                gpi = self.mav.mav.global_position_int_encode(
+                    int(now * 1000), # time_boot_ms
+                    int(new_loc.lat * 1e7),
+                    int(new_loc.lng * 1e7),
+                    666, # alt in mm - not incorrect data!
+                    int(new_loc.alt * 1000 - origin.altitude), # relative alt - urp.
+                    vx=0,
+                    vy=0,
+                    vz=0,
+                    hdg=heading
+                )
+                gpi.pack(self.mav.mav)
+                self.mav.mav.send(gpi)
+            self.assert_receive_message('GLOBAL_POSITION_INT')
+            pos = self.mav.location()
+            delta = self.get_distance(expected_loc, pos)
+            max_delta = 3
+            self.progress("position delta=%f (want <%f)" % (delta, max_delta))
+            if delta < max_delta:
+                break
+
         self.context_pop()
         self.do_RTL()
 
