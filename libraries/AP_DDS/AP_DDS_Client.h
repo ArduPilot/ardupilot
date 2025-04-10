@@ -58,6 +58,9 @@
 #include "rcl_interfaces/msg/ParameterType.h"
 #include "rcl_interfaces/srv/GetParameters.h"
 #endif //AP_DDS_PARAMETER_SERVER_ENABLED
+#if AP_DDS_LASER_SCAN_SUB_ENABLED
+#include "sensor_msgs/msg/LaserScan.h"
+#endif // AP_DDS_LASER_SCAN_SUB_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Scheduler.h>
@@ -232,6 +235,9 @@ private:
     // incoming transforms
     static tf2_msgs_msg_TFMessage rx_dynamic_transforms_topic;
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
+#if AP_DDS_LASER_SCAN_SUB_ENABLED
+    static sensor_msgs_msg_LaserScan rx_laser_scan_topic;
+#endif // AP_DDS_LASER_SCAN_SUB_ENABLED
     HAL_Semaphore csem;
 
 #if AP_DDS_PARAMETER_SERVER_ENABLED

@@ -42,6 +42,7 @@
 #include "AP_DDS_Topic_Table.h"
 #include "AP_DDS_Service_Table.h"
 #include "AP_DDS_External_Odom.h"
+#include "AP_DDS_Laser_Proximity.h"
 
 #define STRCPY(D,S) strncpy(D, S, ARRAY_SIZE(D))
 
@@ -97,6 +98,9 @@ geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
 #if AP_DDS_GLOBAL_POS_CTRL_ENABLED
 ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topic {};
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_LASER_SCAN_SUB_ENABLED
+sensor_msgs_msg_LaserScan AP_DDS_Client::rx_laser_scan_topic {};
+#endif // AP_DDS_LASER_SCAN_SUB_ENABLED
 
 // Define the parameter server data members, which are static class scope.
 // If these are created on the stack, then the AP_DDS_Client::on_request
@@ -835,8 +839,17 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         break;
     }
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
-    }
 
+#if AP_DDS_LASER_SCAN_SUB_ENABLED
+    case topics[to_underlying(TopicIndex::LASER_SCAN_SUB)].dr_id.id: {
+        const bool success = sensor_msgs_msg_LaserScan_deserialize_topic(ub, &rx_laser_scan_topic);
+        if (success) {
+            AP_DDS_Laser_Proximity::handle_laser_scan(rx_laser_scan_topic);
+        }
+        break;
+    }
+#endif // AP_DDS_LASER_SCAN_SUB_ENABLED
+    }
 }
 
 /*
