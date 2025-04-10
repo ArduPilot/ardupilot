@@ -445,10 +445,13 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
     // check if flight mode requires GPS
     bool mode_requires_gps = copter.flightmode->requires_GPS();
 
+    // check if flight mode requires height estimate
+    const bool requires_height = !copter.flightmode->has_manual_throttle();
+
     // always check if inertial nav has started and is ready
     const auto &ahrs = AP::ahrs();
     char failure_msg[100] = {};
-    if (!ahrs.pre_arm_check(mode_requires_gps, failure_msg, sizeof(failure_msg))) {
+    if (!ahrs.pre_arm_check(mode_requires_gps, failure_msg, sizeof(failure_msg), requires_height)) {
         check_failed(display_failure, "AHRS: %s", failure_msg);
         return false;
     }
