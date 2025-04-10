@@ -228,6 +228,9 @@ uint32_t AP_Terrain::east_blocks(struct grid_block &block) const
     // shift another two blocks east to ensure room is available
     loc2.offset(0, 2*grid_spacing*TERRAIN_GRID_BLOCK_SIZE_Y);
     const Vector2f offset = loc1.get_distance_NE(loc2);
+    if (grid_spacing < 1) {
+        return offset.y / TERRAIN_GRID_BLOCK_SPACING_Y;
+    }
     return offset.y / (grid_spacing*TERRAIN_GRID_BLOCK_SPACING_Y);
 }
 
