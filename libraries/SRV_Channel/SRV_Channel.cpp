@@ -180,6 +180,9 @@ SRV_Channel::SRV_Channel(void)
 // convert a 0..range_max to a pwm
 uint16_t SRV_Channel::pwm_from_range(float scaled_value) const
 {
+    if (type != Type::RANGE) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+    }
     if (servo_max <= servo_min || high_out == 0) {
         return servo_min;
     }
@@ -193,6 +196,9 @@ uint16_t SRV_Channel::pwm_from_range(float scaled_value) const
 // convert a -angle_max..angle_max to a pwm
 uint16_t SRV_Channel::pwm_from_angle(float scaled_value) const
 {
+    if (type != Type::ANGLE) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+    }
     if (high_out == 0) {
         return servo_trim;
     }
@@ -204,15 +210,6 @@ uint16_t SRV_Channel::pwm_from_angle(float scaled_value) const
         return servo_trim + uint16_t( (scaled_value * (float)(servo_max - servo_trim)) / (float)high_out);
     } else {
         return servo_trim - uint16_t( (-scaled_value * (float)(servo_trim - servo_min)) / (float)high_out);
-    }
-}
-
-uint16_t SRV_Channel::pwm_from_scaled_value(float scaled_value) const
-{
-    if (type_angle) {
-        return pwm_from_angle(scaled_value);
-    } else {
-        return pwm_from_range(scaled_value);
     }
 }
 
@@ -236,7 +233,16 @@ void SRV_Channel::calc_pwm(float output_scaled)
         return;
     }
 
-    output_pwm = pwm_from_scaled_value(output_scaled);
+    switch (type) {
+    case Type::AUX:
+        return;
+    case Type::ANGLE:
+        output_pwm = pwm_from_angle(output_scaled);
+        break;
+    case Type::RANGE:
+        output_pwm = pwm_from_range(output_scaled);
+        break;
+    }
 }
 
 void SRV_Channel::set_output_pwm(uint16_t pwm, bool force)
@@ -251,23 +257,30 @@ void SRV_Channel::set_output_pwm(uint16_t pwm, bool force)
 void SRV_Channel::set_output_norm(float value)
 {
     // convert normalised value to pwm
-    set_output_pwm(pwm_from_scaled_value(value * high_out));
+    switch (type) {
+    case Type::AUX:
+        return;
+    case Type::ANGLE:
+        set_output_pwm(pwm_from_angle(value * high_out));
+        return;
+    case Type::RANGE:
+        set_output_pwm(pwm_from_range(value * high_out));
+        return;
+    }
 }
 
 // set angular range of scaled output
 void SRV_Channel::set_angle(int16_t angle)
 {
-    type_angle = true;
+    type = Type::ANGLE;
     high_out = angle;    
-    type_setup = true;
 }
 
 // set range of scaled output
 void SRV_Channel::set_range(uint16_t high)
 {
-    type_angle = false;
+    type = Type::RANGE;
     high_out = high;
-    type_setup = true;
 }
 
 /*
