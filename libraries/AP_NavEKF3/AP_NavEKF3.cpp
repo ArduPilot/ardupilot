@@ -1013,7 +1013,9 @@ void NavEKF3::UpdateFilter(void)
     }
 
     // align position of inactive sources to ahrs
-    sources.align_inactive_sources();
+    for (uint8_t i=0; i<num_cores; i++) {
+        sources.align_inactive_sources(i);
+    }
 }
 
 /*
@@ -1136,11 +1138,13 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 
     // check if using compass (i.e. EK3_SRCn_YAW) with deprecated MAG_CAL values (5 was EXTERNAL_YAW, 6 was EXTERNAL_YAW_FALLBACK)
     const int8_t magCalParamVal = _magCal.get();
-    const AP_NavEKF_Source::SourceYaw yaw_source = sources.getYawSource();
-    if (((magCalParamVal == 5) || (magCalParamVal == 6)) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS)) {
-        // yaw source is configured to use compass but MAG_CAL valid is deprecated
-        dal.snprintf(failure_msg, failure_msg_len, "EK3_MAG_CAL and EK3_SRC1_YAW inconsistent");
-        return false;
+    for (uint8_t i = 0; i < num_cores; i++) {
+        const AP_NavEKF_Source::SourceYaw yaw_source = sources.getYawSource(i);
+        if (((magCalParamVal == 5) || (magCalParamVal == 6)) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS)) {
+            // yaw source is configured to use compass but MAG_CAL valid is deprecated
+            dal.snprintf(failure_msg, failure_msg_len, "EK3_MAG_CAL and EK3_SRC1_YAW inconsistent");
+            return false;
+        }
     }
 
     if (!core) {
@@ -1548,7 +1552,12 @@ bool NavEKF3::using_extnav_for_yaw() const
 bool NavEKF3::configuredToUseGPSForPosXY(void) const
 {
     // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity, 3 = do not use GPS
-    return  (sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS);
+    for (uint8_t i=0; i<num_cores; i++) {
+        if (sources.getPosXYSource(i) == AP_NavEKF_Source::SourceXY::GPS) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // write the raw optical flow measurements
