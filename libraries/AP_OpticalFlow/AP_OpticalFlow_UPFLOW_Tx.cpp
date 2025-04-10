@@ -25,17 +25,17 @@
    byte5: y-motion high byte;
    byte6: dt low byte;
    byte7: dt high byte;
-   byte8: reserved;
-   byte9: reserved;
-   byte10: surface quality
-   byte11: hardware version
-   byte12:checksum
-   byte13:footer (0x55)
+   byte8: tof low byte;
+   byte9: tof high byte;
+   byte10: opt quality
+   byte11: tof quality
+   byte12: checksum
+   byte13: footer (0x55)
  */
 
-#include "AP_OpticalFlow_UPFLOW.h"
+#include "AP_OpticalFlow_UPFLOW_Tx.h"
 
-#if AP_OPTICALFLOW_UPFLOW_ENABLED
+#if AP_OPTICALFLOW_UPFLOW_Tx_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -43,6 +43,7 @@
 #include <utility>
 #include "AP_OpticalFlow.h"
 #include <stdio.h>
+//#include <GCS_MAVLink/GCS.h>
 
 #define UPFLOW_HEADER0         (uint8_t)0xFE
 #define UPFLOW_HEADER1         (uint8_t)0x0A
@@ -51,16 +52,19 @@
 #define UPFLOW_TIMEOUT_SEC         0.3f
 
 extern const AP_HAL::HAL& hal;
+struct UPFLOW_TOF UPFLOW_TOF;
+static const char* init_msg = "<set protocol upixels>";
+static bool upflow_tx_message_sent = false;
 
 // constructor
-AP_OpticalFlow_UPFLOW::AP_OpticalFlow_UPFLOW(AP_OpticalFlow &_frontend, AP_HAL::UARTDriver *_uart) :
+AP_OpticalFlow_UPFLOW_Tx::AP_OpticalFlow_UPFLOW_Tx(AP_OpticalFlow &_frontend, AP_HAL::UARTDriver *_uart) :
     OpticalFlow_backend(_frontend),
     uart(_uart)
 {
 }
 
 // detect the device
-AP_OpticalFlow_UPFLOW *AP_OpticalFlow_UPFLOW::detect(AP_OpticalFlow &_frontend)
+AP_OpticalFlow_UPFLOW_Tx *AP_OpticalFlow_UPFLOW_Tx::detect(AP_OpticalFlow &_frontend)
 {
     AP_SerialManager *serial_manager = AP::serialmanager().get_singleton();
     if (serial_manager == nullptr) {
@@ -74,27 +78,34 @@ AP_OpticalFlow_UPFLOW *AP_OpticalFlow_UPFLOW::detect(AP_OpticalFlow &_frontend)
     }
 
     // we have found a serial port so use it
-    AP_OpticalFlow_UPFLOW *sensor = NEW_NOTHROW AP_OpticalFlow_UPFLOW(_frontend, uart);
+    AP_OpticalFlow_UPFLOW_Tx *sensor = new AP_OpticalFlow_UPFLOW_Tx(_frontend, uart);
     return sensor;
 }
 
 // initialise the sensor
-void AP_OpticalFlow_UPFLOW::init()
+void AP_OpticalFlow_UPFLOW_Tx::init()
 {
     // sanity check uart
     if (uart == nullptr) {
         return;
     }
-    // open serial port with baud rate of 19200
-    uart->begin(19200);
+    // open serial port with baud rate of 115200
+    uart->begin(115200);
 }
 
 // read latest values from sensor and fill in x,y and totals.
-void AP_OpticalFlow_UPFLOW::update(void)
+void AP_OpticalFlow_UPFLOW_Tx::update(void)
 {
     // sanity check uart
     if (uart == nullptr) {
         return;
+    }
+
+    // setup upflow link, only once
+    if (!upflow_tx_message_sent) {
+        hal.scheduler->delay(200);
+        uart->write((const uint8_t*)init_msg, strlen(init_msg));
+        upflow_tx_message_sent = true; 
     }
 
     // record gyro values as long as they are being used
@@ -107,7 +118,6 @@ void AP_OpticalFlow_UPFLOW::update(void)
     gyro_sum.x += gyro.x;
     gyro_sum.y += gyro.y;
     gyro_sum_count++;
-
 
     bool phrased = false;
     // read any available characters in the serial buffer
@@ -158,7 +168,7 @@ void AP_OpticalFlow_UPFLOW::update(void)
 
     struct AP_OpticalFlow::OpticalFlow_state state {};
 
-    state.surface_quality = updata.quality;
+    state.surface_quality = updata.opt_valid;
 
     float dt = updata.integration_timespan * 1.0e-6;
 
@@ -178,10 +188,23 @@ void AP_OpticalFlow_UPFLOW::update(void)
 
         // we only apply yaw to flowRate as body rate comes from AHRS
         _applyYaw(state.flowRate);
+
+        //update tof
+        UPFLOW_TOF.if_opt_ok = true;
+        UPFLOW_TOF.ground_distance = updata.ground_distance;
+        UPFLOW_TOF.tof_valid = updata.tof_valid;
+
+        //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UPFLOW_Tx: OK");
+
     } else {
         // first frame received in some time so cannot calculate flow values
         state.flowRate.zero();
         state.bodyRate.zero();
+
+        //update tof
+        UPFLOW_TOF.if_opt_ok = false;
+        UPFLOW_TOF.ground_distance = 0;
+        UPFLOW_TOF.tof_valid = 0;
     }
 
     _update_frontend(state);
@@ -191,4 +214,4 @@ void AP_OpticalFlow_UPFLOW::update(void)
     gyro_sum_count = 0;
 }
 
-#endif  // AP_OPTICALFLOW_UPFLOW_ENABLED
+#endif  // AP_OPTICALFLOW_UPFLOW_Tx_ENABLED

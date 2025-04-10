@@ -2,16 +2,16 @@
 
 #include "AP_OpticalFlow_config.h"
 
-#if AP_OPTICALFLOW_UPFLOW_ENABLED
+#if AP_OPTICALFLOW_UPFLOW_LC30x_ENABLED
 
 #include "AP_OpticalFlow_Backend.h"
 #include <AP_HAL/utility/OwnPtr.h>
 
-class AP_OpticalFlow_UPFLOW : public OpticalFlow_backend
+class AP_OpticalFlow_UPFLOW_LC30x : public OpticalFlow_backend
 {
 public:
     /// constructor
-    AP_OpticalFlow_UPFLOW(AP_OpticalFlow &_frontend, AP_HAL::UARTDriver *uart);
+    AP_OpticalFlow_UPFLOW_LC30x(AP_OpticalFlow &_frontend, AP_HAL::UARTDriver *uart);
 
     // initialise the sensor
     void init() override;
@@ -20,7 +20,7 @@ public:
     void update(void) override;
 
     // detect if the sensor is available
-    static AP_OpticalFlow_UPFLOW *detect(AP_OpticalFlow &_frontend);
+    static AP_OpticalFlow_UPFLOW_LC30x *detect(AP_OpticalFlow &_frontend);
 
 private:
     struct PACKED UpixelsOpticalFlow {
@@ -39,4 +39,4 @@ private:
     uint16_t gyro_sum_count;                // number of gyro sensor values in sum
 };
 
-#endif // AP_OPTICALFLOW_UPFLOW_ENABLED
+#endif // AP_OpticalFlow_UPFLOW_LC30x_ENABLED
