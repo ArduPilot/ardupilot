@@ -679,7 +679,7 @@ arducopter and upload it to my board".
         action='store',
         dest='upload_port',
         default=None,
-        help='''Specify the port to be used with the --upload option. For example a port of /dev/ttyS10 indicates that serial port 10 shuld be used.
+        help='''Specify the port to be used with the --upload option. For example a port of /dev/ttyS10 indicates that serial port 10 should be used.
 ''')
 
     g.add_option('--upload-blueos',

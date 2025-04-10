@@ -29,7 +29,7 @@ mcu = {
     # flags of 2 means faster memory for CPU intensive work
     # flags of 4 means memory can be used for SDMMC DMA
 
-	# overall ram map for information only, board not useable without external flash
+	# overall ram map for information only, board not usable without external flash
     #'RAM_MAP' : [
     #    (0x24000000, 320, 4), # AXI SRAM. Use this for SDMMC IDMA ops
     #    (0x30000000,  32, 0), # SRAM1, SRAM2

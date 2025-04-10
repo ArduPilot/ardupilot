@@ -64,7 +64,7 @@ known_param_fields = [
 # http://www1.bipm.org/en/CGPM/db/3/2/   g_n unit for G-force
 # one further constrain is that only printable (7bit) ASCII characters are allowed
 known_units = {
-#          abreviation : full-text (used in .html .rst and .wiki files)
+#          abbreviation : full-text (used in .html .rst and .wiki files)
 # time
              's'       : 'seconds'               ,
              'ds'      : 'deciseconds'           ,

@@ -195,8 +195,8 @@ class TestBuildOptions(object):
         # should say so:
         for target in self.build_targets:
             path = self.target_to_elf_path(target)
-            extracter = extract_features.ExtractFeatures(path)
-            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extracter.extract()
+            extractor = extract_features.ExtractFeatures(path)
+            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extractor.extract()
             for define in defines:
                 # the following defines are known not to work on some
                 # or all vehicles:
@@ -402,8 +402,8 @@ class TestBuildOptions(object):
         # should say so:
         for target in self.build_targets:
             path = self.target_to_elf_path(target)
-            extracter = extract_features.ExtractFeatures(path)
-            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extracter.extract()
+            extractor = extract_features.ExtractFeatures(path)
+            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extractor.extract()
             for define in defines:
                 if not defines[define]:
                     continue

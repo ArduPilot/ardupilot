@@ -829,7 +829,7 @@ if __name__ == "__main__":
         """Custom option parse class."""
 
         def format_epilog(self, formatter):
-            """Retun customized option parser epilog."""
+            """Return customized option parser epilog."""
             return self.epilog
 
     parser = MyOptionParser(

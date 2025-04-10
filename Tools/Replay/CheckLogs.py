@@ -41,7 +41,7 @@ def get_log_list():
     import glob, sys
     pattern = os.path.join(opts.logdir, "*-checked.bin")
     file_list = glob.glob(pattern)
-    print("Found %u logs to processs" % len(file_list))
+    print("Found %u logs to process" % len(file_list))
     if len(file_list) == 0:
         print("No logs to process matching %s" % pattern)
         sys.exit(1)

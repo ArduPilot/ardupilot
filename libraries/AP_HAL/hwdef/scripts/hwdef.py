@@ -214,7 +214,7 @@ class HWDef:
             self.progress("Removing %s" % u)
             self.config.pop(u, '')
             self.intdefines.pop(u, '')
-            # also remove all occurences of defines in previous lines if any
+            # also remove all occurrences of defines in previous lines if any
             for line in self.alllines[:]:
                 if line.startswith('define') and u == line.split()[1]:
                     self.alllines.remove(line)
