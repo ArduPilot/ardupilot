@@ -134,8 +134,8 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
 
     // @Param: _OPTIONS
     // @DisplayName: EKF Source Options
-    // @Description: EKF Source Options
-    // @Bitmask: 0:FuseAllVelocities, 1:AlignExtNavPosWhenUsingOptFlow
+    // @Description: EKF Source Options. Bit 0: Fuse all velocity sources present in EK3_SRCx_VEL_. Bit 1: Align external navigation position when using optical flow. Bit 3: Use SRC per core. By default, EKF source selection is controlled via the EK3_SRC parameters, allowing only one source to be active at a time across all cores (switchable via MAVLink, Lua, or RC). Enabling this bit maps EKF core 1 to SRC1, core 2 to SRC2, etc., allowing each core to run independently with a dedicated source.
+    // @Bitmask: 0:FuseAllVelocities, 1:AlignExtNavPosWhenUsingOptFlow, 3: UsePerCoreEKFSources
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 16, AP_NavEKF_Source, _options, (int16_t)SourceOptions::FUSE_ALL_VELOCITIES),
 
@@ -165,14 +165,14 @@ void AP_NavEKF_Source::setPosVelYawSourceSet(AP_NavEKF_Source::SourceSetSelectio
 }
 
 // true/false of whether velocity source should be used
-bool AP_NavEKF_Source::useVelXYSource(SourceXY velxy_source) const
+bool AP_NavEKF_Source::useVelXYSource(SourceXY velxy_source, uint8_t core_index) const
 {
-    if (velxy_source == _source_set[active_source_set].velxy) {
+    if (velxy_source == _source_set[getActiveSourceSet(core_index)].velxy) {
         return true;
     }
 
     // check for fuse all velocities
-    if (_options.get() & (uint16_t)(SourceOptions::FUSE_ALL_VELOCITIES)) {
+    if (option_is_set(SourceOptions::FUSE_ALL_VELOCITIES)) {
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
             if (_source_set[i].velxy == velxy_source) {
                 return true;
@@ -184,14 +184,14 @@ bool AP_NavEKF_Source::useVelXYSource(SourceXY velxy_source) const
     return false;
 }
 
-bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source) const
+bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source, uint8_t core_index) const
 {
-    if (velz_source == _source_set[active_source_set].velz) {
+    if (velz_source == _source_set[getActiveSourceSet(core_index)].velz) {
         return true;
     }
 
     // check for fuse all velocities
-    if (_options.get() & (uint16_t)(SourceOptions::FUSE_ALL_VELOCITIES)) {
+    if (option_is_set(SourceOptions::FUSE_ALL_VELOCITIES)) {
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
             if (_source_set[i].velz == velz_source) {
                 return true;
@@ -204,14 +204,14 @@ bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source) const
 }
 
 // true if a velocity source is configured
-bool AP_NavEKF_Source::haveVelZSource() const
+bool AP_NavEKF_Source::haveVelZSource(uint8_t core_index) const
 {
-    if (_source_set[active_source_set].velz != SourceZ::NONE) {
+    if (_source_set[getActiveSourceSet(core_index)].velz != SourceZ::NONE) {
         return true;
     }
 
     // check for fuse all velocities
-    if (_options.get() & (uint16_t)(SourceOptions::FUSE_ALL_VELOCITIES)) {
+    if (option_is_set(SourceOptions::FUSE_ALL_VELOCITIES)) {
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
             if (_source_set[i].velz != SourceZ::NONE) {
                 return true;
@@ -224,30 +224,30 @@ bool AP_NavEKF_Source::haveVelZSource() const
 }
 
 // get yaw source
-AP_NavEKF_Source::SourceYaw AP_NavEKF_Source::getYawSource() const
+AP_NavEKF_Source::SourceYaw AP_NavEKF_Source::getYawSource(uint8_t core_index) const
 {
     // check for special case of disabled compasses
-    if ((_source_set[active_source_set].yaw == SourceYaw::COMPASS) && (AP::dal().compass().get_num_enabled() == 0)) {
+    if ((_source_set[getActiveSourceSet(core_index)].yaw == SourceYaw::COMPASS) && (AP::dal().compass().get_num_enabled() == 0)) {
         return SourceYaw::NONE;
     }
 
-    return _source_set[active_source_set].yaw;
+    return _source_set[getActiveSourceSet(core_index)].yaw;
 }
 
 // get pos Z source
-AP_NavEKF_Source::SourceZ AP_NavEKF_Source::getPosZSource() const
+AP_NavEKF_Source::SourceZ AP_NavEKF_Source::getPosZSource(uint8_t core_index) const
 {
 #ifdef HAL_BARO_ALLOW_INIT_NO_BARO
     // check for special case of missing baro
-    if ((_source_set[active_source_set].posz == SourceZ::BARO) && (AP::dal().baro().num_instances() == 0)) {
+    if ((_source_set[getActiveSourceSet(core_index)].posz == SourceZ::BARO) && (AP::dal().baro().num_instances() == 0)) {
         return SourceZ::NONE;
     }
 #endif
-    return _source_set[active_source_set].posz;
+    return _source_set[getActiveSourceSet(core_index)].posz;
 }
 
 // align position of inactive sources to ahrs
-void AP_NavEKF_Source::align_inactive_sources()
+void AP_NavEKF_Source::align_inactive_sources(uint8_t core_number)
 {
     // align visual odometry
 #if HAL_VISUALODOM_ENABLED
@@ -259,9 +259,9 @@ void AP_NavEKF_Source::align_inactive_sources()
 
     // consider aligning ExtNav XY position:
     bool align_posxy = false;
-    if ((getPosXYSource() == SourceXY::GPS) ||
-        (getPosXYSource() == SourceXY::BEACON) ||
-        ((getVelXYSource() == SourceXY::OPTFLOW) && option_is_set(SourceOptions::ALIGN_EXTNAV_POS_WHEN_USING_OPTFLOW))) {
+    if ((getPosXYSource(core_number) == SourceXY::GPS) ||
+        (getPosXYSource(core_number) == SourceXY::BEACON) ||
+        ((getVelXYSource(core_number) == SourceXY::OPTFLOW) && option_is_set(SourceOptions::ALIGN_EXTNAV_POS_WHEN_USING_OPTFLOW))) {
         // align ExtNav position if active source is GPS, Beacon or (optionally) Optflow
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
             if (_source_set[i].posxy == SourceXY::EXTNAV) {
@@ -274,10 +274,10 @@ void AP_NavEKF_Source::align_inactive_sources()
 
     // consider aligning Z position:
     bool align_posz = false;
-    if ((getPosZSource() == SourceZ::BARO) ||
-        (getPosZSource() == SourceZ::RANGEFINDER) ||
-        (getPosZSource() == SourceZ::GPS) ||
-        (getPosZSource() == SourceZ::BEACON)) {
+    if ((getPosZSource(core_number) == SourceZ::BARO) ||
+        (getPosZSource(core_number) == SourceZ::RANGEFINDER) ||
+        (getPosZSource(core_number) == SourceZ::GPS) ||
+        (getPosZSource(core_number) == SourceZ::BEACON)) {
         // ExtNav is not the active source; we do not want to align active source!
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
             if (_source_set[i].posz == SourceZ::EXTNAV) {
@@ -292,13 +292,13 @@ void AP_NavEKF_Source::align_inactive_sources()
 }
 
 // sensor specific helper functions
-bool AP_NavEKF_Source::usingGPS() const
+bool AP_NavEKF_Source::usingGPS(uint8_t core_index) const
 {
-    return getPosXYSource() == SourceXY::GPS ||
-           getPosZSource() == SourceZ::GPS ||
-           getVelXYSource() == SourceXY::GPS ||
-           getVelZSource() == SourceZ::GPS ||
-           getYawSource() == SourceYaw::GSF;
+    return getPosXYSource(core_index) == SourceXY::GPS ||
+           getPosZSource(core_index) == SourceZ::GPS ||
+           getVelXYSource(core_index) == SourceXY::GPS ||
+           getVelZSource(core_index) == SourceZ::GPS ||
+           getYawSource(core_index) == SourceYaw::GSF;
 }
 
 // true if some parameters have been configured (used during parameter conversion)
