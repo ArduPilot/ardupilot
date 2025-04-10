@@ -1,0 +1,32 @@
+# 3DR_X8-M model
+
+{
+    # Stability Derivatives
+
+    "Xu" : -0.2179,
+    "Yv" : -0.201,
+    "Zw" : -1.3332,
+    "Lv" : -4.465,
+    "Mu" : 4.665,
+    "Nr" : -0.5513,
+
+    # Control Derivatives
+    "Xlon" : -3.881,
+    "Ylat" : 4.2004,
+    "Zcol" : -21.822,
+    "Llat" : 144.32,
+    "Mlon" : 112.93,
+    "Nped" : 12.07,
+
+    # Motor dynamics
+    "Lag" : 24.94,
+    "Lead" : 1.54,
+
+    # Time Delay
+    "time_delay_rp" : 0,
+    "time_delay_ped" : 14,
+    "time_delay_col" : 26,
+
+    "thr_hover": 0.39
+
+}
