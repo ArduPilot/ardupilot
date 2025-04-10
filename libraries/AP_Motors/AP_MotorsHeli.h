@@ -144,11 +144,15 @@ public:
 
     // enum for heli optional features
     enum class HeliOption {
-        USE_LEAKY_I                     = (1<<0),   // 1
+        USE_LEAKY_I                     = (1<<0),
+        USE_HDG_CORRECTION              = (1<<1),
     };
 
     // use leaking integrator management scheme
-    bool using_leaky_integrator() const { return heli_option(HeliOption::USE_LEAKY_I); }
+    bool using_leaky_integrator() const override { return heli_option(HeliOption::USE_LEAKY_I); }
+
+    // use heading error correction
+    bool using_hdg_error_correction() const override { return heli_option(HeliOption::USE_HDG_CORRECTION); }
 
     // Run arming checks
     bool arming_checks(size_t buflen, char *buffer) const override;
