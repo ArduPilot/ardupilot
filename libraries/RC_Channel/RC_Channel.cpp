@@ -745,6 +745,9 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #if AP_GRIPPER_ENABLED
     case AUX_FUNC::GRIPPER:
 #endif
+#if HAL_NAVEKF3_AVAILABLE
+    case AUX_FUNC::GPS_DISABLE_EK3:
+#endif
 #if AP_INERTIALSENSOR_KILL_IMU_ENABLED
     case AUX_FUNC::KILL_IMU1:
     case AUX_FUNC::KILL_IMU2:
@@ -905,6 +908,9 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #endif
 #if HAL_MOUNT_ENABLED
     { AUX_FUNC::MOUNT_LRF_ENABLE, "Mount LRF Enable"},
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    { AUX_FUNC::GPS_DISABLE_EK3,"GPSDisableEK3"},
 #endif
 };
 
@@ -1601,6 +1607,12 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 #endif
         break;
 
+#if HAL_NAVEKF3_AVAILABLE
+    case AUX_FUNC::GPS_DISABLE_EK3:
+        AP::ahrs().gps_disable_ek3(ch_flag == AuxSwitchPos::HIGH);
+        break;
+#endif
+        
     case AUX_FUNC::GPS_DISABLE_YAW:
         AP::gps().set_force_disable_yaw(ch_flag == AuxSwitchPos::HIGH);
         break;
