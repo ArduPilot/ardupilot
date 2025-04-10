@@ -61,7 +61,7 @@ private:
     };
 
     // return true if the given message type should be sent
-    bool should_send(ViconTypeMask type_mask) const { return (((uint8_t)type_mask & _sitl->vicon_type_mask.get()) > 0); }
+    bool should_send(ViconTypeMask type_mask) const { return (((uint8_t)type_mask & _sitl->vicon.type_mask.get()) > 0); }
 
     // get unused index in msg_buf
     bool get_free_msg_buf_index(uint8_t &index);

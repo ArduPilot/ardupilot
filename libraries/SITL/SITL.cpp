@@ -533,98 +533,8 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Description: Scenario for thermalling simulation, for soaring
     AP_GROUPINFO("THML_SCENARI",  12, SIM,  thermal_scenario, 0),
 
-    // @Param: VICON_POS_X
-    // @DisplayName: SITL vicon position on vehicle in Forward direction
-    // @Description: SITL vicon position on vehicle in Forward direction
-    // @Units: m
-    // @Range: 0 10
-    // @User: Advanced
-
-    // @Param: VICON_POS_Y
-    // @DisplayName: SITL vicon position on vehicle in Right direction
-    // @Description: SITL vicon position on vehicle in Right direction
-    // @Units: m
-    // @Range: 0 10
-    // @User: Advanced
-
-    // @Param: VICON_POS_Z
-    // @DisplayName: SITL vicon position on vehicle in Down direction
-    // @Description: SITL vicon position on vehicle in Down direction
-    // @Units: m
-    // @Range: 0 10
-    // @User: Advanced    
-    AP_GROUPINFO("VICON_POS",     14, SIM,  vicon_pos_offset, 0),
-
     // Buyoancy for submarines
     AP_GROUPINFO_FRAME("BUOYANCY", 15, SIM, buoyancy, 1, AP_PARAM_FRAME_SUB),
-
-    // @Param: VICON_GLIT_X
-    // @DisplayName: SITL vicon position glitch North
-    // @Description: SITL vicon position glitch North
-    // @Units: m
-    // @User: Advanced
-
-    // @Param: VICON_GLIT_Y
-    // @DisplayName: SITL vicon position glitch East
-    // @Description: SITL vicon position glitch East
-    // @Units: m
-    // @User: Advanced
-
-    // @Param: VICON_GLIT_Z
-    // @DisplayName: SITL vicon position glitch Down
-    // @Description: SITL vicon position glitch Down
-    // @Units: m
-    // @User: Advanced
-    AP_GROUPINFO("VICON_GLIT",    16, SIM,  vicon_glitch, 0),
-
-    // @Param: VICON_FAIL
-    // @DisplayName: SITL vicon failure
-    // @Description: SITL vicon failure
-    // @Values: 0:Vicon Healthy, 1:Vicon Failed
-    // @User: Advanced
-    AP_GROUPINFO("VICON_FAIL",    17, SIM,  vicon_fail, 0),
-
-    // @Param: VICON_YAW
-    // @DisplayName: SITL vicon yaw angle in earth frame
-    // @Description: SITL vicon yaw angle in earth frame
-    // @Units: deg
-    // @Range: 0 360
-    // @User: Advanced
-    AP_GROUPINFO("VICON_YAW",     18, SIM,  vicon_yaw, 0),
-
-    // @Param: VICON_YAWERR
-    // @DisplayName: SITL vicon yaw error
-    // @Description: SITL vicon yaw added to reported yaw sent to vehicle
-    // @Units: deg
-    // @Range: -180 180
-    // @User: Advanced
-    AP_GROUPINFO("VICON_YAWERR",  19, SIM,  vicon_yaw_error, 0),
-
-    // @Param: VICON_TMASK
-    // @DisplayName: SITL vicon type mask
-    // @Description: SITL vicon messages sent
-    // @Bitmask: 0:VISION_POSITION_ESTIMATE, 1:VISION_SPEED_ESTIMATE, 2:VICON_POSITION_ESTIMATE, 3:VISION_POSITION_DELTA, 4:ODOMETRY
-    // @User: Advanced
-    AP_GROUPINFO("VICON_TMASK",   20, SIM,  vicon_type_mask, 3),
-
-    // @Param: VICON_VGLI_X
-    // @DisplayName: SITL vicon velocity glitch North
-    // @Description: SITL vicon velocity glitch North
-    // @Units: m/s
-    // @User: Advanced
-
-    // @Param: VICON_VGLI_Y
-    // @DisplayName: SITL vicon velocity glitch East
-    // @Description: SITL vicon velocity glitch East
-    // @Units: m/s
-    // @User: Advanced
-
-    // @Param: VICON_VGLI_Z
-    // @DisplayName: SITL vicon velocity glitch Down
-    // @Description: SITL vicon velocity glitch Down
-    // @Units: m/s
-    // @User: Advanced
-    AP_GROUPINFO("VICON_VGLI",    21, SIM,  vicon_vel_glitch, 0),
 
     // @Param: RATE_HZ
     // @DisplayName: Loop rate
@@ -732,6 +642,10 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Path: ./SIM_Volz.cpp
     AP_SUBGROUPINFO(volz_sim, "VOLZ_", 55, SIM, Volz),
 #endif
+
+    // @Group: VICON_
+    // @Path: ./SIM_Vicon.cpp
+    AP_SUBGROUPINFO(vicon, "VICON_", 56, SIM, ViconParms),
 
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
