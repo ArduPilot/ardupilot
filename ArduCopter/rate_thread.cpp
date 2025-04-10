@@ -166,7 +166,8 @@ static inline bool run_decimated_callback(uint8_t decimation_rate, uint8_t& deci
 */
 void Copter::rate_controller_thread()
 {
-    uint8_t target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1, DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), 400));
+    uint8_t target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1,
+                                                     DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), AP::scheduler().get_loop_rate_hz()));
     uint8_t rate_decimation = target_rate_decimation;
 
     // set up the decimation rates
@@ -322,7 +323,8 @@ void Copter::rate_controller_thread()
         now_ms = AP_HAL::millis();
 
         // make sure we have the latest target rate
-        target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1, DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), 400));
+        target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1,
+                                                 DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), AP::scheduler().get_loop_rate_hz()));
         if (now_ms - last_notch_sample_ms >= 1000 || !was_using_rate_thread) {
             // update the PID notch sample rate at 1Hz if we are
             // enabled at runtime
