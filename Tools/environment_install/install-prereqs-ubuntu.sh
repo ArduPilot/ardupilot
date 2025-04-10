@@ -286,7 +286,11 @@ elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
 elif [ ${RELEASE_CODENAME} != 'mantic' ] &&
      [ ${RELEASE_CODENAME} != 'noble' ] && 
      [ ${RELEASE_CODENAME} != 'oracular' ]; then
-    SITL_PKGS+=" python-argparse"
+    if apt-cache search python-argparse | grep argp; then
+        SITL_PKGS+=" python-argparse"
+    elif apt-cache search python3-argparse | grep argp; then
+        SITL_PKGS+=" python3-argparse"
+    fi
 fi
 
 # Check for graphical package for MAVProxy
