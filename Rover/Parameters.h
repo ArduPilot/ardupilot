@@ -219,7 +219,7 @@ public:
         k_param_rcmap,
         k_param_L1_controller,          // unused
         k_param_steerController_old,    // unused
-        k_param_barometer,
+        k_param_barometer_old,
         k_param_notify,
         k_param_button,
         k_param_osd,

@@ -24,9 +24,6 @@ void Rover::init_ardupilot()
 
     g2.windvane.init(serial_manager);
 
-    // init baro before we start the GCS, so that the CLI baro test works
-    barometer.init();
-
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
@@ -57,10 +54,6 @@ void Rover::init_ardupilot()
     // init beacons used for non-gps position estimation
     g2.beacon.init();
 #endif
-
-    // and baro for EKF
-    barometer.set_log_baro_bit(MASK_LOG_IMU);
-    barometer.calibrate();
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);

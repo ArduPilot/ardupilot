@@ -76,7 +76,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #endif
     SCHED_TASK(update_batt_compass,   10,    120,  12),
     SCHED_TASK(read_rangefinder,      20,    100,  15),
-    SCHED_TASK(update_altitude,       10,    100,  18),
     SCHED_TASK(three_hz_loop,          3,     75,  21),
     SCHED_TASK(update_turn_counter,   10,     50,  24),
     SCHED_TASK(one_hz_loop,            1,    100,  33),
@@ -315,11 +314,20 @@ void Sub::read_AHRS()
     ahrs_view.update();
 }
 
-// read baro and rangefinder altitude at 10hz
-void Sub::update_altitude()
+// override barometer update method to do a few extra things
+void Sub::update_barometer()
 {
-    // read in baro altitude
-    read_barometer();
+    AP_Vehicle::update_barometer();
+
+    // If we are reading a positive altitude, the sensor needs calibration
+    // Even a few meters above the water we should have no significant depth reading
+    if(barometer.get_altitude() > 0) {
+        barometer.update_calibration();
+    }
+
+    if (ap.depth_sensor_present) {
+        sensor_health.depth = barometer.healthy(depth_sensor_idx);
+    }
 
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_CTUN)) {

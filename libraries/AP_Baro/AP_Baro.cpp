@@ -1096,6 +1096,34 @@ bool AP_Baro::arming_checks(size_t buflen, char *buffer) const
     return true;
 }
 
+void AP_Baro::convert_parameters_for_move_to_ap_vehicle(uint32_t old_toplevel_key)
+{
+#if HAL_BARO_WIND_COMP_ENABLED
+    // convert the WCF objects:
+    const struct WindCoeffs {
+        uint8_t old_index;
+        WindCoeff &coeff;
+    } wind_coeffs[] {
+        { 18, sensors[0].wind_coeff },
+#if BARO_MAX_INSTANCES > 1
+        { 19, sensors[1].wind_coeff },
+#endif
+#if BARO_MAX_INSTANCES > 2
+        { 20, sensors[2].wind_coeff },
+#endif
+    };
+    for (auto &x : wind_coeffs) {
+        const WindCoeff &coeff = x.coeff;
+        const auto old_index = x.old_index;
+        AP_Param::convert_class(old_toplevel_key, (void*)&coeff, coeff.var_info, old_index, false);
+    }
+#endif  // HAL_BARO_WIND_COMP_ENABLED
+
+    // now convert the top-level parameters
+    AP_Param::convert_class(old_toplevel_key, this, var_info, 0, true);
+}
+
+
 namespace AP {
 
 AP_Baro &baro()
