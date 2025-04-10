@@ -43,6 +43,10 @@ public:
     virtual void get_filter_status(nav_filter_status &status) const {}
     virtual bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const { return false; }
 
+    // enable/disable sending data to autopilot. Can be used to simulate EAHRS failure.
+    virtual void set_data_sending_state(AP_ExternalAHRS::DataSendingState new_state) {}
+    virtual void set_gps_state(AP_ExternalAHRS::GpsState new_state) {}
+
     // Check for new data.
     // This is used when there's not a separate thread for EAHRS.
     // This can also copy interim state protected by locking.
