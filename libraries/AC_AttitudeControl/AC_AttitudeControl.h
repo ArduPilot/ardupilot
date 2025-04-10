@@ -345,6 +345,7 @@ public:
    virtual Vector3f get_J() const = 0; //获取自适应参数
    virtual Vector3f get_e_R() const = 0; //获取旋转矩阵误差
    virtual Vector3f get_e_Omega() const = 0; //获取角速度误差
+   virtual Vector3f get_Md() const = 0; //获取Md
    virtual float get_Psi_R() const = 0; //获取几何控制姿态误差标量函数
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

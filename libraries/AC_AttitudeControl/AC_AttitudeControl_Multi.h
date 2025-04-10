@@ -78,6 +78,7 @@ public:
     Vector3f get_J() const override; //获取自适应参数
     Vector3f get_e_R() const override; //获取旋转矩阵误差
     Vector3f get_e_Omega() const override; //获取角速度误差
+    Vector3f get_Md() const override; //获取Md
     float get_Psi_R() const override; //获取几何控制姿态误差标量函数
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -194,6 +195,7 @@ protected:
     // internal variables
     Vector3f    _e_R;         // 旋转矩阵误差        
     Vector3f    _e_Omega;         //角加速度误差
+    Vector3f    _Md;         //期望力矩
     float       _Psi_R;        // 旋转矩阵误差的斜对称矩阵   
     
 
@@ -215,7 +217,7 @@ DIYLog() : force(), torque() {}
 DIYLog(const Vector3f& f, const Vector3f& t) : force(f), torque(t) {}
 };
 
-extern DIYLog get_log_out_1(float test_msg_3, float test_msg_4); //注意这里全局变量，所以传入的参数名也要区分
+extern DIYLog get_log_out_1(float test_msg_7, float test_msg_8,float test_msg_9); //注意这里全局变量，所以传入的参数名也要区分
 extern DIYLog current_log_out_1;
 extern DIYLog get_current_log_out_1();
 ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

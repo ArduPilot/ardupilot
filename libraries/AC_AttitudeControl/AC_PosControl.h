@@ -23,15 +23,15 @@
 #define POSCONTROL_ACCEL_XY                     100.0f  // default horizontal acceleration in cm/s/s.  This is overwritten by waypoint and loiter controllers
 #define POSCONTROL_JERK_XY                      3.0f    // default horizontal jerk m/s/s/s
 
-#define POSCONTROL_STOPPING_DIST_UP_MAX         300.0f  // max stopping distance (in cm) vertically while climbing
-#define POSCONTROL_STOPPING_DIST_DOWN_MAX       200.0f  // max stopping distance (in cm) vertically while descending
+#define POSCONTROL_STOPPING_DIST_UP_MAX         100.0f  // max stopping distance (in cm) vertically while climbing
+#define POSCONTROL_STOPPING_DIST_DOWN_MAX       100.0f  // max stopping distance (in cm) vertically while descending
 
 #define POSCONTROL_SPEED                        100.0f  // default horizontal speed in cm/s
 #define POSCONTROL_SPEED_DOWN                  -50.0f  // default descent rate in cm/s最大下降速度 默认-150
-#define POSCONTROL_SPEED_UP                     50.0f  // default climb rate in cm/s
+#define POSCONTROL_SPEED_UP                     100.0f  // default climb rate in cm/s
 
-#define POSCONTROL_ACCEL_Z                      100.0f  // default vertical acceleration in cm/s/s.
-#define POSCONTROL_JERK_Z                       3.0f    // default vertical jerk m/s/s/s
+#define POSCONTROL_ACCEL_Z                      300.0f  // default vertical acceleration in cm/s/s.
+#define POSCONTROL_JERK_Z                       5.0f    // default vertical jerk m/s/s/s
 
 #define POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ      2.0f    // low-pass filter on acceleration error (unit: Hz)
 

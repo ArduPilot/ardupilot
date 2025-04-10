@@ -80,7 +80,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     _c_z_4.x = _c_1_4; _c_z_4.y = _c_2_4;//第4个隐藏层中心2*1向量
     _c_z_5.x = _c_1_5; _c_z_5.y = _c_2_5;//第5个隐藏层中心2*1向量
 
-    //设置RBF网络的宽度 Setting the width of the RBF network
+    //设置RBF网络的宽度 Setting the width of the RBF network 注意！！：宽度越大约平滑，太小会发散
     float _b_x = 2.0f;   
     float _b_y = 2.0f;  
     float _b_z = 2.0f;
@@ -240,7 +240,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         _dot_W_y_4 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_4;//y方向第4个权重更新律
         _dot_W_y_5 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_5;//y方向第5个权重更新律
 
-        float _gamma_z = 10.0f;
+        float _gamma_z = 100.0f;
         _dot_W_z_1 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_1;//z方向第1个权重更新律
         _dot_W_z_2 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_2;//z方向第2个权重更新律
         _dot_W_z_3 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_3;//z方向第3个权重更新律
@@ -288,7 +288,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         
         float _J_max = 0.03f; //定义自适应参数上限
         //~~~~~x方向
-        float _eta_x = 0.001f; //定义自适应律参数，eta越大越平滑
+        float _eta_x = 0.01f; //定义自适应律参数，eta越大越平滑
         float _s_x = 0.02f;  //定义缩放因子
         float c_R = 0.6f;
         if ((_e_Omega.x + c_R * _e_R.x) * _pdnn_output.x > 0 )
@@ -314,7 +314,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         }
 
         //~~~~~~y方向
-        float _eta_y = 0.001f; //定义自适应律参数，eta越大越平滑
+        float _eta_y = 0.01f; //定义自适应律参数，eta越大越平滑
         float _s_y = 0.02f;  //定义缩放因子
         if ((_e_Omega.y + c_R * _e_R.y) * _pdnn_output.y > 0 )
         {
@@ -339,6 +339,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         }
 
         //~~~~~~z方向
+        float _J_max_z = 0.04f; //定义自适应参数上限
         float _eta_z = 0.05f; //定义自适应律参数，eta越大越平滑
         float _s_z = 0.02f;  //定义缩放因子
         if ((_e_Omega.z + c_R * _e_R.z) * _pdnn_output.z > 0 )
@@ -347,7 +348,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         }
         if ((_e_Omega.z + c_R * _e_R.z) * _pdnn_output.z <= 0 )
         {
-            if (_J_z < _J_max)
+            if (_J_z < _J_max_z)
             {
                 _dot_J_z = -(_J_z * _J_z) / _eta_z * (_e_Omega.z + c_R * _e_R.z) * _pdnn_output.z;
             }
@@ -393,10 +394,13 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     //(void)_geomrtry_output;
 
     //计算总输出，每个方向上乘以惯性张量
-    _pdnn_output.x = _J_x * (-_e_R.x * _kR - _e_Omega.x * _kOmega - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
-    _pdnn_output.y = _J_y * (-_e_R.y * _kR - _e_Omega.y * _kOmega - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
-    _pdnn_output.z = _J_z * (-_e_R.z * _kR_z - _e_Omega.z * _kOmega_z - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
-  
+    _pdnn_output.x = _J_x * (-_e_R.x * 100.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
+    _pdnn_output.y = _J_y * (-_e_R.y * 100.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
+    _pdnn_output.z = _J_z * (-_e_R.z * 100.0f - _e_Omega.z * 70.0f - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
+    
+    //_pdnn_output.x = 0.01f * (-_e_R.x * 100.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 0.0f *_phi_x + 0.0f*Aug.x); 
+    //_pdnn_output.y = 0.02f * (-_e_R.y * 100.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 0.0f * _phi_y + 0.0f*Aug.y);
+    //_pdnn_output.z = 0.02f * (-_e_R.z * 100.0f - _e_Omega.z * 70.0f - 0.0f *_integrator.z - _geomrtry_output.z - 0.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
 
     return _pdnn_output; //返回pdnn控制器输出
 }

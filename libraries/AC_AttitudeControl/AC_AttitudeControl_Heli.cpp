@@ -581,6 +581,10 @@ Vector3f AC_AttitudeControl_Heli::get_e_Omega() const
 {   
    return _e_Omega;
 }
+Vector3f AC_AttitudeControl_Heli::get_Md() const
+{   
+   return _Md;
+}
 float AC_AttitudeControl_Heli::get_Psi_R() const
 {   
    return _Psi_R;

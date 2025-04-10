@@ -401,6 +401,10 @@ Vector3f AC_AttitudeControl_Multi::get_e_Omega() const
 {   
    return _e_Omega;
 }
+Vector3f AC_AttitudeControl_Multi::get_Md() const
+{   
+   return _Md;
+}
 float AC_AttitudeControl_Multi::get_Psi_R() const
 {   
    return _Psi_R;
@@ -486,11 +490,11 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
 
  ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY New~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DIYLog get_log_out_1(float test_msg_3, float test_msg_4)  //记得修改这里的参数后要在.h文件中也修改一下
+DIYLog get_log_out_1(float test_msg_7, float test_msg_8,float test_msg_9)  //记得修改这里的参数后要在.h文件中也修改一下
 {
     
 // 示例力和力矩数据，你可以根据实际情况进行修改
-Vector3f force(test_msg_3, test_msg_4, 3.0f); // 假设的力值
+Vector3f force(test_msg_7, test_msg_8, test_msg_9); // 假设的力值
 
 Vector3f torque(4.0f, 5.0f, 6.0f); // 假设的力矩值
   
@@ -545,7 +549,7 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, floa
     Vector3f Md = _pdnn_att.update_all(_Rc, _R_body_to_ned_meas, Omega, dt, _Rc_active); //pdnn几何姿态控制器，输出为3*1扭矩
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    
-    _motors.set_roll(Md.x/13.3f);  //发送控制力矩给Mixer
+    _motors.set_roll(Md.x/13.3f);  //发送控制力矩给Mixer 
     _motors.set_roll_ff(0.0f); //设置为无前馈
     _motors.set_pitch(Md.y/13.3f);
     _motors.set_pitch_ff(0.0f);
@@ -565,13 +569,15 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, floa
     _e_Omega.x = _pdnn_att.get_e_Omega().x;
     _e_Omega.y = _pdnn_att.get_e_Omega().y;
     _e_Omega.z = _pdnn_att.get_e_Omega().z;
+    _Md = Md;
     _Psi_R = _pdnn_att.get_Psi_R();
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     //~~~~~~~~~~~~~~~~~~~测试ROS2 Topic~~~~~~~~~~~~~~~~~~~~~
-    float test_msg_3 = _pdnn_att.get_phi().x;
-    float test_msg_4 = _pdnn_att.get_J().x;
-    current_log_out_1 = get_log_out_1(test_msg_3, test_msg_4); //用于ROS2推力话题 
+    float test_msg_7 = _pdnn_att.get_phi().x;
+    float test_msg_8 = _pdnn_att.get_phi().y;
+    float test_msg_9 = _pdnn_att.get_phi().z;
+    current_log_out_1 = get_log_out_1(test_msg_7, test_msg_8, test_msg_9); //用于ROS2推力话题 
 
     control_monitor_update();
 

@@ -404,6 +404,10 @@ Vector3f AC_AttitudeControl_Sub::get_e_Omega() const
 {   
    return _e_Omega;
 }
+Vector3f AC_AttitudeControl_Sub::get_Md() const
+{   
+   return _Md;
+}
 float AC_AttitudeControl_Sub::get_Psi_R() const
 {   
    return _Psi_R;

@@ -180,7 +180,7 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
 
         // update I term 更新积分项
         //void AC_PDNN_3D::update_i(float dt, float _ki, float _c1, float _kimax, bool limit)
-        update_i(dt, 1.0f, 10.0f, 10.0f, true);
+        update_i(dt, 0.1f, 1.0f, 10.0f, true);
    
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~神经网络NN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         //定义隐藏层输入X
@@ -395,9 +395,14 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     _pdnn_output_D.y = _error.y * _kd; 
     _pdnn_output_D.z = _error.z * _kd_z;
 
-    _pdnn_output.x = _m_x * (-_error_m.x * _kp - 0.0f*_integrator.x - _derivative_m.x * _kd + _acc_desired.x - 1.0f*_phi_x); //计算总输出
-    _pdnn_output.y = _m_y * (-_error_m.y * _kp - 0.0f*_integrator.y - _derivative_m.y * _kd + _acc_desired.y -1.0f * _phi_y);
-    _pdnn_output.z = _m_z * (-_error_m.z * _kp_z - 0.0f*_integrator.z - _derivative_m.z * _kd_z - 9.80665f + _acc_desired.z -1.0f *_phi_z); //加入重力值9.80665, NED坐标系下为负数
+    //_pdnn_output.x = _m_x * (-_error_m.x * _kp - 0.0f*_integrator.x - _derivative_m.x * _kd + _acc_desired.x - 1.0f*_phi_x); //计算总输出
+    //_pdnn_output.y = _m_y * (-_error_m.y * _kp - 0.0f*_integrator.y - _derivative_m.y * _kd + _acc_desired.y -1.0f * _phi_y);
+    //_pdnn_output.z = _m_z * (-_error_m.z * _kp_z - 0.0f*_integrator.z - _derivative_m.z * _kd_z - 9.80665f + _acc_desired.z -1.0f *_phi_z); //加入重力值9.80665, NED坐标系下为负数
+
+
+    _pdnn_output.x =1.85f*(-_error_m.x * 8.0f - 0.0f*_integrator.x - _derivative_m.x * 4.0f + _acc_desired.x - 0.0f*_phi_x); //计算总输出
+    _pdnn_output.y =1.85f*(-_error_m.y * 8.0f - 0.0f*_integrator.y - _derivative_m.y * 4.0f + _acc_desired.y -0.0f * _phi_y);
+    _pdnn_output.z =1.85f*(-_error_m.z * 3.0f - 0.0f*_integrator.z - _derivative_m.z * 4.0f - 9.80665f + _acc_desired.z -0.0f *_phi_z); //加入重力值9.80665, NED坐标系下为负数
 
     return _pdnn_output; //返回pdnn控制器输出
 
@@ -408,6 +413,7 @@ void AC_PDNN_3D::update_i(float dt, float _ki, float _c1, float _kimax, bool lim
    if (limit){
 
     Vector3f delta_integrator = (_derivative_m + _error_m * _c1) * dt;
+    //Vector3f delta_integrator = (_error_m * _c1) * dt;
     _integrator += delta_integrator;
     
     float _integrator_x = _integrator.x;

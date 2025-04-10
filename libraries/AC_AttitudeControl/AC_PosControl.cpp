@@ -1216,7 +1216,7 @@ void AC_PosControl::update_z_controller()
     Vector3f _pos_desired_3f;                                //转换数据类型为Vector3f
     _pos_desired_3f.x = pos_desired_x_set_update(_pos_desired.x,400.0f, 1.0f, 400.0f);     //转换数据类型为Vector3f,update函数为平滑轨迹函数
     _pos_desired_3f.y = pos_desired_y_set_update(_pos_desired.y,400.0f, 1.0f, 400.0f);     //转换数据类型为Vector3f,update函数为平滑轨迹函数                
-    _pos_desired_3f.z = - pos_desired_z_set_update(_pos_desired.z,400.0f, 0.5f, 400.0f);   //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
+    _pos_desired_3f.z = -_pos_desired.z;//-pos_desired_z_set_update(_pos_desired.z,400.0f, 0.5f, 400.0f);   //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
     Vector3f _acc_desired_3f;
     _acc_desired_3f.x = 0.0f;
     _acc_desired_3f.y = 0.0f;
@@ -1299,8 +1299,8 @@ void AC_PosControl::update_z_controller()
                   _attitude_control.get_e_R().x, _attitude_control.get_e_R().y, _attitude_control.get_e_R().z);
 
     Write_PSCE(_attitude_control.get_e_Omega().x, _attitude_control.get_e_Omega().y, _attitude_control.get_e_Omega().z,
-                   _attitude_control.get_Psi_R(), _attitude_control.get_Psi_R(), _inav.get_velocity_neu_cms().y,
-                   _accel_desired.y, _accel_target.y, _attitude_control.get_Psi_R());
+                   _attitude_control.get_Psi_R(), _attitude_control.get_Md().x, _attitude_control.get_Md().y,
+                   _attitude_control.get_Md().z, _accel_target.y, _attitude_control.get_Psi_R());
     
     Write_PSCD(_attitude_control.get_phi().x, _attitude_control.get_phi().y, _attitude_control.get_phi().z, //发送给姿态控制,
                   _attitude_control.get_J().x, _attitude_control.get_J().y, _attitude_control.get_J().z,
