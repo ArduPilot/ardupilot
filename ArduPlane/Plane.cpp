@@ -351,9 +351,6 @@ void Plane::one_second_loop()
                                   (float)((aparm.airspeed_max - aparm.airspeed_min)/2));
     }
 
-    // sync MAVLink system ID
-    mavlink_system.sysid = gcs().sysid_this_mav();
-
     AP::srv().enable_aux_servos();
 
     // update notify flags
