@@ -314,7 +314,11 @@ void AP_SystemID::update()
 #endif
 
     if (log_subsample <= 0) {
-        log_data();
+        if (plane.control_mode->supports_vtol_systemid()) {
+            log_data();
+        } else {
+            log_plane_data();
+        }
         if (plane.should_log(MASK_LOG_ATTITUDE_FAST) && plane.should_log(MASK_LOG_ATTITUDE_MED)) {
             log_subsample = 1;
         } else if (plane.should_log(MASK_LOG_ATTITUDE_FAST)) {
@@ -368,14 +372,44 @@ void AP_SystemID::log_data() const
                                     delta_velocity.z * dt_vel_inv);
 
 #if HAL_QUADPLANE_ENABLED
-        if (plane.control_mode->supports_vtol_systemid()) {
-            // log attitude controller at the same rate
-            plane.quadplane.Log_Write_AttRate();
-        }
+        // log attitude controller at the same rate
+        plane.quadplane.Log_Write_AttRate();
 #endif
     }
 #endif // HAL_LOGGING_ENABLED
 }
 
+void AP_SystemID::log_plane_data() const
+{
+#if HAL_LOGGING_ENABLED
+    Vector3f delta_angle;
+    float delta_angle_dt;
+    plane.ins.get_delta_angle(delta_angle, delta_angle_dt);
+
+    Vector3f delta_velocity;
+    float delta_velocity_dt;
+    plane.ins.get_delta_velocity(delta_velocity, delta_velocity_dt);
+
+    if (is_positive(delta_angle_dt) && is_positive(delta_velocity_dt)) {
+        const float dt_ang_inv = 1.0 / delta_angle_dt;
+        const float dt_vel_inv = 1.0 / delta_velocity_dt;
+        AP::logger().WriteStreaming("SIDP", "TimeUS,Time,Targ,F,Gx,Gy,Gz,Ax,Ay,Az",
+                                    "ss-zkkkooo", "F---------", "Qfffffffff",
+                                    AP_HAL::micros64(),
+                                    waveform_time, waveform_sample, waveform_freq_rads / (2 * M_PI),
+                                    degrees(delta_angle.x * dt_ang_inv),
+                                    degrees(delta_angle.y * dt_ang_inv),
+                                    degrees(delta_angle.z * dt_ang_inv),
+                                    delta_velocity.x * dt_vel_inv,
+                                    delta_velocity.y * dt_vel_inv,
+                                    delta_velocity.z * dt_vel_inv);
+                                    plane.nav_roll_cd;
+                                    plane.ahrs.roll_sensor;
+                                    plane.nav_pitch_cd;
+                                    plane.ahrs.pitch_sensor;
+                                    
+                                
+#endif // HAL_LOGGING_ENABLED
+}
 #endif // AP_PLANE_SYSTEMID_ENABLED
 
