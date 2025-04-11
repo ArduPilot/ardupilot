@@ -94,8 +94,8 @@ public:
 #endif
 
     // get camera image horizontal or vertical field of view in degrees.  returns 0 if unknown
-    float horizontal_fov() const { return MAX(0, _params.hfov); }
-    float vertical_fov() const { return MAX(0, _params.vfov); }
+    float horizontal_fov() const { return MAX(0.0f, _params.hfov); }
+    float vertical_fov() const { return MAX(0.0f, _params.vfov); }
 
     // handle MAVLink messages from the camera
     virtual void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) {}
