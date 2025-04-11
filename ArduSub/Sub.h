@@ -460,7 +460,7 @@ private:
     void mainloop_failsafe_disable();
 #if AP_FENCE_ENABLED
     void fence_check();
-    void fence_run_checks() override;
+    void fence_checks_async() override;
 #endif
     bool set_mode(Mode::Number mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, const ModeReason reason) override;

@@ -184,7 +184,7 @@ public:
     enum class OPTIONS {
         DISABLE_MODE_CHANGE = 1U << 0,
         INCLUSION_UNION = 1U << 1,
-        MARGIN_BREACH = 1U << 2,
+        NOTIFY_MARGIN_BREACH = 1U << 2,
     };
     static bool option_enabled(OPTIONS opt, const AP_Int16 &options) {
         return (options.get() & int16_t(opt)) != 0;

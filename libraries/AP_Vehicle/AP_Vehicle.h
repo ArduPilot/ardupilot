@@ -480,7 +480,7 @@ protected:
     } fence_breaches;
 
     void fence_init();
-    virtual void fence_run_checks() {};
+    virtual void fence_checks_async() {};
 #endif
 
 #if AP_TEMPERATURE_SENSOR_ENABLED

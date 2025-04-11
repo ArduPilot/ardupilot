@@ -1157,7 +1157,7 @@ bool AP_Vehicle::block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_lis
 #if AP_FENCE_ENABLED
 void AP_Vehicle::fence_init()
 {
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Vehicle::fence_run_checks, void));
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Vehicle::fence_checks_async, void));
 }
 #endif  // AP_FENCE_ENABLED
 
