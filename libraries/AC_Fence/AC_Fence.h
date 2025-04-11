@@ -238,6 +238,9 @@ private:
     /// retrieve the current NED position relative to home
     bool get_current_position_NED(Vector3f& currpos) const;
 
+    // get altitude in FENCE_ALT_TYPE frame
+    bool get_alt_U_in_frame(float &alt) const;
+
     // additional checks for the different fence types:
     bool pre_arm_check_polygon(char *failure_msg, const uint8_t failure_msg_len) const;
     bool pre_arm_check_circle(char *failure_msg, const uint8_t failure_msg_len) const;
@@ -263,6 +266,7 @@ private:
     AP_Int16        _ret_altitude;      // return to this altitude
     AP_Int16        _options;           // options bitmask, see OPTIONS enum
     AP_Float        _notify_freq;       // margin notification frequency
+    AP_Enum<Location::AltFrame> _alt_type;  // altitude frame
 
     // backup fences
     float           _alt_max_backup_m;          // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
