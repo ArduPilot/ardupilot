@@ -1636,7 +1636,8 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
             Vector2f post_position_cm;
             if (!post_location.get_vector_xy_from_origin_NE(post_position_cm)) {
                 // should probably use SITL variables...
-                return 0.0f;
+                min_dist_cm = 0;
+                goto OUT;
             }
             Vector2f intersection_point_cm;
             if (Vector2f::circle_segment_intersection(ray_endpos_cm, vehicle_pos_cm, post_position_cm, radius_cm, intersection_point_cm)) {
@@ -1658,6 +1659,8 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
             }
         }
     }
+
+OUT:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (postfile != nullptr) {
         fclose(postfile);
