@@ -792,9 +792,9 @@ bool Tiltrotor::get_forward_throttle(float &throttle) const
     uint8_t num_vectored_motors = 0;
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
         if (is_motor_tilting(i)) {
-            float thr_out;
-            if (motors->get_raw_motor_throttle(i, thr_out)) {
-                throttle_sum += thr_out;
+            float thrust;
+            if (motors->get_thrust(i, thrust)) {
+                throttle_sum += motors->thr_lin.thrust_to_actuator(thrust);
                 num_vectored_motors ++;
             }
         }
