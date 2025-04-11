@@ -556,6 +556,9 @@ void rprintf(const char *format, ...)
     if (!f) {
         f = ::fopen(fname, "w");
     }
+    if (!f) {
+        return;
+    }
     va_list ap;
     va_start(ap, format);
     vfprintf(f, format, ap);
