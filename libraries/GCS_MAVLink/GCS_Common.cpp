@@ -2670,6 +2670,9 @@ void GCS::send_message(enum ap_message id)
 
 void GCS::update_send()
 {
+    // cope with changes to mavlink system ID parameter
+    mavlink_system.sysid = sysid;
+
     update_send_has_been_called = true;
 
     if (!initialised_missionitemprotocol_objects) {
