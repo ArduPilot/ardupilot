@@ -381,7 +381,7 @@ void Plane::check_long_failsafe()
             failsafe_long_on_event(FAILSAFE_GCS, ModeReason::GCS_FAILSAFE);
         }
     } else {
-        uint32_t timeout_seconds = g.fs_timeout_long;
+        float timeout_seconds = g.fs_timeout_long;
         if (g.fs_action_short != FS_ACTION_SHORT_DISABLED) {
             // avoid dropping back into short timeout
             timeout_seconds = g.fs_timeout_short;

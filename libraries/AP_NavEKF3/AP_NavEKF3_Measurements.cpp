@@ -943,7 +943,7 @@ void NavEKF3_core::readRngBcnData()
 
             // set the range noise
             // TODO the range library should provide the noise/accuracy estimate for each beacon
-            rngBcnDataNew.rngErr = frontend->_rngBcnNoise;
+            rngBcnDataNew.rngErr = frontend->_rngBcnNoise.get();
 
             // set the range measurement
             rngBcnDataNew.rng = beacon->beacon_distance(index);
@@ -1443,8 +1443,8 @@ void NavEKF3_core::SampleDragData(const imu_elements &imu)
 {
 #if EK3_FEATURE_DRAG_FUSION
     // Average and down sample to 5Hz
-    const ftype bcoef_x = frontend->_ballisticCoef_x;
-    const ftype bcoef_y = frontend->_ballisticCoef_y;
+    const ftype bcoef_x = frontend->_ballisticCoef_x.get();
+    const ftype bcoef_y = frontend->_ballisticCoef_y.get();
     const ftype mcoef = frontend->_momentumDragCoef.get();
     const bool using_bcoef_x = bcoef_x > 1.0f;
     const bool using_bcoef_y = bcoef_y > 1.0f;

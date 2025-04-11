@@ -539,7 +539,7 @@ void NavEKF3_core::SelectVelPosFusion()
     if (gpsDataToFuse) {
         CorrectGPSForAntennaOffset(gpsDataDelayed);
         // calculate innovations and variances for reporting purposes only
-        CalculateVelInnovationsAndVariances(gpsDataDelayed.vel, frontend->_gpsHorizVelNoise, frontend->gpsNEVelVarAccScale, gpsVelInnov, gpsVelVarInnov);
+        CalculateVelInnovationsAndVariances(gpsDataDelayed.vel, frontend->_gpsHorizVelNoise.get(), frontend->gpsNEVelVarAccScale, gpsVelInnov, gpsVelVarInnov);
         // record time GPS data was retrieved from the buffer (for timeout checks)
         gpsRetrieveTime_ms = dal.millis();
     }
@@ -2092,7 +2092,7 @@ void NavEKF3_core::SelectBodyOdomFusion()
             // TODO write a dedicated observation model for wheel encoders
             bodyOdmDataDelayed.vel = prevTnb * velNED;
             bodyOdmDataDelayed.body_offset = wheelOdmDataDelayed.hub_offset;
-            bodyOdmDataDelayed.velErr = frontend->_wencOdmVelErr;
+            bodyOdmDataDelayed.velErr = frontend->_wencOdmVelErr.get();
 
             // Fuse data into the main filter
             FuseBodyVel();
