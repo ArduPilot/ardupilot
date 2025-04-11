@@ -162,6 +162,27 @@ class Board:
             )
             cfg.msg("Enabled custom controller", 'no', color='YELLOW')
 
+        # Allow enabling for controller hook from Simulink for any board
+        if cfg.options.enable_simulink_app:
+            env.AP_LIBRARIES += [
+                'AP_Simulink'
+            ]
+            cfg.msg("Enabled Simulink controller", 'yes')
+            env.DEFINES.update(
+            # Add Defines for Simulink Controller
+                SIMULINK_APP_ENABLED=1,
+            # End of Defines for Simulink Controller
+            )
+            #Enable dwarf parser flags for Simulink external mode 
+            env.CFLAGS += [
+                '-gdwarf-4',
+                '-g3',
+            ]
+            env.CXXFLAGS += [
+                '-gdwarf-4',
+                '-g',
+            ]
+
         # support enabling any option in build_options.py
         for opt in build_options.BUILD_OPTIONS:
             enable_option = opt.config_option().replace("-","_")
