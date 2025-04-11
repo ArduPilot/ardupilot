@@ -95,7 +95,76 @@ const AP_Param::Info Sub::var_info[] = {
     // @Values: 0:Disabled,1:Warn only
     // @User: Standard
     GSCALAR(failsafe_temperature, "FS_TEMP_ENABLE", FS_TEMP_DISABLED),
+    
+#if RC_ENABLED        
+    // @Param: FS_THR_ENABLE
+    // @DisplayName: Throttle Failsafe Enable
+    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
+    // @Values:  0:Disabled,1:Surface on throttle failsafe 
+    // @User: Standard
+    GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   0),
 
+    // @Param: FS_THR_VALUE
+    // @DisplayName: Throttle Failsafe Value
+    // @Description: The PWM level in microseconds on channel 3 below which throttle failsafe triggers
+    // @Range: 910 1100
+    // @Units: PWM
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",  FS_THR_VALUE_DEFAULT),
+    
+    // @Param: FLTMODE1
+    // @DisplayName: Flight Mode 1
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is <= 1230
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake,18:Throw,19:Avoid_ADSB,20:Guided_NoGPS,21:Smart_RTL,22:FlowHold,23:Follow,24:ZigZag,25:SystemID,26:Heli_Autorotate,27:Auto RTL,28:Turtle
+    // @User: Standard
+    GSCALAR(flight_mode1, "FLTMODE1",               (uint8_t)FLIGHT_MODE_1),
+
+    // @Param: FLTMODE2
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 2
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1230, <= 1360
+    GSCALAR(flight_mode2, "FLTMODE2",               (uint8_t)FLIGHT_MODE_2),
+
+    // @Param: FLTMODE3
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 3
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1360, <= 1490
+    GSCALAR(flight_mode3, "FLTMODE3",               (uint8_t)FLIGHT_MODE_3),
+
+    // @Param: FLTMODE4
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 4
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1490, <= 1620
+    GSCALAR(flight_mode4, "FLTMODE4",               (uint8_t)FLIGHT_MODE_4),
+
+    // @Param: FLTMODE5
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 5
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1620, <= 1749
+    GSCALAR(flight_mode5, "FLTMODE5",               (uint8_t)FLIGHT_MODE_5),
+
+    // @Param: FLTMODE6
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 6
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >=1750
+    GSCALAR(flight_mode6, "FLTMODE6",               (uint8_t)FLIGHT_MODE_6),
+
+    // @Param: FLTMODE_CH
+    // @DisplayName: Flightmode channel
+    // @Description: RC Channel to use for flight mode control
+    // @Values: 0:Disabled,5:Channel5,6:Channel6,7:Channel7,8:Channel8,9:Channel9,10:Channel 10,11:Channel 11,12:Channel 12,13:Channel 13,14:Channel 14,15:Channel 15
+    // @User: Advanced
+    GSCALAR(flight_mode_chan, "FLTMODE_CH",         CH_MODE_DEFAULT),
+
+    // @Param: INITIAL_MODE
+    // @DisplayName: Initial flight mode
+    // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver.
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake,18:Throw,19:Avoid_ADSB,20:Guided_NoGPS,21:Smart_RTL,22:FlowHold,23:Follow,24:ZigZag,25:SystemID,26:Heli_Autorotate
+    // @User: Advanced
+    GSCALAR(initial_mode,        "INITIAL_MODE",     (uint8_t)Mode::Number::STABILIZE),
+    
+#endif
     // @Param: FS_PRESS_MAX
     // @DisplayName: Internal Pressure Failsafe Threshold
     // @Description: The maximum internal pressure allowed before triggering failsafe. Failsafe action is determined by FS_PRESS_ENABLE parameter
@@ -671,11 +740,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: SERVO
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     AP_SUBGROUPINFO(servo_channels, "SERVO", 16, ParametersG2, SRV_Channels),
-
+#if RC_ENABLED
     // @Group: RC
     // @Path: ../libraries/RC_Channel/RC_Channels_VarInfo.h
     AP_SUBGROUPINFO(rc_channels, "RC", 17, ParametersG2, RC_Channels),
-
+#endif
     // 18 was scripting
 
     // @Param: ORIGIN_LAT

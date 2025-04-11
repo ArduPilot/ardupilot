@@ -208,6 +208,17 @@ public:
         k_param_cam_tilt_center, // deprecated
         k_param_frame_configuration,
 
+        // 200: flight modes
+        k_param_flight_mode1 = 200,
+        k_param_flight_mode2,
+        k_param_flight_mode3,
+        k_param_flight_mode4,
+        k_param_flight_mode5,
+        k_param_flight_mode6,
+        k_param_simple_modes,
+        k_param_flight_mode_chan,
+        k_param_initial_mode,
+        
         // Acro Mode parameters
         k_param_acro_yaw_p = 220, // Used in all modes for get_pilot_desired_yaw_rate
         k_param_acro_trainer,
@@ -232,7 +243,9 @@ public:
         k_param_rangefinder_signal_min,
         k_param_surftrak_depth,
         k_param_pilot_speed,
-
+        k_param_failsafe_throttle,
+        k_param_throttle_fs_action,     // remove
+        k_param_failsafe_throttle_value,
         k_param_vehicle = 257, // vehicle common block of parameters
         k_param__gcs = 258,
     };
@@ -274,6 +287,8 @@ public:
     // Throttle
     //
     AP_Int16        throttle_deadzone;
+    AP_Int8         failsafe_throttle;
+    AP_Int16        failsafe_throttle_value;
 
     // Misc
     //
@@ -336,6 +351,21 @@ public:
     AP_Float        acro_balance_pitch;
     AP_Int8         acro_trainer;
     AP_Float        acro_expo;
+    
+#if RC_ENABLED
+
+    // Flight modes
+    //
+    AP_Int8         flight_mode1;
+    AP_Int8         flight_mode2;
+    AP_Int8         flight_mode3;
+    AP_Int8         flight_mode4;
+    AP_Int8         flight_mode5;
+    AP_Int8         flight_mode6;
+    AP_Int8         simple_modes;
+    AP_Int8         flight_mode_chan;
+    AP_Int8         initial_mode;
+#endif    
 
     AP_Float                surface_depth;
     AP_Int8                 frame_configuration;
@@ -361,10 +391,10 @@ public:
     // proximity (aka object avoidance) library
     AP_Proximity proximity;
 #endif
-
+#if RC_ENABLED
     // RC input channels
     RC_Channels_Sub rc_channels;
-
+#endif
     // control over servo output ranges
     SRV_Channels servo_channels;
 
