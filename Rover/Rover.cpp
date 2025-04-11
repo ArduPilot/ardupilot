@@ -444,9 +444,6 @@ void Rover::one_second_loop(void)
     AP_Notify::flags.armed = arming.is_armed();
     AP_Notify::flags.flying = hal.util->get_soft_armed();
 
-    // cope with changes to mavlink system ID
-    mavlink_system.sysid = gcs().sysid_this_mav();
-
     // attempt to update home position and baro calibration if not armed:
     if (!hal.util->get_soft_armed()) {
         update_home();
