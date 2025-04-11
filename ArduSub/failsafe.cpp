@@ -511,7 +511,7 @@ void Sub::set_failsafe_radio(bool b)
         // -----------------------------------------------
         failsafe.radio = b;
 
-/*        if (failsafe.radio == false) {
+        if (failsafe.radio == false) {
             // We've regained radio contact
             // ----------------------------
             failsafe_radio_off_event();
@@ -520,7 +520,7 @@ void Sub::set_failsafe_radio(bool b)
             // ------------------------
             failsafe_radio_on_event();
         }
-*/
+
         // update AP_Notify
         AP_Notify::flags.failsafe_radio = b;
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"failsafe");
