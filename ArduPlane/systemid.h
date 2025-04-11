@@ -61,6 +61,7 @@ private:
 
     void set_bf_feedforward(bool value);
     void log_data() const;
+    void log_plane_data() const;
     int8_t log_subsample;       // Subsample multiple for logging.
 
 
