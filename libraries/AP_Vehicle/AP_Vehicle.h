@@ -474,7 +474,7 @@ protected:
 #if AP_FENCE_ENABLED
     AC_Fence fence;
     struct {
-        bool have_updates;      // true if new breache statuses have been captured but not actioned
+        bool have_updates;      // true if new breach statuses have been captured but not actioned
         uint8_t new_breaches;   // the new breaches that are available
         uint32_t last_check_ms; // last time the fence check was run
     } fence_breaches;
