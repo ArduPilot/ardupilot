@@ -34,7 +34,7 @@ typedef Matrix3<float> Matrix3F;
 typedef Quaternion QuaternionF;
 #endif
 
-// define AP_Param types AP_Vector3f and Ap_Matrix3f
+// define AP_Param type AP_Vector3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
 /*
@@ -212,7 +212,17 @@ inline double constrain_double(const double amt, const double low, const double 
 }
 
 // degrees -> radians
-static inline constexpr ftype radians(ftype deg)
+static inline constexpr double radians(double deg)
+{
+    return deg * DEG_TO_RAD;
+}
+
+static inline constexpr float radians(float deg)
+{
+    return deg * DEG_TO_RAD;
+}
+
+static inline constexpr float radians(int deg)
 {
     return deg * DEG_TO_RAD;
 }

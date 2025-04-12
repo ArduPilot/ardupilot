@@ -39,6 +39,7 @@
 #include "AP_InertialSensor_Invensensev3.h"
 #include "AP_InertialSensor_NONE.h"
 #include "AP_InertialSensor_SCHA63T.h"
+#include <AP_Scheduler/AP_Scheduler.h>
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
@@ -1499,6 +1500,27 @@ bool AP_InertialSensor::gyro_calibrated_ok_all() const
         }
     }
     return (get_gyro_count() > 0);
+}
+
+// Prearm check to verify that we have sane sched loop rates set based on Gyro backend rates
+bool AP_InertialSensor::pre_arm_check_gyro_backend_rate_hz(char* fail_msg, uint16_t fail_msg_len) const
+{
+#if AP_SCHEDULER_ENABLED
+    const auto gyro_count = get_gyro_count();
+    const auto threshold = 1.8 * _loop_rate;
+    for (uint8_t i=0; i<gyro_count; i++) {
+        if (!_use(i) || _backends[i] == nullptr) {
+            continue;
+        }
+        const auto rate_hz = _backends[i]->get_gyro_backend_rate_hz();
+        if (rate_hz < threshold && (AP_HAL::Device::devid_get_devtype(_gyro_id(i)) != AP_InertialSensor_Backend::DEVTYPE_SERIAL)) {
+            hal.util->snprintf(fail_msg, fail_msg_len, "Gyro %d rate %dHz < loop ratex1.8 %dHz",
+                               i, int(rate_hz), int(threshold));
+            return false;
+        }
+    }
+#endif
+    return true;
 }
 
 // return true if gyro instance should be used (must be healthy and have it's use parameter set to 1)

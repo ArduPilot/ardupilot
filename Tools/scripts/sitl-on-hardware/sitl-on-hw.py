@@ -55,7 +55,6 @@ def run_program(cmd_list):
     retcode = subprocess.call(cmd_list)
     if retcode != 0:
         print("FAILED: %s" % (' '.join(cmd_list)))
-        global extra_hwdef
         if extra_hwdef is not None:
             extra_hwdef.close()
             os.unlink(extra_hwdef.name)

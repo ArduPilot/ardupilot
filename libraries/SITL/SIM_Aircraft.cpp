@@ -413,6 +413,8 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));
     fdm.bodyMagField = mag_bf;
 
+    fdm.bodyMagField.rotate(sitl->imu_orientation);
+
     // copy laser scanner results
     fdm.scanner.points = scanner.points;
     fdm.scanner.ranges = scanner.ranges;
@@ -1001,7 +1003,8 @@ void Aircraft::smooth_sensors(void)
  */
 float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx)
 {
-    return servo_filter[idx].filter_angle(input.servos[idx], frame_time_us * 1.0e-6);
+    uint16_t pwm = input.servos[idx] == 0 ? 1500 : input.servos[idx];
+    return servo_filter[idx].filter_angle(pwm, frame_time_us * 1.0e-6);
 }
 
 /*
@@ -1371,7 +1374,7 @@ void Aircraft::update_eas_airspeed()
 /*
   set pose on the aircraft, called from scripting
  */
-bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef)
+bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef, const Vector3f &gyro_rads)
 {
     if (instance >= MAX_SIM_INSTANCES || instances[instance] == nullptr) {
         return false;
@@ -1387,6 +1390,7 @@ bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion 
     aircraft.smoothing.rotation_b2e = aircraft.dcm;
     aircraft.smoothing.velocity_ef = velocity_ef;
     aircraft.smoothing.location = loc;
+    aircraft.gyro = gyro_rads;
 
     return true;
 }
@@ -1394,8 +1398,8 @@ bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion 
 /*
   wrapper for scripting access
  */
-bool SITL::SIM::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef)
+bool SITL::SIM::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef, const Vector3f &gyro_rads)
 {
-    return Aircraft::set_pose(instance, loc, quat, velocity_ef);
+    return Aircraft::set_pose(instance, loc, quat, velocity_ef, gyro_rads);
 }
 

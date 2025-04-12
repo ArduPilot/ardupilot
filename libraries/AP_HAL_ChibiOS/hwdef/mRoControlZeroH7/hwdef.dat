@@ -25,8 +25,6 @@ OSCILLATOR_HZ 24000000
 
 FLASH_SIZE_KB 2048
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
 
 # start on 2th sector (1st sector for bootloader)
 FLASH_RESERVE_START_KB 128

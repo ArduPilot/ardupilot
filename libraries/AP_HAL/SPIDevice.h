@@ -45,6 +45,14 @@ public:
     virtual bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                                      uint32_t len) = 0;
 
+    /*
+     * Like #transfer(), but len bytes are both transmitted and received from/into @send_recv.
+     * This function is optimized for DMA-enabled multi-transfers without buffer copying
+     */
+    bool transfer_fullduplex(uint8_t *send_recv, uint32_t len) override {
+        return transfer(send_recv, len, send_recv, len);
+    }
+
     /* 
      *  send N bytes of clock pulses without taking CS. This is used
      *  when initialising microSD interfaces over SPI

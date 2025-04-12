@@ -70,13 +70,16 @@ extern const AP_HAL::HAL &hal;
  #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
   #define ARSPD_DEFAULT_TYPE TYPE_ANALOG
   #define ARSPD_DEFAULT_PIN 1
- #else
+ #elif AP_AIRSPEED_MS4525_ENABLED
   #define ARSPD_DEFAULT_TYPE TYPE_I2C_MS4525
   #ifdef HAL_DEFAULT_AIRSPEED_PIN
       #define ARSPD_DEFAULT_PIN HAL_DEFAULT_AIRSPEED_PIN
   #else
      #define ARSPD_DEFAULT_PIN 15
   #endif
+ #else
+ #define ARSPD_DEFAULT_TYPE TYPE_NONE
+ #define ARSPD_DEFAULT_PIN 15
  #endif //CONFIG_HAL_BOARD
 #else   // All Other Vehicle Types
  #define ARSPD_DEFAULT_TYPE TYPE_NONE
@@ -355,108 +358,96 @@ void AP_Airspeed::allocate()
         case TYPE_NONE:
             // nothing to do
             break;
-        case TYPE_I2C_MS4525:
 #if AP_AIRSPEED_MS4525_ENABLED
+        case TYPE_I2C_MS4525:
             sensor[i] = NEW_NOTHROW AP_Airspeed_MS4525(*this, i);
-#endif
             break;
-        case TYPE_SITL:
+#endif  // AP_AIRSPEED_MS4525_ENABLED
 #if AP_AIRSPEED_SITL_ENABLED
+        case TYPE_SITL:
             sensor[i] = NEW_NOTHROW AP_Airspeed_SITL(*this, i);
-#endif
             break;
-        case TYPE_ANALOG:
+#endif  // AP_AIRSPEED_SITL_ENABLED
 #if AP_AIRSPEED_ANALOG_ENABLED
+        case TYPE_ANALOG:
             sensor[i] = NEW_NOTHROW AP_Airspeed_Analog(*this, i);
-#endif
             break;
+#endif  // AP_AIRSPEED_ANALOG_ENABLED
+#if AP_AIRSPEED_MS5525_ENABLED
         case TYPE_I2C_MS5525:
-#if AP_AIRSPEED_MS5525_ENABLED
             sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_AUTO);
-#endif
             break;
+#endif  // AP_AIRSPEED_MS5525_ENABLED
+#if AP_AIRSPEED_MS5525_ENABLED
         case TYPE_I2C_MS5525_ADDRESS_1:
-#if AP_AIRSPEED_MS5525_ENABLED
             sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_1);
-#endif
             break;
-        case TYPE_I2C_MS5525_ADDRESS_2:
+#endif  // AP_AIRSPEED_MS5525_ENABLED
 #if AP_AIRSPEED_MS5525_ENABLED
+        case TYPE_I2C_MS5525_ADDRESS_2:
             sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_2);
-#endif
             break;
-        case TYPE_I2C_SDP3X:
+#endif  // AP_AIRSPEED_MS5525_ENABLED
 #if AP_AIRSPEED_SDP3X_ENABLED
+        case TYPE_I2C_SDP3X:
             sensor[i] = NEW_NOTHROW AP_Airspeed_SDP3X(*this, i);
-#endif
             break;
-        case TYPE_I2C_DLVR_5IN:
+#endif  // AP_AIRSPEED_SDP3X_ENABLED
 #if AP_AIRSPEED_DLVR_ENABLED
+        case TYPE_I2C_DLVR_5IN:
             sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 5);
-#endif
             break;
         case TYPE_I2C_DLVR_10IN:
-#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 10);
-#endif
             break;
         case TYPE_I2C_DLVR_20IN:
-#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 20);
-#endif
             break;
         case TYPE_I2C_DLVR_30IN:
-#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 30);
-#endif
             break;
         case TYPE_I2C_DLVR_60IN:
-#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 60);
+            break;
 #endif  // AP_AIRSPEED_DLVR_ENABLED
-            break;
-        case TYPE_I2C_ASP5033:
 #if AP_AIRSPEED_ASP5033_ENABLED
+        case TYPE_I2C_ASP5033:
             sensor[i] = NEW_NOTHROW AP_Airspeed_ASP5033(*this, i);
-#endif
             break;
-        case TYPE_UAVCAN:
+#endif  // AP_AIRSPEED_ASP5033_ENABLED
 #if AP_AIRSPEED_DRONECAN_ENABLED
+        case TYPE_UAVCAN:
             sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
-#endif
             break;
-        case TYPE_NMEA_WATER:
+#endif  // AP_AIRSPEED_DRONECAN_ENABLED
 #if AP_AIRSPEED_NMEA_ENABLED
+        case TYPE_NMEA_WATER:
 #if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
             sensor[i] = NEW_NOTHROW AP_Airspeed_NMEA(*this, i);
 #endif
-#endif
             break;
-        case TYPE_MSP:
+#endif  // AP_AIRSPEED_NMEA_ENABLED
 #if AP_AIRSPEED_MSP_ENABLED
+        case TYPE_MSP:
             sensor[i] = NEW_NOTHROW AP_Airspeed_MSP(*this, i, 0);
-#endif
             break;
-        case TYPE_EXTERNAL:
+#endif  // AP_AIRSPEED_MSP_ENABLED
 #if AP_AIRSPEED_EXTERNAL_ENABLED
+        case TYPE_EXTERNAL:
             sensor[i] = NEW_NOTHROW AP_Airspeed_External(*this, i);
-#endif
             break;
-        case TYPE_AUAV_5IN:
+#endif  // AP_AIRSPEED_EXTERNAL_ENABLED
 #if AP_AIRSPEED_AUAV_ENABLED
+        case TYPE_AUAV_5IN:
             sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 5);
-#endif
             break;
         case TYPE_AUAV_10IN:
-#if AP_AIRSPEED_AUAV_ENABLED
             sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 10);
-#endif
             break;
         case TYPE_AUAV_30IN:
-#if AP_AIRSPEED_AUAV_ENABLED
             sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 30);
-#endif
             break;
+#endif  // AP_AIRSPEED_AUAV_ENABLED
         }
         if (sensor[i] && !sensor[i]->init()) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i + 1);

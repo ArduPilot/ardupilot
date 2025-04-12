@@ -299,7 +299,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @DisplayName: Wind Profile Type
     // @Description: Selects how wind varies from surface to WIND_T_ALT
     // @Values: 0:square law,1: none, 2:linear-see WIND_T_COEF
-    // @User: Advanced    
+    // @User: Advanced
     AP_GROUPINFO("WIND_T"      ,15, SIM,  wind_type, SIM::WIND_TYPE_SQRT),
     // @Param: WIND_T_ALT
     // @DisplayName: Full Wind Altitude
@@ -335,6 +335,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // vibration frequencies on each axis
     AP_GROUPINFO("VIB_FREQ",   26, SIM,  vibe_freq, 0),
 
+    // @Group: PARA_
     // @Path: ./SIM_Parachute.cpp
     AP_SUBGROUPINFO(parachute_sim, "PARA_", 27, SIM, Parachute),
 
@@ -400,6 +401,12 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Description: Ground behavior of aircraft (tailsitter, no movement, forward only)
     AP_GROUPINFO("GND_BEHAV",   41, SIM,  gnd_behav, -1),
 
+    // @Param: IMU_ORIENT
+    // @CopyFieldsFrom: AHRS_ORIENTATION
+    // @DisplayName: IMU orientation
+    // @Description: Simulated orientation of the IMUs
+    AP_GROUPINFO("IMU_ORIENT",   42, SIM,  imu_orientation, 0),
+    
     // sailboat wave and tide simulation parameters
 
     // @Param: WAVE_ENABLE
@@ -465,9 +472,11 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Units: us
     AP_GROUPINFO("LOOP_DELAY",  55, SIM,  loop_delay, 0),
 
+    // @Group: BZ_
     // @Path: ./SIM_Buzzer.cpp
     AP_SUBGROUPINFO(buzzer_sim, "BZ_", 56, SIM, Buzzer),
 
+    // @Group: TA_
     // @Path: ./SIM_ToneAlarm.cpp
     AP_SUBGROUPINFO(tonealarm_sim, "TA_", 57, SIM, ToneAlarm),
 

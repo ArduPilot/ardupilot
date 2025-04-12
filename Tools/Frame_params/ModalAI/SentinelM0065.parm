@@ -54,6 +54,10 @@ ATC_RAT_RLL_D 0.002
 ATC_RAT_RLL_I 0.08
 ATC_RAT_RLL_P 0.08
 
+# For external INA231 power monitor
+BATT_MONITOR 21
+BATT_I2C_BUS 1
+
 # battery setup
 BATT_LOW_VOLT    14.2
 BATT_OPTIONS     64

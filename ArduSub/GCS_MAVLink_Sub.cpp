@@ -230,11 +230,6 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
     }
 }
 
-uint8_t GCS_MAVLINK_Sub::sysid_my_gcs() const
-{
-    return sub.g.sysid_my_gcs;
-}
-
 bool GCS_Sub::vehicle_initialised() const {
     return sub.ap.initialised;
 }
@@ -259,205 +254,15 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         break;
 #endif
 
+    case MSG_WIND: // other vehicles do something custom with wind:
+        return true;
+
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
 
     return true;
 }
-
-
-const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-    // @Param: RAW_SENS
-    // @DisplayName: Raw sensor stream rate
-    // @Description: Stream rate of RAW_IMU, SCALED_IMU2, SCALED_PRESSURE, AIRSPEED, and SENSOR_OFFSETS to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_RAW_SENSORS],  2),
-
-    // @Param: EXT_STAT
-    // @DisplayName: Extended status stream rate to ground station
-    // @Description: Stream rate of SYS_STATUS, MEMINFO, MISSION_CURRENT, GPS_RAW_INT, NAV_CONTROLLER_OUTPUT, and LIMITS_STATUS to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_EXTENDED_STATUS],  2),
-
-    // @Param: RC_CHAN
-    // @DisplayName: RC Channel stream rate to ground station
-    // @Description: Stream rate of SERVO_OUTPUT_RAW and RC_CHANNELS_RAW to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_RC_CHANNELS],  2),
-
-    // @Param: POSITION
-    // @DisplayName: Position stream rate to ground station
-    // @Description: Stream rate of GLOBAL_POSITION_INT to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_POSITION],  3),
-
-    // @Param: EXTRA1
-    // @DisplayName: Extra data type 1 stream rate to ground station
-    // @Description: Stream rate of ATTITUDE and SIMSTATE (SITL only) to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_EXTRA1],  10),
-
-    // @Param: EXTRA2
-    // @DisplayName: Extra data type 2 stream rate to ground station
-    // @Description: Stream rate of VFR_HUD to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_EXTRA2],  10),
-
-    // @Param: EXTRA3
-    // @DisplayName: Extra data type 3 stream rate to ground station
-    // @Description: Stream rate of AHRS and SYSTEM_TIME to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_EXTRA3],  3),
-
-    // @Param: PARAMS
-    // @DisplayName: Parameter stream rate to ground station
-    // @Description: Stream rate of PARAM_VALUE to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_PARAMS],  0),
-    AP_GROUPEND
-};
-
-static const ap_message STREAM_RAW_SENSORS_msgs[] = {
-    MSG_RAW_IMU,
-    MSG_SCALED_IMU2,
-    MSG_SCALED_IMU3,
-    MSG_SCALED_PRESSURE,
-    MSG_SCALED_PRESSURE2,
-    MSG_SCALED_PRESSURE3,
-#if AP_AIRSPEED_ENABLED
-    MSG_AIRSPEED,
-#endif
-};
-static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
-    MSG_SYS_STATUS,
-    MSG_POWER_STATUS,
-#if HAL_WITH_MCU_MONITORING
-    MSG_MCU_STATUS,
-#endif
-    MSG_MEMINFO,
-    MSG_CURRENT_WAYPOINT,
-#if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
-    MSG_GPS_RAW,
-#endif
-#if AP_GPS_GPS_RTK_SENDING_ENABLED
-    MSG_GPS_RTK,
-#endif
-#if AP_GPS_GPS2_RAW_SENDING_ENABLED
-    MSG_GPS2_RAW,
-#endif
-#if AP_GPS_GPS2_RTK_SENDING_ENABLED
-    MSG_GPS2_RTK,
-#endif
-    MSG_NAV_CONTROLLER_OUTPUT,
-#if AP_FENCE_ENABLED
-    MSG_FENCE_STATUS,
-#endif
-    MSG_NAMED_FLOAT
-};
-static const ap_message STREAM_POSITION_msgs[] = {
-    MSG_LOCATION,
-    MSG_LOCAL_POSITION
-};
-static const ap_message STREAM_RC_CHANNELS_msgs[] = {
-    MSG_SERVO_OUTPUT_RAW,
-    MSG_RC_CHANNELS,
-#if AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
-    MSG_RC_CHANNELS_RAW, // only sent on a mavlink1 connection
-#endif
-};
-static const ap_message STREAM_EXTRA1_msgs[] = {
-    MSG_ATTITUDE,
-#if AP_SIM_ENABLED
-    MSG_SIMSTATE,
-#endif
-    MSG_AHRS2,
-    MSG_PID_TUNING
-};
-static const ap_message STREAM_EXTRA2_msgs[] = {
-    MSG_VFR_HUD
-};
-static const ap_message STREAM_EXTRA3_msgs[] = {
-    MSG_AHRS,
-    MSG_SYSTEM_TIME,
-#if AP_RANGEFINDER_ENABLED
-    MSG_RANGEFINDER,
-#endif
-    MSG_DISTANCE_SENSOR,
-#if AP_TERRAIN_AVAILABLE
-    MSG_TERRAIN_REQUEST,
-    MSG_TERRAIN_REPORT,
-#endif
-#if AP_BATTERY_ENABLED
-    MSG_BATTERY_STATUS,
-#endif
-#if HAL_MOUNT_ENABLED
-    MSG_GIMBAL_DEVICE_ATTITUDE_STATUS,
-#endif
-#if AP_OPTICALFLOW_ENABLED
-    MSG_OPTICAL_FLOW,
-#endif
-#if COMPASS_CAL_ENABLED
-    MSG_MAG_CAL_REPORT,
-    MSG_MAG_CAL_PROGRESS,
-#endif
-    MSG_EKF_STATUS_REPORT,
-    MSG_VIBRATION,
-#if AP_RPM_ENABLED
-    MSG_RPM,
-#endif
-#if HAL_WITH_ESC_TELEM
-    MSG_ESC_TELEMETRY,
-#endif
-};
-static const ap_message STREAM_PARAMS_msgs[] = {
-    MSG_NEXT_PARAM,
-    MSG_AVAILABLE_MODES
-};
-
-const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
-    MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
-    MAV_STREAM_ENTRY(STREAM_EXTENDED_STATUS),
-    MAV_STREAM_ENTRY(STREAM_POSITION),
-    MAV_STREAM_ENTRY(STREAM_RC_CHANNELS),
-    MAV_STREAM_ENTRY(STREAM_EXTRA1),
-    MAV_STREAM_ENTRY(STREAM_EXTRA2),
-    MAV_STREAM_ENTRY(STREAM_EXTRA3),
-    MAV_STREAM_ENTRY(STREAM_PARAMS),
-    MAV_STREAM_TERMINATOR // must have this at end of stream_entries
-};
 
 bool GCS_MAVLINK_Sub::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
@@ -643,13 +448,13 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
     switch (msg.msgid) {
 
     case MAVLINK_MSG_ID_MANUAL_CONTROL: {     // MAV ID: 69
-        if (msg.sysid != sub.g.sysid_my_gcs) {
+        if (msg.sysid != gcs().sysid_gcs()) {
             break;    // Only accept control from our gcs
         }
         mavlink_manual_control_t packet;
         mavlink_msg_manual_control_decode(&msg, &packet);
 
-        if (packet.target != sub.g.sysid_this_mav) {
+        if (packet.target != gcs().sysid_this_mav()) {
             break; // only accept control aimed at us
         }
 
@@ -674,12 +479,12 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         sub.failsafe.last_pilot_input_ms = AP_HAL::millis();
         // a RC override message is considered to be a 'heartbeat'
         // from the ground station for failsafe purposes
-        gcs().sysid_myggcs_seen(AP_HAL::millis());
+        gcs().sysid_mygcs_seen(AP_HAL::millis());
         break;
     }
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: {     // MAV ID: 70
-        if (msg.sysid != sub.g.sysid_my_gcs) {
+        if (msg.sysid != gcs().sysid_gcs()) {
             break;    // Only accept control from our gcs
         }
 

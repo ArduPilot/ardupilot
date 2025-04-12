@@ -496,6 +496,13 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
 #ifdef HAL_GPIO_LINE_GPIO56
     TOGGLE_PIN_DEBUG(56);
 #endif
+    osalDbgAssert(group->dshot_waiter, "No dshot waiter to signal");
+
+    if (group->dshot_waiter == nullptr) {   // transaction was cancelled, leave everything alone
+        chSysUnlockFromISR();
+        return;
+    }
+
     uint8_t curr_telem_chan = group->bdshot.curr_telem_chan;
 
     // the DMA buffer is either the regular outbound one because we are sharing UP and CH
@@ -542,6 +549,8 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
 
     // tell the waiting process we've done the DMA
     chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
+    group->dshot_waiter = nullptr;
+
 #ifdef HAL_GPIO_LINE_GPIO56
     TOGGLE_PIN_DEBUG(56);
 #endif

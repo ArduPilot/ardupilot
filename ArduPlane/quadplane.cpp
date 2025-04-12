@@ -238,7 +238,15 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ASSIST_ANGLE", 45, QuadPlane, assist.angle, 30),
 
-    // 47: TILT_TYPE
+    // @Param: ASSIST_OPTIONS
+    // @DisplayName: Quadplane assistance options
+    // @Description: Options for special QAssist features
+    // @Bitmask: 0: Disable force fixed wing controller recovery
+    // @Bitmask: 1: Disable quadplane spin recovery
+    // @User: Standard
+    AP_GROUPINFO("ASSIST_OPTIONS", 47, QuadPlane, assist.options, 0),
+    
+    // 47: TILT_TYPE // was AP_Int8, re-used by AP_Int16 ASSIST_OPTIONS
     // 48: TAILSIT_ANGLE
     // 61: TAILSIT_ANG_VT
     // 49: TILT_RATE_DN
@@ -875,11 +883,12 @@ void QuadPlane::run_esc_calibration(void)
  */
 void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 {
-    bool use_multicopter_control = in_vtol_mode() && !tailsitter.in_vtol_transition();
+    bool use_multicopter_control = in_vtol_mode() && !tailsitter.in_vtol_transition() && !force_fw_control_recovery;
     bool use_yaw_target = false;
 
     float yaw_target_cd = 0.0;
-    if (!use_multicopter_control && transition->update_yaw_target(yaw_target_cd)) {
+    if (!use_multicopter_control && transition->update_yaw_target(yaw_target_cd) &&
+        !force_fw_control_recovery) {
         use_multicopter_control = true;
         use_yaw_target = true;
     }
@@ -968,7 +977,7 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
         // disable yaw time constant for 1:1 match of desired rates
         disable_yaw_rate_time_constant();
 
-        attitude_control->input_rate_bf_roll_pitch_yaw_2(bf_input_cd.x, bf_input_cd.y, bf_input_cd.z);
+        attitude_control->input_rate_bf_roll_pitch_yaw_no_shaping(bf_input_cd.x, bf_input_cd.y, bf_input_cd.z);
     }
 }
 
@@ -1955,6 +1964,10 @@ void QuadPlane::motors_output(bool run_rate_controller)
             // relax if have been inactive
             relax_attitude_control();
         }
+
+        // see if we need to be in VTOL recovery
+        assist.check_VTOL_recovery();
+
         // run low level rate controllers that only require IMU data and set loop time
         const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
         motors->set_dt(last_loop_time_s);
@@ -2794,13 +2807,6 @@ void QuadPlane::vtol_position_controller(void)
                                                          0, 1);
                 }
             }
-#if AP_TERRAIN_AVAILABLE
-            float terrain_altitude_offset;
-            if (plane.next_WP_loc.terrain_alt && plane.terrain.height_terrain_difference_home(terrain_altitude_offset, true)) {
-                // Climb if current terrain is above home, target_altitude_cm is reltive to home
-                target_altitude_cm += MAX(terrain_altitude_offset*100,0);
-            }
-#endif
             float zero = 0;
             float target_z = target_altitude_cm;
             pos_control->input_pos_vel_accel_z(target_z, zero, 0);
@@ -3614,6 +3620,8 @@ void QuadPlane::Log_Write_QControl_Tuning()
         speed              = 1U<<2, // true if assistance due to low airspeed
         alt                = 1U<<3, // true if assistance due to low altitude
         angle              = 1U<<4, // true if assistance due to attitude error
+        fw_force           = 1U<<5, // true if forcing use of fixed wing controllers
+        spin_recovery      = 1U<<6, // true if recovering from a spin
     };
 
     uint8_t assist_flags = 0;
@@ -3631,6 +3639,12 @@ void QuadPlane::Log_Write_QControl_Tuning()
     }
     if (assist.in_angle_assist()) {
         assist_flags |= (uint8_t)log_assistance_flags::angle;
+    }
+    if (force_fw_control_recovery) {
+        assist_flags |= (uint8_t)log_assistance_flags::fw_force;
+    }
+    if (in_spin_recovery) {
+        assist_flags |= (uint8_t)log_assistance_flags::spin_recovery;
     }
 
     struct log_QControl_Tuning pkt = {
@@ -4177,7 +4191,7 @@ bool QuadPlane::in_vtol_airbrake(void) const
 // return true if we should show VTOL view
 bool QuadPlane::show_vtol_view() const
 {
-    return available() && transition->show_vtol_view();
+    return available() && transition->show_vtol_view() && !force_fw_control_recovery;
 }
 
 // return true if we should show VTOL view
@@ -4207,13 +4221,27 @@ bool QuadPlane::use_fw_attitude_controllers(void) const
     if (available() &&
         motors->armed() &&
         motors->get_desired_spool_state() >= AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED &&
-        in_vtol_mode() &&
         !tailsitter.enabled() &&
-        poscontrol.get_state() != QPOS_AIRBRAKE) {
-        // we want the desired rates for fixed wing slaved to the
-        // multicopter rates
-        return false;
+        poscontrol.get_state() != QPOS_AIRBRAKE &&
+        !force_fw_control_recovery) {
+
+        if (in_vtol_mode()) {
+            // in VTOL modes always slave fixed wing to VTOL rate control
+            return false;
+        }
+
+        if (transition->use_multirotor_control_in_fwd_transition()) {
+            /*
+              special case for vectored yaw tiltrotors in forward
+              transition, keep multicopter control until we reach
+              target transition airspeed. This can result in loss of
+              yaw control on some tilt-vectored airframes without
+              strong VTOL yaw control
+            */
+            return false;
+        }
     }
+
     return true;
 }
 
@@ -4597,6 +4625,9 @@ void QuadPlane::mode_enter(void)
 
     q_fwd_throttle = 0.0f;
     q_fwd_pitch_lim_cd = 100.0f * q_fwd_pitch_lim;
+
+    force_fw_control_recovery = false;
+    in_spin_recovery = false;
 }
 
 // Set attitude control yaw rate time constant to pilot input command model value

@@ -1767,7 +1767,7 @@ void AP_DDS_Client::update()
     status_ok = uxr_run_session_time(&session, 1);
 }
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD != HAL_BOARD_ESP32
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 extern "C" {
     int clock_gettime(clockid_t clockid, struct timespec *ts);
 }
@@ -1784,6 +1784,6 @@ int clock_gettime(clockid_t clockid, struct timespec *ts)
     ts->tv_nsec = (utc_usec % 1000000ULL) * 1000UL;
     return 0;
 }
-#endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD != HAL_BOARD_ESP32
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
 #endif // AP_DDS_ENABLED

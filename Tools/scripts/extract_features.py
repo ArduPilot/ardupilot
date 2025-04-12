@@ -88,6 +88,7 @@ class ExtractFeatures(object):
             ('AP_RANGEFINDER_TRI2C_ENABLED', r'AP_RangeFinder_TeraRangerI2C::update\b',),
             ('AP_RANGEFINDER_JRE_SERIAL_ENABLED', r'AP_RangeFinder_JRE_Serial::get_reading\b',),
             ('AP_RANGEFINDER_RDS02UF_ENABLED', r'AP_RangeFinder_RDS02UF::get_reading\b',),
+            ('AP_RANGEFINDER_HEXSOONRADAR_ENABLED', r'AP_RangeFinder_NRA24_CAN::handle_frame'),
 
             ('AP_GPS_NMEA_UNICORE_ENABLED', r'AP_GPS_NMEA::parse_agrica_field',),
             ('AP_GPS_{type}_ENABLED', r'AP_GPS_(?P<type>.*)::read\b',),
@@ -103,6 +104,7 @@ class ExtractFeatures(object):
             ('HAL_MSP_{type}_ENABLED', r'AP_(?P<type>.*)_MSP::update\b',),
             ('HAL_MSP_{type}_ENABLED', r'AP_(?P<type>.*)_MSP::read\b',),
             ('HAL_WITH_MSP_DISPLAYPORT', r'AP_OSD_MSP_DisplayPort::init\b',),
+            ('AP_MSP_INAV_FONTS_ENABLED', r'AP_OSD_MSP_DisplayPort::write_INAV\b',),
 
 
             ('AP_BATTERY_{type}_ENABLED', r'AP_BattMonitor_(?P<type>.*)::init\b',),
@@ -119,6 +121,7 @@ class ExtractFeatures(object):
             ('HAL_{type}_TELEM_ENABLED', r'AP_(?P<type>.*)_Telem::init',),
             ('AP_{type}_TELEM_ENABLED', r'AP_(?P<type>.*)_Telem::init',),
             ('HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED', 'AP_CRSF_Telem::calc_text_selection',),
+            ('AP_CRSF_SCRIPTING_ENABLED', 'AP_CRSF_Telem::get_menu_event',),
             ('AP_LTM_TELEM_ENABLED', 'AP_LTM_Telem::init',),
             ('HAL_HIGH_LATENCY2_ENABLED', 'GCS_MAVLINK::handle_control_high_latency',),
 

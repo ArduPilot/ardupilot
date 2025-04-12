@@ -41,6 +41,7 @@ public:
     }
 
     // get altitude (in cm) in the desired frame
+    // does not modify ret_alt_cm unless true is returned
     // returns false on failure to get altitude in the desired frame which can only happen if the original frame or desired frame is:
     // - above-terrain and the terrain database can't supply terrain height amsl
     // - above-home and home is not set
@@ -74,8 +75,11 @@ public:
     // return horizontal distance in meters between two locations
     ftype get_distance(const Location &loc2) const;
 
-    // return the altitude difference in meters taking into account alt frame.
-    bool get_alt_distance(const Location &loc2, ftype &distance) const WARN_IF_UNUSED;
+    // return the altitude difference in meters taking into account
+    // alt frame.  if loc2 is below this location then "distance" will
+    // be positive.  ie. this method returns how far above loc2 this
+    // location is.
+    bool get_height_above(const Location &loc2, ftype &distance) const WARN_IF_UNUSED;
 
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
     // NOT CONSIDERING ALT FRAME!

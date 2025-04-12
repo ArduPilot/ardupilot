@@ -378,6 +378,10 @@ void Plane::stabilize_yaw()
         SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering_output);
     }
 
+#if HAL_QUADPLANE_ENABLED
+    // possibly recover from a spin
+    quadplane.assist.output_spin_recovery();
+#endif
 }
 
 /*

@@ -26,6 +26,10 @@
 #include <AP_OSD/AP_OSD.h>
 #include "AP_MSP_Telem_Backend.h"
 
+#ifndef AP_MSP_INAV_FONTS_ENABLED
+#define AP_MSP_INAV_FONTS_ENABLED 1
+#endif
+
 #define MSP_MAX_INSTANCES 3
 #define MSP_OSD_START 2048
 #define MSP_OSD_STEP_X 1
@@ -57,6 +61,7 @@ public:
         TELEMETRY_MODE = 1U<<0,
         TELEMETRY_DISABLE_DJI_WORKAROUNDS = 1U<<1,
         DISPLAYPORT_BTFL_SYMBOLS = 1U<<2,
+        DISPLAYPORT_INAV_SYMBOLS = 1U<<3,
     };
 
     bool is_option_enabled(const Option option) const;

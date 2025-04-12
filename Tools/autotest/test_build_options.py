@@ -203,6 +203,10 @@ class TestBuildOptions(object):
                 feature_define_whitelist = set([
                     'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
                     'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # no symbol
+                    'AP_PROXIMITY_HEXSOONRADAR_ENABLED',  # this shares symbols with AP_PROXIMITY_MR72_ENABLED
+                    'AP_PROXIMITY_MR72_ENABLED',    # this shares symbols with AP_PROXIMITY_HEXSOONRADAR_ENABLED
+                    'AP_RANGEFINDER_NRA24_CAN_ENABLED',
+                    'AP_RANGEFINDER_HEXSOONRADAR_ENABLED',
                 ])
                 if define in compiled_in_feature_defines:
                     error = f"feature gated by {define} still compiled into ({target}); extract_features.py bug?"
@@ -291,6 +295,14 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED')
             feature_define_whitelist.add('AP_COPTER_AHRS_AUTO_TRIM_ENABLED')
 
+        if target.lower() in ['antennatracker', 'blimp', 'sub', 'plane', 'copter']:
+            # plane has a dependency for AP_Follow which is not
+            # declared in build_options.py; we don't compile follow
+            # support for Follow into Plane unless scripting is also
+            # enabled.  Copter manages to elide everything is
+            # MODE_FOLLOW isn't enabled.
+            feature_define_whitelist.add('AP_FOLLOW_ENABLED')
+
         if target.lower() != "plane":
             # only on Plane:
             feature_define_whitelist.add('AP_ICENGINE_ENABLED')
@@ -308,6 +320,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('MODE_AUTOLAND_ENABLED')
             feature_define_whitelist.add('AP_PLANE_GLIDER_PULLUP_ENABLED')
             feature_define_whitelist.add('AP_QUICKTUNE_ENABLED')
+            feature_define_whitelist.add('AP_PLANE_SYSTEMID_ENABLED')
 
         if target.lower() not in ["plane", "copter"]:
             feature_define_whitelist.add('HAL_ADSB_ENABLED')

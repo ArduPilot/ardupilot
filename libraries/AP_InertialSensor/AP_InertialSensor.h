@@ -156,6 +156,9 @@ public:
     uint16_t get_gyro_rate_hz(uint8_t instance) const { return uint16_t(_gyro_raw_sample_rates[instance] * _gyro_over_sampling[instance]); }
     uint16_t get_accel_rate_hz(uint8_t instance) const { return uint16_t(_accel_raw_sample_rates[instance] * _accel_over_sampling[instance]); }
 
+    // validate backend sample rates
+    bool pre_arm_check_gyro_backend_rate_hz(char* fail_msg, uint16_t fail_msg_len) const;
+
     // FFT support access
 #if HAL_GYROFFT_ENABLED
     const Vector3f& get_gyro_for_fft(void) const { return _gyro_for_fft[_first_usable_gyro]; }
