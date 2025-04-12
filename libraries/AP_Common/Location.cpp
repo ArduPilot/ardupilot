@@ -86,6 +86,14 @@ bool Location::change_alt_frame(AltFrame desired_frame)
     return true;
 }
 
+void Location::copy_alt_from(const Location &other)
+{
+    alt = other.alt;
+    relative_alt = other.relative_alt;
+    terrain_alt = other.terrain_alt;
+    origin_alt = other.origin_alt;
+}
+
 // get altitude frame
 Location::AltFrame Location::get_alt_frame() const
 {
