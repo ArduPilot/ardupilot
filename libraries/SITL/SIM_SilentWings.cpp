@@ -192,11 +192,14 @@ void SilentWings::process_packet()
     wind_ef = dcm * (Vector3f(pkt.vx, pkt.vy, pkt.vz) - Vector3f(pkt.vx_wind, pkt.vy_wind, pkt.vz_wind));
     airspeed = pkt.v_eas;
     airspeed_pitot = pkt.v_eas;
-    Location curr_location;
-    curr_location.lat = pkt.position_latitude * 1.0e7;
-    curr_location.lng = pkt.position_longitude * 1.0e7;
-    curr_location.alt = pkt.altitude_msl * 100.0f;
-    ground_level = curr_location.alt * 0.01f - pkt.altitude_ground;
+    const float alt_abs_m = pkt.altitude_msl;
+    Location curr_location{
+        int32_t(pkt.position_latitude * 1.0e7),
+        int32_t(pkt.position_longitude * 1.0e7),
+        int32_t(alt_abs_m * 100.0f),
+        Location::AltFrame::ABSOLUTE
+    };
+    ground_level = alt_abs_m - pkt.altitude_ground;
     Vector3f posdelta = origin.get_distance_NED(curr_location);
     position.x = posdelta.x;
     position.y = posdelta.y;
@@ -209,16 +212,19 @@ void SilentWings::process_packet()
         printf("SilentWings home reset dist=%f alt=%.1f/%.1f\n",
                curr_location.get_distance(location), curr_location.alt*0.01f, location.alt*0.01f);
         // reset home location
-        home.lat = curr_location.lat;
-        home.lng = curr_location.lng;
-        origin.lat = home.lat;
-        origin.lng = home.lng;
         // Resetting altitude reference point in flight can throw off a bunch
         // of important calculations, so let the home altitude always be 0m MSL
-        home.alt = 0;
+        home = {
+            curr_location.lat,
+            curr_location.lng,
+            0,
+            Location::AltFrame::ABSOLUTE,
+        };
+        origin.lat = home.lat;
+        origin.lng = home.lng;
         position.x = 0;
         position.y = 0;
-        position.z = -curr_location.alt;
+        position.z = -alt_abs_m;;
         home_initialized = true;
         update_position();
     }
