@@ -140,7 +140,8 @@ bool Plane::update_home()
             // altitude or we can end up perpetuating a bias in
             // altitude, as AHRS alt depends on home alt, which means
             // we would have a circular dependency
-            loc.alt = gps.location().alt;
+            loc.set_alt_cm(gps.location().alt,
+                           Location::AltFrame::ABSOLUTE);
             ret = AP::ahrs().set_home(loc);
         }
     }

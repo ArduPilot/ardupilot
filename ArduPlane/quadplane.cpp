@@ -3296,7 +3296,8 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
             return false;
         }
     } else {
-        plane.next_WP_loc.alt = plane.current_loc.alt + cmd.content.location.alt;
+        plane.next_WP_loc.set_alt_cm(plane.current_loc.alt + cmd.content.location.alt,
+                                     Location::AltFrame::ABSOLUTE);
     }
     throttle_wait = false;
 
@@ -3347,7 +3348,8 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
 
     plane.set_next_WP(cmd.content.location);
     // initially aim for current altitude
-    plane.next_WP_loc.alt = plane.current_loc.alt;
+    plane.next_WP_loc.set_alt_cm(plane.current_loc.alt,
+                                 Location::AltFrame::ABSOLUTE);
 
     // initialise the position controller
     pos_control->init_xy_controller();
@@ -3567,7 +3569,8 @@ bool QuadPlane::verify_vtol_land(void)
                 plane.set_next_WP(plane.mission.get_current_nav_cmd().content.location);
             } else {
                 plane.set_next_WP(plane.next_WP_loc);
-                plane.next_WP_loc.alt = ahrs.get_home().alt;
+                plane.next_WP_loc.set_alt_cm(ahrs.get_home().alt,
+                                             Location::AltFrame::ABSOLUTE);
             }
         }
     }
