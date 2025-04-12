@@ -49,9 +49,11 @@ const AP_Param::GroupInfo ShipSim::var_info[] = {
     // @Description: Diameter of the circle the ship is traveling on
     // @Units: m
     AP_GROUPINFO("PSIZE",     3, ShipSim,  path_size, 1000),
-    // @param: SYSID
+    // @Param: SYSID
     // @DisplayName: System ID
     // @Description: System ID of the ship
+    // @Range: 1 255
+    // @User: Advanced
     AP_GROUPINFO("SYSID",     4, ShipSim,  sys_id, 17),
     // @Param: DSIZE
     // @DisplayName: Deck Size
@@ -62,6 +64,7 @@ const AP_Param::GroupInfo ShipSim::var_info[] = {
     // @DisplayName: Offset
     // @Description: Offset distance from home position.
     // @Units: m
+    // @Vector3Parameter: 1
     AP_GROUPINFO("OFS",       7, ShipSim,  offset, 0),
     AP_GROUPEND
 };
