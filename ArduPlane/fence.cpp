@@ -145,14 +145,17 @@ void Plane::fence_check()
                 //return to fence return point, not a rally point
                 if (fence.get_return_altitude() > 0) {
                     // fly to the return point using _retalt
-                    loc.alt = home.alt + 100.0f * fence.get_return_altitude();
+                    loc.set_alt_cm(home.alt + 100.0 * fence.get_return_altitude(),
+                                   Location::AltFrame::ABSOLUTE);
                 } else if (fence.get_safe_alt_min() >= fence.get_safe_alt_max()) {
                     // invalid min/max, use RTL_altitude
-                    loc.alt = home.alt + g.RTL_altitude*100;
+                    loc.set_alt_cm(home.alt + g.RTL_altitude*100,
+                                   Location::AltFrame::ABSOLUTE);
                 } else {
                     // fly to the return point, with an altitude half way between
                     // min and max
-                    loc.alt = home.alt + 100.0f * (fence.get_safe_alt_min() + fence.get_safe_alt_max()) / 2;
+                    loc.set_alt_cm(home.alt + 100.0f * (fence.get_safe_alt_min() + fence.get_safe_alt_max()) / 2,
+                                   Location::AltFrame::ABSOLUTE);
                 }
 
                 Vector2l return_point;
