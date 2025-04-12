@@ -23,12 +23,13 @@
 #include <AP_RCTelemetry/AP_RCTelemetry.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_OSD/AP_OSD.h>
+#include <AP_VideoTX/AP_VideoTX.h>
 
 #include "msp.h"
 
 #include <time.h>
 
-#define MSP_TIME_SLOT_MAX 12
+#define MSP_TIME_SLOT_MAX 13
 #define CELLFULL 4.35
 #define MSP_TXT_BUFFER_SIZE     15U // 11 + 3 utf8 chars + terminator
 #define MSP_TXT_VISIBLE_CHARS   11U
@@ -109,6 +110,9 @@ protected:
         ESC_SENSOR_DATA,
 #endif
         RTC_DATETIME,
+#if AP_VIDEOTX_ENABLED
+        VTX_PARAMETERS,
+#endif
     };
 
     const uint16_t msp_packet_type_map[MSP_TIME_SLOT_MAX] = {
@@ -125,7 +129,10 @@ protected:
 #if HAL_WITH_ESC_TELEM
         MSP_ESC_SENSOR_DATA,
 #endif
-        MSP_RTC
+        MSP_RTC,
+#if AP_VIDEOTX_ENABLED
+        MSP_VTX_CONFIG,
+#endif
     };
 
     /* UTF-8 encodings
@@ -173,7 +180,7 @@ protected:
     void msp_process_received_command();
     MSP::MSPCommandResult msp_process_command(MSP::msp_packet_t *cmd, MSP::msp_packet_t *reply);
     MSP::MSPCommandResult msp_process_sensor_command(uint16_t cmd_msp, MSP::sbuf_t *src);
-    MSP::MSPCommandResult msp_process_out_command(uint16_t cmd_msp, MSP::sbuf_t *dst);
+    MSP::MSPCommandResult msp_process_out_command(uint16_t cmd_msp, MSP::sbuf_t *src, MSP::sbuf_t *dst);
 
     // MSP send
     void msp_send_packet(uint16_t cmd, MSP::msp_version_e msp_version, const void *p, uint16_t size, bool is_request);
@@ -215,6 +222,8 @@ protected:
     virtual MSP::MSPCommandResult msp_process_out_esc_sensor_data(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_rtc(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_rc(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_vtx_config(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_in_vtx_config(MSP::sbuf_t *src, MSP::sbuf_t *dst);
 };
 
 #endif  //HAL_MSP_ENABLED
