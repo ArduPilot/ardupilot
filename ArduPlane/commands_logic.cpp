@@ -501,7 +501,17 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
         next_WP_loc.offset_bearing(bearing, 1000); // push it out 1km
     }
 
-    next_WP_loc.alt = cmd.content.location.alt + home.alt;
+    if (cmd.content.location.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
+        next_WP_loc.set_alt_cm(cmd.content.location.alt,
+                               Location::AltFrame::ABOVE_TERRAIN);
+    } else {
+        int32_t alt_abs_cm;
+        // if this fails we don't change alt
+        if (cmd.content.location.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_abs_cm)) {
+            next_WP_loc.set_alt_cm(alt_abs_cm,
+                                   Location::AltFrame::ABSOLUTE);
+        }
+    }
     condition_value = cmd.p1;
     reset_offset_altitude();
 }
