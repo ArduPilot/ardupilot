@@ -53,7 +53,6 @@ const AP_Param::GroupInfo ShipSim::var_info[] = {
     // @DisplayName: System ID
     // @Description: System ID of the ship
     // @Range: 1 255
-    // @User: Advanced
     AP_GROUPINFO("SYSID",     4, ShipSim,  sys_id, 17),
     // @Param: DSIZE
     // @DisplayName: Deck Size
