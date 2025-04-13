@@ -90,6 +90,11 @@ bool Location::change_alt_frame(AltFrame desired_frame)
 Location::AltFrame Location::get_alt_frame() const
 {
     if (terrain_alt) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (!relative_alt) {
+            AP_HAL::panic("terrain loc must be relative_alt1");
+        }
+#endif
         return AltFrame::ABOVE_TERRAIN;
     }
     if (origin_alt) {
@@ -107,6 +112,9 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!initialised()) {
         AP_HAL::panic("Should not be called on invalid location: Location cannot be (0, 0, 0)");
+    }
+    if (terrain_alt && !relative_alt) {
+        AP_HAL::panic("terrain loc must be relative_alt2");
     }
 #endif
     Location::AltFrame frame = get_alt_frame();
@@ -274,9 +282,28 @@ ftype Location::get_distance(const Location &loc2) const
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
-// return the altitude difference in meters taking into account alt frame.
-bool Location::get_alt_distance(const Location &loc2, ftype &distance) const
+// return the altitude difference in meters taking into account alt
+// frame.  if loc2 is below this location then "distance" will be
+// positive.  ie. this method returns how far above loc2 this location
+// is.
+bool Location::get_height_above(const Location &loc2, ftype &distance) const
 {
+    if (get_alt_frame() == loc2.get_alt_frame()) {
+        switch (get_alt_frame()) {
+        case AltFrame::ABSOLUTE:
+        case AltFrame::ABOVE_HOME:
+        case AltFrame::ABOVE_ORIGIN:
+            // all of these use the same reference
+            distance = (alt - loc2.alt) * 0.01;
+            return true;
+        case AltFrame::ABOVE_TERRAIN:
+            // 1m above terrain here is not the same as 1m above
+            // terrain at loc2, so convert both to absolute and then
+            // subtract.
+            break;
+        }
+    }
+
     int32_t alt1, alt2;
     if (!get_alt_cm(AltFrame::ABSOLUTE, alt1) || !loc2.get_alt_cm(AltFrame::ABSOLUTE, alt2)) {
         return false;
@@ -451,7 +478,7 @@ bool Location::same_alt_as(const Location &loc2) const
     }
 
     ftype alt_diff;
-    bool have_diff = this->get_alt_distance(loc2, alt_diff);
+    bool have_diff = this->get_height_above(loc2, alt_diff);
 
     const ftype tolerance = FLT_EPSILON;
     return have_diff && (fabsF(alt_diff) < tolerance);

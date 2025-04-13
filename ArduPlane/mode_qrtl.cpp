@@ -125,7 +125,7 @@ void ModeQRTL::run()
             Location stopping_loc = Location(stopping_point.tofloat(), Location::AltFrame::ABOVE_ORIGIN);
 
             ftype alt_diff;
-            if (!stopping_loc.get_alt_distance(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {
+            if (!stopping_loc.get_height_above(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {
                 // climb finished or cant get alt diff, head home
                 submode = SubMode::RTL;
                 plane.prev_WP_loc = plane.current_loc;
@@ -146,7 +146,7 @@ void ModeQRTL::run()
 
                 plane.do_RTL(RTL_alt_abs_cm);
                 quadplane.poscontrol_init_approach();
-                if (plane.current_loc.get_alt_distance(plane.next_WP_loc, alt_diff)) {
+                if (plane.current_loc.get_height_above(plane.next_WP_loc, alt_diff)) {
                     poscontrol.slow_descent = is_positive(alt_diff);
                 } else {
                     // default back to old method
