@@ -1391,6 +1391,7 @@ void AP_TECS::set_throttle_min(const float thr_min, bool reset_output) {
         _THRminf_ext = thr_min;
         if (reset_output) {
             _last_throttle_dem = MAX(_last_throttle_dem, _THRminf_ext);
+            _throttle_dem = _last_throttle_dem;
         }
     }
 }
