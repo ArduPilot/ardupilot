@@ -122,58 +122,92 @@ bool AP_InertialSensor_SCHA63T::init()
     hal.scheduler->delay(25);
 
     // set DUE operation mode on (must be less than 1ms)
-    write_register(SCHA63T_DUE, MODE, MODE_NORM);
-    write_register(SCHA63T_DUE, MODE, MODE_NORM);
+    if (!write_register(SCHA63T_DUE, MODE, MODE_NORM)) {
+        return false;
+    }
+    if (!write_register(SCHA63T_DUE, MODE, MODE_NORM)) {
+        return false;
+    }
 
     // set UNO operation mode on
-    write_register(SCHA63T_UNO, MODE, MODE_NORM);
+    if (!write_register(SCHA63T_UNO, MODE, MODE_NORM)) {
+        return false;
+    }
 
     // wait 70ms initial startup
     hal.scheduler->delay(70);
 
     // set UNO configuration (data filter, flag filter)
-    write_register(SCHA63T_UNO, G_FILT_DYN, G_FILT);
-    write_register(SCHA63T_UNO, A_FILT_DYN, A_FILT);
+    if (!write_register(SCHA63T_UNO, G_FILT_DYN, G_FILT)) {
+        return false;
+    }
+    if (!write_register(SCHA63T_UNO, A_FILT_DYN, A_FILT)) {
+        return false;
+    }
 
     // reset DUE write (0001h) to register 18h
-    write_register(SCHA63T_DUE, RESCTRL, HW_RES);
+    if (!write_register(SCHA63T_DUE, RESCTRL, HW_RES)) {
+        return false;
+    }
 
     // wait 25ms for non-volatile memory (NVM) read
     hal.scheduler->delay(25);
 
     // set DUE operation mode on (must be less than 1ms)
-    write_register(SCHA63T_DUE, MODE, MODE_NORM);
-    write_register(SCHA63T_DUE, MODE, MODE_NORM);
+    if (!write_register(SCHA63T_DUE, MODE, MODE_NORM)) {
+        return false;
+    }
+    if (!write_register(SCHA63T_DUE, MODE, MODE_NORM)) {
+        return false;
+    }
 
     // wait 1ms (50ms has already passed)
     hal.scheduler->delay(1);
 
     // set DUE configuration (data filter, flag filter)
-    write_register(SCHA63T_DUE, G_FILT_DYN, G_FILT);
+    if (!write_register(SCHA63T_DUE, G_FILT_DYN, G_FILT)) {
+        return false;
+    }
 
     // startup clear (startup_attempt = 0)
     if (!check_startup()) {
         // system in FAILURE mode (startup_attempt not equal 0 startup_attempt = 1)
         // reset UNO write (0001h) to register 18h
-        write_register(SCHA63T_UNO, RESCTRL, HW_RES);
+        if (!write_register(SCHA63T_UNO, RESCTRL, HW_RES)) {
+            return false;
+        }
         // reset DUE write (0001h) to register 18h
-        write_register(SCHA63T_DUE, RESCTRL, HW_RES);
+        if (!write_register(SCHA63T_DUE, RESCTRL, HW_RES)) {
+            return false;
+        }
         // wait 25ms for non-volatile memory (NVM) read
         hal.scheduler->delay(25);
 
         // set DUE operation mode on (must be less than 1ms)
-        write_register(SCHA63T_DUE, MODE, MODE_NORM);
-        write_register(SCHA63T_DUE, MODE, MODE_NORM);
+        if (!write_register(SCHA63T_DUE, MODE, MODE_NORM)) {
+            return false;
+        }
+        if (!write_register(SCHA63T_DUE, MODE, MODE_NORM)) {
+            return false;
+        }
         // set UNO operation mode on
-        write_register(SCHA63T_UNO, MODE, MODE_NORM);
+        if (!write_register(SCHA63T_UNO, MODE, MODE_NORM)) {
+            return false;
+        }
         // wait 70ms initial startup
         hal.scheduler->delay(50);
 
         // set UNO configuration (data filter, flag filter)
-        write_register(SCHA63T_UNO, G_FILT_DYN, G_FILT);
-        write_register(SCHA63T_UNO, A_FILT_DYN, A_FILT);
+        if (!write_register(SCHA63T_UNO, G_FILT_DYN, G_FILT)) {
+            return false;
+        }
+        if (!write_register(SCHA63T_UNO, A_FILT_DYN, A_FILT)) {
+            return false;
+        }
         // set DUE configuration (data filter, flag filter)
-        write_register(SCHA63T_DUE, G_FILT_DYN, G_FILT);
+        if (!write_register(SCHA63T_DUE, G_FILT_DYN, G_FILT)) {
+            return false;
+        }
 
         // wait 45ms (adjust restart duration to 500ms)
         hal.scheduler->delay(45);
