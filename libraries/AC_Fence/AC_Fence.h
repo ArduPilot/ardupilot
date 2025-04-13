@@ -251,6 +251,7 @@ private:
     AP_Int8         _ret_rally;             // return to fence return point or rally point/home
     AP_Int16        _ret_altitude;          // return to this altitude
     AP_Int16        _options;               // options bitmask, see OPTIONS enum
+    AP_Float        _notify_freq;    // margin notification frequency
 
     // backup fences
     float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
