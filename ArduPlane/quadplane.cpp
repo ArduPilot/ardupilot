@@ -3291,7 +3291,9 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     loc.lng = 0;
     plane.set_next_WP(loc);
     if (option_is_set(QuadPlane::OPTION::RESPECT_TAKEOFF_FRAME)) {
-        if (plane.current_loc.alt >= plane.next_WP_loc.alt) {
+        // convert to absolute frame for takeoff
+        if (!plane.next_WP_loc.change_alt_frame(Location::AltFrame::ABSOLUTE) ||
+            plane.current_loc.alt >= plane.next_WP_loc.alt) {
             // we are above the takeoff already, no need to do anything
             return false;
         }
