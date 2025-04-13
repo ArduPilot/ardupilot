@@ -79,6 +79,12 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps,
     gsofmsg_time = now + 110;
 }
 
+bool AP_GPS_GSOF::get_lag(float &lag_sec) const
+{
+    lag_sec = 0.0065;
+    return true;
+}
+
 // Process all bytes available from the stream
 //
 bool
