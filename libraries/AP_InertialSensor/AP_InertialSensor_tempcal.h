@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AP_InertialSensor_config.h"
+
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/polyfit.h>
@@ -41,7 +43,7 @@ public:
             LowPassFilter2p<float> temp_filter;
             // double precision is needed for good results when we
             // span a wide range of temperatures
-            PolyFit<4, double, Vector3f> pfit;
+            PolyFit<HAL_INS_TEMPERATURE_CAL_ORDER+1, double, Vector3f> pfit;
         } state[2];
 
         void add_sample(const Vector3f &sample, float temperature, LearnState &state);
@@ -67,14 +69,14 @@ public:
 private:
     AP_Float temp_max;
     AP_Float temp_min;
-    AP_Vector3f accel_coeff[3];
-    AP_Vector3f gyro_coeff[3];
+    AP_Vector3f accel_coeff[HAL_INS_TEMPERATURE_CAL_ORDER];
+    AP_Vector3f gyro_coeff[HAL_INS_TEMPERATURE_CAL_ORDER];
     Vector3f accel_tref;
     Vector3f gyro_tref;
     Learn *learn;
 
-    void correct_sensor(float temperature, float cal_temp, const AP_Vector3f coeff[3], Vector3f &v) const;
-    Vector3f polynomial_eval(float temperature, const AP_Vector3f coeff[3]) const;
+    void correct_sensor(float temperature, float cal_temp, const AP_Vector3f coeff[HAL_INS_TEMPERATURE_CAL_ORDER], Vector3f &v) const;
+    Vector3f polynomial_eval(float temperature, const AP_Vector3f coeff[HAL_INS_TEMPERATURE_CAL_ORDER]) const;
 
     // get instance number
     uint8_t instance(void) const;
