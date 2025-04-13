@@ -435,12 +435,17 @@ bool AC_Fence::pre_arm_check_alt(char *failure_msg, const uint8_t failure_msg_le
 /// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
 bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const
 {
+    // if not enabled or not fence set-up always return true
+    if ((!enabled() && !_auto_enabled) || !_configured_fences) {
+        return true;
+    }
+
     // if fences are enabled but none selected fail pre-arm check
     if (_enabled && !present()) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Fences enabled, but none selected");
         return false;
     }
-    
+
     // if AUTOENABLE = 1 or 2 warn now, but fail in a later release
     // PARAMETER_CONVERSION - Added: Jul-2024 for ArduPilot-4.6
     if (_auto_enabled == 1 || _auto_enabled == 2) {
@@ -450,11 +455,6 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FENCE_AUTOENABLE is %u, will be removed in 4.7, use 3", unsigned(_auto_enabled));
             last_autoenable_warn_ms = now_ms;
         }
-    }
-
-    // if not enabled or not fence set-up always return true
-    if ((!enabled() && !_auto_enabled) || !_configured_fences) {
-        return true;
     }
 
     // if we have horizontal limits enabled, check we can get a
