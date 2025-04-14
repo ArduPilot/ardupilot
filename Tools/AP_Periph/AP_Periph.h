@@ -47,6 +47,7 @@
 #endif
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_DAC/AP_DAC.h>
+#include <AP_Servo_Telem/AP_Servo_Telem_config.h>
 
 #if AP_PERIPH_RELAY_ENABLED
 #if AP_PERIPH_PWM_HARDPOINT_ENABLED
@@ -111,6 +112,22 @@
  */
 #undef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
 #endif
+
+#ifndef AP_PERIPH_VOLZ_ENABLED
+#define AP_PERIPH_VOLZ_ENABLED 0
+#endif
+
+// support for sending the actuator_status_Volz DroneCAN message
+#ifndef AP_PERIPH_VOLZ_SEND_COM_VOLZ_SERVO_ACTUATORSTATUS_ENABLED
+#define AP_PERIPH_VOLZ_SEND_COM_VOLZ_SERVO_ACTUATORSTATUS_ENABLED AP_PERIPH_VOLZ_ENABLED && AP_SERVO_TELEM_ENABLED
+#endif
+
+#if AP_PERIPH_VOLZ_ENABLED
+#include <AP_Volz_Protocol/AP_Volz_Protocol.h>
+#if AP_PERIPH_VOLZ_SEND_COM_VOLZ_SERVO_ACTUATORSTATUS_ENABLED
+#include <AP_Servo_Telem/AP_Servo_Telem.h>
+#endif  // AP_PERIPH_VOLZ_SEND_COM_VOLZ_SERVO_ACTUATORSTATUS_ENABLED
+#endif  // AP_PERIPH_VOLZ_ENABLED
 
 #include "Parameters.h"
 
@@ -333,7 +350,25 @@ public:
 #if AP_KDECAN_ENABLED
     AP_KDECAN kdecan;
 #endif
-    
+
+#if AP_SERVO_TELEM_ENABLED
+    AP_Servo_Telem st;
+#endif
+
+#if AP_PERIPH_VOLZ_ENABLED
+    void volz_init();
+    void volz_update();
+    struct {
+        uint32_t last_servo_telem_update_ms;
+        uint32_t last_actuator_status_send_ms;
+        uint8_t next_servo_to_send;
+    } volz;
+    AP_Volz_Protocol volz_protocol;
+    void volz_update_servo_telem();
+#if AP_PERIPH_VOLZ_SEND_COM_VOLZ_SERVO_ACTUATORSTATUS_ENABLED
+    void send_com_volz_servo_ActuatorStatus(uint8_t id, const AP_Servo_Telem::TelemetryData &telem_data);
+#endif  // AP_PERIPH_VOLZ_SEND_COM_VOLZ_SERVO_ACTUATORSTATUS_ENABLED
+#endif
 #if AP_PERIPH_ESC_APD_ENABLED
     ESC_APD_Telem *apd_esc_telem[APD_ESC_INSTANCES];
     void apd_esc_telem_update();

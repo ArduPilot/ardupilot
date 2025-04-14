@@ -304,6 +304,10 @@ public:
     // used by DO_SET_SERVO commands
     void ignore_small_rcin_changes() { ign_small_rcin_changes = true; }
 
+    // get normalised output from -1 to 1, assuming 0 at mid point of
+    // servo_min/servo_max
+    float get_output_norm(void);
+
 private:
     AP_Int16 servo_min;
     AP_Int16 servo_max;
@@ -344,9 +348,6 @@ private:
 
     // return PWM for a given limit value
     uint16_t get_limit_pwm(Limit limit) const;
-
-    // get normalised output from -1 to 1, assuming 0 at mid point of servo_min/servo_max
-    float get_output_norm(void);
 
     // a bitmask type wide enough for NUM_SERVO_CHANNELS
     typedef uint32_t servo_mask_t;
