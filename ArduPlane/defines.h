@@ -161,6 +161,7 @@ enum FlightOptions {
     INDICATE_WAITING_FOR_RUDDER_NEUTRAL = (1<<13),
     IMMEDIATE_CLIMB_IN_AUTO = (1<<14),
     FLAP_ACTUAL_SPEED = (1<<15),
+    ENABLE_FULL_AERO_LF_ROLL_LIMITS = (1<<16),
 };
 
 enum CrowFlapOptions {
