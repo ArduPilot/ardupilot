@@ -171,7 +171,7 @@ def physics_step(pwm_in):
 
   # get gyro vector in body frame
   gyro = dcm.transposed() * vector_to_AP(robot.angular_velocity)
-  
+
   # calculate acceleration
   global last_velocity
   if last_velocity is None:

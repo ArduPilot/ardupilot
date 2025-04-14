@@ -118,7 +118,7 @@ class upload_fw(Task.Task):
         Please download Windows Installer 3.9.x (not 3.10) from https://www.python.org/downloads/
         and make sure to add it to your path during the installation. Once installed, run this
         command in Powershell or Command Prompt to install some packages:
-        
+
         pip.exe install empy==3.3.4 pyserial
         ****************************************
         ****************************************
@@ -461,7 +461,7 @@ def chibios_firmware(self):
         generate_apj_task.set_run_after(generate_bin_task)
         if hex_task is not None:
             hex_task.set_run_after(generate_bin_task)
-        
+
     if self.bld.options.upload:
         _upload_task = self.create_task('upload_fw', src=apj_target)
         _upload_task.set_run_after(generate_apj_task)
@@ -502,7 +502,7 @@ def setup_canperiph_build(cfg):
         ]
 
     cfg.get_board().with_can = True
-    
+
 def load_env_vars(env):
     '''optionally load extra environment variables from env.py in the build directory'''
     print("Checking for env.py")
@@ -690,7 +690,7 @@ def build(bld):
                 bld.bldnode.find_or_declare('ldscript.ld'),
                 bld.bldnode.find_or_declare('hw.dat')]
     )
-    
+
     bld(
         # create the file modules/ChibiOS/include_dirs
         rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} BUILDROOT=${BUILDROOT} CRASHCATCHER=${CC_ROOT_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
@@ -704,7 +704,7 @@ def build(bld):
         group='dynamic_sources',
         target=bld.bldnode.find_or_declare('chibios_flags.h')
     )
-    
+
     common_src = [bld.bldnode.find_or_declare('hwdef.h'),
                   bld.bldnode.find_or_declare('hw.dat'),
                   bld.bldnode.find_or_declare('ldscript.ld'),

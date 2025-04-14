@@ -61,7 +61,7 @@ class Coefficients:
         if imu not in self.gcoef:
             self.gcoef[imu] = {}
         self.gcoef[imu][axis] = values
-        
+
     def set_acoeff(self, imu, axis, order, value):
         if imu not in self.acoef:
             self.acoef[imu] = {}
@@ -85,7 +85,7 @@ class Coefficients:
         if imu not in self.gofs:
             self.gofs[imu] = {}
         self.gofs[imu][axis] = value
-        
+
     def set_tmin(self, imu, tmin):
         self.tmin[imu] = tmin
 
@@ -147,7 +147,7 @@ class Coefficients:
             for axis in AXES:
                 params += 'INS_TCAL%u_GYR%u_%s %.9f\n' % (imu+1, p+1, axis, self.gcoef[imu][axis][POLY_ORDER-(p+1)]*SCALE_FACTOR)
         return params
-    
+
 
 class OnlineIMUfit:
     '''implement the online learning used in ArduPilot'''
@@ -162,7 +162,7 @@ class OnlineIMUfit:
             for j in range(i - k, k-1, -1):
                 self.mat[j][i-j] += temp
             temp *= x
-    
+
         temp = 1.0
         for i in range(self.porder-1, -1, -1):
             self.vec[i] += y * temp
@@ -513,11 +513,9 @@ def IMUfit(logfile):
         ax2.legend(loc='upper right')
         axs[imu].legend(loc='upper left')
         axs[imu].set_title('IMU[%u] Accel (m/s^2)' % imu)
-        
+
     pyplot.show()
 
 
 
 IMUfit(args.log)
-
-

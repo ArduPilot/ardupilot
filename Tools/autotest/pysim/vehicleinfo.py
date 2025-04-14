@@ -555,6 +555,3 @@ class VehicleInfo(object):
             ret["waf_target"] = opts.build_target
 
         return ret
-
-
-
