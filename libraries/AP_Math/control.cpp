@@ -197,7 +197,7 @@ void shape_vel_accel(float vel_input, float accel_input,
     // velocity correction with input velocity
     accel_target += accel_input;
 
-    // constrain total acceleration from accel_min to accel_max
+    // Constrain total acceleration if limiting is enabled
     if (limit_total_accel) {
         accel_target = constrain_float(accel_target, accel_min, accel_max);
     }
@@ -252,7 +252,7 @@ void shape_vel_accel_xy(const Vector2f& vel_input, const Vector2f& accel_input,
 
     accel_target += accel_input;
 
-    // limit total acceleration to accel_max
+    // Constrain total acceleration if limiting is enabled 
     if (limit_total_accel) {
         accel_target.limit_length(accel_max);
     }
@@ -312,8 +312,8 @@ void shape_pos_vel_accel(postype_t pos_input, float vel_input, float accel_input
     // velocity correction with input velocity
     vel_target += vel_input;
 
-    // limit velocity between vel_min and vel_max
-    if (limit_total) {
+    // Constrain total velocity if limiting is enabled and the velocity range is valid (non-zero and min < max)
+    if (limit_total && (vel_max > vel_min)) {
         vel_target = constrain_float(vel_target, vel_min, vel_max);
     }
 
@@ -351,8 +351,8 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input
     // velocity correction with input velocity
     vel_target = vel_target + vel_input;
     
-    // limit velocity to vel_max
-    if (limit_total) {
+    // Constrain total velocity if limiting is enabled and vel_max is positive 
+    if (limit_total && is_positive(vel_max)) {
         vel_target.limit_length(vel_max);
     }
 
@@ -407,7 +407,7 @@ void shape_angle_vel_accel(float angle_input, float angle_vel_input, float angle
     // velocity correction with input velocity
     angle_vel_target += angle_vel_input;
 
-    // limit velocity to vel_max
+    // Constrain total velocity if limiting is enabled and angle_vel_max is positive 
     if (limit_total && is_positive(angle_vel_max)){
         angle_vel_target = constrain_float(angle_vel_target, -angle_vel_max, angle_vel_max);
     }
