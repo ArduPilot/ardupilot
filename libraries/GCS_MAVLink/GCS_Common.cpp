@@ -3013,13 +3013,6 @@ void GCS_MAVLINK::send_vibration() const
 #endif
 }
 
-void GCS_MAVLINK::send_named_float(const char *name, float value) const
-{
-    char float_name[MAVLINK_MSG_NAMED_VALUE_FLOAT_FIELD_NAME_LEN+1] {};
-    strncpy(float_name, name, MAVLINK_MSG_NAMED_VALUE_FLOAT_FIELD_NAME_LEN);
-    mavlink_msg_named_value_float_send(chan, AP_HAL::millis(), float_name, value);
-}
-
 #if AP_AHRS_ENABLED
 void GCS_MAVLINK::send_home_position() const
 {
