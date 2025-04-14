@@ -313,7 +313,7 @@ void shape_pos_vel_accel(postype_t pos_input, float vel_input, float accel_input
     vel_target += vel_input;
 
     // limit velocity between vel_min and vel_max
-    if (limit_total) {
+    if (limit_total && (is_negative(vel_min) || is_positive(vel_max))) {
         vel_target = constrain_float(vel_target, vel_min, vel_max);
     }
 
@@ -352,7 +352,7 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input
     vel_target = vel_target + vel_input;
     
     // limit velocity to vel_max
-    if (limit_total) {
+    if (limit_total && is_positive(vel_max)) {
         vel_target.limit_length(vel_max);
     }
 
