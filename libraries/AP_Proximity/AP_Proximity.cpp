@@ -31,6 +31,7 @@
 #include "AP_Proximity_Scripting.h"
 #include "AP_Proximity_LD06.h"
 #include "AP_Proximity_MR72_CAN.h"
+#include "AP_Proximity_ROS.h"
 
 
 #include <AP_Logger/AP_Logger.h>
@@ -256,6 +257,12 @@ void AP_Proximity::init()
                 drivers[instance] = NEW_NOTHROW AP_Proximity_LD06(*this, state[instance], params[instance], serial_instance);
                 serial_instance++;
             }
+            break;
+#endif
+#if AP_PROXIMITY_ROS_ENABLED
+        case Type::ROS:
+            state[instance].instance = instance;
+            drivers[instance] = NEW_NOTHROW AP_Proximity_ROS(*this, state[instance], params[instance]);
             break;
 #endif
         }
