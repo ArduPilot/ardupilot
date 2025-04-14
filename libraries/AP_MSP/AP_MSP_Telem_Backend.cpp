@@ -126,10 +126,11 @@ bool AP_MSP_Telem_Backend::is_packet_ready(uint8_t idx, bool queue_empty)
     case ESC_SENSOR_DATA:   // esc temp + rpm
 #endif
     case RTC_DATETIME:      // RTC
+        return true;
 #if AP_VIDEOTX_ENABLED
     case VTX_PARAMETERS:    // VTX control
+        return AP::vtx().have_params_changed();
 #endif
-        return true;
     default:
         return false;
     }
@@ -143,6 +144,8 @@ void AP_MSP_Telem_Backend::process_packet(uint8_t idx)
     if (idx == EMPTY_SLOT) {
         return;
     }
+
+    hal.console->printf("process_packet(%u)\n", idx);
 
     uint8_t out_buf[MSP_PORT_OUTBUF_SIZE] {};
 
@@ -429,6 +432,7 @@ void AP_MSP_Telem_Backend::msp_process_received_command()
 
 /*
   ported from inav/src/main/fc/fc_msp.c
+  pull-mode telemetry
  */
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_command(msp_packet_t *cmd, msp_packet_t *reply)
 {
@@ -500,7 +504,11 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp,
         return msp_process_out_rc(dst);
 #if AP_VIDEOTX_ENABLED
     case MSP_VTX_CONFIG:
-        return msp_process_out_vtx_config(dst);
+        if (!src) {
+            return msp_process_out_vtx_config(src, dst);
+        } else {
+            return MSP_RESULT_ACK;
+        }
     case MSP_SET_VTX_CONFIG:
         return msp_process_in_vtx_config(src, dst);
 #endif
@@ -1121,6 +1129,8 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_in_vtx_config(sbuf_t *src, sb
 
     vtx_config* cfg = (vtx_config*)src->ptr;
 
+    hal.console->printf("msp_process_in_vtx_config(): P:%u, B:%u, C:%u, F:%u\n", cfg->power, cfg->band, cfg->channel, cfg->freq);
+
     AP_VideoTX& vtx = AP::vtx();
     // the user may have a VTX connected but not want AP to control it
     // (for instance because they are using myVTX on the transmitter)
@@ -1163,8 +1173,9 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_in_vtx_config(sbuf_t *src, sb
     return MSP_RESULT_ACK;
 }
 
-MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_vtx_config(sbuf_t *dst)
+MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_vtx_config(sbuf_t *src, sbuf_t *dst)
 {
+    hal.console->printf("msp_process_out_vtx_config(%p, %p)\n", src, dst);
     AP_VideoTX& vtx = AP::vtx();
 
     if (!vtx.get_enabled()) {

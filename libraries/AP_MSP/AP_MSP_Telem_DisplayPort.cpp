@@ -41,6 +41,23 @@ MSPCommandResult AP_MSP_Telem_DisplayPort::msp_process_out_fc_variant(sbuf_t *ds
     return MSP_RESULT_ACK;
 }
 
+bool AP_MSP_Telem_DisplayPort::is_scheduler_enabled() const
+{
+    return AP::vtx().get_enabled();
+}
+
+bool AP_MSP_Telem_DisplayPort::is_packet_ready(uint8_t idx, bool queue_empty)
+{
+    switch (idx) {
+#if AP_VIDEOTX_ENABLED
+    case VTX_PARAMETERS:    // VTX control
+        return AP::vtx().get_enabled();
+#endif
+    default:
+        return false;
+    }
+}
+
 bool AP_MSP_Telem_DisplayPort::init_uart()
 {
     if (_msp_port.uart != nullptr)  {
