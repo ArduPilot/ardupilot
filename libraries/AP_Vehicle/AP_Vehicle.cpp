@@ -701,7 +701,7 @@ void AP_Vehicle::scheduler_delay_callback()
     return;
 #endif
 
-    static uint32_t last_1hz, last_50hz, last_5s;
+    static uint32_t last_1hz, last_mav_ms, last_notify_ms, last_5s;
 
 #if HAL_LOGGING_ENABLED
     AP_Logger &logger = AP::logger();
@@ -716,15 +716,19 @@ void AP_Vehicle::scheduler_delay_callback()
         GCS_SEND_MESSAGE(MSG_HEARTBEAT);
         GCS_SEND_MESSAGE(MSG_SYS_STATUS);
     }
-    if (tnow - last_50hz > 20) {
-        last_50hz = tnow;
+    const uint32_t mav_period_ms = hal.util->get_soft_armed() ? 20 : 1;
+    if (tnow - last_mav_ms > mav_period_ms) {
+        last_mav_ms = tnow;
 #if HAL_GCS_ENABLED
         gcs().update_receive();
         gcs().update_send();
 #endif
+    }
+    if (tnow - last_notify_ms > 20) {
+        last_notify_ms = tnow;
         _singleton->notify.update();
     }
-    if (tnow - last_5s > 5000) {
+    if (tnow - last_5s > 5000 && !hal.scheduler->is_system_initialized()) {
         last_5s = tnow;
         if (AP_BoardConfig::in_config_error()) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Config Error: fix problem then reboot");
