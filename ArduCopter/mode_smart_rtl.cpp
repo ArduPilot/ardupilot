@@ -12,6 +12,11 @@
 bool ModeSmartRTL::init(bool ignore_checks)
 {
     if (g2.smart_rtl.is_active()) {
+        // Save the RTL home point if not already saved
+        if (!g2.smart_rtl.is_rtl_point_locked()) {
+            g2.smart_rtl.lock_rtl_point(copter.position());
+        }
+
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
 
@@ -35,7 +40,7 @@ bool ModeSmartRTL::init(bool ignore_checks)
 // perform cleanup required when leaving smart_rtl
 void ModeSmartRTL::exit()
 {
-    // restore last point if we hadn't reached it
+    // Preserve the current RTL point before exiting SmartRTL
     if (smart_rtl_state == SubMode::PATH_FOLLOW && !dest_NED_backup.is_zero()) {
         if (!g2.smart_rtl.add_point(dest_NED_backup)) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "SmartRTL: lost one point");
@@ -43,7 +48,11 @@ void ModeSmartRTL::exit()
     }
     dest_NED_backup.zero();
 
+    // Cancel any requests for path cleanup
     g2.smart_rtl.cancel_request_for_thorough_cleanup();
+
+    // Unlock the RTL point when exiting to allow future modifications
+    g2.smart_rtl.unlock_rtl_point();
 }
 
 void ModeSmartRTL::run()
@@ -102,6 +111,12 @@ void ModeSmartRTL::path_follow_run()
             // backup destination in case we exit smart_rtl mode and need to restore it to the path
             dest_NED_backup = dest_NED;
             path_follow_last_pop_fail_ms = 0;
+
+            // Restore the last locked RTL point if we are resuming the path
+            if (g2.smart_rtl.is_rtl_point_locked()) {
+                dest_NED = g2.smart_rtl.get_locked_rtl_point();
+            }
+
             if (g2.smart_rtl.get_num_points() == 0) {
                 // this is the very last point, add 2m to the target alt and move to pre-land state
                 dest_NED.z -= 2.0f;
@@ -174,8 +189,12 @@ void ModeSmartRTL::pre_land_position_run()
 // save current position for use by the smart_rtl flight mode
 void ModeSmartRTL::save_position()
 {
-    const bool should_save_position = motors->armed() && (copter.flightmode->mode_number() != Mode::Number::SMART_RTL);
+    // Prevent saving positions when the drone is disarmed or in SMART_RTL mode
+    if (!motors->armed() || copter.flightmode->mode_number() == Mode::Number::SMART_RTL) {
+        return;
+    }
 
+    const bool should_save_position = motors->armed() && (copter.flightmode->mode_number() != Mode::Number::SMART_RTL);
     copter.g2.smart_rtl.update(copter.position_ok(), should_save_position);
 }
 
