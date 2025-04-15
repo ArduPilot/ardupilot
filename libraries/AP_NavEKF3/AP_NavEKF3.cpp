@@ -398,9 +398,9 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: GPS_CHECK
     // @DisplayName: GPS preflight check
     // @Description: This is a 1 byte bitmap controlling which GPS preflight checks are performed. Set to 0 to bypass all checks. Set to 255 perform all checks. Set to 3 to check just the number of satellites and HDoP. Set to 31 for the most rigorous checks that will still allow checks to pass when the copter is moving, eg launch from a boat.
-    // @Bitmask: 0:NSats,1:HDoP,2:speed error,3:position error,4:yaw error,5:pos drift,6:vert speed,7:horiz speed
+    // @Bitmask: 0:NSats,1:HDoP,2:speed error,3:position error,4:yaw error,5:pos drift,6:vert speed,7:horiz speed,8:status
     // @User: Advanced
-    AP_GROUPINFO("GPS_CHECK",    32, NavEKF3, _gpsCheck, 31),
+    AP_GROUPINFO("GPS_CHECK",    32, NavEKF3, _gpsCheck, 159),
 
     // @Param: IMU_MASK
     // @DisplayName: Bitmask of active IMUs
