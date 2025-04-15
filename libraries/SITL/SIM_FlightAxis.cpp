@@ -179,7 +179,6 @@ void FlightAxis::parse_reply(const char *reply)
     }
 }
 
-
 /*
   make a SOAP request, returning body of reply
  */
@@ -198,9 +197,15 @@ bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
     vasprintf(&req1, fmt, ap);
     va_end(ap);
 
-    while (!socks.pop(sock)) {
-        usleep(50);
+    // consumer/producer pattern
+    while (socks.is_empty()) {
+        socks_outsem.wait_blocking();
     }
+
+    if (!socks.pop(sock)) {
+        return false;
+    }
+    socks_insem.signal();
 
     char *req;
     asprintf(&req, R"(POST / HTTP/1.1
@@ -602,13 +607,14 @@ void FlightAxis::report_FPS(void)
     }
 }
 
+#include <errno.h>
+
 void FlightAxis::socket_creator(void)
 {
     socket_pid = getpid();
     while (true) {
-        if (!socks.space()) {
-            usleep(500);
-            continue;
+        while (!socks.space()) {
+            socks_insem.wait_blocking();
         }
         auto *sck = NEW_NOTHROW SocketAPM_native(false);
         if (sck == nullptr) {
@@ -619,10 +625,10 @@ void FlightAxis::socket_creator(void)
           don't let the connection take more than 100ms (10Hz). Longer
           than this and we are better off trying for a new socket
          */
-        if (!sck->connect_timeout(controller_ip, controller_port, 100)) {
-            ::printf("connect failed\n");
+        if (!sck->connect_timeout(controller_ip, controller_port, 10)) {
+            ::printf("connect failed (stack=%u)\n", socks.available());
             delete sck;
-            usleep(5000);
+            usleep(500);
             continue;
         }
         sck->set_blocking(false);
@@ -632,6 +638,7 @@ void FlightAxis::socket_creator(void)
             usleep(500);
             continue;
         }
+        socks_outsem.signal();
     }
 }
 

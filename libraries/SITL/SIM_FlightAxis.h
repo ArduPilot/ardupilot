@@ -208,6 +208,8 @@ private:
     // a list of sockets used to reduce inter-packet latency
     ObjectBuffer_TS<SocketAPM_native*> socks{2};
     SocketAPM_native *sock;
+    HAL_BinarySemaphore socks_outsem;
+    HAL_BinarySemaphore socks_insem;
 
     char replybuf[10000];
     pid_t socket_pid;
