@@ -1165,7 +1165,9 @@ bool GCS_MAVLINK::set_mavlink_message_id_interval(const uint32_t mavlink_id,
 {
     const ap_message id = mavlink_id_to_ap_message_id(mavlink_id);
     if (id == MSG_LAST) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No ap_message for mavlink id (%u)", (unsigned int)mavlink_id);
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
         return false;
     }
     return set_ap_message_interval(id, interval_ms);
