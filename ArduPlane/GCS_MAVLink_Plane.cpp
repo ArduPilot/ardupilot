@@ -646,6 +646,24 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     return MAV_RESULT_FAILED;
 }
 
+MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_DO_CHANGE_ALTITUDE(const mavlink_command_int_t &packet)
+{
+    const float alt = packet.param1;
+    MAV_FRAME mav_frame = (MAV_FRAME)packet.param2;
+    Location::AltFrame alt_frame;
+    if (!mavlink_coordinate_frame_to_location_alt_frame(mav_frame, alt_frame)) {
+        return MAV_RESULT_DENIED;
+    }
+    Location loc {
+        0,
+        0,
+        int32_t(alt * 100),  // m -> cm
+        alt_frame,
+    };
+    handle_change_alt_request(loc);
+    return MAV_RESULT_ACCEPTED;
+}
+
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 // these are GUIDED mode commands that are RATE or slew enabled, so you can have more powerful control than default controls.
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavlink_command_int_t &packet)
@@ -777,6 +795,9 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
 
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
+
+    case MAV_CMD_DO_CHANGE_ALTITUDE:
+        return handle_command_int_DO_CHANGE_ALTITUDE(packet);
 
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // special 'slew-enabled' guided commands here... for speed,alt, and direction commands
