@@ -204,6 +204,9 @@ private:
     uint16_t controller_port = 18083;
     SocketAPM_native *socknext;
     SocketAPM_native *sock;
+    HAL_BinarySemaphore socks_outsem;
+    HAL_BinarySemaphore socks_insem;
+
     char replybuf[10000];
     pid_t socket_pid;
     uint32_t sock_error_count;
