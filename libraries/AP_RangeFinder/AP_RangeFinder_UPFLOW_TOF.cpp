@@ -22,6 +22,7 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
 #include <ctype.h>
+#include <AP_OpticalFlow/AP_OpticalFlow_UPFLOW_Tx.h>
 //#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
