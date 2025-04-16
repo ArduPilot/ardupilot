@@ -377,6 +377,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add(r'OSD_PARAM_ENABLED')
             # AP_OSD is not instantiated, , so no MSP backend:
             feature_define_whitelist.add(r'HAL_WITH_MSP_DISPLAYPORT')
+            feature_define_whitelist.add(r'AP_MSP_INAV_FONTS_ENABLED')
             # camera instantiated in specific vehicles:
             feature_define_whitelist.add(r'AP_CAMERA_ENABLED')
             feature_define_whitelist.add(r'AP_CAMERA_.*_ENABLED')
