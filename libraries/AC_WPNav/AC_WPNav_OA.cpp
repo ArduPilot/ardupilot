@@ -212,7 +212,9 @@ bool AC_WPNav_OA::update_wpnav()
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                     return false;
                 }
-                Vector3p dest_NEU{dest_NE.x, dest_NE.y, (float)target_alt_loc.alt};
+                int32_t target_alt_loc_alt_cm = 0;
+                UNUSED_RESULT(target_alt_loc.get_alt_cm(target_alt_loc.get_alt_frame(), target_alt_loc_alt_cm));
+                Vector3p dest_NEU{dest_NE.x, dest_NE.y, (float)target_alt_loc_alt_cm};
 
                 // pass the desired position directly to the position controller
                 _pos_control.input_pos_NEU_cm(dest_NEU, terr_offset, 1000.0);
