@@ -7,7 +7,8 @@
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend.h"
 #include "AP_RangeFinder_Params.h"
-#include "../AP_OpticalFlow/AP_OpticalFlow_UPFLOW_Tx.h"
+//#include "../AP_OpticalFlow/AP_OpticalFlow_UPFLOW_Tx.h"
+//#include "../../AP_OpticalFlow/AP_OpticalFlow_UPFLOW_Tx.h"
 #include "GCS_MAVLink/GCS_MAVLink.h"
 
 class AP_RangeFinder_UPFLOW_TOF : public AP_RangeFinder_Backend
