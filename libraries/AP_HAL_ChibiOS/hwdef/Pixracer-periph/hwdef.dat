@@ -181,7 +181,7 @@ SPIDEV lis3mdl     SPI1 DEVID5  MAG_CS     MODE3 500*KHZ 500*KHZ
 # SPIDEV ramtron     SPI2 DEVID10 FRAM_CS    MODE3   8*MHZ   8*MHZ //unused
 
 # one barometer
-BARO MS56XX SPI:ms5611_int
+BARO MS5611 SPI:ms5611_int
 
 # 2 compasses. R15 has LIS3MDL instead of HMC5843
 COMPASS HMC5843 SPI:hmc5843 false ROTATION_PITCH_180

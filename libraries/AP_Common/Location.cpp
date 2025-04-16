@@ -86,6 +86,14 @@ bool Location::change_alt_frame(AltFrame desired_frame)
     return true;
 }
 
+void Location::copy_alt_from(const Location &other)
+{
+    alt = other.alt;
+    relative_alt = other.relative_alt;
+    terrain_alt = other.terrain_alt;
+    origin_alt = other.origin_alt;
+}
+
 // get altitude frame
 Location::AltFrame Location::get_alt_frame() const
 {
@@ -282,8 +290,11 @@ ftype Location::get_distance(const Location &loc2) const
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
-// return the altitude difference in meters taking into account alt frame.
-bool Location::get_alt_distance(const Location &loc2, ftype &distance) const
+// return the altitude difference in meters taking into account alt
+// frame.  if loc2 is below this location then "distance" will be
+// positive.  ie. this method returns how far above loc2 this location
+// is.
+bool Location::get_height_above(const Location &loc2, ftype &distance) const
 {
     if (get_alt_frame() == loc2.get_alt_frame()) {
         switch (get_alt_frame()) {
@@ -475,7 +486,7 @@ bool Location::same_alt_as(const Location &loc2) const
     }
 
     ftype alt_diff;
-    bool have_diff = this->get_alt_distance(loc2, alt_diff);
+    bool have_diff = this->get_height_above(loc2, alt_diff);
 
     const ftype tolerance = FLT_EPSILON;
     return have_diff && (fabsF(alt_diff) < tolerance);

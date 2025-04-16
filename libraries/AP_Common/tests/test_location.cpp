@@ -364,6 +364,22 @@ TEST(Location, Sanitize)
     EXPECT_NE(test_default_loc.alt, test_loc.alt);
 }
 
+TEST(Location, GetHeightAbove)
+{
+    // we will sanitize test_loc with test_default_loc
+    // test_home is just for reference
+    const Location test_loc{-35362938, 149165085, 37900, Location::AltFrame::ABSOLUTE};
+    const Location test_origin{-35362938, 149165085, 20000, Location::AltFrame::ABSOLUTE};
+
+    ftype alt_delta;
+    EXPECT_EQ(true, test_loc.get_height_above(test_origin, alt_delta));
+    EXPECT_FLOAT_EQ(179, alt_delta);
+
+    EXPECT_EQ(true, test_origin.get_height_above(test_loc, alt_delta));
+    EXPECT_FLOAT_EQ(-179, alt_delta);
+}
+
+
 TEST(Location, Line)
 {
     const Location test_home{35362938, 149165085, 100, Location::AltFrame::ABSOLUTE};

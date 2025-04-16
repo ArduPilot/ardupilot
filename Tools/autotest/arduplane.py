@@ -361,7 +361,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                                             timeout=0.1)
                     now = self.get_sim_time_cached()
                     if now - step_start > 30:
-                        raise AutoTestTimeoutException("Manuevers not completed")
+                        raise AutoTestTimeoutException("Maneuvers not completed")
                     if m is None:
                         continue
 
@@ -807,7 +807,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "BATT_MONITOR": 16, # Maxell battery monitor
         })
 
-        # Must reboot sitl after setting montior type for SMBus parameters to be set due to dynamic group
+        # Must reboot sitl after setting monitor type for SMBus parameters to be set due to dynamic group
         self.reboot_sitl()
         self.set_parameters({
             "BATT_I2C_BUS": 2,      # specified in SIM_I2C.cpp
@@ -1902,7 +1902,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.run_subtest("Inside loop", self.inside_loop)
 
-        self.run_subtest("Stablize test", self.test_stabilize)
+        self.run_subtest("Stabilize test", self.test_stabilize)
 
         self.run_subtest("ACRO test", self.test_acro)
 
@@ -2036,7 +2036,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.delay_sim_time(20)
             self.change_mode("RTL")
             self.wait_distance_to_home(100, 200, timeout=200)
-            # go into LOITER to create additonal time for a GPS re-enable test
+            # go into LOITER to create additional time for a GPS re-enable test
             self.change_mode("LOITER")
             self.set_parameter("SIM_GPS1_ENABLE", 1)
             t_enabled = self.get_sim_time()
@@ -2460,7 +2460,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def LOITER(self):
         '''Test Loiter mode'''
-        # first test old loiter behavour
+        # first test old loiter behaviour
         self.set_parameter("FLIGHT_OPTIONS", 0)
         self.takeoff(alt=200)
         self.set_rc(3, 1500)
@@ -2505,9 +2505,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Centering elevator and ensuring we get back to loiter altitude")
         self.set_rc(2, 1500)
         self.wait_altitude(initial_alt-1, initial_alt+1)
-        # Test new loiter behavour
+        # Test new loiter behaviour
         self.set_parameter("FLIGHT_OPTIONS", 1 << 12)
-        # should decend at max stick
+        # should descend at max stick
         self.set_rc(2, int(rc2_max))
         self.wait_altitude(initial_alt - 110, initial_alt - 90, timeout=90)
         # should not climb back at mid stick
@@ -2607,7 +2607,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("SOAR_ENABLE", 0)
         self.delay_sim_time(10)
 
-        # And reenable. This should force throttle-down
+        # And re-enable. This should force throttle-down
         self.set_parameter("SOAR_ENABLE", 1)
         self.delay_sim_time(10)
 
@@ -2620,7 +2620,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Back to auto
         self.change_mode('AUTO')
 
-        # Reenable thermals
+        # Re-enable thermals
         self.set_parameter("SIM_THML_SCENARI", 1)
 
         # Disable soaring using RC channel.
@@ -3359,7 +3359,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def EKFlaneswitch(self):
         '''Test EKF3 Affinity and Lane Switching'''
 
-        # new lane swtich available only with EK3
+        # new lane switch available only with EK3
         self.set_parameters({
             "EK3_ENABLE": 1,
             "EK2_ENABLE": 0,
@@ -4053,8 +4053,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.progress("User mode change to cruise should retrigger fence action")
         try:
-            # mode change should time out, 'WaitModeTimeout' exception is the desired resut
-            # cant wait too long or the vehicle will be inside fence and allow the mode change
+            # mode change should time out, 'WaitModeTimeout' exception is the desired result
+            # can't wait too long or the vehicle will be inside fence and allow the mode change
             self.change_mode("CRUISE", timeout=10)
             raise NotAchievedException("Should not change mode in fence breach")
         except WaitModeTimeout:
@@ -4411,10 +4411,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.run_autotune()
 
         # Values that are set to constants
-        # If these are changed then the expected tune paramters should also change
+        # If these are changed then the expected tune parameters should also change
         self.assert_parameter_value_pct("RLL2SRV_TCONST", 0.5, 0)
         self.assert_parameter_value_pct("RLL2SRV_RMAX", 75, 0)
-        self.assert_parameter_value_pct("RLL_RATE_IMAX", 0.666, 0.01) # allow some small error to acount for floating point stuff  # noqa:E501
+        self.assert_parameter_value_pct("RLL_RATE_IMAX", 0.666, 0.01) # allow some small error to account for floating point stuff  # noqa:E501
         self.assert_parameter_value_pct("RLL_RATE_FLTT", 3.183, 0.01)
         self.assert_parameter_value_pct("RLL_RATE_FLTE", 0, 0)
         self.assert_parameter_value_pct("RLL_RATE_FLTD", 10.0, 0)
@@ -4429,7 +4429,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.assert_parameter_value_pct("PTCH_RATE_FLTD", 10, 0)
         self.assert_parameter_value_pct("PTCH_RATE_SMAX", 150, 0)
 
-        # Check tunned values, targets derived from running tests multiple times and taking average
+        # Check tuned values, targets derived from running tests multiple times and taking average
         # Expect within 2%
         # Note that I is not checked directly, its value is derived from P, FF, and TCONST which are all checked.
         self.assert_parameter_value_pct("RLL_RATE_P", 1.222702146, 2)
@@ -4439,7 +4439,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.assert_parameter_value_pct("PTCH_RATE_FF", 0.503520715, 5)
 
         # There seem to be multiple solutions for pitch. I'm not sure why this is.
-        # Each value is quite consistent becasue of the fixed steps that autotune takes
+        # Each value is quite consistent because of the fixed steps that autotune takes
         try:
             # Expect this about 84% of the time
             self.assert_parameter_value_pct("PTCH_RATE_P", 1.746079683, 2)
@@ -4482,12 +4482,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 self.progress("Got %s" % str(m))
                 if axis == "Roll":
                     axis = "Pitch"
-                    # Center sticks to allow roll to return to nuetral before starting pitch
+                    # Center sticks to allow roll to return to neutral before starting pitch
                     self.set_rc(1, 1500)
                     self.set_rc(2, 1500)
                     self.delay_sim_time(15)
 
-                    # Reset toggle value so the initial input is in a consistent directon
+                    # Reset toggle value so the initial input is in a consistent direction
                     rc_value = 1000
 
                 elif axis == "Pitch":
@@ -5328,7 +5328,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             seq = self.mav.waypoint_current()
             self.progress("Waiting for wp=%u current=%u" % (wpnum, seq))
             if seq == wpnum:
-                raise NotAchievedException("Reached desired waypoint without first decending 10m,\
+                raise NotAchievedException("Reached desired waypoint without first descending 10m,\
  indicating slope was replanned unexpectedly")
 
             if (self.get_altitude(relative=True, timeout=2) - init_altitude) < -10:
@@ -6850,6 +6850,123 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.takeoff()
         self.fly_home_land_and_disarm()
 
+    def DO_CHANGE_ALTITUDE(self):
+        '''test DO_CHANGE_ALTITUDE mavlink command'''
+        takeoff_alt = 30
+        self.takeoff(alt=takeoff_alt, mode='TAKEOFF')
+        self.wait_altitude(takeoff_alt-1, takeoff_alt+1, minimum_duration=10, relative=True, timeout=60)
+
+        self.start_subtest("Home-relative altitude")
+        target_rel_alt = 40
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
+            p1=target_rel_alt,
+            p2=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_altitude(
+            target_rel_alt-1,
+            target_rel_alt+1,
+            minimum_duration=10,
+            relative=True,
+            timeout=60,
+        )
+
+        self.start_subtest("Absolute altitude")
+        current_abs_alt = self.get_altitude()
+        target_abs_alt = current_abs_alt + 30
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
+            p1=target_abs_alt,
+            p2=mavutil.mavlink.MAV_FRAME_GLOBAL,
+        )
+        self.wait_altitude(
+            target_abs_alt-1,
+            target_abs_alt+1,
+            minimum_duration=10,
+            timeout=60,
+        )
+
+        self.start_subtest("Terrain altitude")
+        current_relative_alt = self.get_altitude(relative=True)
+        target_terr_alt = current_relative_alt + 10
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
+            p1=target_terr_alt,
+            p2=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+        )
+        self.wait_altitude(
+            target_terr_alt-1,
+            target_terr_alt+1,
+            minimum_duration=10,
+            relative=True,
+            altitude_source="TERRAIN_REPORT.current_height",
+            timeout=120,
+        )
+
+        self.start_subtest("Change alt in loiter")
+        self.change_mode('LOITER')
+        current_relative_alt = self.get_altitude(relative=True)
+        self.wait_altitude(
+            current_relative_alt-1,
+            current_relative_alt+1,
+            minimum_duration=10,
+            relative=True,
+            timeout=60,
+        )
+        target_loiter_alt = current_relative_alt+5
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
+            p1=target_loiter_alt,
+            p2=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_altitude(
+            target_loiter_alt-1,
+            target_loiter_alt+1,
+            minimum_duration=10,
+            relative=True,
+            timeout=60,
+        )
+
+        self.start_subtest("Change alt in circle")
+        self.change_mode('CIRCLE')
+        current_relative_alt = self.get_altitude(relative=True)
+        self.wait_altitude(
+            current_relative_alt-1,
+            current_relative_alt+1,
+            minimum_duration=10,
+            relative=True,
+            timeout=60,
+        )
+        target_circle_alt = current_relative_alt-5
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
+            p1=target_circle_alt,
+            p2=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_altitude(
+            target_circle_alt-1,
+            target_circle_alt+1,
+            minimum_duration=10,
+            relative=True,
+            timeout=60,
+        )
+
+        self.start_subtest("Immediately respond to DO_CHANGE_ALTITUDE in a mission")
+        current_relative_alt = self.get_altitude(relative=True)
+        mission_alt = current_relative_alt - 10
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -2000, 0, mission_alt)
+        ])
+        self.change_mode('AUTO')
+        self.wait_altitude(
+            mission_alt-1,
+            mission_alt+1,
+            minimum_duration=10,
+            relative=True,
+            timeout=240,
+        )
+        self.fly_home_land_and_disarm()
+
     def mavlink_AIRSPEED(self):
         '''check receiving of two airspeed sensors'''
         self.set_parameters({
@@ -7010,7 +7127,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         while True:
             m = dfreader.recv_match()
             if m is None:
-                raise NotAchievedException("Did not see csrv Pos/PosCmd discrepency")
+                raise NotAchievedException("Did not see csrv Pos/PosCmd discrepancy")
             if m.get_type() != 'CSRV':
                 continue
             if m.Id != 1:
@@ -7180,6 +7297,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.Volz,
             self.LoggedNamedValueFloat,
             self.AdvancedFailsafeBadBaro,
+            self.DO_CHANGE_ALTITUDE,
         ]
 
     def disabled_tests(self):
