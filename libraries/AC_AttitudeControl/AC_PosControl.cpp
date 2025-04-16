@@ -1138,22 +1138,20 @@ float AC_PosControl::pos_desired_z_set_update(float z_final,float max_alt, float
     //_pos_set_z为平滑后的期望NEU高度（cm）
     static bool initialized = false; // 标志是否已初始化，静态变量只会初始化一次
     static float _pos_set_z = 0.0f;           // static 局部变量，值只初始化一次
-    static float _t = 0.0f;
+    //static float _t = 0.0f;
     // 设置时间步长
-    float _dt_ = 1.0f/frequency;
+    //float _dt_ = 1.0f/frequency;
     // 更新时间
-    _t += 1.0f/frequency;
+    //_t += 1.0f/frequency;
 
     if (!initialized) {
         _pos_set_z = 0.0f;        // 只在第一次调用时初始化
         initialized = true;
-    }                                
-     // **添加高度限制**
-    if (z_final > max_alt && _t>3.0f) {
-        _pos_set_z = max_alt - (max_alt - _pos_set_z) *  expf(-rate * _dt_);  // 限制最大高度
-    }
-    else if(_t>3.0f) {   // **指数衰减方式平滑逼近**
-        _pos_set_z = z_final - (z_final - _pos_set_z) * expf(-rate * _dt_);
+    } 
+    _pos_set_z= z_final;                         
+ // **添加位移限制**
+    if (_pos_set_z > max_alt) {
+        _pos_set_z = max_alt;  // 限制上界
     }
   return _pos_set_z;
 }
@@ -1214,9 +1212,9 @@ void AC_PosControl::update_z_controller()
     Vector3f pos_meas_ned = pos_meas_neu;   
     pos_meas_ned.z = -pos_meas_neu.z;                        //转化测量位置为ned
     Vector3f _pos_desired_3f;                                //转换数据类型为Vector3f
-    _pos_desired_3f.x = pos_desired_x_set_update(_pos_desired.x,400.0f, 1.0f, 400.0f);     //转换数据类型为Vector3f,update函数为平滑轨迹函数
-    _pos_desired_3f.y = pos_desired_y_set_update(_pos_desired.y,400.0f, 1.0f, 400.0f);     //转换数据类型为Vector3f,update函数为平滑轨迹函数                
-    _pos_desired_3f.z = -_pos_desired.z;//-pos_desired_z_set_update(_pos_desired.z,400.0f, 0.5f, 400.0f);   //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
+    _pos_desired_3f.x = _pos_desired.x;//pos_desired_x_set_update(_pos_desired.x,400.0f, 1.0f, 400.0f);     //转换数据类型为Vector3f,update函数为平滑轨迹函数
+    _pos_desired_3f.y = _pos_desired.y;//pos_desired_y_set_update(_pos_desired.y,400.0f, 1.0f, 400.0f);     //转换数据类型为Vector3f,update函数为平滑轨迹函数                
+    _pos_desired_3f.z = -pos_desired_z_set_update(_pos_desired.z,100.0f, 0.5f, 400.0f);   //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
     Vector3f _acc_desired_3f;
     _acc_desired_3f.x = 0.0f;
     _acc_desired_3f.y = 0.0f;
@@ -1235,7 +1233,7 @@ void AC_PosControl::update_z_controller()
     fd = -_U_x.dot(_R_body_to_ned_meas.colz());                  //colz是拷贝取值，fd=U_x * Re3
     float fd_nor;
     fd_nor = fd/66.67f;                                         // fd_nor = fd/f_max，除以预设的无人机最大推力进行归一化
-    float test_msg_1 = _pos_desired_3f.z;
+    float test_msg_1 = -pos_desired_z_set_update(_pos_desired.z,100.0f, 0.5f, 400.0f);
     float test_msg_2 = _pdnn_pos.get_phi().x; 
     current_DIYwrench = get_DIYwrench(test_msg_1, test_msg_2); //用于ROS2推力话题 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1317,7 +1315,7 @@ void AC_PosControl::update_z_controller()
 /// get_lean_angle_max_cd - returns the maximum lean angle the autopilot may request
 float AC_PosControl::get_lean_angle_max_cd() const
 {
-    if (is_positive(_angle_max_override_cd)) {
+    if (is_positive(_angle_max_override_cd)) { 
         return _angle_max_override_cd;
     }
     if (!is_positive(_lean_angle_max)) {

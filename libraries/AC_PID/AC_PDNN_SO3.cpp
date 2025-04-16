@@ -181,7 +181,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
 
         //update I term 更新积分项
         //void AC_PDNN_3D::update_i(float dt, float _ki, float _c1, float _kimax, bool limit)
-        update_i(dt, 1.0f, 1.0f, 50.0f, true); //尽量小，姿态控制要求实时性
+        update_i(dt, 1.0f, 100.0f, 200.0f, true); //尽量小，姿态控制要求实时性
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~神经网络NN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
@@ -394,13 +394,13 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     //(void)_geomrtry_output;
 
     //计算总输出，每个方向上乘以惯性张量
-    _pdnn_output.x = _J_x * (-_e_R.x * 100.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
-    _pdnn_output.y = _J_y * (-_e_R.y * 100.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
-    _pdnn_output.z = _J_z * (-_e_R.z * 100.0f - _e_Omega.z * 80.0f - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
+    //_pdnn_output.x = _J_x * (-_e_R.x * 100.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
+    //_pdnn_output.y = _J_y * (-_e_R.y * 100.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
+    //_pdnn_output.z = _J_z * (-_e_R.z * 100.0f - _e_Omega.z * 80.0f - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
     
-    //_pdnn_output.x = 0.01f * (-_e_R.x * 100.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 0.0f *_phi_x + 0.0f*Aug.x); 
-    //_pdnn_output.y = 0.02f * (-_e_R.y * 100.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 0.0f * _phi_y + 0.0f*Aug.y);
-    //_pdnn_output.z = 0.02f * (-_e_R.z * 100.0f - _e_Omega.z * 80.0f - 0.0f *_integrator.z - _geomrtry_output.z - 0.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
+    _pdnn_output.x = 0.01f * (-_e_R.x * 100.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 0.0f *_phi_x + 0.0f*Aug.x); 
+    _pdnn_output.y = 0.02f * (-_e_R.y * 100.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 0.0f * _phi_y + 0.0f*Aug.y);
+    _pdnn_output.z = 0.02f * (-_e_R.z * 100.0f - _e_Omega.z * 80.0f - 0.0f *_integrator.z - _geomrtry_output.z - 0.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
 
     return _pdnn_output; //返回pdnn控制器输出
 }
@@ -409,7 +409,8 @@ void AC_PDNN_SO3::update_i(float dt, float _ki, float _c2, float _kimax, bool li
 {
    if (limit){
 
-    Vector3f delta_integrator = (_e_Omega + _e_R * _c2) * dt;
+    //Vector3f delta_integrator = (_e_Omega + _e_R * _c2) * dt;
+    Vector3f delta_integrator = (_e_R * _c2) * dt;
     _integrator += delta_integrator;
     
     float _integrator_x = _integrator.x;
