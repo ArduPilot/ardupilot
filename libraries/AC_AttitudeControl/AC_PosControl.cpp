@@ -1132,26 +1132,27 @@ float AC_PosControl::pos_desired_y_set_update(float y_final,float max_pos_y, flo
 }
 
 float AC_PosControl::pos_desired_z_set_update(float z_final,float max_alt, float rate, float frequency) //"z_final" is the final desired height, "rate" 是指数衰减率,越小越慢
-{   
-    //z_final为设置无人机最终期望NEU高度（cm）
+{  //z_final为设置无人机最终期望NEU高度（cm）
     //max_alt 为最大高度限制（cm）
     //_pos_set_z为平滑后的期望NEU高度（cm）
     static bool initialized = false; // 标志是否已初始化，静态变量只会初始化一次
     static float _pos_set_z = 0.0f;           // static 局部变量，值只初始化一次
-    //static float _t = 0.0f;
+    static float _t = 0.0f;
     // 设置时间步长
-    //float _dt_ = 1.0f/frequency;
+    float _dt_ = 1.0f/frequency;
     // 更新时间
-    //_t += 1.0f/frequency;
+    _t += 1.0f/frequency;
 
     if (!initialized) {
         _pos_set_z = 0.0f;        // 只在第一次调用时初始化
         initialized = true;
-    } 
-    _pos_set_z= z_final;                         
- // **添加位移限制**
-    if (_pos_set_z > max_alt) {
-        _pos_set_z = max_alt;  // 限制上界
+    }                                
+     // **添加高度限制**
+    if (z_final > max_alt && _t>3.0f) {
+        _pos_set_z = max_alt - (max_alt - _pos_set_z) *  expf(-rate * _dt_);  // 限制最大高度
+    }
+    else if(_t>3.0f) {   // **指数衰减方式平滑逼近**
+        _pos_set_z = z_final - (z_final - _pos_set_z) * expf(-rate * _dt_);
     }
   return _pos_set_z;
 }
