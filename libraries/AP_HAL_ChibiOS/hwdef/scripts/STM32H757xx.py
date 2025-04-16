@@ -1278,14 +1278,16 @@ AltFunction_map = {
 
 ADC1_map = {
     # format is PIN : ADC1_CHAN
-    "PF11"  :   2,
-    "PA6"	:	3,
-    "PC4"	:	4,
-    "PB1"	:	5,
-    "PF12"  :   6,
-    "PA7"	:	7,
-    "PC5"	:	8,
-    "PB0"	:	9,
+	# "PA0_C":	0,	# not supported
+	# "PA1_C":	1,	# not supported
+	"PF11"	:	2,
+	"PA6"	:	3,
+	"PC4"	:	4,
+	"PB1"	:	5,
+	"PF12"	:	6,
+	"PA7"	:	7,
+	"PC5"	:	8,
+	"PB0"	:	9,
 	"PC0"	:	10,
 	"PC1"	:	11,
 	"PC2"	:	12,
@@ -1300,15 +1302,45 @@ ADC1_map = {
 
 ADC2_map = {
 	# format is PIN : ADC2_CHAN
+	# "PA0_C":	0,	# not supported
+	# "PA1_C":	1,	# not supported
 	"PF13"  :   2,
+	"PA6"	:	3,
+	"PC4"	:	4,
 	"PB1"	:	5,
 	"PF14"  :   6,
+	"PA7"	:	7,
+	"PC5"	:	8,
+	"PB0"	:	9,
+	"PC0"   :   10,
+	"PC1"	:	11,
+	"PC2"	:	12,
+	"PC3"	:	13,
+	"PA2"	:	14,
+	"PA3"	:	15,
+	# ADC2_INP16 not implemented on H757
+	# ADC2_INP17 not implemented on H757
+	"PA4"	:	18,
+	"PA5"	:	19,
 }
 
 ADC3_map = {
 	# format is PIN : ADC3_CHAN
-	"PC3"   :   1,
-	"PF3"	:   5,
-	"PF5"   :   4,
-	"PF4"   :   9,
+	"PC2"	:	0,	# labeled PC2_C
+	"PC3"	:	1,	# labeled PC3_C
+	"PF9"	:	2,
+	"PF7"	:	3,
+	"PF5"	:	4,
+	"PF3"	:	5,
+	"PF10"	:	6,
+	"PF8"	:	7,
+	"PF6"	:	8,
+	"PF4"	:	9,
+	"PC0"	:	10,
+	"PC1"	:	11,
+	# "PC2"	:	12,	# not supported, using the name "PC2" for PC2_C ADC3_INP0
+	"PH2"	:	13,
+	"PH3"	:	14,
+	"PH4"	:	15,
+	"PH5"	:	16,
 }
