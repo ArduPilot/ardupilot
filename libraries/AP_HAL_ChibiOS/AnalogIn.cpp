@@ -814,7 +814,7 @@ void AnalogIn::update_power_flags(void)
       for backup power)
     */
 #if defined(HAL_GPIO_PIN_VDD_BRICK2_VALID)
-    if (palReadLine(HAL_GPIO_PIN_VDD_BRICK_VALID) == 1) {
+    if (palReadLine(HAL_GPIO_PIN_VDD_BRICK2_VALID) == 1) {
         flags |= MAV_POWER_STATUS_SERVO_VALID;
     }
 #elif defined(HAL_GPIO_PIN_VDD_BRICK2_nVALID)
