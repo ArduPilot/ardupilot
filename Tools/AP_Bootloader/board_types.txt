@@ -304,6 +304,7 @@ AP_HW_BrahmaF4                       1184
 AP_HW_X-MAV-AP-F405Mini              1185
 AP_HW_3DRControlN1                   1186
 
+AP_HW_CORVON743V1                    1188
 AP_HW_JFB200                         1200
 
 AP_HW_ESP32_PERIPH                   1205
