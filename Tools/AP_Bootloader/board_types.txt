@@ -303,6 +303,7 @@ AP_HW_NarinH7                        1183
 AP_HW_BrahmaF4                       1184
 AP_HW_X-MAV-AP-F405Mini              1185
 AP_HW_3DRControlN1                   1186
+AP_HW_CORVON405V2_1                  1187
 
 AP_HW_CORVON743V1                    1188
 AP_HW_JFB200                         1200
@@ -452,10 +453,11 @@ AP_HW_sw-boom-f407                   6001
 AP_HW_sw-nav-f405                    6002
 
 # IDs 6100-6109 reserved for MFE
-AP_HW_MFE_PDB_CAN                            6100
-AP_HW_MFE_POS3_CAN                          6101
-AP_HW_MFE_RTK_CAN                             6102
-AP_HW_MFE_AirSpeed_CAN                     6103
+AP_HW_MFE_PDB_CAN                    6100
+AP_HW_MFE_POS3_CAN                   6101
+AP_HW_MFE_RTK_CAN                    6102
+AP_HW_MFE_AirSpeed_CAN               6103
+AP_HW_PixSurveyA2-IND                6104
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
 

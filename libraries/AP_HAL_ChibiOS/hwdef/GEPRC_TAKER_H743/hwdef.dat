@@ -173,8 +173,9 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 #undef define AP_BARO_BMP280_ENABLED
 #define AP_BARO_BMP280_ENABLED 1
 define AP_BARO_SPL06_ENABLED  1
-define AP_BARO_MS56XX_ENABLED 1
-
+define AP_BARO_MS5607_ENABLED 1
+define AP_BARO_MS5611_ENABLED 1
+define AP_BARO_MS5637_ENABLED 1
 
 
 # need to probe external baros even 'though we're minimised to allow custom build options:

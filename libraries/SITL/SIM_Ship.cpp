@@ -34,11 +34,36 @@ using namespace SITL;
 
 // SITL Ship parameters
 const AP_Param::GroupInfo ShipSim::var_info[] = {
+    // @Param: ENABLE
+    // @DisplayName: Ship landing Enable
+    // @Description: Enable ship landing simulation
+    // @Values: 0:Disable,1:Enabled
     AP_GROUPINFO("ENABLE",    1, ShipSim,  enable, 0),
+    // @Param: SPEED
+    // @DisplayName: Ship Speed
+    // @Description: Speed of the ship
+    // @Units: m/s
     AP_GROUPINFO("SPEED",     2, ShipSim,  speed, 3),
+    // @Param: PSIZE
+    // @DisplayName: Path Size
+    // @Description: Diameter of the circle the ship is traveling on
+    // @Units: m
     AP_GROUPINFO("PSIZE",     3, ShipSim,  path_size, 1000),
+    // @Param: SYSID
+    // @DisplayName: System ID
+    // @Description: System ID of the ship
+    // @Range: 1 255
     AP_GROUPINFO("SYSID",     4, ShipSim,  sys_id, 17),
+    // @Param: DSIZE
+    // @DisplayName: Deck Size
+    // @Description: Size of the ship's deck
+    // @Units: m
     AP_GROUPINFO("DSIZE",     5, ShipSim,  deck_size, 10),
+    // @Param: OFS
+    // @DisplayName: Ship landing pad offset
+    // @Description: Defines the offset of the ship's landing pad w.r.t. the ship's origin, i.e. where the beacon is placed on the ship
+    // @Units: m
+    // @Vector3Parameter: 1
     AP_GROUPINFO("OFS",       7, ShipSim,  offset, 0),
     AP_GROUPEND
 };

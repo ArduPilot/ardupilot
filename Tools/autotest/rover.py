@@ -262,7 +262,7 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        self.progress("test bootup state - it's zero-output!")
+        self.progress("test boot-up state - it's zero-output!")
         self.wait_servo_channel_value(spinner_ch, 0)
         self.wait_servo_channel_value(pump_ch, 0)
 
@@ -681,7 +681,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     (2, 'MANUAL'),
                     (3, 'RTL'),
                     (4, 'AUTO'),
-                    (5, 'AUTO'),  # non-existant mode, should stay in RTL
+                    (5, 'AUTO'),  # non-existent mode, should stay in RTL
                     (6, 'MANUAL')]
             mavproxy = self.start_mavproxy(sitl_rcin_port=port)
             for (num, expected) in fnoo:
@@ -1046,7 +1046,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Wait for override value")
         self.wait_rc_channel_value(ch, ch_override_value, timeout=10)
 
-        # make we keep the override vaue for at least 10 seconds:
+        # make we keep the override value for at least 10 seconds:
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > 10:
@@ -2105,7 +2105,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.clear_fence_using_mavproxy(mavproxy)
         self.delay_sim_time(1)
         pointcount = 7
-        mavproxy.send("fence addpoly inc 20 %u 37.2\n" % pointcount) # radius, pointcount, rotaiton
+        mavproxy.send("fence addpoly inc 20 %u 37.2\n" % pointcount) # radius, pointcount, rotation
         self.delay_sim_time(5)
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         if len(downloaded_items) != pointcount:
@@ -2304,7 +2304,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                          target_component=target_component)
 
     def GCSFenceInvalidPoint(self):
-        '''Test fetch non-existant fencepoint'''
+        '''Test fetch non-existent fencepoint'''
         target_system = 1
         target_component = 1
 
@@ -2556,10 +2556,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             verbose=True,
         )
         if m.target_system != target_system:
-            raise NotAchievedException("ACK not targetted at correct system want=%u got=%u" %
+            raise NotAchievedException("ACK not targeted at correct system want=%u got=%u" %
                                        (target_system, m.target_system))
         if m.target_component != target_component:
-            raise NotAchievedException("ACK not targetted at correct component")
+            raise NotAchievedException("ACK not targeted at correct component")
         if m.mission_type != mission_type:
             raise NotAchievedException("Unexpected mission type %u want=%u" %
                                        (m.mission_type, mission_type))
@@ -3035,7 +3035,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     "resetting rally point count didn't change items returned")
             if downloaded[2].x != new_item2_lat:
                 raise NotAchievedException(
-                    "Bad lattitude in downloaded item: want=%u got=%u" %
+                    "Bad latitude in downloaded item: want=%u got=%u" %
                     (new_item2_lat, downloaded[2].x))
 
             self.progress("Grabbing original item 1 using original protocol")
@@ -5965,7 +5965,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Expected %fm got %fm" % (want_range, m.distance))
 
     def DepthFinder(self):
-        '''Test mulitple depthfinders for boats'''
+        '''Test multiple depthfinders for boats'''
         # Setup rangefinders
         self.customise_SITL_commandline([
             "--serial7=sim:nmea", # NMEA Rangefinder
@@ -6159,7 +6159,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.assert_receive_message("HEARTBEAT", mav=mav2)
 
-        # ensure a targetted message is received:
+        # ensure a targeted message is received:
         self.install_message_hook_context(heartbeat_on_mav2)
 
         self.progress("Ensuring we can get a message normally")
@@ -6461,7 +6461,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if board_status.find('0 hours') == -1:
             raise NotAchievedException("Expected uptime in board status")
         if board_status.find('40.713') == -1:
-            raise NotAchievedException("Expected lattitude in board status")
+            raise NotAchievedException("Expected latitude in board status")
 
         self.progress("WebServer tests OK")
 

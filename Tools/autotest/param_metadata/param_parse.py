@@ -29,7 +29,7 @@ parser.add_argument("--no-emit",
                     dest='emit_params',
                     action='store_false',
                     default=True,
-                    help="don't emit parameter documention, just validate")
+                    help="don't emit parameter documentation, just validate")
 parser.add_argument("--format",
                     dest='output_format',
                     action='store',
