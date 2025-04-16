@@ -5,7 +5,7 @@
 class AP_Baro_Backend
 {
 public:
-    AP_Baro_Backend(AP_Baro &baro);
+    AP_Baro_Backend(class AP_Baro &baro);
     virtual ~AP_Baro_Backend(void) {};
 
     // each driver must provide an update method to copy accumulated
@@ -76,7 +76,5 @@ protected:
     uint32_t _error_count;
 
     // set bus ID of this instance, for BARO_DEVID parameters
-    void set_bus_id(uint8_t instance, uint32_t id) {
-        _frontend.sensors[instance].bus_id.set(int32_t(id));
-    }
+    void set_bus_id(uint8_t instance, uint32_t id);
 };

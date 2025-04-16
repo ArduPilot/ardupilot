@@ -16,7 +16,6 @@
 
 #if AP_BARO_BMP581_ENABLED
 
-#include <utility>
 #include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL &hal;
@@ -55,20 +54,15 @@ extern const AP_HAL::HAL &hal;
 #define BMP581_REG_OSR_EFF            0x38
 #define BMP581_REG_CMD                0x7E
 
-AP_Baro_BMP581::AP_Baro_BMP581(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_BMP581::AP_Baro_BMP581(AP_Baro &baro, AP_HAL::Device &dev)
     : AP_Baro_Backend(baro)
-    , _dev(std::move(dev))
+    , _dev(&dev)
 {
 }
 
-AP_Baro_Backend *AP_Baro_BMP581::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_Backend *AP_Baro_BMP581::probe(AP_Baro &baro, AP_HAL::Device &dev)
 {
-    if (!dev) {
-        return nullptr;
-    }
-
-    AP_Baro_BMP581 *sensor = NEW_NOTHROW AP_Baro_BMP581(baro, std::move(dev));
+    AP_Baro_BMP581 *sensor = NEW_NOTHROW AP_Baro_BMP581(baro, dev);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;

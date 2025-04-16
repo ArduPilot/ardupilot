@@ -6,7 +6,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
-#include <AP_HAL/utility/OwnPtr.h>
 
 #ifndef HAL_BARO_SPL06_I2C_ADDR
  #define HAL_BARO_SPL06_I2C_ADDR  (0x76)
@@ -23,12 +22,12 @@ public:
 		SPL06,
 		SPA06,
 	};
-    AP_Baro_SPL06(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Baro_SPL06(AP_Baro &baro, AP_HAL::Device &dev);
 
     /* AP_Baro public interface: */
     void update() override;
 
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device &dev);
 
 private:
 
@@ -39,7 +38,7 @@ private:
 
     int32_t raw_value_scale_factor(uint8_t);
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device *_dev;
 
     int8_t _timer_counter;
     uint8_t _instance;
