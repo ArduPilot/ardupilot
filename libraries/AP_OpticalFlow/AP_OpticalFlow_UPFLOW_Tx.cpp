@@ -52,9 +52,18 @@
 #define UPFLOW_TIMEOUT_SEC         0.3f
 
 extern const AP_HAL::HAL& hal;
-struct UPFLOW_TOF UPFLOW_TOF;
+static UPFLOW_TOF UPFLOW_TOF_DATA;
+static UPFLOW_TOF* upflow_tof_data = &UPFLOW_TOF_DATA;
 static const char* init_msg = "<set protocol upixels>";
 static bool upflow_tx_message_sent = false;
+
+UPFLOW_TOF* get_upflow_tof()
+{
+    if (tof == nullptr) {
+        return 0;
+    }
+    return upflow_tof_data;
+}
 
 // constructor
 AP_OpticalFlow_UPFLOW_Tx::AP_OpticalFlow_UPFLOW_Tx(AP_OpticalFlow &_frontend, AP_HAL::UARTDriver *_uart) :
@@ -190,9 +199,9 @@ void AP_OpticalFlow_UPFLOW_Tx::update(void)
         _applyYaw(state.flowRate);
 
         //update tof
-        UPFLOW_TOF.if_opt_ok = true;
-        UPFLOW_TOF.ground_distance = updata.ground_distance;
-        UPFLOW_TOF.tof_valid = updata.tof_valid;
+        UPFLOW_TOF_DATA.if_opt_ok = true;
+        UPFLOW_TOF_DATA.ground_distance = updata.ground_distance;
+        UPFLOW_TOF_DATA.tof_valid = updata.tof_valid;
 
         //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UPFLOW_Tx: OK");
 
@@ -202,9 +211,9 @@ void AP_OpticalFlow_UPFLOW_Tx::update(void)
         state.bodyRate.zero();
 
         //update tof
-        UPFLOW_TOF.if_opt_ok = false;
-        UPFLOW_TOF.ground_distance = 0;
-        UPFLOW_TOF.tof_valid = 0;
+        UPFLOW_TOF_DATA.if_opt_ok = false;
+        UPFLOW_TOF_DATA.ground_distance = 0;
+        UPFLOW_TOF_DATA.tof_valid = 0;
     }
 
     _update_frontend(state);

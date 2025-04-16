@@ -25,7 +25,6 @@
 //#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
-extern struct UPFLOW_TOF UPFLOW_TOF;
 static int e = 0;
 
 AP_RangeFinder_UPFLOW_TOF::AP_RangeFinder_UPFLOW_TOF(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
@@ -46,10 +45,11 @@ bool AP_RangeFinder_UPFLOW_TOF::detect()
  */
 void AP_RangeFinder_UPFLOW_TOF::update(void)
 {
+    static UPFLOW_TOF* tof_data = get_upflow_tof();
     // check validity of the data
-    if( UPFLOW_TOF.if_opt_ok == true && UPFLOW_TOF.tof_valid != 0 ){
-        state.distance_m = UPFLOW_TOF.ground_distance * 0.001f;
-        UPFLOW_TOF.if_opt_ok = false;
+    if( tof_data->if_opt_ok == true && tof_data->tof_valid != 0 ){
+        state.distance_m = tof_data->ground_distance * 0.001f;
+        tof_data->if_opt_ok = false;
         e = 0;
         //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "tof: OK");
     }else{
