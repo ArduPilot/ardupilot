@@ -74,16 +74,16 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     _c_y_5.x = _c_1_5; _c_y_5.y = _c_2_5;//第5个隐藏层中心2*1向量
 
     Vector2f _c_z_1, _c_z_2, _c_z_3, _c_z_4, _c_z_5; //z方向
-    _c_z_1.x = _c_1_1; _c_z_1.y = _c_2_1;//第1个隐藏层中心2*1向量
-    _c_z_2.x = _c_1_2; _c_z_2.y = _c_2_2;//第2个隐藏层中心2*1向量
-    _c_z_3.x = _c_1_3; _c_z_3.y = _c_2_3;//第3个隐藏层中心2*1向量
-    _c_z_4.x = _c_1_4; _c_z_4.y = _c_2_4;//第4个隐藏层中心2*1向量
-    _c_z_5.x = _c_1_5; _c_z_5.y = _c_2_5;//第5个隐藏层中心2*1向量
+    _c_z_1.x = _c_1_1; _c_z_1.y = -6.0f;//第1个隐藏层中心2*1向量
+    _c_z_2.x = _c_1_2; _c_z_2.y = -3.0f;//第2个隐藏层中心2*1向量
+    _c_z_3.x = _c_1_3; _c_z_3.y = 0.0f;//第3个隐藏层中心2*1向量
+    _c_z_4.x = _c_1_4; _c_z_4.y = 3.0f;//第4个隐藏层中心2*1向量
+    _c_z_5.x = _c_1_5; _c_z_5.y = 6.0f;//第5个隐藏层中心2*1向量
 
     //设置RBF网络的宽度 Setting the width of the RBF network 注意！！：宽度越大约平滑，太小会发散
     float _b_x = 2.0f;   
     float _b_y = 2.0f;  
-    float _b_z = 2.0f;
+    float _b_z = 3.0f;
     
     // reset input filter to value received //无人机重启pdnn姿态控制时的初始化
     if (_reset) { //初始化逻辑
@@ -217,30 +217,30 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         float L_z_1 = (_X_z-_c_z_1).length(); //存储欧式距离
         _h_z_1 = expf(-L_z_1*L_z_1/(2*_b_z*_b_z));//z方向第1个隐藏层输出
         float L_z_2 = (_X_z-_c_z_2).length(); //存储欧式距离
-        _h_z_2 = expf(-L_z_2*L_z_2/(2*_b_z*_b_z));//z方向第2个隐藏层输出
+        _h_z_2 = expf(-L_z_2*L_z_2/(2*3.0f*3.0f));//z方向第2个隐藏层输出
         float L_z_3 = (_X_z-_c_z_3).length(); //存储欧式距离
-        _h_z_3 = expf(-L_z_3*L_z_3/(2*_b_z*_b_z));//z方向第3个隐藏层输出
+        _h_z_3 = expf(-L_z_3*L_z_3/(2*3.0f*3.0f));//z方向第3个隐藏层输出
         float L_z_4 = (_X_z-_c_z_4).length(); //存储欧式距离
-        _h_z_4 = expf(-L_z_4*L_z_4/(2*_b_z*_b_z));//z方向第4个隐藏层输出
+        _h_z_4 = expf(-L_z_4*L_z_4/(2*3.0f*3.0f));//z方向第4个隐藏层输出
         float L_z_5 = (_X_z-_c_z_5).length(); //存储欧式距离
         _h_z_5 = expf(-L_z_5*L_z_5/(2*_b_z*_b_z));//z方向第5个隐藏层输出
 
         //计算权重更新律
-        float _gamma_x = 100.0f;float c_R = 0.6f;
+        float _gamma_x = 120.0f;float c_R = 0.6f;
         _dot_W_x_1 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_1;//x方向第1个权重更新律
         _dot_W_x_2 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_2;//x方向第2个权重更新律
         _dot_W_x_3 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_3;//x方向第3个权重更新律
         _dot_W_x_4 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_4;//x方向第4个权重更新律
         _dot_W_x_5 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_5;//x方向第5个权重更新律
 
-        float _gamma_y = 100.0f;
+        float _gamma_y = 120.0f;
         _dot_W_y_1 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_1;//y方向第1个权重更新律
         _dot_W_y_2 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_2;//y方向第2个权重更新律
         _dot_W_y_3 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_3;//y方向第3个权重更新律
         _dot_W_y_4 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_4;//y方向第4个权重更新律
         _dot_W_y_5 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_5;//y方向第5个权重更新律
 
-        float _gamma_z = 100.0f;
+        float _gamma_z = 50.0f;
         _dot_W_z_1 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_1;//z方向第1个权重更新律
         _dot_W_z_2 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_2;//z方向第2个权重更新律
         _dot_W_z_3 = _gamma_z * (_e_Omega.z + c_R * _e_R.z) * _h_z_3;//z方向第3个权重更新律
@@ -396,11 +396,11 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     //计算总输出，每个方向上乘以惯性张量
     _pdnn_output.x = _J_x * (-_e_R.x * 100.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
     _pdnn_output.y = _J_y * (-_e_R.y * 100.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
-    _pdnn_output.z = _J_z * (-_e_R.z * 100.0f - _e_Omega.z * 70.0f - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
+    _pdnn_output.z = _J_z * (-_e_R.z * 100.0f - _e_Omega.z * 80.0f - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
     
     //_pdnn_output.x = 0.01f * (-_e_R.x * 100.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 0.0f *_phi_x + 0.0f*Aug.x); 
     //_pdnn_output.y = 0.02f * (-_e_R.y * 100.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 0.0f * _phi_y + 0.0f*Aug.y);
-    //_pdnn_output.z = 0.02f * (-_e_R.z * 100.0f - _e_Omega.z * 70.0f - 0.0f *_integrator.z - _geomrtry_output.z - 0.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
+    //_pdnn_output.z = 0.02f * (-_e_R.z * 100.0f - _e_Omega.z * 80.0f - 0.0f *_integrator.z - _geomrtry_output.z - 0.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
 
     return _pdnn_output; //返回pdnn控制器输出
 }
