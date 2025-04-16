@@ -1382,8 +1382,7 @@ int8_t GCS_MAVLINK::deferred_message_to_send_index(uint16_t now16_ms)
         return -1;
     }
 
-    const uint16_t ms_since_last_sent = now16_ms - deferred_message[next_deferred_message_to_send_cache].last_sent_ms;
-    if (ms_since_last_sent < deferred_message[next_deferred_message_to_send_cache].interval_ms) {
+    if ((now16_ms - deferred_message[next_deferred_message_to_send_cache].last_sent_ms) < deferred_message[next_deferred_message_to_send_cache].interval_ms) {
         return -1;
     }
 
