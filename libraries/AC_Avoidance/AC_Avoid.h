@@ -48,10 +48,11 @@ public:
     // before the fence/object.
     // kP, accel_cmss are for the horizontal axis
     // kP_z, accel_cmss_z are for vertical axis
-    void adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt);
+    // proximity_only should be true if only proximity sensor should be used (e.g. fences should not be used)
+    void adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt, bool proximity_only);
     void adjust_velocity(Vector3f &desired_vel_cms, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt) {
         bool backing_up = false;
-        adjust_velocity(desired_vel_cms, backing_up, kP, accel_cmss, kP_z, accel_cmss_z, dt);
+        adjust_velocity(desired_vel_cms, backing_up, kP, accel_cmss, kP_z, accel_cmss_z, dt, false);
     }
 
     // This method limits velocity and calculates backaway velocity from various supported fences
