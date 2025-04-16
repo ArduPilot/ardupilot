@@ -59,9 +59,6 @@ static bool upflow_tx_message_sent = false;
 
 UPFLOW_TOF* get_upflow_tof()
 {
-    if (tof == nullptr) {
-        return 0;
-    }
     return upflow_tof_data;
 }
 
