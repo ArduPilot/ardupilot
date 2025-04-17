@@ -222,6 +222,12 @@ bool AP_Mount_XFRobot::take_picture()
     return send_simple_command(FunctionOrder::SHUTTER, 0x01);
 }
 
+//cycle pic-in-pic
+bool AP_Mount_XFRobot::set_lens(uint8_t lens)
+{
+    return send_simple_command(FunctionOrder::PIC_IN_PIC, 0x00);
+}
+
 // start or stop video recording.  returns true on success
 // set start_recording = true to start record, false to stop recording
 bool AP_Mount_XFRobot::record_video(bool start_recording)
