@@ -912,6 +912,42 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 #endif
 }
 
+#if HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
+void GCS_MAVLINK::handle_mission_item_guided_mode_request(const mavlink_message_t &msg, const mavlink_mission_item_int_t &mission_item_int)
+{
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - last_guided_mission_request_received_ms > 60000) {
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Guided mode mission request received; use SET_POSITION_TARGET_GLOBAL_INT instead");
+            last_guided_mission_request_received_ms = now_ms;
+        }
+
+        const uint8_t current = mission_item_int.current;
+
+        struct AP_Mission::Mission_Command cmd = {};
+        MAV_MISSION_RESULT result = AP_Mission::mavlink_int_to_mission_cmd(mission_item_int, cmd);
+        if (result != MAV_MISSION_ACCEPTED) {
+            //decode failed
+            send_mission_ack(msg, MAV_MISSION_TYPE_MISSION, result);
+            return;
+        }
+        // guided or change-alt
+        if (current == 2) {
+            // current = 2 is a flag to tell us this is a "guided mode"
+            // waypoint and not for the mission
+            result = (handle_guided_request(cmd) ? MAV_MISSION_ACCEPTED
+                      : MAV_MISSION_ERROR) ;
+        } else if (current == 3) {
+            //current = 3 is a flag to tell us this is a alt change only
+            // add home alt if needed
+            handle_change_alt_request(cmd.content.location);
+
+            // verify we received the command
+            result = MAV_MISSION_ACCEPTED;
+        }
+        send_mission_ack(msg, MAV_MISSION_TYPE_MISSION, result);
+}
+#endif  // AP_MISSION_ENABLED
+
 void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
 {
     mavlink_mission_item_int_t mission_item_int;
@@ -941,32 +977,11 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
     }
     const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
 
-#if AP_MISSION_ENABLED
+#if HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
     const uint8_t current = mission_item_int.current;
 
     if (type == MAV_MISSION_TYPE_MISSION && (current == 2 || current == 3)) {
-        struct AP_Mission::Mission_Command cmd = {};
-        MAV_MISSION_RESULT result = AP_Mission::mavlink_int_to_mission_cmd(mission_item_int, cmd);
-        if (result != MAV_MISSION_ACCEPTED) {
-            //decode failed
-            send_mission_ack(msg, MAV_MISSION_TYPE_MISSION, result);
-            return;
-        }
-        // guided or change-alt
-        if (current == 2) {
-            // current = 2 is a flag to tell us this is a "guided mode"
-            // waypoint and not for the mission
-            result = (handle_guided_request(cmd) ? MAV_MISSION_ACCEPTED
-                      : MAV_MISSION_ERROR) ;
-        } else if (current == 3) {
-            //current = 3 is a flag to tell us this is a alt change only
-            // add home alt if needed
-            handle_change_alt_request(cmd.content.location);
-
-            // verify we received the command
-            result = MAV_MISSION_ACCEPTED;
-        }
-        send_mission_ack(msg, MAV_MISSION_TYPE_MISSION, result);
+        handle_mission_item_guided_mode_request(msg, mission_item_int);
         return;
     }
 #endif

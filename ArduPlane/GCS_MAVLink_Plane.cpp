@@ -493,6 +493,7 @@ void GCS_MAVLINK_Plane::send_hygrometer()
 }
 #endif // AP_AIRSPEED_HYGROMETER_ENABLE
 
+#if HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
 /*
   handle a request to switch to guided mode. This happens via a
   callback from handle_mission_item()
@@ -501,6 +502,7 @@ bool GCS_MAVLINK_Plane::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     return plane.control_mode->handle_guided_request(cmd.content.location);
 }
+#endif  // HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
 
 /*
   handle a request to change current WP altitude. This happens via a
@@ -521,7 +523,6 @@ void GCS_MAVLINK_Plane::handle_change_alt_request(Location &location)
     }
     plane.reset_offset_altitude();
 }
-
 
 /*
   handle a LANDING_TARGET command. The timestamp has been jitter corrected

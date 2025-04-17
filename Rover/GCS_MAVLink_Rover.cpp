@@ -464,6 +464,8 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     }
     return true;
 }
+
+#if HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
 bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     if (!rover.control_mode->in_guided_mode()) {
@@ -474,6 +476,7 @@ bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
     // make any new wp uploaded instant (in case we are already in Guided mode)
     return rover.mode_guided.set_desired_location(cmd.content.location);
 }
+#endif  // HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
 
 MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {

@@ -53,8 +53,16 @@ private:
     void send_pid_info(const struct AP_PIDInfo *pid_info, const uint8_t axis, const float achieved);
 
     void handle_message(const mavlink_message_t &msg) override;
+#if HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     void handle_change_alt_request(Location &location) override;
+    void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
+#else
+    // this method can be folded into its remaining caller when
+    // guided-mode-requests are removed:
+    void handle_change_alt_request(Location &location);
+    void handle_change_alt_request(AP_Mission::Mission_Command &cmd);
+#endif
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_int_DO_CHANGE_ALTITUDE(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_int_guided_slew_commands(const mavlink_command_int_t &packet);
