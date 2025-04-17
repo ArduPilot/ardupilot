@@ -5,7 +5,7 @@
 #if AP_FENCE_ENABLED
 
 // async fence checking io callback at 1Khz
-void Plane::fence_run_checks()
+void Plane::fence_checks_async()
 {
     const uint32_t now = AP_HAL::millis();
 

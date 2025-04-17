@@ -1993,9 +1993,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("flying forward (east) until we hit fence")
         pitching_forward = True
         self.set_rc(2, 1100)
-        self.wait_statustext("Polygon fence close")
+        self.wait_statustext("Polygon fence in ([0-9]+[.])?[0-9]?m", regex=True)
 
-        self.wait_statustext("Circle and Polygon fences close")
+        self.wait_statustext("Circle and Polygon fences in ([0-9]+[.])?[0-9]?m", regex=True)
         self.progress("Waiting for fence breach")
         tstart = self.get_sim_time()
         while not self.mode_is("RTL"):
