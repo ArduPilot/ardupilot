@@ -14,10 +14,12 @@
  */
 /*
     Dump logged AIS data to the serial port
-    ./Tools/autotest/sim_vehicle.py -v Rover -A --serial5=sim:AIS --custom-location 51.58689798356386,-3.9044570193067965,0,0
+    ./Tools/autotest/sim_vehicle.py -v Rover -A --serial5=sim:AIS --custom-location 51.58689798356386,-3.9044570193067965,0,0 --map
 
     param set SERIAL5_PROTOCOL 40
     param set AIS_TYPE 1
+    reboot
+    module load ais
 */
 
 #include "SIM_AIS.h"
