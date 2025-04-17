@@ -549,11 +549,11 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, floa
     Vector3f Md = _pdnn_att.update_all(_Rc, _R_body_to_ned_meas, Omega, dt, _Rc_active); //pdnn几何姿态控制器，输出为3*1扭矩
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    
-    _motors.set_roll(Md.x/13.3f);  //发送控制力矩给Mixer 
+    _motors.set_roll(Md.x/6.67f);  //发送控制力矩给Mixer 
     _motors.set_roll_ff(0.0f); //设置为无前馈
-    _motors.set_pitch(Md.y/13.3f);
+    _motors.set_pitch(Md.y/6.67f);
     _motors.set_pitch_ff(0.0f);
-    _motors.set_yaw(Md.z/13.3f); //因为Mixer是基于NED配置，所以这里如果是用到NEU，需要再将NEU下的力矩翻转到NED发送给mixer
+    _motors.set_yaw(Md.z/6.67f); //因为Mixer是基于NED配置，所以这里如果是用到NEU，需要再将NEU下的力矩翻转到NED发送给mixer
     _motors.set_yaw_ff(0.0f);
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~getter传出数据到位置控制以在位置控制中输出到log~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
