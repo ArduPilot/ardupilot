@@ -1,0 +1,34 @@
+# Defaults for HaKRCF405Wing v1.0
+# Created by   : Jani Hirvinen https://github.com/jpkh
+# Version      : v1.1, 19.11.2024
+
+###############################################
+# Serial ports
+# RC Receiver, ELRS 915/2.4Ghz as default on Serial 1 port, that's where the connector is.
+# Can be changed to elsewhere in FC parameters. Most setups isong this flightcontroller are using ELRS.
+RC_PROTOCOLS = 512
+
+###############################################
+# Info leds and NeoPixel (4 x SK6812 onboard)
+
+# NeoPixed output on PWM9
+SERVO12_FUNCTION = 120
+
+# Only have built-in and NeoPixels
+NTF_LED_TYPES = 257
+
+# 4 x SK6812 Leds on board
+NTF_LED_LEN = 4
+
+# We dont want them to be too bright so..
+NTF_LED_BRIGHT = 2
+
+
+###############################################
+# Battery monitor
+# All battery monitor settings are in the hwdef.
+# Here is only default battery size
+
+# Default battery, users need to change this on their settings
+BATT_CAPACITY = 5000
+

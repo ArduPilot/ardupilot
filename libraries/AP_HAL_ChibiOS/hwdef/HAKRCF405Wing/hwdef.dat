@@ -1,0 +1,218 @@
+# Defaults for HaKRCF405Wing v1.1
+# hw definition file for processing by chibios_hwdef.py
+#
+# Board        : HAKRCF405-Wing, v1.1
+# Created by   : Jani Hirvinen https://github.com/jpkh
+# Version      : v1.2, 19.11.2024
+#
+
+#######################################
+# Generic details of the board
+# PA8 - LED's on connectors, 4pcs
+# SD-Card holder on FC Board
+# ICM42688 on SPI1
+# SPL06 (BMP280) Baro
+# OSD on SPI2
+# SDCard on SPI3
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID 4201
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+# Flash size, "BlackBox"
+FLASH_SIZE_KB 1024
+
+# bootloader takes first sector
+FLASH_RESERVE_START_KB 48
+
+define HAL_STORAGE_SIZE 16384
+
+define STORAGE_FLASH_PAGE 1
+
+STM32_ST_USE_TIMER 5
+define CH_CFG_ST_RESOLUTION 32
+
+# USB Setup
+USB_STRING_MANUFACTURER "HakRC"
+USB_STRING_PRODUCT "HAKF405Wing v1.0"
+
+# SPI devices
+
+# SPI1 (IMU)
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# SPI2 (OSD)
+PB13 SPI2_SCK SPI2
+PC2 SPI2_MISO SPI2
+PC3 SPI2_MOSI SPI2
+
+# SPI3 (FLASH)
+PB3 SPI3_SCK SPI3
+PB5 SPI3_MOSI SPI3
+PB4 SPI3_MISO SPI3
+
+# Chip select pins
+PC14 SDCARD_CS CS
+PB12 OSD1_CS CS
+PA4 GYRO1_CS CS
+
+# Beeper
+PC15 BUZZER OUTPUT GPIO(80) LOW
+define HAL_BUZZER_PIN 80
+define HAL_BUZZER_ON 1
+define HAL_BUZZER_OFF 0
+
+# SERIAL ports
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 UART5 USART6
+
+# PA10 IO-debug-console
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# USART1 (RCIN ELRS)
+PA10 USART1_RX USART1 # NODMA
+PA9 USART1_TX USART1 # NODMA
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_RCIN
+define DEFAULT_SERIAL1_BAUD 115
+
+# USART2 TELEMETRY)
+PA3 USART2_RX USART2 # NODMA
+PA2 USART2_TX USART2 # NODMA
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
+define DEFAULT_SERIAL2_BAUD 57
+
+# USART3 (GPS)
+PC11 USART3_RX USART3
+PC10 USART3_TX USART3
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_MAVLink2
+define DEFAULT_SERIAL3_BAUD 57
+
+# UART4
+PA1 UART4_RX UART4 NODMA
+PA0 UART4_TX UART4 NODMA
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_DJI_FPV
+
+# UART5
+PD2 UART5_RX UART5 NODMA
+PC12 UART5_TX UART5 NODMA
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
+
+# USART6
+PC7 USART6_RX USART6
+PC6 USART6_TX USART6
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_None
+
+define HAL_USE_I2C TRUE
+define STM32_I2C_USE_I2C1 TRUE
+
+# I2C ports
+I2C_ORDER I2C1
+
+# I2C1
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# Barometic
+# SPL06 on HakRC F405 Multicopter-FC and Wing-FC
+BARO SPL06 I2C:0:0x76    # Mostly used baro sensor
+#BARO BMP280 I2C:0:0x76   # Not usually used but can be on some of the boards.
+
+# Battery monitor
+# Generic settings for the battery monitor
+define HAL_BATT_MONITOR_DEFAULT 4
+
+# ADC ports
+# ADC1
+# PC0 RSSI_ADC ADC1  # PC0 INVERTER
+PC0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+#PC2 WIFI-SW
+PC1 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# Airspeed sensor on PC5
+PC5 PRESSURE_SENS     ADC1 SCALE(1)
+define HAL_DEFAULT_AIRSPEED_PIN 15
+
+# ADC Scalers and pins
+define BOARD_RSSI_ANA_PIN 10
+define HAL_BATT_CURR_PIN 13
+
+# Current multplier is intentionally high
+define HAL_BATT_CURR_SCALE 100.00
+
+define HAL_BATT_VOLT_PIN 11
+define HAL_BATT_VOLT_SCALE 550
+
+# MOTORS
+PB7  TIM4_CH2  TIM4 PWM(1) GPIO(50)     # M1
+PB6  TIM4_CH1  TIM4 PWM(2) GPIO(51)     # M2
+PB0  TIM3_CH3  TIM3 PWM(3) GPIO(52)     # M3
+PB1  TIM3_CH4  TIM3 PWM(4) GPIO(53)     # M4
+PC8  TIM8_CH3  TIM8 PWM(5) GPIO(54)     # M5
+PC9  TIM8_CH4  TIM8 PWM(6) GPIO(55)     # M6
+PB10 TIM2_CH3  TIM2 PWM(9) GPIO(56)     # M7
+PB11 TIM2_CH4  TIM2 PWM(10) GPIO(57)    # M8
+
+# Servos
+PA15 TIM2_CH1  TIM2 PWM(8) GPIO(58)     # Servo1
+PB14 TIM8_CH2N TIM8 PWM(7) GPIO(59)     # Servo2
+PB15 TIM1_CH3N TIM1 PWM(11) GPIO(60)    # Servo3
+
+# LEDs
+# LED1 PC14, LED0 PC15
+PA14 LED0 OUTPUT LOW GPIO(0)
+PA13 LED1 OUTPUT LOW GPIO(1)
+define HAL_GPIO_A_LED_PIN 0
+define HAL_GPIO_B_LED_PIN 1
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
+
+# LED Strip, PA8, Not defined yet
+PA8 TIM1_CH1 TIM1 PWM(12) GPIO(61)
+
+# This board does not have VTX control, it is always powered
+# We keep this here for future expansions
+#Px1 VTX_PWR OUTPUT HIGH GPIO(81)
+
+# SPI Devices
+SPIDEV imu1      SPI1 DEVID1 GYRO1_CS   MODE3   1*MHZ   8*MHZ
+SPIDEV osd       SPI2 DEVID2 OSD1_CS    MODE0  10*MHZ  10*MHZ
+
+# Dataflash/SDCard setup
+
+# HAKRCF405 Multicopter has dataflash
+#SPIDEV sdcard SPI3 DEVID1 FLASH1_CS  MODE3 104*MHZ 104*MHZ
+#define HAL_LOGGING_DATAFLASH_ENABLED 1
+
+# HAKRCF405Wing has SDCard
+SPIDEV sdcard SPI3 DEVID3 SDCARD_CS MODE0 400*KHZ 25*MHZ
+define HAL_OS_FATFS_IO 1
+
+# OSD setup
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# IMU setup
+# IMU on top side of the PCB, ICM marker pointing towards back.
+IMU Invensensev3 SPI:imu1 ROTATION_ROLL_180_YAW_270
+DMA_PRIORITY TIM4* TIM3* TIM8 SPI1*
+
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+define HAL_DEFAULT_INS_FAST_SAMPLE 3
+
+define NTF_LED_LEN 4
+
+include ../include/minimize_fpv_osd.inc
+
+
