@@ -34,9 +34,6 @@ void Plane::init_ardupilot()
 
     init_rc_out_main();
 
-    // init baro
-    barometer.init();
-
 #if AP_RANGEFINDER_ENABLED
     // initialise rangefinder
     rangefinder.set_log_rfnd_bit(MASK_LOG_SONAR);
@@ -433,11 +430,6 @@ void Plane::startup_INS(void)
 
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
-
-    // read Baro pressure at ground
-    //-----------------------------
-    barometer.set_log_baro_bit(MASK_LOG_IMU);
-    barometer.calibrate();
 }
 
 // sets notify object flight mode information

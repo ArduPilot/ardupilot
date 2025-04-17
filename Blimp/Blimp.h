@@ -298,7 +298,7 @@ private:
     void three_hz_loop();
     void one_hz_loop();
     void read_AHRS(void);
-    void update_altitude();
+    void update_barometer() override;
     void rotate_NE_to_BF(Vector2f &vec);
     void rotate_BF_to_NE(Vector2f &vec);
 
@@ -402,7 +402,6 @@ private:
     void set_throttle_zero_flag(int16_t throttle_control);
 
     // sensors.cpp
-    void read_barometer(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
     bool rangefinder_alt_ok();
@@ -410,6 +409,7 @@ private:
 
     // system.cpp
     void init_ardupilot() override;
+    uint32_t baro_log_bit() const override { return MASK_LOG_IMU; }
     void startup_INS_ground();
     bool position_ok() const;
     bool ekf_has_absolute_position() const;

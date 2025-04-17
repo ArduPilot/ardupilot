@@ -388,6 +388,7 @@ private:
 
     // system.cpp
     void init_ardupilot() override;
+    uint32_t baro_log_bit() const override { return MASK_LOG_IMU; }
     void startup_ground(void);
     void update_ahrs_flyforward();
     bool gcs_mode_enabled(const Mode::Number mode_num) const;
