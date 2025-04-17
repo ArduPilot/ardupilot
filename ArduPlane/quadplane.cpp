@@ -2811,11 +2811,16 @@ void QuadPlane::vtol_position_controller(void)
             float target_z = target_altitude_cm;
             pos_control->input_pos_vel_accel_z(target_z, zero, 0);
         } else if (plane.control_mode == &plane.mode_qrtl) {
-            Location loc2 = loc;
-            loc2.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
-            float target_z = loc2.alt;
-            float zero = 0;
-            pos_control->input_pos_vel_accel_z(target_z, zero, 0);
+            if (tailsitter.enabled()){
+                set_climb_rate_cms(0);  
+                last_pos2_ms = now_ms;
+            }else{
+                Location loc2 = loc;
+                loc2.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
+                float target_z = loc2.alt;
+                float zero = 0;
+                pos_control->input_pos_vel_accel_z(target_z, zero, 0);
+            }
         } else {
             set_climb_rate_cms(0);
         }
@@ -2825,6 +2830,10 @@ void QuadPlane::vtol_position_controller(void)
     case QPOS_LAND_DESCEND:
     case QPOS_LAND_ABORT:
     case QPOS_LAND_FINAL: {
+        if (tailsitter.enabled() && now_ms-last_pos2_ms<7000) {
+               set_climb_rate_cms(0);
+               break;
+        }
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
         if (poscontrol.get_state() == QPOS_LAND_FINAL) {
             if (!option_is_set(QuadPlane::OPTION::DISABLE_GROUND_EFFECT_COMP)) {
