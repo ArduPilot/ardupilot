@@ -826,7 +826,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode("FBWA")
 
         # disable stall prevention so roll angle is not limited
-        self.set_parameter("STALL_PREVENTION", 0)
+        self.set_parameters({"STALL_PREVENTION": 0,
+                             "Q_ASSIST_SPEED": 15})
 
         thr_min_pwm = self.get_parameter("Q_M_PWM_MIN")
         lim_roll_deg = self.get_parameter("ROLL_LIMIT_DEG")
@@ -1936,6 +1937,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "LOG_DISARMED": 1,
             "LOG_REPLAY": 1,
+            "Q_ASSIST_SPEED": 15,
         })
         self.reboot_sitl()
 

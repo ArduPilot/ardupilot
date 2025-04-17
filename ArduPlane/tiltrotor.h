@@ -55,6 +55,10 @@ public:
     float get_fully_forward_tilt() const;
     float get_forward_flight_tilt() const;
 
+    // get a proportion of how far we are through the 2nd part of a transition
+    // 0 means tilt is less than Q_TILT_MAX. 1 means fully forward
+    float get_tilt_completion() const;
+
     // update yaw target for tiltrotor transition
     void update_yaw_target();
 
