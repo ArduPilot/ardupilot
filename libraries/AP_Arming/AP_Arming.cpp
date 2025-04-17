@@ -22,7 +22,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Compass/AP_Compass.h>
-#include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Mission/AP_Mission.h>
@@ -850,7 +849,7 @@ bool AP_Arming::manual_transmitter_checks(bool report)
 {
     if (check_enabled(ARMING_CHECK_RC)) {
 
-        if (AP_Notify::flags.failsafe_radio) {
+        if (rc().in_rc_failsafe()) {
             check_failed(ARMING_CHECK_RC, report, "Radio failsafe on");
             return false;
         }
