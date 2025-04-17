@@ -1215,7 +1215,7 @@ void AC_PosControl::update_z_controller()
     Vector3f _pos_desired_3f;                                //转换数据类型为Vector3f
     _pos_desired_3f.x = 0.0f;//pos_desired_x_set_update(_pos_desired.x,400.0f, 1.0f, 400.0f);     //转换数据类型为Vector3f,update函数为平滑轨迹函数
     _pos_desired_3f.y = 0.0f;//pos_desired_y_set_update(_pos_desired.y,400.0f, 1.0f, 400.0f);     //转换数据类型为Vector3f,update函数为平滑轨迹函数                
-    _pos_desired_3f.z = -pos_desired_z_set_update(_pos_desired.z,200.0f, 0.5f, 400.0f);   //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
+    _pos_desired_3f.z = -pos_desired_z_set_update(_pos_desired.z,150.0f, 0.5f, 400.0f);   //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
     Vector3f _acc_desired_3f;
     _acc_desired_3f.x = 0.0f;
     _acc_desired_3f.y = 0.0f;
@@ -1233,7 +1233,7 @@ void AC_PosControl::update_z_controller()
     float fd;
     fd = -_U_x.dot(_R_body_to_ned_meas.colz());                  //colz是拷贝取值，fd=U_x * Re3
     float fd_nor;
-    fd_nor = fd/43.67f;                                         // fd_nor = fd/f_max，除以预设的无人机最大推力进行归一化
+    fd_nor = fd/50.0f;                                         // fd_nor = fd/f_max，除以预设的无人机最大推力进行归一化
     float test_msg_1 = -pos_desired_z_set_update(_pos_desired.z,200.0f, 0.5f, 400.0f);
     float test_msg_2 = _pdnn_pos.get_phi().x; 
     current_DIYwrench = get_DIYwrench(test_msg_1, test_msg_2); //用于ROS2推力话题 
