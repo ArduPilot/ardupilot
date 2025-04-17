@@ -44,7 +44,7 @@ bool ModeGuided::init(bool ignore_checks)
     // clear pause state when entering guided mode
     _paused = false;
    //新增起飞逻辑，arming后起飞到目标高度cm
-   do_user_takeoff_start(150.0f);
+   do_user_takeoff_start(200.0f);
 
 
     return true;
