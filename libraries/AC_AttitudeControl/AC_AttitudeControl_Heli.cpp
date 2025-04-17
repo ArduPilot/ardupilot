@@ -361,21 +361,16 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
     Quaternion att;
     _ahrs.get_quat_body_to_ned(att);
     if (ang_vel_to_euler_rate(att, _att_error_rot_vec_rad, att_error_euler_rad)) {
-        _euler_angle_target.x = wrap_PI(att_error_euler_rad.x + _ahrs.roll);
-        _euler_angle_target.y = wrap_PI(att_error_euler_rad.y + _ahrs.pitch);
-        _euler_angle_target.z = wrap_2PI(att_error_euler_rad.z + _ahrs.yaw);
-    }
 
-    // handle flipping over pitch axis
-    if (_euler_angle_target.y > M_PI / 2.0f) {
-        _euler_angle_target.x = wrap_PI(_euler_angle_target.x + M_PI);
-        _euler_angle_target.y = wrap_PI(M_PI - _euler_angle_target.x);
-        _euler_angle_target.z = wrap_2PI(_euler_angle_target.z + M_PI);
-    }
-    if (_euler_angle_target.y < -M_PI / 2.0f) {
-        _euler_angle_target.x = wrap_PI(_euler_angle_target.x + M_PI);
-        _euler_angle_target.y = wrap_PI(-M_PI - _euler_angle_target.x);
-        _euler_angle_target.z = wrap_2PI(_euler_angle_target.z + M_PI);
+        // Convert euler attitude error to Quaternion
+        Quaternion attitude_target_update;
+        attitude_target_update.from_euler(att_error_euler_rad);
+
+        // Set target based on current attitude and error
+        _attitude_target = att * attitude_target_update;
+
+        // Keep euler target upto date
+        _attitude_target.to_euler(_euler_angle_target);
     }
 
     // convert body-frame angle errors to body-frame rate targets
