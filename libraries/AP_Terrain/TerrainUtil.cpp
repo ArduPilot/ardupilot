@@ -71,8 +71,12 @@ void AP_Terrain::calculate_grid_info(const Location &loc, struct grid_info &info
     const Vector2f offset = ref.get_distance_NE(loc);
 
     // get indices in terms of grid_spacing elements
-    uint32_t idx_x = offset.x / grid_spacing;
-    uint32_t idx_y = offset.y / grid_spacing;
+    uint32_t idx_x = offset.x;
+    uint32_t idx_y = offset.y;
+    if (grid_spacing >= 1) {
+        idx_x = offset.x / grid_spacing;
+        idx_y = offset.y / grid_spacing;
+    }
 
     // find indexes into 32*28 grids for this degree reference. Note
     // the use of TERRAIN_GRID_BLOCK_SPACING_{X,Y} which gives a one square
@@ -85,8 +89,12 @@ void AP_Terrain::calculate_grid_info(const Location &loc, struct grid_info &info
     info.idx_y = idx_y % TERRAIN_GRID_BLOCK_SPACING_Y;
 
     // find the fraction (0..1) within the square
-    info.frac_x = (offset.x - idx_x * grid_spacing) / grid_spacing;
-    info.frac_y = (offset.y - idx_y * grid_spacing) / grid_spacing;
+    info.frac_x = (offset.x - idx_x);
+    info.frac_y = (offset.y - idx_y);
+    if (grid_spacing >= 1) {
+        info.frac_x = (offset.x - idx_x * grid_spacing) / grid_spacing;
+        info.frac_y = (offset.y - idx_y * grid_spacing) / grid_spacing;
+    }
 
     // calculate lat/lon of SW corner of 32*28 grid_block
     ref.offset(info.grid_idx_x * TERRAIN_GRID_BLOCK_SPACING_X * (float)grid_spacing,
