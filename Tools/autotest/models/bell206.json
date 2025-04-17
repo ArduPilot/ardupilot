@@ -5,7 +5,7 @@
     # Zion, L, Tishler, M, Development of a Full Flight Envelope Helicopter Simulation using System Identification,
     # American Helicopter Society’s 63rd Annual Forum & Technology Display, Virginia Beach, VA, May 1-3, 2007.
     # The rotor control derivatives were modified as it was too sensitive with the ones in the paper assuming that 
-    3 the controls inputs were percent (-100 to 100).
+    # the controls inputs were percent (-100 to 100).
 
     # General Aircraft Data
     "hover_lean": -3.2,
