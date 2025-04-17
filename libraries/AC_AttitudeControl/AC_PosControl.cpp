@@ -1297,7 +1297,7 @@ void AC_PosControl::get_stopping_point_xy_cm(Vector2p &stopping_point) const
     }
     
     float kP = _p_pos_xy.kP();
-    const float stopping_dist = stopping_distance(constrain_float(vel_total, 0.0, _vel_max_xy_cms), kP, _accel_max_xy_cmss);
+    const float stopping_dist = stopping_distance(vel_total, kP, _accel_max_xy_cmss);
     if (!is_positive(stopping_dist)) {
         return;
     }
