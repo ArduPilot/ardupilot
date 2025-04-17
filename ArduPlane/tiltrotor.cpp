@@ -793,8 +793,9 @@ bool Tiltrotor::get_forward_throttle(float &throttle) const
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
         if (is_motor_tilting(i)) {
             float thrust;
-            if (motors->get_thrust(i, thrust)) {
-                throttle_sum += motors->thr_lin.thrust_to_actuator(thrust);
+            const float throttle_range = motors->thr_lin.get_spin_max() - motors->thr_lin.get_spin_min();
+            if (motors->get_thrust(i, thrust) && is_positive(throttle_range)) {
+                throttle_sum += (motors->thr_lin.thrust_to_actuator(thrust) - motors->thr_lin.get_spin_min()) / throttle_range;
                 num_vectored_motors ++;
             }
         }
