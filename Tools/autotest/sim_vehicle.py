@@ -790,7 +790,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
                 print("The parameter file (%s) does not exist" % (x,))
                 sys.exit(1)
         path = ",".join(paths)
-        if cmd_opts.count > 1 or opts.auto_sysid:
+        if cmd_opts.count > 1:
             # we are in a subdirectory when using -n
             path = os.path.join("..", path)
         progress("Using defaults from (%s)" % (path,))
@@ -806,6 +806,10 @@ def start_vehicle(binary, opts, stuff, spawns=None):
                 print("The parameter file (%s) does not exist" %
                       (file,))
                 sys.exit(1)
+
+            if cmd_opts.count > 1 and not os.path.isabs(file):
+                # we are in a subdirectory when using -n
+                file = os.path.join("..", file)
 
             if path is not None:
                 path += "," + str(file)
