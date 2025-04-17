@@ -437,6 +437,11 @@ public:
     
     bool mode_allows_autotuning() const override { return true; }
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
+#endif
+
 protected:
 
     bool _enter() override;
@@ -666,6 +671,11 @@ public:
     bool does_auto_throttle() const override { return true; }
 
     void update_target_altitude() override {};
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
+#endif
 
 protected:
 
