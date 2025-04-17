@@ -368,9 +368,11 @@ class AutoTestHelicopter(AutoTestCopter):
         self.start_subtest("Check pass when autorotation mode not enabled")
         self.set_parameters({
             "AROT_ENABLE": 0,
-            "RPM1_TYPE": 0
+            "RPM1_TYPE": 0,
+            "RNGFND1_TYPE": 0
         })
         self.reboot_sitl()
+        # Check that we don't fail any autorotation related prearms when the mode is not enabled
         try:
             self.wait_statustext("PreArm: AROT: RPM1 not enabled", timeout=50)
             raise NotAchievedException("Received AROT prearm when not AROT not enabled")
@@ -392,6 +394,13 @@ class AutoTestHelicopter(AutoTestCopter):
 
         self.start_subtest("Check pre-arm fails with bad RSC config")
         self.wait_statustext("PreArm: AROT: H_RSC_AROT_* not configured", timeout=50)
+
+        self.start_subtest("Check pre-arm fails with no rangefinder configured")
+        self.wait_statustext("PreArm: AROT: Downward rangefinder not configured", timeout=50)
+        self.set_parameters({"RNGFND1_TYPE": 100,
+                             "RNGFND1_ORIENT": 25})
+
+        # TODO: Add colective misconfigure for bad hover blade pitch angle
 
         self.start_subtest("Check pre-arms clear with all issues corrected")
         self.set_parameter("H_RSC_AROT_ENBL", 1)
