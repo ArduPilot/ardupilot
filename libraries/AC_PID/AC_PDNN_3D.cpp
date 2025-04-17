@@ -400,9 +400,9 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     //_pdnn_output.z = _m_z * (-_error_m.z * _kp_z - 0.0f*_integrator.z - _derivative_m.z * _kd_z - 9.80665f + _acc_desired.z -1.0f *_phi_z); //加入重力值9.80665, NED坐标系下为负数
 
 
-    _pdnn_output.x =1.3f*(-_error_m.x * 16.0f - 0.0f*_integrator.x - _derivative_m.x * 8.0f + _acc_desired.x - 0.0f*_phi_x); //计算总输出
-    _pdnn_output.y =1.3f*(-_error_m.y * 16.0f - 0.0f*_integrator.y - _derivative_m.y * 8.0f + _acc_desired.y -0.0f * _phi_y);
-    _pdnn_output.z =1.3f*(-_error_m.z * 20.0f - 0.0f*_integrator.z - _derivative_m.z * 6.0f - 9.80665f + _acc_desired.z -0.0f *_phi_z); //加入重力值9.80665, NED坐标系下为负数
+    _pdnn_output.x =1.3f*(-_error_m.x * 8.0f - 0.0f*_integrator.x - _derivative_m.x * 4.0f + _acc_desired.x - 0.0f*_phi_x); //计算总输出
+    _pdnn_output.y =1.3f*(-_error_m.y * 8.0f - 0.0f*_integrator.y - _derivative_m.y * 4.0f + _acc_desired.y -0.0f * _phi_y);
+    _pdnn_output.z =1.3f*(-_error_m.z * 10.0f - 0.0f*_integrator.z - _derivative_m.z * 3.0f - 9.80665f + _acc_desired.z -0.0f *_phi_z); //加入重力值9.80665, NED坐标系下为负数
 
     return _pdnn_output; //返回pdnn控制器输出
 
