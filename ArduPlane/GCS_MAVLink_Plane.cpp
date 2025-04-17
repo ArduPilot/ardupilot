@@ -1188,11 +1188,10 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
         }
 
         // Unexpectedly, the mask is expecting "ones" for dimensions that should
-        // be IGNORNED rather than INCLUDED.  See mavlink documentation of the
+        // be IGNORED rather than INCLUDED.  See mavlink documentation of the
         // SET_POSITION_TARGET_GLOBAL_INT message, type_mask field.
-        const uint16_t alt_mask = 0b1111111111111011; // (z mask at bit 3)
-        if (pos_target.type_mask & alt_mask)
-        {
+        const bool alt_ignore = (pos_target.type_mask & POSITION_TARGET_TYPEMASK_Z_IGNORE);
+        if (!alt_ignore) {
             Location loc {
                 0,  // lat
                 0,  // lng
