@@ -255,6 +255,7 @@ public:
     // The altitude element of the location is not used.
     // Returns true if the set was successful.
     bool handle_external_position_estimate(const Location &loc, float pos_accuracy, uint32_t timestamp_);
+    bool handle_external_wind_estimate(const Vector2f &wind_vel, float vel_accuracy, uint32_t timestamp_);
 #endif
 
     // returns the inertial navigation origin in lat/lon/alt

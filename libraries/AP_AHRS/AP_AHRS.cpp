@@ -39,6 +39,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
+#include <AP_Math/AP_Math.h>
 
 #include <AP_Mission/AP_Mission_config.h>
 #if AP_MISSION_ENABLED
@@ -1525,10 +1526,21 @@ bool AP_AHRS::set_origin(const Location &loc)
 #if AP_AHRS_POSITION_RESET_ENABLED
 bool AP_AHRS::handle_external_position_estimate(const Location &loc, float pos_accuracy, uint32_t timestamp_ms)
 {
-#if HAL_NAVEKF3_AVAILABLE
+#if HAL_NAVEKF3_AVAILABLE 
     return EKF3.setLatLng(loc, pos_accuracy, timestamp_ms);
 #endif
     return false;
+}
+#endif
+
+#if AP_AHRS_POSITION_RESET_ENABLED
+bool AP_AHRS::handle_external_wind_estimate(const Vector2f &wind_vel, float vel_accuracy, uint32_t timestamp_ms)
+{
+    dcm.set_external_wind_estimate(wind_vel.length(), wind_vel.angle());
+#if HAL_NAVEKF3_AVAILABLE
+    return EKF3.setWindNE(wind_vel, vel_accuracy, timestamp_ms);
+#endif
+    return true;
 }
 #endif
 
