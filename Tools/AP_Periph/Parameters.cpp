@@ -636,6 +636,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(battery_balance, "BAL",  BattBalance),
 #endif
 
+#if AP_PERIPH_BATTERY_TAG_ENABLED
+    // @Group: BTAG
+    // @Path: battery_tag.cpp
+    GOBJECT(battery_tag, "BTAG",  BatteryTag),
+#endif
+    
 #if AP_PERIPH_SERIAL_OPTIONS_ENABLED
     // @Group: UART
     // @Path: serial_options.cpp
@@ -643,7 +649,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #endif
     
     // NOTE: sim parameters should go last
-#if AP_SIM_ENABLED
+#if AP_SIM_PARAM_ENABLED
     // @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
     GOBJECT(sitl, "SIM_", SITL::SIM),
