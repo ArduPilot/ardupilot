@@ -947,6 +947,7 @@ class sitl_periph(sitl):
             AP_PERIPH_IMU_ENABLED = 0,
             AP_PERIPH_MAG_ENABLED = 0,
             AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
+            AP_PERIPH_BATTERY_INFO_ENABLED = 1,
             AP_PERIPH_MSP_ENABLED = 0,
             AP_PERIPH_BARO_ENABLED = 0,
             AP_PERIPH_EFI_ENABLED = 0,
