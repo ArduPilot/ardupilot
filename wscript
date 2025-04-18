@@ -290,6 +290,10 @@ submodules at specific revisions.
                  default=False,
                  help="Enables custom controller")
 
+    g.add_option('--enable-simulink-app', action='store_true',
+                 default=False,
+                 help="Enables Simulink generated application")
+
     g.add_option('--enable-gps-logging', action='store_true',
                  default=False,
                  help="Enables GPS logging")
