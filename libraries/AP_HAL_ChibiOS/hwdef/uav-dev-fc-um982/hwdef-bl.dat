@@ -1,0 +1,74 @@
+# hw definition for UAV-DEV GmbH FC-UM982
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_UAV-DEV-FC-UM982-H7
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# LED
+define HAL_LED_ON 1
+PE9 LED_BOOTLOADER OUTPUT OPENDRAIN
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# UART
+PB14 USART1_TX USART1
+PB15 USART1_RX USART1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# order of UART
+SERIAL_ORDER OTG1 USART1
+
+define STM32_SERIAL_USE_USART1 TRUE
+define HAL_USE_SERIAL TRUE
+
+# reserve 256 bytes for comms between app and bootloader
+RAM_RESERVE_START 256
+
+PE11 VDD_3V3_ETH_EN OUTPUT LOW
+PE10 VDD_3V3_GNSS_EN OUTPUT LOW
+PB10 NET_NRST OUTPUT LOW
+PD7 GNSS_NRST OUTPUT LOW
+
+# enable DFU by default
+ENABLE_DFU_BOOT 1
+
+# microSD support
+PC8    SDMMC1_D0    SDMMC1
+PC9    SDMMC1_D1    SDMMC1
+PC10   SDMMC1_D2    SDMMC1
+PC11   SDMMC1_D3    SDMMC1
+PC12   SDMMC1_CK    SDMMC1
+PD2    SDMMC1_CMD   SDMMC1
+define FATFS_HAL_DEVICE SDCD1
+
+# enable FAT filesystem support (needs a microSD defined via SDMMC)
+define HAL_OS_FATFS_IO 1
+define AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 1
+
+# FATFS support:
+define CH_CFG_USE_MEMCORE 1
+define CH_CFG_USE_HEAP 1
+define CH_CFG_USE_SEMAPHORES 0
+define CH_CFG_USE_MUTEXES 1
+define CH_CFG_USE_DYNAMIC 1
+define CH_CFG_USE_WAITEXIT 1
+define CH_CFG_USE_REGISTRY 1
+
