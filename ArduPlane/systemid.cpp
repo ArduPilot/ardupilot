@@ -426,12 +426,12 @@ void AP_SystemID::log_plane_data() const
                                     delta_velocity.x * dt_vel_inv,
                                     delta_velocity.y * dt_vel_inv,
                                     delta_velocity.z * dt_vel_inv,
-                                    plane.nav_roll_cd / 100.0f,
-                                    plane.ahrs.roll_sensor / 100.0f,
-                                    pitch / 100.0f,
-                                    plane.ahrs.pitch_sensor / 100.0f,
-                                    SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) / 100.0f,
-                                    SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) / 100.0f);
+                                    plane.nav_roll_cd * 0.01f,
+                                    plane.ahrs.roll_sensor * 0.01f,
+                                    pitch * 0.01f,
+                                    plane.ahrs.pitch_sensor * 0.01f,
+                                    SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) * 0.01f,
+                                    SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) * 0.01f);
                             
     }
 #endif // HAL_LOGGING_ENABLED
