@@ -636,6 +636,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(battery_balance, "BAL",  BattBalance),
 #endif
 
+#if AP_PERIPH_BATTERY_INFO_ENABLED
+    // @Group: BINFO
+    // @Path: batt_info.cpp
+    GOBJECT(battery_info, "BINFO",  BattInfo),
+#endif
+    
 #if AP_PERIPH_SERIAL_OPTIONS_ENABLED
     // @Group: UART
     // @Path: serial_options.cpp
