@@ -152,6 +152,15 @@
 #define STM32_PLL1_DIVM_VALUE               2
 #define STM32_PLL2_DIVM_VALUE               5
 #define STM32_PLL3_DIVM_VALUE               5
+
+#elif STM32_HSECLK == 32000000U
+// this gives 400MHz system clock
+#define STM32_HSE_ENABLED                   TRUE
+#define STM32_HSI_ENABLED                   FALSE
+#define STM32_PLL1_DIVM_VALUE               4
+#define STM32_PLL2_DIVM_VALUE               4
+#define STM32_PLL3_DIVM_VALUE               8
+
 #else
 #error "Unsupported HSE clock"
 #endif
@@ -172,7 +181,7 @@
 #define STM32_PLL3_DIVQ_VALUE               5
 #define STM32_PLL3_DIVR_VALUE               8
 
-#elif (STM32_HSECLK == 8000000U) || (STM32_HSECLK == 16000000U)
+#elif (STM32_HSECLK == 8000000U) || (STM32_HSECLK == 16000000U) || (STM32_HSECLK == 32000000U)
 // common clock tree for multiples of 8MHz crystals
 #ifdef HAL_CUSTOM_MCU_CLOCKRATE
 #if HAL_CUSTOM_MCU_CLOCKRATE == 480000000
