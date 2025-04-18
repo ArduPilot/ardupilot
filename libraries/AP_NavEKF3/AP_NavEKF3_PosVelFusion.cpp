@@ -258,7 +258,6 @@ void NavEKF3_core::ResetPositionNE(ftype posN, ftype posE)
 
 #if EK3_FEATURE_POSITION_RESET
 // Sets the EKF's NE horizontal wind velocity states and their corresponding variances from a supplied velocity NE
-// The altitude element of the location is not used. If accuracy is not known should be passed as NaN.
 // Returns true if the set was successful
 bool NavEKF3_core::setWindNE(const Vector2f &wind_vel, float windAccuracy, uint32_t timestamp_ms)
 {
@@ -284,12 +283,6 @@ bool NavEKF3_core::setWindNE(const Vector2f &wind_vel, float windAccuracy, uint3
     // set the variances using the wind processing noise parameter
     P[22][22] = P[23][23] = sq(MAX(windAccuracy,frontend->_windVelProcessNoise));
 
-    // Correct the position for time delay relative to fusion time horizon assuming a constant velocity
-    // Limit time stamp to a range between current time and 5 seconds ago
-    // const uint32_t timeStampConstrained_ms = MAX(MIN(timestamp_ms, imuSampleTime_ms), imuSampleTime_ms - 5000);
-    // const int32_t delta_ms = int32_t(imuDataDelayed.time_ms - timeStampConstrained_ms);
-    // const ftype delaySec = 1E-3F * ftype(delta_ms);
-    // const Vector2F newPosNE = EKF_origin.get_distance_NE_ftype(loc) + stateStruct.velocity.xy() * delaySec;
     ResetWindNE(wind_vel.x, wind_vel.y);
 
     return true;

@@ -157,8 +157,7 @@ public:
     // Returns true if the set was successful
     bool setLatLng(const Location &loc, float posErr, uint32_t timestamp_ms);
 
-    // Set the EKF's NE horizontal position states and their corresponding variances from a supplied WGS-84 location and uncertainty
-    // The altitude element of the location is not used.
+    // Set the EKF's NE wind velocity states and their corresponding variances from a supplied speed, direction and uncertainty
     // Returns true if the set was successful
     bool setWindNE(const Vector2f &wind_vel, float posErr, uint32_t timestamp_ms);
 
