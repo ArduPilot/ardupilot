@@ -160,6 +160,7 @@ class ManifestGenerator():
             "octa": "OCTOROTOR",
             "octa-quad": "ARDUPILOT_OCTAQUAD",
             "deca": "DECAROTOR",
+            "deca-penta": "DECAROTOR",
             "heli": "HELICOPTER",
             "Plane": "FIXED_WING",
             "AntennaTracker": "ANTENNA_TRACKER",

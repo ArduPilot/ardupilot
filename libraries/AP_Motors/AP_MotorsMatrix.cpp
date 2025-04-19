@@ -1240,6 +1240,36 @@ bool AP_MotorsMatrix::setup_deca_matrix(motor_frame_type frame_type)
     return true;
 }
 #endif // AP_MOTORS_FRAME_DECA_ENABLED
+#if AP_MOTORS_FRAME_DECAPENTA_ENABLED
+bool AP_MotorsMatrix::setup_decapenta_matrix(motor_frame_type frame_type)
+{
+    _mav_type = MAV_TYPE_DECAROTOR;
+    _frame_class_string = "DECAPENTA";
+    switch (frame_type) {
+    case MOTOR_FRAME_TYPE_PLUS: {
+        _frame_type_string = "PLUS";
+        static const AP_MotorsMatrix::MotorDef motors[] {
+            {    0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   1 }, // front top motor
+            {    0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    6 }, // front bottom motor
+            {  -72, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   2 }, // front-left top motor
+            {  -72, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    7 }, // front-left bottom motor
+            { -144, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   3 }, // back-left top motor
+            { -144, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    8 }, // back-left bottom motor
+            {  144, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   4 }, // back-right top motor
+            {  144, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    9 }, // back-right bottom motor
+            {   72, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   5 }, // front-right top motor            
+            {   72, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   10 }, // front-right bottom motor
+        };
+        add_motors(motors, ARRAY_SIZE(motors));
+        break;
+    }
+    default:
+        // decapenta frame class does not support this frame type
+        return false;
+    } //decapenta
+    return true;
+}
+#endif // AP_MOTORS_FRAME_DECAPENTA_ENABLED
 
 void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_type frame_type)
 {
@@ -1286,6 +1316,11 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
         success = setup_deca_matrix(frame_type);
         break;
 #endif //AP_MOTORS_FRAME_DECA_ENABLED
+#if AP_MOTORS_FRAME_DECAPENTA_ENABLED
+    case MOTOR_FRAME_DECAPENTA:
+        success = setup_decapenta_matrix(frame_type);
+        break;
+#endif //AP_MOTORS_FRAME_DECAPENTA_ENABLED
     default:
         // matrix doesn't support the configured class
         success = false;
