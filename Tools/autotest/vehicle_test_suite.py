@@ -4377,8 +4377,8 @@ class TestSuite(ABC):
                         raise ValueError(f"Expected value {value} not in enum {enum}")
                     if got not in enum:
                         raise ValueError(f"Received value {got} not in enum {enum}")
-                    value_string = "{value} ({enum[value].name})"
-                    got_string = "{got} ({enum[got].name})"
+                    value_string = f"{value} ({enum[value].name})"
+                    got_string = f"{got} ({enum[got].name})"
 
             if not self.message_has_field_values_field_values_equal(
                     fieldname, value, got, epsilon=epsilon
