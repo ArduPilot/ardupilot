@@ -379,9 +379,13 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+#if defined(HAL_PARACHUTE_ENABLED) && HAL_PARACHUTE_ENABLED
     case MAV_CMD_DO_PARACHUTE:
+#endif
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
+#if defined(HAL_SPRAYER_ENABLED) && HAL_SPRAYER_ENABLED
     case MAV_CMD_DO_SPRAYER:
+#endif
     case MAV_CMD_DO_AUX_FUNCTION:
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
@@ -470,12 +474,16 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_FENCE_ENABLE:
         return start_command_fence(cmd);
 #endif
+#if defined(HAL_PARACHUTE_ENABLED) && HAL_PARACHUTE_ENABLED
     case MAV_CMD_DO_PARACHUTE:
         return start_command_parachute(cmd);
+#endif
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
         return start_command_do_scripting(cmd);
+#if defined(HAL_SPRAYER_ENABLED) && HAL_SPRAYER_ENABLED
     case MAV_CMD_DO_SPRAYER:
         return start_command_do_sprayer(cmd);
+#endif
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
         return command_do_set_repeat_dist(cmd);
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
