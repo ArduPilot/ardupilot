@@ -179,6 +179,11 @@ AP_BLHeli::AP_BLHeli(void)
 // are observed
 uint8_t AP_BLHeli::blheli_chan_to_output_chan(uint8_t motor)
 {
+    // user has overidden the default output mask, we must use the motor map
+    if (channel_mask.get() != 0) {
+        return motor_map[motor];
+    }
+    // user is using motor mask and so we can use the servo channel options
     uint8_t chan = 0;   // 0 means motor 1 and is ok as a fallback
     SRV_Channels::find_channel(SRV_Channels::get_motor_function(motor), chan);
     return chan;
@@ -505,11 +510,12 @@ void AP_BLHeli::msp_process_command(void)
     }
 
     case MSP_MOTOR_CONFIG: {
-        debug("MSP_MOTOR_CONFIG");
+        debug("MSP_MOTOR_CONFIG(n=%u, p=%u)", num_motors, motor_poles.get());
         uint8_t buf[10];
-        putU16(&buf[0], 1030); // min throttle
-        putU16(&buf[2], 2000); // max throttle
-        putU16(&buf[4], 1000); // min command
+        SRV_Channel* channel = SRV_Channels::srv_channel(blheli_chan_to_output_chan(0));
+        putU16(&buf[0], channel->get_output_min()); // min throttle
+        putU16(&buf[2], channel->get_output_max()); // max throttle
+        putU16(&buf[4], channel->get_output_min()); // min command
         // API 1.42
         buf[6] = num_motors; // motorCount
         buf[7] = motor_poles; // motorPoleCount
@@ -525,9 +531,10 @@ void AP_BLHeli::msp_process_command(void)
         uint8_t buf[16] {};
         for (uint8_t i = 0; i < num_motors; i++) {
             // if we have a mix of reversible and normal report a PWM of zero, this allows BLHeliSuite to conect
+            uint8_t chan = blheli_chan_to_output_chan(i);
             uint16_t v = mixed_type ? 0 : hal.rcout->read(blheli_chan_to_output_chan(i));
             putU16(&buf[2*i], v);
-            debug("MOTOR %u val: %u",i,v);
+            debug("MOTOR %u chan: %u val: %u",i,chan,v);
         }
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
         break;
