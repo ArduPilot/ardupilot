@@ -710,13 +710,6 @@ void AC_PosControl::update_xy_controller()
     if (!limit_accel_xy(_vel_desired.xy(), _accel_target.xy(), accel_max)) {
         // _accel_target was not limited so we can zero the xy limit vector
         _limit_vector.xy().zero();
-    } else {
-        // Check for pitch limiting in the forward direction
-        const float accel_fwd_unlimited = _limit_vector.x * _ahrs.cos_yaw() + _limit_vector.y * _ahrs.sin_yaw();
-        const float pitch_target_unlimited = accel_to_angle(- MIN(accel_fwd_unlimited, accel_max) * 0.01f) * 100;
-        const float accel_fwd_limited = _accel_target.x * _ahrs.cos_yaw() + _accel_target.y * _ahrs.sin_yaw();
-        const float pitch_target_limited = accel_to_angle(- accel_fwd_limited * 0.01f) * 100;
-        _fwd_pitch_is_limited = is_negative(pitch_target_unlimited) && pitch_target_unlimited < pitch_target_limited;
     }
 
     // update angle targets that will be passed to stabilize controller
@@ -1420,6 +1413,24 @@ float AC_PosControl::crosstrack_error() const
         return safe_sqrt(MAX(pos_error.length_squared() - sq(dot_error), 0.0));
     }
 }
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+/// returns true when the forward pitch demand is limited by the maximum allowed tilt
+bool AC_PosControl::get_fwd_pitch_is_limited() const 
+{
+    if (_limit_vector.xy().is_zero()) {  
+        return false;  
+    }  
+    const float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
+    const float accel_max = angle_to_accel(angle_max * 0.01) * 100;
+    // Check for pitch limiting in the forward direction
+    const float accel_fwd_unlimited = _limit_vector.x * _ahrs.cos_yaw() + _limit_vector.y * _ahrs.sin_yaw();
+    const float pitch_target_unlimited = accel_to_angle(- MIN(accel_fwd_unlimited, accel_max) * 0.01f) * 100;
+    const float accel_fwd_limited = _accel_target.x * _ahrs.cos_yaw() + _accel_target.y * _ahrs.sin_yaw();
+    const float pitch_target_limited = accel_to_angle(- accel_fwd_limited * 0.01f) * 100;
+    return is_negative(pitch_target_unlimited) && pitch_target_unlimited < pitch_target_limited;
+}
+#endif // APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 
 ///
 /// private methods
