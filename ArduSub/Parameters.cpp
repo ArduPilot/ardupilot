@@ -739,11 +739,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: SERVO
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     AP_SUBGROUPINFO(servo_channels, "SERVO", 16, ParametersG2, SRV_Channels),
-#if AP_SUB_RC_ENABLED
+
     // @Group: RC
     // @Path: ../libraries/RC_Channel/RC_Channels_VarInfo.h
     AP_SUBGROUPINFO(rc_channels, "RC", 17, ParametersG2, RC_Channels),
-#endif
+
     // 18 was scripting
 
     // @Param: ORIGIN_LAT
