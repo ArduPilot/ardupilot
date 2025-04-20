@@ -70,6 +70,9 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #endif
 
     SCHED_TASK(fifty_hz_loop,         50,     75,   3),
+#if AP_SUB_RC_ENABLED
+    SCHED_TASK(rc_loop,              50,    130,  3),
+#endif
     SCHED_TASK_CLASS(AP_GPS, &sub.gps, update, 50, 200,   6),
 #if AP_OPTICALFLOW_ENABLED
     SCHED_TASK_CLASS(AP_OpticalFlow,          &sub.optflow,             update,         200, 160,   9),
@@ -77,6 +80,9 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(update_batt_compass,   10,    120,  12),
     SCHED_TASK(read_rangefinder,      20,    100,  15),
     SCHED_TASK(update_altitude,       10,    100,  18),
+#if AP_SUB_RC_ENABLED
+    SCHED_TASK_CLASS(RC_Channels, (RC_Channels*)&sub.g2.rc_channels, read_aux_all, 10,  50,  18),
+#endif
     SCHED_TASK(three_hz_loop,          3,     75,  21),
     SCHED_TASK(update_turn_counter,   10,     50,  24),
     SCHED_TASK(one_hz_loop,            1,    100,  33),
@@ -120,6 +126,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #ifdef USERHOOK_SUPERSLOWLOOP
     SCHED_TASK(userhook_SuperSlowLoop, 1,     75,  90),
 #endif
+
 };
 
 void Sub::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -158,8 +165,9 @@ void Sub::fifty_hz_loop()
     failsafe_ekf_check();
 
     failsafe_sensors_check();
-
+#if !AP_SUB_RC_ENABLED
     rc().read_input();
+#endif
 }
 
 // update_batt_compass - read battery and compass
@@ -475,5 +483,15 @@ bool Sub::ensure_ekf_origin()
 
     return true;
 }
+
+#if AP_SUB_RC_ENABLED
+void Sub::rc_loop()
+{
+    // Read radio and 3-position switch on radio
+    // -----------------------------------------
+    read_radio();
+    rc().read_mode_switch();
+}
+#endif
 
 AP_HAL_MAIN_CALLBACKS(&sub);
