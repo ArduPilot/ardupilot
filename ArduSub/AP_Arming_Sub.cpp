@@ -63,10 +63,10 @@ bool AP_Arming_Sub::ins_checks(bool display_failure)
     }
 
     // additional sub-specific checks
-    if (check_enabled(ARMING_CHECK_INS)) {
+    if (check_enabled(Check::INS)) {
         char failure_msg[50] = {};
         if (!AP::ahrs().pre_arm_check(false, failure_msg, sizeof(failure_msg))) {
-            check_failed(ARMING_CHECK_INS, display_failure, "AHRS: %s", failure_msg);
+            check_failed(Check::INS, display_failure, "AHRS: %s", failure_msg);
             return false;
         }
     }
@@ -152,8 +152,8 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     // if we do not have an ekf origin then we can't use the WMM tables
     if (!sub.ensure_ekf_origin()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Compass performance degraded");
-        if (check_enabled(ARMING_CHECK_PARAMETERS)) {
-            check_failed(ARMING_CHECK_PARAMETERS, true, "No world position, check ORIGIN_* parameters");
+        if (check_enabled(Check::PARAMETERS)) {
+            check_failed(Check::PARAMETERS, true, "No world position, check ORIGIN_* parameters");
             return false;
         }
     }
