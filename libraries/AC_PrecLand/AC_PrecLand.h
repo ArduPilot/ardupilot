@@ -187,6 +187,9 @@ private:
     // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
     void run_output_prediction();
 
+    // Attempt to match sensor frame with inertial frame, otherwise use the front of the inertial buffer (PLND_LAG parameter)
+    bool sync_frames(const uint32_t los_meas_time_ms);
+
     // parameters
     AP_Int8                     _enabled;           // enabled/disabled
     AP_Enum<Type>               _type;              // precision landing sensor type
@@ -243,6 +246,7 @@ private:
     };
     ObjectArray<inertial_data_frame_s> *_inertial_history;
     struct inertial_data_frame_s *_inertial_data_delayed;
+    uint16_t _inertial_frame_index;
 
     // backend state
     struct precland_state {
