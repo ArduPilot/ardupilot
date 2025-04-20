@@ -27,6 +27,9 @@ public:
     const Vector3f &get_attitude_offset_deg(void) const {
         return attitude_offset_deg;
     }
+    const Vector3f &get_output_offset(void) const {
+        return output_offset;
+    }
     float get_throttle_offset(void) const {
         return running ? throttle_offset : 0.0;
     }
@@ -58,6 +61,7 @@ private:
 
     void set_bf_feedforward(bool value);
     void log_data() const;
+    void log_plane_data() const;
     int8_t log_subsample;       // Subsample multiple for logging.
 
 
@@ -86,6 +90,7 @@ private:
 
     // current attitude offset
     Vector3f attitude_offset_deg;
+    Vector3f output_offset;
     float throttle_offset;
 
     AxisType start_axis;
