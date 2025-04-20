@@ -78,14 +78,11 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     while (_in_timer) hal.scheduler->delay(1);
 
-    _device->set_speed(b);
-
     bool clear_buffers = false;
-    if (b != 0) {
-        if (_baudrate != b && hal.console != this) {
-            clear_buffers = true;
-        }
+    if (b != 0 && _baudrate != b && hal.console != this) {
+        _device->set_speed(b);
         _baudrate = b;
+        clear_buffers = true;
     }
 
     _allocate_buffers(rxS, txS);
