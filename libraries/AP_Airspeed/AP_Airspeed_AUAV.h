@@ -90,6 +90,12 @@ private:
     float TC50H;
     float TC50L;
 
+    // Step of reading coefficients, request must be made before read.
+    enum class CoefficientStep {
+        request,
+        read,
+    } coefficient_step;
+
 };
 
 class AP_Airspeed_AUAV : public AP_Airspeed_Backend

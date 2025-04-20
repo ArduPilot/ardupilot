@@ -163,17 +163,33 @@ AUAV_Pressure_sensor::Status AUAV_Pressure_sensor::collect(float &PComp, float &
 
 bool AUAV_Pressure_sensor::read_register(uint8_t cmd, uint16_t &result)
 {
-    const uint8_t healthy_status = type == Type::Differential ? 0x50 :  0x40;
+    switch (coefficient_step) {
+        case CoefficientStep::request: {
+            if (dev->transfer(&cmd, sizeof(cmd), nullptr, 0)) {
+                coefficient_step = CoefficientStep::read;
+            }
+            return false;
+        }
 
-    uint8_t raw_bytes[3];
-    if (!dev->transfer(&cmd,1,(uint8_t *)&raw_bytes, sizeof(raw_bytes))) {
-        return false;
+        case CoefficientStep::read: {
+            // Next step is always another request, either for the next coefficient or a re-request if this read fails
+            coefficient_step = CoefficientStep::request;
+
+            const uint8_t healthy_status = type == Type::Differential ? 0x50 :  0x40;
+            uint8_t raw_bytes[3];
+            if (!dev->read((uint8_t *)&raw_bytes, sizeof(raw_bytes))) {
+                return false;
+            }
+            if (raw_bytes[0] != healthy_status) {
+                return false;
+            }
+            result = ((uint16_t)raw_bytes[1] << 8) | (uint16_t)raw_bytes[2];
+            return true;
+        }
     }
-    if (raw_bytes[0] != healthy_status) {
-        return false;
-    }
-    result = ((uint16_t)raw_bytes[1] << 8) | (uint16_t)raw_bytes[2];
-    return true;
+
+    return false;
+
 }
 
 void AUAV_Pressure_sensor::read_coefficients()
