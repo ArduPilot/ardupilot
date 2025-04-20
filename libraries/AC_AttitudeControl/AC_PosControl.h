@@ -444,8 +444,10 @@ public:
     // get earth-frame Z-axis acceleration with gravity removed in cm/s/s with +ve being up
     float get_z_accel_cmss() const { return -(_ahrs.get_accel_ef().z + GRAVITY_MSS) * 100.0f; }
 
+    //#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     /// returns true when the forward pitch demand is limited by the maximum allowed tilt
-    bool get_fwd_pitch_is_limited() const { return _fwd_pitch_is_limited; }
+    bool get_fwd_pitch_is_limited() const;
+    //#endif  // APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     
     // set disturbance north
     void set_disturb_pos_cm(Vector2f disturb_pos) {_disturb_pos = disturb_pos;}
@@ -561,8 +563,6 @@ protected:
     Vector3f    _accel_desired;         // desired acceleration in NEU cm/s/s (feed forward)
     Vector3f    _accel_target;          // acceleration target in NEU cm/s/s
     Vector3f    _limit_vector;          // the direction that the position controller is limited, zero when not limited
-
-    bool        _fwd_pitch_is_limited;     // true when the forward pitch demand is being limited to meet acceleration limits
 
     // terrain handling variables
     float    _pos_terrain_target;       // position terrain target in cm relative to the EKF origin in NEU frame
