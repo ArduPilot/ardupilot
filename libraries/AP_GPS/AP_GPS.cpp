@@ -1379,7 +1379,7 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
     float undulation = 0.0;
     int32_t height_elipsoid_mm = 0;
     if (get_undulation(0, undulation)) {
-        height_elipsoid_mm = loc.alt*10 - undulation*1000;
+        height_elipsoid_mm = loc.alt*10 + undulation*1000;
     }
     horizontal_accuracy(0, hacc);
     vertical_accuracy(0, vacc);
@@ -1420,7 +1420,7 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
     float undulation = 0.0;
     float height_elipsoid_mm = 0;
     if (get_undulation(1, undulation)) {
-        height_elipsoid_mm = loc.alt*10 - undulation*1000;
+        height_elipsoid_mm = loc.alt*10 + undulation*1000;
     }
     horizontal_accuracy(1, hacc);
     vertical_accuracy(1, vacc);

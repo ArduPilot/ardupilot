@@ -185,7 +185,7 @@ AP_GPS_SIRF::_parse_gps(void)
         state.location.lng      = int32_t(be32toh(_buffer.nav.longitude));
         const int32_t alt_amsl = int32_t(be32toh(_buffer.nav.altitude_msl));
         const int32_t alt_ellipsoid = int32_t(be32toh(_buffer.nav.altitude_ellipsoid));
-        state.undulation = (alt_amsl - alt_ellipsoid)*0.01;
+        state.undulation = (alt_ellipsoid - alt_amsl)*0.01;
         state.have_undulation = true;
         set_alt_amsl_cm(state, alt_amsl);
         state.ground_speed      = int32_t(be32toh(_buffer.nav.ground_speed))*0.01f;

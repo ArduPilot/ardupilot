@@ -151,7 +151,7 @@ AP_GPS_ERB::_parse_gps(void)
         state.location.lng    = (int32_t)(_buffer.pos.longitude * (double)1e7);
         state.location.lat    = (int32_t)(_buffer.pos.latitude * (double)1e7);
         state.have_undulation = true;
-        state.undulation = _buffer.pos.altitude_msl - _buffer.pos.altitude_ellipsoid;
+        state.undulation = _buffer.pos.altitude_ellipsoid - _buffer.pos.altitude_msl;
         set_alt_amsl_cm(state, _buffer.pos.altitude_msl * 100);
         state.status          = next_fix;
         _new_position = true;
