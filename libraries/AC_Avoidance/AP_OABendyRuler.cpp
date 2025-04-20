@@ -692,13 +692,34 @@ bool AP_OABendyRuler::calc_margin_from_object_database(const Location &start, co
         return false;
     }
 
+    // // convert cm to m without division
+    start_NEU *= 0.01f;
+    end_NEU *= 0.01f;
+
+    // faster implementation for Vector3f::closest_point_on_line_segment with reusing unchanged variables
+    // Point in the line segment defined by w1,w2 which is closest to point(p)
+    // this is based on the explanation given here: www.fundza.com/vectors/point2line/index.html
+    Vector3f line_vec = end_NEU - start_NEU;
+    float line_length = line_vec.length();
+    bool length_ok = !is_zero(line_length);
+    // protection against divide by zero
+    float scale = length_ok ? 1.0f / line_length : 0.0f;
+    const Vector3f line_unit_vec = line_vec * scale;
+
     // check each obstacle's distance from segment
     float smallest_margin = FLT_MAX;
-    for (uint16_t i=0; i<oaDb->database_count(); i++) {
+    for (uint16_t i=0; i<oaDb->database_count(); ++i) {
         const AP_OADatabase::OA_DbItem& item = oaDb->get_item(i);
-        const Vector3f point_cm = item.pos * 100.0f;
+        const Vector3f point_vec = item.pos - start_NEU;
+        Vector3f closest_point = start_NEU;
+        // protection against divide by zero
+        if (length_ok) {
+            const Vector3f scaled_point_vec = point_vec * scale;
+            float dot_product = constrain_ftype(line_unit_vec * scaled_point_vec, 0.0f, 1.0f);
+            closest_point += line_vec * dot_product;
+        }
         // margin is distance between line segment and obstacle minus obstacle's radius
-        const float m = Vector3f::closest_distance_between_line_and_point(start_NEU, end_NEU, point_cm) * 0.01f - item.radius;
+        const float m = (closest_point - item.pos).length() - item.radius;
         if (m < smallest_margin) {
             smallest_margin = m;
         }
