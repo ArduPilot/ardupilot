@@ -117,6 +117,16 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     AP_SUBGROUPVARPTR(drivers[3], "4_",  29, AP_Proximity, backend_var_info[3]),
 #endif
 
+#if PROXIMITY_MAX_INSTANCES > 4
+    // @Group: 5
+    // @Path: AP_Proximity_Params.cpp
+    AP_SUBGROUPINFO(params[4], "5", 30, AP_Proximity, AP_Proximity_Params),
+
+    // @Group: 5_
+    // @Path: AP_Proximity_MR72_CAN.cpp
+    AP_SUBGROUPVARPTR(drivers[4], "5_",  31, AP_Proximity, backend_var_info[4]),
+#endif
+
     AP_GROUPEND
 };
 
