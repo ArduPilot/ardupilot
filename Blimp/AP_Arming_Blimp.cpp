@@ -47,7 +47,7 @@ bool AP_Arming_Blimp::barometer_checks(bool display_failure)
 
     bool ret = true;
     // check Baro
-    if (check_enabled(ARMING_CHECK_BARO)) {
+    if (check_enabled(Check::BARO)) {
         // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
         // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
         // that may differ from the baro height due to baro drift.
@@ -55,7 +55,7 @@ bool AP_Arming_Blimp::barometer_checks(bool display_failure)
         bool using_baro_ref = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
         if (using_baro_ref) {
             if (fabsf(blimp.inertial_nav.get_position_z_up_cm() - blimp.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
-                check_failed(ARMING_CHECK_BARO, display_failure, "Altitude disparity");
+                check_failed(Check::BARO, display_failure, "Altitude disparity");
                 ret = false;
             }
         }
@@ -67,11 +67,11 @@ bool AP_Arming_Blimp::ins_checks(bool display_failure)
 {
     bool ret = AP_Arming::ins_checks(display_failure);
 
-    if (check_enabled(ARMING_CHECK_INS)) {
+    if (check_enabled(Check::INS)) {
 
         // get ekf attitude (if bad, it's usually the gyro biases)
         if (!pre_arm_ekf_attitude_check()) {
-            check_failed(ARMING_CHECK_INS, display_failure, "EKF attitude is bad");
+            check_failed(Check::INS, display_failure, "EKF attitude is bad");
             ret = false;
         }
     }
@@ -86,9 +86,9 @@ bool AP_Arming_Blimp::board_voltage_checks(bool display_failure)
     }
 
     // check battery voltage
-    if (check_enabled(ARMING_CHECK_VOLTAGE)) {
+    if (check_enabled(Check::VOLTAGE)) {
         if (blimp.battery.has_failsafed()) {
-            check_failed(ARMING_CHECK_VOLTAGE, display_failure, "Battery failsafe");
+            check_failed(Check::VOLTAGE, display_failure, "Battery failsafe");
             return false;
         }
 
@@ -104,13 +104,13 @@ bool AP_Arming_Blimp::board_voltage_checks(bool display_failure)
 bool AP_Arming_Blimp::parameter_checks(bool display_failure)
 {
     // check various parameter values
-    if (check_enabled(ARMING_CHECK_PARAMETERS)) {
+    if (check_enabled(Check::PARAMETERS)) {
 
         // failsafe parameter checks
         if (blimp.g.failsafe_throttle) {
             // check throttle min is above throttle failsafe trigger and that the trigger is above ppm encoder's loss-of-signal value of 900
             if (blimp.channel_up->get_radio_min() <= blimp.g.failsafe_throttle_value+10 || blimp.g.failsafe_throttle_value < 910) {
-                check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check FS_THR_VALUE");
+                check_failed(Check::PARAMETERS, display_failure, "Check FS_THR_VALUE");
                 return false;
             }
         }
@@ -129,7 +129,7 @@ bool AP_Arming_Blimp::motor_checks(bool display_failure)
     }
 
     // further checks enabled with parameters
-    if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
+    if (!check_enabled(Check::PARAMETERS)) {
         return true;
     }
 
@@ -161,14 +161,14 @@ bool AP_Arming_Blimp::gps_checks(bool display_failure)
     }
 
     // return true immediately if gps check is disabled
-    if (!check_enabled(ARMING_CHECK_GPS)) {
+    if (!check_enabled(Check::GPS)) {
         AP_Notify::flags.pre_arm_gps_check = true;
         return true;
     }
 
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (blimp.gps.get_hdop() > blimp.g.gps_hdop_good) {
-        check_failed(ARMING_CHECK_GPS, display_failure, "High GPS HDOP");
+        check_failed(Check::GPS, display_failure, "High GPS HDOP");
         AP_Notify::flags.pre_arm_gps_check = false;
         return false;
     }
