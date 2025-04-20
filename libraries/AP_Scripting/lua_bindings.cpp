@@ -10,6 +10,7 @@
 #endif
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_GPS/AP_GPS.h>
 
 #include "lua_bindings.h"
 
@@ -1269,5 +1270,26 @@ int lua_DroneCAN_get_FlexDebug(lua_State *L)
     return 2;
 }
 #endif // HAL_ENABLE_DRONECAN_DRIVERS
+
+int lua_gps_inject_data(lua_State *L)
+{
+    binding_argcheck(L, 3);       // self + 2 args
+    luaL_checkudata(L, 1, "gps"); // require GPS object as first argument
+
+    const char *data = luaL_checkstring(L, 2);
+    const uint16_t len = get_uint16_t(L, 3);
+
+    if (data == nullptr)
+    {
+        return luaL_error(L, "No data to inject");
+    }
+
+    if (len > 0)
+    {
+        AP::gps().inject_data((const uint8_t *)data, len);
+    }
+
+    return 0;
+}
 
 #endif  // AP_SCRIPTING_ENABLED
