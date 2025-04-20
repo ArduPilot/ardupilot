@@ -1,6 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Notify/ToshibaLED_I2C.h>
+#include <SITL/SITL.h>
 
 void setup();
 void loop();
@@ -13,13 +14,18 @@ AP_Notify notify;
 
 static ToshibaLED_I2C toshiba_led(1);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+SITL::SIM sitl;
+#endif
+
 void setup(void)
 {
     // display welcome message
     hal.console->printf("Toshiba LED test ver 0.1\n");
 
     // initialise LED
-    if (toshiba_led.init()) {
+    if (!toshiba_led.init()) {
         hal.console->printf("Failed to initialise Toshiba LED\n");
     }
     toshiba_led.pNotify = &notify;
