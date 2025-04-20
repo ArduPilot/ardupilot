@@ -5,7 +5,7 @@
 bool AP_Arming_Rover::rc_calibration_checks(const bool display_failure)
 {
     // set rc-checks to success if RC checks are disabled
-    if (!check_enabled(ARMING_CHECK_RC)) {
+    if (!check_enabled(Check::RC)) {
         return true;
     }
 
@@ -20,11 +20,11 @@ bool AP_Arming_Rover::rc_calibration_checks(const bool display_failure)
         const char *channel_name = channel_names[i];
         // check if radio has been calibrated
         if (channel->get_radio_min() > RC_Channel::RC_CALIB_MIN_LIMIT_PWM) {
-            check_failed(ARMING_CHECK_RC, display_failure, "%s radio min too high", channel_name);
+            check_failed(Check::RC, display_failure, "%s radio min too high", channel_name);
             return false;
         }
         if (channel->get_radio_max() < RC_Channel::RC_CALIB_MAX_LIMIT_PWM) {
-            check_failed(ARMING_CHECK_RC, display_failure, "%s radio max too low", channel_name);
+            check_failed(Check::RC, display_failure, "%s radio max too low", channel_name);
             return false;
         }
     }
@@ -179,13 +179,13 @@ bool AP_Arming_Rover::oa_check(bool report)
 bool AP_Arming_Rover::parameter_checks(bool report)
 {
     // success if parameter checks are disabled
-    if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
+    if (!check_enabled(Check::PARAMETERS)) {
         return true;
     }
 
     // check waypoint speed is positive
     if (!is_positive(rover.g2.wp_nav.get_default_speed())) {
-        check_failed(ARMING_CHECK_PARAMETERS, report, "WP_SPEED too low");
+        check_failed(Check::PARAMETERS, report, "WP_SPEED too low");
         return false;
     }
 
