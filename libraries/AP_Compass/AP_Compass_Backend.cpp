@@ -120,10 +120,17 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
         state.motor_offset = mot * _compass._thr;
     } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
         AP_BattMonitor &battery = AP::battery();
-        float current;
-        if (battery.current_amps(current)) {
-            state.motor_offset = mot * current;
+        float current_sum = 0;
+        for (uint8_t b=0; b<AP_BATT_MONITOR_MAX_INSTANCES; b++) {
+            const uint16_t mask = 1U<<b;
+            if (mask & uint16_t(_compass._motor_comp_batmask)) {
+                float current;
+                if (battery.current_amps(current, b)) {
+                    current_sum += current;
+                }
+            }
         }
+        state.motor_offset = mot * current_sum;
     }
 
     /*
