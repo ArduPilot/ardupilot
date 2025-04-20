@@ -25,7 +25,7 @@ void setup(void)
     hal.console->printf("Toshiba LED test ver 0.1\n");
 
     // initialise LED
-    if (toshiba_led.init()) {
+    if (!toshiba_led.init()) {
         hal.console->printf("Failed to initialise Toshiba LED\n");
     }
     toshiba_led.pNotify = &notify;
