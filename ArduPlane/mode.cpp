@@ -73,6 +73,9 @@ bool Mode::enter()
     // disable taildrag takeoff on mode change
     plane.auto_state.fbwa_tdrag_takeoff_mode = false;
 
+    // wipe the takeoff rotation complete state
+    plane.auto_state.rotation_complete = false;
+
     // start with previous WP at current location
     plane.prev_WP_loc = plane.current_loc;
 

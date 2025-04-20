@@ -550,6 +550,9 @@ private:
 
         // last home altitude for detecting changes
         int32_t last_home_alt_cm;
+
+        // have we finished the takeoff ratation (when it applies)?
+        bool rotation_complete;
     } auto_state;
 
 #if AP_SCRIPTING_ENABLED
