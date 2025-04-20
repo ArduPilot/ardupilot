@@ -1,6 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Notify/ToshibaLED_I2C.h>
+#include <SITL/SITL.h>
 
 void setup();
 void loop();
@@ -12,6 +13,11 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 AP_Notify notify;
 
 static ToshibaLED_I2C toshiba_led(1);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+SITL::SIM sitl;
+#endif
 
 void setup(void)
 {
