@@ -197,6 +197,7 @@ define HAL_BATT_MONITOR_DEFAULT 4
 # Setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
+define AP_OSD_LINK_STATS_EXTENSIONS_ENABLED 1
 
 # Font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
