@@ -506,16 +506,16 @@ bool GCS_MAVLINK_Plane::handle_guided_request(AP_Mission::Mission_Command &cmd)
   handle a request to change current WP altitude. This happens via a
   callback from handle_mission_item()
  */
-void GCS_MAVLINK_Plane::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
+void GCS_MAVLINK_Plane::handle_change_alt_request(Location &location)
 {
-    plane.fix_terrain_WP(cmd.content.location, __LINE__);
+    plane.fix_terrain_WP(location, __LINE__);
 
-    if (cmd.content.location.terrain_alt) {
-        plane.next_WP_loc.set_alt_cm(cmd.content.location.alt, Location::AltFrame::ABOVE_TERRAIN);
+    if (location.terrain_alt) {
+        plane.next_WP_loc.set_alt_cm(location.alt, Location::AltFrame::ABOVE_TERRAIN);
     } else {
         // convert to absolute alt
         float abs_alt_m;
-        if (cmd.content.location.get_alt_m(Location::AltFrame::ABSOLUTE, abs_alt_m)) {
+        if (location.get_alt_m(Location::AltFrame::ABSOLUTE, abs_alt_m)) {
             plane.next_WP_loc.set_alt_m(abs_alt_m, Location::AltFrame::ABSOLUTE);
         }
     }
@@ -644,6 +644,24 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;
+}
+
+MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_DO_CHANGE_ALTITUDE(const mavlink_command_int_t &packet)
+{
+    const float alt = packet.param1;
+    MAV_FRAME mav_frame = (MAV_FRAME)packet.param2;
+    Location::AltFrame alt_frame;
+    if (!mavlink_coordinate_frame_to_location_alt_frame(mav_frame, alt_frame)) {
+        return MAV_RESULT_DENIED;
+    }
+    Location loc {
+        0,
+        0,
+        int32_t(alt * 100),  // m -> cm
+        alt_frame,
+    };
+    handle_change_alt_request(loc);
+    return MAV_RESULT_ACCEPTED;
 }
 
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
@@ -777,6 +795,9 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
 
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
+
+    case MAV_CMD_DO_CHANGE_ALTITUDE:
+        return handle_command_int_DO_CHANGE_ALTITUDE(packet);
 
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // special 'slew-enabled' guided commands here... for speed,alt, and direction commands
@@ -1170,14 +1191,15 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
         // be IGNORNED rather than INCLUDED.  See mavlink documentation of the
         // SET_POSITION_TARGET_GLOBAL_INT message, type_mask field.
         const uint16_t alt_mask = 0b1111111111111011; // (z mask at bit 3)
-            
-        AP_Mission::Mission_Command cmd = {0};
-        
         if (pos_target.type_mask & alt_mask)
         {
-            const int32_t alt_cm = pos_target.alt * 100;
-            cmd.content.location.set_alt_cm(alt_cm, frame);
-            handle_change_alt_request(cmd);
+            Location loc {
+                0,  // lat
+                0,  // lng
+                int32_t(pos_target.alt * 100),  // m -> cm
+                frame,
+            };
+            handle_change_alt_request(loc);
         }
     }
 

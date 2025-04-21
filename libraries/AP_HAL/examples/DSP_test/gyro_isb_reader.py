@@ -123,7 +123,7 @@ def isb_parser(logfile):
             print("    },")
 
     print("};")
-    print("const uint16_t SAMPLE_RATE = %d;" % sample_rate)
+    print("const uint16_t SAMPLE_RATE = %d;" % sample_rate)    
 
 
 

@@ -12,7 +12,7 @@ Then connect with ArduPilot like this:
 
   sim_vehicle.py --model morse --console --map
 
-This model assumes you will setup a steering/throttle rover
+This model assumes you will setup a steering/throttle rover 
 
   SERVO1_FUNCTION 26
   SERVO3_FUNCTION 70
@@ -54,7 +54,7 @@ all_sensors.add_stream('socket')
 
 vehicle.append(all_sensors)
 
-# make the vehicle controllable with steer and force
+# make the vehicle controllable with steer and force 
 # this will be available on port 60001 by default
 motion = SteerForce()
 vehicle.append(motion)

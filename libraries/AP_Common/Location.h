@@ -60,6 +60,9 @@ public:
     // - above-origin and origin is not set
     bool change_alt_frame(AltFrame desired_frame);
 
+    // copy altitude and its frame of other Location object:
+    void copy_alt_from(const Location &other);
+
     // get position as a vector (in cm) from origin (x,y only or
     // x,y,z) return false on failure to get the vector which can only
     // happen if the EKF origin has not been set yet x, y and z are in

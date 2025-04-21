@@ -9,7 +9,7 @@ def wait_heartbeat(mav, timeout=10):
     while time.time() < start_time+timeout:
         if mav.recv_match(type='HEARTBEAT', blocking=True, timeout=0.5) is not None:
             return
-    raise Exception("Failed to get heartbeat")
+    raise Exception("Failed to get heartbeat")    
 
 def wait_mode(mav, modes, timeout=10):
     '''wait for one of a set of flight modes'''
@@ -38,7 +38,7 @@ def wait_prearm_ok(mav, timeout=30):
             return
     print("Failed to get pre-arm OK")
     sys.exit(1)
-
+    
 def wait_time(mav, simtime):
     '''wait for simulation time to pass'''
     imu = mav.recv_match(type='RAW_IMU', blocking=True)

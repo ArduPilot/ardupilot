@@ -1,5 +1,5 @@
 """
-Capture a UDP video stream and pipe to an GStreamer RTSP server
+Capture a UDP video stream and pipe to an GStreamer RTSP server 
 
 The Gazebo GStreamerPlugin with <use_basic_pipeline>1</use_basic_pipeline>
 has elements:

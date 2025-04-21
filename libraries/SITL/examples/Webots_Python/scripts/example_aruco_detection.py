@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 #
-# An example script that receives images from a WebotsArduVehicle on port 5599
-# and displays them overlayed with any ArUco markers using OpenCV.
+# An example script that receives images from a WebotsArduVehicle on port 5599 
+# and displays them overlaid with any ArUco markers using OpenCV.
 # Requires opencv-python (`pip3 install opencv-python`)
 #
 
@@ -30,7 +30,7 @@ while True:
     # parse header
     width, height = struct.unpack("=HH", header)
 
-    # for CV applications we may want camera intrinsics such as focal length:
+    # for CV applications we may want camera intrinsics such as focal length: 
     # https://stackoverflow.com/questions/61555182/webot-camera-default-parameters-like-pixel-size-and-focus
     # cam_focal_length = 2 * np.arctan(np.tan(cam_fov * 0.5) / (cam_width / cam_height))
 

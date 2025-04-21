@@ -277,7 +277,7 @@ class Board:
             want_version = cfg.options.assert_cc_version
             if have_version != want_version:
                 cfg.fatal("cc version mismatch: %s should be %s" % (have_version, want_version))
-
+        
         if 'clang' in cfg.env.COMPILER_CC:
             env.CFLAGS += [
                 '-fcolor-diagnostics',
@@ -349,7 +349,7 @@ class Board:
 
         if cfg.options.private_key:
             env.PRIVATE_KEY = cfg.options.private_key
-
+            
         env.CXXFLAGS += [
             '-std=gnu++11',
 
@@ -510,7 +510,7 @@ class Board:
 
         if cfg.options.postype_single:
             env.CXXFLAGS += ['-DHAL_WITH_POSTYPE_DOUBLE=0']
-
+            
         if cfg.options.osd or cfg.options.osd_fonts:
             env.CXXFLAGS += ['-DOSD_ENABLED=1', '-DHAL_MSP_ENABLED=1']
 
@@ -582,15 +582,15 @@ class Board:
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
 def add_dynamic_boards_chibios():
-    '''add boards based on existance of hwdef.dat in subdirectories for ChibiOS'''
+    '''add boards based on existence of hwdef.dat in subdirectories for ChibiOS'''
     add_dynamic_boards_from_hwdef_dir(chibios, 'libraries/AP_HAL_ChibiOS/hwdef')
 
 def add_dynamic_boards_linux():
-    '''add boards based on existance of hwdef.dat in subdirectories for '''
+    '''add boards based on existence of hwdef.dat in subdirectories for '''
     add_dynamic_boards_from_hwdef_dir(linux, 'libraries/AP_HAL_Linux/hwdef')
 
 def add_dynamic_boards_from_hwdef_dir(base_type, hwdef_dir):
-    '''add boards based on existance of hwdef.dat in subdirectory'''
+    '''add boards based on existence of hwdef.dat in subdirectory'''
     dirname, dirlist, filenames = next(os.walk(hwdef_dir))
     for d in dirlist:
         if d in _board_classes.keys():
@@ -600,7 +600,7 @@ def add_dynamic_boards_from_hwdef_dir(base_type, hwdef_dir):
             newclass = type(d, (base_type,), {'name': d})
 
 def add_dynamic_boards_esp32():
-    '''add boards based on existance of hwdef.dat in subdirectories for ESP32'''
+    '''add boards based on existence of hwdef.dat in subdirectories for ESP32'''
     dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ESP32/hwdef'))
     for d in dirlist:
         if d in _board_classes.keys():
@@ -624,7 +624,7 @@ def is_board_based(board, cls):
     return issubclass(_board_classes[board], cls)
 
 def get_ap_periph_boards():
-    '''Add AP_Periph boards based on existance of periph keywork in hwdef.dat or board name'''
+    '''Add AP_Periph boards based on existence of periph keyword in hwdef.dat or board name'''
     list_ap = [s for s in list(_board_classes.keys()) if "periph" in s]
     dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
     for d in dirlist:
@@ -738,7 +738,7 @@ class sitl(Board):
         if not cfg.options.disable_networking and not 'clang' in cfg.env.COMPILER_CC:
             # lwip doesn't build with clang
             env.CXXFLAGS += ['-DAP_NETWORKING_ENABLED=1']
-
+        
         if cfg.options.ubsan or cfg.options.ubsan_abort:
             env.CXXFLAGS += [
                 "-fsanitize=undefined",
@@ -793,7 +793,7 @@ class sitl(Board):
             env.LINKFLAGS += ['-Wl,--wrap,_malloc_r']
         elif platform.system() != 'Darwin':
             env.LINKFLAGS += ['-Wl,--wrap,malloc']
-
+        
         if cfg.options.enable_sfml:
             if not cfg.check_SFML(env):
                 cfg.fatal("Failed to find SFML libraries")
@@ -1041,7 +1041,7 @@ class esp32(Board):
             print("USING EXPRESSIF IDF:"+str(env.idf))
             return cfg.root.find_dir(env.IDF+p).abspath()
         try:
-            env.IDF = os.environ['IDF_PATH']
+            env.IDF = os.environ['IDF_PATH'] 
         except:
             env.IDF = cfg.srcnode.abspath()+"/modules/esp_idf"
 
@@ -1093,7 +1093,7 @@ class esp32(Board):
                          '-Wno-sign-compare',
                          '-fno-inline-functions',
                          '-mlongcalls',
-                         '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f
+                         '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f 
                          '-fno-threadsafe-statics']
         env.CXXFLAGS.remove('-Werror=undef')
         env.CXXFLAGS.remove('-Werror=shadow')
@@ -1263,7 +1263,7 @@ class chibios(Board):
             if not self.cc_version_gte(cfg, 10, 2):
                 # require at least 10.2 compiler
                 cfg.fatal("ChibiOS build requires g++ version 10.2.1 or later, found %s" % '.'.join(cfg.env.CC_VERSION))
-
+            
         if cfg.env.ENABLE_ASSERTS:
             cfg.msg("Enabling ChibiOS asserts", "yes")
             env.CFLAGS += [ '-DHAL_CHIBIOS_ENABLE_ASSERTS' ]
@@ -1288,7 +1288,7 @@ class chibios(Board):
             env.CXXFLAGS += [ '-DHAL_CHIBIOS_ENABLE_MALLOC_GUARD' ]
         else:
             cfg.msg("Enabling malloc guard", "no")
-
+            
         if cfg.env.ENABLE_STATS:
             cfg.msg("Enabling ChibiOS thread statistics", "yes")
             env.CFLAGS += [ '-DHAL_ENABLE_THREAD_STATISTICS' ]
@@ -1477,7 +1477,7 @@ class linux(Board):
             cfg.define('HAL_NUM_CAN_IFACES', 2)
             cfg.define('HAL_CANFD_SUPPORTED', 1)
             cfg.define('CANARD_ENABLE_CANFD', 1)
-
+        
         if self.with_can:
             env.DEFINES.update(CANARD_MULTI_IFACE=1,
                                CANARD_IFACE_ALL = 0x3)
@@ -1620,3 +1620,4 @@ class QURT(Board):
     def get_name(self):
         # get name of class
         return self.__class__.__name__
+    

@@ -41,7 +41,7 @@ def get_log_list():
     import glob, sys
     pattern = os.path.join(opts.logdir, "*-checked.bin")
     file_list = glob.glob(pattern)
-    print("Found %u logs to processs" % len(file_list))
+    print("Found %u logs to process" % len(file_list))
     if len(file_list) == 0:
         print("No logs to process matching %s" % pattern)
         sys.exit(1)
@@ -52,7 +52,7 @@ def create_html_results():
     error_count = 0
 
     git_version = run_cmd('git log --pretty=oneline HEAD~1..HEAD', output=True)
-
+    
     f = open("replay_results.html", "w")
     f.write(
 '''<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
@@ -80,7 +80,7 @@ Git version: %s
 
     line_count = 0
     line_errors = 0
-
+    
     for line in infile:
         line = line.strip()
         line_count += 1

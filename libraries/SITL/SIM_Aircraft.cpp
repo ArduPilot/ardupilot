@@ -672,10 +672,12 @@ void Aircraft::update_home()
         if (sitl == nullptr) {
             return;
         }
-        Location loc;
-        loc.lat = sitl->opos.lat.get() * 1.0e7;
-        loc.lng = sitl->opos.lng.get() * 1.0e7;
-        loc.alt = sitl->opos.alt.get() * 1.0e2;
+        const Location loc{
+            int32_t(sitl->opos.lat.get() * 1.0e7),
+            int32_t(sitl->opos.lng.get() * 1.0e7),
+            int32_t(sitl->opos.alt.get() * 1.0e2),
+            Location::AltFrame::ABSOLUTE
+        };
         set_start_location(loc, sitl->opos.hdg.get());
     }
 }

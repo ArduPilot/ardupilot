@@ -60,9 +60,9 @@ def update_settings(bld):
     settings_json['wscript.board'] = board_name
     if board_name == 'sitl':
         if os.uname().sysname == 'Darwin':
-            settings_json['wscript.MIMode'] =  "lldb"
+            settings_json['wscript.MIMode'] =  "lldb" 
         else:
-            settings_json['wscript.MIMode'] =  "gdb"
+            settings_json['wscript.MIMode'] =  "gdb" 
 
     with open(vscode_setting_json_path, 'w') as f:
         json.dump(settings_json, f, indent=4)
@@ -98,7 +98,7 @@ def update_openocd_cfg(cfg):
 def init_launch_json_if_not_exist(cfg):
     launch_json_path = os.path.join(cfg.srcnode.abspath(), '.vscode', 'launch.json')
     launch_default_json_path = os.path.join(cfg.srcnode.abspath(),'.vscode', 'launch.default.json')
-
+    
     if not os.path.exists(launch_json_path):
         if os.path.exists(launch_default_json_path):
             print(f"Copying {launch_default_json_path} to {launch_json_path}")

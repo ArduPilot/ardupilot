@@ -38,7 +38,6 @@ from std_srvs.srv import Trigger
 
 SERVICE = "/ap/prearm_check"
 
-
 class PreamService(rclpy.node.Node):
     def __init__(self):
         """Initialise the node."""
@@ -58,7 +57,7 @@ class PreamService(rclpy.node.Node):
         time.sleep(0.2)
         try:
             return future.result().success
-        except Exception as e:
+        except Exception  as e:
             print(e)
             return False
 
@@ -81,6 +80,8 @@ class PreamService(rclpy.node.Node):
             print("start_prearm not started yet")
         self.prearm_thread = threading.Thread(target=self.process_prearm)
         self.prearm_thread.start()
+        
+        
 
 
 @launch_pytest.fixture

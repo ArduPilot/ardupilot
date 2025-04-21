@@ -145,7 +145,7 @@ airspeed_types = {
     0x09 : "DEVTYPE_AIRSPEED_NMEA",
     0x0A : "DEVTYPE_AIRSPEED_ASP5033",
 }
-
+    
 decoded_devname = ""
 
 if opts.compass:
@@ -159,7 +159,7 @@ if opts.baro:
 
 if opts.airspeed:
     decoded_devname = airspeed_types.get(devtype, "UNKNOWN")
-
+    
 if bus_type == 3:
     #dronecan devtype represents sensor_id
     print("bus_type:%s(%u)  bus:%u address:%u(0x%x) sensor_id:%u(0x%x) %s" % (

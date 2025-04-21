@@ -132,7 +132,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
 ]
 
 def get_legacy_defines(sketch_name, bld):
-    # If we are building heli, we adjust the build directory define so that
+    # If we are building heli, we adjust the build directory define so that 
     # we do not need to actually split heli and copter directories
     if bld.cmd == 'heli' or 'heli' in bld.targets:
         return [
@@ -679,7 +679,7 @@ arducopter and upload it to my board".
         action='store',
         dest='upload_port',
         default=None,
-        help='''Specify the port to be used with the --upload option. For example a port of /dev/ttyS10 indicates that serial port 10 shuld be used.
+        help='''Specify the port to be used with the --upload option. For example a port of /dev/ttyS10 indicates that serial port 10 should be used.
 ''')
 
     g.add_option('--upload-blueos',
@@ -730,7 +730,7 @@ This option is only supported on macOS versions of clang.
     g.add_option('--ubsan-abort',
         action='store_true',
         help='''Build using the gcc undefined behaviour sanitizer and abort on error''')
-
+    
 def build(bld):
     bld.add_pre_fun(_process_build_command)
     bld.add_pre_fun(_select_programs_from_group)

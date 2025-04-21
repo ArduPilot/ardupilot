@@ -307,9 +307,12 @@ void AirSim::recv_fdm(const sitl_input& input)
     gyro = state.imu.angular_velocity;
     velocity_ef = state.velocity.world_linear_velocity;
 
-    location.lat = state.gps.lat * 1.0e7;
-    location.lng = state.gps.lon * 1.0e7;
-    location.alt = state.gps.alt * 100.0f;
+    location = {
+        int32_t(state.gps.lat * 1.0e7),
+        int32_t(state.gps.lon * 1.0e7),
+        int32_t(state.gps.alt * 100.0f),
+        Location::AltFrame::ABSOLUTE
+    };
 
     position = origin.get_distance_NED_double(location);
 

@@ -34,7 +34,7 @@ for row in data:
 
     # current value of each channel
     values = [int(row[i]) for i in range(1,len(row))]
-
+    
     for c in range(nchannels):
         if values[c] == 0 and prev_values[c] == 1 and pulse_start[c] != 0:
             pulse = t - pulse_start[c]
@@ -44,8 +44,9 @@ for row in data:
         if values[c] == 1 and prev_values[c] == 0:
             pulse_start[c] = t
         prev_values[c] = values[c]
-
+        
     if changed:
         for c in range(nchannels):
             sys.stdout.write("%4u " % pwm[c])
         sys.stdout.write("%.3f\n" % float(row[0]))
+

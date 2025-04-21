@@ -16,7 +16,7 @@
 """
 Bring up ArduPilot SITL and check the BatteryState message is being published.
 
-Checks whether a message is received and that only frame_id = '0' is received,
+Checks whether a message is received and that only frame_id = '0' is received, 
 as SITL has only one battery available.
 
 colcon test --packages-select ardupilot_dds_tests \

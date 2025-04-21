@@ -3477,6 +3477,10 @@ function BattMonitorScript_State_ud:voltage(value) end
 ---@param value boolean
 function BattMonitorScript_State_ud:healthy(value) end
 
+-- set state of health, 255 if not available (this is the defualt)
+---@param value integer
+function BattMonitorScript_State_ud:state_of_health_pct(value) end
+
 -- The temperature library provides access to information about the currently connected temperature sensors on the vehicle.
 temperature_sensor = {}
 

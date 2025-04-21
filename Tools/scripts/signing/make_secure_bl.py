@@ -14,7 +14,7 @@ parser.add_argument("--omit-ardupilot-keys", action='store_true', default=False,
 parser.add_argument("bootloader", type=str, default=None, help="bootloader")
 parser.add_argument("keys", nargs='*', type=str, default=[], help="keys")
 args = parser.parse_args()
-
+    
 descriptor = b'\x4e\xcf\x4e\xa5\xa6\xb6\xf7\x29'
 max_keys = 10
 key_len = 32

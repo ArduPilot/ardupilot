@@ -205,3 +205,4 @@ This is a list of log messages which may be present in logs produced and stored 
             ret += bar + "\n"
 
         return ret
+

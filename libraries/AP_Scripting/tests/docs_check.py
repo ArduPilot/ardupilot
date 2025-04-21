@@ -71,7 +71,7 @@ class method(object):
                 return False
 
         return True
-
+    
     def check_types(self, other):
         if not self.types_compare(self.returns, other.returns):
             return False
@@ -87,7 +87,7 @@ class method(object):
     def is_overload(self, other):
         # this allows multiple function definitions with different params
         white_list = [
-            "Parameter"
+            "Parameter" 
         ]
         allow_override = other.manual or (self.global_name in white_list)
         return allow_override and (self.global_name == other.global_name) and (self.local_name == other.local_name) and (self.num_args != other.num_args)
@@ -243,3 +243,5 @@ if __name__ == '__main__':
         sys.exit(0)
 
     compare(args[0], args[1])
+
+

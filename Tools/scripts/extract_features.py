@@ -96,7 +96,7 @@ class ExtractFeatures(object):
             ('AP_OPTICALFLOW_ENABLED', 'AP_OpticalFlow::AP_OpticalFlow',),
             ('AP_OPTICALFLOW_{type}_ENABLED', r'AP_OpticalFlow_(?P<type>.*)::update\b',),
 
-            ('AP_BARO_{type}_ENABLED', r'AP_Baro_(?P<type>.*)::update\b',),
+            ('AP_BARO_{type}_ENABLED', r'AP_Baro_(?P<type>.*)::(_calculate|update)\b',),
 
             ('AP_MOTORS_FRAME_{type}_ENABLED', r'AP_MotorsMatrix::setup_(?P<type>.*)_matrix\b',),
 

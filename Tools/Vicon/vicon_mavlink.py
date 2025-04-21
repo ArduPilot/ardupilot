@@ -77,7 +77,7 @@ def get_gps_time(tnow):
     leapseconds = 18
     SEC_PER_WEEK = 7 * 86400
     MSEC_PER_WEEK = SEC_PER_WEEK * 1000
-
+    
     epoch = 86400*(10*365 + (1980-1969)/4 + 1 + 6 - 2) - leapseconds
     epoch_seconds = int(tnow - epoch)
     week = int(epoch_seconds) // SEC_PER_WEEK
@@ -200,3 +200,4 @@ def main_loop():
 
 connect_to_vicon("vicon")
 main_loop()
+

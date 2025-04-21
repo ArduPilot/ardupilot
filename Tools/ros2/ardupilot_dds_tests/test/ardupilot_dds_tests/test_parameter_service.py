@@ -73,7 +73,7 @@ class ParameterClient(rclpy.node.Node):
 
         self.set_cli = self.create_client(SetParameters, 'ap/set_parameters')
         while not self.set_cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('SetParameters service not availabel, waiting again...')
+            self.get_logger().info('SetParameters service not available, waiting again...')
 
         # Add a spin thread
         self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))

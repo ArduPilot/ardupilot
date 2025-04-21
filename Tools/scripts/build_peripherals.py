@@ -65,3 +65,4 @@ if len(failed_boards):
     print("Failed boards: %s" % list(failed_boards))
 else:
     print("No failed builds")
+

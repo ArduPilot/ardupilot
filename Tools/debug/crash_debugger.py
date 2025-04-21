@@ -26,7 +26,7 @@ import signal
 def serial_debug(args):
     global spinner, process_cmd
     try:
-        ser = Serial(args.ser_port, 921600) # Configure speed depending on your config
+        ser = Serial(args.ser_port, 921600) # Configure speed depending on your config        
         print('Detecting Crash...')
         ser.write("dump_crash_log".encode('utf-8')) # Send a newline to start the dump
         while 1:
