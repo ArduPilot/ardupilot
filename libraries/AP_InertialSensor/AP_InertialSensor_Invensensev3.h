@@ -37,6 +37,7 @@ public:
         ICM42605, // No HiRes
         ICM40605, // No HiRes
         IIM42652, // HiRes 19bit
+        IIM42653, // HiRes 19bit
         ICM42670, // HiRes 19bit
         ICM45686  // HiRes 20bit
     };
