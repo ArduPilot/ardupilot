@@ -285,8 +285,9 @@ void Plane::control_failsafe()
 
     const bool allow_failsafe_bypass = !arming.is_armed() && !is_flying() && (rc().enabled_protocols() != 0);
     const bool has_had_input = rc().has_had_rc_receiver() || rc().has_had_rc_override();
-    if ((g.throttle_fs_enabled != ThrFailsafe::Enabled) || (allow_failsafe_bypass && !has_had_input)) {
-        // If not flying and disarmed don't trigger failsafe until RC has been received for the fist time
+    if ((g.throttle_fs_enabled != ThrFailsafe::Enabled && !failsafe.rc_failsafe) || (allow_failsafe_bypass && !has_had_input)) {
+        // If throttle fs not enabled and not in failsafe, or 
+        // not flying and disarmed, don't trigger failsafe check until RC has been received for the fist time  
         return;
     }
 
