@@ -65,30 +65,32 @@ class PlaneFbwbJoyControl(Node):
         self._client_arm = self.create_client(ArmMotors, "/ap/arm_motors")
 
         self._client_mode_switch = self.create_client(ModeSwitch, "/ap/mode_switch")
-            
-        self._joy_pub = self.create_publisher(Joy, "/ap/joy", 1)          
+
+        self._joy_pub = self.create_publisher(Joy, "/ap/joy", 1)
 
         # Create subscriptions after services are up
         qos = rclpy.qos.QoSProfile(
             reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT, durability=rclpy.qos.DurabilityPolicy.VOLATILE, depth=1
         )
-        self._subscription_geopose = self.create_subscription(GeoPoseStamped, "/ap/geopose/filtered", self.geopose_cb, qos)
+        self._subscription_geopose = self.create_subscription(
+            GeoPoseStamped, "/ap/geopose/filtered", self.geopose_cb, qos
+        )
         self._cur_geopose = GeoPoseStamped()
-        
+
         self._subscription_twist = self.create_subscription(TwistStamped, "/ap/twist/filtered", self.twist_cb, qos)
         self._climb_rate = 0.0
 
         # Add a spin thread.
         self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))
         self.ros_spin_thread.start()
-        
+
     def geopose_cb(self, msg: GeoPoseStamped):
         """Process a GeoPose message."""
         stamp = msg.header.stamp
         if stamp.sec:
             # Store current state
             self._cur_geopose = msg
-            
+
     def twist_cb(self, msg: TwistStamped):
         """Process a Twist message."""
         linear = msg.twist.linear
@@ -121,7 +123,7 @@ class PlaneFbwbJoyControl(Node):
         try:
             return future.result().status and future.result().curr_mode == mode
         except:
-            return False        
+            return False
 
     def switch_mode_with_timeout(self, desired_mode: int, timeout: rclpy.duration.Duration):
         """Try to switch mode. Returns true on success, or false if mode switch fails or times out."""
@@ -136,46 +138,47 @@ class PlaneFbwbJoyControl(Node):
     def get_cur_geopose(self):
         """Return latest geopose."""
         return self._cur_geopose
-        
+
     def send_joy_value(self, joy_val):
         self._joy_pub.publish(joy_val)
-        
-    #-------------- PROCESSES -----------------
+
+    # -------------- PROCESSES -----------------
     def process_arm(self):
         if self.arm_with_timeout(rclpy.duration.Duration(seconds=30)):
             self.arming_event_object.set()
-        
+
     def start_arm(self):
         self.arm_thread = threading.Thread(target=self.process_arm)
         self.arm_thread.start()
-        
+
     def process_climb(self):
         joy_msg = Joy()
         joy_msg.axes.append(0.0)
         joy_msg.axes.append(0.0)
-        joy_msg.axes.append(0.8) #- straight up
-        joy_msg.axes.append(0.0)        
+        joy_msg.axes.append(0.8)  # - straight up
+        joy_msg.axes.append(0.0)
 
         while True:
             self.send_joy_value(joy_msg)
-            self.arm() #- Keep the system armed (sometimes it disarms and the test fails)
+            self.arm()  # - Keep the system armed (sometimes it disarms and the test fails)
             time.sleep(0.1)
             self.get_logger().info("From AP : Climb rate {}".format(self._climb_rate))
             if self._climb_rate > 0.5:
                 self.climbing_event_object.set()
-                return      
-            
+                return
+
     def climb(self):
         self.climb_thread = threading.Thread(target=self.process_climb)
         self.climb_thread.start()
-        
+
     def arm_and_takeoff_process(self):
         self.process_arm()
         self.climb()
-        
+
     def arm_and_takeoff(self):
         self.climb_thread = threading.Thread(target=self.arm_and_takeoff_process)
-        self.climb_thread.start()        
+        self.climb_thread.start()
+
 
 @launch_pytest.fixture
 def launch_sitl_copter_dds_serial(sitl_copter_dds_serial):
@@ -191,6 +194,7 @@ def launch_sitl_copter_dds_serial(sitl_copter_dds_serial):
     actions = sitl_actions
     yield ld, actions
 
+
 @launch_pytest.fixture
 def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
     """Fixture to create the launch description."""
@@ -204,7 +208,8 @@ def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
     )
     actions = sitl_actions
     yield ld, actions
-    
+
+
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_udp)
 def test_dds_udp_joy_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     """Test joy messages are published by AP_DDS."""
