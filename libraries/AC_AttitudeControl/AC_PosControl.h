@@ -27,8 +27,8 @@
 #define POSCONTROL_STOPPING_DIST_DOWN_MAX       100.0f  // max stopping distance (in cm) vertically while descending
 
 #define POSCONTROL_SPEED                        100.0f  // default horizontal speed in cm/s
-#define POSCONTROL_SPEED_DOWN                  -50.0f  // default descent rate in cm/s最大下降速度 默认-150
-#define POSCONTROL_SPEED_UP                     100.0f  // default climb rate in cm/s
+#define POSCONTROL_SPEED_DOWN                  -20.0f  // default descent rate in cm/s最大下降速度 默认-150
+#define POSCONTROL_SPEED_UP                     50.0f  // default climb rate in cm/s
 
 #define POSCONTROL_ACCEL_Z                      300.0f  // default vertical acceleration in cm/s/s.
 #define POSCONTROL_JERK_Z                       5.0f    // default vertical jerk m/s/s/s
