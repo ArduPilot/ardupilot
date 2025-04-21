@@ -472,6 +472,7 @@ public:
         SHOW_STACK = 0,
         AUTOREBOOT = 1,
         ENABLE_STATS = 2,
+        FIND_NODE = 3,
     };
 
     // check if an option is set

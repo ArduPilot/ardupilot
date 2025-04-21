@@ -416,15 +416,29 @@ void AP_Periph_FW::update()
     node_stats.update();
 #endif
 
-    static uint32_t last_led_ms;
     uint32_t now = AP_HAL::millis();
-    if (now - last_led_ms > 1000) {
-        last_led_ms = now;
+
 #ifdef HAL_GPIO_PIN_LED
+    static uint32_t last_led_ms;
+    static uint32_t next_led_ms = 1000;
+    if (now - last_led_ms > next_led_ms) {
+        last_led_ms = now;
         if (!no_iface_finished_dna) {
+            static uint8_t led_phase = 0;
+            if (debug_option_is_set(DebugOptions::FIND_NODE)) {
+                next_led_ms = (led_phase < 10) ? 100 : 500;
+                led_phase = (led_phase + 1) % 12;
+            } else {
+                next_led_ms = 1000;
+            }
             palToggleLine(HAL_GPIO_PIN_LED);
         }
+    }
 #endif
+
+    static uint32_t last_1_s;
+    if (now - last_1_s > 1000) {
+        last_1_s = now;
 #if 0
 #if AP_PERIPH_GPS_ENABLED
         hal.serial(0)->printf("GPS status: %u\n", (unsigned)gps.status());
