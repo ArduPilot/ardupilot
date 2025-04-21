@@ -277,8 +277,6 @@ private:
 
 #if AP_SCRIPTING_ENABLED
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
-    bool set_steering_and_throttle(float steering, float throttle) override;
-    bool get_steering_and_throttle(float& steering, float& throttle) override;
     // set desired turn rate (degrees/sec) and speed (m/s). Used for scripting
     bool set_desired_turn_rate_and_speed(float turn_rate, float speed) override;
     bool set_desired_speed(float speed) override;
@@ -287,6 +285,8 @@ private:
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) override;
     void nav_script_time_done(uint16_t id) override;
 #endif // AP_SCRIPTING_ENABLED
+    bool set_steering_and_throttle(float steering, float throttle) override;
+    bool get_steering_and_throttle(float& steering, float& throttle) override;
     void ahrs_update();
     void gcs_failsafe_check(void);
     void update_logging1(void);

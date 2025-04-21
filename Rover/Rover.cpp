@@ -194,27 +194,6 @@ bool Rover::set_target_velocity_NED(const Vector3f& vel_ned)
     return true;
 }
 
-// set steering and throttle (-1 to +1) (for use by scripting)
-bool Rover::set_steering_and_throttle(float steering, float throttle)
-{
-    // exit if vehicle is not in Guided mode or Auto-Guided mode
-    if (!control_mode->in_guided_mode()) {
-        return false;
-    }
-
-    // set steering and throttle
-    mode_guided.set_steering_and_throttle(steering, throttle);
-    return true;
-}
-
-// get steering and throttle (-1 to +1) (for use by scripting)
-bool Rover::get_steering_and_throttle(float& steering, float& throttle)
-{
-    steering = g2.motors.get_steering() / 4500.0;
-    throttle = g2.motors.get_throttle() * 0.01;
-    return true;
-}
-
 // set desired turn rate (degrees/sec) and speed (m/s). Used for scripting
 bool Rover::set_desired_turn_rate_and_speed(float turn_rate, float speed)
 {
@@ -295,6 +274,27 @@ void Rover::nav_script_time_done(uint16_t id)
     return mode_auto.nav_script_time_done(id);
 }
 #endif // AP_SCRIPTING_ENABLED
+
+// set steering and throttle (-1 to +1) (for use by scripting)
+bool Rover::set_steering_and_throttle(float steering, float throttle)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!control_mode->in_guided_mode()) {
+        return false;
+    }
+
+    // set steering and throttle
+    mode_guided.set_steering_and_throttle(steering, throttle);
+    return true;
+}
+
+// get steering and throttle (-1 to +1) (for use by scripting)
+bool Rover::get_steering_and_throttle(float& steering, float& throttle)
+{
+    steering = g2.motors.get_steering() / 4500.0;
+    throttle = g2.motors.get_throttle() * 0.01;
+    return true;
+}
 
 // update AHRS system
 void Rover::ahrs_update()
