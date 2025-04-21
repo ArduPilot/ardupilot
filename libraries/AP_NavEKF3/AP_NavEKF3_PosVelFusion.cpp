@@ -993,10 +993,14 @@ void NavEKF3_core::FuseVelPosNED()
                 // adjust scaling on GPS measurement noise variances if not enough satellites
                 if (obsIndex <= 2) {
                     innovVelPos[obsIndex] = stateStruct.velocity[obsIndex] - velPosObs[obsIndex];
-                    R_OBS[obsIndex] *= sq(gpsNoiseScaler);
+                    if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS)) {
+                        R_OBS[obsIndex] *= sq(gpsNoiseScaler);
+                    }
                 } else if (obsIndex == 3 || obsIndex == 4) {
                     innovVelPos[obsIndex] = stateStruct.position[obsIndex-3] - velPosObs[obsIndex];
-                    R_OBS[obsIndex] *= sq(gpsNoiseScaler);
+                    if (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS) {
+                        R_OBS[obsIndex] *= sq(gpsNoiseScaler);
+                    }
                 } else if (obsIndex == 5) {
                     innovVelPos[obsIndex] = stateStruct.position[obsIndex-3] - velPosObs[obsIndex];
                     const ftype gndMaxBaroErr = MAX(frontend->_baroGndEffectDeadZone, 0.0);
