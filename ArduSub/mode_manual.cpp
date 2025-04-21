@@ -29,7 +29,7 @@ void ModeManual::run()
     sub.motors.set_roll(channel_roll->norm_input());
     sub.motors.set_pitch(channel_pitch->norm_input());
     sub.motors.set_yaw(channel_yaw->norm_input() * g.acro_yaw_p / ACRO_YAW_P);
-    sub.motors.set_throttle(channel_throttle->norm_input());
+    sub.motors.set_throttle((channel_throttle->norm_input() + 1.0f) / 2.0f);
     sub.motors.set_forward(channel_forward->norm_input());
     sub.motors.set_lateral(channel_lateral->norm_input());
 }
