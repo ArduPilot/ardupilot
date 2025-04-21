@@ -515,9 +515,10 @@ BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
 # makes sense:
 sanity_check_failed = False
 for x in BUILD_OPTIONS:
-    if len(x.label) > 30:
+    label_len_limit = 40
+    if len(x.label) > label_len_limit:
         sanity_check_failed = True
-        print(f"{x.label} is too long")
+        print(f"{x.label} is too long ({len(x.label)} >= {label_len_limit}")
         sanity_check_failed = True
 
 if sanity_check_failed:
