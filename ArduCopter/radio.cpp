@@ -128,6 +128,7 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
     // if failsafe not enabled pass through throttle and exit
     if(g.failsafe_throttle == FS_THR_DISABLED) {
+        set_failsafe_radio(false);
         return;
     }
 
