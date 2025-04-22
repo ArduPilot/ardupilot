@@ -212,7 +212,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
         const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
 
         const Vector2f& curr_pos = quadplane.inertial_nav.get_position_xy_cm();
-        const Vector2f& target_pos = quadplane.pos_control->get_pos_target_cm().xy().tofloat();
+        const Vector2f& target_pos = quadplane.pos_control->get_pos_target_NEU_cm().xy().tofloat();
         const Vector2f error = (target_pos - curr_pos) * 0.01;
 
         mavlink_msg_nav_controller_output_send(
@@ -222,7 +222,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
             targets.z * 0.01,
             degrees(error.angle()),
             MIN(error.length(), UINT16_MAX),
-            (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_pos_error_z_cm() * 0.01 : 0,
+            (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_pos_error_U_cm() * 0.01 : 0,
             plane.airspeed_error * 100,  // incorrect units; see PR#7933
             quadplane.wp_nav->crosstrack_error());
         return;
@@ -397,7 +397,7 @@ void GCS_MAVLINK_Plane::send_pid_tuning()
     }
 #if HAL_QUADPLANE_ENABLED
     if (g.gcs_pid_mask & TUNING_BITS_ACCZ && plane.quadplane.in_vtol_mode()) {
-        pid_info = &plane.quadplane.pos_control->get_accel_z_pid().get_pid_info();
+        pid_info = &plane.quadplane.pos_control->get_accel_U_pid().get_pid_info();
         send_pid_info(pid_info, PID_TUNING_ACCZ, pid_info->actual);
     }
 #endif
@@ -1254,7 +1254,7 @@ int16_t GCS_MAVLINK_Plane::high_latency_target_altitude() const
     const QuadPlane &quadplane = plane.quadplane;
     //return units are m
     if (quadplane.show_vtol_view()) {
-        return (plane.control_mode != &plane.mode_qstabilize) ? 0.01 * (global_position_current.alt + quadplane.pos_control->get_pos_error_z_cm()) : 0;
+        return (plane.control_mode != &plane.mode_qstabilize) ? 0.01 * (global_position_current.alt + quadplane.pos_control->get_pos_error_U_cm()) : 0;
     }
 #endif
     return 0.01 * (global_position_current.alt + plane.calc_altitude_error_cm());

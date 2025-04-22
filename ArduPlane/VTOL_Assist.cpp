@@ -179,8 +179,8 @@ bool VTOL_Assist::check_VTOL_recovery(void)
                    controller may limit pitch after a strong
                    acceleration event
                 */
-                quadplane.pos_control->init_z_controller();
-                quadplane.pos_control->init_xy_controller();
+                quadplane.pos_control->init_U_controller();
+                quadplane.pos_control->init_NE_controller();
             }
         }
     }
