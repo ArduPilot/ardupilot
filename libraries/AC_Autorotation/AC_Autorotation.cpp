@@ -353,7 +353,7 @@ void AC_Autorotation::update_forward_speed_controller(float pilot_norm_accel)
     }
 
     // Output to attitude controller
-    _attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(angle_target.y * 100.0, angle_target.x * 100.0, yaw_rate_cds);
+    _attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(angle_target.y * 100.0, angle_target.x * 100.0, yaw_rate_cds);
 
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: ARSC
