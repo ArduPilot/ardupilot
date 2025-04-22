@@ -406,7 +406,7 @@ public:
     //
     AP_Int8 throttle_suppress_manual;
     AP_Int8 throttle_passthru_stabilize;
-    AP_Int8 throttle_fs_enabled;
+    AP_Enum<ThrFailsafe> throttle_fs_enabled;
     AP_Int16 throttle_fs_value;
     AP_Int8 throttle_nudge;
     AP_Int32 use_reverse_thrust;
