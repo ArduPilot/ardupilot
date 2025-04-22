@@ -149,7 +149,8 @@ public:
     ///     Position and velocity errors are converted to velocity and acceleration targets using PID objects
     ///     Desired velocity and accelerations are added to these corrections as they are calculated
     ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
-    void update_xy_controller();
+    ///     avoid_obstacles should be true if low level object avoidance using proximity sensors and fence should be enabled
+    void update_xy_controller(bool avoid_obstacles = false);
 
     ///
     /// Vertical position controller
@@ -239,7 +240,8 @@ public:
     ///     Position and velocity errors are converted to velocity and acceleration targets using PID objects
     ///     Desired velocity and accelerations are added to these corrections as they are calculated
     ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
-    void update_z_controller();
+    ///     avoid_obstacles should be true if low level object avoidance using proximity sensors and fence should be enabled
+    void update_z_controller(bool avoid_obstacles = false);
 
 
 

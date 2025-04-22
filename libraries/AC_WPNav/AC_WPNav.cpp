@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AC_WPNav.h"
 
 extern const AP_HAL::HAL& hal;
@@ -189,6 +190,7 @@ void AC_WPNav::wp_and_spline_init(float speed_cms, Vector3f stopping_point)
 
     _flags.reached_destination = true;
     _flags.fast_waypoint = false;
+    _flags.wp_yaw_set = false;
 
     // initialise origin and destination to stopping point
     if (stopping_point.is_zero()) {
@@ -455,6 +457,16 @@ void AC_WPNav::get_wp_stopping_point(Vector3f& stopping_point) const
     stopping_point = stop.tofloat();
 }
 
+// get target yaw in centi-degrees along the path to the next waypoint
+// this may not point directly at the waypoint especially during cornering.  call is_active() before using
+float AC_WPNav::get_yaw_cd() const
+{
+    if (_flags.wp_yaw_set) {
+        return _wp_yaw_cd;
+    }
+    return _pos_control.get_yaw_cd();
+}
+
 /// advance_wp_target_along_track - move target location along track from origin to destination
 bool AC_WPNav::advance_wp_target_along_track(float dt)
 {
@@ -493,10 +505,22 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     // vel_scaler_dt scales the velocity and acceleration to be kinematically consistent
     float vel_scaler_dt = 1.0;
     if (is_positive(_wp_desired_speed_xy_cms)) {
+        // update the offset velocity using the previous iteration's acceleration
         update_vel_accel(_offset_vel, _offset_accel, dt, 0.0, 0.0);
-        const float vel_input = !_paused ? _wp_desired_speed_xy_cms * offset_z_scaler : 0.0;
+
+        // decide on the new velocity target. zero if paused, the waypoint speed or the avoidance limited speed
+        float vel_input = !_paused ? _wp_desired_speed_xy_cms * offset_z_scaler : 0.0;
+#if AP_AVOIDANCE_ENABLED && !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+        if (_simple_avoidance.vel_xy_max_set) {
+            vel_input = MIN(vel_input, _simple_avoidance.vel_xy_max);
+        }
+#endif
+
+        // calculate the acceleration to achieve the new velocity target
         shape_vel_accel(vel_input, 0.0, _offset_vel, _offset_accel, -get_wp_acceleration(), get_wp_acceleration(),
                         _pos_control.get_shaping_jerk_xy_cmsss(), dt, true);
+
+        // calculate the time scaler which is applied later to the SCurve or Spline velocity and acceleration outputs
         vel_scaler_dt = _offset_vel / _wp_desired_speed_xy_cms;
     }
 
@@ -521,6 +545,45 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         _spline_this_leg.advance_target_along_track(_track_scalar_dt * vel_scaler_dt * dt, target_pos, target_vel);
         s_finished = _spline_this_leg.reached_destination();
     }
+
+    // update the target yaw if velocity is greater than 5% _vel_max_xy_cms
+    if (is_positive(target_vel.xy().length_squared())) {
+         if (target_vel.xy().length() > _wp_desired_speed_xy_cms * 0.05f) {
+            _wp_yaw_cd = degrees(target_vel.xy().angle()) * 100.0;
+            _flags.wp_yaw_set = true;
+        }
+    }
+
+#if AP_AVOIDANCE_ENABLED && !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    // use raw targets to calculate maximum avoidance velocity
+    _simple_avoidance.vel_xy_max_set = false;
+    AC_Avoid *_avoid = AP::ac_avoid();
+    if (_avoid != nullptr) {
+        Vector3f target_vel_adjusted = target_vel;
+        bool backing_up = false;
+        _avoid->adjust_velocity(target_vel_adjusted, backing_up, _pos_control.get_pos_xy_p().kP(), _pos_control.get_max_accel_xy_cmss(), _pos_control.get_pos_z_p().kP(), _pos_control.get_max_accel_z_cmss(), dt, true);
+        // check if horizontal velocity has been reduced
+        if (target_vel_adjusted.xy() != target_vel.xy()) {
+            if (target_vel.xy().is_zero()) {
+                // special handling for target_vel of zero to avoid divide by zero
+                _simple_avoidance.vel_xy_max = 0;
+            } else {
+                const float dir = target_vel_adjusted.xy().dot(target_vel.xy()) >= 0.0 ? 1.0 : -1.0;
+                _simple_avoidance.vel_xy_max = dir * target_vel_adjusted.xy().projected(target_vel.xy()).length();
+            }
+            _simple_avoidance.vel_xy_max_set = true;
+        }
+        // check if vertical velocity has been reduced
+        if (!is_equal(target_vel_adjusted.z, target_vel.z) && !is_zero(target_vel.z)) {
+            // calculate a maximum horizontal velocity that will give us the desired vertical velocity
+            const float vel_xy_max_equivalent = fabsf((target_vel_adjusted.z / target_vel.z) * _wp_desired_speed_xy_cms);
+            if (!_simple_avoidance.vel_xy_max_set || (vel_xy_max_equivalent < _simple_avoidance.vel_xy_max)) {
+                _simple_avoidance.vel_xy_max = vel_xy_max_equivalent;
+                _simple_avoidance.vel_xy_max_set = true;
+            }
+        }
+    }
+#endif
 
     Vector3f accel_offset;
     if (is_positive(target_vel.length_squared())) {
