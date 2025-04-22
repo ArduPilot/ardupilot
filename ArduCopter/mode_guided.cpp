@@ -219,7 +219,7 @@ void ModeGuided::wp_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // initialise position controller
@@ -750,7 +750,7 @@ void ModeGuided::pos_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // velaccel_control_run - runs the guided velocity controller
@@ -795,7 +795,7 @@ void ModeGuided::accel_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // velaccel_control_run - runs the guided velocity and acceleration controller
@@ -850,7 +850,7 @@ void ModeGuided::velaccel_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // pause_control_run - runs the guided mode pause controller
@@ -880,7 +880,7 @@ void ModeGuided::pause_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller
-    attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
+    attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), 0.0);
 }
 
 // posvelaccel_control_run - runs the guided position, velocity and acceleration controller
@@ -939,7 +939,7 @@ void ModeGuided::posvelaccel_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // angle_control_run - runs the guided angle controller
@@ -998,7 +998,7 @@ void ModeGuided::angle_control_run()
 
     // call attitude controller
     if (guided_angle_state.attitude_quat.is_zero()) {
-        attitude_control->input_rate_bf_roll_pitch_yaw(ToDeg(guided_angle_state.ang_vel_body.x) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.y) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.z) * 100.0f);
+        attitude_control->input_rate_bf_roll_pitch_yaw_cds(ToDeg(guided_angle_state.ang_vel_body.x) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.y) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.z) * 100.0f);
     } else {
         attitude_control->input_quaternion(guided_angle_state.attitude_quat, guided_angle_state.ang_vel_body);
     }
