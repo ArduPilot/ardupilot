@@ -102,7 +102,7 @@ void ModePosHold::run()
 
     case AltHoldModeState::MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
-        attitude_control->reset_yaw_target_and_rate(false);
+        attitude_control->reset_yaw_target_and_rate();
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
@@ -116,13 +116,22 @@ void ModePosHold::run()
         break;
 
     case AltHoldModeState::Landed_Ground_Idle:
+        attitude_control->reset_yaw_target_and_rate(false);
+        attitude_control->reset_rate_controller_I_terms_smoothly();
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
-        attitude_control->reset_yaw_target_and_rate();
         init_wind_comp_estimate();
-        FALLTHROUGH;
+
+        // set poshold state to pilot override
+        roll_mode = RPMode::PILOT_OVERRIDE;
+        pitch_mode = RPMode::PILOT_OVERRIDE;
+        break;
 
     case AltHoldModeState::Landed_Pre_Takeoff:
+        if (!motors->using_hdg_error_correction()) {
+            attitude_control->reset_target_and_rate(false);
+        }
         attitude_control->reset_rate_controller_I_terms_smoothly();
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
 
