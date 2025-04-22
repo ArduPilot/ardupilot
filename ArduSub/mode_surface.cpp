@@ -45,7 +45,7 @@ void ModeSurface::run()
     float target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
 
     // set target climb rate
     float cmb_rate = constrain_float(fabsf(sub.wp_nav.get_default_speed_up()), 1, position_control->get_max_speed_up_cms());
