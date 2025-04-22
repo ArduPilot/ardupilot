@@ -111,7 +111,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Values{Plane}: 41:TiltMotorsFront,45:TiltMotorsRear,46:TiltMotorRearLeft,47:TiltMotorRearRight
     // @Values: 51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16
     // @Values{Plane, Copter, Rover}: 51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16
-    // @Values{Sub}: 51:RCIN1/Pitch,52:RCIN2/Roll,53:RCIN3/HeaveVertical,54:RCIN4/YawTurn,55:RCIN5/SurgeForward,56:RCIN6/SwayLateral,57:RCIN7/CameraPan,58:RCIN8/CameraTilt,59:RCIN9/Lights1Level,60:RCIN10/Lights2Level,61:RCIN11/VideoSwitch,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16
+    // @Values{Sub}: 51:RCIN1/Pitch,52:RCIN2/Roll,53:RCIN3/HeaveVertical,54:RCIN4/YawTurn,55:RCIN5/SurgeForward,56:RCIN6/SwayLateral,57:RCIN7/CameraPan,58:RCIN8/CameraTilt,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16
     // @Values: 67:Ignition,69:Starter
     // @Values{Plane}: 67:Ignition,69:Starter
     // @Values: 70:Throttle
@@ -163,6 +163,9 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Values{Plane, Copter}: 168:Motor21,169:Motor22,170:Motor23,171:Motor24
     // @Values{Plane, Copter}: 172:Motor25,173:Motor26,174:Motor27,175:Motor28
     // @Values{Plane, Copter}: 176:Motor29,177:Motor30,178:Motor31,179:Motor32
+    // @Values: 180:CameraZoom
+    // @Values{Sub}: 181:Lights1,182:Lights2
+    // @Values{Sub}: 183:VideoSwitch
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FUNCTION",  5, SRV_Channel, function, 0),
