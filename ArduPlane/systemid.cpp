@@ -313,8 +313,10 @@ void AP_SystemID::update()
     }
 
     if (log_subsample <= 0) {
+        log_data();
         if (plane.control_mode->supports_vtol_systemid()) {
-            log_data();
+            // log attitude controller at the same rate
+            plane.quadplane.Log_Write_AttRate();
         } else {
             log_plane_data();
         }
@@ -352,7 +354,6 @@ void AP_SystemID::update()
 void AP_SystemID::log_data() const
 {
 #if HAL_LOGGING_ENABLED
-#if HAL_QUADPLANE_ENABLED
     Vector3f delta_angle;
     float delta_angle_dt;
     plane.ins.get_delta_angle(delta_angle, delta_angle_dt);
@@ -374,66 +375,36 @@ void AP_SystemID::log_data() const
                                     delta_velocity.x * dt_vel_inv,
                                     delta_velocity.y * dt_vel_inv,
                                     delta_velocity.z * dt_vel_inv);
-
-        // log attitude controller at the same rate
-        plane.quadplane.Log_Write_AttRate();
     }
-#endif // HAL_QUADPLANE_ENABLED
 #endif // HAL_LOGGING_ENABLED
 }
 
 // @LoggerMessage: SIDP
 // @Description: System ID data for Plane
 // @Field: TimeUS: Time since system startup
-// @Field: Time: Time reference for waveform
-// @Field: Targ: Current waveform sample
-// @Field: F: Instantaneous waveform frequency
-// @Field: Gx: Delta angle, X-Axis
-// @Field: Gy: Delta angle, Y-Axis
-// @Field: Gz: Delta angle, Z-Axis
-// @Field: Ax: Delta velocity, X-Axis
-// @Field: Ay: Delta velocity, Y-Axis
-// @Field: Az: Delta velocity, Z-Axis
 // @Field: DRll: Desired Roll Angle
 // @Field: Rll: Roll Angle
 // @Field: DPit: Desired Pitch Angle
 // @Field: Pit: Pitch Angle
-// @Field: Aile: Desired Pitch Angle
-// @Field: Elev: Pitch Angle
+// @Field: Aile: Aileron
+// @Field: Elev: Elevator
+// @Field: Rudd: Rudder
 
 void AP_SystemID::log_plane_data() const
 {
 #if HAL_LOGGING_ENABLED
-    Vector3f delta_angle;
-    float delta_angle_dt;
-    plane.ins.get_delta_angle(delta_angle, delta_angle_dt);
+    int16_t pitch = plane.ahrs.pitch_sensor - plane.g.pitch_trim * 100;
+    AP::logger().WriteStreaming("SIDP", "TimeUS,DRll,Rll,DPit,Pit,Aile,Elev,Rudd",
+                                "sooooooo", "F-------", "Qfffffff",
+                                AP_HAL::micros64(),
+                                plane.nav_roll_cd * 0.01f,
+                                plane.ahrs.roll_sensor * 0.01f,
+                                pitch * 0.01f,
+                                plane.ahrs.pitch_sensor * 0.01f,
+                                SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) * 0.01f,
+                                SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) * 0.01f,
+                                SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) * 0.01f);
 
-    Vector3f delta_velocity;
-    float delta_velocity_dt;
-    plane.ins.get_delta_velocity(delta_velocity, delta_velocity_dt);
-
-    if (is_positive(delta_angle_dt) && is_positive(delta_velocity_dt)) {
-        const float dt_ang_inv = 1.0 / delta_angle_dt;
-        const float dt_vel_inv = 1.0 / delta_velocity_dt;
-        int16_t pitch = plane.ahrs.pitch_sensor - plane.g.pitch_trim * 100;
-        AP::logger().WriteStreaming("SIDP", "TimeUS,Time,Targ,F,Gx,Gy,Gz,Ax,Ay,Az,DRll,Rll,DPit,Pit,Aile,Elev",
-                                    "ss-zkkkooooooooo", "F---------------", "Qfffffffffffffff",
-                                    AP_HAL::micros64(),
-                                    waveform_time, waveform_sample, waveform_freq_rads / (2 * M_PI),
-                                    degrees(delta_angle.x * dt_ang_inv),
-                                    degrees(delta_angle.y * dt_ang_inv),
-                                    degrees(delta_angle.z * dt_ang_inv),
-                                    delta_velocity.x * dt_vel_inv,
-                                    delta_velocity.y * dt_vel_inv,
-                                    delta_velocity.z * dt_vel_inv,
-                                    plane.nav_roll_cd * 0.01f,
-                                    plane.ahrs.roll_sensor * 0.01f,
-                                    pitch * 0.01f,
-                                    plane.ahrs.pitch_sensor * 0.01f,
-                                    SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) * 0.01f,
-                                    SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) * 0.01f);
-                            
-    }
 #endif // HAL_LOGGING_ENABLED
 }
 #endif // AP_PLANE_SYSTEMID_ENABLED
