@@ -202,42 +202,42 @@ public:
     virtual void input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_body_rads);
 
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
-    virtual void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
-    
+    virtual void input_euler_angle_roll_pitch_euler_rate_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
+
     // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
-    virtual void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw);
+    virtual void input_euler_angle_roll_pitch_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw);
 
     // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
-    virtual void input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
+    virtual void input_euler_rate_roll_pitch_yaw_cds(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
 
     // Fully stabilized acro
     // Command an angular velocity with angular velocity feedforward and smoothing
-    virtual void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
+    virtual void input_rate_bf_roll_pitch_yaw_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
     // Rate-only acro with no attitude feedback - used only by Copter rate-only acro
     // Command an angular velocity with angular velocity smoothing using rate loops only with no attitude loop stabilization
-    virtual void input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
+    virtual void input_rate_bf_roll_pitch_yaw_2_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
     // Acro with attitude feedback that does not rely on attitude - used only by Plane acro
     // Command an angular velocity with angular velocity smoothing using rate loops only with integrated rate error stabilization
-    virtual void input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
+    virtual void input_rate_bf_roll_pitch_yaw_3_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
     // set the body frame target rates to the specified rates, used by the
     // quadplane code when we want to slave the VTOL controller rates to
     // the fixed wing rates
-    void input_rate_bf_roll_pitch_yaw_no_shaping(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
+    void input_rate_bf_roll_pitch_yaw_no_shaping_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
     // Applies a one-time angular offset in body-frame roll/pitch/yaw angles (centidegrees)
-    virtual void input_angle_step_bf_roll_pitch_yaw(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
+    virtual void input_angle_step_bf_roll_pitch_yaw_cd(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
 
     // Applies a one-time angular velocity offset in body-frame roll/pitch/yaw (centidegrees per second)
-    virtual void input_rate_step_bf_roll_pitch_yaw(float roll_rate_step_bf_cd, float pitch_rate_step_bf_cd, float yaw_rate_step_bf_cd);
+    virtual void input_rate_step_bf_roll_pitch_yaw_cd(float roll_rate_step_bf_cd, float pitch_rate_step_bf_cd, float yaw_rate_step_bf_cd);
 
     // Command a thrust vector in the earth frame and a heading angle and/or rate
-    virtual void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw = true);
+    virtual void input_thrust_vector_rate_heading_cds(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw = true);
 
-    virtual void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds);
-    void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_cd) {input_thrust_vector_heading(thrust_vector, heading_cd, 0.0f);}
+    virtual void input_thrust_vector_heading_cd(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds);
+    void input_thrust_vector_heading_cd(const Vector3f& thrust_vector, float heading_cd) {input_thrust_vector_heading_cd(thrust_vector, heading_cd, 0.0f);}
 
     ////// end rate update functions //////
 
@@ -284,13 +284,13 @@ public:
     void rate_bf_yaw_target(float rate_cds) { _ang_vel_body_rads.z = radians(rate_cds * 0.01f); }
 
     // Set x-axis system identification angular velocity in radians/s
-    void rate_bf_roll_sysid(float rate_rads) { _sysid_ang_vel_body_rads.x = rate_rads; }
+    void rate_bf_roll_sysid_rads(float rate_rads) { _sysid_ang_vel_body_rads.x = rate_rads; }
 
     // Set y-axis system identification angular velocity in radians/s
-    void rate_bf_pitch_sysid(float rate_rads) { _sysid_ang_vel_body_rads.y = rate_rads; }
+    void rate_bf_pitch_sysid_rads(float rate_rads) { _sysid_ang_vel_body_rads.y = rate_rads; }
 
     // Set z-axis system identification angular velocity in radians/s
-    void rate_bf_yaw_sysid(float rate_rads) { _sysid_ang_vel_body_rads.z = rate_rads; }
+    void rate_bf_yaw_sysid_rads(float rate_rads) { _sysid_ang_vel_body_rads.z = rate_rads; }
 
     // Set x-axis system identification actuator
     void actuator_roll_sysid(float command) { _actuator_sysid.x = command; }
@@ -635,5 +635,5 @@ public:
         float yaw_rate_cds;
         HeadingMode heading_mode;
     };
-    void input_thrust_vector_heading(const Vector3f& thrust_vector, HeadingCommand heading);
+    void input_thrust_vector_heading_cd(const Vector3f& thrust_vector, HeadingCommand heading);
 };
