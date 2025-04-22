@@ -46,17 +46,17 @@ public:
     // Set output throttle
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
 
-    // calculate total body frame throttle required to produce the given earth frame throttle
+    // Calculate body-frame throttle required to produce the given earth-frame throttle input (accounts for vehicle tilt)
 	float get_throttle_boosted(float throttle_in);
 
-    // set desired throttle vs attitude mixing (actual mix is slewed towards this value over 1~2 seconds)
-    //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
-    //  has no effect when throttle is above hover throttle
+    // Set desired throttle vs attitude mixing (actual mix is slewed toward this value over 1~2 seconds)
+    // Low values favor pilot/autopilot throttle over attitude control; high values prioritize attitude control
+    // Has no effect when throttle is above hover throttle
     void set_throttle_mix_min() override { _throttle_rpy_mix_desired = _thr_mix_min; }
     void set_throttle_mix_man() override { _throttle_rpy_mix_desired = _thr_mix_man; }
     void set_throttle_mix_max(float ratio) override { _throttle_rpy_mix_desired = _thr_mix_max; }
 
-    // are we producing min throttle?
+    // Returns true if throttle mix is near minimum (i.e., attitude control is deprioritised)
     bool is_throttle_mix_min() const override { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
 
     // run lowest level body-frame rate controller and send outputs to the motors
@@ -68,7 +68,7 @@ public:
     // set the PID notch sample rates
     void set_notch_sample_rate(float sample_rate) override;
 
-    // This function ensures that the ROV reaches the target orientation with the desired yaw rate
+    // Command an euler roll and pitch angle and a yaw angle, slewing the yaw target to limit angular rate
     void input_euler_angle_roll_pitch_slew_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float slew_yaw);
 
     // user settable parameters
@@ -76,10 +76,10 @@ public:
 
 protected:
 
-    // update_throttle_rpy_mix - updates thr_low_comp value towards the target
+    // Slews the current throttle-to-attitude mix ratio toward the target (_throttle_rpy_mix_desired)
     void update_throttle_rpy_mix();
 
-    // get maximum value throttle can be raised to based on throttle vs attitude prioritisation
+    // Get throttle limit based on priority of attitude vs throttle control (used for blending during low thrust)
     float get_throttle_avg_max(float throttle_in);
 
     AP_MotorsMulticopter& _motors_multi;
