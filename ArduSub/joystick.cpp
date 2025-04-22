@@ -8,14 +8,13 @@
 namespace {
 float cam_tilt = 1500.0;
 float cam_pan = 1500.0;
-int16_t lights1 = 1100;
-int16_t lights2 = 1100;
+float lights1 = 0;
+float lights2 = 0;
 int16_t rollTrim = 0;
 int16_t pitchTrim = 0;
 int16_t zTrim = 0;
 int16_t xTrim = 0;
 int16_t yTrim = 0;
-int16_t video_switch = 1100;
 int16_t x_last, y_last, z_last;
 uint32_t buttons_prev;
 
@@ -32,9 +31,6 @@ void Sub::init_joystick()
 {
     default_js_buttons();
 
-    lights1 = RC_Channels::rc_channel(8)->get_radio_min();
-    lights2 = RC_Channels::rc_channel(9)->get_radio_min();
-
     set_mode(Mode::Number::MANUAL, ModeReason::RC_COMMAND); // Initialize flight mode
 
     if (g.numGainSettings < 1) {
@@ -49,6 +45,9 @@ void Sub::init_joystick()
     }
 
     gain = constrain_float(gain, 0.1, 1.0);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_lights1, 0.0);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_lights2, 0.0);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_video_switch, 0.0);
 }
 
 void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons, uint16_t buttons2, uint8_t enabled_extensions,
@@ -138,9 +137,6 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
     RC_Channels::set_override(6, cam_pan, tnow);       // camera pan
     RC_Channels::set_override(7, cam_tilt, tnow);      // camera tilt
-    RC_Channels::set_override(8, lights1, tnow);       // lights 1
-    RC_Channels::set_override(9, lights2, tnow);       // lights 2
-    RC_Channels::set_override(10, video_switch, tnow); // video switch
 
     // Store old x, y, z values for use in input hold logic
     x_last = x;
@@ -216,10 +212,10 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
             static bool video_toggle = false;
             video_toggle = !video_toggle;
             if (video_toggle) {
-                video_switch = 1900;
+                SRV_Channels::set_output_scaled(SRV_Channel::k_video_switch, 1000);
                 gcs().send_text(MAV_SEVERITY_INFO,"Video Toggle: Source 2");
             } else {
-                video_switch = 1100;
+                SRV_Channels::set_output_scaled(SRV_Channel::k_video_switch, 0.0);
                 gcs().send_text(MAV_SEVERITY_INFO,"Video Toggle: Source 1");
             }
         }
@@ -233,71 +229,59 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
     case JSButton::button_function_t::k_lights1_cycle:
         if (!held) {
             static bool increasing = true;
-            RC_Channel* chan = RC_Channels::rc_channel(8);
-            uint16_t min = chan->get_radio_min();
-            uint16_t max = chan->get_radio_max();
-            uint16_t step = (max - min) / g.lights_steps;
+            uint16_t step = 1000.0 / g.lights_steps;
             if (increasing) {
-                lights1 = constrain_float(lights1 + step, min, max);
+                lights1 = constrain_float(lights1 + step, 0.0, 1000.0);
             } else {
-                lights1 = constrain_float(lights1 - step, min, max);
+                lights1 = constrain_float(lights1 - step, 0.0, 1000.0);
             }
-            if (lights1 >= max || lights1 <= min) {
+            if (lights1 >= 1000.0 || lights1 <= 0.0) {
                 increasing = !increasing;
             }
+            SRV_Channels::set_output_scaled(SRV_Channel::k_lights1, lights1);
         }
         break;
     case JSButton::button_function_t::k_lights1_brighter:
         if (!held) {
-            RC_Channel* chan = RC_Channels::rc_channel(8);
-            uint16_t min = chan->get_radio_min();
-            uint16_t max = chan->get_radio_max();
-            uint16_t step = (max - min) / g.lights_steps;
-            lights1 = constrain_float(lights1 + step, min, max);
+            uint16_t step = 1000.0 / g.lights_steps;
+            lights1 = constrain_float(lights1 + step, 0.0, 1000.0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_lights1, lights1);
         }
         break;
     case JSButton::button_function_t::k_lights1_dimmer:
         if (!held) {
-            RC_Channel* chan = RC_Channels::rc_channel(8);
-            uint16_t min = chan->get_radio_min();
-            uint16_t max = chan->get_radio_max();
-            uint16_t step = (max - min) / g.lights_steps;
-            lights1 = constrain_float(lights1 - step, min, max);
+            uint16_t step = 1000.0 / g.lights_steps;
+            lights1 = constrain_float(lights1 - step, 0.0, 1000.0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_lights1, lights1);
         }
         break;
     case JSButton::button_function_t::k_lights2_cycle:
-        if (!held) {
+       if (!held) {
             static bool increasing = true;
-            RC_Channel* chan = RC_Channels::rc_channel(9);
-            uint16_t min = chan->get_radio_min();
-            uint16_t max = chan->get_radio_max();
-            uint16_t step = (max - min) / g.lights_steps;
+            uint16_t step = 1000.0 / g.lights_steps;
             if (increasing) {
-                lights2 = constrain_float(lights2 + step, min, max);
+                lights2 = constrain_float(lights2 + step, 0.0, 1000.0);
             } else {
-                lights2 = constrain_float(lights2 - step, min, max);
+                lights2 = constrain_float(lights2 - step, 0.0, 1000.0);
             }
-            if (lights2 >= max || lights2 <= min) {
+            if (lights2 >= 1000.0 || lights2 <= 0.0) {
                 increasing = !increasing;
             }
+            SRV_Channels::set_output_scaled(SRV_Channel::k_lights2, lights2);
         }
         break;
     case JSButton::button_function_t::k_lights2_brighter:
         if (!held) {
-            RC_Channel* chan = RC_Channels::rc_channel(9);
-            uint16_t min = chan->get_radio_min();
-            uint16_t max = chan->get_radio_max();
-            uint16_t step = (max - min) / g.lights_steps;
-            lights2 = constrain_float(lights2 + step, min, max);
+            uint16_t step = 1000.0 / g.lights_steps;
+            lights2 = constrain_float(lights2 + step, 0.0, 1000.0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_lights2, lights2);
         }
         break;
     case JSButton::button_function_t::k_lights2_dimmer:
         if (!held) {
-            RC_Channel* chan = RC_Channels::rc_channel(9);
-            uint16_t min = chan->get_radio_min();
-            uint16_t max = chan->get_radio_max();
-            uint16_t step = (max - min) / g.lights_steps;
-            lights2 = constrain_float(lights2 - step, min, max);
+            uint16_t step = 1000.0 / g.lights_steps;
+            lights2 = constrain_float(lights2 - step, 0.0, 1000.0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_lights2, lights2);
         }
         break;
     case JSButton::button_function_t::k_gain_toggle:

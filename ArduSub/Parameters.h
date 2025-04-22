@@ -409,8 +409,8 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "BATT_CAPACITY",       0},
     { "LEAK1_PIN",           27},
     { "SCHED_LOOP_RATE",     200},
-    { "SERVO13_FUNCTION",    59},    // k_rcin9, lights 1
-    { "SERVO14_FUNCTION",    60},    // k_rcin10, lights 2
+    { "SERVO13_FUNCTION",    181},   // k_lights1
+    { "SERVO14_FUNCTION",    182},   // k_lights2
     { "SERVO16_FUNCTION",    7},     // k_mount_tilt
     { "SERVO16_REVERSED",    1},
 #else
