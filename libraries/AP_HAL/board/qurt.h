@@ -101,8 +101,8 @@
 /*
   barometer list
  */
-#define PROBE_BARO_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(GET_I2C_DEVICE(bus, addr)),##args))
-#define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(ICP101XX, 2, 0x63)
+#define HAL_BARO_PROBE_LIST \
+    probe_i2c_dev(AP_Baro_ICP101XX::probe, 2, 0x63);
 
 /*
   IMU list
