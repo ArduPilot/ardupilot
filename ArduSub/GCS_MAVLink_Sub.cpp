@@ -86,7 +86,7 @@ void GCS_MAVLINK_Sub::send_nav_controller_output() const
         targets.z * 1.0e-2f,
         sub.wp_nav.get_wp_bearing_to_destination() * 1.0e-2f,
         MIN(sub.wp_nav.get_wp_distance_to_destination() * 1.0e-2f, UINT16_MAX),
-        sub.pos_control.get_pos_error_z_cm() * 1.0e-2f,
+        sub.pos_control.get_pos_error_U_cm() * 1.0e-2f,
         0,
         0);
 }
@@ -214,7 +214,7 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
         }
     }
     if (g.gcs_pid_mask & 8) {
-        const AP_PIDInfo &pid_info = sub.pos_control.get_accel_z_pid().get_pid_info();
+        const AP_PIDInfo &pid_info = sub.pos_control.get_accel_U_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info.target*0.01f,
                                     -(ahrs.get_accel_ef().z + GRAVITY_MSS),
@@ -634,7 +634,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
          */
 
         if (!z_ignore && sub.control_mode == Mode::Number::ALT_HOLD) { // Control only target depth when in ALT_HOLD
-            sub.pos_control.set_pos_desired_z_cm(packet.alt*100);
+            sub.pos_control.set_pos_desired_U_cm(packet.alt*100);
             break;
         }
 
@@ -740,7 +740,7 @@ int16_t GCS_MAVLINK_Sub::high_latency_target_altitude() const
 
     //return units are m
     if (sub.control_mode == Mode::Number::AUTO || sub.control_mode == Mode::Number::GUIDED) {
-        return 0.01 * (global_position_current.alt + sub.pos_control.get_pos_error_z_cm());
+        return 0.01 * (global_position_current.alt + sub.pos_control.get_pos_error_U_cm());
     }
     return 0;
     
@@ -769,7 +769,7 @@ uint8_t GCS_MAVLINK_Sub::high_latency_tgt_airspeed() const
 {
     // return units are m/s*5
     if (sub.control_mode == Mode::Number::AUTO || sub.control_mode == Mode::Number::GUIDED) {
-        return MIN((sub.pos_control.get_vel_desired_cms().length()/100) * 5, UINT8_MAX);
+        return MIN((sub.pos_control.get_vel_desired_NEU_cms().length()/100) * 5, UINT8_MAX);
     }
     return 0;
 }
