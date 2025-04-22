@@ -394,9 +394,9 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     //(void)_geomrtry_output;
 
     //计算总输出，每个方向上乘以惯性张量
-    _pdnn_output.x = _J_x * (-_e_R.x * 50.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
-    _pdnn_output.y = _J_y * (-_e_R.y * 50.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
-    _pdnn_output.z = _J_z * (-_e_R.z * 50.0f - _e_Omega.z * 80.0f - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
+    _pdnn_output.x = _J_x * (-_e_R.x * 40.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
+    _pdnn_output.y = _J_y * (-_e_R.y * 40.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
+    _pdnn_output.z = _J_z * (-_e_R.z * 40.0f - _e_Omega.z * 80.0f - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
     
     //_pdnn_output.x = 0.01f * (-_e_R.x * 60.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
     //_pdnn_output.y = 0.01f * (-_e_R.y * 60.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
