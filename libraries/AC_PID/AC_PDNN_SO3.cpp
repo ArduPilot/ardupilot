@@ -226,14 +226,14 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         _h_z_5 = expf(-L_z_5*L_z_5/(2*_b_z*_b_z));//z方向第5个隐藏层输出
 
         //计算权重更新律
-        float _gamma_x = 120.0f;float c_R = 0.6f;
+        float _gamma_x = 80.0f;float c_R = 0.6f;
         _dot_W_x_1 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_1;//x方向第1个权重更新律
         _dot_W_x_2 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_2;//x方向第2个权重更新律
         _dot_W_x_3 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_3;//x方向第3个权重更新律
         _dot_W_x_4 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_4;//x方向第4个权重更新律
         _dot_W_x_5 = _gamma_x * (_e_Omega.x + c_R * _e_R.x) * _h_x_5;//x方向第5个权重更新律
 
-        float _gamma_y = 120.0f;
+        float _gamma_y = 80.0f;
         _dot_W_y_1 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_1;//y方向第1个权重更新律
         _dot_W_y_2 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_2;//y方向第2个权重更新律
         _dot_W_y_3 = _gamma_y * (_e_Omega.y + c_R * _e_R.y) * _h_y_3;//y方向第3个权重更新律
@@ -394,9 +394,9 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     //(void)_geomrtry_output;
 
     //计算总输出，每个方向上乘以惯性张量
-    _pdnn_output.x = _J_x * (-_e_R.x * 60.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
-    _pdnn_output.y = _J_y * (-_e_R.y * 60.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
-    _pdnn_output.z = _J_z * (-_e_R.z * 60.0f - _e_Omega.z * 80.0f - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
+    _pdnn_output.x = _J_x * (-_e_R.x * 50.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
+    _pdnn_output.y = _J_y * (-_e_R.y * 50.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
+    _pdnn_output.z = _J_z * (-_e_R.z * 50.0f - _e_Omega.z * 80.0f - 0.0f *_integrator.z - _geomrtry_output.z - 1.0f *_phi_z + 0.0f*Aug.z); //偏航误差e_R.z很容易就趋近于0，会导致无法满足持续激励假设
     
     //_pdnn_output.x = 0.01f * (-_e_R.x * 60.0f - _e_Omega.x * 80.0f - 0.0f * _integrator.x - _geomrtry_output.x - 1.0f *_phi_x + 0.0f*Aug.x); 
     //_pdnn_output.y = 0.01f * (-_e_R.y * 60.0f - _e_Omega.y * 80.0f - 0.0f *_integrator.y - _geomrtry_output.y- 1.0f * _phi_y + 0.0f*Aug.y);
