@@ -15,10 +15,10 @@ void Copter::update_ground_effect_detector(void)
     uint32_t tnow_ms = millis();
     float xy_des_speed_cms = 0.0f;
     float xy_speed_cms = 0.0f;
-    float des_climb_rate_cms = pos_control->get_vel_desired_cms().z;
+    float des_climb_rate_cms = pos_control->get_vel_desired_NEU_cms().z;
 
-    if (pos_control->is_active_xy()) {
-        Vector3f vel_target = pos_control->get_vel_target_cms();
+    if (pos_control->is_active_NE()) {
+        Vector3f vel_target = pos_control->get_vel_target_NEU_cms();
         vel_target.z = 0.0f;
         xy_des_speed_cms = vel_target.length();
     }
@@ -56,10 +56,10 @@ void Copter::update_ground_effect_detector(void)
     Vector3f angle_target_rad = attitude_control->get_att_target_euler_cd() * radians(0.01f);
     bool small_angle_request = cosf(angle_target_rad.x)*cosf(angle_target_rad.y) > cosf(radians(7.5f));
     bool xy_speed_low = (position_ok() || ekf_has_relative_position()) && xy_speed_cms <= 125.0f;
-    bool xy_speed_demand_low = pos_control->is_active_xy() && xy_des_speed_cms <= 125.0f;
-    bool slow_horizontal = xy_speed_demand_low || (xy_speed_low && !pos_control->is_active_xy()) || (flightmode->mode_number() == Mode::Number::ALT_HOLD && small_angle_request);
+    bool xy_speed_demand_low = pos_control->is_active_NE() && xy_des_speed_cms <= 125.0f;
+    bool slow_horizontal = xy_speed_demand_low || (xy_speed_low && !pos_control->is_active_NE()) || (flightmode->mode_number() == Mode::Number::ALT_HOLD && small_angle_request);
 
-    bool descent_demanded = pos_control->is_active_z() && des_climb_rate_cms < 0.0f;
+    bool descent_demanded = pos_control->is_active_U() && des_climb_rate_cms < 0.0f;
     bool slow_descent_demanded = descent_demanded && des_climb_rate_cms >= -100.0f;
     bool z_speed_low = fabsf(inertial_nav.get_velocity_z_up_cms()) <= 60.0f;
     bool slow_descent = (slow_descent_demanded || (z_speed_low && descent_demanded));

@@ -17,8 +17,8 @@ bool ModeSmartRTL::init(bool ignore_checks)
 
         // set current target to a reasonable stopping point
         Vector3p stopping_point;
-        pos_control->get_stopping_point_xy_cm(stopping_point.xy());
-        pos_control->get_stopping_point_z_cm(stopping_point.z);
+        pos_control->get_stopping_point_NE_cm(stopping_point.xy());
+        pos_control->get_stopping_point_U_cm(stopping_point.z);
         wp_nav->set_wp_destination(stopping_point.tofloat());
 
         // initialise yaw to obey user parameter
@@ -77,7 +77,7 @@ void ModeSmartRTL::wait_cleanup_run()
     // hover at current target position
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     wp_nav->update_wpnav();
-    pos_control->update_z_controller();
+    pos_control->update_U_controller();
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if return path is computed and if yes, begin journey home
@@ -143,7 +143,7 @@ void ModeSmartRTL::path_follow_run()
     // update controllers
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     wp_nav->update_wpnav();
-    pos_control->update_z_controller();
+    pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
@@ -167,7 +167,7 @@ void ModeSmartRTL::pre_land_position_run()
     // update controllers
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     wp_nav->update_wpnav();
-    pos_control->update_z_controller();
+    pos_control->update_U_controller();
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
