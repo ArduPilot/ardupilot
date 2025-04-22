@@ -1201,6 +1201,9 @@ bool AP_BattMonitor::handle_scripting(uint8_t idx, const BattMonitorScript_State
     if (idx >= _num_instances) {
         return false;
     }
+    if (drivers[idx] == nullptr) {
+        return false;
+    }
     return drivers[idx]->handle_scripting(_state);
 }
 #endif
