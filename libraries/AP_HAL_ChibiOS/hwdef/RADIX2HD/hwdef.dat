@@ -177,3 +177,8 @@ define STM32_I2C_USE_DMA FALSE
 
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
+
+define EK3_FEATURE_EXTERNAL_NAV 1
+define HAL_VISUALODOM_ENABLED 1
+
+define ALLOW_ARM_NO_COMPASS
