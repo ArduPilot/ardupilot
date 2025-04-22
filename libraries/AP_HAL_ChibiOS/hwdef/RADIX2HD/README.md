@@ -148,3 +148,15 @@ BrainFPV bootloader:
 
 To use it, copy the resulting `arducopter_{VERSION}_brainfpv.bin` to the USB drive that appears
 when the RADIX 2 HD is in bootloader mode.
+
+
+### way to build fast on our env
+
+```bash
+./waf configure --board RADIX2HD --enable-dds
+./waf copter
+cd build/RADIX2HD/bin
+mv arducopter arducopter.elf
+brainfpv_fw_packer.py --name arducopter --in arducopter.elf --out arducopter.bin --dev radix2hd -t firmware -b 0x90400000 -z --noheader
+cp -v arducopter.bin /media/izumita/RADIX\ 2\ HD/
+```
