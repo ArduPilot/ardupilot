@@ -288,7 +288,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
         
         float _J_max = 0.03f; //定义自适应参数上限
         //~~~~~x方向
-        float _eta_x = 0.1f; //定义自适应律参数，eta越大越平滑
+        float _eta_x = 0.08f; //定义自适应律参数，eta越大越平滑
         float _s_x = 0.02f;  //定义缩放因子
         float c_R = 0.6f;
         if ((_e_Omega.x + c_R * _e_R.x) * _pdnn_output.x > 0 )
