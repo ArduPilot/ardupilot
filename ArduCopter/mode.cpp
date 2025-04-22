@@ -549,14 +549,14 @@ void Mode::zero_throttle_and_relax_ac(bool spool_up)
     } else {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     }
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(0.0f, 0.0f, 0.0f);
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 }
 
 void Mode::zero_throttle_and_hold_attitude()
 {
     // run attitude controller
-    attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+    attitude_control->input_rate_bf_roll_pitch_yaw_cds(0.0f, 0.0f, 0.0f);
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 }
 
@@ -597,7 +597,7 @@ void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
     pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
     pos_control->update_U_controller();
     // we may need to move this out
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(0.0f, 0.0f, 0.0f);
 }
 
 /*
@@ -781,7 +781,7 @@ void Mode::land_run_horizontal_control()
     }
 
     // call attitude controller
-    attitude_control->input_thrust_vector_heading(thrust_vector, auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(thrust_vector, auto_yaw.get_heading());
 
 }
 
@@ -847,7 +847,7 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
     pos_control->update_U_controller();
 
     // call attitude controller
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
 }
 
