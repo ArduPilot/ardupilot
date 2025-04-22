@@ -1127,10 +1127,11 @@ bool NavEKF3::healthy(void) const
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
 // requires_position should be true if horizontal position configuration should be checked
-bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
+// requires_height should be true if height configuration should be checked
+bool NavEKF3::pre_arm_check(bool requires_position, bool requires_height, char *failure_msg, uint8_t failure_msg_len) const
 {
     // check source configuration
-    if (!sources.pre_arm_check(requires_position, failure_msg, failure_msg_len)) {
+    if (!sources.pre_arm_check(requires_position, requires_height, failure_msg, failure_msg_len)) {
         return false;
     }
 
@@ -1142,6 +1143,34 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
         dal.snprintf(failure_msg, failure_msg_len, "EK3_MAG_CAL and EK3_SRC1_YAW inconsistent");
         return false;
     }
+
+    // check if range finder is enabled and in range
+#if AP_RANGEFINDER_ENABLED
+    if (requires_position || requires_height) {
+        const AP_NavEKF_Source::SourceZ height_source = sources.getPosZSource();
+        if (height_source == AP_NavEKF_Source::SourceZ::RANGEFINDER) {
+            const auto *_rng = dal.rangefinder();
+            if (_rng == nullptr) {
+                dal.snprintf(failure_msg, failure_msg_len, "Rangefinder not enabled");
+                return false;
+            }
+            bool rangefinder_healthy = false;
+            for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
+                auto *backend = _rng->get_backend(i);
+                if (backend != nullptr && backend->orientation() == ROTATION_PITCH_270) {
+                    if (backend->status() == AP_DAL_RangeFinder::Status::Good) {
+                        rangefinder_healthy = true;
+                        break;
+                    }
+                }
+            }
+            if (!rangefinder_healthy) {
+                dal.snprintf(failure_msg, failure_msg_len, "Rangefinder not healthy");
+                return false;
+            }
+        }
+    }
+#endif
 
     if (!core) {
         dal.snprintf(failure_msg, failure_msg_len, "no EKF3 cores");
