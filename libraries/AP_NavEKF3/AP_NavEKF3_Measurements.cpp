@@ -561,12 +561,25 @@ void NavEKF3_core::readGpsData()
     // check for new GPS data
     const auto &gps = dal.gps();
 
+    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS) {
+        return;
+    }
+
+    if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms > 1000 ||
+        gps.status(selected_gps) < AP_DAL_GPS::GPS_OK_FIX_3D || frontend->_gps_disabled) {
+        // GPS has dropped lock or data so reset good to align status and force checks to restart
+        gpsGoodToAlign = false;
+        lastGpsVelFail_ms = imuSampleTime_ms;
+        lastGpsVelPass_ms = 0;
+        waitingForGpsChecks = true;
+    }
+
     // limit update rate to avoid overflowing the FIFO buffer
     if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms <= frontend->sensorIntervalMin_ms) {
         return;
     }
 
-    if (gps.status(selected_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
+    if (gps.status(selected_gps) < AP_DAL_GPS::GPS_OK_FIX_3D || frontend->_gps_disabled) {
         // report GPS fix status
         gpsCheckStatus.bad_fix = true;
         dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
@@ -739,6 +752,7 @@ void NavEKF3_core::readGpsYawData()
     float yaw_deg, yaw_accuracy_deg;
     uint32_t yaw_time_ms;
     if (gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D &&
+        !frontend->_gps_disabled &&
         dal.gps().gps_yaw_deg(selected_gps, yaw_deg, yaw_accuracy_deg, yaw_time_ms) &&
         yaw_time_ms != yawMeasTime_ms) {
         // GPS modules are rather too optimistic about their
@@ -1170,7 +1184,7 @@ void NavEKF3_core::update_gps_selection(void)
             // many GPS sensors available
             preferred_gps = core_index;
         }
-        if (gps.status(preferred_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D) {
+        if (gps.status(preferred_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D && !frontend->_gps_disabled) {
             // select our preferred_gps if it has a 3D fix, otherwise
             // use the primary GPS
             selected_gps = preferred_gps;

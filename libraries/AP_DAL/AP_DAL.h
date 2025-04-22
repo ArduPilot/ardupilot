@@ -50,6 +50,8 @@ public:
         setSourceSet0             = 13,
         setSourceSet1             = 14,
         setSourceSet2             = 15,
+        EK3GPSDisable             = 16,
+        EK3GPSEnable              = 17,
     };
 
     // must remain the same as AP_AHRS_VehicleClass numbers-wise

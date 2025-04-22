@@ -73,6 +73,9 @@ void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
         break;
     case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
         break;
+    case AP_DAL::Event::EK3GPSDisable:
+    case AP_DAL::Event::EK3GPSEnable:
+        break;
     }
     if (replay_force_ekf3) {
         LR_MsgHandler_REV3 h{f, ekf2, ekf3};
@@ -132,6 +135,12 @@ void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
         break;
     case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
         ekf3.setPosVelYawSourceSet(uint8_t(msg.event)-uint8_t(AP_DAL::Event::setSourceSet0));
+        break;
+    case AP_DAL::Event::EK3GPSDisable:
+        ekf3.force_gps_disable(true);
+        break;
+    case AP_DAL::Event::EK3GPSEnable:
+        ekf3.force_gps_disable(false);
         break;
     }
 
