@@ -260,8 +260,15 @@ void Mode::run()
 {
     // Direct stick mixing functionality has been removed, so as not to remove all stick mixing from the user completely
     // the old direct option is now used to enable fbw mixing, this is easier than doing a param conversion.
-    if ((plane.g.stick_mixing == StickMixing::FBW) || (plane.g.stick_mixing == StickMixing::DIRECT_REMOVED)) {
-        plane.stabilize_stick_mixing_fbw();
+    switch ((StickMixing)plane.g.stick_mixing) {
+        case StickMixing::FBW:
+        case StickMixing::FBW_NO_PITCH:
+        case StickMixing::DIRECT_REMOVED:
+            plane.stabilize_stick_mixing_fbw();
+            break;
+        case StickMixing::NONE:
+        case StickMixing::VTOL_YAW:
+            break;
     }
     plane.stabilize_roll();
     plane.stabilize_pitch();
