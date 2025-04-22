@@ -33,16 +33,6 @@ void Sub::init_rc_in()
 
     RC_Channels::set_override(6, 1500); // camera pan channel
     RC_Channels::set_override(7, 1500); // camera tilt channel
-
-    RC_Channel* chan = RC_Channels::rc_channel(8);
-    uint16_t min = chan->get_radio_min();
-    RC_Channels::set_override(8, min); // lights 1 channel
-
-    chan = RC_Channels::rc_channel(9);
-    min = chan->get_radio_min();
-    RC_Channels::set_override(9, min); // lights 2 channel
-
-    RC_Channels::set_override(10, 1100); // video switch
 #endif
 }
 

@@ -137,7 +137,7 @@ bool GCS_MAVLINK_Sub::send_info()
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("Lights1",
-                     SRV_Channels::get_output_norm(SRV_Channel::k_rcin9) / 2.0f + 0.5f);
+                     SRV_Channels::get_output_norm(SRV_Channel::k_lights1) / 2.0f + 0.5f);
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("Lights2",
