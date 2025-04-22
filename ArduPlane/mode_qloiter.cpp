@@ -142,7 +142,7 @@ void ModeQLoiter::run()
 #endif
 
     // call attitude controller with conservative smoothing gain of 4.0f
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target.x*100,
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target.x*100,
                                                                   target.y*100,
                                                                   target.z*100);
 

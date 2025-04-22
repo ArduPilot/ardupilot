@@ -955,13 +955,13 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 #endif
 
         if (use_yaw_target) {
-            attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd + offset_deg.x*100,
+            attitude_control->input_euler_angle_roll_pitch_yaw_cd(plane.nav_roll_cd + offset_deg.x*100,
                                                                plane.nav_pitch_cd + offset_deg.y*100,
                                                                yaw_target_cd + offset_deg.z*100,
                                                                true);
         } else {
             // use euler angle attitude control
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd + offset_deg.x*100,
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd + offset_deg.x*100,
                                                                           plane.nav_pitch_cd + offset_deg.y*100,
                                                                           yaw_rate_cds + offset_deg.z*100);
         }
@@ -977,7 +977,7 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
         // disable yaw time constant for 1:1 match of desired rates
         disable_yaw_rate_time_constant();
 
-        attitude_control->input_rate_bf_roll_pitch_yaw_no_shaping(bf_input_cd.x, bf_input_cd.y, bf_input_cd.z);
+        attitude_control->input_rate_bf_roll_pitch_yaw_no_shaping_cds(bf_input_cd.x, bf_input_cd.y, bf_input_cd.z);
     }
 }
 
@@ -2653,11 +2653,11 @@ void QuadPlane::vtol_position_controller(void)
         setup_rp_fw_angle_gains();
 
         if (have_target_yaw) {
-            attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd,
+            attitude_control->input_euler_angle_roll_pitch_yaw_cd(plane.nav_roll_cd,
                                                                plane.nav_pitch_cd,
                                                                target_yaw_deg*100, true);
         } else {
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
                                                                           plane.nav_pitch_cd,
                                                                           desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         }
@@ -2703,7 +2703,7 @@ void QuadPlane::vtol_position_controller(void)
 
         // call attitude controller
         set_pilot_yaw_rate_time_constant();
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
                                                                       get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         break;
@@ -2745,7 +2745,7 @@ void QuadPlane::vtol_position_controller(void)
 
         // call attitude controller
         set_pilot_yaw_rate_time_constant();
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
                                                                       get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         break;
@@ -3134,7 +3134,7 @@ void QuadPlane::takeoff_controller(void)
     run_xy_controller();
 
     set_pilot_yaw_rate_time_constant();
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
                                                                   plane.nav_pitch_cd,
                                                                   get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
 
@@ -3194,7 +3194,7 @@ void QuadPlane::waypoint_controller(void)
 
     // call attitude controller
     disable_yaw_rate_time_constant();
-    attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd,
+    attitude_control->input_euler_angle_roll_pitch_yaw_cd(plane.nav_roll_cd,
                                                        plane.nav_pitch_cd,
                                                        wp_nav->get_yaw(),
                                                        true);
