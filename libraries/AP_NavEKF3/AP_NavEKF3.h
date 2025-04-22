@@ -455,6 +455,7 @@ private:
     // enum for processing options
     enum class Option {
         JammingExpected     = (1<<0),
+        SuppressGPSFixCheck = (1<<1),
     };
     bool option_is_enabled(Option option) const {
         return (_options & (uint32_t)option) != 0;

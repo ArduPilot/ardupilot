@@ -739,8 +739,8 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Optional EKF behaviour
-    // @Description: This controls optional EKF behaviour. Setting JammingExpected will change the EKF nehaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad
-    // @Bitmask: 0:JammingExpected
+    // @Description: This controls optional EKF behaviour. Setting JammingExpected will change the EKF behaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad GPS measurements from getting fused. If SuppressGPSFixCheck is true, EKF3 will initialize despite the preferred GPS not having at least GPS_OK_FIX_3D (this check only applies to forward-flying non-ground vehicles - i.e. Plane in non-VTOL mode).
+    // @Bitmask: 0:JammingExpected,1:SuppressGPSFixCheck
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
 
