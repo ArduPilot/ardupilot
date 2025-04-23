@@ -18,7 +18,7 @@ bool ModeLoiter::init(bool ignore_checks)
         get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
         // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
+        loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
     } else {
         // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
         loiter_nav->clear_pilot_desired_acceleration();
@@ -51,7 +51,7 @@ bool ModeLoiter::do_precision_loiter()
         return false;        // don't move on the ground
     }
     // if the pilot *really* wants to move the vehicle, let them....
-    if (loiter_nav->get_pilot_desired_acceleration().length() > 50.0f) {
+    if (loiter_nav->get_pilot_desired_acceleration_NE_cmss().length() > 50.0f) {
         return false;
     }
     if (!copter.precland.target_acquired()) {
@@ -99,7 +99,7 @@ void ModeLoiter::run()
         get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
         // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
+        loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
 
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate();
@@ -207,12 +207,12 @@ void ModeLoiter::run()
 
 uint32_t ModeLoiter::wp_distance() const
 {
-    return loiter_nav->get_distance_to_target();
+    return loiter_nav->get_distance_to_target_cm();
 }
 
 int32_t ModeLoiter::wp_bearing() const
 {
-    return loiter_nav->get_bearing_to_target();
+    return loiter_nav->get_bearing_to_target_cd();
 }
 
 #endif

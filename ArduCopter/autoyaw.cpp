@@ -257,7 +257,7 @@ float Mode::AutoYaw::yaw_cd()
     case Mode::CIRCLE:
 #if MODE_CIRCLE_ENABLED
         if (copter.circle_nav->is_active()) {
-            _yaw_angle_cd = copter.circle_nav->get_yaw();
+            _yaw_angle_cd = copter.circle_nav->get_yaw_cd();
         }
 #endif
         break;

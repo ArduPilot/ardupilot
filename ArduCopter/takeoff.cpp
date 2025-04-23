@@ -132,7 +132,7 @@ void _AutoTakeoff::run()
 
     // get terrain offset
     float terr_offset = 0.0f;
-    if (terrain_alt && !wp_nav->get_terrain_offset(terr_offset)) {
+    if (terrain_alt && !wp_nav->get_terrain_offset_cm(terr_offset)) {
         // trigger terrain failsafe
         copter.failsafe_terrain_on_event();
         return;
