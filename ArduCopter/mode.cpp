@@ -710,7 +710,7 @@ void Mode::land_run_horizontal_control()
             // convert pilot input to reposition velocity
             // use half maximum acceleration as the maximum velocity to ensure aircraft will
             // stop from full reposition speed in less than 1 second.
-            const float max_pilot_vel = wp_nav->get_wp_acceleration() * 0.5;
+            const float max_pilot_vel = wp_nav->get_wp_acceleration_cmss() * 0.5;
             vel_correction = get_pilot_desired_velocity(max_pilot_vel);
 
             // record if pilot has overridden roll or pitch

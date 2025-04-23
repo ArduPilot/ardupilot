@@ -104,7 +104,7 @@ void Copter::tuning()
         break;
 
     case TUNING_WP_SPEED:
-        wp_nav->set_speed_xy(tuning_value);
+        wp_nav->set_speed_NE_cms(tuning_value);
         break;
 
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
@@ -145,7 +145,7 @@ void Copter::tuning()
 
 #if MODE_CIRCLE_ENABLED
     case TUNING_CIRCLE_RATE:
-        circle_nav->set_rate(tuning_value);
+        circle_nav->set_rate_degs(tuning_value);
         break;
 #endif
 
@@ -198,7 +198,7 @@ void Copter::tuning()
         break;
 
     case TUNING_LOITER_MAX_XY_SPEED:
-        loiter_nav->set_max_xy_speed(tuning_value);
+        loiter_nav->set_speed_max_NE_cms(tuning_value);
         break;
     }
 }
