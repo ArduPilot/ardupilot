@@ -215,10 +215,10 @@ bool AC_WPNav_OA::update_wpnav()
                 Vector3p dest_NEU{dest_NE.x, dest_NE.y, (float)target_alt_loc.alt};
 
                 // pass the desired position directly to the position controller
-                _pos_control.input_pos_xyz(dest_NEU, terr_offset, 1000.0);
+                _pos_control.input_pos_NEU_cm(dest_NEU, terr_offset, 1000.0);
 
                 // update horizontal position controller (vertical is updated in vehicle code)
-                _pos_control.update_xy_controller();
+                _pos_control.update_NE_controller();
 
                 // return success without calling parent AC_WPNav
                 return true;
@@ -238,10 +238,10 @@ bool AC_WPNav_OA::update_wpnav()
 
                 // pass the desired position directly to the position controller as an offset from EKF origin in NEU
                 Vector3p dest_NEU_p{dest_NEU.x, dest_NEU.y, dest_NEU.z};
-                _pos_control.input_pos_xyz(dest_NEU_p, 0, 1000.0);
+                _pos_control.input_pos_NEU_cm(dest_NEU_p, 0, 1000.0);
 
                 // update horizontal position controller (vertical is updated in vehicle code)
-                _pos_control.update_xy_controller();
+                _pos_control.update_NE_controller();
 
                 // return success without calling parent AC_WPNav
                 return true;

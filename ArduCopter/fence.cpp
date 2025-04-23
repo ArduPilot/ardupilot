@@ -5,7 +5,7 @@
 #if AP_FENCE_ENABLED
 
 // async fence checking io callback at 1Khz
-void Copter::fence_run_checks()
+void Copter::fence_checks_async()
 {
     const uint32_t now = AP_HAL::millis();
 
@@ -31,7 +31,7 @@ void Copter::fence_run_checks()
         // record clearing of breach
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode::ERROR_RESOLVED);
     }
-    fence_breaches.have_updates = true; // new breache status latched so main loop will now pick it up
+    fence_breaches.have_updates = true; // new breach status latched so main loop will now pick it up
 }
 
 // fence_check - ask fence library to check for breaches and initiate the response

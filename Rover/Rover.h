@@ -327,7 +327,7 @@ private:
 #endif
 #if AP_FENCE_ENABLED
     // fence.cpp
-    void fence_run_checks() override;
+    void fence_checks_async() override;
     void fence_check();
 #endif
     // GCS_Mavlink.cpp
