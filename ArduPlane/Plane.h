@@ -1062,7 +1062,7 @@ private:
 #if AP_FENCE_ENABLED
     // fence.cpp
     void fence_check();
-    void fence_run_checks() override;
+    void fence_checks_async() override;
     bool fence_stickmixing() const;
     bool in_fence_recovery() const;
     uint8_t orig_breaches;
