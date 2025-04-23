@@ -31,7 +31,7 @@ void AC_AttitudeControl::Write_ANG() const
 void AC_AttitudeControl::Write_Rate(const AC_PosControl &pos_control) const
 {
     const Vector3f rate_targets = rate_bf_targets() * RAD_TO_DEG;
-    const Vector3f &accel_target = pos_control.get_accel_target_cmss();
+    const Vector3f &accel_target = pos_control.get_accel_target_NEU_cmss();
     const Vector3f gyro_rate = _rate_gyro * RAD_TO_DEG;
     const struct log_Rate pkt_rate{
         LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),

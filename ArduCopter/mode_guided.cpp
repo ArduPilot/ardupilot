@@ -167,7 +167,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 
     // clear i term when we're taking off
-    pos_control->init_z_controller();
+    pos_control->init_U_controller();
 
     // initialise alt for WP_NAVALT_MIN and set completion alt
     auto_takeoff.start(alt_target_cm, alt_target_terrain);
@@ -216,7 +216,7 @@ void ModeGuided::wp_control_run()
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
-    pos_control->update_z_controller();
+    pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
@@ -226,16 +226,16 @@ void ModeGuided::wp_control_run()
 void ModeGuided::pva_control_start()
 {
     // initialise horizontal speed, acceleration
-    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
-    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
 
     // initialize vertical speeds and acceleration
-    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
-    pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
 
     // initialise velocity controller
-    pos_control->init_z_controller();
-    pos_control->init_xy_controller();
+    pos_control->init_U_controller();
+    pos_control->init_NE_controller();
 
     // initialise yaw
     auto_yaw.set_mode_to_default(false);
@@ -292,24 +292,24 @@ bool ModeGuided::is_taking_off() const
 bool ModeGuided::set_speed_xy(float speed_xy_cms)
 {
     // initialise horizontal speed, acceleration
-    pos_control->set_max_speed_accel_xy(speed_xy_cms, wp_nav->get_wp_acceleration());
-    pos_control->set_correction_speed_accel_xy(speed_xy_cms, wp_nav->get_wp_acceleration());
+    pos_control->set_max_speed_accel_NE_cm(speed_xy_cms, wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_NE_cm(speed_xy_cms, wp_nav->get_wp_acceleration());
     return true;
 }
 
 bool ModeGuided::set_speed_up(float speed_up_cms)
 {
     // initialize vertical speeds and acceleration
-    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), speed_up_cms, wp_nav->get_accel_z());
-    pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), speed_up_cms, wp_nav->get_accel_z());
+    pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down(), speed_up_cms, wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down(), speed_up_cms, wp_nav->get_accel_z());
     return true;
 }
 
 bool ModeGuided::set_speed_down(float speed_down_cms)
 {
     // initialize vertical speeds and acceleration
-    pos_control->set_max_speed_accel_z(speed_down_cms, wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
-    pos_control->set_correction_speed_accel_z(speed_down_cms, wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_max_speed_accel_U_cm(speed_down_cms, wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_U_cmss(speed_down_cms, wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
     return true;
 }
 
@@ -320,12 +320,12 @@ void ModeGuided::angle_control_start()
     guided_mode = SubMode::Angle;
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
-    pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
 
     // initialise the vertical position controller
-    if (!pos_control->is_active_z()) {
-        pos_control->init_z_controller();
+    if (!pos_control->is_active_U()) {
+        pos_control->init_U_controller();
     }
 
     // initialise targets
@@ -391,10 +391,10 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
         // convert origin to alt-above-terrain if necessary
         if (!guided_pos_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->init_pos_terrain_cm(origin_terr_offset);
+            pos_control->init_pos_terrain_U_cm(origin_terr_offset);
         }
     } else {
-        pos_control->init_pos_terrain_cm(0.0);
+        pos_control->init_pos_terrain_U_cm(0.0);
     }
 
     // set yaw state
@@ -504,10 +504,10 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         // convert origin to alt-above-terrain if necessary
         if (!guided_pos_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->init_pos_terrain_cm(origin_terr_offset);
+            pos_control->init_pos_terrain_U_cm(origin_terr_offset);
         }
     } else {
-        pos_control->init_pos_terrain_cm(0.0);
+        pos_control->init_pos_terrain_U_cm(0.0);
     }
 
     guided_pos_target_cm = pos_target_f.topostype();
@@ -662,7 +662,7 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
         angle_control_start();
     } else if (!use_thrust && guided_angle_state.use_thrust) {
         // Already angle control but changing from thrust to climb rate
-        pos_control->init_z_controller();
+        pos_control->init_U_controller();
     }
 
     guided_angle_state.attitude_quat = attitude_quat;
@@ -743,11 +743,11 @@ void ModeGuided::pos_control_run()
     if (guided_pos_terrain_alt) {
         pos_offset_z_buffer = MIN(copter.wp_nav->get_terrain_margin() * 100.0, 0.5 * fabsF(guided_pos_target_cm.z));
     }
-    pos_control->input_pos_xyz(guided_pos_target_cm, terr_offset, pos_offset_z_buffer);
+    pos_control->input_pos_NEU_cm(guided_pos_target_cm, terr_offset, pos_offset_z_buffer);
 
     // run position controllers
-    pos_control->update_xy_controller();
-    pos_control->update_z_controller();
+    pos_control->update_NE_controller();
+    pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
@@ -775,24 +775,24 @@ void ModeGuided::accel_control_run()
         if ((auto_yaw.mode() == AutoYaw::Mode::RATE) || (auto_yaw.mode() == AutoYaw::Mode::ANGLE_RATE)) {
             auto_yaw.set_mode(AutoYaw::Mode::HOLD);
         }
-        pos_control->input_vel_accel_xy(guided_vel_target_cms.xy(), guided_accel_target_cmss.xy(), false);
-        pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
+        pos_control->input_vel_accel_NE_cm(guided_vel_target_cms.xy(), guided_accel_target_cmss.xy(), false);
+        pos_control->input_vel_accel_U_cm(guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
     } else {
         // update position controller with new target
-        pos_control->input_accel_xy(guided_accel_target_cmss);
+        pos_control->input_accel_NE_cm(guided_accel_target_cmss);
         if (!stabilizing_vel_xy()) {
             // set position and velocity errors to zero
-            pos_control->stop_vel_xy_stabilisation();
+            pos_control->stop_vel_NE_stabilisation();
         } else if (!stabilizing_pos_xy()) {
             // set position errors to zero
-            pos_control->stop_pos_xy_stabilisation();
+            pos_control->stop_pos_NE_stabilisation();
         }
-        pos_control->input_accel_z(guided_accel_target_cmss.z);
+        pos_control->input_accel_U_cm(guided_accel_target_cmss.z);
     }
 
     // call velocity controller which includes z axis controller
-    pos_control->update_xy_controller();
-    pos_control->update_z_controller();
+    pos_control->update_NE_controller();
+    pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
@@ -825,7 +825,7 @@ void ModeGuided::velaccel_control_run()
     bool do_avoid = false;
 #if AP_AVOIDANCE_ENABLED
     // limit the velocity for obstacle/fence avoidance
-    copter.avoid.adjust_velocity(guided_vel_target_cms, pos_control->get_pos_xy_p().kP(), pos_control->get_max_accel_xy_cmss(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), G_Dt);
+    copter.avoid.adjust_velocity(guided_vel_target_cms, pos_control->get_pos_NE_p().kP(), pos_control->get_max_accel_NE_cmss(), pos_control->get_pos_U_p().kP(), pos_control->get_max_accel_U_cmss(), G_Dt);
     do_avoid = copter.avoid.limits_active();
 #endif
 
@@ -833,21 +833,21 @@ void ModeGuided::velaccel_control_run()
 
     if (!stabilizing_vel_xy() && !do_avoid) {
         // set the current commanded xy vel to the desired vel
-        guided_vel_target_cms.xy() = pos_control->get_vel_desired_cms().xy();
+        guided_vel_target_cms.xy() = pos_control->get_vel_desired_NEU_cms().xy();
     }
-    pos_control->input_vel_accel_xy(guided_vel_target_cms.xy(), guided_accel_target_cmss.xy(), false);
+    pos_control->input_vel_accel_NE_cm(guided_vel_target_cms.xy(), guided_accel_target_cmss.xy(), false);
     if (!stabilizing_vel_xy() && !do_avoid) {
         // set position and velocity errors to zero
-        pos_control->stop_vel_xy_stabilisation();
+        pos_control->stop_vel_NE_stabilisation();
     } else if (!stabilizing_pos_xy() && !do_avoid) {
         // set position errors to zero
-        pos_control->stop_pos_xy_stabilisation();
+        pos_control->stop_pos_NE_stabilisation();
     }
-    pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
+    pos_control->input_vel_accel_U_cm(guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
 
     // call velocity controller which includes z axis controller
-    pos_control->update_xy_controller();
-    pos_control->update_z_controller();
+    pos_control->update_NE_controller();
+    pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
@@ -869,15 +869,15 @@ void ModeGuided::pause_control_run()
 
     // set the horizontal velocity and acceleration targets to zero
     Vector2f vel_xy, accel_xy;
-    pos_control->input_vel_accel_xy(vel_xy, accel_xy, false);
+    pos_control->input_vel_accel_NE_cm(vel_xy, accel_xy, false);
 
     // set the vertical velocity and acceleration targets to zero
     float vel_z = 0.0;
-    pos_control->input_vel_accel_z(vel_z, 0.0, false);
+    pos_control->input_vel_accel_U_cm(vel_z, 0.0, false);
 
     // call velocity controller which includes z axis controller
-    pos_control->update_xy_controller();
-    pos_control->update_z_controller();
+    pos_control->update_NE_controller();
+    pos_control->update_U_controller();
 
     // call attitude controller
     attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
@@ -910,19 +910,19 @@ void ModeGuided::posvelaccel_control_run()
     // send position and velocity targets to position controller
     if (!stabilizing_vel_xy()) {
         // set the current commanded xy pos to the target pos and xy vel to the desired vel
-        guided_pos_target_cm.xy() = pos_control->get_pos_desired_cm().xy();
-        guided_vel_target_cms.xy() = pos_control->get_vel_desired_cms().xy();
+        guided_pos_target_cm.xy() = pos_control->get_pos_desired_NEU_cm().xy();
+        guided_vel_target_cms.xy() = pos_control->get_vel_desired_NEU_cms().xy();
     } else if (!stabilizing_pos_xy()) {
         // set the current commanded xy pos to the target pos
-        guided_pos_target_cm.xy() = pos_control->get_pos_desired_cm().xy();
+        guided_pos_target_cm.xy() = pos_control->get_pos_desired_NEU_cm().xy();
     }
-    pos_control->input_pos_vel_accel_xy(guided_pos_target_cm.xy(), guided_vel_target_cms.xy(), guided_accel_target_cmss.xy(), false);
+    pos_control->input_pos_vel_accel_NE_cm(guided_pos_target_cm.xy(), guided_vel_target_cms.xy(), guided_accel_target_cmss.xy(), false);
     if (!stabilizing_vel_xy()) {
         // set position and velocity errors to zero
-        pos_control->stop_vel_xy_stabilisation();
+        pos_control->stop_vel_NE_stabilisation();
     } else if (!stabilizing_pos_xy()) {
         // set position errors to zero
-        pos_control->stop_pos_xy_stabilisation();
+        pos_control->stop_pos_NE_stabilisation();
     }
 
     // guided_pos_target z-axis should never be a terrain altitude
@@ -931,12 +931,12 @@ void ModeGuided::posvelaccel_control_run()
     }
 
     float pz = guided_pos_target_cm.z;
-    pos_control->input_pos_vel_accel_z(pz, guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
+    pos_control->input_pos_vel_accel_U_cm(pz, guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
     guided_pos_target_cm.z = pz;
 
     // run position controllers
-    pos_control->update_xy_controller();
-    pos_control->update_z_controller();
+    pos_control->update_NE_controller();
+    pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
@@ -963,7 +963,7 @@ void ModeGuided::angle_control_run()
         climb_rate_cms = 0.0f;
         if (guided_angle_state.use_thrust) {
             // initialise vertical velocity controller
-            pos_control->init_z_controller();
+            pos_control->init_U_controller();
             guided_angle_state.use_thrust = false;
         }
     }
@@ -988,7 +988,7 @@ void ModeGuided::angle_control_run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
             set_land_complete(false);
-            pos_control->init_z_controller();
+            pos_control->init_U_controller();
         }
         return;
     }
@@ -1007,8 +1007,8 @@ void ModeGuided::angle_control_run()
     if (guided_angle_state.use_thrust) {
         attitude_control->set_throttle_out(guided_angle_state.thrust, true, copter.g.throttle_filt);
     } else {
-        pos_control->set_pos_target_z_from_climb_rate_cm(climb_rate_cms);
-        pos_control->update_z_controller();
+        pos_control->set_pos_target_U_from_climb_rate_cm(climb_rate_cms);
+        pos_control->update_U_controller();
     }
 }
 
@@ -1122,7 +1122,7 @@ uint32_t ModeGuided::wp_distance() const
     case SubMode::Pos:
         return get_horizontal_distance_cm(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy());
     case SubMode::PosVelAccel:
-        return pos_control->get_pos_error_xy_cm();
+        return pos_control->get_pos_error_NE_cm();
     default:
         return 0;
     }

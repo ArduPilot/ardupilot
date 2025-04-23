@@ -8,11 +8,11 @@ bool ModeAlthold::init(bool ignore_checks) {
 
     // initialize vertical maximum speeds and acceleration
     // sets the maximum speed up and down returned by position controller
-    position_control->set_max_speed_accel_z(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->set_correction_speed_accel_z(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_correction_speed_accel_U_cmss(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise position and desired velocity
-    position_control->init_z_controller();
+    position_control->init_U_controller();
 
     sub.last_pilot_heading = ahrs.yaw_sensor;
 
@@ -33,14 +33,14 @@ void ModeAlthold::run_pre()
     uint32_t tnow = AP_HAL::millis();
 
     // initialize vertical speeds and acceleration
-    position_control->set_max_speed_accel_z(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
         attitude_control->set_throttle_out(0.5,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
-        position_control->relax_z_controller(motors.get_throttle_hover());
+        position_control->relax_U_controller(motors.get_throttle_hover());
         sub.last_pilot_heading = ahrs.yaw_sensor;
         return;
     }
@@ -111,12 +111,12 @@ void ModeAlthold::control_depth() {
     //we allow full control to the pilot, but as soon as there's no input, we handle being at surface/bottom
     if (fabsf(target_climb_rate_cm_s) < 0.05f)  {
         if (sub.ap.at_surface) {
-            position_control->set_pos_desired_z_cm(MIN(position_control->get_pos_desired_z_cm(), g.surface_depth - 5.0f)); // set target to 5 cm below surface level
+            position_control->set_pos_desired_U_cm(MIN(position_control->get_pos_desired_U_cm(), g.surface_depth - 5.0f)); // set target to 5 cm below surface level
         } else if (sub.ap.at_bottom) {
-            position_control->set_pos_desired_z_cm(MAX(inertial_nav.get_position_z_up_cm() + 10.0f, position_control->get_pos_desired_z_cm())); // set target to 10 cm above bottom
+            position_control->set_pos_desired_U_cm(MAX(inertial_nav.get_position_z_up_cm() + 10.0f, position_control->get_pos_desired_U_cm())); // set target to 10 cm above bottom
         }
     }
 
-    position_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate_cm_s);
-    position_control->update_z_controller();
+    position_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cm_s);
+    position_control->update_U_controller();
 }

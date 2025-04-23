@@ -94,11 +94,11 @@ void AC_Loiter::init_target(const Vector2f& position)
     sanity_check_params();
 
     // initialise position controller speed and acceleration
-    _pos_control.set_correction_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
-    _pos_control.set_pos_error_max_xy_cm(LOITER_POS_CORRECTION_MAX);
+    _pos_control.set_correction_speed_accel_NE_cm(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
+    _pos_control.set_pos_error_max_NE_cm(LOITER_POS_CORRECTION_MAX);
 
     // initialise position controller
-    _pos_control.init_xy_controller_stopping_point();
+    _pos_control.init_NE_controller_stopping_point();
 
     // initialise desired acceleration and angles to zero to remain on station
     _predicted_accel.zero();
@@ -107,7 +107,7 @@ void AC_Loiter::init_target(const Vector2f& position)
     _brake_accel = 0.0f;
 
     // set target position
-    _pos_control.set_pos_desired_xy_cm(position);
+    _pos_control.set_pos_desired_NE_cm(position);
 }
 
 /// initialize's position and feed-forward velocity from current pos and velocity
@@ -116,14 +116,14 @@ void AC_Loiter::init_target()
     sanity_check_params();
 
     // initialise position controller speed and acceleration
-    _pos_control.set_correction_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
-    _pos_control.set_pos_error_max_xy_cm(LOITER_POS_CORRECTION_MAX);
+    _pos_control.set_correction_speed_accel_NE_cm(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
+    _pos_control.set_pos_error_max_NE_cm(LOITER_POS_CORRECTION_MAX);
 
     // initialise position controller and move target accelerations smoothly towards zero
-    _pos_control.relax_velocity_controller_xy();
+    _pos_control.relax_velocity_controller_NE();
 
     // initialise predicted acceleration and angles from the position controller
-    _predicted_accel = _pos_control.get_accel_target_cmss().xy();
+    _predicted_accel = _pos_control.get_accel_target_NEU_cmss().xy();
     _predicted_euler_angle.x = radians(_pos_control.get_roll_cd()*0.01f);
     _predicted_euler_angle.y = radians(_pos_control.get_pitch_cd()*0.01f);
     _brake_accel = 0.0f;
@@ -132,7 +132,7 @@ void AC_Loiter::init_target()
 /// reduce response for landing
 void AC_Loiter::soften_for_landing()
 {
-    _pos_control.soften_for_landing_xy();
+    _pos_control.soften_for_landing_NE();
 }
 
 /// set pilot desired acceleration in centi-degrees
@@ -172,7 +172,7 @@ void AC_Loiter::set_pilot_desired_acceleration(float euler_roll_angle_cd, float 
 void AC_Loiter::get_stopping_point_xy(Vector2f& stopping_point) const
 {
     Vector2p stop;
-    _pos_control.get_stopping_point_xy_cm(stop);
+    _pos_control.get_stopping_point_NE_cm(stop);
     stopping_point = stop.tofloat();
 }
 
@@ -189,7 +189,7 @@ float AC_Loiter::get_angle_max_cd() const
 void AC_Loiter::update(bool avoidance_on)
 {
     calc_desired_velocity(avoidance_on);
-    _pos_control.update_xy_controller();
+    _pos_control.update_NE_controller();
 }
 
 //set maximum horizontal speed
@@ -227,7 +227,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     }
 
     // get loiters desired velocity from the position controller where it is being stored.
-    Vector2f desired_vel = _pos_control.get_vel_desired_cms().xy();
+    Vector2f desired_vel = _pos_control.get_vel_desired_NEU_cms().xy();
 
     // update the desired velocity using our predicted acceleration
     desired_vel += _predicted_accel * dt;
@@ -244,7 +244,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         float loiter_brake_accel = 0.0f;
         if (_desired_accel.is_zero()) {
             if ((AP_HAL::millis() - _brake_timer) > _brake_delay * 1000.0f) {
-                float brake_gain = _pos_control.get_vel_xy_pid().kP() * 0.5f;
+                float brake_gain = _pos_control.get_vel_NE_pid().kP() * 0.5f;
                 loiter_brake_accel = constrain_float(sqrt_controller(desired_speed, brake_gain, _brake_jerk_max_cmsss, dt), 0.0f, _brake_accel_cmss);
             }
         } else {
@@ -275,18 +275,18 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         AC_Avoid *_avoid = AP::ac_avoid();
         if (_avoid != nullptr) {
             Vector3f avoidance_vel_3d{desired_vel.x, desired_vel.y, 0.0f};
-            _avoid->adjust_velocity(avoidance_vel_3d, _pos_control.get_pos_xy_p().kP(), _accel_cmss, _pos_control.get_pos_z_p().kP(), _pos_control.get_max_accel_z_cmss(), dt);
+            _avoid->adjust_velocity(avoidance_vel_3d, _pos_control.get_pos_NE_p().kP(), _accel_cmss, _pos_control.get_pos_U_p().kP(), _pos_control.get_max_accel_U_cmss(), dt);
             desired_vel = Vector2f{avoidance_vel_3d.x, avoidance_vel_3d.y};
         }
     }
 #endif // !APM_BUILD_ArduPlane
 
     // get loiters desired velocity from the position controller where it is being stored.
-    Vector2p desired_pos = _pos_control.get_pos_desired_cm().xy();
+    Vector2p desired_pos = _pos_control.get_pos_desired_NEU_cm().xy();
 
     // update the desired position using our desired velocity and acceleration
     desired_pos += (desired_vel * dt).topostype();
 
     // send adjusted feed forward acceleration and velocity back to the Position Controller
-    _pos_control.set_pos_vel_accel_xy(desired_pos, desired_vel, _desired_accel);
+    _pos_control.set_pos_vel_accel_NE_cm(desired_pos, desired_vel, _desired_accel);
 }

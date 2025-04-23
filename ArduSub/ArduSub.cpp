@@ -190,7 +190,7 @@ void Sub::ten_hz_logging_loop()
             logger.Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
             logger.Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
             logger.Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
-            logger.Write_PID(LOG_PIDA_MSG, pos_control.get_accel_z_pid().get_pid_info());
+            logger.Write_PID(LOG_PIDA_MSG, pos_control.get_accel_U_pid().get_pid_info());
         }
     }
     if (should_log(MASK_LOG_MOTBATT)) {
@@ -227,7 +227,7 @@ void Sub::twentyfive_hz_logging()
             logger.Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
             logger.Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
             logger.Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
-            logger.Write_PID(LOG_PIDA_MSG, pos_control.get_accel_z_pid().get_pid_info());
+            logger.Write_PID(LOG_PIDA_MSG, pos_control.get_accel_U_pid().get_pid_info());
         }
     }
 
@@ -300,7 +300,7 @@ void Sub::one_hz_loop()
     set_likely_flying(hal.util->get_soft_armed());
 
     attitude_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
-    pos_control.get_accel_z_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    pos_control.get_accel_U_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 }
 
 void Sub::read_AHRS()

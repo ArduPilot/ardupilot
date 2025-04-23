@@ -220,3 +220,6 @@ define HAL_OS_FATFS_IO 1
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# build ABIN for flash-from-bootloader support:
+env BUILD_ABIN True
