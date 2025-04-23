@@ -81,16 +81,16 @@ void ModeGuided::guided_pos_control_start()
     sub.guided_mode = Guided_WP;
 
     // initialise waypoint controller
-    sub.wp_nav.wp_and_spline_init();
+    sub.wp_nav.wp_and_spline_init_cm();
 
     // initialise wpnav to stopping point at current altitude
     // To-Do: set to current location if disarmed?
     // To-Do: set to stopping point altitude?
     Vector3f stopping_point;
-    sub.wp_nav.get_wp_stopping_point(stopping_point);
+    sub.wp_nav.get_wp_stopping_point_NEU_cm(stopping_point);
 
     // no need to check return status because terrain data is not used
-    sub.wp_nav.set_wp_destination(stopping_point, false);
+    sub.wp_nav.set_wp_destination_NEU_cm(stopping_point, false);
 
     // initialise yaw
     sub.yaw_rate_only = false;
@@ -123,8 +123,8 @@ void ModeGuided::guided_posvel_control_start()
     sub.guided_mode = Guided_PosVel;
 
     // set vertical speed and acceleration
-    position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
-    position_control->set_correction_speed_accel_U_cmss(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
+    position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
+    position_control->set_correction_speed_accel_U_cmss(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
 
     // initialise velocity controller
     position_control->init_U_controller();
@@ -142,8 +142,8 @@ void ModeGuided::guided_angle_control_start()
     sub.guided_mode = Guided_Angle;
 
     // set vertical speed and acceleration
-    position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
-    position_control->set_correction_speed_accel_U_cmss(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
+    position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
+    position_control->set_correction_speed_accel_U_cmss(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
 
     // initialise velocity controller
     position_control->init_U_controller();
@@ -181,7 +181,7 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination)
     }
 
     // no need to check return status because terrain data is not used
-    sub.wp_nav.set_wp_destination(destination, false);
+    sub.wp_nav.set_wp_destination_NEU_cm(destination, false);
 
 #if HAL_LOGGING_ENABLED
     // log target
@@ -252,7 +252,7 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination, bool use_ya
     update_time_ms = AP_HAL::millis();
 
     // no need to check return status because terrain data is not used
-    sub.wp_nav.set_wp_destination(destination, false);
+    sub.wp_nav.set_wp_destination_NEU_cm(destination, false);
 
 #if HAL_LOGGING_ENABLED
     // log target
@@ -463,7 +463,7 @@ void ModeGuided::guided_pos_control_run()
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
-        sub.wp_nav.wp_and_spline_init();
+        sub.wp_nav.wp_and_spline_init_cm();
         return;
     }
 
@@ -701,7 +701,7 @@ void ModeGuided::guided_angle_control_run()
     float yaw_in = wrap_180_cd(guided_angle_state.yaw_cd);
 
     // constrain climb rate
-    float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up());
+    float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms());
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
     uint32_t tnow = AP_HAL::millis();
@@ -808,7 +808,7 @@ float ModeGuided::get_auto_heading()
     case AUTO_YAW_CORRECT_XTRACK: {
         // TODO return current yaw if not in appropriate mode
         // Bearing of current track (centidegrees)
-        float track_bearing = get_bearing_cd(sub.wp_nav.get_wp_origin().xy(), sub.wp_nav.get_wp_destination().xy());
+        float track_bearing = get_bearing_cd(sub.wp_nav.get_wp_origin_NEU_cm().xy(), sub.wp_nav.get_wp_destination_NEU_cm().xy());
 
         // Bearing from current position towards intermediate position target (centidegrees)
         const Vector2f target_vel_xy = position_control->get_vel_target_NEU_cms().xy();

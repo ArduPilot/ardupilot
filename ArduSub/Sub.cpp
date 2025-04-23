@@ -395,7 +395,7 @@ bool Sub::control_check_barometer()
 bool Sub::get_wp_distance_m(float &distance) const
 {
     // see GCS_MAVLINK_Sub::send_nav_controller_output()
-    distance = sub.wp_nav.get_wp_distance_to_destination() * 0.01;
+    distance = sub.wp_nav.get_wp_distance_to_destination_cm() * 0.01;
     return true;
 }
 
@@ -403,7 +403,7 @@ bool Sub::get_wp_distance_m(float &distance) const
 bool Sub::get_wp_bearing_deg(float &bearing) const
 {
     // see GCS_MAVLINK_Sub::send_nav_controller_output()
-    bearing = sub.wp_nav.get_wp_bearing_to_destination() * 0.01;
+    bearing = sub.wp_nav.get_wp_bearing_to_destination_cd() * 0.01;
     return true;
 }
 

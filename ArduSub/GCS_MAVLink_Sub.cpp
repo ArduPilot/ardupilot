@@ -84,8 +84,8 @@ void GCS_MAVLINK_Sub::send_nav_controller_output() const
         targets.x * 1.0e-2f,
         targets.y * 1.0e-2f,
         targets.z * 1.0e-2f,
-        sub.wp_nav.get_wp_bearing_to_destination() * 1.0e-2f,
-        MIN(sub.wp_nav.get_wp_distance_to_destination() * 1.0e-2f, UINT16_MAX),
+        sub.wp_nav.get_wp_bearing_to_destination_cd() * 1.0e-2f,
+        MIN(sub.wp_nav.get_wp_distance_to_destination_cm() * 1.0e-2f, UINT16_MAX),
         sub.pos_control.get_pos_error_U_cm() * 1.0e-2f,
         0,
         0);
@@ -417,7 +417,7 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_command
         // param3 : unused
         // param4 : unused
         if (packet.param2 > 0.0f) {
-            sub.wp_nav.set_speed_xy(packet.param2 * 100.0f);
+            sub.wp_nav.set_speed_NE_cms(packet.param2 * 100.0f);
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
@@ -520,10 +520,10 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
             climb_rate_cms = 0.0f;
         } else if (packet.thrust > 0.5f) {
             // climb at up to WPNAV_SPEED_UP
-            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_up();
+            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_up_cms();
         } else {
             // descend at up to WPNAV_SPEED_DN
-            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_down();
+            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_down_cms();
         }
         sub.mode_guided.guided_set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]), climb_rate_cms);
         break;
@@ -751,7 +751,7 @@ uint8_t GCS_MAVLINK_Sub::high_latency_tgt_heading() const
     // return units are deg/2
     if (sub.control_mode == Mode::Number::AUTO || sub.control_mode == Mode::Number::GUIDED) {
         // need to convert -18000->18000 to 0->360/2
-        return wrap_360_cd(sub.wp_nav.get_wp_bearing_to_destination()) / 200;
+        return wrap_360_cd(sub.wp_nav.get_wp_bearing_to_destination_cd()) / 200;
     }
     return 0;      
 }
@@ -760,7 +760,7 @@ uint16_t GCS_MAVLINK_Sub::high_latency_tgt_dist() const
 {
     // return units are dm
     if (sub.control_mode == Mode::Number::AUTO || sub.control_mode == Mode::Number::GUIDED) {
-        return MIN(sub.wp_nav.get_wp_distance_to_destination() * 0.001, UINT16_MAX);
+        return MIN(sub.wp_nav.get_wp_distance_to_destination_cm() * 0.001, UINT16_MAX);
     }
     return 0;
 }
