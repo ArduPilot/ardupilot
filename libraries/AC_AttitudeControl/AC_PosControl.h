@@ -416,8 +416,8 @@ public:
     ///     this prevents integrator windup during external acceleration saturation
     void set_externally_limited_NE() { _limit_vector.x = _accel_target_neu_cmss.x; _limit_vector.y = _accel_target_neu_cmss.y; }
 
-    // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
-    Vector3f lean_angles_to_accel(const Vector3f& att_target_euler) const;
+    // lean_angles_to_accel_NEU_cmss - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
+    Vector3f lean_angles_to_accel_NEU_cmss(const Vector3f& att_target_euler_rad) const;
 
     // write PSC and/or PSCZ logs
     void write_log();
@@ -472,10 +472,10 @@ protected:
     // get throttle using vibration-resistant calculation (uses feed forward with manually calculated gain)
     float get_throttle_with_vibration_override();
 
-    // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
+    // accel_NE_cmss_to_lean_angles - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
     void accel_NE_cmss_to_lean_angles(float accel_n_cmss, float accel_e_cmss, float& roll_target_cd, float& pitch_target_cd) const;
 
-    // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
+    // lean_angles_to_accel_NE_cmss - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
     void lean_angles_to_accel_NE_cmss(float& accel_n_cmss, float& accel_e_cmss) const;
 
     // calculate_yaw_and_rate_yaw - calculate the vehicle yaw and rate of yaw.
