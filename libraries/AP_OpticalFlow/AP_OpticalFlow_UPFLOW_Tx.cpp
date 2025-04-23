@@ -109,7 +109,7 @@ void AP_OpticalFlow_UPFLOW_Tx::update(void)
 
     // setup upflow link, only once
     if (!upflow_tx_message_sent) {
-        hal.scheduler->delay(200);
+        //hal.scheduler->delay(200);
         uart->write((const uint8_t*)init_msg, strlen(init_msg));
         upflow_tx_message_sent = true; 
     }

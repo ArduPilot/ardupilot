@@ -127,8 +127,6 @@ void AP_OpticalFlow_UPFLOW_LC30x::update(void)
 
     // init upflow,only once
     if (!upflow_lc30x_message_sent) {
-
-        hal.scheduler->delay(200);
         
         uint8_t buf[30];
 		uint16_t len = sizeof(upflow_sensor_cfg);
@@ -141,8 +139,6 @@ void AP_OpticalFlow_UPFLOW_LC30x::update(void)
 		uart->write( upflow_internal_para, 4 );
 		buf[0] = upflow_internal_para[0]^upflow_internal_para[1]^upflow_internal_para[2]^upflow_internal_para[3];
 		uart->write( buf, 1 );		
-
-		hal.scheduler->delay(100);
 									
 		for(uint16_t i=0; i<len;i+=2 )
 		{
@@ -153,8 +149,6 @@ void AP_OpticalFlow_UPFLOW_LC30x::update(void)
 			buf[4] = UPFLOW_SENSOR_IIC_ADDR^upflow_sensor_cfg[i]^upflow_sensor_cfg[i+1];
 			uart->write( buf, 5 );								 
 		}
-
-		hal.scheduler->delay(100);
 		 		 
 		buf[0] = 0xDD;
 		uart->write( buf, 1 );	
