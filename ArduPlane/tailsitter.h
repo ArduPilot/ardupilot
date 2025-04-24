@@ -120,7 +120,7 @@ public:
 private:
 
     // Tailsitter specific log message
-    struct PACKED log_tailsitter {
+    struct PACKED log_TSIT {
         LOG_PACKET_HEADER;
         uint64_t time_us;
         float throttle_scaler;
@@ -197,6 +197,10 @@ public:
     bool allow_weathervane() override;
 
 private:
+
+#if HAL_LOGGING_ENABLED
+    uint8_t log_msg_id() const override { return LOG_TSTR_MSG; }
+#endif  // HAL_LOGGING_ENABLED
 
     enum class State {
         ANGLE_WAIT_FW   = 0,
