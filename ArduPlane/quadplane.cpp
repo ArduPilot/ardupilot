@@ -3677,7 +3677,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         assist_flags |= (uint8_t)log_assistance_flags::spin_recovery;
     }
 
-    struct log_QControl_Tuning pkt = {
+    struct log_QTUN pkt = {
         LOG_PACKET_HEADER_INIT(LOG_QTUN_MSG),
         time_us             : AP_HAL::micros64(),
         throttle_in         : attitude_control->get_throttle_in(),
