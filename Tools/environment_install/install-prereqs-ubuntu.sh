@@ -60,22 +60,37 @@ fi
 # Checking Ubuntu release to adapt software version to install
 RELEASE_CODENAME=$(lsb_release -c -s)
 
-# translate Mint-codenames to Ubuntu-codenames based on https://www.linuxmint.com/download_all.php
-case ${RELEASE_CODENAME} in
-    wilma | xia)
-        RELEASE_CODENAME='noble'
+RELEASE_DISTRIBUTOR=$(lsb_release -i -s)
+case ${RELEASE_DISTRIBUTOR} in
+    elementary)
+        case ${RELEASE_CODENAME} in
+            jolnir)
+                RELEASE_CODENAME='focal'
+                ;;
+        esac
         ;;
-    vanessa | vera | victoria | virginia)
-        RELEASE_CODENAME='jammy'
-        ;;
-    una | uma | ulyssa | ulyana | jolnir)
-        RELEASE_CODENAME='focal'
-        ;;
-    tricia | tina | tessa | tara)
-        RELEASE_CODENAME='bionic'
-        ;;
-    elsie)
-        RELEASE_CODENAME='bullseye'
+    LinuxMint)
+        # translate Mint-codenames to Ubuntu-codenames based on https://www.linuxmint.com/download_all.php
+        case ${RELEASE_CODENAME} in
+            wilma | xia)
+                RELEASE_CODENAME='noble'
+                ;;
+            vanessa | vera | victoria | virginia)
+                RELEASE_CODENAME='jammy'
+                ;;
+            una | uma | ulyssa | ulyana)
+                RELEASE_CODENAME='focal'
+                ;;
+            tricia | tina | tessa | tara)
+                RELEASE_CODENAME='bionic'
+                ;;
+            elsie)
+                RELEASE_CODENAME='bullseye'
+                ;;
+            *)
+                echo "Unable to map ${RELEASE_CODENAME} to an Ubuntu release.  Please patch this script and submit a pull request, or report at https://github.com/ArduPilot/ardupilot/issues"
+                exit 1
+        esac
         ;;
 esac
 
