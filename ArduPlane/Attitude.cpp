@@ -434,7 +434,7 @@ void Plane::stabilize()
     if (control_mode->supports_fw_systemid()) {
         auto &systemid = plane.g2.systemid;
         // systemid is updated here for all other calls
-        systemid.update();
+        systemid.fw_update();
     }
 #endif
 

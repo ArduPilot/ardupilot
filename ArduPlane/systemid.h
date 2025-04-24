@@ -20,7 +20,8 @@ public:
     AP_SystemID(void);
     void start(void);
     void stop(void);
-    void update();
+    void fw_update();
+    void vtol_update();
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -41,7 +42,7 @@ public:
 private:
     Chirp chirp_input;
     bool running;
-
+    // AxisType 14-19 not supported for plane or quadplane
     enum class AxisType {
         NONE = 0,               // none
         INPUT_ROLL = 1,         // angle input roll axis is being excited
@@ -57,6 +58,13 @@ private:
         MIX_PITCH = 11,         // mixer pitch axis is being excited
         MIX_YAW = 12,           // mixer pitch axis is being excited
         MIX_THROTTLE = 13,      // mixer throttle axis is being excited
+        FW_INPUT_ROLL = 20,     // fixed wing angle input roll axis is being excited
+        FW_INPUT_PITCH = 21,    // fixed wing angle pitch axis is being excited
+        FW_INPUT_YAW = 22,      // fixed wing angle yaw axis is being excited
+        FW_MIX_ROLL = 23,       // fixed wing mixer roll axis is being excited
+        FW_MIX_PITCH = 24,      // fixed wing mixer pitch axis is being excited
+        FW_MIX_YAW = 25,        // fixed wing mixer pitch axis is being excited
+        FW_MIX_THROTTLE = 26,   // fixed wing mixer throttle axis is being excited
     };
 
     void set_bf_feedforward(bool value);
