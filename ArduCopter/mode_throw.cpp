@@ -69,12 +69,12 @@ void ModeThrow::run()
         // initialise the z controller
         pos_control->init_U_controller_no_descent();
 
-        // initialise the demanded height to 3m above the throw height
-        // we want to rapidly clear surrounding obstacles
+        // initialise the demanded height below/above the throw height from user parameters
+        // this allows for rapidly clearing surrounding obstacles
         if (g2.throw_type == ThrowType::Drop) {
-            pos_control->set_pos_desired_U_cm(inertial_nav.get_position_z_up_cm() - 100);
+            pos_control->set_pos_desired_U_cm(inertial_nav.get_position_z_up_cm() - g.throw_altitude_descend * 100.0f);
         } else {
-            pos_control->set_pos_desired_U_cm(inertial_nav.get_position_z_up_cm() + 300);
+            pos_control->set_pos_desired_U_cm(inertial_nav.get_position_z_up_cm() + g.throw_altitude_ascend * 100.0f);
         }
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
