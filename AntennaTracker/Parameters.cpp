@@ -197,11 +197,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(pitch_max,               "PITCH_MAX",	PITCH_MAX_DEFAULT),
 
-    // barometer library
-    // @Group: BARO
-    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "BARO", AP_Baro),
-
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass,                "COMPASS_",     Compass),
@@ -560,6 +555,10 @@ void Tracker::load_parameters(void)
     };
 
     AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
+
+#if AP_BARO_ENABLED
+    AP::baro().convert_parameters_for_move_to_ap_vehicle(Parameters::k_param_barometer_old);
+#endif
 
 #if HAL_HAVE_SAFETY_SWITCH
     // configure safety switch to allow stopping the motors while armed

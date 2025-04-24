@@ -520,9 +520,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
-    // @Group: BARO
-    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "BARO", AP_Baro),
+    // BARO was here
 
     // GPS driver
     // @Group: GPS
@@ -1331,6 +1329,10 @@ void Copter::load_parameters(void)
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
     }
 #endif  // HAL_GCS_ENABLED
+
+#if AP_BARO_ENABLED
+    AP::baro().convert_parameters_for_move_to_ap_vehicle(Parameters::k_param_barometer_old);
+#endif
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
