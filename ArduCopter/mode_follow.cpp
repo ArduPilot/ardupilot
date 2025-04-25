@@ -62,7 +62,7 @@ void ModeFollow::run()
     Vector3f dist_vec;  // vector to lead vehicle
     Vector3f dist_vec_offs;  // vector to lead vehicle + offset
     Vector3f vel_of_target;  // velocity of lead vehicle
-    if (g2.follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, vel_of_target)) {
+    if (g2.follow.get_target_dist_and_vel_NED_m(dist_vec, dist_vec_offs, vel_of_target)) {
         // convert dist_vec_offs to cm in NEU
         const Vector3f dist_vec_offs_neu(dist_vec_offs.x * 100.0f, dist_vec_offs.y * 100.0f, -dist_vec_offs.z * 100.0f);
 
@@ -152,12 +152,12 @@ void ModeFollow::run()
 
 uint32_t ModeFollow::wp_distance() const
 {
-    return g2.follow.get_distance_to_target() * 100;
+    return g2.follow.get_distance_to_target_m() * 100;
 }
 
 int32_t ModeFollow::wp_bearing() const
 {
-    return g2.follow.get_bearing_to_target() * 100;
+    return g2.follow.get_bearing_to_target_deg() * 100;
 }
 
 /*
