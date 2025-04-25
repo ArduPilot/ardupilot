@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Units: m
     // @Range: 1 1000
     // @User: Standard
-    AP_GROUPINFO("_DIST_MAX", 5, AP_Follow, _dist_max, 100),
+    AP_GROUPINFO("_DIST_MAX", 5, AP_Follow, _dist_max_m, 100),
 
     // @Param: _OFS_TYPE
     // @DisplayName: Follow offset type
@@ -106,7 +106,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Units: m
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_OFS", 7, AP_Follow, _offset, 0),
+    AP_GROUPINFO("_OFS", 7, AP_Follow, _offset_ned_m, 0),
 
 #if !(APM_BUILD_TYPE(APM_BUILD_Rover))
     // @Param: _YAW_BEHAVE
@@ -160,23 +160,23 @@ AP_Follow::AP_Follow() :
 void AP_Follow::clear_offsets_if_required()
 {
     if (_offsets_were_zero) {
-        _offset.set(Vector3f());
+        _offset_ned_m.set(Vector3f());
         _offsets_were_zero = false;
     }
 }
 
 // get target's estimated location
-bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const
+bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned_ms) const
 {
-    Vector3p pos_ned;
-    Vector3f local_vel_ned;  // so we either change both return parameters or neither
-    if (!get_target_position_and_velocity(pos_ned, local_vel_ned)) {
+    Vector3p pos_ned_m;
+    Vector3f local_vel_ned_m;  // so we either change both return parameters or neither
+    if (!get_target_position_and_velocity_NED_m(pos_ned_m, local_vel_ned_m)) {
         return false;
     }
-    if (!AP::ahrs().get_location_from_origin_offset_NED(loc, pos_ned)) {
+    if (!AP::ahrs().get_location_from_origin_offset_NED(loc, pos_ned_m)) {
         return false;
     }
-    vel_ned = local_vel_ned;
+    vel_ned_ms = local_vel_ned_m;
 
     if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
         loc.change_alt_frame(Location::AltFrame::ABOVE_HOME);
@@ -186,7 +186,7 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 }
 
 // get target's estimated location and velocity, both NED SI from origin
-bool AP_Follow::get_target_position_and_velocity(Vector3p &pos_ned, Vector3f &vel_ned) const
+bool AP_Follow::get_target_position_and_velocity_NED_m(Vector3p &pos_ned_m, Vector3f &vel_ned_ms) const
 {
     // exit immediately if not enabled
     if (!_enabled) {
@@ -202,74 +202,74 @@ bool AP_Follow::get_target_position_and_velocity(Vector3p &pos_ned, Vector3f &ve
     const float dt = (AP_HAL::millis() - _last_location_update_ms) * 0.001f;
 
     // get velocity estimate
-    if (!get_velocity_ned(vel_ned, dt)) {
+    if (!get_velocity_NED_ms(vel_ned_ms, dt)) {
         return false;
     }
 
     // project the vehicle position
-    const Vector3p vel_ned_p { vel_ned.x, vel_ned.y, vel_ned.z };
-    pos_ned = _target_position_ned + vel_ned_p * dt;
+    const Vector3p vel_ned_p { vel_ned_ms.x, vel_ned_ms.y, vel_ned_ms.z };
+    pos_ned_m = _target_position_ned_m + vel_ned_p * dt;
 
     return true;
 }
 
 // get distance vector to target (in meters) and target's velocity all in NED frame
-bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_offs, Vector3f &vel_ned)
+bool AP_Follow::get_target_dist_and_vel_NED_m(Vector3f &dist_ned_m, Vector3f &dist_with_offs_m, Vector3f &vel_ned_ms)
 {
     Vector3f current_position_NED;
     if (!AP::ahrs().get_relative_position_NED_origin(current_position_NED)) {
         clear_dist_and_bearing_to_target();
         return false;
     }
-    Vector3p target_position_NED;
-    Vector3f veh_vel;  // NED
-    if (!get_target_position_and_velocity(target_position_NED, veh_vel)) {
+    Vector3p target_position_ned_m;
+    Vector3f veh_vel_ned_ms;  // NED
+    if (!get_target_position_and_velocity_NED_m(target_position_ned_m, veh_vel_ned_ms)) {
         clear_dist_and_bearing_to_target();
         return false;
     }
 
     // convert from Vector3p to Vector3f as they can't be subtracted:
     Vector3f target_position_NED_f;
-    target_position_NED_f.x = target_position_NED.x;
-    target_position_NED_f.y = target_position_NED.y;
-    target_position_NED_f.z = target_position_NED.z;
+    target_position_NED_f.x = target_position_ned_m.x;
+    target_position_NED_f.y = target_position_ned_m.y;
+    target_position_NED_f.z = target_position_ned_m.z;
 
-    const Vector3f dist_vec = target_position_NED_f - current_position_NED;
+    const Vector3f dist_vec_ned_m = target_position_NED_f - current_position_NED;
 
     // fail if too far
-    if (is_positive(_dist_max.get()) && (dist_vec.length() > _dist_max)) {
+    if (is_positive(_dist_max_m.get()) && (dist_vec_ned_m.length() > _dist_max_m)) {
         clear_dist_and_bearing_to_target();
         return false;
     }
 
-    // initialise offsets from distance vector if required
-    init_offsets_if_required(dist_vec);
+    // initialise offsets_ned_m from distance vector if required
+    init_offsets_if_required(dist_vec_ned_m);
 
-    // get offsets
-    Vector3f offsets;
-    if (!get_offsets_ned(offsets)) {
+    // get offsets_ned_m
+    Vector3f offsets_ned_m;
+    if (!get_offsets_NED_m(offsets_ned_m)) {
         clear_dist_and_bearing_to_target();
         return false;
     }
 
     // calculate results
-    dist_ned = dist_vec;
-    dist_with_offs = dist_vec + offsets;
-    vel_ned = veh_vel;
+    dist_ned_m = dist_vec_ned_m;
+    dist_with_offs_m = dist_vec_ned_m + offsets_ned_m;
+    vel_ned_ms = veh_vel_ned_ms;
 
-    // record distance and heading for reporting purposes
-    if (is_zero(dist_with_offs.x) && is_zero(dist_with_offs.y)) {
+    // record distance and heading_deg for reporting purposes
+    if (is_zero(dist_with_offs_m.x) && is_zero(dist_with_offs_m.y)) {
         clear_dist_and_bearing_to_target();
     } else {
-        _dist_to_target = safe_sqrt(sq(dist_with_offs.x) + sq(dist_with_offs.y));
-        _bearing_to_target = degrees(atan2f(dist_with_offs.y, dist_with_offs.x));
+        _dist_to_target_m = safe_sqrt(sq(dist_with_offs_m.x) + sq(dist_with_offs_m.y));
+        _bearing_to_target_deg = degrees(atan2f(dist_with_offs_m.y, dist_with_offs_m.x));
     }
 
     return true;
 }
 
-// get target's heading in degrees (0 = north, 90 = east)
-bool AP_Follow::get_target_heading_deg(float &heading) const
+// get target's heading_deg in degrees (0 = north, 90 = east)
+bool AP_Follow::get_target_heading_deg(float &heading_deg) const
 {
     // exit immediately if not enabled
     if (!_enabled) {
@@ -281,8 +281,8 @@ bool AP_Follow::get_target_heading_deg(float &heading) const
         return false;
     }
 
-    // return latest heading estimate
-    heading = _target_heading;
+    // return latest heading_deg estimate
+    heading_deg = _target_heading_deg;
     return true;
 }
 
@@ -367,20 +367,20 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
             // absolute altitude
             _target_location.set_alt_cm(packet.alt / 10, Location::AltFrame::ABSOLUTE);
         }
-        if (!_target_location.get_vector_from_origin_NEU(_target_position_ned)) {
+        if (!_target_location.get_vector_from_origin_NEU(_target_position_ned_m)) {
             return false;
         }
-        _target_position_ned.z = -_target_position_ned.z; // NEU->NED
-        _target_position_ned *= 0.01;  // cm -> m
+        _target_position_ned_m.z = -_target_position_ned_m.z; // NEU->NED
+        _target_position_ned_m *= 0.01;  // cm -> m
 
-        _target_velocity_ned.x = packet.vx * 0.01f; // velocity north
-        _target_velocity_ned.y = packet.vy * 0.01f; // velocity east
-        _target_velocity_ned.z = packet.vz * 0.01f; // velocity down
+        _target_velocity_ned_ms.x = packet.vx * 0.01f; // velocity north
+        _target_velocity_ned_ms.y = packet.vy * 0.01f; // velocity east
+        _target_velocity_ned_ms.z = packet.vz * 0.01f; // velocity down
 
         // get a local timestamp with correction for transport jitter
         _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
-        if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
-            _target_heading = packet.hdg * 0.01f;   // convert centi-degrees to degrees
+        if (packet.hdg <= 36000) {                  // heading_deg (UINT16_MAX if unknown)
+            _target_heading_deg = packet.hdg * 0.01f;   // convert centi-degrees to degrees
             _last_heading_update_ms = _last_location_update_ms;
         }
         // initialise _sysid if zero to sender's id
@@ -413,18 +413,18 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
             Location::AltFrame::ABSOLUTE
         };
 
-        if (!new_loc.get_vector_from_origin_NEU(_target_position_ned)) {
+        if (!new_loc.get_vector_from_origin_NEU(_target_position_ned_m)) {
             return false;
         }
-        _target_position_ned.z = -_target_position_ned.z; // NEU->NED
-        _target_position_ned *= 0.01;  // cm -> m
+        _target_position_ned_m.z = -_target_position_ned_m.z; // NEU->NED
+        _target_position_ned_m *= 0.01;  // cm -> m
 
         if (packet.est_capabilities & (1<<1)) {
-            _target_velocity_ned.x = packet.vel[0]; // velocity north
-            _target_velocity_ned.y = packet.vel[1]; // velocity east
-            _target_velocity_ned.z = packet.vel[2]; // velocity down
+            _target_velocity_ned_ms.x = packet.vel[0]; // velocity north
+            _target_velocity_ned_ms.y = packet.vel[1]; // velocity east
+            _target_velocity_ned_ms.z = packet.vel[2]; // velocity down
         } else {
-            _target_velocity_ned.zero();
+            _target_velocity_ned_ms.zero();
         }
 
         // get a local timestamp with correction for transport jitter
@@ -434,7 +434,7 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
             Quaternion q{packet.attitude_q[0], packet.attitude_q[1], packet.attitude_q[2], packet.attitude_q[3]};
             float r, p, y;
             q.to_euler(r,p,y);
-            _target_heading = degrees(y);
+            _target_heading_deg = degrees(y);
             _last_heading_update_ms = _last_location_update_ms;
         }
 
@@ -453,11 +453,11 @@ void AP_Follow::Log_Write_FOLL()
 {
         // get estimated location and velocity
         Location loc_estimate{};
-        Vector3f vel_estimate;
-        UNUSED_RESULT(get_target_location_and_velocity(loc_estimate, vel_estimate));
+        Vector3f vel_estimate_ned_ms;
+        UNUSED_RESULT(get_target_location_and_velocity(loc_estimate, vel_estimate_ned_ms));
 
         Location _target_location;
-        UNUSED_RESULT(AP::ahrs().get_location_from_origin_offset_NED(_target_location, _target_position_ned * 0.01));
+        UNUSED_RESULT(AP::ahrs().get_location_from_origin_offset_NED(_target_location, _target_position_ned_m * 0.01));
         if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
             _target_location.change_alt_frame(Location::AltFrame::ABOVE_HOME);
         }
@@ -484,9 +484,9 @@ void AP_Follow::Log_Write_FOLL()
                                                _target_location.lat,
                                                _target_location.lng,
                                                _target_location.alt,
-                                               (double)_target_velocity_ned.x,
-                                               (double)_target_velocity_ned.y,
-                                               (double)_target_velocity_ned.z,
+                                               (double)_target_velocity_ned_ms.x,
+                                               (double)_target_velocity_ned_ms.y,
+                                               (double)_target_velocity_ned_ms.z,
                                                loc_estimate.lat,
                                                loc_estimate.lng,
                                                loc_estimate.alt
@@ -495,53 +495,53 @@ void AP_Follow::Log_Write_FOLL()
 #endif  // HAL_LOGGING_ENABLED
 
 // get velocity estimate in m/s in NED frame using dt since last update
-bool AP_Follow::get_velocity_ned(Vector3f &vel_ned, float dt) const
+bool AP_Follow::get_velocity_NED_ms(Vector3f &vel_ned_ms, float dt) const
 {
-    vel_ned = _target_velocity_ned + (_target_accel_ned * dt);
+    vel_ned_ms = _target_velocity_ned_ms + (_target_accel_ned_mss * dt);
     return true;
 }
 
-// initialise offsets to provided distance vector to other vehicle (in meters in NED frame) if required
+// initialise offsets_ned_m to provided distance vector to other vehicle (in meters in NED frame) if required
 void AP_Follow::init_offsets_if_required(const Vector3f &dist_vec_ned)
 {
-    // return immediately if offsets have already been set
-    if (!_offset.get().is_zero()) {
+    // return immediately if offsets_ned_m have already been set
+    if (!_offset_ned_m.get().is_zero()) {
         return;
     }
     _offsets_were_zero = true;
 
     float target_heading_deg;
     if ((_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) && get_target_heading_deg(target_heading_deg)) {
-        // rotate offsets from north facing to vehicle's perspective
-        _offset.set(rotate_vector(-dist_vec_ned, -target_heading_deg));
+        // rotate offsets_ned_m from north facing to vehicle's perspective
+        _offset_ned_m.set(rotate_vector(-dist_vec_ned, -target_heading_deg));
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Relative follow offset loaded");
     } else {
         // initialise offset in NED frame
-        _offset.set(-dist_vec_ned);
-        // ensure offset_type used matches frame of offsets saved
+        _offset_ned_m.set(-dist_vec_ned);
+        // ensure offset_type used matches frame of offsets_ned_m saved
         _offset_type.set(AP_FOLLOW_OFFSET_TYPE_NED);
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "N-E-D follow offset loaded");
     }
 }
 
-// get offsets in meters in NED frame
-bool AP_Follow::get_offsets_ned(Vector3f &offset) const
+// get offsets_ned_m in meters in NED frame
+bool AP_Follow::get_offsets_NED_m(Vector3f &offset) const
 {
-    const Vector3f &off = _offset.get();
+    const Vector3f &off = _offset_ned_m.get();
 
-    // if offsets are zero or type is NED, simply return offset vector
+    // if offsets_ned_m are zero or type is NED, simply return offset vector
     if (off.is_zero() || (_offset_type == AP_FOLLOW_OFFSET_TYPE_NED)) {
         offset = off;
         return true;
     }
 
-    // offset type is relative, exit if we cannot get vehicle's heading
+    // offset type is relative, exit if we cannot get vehicle's heading_deg
     float target_heading_deg;
     if (!get_target_heading_deg(target_heading_deg)) {
         return false;
     }
 
-    // rotate offsets from vehicle's perspective to NED
+    // rotate offsets_ned_m from vehicle's perspective to NED
     offset = rotate_vector(off, target_heading_deg);
     return true;
 }
@@ -559,44 +559,43 @@ Vector3f AP_Follow::rotate_vector(const Vector3f &vec, float angle_deg) const
 // set recorded distance and bearing to target to zero
 void AP_Follow::clear_dist_and_bearing_to_target()
 {
-    _dist_to_target = 0.0f;
-    _bearing_to_target = 0.0f;
+    _dist_to_target_m = 0.0f;
+    _bearing_to_target_deg = 0.0f;
 }
 
-// get target's estimated origin-relative-position and velocity (both
-// in SI NED), with offsets added
-bool AP_Follow::get_target_position_and_velocity_ofs(Vector3p &pos_ned, Vector3f &vel_ned) const
+// get target's estimated origin-relative-position and velocity (both in SI NED), with offsets_ned_m added
+bool AP_Follow::get_target_position_and_velocity_ofs_NED_m(Vector3p &pos_ned_m, Vector3f &vel_ned_ms) const
 {
     Vector3f ofs_ned;
-    if (!get_offsets_ned(ofs_ned)) {
+    if (!get_offsets_NED_m(ofs_ned)) {
         return false;
     }
-    if (!get_target_position_and_velocity(pos_ned, vel_ned)) {
+    if (!get_target_position_and_velocity_NED_m(pos_ned_m, vel_ned_ms)) {
         return false;
     }
     // can't add Vector3p and Vector3f directly:
-    pos_ned.x += ofs_ned.x;
-    pos_ned.y += ofs_ned.y;
-    pos_ned.z += ofs_ned.z;
+    pos_ned_m.x += ofs_ned.x;
+    pos_ned_m.y += ofs_ned.y;
+    pos_ned_m.z += ofs_ned.z;
     return true;
 }
 
-// get target's estimated location and velocity (in NED), with offsets added
-bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned) const
+// get target's estimated location and velocity (in NED), with offsets_ned_m added
+bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned_ms) const
 {
-    Vector3p pos_ned;
-    Vector3f local_vel_ned;  // so we either change both return parameters or neither
-    if (!get_target_position_and_velocity_ofs(pos_ned, local_vel_ned)) {
+    Vector3p pos_ned_m;
+    Vector3f local_vel_ned_m;  // so we either change both return parameters or neither
+    if (!get_target_position_and_velocity_ofs_NED_m(pos_ned_m, local_vel_ned_m)) {
         return false;
     }
-    if (!AP::ahrs().get_location_from_origin_offset_NED(loc, pos_ned)) {
+    if (!AP::ahrs().get_location_from_origin_offset_NED(loc, pos_ned_m)) {
         return false;
     }
     if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
         loc.change_alt_frame(Location::AltFrame::ABOVE_HOME);
     }
 
-    vel_ned = local_vel_ned;
+    vel_ned_ms = local_vel_ned_m;
     return true;
 }
 
