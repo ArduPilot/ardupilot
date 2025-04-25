@@ -1,0 +1,22 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from ardupilot_msgs/msg/MotorControl.msg
+// generated code does not contain a copyright notice
+
+#include "builtin_interfaces/msg/Time.idl"
+
+module ardupilot_msgs {
+  module msg {
+    typedef float float__32[32];
+    @verbatim (language="comment", text=
+      "Control the direct motor outputs of the vehicle")
+    struct MotorControl {
+      @verbatim (language="comment", text=
+        "ms")
+      builtin_interfaces::msg::Time timestamp;
+
+      @verbatim (language="comment", text=
+        "[-1, 1]")
+      float__32 actuator;
+    };
+  };
+};

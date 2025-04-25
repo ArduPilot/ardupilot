@@ -85,6 +85,16 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
     return false;
 }
 
+bool AP_DDS_External_Control::handle_motor_control(ardupilot_msgs_msg_MotorControl& cmd_mot)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return false;
+    }
+
+    return external_control->set_actuator_output(cmd_mot.actuator);
+}
+
 bool AP_DDS_External_Control::arm(AP_Arming::Method method, bool do_arming_checks)
 {
     auto *external_control = AP::externalcontrol();

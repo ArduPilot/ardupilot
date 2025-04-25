@@ -170,6 +170,7 @@ Published topics:
 Subscribed topics:
  * /ap/cmd_gps_pose [ardupilot_msgs/msg/GlobalPosition] 1 subscriber
  * /ap/cmd_vel [geometry_msgs/msg/TwistStamped] 1 subscriber
+ * /ap/experimental/cmd_mot [ardupilot_msgs/msg/MotorControl] 1 subscriber
  * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
  * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
 ```
@@ -290,6 +291,15 @@ ros2 topic pub /ap/cmd_gps_pose ardupilot_msgs/msg/GlobalPosition "{latitude: 34
 
 publisher: beginning loop
 publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), coordinate_frame=0, type_mask=0, latitude=34.0, longitude=118.0, altitude=1000.0, velocity=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), acceleration_or_force=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), yaw=0.0)
+```
+- `/ap/experimental/cmd_mot` (type `ardupilot_msgs/msg/MotorControl`): sends
+direct actuator control output to vehicle.
+
+```bash
+ros2 topic pub /ap/experimental/cmd_mot ardupilot_msgs/msg/MotorControl "{timestamp: {sec: 0, nanosec: 0}, actuator: [0.7, 0.7, 0.7, 0.7, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}"
+
+publisher: beginning loop
+publishing #1: ardupilot_msgs.msg.MotorControl(timestamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), actuator=array([0.7, 0.7, 0.7, 0.7, 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. ], dtype=float32))
 ```
  
 ## Contributing to `AP_DDS` library
