@@ -70,11 +70,11 @@ public:
 
     // get target's estimated position (NED-from-origin) and velocity (in NED)
     // from position-from-origin.  metres and metres/second
-    bool get_target_position_and_velocity(Vector3p &pos_ned, Vector3f &vel_ned) const;
+    bool get_target_position_and_velocity_NED_m(Vector3p &pos_ned_m, Vector3f &vel_ned_ms) const;
 
     // get target's estimated position (NED-from-origin) and velocity (in NED)
     // from position-from-origin with offsets added.  metres and metres/second
-    bool get_target_position_and_velocity_ofs(Vector3p &pos_ned, Vector3f &vel_ned) const;
+    bool get_target_position_and_velocity_ofs_NED_m(Vector3p &pos_ned, Vector3f &vel_ned) const;
 
     // get target's estimated location and velocity (in NED).  Derived
     // from position-from-origin.
@@ -85,7 +85,7 @@ public:
     bool get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned) const;
     
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
-    bool get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
+    bool get_target_dist_and_vel_NED_m(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
 
     // get target sysid
     uint8_t get_target_sysid() const { return _sysid.get(); }
@@ -111,10 +111,10 @@ public:
     //
 
     // get horizontal distance to target (including offset) in meters (for reporting purposes)
-    float get_distance_to_target() const { return _dist_to_target; }
+    float get_distance_to_target_m() const { return _dist_to_target_m; }
 
     // get bearing to target (including offset) in degrees (for reporting purposes)
-    float get_bearing_to_target() const { return _bearing_to_target; }
+    float get_bearing_to_target_deg() const { return _bearing_to_target_deg; }
 
     // get system time of last position update
     uint32_t get_last_update_ms() const { return _last_location_update_ms; }
@@ -132,13 +132,13 @@ private:
     bool should_handle_message(const mavlink_message_t &msg) const;
 
     // get velocity estimate in m/s in NED frame using dt since last update
-    bool get_velocity_ned(Vector3f &vel_ned, float dt) const;
+    bool get_velocity_NED_ms(Vector3f &vel_ned, float dt) const;
 
     // initialise offsets to provided distance vector to other vehicle (in meters in NED frame) if required
     void init_offsets_if_required(const Vector3f &dist_vec_ned);
 
     // get offsets in meters in NED frame
-    bool get_offsets_ned(Vector3f &offsets) const;
+    bool get_offsets_NED_m(Vector3f &offsets) const;
 
     // rotate 3D vector clockwise by specified angle (in degrees)
     Vector3f rotate_vector(const Vector3f &vec, float angle_deg) const;
@@ -156,9 +156,9 @@ private:
     // parameters
     AP_Int8     _enabled;           // 1 if this subsystem is enabled
     AP_Int16    _sysid;             // target's mavlink system id (0 to use first sysid seen)
-    AP_Float    _dist_max;          // maximum distance to target.  targets further than this will be ignored
+    AP_Float    _dist_max_m;          // maximum distance to target.  targets further than this will be ignored
     AP_Int8     _offset_type;       // offset frame type (0:North-East-Down, 1:RelativeToLeadVehicleHeading)
-    AP_Vector3f _offset;            // offset from lead vehicle in meters
+    AP_Vector3f _offset_ned_m;            // offset from lead vehicle in meters
     AP_Int8     _yaw_behave;        // following vehicle's yaw/heading behaviour (see YAW_BEHAVE enum)
     AP_Int8     _alt_type;          // altitude source for follow mode
     AC_P        _p_pos;             // position error P controller
@@ -166,14 +166,14 @@ private:
 
     // local variables
     uint32_t _last_location_update_ms;  // system time of last position update
-    Vector3p _target_position_ned;  // last known position of target
-    Vector3f _target_velocity_ned;  // last known velocity of target in NED frame in m/s
-    Vector3f _target_accel_ned;     // last known acceleration of target in NED frame in m/s/s
+    Vector3p _target_position_ned_m;  // last known position of target
+    Vector3f _target_velocity_ned_ms;  // last known velocity of target in NED frame in m/s
+    Vector3f _target_accel_ned_mss;     // last known acceleration of target in NED frame in m/s/s
     uint32_t _last_heading_update_ms;   // system time of last heading update
-    float _target_heading;          // heading in degrees
+    float _target_heading_deg;          // heading in degrees
     bool _automatic_sysid;          // did we lock onto a sysid automatically?
-    float _dist_to_target;          // latest distance to target in meters (for reporting purposes)
-    float _bearing_to_target;       // latest bearing to target in degrees (for reporting purposes)
+    float _dist_to_target_m;          // latest distance to target in meters (for reporting purposes)
+    float _bearing_to_target_deg;       // latest bearing to target in degrees (for reporting purposes)
     bool _offsets_were_zero;        // true if offsets were originally zero and then initialised to the offset from lead vehicle
 
     // setup jitter correction with max transport lag of 3s
