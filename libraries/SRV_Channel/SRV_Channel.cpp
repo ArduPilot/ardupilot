@@ -262,15 +262,24 @@ void SRV_Channel::set_output_norm(float value)
 void SRV_Channel::set_angle(int16_t angle)
 {
     type_angle = true;
-    high_out = angle;    
-    type_setup = true;
+    set_output_high(uint16_t(angle));
 }
 
 // set range of scaled output
 void SRV_Channel::set_range(uint16_t high)
 {
     type_angle = false;
-    high_out = high;
+    set_output_high(high);
+}
+
+/**
+ * set the high point of the output
+ * 
+ * @param [in] high high output
+ */
+void SRV_Channel::set_output_high(uint16_t high)
+{
+    high_out   = high;
     type_setup = true;
 }
 

@@ -369,6 +369,9 @@ private:
     bool override_active;
 
     void set_override(bool b) {override_active = b;};
+
+    // set the high point of the output
+    void set_output_high(uint16_t high);
 };
 
 /*
