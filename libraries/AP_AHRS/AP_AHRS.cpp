@@ -3654,6 +3654,30 @@ float AP_AHRS::get_air_density_ratio(void) const
     return 1.0 / sq(eas2tas);
 }
 
+void AP_AHRS::set_data_sending_state(DataSendingState new_state)
+{
+#if AP_AHRS_EXTERNAL_ENABLED
+    const AP_AHRS_Backend::DataSendingState ext_state = (new_state == DataSendingState::DISABLED) ?
+                                                            AP_AHRS_Backend::DataSendingState::DISABLED :
+                                                            AP_AHRS_Backend::DataSendingState::ENABLED;
+    external.set_data_sending_state(ext_state);
+#endif
+}
+
+void AP_AHRS::set_gps_state(GpsState new_state)
+{
+#if AP_AHRS_EXTERNAL_ENABLED
+    const AP_AHRS_Backend::GpsState ext_state = (new_state == GpsState::DISABLED) ?
+                                                AP_AHRS_Backend::GpsState::DISABLED :
+                                                AP_AHRS_Backend::GpsState::ENABLED;
+    external.set_gps_state(ext_state);
+#endif
+
+#if (HAL_NAVEKF2_AVAILABLE || HAL_NAVEKF3_AVAILABLE) && AP_GPS_ENABLED
+    AP::gps().force_disable(new_state == GpsState::DISABLED);
+#endif
+}
+
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;
 

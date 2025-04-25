@@ -213,6 +213,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp}:  110:KillIMU3
     // @Values{Copter,Plane,Rover,Blimp,Sub,Tracker}: 112:SwitchExternalAHRS
     // @Values{Copter, Rover, Plane}: 113:Retract Mount2
+    // @Values{Copter, Rover, Plane}: 114:Start/Stop data from AHRS
     // @Values{Plane}: 150:CRUISE Mode
     // @Values{Copter}: 151:TURTLE Mode
     // @Values{Copter}: 152:SIMPLE heading reset
@@ -784,6 +785,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
 #if AP_AHRS_ENABLED
     case AUX_FUNC::AHRS_TYPE:
+    case AUX_FUNC::AHRS_START_STOP:
         run_aux_function(ch_option, ch_flag, AuxFuncTrigger::Source::INIT, ch_in);
         break;
 #endif
@@ -1596,8 +1598,10 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 #if AP_GPS_ENABLED
     case AUX_FUNC::GPS_DISABLE:
         AP::gps().force_disable(ch_flag == AuxSwitchPos::HIGH);
-#if HAL_EXTERNAL_AHRS_ENABLED
-        AP::externalAHRS().set_gnss_disable(ch_flag == AuxSwitchPos::HIGH);
+#if AP_AHRS_ENABLED
+        AP::ahrs().set_gps_state(ch_flag == AuxSwitchPos::HIGH ?
+                                 AP_AHRS::GpsState::DISABLED :
+                                 AP_AHRS::GpsState::ENABLED);
 #endif
         break;
 
@@ -1857,6 +1861,12 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 #endif
         break;
     }
+
+    case AUX_FUNC::AHRS_START_STOP:
+        AP::ahrs().set_data_sending_state(ch_flag == AuxSwitchPos::HIGH ?
+                                          AP_AHRS::DataSendingState::DISABLED :
+                                          AP_AHRS::DataSendingState::ENABLED);
+        break;
 #endif  // AP_AHRS_ENABLED
 
 #if HAL_TORQEEDO_ENABLED

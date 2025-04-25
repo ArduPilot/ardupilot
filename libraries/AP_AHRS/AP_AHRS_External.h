@@ -87,6 +87,10 @@ public:
     void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
+
+    // enable/disable sending data to autopilot. Can be used to simulate AHRS failure.
+    void set_data_sending_state(DataSendingState state) override;
+    void set_gps_state(GpsState state) override;
 };
 
 #endif
