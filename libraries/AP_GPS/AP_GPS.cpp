@@ -1908,11 +1908,14 @@ void AP_GPS::Write_GPS(uint8_t i)
 
     /* write auxiliary accuracy information as well */
     float hacc = 0, vacc = 0, sacc = 0;
+    int32_t alt_ellipsoid = INT32_MIN;
     float undulation = 0;
     horizontal_accuracy(i, hacc);
     vertical_accuracy(i, vacc);
     speed_accuracy(i, sacc);
-    get_undulation(i, undulation);
+    if (get_undulation(i, undulation)) {
+        alt_ellipsoid = loc.alt - (undulation*100);
+    }
     struct log_GPA pkt2{
         LOG_PACKET_HEADER_INIT(LOG_GPA_MSG),
         time_us       : time_us,
@@ -1925,7 +1928,7 @@ void AP_GPS::Write_GPS(uint8_t i)
         have_vv       : (uint8_t)have_vertical_velocity(i),
         sample_ms     : last_message_time_ms(i),
         delta_ms      : last_message_delta_time_ms(i),
-        undulation    : undulation,
+        alt_ellipsoid : alt_ellipsoid,
         rtcm_fragments_used: rtcm_stats.fragments_used,
         rtcm_fragments_discarded: rtcm_stats.fragments_discarded
     };
