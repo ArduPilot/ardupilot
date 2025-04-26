@@ -908,15 +908,13 @@ float Mode::throttle_hover() const
 // returns throttle output 0 to 1
 float Mode::get_pilot_desired_throttle() const
 {
-    const float thr_mid = throttle_hover();
-    int16_t throttle_control = channel_throttle->get_control_in();
-
     int16_t mid_stick = copter.get_throttle_mid();
     // protect against unlikely divide by zero
     if (mid_stick <= 0) {
         mid_stick = 500;
     }
 
+    int16_t throttle_control = channel_throttle->get_control_in();
     // ensure reasonable throttle values
     throttle_control = constrain_int16(throttle_control,0,1000);
 
@@ -928,6 +926,7 @@ float Mode::get_pilot_desired_throttle() const
         throttle_in = 0.5f + ((float)(throttle_control-mid_stick)) * 0.5f / (float)(1000-mid_stick);
     }
 
+    const float thr_mid = throttle_hover();
     const float expo = constrain_float(-(thr_mid-0.5f)/0.375f, -0.5f, 1.0f);
     // calculate the output throttle using the given expo function
     float throttle_out = throttle_in*(1.0f-expo) + expo*throttle_in*throttle_in*throttle_in;
