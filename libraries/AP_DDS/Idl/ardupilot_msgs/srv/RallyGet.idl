@@ -1,0 +1,30 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from ardupilot_msgs/srv/RallyGet.srv
+// generated code does not contain a copyright notice
+
+#include "ardupilot_msgs/msg/Rally.idl"
+
+module ardupilot_msgs {
+  module srv {
+    @verbatim (language="comment", text=
+      "This service requests a Rally point from its ID.")
+    struct RallyGet_Request {
+      @verbatim (language="comment", text=
+        "Rally Point ID.")
+      uint8 index;
+    };
+    @verbatim (language="comment", text=
+      "True is the retrieved point is valid.")
+    struct RallyGet_Response {
+      boolean success;
+
+      @verbatim (language="comment", text=
+        "Size of Rally Points list.")
+      uint8 size;
+
+      @verbatim (language="comment", text=
+        "Rally point.")
+      ardupilot_msgs::msg::Rally rally;
+    };
+  };
+};

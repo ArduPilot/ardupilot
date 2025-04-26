@@ -32,6 +32,11 @@
 #if AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
 #include "ardupilot_msgs/srv/Takeoff.h"
 #endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+#if AP_DDS_RALLY_SERVER_ENABLED
+#include <AP_Rally/AP_Rally.h>
+#include "ardupilot_msgs/srv/RallyGet.h"
+#include "ardupilot_msgs/srv/RallySet.h"
+#endif // AP_DDS_RALLY_SERVER_ENABLED
 
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
@@ -44,6 +49,8 @@
 #include "AP_DDS_External_Odom.h"
 
 #define STRCPY(D,S) strncpy(D, S, ARRAY_SIZE(D))
+static constexpr double DEG_LAT_LON_DBL_2_INT =  1.e7;
+static constexpr double ALT_DBL_2_INT =  1.e2;
 
 // Enable DDS at runtime by default
 static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
@@ -258,8 +265,8 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
         break;
     }
     const auto loc = gps.location(instance);
-    msg.latitude = loc.lat * 1E-7;
-    msg.longitude = loc.lng * 1E-7;
+    msg.latitude = loc.lat / DEG_LAT_LON_DBL_2_INT;
+    msg.longitude = loc.lng / DEG_LAT_LON_DBL_2_INT;
 
     int32_t alt_cm;
     if (!loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm)) {
@@ -268,7 +275,7 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
         return true;
     }
-    msg.altitude = alt_cm * 0.01;
+    msg.altitude = alt_cm / ALT_DBL_2_INT;
 
     // ROS allows double precision, ArduPilot exposes float precision today
     Matrix3f cov;
@@ -535,11 +542,11 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
 
     Location loc;
     if (ahrs.get_location(loc)) {
-        msg.pose.position.latitude = loc.lat * 1E-7;
-        msg.pose.position.longitude = loc.lng * 1E-7;
+        msg.pose.position.latitude = loc.lat / DEG_LAT_LON_DBL_2_INT;
+        msg.pose.position.longitude = loc.lng / DEG_LAT_LON_DBL_2_INT;
         // TODO this is assumed to be absolute frame in WGS-84 as per the GeoPose message definition in ROS.
         // Use loc.get_alt_frame() to convert if necessary.
-        msg.pose.position.altitude = loc.alt * 0.01; // Transform from cm to m
+        msg.pose.position.altitude = loc.alt / ALT_DBL_2_INT; // Transform from cm to m
     }
 
     // In ROS REP 103, axis orientation uses the following convention:
@@ -576,9 +583,9 @@ bool AP_DDS_Client::update_topic_goal(geographic_msgs_msg_GeoPointStamped& msg)
         return false;
     }
     target_loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
-    msg.position.latitude = target_loc.lat * 1e-7;
-    msg.position.longitude = target_loc.lng * 1e-7;
-    msg.position.altitude = target_loc.alt * 1e-2;
+    msg.position.latitude = target_loc.lat / DEG_LAT_LON_DBL_2_INT;
+    msg.position.longitude = target_loc.lng / DEG_LAT_LON_DBL_2_INT;
+    msg.position.altitude = target_loc.alt / ALT_DBL_2_INT;
 
     // Check whether the goal has changed or if the topic has never been published.
     const double tolerance_lat_lon = 1e-8; // One order of magnitude smaller than the target's resolution.
@@ -658,9 +665,9 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
     // LLA is WGS-84 geodetic coordinate.
     // Altitude converted from cm to m.
     if (ahrs.get_origin(ekf_origin)) {
-        msg.position.latitude = ekf_origin.lat * 1E-7;
-        msg.position.longitude = ekf_origin.lng * 1E-7;
-        msg.position.altitude = ekf_origin.alt * 0.01;
+        msg.position.latitude = ekf_origin.lat / DEG_LAT_LON_DBL_2_INT;
+        msg.position.longitude = ekf_origin.lng / DEG_LAT_LON_DBL_2_INT;
+        msg.position.altitude = ekf_origin.alt / ALT_DBL_2_INT;
     }
 }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
@@ -978,6 +985,108 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         break;
     }
 #endif //AP_DDS_ARM_CHECK_SERVER_ENABLED
+#if AP_DDS_RALLY_SERVER_ENABLED
+    case services[to_underlying(ServiceIndex::GET_RALLY)].rep_id: {
+        ardupilot_msgs_srv_RallyGet_Request rally_get_request;
+        ardupilot_msgs_srv_RallyGet_Response rally_get_response;
+        const bool deserialize_success = ardupilot_msgs_srv_RallyGet_Request_deserialize_topic(ub, &rally_get_request);
+        if (deserialize_success == false) {
+            break;
+        }
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::GET_RALLY)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        RallyLocation rally_location {};
+        const AP_Rally *rally = AP::rally();
+        if (rally->get_rally_point_with_index(rally_get_request.index, rally_location)) {
+            rally_get_response.success = true;
+            rally_get_response.size = rally->get_rally_total();
+            rally_get_response.rally.point.latitude = rally_location.lat / DEG_LAT_LON_DBL_2_INT;
+            rally_get_response.rally.point.longitude = rally_location.lng / DEG_LAT_LON_DBL_2_INT;
+            rally_get_response.rally.point.altitude = rally_location.alt;
+            if (rally_location.alt_frame_valid) {
+                rally_get_response.rally.altitude_frame = rally_location.alt_frame;
+            } else {
+                rally_get_response.rally.altitude_frame = static_cast<uint8_t>(Location::AltFrame::ABOVE_HOME);
+            }
+        } else {
+            rally_get_response.success = false;
+        }
+
+        uint8_t reply_buffer[ardupilot_msgs_srv_RallyGet_Response_size_of_topic(&rally_get_response, 0)] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, sizeof(reply_buffer));
+        const bool serialize_success = ardupilot_msgs_srv_RallyGet_Response_serialize_topic(&reply_ub, &rally_get_response);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
+
+        break;
+    }
+    case services[to_underlying(ServiceIndex::SET_RALLY)].rep_id: {
+
+        ardupilot_msgs_srv_RallySet_Request rally_set_request;
+        ardupilot_msgs_srv_RallySet_Response rally_set_response;
+        const bool deserialize_success = ardupilot_msgs_srv_RallySet_Request_deserialize_topic(ub, &rally_set_request);
+        if (deserialize_success == false) {
+            break;
+        }
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::SET_RALLY)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        RallyLocation rally_location{};
+        AP_Rally *rally = AP::rally();
+
+        if (rally_set_request.clear) {
+            rally->truncate(0);
+            rally_set_response.success = rally->get_rally_total() == 0;
+        } else {
+            rally_location.lat = static_cast<int32_t>(rally_set_request.rally.point.latitude * DEG_LAT_LON_DBL_2_INT);
+            rally_location.lng = static_cast<int32_t>(rally_set_request.rally.point.longitude * DEG_LAT_LON_DBL_2_INT);
+            rally_location.alt = static_cast<int16_t>(rally_set_request.rally.point.altitude);
+            rally_location.alt_frame_valid = 1;
+            rally_location.alt_frame = rally_set_request.rally.altitude_frame;
+
+            if (rally_location.lat != 0 && rally_location.lng != 0
+                && (rally_set_request.rally.altitude_frame == static_cast<uint8_t>(Location::AltFrame::ABOVE_HOME)
+                    || rally_set_request.rally.altitude_frame == static_cast<uint8_t>(Location::AltFrame::ABOVE_ORIGIN)
+                    || rally_set_request.rally.altitude_frame == static_cast<uint8_t>(Location::AltFrame::ABOVE_TERRAIN)
+                    || rally_set_request.rally.altitude_frame == static_cast<uint8_t>(Location::AltFrame::ABSOLUTE))) {
+                if (rally->append(rally_location)) {
+                    rally_set_response.success = true;
+                } else {
+                    rally_set_response.success = false;
+                }
+            } else {
+                rally_set_response.success = false;
+            }
+        }
+
+        rally_set_response.size = rally->get_rally_total();
+
+        uint8_t reply_buffer[ardupilot_msgs_srv_RallySet_Response_size_of_topic(&rally_set_response, 0)] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, sizeof(reply_buffer));
+        const bool serialize_success = ardupilot_msgs_srv_RallySet_Response_serialize_topic(&reply_ub, &rally_set_response);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
+
+        break;
+    }
+#endif // AP_DDS_RALLY_SERVER_ENABLED
 #if AP_DDS_PARAMETER_SERVER_ENABLED
     case services[to_underlying(ServiceIndex::SET_PARAMETERS)].rep_id: {
         const bool deserialize_success = rcl_interfaces_srv_SetParameters_Request_deserialize_topic(ub, &set_parameter_request);
