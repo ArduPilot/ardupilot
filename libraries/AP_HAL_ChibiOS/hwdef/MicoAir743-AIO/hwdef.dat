@@ -154,7 +154,7 @@ define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_ESCTelemetry
 
 # setup for OSD
 define OSD_ENABLED 1
-define HAL_OSD_TYPE_DEFAULT 5
+define HAL_OSD_TYPE_DEFAULT 1
 
 # setup for BF migration
 define HAL_FRAME_TYPE_DEFAULT 12

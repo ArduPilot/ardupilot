@@ -160,10 +160,10 @@ void AP_SystemID::stop()
         attitude_control->rate_bf_roll_sysid(0);
         attitude_control->rate_bf_pitch_sysid(0);
         attitude_control->rate_bf_yaw_sysid(0);
-        plane.quadplane.pos_control->set_xy_control_scale_factor(1);
+        plane.quadplane.pos_control->set_NE_control_scale_factor(1);
 
         // re-initialise the XY controller so we take current position as target
-        plane.quadplane.pos_control->init_xy_controller();
+        plane.quadplane.pos_control->init_NE_controller();
 
         gcs().send_text(MAV_SEVERITY_INFO, "SystemID stopped");
     }
@@ -239,7 +239,7 @@ void AP_SystemID::update()
     }
 
     // reduce control in XY axis when in position controlled modes
-    plane.quadplane.pos_control->set_xy_control_scale_factor(xy_control_mul);
+    plane.quadplane.pos_control->set_NE_control_scale_factor(xy_control_mul);
 
     if (log_subsample <= 0) {
         log_data();

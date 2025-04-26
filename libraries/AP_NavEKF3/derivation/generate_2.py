@@ -373,7 +373,7 @@ def mag_observation(P,state,R_to_body,i,ib):
 
     mag_code_generator.close()
 
-    # calculate a combined set of equations for a possible reduction in operations, but will use slighlty more stack
+    # calculate a combined set of equations for a possible reduction in operations, but will use slightly more stack
     equations = generate_observation_vector_equations(P,state,m_mag,obs_var,3)
 
     mag_code_generator_alt  = CodeGenerator("./generated/3Dmag_generated_alt.cpp")

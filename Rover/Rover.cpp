@@ -114,7 +114,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update,         50,  200,  78),
 #endif
     SCHED_TASK(gcs_failsafe_check,     10,    200,  81),
+#if AP_FENCE_ENABLED
     SCHED_TASK(fence_check,            10,    200,  84),
+#endif
     SCHED_TASK(ekf_check,              10,    100,  87),
     SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  200,  90),
     SCHED_TASK(one_second_loop,         1,   1500,  96),
@@ -441,9 +443,6 @@ void Rover::one_second_loop(void)
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.armed = arming.is_armed();
     AP_Notify::flags.flying = hal.util->get_soft_armed();
-
-    // cope with changes to mavlink system ID
-    mavlink_system.sysid = gcs().sysid_this_mav();
 
     // attempt to update home position and baro calibration if not armed:
     if (!hal.util->get_soft_armed()) {

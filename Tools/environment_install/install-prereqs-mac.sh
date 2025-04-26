@@ -172,7 +172,7 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
 fi
 
 $PIP install --upgrade pip
-$PIP install wheel
+$PIP install --force-reinstall wheel
 $PIP install $PYTHON_PKGS
 
 echo "Adding ArduPilot Tools to environment"

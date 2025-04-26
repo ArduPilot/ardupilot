@@ -281,7 +281,7 @@ public:
         MOUNT2_ROLL =        215, // mount2 roll input
         MOUNT2_PITCH =       216, // mount3 pitch input
         MOUNT2_YAW =         217, // mount4 yaw input
-        LOWEHEISER_THROTTLE= 218,  // allows for throttle on slider
+        LOWEHEISER_THROTTLE= 218, // allows for throttle on slider
         TRANSMITTER_TUNING = 219, // use a transmitter knob or slider for in-flight tuning
 
         // inputs 248-249 are reserved for the Skybrush fork at

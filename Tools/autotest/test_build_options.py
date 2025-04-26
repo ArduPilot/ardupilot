@@ -6,8 +6,8 @@ Contains functions used to test the ArduPilot build_options.py structures
 To extract feature sizes:
 
 cat >> /tmp/extra-hwdef.dat <<EOF
-undef AP_BARO_MS56XX_ENABLED
-define AP_BARO_MS56XX_ENABLED 1
+undef AP_BARO_MS5611_ENABLED
+define AP_BARO_MS5611_ENABLED 1
 EOF
 
 nice time ./Tools/autotest/test_build_options.py --board=CubeOrange --extra-hwdef=/tmp/extra-hwdef.dat --no-run-with-defaults --no-disable-all --no-enable-in-turn | tee /tmp/tbo-out  # noqa
@@ -77,14 +77,16 @@ class TestBuildOptions(object):
         '''return a set of defines which must always be enabled'''
         must_have_defines = {
             "CubeOrange": frozenset([
-                'AP_BARO_MS56XX_ENABLED',
+                'AP_BARO_MS5611_ENABLED',
+                'AP_BARO_MS5607_ENABLED',
                 'AP_COMPASS_LSM303D_ENABLED',
                 'AP_COMPASS_AK8963_ENABLED',
                 'AP_COMPASS_AK09916_ENABLED',
                 'AP_COMPASS_ICM20948_ENABLED',
             ]),
             "CubeBlack": frozenset([
-                'AP_BARO_MS56XX_ENABLED',
+                'AP_BARO_MS5611_ENABLED',
+                'AP_BARO_MS5607_ENABLED',
                 'AP_COMPASS_LSM303D_ENABLED',
                 'AP_COMPASS_AK8963_ENABLED',
                 'AP_COMPASS_AK09916_ENABLED',
@@ -195,8 +197,8 @@ class TestBuildOptions(object):
         # should say so:
         for target in self.build_targets:
             path = self.target_to_elf_path(target)
-            extracter = extract_features.ExtractFeatures(path)
-            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extracter.extract()
+            extractor = extract_features.ExtractFeatures(path)
+            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extractor.extract()
             for define in defines:
                 # the following defines are known not to work on some
                 # or all vehicles:
@@ -253,7 +255,10 @@ class TestBuildOptions(object):
             'AP_BARO_FBM320_ENABLED',
             'AP_BARO_KELLERLD_ENABLED',
             'AP_BARO_LPS2XH_ENABLED',
-            'AP_BARO_MS56XX_ENABLED',
+            'AP_BARO_MS5607_ENABLED',
+            'AP_BARO_MS5611_ENABLED',
+            'AP_BARO_MS5637_ENABLED',
+            'AP_BARO_MS5837_ENABLED',
             'AP_BARO_SPL06_ENABLED',
             'AP_CAMERA_SEND_FOV_STATUS_ENABLED',  # elided unless AP_CAMERA_SEND_FOV_STATUS_ENABLED
             'AP_COMPASS_LSM9DS1_ENABLED',  # must be in hwdef, not probed
@@ -377,6 +382,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add(r'OSD_PARAM_ENABLED')
             # AP_OSD is not instantiated, , so no MSP backend:
             feature_define_whitelist.add(r'HAL_WITH_MSP_DISPLAYPORT')
+            feature_define_whitelist.add(r'AP_MSP_INAV_FONTS_ENABLED')
             # camera instantiated in specific vehicles:
             feature_define_whitelist.add(r'AP_CAMERA_ENABLED')
             feature_define_whitelist.add(r'AP_CAMERA_.*_ENABLED')
@@ -402,8 +408,8 @@ class TestBuildOptions(object):
         # should say so:
         for target in self.build_targets:
             path = self.target_to_elf_path(target)
-            extracter = extract_features.ExtractFeatures(path)
-            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extracter.extract()
+            extractor = extract_features.ExtractFeatures(path)
+            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extractor.extract()
             for define in defines:
                 if not defines[define]:
                     continue

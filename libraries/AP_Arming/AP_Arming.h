@@ -21,28 +21,28 @@ public:
 
     void update();
 
-    enum ArmingChecks {
-        ARMING_CHECK_ALL         = (1U << 0),
-        ARMING_CHECK_BARO        = (1U << 1),
-        ARMING_CHECK_COMPASS     = (1U << 2),
-        ARMING_CHECK_GPS         = (1U << 3),
-        ARMING_CHECK_INS         = (1U << 4),
-        ARMING_CHECK_PARAMETERS  = (1U << 5),
-        ARMING_CHECK_RC          = (1U << 6),
-        ARMING_CHECK_VOLTAGE     = (1U << 7),
-        ARMING_CHECK_BATTERY     = (1U << 8),
-        ARMING_CHECK_AIRSPEED    = (1U << 9),
-        ARMING_CHECK_LOGGING     = (1U << 10),
-        ARMING_CHECK_SWITCH      = (1U << 11),
-        ARMING_CHECK_GPS_CONFIG  = (1U << 12),
-        ARMING_CHECK_SYSTEM      = (1U << 13),
-        ARMING_CHECK_MISSION     = (1U << 14),
-        ARMING_CHECK_RANGEFINDER = (1U << 15),
-        ARMING_CHECK_CAMERA      = (1U << 16),
-        ARMING_CHECK_AUX_AUTH    = (1U << 17),
-        ARMING_CHECK_VISION      = (1U << 18),
-        ARMING_CHECK_FFT         = (1U << 19),
-        ARMING_CHECK_OSD         = (1U << 20),
+    enum class Check {
+        ALL         = (1U << 0),
+        BARO        = (1U << 1),
+        COMPASS     = (1U << 2),
+        GPS         = (1U << 3),
+        INS         = (1U << 4),
+        PARAMETERS  = (1U << 5),
+        RC          = (1U << 6),
+        VOLTAGE     = (1U << 7),
+        BATTERY     = (1U << 8),
+        AIRSPEED    = (1U << 9),
+        LOGGING     = (1U << 10),
+        SWITCH      = (1U << 11),
+        GPS_CONFIG  = (1U << 12),
+        SYSTEM      = (1U << 13),
+        MISSION     = (1U << 14),
+        RANGEFINDER = (1U << 15),
+        CAMERA      = (1U << 16),
+        AUX_AUTH    = (1U << 17),
+        VISION      = (1U << 18),
+        FFT         = (1U << 19),
+        OSD         = (1U << 20),
     };
 
     enum class Method {
@@ -268,9 +268,9 @@ protected:
     virtual bool mandatory_checks(bool report);
 
     // returns true if a particular check is enabled
-    bool check_enabled(const enum AP_Arming::ArmingChecks check) const;
+    bool check_enabled(const AP_Arming::Check check) const;
     // handle the case where a check fails
-    void check_failed(const enum AP_Arming::ArmingChecks check, bool report, const char *fmt, ...) const FMT_PRINTF(4, 5);
+    void check_failed(const AP_Arming::Check check, bool report, const char *fmt, ...) const FMT_PRINTF(4, 5);
     void check_failed(bool report, const char *fmt, ...) const FMT_PRINTF(3, 4);
 
     void Log_Write_Arm(bool forced, AP_Arming::Method method);

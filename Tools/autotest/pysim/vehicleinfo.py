@@ -518,7 +518,7 @@ class VehicleInfo(object):
         return self.options[vehicle]["frames"][default_frame]["waf_target"]
 
     def options_for_frame(self, frame, vehicle, opts):
-        """Return informatiom about how to sitl for frame e.g. build-type==sitl"""
+        """Return information about how to sitl for frame e.g. build-type==sitl"""
         ret = None
         frames = self.options[vehicle]["frames"]
         if frame in frames:

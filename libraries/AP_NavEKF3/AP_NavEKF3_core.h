@@ -799,6 +799,9 @@ private:
     // try changing compasses on compass failure or timeout
     void tryChangeCompass(void);
 
+    // try changing to a specific compass index
+    void tryChangeCompass(uint8_t compass_index);
+
     // check for new airspeed data and update stored measurements if available
     void readAirSpdData();
 

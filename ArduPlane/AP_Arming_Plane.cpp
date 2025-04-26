@@ -179,41 +179,41 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
 
     // lean angle parameter check
     if (plane.quadplane.aparm.angle_max < 1000 || plane.quadplane.aparm.angle_max > 8000) {
-        check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check Q_ANGLE_MAX");
+        check_failed(Check::PARAMETERS, display_failure, "Check Q_ANGLE_MAX");
         ret = false;
     }
 
     if ((plane.quadplane.tailsitter.enable > 0) && (plane.quadplane.tiltrotor.enable > 0)) {
-        check_failed(ARMING_CHECK_PARAMETERS, display_failure, "set TAILSIT_ENABLE 0 or TILT_ENABLE 0");
+        check_failed(Check::PARAMETERS, display_failure, "set TAILSIT_ENABLE 0 or TILT_ENABLE 0");
         ret = false;
 
     } else {
 
         if ((plane.quadplane.tailsitter.enable > 0) && !plane.quadplane.tailsitter.enabled()) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "tailsitter setup not complete, reboot");
+            check_failed(Check::PARAMETERS, display_failure, "tailsitter setup not complete, reboot");
             ret = false;
         }
 
         if ((plane.quadplane.tiltrotor.enable > 0) && !plane.quadplane.tiltrotor.enabled()) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "tiltrotor setup not complete, reboot");
+            check_failed(Check::PARAMETERS, display_failure, "tiltrotor setup not complete, reboot");
             ret = false;
         }
     }
 
     // ensure controllers are OK with us arming:
     if (!plane.quadplane.pos_control->pre_arm_checks("PSC", failure_msg, ARRAY_SIZE(failure_msg))) {
-        check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
+        check_failed(Check::PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
         ret = false;
     }
     if (!plane.quadplane.attitude_control->pre_arm_checks("ATC", failure_msg, ARRAY_SIZE(failure_msg))) {
-        check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
+        check_failed(Check::PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
         ret = false;
     }
 
     /*
       Q_ASSIST_SPEED really should be enabled for all quadplanes except tailsitters
      */
-    if (check_enabled(ARMING_CHECK_PARAMETERS) &&
+    if (check_enabled(Check::PARAMETERS) &&
         is_zero(plane.quadplane.assist.speed) &&
         !plane.quadplane.tailsitter.enabled()) {
         check_failed(display_failure,"Q_ASSIST_SPEED is not set");
@@ -221,7 +221,7 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
     }
 
     if ((plane.quadplane.tailsitter.enable > 0) && (plane.quadplane.q_fwd_thr_use != QuadPlane::FwdThrUse::OFF)) {
-        check_failed(ARMING_CHECK_PARAMETERS, display_failure, "set Q_FWD_THR_USE to 0");
+        check_failed(Check::PARAMETERS, display_failure, "set Q_FWD_THR_USE to 0");
         ret = false;
     }
 
@@ -237,10 +237,10 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
     }
 
     // additional plane specific checks
-    if (check_enabled(ARMING_CHECK_INS)) {
+    if (check_enabled(Check::INS)) {
         char failure_msg[50] = {};
         if (!AP::ahrs().pre_arm_check(true, failure_msg, sizeof(failure_msg))) {
-            check_failed(ARMING_CHECK_INS, display_failure, "AHRS: %s", failure_msg);
+            check_failed(Check::INS, display_failure, "AHRS: %s", failure_msg);
             return false;
         }
     }
@@ -443,11 +443,11 @@ bool AP_Arming_Plane::mission_checks(bool report)
     if (plane.g.rtl_autoland == RtlAutoland::RTL_DISABLE) {
         if (plane.mission.contains_item(MAV_CMD_DO_LAND_START)) {
             ret = false;
-            check_failed(ARMING_CHECK_MISSION, report, "DO_LAND_START set and RTL_AUTOLAND disabled");
+            check_failed(Check::MISSION, report, "DO_LAND_START set and RTL_AUTOLAND disabled");
         }
         if (plane.mission.contains_item(MAV_CMD_DO_RETURN_PATH_START)) {
             ret = false;
-            check_failed(ARMING_CHECK_MISSION, report, "DO_RETURN_PATH_START set and RTL_AUTOLAND disabled");
+            check_failed(Check::MISSION, report, "DO_RETURN_PATH_START set and RTL_AUTOLAND disabled");
         }
     }
 #if HAL_QUADPLANE_ENABLED
@@ -467,7 +467,7 @@ bool AP_Arming_Plane::mission_checks(bool report)
                 const float min_dist = 0.75 * plane.quadplane.stopping_distance(sq(landing_speed));
                 if (dist < min_dist) {
                     ret = false;
-                    check_failed(ARMING_CHECK_MISSION, report, "VTOL land too short, min %.0fm", min_dist);
+                    check_failed(Check::MISSION, report, "VTOL land too short, min %.0fm", min_dist);
                 }
             }
             prev_cmd = cmd;

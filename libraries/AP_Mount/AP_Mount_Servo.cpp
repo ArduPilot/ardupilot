@@ -95,7 +95,7 @@ void AP_Mount_Servo::update()
             FALLTHROUGH;
         case MountTargetType::ANGLE:
             // update _angle_bf_output_rad based on angle target
-            if ((mount_mode != MAV_MOUNT_MODE_RETRACT) & (mount_mode != MAV_MOUNT_MODE_NEUTRAL)) {
+            if ((mount_mode != MAV_MOUNT_MODE_RETRACT) && (mount_mode != MAV_MOUNT_MODE_NEUTRAL)) {
                 update_angle_outputs(mnt_target.angle_rad);
             }
             break;

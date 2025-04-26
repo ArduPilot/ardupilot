@@ -212,7 +212,17 @@ inline double constrain_double(const double amt, const double low, const double 
 }
 
 // degrees -> radians
-static inline constexpr ftype radians(ftype deg)
+static inline constexpr double radians(double deg)
+{
+    return deg * DEG_TO_RAD;
+}
+
+static inline constexpr float radians(float deg)
+{
+    return deg * DEG_TO_RAD;
+}
+
+static inline constexpr float radians(int deg)
 {
     return deg * DEG_TO_RAD;
 }

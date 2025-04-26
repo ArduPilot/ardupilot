@@ -104,12 +104,12 @@ void ModeGuided::guided_vel_control_start()
     sub.guided_mode = Guided_Velocity;
 
     // initialize vertical maximum speeds and acceleration
-    position_control->set_max_speed_accel_z(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->set_correction_speed_accel_z(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->set_correction_speed_accel_U_cmss(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise velocity controller
-    position_control->init_z_controller();
-    position_control->init_xy_controller();
+    position_control->init_U_controller();
+    position_control->init_NE_controller();
 
     // pilot always controls yaw
     sub.yaw_rate_only = false;
@@ -123,12 +123,12 @@ void ModeGuided::guided_posvel_control_start()
     sub.guided_mode = Guided_PosVel;
 
     // set vertical speed and acceleration
-    position_control->set_max_speed_accel_z(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
-    position_control->set_correction_speed_accel_z(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
+    position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
+    position_control->set_correction_speed_accel_U_cmss(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
 
     // initialise velocity controller
-    position_control->init_z_controller();
-    position_control->init_xy_controller();
+    position_control->init_U_controller();
+    position_control->init_NE_controller();
 
     // pilot always controls yaw
     sub.yaw_rate_only = false;
@@ -142,11 +142,11 @@ void ModeGuided::guided_angle_control_start()
     sub.guided_mode = Guided_Angle;
 
     // set vertical speed and acceleration
-    position_control->set_max_speed_accel_z(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
-    position_control->set_correction_speed_accel_z(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
+    position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
+    position_control->set_correction_speed_accel_U_cmss(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
 
     // initialise velocity controller
-    position_control->init_z_controller();
+    position_control->init_U_controller();
 
     // initialise targets
     guided_angle_state.update_time_ms = AP_HAL::millis();
@@ -273,7 +273,7 @@ void ModeGuided::guided_set_velocity(const Vector3f& velocity)
     update_time_ms = AP_HAL::millis();
 
     // set position controller velocity target
-    position_control->set_vel_desired_cms(velocity);
+    position_control->set_vel_desired_NEU_cms(velocity);
 }
 
 // guided_set_velocity - sets guided mode's target velocity
@@ -290,7 +290,7 @@ void ModeGuided::guided_set_velocity(const Vector3f& velocity, bool use_yaw, flo
     update_time_ms = AP_HAL::millis();
 
     // set position controller velocity target
-    position_control->set_vel_desired_cms(velocity);
+    position_control->set_vel_desired_NEU_cms(velocity);
 
 }
 
@@ -316,9 +316,9 @@ bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination, cons
     posvel_pos_target_cm = destination.topostype();
     posvel_vel_target_cms = velocity;
 
-    position_control->input_pos_vel_accel_xy(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
+    position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
     float dz = posvel_pos_target_cm.z;
-    position_control->input_pos_vel_accel_z(dz, posvel_vel_target_cms.z, 0);
+    position_control->input_pos_vel_accel_U_cm(dz, posvel_vel_target_cms.z, 0);
     posvel_pos_target_cm.z = dz;
 
 #if HAL_LOGGING_ENABLED
@@ -355,9 +355,9 @@ bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination, cons
     posvel_pos_target_cm = destination.topostype();
     posvel_vel_target_cms = velocity;
 
-    position_control->input_pos_vel_accel_xy(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
+    position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
     float dz = posvel_pos_target_cm.z;
-    position_control->input_pos_vel_accel_z(dz, posvel_vel_target_cms.z, 0);
+    position_control->input_pos_vel_accel_U_cm(dz, posvel_vel_target_cms.z, 0);
     posvel_pos_target_cm.z = dz;
 
 #if HAL_LOGGING_ENABLED
@@ -498,7 +498,7 @@ void ModeGuided::guided_pos_control_run()
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    position_control->update_z_controller();
+    position_control->update_U_controller();
 
     // call attitude controller
     if (sub.auto_yaw_mode == AUTO_YAW_HOLD) {
@@ -529,8 +529,8 @@ void ModeGuided::guided_vel_control_run()
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         // initialise velocity controller
-        position_control->init_z_controller();
-        position_control->init_xy_controller();
+        position_control->init_U_controller();
+        position_control->init_NE_controller();
         return;
     }
 
@@ -555,16 +555,16 @@ void ModeGuided::guided_vel_control_run()
 
     // set velocity to zero if no updates received for 3 seconds
     uint32_t tnow = AP_HAL::millis();
-    if (tnow - update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !position_control->get_vel_desired_cms().is_zero()) {
-        position_control->set_vel_desired_cms(Vector3f(0,0,0));
+    if (tnow - update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !position_control->get_vel_desired_NEU_cms().is_zero()) {
+        position_control->set_vel_desired_NEU_cms(Vector3f(0,0,0));
     }
 
-    position_control->stop_pos_xy_stabilisation();
+    position_control->stop_pos_NE_stabilisation();
     // call velocity controller which includes z axis controller
-    position_control->update_xy_controller();
+    position_control->update_NE_controller();
 
-    position_control->set_pos_target_z_from_climb_rate_cm(position_control->get_vel_desired_cms().z);
-    position_control->update_z_controller();
+    position_control->set_pos_target_U_from_climb_rate_cm(position_control->get_vel_desired_NEU_cms().z);
+    position_control->update_U_controller();
 
     float lateral_out, forward_out;
     sub.translate_pos_control_rp(lateral_out, forward_out);
@@ -602,8 +602,8 @@ void ModeGuided::guided_posvel_control_run()
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         // initialise velocity controller
-        position_control->init_z_controller();
-        position_control->init_xy_controller();
+        position_control->init_U_controller();
+        position_control->init_NE_controller();
         return;
     }
 
@@ -637,14 +637,14 @@ void ModeGuided::guided_posvel_control_run()
     posvel_pos_target_cm += (posvel_vel_target_cms * position_control->get_dt()).topostype();
 
     // send position and velocity targets to position controller
-    position_control->input_pos_vel_accel_xy(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
+    position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
     float pz = posvel_pos_target_cm.z;
-    position_control->input_pos_vel_accel_z(pz, posvel_vel_target_cms.z, 0);
+    position_control->input_pos_vel_accel_U_cm(pz, posvel_vel_target_cms.z, 0);
     posvel_pos_target_cm.z = pz;
 
     // run position controller
-    position_control->update_xy_controller();
-    position_control->update_z_controller();
+    position_control->update_NE_controller();
+    position_control->update_U_controller();
 
     float lateral_out, forward_out;
     sub.translate_pos_control_rp(lateral_out, forward_out);
@@ -682,7 +682,7 @@ void ModeGuided::guided_angle_control_run()
         attitude_control->set_throttle_out(0.0f,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         // initialise velocity controller
-        position_control->init_z_controller();
+        position_control->init_U_controller();
         return;
     }
 
@@ -718,8 +718,8 @@ void ModeGuided::guided_angle_control_run()
     attitude_control->input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true);
 
     // call position controller
-    position_control->set_pos_target_z_from_climb_rate_cm(climb_rate_cms);
-    position_control->update_z_controller();
+    position_control->set_pos_target_U_from_climb_rate_cm(climb_rate_cms);
+    position_control->update_U_controller();
 }
 
 // Guided Limit code
@@ -811,9 +811,9 @@ float ModeGuided::get_auto_heading()
         float track_bearing = get_bearing_cd(sub.wp_nav.get_wp_origin().xy(), sub.wp_nav.get_wp_destination().xy());
 
         // Bearing from current position towards intermediate position target (centidegrees)
-        const Vector2f target_vel_xy = position_control->get_vel_target_cms().xy();
+        const Vector2f target_vel_xy = position_control->get_vel_target_NEU_cms().xy();
         float angle_error = 0.0f;
-        if (target_vel_xy.length() >= position_control->get_max_speed_xy_cms() * 0.1f) {
+        if (target_vel_xy.length() >= position_control->get_max_speed_NE_cms() * 0.1f) {
             const float desired_angle_cd = degrees(target_vel_xy.angle()) * 100.0f;
             angle_error = wrap_180_cd(desired_angle_cd - track_bearing);
         }

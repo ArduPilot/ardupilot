@@ -66,6 +66,13 @@ const AP_Param::GroupInfo Volz::var_info[] = {
     AP_GROUPEND
 };
 
+// this isn't in the header as inlcuding sparse_endian in the header
+// causes compilation issues with redefinition of bswap16
+void Volz::Command::update_checksum()
+{
+    crc = htobe16(calculate_checksum());
+}
+
 Volz::Volz() : SerialDevice::SerialDevice()
 {
     AP_Param::setup_object_defaults(this, var_info);

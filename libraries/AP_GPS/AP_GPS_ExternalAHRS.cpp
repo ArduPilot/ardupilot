@@ -48,10 +48,12 @@ void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_messag
     }
     state.num_sats = pkt.satellites_in_view;
 
-    Location loc = {};
-    loc.lat = pkt.latitude;
-    loc.lng = pkt.longitude;
-    loc.alt = pkt.msl_altitude;
+    const Location loc {
+        pkt.latitude,
+        pkt.longitude,
+        pkt.msl_altitude,
+        Location::AltFrame::ABSOLUTE
+    };
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!loc.initialised() && state.status >= AP_GPS::GPS_Status::GPS_OK_FIX_2D) {
         AP_HAL::panic("Invalid location passed to AP_GPS_ExternalAHRS");

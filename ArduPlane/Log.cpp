@@ -32,14 +32,14 @@ void Plane::Log_Write_Attitude(void)
         logger.Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
         logger.Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
         logger.Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
-        logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_z_pid().get_pid_info() );
+        logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_U_pid().get_pid_info() );
 
         // Write tailsitter specific log at same rate as PIDs
         quadplane.tailsitter.write_log();
     }
-    if (quadplane.in_vtol_mode() && quadplane.pos_control->is_active_xy()) {
-        logger.Write_PID(LOG_PIDN_MSG, quadplane.pos_control->get_vel_xy_pid().get_pid_info_x());
-        logger.Write_PID(LOG_PIDE_MSG, quadplane.pos_control->get_vel_xy_pid().get_pid_info_y());
+    if (quadplane.in_vtol_mode() && quadplane.pos_control->is_active_NE()) {
+        logger.Write_PID(LOG_PIDN_MSG, quadplane.pos_control->get_vel_NE_pid().get_pid_info_x());
+        logger.Write_PID(LOG_PIDE_MSG, quadplane.pos_control->get_vel_NE_pid().get_pid_info_y());
     }
 #endif
 

@@ -1022,7 +1022,7 @@ private:
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) { return false; };
-    virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) {};
+    virtual void handle_change_alt_request(Location &location) {};
     void handle_common_mission_message(const mavlink_message_t &msg);
 
     virtual void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) {};
@@ -1044,6 +1044,7 @@ private:
                                                      const uint16_t payload_size);
     void handle_vision_speed_estimate(const mavlink_message_t &msg);
     void handle_landing_target(const mavlink_message_t &msg);
+    void handle_generator_message(const mavlink_message_t &msg);
 
     void lock_channel(const mavlink_channel_t chan, bool lock);
 

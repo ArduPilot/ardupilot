@@ -201,7 +201,7 @@ PE12 SAFETY_IN INPUT PULLDOWN
 define HAL_HAVE_SAFETY_SWITCH 1
 
 # one baro
-BARO MS56XX SPI:ms5611
+BARO MS5611 SPI:ms5611
 
 # one builtin compass, plus one on the default GPS that is external with
 # a non-default orientation

@@ -3,7 +3,7 @@
 
 bool ModeStabilize::init(bool ignore_checks) {
     // set target altitude to zero for reporting
-    position_control->set_pos_desired_z_cm(0);
+    position_control->set_pos_desired_U_cm(0);
     sub.last_pilot_heading = ahrs.yaw_sensor;
 
     return true;
@@ -60,7 +60,7 @@ void ModeStabilize::run()
     }
 
     // output pilot's throttle
-    attitude_control->set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
+    attitude_control->set_throttle_out((channel_throttle->norm_input() + 1.0f) / 2.0f, false, g.throttle_filt);
 
     //control_in is range -1000-1000
     //radio_in is raw pwm value

@@ -364,6 +364,22 @@ TEST(Location, Sanitize)
     EXPECT_NE(test_default_loc.alt, test_loc.alt);
 }
 
+TEST(Location, GetHeightAbove)
+{
+    // we will sanitize test_loc with test_default_loc
+    // test_home is just for reference
+    const Location test_loc{-35362938, 149165085, 37900, Location::AltFrame::ABSOLUTE};
+    const Location test_origin{-35362938, 149165085, 20000, Location::AltFrame::ABSOLUTE};
+
+    ftype alt_delta;
+    EXPECT_EQ(true, test_loc.get_height_above(test_origin, alt_delta));
+    EXPECT_FLOAT_EQ(179, alt_delta);
+
+    EXPECT_EQ(true, test_origin.get_height_above(test_loc, alt_delta));
+    EXPECT_FLOAT_EQ(-179, alt_delta);
+}
+
+
 TEST(Location, Line)
 {
     const Location test_home{35362938, 149165085, 100, Location::AltFrame::ABSOLUTE};
@@ -393,5 +409,74 @@ TEST(Location, OffsetError)
         EXPECT_FLOAT_EQ(dist, 0);
     }
 }
+
+#define TEST_POLYGON_DISTANCE_POINTS(POLYGON, TEST_POINTS)                       \
+    do {                                                                \
+        for (uint32_t i = 0; i < ARRAY_SIZE(TEST_POINTS); i++) {        \
+            float distance; \
+            Polygon_closest_distance_point(POLYGON,     \
+                                            ARRAY_SIZE(POLYGON),\
+                                            TEST_POINTS[i].point, distance);\
+            EXPECT_TRUE(fabs(TEST_POINTS[i].distance - distance) <= 1.0f); \
+        }                                                               \
+    } while(0)
+
+static Vector2f scale_latlon_from_origin(const Vector2l &point)
+{
+    // using some random australian location results in 15m errors.
+    // const Location origin{35362938, 149165085, 0, Location::AltFrame::ABOVE_HOME};
+    const Location origin { 515092732, -1267776, 0, Location::AltFrame::ABOVE_HOME };   // NW corner
+    Location tmp_loc { point.x, point.y, 0, Location::AltFrame::ABOVE_HOME };
+    return origin.get_distance_NE(tmp_loc);
+}
+
+// Center of London (Charing Cross)
+const int32_t CENTER_LAT = static_cast<int32_t>(51.5085 * 1E7); // 515085000
+const int32_t CENTER_LON = static_cast<int32_t>(-0.1257 * 1E7); // -1257000
+
+const int32_t CENTER_NORTH_LAT = static_cast<int32_t>((51.5085  + 0.0003366)* 1E7); // 37.5m from edge
+const int32_t CENTER_EAST_LON = static_cast<int32_t>((-0.1257 + 0.0005388)* 1E7); //  37.5m from edge
+const int32_t CENTER_SOUTH_LAT = static_cast<int32_t>((51.5085 - 0.0003366) * 1E7); // 37.5m from edge
+const int32_t CENTER_WEST_LON = static_cast<int32_t>((-0.1257 - 0.0005388) * 1E7); // 37.5m from edge
+
+// Bounding box coordinates (in 1E7 degrees)
+const int32_t NORTH_WEST_LAT = static_cast<int32_t>((51.5085 + 0.0006732) * 1E7); // 515092732
+const int32_t NORTH_WEST_LON = static_cast<int32_t>((-0.1257 - 0.0010776) * 1E7); // -1267776
+
+const int32_t NORTH_EAST_LAT = static_cast<int32_t>((51.5085 + 0.0006732) * 1E7); // 515092732
+const int32_t NORTH_EAST_LON = static_cast<int32_t>((-0.1257 + 0.0010776) * 1E7); // -1246224
+
+const int32_t SOUTH_WEST_LAT = static_cast<int32_t>((51.5085 - 0.0006732) * 1E7); // 515080268
+const int32_t SOUTH_WEST_LON = static_cast<int32_t>((-0.1257 - 0.0010776) * 1E7); // -1267776
+
+const int32_t SOUTH_EAST_LAT = static_cast<int32_t>((51.5085 - 0.0006732) * 1E7); // 515080268
+const int32_t SOUTH_EAST_LON = static_cast<int32_t>((-0.1257 + 0.0010776) * 1E7); // -1246224
+
+#define CARTESIAN(lat, lng) (scale_latlon_from_origin(Vector2l(lat, lng)))
+// Array of coordinates in cartesian pairs for each corner
+static const Vector2f London_boundary[] {
+    CARTESIAN(NORTH_WEST_LAT, NORTH_WEST_LON), // Northwest corner
+    CARTESIAN(NORTH_EAST_LAT, NORTH_EAST_LON), // Northeast corner
+    CARTESIAN(SOUTH_EAST_LAT, SOUTH_EAST_LON), // Southeast corner
+    CARTESIAN(SOUTH_WEST_LAT, SOUTH_WEST_LON), // Southwest corner
+    CARTESIAN(NORTH_WEST_LAT, NORTH_WEST_LON), // Northwest corner
+};
+
+static const struct {
+    Vector2f point;
+    float distance;
+} London_test_points[] = {
+    { CARTESIAN(CENTER_LAT, CENTER_LON), 75.0f, },
+    { CARTESIAN(CENTER_NORTH_LAT, CENTER_LON), 37.5f, },
+    { CARTESIAN(CENTER_LAT, CENTER_EAST_LON), 37.5f, },
+    { CARTESIAN(CENTER_SOUTH_LAT, CENTER_LON), 37.5f, },
+    { CARTESIAN(CENTER_LAT, CENTER_WEST_LON), 37.5f, },
+};
+
+TEST(Location, London_distance)
+{
+    TEST_POLYGON_DISTANCE_POINTS(London_boundary, London_test_points);
+}
+
 
 AP_GTEST_MAIN()

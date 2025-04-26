@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-script to run configre for all hwdef.dat, to check for syntax errors
+script to run configure for all hwdef.dat, to check for syntax errors
 """
 
 import os
@@ -36,7 +36,7 @@ done = []
 board_list = []
 
 def get_board_list():
-    '''add boards based on existance of hwdef-bl.dat in subdirectories for ChibiOS'''
+    '''add boards based on existence of hwdef-bl.dat in subdirectories for ChibiOS'''
     board_list = []
     # these are base builds, and don't build directly
     omit = []

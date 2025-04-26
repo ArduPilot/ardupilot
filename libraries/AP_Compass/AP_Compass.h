@@ -380,7 +380,7 @@ private:
 
     // load backend drivers
     bool _add_backend(AP_Compass_Backend *backend);
-    void _probe_external_i2c_compasses(void);
+    __INITFUNC__ void _probe_external_i2c_compasses(void);
     void _detect_backends(void);
     void probe_i2c_spi_compasses(void);
 #if AP_COMPASS_DRONECAN_ENABLED

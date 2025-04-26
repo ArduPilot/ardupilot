@@ -364,7 +364,7 @@ class generate_apj(Task.Task):
             d["brand_name"] = self.env.BRAND_NAME
         if self.env.build_dates:
             # we omit build_time when we don't have build_dates so that apj
-            # file is idential for same git hash and compiler
+            # file is identical for same git hash and compiler
             d["build_time"] = int(time.time())
         apj_file = self.outputs[0].abspath()
         f = open(apj_file, "w")
@@ -753,7 +753,7 @@ def build(bld):
     wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf']
 
     # list of functions that we will give a link error for if they are
-    # used. This is to prevent accidential use of these functions
+    # used. This is to prevent accidental use of these functions
     blacklist = ['_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r', 'ftell',
                  'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
                  'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',

@@ -25,7 +25,12 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
  */
 Sub::Sub()
     :
+
+#if AP_SUB_RC_ENABLED
+          flight_modes(&g.flight_mode1),
+#else
           control_mode(Mode::Number::MANUAL),
+#endif
           motors(MAIN_LOOP_RATE),
           auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
           inertial_nav(ahrs),

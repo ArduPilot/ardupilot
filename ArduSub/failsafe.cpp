@@ -499,3 +499,55 @@ void Sub::failsafe_terrain_act()
         arming.disarm(AP_Arming::Method::TERRAINFAILSAFE);
     }
 }
+
+#if AP_SUB_RC_ENABLED
+void Sub::set_failsafe_radio(bool b)
+{
+  // only act on changes
+    // -------------------
+    if(failsafe.radio != b) {
+
+        // store the value so we don't trip the gate twice
+        // -----------------------------------------------
+        failsafe.radio = b;
+
+        if (failsafe.radio == false) {
+            // We've regained radio contact
+            // ----------------------------
+            failsafe_radio_off_event();
+
+        }else{
+            // We've lost radio contact
+            // ------------------------
+            failsafe_radio_on_event();
+        }
+
+        // update AP_Notify
+        AP_Notify::flags.failsafe_radio = b;
+    }
+}
+
+// failsafe_radio_on_event - RC contact lost
+void Sub::failsafe_radio_on_event()
+{
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_OCCURRED);
+    gcs().send_text(MAV_SEVERITY_WARNING, "RC Failsafe");
+        switch(g.failsafe_throttle) {
+        case FS_THR_SURFACE:
+            set_mode(Mode::Number::SURFACE, ModeReason::RADIO_FAILSAFE);
+            break;
+        case FS_THR_WARN:
+        case FS_THR_DISABLED:
+            break;
+    }    
+}
+
+// failsafe_radio_off event- respond to radio contact being regained
+void Sub::failsafe_radio_off_event()
+{
+    // no need to do anything except log the error as resolved
+    // user can now override roll, pitch, yaw and throttle and even use flight mode switch to restore previous flight mode
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_RESOLVED);
+    gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe Cleared");
+}
+#endif

@@ -116,8 +116,8 @@ IMU Invensensev3 SPI:icm42605 ROTATION_PITCH_180_YAW_270
 
 # one baro, check both addressess
 BARO DPS280 SPI:dps310
-BARO MS56XX I2C:0:0x76
-BARO MS56XX I2C:0:0x77
+BARO MS5611 I2C:0:0x76
+BARO MS5611 I2C:0:0x77
 
 
 # enable RAMTROM parameter storage
