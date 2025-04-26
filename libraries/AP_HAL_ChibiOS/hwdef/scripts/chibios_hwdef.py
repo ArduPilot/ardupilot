@@ -3091,7 +3091,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
                         p = self.altmap[alt][pp]
                         if p.portpin == u:
                             del self.altmap[alt][pp]
-                            del self.altlabel[p.label]
+                            if p.label in self.altlabel:
+                                del self.altlabel[p.label]
                 self.alttype.pop(u, '')
                 self.intdefines.pop(u, '')
                 for dev in self.spidev:
