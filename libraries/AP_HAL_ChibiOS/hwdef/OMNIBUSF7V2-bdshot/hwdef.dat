@@ -1,0 +1,8 @@
+# Bi-directional dshot version of OMNIBUSF7V2
+
+include ../OMNIBUSF7V2/hwdef.dat
+
+undef PE11 PB0
+
+PE11 TIM1_CH2 TIM1 PWM(4) GPIO(53) BIDIR
+PB0  TIM3_CH3 TIM3 PWM(1) GPIO(50) BIDIR
