@@ -760,6 +760,7 @@ function HLSatcom()
     --- check if GCS telemetry has been lost for RCK_TIMEOUT sec (if param enabled)
     if RCK_FORCEHL:get() == 2 then
         -- link lost time = boot time - GCS last seen time
+        ---@diagnostic disable-next-line cast-local-type
         link_lost_for = millis():toint() - gcs:last_seen()
         -- gcs:last_seen() is set to millis() during boot (on plane). 0 on rover/copter
         -- So if it's less than 10000 assume no GCS packet received since boot
