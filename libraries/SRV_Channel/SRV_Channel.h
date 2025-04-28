@@ -188,7 +188,17 @@ public:
         k_rcin14_mapped         = 153,
         k_rcin15_mapped         = 154,
         k_rcin16_mapped         = 155,
-        k_cam_zoom              = 180,   // 180 matches the value on master
+        k_lift_release          = 156,
+        k_cam_zoom              = 180,
+        k_lights1               = 181,
+        k_lights2               = 182,
+        k_video_switch          = 183,
+        k_actuator1             = 184,   // Aux channels used for controlling user peripherals
+        k_actuator2             = 185,
+        k_actuator3             = 186,
+        k_actuator4             = 187,
+        k_actuator5             = 188,
+        k_actuator6             = 189,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
