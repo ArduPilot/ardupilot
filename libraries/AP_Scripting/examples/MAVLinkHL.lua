@@ -415,6 +415,7 @@ function HLSatcom()
     -- if mode 1 and there's been no mavlink traffic for 5000 ms, enable high latency
     if hl_mode == 1 then
         -- link lost time = boot time - GCS last seen time
+        ---@diagnostic disable-next-line cast-local-type
         link_lost_for = millis():toint() - gcs:last_seen()
         -- gcs:last_seen() is set to millis() during boot (on plane). 0 on rover/copter
         -- So if it's less than 10000 assume no GCS packet received since boot
