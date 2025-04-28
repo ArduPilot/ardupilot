@@ -5168,7 +5168,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_level_flight(accuracy=10, timeout=1)  # Ensure we have roughly level-off.
         self.delay_sim_time(5)
 
-        self.disarm_vehicle(force=True)  # No need to test further.
+        self.change_mode('AUTOLAND')
+        self.wait_disarmed(timeout=180)
 
     def DCMFallback(self):
         '''Really annoy the EKF and force fallback'''
@@ -5207,7 +5208,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext("DCM Active", check_context=True)
         self.context_stop_collecting('STATUSTEXT')
 
-        self.fly_home_land_and_disarm()
+        self.change_mode('AUTOLAND')
+        self.wait_disarmed(timeout=180)
 
     def EFITest(self, efi_type, name, sim_name, check_fuel_flow=True):
         '''method to be called by EFI tests'''
