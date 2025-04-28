@@ -19,9 +19,14 @@ bool ModeRTL::init(bool ignore_checks)
     }
     // initialise waypoint and spline controller
     wp_nav->wp_and_spline_init(g.rtl_speed_cms);
-    _state = SubMode::STARTING;
-    _state_complete = true; // see run() method below
+
+    // initialise state
+    _state = SubMode::BUILD_PATH;
+    _state_complete = false;
+
+    // allow terrain following unless in terrain failsafe
     terrain_following_allowed = !copter.failsafe.terrain;
+
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
     copter.ap.land_repo_active = false;
 
@@ -42,9 +47,15 @@ void ModeRTL::restart_without_terrain()
 #if HAL_LOGGING_ENABLED
     LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::RESTARTED_RTL);
 #endif
+
+    // disable terrain following
     terrain_following_allowed = false;
-    _state = SubMode::STARTING;
-    _state_complete = true;
+
+    // initialise state
+    _state = SubMode::BUILD_PATH;
+    _state_complete = false;
+
+    // notify user
     gcs().send_text(MAV_SEVERITY_CRITICAL,"Restarting RTL - Terrain data missing");
 }
 
@@ -70,8 +81,7 @@ void ModeRTL::run(bool disarm_on_land)
     // check if we need to move to next state
     if (_state_complete) {
         switch (_state) {
-        case SubMode::STARTING:
-            build_path();
+        case SubMode::BUILD_PATH:
             climb_start();
             break;
         case SubMode::INITIAL_CLIMB:
@@ -99,10 +109,9 @@ void ModeRTL::run(bool disarm_on_land)
     // call the correct run function
     switch (_state) {
 
-    case SubMode::STARTING:
-        // should not be reached:
-        _state = SubMode::INITIAL_CLIMB;
-        FALLTHROUGH;
+    case SubMode::BUILD_PATH:
+        build_path_run();
+        break;
 
     case SubMode::INITIAL_CLIMB:
         climb_return_run();
@@ -374,14 +383,31 @@ void ModeRTL::land_run(bool disarm_on_land)
     land_run_normal_or_precland();
 }
 
-void ModeRTL::build_path()
+// build RTL return path
+// _state_complete set to true on success
+void ModeRTL::build_path_run()
 {
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // run waypoint controller
+    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
+    pos_control->update_z_controller();
+
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+
+    // compute return target
+    if (!compute_return_target()) {
+        return;
+    }
+
     // origin point is our stopping point
     rtl_path.origin_point = get_stopping_point();
     rtl_path.origin_point.change_alt_frame(Location::AltFrame::ABOVE_HOME);
-
-    // compute return target
-    compute_return_target();
 
     // climb target is above our origin point at the return altitude
     rtl_path.climb_target = Location(rtl_path.origin_point.lat, rtl_path.origin_point.lng, rtl_path.return_target.alt, rtl_path.return_target.get_alt_frame());
@@ -394,15 +420,26 @@ void ModeRTL::build_path()
 
     // set land flag
     rtl_path.land = g.rtl_alt_final <= 0;
+
+    // state is complete
+    _state_complete = true;
 }
 
 // compute the return target - home or rally point
-//   return target's altitude is updated to a higher altitude that the vehicle can safely return at (frame may also be set)
-void ModeRTL::compute_return_target()
+//   rtl_path.return_target's altitude is updated to a higher altitude that the vehicle can safely return at (frame may also be set)
+//   returns true on success and fills in rtl_path structure
+bool ModeRTL::compute_return_target()
 {
     // set return target to nearest rally point or home position
 #if HAL_RALLY_ENABLED
-    rtl_path.return_target = copter.rally.calc_best_rally_or_home_location(copter.current_loc, ahrs.get_home().alt);
+    if (!copter.rally.find_nearest_rally_or_home_with_dijkstras(copter.current_loc, ahrs.get_home().alt, rtl_path.return_target)) {
+        return false;
+    }
+    if (!rtl_path.return_target.initialised()) {
+        // sanity check return target, this should never happen
+        rtl_path.return_target = ahrs.get_home();
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
     rtl_path.return_target.change_alt_frame(Location::AltFrame::ABSOLUTE);
 #else
     rtl_path.return_target = ahrs.get_home();
@@ -513,13 +550,15 @@ void ModeRTL::compute_return_target()
 
     // ensure we do not descend
     rtl_path.return_target.alt = MAX(rtl_path.return_target.alt, curr_alt);
+
+    return true;
 }
 
 bool ModeRTL::get_wp(Location& destination) const
 {
     // provide target in states which use wp_nav
     switch (_state) {
-    case SubMode::STARTING:
+    case SubMode::BUILD_PATH:
     case SubMode::INITIAL_CLIMB:
     case SubMode::RETURN_HOME:
     case SubMode::LOITER_AT_HOME:

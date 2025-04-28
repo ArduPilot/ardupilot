@@ -64,7 +64,7 @@ void AP_OADijkstra::Write_OADijkstra(const uint8_t state, const uint8_t error_id
 #endif
 
 #if AP_OAPATHPLANNER_ENABLED
-void AP_OADijkstra::Write_Visgraph_point(const uint8_t version, const uint8_t point_num, const int32_t Lat, const int32_t Lon) const
+void AP_OADijkstra_StaticData::Write_Visgraph_point(const uint8_t version, const uint8_t point_num, const int32_t Lat, const int32_t Lon) const
 {
     const struct log_OD_Visgraph pkt{
         LOG_PACKET_HEADER_INIT(LOG_OD_VISGRAPH_MSG),

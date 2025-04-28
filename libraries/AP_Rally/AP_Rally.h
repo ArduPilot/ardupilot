@@ -77,6 +77,13 @@ public:
     Location calc_best_rally_or_home_location(const Location &current_loc, float rtl_home_alt_amsl_cm) const;
     bool find_nearest_rally_point(const Location &myloc, RallyLocation &ret) const;
 
+    // find rally point or home with shortest flight path distance calculated using Dijkstras
+    // returns true on completion and fills in ret with the Location of the closest rally point or home
+    // returns false if the calculation has not yet completed
+    // should be called continuously until it returns true.  only one caller is supported at a time
+    // if dijkstras is disabled or "Use Dikstras" options bit is not set then it will fall back to calc_best_rally_or_home_location()
+    bool find_nearest_rally_or_home_with_dijkstras(const Location &current_loc, float rtl_home_alt_amsl_cm, Location& ret);
+
     // last time rally points changed
     uint32_t last_change_time_ms(void) const { return _last_change_time_ms; }
 
@@ -94,12 +101,36 @@ private:
 
     static StorageAccess _storage;
 
+    // options bitmask
+    enum class Options : uint8_t {
+        USE_DIJKSTRAS = (1U << 0),
+    };
+
+    // check if a option is set
+    bool option_is_set(Options option) const {
+        return (uint8_t(_options.get()) & uint8_t(option)) != 0;
+    }
+
     // parameters
     AP_Int8  _rally_point_total_count;
     AP_Float _rally_limit_km;
     AP_Int8  _rally_incl_home;
+    AP_Int8  _options;
 
     uint32_t _last_change_time_ms = 0xFFFFFFFF;
+
+    // find_nearest_rally_or_home_with_dijkstras related variables
+    struct FindWithDijkstras {
+        enum class State {
+            NOT_STARTED = 0,
+            PROCESSING,
+            COMPLETED
+        } state;                    // state of search for shortest path
+        uint8_t rally_index;        // rally point index used for while iteratively searching for shortest path using Dijkstra's
+        float shortest_path_length; // shortest path length to rally point or home
+        bool shortest_path_valid;   // true if shortest_path_length has a valid distance
+        Location shortest_path_loc; // Location of home or rally point with shortest path length distance
+    } _find_with_dijkstras;
 };
 
 namespace AP {

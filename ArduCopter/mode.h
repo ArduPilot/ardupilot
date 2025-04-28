@@ -1471,7 +1471,7 @@ public:
 
     // RTL states
     enum class SubMode : uint8_t {
-        STARTING,
+        BUILD_PATH,
         INITIAL_CLIMB,
         RETURN_HOME,
         LOITER_AT_HOME,
@@ -1518,8 +1518,8 @@ private:
     void climb_return_run();
     void loiterathome_start();
     void loiterathome_run();
-    void build_path();
-    void compute_return_target();
+    void build_path_run();
+    bool compute_return_target();
 
     SubMode _state = SubMode::INITIAL_CLIMB;  // records state of rtl (initial climb, returning home, etc)
     bool _state_complete = false; // set to true if the current state is completed

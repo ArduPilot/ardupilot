@@ -83,6 +83,12 @@ public:
 
     uint16_t get_options() const { return _options;}
 
+    // get path length to arbitrary Location using Dijkstra's algorithm
+    // the request is processed in a background thread and returns OA_PROCESSING until the path length is calculated
+    // returns OA_SUCCESS once the path length is calculated and fills in the path_length argument
+    // only supports a single caller at a time
+    OA_RetState get_path_length(const Location &origin, const Location &destination, float &path_length) WARN_IF_UNUSED;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -91,8 +97,17 @@ private:
     void avoidance_thread();
     bool start_thread();
 
+    // handle avoidance requests in the avoidance thread
+    void handle_avoidance_requests();
+
+    // handle path length requests in the avoidance thread
+    void handle_path_length_requests();
+
     // helper function to map OABendyType to OAPathPlannerUsed
     OAPathPlannerUsed map_bendytype_to_pathplannerused(AP_OABendyRuler::OABendyType bendy_type);
+
+    // helper function to map Dijkstras return state to OA_RetState
+    OA_RetState map_dijkstra_state_to_oa_retstate(AP_OADijkstra::AP_OADijkstra_State dijkstra_state);
 
     // an avoidance request from the navigation code
     struct avoidance_info {
@@ -116,6 +131,23 @@ private:
         OAPathPlannerUsed path_planner_used;    // path planner that produced the result
         OA_RetState ret_state;      // OA_SUCCESS if the vehicle should move along the path from origin_new to destination_new
     } avoidance_result;
+
+    // request and reply for path length (using Dijkstras)
+    struct PathLengthRequest {
+        Location origin;
+        Location destination;
+        uint32_t request_time_ms;
+    } path_length_request;
+    HAL_Semaphore path_length_request_sem;  // semaphore for multi-thread use of path_length_request
+    uint32_t path_length_first_ms;  // system time that the first path length request was made.  Used to avoid timeout error on first run
+
+    struct PathLengthReply {
+        Location destination;       // destination (used to compare against request)
+        OA_RetState ret_state;      // OA_SUCCESS if the path length could be calculated
+        float path_length_m;        // path length in meters
+        uint32_t result_time_ms;    // system time the result was calculated (used to verify the result is recent)
+    } path_length_reply = {ret_state : OA_PROCESSING};
+    HAL_Semaphore path_length_reply_sem;    // semaphore for multi-thread use of path_length_reply
 
     // parameters
     AP_Int8 _type;                  // avoidance algorithm to be used
