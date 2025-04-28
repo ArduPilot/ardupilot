@@ -6,6 +6,10 @@
 #define AP_SRV_CHANNELS_ENABLED 1
 #endif
 
+#ifndef ACTUATOR_CHANNELS
+#define ACTUATOR_CHANNELS 0
+#endif
+
 #ifndef NUM_SERVO_CHANNELS
     #if HAL_PROGRAM_SIZE_LIMIT_KB > 1024
         #define NUM_SERVO_CHANNELS 32
