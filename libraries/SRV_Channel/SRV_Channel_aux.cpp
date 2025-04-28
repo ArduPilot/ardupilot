@@ -207,6 +207,12 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_video_switch:
         set_range(1000);
         break;
+#if ACTUATOR_CHANNELS > 0
+    case k_actuator1 ... k_actuator6:
+        // We take floats from -1 to 1. see MAV_CMD_DO_SET_ACTUATOR
+        set_angle(1);
+        break;
+#endif
     default:
         break;
     }
