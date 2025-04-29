@@ -321,7 +321,7 @@ public:
     void send_distance_sensor();
     // send_rangefinder sends only if a downward-facing instance is
     // found.  Rover overrides this!
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     virtual void send_rangefinder() const;
 #endif
     void send_proximity();
