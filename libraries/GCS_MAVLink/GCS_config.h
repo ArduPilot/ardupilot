@@ -5,6 +5,7 @@
 #include <AP_Mission/AP_Mission_config.h>
 #include <AP_InertialSensor/AP_InertialSensor_config.h>
 #include <AP_Arming/AP_Arming_config.h>
+#include <AP_RangeFinder/AP_RangeFinder_config.h>
 
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 1
@@ -96,6 +97,12 @@
 // ArduPilot 4.10 stops sending the warning
 #ifndef AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
 #define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED AP_MISSION_ENABLED
+#endif
+
+// RANGEFINDER is a subset of the DISTANCE_SENSOR message which we
+// also send.  Rover's send-minimum can be done on the client-side.
+#ifndef AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
+#define AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED AP_RANGEFINDER_ENABLED
 #endif
 
 // all commands can be executed by COMMAND_INT, so COMMAND_LONG isn't
