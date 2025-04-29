@@ -109,6 +109,10 @@
 
 // RANGEFINDER is a subset of the DISTANCE_SENSOR message which we
 // also send.  Rover's send-minimum can be done on the client-side.
+// CODE_REMOVAL
+// ArduPilot 4.7 stops sending the message by default
+// ArduPilot 4.8 compiles the code out by default
+// ArduPilot 4.9 removes the code entirely
 #ifndef AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 #define AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED AP_RANGEFINDER_ENABLED
 #endif
