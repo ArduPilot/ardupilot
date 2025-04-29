@@ -321,7 +321,17 @@ void AP_InertialSensor_SITL::timer_update(void)
     if (sitl == nullptr) {
         return;
     }
-    if (now >= next_accel_sample) {
+
+    // on some simulations (RealFlight) the aircraft sim decides when a new sample is available.
+    const bool sync_imus_to_frames = frame_num > 0;
+
+    if (sync_imus_to_frames && frame_num == sitl->state.frame_num) {
+        return;
+    }
+
+    frame_num = sitl->state.frame_num;
+
+    if (now >= next_accel_sample || sync_imus_to_frames) {
         if (((1U << accel_instance) & sitl->accel_fail_mask) == 0) {
 #if AP_SIM_INS_FILE_ENABLED
             if (sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ
@@ -339,7 +349,7 @@ void AP_InertialSensor_SITL::timer_update(void)
             }
         }
     }
-    if (now >= next_gyro_sample) {
+    if (now >= next_gyro_sample || sync_imus_to_frames) {
         if (((1U << gyro_instance) & sitl->gyro_fail_mask) == 0) {
 #if AP_SIM_INS_FILE_ENABLED
             if (sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ
