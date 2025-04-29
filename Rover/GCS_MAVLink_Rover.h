@@ -61,9 +61,11 @@ private:
 
     int16_t vfr_hud_throttle() const override;
 
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     void send_rangefinder() const override;
+#endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 
+#if AP_RANGEFINDER_ENABLED
     // send WATER_DEPTH - metres and temperature
     void send_water_depth();
     // state variable for the last rangefinder we sent a WATER_DEPTH
