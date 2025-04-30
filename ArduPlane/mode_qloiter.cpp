@@ -54,7 +54,7 @@ void ModeQLoiter::run()
     if (last_pos_set_ms != 0 && now - last_pos_set_ms < precland_timeout_ms) {
         // we have an active landing target override
         Vector2f rel_origin;
-        if (plane.next_WP_loc.get_vector_xy_from_origin_NE(rel_origin)) {
+        if (plane.next_WP_loc.get_vector_xy_from_origin_NE_cm(rel_origin)) {
             quadplane.pos_control->set_pos_desired_NE_cm(rel_origin);
             last_target_loc_set_ms = 0;
         }
@@ -142,7 +142,7 @@ void ModeQLoiter::run()
 #endif
 
     // call attitude controller with conservative smoothing gain of 4.0f
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target.x*100,
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target.x*100,
                                                                   target.y*100,
                                                                   target.z*100);
 

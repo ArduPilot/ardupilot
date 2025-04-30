@@ -73,7 +73,6 @@ void SITL_State::_sitl_setup()
 
     fprintf(stdout, "Starting SITL input\n");
 
-    // find the barometer object if it exists
     _sitl = AP::sitl();
 
     if (_sitl != nullptr) {
@@ -319,7 +318,6 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     uint32_t now = AP_HAL::micros();
     last_update_usec = now;
 
-    float altitude = AP::baro().get_altitude();
     float wind_speed = 0;
     float wind_direction = 0;
     float wind_dir_z = 0;
@@ -346,6 +344,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         wind_dir_z =     _sitl->wind_dir_z_active;
         
         // pass wind into simulators using different wind types via param SIM_WIND_T*.
+        const float altitude = _sitl->state.height_agl;
         switch (_sitl->wind_type) {
         case SITL::SIM::WIND_TYPE_SQRT:
             if (altitude < _sitl->wind_type_alt) {

@@ -187,7 +187,7 @@ void AP_EFI::log_status(void)
 // @Field: OilT: Oil temperature
 // @Field: FP: Fuel Pressure
 // @Field: FCR: Fuel Consumption Rate
-// @Field: CFV: Consumed fueld volume
+// @Field: CFV: Consumed fuel volume
 // @Field: TPS: Throttle Position
 // @Field: IDX: Index of the publishing ECU
     AP::logger().WriteStreaming("EFI",

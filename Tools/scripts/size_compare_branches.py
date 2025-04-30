@@ -746,6 +746,18 @@ class SizeCompareBranches(object):
 
         return result
 
+    def create_stripped_elf(self, path, bin_prefix="arm-none-eabi"):
+        stripped_path = f"{path}-stripped"
+        shutil.copy(path, stripped_path)
+
+        strip = "strip"
+        if bin_prefix is not None:
+            strip = "-".join([bin_prefix, strip])
+
+        self.run_program("strip", [strip, stripped_path])
+
+        return stripped_path
+
     def compare_results(self, result_master, result_branch):
         ret = {}
         for vehicle in result_master["vehicle"].keys():
@@ -760,6 +772,7 @@ class SizeCompareBranches(object):
                 new_path = os.path.join(new_bin_dir, bin_filename)
                 master_size = os.path.getsize(master_path)
                 new_size = os.path.getsize(new_path)
+                identical = self.files_are_identical(master_path, new_path)
             except FileNotFoundError:
                 elf_filename = result_master["vehicle"][vehicle]["elf_filename"]
                 master_path = os.path.join(master_bin_dir, elf_filename)
@@ -767,7 +780,13 @@ class SizeCompareBranches(object):
                 master_size = os.path.getsize(master_path)
                 new_size = os.path.getsize(new_path)
 
-            identical = self.files_are_identical(master_path, new_path)
+                identical = self.files_are_identical(master_path, new_path)
+                if not identical:
+                    # try stripping the files and *then* comparing.
+                    # This treats symbol renames as then "identical".
+                    master_path_stripped = self.create_stripped_elf(master_path)
+                    new_path_stripped = self.create_stripped_elf(new_path)
+                    identical = self.files_are_identical(master_path_stripped, new_path_stripped)
 
             board = result_master["board"]
             ret[vehicle] = SizeCompareBranchesResult(board, vehicle, new_size - master_size, identical)

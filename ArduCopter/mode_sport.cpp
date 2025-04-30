@@ -119,7 +119,7 @@ void ModeSport::run()
     }
 
     // call attitude controller
-    attitude_control->input_euler_rate_roll_pitch_yaw(target_roll_rate, target_pitch_rate, target_yaw_rate);
+    attitude_control->input_euler_rate_roll_pitch_yaw_cds(target_roll_rate, target_pitch_rate, target_yaw_rate);
 
     // run the vertical position controller and set output throttle
     pos_control->update_U_controller();

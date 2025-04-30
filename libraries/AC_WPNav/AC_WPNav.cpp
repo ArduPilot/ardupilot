@@ -871,7 +871,7 @@ bool AC_WPNav::get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_
 {
     // convert location to NE vector2f
     Vector2f res_vec;
-    if (!loc.get_vector_xy_from_origin_NE(res_vec)) {
+    if (!loc.get_vector_xy_from_origin_NE_cm(res_vec)) {
         return false;
     }
 
