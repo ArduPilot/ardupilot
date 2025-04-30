@@ -1,0 +1,54 @@
+name: test commit list
+
+on:
+  - pull_request
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-chibios:v0.1.3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: base_branch
+          submodules: 'no'
+
+      - name: Check commitlist origin/${{ github.base_ref }}..${{ github.ref }}
+        shell: bash
+        run: |
+          set -ex
+          cd base_branch
+
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+
+          # create file to inspect
+          COMMITLIST=/tmp/commitlist.txt
+          git fetch --recurse-submodules=no origin $GITHUB_BASE_REF
+          git log --format="%s" origin/${{ github.base_ref }}..${{ github.ref }} > $COMMITLIST
+
+          echo "Commit list:"
+          cat $COMMITLIST
+
+          # fixup commits should never be merged:
+          if grep -F 'fixup!' $COMMITLIST; then
+             echo 'Fixup commits found: Please squash any fixup! commits.'
+             exit 1
+          fi
+
+          # No Merge commits to be merged:
+          if grep 'Merge branch.*into' $COMMITLIST; then
+             echo "Merge commits found.  Your PR should not contain any merge commits. If you need to bring your PR up to date with master, then rebase your branch on top master. (https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html).  If using github, choose 'Update with rebase', not just 'Update branch'."
+             exit 1
+          fi
+
+          # require a ":" to appear somewhere in the message:
+          while IFS= read x; do
+              if ! [[ "$x" == *":"* ]] ; then
+                 echo "Commit message ($x) missing subsystem tag on front.  Re-word your commit to reflect what subsystem it changes. E.g. 'AP_Compass: Added new driver' (https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html)"
+                 exit 1
+              fi
+          done < $COMMITLIST
