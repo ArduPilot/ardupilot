@@ -1329,8 +1329,8 @@ void AP_CRSF_Telem::calc_parameter() {
         AP_Int8* p = (AP_Int8*)setting->_param;
         _telem.ext.param_entry.payload[1] = ParameterType::INT8;
         _telem.ext.param_entry.payload[idx] = p->get();  // value
-        _telem.ext.param_entry.payload[idx+1] = int8_t(setting->_param_min);  // min
-        _telem.ext.param_entry.payload[idx+2] = int8_t(setting->_param_max); // max
+        _telem.ext.param_entry.payload[idx+1] = int8_t(setting->_param_min.get());  // min
+        _telem.ext.param_entry.payload[idx+2] = int8_t(setting->_param_max.get()); // max
         _telem.ext.param_entry.payload[idx+3] = int8_t(0);  // default
         idx += 4;
         break;
@@ -1339,8 +1339,8 @@ void AP_CRSF_Telem::calc_parameter() {
         AP_Int16* p = (AP_Int16*)setting->_param;
         _telem.ext.param_entry.payload[1] = ParameterType::INT16;
         put_be16_ptr(&_telem.ext.param_entry.payload[idx], p->get());  // value
-        put_be16_ptr(&_telem.ext.param_entry.payload[idx+2], setting->_param_min);  // min
-        put_be16_ptr(&_telem.ext.param_entry.payload[idx+4], setting->_param_max); // max
+        put_be16_ptr(&_telem.ext.param_entry.payload[idx+2], setting->_param_min.get());  // min
+        put_be16_ptr(&_telem.ext.param_entry.payload[idx+4], setting->_param_max.get()); // max
         put_be16_ptr(&_telem.ext.param_entry.payload[idx+6], 0);  // default
         idx += 8;
         break;

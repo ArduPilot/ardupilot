@@ -7,7 +7,7 @@
 
 bool ModeAcro::init(bool ignore_checks) {
     // set target altitude to zero for reporting
-    position_control->set_pos_desired_z_cm(0);
+    position_control->set_pos_desired_U_cm(0);
 
     // attitude hold inputs become thrust inputs in acro mode
     // set to neutral to prevent chaotic behavior (esp. roll/pitch)
@@ -34,7 +34,7 @@ void ModeAcro::run()
     get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
 
     // run attitude controller
-    attitude_control->input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
+    attitude_control->input_rate_bf_roll_pitch_yaw_cds(target_roll, target_pitch, target_yaw);
 
     // output pilot's throttle without angle boost
     attitude_control->set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);

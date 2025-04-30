@@ -78,6 +78,7 @@ class TestBuildOptions(object):
         must_have_defines = {
             "CubeOrange": frozenset([
                 'AP_BARO_MS5611_ENABLED',
+                'AP_BARO_MS5607_ENABLED',
                 'AP_COMPASS_LSM303D_ENABLED',
                 'AP_COMPASS_AK8963_ENABLED',
                 'AP_COMPASS_AK09916_ENABLED',
@@ -85,6 +86,7 @@ class TestBuildOptions(object):
             ]),
             "CubeBlack": frozenset([
                 'AP_BARO_MS5611_ENABLED',
+                'AP_BARO_MS5607_ENABLED',
                 'AP_COMPASS_LSM303D_ENABLED',
                 'AP_COMPASS_AK8963_ENABLED',
                 'AP_COMPASS_AK09916_ENABLED',

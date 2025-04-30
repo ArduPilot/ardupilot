@@ -68,7 +68,7 @@ protected:
 
 };
 
-// Transition for separate left thrust quadplanes
+// Transition for separate lift thrust quadplanes
 class SLT_Transition : public Transition
 {
 public:

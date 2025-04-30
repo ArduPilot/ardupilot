@@ -9,6 +9,7 @@
 #include "quadplane.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>
+#include "config.h"
 #include "pullup.h"
 #include "systemid.h"
 
@@ -362,6 +363,11 @@ public:
 
     // handle a guided target request from GCS
     bool handle_guided_request(Location target_loc) override;
+
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+    // handle a guided airspeed command, typically from companion computer
+    bool handle_change_airspeed(const float airspeed, const float acceleration);
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 
     void set_radius_and_direction(const float radius, const bool direction_is_ccw);
 

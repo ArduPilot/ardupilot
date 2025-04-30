@@ -52,7 +52,7 @@ float ModeCircle::get_reached_distance() const
 bool ModeCircle::set_center(const Location& center_loc, float radius_m, bool dir_ccw)
 {
     Vector2f center_pos_cm;
-    if (!center_loc.get_vector_xy_from_origin_NE(center_pos_cm)) {
+    if (!center_loc.get_vector_xy_from_origin_NE_cm(center_pos_cm)) {
         return false;
     }
     if (!_enter()) {

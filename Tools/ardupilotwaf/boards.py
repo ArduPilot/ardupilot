@@ -526,6 +526,14 @@ class Board:
             env.CXXFLAGS += ['-DHAL_WITH_EKF_DOUBLE=0']
 
         if cfg.options.consistent_builds:
+            # if symbols are renamed we don't want them to affect the output:
+            env.CXXFLAGS += ['-fno-rtti']
+            env.CFLAGS += ['-fno-rtti']
+            # stop including a unique ID in the headers.  More useful
+            # when trying to find binary differences as the build-id
+            # appears to be a hash of the output products
+            # (ie. identical for identical compiler output):
+            env.LDFLAGS += ['-Wl,--build-id=bob']
             # squash all line numbers to be the number 17
             env.CXXFLAGS += [
                 "-D__AP_LINE__=17",

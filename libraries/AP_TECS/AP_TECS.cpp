@@ -809,6 +809,23 @@ void AP_TECS::_update_throttle_with_airspeed(void)
 
 #if HAL_LOGGING_ENABLED
         if (AP::logger().should_log(_log_bitmask)){
+            // @LoggerMessage: TEC3
+            // @Vehicles: Plane
+            // @Description: Additional additional information about the Total Energy Control System
+            // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+            // @Field: TimeUS: Time since system startup
+            // @Field: KED: Kinetic Energy Dot (1st derivative of KE)
+            // @Field: PED: Potential Energy Dot (1st derivative of PE)
+            // @Field: KEDD: Kinetic Energy Dot Demand
+            // @Field: PEDD: Potential Energy Dot Demand
+            // @Field: TEE: Total energy error
+            // @Field: TEDE: Total energy dot error (1st derivative of total energy error)
+            // @Field: FFT: feed-forward throttle
+            // @Field: Imin: integrator limit based on throttle values
+            // @Field: Imax: integrator limit based on throttle values
+            // @Field: I: integrator state for throttle
+            // @Field: Emin: lower limit for potential energy error
+            // @Field: Emax: upper limit for potential energy error
             AP::logger().WriteStreaming("TEC3","TimeUS,KED,PED,KEDD,PEDD,TEE,TEDE,FFT,Imin,Imax,I,Emin,Emax",
                                         "Qffffffffffff",
                                         AP_HAL::micros64(),

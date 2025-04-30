@@ -41,7 +41,7 @@ public:
     void get_stopping_point_xy(Vector2f& stopping_point) const;
 
     /// get horizontal distance to loiter target in cm
-    float get_distance_to_target() const { return _pos_control.get_pos_error_xy_cm(); }
+    float get_distance_to_target() const { return _pos_control.get_pos_error_NE_cm(); }
 
     /// get bearing to target in centi-degrees
     int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target_cd(); }

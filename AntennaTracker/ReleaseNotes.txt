@@ -1,5 +1,53 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
+Release 4.6.0-beta6 28-Apr-2025
+
+Changes from 4.6.0-beta5
+
+1) Board specific changes
+
+- ARK FPV, LumenierLuxF765, MicroAir743, StellarF4v2, X-MAV-AP-H743v2 OSD Type defaults fixed
+- BETAFPV-F405-I2C UART6 fix
+- BrotherHobby F405v3 and H743 support
+- FlywooF405HD VTX power pin fixed
+- NarinFC-H7 support
+- TBS Lucid H7 Wing support
+- TBS Lucid H7 support for both I2C ports
+
+2) Driver bug fixes and enhancements
+
+- DroneCAN semaphore bug fixed which affected MPPT battery and Serial-over-CAN
+- GPS logs altitude above ellipsoid instead of undulation
+- GSOF GPS protects against port misconfiguration
+- UBlox GPS configuration sped up
+- Lua script battery monitor failures that could cause hardfaults fixed
+- Nova GPS undulation fix
+- Proximity backends increased to 5
+- SCHA63T IMU temperature reporting bug fixed
+
+3) Plane specific fixes and enhancements
+
+- Circle mode terrain alt handling fixed
+- Fence re-enable after fence breach fixed
+- Prevent rotation pitch calculations from running post-rotation
+- Takeoff leveloff timeout check added
+- Terrain guided target intermediate alt handling fixed
+
+4) Copter SCurve navigation fix to avoid excessive vertical speed when passing through waypoints
+
+5) Rover circle mode and QuickTune support smaller vehicles
+
+6) Bug Fixes and minor enhancements
+
+- AHRS initial orientation fixed when autopilot mounted in non-default orientation
+- AIRSPEED mavlink message health flags fixed
+- CAMERA_FOV_STATUS message always sent (once requested), attitude is earth-frame and FOV can be decimal numbers
+- DDS / ROS2 fix to provide clock_gettime only on ChibiOS boards
+- Lightware I2C and HC SR04 fixed timestamp for last reading (should only affect AP_Periph devices)
+- "No ap_message for mavlink id" warning removed
+- Power brick2 valid flag fixed on some boards
+- Pre-arm check that gyro read rate is at least the main loop rate
+------------------------------------------------------------------
 Release 4.6.0-beta5 31-Mar-2025
 
 Changes from 4.6.0-beta4

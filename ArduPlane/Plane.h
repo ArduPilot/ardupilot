@@ -559,6 +559,9 @@ private:
 
         // last home altitude for detecting changes
         int32_t last_home_alt_cm;
+
+        // have we finished the takeoff ratation (when it applies)?
+        bool rotation_complete;
     } auto_state;
 
 #if AP_SCRIPTING_ENABLED
@@ -1062,7 +1065,7 @@ private:
 #if AP_FENCE_ENABLED
     // fence.cpp
     void fence_check();
-    void fence_run_checks() override;
+    void fence_checks_async() override;
     bool fence_stickmixing() const;
     bool in_fence_recovery() const;
     uint8_t orig_breaches;
@@ -1269,11 +1272,7 @@ private:
         CROW_DISABLED,
     };
 
-    enum class ThrFailsafe {
-        Disabled    = 0,
-        Enabled     = 1,
-        EnabledNoFS = 2
-    };
+    using ThrFailsafe = Parameters::ThrFailsafe;
 
     CrowMode crow_mode = CrowMode::NORMAL;
 

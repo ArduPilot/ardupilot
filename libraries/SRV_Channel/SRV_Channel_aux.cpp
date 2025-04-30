@@ -202,6 +202,9 @@ void SRV_Channel::aux_servo_function_setup(void)
         break;
     case k_cam_zoom:
     case k_cam_focus:
+    case k_lights1:
+    case k_lights2:
+    case k_video_switch:
         set_range(1000);
         break;
     default:

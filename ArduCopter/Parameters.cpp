@@ -648,6 +648,20 @@ const AP_Param::Info Copter::var_info[] = {
     // @Units: m
     // @User: Advanced
     GSCALAR(throw_altitude_max, "THROW_ALT_MAX", 0),
+
+    // @Param: THROW_ALT_DCSND
+    // @DisplayName: Throw mode target altitude to descend
+    // @Description: Target altitude to descend during a drop, (must be positive). This allows for rapidly clearing surrounding obstacles.
+    // @Units: m
+    // @User: Advanced
+    GSCALAR(throw_altitude_descend, "THROW_ALT_DCSND", 1.0),
+
+    // @Param: THROW_ALT_ACSND
+    // @DisplayName: Throw mode target altitude to ascsend
+    // @Description: Target altitude to ascend during a throw upwards (must be positive). This allows for rapidly clearing surrounding obstacles.
+    // @Units: m
+    // @User: Advanced
+    GSCALAR(throw_altitude_ascend, "THROW_ALT_ACSND", 3.0),
 #endif
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED
