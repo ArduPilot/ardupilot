@@ -7,6 +7,9 @@
 #include "uxr/client/client.h"
 #include "ucdr/microcdr.h"
 
+#if AP_DDS_ATT_CTRL_ENABLED
+#include "ardupilot_msgs/msg/AttitudeTarget.h"
+#endif // AP_DDS_ATT_CTRL_ENABLED
 #if AP_DDS_GLOBAL_POS_CTRL_ENABLED
 #include "ardupilot_msgs/msg/GlobalPosition.h"
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
@@ -220,6 +223,10 @@ private:
     // incoming joystick data
     static sensor_msgs_msg_Joy rx_joy_topic;
 #endif // AP_DDS_JOY_SUB_ENABLED
+#if AP_DDS_ATT_CTRL_ENABLED
+    // incoming REP147 attitude control
+    static ardupilot_msgs_msg_AttitudeTarget rx_attitude_control_topic;
+#endif // AP_DDS_ATT_CTRL_ENABLED
 #if AP_DDS_VEL_CTRL_ENABLED
     // incoming REP147 velocity control
     static geometry_msgs_msg_TwistStamped rx_velocity_control_topic;

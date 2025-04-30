@@ -51,6 +51,47 @@ bool AP_DDS_External_Control::handle_global_position_control(ardupilot_msgs_msg_
     return false;
 }
 
+bool AP_DDS_External_Control::handle_attitude_control(ardupilot_msgs_msg_AttitudeTarget& cmd_att)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return false;
+    }
+
+    const bool roll_rate_ignore   = cmd_att.type_mask & AttitudeTarget::IGNORE_ROLL_RATE;
+    const bool pitch_rate_ignore  = cmd_att.type_mask & AttitudeTarget::IGNORE_PITCH_RATE;
+    const bool yaw_rate_ignore    = cmd_att.type_mask & AttitudeTarget::IGNORE_YAW_RATE;
+    const bool throttle_ignore    = cmd_att.type_mask & AttitudeTarget::IGNORE_THRUST;
+    const bool attitude_ignore    = cmd_att.type_mask & AttitudeTarget::IGNORE_ATTITUDE;
+
+    // thrust field should not be ignored
+    if (throttle_ignore) {
+        return false;
+    }
+
+    Quaternion attitude_quat;
+    if (attitude_ignore) {
+        attitude_quat.zero();
+    } else {
+        attitude_quat = Quaternion(cmd_att.orientation.w,cmd_att.orientation.x,cmd_att.orientation.y,cmd_att.orientation.z);
+        if (!attitude_quat.is_unit_length()) {
+            return false;
+        }
+    }
+
+    Vector3f ang_vel_body;
+    // Ensure the ang-vel vector is always populated
+    ang_vel_body.x = roll_rate_ignore ? 0.0f : cmd_att.body_rate.x;
+    ang_vel_body.y = pitch_rate_ignore ? 0.0f : cmd_att.body_rate.y;
+    ang_vel_body.z = yaw_rate_ignore ? 0.0f : cmd_att.body_rate.z;
+
+    if (roll_rate_ignore && pitch_rate_ignore && yaw_rate_ignore) {
+        return false; // TODO: Needs better handling
+    }
+
+    return external_control->set_attitude_target(attitude_quat, ang_vel_body, cmd_att.thrust);
+}
+
 bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistStamped& cmd_vel)
 {
     auto *external_control = AP::externalcontrol();

@@ -18,6 +18,13 @@ public:
 
     AP_ExternalControl();
     /*
+        sets attitude target
+    */
+    virtual bool set_attitude_target(Quaternion attitude_quat, Vector3f ang_vel_body, float thrust) WARN_IF_UNUSED {
+        return false;
+    }
+
+    /*
       Set linear velocity and yaw rate. Pass NaN for yaw_rate_rads to not control yaw.
       Velocity is in earth frame, NED [m/s].
       Yaw is in earth frame, NED [rad/s].

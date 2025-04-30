@@ -121,6 +121,10 @@
 #define AP_DDS_JOY_SUB_ENABLED 1
 #endif
 
+#ifndef AP_DDS_ATT_CTRL_ENABLED
+#define AP_DDS_ATT_CTRL_ENABLED 1
+#endif
+
 #ifndef AP_DDS_VEL_CTRL_ENABLED
 #define AP_DDS_VEL_CTRL_ENABLED 1
 #endif
