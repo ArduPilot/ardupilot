@@ -559,6 +559,9 @@ private:
 
         // last home altitude for detecting changes
         int32_t last_home_alt_cm;
+
+        // have we finished the takeoff ratation (when it applies)?
+        bool rotation_complete;
     } auto_state;
 
 #if AP_SCRIPTING_ENABLED
@@ -902,6 +905,9 @@ private:
     int32_t relative_target_altitude_cm(void);
     void change_target_altitude(int32_t change_cm);
     void set_target_altitude_proportion(const Location &loc, float proportion);
+#if AP_TERRAIN_AVAILABLE
+    bool set_target_altitude_proportion_terrain(void);
+#endif
     void constrain_target_altitude_location(const Location &loc1, const Location &loc2);
     int32_t calc_altitude_error_cm(void);
     void check_fbwb_altitude(void);
@@ -914,6 +920,7 @@ private:
     float mission_alt_offset(void);
     float height_above_target(void);
     float lookahead_adjustment(void);
+    void fix_terrain_WP(Location &loc, uint32_t linenum);
 #if AP_RANGEFINDER_ENABLED
     float rangefinder_correction(void);
     void rangefinder_height_update(void);
@@ -1058,8 +1065,10 @@ private:
 #if AP_FENCE_ENABLED
     // fence.cpp
     void fence_check();
+    void fence_checks_async() override;
     bool fence_stickmixing() const;
     bool in_fence_recovery() const;
+    uint8_t orig_breaches;
 #endif
 
     // Plane.cpp
@@ -1263,11 +1272,7 @@ private:
         CROW_DISABLED,
     };
 
-    enum class ThrFailsafe {
-        Disabled    = 0,
-        Enabled     = 1,
-        EnabledNoFS = 2
-    };
+    using ThrFailsafe = Parameters::ThrFailsafe;
 
     CrowMode crow_mode = CrowMode::NORMAL;
 

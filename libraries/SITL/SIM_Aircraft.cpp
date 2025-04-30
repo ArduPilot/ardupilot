@@ -483,7 +483,13 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 #endif
     // for EKF comparison log relhome pos and velocity at loop rate
     static uint16_t last_ticks;
-    uint16_t ticks = AP::scheduler().ticks();
+    // FIXME: stop using AP_Scheduler here!  It's from "the other side"
+    const auto *scheduler = AP_Scheduler::get_singleton();
+    if (scheduler == nullptr) {
+        // not instantiated in examples
+        return;
+    }
+    uint16_t ticks = scheduler->ticks();
     if (last_ticks != ticks) {
         last_ticks = ticks;
 // @LoggerMessage: SIM2
@@ -672,10 +678,12 @@ void Aircraft::update_home()
         if (sitl == nullptr) {
             return;
         }
-        Location loc;
-        loc.lat = sitl->opos.lat.get() * 1.0e7;
-        loc.lng = sitl->opos.lng.get() * 1.0e7;
-        loc.alt = sitl->opos.alt.get() * 1.0e2;
+        const Location loc{
+            int32_t(sitl->opos.lat.get() * 1.0e7),
+            int32_t(sitl->opos.lng.get() * 1.0e7),
+            int32_t(sitl->opos.alt.get() * 1.0e2),
+            Location::AltFrame::ABSOLUTE
+        };
         set_start_location(loc, sitl->opos.hdg.get());
     }
 }

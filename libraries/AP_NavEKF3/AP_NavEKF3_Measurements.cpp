@@ -257,27 +257,41 @@ void NavEKF3_core::tryChangeCompass(void)
         if (tempIndex >= maxCount) {
             tempIndex -= maxCount;
         }
-        // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
-        if (compass.healthy(tempIndex) && compass.use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
-            magSelectIndex = tempIndex;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
-            // reset the timeout flag and timer
-            magTimeout = false;
-            lastHealthyMagTime_ms = imuSampleTime_ms;
-            // zero the learned magnetometer bias states
-            stateStruct.body_magfield.zero();
-            // clear the measurement buffer
-            storedMag.reset();
-            // clear the data waiting flag so that we do not use any data pending from the previous sensor
-            magDataToFuse = false;
-            // request a reset of the magnetic field states
-            magStateResetRequest = true;
-            // declare the field unlearned so that the reset request will be obeyed
-            magFieldLearned = false;
-            // reset body mag variances on next CovariancePrediction
-            needMagBodyVarReset = true;
-            return;
-        }
+        tryChangeCompass(tempIndex);
+    }
+}
+
+// try changing to a specific compass index
+void NavEKF3_core::tryChangeCompass(uint8_t mag_index)
+{
+    const auto &compass = dal.compass();
+    const uint8_t maxCount = compass.get_count();
+
+    if (mag_index >= maxCount) {
+        // we assume the passed index should be valid
+        return;
+    }
+
+     // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
+    if (compass.healthy(mag_index) && compass.use_for_yaw(mag_index) && mag_index != magSelectIndex) {
+        magSelectIndex = mag_index;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
+        // reset the timeout flag and timer
+        magTimeout = false;
+        lastHealthyMagTime_ms = imuSampleTime_ms;
+        // zero the learned magnetometer bias states
+        stateStruct.body_magfield.zero();
+        // clear the measurement buffer
+        storedMag.reset();
+        // clear the data waiting flag so that we do not use any data pending from the previous sensor
+        magDataToFuse = false;
+        // request a reset of the magnetic field states
+        magStateResetRequest = true;
+        // declare the field unlearned so that the reset request will be obeyed
+        magFieldLearned = false;
+        // reset body mag variances on next CovariancePrediction
+        needMagBodyVarReset = true;
+        return;
     }
 }
 
@@ -943,7 +957,7 @@ void NavEKF3_core::readRngBcnData()
 
             // set the range noise
             // TODO the range library should provide the noise/accuracy estimate for each beacon
-            rngBcnDataNew.rngErr = frontend->_rngBcnNoise;
+            rngBcnDataNew.rngErr = frontend->_rngBcnNoise.get();
 
             // set the range measurement
             rngBcnDataNew.rng = beacon->beacon_distance(index);
@@ -1177,6 +1191,12 @@ void NavEKF3_core::update_mag_selection(void)
             compass.use_for_yaw(core_index)) {
             // use core_index compass if it is healthy
             magSelectIndex = core_index;
+        }
+    } else {
+        // if we are not armed, use the primary compass (if it is healthy)
+        const uint8_t primary_compass = compass.get_first_usable();
+        if (!dal.get_armed() && (magSelectIndex != primary_compass)) {
+            tryChangeCompass(primary_compass);
         }
     }
 }
@@ -1443,8 +1463,8 @@ void NavEKF3_core::SampleDragData(const imu_elements &imu)
 {
 #if EK3_FEATURE_DRAG_FUSION
     // Average and down sample to 5Hz
-    const ftype bcoef_x = frontend->_ballisticCoef_x;
-    const ftype bcoef_y = frontend->_ballisticCoef_y;
+    const ftype bcoef_x = frontend->_ballisticCoef_x.get();
+    const ftype bcoef_y = frontend->_ballisticCoef_y.get();
     const ftype mcoef = frontend->_momentumDragCoef.get();
     const bool using_bcoef_x = bcoef_x > 1.0f;
     const bool using_bcoef_y = bcoef_y > 1.0f;

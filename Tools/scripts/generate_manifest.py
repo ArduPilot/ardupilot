@@ -523,7 +523,7 @@ class ManifestGenerator():
                 tag = firstlevel
                 if not self.valid_release_type(tag):
                     print("Unknown tag (%s) in directory (%s)" %
-                          (tag, os.path.join(vdir)), file=sys.stderr)
+                          (tag, os.path.join(*vdir)), file=sys.stderr)
                     continue
                 tag_path = os.path.join(basedir, vehicletype, tag)
                 if not os.path.isdir(tag_path):

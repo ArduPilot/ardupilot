@@ -285,7 +285,7 @@ void Plane::control_failsafe()
 
     const bool allow_failsafe_bypass = !arming.is_armed() && !is_flying() && (rc().enabled_protocols() != 0);
     const bool has_had_input = rc().has_had_rc_receiver() || rc().has_had_rc_override();
-    if ((ThrFailsafe(g.throttle_fs_enabled.get()) != ThrFailsafe::Enabled) || (allow_failsafe_bypass && !has_had_input)) {
+    if ((g.throttle_fs_enabled != ThrFailsafe::Enabled) || (allow_failsafe_bypass && !has_had_input)) {
         // If not flying and disarmed don't trigger failsafe until RC has been received for the fist time
         return;
     }
@@ -387,7 +387,7 @@ void Plane::trim_radio()
  */
 bool Plane::rc_throttle_value_ok(void) const
 {
-    if (ThrFailsafe(g.throttle_fs_enabled.get()) == ThrFailsafe::Disabled) {
+    if (g.throttle_fs_enabled == ThrFailsafe::Disabled) {
         return true;
     }
     if (channel_throttle->get_reverse()) {

@@ -525,7 +525,7 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
     if (auto_mode == Auto_CircleMoveToEdge) {
         if (wp_nav.reached_wp_destination()) {
             Vector3f circle_center;
-            UNUSED_RESULT(cmd.content.location.get_vector_from_origin_NEU(circle_center));
+            UNUSED_RESULT(cmd.content.location.get_vector_from_origin_NEU_cm(circle_center));
 
             // set target altitude if not provided
             if (is_zero(circle_center.z)) {

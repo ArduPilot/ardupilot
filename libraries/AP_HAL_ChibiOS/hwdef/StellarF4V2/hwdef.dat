@@ -135,7 +135,7 @@ STORAGE_FLASH_PAGE 1
 
 # setup for OSD
 define OSD_ENABLED 1
-define HAL_OSD_TYPE_DEFAULT 5
+define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # minimal drivers to reduce flash usage

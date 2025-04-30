@@ -105,9 +105,6 @@ void ModeRTL::run(bool disarm_on_land)
         FALLTHROUGH;
 
     case SubMode::INITIAL_CLIMB:
-        climb_return_run();
-        break;
-
     case SubMode::RETURN_HOME:
         climb_return_run();
         break;
@@ -178,10 +175,10 @@ void ModeRTL::climb_return_run()
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    pos_control->update_z_controller();
+    pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've completed this stage of RTL
     _state_complete = wp_nav->reached_wp_destination();
@@ -220,10 +217,10 @@ void ModeRTL::loiterathome_run()
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    pos_control->update_z_controller();
+    pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've completed this stage of RTL
     if ((millis() - _loiter_start_time) >= (uint32_t)g.rtl_loiter_time.get()) {
@@ -246,7 +243,7 @@ void ModeRTL::descent_start()
     _state_complete = false;
 
     // initialise altitude target to stopping point
-    pos_control->init_z_controller_stopping_point();
+    pos_control->init_U_controller_stopping_point();
 
     // initialise yaw
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
@@ -300,16 +297,16 @@ void ModeRTL::descent_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     Vector2f accel;
-    pos_control->input_vel_accel_xy(vel_correction, accel);
-    pos_control->update_xy_controller();
+    pos_control->input_vel_accel_NE_cm(vel_correction, accel);
+    pos_control->update_NE_controller();
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    pos_control->set_alt_target_with_slew(rtl_path.descent_target.alt);
-    pos_control->update_z_controller();
+    pos_control->set_alt_target_with_slew_cm(rtl_path.descent_target.alt);
+    pos_control->update_U_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've reached within 20cm of final altitude
     _state_complete = labs(rtl_path.descent_target.alt - copter.inertial_nav.get_position_z_up_cm()) < 20;
@@ -322,17 +319,17 @@ void ModeRTL::land_start()
     _state_complete = false;
 
     // set horizontal speed and acceleration limits
-    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
-    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
 
     // initialise loiter target destination
-    if (!pos_control->is_active_xy()) {
-        pos_control->init_xy_controller();
+    if (!pos_control->is_active_NE()) {
+        pos_control->init_NE_controller();
     }
 
     // initialise the vertical position controller
-    if (!pos_control->is_active_z()) {
-        pos_control->init_z_controller();
+    if (!pos_control->is_active_U()) {
+        pos_control->init_U_controller();
     }
 
     // initialise yaw
@@ -409,7 +406,7 @@ void ModeRTL::compute_return_target()
 #endif
 
     // get position controller Z-axis offset in cm above EKF origin
-    int32_t pos_offset_z = pos_control->get_pos_offset_z_cm();
+    int32_t pos_offset_z = pos_control->get_pos_offset_U_cm();
 
     // curr_alt is current altitude above home or above terrain depending upon use_terrain
     int32_t curr_alt = copter.current_loc.alt - pos_offset_z;

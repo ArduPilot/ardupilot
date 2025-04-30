@@ -62,8 +62,8 @@ void AC_Circle::init(const Vector3p& center, bool terrain_alt, float rate_deg_pe
     _rate = rate_deg_per_sec;
 
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
-    _pos_control.init_xy_controller_stopping_point();
-    _pos_control.init_z_controller_stopping_point();
+    _pos_control.init_NE_controller_stopping_point();
+    _pos_control.init_U_controller_stopping_point();
 
     // calculate velocities
     calc_velocities(true);
@@ -82,11 +82,11 @@ void AC_Circle::init()
     _rate = _rate_parm;
 
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
-    _pos_control.init_xy_controller_stopping_point();
-    _pos_control.init_z_controller_stopping_point();
+    _pos_control.init_NE_controller_stopping_point();
+    _pos_control.init_U_controller_stopping_point();
 
     // get stopping point
-    const Vector3p& stopping_point = _pos_control.get_pos_desired_cm();
+    const Vector3p& stopping_point = _pos_control.get_pos_desired_NEU_cm();
 
     // set circle center to circle_radius ahead of stopping point
     _center = stopping_point;
@@ -110,7 +110,8 @@ void AC_Circle::set_center(const Location& center)
         // convert Location with terrain altitude
         Vector2f center_xy;
         int32_t terr_alt_cm;
-        if (center.get_vector_xy_from_origin_NE(center_xy) && center.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, terr_alt_cm)) {
+        if (center.get_vector_xy_from_origin_NE_cm(center_xy) &&
+            center.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, terr_alt_cm)) {
             set_center(Vector3f(center_xy.x, center_xy.y, terr_alt_cm), true);
         } else {
             // failed to convert location so set to current position and log error
@@ -120,7 +121,7 @@ void AC_Circle::set_center(const Location& center)
     } else {
         // convert Location with alt-above-home, alt-above-origin or absolute alt
         Vector3f circle_center_neu;
-        if (!center.get_vector_from_origin_NEU(circle_center_neu)) {
+        if (!center.get_vector_from_origin_NEU_cm(circle_center_neu)) {
             // default to current position and log error
             circle_center_neu = _inav.get_position_neu_cm();
             LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
@@ -185,7 +186,7 @@ bool AC_Circle::update(float climb_rate_cms)
     if (_terrain_alt) {
         target_z_cm = _center.z + terr_offset;
     } else {
-        target_z_cm = _pos_control.get_pos_desired_z_cm();
+        target_z_cm = _pos_control.get_pos_desired_U_cm();
     }
 
     // if the circle_radius is zero we are doing panorama so no need to update loiter target
@@ -200,7 +201,7 @@ bool AC_Circle::update(float climb_rate_cms)
         target.y += - _radius * sinf(-_angle);
 
         // heading is from vehicle to center of circle
-        _yaw = get_bearing_cd(_pos_control.get_pos_desired_cm().xy().tofloat(), _center.tofloat().xy());
+        _yaw = get_bearing_cd(_pos_control.get_pos_desired_NEU_cm().xy().tofloat(), _center.tofloat().xy());
 
         if ((_options.get() & CircleOptions::FACE_DIRECTION_OF_TRAVEL) != 0) {
             _yaw += is_positive(_rate)?-9000.0f:9000.0f;
@@ -214,17 +215,17 @@ bool AC_Circle::update(float climb_rate_cms)
 
     // update position controller target
     Vector2f zero;
-    _pos_control.input_pos_vel_accel_xy(target.xy(), zero, zero);
+    _pos_control.input_pos_vel_accel_NE_cm(target.xy(), zero, zero);
     if (_terrain_alt) {
         float zero2 = 0;
         float target_zf = target.z;
-        _pos_control.input_pos_vel_accel_z(target_zf, zero2, 0);
+        _pos_control.input_pos_vel_accel_U_cm(target_zf, zero2, 0);
     } else {
-        _pos_control.set_pos_target_z_from_climb_rate_cm(climb_rate_cms);
+        _pos_control.set_pos_target_U_from_climb_rate_cm(climb_rate_cms);
     }
 
     // update position controller
-    _pos_control.update_xy_controller();
+    _pos_control.update_NE_controller();
 
     // set update time
     _last_update_ms = AP_HAL::millis();
@@ -241,8 +242,8 @@ void AC_Circle::get_closest_point_on_circle(Vector3f& result, float& dist_cm) co
 {
     // get current position
     Vector3p stopping_point;
-    _pos_control.get_stopping_point_xy_cm(stopping_point.xy());
-    _pos_control.get_stopping_point_z_cm(stopping_point.z);
+    _pos_control.get_stopping_point_NE_cm(stopping_point.xy());
+    _pos_control.get_stopping_point_U_cm(stopping_point.z);
 
     // calc vector from stopping point to circle center
     Vector3f vec = (stopping_point - _center).tofloat();
@@ -279,14 +280,14 @@ void AC_Circle::calc_velocities(bool init_velocity)
         _angular_accel = MAX(fabsf(_angular_vel_max),ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));  // reach maximum yaw velocity in 1 second
     }else{
         // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
-        float velocity_max = MIN(_pos_control.get_max_speed_xy_cms(), safe_sqrt(0.5f*_pos_control.get_max_accel_xy_cmss()*_radius));
+        float velocity_max = MIN(_pos_control.get_max_speed_NE_cms(), safe_sqrt(0.5f*_pos_control.get_max_accel_NE_cmss()*_radius));
 
         // angular_velocity in radians per second
         _angular_vel_max = velocity_max/_radius;
         _angular_vel_max = constrain_float(ToRad(_rate),-_angular_vel_max,_angular_vel_max);
 
         // angular_velocity in radians per second
-        _angular_accel = MAX(_pos_control.get_max_accel_xy_cmss()/_radius, ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));
+        _angular_accel = MAX(_pos_control.get_max_accel_NE_cmss()/_radius, ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));
     }
 
     // initialise angular velocity
@@ -315,7 +316,7 @@ void AC_Circle::init_start_angle(bool use_heading)
     } else {
         // if we are exactly at the center of the circle, init angle to directly behind vehicle (so vehicle will backup but not change heading)
         // curr_pos_desired is the position before we add offsets and terrain
-        const Vector3f &curr_pos_desired= _pos_control.get_pos_desired_cm().tofloat();
+        const Vector3f &curr_pos_desired= _pos_control.get_pos_desired_NEU_cm().tofloat();
         if (is_equal(curr_pos_desired.x,float(_center.x)) && is_equal(curr_pos_desired.y,float(_center.y))) {
             _angle = wrap_PI(_ahrs.yaw-M_PI);
         } else {

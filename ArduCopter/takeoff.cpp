@@ -52,7 +52,7 @@ void Mode::_TakeOff::start(float alt_cm)
 {
     // initialise takeoff state
     _running = true;
-    take_off_start_alt = copter.pos_control->get_pos_desired_z_cm();
+    take_off_start_alt = copter.pos_control->get_pos_desired_U_cm();
     take_off_complete_alt  = take_off_start_alt + alt_cm;
 }
 
@@ -83,11 +83,11 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
         float throttle = constrain_float(copter.attitude_control->get_throttle_in() + copter.G_Dt / copter.g2.takeoff_throttle_slew_time, 0.0, 1.0);
         copter.attitude_control->set_throttle_out(throttle, true, 0.0);
         // tell position controller to reset alt target and reset I terms
-        copter.pos_control->init_z_controller();
+        copter.pos_control->init_U_controller();
         if (throttle >= MIN(copter.g2.takeoff_throttle_max, 0.9) || 
-            (copter.pos_control->get_z_accel_cmss() >= 0.5 * copter.pos_control->get_max_accel_z_cmss()) ||
-            (copter.pos_control->get_vel_desired_cms().z >= constrain_float(pilot_climb_rate_cm, copter.pos_control->get_max_speed_up_cms() * 0.1, copter.pos_control->get_max_speed_up_cms() * 0.5)) || 
-            (is_positive(take_off_complete_alt - take_off_start_alt) && copter.pos_control->get_pos_desired_z_cm() - take_off_start_alt > 0.5 * (take_off_complete_alt - take_off_start_alt))) {
+            (copter.pos_control->get_measured_accel_U_cmss() >= 0.5 * copter.pos_control->get_max_accel_U_cmss()) ||
+            (copter.pos_control->get_vel_desired_NEU_cms().z >= constrain_float(pilot_climb_rate_cm, copter.pos_control->get_max_speed_up_cms() * 0.1, copter.pos_control->get_max_speed_up_cms() * 0.5)) || 
+            (is_positive(take_off_complete_alt - take_off_start_alt) && copter.pos_control->get_pos_desired_U_cm() - take_off_start_alt > 0.5 * (take_off_complete_alt - take_off_start_alt))) {
             // throttle > 90%
             // acceleration > 50% maximum acceleration
             // velocity > 10% maximum velocity && commanded climb rate
@@ -100,11 +100,11 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
         float vel_z = pilot_climb_rate_cm;
 
         // command the aircraft to the take off altitude and current pilot climb rate
-        copter.pos_control->input_pos_vel_accel_z(pos_z, vel_z, 0);
+        copter.pos_control->input_pos_vel_accel_U_cm(pos_z, vel_z, 0);
 
         // stop take off early and return if negative climb rate is commanded or we are within 0.1% of our take off altitude
         if (is_negative(pilot_climb_rate_cm) ||
-            (take_off_complete_alt  - take_off_start_alt) * 0.999f < copter.pos_control->get_pos_desired_z_cm() - take_off_start_alt) {
+            (take_off_complete_alt  - take_off_start_alt) * 0.999f < copter.pos_control->get_pos_desired_U_cm() - take_off_start_alt) {
             stop();
         }
     }
@@ -144,13 +144,13 @@ void _AutoTakeoff::run()
     // aircraft stays in landed state until rotor speed run up has finished
     if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         // motors have not completed spool up yet so relax navigation and position controllers
-        pos_control->relax_velocity_controller_xy();
-        pos_control->update_xy_controller();
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
-        pos_control->update_z_controller();
+        pos_control->relax_velocity_controller_NE();
+        pos_control->update_NE_controller();
+        pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
+        pos_control->update_U_controller();
         attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
+        attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), 0.0);
         // update auto_takeoff_no_nav_alt_cm
         no_nav_alt_cm = inertial_nav.get_position_z_up_cm() + g2.wp_navalt_min * 100;
         return;
@@ -162,14 +162,14 @@ void _AutoTakeoff::run()
         float throttle = constrain_float(copter.attitude_control->get_throttle_in() + copter.G_Dt / copter.g2.takeoff_throttle_slew_time, 0.0, 1.0);
         copter.attitude_control->set_throttle_out(throttle, true, 0.0);
         // tell position controller to reset alt target and reset I terms
-        copter.pos_control->init_z_controller();
-        pos_control->relax_velocity_controller_xy();
-        pos_control->update_xy_controller();
+        copter.pos_control->init_U_controller();
+        pos_control->relax_velocity_controller_NE();
+        pos_control->update_NE_controller();
         attitude_control->reset_rate_controller_I_terms();
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
+        attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), 0.0);
         if (throttle >= MIN(copter.g2.takeoff_throttle_max, 0.9) || 
-            (copter.pos_control->get_z_accel_cmss() >= 0.5 * copter.pos_control->get_max_accel_z_cmss()) ||
-            (copter.pos_control->get_vel_desired_cms().z >= 0.1 * copter.pos_control->get_max_speed_up_cms()) || 
+            (copter.pos_control->get_measured_accel_U_cmss() >= 0.5 * copter.pos_control->get_max_accel_U_cmss()) ||
+            (copter.pos_control->get_vel_desired_NEU_cms().z >= 0.1 * copter.pos_control->get_max_speed_up_cms()) || 
             ( no_nav_active && (inertial_nav.get_position_z_up_cm() >= no_nav_alt_cm))) {
             // throttle > 90%
             // acceleration > 50% maximum acceleration
@@ -186,37 +186,37 @@ void _AutoTakeoff::run()
         if (inertial_nav.get_position_z_up_cm() >= no_nav_alt_cm) {
             no_nav_active = false;
         }
-        pos_control->relax_velocity_controller_xy();
+        pos_control->relax_velocity_controller_NE();
     } else {
         Vector2f vel;
         Vector2f accel;
-        pos_control->input_vel_accel_xy(vel, accel);
+        pos_control->input_vel_accel_NE_cm(vel, accel);
     }
-    pos_control->update_xy_controller();
+    pos_control->update_NE_controller();
 
     // command the aircraft to the take off altitude
     float pos_z = complete_alt_cm + terr_offset;
     float vel_z = 0.0;
-    copter.pos_control->input_pos_vel_accel_z(pos_z, vel_z, 0.0);
+    copter.pos_control->input_pos_vel_accel_U_cm(pos_z, vel_z, 0.0);
     
     // run the vertical position controller and set output throttle
-    pos_control->update_z_controller();
+    pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), copter.flightmode->auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), copter.flightmode->auto_yaw.get_heading());
 
     // takeoff complete when we are less than 1% of the stopping distance from the target altitude
     // and 10% our maximum climb rate
     const float vel_threshold_fraction = 0.1;
     // stopping distance from vel_threshold_fraction * max velocity
-    const float stop_distance = 0.5 * sq(vel_threshold_fraction * copter.pos_control->get_max_speed_up_cms()) / copter.pos_control->get_max_accel_z_cmss();
-    bool reached_altitude = copter.pos_control->get_pos_desired_z_cm() >= pos_z - stop_distance;
-    bool reached_climb_rate = copter.pos_control->get_vel_desired_cms().z < copter.pos_control->get_max_speed_up_cms() * vel_threshold_fraction;
+    const float stop_distance = 0.5 * sq(vel_threshold_fraction * copter.pos_control->get_max_speed_up_cms()) / copter.pos_control->get_max_accel_U_cmss();
+    bool reached_altitude = copter.pos_control->get_pos_desired_U_cm() >= pos_z - stop_distance;
+    bool reached_climb_rate = copter.pos_control->get_vel_desired_NEU_cms().z < copter.pos_control->get_max_speed_up_cms() * vel_threshold_fraction;
     complete = reached_altitude && reached_climb_rate;
 
     // calculate completion for location in case it is needed for a smooth transition to wp_nav
     if (complete) {
-        const Vector3p& _complete_pos = copter.pos_control->get_pos_desired_cm();
+        const Vector3p& _complete_pos = copter.pos_control->get_pos_desired_NEU_cm();
         complete_pos = Vector3p{_complete_pos.x, _complete_pos.y, pos_z};
     }
 }

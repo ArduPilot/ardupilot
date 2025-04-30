@@ -36,6 +36,11 @@ public:
     static const uint16_t k_format_version = 13;
     //////////////////////////////////////////////////////////////////
 
+    enum class ThrFailsafe {
+        Disabled    = 0,
+        Enabled     = 1,
+        EnabledNoFS = 2
+    };
 
     enum {
         // Layout version number, always key zero.
@@ -136,7 +141,7 @@ public:
         k_param_land_disarm_delay,  // unused - moved to AP_Landing
         k_param_alt_slope_max_height,
         k_param_rudder_only,
-        k_param_gcs3,            // 93
+        k_param_gcs3_unused,               // unused in ArduPilot-4.7
         k_param_gcs_pid_mask,
         k_param_crash_detection_enable,
         k_param_land_abort_throttle_enable, // unused - moved to AP_Landing
@@ -158,14 +163,14 @@ public:
 
         // 110: Telemetry control
         //
-        k_param_gcs0 = 110,         // stream rates for SERIAL0
-        k_param_gcs1,               // stream rates for SERIAL1
-        k_param_sysid_this_mav,
-        k_param_sysid_my_gcs,
+        k_param_gcs0_unused = 110,         // unused in ArduPilot-4.7
+        k_param_gcs1_unused,               // unused in ArduPilot-4.7
+        k_param_sysid_this_mav_old,
+        k_param_sysid_my_gcs_old,
         k_param_serial1_baud_old,   // deprecated
-        k_param_telem_delay,
+        k_param_telem_delay_old,
         k_param_serial0_baud_old,   // deprecated
-        k_param_gcs2,               // stream rates for SERIAL2
+        k_param_gcs2_unused,               // unused in ArduPilot-4.7
         k_param_serial2_baud_old,   // deprecated
         k_param_serial2_protocol,   // deprecated
 
@@ -350,9 +355,9 @@ public:
         // 254,255: reserved
 
         k_param_vehicle = 257, // vehicle common block of parameters
-        k_param_gcs4,          // stream rates
-        k_param_gcs5,          // stream rates
-        k_param_gcs6,          // stream rates
+        k_param_gcs4_unused,               // unused in ArduPilot-4.7
+        k_param_gcs5_unused,               // unused in ArduPilot-4.7
+        k_param_gcs6_unused,               // unused in ArduPilot-4.7
         k_param_fence,         // vehicle fence - unused
         k_param_acro_yaw_rate,
         k_param_takeoff_throttle_max_t,
@@ -363,17 +368,12 @@ public:
 
         k_param_pullup = 270,
         k_param_quicktune,
-        k_param_mode_autoland, 
+        k_param_mode_autoland,
+        k_param__gcs,
 
     };
 
     AP_Int16 format_version;
-
-    // Telemetry control
-    //
-    AP_Int16 sysid_this_mav;
-    AP_Int16 sysid_my_gcs;
-    AP_Int8 telem_delay;
 
     AP_Enum<RtlAutoland> rtl_autoland;
 
@@ -406,7 +406,7 @@ public:
     //
     AP_Int8 throttle_suppress_manual;
     AP_Int8 throttle_passthru_stabilize;
-    AP_Int8 throttle_fs_enabled;
+    AP_Enum<ThrFailsafe> throttle_fs_enabled;
     AP_Int16 throttle_fs_value;
     AP_Int8 throttle_nudge;
     AP_Int32 use_reverse_thrust;
@@ -505,9 +505,6 @@ public:
     
     // control over servo output ranges
     SRV_Channels servo_channels;
-
-    // whether to enforce acceptance of packets only from sysid_my_gcs
-    AP_Int8 sysid_enforce;
 
 #if HAL_SOARING_ENABLED
     // ArduSoar parameters

@@ -325,10 +325,11 @@ private:
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     void afs_fs_check(void);
 #endif
-
+#if AP_FENCE_ENABLED
     // fence.cpp
+    void fence_checks_async() override;
     void fence_check();
-
+#endif
     // GCS_Mavlink.cpp
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 

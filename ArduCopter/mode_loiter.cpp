@@ -26,13 +26,13 @@ bool ModeLoiter::init(bool ignore_checks)
     loiter_nav->init_target();
 
     // initialise the vertical position controller
-    if (!pos_control->is_active_z()) {
-        pos_control->init_z_controller();
+    if (!pos_control->is_active_U()) {
+        pos_control->init_U_controller();
     }
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    pos_control->set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
 #if AC_PRECLAND_ENABLED
     _precision_loiter_active = false;
@@ -73,9 +73,9 @@ void ModeLoiter::precision_loiter_xy()
     Vector2f zero;
     Vector2p landing_pos = target_pos.topostype();
     // target vel will remain zero if landing target is stationary
-    pos_control->input_pos_vel_accel_xy(landing_pos, target_vel, zero);
+    pos_control->input_pos_vel_accel_NE_cm(landing_pos, target_vel, zero);
     // run pos controller
-    pos_control->update_xy_controller();
+    pos_control->update_NE_controller();
 }
 #endif
 
@@ -88,7 +88,7 @@ void ModeLoiter::run()
     float target_climb_rate = 0.0f;
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // process pilot inputs unless we are in radio failsafe
     if (!copter.failsafe.radio) {
@@ -105,7 +105,7 @@ void ModeLoiter::run()
         target_yaw_rate = get_pilot_desired_yaw_rate();
 
         // get pilot desired climb rate
-        target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+        target_climb_rate = get_pilot_desired_climb_rate();
         target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
     } else {
         // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
@@ -126,9 +126,9 @@ void ModeLoiter::run()
     case AltHoldModeState::MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->reset_yaw_target_and_rate();
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
+        pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->init_target();
-        attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
         break;
 
     case AltHoldModeState::Landed_Ground_Idle:
@@ -138,8 +138,8 @@ void ModeLoiter::run()
     case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
-        attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
+        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+        pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
     case AltHoldModeState::Takeoff:
@@ -158,7 +158,7 @@ void ModeLoiter::run()
         loiter_nav->update();
 
         // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
         break;
 
     case AltHoldModeState::Flying:
@@ -186,7 +186,7 @@ void ModeLoiter::run()
 #endif
 
         // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
@@ -197,12 +197,12 @@ void ModeLoiter::run()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
+        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate);
         break;
     }
 
     // run the vertical position controller and set output throttle
-    pos_control->update_z_controller();
+    pos_control->update_U_controller();
 }
 
 uint32_t ModeLoiter::wp_distance() const

@@ -929,7 +929,7 @@ def start_mavproxy(opts, stuff):
             if '=' in x:
                 mavargs[i] = x.split('=')[0]
                 mavargs.insert(i+1, x.split('=')[1])
-        # Use this flag to tell if parsing character inbetween a pair
+        # Use this flag to tell if parsing character in between a pair
         # of quotation marks
         inString = False
         beginStringIndex = []
@@ -1331,7 +1331,7 @@ group_sim.add_option("", "--start-time",
 group_sim.add_option("", "--sysid",
                      type='int',
                      default=None,
-                     help="Set SYSID_THISMAV")
+                     help="Set MAV_SYSID")
 group_sim.add_option("--postype-single",
                      action='store_true',
                      help="force single precision postype_t")
@@ -1348,7 +1348,7 @@ group_sim.add_option("", "--slave",
 group_sim.add_option("", "--auto-sysid",
                      default=False,
                      action='store_true',
-                     help="Set SYSID_THISMAV based upon instance number")
+                     help="Set MAV_SYSID based upon instance number")
 group_sim.add_option("", "--sim-address",
                      type=str,
                      default="127.0.0.1",

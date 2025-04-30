@@ -9,6 +9,7 @@
 #include "GCS_config.h"
 
 #include <AP_AHRS/AP_AHRS_config.h>
+#include <AP_Terrain/AP_Terrain_config.h>
 
 enum ap_message : uint8_t {
     MSG_HEARTBEAT,
@@ -52,8 +53,10 @@ enum ap_message : uint8_t {
     MSG_WIND,
     MSG_RANGEFINDER,
     MSG_DISTANCE_SENSOR,
+#if AP_TERRAIN_AVAILABLE
     MSG_TERRAIN_REQUEST,
     MSG_TERRAIN_REPORT,
+#endif  // AP_TERRAIN_AVAILABLE
     MSG_BATTERY2,
     MSG_CAMERA_FEEDBACK,
     MSG_CAMERA_INFORMATION,

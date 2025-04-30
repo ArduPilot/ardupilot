@@ -38,20 +38,9 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Advanced
     GSCALAR(format_version, "FORMAT_VERSION",   0),
 
-    // @Param: SYSID_THISMAV
-    // @DisplayName: MAVLink system ID of this vehicle
-    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network
-    // @Range: 1 255
-    // @User: Advanced
-    GSCALAR(sysid_this_mav, "SYSID_THISMAV",   MAV_SYSTEM_ID),
+    // SYSID_THISMAV was here
 
-    // @Param: SYSID_MYGCS
-    // @DisplayName: My ground station number
-    // @Description: Allows restricting radio overrides to only come from my ground station
-    // @Range: 1 255
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(sysid_my_gcs,   "SYSID_MYGCS",     255),
+    // SYSID_MYGCS was here
 
     // @Param: PILOT_THR_FILT
     // @DisplayName: Throttle filter cutoff
@@ -106,7 +95,75 @@ const AP_Param::Info Sub::var_info[] = {
     // @Values: 0:Disabled,1:Warn only
     // @User: Standard
     GSCALAR(failsafe_temperature, "FS_TEMP_ENABLE", FS_TEMP_DISABLED),
+    
+#if AP_SUB_RC_ENABLED        
+    // @Param: FS_THR_ENABLE
+    // @DisplayName: Throttle Failsafe Enable
+    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
+    // @Values:  0:Disabled,1: Warn only but prevent arming,2:Surface on throttle failsafe 
+    // @User: Standard
+    GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   0),
 
+    // @Param: FS_THR_VALUE
+    // @DisplayName: Throttle Failsafe Value
+    // @Description: The PWM level in microseconds on channel 3 below which throttle failsafe triggers
+    // @Range: 910 1100
+    // @Units: PWM
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",  FS_THR_VALUE_DEFAULT),
+    
+    // @Param: FLTMODE1
+    // @DisplayName: Flight Mode 1
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is <= 1230
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,7:Circle,9:Surface,16:PosHold,19:Manual,20:Motor Detect,21:SurfTrak
+    // @User: Standard
+    GSCALAR(flight_mode1, "FLTMODE1",               (uint8_t)FLIGHT_MODE_1),
+
+    // @Param: FLTMODE2
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 2
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1230, <= 1360
+    GSCALAR(flight_mode2, "FLTMODE2",               (uint8_t)FLIGHT_MODE_2),
+
+    // @Param: FLTMODE3
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 3
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1360, <= 1490
+    GSCALAR(flight_mode3, "FLTMODE3",               (uint8_t)FLIGHT_MODE_3),
+
+    // @Param: FLTMODE4
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 4
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1490, <= 1620
+    GSCALAR(flight_mode4, "FLTMODE4",               (uint8_t)FLIGHT_MODE_4),
+
+    // @Param: FLTMODE5
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 5
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1620, <= 1749
+    GSCALAR(flight_mode5, "FLTMODE5",               (uint8_t)FLIGHT_MODE_5),
+
+    // @Param: FLTMODE6
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 6
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >=1750
+    GSCALAR(flight_mode6, "FLTMODE6",               (uint8_t)FLIGHT_MODE_6),
+
+    // @Param: FLTMODE_CH
+    // @DisplayName: Flightmode channel
+    // @Description: RC Channel to use for flight mode control
+    // @Values: 0:Disabled,5:Channel5,6:Channel6,7:Channel7,8:Channel8,9:Channel9,10:Channel 10,11:Channel 11,12:Channel 12,13:Channel 13,14:Channel 14,15:Channel 15
+    // @User: Advanced
+    GSCALAR(flight_mode_chan, "FLTMODE_CH",         0),
+
+    // @Param: THR_ARM_POS
+    // @DisplayName: Throttle arming position
+    // @Description: Determines if throttle must be at min or within trim value to arm, if RC checks and RC_OPTION for "0" throttle are enabled.
+    // @User: Standard
+    // @Bitmask: 0:Throttle at or below min, 1: Throttle within a dead zone of RC trim value
+    GSCALAR(thr_arming_position, "THR_ARM_POS", 1),    
+#endif
     // @Param: FS_PRESS_MAX
     // @DisplayName: Internal Pressure Failsafe Threshold
     // @Description: The maximum internal pressure allowed before triggering failsafe. Failsafe action is determined by FS_PRESS_ENABLE parameter
@@ -515,46 +572,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
     GOBJECT(pos_control, "PSC", AC_PosControl),
 
-    // @Group: SR0_
-    // @Path: GCS_MAVLink_Sub.cpp
-    GOBJECTN(_gcs.chan_parameters[0],  gcs0,       "SR0_",     GCS_MAVLINK_Parameters),
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 2
-    // @Group: SR1_
-    // @Path: GCS_MAVLink_Sub.cpp
-    GOBJECTN(_gcs.chan_parameters[1],  gcs1,       "SR1_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 3
-    // @Group: SR2_
-    // @Path: GCS_MAVLink_Sub.cpp
-    GOBJECTN(_gcs.chan_parameters[2],  gcs2,       "SR2_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 4
-    // @Group: SR3_
-    // @Path: GCS_MAVLink_Sub.cpp
-    GOBJECTN(_gcs.chan_parameters[3],  gcs3,       "SR3_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 5
-    // @Group: SR4_
-    // @Path: GCS_MAVLink_Sub.cpp
-    GOBJECTN(_gcs.chan_parameters[4],  gcs4,       "SR4_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 6
-    // @Group: SR5_
-    // @Path: GCS_MAVLink_Sub.cpp
-    GOBJECTN(_gcs.chan_parameters[5],  gcs5,       "SR5_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 7
-    // @Group: SR6_
-    // @Path: GCS_MAVLink_Sub.cpp
-    GOBJECTN(_gcs.chan_parameters[6],  gcs6,       "SR6_",     GCS_MAVLINK_Parameters),
-#endif
-
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
     GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
@@ -695,6 +712,12 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     PARAM_VEHICLE_INFO,
 
+#if HAL_GCS_ENABLED
+    // @Group: MAV
+    // @Path: ../libraries/GCS_MAVLink/GCS.cpp
+    GOBJECT(_gcs,           "MAV",  GCS),
+#endif
+
     AP_VAREND
 };
 
@@ -815,6 +838,18 @@ void Sub::load_parameters()
     };
 
     AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
+
+#if HAL_GCS_ENABLED
+    // Move parameters into new MAV_ parameter namespace
+    // PARAMETER_CONVERSION - Added: Mar-2025
+    {
+        static const AP_Param::ConversionInfo gcs_conversion_info[] {
+            { Parameters::k_param_sysid_this_mav_old, 0, AP_PARAM_INT16,  "MAV_SYSID" },
+            { Parameters::k_param_sysid_my_gcs_old, 0, AP_PARAM_INT16, "MAV_GCS_SYSID" },
+        };
+        AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
+    }
+#endif  // HAL_GCS_ENABLED
 }
 
 void Sub::convert_old_parameters()

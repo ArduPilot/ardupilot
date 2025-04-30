@@ -210,7 +210,7 @@ IMU Invensense SPI:mpu6000 ROTATION_ROLL_180_YAW_270
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
 # DPS310 integrated on I2C2 bus, multiple possible choices for external barometer
-BARO MS56XX I2C:0:0x77
+BARO MS5611 I2C:0:0x77
 BARO DPS310 I2C:0:0x76
 BARO BMP280 I2C:0:0x76
 
@@ -220,3 +220,6 @@ define HAL_OS_FATFS_IO 1
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# build ABIN for flash-from-bootloader support:
+env BUILD_ABIN True

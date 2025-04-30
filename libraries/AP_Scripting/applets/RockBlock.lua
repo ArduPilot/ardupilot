@@ -289,6 +289,7 @@ local function MAVLinkProcessor()
                     loc:alt(_mavresult.z * 100)
                     if _mavresult.frame == 10 then -- MAV_FRAME_GLOBAL_TERRAIN_ALT
                         loc:terrain_alt(true)
+                        loc:relative_alt(true)
                     elseif _mavresult.frame == 3 then -- MAV_FRAME_GLOBAL_RELATIVE_ALT
                         loc:relative_alt(true)
                     end
@@ -403,7 +404,7 @@ local function MAVLinkProcessor()
 
         -- create the header. Assume componentid of 1
         local header = string.pack('<BBBBBB', PROTOCOL_MARKER_V1, #payload,
-                                   _txseqid, param:get('SYSID_THISMAV'), 1,
+                                   _txseqid, param:get('MAV_SYSID'), 1,
                                    msgid)
 
         -- generate the CRC
@@ -759,7 +760,7 @@ function HLSatcom()
     --- check if GCS telemetry has been lost for RCK_TIMEOUT sec (if param enabled)
     if RCK_FORCEHL:get() == 2 then
         -- link lost time = boot time - GCS last seen time
-        link_lost_for = millis():toint() - gcs:last_seen()
+        link_lost_for = (millis()- gcs:last_seen()):toint()
         -- gcs:last_seen() is set to millis() during boot (on plane). 0 on rover/copter
         -- So if it's less than 10000 assume no GCS packet received since boot
         if link_lost_for > (RCK_TIMEOUT:get() * 1000) and not gcs:get_high_latency_status() and gcs:last_seen() > 10000 then

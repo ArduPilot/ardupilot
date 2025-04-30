@@ -97,7 +97,7 @@ void ModeQRTL::run()
         case SubMode::climb: {
             // request zero velocity
             Vector2f vel, accel;
-            pos_control->input_vel_accel_xy(vel, accel);
+            pos_control->input_vel_accel_NE_cm(vel, accel);
             quadplane.run_xy_controller();
 
             // nav roll and pitch are controller by position controller
@@ -107,11 +107,11 @@ void ModeQRTL::run()
             plane.quadplane.assign_tilt_to_fwd_thr();
 
             if (quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
-                pos_control->set_externally_limited_xy();
+                pos_control->set_externally_limited_NE();
             }
             // weathervane with no pilot input
             quadplane.disable_yaw_rate_time_constant();
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
                                                                           plane.nav_pitch_cd,
                                                                           quadplane.get_weathervane_yaw_rate_cds());
 
@@ -121,11 +121,11 @@ void ModeQRTL::run()
 
             // Climb done when stopping point reaches target altitude
             Vector3p stopping_point;
-            pos_control->get_stopping_point_z_cm(stopping_point.z);
+            pos_control->get_stopping_point_U_cm(stopping_point.z);
             Location stopping_loc = Location(stopping_point.tofloat(), Location::AltFrame::ABOVE_ORIGIN);
 
             ftype alt_diff;
-            if (!stopping_loc.get_alt_distance(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {
+            if (!stopping_loc.get_height_above(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {
                 // climb finished or cant get alt diff, head home
                 submode = SubMode::RTL;
                 plane.prev_WP_loc = plane.current_loc;
@@ -146,7 +146,7 @@ void ModeQRTL::run()
 
                 plane.do_RTL(RTL_alt_abs_cm);
                 quadplane.poscontrol_init_approach();
-                if (plane.current_loc.get_alt_distance(plane.next_WP_loc, alt_diff)) {
+                if (plane.current_loc.get_height_above(plane.next_WP_loc, alt_diff)) {
                     poscontrol.slow_descent = is_positive(alt_diff);
                 } else {
                     // default back to old method
@@ -160,7 +160,7 @@ void ModeQRTL::run()
             quadplane.vtol_position_controller();
             if (poscontrol.get_state() > QuadPlane::QPOS_POSITION2) {
                 // change target altitude to home alt
-                plane.next_WP_loc.alt = plane.home.alt;
+                plane.next_WP_loc.set_alt_cm(plane.home.alt, Location::AltFrame::ABSOLUTE);
             }
             if (poscontrol.get_state() >= QuadPlane::QPOS_POSITION2) {
                 // start landing logic

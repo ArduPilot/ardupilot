@@ -262,7 +262,7 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        self.progress("test bootup state - it's zero-output!")
+        self.progress("test boot-up state - it's zero-output!")
         self.wait_servo_channel_value(spinner_ch, 0)
         self.wait_servo_channel_value(pump_ch, 0)
 
@@ -681,7 +681,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     (2, 'MANUAL'),
                     (3, 'RTL'),
                     (4, 'AUTO'),
-                    (5, 'AUTO'),  # non-existant mode, should stay in RTL
+                    (5, 'AUTO'),  # non-existent mode, should stay in RTL
                     (6, 'MANUAL')]
             mavproxy = self.start_mavproxy(sitl_rcin_port=port)
             for (num, expected) in fnoo:
@@ -770,7 +770,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def RCOverridesCancel(self):
         '''Test RC overrides Cancel'''
-        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
         self.change_mode('MANUAL')
         self.wait_ready_to_arm()
         self.zero_throttle()
@@ -841,7 +841,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def RCOverrides(self):
         '''Test RC overrides'''
-        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
         self.set_parameter("RC12_OPTION", 46)
         self.reboot_sitl()
 
@@ -1046,7 +1046,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Wait for override value")
         self.wait_rc_channel_value(ch, ch_override_value, timeout=10)
 
-        # make we keep the override vaue for at least 10 seconds:
+        # make we keep the override value for at least 10 seconds:
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > 10:
@@ -1074,7 +1074,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def MANUAL_CONTROL(self):
         '''Test mavlink MANUAL_CONTROL'''
         self.set_parameters({
-            "SYSID_MYGCS": self.mav.source_system,
+            "MAV_GCS_SYSID": self.mav.source_system,
             "RC12_OPTION": 46, # enable/disable rc overrides
         })
         self.reboot_sitl()
@@ -1231,8 +1231,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.mavproxy_do_set_mode_via_command_long(mavproxy, "MANUAL")
         self.stop_mavproxy(mavproxy)
 
-    def SYSID_ENFORCE(self):
-        '''Test enforcement of SYSID_MYGCS'''
+    def MAV_GCS_ENFORCE(self):
+        '''Test enforcement of strict mode for MAV_GCS_SYSID'''
         '''Run the same arming code with correct then incorrect SYSID'''
 
         if self.mav.source_system != self.mav.mav.srcSystem:
@@ -1242,8 +1242,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         old_srcSystem = self.mav.mav.srcSystem
         ex = None
         try:
-            self.set_parameter("SYSID_MYGCS", self.mav.source_system)
-            self.set_parameter("SYSID_ENFORCE", 1, add_to_context=False)
+            self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+            self.set_parameter("MAV_OPTIONS", 1, add_to_context=False)
 
             self.change_mode('MANUAL')
 
@@ -1267,7 +1267,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 success = True
             self.mav.mav.srcSystem = old_srcSystem
             if not success:
-                raise NotAchievedException("Managed to arm with SYSID_ENFORCE set")
+                raise NotAchievedException("Managed to arm with MAV_GCS enforce set")
 
             # should be able to arm from the vehicle's own components:
             self.progress("Attempting to arm vehicle from vehicle component")
@@ -1286,7 +1286,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.print_exception_caught(e)
             ex = e
         self.mav.mav.srcSystem = old_srcSystem
-        self.set_parameter("SYSID_ENFORCE", 0, add_to_context=False)
+        self.set_parameter("MAV_OPTIONS", 0, add_to_context=False)
         self.context_pop()
         if ex is not None:
             raise ex
@@ -1768,7 +1768,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_gcs_failsafe(self, side=60, timeout=360):
-        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
         self.set_parameter("FS_ACTION", 1)
         self.set_parameter("FS_THR_ENABLE", 0)  # disable radio FS as it inhibt GCS one's
 
@@ -2105,7 +2105,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.clear_fence_using_mavproxy(mavproxy)
         self.delay_sim_time(1)
         pointcount = 7
-        mavproxy.send("fence addpoly inc 20 %u 37.2\n" % pointcount) # radius, pointcount, rotaiton
+        mavproxy.send("fence addpoly inc 20 %u 37.2\n" % pointcount) # radius, pointcount, rotation
         self.delay_sim_time(5)
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         if len(downloaded_items) != pointcount:
@@ -2304,7 +2304,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                          target_component=target_component)
 
     def GCSFenceInvalidPoint(self):
-        '''Test fetch non-existant fencepoint'''
+        '''Test fetch non-existent fencepoint'''
         target_system = 1
         target_component = 1
 
@@ -2556,10 +2556,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             verbose=True,
         )
         if m.target_system != target_system:
-            raise NotAchievedException("ACK not targetted at correct system want=%u got=%u" %
+            raise NotAchievedException("ACK not targeted at correct system want=%u got=%u" %
                                        (target_system, m.target_system))
         if m.target_component != target_component:
-            raise NotAchievedException("ACK not targetted at correct component")
+            raise NotAchievedException("ACK not targeted at correct component")
         if m.mission_type != mission_type:
             raise NotAchievedException("Unexpected mission type %u want=%u" %
                                        (m.mission_type, mission_type))
@@ -3035,7 +3035,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     "resetting rally point count didn't change items returned")
             if downloaded[2].x != new_item2_lat:
                 raise NotAchievedException(
-                    "Bad lattitude in downloaded item: want=%u got=%u" %
+                    "Bad latitude in downloaded item: want=%u got=%u" %
                     (new_item2_lat, downloaded[2].x))
 
             self.progress("Grabbing original item 1 using original protocol")
@@ -5965,7 +5965,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Expected %fm got %fm" % (want_range, m.distance))
 
     def DepthFinder(self):
-        '''Test mulitple depthfinders for boats'''
+        '''Test multiple depthfinders for boats'''
         # Setup rangefinders
         self.customise_SITL_commandline([
             "--serial7=sim:nmea", # NMEA Rangefinder
@@ -6159,7 +6159,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.assert_receive_message("HEARTBEAT", mav=mav2)
 
-        # ensure a targetted message is received:
+        # ensure a targeted message is received:
         self.install_message_hook_context(heartbeat_on_mav2)
 
         self.progress("Ensuring we can get a message normally")
@@ -6461,7 +6461,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if board_status.find('0 hours') == -1:
             raise NotAchievedException("Expected uptime in board status")
         if board_status.find('40.713') == -1:
-            raise NotAchievedException("Expected lattitude in board status")
+            raise NotAchievedException("Expected latitude in board status")
 
         self.progress("WebServer tests OK")
 
@@ -6884,6 +6884,32 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def GetMessageInterval(self):
+        '''check that the two methods for requesting a MESSAGE_INTERVAL message are equivalent'''
+        target_msg = mavutil.mavlink.MAVLINK_MSG_ID_HOME_POSITION
+        old_cmd = (mavutil.mavlink.MAV_CMD_GET_MESSAGE_INTERVAL, target_msg, 0)
+        new_cmd = (mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, mavutil.mavlink.MAVLINK_MSG_ID_MESSAGE_INTERVAL, target_msg)
+
+        interval_us = None
+
+        for run_command in self.run_cmd, self.run_cmd_int:
+            for cmd in old_cmd, new_cmd:
+                cmd_id, p1, p2 = cmd
+
+                self.context_collect("MESSAGE_INTERVAL")
+                run_command(cmd_id, p1=p1, p2=p2)
+                m = self.assert_receive_message('MESSAGE_INTERVAL', timeout=1, check_context=True)
+                self.context_clear_collection("MESSAGE_INTERVAL")
+
+                if m.message_id != target_msg:
+                    raise NotAchievedException(f"Unexpected ID in MESSAGE_INTERVAL (want={target_msg}, got={m.message_id})")
+
+                if interval_us is None:
+                    interval_us = m.interval_us
+
+                if m.interval_us != interval_us:
+                    raise NotAchievedException(f"Unexpected interval_us (want={interval_us}, got={m.interval_us})")
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6914,7 +6940,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.SET_MESSAGE_INTERVAL,
             self.MESSAGE_INTERVAL_COMMAND_INT,
             self.REQUEST_MESSAGE,
-            self.SYSID_ENFORCE,
+            self.MAV_GCS_ENFORCE,
             self.SET_ATTITUDE_TARGET,
             self.SET_ATTITUDE_TARGET_heading,
             self.SET_POSITION_TARGET_LOCAL_NED,
@@ -6984,6 +7010,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.JammingSimulation,
             self.BatteryInvalid,
             self.REQUIRE_LOCATION_FOR_ARMING,
+            self.GetMessageInterval,
         ])
         return ret
 
