@@ -749,12 +749,10 @@ void AP_TECS::_update_throttle_with_airspeed(void)
 
         // Calculate feed-forward throttle
         const float nomThr = aparm.throttle_cruise * 0.01f;
-        const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
         // Use the demanded rate of change of total energy as the feed-forward demand, but add
         // additional component which scales with (1/(cos(bank angle)**2) - 1) to compensate for induced
         // drag increase during turns.
-        const float cosPhi_squared = (rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y);
-        STEdot_dem = STEdot_dem + _rollComp * (1.0f/constrain_float(cosPhi_squared, 0.1f, 1.0f) - 1.0f);
+        STEdot_dem = STEdot_dem + _rollComp * (1.0f/constrain_float(sq(_ahrs.cos_roll()), 0.1f, 1.0f) - 1.0f);
         const float ff_throttle = nomThr + STEdot_dem / K_thr2STE;
 
         // Calculate PD + FF throttle
@@ -920,12 +918,10 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge, float pi
     }
 
     // Calculate additional throttle for turn drag compensation including throttle nudging
-    const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
     // Use the demanded rate of change of total energy as the feed-forward demand, but add
     // additional component which scales with (1/(cos(bank angle)**2) - 1) to compensate for induced
     // drag increase during turns.
-    const float cosPhi_squared = (rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y);
-    float STEdot_dem = _rollComp * (1.0f/constrain_float(cosPhi_squared, 0.1f, 1.0f) - 1.0f);
+    float STEdot_dem = _rollComp * (1.0f/constrain_float(sq(_ahrs.cos_roll()), 0.1f, 1.0f) - 1.0f);
     _throttle_dem = _throttle_dem + STEdot_dem / (_STEdot_max - _STEdot_min) * (_THRmaxf - _THRminf);
 
     constrain_throttle();
