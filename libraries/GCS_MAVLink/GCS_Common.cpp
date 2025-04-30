@@ -1382,6 +1382,9 @@ int8_t GCS_MAVLINK::deferred_message_to_send_index(uint16_t now16_ms)
         return -1;
     }
 
+    // an intermediate 16-bit variable is used here to strictly avoid
+    // type promotion creating 32-bit (or higher) maths here.  Do not
+    // be tempted to remove ms_since_last_sent here.
     const uint16_t ms_since_last_sent = now16_ms - deferred_message[next_deferred_message_to_send_cache].last_sent_ms;
     if (ms_since_last_sent < deferred_message[next_deferred_message_to_send_cache].interval_ms) {
         return -1;
