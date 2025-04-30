@@ -1271,6 +1271,7 @@ int lua_DroneCAN_get_FlexDebug(lua_State *L)
 }
 #endif // HAL_ENABLE_DRONECAN_DRIVERS
 
+#if AP_GPS_ENABLED
 int lua_gps_inject_data(lua_State *L)
 {
     binding_argcheck(L, 3);       // self + 2 args
