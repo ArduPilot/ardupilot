@@ -2029,7 +2029,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.progress("Orbit with GPS and learn wind")
             # allow longer to learn wind if there is no airspeed sensor
             if disable_airspeed_sensor:
-                self.delay_sim_time(60)
+                self.delay_sim_time(180)
             else:
                 self.delay_sim_time(20)
             self.set_parameter("SIM_GPS1_ENABLE", 0)
