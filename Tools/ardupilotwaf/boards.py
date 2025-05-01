@@ -277,7 +277,13 @@ class Board:
             want_version = cfg.options.assert_cc_version
             if have_version != want_version:
                 cfg.fatal("cc version mismatch: %s should be %s" % (have_version, want_version))
-        
+
+        # ensure that if you are using clang you're using it for both
+        # C and C++!
+        if (("clang" in cfg.env.COMPILER_CC and "clang" not in cfg.env.COMPILER_CXX) or
+            ("clang" not in cfg.env.COMPILER_CC and "clang" in cfg.env.COMPILER_CXX)):
+            cfg.fatal("Compiler mismatch; set CC and CXX to matching compilers (eg. CXX=clang++-19 CC=clang-19")
+
         if 'clang' in cfg.env.COMPILER_CC:
             env.CFLAGS += [
                 '-fcolor-diagnostics',
