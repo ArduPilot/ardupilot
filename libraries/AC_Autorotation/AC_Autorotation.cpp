@@ -447,7 +447,7 @@ void AC_Autorotation::log_write_autorotation(void) const
                                 "F-",
                                 "QB",
                                 AP_HAL::micros64(),
-                                _landed_reason);
+                                reason);
 }
 #endif  // HAL_LOGGING_ENABLED
 
