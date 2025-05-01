@@ -37,6 +37,7 @@ private:
         PARAM_SPACE_USED,
         RC_PROTOCOL,
         RC_OUTPUT,
+        LOG_RTC_MSG,
     };
     Stage stage;
 };
