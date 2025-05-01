@@ -730,6 +730,21 @@ class WaitAndMaintainServoChannelValue(WaitAndMaintain):
         return m_value
 
 
+class WaitAndMaintainCurrentWaypoint(WaitAndMaintain):
+    def __init__(self, test_suite, wpnum, **kwargs):
+        super().__init__(test_suite, **kwargs)
+        self.wpnum = wpnum
+
+    def announce_start_text(self):
+        return f"Ensuring wp={self.wpnum}"
+
+    def get_target_value(self):
+        return self.wpnum
+
+    def get_current_value(self):
+        return self.test_suite.current_waypoint()
+
+
 class MSP_Generic(Telem):
     def __init__(self, destination_address):
         super(MSP_Generic, self).__init__(destination_address)
