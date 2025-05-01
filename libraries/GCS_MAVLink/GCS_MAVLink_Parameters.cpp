@@ -96,7 +96,7 @@ static const uint8_t default_rates[] {
     AP_MAV_DEFAULT_STREAM_RATE_PARAMS,
     AP_MAV_DEFAULT_STREAM_RATE_ADSB,
 };
-static_assert(ARRAY_SIZE(default_rates) == GCS_MAVLINK::NUM_STREAMS);
+static_assert(ARRAY_SIZE(default_rates) == GCS_MAVLINK::NUM_STREAMS, "enough default rates for all streams");
 
 #define DRATE(x) (float(default_rates[x]))
 

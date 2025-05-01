@@ -3515,7 +3515,9 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
+#if !defined(__clang__)  // avoid -Wunknown-warning-option
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
             *foo = 0xab;
 #pragma GCC diagnostic pop
 
@@ -3533,7 +3535,9 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
             // String is kept short for space reasons.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
+#if !defined(__clang__)  // avoid -Wunknown-warning-option
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
             send_text(MAV_SEVERITY_INFO, "x: %u", (unsigned)*foo);
 #pragma GCSS diagnostic pop
 
