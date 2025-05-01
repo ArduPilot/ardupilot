@@ -13615,6 +13615,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if len(self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)) != 0:
             raise NotAchievedException("Mission did not clear after reboot with option set")
 
+    def PLDNoParameters(self):
+        ''''try enabling PLD with lat/lng/alt all zero'''
+        self.set_parameter('SIM_PLD_LAT', 0)
+        self.set_parameter('SIM_PLD_LON', 0)
+        self.set_parameter('SIM_PLD_HEIGHT', 0)
+        self.set_parameter('SIM_PLD_ENABLE', 1)
+        self.wait_statustext('Set SIM_PLD_LAT, SIM_PLD_LAT and SIM_PLD_ALT')
+
     def do_land(self):
         self.change_mode('LAND')
         self.wait_disarmed()
@@ -13737,6 +13745,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.Ch6TuningLoitMaxXYSpeed,
             self.TestEKF3CompassFailover,
             self.test_EKF3_option_disable_lane_switch,
+            self.PLDNoParameters
         ])
         return ret
 
