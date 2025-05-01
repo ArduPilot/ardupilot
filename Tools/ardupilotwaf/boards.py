@@ -294,14 +294,6 @@ class Board:
                 '-Wno-format-contains-nul',
                 '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f
             ]
-            if self.cc_version_gte(cfg, 7, 4):
-                env.CXXFLAGS += [
-                    '-Werror=implicit-fallthrough',
-                ]
-            env.CXXFLAGS += [
-                '-fsingle-precision-constant',
-                '-Wno-psabi',
-            ]
 
         if cfg.env.DEBUG:
             env.CFLAGS += [
@@ -428,7 +420,9 @@ class Board:
         else:
             env.CXXFLAGS += [
                 '-Wno-format-contains-nul',
-                '-Werror=unused-but-set-variable'
+                '-Werror=unused-but-set-variable',
+                '-fsingle-precision-constant',
+                '-Wno-psabi',
             ]
             if self.cc_version_gte(cfg, 5, 2):
                 env.CXXFLAGS += [
