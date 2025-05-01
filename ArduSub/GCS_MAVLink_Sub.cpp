@@ -264,10 +264,12 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     return true;
 }
 
+#if HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
 bool GCS_MAVLINK_Sub::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     return sub.do_guided(cmd);
 }
+#endif
 
 MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration_baro(const mavlink_message_t &msg)
 {

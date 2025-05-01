@@ -454,6 +454,8 @@ BUILD_OPTIONS = [
 
     Feature('CAN', 'DroneCAN', 'HAL_ENABLE_DRONECAN_DRIVERS', 'Enable DroneCAN support', 0, None),
     Feature('CAN', 'CAN Logging', 'AP_CAN_LOGGING_ENABLED', 'Enable CAN logging support', 0, 'Logging'),
+
+    Feature('MAVLink', 'GUIDED_MISSION_REQUESTS', 'HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED', 'Enable changing position and location with mission requests in guided mode', 0, None),  # noqa:E501
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))

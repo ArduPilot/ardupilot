@@ -119,4 +119,14 @@
 
 #ifndef AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
 #define AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED HAL_GCS_ENABLED && AP_ARMING_ENABLED
-#endif
+#endif  // AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
+
+// CODE_REMOVAL
+// ArduPilot can be commanded by upload of a mission item with the "current" field set to 2 (for position) or 3 (for just altitude.  This behaviour is slated to be removed:
+// ArduPilot 4.6 warns if the functionality is used
+// ArduPilot 4.7 stops compiling support in
+// ArduPilot 4.8 removes the code entirely
+#ifndef HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
+#define HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED AP_MISSION_ENABLED
+#endif  // HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
+

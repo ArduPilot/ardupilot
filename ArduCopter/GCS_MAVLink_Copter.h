@@ -74,7 +74,9 @@ private:
 
     void handle_message(const mavlink_message_t &msg) override;
     void handle_command_ack(const mavlink_message_t &msg) override;
+#if HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
+#endif
     bool try_send_message(enum ap_message id) override;
 
     void packetReceived(const mavlink_status_t &status,
