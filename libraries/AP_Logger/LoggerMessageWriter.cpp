@@ -362,8 +362,20 @@ void LoggerMessageWriter_WriteSysInfo::process() {
                 return; // call me again
             }
         }
+#if AP_RTC_LOGGING_ENABLED
+        stage = Stage::LOG_RTC_MSG;
+        FALLTHROUGH;
+#else
         break;
+#endif  // AP_RTC_ENABLED
     }
+#if AP_RTC_LOGGING_ENABLED
+    case Stage::LOG_RTC_MSG:
+        if (! _logger_backend->Write_RTC()) {
+            return;
+        }
+        break;
+#endif  // AP_RTC_ENABLED
     }
 
     _finished = true;  // all done!

@@ -699,6 +699,14 @@ void AP_Logger::setVehicle_Startup_Writer(vehicle_startup_message_Writer writer)
     _vehicle_messages = writer;
 }
 
+#if AP_RTC_LOGGING_ENABLED
+// Write RTC data
+void AP_Logger::Write_RTC()
+{
+    FOR_EACH_BACKEND(Write_RTC());
+}
+#endif  // AP_RTC_LOGGING_ENABLED
+
 void AP_Logger::set_vehicle_armed(const bool armed_state)
 {
     if (armed_state == _armed) {
