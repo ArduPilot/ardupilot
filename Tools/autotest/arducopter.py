@@ -13796,6 +13796,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.test_EKF3_option_disable_lane_switch,
             self.PLDNoParameters
             self.ImpossibleToReachButWayPointsCompletedAnyway,
+            self.MotPWM2000StillHitWaypoints,
         ])
         return ret
 
@@ -13873,6 +13874,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'SIM_WIND_DIR': 180,
             'SIM_WIND_SPD': 10,
             'ANGLE_MAX': 1000,
+        })
+        w = vehicle_test_suite.WaitAndMaintainCurrentWaypoint(
+            self,
+            3,
+            minimum_duration=120,
+            timeout=121,
+        )
+        w.run()
+        self.context_pop()
+        self.do_RTL()
+
+    def MotPWM2000StillHitWaypoints(self):
+        '''#29845 states that we will complete items when we're not
+        going near them'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,     0,   0,  2),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  200,   0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  200, -60, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,    0, -60, 20),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_JUMP,
+                p1=3,
+                p2=10,
+            ),
+        ])
+        self.set_parameter('AUTO_OPTIONS', 3)
+        self.takeoff(10, mode='AUTO')
+        self.wait_current_waypoint(3)
+        self.context_push()
+        self.set_parameter('SIM_SPEEDUP', 1)
+        self.set_parameters({
+            'MOT_PWM_MIN': 2000,
         })
         w = vehicle_test_suite.WaitAndMaintainCurrentWaypoint(
             self,
