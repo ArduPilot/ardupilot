@@ -17,8 +17,7 @@ bool ModeRTL::init(bool ignore_checks)
             return false;
         }
     }
-    // initialise waypoint and spline controller
-    wp_nav->wp_and_spline_init(g.rtl_speed_cms);
+    // do not initialise waypoint and spline controller yet, controller will initialize itself when the first waypoint is passed
     _state = SubMode::STARTING;
     _state_complete = true; // see run() method below
     terrain_following_allowed = !copter.failsafe.terrain;
@@ -147,6 +146,9 @@ void ModeRTL::return_start()
 {
     _state = SubMode::RETURN_HOME;
     _state_complete = false;
+
+    // set RTL speed for return path
+    wp_nav->set_speed_xy(g.rtl_speed_cms);
 
     if (!wp_nav->set_wp_destination_loc(rtl_path.return_target)) {
         // failure must be caused by missing terrain data, restart RTL

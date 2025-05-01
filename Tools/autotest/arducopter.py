@@ -13820,7 +13820,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "CompassMot": "Causes an arithmetic exception in the EKF",
             "SMART_RTL_EnterLeave": "Causes a panic",
             "SMART_RTL_Repeat": "Currently fails due to issue with loop detection",
-            "RTLStoppingDistanceSpeed": "Currently fails due to vehicle going off-course",
         }
 
 
