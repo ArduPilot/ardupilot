@@ -465,6 +465,8 @@ AP_HW_PixSurveyA2-IND                6104
 
 # IDs 6900-6909 reserved for Easy Aerial
 
+# IDs 6960-6969 reserved for ViaDrone
+
 # IDs 7000-7099 reserved for CUAV
 AP_HW_CUAV-7-NANO                    7000
 
