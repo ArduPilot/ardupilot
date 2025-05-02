@@ -24,7 +24,7 @@ from scipy import signal
 from pymavlink.rotmat import Vector3, Matrix3
 
 # fit an order 3 polynomial
-POLY_ORDER = 3
+POLY_ORDER = 5
 
 # we use a fixed reference temperature of 35C. This has the advantage that
 # we don't need to know the final temperature when doing an online calibration
@@ -318,7 +318,7 @@ def IMUfit(logfile):
                 stype = m.group(2)
                 p = int(m.group(3))
                 axis = m.group(4)
-                if stop_capture[imu]:
+                if stop_capture[imu] or c.enable[imu] == 2:
                     continue
                 if stype == 'ACC':
                     c.set_acoeff(imu, axis, p, msg.Value/SCALE_FACTOR)

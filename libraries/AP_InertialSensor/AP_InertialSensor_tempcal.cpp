@@ -134,6 +134,50 @@ const AP_Param::GroupInfo AP_InertialSensor_TCal::var_info[] = {
 
     AP_GROUPINFO("ACC3", 6, AP_InertialSensor_TCal, accel_coeff[2], 0),
 
+#if HAL_INS_TEMPERATURE_CAL_ORDER > 3
+    // @Param: ACC4_X
+    // @DisplayName: Accelerometer 4th order temperature coefficient X axis
+    // @Description: This is the 4th order temperature coefficient from a temperature calibration
+    // @User: Advanced
+    // @Calibration: 1
+
+    // @Param: ACC4_Y
+    // @DisplayName: Accelerometer 4th order temperature coefficient Y axis
+    // @Description: This is the 4th order temperature coefficient from a temperature calibration
+    // @User: Advanced
+    // @Calibration: 1
+
+    // @Param: ACC4_Z
+    // @DisplayName: Accelerometer 4th order temperature coefficient Z axis
+    // @Description: This is the 4th order temperature coefficient from a temperature calibration
+    // @User: Advanced
+    // @Calibration: 1
+
+    AP_GROUPINFO("ACC4", 10, AP_InertialSensor_TCal, accel_coeff[3], 0),
+#endif
+
+#if HAL_INS_TEMPERATURE_CAL_ORDER > 4
+    // @Param: ACC5_X
+    // @DisplayName: Accelerometer 5th order temperature coefficient X axis
+    // @Description: This is the 5th order temperature coefficient from a temperature calibration
+    // @User: Advanced
+    // @Calibration: 1
+
+    // @Param: ACC5_Y
+    // @DisplayName: Accelerometer 5th order temperature coefficient Y axis
+    // @Description: This is the 5th order temperature coefficient from a temperature calibration
+    // @User: Advanced
+    // @Calibration: 1
+
+    // @Param: ACC5_Z
+    // @DisplayName: Accelerometer 5th order temperature coefficient Z axis
+    // @Description: This is the 5th order temperature coefficient from a temperature calibration
+    // @User: Advanced
+    // @Calibration: 1
+
+    AP_GROUPINFO("ACC5", 11, AP_InertialSensor_TCal, accel_coeff[4], 0),
+#endif
+
     // @Param: GYR1_X
     // @DisplayName: Gyroscope 1st order temperature coefficient X axis
     // @Description: This is the 1st order temperature coefficient from a temperature calibration
@@ -194,24 +238,72 @@ const AP_Param::GroupInfo AP_InertialSensor_TCal::var_info[] = {
 
     AP_GROUPINFO("GYR3", 9, AP_InertialSensor_TCal, gyro_coeff[2], 0),
 
+#if HAL_INS_TEMPERATURE_CAL_ORDER > 3
+    // @Param: GYR4_X
+    // @DisplayName: Gyroscope 4th order temperature coefficient X axis
+    // @Description: This is the 4th order temperature coefficient from a temperature calibration
+    // @User: Advanced
+    // @Calibration: 1
+
+    // @Param: GYR4_Y
+    // @DisplayName: Gyroscope 4th order temperature coefficient Y axis
+    // @Description: This is the 4th order temperature coefficient from a temperature calibration
+    // @User: Advanced
+    // @Calibration: 1
+
+    // @Param: GYR4_Z
+    // @DisplayName: Gyroscope 4th order temperature coefficient Z axis
+    // @Description: This is the 4th order temperature coefficient from a temperature calibration
+    // @User: Advanced
+    // @Calibration: 1
+
+    AP_GROUPINFO("GYR4", 12, AP_InertialSensor_TCal, gyro_coeff[3], 0),
+#endif
+
+#if HAL_INS_TEMPERATURE_CAL_ORDER > 4
+    // @Param: GYR5_X
+    // @DisplayName: Gyroscope 5th order temperature coefficient X axis
+    // @Description: This is the 5th order temperature coefficient from a temperature calibration
+    // @User: Advanced
+    // @Calibration: 1
+
+    // @Param: GYR5_Y
+    // @DisplayName: Gyroscope 5th order temperature coefficient Y axis
+    // @Description: This is the 5th order temperature coefficient from a temperature calibration
+    // @User: Advanced
+    // @Calibration: 1
+
+    // @Param: GYR5_Z
+    // @DisplayName: Gyroscope 5th order temperature coefficient Z axis
+    // @Description: This is the 5th order temperature coefficient from a temperature calibration
+    // @User: Advanced
+    // @Calibration: 1
+
+    AP_GROUPINFO("GYR5", 13, AP_InertialSensor_TCal, gyro_coeff[4], 0),
+#endif
     AP_GROUPEND
 };
-
 
 /*
   evaluate a 3rd order polynomial (without the constant term) given a set of coefficients
  */
-Vector3f AP_InertialSensor_TCal::polynomial_eval(float tdiff, const AP_Vector3f coeff[3]) const
+Vector3f AP_InertialSensor_TCal::polynomial_eval(float tdiff, const AP_Vector3f coeff[HAL_INS_TEMPERATURE_CAL_ORDER]) const
 {
     // evaluate order 3 polynomial
     const Vector3f *c = (Vector3f *)&coeff[0];
-    return (c[0] + (c[1] + c[2]*tdiff)*tdiff)*tdiff*INV_SCALE_FACTOR;
+    Vector3f poly = c[HAL_INS_TEMPERATURE_CAL_ORDER-1] * tdiff;
+    for (int8_t k = HAL_INS_TEMPERATURE_CAL_ORDER-2; k >= 0; k--) {
+        poly += c[k];
+        poly *= tdiff;
+    }
+    poly *= INV_SCALE_FACTOR;
+    return poly;
 }
 
 /*
   correct a single sensor for the current temperature
  */
-void AP_InertialSensor_TCal::correct_sensor(float temperature, float cal_temp, const AP_Vector3f coeff[3], Vector3f &v) const
+void AP_InertialSensor_TCal::correct_sensor(float temperature, float cal_temp, const AP_Vector3f coeff[HAL_INS_TEMPERATURE_CAL_ORDER], Vector3f &v) const
 {
     if (enable != Enable::Enabled) {
         return;
@@ -413,28 +505,28 @@ void AP_InertialSensor_TCal::Learn::finish_calibration(float temperature)
  */
 bool AP_InertialSensor_TCal::Learn::save_calibration(float temperature)
 {
-    Vector3f coefficients[3];
+    Vector3f coefficients[HAL_INS_TEMPERATURE_CAL_ORDER];
 
-    Vector3f p[4];
+    Vector3f p[HAL_INS_TEMPERATURE_CAL_ORDER+1];
     if (!state[0].pfit.get_polynomial(p)) {
         return false;
     }
-    for (uint8_t k=0; k<3; k++) {
-        coefficients[k] = p[2-k] * SCALE_FACTOR;
+    for (uint8_t k=0; k<HAL_INS_TEMPERATURE_CAL_ORDER; k++) {
+        coefficients[k] = p[HAL_INS_TEMPERATURE_CAL_ORDER-1-k] * SCALE_FACTOR;
     }
 
-    for (uint8_t k=0; k<3; k++) {
+    for (uint8_t k=0; k<HAL_INS_TEMPERATURE_CAL_ORDER; k++) {
         tcal.accel_coeff[k].set_and_save_ifchanged(coefficients[k]);
     }
 
     if (!state[1].pfit.get_polynomial(p)) {
         return false;
     }
-    for (uint8_t k=0; k<3; k++) {
-        coefficients[k] = p[2-k] * SCALE_FACTOR;
+    for (uint8_t k=0; k<HAL_INS_TEMPERATURE_CAL_ORDER; k++) {
+        coefficients[k] = p[HAL_INS_TEMPERATURE_CAL_ORDER-1-k] * SCALE_FACTOR;
     }
 
-    for (uint8_t k=0; k<3; k++) {
+    for (uint8_t k=0; k<HAL_INS_TEMPERATURE_CAL_ORDER; k++) {
         tcal.gyro_coeff[k].set_and_save_ifchanged(coefficients[k]);
     }
     tcal.temp_min.set_and_save_ifchanged(start_temp);
@@ -461,7 +553,7 @@ void AP_InertialSensor_TCal::get_persistent_params(ExpandingString &str) const
         str.printf("INS%u_TCAL_ENABLE=1\n", imu);
         str.printf("INS%u_TCAL_TMIN=%.2f\n", imu, temp_min.get());
         str.printf("INS%u_TCAL_TMAX=%.2f\n", imu, temp_max.get());
-        for (uint8_t k=0; k<3; k++) {
+        for (uint8_t k=0; k<HAL_INS_TEMPERATURE_CAL_ORDER; k++) {
             const Vector3f &acc = accel_coeff[k].get();
             const Vector3f &gyr = gyro_coeff[k].get();
             str.printf("INS%u_TCAL_ACC%u_X=%f\n", imu, k+1, acc.x);
@@ -477,7 +569,7 @@ void AP_InertialSensor_TCal::get_persistent_params(ExpandingString &str) const
     str.printf("INS_TCAL%u_ENABLE=1\n", imu);
     str.printf("INS_TCAL%u_TMIN=%.2f\n", imu, temp_min.get());
     str.printf("INS_TCAL%u_TMAX=%.2f\n", imu, temp_max.get());
-    for (uint8_t k=0; k<3; k++) {
+    for (uint8_t k=0; k<HAL_INS_TEMPERATURE_CAL_ORDER; k++) {
         const Vector3f &acc = accel_coeff[k].get();
         const Vector3f &gyr = gyro_coeff[k].get();
         str.printf("INS_TCAL%u_ACC%u_X=%f\n", imu, k+1, acc.x);
