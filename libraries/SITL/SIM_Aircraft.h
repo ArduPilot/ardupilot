@@ -39,6 +39,10 @@
 #include <Filter/Filter.h>
 #include "SIM_JSON_Master.h"
 #include "ServoModel.h"
+#include <AP_TopoLift/AP_TopoLift_config.h>
+#if AP_TOPO_LIFT_ENABLED
+#include <AP_TopoLift/AP_TopoLiftSinglePointEstimate.h>
+#endif
 #include "SIM_GPIO_LED_1.h"
 #include "SIM_GPIO_LED_2.h"
 #include "SIM_GPIO_LED_3.h"
@@ -349,6 +353,11 @@ protected:
     // get local thermal updraft
     float get_local_updraft(const Vector3d &currentPos);
 
+#if AP_TOPO_LIFT_ENABLED
+    // get topographic lift influence
+    float get_topo_lift(const Location &loc);
+#endif
+
     // update EAS speeds
     void update_eas_airspeed();
 
@@ -402,6 +411,9 @@ private:
     DroneCANDevice *dronecan;
 #endif
 
+#if AP_TOPO_LIFT_ENABLED
+    AP_TopoLiftSinglePointEstimate topo_lift_estimate;
+#endif
 
 #if AP_SIM_GPIO_LED_1_ENABLED
     GPIO_LED_1 sim_led1{8};  // pin to match sitl.h
