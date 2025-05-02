@@ -95,7 +95,19 @@ bool RC_Channels::read_input(void)
 
 uint8_t RC_Channels::get_valid_channel_count(void)
 {
-    return MIN(NUM_RC_CHANNELS, hal.rcin->num_channels());
+    // find highest-numbered override channel.  Note the difference
+    // between offset and number here.
+    RC_Channels &_rc = rc();
+    uint8_t highest_override = 0;
+    for (highest_override = NUM_RC_CHANNELS; highest_override > 0; highest_override--) {
+        if (_rc.channel(highest_override-1)->has_override()) {
+            break;
+        }
+    }
+
+    const uint8_t hal_channel_count = hal.rcin->num_channels();
+
+    return MIN(NUM_RC_CHANNELS, MAX(highest_override, hal_channel_count));
 }
 
 int16_t RC_Channels::get_receiver_rssi(void)
