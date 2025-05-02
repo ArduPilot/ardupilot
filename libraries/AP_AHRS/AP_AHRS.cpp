@@ -1712,7 +1712,7 @@ bool AP_AHRS::get_hagl(float &height) const
 /*
   return a relative NED position from the origin in meters
 */
-bool AP_AHRS::get_relative_position_NED_origin_float(Vector3f &vec) const
+bool AP_AHRS::get_relative_position_NED_origin(Vector3p &vec) const
 {
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
@@ -1721,8 +1721,8 @@ bool AP_AHRS::get_relative_position_NED_origin_float(Vector3f &vec) const
 #endif
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO: {
-        Vector2f posNE;
-        float posD;
+        Vector2p posNE;
+        postype_t posD;
         if (EKF2.getPosNE(posNE) && EKF2.getPosD(posD)) {
             // position is valid
             vec.x = posNE.x;
@@ -1736,8 +1736,8 @@ bool AP_AHRS::get_relative_position_NED_origin_float(Vector3f &vec) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE: {
-            Vector2f posNE;
-            float posD;
+            Vector2p posNE;
+            postype_t posD;
             if (EKF3.getPosNE(posNE) && EKF3.getPosD(posD)) {
                 // position is valid
                 vec.x = posNE.x;
@@ -1780,7 +1780,7 @@ bool AP_AHRS::get_relative_position_NED_home(Vector3f &vec) const
 /*
   return a relative position estimate from the origin in meters
 */
-bool AP_AHRS::get_relative_position_NE_origin_float(Vector2f &posNE) const
+bool AP_AHRS::get_relative_position_NE_origin(Vector2p &posNE) const
 {
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
@@ -1836,7 +1836,7 @@ bool AP_AHRS::get_relative_position_NE_home(Vector2f &posNE) const
 /*
   return a relative ground position from the origin in meters, down
 */
-bool AP_AHRS::get_relative_position_D_origin_float(float &posD) const
+bool AP_AHRS::get_relative_position_D_origin(postype_t &posD) const
 {
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
@@ -1883,8 +1883,8 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
     }
 
     Location originLLH;
-    float originD;
-    if (!get_relative_position_D_origin_float(originD) ||
+    postype_t originD;
+    if (!get_relative_position_D_origin(originD) ||
         !_get_origin(originLLH)) {
 #if AP_GPS_ENABLED
         const auto &gps = AP::gps();
