@@ -1,0 +1,14 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the HolybroV6C hardware bdshot version
+
+include ../Pixhawk5X/hwdef.dat
+
+undef PE14 PA10 PE11 PA8 PD13 PD14
+
+# PWM output pins
+PE14 TIM1_CH4 TIM1 PWM(1) GPIO(50)
+PA10 TIM1_CH3 TIM1 PWM(2) GPIO(51) BIDIR
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52) BIDIR
+PA8  TIM1_CH1 TIM1 PWM(4) GPIO(53)
+PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
+PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
