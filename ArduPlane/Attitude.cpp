@@ -300,21 +300,17 @@ void Plane::stabilize_stick_mixing_fbw()
         return;
     }
 
+    // do FBW-A style pitch stick mixing. Scale the inputs up to the full pitch
+    // range, so that a complete override is always possible.
     float pitch_input = channel_pitch->norm_input_dz();
-    if (pitch_input > 0.5f) {
-        pitch_input = (3*pitch_input - 1);
-    } else if (pitch_input < -0.5f) {
-        pitch_input = (3*pitch_input + 1);
-    }
     if (fly_inverted()) {
         pitch_input = -pitch_input;
     }
-    if (pitch_input > 0) {
-        nav_pitch_cd += pitch_input * aparm.pitch_limit_max*100;
-    } else {
-        nav_pitch_cd += -(pitch_input * pitch_limit_min*100);
-    }
-    nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min*100, aparm.pitch_limit_max.get()*100);
+    const int32_t pitch_min_cd = pitch_limit_min * 100;
+    const int32_t pitch_max_cd = aparm.pitch_limit_max.get() * 100;
+    const float pitch_range_cd = pitch_max_cd - pitch_min_cd;
+    nav_pitch_cd += pitch_input * pitch_range_cd;
+    nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_min_cd, pitch_max_cd);
 }
 
 
