@@ -28,9 +28,10 @@ private:
 
     enum {
         PIXART_3900=0,
-        PIXART_3901=1
+        PIXART_3901=1,
+        PIXART_3903=2
     } model;
-    
+
     struct RegData {
         uint8_t reg;
         uint8_t value;
@@ -61,6 +62,16 @@ private:
     static const RegData init_data_3900[];
     static const RegData init_data_3901_1[];
     static const RegData init_data_3901_2[];
+    static const RegData init_data_3901_3[];
+    static const RegData init_data_3903_1_Bright[];
+    static const RegData init_data_3903_2_Bright[];
+    static const RegData init_data_3903_3_Bright[];
+    static const RegData init_data_3903_1_LowLight[];
+    static const RegData init_data_3903_2_LowLight[];
+    static const RegData init_data_3903_3_LowLight[];
+    static const RegData init_data_3903_1_SuperLowLight[];
+    static const RegData init_data_3903_2_SuperLowLight[];
+    static const RegData init_data_3903_3_SuperLowLight[];
     const float flow_pixel_scaling = 1.26e-3;
 
     // setup sensor
@@ -77,8 +88,19 @@ private:
     void timer(void);
     void motion_burst(void);
 
+    void changeMode(uint8_t mode);
+    void brightMode(void);
+    void lowlightMode(void);
+    void superlowlightMode(void);
+
     uint32_t last_burst_us;
     uint32_t last_update_ms;
+
+    uint8_t _mode;
+    int _bright_to_low_count{0};
+    int _low_to_superlow_count{0};
+    int _low_to_bright_count{0};
+    int _superlow_to_low_count{0};
 };
 
 #endif  // AP_OPTICALFLOW_PIXART_ENABLED
