@@ -296,10 +296,12 @@ bool RC_Channel::get_reverse(void) const
 // read input from hal.rcin or overrides
 bool RC_Channel::update(void)
 {
+    raw_radio_in = hal.rcin->read(ch_in);
+
     if (has_override() && !rc().option_is_enabled(RC_Channels::Option::IGNORE_OVERRIDES)) {
         radio_in = override_value;
     } else if (rc().has_had_rc_receiver() && !rc().option_is_enabled(RC_Channels::Option::IGNORE_RECEIVER)) {
-        radio_in = hal.rcin->read(ch_in);
+        radio_in = raw_radio_in;
     } else {
         return false;
     }
@@ -485,6 +487,13 @@ bool RC_Channel::in_trim_dz() const
     return is_bounded_int32(radio_in, radio_trim - dead_zone, radio_trim + dead_zone);
 }
 
+/*
+  return true if raw input is within deadzone of trim
+*/
+bool RC_Channel::in_raw_trim_dz() const
+{
+    return is_bounded_int32(raw_radio_in, radio_trim - dead_zone, radio_trim + dead_zone);
+}
 
 /*
    return trues if input is within deadzone of min
@@ -498,6 +507,11 @@ void RC_Channel::set_override(const uint16_t v, const uint32_t timestamp_ms)
 {
     if (!rc().gcs_overrides_enabled()) {
         return;
+    }
+
+    // set the throttle value when the override is first activated
+    if (override_value == 0 && ch_in == rc().get_throttle_channel().ch_in) {
+        rc().override_start_throttle = raw_radio_in;
     }
 
     last_override_time = timestamp_ms != 0 ? timestamp_ms : AP_HAL::millis();

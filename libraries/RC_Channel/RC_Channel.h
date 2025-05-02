@@ -71,6 +71,8 @@ public:
 
     // return true if input is within deadzone of trim
     bool       in_trim_dz() const;
+    // return true if raw input is within deadzone of trim
+    bool       in_raw_trim_dz() const;
 
     int16_t    get_radio_in() const { return radio_in;}
     void       set_radio_in(int16_t val) {radio_in = val;}
@@ -407,6 +409,7 @@ private:
 
     // pwm is stored here
     int16_t     radio_in;
+    int16_t     raw_radio_in;
 
     // value generated from PWM normalised to configured scale
     int16_t    control_in;
@@ -521,6 +524,9 @@ public:
     // is RC channel 1.  Beware this is not a cheap call.
     uint16_t get_override_mask() const;
 
+    // determine if the current RC overrides should be cleared due to pilot input
+    bool should_clear_overrides(void);
+
     class RC_Channel *find_channel_for_option(const RC_Channel::AUX_FUNC option);
     bool duplicate_options_exist();
     void convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option);
@@ -560,6 +566,7 @@ public:
         USE_CRSF_LQ_AS_RSSI     = (1U << 11), // returns CRSF link quality as RSSI value, instead of RSSI
         CRSF_FM_DISARM_STAR     = (1U << 12), // when disarmed, add a star at the end of the flight mode in CRSF telemetry
         ELRS_420KBAUD           = (1U << 13), // use 420kbaud for ELRS protocol
+        CLEAR_OVERRIDES_BY_RC   = (1U << 14), // clear MAVLink overrides if the pilot inputs any of roll/pitch/throttle/yaw
     };
 
     bool option_is_enabled(Option option) const {
@@ -658,6 +665,7 @@ private:
     bool has_new_overrides;
     bool _has_had_rc_receiver; // true if we have had a direct detach RC receiver, does not include overrides
     bool _has_had_override; // true if we have had an override on any channel
+    int16_t override_start_throttle; // throttle value when override was activated
 
     AP_Float _override_timeout;
     AP_Int32  _options;
