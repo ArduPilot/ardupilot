@@ -231,19 +231,24 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
         return;
     }
 
+    // Retain same rotation & position for object points from the same sensor dataframe
+    // otherwise will cause distortion as vehicle moves fast
+    // since obstacle_distance_3d packet only contain single object point
+    static Vector3f current_pos;
+    static Matrix3f body_to_ned;
+    static bool database_ready = false;
+
     if ((previous_msg_timestamp != _last_msg_update_timestamp_ms) || (time_diff > PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS)) {
         // push data from temp boundary to the main 3-D proximity boundary because a new timestamp has arrived
         temp_boundary.update_3D_boundary(state.instance, frontend.boundary);
         // clear temp boundary for new data
         temp_boundary.reset();
+        // obtain vehicle position & rotation for object packets
+        database_ready = database_prepare_for_push(current_pos, body_to_ned);
     }
 
     _distance_min = packet.min_distance;
     _distance_max = packet.max_distance;
-
-    Vector3f current_pos;
-    Matrix3f body_to_ned;
-    const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
 
     const Vector3f obstacle_FRD(packet.x, packet.y, packet.z);
     const float obstacle_distance = obstacle_FRD.length();
@@ -269,7 +274,7 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
     temp_boundary.add_distance(face, pitch, yaw, obstacle.length());
 
     if (database_ready) {
-        database_push(yaw, pitch, obstacle.length(),_last_update_ms, current_pos, body_to_ned);
+        database_push(yaw, pitch, obstacle.length(), _last_update_ms, current_pos, body_to_ned);
     }
     return;
 }
