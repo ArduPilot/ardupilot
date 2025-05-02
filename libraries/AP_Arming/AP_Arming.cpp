@@ -143,8 +143,6 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     AP_GROUPINFO_FRAME("RUDDER",  6,     AP_Arming, _rudder_arming, ARMING_RUDDER_DEFAULT, AP_PARAM_FRAME_PLANE |
                                                                                            AP_PARAM_FRAME_ROVER |
                                                                                            AP_PARAM_FRAME_COPTER |
-                                                                                           AP_PARAM_FRAME_TRICOPTER |
-                                                                                           AP_PARAM_FRAME_HELI |
                                                                                            AP_PARAM_FRAME_BLIMP),
 
     // @Param: MIS_ITEMS
