@@ -151,5 +151,10 @@ define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
+
+# defines to transition minimize-fpv-osd boards to parachute-not-compiled-in:
+define HAL_PARACHUTE_ENABLED 0
+define AP_PARACHUTE_UNAVAILABLE_ENABLED 1
+
 include ../include/minimize_fpv_osd.inc
 

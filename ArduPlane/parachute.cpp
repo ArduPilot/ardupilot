@@ -9,6 +9,10 @@ void Plane::parachute_check()
 #if HAL_PARACHUTE_ENABLED
     parachute.update();
     parachute.check_sink_rate();
+#elif AP_PARACHUTE_UNAVAILABLE_ENABLED
+    if (AP::parachute()->mistakenly_enabled() && !AP::arming().is_armed()) {
+        AP_BoardConfig::config_error("CHUTE_ENABLED=1 but not compiled in");
+    }
 #endif
 }
 
