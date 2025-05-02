@@ -266,7 +266,142 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
     Mode *new_flightmode = mode_from_mode_num(mode);
     if (new_flightmode == nullptr) {
-        notify_no_such_mode((uint8_t)mode);
+        const char *mode_name;
+        switch (mode) {
+// #if MODE_STABILIZE_ENABLED == DISABLED
+//         case Mode::Number::STABILIZE:
+//             mode_name = "STABILIZE";
+//             break;
+// #endif
+#if MODE_ACRO_ENABLED == DISABLED
+        case Mode::Number::ACRO:
+            mode_name = "ACRO";
+            break;
+#endif
+// #if MODE_ALT_HOLD_ENABLED == DISABLED
+//         case Mode::Number::ALT_HOLD:
+//             mode_name = "ALT_HOLD";
+//             break;
+// #endif
+#if MODE_AUTO_ENABLED == DISABLED
+        case Mode::Number::AUTO:
+            mode_name = "AUTO";
+            break;
+#endif
+#if MODE_GUIDED_ENABLED == DISABLED
+        case Mode::Number::GUIDED:
+            mode_name = "GUIDED";
+            break;
+#endif
+#if MODE_LOITER_ENABLED == DISABLED
+        case Mode::Number::LOITER:
+            mode_name = "LOITER";
+            break;
+#endif
+#if MODE_RTL_ENABLED == DISABLED
+        case Mode::Number::RTL:
+            mode_name = "RTL";
+            break;
+#endif
+#if MODE_CIRCLE_ENABLED == DISABLED
+        case Mode::Number::CIRCLE:
+            mode_name = "CIRCLE";
+            break;
+#endif
+// #if MODE_LAND_ENABLED == DISABLED
+//         case Mode::Number::LAND:
+//             mode_name = "LAND";
+//             break;
+// #endif
+#if MODE_DRIFT_ENABLED == DISABLED
+        case Mode::Number::DRIFT:
+            mode_name = "DRIFT";
+            break;
+#endif
+#if MODE_SPORT_ENABLED == DISABLED
+        case Mode::Number::SPORT:
+            mode_name = "SPORT";
+            break;
+#endif
+#if MODE_FLIP_ENABLED == DISABLED
+        case Mode::Number::FLIP:
+            mode_name = "FLIP";
+            break;
+#endif
+#if AUTOTUNE_ENABLED == DISABLED
+        case Mode::Number::AUTOTUNE:
+            mode_name = "AUTOTUNE";
+            break;
+#endif
+#if MODE_POSHOLD_ENABLED == DISABLED
+        case Mode::Number::POSHOLD:
+            mode_name = "POSHOLD";
+            break;
+#endif
+#if MODE_BRAKE_ENABLED == DISABLED
+        case Mode::Number::BRAKE:
+            mode_name = "BRAKE";
+            break;
+#endif
+#if MODE_THROW_ENABLED == DISABLED
+        case Mode::Number::THROW:
+            mode_name = "THROW";
+            break;
+#endif
+#if HAL_ADSB_ENABLED == DISABLED
+        case Mode::Number::AVOID_ADSB:
+            mode_name = "AVOID_ADSB";
+            break;
+#endif
+#if MODE_GUIDED_NOGPS_ENABLED == DISABLED
+        case Mode::Number::GUIDED_NOGPS:
+            mode_name = "GUIDED_NOGPS";
+            break;
+#endif
+#if MODE_SMARTRTL_ENABLED == DISABLED
+        case Mode::Number::SMART_RTL:
+            mode_name = "SMART_RTL";
+            break;
+#endif
+#if AP_OPTICALFLOW_ENABLED == DISABLED
+        case Mode::Number::FLOWHOLD:
+            mode_name = "FLOWHOLD";
+            break;
+#endif
+#if MODE_FOLLOW_ENABLED == DISABLED
+        case Mode::Number::FOLLOW:
+            mode_name = "FOLLOW";
+            break;
+#endif
+#if MODE_ZIGZAG_ENABLED == DISABLED
+        case Mode::Number::ZIGZAG:
+            mode_name = "ZIGZAG";
+            break;
+#endif
+#if MODE_SYSTEMID_ENABLED == DISABLED
+        case Mode::Number::SYSTEMID:
+            mode_name = "SYSTEMID";
+            break;
+#endif
+#if MODE_AUTOROTATE_ENABLED == DISABLED
+        case Mode::Number::AUTOROTATE:
+            mode_name = "AUTOROTATE";
+            break;
+#endif
+        case Mode::Number::AUTO_RTL:
+            mode_name = "AUTO_RTL";
+            break;
+#if MODE_TURTLE_ENABLED == DISABLED
+        case Mode::Number::TURTLE:
+            mode_name = "TURTLE";
+            break;
+#endif
+        default:
+            mode_name = "KNOWN or UNKNOWN";
+            break;
+        }
+
+        notify_no_such_mode_name((uint8_t)mode, mode_name);
         return false;
     }
 
