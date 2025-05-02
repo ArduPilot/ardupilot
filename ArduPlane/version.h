@@ -6,14 +6,14 @@
 
 #include "ap_version.h"
 
-#define THISFIRMWARE "ArduPlane V4.5.7"
+#define THISFIRMWARE "ArduPlane V4.5.7 - force backtrans abort"
 
 // the following line is parsed by the autotest scripts
-#define FIRMWARE_VERSION 4,5,7,FIRMWARE_VERSION_TYPE_OFFICIAL
+#define FIRMWARE_VERSION 4,5,7,FIRMWARE_VERSION_TYPE_DEV
 
 #define FW_MAJOR 4
 #define FW_MINOR 5
 #define FW_PATCH 7
-#define FW_TYPE FIRMWARE_VERSION_TYPE_OFFICIAL
+#define FW_TYPE FIRMWARE_VERSION_TYPE_DEV
 
 #include <AP_Common/AP_FWVersionDefine.h>

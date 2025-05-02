@@ -250,7 +250,7 @@ jobs:
           Tools/scripts/build_ci.sh
 
       - name: Archive buildlog artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
            name: fail-${{matrix.config}}
@@ -264,7 +264,7 @@ jobs:
            retention-days: 14
 
       - name: Archive .bin artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
            name: BIN-${{matrix.config}}
            path: /__w/ardupilot/ardupilot/logs

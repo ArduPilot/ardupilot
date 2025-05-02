@@ -121,6 +121,12 @@ void Plane::stabilize_roll()
     }
 
     const float roll_out = stabilize_roll_get_roll_out();
+    AP::logger().Write("ATTR", "TimeUS,RollOut",
+        "sd", // seconds, degrees
+        "F0", // micro (1e-6), no mult (1e0)
+        "Qf", // uint64_t, float
+        AP_HAL::micros64(),
+        roll_out/100.0f);
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, roll_out);
 }
 
@@ -174,6 +180,12 @@ void Plane::stabilize_pitch()
     }
 
     const float pitch_out = stabilize_pitch_get_pitch_out();
+    AP::logger().Write("ATTP", "TimeUS,PitchOut",
+        "sd", // seconds, degrees
+        "F0", // micro (1e-6), no mult (1e0)
+        "Qf", // uint64_t, float
+        AP_HAL::micros64(),
+        pitch_out/100.0f);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitch_out);
 }
 
@@ -361,6 +373,12 @@ void Plane::stabilize_yaw()
       now calculate rudder for the rudder
      */
     const float rudder_output = calc_nav_yaw_coordinated();
+    AP::logger().Write("ATTY", "TimeUS,YawOut",
+        "sd", // seconds, degrees
+        "F0", // micro (1e-6), no mult (1e0)
+        "Qf", // uint64_t, float
+        AP_HAL::micros64(),
+        rudder_output/100.0f);
 
     if (!ground_steering) {
         // Not doing ground steering, output rudder on steering channel

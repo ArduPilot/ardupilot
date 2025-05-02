@@ -858,7 +858,9 @@ void Tailsitter_Transition::update()
     }
 
     case TRANSITION_ANGLE_WAIT_VTOL:
-        // nothing to do, this is handled in the fixed wing attitude controller
+        // handle a rapid back transition to VTOL flight which is aborted and we're back to FW mode
+        force_transition_complete();
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Back transition abort handled!");
         break;
 
     case TRANSITION_DONE:
