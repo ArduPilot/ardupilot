@@ -373,12 +373,24 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
         _target_position_ned.z = -_target_position_ned.z; // NEU->NED
         _target_position_ned *= 0.01;  // cm -> m
 
+        // get a local timestamp with correction for transport jitter
+        uint32_t timestamp_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
+        uint32_t dt = (timestamp_ms - _last_location_update_ms) * 0.001f;
+        
+        _last_location_update_ms = timestamp_ms;
+
+        // sanity check, prevent division by 0
+        if (dt > 0) {
+            // calculate acceleration dv/dt
+            _target_accel_ned.x = ((packet.vx * 0.01f) - _target_velocity_ned.x) / dt;
+            _target_accel_ned.y = ((packet.vy * 0.01f) - _target_velocity_ned.y) / dt;
+            _target_accel_ned.z = ((packet.vz * 0.01f) - _target_velocity_ned.z) / dt;
+        }
+
         _target_velocity_ned.x = packet.vx * 0.01f; // velocity north
         _target_velocity_ned.y = packet.vy * 0.01f; // velocity east
         _target_velocity_ned.z = packet.vz * 0.01f; // velocity down
 
-        // get a local timestamp with correction for transport jitter
-        _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
         if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
             _target_heading = packet.hdg * 0.01f;   // convert centi-degrees to degrees
             _last_heading_update_ms = _last_location_update_ms;
