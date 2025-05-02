@@ -749,7 +749,7 @@ local Parameter_ud = {}
 ---@return Parameter_ud
 function Parameter() end
 
--- Set the defualt value of this parameter, if the parameter has not been configured by the user its value will be updated to the new defualt.
+-- Set the default value of this parameter, if the parameter has not been configured by the user its value will be updated to the new defualt.
 ---@param value number
 ---@return boolean
 function Parameter_ud:set_default(value) end
@@ -1941,6 +1941,37 @@ function ins:get_gyro(instance) end
 ---@param instance integer -- the 0-based index of the accelerometer instance to return.
 ---@return Vector3f_ud
 function ins:get_accel(instance) end
+
+-- desc
+---@class AP_InertialSensor__HarmonicNotch_ud
+local AP_InertialSensor__HarmonicNotch_ud = {}
+
+-- Get a specific scripting enabled harmonic notch instance
+---@param instance integer -- the 0-based index of the harmonic notch instance to return.
+---@return AP_InertialSensor__HarmonicNotch_ud|nil
+function ins:get_harmonic_notch(instance) end
+
+-- get array field
+---@param index integer
+---@return number
+function AP_InertialSensor__HarmonicNotch_ud:get_frequency(index) end
+
+-- set array field
+---@param index integer
+---@param value number
+function AP_InertialSensor__HarmonicNotch_ud:set_frequency(index, value) end
+
+-- get field
+---@return integer
+function AP_InertialSensor__HarmonicNotch_ud:get_num_frequencies() end
+
+-- set field
+---@param value integer
+function AP_InertialSensor__HarmonicNotch_ud:set_num_frequencies(value) end
+
+-- desc
+---@param value number
+function AP_InertialSensor__HarmonicNotch_ud:update_frequency(value) end
 
 -- desc
 Motors_dynamic = {}

@@ -472,6 +472,13 @@ public:
             return inactive;
         }
 
+#if AP_SCRIPTING_ENABLED
+        void set_frequency(uint8_t idx, float scaled_freq) { calculated_notch_freq_hz[idx] = fabsf(scaled_freq); }
+        void set_num_frequencies(uint8_t nfreqs) { num_calculated_notch_frequencies = nfreqs; }
+        float get_frequency(uint8_t idx) { return calculated_notch_freq_hz[idx]; }
+        uint8_t get_num_frequencies() { return num_calculated_notch_frequencies; }
+#endif
+
     private:
         // support for updating harmonic filter at runtime
         float last_center_freq_hz[INS_MAX_INSTANCES];
@@ -479,6 +486,10 @@ public:
         float last_attenuation_dB[INS_MAX_INSTANCES];
         bool inactive;
     } harmonic_notches[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS];
+
+#if AP_SCRIPTING_ENABLED
+    HarmonicNotch* get_harmonic_notch(uint8_t idx);
+#endif
 #endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
 private:

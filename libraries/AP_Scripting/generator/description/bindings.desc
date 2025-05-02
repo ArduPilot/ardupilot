@@ -695,6 +695,15 @@ singleton AP_InertialSensor method calibrating boolean
 singleton AP_InertialSensor method get_gyro Vector3f uint8_t'skip_check
 singleton AP_InertialSensor method get_accel Vector3f uint8_t'skip_check
 singleton AP_InertialSensor method gyros_consistent boolean uint8_t'skip_check
+ap_object AP_InertialSensor::HarmonicNotch depends AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+singleton AP_InertialSensor method get_harmonic_notch AP_InertialSensor::HarmonicNotch uint8_t 0 HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
+
+ap_object AP_InertialSensor::HarmonicNotch method set_frequency void uint8_t 0 INS_MAX_NOTCHES float'skip_check
+ap_object AP_InertialSensor::HarmonicNotch method get_frequency float uint8_t 0 INS_MAX_NOTCHES
+ap_object AP_InertialSensor::HarmonicNotch method set_num_frequencies void uint8_t 0 INS_MAX_NOTCHES
+ap_object AP_InertialSensor::HarmonicNotch method get_num_frequencies uint8_t
+ap_object AP_InertialSensor::HarmonicNotch method update_freq_hz void float'skip_check
+ap_object AP_InertialSensor::HarmonicNotch method update_freq_hz rename update_frequency
 
 singleton CAN manual get_device lua_get_CAN_device 1 1
 singleton CAN manual get_device2 lua_get_CAN_device2 1 1

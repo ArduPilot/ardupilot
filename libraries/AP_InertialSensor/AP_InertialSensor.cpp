@@ -1093,6 +1093,17 @@ AP_InertialSensor::init(uint16_t loop_rate)
 #endif
 }
 
+#if AP_SCRIPTING_ENABLED
+AP_InertialSensor::HarmonicNotch* AP_InertialSensor::get_harmonic_notch(uint8_t idx)
+{
+    HarmonicNotch& notch = harmonic_notches[idx];
+    if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::Scripting) {
+        return &notch;
+    }
+    return nullptr;
+}
+#endif
+
 bool AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
 {
 

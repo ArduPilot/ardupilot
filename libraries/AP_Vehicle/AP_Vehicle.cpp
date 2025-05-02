@@ -892,6 +892,10 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
             }
             break;
 #endif
+#if AP_SCRIPTING_ENABLED
+        case HarmonicNotchDynamicMode::Scripting:
+            break;  // let scripting do its thing
+#endif
         case HarmonicNotchDynamicMode::Fixed: // static
         default:
             notch.update_freq_hz(ref_freq);
