@@ -29,6 +29,8 @@ public:
 
     virtual void update() = 0;
 
+    virtual void enter() {}
+
 protected:
     void update_scan();
     void update_auto();
@@ -60,6 +62,10 @@ public:
         _use_yaw_rate = use_yaw_rate;
         _yaw_rate_rads = yaw_rate_rads;
     }
+
+protected:
+
+    void enter() override;
 
 private:
     Quaternion _target_att;
