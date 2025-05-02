@@ -159,9 +159,12 @@ AP_BattMonitor::Failsafe AP_BattMonitor_Backend::update_failsafes(void)
         // this is the first time our voltage has dropped below minimum so start timer
         if (_state.critical_voltage_start_ms == 0) {
             _state.critical_voltage_start_ms = now;
-        } else if (_params._low_voltage_timeout > 0 &&
-                   now - _state.critical_voltage_start_ms > uint32_t(_params._low_voltage_timeout)*1000U) {
-            return AP_BattMonitor::Failsafe::Critical;
+        } else {
+            int32_t voltage_timeout = _params._crt_voltage_timeout > 0 ? _params._crt_voltage_timeout : _params._low_voltage_timeout*1000;
+            if (voltage_timeout > 0 &&
+                now - _state.critical_voltage_start_ms > uint32_t(voltage_timeout)) {
+                return AP_BattMonitor::Failsafe::Critical;
+            }
         }
     } else {
         // acceptable voltage so reset timer
