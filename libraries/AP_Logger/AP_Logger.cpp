@@ -794,12 +794,6 @@ void AP_LoggerThread::StopLogging()
     FOR_EACH_BACKEND(stop_logging());
 }
 
-uint16_t AP_LoggerThread::find_last_log() const {
-    if (_next_backend == 0) {
-        return 0;
-    }
-    return backends[0]->find_last_log();
-}
 void AP_LoggerThread::get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) {
     if (_next_backend == 0) {
         return;
@@ -1590,14 +1584,14 @@ void AP_LoggerThread::process_request_queue(void)
 #undef FOR_EACH_BACKEND
 
 // completes simple thread request synchronously
-bool AP_Logger::synchronously_complete_simple_iothread_request(AP_LoggerThreadRequest::Type type, const char *name, uint16_t limit_ms)
+bool AP_Logger::synchronously_complete_simple_thread_request(AP_LoggerThreadRequest::Type type, const char *name, uint16_t limit_ms)
 {
-    AP_LoggerThreadRequest *request = request_queue.claim_simple_iothread_request(type);
+    AP_LoggerThreadRequest *request = request_queue.claim_thread_request(type);
     if (request == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING, "%s failed (no request)", name);
         return false;
     }
-    if (!synchronously_complete_iothread_request(*request, limit_ms)) {
+    if (!synchronously_complete_thread_request(*request, limit_ms)) {
         // this is debug only; the thread may swipe this at any time
         if (request->state == AP_LoggerThreadRequest::State::ABANDONED) {
             gcs().send_text(MAV_SEVERITY_WARNING, "%s failed (abandoned)", name);
@@ -1608,7 +1602,7 @@ bool AP_Logger::synchronously_complete_simple_iothread_request(AP_LoggerThreadRe
     return true;
 }
 
-bool AP_Logger::synchronously_complete_iothread_request(AP_LoggerThreadRequest &request, uint16_t limit_ms)
+bool AP_Logger::synchronously_complete_thread_request(AP_LoggerThreadRequest &request, uint16_t limit_ms)
 {
     uint32_t tstart = AP_HAL::micros();
     request.free_after_processing = false;
@@ -1645,7 +1639,7 @@ bool AP_Logger::synchronously_complete_iothread_request(AP_LoggerThreadRequest &
 void AP_Logger::PrepForArming()
 {
     const uint16_t open_limit_ms = 1000;
-    synchronously_complete_simple_iothread_request(AP_LoggerThreadRequest::Type::PrepForArming, "PrepForArming", open_limit_ms);
+    synchronously_complete_simple_thread_request(AP_LoggerThreadRequest::Type::PrepForArming, "PrepForArming", open_limit_ms);
 }
 
 // Wrote an event packet

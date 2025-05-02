@@ -37,7 +37,7 @@ void AP_Logger::handle_log_message(GCS_MAVLINK &link, const mavlink_message_t &m
 {
     const bool synchronous = false;  // FIXME, these should all be async
 
-    AP_LoggerThreadRequest *request = request_queue.claim_free_request();
+    AP_LoggerThreadRequest *request = request_queue.claim_thread_request();
     if (request == nullptr) {
         return;
     }
@@ -86,7 +86,7 @@ void AP_Logger::handle_log_message(GCS_MAVLINK &link, const mavlink_message_t &m
 
     // synchronous completion:
     if (synchronous) {
-        if (!request_queue.complete_iothread_request(*request)) {
+        if (!request_queue.complete_thread_request(*request)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "%s failed", "HandleLogMessage");
         }
     } else {

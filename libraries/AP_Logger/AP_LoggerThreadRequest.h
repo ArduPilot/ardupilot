@@ -90,9 +90,9 @@ public:
 class AP_LoggerThreadRequestQueue {
 public:
 
-    AP_LoggerThreadRequest *claim_simple_iothread_request(AP_LoggerThreadRequest::Type type);
+    AP_LoggerThreadRequest *claim_thread_request(AP_LoggerThreadRequest::Type type);
 
-    AP_LoggerThreadRequest *claim_free_request();
+    AP_LoggerThreadRequest *claim_thread_request();
 
     void free_request(AP_LoggerThreadRequest &r) {
         r.state = AP_LoggerThreadRequest::State::FREE;
@@ -102,8 +102,8 @@ public:
         r.state = AP_LoggerThreadRequest::State::PENDING;
     }
 
-    bool complete_simple_iothread_request(AP_LoggerThreadRequest::Type type, const char *name);
-    bool complete_iothread_request(AP_LoggerThreadRequest &request);
+    bool complete_simple_thread_request(AP_LoggerThreadRequest::Type type, const char *name);
+    bool complete_thread_request(AP_LoggerThreadRequest &request);
 
     uint8_t requests_count;
 

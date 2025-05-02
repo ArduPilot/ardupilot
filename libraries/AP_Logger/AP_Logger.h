@@ -758,8 +758,8 @@ public:
     }
 
     // Thread-related functions:
-    bool synchronously_complete_simple_iothread_request(AP_LoggerThreadRequest::Type type, const char *name, uint16_t limit_ms=100);
-    bool synchronously_complete_iothread_request(AP_LoggerThreadRequest &request, uint16_t limit_ms=100);
+    bool synchronously_complete_simple_thread_request(AP_LoggerThreadRequest::Type type, const char *name, uint16_t limit_ms=100);
+    bool synchronously_complete_thread_request(AP_LoggerThreadRequest &request, uint16_t limit_ms=100);
 
 private:
 
