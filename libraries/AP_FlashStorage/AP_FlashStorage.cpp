@@ -368,6 +368,7 @@ bool AP_FlashStorage::write_all()
 {
     debug("write_all to sector %u at %u with reserved_space=%u\n",
            current_sector, write_offset, reserved_space);
+    uint16_t bytes_copied = 0;
     for (uint16_t ofs=0; ofs<storage_size; ofs += max_write) {
         // local variable needed to overcome problem with MIN() macro and -O0
         const uint8_t max_write_local = max_write;
@@ -376,13 +377,15 @@ bool AP_FlashStorage::write_all()
             if (!write(ofs, n)) {
                 return false;
             }
+            bytes_copied += n;
         }
     }
+    debug("write_all copied %u bytes\n", bytes_copied);
     return true;
 }
 
 // return true if all bytes are zero
-bool AP_FlashStorage::all_zero(uint16_t ofs, uint16_t size)
+bool AP_FlashStorage::all_zero(uint16_t ofs, uint16_t size) const
 {
     while (size--) {
         if (mem_buffer[ofs++] != 0) {
@@ -440,8 +443,9 @@ bool AP_FlashStorage::switch_sectors(void)
         
     // we need to reserve some space in next sector to ensure we can successfully do a
     // full write out on init()
-    reserved_space = reserve_size;
-    
+    reserved_space = reserve_size();
+    debug("Reserving %u bytes full full-write\n", reserved_space);
+
     write_offset = sizeof(header);
     return true;    
 }
@@ -689,3 +693,19 @@ void AP_FlashStorage::sector_header::set_state(SectorState state)
     }
 }
 #endif
+
+uint16_t AP_FlashStorage::reserve_size() const
+{
+    // count up storage space currently in use
+    uint16_t count = 0;
+    for (uint16_t ofs=0; ofs<storage_size; ofs += max_write) {
+        // local variable needed to overcome problem with MIN() macro and -O0
+        const uint8_t max_write_local = max_write;
+        uint8_t n = MIN(max_write_local, storage_size-ofs);
+        if (!all_zero(ofs, n)) {
+            count++;
+        }
+    }
+
+    return (sizeof(sector_header) + count * (max_write+sizeof(block_header)));
+}
