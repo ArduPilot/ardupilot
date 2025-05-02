@@ -703,6 +703,9 @@ void AP_Logger::set_vehicle_armed(const bool armed_state)
         // get a set of @SYS files logged:
         file_content_prepare_for_arming = true;
 #endif
+        if (_params.log_disarmed && _params.file_disarm_rot) {
+            FOR_EACH_BACKEND(vehicle_was_disarmed());
+        }
     } else {
         // went from armed to disarmed
         FOR_EACH_BACKEND(vehicle_was_disarmed());
