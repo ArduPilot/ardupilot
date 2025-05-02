@@ -669,6 +669,15 @@ void AP_RCProtocol_CRSF::process_link_stats_frame(const void* data)
         _link_status.active_antenna = -1;
     }
 #endif
+
+    // Report to frontend
+    frontend._rc_link_status.link_quality = _link_status.link_quality;
+#if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
+    frontend._rc_link_status.rssi_dbm = _link_status.rssi_dbm;
+    frontend._rc_link_status.snr = _link_status.snr;
+    frontend._rc_link_status.tx_power = _link_status.tx_power;
+    frontend._rc_link_status.active_antenna = _link_status.active_antenna;
+#endif
 }
 
 // process link statistics to get RX RSSI
