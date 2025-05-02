@@ -27,6 +27,10 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include <cstdio>
+#endif
+
 #ifndef MAV_SYSID_DEFAULT
 #if APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
 #define MAV_SYSID_DEFAULT 2
@@ -177,6 +181,40 @@ void GCS::send_text(MAV_SEVERITY severity, const char *fmt, ...)
     va_list arg_list;
     va_start(arg_list, fmt);
     send_textv(severity, fmt, arg_list);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    switch(severity) {
+        case MAV_SEVERITY_EMERGENCY:
+            std::printf("EMERGENCY: ");
+            break;
+        case MAV_SEVERITY_ALERT:
+            std::printf("ALERT: ");
+            break;
+        case MAV_SEVERITY_CRITICAL:
+            std::printf("CRITICAL: ");
+            break;
+        case MAV_SEVERITY_ERROR:
+            std::printf("ERROR: ");
+            break;
+        case MAV_SEVERITY_WARNING:
+            std::printf("WARNING: ");
+            break;
+        case MAV_SEVERITY_NOTICE:
+            std::printf("NOTICE: ");
+            break;
+        case MAV_SEVERITY_INFO:
+            std::printf("INFO: ");
+            break;
+        case MAV_SEVERITY_DEBUG:
+            std::printf("DEBUG: ");
+            break;
+        default:
+            break;
+    }
+    std::vprintf(fmt, arg_list);
+    std::printf("\n");
+#endif
+
     va_end(arg_list);
 }
 
