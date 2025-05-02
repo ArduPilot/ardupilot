@@ -30,7 +30,7 @@ public:
     void init_ardupilot() override {};
     void load_parameters() override {};
     void init() {
-        BoardConfig.init();
+        boardconfig.init();
         ins.init(100);
         ahrs.init();
     }

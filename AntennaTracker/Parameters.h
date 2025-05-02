@@ -70,7 +70,7 @@ public:
         k_param_start_latitude,
         k_param_start_longitude,
         k_param_startup_delay,
-        k_param_BoardConfig,
+        k_param_BoardConfig_old,
         k_param_gps,
         k_param_scan_speed_unused, // deprecated
         k_param_proxy_mode_unused, // deprecated

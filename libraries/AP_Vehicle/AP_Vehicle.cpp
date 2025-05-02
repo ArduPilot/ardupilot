@@ -28,6 +28,7 @@
 extern AP_IOMCU iomcu;
 #endif
 #include <AP_Scripting/AP_Scripting.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
@@ -284,6 +285,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(serial_manager, "SERIAL", 31, AP_Vehicle, AP_SerialManager),
 #endif
 
+#if AP_BOARDCONFIG_SINGLETON_ENABLED
+    // @Group: BRD_
+    // @Path: ../AP_BoardConfig/AP_BoardConfig.cpp
+    AP_SUBGROUPINFO(boardconfig, "BRD_", 32, AP_Vehicle, AP_BoardConfig),
+#endif
+
     AP_GROUPEND
 };
 
@@ -405,7 +412,9 @@ void AP_Vehicle::setup()
     stats.init();
 #endif
 
-    BoardConfig.init();
+#if AP_BOARDCONFIG_SINGLETON_ENABLED
+    boardconfig.init();
+#endif
 
 #if HAL_CANMANAGER_ENABLED
     can_mgr.init();
@@ -549,6 +558,7 @@ void AP_Vehicle::loop()
     G_Dt = 0.001;
 #endif
 
+#if AP_BOARDCONFIG_SINGLETON_ENABLED
     if (!done_safety_init) {
         /*
           disable safety if requested. This is delayed till after the
@@ -558,8 +568,11 @@ void AP_Vehicle::loop()
           range which could damage hardware
         */
         done_safety_init = true;
-        BoardConfig.init_safety();
-
+        boardconfig.init_safety();
+    }
+#endif  // AP_BOARDCONFIG_SINGLETON_ENABLED
+    if (!emitted_rc_output_mode_banner) {
+        emitted_rc_output_mode_banner = true;
         // send RC output mode info if available
         char banner_msg[50];
         if (hal.rcout->get_output_mode_banner(banner_msg, sizeof(banner_msg))) {

@@ -265,9 +265,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
     GOBJECT(battery,                "BATT", AP_BattMonitor),
 
-    // @Group: BRD_
-    // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig.cpp
-    GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),
+    // BRD_ (AP_BoardConfig) was here
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     // @Group: CAN_
@@ -871,6 +869,10 @@ void Rover::load_parameters(void)
 #if AP_SERIALMANAGER_ENABLED
         // PARAMETER_CONVERSION - Added: Feb-2024 for Rover-4.6
         { &serial_manager, serial_manager.var_info, Parameters::k_param_serial_manager_old },
+#endif
+#if AP_BOARDCONFIG_SINGLETON_ENABLED
+        // PARAMETER_CONVERSION - Added: Mar-2024
+        { &boardconfig, boardconfig.var_info, Parameters::k_param_BoardConfig_old },
 #endif
     };
 

@@ -231,10 +231,6 @@ const AP_Param::Info Tracker::var_info[] = {
     GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
-    // @Group: BRD_
-    // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig.cpp
-    GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),
-
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     // @Group: CAN_
     // @Path: ../libraries/AP_CANManager/AP_CANManager.cpp
@@ -556,6 +552,10 @@ void Tracker::load_parameters(void)
 #if AP_SERIALMANAGER_ENABLED
         // PARAMETER_CONVERSION - Added: Feb-2024 for Tracker-4.6
         { &serial_manager, serial_manager.var_info, Parameters::k_param_serial_manager_old },
+#endif
+#if AP_BOARDCONFIG_SINGLETON_ENABLED
+        // PARAMETER_CONVERSION - Added: Mar-2024 for Tracker-4.6
+        { &boardconfig, boardconfig.var_info, Parameters::k_param_BoardConfig_old },
 #endif
     };
 

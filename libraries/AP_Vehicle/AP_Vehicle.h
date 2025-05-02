@@ -316,8 +316,10 @@ protected:
 
     virtual void set_control_channels() {}
 
+#if AP_BOARDCONFIG_SINGLETON_ENABLED
     // board specific config
-    AP_BoardConfig BoardConfig;
+    AP_BoardConfig boardconfig;
+#endif
 
 #if HAL_CANMANAGER_ENABLED
     // board specific config for CAN bus
@@ -567,7 +569,7 @@ private:
 #endif
 
     bool done_safety_init;
-
+    bool emitted_rc_output_mode_banner;
 
     uint32_t _last_internal_errors;  // backup of AP_InternalError::internal_errors bitmask
 

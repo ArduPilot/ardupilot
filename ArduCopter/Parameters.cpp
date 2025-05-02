@@ -498,9 +498,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
     GOBJECT(battery,                "BATT",         AP_BattMonitor),
 
-    // @Group: BRD_
-    // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig.cpp
-    GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),
+    // BRD_ (AP_BoardConfig) was here
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     // @Group: CAN_
@@ -1314,8 +1312,11 @@ void Copter::load_parameters(void)
         // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
         { &serial_manager, serial_manager.var_info, Parameters::k_param_serial_manager_old },
 #endif
+#if AP_BOARDCONFIG_SINGLETON_ENABLED
+        // PARAMETER_CONVERSION - Added: Mar-2024 for Copter-4.6
+        { &boardconfig, boardconfig.var_info, Parameters::k_param_BoardConfig_old },
+#endif
     };
-
     AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
 
 #if HAL_GCS_ENABLED
