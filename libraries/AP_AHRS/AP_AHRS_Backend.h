@@ -185,19 +185,19 @@ public:
     // return a position relative to origin in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
     // true
-    virtual bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED {
+    virtual bool get_relative_position_NED_origin(Vector3p &vec) const WARN_IF_UNUSED {
         return false;
     }
 
     // return a position relative to origin in meters, North/East
     // order. Return true if estimate is valid
-    virtual bool get_relative_position_NE_origin(Vector2f &vecNE) const WARN_IF_UNUSED {
+    virtual bool get_relative_position_NE_origin(Vector2p &vecNE) const WARN_IF_UNUSED {
         return false;
     }
 
     // return a Down position relative to origin in meters
     // Return true if estimate is valid
-    virtual bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED {
+    virtual bool get_relative_position_D_origin(postype_t &posD) const WARN_IF_UNUSED {
         return false;
     }
 
