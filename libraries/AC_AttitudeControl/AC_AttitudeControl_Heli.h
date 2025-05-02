@@ -83,6 +83,7 @@ public:
     void input_euler_angle_roll_pitch_euler_rate_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds) override;
 
     // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
+#if AP_INVERTED_FLIGHT_ENABLED
     void input_euler_angle_roll_pitch_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw) override;
     
     // Command a thrust vector in the earth frame and a heading angle and/or rate
@@ -94,6 +95,7 @@ public:
 
     // accessor for inverted flight flag
     bool get_inverted_flight() override { return _inverted_flight; }
+#endif
 
     // set the PID notch sample rates
     void set_notch_sample_rate(float sample_rate) override;

@@ -584,19 +584,23 @@ float AC_AttitudeControl_Heli::get_roll_trim_cd()
 // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
 void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_euler_rate_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
 {
+#if AP_INVERTED_FLIGHT_ENABLED
     if (_inverted_flight) {
         euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
     }
     AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_cd(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_rate_cds);
+#endif
 }
 
 // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
 void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
 {
+#if AP_INVERTED_FLIGHT_ENABLED
     if (_inverted_flight) {
         euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
     }
     AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_cd(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_angle_cd, slew_yaw);
+#endif
 }
 
 void AC_AttitudeControl_Heli::set_notch_sample_rate(float sample_rate)
@@ -608,6 +612,7 @@ void AC_AttitudeControl_Heli::set_notch_sample_rate(float sample_rate)
 #endif
 }
 
+#if AP_INVERTED_FLIGHT_ENABLED
 // Command a thrust vector and heading rate
 void AC_AttitudeControl_Heli::input_thrust_vector_rate_heading_cds(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw)
 {
@@ -640,3 +645,4 @@ void AC_AttitudeControl_Heli::input_thrust_vector_heading_cd(const Vector3f& thr
     // note that we are throwing away heading rate here
     AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_cd(euler_roll_angle_cd, degrees(angle_target.y) * 100.0f, heading_angle_cd, true);
 }
+#endif

@@ -144,7 +144,9 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
     case AUX_FUNC::TRAINING:
     case AUX_FUNC::FLAP:
     case AUX_FUNC::GUIDED:
+#if AP_INVERTED_FLIGHT_ENABLED
     case AUX_FUNC::INVERTED:
+#endif
     case AUX_FUNC::LOITER:
     case AUX_FUNC::MANUAL:
     case AUX_FUNC::RTL:
@@ -227,9 +229,11 @@ bool RC_Channel_Plane::do_aux_function(const AuxFuncTrigger &trigger)
     const AuxSwitchPos &ch_flag = trigger.pos;
 
     switch(ch_option) {
+#if AP_INVERTED_FLIGHT_ENABLED
     case AUX_FUNC::INVERTED:
         plane.inverted_flight = (ch_flag == AuxSwitchPos::HIGH);
         break;
+#endif
 
     case AUX_FUNC::REVERSE_THROTTLE:
         plane.reversed_throttle = (ch_flag == AuxSwitchPos::HIGH);

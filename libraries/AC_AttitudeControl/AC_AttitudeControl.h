@@ -423,8 +423,10 @@ public:
                         char *failure_msg,
                         const uint8_t failure_msg_len);
 
+#if AP_INVERTED_FLIGHT_ENABLED
     // enable inverted flight on backends that support it
     virtual void set_inverted_flight(bool inverted) {}
+#endif
 
     // enable accessor for inverted flight flag on backends that support it
     virtual bool get_inverted_flight() { return false;}

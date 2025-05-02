@@ -351,8 +351,10 @@ private:
     // time of last mode change
     uint32_t last_mode_change_ms;
 
+#if AP_INVERTED_FLIGHT_ENABLED
     // This is used to enable the inverted flight feature
     bool inverted_flight;
+#endif
 
     // last time we ran roll/pitch stabilization
     uint32_t last_stabilize_ms;
@@ -528,8 +530,10 @@ private:
         // are we headed to the land approach waypoint? Works for any nav type
         bool wp_is_land_approach;
 
+#if AP_INVERTED_FLIGHT_ENABLED
         // should we fly inverted?
         bool inverted_flight;
+#endif
 
         // should we enable cross-tracking for the next waypoint?
         bool next_wp_crosstrack;

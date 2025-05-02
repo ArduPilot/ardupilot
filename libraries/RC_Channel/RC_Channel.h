@@ -10,6 +10,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Bitmask.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #define NUM_RC_CHANNELS 16
 
@@ -150,7 +151,9 @@ public:
         AVOID_PROXIMITY =     40, // enable object avoidance using proximity sensors (ie. horizontal lidar)
         ARMDISARM_UNUSED =    41, // UNUSED
         SMART_RTL =           42, // change to SmartRTL flight mode
+#if AP_INVERTED_FLIGHT_ENABLED
         INVERTED  =           43, // enable inverted flight
+#endif
         WINCH_ENABLE =        44, // winch enable/disable
         WINCH_CONTROL =       45, // winch control
         RC_OVERRIDE_ENABLE =  46, // enable RC Override
