@@ -269,6 +269,25 @@ bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &
     return false;
 }
 
+// get steering rate pid info (for use in scripting)
+bool Rover::get_steering_rate_pid_info(float& target, float& actual) {
+    const AP_PIDInfo *pid_info;
+    pid_info = &g2.attitude_control.get_steering_rate_pid().get_pid_info();
+    target = degrees(pid_info->target);
+    actual = degrees(pid_info->actual);
+    return true;
+}
+
+// get throttle/speed pid info (for use in scripting)
+bool Rover::get_throttle_speed_pid_info(float &target, float &actual)
+{
+    const AP_PIDInfo *pid_info;
+    pid_info = &g2.attitude_control.get_throttle_speed_pid_info();
+    target = pid_info->target;
+    actual = pid_info->actual;
+    return true;
+}
+
 // returns true if mode supports NAV_SCRIPT_TIME mission commands
 bool Rover::nav_scripting_enable(uint8_t mode)
 {

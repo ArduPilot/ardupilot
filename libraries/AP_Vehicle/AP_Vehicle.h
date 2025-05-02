@@ -213,8 +213,18 @@ public:
    // set auto mode speed in meters/sec (for use by scripting with Copter/Rover)
     virtual bool set_desired_speed(float speed) { return false; }
 
+    // get steering rate PID info (for use by scripting with Rover)
+    virtual bool get_steering_rate_pid_info(float &target, float &actual) { return false; }
+
+    // get throttle/speed PID info (for use by scripting with Rover)
+    virtual bool get_throttle_speed_pid_info(float &target, float &actual) { return false; }
+
     // support for NAV_SCRIPT_TIME mission command
-    virtual bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) { return false; }
+    virtual bool
+    nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
+    {
+        return false;
+    }
     virtual void nav_script_time_done(uint16_t id) {}
 
     // allow for VTOL velocity matching of a target

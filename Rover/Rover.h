@@ -283,6 +283,8 @@ private:
     bool set_desired_turn_rate_and_speed(float turn_rate, float speed) override;
     bool set_desired_speed(float speed) override;
     bool get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value) override;
+    bool get_steering_rate_pid_info(float &target, float &actual) override;
+    bool get_throttle_speed_pid_info(float &target, float &actual) override;
     bool nav_scripting_enable(uint8_t mode) override;
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) override;
     void nav_script_time_done(uint16_t id) override;
