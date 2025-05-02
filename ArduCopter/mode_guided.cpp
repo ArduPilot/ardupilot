@@ -803,7 +803,9 @@ void ModeGuided::accel_control_run()
 void ModeGuided::velaccel_control_run()
 {
     // if not armed set throttle to zero and exit immediately
-    if (is_disarmed_or_landed()) {
+    // Unless there is an AllowArmingFromTX bit in GUID_OPTIONS
+    bool allow_arming_on_ground = copter.g2.guided_options & (uint32_t)Options::AllowArmingFromTX;
+    if (is_disarmed_or_landed() && !allow_arming_on_ground) {
         // do not spool down tradheli when on the ground with motor interlock enabled
         make_safe_ground_handling(copter.is_tradheli() && motors->get_interlock());
         return;
