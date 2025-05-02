@@ -31,8 +31,8 @@ extern const AP_HAL::HAL &hal;
 static constexpr float OA_MARGIN_MAX_DEFAULT = 5;
 static constexpr int16_t OA_OPTIONS_DEFAULT = 1;
 
-static constexpr int16_t OA_UPDATE_MS = 1000;      // path planning updates run at 1hz
-static constexpr int16_t OA_TIMEOUT_MS = 3000;     // results over 3 seconds old are ignored
+static constexpr int16_t OA_UPDATE_MS = 100;      // path planning updates run at 10hz
+static constexpr int16_t OA_TIMEOUT_MS = 300;     // results over 0.3 seconds old are ignored
 
 const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
 
