@@ -329,8 +329,7 @@ protected:
     AP_Scheduler scheduler;
 #endif
 
-    // IMU variables
-    // Integration time; time last loop took to run
+    // simple copy of get_loop_period_s
     float G_Dt;
 
     // sensor drivers
