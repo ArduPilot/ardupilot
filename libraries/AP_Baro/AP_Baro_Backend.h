@@ -1,4 +1,5 @@
 #pragma once
+#include <Filter/GlitchFilter.h>
 
 #include "AP_Baro.h"
 
@@ -77,4 +78,6 @@ protected:
     void set_bus_id(uint8_t instance, uint32_t id) {
         _frontend.sensors[instance].bus_id.set(int32_t(id));
     }
+    
+    GlitchFilter _glitch_filter; 
 };
