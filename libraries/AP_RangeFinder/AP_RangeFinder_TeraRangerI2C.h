@@ -40,6 +40,15 @@ private:
     void timer(void);
     AP_HAL::I2CDevice *dev;
 
+    bool max_distance_param_default(float &distance) {
+        distance = 14.0;
+        return true;
+    }
+    bool min_distance_param_default(float &distance) {
+        distance = 2.0;
+        return true;
+    }
+
     struct {
         uint32_t sum;
         uint32_t count;
