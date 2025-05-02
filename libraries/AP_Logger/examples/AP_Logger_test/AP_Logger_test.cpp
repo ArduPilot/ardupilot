@@ -69,7 +69,35 @@ void AP_LoggerTest::setup(void)
 
     // We start to write some info (sequentially) starting from page 1
     // This is similar to what we will do...
-    log_num = logger.find_last_log();
+    {
+        AP_LoggerThreadRequest *request = AP::logger().claim_thread_request(AP_LoggerThreadRequest::Type::FindLastLog);
+        if (request == nullptr) {
+            AP_HAL::panic("Failed to claim request!");
+        }
+        request->state = AP_LoggerThreadRequest::State::PENDING;
+
+        while (request->state != AP_LoggerThreadRequest::State::PROCESSED) {
+            switch (request->state) {
+            case AP_LoggerThreadRequest::State::FREE:
+            case AP_LoggerThreadRequest::State::CLAIMED:
+            case AP_LoggerThreadRequest::State::ABANDONED:
+                // only we are supposed to abandon requests, and we didn't...
+                INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                return;
+            case AP_LoggerThreadRequest::State::PENDING:
+            case AP_LoggerThreadRequest::State::PROCESSING:
+                // it's thinking
+                hal.scheduler->delay(10);
+                continue;
+            case AP_LoggerThreadRequest::State::PROCESSED:
+                // all done
+                break;
+            }
+        }
+        log_num = request->parameters.FindLastLog.returned_last_log_number;
+        request->state = AP_LoggerThreadRequest::State::FREE;
+    }
+
     hal.console->printf("Using log number %u\n", log_num);
     hal.console->printf("Writing to flash... wait...\n");
 

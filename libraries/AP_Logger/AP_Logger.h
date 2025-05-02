@@ -758,6 +758,12 @@ public:
     }
 
     // Thread-related functions:
+    AP_LoggerThreadRequest *claim_thread_request() {
+        return request_queue.claim_thread_request();
+    }
+    AP_LoggerThreadRequest *claim_thread_request(AP_LoggerThreadRequest::Type type) {
+        return request_queue.claim_thread_request(type);
+    }
     bool synchronously_complete_simple_thread_request(AP_LoggerThreadRequest::Type type, const char *name, uint16_t limit_ms=100);
     bool synchronously_complete_thread_request(AP_LoggerThreadRequest &request, uint16_t limit_ms=100);
 
@@ -778,7 +784,7 @@ private:
 
     bool _warned_log_disarm; // true if we have sent a message warning to disarm for logging
 
-    AP_LoggerThreadRequestQueue request_queue;
+    AP_LoggerThreadRequestQueue request_queue;  // do we need to be so protective?
 };
 
 namespace AP {
