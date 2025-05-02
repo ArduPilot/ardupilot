@@ -16,6 +16,7 @@ import ardupilotwaf
 import boards
 import shutil
 import build_options
+import glob
 
 from waflib import Build, ConfigSet, Configure, Context, Utils
 from waflib.Configure import conf
@@ -131,6 +132,37 @@ def init(ctx):
 
     # define the variant build commands according to the board
     _set_build_context_variant(board)
+
+def add_build_options(g):
+    '''add any option in Tools/scripts/build_options.py'''
+    for opt in build_options.BUILD_OPTIONS:
+        enable_option = "--" + opt.config_option()
+        disable_option = enable_option.replace("--enable", "--disable")
+        enable_description = opt.description
+        if not enable_description.lower().startswith("enable"):
+            enable_description = "Enable " + enable_description
+        disable_description = "Disable " + enable_description[len("Enable "):]
+        g.add_option(enable_option,
+                     action='store_true',
+                     default=False,
+                     help=enable_description)
+        g.add_option(disable_option,
+                     action='store_true',
+                     default=False,
+                     help=disable_description)
+
+def add_script_options(g):
+    '''add any drivers or applets from libraries/AP_Scripting'''
+    driver_list = glob.glob(os.path.join(Context.run_dir, "libraries/AP_Scripting/drivers/*.lua"))
+    applet_list = glob.glob(os.path.join(Context.run_dir, "libraries/AP_Scripting/applets/*.lua"))
+    for d in driver_list + applet_list:
+        bname = os.path.basename(d)
+        embed_name = bname[:-4]
+        embed_option = "--embed-%s" % embed_name
+        g.add_option(embed_option,
+                     action='store_true',
+                     default=False,
+                     help="Embed %s in ROMFS" % bname)
 
 def options(opt):
     opt.load('compiler_cxx compiler_c waf_unit_test python')
@@ -450,22 +482,10 @@ configuration in order to save typing.
         help='enables checking of new to ensure NEW_NOTHROW is used')
 
     # support enabling any option in build_options.py
-    for opt in build_options.BUILD_OPTIONS:
-        enable_option = "--" + opt.config_option()
-        disable_option = enable_option.replace("--enable", "--disable")
-        enable_description = opt.description
-        if not enable_description.lower().startswith("enable"):
-            enable_description = "Enable " + enable_description
-        disable_description = "Disable " + enable_description[len("Enable "):]
-        g.add_option(enable_option,
-                     action='store_true',
-                     default=False,
-                     help=enable_description)
-        g.add_option(disable_option,
-                     action='store_true',
-                     default=False,
-                     help=disable_description)
-    
+    add_build_options(g)
+
+    # support embedding lua drivers and applets
+    add_script_options(g)
     
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
