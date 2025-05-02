@@ -499,15 +499,23 @@ class SizeCompareBranches(object):
             print("Thread failure: %s" % str(ex))
 
     class Task():
-        def __init__(self, board : str, commitish : str, outdir : str, vehicles_to_build : str, extra_hwdef_file : str):
+        def __init__(self,
+                     board: str,
+                     commitish: str,
+                     outdir: str,
+                     vehicles_to_build: str,
+                     extra_hwdef: str = None,
+                     toolchain: str = None,
+                     ) -> None:
             self.board = board
             self.commitish = commitish
             self.outdir = outdir
             self.vehicles_to_build = vehicles_to_build
-            self.extra_hwdef_file = extra_hwdef_file
+            self.extra_hwdef_file = extra_hwdef
+            self.toolchain : str = toolchain
 
         def __str__(self):
-            return f"Task({self.board}, {self.commitish}, {self.outdir}, {self.vehicles_to_build}, {self.extra_hwdef_file})"
+            return f"Task({self.board}, {self.commitish}, {self.outdir}, {self.vehicles_to_build}, {self.extra_hwdef_file} {self.toolchain})"  # NOQA:E501
 
     def run_all(self):
         '''run tests for boards and vehicles passed in constructor'''
@@ -533,7 +541,8 @@ class SizeCompareBranches(object):
                 self.master_commit,
                 outdir_1,
                 vehicles_to_build,
-                self.extra_hwdef_master,
+                extra_hwdef=self.extra_hwdef_master,
+                toolchain=board_info.toolchain,
             ))
             outdir_2 = os.path.join(tmpdir, "out-branch-%s" % (board,))
             tasks.append(SizeCompareBranches.Task(
@@ -541,7 +550,8 @@ class SizeCompareBranches(object):
                 self.branch,
                 outdir_2,
                 vehicles_to_build,
-                self.extra_hwdef_branch,
+                extra_hwdef=self.extra_hwdef_branch,
+                toolchain=board_info.toolchain,
             ))
         self.tasks = tasks
 
@@ -572,12 +582,17 @@ class SizeCompareBranches(object):
             new_elf_dir = result_branch["vehicle"][vehicle]["elf_dir"]
             board = result_master["board"]
             self.progress("Starting compare (~10 minutes!)")
+            toolchain = result_master["toolchain"]
+            if toolchain is None:
+                toolchain = ""
+            else:
+                toolchain += "-"
             elf_diff_commandline = [
                 "time",
                 "python3",
                 "-m", "elf_diff",
                 "--bin_dir", self.bin_dir,
-                '--bin_prefix=arm-none-eabi-',
+                f'--bin_prefix={toolchain}',
                 "--old_alias", "%s %s" % (master_branch, elf_filename),
                 "--new_alias", "%s %s" % (branch, elf_filename),
                 "--html_dir", "../ELF_DIFF_%s_%s" % (board, vehicle),
@@ -604,12 +619,12 @@ class SizeCompareBranches(object):
         # pair off results, master and branch:
         pairs = {}
         for res in task_results:
-            board = res["board"]
+            board = res.board
             if board not in pairs:
                 pairs[board] = {}
-            if res["branch"] == self.master_commit:
+            if res.branch == self.master_commit:
                 pairs[board]["master"] = res
-            elif res["branch"] == self.branch:
+            elif res.branch == self.branch:
                 pairs[board]["branch"] = res
             else:
                 raise ValueError(res["branch"])
@@ -620,7 +635,7 @@ class SizeCompareBranches(object):
                 # probably incomplete:
                 continue
             master = pair["master"]
-            board = master["board"]
+            board = master.board
             try:
                 results[board] = self.compare_results(master, pair["branch"])
                 if self.run_elf_diff and not no_elf_diff:
@@ -710,12 +725,20 @@ class SizeCompareBranches(object):
             jobs=jobs,
         )
 
-    def gather_results_for_task(self, task):
-        result = {
-            "board": task.board,
-            "branch": task.commitish,
-            "vehicle": {},
-        }
+    class Result():
+        def __init__(self, board, branch, toolchain=None):
+            self.board = board
+            self.branch = branch
+            self.toolchain = toolchain
+
+            self.vehicle = {}
+
+    def gather_results_for_task(self, task) -> Result:
+        result = SizeCompareBranches.Result(
+            task.board,
+            task.commitish,
+            toolchain=task.toolchain,
+        )
 
         have_source_trees = self.parallel_copies is not None and len(self.tasks) <= self.parallel_copies
 
@@ -723,8 +746,8 @@ class SizeCompareBranches(object):
             if vehicle == 'bootloader' and task.board in self.bootloader_blacklist:
                 continue
 
-            result["vehicle"][vehicle] = {}
-            v = result["vehicle"][vehicle]
+            result.vehicle[vehicle] = {}
+            v = result.vehicle[vehicle]
             v["bin_filename"] = self.vehicle_map[vehicle] + '.bin'
 
             elf_dirname = "bin"
@@ -746,35 +769,35 @@ class SizeCompareBranches(object):
 
         return result
 
-    def create_stripped_elf(self, path, bin_prefix="arm-none-eabi"):
+    def create_stripped_elf(self, path, toolchain="arm-none-eabi"):
         stripped_path = f"{path}-stripped"
         shutil.copy(path, stripped_path)
 
         strip = "strip"
-        if bin_prefix is not None:
-            strip = "-".join([bin_prefix, strip])
+        if toolchain is not None:
+            strip = "-".join([toolchain, strip])
 
-        self.run_program("strip", [strip, stripped_path])
+        self.run_program("strip", [strip, stripped_path], show_command=False)
 
         return stripped_path
 
-    def compare_results(self, result_master, result_branch):
+    def compare_results(self, result_master : Result, result_branch : Result):
         ret = {}
-        for vehicle in result_master["vehicle"].keys():
+        for vehicle in result_master.vehicle.keys():
             # check for the difference in size (and identicality)
             # of the two binaries:
-            master_bin_dir = result_master["vehicle"][vehicle]["bin_dir"]
-            new_bin_dir = result_branch["vehicle"][vehicle]["bin_dir"]
+            master_bin_dir = result_master.vehicle[vehicle]["bin_dir"]
+            new_bin_dir = result_branch.vehicle[vehicle]["bin_dir"]
 
             try:
-                bin_filename = result_master["vehicle"][vehicle]["bin_filename"]
+                bin_filename = result_master.vehicle[vehicle]["bin_filename"]
                 master_path = os.path.join(master_bin_dir, bin_filename)
                 new_path = os.path.join(new_bin_dir, bin_filename)
                 master_size = os.path.getsize(master_path)
                 new_size = os.path.getsize(new_path)
                 identical = self.files_are_identical(master_path, new_path)
             except FileNotFoundError:
-                elf_filename = result_master["vehicle"][vehicle]["elf_filename"]
+                elf_filename = result_master.vehicle[vehicle]["elf_filename"]
                 master_path = os.path.join(master_bin_dir, elf_filename)
                 new_path = os.path.join(new_bin_dir, elf_filename)
                 master_size = os.path.getsize(master_path)
@@ -784,11 +807,17 @@ class SizeCompareBranches(object):
                 if not identical:
                     # try stripping the files and *then* comparing.
                     # This treats symbol renames as then "identical".
-                    master_path_stripped = self.create_stripped_elf(master_path)
-                    new_path_stripped = self.create_stripped_elf(new_path)
+                    master_path_stripped = self.create_stripped_elf(
+                        master_path,
+                        toolchain=result_master.toolchain,
+                    )
+                    new_path_stripped = self.create_stripped_elf(
+                        new_path,
+                        toolchain=result_branch.toolchain,
+                    )
                     identical = self.files_are_identical(master_path_stripped, new_path_stripped)
 
-            board = result_master["board"]
+            board = result_master.board
             ret[vehicle] = SizeCompareBranchesResult(board, vehicle, new_size - master_size, identical)
 
         return ret
