@@ -101,6 +101,7 @@ public:
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
     // NOT CONSIDERING ALT FRAME!
     Vector3f get_distance_NED(const Location &loc2) const;
+    Vector3p get_distance_NED_postype(const Location &loc2) const;
     Vector3d get_distance_NED_double(const Location &loc2) const;
 
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2 considering alt frame, if altitude cannot be resolved down distance is 0
@@ -108,6 +109,7 @@ public:
 
     // return the distance in meters in North/East plane as a N/E vector to loc2
     Vector2f get_distance_NE(const Location &loc2) const;
+    Vector2p get_distance_NE_postype(const Location &loc2) const;
     Vector2d get_distance_NE_double(const Location &loc2) const;
     Vector2F get_distance_NE_ftype(const Location &loc2) const;
 
