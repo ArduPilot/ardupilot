@@ -371,6 +371,8 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
         txi.loopback       = (flags & Loopback) != 0;
         txi.abort_on_error = (flags & AbortOnError) != 0;
         // setup frame initial state
+        txi.aborted        = false;
+        txi.setup          = true;
         txi.pushed         = false;
     }
 
