@@ -119,7 +119,7 @@ private:
 void AP_LoggerTest_AllTypes::flush_logger(AP_Logger &_logger)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    _logger.flush();
+    // _logger.flush();
 #else
     // flush is not available on e.g. stm32 as it would be a somewhat
     // dangerous operation, but if we wait long enough (at time of
@@ -132,7 +132,7 @@ void AP_LoggerTest_AllTypes::flush_logger(AP_Logger &_logger)
 
 void AP_LoggerTest_AllTypes::Log_Write_TypeMessages()
 {
-    log_num = logger.find_last_log();
+    log_num = 0;  // logger.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
 
     hal.console->printf("Writing out a few messages to get formats out...");
@@ -187,7 +187,7 @@ void AP_LoggerTest_AllTypes::Log_Write_TypeMessages()
 
 void AP_LoggerTest_AllTypes::Log_Write_TypeMessages_Log_Write()
 {
-    log_num = logger.find_last_log();
+    log_num = 0;  // logger.find_last_log();
     hal.console->printf("Using log number for Log_Write %u\n", log_num);
 
     hal.console->printf("Writing out a few messages to get formats out...");
