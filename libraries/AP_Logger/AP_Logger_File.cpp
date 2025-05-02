@@ -1058,7 +1058,8 @@ bool AP_Logger_File::io_thread_alive() const
     // SITL speedup options, so we allow for it here.
     SITL::SIM *sitl = AP::sitl();
     if (sitl != nullptr) {
-        timeout_ms *= sitl->speedup;
+        /* sitl->speedup may be -1 to indicate "default" so we check explicitly */
+        timeout_ms *= sitl->speedup > 0 ? sitl->speedup : 1;
     }
 #endif
     return (AP_HAL::millis() - _io_timer_heartbeat) < timeout_ms;
