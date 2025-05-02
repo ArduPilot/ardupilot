@@ -233,6 +233,12 @@ static inline constexpr float degrees(float rad)
     return rad * RAD_TO_DEG;
 }
 
+// degrees -> quadrants
+static inline constexpr ftype deg2quad(ftype deg)
+{
+    return deg * DEG_TO_QUAD;
+}
+
 template<typename T>
 ftype sq(const T val)
 {

@@ -34,7 +34,7 @@ public:
 
     void setup();
 
-    void slew(float tilt);
+    void slew(float tilt, int16_t rate_limit_dps = 0);
     void binary_slew(bool forward);
     void update();
     void continuous_update();
@@ -49,9 +49,13 @@ public:
         return tilt_mask.get() & (1U<<motor);
     }
 
+    float max_tilting_motor_thrust_demand () const{
+        return _max_tilting_motor_thrust_demand;
+    }
+
     bool fully_fwd() const;
     bool fully_up() const;
-    float tilt_max_change(bool up, bool in_flap_range = false) const;
+    float tilt_max_change(bool up, bool in_flap_range = false, int16_t rate_limit_dps = 0) const;
     float get_fully_forward_tilt() const;
     float get_forward_flight_tilt() const;
 
@@ -83,6 +87,13 @@ public:
     AP_Float fixed_angle;
     AP_Float fixed_gain;
     AP_Float flap_angle_deg;
+    AP_Int8  max_rate_down_transition_dps;
+
+    enum class Options {
+        DELAY_TRANSITON_TILT = (1<<0),
+    };
+
+    AP_Int16 options;
 
     float current_tilt;
     float current_throttle;
@@ -122,6 +133,8 @@ private:
     // true if the current tilt angle is equal to the desired
     // with slow tilt rates the tilt angle can lag
     bool angle_achieved;
+
+    float _max_tilting_motor_thrust_demand; // normalised thrust demand between 0 and 1 for the largest thrust titling motor
 
     // refences for convenience
     QuadPlane& quadplane;

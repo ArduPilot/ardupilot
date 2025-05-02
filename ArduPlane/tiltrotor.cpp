@@ -82,6 +82,22 @@ const AP_Param::GroupInfo Tiltrotor::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("WING_FLAP", 10, Tiltrotor, flap_angle_deg, 0),
 
+    // @Param: RATE_FWD
+    // @DisplayName: Transition tilt completion rate.
+    // @Description: This is the angular rate that rotors will be tilted from Q_TILT_MAX to the fixed wing flight tilt angle when doing a transition from VTOL to fixed wing flight. If the maximum throttle of tilting motors starts to saturate, then the rotors will tilt back toward Q_TILT_MAX at Q_RATE_UP deg/sec until the motors stop saturating. If Q_TILT_RATE_FWD is not positive, the Q_TILT_RATE_DN value is used if positive, otherwise the Q_TILT_RATE_UP value is used. Tilting past Q_TILT_MAX can delayed until the minimum forward flight airspeed is reached by setting bit 0 in Q_TILT_OPTIONS.
+    // @Units: deg/s
+    // @Increment: 1
+    // @Range: 0 45
+    // @User: Standard
+    AP_GROUPINFO("RATE_FWD", 11, Tiltrotor, max_rate_down_transition_dps, 15),
+
+    // @Param: OPTIONS
+    // @DisplayName: Tilt rotor options
+    // @Description: Options impacting tilt rotor behaviour
+    // @Bitmask: 0:Delay tilt past Q_TILT_MAX during VTOl to FW transition
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 12, Tiltrotor, options, 0),
+
     AP_GROUPEND
 };
 
@@ -155,14 +171,19 @@ void Tiltrotor::setup()
 
 /*
   calculate maximum tilt change as a proportion from 0 to 1 of tilt
+  use rate limit if positive value
  */
-float Tiltrotor::tilt_max_change(bool up, bool in_flap_range) const
+float Tiltrotor::tilt_max_change(bool up, bool in_flap_range, int16_t rate_limit_dps) const
 {
     float rate;
-    if (up || max_rate_down_dps <= 0) {
-        rate = max_rate_up_dps;
+    if (rate_limit_dps <= 0) {
+        if (up || max_rate_down_dps <= 0) {
+            rate = max_rate_up_dps;
+        } else {
+            rate = max_rate_down_dps;
+        }
     } else {
-        rate = max_rate_down_dps;
+        rate = (float)rate_limit_dps;
     }
     if (type != TILT_TYPE_BINARY && !up && !in_flap_range) {
         bool fast_tilt = false;
@@ -178,15 +199,17 @@ float Tiltrotor::tilt_max_change(bool up, bool in_flap_range) const
             rate = MAX(rate, 90);
         }
     }
-    return rate * plane.G_Dt * (1/90.0);
+    return deg2quad(rate * plane.G_Dt);
 }
 
 /*
   output a slew limited tiltrotor angle. tilt is from 0 to 1
+  use rate_limit_dps if positive
  */
-void Tiltrotor::slew(float newtilt)
+void Tiltrotor::slew(float newtilt, int16_t rate_limit_dps)
 {
-    float max_change = tilt_max_change(newtilt<current_tilt, newtilt > get_fully_forward_tilt());
+    const float max_change = tilt_max_change(newtilt<current_tilt, newtilt > get_fully_forward_tilt(), rate_limit_dps);
+
     current_tilt = constrain_float(newtilt, current_tilt-max_change, current_tilt+max_change);
 
     angle_achieved = is_equal(newtilt, current_tilt);
@@ -199,13 +222,13 @@ void Tiltrotor::slew(float newtilt)
 // tilt wings can sustain forward flight with some amount of wing tilt
 float Tiltrotor::get_fully_forward_tilt() const
 {
-    return 1.0 - (flap_angle_deg * (1/90.0));
+    return 1.0 - (deg2quad(flap_angle_deg));
 }
 
 // return the target tilt value for forward flight
 float Tiltrotor::get_forward_flight_tilt() const
 {
-    return 1.0 - ((flap_angle_deg * (1/90.0)) * SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto) * 0.01);
+    return 1.0 - ((deg2quad(flap_angle_deg)) * SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto) * 0.01);
 }
 
 /*
@@ -299,7 +322,7 @@ void Tiltrotor::continuous_update(void)
         // set to quadplane.forward_throttle_pct()
         const float fwd_g_demand = 0.01 * quadplane.forward_throttle_pct();
         const float fwd_tilt_deg = MIN(degrees(atanf(fwd_g_demand)), (float)max_angle_deg);
-        slew(MIN(fwd_tilt_deg * (1/90.0), get_forward_flight_tilt()));
+        slew(MIN(deg2quad(fwd_tilt_deg), get_forward_flight_tilt()));
         return;
     } else if (!quadplane.assisted_flight &&
                (plane.control_mode == &plane.mode_qacro ||
@@ -312,24 +335,89 @@ void Tiltrotor::continuous_update(void)
         } else {
             // manual control of forward throttle up to max VTOL angle
             float settilt = .01f * quadplane.forward_throttle_pct();
-            slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
+            slew(MIN(settilt * deg2quad(max_angle_deg), get_forward_flight_tilt()));
         }
         return;
     }
 
+    float new_tilt = 0.0f;
+    int16_t tilt_rate_dps = 0;
     if (quadplane.assisted_flight &&
+        transition->transition_state == Tiltrotor_Transition::TRANSITION_AIRSPEED_WAIT &&
+        (type == TILT_TYPE_VECTORED_YAW || type == TILT_TYPE_CONTINUOUS)) {
+            const float tilt_angle_range = 90.0f * get_fully_forward_tilt() - (float)max_angle_deg;
+            const bool delay_tilt_past_vtol_max = (int16_t)options.get() & (int16_t)Options::DELAY_TRANSITON_TILT;
+            if (!delay_tilt_past_vtol_max && is_positive(tilt_angle_range)) {
+                // Tilt immediately to Q_TILT_MAX. Then tilt forward from Q_TILT_MAX to the forward flight value.
+                // If when tilting forward past Q_TILT_MAX, the throttle for any tilting motor is saturating, the
+                // tilt angle is reduced to prevent loss of attitude control.
+                const float max_throttle = max_tilting_motor_thrust_demand();
+                if (max_throttle < 0.95f) {
+                    // Tilt the rotors forward if the maximum throttle of the tilting motors is not saturating.
+                    if (current_tilt < deg2quad((float)max_angle_deg)) {
+                        // use the normal rate up to the maximum VTOL tilt angle
+                        if (max_rate_down_dps <= 0) {
+                            // use the up rate if the down rate isn't defined
+                            tilt_rate_dps = max_rate_up_dps;
+                        } else {
+                            tilt_rate_dps = max_rate_down_dps;
+                        }
+                    } else {
+                        // when tilting past the maximum VTOL tilt angle set by  Q_TILT_MAX,
+                        // enable use of a different rate which can be set slower to allow the
+                        // pitch angle and height control time to raise throttle on the tilted motors.
+                        if (max_rate_down_transition_dps > 0) {
+                            tilt_rate_dps = max_rate_down_transition_dps;
+                        } else if (max_rate_down_dps > 0) {
+                            // use the VTOL flight tilt down rate if the rate to be used when past Q_TILT_MAX isn't set
+                            tilt_rate_dps = max_rate_down_dps;
+                        } else {
+                            // use the VTOL flight tilt up rate if the VTOL flight tilt down rate isn't set
+                            tilt_rate_dps = max_rate_up_dps;
+                        }
+                    }
+                    new_tilt = get_forward_flight_tilt();
+                } else if (current_tilt > deg2quad((float)max_angle_deg)) {
+                    // If the maximum throttle of the tilting motors is clipping and rotors are tilted past the normal
+                    // VTOL limit, tilt the rotors back faster to prevent possible loss of attitude control.
+                    if (max_rate_down_transition_dps > 0) {
+                        tilt_rate_dps = max_rate_down_transition_dps;
+                    } else if (max_rate_down_dps > 0) {
+                        // use the VTOL flight tilt down rate if the rate to be used when past Q_TILT_MAX isn't set
+                        tilt_rate_dps = max_rate_down_dps;
+                    } else {
+                        // use the VTOL flight tilt up rate if the VTOL flight tilt down rate isn't set
+                        tilt_rate_dps = max_rate_up_dps;
+                    }
+                    tilt_rate_dps = (3 * tilt_rate_dps) / 2;
+                    new_tilt = deg2quad((float)max_angle_deg);
+
+                }
+
+                AP::logger().Write("QTLT", "TimeUS,MT,NT,CT", "Qfff",
+                                        AP_HAL::micros64(),
+                                        (double)max_throttle,
+                                        (double)new_tilt,
+                                        (double)current_tilt);
+
+            } else {
+                new_tilt = deg2quad((float)max_angle_deg);
+            }
+    } else if (quadplane.assisted_flight &&
         transition->transition_state >= Tiltrotor_Transition::TRANSITION_TIMER) {
-        // we are transitioning to fixed wing - tilt the motors all
-        // the way forward
-        slew(get_forward_flight_tilt());
+        // we are transitioning to forward flight on a time based schedule - tilt the motors all
+        // the way forward.
+        // TODO - investigate if the method used for TRANSITION_AIRSPEED_WAIT can be used here.
+        new_tilt = get_forward_flight_tilt();
     } else {
         // until we have completed the transition we limit the tilt to
         // Q_TILT_MAX. Anything above 50% throttle gets
         // Q_TILT_MAX. Below 50% throttle we decrease linearly. This
         // relies heavily on Q_VFWD_GAIN being set appropriately.
        float settilt = constrain_float((SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)-MAX(plane.aparm.throttle_min.get(),0)) * 0.02, 0, 1);
-       slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
+       new_tilt = MIN(settilt * deg2quad(max_angle_deg), get_forward_flight_tilt());
     }
+    slew(new_tilt, tilt_rate_dps);
 }
 
 
@@ -494,6 +582,8 @@ void Tiltrotor::tilt_compensate_angle(float *thrust, uint8_t num_motors, float n
             thrust[i] *= scale;
         }
     }
+
+    _max_tilting_motor_thrust_demand = largest_tilted;
 }
 
 /*
@@ -690,10 +780,10 @@ void Tiltrotor::bicopter_output(void)
     float tilt_right = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight);
 
     if (is_negative(tilt_left)) {
-        tilt_left *= tilt_yaw_angle * (1/90.0);
+        tilt_left *= deg2quad(tilt_yaw_angle);
     }
     if (is_negative(tilt_right)) {
-        tilt_right *= tilt_yaw_angle * (1/90.0);
+        tilt_right *= deg2quad(tilt_yaw_angle);
     }
 
     // reduce authority of bicopter as motors are tilted forwards
@@ -778,7 +868,7 @@ bool Tiltrotor_Transition::show_vtol_view() const
 // return true if we are tilted over the max angle threshold
 bool Tiltrotor::tilt_over_max_angle(void) const
 {
-    const float tilt_threshold = (max_angle_deg/90.0f);
+    const float tilt_threshold = deg2quad((float)max_angle_deg);
     return (current_tilt > MIN(tilt_threshold, get_forward_flight_tilt()));
 }
 
