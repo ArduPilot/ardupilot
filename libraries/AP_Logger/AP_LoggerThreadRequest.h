@@ -35,7 +35,7 @@ public:
         VehicleWasDisarmed,  // FIXME: remove this and just look at the armed state in the thread
         HandleRemoteLogBlockStatus,
 
-        // FindLastLog,
+        FindLastLog,
         // FindOldestLog,
         // GetLogBoundaries,
         // GetLogData,
@@ -75,6 +75,9 @@ public:
             uint32_t seqno;
             uint8_t status;
         } HandleRemoteLogBlockStatus;
+        struct {
+            uint8_t returned_last_log_number;
+        } FindLastLog;
     } parameters;
 
     Type type;

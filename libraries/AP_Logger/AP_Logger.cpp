@@ -1515,6 +1515,12 @@ void AP_LoggerThread::process_request(AP_LoggerThreadRequest &request)
         FOR_EACH_BACKEND(stop_logging());
         break;
     }
+    case AP_LoggerThreadRequest::Type::FindLastLog: {
+        request.parameters.FindLastLog.returned_last_log_number = backends[0]->find_last_log();
+        request.state = AP_LoggerThreadRequest::State::PROCESSED;
+        break;
+    }
+
     // the following cases are handled in the backend-specific
     // subclasses such as AP_LoggerThreadMethods_File:
     case AP_LoggerThreadRequest::Type::KillWriteFD:
