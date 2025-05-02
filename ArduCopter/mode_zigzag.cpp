@@ -26,14 +26,6 @@ const AP_Param::GroupInfo ModeZigZag::var_info[] = {
     AP_GROUPINFO("SPRAYER", 2, ModeZigZag, _spray_enabled, 0),
 #endif // HAL_SPRAYER_ENABLED
 
-    // @Param: WP_DELAY
-    // @DisplayName: The delay for zigzag waypoint
-    // @Description: Waiting time after reached the destination
-    // @Units: s
-    // @Range: 0 127
-    // @User: Advanced
-    AP_GROUPINFO("WP_DELAY", 3, ModeZigZag, _wp_delay, 0),
-
     // @Param: SIDE_DIST
     // @DisplayName: Sideways distance in ZigZag auto
     // @Description: The distance to move sideways in ZigZag mode
@@ -201,7 +193,6 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
                     ab_dest_stored = ab_dest;
                     // spray on while moving to A or B
                     spray(true);
-                    reach_wp_time_ms = 0;
                     if (is_auto == false || line_num == ZIGZAG_LINE_INFINITY) {
                         gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), (ab_dest == Destination::A) ? "A" : "B");
                     } else {
@@ -226,7 +217,6 @@ void ModeZigZag::move_to_side()
                 auto_stage = AutoState::SIDEWAYS;
                 current_dest = next_dest;
                 current_terr_alt = terr_alt;
-                reach_wp_time_ms = 0;
                 char const *dir[] = {"forward", "right", "backward", "left"};
                 gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), dir[(uint8_t)zigzag_direction]);
             }
@@ -406,12 +396,7 @@ bool ModeZigZag::reached_destination()
         return false;
     }
 
-    // wait at time which is set in zigzag_wp_delay
-    uint32_t now = AP_HAL::millis();
-    if (reach_wp_time_ms == 0) {
-        reach_wp_time_ms = now;
-    }
-    return ((now - reach_wp_time_ms) >= (uint16_t)constrain_int16(_wp_delay, 0, 127) * 1000);
+    return true;
 }
 
 // calculate next destination according to vector A-B and current position
@@ -533,7 +518,6 @@ void ModeZigZag::run_auto()
             wp_nav->wp_and_spline_init_cm();
             if (wp_nav->set_wp_destination_NEU_cm(current_dest, current_terr_alt)) {
                 stage = AUTO;
-                reach_wp_time_ms = 0;
                 char const *dir[] = {"forward", "right", "backward", "left"};
                 gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), dir[(uint8_t)zigzag_direction]);
             }

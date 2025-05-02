@@ -2005,7 +2005,6 @@ private:
         SIDEWAYS,       // moving to sideways
     } auto_stage;
 
-    uint32_t reach_wp_time_ms = 0;  // time since vehicle reached destination (or zero if not yet reached)
     Destination ab_dest_stored;     // store the current destination
     bool is_auto;                   // enable zigzag auto feature which is automate both AB and sideways
     uint16_t line_count = 0;        // current line number
