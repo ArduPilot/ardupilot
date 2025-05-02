@@ -12,8 +12,8 @@ void NavEKF2_core::Log_Write_NKF1(uint64_t time_us) const
 {
     // Write first EKF packet
     Vector3f euler;
-    Vector2f posNE;
-    float posD;
+    Vector2p posNE;
+    postype_t posD;
     Vector3f velNED;
     Vector3f gyroBias;
     float posDownDeriv;
