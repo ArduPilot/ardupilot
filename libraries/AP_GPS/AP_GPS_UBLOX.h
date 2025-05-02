@@ -600,8 +600,7 @@ private:
         uint32_t accEst;
     };
 
-    // Receive buffer
-    union PACKED {
+    union PACKED PacketUnion {
         DEFINE_BYTE_ARRAY_METHODS
         ubx_nav_posllh posllh;
         ubx_nav_status status;
@@ -634,7 +633,29 @@ private:
         ubx_ack_ack ack;
         ubx_ack_nack nack;
         ubx_tim_tm2 tim_tm2;
-    } _buffer;
+    };
+
+    // Receive buffer
+    struct PACKED UBLOXBuffer {
+        uint8_t preamble1;
+        uint8_t preamble2;
+        uint8_t message_class;
+        uint8_t id;
+        uint16_t payload_length;
+        PacketUnion _packet_union;
+        // 2-byte checksum after packet
+    } _outer_buffer;
+    uint16_t _buffer_ofs;
+
+    // this avoids code churn:
+    PacketUnion &_buffer = _outer_buffer._packet_union;
+
+    bool message_parsed;
+    uint16_t ublox_discard;
+    uint16_t rtcm_discard;
+    uint8_t rtcm3_packet[300];
+    int16_t discard_byte_return(const uint8_t *buffer, uint16_t len);
+    int16_t find_ublox(const uint8_t *buffer, uint16_t buffer_len);
 
     enum class RELPOSNED {
         gnssFixOK          = 1U << 0,
@@ -757,10 +778,6 @@ private:
         STEP_L5,
         STEP_LAST
     };
-
-    // Packet checksum accumulators
-    uint8_t         _ck_a;
-    uint8_t         _ck_b;
 
     // State machine state
     uint8_t         _step;

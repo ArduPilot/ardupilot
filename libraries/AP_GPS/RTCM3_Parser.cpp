@@ -21,118 +21,61 @@
 #include <AP_Math/AP_Math.h>
 #include "RTCM3_Parser.h"
 
-// reset state
-void RTCM3_Parser::reset(void)
-{
-    pkt_len = 0;
-    pkt_bytes = 0;
-    found_len = 0;
-}
-
-// clear previous packet
-void RTCM3_Parser::clear_packet(void)
-{
-    if (found_len == 0) {
-        return;
-    }
-    // clear previous packet
-    if (pkt_bytes > found_len) {
-        memmove(&pkt[0], &pkt[found_len], pkt_bytes-found_len);
-        pkt_bytes -= found_len;
-    } else {
-        pkt_bytes = 0;
-    }
-    found_len = 0;
-    pkt_len = 0;
-}
-
-// return length of found packet
-uint16_t RTCM3_Parser::get_len(const uint8_t *&bytes) const
-{
-    if (found_len > 0) {
-        bytes = &pkt[0];
-    }
-    return found_len;
-}
-
 // return ID of found packet
-uint16_t RTCM3_Parser::get_id(void) const
+uint16_t RTCM3_Parser::get_id(const uint8_t *pkt, uint8_t pkt_len) const
 {
-    if (found_len == 0) {
+    if (pkt_len < 5) {
+        // should not have been called!  This method should only be
+        // called if find_packet returns true.
         return 0;
     }
     return (pkt[3]<<8 | pkt[4]) >> 4;
 }
 
-// look for preamble to try to resync
-void RTCM3_Parser::resync(void)
+int16_t RTCM3_Parser::find_packet(const uint8_t *pkt, uint8_t buffer_len) const
 {
-    const uint8_t *p = (const uint8_t *)memchr(&pkt[1], RTCMv3_PREAMBLE, pkt_bytes-1);
-    if (p != nullptr) {
-        const uint16_t idx = p - &pkt[0];
-        memmove(&pkt[0], p, pkt_bytes - idx);
-        pkt_bytes -= idx;
-        if (pkt_bytes >= 3) {
-            pkt_len = (pkt[1]<<8 | pkt[2]) & 0x3ff;
-        } else {
-            pkt_len = 0;
-        }
-    } else {
-        reset();
+    auto preamble_offset = offset_of_byte_in_buffer(RTCMv3_PREAMBLE, pkt, buffer_len);
+    if (preamble_offset != 0) {
+        return -buffer_len;
     }
-}
 
-// parse packet
-bool RTCM3_Parser::parse(void)
-{
+    if (buffer_len < 3) {
+        // might be a packet but we don't have a length
+        return 0;
+    }
+
+    const uint16_t pkt_len = (pkt[1]<<8 | pkt[2]) & 0x3ff;
+    if (pkt_len > 300) {
+        // don't accept packets over 300 bytes long
+        return -1;
+    }
+
+    // 1 byte preamble, 2 bytes length, n-bytes data, 2 bytes crc, 1-byte parity
+    if (buffer_len < pkt_len + 6) {
+        return 0;
+    }
+
+    // we have enough bytes for a complete packet; validate checksum:
     const uint8_t *parity = &pkt[pkt_len+3];
     uint32_t crc1 = (parity[0] << 16) | (parity[1] << 8) | parity[2];
     uint32_t crc2 = crc_crc24(pkt, pkt_len+3);
     if (crc1 != crc2) {
-        resync();
-        return false;
-    }
-
-    // we got a good packet
-    found_len = pkt_len+6;
-    return true;
-}
-
-// read in one byte, return true if a full packet is available
-bool RTCM3_Parser::read(uint8_t byte)
-{
-    clear_packet();
-
-    if (pkt_bytes > 0 && pkt[0] != RTCMv3_PREAMBLE) {
-        resync();
-    }
-
-    if (pkt_bytes == 0 && byte != RTCMv3_PREAMBLE) {
-        // discard
-        return false;
-    }
-
-    if (pkt_bytes >= sizeof(pkt)) {
-        // too long, resync
-        resync();
-    }
-
-    pkt[pkt_bytes++] = byte;
-
-    if (pkt_len == 0 && pkt_bytes >= 3) {
-        pkt_len = (pkt[1]<<8 | pkt[2]) & 0x3ff;
-        if (pkt_len == 0) {
-            resync();
+#if 1
+        // checksum mis-match; search the buffer for the preamble to
+        // allow many bytes to be discarded in case of corruption
+        auto offset = offset_of_byte_in_buffer(RTCMv3_PREAMBLE, pkt, buffer_len);
+        if (offset < 0) {
+            return buffer_len;
         }
+        return -offset;
+#else
+        // just discard 1 byte to save searching for the preamble
+        return -1;
+#endif
     }
 
-    if (pkt_len != 0 && pkt_bytes >= pkt_len + 6) {
-        // got header, packet body and parity
-        return parse();
-    }
-
-    // need more bytes
-    return false;
+    // checksum matches; 
+    return pkt_len + 6;
 }
 
 #ifdef RTCM_MAIN_TEST

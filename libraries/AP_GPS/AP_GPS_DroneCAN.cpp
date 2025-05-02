@@ -83,8 +83,8 @@ AP_GPS_DroneCAN::~AP_GPS_DroneCAN()
     _detected_modules[_detected_module].driver = nullptr;
 
 #if GPS_MOVING_BASELINE
-    if (rtcm3_parser != nullptr) {
-        delete rtcm3_parser;
+    if (rtcm3.packet != nullptr) {
+        delete rtcm3.packet;
     }
 #endif
 }
@@ -197,8 +197,8 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         }
 #if GPS_MOVING_BASELINE
         if (backend->role == AP_GPS::GPS_ROLE_MB_BASE) {
-            backend->rtcm3_parser = NEW_NOTHROW RTCM3_Parser;
-            if (backend->rtcm3_parser == nullptr) {
+            backend->rtcm3.packet = NEW_NOTHROW uint8_t[backend->rtcm3.packet_max_length];
+            if (backend->rtcm3.packet == nullptr) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DroneCAN%u-%u: failed RTCMv3 parser allocation", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
             }
         }
@@ -554,11 +554,22 @@ void AP_GPS_DroneCAN::handle_moving_baseline_msg(const ardupilot_gnss_MovingBase
         return;
     }
 
-    if (rtcm3_parser == nullptr) {
+    if (rtcm3.packet == nullptr) {
         return;
     }
-    for (int i=0; i < msg.data.len; i++) {
-        rtcm3_parser->read(msg.data.data[i]);
+
+    if (msg.data.len > rtcm3.packet_max_length) {
+        // couldn't store it anyway
+        return;
+    }
+
+    // < 0 is "discard bytes" - but we're only expecting complete packets
+    // == 0 is "might be a packet -  but we're only expecting complete packets
+    // > 0 is found-a-packet
+    auto parser_result = rtcm3.parser.find_packet(msg.data.data, msg.data.len);
+    if (parser_result > 0) {
+        memcpy(rtcm3.packet, msg.data.data, parser_result);
+        rtcm3.packet_length = parser_result;
     }
 }
 
@@ -587,20 +598,20 @@ void AP_GPS_DroneCAN::handle_relposheading_msg(const ardupilot_gnss_RelPosHeadin
 bool AP_GPS_DroneCAN::get_RTCMV3(const uint8_t *&bytes, uint16_t &len)
 {
     WITH_SEMAPHORE(sem);
-    if (rtcm3_parser != nullptr) {
-        len = rtcm3_parser->get_len(bytes);
-        return len > 0;
+    if (rtcm3.packet_length == 0) {
+        return false;
     }
-    return false;
+    bytes = rtcm3.packet;
+    len = rtcm3.packet_length;
+
+    return true;
 }
 
 // clear previous RTCM3 packet
 void AP_GPS_DroneCAN::clear_RTCMV3(void)
 {
     WITH_SEMAPHORE(sem);
-    if (rtcm3_parser != nullptr) {
-        rtcm3_parser->clear_packet();
-    }
+    rtcm3.packet_length = 0;
 }
 
 #endif // GPS_MOVING_BASELINE
