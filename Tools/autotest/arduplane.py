@@ -7232,6 +7232,119 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if abs(m.Pos - m.PosCmd) > 20:
                 break
 
+    def setup_servo_mount(self, roll_servo=5, pitch_servo=6, yaw_servo=7):
+        '''configure a rpy servo mount; caller responsible for required rebooting'''
+        self.progress("Setting up servo mount")
+        self.set_parameters({
+            "MNT1_TYPE": 1,
+            "MNT1_PITCH_MIN": -45,
+            "MNT1_PITCH_MAX": 45,
+            "RC6_OPTION": 213,  # MOUNT1_PITCH
+            "SERVO%u_FUNCTION" % roll_servo: 8, # roll
+            "SERVO%u_FUNCTION" % pitch_servo: 7, # pitch
+            "SERVO%u_FUNCTION" % yaw_servo: 6, # yaw
+        })
+
+    def ScriptedArmingChecksApplet(self):
+        """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
+            """
+        self .start_subtest("Scripted Arming Checks Applet validation")
+        self.context_push()
+        self.context_collect("STATUSTEXT")
+        ex = None
+
+        applet_script = "arming-checks.lua"
+        try:
+            """Initialize the FC"""
+            self.set_parameter("SCR_ENABLE", 1)
+            self.install_applet_script(applet_script)
+            self.reboot_sitl()
+            self.wait_ekf_happy()
+            self.wait_text("ArduPilot Ready", check_context=True)
+            self.wait_text("Arming Checks .* loaded", timeout=30, check_context=True, regex=True)
+
+            self .start_subsubtest("ArmCk: MAV_SYSID not set")
+            self.progress("Currently SYSID is %f" % self.get_parameter('MAV_SYSID'))
+            self.wait_text("ArmCk: MAV_SYSID not set", timeout=30, check_context=True, regex=True)
+
+            ''' This check comes first since its part of the standard parameters - an invalid scaling speed'''
+            self .start_subsubtest("ArmCk: SCALING_SPEED close to AIRSPEED_CRUISE")
+            self.assert_prearm_failure("Scaling spd not close", other_prearm_failures_fatal=False)
+            self.set_parameter("SCALING_SPEED", 22)
+            self.wait_text("Cleared: Scaling spd not close", check_context=True)
+
+            self .start_subsubtest("ArmCk: FOLL_SYSID must be set if FOLL_ENABLE = 1")
+            self.set_parameter("FOLL_ENABLE", 1)
+            self.assert_prearm_failure("FOLL_SYSID not set", other_prearm_failures_fatal=False)
+            self.set_parameter("FOLL_SYSID", 3)
+            self.wait_text("Cleared: FOLL_SYSID not set", check_context=True)
+
+            ''' Need a healthy camera mount defined for this to work '''
+            self .start_subsubtest("ArmCk: Mount SYSID must be match FOLL_SYSID")
+            self.setup_servo_mount()
+            ''' to fail the check MNTx_SYSID_DFLT must be non zero but not = FOLL_SYSID'''
+            self.set_parameter("MNT1_SYSID_DFLT", 1)
+            self.reboot_sitl() # to handle MNT_TYPE changing
+            self.wait_text("ArduPilot Ready", check_context=True)
+            self.wait_text("Arming Checks .* loaded", timeout=30, check_context=True, regex=True)
+            self.wait_text("MAV_SYSID not set", timeout=30, check_context=True, regex=True)
+            self.progress("Currently MNT1_SYSID_DFLT is %f" % self.get_parameter('MNT1_SYSID_DFLT'))
+            self.wait_text("ArmCk: MNTx_SYSID != FOLL", check_context=True)
+            self.set_parameter("MNT1_SYSID_DFLT", 3)
+            self.wait_text("Cleared: MNTx_SYSID != FOLL", check_context=True)
+
+            self .start_subsubtest("ArmCk: RTL_ALTITUDE must be legal")
+            self.set_parameter("RTL_ALTITUDE", 150)
+            self.assert_prearm_failure("ArmCk: fail: RTL_ALT", other_prearm_failures_fatal=False)
+            self.set_parameter("RTL_ALTITUDE", 120)
+            self.wait_text("Cleared: RTL_ALT", check_context=True)
+
+            self .start_subsubtest("ArmCk: RTL_CLIMB_MIN must be legal")
+            self.set_parameter("RTL_CLIMB_MIN", 150)
+            self.wait_text("ArmCk: RTL_CLIMB_MIN too high", check_context=True)
+            self.set_parameter("RTL_CLIMB_MIN", 120)
+            self.wait_text("Cleared: RTL_CLIMB_MIN too high", check_context=True)
+
+            self .start_subsubtest("ArmCk: AIRSPEED stall < min < cruise < max")
+            ''' Airspeed parameter start out as
+            AIRSPEED_STALL = 0
+            AIRSPEED_MIN = 10
+            AIRSPEED_CRUISE = 22
+            AIRSPEED_MAX = 30
+            '''
+            self .start_subsubtest("ArmCk: AIRSPEED max < others")
+            self.set_parameter("AIRSPEED_MAX", 5)
+            self.assert_prearm_failure("ArmCk: fail: stall < min", other_prearm_failures_fatal=False)
+            self.set_parameter("AIRSPEED_MAX", 30)
+            self.wait_text("Cleared: stall < min", check_context=True)
+            self .start_subsubtest("ArmCk: AIRSPEED cruise < min")
+            self.set_parameter("AIRSPEED_MIN", 25)
+            self.assert_prearm_failure("ArmCk: fail: stall < min", other_prearm_failures_fatal=False)
+            self.set_parameter("AIRSPEED_MIN", 10)
+            self.wait_text("Cleared: stall < min", check_context=True)
+            self .start_subsubtest("ArmCk: AIRSPEED cruise > max")
+            self.set_parameter("AIRSPEED_CRUISE", 40)
+            self.assert_prearm_failure("ArmCk: fail: stall < min", other_prearm_failures_fatal=False)
+            self.set_parameter("AIRSPEED_CRUISE", 22)
+            self.wait_text("Cleared: stall < min", check_context=True)
+
+            self.start_subsubtest("ArmCk: AIRSPEED_MIN must be > AIRSPEED_STALL")
+            ''' only applies if AIRSPEED_STALL is non zero'''
+            self.set_parameter("AIRSPEED_STALL", 2)
+            self.wait_text("ArmCk: Min Speed not", check_context=True)
+            self.set_parameter("AIRSPEED_STALL", 8)
+
+            self .start_subsubtest("Scripted Arming Checks complete")
+
+        except Exception as e:
+            ex = e
+            self.print_exception_caught(e)
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -7397,6 +7510,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.AdvancedFailsafeBadBaro,
             self.DO_CHANGE_ALTITUDE,
             self.SET_POSITION_TARGET_GLOBAL_INT_for_altitude,
+            self.ScriptedArmingChecksApplet,
         ]
 
     def disabled_tests(self):

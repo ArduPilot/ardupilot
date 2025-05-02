@@ -2632,6 +2632,50 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.mav.motors_disarmed_wait()
         self.reset_SITL_commandline()
 
+    def ScriptedArmingChecksApplet(self):
+        """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
+            """
+        self .start_subtest("Scripted Arming Checks Applet validation")
+        self.context_push()
+        self.context_collect("STATUSTEXT")
+        ex = None
+
+        applet_script = "arming-checks.lua"
+        try:
+            """Initialize the FC"""
+            self.set_parameter("SCR_ENABLE", 1)
+            self.install_applet_script(applet_script)
+            self.reboot_sitl()
+            self.wait_ekf_happy()
+            self.wait_text("ArduPilot Ready", check_context=True)
+            self.wait_text("Arming Checks .* loaded", timeout=30, check_context=True, regex=True)
+            '''self.install_messageprinter_handlers_context(['PARAM_VALUE'])'''
+
+            self .start_subsubtest("ArmCk: Q_RTL_ALT must be legal")
+            self.set_parameter("Q_RTL_ALT", 150)
+            self.assert_prearm_failure("ArmCk: fail: RTL_ALT", other_prearm_failures_fatal=False)
+            self.set_parameter("Q_RTL_ALT", 120)
+            self.wait_text("Cleared: RTL_ALT", check_context=True)
+
+            self.start_subsubtest("ArmCk: Q_RTL vs QLand")
+            ''' this is only a warning'''
+            self.set_parameter("Q_OPTIONS", 33)
+            self.wait_text("ArmCk: Q will RTL", check_context=True)
+            self.set_parameter("Q_OPTIONS", 1)
+            self.wait_text("ArmCk: Q will land", check_context=True)
+
+            self .start_subsubtest("Scripted Arming Checks complete")
+
+        except Exception as e:
+            ex = e
+            self.print_exception_caught(e)
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
+
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2689,5 +2733,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.QLoiterRecovery,
             self.FastInvertedRecovery,
             self.CruiseRecovery,
+            self.ScriptedArmingChecksApplet,
         ])
         return ret
