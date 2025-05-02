@@ -5,9 +5,10 @@ import re
 import sys, os
 import fnmatch
 import platform
+import glob
 
 import waflib
-from waflib import Utils
+from waflib import Utils, Context
 from waflib.Configure import conf
 import json
 _board_classes = {}
@@ -172,6 +173,17 @@ class Board:
             elif getattr(cfg.options, disable_option, False):
                 env.CXXFLAGS += ['-D%s=0' % opt.define]
                 cfg.msg("Enabled %s" % opt.label, 'no', color='YELLOW')
+
+        # support embedding lua drivers and applets
+        driver_list = glob.glob(os.path.join(Context.run_dir, "libraries/AP_Scripting/drivers/*.lua"))
+        applet_list = glob.glob(os.path.join(Context.run_dir, "libraries/AP_Scripting/applets/*.lua"))
+        for d in driver_list + applet_list:
+            bname = os.path.basename(d)
+            embed_name = bname[:-4]
+            embed_option = f"embed-{embed_name}".replace("-","_")
+            if getattr(cfg.options, embed_option, False):
+                env.ROMFS_FILES += [(f'scripts/{bname}', d)]
+                cfg.msg(f"Embedded {bname}", 'yes', color='GREEN')
 
         if cfg.options.disable_networking:
             env.CXXFLAGS += ['-DAP_NETWORKING_ENABLED=0']
