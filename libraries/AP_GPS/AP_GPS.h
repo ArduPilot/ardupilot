@@ -631,6 +631,7 @@ protected:
         GPSL5HealthOverride = (1U << 5),
         AlwaysRTCMDecode = (1U << 6),
         DisableRTCMDecode = (1U << 7),
+        LogRTCMData = (1U << 8),
     };
 
     // check if an option is set
@@ -802,6 +803,7 @@ private:
     struct {
         RTCM3_Parser *parsers[MAVLINK_COMM_NUM_BUFFERS];
         uint32_t sent_crc[32];
+        mavlink_channel_t sent_channels[32];
         uint8_t sent_idx;
         uint16_t seen_mav_channels;
     } rtcm;

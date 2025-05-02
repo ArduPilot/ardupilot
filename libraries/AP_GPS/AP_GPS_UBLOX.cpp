@@ -406,6 +406,17 @@ AP_GPS_UBLOX::_request_next_config(void)
         _unconfigured_messages & = ~CONFIG_RATE_RAW;
 #endif
         break;
+    case STEP_RTCM:
+#if UBLOX_RXM_RTCM_LOGGING
+        if(!option_set(AP_GPS::DriverOptions::LogRTCMData)) {
+            _unconfigured_messages &= ~CONFIG_RATE_RTCM;
+        } else if(!_request_message_rate(CLASS_RXM, MSG_RXM_RTCM)) {
+            _next_message--;
+        }
+#else
+        _unconfigured_messages & = ~CONFIG_RATE_RTCM;
+#endif
+        break;
     case STEP_VERSION:
         if(!_have_version && !hal.util->get_soft_armed()) {
             _request_version();
@@ -542,7 +553,11 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
             config_msg_id = CONFIG_RATE_POSLLH;
             break;
         case MSG_STATUS:
+#if UBLOX_RXM_RTCM_LOGGING
+            desired_rate = RATE_STATUS;
+#else
             desired_rate = havePvtMsg ? 0 : RATE_STATUS;
+#endif
             config_msg_id = CONFIG_RATE_STATUS;
             break;
         case MSG_SOL:
@@ -583,9 +598,9 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
             return;
         }
         break;
-#if UBLOX_RXM_RAW_LOGGING
     case CLASS_RXM:
         switch(msg_id) {
+#if UBLOX_RXM_RAW_LOGGING
         case MSG_RXM_RAW:
             desired_rate = gps._raw_data;
             config_msg_id = CONFIG_RATE_RAW;
@@ -594,11 +609,17 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
             desired_rate = gps._raw_data;
             config_msg_id = CONFIG_RATE_RAW;
             break;
+#endif // UBLOX_RXM_RAW_LOGGING
+#if UBLOX_RXM_RTCM_LOGGING
+        case MSG_RXM_RTCM:
+            desired_rate = option_set(AP_GPS::DriverOptions::LogRTCMData) ? 1 : 0;
+            config_msg_id = CONFIG_RATE_RTCM;
+            break;
+#endif // UBLOX_RXM_RTCM_LOGGING
         default:
             return;
         }
         break;
-#endif // UBLOX_RXM_RAW_LOGGING
 #if UBLOX_TIM_TM2_LOGGING
     case CLASS_TIM:
         if (msg_id == MSG_TIM_TM2) {
@@ -983,6 +1004,43 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
 #endif
 }
 #endif // UBLOX_RXM_RAW_LOGGING
+
+#if UBLOX_RXM_RTCM_LOGGING
+void AP_GPS_UBLOX::log_rxm_rtcm(const struct ubx_rxm_rtcm &rtcm)
+{
+#if HAL_LOGGING_ENABLED
+    if (!should_log()) {
+        return;
+    }
+
+    uint64_t now = AP_HAL::micros64();
+
+    const struct log_GPS_RTCM header = {
+        LOG_PACKET_HEADER_INIT(LOG_GPS_RTCM_MSG),
+        time_us    : now,
+        version : rtcm.version,
+        flags : rtcm.flags,
+        refStation : rtcm.refStation,
+        msgType : rtcm.msgType
+    };
+    AP::logger().WriteBlock(&header, sizeof(header));
+#endif
+}
+
+void AP_GPS_UBLOX::log_status(const struct ubx_nav_status &status)
+{
+#if HAL_LOGGING_ENABLED
+    if (!should_log()) {
+        return;
+    }
+
+    AP::logger().WriteStreaming("UBX3", "TimeUS,iTOW,fixType,fixStat,diffStat,res,fixTime,uptime", "s-------", "F-------", "QIBBBBII",
+                                AP_HAL::micros64(),
+                                status.itow, status.fix_type, status.fix_status, status.differential_status,
+                                status.res, status.time_to_first_fix, status.uptime);
+#endif
+}
+#endif // UBLOX_RXM_RTCM_LOGGING
 
 void AP_GPS_UBLOX::unexpected_message(void)
 {
@@ -1487,6 +1545,13 @@ AP_GPS_UBLOX::_parse_gps(void)
     }
 #endif // UBLOX_RXM_RAW_LOGGING
 
+#if UBLOX_RXM_RTCM_LOGGING
+    if (_class == CLASS_RXM && _msg_id == MSG_RXM_RTCM && option_set(AP_GPS::DriverOptions::LogRTCMData)) {
+        log_rxm_rtcm(_buffer.rxm_rtcm);
+        return false;
+    }
+#endif // UBLOX_RXM_RTCM_LOGGING
+
 #if UBLOX_TIM_TM2_LOGGING
     if ((_class == CLASS_TIM) && (_msg_id == MSG_TIM_TM2) && (_payload_length == 28)) {
         log_tim_tm2();
@@ -1532,6 +1597,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         Debug("MSG_STATUS fix_status=%u fix_type=%u",
               _buffer.status.fix_status,
               _buffer.status.fix_type);
+#if UBLOX_RXM_RTCM_LOGGING
+        log_status(_buffer.status);
+#endif
         _check_new_itow(_buffer.status.itow);
         if (havePvtMsg) {
             _unconfigured_messages |= CONFIG_RATE_STATUS;
@@ -2186,7 +2254,8 @@ static const char *reasons[] = {"navigation rate",
                                 "TIM TM2",
                                 "F9",
                                 "M10",
-                                "L5 Enable Disable"};
+                                "L5 Enable Disable",
+                                "rtcm rate"};
 
 static_assert((1 << ARRAY_SIZE(reasons)) == CONFIG_LAST, "UBLOX: Missing configuration description");
 

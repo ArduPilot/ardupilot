@@ -239,7 +239,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health, 6:Enable RTCM full parse even for a single channel, 7:Disable automatic full RTCM parsing when RTCM seen on more than one channel
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health, 6:Enable RTCM full parse even for a single channel, 7:Disable automatic full RTCM parsing when RTCM seen on more than one channel, 8:Log RTCM data
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 
@@ -1642,7 +1642,14 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
             const uint32_t crc = crc_crc32(0, buf, len);
 
 #if HAL_LOGGING_ENABLED
-            AP::logger().WriteStreaming("RTCM", "TimeUS,Chan,RTCMId,Len,CRC", "s#---", "F----", "QBHHI",
+// @LoggerMessage: RTKR
+// @Description: RTCM parser data
+// @Field: TimeUS: microseconds since system startup
+// @Field: Chan: RTCM channel data
+// @Field: RTCMId: RTCM parser ID
+// @Field: Len: RTCM injection packet length
+// @Field: CRC: RTCM injection packet CRC
+            AP::logger().WriteStreaming("RTKR", "TimeUS,Chan,RTCMId,Len,CRC", "s#---", "F----", "QBHHI",
                                         AP_HAL::micros64(),
                                         uint8_t(chan),
                                         rtcm.parsers[chan]->get_id(),
@@ -1652,8 +1659,8 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
             
             bool already_seen = false;
             for (uint8_t c=0; c<ARRAY_SIZE(rtcm.sent_crc); c++) {
-                if (rtcm.sent_crc[c] == crc) {
-                    // we have already sent this message
+                if (rtcm.sent_crc[c] == crc && rtcm.sent_channels[c] != chan) {
+                    // we have already sent this message, duplicates on the same channel are allowed
                     already_seen = true;
                     break;
                 }
@@ -1662,9 +1669,25 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
                 continue;
             }
             rtcm.sent_crc[rtcm.sent_idx] = crc;
+            rtcm.sent_channels[rtcm.sent_idx] = chan;
             rtcm.sent_idx = (rtcm.sent_idx+1) % ARRAY_SIZE(rtcm.sent_crc);
 
             if (buf != nullptr && len > 0) {
+#if HAL_LOGGING_ENABLED
+// @LoggerMessage: RTKT
+// @Description: RTCM parser data
+// @Field: TimeUS: microseconds since system startup
+// @Field: Chan: RTCM channel data
+// @Field: RTCMId: RTCM parser ID
+// @Field: Len: RTCM injection packet length
+// @Field: CRC: RTCM injection packet CRC
+                AP::logger().WriteStreaming("RTKT", "TimeUS,Chan,RTCMId,Len,CRC", "s#---", "F----", "QBHHI",
+                                            AP_HAL::micros64(),
+                                            uint8_t(chan),
+                                            rtcm.parsers[chan]->get_id(),
+                                            len,
+                                            crc);
+#endif
                 inject_data(buf, len);
             }
             rtcm.parsers[chan]->reset();
