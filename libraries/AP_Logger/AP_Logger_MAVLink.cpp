@@ -57,6 +57,10 @@ void AP_Logger_MAVLink::Init()
 
 bool AP_Logger_MAVLink::logging_failed() const
 {
+    // Ensure check doesnt fail for special case: Plane disarmed & logging while disarmed disabled
+    if (_front._params.log_disarmed == AP_Logger::LogDisarmed::NONE && !hal.util->get_soft_armed()) { 
+        return false;
+    }
     return !_sending_to_client;
 }
 
