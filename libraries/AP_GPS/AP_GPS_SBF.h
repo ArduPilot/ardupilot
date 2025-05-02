@@ -28,6 +28,15 @@
 #define SBF_DISK_FULL     (1 << 8)
 #define SBF_DISK_MOUNTED  (1 << 9)
 
+#define SBF_0_1_HZ  "sec10";
+#define SBF_0_2_HZ  "sec5";
+#define SBF_0_5_HZ  "sec2";
+#define SBF_1_0_HZ  "sec1";
+#define SBF_2_0_HZ  "msec500";
+#define SBF_5_0_HZ  "msec200";
+#define SBF_10_0_HZ "msec100";
+#define SBF_20_0_HZ "msec50";
+
 class AP_GPS_SBF : public AP_GPS_Backend
 {
 public:
@@ -60,6 +69,8 @@ public:
 
     bool get_error_codes(uint32_t &error_codes) const override { error_codes = RxError; return true; };
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
 
     bool parse(uint8_t temp);
@@ -68,15 +79,30 @@ private:
     static const uint8_t SBF_PREAMBLE1 = '$';
     static const uint8_t SBF_PREAMBLE2 = '@';
 
+    // GPS receiver log level which determines what data is logged
+    enum class GPS_Logging_Level : uint8_t {
+        LITE = 0,
+        BASIC = 1,
+        DEFAULT = 2,
+        FULL = 3,
+    };
+
+    // SBF specific parameters
+    AP_Float _logging_frequency;        // frequency at which the receiver should log messages
+    AP_Enum<GPS_Logging_Level> _logging_level;             // amount of details the receiver should log
+    AP_Int8 _logging_overwrite;         // whether to override existing logging on the receiver or add to it
+
     uint8_t _init_blob_index;
     uint32_t _init_blob_time;
     enum class Config_State {
         Baud_Rate,
         SSO,
+        Constellation,
+        LogStream,
+        LogFile,
         Blob,
         SBAS,
         SGA,
-        Constellation,
         Complete
     };
     Config_State config_step;
@@ -85,7 +111,6 @@ private:
     "srd,Moderate,UAV",
     "sem,PVT,5",
     "spm,Rover,all",
-    "sso,Stream2,Dsk1,postprocess+event+comment+ReceiverStatus,msec100",
 #if defined (GPS_SBF_EXTRA_CONFIG)
     GPS_SBF_EXTRA_CONFIG
 #endif

@@ -45,6 +45,9 @@ do {                                            \
 #ifndef GPS_SBF_STREAM_NUMBER
   #define GPS_SBF_STREAM_NUMBER 1
 #endif
+#ifndef GPS_SBF_LOG_STREAM_NUMBER
+  #define GPS_SBF_LOG_STREAM_NUMBER 2
+#endif
 
 #define SBF_EXCESS_COMMAND_BYTES 5 // 2 start bytes + validity byte + space byte + endline byte
 
@@ -57,6 +60,38 @@ do {                                            \
 constexpr const char *AP_GPS_SBF::portIdentifiers[];
 constexpr const char* AP_GPS_SBF::_initialisation_blob[];
 constexpr const char* AP_GPS_SBF::sbas_on_blob[];
+
+// table of user settable parameters
+const AP_Param::GroupInfo AP_GPS_SBF::var_info[] = {
+
+    // @Param: LOG_HZ
+    // @DisplayName: Log frequency
+    // @Description: The frequency with which the receiver logs information.
+    // @Units: Hz
+    // @Increment: 0.1
+    // @Range: 0 20
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("LOG_HZ", 1, AP_GPS_SBF, _logging_frequency, 1.0f),
+
+    // @Param: LOG_LEVEL
+    // @DisplayName: Log level
+    // @Description: The level of detail the receiver should log.
+    // @Values: 0:Lite, 1:Basic, 2:Default, 3:Full
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("LOG_LEVEL", 2, AP_GPS_SBF, _logging_level, 2),
+
+    // @Param: LOG_FORCE
+    // @DisplayName: Log overwrite
+    // @Description: Whether logging setup should overwrite existing logging on the receiver.
+    // @Values: 0:Disabled, 1:Enabled
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("LOG_FORCE", 3, AP_GPS_SBF, _logging_overwrite, 0),
+
+    AP_GROUPEND
+};
 
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps,
                        AP_GPS::Params &_params,
@@ -76,6 +111,11 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps,
         (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA)) {
         state.gps_yaw_configured = true;
     }
+
+    // set ptr in params so private parameters are accessible
+    _params.sbf_backend = this;
+
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 AP_GPS_SBF::~AP_GPS_SBF (void) {
@@ -138,8 +178,71 @@ AP_GPS_SBF::read(void)
                                     config_string = nullptr;
                                 }
                                 break;
+                            case Config_State::LogStream:
+                                if (_logging_frequency <= 0.0f && _logging_overwrite) {
+                                    // hard-disable logging, clear existing stream
+                                    if (asprintf(&config_string, "sso,Stream%d,none,none,off\n", (int)GPS_SBF_LOG_STREAM_NUMBER) == -1) {
+                                        config_string = nullptr;
+                                    }
+                                } else if (_logging_frequency <= 0.0f) {
+                                    // soft-disable logging, keep existing stream
+                                    if (asprintf(&config_string, "sso,Stream%d,,,off\n", (int)GPS_SBF_LOG_STREAM_NUMBER) == -1) {
+                                        config_string = nullptr;
+                                    }
+                                } else {
+                                    // enable logging
+                                    const char* logging_frequency;
+                                    if (_logging_frequency <= 0.1f) {
+                                        logging_frequency = SBF_0_1_HZ;
+                                    } else if (_logging_frequency <= 0.2f) {
+                                        logging_frequency = SBF_0_2_HZ;
+                                    } else if (_logging_frequency <= 0.5f) {
+                                        logging_frequency = SBF_0_5_HZ;
+                                    } else if (_logging_frequency <= 1.0f) {
+                                        logging_frequency = SBF_1_0_HZ;
+                                    } else if (_logging_frequency <= 2.0f) {
+                                        logging_frequency = SBF_2_0_HZ;
+                                    } else if (_logging_frequency <= 5.0f) {
+                                        logging_frequency = SBF_5_0_HZ;
+                                    } else if (_logging_frequency <= 10.0f) {
+                                        logging_frequency = SBF_10_0_HZ;
+                                    } else {
+                                        logging_frequency = SBF_20_0_HZ;
+                                    }
+
+                                    const char* logged_blocks;
+                                    switch (GPS_Logging_Level(_logging_level.get())) {
+                                        case GPS_Logging_Level::LITE:
+                                            logged_blocks = "PostProcess+Event";
+                                            break;
+                                        case GPS_Logging_Level::BASIC:
+                                            logged_blocks = "PostProcess+Event+Comment+ReceiverStatus";
+                                            break;
+                                        case GPS_Logging_Level::DEFAULT:
+                                        default:
+                                            logged_blocks = "Support+Event+Comment";
+                                            break;
+                                        case GPS_Logging_Level::FULL:
+                                            logged_blocks = "Support+Event+Comment+BBSamples";
+                                            break;
+                                    }
+                                    if (asprintf(&config_string, "sso,Stream%d,Dsk1,%s%s,%s\n",
+                                                (int)GPS_SBF_LOG_STREAM_NUMBER,
+                                                _logging_overwrite ? "" : "+",
+                                                logged_blocks,
+                                                logging_frequency) == -1) {
+                                        config_string = nullptr;
+                                    }
+                                }
+
+                                break;
+                            case Config_State::LogFile:
+                                if (asprintf(&config_string, "sfn,DSK1,Incremental,'ardup'\n") == -1) {
+                                        config_string = nullptr;
+                                }
+                                break;
                             case Config_State::Constellation:
-                                if ((params.gnss_mode&0x6F)!=0) {
+                                 {
                                     //IMES not taken into account by Septentrio receivers
                                     if (asprintf(&config_string, "sst, %s%s%s%s%s%s\n", (params.gnss_mode&(1U<<0))!=0 ? "GPS" : "",
                                                             (params.gnss_mode&(1U<<1))!=0 ? ((params.gnss_mode&0x01)==0 ? "SBAS" : "+SBAS") : "",
@@ -385,9 +488,28 @@ AP_GPS_SBF::parse(uint8_t temp)
                                     config_step = Config_State::SSO;
                                     break;
                                 case Config_State::SSO:
-                                    config_step = Config_State::Constellation;
+                                    if ((params.gnss_mode&0x6F)!=0) {
+                                        config_step = Config_State::Constellation;
+                                    }
+                                    else if (_logging_overwrite) {
+                                        config_step = Config_State::LogStream;
+                                    }
+                                    else {
+                                        config_step = Config_State::Blob;
+                                    }
                                     break;
                                 case Config_State::Constellation:
+                                    if (_logging_overwrite) {
+                                        config_step = Config_State::LogStream;
+                                    }
+                                    else {
+                                        config_step = Config_State::Blob;
+                                    }
+                                    break;
+                                case Config_State::LogStream:
+                                    config_step = Config_State::LogFile;
+                                    break;
+                                case Config_State::LogFile:
                                     config_step = Config_State::Blob;
                                     break;
                                 case Config_State::Blob:
