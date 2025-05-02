@@ -69,7 +69,7 @@ void AC_Circle::init_NEU_cm(const Vector3p& center_neu_cm, bool terrain_alt, flo
     calc_velocities(true);
 
     // set start angle from position
-    init_start_angle(false);
+    init_start_angle(true);
 }
 
 /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
