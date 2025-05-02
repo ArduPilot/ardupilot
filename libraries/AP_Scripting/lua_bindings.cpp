@@ -1294,3 +1294,5 @@ int lua_gps_inject_data(lua_State *L)
 }
 
 #endif  // AP_SCRIPTING_ENABLED
+
+#endif  // AP_SCRIPTING_ENABLED
