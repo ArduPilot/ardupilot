@@ -103,6 +103,10 @@ bool Mode::enter()
     plane.target_altitude.terrain_following_pending = false;
 #endif
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    plane.g2.systemid.stop();
+#endif
+
     // disable auto mode servo idle during altitude wait command
     plane.auto_state.idle_mode = false;
 
