@@ -326,6 +326,7 @@ void Sub::failsafe_gcs_check()
         // Log event if we are recovering from previous gcs failsafe
         if (failsafe.gcs) {
             LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"GCS Failsafe Cleared");
         }
         failsafe.gcs = false;
         return;
