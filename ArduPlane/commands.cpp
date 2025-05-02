@@ -84,6 +84,11 @@ void Plane::set_guided_WP(const Location &loc)
     // ---------------------
     next_WP_loc = loc;
 
+    // convert to absolute alt
+    if (!next_WP_loc.terrain_alt) {
+        next_WP_loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
+    }
+
     fix_terrain_WP(next_WP_loc, __LINE__);
 
     // used to control FBW and limit the rate of climb

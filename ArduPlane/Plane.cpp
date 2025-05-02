@@ -881,18 +881,11 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
 // set target location (for use by external control and scripting)
 bool Plane::set_target_location(const Location &target_loc)
 {
-    Location loc{target_loc};
-    fix_terrain_WP(loc, __LINE__);
-
     if (plane.control_mode != &plane.mode_guided) {
         // only accept position updates when in GUIDED mode
         return false;
     }
-    // add home alt if needed
-    if (!loc.terrain_alt) {
-        loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
-    }
-    plane.set_guided_WP(loc);
+    plane.set_guided_WP(target_loc);
     return true;
 }
 #endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED

@@ -629,11 +629,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
         plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
 #endif
 
-        // convert to absolute alt
-        if (!requested_position.terrain_alt) {
-            requested_position.change_alt_frame(Location::AltFrame::ABSOLUTE);
-        }
-
         plane.set_guided_WP(requested_position);
 
         // Loiter radius for planes. Positive radius in meters, direction is controlled by Yaw (param4) value, parsed above
