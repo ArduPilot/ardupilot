@@ -144,7 +144,7 @@ void AP_LoggerTest::setup(void)
                          17.3);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    logger.flush();
+    // logger.flush();
 #endif
 
     logger.set_vehicle_armed(false);
