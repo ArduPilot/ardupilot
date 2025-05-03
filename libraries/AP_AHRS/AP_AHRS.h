@@ -269,17 +269,17 @@ public:
     // return the relative position NED from either home or origin
     // return true if the estimate is valid
     bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED;
-    bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED;
+    bool get_relative_position_NED_origin_float(Vector3f &vec) const WARN_IF_UNUSED;
 
     // return the relative position NE from home or origin
     // return true if the estimate is valid
     bool get_relative_position_NE_home(Vector2f &posNE) const WARN_IF_UNUSED;
-    bool get_relative_position_NE_origin(Vector2f &posNE) const WARN_IF_UNUSED;
+    bool get_relative_position_NE_origin_float(Vector2f &posNE) const WARN_IF_UNUSED;
 
     // return the relative position down from home or origin
     // baro will be used for the _home relative one if the EKF isn't
     void get_relative_position_D_home(float &posD) const;
-    bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED;
+    bool get_relative_position_D_origin_float(float &posD) const WARN_IF_UNUSED;
 
     // return location corresponding to vector relative to the
     // vehicle's origin
