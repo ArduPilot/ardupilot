@@ -39,7 +39,7 @@ private:
     static bool low_level_input(struct netif *netif, struct pbuf **pbuf);
     static int8_t ethernetif_init(struct netif *netif);
 
-    static char *substitute_vars(const char *msg, uint32_t size);
+    static char *substitute_vars(const char *msg);
     static struct web_var {
         const char *name;
         const char *value;
