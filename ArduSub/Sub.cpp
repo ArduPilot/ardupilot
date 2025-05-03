@@ -434,7 +434,7 @@ float Sub::get_alt_rel() const
 
     // get relative position
     float posD;
-    if (ahrs.get_relative_position_D_origin(posD)) {
+    if (ahrs.get_relative_position_D_origin_float(posD)) {
         if (ahrs.home_is_set()) {
             // adjust to the home position
             auto home = ahrs.get_home();
@@ -463,7 +463,7 @@ float Sub::get_alt_msl() const
 
     // get relative position
     float posD;
-    if (!ahrs.get_relative_position_D_origin(posD)) {
+    if (!ahrs.get_relative_position_D_origin_float(posD)) {
         // fall back to the barometer reading
         posD = -AP::baro().get_altitude();
     }
