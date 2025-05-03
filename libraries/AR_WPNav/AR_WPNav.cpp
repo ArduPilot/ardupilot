@@ -405,7 +405,7 @@ void AR_WPNav::advance_wp_target_along_track(const Location &current_loc, float 
     // exit immediately if no current location, destination or disarmed
     Vector2f curr_pos_NE;
     Vector3f curr_vel_NED;
-    if (!AP::ahrs().get_relative_position_NE_origin(curr_pos_NE) || !AP::ahrs().get_velocity_NED(curr_vel_NED)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(curr_pos_NE) || !AP::ahrs().get_velocity_NED(curr_vel_NED)) {
         return;
     }
 
