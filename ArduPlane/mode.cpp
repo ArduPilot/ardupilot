@@ -259,8 +259,8 @@ bool Mode::_pre_arm_checks(size_t buflen, char *buffer) const
 void Mode::run()
 {
     // Direct stick mixing functionality has been removed, so as not to remove all stick mixing from the user completely
-    // the old direct option is now used to enable fbw mixing, this is easier than doing a param conversion.
-    if ((plane.g.stick_mixing == StickMixing::FBW) || (plane.g.stick_mixing == StickMixing::DIRECT_REMOVED)) {
+    // the old direct option is now used to enable FBW-A style mixing, this is easier than doing a param conversion.
+    if ((plane.g.stick_mixing == StickMixing::FBWA) || (plane.g.stick_mixing == StickMixing::FBW_ROLL)) {
         plane.stabilize_stick_mixing_fbw();
     }
     plane.stabilize_roll();
