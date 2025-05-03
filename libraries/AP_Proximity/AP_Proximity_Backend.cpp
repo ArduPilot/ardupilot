@@ -94,7 +94,7 @@ bool AP_Proximity_Backend::database_prepare_for_push(Vector3f &current_pos, Matr
         return false;
     }
 
-    if (!AP::ahrs().get_relative_position_NED_origin(current_pos)) {
+    if (!AP::ahrs().get_relative_position_NED_origin_float(current_pos)) {
         return false;
     }
 
