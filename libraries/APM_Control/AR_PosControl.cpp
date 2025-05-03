@@ -116,7 +116,7 @@ void AR_PosControl::update(float dt)
     // exit immediately if no current location, destination or disarmed
     Vector2f curr_pos_NE;
     Vector3f curr_vel_NED;
-    if (!hal.util->get_soft_armed() || !AP::ahrs().get_relative_position_NE_origin(curr_pos_NE) ||
+    if (!hal.util->get_soft_armed() || !AP::ahrs().get_relative_position_NE_origin_float(curr_pos_NE) ||
         !AP::ahrs().get_velocity_NED(curr_vel_NED)) {
         _desired_speed = _atc.get_desired_speed_accel_limited(0.0f, dt);
         _desired_lat_accel = 0.0f;
@@ -250,7 +250,7 @@ bool AR_PosControl::init()
     // get current position and velocity from AHRS
     Vector2f pos_NE;
     Vector3f vel_NED;
-    if (!AP::ahrs().get_relative_position_NE_origin(pos_NE) || !AP::ahrs().get_velocity_NED(vel_NED)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(pos_NE) || !AP::ahrs().get_velocity_NED(vel_NED)) {
         return false;
     }
 
@@ -351,7 +351,7 @@ Vector2p AR_PosControl::get_pos_error() const
 {
     // return zero error is not active or no position estimate
     Vector2f curr_pos_NE;
-    if (!is_active() ||!AP::ahrs().get_relative_position_NE_origin(curr_pos_NE)) {
+    if (!is_active() ||!AP::ahrs().get_relative_position_NE_origin_float(curr_pos_NE)) {
         return Vector2p{};
     }
 
@@ -371,7 +371,7 @@ void AR_PosControl::write_log()
     // exit immediately if no position or velocity estimate
     Vector3f curr_pos_NED;
     Vector3f curr_vel_NED;
-    if (!AP::ahrs().get_relative_position_NED_origin(curr_pos_NED) || !AP::ahrs().get_velocity_NED(curr_vel_NED)) {
+    if (!AP::ahrs().get_relative_position_NED_origin_float(curr_pos_NED) || !AP::ahrs().get_velocity_NED(curr_vel_NED)) {
         return;
     }
 
@@ -418,7 +418,7 @@ void AR_PosControl::handle_ekf_xy_reset()
     uint32_t reset_ms = AP::ahrs().getLastPosNorthEastReset(pos_shift);
     if (reset_ms != _ekf_xy_reset_ms) {
         Vector2f pos_NE;
-        if (!AP::ahrs().get_relative_position_NE_origin(pos_NE)) {
+        if (!AP::ahrs().get_relative_position_NE_origin_float(pos_NE)) {
             return;
         }
         _pos_target = (pos_NE + _p_pos.get_error()).topostype();
