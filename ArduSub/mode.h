@@ -50,7 +50,8 @@ public:
         POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
         MANUAL =       19,  // Pass-through input with no stabilization
         MOTOR_DETECT = 20,  // Automatically detect motors orientation
-        SURFTRAK =     21   // Track distance above seafloor (hold range)
+        SURFTRAK =     21,   // Track distance above seafloor (hold range)
+        EMERGENCY =    22   // emergency surface not requiring position or depth
         // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
@@ -503,3 +504,30 @@ protected:
     const char *name4() const override { return "DETE"; }
     Mode::Number number() const override { return Mode::Number::MOTOR_DETECT; }
 };
+
+class ModeEmergency : public Mode
+{
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+
+    virtual void run() override;
+
+    bool init(bool ignore_checks) override;
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; }
+    bool is_autopilot() const override { return true; }
+
+protected:
+
+    const char *name() const override { return "EMERGENCY"; }
+    const char *name4() const override { return "EMER"; }
+    Mode::Number number() const override { return Mode::Number::EMERGENCY; }
+
+private:
+    bool has_surfaced;
+};
+
+

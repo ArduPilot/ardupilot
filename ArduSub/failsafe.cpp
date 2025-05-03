@@ -360,6 +360,8 @@ void Sub::failsafe_gcs_check()
         if (!set_mode(Mode::Number::SURFACE, ModeReason::GCS_FAILSAFE)) {
             arming.disarm(AP_Arming::Method::GCS_FAILSAFE_SURFACEFAILED);
         }
+    } else if (g.failsafe_gcs == FS_GCS_EMERGENCY && motors.armed()) {
+        set_mode(Mode::Number::EMERGENCY, ModeReason::GCS_FAILSAFE);
     }
 }
 
@@ -535,6 +537,9 @@ void Sub::failsafe_radio_on_event()
         switch(g.failsafe_throttle) {
         case FS_THR_SURFACE:
             set_mode(Mode::Number::SURFACE, ModeReason::RADIO_FAILSAFE);
+            break;
+        case FS_THR_EMERGENCY:
+            set_mode(Mode::Number::EMERGENCY, ModeReason:: RADIO_FAILSAFE);
             break;
         case FS_THR_WARN:
         case FS_THR_DISABLED:

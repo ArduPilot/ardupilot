@@ -102,6 +102,7 @@ enum LoggingParameters {
 #define FS_GCS_DISARM       2 // Disarm
 #define FS_GCS_HOLD         3 // Switch depth hold mode or poshold mode if available
 #define FS_GCS_SURFACE      4 // Switch to surface mode
+#define FS_GCS_EMERGENCY    5 // Swith to emergency mode
 
 // Leak failsafe definitions (FS_LEAK_ENABLE parameter)
 #define FS_LEAK_DISABLED    0 // Disabled
@@ -142,6 +143,7 @@ enum LoggingParameters {
 #define FS_THR_DISABLED                            0
 #define FS_THR_WARN                                1
 #define FS_THR_SURFACE                             2
+#define FS_THR_EMERGENCY		           3
 
 // Amount of time to attempt recovery of valid rangefinder data before
 // initiating terrain failsafe action

@@ -59,6 +59,9 @@ Mode *Sub::mode_from_mode_num(const Mode::Number mode)
     case Mode::Number::MOTOR_DETECT:
         ret = &mode_motordetect;
         break;
+    case Mode::Number::EMERGENCY:
+        ret = &mode_emergency;
+        break;
     default:
         break;
     }

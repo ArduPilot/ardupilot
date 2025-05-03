@@ -118,6 +118,7 @@ public:
     friend class ModeAuto;
     friend class ModeCircle;
     friend class ModeSurface;
+    friend class ModeEmergency;
     friend class ModeMotordetect;
 
     Sub(void);
@@ -620,6 +621,7 @@ private:
     ModePoshold mode_poshold;
     ModeCircle mode_circle;
     ModeSurface mode_surface;
+    ModeEmergency mode_emergency;
     ModeMotordetect mode_motordetect;
     ModeSurftrak mode_surftrak;
 
