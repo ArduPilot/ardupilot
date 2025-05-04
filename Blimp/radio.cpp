@@ -15,7 +15,7 @@ void Blimp::default_dead_zones()
 
 void Blimp::init_rc_in()
 {
-    // the library gaurantees that these are non-nullptr:
+    // the library guarantees that these are non-nullptr:
     channel_right = &rc().get_roll_channel();
     channel_front = &rc().get_pitch_channel();
     channel_up    = &rc().get_throttle_channel();
