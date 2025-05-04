@@ -191,7 +191,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: SLEW_UP_TIME
     // @DisplayName: Output slew time for increasing throttle
     // @Description: Time in seconds to slew output from zero to full. This is used to limit the rate at which output can change. Range is constrained between 0 and 0.5.
-    // @Range: 0 .5
+    // @Range: 0 0.5
     // @Units: s
     // @Increment: 0.001
     // @User: Advanced
@@ -200,7 +200,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: SLEW_DN_TIME
     // @DisplayName: Output slew time for decreasing throttle
     // @Description: Time in seconds to slew output from full to zero. This is used to limit the rate at which output can change.  Range is constrained between 0 and 0.5.
-    // @Range: 0 .5
+    // @Range: 0 0.5
     // @Units: s
     // @Increment: 0.001
     // @User: Advanced
