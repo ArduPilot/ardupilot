@@ -119,6 +119,10 @@ void ModeAuto::update()
         plane.calc_nav_pitch();
         plane.calc_throttle();
     }
+
+    //if(plane.g.auto_follow_enable && plane.adjusted_relative_altitude_cm()/100 >= plane.g.follow_min_alt){
+      //  plane.set_mode(plane.mode_autofollow, ModeReason::MISSION_END);
+   // }
 }
 
 void ModeAuto::navigate()

@@ -99,15 +99,39 @@ void ModeGuided::update()
 
     }
 
+   // if(plane.g.auto_follow_enable && plane.adjusted_relative_altitude_cm()/100 >= plane.g.follow_min_alt){
+     //  plane.set_mode(plane.mode_autofollow, ModeReason::MISSION_END);
+    // } 
+
 }
 
 void ModeGuided::navigate()
 {
-    plane.update_loiter(active_radius_m);
+   // plane.update_loiter(active_radius_m);
+
+    // Zero indicates to use WP_LOITER_RAD
+    if(plane.g.guided_takip == 0)
+        plane.update_loiter(0);
+    else{
+        plane.nav_controller->update_waypoint(plane.current_loc,plane.next_WP_loc,0.01f);
+    }
 }
 
 bool ModeGuided::handle_guided_request(Location target_loc)
 {
+
+    // add home alt if needed
+    if (target_loc.relative_alt) {
+        target_loc.alt += plane.home.alt;
+        target_loc.relative_alt = 0;
+    }
+
+    if(plane.g.guided_takip == 0)
+        plane.set_guided_WP(target_loc);
+    else{
+        plane.next_WP_loc = target_loc;
+    }
+ /*
     plane.fix_terrain_WP(target_loc, __LINE__);
     // add home alt if needed
     if (!target_loc.terrain_alt) {
@@ -115,7 +139,7 @@ bool ModeGuided::handle_guided_request(Location target_loc)
     }
 
     plane.set_guided_WP(target_loc);
-
+ */
     return true;
 }
 
