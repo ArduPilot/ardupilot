@@ -115,6 +115,14 @@ private:
         WAITING_FOR_CRC_LOW
     };
 
+    // camera image types
+    enum class CameraType : uint8_t {
+        MAIN_PIP_ZOOM_SUB_THERMAL = 1,
+        MAIN_THERMAL = 2,
+        MAIN_PIP_THERMAL_SUB_ZOOM = 3,
+        MAIN_ZOOM = 4
+       };
+
     // reading incoming packets from gimbal
     void read_incoming_packets();
 

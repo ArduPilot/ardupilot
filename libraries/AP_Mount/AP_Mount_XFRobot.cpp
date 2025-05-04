@@ -222,10 +222,24 @@ bool AP_Mount_XFRobot::take_picture()
     return send_simple_command(FunctionOrder::SHUTTER, 0x01);
 }
 
-//cycle pic-in-pic
+//set camera lens
 bool AP_Mount_XFRobot::set_lens(uint8_t lens)
 {
-    return send_simple_command(FunctionOrder::PIC_IN_PIC, 0x00);
+    CameraType selected_cam;
+
+    static const CameraType cam_type_table[] {
+        CameraType::MAIN_PIP_ZOOM_SUB_THERMAL,
+        CameraType::MAIN_THERMAL,
+        CameraType::MAIN_ZOOM,
+    };
+
+    // sanity check lens values
+    if (lens >= ARRAY_SIZE(cam_type_table)) {
+        return false;
+    }
+    selected_cam = cam_type_table[lens];
+
+    return send_simple_command(FunctionOrder::PIC_IN_PIC, (uint8_t)selected_cam);
 }
 
 // start or stop video recording.  returns true on success
