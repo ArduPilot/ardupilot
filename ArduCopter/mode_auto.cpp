@@ -1296,7 +1296,7 @@ void PayloadPlace::run()
         case State::FlyToLocation:
         case State::Descent_Start:
             gcs().send_text(MAV_SEVERITY_INFO, "%s Abort: Gripper Open", prefix_str);
-            // Descent_Start has not run so we must also initalise descent_start_altitude_cm
+            // Descent_Start has not run so we must also initialise descent_start_altitude_cm
             descent_start_altitude_cm = pos_control->get_pos_desired_U_cm();
             state = State::Done;
             break;
