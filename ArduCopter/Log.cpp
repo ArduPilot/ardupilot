@@ -264,7 +264,7 @@ void Copter::Log_Write_SysID_Data(float waveform_time, float waveform_sample, fl
 #if MODE_SYSTEMID_ENABLED
     struct log_SysIdD pkt_sidd = {
         LOG_PACKET_HEADER_INIT(LOG_SYSIDD_MSG),
-        time_us         : AP_HAL::micros64(),
+        time_us         : AP::scheduler().get_loop_start_time_us(),
         waveform_time   : waveform_time,
         waveform_sample : waveform_sample,
         waveform_freq   : waveform_freq,
@@ -298,7 +298,7 @@ void Copter::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitu
 #if MODE_SYSTEMID_ENABLED
     struct log_SysIdS pkt_sids = {
         LOG_PACKET_HEADER_INIT(LOG_SYSIDS_MSG),
-        time_us             : AP_HAL::micros64(),
+        time_us             : AP::scheduler().get_loop_start_time_us(),
         systemID_axis       : systemID_axis,
         waveform_magnitude  : waveform_magnitude,
         frequency_start     : frequency_start,
