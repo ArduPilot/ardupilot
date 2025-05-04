@@ -980,7 +980,7 @@ int8_t AP_CRSF_Telem::get_vertical_speed_packed()
     float vspeed = get_vspeed_ms();
     float vertical_speed_cm_s = vspeed * 100.0f;
     const int16_t Kl = 100; // linearity constant;
-    const float Kr = .026f; // range constant;
+    const float Kr = 0.026f; // range constant;
     int8_t vspeed_packed = int8_t(logf(fabsf(vertical_speed_cm_s)/Kl + 1)/Kr);
     return vspeed_packed * (is_negative(vertical_speed_cm_s) ? -1 : 1);
 }
