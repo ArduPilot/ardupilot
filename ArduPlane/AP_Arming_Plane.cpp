@@ -81,7 +81,8 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
-    if (plane.aparm.pitch_limit_max < 3) {
+    if (plane.aparm.pitch_limit_max < 3 && plane.aparm.throttle_max > 0) {
+        // only gliders are allowed to have very low pitch limits (some gliders want negative limits)
         check_failed(display_failure, "PTCH_LIM_MAX_DEG too small (%.1f)", plane.aparm.pitch_limit_max.get());
         ret = false;
     }

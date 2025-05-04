@@ -52,14 +52,22 @@ protected:
 
     AP_Float balloon_burst_amsl;
     AP_Float balloon_rate;
+    AP_Float mass;
+
+    struct {
+        // parameters for the drop attitude and speed, useful
+        // for drops that are not tail up
+        // NOTE! requires EKF type 10
+        AP_Float speed;
+        AP_Float roll_deg;
+        AP_Float pitch_deg;
+        AP_Float yaw_deg;
+    } release_init;
 
     /*
       parameters that define the glider model
      */
     const struct Model {
-        // total vehicle mass
-        float mass = 9.07441; // kg
-
         // reference area
         float Sref = 0.92762; // m^2
 
