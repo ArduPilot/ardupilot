@@ -371,6 +371,31 @@ public:
         k_param_mode_autoland,
         k_param__gcs,
 
+
+        //autofollow 
+        k_param_auto_follow_enable = 274,
+        k_param_follow_roll,
+        k_param_follow_pitch,
+        k_param_follow_yaw,
+        k_param_follow_min_alt,
+
+        //kamikaze
+        k_param_kamikaze_start_altitude,
+        k_param_kamikaze_dive_angle,
+        k_param_kamikaze_end_altitude,
+        k_param_kamikaze_radius_offset,
+        k_param_kamikaze_lat_bas,
+        k_param_kamikaze_lat_son,
+        k_param_kamikaze_lon_bas,
+        k_param_kamikaze_lon_son,
+        k_param_kamikaze_start_alt,
+        k_param_kamikaze_controller_p,
+        k_param_kamikaze_controller_i,
+        k_param_kamikaze_qr_detect,
+        k_param_kamikaze_pitch_min,
+
+        k_param_guided_takip,
+        
     };
 
     AP_Int16 format_version;

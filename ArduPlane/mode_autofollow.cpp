@@ -1,6 +1,6 @@
 #include "mode.h"
 #include "Plane.h"
-#include "GCS_Mavlink.h"
+#include "GCS_Mavlink_Plane.h"
 #include "math.h"
 
 bool ModeAutoFollow::_enter()

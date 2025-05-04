@@ -70,8 +70,8 @@ public:
 #if MODE_AUTOLAND_ENABLED
         AUTOLAND      = 26,
 #endif
-        AUTOFOLLOW    = 26,
-        KAMIKAZE      = 27,
+        AUTOFOLLOW    = 27,
+        KAMIKAZE      = 28,
     // Mode number 30 reserved for "offboard" for external/lua control.
     };
 

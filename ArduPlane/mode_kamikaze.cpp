@@ -242,7 +242,7 @@ bool ModeKamikaze::_enter()
     kamikaze_target = plane.next_WP_loc;
 
     kamikaze_state = 0; // kamikaze durumu default haliyle arayış olarak tanımlanır 
-    previous_pitch_limit = plane.pitch_limit_min_cd; // tecs kontrolcüsü minimum pitch limiti dalış sırasında değiştirileceği için eski değer hafızaya atılır.
+    previous_pitch_limit = plane.pitch_limit_min; // tecs kontrolcüsü minimum pitch limiti dalış sırasında değiştirileceği için eski değer hafızaya atılır.
 
     rise_basla = 0;               // cikis waypointini bir kere tanimlamak icin 
 
@@ -344,7 +344,7 @@ void ModeKamikaze::_exit()
     yonelim_error = 0;
     dalis_yaricap = 0;
     dalis_pitch_cd = 0;
-    plane.pitch_limit_min_cd = previous_pitch_limit;
+    plane.pitch_limit_min = previous_pitch_limit;
     rise_basla = 0;           
     actual_dive_angle = 0;       
     dive_error = 0;
