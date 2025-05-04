@@ -220,3 +220,49 @@
 #ifndef THR_CTRL_LAND_THRESH
  #define THR_CTRL_LAND_THRESH 0.7
 #endif
+
+
+
+//////////////////////////////////////////////////////////////////////////////
+//  AutoFollow 
+#ifndef AUTO_FOLLOW_ENABLE_DEFAULT
+ #define AUTO_FOLLOW_ENABLE_DEFAULT      0     // default value for my new parameter
+#endif
+
+#ifndef FOLLOW_ROLL_DEFAULT
+ #define FOLLOW_ROLL_DEFAULT      0     // default value for my new parameter
+#endif
+
+#ifndef FOLLOW_PITCH_DEFAULT
+ #define FOLLOW_PITCH_DEFAULT      0     // default value for my new parameter
+#endif
+
+#ifndef FOLLOW_YAW_DEFAULT
+ #define FOLLOW_YAW_DEFAULT      0     // default value for my new parameter
+#endif
+
+
+/*
+//////////////////////////////////////////////////////////////////////////////
+//  Kamikaze
+
+#ifndef KAMIKAZE_DIVE_ANGLE_DEFAULT
+ #define KAMIKAZE_DIVE_ANGLE_DEFAULT      45     // default value for my new parameter
+#endif
+
+#ifndef KAMIKAZE_END_ALTITUDE_DEFAULT
+ #define KAMIKAZE_DIVE_ANGLE_DEFAULT      50     // default value for my new parameter
+#endif
+
+#ifndef KAMIKAZE_CONTROLLER_P_DEFAULT
+ #define KAMIKAZE_CONTROLLER_P_DEFAULT    1000       // default value for my new parameter
+#endif
+
+#ifndef KAMIKAZE_CONTROLLER_I_DEFAULT
+ #define KAMIKAZE_CONTROLLER_I_DEFAULT    0.1       // default value for my new parameter
+#endif
+
+#ifndef KAMIKAZE_RADIUS_OFFSET_DEFAULT
+ #define KAMIKAZE_RADIUS_OFFSET_DEFAULT    10       // default value for my new parameter
+#endif
+*/
