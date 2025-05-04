@@ -3709,7 +3709,7 @@ float QuadPlane::forward_throttle_pct()
             float fwd_thr = rc_fwd_thr_ch->percent_input();
 
             // set forward throttle to fwd_thr_max * (manual input + mix): range [0,100]
-            fwd_thr *= .01f * constrain_float(fwd_thr_max, 0, 100);
+            fwd_thr *= 0.01f * constrain_float(fwd_thr_max, 0, 100);
             return fwd_thr;
         }
     }
