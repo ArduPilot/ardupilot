@@ -5372,12 +5372,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_wind_estimate(const mavlink_
     if (packet.param3 < 0 || packet.param3 > 360) {
         return MAV_RESULT_DENIED;
     }
-    Vector2f wind_vel;
-    wind_vel.x = -packet.param1;
-    wind_vel.y = 0;
-    wind_vel.rotate(packet.param3*3.1415/180);
-
-    AP::ahrs().handle_external_wind_estimate(wind_vel, packet.param2, 0);
+    AP::ahrs().handle_external_wind_estimate(packet.param1, packet.param2, packet.param3, 0);
     return MAV_RESULT_ACCEPTED;
 }
 #endif // AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED

@@ -1534,11 +1534,13 @@ bool AP_AHRS::handle_external_position_estimate(const Location &loc, float pos_a
 #endif
 
 #if AP_AHRS_POSITION_RESET_ENABLED
-bool AP_AHRS::handle_external_wind_estimate(const Vector2f &wind_vel, float vel_accuracy, uint32_t timestamp_ms)
+bool AP_AHRS::handle_external_wind_estimate(float wind_speed, float wind_speed_acc, float wind_dir, uint32_t timestamp_ms)
 {
-    dcm.set_external_wind_estimate(wind_vel.length(), wind_vel.angle());
+    dcm.set_external_wind_estimate(wind_speed, wind_dir);
 #if HAL_NAVEKF3_AVAILABLE
-    return EKF3.setWindNE(wind_vel, vel_accuracy, timestamp_ms);
+    Vector2f wind_vel = Vector2f(-wind_speed, 0);
+    wind_vel.rotate(radians(wind_dir));
+    return EKF3.setWindNE(wind_vel, wind_speed_acc, timestamp_ms);
 #endif
     return true;
 }
