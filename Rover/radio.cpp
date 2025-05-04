@@ -6,7 +6,7 @@
 void Rover::set_control_channels(void)
 {
     // check change on RCMAP
-    // the library gaurantees that these are non-nullptr:
+    // the library guarantees that these are non-nullptr:
     channel_steer    = &rc().get_roll_channel();
     channel_throttle = &rc().get_throttle_channel();
     channel_lateral  = &rc().get_yaw_channel();
