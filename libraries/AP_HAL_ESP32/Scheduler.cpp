@@ -113,7 +113,7 @@ void Scheduler::init()
     	hal.console->printf("OK created task _uart_thread on FASTCPU\n");
     }	  
 
-    // we put thos on the SLOW core as it mounts the sd card, and that often isn't conencted.
+    // we put those on the SLOW core as it mounts the sd card, and that often isn't connected.
     if (xTaskCreatePinnedToCore(_io_thread, "SchedulerIO:APM_IO", IO_SS, this, IO_PRIO, &_io_task_handle,SLOWCPU) != pdPASS) {
         hal.console->printf("FAILED to create task _io_thread on SLOWCPU\n");
     } else {
