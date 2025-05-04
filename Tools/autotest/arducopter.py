@@ -8904,7 +8904,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if bs.voltages[0] != want_bs_volt:
             raise NotAchievedException("Battery voltage not as expected (want=%f) got=(%f)" % (want_bs_volt, bs.voltages[0],))
 
-        self.progress("Cheking battery remaining")
+        self.progress("Checking battery remaining")
         bs = self.assert_receive_message(
             "BATTERY_STATUS",
             condition="BATTERY_STATUS.id==2",  # id is zero-indexed
