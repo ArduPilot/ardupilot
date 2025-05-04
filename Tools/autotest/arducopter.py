@@ -13615,6 +13615,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 break
         self.do_land()
 
+        self.set_parameters({
+            'FSTRATE_ENABLE': 1,
+        })
+        self.reboot_sitl()
+        self.takeoff(5, mode='STABILIZE')
+        self.set_rc(3, 1475)
+        self.context_collect('STATUSTEXT')
+        self.change_mode('SYSTEMID')
+        self.wait_statustext('SystemID Starting: axis=1', check_context=True)
+        tstart = self.get_sim_time_cached()
+        while True:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise NotAchievedException("Did not finish System ID")
+            alt = self.get_altitude(relative=True)
+            self.progress("Altitude %s" % alt)
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=0.1)
+            if m is not None and m.text == 'SystemID Finished':
+                break
+        self.do_land()
+
     def RTLStoppingDistanceSpeed(self):
         '''test stopping distance unaffected by RTL speed'''
         self.upload_simple_relhome_mission([
