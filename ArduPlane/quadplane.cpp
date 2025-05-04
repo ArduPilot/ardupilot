@@ -277,7 +277,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Bitmask: 8: Mtrs_Only_Qassist-in tailsitters only uses VTOL motors and not flying surfaces for QASSIST
     // @Bitmask: 10: Disarmed Yaw Tilt-enable motor tilt for yaw when disarmed
     // @Bitmask: 11: Delay Spoolup-delay VTOL spoolup for 2 seconds after arming
-    // @Bitmask: 12: Disable speed based Qassist when using synthethic airspeed estimates
+    // @Bitmask: 12: Disable speed based Qassist when using synthetic airspeed estimates
     // @Bitmask: 13: Disable Ground Effect Compensation-on baro altitude reports
     // @Bitmask: 14: Ignore forward flight angle limits-in Qmodes and use Q_ANGLE_MAX exclusively
     // @Bitmask: 15: ThrLandControl-enable throttle stick control of landing rate
@@ -449,7 +449,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     // @Param: BACKTRANS_MS
     // @DisplayName: SLT and Tiltrotor back transition pitch limit duration
-    // @Description: Pitch angle will increase from 0 to angle max over this duration when switching into VTOL flight in a postion control mode. 0 Disables.
+    // @Description: Pitch angle will increase from 0 to angle max over this duration when switching into VTOL flight in a position control mode. 0 Disables.
     // @Units: ms
     // @Range: 0 10000
     AP_GROUPINFO("BACKTRANS_MS", 28, QuadPlane, back_trans_pitch_limit_ms, 3000),
@@ -821,7 +821,7 @@ bool QuadPlane::setup(void)
         AP_BoardConfig::allocation_error("transition");
     }
 
-    // init wp_nav variables after detaults are setup
+    // init wp_nav variables after defaults are setup
     wp_nav->wp_and_spline_init_cm();
 
     transition->force_transition_complete();
@@ -971,7 +971,7 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
                                plane.pitchController.get_pid_info().target * 100.0f,
                                yaw_rate_cds };
 
-        // rotate into multicopter attitude refence frame
+        // rotate into multicopter attitude reference frame
         ahrs_view->rotate(bf_input_cd);
 
         // disable yaw time constant for 1:1 match of desired rates
@@ -1013,7 +1013,7 @@ void QuadPlane::run_z_controller(void)
     }
     const uint32_t now = AP_HAL::millis();
     if (tailsitter.in_vtol_transition(now)) {
-        // never run Z controller in tailsitter transtion
+        // never run Z controller in tailsitter transition
         return;
     }
     if ((now - last_pidz_active_ms) > 20 || !pos_control->is_active_U()) {
@@ -1564,7 +1564,7 @@ void SLT_Transition::update()
             quadplane.attitude_control->rate_bf_yaw_target(0.0);
         }
         if (quadplane.tiltrotor.enabled() && !quadplane.tiltrotor.has_fw_motor()) {
-            // tilt rotors without decidated fw motors do not have forward throttle output in this stage
+            // tilt rotors without dedicated fw motors do not have forward throttle output in this stage
             // prevent throttle I wind up
             plane.TECS_controller.reset_throttle_I();
         }
@@ -1610,9 +1610,9 @@ void SLT_Transition::update()
             throttle_scaled = 0.01;
         }
         if (quadplane.tiltrotor.enabled() && !quadplane.tiltrotor.has_vtol_motor() && !quadplane.tiltrotor.has_fw_motor()) {
-            // All motors tilting, Use a combination of vertical and forward throttle based on curent tilt angle
+            // All motors tilting, Use a combination of vertical and forward throttle based on current tilt angle
             // scale from all VTOL throttle at airspeed_reached_tilt to all forward throttle at fully forward tilt
-            // this removes a step change in throttle once assistance is stoped
+            // this removes a step change in throttle once assistance is stopped
             const float ratio = (constrain_float(quadplane.tiltrotor.current_tilt, airspeed_reached_tilt, quadplane.tiltrotor.get_fully_forward_tilt()) - airspeed_reached_tilt) / (quadplane.tiltrotor.get_fully_forward_tilt() - airspeed_reached_tilt);
             const float fw_throttle = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),0) * 0.01;
             throttle_scaled = constrain_float(throttle_scaled * (1.0-ratio) + fw_throttle * ratio, 0.0, 1.0);
@@ -1828,7 +1828,7 @@ void QuadPlane::update_throttle_suppression(void)
        if the user has unset the "check throttle zero when arming"
        then the RC controller has a sprung throttle and we should not
        consider non-zero throttle to mean that pilot is commanding
-       takeoff unless in a manual thottle mode
+       takeoff unless in a manual throttle mode
     */
     if (!is_zero(get_throttle_input()) &&
         (rc().arming_check_throttle() ||
@@ -2251,7 +2251,7 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
         // handle resets needed for when the state changes
         if (s == QPOS_POSITION1) {
             reached_wp_speed = false;
-            // never do a rate reset, if attitude control is not active it will be automaticaly reset before running, see: last_att_control_ms
+            // never do a rate reset, if attitude control is not active it will be automatically reset before running, see: last_att_control_ms
             // if it is active then the rate control should not be reset at all
             qp.attitude_control->reset_yaw_target_and_rate(false);
             pos1_speed_limit = plane.ahrs.groundspeed_vector().length();
@@ -3618,7 +3618,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         target_climb_rate_cms = pos_control->get_vel_target_U_cms();
     }
 
-    // Asemble assistance bitmask, defintion here is used to generate log documentation
+    // Assemble assistance bitmask, definition here is used to generate log documentation
     enum class log_assistance_flags {
         in_assisted_flight = 1U<<0, // true if VTOL assist is active
         forced             = 1U<<1, // true if assistance is forced

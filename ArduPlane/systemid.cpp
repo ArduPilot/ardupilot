@@ -6,7 +6,7 @@
 #include "Plane.h"
 
 /*
-  handle systemid via an auxillary switch
+  handle systemid via an auxiliary switch
  */
 
 const AP_Param::GroupInfo AP_SystemID::var_info[] = {

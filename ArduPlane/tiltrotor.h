@@ -123,7 +123,7 @@ private:
     // with slow tilt rates the tilt angle can lag
     bool angle_achieved;
 
-    // refences for convenience
+    // references for convenience
     QuadPlane& quadplane;
     AP_MotorsMulticopter*& motors;
 

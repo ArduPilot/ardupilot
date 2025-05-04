@@ -21,7 +21,7 @@ bool ModeQRTL::_enter()
         const float dist = plane.current_loc.get_distance(destination);
         const float radius = get_VTOL_return_radius();
 
-        // Climb at least to a cone around home of hight of QRTL alt and radius of radius
+        // Climb at least to a cone around home of height of QRTL alt and radius of radius
         // Always climb up to at least Q_RTL_ALT_MIN, constrain Q_RTL_ALT_MIN between Q_LAND_FINAL_ALT and Q_RTL_ALT
         const float min_climb = constrain_float(quadplane.qrtl_alt_min, quadplane.land_final_alt, quadplane.qrtl_alt);
         const float target_alt = MAX(quadplane.qrtl_alt * (dist / MAX(radius, dist)), min_climb);
@@ -49,7 +49,7 @@ bool ModeQRTL::_enter()
             return true;
 
         } else if (dist < radius) {
-            // Above home "cone", return at curent altitude if lower than QRTL alt
+            // Above home "cone", return at current altitude if lower than QRTL alt
             int32_t current_alt_abs_cm;
             if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, current_alt_abs_cm)) {
                 RTL_alt_abs_cm = MIN(RTL_alt_abs_cm, current_alt_abs_cm);
