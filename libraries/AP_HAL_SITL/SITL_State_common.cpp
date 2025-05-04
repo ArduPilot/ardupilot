@@ -434,8 +434,8 @@ void SITL_State_Common::update_voltage_current(struct sitl_input &input, float t
     voltage_pin_voltage = (voltage / 10.1f);
     current_pin_voltage = current/17.0f;
     // fake battery2 as just a 25% gain on the first one
-    voltage2_pin_voltage = voltage_pin_voltage * .25f;
-    current2_pin_voltage = current_pin_voltage * .25f;
+    voltage2_pin_voltage = voltage_pin_voltage * 0.25f;
+    current2_pin_voltage = current_pin_voltage * 0.25f;
 }
 
 #endif // HAL_BOARD_SITL
