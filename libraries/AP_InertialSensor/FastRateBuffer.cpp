@@ -151,6 +151,12 @@ bool AP_InertialSensor::push_next_gyro_sample(const Vector3f& gyro, float delta_
  */
 bool AP_InertialSensor::get_rate_delta_angle(Vector3f &delta_angle, float &delta_angle_dt)
 {
+    if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
+        return false;
+    }
+
+    WITH_SEMAPHORE(fast_rate_buffer->_mutex);
+
     delta_angle_dt = fast_rate_buffer->delta_angle_acc_dt;
     delta_angle = fast_rate_buffer->delta_angle_acc;
 
