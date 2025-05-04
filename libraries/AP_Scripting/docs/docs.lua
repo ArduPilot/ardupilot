@@ -3637,6 +3637,14 @@ ahrs = {}
 ---@return boolean -- true if call was handled successfully
 function ahrs:handle_external_position_estimate(location, accuracy, timestamp_ms) end
 
+-- supply an external windspeed estimate to the AHRS (supported by EKF3)
+---@param wind_speed number -- estimated wind speed
+---@param wind_direction number -- estimated wind direction
+---@param speed_accuracy number -- 1-sigma accuracy in meters/second
+---@param timestamp_ms uint32_t_ud|integer|number -- timestamp of reading in ms since boot
+---@return boolean -- true if call was handled successfully
+function ahrs:handle_external_wind_estimate(wind_speed, wind_direction, speed_accuracy, timestamp_ms) end
+
 -- desc
 ---@return Quaternion_ud|nil
 function ahrs:get_quaternion() end
