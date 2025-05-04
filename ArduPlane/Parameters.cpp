@@ -715,6 +715,156 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
 
+
+    ////////////// AUTO FOLLOW PARAM ////////////////////////////////
+    // @Param: Follow_Enable
+    // @Description: Enable the autofollow mode 
+    // @Range: 0 1
+    // @User: Advance
+    GSCALAR(auto_follow_enable,     "FOLLOW_ENABLE", 0),
+
+    // @Param: Follow_Roll
+    // @Description: Define in desired roll in auto follow mode 
+    // @Range: -9000 9000
+    // @User: Advance
+    // @Unit : Centi Degree
+    GSCALAR(follow_roll ,           "FOLLOW_ROLL" , 0),
+
+    // @Param: Follow_PITCH
+    // @Description: Define in desired pitch in auto follow mode 
+    // @Range: -9000 9000
+    // @User: Advance
+    // @Unit : Centi Degree
+    GSCALAR(follow_pitch ,           "FOLLOW_PITCH" , 0),
+
+    // @Param: Follow_Yaw
+    // @Description: Define in desired yaw in auto follow mode 
+    // @Range: -9000 9000
+    // @User: Advance
+    // @Unit : Centi Degree
+    GSCALAR(follow_yaw ,             "FOLLOW_YAW" , 0),
+
+    // @Param: Follow_Min_Alt
+    // @Description: Define in desired min alt in auto follow mode 
+    // @Range: 0 32000
+    // @User: Advance
+    // @Unit : m
+    GSCALAR(follow_min_alt ,         "FOLLOW_MIN_ALT" , 0),
+
+//////// KAMIKAZE PARAMETERS ////////////
+
+    // @Param: KAMI_DIVE_ANGLE
+    // @DisplayName: Kamikaze dalis acisi
+    // @Description: Dalis rotasinin yer ile yapacagi aci 
+    // @Range: 10 90
+    // @Units: deg
+	// @Increment: 1
+    // @User: Standard
+    GSCALAR(kamikaze_dive_angle,      "KAMI_DIVE_ANGLE",  50),
+
+    // @Param: KAMI_END_ALT
+    // @DisplayName: Kamikaze bitis irtifasi
+    // @Description: Dalisin bitirilecegi ve kalkisin baslayacagi irtifa  
+    // @Range: 1 1000
+    // @Units: m
+	// @Increment: 1
+    // @User: Standard
+    GSCALAR(kamikaze_end_altitude,    "KAMI_END_ALT",  100),
+
+    // @Param: KAMI_CNTRL_P
+    // @DisplayName: Dalis kontrolcusu p katsayisi
+    // @Description: Dalis kontrolcusu oransal (proportional) katsayisi 
+    // @Range: 0 10
+	// @Increment: 0.01
+    // @User: Standard
+    GSCALAR(kamikaze_controller_p,     "KAMI_CNTRL_P",  0.5f),
+
+    // @Param: KAMI_CNTRL_I
+    // @DisplayName: Dalis kontrolcusu I katsayisi
+    // @Description: Dalis kontrolcusu integrator katsayisi 
+    // @Range: 0 10
+	// @Increment: 0.01
+    // @User: Standard
+    GSCALAR(kamikaze_controller_i,     "KAMI_CNTRL_I",  0.1f),
+
+    // @Param: KAMI_RAD_OFFSET
+    // @DisplayName: Dalis yaricapi ofseti
+    // @Description: Dalis yaricapi ofseti 
+    // @Range: 0 100
+	// @Increment: 1
+    // @User: Standard
+    GSCALAR(kamikaze_radius_offset,    "KAMI_RAD_OFFSET",  10),
+
+
+    // @Param: KAMI_LAT_BAS
+    // @DisplayName: Kamikaze konum latitude ilk sayilari
+    // @Description: Kamikaze konum latitude ilk sayilari
+    // @Range: 0 99999
+	// @Increment: 1
+    // @User: Standard
+    GSCALAR(kamikaze_lat_bas,    "KAMI_LAT_BAS",  0),
+
+    // @Param: KAMI_LAT_SON
+    // @DisplayName: Kamikaze konum latitude son sayilari
+    // @Description: Kamikaze konum latitude son sayilari
+    // @Range: 0 99999
+	// @Increment: 1
+    // @User: Standard
+    GSCALAR(kamikaze_lat_son,    "KAMI_LAT_SON",  0),
+
+    // @Param: KAMI_LON_BAS
+    // @DisplayName: Kamikaze konum longitude ilk sayilari
+    // @Description: Kamikaze konum longitude ilk sayilari
+    // @Range: 0 99999
+	// @Increment: 1
+    // @User: Standard
+    GSCALAR(kamikaze_lon_bas,    "KAMI_LON_BAS",  0),
+
+    // @Param: KAMI_LON_SON
+    // @DisplayName: Kamikaze konum longitude son sayilari
+    // @Description: Kamikaze konum longitude son sayilari
+    // @Range: 0 99999
+	// @Increment: 1
+    // @User: Standard
+    GSCALAR(kamikaze_lon_son,    "KAMI_LON_SON",  0),
+
+    // @Param: KAMI_START_ALT
+    // @DisplayName: Kamikaze start altitude
+    // @Description: Kamikaze waypointinin irtifasini belirler.
+    // @Range: 0 500
+	// @Increment: 1
+    // @User: Standard
+    GSCALAR(kamikaze_start_alt,    "KAMI_START_ALT",  0),
+
+    // @Param: KAMI_QR_DETECT
+    // @DisplayName: QR Detection Durumu
+    // @Description: QR kodunu okunduysa bir okunmadiysa 0 degerini alir
+    // @Range: 0 1
+	// @Increment: 1
+    // @User: Standard
+    GSCALAR(kamikaze_qr_detect,    "KAMI_QR_DETECT",  0),
+    
+    // @Param: KAMI_PITCH_MIN
+    // @DisplayName: Kamikaze dalis maks pitch acisi
+    // @Description: Dalis sirasinda maks pitch acisi 
+    // @Range: 1 9000
+    // @Units: Centi Degree
+	// @Increment: 1
+    // @User: Standard
+    GSCALAR(kamikaze_pitch_min,       "KAMI_PITCH_MIN", 5500),
+
+    //////// GUIDED TAKIP //////////
+
+    // @Param: QUIDED_TAKIP
+    // @DisplayName: Guided Takip
+    // @Description: Guided takip aktivasyonu 
+    // @Range: 0 1
+	// @Increment: 1
+    // @User: Standard
+    GSCALAR(guided_takip,    "GUIDED_TAKIP",  0),
+
+
+
 #if HAL_WITH_IO_MCU
     // @Param: OVERRIDE_CHAN
     // @DisplayName: IO override channel
@@ -1304,6 +1454,9 @@ static const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_fence_retalt,       0,     AP_PARAM_INT16, "FENCE_RET_ALT"},
     { Parameters::k_param_fence_ret_rally,    0,      AP_PARAM_INT8, "FENCE_RET_RALLY"},
     { Parameters::k_param_fence_autoenable,   0,      AP_PARAM_INT8, "FENCE_AUTOENABLE"},
+    { Parameters::k_param_kamikaze_controller_p, 0, AP_PARAM_FLOAT, "KAMI_CNTRL_P"},
+    { Parameters::k_param_kamikaze_controller_i, 0, AP_PARAM_FLOAT, "KAMI_CNTRL_I"},
+
 };
 
 struct RCConversionInfo {

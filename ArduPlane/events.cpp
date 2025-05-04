@@ -76,6 +76,8 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
         }
         FALLTHROUGH;
     }
+    case Mode::Number::AUTOFOLLOW:
+    case Mode::Number::KAMIKAZE:
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
     case Mode::Number::LOITER:
@@ -192,7 +194,9 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
         }
 #endif
         FALLTHROUGH;
-
+    
+    case Mode::Number::AUTOFOLLOW:
+    case Mode::Number::KAMIKAZE:
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
 

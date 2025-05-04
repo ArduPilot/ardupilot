@@ -475,6 +475,31 @@ public:
     AP_Int8 override_channel;
 #endif
     AP_Int16 gcs_pid_mask;
+
+     /////// AUTO FOLLOW PARAM ///////
+     AP_Int8 auto_follow_enable;
+     AP_Int32 follow_roll;
+     AP_Int32 follow_pitch;
+     AP_Int32 follow_yaw;
+     AP_Int32 follow_min_alt;
+ 
+     //////// KAMIKAZE PARAMS ////////
+     AP_Int16 kamikaze_start_altitude;  
+     AP_Int16 kamikaze_dive_angle;
+     AP_Int16 kamikaze_end_altitude;
+     AP_Int16 kamikaze_radius_offset;
+     AP_Int32 kamikaze_lat_bas;
+     AP_Int32 kamikaze_lat_son;
+     AP_Int32 kamikaze_lon_bas;
+     AP_Int32 kamikaze_lon_son;
+     AP_Int32 kamikaze_start_alt;
+     AP_Float kamikaze_controller_p;
+     AP_Float kamikaze_controller_i; 
+     AP_Int8 kamikaze_qr_detect;
+     AP_Int32 kamikaze_pitch_min;
+ 
+     //////// GUIDED TAKIP //////////
+     AP_Int8 guided_takip;
 };
 
 /*

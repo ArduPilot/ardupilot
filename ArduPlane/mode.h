@@ -70,7 +70,8 @@ public:
 #if MODE_AUTOLAND_ENABLED
         AUTOLAND      = 26,
 #endif
-
+        AUTOFOLLOW    = 26,
+        KAMIKAZE      = 27,
     // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
@@ -1037,3 +1038,66 @@ protected:
 };
 
 #endif
+
+
+class ModeAutoFollow : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::AUTOFOLLOW; }
+    const char *name() const override { return "AUTOFOLLOW"; }
+    const char *name4() const override { return "AFLW"; }
+
+    bool does_automatic_thermal_switch() const override { return true; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    void navigate() override;
+
+    bool allows_throttle_nudging() const override { return true; }
+
+    bool does_auto_navigation() const override;
+
+    bool does_auto_throttle() const override;
+
+protected:
+    bool _enter() override;
+    void _exit() override;
+};
+
+class ModeKamikaze : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::KAMIKAZE; }
+    const char *name() const override { return "KAMIKAZE"; }
+    const char *name4() const override { return "KAMI"; }
+
+    bool does_automatic_thermal_switch() const override { return true; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    void navigate() override;
+
+    void dive();
+
+    void rise();
+
+    void search();
+
+    virtual bool is_guided_mode() const override { return true; }
+
+    bool allows_throttle_nudging() const override { return true; }
+
+    bool does_auto_navigation() const override;
+
+    bool does_auto_throttle() const override;
+
+protected:
+
+    bool _enter() override;
+    void _exit() override;
+};
+

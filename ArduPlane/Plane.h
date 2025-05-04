@@ -173,6 +173,9 @@ public:
     friend class ModeTakeoff;
     friend class ModeThermal;
     friend class ModeLoiterAltQLand;
+
+    friend class ModeAutoFollow;
+    friend class ModeKamikaze;
 #if MODE_AUTOLAND_ENABLED
     friend class ModeAutoLand;
 #endif
@@ -342,7 +345,8 @@ private:
 #if AP_QUICKTUNE_ENABLED
     AP_Quicktune quicktune;
 #endif
-    
+    ModeAutoFollow mode_autofollow;
+    ModeKamikaze mode_kamikaze;    
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     Mode *control_mode = &mode_initializing;
