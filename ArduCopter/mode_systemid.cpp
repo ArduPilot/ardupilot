@@ -383,8 +383,12 @@ void ModeSystemId::run()
         pos_control->update_U_controller();
     }
 
-    if (log_subsample <= 0) {
-        log_data();
+    if (log_subsample <= 0 && !copter.using_rate_thread) {
+        Vector3f delta_angle;
+        float delta_angle_dt;
+        copter.ins.get_delta_angle(delta_angle, delta_angle_dt);
+        log_attitude_data(delta_angle_dt, delta_angle);
+
         if (copter.should_log(MASK_LOG_ATTITUDE_FAST) && copter.should_log(MASK_LOG_ATTITUDE_MED)) {
             log_subsample = 1;
         } else if (copter.should_log(MASK_LOG_ATTITUDE_FAST)) {
@@ -398,13 +402,9 @@ void ModeSystemId::run()
     log_subsample -= 1;
 }
 
-// log system id and attitude
-void ModeSystemId::log_data() const
+// log system id and just attitude data
+void ModeSystemId::log_attitude_data(float delta_angle_dt, const Vector3f& delta_angle) const
 {
-    Vector3f delta_angle;
-    float delta_angle_dt;
-    copter.ins.get_delta_angle(delta_angle, delta_angle_dt);
-
     Vector3f delta_velocity;
     float delta_velocity_dt;
     copter.ins.get_delta_velocity(delta_velocity, delta_velocity_dt);
@@ -417,6 +417,15 @@ void ModeSystemId::log_data() const
     copter.Log_Write_Attitude();
     copter.Log_Write_Rate();
     copter.Log_Write_PIDS();
+}
+
+// log system id and all data
+void ModeSystemId::log_data() const
+{
+    Vector3f delta_angle;
+    float delta_angle_dt;
+    copter.ins.get_delta_angle(delta_angle, delta_angle_dt);
+    log_attitude_data(delta_angle_dt, delta_angle);
 
     if (is_poscontrol_axis_type()) {
         pos_control->write_log();
