@@ -119,7 +119,7 @@ void ModePoshold::control_horizontal() {
         // convert pos control roll and pitch angles back to lateral and forward efforts
         sub.translate_pos_control_rp(lateral_out, forward_out);
 
-        // udpate the xy controller
+        // update the xy controller
         position_control->update_NE_controller();
     } else if (g.pilot_speed > 0) {
         // allow the pilot to reposition manually
