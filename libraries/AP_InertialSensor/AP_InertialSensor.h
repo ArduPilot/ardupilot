@@ -817,12 +817,14 @@ public:
     void disable_fast_rate_buffer();
     // get the next available gyro sample from the fast rate buffer
     bool get_next_gyro_sample(Vector3f& gyro);
+    // get accumulated delta angles and time and zero out once retrieved
+    bool get_rate_delta_angle(Vector3f &delta_angle, float &delta_angle_dt);
     // get the number of available gyro samples in the fast rate buffer
     uint32_t get_num_gyro_samples();
     // set the rate at which samples are collected, unused samples are dropped
     void set_rate_decimation(uint8_t rdec);
     // push a new gyro sample into the fast rate buffer
-    bool push_next_gyro_sample(const Vector3f& gyro);
+    bool push_next_gyro_sample(const Vector3f& gyro, float delta_angle_dt, const Vector3f& delta_angle);
     // run the filter parmeter update code.
     void update_backend_filters();
     // are rate loop samples enabled for this instance?

@@ -216,7 +216,7 @@ void AP_InertialSensor_Backend::save_gyro_window(const uint8_t instance, const V
 /*
   apply harmonic notch and low pass gyro filters
  */
-void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const Vector3f &gyro)
+void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const Vector3f &gyro, float delta_angle_dt, const Vector3f &delta_angle)
 {
     uint8_t filter_phase = 0;
     save_gyro_window(instance, gyro, filter_phase++);
@@ -266,7 +266,7 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
 
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
     if (_imu.is_rate_loop_gyro_enabled(instance)) {
-        if (_imu.push_next_gyro_sample(gyro_filtered)) {
+        if (_imu.push_next_gyro_sample(gyro_filtered, delta_angle_dt, delta_angle)) {
             // if we used the value, record it for publication to the front-end
             _imu._gyro_filtered[instance] = gyro_filtered;
         }
@@ -361,7 +361,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         _imu._last_raw_gyro[instance] = gyro;
 
         // apply gyro filters and sample for FFT
-        apply_gyro_filters(instance, gyro);
+        apply_gyro_filters(instance, gyro, dt, delta_angle + delta_coning);
 
         _imu._new_gyro_data[instance] = true;
     }
@@ -450,7 +450,7 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
         _imu._last_raw_gyro[instance] = gyro;
 
         // apply gyro filters and sample for FFT
-        apply_gyro_filters(instance, gyro);
+        apply_gyro_filters(instance, gyro, dt, delta_angle + delta_coning);
 
         _imu._new_gyro_data[instance] = true;
     }

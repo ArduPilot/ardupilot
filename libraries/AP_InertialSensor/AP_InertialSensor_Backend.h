@@ -177,7 +177,7 @@ protected:
     void _publish_gyro(uint8_t instance, const Vector3f &gyro) __RAMFUNC__; /* front end */
 
     // apply notch and lowpass gyro filters and sample for FFT
-    void apply_gyro_filters(const uint8_t instance, const Vector3f &gyro);
+    void apply_gyro_filters(const uint8_t instance, const Vector3f &gyro, float delta_angle_dt, const Vector3f& delta_angle);
     void save_gyro_window(const uint8_t instance, const Vector3f &gyro, uint8_t phase);
 
     // this should be called every time a new gyro raw sample is
