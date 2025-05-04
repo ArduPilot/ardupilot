@@ -8,7 +8,7 @@
  */
 void Plane::set_control_channels(void)
 {
-    // the library gaurantees that these are non-nullptr:
+    // the library guarantees that these are non-nullptr:
     if (g.rudder_only) {
         // in rudder only mode the roll and rudder channels are the
         // same.

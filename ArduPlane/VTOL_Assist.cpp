@@ -67,8 +67,8 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
     if (!quadplane.tailsitter.enabled() && !( (plane.control_mode->does_auto_throttle() && !plane.throttle_suppressed)
                                                                       || is_positive(plane.get_throttle_input()) 
                                                                       || plane.is_flying() ) ) {
-        // not in a flight mode and condition where it would be safe to turn on vertial lift motors
-        // skip this check for tailsitters because the forward and vertial motors are the same and are controled directly by throttle imput unlike other quadplanes
+        // not in a flight mode and condition where it would be safe to turn on vertical lift motors
+        // skip this check for tailsitters because the forward and vertical motors are the same and are controlled directly by throttle input unlike other quadplanes
         reset();
         return false;
     }
