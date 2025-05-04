@@ -123,7 +123,7 @@ void Copter::read_radio()
     set_failsafe_radio(true);
 }
 
-#define FS_COUNTER 3        // radio failsafe kicks in after 3 consecutive throttle values below failsafe_throttle_value
+constexpr uint8_t FS_COUNTER = 3;  // radio failsafe kicks in after 3 consecutive throttle values below failsafe_throttle_value
 void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
     // if failsafe not enabled pass through throttle and exit
@@ -161,7 +161,7 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
     }
 }
 
-#define THROTTLE_ZERO_DEBOUNCE_TIME_MS 400
+constexpr uint32_t THROTTLE_ZERO_DEBOUNCE_TIME_MS = 400;
 // set_throttle_zero_flag - set throttle_zero flag from debounced throttle control
 // throttle_zero is used to determine if the pilot intends to shut down the motors
 // Basically, this signals when we are not flying.  We are either on the ground
