@@ -59,7 +59,7 @@ void ModeDrift::run()
     roll_vel = constrain_float(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
     pitch_vel = constrain_float(pitch_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
 
-    roll_input = roll_input * .96f + (float)channel_yaw->get_control_in() * .04f;
+    roll_input = roll_input * 0.96f + (float)channel_yaw->get_control_in() * 0.04f;
 
     // convert user input into desired roll velocity
     float roll_vel_error = roll_vel - (roll_input / DRIFT_SPEEDGAIN);
@@ -70,8 +70,8 @@ void ModeDrift::run()
 
     // If we let go of sticks, bring us to a stop
     if (is_zero(target_pitch)) {
-        // .14/ (.03 * 100) = 4.6 seconds till full braking
-        braker += .03f;
+        // 0.14/ (0.03 * 100) = 4.6 seconds till full braking
+        braker += 0.03f;
         braker = MIN(braker, DRIFT_SPEEDGAIN);
         target_pitch = pitch_vel * braker;
     } else {
