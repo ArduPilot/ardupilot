@@ -331,7 +331,7 @@ void AP_TECS::update_50hz(void)
     }
     _update_50hz_last_usec = now;
 
-    // Use inertial nav verical velocity and height if available
+    // Use inertial nav vertical velocity and height if available
     Vector3f velned;
     if (_ahrs.get_velocity_NED(velned)) {
         // if possible use the EKF vertical velocity
@@ -1134,7 +1134,7 @@ void AP_TECS::_update_pitch(void)
 
 void AP_TECS::_initialise_states(float hgt_afe)
 {
-    // Initialise states and variables if DT > 0.2 second or TECS is getting overriden or in climbout.
+    // Initialise states and variables if DT > 0.2 second or TECS is getting overridden or in climbout.
     _flags.reset = false;
 
     if (_DT > 0.2f || _need_reset) {
@@ -1238,7 +1238,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 {
     uint64_t now = AP_HAL::micros64();
     // check how long since we last did the 50Hz update; do nothing in
-    // this loop if that hasn't run for some signficant period of
+    // this loop if that hasn't run for some significant period of
     // time.  Notably, it may never have run, leaving _TAS_state as
     // zero and subsequently division-by-zero errors.
     const float _DT_for_update_50hz = (now - _update_50hz_last_usec) * 1.0e-6f;
