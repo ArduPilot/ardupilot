@@ -69,7 +69,6 @@ singleton AP_AHRS method get_quaternion boolean Quaternion'Null
 singleton AP_AHRS method handle_external_position_estimate boolean Location float'skip_check uint32_t'skip_check
 singleton AP_AHRS method handle_external_position_estimate depends AP_AHRS_EXTERNAL_ENABLED
 singleton AP_AHRS method handle_external_wind_estimate boolean float'skip_check float'skip_check float'skip_check uint32_t'skip_check
-singleton AP_AHRS method set_external_wind_estimate void float'skip_check float'skip_check
 
 include AP_Arming/AP_Arming.h
 
