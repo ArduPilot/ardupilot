@@ -97,7 +97,7 @@ void ModeKamikaze::dive()
 
 
     // hedef pitche izin vermesi için sınır düşürülür
-    plane.pitch_limit_min_cd = -(dalis_pitch_cd + 1);
+    plane.pitch_limit_min = -(dalis_pitch_cd + 1);
 
     // ardupilotun attitude PID kontrolcüsüne dalış anında istenilen roll ve pitch değerleri gönderilir.
     // plane.nav_pitch_cd = -dalis_pitch_cd ;
