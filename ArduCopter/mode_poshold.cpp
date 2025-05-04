@@ -464,7 +464,7 @@ void ModePosHold::run()
                     if (!is_zero(target_pitch)) {
                         // init transition to pilot override
                         pitch_controller_to_pilot_override();
-                        // if roll not overriden switch roll-mode to brake (but be ready to go back to loiter any time)
+                        // if roll not overridden switch roll-mode to brake (but be ready to go back to loiter any time)
                         if (is_zero(target_roll)) {
                             roll_mode = RPMode::BRAKE_READY_TO_LOITER;
                             brake.roll = 0.0f;
