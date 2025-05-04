@@ -84,9 +84,9 @@ void GCS_MAVLINK_Sub::send_nav_controller_output() const
         targets.x * 1.0e-2f,
         targets.y * 1.0e-2f,
         targets.z * 1.0e-2f,
-        sub.wp_nav.get_wp_bearing_to_destination() * 1.0e-2f,
-        MIN(sub.wp_nav.get_wp_distance_to_destination() * 1.0e-2f, UINT16_MAX),
-        sub.pos_control.get_pos_error_z_cm() * 1.0e-2f,
+        sub.wp_nav.get_wp_bearing_to_destination_cd() * 1.0e-2f,
+        MIN(sub.wp_nav.get_wp_distance_to_destination_cm() * 1.0e-2f, UINT16_MAX),
+        sub.pos_control.get_pos_error_U_cm() * 1.0e-2f,
         0,
         0);
 }
@@ -137,7 +137,7 @@ bool GCS_MAVLINK_Sub::send_info()
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("Lights1",
-                     SRV_Channels::get_output_norm(SRV_Channel::k_rcin9) / 2.0f + 0.5f);
+                     SRV_Channels::get_output_norm(SRV_Channel::k_lights1) / 2.0f + 0.5f);
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("Lights2",
@@ -214,7 +214,7 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
         }
     }
     if (g.gcs_pid_mask & 8) {
-        const AP_PIDInfo &pid_info = sub.pos_control.get_accel_z_pid().get_pid_info();
+        const AP_PIDInfo &pid_info = sub.pos_control.get_accel_U_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info.target*0.01f,
                                     -(ahrs.get_accel_ef().z + GRAVITY_MSS),
@@ -228,11 +228,6 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
             return;
         }
     }
-}
-
-uint8_t GCS_MAVLINK_Sub::sysid_my_gcs() const
-{
-    return sub.g.sysid_my_gcs;
 }
 
 bool GCS_Sub::vehicle_initialised() const {
@@ -259,205 +254,15 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         break;
 #endif
 
+    case MSG_WIND: // other vehicles do something custom with wind:
+        return true;
+
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
 
     return true;
 }
-
-
-const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-    // @Param: RAW_SENS
-    // @DisplayName: Raw sensor stream rate
-    // @Description: Stream rate of RAW_IMU, SCALED_IMU2, SCALED_PRESSURE, AIRSPEED, and SENSOR_OFFSETS to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_RAW_SENSORS],  2),
-
-    // @Param: EXT_STAT
-    // @DisplayName: Extended status stream rate to ground station
-    // @Description: Stream rate of SYS_STATUS, MEMINFO, MISSION_CURRENT, GPS_RAW_INT, NAV_CONTROLLER_OUTPUT, and LIMITS_STATUS to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_EXTENDED_STATUS],  2),
-
-    // @Param: RC_CHAN
-    // @DisplayName: RC Channel stream rate to ground station
-    // @Description: Stream rate of SERVO_OUTPUT_RAW and RC_CHANNELS_RAW to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_RC_CHANNELS],  2),
-
-    // @Param: POSITION
-    // @DisplayName: Position stream rate to ground station
-    // @Description: Stream rate of GLOBAL_POSITION_INT to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_POSITION],  3),
-
-    // @Param: EXTRA1
-    // @DisplayName: Extra data type 1 stream rate to ground station
-    // @Description: Stream rate of ATTITUDE and SIMSTATE (SITL only) to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_EXTRA1],  10),
-
-    // @Param: EXTRA2
-    // @DisplayName: Extra data type 2 stream rate to ground station
-    // @Description: Stream rate of VFR_HUD to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_EXTRA2],  10),
-
-    // @Param: EXTRA3
-    // @DisplayName: Extra data type 3 stream rate to ground station
-    // @Description: Stream rate of AHRS and SYSTEM_TIME to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_EXTRA3],  3),
-
-    // @Param: PARAMS
-    // @DisplayName: Parameter stream rate to ground station
-    // @Description: Stream rate of PARAM_VALUE to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK_Parameters, streamRates[GCS_MAVLINK::STREAM_PARAMS],  0),
-    AP_GROUPEND
-};
-
-static const ap_message STREAM_RAW_SENSORS_msgs[] = {
-    MSG_RAW_IMU,
-    MSG_SCALED_IMU2,
-    MSG_SCALED_IMU3,
-    MSG_SCALED_PRESSURE,
-    MSG_SCALED_PRESSURE2,
-    MSG_SCALED_PRESSURE3,
-#if AP_AIRSPEED_ENABLED
-    MSG_AIRSPEED,
-#endif
-};
-static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
-    MSG_SYS_STATUS,
-    MSG_POWER_STATUS,
-#if HAL_WITH_MCU_MONITORING
-    MSG_MCU_STATUS,
-#endif
-    MSG_MEMINFO,
-    MSG_CURRENT_WAYPOINT,
-#if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
-    MSG_GPS_RAW,
-#endif
-#if AP_GPS_GPS_RTK_SENDING_ENABLED
-    MSG_GPS_RTK,
-#endif
-#if AP_GPS_GPS2_RAW_SENDING_ENABLED
-    MSG_GPS2_RAW,
-#endif
-#if AP_GPS_GPS2_RTK_SENDING_ENABLED
-    MSG_GPS2_RTK,
-#endif
-    MSG_NAV_CONTROLLER_OUTPUT,
-#if AP_FENCE_ENABLED
-    MSG_FENCE_STATUS,
-#endif
-    MSG_NAMED_FLOAT
-};
-static const ap_message STREAM_POSITION_msgs[] = {
-    MSG_LOCATION,
-    MSG_LOCAL_POSITION
-};
-static const ap_message STREAM_RC_CHANNELS_msgs[] = {
-    MSG_SERVO_OUTPUT_RAW,
-    MSG_RC_CHANNELS,
-#if AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
-    MSG_RC_CHANNELS_RAW, // only sent on a mavlink1 connection
-#endif
-};
-static const ap_message STREAM_EXTRA1_msgs[] = {
-    MSG_ATTITUDE,
-#if AP_SIM_ENABLED
-    MSG_SIMSTATE,
-#endif
-    MSG_AHRS2,
-    MSG_PID_TUNING
-};
-static const ap_message STREAM_EXTRA2_msgs[] = {
-    MSG_VFR_HUD
-};
-static const ap_message STREAM_EXTRA3_msgs[] = {
-    MSG_AHRS,
-    MSG_SYSTEM_TIME,
-#if AP_RANGEFINDER_ENABLED
-    MSG_RANGEFINDER,
-#endif
-    MSG_DISTANCE_SENSOR,
-#if AP_TERRAIN_AVAILABLE
-    MSG_TERRAIN_REQUEST,
-    MSG_TERRAIN_REPORT,
-#endif
-#if AP_BATTERY_ENABLED
-    MSG_BATTERY_STATUS,
-#endif
-#if HAL_MOUNT_ENABLED
-    MSG_GIMBAL_DEVICE_ATTITUDE_STATUS,
-#endif
-#if AP_OPTICALFLOW_ENABLED
-    MSG_OPTICAL_FLOW,
-#endif
-#if COMPASS_CAL_ENABLED
-    MSG_MAG_CAL_REPORT,
-    MSG_MAG_CAL_PROGRESS,
-#endif
-    MSG_EKF_STATUS_REPORT,
-    MSG_VIBRATION,
-#if AP_RPM_ENABLED
-    MSG_RPM,
-#endif
-#if HAL_WITH_ESC_TELEM
-    MSG_ESC_TELEMETRY,
-#endif
-};
-static const ap_message STREAM_PARAMS_msgs[] = {
-    MSG_NEXT_PARAM,
-    MSG_AVAILABLE_MODES
-};
-
-const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
-    MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
-    MAV_STREAM_ENTRY(STREAM_EXTENDED_STATUS),
-    MAV_STREAM_ENTRY(STREAM_POSITION),
-    MAV_STREAM_ENTRY(STREAM_RC_CHANNELS),
-    MAV_STREAM_ENTRY(STREAM_EXTRA1),
-    MAV_STREAM_ENTRY(STREAM_EXTRA2),
-    MAV_STREAM_ENTRY(STREAM_EXTRA3),
-    MAV_STREAM_ENTRY(STREAM_PARAMS),
-    MAV_STREAM_TERMINATOR // must have this at end of stream_entries
-};
 
 bool GCS_MAVLINK_Sub::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
@@ -612,7 +417,7 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_command
         // param3 : unused
         // param4 : unused
         if (packet.param2 > 0.0f) {
-            sub.wp_nav.set_speed_xy(packet.param2 * 100.0f);
+            sub.wp_nav.set_speed_NE_cms(packet.param2 * 100.0f);
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
@@ -643,13 +448,13 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
     switch (msg.msgid) {
 
     case MAVLINK_MSG_ID_MANUAL_CONTROL: {     // MAV ID: 69
-        if (msg.sysid != sub.g.sysid_my_gcs) {
+        if (msg.sysid != gcs().sysid_gcs()) {
             break;    // Only accept control from our gcs
         }
         mavlink_manual_control_t packet;
         mavlink_msg_manual_control_decode(&msg, &packet);
 
-        if (packet.target != sub.g.sysid_this_mav) {
+        if (packet.target != gcs().sysid_this_mav()) {
             break; // only accept control aimed at us
         }
 
@@ -679,7 +484,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
     }
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: {     // MAV ID: 70
-        if (msg.sysid != sub.g.sysid_my_gcs) {
+        if (msg.sysid != gcs().sysid_gcs()) {
             break;    // Only accept control from our gcs
         }
 
@@ -715,10 +520,10 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
             climb_rate_cms = 0.0f;
         } else if (packet.thrust > 0.5f) {
             // climb at up to WPNAV_SPEED_UP
-            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_up();
+            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_up_cms();
         } else {
             // descend at up to WPNAV_SPEED_DN
-            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_down();
+            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_down_cms();
         }
         sub.mode_guided.guided_set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]), climb_rate_cms);
         break;
@@ -829,7 +634,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
          */
 
         if (!z_ignore && sub.control_mode == Mode::Number::ALT_HOLD) { // Control only target depth when in ALT_HOLD
-            sub.pos_control.set_pos_desired_z_cm(packet.alt*100);
+            sub.pos_control.set_pos_desired_U_cm(packet.alt*100);
             break;
         }
 
@@ -851,7 +656,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
                 int32_t(packet.alt*100),
                 frame,
             };
-            if (!loc.get_vector_from_origin_NEU(pos_neu_cm)) {
+            if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
                 break;
             }
         }
@@ -935,7 +740,7 @@ int16_t GCS_MAVLINK_Sub::high_latency_target_altitude() const
 
     //return units are m
     if (sub.control_mode == Mode::Number::AUTO || sub.control_mode == Mode::Number::GUIDED) {
-        return 0.01 * (global_position_current.alt + sub.pos_control.get_pos_error_z_cm());
+        return 0.01 * (global_position_current.alt + sub.pos_control.get_pos_error_U_cm());
     }
     return 0;
     
@@ -946,7 +751,7 @@ uint8_t GCS_MAVLINK_Sub::high_latency_tgt_heading() const
     // return units are deg/2
     if (sub.control_mode == Mode::Number::AUTO || sub.control_mode == Mode::Number::GUIDED) {
         // need to convert -18000->18000 to 0->360/2
-        return wrap_360_cd(sub.wp_nav.get_wp_bearing_to_destination()) / 200;
+        return wrap_360_cd(sub.wp_nav.get_wp_bearing_to_destination_cd()) / 200;
     }
     return 0;      
 }
@@ -955,7 +760,7 @@ uint16_t GCS_MAVLINK_Sub::high_latency_tgt_dist() const
 {
     // return units are dm
     if (sub.control_mode == Mode::Number::AUTO || sub.control_mode == Mode::Number::GUIDED) {
-        return MIN(sub.wp_nav.get_wp_distance_to_destination() * 0.001, UINT16_MAX);
+        return MIN(sub.wp_nav.get_wp_distance_to_destination_cm() * 0.001, UINT16_MAX);
     }
     return 0;
 }
@@ -964,7 +769,7 @@ uint8_t GCS_MAVLINK_Sub::high_latency_tgt_airspeed() const
 {
     // return units are m/s*5
     if (sub.control_mode == Mode::Number::AUTO || sub.control_mode == Mode::Number::GUIDED) {
-        return MIN((sub.pos_control.get_vel_desired_cms().length()/100) * 5, UINT8_MAX);
+        return MIN((sub.pos_control.get_vel_desired_NEU_cms().length()/100) * 5, UINT8_MAX);
     }
     return 0;
 }

@@ -478,7 +478,7 @@ protected:
 
     const char *name() const override { return "SURFACE"; }
     const char *name4() const override { return "SURF"; }
-    Mode::Number number() const override { return Mode::Number::CIRCLE; }
+    Mode::Number number() const override { return Mode::Number::SURFACE; }
 };
 
 

@@ -331,7 +331,7 @@ void AP_TECS::update_50hz(void)
     }
     _update_50hz_last_usec = now;
 
-    // Use inertial nav verical velocity and height if available
+    // Use inertial nav vertical velocity and height if available
     Vector3f velned;
     if (_ahrs.get_velocity_NED(velned)) {
         // if possible use the EKF vertical velocity
@@ -809,6 +809,23 @@ void AP_TECS::_update_throttle_with_airspeed(void)
 
 #if HAL_LOGGING_ENABLED
         if (AP::logger().should_log(_log_bitmask)){
+            // @LoggerMessage: TEC3
+            // @Vehicles: Plane
+            // @Description: Additional additional information about the Total Energy Control System
+            // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+            // @Field: TimeUS: Time since system startup
+            // @Field: KED: Kinetic Energy Dot (1st derivative of KE)
+            // @Field: PED: Potential Energy Dot (1st derivative of PE)
+            // @Field: KEDD: Kinetic Energy Dot Demand
+            // @Field: PEDD: Potential Energy Dot Demand
+            // @Field: TEE: Total energy error
+            // @Field: TEDE: Total energy dot error (1st derivative of total energy error)
+            // @Field: FFT: feed-forward throttle
+            // @Field: Imin: integrator limit based on throttle values
+            // @Field: Imax: integrator limit based on throttle values
+            // @Field: I: integrator state for throttle
+            // @Field: Emin: lower limit for potential energy error
+            // @Field: Emax: upper limit for potential energy error
             AP::logger().WriteStreaming("TEC3","TimeUS,KED,PED,KEDD,PEDD,TEE,TEDE,FFT,Imin,Imax,I,Emin,Emax",
                                         "Qffffffffffff",
                                         AP_HAL::micros64(),
@@ -916,20 +933,23 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge, float pi
 
 void AP_TECS::_detect_bad_descent(void)
 {
+    // Don't detect bad descents when gliding, transitioning, or when underspeed.
+    if (_flags.is_gliding || _flight_stage == AP_FixedWing::FlightStage::VTOL || _flags.underspeed) {
+        _flags.badDescent = false;
+        return;
+    }
+
     // Detect a demanded airspeed too high for the aircraft to achieve. This will be
     // evident by the following conditions:
-    // 1) Underspeed protection not active
-    // 2) Specific total energy error > 200 (greater than ~20m height error)
-    // 3) Specific total energy reducing
-    // 4) throttle demand > 90%
-    // If these four conditions exist simultaneously, then the protection
-    // mode will be activated.
-    // Once active, the following condition are required to stay in the mode
-    // 1) Underspeed protection not active
-    // 2) Specific total energy error > 0
-    // This mode will produce an undulating speed and height response as it cuts in and out but will prevent the aircraft from descending into the ground if an unachievable speed demand is set
+    // 1) Specific total energy error > 200 (greater than ~20m height error)
+    // 2) Specific total energy reducing
+    // 3) throttle demand > 90%
+    // If these conditions exist simultaneously, then the protection mode will be activated.
+    // Once active, it will remain active until the specific total energy error drops below 0.
+    // This mode will produce an undulating speed and height response as it cuts in and out, but it
+    // will prevent the aircraft from descending into the ground if an unachievable speed demand is set.
     float STEdot = _SPEdot + _SKEdot;
-    if (((!_flags.underspeed && (_STE_error > 200.0f) && (STEdot < 0.0f) && (_throttle_dem >= _THRmaxf * 0.9f)) || (_flags.badDescent && !_flags.underspeed && (_STE_error > 0.0f))) && !_flags.is_gliding) {
+    if (((_STE_error > 200.0f) && (STEdot < 0.0f) && (_throttle_dem >= _THRmaxf * 0.9f)) || (_flags.badDescent && (_STE_error > 0.0f))) {
         _flags.badDescent = true;
     } else {
         _flags.badDescent = false;
@@ -1114,7 +1134,7 @@ void AP_TECS::_update_pitch(void)
 
 void AP_TECS::_initialise_states(float hgt_afe)
 {
-    // Initialise states and variables if DT > 0.2 second or TECS is getting overriden or in climbout.
+    // Initialise states and variables if DT > 0.2 second or TECS is getting overridden or in climbout.
     _flags.reset = false;
 
     if (_DT > 0.2f || _need_reset) {
@@ -1218,7 +1238,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 {
     uint64_t now = AP_HAL::micros64();
     // check how long since we last did the 50Hz update; do nothing in
-    // this loop if that hasn't run for some signficant period of
+    // this loop if that hasn't run for some significant period of
     // time.  Notably, it may never have run, leaving _TAS_state as
     // zero and subsequently division-by-zero errors.
     const float _DT_for_update_50hz = (now - _update_50hz_last_usec) * 1.0e-6f;

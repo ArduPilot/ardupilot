@@ -71,7 +71,7 @@
 #define HAL_BATT_CURR_PIN (4)
 #define HAL_BATT_CURR_SCALE (36)
 
-// ADC is available on lots of pints on the esp32, but adc2 cant co-exist with wifi we choose to allow ADC on :
+// ADC is available on lots of pints on the esp32, but adc2 can't co-exist with wifi we choose to allow ADC on :
 //#define HAL_DISABLE_ADC_DRIVER 1
 #define TRUE 1
 #define HAL_USE_ADC TRUE

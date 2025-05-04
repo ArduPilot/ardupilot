@@ -526,6 +526,14 @@ class Board:
             env.CXXFLAGS += ['-DHAL_WITH_EKF_DOUBLE=0']
 
         if cfg.options.consistent_builds:
+            # if symbols are renamed we don't want them to affect the output:
+            env.CXXFLAGS += ['-fno-rtti']
+            env.CFLAGS += ['-fno-rtti']
+            # stop including a unique ID in the headers.  More useful
+            # when trying to find binary differences as the build-id
+            # appears to be a hash of the output products
+            # (ie. identical for identical compiler output):
+            env.LDFLAGS += ['-Wl,--build-id=bob']
             # squash all line numbers to be the number 17
             env.CXXFLAGS += [
                 "-D__AP_LINE__=17",
@@ -582,15 +590,15 @@ class Board:
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
 def add_dynamic_boards_chibios():
-    '''add boards based on existance of hwdef.dat in subdirectories for ChibiOS'''
+    '''add boards based on existence of hwdef.dat in subdirectories for ChibiOS'''
     add_dynamic_boards_from_hwdef_dir(chibios, 'libraries/AP_HAL_ChibiOS/hwdef')
 
 def add_dynamic_boards_linux():
-    '''add boards based on existance of hwdef.dat in subdirectories for '''
+    '''add boards based on existence of hwdef.dat in subdirectories for '''
     add_dynamic_boards_from_hwdef_dir(linux, 'libraries/AP_HAL_Linux/hwdef')
 
 def add_dynamic_boards_from_hwdef_dir(base_type, hwdef_dir):
-    '''add boards based on existance of hwdef.dat in subdirectory'''
+    '''add boards based on existence of hwdef.dat in subdirectory'''
     dirname, dirlist, filenames = next(os.walk(hwdef_dir))
     for d in dirlist:
         if d in _board_classes.keys():
@@ -600,7 +608,7 @@ def add_dynamic_boards_from_hwdef_dir(base_type, hwdef_dir):
             newclass = type(d, (base_type,), {'name': d})
 
 def add_dynamic_boards_esp32():
-    '''add boards based on existance of hwdef.dat in subdirectories for ESP32'''
+    '''add boards based on existence of hwdef.dat in subdirectories for ESP32'''
     dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ESP32/hwdef'))
     for d in dirlist:
         if d in _board_classes.keys():
@@ -624,7 +632,7 @@ def is_board_based(board, cls):
     return issubclass(_board_classes[board], cls)
 
 def get_ap_periph_boards():
-    '''Add AP_Periph boards based on existance of periph keywork in hwdef.dat or board name'''
+    '''Add AP_Periph boards based on existence of periph keyword in hwdef.dat or board name'''
     list_ap = [s for s in list(_board_classes.keys()) if "periph" in s]
     dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
     for d in dirlist:

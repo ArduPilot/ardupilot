@@ -107,7 +107,7 @@ void AP_Stats::update()
     if (params_reset == 0) {
         // Only reset statistics if the user explicitly sets AP_STATS_RESET parameter to zero.
         // This allows users to load parameter files (in MP, MAVProxy or any other GCS) without
-        // accidentally reseting the statistics, because the AP_STATS_RESET value contained in
+        // accidentally resetting the statistics, because the AP_STATS_RESET value contained in
         // the parameter file will be ignored (unless it is zero and it is usually not zero).
         // The other statistics parameters are read-only, and the GCS should be clever enough to not set those.
         params.bootcount.set_and_save_ifchanged(0);

@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
     // @Param: _RATE_I
     // @DisplayName: Pitch axis rate controller I gain
-    // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate
+    // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate
     // @Range: 0.01 0.6
     // @Increment: 0.01
     // @User: Standard
@@ -87,7 +87,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
     // @Param: _RATE_D
     // @DisplayName: Pitch axis rate controller D gain
-    // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate
+    // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate
     // @Range: 0.001 0.03
     // @Increment: 0.001
     // @User: Standard

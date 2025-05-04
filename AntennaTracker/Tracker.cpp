@@ -77,9 +77,6 @@ void Tracker::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 
 void Tracker::one_second_loop()
 {
-    // sync MAVLink system ID
-    mavlink_system.sysid = g.sysid_this_mav;
-
     // update assigned functions and enable auxiliary servos
     AP::srv().enable_aux_servos();
 

@@ -86,7 +86,7 @@ void Copter::update_land_detector()
 #if MODE_AUTOROTATE_ENABLED
                                     || (flightmode->mode_number() == Mode::Number::AUTOROTATE && motors->get_below_land_min_coll())
 #endif
-                                    || ((!get_force_flying() || landing) && motors->limit.throttle_lower && pos_control->get_vel_desired_cms().z < 0.0f);
+                                    || ((!get_force_flying() || landing) && motors->limit.throttle_lower && pos_control->get_vel_desired_NEU_cms().z < 0.0f);
         bool throttle_mix_at_min = true;
 #else
         // check that the average throttle output is near minimum (less than 12.5% hover throttle)
@@ -307,13 +307,13 @@ void Copter::update_throttle_mix()
         const bool accel_moving = (land_accel_ef_filter.get().length() > LAND_CHECK_ACCEL_MOVING);
 
         // check for requested descent
-        bool descent_not_demanded = pos_control->get_vel_desired_cms().z >= 0.0f;
+        bool descent_not_demanded = pos_control->get_vel_desired_NEU_cms().z >= 0.0f;
 
         // check if landing
         const bool landing = flightmode->is_landing();
 
         if (((large_angle_request || get_force_flying()) && !landing) || large_angle_error || accel_moving || descent_not_demanded) {
-            attitude_control->set_throttle_mix_max(pos_control->get_vel_z_control_ratio());
+            attitude_control->set_throttle_mix_max(pos_control->get_vel_U_control_ratio());
         } else {
             attitude_control->set_throttle_mix_min();
         }

@@ -605,7 +605,7 @@ void NavEKF3_core::SelectVelPosFusion()
     if (gpsDataToFuse) {
         CorrectGPSForAntennaOffset(gpsDataDelayed);
         // calculate innovations and variances for reporting purposes only
-        CalculateVelInnovationsAndVariances(gpsDataDelayed.vel, frontend->_gpsHorizVelNoise, frontend->gpsNEVelVarAccScale, gpsVelInnov, gpsVelVarInnov);
+        CalculateVelInnovationsAndVariances(gpsDataDelayed.vel, frontend->_gpsHorizVelNoise.get(), frontend->gpsNEVelVarAccScale, gpsVelInnov, gpsVelVarInnov);
         // record time GPS data was retrieved from the buffer (for timeout checks)
         gpsRetrieveTime_ms = dal.millis();
     }
@@ -758,14 +758,14 @@ void NavEKF3_core::FuseVelPosNED()
     Vector6 R_OBS_DATA_CHECKS; // Measurement variances used for data checks only
     ftype SK;
 
-    // perform sequential fusion of GPS measurements. This assumes that the
+    // perform sequential fusion of measurements. This assumes that the
     // errors in the different velocity and position components are
     // uncorrelated which is not true, however in the absence of covariance
-    // data from the GPS receiver it is the only assumption we can make
+    // data from sensors like GPS receivers; it is the only assumption we can make
     // so we might as well take advantage of the computational efficiencies
     // associated with sequential fusion
     if (fuseVelData || fusePosData || fuseHgtData) {
-        // estimate the GPS Velocity, GPS horiz position and height measurement variances.
+        // estimate the velocity, horiz position and height measurement variances.
         // Use different errors if operating without external aiding using an assumed position or velocity of zero
         if (PV_AidingMode == AID_NONE) {
             if (tiltAlignComplete && motorsArmed) {
@@ -781,14 +781,16 @@ void NavEKF3_core::FuseVelPosNED()
             R_OBS[4] = R_OBS[0];
             for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
         } else {
+#if EK3_FEATURE_EXTERNAL_NAV
+            const bool extNavUsedForVel = extNavVelToFuse && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV);
+            if (extNavUsedForVel) {
+                R_OBS[2] = R_OBS[0] = sq(constrain_ftype(extNavVelDelayed.err, 0.05f, 50.0f));
+            } else
+#endif
             if (gpsSpdAccuracy > 0.0f) {
                 // use GPS receivers reported speed accuracy if available and floor at value set by GPS velocity noise parameter
                 R_OBS[0] = sq(constrain_ftype(gpsSpdAccuracy, frontend->_gpsHorizVelNoise, 50.0f));
                 R_OBS[2] = sq(constrain_ftype(gpsSpdAccuracy, frontend->_gpsVertVelNoise, 50.0f));
-#if EK3_FEATURE_EXTERNAL_NAV
-            } else if (extNavVelToFuse) {
-                R_OBS[2] = R_OBS[0] = sq(constrain_ftype(extNavVelDelayed.err, 0.05f, 5.0f));
-#endif
             } else {
                 // calculate additional error in GPS velocity caused by manoeuvring
                 R_OBS[0] = sq(constrain_ftype(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
@@ -796,12 +798,13 @@ void NavEKF3_core::FuseVelPosNED()
             }
             R_OBS[1] = R_OBS[0];
             // Use GPS reported position accuracy if available and floor at value set by GPS position noise parameter
+#if EK3_FEATURE_EXTERNAL_NAV
+            if (extNavUsedForPos) {
+                R_OBS[3] = sq(constrain_ftype(extNavDataDelayed.posErr, 0.01f, 100.0f));
+            } else
+#endif
             if (gpsPosAccuracy > 0.0f) {
                 R_OBS[3] = sq(constrain_ftype(gpsPosAccuracy, frontend->_gpsHorizPosNoise, 100.0f));
-#if EK3_FEATURE_EXTERNAL_NAV
-            } else if (extNavUsedForPos) {
-                R_OBS[3] = sq(constrain_ftype(extNavDataDelayed.posErr, 0.01f, 10.0f));
-#endif
             } else {
                 // calculate additional error in GPS position caused by manoeuvring
                 const ftype posErr = frontend->gpsPosVarAccScale * accNavMag;
@@ -813,7 +816,7 @@ void NavEKF3_core::FuseVelPosNED()
             // plus a margin for manoeuvres. It is better to reject GPS horizontal velocity errors early
             ftype obs_data_chk;
 #if EK3_FEATURE_EXTERNAL_NAV
-            if (extNavVelToFuse) {
+            if (extNavUsedForVel) {
                 obs_data_chk = sq(constrain_ftype(extNavVelDelayed.err, 0.05f, 5.0f)) + sq(frontend->extNavVelVarAccScale * accNavMag);
             } else
 #endif
@@ -1059,10 +1062,14 @@ void NavEKF3_core::FuseVelPosNED()
                 // adjust scaling on GPS measurement noise variances if not enough satellites
                 if (obsIndex <= 2) {
                     innovVelPos[obsIndex] = stateStruct.velocity[obsIndex] - velPosObs[obsIndex];
-                    R_OBS[obsIndex] *= sq(gpsNoiseScaler);
+                    if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS)) {
+                        R_OBS[obsIndex] *= sq(gpsNoiseScaler);
+                    }
                 } else if (obsIndex == 3 || obsIndex == 4) {
                     innovVelPos[obsIndex] = stateStruct.position[obsIndex-3] - velPosObs[obsIndex];
-                    R_OBS[obsIndex] *= sq(gpsNoiseScaler);
+                    if (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS) {
+                        R_OBS[obsIndex] *= sq(gpsNoiseScaler);
+                    }
                 } else if (obsIndex == 5) {
                     innovVelPos[obsIndex] = stateStruct.position[obsIndex-3] - velPosObs[obsIndex];
                     const ftype gndMaxBaroErr = MAX(frontend->_baroGndEffectDeadZone, 0.0);
@@ -2158,7 +2165,7 @@ void NavEKF3_core::SelectBodyOdomFusion()
             // TODO write a dedicated observation model for wheel encoders
             bodyOdmDataDelayed.vel = prevTnb * velNED;
             bodyOdmDataDelayed.body_offset = wheelOdmDataDelayed.hub_offset;
-            bodyOdmDataDelayed.velErr = frontend->_wencOdmVelErr;
+            bodyOdmDataDelayed.velErr = frontend->_wencOdmVelErr.get();
 
             // Fuse data into the main filter
             FuseBodyVel();

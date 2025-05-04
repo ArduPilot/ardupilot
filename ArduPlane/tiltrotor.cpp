@@ -649,7 +649,7 @@ void Tiltrotor::vectoring(void)
             motors->limit.yaw = true;
         }
 
-        // constrain and scale to ouput range
+        // constrain and scale to output range
         left_tilt = constrain_float(left_tilt,0.0,1.0) * 1000.0;
         right_tilt = constrain_float(right_tilt,0.0,1.0) * 1000.0;
 

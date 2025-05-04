@@ -161,7 +161,7 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
 
     // @Param: MIN_VO
     // @DisplayName: Tailsitter Disk loading minimum outflow speed
-    // @Description: Use in conjunction with disk theory gain scaling and Q_TAILSIT_DSKLD to specify minumum airspeed over control surfaces, this will be used to boost throttle, when descending for example, 0 disables
+    // @Description: Use in conjunction with disk theory gain scaling and Q_TAILSIT_DSKLD to specify minimum airspeed over control surfaces, this will be used to boost throttle, when descending for example, 0 disables
     // @Range: 0 15
     AP_GROUPINFO("MIN_VO", 22, Tailsitter, disk_loading_min_outflow, 0),
 
@@ -310,7 +310,7 @@ void Tailsitter::output(void)
                 throttle = motors->thr_lin.actuator_to_thrust(MIN(transition_throttle_vtol*0.01,1.0));
             } else {
                 throttle = motors->get_throttle_hover();
-                // work out equivelent motors throttle level for cruise
+                // work out equivalent motors throttle level for cruise
                 throttle = MAX(throttle,motors->thr_lin.actuator_to_thrust(plane.aparm.throttle_cruise.get() * 0.01));
             }
 
@@ -862,7 +862,7 @@ void Tailsitter_Transition::update()
         plane.nav_pitch_cd = constrain_float(fw_transition_initial_pitch - (quadplane.tailsitter.transition_rate_fw * dt) * 0.1f * (plane.fly_inverted()?-1.0f:1.0f), -8500, 8500);
         plane.nav_roll_cd = 0;
         quadplane.disable_yaw_rate_time_constant();
-        quadplane.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+        quadplane.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
                                                                       0);
         // set throttle at either hover throttle or current throttle, whichever is higher, through the transition
@@ -969,7 +969,7 @@ void Tailsitter_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& na
 
 bool Tailsitter_Transition::allow_stick_mixing() const
 {
-    // Transitioning into VTOL flight, inital pitch up
+    // Transitioning into VTOL flight, initial pitch up
     if (tailsitter.in_vtol_transition()) {
         return false;
     }

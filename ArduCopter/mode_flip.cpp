@@ -117,7 +117,7 @@ void ModeFlip::run()
 
     case FlipState::Start:
         // under 45 degrees request 400deg/sec roll or pitch
-        attitude_control->input_rate_bf_roll_pitch_yaw(FLIP_ROTATION_RATE * roll_dir, FLIP_ROTATION_RATE * pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw_cds(FLIP_ROTATION_RATE * roll_dir, FLIP_ROTATION_RATE * pitch_dir, 0.0);
 
         // increase throttle
         throttle_out += FLIP_THR_INC;
@@ -136,7 +136,7 @@ void ModeFlip::run()
 
     case FlipState::Roll:
         // between 45deg ~ -90deg request 400deg/sec roll
-        attitude_control->input_rate_bf_roll_pitch_yaw(FLIP_ROTATION_RATE * roll_dir, 0.0, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw_cds(FLIP_ROTATION_RATE * roll_dir, 0.0, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
@@ -148,7 +148,7 @@ void ModeFlip::run()
 
     case FlipState::Pitch_A:
         // between 45deg ~ -90deg request 400deg/sec pitch
-        attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, FLIP_ROTATION_RATE * pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw_cds(0.0f, FLIP_ROTATION_RATE * pitch_dir, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
@@ -160,7 +160,7 @@ void ModeFlip::run()
 
     case FlipState::Pitch_B:
         // between 45deg ~ -90deg request 400deg/sec pitch
-        attitude_control->input_rate_bf_roll_pitch_yaw(0.0, FLIP_ROTATION_RATE * pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw_cds(0.0, FLIP_ROTATION_RATE * pitch_dir, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
@@ -172,7 +172,7 @@ void ModeFlip::run()
 
     case FlipState::Recover: {
         // use originally captured earth-frame angle targets to recover
-        attitude_control->input_euler_angle_roll_pitch_yaw(orig_attitude.x, orig_attitude.y, orig_attitude.z, false);
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(orig_attitude.x, orig_attitude.y, orig_attitude.z, false);
 
         // increase throttle to gain any lost altitude
         throttle_out += FLIP_THR_INC;

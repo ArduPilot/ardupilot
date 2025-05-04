@@ -78,24 +78,24 @@ public:
 
         // 110: Telemetry control
         //
-        k_param_gcs0 = 110,         // stream rates for SERIAL0
-        k_param_gcs1,               // stream rates for SERIAL1
-        k_param_sysid_this_mav,
-        k_param_sysid_my_gcs,
+        k_param_gcs0_unused = 110,  // unused in ArduPilot-4.7
+        k_param_gcs1_unused,        // unused in ArduPilot-4.7
+        k_param_sysid_this_mav_old,
+        k_param_sysid_my_gcs_old,
         k_param_serial0_baud_old,   // unused
         k_param_serial1_baud_old,   // unused
-        k_param_telem_delay,
+        k_param_telem_delay_old,
         k_param_skip_gyro_cal,      // unused
-        k_param_gcs2,               // stream rates for SERIAL2
+        k_param_gcs2_unused,        // unused in ArduPilot-4.7
         k_param_serial2_baud_old,   // unused
         k_param_serial2_protocol,   // deprecated, can be deleted
         k_param_serial_manager_old,     // serial manager library
         k_param_cli_enabled_old,    // unused
-        k_param_gcs3,
+        k_param_gcs3_unused,        // unused in ArduPilot-4.7
         k_param_gcs_pid_mask,
-        k_param_gcs4,
-        k_param_gcs5,
-        k_param_gcs6,
+        k_param_gcs4_unused,        // unused in ArduPilot-4.7
+        k_param_gcs5_unused,        // unused in ArduPilot-4.7
+        k_param_gcs6_unused,        // unused in ArduPilot-4.7
 
         //
         // 130: Sensor parameters
@@ -230,6 +230,7 @@ public:
         // 254,255: reserved
 
         k_param_vehicle = 257, // vehicle common block of parameters
+        k_param__gcs = 258,
         };
 
     AP_Int16    format_version;
@@ -239,12 +240,6 @@ public:
     AP_Int32    log_bitmask;
     AP_Int8     reset_switch_chan;
     AP_Int8     initial_mode;
-
-    // Telemetry control
-    //
-    AP_Int16    sysid_this_mav;
-    AP_Int16    sysid_my_gcs;
-    AP_Int8     telem_delay;
 
     // navigation parameters
     //
@@ -291,9 +286,6 @@ public:
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
-
-    // whether to enforce acceptance of packets only from sysid_my_gcs
-    AP_Int8 sysid_enforce;
 
     // RC input channels
     RC_Channels_Rover rc_channels;

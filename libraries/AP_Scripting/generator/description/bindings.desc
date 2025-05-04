@@ -14,8 +14,13 @@ userdata Location method get_distance float Location
 userdata Location method offset void float'skip_check float'skip_check
 userdata Location method offset_bearing void float'skip_check float'skip_check
 userdata Location method offset_bearing_and_pitch void float'skip_check float'skip_check float'skip_check
+userdata Location method get_vector_from_origin_NEU_m boolean Vector3f'Null
+userdata Location method get_vector_from_origin_NEU_m depends AP_AHRS_ENABLED
+userdata Location method get_vector_from_origin_NEU_cm boolean Vector3f'Null
+userdata Location method get_vector_from_origin_NEU_cm depends AP_AHRS_ENABLED
 userdata Location method get_vector_from_origin_NEU boolean Vector3f'Null
 userdata Location method get_vector_from_origin_NEU depends AP_AHRS_ENABLED
+userdata Location method get_vector_from_origin_NEU deprecate Use get_vector_from_origin_NEU_cm or get_vector_from_origin_NEU_m
 userdata Location method get_bearing float Location
 userdata Location method get_distance_NED Vector3f Location
 userdata Location method get_distance_NE Vector2f Location
@@ -93,6 +98,7 @@ userdata BattMonitorScript_State field current_amps float'skip_check write
 userdata BattMonitorScript_State field consumed_mah float'skip_check write
 userdata BattMonitorScript_State field consumed_wh float'skip_check write
 userdata BattMonitorScript_State field temperature float'skip_check write
+userdata BattMonitorScript_State field state_of_health_pct uint8_t'skip_check write
 
 singleton AP_BattMonitor rename battery
 singleton AP_BattMonitor depends AP_BATTERY_ENABLED
@@ -714,6 +720,26 @@ ap_object ScriptingCANBuffer method write_frame boolean AP_HAL::CANFrame uint32_
 ap_object ScriptingCANBuffer method read_frame boolean AP_HAL::CANFrame'Null
 ap_object ScriptingCANBuffer method add_filter boolean uint32_t'skip_check uint32_t'skip_check
 
+include AP_Scripting/AP_Scripting_CRSFMenu.h
+userdata CRSFParameter depends AP_CRSF_SCRIPTING_ENABLED
+userdata CRSFParameter method id uint8_t'skip_check
+userdata CRSFParameter manual data lua_CRSF_param_data 0 1
+
+userdata CRSFMenu depends AP_CRSF_SCRIPTING_ENABLED
+userdata CRSFMenu creation lua_CRSF_new_menu 1
+userdata CRSFMenu method id uint8_t'skip_check
+userdata CRSFMenu method name string
+userdata CRSFMenu method num_params uint8_t'skip_check
+userdata CRSFMenu manual add_parameter lua_CRSF_add_parameter 1 1
+userdata CRSFMenu manual add_menu lua_CRSF_add_menu 1 1
+
+singleton AP::crsf_telem() depends AP_CRSF_SCRIPTING_ENABLED
+singleton AP::crsf_telem() literal
+singleton AP::crsf_telem() rename crsf
+singleton AP::crsf_telem() manual add_menu lua_CRSF_add_root_menu 1 1
+singleton AP::crsf_telem() manual get_menu_event lua_CRSF_get_menu_event 1 3
+singleton AP::crsf_telem() manual send_write_response lua_CRSF_send_response 1 1
+
 include AP_DroneCAN/AP_DroneCAN.h
 global manual DroneCAN_get_FlexDebug lua_DroneCAN_get_FlexDebug 4 2 depends (HAL_ENABLE_DRONECAN_DRIVERS==1)
 
@@ -1002,6 +1028,9 @@ singleton AC_Fence depends AP_FENCE_ENABLED
 singleton AC_Fence rename fence
 singleton AC_Fence method get_breaches uint8_t
 singleton AC_Fence method get_breach_time uint32_t
+singleton AC_Fence method get_margin_breaches uint8_t
+singleton AC_Fence method get_margin_breach_time uint32_t
+singleton AC_Fence method get_breach_distance float uint8_t'skip_check
 
 include AP_Filesystem/AP_Filesystem.h depends AP_FILESYSTEM_FILE_READING_ENABLED
 include AP_Filesystem/AP_Filesystem_config.h

@@ -176,7 +176,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
 #if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the quad
         if (!copter.camera_mount.has_pan_control()) {
-            if (roi_location.get_vector_from_origin_NEU(roi)) {
+            if (roi_location.get_vector_from_origin_NEU_cm(roi)) {
                 auto_yaw.set_mode(Mode::ROI);
             }
         }
@@ -191,7 +191,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
         //      4: point at a target given a target id (can't be implemented)
 #else
         // if we have no camera mount aim the quad at the location
-        if (roi_location.get_vector_from_origin_NEU(roi)) {
+        if (roi_location.get_vector_from_origin_NEU_cm(roi)) {
             auto_yaw.set_mode(Mode::ROI);
         }
 #endif  // HAL_MOUNT_ENABLED
@@ -257,7 +257,7 @@ float Mode::AutoYaw::yaw_cd()
     case Mode::CIRCLE:
 #if MODE_CIRCLE_ENABLED
         if (copter.circle_nav->is_active()) {
-            _yaw_angle_cd = copter.circle_nav->get_yaw();
+            _yaw_angle_cd = copter.circle_nav->get_yaw_cd();
         }
 #endif
         break;

@@ -67,6 +67,7 @@
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_Landing/AP_Landing_config.h>
+#include <AP_Generator/AP_Generator_Loweheiser.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -128,12 +129,11 @@ GCS *GCS::_singleton = nullptr;
 GCS_MAVLINK_InProgress GCS_MAVLINK_InProgress::in_progress_tasks[1];
 uint32_t GCS_MAVLINK_InProgress::last_check_ms;
 
-GCS_MAVLINK::GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters,
-                         AP_HAL::UARTDriver &uart)
+GCS_MAVLINK::GCS_MAVLINK(AP_HAL::UARTDriver &uart)
 {
-    _port = &uart;
+    AP_Param::setup_object_defaults(this, var_info);
 
-    streamRates = parameters.streamRates;
+    _port = &uart;
 }
 
 bool GCS_MAVLINK::init(uint8_t instance)
@@ -961,7 +961,7 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
         } else if (current == 3) {
             //current = 3 is a flag to tell us this is a alt change only
             // add home alt if needed
-            handle_change_alt_request(cmd);
+            handle_change_alt_request(cmd.content.location);
 
             // verify we received the command
             result = MAV_MISSION_ACCEPTED;
@@ -1043,7 +1043,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_GPS2_RTK,              MSG_GPS2_RTK},
 #endif
         { MAVLINK_MSG_ID_SYSTEM_TIME,           MSG_SYSTEM_TIME},
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
         { MAVLINK_MSG_ID_RC_CHANNELS_SCALED,    MSG_SERVO_OUT},
+#endif  // APM_BUILD_TYPE(APM_BUILD_Rover)
         { MAVLINK_MSG_ID_PARAM_VALUE,           MSG_NEXT_PARAM},
 #if AP_FENCE_ENABLED
         { MAVLINK_MSG_ID_FENCE_STATUS,          MSG_FENCE_STATUS},
@@ -1115,8 +1117,10 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_BATTERY_ENABLED
         { MAVLINK_MSG_ID_BATTERY_STATUS,        MSG_BATTERY_STATUS},
 #endif
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
         { MAVLINK_MSG_ID_AOA_SSA,               MSG_AOA_SSA},
-#if HAL_LANDING_DEEPSTALL_ENABLED
+#endif  // APM_BUILD_ArduPlane
+#if HAL_LANDING_DEEPSTALL_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
         { MAVLINK_MSG_ID_DEEPSTALL,             MSG_LANDING},
 #endif
         { MAVLINK_MSG_ID_EXTENDED_SYS_STATE,    MSG_EXTENDED_SYS_STATE},
@@ -1171,7 +1175,9 @@ bool GCS_MAVLINK::set_mavlink_message_id_interval(const uint32_t mavlink_id,
 {
     const ap_message id = mavlink_id_to_ap_message_id(mavlink_id);
     if (id == MSG_LAST) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No ap_message for mavlink id (%u)", (unsigned int)mavlink_id);
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
         return false;
     }
     return set_ap_message_interval(id, interval_ms);
@@ -1376,6 +1382,9 @@ int8_t GCS_MAVLINK::deferred_message_to_send_index(uint16_t now16_ms)
         return -1;
     }
 
+    // an intermediate 16-bit variable is used here to strictly avoid
+    // type promotion creating 32-bit (or higher) maths here.  Do not
+    // be tempted to remove ms_since_last_sent here.
     const uint16_t ms_since_last_sent = now16_ms - deferred_message[next_deferred_message_to_send_cache].last_sent_ms;
     if (ms_since_last_sent < deferred_message[next_deferred_message_to_send_cache].interval_ms) {
         return -1;
@@ -2666,6 +2675,9 @@ void GCS::send_message(enum ap_message id)
 
 void GCS::update_send()
 {
+    // cope with changes to mavlink system ID parameter
+    mavlink_system.sysid = sysid;
+
     update_send_has_been_called = true;
 
     if (!initialised_missionitemprotocol_objects) {
@@ -2740,27 +2752,26 @@ void GCS::setup_console()
         // this is probably not going to end well.
         return;
     }
-    if (ARRAY_SIZE(chan_parameters) == 0) {
+    if (ARRAY_SIZE(_chan_var_info) == 0) {
         return;
     }
-    create_gcs_mavlink_backend(chan_parameters[0], *uart);
+    create_gcs_mavlink_backend(*uart);
 }
 
 
-GCS_MAVLINK_Parameters::GCS_MAVLINK_Parameters()
+void GCS::create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart)
 {
-    AP_Param::setup_object_defaults(this, var_info);
-}
-
-void GCS::create_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params, AP_HAL::UARTDriver &uart)
-{
-    if (_num_gcs >= ARRAY_SIZE(chan_parameters)) {
+    if (_num_gcs >= ARRAY_SIZE(_chan_var_info)) {
         return;
     }
-    _chan[_num_gcs] = new_gcs_mavlink_backend(params, uart);
+    _chan[_num_gcs] = new_gcs_mavlink_backend(uart);
     if (_chan[_num_gcs] == nullptr) {
         return;
     }
+
+    // prepare parameters:
+    _chan_var_info[_num_gcs] = _chan[_num_gcs]->var_info;
+    AP_Param::load_object_from_eeprom(_chan[_num_gcs], _chan_var_info[_num_gcs]);
 
     if (!_chan[_num_gcs]->init(_num_gcs)) {
         delete _chan[_num_gcs];
@@ -2774,16 +2785,12 @@ void GCS::create_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params, AP_HAL::UAR
 void GCS::setup_uarts()
 {
     for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        if (i >= ARRAY_SIZE(chan_parameters)) {
-            // should not happen
-            break;
-        }
         AP_HAL::UARTDriver *uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_MAVLink, i);
         if (uart == nullptr) {
             // no more mavlink uarts
             break;
         }
-        create_gcs_mavlink_backend(chan_parameters[i], *uart);
+        create_gcs_mavlink_backend(*uart);
     }
 
 #if AP_FRSKY_TELEM_ENABLED
@@ -3032,7 +3039,7 @@ void GCS_MAVLINK::send_home_position() const
 
     // get home position from origin
     Vector3f home_pos_ned;
-    if (home.get_vector_from_origin_NEU(home_pos_ned)) {
+    if (home.get_vector_from_origin_NEU_cm(home_pos_ned)) {
         // convert NEU in cm to NED in meters
         home_pos_ned *= 0.01f;
         home_pos_ned.z *= -1;
@@ -3198,6 +3205,12 @@ uint8_t GCS::get_channel_from_port_number(uint8_t port_num)
 MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int_t &packet)
 {
     const uint32_t mavlink_id = (uint32_t)packet.param1;
+
+    if (mavlink_id == MAVLINK_MSG_ID_MESSAGE_INTERVAL) {
+        const mavlink_command_int_t msg_interval_cmd = { .param1 = packet.param2, };
+        return handle_command_get_message_interval(msg_interval_cmd);
+    }
+
     const ap_message id = mavlink_id_to_ap_message_id(mavlink_id);
     if (id == MSG_LAST) {
         return MAV_RESULT_FAILED;
@@ -3278,7 +3291,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_message_interval(const mavlink_comman
 bool GCS_MAVLINK::telemetry_delayed() const
 {
     uint32_t tnow = AP_HAL::millis() >> 10;
-    if (tnow > telem_delay()) {
+    if (tnow >= gcs().telem_delay()) {
         return false;
     }
     if (chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
@@ -3744,7 +3757,7 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
     char text[text_len] = { 'G','C','S',':'};
     uint8_t offset = strlen(text);
 
-    if (msg.sysid != sysid_my_gcs()) {
+    if (msg.sysid != gcs().sysid_gcs()) {
         offset = hal.util->snprintf(text,
                                     max_prefix_len,
                                     "SRC=%u/%u:",
@@ -3810,11 +3823,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_int_t &packe
 #if AP_AHRS_ENABLED
 // sets ekf_origin if it has not been set.
 //  should only be used when there is no GPS to provide an absolute position
-void GCS_MAVLINK::set_ekf_origin(const Location& loc)
+MAV_RESULT GCS_MAVLINK::set_ekf_origin(const Location& loc)
 {
     // check location is valid
+    if (loc.is_zero()) {
+        return MAV_RESULT_DENIED;
+    }
     if (!loc.check_latlng()) {
-        return;
+        return MAV_RESULT_DENIED;
     }
 
     AP_AHRS &ahrs = AP::ahrs();
@@ -3822,11 +3838,11 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
     // check if EKF origin has already been set
     Location ekf_origin;
     if (ahrs.get_origin(ekf_origin)) {
-        return;
+        return MAV_RESULT_FAILED;
     }
 
     if (!ahrs.set_origin(loc)) {
-        return;
+        return MAV_RESULT_FAILED;
     }
 
     // send ekf origin to GCS
@@ -3834,8 +3850,10 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
         // try again later
         send_message(MSG_ORIGIN);
     }
+    return MAV_RESULT_ACCEPTED;
 }
 
+#if AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
 void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t &msg)
 {
     mavlink_set_gps_global_origin_t packet;
@@ -3847,12 +3865,16 @@ void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t &msg)
         return;
     }
 
-    Location ekf_origin {};
-    ekf_origin.lat = packet.latitude;
-    ekf_origin.lng = packet.longitude;
-    ekf_origin.alt = packet.altitude / 10;
+    const Location ekf_origin {
+        packet.latitude,
+        packet.longitude,
+        int32_t(packet.altitude * 0.1f),  // mm -> cm
+        Location::AltFrame::ABSOLUTE
+    };
     set_ekf_origin(ekf_origin);
 }
+#endif  // AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
+
 #endif  // AP_AHRS_ENABLED
 
 /*
@@ -4028,6 +4050,11 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
     if (accelcal != nullptr) {
         accelcal->handle_command_ack(packet);
     }
+#if AP_GENERATOR_LOWEHEISER_ENABLED
+    // this might be an ACK from a loweheiser generator:
+    handle_generator_message(msg);
+#endif
+
 #endif
 }
 
@@ -4036,7 +4063,7 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 // control of switch position and RC PWM values.
 void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
 {
-    if(msg.sysid != sysid_my_gcs()) {
+    if(msg.sysid != gcs().sysid_gcs()) {
         return; // Only accept control from our gcs
     }
 
@@ -4199,7 +4226,7 @@ void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg) const
 {
     // if the heartbeat is from our GCS then we don't failsafe for
     // now...
-    if (msg.sysid == sysid_my_gcs()) {
+    if (msg.sysid == gcs().sysid_gcs()) {
         gcs().sysid_mygcs_seen(AP_HAL::millis());
     }
 }
@@ -4231,7 +4258,7 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         handle_common_param_message(msg);
         break;
 
-#if AP_AHRS_ENABLED
+#if AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
     case MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN:
         handle_set_gps_global_origin(msg);
         break;
@@ -4527,8 +4554,31 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
     }
 #endif
+#if AP_GENERATOR_LOWEHEISER_ENABLED
+    case MAVLINK_MSG_ID_LOWEHEISER_GOV_EFI:
+        // message received from Loweheiser mavlink connection
+        handle_generator_message(msg);
+        break;
+#endif
     }
 
+}
+
+void GCS_MAVLINK::handle_generator_message(const mavlink_message_t &msg)
+{
+#if AP_GENERATOR_LOWEHEISER_ENABLED
+    AP_Generator *generator = AP::generator();
+    if (generator == nullptr) {
+        return;
+    }
+
+    auto *backend = generator->get_loweheiser();
+    if (backend == nullptr) {
+        return;
+    }
+
+    backend->handle_mavlink_msg(*this, msg);
+#endif
 }
 
 void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
@@ -4671,6 +4721,18 @@ void GCS_MAVLINK::send_sim_state() const
     sitl->sim_state_send(get_chan());
 }
 #endif
+
+#if AP_AHRS_ENABLED
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_global_origin(const mavlink_command_int_t &packet)
+{
+    Location global_origin;
+    if (!location_from_command_t(packet, global_origin)) {
+        return MAV_RESULT_DENIED;
+    }
+
+    return set_ekf_origin(global_origin);
+}
+#endif  // AP_AHRS_ENABLED
 
 #if AP_BOOTLOADER_FLASHING_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_int_t &packet)
@@ -5113,6 +5175,7 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
     // case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_DO_REPOSITION:
     case MAV_CMD_EXTERNAL_POSITION_ESTIMATE:
+    case MAV_CMD_DO_SET_GLOBAL_ORIGIN:
         return true;
     default:
         return false;
@@ -5492,6 +5555,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         }
         return  MAV_RESULT_FAILED;
 #endif
+
+#if AP_AHRS_ENABLED
+    case MAV_CMD_DO_SET_GLOBAL_ORIGIN:
+        return handle_command_do_set_global_origin(packet);
+#endif  // AP_AHRS_ENABLED
 
 #if AP_RC_CHANNEL_ENABLED
     case MAV_CMD_DO_AUX_FUNCTION:
@@ -6626,6 +6694,21 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif
 
+        // terrain request and report shouldn't be here; the vehicles
+        // should be doing better in terms of factoring behaviour up
+#if AP_TERRAIN_AVAILABLE
+    case MSG_TERRAIN_REQUEST:
+    case MSG_TERRAIN_REPORT:
+#endif  // AP_TERRAIN_AVAILABLE
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+        // hygrometer should be in its down library, not called via
+        // Plane's functions
+    case MSG_HYGROMETER:
+#endif
+        // ADSB should be moved down into here
+    case MSG_ADSB_VEHICLE:
+        break;
+
     default:
         // try_send_message must always at some stage return true for
         // a message, or we will attempt to infinitely retry the
@@ -6926,7 +7009,7 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
 }
 
 /*
-  return true if we will accept this packet. Used to implement SYSID_ENFORCE
+  return true if we will accept this packet. Used to implement MAV_GCS_ENFRCE
  */
 bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
                                 const mavlink_message_t &msg) const
@@ -6937,7 +7020,7 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
         return true;
     }
 
-    if (msg.sysid == sysid_my_gcs()) {
+    if (msg.sysid == gcs().sysid_gcs()) {
         return true;
     }
 
@@ -6946,7 +7029,7 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
         return true;
     }
 
-    if (!sysid_enforce()) {
+    if (!gcs().option_is_enabled(GCS::Option::GCS_SYSID_ENFORCE)) {
         return true;
     }
 
@@ -7189,7 +7272,7 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
 
 void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
 {
-    if (msg.sysid != sysid_my_gcs()) {
+    if (msg.sysid != gcs().sysid_gcs()) {
         return; // only accept control from our gcs
     }
 

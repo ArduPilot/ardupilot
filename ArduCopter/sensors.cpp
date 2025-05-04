@@ -60,9 +60,9 @@ void Copter::update_rangefinder_terrain_offset()
     rangefinder_up_state.terrain_offset_cm += (terrain_offset_cm - rangefinder_up_state.terrain_offset_cm) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
 
     if (rangefinder_state.alt_healthy || rangefinder_state.data_stale()) {
-        wp_nav->set_rangefinder_terrain_offset(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_cm);
+        wp_nav->set_rangefinder_terrain_offset_cm(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_cm);
 #if MODE_CIRCLE_ENABLED
-        circle_nav->set_rangefinder_terrain_offset(rangefinder_state.enabled && wp_nav->rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_cm);
+        circle_nav->set_rangefinder_terrain_offset_cm(rangefinder_state.enabled && wp_nav->rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_cm);
 #endif
     }
 }

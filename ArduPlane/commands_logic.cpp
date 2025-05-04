@@ -340,6 +340,9 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
     auto_state.crosstrack = false;
     prev_WP_loc = current_loc;
     next_WP_loc = calc_best_rally_or_home_location(current_loc, rtl_altitude_AMSL_cm);
+
+    fix_terrain_WP(next_WP_loc, __LINE__);
+
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
 
@@ -381,6 +384,7 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
     next_WP_loc.lat = home.lat + 10;
     next_WP_loc.lng = home.lng + 10;
     auto_state.takeoff_complete = false; // set flag to use gps ground course during TO. IMU will be doing yaw drift correction.
+    auto_state.rotation_complete = false;
     auto_state.height_below_takeoff_to_level_off_cm = 0;
     // Flag also used to override "on the ground" throttle disable
 
@@ -500,7 +504,17 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
         next_WP_loc.offset_bearing(bearing, 1000); // push it out 1km
     }
 
-    next_WP_loc.alt = cmd.content.location.alt + home.alt;
+    if (cmd.content.location.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
+        next_WP_loc.set_alt_cm(cmd.content.location.alt,
+                               Location::AltFrame::ABOVE_TERRAIN);
+    } else {
+        int32_t alt_abs_cm;
+        // if this fails we don't change alt
+        if (cmd.content.location.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_abs_cm)) {
+            next_WP_loc.set_alt_cm(alt_abs_cm,
+                                   Location::AltFrame::ABSOLUTE);
+        }
+    }
     condition_value = cmd.p1;
     reset_offset_altitude();
 }
@@ -1044,7 +1058,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 // fly home and loiter at RTL alt
                 nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
                 if (plane.reached_loiter_target()) {
-                    // decend to Q RTL alt
+                    // descend to Q RTL alt
                     plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt*100UL);
                     plane.loiter_angle_reset();
                     vtol_approach_s.approach_stage = VTOLApproach::Stage::LOITER_TO_ALT;
@@ -1095,7 +1109,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
             }
         case VTOLApproach::Stage::APPROACH_LINE:
             {
-                // project an apporach path
+                // project an approach path
                 Location start = cmd.content.location;
                 Location end = cmd.content.location;
 

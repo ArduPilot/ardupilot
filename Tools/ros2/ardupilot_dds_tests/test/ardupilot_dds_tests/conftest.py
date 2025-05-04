@@ -22,9 +22,6 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch import LaunchDescriptionSource
 from launch.actions import IncludeLaunchDescription
-from launch.substitutions import PathJoinSubstitution
-
-from launch_ros.substitutions import FindPackageShare
 
 from pathlib import Path
 

@@ -270,7 +270,7 @@ private:
         //   measured ground or ceiling level measured using the range finder.
         void update_surface_offset();
 
-        // target has already been set by terrain following so do not initalise again
+        // target has already been set by terrain following so do not initialise again
         // this should be called by flight modes when switching from terrain following to surface tracking (e.g. ZigZag)
         void external_init();
 
@@ -732,7 +732,7 @@ private:
 
     // Attitude.cpp
     void update_throttle_hover();
-    float get_pilot_desired_climb_rate(float throttle_control);
+    float get_pilot_desired_climb_rate();
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
@@ -840,6 +840,7 @@ private:
     // fence.cpp
 #if AP_FENCE_ENABLED
     void fence_check();
+    void fence_checks_async() override;
 #endif
 
     // heli.cpp

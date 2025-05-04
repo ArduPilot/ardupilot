@@ -62,13 +62,13 @@ public:
 
 protected:
 
-    // refences for convenience
+    // references for convenience
     QuadPlane& quadplane;
     AP_MotorsMulticopter*& motors;
 
 };
 
-// Transition for separate left thrust quadplanes
+// Transition for separate lift thrust quadplanes
 class SLT_Transition : public Transition
 {
 public:

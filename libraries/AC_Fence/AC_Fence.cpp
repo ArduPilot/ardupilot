@@ -42,6 +42,8 @@ extern const AP_HAL::HAL& hal;
 #define AC_FENCE_OPTIONS_DEFAULT                   0
 #endif
 
+#define AC_FENCE_NOTIFY_DEFAULT                     1.0f    // default to notifications at 1Hz
+
 //#define AC_FENCE_DEBUG
 
 const AP_Param::GroupInfo AC_Fence::var_info[] = {
@@ -139,12 +141,20 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FRAME("AUTOENABLE", 10, AC_Fence, _auto_enabled, static_cast<uint8_t>(AutoEnable::ALWAYS_DISABLED), AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
 
-    // @Param{Plane, Copter}: OPTIONS
+    // @Param: OPTIONS
     // @DisplayName: Fence options
-    // @Description: When bit 0 is set sisable mode change following fence action until fence breach is cleared. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
-    // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared, 1:Allow union of inclusion areas
+    // @Description: When bit 0 is set disable mode change following fence action until fence breach is cleared. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
+    // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared, 1:Allow union of inclusion areas, 2:Notify on margin breaches
     // @User: Standard
-    AP_GROUPINFO_FRAME("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(AC_FENCE_OPTIONS_DEFAULT), AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
+    AP_GROUPINFO("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(AC_FENCE_OPTIONS_DEFAULT)),
+
+    // @Param: NTF_FREQ
+    // @DisplayName: Fence margin notification frequency in hz
+    // @Description: When bit 2 of FENCE_OPTIONS is set this parameter controls the frequency of margin breach notifications. If set to 0 only new margin breaches are notified.
+    // @Range: 0 10
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("NTF_FREQ", 12, AC_Fence, _notify_freq, static_cast<float>(AC_FENCE_NOTIFY_DEFAULT)),
 
     AP_GROUPEND
 };
@@ -536,12 +546,11 @@ bool AC_Fence::check_fence_alt_max()
     AP::ahrs().get_relative_position_D_home(alt);
     const float _curr_alt = -alt; // translate Down to Up
 
+    // record distance above/below breach
+    _alt_max_breach_distance = _curr_alt - _alt_max;
+
     // check if we are over the altitude fence
     if (_curr_alt >= _alt_max) {
-
-        // record distance above breach
-        _alt_max_breach_distance = _curr_alt - _alt_max;
-
         // check for a new breach or a breach of the backup fence
         if (!(_breached_fences & AC_FENCE_TYPE_ALT_MAX) ||
             (!is_zero(_alt_max_backup) && _curr_alt >= _alt_max_backup)) {
@@ -556,6 +565,10 @@ bool AC_Fence::check_fence_alt_max()
         }
         // old breach
         return false;
+    } else if (_curr_alt >= _alt_max - _margin) {
+        record_margin_breach(AC_FENCE_TYPE_ALT_MAX);
+    } else {
+        clear_margin_breach(AC_FENCE_TYPE_ALT_MAX);
     }
 
     // not breached
@@ -564,7 +577,6 @@ bool AC_Fence::check_fence_alt_max()
     if ((_breached_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
         clear_breach(AC_FENCE_TYPE_ALT_MAX);
         _alt_max_backup = 0.0f;
-        _alt_max_breach_distance = 0.0f;
     }
 
     return false;
@@ -585,11 +597,12 @@ bool AC_Fence::check_fence_alt_min()
     AP::ahrs().get_relative_position_D_home(alt);
     const float _curr_alt = -alt; // translate Down to Up
 
+    // record distance above/below breach
+    _alt_min_breach_distance = _alt_min - _curr_alt;
+
     // check if we are under the altitude fence
     if (_curr_alt <= _alt_min) {
 
-        // record distance below breach
-        _alt_min_breach_distance = _alt_min - _curr_alt;
 
         // check for a new breach or a breach of the backup fence
         if (!(_breached_fences & AC_FENCE_TYPE_ALT_MIN) ||
@@ -605,6 +618,10 @@ bool AC_Fence::check_fence_alt_min()
         }
         // old breach
         return false;
+    } else if (_curr_alt <= _alt_min + _margin) {
+        record_margin_breach(AC_FENCE_TYPE_ALT_MIN);
+    } else {
+        clear_margin_breach(AC_FENCE_TYPE_ALT_MIN);
     }
 
     // not breached
@@ -613,7 +630,6 @@ bool AC_Fence::check_fence_alt_min()
     if ((_breached_fences & AC_FENCE_TYPE_ALT_MIN) != 0) {
         clear_breach(AC_FENCE_TYPE_ALT_MIN);
         _alt_min_backup = 0.0f;
-        _alt_min_breach_distance = 0.0f;
     }
 
     return false;
@@ -659,13 +675,23 @@ bool AC_Fence::check_fence_polygon()
     }
 
     const bool was_breached = _breached_fences & AC_FENCE_TYPE_POLYGON;
-    if (_poly_loader.breached()) {
+
+    Location loc;
+    const bool have_location = AP::ahrs().get_location(loc);
+
+    if (have_location && _poly_loader.breached(loc, _polygon_breach_distance)) {
         if (!was_breached) {
             record_breach(AC_FENCE_TYPE_POLYGON);
             return true;
         }
         return false;
+    } else if (option_enabled(OPTIONS::NOTIFY_MARGIN_BREACH)
+               && _polygon_breach_distance < 0 && fabsf(_polygon_breach_distance) < _margin) {
+        record_margin_breach(AC_FENCE_TYPE_POLYGON);
+    } else {
+        clear_margin_breach(AC_FENCE_TYPE_POLYGON);
     }
+
     if (was_breached) {
         clear_breach(AC_FENCE_TYPE_POLYGON);
     }
@@ -689,11 +715,11 @@ bool AC_Fence::check_fence_circle()
         _home_distance = home.length();
     }
 
+    // record distance outside/inside the fence
+    _circle_breach_distance = _home_distance - _circle_radius;
+
     // check if we are outside the fence
     if (_home_distance >= _circle_radius) {
-
-        // record distance outside the fence
-        _circle_breach_distance = _home_distance - _circle_radius;
 
         // check for a new breach or a breach of the backup fence
         if (!(_breached_fences & AC_FENCE_TYPE_CIRCLE) ||
@@ -705,6 +731,10 @@ bool AC_Fence::check_fence_circle()
             return true;
         }
         return false;
+    } else if (_home_distance >= _circle_radius - _margin) {
+        record_margin_breach(AC_FENCE_TYPE_CIRCLE);
+    } else {
+        clear_margin_breach(AC_FENCE_TYPE_CIRCLE);
     }
 
     // not currently breached
@@ -713,7 +743,6 @@ bool AC_Fence::check_fence_circle()
     if (_breached_fences & AC_FENCE_TYPE_CIRCLE) {
         clear_breach(AC_FENCE_TYPE_CIRCLE);
         _circle_radius_backup = 0.0f;
-        _circle_breach_distance = 0.0f;
     }
 
     return false;
@@ -767,6 +796,11 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
         return 0;
     }
 
+    // take lock inside critical section
+    if (!_poly_loader.get_loaded_fence_semaphore().take_nonblocking()) {
+        return 0;
+    }
+
     // disable the (temporarily) disabled fences
     enable(false, disabled_fences, false);
 
@@ -801,12 +835,15 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
     if (_manual_recovery_start_ms != 0) {
         // we ignore any fence breaches during the manual recovery period which is about 10 seconds
         if ((AP_HAL::millis() - _manual_recovery_start_ms) < AC_FENCE_MANUAL_RECOVERY_TIME_MIN) {
+            _poly_loader.get_loaded_fence_semaphore().give();
             return 0;
         }
         // recovery period has passed so reset manual recovery time
         // and continue with fence breach checks
         _manual_recovery_start_ms = 0;
     }
+
+    _poly_loader.get_loaded_fence_semaphore().give();
 
     // return any new breaches that have occurred
     return ret;
@@ -876,17 +913,64 @@ void AC_Fence::record_breach(uint8_t fence_type)
     _breached_fences |= fence_type;
 }
 
-/// clear_breach - update breach bitmask, time and count
+/// record_margin_breach - update margin_breach bitmask, time and count
+void AC_Fence::record_margin_breach(uint8_t fence_type)
+{
+    // if we haven't already breached a margin limit, update the breach time
+    const uint32_t now = AP_HAL::millis();
+
+    bool notify_margin_breach = false;
+
+    if (option_enabled(OPTIONS::NOTIFY_MARGIN_BREACH)) {
+        if ((!is_zero(_notify_freq)
+            && AP_HAL::timeout_expired(_last_margin_breach_notify_sent_ms, now,
+                                       uint32_t(roundf(1000.0f / _notify_freq))))
+            || !(_breached_fence_margins & fence_type)) {
+            notify_margin_breach = true;
+        }
+    }
+
+    if (!(_breached_fence_margins & fence_type)) {
+        _margin_breach_time = now;
+    }
+
+    // update bitmask
+    _breached_fence_margins |= fence_type;
+
+    // emit a message indicated we're newly-breached, but not too often
+    if (notify_margin_breach) {
+        _last_margin_breach_notify_sent_ms = now;
+        char msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        ExpandingString e(msg, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1);
+        AC_Fence::get_fence_names(_breached_fence_margins, e);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "%s in %.1fm", e.get_writeable_string(), fabsf(get_breach_distance(_breached_fence_margins)));
+    }
+}
+
+/// clear_breach - update breach bitmask
 void AC_Fence::clear_breach(uint8_t fence_type)
 {
     _breached_fences &= ~fence_type;
 }
 
+/// clear_margin_breach - update margin reach bitmask
+void AC_Fence::clear_margin_breach(uint8_t fence_type)
+{
+    if (_breached_fence_margins & fence_type) {
+        if (option_enabled(OPTIONS::NOTIFY_MARGIN_BREACH)) {
+            print_fence_message("cleared margin breach", fence_type);
+        }
+    }
+
+    _breached_fence_margins &= ~fence_type;
+}
+
 /// get_breach_distance - returns maximum distance in meters outside
+/// negative values mean distance in meters inside
 /// of the given fences.  fence_type is a bitmask here.
 float AC_Fence::get_breach_distance(uint8_t fence_type) const
 {
-    float max = 0.0f;
+    float max = -FLT_MAX;
 
     if (fence_type & AC_FENCE_TYPE_ALT_MAX) {
         max = MAX(_alt_max_breach_distance, max);
@@ -896,6 +980,9 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const
     }
     if (fence_type & AC_FENCE_TYPE_CIRCLE) {
         max = MAX(_circle_breach_distance, max);
+    }
+    if (fence_type & AC_FENCE_TYPE_POLYGON) {
+        max = MAX(_polygon_breach_distance, max);
     }
     return max;
 }

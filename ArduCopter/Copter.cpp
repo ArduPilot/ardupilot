@@ -474,13 +474,13 @@ AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, c
 // circle mode controls
 bool Copter::get_circle_radius(float &radius_m)
 {
-    radius_m = circle_nav->get_radius() * 0.01f;
+    radius_m = circle_nav->get_radius_cm() * 0.01f;
     return true;
 }
 
-bool Copter::set_circle_rate(float rate_dps)
+bool Copter::set_circle_rate(float rate_degs)
 {
-    circle_nav->set_rate(rate_dps);
+    circle_nav->set_rate_degs(rate_degs);
     return true;
 }
 #endif
@@ -802,7 +802,7 @@ void Copter::one_hz_loop()
     if (!using_rate_thread) {
         attitude_control->set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
     }
-    pos_control->get_accel_z_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    pos_control->get_accel_U_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     custom_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #endif
@@ -889,7 +889,7 @@ void Copter::update_super_simple_bearing(bool force_update)
     }
 
     super_simple_last_bearing = bearing;
-    const float angle_rad = radians((super_simple_last_bearing+18000)/100);
+    const float angle_rad = radians((super_simple_last_bearing+18000)*0.01f);
     super_simple_cos_yaw = cosf(angle_rad);
     super_simple_sin_yaw = sinf(angle_rad);
 }

@@ -28,12 +28,12 @@
 bool ModePosHold::init(bool ignore_checks)
 {
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    pos_control->set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_correction_speed_accel_U_cmss(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise the vertical position controller
-    if (!pos_control->is_active_z()) {
-        pos_control->init_z_controller();
+    if (!pos_control->is_active_U()) {
+        pos_control->init_U_controller();
     }
 
     // initialise lean angles to current attitude
@@ -72,7 +72,7 @@ void ModePosHold::run()
     const Vector3f& vel = inertial_nav.get_velocity_neu_cms();
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
     loiter_nav->clear_pilot_desired_acceleration();
 
     // apply SIMPLE mode transform to pilot inputs
@@ -86,7 +86,7 @@ void ModePosHold::run()
     float target_yaw_rate = get_pilot_desired_yaw_rate();
 
     // get pilot desired climb rate (for alt-hold mode and take-off)
-    float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    float target_climb_rate = get_pilot_desired_climb_rate();
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // relax loiter target if we might be landed
@@ -103,7 +103,7 @@ void ModePosHold::run()
     case AltHoldModeState::MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->reset_yaw_target_and_rate(false);
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
+        pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
 
@@ -124,7 +124,7 @@ void ModePosHold::run()
 
     case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
+        pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
 
         // set poshold state to pilot override
         roll_mode = RPMode::PILOT_OVERRIDE;
@@ -164,7 +164,7 @@ void ModePosHold::run()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
+        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate);
         break;
     }
 
@@ -377,7 +377,7 @@ void ModePosHold::run()
         pitch_mode = RPMode::BRAKE_TO_LOITER;
         brake.to_loiter_timer = POSHOLD_BRAKE_TO_LOITER_TIMER;
         // init loiter controller
-        loiter_nav->init_target(inertial_nav.get_position_xy_cm() - pos_control->get_pos_offset_cm().xy().tofloat());
+        loiter_nav->init_target_cm(inertial_nav.get_position_xy_cm() - pos_control->get_pos_offset_NEU_cm().xy().tofloat());
         // set delay to start of wind compensation estimate updates
         wind_comp_start_timer = POSHOLD_WIND_COMP_START_TIMER;
     }
@@ -412,8 +412,8 @@ void ModePosHold::run()
                 loiter_nav->update(false);
 
                 // calculate final roll and pitch output by mixing loiter and brake controls
-                roll = mix_controls(brake_to_loiter_mix, brake.roll + wind_comp_roll, loiter_nav->get_roll());
-                pitch = mix_controls(brake_to_loiter_mix, brake.pitch + wind_comp_pitch, loiter_nav->get_pitch());
+                roll = mix_controls(brake_to_loiter_mix, brake.roll + wind_comp_roll, loiter_nav->get_roll_cd());
+                pitch = mix_controls(brake_to_loiter_mix, brake.pitch + wind_comp_pitch, loiter_nav->get_pitch_cd());
 
                 // check for pilot input
                 if (!is_zero(target_roll) || !is_zero(target_pitch)) {
@@ -443,8 +443,8 @@ void ModePosHold::run()
                 loiter_nav->update(false);
 
                 // set roll angle based on loiter controller outputs
-                roll = loiter_nav->get_roll();
-                pitch = loiter_nav->get_pitch();
+                roll = loiter_nav->get_roll_cd();
+                pitch = loiter_nav->get_pitch_cd();
 
                 // update wind compensation estimate
                 update_wind_comp_estimate();
@@ -464,7 +464,7 @@ void ModePosHold::run()
                     if (!is_zero(target_pitch)) {
                         // init transition to pilot override
                         pitch_controller_to_pilot_override();
-                        // if roll not overriden switch roll-mode to brake (but be ready to go back to loiter any time)
+                        // if roll not overridden switch roll-mode to brake (but be ready to go back to loiter any time)
                         if (is_zero(target_roll)) {
                             roll_mode = RPMode::BRAKE_READY_TO_LOITER;
                             brake.roll = 0.0f;
@@ -486,10 +486,10 @@ void ModePosHold::run()
     pitch = constrain_float(pitch, -angle_max, angle_max);
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(roll, pitch, target_yaw_rate);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(roll, pitch, target_yaw_rate);
 
     // run the vertical position controller and set output throttle
-    pos_control->update_z_controller();
+    pos_control->update_U_controller();
 }
 
 // poshold_update_pilot_lean_angle - update the pilot's filtered lean angle with the latest raw input received
@@ -569,7 +569,7 @@ void ModePosHold::update_wind_comp_estimate()
     }
 
     // get position controller accel target
-    const Vector3f& accel_target = pos_control->get_accel_target_cmss();
+    const Vector3f& accel_target = pos_control->get_accel_target_NEU_cmss();
 
     // update wind compensation in earth-frame lean angles
     if (is_zero(wind_comp_ef.x)) {

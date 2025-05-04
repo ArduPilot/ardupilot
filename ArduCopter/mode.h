@@ -390,7 +390,7 @@ public:
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
-    float get_pilot_desired_climb_rate(float throttle_control);
+    float get_pilot_desired_climb_rate();
     float get_non_takeoff_throttle(void);
     void update_simple_mode(void);
     bool set_mode(Mode::Number mode, ModeReason reason);
@@ -954,7 +954,7 @@ private:
         Abandon
     };
     FlipState _state;               // current state of flip
-    Mode::Number   orig_control_mode;   // flight mode when flip was initated
+    Mode::Number   orig_control_mode;   // flight mode when flip was initiated
     uint32_t  start_time_ms;          // time since flip began
     int8_t    roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
     int8_t    pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
