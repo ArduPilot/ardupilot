@@ -160,13 +160,15 @@ private:
     AP_Int8     _offset_type;       // offset frame type (0:North-East-Down, 1:RelativeToLeadVehicleHeading)
     AP_Vector3f _offset;            // offset from lead vehicle in meters
     AP_Int8     _yaw_behave;        // following vehicle's yaw/heading behaviour (see YAW_BEHAVE enum)
-    AP_Int8     _alt_type;          // altitude source for follow mode
+    AP_Enum<Location::AltFrame>    _alt_type;          // altitude source for follow mode
     AC_P        _p_pos;             // position error P controller
     AP_Int16    _options;           // options for mount behaviour follow mode
+    AP_Float    _timeout;           // position estimate timeout after x milliseconds
 
     // local variables
     uint32_t _last_location_update_ms;  // system time of last position update
     Vector3p _target_position_ned;  // last known position of target
+    uint32_t _target_location_last_time_boot_ms;   // the timestamp of the most recently received location from the target
     Vector3f _target_velocity_ned;  // last known velocity of target in NED frame in m/s
     Vector3f _target_accel_ned;     // last known acceleration of target in NED frame in m/s/s
     uint32_t _last_heading_update_ms;   // system time of last heading update
