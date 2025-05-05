@@ -416,7 +416,6 @@ void ModeSystemId::log_attitude_data(float delta_angle_dt, const Vector3f& delta
     // Full rate logging of attitude, rate and pid loops
     copter.Log_Write_Attitude();
     copter.Log_Write_Rate();
-    copter.Log_Write_PIDS();
 }
 
 // log system id and all data
