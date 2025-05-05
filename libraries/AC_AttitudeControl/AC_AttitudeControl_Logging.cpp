@@ -15,7 +15,7 @@ void AC_AttitudeControl::Write_ANG() const
 
     const struct log_ANG pkt{
         LOG_PACKET_HEADER_INIT(LOG_ANG_MSG),
-        time_us         : AP::scheduler().get_loop_start_time_us(),
+        time_us         : _rate_gyro_time_us,
         control_roll    : targets.x,
         roll            : degrees(_ahrs.roll),
         control_pitch   : targets.y,
