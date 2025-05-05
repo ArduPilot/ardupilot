@@ -170,7 +170,6 @@ void Sub::handle_battery_failsafe(const char* type_str, const int8_t action)
 // Make sure that we are receiving pilot input at an appropriate interval
 void Sub::failsafe_pilot_input_check()
 {
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (g.failsafe_pilot_input == FS_PILOT_INPUT_DISABLED) {
         failsafe.pilot_input = false;
         return;
@@ -195,7 +194,6 @@ void Sub::failsafe_pilot_input_check()
     if(g.failsafe_pilot_input == FS_PILOT_INPUT_DISARM) {
         arming.disarm(AP_Arming::Method::PILOT_INPUT_FAILSAFE);
     }
-#endif
 }
 
 // Internal pressure failsafe check

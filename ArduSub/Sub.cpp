@@ -46,9 +46,7 @@ Sub::Sub()
           auto_mode(Auto_WP),
           guided_mode(Guided_WP)
 {
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     failsafe.pilot_input = true;
-#endif
     if (_singleton != nullptr) {
         AP_HAL::panic("Can only be one Sub");
     }
@@ -379,7 +377,6 @@ void Sub::update_altitude()
 
 bool Sub::control_check_barometer()
 {
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor
         gcs().send_text(MAV_SEVERITY_WARNING, "Depth sensor is not connected.");
         return false;
@@ -387,7 +384,6 @@ bool Sub::control_check_barometer()
         gcs().send_text(MAV_SEVERITY_WARNING, "Depth sensor error.");
         return false;
     }
-#endif
     return true;
 }
 
