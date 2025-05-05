@@ -59,6 +59,12 @@ const AP_Param::GroupInfo AP_Generator_Loweheiser::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OVER_TEMP", 16, AP_Generator_Loweheiser, temp_for_overtemp_warning, 205),
 
+    // @Param: AUTO_START
+    // @DisplayName: Automatic engine starter
+    // @Description: When enabled, the engine's starter will be automatically controlled to start and re-start the engine.
+    // @User: Advanced
+    AP_GROUPINFO("AUTO_START", 17, AP_Generator_Loweheiser, auto_start, 0),
+
     // Param indexes must be between 10 and 19 to avoid conflict with other generator param tables loaded by pointer
 
     AP_GROUPEND
@@ -384,7 +390,6 @@ void AP_Generator_Loweheiser::command_generator()
     uint8_t run_electric_starter = 0;
     uint8_t desired_engine_state = 0;
 
-    bool user_controlled_starter = false;
     switch (commanded_runstate) {
     case RunState::STOP:
         // the variable initialisation above is sufficient
@@ -419,18 +424,6 @@ void AP_Generator_Loweheiser::command_generator()
         if (rc_channel_manual_throttle != nullptr &&
             rc().has_valid_input()) {
             throttle = rc_channel_manual_throttle->percent_input();
-            // honour an electric start channel, too:
-            if (rc_channel_starter_motor != nullptr) {
-                user_controlled_starter = true;
-                switch (rc_channel_starter_motor->get_aux_switch_pos()) {
-                case RC_Channel::AuxSwitchPos::LOW:
-                case RC_Channel::AuxSwitchPos::MIDDLE:
-                    break;
-                case RC_Channel::AuxSwitchPos::HIGH:
-                    run_electric_starter = 1;
-                    break;
-                }
-            }
         } else {
             // no manual throttle in play
             throttle = idle_throttle;
@@ -443,19 +436,49 @@ void AP_Generator_Loweheiser::command_generator()
         break;
     }
 
-    // if our desired run state is not "stop", and the RPM is zero,
-    // then consider running the starter motor.  Run motor for 5s.
-    if (!user_controlled_starter && commanded_runstate != RunState::STOP) {
+    // Check if the user wants to run the starter.
+    if (rc_channel_starter_motor != nullptr) {
+        switch (rc_channel_starter_motor->get_aux_switch_pos()) {
+        case RC_Channel::AuxSwitchPos::LOW:
+        case RC_Channel::AuxSwitchPos::MIDDLE:
+            rc_channel_starter_state_prev = false;
+            starter_requested_user = false;
+            break;
+        case RC_Channel::AuxSwitchPos::HIGH:
+            // Request running the starer on a rising edge.
+            if (!rc_channel_starter_state_prev) {
+                starter_requested_user = true;
+            }
+            rc_channel_starter_state_prev = true;
+            break;
+        }
+    } else {
+        rc_channel_starter_state_prev = false;
+        starter_requested_user = false;
+    }
+
+    // Consider running the starter motor.
+    if (
+        ((auto_start == 1) || starter_requested_user) // Run the starter if there is a request for it...
+        && (commanded_runstate != RunState::STOP)  // ... and we are not in the STOP state...
+        && (is_zero(packet.efi_rpm)) // ... and the engine is confirmed stopped.
+       )
+    {
         bool configure_for_start = false;
         if (last_start_time_ms == 0) {
-            if (is_zero(packet.efi_rpm)) {
-                gcs().send_text(MAV_SEVERITY_INFO, "LH: running starter motor");
-                last_start_time_ms = now_ms;
-                configure_for_start = true;
-            }
+            gcs().send_text(MAV_SEVERITY_INFO, "LH: running starter motor");
+            last_start_time_ms = now_ms;
+            configure_for_start = true;
         } else if (now_ms - last_start_time_ms < 5000) {
+            // Run the starter motor for a maximum of 5s.
             configure_for_start = true;
         } else if (now_ms - last_start_time_ms > 20000) {
+            // Under auto-start logic, the starter will attempt once every 20s.
+            last_start_time_ms = 0;
+        } else if (starter_requested_user) {
+            // This will exit the starter logic after trying once, when the starter was requested by the user.
+            // The user **can** override the 20s cooldown period.
+            starter_requested_user = false;
             last_start_time_ms = 0;
         }
 
