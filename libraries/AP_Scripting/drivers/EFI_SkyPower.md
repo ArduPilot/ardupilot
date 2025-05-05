@@ -60,6 +60,63 @@ driver will monitor engine RPM when the engine is started and if it
 drops below this value then an engine start will be sent to restart
 the engine.
 
+## EFI_SP_TLM_RT
+
+Telemetry rate. This is the rate at which extra telemetry values
+are sent to the GCS.
+
+## EFI_SP_LOG_RT
+
+Log rate. This is the rate at which extra logging of the SkyPower EFI is
+performed.
+
+## EFI_SP_ST_DISARM
+
+This controls if starting the engine while disarmed is allowed. 0:Disabled,1:Enabled.
+
+## EFI_SP_MODEL
+
+SkyPower EFI ECU model. 0:SRE_180, 1:SP_275.
+
+## EFI_SP_GEN_CTRL
+
+Enable generator control. 0:Disabled,1:Enabled
+
+## EFI_SP_RST_TIME
+
+SkyPower EFI restart time. If engine should be running and it has stopped for
+this amount of time then auto-restart. To disable this feature set this value to zero.
+
+## EFI_SP_THR_MAX
+
+SkyPower EFI maximum throttle command. Use this parameter to limit the maximum demanded throttle, in case your engine power curve drops off past a throttle value. It is recommended that you limit your autopilot throttle limit instead.
+
+## EFI_SP_GEN_AUTO
+
+Enable automatic EFI Generator on/off logic. This will automatically switch
+the generator on or off, depending on the engine load.
+
+## EFI_SP_GEN_MIN
+
+EFI Generator will switch ON if engine load is less than this parameter for
+`EFI_SP_GEN_TIMER` seconds. Applies when `EFI_SP_GEN_AUTO`=1.
+
+## EFI_SP_GEN_MAX
+
+EFI Generator will switch OFF if engine load is more than this parameter for
+`EFI_SP_GEN_TIMER` seconds. Applies when `EFI_SP_GEN_AUTO`=1.
+
+## EFI_SP_GEN_TIMER
+
+EFI Generator load has to be greater than `EFI_SP_GEN_MAX` or less than
+`EFI_SP_GEN_MAX` for this many seconds for a switch to happen. Applies when
+`EFI_SP_GEN_AUTO`=1.
+
+## EFI_SP_GEN_TOUT
+
+EFI Generator will not be switched on/off if it was previously switched within
+this many seconds. Applies when `EFI_SP_GEN_AUTO`=1.
+
 # Operation
 
 This driver should be loaded by placing the lua script in the
