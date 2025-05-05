@@ -14,12 +14,22 @@
 #include <Filter/Filter.h>
 #include "AP_Logger.h"
 #include <AP_IOMCU/AP_IOMCU.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #if HAL_LOGGER_FENCE_ENABLED
     #include <AC_Fence/AC_Fence.h>
 #endif
 
 extern const AP_HAL::HAL& hal;
+
+
+// we need to force format messages for Write(...) calls out to
+// the log as they're made up each time we eun ArduPilot,
+// including in new (debug?) code and in exception paths and the like
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    bool force_Write_format_out;
+#endif // APM_BUILD_TYPE
+
 
 AP_Logger_Backend::AP_Logger_Backend(AP_Logger &front,
                                      class LoggerMessageWriter_DFLogStart *writer) :
@@ -324,7 +334,19 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
         }
     }
 
-    return WritePrioritisedBlock(buffer, msg_len, is_critical, is_streaming);
+    // we need to force these formats out as they're made up each time
+    // we run ArduPilot:
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    force_Write_format_out = true;
+#endif // APM_BUILD_TYPE
+
+    bool ret = WritePrioritisedBlock(buffer, msg_len, is_critical, is_streaming);
+
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    force_Write_format_out = false;
+#endif // APM_BUILD_TYPE
+
+    return ret;
 }
 
 bool AP_Logger_Backend::StartNewLogOK() const
@@ -413,8 +435,10 @@ void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
 bool AP_Logger_Backend::ensure_format_emitted(const void *pBuffer, uint16_t size)
 {
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
-    // we trust that Replay will correctly emit formats as required
-    return true;
+    if (!force_Write_format_out) {
+        // we trust that Replay will correctly emit formats as required
+        return true;
+    }
 #endif
 
     // extract the ID:
