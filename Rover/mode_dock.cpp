@@ -60,13 +60,13 @@ bool ModeDock::_enter()
 {
     // refuse to enter the mode if dock is not in sight
     if (!rover.precland.enabled() || !rover.precland.target_acquired()) {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Dock: target not acquired");
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Dock: target not acquired");
         return false;
     }
 
     if (hdg_corr_enable && is_negative(desired_dir)) {
         // DOCK_DIR is required for heading correction
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Dock: Set DOCK_DIR or disable heading correction");
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Dock: Set DOCK_DIR or disable heading correction");
         return false;
     }
 
@@ -132,7 +132,7 @@ void ModeDock::update()
         _docking_complete = true;
 
         // send a one time notification to GCS
-        gcs().send_text(MAV_SEVERITY_INFO, "Dock: Docking complete");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Dock: Docking complete");
 
         // initialise mode loiter if it is a boat
         if (rover.is_boat()) {

@@ -465,7 +465,7 @@ float Sailboat::calc_heading(float desired_heading_cd)
 
     // if tack triggered, calculate target heading
     if (should_tack && (now - tack_clear_ms) > TACK_RETRY_TIME_MS) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Sailboat: Tacking");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Sailboat: Tacking");
         // calculate target heading for the new tack
         switch (current_tack) {
             case AP_WindVane::Sailboat_Tack::TACK_PORT:
@@ -490,7 +490,7 @@ float Sailboat::calc_heading(float desired_heading_cd)
                 // if we have throttle available use it for another two time periods to get the tack done
                 tack_assist = true;
             } else {
-                gcs().send_text(MAV_SEVERITY_INFO, "Sailboat: Tacking timed out");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Sailboat: Tacking timed out");
                 clear_tack();
             }
         }
@@ -521,7 +521,7 @@ void Sailboat::set_motor_state(UseMotor state, bool report_failure)
         rover.get_frame_type() != rover.g2.motors.frame_type::FRAME_TYPE_UNDEFINED) {
         motor_state = state;
     } else if (report_failure) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Sailboat: failed to enable motor");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Sailboat: failed to enable motor");
     }
 }
 
