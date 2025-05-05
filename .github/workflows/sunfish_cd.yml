@@ -3,28 +3,27 @@ name: Sunfish CD
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 jobs:
   build:
     name: Upload firmware to Google Drive
     runs-on: ubuntu-latest
+    container:
+      image: ardupilot/ardupilot-dev-base:v0.1.3
+      options: --user 1001
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        run: |
-          NOW=$(date -u +"%F-%T")
-          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
+      # Put ccache into github cache for faster build
       - name: ccache cache files
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}  # restore ccache from either previous build on this branch or on master
+          key: ${{github.workflow}}-ccache-${{github.ref_name}}
+          restore-keys: ${{github.workflow}}-ccache-master  # restore ccache from either previous build on this branch or on master
       - name: setup ccache
         run: |
           . .github/workflows/ccache.env
