@@ -11,6 +11,7 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Vehicle/ModeReason.h>
 
 class AP_ExternalControl
 {
@@ -42,6 +43,11 @@ public:
         Disarm the vehicle
     */
     virtual bool disarm(AP_Arming::Method method, bool do_disarm_checks) WARN_IF_UNUSED;
+
+    /*
+        Set the mode of the vehicle. The mode number is vehicle specific.
+    */
+    virtual bool set_mode(const uint8_t mode, const ModeReason reason) WARN_IF_UNUSED;
 
     static AP_ExternalControl *get_singleton(void) WARN_IF_UNUSED {
         return singleton;
