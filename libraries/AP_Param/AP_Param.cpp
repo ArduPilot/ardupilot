@@ -1448,6 +1448,25 @@ bool AP_Param::is_read_only(void) const
     return false;
 }
 
+// returns true if this parameter should be settable via the
+// MAVLink interface:
+bool AP_Param::allow_set_via_mavlink(uint16_t flags) const
+{
+    if (is_read_only()) {
+        return false;
+    }
+
+    if (flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) {
+        // the user can set BRD_OPTIONS to enable set of internal
+        // parameters, for developer testing or unusual use cases
+        if (!AP_BoardConfig::allow_set_internal_parameters()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // set a AP_Param variable to a specified value
 void AP_Param::set_value(enum ap_var_type type, void *ptr, float value)
 {
