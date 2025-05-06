@@ -1,6 +1,6 @@
 #include "SIM_config.h"
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
 
 #include "SIM_GPS_SBP_Common.h"
 
@@ -31,4 +31,4 @@ void GPS_SBP_Common::sbp_send_message(uint16_t msg_type, uint16_t sender_id, uin
     write_to_autopilot((char*)&crc, 2);
 }
 
-#endif
+#endif  // AP_SIM_GPS_ENABLED
