@@ -1212,10 +1212,13 @@ void AP_Mount_Siyi::check_firmware_version() const
             minimum_ver.camera.patch = 1;
             break;
 
+        case HardwareModel::ZT6:
+            minimum_ver.camera = {.major = 0, .minor = 1, .patch = 9};
+            break;
+
         case HardwareModel::A2:
         case HardwareModel::ZR10:
         case HardwareModel::ZR30:
-        case HardwareModel::ZT6:
         case HardwareModel::ZT30:
             // TBD
             break;
