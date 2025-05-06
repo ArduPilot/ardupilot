@@ -120,10 +120,7 @@ bool AP_Logger_MAVLink::free_seqno_from_queue(uint32_t seqno, dm_block_queue_t &
 
 bool AP_Logger_MAVLink::WritesOK() const
 {
-    if (!_sending_to_client) {
-        return false;
-    }
-    return true;
+    return _sending_to_client;
 }
 
 /* Write a block of data at current offset */
@@ -311,6 +308,7 @@ void AP_Logger_MAVLink::stats_init() {
     stats.resends = 0;
     stats_reset();
 }
+
 void AP_Logger_MAVLink::stats_reset() {
     stats.state_free = 0;
     stats.state_free_min = -1; // unsigned wrap
@@ -354,10 +352,7 @@ void AP_Logger_MAVLink::Write_DMS(AP_Logger_MAVLink &logger_mav)
 
 void AP_Logger_MAVLink::stats_log()
 {
-    if (!_initialised) {
-        return;
-    }
-    if (stats.collection_count == 0) {
+    if (!_initialised || stats.collection_count == 0) {
         return;
     }
     Write_DMS(*this);
@@ -391,6 +386,7 @@ uint8_t AP_Logger_MAVLink::stack_size(struct dm_block *stack)
     }
     return ret;
 }
+
 uint8_t AP_Logger_MAVLink::queue_size(dm_block_queue_t queue)
 {
     return stack_size(queue.oldest);
