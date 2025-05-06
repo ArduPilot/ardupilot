@@ -116,7 +116,6 @@ void AP_Logger::handle_log_request_data(GCS_MAVLINK &link, const mavlink_message
         if (_log_sending_link->get_chan() != link.get_chan()) {
             link.send_text(MAV_SEVERITY_INFO, "Log download in progress");
         }
-        return;
     }
 
     mavlink_log_request_data_t packet;
@@ -150,6 +149,7 @@ void AP_Logger::handle_log_request_data(GCS_MAVLINK &link, const mavlink_message
     if (_log_data_remaining > packet.count) {
         _log_data_remaining = packet.count;
     }
+    end_log_transfer_pending_ms = 0;
 
     transfer_activity = TransferActivity::SENDING;
     _log_sending_link = &link;
@@ -192,6 +192,13 @@ void AP_Logger::end_log_transfer()
 void AP_Logger::handle_log_send()
 {
     WITH_SEMAPHORE(_log_send_sem);
+
+    if (end_log_transfer_pending_ms != 0 &&
+        AP_HAL::millis() - end_log_transfer_pending_ms > 1000) {
+        end_log_transfer_pending_ms = 0;
+        end_log_transfer();
+        return;
+    }
 
     if (_log_sending_link == nullptr) {
         return;
@@ -327,8 +334,10 @@ bool AP_Logger::handle_log_send_data()
 
     _log_data_offset += nbytes;
     _log_data_remaining -= nbytes;
-    if (nbytes < MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN || _log_data_remaining == 0) {
-        end_log_transfer();
+    if (_log_data_remaining == 0) {
+        end_log_transfer_pending_ms = AP_HAL::millis();
+    } else {
+        end_log_transfer_pending_ms = 0;
     }
     return true;
 }
