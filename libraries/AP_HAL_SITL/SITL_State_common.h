@@ -157,8 +157,8 @@ public:
 
     // simulated InertialLabs INS
     SITL::InertialLabs *inertiallabs;
-    
-#if HAL_SIM_JSON_MASTER_ENABLED
+
+#if AP_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
     SITL::JSON_Master ride_along;
 #endif
