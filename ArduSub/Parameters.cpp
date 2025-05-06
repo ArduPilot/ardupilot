@@ -178,6 +178,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(failsafe_temperature_max, "FS_TEMP_MAX", FS_TEMP_MAX_DEFAULT),
 
+    // @Param: SURFACE_MAX_THR
+    // @DisplayName: Surface Maximum Throttle
+    // @Description: Maximum throttle value when the vehicle is at the surface. This value is used to scale throttle linearly from 1. (full) to min as the vehicle approaches the surface. The attenuation starts at 1 meter from surface.  Only upwards throttle is limited.
+    // @Range: 0.0 1.0
+    // @User: Standard
+    // @Increment: 0.01
+    GSCALAR(surface_max_throttle, "SURFACE_MAX_THR", 0.1f),
+
     // @Param: FS_TERRAIN_ENAB
     // @DisplayName: Terrain Failsafe Enable
     // @Description: Controls what action to take if terrain information is lost during AUTO mode

@@ -208,6 +208,7 @@ public:
         k_param_throttle_gain,
         k_param_cam_tilt_center, // deprecated
         k_param_frame_configuration,
+        k_param_surface_max_throttle,
 
         // 200: flight modes
         k_param_flight_mode1 = 200,
@@ -369,6 +370,8 @@ public:
 
     AP_Float                surface_depth;
     AP_Int8                 frame_configuration;
+
+    AP_Float surface_max_throttle;
 
     // Note: keep initializers here in the same order as they are declared
     // above.
