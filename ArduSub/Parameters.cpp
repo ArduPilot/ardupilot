@@ -767,6 +767,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ORIGIN_ALT", 21, ParametersG2, backup_origin_alt, 0),
 
+    // @Param: SURF_NOBARO_THST
+    // @DisplayName: Throttle output when surface mode is engaged and baro is not available
+    // @Description:  Throttle output when surface mode is engaged and baro is not available. 100% is full throttle. -100% is maximum throttle downwards
+    // @Units: %
+    // @User: Standard
+    AP_GROUPINFO("SURF_NOBARO_THST", 22, ParametersG2, surface_sensorless_thrust, 10),
+
     AP_GROUPEND
 };
 
