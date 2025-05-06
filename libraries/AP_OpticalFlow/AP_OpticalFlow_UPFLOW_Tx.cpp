@@ -105,7 +105,7 @@ void AP_OpticalFlow_UPFLOW_Tx::update(void)
         return;
     }
 
-    static UPFLOW_TOF* UPFLOW_TOF_DATA = get_upflow_tof();
+    static UPFLOW_TOF UPFLOW_TOF_DATA = get_upflow_tof();
 
     // setup upflow link, only once
     if (!upflow_tx_message_sent) {
@@ -196,9 +196,9 @@ void AP_OpticalFlow_UPFLOW_Tx::update(void)
         _applyYaw(state.flowRate);
 
         //update tof
-        UPFLOW_TOF_DATA->if_opt_ok = true;
-        UPFLOW_TOF_DATA->ground_distance = updata.ground_distance;
-        UPFLOW_TOF_DATA->tof_valid = updata.tof_valid;
+        UPFLOW_TOF_DATA.if_opt_ok = true;
+        UPFLOW_TOF_DATA.ground_distance = updata.ground_distance;
+        UPFLOW_TOF_DATA.tof_valid = updata.tof_valid;
 
         //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UPFLOW_Tx: OK");
 
@@ -208,10 +208,13 @@ void AP_OpticalFlow_UPFLOW_Tx::update(void)
         state.bodyRate.zero();
 
         //update tof
-        UPFLOW_TOF_DATA->if_opt_ok = false;
-        UPFLOW_TOF_DATA->ground_distance = 0;
-        UPFLOW_TOF_DATA->tof_valid = 0;
+        UPFLOW_TOF_DATA.if_opt_ok = false;
+        UPFLOW_TOF_DATA.ground_distance = 0;
+        UPFLOW_TOF_DATA.tof_valid = 0;
     }
+
+    // update the rangefinder state
+    set_upflow_tof(UPFLOW_TOF_DATA);
 
     _update_frontend(state);
 

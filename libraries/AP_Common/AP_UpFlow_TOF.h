@@ -8,4 +8,6 @@ typedef struct{
     bool        if_opt_ok;
 }UPFLOW_TOF;
 
-UPFLOW_TOF* get_upflow_tof();
+//UPFLOW_TOF* get_upflow_tof_ptr();
+UPFLOW_TOF get_upflow_tof();
+void set_upflow_tof( UPFLOW_TOF data );

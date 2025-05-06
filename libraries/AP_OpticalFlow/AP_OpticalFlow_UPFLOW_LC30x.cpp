@@ -52,7 +52,8 @@
 #define UPFLOW_TIMEOUT_SEC         0.3f
 
 extern const AP_HAL::HAL& hal;
-static bool upflow_lc30x_message_sent = false;
+
+/* static bool upflow_lc30x_message_sent = false;
 
 // internal parameter configuration instructions
 static const uint8_t upflow_internal_para[4] = {0x96, 0x26, 0xbc, 0x50};
@@ -77,7 +78,7 @@ static const uint8_t upflow_sensor_cfg[]= {
     0xab, 0x16, 0xac, 0x3c, 0xad, 0xf0, 0xae, 0x57, 0xc6, 0xaa, 0xd2, 0x78, 0xd0, 0xb4, 0xd1, 0x00, 0xc8, 0x10, 0xc9, 0x12,
     0xd3, 0x09, 0xd4, 0x2a, 0xee, 0x4c, 0x7e, 0xfa, 0x74, 0xa7, 0x78, 0x4e, 0x60, 0xe7, 0x61, 0xc8, 0x6d, 0x70, 0x1e, 0x39,
     0x98, 0x1a
-};
+}; */
 
 
 // constructor
@@ -126,7 +127,7 @@ void AP_OpticalFlow_UPFLOW_LC30x::update(void)
     }
 
     // init upflow,only once
-    if (!upflow_lc30x_message_sent) {
+    /* if (!upflow_lc30x_message_sent) {
         
         uint8_t buf[30];
 		uint16_t len = sizeof(upflow_sensor_cfg);
@@ -154,7 +155,7 @@ void AP_OpticalFlow_UPFLOW_LC30x::update(void)
 		uart->write( buf, 1 );	
 
         upflow_lc30x_message_sent = true; 
-    }
+    } */
 
 
     // record gyro values as long as they are being used

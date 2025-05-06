@@ -46,11 +46,11 @@ bool AP_RangeFinder_UPFLOW_TOF::detect()
  */
 void AP_RangeFinder_UPFLOW_TOF::update(void)
 {
-    static UPFLOW_TOF* tof_data = get_upflow_tof();
+    static UPFLOW_TOF tof_data = get_upflow_tof();
     // check validity of the data
-    if( tof_data->if_opt_ok == true && tof_data->tof_valid != 0 ){
-        state.distance_m = tof_data->ground_distance * 0.001f;
-        tof_data->if_opt_ok = false;
+    if( tof_data.if_opt_ok == true && tof_data.tof_valid != 0 ){
+        state.distance_m = tof_data.ground_distance * 0.001f;
+        tof_data.if_opt_ok = false;
         e = 0;
         //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "tof: OK");
     }else{
@@ -61,6 +61,9 @@ void AP_RangeFinder_UPFLOW_TOF::update(void)
             //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "tof: err");
         }
     }
+
+    // update the rangefinder state
+    set_upflow_tof(tof_data);
     
     // update range_valid state based on distance measured
     update_status();
