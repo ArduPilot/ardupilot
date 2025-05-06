@@ -574,15 +574,17 @@ class SizeCompareBranches(object):
         return self.compare_task_results(task_results)
 
     def elf_diff_results(self, result_master, result_branch):
-        master_branch = result_master["branch"]
-        branch = result_branch["branch"]
-        for vehicle in result_master["vehicle"].keys():
-            elf_filename = result_master["vehicle"][vehicle]["elf_filename"]
-            master_elf_dir = result_master["vehicle"][vehicle]["elf_dir"]
-            new_elf_dir = result_branch["vehicle"][vehicle]["elf_dir"]
-            board = result_master["board"]
+        master_branch = result_master.branch
+        branch = result_branch.branch
+        for vehicle_name in result_master.vehicle.keys():
+            master_vehicle = result_master.vehicle[vehicle_name]
+            elf_filename = master_vehicle["elf_filename"]
+            master_elf_dir = master_vehicle["elf_dir"]
+            branch_vehicle = result_branch.vehicle[vehicle_name]
+            new_elf_dir = branch_vehicle["elf_dir"]
+            board = result_master.board
             self.progress("Starting compare (~10 minutes!)")
-            toolchain = result_master["toolchain"]
+            toolchain = result_master.toolchain
             if toolchain is None:
                 toolchain = ""
             else:
@@ -595,12 +597,12 @@ class SizeCompareBranches(object):
                 f'--bin_prefix={toolchain}',
                 "--old_alias", "%s %s" % (master_branch, elf_filename),
                 "--new_alias", "%s %s" % (branch, elf_filename),
-                "--html_dir", "../ELF_DIFF_%s_%s" % (board, vehicle),
+                "--html_dir", "../ELF_DIFF_%s_%s" % (board, vehicle_name),
             ]
 
             try:
-                master_source_prefix = result_master["vehicle"][vehicle]["source_path"]
-                branch_source_prefix = result_branch["vehicle"][vehicle]["source_path"]
+                master_source_prefix = master_vehicle["source_path"]
+                branch_source_prefix = branch_vehicle["source_path"]
                 elf_diff_commandline.extend([
                     "--old_source_prefix", master_source_prefix,
                     "--new_source_prefix", branch_source_prefix,
@@ -823,7 +825,7 @@ class SizeCompareBranches(object):
         return ret
 
 
-if __name__ == '__main__':
+def main():
     parser = optparse.OptionParser("size_compare_branches.py")
     parser.add_option("",
                       "--elf-diff",
@@ -944,3 +946,7 @@ if __name__ == '__main__':
         jobs=cmd_opts.jobs,
     )
     x.run()
+
+
+if __name__ == '__main__':
+    main()
