@@ -143,6 +143,7 @@ void Sub::exit_mode(Mode::Number old_control_mode, Mode::Number new_control_mode
         camera_mount.set_mode_to_default();
 #endif  // HAL_MOUNT_ENABLED
     }
+    motors.set_max_throttle(1.0f);
 }
 
 bool Sub::set_mode(const uint8_t new_mode, const ModeReason reason)
@@ -163,6 +164,7 @@ void Sub::exit_mode(Mode *&old_flightmode, Mode *&new_flightmode){
 #if HAL_MOUNT_ENABLED
         camera_mount.set_mode_to_default();
 #endif  // HAL_MOUNT_ENABLED
+    motors.set_max_throttle(1.0f);
 }
 
 // notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device
