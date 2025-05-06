@@ -197,11 +197,11 @@ private:
 
     // simulated InertialLabs INS-U
     SITL::InertialLabs *inertiallabs;
-    
-#if HAL_SIM_JSON_MASTER_ENABLED
+
+#if AP_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
     SITL::JSON_Master ride_along;
-#endif
+#endif  // AP_SIM_JSON_MASTER_ENABLED
 
 #if HAL_SIM_AIS_ENABLED
     // simulated AIS stream
