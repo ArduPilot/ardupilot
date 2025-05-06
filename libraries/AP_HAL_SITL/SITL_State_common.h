@@ -94,10 +94,10 @@ public:
     SITL::SoloGimbal *gimbal;
 #endif
 
-#if HAL_SIM_ADSB_ENABLED
+#if AP_SIM_ADSB_ENABLED
     // simulated ADSb
     SITL::ADSB *adsb;
-#endif
+#endif  // AP_SIM_ADSB_ENABLED
 
 #if AP_SIM_ADSB_SAGETECH_MXS_ENABLED
     SITL::ADSB_Sagetech_MXS *sagetech_mxs;
@@ -121,7 +121,7 @@ public:
     SITL::PS_LD06 *ld06;
 #endif  // AP_SIM_PS_LD06_ENABLED
 
-#if HAL_SIM_PS_RPLIDARA2_ENABLED
+#if AP_SIM_PS_RPLIDARA2_ENABLED
     // simulated RPLidarA2:
     SITL::PS_RPLidarA2 *rplidara2;
 #endif
@@ -132,12 +132,12 @@ public:
     // simulated RPLidarA1:
     SITL::PS_RPLidarA1 *rplidara1;
 
-#if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
+#if AP_SIM_PS_LIGHTWARE_SF45B_ENABLED
     // simulated SF45B proximity sensor:
     SITL::PS_LightWare_SF45B *sf45b;
 #endif
 
-#if HAL_SIM_PS_TERARANGERTOWER_ENABLED
+#if AP_SIM_PS_TERARANGERTOWER_ENABLED
     SITL::PS_TeraRangerTower *terarangertower;
 #endif
 
@@ -163,7 +163,7 @@ public:
     SITL::JSON_Master ride_along;
 #endif
 
-#if HAL_SIM_AIS_ENABLED
+#if AP_SIM_AIS_ENABLED
     // simulated AIS stream
     SITL::AIS *ais;
     SITL::AIS_Replay *ais_replay;
