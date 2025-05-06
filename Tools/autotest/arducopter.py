@@ -13882,6 +13882,50 @@ RTL_ALT 111
         self.set_parameter('SIM_PLD_ENABLE', 1)
         self.wait_statustext('Set SIM_PLD_LAT, SIM_PLD_LAT and SIM_PLD_ALT')
 
+    def LuaParamSet(self):
+        '''test param-set.lua applet'''
+        self.install_applet_script_context("param-set.lua")
+        self.set_parameters({
+            'SCR_ENABLE': 1,
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()  # scripts will be ready by now!
+        self.start_subtest("set RTL_ALT freely")
+        self.set_parameter("RTL_ALT", 23)
+        self.set_parameter("RTL_ALT", 28)
+
+        self.start_subtest("Unable to set DISARM_DELAY freely")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        old_disarm_delay_value = self.get_parameter('DISARM_DELAY')
+        self.send_set_parameter_direct('DISARM_DELAY', 78)
+        self.wait_statustext('param-set: param set denied (DISARM_DELAY)', check_context=True)
+        self.assert_parameter_value('DISARM_DELAY', old_disarm_delay_value)
+        self.context_pop()
+
+        self.start_subtest("Disabling applet via parameter should allow freely setting DISARM_DELAY")
+        self.set_parameter("PARAM_SET_ENABLE", 0)
+        self.set_parameter("DISARM_DELAY", 56)
+
+        self.start_subtest("Re-enabling applet via parameter should stop freely setting DISARM_DELAY")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("PARAM_SET_ENABLE", 1)
+        old_disarm_delay_value = self.get_parameter('DISARM_DELAY')
+        self.send_set_parameter_direct('DISARM_DELAY', 78)
+        self.wait_statustext('param-set: param set denied (DISARM_DELAY)', check_context=True)
+        self.assert_parameter_value('DISARM_DELAY', old_disarm_delay_value)
+        self.context_pop()
+
+        self.start_subtest("Ensure that parameter values are persistent")
+        self.set_parameter('DISARM_DELAY', 111)
+        self.reboot_sitl()
+        self.assert_parameter_value('DISARM_DELAY', 111)
+
+        # very bad things happen if we don't turn things off at the end..
+        self.set_parameter("PARAM_SET_ENABLE", 0)
+
     def do_land(self):
         self.change_mode('LAND')
         self.wait_disarmed()
@@ -13896,6 +13940,7 @@ RTL_ALT 111
             self.DynamicRpmNotchesRateThread,
             self.PIDNotches,
             self.StaticNotches,
+            self.LuaParamSet,
             self.RefindGPS,
             Test(self.GyroFFT, attempts=1, speedup=8),
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
