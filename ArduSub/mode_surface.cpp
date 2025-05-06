@@ -3,7 +3,7 @@
 
 bool ModeSurface::init(bool ignore_checks)
 {
-    sensorless_mode = !sub.control_check_barometer();
+    nobaro_mode = !sub.control_check_barometer();
 
     // initialize vertical speeds and acceleration
     position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
@@ -30,8 +30,9 @@ void ModeSurface::run()
         return;
     }
 
-    if (sensorless_mode) {
-        float thrust_output = 0.5f + g2.surface_sensorless_thrust * 0.005f; // map -100, 100 to 0, 1
+    // If no barometer is available, use the surface_nobaro_thrust parameter to set the throttle output
+    if (nobaro_mode) {
+        float thrust_output = 0.5f + g2.surface_nobaro_thrust * 0.005f; // map -100, 100 to 0, 1
         attitude_control->set_throttle_out(thrust_output, true, g.throttle_filt);
     } else {
         // Already at surface, hold depth at surface
