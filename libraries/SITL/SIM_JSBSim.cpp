@@ -16,9 +16,11 @@
   simulator connector for JSBSim
 */
 
-#include "SIM_JSBSim.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_JSBSIM_ENABLED
+#if AP_SIM_JSBSIM_ENABLED
+
+#include "SIM_JSBSim.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -487,4 +489,4 @@ void JSBSim::update(const struct sitl_input &input)
 
 } // namespace SITL
 
-#endif  // HAL_SIM_JSBSIM_ENABLED
+#endif  // AP_SIM_JSBSIM_ENABLED
