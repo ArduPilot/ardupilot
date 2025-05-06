@@ -54,7 +54,7 @@ void ModeQLoiter::run()
     if (last_pos_set_ms != 0 && now - last_pos_set_ms < precland_timeout_ms) {
         // we have an active landing target override
         Vector2f rel_origin;
-        if (plane.next_WP_loc.get_vector_xy_from_origin_NE(rel_origin)) {
+        if (plane.next_WP_loc.get_vector_xy_from_origin_NE_cm(rel_origin)) {
             quadplane.pos_control->set_pos_desired_NE_cm(rel_origin);
             last_target_loc_set_ms = 0;
         }
@@ -112,7 +112,7 @@ void ModeQLoiter::run()
     // process pilot's roll and pitch input
     float target_roll_cd, target_pitch_cd;
     quadplane.get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
-    loiter_nav->set_pilot_desired_acceleration(target_roll_cd, target_pitch_cd);
+    loiter_nav->set_pilot_desired_acceleration_cd(target_roll_cd, target_pitch_cd);
     
     // run loiter controller
     if (!pos_control->is_active_NE()) {
@@ -121,8 +121,8 @@ void ModeQLoiter::run()
     loiter_nav->update();
 
     // nav roll and pitch are controller by loiter controller
-    plane.nav_roll_cd = loiter_nav->get_roll();
-    plane.nav_pitch_cd = loiter_nav->get_pitch();
+    plane.nav_roll_cd = loiter_nav->get_roll_cd();
+    plane.nav_pitch_cd = loiter_nav->get_pitch_cd();
 
     plane.quadplane.assign_tilt_to_fwd_thr();
 
@@ -142,7 +142,7 @@ void ModeQLoiter::run()
 #endif
 
     // call attitude controller with conservative smoothing gain of 4.0f
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target.x*100,
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target.x*100,
                                                                   target.y*100,
                                                                   target.z*100);
 

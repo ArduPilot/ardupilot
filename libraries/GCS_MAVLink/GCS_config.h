@@ -87,8 +87,13 @@
 
 // GCS should be using MISSION_REQUEST_INT instead; this is a waste of
 // flash.  MISSION_REQUEST was deprecated in June 2020.  We started
-// sending warnings to the GCS in Sep 2022 if this command was used.
+// sending warnings to the GCS in Sep 2022 if MISSION_REQUEST was used.
 // Copter 4.4.0 sends this warning.
+// CODE_REMOVAL
+// ArduPilot 4.4 sends warnings if MISSION_ITEM used
+// ArduPilot 4.8 stops compiling in MISSION_ITEM but still sends warnings
+// ArduPilot 4.9 removes the code but sends message about MISSION_ITEM not supported
+// ArduPilot 4.10 stops sending the warning
 #ifndef AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
 #define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED AP_MISSION_ENABLED
 #endif
@@ -114,4 +119,13 @@
 
 #ifndef AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
 #define AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED HAL_GCS_ENABLED && AP_ARMING_ENABLED
-#endif
+#endif  // AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
+
+// deprecated 2025-02, replaced by MAV_CMD_DO_SET_GLOBAL_ORIGIN
+// ArduPilot 4.8 starts to warn if anyone uses this
+// ArduPilot 4.9 continues to warn if anyone uses this
+// ArduPilot 4.10 compiles support out
+// ArduPilot 4.11 removes the code
+#ifndef AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
+#define AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED (HAL_GCS_ENABLED && AP_AHRS_ENABLED)
+#endif  // AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED

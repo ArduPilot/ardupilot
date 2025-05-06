@@ -85,6 +85,20 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
 
     in_arm_motors = true;
 
+    //if RC checks enabled, and RC_OPTIONS enabled for "0" throttle, and enabled check for throttle within trim position
+    if (check_enabled(Check::RC) &&
+     rc().option_is_enabled(RC_Channels::Option::ARMING_CHECK_THROTTLE) &&
+     (sub.g.thr_arming_position == WITHIN_THR_TRIM)) {
+        const char *rc_item = "Throttle";
+        // check throttle is within trim+/- dz, ie centered throttle
+        if (!sub.channel_throttle->in_trim_dz()) {
+           check_failed(Check::RC, true, "%s not centered/close to trim", rc_item);
+           AP_Notify::events.arming_failed = true;
+           in_arm_motors = false;
+           return false;
+        }
+    }
+
     if (!AP_Arming::arm(method, do_arming_checks)) {
         AP_Notify::events.arming_failed = true;
         in_arm_motors = false;
@@ -106,9 +120,7 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
         AP::notify().update();
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     send_arm_disarm_statustext("Arming motors");
-#endif
 
     AP_AHRS &ahrs = AP::ahrs();
 
@@ -172,9 +184,7 @@ bool AP_Arming_Sub::disarm(const AP_Arming::Method method, bool do_disarm_checks
         return false;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     send_arm_disarm_statustext("Disarming motors");
-#endif
 
     auto &ahrs = AP::ahrs();
 

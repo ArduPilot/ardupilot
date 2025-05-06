@@ -21,8 +21,8 @@ TEST(RC2RPTest, Corners) {
     for (uint i=0; i<ARRAY_SIZE(roll_val_deg); i++) {
         rc_input_to_roll_pitch(roll_in[i], pitch_in[i], angle_max_deg, angle_limit_deg, roll_out_deg, pitch_out_deg);
 
-        EXPECT_TRUE(fabsf(roll_out_deg  - roll_val_deg[i])  < .0005f);
-        EXPECT_TRUE(fabsf(pitch_out_deg - pitch_val_deg[i]) < .0005f);
+        EXPECT_TRUE(fabsf(roll_out_deg  - roll_val_deg[i])  < 0.0005f);
+        EXPECT_TRUE(fabsf(pitch_out_deg - pitch_val_deg[i]) < 0.0005f);
     }
 }
 
@@ -48,8 +48,8 @@ TEST(RC2RPTest, Axes) {
     for (uint i=0; i<ARRAY_SIZE(roll_val_deg); i++) {
         rc_input_to_roll_pitch(roll_in[i], pitch_in[i], angle_max_deg, angle_limit_deg, roll_out_deg, pitch_out_deg);
 
-        EXPECT_TRUE(fabsf(roll_out_deg  - roll_val_deg[i])  < .00005f);
-        EXPECT_TRUE(fabsf(pitch_out_deg - pitch_val_deg[i]) < .00005f);
+        EXPECT_TRUE(fabsf(roll_out_deg  - roll_val_deg[i])  < 0.00005f);
+        EXPECT_TRUE(fabsf(pitch_out_deg - pitch_val_deg[i]) < 0.00005f);
     }
 
 }
@@ -82,8 +82,8 @@ TEST(RC2RPTest, Circle) {
         float pitch_in = xy_rp[row][1];
         rc_input_to_roll_pitch(roll_in, pitch_in, angle_max_deg, angle_limit_deg, roll_out_deg, pitch_out_deg);
 
-        EXPECT_TRUE(fabsf(roll_out_deg  - xy_rp[row][2]) < .02f);
-        EXPECT_TRUE(fabsf(pitch_out_deg - xy_rp[row][3]) < .02f);
+        EXPECT_TRUE(fabsf(roll_out_deg  - xy_rp[row][2]) < 0.02f);
+        EXPECT_TRUE(fabsf(pitch_out_deg - xy_rp[row][3]) < 0.02f);
     }
 }
 

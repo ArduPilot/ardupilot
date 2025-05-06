@@ -258,9 +258,9 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     Vector3d pos_corrected = position + (pos_offset_ef + _sitl->vicon.glitch.get()).todouble();
     // add some gaussian noise to the position
     pos_corrected += Vector3d(
-        Aircraft::rand_normal(0, _sitl->vicon.pos_stddev),
-        Aircraft::rand_normal(0, _sitl->vicon.pos_stddev),
-        Aircraft::rand_normal(0, _sitl->vicon.pos_stddev)
+        Aircraft::rand_normal(0, _sitl->vicon.pos_stddev.get()),
+        Aircraft::rand_normal(0, _sitl->vicon.pos_stddev.get()),
+        Aircraft::rand_normal(0, _sitl->vicon.pos_stddev.get())
     );
 
     // calculate a velocity offset due to the antenna position offset and body rotation rate
@@ -287,9 +287,9 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
 
     // add some gaussian noise to the velocity
     vel_corrected += Vector3f(
-        Aircraft::rand_normal(0, _sitl->vicon.vel_stddev),
-        Aircraft::rand_normal(0, _sitl->vicon.vel_stddev),
-        Aircraft::rand_normal(0, _sitl->vicon.vel_stddev)
+        Aircraft::rand_normal(0, _sitl->vicon.vel_stddev.get()),
+        Aircraft::rand_normal(0, _sitl->vicon.vel_stddev.get()),
+        Aircraft::rand_normal(0, _sitl->vicon.vel_stddev.get())
     );
 
     // add yaw error reported to vehicle

@@ -132,7 +132,7 @@ void _AutoTakeoff::run()
 
     // get terrain offset
     float terr_offset = 0.0f;
-    if (terrain_alt && !wp_nav->get_terrain_offset(terr_offset)) {
+    if (terrain_alt && !wp_nav->get_terrain_offset_cm(terr_offset)) {
         // trigger terrain failsafe
         copter.failsafe_terrain_on_event();
         return;
@@ -150,7 +150,7 @@ void _AutoTakeoff::run()
         pos_control->update_U_controller();
         attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
+        attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), 0.0);
         // update auto_takeoff_no_nav_alt_cm
         no_nav_alt_cm = inertial_nav.get_position_z_up_cm() + g2.wp_navalt_min * 100;
         return;
@@ -166,7 +166,7 @@ void _AutoTakeoff::run()
         pos_control->relax_velocity_controller_NE();
         pos_control->update_NE_controller();
         attitude_control->reset_rate_controller_I_terms();
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
+        attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), 0.0);
         if (throttle >= MIN(copter.g2.takeoff_throttle_max, 0.9) || 
             (copter.pos_control->get_measured_accel_U_cmss() >= 0.5 * copter.pos_control->get_max_accel_U_cmss()) ||
             (copter.pos_control->get_vel_desired_NEU_cms().z >= 0.1 * copter.pos_control->get_max_speed_up_cms()) || 
@@ -203,7 +203,7 @@ void _AutoTakeoff::run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), copter.flightmode->auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), copter.flightmode->auto_yaw.get_heading());
 
     // takeoff complete when we are less than 1% of the stopping distance from the target altitude
     // and 10% our maximum climb rate

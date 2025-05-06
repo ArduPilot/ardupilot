@@ -21,7 +21,7 @@ bool ModeAuto::init(bool ignore_checks) {
     }
 
     // initialise waypoint controller
-    sub.wp_nav.wp_and_spline_init();
+    sub.wp_nav.wp_and_spline_init_cm();
 
     // clear guided limits
     guided_limit_clear();
@@ -71,7 +71,7 @@ void ModeAuto::auto_wp_start(const Vector3f& destination)
     sub.auto_mode = Auto_WP;
 
     // initialise wpnav (no need to check return status because terrain data is not used)
-    sub.wp_nav.set_wp_destination(destination, false);
+    sub.wp_nav.set_wp_destination_NEU_cm(destination, false);
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
@@ -113,7 +113,7 @@ void ModeAuto::auto_wp_run()
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
-        sub.wp_nav.wp_and_spline_init();                                                // Reset xy target
+        sub.wp_nav.wp_and_spline_init_cm();                                                // Reset xy target
         return;
     }
 
@@ -160,10 +160,10 @@ void ModeAuto::auto_wp_run()
     // call attitude controller
     if (sub.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch & yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
     } else {
         // roll, pitch from pilot, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, get_auto_heading(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(target_roll, target_pitch, get_auto_heading(), true);
     }
 }
 
@@ -181,14 +181,14 @@ void ModeAuto::auto_circle_movetoedge_start(const Location &circle_center, float
     }
 
      // set circle direction by using rate
-    float current_rate = sub.circle_nav.get_rate();
+    float current_rate = sub.circle_nav.get_rate_degs();
     current_rate = ccw_turn ? -fabsf(current_rate) : fabsf(current_rate);
-    sub.circle_nav.set_rate(current_rate);
+    sub.circle_nav.set_rate_degs(current_rate);
 
     // check our distance from edge of circle
     Vector3f circle_edge_neu;
     float dist_to_edge;
-    sub.circle_nav.get_closest_point_on_circle(circle_edge_neu, dist_to_edge);
+    sub.circle_nav.get_closest_point_on_circle_NEU_cm(circle_edge_neu, dist_to_edge);
 
     // if more than 3m then fly to edge
     if (dist_to_edge > 300.0f) {
@@ -208,8 +208,8 @@ void ModeAuto::auto_circle_movetoedge_start(const Location &circle_center, float
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
-        float dist_to_center = get_horizontal_distance_cm(inertial_nav.get_position_xy_cm().topostype(), sub.circle_nav.get_center().xy());
-        if (dist_to_center > sub.circle_nav.get_radius() && dist_to_center > 500) {
+        float dist_to_center = get_horizontal_distance_cm(inertial_nav.get_position_xy_cm().topostype(), sub.circle_nav.get_center_NEU_cm().xy());
+        if (dist_to_center > sub.circle_nav.get_radius_cm() && dist_to_center > 500) {
             set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         } else {
             // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
@@ -227,7 +227,7 @@ void ModeAuto::auto_circle_start()
     sub.auto_mode = Auto_Circle;
 
     // initialise circle controller
-    sub.circle_nav.init(sub.circle_nav.get_center(), sub.circle_nav.center_is_terrain_alt(), sub.circle_nav.get_rate());
+    sub.circle_nav.init_NEU_cm(sub.circle_nav.get_center_NEU_cm(), sub.circle_nav.center_is_terrain_alt(), sub.circle_nav.get_rate_degs());
 }
 
 // auto_circle_run - circle in AUTO flight mode
@@ -235,7 +235,7 @@ void ModeAuto::auto_circle_start()
 void ModeAuto::auto_circle_run()
 {
     // call circle controller
-    sub.failsafe_terrain_set_status(sub.circle_nav.update());
+    sub.failsafe_terrain_set_status(sub.circle_nav.update_cms());
 
     float lateral_out, forward_out;
     sub.translate_circle_nav_rp(lateral_out, forward_out);
@@ -249,7 +249,7 @@ void ModeAuto::auto_circle_run()
     position_control->update_U_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), sub.circle_nav.get_yaw(), true);
+    attitude_control->input_euler_angle_roll_pitch_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), sub.circle_nav.get_yaw_cd(), true);
 }
 
 #if NAV_GUIDED
@@ -283,10 +283,10 @@ bool ModeAuto::auto_loiter_start()
 
     // calculate stopping point
     Vector3f stopping_point;
-    sub.wp_nav.get_wp_stopping_point(stopping_point);
+    sub.wp_nav.get_wp_stopping_point_NEU_cm(stopping_point);
 
     // initialise waypoint controller target to stopping point
-    sub.wp_nav.set_wp_destination(stopping_point);
+    sub.wp_nav.set_wp_destination_NEU_cm(stopping_point);
 
     // hold yaw at current heading
     set_auto_yaw_mode(AUTO_YAW_HOLD);
@@ -305,7 +305,7 @@ void ModeAuto::auto_loiter_run()
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
 
-        sub.wp_nav.wp_and_spline_init();                                                // Reset xy target
+        sub.wp_nav.wp_and_spline_init_cm();                                                // Reset xy target
         return;
     }
 
@@ -339,7 +339,7 @@ void ModeAuto::auto_loiter_run()
     sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, sub.aparm.angle_max);
 
     // roll & pitch & yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
 }
 
 
@@ -401,7 +401,7 @@ void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
 #if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the sub
         if (!sub.camera_mount.has_pan_control()) {
-            if (roi_location.get_vector_from_origin_NEU(sub.roi_WP)) {
+            if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP)) {
                 set_auto_yaw_mode(AUTO_YAW_ROI);
             }
         }
@@ -416,7 +416,7 @@ void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
         //      4: point at a target given a target id (can't be implemented)
 #else
         // if we have no camera mount aim the sub at the location
-        if (roi_location.get_vector_from_origin_NEU(sub.roi_WP)) {
+        if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP)) {
             set_auto_yaw_mode(AUTO_YAW_ROI);
         }
 #endif  // HAL_MOUNT_ENABLED
@@ -458,8 +458,8 @@ bool ModeAuto::auto_terrain_recover_start()
     position_control->relax_U_controller(motors.get_throttle_hover());
 
     // initialize vertical maximum speeds and acceleration
-    position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
-    position_control->set_correction_speed_accel_U_cmss(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
+    position_control->set_max_speed_accel_U_cm(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
+    position_control->set_correction_speed_accel_U_cmss(sub.wp_nav.get_default_speed_down_cms(), sub.wp_nav.get_default_speed_up_cms(), sub.wp_nav.get_accel_U_cmss());
 
     gcs().send_text(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
     return true;
@@ -491,12 +491,12 @@ void ModeAuto::auto_terrain_recover_run()
     switch (sub.rangefinder.status_orient(ROTATION_PITCH_270)) {
 
     case RangeFinder::Status::OutOfRangeLow:
-        target_climb_rate = sub.wp_nav.get_default_speed_up();
+        target_climb_rate = sub.wp_nav.get_default_speed_up_cms();
         rangefinder_recovery_ms = 0;
         break;
 
     case RangeFinder::Status::OutOfRangeHigh:
-        target_climb_rate = sub.wp_nav.get_default_speed_down();
+        target_climb_rate = sub.wp_nav.get_default_speed_down_cms();
         rangefinder_recovery_ms = 0;
         break;
 
@@ -575,5 +575,5 @@ void ModeAuto::auto_terrain_recover_run()
     float target_yaw_rate = 0;
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
 }

@@ -336,17 +336,17 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
     _flags_heli.flybar_passthrough = true;
 
     // set bf rate targets to current body frame rates (i.e. relax and be ready for vehicle to switch out of acro)
-    _ang_vel_target.x = _ahrs.get_gyro().x;
-    _ang_vel_target.y = _ahrs.get_gyro().y;
+    _ang_vel_target_rads.x = _ahrs.get_gyro().x;
+    _ang_vel_target_rads.y = _ahrs.get_gyro().y;
 
     // accel limit desired yaw rate
     if (get_accel_yaw_max_radss() > 0.0f) {
         float rate_change_limit_rads = get_accel_yaw_max_radss() * _dt;
-        float rate_change_rads = yaw_rate_bf_rads - _ang_vel_target.z;
+        float rate_change_rads = yaw_rate_bf_rads - _ang_vel_target_rads.z;
         rate_change_rads = constrain_float(rate_change_rads, -rate_change_limit_rads, rate_change_limit_rads);
-        _ang_vel_target.z += rate_change_rads;
+        _ang_vel_target_rads.z += rate_change_rads;
     } else {
-        _ang_vel_target.z = yaw_rate_bf_rads;
+        _ang_vel_target_rads.z = yaw_rate_bf_rads;
     }
 
     integrate_bf_rate_error_to_angle_errors();
@@ -361,39 +361,39 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
     Quaternion att;
     _ahrs.get_quat_body_to_ned(att);
     if (ang_vel_to_euler_rate(att, _att_error_rot_vec_rad, att_error_euler_rad)) {
-        _euler_angle_target.x = wrap_PI(att_error_euler_rad.x + _ahrs.roll);
-        _euler_angle_target.y = wrap_PI(att_error_euler_rad.y + _ahrs.pitch);
-        _euler_angle_target.z = wrap_2PI(att_error_euler_rad.z + _ahrs.yaw);
+        _euler_angle_target_rad.x = wrap_PI(att_error_euler_rad.x + _ahrs.roll);
+        _euler_angle_target_rad.y = wrap_PI(att_error_euler_rad.y + _ahrs.pitch);
+        _euler_angle_target_rad.z = wrap_2PI(att_error_euler_rad.z + _ahrs.yaw);
     }
 
     // handle flipping over pitch axis
-    if (_euler_angle_target.y > M_PI / 2.0f) {
-        _euler_angle_target.x = wrap_PI(_euler_angle_target.x + M_PI);
-        _euler_angle_target.y = wrap_PI(M_PI - _euler_angle_target.x);
-        _euler_angle_target.z = wrap_2PI(_euler_angle_target.z + M_PI);
+    if (_euler_angle_target_rad.y > M_PI / 2.0f) {
+        _euler_angle_target_rad.x = wrap_PI(_euler_angle_target_rad.x + M_PI);
+        _euler_angle_target_rad.y = wrap_PI(M_PI - _euler_angle_target_rad.x);
+        _euler_angle_target_rad.z = wrap_2PI(_euler_angle_target_rad.z + M_PI);
     }
-    if (_euler_angle_target.y < -M_PI / 2.0f) {
-        _euler_angle_target.x = wrap_PI(_euler_angle_target.x + M_PI);
-        _euler_angle_target.y = wrap_PI(-M_PI - _euler_angle_target.x);
-        _euler_angle_target.z = wrap_2PI(_euler_angle_target.z + M_PI);
+    if (_euler_angle_target_rad.y < -M_PI / 2.0f) {
+        _euler_angle_target_rad.x = wrap_PI(_euler_angle_target_rad.x + M_PI);
+        _euler_angle_target_rad.y = wrap_PI(-M_PI - _euler_angle_target_rad.x);
+        _euler_angle_target_rad.z = wrap_2PI(_euler_angle_target_rad.z + M_PI);
     }
 
     // convert body-frame angle errors to body-frame rate targets
-    _ang_vel_body = update_ang_vel_target_from_att_error(_att_error_rot_vec_rad);
+    _ang_vel_body_rads = update_ang_vel_target_from_att_error(_att_error_rot_vec_rad);
 
     // set body-frame roll/pitch rate target to current desired rates which are the vehicle's actual rates
-    _ang_vel_body.x = _ang_vel_target.x;
-    _ang_vel_body.y = _ang_vel_target.y;
+    _ang_vel_body_rads.x = _ang_vel_target_rads.x;
+    _ang_vel_body_rads.y = _ang_vel_target_rads.y;
 
     // add desired target to yaw
-    _ang_vel_body.z += _ang_vel_target.z;
-    _thrust_error_angle = _att_error_rot_vec_rad.xy().length();
+    _ang_vel_body_rads.z += _ang_vel_target_rads.z;
+    _thrust_error_angle_rad = _att_error_rot_vec_rad.xy().length();
 }
 
 void AC_AttitudeControl_Heli::integrate_bf_rate_error_to_angle_errors()
 {
     // Integrate the angular velocity error into the attitude error
-    _att_error_rot_vec_rad += (_ang_vel_target - _ahrs.get_gyro()) * _dt;
+    _att_error_rot_vec_rad += (_ang_vel_target_rads - _ahrs.get_gyro()) * _dt;
 
     // Constrain attitude error
     _att_error_rot_vec_rad.x = constrain_float(_att_error_rot_vec_rad.x, -AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD, AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD);
@@ -402,11 +402,11 @@ void AC_AttitudeControl_Heli::integrate_bf_rate_error_to_angle_errors()
 }
 
 // subclass non-passthrough too, for external gyro, no flybar
-void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
+void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     _passthrough_yaw = yaw_rate_bf_cds;
 
-    AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(roll_rate_bf_cds, pitch_rate_bf_cds, yaw_rate_bf_cds);
+    AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_cds(roll_rate_bf_cds, pitch_rate_bf_cds, yaw_rate_bf_cds);
 }
 
 //
@@ -417,9 +417,9 @@ void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cd
 // should be called at 100hz or more
 void AC_AttitudeControl_Heli::rate_controller_run()
 {	
-    _ang_vel_body += _sysid_ang_vel_body;
+    _ang_vel_body_rads += _sysid_ang_vel_body_rads;
 
-    _rate_gyro = _ahrs.get_gyro_latest();
+    _rate_gyro_rads = _ahrs.get_gyro_latest();
     _rate_gyro_time_us = AP_HAL::micros64();
 
     // call rate controllers and send output to motors object
@@ -428,15 +428,15 @@ void AC_AttitudeControl_Heli::rate_controller_run()
         _motors.set_roll(_passthrough_roll / 4500.0f);
         _motors.set_pitch(_passthrough_pitch / 4500.0f);
     } else {
-        rate_bf_to_motor_roll_pitch(_rate_gyro, _ang_vel_body.x, _ang_vel_body.y);
+        rate_bf_to_motor_roll_pitch(_rate_gyro_rads, _ang_vel_body_rads.x, _ang_vel_body_rads.y);
     }
     if (_flags_heli.tail_passthrough) {
         _motors.set_yaw(_passthrough_yaw / 4500.0f);
     } else {
-        _motors.set_yaw(rate_target_to_motor_yaw(_rate_gyro.z, _ang_vel_body.z));
+        _motors.set_yaw(rate_target_to_motor_yaw(_rate_gyro_rads.z, _ang_vel_body_rads.z));
     }
 
-    _sysid_ang_vel_body.zero();
+    _sysid_ang_vel_body_rads.zero();
     _actuator_sysid.zero();
 
 }
@@ -445,7 +445,7 @@ void AC_AttitudeControl_Heli::rate_controller_run()
 void AC_AttitudeControl_Heli::update_althold_lean_angle_max(float throttle_in)
 {
     float althold_lean_angle_max = acosf(constrain_float(throttle_in / AC_ATTITUDE_HELI_ANGLE_LIMIT_THROTTLE_MAX, 0.0f, 1.0f));
-    _althold_lean_angle_max = _althold_lean_angle_max + (_dt / (_dt + _angle_limit_tc)) * (althold_lean_angle_max - _althold_lean_angle_max);
+    _althold_lean_angle_max_rad = _althold_lean_angle_max_rad + (_dt / (_dt + _angle_limit_tc)) * (althold_lean_angle_max - _althold_lean_angle_max_rad);
 }
 
 //
@@ -563,7 +563,7 @@ float AC_AttitudeControl_Heli::get_throttle_boosted(float throttle_in)
 
     float cos_tilt = _ahrs.cos_pitch() * _ahrs.cos_roll();
     float inverted_factor = constrain_float(2.0f * cos_tilt, -1.0f, 1.0f);
-    float cos_tilt_target = fabsf(cosf(_thrust_angle));
+    float cos_tilt_target = fabsf(cosf(_thrust_angle_rad));
     float boost_factor = 1.0f / constrain_float(cos_tilt_target, 0.1f, 1.0f);
 
     // angle boost and inverted factor applied about the zero thrust collective
@@ -582,21 +582,21 @@ float AC_AttitudeControl_Heli::get_roll_trim_cd()
 }
 
 // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
-void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
+void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_euler_rate_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
 {
     if (_inverted_flight) {
         euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
     }
-    AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_rate_cds);
+    AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_cd(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_rate_cds);
 }
 
 // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
-void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
+void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
 {
     if (_inverted_flight) {
         euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
     }
-    AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_angle_cd, slew_yaw);
+    AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_cd(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_angle_cd, slew_yaw);
 }
 
 void AC_AttitudeControl_Heli::set_notch_sample_rate(float sample_rate)
@@ -609,11 +609,11 @@ void AC_AttitudeControl_Heli::set_notch_sample_rate(float sample_rate)
 }
 
 // Command a thrust vector and heading rate
-void AC_AttitudeControl_Heli::input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw)
+void AC_AttitudeControl_Heli::input_thrust_vector_rate_heading_cds(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw)
 {
 
     if (!_inverted_flight) {
-        AC_AttitudeControl::input_thrust_vector_rate_heading(thrust_vector, heading_rate_cds, slew_yaw);
+        AC_AttitudeControl::input_thrust_vector_rate_heading_cds(thrust_vector, heading_rate_cds, slew_yaw);
         return;
     }
     // convert thrust vector to a roll and pitch angles
@@ -622,14 +622,14 @@ void AC_AttitudeControl_Heli::input_thrust_vector_rate_heading(const Vector3f& t
 
     float euler_roll_angle_cd = degrees(angle_target.x) * 100.0f;
     euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
-    AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(euler_roll_angle_cd, degrees(angle_target.y) * 100.0f, heading_rate_cds);
+    AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_cd(euler_roll_angle_cd, degrees(angle_target.y) * 100.0f, heading_rate_cds);
 }
 
 // Command a thrust vector, heading and heading rate
-void AC_AttitudeControl_Heli::input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds)
+void AC_AttitudeControl_Heli::input_thrust_vector_heading_cd(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds)
 {
     if (!_inverted_flight) {
-        AC_AttitudeControl::input_thrust_vector_heading(thrust_vector, heading_angle_cd, heading_rate_cds);
+        AC_AttitudeControl::input_thrust_vector_heading_cd(thrust_vector, heading_angle_cd, heading_rate_cds);
         return;
     }
     // convert thrust vector to a roll and pitch angles
@@ -638,5 +638,5 @@ void AC_AttitudeControl_Heli::input_thrust_vector_heading(const Vector3f& thrust
     float euler_roll_angle_cd = degrees(angle_target.x) * 100.0f;
     euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
     // note that we are throwing away heading rate here
-    AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(euler_roll_angle_cd, degrees(angle_target.y) * 100.0f, heading_angle_cd, true);
+    AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_cd(euler_roll_angle_cd, degrees(angle_target.y) * 100.0f, heading_angle_cd, true);
 }

@@ -880,14 +880,14 @@ namespace AP {
 
 /// Template class for scalar variables.
 ///
-/// Objects of this type have a value, and can be treated in many ways as though they
-/// were the value.
+/// Objects of this type have a value, though the infrastructure to actually
+/// treat them as a value is delegated to a type-specialized subclass.
 ///
 /// @tparam T			The scalar type of the variable
 /// @tparam PT			The AP_PARAM_* type
 ///
 template<typename T, ap_var_type PT>
-class AP_ParamT : public AP_Param
+class AP_ParamTBase : public AP_Param
 {
 public:
     static const ap_var_type        vtype = PT;
@@ -930,15 +930,7 @@ public:
     /// updated correctly.
     void set_and_save_ifchanged(const T &v);
 
-    /// Conversion to T returns a reference to the value.
-    ///
-    /// This allows the class to be used in many situations where the value would be legal.
-    ///
-    operator const T &() const {
-        return _value;
-    }
-
-    /// AP_ParamT types can implement AP_Param::cast_to_float
+    /// AP_ParamTBase types can implement AP_Param::cast_to_float
     ///
     float cast_to_float(void) const;
 
@@ -946,11 +938,91 @@ protected:
     T _value;
 };
 
+template<typename T, ap_var_type PT>
+class AP_ParamT : public AP_ParamTBase<T, PT> // for int and smaller types
+{
+public:
+    /// Conversion to T returns a reference to the value. A reference is
+    /// necessary as some users expect to pass a reference around.
+    ///
+    /// This allows the class to be used in many situations where the value
+    /// would be legal.
+    ///
+    /// Note that this can cause strange conversions: the value can be silently
+    /// converted to a smaller type, causing unexpected truncation in an
+    /// expression like `int16_t v = true ? int16_param : (int8_t)0`.
+    ///
+    /// C numeric conversion rules can be reinstated where needed by simply
+    /// calling `.get()` on the value.
+    ///
+    operator const T &() const {
+        return this->_value;
+    }
+};
 
-/// Template class for non-scalar variables.
+template<>
+class AP_ParamT<float, AP_PARAM_FLOAT> : public AP_ParamTBase<float, AP_PARAM_FLOAT>
+{
+public:
+    /// Conversion to float returns a reference to the value. A reference is
+    /// necessary as some users expect to pass a reference around.
+    ///
+    /// This allows the class to be used in many situations where the value
+    /// would be legal.
+    ///
+    /// We must return a float and specifically make this function a template to
+    /// forbid further conversions: paraphrasing [over.ics.user] clause 3,
+    /// templated user-defined conversion functions require that a further
+    /// conversion be an exact match. This prevents the value from silently
+    /// converting to an int and causing unexpected truncation in an expression
+    /// like `float v = true ? float_param : 0`.
+    ///
+    /// This does also prevent implicit conversion to double, but that is a
+    /// relatively small price to pay. C numeric conversion rules can be
+    /// reinstated where needed by simply calling `.get()` on the value, or by
+    /// manually casting to `double` or `int`.
+    ///
+    template<bool X = true>
+    operator const float &() const {
+        return this->_value;
+    }
+
+    explicit operator int () const { // convenience function for int casts
+        return (int)this->_value;
+    }
+
+    explicit operator double () const { // convenience function for double casts
+        return (double)this->_value;
+    }
+
+#if defined(__clang__)
+    // inexplicably, clang will not use the built-in operator implementations
+    // for floats on two AP_ParamT<float>s, so provide them for it.
+
+    float operator -() const { return -this->_value; } // unary minus
+
+#define PARAM_SELF_OPER(R, OP) \
+    R operator OP (const AP_ParamT<float, AP_PARAM_FLOAT>& other) const { return this->_value OP other._value; }
+
+    PARAM_SELF_OPER(float, +);
+    PARAM_SELF_OPER(float, -);
+    PARAM_SELF_OPER(float, *);
+    PARAM_SELF_OPER(float, /);
+    PARAM_SELF_OPER(bool, >);
+    PARAM_SELF_OPER(bool, <);
+    PARAM_SELF_OPER(bool, <=);
+    PARAM_SELF_OPER(bool, >=);
+    // != and == are unsafe on floats
+
+#undef PARAM_SELF_OPER
+
+#endif
+};
+
+/// Template class for non-scalar variables, intended for non-C types.
 ///
-/// Objects of this type have a value, and can be treated in many ways as though they
-/// were the value.
+/// Objects of this type have an object value, and can be treated in many ways
+/// as though they were the value.
 ///
 /// @tparam T			The scalar type of the variable
 /// @tparam PT			AP_PARAM_* type
@@ -990,9 +1062,12 @@ public:
     void set_and_save_ifchanged(const T &v);
 
 
-    /// Conversion to T returns a reference to the value.
+    /// Conversion to T returns a reference to the value. A reference is
+    /// necessary as some users expect to pass a reference around.
     ///
-    /// This allows the class to be used in many situations where the value would be legal.
+    /// This allows the class to be used in many situations where the value
+    /// would be legal. As T is a user-defined class and not a C type, we don't
+    /// have to worry about weird numeric conversions.
     ///
     operator const T &() const {
         return _value;
@@ -1010,7 +1085,7 @@ protected:
 // _suffix is the suffix on the AP_* type name
 // _pt is the enum ap_var_type type
 #define AP_PARAMDEF(_t, _suffix, _pt)   typedef AP_ParamT<_t, _pt> AP_ ## _suffix;
-AP_PARAMDEF(float, Float, AP_PARAM_FLOAT);    // defines AP_Float
+AP_PARAMDEF(float, Float, AP_PARAM_FLOAT);    // defines AP_Float, requires specialization!
 AP_PARAMDEF(int8_t, Int8, AP_PARAM_INT8);     // defines AP_Int8
 AP_PARAMDEF(int16_t, Int16, AP_PARAM_INT16);  // defines AP_Int16
 AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
@@ -1021,6 +1096,9 @@ AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
 // _suffix is the suffix on the AP_* type name
 // _pt is the enum ap_var_type type
 #define AP_PARAMDEFV(_t, _suffix, _pt)   typedef AP_ParamV<_t, _pt> AP_ ## _suffix;
+
+// see comment in the AP_ParamT float specialization
+static_assert(not std::is_convertible<AP_Float, int>::value, "illegal conversion possible");
 
 /*
   template class for enum types based on AP_Int8

@@ -270,6 +270,7 @@ class ExtractFeatures(object):
             ('AP_TUNING_ENABLED', 'AP_Tuning::check_input'),
             ('AP_DRONECAN_SERIAL_ENABLED', 'AP_DroneCAN_Serial::update'),
             ('AP_SERIALMANAGER_IMUOUT_ENABLED', 'AP_InertialSensor::send_uart_data'),
+            ('AP_NETWORKING_ENABLED', 'AP_Networking::init'),
             ('AP_NETWORKING_BACKEND_PPP', 'AP_Networking_PPP::init'),
             ('AP_NETWORKING_CAN_MCAST_ENABLED', 'AP_Networking_CAN::start'),
             ('FORCE_APJ_DEFAULT_PARAMETERS', 'AP_Param::param_defaults_data'),

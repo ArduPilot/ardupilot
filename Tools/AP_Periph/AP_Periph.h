@@ -105,7 +105,7 @@
 
 #if defined(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT) && !defined(HAL_DEBUG_BUILD) && !defined(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_NON_DEBUG)
 /* this checking for reboot can lose bytes on GPS modules and other
- * serial devices. It is really only relevent on a debug build if you
+ * serial devices. It is really only relevant on a debug build if you
  * really want it for non-debug build then define
  * HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_NON_DEBUG in hwdef.dat
  */

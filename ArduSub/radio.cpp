@@ -25,7 +25,6 @@ void Sub::init_rc_in()
     channel_forward->set_default_dead_zone(30);
     channel_lateral->set_default_dead_zone(30);
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     // initialize rc input to 1500 on control channels (rather than 0)
     for (int i = 0; i < 6; i++) {
         RC_Channels::set_override(i, 1500);
@@ -33,17 +32,6 @@ void Sub::init_rc_in()
 
     RC_Channels::set_override(6, 1500); // camera pan channel
     RC_Channels::set_override(7, 1500); // camera tilt channel
-
-    RC_Channel* chan = RC_Channels::rc_channel(8);
-    uint16_t min = chan->get_radio_min();
-    RC_Channels::set_override(8, min); // lights 1 channel
-
-    chan = RC_Channels::rc_channel(9);
-    min = chan->get_radio_min();
-    RC_Channels::set_override(9, min); // lights 2 channel
-
-    RC_Channels::set_override(10, 1100); // video switch
-#endif
 }
 
 // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
@@ -62,3 +50,81 @@ void Sub::init_rc_out()
     // refresh auxiliary channel to function map
     SRV_Channels::update_aux_servo_function();
 }
+#if AP_SUB_RC_ENABLED
+void Sub::read_radio()
+{ 
+    const uint32_t tnow_ms = AP_HAL::millis();
+
+    if (rc().read_input()) {
+        //got valid input
+        last_radio_update_ms = tnow_ms;
+        failsafe.last_pilot_input_ms = tnow_ms;
+        set_throttle_and_failsafe(channel_throttle->get_radio_in());
+        return;
+    }
+    
+   // No radio input this time
+    if (failsafe.radio) {
+        // already in failsafe! no further action
+        return;
+    }
+
+    // trigger failsafe if no update from the RC Radio for RC_FS_TIMEOUT seconds
+    const uint32_t elapsed_ms = tnow_ms - last_radio_update_ms;
+    if (elapsed_ms < rc().get_fs_timeout_ms()) {
+        // not timed out yet
+        return;
+    }
+    if (!g.failsafe_throttle) {
+        // throttle failsafe not enabled
+        return;
+    }
+    if (!rc().has_ever_seen_rc_input() && !sub.motors.armed()) {
+        // we only failsafe if we are armed OR we have ever seen an RC receiver
+        return;
+    }
+    
+    // Log an error and enter failsafe.
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::RADIO, LogErrorCode::RADIO_LATE_FRAME);
+    set_failsafe_radio(true);
+}
+
+#define FS_COUNTER 3        // radio failsafe kicks in after 3 consecutive throttle values below failsafe_throttle_value
+void Sub::set_throttle_and_failsafe(uint16_t throttle_pwm)
+{
+    // if failsafe not enabled pass through throttle, clear RC failsafe if it exists, and exit
+    if(g.failsafe_throttle == FS_THR_DISABLED) {
+        set_failsafe_radio(false);
+        return;
+    }
+
+    //check for low throttle value
+    if (throttle_pwm < (uint16_t)g.failsafe_throttle_value) {
+
+        // if we are already in failsafe or motors not armed pass through throttle and exit
+        if (failsafe.radio || !(rc().has_ever_seen_rc_input() || sub.motors.armed())) {
+            return;
+        }
+
+        // check for 3 low throttle values
+        // Note: we do not pass through the low throttle until 3 low throttle values are received
+        failsafe.radio_counter++;
+        if( failsafe.radio_counter >= FS_COUNTER ) {
+            failsafe.radio_counter = FS_COUNTER;  // check to ensure we don't overflow the counter
+            set_failsafe_radio(true);
+        }
+    }else{
+        // we have a good throttle so reduce failsafe counter
+        failsafe.radio_counter--;
+        if( failsafe.radio_counter <= 0 ) {
+            failsafe.radio_counter = 0;   // check to ensure we don't underflow the counter
+
+            // disengage failsafe after three (nearly) consecutive valid throttle values
+            if (failsafe.radio) {
+                set_failsafe_radio(false);
+            }
+        }
+        // pass through throttle
+    }
+}
+#endif

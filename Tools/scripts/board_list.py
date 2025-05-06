@@ -15,6 +15,7 @@ class Board(object):
     def __init__(self, name):
         self.name = name
         self.is_ap_periph = False
+        self.toolchain = 'arm-eabi-none'  # FIXME: try to remove this?
         self.autobuild_targets = [
             'Tracker',
             'Blimp',
@@ -90,10 +91,15 @@ class BoardList(object):
             if not os.path.exists(filepath):
                 continue
             filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
+
+            # FIXME: we really should be using hwdef.py to parse
+            # these, but it's too slow.  We use board_list in some
+            # places we can't afford to be slow.
             text = self.read_hwdef(filepath)
 
             board = Board(adir)
             self.boards.append(board)
+            board_toolchain_set = False
             for line in text:
                 if re.match(r"^\s*env AP_PERIPH 1", line):
                     board.is_ap_periph = 1
@@ -110,6 +116,22 @@ class BoardList(object):
                         board.autobuild_targets = [
                             x.rstrip().lstrip().lower() for x in mname.split(",")
                         ]
+
+                m = re.match(r"\s*env\s*TOOLCHAIN\s*([-\w]+)\s*", line)
+                if m is not None:
+                    board.toolchain = m.group(1)
+                    board_toolchain_set = True
+                    if board.toolchain == 'native':
+                        board.toolchain = None
+
+            # toolchain not in hwdef; make up some defaults:
+            if not board_toolchain_set:
+                if "Linux" in hwdef_dir:
+                    board.toolchain = 'arm-linux-gnueabihf'
+                elif "ChibiOS" in hwdef_dir:
+                    board.toolchain = 'arm-none-eabi'
+                else:
+                    raise ValueError(f"Unable to determine toolchain for {adir}")
 
     def read_hwdef(self, filepath):
         fh = open(filepath)
