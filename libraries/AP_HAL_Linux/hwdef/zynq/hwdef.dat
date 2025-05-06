@@ -1,6 +1,5 @@
 # Stub the sensors out for now, at least we can build and run
 define HAL_INS_DEFAULT HAL_INS_NONE
-define HAL_BARO_DEFAULT HAL_BARO_NONE
 
 # only external compasses
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
