@@ -35,6 +35,7 @@ class AP_ExternalAHRS {
 public:
     friend class AP_ExternalAHRS_backend;
     friend class AP_ExternalAHRS_VectorNav;
+    friend class AP_ExternalAHRS_AdvancedNavigation;
 
     AP_ExternalAHRS();
 
@@ -50,10 +51,12 @@ public:
 #if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
         MicroStrain5 = 2,
 #endif
+#if AP_EXTERNAL_AHRS_ADNAV_ENABLED
+        AdNav = 3,
+#endif
 #if AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
         InertialLabs = 5,
 #endif
-        // 3 reserved for AdNav
         // 4 reserved for CINS
         // 6 reserved for Trimble
 #if AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
@@ -176,6 +179,7 @@ protected:
 
     enum class OPTIONS {
         VN_UNCOMP_IMU = 1U << 0,
+        ARSP_AID = 1U << 1,
     };
     bool option_is_set(OPTIONS option) const { return (options.get() & int32_t(option)) != 0; }
 
@@ -187,6 +191,7 @@ private:
     AP_Int16         log_rate;
     AP_Int16         options;
     AP_Int16         sensors;
+    AP_Float         arsp_err_20ms;
 
     static AP_ExternalAHRS *_singleton;
 
