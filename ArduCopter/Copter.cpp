@@ -925,7 +925,7 @@ void Copter::update_altitude()
 bool Copter::get_wp_distance_m(float &distance) const
 {
     // see GCS_MAVLINK_Copter::send_nav_controller_output()
-    distance = flightmode->wp_distance() * 0.01;
+    distance = flightmode->wp_distance_m();
     return true;
 }
 

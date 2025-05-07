@@ -216,7 +216,7 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
         targets.y * 1.0e-2f,
         targets.z * 1.0e-2f,
         flightmode->wp_bearing() * 1.0e-2f,
-        MIN(flightmode->wp_distance() * 1.0e-2f, UINT16_MAX),
+        MIN(flightmode->wp_distance_m(), UINT16_MAX),
         copter.pos_control->get_pos_error_U_cm() * 1.0e-2f,
         0,
         flightmode->crosstrack_error() * 1.0e-2f);
@@ -1362,7 +1362,7 @@ uint16_t GCS_MAVLINK_Copter::high_latency_tgt_dist() const
     if (copter.ap.initialised) {
         // return units are dm
         const Mode *flightmode = copter.flightmode;
-        return MIN(flightmode->wp_distance() * 1.0e-2, UINT16_MAX) / 10;
+        return MIN(flightmode->wp_distance_m(), UINT16_MAX) / 10;
     }
     return 0;
 }

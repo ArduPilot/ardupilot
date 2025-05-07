@@ -205,9 +205,9 @@ void ModeLoiter::run()
     pos_control->update_U_controller();
 }
 
-uint32_t ModeLoiter::wp_distance() const
+float ModeLoiter::wp_distance_m() const
 {
-    return loiter_nav->get_distance_to_target_cm();
+    return loiter_nav->get_distance_to_target_cm() * 0.01f;
 }
 
 int32_t ModeLoiter::wp_bearing() const
