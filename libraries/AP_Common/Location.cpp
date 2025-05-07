@@ -375,6 +375,13 @@ Vector3f Location::get_distance_NED(const Location &loc2) const
                     (alt - loc2.alt) * 0.01);
 }
 
+Vector3p Location::get_distance_NED_postype(const Location &loc2) const
+{
+    return Vector3p((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
+                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((lat+loc2.lat)/2),
+                    (alt - loc2.alt) * 0.01);
+}
+
 // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
 Vector3d Location::get_distance_NED_double(const Location &loc2) const
 {
@@ -399,6 +406,12 @@ Vector3f Location::get_distance_NED_alt_frame(const Location &loc2) const
 Vector2d Location::get_distance_NE_double(const Location &loc2) const
 {
     return Vector2d((loc2.lat - lat) * double(LOCATION_SCALING_FACTOR),
+                    diff_longitude(loc2.lng,lng) * double(LOCATION_SCALING_FACTOR) * longitude_scale((lat+loc2.lat)/2));
+}
+
+Vector2p Location::get_distance_NE_postype(const Location &loc2) const
+{
+    return Vector2p((loc2.lat - lat) * double(LOCATION_SCALING_FACTOR),
                     diff_longitude(loc2.lng,lng) * double(LOCATION_SCALING_FACTOR) * longitude_scale((lat+loc2.lat)/2));
 }
 

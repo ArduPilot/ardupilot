@@ -82,7 +82,7 @@ bool ModeCircle::set_center(const Location& center_loc, float radius_m, bool dir
 bool ModeCircle::_enter()
 {
     // capture starting point and yaw
-    if (!AP::ahrs().get_relative_position_NE_origin(config.center_pos)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(config.center_pos)) {
         return false;
     }
     config.radius = MAX(fabsf(radius), AR_CIRCLE_RADIUS_MIN);
@@ -129,7 +129,7 @@ void ModeCircle::init_target_yaw_rad()
 {
     // if no position estimate use vehicle yaw
     Vector2f curr_pos_NE;
-    if (!AP::ahrs().get_relative_position_NE_origin(curr_pos_NE)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(curr_pos_NE)) {
         target.yaw_rad = AP::ahrs().get_yaw();
         return;
     }
@@ -150,7 +150,7 @@ void ModeCircle::update()
 {
     // get current position
     Vector2f curr_pos;
-    const bool position_ok = AP::ahrs().get_relative_position_NE_origin(curr_pos);
+    const bool position_ok = AP::ahrs().get_relative_position_NE_origin_float(curr_pos);
 
     // if no position estimate stop vehicle
     if (!position_ok) {
@@ -242,7 +242,7 @@ void ModeCircle::update_circling()
 float ModeCircle::wp_bearing() const
 {
     Vector2f curr_pos_NE;
-    if (!AP::ahrs().get_relative_position_NE_origin(curr_pos_NE)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(curr_pos_NE)) {
         return 0;
     }
     // calc vector from circle center to vehicle
