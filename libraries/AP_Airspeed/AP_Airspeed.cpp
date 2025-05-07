@@ -346,95 +346,98 @@ void AP_Airspeed::allocate()
 #else
     // look for sensors based on type parameters
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        auto &_state = state[i];
+        auto &_param = param[i];
+        _state.instance = i;
 #if AP_AIRSPEED_AUTOCAL_ENABLE
-        state[i].calibration.init(param[i].ratio);
-        state[i].last_saved_ratio = param[i].ratio;
+        _state.calibration.init(_param.ratio);
+        _state.last_saved_ratio = _param.ratio;
 #endif
 
         // Set the enable automatically to false and set the probability that the airspeed is healhy to start with
-        state[i].failures.health_probability = 1.0f;
+        _state.failures.health_probability = 1.0f;
 
-        switch ((enum airspeed_type)param[i].type.get()) {
+        switch ((enum airspeed_type)_param.type.get()) {
         case TYPE_NONE:
             // nothing to do
             break;
 #if AP_AIRSPEED_MS4525_ENABLED
         case TYPE_I2C_MS4525:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_MS4525(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_MS4525(*this, _state, _param);
             break;
 #endif  // AP_AIRSPEED_MS4525_ENABLED
 #if AP_AIRSPEED_SITL_ENABLED
         case TYPE_SITL:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_SITL(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_SITL(*this, _state, _param);
             break;
 #endif  // AP_AIRSPEED_SITL_ENABLED
 #if AP_AIRSPEED_ANALOG_ENABLED
         case TYPE_ANALOG:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_Analog(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_Analog(*this, _state, _param);
             break;
 #endif  // AP_AIRSPEED_ANALOG_ENABLED
 #if AP_AIRSPEED_MS5525_ENABLED
         case TYPE_I2C_MS5525:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_AUTO);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, _state, _param, AP_Airspeed_MS5525::MS5525_ADDR_AUTO);
             break;
 #endif  // AP_AIRSPEED_MS5525_ENABLED
 #if AP_AIRSPEED_MS5525_ENABLED
         case TYPE_I2C_MS5525_ADDRESS_1:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_1);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, _state, _param, AP_Airspeed_MS5525::MS5525_ADDR_1);
             break;
 #endif  // AP_AIRSPEED_MS5525_ENABLED
 #if AP_AIRSPEED_MS5525_ENABLED
         case TYPE_I2C_MS5525_ADDRESS_2:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_2);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_MS5525(*this, _state, _param, AP_Airspeed_MS5525::MS5525_ADDR_2);
             break;
 #endif  // AP_AIRSPEED_MS5525_ENABLED
 #if AP_AIRSPEED_SDP3X_ENABLED
         case TYPE_I2C_SDP3X:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_SDP3X(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_SDP3X(*this, _state, _param);
             break;
 #endif  // AP_AIRSPEED_SDP3X_ENABLED
 #if AP_AIRSPEED_DLVR_ENABLED
         case TYPE_I2C_DLVR_5IN:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 5);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, _state, _param, 5);
             break;
         case TYPE_I2C_DLVR_10IN:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 10);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, _state, _param, 10);
             break;
         case TYPE_I2C_DLVR_20IN:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 20);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, _state, _param, 20);
             break;
         case TYPE_I2C_DLVR_30IN:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 30);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, _state, _param, 30);
             break;
         case TYPE_I2C_DLVR_60IN:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, i, 60);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_DLVR(*this, _state, _param, 60);
             break;
 #endif  // AP_AIRSPEED_DLVR_ENABLED
 #if AP_AIRSPEED_ASP5033_ENABLED
         case TYPE_I2C_ASP5033:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_ASP5033(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_ASP5033(*this, _state, _param);
             break;
 #endif  // AP_AIRSPEED_ASP5033_ENABLED
 #if AP_AIRSPEED_DRONECAN_ENABLED
         case TYPE_UAVCAN:
-            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
+            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, _state, _param, uint32_t(_param.bus_id.get()));
             break;
 #endif  // AP_AIRSPEED_DRONECAN_ENABLED
 #if AP_AIRSPEED_NMEA_ENABLED
         case TYPE_NMEA_WATER:
 #if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
-            sensor[i] = NEW_NOTHROW AP_Airspeed_NMEA(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_NMEA(*this, _state, _param);
 #endif
             break;
 #endif  // AP_AIRSPEED_NMEA_ENABLED
 #if AP_AIRSPEED_MSP_ENABLED
         case TYPE_MSP:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_MSP(*this, i, 0);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_MSP(*this, _state, _param, 0);
             break;
 #endif  // AP_AIRSPEED_MSP_ENABLED
 #if AP_AIRSPEED_EXTERNAL_ENABLED
         case TYPE_EXTERNAL:
-            sensor[i] = NEW_NOTHROW AP_Airspeed_External(*this, i);
+            sensor[i] = NEW_NOTHROW AP_Airspeed_External(*this, _state, _param);
             break;
 #endif  // AP_AIRSPEED_EXTERNAL_ENABLED
 #if AP_AIRSPEED_AUAV_ENABLED
@@ -463,8 +466,10 @@ void AP_Airspeed::allocate()
     // we need a 2nd pass for DroneCAN sensors so we can match order by DEVID
     // the 2nd pass accepts any devid
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        if (sensor[i] == nullptr && (enum airspeed_type)param[i].type.get() == TYPE_UAVCAN) {
-            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, 0);
+        auto &_state = state[i];
+        auto &_param = param[i];
+        if (sensor[i] == nullptr && (enum airspeed_type)_param.type.get() == TYPE_UAVCAN) {
+            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, _state, _param, 0);
             if (sensor[i] != nullptr) {
                 num_sensors = i+1;
             }
@@ -479,7 +484,8 @@ void AP_Airspeed::allocate()
         if (sensor[i] == nullptr) {
             // note we use set() not set_and_save() to allow a sensor to be temporarily
             // removed for one boot without losing its slot
-            param[i].bus_id.set(0);
+            auto &_param = param[i];
+            _param.bus_id.set(0);
         }
     }
 }
@@ -616,17 +622,14 @@ AP_Airspeed::CalibrationState AP_Airspeed::get_calibration_state() const
 }
 
 // read one airspeed sensor
-void AP_Airspeed::read(uint8_t i)
+void AP_Airspeed_Backend::update()
 {
-    if (!enabled(i) || !sensor[i]) {
-        return;
-    }
-    state[i].last_update_ms = AP_HAL::millis();
+    state.last_update_ms = AP_HAL::millis();
 
     // try and get a direct reading of airspeed
-    if (sensor[i]->has_airspeed()) {
-        state[i].healthy = sensor[i]->get_airspeed(state[i].airspeed);
-        state[i].raw_airspeed = state[i].airspeed;  // for logging
+    if (has_airspeed()) {
+        state.healthy = get_airspeed(state.airspeed);
+        state.raw_airspeed = state.airspeed;  // for logging
         return;
     }
 
@@ -634,20 +637,18 @@ void AP_Airspeed::read(uint8_t i)
     /*
       remember the old healthy state
      */
-    bool prev_healthy = state[i].healthy;
+    bool prev_healthy = state.healthy;
 #endif
 
-    float raw_pressure = 0;
-    state[i].healthy = sensor[i]->get_differential_pressure(raw_pressure);
-
-    float airspeed_pressure = raw_pressure - get_offset(i);
+    state.healthy = get_differential_pressure(state.raw_pressure);
+    float airspeed_pressure = state.raw_pressure - get_offset();
 
     // remember raw pressure for logging
-    state[i].corrected_pressure = airspeed_pressure;
+    state.corrected_pressure = airspeed_pressure;
 
 #ifndef HAL_BUILD_AP_PERIPH
-    if (state[i].cal.start_ms != 0) {
-        update_calibration(i, raw_pressure);
+    if (state.cal.start_ms != 0) {
+        frontend.update_calibration(state.instance, state.raw_pressure);
     }
 
     // filter before clamping positive
@@ -655,31 +656,31 @@ void AP_Airspeed::read(uint8_t i)
         // if the previous state was not healthy then we should not
         // use an IIR filter, otherwise a bad reading will last for
         // some time after the sensor becomes healthy again
-        state[i].filtered_pressure = airspeed_pressure;
+        state.filtered_pressure = airspeed_pressure;
     } else {
-        state[i].filtered_pressure = 0.7f * state[i].filtered_pressure + 0.3f * airspeed_pressure;
+        state.filtered_pressure = 0.7f * state.filtered_pressure + 0.3f * airspeed_pressure;
     }
 
     /*
       we support different pitot tube setups so user can choose if
       they want to be able to detect pressure on the static port
      */
-    switch ((enum pitot_tube_order)param[i].tube_order.get()) {
-    case PITOT_TUBE_ORDER_NEGATIVE:
-        state[i].last_pressure  = -airspeed_pressure;
-        state[i].raw_airspeed   = sqrtf(MAX(-airspeed_pressure, 0) * param[i].ratio);
-        state[i].airspeed       = sqrtf(MAX(-state[i].filtered_pressure, 0) * param[i].ratio);
+    switch ((enum AP_Airspeed::pitot_tube_order)params.tube_order.get()) {
+    case AP_Airspeed::pitot_tube_order::PITOT_TUBE_ORDER_NEGATIVE:
+        state.last_pressure  = -airspeed_pressure;
+        state.raw_airspeed   = sqrtf(MAX(-airspeed_pressure, 0) * params.ratio);
+        state.airspeed       = sqrtf(MAX(-state.filtered_pressure, 0) * params.ratio);
         break;
-    case PITOT_TUBE_ORDER_POSITIVE:
-        state[i].last_pressure  = airspeed_pressure;
-        state[i].raw_airspeed   = sqrtf(MAX(airspeed_pressure, 0) * param[i].ratio);
-        state[i].airspeed       = sqrtf(MAX(state[i].filtered_pressure, 0) * param[i].ratio);
+    case AP_Airspeed::pitot_tube_order::PITOT_TUBE_ORDER_POSITIVE:
+        state.last_pressure  = airspeed_pressure;
+        state.raw_airspeed   = sqrtf(MAX(airspeed_pressure, 0) * params.ratio);
+        state.airspeed       = sqrtf(MAX(state.filtered_pressure, 0) * params.ratio);
         break;
-    case PITOT_TUBE_ORDER_AUTO:
+    case AP_Airspeed::pitot_tube_order::PITOT_TUBE_ORDER_AUTO:
     default:
-        state[i].last_pressure  = fabsf(airspeed_pressure);
-        state[i].raw_airspeed   = sqrtf(fabsf(airspeed_pressure) * param[i].ratio);
-        state[i].airspeed       = sqrtf(fabsf(state[i].filtered_pressure) * param[i].ratio);
+        state.last_pressure  = fabsf(airspeed_pressure);
+        state.raw_airspeed   = sqrtf(fabsf(airspeed_pressure) * params.ratio);
+        state.airspeed       = sqrtf(fabsf(state.filtered_pressure) * params.ratio);
         break;
     }
 #endif // HAL_BUILD_AP_PERIPH
@@ -693,7 +694,13 @@ void AP_Airspeed::update()
     }
 
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        read(i);
+        if (!enabled(i)) {
+            continue;
+        }
+        if (sensor[i] == nullptr) {
+            continue;
+        }
+        sensor[i]->update();
     }
 
 #if HAL_GCS_ENABLED
@@ -786,24 +793,30 @@ void AP_Airspeed::Log_Airspeed()
         if (!enabled(i) || sensor[i] == nullptr) {
             continue;
         }
+        sensor[i]->Log_Airspeed(now);
+    }
+}
+
+void AP_Airspeed_Backend::Log_Airspeed(uint64_t now)
+{
         float temperature;
-        if (!get_temperature(i, temperature)) {
+        if (!get_temperature(temperature)) {
             temperature = 0;
         }
         const struct log_ARSP pkt{
             LOG_PACKET_HEADER_INIT(LOG_ARSP_MSG),
             time_us       : now,
-            instance      : i,
-            airspeed      : get_raw_airspeed(i),
-            diffpressure  : get_differential_pressure(i),
+            instance      : state.instance,
+            airspeed      : state.raw_airspeed,
+            diffpressure  : state.raw_pressure,
             temperature   : (int16_t)(temperature * 100.0f),
-            rawpressure   : get_corrected_pressure(i),
-            offset        : get_offset(i),
-            use           : use(i),
-            healthy       : healthy(i),
-            health_prob   : get_health_probability(i),
-            test_ratio    : get_test_ratio(i),
-            primary       : get_primary()
+            rawpressure   : state.corrected_pressure,
+            offset        : get_offset(),
+            use           : frontend.use(state.instance),
+            healthy       : state.healthy,
+            health_prob   : state.failures.health_probability,
+            test_ratio    : state.failures.test_ratio,
+            primary       : frontend.get_primary()
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
 
@@ -813,23 +826,22 @@ void AP_Airspeed::Log_Airspeed()
             float temperature;
             float humidity;
         } hygrometer;
-        if (sensor[i]->get_hygrometer(hygrometer.sample_ms, hygrometer.temperature, hygrometer.humidity) &&
-            hygrometer.sample_ms != state[i].last_hygrometer_log_ms) {
+        if (get_hygrometer(hygrometer.sample_ms, hygrometer.temperature, hygrometer.humidity) &&
+            hygrometer.sample_ms != state.last_hygrometer_log_ms) {
             AP::logger().WriteStreaming("HYGR",
                                         "TimeUS,Id,Humidity,Temp",
                                         "s#%O",
                                         "F---",
                                         "QBff",
                                         AP_HAL::micros64(),
-                                        i,
+                                        state.instance,
                                         hygrometer.humidity,
                                         hygrometer.temperature);
-            state[i].last_hygrometer_log_ms = hygrometer.sample_ms;
+            state.last_hygrometer_log_ms = hygrometer.sample_ms;
         }
-#endif
-    }
+#endif  // AP_AIRSPEED_HYGROMETER_ENABLE
 }
-#endif
+#endif  // HAL_LOGGING_ENABLED
 
 bool AP_Airspeed::use(uint8_t i) const
 {
