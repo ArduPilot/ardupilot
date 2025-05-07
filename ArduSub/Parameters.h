@@ -208,7 +208,7 @@ public:
         k_param_throttle_gain,
         k_param_cam_tilt_center, // deprecated
         k_param_frame_configuration,
-
+        k_param_surface_sensorless_thrust,
         // 200: flight modes
         k_param_flight_mode1 = 200,
         k_param_flight_mode2,
@@ -401,6 +401,7 @@ public:
     AP_Float backup_origin_lat;
     AP_Float backup_origin_lon;
     AP_Float backup_origin_alt;
+    AP_Float surface_sensorless_thrust;
 };
 
 extern const AP_Param::Info        var_info[];
