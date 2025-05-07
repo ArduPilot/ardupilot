@@ -246,6 +246,8 @@ public:
 
     void StopLogging();
 
+    void Write_RTC();
+
     void Write_Parameter(const char *name, float value);
     void Write_Event(LogEvent id);
     void Write_Error(LogErrorSubsystem sub_system,
