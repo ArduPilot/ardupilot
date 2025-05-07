@@ -88,6 +88,8 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
         return false;
     }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wbitwise-instead-of-logical"
     return (AP_Arming::pre_arm_checks(report)
             & motor_checks(report)
 #if AP_OAPATHPLANNER_ENABLED
@@ -95,6 +97,7 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 #endif
             & parameter_checks(report)
             & mode_checks(report));
+#pragma clang diagnostic pop
 }
 
 bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)

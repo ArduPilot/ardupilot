@@ -29,6 +29,8 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
         return mandatory_checks(display_failure);
     }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wbitwise-instead-of-logical"
     return parameter_checks(display_failure)
 #if AP_FENCE_ENABLED
            & fence_checks(display_failure)
@@ -37,6 +39,7 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
            & gcs_failsafe_check(display_failure)
            & alt_checks(display_failure)
            & AP_Arming::pre_arm_checks(display_failure);
+#pragma clang diagnostic pop
 }
 
 bool AP_Arming_Blimp::barometer_checks(bool display_failure)
