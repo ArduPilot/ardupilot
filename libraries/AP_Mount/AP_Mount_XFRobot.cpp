@@ -228,9 +228,9 @@ bool AP_Mount_XFRobot::set_lens(uint8_t lens)
     CameraType selected_cam;
 
     static const CameraType cam_type_table[] {
+        CameraType::MAIN_ZOOM_SUB_THERMAL,
+        CameraType::MAIN_THERMAL_SUB_ZOOM,
         CameraType::MAIN_PIP_ZOOM_SUB_THERMAL,
-        CameraType::MAIN_THERMAL,
-        CameraType::MAIN_ZOOM,
     };
 
     // sanity check lens values
