@@ -150,9 +150,9 @@ void ModeFollow::run()
     ModeGuided::run();
 }
 
-uint32_t ModeFollow::wp_distance() const
+float ModeFollow::wp_distance_m() const
 {
-    return g2.follow.get_distance_to_target_m() * 100;
+    return g2.follow.get_distance_to_target_m();
 }
 
 int32_t ModeFollow::wp_bearing() const
