@@ -24,13 +24,10 @@ colcon test --packages-select ardupilot_dds_tests \
 
 """
 
-import launch_pytest
 import pytest
 import rclpy
 import rclpy.node
 import threading
-
-from launch import LaunchDescription
 
 from launch_pytest.tools import process as process_tools
 
@@ -39,6 +36,11 @@ from rclpy.qos import QoSReliabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
 
 from ardupilot_msgs.msg import Rc
+
+from launch_fixtures import (
+    launch_sitl_copter_dds_serial,
+    launch_sitl_copter_dds_udp,
+)
 
 TOPIC = "ap/rc"
 
@@ -72,36 +74,6 @@ class RcListener(rclpy.node.Node):
     def subscriber_callback(self, msg):
         """Process a Rc message."""
         self.msg_event_object.set()
-
-
-@launch_pytest.fixture
-def launch_sitl_copter_dds_serial(sitl_copter_dds_serial):
-    """Fixture to create the launch description."""
-    sitl_ld, sitl_actions = sitl_copter_dds_serial
-
-    ld = LaunchDescription(
-        [
-            sitl_ld,
-            launch_pytest.actions.ReadyToTest(),
-        ]
-    )
-    actions = sitl_actions
-    yield ld, actions
-
-
-@launch_pytest.fixture
-def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
-    """Fixture to create the launch description."""
-    sitl_ld, sitl_actions = sitl_copter_dds_udp
-
-    ld = LaunchDescription(
-        [
-            sitl_ld,
-            launch_pytest.actions.ReadyToTest(),
-        ]
-    )
-    actions = sitl_actions
-    yield ld, actions
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
@@ -153,4 +125,3 @@ def test_dds_udp_rc_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     finally:
         rclpy.shutdown()
     yield
-    
