@@ -256,19 +256,6 @@ void AP_SystemID::update()
     log_subsample -= 1;
 }
 
-// @LoggerMessage: SIDD
-// @Description: System ID data
-// @Field: TimeUS: Time since system startup
-// @Field: Time: Time reference for waveform
-// @Field: Targ: Current waveform sample
-// @Field: F: Instantaneous waveform frequency
-// @Field: Gx: Delta angle, X-Axis
-// @Field: Gy: Delta angle, Y-Axis
-// @Field: Gz: Delta angle, Z-Axis
-// @Field: Ax: Delta velocity, X-Axis
-// @Field: Ay: Delta velocity, Y-Axis
-// @Field: Az: Delta velocity, Z-Axis
-
 // log system id
 void AP_SystemID::log_data() const
 {
@@ -284,17 +271,13 @@ void AP_SystemID::log_data() const
     if (is_positive(delta_angle_dt) && is_positive(delta_velocity_dt)) {
         const float dt_ang_inv = 1.0 / delta_angle_dt;
         const float dt_vel_inv = 1.0 / delta_velocity_dt;
-        AP::logger().WriteStreaming("SIDD", "TimeUS,Time,Targ,F,Gx,Gy,Gz,Ax,Ay,Az",
-                                    "ss-zkkkooo", "F---------", "Qfffffffff",
-                                    AP_HAL::micros64(),
-                                    waveform_time, waveform_sample, waveform_freq_rads / (2 * M_PI),
-                                    degrees(delta_angle.x * dt_ang_inv),
-                                    degrees(delta_angle.y * dt_ang_inv),
-                                    degrees(delta_angle.z * dt_ang_inv),
-                                    delta_velocity.x * dt_vel_inv,
-                                    delta_velocity.y * dt_vel_inv,
-                                    delta_velocity.z * dt_vel_inv);
-
+        plane.quadplane.attitude_control->Log_Write_SysID_Data(waveform_time, waveform_sample, waveform_freq_rads / (2 * M_PI),
+                                                               degrees(delta_angle.x * dt_ang_inv),
+                                                               degrees(delta_angle.y * dt_ang_inv),
+                                                               degrees(delta_angle.z * dt_ang_inv),
+                                                               delta_velocity.x * dt_vel_inv,
+                                                               delta_velocity.y * dt_vel_inv,
+                                                               delta_velocity.z * dt_vel_inv);
         // log attitude controller at the same rate
         plane.quadplane.Log_Write_AttRate();
     }

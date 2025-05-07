@@ -467,10 +467,16 @@ void Copter::disable_fast_rate_loop(RateControllerRates& rates)
 void Copter::rate_controller_log_update()
 {
 #if HAL_LOGGING_ENABLED
-    if (!copter.flightmode->logs_attitude()) {
+    if (!flightmode->logs_attitude()) {
         Log_Write_Rate();
         Log_Write_PIDS(); // only logs if PIDS bitmask is set
+    } else {
+        Vector3f delta_angle;
+        float delta_angle_dt;
+        ins.get_rate_delta_angle(delta_angle, delta_angle_dt);
+        flightmode->log_attitude_data(delta_angle_dt, delta_angle);
     }
+
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     if (should_log(MASK_LOG_FTN_FAST)) {
         AP::ins().write_notch_log_messages();

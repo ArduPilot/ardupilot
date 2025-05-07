@@ -463,6 +463,9 @@ public:
     // write ANG message
     void Write_ANG() const;
 
+    // Write SYSIDD message
+    void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z);
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 

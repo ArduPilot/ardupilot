@@ -20,7 +20,6 @@ enum LoggingParameters {
     LOG_PARAMTUNE_MSG,
     LOG_HELI_MSG,
     LOG_GUIDEDTARGET_MSG,
-    LOG_SYSIDD_MSG,
     LOG_SYSIDS_MSG,
     LOG_FINI_MSG,
     LOG_FINO_MSG,

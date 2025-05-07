@@ -244,38 +244,11 @@ void Copter::Log_Video_Stabilisation()
     ahrs.write_video_stabilisation();
 }
 
-struct PACKED log_SysIdD {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float    waveform_time;
-    float    waveform_sample;
-    float    waveform_freq;
-    float    angle_x;
-    float    angle_y;
-    float    angle_z;
-    float    accel_x;
-    float    accel_y;
-    float    accel_z;
-};
-
 // Write an rate packet
 void Copter::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z)
 {
 #if MODE_SYSTEMID_ENABLED
-    struct log_SysIdD pkt_sidd = {
-        LOG_PACKET_HEADER_INIT(LOG_SYSIDD_MSG),
-        time_us         : AP_HAL::micros64(),
-        waveform_time   : waveform_time,
-        waveform_sample : waveform_sample,
-        waveform_freq   : waveform_freq,
-        angle_x         : angle_x,
-        angle_y         : angle_y,
-        angle_z         : angle_z,
-        accel_x         : accel_x,
-        accel_y         : accel_y,
-        accel_z         : accel_z
-    };
-    logger.WriteBlock(&pkt_sidd, sizeof(pkt_sidd));
+    attitude_control->Log_Write_SysID_Data(waveform_time, waveform_sample, waveform_freq, angle_x, angle_y, angle_z, accel_z, accel_y, accel_z);
 #endif
 }
 
@@ -298,7 +271,7 @@ void Copter::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitu
 #if MODE_SYSTEMID_ENABLED
     struct log_SysIdS pkt_sids = {
         LOG_PACKET_HEADER_INIT(LOG_SYSIDS_MSG),
-        time_us             : AP_HAL::micros64(),
+        time_us             : AP::scheduler().get_loop_start_time_us(),
         systemID_axis       : systemID_axis,
         waveform_magnitude  : waveform_magnitude,
         frequency_start     : frequency_start,
@@ -492,22 +465,6 @@ const struct LogStructure Copter::log_structure[] = {
       "DU32",  "QBI",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
-
-// @LoggerMessage: SIDD
-// @Description: System ID data
-// @Field: TimeUS: Time since system startup
-// @Field: Time: Time reference for waveform
-// @Field: Targ: Current waveform sample
-// @Field: F: Instantaneous waveform frequency
-// @Field: Gx: Delta angle, X-Axis
-// @Field: Gy: Delta angle, Y-Axis
-// @Field: Gz: Delta angle, Z-Axis
-// @Field: Ax: Delta velocity, X-Axis
-// @Field: Ay: Delta velocity, Y-Axis
-// @Field: Az: Delta velocity, Z-Axis
-
-    { LOG_SYSIDD_MSG, sizeof(log_SysIdD),
-      "SIDD", "Qfffffffff",  "TimeUS,Time,Targ,F,Gx,Gy,Gz,Ax,Ay,Az", "ss-zkkkooo", "F---------" , true },
 
 // @LoggerMessage: SIDS
 // @Description: System ID settings

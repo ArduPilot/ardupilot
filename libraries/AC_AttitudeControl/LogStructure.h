@@ -10,7 +10,8 @@
     LOG_PSOE_MSG, \
     LOG_PSOD_MSG, \
     LOG_PSOT_MSG, \
-    LOG_ANG_MSG
+    LOG_ANG_MSG,  \
+    LOG_SYSIDD_MSG
 
 // @LoggerMessage: PSCN
 // @Description: Position Control North
@@ -175,6 +176,32 @@ struct PACKED log_ANG {
     float sensor_dt;
 };
 
+// @LoggerMessage: SIDD
+// @Description: System ID data
+// @Field: TimeUS: Timestamp of the current Attitude loop
+// @Field: Time: Time reference for waveform
+// @Field: Targ: Current waveform sample
+// @Field: F: Instantaneous waveform frequency
+// @Field: Gx: Delta angle, X-Axis
+// @Field: Gy: Delta angle, Y-Axis
+// @Field: Gz: Delta angle, Z-Axis
+// @Field: Ax: Delta velocity, X-Axis
+// @Field: Ay: Delta velocity, Y-Axis
+// @Field: Az: Delta velocity, Z-Axis
+struct PACKED log_SysIdD {
+  LOG_PACKET_HEADER;
+  uint64_t time_us;
+  float    waveform_time;
+  float    waveform_sample;
+  float    waveform_freq;
+  float    angle_x;
+  float    angle_y;
+  float    angle_z;
+  float    accel_x;
+  float    accel_y;
+  float    accel_z;
+};
+
 #define PSCx_FMT "Qfffffffff"
 #define PSCx_UNITS "smmmnnnooo"
 #define PSCx_MULTS "F000000000"
@@ -199,6 +226,8 @@ struct PACKED log_ANG {
     { LOG_PSOT_MSG, sizeof(log_PSOx), \
       "PSOT", PSOx_FMT, "TimeUS,TPOT,POT,TVOT,VOT,TAOT,AOT", PSOx_UNITS, PSOx_MULTS }, \
     { LOG_RATE_MSG, sizeof(log_Rate), \
-        "RATE", "Qfffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut,AOutSlew", "skk-kk-kk-oo--", "F?????????BB--" , true }, \
+      "RATE", "Qfffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut,AOutSlew", "skk-kk-kk-oo--", "F?????????BB--" , true }, \
     { LOG_ANG_MSG, sizeof(log_ANG),\
-        "ANG", "Qfffffff", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,Dt", "sddddhhs", "F0000000" , true }
+      "ANG", "Qfffffff", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,Dt", "sddddhhs", "F0000000" , true },\
+    { LOG_SYSIDD_MSG, sizeof(log_SysIdD),\
+      "SIDD", "Qfffffffff",  "TimeUS,Time,Targ,F,Gx,Gy,Gz,Ax,Ay,Az", "ss-zkkkooo", "F---------" , true }
