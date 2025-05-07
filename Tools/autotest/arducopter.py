@@ -8,6 +8,7 @@ import copy
 import math
 import os
 import shutil
+import tempfile
 import time
 import numpy
 
@@ -11990,6 +11991,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
              self.MAV_CMD_NAV_VTOL_LAND,
              self.clear_roi,
+             self.ReadOnlyDefaults,
         ])
         return ret
 
@@ -13409,6 +13411,49 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # restart GPS driver
         self.reboot_sitl()
+
+    def ReadOnlyDefaults(self):
+        '''test that defaults marked "readonly" can't be set'''
+        defaults_filepath = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        defaults_filepath.write("""
+DISARM_DELAY 77 @READONLY
+RTL_ALT 123
+RTL_ALT_FINAL 129
+""")
+        defaults_filepath.close()
+        self.customise_SITL_commandline([
+        ], defaults_filepath=defaults_filepath.name)
+
+        self.context_collect('STATUSTEXT')
+        self.send_set_parameter_direct("DISARM_DELAY", 88)
+
+        self.wait_statustext("Param write denied (DISARM_DELAY)")
+        self.assert_parameter_value("DISARM_DELAY", 77)
+        self.assert_parameter_value("RTL_ALT", 123)
+
+        self.start_subtest('Ensure something is writable....')
+        self.set_parameter('RTL_ALT_FINAL', 101)
+
+        new_values_filepath = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        new_values_filepath.write("""
+DISARM_DELAY 99
+RTL_ALT 111
+""")
+        new_values_filepath.close()
+
+        self.start_subtest("Ensure parameters can't be set via FTP either")
+        mavproxy = self.start_mavproxy()
+        # can't do two FTP things at once, so wait until parameters are received
+        mavproxy.expect("Received .* parameters")
+        self.mavproxy_load_module(mavproxy, 'ftp')
+        mavproxy.send(f"param ftpload {new_values_filepath.name}\n")
+        mavproxy.expect("Loaded")
+        self.delay_sim_time(1)
+        self.stop_mavproxy(mavproxy)
+
+        self.assert_parameter_value("DISARM_DELAY", 77)
+        self.assert_parameter_value("RTL_ALT", 111)
+        self.assert_parameter_value('RTL_ALT_FINAL', 101)
 
     def ScriptingFlipMode(self):
         '''test adding custom mode from scripting'''
