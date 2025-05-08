@@ -958,13 +958,18 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
             // waypoint and not for the mission
             result = (handle_guided_request(cmd) ? MAV_MISSION_ACCEPTED
                       : MAV_MISSION_ERROR) ;
+#if AP_MAVLINK_CHANGEALT_MISS_CURR_3_ENABLED
         } else if (current == 3) {
+            send_received_message_deprecation_warning("MISSION_ITEM_INT.current=3; use MAV_CMD_DO_CHANGE_ALTITUDE");
             //current = 3 is a flag to tell us this is a alt change only
             // add home alt if needed
             handle_change_alt_request(cmd.content.location);
 
             // verify we received the command
             result = MAV_MISSION_ACCEPTED;
+#else
+            result = MAV_MISSION_UNSUPPORTED;
+#endif  // AP_MAVLINK_CHANGEALT_MISS_CURR_3_ENABLED
         }
         send_mission_ack(msg, MAV_MISSION_TYPE_MISSION, result);
         return;

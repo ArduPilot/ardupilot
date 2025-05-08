@@ -64,6 +64,14 @@
 #define AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED 0
 #endif
 
+// CODE_REMOVAL - remove changing altitude of current waypoint via mission item
+// ArduPilot 4.7 sends deprecation warnings for mission-current-3 commands
+// ArduPilot 4.8 stops compiling them in by default
+// ArduPilot 4.9 removes the code entirely
+#ifndef AP_MAVLINK_CHANGEALT_MISS_CURR_3_ENABLED
+#define AP_MAVLINK_CHANGEALT_MISS_CURR_3_ENABLED 1
+#endif
+
 // this is for both read and write messages:
 #ifndef AP_MAVLINK_MSG_DEVICE_OP_ENABLED
 #define AP_MAVLINK_MSG_DEVICE_OP_ENABLED HAL_GCS_ENABLED
