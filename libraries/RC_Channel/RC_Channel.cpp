@@ -211,6 +211,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 108:QRTL Mode
     // @Values{Copter}: 109:use Custom Controller
     // @Values{Copter, Rover, Plane, Blimp, Sub}:  110:KillIMU3
+    // @Values{Copter, Rover, Plane, Blimp, Sub}:  111:Loweheiser starter
     // @Values{Copter,Plane,Rover,Blimp,Sub,Tracker}: 112:SwitchExternalAHRS
     // @Values{Copter, Rover, Plane, Sub}: 113:Retract Mount2
     // @Values{Plane}: 150:CRUISE Mode
@@ -256,6 +257,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 210:Airbrakes
     // @Values{Rover}: 211:Walking Height
     // @Values{Copter, Rover, Plane, Sub}: 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw
+    // @Values{Copter, Rover, Plane, Blimp, Sub}:  218:Loweheiser throttle
     // @Values{Copter}: 219:Transmitter Tuning
     // @Values{Copter, Rover, Plane, Sub}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8, 308:Scripting9, 309:Scripting10, 310:Scripting11, 311:Scripting12, 312:Scripting13, 313:Scripting14, 314:Scripting15, 315:Scripting16
     // @User: Standard
