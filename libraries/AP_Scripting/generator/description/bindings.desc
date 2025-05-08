@@ -1046,6 +1046,13 @@ singleton AC_Fence method get_margin_breaches uint8_t
 singleton AC_Fence method get_margin_breach_time uint32_t
 singleton AC_Fence method get_breach_distance float uint8_t'skip_check
 
+include AP_Rally/AP_Rally.h depends HAL_RALLY_ENABLED
+
+singleton AP_Rally depends HAL_RALLY_ENABLED
+singleton AP_Rally rename rally
+singleton AP_Rally method get_rally_total uint8_t
+singleton AP_Rally method get_rally_location_with_index boolean uint8_t'skip_check Location'Null
+
 include AP_Filesystem/AP_Filesystem.h depends AP_FILESYSTEM_FILE_READING_ENABLED
 include AP_Filesystem/AP_Filesystem_config.h
 userdata AP_Filesystem::stat_t depends AP_FILESYSTEM_FILE_READING_ENABLED
