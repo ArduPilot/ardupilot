@@ -553,7 +553,12 @@ void port_setbaud(uint32_t baudrate)
 void check_ecc_errors(void)
 {
     __disable_fault_irq();
+    // corrupt main flash
     // stm32_flash_corrupt(0x8043200);
+    // stm32_flash_corrupt(0x8043300);
+    // corrupt parameter storage
+    // stm32_flash_corrupt(0x81E3200);
+    // stm32_flash_corrupt(0x81E3300);
     auto *dma = dmaStreamAlloc(STM32_DMA_STREAM_ID(1, 1), 0, nullptr, nullptr);
 
     uint32_t *buf = (uint32_t*)malloc_dma(ECC_CHECK_CHUNK_SIZE);
@@ -562,13 +567,15 @@ void check_ecc_errors(void)
         // DMA'ble memory not available
         return;
     }
-    uint32_t ofs = 0;
-    while (ofs < BOARD_FLASH_SIZE*1024) {
-        if (FLASH->SR1 & (FLASH_SR_SNECCERR | FLASH_SR_DBECCERR)) {
+    uint32_t page_size = stm32_flash_getpagesize(flash_base_page);
+    uint32_t ofs = page_size * flash_base_page; // don't check the bootloader
+    uint32_t ofs_hwm = page_size * (flash_base_page + num_pages);   // end of main firmware
+    while (ofs < ofs_hwm) {
+        if (FLASH->SR1 & FLASH_SR_DBECCERR) {
             break;
         }
 #if BOARD_FLASH_SIZE > 1024
-        if (FLASH->SR2 & (FLASH_SR_SNECCERR | FLASH_SR_DBECCERR)) {
+        if (FLASH->SR2 & FLASH_SR_DBECCERR) {
             break;
         }
 #endif
@@ -579,9 +586,8 @@ void check_ecc_errors(void)
         dmaWaitCompletion(dma);
         ofs += ECC_CHECK_CHUNK_SIZE;
     }
-    dmaStreamFree(dma);
     
-    if (ofs < BOARD_FLASH_SIZE*1024) {
+    if (ofs < ofs_hwm) {
         // we must have ECC errors in flash
         flash_set_keep_unlocked(true);
         for (uint32_t i=0; i<num_pages; i++) {
@@ -589,6 +595,40 @@ void check_ecc_errors(void)
         }
         flash_set_keep_unlocked(false);
     }
+
+#ifdef STORAGE_FLASH_START_PAGE   // now check the parameter storage area if its in flash
+    FLASH->CCR1 |= FLASH_CCR_CLR_DBECCERR;
+    FLASH->CCR2 |= FLASH_CCR_CLR_DBECCERR;
+
+    ofs = page_size * STORAGE_FLASH_START_PAGE;
+    ofs_hwm = page_size * (STORAGE_FLASH_START_PAGE + 2);
+    while (ofs < ofs_hwm) {
+        if (FLASH->SR1 & FLASH_SR_DBECCERR) {
+            break;
+        }
+#if BOARD_FLASH_SIZE > 1024
+        if (FLASH->SR2 & FLASH_SR_DBECCERR) {
+            break;
+        }
+#endif
+        dmaStartMemCopy(dma,
+                        STM32_DMA_CR_PL(0) | STM32_DMA_CR_PSIZE_BYTE |
+                        STM32_DMA_CR_MSIZE_BYTE,
+                        ofs+(uint8_t*)FLASH_BASE, buf, ECC_CHECK_CHUNK_SIZE);
+        dmaWaitCompletion(dma);
+        ofs += ECC_CHECK_CHUNK_SIZE;
+    }
+
+    if (ofs < ofs_hwm) {
+        // we must have ECC errors in flash
+        flash_set_keep_unlocked(true);
+        for (uint32_t i=0; i<2; i++) {
+            stm32_flash_erasepage(STORAGE_FLASH_START_PAGE+i);
+        }
+        flash_set_keep_unlocked(false);
+    }
+#endif // STORAGE_FLASH_START_PAGE
+    dmaStreamFree(dma);
     __enable_fault_irq();
 }
 #endif // defined(STM32H7) && CH_CFG_USE_HEAP
