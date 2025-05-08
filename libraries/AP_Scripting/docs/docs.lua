@@ -4002,6 +4002,18 @@ function fence:get_margin_breaches() end
 ---@return number -- distance
 function fence:get_breach_distance(fence_type) end
 
+-- Rally library
+rally = {}
+
+-- Returns the count of the number of Rally points
+---@return integer
+function rally:get_rally_total() end
+
+-- Returns a specfic rally by index as a Location (i.e NOT as a RallyLocation, a regular Location)
+---@param index integer
+---@return Location_ud|nil
+function rally:get_rally_location_with_index(index) end
+
 -- desc
 ---@class (exact) stat_t_ud
 local stat_t_ud = {}
