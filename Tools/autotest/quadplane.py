@@ -2929,5 +2929,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.FastInvertedRecovery,
             self.CruiseRecovery,
             self.TerrainAvoidApplet,
+            self.ScriptedArmingChecksApplet,
         ])
         return ret
