@@ -96,11 +96,9 @@ elseif FWVersion:type() == 3 then -- Plane specific Parameters
 end
 
 -- this is the pre 4.7 name for this parameter
-local function try_sysid_thismav()
-    MAV_SYSID = Parameter("SYSID_THISMAV")
-end
-if not pcall(try_sysid_thismav) then
-    MAV_SYSID = Parameter("MAV_SYSID")
+MAV_SYSID = Parameter()
+if not MAV_SYSID:init("MAV_SYSID") then
+    assert(MAV_SYSID:init("SYSID_THISMAV"), string.format("%s SYSID not found", SCRIPT_NAME_SHORT ))
 end
 
 local validate      -- forward definition of the validate() function
