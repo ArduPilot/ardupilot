@@ -506,6 +506,7 @@ protected:
 
     // saveable rate of each stream
     AP_Int16        streamRates[NUM_STREAMS];
+    AP_Int32        devid;  // ID for device using this mavlink channel
 
     void handle_heartbeat(const mavlink_message_t &msg) const;
 
