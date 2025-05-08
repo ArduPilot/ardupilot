@@ -488,6 +488,9 @@ class WaitAndMaintain(object):
         self.last_progress_print = 0
         self.progress_print_interval = progress_print_interval
         self.comparator = comparator
+        if self.minimum_duration is not None:
+            if self.timeout < self.minimum_duration:
+                raise ValueError("timeout less than min duration")
 
         self.fn = fn
         self.fn_interval = fn_interval
@@ -699,6 +702,17 @@ class WaitAndMaintainArmed(WaitAndMaintain):
 
     def announce_start_text(self):
         return "Ensuring vehicle remains armed"
+
+
+class WaitAndMaintainDisarmed(WaitAndMaintain):
+    def get_current_value(self):
+        return self.test_suite.armed()
+
+    def get_target_value(self):
+        return False
+
+    def announce_start_text(self):
+        return "Ensuring vehicle remains disarmed"
 
 
 class WaitAndMaintainServoChannelValue(WaitAndMaintain):
@@ -2428,6 +2442,10 @@ class TestSuite(ABC):
             self.assert_simstate_location_is_at_startup_location(dist_max=startup_location_dist_max)
         if mark_context:
             self.context_get().reboot_sitl_was_done = True
+
+    def assert_armed(self):
+        if not self.armed():
+            raise NotAchievedException("Not armed")
 
     def reboot_sitl_mavproxy(self, required_bootcount=None):
         """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
