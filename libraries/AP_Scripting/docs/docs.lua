@@ -3891,6 +3891,13 @@ function fence:get_breach_time() end
 ---| 8 # Minimum altitude
 function fence:get_breaches() end
 
+-- Rally library
+rally = {}
+-- Returns a specfic rally by index as a Location 
+---@param index integer -- 0 indexed
+---@return Location_ud|nil
+function rally:get_rally_location(index) end
+
 -- desc
 ---@class (exact) stat_t_ud
 local stat_t_ud = {}
