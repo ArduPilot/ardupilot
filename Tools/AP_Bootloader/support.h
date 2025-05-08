@@ -6,7 +6,7 @@
 #define LED_BOOTLOADER	2
 
 #ifndef AP_FLASH_ECC_CHECK_ENABLED
-#define AP_FLASH_ECC_CHECK_ENABLED defined(STM32H7) && CH_CFG_USE_HEAP && !defined(STORAGE_FLASH_START_PAGE)
+#define AP_FLASH_ECC_CHECK_ENABLED defined(STM32H7) && CH_CFG_USE_HEAP
 #endif
 
 /* board info forwarded from board-specific code to booloader */
