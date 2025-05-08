@@ -89,55 +89,60 @@ SIM_SERVO_SPEED 0.06
 LOG_BITMASK      65535
 
 # default PID params for position and velocity-controlled modes
-MAX_POS_XY       0.15
-MAX_POS_YAW      0.3
-MAX_POS_Z        0.15
-MAX_VEL_XY       0.2
-MAX_VEL_YAW      0.4
-MAX_VEL_Z        0.2
+LOIT_MAX_POS_X        0.15
+LOIT_MAX_POS_Y        0.15
+LOIT_MAX_POS_YAW      0.3
+LOIT_MAX_POS_Z        0.15
 
-VELXY_D          1.0
-VELXY_FF         0.0
-VELXY_FLTD       3.0
-VELXY_FLTE       3.0
-VELXY_I          1.5
-VELXY_IMAX       5.0
-VELXY_P          5.0
-VELYAW_D         0.0
-VELYAW_FF        0.0
-VELYAW_FLTD      3.0
-VELYAW_FLTE      3.0
-VELYAW_I         0.8
-VELYAW_IMAX      5.0
-VELYAW_P         10.0
-VELZ_D           0.0
-VELZ_FF          0.0
-VELZ_FLTD        3.0
-VELZ_FLTE        3.0
-VELZ_I           1.0
-VELZ_IMAX        2.0
-VELZ_P           15.0
+LOIT_MAX_VEL_X        0.2
+LOIT_MAX_VEL_Y        0.2
+LOIT_MAX_VEL_YAW      0.4
+LOIT_MAX_VEL_Z        0.2
 
-POSXY_D          0.0
-POSXY_FF         0.0
-POSXY_FLTD       3.0
-POSXY_FLTE       3.0
-POSXY_I          0.05
-POSXY_IMAX       0.1
-POSXY_P          1.0
-POSYAW_D         0.0
-POSYAW_FF        0.0
-POSYAW_FLTD      3.0
-POSYAW_FLTE      3.0
-POSYAW_FLTT      3.0
-POSYAW_I         0.1
-POSYAW_IMAX      1.0
-POSYAW_P         1.0
-POSYAW_SMAX      0.0
-POSZ_D           0.0
-POSZ_FF          0.0
-POSZ_FLTD        3.0
-POSZ_FLTE        3.0
-POSZ_I           0.0
-POSZ_IMAX        0.0
-POSZ_P           0.7
+LOIT_VELX_D          1.0
+LOIT_VELX_FF         0.0
+LOIT_VELX_I          1.5
+LOIT_VELX_IMAX       5.0
+LOIT_VELX_P          5.0
+
+LOIT_VELY_D          1.0
+LOIT_VELY_FF         0.0
+LOIT_VELY_I          1.5
+LOIT_VELY_IMAX       5.0
+LOIT_VELY_P          5.0
+
+LOIT_VELYAW_D         0.0
+LOIT_VELYAW_FF        0.0
+LOIT_VELYAW_I         0.8
+LOIT_VELYAW_IMAX      5.0
+LOIT_VELYAW_P         10.0
+
+LOIT_VELZ_D           0.0
+LOIT_VELZ_FF          0.0
+LOIT_VELZ_I           1.0
+LOIT_VELZ_IMAX        2.0
+LOIT_VELZ_P           15.0
+
+LOIT_POSX_D          0.0
+LOIT_POSX_FF         0.0
+LOIT_POSX_I          0.05
+LOIT_POSX_IMAX       0.1
+LOIT_POSX_P          1.0
+
+LOIT_POSXY_D          0.0
+LOIT_POSXY_FF         0.0
+LOIT_POSXY_I          0.05
+LOIT_POSXY_IMAX       0.1
+LOIT_POSXY_P          1.0
+
+LOIT_POSYAW_D         0.0
+LOIT_POSYAW_FF        0.0
+LOIT_POSYAW_I         0.1
+LOIT_POSYAW_IMAX      1.0
+LOIT_POSYAW_P         1.0
+
+LOIT_POSZ_D           0.0
+LOIT_POSZ_FF          0.0
+LOIT_POSZ_I           0.0
+LOIT_POSZ_IMAX        0.0
+LOIT_POSZ_P           0.7

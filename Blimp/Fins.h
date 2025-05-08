@@ -1,11 +1,13 @@
 //This class converts horizontal acceleration commands to fin flapping commands.
 #pragma once
 #include <AP_Notify/AP_Notify.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
-#define NUM_FINS 4 //Current maximum number of fins that can be added.
-#define RC_SCALE 1000
+#define NUM_FINS 4 //Current maximum number of fins or motors that can be added.
+#define RC_SCALE 1000 //Input and output scaling
+
 class Fins
 {
 public:
@@ -14,11 +16,12 @@ public:
 
     enum motor_frame_class {
         MOTOR_FRAME_UNDEFINED = 0,
-        MOTOR_FRAME_AIRFISH = 1,
+        MOTOR_FRAME_FISHBLIMP = 1,
+        MOTOR_FRAME_FOUR_MOTOR = 2,
     };
-    enum motor_frame_type {
-        MOTOR_FRAME_TYPE_AIRFISH = 1,
-    };
+
+    //Need this class variable (rather than using the parameter directly) because if the user changes the parameter, we don't want it to use the new frame's output logic when setup_finsmotors() hasn't been called for this frame.
+    motor_frame_class _frame;
 
     //constructor
     Fins(uint16_t loop_rate);
@@ -57,7 +60,7 @@ protected:
     float              _amp[NUM_FINS]; //amplitudes
     float              _off[NUM_FINS]; //offsets
     float              _freq[NUM_FINS]; //frequency multiplier
-    float              _pos[NUM_FINS]; //servo positions
+    float              _thrpos[NUM_FINS]; //servo positions or motor throttles
 
     float               _right_amp_factor[NUM_FINS];
     float               _front_amp_factor[NUM_FINS];
@@ -80,18 +83,24 @@ public:
 
     AP_Float            freq_hz;
     AP_Int8             turbo_mode;
-
-    bool _interlock;         // 1 if the motor interlock is enabled (i.e. motors run), 0 if disabled (motors don't run)
-    bool _initialised_ok;    // 1 if initialisation was successful
+    AP_Float            thr_max;
 
     void output_min();
 
     void add_fin(int8_t fin_num, float right_amp_fac, float front_amp_fac, float yaw_amp_fac, float down_amp_fac,
                  float right_off_fac, float front_off_fac, float yaw_off_fac, float down_off_fac);
 
+    void add_motor(int8_t fin_num, float right_amp_fac, float front_amp_fac, float yaw_amp_fac, float down_amp_fac);
+
+    void setup_finsmotors();
     void setup_fins();
+    void setup_motors();
 
     void output();
+    void output_fins();
+    void output_motors();
+
+    const char* get_frame_string();
 
     float get_throttle()
     {
@@ -101,5 +110,4 @@ public:
         return fmaxf(fmaxf(fabsf(down_out),fabsf(front_out)), fmaxf(fabsf(right_out),fabsf(yaw_out)));
     }
 
-    void rc_write(uint8_t chan, uint16_t pwm);
 };
