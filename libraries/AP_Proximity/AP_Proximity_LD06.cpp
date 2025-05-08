@@ -169,7 +169,7 @@
          const float distance_m = UINT16_VALUE(_response[i + 1], _response[i]) * 0.001;
          const uint8_t confidence_meas = _response[i+2];
          // Validates data and checks if it should be included
-         if (distance_m > distance_min() && distance_m < distance_max()) {
+         if (confidence_meas > MIN_CONFIDENCE_LD06 && distance_m > distance_min() && distance_m < distance_max()) {
              sampled_counts++;
              distance_avg += distance_m * confidence_meas;
              confidence_sum += confidence_meas;

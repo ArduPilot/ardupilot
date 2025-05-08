@@ -34,7 +34,8 @@
  
  // Minimum and maximum distance that the sensor can read in meters
  #define MAX_READ_DISTANCE_LD06          12.0f
- #define MIN_READ_DISTANCE_LD06           0.02f
+ #define MIN_READ_DISTANCE_LD06          0.02f
+ #define MIN_CONFIDENCE_LD06             15 
  
  class AP_Proximity_LD06 : public AP_Proximity_Backend_Serial
  {
