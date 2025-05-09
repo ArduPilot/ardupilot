@@ -2,8 +2,10 @@
 
 #include <AP_HAL/AP_HAL.h>
 
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <sys/inotify.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -30,6 +32,7 @@ union gpio_params {
     char export_gpio[sizeof("export")];
     char direction[sizeof("gpio" UINT32_MAX_STR "/direction")];
     char value[sizeof("gpio" UINT32_MAX_STR "/value")];
+    char edge[sizeof("edge" UINT32_MAX_STR "/edge")];
 };
 
 #define GPIO_BASE_PATH "/sys/class/gpio/"
@@ -89,6 +92,9 @@ void GPIO_Sysfs::init()
         }
     }
 #endif
+
+    _interrupt_thread_created = false;
+    _interrupt_inotify_fd = 0;
 }
 
 void GPIO_Sysfs::pinMode(uint8_t vpin, uint8_t output)
@@ -189,6 +195,168 @@ error:
 void GPIO_Sysfs::toggle(uint8_t vpin)
 {
     write(vpin, !read(vpin));
+}
+
+void GPIO_Sysfs::_pinEdge(unsigned int pin, GPIO::INTERRUPT_TRIGGER_TYPE mode)
+{
+    const char *edge;
+    char path[GPIO_PATH_MAX];
+
+    switch(mode) {
+        case INTERRUPT_FALLING:
+            edge = "falling";
+            break;
+
+        case INTERRUPT_RISING:
+            edge = "rising";
+            break;
+
+        case INTERRUPT_BOTH:
+            edge = "both";
+            break;
+
+        default:
+            hal.console->printf("GPIO_Sysfs: Failed to set pin %u interrupt edge to unknown mode.\n", pin);
+            return;
+    }
+
+    int r = snprintf(path, GPIO_PATH_MAX, GPIO_BASE_PATH "gpio%u/edge", pin);
+    if (r < 0 || r >= (int)GPIO_PATH_MAX
+        || Util::from(hal.util)->write_file(path, "%s", edge) < 0) {
+        hal.console->printf("GPIO_Sysfs: Unable to set pin %u interrupt edge to %s.\n", pin, edge);
+    }
+}
+
+/***
+ Interrupt interface:
+                               ret , pin    , state,timestamp
+ where:
+   ret indicates the functor must return void
+   pin is the pin which has triggered the interrupt
+   state is the new state of the pin
+   timestamp is the time in microseconds the interrupt occurred
+**/
+bool GPIO_Sysfs::attach_interrupt(uint8_t vpin, irq_handler_fn_t fn, GPIO::INTERRUPT_TRIGGER_TYPE mode)
+{
+    /* already attached interrupt for this pin? */
+    if(_interrupt_watchers.count(vpin)) {
+        hal.console->printf("GPIO_Sysfs: pin %u already has interrupt handler attached.\n", vpin);
+        return false;
+    }
+
+    /* translate sysfs pin from ardupilot vpin */
+    const unsigned pin = pin_table[vpin];
+
+    /* attach or detach interrupt handler? */
+    if(mode != INTERRUPT_NONE) {
+        hal.console->printf("GPIO_Sysfs: attaching interrupt handler to pin %u\n", vpin);
+        /* set interrupt mode for pin (rising/falling/both edges) */
+        _pinEdge(pin, mode);
+
+        /* create path to pin value */
+        char path[GPIO_PATH_MAX];
+        int r = snprintf(path, GPIO_PATH_MAX, GPIO_BASE_PATH "gpio%u", pin);
+        if (r < 0 || r >= (int)GPIO_PATH_MAX) {
+            hal.console->printf("GPIO_Sysfs: unable to build path\n");
+            return false;
+        }
+
+        /* initialize inotify for our interrupt thread */
+        if (!_interrupt_inotify_fd) {
+            if ((_interrupt_inotify_fd = inotify_init()) < 0) {
+                AP_HAL::panic( "GPIO_Sysfs: couldn't initialize inotify");
+            }
+        }
+        /* add watch to /sys/class/gpio/gpioNNN directory */
+        int wd;
+        if((wd = inotify_add_watch(_interrupt_inotify_fd, path, IN_MODIFY)) < 0) {
+            AP_HAL::panic( "GPIO_Sysfs: failed to add inotify watch for \"%s\": %s", path, strerror(errno));
+        }
+
+        /* remember interrupt handler & vpin for this inotify watcher */
+        _interrupt_handlers[wd] = { .fn = fn, .vpin = vpin };
+        /* remember inotify watcher used for this vpin */
+        _interrupt_watchers[vpin] = wd;
+    }
+
+    /* detach interrupt handler */
+    else {
+        /* remove interrupt handler */
+        hal.console->printf("GPIO_Sysfs: detaching interrupt handler from pin %u\n", vpin);
+        int wd = _interrupt_watchers[vpin];
+        inotify_rm_watch( _interrupt_inotify_fd, wd);
+        /* forget interrupt handler */
+        _interrupt_handlers.erase(wd);
+        /* forget interrupt watcher */
+        _interrupt_watchers.erase(vpin);
+        return true;
+    }
+
+    /* interrupt thread already launched? */
+    if(!_interrupt_thread_created) {
+        _interrupt_thread_created = true;
+        if (!hal.scheduler->thread_create(
+                FUNCTOR_BIND_MEMBER(&GPIO_Sysfs::_gpio_interrupt_thread, void),
+                "ap-gpio-interrupts",
+                4096,
+                AP_HAL::Scheduler::PRIORITY_BOOST,
+                -1
+        )) {
+            AP_HAL::panic("GPIO_Sysfs: Unable to create GPIO_Interrupts thread");
+        }
+    }
+
+    return true;
+}
+
+/* thread to handle inotify events and call interrupt handlers attached to pins accordingly */
+void GPIO_Sysfs::_gpio_interrupt_thread(void)
+{
+    #define MAX_EVENTS 1024 /* max. number of events to process at one go */
+    #define EVENT_SIZE  ( sizeof (struct inotify_event) ) /* size of one event */
+    #define BUF_LEN     ( MAX_EVENTS * ( EVENT_SIZE + GPIO_PATH_MAX )) /* buffer to store the data of events */
+
+    hal.console->printf("GPIO_Sysfs: interrupt thread started\n");
+
+    /* keep reading events from inotify fd */
+    char buffer[BUF_LEN];
+    while (true) {
+        int length = ::read( _interrupt_inotify_fd, buffer, BUF_LEN );
+
+        if ( length < 0 ) {
+            hal.console->printf("GPIO_Sysfs: read error: %s\n", strerror(errno) );
+        }
+
+        /* process all events that were read from buffer */
+        struct inotify_event event;
+        for (int i = 0; i < length; i += EVENT_SIZE + event.len) {
+            /* copy event from buffer */
+            memcpy(&event, &buffer[i], sizeof(event));
+            /* event has no path? */
+            if ( event.len == 0) {
+                /* skip event */
+                continue;
+            }
+
+            /* unknown event? */
+            if (!(event.mask & IN_MODIFY)) {
+                /* skip event */
+                continue;
+            }
+
+            /* get current time */
+            uint32_t timestamp = AP_HAL::millis();
+            /* lookup interrupt handler from inotify watcher */
+            _interrupt_and_vpin id = _interrupt_handlers[event.wd];
+            /* our registered irq handler */
+            irq_handler_fn_t fn = id.fn;
+            /* the vpin that triggered this interrupt */
+            uint8_t vpin = id.vpin;
+            /* call interrupt handler */
+            fn(vpin, read(vpin), timestamp);
+        }
+
+    }
 }
 
 AP_HAL::DigitalSource* GPIO_Sysfs::channel(uint16_t vpin)
