@@ -20,12 +20,16 @@ public:
     AP_SystemID(void);
     void start(void);
     void stop(void);
-    void update();
+    void fw_update();
+    void vtol_update();
 
     static const struct AP_Param::GroupInfo var_info[];
 
     const Vector3f &get_attitude_offset_deg(void) const {
         return attitude_offset_deg;
+    }
+    const Vector3f &get_output_offset(void) const {
+        return output_offset;
     }
     float get_throttle_offset(void) const {
         return running ? throttle_offset : 0.0;
@@ -38,7 +42,7 @@ public:
 private:
     Chirp chirp_input;
     bool running;
-
+    // AxisType 14-19 not supported for plane or quadplane
     enum class AxisType {
         NONE = 0,               // none
         INPUT_ROLL = 1,         // angle input roll axis is being excited
@@ -54,10 +58,18 @@ private:
         MIX_PITCH = 11,         // mixer pitch axis is being excited
         MIX_YAW = 12,           // mixer pitch axis is being excited
         MIX_THROTTLE = 13,      // mixer throttle axis is being excited
+        FW_INPUT_ROLL = 20,     // fixed wing angle input roll axis is being excited
+        FW_INPUT_PITCH = 21,    // fixed wing angle pitch axis is being excited
+        FW_INPUT_YAW = 22,      // fixed wing angle yaw axis is being excited
+        FW_MIX_ROLL = 23,       // fixed wing mixer roll axis is being excited
+        FW_MIX_PITCH = 24,      // fixed wing mixer pitch axis is being excited
+        FW_MIX_YAW = 25,        // fixed wing mixer pitch axis is being excited
+        FW_MIX_THROTTLE = 26,   // fixed wing mixer throttle axis is being excited
     };
 
     void set_bf_feedforward(bool value);
     void log_data() const;
+    void log_plane_data() const;
     int8_t log_subsample;       // Subsample multiple for logging.
 
 
@@ -86,6 +98,7 @@ private:
 
     // current attitude offset
     Vector3f attitude_offset_deg;
+    Vector3f output_offset;
     float throttle_offset;
 
     AxisType start_axis;

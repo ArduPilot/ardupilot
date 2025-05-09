@@ -950,7 +950,7 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 
 #if AP_PLANE_SYSTEMID_ENABLED
         auto &systemid = plane.g2.systemid;
-        systemid.update();
+        systemid.vtol_update();
         offset_deg = systemid.get_attitude_offset_deg();
 #endif
 

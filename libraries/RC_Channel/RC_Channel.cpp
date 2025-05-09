@@ -247,7 +247,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 181: QuickTune
     // @Values{Copter}: 182: AHRS AutoTrim
     // @Values{Plane}: 183: AUTOLAND mode
-    // @Values{Plane}: 184: System ID Chirp (Quadplane only)
+    // @Values{Plane}: 184: System ID Chirp
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
