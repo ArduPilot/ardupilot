@@ -1,4 +1,26 @@
-Release 1.7.0 26th February 2023
+Release 1.8.0 21st December 2024
+--------------------------------
+
+This is a major AP_Periph release with the following changes:
+
+- Support RTCMv3 packets larger than 300 bytes
+- Support for HiRes magnetometer data
+- Fixed CAN Mirroring
+- Support for two RangeFinders
+- GPS Rover fixes
+- Support for streaming dedicated RPM messages
+- Added CAN multicast UDP network gateway support
+- Various PPGW Web UI fixes and enhancements
+- Support for ESC_RATE parameter
+- Support for sending extended ESC status
+- Support for publishing raw IMU data
+- Support for simulation of DroneCAN servo status
+- Various CubeNode fixes
+- Various BotBlox DroneNet fixes and enhancements
+- Add support for MatekG474-Periph
+- Removed non-ublox GPSs from MatekL431-Periph
+
+Release 1.7.0 26th February 2024
 --------------------------------
 
 This is a major AP_Periph release with the following key changes:
