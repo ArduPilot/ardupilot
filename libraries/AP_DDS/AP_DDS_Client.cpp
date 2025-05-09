@@ -1227,7 +1227,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         }
 #endif // AP_EXTERNAL_CONTROL_ENABLED
 
-        
+
 
         const uxrObjectId replier_id = {
             .id = services[to_underlying(ServiceIndex::SET_GLIDING)].rep_id,

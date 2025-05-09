@@ -114,7 +114,8 @@ bool AP_DDS_External_Control::disarm(AP_Arming::Method method, bool do_disarm_ch
 }
 
 #if AP_DDS_GLIDING_SERVER_ENABLED
-bool AP_DDS_External_Control::request_gliding(const ardupilot_msgs_srv_SetGliding_Request& req) {
+bool AP_DDS_External_Control::request_gliding(const ardupilot_msgs_srv_SetGliding_Request& req)
+{
     auto *external_control = AP::externalcontrol();
     if (external_control == nullptr) {
         return false;
