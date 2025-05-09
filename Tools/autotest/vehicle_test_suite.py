@@ -5809,16 +5809,24 @@ class TestSuite(ABC):
         m = self.wait_heartbeat()
         return (m.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED) != 0
 
-    def send_mavlink_arm_command(self):
+    def send_mavlink_arm_command(self, force=False):
+        p2 = 0
+        if force:
+            p2 = 2989
         self.send_cmd(
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
             p1=1,  # ARM
+            p2=p2
         )
 
-    def send_mavlink_disarm_command(self):
+    def send_mavlink_disarm_command(self, force=False):
+        p2 = 0
+        if force:
+            p2 = 21196 # magic force disarm value
         self.send_cmd(
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
             p1=0,  # DISARM
+            p2=p2
         )
 
     def send_mavlink_run_prearms_command(self):
@@ -8413,7 +8421,7 @@ class TestSuite(ABC):
             if self.mav.motors_armed():
                 raise NotAchievedException("Armed when we shouldn't have")
 
-    def assert_arm_failure(self, expected_statustext, timeout=5, ignore_prearm_failures=[]):
+    def assert_arm_failure(self, expected_statustext, timeout=5, force=False, ignore_prearm_failures=[]):
         seen_statustext = False
         seen_command_ack = False
 
@@ -8430,7 +8438,7 @@ class TestSuite(ABC):
                     (seen_statustext, seen_command_ack))
             if now - arm_last_send > 1:
                 arm_last_send = now
-                self.send_mavlink_arm_command()
+                self.send_mavlink_arm_command(force)
             m = self.mav.recv_match(blocking=True, timeout=1)
             if m is None:
                 continue
