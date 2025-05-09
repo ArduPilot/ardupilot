@@ -38,6 +38,13 @@ bool AP_Arming_Sub::has_disarm_function() const {
             }
         }
     }
+    // check if an AUX function that disarms or estops is setup
+    if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP) || 
+        rc().find_channel_for_option(RC_Channel::AUX_FUNC::DISARM) || 
+        rc().find_channel_for_option(RC_Channel::AUX_FUNC::ARMDISARM) || 
+        rc().find_channel_for_option(RC_Channel::AUX_FUNC::ARM_EMERGENCY_STOP)) {
+        return true;
+    }  
     return false;
 }
 
@@ -48,7 +55,7 @@ bool AP_Arming_Sub::pre_arm_checks(bool display_failure)
     }
     // don't allow arming unless there is a disarm button configured
     if (!has_disarm_function()) {
-        check_failed(display_failure, "Must assign a disarm or arm_toggle button");
+        check_failed(display_failure, "Must assign a disarm or arm_toggle button or disarm aux function");
         return false;
     }
 
