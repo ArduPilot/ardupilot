@@ -449,7 +449,7 @@ void Plane::reset_offset_altitude(void)
  */
 void Plane::set_offset_altitude_location(const Location &start_loc, const Location &destination_loc)
 {
-    ftype alt_difference_m = 0;
+    ftype alt_difference_m;
     if (destination_loc.get_height_above(start_loc, alt_difference_m)) {
         target_altitude.offset_cm = alt_difference_m * 100;
     } else {
