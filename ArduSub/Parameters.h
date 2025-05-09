@@ -417,6 +417,10 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "RC3_TRIM",            1500},
     { "COMPASS_OFFS_MAX",    1000},
     { "INS_GYR_CAL",         0},
+    { "RCMAP_ROLL",          2},
+    { "RCMAP_PITCH",         1},
+    { "RCMAP_FORWARD",       5},
+    { "RCMAP_LATERAL",       6},
 #if HAL_MOUNT_ENABLED
     { "MNT1_TYPE",           1},
     { "MNT1_DEFLT_MODE",     MAV_MOUNT_MODE_RC_TARGETING},
