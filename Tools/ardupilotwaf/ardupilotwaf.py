@@ -129,6 +129,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_RCMapper',
     'AP_MultiHeap',
     'AP_Follow',
+    'AP_LocationDB',
 ]
 
 def get_legacy_defines(sketch_name, bld):

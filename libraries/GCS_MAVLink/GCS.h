@@ -557,6 +557,10 @@ protected:
     void handle_obstacle_distance_3d(const mavlink_message_t &msg);
 
     void handle_adsb_message(const mavlink_message_t &msg);
+#if AP_LOCATIONDB_ENABLED
+    void handle_global_position_int(const mavlink_message_t &msg);
+    void handle_follow_target(const mavlink_message_t &msg);
+#endif
 
     void handle_osd_param_config(const mavlink_message_t &msg) const;
 

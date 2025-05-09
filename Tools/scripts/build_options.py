@@ -376,6 +376,7 @@ BUILD_OPTIONS = [
     Feature('Other', 'Logging', 'HAL_LOGGING_ENABLED', 'Enable Logging', 0, None),
     Feature('Other', 'CUSTOM_ROTATIONS', 'AP_CUSTOMROTATIONS_ENABLED', 'Enable Custom  sensor rotations', 0, None),
     Feature('Other', 'PID_FILTERING', 'AP_FILTER_ENABLED', 'Enable PID filtering', 0, None),
+    Feature('Other', 'LocationDB', 'AP_LOCATIONDB_ENABLED', 'Enable Location Database', 0, None),
 
     # MAVLink section for mavlink features and/or message handling,
     # rather than for e.g. mavlink-based sensor drivers
@@ -455,6 +456,8 @@ BUILD_OPTIONS = [
 
     Feature('CAN', 'DroneCAN', 'HAL_ENABLE_DRONECAN_DRIVERS', 'Enable DroneCAN support', 0, None),
     Feature('CAN', 'CAN Logging', 'AP_CAN_LOGGING_ENABLED', 'Enable CAN logging support', 0, 'Logging'),
+
+    Feature('Filesystem', 'FILESYSTEM_LOCATIONDB', 'AP_FILESYSTEM_LOCATIONDB_ENABLED', 'Enable @LOCDB/ filesystem', 0, 'LocationDB'),  # noqa
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
