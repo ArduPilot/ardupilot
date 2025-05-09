@@ -8,6 +8,7 @@ import copy
 import math
 import os
 import shutil
+import tempfile
 import time
 import numpy
 
@@ -11990,6 +11991,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
              self.MAV_CMD_NAV_VTOL_LAND,
              self.clear_roi,
+             self.ReadOnlyDefaults,
         ])
         return ret
 
@@ -13410,6 +13412,48 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # restart GPS driver
         self.reboot_sitl()
 
+    def ReadOnlyDefaults(self):
+        '''test that defaults marked "readonly" can't be set'''
+        defaults_filepath = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        defaults_filepath.write("""
+DISARM_DELAY 77 @READONLY
+RTL_ALT 123
+RTL_ALT_FINAL 129
+""")
+        defaults_filepath.close()
+        self.customise_SITL_commandline([
+        ], defaults_filepath=defaults_filepath.name)
+
+        self.context_collect('STATUSTEXT')
+        self.send_set_parameter_direct("DISARM_DELAY", 88)
+
+        self.wait_statustext("Param write denied (DISARM_DELAY)")
+        self.assert_parameter_value("DISARM_DELAY", 77)
+        self.assert_parameter_value("RTL_ALT", 123)
+
+        self.start_subtest('Ensure something is writable....')
+        self.set_parameter('RTL_ALT_FINAL', 101)
+
+        new_values_filepath = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        new_values_filepath.write("""
+DISARM_DELAY 99
+RTL_ALT 111
+""")
+        new_values_filepath.close()
+
+        self.start_subtest("Ensure parameters can't be set via FTP either")
+        mavproxy = self.start_mavproxy()
+        # can't do two FTP things at once, so wait until parameters are received
+        mavproxy.expect("Received .* parameters")
+        mavproxy.send(f"param ftpload {new_values_filepath.name}\n")
+        mavproxy.expect("Loaded")
+        self.delay_sim_time(1)
+        self.stop_mavproxy(mavproxy)
+
+        self.assert_parameter_value("DISARM_DELAY", 77)
+        self.assert_parameter_value("RTL_ALT", 111)
+        self.assert_parameter_value('RTL_ALT_FINAL', 101)
+
     def ScriptingFlipMode(self):
         '''test adding custom mode from scripting'''
         # Really it would be nice to check for the AVAILABLE_MODES message, but pymavlink does not understand them yet.
@@ -13671,6 +13715,46 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter('SIM_PLD_ENABLE', 1)
         self.wait_statustext('Set SIM_PLD_LAT, SIM_PLD_LAT and SIM_PLD_ALT')
 
+    def LuaParamSet(self):
+        '''test param-set.lua applet'''
+        self.install_applet_script_context("param-set.lua")
+        self.install_mavlink_module_context()
+        self.set_parameters({
+            'SCR_ENABLE': 1,
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()  # scripts will be ready by now!
+        self.start_subtest("set RTL_ALT freely")
+        self.set_parameter("RTL_ALT", 23)
+        self.set_parameter("RTL_ALT", 28)
+
+        self.start_subtest("Unable to set DISARM_DELAY freely")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        old_disarm_delay_value = self.get_parameter('DISARM_DELAY')
+        self.send_set_parameter_direct('DISARM_DELAY', 78)
+        self.wait_statustext('param-set: param set denied (DISARM_DELAY)', check_context=True)
+        self.assert_parameter_value('DISARM_DELAY', old_disarm_delay_value)
+        self.context_pop()
+
+        self.start_subtest("Disabling applet via parameter should allow freely setting DISARM_DELAY")
+        self.set_parameter("PS_ENABLE", 0)
+        self.set_parameter("DISARM_DELAY", 56)
+
+        self.start_subtest("Re-enabling applet via parameter should stop freely setting DISARM_DELAY")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("PS_ENABLE", 1)
+        old_disarm_delay_value = self.get_parameter('DISARM_DELAY')
+        self.send_set_parameter_direct('DISARM_DELAY', 78)
+        self.wait_statustext('param-set: param set denied (DISARM_DELAY)', check_context=True)
+        self.assert_parameter_value('DISARM_DELAY', old_disarm_delay_value)
+        self.context_pop()
+
+        # very bad things happen if we don't turn things off at the end..
+        self.set_parameter("PS_ENABLE", 0)
+
     def do_land(self):
         self.change_mode('LAND')
         self.wait_disarmed()
@@ -13685,6 +13769,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.DynamicRpmNotchesRateThread,
             self.PIDNotches,
             self.StaticNotches,
+            self.LuaParamSet,
             self.RefindGPS,
             Test(self.GyroFFT, attempts=1, speedup=8),
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
