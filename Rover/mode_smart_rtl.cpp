@@ -47,7 +47,7 @@ void ModeSmartRTL::update()
                 Vector3f dest_NED;
                 if (!g2.smart_rtl.pop_point(dest_NED)) {
                     // if not more points, we have reached home
-                    gcs().send_text(MAV_SEVERITY_INFO, "Reached destination");
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reached destination");
                     smart_rtl_state = SmartRTLState::StopAtHome;
                     break;
                 } else {
@@ -56,7 +56,7 @@ void ModeSmartRTL::update()
                     if (g2.smart_rtl.peek_point(next_dest_NED)) {
                         if (!g2.wp_nav.set_desired_location_NED(dest_NED, next_dest_NED)) {
                             // this should never happen because the EKF origin should already be set
-                            gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
+                            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
                             smart_rtl_state = SmartRTLState::Failure;
                             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                         }
@@ -64,7 +64,7 @@ void ModeSmartRTL::update()
                         // no next point so add only immediate point
                         if (!g2.wp_nav.set_desired_location_NED(dest_NED)) {
                             // this should never happen because the EKF origin should already be set
-                            gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
+                            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
                             smart_rtl_state = SmartRTLState::Failure;
                             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                         }
