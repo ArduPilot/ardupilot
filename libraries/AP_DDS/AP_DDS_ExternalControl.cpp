@@ -65,6 +65,14 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
             float(cmd_vel.twist.linear.x),
             float(cmd_vel.twist.linear.y),
             float(-cmd_vel.twist.linear.z) };
+
+        if (isnan(linear_velocity_base_link.y) && isnan(linear_velocity_base_link.z)) {
+            // Assume it's an airspeed command so ignore the angular data.
+            // While MAV_CMD_GUIDED_CHANGE_SPEED supports commands of ground speed and airspeed,
+            // ROS users likely care more about airspeed control for a low level velocity control interface like this.
+            return external_control->set_airspeed(linear_velocity_base_link.x);
+        }
+
         const float yaw_rate = -cmd_vel.twist.angular.z;
 
         auto &ahrs = AP::ahrs();
@@ -105,6 +113,17 @@ bool AP_DDS_External_Control::disarm(AP_Arming::Method method, bool do_disarm_ch
     return external_control->disarm(method, do_disarm_checks);
 }
 
+#if AP_DDS_GLIDING_SERVER_ENABLED
+bool AP_DDS_External_Control::request_gliding(const ardupilot_msgs_srv_SetGliding_Request& req)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return false;
+    }
+    return external_control->request_gliding(req.glide_requested);
+}
+#endif // AP_DDS_GLIDING_SERVER_ENABLED
+
 bool AP_DDS_External_Control::convert_alt_frame(const uint8_t frame_in,  Location::AltFrame& frame_out)
 {
 
@@ -124,6 +143,5 @@ bool AP_DDS_External_Control::convert_alt_frame(const uint8_t frame_in,  Locatio
     }
     return true;
 }
-
 
 #endif // AP_DDS_ENABLED

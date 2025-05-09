@@ -195,6 +195,7 @@ $ ros2 service list
 /ap/arm_motors
 /ap/mode_switch
 /ap/prearm_check
+/ap/set_gliding
 /ap/experimental/takeoff
 ---
 ```
@@ -222,6 +223,7 @@ $ ros2 service list -t
 /ap/arm_motors [ardupilot_msgs/srv/ArmMotors]
 /ap/mode_switch [ardupilot_msgs/srv/ModeSwitch]
 /ap/prearm_check [std_srvs/srv/Trigger]
+TODO
 /ap/experimental/takeoff [ardupilot_msgs/srv/Takeoff]
 ```
 

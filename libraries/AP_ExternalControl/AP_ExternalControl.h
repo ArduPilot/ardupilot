@@ -17,6 +17,13 @@ class AP_ExternalControl
 public:
 
     AP_ExternalControl();
+
+    /*
+        Sets the target airspeed.
+    */
+    virtual bool set_airspeed(const float airspeed) WARN_IF_UNUSED {
+        return false;
+    }
     /*
       Set linear velocity and yaw rate. Pass NaN for yaw_rate_rads to not control yaw.
       Velocity is in earth frame, NED [m/s].
@@ -42,6 +49,13 @@ public:
         Disarm the vehicle
     */
     virtual bool disarm(AP_Arming::Method method, bool do_disarm_checks) WARN_IF_UNUSED;
+
+    /*
+        Request gliding
+    */
+    virtual bool request_gliding(bool gliding_requested) WARN_IF_UNUSED {
+        return false;
+    }
 
     static AP_ExternalControl *get_singleton(void) WARN_IF_UNUSED {
         return singleton;
