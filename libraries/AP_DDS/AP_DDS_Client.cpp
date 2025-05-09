@@ -4,7 +4,9 @@
 #if AP_DDS_ENABLED
 #include <uxr/client/util/ping.h>
 
+#if AP_DDS_NEEDS_GPS
 #include <AP_GPS/AP_GPS.h>
+#endif // AP_DDS_NEEDS_GPS
 #include <AP_HAL/AP_HAL.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RTC/AP_RTC.h>
