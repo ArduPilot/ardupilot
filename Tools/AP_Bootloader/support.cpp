@@ -594,6 +594,11 @@ void check_ecc_flash_region(uint16_t start_page, uint16_t num_pages_chk)
     }
     dmaStreamFree(dma);
     free(buf);
+    // clear the interrupts
+    FLASH->CCR1 |= FLASH_CCR_CLR_DBECCERR;
+#if BOARD_FLASH_SIZE > 1024
+    FLASH->CCR2 |= FLASH_CCR_CLR_DBECCERR;
+#endif
 }
 
 void check_ecc_errors(void)
@@ -609,10 +614,6 @@ void check_ecc_errors(void)
     check_ecc_flash_region(flash_base_page, num_pages);
 
 #ifdef STORAGE_FLASH_START_PAGE   // now check the parameter storage area if its in flash
-    FLASH->CCR1 |= FLASH_CCR_CLR_DBECCERR;
-#if BOARD_FLASH_SIZE > 1024
-    FLASH->CCR2 |= FLASH_CCR_CLR_DBECCERR;
-#endif
     check_ecc_flash_region(STORAGE_FLASH_START_PAGE, 2);
 #endif // STORAGE_FLASH_START_PAGE
 
