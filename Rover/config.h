@@ -3,11 +3,11 @@
 #include "defines.h"
 
 #ifndef MAV_SYSTEM_ID
-  #define MAV_SYSTEM_ID    1
+#define MAV_SYSTEM_ID    1
 #endif
 
 #ifndef ARM_DELAY_MS
-  #define ARM_DELAY_MS  2000
+#define ARM_DELAY_MS  2000
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -15,7 +15,7 @@
 //
 
 #ifndef CH7_OPTION
-  #define CH7_OPTION CH7_SAVE_WP
+#define CH7_OPTION CH7_SAVE_WP
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -23,26 +23,26 @@
 // MODE_CHANNEL
 //
 #ifndef MODE_CHANNEL
-  #define MODE_CHANNEL    8
+#define MODE_CHANNEL    8
 #endif
 #if (MODE_CHANNEL != 5) && (MODE_CHANNEL != 6) && (MODE_CHANNEL != 7) && (MODE_CHANNEL != 8)
-  #error XXX
-  #error XXX You must set MODE_CHANNEL to 5, 6, 7 or 8
-  #error XXX
+#error XXX
+#error XXX You must set MODE_CHANNEL to 5, 6, 7 or 8
+#error XXX
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // NAVL1
 //
 #ifndef NAVL1
-  #define NAVL1_PERIOD    8
+#define NAVL1_PERIOD    8
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // CRUISE_SPEED default
 //
 #ifndef CRUISE_SPEED
-  #define CRUISE_SPEED    2  // in m/s
+#define CRUISE_SPEED    2  // in m/s
 #endif
 
 #define DEFAULT_LOG_BITMASK    0xffff
@@ -69,9 +69,13 @@
 // position (to for example return to switched mode after failsafe or
 // fence breach)
 #ifndef RESET_SWITCH_CHAN_PWM
-  #define RESET_SWITCH_CHAN_PWM    1750
+#define RESET_SWITCH_CHAN_PWM    1750
 #endif
 
 #ifndef AP_ROVER_ADVANCED_FAILSAFE_ENABLED
-  #define AP_ROVER_ADVANCED_FAILSAFE_ENABLED 0
+#define AP_ROVER_ADVANCED_FAILSAFE_ENABLED 0
+#endif
+
+#ifndef AP_QUICKTUNE_ENABLED
+#define AP_QUICKTUNE_ENABLED 1
 #endif
