@@ -976,7 +976,6 @@ private:
     bool verify_loiter_time();
     bool verify_loiter_turns(const AP_Mission::Mission_Command &cmd);
     bool verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd);
-    bool verify_RTL();
     bool verify_continue_and_change_alt();
     bool verify_wait_delay();
     bool verify_within_distance();
