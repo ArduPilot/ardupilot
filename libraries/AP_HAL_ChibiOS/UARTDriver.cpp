@@ -333,6 +333,12 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
         rx_dma_enabled = rx_bounce_buf[0] != nullptr && rx_bounce_buf[1] != nullptr;
         tx_dma_enabled = tx_bounce_buf != nullptr;
     }
+    if (_last_options & OPTION_NODMA_RX) {
+        rx_dma_enabled = false;
+    }
+    if (_last_options & OPTION_NODMA_TX) {
+        tx_dma_enabled = false;
+    }
     if (contention_counter > 1000 && _baudrate <= CONTENTION_BAUD_THRESHOLD) {
         // we've previously disabled TX DMA due to contention, don't
         // re-enable on a new begin() unless high baudrate
