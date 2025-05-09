@@ -26,7 +26,6 @@
 
 #define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
 #define PROBE_MAG_IMU(driver, imudev, imu_instance, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(imu_instance,##args))
-#define PROBE_BARO_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(GET_I2C_DEVICE(bus, addr)),##args))
 
 //Protocols
 //list of protocols/enum:	ardupilot/libraries/AP_SerialManager/AP_SerialManager.h
@@ -70,7 +69,8 @@
 #define HAL_INS_MPU9250_NAME 				"mpu9250"
 
 //Baro
-#define HAL_BARO_PROBE_LIST 				PROBE_BARO_I2C(BMP280, 0, 0x76)
+#define HAL_BARO_PROBE_LIST                         \
+    probe_i2c_dev(AP_Baro_BMP280::probe, 0, 0x76);
 
 //I2C Buses
 #define HAL_ESP32_I2C_BUSES				{.port=I2C_NUM_0, .sda=GPIO_NUM_21, .scl=GPIO_NUM_22, .speed=400*KHZ, .internal=true}

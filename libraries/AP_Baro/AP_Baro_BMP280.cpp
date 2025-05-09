@@ -47,20 +47,15 @@ extern const AP_HAL::HAL &hal;
 #define BMP280_REG_CONFIG    0xF5
 #define BMP280_REG_DATA      0xF7
 
-AP_Baro_BMP280::AP_Baro_BMP280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_BMP280::AP_Baro_BMP280(AP_Baro &baro, AP_HAL::Device &dev)
     : AP_Baro_Backend(baro)
-    , _dev(std::move(dev))
+    , _dev(&dev)
 {
 }
 
-AP_Baro_Backend *AP_Baro_BMP280::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_Backend *AP_Baro_BMP280::probe(AP_Baro &baro, AP_HAL::Device &dev)
 {
-    if (!dev) {
-        return nullptr;
-    }
-
-    AP_Baro_BMP280 *sensor = NEW_NOTHROW AP_Baro_BMP280(baro, std::move(dev));
+    AP_Baro_BMP280 *sensor = NEW_NOTHROW AP_Baro_BMP280(baro, dev);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
