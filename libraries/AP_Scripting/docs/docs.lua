@@ -2985,6 +2985,14 @@ function gcs:send_text(severity, text) end
 ---@return uint32_t_ud -- system time in milliseconds
 function gcs:last_seen() end
 
+-- Return whether the GCS library is currently allowed to set parameters
+---@return boolean
+function gcs:get_allow_param_set() end
+
+-- set whether the GCS library is currently allowed to set parameters
+---@param new_allow_value boolean
+function gcs:set_allow_param_set(new_allow_value) end
+
 -- call a MAVLink MAV_CMD_xxx command via command_int interface
 ---@param command integer -- MAV_CMD_xxx
 ---@param params table -- parameters of p1, p2, p3, p4, x, y and z and frame. Any not specified taken as zero
