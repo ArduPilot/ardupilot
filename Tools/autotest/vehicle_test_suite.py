@@ -216,6 +216,7 @@ class Context(object):
         self.installed_scripts = []
         self.installed_modules = []
         self.overridden_message_rates = {}
+        self.raising_debug_trap_on_exceptions = False
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
@@ -3684,6 +3685,35 @@ class TestSuite(ABC):
             raise NotAchievedException("Air Temperature not received from HIGH_LATENCY2")
         self.HIGH_LATENCY2_links()
 
+    def context_set_send_debug_trap_on_exceptions(self, value=True):
+        '''send a debug trap to ArduPilot if an ErrorException is raised.'''
+
+        # this is a diagnostic tool, only expected to be used for
+        # debugging, never for committed code
+
+        def trace_calls(frame, event, arg):
+            if event == 'exception':
+                exc_type, exc_value, tb = arg
+                if issubclass(exc_type, ErrorException):
+                    print(f"[Tracer] Exception raised: {exc_type}")
+                    self.send_debug_trap()
+            return trace_calls
+
+        context = self.context_get()
+
+        if value:
+            if sys.gettrace() is not None:
+                raise ValueError("Can't trace, something else already is")
+            sys.settrace(trace_calls)
+            context.raising_debug_trap_on_exceptions = True
+            return
+
+        if not sys.gettrace():
+            raise ValueError("Expected to see something tracing")
+
+        context.raising_debug_trap_on_exceptions = False
+        sys.settrace(None)
+
     def context_set_message_rate_hz(self, id, rate_hz, run_cmd=None):
         if run_cmd is None:
             run_cmd = self.run_cmd
@@ -6456,6 +6486,8 @@ class TestSuite(ABC):
             self.remove_installed_modules(module)
         if dead.sitl_commandline_customised and len(self.contexts):
             self.contexts[-1].sitl_commandline_customised = True
+        if dead.raising_debug_trap_on_exceptions:
+            sys.settrace(None)
 
         dead_parameters_dict = {}
         for p in dead.parameters:
