@@ -116,7 +116,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 5:Save Trim
     // @Values{Rover}: 5:Save Trim (4.1 and lower)
     // @Values{Copter, Rover}: 7:Save WP
-    // @Values{Copter, Rover, Plane}: 9:Camera Trigger
+    // @Values{Copter, Rover, Plane, Sub}: 9:Camera Trigger
     // @Values{Copter}: 10:RangeFinder Enable
     // @Values{Copter, Rover, Plane, Sub}: 11:Fence Enable
     // @Values{Copter}: 13:Super Simple Mode
@@ -164,10 +164,10 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Rover}: 59:Simple Mode
     // @Values{Copter}: 60:ZigZag Mode
     // @Values{Copter}: 61:ZigZag SaveWP
-    // @Values{Copter, Rover, Plane}: 62:Compass Learn
+    // @Values{Copter, Rover, Plane, Sub}: 62:Compass Learn
     // @Values{Rover}: 63:Sailboat Tack
     // @Values{Plane}: 64:Reverse Throttle
-    // @Values{Copter, Rover, Plane, Blimp}: 65:GPS Disable
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 65:GPS Disable
     // @Values{Copter, Rover, Plane, Sub}: 66:Relay5 On/Off, 67:Relay6 On/Off
     // @Values{Copter}: 68:STABILIZE Mode
     // @Values{Copter}: 69:POSHOLD Mode
@@ -205,7 +205,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Sub}: 102:Camera Mode Toggle
     // @Values{Copter, Rover, Plane, Blimp, Sub, Tracker}: 103: EKF lane switch attempt
     // @Values{Copter, Rover, Plane, Blimp, Sub, Tracker}: 104: EKF yaw reset
-    // @Values{Copter, Rover, Plane}: 105:GPS Disable Yaw
+    // @Values{Copter, Rover, Plane, Sub}: 105:GPS Disable Yaw
     // @Values{Rover, Plane}: 106:Disable Airspeed Use
     // @Values{Plane}: 107:Enable FW Autotune
     // @Values{Plane}: 108:QRTL Mode
