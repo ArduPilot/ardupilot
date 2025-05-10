@@ -44,7 +44,7 @@ void Copter::SurfaceTracking::update_surface_offset()
     }
 }
 
-// target has already been set by terrain following so do not initalise again
+// target has already been set by terrain following so do not initialise again
 // this should be called by flight modes when switching from terrain following to surface tracking (e.g. ZigZag)
 void Copter::SurfaceTracking::external_init()
 {

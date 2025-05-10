@@ -321,7 +321,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: NavRoll: desired roll
 // @Field: Roll: achieved roll
 // @Field: NavPitch: desired pitch assuming pitch trims are already applied
-// @Field: Pitch: achieved pitch assuming pitch trims are already applied,ie "0deg" is level flight trimmed pitch attitude as shown on artifical horizon level line.
+// @Field: Pitch: achieved pitch assuming pitch trims are already applied,ie "0deg" is level flight trimmed pitch attitude as shown on artificial horizon level line.
 // @Field: ThO: scaled output throttle
 // @Field: RdO: scaled output rudder
 // @Field: ThD: demanded speed-height-controller throttle
@@ -377,7 +377,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Description: Current status of the aircraft
 // @Field: TimeUS: Time since system startup
 // @Field: isFlying: True if aircraft is probably flying
-// @Field: isFlyProb: Probabilty that the aircraft is flying
+// @Field: isFlyProb: Probability that the aircraft is flying
 // @Field: Armed: Arm status of the aircraft
 // @Field: Safety: State of the safety switch
 // @Field: Crash: True if crash is detected
@@ -446,7 +446,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: TimeUS: Time since system startup
 // @Field: Ts: throttle scaling used for tilt motors
 // @Field: Ss: speed scailing used for control surfaces method from Q_TAILSIT_GSCMSK
-// @Field: Tmin: minimum output throttle caculated from disk thoery gain scale with Q_TAILSIT_MIN_VO
+// @Field: Tmin: minimum output throttle calculated from disk thoery gain scale with Q_TAILSIT_MIN_VO
 #if HAL_QUADPLANE_ENABLED
     { LOG_TSIT_MSG, sizeof(Tailsitter::log_tailsitter),
       "TSIT", "Qfff",  "TimeUS,Ts,Ss,Tmin", "s---", "F---" , true },

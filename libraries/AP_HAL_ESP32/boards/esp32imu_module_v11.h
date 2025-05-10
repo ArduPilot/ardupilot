@@ -37,9 +37,6 @@
 //INS choices: 
 #define HAL_INS_DEFAULT HAL_INS_MPU60XX_I2C
 #define HAL_INS_MPU6000_NAME "Invensense"
-// BARO choices:
-#define HAL_BARO_DEFAULT HAL_BARO_BMP280_I2C
-#define HAL_BARO_BMP280_NAME "BMP280"
 
 // IMU probing:
 #define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensense, 0, 0x68, ROTATION_NONE)

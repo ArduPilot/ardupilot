@@ -575,7 +575,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: LOIT_SPEED_GAIN
     // @DisplayName: Loiter speed gain
-    // @Description: Determines how agressively LOITER tries to correct for drift from loiter point. Higher is faster but default should be acceptable.
+    // @Description: Determines how aggressively LOITER tries to correct for drift from loiter point. Higher is faster but default should be acceptable.
     // @Range: 0 5
     // @Increment: 0.01
     // @User: Advanced

@@ -321,7 +321,7 @@ public:
     void send_distance_sensor();
     // send_rangefinder sends only if a downward-facing instance is
     // found.  Rover overrides this!
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     virtual void send_rangefinder() const;
 #endif
     void send_proximity();
@@ -487,7 +487,7 @@ protected:
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
     bool accept_packet(const mavlink_status_t &status, const mavlink_message_t &msg) const;
-    void set_ekf_origin(const Location& loc);
+    MAV_RESULT set_ekf_origin(const Location& loc);
 
     virtual uint8_t base_mode() const = 0;
     MAV_STATE system_status() const;
@@ -583,7 +583,9 @@ protected:
     void handle_vision_position_delta(const mavlink_message_t &msg);
 
     virtual void handle_message(const mavlink_message_t &msg);
+#if AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
     void handle_set_gps_global_origin(const mavlink_message_t &msg);
+#endif  // AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
     void handle_setup_signing(const mavlink_message_t &msg) const;
     virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 #if AP_MAVLINK_FAILURE_CREATION_ENABLED
@@ -710,6 +712,7 @@ protected:
     virtual int16_t vfr_hud_throttle() const { return 0; }
 #if AP_AHRS_ENABLED
     virtual float vfr_hud_alt() const;
+    MAV_RESULT handle_command_do_set_global_origin(const mavlink_command_int_t &packet);
 #endif
 
 #if HAL_HIGH_LATENCY2_ENABLED

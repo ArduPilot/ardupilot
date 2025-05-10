@@ -97,7 +97,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     }
 
     if (plane.channel_throttle->get_reverse() && 
-        Plane::ThrFailsafe(plane.g.throttle_fs_enabled.get()) != Plane::ThrFailsafe::Disabled &&
+        plane.g.throttle_fs_enabled != Plane::ThrFailsafe::Disabled &&
         plane.g.throttle_fs_value < 
         plane.channel_throttle->get_radio_max()) {
         check_failed(display_failure, "Invalid THR_FS_VALUE for rev throttle");
@@ -486,7 +486,7 @@ bool AP_Arming_Plane::rc_received_if_enabled_check(bool display_failure)
     }
 
     // If RC failsafe is enabled we must receive RC before arming
-    if ((Plane::ThrFailsafe(plane.g.throttle_fs_enabled.get()) == Plane::ThrFailsafe::Enabled) && 
+    if ((plane.g.throttle_fs_enabled == Plane::ThrFailsafe::Enabled) &&
         !(rc().has_had_rc_receiver() || rc().has_had_rc_override())) {
         check_failed(display_failure, "Waiting for RC");
         return false;

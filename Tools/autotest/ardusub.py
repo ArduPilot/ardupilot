@@ -237,6 +237,40 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                     "Distance not maintained: want %.2f (+/- %.2f) got=%.2f" %
                     (previous_distance, delta, m.distance))
 
+    def GCSFailsafe(self):
+        '''Test GCSFailsafe'''
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+        self.context_push()
+        self.setGCSfailsafe(4)
+        self.set_heartbeat_rate(0)
+        self.wait_mode("SURFACE")
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        self.progress("GSC Failsafe OK")
+        self.disarm_vehicle()
+        self.context_pop()
+
+    # Tests actions and logic behind the radio failsafe
+    def ThrottleFailsafe(self):
+        '''Test RC and RC Failsafe'''
+        # disable GCS and enable RC
+        self.context_push()
+        self.set_parameter('FS_GCS_ENABLE', 0)
+        self.set_parameter('RC_PROTOCOLS', 1)
+        self.set_heartbeat_rate(0)
+        # Trigger an RC failure with the failsafe disabled. Verify no action taken.
+        self.start_subtest("Radio failsafe disabled test: FS_THR_ENABLE=0 should take no failsafe action")
+        self.set_parameter('FS_THR_ENABLE', 0)
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_ready_to_arm()
+        # Switch RC failsafe action to SURFACE, should take action since we are in RC failsafe
+        self.set_parameter('FS_THR_ENABLE', 2)
+        self.wait_mode("SURFACE")
+        self.context_pop()
+        self.progress("Completed Radio failsafe disabled test")
+
     def Surftrak(self):
         """Test SURFTRAK mode"""
 
@@ -1071,6 +1105,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         ret.extend([
             self.DiveManual,
+            self.GCSFailsafe,
+            self.ThrottleFailsafe,
             self.AltitudeHold,
             self.Surftrak,
             self.SimTerrainSurftrak,

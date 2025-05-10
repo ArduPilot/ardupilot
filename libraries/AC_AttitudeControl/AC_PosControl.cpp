@@ -1095,15 +1095,15 @@ void AC_PosControl::set_pos_vel_accel_NE_cm(const Vector2p& pos_ne_cm, const Vec
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean target angles to lat/lon frame accelerations in cm/s/s
-Vector3f AC_PosControl::lean_angles_to_accel(const Vector3f& att_target_euler) const
+Vector3f AC_PosControl::lean_angles_to_accel_NEU_cmss(const Vector3f& att_target_euler_rad) const
 {
     // rotate our roll, pitch angles into lat/lon frame
-    const float sin_roll = sinf(att_target_euler.x);
-    const float cos_roll = cosf(att_target_euler.x);
-    const float sin_pitch = sinf(att_target_euler.y);
-    const float cos_pitch = cosf(att_target_euler.y);
-    const float sin_yaw = sinf(att_target_euler.z);
-    const float cos_yaw = cosf(att_target_euler.z);
+    const float sin_roll = sinf(att_target_euler_rad.x);
+    const float cos_roll = cosf(att_target_euler_rad.x);
+    const float sin_pitch = sinf(att_target_euler_rad.y);
+    const float cos_pitch = cosf(att_target_euler_rad.y);
+    const float sin_yaw = sinf(att_target_euler_rad.z);
+    const float cos_yaw = cosf(att_target_euler_rad.z);
 
     return Vector3f{
         (GRAVITY_MSS * 100.0f) * (-cos_yaw * sin_pitch * cos_roll - sin_yaw * sin_roll) / MAX(cos_roll * cos_pitch, 0.1f),
@@ -1478,9 +1478,9 @@ void AC_PosControl::accel_NE_cmss_to_lean_angles(float accel_n_cmss, float accel
 void AC_PosControl::lean_angles_to_accel_NE_cmss(float& accel_n_cmss, float& accel_e_cmss) const
 {
     // rotate our roll, pitch angles into lat/lon frame
-    Vector3f att_target_euler = _attitude_control.get_att_target_euler_rad();
-    att_target_euler.z = _ahrs.yaw;
-    Vector3f accel_ne_cmss = lean_angles_to_accel(att_target_euler);
+    Vector3f att_target_euler_rad = _attitude_control.get_att_target_euler_rad();
+    att_target_euler_rad.z = _ahrs.yaw;
+    Vector3f accel_ne_cmss = lean_angles_to_accel_NEU_cmss(att_target_euler_rad);
 
     accel_n_cmss = accel_ne_cmss.x;
     accel_e_cmss = accel_ne_cmss.y;

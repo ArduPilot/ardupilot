@@ -279,7 +279,7 @@ void ModeAutoLand::check_takeoff_direction()
     }
 }
 
-// Sets autoland direction using ground course + offest parameter
+// Sets autoland direction using ground course + offset parameter
 void ModeAutoLand::set_autoland_direction(const float heading)
 {
     plane.takeoff_state.initial_direction.heading = wrap_360(heading);

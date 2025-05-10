@@ -25,7 +25,6 @@ void Sub::init_rc_in()
     channel_forward->set_default_dead_zone(30);
     channel_lateral->set_default_dead_zone(30);
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     // initialize rc input to 1500 on control channels (rather than 0)
     for (int i = 0; i < 6; i++) {
         RC_Channels::set_override(i, 1500);
@@ -33,7 +32,6 @@ void Sub::init_rc_in()
 
     RC_Channels::set_override(6, 1500); // camera pan channel
     RC_Channels::set_override(7, 1500); // camera tilt channel
-#endif
 }
 
 // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration

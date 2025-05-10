@@ -301,7 +301,7 @@ void AC_AutoTune::run()
 
     // if pilot override call attitude controller
     if (pilot_override || mode != TUNING) {
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
     } else {
         // somehow get attitude requests from autotuning
         control_attitude();
@@ -373,7 +373,7 @@ void AC_AutoTune::control_attitude()
         get_poshold_attitude(roll_cd, pitch_cd, desired_yaw_cd);
 
         // hold level attitude
-        attitude_control->input_euler_angle_roll_pitch_yaw(roll_cd, pitch_cd, desired_yaw_cd, true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(roll_cd, pitch_cd, desired_yaw_cd, true);
 
         // hold the copter level for 0.5 seconds before we begin a twitch
         // reset counter if we are no longer level
@@ -583,7 +583,7 @@ void AC_AutoTune::control_attitude()
     case ABORT:
         if (axis == AxisType::YAW || axis == AxisType::YAW_D) {
             // todo: check to make sure we need this
-            attitude_control->input_euler_angle_roll_pitch_yaw(0.0f, 0.0f, ahrs_view->yaw_sensor, false);
+            attitude_control->input_euler_angle_roll_pitch_yaw_cd(0.0f, 0.0f, ahrs_view->yaw_sensor, false);
         }
 
         // set gains to their intra-test values (which are very close to the original gains)

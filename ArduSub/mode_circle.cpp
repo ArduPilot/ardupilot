@@ -14,8 +14,8 @@ bool ModeCircle::init(bool ignore_checks)
     sub.circle_pilot_yaw_override = false;
 
     // initialize speeds and accelerations
-    position_control->set_max_speed_accel_NE_cm(sub.wp_nav.get_default_speed_xy(), sub.wp_nav.get_wp_acceleration());
-    position_control->set_correction_speed_accel_NE_cm(sub.wp_nav.get_default_speed_xy(), sub.wp_nav.get_wp_acceleration());
+    position_control->set_max_speed_accel_NE_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
+    position_control->set_correction_speed_accel_NE_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
     position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
     position_control->set_correction_speed_accel_U_cmss(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
@@ -33,7 +33,7 @@ void ModeCircle::run()
     float target_climb_rate = 0;
 
     // update parameters, to allow changing at runtime
-    position_control->set_max_speed_accel_NE_cm(sub.wp_nav.get_default_speed_xy(), sub.wp_nav.get_wp_acceleration());
+    position_control->set_max_speed_accel_NE_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
     position_control->set_max_speed_accel_U_cm(-sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // if not armed set throttle to zero and exit immediately
@@ -61,7 +61,7 @@ void ModeCircle::run()
     motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run circle controller
-    sub.failsafe_terrain_set_status(sub.circle_nav.update());
+    sub.failsafe_terrain_set_status(sub.circle_nav.update_cms());
 
     ///////////////////////
     // update xy outputs //
@@ -75,9 +75,9 @@ void ModeCircle::run()
 
     // call attitude controller
     if (sub.circle_pilot_yaw_override) {
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
     } else {
-        attitude_control->input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), sub.circle_nav.get_yaw(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), sub.circle_nav.get_yaw_cd(), true);
     }
 
     // update altitude target and call position controller

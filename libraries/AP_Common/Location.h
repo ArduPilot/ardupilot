@@ -69,11 +69,25 @@ public:
     // centimetres.  If this method returns false then vec_ne is
     // unmodified.
     template<typename T>
-    bool get_vector_xy_from_origin_NE(T &vec_ne) const WARN_IF_UNUSED;
+    bool get_vector_xy_from_origin_NE_cm(T &vec_ne) const WARN_IF_UNUSED;
     // converts location to a vector from origin; if this method returns
     // false then vec_neu is unmodified
     template<typename T>
+    bool get_vector_from_origin_NEU_cm(T &vec_neu) const WARN_IF_UNUSED;
+    // same as get_vector_from_origin_NEU_cm, but only here so we can
+    // continue to use it in LUA scripts:
+    template<typename T>
     bool get_vector_from_origin_NEU(T &vec_neu) const WARN_IF_UNUSED;
+
+    // get position as a vector (in metres) from origin (x,y only or
+    // x,y,z) return false on failure to get the vector which can only
+    // happen if the EKF origin has not been set yet x, y and z are in
+    // metres.  If this method returns false then vec_ne is
+    // unmodified.
+    template<typename T>
+    bool get_vector_xy_from_origin_NE_m(T &vec_ne) const;
+    template<typename T>
+    bool get_vector_from_origin_NEU_m(T &vec_neu) const;
 
     // return horizontal distance in meters between two locations
     ftype get_distance(const Location &loc2) const;

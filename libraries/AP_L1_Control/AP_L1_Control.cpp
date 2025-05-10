@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
 
     // @Param: LIM_BANK
     // @DisplayName: Loiter Radius Bank Angle Limit
-    // @Description: The sealevel bank angle limit for a continous loiter. (Used to calculate airframe loading limits at higher altitudes). Setting to 0, will instead just scale the loiter radius directly
+    // @Description: The sealevel bank angle limit for a continuous loiter. (Used to calculate airframe loading limits at higher altitudes). Setting to 0, will instead just scale the loiter radius directly
     // @Units: deg
     // @Range: 0 89
     // @User: Advanced

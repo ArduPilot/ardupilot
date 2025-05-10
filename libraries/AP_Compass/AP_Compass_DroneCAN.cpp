@@ -25,8 +25,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <SITL/SITL.h>
 
-extern const AP_HAL::HAL& hal;
-
 #define LOG_TAG "COMPASS"
 
 AP_Compass_DroneCAN::DetectedModules AP_Compass_DroneCAN::_detected_modules[];

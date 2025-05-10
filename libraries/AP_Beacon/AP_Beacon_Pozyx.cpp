@@ -128,7 +128,7 @@ void AP_Beacon_Pozyx::parse_buffer()
             {
                 uint8_t beacon_id = linebuf[0];
                 uint32_t beacon_distance = (uint32_t)linebuf[4] << 24 | (uint32_t)linebuf[3] << 16 | (uint32_t)linebuf[2] << 8 | (uint32_t)linebuf[1];
-                float beacon_dist = beacon_distance/1000.0f;
+                float beacon_dist = beacon_distance*0.001f;
                 if (beacon_dist <= AP_BEACON_DISTANCE_MAX) {
                     set_beacon_distance(beacon_id, beacon_dist);
                     parsed = true;

@@ -29,7 +29,7 @@ AP_MotorsUGV *AP_MotorsUGV::_singleton;
 const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Param: PWM_TYPE
     // @DisplayName: Motor Output PWM type
-    // @Description: This selects the output PWM type as regular PWM, OneShot, Brushed motor support using PWM (duty cycle) with separated direction signal, Brushed motor support with separate throttle and direction PWM (duty cyle)
+    // @Description: This selects the output PWM type as regular PWM, OneShot, Brushed motor support using PWM (duty cycle) with separated direction signal, Brushed motor support with separate throttle and direction PWM (duty cycle)
     // @Values: 0:Normal,1:OneShot,2:OneShot125,3:BrushedWithRelay,4:BrushedBiPolar,5:DShot150,6:DShot300,7:DShot600,8:DShot1200
     // @User: Advanced
     // @RebootRequired: True
@@ -113,7 +113,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
 
     // @Param: THST_ASYM
     // @DisplayName: Motor Thrust Asymmetry
-    // @Description: Thrust Asymetry. Used for skid-steering. 2.0 means your motors move twice as fast forward than they do backwards.
+    // @Description: Thrust Asymmetry. Used for skid-steering. 2.0 means your motors move twice as fast forward than they do backwards.
     // @Range: 1.0 10.0
     // @User: Advanced
     AP_GROUPINFO("THST_ASYM", 14, AP_MotorsUGV, _thrust_asymmetry, 1.0f),
@@ -948,14 +948,14 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
                 thr_str_ltr_max = fabsf(thr_str_ltr_out[i]);
             }
         }
-        // Scale all outputs back evenly such that the lagest fits
+        // Scale all outputs back evenly such that the largest fits
         const float output_scale = 1 / thr_str_ltr_max;
         for (uint8_t i=0; i<_motors_num; i++) {
             // send output for each motor
             output_throttle(SRV_Channels::get_motor_function(i), thr_str_ltr_out[i] * 100.0f * output_scale);
         }
         if (output_scale < 1.0) {
-            // cant tell which command resulted in the scale back, so limit all
+            // can't tell which command resulted in the scale back, so limit all
             limit.steer_left = true;
             limit.steer_right = true;
             limit.throttle_lower = true;

@@ -20,13 +20,10 @@ Run pre_arm check test on Copter.
 Warning - This is NOT production code; it's a simple demo of capability.
 """
 
-import math
 import rclpy
 import time
-import errno
 
 from rclpy.node import Node
-from builtin_interfaces.msg import Time
 from std_srvs.srv import Trigger
 
 
@@ -57,6 +54,7 @@ class CopterPreArm(Node):
             armable = self.prearm().success
             time.sleep(1)
         return armable
+
 
 def main(args=None):
     """Node entry point."""

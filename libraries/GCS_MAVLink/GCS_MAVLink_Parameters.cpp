@@ -96,7 +96,7 @@ static const uint8_t default_rates[] {
     AP_MAV_DEFAULT_STREAM_RATE_PARAMS,
     AP_MAV_DEFAULT_STREAM_RATE_ADSB,
 };
-static_assert(ARRAY_SIZE(default_rates) == GCS_MAVLINK::NUM_STREAMS);
+static_assert(ARRAY_SIZE(default_rates) == GCS_MAVLINK::NUM_STREAMS, "enough default rates for all streams");
 
 #define DRATE(x) (float(default_rates[x]))
 
@@ -323,12 +323,12 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
 #endif  // AP_AHRS_ENABLED
     MSG_WIND,
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     MSG_RANGEFINDER,
-#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
+#if AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
     MSG_WATER_DEPTH,
-#endif  // APM_BUILD_TYPE(APM_BUILD_Rover)
-#endif
+#endif  // AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
     MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,
 #if AP_TERRAIN_AVAILABLE

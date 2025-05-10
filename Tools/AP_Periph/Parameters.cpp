@@ -113,8 +113,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM
     // @Param: CAN_TERMINATE
-    // @DisplayName: Enable CAN software temination in this node
-    // @Description: Enable CAN software temination in this node
+    // @DisplayName: Enable CAN software termination in this node
+    // @Description: Enable CAN software termination in this node
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     // @RebootRequired: True

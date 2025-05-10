@@ -190,7 +190,7 @@ void Plane::takeoff_calc_pitch(void)
 {
     // First see if TKOFF_ROTATE_SPD applies.
     // This will set the pitch for the first portion of the takeoff, up until cruise speed is reached.
-    if (g.takeoff_rotate_speed > 0) {
+    if (!auto_state.rotation_complete && g.takeoff_rotate_speed > 0) {
         // A non-zero rotate speed is recommended for ground takeoffs.
         if (auto_state.highest_airspeed < g.takeoff_rotate_speed) {
             // We have not reached rotate speed, use the specified takeoff target pitch angle.
@@ -209,6 +209,7 @@ void Plane::takeoff_calc_pitch(void)
             return;
         }
     }
+    auto_state.rotation_complete = true;
 
     // We are now past the rotation.
     // Initialize pitch limits for TECS.

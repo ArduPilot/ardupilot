@@ -4228,6 +4228,14 @@ class TestSuite(ABC):
             count += 1
 
     def create_simple_relhome_mission(self, items_in, target_system=1, target_component=1):
+        return self.create_simple_relloc_mission(
+            self.home_position_as_mav_location(),
+            items_in,
+            target_system=target_system,
+            target_component=target_component,
+        )
+
+    def create_simple_relloc_mission(self, loc, items_in, target_system=1, target_component=1):
         '''takes a list of (type, n, e, alt) items.  Creates a mission in
         absolute frame using alt as relative-to-home and n and e as
         offsets in metres from home'''
@@ -4252,9 +4260,9 @@ class TestSuite(ABC):
             lat = 0
             lng = 0
             if n != 0 or e != 0:
-                loc = self.home_relative_loc_ne(n, e)
-                lat = loc.lat
-                lng = loc.lng
+                relloc = self.offset_location_ne(loc, n, e)
+                lat = relloc.lat
+                lng = relloc.lng
             frame = mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
             if not self.ardupilot_stores_frame_for_cmd(t):
                 frame = mavutil.mavlink.MAV_FRAME_GLOBAL
@@ -4267,6 +4275,14 @@ class TestSuite(ABC):
 
     def upload_simple_relhome_mission(self, items, target_system=1, target_component=1):
         mission = self.create_simple_relhome_mission(
+            items,
+            target_system=target_system,
+            target_component=target_component)
+        self.check_mission_upload_download(mission)
+
+    def upload_simple_relloc_mission(self, loc, items, target_system=1, target_component=1):
+        mission = self.create_simple_relloc_mission(
+            loc,
             items,
             target_system=target_system,
             target_component=target_component)
@@ -5703,7 +5719,7 @@ class TestSuite(ABC):
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=chan, p2=pwm)
 
     def location_offset_ne(self, location, north, east):
-        '''move location in metres'''
+        '''move location in metres.  You probably wat offset_location_ne'''
         print("old: %f %f" % (location.lat, location.lng))
         (lat, lng) = mp_util.gps_offset(location.lat, location.lng, east, north)
         location.lat = lat

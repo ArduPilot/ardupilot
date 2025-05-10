@@ -549,14 +549,14 @@ void Mode::zero_throttle_and_relax_ac(bool spool_up)
     } else {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     }
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(0.0f, 0.0f, 0.0f);
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 }
 
 void Mode::zero_throttle_and_hold_attitude()
 {
     // run attitude controller
-    attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+    attitude_control->input_rate_bf_roll_pitch_yaw_cds(0.0f, 0.0f, 0.0f);
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 }
 
@@ -597,7 +597,7 @@ void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
     pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
     pos_control->update_U_controller();
     // we may need to move this out
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(0.0f, 0.0f, 0.0f);
 }
 
 /*
@@ -710,7 +710,7 @@ void Mode::land_run_horizontal_control()
             // convert pilot input to reposition velocity
             // use half maximum acceleration as the maximum velocity to ensure aircraft will
             // stop from full reposition speed in less than 1 second.
-            const float max_pilot_vel = wp_nav->get_wp_acceleration() * 0.5;
+            const float max_pilot_vel = wp_nav->get_wp_acceleration_cmss() * 0.5;
             vel_correction = get_pilot_desired_velocity(max_pilot_vel);
 
             // record if pilot has overridden roll or pitch
@@ -781,7 +781,7 @@ void Mode::land_run_horizontal_control()
     }
 
     // call attitude controller
-    attitude_control->input_thrust_vector_heading(thrust_vector, auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(thrust_vector, auto_yaw.get_heading());
 
 }
 
@@ -847,7 +847,7 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
     pos_control->update_U_controller();
 
     // call attitude controller
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
 }
 
@@ -908,15 +908,13 @@ float Mode::throttle_hover() const
 // returns throttle output 0 to 1
 float Mode::get_pilot_desired_throttle() const
 {
-    const float thr_mid = throttle_hover();
-    int16_t throttle_control = channel_throttle->get_control_in();
-
     int16_t mid_stick = copter.get_throttle_mid();
     // protect against unlikely divide by zero
     if (mid_stick <= 0) {
         mid_stick = 500;
     }
 
+    int16_t throttle_control = channel_throttle->get_control_in();
     // ensure reasonable throttle values
     throttle_control = constrain_int16(throttle_control,0,1000);
 
@@ -928,6 +926,7 @@ float Mode::get_pilot_desired_throttle() const
         throttle_in = 0.5f + ((float)(throttle_control-mid_stick)) * 0.5f / (float)(1000-mid_stick);
     }
 
+    const float thr_mid = throttle_hover();
     const float expo = constrain_float(-(thr_mid-0.5f)/0.375f, -0.5f, 1.0f);
     // calculate the output throttle using the given expo function
     float throttle_out = throttle_in*(1.0f-expo) + expo*throttle_in*throttle_in*throttle_in;

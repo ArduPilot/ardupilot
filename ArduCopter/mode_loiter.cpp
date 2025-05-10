@@ -18,7 +18,7 @@ bool ModeLoiter::init(bool ignore_checks)
         get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
         // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
+        loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
     } else {
         // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
         loiter_nav->clear_pilot_desired_acceleration();
@@ -51,7 +51,7 @@ bool ModeLoiter::do_precision_loiter()
         return false;        // don't move on the ground
     }
     // if the pilot *really* wants to move the vehicle, let them....
-    if (loiter_nav->get_pilot_desired_acceleration().length() > 50.0f) {
+    if (loiter_nav->get_pilot_desired_acceleration_NE_cmss().length() > 50.0f) {
         return false;
     }
     if (!copter.precland.target_acquired()) {
@@ -99,7 +99,7 @@ void ModeLoiter::run()
         get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
         // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
+        loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
 
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate();
@@ -128,7 +128,7 @@ void ModeLoiter::run()
         attitude_control->reset_yaw_target_and_rate();
         pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->init_target();
-        attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
         break;
 
     case AltHoldModeState::Landed_Ground_Idle:
@@ -138,7 +138,7 @@ void ModeLoiter::run()
     case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
-        attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
         pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
@@ -158,7 +158,7 @@ void ModeLoiter::run()
         loiter_nav->update();
 
         // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
         break;
 
     case AltHoldModeState::Flying:
@@ -186,7 +186,7 @@ void ModeLoiter::run()
 #endif
 
         // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
@@ -207,12 +207,12 @@ void ModeLoiter::run()
 
 uint32_t ModeLoiter::wp_distance() const
 {
-    return loiter_nav->get_distance_to_target();
+    return loiter_nav->get_distance_to_target_cm();
 }
 
 int32_t ModeLoiter::wp_bearing() const
 {
-    return loiter_nav->get_bearing_to_target();
+    return loiter_nav->get_bearing_to_target_cd();
 }
 
 #endif

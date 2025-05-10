@@ -18,7 +18,7 @@ bool ModeRTL::init(bool ignore_checks)
         }
     }
     // initialise waypoint and spline controller
-    wp_nav->wp_and_spline_init(g.rtl_speed_cms);
+    wp_nav->wp_and_spline_init_cm(g.rtl_speed_cms);
     _state = SubMode::STARTING;
     _state_complete = true; // see run() method below
     terrain_following_allowed = !copter.failsafe.terrain;
@@ -105,9 +105,6 @@ void ModeRTL::run(bool disarm_on_land)
         FALLTHROUGH;
 
     case SubMode::INITIAL_CLIMB:
-        climb_return_run();
-        break;
-
     case SubMode::RETURN_HOME:
         climb_return_run();
         break;
@@ -181,7 +178,7 @@ void ModeRTL::climb_return_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've completed this stage of RTL
     _state_complete = wp_nav->reached_wp_destination();
@@ -223,7 +220,7 @@ void ModeRTL::loiterathome_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've completed this stage of RTL
     if ((millis() - _loiter_start_time) >= (uint32_t)g.rtl_loiter_time.get()) {
@@ -284,7 +281,7 @@ void ModeRTL::descent_run()
             update_simple_mode();
 
             // convert pilot input to reposition velocity
-            vel_correction = get_pilot_desired_velocity(wp_nav->get_wp_acceleration() * 0.5);
+            vel_correction = get_pilot_desired_velocity(wp_nav->get_wp_acceleration_cmss() * 0.5);
 
             // record if pilot has overridden roll or pitch
             if (!vel_correction.is_zero()) {
@@ -309,7 +306,7 @@ void ModeRTL::descent_run()
     pos_control->update_U_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've reached within 20cm of final altitude
     _state_complete = labs(rtl_path.descent_target.alt - copter.inertial_nav.get_position_z_up_cm()) < 20;
@@ -322,8 +319,8 @@ void ModeRTL::land_start()
     _state_complete = false;
 
     // set horizontal speed and acceleration limits
-    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
-    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
+    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
 
     // initialise loiter target destination
     if (!pos_control->is_active_NE()) {
@@ -535,12 +532,12 @@ bool ModeRTL::get_wp(Location& destination) const
 
 uint32_t ModeRTL::wp_distance() const
 {
-    return wp_nav->get_wp_distance_to_destination();
+    return wp_nav->get_wp_distance_to_destination_cm();
 }
 
 int32_t ModeRTL::wp_bearing() const
 {
-    return wp_nav->get_wp_bearing_to_destination();
+    return wp_nav->get_wp_bearing_to_destination_cd();
 }
 
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
@@ -554,19 +551,19 @@ bool ModeRTL::use_pilot_yaw(void) const
 
 bool ModeRTL::set_speed_xy(float speed_xy_cms)
 {
-    copter.wp_nav->set_speed_xy(speed_xy_cms);
+    copter.wp_nav->set_speed_NE_cms(speed_xy_cms);
     return true;
 }
 
 bool ModeRTL::set_speed_up(float speed_up_cms)
 {
-    copter.wp_nav->set_speed_up(speed_up_cms);
+    copter.wp_nav->set_speed_up_cms(speed_up_cms);
     return true;
 }
 
 bool ModeRTL::set_speed_down(float speed_down_cms)
 {
-    copter.wp_nav->set_speed_down(speed_down_cms);
+    copter.wp_nav->set_speed_down_cms(speed_down_cms);
     return true;
 }
 

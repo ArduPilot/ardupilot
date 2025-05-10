@@ -1,0 +1,29 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from ardupilot_msgs/msg/Rc.msg
+// generated code does not contain a copyright notice
+
+#include "std_msgs/msg/Header.idl"
+
+module ardupilot_msgs {
+  module msg {
+    struct Rc {
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "returns true if radio is connected.")
+      boolean is_connected;
+
+      @verbatim (language="comment", text=
+        "returns [0, 100] for receiver RSSI.")
+      uint8 receiver_rssi;
+
+      @verbatim (language="comment", text=
+        "channels values.")
+      sequence<int16, 32> channels;
+
+      @verbatim (language="comment", text=
+        "sets true if a channel is overridden.")
+      sequence<boolean, 32> active_overrides;
+    };
+  };
+};

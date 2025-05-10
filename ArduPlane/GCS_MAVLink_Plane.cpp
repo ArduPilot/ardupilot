@@ -675,35 +675,13 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
             return MAV_RESULT_FAILED;
         }
 
-         // only airspeed commands are supported right now...
+        // only airspeed commands are supported right now...
         if (int(packet.param1) != SPEED_TYPE_AIRSPEED) {  // since SPEED_TYPE is int in range 0-1 and packet.param1 is a *float* this works.
             return MAV_RESULT_DENIED;
         }
 
-         // reject airspeeds that are outside of the tuning envelope
-        if (packet.param2 > plane.aparm.airspeed_max || packet.param2 < plane.aparm.airspeed_min) {
-            return MAV_RESULT_DENIED;
-        }
-
-         // no need to process any new packet/s with the
-         //  same airspeed any further, if we are already doing it.
-        float new_target_airspeed_cm = packet.param2 * 100;
-        if ( is_equal(new_target_airspeed_cm,plane.guided_state.target_airspeed_cm)) { 
-            return MAV_RESULT_ACCEPTED;
-        }
-        plane.guided_state.target_airspeed_cm = new_target_airspeed_cm;
-        plane.guided_state.target_airspeed_time_ms = AP_HAL::millis();
-
-         if (is_zero(packet.param3)) {
-            // the user wanted /maximum acceleration, pick a large value as close enough
-            plane.guided_state.target_airspeed_accel = 1000.0f;
-        } else {
-            plane.guided_state.target_airspeed_accel = fabsf(packet.param3);
-        }
-
-         // assign an acceleration direction
-        if (plane.guided_state.target_airspeed_cm < plane.target_airspeed_cm) {
-            plane.guided_state.target_airspeed_accel *= -1.0f;
+        if (!plane.mode_guided.handle_change_airspeed(packet.param2, packet.param3)) {
+            return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
     }
@@ -1282,7 +1260,7 @@ uint16_t GCS_MAVLINK_Plane::high_latency_tgt_dist() const
     const QuadPlane &quadplane = plane.quadplane;
     if (quadplane.show_vtol_view()) {
         bool wp_nav_valid = quadplane.using_wp_nav();
-        return (wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination(), UINT16_MAX) : 0) / 10;
+        return (wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination_cm(), UINT16_MAX) : 0) / 10;
     }
     #endif
 

@@ -67,8 +67,8 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
     if (!quadplane.tailsitter.enabled() && !( (plane.control_mode->does_auto_throttle() && !plane.throttle_suppressed)
                                                                       || is_positive(plane.get_throttle_input()) 
                                                                       || plane.is_flying() ) ) {
-        // not in a flight mode and condition where it would be safe to turn on vertial lift motors
-        // skip this check for tailsitters because the forward and vertial motors are the same and are controled directly by throttle imput unlike other quadplanes
+        // not in a flight mode and condition where it would be safe to turn on vertical lift motors
+        // skip this check for tailsitters because the forward and vertical motors are the same and are controlled directly by throttle input unlike other quadplanes
         reset();
         return false;
     }
@@ -171,7 +171,7 @@ bool VTOL_Assist::check_VTOL_recovery(void)
             quadplane.force_fw_control_recovery = false;
             quadplane.attitude_control->reset_target_and_rate(false);
 
-            if (ahrs.groundspeed() > quadplane.wp_nav->get_default_speed_xy()*0.01) {
+            if (ahrs.groundspeed() > quadplane.wp_nav->get_default_speed_NE_cms()*0.01) {
                 /* if moving at high speed also reset position
                    controller and height controller
 

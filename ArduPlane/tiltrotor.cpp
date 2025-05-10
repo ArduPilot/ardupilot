@@ -311,7 +311,7 @@ void Tiltrotor::continuous_update(void)
             slew(0);
         } else {
             // manual control of forward throttle up to max VTOL angle
-            float settilt = .01f * quadplane.forward_throttle_pct();
+            float settilt = 0.01f * quadplane.forward_throttle_pct();
             slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
         }
         return;
@@ -649,7 +649,7 @@ void Tiltrotor::vectoring(void)
             motors->limit.yaw = true;
         }
 
-        // constrain and scale to ouput range
+        // constrain and scale to output range
         left_tilt = constrain_float(left_tilt,0.0,1.0) * 1000.0;
         right_tilt = constrain_float(right_tilt,0.0,1.0) * 1000.0;
 

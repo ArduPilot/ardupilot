@@ -455,7 +455,7 @@ void RCOutput::push()
 
             // If safety is on and safety mask not bypassing
             if (safety_on && !(safety_mask & (1U<<(i)))) {
-                // safety is on, overwride pwm
+                // safety is on, override pwm
                 period_us = safe_pwm[i];
             }
             write_int(i, period_us);
@@ -478,7 +478,7 @@ void RCOutput::write_int(uint8_t chan, uint16_t period_us)
 
     bool safety_on = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
     if (safety_on && !(safety_mask & (1U<<(chan)))) {
-        // safety is on, overwride pwm
+        // safety is on, override pwm
         period_us = safe_pwm[chan];
     }
 

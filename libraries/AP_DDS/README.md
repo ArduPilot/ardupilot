@@ -153,7 +153,7 @@ Depending on what's configured, you will see something similar to this:
 ```bash
 $ ros2 topic list -v
 Published topics:
- * /ap/airspeed [geometry_msgs/msg/Vector3] 1 publisher
+ * /ap/airspeed [ardupilot_msgs/msg/Airspeed] 1 publisher
  * /ap/battery [sensor_msgs/msg/BatteryState] 1 publisher
  * /ap/clock [rosgraph_msgs/msg/Clock] 1 publisher
  * /ap/geopose/filtered [geographic_msgs/msg/GeoPoseStamped] 1 publisher
@@ -161,6 +161,8 @@ Published topics:
  * /ap/imu/experimental/data [sensor_msgs/msg/Imu] 1 publisher
  * /ap/navsat [sensor_msgs/msg/NavSatFix] 1 publisher
  * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
+ * /ap/rc [ardupilot_msgs/msg/Rc] 1 publisher
+ * /ap/status [ardupilot_msgs/msg/Status] 1 publisher
  * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher
  * /ap/time [builtin_interfaces/msg/Time] 1 publisher
  * /ap/twist/filtered [geometry_msgs/msg/TwistStamped] 1 publisher

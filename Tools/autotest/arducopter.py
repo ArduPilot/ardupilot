@@ -3145,6 +3145,54 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if gpi.lat != 0:
                 break
 
+    def MAV_CMD_DO_SET_GLOBAL_ORIGIN(self):
+        '''test MAV_CMD_DO_SET_GLOBAL_ORIGIN command'''
+        # don't run this test if command not available:
+        try:
+            mavutil.mavlink.MAV_CMD_DO_SET_GLOBAL_ORIGIN
+        except AttributeError:
+            return
+
+        # disable the GPS so we don't get origin that way:
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+            "GPS1_TYPE": 0,
+        })
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        # we must wait until we are using EKF3 as DCM does not allow
+        # set_origin:
+        self.wait_statustext("EKF3 active", check_context=True)
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_SET_GLOBAL_ORIGIN,
+            p5=0,
+            p6=0,
+            p7=0,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_SET_GLOBAL_ORIGIN,
+            p5=0,
+            p6=int(214*1e7),
+            p7=0,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED
+        )
+        origin_lat = -23.322332
+        origin_lng = 123.45678
+        origin_alt = 23.67  # metres
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_SET_GLOBAL_ORIGIN,
+            p5=int(origin_lat*1e7),
+            p6=int(origin_lng*1e7),
+            p7=origin_alt
+        )
+        ggo = self.poll_message('GPS_GLOBAL_ORIGIN')
+        self.assert_message_field_values(ggo, {
+            "latitude": int(origin_lat*1e7),
+            "longitude": int(origin_lng*1e7),
+            "altitude": int(origin_alt*1000),  # m -> mm
+        })
+
     def FarOrigin(self):
         '''fly a mission far from the vehicle origin'''
         # Fly mission #1
@@ -8856,7 +8904,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if bs.voltages[0] != want_bs_volt:
             raise NotAchievedException("Battery voltage not as expected (want=%f) got=(%f)" % (want_bs_volt, bs.voltages[0],))
 
-        self.progress("Cheking battery remaining")
+        self.progress("Checking battery remaining")
         bs = self.assert_receive_message(
             "BATTERY_STATUS",
             condition="BATTERY_STATUS.id==2",  # id is zero-indexed
@@ -13615,6 +13663,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if len(self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)) != 0:
             raise NotAchievedException("Mission did not clear after reboot with option set")
 
+    def PLDNoParameters(self):
+        ''''try enabling PLD with lat/lng/alt all zero'''
+        self.set_parameter('SIM_PLD_LAT', 0)
+        self.set_parameter('SIM_PLD_LON', 0)
+        self.set_parameter('SIM_PLD_HEIGHT', 0)
+        self.set_parameter('SIM_PLD_ENABLE', 1)
+        self.wait_statustext('Set SIM_PLD_LAT, SIM_PLD_LAT and SIM_PLD_ALT')
+
     def do_land(self):
         self.change_mode('LAND')
         self.wait_disarmed()
@@ -13705,6 +13761,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.BrakeZ,
             self.MAV_CMD_DO_FLIGHTTERMINATION,
             self.MAV_CMD_DO_LAND_START,
+            self.MAV_CMD_DO_SET_GLOBAL_ORIGIN,
             self.MAV_CMD_SET_EKF_SOURCE_SET,
             self.MAV_CMD_NAV_TAKEOFF,
             self.MAV_CMD_NAV_TAKEOFF_command_int,
@@ -13737,6 +13794,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.Ch6TuningLoitMaxXYSpeed,
             self.TestEKF3CompassFailover,
             self.test_EKF3_option_disable_lane_switch,
+            self.PLDNoParameters
         ])
         return ret
 

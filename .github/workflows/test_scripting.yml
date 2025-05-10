@@ -29,8 +29,10 @@ jobs:
         with:
           submodules: 'recursive'
 
-      - name: Register lua problem matcher
-        run: echo "::add-matcher::.github/problem-matchers/Lua.json"
+      - name: Register lua check problem matcher
+        run: |
+          echo "::add-matcher::.github/problem-matchers/Lua.json"
+          echo "::remove-matcher owner=Lua-language-server-problem-matcher::"
 
       - name: Lua Linter
         shell: bash
@@ -39,11 +41,21 @@ jobs:
           sudo apt-get -y install lua-check
           ./Tools/scripts/run_luacheck.sh
 
+      - name: Register lua language server problem matcher
+        run: |
+          echo "::add-matcher::.github/problem-matchers/Lua.json"
+          echo "::remove-matcher owner=Luacheck-problem-matcher::"
+
       - name: Language server check
         shell: bash
         run: |
           python3 -m pip install github-release-downloader
           python3 ./Tools/scripts/run_lua_language_check.py
+
+      - name: Remove problem matchers
+        run: |
+          echo "::remove-matcher owner=Luacheck-problem-matcher::"
+          echo "::remove-matcher owner=Lua-language-server-problem-matcher::"
 
       - name: Generate docs md
         shell: bash
