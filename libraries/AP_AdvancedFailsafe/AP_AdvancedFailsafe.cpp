@@ -253,7 +253,16 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
             _state = STATE_DATA_LINK_LOSS;
             if (_wp_comms_hold) {
                 _saved_wp = mission.get_current_nav_cmd().index;
-                mission.set_current_cmd(_wp_comms_hold);
+
+                //option to not go back to the loss comm mission item if we are already in return path or passed loss comm mission item
+                if ((mission.state() == AP_Mission::MISSION_RUNNING) &&
+                    ((option_is_set(Option::CONTINUE_IF_ALREADY_IN_RETURN_PATH) && mission.get_in_return_path_flag()) ||
+                     (option_is_set(Option::CONTINUE_IF_PASSED_LOSS_COMM_WP)    && (mission.get_current_nav_cmd().index > _wp_comms_hold)))){
+                    
+                }else {//nominal case, set mission item to _wp_comms_hold
+                    mission.set_current_cmd(_wp_comms_hold);
+                }
+               
                 if (mode == AFS_AUTO && option_is_set(Option::GCS_FS_ALL_AUTONOMOUS_MODES)) {
                     set_mode_auto();
                 }
