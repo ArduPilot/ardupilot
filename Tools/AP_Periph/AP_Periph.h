@@ -40,6 +40,7 @@
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 #include "rc_in.h"
 #include "batt_balance.h"
+#include "battery_tag.h"
 #include "networking.h"
 #include "serial_options.h"
 #if AP_SIM_ENABLED
@@ -101,6 +102,10 @@
 
 #ifndef HAL_PERIPH_CAN_MIRROR
 #define HAL_PERIPH_CAN_MIRROR 0
+#endif
+
+#ifndef AP_SIM_PARAM_ENABLED
+#define AP_SIM_PARAM_ENABLED AP_SIM_ENABLED
 #endif
 
 #if defined(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT) && !defined(HAL_DEBUG_BUILD) && !defined(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_NON_DEBUG)
@@ -383,6 +388,10 @@ public:
     BattBalance battery_balance;
 #endif
 
+#if AP_PERIPH_BATTERY_TAG_ENABLED
+    BatteryTag battery_tag;
+#endif
+    
 #if AP_PERIPH_SERIAL_OPTIONS_ENABLED
     SerialOptions serial_options;
 #endif
@@ -552,6 +561,7 @@ public:
     void handle_lightscommand(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void handle_notify_state(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void handle_hardpoint_command(CanardInstance* canard_instance, CanardRxTransfer* transfer);
+    void handle_globaltime(CanardInstance* canard_instance, CanardRxTransfer* transfer);
 
     void process1HzTasks(uint64_t timestamp_usec);
     void processTx(void);
