@@ -264,23 +264,23 @@ void Plane::failsafe_long_off_event(ModeReason reason)
 
 void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
-    switch ((Failsafe_Action)action) {
+    switch ((FailsafeAction)action) {
 #if HAL_QUADPLANE_ENABLED
-        case Failsafe_Action_Loiter_alt_QLand:
+        case FailsafeAction::Loiter_alt_QLand:
             if (quadplane.available()) {
                 plane.set_mode(mode_loiter_qland, ModeReason::BATTERY_FAILSAFE);
                 break;
             }
             FALLTHROUGH;
 
-        case Failsafe_Action_QLand:
+        case FailsafeAction::QLand:
             if (quadplane.available()) {
                 plane.set_mode(mode_qland, ModeReason::BATTERY_FAILSAFE);
                 break;
             }
             FALLTHROUGH;
 #endif // HAL_QUADPLANE_ENABLED
-        case Failsafe_Action_Land: {
+        case FailsafeAction::Land: {
             bool already_landing = flight_stage == AP_FixedWing::FlightStage::LAND;
 #if HAL_QUADPLANE_ENABLED
             if (control_mode == &mode_qland || control_mode == &mode_loiter_qland) {
@@ -301,8 +301,8 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             }
             FALLTHROUGH;
         }
-        case Failsafe_Action_RTL:
-        case Failsafe_Action_AUTOLAND_OR_RTL: {
+        case FailsafeAction::RTL:
+        case FailsafeAction::AUTOLAND_OR_RTL: {
             bool already_landing = flight_stage == AP_FixedWing::FlightStage::LAND;
 #if HAL_QUADPLANE_ENABLED
             if (control_mode == &mode_qland || control_mode == &mode_loiter_qland ||
@@ -324,7 +324,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
                 }
                 aparm.throttle_cruise.load();
 #if MODE_AUTOLAND_ENABLED
-                if (((Failsafe_Action)action == Failsafe_Action_AUTOLAND_OR_RTL) && set_mode(mode_autoland, ModeReason::BATTERY_FAILSAFE)) {
+                if (((FailsafeAction)action == FailsafeAction::AUTOLAND_OR_RTL) && set_mode(mode_autoland, ModeReason::BATTERY_FAILSAFE)) {
                     break;
                 }
 #endif
@@ -333,7 +333,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             break;
         }
 
-        case Failsafe_Action_Terminate:
+        case FailsafeAction::Terminate:
 #if AP_ADVANCEDFAILSAFE_ENABLED
             char battery_type_str[17];
             snprintf(battery_type_str, 17, "%s battery", type_str);
@@ -343,13 +343,13 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 #endif
             break;
 
-        case Failsafe_Action_Parachute:
+        case FailsafeAction::Parachute:
 #if HAL_PARACHUTE_ENABLED
             parachute_release();
 #endif
             break;
 
-        case Failsafe_Action_None:
+        case FailsafeAction::None:
             // don't actually do anything, however we should still flag the system as having hit a failsafe
             // and ensure all appropriate flags are going off to the user
             break;
