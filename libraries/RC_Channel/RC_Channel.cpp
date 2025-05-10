@@ -651,6 +651,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::COMPASS_LEARN:
 #if AP_ARMING_ENABLED
     case AUX_FUNC::DISARM:
+    case AUX_FUNC::ARM:
 #endif
     case AUX_FUNC::DO_NOTHING:
 #if AP_LANDINGGEAR_ENABLED
@@ -1563,6 +1564,12 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
             AP::arming().disarm(AP_Arming::Method::AUXSWITCH);
         }
         break;
+
+    case AUX_FUNC::ARM:
+        if (ch_flag == AuxSwitchPos::HIGH) {
+            AP::arming().arm(AP_Arming::Method::AUXSWITCH);
+        }  
+        break;  
 #endif
 
     case AUX_FUNC::COMPASS_LEARN:
