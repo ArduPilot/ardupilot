@@ -584,7 +584,7 @@ void Sub::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 
 void Sub::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
-    condition_value  = cmd.content.distance.meters * 100;
+    condition_value  = cmd.content.distance.meters;
 }
 
 void Sub::do_yaw(const AP_Mission::Mission_Command& cmd)

@@ -1114,17 +1114,17 @@ const Vector3f& ModeGuided::get_target_accel() const
     return guided_accel_target_cmss;
 }
 
-uint32_t ModeGuided::wp_distance() const
+float ModeGuided::wp_distance_m() const
 {
     switch(guided_mode) {
     case SubMode::WP:
-        return wp_nav->get_wp_distance_to_destination_cm();
+        return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
     case SubMode::Pos:
-        return get_horizontal_distance_cm(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy());
+        return get_horizontal_distance_cm(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy()) * 0.01f;
     case SubMode::PosVelAccel:
-        return pos_control->get_pos_error_NE_cm();
+        return pos_control->get_pos_error_NE_cm() * 0.01f;
     default:
-        return 0;
+        return 0.0f;
     }
 }
 

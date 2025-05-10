@@ -576,9 +576,9 @@ void ModeZigZag::spray(bool b)
 #endif
 }
 
-uint32_t ModeZigZag::wp_distance() const
+float ModeZigZag::wp_distance_m() const
 {
-    return is_auto ? wp_nav->get_wp_distance_to_destination_cm() : 0;
+    return is_auto ? wp_nav->get_wp_distance_to_destination_cm() * 0.01f : 0.0f;
 }
 int32_t ModeZigZag::wp_bearing() const
 {

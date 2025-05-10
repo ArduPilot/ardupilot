@@ -126,9 +126,9 @@ void ModeCircle::run()
     attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
-uint32_t ModeCircle::wp_distance() const
+float ModeCircle::wp_distance_m() const
 {
-    return copter.circle_nav->get_distance_to_target_cm();
+    return copter.circle_nav->get_distance_to_target_cm() * 0.01f;
 }
 
 int32_t ModeCircle::wp_bearing() const

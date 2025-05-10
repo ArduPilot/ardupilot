@@ -853,15 +853,15 @@ bool ModeAuto::do_guided(const AP_Mission::Mission_Command& cmd)
     return true;
 }
 
-uint32_t ModeAuto::wp_distance() const
+float ModeAuto::wp_distance_m() const
 {
     switch (_mode) {
     case SubMode::CIRCLE:
-        return copter.circle_nav->get_distance_to_target_cm();
+        return copter.circle_nav->get_distance_to_target_cm() * 0.01f;
     case SubMode::WP:
     case SubMode::CIRCLE_MOVE_TO_EDGE:
     default:
-        return wp_nav->get_wp_distance_to_destination_cm();
+        return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
     }
 }
 
@@ -1922,7 +1922,7 @@ void ModeAuto::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 
 void ModeAuto::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
-    condition_value  = cmd.content.distance.meters * 100;
+    condition_value  = cmd.content.distance.meters;
 }
 
 void ModeAuto::do_yaw(const AP_Mission::Mission_Command& cmd)
@@ -2206,7 +2206,7 @@ bool ModeAuto::verify_wait_delay()
 
 bool ModeAuto::verify_within_distance()
 {
-    if (wp_distance() < (uint32_t)MAX(condition_value,0)) {
+    if (wp_distance_m() < MAX(condition_value,0)) {
         condition_value = 0;
         return true;
     }
