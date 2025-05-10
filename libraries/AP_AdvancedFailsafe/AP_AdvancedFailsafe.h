@@ -171,6 +171,8 @@ private:
     enum class Option {
         CONTINUE_AFTER_RECOVERED = (1U<<0),
         GCS_FS_ALL_AUTONOMOUS_MODES = (1U<<1),
+        CONTINUE_IF_ALREADY_IN_RETURN_PATH = (1U<<2),
+        CONTINUE_IF_PASSED_LOSS_COMM_WP = (1U<<3),
     };
     bool option_is_set(Option option) const {
         return (options.get() & int16_t(option)) != 0;
