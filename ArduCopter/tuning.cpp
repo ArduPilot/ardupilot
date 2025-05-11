@@ -9,8 +9,6 @@
 //  should be called at 3.3hz
 void Copter::tuning()
 {
-    const RC_Channel *rc_tuning = rc().find_channel_for_option(RC_Channel::AUX_FUNC::TRANSMITTER_TUNING);
-
     // exit immediately if tuning channel is not set
     if (rc_tuning == nullptr) {
         return;
