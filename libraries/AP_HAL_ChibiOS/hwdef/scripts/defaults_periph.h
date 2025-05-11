@@ -136,8 +136,8 @@
 #define COMPASS_LEARN_ENABLED 0
 #endif
 
-#ifndef HAL_EXTERNAL_AHRS_ENABLED
-#define HAL_EXTERNAL_AHRS_ENABLED 0
+#ifndef AP_EXTERNAL_AHRS_ENABLED
+#define AP_EXTERNAL_AHRS_ENABLED 0
 #endif
 
 // disable RC_Channels library:
