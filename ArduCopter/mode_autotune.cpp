@@ -29,8 +29,7 @@ bool AutoTune::init()
     return init_internals(position_hold,
                           copter.attitude_control,
                           copter.pos_control,
-                          copter.ahrs_view,
-                          &copter.inertial_nav);
+                          copter.ahrs_view);
 }
 
 void AutoTune::run()
