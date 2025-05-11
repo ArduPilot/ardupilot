@@ -929,7 +929,7 @@ class sitl_periph(sitl):
             AP_AHRS_ENABLED = 1,
             AP_AHRS_BACKEND_DEFAULT_ENABLED = 0,
             AP_AHRS_DCM_ENABLED = 1,  # need a default backend
-            HAL_EXTERNAL_AHRS_ENABLED = 0,
+            AP_EXTERNAL_AHRS_ENABLED = 0,
 
             HAL_MAVLINK_BINDINGS_ENABLED = 1,
 
