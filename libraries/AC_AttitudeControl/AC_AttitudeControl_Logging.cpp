@@ -15,7 +15,7 @@ void AC_AttitudeControl::Write_ANG() const
 
     const struct log_ANG pkt{
         LOG_PACKET_HEADER_INIT(LOG_ANG_MSG),
-        time_us         : AP::scheduler().get_loop_start_time_us(),
+        time_us         : _rate_gyro_time_us,
         control_roll    : targets.x,
         roll            : degrees(_ahrs.roll),
         control_pitch   : targets.y,
@@ -70,6 +70,25 @@ void AC_AttitudeControl::Write_Rate(const AC_PosControl &pos_control) const
         };
         AP::logger().WriteBlock(&pkt_ATSC, sizeof(pkt_ATSC));
     }
+}
+
+// Write an rate packet
+void AC_AttitudeControl::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z)
+{
+    struct log_SysIdD pkt_sidd = {
+        LOG_PACKET_HEADER_INIT(LOG_SYSIDD_MSG),
+        time_us         : _rate_gyro_time_us,
+        waveform_time   : waveform_time,
+        waveform_sample : waveform_sample,
+        waveform_freq   : waveform_freq,
+        angle_x         : angle_x,
+        angle_y         : angle_y,
+        angle_z         : angle_z,
+        accel_x         : accel_x,
+        accel_y         : accel_y,
+        accel_z         : accel_z
+    };
+    AP::logger().WriteBlock(&pkt_sidd, sizeof(pkt_sidd));
 }
 
 #endif // HAL_LOGGING_ENABLED

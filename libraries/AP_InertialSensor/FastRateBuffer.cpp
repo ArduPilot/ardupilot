@@ -111,7 +111,6 @@ bool FastRateBuffer::get_next_gyro_sample(Vector3f& gyro)
     }
 
     WITH_SEMAPHORE(_mutex);
-
     return _rate_loop_gyro_window.pop(gyro);
 }
 
@@ -120,7 +119,7 @@ void FastRateBuffer::reset()
     _rate_loop_gyro_window.clear();
 }
 
-bool AP_InertialSensor::push_next_gyro_sample(const Vector3f& gyro)
+bool AP_InertialSensor::push_next_gyro_sample(const Vector3f& gyro, float delta_angle_dt, const Vector3f& delta_angle)
 {
     if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
         return false;
@@ -134,11 +133,36 @@ bool AP_InertialSensor::push_next_gyro_sample(const Vector3f& gyro)
     */
     WITH_SEMAPHORE(fast_rate_buffer->_mutex);
 
+    // just a copy of the latest delta angle data
+    // when running at high rates this is close enough to reality to be sufficient
+    fast_rate_buffer->delta_angle_acc_dt += delta_angle_dt;
+    fast_rate_buffer->delta_angle_acc += delta_angle;
+
     if (!fast_rate_buffer->_rate_loop_gyro_window.push(gyro)) {
         debug("dropped rate loop sample");
     }
     fast_rate_buffer->rate_decimation_count = 0;
     fast_rate_buffer->_notifier.signal();
+    return true;
+}
+
+/*
+  get delta angles
+ */
+bool AP_InertialSensor::get_rate_delta_angle(Vector3f &delta_angle, float &delta_angle_dt)
+{
+    if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
+        return false;
+    }
+
+    WITH_SEMAPHORE(fast_rate_buffer->_mutex);
+
+    delta_angle_dt = fast_rate_buffer->delta_angle_acc_dt;
+    delta_angle = fast_rate_buffer->delta_angle_acc;
+
+    fast_rate_buffer->delta_angle_acc_dt = 0;
+    fast_rate_buffer->delta_angle_acc.zero();
+
     return true;
 }
 

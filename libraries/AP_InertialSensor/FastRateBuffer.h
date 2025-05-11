@@ -45,6 +45,10 @@ private:
     ObjectBuffer<Vector3f> _rate_loop_gyro_window{AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE};
     uint8_t rate_decimation; // 0 means off
     uint8_t rate_decimation_count;
+
+    float delta_angle_acc_dt;
+    Vector3f delta_angle_acc;
+
     HAL_BinarySemaphore _notifier;
     HAL_Semaphore _mutex;
 };
