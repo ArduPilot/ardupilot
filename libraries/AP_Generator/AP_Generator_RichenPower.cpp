@@ -330,7 +330,7 @@ void AP_Generator_RichenPower::Log_Write()
     last_logged_reading_ms = last_reading_ms;
 
     AP::logger().WriteStreaming(
-        "GEN",
+        "RICH",
         "TimeUS,runTime,maintTime,errors,rpm,ovolt,ocurr,mode",
         "s-------",
         "F-------",
