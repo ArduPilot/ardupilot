@@ -114,9 +114,9 @@ AR_PosControl::AR_PosControl(AR_AttitudeControl& atc) :
 void AR_PosControl::update(float dt)
 {
     // exit immediately if no current location, destination or disarmed
-    Vector2f curr_pos_NE;
+    Vector3p curr_pos_NED_m;
     Vector3f curr_vel_NED;
-    if (!hal.util->get_soft_armed() || !AP::ahrs().get_relative_position_NE_origin_float(curr_pos_NE) ||
+    if (!hal.util->get_soft_armed() || !AP::ahrs().get_relative_position_NED_origin(curr_pos_NED_m) ||
         !AP::ahrs().get_velocity_NED(curr_vel_NED)) {
         _desired_speed = _atc.get_desired_speed_accel_limited(0.0f, dt);
         _desired_lat_accel = 0.0f;
@@ -138,7 +138,7 @@ void AR_PosControl::update(float dt)
     _vel_target.zero();
     if (_pos_target_valid) {
         Vector2p pos_target = _pos_target;
-        _vel_target = _p_pos.update_all(pos_target.x, pos_target.y, curr_pos_NE);
+        _vel_target = _p_pos.update_all(pos_target, curr_pos_NED_m.xy());
     }
 
     // calculation velocity error
