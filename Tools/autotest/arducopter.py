@@ -12896,6 +12896,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "AUTO_OPTIONS": 3,
         })
         self.set_rc(6, 2000)
+        self.reboot_sitl()
 
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
@@ -12931,6 +12932,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "AUTO_OPTIONS": 3,
         })
         self.set_rc(6, 2000)
+        self.reboot_sitl()
 
         self.takeoff(mode='LOITER')
 
