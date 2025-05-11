@@ -24,9 +24,9 @@ public:
 
 private:
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     AP_ExternalAHRS eAHRS;
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_EXTERNAL_AHRS_ENABLED
     AP_Scheduler scheduler;
 
     uint32_t ins_counter;
