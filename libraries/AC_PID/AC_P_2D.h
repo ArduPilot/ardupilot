@@ -17,13 +17,7 @@ public:
     CLASS_NO_COPY(AC_P_2D);
 
     // set target and measured inputs to P controller and calculate outputs
-    Vector2f update_all(postype_t &target_x, postype_t &target_y, const Vector2f &measurement) WARN_IF_UNUSED;
-
-    // set target and measured inputs to P controller and calculate outputs
-    // measurement is provided as 3-axis vector but only x and y are used
-    Vector2f update_all(postype_t &target_x, postype_t &target_y, const Vector3f &measurement) WARN_IF_UNUSED {
-        return update_all(target_x, target_y, Vector2f{measurement.x, measurement.y});
-    }
+    Vector2f update_all(Vector2p &target, const Vector2p &measurement) WARN_IF_UNUSED;
 
     // set_limits - sets the maximum error to limit output and first and second derivative of output
     void set_limits(float output_max, float D_Out_max = 0.0f, float D2_Out_max = 0.0f);
