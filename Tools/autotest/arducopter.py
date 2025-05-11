@@ -12796,6 +12796,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(6, 2000)
         self.reboot_sitl()
 
+        # DZ default should be set:
+        self.assert_parameter_value("RC6_DZ", 0)
+
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 20),
@@ -12831,6 +12834,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.set_rc(6, 2000)
         self.reboot_sitl()
+
+        # DZ default should be set:
+        self.assert_parameter_value("RC6_DZ", 0)
 
         self.takeoff(mode='LOITER')
 
