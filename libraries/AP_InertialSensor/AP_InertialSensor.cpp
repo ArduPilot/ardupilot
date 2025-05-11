@@ -1505,7 +1505,7 @@ bool AP_InertialSensor::gyro_calibrated_ok_all() const
 // Prearm check to verify that we have sane sched loop rates set based on Gyro backend rates
 bool AP_InertialSensor::pre_arm_check_gyro_backend_rate_hz(char* fail_msg, uint16_t fail_msg_len) const
 {
-#if AP_SCHEDULER_ENABLED
+#if AP_SCHEDULER_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
     const auto gyro_count = get_gyro_count();
     const auto threshold = 1.8 * _loop_rate;
     for (uint8_t i=0; i<gyro_count; i++) {
