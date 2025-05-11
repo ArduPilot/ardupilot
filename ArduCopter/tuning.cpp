@@ -9,18 +9,24 @@
 //  should be called at 3.3hz
 void Copter::tuning()
 {
-    // exit immediately if tuning channel is not set
     if (rc_tuning == nullptr) {
-        return;
-    }
-    
-    // exit immediately if the tuning function is not set or min and max are both zero
-    if ((g.rc_tuning_param <= 0) || (is_zero(g2.tuning_min.get()) && is_zero(g2.tuning_max.get()))) {
+        // tuning channel is not set - don't know where to take input value from
         return;
     }
 
-    // exit immediately when radio failsafe is invoked or transmitter has not been turned on
-    if (!rc().has_valid_input() || rc_tuning->get_radio_in() == 0) {
+    if (g.rc_tuning_param <= 0) {
+        // no parameter set for tuning
+        return;
+    }
+
+    // check endpoints are not both zero:
+    if (is_zero(g2.tuning_min.get()) && is_zero(g2.tuning_max.get())) {
+        // both endpoints are zero, there is no input range to tune across
+        return;
+    }
+
+    if (!rc().has_valid_input()) {
+        // no valid transmitter values to use
         return;
     }
 
