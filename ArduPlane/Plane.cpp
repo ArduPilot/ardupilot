@@ -204,6 +204,9 @@ void Plane::ahrs_update()
 
     // update inertial_nav for quadplane
     quadplane.inertial_nav.update();
+    if (quadplane.available()) {  
+        quadplane.pos_control->update_estimates();  
+    }  
 #endif
 
 #if HAL_LOGGING_ENABLED
