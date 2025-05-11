@@ -684,6 +684,12 @@ class ChibiOSHWDef(hwdef.HWDef):
             line = "0"
         return line
 
+    def disable_can(self, f):
+        '''setup for a non-CAN enabled board'''
+        f.write("#define HAL_NUM_CAN_IFACES 0\n")
+        f.write("#undef HAL_ENABLE_DRONECAN_DRIVERS\n")
+        f.write("#define HAL_ENABLE_DRONECAN_DRIVERS 0\n")
+
     def enable_can(self, f):
         '''setup for a CAN enabled board'''
         if self.mcu_series.startswith("STM32H7") or self.mcu_series.startswith("STM32G4"):
@@ -1010,6 +1016,8 @@ class ChibiOSHWDef(hwdef.HWDef):
 
         if self.have_type_prefix('CAN') and not using_chibios_can:
             self.enable_can(f)
+        else:
+            self.disable_can(f)
         flash_size = self.get_config('FLASH_SIZE_KB', type=int)
         f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
         self.env_vars['BOARD_FLASH_SIZE'] = flash_size
