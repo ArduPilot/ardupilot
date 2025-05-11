@@ -5,6 +5,7 @@ void Sub::read_inertia()
 {
     // inertial altitude estimates
     inertial_nav.update();
+    sub.pos_control.update_estimates();
 
     // pull position from ahrs
     Location loc;
