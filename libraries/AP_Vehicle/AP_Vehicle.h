@@ -428,7 +428,7 @@ protected:
     AP_Generator generator;
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     AP_ExternalAHRS externalAHRS;
 #endif
 
