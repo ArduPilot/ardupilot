@@ -3088,6 +3088,109 @@ class TestSuite(ABC):
 
         return ids
 
+    def LoggerDocumentation_greylist(self):
+        '''returns a set of messages should should be documented but
+        are currently known as undocumented'''
+        return set([
+            "FENC",  # fence
+            "FTN3",  # gyrofft
+            "GEN",   # generator
+            "IE24",  # generator
+            "IEFC",  # generator
+            "IREG",  # INS something
+            "ISBD",  # InertialSensor batch logging
+            "ISBH",  # InertialSensor batch logging
+            "RELY",  # relay
+            "RTCM",  # GPS
+            "SBRE",  # septentrio
+
+            "SAF1",  # blimp-sim
+            "SAN1",  # blimp-sim
+            "SAN2",  # blimp-sim
+            "SBA1",  # blimp-sim
+            "SBLM",  # blimp-sim
+            "SCTL",  # glider-sim
+            "SFA1",  # blimp-sim
+            "SFAN",  # blimp-sim
+            "SFN",   # blimp-sim
+            "SFT",   # blimp-sim
+            "SFV1",  # blimp-sim
+            "SMGC",  # blimp-sim
+            "SRT1",  # blimp-sim
+            "SRT2",  # blimp-sim
+            "SRT3",  # blimp-sim
+            "SSAN",  # blimp-sim
+
+            "GLT",  # glider sim
+            "SL2",  # glider-sim
+            "SLD",  # glider-sim
+
+            "SMVZ",  # Sim-Volz
+
+            "SORC",  # Soaring
+            "VAR",   # soaring
+
+            "TCLR",  # tempcal
+            "TEMP",  # temperature sensor library
+
+            "ARHS",  # autorotation
+            "AROT",  # autorotation
+            "ARSC",  # autorotation
+            "ATDH",  # heli autotune
+            "ATNH",  # heli autotune
+            "ATSH",  # heli autotune
+            "CC",    # AC_CustomControl
+            "FWDT",  # quadplane
+            "GMB1",  # sologimbal
+            "GMB2",  # sologimbal
+            "QBRK",  # quadplane
+            "SURF",  # surface-tracking
+            "ATUN",  # Copter autotune
+        ])
+
+    def LoggerDocumentation_whitelist(self):
+        '''returns a set of messages which we do not want to see
+        documentation for'''
+
+        # we allow for no docs for replay messages, as these are not for end-users. They are
+        # effectively binary blobs for replay
+        # Documenting these is still useful! -pb
+        REPLAY_MSGS = ['RFRH', 'RFRF', 'REV2', 'RSO2', 'RWA2', 'REV3', 'RSO3', 'RWA3', 'RMGI',
+                       'REY3', 'RFRN', 'RISH', 'RISI', 'RISJ', 'RBRH', 'RBRI', 'RRNH', 'RRNI',
+                       'RGPH', 'RGPI', 'RGPJ', 'RASH', 'RASI', 'RBCH', 'RBCI', 'RVOH', 'RMGH',
+                       'ROFH', 'REPH', 'REVH', 'RWOH', 'RBOH', 'RSLL']
+
+        ret = set(REPLAY_MSGS)
+
+        # messages not expected to be on particular vehicles.  Nothing
+        # needs fixing below this point, unless you can come up with a
+        # better way to avoid this list!
+
+        # We extract all message that need to be documented from the
+        # code, but we don't pay attention to which vehicles will use
+        # those messages.  We *do* care about the documented messages
+        # for a vehicle as we follow the tree created by the
+        # documentation (eg. @Path:
+        # ../libraries/AP_LandingGear/AP_LandingGear.cpp).
+        vinfo_key = self.vehicleinfo_key()
+        if vinfo_key != 'ArduPlane':
+            ret.update([
+                "TECS",  # only Plane has TECS
+                "TEC2",  # only Plane has TECS
+                "TEC3",  # only Plane has TECS
+                "SOAR",  # only Planes can truly soar
+                "SORC",  # soaring is pure magic
+                "QBRK",  # quadplane
+                "FWDT",  # quadplane
+            ])
+        if vinfo_key == 'ArduCopter':
+            ret.update([
+                "CC",    # only Copter has the CustomController
+            ])
+        # end not-expected-to-be-fixed block
+
+        return ret
+
     def LoggerDocumentation(self):
         '''Test Onboard Logging Generation'''
         xml_filepath = os.path.join(self.buildlogs_dirpath(), "LogMessages.xml")
@@ -3128,12 +3231,8 @@ class TestSuite(ABC):
         objectify.enable_recursive_str()
         tree = objectify.fromstring(xml)
 
-        # we allow for no docs for replay messages, as these are not for end-users. They are
-        # effectively binary blobs for replay
-        REPLAY_MSGS = ['RFRH', 'RFRF', 'REV2', 'RSO2', 'RWA2', 'REV3', 'RSO3', 'RWA3', 'RMGI',
-                       'REY3', 'RFRN', 'RISH', 'RISI', 'RISJ', 'RBRH', 'RBRI', 'RRNH', 'RRNI',
-                       'RGPH', 'RGPI', 'RGPJ', 'RASH', 'RASI', 'RBCH', 'RBCI', 'RVOH', 'RMGH',
-                       'ROFH', 'REPH', 'REVH', 'RWOH', 'RBOH', 'RSLL']
+        whitelist = self.LoggerDocumentation_whitelist()
+        greylist = self.LoggerDocumentation_greylist()
 
         docco_ids = {}
         for thing in tree.logformat:
@@ -3143,7 +3242,7 @@ class TestSuite(ABC):
                 "labels": [],
             }
             if getattr(thing.fields, 'field', None) is None:
-                if name in REPLAY_MSGS:
+                if name in whitelist:
                     continue
                 raise NotAchievedException("no doc fields for %s" % name)
             for field in thing.fields.field:
@@ -3156,10 +3255,18 @@ class TestSuite(ABC):
         # self.progress("Code ids: (%s)" % str(sorted(code_ids.keys())))
         # self.progress("Docco ids: (%s)" % str(sorted(docco_ids.keys())))
 
+        undocumented = set()
+        overdocumented = set()
         for name in sorted(code_ids.keys()):
             if name not in docco_ids:
-                self.progress("Undocumented message: %s" % str(name))
+                if name in greylist:
+                    self.progress(f"{name} should be documented but isn't")
+                    continue
+                if name not in whitelist:
+                    undocumented.add(name)
                 continue
+            if name in whitelist:
+                overdocumented.add(name)
             seen_labels = {}
             for label in code_ids[name]["labels"].split(","):
                 if label in seen_labels:
@@ -3169,9 +3276,19 @@ class TestSuite(ABC):
                 if label not in docco_ids[name]["labels"]:
                     raise NotAchievedException("%s.%s not in documented fields (have (%s))" %
                                                (name, label, ",".join(docco_ids[name]["labels"])))
+
+        if len(undocumented):
+            for name in sorted(undocumented):
+                self.progress(f"Undocumented message: {name}")
+            raise NotAchievedException("Undocumented messages found")
+        if len(overdocumented):
+            for name in sorted(overdocumented):
+                self.progress(f"Message documented when it shouldn't be: {name}")
+            raise NotAchievedException("Overdocumented messages found")
+
         missing = []
         for name in sorted(docco_ids):
-            if name not in code_ids and name not in REPLAY_MSGS:
+            if name not in code_ids and name not in whitelist:
                 missing.append(name)
                 continue
             for label in docco_ids[name]["labels"]:
