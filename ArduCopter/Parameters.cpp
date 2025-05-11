@@ -864,13 +864,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: TUNE_MIN
     // @DisplayName: Tuning minimum
-    // @Description: Minimum value that the parameter currently being tuned with the transmitter's channel 6 knob will be set to
+    // @Description: Minimum value that the parameter currently being tuned with the transmitter's TRANSMITTER_TUNING knob will be set to
     // @User: Standard
     AP_GROUPINFO("TUNE_MIN", 31, ParametersG2, tuning_min, 0),
 
     // @Param: TUNE_MAX
     // @DisplayName: Tuning maximum
-    // @Description: Maximum value that the parameter currently being tuned with the transmitter's channel 6 knob will be set to
+    // @Description: Maximum value that the parameter currently being tuned with the transmitter's TRANSMITTER_TUNING knob will be set to
     // @User: Standard
     AP_GROUPINFO("TUNE_MAX", 32, ParametersG2, tuning_max, 0),
 

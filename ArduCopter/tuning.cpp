@@ -5,7 +5,7 @@
  * This should not be confused with the AutoTune feature which can be found in control_autotune.cpp
  */
 
-// tuning - updates parameters based on the ch6 TRANSMITTER_TUNING channel knob's position
+// tuning - updates parameters based on the TRANSMITTER_TUNING channel knob's position
 //  should be called at 3.3hz
 void Copter::tuning()
 {
