@@ -108,8 +108,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control) :
-    _inav(inav),
+AC_WPNav::AC_WPNav(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control) :
     _ahrs(ahrs),
     _pos_control(pos_control),
     _attitude_control(attitude_control)
@@ -409,12 +408,9 @@ void AC_WPNav::shift_wp_origin_and_destination_to_current_pos_NE()
     // Reset position controller to current location
     _pos_control.init_NE_controller();
 
-    // get current and target locations
-    const Vector2f& curr_pos_neu_cm = _inav.get_position_xy_cm();
-
     // shift origin and destination_neu_cm horizontally
-    _origin_neu_cm.xy() = curr_pos_neu_cm;
-    _destination_neu_cm.xy() = curr_pos_neu_cm;
+    _origin_neu_cm.xy() = _pos_control.get_pos_estimate_NEU_cm().xy().tofloat();
+    _destination_neu_cm.xy() = _pos_control.get_pos_estimate_NEU_cm().xy().tofloat();
 }
 
 /// shifts the origin and destination_neu_cm horizontally to the achievable stopping point
@@ -472,7 +468,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     const Vector3p& psc_pos_offset_neu_cm = _pos_control.get_pos_offset_NEU_cm();
 
     // get current position and adjust altitude to origin and destination_neu_cm's frame (i.e. _frame)
-    Vector3f curr_pos_neu_cm = _inav.get_position_neu_cm() - psc_pos_offset_neu_cm.tofloat();
+    Vector3f curr_pos_neu_cm = _pos_control.get_pos_estimate_NEU_cm().tofloat() - psc_pos_offset_neu_cm.tofloat();
     curr_pos_neu_cm.z -= terr_offset_u_cm;
     Vector3f curr_target_vel_neu_cms = _pos_control.get_vel_desired_NEU_cms();
     curr_target_vel_neu_cms.z -= _pos_control.get_vel_offset_U_cms();
@@ -484,7 +480,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     if (is_positive(curr_target_vel_neu_cms.length_squared())) {
         Vector3f track_direction_neu = curr_target_vel_neu_cms.normalized();
         const float track_error_neu_cm = _pos_control.get_pos_error_NEU_cm().dot(track_direction_neu);
-        const float track_velocity_neu_cms = _inav.get_velocity_neu_cms().dot(track_direction_neu);
+        const float track_velocity_neu_cms = _pos_control.get_vel_estimate_NEU_cms().dot(track_direction_neu);
         // set time scaler to be consistent with the achievable aircraft speed with a 5% buffer for short term variation.
         track_scaler_dt = constrain_float(0.05f + (track_velocity_neu_cms - _pos_control.get_pos_NE_p().kP() * track_error_neu_cm) / curr_target_vel_neu_cms.length(), 0.0f, 1.0f);
     }
@@ -578,13 +574,13 @@ void AC_WPNav::update_track_with_speed_accel_limits()
 /// get_wp_distance_to_destination - get horizontal distance to destination_neu_cm in cm
 float AC_WPNav::get_wp_distance_to_destination_cm() const
 {
-    return get_horizontal_distance_cm(_inav.get_position_xy_cm(), _destination_neu_cm.xy());
+    return get_horizontal_distance_cm(_pos_control.get_pos_estimate_NEU_cm().xy().tofloat(), _destination_neu_cm.xy());
 }
 
 /// get_wp_bearing_to_destination_cd - get bearing to next waypoint in centi-degrees
 int32_t AC_WPNav::get_wp_bearing_to_destination_cd() const
 {
-    return get_bearing_cd(_inav.get_position_xy_cm(), _destination_neu_cm.xy());
+    return get_bearing_cd(_pos_control.get_pos_estimate_NEU_cm().xy().tofloat(), _destination_neu_cm.xy());
 }
 
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
@@ -668,7 +664,7 @@ bool AC_WPNav::get_terrain_offset_cm(float& offset_cm)
         AP_Terrain *terrain = AP::terrain();
         if (terrain != nullptr &&
             terrain->height_above_terrain(terr_alt, true)) {
-            offset_cm = _inav.get_position_z_up_cm() - (terr_alt * 100.0);
+            offset_cm = _pos_control.get_pos_estimate_NEU_cm().z - (terr_alt * 100.0);
             return true;
         }
 #endif

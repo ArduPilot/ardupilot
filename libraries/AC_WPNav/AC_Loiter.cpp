@@ -79,8 +79,7 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_Loiter::AC_Loiter(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control) :
-    _inav(inav),
+AC_Loiter::AC_Loiter(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control) :
     _ahrs(ahrs),
     _pos_control(pos_control),
     _attitude_control(attitude_control)
