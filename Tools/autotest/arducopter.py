@@ -8633,8 +8633,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.set_message_rate_hz("GENERATOR_STATUS", -1)
         self.set_parameter("LOG_DISARMED", 0)
-        if not self.current_onboard_log_contains_message("GEN"):
-            raise NotAchievedException("Did not find expected GEN message")
+        if not self.current_onboard_log_contains_message("RICH"):
+            raise NotAchievedException("Did not find expected RICH message")
 
     def IE24(self):
         '''Test IntelligentEnergy 2.4kWh generator with V1 and V2 telemetry protocols'''
