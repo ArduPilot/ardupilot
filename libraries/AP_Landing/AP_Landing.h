@@ -209,4 +209,7 @@ private:
     bool type_slope_is_on_approach(void) const;
     bool type_slope_is_expecting_impact(void) const;
     bool type_slope_is_throttle_suppressed(void) const;
+
+    // return a location alt in cm as AMSL
+    int32_t loc_alt_AMSL_cm(const Location &loc) const;
 };
