@@ -331,6 +331,18 @@ private:
     bool _have_i2c_driver(uint8_t bus_num, uint8_t address) const;
     bool _add_backend(AP_Baro_Backend *backend);
     void _probe_i2c_barometers(void);
+
+    void probe_i2c_dev(AP_Baro_Backend* (*probefn)(AP_Baro&, AP_HAL::Device&), uint8_t bus, uint8_t addr);
+    void probe_spi_dev(AP_Baro_Backend* (*probefn)(AP_Baro&, AP_HAL::Device&), const char *name);
+    void probe_dev(AP_Baro_Backend* (*probefn)(AP_Baro&, AP_HAL::Device&), AP_HAL::Device *dev);
+#if AP_BARO_ICM20789_ENABLED
+    void probe_icm20789(uint8_t bus, uint8_t addr, const char *mpu_name);
+    void probe_icm20789(uint8_t bus, uint8_t addr, uint8_t mpu_bus, uint8_t mpu_addr);
+    // convenience underlying method for other probe functions;
+    // will. delete the passed-in devices if a backend is not found
+    void _probe_icm20789(AP_HAL::I2CDevice *i2c_dev, AP_HAL::Device *mpu_dev);
+#endif  // AP_BARO_ICM20789_ENABLED
+
     AP_Int8                            _filter_range;  // valid value range from mean value
     AP_Int32                           _baro_probe_ext;
 
