@@ -56,6 +56,7 @@ void custom_startup(void);
 
 #if defined(STM32H7) && CH_CFG_USE_HEAP
 void check_ecc_errors(void);
+void check_ecc_flash_region(uint16_t start_page, uint16_t num_pages_chk);
 #endif
 
 // printf to debug uart (or USB)
