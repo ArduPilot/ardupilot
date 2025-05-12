@@ -31,14 +31,18 @@ void Copter::tuning()
         return;
     }
 
-    if (rc_tuning->get_radio_in() == 0) {
-        // zero value probably indicates this channel has never been updated
+    const uint16_t radio_in = rc_tuning->get_radio_in();
+    const uint16_t radio_min = rc_tuning->get_radio_min();
+    const uint16_t radio_max = rc_tuning->get_radio_max();
+
+    // discard values which are out of range
+    if (radio_in < radio_min || radio_in > radio_max) {
+        // invalid radio in value; channel may never have been updated and be 0
         return;
     }
 
-    const uint16_t radio_in = rc_tuning->get_radio_in();
-    float tuning_value = linear_interpolate(tuning_min, tuning_max, radio_in, rc_tuning->get_radio_min(), rc_tuning->get_radio_max());
-    
+    const float tuning_value = linear_interpolate(tuning_min, tuning_max, radio_in, radio_min, radio_max);
+
 #if HAL_LOGGING_ENABLED
     Log_Write_Parameter_Tuning(g.radio_tuning, tuning_value, tuning_min, tuning_max);
 #endif
