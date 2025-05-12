@@ -14,7 +14,7 @@ void Copter::tuning()
         return;
     }
 
-    if (g.radio_tuning <= 0) {
+    if (g.tuning_param <= 0) {
         // no parameter set for tuning
         return;
     }
@@ -44,10 +44,10 @@ void Copter::tuning()
     const float tuning_value = linear_interpolate(tuning_min, tuning_max, radio_in, radio_min, radio_max);
 
 #if HAL_LOGGING_ENABLED
-    Log_Write_Parameter_Tuning(g.radio_tuning, tuning_value, tuning_min, tuning_max);
+    Log_Write_Parameter_Tuning(g.tuning_param, tuning_value, tuning_min, tuning_max);
 #endif
 
-    switch(g.radio_tuning) {
+    switch(g.tuning_param) {
 
     // Roll, Pitch tuning
     case TUNING_STABILIZE_ROLL_PITCH_KP:
