@@ -42,7 +42,7 @@ private:
 static AP_BoardConfig board_config;
 static SchedTest schedtest;
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros, _priority) SCHED_TASK_CLASS(SchedTest, &schedtest, func, _interval_ticks, _max_time_micros, _priority)
+#define SCHED_TASK(func, rate_hz, _max_time_micros, _priority) SCHED_TASK_CLASS(SchedTest, &schedtest, func, rate_hz, _max_time_micros, _priority)
 
 /*
   scheduler table - all regular tasks should be listed here.
