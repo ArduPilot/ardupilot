@@ -416,7 +416,8 @@ private:
         Hold          = 2,
         SmartRTL      = 3,
         SmartRTL_Hold = 4,
-        Terminate     = 5
+        Terminate     = 5,
+        Loiter_Hold   = 6,
     };
 
     enum class Failsafe_Options : uint32_t {
