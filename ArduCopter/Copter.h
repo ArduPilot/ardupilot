@@ -1011,6 +1011,7 @@ private:
     // tuning.cpp
     void tuning();
     void tuning(const class RC_Channel *tuning_ch, int8_t tuning_param, float tuning_min, float tuning_max);
+    bool being_tuned(int8_t tuning_param) const;
 
     // UserCode.cpp
     void userhook_init();
