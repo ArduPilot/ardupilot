@@ -13,6 +13,17 @@ void Copter::tuning()
     tuning(rc_tuning2, g2.rc_tuning2_param, g2.rc_tuning2_min.get(), g2.rc_tuning2_max.get());
 }
 
+bool Copter::being_tuned(int8_t tuning_param) const
+{
+    if (g.rc_tuning_param == tuning_param) {
+        return true;
+    }
+    if (g2.rc_tuning2_param == tuning_param) {
+        return true;
+    }
+    return false;
+}
+
 void Copter::tuning(const RC_Channel *tuning_ch, int8_t tuning_param, float tuning_min, float tuning_max)
 {
     if (tuning_ch == nullptr) {
