@@ -19,8 +19,8 @@ void Copter::tuning()
         return;
     }
 
-    const float tuning_min = g2.tuning_min.get();
-    const float tuning_max = g2.tuning_max.get();
+    const float tuning_min = g2.rc_tuning_min;
+    const float tuning_max = g2.rc_tuning_max;
     if (is_equal(tuning_min, tuning_max)) {
         // endpoints are equal, there is no parameter value range to tune across
         return;
@@ -35,7 +35,7 @@ void Copter::tuning()
     const float tuning_value = linear_interpolate(g2.tuning_min, g2.tuning_max, norm_in, -1, 1);
 
 #if HAL_LOGGING_ENABLED
-    Log_Write_Parameter_Tuning(g.rc_tuning_param, tuning_value, g2.tuning_min, g2.tuning_max);
+    Log_Write_Parameter_Tuning(g.rc_tuning_param, tuning_value, tuning_min, tuning_max);
 #endif
 
     switch(g.rc_tuning_param) {
