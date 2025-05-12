@@ -259,6 +259,9 @@ public:
 
     /// Position
 
+    /// get_pos_estimate_NEU_cm - returns the current position estimate, frame NEU in cm relative to the EKF origin
+    const Vector3p& get_pos_estimate_NEU_cm() const { return _pos_estimate_neu_cm; }
+
     /// get_pos_target_NEU_cm - returns the position target, frame NEU in cm relative to the EKF origin
     const Vector3p& get_pos_target_NEU_cm() const { return _pos_target_neu_cm; }
 
@@ -300,6 +303,9 @@ public:
 
 
     /// Velocity
+
+    /// get_vel_estimate_NEU_cms - returns current velocity estimate in cm/s in NEU
+    const Vector3f& get_vel_estimate_NEU_cms() const { return _vel_estimate_neu_cms; }
 
     /// set_vel_desired_NEU_cms - sets desired velocity in NEU cm/s
     void set_vel_desired_NEU_cms(const Vector3f &vel_desired_neu_cms) { _vel_desired_neu_cms = vel_desired_neu_cms; }
