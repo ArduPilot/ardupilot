@@ -516,6 +516,9 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "configure-all" ]; then
         echo "Checking configure of all boards"
         ./Tools/scripts/configure_all.py
+        echo "Checking build of boards using configure_all.py"
+        # this glob chosen so we include some peripherals:
+        ./Tools/scripts/configure_all.py --build --pattern CubeBlack*
         continue
     fi
 
