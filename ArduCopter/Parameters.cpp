@@ -868,13 +868,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: Tuning minimum
     // @Description: Transmitter Tuning minum value. The parameter being tuned will have its value set to this minimum value when the tuning knob is at its lowest position
     // @User: Standard
-    AP_GROUPINFO("TUNE_MIN", 31, ParametersG2, tuning_min, 0),
+    AP_GROUPINFO("TUNE_MIN", 31, ParametersG2, rc_tuning_min, 0),
 
     // @Param: TUNE_MAX
     // @DisplayName: Tuning maximum
     // @Description: Transmitter Tuning maximum value. The parameter being tuned will have its value set to this maximum value when the tuning knob is at its highest position
     // @User: Standard
-    AP_GROUPINFO("TUNE_MAX", 32, ParametersG2, tuning_max, 0),
+    AP_GROUPINFO("TUNE_MAX", 32, ParametersG2, rc_tuning_max, 0),
 
 #if AP_OAPATHPLANNER_ENABLED
     // @Group: OA_

@@ -594,8 +594,8 @@ public:
     void *autotune_ptr;
 #endif
 
-    AP_Float tuning_min;
-    AP_Float tuning_max;
+    AP_Float rc_tuning_min;
+    AP_Float rc_tuning_max;
 
 #if AP_OAPATHPLANNER_ENABLED
     // object avoidance path planning
