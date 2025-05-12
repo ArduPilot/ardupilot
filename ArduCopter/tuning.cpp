@@ -15,7 +15,7 @@ void Copter::tuning()
     }
     
     // exit immediately if the tuning function is not set or min and max are both zero
-    if ((g.radio_tuning <= 0) || (is_zero(g2.tuning_min.get()) && is_zero(g2.tuning_max.get()))) {
+    if ((g.rc_tuning_param <= 0) || (is_zero(g2.tuning_min.get()) && is_zero(g2.tuning_max.get()))) {
         return;
     }
 
@@ -28,10 +28,10 @@ void Copter::tuning()
     const float tuning_value = linear_interpolate(g2.tuning_min, g2.tuning_max, control_in, -1, 1);
 
 #if HAL_LOGGING_ENABLED
-    Log_Write_Parameter_Tuning(g.radio_tuning, tuning_value, g2.tuning_min, g2.tuning_max);
+    Log_Write_Parameter_Tuning(g.rc_tuning_param, tuning_value, g2.tuning_min, g2.tuning_max);
 #endif
 
-    switch(g.radio_tuning) {
+    switch(g.rc_tuning_param) {
 
     // Roll, Pitch tuning
     case TUNING_STABILIZE_ROLL_PITCH_KP:
