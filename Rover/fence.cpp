@@ -67,6 +67,11 @@ void Rover::fence_check()
                         set_mode(mode_hold, ModeReason::FENCE_BREACHED);
                     }
                     break;
+                case FailsafeAction::Loiter_Hold:
+                    if (!set_mode(mode_loiter, ModeReason::FENCE_BREACHED)) {
+                        set_mode(mode_hold, ModeReason::FENCE_BREACHED);
+                    }
+                    break;
                 case FailsafeAction::Terminate:
                     arming.disarm(AP_Arming::Method::FENCEBREACH);
                     break;
