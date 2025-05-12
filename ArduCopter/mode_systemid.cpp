@@ -129,7 +129,7 @@ bool ModeSystemId::init(bool ignore_checks)
             pos_control->init_U_controller();
         }
         Vector3f curr_pos;
-        curr_pos = inertial_nav.get_position_neu_cm();
+        curr_pos = pos_control->get_pos_estimate_NEU_cm().tofloat();
         target_pos = curr_pos.xy();
     }
 

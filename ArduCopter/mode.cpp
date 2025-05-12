@@ -654,7 +654,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
             Vector2f target_pos;
             float target_error_cm = 0.0f;
             if (copter.precland.get_target_position_cm(target_pos)) {
-                const Vector2f current_pos = inertial_nav.get_position_xy_cm();
+                const Vector2f current_pos = pos_control->get_pos_estimate_NEU_cm().xy().tofloat();
                 // target is this many cm away from the vehicle
                 target_error_cm = (target_pos - current_pos).length();
             }
@@ -738,10 +738,10 @@ void Mode::land_run_horizontal_control()
     if (copter.ap.prec_land_active) {
         Vector2f target_pos, target_vel;
         if (!copter.precland.get_target_position_cm(target_pos)) {
-            target_pos = inertial_nav.get_position_xy_cm();
+            target_pos = pos_control->get_pos_estimate_NEU_cm().xy().tofloat();
         }
          // get the velocity of the target
-        copter.precland.get_target_velocity_cms(inertial_nav.get_velocity_xy_cms(), target_vel);
+        copter.precland.get_target_velocity_cms(pos_control->get_vel_estimate_NEU_cms().xy(), target_vel);
 
         Vector2f zero;
         Vector2p landing_pos = target_pos.topostype();

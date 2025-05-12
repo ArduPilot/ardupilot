@@ -1062,7 +1062,7 @@ void ModeGuided::limit_init_time_and_pos()
     guided_limit.start_time = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos = inertial_nav.get_position_neu_cm();
+    guided_limit.start_pos = pos_control->get_pos_estimate_NEU_cm().tofloat();
 }
 
 // limit_check - returns true if guided mode has breached a limit
@@ -1075,7 +1075,7 @@ bool ModeGuided::limit_check()
     }
 
     // get current location
-    const Vector3f& curr_pos = inertial_nav.get_position_neu_cm();
+    const Vector3f& curr_pos = pos_control->get_pos_estimate_NEU_cm().tofloat();
 
     // check if we have gone below min alt
     if (!is_zero(guided_limit.alt_min_cm) && (curr_pos.z < guided_limit.alt_min_cm)) {
@@ -1120,7 +1120,7 @@ float ModeGuided::wp_distance_m() const
     case SubMode::WP:
         return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
     case SubMode::Pos:
-        return get_horizontal_distance_cm(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy()) * 0.01f;
+        return get_horizontal_distance_cm(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat()) * 0.01f;
     case SubMode::PosVelAccel:
         return pos_control->get_pos_error_NE_cm() * 0.01f;
     default:
@@ -1134,7 +1134,7 @@ int32_t ModeGuided::wp_bearing() const
     case SubMode::WP:
         return wp_nav->get_wp_bearing_to_destination_cd();
     case SubMode::Pos:
-        return get_bearing_cd(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy());
+        return get_bearing_cd(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat());
     case SubMode::PosVelAccel:
         return pos_control->get_bearing_to_target_cd();
     case SubMode::TakeOff:

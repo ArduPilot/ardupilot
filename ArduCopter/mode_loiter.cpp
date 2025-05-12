@@ -61,10 +61,10 @@ void ModeLoiter::precision_loiter_xy()
     loiter_nav->clear_pilot_desired_acceleration();
     Vector2f target_pos, target_vel;
     if (!copter.precland.get_target_position_cm(target_pos)) {
-        target_pos = inertial_nav.get_position_xy_cm();
+        target_pos = pos_control->get_pos_estimate_NEU_cm().xy().tofloat();
     }
     // get the velocity of the target
-    copter.precland.get_target_velocity_cms(inertial_nav.get_velocity_xy_cms(), target_vel);
+    copter.precland.get_target_velocity_cms(pos_control->get_vel_estimate_NEU_cms().xy(), target_vel);
 
     Vector2f zero;
     Vector2p landing_pos = target_pos.topostype();
