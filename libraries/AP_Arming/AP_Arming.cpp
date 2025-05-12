@@ -663,11 +663,14 @@ bool AP_Arming::gps_checks(bool report)
                 return false;
             }
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
             //GPS update rate acceptable
             if (!gps.is_healthy(i)) {
                 check_failed(Check::GPS, report, "GPS %i: not healthy", i+1);
                 return false;
             }
+#endif
+
         }
 
         if (!AP::ahrs().home_is_set()) {
