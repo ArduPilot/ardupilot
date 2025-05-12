@@ -25,13 +25,8 @@ void Copter::tuning()
         return;
     }
 
-    if (failsafe.radio) {
-        // in radio failsafe - no valid transmitter values to use
-        return;
-    }
-
-    if (failsafe.radio_counter != 0) {
-        // last data from the radio was invalid, so don't use it
+    if (!rc().has_valid_input()) {
+        // need valid RC data to function
         return;
     }
 
