@@ -64,7 +64,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     if (type_slope_stage == SlopeStage::NORMAL) {
         const bool heading_lined_up = abs(nav_controller->bearing_error_cd()) < 1000 && !nav_controller->data_is_stale();
         const bool on_flight_line = fabsf(nav_controller->crosstrack_error()) < 5.0f && !nav_controller->data_is_stale();
-        const bool below_prev_WP = current_loc.alt < prev_WP_loc.alt;
+        const bool below_prev_WP = current_loc.alt < loc_alt_AMSL_cm(prev_WP_loc);
         if ((mission.get_prev_nav_cmd_id() == MAV_CMD_NAV_LOITER_TO_ALT) ||
             (wp_proportion >= 0 && heading_lined_up && on_flight_line) ||
             (wp_proportion > 0.15f && heading_lined_up && below_prev_WP) ||
@@ -201,10 +201,10 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_FixedWi
 
     rangefinder_state.last_stable_correction = rangefinder_state.correction;
 
-    float corrected_alt_m = (adjusted_altitude_cm_fn() - next_WP_loc.alt)*0.01f - rangefinder_state.correction;
+    float corrected_alt_m = (adjusted_altitude_cm_fn() - loc_alt_AMSL_cm(next_WP_loc))*0.01f - rangefinder_state.correction;
     float total_distance_m = prev_WP_loc.get_distance(next_WP_loc);
     float top_of_glide_slope_alt_m = total_distance_m * corrected_alt_m / wp_distance;
-    prev_WP_loc.alt = top_of_glide_slope_alt_m*100 + next_WP_loc.alt;
+    prev_WP_loc.set_alt_cm(top_of_glide_slope_alt_m*100 + loc_alt_AMSL_cm(next_WP_loc), Location::AltFrame::ABSOLUTE);
 
     // re-calculate auto_state.land_slope with updated prev_WP_loc
     setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude_offset_cm);
@@ -261,7 +261,7 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     }
 
     // height we need to sink for this WP
-    float sink_height = (prev_WP_loc.alt - next_WP_loc.alt)*0.01f;
+    float sink_height = (loc_alt_AMSL_cm(prev_WP_loc) - loc_alt_AMSL_cm(next_WP_loc))*0.01f;
 
     // current ground speed
     float groundspeed = ahrs.groundspeed();
@@ -312,6 +312,7 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     // now calculate our aim point, which is before the landing
     // point and above it
     Location loc = next_WP_loc;
+    loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
     loc.offset_bearing(land_bearing_cd * 0.01f, -flare_distance);
     loc.alt += aim_height*100;
 
@@ -327,7 +328,7 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     loc.alt -= slope * land_projection * 100;
 
     // setup the offset_cm for set_target_altitude_proportion()
-    target_altitude_offset_cm = loc.alt - prev_WP_loc.alt;
+    target_altitude_offset_cm = loc.alt - loc_alt_AMSL_cm(prev_WP_loc);
 
     // calculate the proportion we are to the target
     float land_proportion = current_loc.line_path_proportion(prev_WP_loc, loc);
