@@ -19,9 +19,10 @@ void Copter::tuning()
         return;
     }
 
-    // check endpoints are not both zero:
-    if (is_zero(g2.tuning_min.get()) && is_zero(g2.tuning_max.get())) {
-        // both endpoints are zero, there is no input range to tune across
+    const float tuning_min = g2.tuning_min.get();
+    const float tuning_max = g2.tuning_max.get();
+    if (is_equal(tuning_min, tuning_max)) {
+        // endpoints are equal, there is no parameter value range to tune across
         return;
     }
 
