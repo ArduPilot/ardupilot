@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Landing::var_info[] = {
@@ -205,6 +206,28 @@ AP_Landing::AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_TECS *_tecs_Cont
 #endif
 {
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+/*
+  return a location alt in cm as AMSL
+  assumes loc frame is either AMSL or ABOVE_TERRAIN
+*/
+int32_t AP_Landing::loc_alt_AMSL_cm(const Location &loc) const
+{
+    int32_t alt_cm;
+    // try first with full conversion
+    if (loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm)) {
+        return alt_cm;
+    }
+    if (loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
+        // if we can't get true terrain then assume flat terrain
+        // around home
+        return loc.alt + ahrs.get_home().alt;
+    }
+
+    // this should not happen, but return a value
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    return loc.alt;
 }
 
 void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
