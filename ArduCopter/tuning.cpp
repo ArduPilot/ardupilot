@@ -1,5 +1,6 @@
 #include "Copter.h"
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
 /*
  * Function to update various parameters in flight using the TRANSMITTER_TUNING channel knob
  * This should not be confused with the AutoTune feature which can be found in control_autotune.cpp
@@ -222,3 +223,5 @@ void Copter::tuning(const RC_Channel *tuning_ch, int8_t tuning_param, float tuni
         break;
     }
 }
+
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED

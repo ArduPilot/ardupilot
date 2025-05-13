@@ -738,8 +738,10 @@ void Copter::three_hz_loop()
     // check for deadreckoning failsafe
     failsafe_deadreckon_check();
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     //update transmitter based in flight tuning
     tuning();
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // check if avoidance should be enabled based on alt
     low_alt_avoidance();
