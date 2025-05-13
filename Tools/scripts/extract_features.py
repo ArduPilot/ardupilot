@@ -298,6 +298,7 @@ class ExtractFeatures(object):
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
             ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
+            ('AP_RC_TRANSMITTER_TUNING_ENABLED',  r'Copter::tuning'),
         ]
 
     def progress(self, msg):
