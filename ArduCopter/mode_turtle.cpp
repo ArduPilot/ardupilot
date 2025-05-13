@@ -8,6 +8,8 @@
 
 bool ModeTurtle::init(bool ignore_checks)
 {
+    WITH_SEMAPHORE(msem);
+
     // do not enter the mode when already armed or when flying
     if (motors->armed() || SRV_Channels::get_dshot_esc_type() == 0) {
         return false;
@@ -26,14 +28,15 @@ bool ModeTurtle::init(bool ignore_checks)
         return false;
     }
 
-    // turn on notify leds
-    AP_Notify::flags.esc_calibration = true;
+    shutdown = false;
 
     return true;
 }
 
 void ModeTurtle::arm_motors()
 {
+    WITH_SEMAPHORE(msem);
+
     if (hal.util->get_soft_armed()) {
         return;
     }
@@ -62,6 +65,8 @@ bool ModeTurtle::allows_arming(AP_Arming::Method method) const
 
 void ModeTurtle::exit()
 {
+    shutdown = true;
+
     disarm_motors();
 
     // turn off notify leds
@@ -70,13 +75,14 @@ void ModeTurtle::exit()
 
 void ModeTurtle::disarm_motors()
 {
+    WITH_SEMAPHORE(msem);
+
     if (!hal.util->get_soft_armed()) {
         return;
     }
 
     // disarm
     motors->armed(false);
-    hal.util->set_soft_armed(false);
 
     // un-reverse the motors
     change_motor_direction(false);
@@ -86,6 +92,8 @@ void ModeTurtle::disarm_motors()
     g.failsafe_throttle.load();
     g.failsafe_gcs.load();
     g.fs_ekf_action.load();
+
+    hal.util->set_soft_armed(false);
 }
 
 void ModeTurtle::change_motor_direction(bool reverse)
@@ -169,6 +177,14 @@ void ModeTurtle::run()
 // actually write values to the motors
 void ModeTurtle::output_to_motors()
 {
+    if (shutdown) {
+        disarm_motors();
+
+        // turn off notify leds
+        AP_Notify::flags.esc_calibration = false;
+        return;
+    }
+
     // throttle needs to be raised
     if (is_zero(channel_throttle->norm_input_dz())) {
         const uint32_t now = AP_HAL::millis();
@@ -180,6 +196,9 @@ void ModeTurtle::output_to_motors()
         disarm_motors();
         return;
     }
+
+    // turn on notify leds
+    AP_Notify::flags.esc_calibration = true;
 
     arm_motors();
 
