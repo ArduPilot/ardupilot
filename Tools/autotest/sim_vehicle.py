@@ -408,7 +408,7 @@ def do_build(opts, frame_options):
         cmd_configure.append("--define=%s" % nv)
 
     if opts.enable_dds:
-        cmd_configure.append("--enable-dds")
+        cmd_configure.append("--enable-DDS")
 
     if opts.disable_networking:
         cmd_configure.append("--disable-networking")

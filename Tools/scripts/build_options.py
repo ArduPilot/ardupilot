@@ -456,6 +456,9 @@ BUILD_OPTIONS = [
 
     Feature('CAN', 'DroneCAN', 'HAL_ENABLE_DRONECAN_DRIVERS', 'Enable DroneCAN support', 0, None),
     Feature('CAN', 'CAN Logging', 'AP_CAN_LOGGING_ENABLED', 'Enable CAN logging support', 0, 'Logging'),
+
+    Feature('DDS', 'DDS', 'AP_DDS_ENABLED', 'Enable MicroXRCE DDS support for ROS 2', 0, None),
+
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
