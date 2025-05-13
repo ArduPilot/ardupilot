@@ -305,6 +305,7 @@ class ExtractFeatures(object):
             ('AP_PERIPH_NOTIFY_ENABLED', r'AP_Periph_FW::handle_notify_state'),
             ('AP_PERIPH_SERIAL_OPTIONS_ENABLED', r'SerialOptions::init'),
             ('AP_PERIPH_BATTERY_ENABLED', r'AP_Periph_FW::can_battery_update'),
+            ('AP_RC_TRANSMITTER_TUNING_ENABLED',  r'Copter::tuning'),
         ]
 
     def progress(self, msg):
