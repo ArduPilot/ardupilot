@@ -19,6 +19,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Airspeed.msg"
   "srv/ArmMotors.srv"
   "srv/ModeSwitch.srv"
+  "srv/SetGliding.srv"
   "srv/Takeoff.srv"
   DEPENDENCIES geometry_msgs std_msgs
   ADD_LINTER_TESTS
