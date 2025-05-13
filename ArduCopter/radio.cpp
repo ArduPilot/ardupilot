@@ -15,12 +15,15 @@ void Copter::default_dead_zones()
     channel_throttle->set_default_dead_zone(30);
     channel_yaw->set_default_dead_zone(20);
 #endif
+
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     if (rc_tuning != nullptr) {
         rc_tuning->set_default_dead_zone(0);
     }
     if (rc_tuning2 != nullptr) {
         rc_tuning2->set_default_dead_zone(0);
     }
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 }
 
 void Copter::init_rc_in()
@@ -37,8 +40,10 @@ void Copter::init_rc_in()
     channel_yaw->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
     channel_throttle->set_range(1000);
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     rc_tuning = rc().find_channel_for_option(RC_Channel::AUX_FUNC::TRANSMITTER_TUNING);
     rc_tuning2 = rc().find_channel_for_option(RC_Channel::AUX_FUNC::TRANSMITTER_TUNING2);
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // set default dead zones
     default_dead_zones();
