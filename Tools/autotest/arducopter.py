@@ -13153,6 +13153,43 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_heading(90, timeout=60, minimum_duration=10)
         self.do_RTL()
 
+    def FenceBreachWithOA(self):
+        '''test breaching the fence after we've done avoidance'''
+        self.set_parameters({
+            "OA_TYPE": 1,
+        })
+        self.reboot_sitl()
+
+        self.takeoff(10, mode='GUIDED')
+        takeoff_loc = self.mav.location()
+
+        self.upload_fences_from_locations(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION,
+            [
+                {
+                    "radius": 10,
+                    "loc": self.offset_location_ne(takeoff_loc, 20, 0),
+                },
+            ])
+
+        loc = self.offset_location_ne(takeoff_loc, 40, 0)
+        self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+        self.wait_location(loc)
+
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+        })
+
+        self.start_subtest("Breach fence, should RTL and disarm")
+        loc2 = self.offset_location_ne(takeoff_loc, -40, 0)
+        self.send_do_reposition(loc2, frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+
+        self.wait_mode('RTL')
+        # self.delay_sim_time(10)
+        # self.send_debug_trap()
+        self.wait_location(takeoff_loc)
+        self.wait_disarmed()
+
     def Clamp(self):
         '''test Copter docking clamp'''
         clamp_ch = 11
@@ -13934,6 +13971,7 @@ RTL_ALT 111
             self.CameraLogMessages,
             self.LoiterToGuidedHomeVSOrigin,
             self.GuidedModeThrust,
+            self.FenceBreachWithOA,
             self.CompassMot,
             self.AutoRTL,
             self.EK3_OGN_HGT_MASK_climbing,
