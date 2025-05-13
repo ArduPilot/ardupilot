@@ -58,7 +58,7 @@ void Copter::arm_motors_check()
         }
 
         // increase the counter to a maximum of 1 beyond the disarm delay
-        if (arming_counter <= DISARM_DELAY) {
+        if (arming_counter < DISARM_DELAY) {
             arming_counter++;
         }
 
