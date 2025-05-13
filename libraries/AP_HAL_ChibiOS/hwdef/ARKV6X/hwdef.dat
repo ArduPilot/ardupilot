@@ -116,12 +116,6 @@ PF12 SCALED4_V3V3 ADC1 SCALE(2)
 
 PB1 VDD_5V_SENS  ADC1 SCALE(2)
 
-# pin7 on AD&IO, analog 12
-PC2 ADC1_6V6 ADC1 SCALE(2)
-
-# pin6 on AD&IO, analog 13
-PC3 ADC1_3V3 ADC1 SCALE(1)
-
 # SPI1 - IIM42652
 PA5 SPI1_SCK SPI1
 PB5 SPI1_MOSI SPI1
@@ -318,6 +312,22 @@ define HAL_WITH_RAMTRON 1
 define HAL_BATTMON_INA2XX_BUS 1
 define HAL_BATTMON_INA2XX_ADDR 0
 define HAL_BATT_MONITOR_DEFAULT 21
+
+# ADIO connector for optional analog
+# voltage and current sensing
+
+# pin7 on AD&IO, analog 12
+PC2 ADC1_6V6 ADC1 SCALE(2)
+# pin6 on AD&IO, analog 13
+PC3 ADC1_3V3 ADC1 SCALE(1)
+
+# Analog battery input scaling
+# See STM32H743xx.py
+define HAL_BATT_VOLT_PIN 13
+define HAL_BATT_CURR_PIN 12
+# TODO: these need to be adjusted for the MAUCH 031 PDB
+define HAL_BATT_VOLT_SCALE 21
+define HAL_BATT_CURR_SCALE 120
 
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
