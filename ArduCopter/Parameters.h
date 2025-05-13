@@ -690,6 +690,11 @@ public:
 
     AP_Int8 att_enable;
     AP_Int8 att_decimation;
+
+    // second transmitter channel for tuning:
+    AP_Int8 rc_tuning2_param;
+    AP_Float rc_tuning2_min;
+    AP_Float rc_tuning2_max;
 };
 
 extern const AP_Param::Info        var_info[];
