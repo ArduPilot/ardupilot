@@ -1167,7 +1167,7 @@ void AP_BattMonitor::MPPT_set_powered_state_to_all(const bool power_on)
 // it will supply energy if available.
 void AP_BattMonitor::MPPT_set_powered_state(const uint8_t instance, const bool power_on)
 {
-    if (instance < _num_instances) {
+    if (instance < _num_instances && drivers[instance] != nullptr) {
         drivers[instance]->mppt_set_powered_state(power_on);
     }
 }
