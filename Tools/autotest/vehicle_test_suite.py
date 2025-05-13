@@ -3094,7 +3094,6 @@ class TestSuite(ABC):
         return set([
             "FENC",  # fence
             "FTN3",  # gyrofft
-            "GEN",   # generator
             "IE24",  # generator
             "IEFC",  # generator
             "IREG",  # INS something
