@@ -386,6 +386,7 @@ public:
         LOWEHEISER_THROTTLE= 218, // allows for throttle on slider
 #endif  // HAL_GENERATOR_ENABLED
         TRANSMITTER_TUNING = 219, // use a transmitter knob or slider for in-flight tuning
+        TRANSMITTER_TUNING2 = 220, // use another transmitter knob or slider for in-flight tuning
 
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
