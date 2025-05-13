@@ -252,9 +252,11 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     // channel which is being used to tune a parameter value:
     RC_Channel *rc_tuning;
     RC_Channel *rc_tuning2;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // flight modes convenience array
     AP_Int8 *flight_modes;
@@ -1008,10 +1010,12 @@ private:
     void terrain_update();
     void terrain_logging();
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     // tuning.cpp
     void tuning();
     void tuning(const class RC_Channel *tuning_ch, int8_t tuning_param, float tuning_min, float tuning_max);
     bool being_tuned(int8_t tuning_param) const;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // UserCode.cpp
     void userhook_init();
