@@ -238,6 +238,7 @@ class TestBuildOptions(object):
         # or all vehicles:
         feature_define_whitelist = set([
             'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
+            'AP_RC_TRANSMITTER_TUNING_ENABLED',  # no symbol
             'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # no symbol
             'AP_DRONECAN_VOLZ_FEEDBACK_ENABLED',  # broken, no subscriber
             # Baro drivers either come in because you have

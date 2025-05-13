@@ -309,6 +309,7 @@ class ExtractFeatures(object):
         whitelist = frozenset([
             'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # this define changes single method body, hard to detect?
             'AP_PLANE_BLACKBOX_LOGGING', # no visible signature
+            'AP_RC_TRANSMITTER_TUNING_ENABLED',  # no visible signature
         ])
         for option in build_options.BUILD_OPTIONS:
             if option.define in whitelist:
