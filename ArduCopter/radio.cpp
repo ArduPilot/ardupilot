@@ -18,6 +18,9 @@ void Copter::default_dead_zones()
     if (rc_tuning != nullptr) {
         rc_tuning->set_default_dead_zone(0);
     }
+    if (rc_tuning2 != nullptr) {
+        rc_tuning2->set_default_dead_zone(0);
+    }
 }
 
 void Copter::init_rc_in()
@@ -35,6 +38,7 @@ void Copter::init_rc_in()
     channel_throttle->set_range(1000);
 
     rc_tuning = rc().find_channel_for_option(RC_Channel::AUX_FUNC::TRANSMITTER_TUNING);
+    rc_tuning2 = rc().find_channel_for_option(RC_Channel::AUX_FUNC::TRANSMITTER_TUNING2);
 
     // set default dead zones
     default_dead_zones();

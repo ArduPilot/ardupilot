@@ -9,18 +9,22 @@
 //  should be called at 3.3hz
 void Copter::tuning()
 {
-    if (rc_tuning == nullptr) {
+    tuning(rc_tuning, g.tuning_param, g2.tuning_min.get(), g2.tuning_max.get());
+    tuning(rc_tuning2, g2.tuning2_param, g2.tuning2_min.get(), g2.tuning2_max.get());
+}
+
+void Copter::tuning(const RC_Channel *tuning_ch, int8_t tuning_param, float tuning_min, float tuning_max)
+{
+    if (tuning_ch == nullptr) {
         // tuning channel is not set - don't know where to take input value from
         return;
     }
 
-    if (g.tuning_param <= 0) {
+    if (tuning_param <= 0) {
         // no parameter set for tuning
         return;
     }
 
-    const float tuning_min = g2.tuning_min.get();
-    const float tuning_max = g2.tuning_max.get();
     if (is_equal(tuning_min, tuning_max)) {
         // endpoints are equal, there is no input range to tune across
         return;
@@ -31,9 +35,9 @@ void Copter::tuning()
         return;
     }
 
-    const uint16_t radio_in = rc_tuning->get_radio_in();
-    const uint16_t radio_min = rc_tuning->get_radio_min();
-    const uint16_t radio_max = rc_tuning->get_radio_max();
+    const uint16_t radio_in = tuning_ch->get_radio_in();
+    const uint16_t radio_min = tuning_ch->get_radio_min();
+    const uint16_t radio_max = tuning_ch->get_radio_max();
 
     // discard values which are out of range
     if (radio_in < radio_min || radio_in > radio_max) {
@@ -44,10 +48,10 @@ void Copter::tuning()
     const float tuning_value = linear_interpolate(tuning_min, tuning_max, radio_in, radio_min, radio_max);
 
 #if HAL_LOGGING_ENABLED
-    Log_Write_Parameter_Tuning(g.tuning_param, tuning_value, tuning_min, tuning_max);
+    Log_Write_Parameter_Tuning(tuning_param, tuning_value, tuning_min, tuning_max);
 #endif
 
-    switch(g.tuning_param) {
+    switch(tuning_param) {
 
     // Roll, Pitch tuning
     case TUNING_STABILIZE_ROLL_PITCH_KP:
