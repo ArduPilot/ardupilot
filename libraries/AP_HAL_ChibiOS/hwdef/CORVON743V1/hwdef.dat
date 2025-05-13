@@ -21,6 +21,15 @@ FLASH_RESERVE_START_KB 128
 define HAL_STORAGE_SIZE 32768
 STORAGE_FLASH_PAGE 14
 
+#BATTERY MONITOR ON
+BATT_MONITOR 4
+
+#enable second OSD type
+OSD_TYPE2 = 5
+
+#Serial Port defaults
+SERIAL2_PROTOCOL 42
+
 # default to all pins low to avoid ESD issues
 DEFAULTGPIO OUTPUT LOW PULLDOWN
 
@@ -87,7 +96,7 @@ PB1  TIM3_CH4  TIM3  PWM(5)  GPIO(54) BIDIR
 PB0  TIM3_CH3  TIM3  PWM(6)  GPIO(55)
 PD12 TIM4_CH1  TIM4  PWM(7)  GPIO(56) BIDIR
 PD13 TIM4_CH2  TIM4  PWM(8)  GPIO(57)
-PD14 TIM4_CH3  TIM4  PWM(9)  GPIO(58)
+PD14 TIM4_CH3  TIM4  PWM(9)  GPIO(58) BIDIR
 PD15 TIM4_CH4  TIM4  PWM(10) GPIO(59)
 
 # 10 PWM available by default
@@ -166,3 +175,5 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 # setup for BF migration
 define HAL_FRAME_TYPE_DEFAULT 12
 
+# build ABIN for flash-from-bootloader support:
+env BUILD_ABIN True
