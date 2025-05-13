@@ -22,6 +22,11 @@ public:
     */
     bool set_airspeed(const float airspeed) override WARN_IF_UNUSED;
 
+    /*
+        Request gliding
+    */
+    bool request_gliding(bool gliding_requested) override WARN_IF_UNUSED;
+
 };
 
 #endif // AP_EXTERNAL_CONTROL_ENABLED
