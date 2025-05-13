@@ -1208,6 +1208,24 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("FSTRATE_DIV", 10, ParametersG2, att_decimation, 1),
 #endif
 
+    // @Param: TUNE2_MIN
+    // @DisplayName: Tuning minimum
+    // @Description: Minimum value that the parameter currently being tuned with the transmitter's TRANSMITTER_TUNING2 knob will be set to
+    // @User: Standard
+    AP_GROUPINFO("TUNE2_MIN", 11, ParametersG2, rc_tuning2_min, 0),
+
+    // @Param: TUNE2_MAX
+    // @DisplayName: Tuning maximum
+    // @Description: Maximum value that the parameter currently being tuned with the transmitter's TRANSMITTER2_TUNING knob will be set to
+    // @User: Standard
+    AP_GROUPINFO("TUNE2_MAX", 12, ParametersG2, rc_tuning2_max, 0),
+
+    // @Param: TUNE2
+    // @CopyFieldsFrom: TUNE
+    // @DisplayName: Tuning Parameter for TRANSMITTER_TUNE2
+    // @Description: Selects parameter (normally a PID gain) that is being tuned with an RC transmitter's knob. The RC input channel used is assigned by setting RCx_OPTION to 220.
+    AP_GROUPINFO("TUNE2", 13, ParametersG2, rc_tuning2_param, 0),
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
