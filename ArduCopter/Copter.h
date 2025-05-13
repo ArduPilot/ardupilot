@@ -254,6 +254,7 @@ private:
 
     // channel which is being used to tune a parameter value:
     RC_Channel *rc_tuning;
+    RC_Channel *rc_tuning2;
 
     // flight modes convenience array
     AP_Int8 *flight_modes;
@@ -1009,6 +1010,7 @@ private:
 
     // tuning.cpp
     void tuning();
+    void tuning(const class RC_Channel *tuning_ch, int8_t tuning_param, float tuning_min, float tuning_max);
 
     // UserCode.cpp
     void userhook_init();
