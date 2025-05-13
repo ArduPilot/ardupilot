@@ -3099,7 +3099,6 @@ class TestSuite(ABC):
             "IREG",  # INS something
             "ISBD",  # InertialSensor batch logging
             "ISBH",  # InertialSensor batch logging
-            "RELY",  # relay
             "RTCM",  # GPS
             "SBRE",  # septentrio
 
