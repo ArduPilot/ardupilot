@@ -31,8 +31,10 @@ void Copter::init_rc_in()
     channel_yaw->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
     channel_throttle->set_range(1000);
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     rc_tuning = rc().find_channel_for_option(RC_Channel::AUX_FUNC::TRANSMITTER_TUNING);
     rc_tuning2 = rc().find_channel_for_option(RC_Channel::AUX_FUNC::TRANSMITTER_TUNING2);
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // set default dead zones
     default_dead_zones();

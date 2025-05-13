@@ -299,12 +299,14 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Normal Start-up, 1:Start-up in ESC Calibration mode if throttle high, 2:Start-up in ESC Calibration mode regardless of throttle, 3:Start-up and automatically calibrate ESCs, 9:Disabled
     GSCALAR(esc_calibrate, "ESC_CALIBRATION",       0),
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     // @Param: TUNE
     // @DisplayName: Tuning Parameter
     // @Description: Selects parameter (normally a PID gain) that is being tuned with an RC transmitter's knob. The RC input channel used is assigned by setting RCx_OPTION to 219.
     // @User: Standard
     // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,56:Rate Yaw Filter,55:Motor Yaw Headroom,14:AltHold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,12:Loiter Pos kP,22:Velocity XY kP,28:Velocity XY kI,10:WP Speed,25:Acro Roll/Pitch deg/s,40:Acro Yaw deg/s,45:RC Feel,13:Heli Ext Gyro,38:Declination,39:Circle Rate,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF,58:SysID Magnitude,59:PSC Angle Max,60:Loiter Speed
     GSCALAR(rc_tuning_param, "TUNE",                   0),
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type (+, X, V, etc)
@@ -864,6 +866,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // 30 was AP_Scripting
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     // @Param: TUNE_MIN
     // @DisplayName: Tuning minimum
     // @Description: Transmitter Tuning minum value. The parameter being tuned will have its value set to this minimum value when the tuning knob is at its lowest position
@@ -875,6 +878,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Transmitter Tuning maximum value. The parameter being tuned will have its value set to this maximum value when the tuning knob is at its highest position
     // @User: Standard
     AP_GROUPINFO("TUNE_MAX", 32, ParametersG2, rc_tuning_max, 0),
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
 #if AP_OAPATHPLANNER_ENABLED
     // @Group: OA_
@@ -1208,6 +1212,7 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("FSTRATE_DIV", 10, ParametersG2, att_decimation, 1),
 #endif
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     // @Param: TUNE2_MIN
     // @DisplayName: Tuning minimum
     // @Description: Minimum value that the parameter currently being tuned with the transmitter's TRANSMITTER_TUNING2 knob will be set to
@@ -1225,6 +1230,7 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @DisplayName: Tuning Parameter for TRANSMITTER_TUNE2
     // @Description: Selects parameter (normally a PID gain) that is being tuned with an RC transmitter's knob. The RC input channel used is assigned by setting RCx_OPTION to 220.
     AP_GROUPINFO("TUNE2", 13, ParametersG2, rc_tuning2_param, 0),
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
