@@ -446,7 +446,9 @@ public:
     //
     AP_Int32        log_bitmask;
     AP_Int8         esc_calibrate;
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     AP_Int8         rc_tuning_param;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
     AP_Int8         frame_type;
     AP_Int8         disarm_delay;
 
@@ -594,8 +596,10 @@ public:
     void *autotune_ptr;
 #endif
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     AP_Float rc_tuning_min;
     AP_Float rc_tuning_max;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
 #if AP_OAPATHPLANNER_ENABLED
     // object avoidance path planning
@@ -691,10 +695,12 @@ public:
     AP_Int8 att_enable;
     AP_Int8 att_decimation;
 
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
     // second transmitter channel for tuning:
     AP_Int8 rc_tuning2_param;
     AP_Float rc_tuning2_min;
     AP_Float rc_tuning2_max;
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 };
 
 extern const AP_Param::Info        var_info[];
