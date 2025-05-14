@@ -56,6 +56,9 @@ void RC_Channel_Rover::init_aux_function(const AUX_FUNC ch_option, const AuxSwit
     case AUX_FUNC::SAILBOAT_MOTOR_3POS:
         do_aux_function_sailboat_motor_3pos(ch_flag);
         break;
+#if AP_QUICKTUNE_ENABLED
+    case AUX_FUNC::QUICKTUNE:
+#endif
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
         break;
@@ -254,7 +257,11 @@ bool RC_Channel_Rover::do_aux_function(const AuxFuncTrigger &trigger)
     case AUX_FUNC::WALKING_HEIGHT:
     case AUX_FUNC::WIND_VANE_DIR_OFSSET:
         break;
-
+#if AP_QUICKTUNE_ENABLED
+    case AUX_FUNC::QUICKTUNE:
+        rover.quick_tune.update_switch_pos(ch_flag);
+        break;
+#endif
     default:
         return RC_Channel::do_aux_function(trigger);
 

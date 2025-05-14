@@ -138,6 +138,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,           10,    200, 129),
 #endif
+#if AP_QUICKTUNE_ENABLED
+    SCHED_TASK(update_quicktune, 40, 100, 163),
+#endif
 };
 
 
@@ -507,6 +510,18 @@ bool Rover::get_wp_crosstrack_error_m(float &xtrack_error) const
     xtrack_error = control_mode->crosstrack_error();
     return true;
 }
+
+#if AP_QUICKTUNE_ENABLED
+/*
+  update AP_Quicktune object. We pass the supports_quicktune() method
+  in so that quicktune can detect if the user changes to a
+  non-quicktune capable mode while tuning and the gains can be reverted
+ */
+void Rover::update_quicktune(void)
+{
+    quick_tune.update();
+}
+#endif
 
 
 Rover rover;
