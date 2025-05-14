@@ -330,7 +330,7 @@ void Copter::update_auto_armed()
             return;
         }
         // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
-        if(flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio) {
+        if (flightmode->has_manual_throttle() && ap.throttle_zero && rc().has_valid_input()) {
             set_auto_armed(false);
         }
 
