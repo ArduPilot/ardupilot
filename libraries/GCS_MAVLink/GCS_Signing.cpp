@@ -115,7 +115,7 @@ static bool accept_unsigned_callback(const mavlink_status_t *status, uint32_t ms
 {
     if (status == mavlink_get_channel_status(MAVLINK_COMM_0)) {
         // always accept channel 0, assumed to be secure channel. This
-        // is USB on PX4 boards
+        // is USB on ChibiOS boards
         return true;
     }
     for (uint8_t i=0; i<ARRAY_SIZE(accept_list); i++) {
