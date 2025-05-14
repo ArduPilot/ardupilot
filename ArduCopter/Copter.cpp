@@ -853,6 +853,11 @@ void Copter::update_simple_mode(void)
     // mark radio frame as consumed
     ap.new_radio_frame = false;
 
+    // avoid processing bind-time RC values:
+    if (!rc().has_valid_input()) {
+        return;
+    }
+
     if (simple_mode == SimpleMode::SIMPLE) {
         // rotate roll, pitch input by -initial simple heading (i.e. north facing)
         rollx = channel_roll->get_control_in()*simple_cos_yaw - channel_pitch->get_control_in()*simple_sin_yaw;
