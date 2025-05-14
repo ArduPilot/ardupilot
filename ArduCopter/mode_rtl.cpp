@@ -267,7 +267,7 @@ void ModeRTL::descent_run()
     }
 
     // process pilot's input
-    if (!copter.failsafe.radio) {
+    if (rc().has_valid_input()) {
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
             LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
