@@ -568,7 +568,11 @@ public:
 
     // return the persistent top level key for the ParamToken key
     static uint16_t get_persistent_key(uint16_t key) { return var_info(key).key; }
-    
+
+    // returns true if this parameter should be settable via the
+    // MAVLink interface:
+    bool allow_set_via_mavlink(uint16_t flags) const;
+
     // count of parameters in tree
     static uint16_t count_parameters(void);
 
