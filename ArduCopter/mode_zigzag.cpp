@@ -67,20 +67,16 @@ ModeZigZag::ModeZigZag(void) : Mode()
 // initialise zigzag controller
 bool ModeZigZag::init(bool ignore_checks)
 {
-    if (!copter.failsafe.radio) {
-        // apply simple mode transform to pilot inputs
-        update_simple_mode();
+    // apply simple mode transform to pilot inputs
+    update_simple_mode();
 
-        // convert pilot input to lean angles
-        float target_roll, target_pitch;
-        get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    // convert pilot input to lean angles
+    float target_roll, target_pitch;
+    get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
-        // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
-    } else {
-        // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
-        loiter_nav->clear_pilot_desired_acceleration();
-    }
+    // process pilot's roll and pitch input
+    loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
+
     loiter_nav->init_target();
 
     // set vertical speed and acceleration limits
@@ -261,11 +257,7 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
 void ModeZigZag::auto_control()
 {
     // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate();
-    }
+    const float target_yaw_rate = get_pilot_desired_yaw_rate();
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -294,28 +286,24 @@ void ModeZigZag::manual_control()
     float target_climb_rate = 0.0f;
 
     // process pilot inputs unless we are in radio failsafe
-    if (!copter.failsafe.radio) {
-        float target_roll, target_pitch;
-        // apply SIMPLE mode transform to pilot inputs
-        update_simple_mode();
+    float target_roll, target_pitch;
 
-        // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    // apply SIMPLE mode transform to pilot inputs
+    update_simple_mode();
 
-        // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate();
+    // convert pilot input to lean angles
+    get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
-        // get pilot desired climb rate
-        target_climb_rate = get_pilot_desired_climb_rate();
-        // make sure the climb rate is in the given range, prevent floating point errors
-        target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
-    } else {
-        // clear out pilot desired acceleration in case radio failsafe event occurs and we
-        // do not switch to RTL for some reason
-        loiter_nav->clear_pilot_desired_acceleration();
-    }
+    // process pilot's roll and pitch input
+    loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
+
+    // get pilot's desired yaw rate
+    target_yaw_rate = get_pilot_desired_yaw_rate();
+
+    // get pilot desired climb rate
+    target_climb_rate = get_pilot_desired_climb_rate();
+    // make sure the climb rate is in the given range, prevent floating point errors
+    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
