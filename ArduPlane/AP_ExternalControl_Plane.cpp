@@ -38,4 +38,18 @@ bool AP_ExternalControl_Plane::set_airspeed(const float airspeed)
 #endif
 }
 
+/*
+    Request gliding
+*/
+bool AP_ExternalControl_Plane::request_gliding(bool gliding_requested)
+{
+    // The command is only valid in guided mode.
+    if (plane.control_mode != &plane.mode_guided) {
+        return false;
+    }
+
+    plane.TECS_controller.set_gliding_requested_flag(gliding_requested);
+    return true;
+}
+
 #endif // AP_EXTERNAL_CONTROL_ENABLED
