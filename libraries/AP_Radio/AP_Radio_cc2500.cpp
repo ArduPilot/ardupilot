@@ -653,8 +653,8 @@ static const uint8_t wifi_chan_map[14] = {
 void AP_Radio_cc2500::setup_hopping_table_SRT(void)
 {
     uint8_t val;
-    uint8_t channel = bindTxId[0] % 127;
-    uint8_t channel_spacing = bindTxId[1] % 127;
+    uint8_t channel = bindTxId[0] % INT8_MAX;
+    uint8_t channel_spacing = bindTxId[1] % INT8_MAX;
     uint8_t i;
     uint8_t wifi_chan = t_status.wifi_chan;
     uint8_t cc_wifi_mid, cc_wifi_low, cc_wifi_high;
