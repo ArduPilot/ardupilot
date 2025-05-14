@@ -271,7 +271,7 @@ struct PACKED AN_RequestPacket
         auto current_id = id;
         for(unsigned i = 0; i < count; i++)
         {
-            this->packet_id[count] = static_cast<AN_PacketId>(current_id);
+            this->packet_id[count - 1] = static_cast<AN_PacketId>(current_id);
             
             current_id = static_cast<AN_PacketId>(va_arg(args, int));
         }
@@ -284,7 +284,7 @@ struct PACKED AN_RequestPacket
         auto current_id = id;
         for(unsigned i = 0; i < count; i++)
         {
-            this->packet_id[count] = static_cast<AN_PacketId>(current_id);
+            this->packet_id[count - 1] = static_cast<AN_PacketId>(current_id);
             
             current_id = static_cast<AN_PacketId>(va_arg(args, int));
         }
@@ -408,7 +408,7 @@ struct PACKED AN_SystemState
         Location loc;
         get_location(loc);
         
-        // @LoggerMessage: ANS
+        // @LoggerMessage: ADS
         // @Description: Advanced Navigation State Packet
         // @Field: TimeUS: Time since system startup
         // @Field: VN: Velocity N
@@ -422,7 +422,7 @@ struct PACKED AN_SystemState
         // @Field: Alt: Altitude (m above sea level)
         // @Field: RelAlt: Relative Altitude (above home)
 
-        AP::logger().WriteStreaming("ANS", "TimeUS,VN,VE,VD,Roll,Pitch,Yaw,Lat,Lng,Alt",
+        AP::logger().WriteStreaming("ADS", "TimeUS,VN,VE,VD,Roll,Pitch,Yaw,Lat,Lng,Alt",
                                     "snnndddDUm", "F000000GG0",
                                     "QffffffLLf",
                                     AP_HAL::micros64(),
@@ -467,7 +467,7 @@ public:
     
     void to_log() const
     {
-        // @LoggerMessage: ANI
+        // @LoggerMessage: ADI
         // @Description: Advanced Navigation IMU Data
         // @Field: TimeUS: Time since system startup
         // @Field: Temp: Temprature
@@ -482,7 +482,7 @@ public:
         // @Field: GY: Rotation rate Y-axis
         // @Field: GZ: Rotation rate Z-axis
 
-        AP::logger().WriteStreaming("ANI", "TimeUS,Temp,Pres,MX,MY,MZ,AX,AY,AZ,GX,GY,GZ",
+        AP::logger().WriteStreaming("ADI", "TimeUS,Temp,Pres,MX,MY,MZ,AX,AY,AZ,GX,GY,GZ",
                                     "sdPGGGoooEEE", "F00000000000",
                                     "Qfffffffffff",
                                     AP_HAL::micros64(),
@@ -669,13 +669,13 @@ struct PACKED AN_RawGnss
         // @Field: HACC: Horizontal positional accuracy (m)
         // @Field: VACC: Vertical positional accuracy (m)
 
-        AP::logger().WriteStreaming("ANG", "TimeUS,VN,VE,VD,Heading,Lat,Lng,Alt,HDOP,VDOP,HACC,VACC",
-                                    "snnnnDUmnnnn", "F0000GG00000",
+        AP::logger().WriteStreaming("ADG", "TimeUS,VN,VE,VD,Heading,Lat,Lng,Alt,HDOP,VDOP,HACC,VACC",
+                                    "snnndDUmnnnn", "F0000GG00000",
                                     "QffffLLfffff",
                                     AP_HAL::micros64(),
                                     this->velocity_ned[0], this->velocity_ned[1], this->velocity_ned[2],
-                                    this->has_yaw() ? degrees(this->heading): 0,
-                                    loc.lat, loc.alt, (float)(loc.alt) * 0.01,
+                                    this->has_yaw() ? degrees(this->heading): 0.0f,
+                                    loc.lat, loc.alt, (float)(loc.alt) * 0.01f,
                                     satellites->get_hdop(), satellites->get_vdop(),
                                     get_horizontal_position_accuracy(), get_vertical_position_accuracy());
     }
@@ -1568,6 +1568,22 @@ bool AP_ExternalAHRS_AdvancedNavigation::has_baro(void) const
     return true;
 }
 
+// return whether Advanced Navigation device has compass capability
+bool AP_ExternalAHRS_AdvancedNavigation::has_compass(void) const
+{
+    switch (_device_id)
+    {
+    case AN_DeviceInfo::AN_DeviceId::AIR_DATA_UNIT:
+    case AN_DeviceInfo::AN_DeviceId::BOREAS_D90:
+    case AN_DeviceInfo::AN_DeviceId::BOREAS_D90_FPGA:
+    case AN_DeviceInfo::AN_DeviceId::BOREAS_COIL:
+        return false;
+    default:
+        break;
+    }
+    return true;
+}
+
 // send ANPP packet out
 // return true if successfull
 bool AP_ExternalAHRS_AdvancedNavigation::send_packet(AN_Packet &an_packet)
@@ -1781,14 +1797,17 @@ void AP_ExternalAHRS_AdvancedNavigation::handle_raw_sensors_packet()
 #endif
 
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
-    AP_ExternalAHRS::mag_data_message_t mag;
+    if(has_compass())
+    {
+        AP_ExternalAHRS::mag_data_message_t mag;
 
-    mag.field = Vector3f{
-        raw_sensors.magnetometers[0],
-        raw_sensors.magnetometers[1],
-        raw_sensors.magnetometers[2]};
+        mag.field = Vector3f{
+            raw_sensors.magnetometers[0],
+            raw_sensors.magnetometers[1],
+            raw_sensors.magnetometers[2]};
 
-    AP::compass().handle_external(mag);
+        AP::compass().handle_external(mag);
+    }
 #endif
 
     AP_ExternalAHRS::ins_data_message_t ins;

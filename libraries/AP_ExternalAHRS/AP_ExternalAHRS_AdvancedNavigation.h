@@ -240,6 +240,7 @@ private:
 
     bool has_gnss(void) const;
     bool has_baro(void) const;
+    bool has_compass(void) const;
 
     void handle_packet();
     void handle_system_state_packet();
