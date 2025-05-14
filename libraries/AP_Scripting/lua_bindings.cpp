@@ -784,7 +784,7 @@ int lua_serial_find_simulated_device(lua_State *L) {
 
     binding_argcheck(L, 2 + arg_offset);
 
-    const int8_t protocol = (int8_t)get_uint32(L, 1 + arg_offset, 0, 127);
+    const int8_t protocol = (int8_t)get_uint32(L, 1 + arg_offset, 0, INT8_MAX);
     uint32_t instance = get_uint16_t(L, 2 + arg_offset);
 
     auto *scripting = AP::scripting();
