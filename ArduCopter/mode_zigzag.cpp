@@ -115,7 +115,7 @@ void ModeZigZag::run()
 
     // set the direction and the total number of lines
     zigzag_direction = (Direction)constrain_int16(_direction, 0, 3);
-    line_num = constrain_int16(_line_num, ZIGZAG_LINE_INFINITY, 32767);
+    line_num = constrain_int16(_line_num, ZIGZAG_LINE_INFINITY, INT16_MAX);
 
     // auto control
     if (stage == AUTO) {
