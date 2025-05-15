@@ -745,3 +745,62 @@ void NavEKF3_core::FuseDragForces()
 *                   MISC FUNCTIONS                      *
 ********************************************************/
 
+#if EK3_FEATURE_SETWIND
+bool NavEKF3_core::setWind(float speed, float speed_accuracy, float direction, float direction_accuracy)
+{
+    // reset the corresponding covariances
+    zeroRows(P,22,23);
+    zeroCols(P,22,23);
+
+    // set the wind state variances
+    if (!isnan(speed_accuracy) && is_positive(speed_accuracy)) {
+        if (!isnan(direction_accuracy) && is_positive(direction_accuracy)) {
+            const ftype spdVar = sq(speed_accuracy);
+            const ftype dirnVar = sq(radians(direction_accuracy));
+
+            const ftype PS0 = cosf(radians(direction));
+            const ftype PS1 = sq(PS0);
+            const ftype PS2 = sinf(radians(direction));
+            const ftype PS3 = sq(PS2);
+            const ftype PS4 = dirnVar*sq(speed);
+            const ftype PS5 = PS0*PS2*(-PS4 + spdVar);
+
+            P[22][22] = PS1*spdVar + PS3*PS4;
+            P[23][22] = PS5;
+            P[22][23] = PS5;
+            P[23][23] = PS1*PS4 + PS3*spdVar;
+        } else {
+            P[22][22] = P[23][23] = sq(speed_accuracy);
+        }
+    } else {
+        P[22][22] = P[23][23] = sq(WIND_SPD_UNCERTAINTY);
+    }
+
+    // reset the NE wind velocity states to the measurement
+    Vector2F wind_vel_prev = stateStruct.wind_vel;
+    stateStruct.wind_vel.x = -speed * cosF(radians(direction));
+    stateStruct.wind_vel.y = -speed * sinF(radians(direction));
+
+    // update the vehicle velocity states to be consistent with the new wind estimate if dead reckoning
+    if ((imuSampleTime_ms - lastGpsPosPassTime_ms) > frontend->deadReckonDeclare_ms) {
+        velResetNE = stateStruct.wind_vel - wind_vel_prev;
+        stateStruct.velocity.xy() += velResetNE;
+
+        // update the output buffer
+        for (uint8_t i=0; i<imu_buffer_length; i++) {
+            storedOutput[i].velocity.xy() = stateStruct.velocity.xy();
+        }
+        outputDataNew.velocity.xy() = stateStruct.velocity.xy();
+        outputDataDelayed.velocity.xy() = stateStruct.velocity.xy();
+
+        // store the time of the reset
+        lastVelReset_ms = imuSampleTime_ms;
+    }
+
+    // store the time of the reset
+    lastExtWindVelSet_ms = imuSampleTime_ms;
+
+    return true;
+
+}
+#endif // EK3_FEATURE_SETWIND
