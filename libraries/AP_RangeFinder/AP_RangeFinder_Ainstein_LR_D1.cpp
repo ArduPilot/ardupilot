@@ -56,8 +56,26 @@ uint8_t AP_RangeFinder_Ainstein_LR_D1::LRD1Union::calculate_checksum() const
     return crc_sum_of_bytes(&buffer[3], sizeof(u.packet)-4);
 }
 
-// get_reading - read a value from the sensor
+// get_reading - read all samples, return last.  The device sends at
+// 40Hz, so there should only ever be one sample available.  Assuming
+// that something's gone wrong with scheduling, we will simply return
+// the last.
 bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
+{
+    bool ret = false;
+    for (uint8_t i=0; i<10; i++) {
+        float tmp_reading = 0;
+        if (!get_one_reading(tmp_reading)) {
+            break;
+        }
+        ret = true;
+        reading_m = tmp_reading;
+    }
+    return ret;
+}
+
+// get_one_reading - read a value from the sensor
+bool AP_RangeFinder_Ainstein_LR_D1::get_one_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;
@@ -88,11 +106,23 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
         return false;
     }
 
+    // distinguish between old and new packet format by inspecting
+    // "byte 12" (offset 11); in the old format this will always be
+    // 0xff.  This was reserved for "offset count", now is altitude-valid.
+    const bool is_v19000 = (u.packet_v19000.altitude_valid != 0xff);
+
+    // same for both packet formats:
     reading_m = be16toh(u.packet.object1_alt) * 0.01;
 
 #if AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
         const uint32_t now_ms = AP_HAL::millis();
-        const uint8_t malfunction_alert = u.packet.malfunction_alert;
+        uint16_t malfunction_alert;
+        if (is_v19000) {
+            // new packet format allows for 16 bits:
+            malfunction_alert = be16toh(u.packet_v19000.malfunction_alert);
+        } else {
+            malfunction_alert = u.packet.malfunction_alert;
+        }
         if (malfunction_alert_prev != malfunction_alert && now_ms - malfunction_alert_last_send_ms >= 1000) {
             report_malfunction(malfunction_alert, malfunction_alert_prev);
             malfunction_alert_prev = malfunction_alert;
@@ -101,6 +131,22 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
 #endif
 
     const uint8_t snr = u.packet.object1_snr;
+
+    signal_quality_pct = linear_interpolate(
+        RangeFinder::SIGNAL_QUALITY_MIN, RangeFinder::SIGNAL_QUALITY_MAX,
+        snr,
+        0, 255
+    );
+
+    if (is_v19000 && !u.packet_v19000.altitude_valid) {
+        // the device has specifically told us that the reading is not
+        // valid, we can't interepret it further.  It's still a
+        // reading, so we still return true from this function, but we
+        // can't say anything about our altitude so we mark ourselves
+        // as out-of-range-high:
+        reading_m = max_distance() + 1;
+    } else {
+        // try to infer out-of-range from the SNR field:
 
         /* From datasheet:
             Altitude measurements associated with a SNR value 
@@ -111,27 +157,19 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
             The altitude measurements should not in any circumstances be used as true
             measurements independently of the corresponding SNR values. 
         */
-        signal_quality_pct = (snr <= 13 || malfunction_alert != 0) ? RangeFinder::SIGNAL_QUALITY_MIN : RangeFinder::SIGNAL_QUALITY_MAX;
 
-    bool has_data = false;
-
-        if (snr <= 13) {            
-            has_data = false;           
+        if (snr <= 13) {
             if (snr == 0) {
-                state.status = RangeFinder::Status::OutOfRangeHigh;
-                reading_m = MAX(656, max_distance() + 1);
-            } else {
-                state.status = RangeFinder::Status::NoData;
+                // out-of-range high:
+                reading_m = max_distance() + 1;
             }
-        } else {
-            has_data = true;
-            state.status = RangeFinder::Status::Good;
         }
+    }
 
     // consume this packet:
     move_signature_in_buffer(sizeof(u.packet));
 
-    return has_data;
+    return true;
 }
 
 #if AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
