@@ -10012,7 +10012,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.assert_distance_sensor_quality(sq_at_sqalt)
 
         self.progress("Moving higher to be out of max rangefinder range")
-        self.fly_guided_move_local(0, 0, 150)
+        self.fly_guided_move_local(0, 0, takeoff_alt + 50)
 
         # sensor remains healthy even out-of-range
         self.assert_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
@@ -10022,8 +10022,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # life's too short for soft landings:
         self.disarm_vehicle(force=True)
 
-    def RangeFinderDriversMaxAlt(self) -> None:
-        '''test max-height behaviour'''
+    def RangeFinderDriversMaxAlt_LightwareSerial(self) -> None:
+        '''test max-height behaviour - LightwareSerial'''
         self.RangeFinderDriversMaxAlt_FlyDriver(
             name="LightwareSerial",
             rngfnd_type=8,
@@ -10031,6 +10031,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             maxalt=100,
             sqalt=95,
             sq_at_sqalt=100,
+        )
+
+    def RangeFinderDriversMaxAlt_AinsteinLRD1(self) -> None:
+        '''test max-height behaviour - Ainstein LRD1'''
+        self.RangeFinderDriversMaxAlt_FlyDriver(
+            name="Ainstein-LR-D1",
+            rngfnd_type=42,
+            simname='ainsteinlrd1',
+            maxalt=500,
+            sqalt=495,
+            sq_at_sqalt=39,
         )
 
     def RangeFinderDriversLongRange(self):
@@ -12207,7 +12218,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.RangeFinderDrivers,
              self.FlyRangeFinderMAVlink,
              self.FlyRangeFinderSITL,
-             self.RangeFinderDriversMaxAlt,
+             self.RangeFinderDriversMaxAlt_LightwareSerial,
+             self.RangeFinderDriversMaxAlt_AinsteinLRD1,
              self.RangeFinderDriversLongRange,
              self.RangeFinderSITLLongRange,
              self.MaxBotixI2CXL,
