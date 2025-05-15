@@ -96,6 +96,7 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
             if (snr == 0) {
                 state.status = RangeFinder::Status::OutOfRangeHigh;
                 reading_m = MAX(656, max_distance() + 1);
+                has_data = true;
             } else {
                 state.status = RangeFinder::Status::NoData;
             }
