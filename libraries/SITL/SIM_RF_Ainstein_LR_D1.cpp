@@ -30,7 +30,12 @@ uint32_t RF_Ainstein_LR_D1::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uin
 
     uint8_t malfunction_alert = 0;
 
-    const uint8_t snr = (alt_cm == 0xFFFF) ? 0 : 100;
+    uint8_t snr = 100;
+    if (alt_cm > 10000) {
+        // out of range @100m
+        snr = 0;
+        alt_cm = 146;  // bogus flag value
+    }
 
     buffer[0] = 0xEB;  // packet header msb
     buffer[1] = 0x90;  // packet header lsb
