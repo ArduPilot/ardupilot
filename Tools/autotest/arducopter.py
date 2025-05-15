@@ -9931,6 +9931,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             sqalt=95,
             sq_at_sqalt=100,
         )
+        self.RangeFinderDriversMaxAlt_FlyDriver(
+            name="Ainstein-LR-D1",
+            rngfnd_type=42,
+            simname='ainsteinlrd1',
+            maxalt=100,
+            sqalt=95,
+            sq_at_sqalt=100,
+        )
 
     def RangeFinderDriversLongRange(self):
         '''test rangefinder above 327m'''
