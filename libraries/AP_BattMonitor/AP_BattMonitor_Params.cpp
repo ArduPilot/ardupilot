@@ -156,7 +156,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Battery monitor options
     // @Description: This sets options to change the behaviour of the battery monitor
-    // @Bitmask: 0:Ignore DroneCAN SoC, 1:MPPT reports input voltage and current, 2:MPPT Powered off when disarmed, 3:MPPT Powered on when armed, 4:MPPT Powered off at boot, 5:MPPT Powered on at boot, 6:Send resistance compensated voltage to GCS, 7:Allow DroneCAN InfoAux to be from a different CAN node, 8:Battery is for internal autopilot use only, 9:Sum monitor measures minimum voltage instead of average
+    // @Bitmask: 0:Ignore DroneCAN SoC, 1:MPPT reports input voltage and current, 2:MPPT Powered off when disarmed, 3:MPPT Powered on when armed, 4:MPPT Powered off at boot, 5:MPPT Powered on at boot, 6:Send resistance compensated voltage to GCS, 7:Allow DroneCAN InfoAux to be from a different CAN node, 8:Battery is for internal autopilot use only, 9:Sum monitor measures minimum voltage instead of average, 10:Allow DroneCAN dynamic node update on hot-swap
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 21, AP_BattMonitor_Params, _options, 0),
 #endif // AP_BATTERY_OPTIONS_PARAM_ENABLED
