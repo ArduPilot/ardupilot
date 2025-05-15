@@ -5,8 +5,8 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H730xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1108
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_SPRACINGH7RF
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -25,6 +25,10 @@ FLASH_RESERVE_START_KB 0
 define HAL_FLASH_PROTECTION 1
 
 EXT_FLASH_SIZE_MB 2
+
+# pin program size limit to 128kB.  If we don't do this then "flashram"
+#  (the ".ramfunc" space) overflows.
+define HAL_PROGRAM_SIZE_LIMIT_KB 128
 
 I2C_ORDER I2C1 I2C2
 

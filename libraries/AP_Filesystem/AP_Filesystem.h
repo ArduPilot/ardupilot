@@ -110,6 +110,10 @@ public:
     struct dirent *readdir(DirHandle *dirp);
     int closedir(DirHandle *dirp);
 
+    // return number of bytes that should be written before fsync for optimal
+    // streaming performance/robustness. if zero, any number can be written.
+    uint32_t bytes_until_fsync(int fd);
+
     // return free disk space in bytes, -1 on error
     int64_t disk_free(const char *path);
 

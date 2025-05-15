@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32F7xx  STM32F767xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1131
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_PixFlamingoF767_V1
 
 USB_STRING_MANUFACTURER "Dheeran labs"
 USB_STRING_PRODUCT "PixFlamingo"

@@ -359,13 +359,6 @@ Vector2p AR_PosControl::get_pos_error() const
     return (_pos_target - curr_pos_NE.topostype());
 }
 
-// get the slew rate value for velocity.  used for oscillation detection in lua scripts
-void AR_PosControl::get_srate(float &velocity_srate)
-{
-    // slew rate is the same for x and y axis
-    velocity_srate = _pid_vel.get_pid_info_x().slew_rate;
-}
-
 #if HAL_LOGGING_ENABLED
 // write PSC logs
 void AR_PosControl::write_log()

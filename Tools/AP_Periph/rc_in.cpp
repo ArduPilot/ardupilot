@@ -114,7 +114,7 @@ void AP_Periph_FW::rcin_update()
     }
 
     // log discovered protocols:
-    auto new_rc_protocol = rc.protocol_name();
+    auto new_rc_protocol = rc.detected_protocol_name();
     if (new_rc_protocol != rcin_rc_protocol) {
         can_printf("Decoding (%s)", new_rc_protocol);
         rcin_rc_protocol = new_rc_protocol;

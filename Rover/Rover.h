@@ -325,10 +325,11 @@ private:
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     void afs_fs_check(void);
 #endif
-
+#if AP_FENCE_ENABLED
     // fence.cpp
+    void fence_checks_async() override;
     void fence_check();
-
+#endif
     // GCS_Mavlink.cpp
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 
@@ -449,6 +450,14 @@ public:
 
     // Simple mode
     float simple_sin_yaw;
+
+#if AP_ROVER_AUTO_ARM_ONCE_ENABLED
+    struct {
+        uint32_t last_arm_attempt_ms;
+        bool done;
+    } auto_arm_once;
+    void handle_auto_arm_once();
+#endif  // AP_ROVER_AUTO_ARM_ONCE_ENABLED
 };
 
 extern Rover rover;

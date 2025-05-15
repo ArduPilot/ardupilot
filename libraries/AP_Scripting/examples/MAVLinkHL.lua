@@ -141,10 +141,10 @@ local function MAVLinkProcessor()
         -- returns true if a packet was decoded, false otherwise
         _mavbuffer = _mavbuffer .. string.char(byte)
 
-        -- parse buffer to find MAVLink packets
-        if #_mavbuffer == 1 and string.byte(_mavbuffer, 1) == PROTOCOL_MARKER_V1 and
-            _mavdecodestate == 0 then
-            -- we have a packet start
+        -- check if this is a start of packet
+        if _mavdecodestate == 0 and byte == PROTOCOL_MARKER_V1 then
+            -- we have a packet start, discard the buffer before this byte
+            _mavbuffer = string.char(byte)
             _mavdecodestate = 1
             return
         end
@@ -299,7 +299,10 @@ local function MAVLinkProcessor()
         end
 
         -- packet too big ... start again
-        if #_mavbuffer > 263 then _mavbuffer = "" end
+        if #_mavbuffer > 263 then 
+            _mavbuffer = ""
+            _mavdecodestate = 0
+        end
         return false
     end
 
@@ -344,7 +347,7 @@ local function MAVLinkProcessor()
 
         -- create the header. Assume componentid of 1
         local header = string.pack('<BBBBBB', PROTOCOL_MARKER_V1, #payload,
-                                   _txseqid, param:get('SYSID_THISMAV'), 1,
+                                   _txseqid, param:get('MAV_SYSID'), 1,
                                    msgid)
 
         -- generate the CRC
@@ -411,14 +414,11 @@ function HLSatcom()
 
     -- if mode 1 and there's been no mavlink traffic for 5000 ms, enable high latency
     if hl_mode == 1 then
-        if last_seen == gcs:last_seen() then
-            link_lost_for = link_lost_for + 100
-        else
-            -- There has been a new heartbeat, update last_seen and reset link_lost_for
-            last_seen = gcs:last_seen()
-            link_lost_for = 0
-        end
-        if link_lost_for > 5000 and not gcs:get_high_latency_status() then
+        -- link lost time = boot time - GCS last seen time
+        link_lost_for = (millis()- gcs:last_seen()):toint()
+        -- gcs:last_seen() is set to millis() during boot (on plane). 0 on rover/copter
+        -- So if it's less than 10000 assume no GCS packet received since boot
+        if link_lost_for > 5000 and not gcs:get_high_latency_status() and gcs:last_seen() > 10000 then
             gcs:enable_high_latency_connections(true)
         elseif link_lost_for < 5000 and gcs:get_high_latency_status() then
             gcs:enable_high_latency_connections(false)

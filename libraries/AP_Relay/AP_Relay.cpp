@@ -34,25 +34,6 @@
 #include <SITL/SITL.h>
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-  #define RELAY1_PIN_DEFAULT 13
-
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
-    #define RELAY1_PIN_DEFAULT 57
-    #define RELAY2_PIN_DEFAULT 49
-    #define RELAY3_PIN_DEFAULT 116
-    #define RELAY4_PIN_DEFAULT 113
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-    #define RELAY1_PIN_DEFAULT 27
-    #define RELAY2_PIN_DEFAULT 65
-    #define RELAY3_PIN_DEFAULT 22
-    #define RELAY4_PIN_DEFAULT 81
-    #define RELAY5_PIN_DEFAULT 23
-    #define RELAY6_PIN_DEFAULT 26
-  #endif
-#endif
-
 #ifndef RELAY1_PIN_DEFAULT
   #define RELAY1_PIN_DEFAULT -1
 #endif
@@ -419,11 +400,21 @@ void AP_Relay::set_pin_by_instance(uint8_t instance, bool value)
     if (initial_value != value) {
         set_pin(pin, value);
 #if HAL_LOGGING_ENABLED
-        AP::logger().Write("RELY", "TimeUS,Instance,State", "s#-", "F--", "QBB",
-                            AP_HAL::micros64(),
-                            instance,
-                            value);
-#endif
+// @LoggerMessage: RELY
+// @Description: Relay state
+// @Field: TimeUS: Time since system startup
+// @Field: Instance: relay instance number
+// @Field: State: current state
+        AP::logger().Write(
+            "RELY",
+            "TimeUS," "Instance," "State",
+            "s"       "#"         "-",
+            "F"       "-"         "-",
+            "Q"       "B"         "B",
+            AP_HAL::micros64(),
+            instance,
+            value);
+#endif  // HAL_LOGGING_ENABLED
     }
 }
 

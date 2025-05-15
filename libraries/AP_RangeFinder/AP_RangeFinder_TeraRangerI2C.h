@@ -15,7 +15,7 @@ public:
     // static detection function
     static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state,
                                           AP_RangeFinder_Params &_params,
-                                          AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev);
+                                          AP_HAL::I2CDevice *i2c_dev);
 
     // update state
     void update(void) override;
@@ -30,7 +30,7 @@ private:
     // constructor
     AP_RangeFinder_TeraRangerI2C(RangeFinder::RangeFinder_State &_state,
     								AP_RangeFinder_Params &_params,
-                                 AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev);
+                                 AP_HAL::I2CDevice *i2c_dev);
 
     bool measure(void);
     bool collect_raw(uint16_t &raw_distance);
@@ -38,7 +38,7 @@ private:
 
     bool init(void);
     void timer(void);
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
+    AP_HAL::I2CDevice *dev;
 
     struct {
         uint32_t sum;

@@ -67,7 +67,7 @@ void ModeCruise::navigate()
         plane.channel_roll->get_control_in() == 0 &&
         plane.rudder_input() == 0 &&
         plane.gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
-        plane.gps.ground_speed() >= 3 &&
+        plane.gps.ground_speed() >= GPS_GND_CRS_MIN_SPD &&
         moving_forwards &&
         lock_timer_ms == 0) {
         // user wants to lock the heading - start the timer

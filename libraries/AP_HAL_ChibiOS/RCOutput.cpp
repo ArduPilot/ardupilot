@@ -347,7 +347,7 @@ void RCOutput::dshot_collect_dma_locks(rcout_timer_t cycle_start_us, rcout_timer
             if (!mask) {
                 dma_cancel(group);
             }
-            group.dshot_waiter = nullptr;
+            osalDbgAssert(group.dshot_waiter == nullptr, "Dshot waiter was not reset");
 #ifdef HAL_WITH_BIDIR_DSHOT
             // if using input capture DMA then clean up
             if (group.bdshot.enabled) {
@@ -737,7 +737,13 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
 
     chan -= chan_offset;
 
-    period[chan] = period_us;
+    if (corked) {
+        // when corked we put the updated period in a separate array which is
+        // copied to period[] when we push
+        period_corked[chan] = period_us;
+    } else {
+        period[chan] = period_us;
+    }
 
     if (chan < num_fmu_channels) {
         active_fmu_channels = MAX(chan+1, active_fmu_channels);
@@ -1344,6 +1350,7 @@ void RCOutput::push(void)
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
     corked = false;
+    memcpy(period, period_corked, sizeof(period));
     push_local();
 #if HAL_WITH_IO_MCU
     if (iomcu_enabled) {
@@ -1840,12 +1847,12 @@ __RAMFUNC__ void RCOutput::dma_unlock(virtual_timer_t* vt, void *p)
 {
     chSysLockFromISR();
     pwm_group *group = (pwm_group *)p;
-
     group->dshot_state = DshotState::IDLE;
     if (group->dshot_waiter != nullptr) {
         // tell the waiting process we've done the DMA. Note that
-        // dshot_waiter can be null if we have cancelled the send
+        // dshot_waiter can be null if we have just cancelled the send
         chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
+        group->dshot_waiter = nullptr;
     }
     chSysUnlockFromISR();
 }
@@ -1904,6 +1911,7 @@ void RCOutput::dma_cancel(pwm_group& group)
     chEvtGetAndClearEventsI(group.dshot_event_mask | DSHOT_CASCADE);
 
     group.dshot_state = DshotState::IDLE;
+    group.dshot_waiter = nullptr;
     chSysUnlock();
 }
 

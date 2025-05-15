@@ -30,11 +30,10 @@ extern const AP_HAL::HAL &hal;
 
 #define SEG_INIT                0
 #define SEG_ACCEL_MAX           4
-#define SEG_TURN_IN             4
 #define SEG_ACCEL_END           7
 #define SEG_SPEED_CHANGE_END    14
 #define SEG_CONST               15
-#define SEG_TURN_OUT            15
+#define SEG_DECEL_START         15
 #define SEG_DECEL_END           22
 
 // constructor
@@ -495,23 +494,29 @@ bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, floa
     // check for change of leg on fast waypoint
     const float time_to_destination = get_time_remaining();
     if (fast_waypoint 
-        && is_zero(next_leg.get_time_elapsed()) 
-        && (get_time_elapsed() >= time_turn_out() - next_leg.time_turn_in()) 
-        && (position_sq >= 0.25 * track.length_squared())) {
+        && is_zero(next_leg.get_time_elapsed()) // The next leg has not started
+        && (get_time_elapsed() >= time_decel_start()) // The current leg has started the deceleration phase
+        && (get_time_remaining() <= next_leg.time_accel_end()) // The current leg will finish before completion of the acceleration phase of the next leg
+        ) {
 
+        // Calculate the position, velocity and acceleration at the turn mid point
         Vector3f turn_pos = -get_track();
         Vector3f turn_vel, turn_accel;
         move_from_time_pos_vel_accel(get_time_elapsed() + time_to_destination * 0.5f, turn_pos, turn_vel, turn_accel);
         next_leg.move_from_time_pos_vel_accel(time_to_destination * 0.5f, turn_pos, turn_vel, turn_accel);
         const float speed_min = MIN(get_speed_along_track(), next_leg.get_speed_along_track());
-        if ((get_time_remaining() < next_leg.time_end() * 0.5f) && (turn_pos.length() < wp_radius) &&
-             (Vector2f{turn_vel.x, turn_vel.y}.length() < speed_min) &&
-             (Vector2f{turn_accel.x, turn_accel.y}.length() < accel_corner)) {
+        const float accel_z_lim = MIN(get_accel_z_max(), next_leg.get_accel_z_max());
+        if ((turn_pos.length() < wp_radius) // The turn mid point is within the waypoint radius
+            && (turn_vel.length() < speed_min) // The speed at the turn mid point is less than the minimum speed
+            && (Vector2f{turn_accel.x, turn_accel.y}.length() < accel_corner) // The acceleration at the turn mid point is less than the corner acceleration
+            && (fabsf(turn_accel.z) < accel_z_lim) // The vertical acceleration at the turn mid point is less than the maximum vertical acceleration
+            ) {
             next_leg.move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
         }
     } else if (!is_zero(next_leg.get_time_elapsed())) {
         next_leg.move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
         if (next_leg.get_time_elapsed() >= get_time_remaining()) {
+            // consider the current leg finished when we have passed half way through the turn between legs
             s_finished = true;
         }
     }
@@ -599,22 +604,24 @@ bool SCurve::braking() const
     return time >= segment[SEG_CONST].end_time;
 }
 
-// return time offset used to initiate the turn onto leg
-float SCurve::time_turn_in() const
+// return time offset for the start of the constant speed section and end of the acceleration section
+// used to initiate the turn onto leg
+float SCurve::time_accel_end() const
 {
     if (num_segs != segments_max) {
         return 0.0;
     }
-    return segment[SEG_TURN_IN].end_time;
+    return segment[SEG_ACCEL_END].end_time;
 }
 
-// return time offset used to initiate the turn from leg
-float SCurve::time_turn_out() const
+// return time offset for the end of the constant speed section and start of the deceleration section
+// used to initiate the turn from leg
+float SCurve::time_decel_start() const
 {
     if (num_segs != segments_max) {
         return 0.0;
     }
-    return segment[SEG_TURN_OUT].end_time;
+    return segment[SEG_DECEL_START].end_time;
 }
 
 // increment the internal time
@@ -1047,6 +1054,7 @@ void SCurve::set_kinematic_limits(const Vector3f &origin, const Vector3f &destin
 
     vel_max = track_speed_max;
     accel_max = track_accel_max;
+    accel_z_max = accel_z;
 }
 
 // return true if the curve is valid.  Used to identify and protect against code errors

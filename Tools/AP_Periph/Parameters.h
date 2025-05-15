@@ -48,7 +48,7 @@ public:
         k_param_can_protocol0,
         k_param_can_protocol1,
         k_param_can_protocol2,
-        k_param_sysid_this_mav,
+        k_param_sysid_this_mav_old,
         k_param_serial_manager,
         k_param_gps_mb_only_can_port,
         k_param_scripting,
@@ -99,6 +99,8 @@ public:
         k_param_esc_extended_telem_rate,
         k_param_imu_sample_rate,
         k_param_imu,
+        k_param_dac,
+        k_param__gcs,
     };
 
     AP_Int16 format_version;
@@ -113,10 +115,10 @@ public:
     AP_Int8 can_slcan_cport;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
+#if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED
     AP_Int8 buzz_volume;
 #endif
-#ifdef AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
+#if AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
     AP_Int8 led_brightness;
 #endif
 #if AP_PERIPH_BARO_ENABLED
@@ -132,24 +134,24 @@ public:
     AP_Int16 rangefinder_max_rate;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PROXIMITY
+#if AP_PERIPH_PROXIMITY_ENABLED
     AP_Int32 proximity_baud;
     AP_Int8 proximity_port;
     AP_Int16 proximity_max_rate;
 #endif
 
 
-#ifdef HAL_PERIPH_ENABLE_ADSB
+#if AP_PERIPH_ADSB_ENABLED
     AP_Int32 adsb_baudrate;
     AP_Int8 adsb_port;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+#if AP_PERIPH_PWM_HARDPOINT_ENABLED
     AP_Int16 hardpoint_id;
     AP_Int8 hardpoint_rate;
 #endif
 
-#if defined(HAL_PERIPH_ENABLE_HWESC) || defined(HAL_PERIPH_ENABLE_ESC_APD)
+#if AP_PERIPH_HOBBYWING_ESC_ENABLED || AP_PERIPH_ESC_APD_ENABLED
     #if defined ESC_NUMBERS
         #error "ESC_NUMBERS should not have been previously defined"
     #endif
@@ -173,11 +175,11 @@ public:
 #endif
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_MSP
+#if AP_PERIPH_MSP_ENABLED
     AP_Int8 msp_port;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
     AP_Int16 esc_rate;
     AP_Int8 esc_pwm_type;
     AP_Int16 esc_command_timeout_ms;
@@ -200,15 +202,11 @@ public:
     AP_Int32        log_bitmask;
 #endif
 
-#if HAL_GCS_ENABLED
-    AP_Int16 sysid_this_mav;
-#endif
-
 #if AP_PERIPH_BATTERY_ENABLED
     AP_Int32 battery_hide_mask;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_EFI
+#if AP_PERIPH_EFI_ENABLED
     AP_Int32 efi_baudrate;
     AP_Int8 efi_port;
 #endif
@@ -221,7 +219,7 @@ public:
     AP_Int8 can_mirror_ports;
 #endif // HAL_PERIPH_CAN_MIRROR
 
-#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+#if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
     AP_Int8 temperature_msg_rate;
 #endif
 

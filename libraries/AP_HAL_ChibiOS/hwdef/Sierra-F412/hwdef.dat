@@ -12,8 +12,8 @@ FLASH_RESERVE_START_KB 64
 define STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 8192
 
-# board ID for firmware load
-APJ_BOARD_ID 1055
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_SierraF412
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -81,8 +81,6 @@ PA0 VSENSE ADC1 SCALE(2)
 
 define HAL_NO_GPIO_IRQ
 
-# avoid RCIN thread to save memory
-define HAL_USE_RTC FALSE
 define DMA_RESERVE_SIZE 0
 
 # enable CAN support
@@ -104,8 +102,8 @@ define AP_PERIPH_GPS_ENABLED 1
 define HAL_PERIPH_GPS_PORT_DEFAULT 3
 define AP_PERIPH_MAG_ENABLED 1
 define AP_PERIPH_BARO_ENABLED 1
-define HAL_PERIPH_ENABLE_RC_OUT
-define HAL_PERIPH_ENABLE_NOTIFY
+define AP_PERIPH_RC_OUT_ENABLED 1
+define AP_PERIPH_NOTIFY_ENABLED 1
 
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256

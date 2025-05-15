@@ -21,6 +21,7 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <ch.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -78,6 +79,9 @@ void AP_IOMCU::init(void)
 {
     // uart runs at 1.5MBit
     uart.begin(1500*1000, 128, 128);
+#ifdef AP_IOMCU_UART_OPTIONS
+    uart.set_options(AP_IOMCU_UART_OPTIONS);
+#endif
     uart.set_unbuffered_writes(true);
 
 #if IOMCU_DEBUG_ENABLE
@@ -1092,10 +1096,11 @@ void AP_IOMCU::send_rc_protocols()
 /*
   check ROMFS firmware against CRC on IOMCU, and if incorrect then upload new firmware
  */
+
 bool AP_IOMCU::check_crc(void)
 {
     // flash size minus 4k bootloader
-	const uint32_t flash_size = 0x10000 - 0x1000;
+	const uint32_t flash_size = AP_IOMCU_FW_FLASH_SIZE;
     const char *path = AP_BoardConfig::io_dshot() ? dshot_fw_name : fw_name;
 
     fw = AP_ROMFS::find_decompress(path, fw_size);
@@ -1188,6 +1193,10 @@ bool AP_IOMCU::healthy(void)
  */
 void AP_IOMCU::shutdown(void)
 {
+    if (!initialised) {
+        // we're not initialised yet, so cannot shutdown
+        return;
+    }
     do_shutdown = true;
     while (!done_shutdown) {
         hal.scheduler->delay(1);
@@ -1207,13 +1216,13 @@ void AP_IOMCU::soft_reboot(void)
 /*
   request bind on a DSM radio
  */
-void AP_IOMCU::bind_dsm(uint8_t mode)
+void AP_IOMCU::bind_dsm()
 {
     if (!is_chibios_backend || AP::arming().is_armed()) {
         // only with ChibiOS IO firmware, and disarmed
         return;
     }
-    uint16_t reg = mode;
+    uint16_t reg = 0;  // this is unused by the IOMCU
     write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM_BIND, 1, &reg);
 }
 

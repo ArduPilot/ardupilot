@@ -166,28 +166,28 @@ AP_Float *AP_Tuning_Plane::get_param_pointer(uint8_t parm)
         return &plane.quadplane.attitude_control->get_angle_yaw_p().kP();
 
     case TUNING_PXY_P:
-        return &plane.quadplane.pos_control->get_pos_xy_p().kP();
+        return &plane.quadplane.pos_control->get_pos_NE_p().kP();
 
     case TUNING_PZ_P:
-        return &plane.quadplane.pos_control->get_pos_z_p().kP();
+        return &plane.quadplane.pos_control->get_pos_U_p().kP();
 
     case TUNING_VXY_P:
-        return &plane.quadplane.pos_control->get_vel_xy_pid().kP();
+        return &plane.quadplane.pos_control->get_vel_NE_pid().kP();
 
     case TUNING_VXY_I:
-        return &plane.quadplane.pos_control->get_vel_xy_pid().kI();
+        return &plane.quadplane.pos_control->get_vel_NE_pid().kI();
 
     case TUNING_VZ_P:
-        return &plane.quadplane.pos_control->get_vel_z_pid().kP();
+        return &plane.quadplane.pos_control->get_vel_U_pid().kP();
 
     case TUNING_AZ_P:
-        return &plane.quadplane.pos_control->get_accel_z_pid().kP();
+        return &plane.quadplane.pos_control->get_accel_U_pid().kP();
 
     case TUNING_AZ_I:
-        return &plane.quadplane.pos_control->get_accel_z_pid().kI();
+        return &plane.quadplane.pos_control->get_accel_U_pid().kI();
 
     case TUNING_AZ_D:
-        return &plane.quadplane.pos_control->get_accel_z_pid().kD();
+        return &plane.quadplane.pos_control->get_accel_U_pid().kD();
 
     case TUNING_RATE_PITCH_FF:
         return &plane.quadplane.attitude_control->get_rate_pitch_pid().ff();

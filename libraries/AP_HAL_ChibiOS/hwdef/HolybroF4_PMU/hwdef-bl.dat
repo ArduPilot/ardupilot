@@ -6,8 +6,8 @@ MCU STM32F4xx STM32F405xx
 # crystal frequency
 OSCILLATOR_HZ 16000000
 
-# board ID for firmware load
-APJ_BOARD_ID 5401
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_Holybro-PMU-F4
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -33,6 +33,7 @@ PC11  USART3_RX USART3
 PA11 CAN1_RX CAN1
 PA12 CAN1_TX CAN1
 PA15 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PB4 GPIO_CAN1_TERM OUTPUT PUSHPULL SPEED_LOW LOW
 
 define HAL_USE_CAN TRUE
 define STM32_CAN_USE_CAN1 TRUE

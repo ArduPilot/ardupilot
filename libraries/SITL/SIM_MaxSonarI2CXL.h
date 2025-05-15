@@ -1,5 +1,19 @@
 #pragma once
 
+/*
+  Simulator for the MaxsonarI2XL rangefinder
+
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter --speedup=1
+
+param set RNGFND1_TYPE 2
+graph RANGEFINDER.distance
+graph GLOBAL_POSITION_INT.relative_alt/1000-RANGEFINDER.distance
+reboot
+
+arm throttle
+rc 3 1600
+*/
+
 #include "SIM_config.h"
 
 #if AP_SIM_MAXSONAR_I2C_XL_ENABLED

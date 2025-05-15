@@ -110,7 +110,7 @@ void AP_Periph_FW::init()
 #endif
     serial_manager.init();
 
-#ifdef HAL_PERIPH_ENABLE_NETWORKING
+#if AP_PERIPH_NETWORKING_ENABLED
     networking_periph.init();
 #endif
 
@@ -144,7 +144,7 @@ void AP_Periph_FW::init()
     node_stats.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+#if AP_PERIPH_SERIAL_OPTIONS_ENABLED
     serial_options.init();
 #endif
 
@@ -159,6 +159,10 @@ void AP_Periph_FW::init()
         gps.init();
     }
 #endif  // AP_PERIPH_GPS_ENABLED
+
+#if AP_DAC_ENABLED
+    dac.init();
+#endif
 
 #if AP_PERIPH_MAG_ENABLED
     compass.init();
@@ -185,7 +189,7 @@ void AP_Periph_FW::init()
     rcin_init();
 #endif
 
-#if defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_RC_OUT)
+#if defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || AP_PERIPH_RC_OUT_ENABLED
     hal.rcout->init();
 #endif
 
@@ -193,15 +197,15 @@ void AP_Periph_FW::init()
     hal.rcout->set_serial_led_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY, HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY, AP_HAL::RCOutput::MODE_NEOPIXEL);
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
     rcout_init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_ADSB
+#if AP_PERIPH_ADSB_ENABLED
     adsb_init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_EFI
+#if AP_PERIPH_EFI_ENABLED
     if (efi.enabled() && g.efi_port >= 0) {
         auto *uart = hal.serial(g.efi_port);
         if (uart != nullptr) {
@@ -216,7 +220,7 @@ void AP_Periph_FW::init()
     kdecan.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+#if AP_PERIPH_AIRSPEED_ENABLED
 #if (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) && (HAL_USE_I2C == TRUE)
     const bool pins_enabled = ChibiOS::I2CBus::check_select_pins(0x01);
     if (pins_enabled) {
@@ -254,7 +258,7 @@ void AP_Periph_FW::init()
     }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PROXIMITY
+#if AP_PERIPH_PROXIMITY_ENABLED
     if (proximity.get_type(0) != AP_Proximity::Type::None && g.proximity_port >= 0) {
         auto *uart = hal.serial(g.proximity_port);
         if (uart != nullptr) {
@@ -265,15 +269,15 @@ void AP_Periph_FW::init()
     }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+#if AP_PERIPH_PWM_HARDPOINT_ENABLED
     pwm_hardpoint_init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_HWESC
+#if AP_PERIPH_HOBBYWING_ESC_ENABLED
     hwesc_telem.init(hal.serial(HAL_PERIPH_HWESC_SERIAL_PORT));
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_ESC_APD
+#if AP_PERIPH_ESC_APD_ENABLED
     for (uint8_t i = 0; i < ESC_NUMBERS; i++) {
         const uint8_t port = g.esc_serial_port[i];
         if (port < SERIALMANAGER_NUM_PORTS) { // skip bad ports
@@ -282,7 +286,7 @@ void AP_Periph_FW::init()
     }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_MSP
+#if AP_PERIPH_MSP_ENABLED
     if (g.msp_port >= 0) {
         msp_init(hal.serial(g.msp_port));
     }
@@ -300,11 +304,11 @@ void AP_Periph_FW::init()
     rpm_sensor.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
     notify.init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RELAY
+#if AP_PERIPH_RELAY_ENABLED
     relay.init();
 #endif
 
@@ -314,13 +318,13 @@ void AP_Periph_FW::init()
     start_ms = AP_HAL::millis();
 }
 
-#if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || defined(HAL_PERIPH_ENABLE_NOTIFY)
+#if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || AP_PERIPH_NOTIFY_ENABLED
 /*
   rotating rainbow pattern on startup
  */
 void AP_Periph_FW::update_rainbow()
 {
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
     if (notify.get_led_len() != 8) {
         return;
     }
@@ -332,7 +336,7 @@ void AP_Periph_FW::update_rainbow()
     uint32_t now = AP_HAL::millis();
     if (now - start_ms > 1500) {
         rainbow_done = true;
-#if defined (HAL_PERIPH_ENABLE_NOTIFY)
+#if AP_PERIPH_NOTIFY_ENABLED
         periph.notify.handle_rgb(0, 0, 0);
 #elif defined(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY)
         hal.rcout->set_serial_led_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY, -1, 0, 0, 0);
@@ -365,7 +369,7 @@ void AP_Periph_FW::update_rainbow()
     float brightness = 0.3;
     for (uint8_t n=0; n<8; n++) {
         uint8_t i = (step + n) % nsteps;
-#if defined (HAL_PERIPH_ENABLE_NOTIFY)
+#if AP_PERIPH_NOTIFY_ENABLED
         periph.notify.handle_rgb(
 #elif defined(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY)
         hal.rcout->set_serial_led_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY, n,
@@ -380,7 +384,7 @@ void AP_Periph_FW::update_rainbow()
     hal.rcout->serial_led_send(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY);
 #endif
 }
-#endif // HAL_PERIPH_ENABLE_NOTIFY
+#endif // AP_PERIPH_NOTIFY_ENABLED
 
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && CH_DBG_ENABLE_STACK_CHECK == TRUE
@@ -452,8 +456,12 @@ void AP_Periph_FW::update()
         check_for_serial_reboot_cmd(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT);
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
         rcout_init_1Hz();
+#endif
+
+#if AP_DAC_ENABLED
+        dac.update();
 #endif
 
         GCS_SEND_MESSAGE(MSG_HEARTBEAT);
@@ -505,7 +513,7 @@ void AP_Periph_FW::update()
     if (now - fiftyhz_last_update_ms >= 20) {
         // update at 50Hz
         fiftyhz_last_update_ms = now;
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
         notify.update();
 #endif
 #if HAL_GCS_ENABLED
@@ -535,14 +543,14 @@ void AP_Periph_FW::update()
 
     can_update();
 
-#ifdef HAL_PERIPH_ENABLE_NETWORKING
+#if AP_PERIPH_NETWORKING_ENABLED
     networking_periph.update();
 #endif
 
-#if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || defined(HAL_PERIPH_ENABLE_NOTIFY)
+#if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || AP_PERIPH_NOTIFY_ENABLED
     update_rainbow();
 #endif
-#ifdef HAL_PERIPH_ENABLE_ADSB
+#if AP_PERIPH_ADSB_ENABLED
     adsb_update();
 #endif
 }
@@ -604,7 +612,7 @@ void AP_Periph_FW::check_for_serial_reboot_cmd(const int8_t serial_index)
 // This is copied from AP_Vehicle::reboot(bool hold_in_bootloader) minus the actual reboot
 void AP_Periph_FW::prepare_reboot()
 {
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
         // force safety on
         hal.rcout->force_safety_on();
 #endif

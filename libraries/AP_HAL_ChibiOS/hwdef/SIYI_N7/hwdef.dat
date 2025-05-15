@@ -8,13 +8,11 @@ MCU STM32H7xx STM32H743xx
 # crystal frequency
 OSCILLATOR_HZ 16000000
 
-# board ID for firmware load
-APJ_BOARD_ID 1123
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_SIYI_N7
 
 FLASH_SIZE_KB 2048
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
 
 # bootloader takes first sector
 FLASH_RESERVE_START_KB 128
@@ -203,7 +201,7 @@ PE12 SAFETY_IN INPUT PULLDOWN
 define HAL_HAVE_SAFETY_SWITCH 1
 
 # one baro
-BARO MS56XX SPI:ms5611
+BARO MS5611 SPI:ms5611
 
 # one builtin compass, plus one on the default GPS that is external with
 # a non-default orientation

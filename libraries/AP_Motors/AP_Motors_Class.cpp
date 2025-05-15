@@ -296,11 +296,15 @@ void AP_Motors::set_frame_string(const char * str) {
 // output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_Motors::output_test_seq(uint8_t motor_seq, int16_t pwm)
+//  return true if output was successful, false if not possible
+bool AP_Motors::output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
     if (armed() && _interlock) {
         _output_test_seq(motor_seq, pwm);
+        return true;
     }
+    output_min();
+    return false;
 }
 
 bool AP_Motors::arming_checks(size_t buflen, char *buffer) const

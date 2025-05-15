@@ -22,6 +22,14 @@
 #define HAL_MEM_CLASS HAL_MEM_CLASS_20
 #endif
 
+// FIXME: BOARD_FLASH_SIZE is not adjusted for flash pages used for
+// storage, for the bootloader sector or for wasted pages (eg. defunct
+// OSD storage page).  These all impact the amount of space we have
+// for storing program!
+#ifndef HAL_PROGRAM_SIZE_LIMIT_KB
+#define HAL_PROGRAM_SIZE_LIMIT_KB (BOARD_FLASH_SIZE+EXT_FLASH_SIZE_MB*1024)
+#endif
+
 #ifndef HAL_NUM_CAN_IFACES
 #define HAL_NUM_CAN_IFACES 0
 #endif
@@ -159,3 +167,11 @@
 #ifndef AP_NOTIFY_TONEALARM_ENABLED
 #define AP_NOTIFY_TONEALARM_ENABLED ((defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM_ENABLED))
 #endif
+
+#ifndef AP_NOTIFY_BUZZER_ENABLED
+#define AP_NOTIFY_BUZZER_ENABLED 1
+#endif
+
+#ifndef AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+#define AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED 0
+#endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED

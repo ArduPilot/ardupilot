@@ -1,8 +1,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F427xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1096
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_PixPilot-V3
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
@@ -13,7 +13,6 @@ STM32_ST_USE_TIMER 5
 # flash size
 FLASH_SIZE_KB 2048
 
-env OPTIMIZE -O2
 # USB setup
 USB_STRING_MANUFACTURER "ArduPilot"
 
@@ -186,8 +185,8 @@ IMU Invensensev3 SPI:ICM42688_ext     ROTATION_NONE
 IMU Invensensev3 SPI:ICM40605_ext     ROTATION_NONE
 #ROTATION_ROLL_180_YAW_270
 
-BARO MS56XX SPI:ms5611
-BARO MS56XX SPI:ms5611_ext
+BARO MS5611 SPI:ms5611
+BARO MS5611 SPI:ms5611_ext
 
 
 COMPASS IST8310 I2C:0:0x0E false ROTATION_ROLL_180_YAW_270

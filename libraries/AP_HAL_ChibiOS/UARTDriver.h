@@ -50,9 +50,6 @@ public:
     uint32_t txspace() override;
     void _rx_timer_tick(void);
     void _tx_timer_tick(void);
-#if HAL_FORWARD_OTG2_SERIAL
-    void fwd_otg2_serial(void);
-#endif
 
     // control optional features
     bool set_options(uint16_t options) override;
@@ -220,12 +217,12 @@ private:
     // statistics
     uint32_t _tx_stats_bytes;
     uint32_t _rx_stats_bytes;
+    uint32_t _rx_stats_dropped_bytes;
 
     // we remember config options from set_options to apply on sdStart()
     uint32_t _cr1_options;
     uint32_t _cr2_options;
     uint32_t _cr3_options;
-    uint16_t _last_options;
 
     // half duplex control. After writing we throw away bytes for 4 byte widths to
     // prevent reading our own bytes back
@@ -290,6 +287,7 @@ protected:
     // Getters for cumulative tx and rx counts
     uint32_t get_total_tx_bytes() const override { return _tx_stats_bytes; }
     uint32_t get_total_rx_bytes() const override { return _rx_stats_bytes; }
+    uint32_t get_total_dropped_rx_bytes() const override { return _rx_stats_dropped_bytes; }
 #if CH_CFG_USE_EVENTS == TRUE
     uint32_t _rx_stats_framing_errors;
     uint32_t _rx_stats_overrun_errors;

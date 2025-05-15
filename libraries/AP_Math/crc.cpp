@@ -93,9 +93,9 @@ uint8_t crc_crc8(const uint8_t *p, uint8_t len)
 }
 
 // CRC8 that does not use a lookup table: for generic polynomials
-uint8_t crc8_generic(const uint8_t *buf, const uint16_t buf_len, const uint8_t polynomial)
+uint8_t crc8_generic(const uint8_t *buf, const uint16_t buf_len, const uint8_t polynomial, uint8_t initial_value)
 {
-    uint8_t crc = 0;
+    uint8_t crc = initial_value;
     for (uint16_t i = 0; i < buf_len; i++) {
         crc = crc8_dvb(buf[i], crc, polynomial);
     }

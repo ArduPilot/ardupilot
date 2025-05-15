@@ -119,7 +119,7 @@ void Tiltrotor::setup()
 
     // check if there are any permanent VTOL motors
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
-        if (motors->is_motor_enabled(i) && ((tilt_mask & (1U<<1)) == 0)) {
+        if (motors->is_motor_enabled(i) && !is_motor_tilting(i)) {
             // enabled motor not set in tilt mask
             _have_vtol_motor = true;
             break;
@@ -311,7 +311,7 @@ void Tiltrotor::continuous_update(void)
             slew(0);
         } else {
             // manual control of forward throttle up to max VTOL angle
-            float settilt = .01f * quadplane.forward_throttle_pct();
+            float settilt = 0.01f * quadplane.forward_throttle_pct();
             slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
         }
         return;
@@ -649,7 +649,7 @@ void Tiltrotor::vectoring(void)
             motors->limit.yaw = true;
         }
 
-        // constrain and scale to ouput range
+        // constrain and scale to output range
         left_tilt = constrain_float(left_tilt,0.0,1.0) * 1000.0;
         right_tilt = constrain_float(right_tilt,0.0,1.0) * 1000.0;
 
@@ -742,10 +742,18 @@ void Tiltrotor::update_yaw_target(void)
     transition_yaw_set_ms = now;
 }
 
+
+/*
+  control use of multirotor rate control in forward transition
+ */
+bool Tiltrotor_Transition::use_multirotor_control_in_fwd_transition() const
+{
+    return tiltrotor.is_vectored() && transition_state <= TRANSITION_TIMER;
+}
+
 bool Tiltrotor_Transition::update_yaw_target(float& yaw_target_cd)
 {
-    if (!(tiltrotor.is_vectored() &&
-        transition_state <= TRANSITION_TIMER)) {
+    if (!use_multirotor_control_in_fwd_transition()) {
         return false;
     }
     tiltrotor.update_yaw_target();

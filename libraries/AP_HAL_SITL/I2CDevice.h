@@ -22,7 +22,6 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <AP_HAL/I2CDevice.h>
-#include <AP_HAL/utility/OwnPtr.h>
 
 #include "AP_HAL_SITL_Namespace.h"
 #include "Semaphores.h"

@@ -44,6 +44,8 @@ extern const AP_HAL::HAL& hal;
 extern const HAL_SITL& hal_sitl;
 #endif
 
+Aircraft *Aircraft::instances[MAX_SIM_INSTANCES];
+
 /*
   parent class for all simulator types
  */
@@ -411,6 +413,8 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));
     fdm.bodyMagField = mag_bf;
 
+    fdm.bodyMagField.rotate(sitl->imu_orientation);
+
     // copy laser scanner results
     fdm.scanner.points = scanner.points;
     fdm.scanner.ranges = scanner.ranges;
@@ -479,7 +483,13 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 #endif
     // for EKF comparison log relhome pos and velocity at loop rate
     static uint16_t last_ticks;
-    uint16_t ticks = AP::scheduler().ticks();
+    // FIXME: stop using AP_Scheduler here!  It's from "the other side"
+    const auto *scheduler = AP_Scheduler::get_singleton();
+    if (scheduler == nullptr) {
+        // not instantiated in examples
+        return;
+    }
+    uint16_t ticks = scheduler->ticks();
     if (last_ticks != ticks) {
         last_ticks = ticks;
 // @LoggerMessage: SIM2
@@ -619,6 +629,11 @@ float Aircraft::rangefinder_range() const
     // Add some noise on reading
     altitude += sitl->sonar_noise * rand_float();
 
+    // our starting positions can disagree with the terrain database:
+    if (altitude < 0) {
+        altitude = 0;
+    }
+
     return altitude;
 }
 
@@ -663,10 +678,12 @@ void Aircraft::update_home()
         if (sitl == nullptr) {
             return;
         }
-        Location loc;
-        loc.lat = sitl->opos.lat.get() * 1.0e7;
-        loc.lng = sitl->opos.lng.get() * 1.0e7;
-        loc.alt = sitl->opos.alt.get() * 1.0e2;
+        const Location loc{
+            int32_t(sitl->opos.lat.get() * 1.0e7),
+            int32_t(sitl->opos.lng.get() * 1.0e7),
+            int32_t(sitl->opos.alt.get() * 1.0e2),
+            Location::AltFrame::ABSOLUTE
+        };
         set_start_location(loc, sitl->opos.hdg.get());
     }
 }
@@ -686,6 +703,8 @@ void Aircraft::update_model(const struct sitl_input &input)
  */
 void Aircraft::update_dynamics(const Vector3f &rot_accel)
 {
+    WITH_SEMAPHORE(pose_sem);
+
     // update eas2tas and air density
 #if AP_AHRS_ENABLED
     eas2tas = AP::ahrs().get_EAS2TAS();
@@ -992,7 +1011,8 @@ void Aircraft::smooth_sensors(void)
  */
 float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx)
 {
-    return servo_filter[idx].filter_angle(input.servos[idx], frame_time_us * 1.0e-6);
+    uint16_t pwm = input.servos[idx] == 0 ? 1500 : input.servos[idx];
+    return servo_filter[idx].filter_angle(pwm, frame_time_us * 1.0e-6);
 }
 
 /*
@@ -1358,3 +1378,36 @@ void Aircraft::update_eas_airspeed()
         airspeed_pitot *= cosf((pitot_aoa - max_pitot_aoa) * gain_factor);
     }
 }
+
+/*
+  set pose on the aircraft, called from scripting
+ */
+bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef, const Vector3f &gyro_rads)
+{
+    if (instance >= MAX_SIM_INSTANCES || instances[instance] == nullptr) {
+        return false;
+    }
+    auto &aircraft = *instances[instance];
+    WITH_SEMAPHORE(aircraft.pose_sem);
+
+    quat.rotation_matrix(aircraft.dcm);
+    aircraft.velocity_ef = velocity_ef;
+    aircraft.location = loc;
+    aircraft.position = aircraft.home.get_distance_NED_double(loc);
+    aircraft.smoothing.position = aircraft.position;
+    aircraft.smoothing.rotation_b2e = aircraft.dcm;
+    aircraft.smoothing.velocity_ef = velocity_ef;
+    aircraft.smoothing.location = loc;
+    aircraft.gyro = gyro_rads;
+
+    return true;
+}
+
+/*
+  wrapper for scripting access
+ */
+bool SITL::SIM::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef, const Vector3f &gyro_rads)
+{
+    return Aircraft::set_pose(instance, loc, quat, velocity_ef, gyro_rads);
+}
+

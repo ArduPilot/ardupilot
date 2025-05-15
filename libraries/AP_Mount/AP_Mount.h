@@ -49,6 +49,7 @@ class AP_Mount_Xacti;
 class AP_Mount_Viewpro;
 class AP_Mount_Topotek;
 class AP_Mount_CADDX;
+class AP_Mount_XFRobot;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -125,10 +126,13 @@ public:
 #if HAL_MOUNT_CADDX_ENABLED
         CADDX = 13,        /// CADDX gimbal using a custom serial protocol
 #endif
+#if HAL_MOUNT_XFROBOT_ENABLED
+        XFRobot = 14,        /// XFRobot gimbal using a custom serial protocol
+#endif
     };
 
     // init - detect and initialise all mounts
-    void init();
+    __INITFUNC__ void init();
 
     // update - give mount opportunity to update servos.  should be called at 10hz or higher
     void update();

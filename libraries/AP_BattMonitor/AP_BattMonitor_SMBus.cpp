@@ -47,7 +47,7 @@ AP_BattMonitor_SMBus::AP_BattMonitor_SMBus(AP_BattMonitor &mon,
 
 void AP_BattMonitor_SMBus::init(void)
 {
-    _dev = hal.i2c_mgr->get_device(_bus, _address, 100000, true, 20);
+    _dev = hal.i2c_mgr->get_device_ptr(_bus, _address, 100000, true, 20);
     
     if (_dev) {
         timer_handle = _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus::timer, void));

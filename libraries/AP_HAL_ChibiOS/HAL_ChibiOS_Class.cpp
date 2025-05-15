@@ -206,6 +206,25 @@ thread_t* get_main_thread()
     return daemon_task;
 }
 
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+#if !defined(STM32H7)
+#error AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED only available on H7 processors
+#endif  // !defined(STM32H7)
+static void mem_protect_enable()
+{
+    /*
+      enable this on H7 to make writes to the first 1k of RAM on H7
+      produce a hard fault and crash dump
+     */
+    mpuConfigureRegion(MPU_REGION_7,
+                       0x0,
+                       MPU_RASR_ATTR_AP_NA_NA |
+                       MPU_RASR_SIZE_1K |
+                       MPU_RASR_ENABLE);
+    mpuEnable(MPU_CTRL_PRIVDEFENA | MPU_CTRL_ENABLE);
+}
+#endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+
 static AP_HAL::HAL::Callbacks* g_callbacks;
 
 static void main_loop()
@@ -296,6 +315,10 @@ static void main_loop()
       switch to high priority for main loop
      */
     chThdSetPriority(APM_MAIN_PRIORITY);
+
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+    mem_protect_enable();
+#endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
 
     while (true) {
         g_callbacks->loop();

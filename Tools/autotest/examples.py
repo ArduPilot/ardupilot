@@ -4,9 +4,6 @@ Contains functions used to test the ArduPilot examples
 AP_FLAKE8_CLEAN
 """
 
-from __future__ import print_function
-
-
 import os
 import pexpect
 import signal
@@ -69,7 +66,7 @@ def run_example(name, filepath, valgrind=False, gdb=False):
         print("process exited with -15, indicating it didn't catch the TERM signal and exit properly")
     elif retcode != 0:
         # note that process could exit with code 0 and we couldn't tell...
-        raise ValueError("Process exitted with non-zero exitcode %s" % str(retcode))
+        raise ValueError("Process exited with non-zero exitcode %s" % str(retcode))
 
     print("Ran: (%s)" % str(cmd))
 

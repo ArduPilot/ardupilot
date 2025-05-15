@@ -9,7 +9,7 @@ MAV_TYPE GCS_Blimp::frame_type() const
     return blimp.get_frame_mav_type();
 }
 
-MAV_MODE GCS_MAVLINK_Blimp::base_mode() const
+uint8_t GCS_MAVLINK_Blimp::base_mode() const
 {
     uint8_t _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
     _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
@@ -22,7 +22,7 @@ MAV_MODE GCS_MAVLINK_Blimp::base_mode() const
     // indicate we have set a custom mode
     _base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    return (MAV_MODE)_base_mode;
+    return _base_mode;
 }
 
 uint32_t GCS_Blimp::custom_mode() const
@@ -172,20 +172,6 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
     }
 }
 
-uint8_t GCS_MAVLINK_Blimp::sysid_my_gcs() const
-{
-    return blimp.g.sysid_my_gcs;
-}
-bool GCS_MAVLINK_Blimp::sysid_enforce() const
-{
-    return blimp.g2.sysid_enforce;
-}
-
-uint32_t GCS_MAVLINK_Blimp::telem_delay() const
-{
-    return (uint32_t)(blimp.g.telem_delay);
-}
-
 bool GCS_Blimp::vehicle_initialised() const
 {
     return blimp.ap.initialised;
@@ -201,9 +187,6 @@ bool GCS_MAVLINK_Blimp::try_send_message(enum ap_message id)
         send_wind();
         break;
 
-    case MSG_SERVO_OUT:
-    case MSG_AOA_SSA:
-    case MSG_LANDING:
     case MSG_ADSB_VEHICLE:
         // unused
         break;
@@ -213,216 +196,6 @@ bool GCS_MAVLINK_Blimp::try_send_message(enum ap_message id)
     }
     return true;
 }
-
-
-const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-    // @Param: RAW_SENS
-    // @DisplayName: Raw sensor stream rate
-    // @Description: Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3, AIRSPEED and SENSOR_OFFSETS to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK_Parameters, streamRates[0],  0),
-
-    // @Param: EXT_STAT
-    // @DisplayName: Extended status stream rate to ground station
-    // @Description: Stream rate of SYS_STATUS, POWER_STATUS, MCU_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, and FENCE_STATUS to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK_Parameters, streamRates[1],  0),
-
-    // @Param: RC_CHAN
-    // @DisplayName: RC Channel stream rate to ground station
-    // @Description: Stream rate of SERVO_OUTPUT_RAW and RC_CHANNELS to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK_Parameters, streamRates[2],  0),
-
-    // @Param: RAW_CTRL
-    // @DisplayName: Unused
-    // @Description: Unused
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK_Parameters, streamRates[3],  0),
-
-    // @Param: POSITION
-    // @DisplayName: Position stream rate to ground station
-    // @Description: Stream rate of GLOBAL_POSITION_INT and LOCAL_POSITION_NED to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK_Parameters, streamRates[4],  0),
-
-    // @Param: EXTRA1
-    // @DisplayName: Extra data type 1 stream rate to ground station
-    // @Description: Stream rate of ATTITUDE, SIMSTATE (SITL only), AHRS2 and PID_TUNING to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK_Parameters, streamRates[5],  0),
-
-    // @Param: EXTRA2
-    // @DisplayName: Extra data type 2 stream rate to ground station
-    // @Description: Stream rate of VFR_HUD to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK_Parameters, streamRates[6],  0),
-
-    // @Param: EXTRA3
-    // @DisplayName: Extra data type 3 stream rate to ground station
-    // @Description: Stream rate of AHRS, SYSTEM_TIME, RANGEFINDER, DISTANCE_SENSOR, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION and RPM to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK_Parameters, streamRates[7],  0),
-
-    // @Param: PARAMS
-    // @DisplayName: Parameter stream rate to ground station
-    // @Description: Stream rate of PARAM_VALUE to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK_Parameters, streamRates[8],  0),
-    AP_GROUPEND
-};
-
-static const ap_message STREAM_RAW_SENSORS_msgs[] = {
-    MSG_RAW_IMU,
-    MSG_SCALED_IMU2,
-    MSG_SCALED_IMU3,
-    MSG_SCALED_PRESSURE,
-    MSG_SCALED_PRESSURE2,
-    MSG_SCALED_PRESSURE3,
-#if AP_AIRSPEED_ENABLED
-    MSG_AIRSPEED,
-#endif
-};
-static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
-    MSG_SYS_STATUS,
-    MSG_POWER_STATUS,
-#if HAL_WITH_MCU_MONITORING
-    MSG_MCU_STATUS,
-#endif
-    MSG_MEMINFO,
-    MSG_CURRENT_WAYPOINT, // MISSION_CURRENT
-#if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
-    MSG_GPS_RAW,
-#endif
-#if AP_GPS_GPS_RTK_SENDING_ENABLED
-    MSG_GPS_RTK,
-#endif
-#if AP_GPS_GPS2_RAW_SENDING_ENABLED
-    MSG_GPS2_RAW,
-#endif
-#if AP_GPS_GPS2_RTK_SENDING_ENABLED
-    MSG_GPS2_RTK,
-#endif
-    MSG_NAV_CONTROLLER_OUTPUT,
-#if AP_FENCE_ENABLED
-    MSG_FENCE_STATUS,
-#endif
-    MSG_POSITION_TARGET_GLOBAL_INT,
-};
-static const ap_message STREAM_POSITION_msgs[] = {
-    MSG_LOCATION,
-    MSG_LOCAL_POSITION
-};
-static const ap_message STREAM_RC_CHANNELS_msgs[] = {
-    MSG_SERVO_OUTPUT_RAW,
-    MSG_RC_CHANNELS,
-#if AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
-    MSG_RC_CHANNELS_RAW, // only sent on a mavlink1 connection
-#endif
-};
-static const ap_message STREAM_EXTRA1_msgs[] = {
-    MSG_ATTITUDE,
-#if AP_SIM_ENABLED
-    MSG_SIMSTATE,
-#endif
-    MSG_AHRS2,
-    MSG_PID_TUNING // Up to four PID_TUNING messages are sent, depending on GCS_PID_MASK parameter
-};
-static const ap_message STREAM_EXTRA2_msgs[] = {
-    MSG_VFR_HUD
-};
-static const ap_message STREAM_EXTRA3_msgs[] = {
-    MSG_AHRS,
-    MSG_SYSTEM_TIME,
-    MSG_WIND,
-#if AP_RANGEFINDER_ENABLED
-    MSG_RANGEFINDER,
-#endif
-    MSG_DISTANCE_SENSOR,
-#if AP_BATTERY_ENABLED
-    MSG_BATTERY_STATUS,
-#endif
-#if HAL_MOUNT_ENABLED
-    MSG_GIMBAL_DEVICE_ATTITUDE_STATUS,
-#endif
-#if AP_OPTICALFLOW_ENABLED
-    MSG_OPTICAL_FLOW,
-#endif
-#if COMPASS_CAL_ENABLED
-    MSG_MAG_CAL_REPORT,
-    MSG_MAG_CAL_PROGRESS,
-#endif
-    MSG_EKF_STATUS_REPORT,
-    MSG_VIBRATION,
-#if AP_RPM_ENABLED
-    MSG_RPM,
-#endif
-#if HAL_WITH_ESC_TELEM
-    MSG_ESC_TELEMETRY,
-#endif
-#if HAL_GENERATOR_ENABLED
-    MSG_GENERATOR_STATUS,
-#endif
-};
-static const ap_message STREAM_PARAMS_msgs[] = {
-    MSG_NEXT_PARAM,
-    MSG_AVAILABLE_MODES
-};
-static const ap_message STREAM_ADSB_msgs[] = {
-    MSG_ADSB_VEHICLE,
-#if AP_AIS_ENABLED
-    MSG_AIS_VESSEL,
-#endif
-};
-
-const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
-    MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
-    MAV_STREAM_ENTRY(STREAM_EXTENDED_STATUS),
-    MAV_STREAM_ENTRY(STREAM_POSITION),
-    MAV_STREAM_ENTRY(STREAM_RC_CHANNELS),
-    MAV_STREAM_ENTRY(STREAM_EXTRA1),
-    MAV_STREAM_ENTRY(STREAM_EXTRA2),
-    MAV_STREAM_ENTRY(STREAM_EXTRA3),
-    MAV_STREAM_ENTRY(STREAM_ADSB),
-    MAV_STREAM_ENTRY(STREAM_PARAMS),
-    MAV_STREAM_TERMINATOR // must have this at end of stream_entries
-};
 
 void GCS_MAVLINK_Blimp::packetReceived(const mavlink_status_t &status,
                                        const mavlink_message_t &msg)

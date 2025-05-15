@@ -90,8 +90,11 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_home(cmd);
         break;
 
+    case MAV_CMD_DO_SET_ROI_LOCATION:       // 195
+    case MAV_CMD_DO_SET_ROI_NONE:           // 197
     case MAV_CMD_DO_SET_ROI:                // 201
         // point the vehicle and camera at a region of interest (ROI)
+        // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
         do_roi(cmd);
         break;
 
@@ -186,6 +189,8 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
         // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
+    case MAV_CMD_DO_SET_ROI_LOCATION:
+    case MAV_CMD_DO_SET_ROI_NONE:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
@@ -298,7 +303,7 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
     if (target_loc.lat == 0 && target_loc.lng == 0) {
         // To-Do: make this simpler
         Vector3f temp_pos;
-        wp_nav.get_wp_stopping_point_xy(temp_pos.xy());
+        wp_nav.get_wp_stopping_point_NE_cm(temp_pos.xy());
         const Location temp_loc(temp_pos, Location::AltFrame::ABOVE_ORIGIN);
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
@@ -520,7 +525,7 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
     if (auto_mode == Auto_CircleMoveToEdge) {
         if (wp_nav.reached_wp_destination()) {
             Vector3f circle_center;
-            UNUSED_RESULT(cmd.content.location.get_vector_from_origin_NEU(circle_center));
+            UNUSED_RESULT(cmd.content.location.get_vector_from_origin_NEU_cm(circle_center));
 
             // set target altitude if not provided
             if (is_zero(circle_center.z)) {
@@ -540,7 +545,7 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
     const float turns = cmd.get_loiter_turns();
 
     // check if we have completed circling
-    return fabsf(sub.circle_nav.get_angle_total()/M_2PI) >= turns;
+    return fabsf(sub.circle_nav.get_angle_total_rad()/M_2PI) >= turns;
 }
 
 #if NAV_GUIDED
@@ -579,7 +584,7 @@ void Sub::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 
 void Sub::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
-    condition_value  = cmd.content.distance.meters * 100;
+    condition_value  = cmd.content.distance.meters;
 }
 
 void Sub::do_yaw(const AP_Mission::Mission_Command& cmd)
@@ -607,7 +612,7 @@ bool Sub::verify_wait_delay()
 
 bool Sub::verify_within_distance()
 {
-    if (wp_nav.get_wp_distance_to_destination() < (uint32_t)MAX(condition_value,0)) {
+    if (wp_nav.get_wp_distance_to_destination_cm() < (uint32_t)MAX(condition_value,0)) {
         condition_value = 0;
         return true;
     }
@@ -661,7 +666,7 @@ bool Sub::do_guided(const AP_Mission::Mission_Command& cmd)
 void Sub::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.content.speed.target_ms > 0) {
-        wp_nav.set_speed_xy(cmd.content.speed.target_ms * 100.0f);
+        wp_nav.set_speed_NE_cms(cmd.content.speed.target_ms * 100.0f);
     }
 }
 

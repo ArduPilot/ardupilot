@@ -12,8 +12,6 @@
 #endif
 #include <stdio.h>
 
-#define SENSOR_RATE_DEBUG 0
-
 #ifndef AP_HEATER_IMU_INSTANCE
 #define AP_HEATER_IMU_INSTANCE 0
 #endif
@@ -744,12 +742,6 @@ void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t s
 #endif
     }
 #endif
-}
-
-void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
-                                                          float max_offset)
-{
-    _imu._accel_max_abs_offsets[instance] = max_offset;
 }
 
 // increment accelerometer error_count

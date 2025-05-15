@@ -161,7 +161,7 @@ bool AC_AutoTune::init_position_controller(void)
     init_z_limits();
 
     // initialise the vertical position controller
-    pos_control->init_z_controller();
+    pos_control->init_U_controller();
 
     return true;
 }
@@ -244,7 +244,7 @@ void AC_AutoTune::run()
     if (!motors->armed() || !motors->get_interlock()) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0.0f, true, 0.0f);
-        pos_control->relax_z_controller(0.0f);
+        pos_control->relax_U_controller(0.0f);
         return;
     }
 
@@ -301,7 +301,7 @@ void AC_AutoTune::run()
 
     // if pilot override call attitude controller
     if (pilot_override || mode != TUNING) {
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
     } else {
         // somehow get attitude requests from autotuning
         control_attitude();
@@ -310,8 +310,8 @@ void AC_AutoTune::run()
     }
 
     // call position controller
-    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate_cms);
-    pos_control->update_z_controller();
+    pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
+    pos_control->update_U_controller();
 
 }
 
@@ -373,7 +373,7 @@ void AC_AutoTune::control_attitude()
         get_poshold_attitude(roll_cd, pitch_cd, desired_yaw_cd);
 
         // hold level attitude
-        attitude_control->input_euler_angle_roll_pitch_yaw(roll_cd, pitch_cd, desired_yaw_cd, true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(roll_cd, pitch_cd, desired_yaw_cd, true);
 
         // hold the copter level for 0.5 seconds before we begin a twitch
         // reset counter if we are no longer level
@@ -583,7 +583,7 @@ void AC_AutoTune::control_attitude()
     case ABORT:
         if (axis == AxisType::YAW || axis == AxisType::YAW_D) {
             // todo: check to make sure we need this
-            attitude_control->input_euler_angle_roll_pitch_yaw(0.0f, 0.0f, ahrs_view->yaw_sensor, false);
+            attitude_control->input_euler_angle_roll_pitch_yaw_cd(0.0f, 0.0f, ahrs_view->yaw_sensor, false);
         }
 
         // set gains to their intra-test values (which are very close to the original gains)

@@ -37,20 +37,9 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(format_version, "FORMAT_VERSION",   0),
 
-    // @Param: SYSID_THISMAV
-    // @DisplayName: MAVLink system ID of this vehicle
-    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network
-    // @Range: 1 255
-    // @User: Advanced
-    GSCALAR(sysid_this_mav, "SYSID_THISMAV",   MAV_SYSTEM_ID),
+    // SYSID_THISMAV was here
 
-    // @Param: SYSID_MYGCS
-    // @DisplayName: My ground station number
-    // @Description: Allows restricting radio overrides to only come from my ground station
-    // @Range: 1 255
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(sysid_my_gcs,   "SYSID_MYGCS",     255),
+    // SYSID_MYGCS was here
 
     // @Param: PILOT_THR_FILT
     // @DisplayName: Throttle filter cutoff
@@ -78,15 +67,6 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(throttle_behavior, "PILOT_THR_BHV", 0),
 
     // AP_SerialManager was here
-
-    // @Param: TELEM_DELAY
-    // @DisplayName: Telemetry startup delay
-    // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
-    // @User: Advanced
-    // @Units: s
-    // @Range: 0 30
-    // @Increment: 1
-    GSCALAR(telem_delay,            "TELEM_DELAY",     0),
 
     // @Param: GCS_PID_MASK
     // @DisplayName: GCS PID tuning mask
@@ -307,7 +287,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
-    // @Description: Bitmap of what on-board log types to enable. This value is made up of the sum of each of the log types you want to be saved. It is usually best just to enable all basiclog types by setting this to 65535. 
+    // @Description: Bitmap of what on-board log types to enable. This value is made up of the sum of each of the log types you want to be saved. It is usually best just to enable all basiclog types by setting this to 65535. Note that if you want to reduce log sizes you should consider using LOG_FILE_RATEMAX instead of disabling logging items with this parameter.
     // @Bitmask: 0:Fast Attitude,1:Medium Attitude,2:GPS,3:System Performance,4:Control Tuning,5:Navigation Tuning,6:RC input,7:IMU,8:Mission Commands,9:Battery Monitor,10:RC output,11:Optical Flow,12:PID,13:Compass,15:Camera,17:Motors,18:Fast IMU,19:Raw IMU,20:Video Stabilization,21:Fast harmonic notch logging
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
@@ -320,8 +300,8 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(esc_calibrate, "ESC_CALIBRATION",       0),
 
     // @Param: TUNE
-    // @DisplayName: Channel 6 Tuning
-    // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
+    // @DisplayName: Tuning Parameter
+    // @Description: Selects parameter (normally a PID gain) that is being tuned with an RC transmitter's knob. The RC input channel used is assigned by setting RCx_OPTION to 219.
     // @User: Standard
     // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,56:Rate Yaw Filter,55:Motor Yaw Headroom,14:AltHold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,12:Loiter Pos kP,22:Velocity XY kP,28:Velocity XY kI,10:WP Speed,25:Acro Roll/Pitch deg/s,40:Acro Yaw deg/s,45:RC Feel,13:Heli Ext Gyro,38:Declination,39:Circle Rate,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF,58:SysID Magnitude,59:PSC Angle Max,60:Loiter Speed
     GSCALAR(radio_tuning, "TUNE",                   0),
@@ -502,45 +482,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
     GOBJECTPTR(pos_control, "PSC", AC_PosControl),
 
-    // @Group: SR0_
-    // @Path: GCS_MAVLink_Copter.cpp
-    GOBJECTN(_gcs.chan_parameters[0],  gcs0,       "SR0_",     GCS_MAVLINK_Parameters),
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 2
-    // @Group: SR1_
-    // @Path: GCS_MAVLink_Copter.cpp
-    GOBJECTN(_gcs.chan_parameters[1],  gcs1,       "SR1_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 3
-    // @Group: SR2_
-    // @Path: GCS_MAVLink_Copter.cpp
-    GOBJECTN(_gcs.chan_parameters[2],  gcs2,       "SR2_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 4
-    // @Group: SR3_
-    // @Path: GCS_MAVLink_Copter.cpp
-    GOBJECTN(_gcs.chan_parameters[3],  gcs3,       "SR3_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 5
-    // @Group: SR4_
-    // @Path: GCS_MAVLink_Copter.cpp
-    GOBJECTN(_gcs.chan_parameters[4],  gcs4,       "SR4_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 6
-    // @Group: SR5_
-    // @Path: GCS_MAVLink_Copter.cpp
-    GOBJECTN(_gcs.chan_parameters[5],  gcs5,       "SR5_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 7
-    // @Group: SR6_
-    // @Path: GCS_MAVLink_Copter.cpp
-    GOBJECTN(_gcs.chan_parameters[6],  gcs6,       "SR6_",     GCS_MAVLINK_Parameters),
-#endif
+    // SR0 through SR6 was here
 
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
@@ -706,6 +648,20 @@ const AP_Param::Info Copter::var_info[] = {
     // @Units: m
     // @User: Advanced
     GSCALAR(throw_altitude_max, "THROW_ALT_MAX", 0),
+
+    // @Param: THROW_ALT_DCSND
+    // @DisplayName: Throw mode target altitude to descend
+    // @Description: Target altitude to descend during a drop, (must be positive). This allows for rapidly clearing surrounding obstacles.
+    // @Units: m
+    // @User: Advanced
+    GSCALAR(throw_altitude_descend, "THROW_ALT_DCSND", 1.0),
+
+    // @Param: THROW_ALT_ACSND
+    // @DisplayName: Throw mode target altitude to ascsend
+    // @Description: Target altitude to ascend during a throw upwards (must be positive). This allows for rapidly clearing surrounding obstacles.
+    // @Units: m
+    // @User: Advanced
+    GSCALAR(throw_altitude_ascend, "THROW_ALT_ACSND", 3.0),
 #endif
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED
@@ -727,6 +683,12 @@ const AP_Param::Info Copter::var_info[] = {
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     PARAM_VEHICLE_INFO,
+
+#if HAL_GCS_ENABLED
+    // @Group: MAV
+    // @Path: ../libraries/GCS_MAVLink/GCS.cpp
+    GOBJECT(_gcs,           "MAV",  GCS),
+#endif
 
     AP_VAREND
 };
@@ -808,12 +770,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("ACRO_THR_MID", 10, ParametersG2, acro_thr_mid, ACRO_THR_MID_DEFAULT),
 #endif
 
-    // @Param: SYSID_ENFORCE
-    // @DisplayName: GCS sysid enforcement
-    // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
-    // @Values: 0:NotEnforced,1:Enforced
-    // @User: Advanced
-    AP_GROUPINFO("SYSID_ENFORCE", 11, ParametersG2, sysid_enforce, 0),
+    // 11 was SYSID_ENFORCE
 
     // 12 was AP_Stats
 
@@ -1133,7 +1090,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: TKOFF_SLEW_TIME
     // @DisplayName: Slew time of throttle during take-off
-    // @Description: Time to slew the throttle from minimum to maximum while checking for a succsessful takeoff.
+    // @Description: Time to slew the throttle from minimum to maximum while checking for a successful takeoff.
     // @Units: s
     // @Range: 0.25 5.0
     // @User: Standard
@@ -1361,6 +1318,19 @@ void Copter::load_parameters(void)
 
     AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
 
+#if HAL_GCS_ENABLED
+    // Move parameters into new MAV_ parameter namespace
+    // PARAMETER_CONVERSION - Added: Mar-2025 for ArduPilot-4.7
+    {
+        const AP_Param::ConversionInfo gcs_conversion_info[] {
+            { Parameters::k_param_sysid_this_mav_old, 0, AP_PARAM_INT16,  "MAV_SYSID" },
+            { Parameters::k_param_sysid_my_gcs_old, 0, AP_PARAM_INT16, "MAV_GCS_SYSID" },
+            { Parameters::k_param_g2,  11, AP_PARAM_INT8, "MAV_OPTIONS" },
+            { Parameters::k_param_telem_delay_old,  0, AP_PARAM_INT8, "MAV_TELEM_DELAY" },
+        };
+        AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
+    }
+#endif  // HAL_GCS_ENABLED
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
@@ -1452,7 +1422,7 @@ void Copter::convert_prx_parameters()
 {
     // convert PRX to PRX1_ parameters for Copter-4.3
     // PARAMETER_CONVERSION - Added: Aug-2022
-    const AP_Param::ConversionInfo prx_conversion_info[] = {
+    static const AP_Param::ConversionInfo prx_conversion_info[] = {
         { Parameters::k_param_g2, 72, AP_PARAM_INT8, "PRX1_TYPE" },
         { Parameters::k_param_g2, 136, AP_PARAM_INT8, "PRX1_ORIENT" },
         { Parameters::k_param_g2, 200, AP_PARAM_INT16, "PRX1_YAW_CORR" },

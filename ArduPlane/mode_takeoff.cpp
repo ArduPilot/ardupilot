@@ -44,7 +44,7 @@ const AP_Param::GroupInfo ModeTakeoff::var_info[] = {
 
     // @Param: GND_PITCH
     // @DisplayName: Takeoff run pitch demand
-    // @Description: Degrees of pitch angle demanded during the takeoff run before speed reaches TKOFF_ROTATE_SPD. For taildraggers set to 3-point ground pitch angle and use TKOFF_TDRAG_ELEV to prevent nose tipover. For nose-wheel steer aircraft set to the ground pitch angle and if a reduction in nose-wheel load is required as speed rises, use a positive offset in TKOFF_GND_PITCH of up to 5 degrees above the angle on ground, starting at the mesured pitch angle and incrementing in 1 degree steps whilst checking for premature rotation and takeoff with each increment. To increase nose-wheel load, use a negative TKOFF_TDRAG_ELEV and refer to notes on TKOFF_TDRAG_ELEV before making adjustments.
+    // @Description: Degrees of pitch angle demanded during the takeoff run before speed reaches TKOFF_ROTATE_SPD. For taildraggers set to 3-point ground pitch angle and use TKOFF_TDRAG_ELEV to prevent nose tipover. For nose-wheel steer aircraft set to the ground pitch angle and if a reduction in nose-wheel load is required as speed rises, use a positive offset in TKOFF_GND_PITCH of up to 5 degrees above the angle on ground, starting at the measured pitch angle and incrementing in 1 degree steps whilst checking for premature rotation and takeoff with each increment. To increase nose-wheel load, use a negative TKOFF_TDRAG_ELEV and refer to notes on TKOFF_TDRAG_ELEV before making adjustments.
     // @Units: deg
     // @Range: -5.0 10.0
     // @Increment: 0.1
@@ -120,13 +120,13 @@ void ModeTakeoff::update()
 
             /*
               don't lock in the takeoff loiter location until we reach
-              a ground speed of AIRSPEED_MIN*0.3 to cope with aircraft
+              a ground speed of GPS_GND_CRS_MIN_SPD to cope with aircraft
               with no compass or poor compass. If flying in a very
               strong headwind then the is_flying() check above will
               eventually trigger
              */
             if (!plane.throttle_suppressed &&
-                groundspeed > plane.aparm.airspeed_min*0.3) {
+                groundspeed > GPS_GND_CRS_MIN_SPD) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Takeoff to %.0fm for %.1fm heading %.1f deg",
                                 alt, dist, direction);
                 plane.takeoff_state.start_time_ms = millis();

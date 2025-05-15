@@ -155,6 +155,9 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     // system to control the vehicle attitude and the attitude of various
     // devices such as cameras.
     //    |Region of interest mode. (see MAV_ROI enum)| Waypoint index/ target ID. (see MAV_ROI enum)| ROI index (allows a vehicle to manage multiple cameras etc.)| Empty| x the location of the fixed ROI (see MAV_FRAME)| y| z|
+    // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
+    case MAV_CMD_DO_SET_ROI_LOCATION:
+    case MAV_CMD_DO_SET_ROI_NONE:
     case MAV_CMD_DO_SET_ROI:
         if (cmd.content.location.alt == 0 && cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
             // switch off the camera tracking if enabled
@@ -311,6 +314,8 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_DO_SET_ROI_LOCATION:
+    case MAV_CMD_DO_SET_ROI_NONE:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_VTOL_TRANSITION:
@@ -335,6 +340,9 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
     auto_state.crosstrack = false;
     prev_WP_loc = current_loc;
     next_WP_loc = calc_best_rally_or_home_location(current_loc, rtl_altitude_AMSL_cm);
+
+    fix_terrain_WP(next_WP_loc, __LINE__);
+
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
 
@@ -344,7 +352,7 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
         loiter.direction = 1;
     }
 
-    setup_glide_slope();
+    setup_alt_slope();
     setup_turn_angle();
 }
 
@@ -375,8 +383,8 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
     auto_state.takeoff_altitude_rel_cm = next_WP_loc.alt - home.alt;
     next_WP_loc.lat = home.lat + 10;
     next_WP_loc.lng = home.lng + 10;
-    auto_state.takeoff_speed_time_ms = 0;
     auto_state.takeoff_complete = false; // set flag to use gps ground course during TO. IMU will be doing yaw drift correction.
+    auto_state.rotation_complete = false;
     auto_state.height_below_takeoff_to_level_off_cm = 0;
     // Flag also used to override "on the ground" throttle disable
 
@@ -496,7 +504,17 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
         next_WP_loc.offset_bearing(bearing, 1000); // push it out 1km
     }
 
-    next_WP_loc.alt = cmd.content.location.alt + home.alt;
+    if (cmd.content.location.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
+        next_WP_loc.set_alt_cm(cmd.content.location.alt,
+                               Location::AltFrame::ABOVE_TERRAIN);
+    } else {
+        int32_t alt_abs_cm;
+        // if this fails we don't change alt
+        if (cmd.content.location.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_abs_cm)) {
+            next_WP_loc.set_alt_cm(alt_abs_cm,
+                                   Location::AltFrame::ABSOLUTE);
+        }
+    }
     condition_value = cmd.p1;
     reset_offset_altitude();
 }
@@ -551,21 +569,15 @@ bool Plane::verify_takeoff()
     trust_ahrs_yaw |= ahrs.dcm_yaw_initialised();
 #endif
     if (trust_ahrs_yaw && steer_state.hold_course_cd == -1) {
-        const float min_gps_speed = GPS_GND_CRS_MIN_SPD;
-        if (auto_state.takeoff_speed_time_ms == 0 && 
-            gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
-            gps.ground_speed() > min_gps_speed &&
+        // once we reach sufficient speed for good GPS course
+        // estimation we save our current GPS ground course
+        // corrected for summed yaw to set the take off
+        // course. This keeps wings level until we are ready to
+        // rotate, and also allows us to cope with arbitrary
+        // compass errors for auto takeoff
+        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
+            gps.ground_speed() > GPS_GND_CRS_MIN_SPD &&
             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-            auto_state.takeoff_speed_time_ms = millis();
-        }
-        if (auto_state.takeoff_speed_time_ms != 0 &&
-            millis() - auto_state.takeoff_speed_time_ms >= 2000) {
-            // once we reach sufficient speed for good GPS course
-            // estimation we save our current GPS ground course
-            // corrected for summed yaw to set the take off
-            // course. This keeps wings level until we are ready to
-            // rotate, and also allows us to cope with arbitrary
-            // compass errors for auto takeoff
             float takeoff_course = wrap_PI(radians(gps.ground_course())) - steer_state.locked_course_err;
             takeoff_course = wrap_PI(takeoff_course);
             steer_state.hold_course_cd = wrap_360_cd(degrees(takeoff_course)*100);
@@ -1046,7 +1058,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 // fly home and loiter at RTL alt
                 nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
                 if (plane.reached_loiter_target()) {
-                    // decend to Q RTL alt
+                    // descend to Q RTL alt
                     plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt*100UL);
                     plane.loiter_angle_reset();
                     vtol_approach_s.approach_stage = VTOLApproach::Stage::LOITER_TO_ALT;
@@ -1097,7 +1109,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
             }
         case VTOLApproach::Stage::APPROACH_LINE:
             {
-                // project an apporach path
+                // project an approach path
                 Location start = cmd.content.location;
                 Location end = cmd.content.location;
 

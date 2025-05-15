@@ -24,8 +24,8 @@ OSCILLATOR_HZ 8000000
 # assume the 512k flash part
 FLASH_SIZE_KB 512
 
-# board ID for firmware load
-APJ_BOARD_ID 1041
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_mRoM10095
 
 define HAL_CAN_POOL_SIZE 6000
 

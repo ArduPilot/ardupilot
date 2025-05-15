@@ -6,7 +6,6 @@ Andrew Tridgell, October 2011
 
  AP_FLAKE8_CLEAN
 """
-from __future__ import print_function
 import atexit
 import fnmatch
 import copy
@@ -236,7 +235,6 @@ def test_prerequisites():
 
 def alarm_handler(signum, frame):
     """Handle test timeout."""
-    global results, opts, tester
     try:
         print("Alarm handler called")
         if tester is not None:
@@ -660,7 +658,6 @@ def write_webresults(results_to_write):
 
 def write_fullresults():
     """Write out full results set."""
-    global results
     results.addglob("Google Earth track", '*.kmz')
     results.addfile('Full Logs', 'autotest-output.txt')
     results.addglob('DataFlash Log', '*-log.bin')
@@ -700,7 +697,6 @@ def write_fullresults():
 
 def run_tests(steps):
     """Run a list of steps."""
-    global results
 
     corefiles = glob.glob("core*")
     corefiles.extend(glob.glob("ap-*.core"))
@@ -754,7 +750,6 @@ def run_tests(steps):
                         '<span class="failed-text">FAILED</span>',
                         time.time() - t1)
 
-        global tester
         if tester is not None and tester.rc_thread is not None:
             if passed:
                 print("BAD: RC Thread still alive after run_step")
@@ -834,7 +829,7 @@ if __name__ == "__main__":
         """Custom option parse class."""
 
         def format_epilog(self, formatter):
-            """Retun customized option parser epilog."""
+            """Return customized option parser epilog."""
             return self.epilog
 
     parser = MyOptionParser(

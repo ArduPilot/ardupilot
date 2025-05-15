@@ -64,7 +64,7 @@ AP_BattMonitor_INA239::AP_BattMonitor_INA239(AP_BattMonitor &mon,
 
 void AP_BattMonitor_INA239::init(void)
 {
-    dev = hal.spi->get_device(AP_BATTERY_INA239_SPI_DEVICE);
+    dev = hal.spi->get_device_ptr(AP_BATTERY_INA239_SPI_DEVICE);
     if (!dev) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "device fail");
         return;

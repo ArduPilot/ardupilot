@@ -658,14 +658,17 @@ void Util::uart_info(ExpandingString &str)
     for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
         auto *uart = hal.serial(i);
         if (uart) {
-            str.printf("SERIAL%u ", i);
+#if HAL_WITH_IO_MCU
+            if (i == HAL_UART_IOMCU_IDX) {
+                str.printf("IOMCU   ");
+            } else
+#endif
+            {
+                str.printf("SERIAL%u ", i);
+            }
             uart->uart_info(str, sys_uart_stats.serial[i], dt_ms);
         }
     }
-#if HAL_WITH_IO_MCU
-    str.printf("IOMCU   ");
-    uart_io.uart_info(str, sys_uart_stats.io, dt_ms);
-#endif
 }
 
 // Log UART message for each serial port
@@ -684,10 +687,6 @@ void Util::uart_log()
             uart->log_stats(i, log_uart_stats.serial[i], dt_ms);
         }
     }
-#if HAL_WITH_IO_MCU
-    // Use magic instance 100 for IOMCU
-    uart_io.log_stats(100, log_uart_stats.io, dt_ms);
-#endif
 }
 #endif // HAL_LOGGING_ENABLED
 #endif // HAL_UART_STATS_ENABLED

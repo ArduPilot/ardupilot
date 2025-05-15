@@ -9,7 +9,7 @@ import shutil
 VEHICLES = ['AntennaTracker', 'Copter', 'Plane', 'Rover', 'Sub']
 
 # beta directories that may contain stable builds
-BETA_DIRS = ['beta-4.3']
+BETA_DIRS = []
 
 def make_stable(basedir, vehicle):
     '''make stable version for a vehicle'''
@@ -37,7 +37,7 @@ def make_stable(basedir, vehicle):
         shutil.copytree(old_dir, new_dir)
 
 def make_stable_from_beta(basedir, vehicle, beta_dir):
-    '''make stable version from a beta with OFFICAL tag'''
+    '''make stable version from a beta with OFFICIAL tag'''
     beta_dir = os.path.join(basedir, vehicle, beta_dir)
     if not os.path.exists(beta_dir):
         return

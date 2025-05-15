@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(generator, "GEN_", 7, AP_Vehicle, AP_Generator),
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     // @Group: EAHRS
     // @Path: ../AP_ExternalAHRS/AP_ExternalAHRS.cpp
     AP_SUBGROUPINFO(externalAHRS, "EAHRS", 8, AP_Vehicle, AP_ExternalAHRS),
@@ -356,6 +356,11 @@ void AP_Vehicle::setup()
 #endif
 
 #if AP_SERIALMANAGER_ENABLED
+#if HAL_WITH_IO_MCU
+    if (BoardConfig.io_enabled()) {
+        serial_manager.set_protocol_and_baud(HAL_UART_IOMCU_IDX, AP_SerialManager::SerialProtocol_IOMCU, 0);
+    }
+#endif
     // initialise serial ports
     serial_manager.init();
 #endif
@@ -386,7 +391,7 @@ void AP_Vehicle::setup()
     msp.init();
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     // call externalAHRS init before init_ardupilot to allow for external sensors
     externalAHRS.init();
 #endif
@@ -500,6 +505,7 @@ void AP_Vehicle::setup()
 
 #if AP_FENCE_ENABLED
     fence.init();
+    fence_init();
 #endif
 
 #if AP_CUSTOMROTATIONS_ENABLED
@@ -1051,7 +1057,7 @@ void AP_Vehicle::one_Hz_update(void)
       every 10s check if using a 2M firmware on a 1M board
      */
     if (one_Hz_counter % 10U == 0) {
-#if defined(BOARD_CHECK_F427_USE_1M) && (BOARD_FLASH_SIZE>1024)
+#if defined(BOARD_CHECK_F427_USE_1M) && (HAL_PROGRAM_SIZE_LIMIT_KB>1024)
         if (!hal.util->get_soft_armed() && check_limit_flash_1M()) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, BOARD_CHECK_F427_USE_1M);
         }
@@ -1062,7 +1068,7 @@ void AP_Vehicle::one_Hz_update(void)
       every 30s check if using a 1M firmware on a 2M board
      */
     if (one_Hz_counter % 30U == 0) {
-#if defined(BOARD_CHECK_F427_USE_1M) && (BOARD_FLASH_SIZE<=1024)
+#if defined(BOARD_CHECK_F427_USE_1M) && (HAL_PROGRAM_SIZE_LIMIT_KB<=1024)
         if (!hal.util->get_soft_armed() && !check_limit_flash_1M()) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, BOARD_CHECK_F427_USE_2M);
         }
@@ -1073,8 +1079,12 @@ void AP_Vehicle::one_Hz_update(void)
     scripting.update();
 #endif
 
-#if HAL_LOGGING_ENABLED
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+    // Log data rates of physical and virtual serial ports
     hal.util->uart_log();
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    serial_manager.registered_ports_log();
+#endif
 #endif
 
 }
@@ -1143,6 +1153,13 @@ bool AP_Vehicle::block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_lis
     return false;
 }
 #endif
+
+#if AP_FENCE_ENABLED
+void AP_Vehicle::fence_init()
+{
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Vehicle::fence_checks_async, void));
+}
+#endif  // AP_FENCE_ENABLED
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 

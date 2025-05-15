@@ -23,7 +23,7 @@ define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 
 
 # ----------- I2C airspeed
-define HAL_PERIPH_ENABLE_AIRSPEED
+define AP_PERIPH_AIRSPEED_ENABLED 1
 define AIRSPEED_MAX_SENSORS 1
 
 
@@ -41,12 +41,12 @@ define HAL_BATT_MONITOR_DEFAULT 21
 
 
 # ----------- MSP
-define HAL_PERIPH_ENABLE_MSP
+define AP_PERIPH_MSP_ENABLED 1
 define HAL_MSP_ENABLED 1
 
 
 # ----------- ADSB
-define HAL_PERIPH_ENABLE_ADSB
+define AP_PERIPH_ADSB_ENABLED 1
 
 
 # ----------- RC INPUT
@@ -54,12 +54,12 @@ define AP_PERIPH_RCIN_ENABLED 1
 
 
 # ----------- EFI
-define HAL_PERIPH_ENABLE_EFI
+define AP_PERIPH_EFI_ENABLED 1
 define HAL_EFI_ENABLED 1
 
 
 # ----------- proximity
-define HAL_PERIPH_ENABLE_PROXIMITY
+define AP_PERIPH_PROXIMITY_ENABLED 1
 define HAL_PROXIMITY_ENABLED 1
 
 

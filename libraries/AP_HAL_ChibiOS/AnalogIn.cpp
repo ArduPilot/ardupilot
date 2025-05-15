@@ -761,6 +761,10 @@ void AnalogIn::_timer_tick(void)
         // note min/max swap due to inversion
         _mcu_voltage_min = 3.3 * VREFINT_CAL / float(_mcu_vrefint_max+0.001);
         _mcu_voltage_max = 3.3 * VREFINT_CAL / float(_mcu_vrefint_min+0.001);
+        
+        // reset min and max
+        _mcu_vrefint_max = 0;
+        _mcu_vrefint_min = 0;
     }
 #endif
 }
@@ -810,7 +814,7 @@ void AnalogIn::update_power_flags(void)
       for backup power)
     */
 #if defined(HAL_GPIO_PIN_VDD_BRICK2_VALID)
-    if (palReadLine(HAL_GPIO_PIN_VDD_BRICK_VALID) == 1) {
+    if (palReadLine(HAL_GPIO_PIN_VDD_BRICK2_VALID) == 1) {
         flags |= MAV_POWER_STATUS_SERVO_VALID;
     }
 #elif defined(HAL_GPIO_PIN_VDD_BRICK2_nVALID)

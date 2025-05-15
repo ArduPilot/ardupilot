@@ -747,29 +747,6 @@ void Plane::set_servos_flaps(void)
     flaperon_update();
 }
 
-#if AP_LANDINGGEAR_ENABLED
-/*
-  setup landing gear state
- */
-void Plane::set_landing_gear(void)
-{
-    if (control_mode == &mode_auto && arming.is_armed_and_safety_off() && is_flying() && gear.last_flight_stage != flight_stage) {
-        switch (flight_stage) {
-        case AP_FixedWing::FlightStage::LAND:
-            g2.landing_gear.deploy_for_landing();
-            break;
-        case AP_FixedWing::FlightStage::NORMAL:
-            g2.landing_gear.retract_after_takeoff();
-            break;
-        default:
-            break;
-        }
-    }
-    gear.last_flight_stage = flight_stage;
-}
-#endif // AP_LANDINGGEAR_ENABLED
-
-
 /*
   support for twin-engine planes
  */
@@ -918,11 +895,6 @@ void Plane::set_servos(void)
 
     // setup flap outputs
     set_servos_flaps();
-
-#if AP_LANDINGGEAR_ENABLED
-    // setup landing gear output
-    set_landing_gear();
-#endif
 
     // set airbrake outputs
     airbrake_update();

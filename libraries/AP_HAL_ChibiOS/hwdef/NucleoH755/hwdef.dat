@@ -14,8 +14,8 @@ STM32_ST_USE_TIMER 5
 define CORE_CM7
 define SMPS_PWR
 
-# board ID for firmware load
-APJ_BOARD_ID 139
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_DURANDAL
 
 FLASH_SIZE_KB 2048
 

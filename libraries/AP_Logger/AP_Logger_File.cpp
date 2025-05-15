@@ -987,9 +987,10 @@ void AP_Logger_File::io_timer(void)
         return;
     }
 
-#if AP_FILESYSTEM_LITTLEFS_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    bool sync_block = AP::littlefs().sync_block(_write_fd, _write_offset, nbytes);
-#endif // AP_FILESYSTEM_LITTLEFS_ENABLED
+    uint32_t bytes_until_fsync = AP::FS().bytes_until_fsync(_write_fd);
+    if (bytes_until_fsync > 0 && nbytes > bytes_until_fsync) {
+        nbytes = bytes_until_fsync; // write exactly enough to sync
+    }
 
     ssize_t nwritten = AP::FS().write(_write_fd, head, nbytes);
     last_io_operation = "";
@@ -1016,28 +1017,12 @@ void AP_Logger_File::io_timer(void)
         _write_offset += nwritten;
         _writebuf.advance(nwritten);
 
-        /*
-          fsync on littlefs is extremely expensive (20% CPU on an H7) particularly because the
-          COW architecture can mean you end up copying a load of blocks. instead try and only sync
-          at the end of a block to avoid copying and minimise CPU. fsync is needed for the file
-          metadata (including size) to be updated
-         */
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
-#if AP_FILESYSTEM_LITTLEFS_ENABLED
-        if (sync_block)
-#endif // AP_FILESYSTEM_LITTLEFS_ENABLED
-        {
-            /*
-              the best strategy for minimizing corruption on microSD cards
-              seems to be to write in 4k chunks and fsync the file on each
-              chunk, ensuring the directory entry is updated after each
-              write.
-            */
+        // we know nwritten > 0 so we won't sync if bytes_until_fsync == 0
+        if ((uint32_t)nwritten == bytes_until_fsync) {
             last_io_operation = "fsync";
             AP::FS().fsync(_write_fd);
             last_io_operation = "";
         }
-#endif
 
 #if AP_RTC_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         // ChibiOS does not update mtime on writes, so if we opened

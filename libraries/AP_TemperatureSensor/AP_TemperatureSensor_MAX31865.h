@@ -29,7 +29,7 @@ class AP_TemperatureSensor_MAX31865 : public AP_TemperatureSensor_Backend {
     using AP_TemperatureSensor_Backend::AP_TemperatureSensor_Backend;
 public:
 
-    void init(void) override;
+    __INITFUNC__ void init(void) override;
 
     void update(void) override {};
 

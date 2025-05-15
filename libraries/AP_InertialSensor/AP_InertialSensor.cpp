@@ -39,6 +39,7 @@
 #include "AP_InertialSensor_Invensensev3.h"
 #include "AP_InertialSensor_NONE.h"
 #include "AP_InertialSensor_SCHA63T.h"
+#include <AP_Scheduler/AP_Scheduler.h>
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
@@ -704,7 +705,6 @@ AP_InertialSensor::AP_InertialSensor() :
 
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _gyro_cal_ok[i] = true;
-        _accel_max_abs_offsets[i] = 3.5f;
     }
     for (uint8_t i=0; i<INS_VIBRATION_CHECK_INSTANCES; i++) {
         _accel_vibe_floor_filter[i].set_cutoff_frequency(AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ);
@@ -1181,7 +1181,7 @@ AP_InertialSensor::detect_backends(void)
 // macro for use by HAL_INS_PROBE_LIST
 #define GET_I2C_DEVICE(bus, address) hal.i2c_mgr->get_device(bus, address)
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     // if enabled, make the first IMU the external AHRS
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU);
     if (serial_port >= 0) {
@@ -1500,6 +1500,27 @@ bool AP_InertialSensor::gyro_calibrated_ok_all() const
         }
     }
     return (get_gyro_count() > 0);
+}
+
+// Prearm check to verify that we have sane sched loop rates set based on Gyro backend rates
+bool AP_InertialSensor::pre_arm_check_gyro_backend_rate_hz(char* fail_msg, uint16_t fail_msg_len) const
+{
+#if AP_SCHEDULER_ENABLED
+    const auto gyro_count = get_gyro_count();
+    const auto threshold = 1.8 * _loop_rate;
+    for (uint8_t i=0; i<gyro_count; i++) {
+        if (!_use(i) || _backends[i] == nullptr) {
+            continue;
+        }
+        const auto rate_hz = _backends[i]->get_gyro_backend_rate_hz();
+        if (rate_hz < threshold && (AP_HAL::Device::devid_get_devtype(_gyro_id(i)) != AP_InertialSensor_Backend::DEVTYPE_SERIAL)) {
+            hal.util->snprintf(fail_msg, fail_msg_len, "Gyro %d rate %dHz < loop ratex1.8 %dHz",
+                               i, int(rate_hz), int(threshold));
+            return false;
+        }
+    }
+#endif
+    return true;
 }
 
 // return true if gyro instance should be used (must be healthy and have it's use parameter set to 1)
@@ -2797,14 +2818,14 @@ void AP_InertialSensor::send_uart_data(void)
 }
 #endif // AP_SERIALMANAGER_IMUOUT_ENABLED
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
 void AP_InertialSensor::handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt)
 {
     for (uint8_t i = 0; i < _backend_count; i++) {
         _backends[i]->handle_external(pkt);
     }
 }
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_EXTERNAL_AHRS_ENABLED
 
 // force save of current calibration as valid
 void AP_InertialSensor::force_save_calibration(void)

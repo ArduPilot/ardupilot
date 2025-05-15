@@ -62,7 +62,7 @@ void ModeFollow::run()
     Vector3f dist_vec;  // vector to lead vehicle
     Vector3f dist_vec_offs;  // vector to lead vehicle + offset
     Vector3f vel_of_target;  // velocity of lead vehicle
-    if (g2.follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, vel_of_target)) {
+    if (g2.follow.get_target_dist_and_vel_NED_m(dist_vec, dist_vec_offs, vel_of_target)) {
         // convert dist_vec_offs to cm in NEU
         const Vector3f dist_vec_offs_neu(dist_vec_offs.x * 100.0f, dist_vec_offs.y * 100.0f, -dist_vec_offs.z * 100.0f);
 
@@ -81,12 +81,12 @@ void ModeFollow::run()
 
         // slow down horizontally as we approach target (use 1/2 of maximum deceleration for gentle slow down)
         const float dist_to_target_xy = Vector2f(dist_vec_offs_neu.x, dist_vec_offs_neu.y).length();
-        copter.avoid.limit_velocity_2D(pos_control->get_pos_xy_p().kP().get(), pos_control->get_max_accel_xy_cmss() * 0.5f, desired_velocity_xy_cms, dir_to_target_xy, dist_to_target_xy, copter.G_Dt);
+        copter.avoid.limit_velocity_2D(pos_control->get_pos_NE_p().kP().get(), pos_control->get_max_accel_NE_cmss() * 0.5f, desired_velocity_xy_cms, dir_to_target_xy, dist_to_target_xy, copter.G_Dt);
         // copy horizontal velocity limits back to 3d vector
         desired_velocity_neu_cms.xy() = desired_velocity_xy_cms;
 
         // limit vertical desired_velocity_neu_cms to slow as we approach target (we use 1/2 of maximum deceleration for gentle slow down)
-        const float des_vel_z_max = copter.avoid.get_max_speed(pos_control->get_pos_z_p().kP().get(), pos_control->get_max_accel_z_cmss() * 0.5f, fabsf(dist_vec_offs_neu.z), copter.G_Dt);
+        const float des_vel_z_max = copter.avoid.get_max_speed(pos_control->get_pos_U_p().kP().get(), pos_control->get_max_accel_U_cmss() * 0.5f, fabsf(dist_vec_offs_neu.z), copter.G_Dt);
         desired_velocity_neu_cms.z = constrain_float(desired_velocity_neu_cms.z, -des_vel_z_max, des_vel_z_max);
 
         // Add the target velocity baseline.
@@ -94,13 +94,13 @@ void ModeFollow::run()
         desired_velocity_neu_cms.z += -vel_of_target.z * 100.0f;
 
         // scale desired velocity to stay within horizontal speed limit
-        desired_velocity_neu_cms.xy().limit_length(pos_control->get_max_speed_xy_cms());
+        desired_velocity_neu_cms.xy().limit_length(pos_control->get_max_speed_NE_cms());
 
         // limit desired velocity to be between maximum climb and descent rates
         desired_velocity_neu_cms.z = constrain_float(desired_velocity_neu_cms.z, -fabsf(pos_control->get_max_speed_down_cms()), pos_control->get_max_speed_up_cms());
 
         // limit the velocity for obstacle/fence avoidance
-        copter.avoid.adjust_velocity(desired_velocity_neu_cms, pos_control->get_pos_xy_p().kP().get(), pos_control->get_max_accel_xy_cmss(), pos_control->get_pos_z_p().kP().get(), pos_control->get_max_accel_z_cmss(), G_Dt);
+        copter.avoid.adjust_velocity(desired_velocity_neu_cms, pos_control->get_pos_NE_p().kP().get(), pos_control->get_max_accel_NE_cmss(), pos_control->get_pos_U_p().kP().get(), pos_control->get_max_accel_U_cmss(), G_Dt);
 
         // calculate vehicle heading
         switch (g2.follow.get_yaw_behave()) {
@@ -150,14 +150,14 @@ void ModeFollow::run()
     ModeGuided::run();
 }
 
-uint32_t ModeFollow::wp_distance() const
+float ModeFollow::wp_distance_m() const
 {
-    return g2.follow.get_distance_to_target() * 100;
+    return g2.follow.get_distance_to_target_m();
 }
 
 int32_t ModeFollow::wp_bearing() const
 {
-    return g2.follow.get_bearing_to_target() * 100;
+    return g2.follow.get_bearing_to_target_deg() * 100;
 }
 
 /*
@@ -165,11 +165,8 @@ int32_t ModeFollow::wp_bearing() const
  */
 bool ModeFollow::get_wp(Location &loc) const
 {
-    float dist = g2.follow.get_distance_to_target();
-    float bearing = g2.follow.get_bearing_to_target();
-    loc = copter.current_loc;
-    loc.offset_bearing(bearing, dist);
-    return true;
+    Vector3f vel;
+    return g2.follow.get_target_location_and_velocity_ofs(loc, vel);
 }
 
 #endif // MODE_FOLLOW_ENABLED

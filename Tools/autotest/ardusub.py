@@ -7,7 +7,6 @@ Parameters are in-code defaults plus default_params/sub.parm
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import print_function
 import os
 import sys
 
@@ -109,10 +108,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 altitude range
         """
         tstart = self.get_sim_time_cached()
-        previous_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        previous_altitude = self.assert_receive_message('VFR_HUD').alt
         self.progress('Altitude to be watched: %f' % (previous_altitude))
         while True:
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            m = self.assert_receive_message('VFR_HUD')
             if self.get_sim_time_cached() - tstart > timeout:
                 self.progress('Altitude hold done: %f' % (previous_altitude))
                 return
@@ -127,9 +126,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.change_mode('ALT_HOLD')
 
-        msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
-        if msg is None:
-            raise NotAchievedException("Did not get GLOBAL_POSITION_INT")
+        msg = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
         pwm = 1300
         if msg.relative_alt/1000.0 < -6.0:
             # need to go up, not down!
@@ -228,17 +225,51 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def watch_distance_maintained(self, delta=0.3, timeout=5.0):
         """Watch and wait for the rangefinder reading to be maintained"""
         tstart = self.get_sim_time_cached()
-        previous_distance = self.mav.recv_match(type='RANGEFINDER', blocking=True).distance
+        previous_distance = self.assert_receive_message('RANGEFINDER').distance
         self.progress('Distance to be watched: %.2f' % previous_distance)
         while True:
-            m = self.mav.recv_match(type='RANGEFINDER', blocking=True)
             if self.get_sim_time_cached() - tstart > timeout:
                 self.progress('Distance hold done: %f' % previous_distance)
                 return
+            m = self.assert_receive_message('RANGEFINDER')
             if abs(m.distance - previous_distance) > delta:
                 raise NotAchievedException(
                     "Distance not maintained: want %.2f (+/- %.2f) got=%.2f" %
                     (previous_distance, delta, m.distance))
+
+    def GCSFailsafe(self):
+        '''Test GCSFailsafe'''
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+        self.context_push()
+        self.setGCSfailsafe(4)
+        self.set_heartbeat_rate(0)
+        self.wait_mode("SURFACE")
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        self.progress("GSC Failsafe OK")
+        self.disarm_vehicle()
+        self.context_pop()
+
+    # Tests actions and logic behind the radio failsafe
+    def ThrottleFailsafe(self):
+        '''Test RC and RC Failsafe'''
+        # disable GCS and enable RC
+        self.context_push()
+        self.set_parameter('FS_GCS_ENABLE', 0)
+        self.set_parameter('RC_PROTOCOLS', 1)
+        self.set_heartbeat_rate(0)
+        # Trigger an RC failure with the failsafe disabled. Verify no action taken.
+        self.start_subtest("Radio failsafe disabled test: FS_THR_ENABLE=0 should take no failsafe action")
+        self.set_parameter('FS_THR_ENABLE', 0)
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_ready_to_arm()
+        # Switch RC failsafe action to SURFACE, should take action since we are in RC failsafe
+        self.set_parameter('FS_THR_ENABLE', 2)
+        self.wait_mode("SURFACE")
+        self.context_pop()
+        self.progress("Completed Radio failsafe disabled test")
 
     def Surftrak(self):
         """Test SURFTRAK mode"""
@@ -453,7 +484,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1500)
         self.delay_sim_time(3)
         # start the test itself, go through some modes and check if anything changes
-        previous_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        previous_altitude = self.assert_receive_message('VFR_HUD').alt
         self.change_mode('ALT_HOLD')
         self.delay_sim_time(2)
         self.change_mode('POSHOLD')
@@ -472,7 +503,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.delay_sim_time(2)
         self.change_mode('MANUAL')
         self.disarm_vehicle()
-        final_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        final_altitude = self.assert_receive_message('VFR_HUD').alt
         if abs(previous_altitude - final_altitude) > delta:
             raise NotAchievedException(
                 "Changing modes affected depth with no throttle input!, started at {}, ended at {}"
@@ -494,9 +525,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.delay_sim_time(2)
 
         # Save starting point
-        msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
-        if msg is None:
-            raise NotAchievedException("Did not get GLOBAL_POSITION_INT")
+        self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
         start_pos = self.mav.location()
         # Hold in perfect conditions
         self.progress("Testing position hold in perfect conditions")
@@ -610,8 +639,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        startpos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                                       blocking=True)
+        startpos = self.assert_receive_message('GLOBAL_POSITION_INT')
 
         lat = 5
         lon = 5
@@ -641,8 +669,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         while True:
             if self.get_sim_time_cached() - tstart > 200:
                 raise NotAchievedException("Did not move far enough")
-            pos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                                      blocking=True)
+            pos = self.assert_receive_message('GLOBAL_POSITION_INT')
             delta = self.get_distance_int(startpos, pos)
             self.progress("delta=%f (want >10)" % delta)
             if delta > 10:
@@ -1047,12 +1074,39 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle()
 
+    def SHT3X(self):
+        '''test for the SHT3X temperature/hygro driver'''
+        self.set_parameters({
+            'TEMP1_TYPE': 8,
+            'TEMP1_ADDR': 0x44,
+            'TEMP_LOG': 1,
+        })
+        self.reboot_sitl()
+        self.context_push()
+        self.set_parameter('LOG_DISARMED', 1)
+        self.delay_sim_time(10)
+        self.context_pop()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='TEMP')
+            if m is None:
+                break
+            self.progress(m)
+            if m.Temp > 15 or m.Temp < 30:
+                # success!
+                break
+        if m is None:
+            raise NotAchievedException("Did not get good TEMP message")
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
 
         ret.extend([
             self.DiveManual,
+            self.GCSFailsafe,
+            self.ThrottleFailsafe,
             self.AltitudeHold,
             self.Surftrak,
             self.SimTerrainSurftrak,
@@ -1080,6 +1134,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.FuseMag,
             self.INA3221,
             self.PosHoldBounceBack,
+            self.SHT3X,
         ])
 
         return ret

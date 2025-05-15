@@ -34,15 +34,8 @@ void Plane::check_home_alt_change(void)
     if (home_alt_cm != auto_state.last_home_alt_cm && hal.util->get_soft_armed()) {
         // cope with home altitude changing
         const int32_t alt_change_cm = home_alt_cm - auto_state.last_home_alt_cm;
-        if (next_WP_loc.terrain_alt) {
-            /*
-              next_WP_loc for terrain alt WP are quite strange. They
-              have terrain_alt=1, but also have relative_alt=0 and
-              have been calculated to be relative to home. We need to
-              adjust for the change in home alt
-             */
-            next_WP_loc.alt += alt_change_cm;
-        }
+        fix_terrain_WP(next_WP_loc, __LINE__);
+
         // reset TECS to force the field elevation estimate to reset
         TECS_controller.offset_altitude(alt_change_cm * 0.01f);
     }
@@ -50,9 +43,9 @@ void Plane::check_home_alt_change(void)
 }
 
 /*
-  setup for a gradual glide slope to the next waypoint, if appropriate
+  setup for a gradual altitude slope to the next waypoint, if appropriate
  */
-void Plane::setup_glide_slope(void)
+void Plane::setup_alt_slope(void)
 {
     // establish the distance we are travelling to the next waypoint,
     // for calculating out rate of change of altitude
@@ -84,8 +77,7 @@ void Plane::setup_glide_slope(void)
         break;
 
     case Mode::Number::AUTO:
-
-        //climb without doing glide slope if option is enabled
+        // climb without doing slope if option is enabled
         if (!above_location_current(next_WP_loc) && plane.flight_option_enabled(FlightOptions::IMMEDIATE_CLIMB_IN_AUTO)) {
             reset_offset_altitude();
             break;
@@ -193,7 +185,7 @@ void Plane::set_target_altitude_current(void)
     // target altitude
     target_altitude.amsl_cm = current_loc.alt;
 
-    // reset any glide slope offset
+    // reset any altitude slope offset
     reset_offset_altitude();
 
 #if AP_TERRAIN_AVAILABLE
@@ -236,10 +228,6 @@ void Plane::set_target_altitude_location(const Location &loc)
     if (loc.terrain_alt && terrain.height_above_terrain(height, true)) {
         target_altitude.terrain_following = true;
         target_altitude.terrain_alt_cm = loc.alt;
-        if (!loc.relative_alt) {
-            // it has home added, remove it
-            target_altitude.terrain_alt_cm -= home.alt;
-        }
     } else {
         target_altitude.terrain_following = false;
     }
@@ -292,6 +280,7 @@ void Plane::change_target_altitude(int32_t change_cm)
     }
 #endif
 }
+
 /*
   change target altitude by a proportion of the target altitude offset
   (difference in height to next WP from previous WP). proportion
@@ -308,18 +297,58 @@ void Plane::set_target_altitude_proportion(const Location &loc, float proportion
     set_target_altitude_location(loc);
     proportion = constrain_float(proportion, 0.0f, 1.0f);
     change_target_altitude(-target_altitude.offset_cm*proportion);
-    //rebuild the glide slope if we are above it and supposed to be climbing
-    if(g.glide_slope_threshold > 0) {
-        if(target_altitude.offset_cm > 0 && calc_altitude_error_cm() < -100 * g.glide_slope_threshold) {
+
+    // rebuild the altitude slope if we are above it and supposed to be climbing
+    if (g.alt_slope_max_height > 0) {
+        if (target_altitude.offset_cm > 0 && calc_altitude_error_cm() < -100 * g.alt_slope_max_height) {
             set_target_altitude_location(loc);
             set_offset_altitude_location(current_loc, loc);
             change_target_altitude(-target_altitude.offset_cm*proportion);
-            //adjust the new target offset altitude to reflect that we are partially already done
-            if(proportion > 0.0f)
+            // adjust the new target offset altitude to reflect that we are partially already done
+            if (proportion > 0.0f)
                 target_altitude.offset_cm = ((float)target_altitude.offset_cm)/proportion;
         }
     }
 }
+
+#if AP_TERRAIN_AVAILABLE
+/*
+  change target altitude along a path between two locations
+  (prev_WP_loc and next_WP_loc) where the second location is a terrain
+  altitude
+ */
+bool Plane::set_target_altitude_proportion_terrain(void)
+{
+    if (!next_WP_loc.terrain_alt ||
+        !next_WP_loc.relative_alt) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return false;
+    }
+    /*
+      we first need to get the height of the terrain at prev_WP_loc
+     */
+    float prev_WP_height_terrain;
+    if (!plane.prev_WP_loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN,
+                                     prev_WP_height_terrain)) {
+        return false;
+    }
+    // and next_WP_loc alt as terrain
+    float next_WP_height_terrain;
+    if (!plane.next_WP_loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN,
+                                     next_WP_height_terrain)) {
+        return false;
+    }
+    Location loc = next_WP_loc;
+    const auto alt = linear_interpolate(prev_WP_height_terrain, next_WP_height_terrain,
+                                        plane.auto_state.wp_proportion, 0, 1);
+
+    loc.set_alt_m(alt, Location::AltFrame::ABOVE_TERRAIN);
+
+    set_target_altitude_location(loc);
+
+    return true;
+}
+#endif // AP_TERRAIN_AVAILABLE
 
 /*
   constrain target altitude to be between two locations. Used to
@@ -405,7 +434,7 @@ void Plane::check_fbwb_altitude(void)
 }
 
 /*
-  reset the altitude offset used for glide slopes
+  reset the altitude offset used for altitude slopes
  */
 void Plane::reset_offset_altitude(void)
 {
@@ -414,14 +443,18 @@ void Plane::reset_offset_altitude(void)
 
 
 /*
-  reset the altitude offset used for glide slopes, based on difference
-  between altitude at a destination and a specified start altitude. If
-  destination is above the starting altitude then the result is
-  positive.
+  reset the altitude offset used for slopes, based on difference between
+  altitude at a destination and a specified start altitude. If destination is
+  above the starting altitude then the result is positive.
  */
 void Plane::set_offset_altitude_location(const Location &start_loc, const Location &destination_loc)
 {
-    target_altitude.offset_cm = destination_loc.alt - start_loc.alt;
+    ftype alt_difference_m = 0;
+    if (destination_loc.get_height_above(start_loc, alt_difference_m)) {
+        target_altitude.offset_cm = alt_difference_m * 100;
+    } else {
+        target_altitude.offset_cm = 0;
+    }
 
 #if AP_TERRAIN_AVAILABLE
     /*
@@ -438,20 +471,19 @@ void Plane::set_offset_altitude_location(const Location &start_loc, const Locati
 #endif
 
     if (flight_stage != AP_FixedWing::FlightStage::LAND) {
-        // if we are within GLIDE_SLOPE_MIN meters of the target altitude
-        // then reset the offset to not use a glide slope. This allows for
-        // more accurate flight of missions where the aircraft may lose or
-        // gain a bit of altitude near waypoint turn points due to local
-        // terrain changes
-        if (g.glide_slope_min <= 0 ||
-            labs(target_altitude.offset_cm)*0.01f < g.glide_slope_min) {
+        // if we are within ALT_SLOPE_MIN meters of the target altitude then
+        // reset the offset to not use an altitude slope. This allows for more
+        // accurate flight of missions where the aircraft may lose or gain a bit
+        // of altitude near waypoint turn points due to local terrain changes
+        if (g.alt_slope_min <= 0 ||
+            labs(target_altitude.offset_cm)*0.01f < g.alt_slope_min) {
             target_altitude.offset_cm = 0;
         }
     }
 }
 
 /*
-  return true if current_loc is above loc. Used for glide slope
+  return true if current_loc is above loc. Used for altitude slope
   calculations.
 
   "above" is simple if we are not terrain following, as it just means
@@ -903,4 +935,25 @@ float Plane::get_landing_height(bool &rangefinder_active)
 #endif
 
     return height;
+}
+
+/*
+  if a terrain location doesn't have the relative_alt flag set
+  then fix the alt and trigger a flow of control error
+ */
+void Plane::fix_terrain_WP(Location &loc, uint32_t linenum)
+{
+    if (loc.terrain_alt && !loc.relative_alt) {
+        AP::internalerror().error(AP_InternalError::error_t::flow_of_control, linenum);
+        /*
+          we definitely have a bug, now we need to guess what was
+          really meant. The lack of the relative_alt flag notionally
+          means that home.alt has been added to loc.alt, so remove it,
+          but only if it doesn't lead to a negative terrain altitude
+         */
+        if (loc.alt - home.alt > -500) {
+            loc.alt -= home.alt;
+        }
+        loc.relative_alt = true;
+    }
 }

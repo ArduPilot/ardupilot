@@ -114,10 +114,6 @@ void RCInput::_timer_tick(void)
     if (!_init) {
         return;
     }
-#if AP_HAVE_GCS_SEND_TEXT
-    const char *rc_protocol = nullptr;
-    RCSource source = last_source;
-#endif
 
 #if AP_RCPROTOCOL_ENABLED
     AP_RCProtocol &rcprot = AP::RC();
@@ -131,9 +127,6 @@ void RCInput::_timer_tick(void)
     }
 #endif
 
-#endif  // AP_RCPROTOCOL_ENABLED
-
-#if AP_RCPROTOCOL_ENABLED
     if (rcprot.new_input()) {
         WITH_SEMAPHORE(rcin_mutex);
         _rcin_timestamp_last_signal = AP_HAL::micros();
@@ -142,35 +135,6 @@ void RCInput::_timer_tick(void)
         rcprot.read(_rc_values, _num_channels);
         _rssi = rcprot.get_RSSI();
         _rx_link_quality = rcprot.get_rx_link_quality();
-#if AP_HAVE_GCS_SEND_TEXT
-        rc_protocol = rcprot.protocol_name();
-        source = rcprot.using_uart() ? RCSource::RCPROT_BYTES : RCSource::RCPROT_PULSES;
-        // printf("RCInput: decoding %s", last_protocol);
-#endif
     }
 #endif // AP_RCPROTOCOL_ENABLED
-
-#if AP_HAVE_GCS_SEND_TEXT
-    if (rc_protocol && (rc_protocol != last_protocol || source != last_source)) {
-        last_protocol = rc_protocol;
-        last_source = source;
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s(%u)", last_protocol, unsigned(source));
-    }
-#endif
-
-    // note, we rely on the vehicle code checking new_input()
-    // and a timeout for the last valid input to handle failsafe
-}
-
-/*
-  start a bind operation, if supported
- */
-bool RCInput::rc_bind(int dsmMode)
-{
-#if AP_RCPROTOCOL_ENABLED
-    // ask AP_RCProtocol to start a bind
-    AP::RC().start_bind();
-#endif
-
-    return true;
 }

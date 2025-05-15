@@ -19,6 +19,7 @@
 #include "AP_Mount_Viewpro.h"
 #include "AP_Mount_Topotek.h"
 #include "AP_Mount_CADDX.h"
+#include "AP_Mount_XFRobot.h"
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -178,6 +179,15 @@ void AP_Mount::init()
             serial_instance++;
             break;
 #endif // HAL_MOUNT_CADDX_ENABLED
+
+#if HAL_MOUNT_XFROBOT_ENABLED
+        // check for XFRobot gimbal
+        case Type::XFRobot:
+            _backends[instance] = NEW_NOTHROW AP_Mount_XFRobot(*this, _params[instance], instance, serial_instance);
+            _num_instances++;
+            serial_instance++;
+            break;
+#endif // HAL_MOUNT_XFROBOT_ENABLED
         }
 
         // init new instance

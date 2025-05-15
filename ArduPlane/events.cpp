@@ -131,7 +131,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::THERMAL:
     case Mode::Number::TAKEOFF:
         if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF && !(g.fs_action_long == FS_ACTION_LONG_GLIDE || g.fs_action_long == FS_ACTION_LONG_PARACHUTE)) {
-            // don't failsafe if in inital climb of TAKEOFF mode and FS action is not parachute or glide
+            // don't failsafe if in initial climb of TAKEOFF mode and FS action is not parachute or glide
             // long failsafe will be re-called if still in fs after initial climb
             long_failsafe_pending = true;
             break;
@@ -301,11 +301,17 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             }
             FALLTHROUGH;
         }
-        case Failsafe_Action_RTL: {
+        case Failsafe_Action_RTL:
+        case Failsafe_Action_AUTOLAND_OR_RTL: {
             bool already_landing = flight_stage == AP_FixedWing::FlightStage::LAND;
 #if HAL_QUADPLANE_ENABLED
             if (control_mode == &mode_qland || control_mode == &mode_loiter_qland ||
                 quadplane.in_vtol_land_sequence()) {
+                already_landing = true;
+            }
+#endif
+#if MODE_AUTOLAND_ENABLED
+            if (control_mode == &mode_autoland) {
                 already_landing = true;
             }
 #endif
@@ -316,8 +322,13 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
                     plane.mission.set_in_landing_sequence_flag(true);
                     break;
                 }
-                set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE);
                 aparm.throttle_cruise.load();
+#if MODE_AUTOLAND_ENABLED
+                if (((Failsafe_Action)action == Failsafe_Action_AUTOLAND_OR_RTL) && set_mode(mode_autoland, ModeReason::BATTERY_FAILSAFE)) {
+                    break;
+                }
+#endif
+                set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE);
             }
             break;
         }

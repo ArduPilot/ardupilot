@@ -1,6 +1,145 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
-Release 4.6.0-beta3
+Release 4.6.0-beta6 28-Apr-2025
+
+Changes from 4.6.0-beta5
+
+1) Board specific changes
+
+- ARK FPV, LumenierLuxF765, MicroAir743, StellarF4v2, X-MAV-AP-H743v2 OSD Type defaults fixed
+- BETAFPV-F405-I2C UART6 fix
+- BrotherHobby F405v3 and H743 support
+- FlywooF405HD VTX power pin fixed
+- NarinFC-H7 support
+- TBS Lucid H7 Wing support
+- TBS Lucid H7 support for both I2C ports
+
+2) Driver bug fixes and enhancements
+
+- DroneCAN semaphore bug fixed which affected MPPT battery and Serial-over-CAN
+- GPS logs altitude above ellipsoid instead of undulation
+- GSOF GPS protects against port misconfiguration
+- UBlox GPS configuration sped up
+- Lua script battery monitor failures that could cause hardfaults fixed
+- Nova GPS undulation fix
+- Proximity backends increased to 5
+- SCHA63T IMU temperature reporting bug fixed
+
+3) Plane specific fixes and enhancements
+
+- Circle mode terrain alt handling fixed
+- Fence re-enable after fence breach fixed
+- Prevent rotation pitch calculations from running post-rotation
+- Takeoff leveloff timeout check added
+- Terrain guided target intermediate alt handling fixed
+
+4) Copter SCurve navigation fix to avoid excessive vertical speed when passing through waypoints
+
+5) Rover circle mode and QuickTune support smaller vehicles
+
+6) Bug Fixes and minor enhancements
+
+- AHRS initial orientation fixed when autopilot mounted in non-default orientation
+- AIRSPEED mavlink message health flags fixed
+- CAMERA_FOV_STATUS message always sent (once requested), attitude is earth-frame and FOV can be decimal numbers
+- DDS / ROS2 fix to provide clock_gettime only on ChibiOS boards
+- Lightware I2C and HC SR04 fixed timestamp for last reading (should only affect AP_Periph devices)
+- "No ap_message for mavlink id" warning removed
+- Power brick2 valid flag fixed on some boards
+- Pre-arm check that gyro read rate is at least the main loop rate
+------------------------------------------------------------------
+Release 4.6.0-beta5 31-Mar-2025
+
+Changes from 4.6.0-beta4
+
+1) Board specfic changes
+
+- MFT-SEMA100 compass orientation fix
+- SpeedyBee F405 AIO support
+
+2) Driver bug fixes and enhancements
+
+- Bdshot locking issue fix for slow boards that could cause the flight controller to crash
+- BMP280 barometer error handling during init improved
+- CADDX gimbal RC update rate fixed
+- Hexsoon 77G and 24G radar support
+- IE FuelCell generator data rate increased
+- IIS2MDC compass support
+- LD19/LD06 proximity sensor data length sanity check fix
+- RC output cork/push fix to avoid potential motor knocking
+- SBF MosaicX5 packets with invalid length ignored
+- SPL06 barometer accuracy improvements
+- Ublox M10 configuration fix
+
+3) Plane specific fixes and enhancements
+
+- Tiltrotor motor check fixed used in throttle control handover from VTOL to forward flight
+- Improved QAssist and VTOL mode recovery from bad attitudes
+- Fixed rudder output in VTOL modes
+- Added fix for indecision in the roll controller close to inverted
+- Ensure tiltrotors use consistent fixed wing and VTOL rates
+- Clear inverted control flag on Q-mode entry
+- Auto-deploy landing gear on all fixed wing landings when enabled
+- Prevent learning bad ARSP_RATIO values when not flying
+
+4) Rover specific fixes and enhancements
+
+- Lua bindings for Follow mode
+- WATER_DEPTH mavlink message rate fix
+
+5) Parameter description improvements
+
+- ADSB_LIST_ALT param desc improved
+- Alphabetised type params for CAN, Mount, OptFlow, Proximity, Rangefinder, Serial Manager
+- Copter's battery failsafe action gets "Brake or Land"
+- LOG_FILE_BUFSIZE units fixed
+- MOT_THST_HOVER range fixed
+- SERIALx_BAUD value added for PPP networking
+
+6) Bug Fixes and minor enhancements
+
+- Arming check for EKF3 velocity innovations
+- Copter's LOG_BITMASK includes PIDs by default
+- DO_SET_ROI_LOCATION mission command support
+- MCU min/max voltage logging fix
+- MIS_OPTION parameter handling fixed
+------------------------------------------------------------------
+Release 4.6.0-beta4 14-Feb-2025
+
+Changes from 4.6.0-beta3
+
+1) Board specfic changes
+
+- BETAFPV F405 supports DPS310 baro
+- BETAFPV F405 board variants added
+
+2) Driver enhancements
+
+- CADDX camera gimbal support
+- UltraMotion CAN servo support
+
+3) Copter specific fixes and minor enhancements
+
+- SysId mode uninitialised variables fixed
+- ARMING_OPTIONS gets "Require position for arming" (was in FLIGHT_OPTIONS)
+
+4) Bug Fixes and minor enhancements
+
+- AM32 ESC passthrough fixed
+- BMP581 baro initialisation fix
+- DDS/ROS2 driver waits indefinitely until companion computer running ROS2 starts
+- Lua script potential deadlock fix when initialising mavlink in script
+- Mcast and HW CAN bridging disabled by default
+- Plane's TILT log message only logged on tilt-rotors
+- ROMFS race condition when opening files that caused apparent script corruption fixed
+- Serial flow control support on UARTS 6 to 8
+- Serial passthrough fix to restore parity upon completion
+- Serial protocol parameter fix to include I-Bus Telemetry
+- uAvionix ping200X driver fixes
+- Video stream information lua script param index fixed (avoids param conflict with other scripts)
+- ViewPro object tracking fixed
+------------------------------------------------------------------
+Release 4.6.0-beta3 21-Jan-2025
 
 Changes from 4.6.0-beta2
 

@@ -11,13 +11,11 @@ USB_VENDOR 0x3162 # ONLY FOR USE BY Holybro
 USB_PRODUCT 0x004B
 USB_STRING_MANUFACTURER "Holybro"
 
-# board ID for firmware load
-APJ_BOARD_ID 139
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_DURANDAL
 
 FLASH_SIZE_KB 2048
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
 
 # bootloader takes first sector
 FLASH_RESERVE_START_KB 128
@@ -308,7 +306,7 @@ define HAL_WITH_RAMTRON 1
 define HAL_HAVE_SAFETY_SWITCH 1
 
 # one baro
-BARO MS56XX SPI:ms5611
+BARO MS5611 SPI:ms5611
 
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 

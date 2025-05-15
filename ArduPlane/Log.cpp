@@ -32,14 +32,14 @@ void Plane::Log_Write_Attitude(void)
         logger.Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
         logger.Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
         logger.Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
-        logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_z_pid().get_pid_info() );
+        logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_U_pid().get_pid_info() );
 
         // Write tailsitter specific log at same rate as PIDs
         quadplane.tailsitter.write_log();
     }
-    if (quadplane.in_vtol_mode() && quadplane.pos_control->is_active_xy()) {
-        logger.Write_PID(LOG_PIDN_MSG, quadplane.pos_control->get_vel_xy_pid().get_pid_info_x());
-        logger.Write_PID(LOG_PIDE_MSG, quadplane.pos_control->get_vel_xy_pid().get_pid_info_y());
+    if (quadplane.in_vtol_mode() && quadplane.pos_control->is_active_NE()) {
+        logger.Write_PID(LOG_PIDN_MSG, quadplane.pos_control->get_vel_NE_pid().get_pid_info_x());
+        logger.Write_PID(LOG_PIDE_MSG, quadplane.pos_control->get_vel_NE_pid().get_pid_info_y());
     }
 #endif
 
@@ -210,6 +210,7 @@ struct PACKED log_Status {
     bool is_still;
     uint8_t stage;
     bool impact;
+    bool throttle_supressed;
 };
 
 void Plane::Log_Write_Status()
@@ -225,6 +226,7 @@ void Plane::Log_Write_Status()
         ,is_still    : AP::ins().is_still()
         ,stage       : static_cast<uint8_t>(flight_stage)
         ,impact      : crash_state.impact_detected
+        ,throttle_supressed : throttle_suppressed
         };
 
     logger.WriteBlock(&pkt, sizeof(pkt));
@@ -319,7 +321,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: NavRoll: desired roll
 // @Field: Roll: achieved roll
 // @Field: NavPitch: desired pitch assuming pitch trims are already applied
-// @Field: Pitch: achieved pitch assuming pitch trims are already applied,ie "0deg" is level flight trimmed pitch attitude as shown on artifical horizon level line.
+// @Field: Pitch: achieved pitch assuming pitch trims are already applied,ie "0deg" is level flight trimmed pitch attitude as shown on artificial horizon level line.
 // @Field: ThO: scaled output throttle
 // @Field: RdO: scaled output rudder
 // @Field: ThD: demanded speed-height-controller throttle
@@ -375,15 +377,16 @@ const struct LogStructure Plane::log_structure[] = {
 // @Description: Current status of the aircraft
 // @Field: TimeUS: Time since system startup
 // @Field: isFlying: True if aircraft is probably flying
-// @Field: isFlyProb: Probabilty that the aircraft is flying
+// @Field: isFlyProb: Probability that the aircraft is flying
 // @Field: Armed: Arm status of the aircraft
 // @Field: Safety: State of the safety switch
 // @Field: Crash: True if crash is detected
 // @Field: Still: True when vehicle is not moving in any axis
 // @Field: Stage: Current stage of the flight
 // @Field: Hit: True if impact is detected
+// @Field: Sup: True if throttle is suppressed
     { LOG_STATUS_MSG, sizeof(log_Status),
-      "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit", "s--------", "F--------" , true },
+      "STAT", "QBfBBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit,Sup", "s---------", "F---------" , true },
 
 // @LoggerMessage: QTUN
 // @Description: QuadPlane vertical tuning message
@@ -443,7 +446,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: TimeUS: Time since system startup
 // @Field: Ts: throttle scaling used for tilt motors
 // @Field: Ss: speed scailing used for control surfaces method from Q_TAILSIT_GSCMSK
-// @Field: Tmin: minimum output throttle caculated from disk thoery gain scale with Q_TAILSIT_MIN_VO
+// @Field: Tmin: minimum output throttle calculated from disk thoery gain scale with Q_TAILSIT_MIN_VO
 #if HAL_QUADPLANE_ENABLED
     { LOG_TSIT_MSG, sizeof(Tailsitter::log_tailsitter),
       "TSIT", "Qfff",  "TimeUS,Ts,Ss,Tmin", "s---", "F---" , true },

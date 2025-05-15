@@ -281,15 +281,7 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
 
     float old_value = vp->cast_to_float(var_type);
 
-    if (parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) {
-        // the user can set BRD_OPTIONS to enable set of internal
-        // parameters, for developer testing or unusual use cases
-        if (AP_BoardConfig::allow_set_internal_parameters()) {
-            parameter_flags &= ~AP_PARAM_FLAG_INTERNAL_USE_ONLY;
-        }
-    }
-
-    if ((parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) || vp->is_read_only()) {
+    if (!vp->allow_set_via_mavlink(parameter_flags)) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param write denied (%s)", key);
         // send the readonly value
         send_parameter_value(key, var_type, old_value);

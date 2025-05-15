@@ -337,6 +337,10 @@ void AP_InertialSensor_Invensensev3::start()
             temp_sensitivity = 1.0 / 128.0;
             accel_scale = ACCEL_SCALE_HIGHRES_32G;
             gyro_scale = GYRO_SCALE_HIGHRES_4000DPS;
+        } else if (inv3_type == Invensensev3_Type::IIM42653) {
+            accel_scale = ACCEL_SCALE_HIGHRES_32G;
+            gyro_scale = GYRO_SCALE_HIGHRES_4000DPS;
+            temp_sensitivity = 1.0 / 132.48;
         } else if (inv3_type == Invensensev3_Type::ICM42670) {
             temp_sensitivity = 1.0 / 128.0;
         }
@@ -599,7 +603,7 @@ void AP_InertialSensor_Invensensev3::read_fifo()
         tfr_buffer[0] = reg_data | BIT_READ_FLAG;
         // transfer will also be sending data, make sure that data is zero
         memset(tfr_buffer + 1, 0, n * fifo_sample_size);
-        if (!dev->transfer(tfr_buffer, n * fifo_sample_size + 1, tfr_buffer, n * fifo_sample_size + 1)) {
+        if (!dev->transfer_fullduplex(tfr_buffer, n * fifo_sample_size + 1)) {
             goto check_registers;
         }
         samples = tfr_buffer + 1;

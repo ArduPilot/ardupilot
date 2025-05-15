@@ -45,7 +45,6 @@
 #define LFS_CHECK(func) do { int __retval = func; if (__retval < 0) { errno = errno_from_lfs_error(__retval); return -1; }} while (0)
 #define LFS_CHECK_NULL(func) do { int __retval = func; if (__retval < 0) { errno = errno_from_lfs_error(__retval); return nullptr; }} while (0)
 #define LFS_ATTR_MTIME 'M'
-#define LFS_FLASH_BLOCKS_PER_BLOCK 1
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
 static int flashmem_read(
@@ -63,16 +62,6 @@ static int errno_from_lfs_error(int lfs_error);
 static int lfs_flags_from_flags(int flags);
 
 const extern AP_HAL::HAL& hal;
-
-AP_Filesystem_FlashMemory_LittleFS* AP_Filesystem_FlashMemory_LittleFS::singleton;
-
-AP_Filesystem_FlashMemory_LittleFS::AP_Filesystem_FlashMemory_LittleFS()
-{
-    if (singleton) {
-        AP_HAL::panic("Too many AP_Filesystem_FlashMemory_LittleFS instances");
-    }
-    singleton = this;
-}
 
 int AP_Filesystem_FlashMemory_LittleFS::open(const char *pathname, int flags, bool allow_absolute_path)
 {
@@ -201,6 +190,10 @@ int AP_Filesystem_FlashMemory_LittleFS::fsync(int fd)
         return -1;
     }
 
+    if (fp->file.off != fs_cfg.block_size) {
+        debug("misaligned fsync: %lu\n", fp->file.off);
+    }
+
     LFS_CHECK(lfs_file_sync(&fs, &(fp->file)));
     return 0;
 }
@@ -310,7 +303,7 @@ void *AP_Filesystem_FlashMemory_LittleFS::opendir(const char *pathdir)
     WITH_SEMAPHORE(fs_sem);
     ENSURE_MOUNTED_NULL();
 
-    DirEntry *result = new DirEntry;
+    DirEntry *result = NEW_NOTHROW DirEntry;
     if (!result) {
         errno = ENOMEM;
         return nullptr;
@@ -401,12 +394,61 @@ int AP_Filesystem_FlashMemory_LittleFS::closedir(void *ptr)
     // means we didn't successfully open the directory and lock.
     fs_sem.give();
 
-    LFS_CHECK(lfs_dir_close(&fs, &pair->dir));
-
+    int retval = lfs_dir_close(&fs, &pair->dir);
     delete pair;
+
+    if (retval < 0) {
+        errno = errno_from_lfs_error(retval);
+        return -1;
+    }
 
     return 0;
 }
+
+// return number of bytes that should be written before fsync for optimal
+// streaming performance/robustness. if zero, any number can be written.
+// LittleFS needs to copy the block contents to a new one if fsync is called
+// in the middle of a block. LittleFS also is guaranteed to not remember any
+// file contents until fsync is called!
+uint32_t AP_Filesystem_FlashMemory_LittleFS::bytes_until_fsync(int fd)
+{
+    FS_CHECK_ALLOWED(0);
+    WITH_SEMAPHORE(fs_sem);
+
+    FileDescriptor* fp = lfs_file_from_fd(fd);
+    if (!mounted || fp == nullptr) {
+        return 0;
+    }
+
+    uint32_t file_pos = fp->file.pos;
+    uint32_t block_size = fs_cfg.block_size;
+
+    // first block exclusively stores data:
+    // https://github.com/littlefs-project/littlefs/issues/564#issuecomment-2555733922
+    if (file_pos < block_size) {
+        return block_size - file_pos; // so block_offset is exactly file_pos
+    }
+
+    // see https://github.com/littlefs-project/littlefs/issues/564#issuecomment-2363032827
+    // n = (N − w/8 ( popcount( N/(B − 2w/8) − 1) + 2))/(B − 2w/8))
+    // off = N − ( B − 2w/8 ) n − w/8popcount( n )
+#define BLOCK_INDEX(N, B) \
+    (N - sizeof(uint32_t) * (__builtin_popcount(N/(B - 2 * sizeof(uint32_t)) -1) + 2))/(B - 2 * sizeof(uint32_t))
+
+#define BLOCK_OFFSET(N, B, n) \
+    (N - (B - 2*sizeof(uint32_t)) * n - sizeof(uint32_t) * __builtin_popcount(n))
+
+    uint32_t block_index = BLOCK_INDEX(file_pos, block_size);
+    // offset will be 4 (or bigger) through (block_size-1) as subsequent blocks
+    // start with one or more pointers; offset will never equal block_size
+    uint32_t block_offset = BLOCK_OFFSET(file_pos, block_size, block_index);
+
+#undef BLOCK_INDEX
+#undef BLOCK_OFFSET
+
+    return block_size - block_offset;
+}
+
 
 int64_t AP_Filesystem_FlashMemory_LittleFS::disk_free(const char *path)
 {
@@ -574,6 +616,7 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_ID_WINBOND_W25N01GV      0xEFAA21
 #define JEDEC_ID_WINBOND_W25N02KV      0xEFAA22
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
+#define JEDEC_ID_GIGA_GD25Q16E         0xC84015
 
 /* Hardware-specific constants */
 
@@ -593,34 +636,6 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define W25NXX_TIMEOUT_PAGE_PROGRAM_US     700  // tPPmax = 700us
 #define W25NXX_TIMEOUT_BLOCK_ERASE_MS      10   // tBEmax = 10ms
 #define W25NXX_TIMEOUT_RESET_MS            500  // tRSTmax = 500ms
-
-bool AP_Filesystem_FlashMemory_LittleFS::sync_block(int _write_fd, uint32_t _write_offset, uint32_t& nbytes)
-{
-    // see https://github.com/littlefs-project/littlefs/issues/564#issuecomment-2363032827
-    // n = (N − w/8 ( popcount( N/(B − 2w/8) − 1) + 2))/(B − 2w/8))
-    // off = N − ( B − 2w/8 ) n − w/8popcount( n )
-#define BLOCK_INDEX(N, B) \
-    (N - sizeof(uint32_t) * (__builtin_popcount(N/(B - 2 * sizeof(uint32_t)) -1) + 2))/(B - 2 * sizeof(uint32_t))
-
-#define BLOCK_OFFSET(N, B, n) \
-    (N - (B - 2*sizeof(uint32_t)) * n - sizeof(uint32_t) * __builtin_popcount(n))
-
-    uint32_t blocksize = fs_cfg.block_size;
-    uint32_t block_index = BLOCK_INDEX(_write_offset, blocksize);
-    uint32_t block_offset = BLOCK_OFFSET(_write_offset, blocksize, block_index);
-    if (blocksize - block_offset <= nbytes) {
-        if (blocksize == block_offset) {
-            // exactly at the end of the block, sync and then write all the data
-            AP::FS().fsync(_write_fd);
-            return false;
-        } else {
-            // near the end of the block, fill in the remaining gap
-            nbytes = blocksize - block_offset;
-            return true;
-        }
-    }
-    return false;
-}
 
 bool AP_Filesystem_FlashMemory_LittleFS::is_busy()
 {
@@ -715,81 +730,89 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
 
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
     uint32_t id = buf[1] << 16 | buf[2] << 8 | buf[3];
-
 #else
     uint32_t id = buf[0] << 16 | buf[1] << 8 | buf[2];
 #endif
 
     // Let's specify the terminology here.
     //
-    // 1 block = smallest unit that we can _erase_ in a single operation
-    // 1 page = smallest unit that we can read or program in a single operation
+    // 1 block = smallest unit that we _erase_ in a single operation
+    // 1 page = smallest unit that we read or program in a single operation
     //
-    // So, for instance, if we have 4K sectors on the flash chip and we can
-    // always erase a single 4K sector, the LFS block size will be 4096 bytes,
+    // regardless of what the flash chip documentation refers to as a "block"
 
-    // irrespectively of what the flash chip documentation refers to as a "block"
-    /* Most flash chips are programmable in chunks of 256 bytes and erasable in
-     * blocks of 4K so we start with these defaults */
-    uint16_t page_size = 256;
-    flash_block_size = 4096;
-    flash_block_count = 0;
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+    // these NAND chips have 2048 byte pages and 128K erase blocks
+    lfs_size_t page_size = 2048;
+    lfs_size_t block_size = 131072;
+#else
+    // typical JEDEC-ish NOR flash chips have 256 byte pages and 64K blocks.
+    // many also support smaller erase sizes like 4K "sectors", but the largest
+    // block size is fastest to erase in bytes per second by 3-5X so we use
+    // that. be aware that worst case erase time can be seconds!
+    lfs_size_t page_size = 256;
+    lfs_size_t block_size = 65536;
+#endif
 
+    lfs_size_t block_count;
     switch (id) {
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
     case JEDEC_ID_WINBOND_W25N01GV:
-        /* 128M, programmable in chunks of 2048 bytes, erasable in blocks of 128K */
-        page_size = 2048;
-        flash_block_size = 131072;
-        flash_block_count = 1024;
+        block_count = 1024;   /* 128MiB */
         break;
     case JEDEC_ID_WINBOND_W25N02KV:
-        /* 256M, programmable in chunks of 2048 bytes, erasable in blocks of 128K */
-        page_size = 2048;
-        flash_block_size = 131072;
-        flash_block_count = 2048;
+        block_count = 2048;   /* 256MiB */
         break;
 #else
     case JEDEC_ID_WINBOND_W25Q16:
     case JEDEC_ID_MICRON_M25P16:
-        flash_block_count = 32;   /* 128K */
+    case JEDEC_ID_GIGA_GD25Q16E:
+        block_count = 32;     /* 2MiB */
         break;
 
     case JEDEC_ID_WINBOND_W25Q32:
     case JEDEC_ID_WINBOND_W25X32:
     case JEDEC_ID_MACRONIX_MX25L3206E:
-        flash_block_count = 64;   /* 256K */
+        block_count = 64;     /* 4MiB */
         break;
 
     case JEDEC_ID_MICRON_N25Q064:
     case JEDEC_ID_WINBOND_W25Q64:
     case JEDEC_ID_MACRONIX_MX25L6406E:
-        flash_block_count = 128;  /* 512K */
+        block_count = 128;    /* 8MiB */
         break;
 
     case JEDEC_ID_MICRON_N25Q128:
     case JEDEC_ID_WINBOND_W25Q128:
     case JEDEC_ID_WINBOND_W25Q128_2:
     case JEDEC_ID_CYPRESS_S25FL128L:
-        flash_block_count = 256;  /* 1M */
+        block_count = 256;    /* 16MiB */
         break;
 
     case JEDEC_ID_WINBOND_W25Q256:
     case JEDEC_ID_MACRONIX_MX25L25635E:
-        flash_block_count = 512;  /* 2M */
+        block_count = 512;    /* 32MiB */
         use_32bit_address = true;
         break;
 #endif
     default:
+        block_count = 0;
         hal.scheduler->delay(2000);
         printf("Unknown SPI Flash 0x%08x\n", id);
         return 0;
     }
 
     fs_cfg.read_size = page_size;
-    fs_cfg.prog_size = page_size;
-    fs_cfg.block_size = flash_block_size * LFS_FLASH_BLOCKS_PER_BLOCK;
-    fs_cfg.block_count = flash_block_count / LFS_FLASH_BLOCKS_PER_BLOCK;
+    fs_cfg.prog_size = page_size; // we assume this is equal to read_size!
+    fs_cfg.block_size = block_size;
+    fs_cfg.block_count = block_count;
+
+    // larger metadata blocks mean less frequent compaction operations, but each
+    // takes longer. however, the total time spent compacting for a given file
+    // size still goes down with larger metadata blocks. 4096 was chosen to
+    // minimize both frequency and log buffer utilization.
+    fs_cfg.metadata_max = 4096;
+    fs_cfg.compact_thresh = 4096*0.88f;
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
     fs_cfg.metadata_max = page_size * 2;
     fs_cfg.compact_thresh = fs_cfg.metadata_max * 0.88f;
@@ -951,16 +974,6 @@ AP_Filesystem_Backend::FormatStatus AP_Filesystem_FlashMemory_LittleFS::get_form
     return format_status;
 }
 
-inline uint32_t AP_Filesystem_FlashMemory_LittleFS::lfs_block_and_offset_to_raw_flash_address(lfs_block_t index, lfs_off_t off, lfs_off_t flash_block)
-{
-    return index * fs_cfg.block_size + off + flash_block * flash_block_size;
-}
-
-inline uint32_t AP_Filesystem_FlashMemory_LittleFS::lfs_block_to_raw_flash_page_index(lfs_block_t index, lfs_off_t flash_block)
-{
-    return index * (fs_cfg.block_size / fs_cfg.prog_size) + flash_block * (flash_block_size / fs_cfg.prog_size);
-}
-
 bool AP_Filesystem_FlashMemory_LittleFS::write_enable()
 {
     uint8_t b = JEDEC_WRITE_ENABLE;
@@ -975,11 +988,12 @@ bool AP_Filesystem_FlashMemory_LittleFS::write_enable()
 
 bool AP_Filesystem_FlashMemory_LittleFS::init_flash()
 {
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-    // reset the device
     if (!wait_until_device_is_ready()) {
         return false;
     }
+
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+    // reset the device
     {
         WITH_SEMAPHORE(dev_sem);
         uint8_t b = JEDEC_DEVICE_RESET;
@@ -1005,26 +1019,24 @@ bool AP_Filesystem_FlashMemory_LittleFS::init_flash()
 }
 
 #ifdef AP_LFS_DEBUG
-static uint32_t block_writes;
+static uint32_t page_writes;
 static uint32_t last_write_msg_ms;
 static uint32_t page_reads;
+static uint32_t block_erases;
 #endif
 int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
     lfs_block_t block, lfs_off_t off, void* buffer, lfs_size_t size
 ) {
-    uint32_t address;
-    lfs_off_t read_off = 0;
-
-    if (dead) {
-        return LFS_ERR_IO;
-    }
-
-    address = lfs_block_and_offset_to_raw_flash_address(block, off);
-
     EXPECT_DELAY_MS((25*size)/(fs_cfg.read_size*1000));
 
-    while (size > 0) {
-        uint32_t read_size = MIN(size, fs_cfg.read_size);
+    // LittleFS always calls us with off aligned to read_size and size a
+    // multiple of read_size
+    const uint32_t page_size = fs_cfg.read_size;
+    uint32_t num_pages = size / page_size;
+    uint32_t address = (block * fs_cfg.block_size) + off;
+    uint8_t* p = static_cast<uint8_t*>(buffer);
+
+    while (num_pages--) {
 #ifdef AP_LFS_DEBUG
         page_reads++;
 #endif
@@ -1036,7 +1048,7 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
         }
         {
             WITH_SEMAPHORE(dev_sem);
-            send_command_addr(JEDEC_PAGE_DATA_READ, address / fs_cfg.read_size);
+            send_command_addr(JEDEC_PAGE_DATA_READ, address / page_size);
         }
 #endif
         if (!wait_until_device_is_ready()) {
@@ -1046,13 +1058,16 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
         WITH_SEMAPHORE(dev_sem);
 
         dev->set_chip_select(true);
-        send_command_addr(JEDEC_READ_DATA, address % fs_cfg.read_size);
-        dev->transfer(nullptr, 0, static_cast<uint8_t*>(buffer)+read_off, size);
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+        send_command_addr(JEDEC_READ_DATA, 0); // read one page internal buffer
+#else
+        send_command_addr(JEDEC_READ_DATA, address);
+#endif
+        dev->transfer(nullptr, 0, p, page_size);
         dev->set_chip_select(false);
 
-        size -= read_size;
-        address += read_size;
-        read_off += read_size;
+        address += page_size;
+        p += page_size;
     }
     return LFS_ERR_OK;
 }
@@ -1061,30 +1076,28 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
 int AP_Filesystem_FlashMemory_LittleFS::_flashmem_prog(
     lfs_block_t block, lfs_off_t off, const void* buffer, lfs_size_t size
 ) {
-    uint32_t address;
-    lfs_off_t prog_off = 0;
-
-    if (dead) {
-        return LFS_ERR_IO;
-    }
-
     EXPECT_DELAY_MS((250*size)/(fs_cfg.read_size*1000));
 
-    address = lfs_block_and_offset_to_raw_flash_address(block, off);
+    // LittleFS always calls us with off aligned to prog_size and size a
+    // multiple of prog_size (which we set equal to read_size)
+    const uint32_t page_size = fs_cfg.read_size;
+    uint32_t num_pages = size / page_size;
+    uint32_t address = (block * fs_cfg.block_size) + off;
+    const uint8_t* p = static_cast<const uint8_t*>(buffer);
 
-    while (size > 0) {
-        uint32_t prog_size = MIN(size, fs_cfg.prog_size);
+    while (num_pages--) {
         if (!write_enable()) {
             return LFS_ERR_IO;
         }
 
 #ifdef AP_LFS_DEBUG
-        block_writes++;
+        page_writes++;
         if (AP_HAL::millis() - last_write_msg_ms > 5000) {
-            debug("LFS: writes %lukB/s, pages %lu/s (reads %lu/s)",
-                (block_writes*fs_cfg.prog_size)/(5*1024), block_writes/5, page_reads/5);
-            block_writes = 0;
+            debug("LFS: writes %lukB/s, pages %lu/s (reads %lu/s, block erases %lu/s)",
+                (page_writes*page_size)/(5*1024), page_writes/5, page_reads/5, block_erases/5);
+            page_writes = 0;
             page_reads = 0;
+            block_erases = 0;
             last_write_msg_ms = AP_HAL::millis();
         }
 #endif
@@ -1094,47 +1107,45 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_prog(
         /* First we need to write into the data buffer at column address zero,
         * then we need to issue PROGRAM_EXECUTE to commit the internal buffer */
         dev->set_chip_select(true);
-        send_command_page(JEDEC_PAGE_WRITE, address % fs_cfg.prog_size);
-        dev->transfer(static_cast<const uint8_t*>(buffer)+prog_off, prog_size, nullptr, 0);
+        send_command_page(JEDEC_PAGE_WRITE, 0);
+        dev->transfer(p, page_size, nullptr, 0);
         dev->set_chip_select(false);
-        send_command_addr(JEDEC_PROGRAM_EXECUTE, address / fs_cfg.prog_size);
-        // this simply means the data is in the internal cache, it will take some period to
-        // propagate to the flash itself
+        send_command_addr(JEDEC_PROGRAM_EXECUTE, address / page_size);
 #else
         dev->set_chip_select(true);
         send_command_addr(JEDEC_PAGE_WRITE, address);
-        dev->transfer(static_cast<const uint8_t*>(buffer)+prog_off, prog_size, nullptr, 0);
+        dev->transfer(p, page_size, nullptr, 0);
         dev->set_chip_select(false);
 #endif
-        size -= prog_size;
-        address += prog_size;
-        prog_off += prog_size;
+        // writing simply means the data is in the internal cache, it will take
+        // some period to propagate to the flash itself
+
+        address += page_size;
+        p += page_size;
     }
     return LFS_ERR_OK;
 }
 
 int AP_Filesystem_FlashMemory_LittleFS::_flashmem_erase(lfs_block_t block) {
-    if (dead) {
+    if (!write_enable()) {
         return LFS_ERR_IO;
     }
 
-    for (lfs_off_t fblock = 0; fblock < LFS_FLASH_BLOCKS_PER_BLOCK; fblock++) {
-
-        if (!write_enable()) {
-            return LFS_ERR_IO;
-        }
-
-        WITH_SEMAPHORE(dev_sem);
-
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-        send_command_addr(JEDEC_BLOCK_ERASE, lfs_block_to_raw_flash_page_index(block, fblock));
-#else
-        send_command_addr(JEDEC_SECTOR4_ERASE, lfs_block_and_offset_to_raw_flash_address(block, 0, fblock));
+#ifdef AP_LFS_DEBUG
+    block_erases++;
 #endif
 
-        // sleep so that other processes get the CPU cycles that the 4ms erase cycle needs.
-        hal.scheduler->delay(4);
-    }
+    WITH_SEMAPHORE(dev_sem);
+
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+    const uint32_t pages_per_block = fs_cfg.block_size / fs_cfg.read_size;
+    send_command_addr(JEDEC_BLOCK_ERASE, block * pages_per_block);
+#else
+    send_command_addr(JEDEC_BLOCK_ERASE, block * fs_cfg.block_size);
+#endif
+
+    // sleep so that other processes get the CPU cycles that the 4ms erase cycle needs.
+    hal.scheduler->delay(4);
 
     return LFS_ERR_OK;
 }
@@ -1232,20 +1243,6 @@ static int lfs_flags_from_flags(int flags)
     }
 
     return outflags;
-}
-
-// get_singleton for access from logging layer
-AP_Filesystem_FlashMemory_LittleFS *AP_Filesystem_FlashMemory_LittleFS::get_singleton(void)
-{
-    return singleton;
-}
-
-namespace AP
-{
-AP_Filesystem_FlashMemory_LittleFS &littlefs()
-{
-    return *AP_Filesystem_FlashMemory_LittleFS::get_singleton();
-}
 }
 
 #endif  // AP_FILESYSTEM_LITTLEFS_ENABLED

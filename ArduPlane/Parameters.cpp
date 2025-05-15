@@ -14,20 +14,9 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
 
-    // @Param: SYSID_THISMAV
-    // @DisplayName: MAVLink system ID of this vehicle
-    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network
-    // @Range: 1 255
-    // @User: Advanced
-    GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
+    // SYSID_THISMAV was here
 
-    // @Param: SYSID_MYGCS
-    // @DisplayName: Ground station MAVLink system ID
-    // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
-    // @Range: 1 255
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
+    // SYSID_MYGCS was here
 
     // AP_SerialManager was here
 
@@ -41,20 +30,13 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: AUTOTUNE_OPTIONS
     // @DisplayName: Autotune options bitmask
-    // @Description: Fixed Wing Autotune specific options. Useful on QuadPlanes with higher INS_GYRO_FILTER settings to prevent these filter values from being set too agressively during Fixed Wing Autotune.
+    // @Description: Fixed Wing Autotune specific options. Useful on QuadPlanes with higher INS_GYRO_FILTER settings to prevent these filter values from being set too aggressively during Fixed Wing Autotune.
     // @Bitmask: 0: Disable FLTD update by Autotune
     // @Bitmask: 1: Disable FLTT update by Autotune
     // @User: Advanced
     ASCALAR(autotune_options, "AUTOTUNE_OPTIONS",  0),
 
-    // @Param: TELEM_DELAY
-    // @DisplayName: Telemetry startup delay 
-    // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
-    // @User: Standard
-    // @Units: s
-    // @Range: 0 30
-    // @Increment: 1
-    GSCALAR(telem_delay,            "TELEM_DELAY",     0),
+    // TELEM_DELAY was here
 
     // @Param: GCS_PID_MASK
     // @DisplayName: GCS PID tuning mask
@@ -88,23 +70,23 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(stab_pitch_down, "STAB_PITCH_DOWN",   2.0f),
 
-    // @Param: GLIDE_SLOPE_MIN
-    // @DisplayName: Glide slope minimum
-    // @Description: This controls the minimum altitude change for a waypoint before a glide slope will be used instead of an immediate altitude change. The default value is 15 meters, which helps to smooth out waypoint missions where small altitude changes happen near waypoints. If you don't want glide slopes to be used in missions then you can set this to zero, which will disable glide slope calculations. Otherwise you can set it to a minimum number of meters of altitude error to the destination waypoint before a glide slope will be used to change altitude.
+    // @Param: ALT_SLOPE_MIN
+    // @DisplayName: Altitude slope minimum
+    // @Description: This controls the minimum altitude change for a waypoint before an altitude slope will be used instead of an immediate altitude change. The default value is 15 meters, which helps to smooth out waypoint missions where small altitude changes happen near waypoints. If you don't want altitude slopes to be used in missions then you can set this to zero, which will disable altitude slope calculations. Otherwise you can set it to a minimum number of meters of altitude error to the destination waypoint before an altitude slope will be used to change altitude.
     // @Range: 0 1000
     // @Increment: 1
     // @Units: m
     // @User: Advanced
-    GSCALAR(glide_slope_min, "GLIDE_SLOPE_MIN", 15),
+    GSCALAR(alt_slope_min, "ALT_SLOPE_MIN", 15),
 
-    // @Param: GLIDE_SLOPE_THR
-    // @DisplayName: Glide slope threshold
-    // @Description: This controls the height above the glide slope the plane may be before rebuilding a glide slope. This is useful for smoothing out an autotakeoff
+    // @Param: ALT_SLOPE_MAXHGT
+    // @DisplayName: Altitude slope maximum height
+    // @Description: This controls the height above the altitude slope the plane may be before rebuilding it. This is useful for smoothing out an auto-takeoff.
     // @Range: 0 100
     // @Increment: 1
     // @Units: m
     // @User: Advanced
-    GSCALAR(glide_slope_threshold, "GLIDE_SLOPE_THR", 5.0),
+    GSCALAR(alt_slope_max_height, "ALT_SLOPE_MAXHGT", 5.0),
 
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing
@@ -124,7 +106,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: TKOFF_THR_MINACC
     // @DisplayName: Takeoff throttle min acceleration
-    // @Description: Minimum forward acceleration in m/s/s before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches and bungee launches this should be set to around 15. Also see TKOFF_ACCEL_CNT paramter for control of full "shake to arm".
+    // @Description: Minimum forward acceleration in m/s/s before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches and bungee launches this should be set to around 15. Also see TKOFF_ACCEL_CNT parameter for control of full "shake to arm".
     // @Units: m/s/s
     // @Range: 0 30
     // @Increment: 0.1
@@ -273,7 +255,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: WP_LOITER_RAD
     // @DisplayName: Waypoint Loiter Radius
-    // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter. If you set this value to a negative number then the default loiter direction will be counter-clockwise instead of clockwise.
+    // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter. If you set this value to a negative number then the default loiter direction will be counter-clockwise instead of clockwise. If this value is too close to zero, the achieved loiter radius will be determined by ROLL_LIMIT_DEG.
     // @Units: m
     // @Range: -32767 32767
     // @Increment: 1
@@ -323,7 +305,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: AIRSPEED_STALL
     // @DisplayName: Stall airspeed
-    // @Description: If stall prevention is enabled this speed is used to calculate the minimum airspeed while banking. If this is set to 0 then the stall speed is assumed to be the minimum airspeed speed. Typically set slightly higher then true stall speed. Value is as an indicated (calibrated/apparent) airspeed.
+    // @Description: If stall prevention is enabled this speed is used to calculate the minimum airspeed while banking. It is also used during landing final as the minimum airspeed that can be demanded by the TECS, which allows using TECS_LAND_ARSPD or LAND_PF_ARSPD to achieve landings slower than AIRSPEED_MIN. If this is set to 0 then the stall speed is assumed to be the minimum airspeed speed. Typically set slightly higher then true stall speed.
     // @Units: m/s
     // @Range: 5 75
     // @User: Standard
@@ -752,7 +734,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: CRASH_ACC_THRESH
     // @DisplayName: Crash Deceleration Threshold
-    // @Description: X-Axis deceleration threshold to notify the crash detector that there was a possible impact which helps disarm the motor quickly after a crash. This value should be much higher than normal negative x-axis forces during normal flight, check flight log files to determine the average IMU.x values for your aircraft and motor type. Higher value means less sensative (triggers on higher impact). For electric planes that don't vibrate much during fight a value of 25 is good (that's about 2.5G). For petrol/nitro planes you'll want a higher value. Set to 0 to disable the collision detector.
+    // @Description: X-Axis deceleration threshold to notify the crash detector that there was a possible impact which helps disarm the motor quickly after a crash. This value should be much higher than normal negative x-axis forces during normal flight, check flight log files to determine the average IMU.x values for your aircraft and motor type. Higher value means less sensitive (triggers on higher impact). For electric planes that don't vibrate much during fight a value of 25 is good (that's about 2.5G). For petrol/nitro planes you'll want a higher value. Set to 0 to disable the collision detector.
     // @Units: m/s/s
     // @Range: 10 127
     // @Increment: 1
@@ -876,45 +858,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
     GOBJECT(rcmap,                "RCMAP_",         RCMapper),
 
-    // @Group: SR0_
-    // @Path: GCS_MAVLink_Plane.cpp
-    GOBJECTN(_gcs.chan_parameters[0], gcs0,        "SR0_",     GCS_MAVLINK_Parameters),
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 2
-    // @Group: SR1_
-    // @Path: GCS_MAVLink_Plane.cpp
-    GOBJECTN(_gcs.chan_parameters[1],  gcs1,       "SR1_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 3
-    // @Group: SR2_
-    // @Path: GCS_MAVLink_Plane.cpp
-    GOBJECTN(_gcs.chan_parameters[2],  gcs2,       "SR2_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 4
-    // @Group: SR3_
-    // @Path: GCS_MAVLink_Plane.cpp
-    GOBJECTN(_gcs.chan_parameters[3],  gcs3,       "SR3_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 5
-    // @Group: SR4_
-    // @Path: GCS_MAVLink_Plane.cpp
-    GOBJECTN(_gcs.chan_parameters[4],  gcs4,       "SR4_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 6
-    // @Group: SR5_
-    // @Path: GCS_MAVLink_Plane.cpp
-    GOBJECTN(_gcs.chan_parameters[5],  gcs5,       "SR5_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 7
-    // @Group: SR6_
-    // @Path: GCS_MAVLink_Plane.cpp
-    GOBJECTN(_gcs.chan_parameters[6],  gcs6,       "SR6_",     GCS_MAVLINK_Parameters),
-#endif
+    // SR0 through SR6 were here
 
     // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
@@ -1049,7 +993,13 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Quicktune/AP_Quicktune.cpp
     GOBJECT(quicktune, "QWIK_",  AP_Quicktune),
 #endif
-    
+
+#if HAL_GCS_ENABLED
+    // @Group: MAV
+    // @Path: ../libraries/GCS_MAVLink/GCS.cpp
+    GOBJECT(_gcs,           "MAV",  GCS),
+#endif
+
     AP_VAREND
 };
 
@@ -1071,13 +1021,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #endif
 
     // 3 was used by prototype for servo_channels
-    
-    // @Param: SYSID_ENFORCE
-    // @DisplayName: GCS sysid enforcement
-    // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
-    // @Values: 0:NotEnforced,1:Enforced
-    // @User: Advanced
-    AP_GROUPINFO("SYSID_ENFORCE", 4, ParametersG2, sysid_enforce, 0),
+
+    // 4 was used by SYSID_ENFORCE
 
     // AP_Stats was 5
 
@@ -1113,7 +1058,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     
     // @Param: HOME_RESET_ALT
     // @DisplayName: Home reset altitude threshold
-    // @Description: When the aircraft is within this altitude of the home waypoint, while disarmed it will automatically update the home position. Set to 0 to continously reset it.
+    // @Description: When the aircraft is within this altitude of the home waypoint, while disarmed it will automatically update the home position. Set to 0 to continuously reset it.
     // @Values: -1:Never reset,0:Always reset
     // @Range: -1 127
     // @Units: m
@@ -1131,7 +1076,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 3: Force target airspeed to trim airspeed in Cruise or FBWB
     // @Bitmask: 4: Climb to RTL_ALTITUDE before turning for RTL
     // @Bitmask: 5: Enable yaw damper in acro mode
-    // @Bitmask: 6: Supress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airspeed sensor.
+    // @Bitmask: 6: Suppress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airspeed sensor.
     // @Bitmask: 7: EnableDefaultAirspeed for takeoff
     // @Bitmask: 8: Remove the PTCH_TRIM_DEG on the GCS horizon
     // @Bitmask: 9: Remove the PTCH_TRIM_DEG on the OSD horizon
@@ -1319,6 +1264,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FWD_BAT_THR_CUT", 37, ParametersG2, fwd_batt_cmp.batt_voltage_throttle_cutoff, 0.0f),
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // @Group: SID
+    // @Path: systemid.cpp
+    AP_SUBGROUPINFO(systemid, "SID", 38, ParametersG2, AP_SystemID),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -1583,4 +1534,18 @@ void Plane::load_parameters(void)
     };
 
     AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
+
+#if HAL_GCS_ENABLED
+    // Move parameters into new MAV_ parameter namespace
+    // PARAMETER_CONVERSION - Added: Mar-2025 for ArduPilot-4.7
+    {
+        static const AP_Param::ConversionInfo gcs_conversion_info[] {
+            { Parameters::k_param_sysid_this_mav_old, 0, AP_PARAM_INT16,  "MAV_SYSID" },
+            { Parameters::k_param_sysid_my_gcs_old, 0, AP_PARAM_INT16, "MAV_GCS_SYSID" },
+            { Parameters::k_param_g2,  4, AP_PARAM_INT8, "MAV_OPTIONS" },
+            { Parameters::k_param_telem_delay_old,  0, AP_PARAM_INT8, "MAV_TELEM_DELAY" },
+        };
+        AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
+    }
+#endif  // HAL_GCS_ENABLED
 }

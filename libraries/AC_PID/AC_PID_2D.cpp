@@ -96,10 +96,6 @@ Vector2f AC_PID_2D::update_all(const Vector2f &target, const Vector2f &measureme
 
     // update I term
     update_i(dt, limit);
-
-    // calculate slew limit
-    _slew_calc.update(Vector2f{_pid_info_x.P + _pid_info_x.D, _pid_info_y.P + _pid_info_y.D}, dt);
-    _pid_info_x.slew_rate = _pid_info_y.slew_rate = _slew_calc.get_slew_rate();
  
     _pid_info_x.target = _target.x;
     _pid_info_x.actual = measurement.x;

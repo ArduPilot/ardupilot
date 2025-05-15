@@ -125,7 +125,7 @@ AP_BattMonitor_INA2XX::AP_BattMonitor_INA2XX(AP_BattMonitor &mon,
 
 void AP_BattMonitor_INA2XX::init(void)
 {
-    dev = hal.i2c_mgr->get_device(i2c_bus, i2c_address, 100000, false, 20);
+    dev = hal.i2c_mgr->get_device_ptr(i2c_bus, i2c_address, 100000, false, 20);
     if (!dev) {
         return;
     }

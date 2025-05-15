@@ -132,6 +132,7 @@ public:
     virtual bool in_guided_mode() const { return false; }
     virtual bool logs_attitude() const { return false; }
     virtual bool allows_save_trim() const { return false; }
+    virtual bool allows_auto_trim() const { return false; }
     virtual bool allows_autotune() const { return false; }
     virtual bool allows_flip() const { return false; }
     virtual bool crash_check_enabled() const { return true; }
@@ -164,7 +165,7 @@ public:
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) const { return false; };
     virtual int32_t wp_bearing() const { return 0; }
-    virtual uint32_t wp_distance() const { return 0; }
+    virtual float wp_distance_m() const { return 0.0f; }
     virtual float crosstrack_error() const { return 0.0f;}
 
     // functions to support MAV_CMD_DO_CHANGE_SPEED
@@ -389,7 +390,7 @@ public:
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
-    float get_pilot_desired_climb_rate(float throttle_control);
+    float get_pilot_desired_climb_rate();
     float get_non_takeoff_throttle(void);
     void update_simple_mode(void);
     bool set_mode(Mode::Number mode, ModeReason reason);
@@ -485,6 +486,8 @@ public:
     }
     bool allows_autotune() const override { return true; }
     bool allows_flip() const override { return true; }
+    bool allows_auto_trim() const override { return true; }
+    bool allows_save_trim() const override { return true; }
 #if FRAME_CONFIG == HELI_FRAME
     bool allows_inverted() const override { return true; };
 #endif
@@ -609,7 +612,7 @@ protected:
     const char *name() const override { return auto_RTL? "AUTO RTL" : "AUTO"; }
     const char *name4() const override { return auto_RTL? "ARTL" : "AUTO"; }
 
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
     bool get_wp(Location &loc) const override;
@@ -879,7 +882,7 @@ protected:
     const char *name() const override { return "CIRCLE"; }
     const char *name4() const override { return "CIRC"; }
 
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
 
 private:
@@ -951,7 +954,7 @@ private:
         Abandon
     };
     FlipState _state;               // current state of flip
-    Mode::Number   orig_control_mode;   // flight mode when flip was initated
+    Mode::Number   orig_control_mode;   // flight mode when flip was initiated
     uint32_t  start_time_ms;          // time since flip began
     int8_t    roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
     int8_t    pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
@@ -1156,7 +1159,7 @@ protected:
     const char *name() const override { return "GUIDED"; }
     const char *name4() const override { return "GUID"; }
 
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override;
 
@@ -1313,6 +1316,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
+    bool allows_auto_trim() const override { return true; }
 
 #if FRAME_CONFIG == HELI_FRAME
     bool allows_inverted() const override { return true; };
@@ -1327,7 +1331,7 @@ protected:
     const char *name() const override { return "LOITER"; }
     const char *name4() const override { return "LOIT"; }
 
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return pos_control->crosstrack_error();}
 
@@ -1362,6 +1366,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
+    bool allows_auto_trim() const override { return true;}
 
 protected:
 
@@ -1495,7 +1500,7 @@ protected:
     const char *name4() const override { return "RTL "; }
 
     // for reporting to GCS
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
@@ -1586,7 +1591,7 @@ protected:
 
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
@@ -1651,6 +1656,7 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool allows_save_trim() const override { return true; }
+    bool allows_auto_trim() const override { return true; }
     bool allows_autotune() const override { return true; }
     bool allows_flip() const override { return true; }
 
@@ -1752,7 +1758,7 @@ private:
     float time_const_freq;      // Time at constant frequency before chirp starts
     int8_t log_subsample;       // Subsample multiple for logging.
     Vector2f target_vel;        // target velocity for position controller modes
-    Vector2f target_pos;       // target positon
+    Vector2f target_pos;       // target position
     Vector2f input_vel_last;    // last cycle input velocity
     // System ID states
     enum class SystemIDModeState {
@@ -1903,7 +1909,7 @@ protected:
 
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
-    uint32_t wp_distance() const override;
+    float  wp_distance_m() const override;
     int32_t wp_bearing() const override;
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
@@ -1958,7 +1964,7 @@ protected:
 
     const char *name() const override { return "ZIGZAG"; }
     const char *name4() const override { return "ZIGZ"; }
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override;
 

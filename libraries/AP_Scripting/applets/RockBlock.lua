@@ -54,12 +54,12 @@ function bind_param(name)
  end
 
  -- setup RCK specific parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 4), 'could not add param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 5), 'could not add param table')
 --[[
   // @Param: RCK_FORCEHL
   // @DisplayName: Force enable High Latency mode
   // @Description: Automatically enables High Latency mode if not already enabled
-  // @Values: 0:Disabled,1:Enabled,2:Enabled on 5000ms telemetry loss
+  // @Values: 0:Disabled,1:Enabled,2:Enabled on telemetry loss
   // @User: Standard
 --]]
 RCK_FORCEHL     = bind_add_param('FORCEHL', 1, 0)
@@ -91,6 +91,16 @@ RCK_DEBUG     = bind_add_param('DEBUG', 3, 0)
   // @User: Standard
 --]]
 RCK_ENABLE     = bind_add_param('ENABLE', 4, 1)
+
+--[[
+  // @Param: RCK_TIMEOUT
+  // @DisplayName: GCS timeout to start sendin Rockblock messages
+  // @Description: If RCK_FORCEHL=2, this is the number of seconds of GCS timeout until High Latency mode is auto-enabled
+  // @Range: 0 600
+  // @Units: s
+  // @User: Standard
+--]]
+RCK_TIMEOUT     = bind_add_param('TIMEOUT', 5, 5)
 
 --[[
 Returns true if the value is NaN, false otherwise
@@ -188,10 +198,10 @@ local function MAVLinkProcessor()
         -- returns true if a packet was decoded, false otherwise
         _mavbuffer = _mavbuffer .. string.char(byte)
 
-        -- parse buffer to find MAVLink packets
-        if #_mavbuffer == 1 and string.byte(_mavbuffer, 1) == PROTOCOL_MARKER_V1 and
-            _mavdecodestate == 0 then
-            -- we have a packet start
+        -- check if this is a start of packet
+        if _mavdecodestate == 0 and byte == PROTOCOL_MARKER_V1 then
+            -- we have a packet start, discard the buffer before this byte
+            _mavbuffer = string.char(byte)
             _mavdecodestate = 1
             return
         end
@@ -279,6 +289,7 @@ local function MAVLinkProcessor()
                     loc:alt(_mavresult.z * 100)
                     if _mavresult.frame == 10 then -- MAV_FRAME_GLOBAL_TERRAIN_ALT
                         loc:terrain_alt(true)
+                        loc:relative_alt(true)
                     elseif _mavresult.frame == 3 then -- MAV_FRAME_GLOBAL_RELATIVE_ALT
                         loc:relative_alt(true)
                     end
@@ -345,7 +356,10 @@ local function MAVLinkProcessor()
         end
 
         -- packet too big ... start again
-        if #_mavbuffer > 263 then _mavbuffer = "" end
+        if #_mavbuffer > 263 then 
+            _mavbuffer = ""
+            _mavdecodestate = 0
+        end
         return false
     end
 
@@ -390,7 +404,7 @@ local function MAVLinkProcessor()
 
         -- create the header. Assume componentid of 1
         local header = string.pack('<BBBBBB', PROTOCOL_MARKER_V1, #payload,
-                                   _txseqid, param:get('SYSID_THISMAV'), 1,
+                                   _txseqid, param:get('MAV_SYSID'), 1,
                                    msgid)
 
         -- generate the CRC
@@ -743,23 +757,20 @@ function HLSatcom()
         rockblock.checkmodem()
     end
 
-    --- check if GCS telemetry has been lost for 5000 millisec (if param enabled)
+    --- check if GCS telemetry has been lost for RCK_TIMEOUT sec (if param enabled)
     if RCK_FORCEHL:get() == 2 then
-        if last_seen == gcs:last_seen() then
-            link_lost_for = link_lost_for + 100
-        else
-            -- There has been a new heartbeat, update last_seen and reset link_lost_for
-            last_seen = gcs:last_seen()
-            link_lost_for = 0
-        end
-        if link_lost_for > 5000 and not gcs:get_high_latency_status() then
+        -- link lost time = boot time - GCS last seen time
+        link_lost_for = (millis()- gcs:last_seen()):toint()
+        -- gcs:last_seen() is set to millis() during boot (on plane). 0 on rover/copter
+        -- So if it's less than 10000 assume no GCS packet received since boot
+        if link_lost_for > (RCK_TIMEOUT:get() * 1000) and not gcs:get_high_latency_status() and gcs:last_seen() > 10000 then
             gcs:enable_high_latency_connections(true)
-        elseif link_lost_for < 5000 and gcs:get_high_latency_status() then
+        elseif link_lost_for < (RCK_TIMEOUT:get() * 1000) and gcs:get_high_latency_status() then
             gcs:enable_high_latency_connections(false)
         end
     end
     
-    -- send HL2 packet every 30 sec, if not aleady in a mailbox check
+    -- send HL2 packet every RCK_PERIOD sec, if not aleady in a mailbox check
     if rockblock.modem_detected and gcs:get_high_latency_status() and
         (millis():tofloat() * 0.001) - rockblock.time_last_tx > RCK_PERIOD:get() and not rockblock.is_transmitting then
 

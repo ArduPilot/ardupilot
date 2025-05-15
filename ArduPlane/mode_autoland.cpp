@@ -4,6 +4,10 @@
 
 #if MODE_AUTOLAND_ENABLED
 
+// This is added to the target altitude to make sure the true target is exceeded.
+// This should be larger than the expected steady state error.
+constexpr float fast_climb_extra_alt = 10;
+
 /*
   mode AutoLand parameters
  */
@@ -43,13 +47,13 @@ const AP_Param::GroupInfo ModeAutoLand::var_info[] = {
     AP_GROUPINFO("OPTIONS", 4, ModeAutoLand, options, 0),
 
     // @Param: CLIMB
-    // @DisplayName: Minimum climb before turning upon entry
-    // @Description: Vehicle will climb with limited turn ability (LEVEL_ROLL_LIMIT) upon mode entry by at least this amount, before proceeding to loiter-to-alt and landing legs.
+    // @DisplayName: Minimum altitude above terrain before turning upon entry
+    // @Description: Vehicle will climb with limited turn ability (LEVEL_ROLL_LIMIT) until it is at least this altitude above the terrain at the point of entry, before proceeding to loiter-to-alt and landing legs. 0 Disables.
     // @Range: 0 100
     // @Increment: 1
     // @Units: m
     // @User: Standard
-    AP_GROUPINFO("CLIMB", 5, ModeAutoLand, climb_min, 0),
+    AP_GROUPINFO("CLIMB", 5, ModeAutoLand, terrain_alt_min, 0),
 
 
     AP_GROUPEND
@@ -151,29 +155,35 @@ bool ModeAutoLand::_enter()
 
     // May need to climb first
     bool climb_first = false;
-    if (climb_min > 0) {
-        // Copy loiter and update target altitude to current altitude plus climb altitude
-        cmd_climb = cmd_loiter;
-        float abs_alt;
-        if (plane.current_loc.get_alt_m(Location::AltFrame::ABSOLUTE, abs_alt)) {
-            // Add 10m to ensure full rate climb past target altitude
-            cmd_climb.content.location.set_alt_m(abs_alt + climb_min + 10, Location::AltFrame::ABSOLUTE);
-            climb_first = true;
+    if (terrain_alt_min > 0) {
+        // Work out the distance needed to climb above terrain
+#if AP_TERRAIN_AVAILABLE
+        const bool use_terrain = plane.terrain_enabled_in_current_mode();
+#else
+        const bool use_terrain = false;
+#endif
+        const float dist_to_climb = terrain_alt_min - plane.relative_ground_altitude(plane.g.rangefinder_landing, use_terrain);
+        if (is_positive(dist_to_climb)) {
+            // Copy loiter and update target altitude to current altitude plus climb altitude
+            cmd_climb = cmd_loiter;
+            float abs_alt;
+            if (plane.current_loc.get_alt_m(Location::AltFrame::ABSOLUTE, abs_alt)) {
+                cmd_climb.content.location.set_alt_m(abs_alt + dist_to_climb + fast_climb_extra_alt, Location::AltFrame::ABSOLUTE);
+                climb_first = true;
+            }
         }
     }
 
 #if AP_TERRAIN_AVAILABLE
     // Update loiter location to be relative terrain if enabled
     if (plane.terrain_enabled_in_current_mode()) {
-        cmd_loiter.content.location.terrain_alt = 1;
+        cmd_loiter.content.location.set_alt_m(final_wp_alt, Location::AltFrame::ABOVE_TERRAIN);
     };
 #endif
     // land WP at home
     cmd_land.id = MAV_CMD_NAV_LAND;
     cmd_land.content.location = home;
-    
-    entry_alt = plane.current_loc.alt;
-    
+
     // start first leg toward the base leg loiter to alt point
     if (climb_first) {
         stage = AutoLandStage::CLIMB;
@@ -213,10 +223,9 @@ void ModeAutoLand::navigate()
         // Update loiter, although roll limit is applied the vehicle will still navigate (slowly)
         plane.update_loiter(cmd_climb.p1);
 
-        int32_t alt_diff;
-        alt_diff = plane.current_loc.alt - entry_alt;
-        if (plane.reached_loiter_target() || (alt_diff > climb_min * 100)) {
-            // Reached destination or cant get alt or Climb is done, move onto loiter
+        ftype dist;
+        if (plane.reached_loiter_target() || !cmd_climb.content.location.get_height_above(plane.current_loc, dist) || (dist < fast_climb_extra_alt)) {
+            // Reached destination or Climb is done, move onto loiter
             plane.auto_state.next_wp_crosstrack = true;
             stage = AutoLandStage::LOITER;
             plane.start_command(cmd_loiter);
@@ -270,7 +279,7 @@ void ModeAutoLand::check_takeoff_direction()
     }
 }
 
-// Sets autoland direction using ground course + offest parameter
+// Sets autoland direction using ground course + offset parameter
 void ModeAutoLand::set_autoland_direction(const float heading)
 {
     plane.takeoff_state.initial_direction.heading = wrap_360(heading);
@@ -295,6 +304,12 @@ void ModeAutoLand::arm_check(void)
         set_autoland_direction(plane.ahrs.yaw_sensor * 0.01);
     }
 }
+
+bool ModeAutoLand::is_landing() const
+{
+    return (plane.flight_stage == AP_FixedWing::FlightStage::LAND);
+}
+
 
 #endif // MODE_AUTOLAND_ENABLED
 

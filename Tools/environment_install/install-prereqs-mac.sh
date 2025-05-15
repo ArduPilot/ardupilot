@@ -161,7 +161,7 @@ if [[ $DO_AP_STM_ENV -eq 1 ]]; then
     install_arm_none_eabi_toolchain
 fi
 
-PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect geocoder flake8 junitparser empy==3.3.4 dronecan"
+PYTHON_PKGS="setuptools future lxml matplotlib pymavlink MAVProxy pexpect geocoder flake8 junitparser empy==3.3.4 dronecan"
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
     PYTHON_PKGS="$PYTHON_PKGS intelhex gnureadline"
@@ -172,7 +172,7 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
 fi
 
 $PIP install --upgrade pip
-$PIP install wheel
+$PIP install --force-reinstall wheel
 $PIP install $PYTHON_PKGS
 
 echo "Adding ArduPilot Tools to environment"

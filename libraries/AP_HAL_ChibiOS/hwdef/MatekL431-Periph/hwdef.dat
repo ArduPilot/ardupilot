@@ -47,14 +47,14 @@ define HAL_BARO_ALLOW_INIT_NO_BARO
 BARO SPL06 I2C:0:0x76
 
 # ------------------ I2C airspeed -------------------------
-define HAL_PERIPH_ENABLE_AIRSPEED
+define AP_PERIPH_AIRSPEED_ENABLED 1
 
 # MS4525 sensor by default
 define HAL_AIRSPEED_TYPE_DEFAULT 1
 define AIRSPEED_MAX_SENSORS 1
 
 # -------------------- MSP --------------------------------
-define HAL_PERIPH_ENABLE_MSP
+define AP_PERIPH_MSP_ENABLED 1
 define HAL_MSP_ENABLED 1
 define AP_PERIPH_MSP_PORT_DEFAULT 1
 
@@ -78,8 +78,8 @@ PB0 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
 PB1 BATT2_CURRENT_SENS ADC1 SCALE(1)
 
 # -------------------- Buzzer+NeoPixels --------------d------
-define HAL_PERIPH_ENABLE_RC_OUT
-define HAL_PERIPH_ENABLE_NOTIFY
+define AP_PERIPH_RC_OUT_ENABLED 1
+define AP_PERIPH_NOTIFY_ENABLED 1
 
 
 define HAL_SERIAL_ESC_COMM_ENABLED 1

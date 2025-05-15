@@ -14,8 +14,8 @@ FLASH_RESERVE_START_KB 34
 STORAGE_FLASH_PAGE 126
 define HAL_STORAGE_SIZE 800
 
-# board ID for firmware load
-APJ_BOARD_ID 1005
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_ZUBAXGNSS
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -97,8 +97,6 @@ define PORT_INT_REQUIRED_STACK 64
 #defined to turn off undef warnings
 define __FPU_PRESENT 0
 
-define HAL_USE_RTC FALSE
-
 define DMA_RESERVE_SIZE 0
 
 MAIN_STACK 0x200
@@ -126,7 +124,7 @@ define HAL_I2C_INTERNAL_MASK 0
 COMPASS LIS3MDL SPI:lis3mdl false ROTATION_YAW_270
 
 # MS5611 baro
-BARO MS56XX SPI:ms5611
+BARO MS5611 SPI:ms5611
 
 define HAL_BARO_ALLOW_INIT_NO_BARO
 

@@ -15,6 +15,7 @@ class Board(object):
     def __init__(self, name):
         self.name = name
         self.is_ap_periph = False
+        self.toolchain = 'arm-eabi-none'  # FIXME: try to remove this?
         self.autobuild_targets = [
             'Tracker',
             'Blimp',
@@ -37,61 +38,68 @@ def in_blacklist(blacklist, b):
 class BoardList(object):
 
     def set_hwdef_dir(self):
-        self.hwdef_dir = os.path.join(
+        # work out wheer the hwdef files exist.  This file
+        # (board_list.py) is copied into place on the autotest server,
+        # so it isn't always in the same relative position to the
+        # hwdef directories!
+        found = False
+        for relpath_bit in [
+                os.path.join("..", "..", "libraries"),
+                'libraries',
+        ]:
+            probe = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                relpath_bit, "AP_HAL_ChibiOS", "hwdef"
+            )
+            if os.path.exists(probe):
+                found = True
+                break
+
+        if not found:
+            raise ValueError("Did not find hwdef_dir")
+
+        realpath = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
-            "..", "..", "libraries", "AP_HAL_ChibiOS", "hwdef")
+            relpath_bit
+        )
 
-        if os.path.exists(self.hwdef_dir):
-            return
-
-        self.hwdef_dir = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "libraries", "AP_HAL_ChibiOS", "hwdef")
-
-        if os.path.exists(self.hwdef_dir):
-            # we're on the autotest server and have been copied in
-            # to the APM root directory
-            return
-
-        raise ValueError("Did not find hwdef_dir")
+        self.hwdef_dir = []
+        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux':
+            self.hwdef_dir.append(os.path.join(realpath, haldir, "hwdef"))
 
     def __init__(self):
         self.set_hwdef_dir()
 
         # no hwdefs for Linux boards - yet?
         self.boards = [
-            Board("erlebrain2"),
-            Board("navigator"),
-            Board("navigator64"),
-            Board("navio"),
-            Board("navio2"),
-            Board("edge"),
-            Board("obal"),
-            Board("pxf"),
-            Board("bbbmini"),
-            Board("bebop"),
-            Board("blue"),
-            Board("pxfmini"),
-            Board("canzero"),
             Board("SITL_x86_64_linux_gnu"),
             Board("SITL_arm_linux_gnueabihf"),
         ]
 
-        for adir in os.listdir(self.hwdef_dir):
+        for hwdef_dir in self.hwdef_dir:
+            self.add_hwdefs_from_hwdef_dir(hwdef_dir)
+
+    def add_hwdefs_from_hwdef_dir(self, hwdef_dir):
+        for adir in os.listdir(hwdef_dir):
             if adir is None:
                 continue
-            if not os.path.isdir(os.path.join(self.hwdef_dir, adir)):
+            if not os.path.isdir(os.path.join(hwdef_dir, adir)):
                 continue
             if adir in ["scripts", "common", "STM32CubeConf"]:
                 continue
-            filepath = os.path.join(self.hwdef_dir, adir, "hwdef.dat")
+            filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
             if not os.path.exists(filepath):
                 continue
-            filepath = os.path.join(self.hwdef_dir, adir, "hwdef.dat")
+            filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
+
+            # FIXME: we really should be using hwdef.py to parse
+            # these, but it's too slow.  We use board_list in some
+            # places we can't afford to be slow.
             text = self.read_hwdef(filepath)
 
             board = Board(adir)
             self.boards.append(board)
+            board_toolchain_set = False
             for line in text:
                 if re.match(r"^\s*env AP_PERIPH 1", line):
                     board.is_ap_periph = 1
@@ -108,6 +116,22 @@ class BoardList(object):
                         board.autobuild_targets = [
                             x.rstrip().lstrip().lower() for x in mname.split(",")
                         ]
+
+                m = re.match(r"\s*env\s*TOOLCHAIN\s*([-\w]+)\s*", line)
+                if m is not None:
+                    board.toolchain = m.group(1)
+                    board_toolchain_set = True
+                    if board.toolchain == 'native':
+                        board.toolchain = None
+
+            # toolchain not in hwdef; make up some defaults:
+            if not board_toolchain_set:
+                if "Linux" in hwdef_dir:
+                    board.toolchain = 'arm-linux-gnueabihf'
+                elif "ChibiOS" in hwdef_dir:
+                    board.toolchain = 'arm-none-eabi'
+                else:
+                    raise ValueError(f"Unable to determine toolchain for {adir}")
 
     def read_hwdef(self, filepath):
         fh = open(filepath)

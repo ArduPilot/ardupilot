@@ -42,7 +42,7 @@ void Copter::update_throttle_hover()
     }
 
     // do not update while climbing or descending
-    if (!is_zero(pos_control->get_vel_desired_cms().z)) {
+    if (!is_zero(pos_control->get_vel_desired_NEU_cms().z)) {
         return;
     }
 
@@ -62,12 +62,14 @@ void Copter::update_throttle_hover()
 
 // get_pilot_desired_climb_rate - transform pilot's throttle input to climb rate in cm/s
 // without any deadzone at the bottom
-float Copter::get_pilot_desired_climb_rate(float throttle_control)
+float Copter::get_pilot_desired_climb_rate()
 {
     // throttle failsafe check
     if (failsafe.radio || !rc().has_ever_seen_rc_input()) {
         return 0.0f;
     }
+
+    float throttle_control = copter.channel_throttle->get_control_in();
 
 #if TOY_MODE_ENABLED
     if (g2.toy_mode.enabled()) {
@@ -115,7 +117,7 @@ void Copter::set_accel_throttle_I_from_pilot_throttle()
     // get last throttle input sent to attitude controller
     float pilot_throttle = constrain_float(attitude_control->get_throttle_in(), 0.0f, 1.0f);
     // shift difference between pilot's throttle and hover throttle into accelerometer I
-    pos_control->get_accel_z_pid().set_integrator((pilot_throttle-motors->get_throttle_hover()) * 1000.0f);
+    pos_control->get_accel_U_pid().set_integrator((pilot_throttle-motors->get_throttle_hover()) * 1000.0f);
 }
 
 // rotate vector from vehicle's perspective to North-East frame

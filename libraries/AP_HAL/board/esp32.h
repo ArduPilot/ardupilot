@@ -17,6 +17,10 @@
 #include "esp32s3devkit.h" //Nick K. on discord
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3EMPTY
 #include "esp32s3empty.h"
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3M5STAMPFLY
+#include "esp32s3m5stampfly.h" // https://shop.m5stack.com/products/m5stamp-fly-with-m5stamps3
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_IMU_MODULE_V11
+#include "esp32imu_module_v11.h" //makerfabs esp32 imu module v1.1
 #else
 #error "Invalid CONFIG_HAL_BOARD_SUBTYPE for esp32"
 #endif
@@ -34,6 +38,10 @@
 
 #define O_CLOEXEC 0
 #define HAL_STORAGE_SIZE (16384)
+
+#ifndef HAL_PROGRAM_SIZE_LIMIT_KB
+#define HAL_PROGRAM_SIZE_LIMIT_KB 2048
+#endif
 
 #ifdef __cplusplus
 // allow for static semaphores
@@ -54,7 +62,7 @@
 #define HAL_MEM_CLASS HAL_MEM_CLASS_192
 
 // disable uncommon stuff that we'd otherwise get 
-#define HAL_EXTERNAL_AHRS_ENABLED 0
+#define AP_EXTERNAL_AHRS_ENABLED 0
 #define HAL_GENERATOR_ENABLED 0
 
 #define __LITTLE_ENDIAN  1234
@@ -131,3 +139,7 @@
 
 // remove once ESP32 isn't so chronically slow
 #define AP_SCHEDULER_OVERTIME_MARGIN_US 50000UL
+
+#ifndef AP_NOTIFY_BUZZER_ENABLED
+#define AP_NOTIFY_BUZZER_ENABLED 1
+#endif

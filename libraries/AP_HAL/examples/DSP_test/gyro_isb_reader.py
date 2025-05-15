@@ -3,8 +3,6 @@
 '''
 extract ISBH and ISBD messages from AP_Logging files and produce C++ arrays for consumption by the DSP subsystem
 '''
-from __future__ import print_function
-
 import os
 import sys
 import time

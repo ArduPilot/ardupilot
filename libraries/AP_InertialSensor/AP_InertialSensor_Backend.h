@@ -90,7 +90,7 @@ public:
     // get a startup banner to output to the GCS
     virtual bool get_output_banner(char* banner, uint8_t banner_len) { return false; }
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     virtual void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt) {}
 #endif
 
@@ -100,6 +100,12 @@ public:
     bool has_been_killed(uint8_t instance) const { return false; }
 #endif
 
+    // get the backend update rate for the gyro in Hz
+    // if the backend polling rate is the same as the sample rate or higher, return raw sample rate
+    // override and return the backend rate in Hz if it is lower than the sample rate
+    virtual uint16_t get_gyro_backend_rate_hz() const {
+        return _gyro_raw_sample_rate(gyro_instance);
+    }
 
     /*
       device driver IDs. These are used to fill in the devtype field
@@ -236,9 +242,6 @@ protected:
 
     // return true if the sensors are still converging and sampling rates could change significantly
     bool sensors_converging() const;
-
-    // set accelerometer max absolute offset for calibration
-    void _set_accel_max_abs_offset(uint8_t instance, float offset);
 
     // get accelerometer raw sample rate.
     float _accel_raw_sample_rate(uint8_t instance) const {

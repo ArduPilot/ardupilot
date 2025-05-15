@@ -5,8 +5,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1125
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_BETAFPV_F405
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -153,6 +153,9 @@ define HAL_INS_TEMPERATURE_CAL_ENABLE 1
 define AP_BARO_SPL06_BACKGROUND_ENABLE 1
 # 4S version has no baro
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
+
+# enable baro thrust scaling
+define AP_BARO_THST_COMP_ENABLED 1
 
 include ../include/minimize_fpv_osd.inc
 AUTOBUILD_TARGETS Copter

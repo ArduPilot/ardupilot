@@ -4,8 +4,6 @@
 check that replay produced identical results
 '''
 
-from __future__ import print_function
-
 def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose=False, accuracy=0.0, ignores=set()):
     '''check replay log for matching output'''
     from pymavlink import mavutil

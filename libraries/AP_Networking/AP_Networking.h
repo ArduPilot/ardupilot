@@ -287,7 +287,19 @@ private:
         bool have_received;
         bool close_on_recv_error;
         uint32_t last_udp_srv_recv_time_ms;
+
+        // statistics
+        uint32_t tx_stats_bytes;
+        uint32_t rx_stats_bytes;
+
         HAL_Semaphore sem;
+
+    protected:
+#if HAL_UART_STATS_ENABLED
+        // Getters for cumulative tx and rx counts
+        uint32_t get_total_tx_bytes() const override { return tx_stats_bytes; }
+        uint32_t get_total_rx_bytes() const override { return rx_stats_bytes; }
+#endif
     };
 #endif // AP_NETWORKING_REGISTER_PORT_ENABLED
 

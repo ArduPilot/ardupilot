@@ -1,8 +1,7 @@
 #include "Rover.h"
 
 #define AR_CIRCLE_ACCEL_DEFAULT         1.0 // default acceleration in m/s/s if not specified by user
-#define AR_CIRCLE_RADIUS_MIN            0.5 // minimum radius in meters
-#define AR_CIRCLE_REACHED_EDGE_DIST     0.2 // vehicle has reached edge if within 0.2m
+#define AR_CIRCLE_RADIUS_MIN            0.1 // minimum radius in meters
 
 const AP_Param::GroupInfo ModeCircle::var_info[] = {
 
@@ -39,12 +38,21 @@ ModeCircle::ModeCircle() : Mode()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+// get the distance at which the vehicle is considered to be on track along the circle
+float ModeCircle::get_reached_distance() const
+{
+    if (config.radius >= 0.5) {
+        return 0.2;
+    }
+    return 0.1;
+}
+
 // initialise with specific center location, radius (in meters) and direction
 // replaces use of _enter when initialised from within Auto mode
 bool ModeCircle::set_center(const Location& center_loc, float radius_m, bool dir_ccw)
 {
     Vector2f center_pos_cm;
-    if (!center_loc.get_vector_xy_from_origin_NE(center_pos_cm)) {
+    if (!center_loc.get_vector_xy_from_origin_NE_cm(center_pos_cm)) {
         return false;
     }
     if (!_enter()) {
@@ -158,12 +166,12 @@ void ModeCircle::update()
     // Update depending on stage
     if (!reached_edge) {
         update_drive_to_radius();
-    } else if (dist_to_edge_m > 2 * MAX(g2.turn_radius, AR_CIRCLE_REACHED_EDGE_DIST) && !tracking_back) {
+    } else if (dist_to_edge_m > 2 * MAX(g2.turn_radius, get_reached_distance()) && !tracking_back) {
         // if more than 2* turn_radius outside circle radius, slow vehicle by 20%
         config.speed = 0.8 * config.speed;
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Circle: cannot keep up, slowing to %.1fm/s", config.speed);
         tracking_back = true;
-    } else if (dist_to_edge_m < MAX(g2.turn_radius, AR_CIRCLE_REACHED_EDGE_DIST) && tracking_back) {
+    } else if (dist_to_edge_m < MAX(g2.turn_radius, get_reached_distance()) && tracking_back) {
         // if within turn_radius, call the vehicle back on track
         tracking_back = false;
     } else {
@@ -184,7 +192,7 @@ void ModeCircle::update()
 void ModeCircle::update_drive_to_radius()
 {
     // check if vehicle has reached edge of circle
-    const float dist_thresh_m = MAX(g2.turn_radius, AR_CIRCLE_REACHED_EDGE_DIST);
+    const float dist_thresh_m = MAX(g2.turn_radius, get_reached_distance());
     reached_edge |= dist_to_edge_m <= dist_thresh_m;
 
     // calculate target point's position, velocity and acceleration
