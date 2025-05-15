@@ -24,61 +24,84 @@
 #include "AP_RangeFinder_Ainstein_LR_D1.h"
 #include <GCS_MAVLink/GCS.h>
 
+#include <AP_HAL/utility/sparse-endian.h>
+
+static const uint8_t PACKET_HEADER_MSB = 0xEB;
+static const uint8_t PACKET_HEADER_LSB = 0x90;
+
+// make sure we know what size the packet object is:
+// assert_storage_size<AP_RangeFinder_Ainstein_LR_D1::LRD1Union::LRD1Packet, 32> _assert_storage_lrd1_packet;
+
+// ensures that there is a packet starting at offset 0 in the buffer.
+// If that's not the case this returns false.  Search starts at offset
+// start in the buffer - if a packet header is found at a non-zero
+// offset then the data is moved to the start of the buffer.
+bool AP_RangeFinder_Ainstein_LR_D1::move_signature_in_buffer(uint8_t start)
+{
+    for (uint8_t i=start; i<buffer_used; i++) {
+        if (u.buffer[i] == PACKET_HEADER_MSB) {
+            memmove(&u.buffer[0], &u.buffer[i], buffer_used-i);
+            buffer_used -= i;
+            return true;
+        }
+    }
+    // header byte not in buffer
+    buffer_used = 0;
+    return false;
+}
+
+uint8_t AP_RangeFinder_Ainstein_LR_D1::LRD1Union::calculate_checksum() const
+{
+    // the -4 here is 3 bytes of header and 1 byte of checksum
+    return crc_sum_of_bytes(&buffer[3], sizeof(u.packet)-4);
+}
+
 // get_reading - read a value from the sensor
 bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
 {
-    if (uart == nullptr || uart->available() == 0) {
+    if (uart == nullptr) {
         return false;
     }
 
-    bool has_data = false;
+    const uint8_t num_read = uart->read(&u.buffer[buffer_used], ARRAY_SIZE(u.buffer)-buffer_used);
+    buffer_used += num_read;
 
-    uint32_t available = MAX(uart->available(), static_cast<unsigned int>(PACKET_SIZE*4));
-    while (available >= PACKET_SIZE) {
-        // ---------------
-        // Sync up with the header
-        const uint8_t header[] = {
-            0xEB,   // Header MSB
-            0x90,   // Header LSB
-            0x00   // Device ID
-        };
-        for (uint8_t i = 0; i<ARRAY_SIZE(header); i++) {
-            available--;
-            if (uart->read() != header[i]) {
-                continue;
-            }
-        }
+    if (buffer_used == 0) {
+        return false;
+    }
 
-        const uint8_t rest_of_packet_size = (PACKET_SIZE - ARRAY_SIZE(header));
-        if (available < rest_of_packet_size) {  
-            return false;
-        }
+    if (!move_signature_in_buffer(0)) {
+        return false;
+    }
 
-        // ---------------
-        // header is aligned!
-        // ---------------
+    if (buffer_used < sizeof(u.packet)) {
+        return false;
+    }
 
-        uint8_t buffer[rest_of_packet_size];
-        available -= uart->read(buffer, ARRAY_SIZE(buffer));
+    // sanity checks; see data sheet on these fixed values.
+    if (u.packet.header_lsb != PACKET_HEADER_LSB ||
+        u.packet.device_id != 0x00 ||
+        u.packet.length != 28 ||
+        u.packet.objects_number != 1 ||
+        u.calculate_checksum() != u.packet.checksum) {
+        // sanity checks failed - discard and try again next time we're called:
+        move_signature_in_buffer(1);
+        return false;
+    }
 
-        const uint8_t checksum = buffer[ARRAY_SIZE(buffer)-1]; // last byte is a checksum
-        if (crc_sum_of_bytes(buffer, ARRAY_SIZE(buffer)-1) != checksum) {
-            // bad Checksum
-            continue;
-        }
-
-        const uint8_t malfunction_alert = buffer[1];
-        reading_m = UINT16_VALUE(buffer[3], buffer[4]) * 0.01;
-        const uint8_t snr = buffer[5];
+    reading_m = be16toh(u.packet.object1_alt) * 0.01;
 
 #if AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
         const uint32_t now_ms = AP_HAL::millis();
+        const uint8_t malfunction_alert = u.packet.malfunction_alert;
         if (malfunction_alert_prev != malfunction_alert && now_ms - malfunction_alert_last_send_ms >= 1000) {
             report_malfunction(malfunction_alert, malfunction_alert_prev);
             malfunction_alert_prev = malfunction_alert;
             malfunction_alert_last_send_ms = now_ms;
         }
 #endif
+
+    const uint8_t snr = u.packet.object1_snr;
 
         /* From datasheet:
             Altitude measurements associated with a SNR value 
@@ -90,6 +113,8 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
             measurements independently of the corresponding SNR values. 
         */
         signal_quality_pct = (snr <= 13 || malfunction_alert != 0) ? RangeFinder::SIGNAL_QUALITY_MIN : RangeFinder::SIGNAL_QUALITY_MAX;
+
+    bool has_data = false;
 
         if (snr <= 13) {            
             has_data = false;           
@@ -103,7 +128,9 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
             has_data = true;
             state.status = RangeFinder::Status::Good;
         }
-    }
+
+    // consume this packet:
+    move_signature_in_buffer(sizeof(u.packet));
 
     return has_data;
 }
