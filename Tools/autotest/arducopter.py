@@ -4,6 +4,8 @@ Fly Copter in SITL
 AP_FLAKE8_CLEAN
 '''
 
+from __future__ import annotations
+
 import copy
 import math
 import os
@@ -9956,27 +9958,39 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.reboot_sitl()
             self.fly_rangefinder_drivers_fly([x.name for x in do_drivers])
 
-    def RangeFinderDriversMaxAlt(self):
+    def RangeFinderDriversMaxAlt_FlyDriver(self,
+                                           name : str,
+                                           rngfnd_type : int,
+                                           simname : str,
+                                           maxalt : float,
+                                           sqalt : float | None = None,
+                                           sq_at_sqalt : float | None = None,
+                                           ):
         '''test max-height behaviour'''
         # lightwareserial goes to 130m when out of range
+        self.progress(f"Flying {name}")
         self.set_parameters({
             "SERIAL4_PROTOCOL": 9,
-            "RNGFND1_TYPE": 8,
+            "RNGFND1_TYPE": rngfnd_type,
             "WPNAV_SPEED_UP": 1000,  # cm/s
         })
         self.customise_SITL_commandline([
-            "--serial4=sim:lightwareserial",
+            f"--serial4=sim:{simname}",
         ])
+        takeoff_alt = sqalt
+        if sqalt is None:
+            takeoff_alt = maxalt
         self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
-        self.takeoff(95, mode='GUIDED', timeout=240, max_err=0.5)
-        self.assert_rangefinder_distance_between(90, 100)
+        self.takeoff(takeoff_alt, mode='GUIDED', timeout=240, max_err=0.5)
+        self.assert_rangefinder_distance_between(takeoff_alt-5, takeoff_alt+5)
 
-        self.wait_rangefinder_distance(90, 100)
+        self.wait_rangefinder_distance(takeoff_alt-5, takeoff_alt+5)
 
         rf_bit = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION
 
         self.assert_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
-        self.assert_distance_sensor_quality(100)
+        if sq_at_sqalt is not None:
+            self.assert_distance_sensor_quality(sq_at_sqalt)
 
         self.progress("Moving higher to be out of max rangefinder range")
         self.fly_guided_move_local(0, 0, 150)
@@ -9986,7 +10000,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.assert_distance_sensor_quality(1)
 
-        self.do_RTL()
+        # life's too short for soft landings:
+        self.disarm_vehicle(force=True)
+
+    def RangeFinderDriversMaxAlt(self) -> None:
+        '''test max-height behaviour'''
+        self.RangeFinderDriversMaxAlt_FlyDriver(
+            name="LightwareSerial",
+            rngfnd_type=8,
+            simname='lightwareserial',
+            maxalt=100,
+            sqalt=95,
+            sq_at_sqalt=100,
+        )
 
     def RangeFinderDriversLongRange(self):
         '''test rangefinder above 327m'''
