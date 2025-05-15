@@ -607,7 +607,6 @@ void NavEKF3_core::SelectVelPosFusion()
 
     // if we are using GPS, check for a change in receiver and reset position and height
     if (gpsDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (posxy_source == AP_NavEKF_Source::SourceXY::GPS) && (gpsDataDelayed.sensor_idx != last_gps_idx || posxy_source_reset)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "fuse gps 2, %u", gpsDataToFuse);
         // mark a source reset as consumed
         posxy_source_reset = false;
 
@@ -844,8 +843,6 @@ void NavEKF3_core::FuseVelPosNED()
         varInnovVelPos[3] = P[7][7] + R_OBS_DATA_CHECKS[3];
         varInnovVelPos[4] = P[8][8] + R_OBS_DATA_CHECKS[4];
 
-        // TODO (EF): enabling this pos check causes conflict with GPS using external nav
-        if (gpsDataToFuse) {
             // Apply an innovation consistency threshold test
             // Don't allow test to fail if not navigating and using a constant position
             // assumption to constrain tilt errors because innovations can become large
@@ -857,7 +854,7 @@ void NavEKF3_core::FuseVelPosNED()
             if (posTestRatio < 1.0f || (PV_AidingMode == AID_NONE)) {
                 posCheckPassed = true;
                 lastGpsPosPassTime_ms = imuSampleTime_ms;
-            } else if ((frontend->_gpsGlitchRadiusMax <= 0) && (PV_AidingMode != AID_NONE)) {
+            } else if ((gpsDataToFuse && frontend->_gpsGlitchRadiusMax <= 0) && (PV_AidingMode != AID_NONE)) {
                 // Handle the special case where the glitch radius parameter has been set to a non-positive number.
                 // The innovation variance is increased to limit the state update to an amount corresponding
                 // to a test ratio of 1.
@@ -873,8 +870,23 @@ void NavEKF3_core::FuseVelPosNED()
             if (posCheckPassed || posTimeout || badIMUdata) {
                 // if timed out or outside the specified uncertainty radius, reset to the external sensor
                 // if velocity drift is being constrained, dont reset until gps passes quality checks
-                const bool posVarianceIsTooLarge = (frontend->_gpsGlitchRadiusMax > 0) && (P[8][8] + P[7][7]) > sq(ftype(frontend->_gpsGlitchRadiusMax));
-                if ((posTimeout || posVarianceIsTooLarge) && (!velAiding || gpsGoodToAlign)) {
+                bool posVarianceIsTooLarge = false;
+                if (extNavDataToFuse)
+                {
+                    posVarianceIsTooLarge = (P[8][8] + P[7][7]) > sq(ftype(extNavDataDelayed.posErr));
+                }
+                else if (gpsDataToFuse)
+                {
+                    posVarianceIsTooLarge = (frontend->_gpsGlitchRadiusMax > 0) && (P[8][8] + P[7][7]) > sq(ftype(frontend->_gpsGlitchRadiusMax));
+                }
+                else
+                {
+                    // (EF): This triggers on the ground
+                    // TODO (EF): Do we need to handle this case for beacons?
+                    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "posVarianceIsTooLarge w/o extnav or GPS");
+                }
+
+                if ((posTimeout || posVarianceIsTooLarge) && (!velAiding || (gpsGoodToAlign && gpsDataToFuse))) {
                     // reset the position to the current external sensor position
                     ResetPosition(resetDataSource::DEFAULT);
 
@@ -884,7 +896,19 @@ void NavEKF3_core::FuseVelPosNED()
                     // Reset the position variances and corresponding covariances to a value that will pass the checks
                     zeroRows(P,7,8);
                     zeroCols(P,7,8);
-                    P[7][7] = sq(ftype(0.5f*frontend->_gpsGlitchRadiusMax));
+                    if (extNavDataToFuse)
+                    {
+                        P[7][7] = sq(ftype(0.5f*extNavDataDelayed.posErr));
+                    }
+                    else if (gpsDataToFuse)
+                    {
+                        P[7][7] = sq(ftype(0.5f*frontend->_gpsGlitchRadiusMax));
+                    }
+                    else
+                    {
+                        // (EF): Doesn't seem to trigger
+                        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "reset pos variance w/o extnav or GPS");
+                    }
                     P[8][8] = P[7][7];
 
                     // Reset the normalised innovation to avoid failing the bad fusion tests
@@ -904,7 +928,6 @@ void NavEKF3_core::FuseVelPosNED()
             } else {
                 fusePosData = false;
             }
-        }
     }
 
         // Test velocity measurements
@@ -933,7 +956,7 @@ void NavEKF3_core::FuseVelPosNED()
             if (velTestRatio < 1.0) {
                 velCheckPassed = true;
                 lastVelPassTime_ms = imuSampleTime_ms;
-            } else if (frontend->_gpsGlitchRadiusMax <= 0) {
+            } else if (gpsDataToFuse && frontend->_gpsGlitchRadiusMax <= 0) {
                 // Handle the special case where the glitch radius parameter has been set to a non-positive number.
                 // The innovation variance is increased to limit the state update to an amount corresponding
                 // to a test ratio of 1.
