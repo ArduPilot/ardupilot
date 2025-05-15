@@ -496,8 +496,7 @@ void SITL_State::set_height_agl(void)
     }
 
 #if AP_TERRAIN_AVAILABLE
-    if (_sitl != nullptr &&
-        _sitl->terrain_enable) {
+    if (_sitl->terrain_enable) {
         // get height above terrain from AP_Terrain. This assumes
         // AP_Terrain is working
         float terrain_height_amsl;
@@ -514,10 +513,8 @@ void SITL_State::set_height_agl(void)
     }
 #endif
 
-    if (_sitl != nullptr) {
-        // fall back to flat earth model
-        _sitl->state.height_agl = _sitl->state.altitude - home_alt;
-    }
+    // fall back to flat earth model
+    _sitl->state.height_agl = _sitl->state.altitude - home_alt;
 }
 
 /*
