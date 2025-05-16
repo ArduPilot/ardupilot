@@ -215,7 +215,11 @@ void Copter::rate_controller_thread()
 #endif
 
         // allow changing option at runtime
-        if (get_fast_rate_type() == FastRateType::FAST_RATE_DISABLED || ap.motor_test) {
+        if (get_fast_rate_type() == FastRateType::FAST_RATE_DISABLED || ap.motor_test
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+            || ins.temperature_cal_running()
+#endif
+            ) {
             if (was_using_rate_thread) {
                 disable_fast_rate_loop(rates);
                 was_using_rate_thread = false;
