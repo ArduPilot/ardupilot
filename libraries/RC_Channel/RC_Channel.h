@@ -282,7 +282,10 @@ public:
         MOUNT2_PITCH =       216, // mount3 pitch input
         MOUNT2_YAW =         217, // mount4 yaw input
         LOWEHEISER_THROTTLE= 218, // allows for throttle on slider
+#if AP_RC_TRANSMITTER_TUNING_ENABLED
         TRANSMITTER_TUNING = 219, // use a transmitter knob or slider for in-flight tuning
+        TRANSMITTER_TUNING2 = 220, // use another transmitter knob or slider for in-flight tuning
+#endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
