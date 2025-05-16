@@ -209,7 +209,7 @@ void AC_Autorotation::init(void)
 {
     // Initialisation of head speed controller
     // Set initial collective position to be the current collective position for smooth init
-    const float collective_out = _motors_heli->get_throttle_out();
+    const float collective_out = _motors_heli->get_throttle();
 
     // Reset feed forward filter
     col_trim_lpf.reset(collective_out);
