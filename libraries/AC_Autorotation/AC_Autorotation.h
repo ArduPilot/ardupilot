@@ -126,7 +126,7 @@ private:
 
     // Forward speed controller
     void update_forward_speed_controller(float pilot_norm_accel);
-    AC_PID_Basic _fwd_speed_pid{2.0, 2.0, 0.2, 0.1, 4.0, 0.0, 10.0};  // PID object for vel to accel controller, Default values for kp, ki, kd, kff, imax, filt E Hz, filt D Hz
+    AC_PID_Basic _fwd_speed_pid{0.75, 1.0, 0.1, 0.1, 4.0, 0.0, 10.0};  // PID object for vel to accel controller, Default values for kp, ki, kd, kff, imax, filt E Hz, filt D Hz
     bool _limit_accel;            // Flag used for limiting integrator wind up if vehicle is against an accel or angle limit
     float _desired_vel;           // (m/s) This is the velocity that we want.  This is the variable that is set by the invoking function to request a certain speed
     float _target_vel;            // (m/s) This is the acceleration constrained velocity that we are allowed

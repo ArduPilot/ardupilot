@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.5 8.0
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("XY_ACC_MAX", 7, AC_Autorotation, _param_accel_max, 2.0),
+    AP_GROUPINFO("XY_ACC_MAX", 7, AC_Autorotation, _param_accel_max, 5.0),
 
     // @Param: HS_SENSOR
     // @DisplayName: Main Rotor RPM Sensor 
