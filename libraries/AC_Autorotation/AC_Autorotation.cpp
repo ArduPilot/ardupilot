@@ -673,7 +673,7 @@ void AC_Autorotation::calc_flare_hgt(const float fwd_speed, float climb_rate)
     _calculated_touch_down_hgt = -1.0 * climb_rate * get_touchdown_time();
 
     // Total delta altitude to ground
-    _calculated_flare_hgt = _touch_down_hgt.get() + delta_h;
+    _calculated_flare_hgt = _calculated_touch_down_hgt + delta_h;
 
     // Save these calculated values for use, if the conditions were appropriate for us to consider the value reliable
     if (fabsf(_fwd_speed_pid.get_error()) < 0.2 * _param_target_speed.get() &&  // Check that our forward speed is withing 20% of target
