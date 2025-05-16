@@ -1568,6 +1568,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "Q_WP_SPEED": 700,
             "SIM_SHIP_DSIZE": 10,
             "FOLL_ENABLE": 1,
+            "FOLL_DIST_MAX": 1000,
             "FOLL_SYSID": 17,
             "FOLL_OFS_TYPE": 1,
             "SIM_TERRAIN" : 0,
