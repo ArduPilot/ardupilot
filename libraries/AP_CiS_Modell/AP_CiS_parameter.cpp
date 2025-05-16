@@ -1,4 +1,5 @@
-#include "CiS_parameter.h"
+#include "AP_CiS_parameter.h"
+#include <GCS_MAVLink/GCS.h>
 
 CiS_parameter::CiS_parameter() {
     AP_Param::setup_object_defaults(this, var_info);
@@ -16,3 +17,15 @@ const AP_Param::GroupInfo CiS_parameter::var_info[] = {
 
     AP_GROUPEND
 };
+
+
+void CiS_parameter::update() {
+    static bool last_state = false;
+    bool current = greeting.get();
+
+    if (current && !last_state) {
+        gcs().send_text(MAV_SEVERITY_INFO, "CiS_Modell is Active");
+    }
+
+    last_state = current;
+}

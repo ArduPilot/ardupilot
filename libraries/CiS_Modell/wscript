@@ -1,9 +1,0 @@
-def build(bld):
-    bld.static_library(
-        target='CiS_Modell',
-        source=[
-            'CiS_Modell.cpp',
-            'CiS_parameter.cpp',
-        ],
-        includes=['.'],
-    )

@@ -82,7 +82,7 @@
 
 #include <AP_IBus_Telem/AP_IBus_Telem.h>
 
-#include <CiS_Modell/CiS_Modell.h>
+#include <AP_CiS_Modell/AP_CiS_Modell.h>
 
 class AP_DDS_Client;
 

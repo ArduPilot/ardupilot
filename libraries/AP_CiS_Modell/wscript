@@ -1,0 +1,10 @@
+def build(bld):
+    bld.static_library(
+        target='AP_CiS_Modell',
+        source=[
+            # Add new cpp files here
+            'AP_CiS_Modell.cpp',
+            'AP_CiS_parameter.cpp',
+        ],
+        includes=['.'], #all headers 
+    )

@@ -25,7 +25,7 @@ COMMON_VEHICLE_DEPENDENT_CAN_LIBRARIES = [
 ]
 
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
-    'CiS_Modell',
+    'AP_CiS_Modell',
     'AP_AccelCal',
     'AP_ADC',
     'AP_AHRS',
