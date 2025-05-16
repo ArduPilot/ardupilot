@@ -1464,6 +1464,13 @@ bool AP_Param::allow_set_via_mavlink(uint16_t flags) const
         }
     }
 
+#if HAL_GCS_ENABLED
+    // check the MAVLink library is OK with the concept:
+    if (!gcs().get_allow_param_set()) {
+        return false;
+    }
+#endif  // HAL_GCS_ENABLED
+
     return true;
 }
 
