@@ -721,9 +721,12 @@ bool AC_Autorotation::should_begin_touchdown(void) const
     }
 
     float time_to_ground = fabsf(_hagl / vz);
-    return time_to_ground <= get_touchdown_time();
+    const bool time_check = time_to_ground <= get_touchdown_time();
 
-    // TODO: need to build in _touch_down_hgt protection here too
+    // force the flare if we are below the minimum guard height
+    const bool min_height_check = _hagl < _touch_down_hgt.min_height;
+
+    return time_check || min_height_check;
 }
 
 // smoothly zero velocity and accel
