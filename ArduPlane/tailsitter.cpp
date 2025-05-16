@@ -872,7 +872,9 @@ void Tailsitter_Transition::update()
     }
 
     case TRANSITION_ANGLE_WAIT_VTOL:
-        // nothing to do, this is handled in the fixed wing attitude controller
+        // Switched to Forward flight mode while in transition to VTOL.
+        // Start transition back to forward flight.
+        restart();
         break;
 
     case TRANSITION_DONE:
