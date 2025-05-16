@@ -203,10 +203,6 @@ public:
     virtual bool get_circle_radius(float &radius_m) { return false; }
     virtual bool set_circle_rate(float rate_dps) { return false; }
 
-    // get or set steering and throttle (-1 to +1) (for use by scripting with Rover)
-    virtual bool set_steering_and_throttle(float steering, float throttle) { return false; }
-    virtual bool get_steering_and_throttle(float& steering, float& throttle) { return false; }
-
     // set turn rate in deg/sec and speed in meters/sec (for use by scripting with Rover)
     virtual bool set_desired_turn_rate_and_speed(float turn_rate, float speed) { return false; }
 
@@ -254,6 +250,10 @@ public:
     virtual custom_mode_state* register_custom_mode(const uint8_t number, const char* full_name, const char* short_name) { return nullptr; }
 
 #endif // AP_SCRIPTING_ENABLED
+
+    // get or set steering and throttle (-1 to +1) (for use by scripting with Rover)
+    virtual bool set_steering_and_throttle(float steering, float throttle) { return false; }
+    virtual bool get_steering_and_throttle(float& steering, float& throttle) { return false; }
 
     // returns true if vehicle is in the process of landing
     virtual bool is_landing() const { return false; }
