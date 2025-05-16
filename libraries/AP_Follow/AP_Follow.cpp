@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 
     // @Param: _DIST_MAX
     // @DisplayName: Follow distance maximum
-    // @Description: Follow distance maximum.  targets further than this will be ignored
+    // @Description: Follow distance maximum. If exceeded, the follow estimate will be considered invalid.
     // @Units: m
     // @Range: 1 1000
     // @User: Standard
@@ -846,7 +846,7 @@ void AP_Follow::Log_Write_FOLL()
     UNUSED_RESULT(get_target_location_and_velocity(loc_estimate, vel_estimate));
 
     Location _target_location;
-    UNUSED_RESULT(AP::ahrs().get_location_from_origin_offset_NED(_target_location, _target_pos_ned_m * 0.01));
+    UNUSED_RESULT(AP::ahrs().get_location_from_origin_offset_NED(_target_location, _target_pos_ned_m));
 
     if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
         _target_location.change_alt_frame(Location::AltFrame::ABOVE_HOME);
