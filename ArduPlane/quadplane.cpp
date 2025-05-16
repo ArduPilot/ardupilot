@@ -31,7 +31,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: TRANSITION_MS
     // @DisplayName: Transition time
-    // @Description: Transition time in milliseconds after minimum airspeed is reached
+    // @Description: Transition time in milliseconds after minimum airspeed is reached. This is not used for tilt quadplanes, in tilt quadplanes transition completion occurs when the tilting rotors are fully tilted.
     // @Units: ms
     // @Range: 500 30000
     // @User: Advanced
@@ -1483,6 +1483,7 @@ void SLT_Transition::update()
         transition_state = TRANSITION_DONE;
         transition_start_ms = 0;
         transition_low_airspeed_ms = 0;
+        quadplane.assisted_flight = false;
     }
 
     if (transition_state < TRANSITION_DONE) {
@@ -1588,15 +1589,26 @@ void SLT_Transition::update()
         // transition time, but continue to stabilize
         const uint32_t transition_timer_ms = now - transition_low_airspeed_ms;
         const float trans_time_ms = constrain_float(quadplane.transition_time_ms,500,30000);
-        if (transition_timer_ms > unsigned(trans_time_ms)) {
+
+        // note that tiltrotors complete transition when tilt is fully
+        // forward, checked above
+        if (!quadplane.tiltrotor.enabled() && transition_timer_ms > unsigned(trans_time_ms)) {
             transition_state = TRANSITION_DONE;
             in_forced_transition = false;
             transition_start_ms = 0;
             transition_low_airspeed_ms = 0;
             gcs().send_text(MAV_SEVERITY_INFO, "Transition done");
+            quadplane.assisted_flight = false;
+        } else {
+            quadplane.assisted_flight = true;
         }
 
-        float transition_scale = (trans_time_ms - transition_timer_ms) / trans_time_ms;
+        float transition_scale;
+        if (quadplane.tiltrotor.enabled()) {
+            transition_scale = 1.0 - quadplane.tiltrotor.get_tilt_completion();
+        } else {
+            transition_scale = (trans_time_ms - transition_timer_ms) / trans_time_ms;
+        }
         float throttle_scaled = last_throttle * transition_scale;
 
         // set zero throttle mix, to give full authority to
@@ -1617,7 +1629,6 @@ void SLT_Transition::update()
             const float fw_throttle = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),0) * 0.01;
             throttle_scaled = constrain_float(throttle_scaled * (1.0-ratio) + fw_throttle * ratio, 0.0, 1.0);
         }
-        quadplane.assisted_flight = true;
         quadplane.hold_stabilize(throttle_scaled);
 
         // set desired yaw to current yaw in both desired angle and
