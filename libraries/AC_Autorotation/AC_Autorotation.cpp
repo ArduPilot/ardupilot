@@ -163,13 +163,13 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 10 30
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("FLR_MIN_HGT", 13, AC_Autorotation, _flare_hgt.min_height, 20),
+    AP_GROUPINFO("FLR_MIN_HGT", 13, AC_Autorotation, _flare_hgt.min_height, 6),
 
     // @Param: TD_MIN_HGT
     // @DisplayName: Minimum Touch Down Height
     // @Description: A safety cutoff feature to ensure that the calculated touch down height cannot go below this value. This is the absolute minimum height that the touch down will initiate. Touch down height must be less than flare height. Ensure that this is appropriate for your vehicle.
     // @Units: m
-    // @Range: 10 30
+    // @Range: 0.5 10
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("TD_MIN_HGT", 14, AC_Autorotation, _touch_down_hgt.min_height, 0.5),
@@ -375,8 +375,6 @@ void AC_Autorotation::run_touchdown(void)
     const float col_ff = col_trim_lpf.apply(_motors_heli->get_throttle(), _dt);
 
     // Update collective output
-    // Output of p controller is scaled by 1e-3 as collective to sink rate is extremely sensitive, this makes the gain a more friendly number
-    // TODO: consider using a target normalized controller here
     const float error = target_climb_rate - climb_rate;
     const float col_p = _p_col_td.get_p(error);
     const float collective_out = constrain_value(col_p + col_ff, 0.0f, 1.0f);
