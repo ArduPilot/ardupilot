@@ -83,6 +83,7 @@ private:
             float get(void) const { return height; };
             void reset(void) { set(0.0); }
             AP_Float min_height;
+            AP_Float max_height;
         private:
             float height;
     };

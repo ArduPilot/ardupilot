@@ -191,6 +191,15 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TD_MAX_ANG", 16, AC_Autorotation, _param_max_touchdown_angle, 10),
 
+    // @Param: FLR_MAX_HGT
+    // @DisplayName: Maximum Flare Height
+    // @Description: A safety cutoff feature to ensure that the calculated flare height cannot go above this value. This is the absolute maximum height above ground that the flare will initiate. Ensure that this is appropriate for your vehicle.
+    // @Units: m
+    // @Range: 10 30
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FLR_MAX_HGT", 17, AC_Autorotation, _flare_hgt.max_height, 30),
+
     AP_GROUPEND
 };
 
@@ -229,6 +238,9 @@ void AC_Autorotation::init(void)
     // Reset the guarded height measurements to ensure that they init to the min value
     _flare_hgt.reset();
     _touch_down_hgt.reset();
+
+    // set the guarded heights
+    _touch_down_hgt.max_height = _flare_hgt.min_height;
 
     // ensure the AP_SurfaceDistance object is enabled
 #if AP_RANGEFINDER_ENABLED
@@ -960,7 +972,8 @@ void AC_Autorotation::exit(void)
 // Set height value with protections in place to ensure we do not exceed the minimum value
 void AC_Autorotation::GuardedHeight::set(float hgt)
 {
-    // ensure that min height is positive, we set a min permissible value of 0.1 m
-    const float min_hgt = MAX(min_height.get(), 0.1);
-    height = MAX(min_hgt, hgt);
+    // ensure that min and max heights are positive and remotely sensible
+    const float min_hgt = MAX(min_height.get(), 0.2);
+    const float max_hgt = MAX(max_height.get(), 1.0);
+    height = constrain_float(hgt, min_hgt, max_hgt);
 }
