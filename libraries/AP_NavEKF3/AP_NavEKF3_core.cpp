@@ -1897,9 +1897,9 @@ void NavEKF3_core::ConstrainVariances()
 #if EK3_FEATURE_EXTERNAL_NAV
         if (useExtNavVel) {
             P[6][6] = fmaxF(P[6][6], sq(extNavVelDelayed.err));
-        } else if (gpsDataToFuse)
+        } else 
 #endif
-        {
+        if (gpsDataToFuse) {
             P[6][6] = fmaxF(P[6][6], sq(frontend->_gpsVertVelNoise));
         }
         else {
@@ -1922,9 +1922,9 @@ void NavEKF3_core::ConstrainVariances()
         #if EK3_FEATURE_EXTERNAL_NAV
             if (useExtNavVel) {
                 P[6][6] = sq(extNavVelDelayed.err);
-            } else if (gpsDataToFuse)
+            } else 
         #endif
-            {
+            if (gpsDataToFuse) {
                 P[6][6] = sq(frontend->_gpsVertVelNoise);
             }
             else {

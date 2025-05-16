@@ -512,7 +512,7 @@ void NavEKF3_core::SelectVelPosFusion()
     }
 
     const AP_NavEKF_Source::SourceXY posxy_source = frontend->sources.getPosXYSource();
-    #if EK3_FEATURE_EXTERNAL_NAV
+#if EK3_FEATURE_EXTERNAL_NAV
     // Check for data at the fusion time horizon
     extNavDataToFuse = (posxy_source == AP_NavEKF_Source::SourceXY::EXTNAV) && storedExtNav.recall(extNavDataDelayed, imuDataDelayed.time_ms);
     if (extNavDataToFuse) {
@@ -546,7 +546,6 @@ void NavEKF3_core::SelectVelPosFusion()
     }
 
     // detect position source changes.  Trigger position reset if position source is valid
-    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "posxy_source: %u",(unsigned)posxy_source);
     if (posxy_source != posxy_source_last) {
         posxy_source_reset = (posxy_source != AP_NavEKF_Source::SourceXY::NONE);
         posxy_source_last = posxy_source;
@@ -713,7 +712,9 @@ void NavEKF3_core::FuseVelPosNED()
         R_OBS[4] = R_OBS[0];
         for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
     } else {
+#if EK3_FEATURE_EXTERNAL_NAV
         const bool extNavUsedForVel = extNavVelToFuse && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV);
+#endif
         if (fuseVelData)
         {
 #if EK3_FEATURE_EXTERNAL_NAV
@@ -784,18 +785,18 @@ void NavEKF3_core::FuseVelPosNED()
         // For horizontal GPS velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPS performance
         // plus a margin for manoeuvres. It is better to reject GPS horizontal velocity errors early
         ftype obs_data_chk;
+#if EK3_FEATURE_EXTERNAL_NAV
+        if (extNavUsedForVel) {
+            obs_data_chk = sq(constrain_ftype(extNavVelDelayed.err, 0.05f, 5.0f)) + sq(frontend->extNavVelVarAccScale * accNavMag);
+        } else 
+#endif
         if (gpsDataToFuse)
         {
             obs_data_chk = sq(constrain_ftype(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
-        }
-#if EK3_FEATURE_EXTERNAL_NAV
-        else if (extNavUsedForVel) {
-            obs_data_chk = sq(constrain_ftype(extNavVelDelayed.err, 0.05f, 5.0f)) + sq(frontend->extNavVelVarAccScale * accNavMag);
         } else {
             // TODO (EF): No horizontal vel this update, default value
             obs_data_chk = 5.0f;
         }
-#endif
         R_OBS_DATA_CHECKS[0] = R_OBS_DATA_CHECKS[1] = R_OBS_DATA_CHECKS[2] = obs_data_chk;
 
     }
@@ -803,38 +804,37 @@ void NavEKF3_core::FuseVelPosNED()
     R_OBS[5] = posDownObsNoise;
     for (uint8_t i=3; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
 
-        // TODO (EF): extra indentation for cleaner git diff, remove
-        // if vertical GPS velocity data and an independent height source is being used, check to see if the GPS vertical velocity and altimeter
-        // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
-        // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
-        if (gpsDataDelayed.have_vz && fuseVelData && (frontend->sources.getPosZSource() != AP_NavEKF_Source::SourceZ::GPS)) {
-            // calculate innovations for height and vertical GPS vel measurements
-            const ftype hgtErr  = stateStruct.position.z - velPosObs[5];
-            const ftype velDErr = stateStruct.velocity.z - velPosObs[2];
-            // Check if they are the same sign and both more than 3-sigma out of bounds
-            // Step the test threshold up in stages from 1 to 2 to 3 sigma after exiting
-            // from a previous bad IMU event so that a subsequent error is caught more quickly.
-            const uint32_t timeSinceLastBadIMU_ms = imuSampleTime_ms - badIMUdata_ms;
-            float R_gain;
-            if (timeSinceLastBadIMU_ms > (BAD_IMU_DATA_HOLD_MS * 2)) {
-                R_gain = 9.0F;
-            } else if  (timeSinceLastBadIMU_ms > ((BAD_IMU_DATA_HOLD_MS * 3) / 2)) {
-                R_gain = 4.0F;
-            } else {
-                R_gain = 1.0F;
-            }
-            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > R_gain * R_OBS[5]) && (sq(velDErr) >R_gain * R_OBS[2])) {
-                badIMUdata_ms = imuSampleTime_ms;
-            } else {
-                goodIMUdata_ms = imuSampleTime_ms;
-            }
-            if (timeSinceLastBadIMU_ms < BAD_IMU_DATA_HOLD_MS) {
-                badIMUdata = true;
-                stateStruct.velocity.z = gpsDataDelayed.vel.z;
-            } else {
-                badIMUdata = false;
-            }
+    // If vertical GPS velocity data and an independent height source is being used, check to see if the GPS vertical velocity and altimeter
+    // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
+    // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
+    if (gpsDataDelayed.have_vz && fuseVelData && (frontend->sources.getPosZSource() != AP_NavEKF_Source::SourceZ::GPS)) {
+        // calculate innovations for height and vertical GPS vel measurements
+        const ftype hgtErr  = stateStruct.position.z - velPosObs[5];
+        const ftype velDErr = stateStruct.velocity.z - velPosObs[2];
+        // Check if they are the same sign and both more than 3-sigma out of bounds
+        // Step the test threshold up in stages from 1 to 2 to 3 sigma after exiting
+        // from a previous bad IMU event so that a subsequent error is caught more quickly.
+        const uint32_t timeSinceLastBadIMU_ms = imuSampleTime_ms - badIMUdata_ms;
+        float R_gain;
+        if (timeSinceLastBadIMU_ms > (BAD_IMU_DATA_HOLD_MS * 2)) {
+            R_gain = 9.0F;
+        } else if  (timeSinceLastBadIMU_ms > ((BAD_IMU_DATA_HOLD_MS * 3) / 2)) {
+            R_gain = 4.0F;
+        } else {
+            R_gain = 1.0F;
         }
+        if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > R_gain * R_OBS[5]) && (sq(velDErr) >R_gain * R_OBS[2])) {
+            badIMUdata_ms = imuSampleTime_ms;
+        } else {
+            goodIMUdata_ms = imuSampleTime_ms;
+        }
+        if (timeSinceLastBadIMU_ms < BAD_IMU_DATA_HOLD_MS) {
+            badIMUdata = true;
+            stateStruct.velocity.z = gpsDataDelayed.vel.z;
+        } else {
+            badIMUdata = false;
+        }
+    }
 
     // Test horizontal position measurements
     if (fusePosData) {
@@ -871,11 +871,13 @@ void NavEKF3_core::FuseVelPosNED()
                 // if timed out or outside the specified uncertainty radius, reset to the external sensor
                 // if velocity drift is being constrained, dont reset until gps passes quality checks
                 bool posVarianceIsTooLarge = false;
+#if EK3_FEATURE_EXTERNAL_NAV
                 if (extNavDataToFuse)
                 {
                     posVarianceIsTooLarge = (P[8][8] + P[7][7]) > sq(ftype(extNavDataDelayed.posErr));
-                }
-                else if (gpsDataToFuse)
+                } else 
+#endif
+                if (gpsDataToFuse)
                 {
                     posVarianceIsTooLarge = (frontend->_gpsGlitchRadiusMax > 0) && (P[8][8] + P[7][7]) > sq(ftype(frontend->_gpsGlitchRadiusMax));
                 }
@@ -896,17 +898,18 @@ void NavEKF3_core::FuseVelPosNED()
                     // Reset the position variances and corresponding covariances to a value that will pass the checks
                     zeroRows(P,7,8);
                     zeroCols(P,7,8);
+#if EK3_FEATURE_EXTERNAL_NAV
                     if (extNavDataToFuse)
                     {
                         P[7][7] = sq(ftype(0.5f*extNavDataDelayed.posErr));
-                    }
-                    else if (gpsDataToFuse)
+                    } else
+#endif
+                    if (gpsDataToFuse)
                     {
                         P[7][7] = sq(ftype(0.5f*frontend->_gpsGlitchRadiusMax));
                     }
                     else
                     {
-                        // (EF): Doesn't seem to trigger
                         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "reset pos variance w/o extnav or GPS");
                     }
                     P[8][8] = P[7][7];
