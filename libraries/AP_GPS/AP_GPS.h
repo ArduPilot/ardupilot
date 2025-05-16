@@ -602,6 +602,9 @@ public:
     uint8_t get_auto_switch_type() const { return _auto_switch; }
 #endif
 
+    // Inject a packet of raw binary to a GPS
+    void inject_data(const uint8_t *data, uint16_t len);
+
 protected:
 
     // configuration parameters
@@ -751,7 +754,6 @@ private:
     void handle_gps_inject(const mavlink_message_t &msg);
 
     //Inject a packet of raw binary to a GPS
-    void inject_data(const uint8_t *data, uint16_t len);
     void inject_data(uint8_t instance, const uint8_t *data, uint16_t len);
 
 #if AP_GPS_BLENDED_ENABLED
