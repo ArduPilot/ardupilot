@@ -1,0 +1,10 @@
+# CiS_Modell wafS library
+def build(bld):
+    bld.static_library(
+   target='CiS_parameter',
+        source=[
+            'CiS_Modell.cpp',
+           'CiS_parameter.cpp',
+        ],
+        includes=['.'],
+    )
