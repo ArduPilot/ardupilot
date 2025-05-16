@@ -687,9 +687,8 @@ static bool stm32_flash_write_h7(uint32_t addr, const void *buf, uint32_t count)
     bool success = true;
 
     while (count >= 32) {
-        const uint8_t *b2 = (const uint8_t *)addr;
         // if the bytes already match then skip this chunk
-        if (memcmp(b, b2, 32) != 0) {
+        if (memcmp((void*)addr, b, 32) != 0) {
             // check for erasure
             if (!stm32h7_check_all_ones(addr, 8)) {
                 return false;
@@ -709,7 +708,8 @@ static bool stm32_flash_write_h7(uint32_t addr, const void *buf, uint32_t count)
                 success = false;
                 goto failed;
             }
-            // check contents
+            // check contents after invalidating so we see what actually got written
+            SCB_InvalidateDCache_by_Addr((void*)addr, 32);
             if (memcmp((void*)addr, b, 32) != 0) {
                 success = false;
                 goto failed;
