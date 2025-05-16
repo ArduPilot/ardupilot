@@ -28,7 +28,6 @@ typedef double ftype;
 #define ceilF(x) ceil(x)
 #define fminF(x,y) fmin(x,y)
 #define fmodF(x,y) fmod(x,y)
-#define fabsF(x) fabs(x)
 #define toftype todouble
 #else
 typedef float ftype;
@@ -43,11 +42,10 @@ typedef float ftype;
 #define fmaxF(x,y) fmaxf(x,y)
 #define powF(x,y) powf(x,y)
 #define logF(x) logf(x)
-#define fabsF(x) fabsf(x)
+#define fabsF(x) fabsf((float)(x))
 #define ceilF(x) ceilf(x)
 #define fminF(x,y) fminf(x,y)
 #define fmodF(x,y) fmodf(x,y)
-#define fabsF(x) fabsf(x)
 #define toftype tofloat
 #endif
 
