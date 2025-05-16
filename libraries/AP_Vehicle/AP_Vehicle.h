@@ -82,6 +82,8 @@
 
 #include <AP_IBus_Telem/AP_IBus_Telem.h>
 
+#include <CiS_Modell/CiS_Modell.h>
+
 class AP_DDS_Client;
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
@@ -135,6 +137,13 @@ public:
     // Valgrind errors
     virtual void get_scheduler_tasks(const AP_Scheduler::Task *&tasks, uint8_t &task_count, uint32_t &log_bit) = 0;
 #endif
+
+#if CIS_MODEL_ENABLED
+    CiS_parameter _cis_param;
+    CiS_parameter& get_cis_param() { return _cis_param; }
+#endif
+
+
 
     /*
       set the "likely flying" flag. This is not guaranteed to be

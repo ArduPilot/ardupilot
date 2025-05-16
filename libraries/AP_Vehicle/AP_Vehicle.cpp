@@ -283,7 +283,11 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_SerialManager/AP_SerialManager.cpp
     AP_SUBGROUPINFO(serial_manager, "SERIAL", 31, AP_Vehicle, AP_SerialManager),
 #endif
-
+#if CIS_MODEL_ENABLED
+    // @Group: CIS_
+    // @Path: ../CiS_Modell/CiS_parameter.cpp
+    AP_SUBGROUPINFO(_cis_param, "CIS_", 32, AP_Vehicle, CiS_parameter),
+#endif
     AP_GROUPEND
 };
 
@@ -293,7 +297,6 @@ AP_Vehicle& vehicle = *AP_Vehicle::get_singleton();
 #else
 extern AP_Vehicle& vehicle;
 #endif
-
 /*
   setup is called when the sketch starts
  */
@@ -1086,7 +1089,7 @@ void AP_Vehicle::one_Hz_update(void)
     serial_manager.registered_ports_log();
 #endif
 #endif
-
+CiS_Modell::get_instance().update();
 }
 
 void AP_Vehicle::check_motor_noise()
