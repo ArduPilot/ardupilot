@@ -92,6 +92,7 @@ void Mode::calc_angle_error(float pitch, float yaw, bool direction_reversed)
     struct Tracker::NavStatus &nav_status = tracker.nav_status;
     nav_status.angle_error_pitch = bf_pitch_err;
     nav_status.angle_error_yaw = bf_yaw_err;
+    nav_status.target_bearing = yaw / 100;
 
     // set actual and desired for logging, note we are using angles not rates
     Parameters &g = tracker.g;
