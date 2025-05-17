@@ -318,7 +318,7 @@ mkdir -p libraries/AP_DDS/Idl/builtin_interfaces/msg/
 # Copy the IDL
 cp /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/builtin_interfaces/msg/
 
-# Build the code again with the `--enable-dds` flag as described above
+# Build the code again with the `--enable-DDS` flag as described above
 ```
 
 If the message is custom for ardupilot, first create the ROS message in `Tools/ros2/ardupilot_msgs/msg/GlobalPosition.msg`.
@@ -406,7 +406,7 @@ SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2
 
 For example, build, flash, and set up OTG2 for DDS
 ```bash
-./waf configure --board Pixhawk6X --enable-dds
+./waf configure --board Pixhawk6X --enable-DDS
 ./waf plane --upload
 mavproxy.py --console
 param set DDS_ENABLE 1

@@ -329,9 +329,6 @@ submodules at specific revisions.
     g.add_option('--enable-gps-logging', action='store_true',
                  default=False,
                  help="Enables GPS logging")
-    
-    g.add_option('--enable-dds', action='store_true',
-                 help="Enable the dds client to connect with ROS2/DDS.")
 
     g.add_option('--disable-networking', action='store_true',
                  help="Disable the networking API code")
@@ -639,6 +636,7 @@ def configure(cfg):
     cfg.recurse('libraries/SITL')
 
     cfg.recurse('libraries/AP_Networking')
+    cfg.recurse('libraries/AP_DDS')
 
     cfg.start_msg('Scripting runtime checks')
     if cfg.options.scripting_checks:
@@ -825,8 +823,7 @@ def _build_dynamic_sources(bld):
             ]
         )
 
-    if bld.env.ENABLE_DDS:
-        bld.recurse("libraries/AP_DDS")
+    bld.recurse("libraries/AP_DDS")
 
     def write_version_header(tsk):
         bld = tsk.generator.bld
