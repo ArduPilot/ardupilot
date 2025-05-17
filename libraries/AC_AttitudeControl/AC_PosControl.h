@@ -41,8 +41,7 @@ class AC_PosControl
 public:
 
     /// Constructor
-    AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
-                  const class AP_Motors& motors, AC_AttitudeControl& attitude_control);
+    AC_PosControl(AP_AHRS_View& ahrs, const class AP_Motors& motors, AC_AttitudeControl& attitude_control);
 
     // do not allow copying
     CLASS_NO_COPY(AC_PosControl);
@@ -52,6 +51,11 @@ public:
     ///   the position controller should run updates for active controllers on each loop to ensure normal operation
     void set_dt(float dt) { _dt = dt; }
     float get_dt() const { return _dt; }
+
+    // Updates internal position and velocity estimates in the NED frame.
+    // Falls back to vertical-only estimates if full NED data is unavailable.
+    // When high_vibes is true, forces use of vertical fallback for velocity.
+    void update_estimates(bool high_vibes = false);
 
     /// get_shaping_jerk_NE_cmsss - gets the jerk limit of the ne kinematic path generation in cm/s/s/s
     float get_shaping_jerk_NE_cmsss() const { return _shaping_jerk_ne_msss * 100.0; }
@@ -255,6 +259,9 @@ public:
 
     /// Position
 
+    /// get_pos_estimate_NEU_cm - returns the current position estimate, frame NEU in cm relative to the EKF origin
+    const Vector3p& get_pos_estimate_NEU_cm() const { return _pos_estimate_neu_cm; }
+
     /// get_pos_target_NEU_cm - returns the position target, frame NEU in cm relative to the EKF origin
     const Vector3p& get_pos_target_NEU_cm() const { return _pos_target_neu_cm; }
 
@@ -297,6 +304,9 @@ public:
 
     /// Velocity
 
+    /// get_vel_estimate_NEU_cms - returns current velocity estimate in cm/s in NEU
+    const Vector3f& get_vel_estimate_NEU_cms() const { return _vel_estimate_neu_cms; }
+
     /// set_vel_desired_NEU_cms - sets desired velocity in NEU cm/s
     void set_vel_desired_NEU_cms(const Vector3f &vel_desired_neu_cms) { _vel_desired_neu_cms = vel_desired_neu_cms; }
 
@@ -304,7 +314,7 @@ public:
     void set_vel_desired_NE_cms(const Vector2f &vel_desired_ne_cms) {_vel_desired_neu_cms.xy() = vel_desired_ne_cms; }
 
     /// get_vel_desired_NEU_cms - returns desired velocity in cm/s in NEU
-    const Vector3f& get_vel_desired_NEU_cms() { return _vel_desired_neu_cms; }
+    const Vector3f& get_vel_desired_NEU_cms() const { return _vel_desired_neu_cms; }
 
     // get_vel_target_NEU_cms - returns the target velocity in NEU cm/s
     const Vector3f& get_vel_target_NEU_cms() const { return _vel_target_neu_cms; }
@@ -334,7 +344,7 @@ public:
     void init_pos_terrain_U_cm(float pos_terrain_u_cm);
 
     // get_pos_terrain_U_cm - returns the current terrain altitude in cm
-    float get_pos_terrain_U_cm() { return _pos_terrain_u_cm; }
+    float get_pos_terrain_U_cm() const { return _pos_terrain_u_cm; }
 
 
     /// Offset
@@ -518,7 +528,6 @@ protected:
 
     // references to inertial nav and ahrs libraries
     AP_AHRS_View&           _ahrs;
-    const AP_InertialNav&   _inav;
     const class AP_Motors&  _motors;
     AC_AttitudeControl&     _attitude_control;
 
@@ -555,8 +564,10 @@ protected:
     float       _yaw_rate_target_cds;       // desired yaw rate in centi-degrees per second calculated by position controller
 
     // position controller internal variables
+    Vector3p    _pos_estimate_neu_cm;
     Vector3p    _pos_desired_neu_cm;        // desired location, frame NEU in cm relative to the EKF origin.  This is equal to the _pos_target minus offsets
     Vector3p    _pos_target_neu_cm;         // target location, frame NEU in cm relative to the EKF origin.  This is equal to the _pos_desired_neu_cm plus offsets
+    Vector3f    _vel_estimate_neu_cms;
     Vector3f    _vel_desired_neu_cms;       // desired velocity in NEU cm/s
     Vector3f    _vel_target_neu_cms;        // velocity target in NEU cm/s calculated by pos_to_rate step
     Vector3f    _accel_desired_neu_cmss;    // desired acceleration in NEU cm/s/s (feed forward)

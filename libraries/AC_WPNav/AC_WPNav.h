@@ -20,7 +20,7 @@ class AC_WPNav
 public:
 
     /// Constructor
-    AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
+    AC_WPNav(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
     /// provide rangefinder based terrain offset
     /// terrain offset is the terrain's height above the EKF origin
@@ -236,7 +236,6 @@ protected:
     void calc_scurve_jerk_and_snap();
 
     // references and pointers to external libraries
-    const AP_InertialNav&   _inav;
     const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;

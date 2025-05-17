@@ -217,7 +217,7 @@ bool AP_Follow::get_target_position_and_velocity_NED_m(Vector3p &pos_ned_m, Vect
 bool AP_Follow::get_target_dist_and_vel_NED_m(Vector3f &dist_ned_m, Vector3f &dist_with_offs_m, Vector3f &vel_ned_ms)
 {
     Vector3f current_position_NED;
-    if (!AP::ahrs().get_relative_position_NED_origin(current_position_NED)) {
+    if (!AP::ahrs().get_relative_position_NED_origin_float(current_position_NED)) {
         clear_dist_and_bearing_to_target();
         return false;
     }

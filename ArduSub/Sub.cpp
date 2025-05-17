@@ -37,10 +37,10 @@ Sub::Sub()
           inertial_nav(ahrs),
           ahrs_view(ahrs, ROTATION_NONE),
           attitude_control(ahrs_view, aparm, motors),
-          pos_control(ahrs_view, inertial_nav, motors, attitude_control),
-          wp_nav(inertial_nav, ahrs_view, pos_control, attitude_control),
-          loiter_nav(inertial_nav, ahrs_view, pos_control, attitude_control),
-          circle_nav(inertial_nav, ahrs_view, pos_control),
+          pos_control(ahrs_view, motors, attitude_control),
+          wp_nav(ahrs_view, pos_control, attitude_control),
+          loiter_nav(ahrs_view, pos_control, attitude_control),
+          circle_nav(ahrs_view, pos_control),
           param_loader(var_info),
           flightmode(&mode_manual),
           auto_mode(Auto_WP),
@@ -430,7 +430,7 @@ float Sub::get_alt_rel() const
 
     // get relative position
     float posD;
-    if (ahrs.get_relative_position_D_origin(posD)) {
+    if (ahrs.get_relative_position_D_origin_float(posD)) {
         if (ahrs.home_is_set()) {
             // adjust to the home position
             auto home = ahrs.get_home();
@@ -459,7 +459,7 @@ float Sub::get_alt_msl() const
 
     // get relative position
     float posD;
-    if (!ahrs.get_relative_position_D_origin(posD)) {
+    if (!ahrs.get_relative_position_D_origin_float(posD)) {
         // fall back to the barometer reading
         posD = -AP::baro().get_altitude();
     }

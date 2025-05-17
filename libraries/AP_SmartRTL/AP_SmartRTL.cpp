@@ -201,7 +201,7 @@ bool AP_SmartRTL::peek_point(Vector3f& point)
 void AP_SmartRTL::set_home(bool position_ok)
 {
     Vector3f current_pos;
-    position_ok &= AP::ahrs().get_relative_position_NED_origin(current_pos);
+    position_ok &= AP::ahrs().get_relative_position_NED_origin_float(current_pos);
     set_home(position_ok, current_pos);
 }
 
@@ -250,7 +250,7 @@ void AP_SmartRTL::update(bool position_ok, bool save_position)
     }
 
     Vector3f current_pos;
-    position_ok &= AP::ahrs().get_relative_position_NED_origin(current_pos);
+    position_ok &= AP::ahrs().get_relative_position_NED_origin_float(current_pos);
     update(position_ok, current_pos);
 }
 
