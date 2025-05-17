@@ -818,7 +818,7 @@ int lua_serial_writestring(lua_State *L)
 
     // get the bytes the user wants to write, along with their length
     size_t req_bytes;
-    const char *data = lua_tolstring(L, 2, &req_bytes);
+    const char *data = luaL_checklstring(L, 2, &req_bytes);
 
     // write up to that number of bytes
     const uint32_t written_bytes = port->write((const uint8_t*)data, req_bytes);
