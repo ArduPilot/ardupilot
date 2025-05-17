@@ -2238,6 +2238,18 @@ bool Compass::have_scale_factor(uint8_t i) const
     return true;
 }
 
+/*
+  return scale factor for compass instance or 1 if unavailable
+ */
+float Compass::get_scale_factor(uint8_t i) const
+{
+    if (!have_scale_factor(i)) {
+        return 1;
+    }
+    StateIndex id = _get_state_id(Priority(i));
+    return _state[id].scale_factor;
+}
+
 #if AP_COMPASS_MSP_ENABLED
 void Compass::handle_msp(const MSP::msp_compass_data_message_t &pkt)
 {
