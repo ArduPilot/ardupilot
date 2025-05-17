@@ -404,6 +404,8 @@ public:
     AP_Float backup_origin_lat;
     AP_Float backup_origin_lon;
     AP_Float backup_origin_alt;
+    AP_Float actuator_increment_step[ACTUATOR_CHANNELS];
+
 };
 
 extern const AP_Param::Info        var_info[];
