@@ -5533,6 +5533,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def WPYawBehaviour1RTL(self):
+        '''ensure behaviour 1 (face home) works in RTL'''
+        self.start_subtest("moving off in guided mode and checking return yaw")
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.wait_heading(272, timeout=1)  # verify initial heading"
+        self.takeoff(2, mode='GUIDED')
+        self.set_parameter('WP_YAW_BEHAVIOR', 1)  # 1 is face next waypoint
+        self.fly_guided_move_local(100, 100, z_up=20)
+        self.wait_heading(45, timeout=1)
+        self.change_mode('RTL')
+        self.wait_heading(225, minimum_duration=10, timeout=20)
+        self.wait_disarmed()
+
+        self.reboot_sitl()
+        self.start_subtest("now the same but in auto mode")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 2),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 100, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.set_parameter('AUTO_OPTIONS', 3)
+        self.change_mode('AUTO')
+        self.set_rc(3, 1000)
+        self.wait_ready_to_arm()
+        self.wait_heading(273, timeout=1)  # verify initial heading"
+        self.arm_vehicle()
+        self.wait_heading(45, minimum_duration=10, timeout=20)
+        self.wait_current_waypoint(3)
+        self.wait_heading(225, minimum_duration=10, timeout=20)
+        self.wait_disarmed()
+
     def TestGripperMission(self):
         '''Test Gripper mission items'''
         num_wp = self.load_mission("copter-gripper-mission.txt")
@@ -13869,6 +13901,7 @@ RTL_ALT 111
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
             Test(self.GyroFFTAverage, attempts=1, speedup=8),
             Test(self.GyroFFTContinuousAveraging, attempts=4, speedup=8),
+            self.WPYawBehaviour1RTL,
             self.GyroFFTPostFilter,
             self.GyroFFTMotorNoiseCheck,
             self.CompassReordering,
