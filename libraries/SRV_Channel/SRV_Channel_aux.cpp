@@ -822,6 +822,18 @@ void SRV_Channels::set_slew_rate(SRV_Channel::Function function, float slew_rate
     _slew = new_slew;
 }
 
+// update channels last_scaled_output to match value
+void SRV_Channels::set_slew_last_scaled_output(SRV_Channel::Function function, float value)
+{
+    for (slew_list *slew = _slew; slew; slew = slew->next) {
+        if (slew->func == function) {
+            // found existing item, update slew limiter value
+            slew->last_scaled_output = value;
+            return;
+        }
+    }
+}
+
 // call set_angle() on matching channels
 void SRV_Channels::set_angle(SRV_Channel::Function function, uint16_t angle)
 {
