@@ -93,6 +93,8 @@ public:
         MOTOR_FRAME_TYPE_NYT_X = 17, // X frame, no differential torque for yaw
         MOTOR_FRAME_TYPE_BF_X_REV = 18, // X frame, betaflight ordering, reversed motors
         MOTOR_FRAME_TYPE_Y4 = 19, //Y4 Quadrotor frame
+        MOTOR_FRAME_TYPE_X_COR = 20, // X8 co-rotating, old motor ordering
+        MOTOR_FRAME_TYPE_CW_X_COR = 21, // X8 co-rotating, clockwise motor ordering
     };
 
 
