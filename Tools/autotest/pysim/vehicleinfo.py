@@ -90,6 +90,16 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-octaquad.parm" ],
             },
+            "octa-quad-cor": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-octaquad-cor.parm" ],
+            },
+            "octa-quad-cw-cor": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-octaquad-cw-cor.parm" ],
+            },
             "octa": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
