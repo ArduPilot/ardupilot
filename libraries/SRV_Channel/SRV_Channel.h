@@ -333,6 +333,9 @@ private:
     // convert a 0..range_max to a pwm
     uint16_t pwm_from_range(float scaled_value) const;
 
+    // convert a pwm to a 0..1 value
+    float range_from_pwm() const;
+
     // convert a -angle_max..angle_max to a pwm
     uint16_t pwm_from_angle(float scaled_value) const;
 
@@ -401,6 +404,9 @@ public:
     // set output value for a function channel as a scaled value. This
     // this should be followed by a call to calc_pwm() to output the pwm values
     static void set_output_scaled(SRV_Channel::Function function, float value);
+
+    // set output scaled to trim value for the given function
+    static void set_output_scaled_to_trim(SRV_Channel::Function function);
 
     // get scaled output for the given function type.
     static float get_output_scaled(SRV_Channel::Function function);
