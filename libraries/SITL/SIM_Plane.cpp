@@ -459,6 +459,17 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         thrust = icengine.update(input);
     }
 
+    // simulated thrust failure
+    if (sitl->thrust_fail > 0) {
+        if (sitl->thrust_fail < 1) {
+            // partial loss
+            thrust *= sitl->thrust_fail;
+        } else {
+            // total loss
+            thrust = 0;
+        }
+    }
+
     // calculate angle of attack
     angle_of_attack = atan2f(velocity_air_bf.z, velocity_air_bf.x);
     beta = atan2f(velocity_air_bf.y,velocity_air_bf.x);

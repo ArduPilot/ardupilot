@@ -547,6 +547,9 @@ public:
     // RPM when motors are armed
     AP_Float esc_rpm_armed;
 
+    // ESC/Motor failure that degrades Plane forward thrust
+    AP_Float thrust_fail;
+
     struct {
         // LED state, for serial LED emulation
         struct {
