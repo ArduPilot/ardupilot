@@ -24,6 +24,7 @@
 #include "AP_ExternalAHRS_backend.h"
 #include "AP_ExternalAHRS_VectorNav.h"
 #include "AP_ExternalAHRS_MicroStrain5.h"
+#include "AP_ExternalAHRS_AdvancedNavigation.h"
 #include "AP_ExternalAHRS_MicroStrain7.h"
 #include "AP_ExternalAHRS_InertialLabs.h"
 
@@ -90,6 +91,13 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_LOG_RATE", 5, AP_ExternalAHRS, log_rate, 10),
     
+    // @Param: _ARSP_ERR_20MS
+    // @DisplayName: Airspeed error at 20m/s
+    // @Description: Estimate of error in airspeed when vehicle travelling at 20m/s
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("_ASER_20MS", 6, AP_ExternalAHRS, arsp_err_20ms, 1.0),
+    
     AP_GROUPEND
 };
 
@@ -115,6 +123,12 @@ void AP_ExternalAHRS::init(void)
 #if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
     case DevType::MicroStrain5:
         backend = NEW_NOTHROW AP_ExternalAHRS_MicroStrain5(this, state);
+        return;
+#endif
+
+#if AP_EXTERNAL_AHRS_ADNAV_ENABLED
+    case DevType::AdNav:
+        backend = NEW_NOTHROW AP_ExternalAHRS_AdvancedNavigation(this, state);
         return;
 #endif
 
