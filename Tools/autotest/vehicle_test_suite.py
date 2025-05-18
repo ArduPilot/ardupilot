@@ -3122,7 +3122,6 @@ class TestSuite(ABC):
             "SMVZ",  # Sim-Volz
 
             "SORC",  # Soaring
-            "VAR",   # soaring
 
             "TCLR",  # tempcal
             "TEMP",  # temperature sensor library
@@ -3139,7 +3138,6 @@ class TestSuite(ABC):
             "GMB2",  # sologimbal
             "QBRK",  # quadplane
             "SURF",  # surface-tracking
-            "ATUN",  # Copter autotune
         ])
 
     def LoggerDocumentation_whitelist(self):
@@ -3305,6 +3303,11 @@ class TestSuite(ABC):
                                                (name, label))
         if len(missing) > 0:
             raise NotAchievedException("Documented messages (%s) not in code" % missing)
+
+        # ensure things in the whitelist are not documented:
+        for g in greylist:
+            if g in docco_ids:
+                raise NotAchievedException(f"greylisted ({g}) is actually documented")
 
     def initialise_after_reboot_sitl(self):
 
