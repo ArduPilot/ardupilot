@@ -1642,6 +1642,13 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
             const uint32_t crc = crc_crc32(0, buf, len);
 
 #if HAL_LOGGING_ENABLED
+// @LoggerMessage: RTCM
+// @Description: GPS atmospheric perturbation data
+// @Field: TimeUS: Time since system startup
+// @Field: Chan: mavlink channel number this data was received on
+// @Field: RTCMId: ID field from RTCM packet
+// @Field: Len: RTCM packet length
+// @Field: CRC: calculated crc32 for the packet
             AP::logger().WriteStreaming("RTCM", "TimeUS,Chan,RTCMId,Len,CRC", "s#---", "F----", "QBHHI",
                                         AP_HAL::micros64(),
                                         uint8_t(chan),
