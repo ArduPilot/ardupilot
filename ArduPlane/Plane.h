@@ -1002,6 +1002,8 @@ private:
     void do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 #if HAL_QUADPLANE_ENABLED
+    // vtol takeoff from AP_Vehicle for quadplane.
+    bool start_takeoff(const float alt) override;
     bool verify_landing_vtol_approach(const AP_Mission::Mission_Command& cmd);
 #endif
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
