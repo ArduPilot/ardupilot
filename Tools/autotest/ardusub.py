@@ -313,6 +313,14 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_statustext('rangefinder target is', check_context=True)
         self.watch_distance_maintained()
 
+        # Disarm, allowing the vehicle to drift up
+        self.disarm_vehicle()
+        self.delay_sim_time(5)
+
+        # Re-arm. The vehicle should get a new rangefinder target and maintain distance
+        self.arm_vehicle()
+        self.watch_distance_maintained()
+
         self.disarm_vehicle()
         self.context_pop()
 
