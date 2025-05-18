@@ -152,11 +152,26 @@ bool GCS_MAVLINK::init(uint8_t instance)
         return false;
     }
 
+    // PARAMETER_CONVERSION - Added: May-2025 for ArduPilot-4.7
+    // convert parameters; we used to use bits in the UARTDriver to
+    // remember whether the mavlink connection on that interface was
+    // "private" or not, and whether to ignore streamrate sets via
+    // REQUEST_DATA_STREAM.  We moved that into the MAVn_OPTIONS, this
+    // is the conversion:
+    if (!options_were_converted) {
+        options_were_converted.set_and_save(1);
+        if (_port->option_is_set(AP_HAL::UARTDriver::Option::OPTION_MAVLINK_NO_FORWARD_old)) {
+            enable_option(Option::NO_FORWARD);
+        }
+        if (_port->option_is_set(AP_HAL::UARTDriver::Option::OPTION_NOSTREAMOVERRIDE_old)) {
+            enable_option(Option::NOSTREAMOVERRIDE);
+        }
+    }
+
     // and init the gcs instance
 
-    // whether this port is considered "private" is stored on the uart
-    // rather than in our own parameters:
-    if (uartstate->option_enabled(AP_HAL::UARTDriver::OPTION_MAVLINK_NO_FORWARD)) {
+    // whether this port is considered "private":
+    if (option_enabled(Option::NO_FORWARD)) {
         set_channel_private(chan);
     }
 
@@ -4419,10 +4434,12 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 #endif
 
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
-        // only pass if override is not selected 
-        if (!(_port->get_options() & _port->OPTION_NOSTREAMOVERRIDE)) {
-            handle_request_data_stream(msg);
+        if (option_enabled(Option::NOSTREAMOVERRIDE)) {
+            // options indicate we are to ignore this stream rate
+            // request
+            break;
         }
+        handle_request_data_stream(msg);
         break;
 
     case MAVLINK_MSG_ID_DATA96:
