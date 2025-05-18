@@ -3096,7 +3096,6 @@ class TestSuite(ABC):
             "FTN3",  # gyrofft
             "IE24",  # generator
             "IEFC",  # generator
-            "IREG",  # INS something
             "RTCM",  # GPS
             "SBRE",  # septentrio
 
