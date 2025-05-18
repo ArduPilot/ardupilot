@@ -892,6 +892,13 @@ bool AP_InertialSensor_Backend::should_log_imu_raw() const
 void AP_InertialSensor_Backend::log_register_change(uint32_t bus_id, const AP_HAL::Device::checkreg &reg)
 {
 #if HAL_LOGGING_ENABLED
+// @LoggerMessage: IREG
+// @Description: IMU Register unexpected value change
+// @Field: TimeUS: Time since system startup
+// @Field: DevID: bus ID
+// @Field: Bank: device register bank
+// @Field: Reg: device register
+// @Field: Val: unexpected value
     AP::logger().Write("IREG", "TimeUS,DevID,Bank,Reg,Val", "QIBBB",
                        AP_HAL::micros64(),
                        bus_id,
