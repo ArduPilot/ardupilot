@@ -3095,7 +3095,6 @@ class TestSuite(ABC):
             "FTN3",  # gyrofft
             "IE24",  # generator
             "IEFC",  # generator
-            "RTCM",  # GPS
             "SBRE",  # septentrio
 
             "SAF1",  # blimp-sim
@@ -3126,18 +3125,10 @@ class TestSuite(ABC):
             "TCLR",  # tempcal
             "TEMP",  # temperature sensor library
 
-            "ARHS",  # autorotation
-            "AROT",  # autorotation
-            "ARSC",  # autorotation
-            "ATDH",  # heli autotune
-            "ATNH",  # heli autotune
-            "ATSH",  # heli autotune
             "CC",    # AC_CustomControl
+
             "FWDT",  # quadplane
-            "GMB1",  # sologimbal
-            "GMB2",  # sologimbal
             "QBRK",  # quadplane
-            "SURF",  # surface-tracking
         ])
 
     def LoggerDocumentation_whitelist(self):
@@ -3165,6 +3156,10 @@ class TestSuite(ABC):
         # documentation (eg. @Path:
         # ../libraries/AP_LandingGear/AP_LandingGear.cpp).
         vinfo_key = self.vehicleinfo_key()
+        if vinfo_key != 'ArduPlane' and vinfo_key != 'ArduCopter' and vinfo_key != 'Helicopter':
+            ret.update([
+                "ATUN",  # Plane and Copter have ATUN messages
+            ])
         if vinfo_key != 'ArduPlane':
             ret.update([
                 "TECS",  # only Plane has TECS
@@ -3174,6 +3169,19 @@ class TestSuite(ABC):
                 "SORC",  # soaring is pure magic
                 "QBRK",  # quadplane
                 "FWDT",  # quadplane
+                "VAR",   # variometer only applicable on Plane
+            ])
+        if vinfo_key != 'ArduCopter' and vinfo_key != "Helicopter":
+            ret.update([
+                "ARHS",    # autorotation
+                "AROT",    # autorotation
+                "ARSC",    # autorotation
+                "ATDH",    # heli autotune
+                "ATNH",    # heli autotune
+                "ATSH",    # heli autotune
+                "GMB1",    # sologimbal
+                "GMB2",    # sologimbal
+                "SURF",    # surface-tracking
             ])
         if vinfo_key == 'ArduCopter':
             ret.update([
