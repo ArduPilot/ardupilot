@@ -3097,8 +3097,6 @@ class TestSuite(ABC):
             "IE24",  # generator
             "IEFC",  # generator
             "IREG",  # INS something
-            "ISBD",  # InertialSensor batch logging
-            "ISBH",  # InertialSensor batch logging
             "RTCM",  # GPS
             "SBRE",  # septentrio
 
