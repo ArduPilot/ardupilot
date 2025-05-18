@@ -324,11 +324,11 @@ bool AP_Follow::update_estimate()
     _last_estimation_update_ms = now;
 
     // Check if the target is within the maximum distance
-    Vector3f current_position_ned_m;
+    Vector3p current_position_ned_m;
     if (!AP::ahrs().get_relative_position_NED_origin(current_position_ned_m)) {
         return false;
     }
-    const Vector3p dist_vec_ned_m = _target_pos_ned_m - current_position_ned_m.topostype();
+    const Vector3p dist_vec_ned_m = _target_pos_ned_m - current_position_ned_m;
     
     // If _dist_max_m is not positive, we don't check the distance
     if (is_positive(_dist_max_m.get()) && (dist_vec_ned_m.length() > _dist_max_m)) {
@@ -378,13 +378,13 @@ bool AP_Follow::get_target_dist_and_vel_NED_m(Vector3f &dist_ned, Vector3f &dist
         return false;
     }
 
-    Vector3f current_position_ned_m;
+    Vector3p current_position_ned_m;
     if (!AP::ahrs().get_relative_position_NED_origin(current_position_ned_m)) {
         return false;
     }
 
-    const Vector3p dist_vec_ned_m = _estimate_pos_ned_m - current_position_ned_m.topostype();
-    const Vector3p ofs_dist_vec = _ofs_estimate_pos_ned_m - current_position_ned_m.topostype();
+    const Vector3p dist_vec_ned_m = _estimate_pos_ned_m - current_position_ned_m;
+    const Vector3p ofs_dist_vec = _ofs_estimate_pos_ned_m - current_position_ned_m;
     dist_ned = dist_vec_ned_m.tofloat();
     dist_with_offs = ofs_dist_vec.tofloat();
     vel_ned = _ofs_estimate_vel_ned_ms;
@@ -764,11 +764,11 @@ void AP_Follow::init_offsets_if_required()
     }
 
     // Check if the target is within the maximum distance
-    Vector3f current_position_ned_m;
+    Vector3p current_position_ned_m;
     if (!AP::ahrs().get_relative_position_NED_origin(current_position_ned_m)) {
         return;
     }
-    const Vector3f dist_vec_ned_m = (_target_pos_ned_m - current_position_ned_m.topostype()).tofloat();
+    const Vector3f dist_vec_ned_m = (_target_pos_ned_m - current_position_ned_m).tofloat();
 
     float target_heading_deg;
     if ((_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) && get_target_heading_deg(target_heading_deg)) {
@@ -819,7 +819,7 @@ void AP_Follow::clear_dist_and_bearing_to_target()
 // Updates the recorded distance and bearing to the target to zero.
 void AP_Follow::update_dist_and_bearing_to_target()
 {
-    Vector3f current_position_ned_m;
+    Vector3p current_position_ned_m;
     if (!AP::ahrs().get_relative_position_NED_origin(current_position_ned_m)) {
         // if unable to retrieve local position, clear distance/bearing info
         clear_dist_and_bearing_to_target();
@@ -829,7 +829,7 @@ void AP_Follow::update_dist_and_bearing_to_target()
         current_position_ned_m *= 0.01;  // convert cm to m
 
         // calculate distance vectors to target, both with and without offsets
-        const Vector3p ofs_dist_vec = _ofs_estimate_pos_ned_m - current_position_ned_m.topostype();
+        const Vector3p ofs_dist_vec = _ofs_estimate_pos_ned_m - current_position_ned_m;
 
         // record distance and bearing to target for reporting/logging
         if (ofs_dist_vec.xy().is_zero()) {
