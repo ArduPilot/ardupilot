@@ -1410,22 +1410,22 @@ void Plane::load_parameters(void)
     if (AP_Param::find_old_parameter(&fence_action_info_old, &fence_action_old)) {
         enum ap_var_type ptype;
         AP_Int8 *fence_action_new = (AP_Int8*)AP_Param::find(&fence_action_info_old.new_name[0], &ptype);
-        uint8_t fence_action_new_val;
+        AC_Fence::Action fence_action_new_val;
         if (fence_action_new && !fence_action_new->configured()) {
             switch(fence_action_old.get()) {
                 case 0: // FENCE_ACTION_NONE
                 case 2: // FENCE_ACTION_REPORT_ONLY
                 default:
-                    fence_action_new_val = AC_FENCE_ACTION_REPORT_ONLY;
+                    fence_action_new_val = AC_Fence::Action::REPORT_ONLY;
                     break;
                 case 1: // FENCE_ACTION_GUIDED
-                    fence_action_new_val = AC_FENCE_ACTION_GUIDED;
+                    fence_action_new_val = AC_Fence::Action::GUIDED;
                     break;
                 case 3: // FENCE_ACTION_GUIDED_THR_PASS
-                    fence_action_new_val = AC_FENCE_ACTION_GUIDED_THROTTLE_PASS;
+                    fence_action_new_val = AC_Fence::Action::GUIDED_THROTTLE_PASS;
                     break;
                 case 4: // FENCE_ACTION_RTL
-                    fence_action_new_val = AC_FENCE_ACTION_RTL_AND_LAND;
+                    fence_action_new_val = AC_Fence::Action::RTL_AND_LAND;
                     break;
             }
             fence_action_new->set_and_save((int8_t)fence_action_new_val);
