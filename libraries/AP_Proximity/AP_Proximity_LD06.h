@@ -63,12 +63,16 @@ private:
     uint32_t  _last_distance_received_ms;
 
     // face related variables
-    AP_Proximity_Boundary_3D::Face _last_face;///< last face requested
-    float _last_angle_deg;                    ///< yaw angle (in degrees) of _last_distance_m
-    float _last_distance_m;                   ///< shortest distance for _last_face
-    bool _last_distance_valid;                ///< true if _last_distance_m is valid
+    struct {
+        AP_Proximity_Boundary_3D::Face face;    // last face requested
+        float angle_ref_deg;                    // yaw angle reference used to avoid wrap issues angle_sum_deg
+        float angle_sum_deg;                    // yaw angle sum relative to angle_ref_deg (used to average angles)
+        float distance_sum_m;                   // average distance for this face
+        uint8_t sum_count;                      // number of angle and distance readings for this face
+    } _lastface;
 
-    uint16_t _angle_2deg;
-    float _dist_2deg_m;
+    uint16_t _angle_2deg;           // latest angle received rounded off to 2 degrees
+    float _dist_2deg_sum_m;         // sum of distances received for the above angle
+    uint8_t _dist_2deg_sum_count;   // number of readings received for the above angle
 };
 #endif // AP_PROXIMITY_LD06_ENABLED

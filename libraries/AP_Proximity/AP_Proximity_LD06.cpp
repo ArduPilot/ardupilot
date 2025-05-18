@@ -178,41 +178,52 @@ void AP_Proximity_LD06::parse_response_data()
             continue;
         }
 
-        uint16_t a2d = (int)(angle_deg / 2.0) * 2;
+        // round the angle to the nearest 2 degrees
+        const uint16_t a2d = (int)(angle_deg / 2.0) * 2;
         if (_angle_2deg == a2d) {
-            if (distance_m < _dist_2deg_m) {
-                _dist_2deg_m = distance_m;
-            }
+            // sum distances for this angle
+            _dist_2deg_sum_m += distance_m;
+            _dist_2deg_sum_count++;
         } else {
-            // New 2deg angle, record the old one
 
+            // new face, calculate the distance for the previous face
             const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face((float)_angle_2deg);
-
-            if (face != _last_face) {
+            if (face != _lastface.face) {
                 // distance is for a new face, the previous one can be updated now
-                if (_last_distance_valid) {
-                    frontend.boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m, state.instance);
+                if (_lastface.sum_count > 0) {
+                    const float angle_avg_deg = wrap_360(_lastface.angle_ref_deg + (_lastface.angle_sum_deg / _lastface.sum_count));
+                    const float distance_avg_m = _lastface.distance_sum_m / _lastface.sum_count;
+                    frontend.boundary.set_face_attributes(_lastface.face, angle_avg_deg, distance_avg_m, state.instance);
                 } else {
                     // reset distance from last face
                     frontend.boundary.reset_face(face, state.instance);
                 }
 
                 // initialize the new face
-                _last_face = face;
-                _last_distance_valid = false;
+                _lastface.face = face;
+                _lastface.angle_ref_deg = _angle_2deg;
+                _lastface.angle_sum_deg = 0.0f;
+                _lastface.distance_sum_m = 0.0f;
+                _lastface.sum_count = 0;
             }
 
-            // update shortest distance
-            if (!_last_distance_valid || (_dist_2deg_m < _last_distance_m)) {
-                _last_distance_m = _dist_2deg_m;
-                _last_distance_valid = true;
-                _last_angle_deg = (float)_angle_2deg;
-            }
-            // update OA database
-            database_push(_last_angle_deg, _last_distance_m);
+            // use distance (averaged over 2 degrees) to update face averages and publish to OA database
+            if (_dist_2deg_sum_count > 0) {
+                const float dist_2deg_m = _dist_2deg_sum_m / _dist_2deg_sum_count;
 
+                // update face averages
+                _lastface.angle_sum_deg += wrap_180(_angle_2deg - _lastface.angle_ref_deg);
+                _lastface.distance_sum_m += dist_2deg_m;
+                _lastface.sum_count++;
+
+                // update OA database with the detailed angle and distance
+                database_push(_angle_2deg, dist_2deg_m);
+            }
+
+            // reset angle round to 2 degrees
             _angle_2deg = a2d;
-            _dist_2deg_m = distance_m;
+            _dist_2deg_sum_m = 0.0f;
+            _dist_2deg_sum_count = 0;
         }
     }
 }
