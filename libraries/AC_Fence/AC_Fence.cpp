@@ -780,6 +780,15 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
         float alt;
         AP::ahrs().get_relative_position_D_home(alt);
 
+        // @LoggerMessage: FENC
+        // @Description: Fence status - development diagnostic message
+        // @Field: TimeUS: Time since system startup
+        // @Field: EN: bitmask of enabled fences
+        // @Field: AE: bitmask of automatically enabled fences
+        // @Field: CF: bitmask of configured-in-parameters fences
+        // @Field: EF: bitmask of enabled fences
+        // @Field: DF: bitmask of currently disabled fences
+        // @Field: Alt: current vehicle altitude
         AP::logger().WriteStreaming("FENC", "TimeUS,EN,AE,CF,EF,DF,Alt", "QIIIIIf",
                                     AP_HAL::micros64(),
                                     enabled(),
