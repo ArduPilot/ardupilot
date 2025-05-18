@@ -6177,7 +6177,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # ensure setting the private channel mask doesn't cause us to
         # execute these commands:
-        self.set_parameter("SERIAL2_OPTIONS", 1024)
+        self.set_parameter("MAV3_OPTIONS", 2)
         self.reboot_sitl()  # mavlink-private is reboot-required
         mav2 = mavutil.mavlink_connection("tcp:localhost:5763",
                                           robust_parsing=True,
