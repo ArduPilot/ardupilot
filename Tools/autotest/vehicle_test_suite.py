@@ -3097,7 +3097,6 @@ class TestSuite(ABC):
             "IE24",  # generator
             "IEFC",  # generator
             "IREG",  # INS something
-            "RTCM",  # GPS
             "SBRE",  # septentrio
 
             "SAF1",  # blimp-sim
