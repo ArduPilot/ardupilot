@@ -32,11 +32,11 @@ public:
 
     // Init and run the flare phase controller
     void init_flare(void);
-    void run_flare(void);
+    void run_flare(float pilot_norm_accel);
 
     // Init and run the touch down phase controller
     void init_touchdown(void);
-    void run_touchdown(void);
+    void run_touchdown(float pilot_norm_accel);
 
     // Run the landed phase controller to zero the desired vels and accels
     void run_landed(void);

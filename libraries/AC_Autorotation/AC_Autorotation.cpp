@@ -337,7 +337,7 @@ void AC_Autorotation::init_flare(void)
     _flare_entry_fwd_speed = get_bf_speed_forward();
 }
 
-void AC_Autorotation::run_flare(void)
+void AC_Autorotation::run_flare(float pilot_norm_accel)
 {
     // Update head speed/ collective controller
     update_headspeed_controller();
@@ -347,8 +347,7 @@ void AC_Autorotation::run_flare(void)
     _desired_vel = linear_interpolate(0.0f, _flare_entry_fwd_speed, _hagl, _touch_down_hgt.get(), _flare_hgt.get());
 
     // Run forward speed controller
-    _last_pilot_input *= 0.95;
-    update_forward_speed_controller(_last_pilot_input);
+    update_forward_speed_controller(pilot_norm_accel);
 }
 
 void AC_Autorotation::init_touchdown(void)
@@ -360,7 +359,7 @@ void AC_Autorotation::init_touchdown(void)
     _touchdown_init_hgt = _hagl;
 }
 
-void AC_Autorotation::run_touchdown(void)
+void AC_Autorotation::run_touchdown(float pilot_norm_accel)
 {
     const float climb_rate = get_ef_velocity_up();
 
@@ -385,9 +384,8 @@ void AC_Autorotation::run_touchdown(void)
     // keep driving the desired speed to zero. This will help with getting the vehicle level for touch down
     _desired_vel *= 1 - (_dt / get_touchdown_time());
 
-    // Similarly, we don't know if the pilot input was interrupted so we smoothly reduce the last given command to zero
-    _last_pilot_input *= 0.95;
-    update_forward_speed_controller(_last_pilot_input);
+    // Update forward speed controller
+    update_forward_speed_controller(pilot_norm_accel);
 
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: ARCR
@@ -513,9 +511,6 @@ void AC_Autorotation::update_forward_speed_controller(float pilot_norm_accel)
     // Pilot can request as much as 1/2 of the max accel laterally to perform a turn.
     // We only allow up to half as we need to prioritize building/maintaining airspeed.
     Vector2f bf_accel_target = {fwd_accel_target, pilot_norm_accel * get_accel_max() * 0.5};
-
-    // Save the last pilot input so that we can smoothly zero it when we transition to the flare phase
-    _last_pilot_input = pilot_norm_accel;
 
     // Ensure we do not exceed the accel limit
     _limit_accel = bf_accel_target.limit_length(get_accel_max());
