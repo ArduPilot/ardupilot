@@ -637,6 +637,12 @@ void AP_TECS::_update_height_demand(void)
         // correct for offset between height above ground and height above datum used by control loops
         _hgt_dem += (_hgt_afe - _height);
     }
+
+    // avoid increasing the error between our current energy and
+    // demanded energy, to avoid pushing the throttle through the roof
+    if (_flags.overspeed) {
+        // _hgt_dem = _height;
+    }
 }
 
 void AP_TECS::_detect_underspeed(void)
@@ -755,6 +761,8 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         _throttle_dem = 1.0f;
     } else if (_flags.is_gliding) {
         _throttle_dem = 0.0f;
+    // } else if (_flags.overspeed) {
+    //        _throttle_dem = 0.0f;
     } else {
         // Calculate gain scaler from specific energy error to throttle
         const float K_thr2STE = (_STEdot_max - _STEdot_min) / (_THRmaxf - _THRminf); // This is the derivative of STEdot wrt throttle measured across the max allowed throttle range.
