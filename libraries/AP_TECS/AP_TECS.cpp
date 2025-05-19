@@ -836,21 +836,24 @@ void AP_TECS::_update_throttle_with_airspeed(void)
             // @Field: I: integrator state for throttle
             // @Field: Emin: lower limit for potential energy error
             // @Field: Emax: upper limit for potential energy error
-            AP::logger().WriteStreaming("TEC3","TimeUS,KED,PED,KEDD,PEDD,TEE,TEDE,FFT,Imin,Imax,I,Emin,Emax",
-                                        "Qffffffffffff",
-                                        AP_HAL::micros64(),
-                                        (double)_SKEdot,
-                                        (double)_SPEdot,
-                                        (double)_SKEdot_dem,
-                                        (double)_SPEdot_dem,
-                                        (double)_STE_error,
-                                        (double)STEdot_error,
-                                        (double)ff_throttle,
-                                        (double)integ_min,
-                                        (double)integ_max,
-                                        (double)_integTHR_state,
-                                        (double)SPE_err_min,
-                                        (double)SPE_err_max);
+            AP::logger().WriteStreaming(
+                "TEC3",
+                "TimeUS," "KED," "PED," "KEDD," "PEDD," "TEE," "TEDE," "FFT," "Imin," "Imax," "I," "Emin," "Emax",
+                "Q"       "f"    "f"    "f"     "f"     "f"    "f"     "f"    "f"     "f"     "f"  "f"     "f",
+                AP_HAL::micros64(),
+                (double)_SKEdot,
+                (double)_SPEdot,
+                (double)_SKEdot_dem,
+                (double)_SPEdot_dem,
+                (double)_STE_error,
+                (double)STEdot_error,
+                (double)ff_throttle,
+                (double)integ_min,
+                (double)integ_max,
+                (double)_integTHR_state,
+                (double)SPE_err_min,
+                (double)SPE_err_max
+            );
         }
         // @LoggerMessage: TEC4
         // @Vehicles: Plane
