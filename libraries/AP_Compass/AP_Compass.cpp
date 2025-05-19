@@ -1904,7 +1904,7 @@ Compass::save_motor_compensation()
     }
 }
 
-void Compass::try_set_initial_location()
+void Compass::set_initial_location(float latitude, float longitude)
 {
     if (!_auto_declination) {
         return;
@@ -1913,19 +1913,23 @@ void Compass::try_set_initial_location()
         return;
     }
 
+    _initial_location_set = true;
+
+    _declination.set(radians(AP_Declination::get_declination(latitude, longitude)));
+}
+
+void Compass::try_set_initial_location()
+{
     Location loc;
     if (!AP::ahrs().get_location(loc)) {
         return;
     }
-    _initial_location_set = true;
 
     // if automatic declination is configured, then compute
     // the declination based on the initial GPS fix
     // Set the declination based on the lat/lng from GPS
-    _declination.set(radians(
-                         AP_Declination::get_declination(
-                             (float)loc.lat / 10000000,
-                             (float)loc.lng / 10000000)));
+    set_initial_location((float)loc.lat / 10000000,
+                         (float)loc.lng / 10000000);
 }
 
 /// return true if the compass should be used for yaw calculations
