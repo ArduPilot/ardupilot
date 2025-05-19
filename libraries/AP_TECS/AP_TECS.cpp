@@ -844,6 +844,25 @@ void AP_TECS::_update_throttle_with_airspeed(void)
                                         (double)SPE_err_min,
                                         (double)SPE_err_max);
         }
+        // @LoggerMessage: TEC4
+        // @Vehicles: Plane
+        // @Description: Additional additional additional information about the Total Energy Control System
+        // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+        // @Field: TimeUS: Time since system startup
+        // @Field: P: estimate of potential energy
+        // @Field: K: estimate of kinetic energy
+        // @Field: Pdem: demanded potential energy
+        // @Field: Kdem: demanded kinetic energy
+        AP::logger().WriteStreaming(
+            "TEC4",
+            "TimeUS," "P," "K," "Pdem," "Kdem",
+            "Q"       "f"  "f"  "f"     "f",
+            AP_HAL::micros64(),
+            (double)_SPE_est,
+            (double)_SKE_est,
+            (double)_SPE_dem,
+            (double)_SKE_dem
+            );
 #endif
     }
 
