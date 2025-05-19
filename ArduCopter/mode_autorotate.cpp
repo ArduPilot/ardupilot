@@ -135,7 +135,7 @@ void ModeAutorotate::run()
 
         case Phase::FLARE:
             // Smoothly slow the aircraft to a stop by pitching up, maintaining set point head speed throughout.
-            g2.arot.run_flare();
+            g2.arot.run_flare(pilot_norm_input);
             break;
 
         case Phase::TOUCH_DOWN_INIT:
@@ -145,7 +145,7 @@ void ModeAutorotate::run()
 
         case Phase::TOUCH_DOWN:
             // Ensure vehicle is level and use energy stored in head to gently touch down on the ground
-            g2.arot.run_touchdown();
+            g2.arot.run_touchdown(pilot_norm_input);
             break;
 
         case Phase::LANDED_INIT:
