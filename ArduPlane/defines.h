@@ -53,8 +53,8 @@ enum failsafe_action_long {
 // type of stick mixing enabled
 enum class StickMixing {
     NONE     = 0,
-    FBW      = 1,
-    DIRECT_REMOVED = 2,
+    FBW_ROLL = 1,
+    FBWA     = 2,
     VTOL_YAW = 3,
 };
 
