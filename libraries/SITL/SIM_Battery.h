@@ -30,9 +30,11 @@ public:
     void setup(float _capacity_Ah, float _resistance, float _max_voltage);
 
     void init_voltage(float voltage);
+    void init_capacity(float capacity);
 
     void set_current(float current_amps);
     float get_voltage(void) const;
+    float get_capacity(void) const { return capacity_Ah; }
 
     // return battery temperature in Kelvin:
     float get_temperature(void) const { return temperature.kelvin; }
