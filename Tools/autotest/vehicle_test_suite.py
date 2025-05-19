@@ -3118,8 +3118,6 @@ class TestSuite(ABC):
             "SL2",  # glider-sim
             "SLD",  # glider-sim
 
-            "SMVZ",  # Sim-Volz
-
             "SORC",  # Soaring
 
             "TCLR",  # tempcal
