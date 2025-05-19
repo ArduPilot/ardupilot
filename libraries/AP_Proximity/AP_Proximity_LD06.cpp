@@ -170,7 +170,7 @@ void AP_Proximity_LD06::parse_response_data()
 
         // Gets the distance recorded and converts to meters
         const float angle_deg = correct_angle_for_orientation(start_angle + angle_step * (i / MEASUREMENT_PAYLOAD_LENGTH));
-        const float distance_m = UINT16_VALUE(_response[i + 1], _response[i]) * 0.001;
+        const float distance_m = _dist_filt_mm.apply(UINT16_VALUE(_response[i + 1], _response[i])) * 0.001;
         const float confidence = _response[i + 2];
 
         // ignore distance that are out-of-range or have low confidence
