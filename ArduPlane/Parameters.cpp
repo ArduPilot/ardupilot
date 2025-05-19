@@ -1034,7 +1034,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Quicktune/AP_Quicktune.cpp
     GOBJECT(quicktune, "QWIK_",  AP_Quicktune),
 #endif
-    
+
     AP_VAREND
 };
 
@@ -1293,6 +1293,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Values: 4:Back, 25:Down, 101:Custom1, 102:Custom2
     // @User: Standard
     AP_GROUPINFO("RNGFND_LND_ORNT", 36, ParametersG2, rangefinder_land_orient, ROTATION_PITCH_270),
+#endif
+
+    // index 37 saved for 4.7-dev param FWD_BAT_THR_CUT
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    // @Group: SID
+    // @Path: systemid.cpp
+    AP_SUBGROUPINFO(systemid, "SID", 38, ParametersG2, AP_SystemID),
 #endif
     
     AP_GROUPEND
