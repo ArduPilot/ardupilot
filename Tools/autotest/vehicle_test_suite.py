@@ -3121,7 +3121,6 @@ class TestSuite(ABC):
             "SORC",  # Soaring
 
             "TCLR",  # tempcal
-            "TEMP",  # temperature sensor library
 
             "CC",    # AC_CustomControl
 
