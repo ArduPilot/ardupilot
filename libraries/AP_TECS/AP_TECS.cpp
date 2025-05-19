@@ -670,6 +670,15 @@ void AP_TECS::_detect_underspeed(void)
     }
 }
 
+void AP_TECS::_detect_overspeed(void)
+{
+    if (_flags.overspeed) {
+        _flags.overspeed = _TAS_state > _TASmax * 0.5;
+    } else {
+        _flags.overspeed = _TAS_state > _TASmax * 1.1;
+    }
+}
+
 void AP_TECS::_update_energies(void)
 {
     // Calculate specific energy demands
@@ -1323,6 +1332,9 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Detect underspeed condition
     _detect_underspeed();
 
+    // Detect overspeed condition
+    _detect_overspeed();
+
     // Calculate specific energy quantitiues
     _update_energies();
 
@@ -1376,7 +1388,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         AP::logger().WriteStreaming("TECS", "TimeUS,h,dh,hin,hdem,dhdem,spdem,sp,dsp,th,ph,pmin,pmax,dspdem,f",
                                     "smnmmnnnn------",
                                     "F00000000------",
-                                    "QfffffffffffffB",
+                                    "QfffffffffffffH",
                                     now,
                                     (double)_height,
                                     (double)_climb_rate,
