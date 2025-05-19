@@ -68,6 +68,7 @@ private:
     float _last_distance_m;                   ///< shortest distance for _last_face
     bool _last_distance_valid;                ///< true if _last_distance_m is valid
 
+    // angle and distance for the latest 2 degree sector
     uint16_t _angle_2deg;
     float _dist_2deg_m;
 };
