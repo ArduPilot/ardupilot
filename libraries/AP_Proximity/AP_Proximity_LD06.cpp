@@ -215,8 +215,8 @@ void AP_Proximity_LD06::parse_response_data()
                 _last_angle_deg = (float)_angle_2deg;
             }
 
-            // update OA database
-            database_push(_last_angle_deg, _last_distance_m);
+            // update OA database with the 2 degree sectors distance
+            database_push(_angle_2deg, _dist_2deg_m);
 
             // advance to the next 2 degree sector
             _angle_2deg = a2d;
