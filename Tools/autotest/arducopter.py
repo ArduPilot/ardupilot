@@ -14057,11 +14057,13 @@ RTL_ALT 111
             binary_path,
             cwd=periph_rundir,
             stdout_prefix="periph",
-            gdb=True,
+            gdb=self.gdb,
             valgrind=self.valgrind,
             customisations=[
                 '-I', str(1),
                 '--serial0', 'mcast:',
+                '--serial1', 'tcp:2',
+                '--serial2', 'tcp:3',
             ],
             param_defaults={
                 "SIM_SPEEDUP": speedup,
@@ -14088,6 +14090,10 @@ RTL_ALT 111
             "CAN_D1_UC_S1_IDX": 1,  # serial port number on CAN device
             "CAN_D1_UC_S1_NOD": 125,  # FIXME: set this explicitly
             "CAN_D1_UC_S1_PRO": 2,  # protocol to set on remote node
+
+            "CAN_D1_UC_S2_IDX": 2,  # serial port number on CAN device
+            "CAN_D1_UC_S2_NOD": 125,  # FIXME: set this explicitly
+            "CAN_D1_UC_S2_PRO": 2,  # protocol to set on remote node
         })
 
         self.reboot_sitl()
@@ -14108,6 +14114,28 @@ RTL_ALT 111
             source_component=9,
         )
         self.assert_receive_message("HEARTBEAT", mav=mav2, very_verbose=True)
+        self.drain_mav()
+
+        self.progress("Connect to the other serial port on the peripheral, which should also be talking mavlink")
+        mav3 = mavutil.mavlink_connection(
+            "tcp:localhost:5773",
+            robust_parsing=True,
+            source_system=10,
+            source_component=10,
+        )
+        self.assert_receive_message("HEARTBEAT", mav=mav3, very_verbose=True)
+        self.drain_mav()
+
+        # make sure we continue to get heartbeats:
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time()
+            if now - tstart > 30:
+                break
+            self.assert_receive_message('HEARTBEAT', mav=mav2, verbose=2)
+            self.drain_mav()
+            self.assert_receive_message('HEARTBEAT', mav=mav3, verbose=2)
+            self.drain_mav()
 
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
