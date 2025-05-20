@@ -3093,8 +3093,6 @@ class TestSuite(ABC):
         are currently known as undocumented'''
         return set([
             "FTN3",  # gyrofft
-            "IE24",  # generator
-            "IEFC",  # generator
             "SBRE",  # septentrio
 
             "SAF1",  # blimp-sim
