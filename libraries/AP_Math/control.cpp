@@ -391,10 +391,8 @@ void shape_angle_vel_accel(float angle_input, float angle_vel_input, float angle
     // The negative acceleration limit is used here because the square root controller
     // manages the approach to the setpoint. Therefore the acceleration is in the opposite
     // direction to the position error.
-    float angle_accel_tc_max;
-    float KPv;
-    angle_accel_tc_max = 0.5 * angle_accel_max;
-    KPv = 0.5 * angle_jerk_max / angle_accel_max;
+    const float angle_accel_tc_max = 0.5 * angle_accel_max;
+    const float KPv = 0.5 * angle_jerk_max / angle_accel_max;
 
     // velocity to correct position
     float angle_vel_target = sqrt_controller(angle_error, KPv, angle_accel_tc_max, dt);
