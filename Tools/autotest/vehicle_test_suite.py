@@ -3116,8 +3116,6 @@ class TestSuite(ABC):
             "SL2",  # glider-sim
             "SLD",  # glider-sim
 
-            "SORC",  # Soaring
-
             "TCLR",  # tempcal
 
             "CC",    # AC_CustomControl
