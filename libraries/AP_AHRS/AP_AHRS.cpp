@@ -1763,6 +1763,16 @@ bool AP_AHRS::get_relative_position_NED_origin(Vector3p &vec) const
     return false;
 }
 
+bool AP_AHRS::get_relative_position_NED_origin_float(Vector3f &vec) const
+{
+    Vector3p tmp_posNED;
+    if (!get_relative_position_NED_origin(tmp_posNED)) {
+        return false;
+    }
+    vec = tmp_posNED.tofloat();
+    return true;
+}
+
 /*
  return a relative ground position from home in meters
 */
@@ -1813,6 +1823,16 @@ bool AP_AHRS::get_relative_position_NE_origin(Vector2p &posNE) const
     }
     // since there is no default case above, this is unreachable
     return false;
+}
+
+bool AP_AHRS::get_relative_position_NE_origin_float(Vector2f &posNE) const
+{
+    Vector2p tmp_posNE;
+    if (!get_relative_position_NE_origin(tmp_posNE)) {
+        return false;
+    }
+    posNE = tmp_posNE.tofloat();
+    return true;
 }
 
 /*
@@ -1868,6 +1888,16 @@ bool AP_AHRS::get_relative_position_D_origin(postype_t &posD) const
     }
     // since there is no default case above, this is unreachable
     return false;
+}
+
+bool AP_AHRS::get_relative_position_D_origin_float(float &posD) const
+{
+    postype_t tmp_posD;
+    if (!get_relative_position_D_origin(tmp_posD)) {
+        return false;
+    }
+    posD = float(tmp_posD);
+    return true;
 }
 
 /*
