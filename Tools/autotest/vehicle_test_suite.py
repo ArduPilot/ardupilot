@@ -3121,9 +3121,6 @@ class TestSuite(ABC):
             "TCLR",  # tempcal
 
             "CC",    # AC_CustomControl
-
-            "FWDT",  # quadplane
-            "QBRK",  # quadplane
         ])
 
     def LoggerDocumentation_whitelist(self):
