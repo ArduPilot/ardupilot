@@ -22,6 +22,15 @@ struct PACKED log_SbpHealth {
     uint32_t last_iar_num_hypotheses;
 };
 
+// @LoggerMessage: SBRE
+// @Description: Swift Time Data
+// @Field: TimeUS: Time since system startup
+// @Field: GWk: GPS week number
+// @Field: GMS: Milliseconds through GPS week
+// @Field: ns_residual: residual of milliseconds rounding in ns
+// @Field: level: GPIO pin levels
+// @Field: quality: time quality
+
 struct PACKED log_SbpEvent {
     LOG_PACKET_HEADER;
     uint64_t time_us;
