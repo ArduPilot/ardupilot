@@ -465,8 +465,7 @@ void Copter::notify_flight_mode() {
 // returns desired angle in centi-degrees
 void Mode::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const
 {
-    // throttle failsafe check
-    if (copter.failsafe.radio || !rc().has_ever_seen_rc_input()) {
+    if (!rc().has_valid_input()) {
         roll_out_cd = 0.0;
         pitch_out_cd = 0.0;
         return;
@@ -487,8 +486,7 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
 {
     Vector2f vel;
 
-    // throttle failsafe check
-    if (copter.failsafe.radio || !rc().has_ever_seen_rc_input()) {
+    if (!rc().has_valid_input()) {
         return vel;
     }
     // fetch roll and pitch inputs
@@ -694,7 +692,7 @@ void Mode::land_run_horizontal_control()
     }
 
     // process pilot inputs
-    if (!copter.failsafe.radio) {
+    if (rc().has_valid_input()) {
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
             LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
@@ -809,7 +807,7 @@ void Mode::land_run_normal_or_precland(bool pause_descent)
 // The passed in location is expected to be NED and in m
 void Mode::precland_retry_position(const Vector3f &retry_pos)
 {
-    if (!copter.failsafe.radio) {
+    if (rc().has_valid_input()) {
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
             LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
@@ -1005,8 +1003,7 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
 // returns desired yaw rate in centi-degrees per second
 float Mode::get_pilot_desired_yaw_rate() const
 {
-    // throttle failsafe check
-    if (copter.failsafe.radio || !rc().has_ever_seen_rc_input()) {
+    if (!rc().has_valid_input()) {
         return 0.0f;
     }
 
