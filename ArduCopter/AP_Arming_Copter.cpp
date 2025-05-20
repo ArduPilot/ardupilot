@@ -138,8 +138,10 @@ bool AP_Arming_Copter::barometer_checks(bool display_failure)
         // that may differ from the baro height due to baro drift.
         const auto &ahrs = AP::ahrs();
         const bool using_baro_ref = !ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL) && ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS);
+        float pos_d_m = 0;
+        UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
         if (using_baro_ref) {
-            if (fabsf(copter.inertial_nav.get_position_z_up_cm() - copter.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
+            if (fabsf(-pos_d_m * 100.0 - copter.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
                 check_failed(Check::BARO, display_failure, "Altitude disparity");
                 ret = false;
             }
@@ -732,8 +734,10 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
             // ignore failure
         }
 
-        // remember the height when we armed
-        copter.arming_altitude_m = copter.inertial_nav.get_position_z_up_cm() * 0.01;
+        // remember the height when we armed (ignore failures)
+        float pos_d_m = 0;
+        UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
+        copter.arming_altitude_m = -pos_d_m;
     }
     copter.update_super_simple_bearing(false);
 

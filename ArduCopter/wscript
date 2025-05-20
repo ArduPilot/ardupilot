@@ -15,7 +15,6 @@ def build(bld):
             'AC_WPNav',
             'AP_Camera',
             'AP_IRLock',
-            'AP_InertialNav',
             'AP_Motors',
             'AP_Avoidance',
             'AP_AdvancedFailsafe',

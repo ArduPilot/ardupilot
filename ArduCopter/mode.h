@@ -259,7 +259,6 @@ protected:
     AC_WPNav *&wp_nav;
     AC_Loiter *&loiter_nav;
     AC_PosControl *&pos_control;
-    AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
     AC_AttitudeControl *&attitude_control;
     MOTOR_CLASS *&motors;

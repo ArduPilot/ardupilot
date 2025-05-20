@@ -14,7 +14,6 @@ Mode::Mode(void) :
     wp_nav(copter.wp_nav),
     loiter_nav(copter.loiter_nav),
     pos_control(copter.pos_control),
-    inertial_nav(copter.inertial_nav),
     ahrs(copter.ahrs),
     attitude_control(copter.attitude_control),
     motors(copter.motors),
