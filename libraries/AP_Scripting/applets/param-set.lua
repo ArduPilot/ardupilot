@@ -18,10 +18,6 @@
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 local UPDATE_INTERVAL_MS = 10           -- update at about 100hz
 
--- get a reference to MAV_SYSID parameter so we can filter messages to
---   just those parameter-sets aimed at this vehicle:
-MAV_SYSID = Parameter("MAV_SYSID")
-
 -- prefix for all text messages:
 local TEXT_PREFIX_STR = "param-set"
 
