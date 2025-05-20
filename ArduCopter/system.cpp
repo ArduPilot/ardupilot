@@ -237,13 +237,11 @@ bool Copter::position_ok() const
 // ekf_has_absolute_position - returns true if the EKF can provide an absolute WGS-84 position estimate
 bool Copter::ekf_has_absolute_position() const
 {
-    if (!ahrs.have_inertial_nav()) {
+    nav_filter_status filt_status;
+    if (!ahrs.have_inertial_nav() || !AP::ahrs().get_filter_status(filt_status)) {
         // do not allow navigation with dcm position
         return false;
     }
-
-    // with EKF use filter status and ekf check
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
 
     // if disarmed we accept a predicted horizontal position
     if (!motors->armed()) {
@@ -258,7 +256,8 @@ bool Copter::ekf_has_absolute_position() const
 bool Copter::ekf_has_relative_position() const
 {
     // return immediately if EKF not used
-    if (!ahrs.have_inertial_nav()) {
+    nav_filter_status filt_status;
+    if (!ahrs.have_inertial_nav() || !AP::ahrs().get_filter_status(filt_status)) {
         return false;
     }
 
@@ -281,9 +280,6 @@ bool Copter::ekf_has_relative_position() const
         return false;
     }
 
-    // get filter status from EKF
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-
     // if disarmed we accept a predicted horizontal relative position
     if (!motors->armed()) {
         return (filt_status.flags.pred_horiz_pos_rel);
@@ -295,13 +291,11 @@ bool Copter::ekf_has_relative_position() const
 // returns true if the ekf has a good altitude estimate (required for modes which do AltHold)
 bool Copter::ekf_alt_ok() const
 {
-    if (!ahrs.have_inertial_nav()) {
+    nav_filter_status filt_status;
+    if (!ahrs.have_inertial_nav() || !AP::ahrs().get_filter_status(filt_status)) {
         // do not allow alt control with only dcm
         return false;
     }
-
-    // with EKF use filter status and ekf check
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
 
     // require both vertical velocity and position
     return (filt_status.flags.vert_vel && filt_status.flags.vert_pos);

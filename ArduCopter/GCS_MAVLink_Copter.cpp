@@ -1069,7 +1069,13 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
             if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED ||
                 packet.coordinate_frame == MAV_FRAME_BODY_NED ||
                 packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-                pos_vector += copter.inertial_nav.get_position_neu_cm();
+                Vector3f pos_ned_m;
+                if (!AP::ahrs().get_relative_position_NED_origin_float(pos_ned_m)) {
+                    // need position estimate to calculate target position
+                    return;
+                }
+                pos_vector.xy() += pos_ned_m.xy() * 100.0;
+                pos_vector.z -= pos_ned_m.z * 100.0;
             }
         }
 
