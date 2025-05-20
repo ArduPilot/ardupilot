@@ -32,29 +32,33 @@ from launch import LaunchDescription
 
 from launch_pytest.tools import process as process_tools
 
-from geometry_msgs.msg import Vector3Stamped
+from rclpy.qos import QoSProfile
+from rclpy.qos import QoSReliabilityPolicy
+from rclpy.qos import QoSHistoryPolicy
 
-AIRSPEED_SENSOR_TOPIC = "ap/airspeed"
-VEL_CTRL_TOPIC = "ap/cmd_vel"
+from ardupilot_msgs.msg import Airspeed
+
+TOPIC = "/ap/airspeed"
+AIRSPEED_RECV_TIMEOUT = 20.0
 
 
 class AirspeedTester(rclpy.node.Node):
-    """Subscribe to airspeed state and command airspeed."""
+    """Subscribe to Airspeed messages."""
 
     def __init__(self):
         """Initialise the node."""
-        super().__init__("airspeed_tester")
+        super().__init__("airspeed_listener")
         self.msg_event_object = threading.Event()
 
     def start_subscriber(self):
         """Start the subscriber."""
-        qos = rclpy.qos.QoSProfile(
-            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT, durability=rclpy.qos.DurabilityPolicy.VOLATILE, depth=1
+        qos_profile = QoSProfile(
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=1,
         )
 
-        self.subscription = self.create_subscription(
-            Vector3Stamped, AIRSPEED_SENSOR_TOPIC, self.airspeed_data_callback, qos
-        )
+        self.subscription = self.create_subscription(Airspeed, TOPIC, self.airspeed_data_callback, qos_profile)
 
         # Add a spin thread.
         self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))
@@ -65,6 +69,36 @@ class AirspeedTester(rclpy.node.Node):
         self.msg_event_object.set()
 
         self.get_logger().info(f"From AP : airspeed {msg}")
+
+
+@launch_pytest.fixture
+def launch_sitl_copter_dds_serial(sitl_copter_dds_serial):
+    """Fixture to create the launch description."""
+    sitl_ld, sitl_actions = sitl_copter_dds_serial
+
+    ld = LaunchDescription(
+        [
+            sitl_ld,
+            launch_pytest.actions.ReadyToTest(),
+        ]
+    )
+    actions = sitl_actions
+    yield ld, actions
+
+
+@launch_pytest.fixture
+def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
+    """Fixture to create the launch description."""
+    sitl_ld, sitl_actions = sitl_copter_dds_udp
+
+    ld = LaunchDescription(
+        [
+            sitl_ld,
+            launch_pytest.actions.ReadyToTest(),
+        ]
+    )
+    actions = sitl_actions
+    yield ld, actions
 
 
 @launch_pytest.fixture
@@ -97,8 +131,59 @@ def launch_sitl_plane_dds_udp(sitl_plane_dds_udp):
     yield ld, actions
 
 
+@pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
+def test_dds_serial_airspeed_msg_recv_copter(launch_context, launch_sitl_copter_dds_serial):
+    """Test airspeed messages are published by AP_DDS."""
+    _, actions = launch_sitl_copter_dds_serial
+    virtual_ports = actions["virtual_ports"].action
+    micro_ros_agent = actions["micro_ros_agent"].action
+    mavproxy = actions["mavproxy"].action
+    sitl = actions["sitl"].action
+
+    # Wait for process to start.
+    process_tools.wait_for_start_sync(launch_context, virtual_ports, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
+
+    rclpy.init()
+    try:
+        node = AirspeedTester()
+        node.start_subscriber()
+        msgs_received_flag = node.msg_event_object.wait(timeout=AIRSPEED_RECV_TIMEOUT)
+        assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
+    finally:
+        rclpy.shutdown()
+    yield
+
+
+@pytest.mark.launch(fixture=launch_sitl_copter_dds_udp)
+def test_dds_udp_airspeed_msg_recv_copter(launch_context, launch_sitl_copter_dds_udp):
+    """Test airspeed messages are published by AP_DDS."""
+    _, actions = launch_sitl_copter_dds_udp
+    micro_ros_agent = actions["micro_ros_agent"].action
+    mavproxy = actions["mavproxy"].action
+    sitl = actions["sitl"].action
+
+    # Wait for process to start.
+    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
+
+    rclpy.init()
+    try:
+        node = AirspeedTester()
+        node.start_subscriber()
+        msgs_received_flag = node.msg_event_object.wait(timeout=AIRSPEED_RECV_TIMEOUT)
+        assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
+
+    finally:
+        rclpy.shutdown()
+    yield
+
+
 @pytest.mark.launch(fixture=launch_sitl_plane_dds_serial)
-def test_dds_serial_airspeed_msg_recv(launch_context, launch_sitl_plane_dds_serial):
+def test_dds_serial_airspeed_msg_recv_plane(launch_context, launch_sitl_plane_dds_serial):
     """Test airspeed messages are published by AP_DDS."""
     _, actions = launch_sitl_plane_dds_serial
     virtual_ports = actions["virtual_ports"].action
@@ -116,16 +201,15 @@ def test_dds_serial_airspeed_msg_recv(launch_context, launch_sitl_plane_dds_seri
     try:
         node = AirspeedTester()
         node.start_subscriber()
-        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
-        assert msgs_received_flag, f"Did not receive '{AIRSPEED_SENSOR_TOPIC}' msgs."
-
+        msgs_received_flag = node.msg_event_object.wait(timeout=AIRSPEED_RECV_TIMEOUT)
+        assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
         rclpy.shutdown()
     yield
 
 
 @pytest.mark.launch(fixture=launch_sitl_plane_dds_udp)
-def test_dds_udp_airspeed_msg_recv(launch_context, launch_sitl_plane_dds_udp):
+def test_dds_udp_airspeed_msg_recv_plane(launch_context, launch_sitl_plane_dds_udp):
     """Test airspeed messages are published by AP_DDS."""
     _, actions = launch_sitl_plane_dds_udp
     micro_ros_agent = actions["micro_ros_agent"].action
@@ -141,8 +225,8 @@ def test_dds_udp_airspeed_msg_recv(launch_context, launch_sitl_plane_dds_udp):
     try:
         node = AirspeedTester()
         node.start_subscriber()
-        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
-        assert msgs_received_flag, f"Did not receive '{AIRSPEED_SENSOR_TOPIC}' msgs."
+        msgs_received_flag = node.msg_event_object.wait(timeout=AIRSPEED_RECV_TIMEOUT)
+        assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
 
     finally:
         rclpy.shutdown()

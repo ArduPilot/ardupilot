@@ -1181,7 +1181,7 @@ AP_InertialSensor::detect_backends(void)
 // macro for use by HAL_INS_PROBE_LIST
 #define GET_I2C_DEVICE(bus, address) hal.i2c_mgr->get_device(bus, address)
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     // if enabled, make the first IMU the external AHRS
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU);
     if (serial_port >= 0) {
@@ -2818,14 +2818,14 @@ void AP_InertialSensor::send_uart_data(void)
 }
 #endif // AP_SERIALMANAGER_IMUOUT_ENABLED
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
 void AP_InertialSensor::handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt)
 {
     for (uint8_t i = 0; i < _backend_count; i++) {
         _backends[i]->handle_external(pkt);
     }
 }
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_EXTERNAL_AHRS_ENABLED
 
 // force save of current calibration as valid
 void AP_InertialSensor::force_save_calibration(void)

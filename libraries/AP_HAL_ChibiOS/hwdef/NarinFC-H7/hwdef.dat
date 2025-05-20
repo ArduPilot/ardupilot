@@ -46,7 +46,6 @@ PA12 OTG_FS_DP OTG1
 
 # Port switching for USB HS and FS,high = USB_FS , LOW = USB_HS
 PH15 USB_HS_ENABLE OUTPUT HIGH
-define USB_HW_ENABLE_HS 0
 
 # these are the pins for SWD debugging with a STlinkv2 or black-magic probe
 PA13 JTMS-SWDIO SWD

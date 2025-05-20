@@ -304,6 +304,8 @@ AP_HW_BrahmaF4                       1184
 AP_HW_X-MAV-AP-F405Mini              1185
 AP_HW_3DRControlN1                   1186
 AP_HW_CORVON405V2_1                  1187
+AP_HW_NarinH5                        1188
+AP_HW_CORVON743V1                    1189
 
 AP_HW_JFB200                         1200
 
@@ -335,6 +337,7 @@ AP_HW_CUBERED_PERIPH                 1409
 AP_HW_RadiolinkPIX6                  1410
 
 AP_HW_JHEMCU-H743HD                  1411
+AP_HW_JHEMCUF405PRO                  1412
 
 AP_HW_LongbowF405                    1422
 
@@ -462,6 +465,8 @@ AP_HW_PixSurveyA2-IND                6104
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
 # IDs 6900-6909 reserved for Easy Aerial
+
+# IDs 6960-6969 reserved for ViaDrone
 
 # IDs 7000-7099 reserved for CUAV
 AP_HW_CUAV-7-NANO                    7000

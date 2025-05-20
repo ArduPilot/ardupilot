@@ -428,6 +428,50 @@ void Rover::update_logging2(void)
 }
 #endif  // HAL_LOGGING_ENABLED
 
+#if AP_ROVER_AUTO_ARM_ONCE_ENABLED
+void Rover::handle_auto_arm_once()
+{
+    if (arming.is_armed()) {
+        // never re-arm automatically if the user ever armed the vehicle
+        auto_arm_once.done = true;
+        return;
+    }
+    if (auto_arm_once.done) {
+        return;
+    }
+    switch (arming.arming_required()) {
+    case AP_Arming::Required::NO:
+    case AP_Arming::Required::YES_MIN_PWM:
+    case AP_Arming::Required::YES_ZERO_PWM:
+        // in case the user changes the require parameter at runtime,
+        // don't auto-arm:
+        auto_arm_once.done = true;
+        return;
+    case AP_Arming::Required::YES_AUTO_ARM_MIN_PWM:
+    case AP_Arming::Required::YES_AUTO_ARM_ZERO_PWM:
+        break;
+    }
+
+    // don't try to arm if prearms are not passing:
+    if (!arming.get_last_prearm_checks_result()) {
+        return;
+    }
+
+    const uint32_t now_ms = AP_HAL::millis();
+    // only attempt to auto arm once per 5 seconds:
+    if (now_ms - auto_arm_once.last_arm_attempt_ms < 5000) {
+        return;
+    }
+    auto_arm_once.last_arm_attempt_ms = now_ms;
+
+    if (!arming.arm(AP_Arming::Method::AUTO_ARM_ONCE)) {
+        return;
+    }
+
+    auto_arm_once.done = true;
+}
+#endif  // AP_ROVER_AUTO_ARM_ONCE_ENABLED
+
 /*
   once a second events
  */
@@ -443,6 +487,10 @@ void Rover::one_second_loop(void)
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.armed = arming.is_armed();
     AP_Notify::flags.flying = hal.util->get_soft_armed();
+
+#if AP_ROVER_AUTO_ARM_ONCE_ENABLED
+    handle_auto_arm_once();
+#endif  // AP_ROVER_AUTO_ARM_ONCE_ENABLED
 
     // attempt to update home position and baro calibration if not armed:
     if (!hal.util->get_soft_armed()) {

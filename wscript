@@ -14,6 +14,7 @@ import ardupilotwaf
 import boards
 import shutil
 import build_options
+import glob
 
 from waflib import Build, ConfigSet, Configure, Context, Utils
 from waflib.Configure import conf
@@ -80,6 +81,10 @@ Build.BuildContext.execute = ardupilotwaf.ap_autoconfigure(Build.BuildContext.ex
 Configure.ConfigurationContext.post_recurse = ardupilotwaf.ap_configure_post_recurse()
 
 
+# Get the GitHub Actions summary file path
+is_ci = os.getenv('CI')
+
+
 def _set_build_context_variant(board):
     for c in Context.classes:
         if not issubclass(c, Build.BuildContext):
@@ -129,6 +134,37 @@ def init(ctx):
 
     # define the variant build commands according to the board
     _set_build_context_variant(board)
+
+def add_build_options(g):
+    '''add any option in Tools/scripts/build_options.py'''
+    for opt in build_options.BUILD_OPTIONS:
+        enable_option = "--" + opt.config_option()
+        disable_option = enable_option.replace("--enable", "--disable")
+        enable_description = opt.description
+        if not enable_description.lower().startswith("enable"):
+            enable_description = "Enable " + enable_description
+        disable_description = "Disable " + enable_description[len("Enable "):]
+        g.add_option(enable_option,
+                     action='store_true',
+                     default=False,
+                     help=enable_description)
+        g.add_option(disable_option,
+                     action='store_true',
+                     default=False,
+                     help=disable_description)
+
+def add_script_options(g):
+    '''add any drivers or applets from libraries/AP_Scripting'''
+    driver_list = glob.glob(os.path.join(Context.run_dir, "libraries/AP_Scripting/drivers/*.lua"))
+    applet_list = glob.glob(os.path.join(Context.run_dir, "libraries/AP_Scripting/applets/*.lua"))
+    for d in driver_list + applet_list:
+        bname = os.path.basename(d)
+        embed_name = bname[:-4]
+        embed_option = "--embed-%s" % embed_name
+        g.add_option(embed_option,
+                     action='store_true',
+                     default=False,
+                     help="Embed %s in ROMFS" % bname)
 
 def options(opt):
     opt.load('compiler_cxx compiler_c waf_unit_test python')
@@ -448,22 +484,10 @@ configuration in order to save typing.
         help='enables checking of new to ensure NEW_NOTHROW is used')
 
     # support enabling any option in build_options.py
-    for opt in build_options.BUILD_OPTIONS:
-        enable_option = "--" + opt.config_option()
-        disable_option = enable_option.replace("--enable", "--disable")
-        enable_description = opt.description
-        if not enable_description.lower().startswith("enable"):
-            enable_description = "Enable " + enable_description
-        disable_description = "Disable " + enable_description[len("Enable "):]
-        g.add_option(enable_option,
-                     action='store_true',
-                     default=False,
-                     help=enable_description)
-        g.add_option(disable_option,
-                     action='store_true',
-                     default=False,
-                     help=disable_description)
-    
+    add_build_options(g)
+
+    # support embedding lua drivers and applets
+    add_script_options(g)
     
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
@@ -484,6 +508,8 @@ def _collect_autoconfig_files(cfg):
                 cfg.files.append(p)
 
 def configure(cfg):
+    if is_ci:
+        print(f"::group::Waf Configure")
 	# we need to enable debug mode when building for gconv, and force it to sitl
     if cfg.options.board is None:
         cfg.options.board = 'sitl'
@@ -677,6 +703,8 @@ def configure(cfg):
 
     cfg.remove_target_list()
     _collect_autoconfig_files(cfg)
+    if is_ci:
+        print("::endgroup::")
 
     if cfg.env.DEBUG and cfg.env.VS_LAUNCH:
         import vscode_helper
@@ -907,6 +935,8 @@ def _load_pre_build(bld):
         brd.pre_build(bld)    
 
 def build(bld):
+    if is_ci:
+        print(f"::group::Waf Build")
     config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
     bld.env.CCDEPS = config_hash
     bld.env.CXXDEPS = config_hash
@@ -946,6 +976,11 @@ def build(bld):
     _build_recursion(bld)
 
     _build_post_funs(bld)
+    if is_ci:
+        def print_ci_endgroup(bld):
+            print(f"::endgroup::")
+        bld.add_post_fun(print_ci_endgroup)
+
 
     if bld.env.DEBUG and bld.env.VS_LAUNCH:
         import vscode_helper

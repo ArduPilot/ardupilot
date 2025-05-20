@@ -79,7 +79,7 @@ public:
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) { return false; }
     virtual int32_t wp_bearing() const { return 0; }
-    virtual uint32_t wp_distance() const { return 0; }
+    virtual float wp_distance_m() const { return 0.0f; }
     virtual float crosstrack_error() const { return 0.0f; }
 
   
@@ -478,7 +478,7 @@ protected:
 
     const char *name() const override { return "SURFACE"; }
     const char *name4() const override { return "SURF"; }
-    Mode::Number number() const override { return Mode::Number::CIRCLE; }
+    Mode::Number number() const override { return Mode::Number::SURFACE; }
 };
 
 

@@ -216,7 +216,7 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
         targets.y * 1.0e-2f,
         targets.z * 1.0e-2f,
         flightmode->wp_bearing() * 1.0e-2f,
-        MIN(flightmode->wp_distance() * 1.0e-2f, UINT16_MAX),
+        MIN(flightmode->wp_distance_m(), UINT16_MAX),
         copter.pos_control->get_pos_error_U_cm() * 1.0e-2f,
         0,
         flightmode->crosstrack_error() * 1.0e-2f);
@@ -1010,10 +1010,10 @@ void GCS_MAVLINK_Copter::handle_message_set_attitude_target(const mavlink_messag
                 climb_rate_or_thrust = 0.0f;
             } else if (packet.thrust > 0.5f) {
                 // climb at up to WPNAV_SPEED_UP
-                climb_rate_or_thrust = (packet.thrust - 0.5f) * 2.0f * copter.wp_nav->get_default_speed_up();
+                climb_rate_or_thrust = (packet.thrust - 0.5f) * 2.0f * copter.wp_nav->get_default_speed_up_cms();
             } else {
                 // descend at up to WPNAV_SPEED_DN
-                climb_rate_or_thrust = (0.5f - packet.thrust) * 2.0f * -copter.wp_nav->get_default_speed_down();
+                climb_rate_or_thrust = (0.5f - packet.thrust) * 2.0f * -copter.wp_nav->get_default_speed_down_cms();
             }
         }
 
@@ -1211,7 +1211,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
                 return;
             }
             Vector3f pos_neu_cm;
-            if (!loc.get_vector_from_origin_NEU(pos_neu_cm)) {
+            if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
                 // input is not valid so stop
                 copter.mode_guided.init(true);
                 return;
@@ -1362,7 +1362,7 @@ uint16_t GCS_MAVLINK_Copter::high_latency_tgt_dist() const
     if (copter.ap.initialised) {
         // return units are dm
         const Mode *flightmode = copter.flightmode;
-        return MIN(flightmode->wp_distance() * 1.0e-2, UINT16_MAX) / 10;
+        return MIN(flightmode->wp_distance_m(), UINT16_MAX) / 10;
     }
     return 0;
 }

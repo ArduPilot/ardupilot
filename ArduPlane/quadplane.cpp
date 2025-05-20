@@ -277,13 +277,13 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Bitmask: 8: Mtrs_Only_Qassist-in tailsitters only uses VTOL motors and not flying surfaces for QASSIST
     // @Bitmask: 10: Disarmed Yaw Tilt-enable motor tilt for yaw when disarmed
     // @Bitmask: 11: Delay Spoolup-delay VTOL spoolup for 2 seconds after arming
-    // @Bitmask: 12: Disable speed based Qassist when using synthethic airspeed estimates
+    // @Bitmask: 12: Disable speed based Qassist when using synthetic airspeed estimates
     // @Bitmask: 13: Disable Ground Effect Compensation-on baro altitude reports
     // @Bitmask: 14: Ignore forward flight angle limits-in Qmodes and use Q_ANGLE_MAX exclusively
     // @Bitmask: 15: ThrLandControl-enable throttle stick control of landing rate
     // @Bitmask: 16: DisableApproach-disable use of approach and airbrake stages in VTOL landing
     // @Bitmask: 17: EnableLandResposition-enable pilot controlled repositioning in AUTO land.Descent will pause while repositioning
-    // @Bitmask: 18: ARMVTOL-arm only in VTOL or AUTO modes
+    // @Bitmask: 18: ARMVTOL-arm only in VTOL modes (or AUTO mode when current nav cmd is VTOL Takeoff)
     // @Bitmask: 19: CompleteTransition-to fixed wing if Q_TRANS_FAIL timer times out instead of QLAND
     // @Bitmask: 20: Force RTL mode-forces RTL mode on rc failsafe in VTOL modes overriding bit 5(USE_QRTL)
     // @Bitmask: 21: Tilt rotor-tilt motors up when disarmed in FW modes (except manual) to prevent ground strikes.
@@ -449,7 +449,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     // @Param: BACKTRANS_MS
     // @DisplayName: SLT and Tiltrotor back transition pitch limit duration
-    // @Description: Pitch angle will increase from 0 to angle max over this duration when switching into VTOL flight in a postion control mode. 0 Disables.
+    // @Description: Pitch angle will increase from 0 to angle max over this duration when switching into VTOL flight in a position control mode. 0 Disables.
     // @Units: ms
     // @Range: 0 10000
     AP_GROUPINFO("BACKTRANS_MS", 28, QuadPlane, back_trans_pitch_limit_ms, 3000),
@@ -821,8 +821,8 @@ bool QuadPlane::setup(void)
         AP_BoardConfig::allocation_error("transition");
     }
 
-    // init wp_nav variables after detaults are setup
-    wp_nav->wp_and_spline_init();
+    // init wp_nav variables after defaults are setup
+    wp_nav->wp_and_spline_init_cm();
 
     transition->force_transition_complete();
 
@@ -955,13 +955,13 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 #endif
 
         if (use_yaw_target) {
-            attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd + offset_deg.x*100,
+            attitude_control->input_euler_angle_roll_pitch_yaw_cd(plane.nav_roll_cd + offset_deg.x*100,
                                                                plane.nav_pitch_cd + offset_deg.y*100,
                                                                yaw_target_cd + offset_deg.z*100,
                                                                true);
         } else {
             // use euler angle attitude control
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd + offset_deg.x*100,
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd + offset_deg.x*100,
                                                                           plane.nav_pitch_cd + offset_deg.y*100,
                                                                           yaw_rate_cds + offset_deg.z*100);
         }
@@ -971,13 +971,13 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
                                plane.pitchController.get_pid_info().target * 100.0f,
                                yaw_rate_cds };
 
-        // rotate into multicopter attitude refence frame
+        // rotate into multicopter attitude reference frame
         ahrs_view->rotate(bf_input_cd);
 
         // disable yaw time constant for 1:1 match of desired rates
         disable_yaw_rate_time_constant();
 
-        attitude_control->input_rate_bf_roll_pitch_yaw_no_shaping(bf_input_cd.x, bf_input_cd.y, bf_input_cd.z);
+        attitude_control->input_rate_bf_roll_pitch_yaw_no_shaping_cds(bf_input_cd.x, bf_input_cd.y, bf_input_cd.z);
     }
 }
 
@@ -1013,7 +1013,7 @@ void QuadPlane::run_z_controller(void)
     }
     const uint32_t now = AP_HAL::millis();
     if (tailsitter.in_vtol_transition(now)) {
-        // never run Z controller in tailsitter transtion
+        // never run Z controller in tailsitter transition
         return;
     }
     if ((now - last_pidz_active_ms) > 20 || !pos_control->is_active_U()) {
@@ -1245,8 +1245,8 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground)
         // when in final use descent rate for final even if alt has climbed again
         height_above_ground = MIN(height_above_ground, land_final_alt);
     }
-    const float max_climb_speed = wp_nav->get_default_speed_up();
-    float ret = linear_interpolate(land_final_speed*100, wp_nav->get_default_speed_down(),
+    const float max_climb_speed = wp_nav->get_default_speed_up_cms();
+    float ret = linear_interpolate(land_final_speed*100, wp_nav->get_default_speed_down_cms(),
                                    height_above_ground,
                                    land_final_alt, land_final_alt+6);
 
@@ -1408,7 +1408,7 @@ float QuadPlane::assist_climb_rate_cms(void) const
         climb_rate = plane.g.flybywire_climb_rate * (plane.nav_pitch_cd/(plane.aparm.pitch_limit_max*100));
         climb_rate *= plane.get_throttle_input();
     }
-    climb_rate = constrain_float(climb_rate, -wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up());
+    climb_rate = constrain_float(climb_rate, -wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms());
 
     // bring in the demanded climb rate over 2 seconds
     const uint32_t ramp_up_time_ms = 2000;
@@ -1564,7 +1564,7 @@ void SLT_Transition::update()
             quadplane.attitude_control->rate_bf_yaw_target(0.0);
         }
         if (quadplane.tiltrotor.enabled() && !quadplane.tiltrotor.has_fw_motor()) {
-            // tilt rotors without decidated fw motors do not have forward throttle output in this stage
+            // tilt rotors without dedicated fw motors do not have forward throttle output in this stage
             // prevent throttle I wind up
             plane.TECS_controller.reset_throttle_I();
         }
@@ -1610,9 +1610,9 @@ void SLT_Transition::update()
             throttle_scaled = 0.01;
         }
         if (quadplane.tiltrotor.enabled() && !quadplane.tiltrotor.has_vtol_motor() && !quadplane.tiltrotor.has_fw_motor()) {
-            // All motors tilting, Use a combination of vertical and forward throttle based on curent tilt angle
+            // All motors tilting, Use a combination of vertical and forward throttle based on current tilt angle
             // scale from all VTOL throttle at airspeed_reached_tilt to all forward throttle at fully forward tilt
-            // this removes a step change in throttle once assistance is stoped
+            // this removes a step change in throttle once assistance is stopped
             const float ratio = (constrain_float(quadplane.tiltrotor.current_tilt, airspeed_reached_tilt, quadplane.tiltrotor.get_fully_forward_tilt()) - airspeed_reached_tilt) / (quadplane.tiltrotor.get_fully_forward_tilt() - airspeed_reached_tilt);
             const float fw_throttle = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),0) * 0.01;
             throttle_scaled = constrain_float(throttle_scaled * (1.0-ratio) + fw_throttle * ratio, 0.0, 1.0);
@@ -1828,7 +1828,7 @@ void QuadPlane::update_throttle_suppression(void)
        if the user has unset the "check throttle zero when arming"
        then the RC controller has a sprung throttle and we should not
        consider non-zero throttle to mean that pilot is commanding
-       takeoff unless in a manual thottle mode
+       takeoff unless in a manual throttle mode
     */
     if (!is_zero(get_throttle_input()) &&
         (rc().arming_check_throttle() ||
@@ -2136,7 +2136,7 @@ void QuadPlane::update_land_positioning(void)
     float pitch_in = plane.channel_pitch->get_control_in() * scale;
 
     // limit correction speed to accel with stopping time constant of 0.5s
-    const float speed_max_cms = wp_nav->get_wp_acceleration() * 0.5;
+    const float speed_max_cms = wp_nav->get_wp_acceleration_cmss() * 0.5;
     const float dt = plane.scheduler.get_loop_period_s();
 
     poscontrol.target_vel_cms = Vector3f(-pitch_in, roll_in, 0) * speed_max_cms;
@@ -2156,12 +2156,12 @@ void QuadPlane::update_land_positioning(void)
  */
 void QuadPlane::run_xy_controller(float accel_limit)
 {
-    float accel_cmss = wp_nav->get_wp_acceleration();
+    float accel_cmss = wp_nav->get_wp_acceleration_cmss();
     if (is_positive(accel_limit)) {
         // allow for accel limit override
         accel_cmss = MAX(accel_cmss, accel_limit*100);
     }
-    const float speed_cms = wp_nav->get_default_speed_xy();
+    const float speed_cms = wp_nav->get_default_speed_NE_cms();
     pos_control->set_max_speed_accel_NE_cm(speed_cms, accel_cmss);
     pos_control->set_correction_speed_accel_NE_cm(speed_cms, accel_cmss);
     if (!pos_control->is_active_NE()) {
@@ -2251,7 +2251,7 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
         // handle resets needed for when the state changes
         if (s == QPOS_POSITION1) {
             reached_wp_speed = false;
-            // never do a rate reset, if attitude control is not active it will be automaticaly reset before running, see: last_att_control_ms
+            // never do a rate reset, if attitude control is not active it will be automatically reset before running, see: last_att_control_ms
             // if it is active then the rate control should not be reset at all
             qp.attitude_control->reset_yaw_target_and_rate(false);
             pos1_speed_limit = plane.ahrs.groundspeed_vector().length();
@@ -2530,12 +2530,12 @@ void QuadPlane::vtol_position_controller(void)
         // calculate speed we should be at to reach the position2
         // target speed at the position2 distance threshold, assuming
         // Q_TRANS_DECEL is correct
-        const float stopping_speed = safe_sqrt(MAX(0, distance-position2_dist_threshold) * 2 * transition_decel) + position2_target_speed;
+        const float stopping_speed = safe_sqrt(MAX(0, distance-position2_dist_threshold) * 2 * transition_decel + sq(position2_target_speed));
 
         float target_speed = stopping_speed;
 
         // maximum configured VTOL speed
-        const float wp_speed = MAX(1.0, wp_nav->get_default_speed_xy() * 0.01);
+        const float wp_speed = MAX(1.0, wp_nav->get_default_speed_NE_cms() * 0.01);
         const float scaled_wp_speed = get_scaled_wp_speed(degrees(diff_wp.angle()));
 
         // limit target speed to a the pos1 speed limit, which starts out at the initial speed
@@ -2653,11 +2653,11 @@ void QuadPlane::vtol_position_controller(void)
         setup_rp_fw_angle_gains();
 
         if (have_target_yaw) {
-            attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd,
+            attitude_control->input_euler_angle_roll_pitch_yaw_cd(plane.nav_roll_cd,
                                                                plane.nav_pitch_cd,
                                                                target_yaw_deg*100, true);
         } else {
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
                                                                           plane.nav_pitch_cd,
                                                                           desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         }
@@ -2703,7 +2703,7 @@ void QuadPlane::vtol_position_controller(void)
 
         // call attitude controller
         set_pilot_yaw_rate_time_constant();
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
                                                                       get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         break;
@@ -2745,7 +2745,7 @@ void QuadPlane::vtol_position_controller(void)
 
         // call attitude controller
         set_pilot_yaw_rate_time_constant();
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
                                                                       get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         break;
@@ -2832,7 +2832,7 @@ void QuadPlane::vtol_position_controller(void)
             }
         }
         if (poscontrol.get_state() == QPOS_LAND_ABORT) {
-            set_climb_rate_cms(wp_nav->get_default_speed_up());
+            set_climb_rate_cms(wp_nav->get_default_speed_up_cms());
             break;
         }
         const float descent_rate_cms = landing_descent_rate_cms(height_above_ground);
@@ -3013,7 +3013,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
 float QuadPlane::get_scaled_wp_speed(float target_bearing_deg) const
 {
     const float yaw_difference = fabsf(wrap_180(degrees(plane.ahrs.get_yaw()) - target_bearing_deg));
-    const float wp_speed = wp_nav->get_default_speed_xy() * 0.01;
+    const float wp_speed = wp_nav->get_default_speed_NE_cms() * 0.01;
     if (yaw_difference > 20) {
         // this gives a factor of 2x reduction in max speed when
         // off by 90 degrees, and 3x when off by 180 degrees
@@ -3134,11 +3134,11 @@ void QuadPlane::takeoff_controller(void)
     run_xy_controller();
 
     set_pilot_yaw_rate_time_constant();
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
                                                                   plane.nav_pitch_cd,
                                                                   get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
 
-    float vel_z = wp_nav->get_default_speed_up();
+    float vel_z = wp_nav->get_default_speed_up_cms();
     if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
         // for guided takeoff we aim for a specific height with zero
         // velocity at that height
@@ -3171,7 +3171,7 @@ void QuadPlane::waypoint_controller(void)
     const uint32_t now = AP_HAL::millis();
     if (!loc.same_loc_as(last_auto_target) ||
         now - last_loiter_ms > 500) {
-        wp_nav->set_wp_destination(poscontrol.target_cm.tofloat());
+        wp_nav->set_wp_destination_NEU_cm(poscontrol.target_cm.tofloat());
         last_auto_target = loc;
     }
     last_loiter_ms = now;
@@ -3194,7 +3194,7 @@ void QuadPlane::waypoint_controller(void)
 
     // call attitude controller
     disable_yaw_rate_time_constant();
-    attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd,
+    attitude_control->input_euler_angle_roll_pitch_yaw_cd(plane.nav_roll_cd,
                                                        plane.nav_pitch_cd,
                                                        wp_nav->get_yaw(),
                                                        true);
@@ -3618,7 +3618,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         target_climb_rate_cms = pos_control->get_vel_target_U_cms();
     }
 
-    // Asemble assistance bitmask, defintion here is used to generate log documentation
+    // Assemble assistance bitmask, definition here is used to generate log documentation
     enum class log_assistance_flags {
         in_assisted_flight = 1U<<0, // true if VTOL assist is active
         forced             = 1U<<1, // true if assistance is forced
@@ -3709,7 +3709,7 @@ float QuadPlane::forward_throttle_pct()
             float fwd_thr = rc_fwd_thr_ch->percent_input();
 
             // set forward throttle to fwd_thr_max * (manual input + mix): range [0,100]
-            fwd_thr *= .01f * constrain_float(fwd_thr_max, 0, 100);
+            fwd_thr *= 0.01f * constrain_float(fwd_thr_max, 0, 100);
             return fwd_thr;
         }
     }
@@ -3759,7 +3759,7 @@ float QuadPlane::forward_throttle_pct()
     // add in a component from our current pitch demand. This tends to
     // move us to zero pitch. Assume that LIM_PITCH would give us the
     // WP nav speed.
-    fwd_vel_error -= (wp_nav->get_default_speed_xy() * 0.01f) * plane.nav_pitch_cd / (plane.aparm.pitch_limit_max*100);
+    fwd_vel_error -= (wp_nav->get_default_speed_NE_cms() * 0.01f) * plane.nav_pitch_cd / (plane.aparm.pitch_limit_max*100);
 
     if (should_relax() && vel_ned.length() < 1) {
         // we may be landed

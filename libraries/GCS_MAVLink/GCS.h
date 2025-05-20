@@ -34,6 +34,10 @@
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
+#ifndef HAL_GCS_ALLOW_PARAM_SET_DEFAULT
+#define HAL_GCS_ALLOW_PARAM_SET_DEFAULT 1
+#endif  // HAL_GCS_IGNORE_PARAM_SET_DEFAULT
+
 // macros used to determine if a message will fit in the space available.
 
 void gcs_out_of_space_to_send(mavlink_channel_t chan);
@@ -321,7 +325,7 @@ public:
     void send_distance_sensor();
     // send_rangefinder sends only if a downward-facing instance is
     // found.  Rover overrides this!
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     virtual void send_rangefinder() const;
 #endif
     void send_proximity();
@@ -487,7 +491,7 @@ protected:
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
     bool accept_packet(const mavlink_status_t &status, const mavlink_message_t &msg) const;
-    void set_ekf_origin(const Location& loc);
+    MAV_RESULT set_ekf_origin(const Location& loc);
 
     virtual uint8_t base_mode() const = 0;
     MAV_STATE system_status() const;
@@ -583,7 +587,9 @@ protected:
     void handle_vision_position_delta(const mavlink_message_t &msg);
 
     virtual void handle_message(const mavlink_message_t &msg);
+#if AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
     void handle_set_gps_global_origin(const mavlink_message_t &msg);
+#endif  // AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
     void handle_setup_signing(const mavlink_message_t &msg) const;
     virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 #if AP_MAVLINK_FAILURE_CREATION_ENABLED
@@ -710,6 +716,7 @@ protected:
     virtual int16_t vfr_hud_throttle() const { return 0; }
 #if AP_AHRS_ENABLED
     virtual float vfr_hud_alt() const;
+    MAV_RESULT handle_command_do_set_global_origin(const mavlink_command_int_t &packet);
 #endif
 
 #if HAL_HIGH_LATENCY2_ENABLED
@@ -1238,6 +1245,17 @@ public:
         return (mav_options & (uint16_t)option) != 0;
     }
 
+    // returns true if attempts to set parameters via PARAM_SET or via
+    // file upload in mavftp should be honoured:
+    bool get_allow_param_set() const {
+        return allow_param_set;
+    }
+    // can be used to force sets via PARAM_SET or via mavftp file
+    // upload to be ignored by the GCS library:
+    void set_allow_param_set(bool new_allowed) {
+        allow_param_set = new_allowed;
+    }
+
     bool out_of_time() const;
 
 #if AP_FRSKY_TELEM_ENABLED
@@ -1346,6 +1364,11 @@ private:
 #else
     static const uint8_t _status_capacity = 30;
 #endif
+
+    // ephemeral state indicating whether the GCS (including via
+    // PARAM_SET and upload of param values via FTP) should be allowed
+    // to change parameter values:
+    bool allow_param_set = HAL_GCS_ALLOW_PARAM_SET_DEFAULT;
 
     // queue of outgoing statustext messages.  Each entry consumes 58
     // bytes of RAM on stm32

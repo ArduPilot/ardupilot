@@ -559,6 +559,9 @@ private:
 
         // last home altitude for detecting changes
         int32_t last_home_alt_cm;
+
+        // have we finished the takeoff ratation (when it applies)?
+        bool rotation_complete;
     } auto_state;
 
 #if AP_SCRIPTING_ENABLED
@@ -973,7 +976,6 @@ private:
     bool verify_loiter_time();
     bool verify_loiter_turns(const AP_Mission::Mission_Command &cmd);
     bool verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd);
-    bool verify_RTL();
     bool verify_continue_and_change_alt();
     bool verify_wait_delay();
     bool verify_within_distance();
@@ -1269,11 +1271,7 @@ private:
         CROW_DISABLED,
     };
 
-    enum class ThrFailsafe {
-        Disabled    = 0,
-        Enabled     = 1,
-        EnabledNoFS = 2
-    };
+    using ThrFailsafe = Parameters::ThrFailsafe;
 
     CrowMode crow_mode = CrowMode::NORMAL;
 

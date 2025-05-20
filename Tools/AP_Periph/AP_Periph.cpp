@@ -553,6 +553,9 @@ void AP_Periph_FW::update()
 #if AP_PERIPH_ADSB_ENABLED
     adsb_update();
 #endif
+#if AP_PERIPH_BATTERY_TAG_ENABLED
+    battery_tag.update();
+#endif
 }
 
 #ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT

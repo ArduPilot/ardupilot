@@ -480,6 +480,15 @@ void AP_Generator_IE_2400::log_write()
             return;
 
         case ProtocolVersion::LEGACY:
+            // @LoggerMessage: IE24
+            // @Description: Intelligent Energy Fuel Cell generator (legacy protocol)
+            // @URL: https://ardupilot.org/copter/docs/common-ie24-fuelcell.html
+            // @Field: TimeUS: Time since system startup
+            // @Field: FUEL: Fuel remaining
+            // @Field: SPMPWR: stack power module power draw
+            // @Field: POUT: output power
+            // @Field: ERR: error codes
+            // @FieldValueEnum: ERR: AP_Generator_IE_2400::ErrorCode
             AP::logger().WriteStreaming(
                 "IE24",
                 "TimeUS,FUEL,SPMPWR,POUT,ERR",
@@ -495,6 +504,22 @@ void AP_Generator_IE_2400::log_write()
             break;
 
         case ProtocolVersion::V2:
+            // @LoggerMessage: IEFC
+            // @Description: Intelligent Energy Fuel Cell generator
+            // @URL: https://ardupilot.org/copter/docs/common-ie24-fuelcell.html
+            // @Field: TimeUS: Time since system startup
+            // @Field: Tank: Fuel remaining
+            // @Field: Inlet: Inlet pressure
+            // @Field: BattV: battery voltage
+            // @Field: OutPwr: output power
+            // @Field: SPMPwr: stack power module power draw
+            // @Field: FNo: fault number
+            // @Field: BPwr: battery power draw
+            // @Field: State: generator state
+            // @FieldValueEnum: State: AP_Generator_IE_2400::V2_State
+            // @Field: F1: error code
+            // @FieldValueEnum: F1: AP_Generator_IE_2400::ErrorCode
+            // @Field: F2: sub-error code
             AP::logger().WriteStreaming(
                 "IEFC",
                 "TimeUS,Tank,Inlet,BattV,OutPwr,SPMPwr,FNo,BPwr,State,F1,F2",

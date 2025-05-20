@@ -87,8 +87,15 @@ public:
     void log_writeDefaultAirSpeed3(const float aspeed, const float uncertainty);
     void log_writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type);
 
-    enum class StateMask {
+    enum class RFRNFlags {
         ARMED = (1U<<0),
+        UNUSED = (1U<<1),
+        FLY_FORWARD = (1U<<2),
+        AHRS_AIRSPEED_SENSOR_ENABLED = (1U<<3),
+        OPTICALFLOW_ENABLED = (1U<<4),
+        WHEELENCODER_ENABLED = (1U<<5),
+        TAKEOFF_EXPECTED = (1U<<6),
+        TOUCHDOWN_EXPECTED = (1U<<7),
     };
 
     // EKF ID for timing checks

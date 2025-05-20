@@ -20,8 +20,8 @@ bool ModeThrow::init(bool ignore_checks)
     nextmode_attempted = false;
 
     // initialise pos controller speed and acceleration
-    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_xy(), BRAKE_MODE_DECEL_RATE);
-    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_xy(), BRAKE_MODE_DECEL_RATE);
+    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), BRAKE_MODE_DECEL_RATE);
+    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), BRAKE_MODE_DECEL_RATE);
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_U_cm(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
@@ -69,12 +69,12 @@ void ModeThrow::run()
         // initialise the z controller
         pos_control->init_U_controller_no_descent();
 
-        // initialise the demanded height to 3m above the throw height
-        // we want to rapidly clear surrounding obstacles
+        // initialise the demanded height below/above the throw height from user parameters
+        // this allows for rapidly clearing surrounding obstacles
         if (g2.throw_type == ThrowType::Drop) {
-            pos_control->set_pos_desired_U_cm(inertial_nav.get_position_z_up_cm() - 100);
+            pos_control->set_pos_desired_U_cm(inertial_nav.get_position_z_up_cm() - g.throw_altitude_descend * 100.0f);
         } else {
-            pos_control->set_pos_desired_U_cm(inertial_nav.get_position_z_up_cm() + 300);
+            pos_control->set_pos_desired_U_cm(inertial_nav.get_position_z_up_cm() + g.throw_altitude_ascend * 100.0f);
         }
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
@@ -158,7 +158,7 @@ void ModeThrow::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // demand a level roll/pitch attitude with zero yaw rate
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(0.0f, 0.0f, 0.0f);
 
         // output 50% throttle and turn off angle boost to maximise righting moment
         attitude_control->set_throttle_out(0.5f, false, g.throttle_filt);
@@ -171,7 +171,7 @@ void ModeThrow::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(0.0f, 0.0f, 0.0f);
 
         // call height controller
         pos_control->set_pos_target_U_from_climb_rate_cm(0.0f);
@@ -191,7 +191,7 @@ void ModeThrow::run()
         pos_control->update_NE_controller();
 
         // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0f);
+        attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), 0.0f);
 
         // call height controller
         pos_control->set_pos_target_U_from_climb_rate_cm(0.0f);
@@ -268,7 +268,7 @@ bool ModeThrow::throw_detected()
         changing_height = inertial_nav.get_velocity_z_up_cms() > THROW_VERTICAL_SPEED;
     }
 
-    // Check the vertical acceleraton is greater than 0.25g
+    // Check the vertical acceleration is greater than 0.25g
     bool free_falling = ahrs.get_accel_ef().z > -0.25 * GRAVITY_MSS;
 
     // Check if the accel length is < 1.0g indicating that any throw action is complete and the copter has been released

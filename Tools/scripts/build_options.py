@@ -34,7 +34,7 @@ class Feature:
 BUILD_OPTIONS = [
     Feature('AHRS', 'EKF3', 'HAL_NAVEKF3_AVAILABLE', 'Enable EKF3', 1, None),
     Feature('AHRS', 'EKF2', 'HAL_NAVEKF2_AVAILABLE', 'Enable EKF2', 0, None),
-    Feature('AHRS', 'AHRS_EXT', 'HAL_EXTERNAL_AHRS_ENABLED', 'Enable External AHRS', 0, None),
+    Feature('AHRS', 'AHRS_EXT', 'AP_EXTERNAL_AHRS_ENABLED', 'Enable External AHRS', 0, None),
     Feature('AHRS', 'MicroStrain5', 'AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED', 'Enable MICROSTRAIN 5-series external AHRS', 0, "AHRS_EXT"),  # noqa: E501
     Feature('AHRS', 'MicroStrain7', 'AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED', 'Enable MICROSTRAIN 7-series external AHRS', 0, "AHRS_EXT"),  # noqa: E501
     Feature('AHRS', 'AHRS_EXT_VECTORNAV', 'AP_EXTERNAL_AHRS_VECTORNAV_ENABLED', 'Enable VectorNav external AHRS', 0, "AHRS_EXT"),  # noqa
@@ -164,6 +164,7 @@ BUILD_OPTIONS = [
     Feature('Copter', 'COPTER_AHRS_AUTO_TRIM', 'AP_COPTER_AHRS_AUTO_TRIM_ENABLED', 'Enable Copter AHRS AutoTrim', 0, None),  # noqa
 
     Feature('Rover', 'ROVER_ADVANCED_FAILSAFE', 'AP_ROVER_ADVANCED_FAILSAFE_ENABLED', 'Enable Advanced Failsafe', 0, "ADVANCED_FAILSAFE"),  # NOQA: 501
+    Feature('Rover', 'ROVER_AUTO_ARM_ONCE', 'AP_ROVER_AUTO_ARM_ONCE_ENABLED', 'Make Auto-Arm-Once functionality available', 0, None),  # NOQA: 501
 
     Feature('Mission', 'MISSION_NAV_PAYLOAD_PLACE', 'AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED', 'Enable NAV_PAYLOAD_PLACE', 0, None),  # noqa
     Feature('Copter', 'AC_PAYLOAD_PLACE_ENABLED', 'AC_PAYLOAD_PLACE_ENABLED', 'Enable Copter Payload Place', 0, 'MISSION_NAV_PAYLOAD_PLACE'),  # noqa
@@ -395,6 +396,7 @@ BUILD_OPTIONS = [
     Feature('MAVLink', 'VIDEO_STREAM_INFORMATION', 'AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'Enable MAVLink VIDEO_STREAM_INFORMATION message', 0, "Camera"), # noqa
     Feature('Other', 'AP_FOLLOW', 'AP_FOLLOW_ENABLED', 'Enable Follow library', 0, None),
     Feature('MAVLink', 'MAVLINK_MSG_FLIGHT_INFORMATION', 'AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'Enable FLIGHT_INFORMATION MAVLink message', 0, None),  # noqa
+    Feature('MAVLink', 'RANGEFINDER_SENDING', 'AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED', 'Enable sending of RANGEFINDER mavlink message', 0, None),  # noqa
 
     Feature('Developer', 'KILL_IMU', 'AP_INERTIALSENSOR_KILL_IMU_ENABLED', 'Allow IMUs to be disabled at runtime', 0, None),
     Feature('Developer', 'CRASHCATCHER', 'AP_CRASHDUMP_ENABLED', 'Enable CrashCatcher', 0, None),
@@ -448,8 +450,9 @@ BUILD_OPTIONS = [
     Feature('Filesystem', 'FILESYSTEM_SYS', 'AP_FILESYSTEM_SYS_ENABLED', 'Enable @SYS/ filesystem', 0, None),
     Feature('Filesystem', 'APJ_TOOL_PARAMETERS', 'FORCE_APJ_DEFAULT_PARAMETERS', 'Enable apj_tool parameter area', 0, None),
 
-    Feature('Networking', 'PPP', 'AP_NETWORKING_BACKEND_PPP', 'Enable PPP networking', 0, None),
-    # Feature('Networking', 'CAN MCAST', 'AP_NETWORKING_CAN_MCAST_ENABLED', 'Enable CAN multicast bridge', 0, None),
+    Feature('Networking', 'Networking', 'AP_NETWORKING_ENABLED', 'Enable networking', 0, None),
+    Feature('Networking', 'PPP', 'AP_NETWORKING_BACKEND_PPP', 'Enable PPP networking', 0, "Networking"),
+    Feature('Networking', 'CAN_MCAST', 'AP_NETWORKING_CAN_MCAST_ENABLED', 'Enable CAN multicast bridge', 0, "Networking,DroneCAN"), # noqa
 
     Feature('CAN', 'DroneCAN', 'HAL_ENABLE_DRONECAN_DRIVERS', 'Enable DroneCAN support', 0, None),
     Feature('CAN', 'CAN Logging', 'AP_CAN_LOGGING_ENABLED', 'Enable CAN logging support', 0, 'Logging'),

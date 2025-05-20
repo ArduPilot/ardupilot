@@ -64,7 +64,7 @@ void ModeAlthold::run_pre()
         target_pitch = degrees(target_pitch);
         target_yaw = degrees(target_yaw);
 
-        attitude_control->input_euler_angle_roll_pitch_yaw(target_roll * 1e2f, target_pitch * 1e2f, target_yaw * 1e2f, true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(target_roll * 1e2f, target_pitch * 1e2f, target_yaw * 1e2f, true);
         return;
     }
 
@@ -76,7 +76,7 @@ void ModeAlthold::run_pre()
 
     // call attitude controller
     if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
         sub.last_pilot_heading = ahrs.yaw_sensor;
         sub.last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
 
@@ -88,11 +88,11 @@ void ModeAlthold::run_pre()
             target_yaw_rate = 0; // Stop rotation on yaw axis
 
             // call attitude controller with target yaw rate = 0 to decelerate on yaw axis
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
             sub.last_pilot_heading = ahrs.yaw_sensor; // update heading to hold
 
         } else { // call attitude controller holding absolute bearing
-            attitude_control->input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, sub.last_pilot_heading, true);
+            attitude_control->input_euler_angle_roll_pitch_yaw_cd(target_roll, target_pitch, sub.last_pilot_heading, true);
         }
     }
 }
@@ -104,6 +104,12 @@ void ModeAlthold::run_post()
 }
 
 void ModeAlthold::control_depth() {
+    // return 0.2f when at the surface to p
+    // scale linearly between 0.2f and 1.0f as we approach the surface
+    float distance_to_surface = (g.surface_depth - inertial_nav.get_position_z_up_cm()) * 0.01f;
+    distance_to_surface = constrain_float(distance_to_surface, 0.0f, 1.0f);
+    motors.set_max_throttle(g.surface_max_throttle + (1.0f - g.surface_max_throttle) * distance_to_surface);
+
     float target_climb_rate_cm_s = sub.get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     target_climb_rate_cm_s = constrain_float(target_climb_rate_cm_s, -sub.get_pilot_speed_dn(), g.pilot_speed_up);
 
@@ -111,7 +117,7 @@ void ModeAlthold::control_depth() {
     //we allow full control to the pilot, but as soon as there's no input, we handle being at surface/bottom
     if (fabsf(target_climb_rate_cm_s) < 0.05f)  {
         if (sub.ap.at_surface) {
-            position_control->set_pos_desired_U_cm(MIN(position_control->get_pos_desired_U_cm(), g.surface_depth - 5.0f)); // set target to 5 cm below surface level
+            position_control->set_pos_desired_U_cm(MIN(position_control->get_pos_desired_U_cm(), g.surface_depth)); // set target to 5 cm below surface level
         } else if (sub.ap.at_bottom) {
             position_control->set_pos_desired_U_cm(MAX(inertial_nav.get_position_z_up_cm() + 10.0f, position_control->get_pos_desired_U_cm())); // set target to 10 cm above bottom
         }

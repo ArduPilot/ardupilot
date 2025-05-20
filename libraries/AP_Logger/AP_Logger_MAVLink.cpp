@@ -333,7 +333,7 @@ void AP_Logger_MAVLink::Write_DMS(AP_Logger_MAVLink &logger_mav)
         return;
     }
     const struct log_DMS pkt{
-        LOG_PACKET_HEADER_INIT(LOG_DMS),
+        LOG_PACKET_HEADER_INIT(LOG_DMS_MSG),
         timestamp         : AP_HAL::micros64(),
         seqno             : logger_mav._next_seq_num-1,
         dropped           : logger_mav._dropped,

@@ -174,7 +174,8 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         _dest_to_next_dest_clear = false;
         if (!next_destination.is_zero()) {
             Vector2f seg_start, seg_end;
-            if (destination.get_vector_xy_from_origin_NE(seg_start) && next_destination.get_vector_xy_from_origin_NE(seg_end)) {
+            if (destination.get_vector_xy_from_origin_NE_cm(seg_start) &&
+                next_destination.get_vector_xy_from_origin_NE_cm(seg_end)) {
                 _dest_to_next_dest_clear = !intersects_fence(seg_start, seg_end);
             }
         }
@@ -879,7 +880,8 @@ bool AP_OADijkstra::find_closest_node_idx(node_index &node_idx) const
 bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &destination, AP_OADijkstra_Error &err_id)
 {
     // convert origin and destination to offsets from EKF origin
-    if (!origin.get_vector_xy_from_origin_NE(_path_source) || !destination.get_vector_xy_from_origin_NE(_path_destination)) {
+    if (!origin.get_vector_xy_from_origin_NE_cm(_path_source) ||
+        !destination.get_vector_xy_from_origin_NE_cm(_path_destination)) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_NO_POSITION_ESTIMATE;
         return false;
     }

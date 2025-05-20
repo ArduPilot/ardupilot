@@ -22,21 +22,22 @@ colcon test --executor sequential --parallel-workers 0 --base-paths src/ardupilo
 
 """
 
-import launch_pytest
-import math
 import time
 import pytest
 import rclpy
 import rclpy.node
 import threading
 
-from launch import LaunchDescription
-
 from launch_pytest.tools import process as process_tools
 from std_srvs.srv import Trigger
 
+from launch_fixtures import (
+    launch_sitl_copter_dds_serial,
+    launch_sitl_copter_dds_udp,
+)
 
 SERVICE = "/ap/prearm_check"
+
 
 class PreamService(rclpy.node.Node):
     def __init__(self):
@@ -57,7 +58,7 @@ class PreamService(rclpy.node.Node):
         time.sleep(0.2)
         try:
             return future.result().success
-        except Exception  as e:
+        except Exception as e:
             print(e)
             return False
 
@@ -80,38 +81,6 @@ class PreamService(rclpy.node.Node):
             print("start_prearm not started yet")
         self.prearm_thread = threading.Thread(target=self.process_prearm)
         self.prearm_thread.start()
-        
-        
-
-
-@launch_pytest.fixture
-def launch_sitl_copter_dds_serial(sitl_copter_dds_serial):
-    """Fixture to create the launch description."""
-    sitl_ld, sitl_actions = sitl_copter_dds_serial
-
-    ld = LaunchDescription(
-        [
-            sitl_ld,
-            launch_pytest.actions.ReadyToTest(),
-        ]
-    )
-    actions = sitl_actions
-    yield ld, actions
-
-
-@launch_pytest.fixture
-def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
-    """Fixture to create the launch description."""
-    sitl_ld, sitl_actions = sitl_copter_dds_udp
-
-    ld = LaunchDescription(
-        [
-            sitl_ld,
-            launch_pytest.actions.ReadyToTest(),
-        ]
-    )
-    actions = sitl_actions
-    yield ld, actions
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
