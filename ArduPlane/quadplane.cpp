@@ -2959,6 +2959,13 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
         plane.nav_pitch_cd = MIN(plane.nav_pitch_cd, (int32_t)q_bck_pitch_lim_cd);
 
 #if HAL_LOGGING_ENABLED
+        // @LoggerMessage: QBRK
+        // @Description: Quadplane Braking
+        // @Field: TimeUS: Time since system startup
+        // @Field: SpdScaler: braking speed scaler
+        // @Field: NPULCD: upper limit for navigation pitch
+        // @Field: QBPLCD: upper limit for back transition pitch
+        // @Field: NPCD: demanded navigation pitch
         AP::logger().WriteStreaming("QBRK",
                                 "TimeUS,SpdScaler,NPULCD,QBPLCD,NPCD",  // labels
                                 "Qffii",    // fmt
@@ -2990,6 +2997,15 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
 
 #if HAL_LOGGING_ENABLED
     // Diagnostics logging - remove when feature is fully flight tested.
+    // @LoggerMessage: FWDT
+    // @Description: Forward Throttle calculations
+    // @Field: TimeUS: Time since system startup
+    // @Field: fts: forward throttle scaler
+    // @Field: qfplcd: quadplane forward pitch limit
+    // @Field: npllcd: navigation pitch lower limit
+    // @Field: npcd: demanded navigation pitch
+    // @Field: qft: quadplane forward throttle
+    // @Field: npulcd: upper limit for navigation pitch
     AP::logger().WriteStreaming("FWDT",
                                 "TimeUS,fts,qfplcd,npllcd,npcd,qft,npulcd",  // labels
                                 "Qffffff",    // fmt
