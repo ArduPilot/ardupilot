@@ -3092,7 +3092,6 @@ class TestSuite(ABC):
         '''returns a set of messages should should be documented but
         are currently known as undocumented'''
         return set([
-            "SBRE",  # septentrio
 
             "SAF1",  # blimp-sim
             "SAN1",  # blimp-sim
