@@ -5,17 +5,23 @@ Mode::AutoYaw Mode::auto_yaw;
 // roi_yaw - returns heading towards location held in roi
 float Mode::AutoYaw::roi_yaw() const
 {
-    return get_bearing_cd(copter.inertial_nav.get_position_xy_cm(), roi.xy());
+    Vector2f pos_ne_m;
+    if (AP::ahrs().get_relative_position_NE_origin_float(pos_ne_m)){
+        return get_bearing_cd(pos_ne_m * 100.0, roi.xy());
+    }
+    return copter.attitude_control->get_att_target_euler_cd().z;
 }
 
 // returns a yaw in degrees, direction of vehicle travel:
 float Mode::AutoYaw::look_ahead_yaw()
 {
-    const Vector3f& vel = copter.inertial_nav.get_velocity_neu_cms();
-    const float speed_sq = vel.xy().length_squared();
     // Commanded Yaw to automatically look ahead.
-    if (copter.position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED))) {
-        _look_ahead_yaw = degrees(atan2f(vel.y,vel.x));
+    Vector3f vel_ned_ms;
+    if (copter.position_ok() && AP::ahrs().get_velocity_NED(vel_ned_ms)) {
+        const float speed_sq = vel_ned_ms.xy().length_squared() * 10000.0;
+        if (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED)) {
+            _look_ahead_yaw = degrees(atan2f(vel_ned_ms.y,vel_ned_ms.x));
+        }
     }
     return _look_ahead_yaw;
 }
