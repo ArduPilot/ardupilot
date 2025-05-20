@@ -202,6 +202,16 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("_ADSB",   10, GCS_MAVLINK, streamRates[GCS_MAVLINK::STREAM_ADSB], DRATE(GCS_MAVLINK::STREAM_ADSB)),
+
+    // ID gap here for more stream rates
+
+    // @Param: _DEVID
+    // @DisplayName: DeviceID
+    // @Description: ID of device using this MAVLink channel
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("_DEVID",   20, GCS_MAVLINK, devid, 0),
+
     AP_GROUPEND
 };
 #undef DRATE

@@ -446,6 +446,7 @@ void AP_SerialManager::init()
         auto *uart = hal.serial(i);
 
         state[i].idx = i;
+        state[i].set_devid(AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UART, i, 0, 0));
 
         if (uart != nullptr) {
             set_options(i);

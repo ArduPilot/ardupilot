@@ -71,6 +71,8 @@ void AP_Networking::ports_init(void)
         auto &p = ports[i];
         NetworkPortType ptype = (NetworkPortType)p.type;
         p.state.idx = AP_SERIALMANAGER_NET_PORT_1 + i;
+        p.state.devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_NET_PORT, i, 0, 0));
+
         switch (ptype) {
         case NetworkPortType::NONE:
             break;
