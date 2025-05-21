@@ -5442,7 +5442,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_wind_estimate(const mavlink_
         return MAV_RESULT_DENIED;
     }
 
-    AP::ahrs().set_external_wind_estimate(packet.param1, packet.param3);
+    const float speed = packet.param1;
+    const float speed_accuracy = packet.param2;
+    const float direction = packet.param3;
+    const float direction_accuracy = packet.param4;
+
+    if (!AP::ahrs().set_external_wind_estimate(speed, speed_accuracy, direction, direction_accuracy)) {
+        return MAV_RESULT_FAILED;
+    }
+
     return MAV_RESULT_ACCEPTED;
 }
 #endif // AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
