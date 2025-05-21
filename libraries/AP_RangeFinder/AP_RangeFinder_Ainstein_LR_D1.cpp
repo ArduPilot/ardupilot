@@ -114,6 +114,32 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
 
     const uint8_t snr = u.packet.object1_snr;
 
+    signal_quality_pct = linear_interpolate(
+        RangeFinder::SIGNAL_QUALITY_MIN, RangeFinder::SIGNAL_QUALITY_MAX,
+        snr,
+        0, 255
+    );
+
+    if (is_v19000) {
+        abort();
+
+        // the device explicitly tells us if it is out-of-range:
+        switch (u.packet_v19000.out_of_range_indication) {
+        default: // invalid value / malformed packet
+        case 0:  // "undefined altitude"
+            return false;
+        case 1:  // "Valid Altitude"
+            break;
+        case 2:  // "Altitude is too close"
+            reading_m = min_distance() - 1;
+            break;
+        case 3:  // "Altitude is too far"
+            reading_m = max_distance() + 1;
+            break;
+        }
+    } else {  // not a v19.0.0.0 packet; we try to infer out-of-range
+              // from the SNR field:
+
         /* From datasheet:
             Altitude measurements associated with a SNR value 
             of 13dB or lower are considered erroneous. 
@@ -123,11 +149,6 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
             The altitude measurements should not in any circumstances be used as true
             measurements independently of the corresponding SNR values. 
         */
-    signal_quality_pct = linear_interpolate(
-        RangeFinder::SIGNAL_QUALITY_MIN, RangeFinder::SIGNAL_QUALITY_MAX,
-        snr,
-        0, 255
-    );
 
         if (snr <= 13) {
             if (snr == 0) {
@@ -135,6 +156,7 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
                 reading_m = max_distance() + 1;
             }
         }
+    }
 
     // consume this packet:
     move_signature_in_buffer(sizeof(u.packet));
