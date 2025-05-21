@@ -56,8 +56,26 @@ uint8_t AP_RangeFinder_Ainstein_LR_D1::LRD1Union::calculate_checksum() const
     return crc_sum_of_bytes(&buffer[3], sizeof(u.packet)-4);
 }
 
-// get_reading - read a value from the sensor
+// get_reading - read all samples, return last.  The device sends at
+// 40Hz, so there should only ever be one sample available.  Assuming
+// that something's gone wrong with scheduling, we will simply return
+// the last.
 bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
+{
+    bool ret = false;
+    for (uint8_t i=0; i<10; i++) {
+        float tmp_reading = 0;
+        if (!get_one_reading(tmp_reading)) {
+            break;
+        }
+        ret = true;
+        reading_m = tmp_reading;
+    }
+    return ret;
+}
+
+// get_one_reading - read a value from the sensor
+bool AP_RangeFinder_Ainstein_LR_D1::get_one_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;

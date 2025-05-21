@@ -47,8 +47,14 @@ private:
 
     using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
-    // get a reading
+    // get_reading - read all samples, return last.  The device sends at
+    // 40Hz, so there should only ever be one sample available.  Assuming
+    // that something's gone wrong with scheduling, we will simply return
+    // the last.
     bool get_reading(float &reading_m) override;
+
+    // get a reading
+    bool get_one_reading(float &reading_m);
 
     // 0 is no return value, 100 is perfect.  false means signal
     // quality is not available
