@@ -345,9 +345,9 @@ void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vec
 void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float euler_roll_angle_rad = radians(euler_roll_angle_cd * 0.01f);
-    float euler_pitch_angle_rad = radians(euler_pitch_angle_cd * 0.01f);
-    float euler_yaw_rate_rads = radians(euler_yaw_rate_cds * 0.01f);
+    float euler_roll_angle_rad = euler_roll_angle_cd * radians(0.01f);
+    float euler_pitch_angle_rad = euler_pitch_angle_cd * radians(0.01f);
+    float euler_yaw_rate_rads = euler_yaw_rate_cds * radians(0.01f);
     input_euler_angle_roll_pitch_euler_rate_yaw_rad(euler_roll_angle_rad, euler_pitch_angle_rad, euler_yaw_rate_rads);
 }
 
@@ -403,9 +403,9 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad(float e
 void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
 {
     // Convert from centidegrees on public interface to radians
-    float euler_roll_angle_rad = radians(euler_roll_angle_cd * 0.01f);
-    float euler_pitch_angle_rad = radians(euler_pitch_angle_cd * 0.01f);
-    float euler_yaw_angle_rad = radians(euler_yaw_angle_cd * 0.01f);
+    float euler_roll_angle_rad = euler_roll_angle_cd * radians(0.01f);
+    float euler_pitch_angle_rad = euler_pitch_angle_cd * radians(0.01f);
+    float euler_yaw_angle_rad = euler_yaw_angle_cd * radians(0.01f);
 
     input_euler_angle_roll_pitch_yaw_rad(euler_roll_angle_rad, euler_pitch_angle_rad, euler_yaw_angle_rad, slew_yaw);
 }
@@ -470,9 +470,9 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(float euler_roll_a
 void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_cds(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float euler_roll_rate_rads = radians(euler_roll_rate_cds * 0.01f);
-    float euler_pitch_rate_rads = radians(euler_pitch_rate_cds * 0.01f);
-    float euler_yaw_rate_rads = radians(euler_yaw_rate_cds * 0.01f);
+    float euler_roll_rate_rads = euler_roll_rate_cds * radians(0.01f);
+    float euler_pitch_rate_rads = euler_pitch_rate_cds * radians(0.01f);
+    float euler_yaw_rate_rads = euler_yaw_rate_cds * radians(0.01f);
 
     input_euler_rate_roll_pitch_yaw_rads(euler_roll_rate_rads, euler_pitch_rate_rads, euler_yaw_rate_rads);
 }
@@ -521,9 +521,9 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_rads(float euler_roll_r
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float roll_rate_bf_rads = radians(roll_rate_bf_cds * 0.01f);
-    float pitch_rate_bf_rads = radians(pitch_rate_bf_cds * 0.01f);
-    float yaw_rate_bf_rads = radians(yaw_rate_bf_cds * 0.01f);
+    float roll_rate_bf_rads = roll_rate_bf_cds * radians(0.01f);
+    float pitch_rate_bf_rads = pitch_rate_bf_cds * radians(0.01f);
+    float yaw_rate_bf_rads = yaw_rate_bf_cds * radians(0.01f);
 
     input_rate_bf_roll_pitch_yaw_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
@@ -567,9 +567,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_ra
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float roll_rate_bf_rads = radians(roll_rate_bf_cds * 0.01f);
-    float pitch_rate_bf_rads = radians(pitch_rate_bf_cds * 0.01f);
-    float yaw_rate_bf_rads = radians(yaw_rate_bf_cds * 0.01f);
+    float roll_rate_bf_rads = roll_rate_bf_cds * radians(0.01f);
+    float pitch_rate_bf_rads = pitch_rate_bf_cds * radians(0.01f);
+    float yaw_rate_bf_rads = yaw_rate_bf_cds * radians(0.01f);
 
     input_rate_bf_roll_pitch_yaw_2_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
@@ -598,9 +598,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2_rads(float roll_rate_bf_
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float roll_rate_bf_rads = radians(roll_rate_bf_cds * 0.01f);
-    float pitch_rate_bf_rads = radians(pitch_rate_bf_cds * 0.01f);
-    float yaw_rate_bf_rads = radians(yaw_rate_bf_cds * 0.01f);
+    float roll_rate_bf_rads = roll_rate_bf_cds * radians(0.01f);
+    float pitch_rate_bf_rads = pitch_rate_bf_cds * radians(0.01f);
+    float yaw_rate_bf_rads = yaw_rate_bf_cds * radians(0.01f);
 
     input_rate_bf_roll_pitch_yaw_3_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
@@ -662,9 +662,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3_rads(float roll_rate_bf_
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_no_shaping_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
-    const float roll_rate_bf_rads = radians(roll_rate_bf_cds * 0.01f);
-    const float pitch_rate_bf_rads = radians(pitch_rate_bf_cds * 0.01f);
-    const float yaw_rate_bf_rads = radians(yaw_rate_bf_cds * 0.01f);
+    const float roll_rate_bf_rads = roll_rate_bf_cds * radians(0.01f);
+    const float pitch_rate_bf_rads = pitch_rate_bf_cds * radians(0.01f);
+    const float yaw_rate_bf_rads = yaw_rate_bf_cds * radians(0.01f);
 
     input_rate_bf_roll_pitch_yaw_no_shaping_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
@@ -692,9 +692,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_no_shaping_rads(float roll
 void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw_cd(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd)
 {
     // Convert from centidegrees on public interface to radians
-    float roll_angle_step_bf_rad = radians(roll_angle_step_bf_cd * 0.01f);
-    float pitch_angle_step_bf_rad = radians(pitch_angle_step_bf_cd * 0.01f);
-    float yaw_angle_step_bf_rad = radians(yaw_angle_step_bf_cd * 0.01f);
+    float roll_angle_step_bf_rad = roll_angle_step_bf_cd * radians(0.01f);
+    float pitch_angle_step_bf_rad = pitch_angle_step_bf_cd * radians(0.01f);
+    float yaw_angle_step_bf_rad = yaw_angle_step_bf_cd * radians(0.01f);
 
     input_angle_step_bf_roll_pitch_yaw_rad(roll_angle_step_bf_rad, pitch_angle_step_bf_rad, yaw_angle_step_bf_rad);
 }
@@ -724,9 +724,9 @@ void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw_rad(float roll_angle
 void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_cds(float roll_rate_step_bf_cds, float pitch_rate_step_bf_cds, float yaw_rate_step_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float roll_rate_step_bf_rads = radians(roll_rate_step_bf_cds * 0.01f);
-    float pitch_rate_step_bf_rads = radians(pitch_rate_step_bf_cds * 0.01f);
-    float yaw_rate_step_bf_rads = radians(yaw_rate_step_bf_cds * 0.01f);
+    float roll_rate_step_bf_rads = roll_rate_step_bf_cds * radians(0.01f);
+    float pitch_rate_step_bf_rads = pitch_rate_step_bf_cds * radians(0.01f);
+    float yaw_rate_step_bf_rads = yaw_rate_step_bf_cds * radians(0.01f);
 
     input_rate_step_bf_roll_pitch_yaw_rads(roll_rate_step_bf_rads, pitch_rate_step_bf_rads, yaw_rate_step_bf_rads);
 }
@@ -750,7 +750,7 @@ void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_rads(float roll_rate_
 void AC_AttitudeControl::input_thrust_vector_rate_heading_cds(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw)
 {
     // Convert from centidegrees on public interface to radians
-    float heading_rate_rads = radians(heading_rate_cds * 0.01f);
+    float heading_rate_rads = heading_rate_cds * radians(0.01f);
 
     input_thrust_vector_rate_heading_rads(thrust_vector, heading_rate_rads, slew_yaw);
 }
@@ -812,8 +812,8 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& t
 void AC_AttitudeControl::input_thrust_vector_heading_cd(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float heading_rate_rads = radians(heading_rate_cds * 0.01f);
-    float heading_angle_rad = radians(heading_angle_cd * 0.01f);
+    float heading_rate_rads = heading_rate_cds * radians(0.01f);
+    float heading_angle_rad = heading_angle_cd * radians(0.01f);
 
     input_thrust_vector_heading_rad(thrust_vector, heading_angle_rad, heading_rate_rads);
 }
