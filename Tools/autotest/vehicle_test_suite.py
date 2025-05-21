@@ -3098,7 +3098,6 @@ class TestSuite(ABC):
             "SAN2",  # blimp-sim
             "SBA1",  # blimp-sim
             "SBLM",  # blimp-sim
-            "SCTL",  # glider-sim
             "SFA1",  # blimp-sim
             "SFAN",  # blimp-sim
             "SFN",   # blimp-sim
@@ -3109,10 +3108,6 @@ class TestSuite(ABC):
             "SRT2",  # blimp-sim
             "SRT3",  # blimp-sim
             "SSAN",  # blimp-sim
-
-            "GLT",  # glider sim
-            "SL2",  # glider-sim
-            "SLD",  # glider-sim
         ])
 
     def LoggerDocumentation_whitelist(self):
