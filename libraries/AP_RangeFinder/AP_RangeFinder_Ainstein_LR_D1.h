@@ -55,6 +55,16 @@ private:
         AltitudeReading   = (1U << 7),  // 0x80
     };
 
+    // Ainstein LR-D1 firmware emits a single message with the same
+    // header bytes, size, device_id and length, but different
+    // meanings for some of the fields!  We differentiate between the
+    // "original" packet and the new-style packet by looking at the
+    // "byte 12" (at offset 11).  If it is not 0xff then we consider
+    // the packet to be of the "v19.0.0" format.  In this new format
+    // there is no objectt count, there are 16 malfunction alert bits,
+    // "byte 12" contains the unit's self-assessed height-valid
+    // information a lot of fields move from "other object readings"
+    // to "reserved"
     union LRD1Union {
         struct PACKED LRD1Packet {
             uint8_t header_msb;
@@ -69,14 +79,27 @@ private:
             uint8_t unused[20];
             uint8_t checksum;  // (data4+data5+…+data29+data31) bitwise-AND with 0xFF
         } packet;
-        uint8_t buffer[64];  // each packet is 30 bytes long
+        struct PACKED LRD1Packet_v19000 {
+            uint8_t header_msb;
+            uint8_t header_lsb;
+            uint8_t device_id;
+            uint8_t length;  // "fixed as 28 bytes"
+            uint16_t malfunction_alert;
+            uint16_t object1_alt;
+            uint8_t object1_snr;
+            uint16_t object1_velocity;
+            uint8_t out_of_range_indication;
+            uint8_t reserved[19];
+            uint8_t checksum;  // (data4+data5+…+data29+data31) bitwise-AND with 0xFF
+        } packet_v19000;
+        uint8_t buffer[64];  // each packet is 32 bytes long
 
         // return checksum calculated from data in buffer
         uint8_t calculate_checksum() const;
     } u;
     uint8_t buffer_used;
 
-    uint8_t malfunction_alert_prev;
+    uint16_t malfunction_alert_prev;
     uint32_t malfunction_alert_last_send_ms;
 
     int8_t signal_quality_pct = RangeFinder::SIGNAL_QUALITY_UNKNOWN;    

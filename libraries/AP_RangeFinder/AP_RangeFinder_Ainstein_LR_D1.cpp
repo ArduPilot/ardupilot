@@ -88,11 +88,23 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
         return false;
     }
 
+    // distinguish between old and new packet format by inspecting
+    // "byte 12" (offset 11); in the old format this will always be
+    // 0xff.
+    const bool is_v19000 = (u.packet_v19000.out_of_range_indication != 0xff);
+
+    // same for both packet formats:
     reading_m = be16toh(u.packet.object1_alt) * 0.01;
 
 #if AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
         const uint32_t now_ms = AP_HAL::millis();
-        const uint8_t malfunction_alert = u.packet.malfunction_alert;
+        uint16_t malfunction_alert;
+        if (is_v19000) {
+            // new packet format allows for 16 bits:
+            malfunction_alert = be16toh(u.packet_v19000.malfunction_alert);
+        } else {
+            malfunction_alert = u.packet.malfunction_alert;
+        }
         if (malfunction_alert_prev != malfunction_alert && now_ms - malfunction_alert_last_send_ms >= 1000) {
             report_malfunction(malfunction_alert, malfunction_alert_prev);
             malfunction_alert_prev = malfunction_alert;
