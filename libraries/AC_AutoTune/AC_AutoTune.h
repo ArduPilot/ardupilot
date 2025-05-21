@@ -170,8 +170,7 @@ protected:
     bool init_internals(bool use_poshold,
                         AC_AttitudeControl *attitude_control,
                         AC_PosControl *pos_control,
-                        AP_AHRS_View *ahrs_view,
-                        AP_InertialNav *inertial_nav);
+                        AP_AHRS_View *ahrs_view);
 
     // send intermittent updates to user on status of tune
     virtual void do_gcs_announcements() = 0;
@@ -263,7 +262,6 @@ protected:
     AC_AttitudeControl *attitude_control;
     AC_PosControl *pos_control;
     AP_AHRS_View *ahrs_view;
-    AP_InertialNav *inertial_nav;
     AP_Motors *motors;
 
     AxisType axis;                       // current axis being tuned. see AxisType enum
