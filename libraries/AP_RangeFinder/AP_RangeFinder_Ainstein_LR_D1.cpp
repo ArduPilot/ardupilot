@@ -125,26 +125,17 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
         */
         signal_quality_pct = (snr <= 13 || malfunction_alert != 0) ? RangeFinder::SIGNAL_QUALITY_MIN : RangeFinder::SIGNAL_QUALITY_MAX;
 
-    bool has_data = false;
-
-        if (snr <= 13) {            
-            has_data = false;           
+        if (snr <= 13) {
             if (snr == 0) {
-                state.status = RangeFinder::Status::OutOfRangeHigh;
-                reading_m = MAX(656, max_distance() + 1);
-                has_data = true;
-            } else {
-                state.status = RangeFinder::Status::NoData;
+                // out-of-range high:
+                reading_m = max_distance() + 1;
             }
-        } else {
-            has_data = true;
-            state.status = RangeFinder::Status::Good;
         }
 
     // consume this packet:
     move_signature_in_buffer(sizeof(u.packet));
 
-    return has_data;
+    return true;
 }
 
 #if AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
