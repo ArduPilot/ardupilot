@@ -118,7 +118,7 @@ void AP_RangeFinder_Ainstein_LR_D1::report_malfunction(const uint8_t _malfunctio
         { MalfunctionAlert::Temperature, "Temperature" },
         { MalfunctionAlert::Voltage, "Voltage" },
         { MalfunctionAlert::IFSignalSaturation, "IF signal saturation" },
-        { MalfunctionAlert::AltitudeReading, "Attitude reading overflow" },
+        { MalfunctionAlert::AltitudeReading, "Altitude reading overflow" },
     };
 
     for (const auto &alert : alerts) {
