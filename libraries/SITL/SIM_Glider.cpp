@@ -128,6 +128,14 @@ Vector3f Glider::getTorque(float inputAileron, float inputElevator, float inputR
 
 
 #if 0
+    // @LoggerMessage: GLT
+    // @Description: Simulated Glider Angles and coefficients
+    // @Field: TimeUS: Time since system startup
+    // @Field: Alpha: alpha angle
+    // @Field: Beta: beta angle
+    // @Field: Cl: lift coefficent
+    // @Field: Cm: roll coffecient
+    // @Field: Cn: yaw coefficient
     AP::logger().Write("GLT", "TimeUS,Alpha,Beta,Cl,Cm,Cn", "Qfffff",
                        AP_HAL::micros64(),
                        degrees(alpharad),
@@ -181,6 +189,23 @@ Vector3f Glider::getForce(float inputAileron, float inputElevator, float inputRu
             airspeed > 1) {
             last_drag_ms = now;
 #if HAL_LOGGING_ENABLED
+            // @LoggerMessage: SLD
+            // @Description: Simulated Glider Dropped Calculations
+            // @Field: TimeUS: Time since system startup
+            // @Field: AltFt: altitude in feet
+            // @Field: AltM: altitude in metres
+            // @Field: EAS: equivalent airspeed
+            // @Field: TAS: true airspeed
+            // @Field: AD: air density
+            // @Field: Fl: lift
+            // @Field: Fd: drag
+            // @Field: LD: lift/drag ratio
+            // @Field: Elev: elevator output
+            // @Field: AoA: angle of attack
+            // @Field: Fx: X-axis force
+            // @Field: Fy: Y-axis force
+            // @Field: Fz: Z-axis force
+            // @Field: q: air pressure
             AP::logger().Write("SLD", "TimeUS,AltFt,AltM,EAS,TAS,AD,Fl,Fd,LD,Elev,AoA,Fx,Fy,Fz,q", "Qffffffffffffff",
                                AP_HAL::micros64(),
                                (location.alt*0.01)/FEET_TO_METERS,
@@ -193,6 +218,23 @@ Vector3f Glider::getForce(float inputAileron, float inputElevator, float inputRu
                                degrees(alpharad),
                                Fx, Fy, Fz,
                                qPa);
+            // @LoggerMessage: SL2
+            // @Description: More Simulated Glider Dropped Calculations
+            // @Field: TimeUS: Time since system startup
+            // @Field: AltFt: altitude in feet
+            // @Field: KEAS: equivalent airspeed in knots
+            // @Field: KTAS: true airspeed in knots
+            // @Field: AD: air density
+            // @Field: Fl: lift
+            // @Field: Fd: drag
+            // @Field: LD: lift/drag ratio
+            // @Field: Elev: elevator output
+            // @Field: Ail: aileron output
+            // @Field: Rud: rudder output
+            // @Field: AoA: Angle of Attack
+            // @Field: SSA: Side Slip Angle
+            // @Field: q: air pressire
+            // @Field: Az: z-axis body-frame acceleration
             AP::logger().Write("SL2", "TimeUS,AltFt,KEAS,KTAS,AD,Fl,Fd,LD,Elev,Ail,Rud,AoA,SSA,q,Az", "Qffffffffffffff",
                                AP_HAL::micros64(),
                                (location.alt*0.01)/FEET_TO_METERS,
@@ -208,6 +250,12 @@ Vector3f Glider::getForce(float inputAileron, float inputElevator, float inputRu
                                qPa,
                                accel_body.z);
 
+            // @LoggerMessage: SCTL
+            // @Description: Simulated Glider Drop control outputs
+            // @Field: TimeUS: Time since system startup
+            // @Field: Ail: aileron output
+            // @Field: Elev: elevator output
+            // @Field: Rudd: rudder output
             AP::logger().Write("SCTL", "TimeUS,Ail,Elev,Rudd", "Qfff",
                                AP_HAL::micros64(),
                                degrees(aileron_rad),
