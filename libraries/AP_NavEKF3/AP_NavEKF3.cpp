@@ -1206,7 +1206,7 @@ int8_t NavEKF3::getPrimaryCoreIMUIndex(void) const
 // Write the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF3::getPosNE(Vector2f &posNE) const
+bool NavEKF3::getPosNE(Vector2p &posNE) const
 {
     if (!core) {
         return false;
@@ -1217,7 +1217,7 @@ bool NavEKF3::getPosNE(Vector2f &posNE) const
 // Write the last calculated D position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF3::getPosD(float &posD) const
+bool NavEKF3::getPosD(postype_t &posD) const
 {
     if (!core) {
         return false;
@@ -2019,7 +2019,8 @@ void NavEKF3::updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_prim
 // update the position reset data to capture changes due to a lane switch
 void NavEKF3::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_primary)
 {
-    Vector2f pos_old_primary, pos_new_primary, old_pos_delta;
+    Vector2p pos_old_primary, pos_new_primary;
+    Vector2f old_pos_delta;
 
     // If core position reset data has been consumed reset delta to zero
     if (!pos_reset_data.core_changed) {
@@ -2035,7 +2036,7 @@ void NavEKF3::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_prim
     // Add current delta in case it hasn't been consumed yet
     core[old_primary].getPosNE(pos_old_primary);
     core[new_primary].getPosNE(pos_new_primary);
-    pos_reset_data.core_delta = pos_new_primary - pos_old_primary + pos_reset_data.core_delta;
+    pos_reset_data.core_delta = (pos_new_primary - pos_old_primary).tofloat() + pos_reset_data.core_delta;
     pos_reset_data.last_primary_change = imuSampleTime_us / 1000;
     pos_reset_data.core_changed = true;
 
@@ -2046,7 +2047,8 @@ void NavEKF3::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_prim
 // new primary EKF update has been run
 void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary)
 {
-    float posDownOldPrimary, posDownNewPrimary, oldPosDownDelta;
+    postype_t posDownOldPrimary, posDownNewPrimary;
+    float oldPosDownDelta;
 
     // If core position reset data has been consumed reset delta to zero
     if (!pos_down_reset_data.core_changed) {

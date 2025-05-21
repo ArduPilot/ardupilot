@@ -248,7 +248,7 @@ float ModeDock::apply_slowdown(float desired_speed)
 // we can calculate it based on most recent value from precland because the dock is assumed stationary wrt ekf origin
 bool ModeDock::calc_dock_pos_rel_vehicle_NE(Vector2f &dock_pos_rel_vehicle) const {
     Vector2f current_pos_m;
-    if (!AP::ahrs().get_relative_position_NE_origin(current_pos_m)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(current_pos_m)) {
         return false;
     }
  
