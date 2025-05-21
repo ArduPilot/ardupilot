@@ -35,6 +35,14 @@ protected:
         return 115200;
     }
 
+    // make sure readings go out-of-range when necessary
+    float max_distance() const override  {
+        return MIN(AP_RangeFinder_Backend::max_distance(), 500);
+    }
+    float min_distance() const override {
+        return MAX(AP_RangeFinder_Backend::min_distance(), 0.7);
+    }
+
 private:
 
     using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
