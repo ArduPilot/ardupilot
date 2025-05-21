@@ -47,6 +47,10 @@ void ModeFollow::run()
         return;
     }
 
+    // set offsets to current relative position if not already set
+    // this is done here to prevent the vehicle coliding with the target vehicle
+    g2.follow.init_offsets_if_required();
+
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
