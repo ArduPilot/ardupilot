@@ -120,14 +120,15 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
         0, 255
     );
 
-    if (is_v19000) {
-        abort();
+    bool have_reading = true;
 
+    if (is_v19000) {
         // the device explicitly tells us if it is out-of-range:
         switch (u.packet_v19000.out_of_range_indication) {
         default: // invalid value / malformed packet
         case 0:  // "undefined altitude"
-            return false;
+            have_reading = false;
+            break;
         case 1:  // "Valid Altitude"
             break;
         case 2:  // "Altitude is too close"
@@ -161,7 +162,7 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
     // consume this packet:
     move_signature_in_buffer(sizeof(u.packet));
 
-    return true;
+    return have_reading;
 }
 
 #if AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
