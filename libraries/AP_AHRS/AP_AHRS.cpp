@@ -1654,6 +1654,18 @@ bool AP_AHRS::get_mag_field_correction(Vector3f &vec) const
     return false;
 }
 
+// get velocity down in m/s.  This returns get_velocity_NED.z() if available, otherwise falls back to get_vert_pos_rate_D()
+// if high_vibes is true then this is equivalent to get_vert_pos_rate_D
+bool AP_AHRS::get_velocity_D(float &velD, bool high_vibes) const
+{
+    Vector3f velNED;
+    if (!high_vibes && get_velocity_NED(velNED)) {
+        velD = velNED.z;
+        return true;
+    }
+    return get_vert_pos_rate_D(velD);
+}
+
 // Get a derivative of the vertical position which is kinematically consistent with the vertical position is required by some control loops.
 // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
 bool AP_AHRS::get_vert_pos_rate_D(float &velocity) const
