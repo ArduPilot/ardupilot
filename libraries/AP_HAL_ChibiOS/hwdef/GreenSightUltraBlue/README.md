@@ -1,4 +1,4 @@
-# UltraBlue Flight Controller
+# GreenSight UltraBlue Flight Controller
 
 The UltraBlue flight controller is sold by [GreenSight](https://greensightag.com).
 
@@ -14,15 +14,14 @@ The UltraBlue flight controller is sold by [GreenSight](https://greensightag.com
 
 ## Connector Overview
 
-<img src="UltraBlue_connector_overview_front.png" alt="UltraBlue Board" title="UltraBlue Board" style="width: 30%;" >
+<img src="UltraBlue_connector_overview_top.png" alt="UltraBlue Board Connector Overview" title="Top View of UltraBlue Board" style="width: 30%;" >
 
-<img src="UltraBlue_connector_overview_back.png" alt="UltraBlue Board" title="UltraBlue Board" style="width: 30%;" >
-
+<img src="UltraBlue_connector_overview_bottom.png" alt="UltraBlue Board Connector Overview" title="Bottom View of UltraBlue Board" style="width: 30%;" >
 
 ## UART Mapping
 
  - SERIAL0 -> USB (console)
- - SERIAL1 -> USART2 (telem1)
+ - SERIAL1 -> USART2 (Jetson telem)
  - SERIAL2 -> USART6 (telem2)
  - SERIAL3 -> USART1 (primary GPS)
  - SERIAL4 -> UART4 (GPS2)
@@ -41,25 +40,21 @@ All connectors are JST GH type unless otherwise specified.
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>PPM-SBUS-PORT</td>
    <td>PPM/SBUS</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>5V_Periph</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
@@ -72,25 +67,21 @@ All connectors are JST GH type unless otherwise specified.
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>5V_Periph</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>PRESSURE_SENS_IN</td>
    <td>Autopilot Analog Input</td>
    <td>Analog 0 to +6.6V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
@@ -103,31 +94,26 @@ All connectors are JST GH type unless otherwise specified.
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>5V_Periph</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>I2C4_SCL</td>
    <td>Autopilot I2C Bus 4 Clock</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>I2C4_SDA</td>
    <td>Autopilot I2C Bus 4 Data</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
@@ -140,31 +126,26 @@ All connectors are JST GH type unless otherwise specified.
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>5V_Periph</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>DEBUG_TX</td>
    <td>Autopilot Debug UART Transmit</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>DEBUG_RX</td>
    <td>Autopilot Debug UART Receive</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
@@ -177,25 +158,21 @@ All connectors are JST GH type unless otherwise specified.
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>DSM_3V3</td>
    <td>VCC</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>DSM&SBUS_IN</td>
    <td>Spektrum/DSM</td>
    <td>+3.3V</td>
    </tr>
@@ -208,92 +185,78 @@ All connectors are JST GH type unless otherwise specified.
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>5V_Periph</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>SPI5_SCK</td>
    <td>SPI5 Clock</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>SPI5_MISO</td>
    <td>SPI5 Master In Slave Out</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>SPI5_MOSI</td>
    <td>SPI5 Master Out Slave In</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>5</td>
-   <td>SPI5_EXT1_CS1</td>
    <td>SPI5 External Chip</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>6</td>
-   <td>SPI5_EXT1_CS2</td>
    <td>SPI5 External Chip Select 2</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>7</td>
-   <td>SPI5_EXT1_CS3</td>
    <td>SPI5 External Chip Select 3</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>8</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
    </tbody>
    </table>
 
-### JP17 - Cooling Fan (Companion Computer)
+### JP17 - Jetson Cooling Fan (Companion Computer)
 
    <table border="1" class="docutils">
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>5V_JET</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>JET_GPIO08</td>
    <td>Jetson PWM Tach Input</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>JET_GPIO14</td>
    <td>Jetson PWM Fan Output</td>
    <td>+3.3V</td>
    </tr>
@@ -302,35 +265,32 @@ All connectors are JST GH type unless otherwise specified.
 
 ### JP3 - CAN 1 (Autopilot and Jetson Companion Computer)
 
+NOTE: CAN 1 is connected to Jetson, Payloads and AP.
+
    <table border="1" class="docutils">
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>5V_CAN</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>CAN_H_1</td>
    <td>Autopilot and Jetson CAN High</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>CAN_L_1</td>
    <td>Autopilot and Jetson CAN Low</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
@@ -343,31 +303,26 @@ All connectors are JST GH type unless otherwise specified.
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>5V_CAN</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>CAN_H_2</td>
    <td>Autopilot only CAN High</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>CAN_L_2</td>
    <td>Autopilot only CAN Low</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
@@ -382,55 +337,46 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>JET_GBE_MDI3_P</td>
    <td>Jetson Ethernet (Cap Coupled)</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>JET_GBE_MDI3_N</td>
    <td>Jetson Ethernet (Cap Coupled)</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>JET_GBE_MDI2_P</td>
    <td>Jetson Ethernet (Cap Coupled)</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>JET_GBE_MDI2_N</td>
    <td>Jetson Ethernet (Cap Coupled)</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>5</td>
-   <td>JET_GBE_MDI1_P</td>
    <td>Jetson Ethernet (Cap Coupled) 10/100</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>6</td>
-   <td>JET_GBE_MDI1_N</td>
    <td>Jetson Ethernet (Cap Coupled) 10/100</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>7</td>
-   <td>JET_GBE_MDI0_P</td>
    <td>Jetson Ethernet (Cap Coupled) 10/100</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>8</td>
-   <td>JET_GBE_MDI0_N</td>
    <td>Jetson Ethernet (Cap Coupled) 10/100</td>
    <td>+3.3V</td>
    </tr>
@@ -443,25 +389,21 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>JET_UART2_TX</td>
    <td>Jetson UART Debug Transmit</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>JET_UART2_RX</td>
    <td>Jetson UART Debug Receive</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
@@ -474,43 +416,36 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>5V_HP</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>TELEM2_TX</td>
    <td>Autopilot Telem 2 UART Transmit</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>TELEM2_RX</td>
    <td>Autopilot Telem 2 UART Receive</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>TELEM2_CTS</td>
    <td>Autopilot Telem 2 UART Clear to Send</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>5</td>
-   <td>TELEM2_RTS</td>
    <td>Autopilot Telem 2 UART Request to Send</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>6</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
@@ -523,43 +458,36 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>5V_HP</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>JET_UART1_TX</td>
    <td>Jetson UART 1 Transmit</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>JET_UART1_RX</td>
    <td>Jetson UART 1 Receive</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>JET_UART1_CTS_N</td>
    <td>Jetson UART 1 Clear to Send</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>5</td>
-   <td>JET_UART1_RTS_N</td>
    <td>Jetson UART 1 Request to Send</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>6</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
@@ -572,61 +500,51 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>5V_JET</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>LED_R</td>
    <td>RGB LED Driver Red channel (low side)</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>LED_G</td>
    <td>RGB LED Driver Green channel (low side)</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>LED_B</td>
    <td>RGB LED Driver Blue channel (low side)</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>5</td>
-   <td>Power_Button</td>
    <td>Power Button pass-thru to power board</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>6</td>
-   <td>DELL_1W</td>
    <td>Dell 1W input to Jetson</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>7</td>
-   <td>IO-LED_SAFETY_ PROT</td>
    <td>Safety Indicator LED pulse</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>8</td>
-   <td>SAFETY_SW_R</td>
    <td>Safety switch input to Autopilot</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>9</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
@@ -639,43 +557,36 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>5V_Periph</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>GPS2_TX</td>
    <td>Autopilot GPS2 UART Transmit</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>GPS2_RX</td>
    <td>Autopilot GPS2 UART Receive</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>I2C2_SCL_GPS2</td>
    <td>Autopilot I2C Bus 2 Clock (GPS2 SCL)</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>5</td>
-   <td>I2C2_SDA_GPS2</td>
    <td>Autopilot I2C Bus 2 Data (GPS2 SDA)</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>6</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
@@ -688,31 +599,26 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>JET_I2C1_SCL</td>
    <td>Jetson I2C Bus 1 Clock</td>
    <td>3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>JET_I2C1_SDA</td>
    <td>Jetson I2C Bus 1 Data</td>
    <td>3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>5V_CAN</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
@@ -725,43 +631,36 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>5V_Periph</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>GPS1_TX</td>
    <td>Autopilot GPS1 UART Transmit</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>GPS1_RX</td>
    <td>Autopilot GPS1 UART Receive</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>I2C1_SCL</td>
    <td>Autopilot I2C Bus 1 Clock (GPS1 SCL)</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>5</td>
-   <td>I2C1_SDA</td>
    <td>Autopilot I2C Bus 1 Data (GPS1 SDA)</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>6</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
@@ -774,69 +673,38 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>JET_SPI0_SCK</td>
+   <td>VCC</td>
+   <td>+5V</td>
+   </tr>
+   <tr>
+   <td>2</td>
    <td>Jetson SPI 0 Clock</td>
    <td>+3.3V</td>
    </tr>
    <tr>
-   <td>2</td>
-   <td>JET_SPI0_CS0_N</td>
-   <td>Jetson SPI 0 Chip Select 0</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
    <td>3</td>
-   <td>JET_SPI0_CS1_N</td>
-   <td>Jetson SPI 0 Chip Select 1</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>JET_SPI0_MISO</td>
    <td>Jetson SPI 0 Master-In / Servant-Out</td>
    <td>+3.3V</td>
    </tr>
    <tr>
-   <td>5</td>
-   <td>JET_SPI0_MOSI</td>
+   <td>4</td>
    <td>Jetson SPI 0 Master-Out / Servant-In</td>
    <td>+3.3V</td>
    </tr>
    <tr>
+   <td>5</td>
+   <td>Jetson SPI 0 Chip Select 0</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
    <td>6</td>
-   <td>JET_SP1_SCK</td>
-   <td>Jetson SPI 1 Clock</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>7</td>
-   <td>JET_SPI1_CS0_N</td>
-   <td>Jetson SPI 1 Chip Select 0</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>8</td>
-   <td>JET_SPI1_CS1_N</td>
-   <td>Jetson SPI 1 Chip Select 1</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>9</td>
-   <td>JET_SPI1_MISO</td>
-   <td>Jetson SPI 1 Master-In / Servant-Out</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>10</td>
-   <td>JET_SPI1_MOSI</td>
-   <td>Jetson SPI 1 Master-Out / Servant-In</td>
-   <td>+3.3V</td>
+   <td>Ground</td>
+   <td>GND</td>
    </tr>
    </tbody>
    </table>
@@ -846,56 +714,47 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>5V_Periph</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>FMU_CAP1_PORT</td>
-   <td>Autopilot Spare GPIO 1</td>
+   <td>WS2812B LED</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>FMU_CAP2_PORT</td>
-   <td>Autopilot Spare GPIO 2</td>
+   <td>GPIO 59</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>FMU_CAP3_PORT</td>
-   <td>Autopilot Spare GPIO 3</td>
+   <td>GPIO 60</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>5</td>
-   <td>FMU_SPARE_4_PORT
    </td>
-   <td>Autopilot Spare GPIO 4</td>
+   <td>GPIO 61</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>6</td>
-   <td>FMU_CAP5_PORT</td>
-   <td>Autopilot Spare GPIO 5</td>
+   <td>GPIO 62</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>7</td>
-   <td>FMU_CAP6_PORT</td>
-   <td>Autopilot Spare GPIO 6</td>
+   <td>GPIO 63</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>8</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
@@ -908,89 +767,92 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Name</th>
    <th>Signal</th>
    <th>Volt</th>
    </tr>
    <tr>
    <td>1</td>
-   <td>5V_JET</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
    <tr>
    <td>2</td>
-   <td>I2S1_SCLK</td>
    <td>I2S1 Clock</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>I2S1_DIN</td>
    <td>I2S1 Data In</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>I2S1_DOUT</td>
    <td>I2S1 Data Out</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>5</td>
-   <td>I2S1_FS</td>
    <td>I2S1 Frame Select</td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>6</td>
-   <td>Ground</td>
    <td>GND</td>
    <td>GND</td>
    </tr>
    </tbody>
    </table>
 
-### Mezzanine Connector
+### J2 - Jetson Payload 1
+
+   <img src="UltraBlue_J2_primary_payload_connector.png" alt="UltraBlue Board" title="UltraBlue Board" style="width: 40%;" >
+
+### J3 - Jetson Payload 2
+
+   <img src="UltraBlue_J3_secondary_payload_connector.png" alt="UltraBlue Board" title="UltraBlue Board" style="width: 40%;" >
+
+### J1 - Mezzanine Connector
+
+NOTE: Odd pins from 1-19 are VDD_5V_IN. Odd pins from 21 to 41 are GND.
 
 External Pin Information:
    <table border="1" class="docutils">
    <tbody>
    <tr>
    <th>Pin</th>
-   <th>Info</th>
+   <th>Purpose</th>
    </tr>
    <tr>
    <td>2</td>
-   <td>ESC/Servo Output, 3.3V, Protected</td>
+   <td>ESC/Servo 1 Output, 3.3V, Protected</td>
    </tr>
    <tr>
    <td>4</td>
-   <td>ESC/Servo Output, 3.3V, Protected</td>
+   <td>ESC/Servo 2 Output, 3.3V, Protected</td>
    </tr>
    <tr>
    <td>6</td>
-   <td>ESC/Servo Output, 3.3V, Protected</td>
+   <td>ESC/Servo 3 Output, 3.3V, Protected</td>
    </tr>
    <tr>
    <td>8</td>
-   <td>ESC/Servo Output, 3.3V, Protected</td>
+   <td>ESC/Servo 4 Output, 3.3V, Protected</td>
    </tr>
    <tr>
    <td>10</td>
-   <td>ESC/Servo Output, 3.3V, Protected</td>
+   <td>ESC/Servo 5 Output, 3.3V, Protected</td>
    </tr>
    <tr>
    <td>12</td>
-   <td>ESC/Servo Output, 3.3V, Protected</td>
+   <td>ESC/Servo 6 Output, 3.3V, Protected</td>
    </tr>
    <tr>
    <td>14</td>
-   <td>ESC/Servo Output, 3.3V, Protected</td>
+   <td>ESC/Servo 7 Output, 3.3V, Protected</td>
    </tr>
    <tr>
    <td>16</td>
-   <td>ESC/Servo Output, 3.3V, Protected</td>
+   <td>ESC/Servo 8 Output, 3.3V, Protected</td>
    </tr>
    <tr>
    <td>18</td>
@@ -1043,10 +905,48 @@ External Pin Information:
    </tbody>
    </table>
 
+## RC Input
+
+RC input is configured by default on SERIAL5. SERIAL5_PROTOCOL must be set to 23 (RCIN). This serial port can be configured to receive various RC protocols like DSM, PPM and SBUS. When using PPM or SBUS, the receiver must be connected to the JP1 connector. For Spektrum/DSM radios the JP4 connector should be used.
+
+## PWM Output
+
+The UltraBlue flight controller supports up to 16 PWM outputs.
+
+The 16 PWM outputs are in 5 groups:
+* PWM 1 - 4 are in group1 (TIM5)
+* PWM 5 - 8 are in group2 (TIM4)
+* PWM 9 - 12 are in group3 (TIM1)
+* PWM 13 and 14 are in group4 (TIM12) (no DMA)
+* PWM 15 and 16 are in group5 (TIM8)
+
+PWM 9 is used for the WS2812B LED.
+Channels within the same group need to use the same output rate and protocol. Outputs 1 - 8 support bi-directional DShot.
+
+## GPIOs
+
+PWM ports 10 - 14 on JP12 can be used as GPIOs (relays, buttons, RPM etc.). To use them you need to set the output's SERVOx_FUNCTION to -1. See GPIOs page for more information.
+
+The numbering of the GPIOs for PIN parameters in ArduPilot is:
+* PWM10 59
+* PWM11 60
+* PWM12 61
+* PWM13 62
+* PWM14 63
+
+## Firmware
+
+The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of *.apj firmware files with any ArduPilot compatible ground station.
+
+## Battery Monitoring
+
+The J1 - Mezzanine Connector has inputs for battery voltage and current. It also has an I2C bus connection, Bus 1 (I2C3), intended for use with SMBus batteries and BMSs. The BATT_I2C_BUS parameter should be set to 1.
+
 ## Camera Control
 
 GPIO 64 (camera trigger) is controlled by RELAY1 (default).  
 GPIO 65 (camera trigger return) is controlled by RELAY2 (default).
+Both of these pins are routed to the J2 connector - Jetson Payload 1.
 
 ## Acknowledgements
 
