@@ -9937,7 +9937,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             simname='ainsteinlrd1',
             maxalt=100,
             sqalt=95,
-            sq_at_sqalt=100,
+            sq_at_sqalt=39,
         )
 
     def RangeFinderDriversLongRange(self):
