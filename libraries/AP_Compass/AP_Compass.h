@@ -494,6 +494,9 @@ private:
 #if AP_COMPASS_IIS2MDC_ENABLED
         DRIVER_IIS2MDC  =22,
 #endif
+#if AP_COMPASS_MMC5603_ENABLED
+        DRIVER_MMC5603   =23,
+#endif
 };
 
     bool _driver_enabled(enum DriverType driver_type);
