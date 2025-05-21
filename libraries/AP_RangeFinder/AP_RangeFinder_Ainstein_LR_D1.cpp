@@ -123,7 +123,11 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
             The altitude measurements should not in any circumstances be used as true
             measurements independently of the corresponding SNR values. 
         */
-        signal_quality_pct = (snr <= 13 || malfunction_alert != 0) ? RangeFinder::SIGNAL_QUALITY_MIN : RangeFinder::SIGNAL_QUALITY_MAX;
+    signal_quality_pct = linear_interpolate(
+        RangeFinder::SIGNAL_QUALITY_MIN, RangeFinder::SIGNAL_QUALITY_MAX,
+        snr,
+        0, 255
+    );
 
         if (snr <= 13) {
             if (snr == 0) {
