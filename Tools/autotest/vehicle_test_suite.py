@@ -3113,8 +3113,6 @@ class TestSuite(ABC):
             "GLT",  # glider sim
             "SL2",  # glider-sim
             "SLD",  # glider-sim
-
-            "CC",    # AC_CustomControl
         ])
 
     def LoggerDocumentation_whitelist(self):
@@ -3169,10 +3167,6 @@ class TestSuite(ABC):
                 "GMB1",    # sologimbal
                 "GMB2",    # sologimbal
                 "SURF",    # surface-tracking
-            ])
-        if vinfo_key == 'ArduCopter':
-            ret.update([
-                "CC",    # only Copter has the CustomController
             ])
         # end not-expected-to-be-fixed block
 
