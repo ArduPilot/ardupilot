@@ -10,8 +10,8 @@ FLASH_RESERVE_START_KB 26
 STORAGE_FLASH_PAGE 11
 define HAL_STORAGE_SIZE 800
 
-# board ID for firmware load
-APJ_BOARD_ID 1004
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_F303_PERIPH
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -44,8 +44,6 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 define HAL_NO_GPIO_IRQ
 define SERIAL_BUFFERS_SIZE 512
 define PORT_INT_REQUIRED_STACK 64
-
-define HAL_USE_RTC FALSE
 
 define DMA_RESERVE_SIZE 0
 
@@ -121,12 +119,12 @@ BARO DPS310 I2C:0:0x76
 
 # enable builtin GPS, mag and baro
 # also allow for airspeed on i2c port, and rangefinder on MSP port
-define HAL_PERIPH_ENABLE_GPS
-define HAL_PERIPH_ENABLE_MAG
-define HAL_PERIPH_ENABLE_BARO
-define HAL_PERIPH_ENABLE_AIRSPEED
-define HAL_PERIPH_ENABLE_RANGEFINDER
-define HAL_PERIPH_ENABLE_MSP
+define AP_PERIPH_GPS_ENABLED 1
+define AP_PERIPH_MAG_ENABLED 1
+define AP_PERIPH_BARO_ENABLED 1
+define AP_PERIPH_AIRSPEED_ENABLED 1
+define AP_PERIPH_RANGEFINDER_ENABLED 1
+define AP_PERIPH_MSP_ENABLED 1
 
 # setup for MSP
 define HAL_MSP_ENABLED 1

@@ -10,8 +10,8 @@ FLASH_RESERVE_START_KB 30
 STORAGE_FLASH_PAGE 13
 define HAL_STORAGE_SIZE 800
 
-# board ID for firmware load
-APJ_BOARD_ID 1027
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_FlywooF745
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -123,7 +123,7 @@ PA8 TIM1_CH1 TIM1 PWM(1) GPIO(50)
 # LED on timer
 PA15 TIM2_CH1 TIM2 PWM(2) GPIO(51)
 
-define HAL_PERIPH_ENABLE_RC_OUT
+define AP_PERIPH_RC_OUT_ENABLED 1
 
 define HAL_UART_MIN_TX_SIZE 256
 define HAL_UART_MIN_RX_SIZE 128

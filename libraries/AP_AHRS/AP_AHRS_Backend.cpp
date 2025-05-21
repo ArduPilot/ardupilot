@@ -71,7 +71,8 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
 void AP_AHRS::update_orientation()
 {
     const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - last_orientation_update_ms < 1000) {
+    if (last_orientation_update_ms != 0 &&
+        now_ms - last_orientation_update_ms < 1000) {
         // only update once/second
         return;
     }

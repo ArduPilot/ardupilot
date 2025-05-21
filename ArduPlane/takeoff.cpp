@@ -190,7 +190,7 @@ void Plane::takeoff_calc_pitch(void)
 {
     // First see if TKOFF_ROTATE_SPD applies.
     // This will set the pitch for the first portion of the takeoff, up until cruise speed is reached.
-    if (g.takeoff_rotate_speed > 0) {
+    if (!auto_state.rotation_complete && g.takeoff_rotate_speed > 0) {
         // A non-zero rotate speed is recommended for ground takeoffs.
         if (auto_state.highest_airspeed < g.takeoff_rotate_speed) {
             // We have not reached rotate speed, use the specified takeoff target pitch angle.
@@ -209,6 +209,7 @@ void Plane::takeoff_calc_pitch(void)
             return;
         }
     }
+    auto_state.rotation_complete = true;
 
     // We are now past the rotation.
     // Initialize pitch limits for TECS.
@@ -285,7 +286,7 @@ void Plane::takeoff_calc_throttle() {
     const float current_baro_alt = barometer.get_altitude();
     const bool below_lvl_alt = current_baro_alt < auto_state.baro_takeoff_alt + mode_takeoff.level_alt;
     // Set the minimum throttle limit.
-    const bool use_throttle_range = (aparm.takeoff_options & (uint32_t)AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
+    const bool use_throttle_range = tkoff_option_is_set(AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
     if (!use_throttle_range // We don't want to employ a throttle range.
         || !ahrs.using_airspeed_sensor() // We don't have an airspeed sensor.
         || below_lvl_alt // We are below TKOFF_LVL_ALT.

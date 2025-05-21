@@ -1,8 +1,8 @@
 The JSON SITL backend allows software to easily interface with ArduPilot using a standard JSON interface.
 
-To launch the JSON backend run SITL with ```-f json:127.0.0.1``` where 127.0.0.1 is replaced with the IP the physics backend is running at.
+To launch the JSON backend run SITL with ```--model JSON:127.0.0.1``` where 127.0.0.1 is replaced with the IP the physics backend is running at. For example: ```sim_vehicle.py -v ArduCopter -f octaquad --model JSON:127.0.0.1 --map --console```
 
-Connection to SITL is made via a UDP link. The physics backend should listen for incoming messages on port 9002 it should then reply to the IP and port the messages were received from. This removes the need to configure the a target
+Connection to SITL is made via a UDP link. The physics backend should listen for incoming messages on port 9002 it should then reply to the IP and port the messages were received from. This removes the need to configure a target
 IP and port for SITL in the physics backend. SITL will send a output message every 10 seconds allowing the physics backend to auto detect.
 
 SITL output
@@ -58,6 +58,7 @@ This is a example input frame, it should be preceded by and terminated with a ca
 {"timestamp":2500,"imu":{"gyro":[0,0,0],"accel_body":[0,0,0]},"position":[0,0,0],"attitude":[0,0,0],"velocity":[0,0,0]}
 ```
 The order of fields is not important.
+Note that the timestamp is the absolute physics time, not the timestep.
 
 It is possible to send optional fields to provide data for additional sensors, in most cases this will require setting the relevant sensor type param to the SITL driver.
 

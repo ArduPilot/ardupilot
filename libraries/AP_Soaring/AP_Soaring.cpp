@@ -8,6 +8,10 @@
 #include <GCS_MAVLink/GCS.h>
 #include <stdint.h>
 
+#if HAL_SOARING_NVF_EKF_ENABLED
+static constexpr uint32_t NVF_PUBLISHER_DELAY_MS = 250;
+#endif // HAL_SOARING_NVF_EKF_ENABLED
+
 // ArduSoar parameters
 const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: ENABLE
@@ -370,10 +374,15 @@ void SoaringController::update_thermalling()
                                            (double)wind_drift.y,
                                            (double)_thermalability);
 #if HAL_SOARING_NVF_EKF_ENABLED
-    gcs().send_named_float("SOAREKFX0", (float)_ekf.X[0]);
-    gcs().send_named_float("SOAREKFX1", (float)_ekf.X[1]);
-    gcs().send_named_float("SOAREKFX2", (float)_ekf.X[2]);
-    gcs().send_named_float("SOAREKFX3", (float)_ekf.X[3]);
+    auto const now_ms = AP_HAL::millis();
+    if (now_ms - _prev_nvf_pub_time_ms > NVF_PUBLISHER_DELAY_MS) {
+        gcs().send_named_float("SOAREKFX0", (float)_ekf.X[0]);
+        gcs().send_named_float("SOAREKFX1", (float)_ekf.X[1]);
+        gcs().send_named_float("SOAREKFX2", (float)_ekf.X[2]);
+        gcs().send_named_float("SOAREKFX3", (float)_ekf.X[3]);
+        _prev_nvf_pub_time_ms = now_ms;
+    }
+
 #endif // HAL_SOARING_NVF_EKF_ENABLED
 #endif
 }
@@ -398,6 +407,17 @@ void SoaringController::update_cruising()
     _speedToFly.update(wx, wz, thermal_vspeed, CLmin, CLmax);
 
 #if HAL_LOGGING_ENABLED
+    // @LoggerMessage: SORC
+    // @Vehicles: Plane
+    // @Description: Soaring Cruise-phase data
+    // @URL: https://ardupilot.org/plane/docs/soaring.html
+    // @Field: TimeUS: Time since system startup
+    // @Field: wx: body-frame wind estimate, x-axis
+    // @Field: wz: body-frame wind estimate, z-axis
+    // @Field: wexp: estimated thermal vertical speed
+    // @Field: CLmin: expected climb-rate lower-limit
+    // @Field: CLmax: expected climb-rate upper-limit
+    // @Field: Vopt: calculated optimal speed to fly
     AP::logger().WriteStreaming("SORC", "TimeUS,wx,wz,wexp,CLmin,CLmax,Vopt", "Qffffff",
                                        AP_HAL::micros64(),
                                        (double)wx,

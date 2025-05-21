@@ -239,7 +239,7 @@ void AP_ICEngine::param_conversion()
     // Conversion table giving the old on and off pwm parameter indexes and the function for both starter and ignition
     const struct convert_table {
         uint32_t element[2];
-        SRV_Channel::Aux_servo_function_t fuction;
+        SRV_Channel::Function fuction;
     } conversion_table[] = {
         { {450, 514}, SRV_Channel::k_starter },  // PWM_STRT_ON, PWM_STRT_OFF
         { {322, 386}, SRV_Channel::k_ignition }, // PWM_IGN_ON, PWM_IGN_OFF

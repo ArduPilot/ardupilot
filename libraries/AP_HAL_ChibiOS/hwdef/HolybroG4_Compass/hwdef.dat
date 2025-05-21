@@ -9,8 +9,8 @@ FLASH_RESERVE_START_KB 36
 STORAGE_FLASH_PAGE 16
 define HAL_STORAGE_SIZE 800
 
-# board ID for firmware load
-APJ_BOARD_ID 1088
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_HolybroCompass
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -72,14 +72,13 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 
 define HAL_NO_GPIO_IRQ
 
-define HAL_USE_RTC FALSE
-
 define DMA_RESERVE_SIZE 0
 
 # enable CAN support
 PA11 CAN1_RX CAN1
 PA12 CAN1_TX CAN1
 PC13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PB4 GPIO_CAN1_TERM OUTPUT PUSHPULL SPEED_LOW HIGH
 
 define HAL_DEVICE_THREAD_STACK 768
 
@@ -87,7 +86,7 @@ define HAL_DEVICE_THREAD_STACK 768
 define AP_PARAM_MAX_EMBEDDED_PARAM 256
 
 # MAG
-define HAL_PERIPH_ENABLE_MAG
+define AP_PERIPH_MAG_ENABLED 1
 
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime

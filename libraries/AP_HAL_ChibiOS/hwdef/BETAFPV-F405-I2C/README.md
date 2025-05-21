@@ -1,6 +1,6 @@
 # BETAFPV F405 AIO Flight Controller
 
-The BETAFPV F405 AIO is a flight controller produced by [BETAFPV](https://betafpv.com/collections/brushless-flight-controller/products/f4-1s-12a-aio-brushless-flight-controller-v3-0).
+The BETAFPV F405 AIO is a flight controller produced by [BETAFPV](https://betafpv.com/collections/flight-controller-1/products/f4-2-3s-20a-aio-fc-v1).
 
 ## Features
 
@@ -8,9 +8,9 @@ The BETAFPV F405 AIO is a flight controller produced by [BETAFPV](https://betafp
  - Gyro: ICM42688-P
  - 16Mb Onboard Flash
  - BEC output: 5V, 2A@4V
- - Barometer: BMP280
+ - Barometer: DPS310
  - OSD: AT7456E
- - 5 UARTS: (UART1, UART4, UART5, UART6)
+ - 5 UARTS: (UART1, UART3, UART4, UART5, UART6)
  - 5 PWM outputs (4 motor outputs used internally for integrated 4-in-1 ESC and 1 integrated LED)
  - Integrated 4-in-1 BlueJay ESC
 
@@ -18,7 +18,7 @@ This version supports a compass via the TX3 (SCL) and RX3 (SDA) pins, but requir
 
 ## Pinout
 
-![BETAFPV F405 AIO Board](../BETAFPV-F405/betafpv_f405_pinout.jpg "BETAFPV F405 AIO")
+![BETAFPV F4 2-3S 20A AIO FC V1](../BETAFPV-F405/F4AIO.png "BETAFPV F4 2-3S 20A AIO FC V1")
 
 ## UART Mapping
 

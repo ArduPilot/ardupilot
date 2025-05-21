@@ -1,6 +1,6 @@
 #include "AP_RangeFinder_config.h"
 
-#if AP_RANGEFINDER_NRA24_CAN_ENABLED
+#if AP_RANGEFINDER_NRA24_CAN_DRIVER_ENABLED
 
 #include "AP_RangeFinder_NRA24_CAN.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -64,4 +64,4 @@ bool AP_RangeFinder_NRA24_CAN::handle_frame(AP_HAL::CANFrame &frame)
     return true;
 }
 
-#endif  // AP_RANGEFINDER_NRA24_CAN_ENABLED
+#endif  // AP_RANGEFINDER_NRA24_CAN_DRIVER_ENABLED

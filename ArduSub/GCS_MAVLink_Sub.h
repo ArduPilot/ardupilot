@@ -8,12 +8,7 @@ public:
 
     using GCS_MAVLINK::GCS_MAVLINK;
 
-    uint8_t sysid_my_gcs() const override;
 protected:
-
-    uint32_t telem_delay() const override {
-        return 0;
-    };
 
     MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet) override;
 
@@ -49,7 +44,7 @@ private:
 
     bool send_info(void);
 
-    MAV_MODE base_mode() const override;
+    uint8_t base_mode() const override;
     MAV_STATE vehicle_system_status() const override;
 
     int16_t vfr_hud_throttle() const override;

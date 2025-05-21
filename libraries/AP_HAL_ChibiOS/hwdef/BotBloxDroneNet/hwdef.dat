@@ -13,7 +13,7 @@ OSCILLATOR_HZ 16000000
 # setup build for a peripheral bootloader
 env AP_PERIPH 1
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_BotBloxSwitch
 
 FLASH_RESERVE_START_KB 128
@@ -26,8 +26,6 @@ STORAGE_FLASH_PAGE 6
 
 # flash size
 FLASH_SIZE_KB 1024
-
-env OPTIMIZE -Os
 
 # pins for SWD debugging
 PA13 JTMS-SWDIO SWD
@@ -85,7 +83,7 @@ define BOARD_PHY_RMII
 # auto-negotiation doesn't work, force 100MBit full duplex
 define STM32_MAC_PHY_LINK_TYPE MAC_LINK_100_FULLDUPLEX
 
-define HAL_PERIPH_ENABLE_NETWORKING
+define AP_PERIPH_NETWORKING_ENABLED 1
 define AP_NETWORKING_MAX_INSTANCES 4
 
 # allow load from USB

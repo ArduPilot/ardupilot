@@ -22,23 +22,27 @@
 #include <SITL/SITL.h>
 
 #include "SIM_I2C.h"
-#include "SIM_ToshibaLED.h"
-#include "SIM_MaxSonarI2CXL.h"
+
+#include "SIM_Airspeed_DLVR.h"
+#include "SIM_AS5600.h"
 #include "SIM_BattMonitor_SMBus_Generic.h"
 #include "SIM_BattMonitor_SMBus_Maxell.h"
 #include "SIM_BattMonitor_SMBus_Rotoye.h"
-#include "SIM_Airspeed_DLVR.h"
-#include "SIM_Temperature_TSYS01.h"
-#include "SIM_Temperature_TSYS03.h"
-#include "SIM_Temperature_MCP9600.h"
 #include "SIM_ICM40609.h"
+#include "SIM_INA3221.h"
 #include "SIM_IS31FL3195.h"
-#include "SIM_LP5562.h"
 #include "SIM_LM2755.h"
+#include "SIM_LP5562.h"
+#include "SIM_MaxSonarI2CXL.h"
 #include "SIM_MS5525.h"
 #include "SIM_MS5611.h"
 #include "SIM_QMC5883L.h"
-#include "SIM_INA3221.h"
+#include "SIM_Temperature_MCP9600.h"
+#include "SIM_Temperature_SHT3x.h"
+#include "SIM_Temperature_TSYS01.h"
+#include "SIM_Temperature_TSYS03.h"
+#include "SIM_TeraRangerI2C.h"
+#include "SIM_ToshibaLED.h"
 
 #include <signal.h>
 
@@ -74,6 +78,9 @@ static SIM_BattMonitor_SMBus_Generic smbus_generic;
 #if AP_SIM_AIRSPEED_DLVR_ENABLED
 static Airspeed_DLVR airspeed_dlvr;
 #endif
+#if AP_SIM_TEMPERATURE_SHT3X_ENABLED
+static SHT3x sht3x;
+#endif  // AP_SIM_TEMPERATURE_SHT3X_ENABLED
 #if AP_SIM_TEMPERATURE_TSYS01_ENABLED
 static TSYS01 tsys01;
 #endif
@@ -108,12 +115,21 @@ static QMC5883L qmc5883l;
 #if AP_SIM_INA3221_ENABLED
 static INA3221 ina3221;
 #endif
+#if AP_SIM_TERARANGERI2C_ENABLED
+static TeraRangerI2C terarangeri2c;
+#endif
+#if AP_SIM_AS5600_ENABLED
+static AS5600 as5600;  // AoA sensor
+#endif  // AP_SIM_AS5600_ENABLED
 
 struct i2c_device_at_address {
     uint8_t bus;
     uint8_t addr;
     I2CDevice &device;
 } i2c_devices[] {
+#if AP_SIM_TERARANGERI2C_ENABLED
+    { 0, 0x31, terarangeri2c },   // RNGFNDx_TYPE = 14, RNGFNDx_ADDR = 49
+#endif  // AP_SIM_TERARANGERI2C_ENABLED
 #if AP_SIM_MAXSONAR_I2C_XL_ENABLED
     { 0, 0x70, maxsonari2cxl },   // RNGFNDx_TYPE = 2, RNGFNDx_ADDR = 112
 #endif
@@ -126,11 +142,17 @@ struct i2c_device_at_address {
 #if AP_SIM_ICM40609_ENABLED
     { 1, 0x01, icm40609 },
 #endif
+#if AP_SIM_TEMPERATURE_SHT3X_ENABLED
+    { 1, 0x44, sht3x },
+#endif
 #if AP_SIM_TOSHIBALED_ENABLED
     { 1, 0x55, toshibaled },
 #endif
     { 1, 0x38, ignored }, // NCP5623
     { 1, 0x39, ignored }, // NCP5623C
+#if AP_SIM_AS5600_ENABLED
+    { 1, 0x36, as5600 },
+#endif
     { 1, 0x40, ignored }, // KellerLD
 #if AP_SIM_MS5525_ENABLED
     { 1, 0x76, ms5525 },  // MS5525: ARSPD_TYPE = 4

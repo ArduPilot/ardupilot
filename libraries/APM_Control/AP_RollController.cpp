@@ -21,7 +21,6 @@
 #include "AP_RollController.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Scheduler/AP_Scheduler.h>
-#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -146,101 +145,42 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 
 // constructor
 AP_RollController::AP_RollController(const AP_FixedWing &parms)
-    : aparm(parms)
+    : AP_FW_Controller(parms,
+      AC_PID::Defaults{
+        .p         = 0.08,
+        .i         = 0.15,
+        .d         = 0.0,
+        .ff        = 0.345,
+        .imax      = 0.666,
+        .filt_T_hz = 3.0,
+        .filt_E_hz = 0.0,
+        .filt_D_hz = 12.0,
+        .srmax     = 150.0,
+        .srtau     = 1.0
+    },
+    AP_AutoTune::ATType::AUTOTUNE_ROLL)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    rate_pid.set_slew_limit_scale(45);
 }
 
-
-/*
-  AC_PID based rate controller
-*/
-float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, bool ground_mode)
+float AP_RollController::get_measured_rate() const
 {
-    const AP_AHRS &_ahrs = AP::ahrs();
+    return AP::ahrs().get_gyro().x;
+}
 
-    const float dt = AP::scheduler().get_loop_period_s();
-    const float eas2tas = _ahrs.get_EAS2TAS();
-    bool limit_I = fabsf(_last_out) >= 45;
-    float rate_x = _ahrs.get_gyro().x;
+float AP_RollController::get_airspeed() const
+{
     float aspeed;
-    float old_I = rate_pid.get_i();
-
-    if (!_ahrs.airspeed_estimate(aspeed)) {
-        aspeed = 0;
+    if (!AP::ahrs().airspeed_estimate(aspeed)) {
+        // If no airspeed available use 0
+        aspeed = 0.0;
     }
-    bool underspeed = aspeed <= float(aparm.airspeed_min);
-    if (underspeed) {
-        limit_I = true;
-    }
-
-    // the P and I elements are scaled by sq(scaler). To use an
-    // unmodified AC_PID object we scale the inputs and calculate FF separately
-    //
-    // note that we run AC_PID in radians so that the normal scaling
-    // range for IMAX in AC_PID applies (usually an IMAX value less than 1.0)
-    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_x * scaler * scaler, dt, limit_I);
-
-    if (underspeed) {
-        // when underspeed we lock the integrator
-        rate_pid.set_integrator(old_I);
-    }
-
-    // FF should be scaled by scaler/eas2tas, but since we have scaled
-    // the AC_PID target above by scaler*scaler we need to instead
-    // divide by scaler*eas2tas to get the right scaling
-    const float ff = degrees(ff_scale * rate_pid.get_ff() / (scaler * eas2tas));
-    ff_scale = 1.0;
-
-    if (disable_integrator) {
-        rate_pid.reset_I();
-    }
-
-    // convert AC_PID info object to same scale as old controller
-    _pid_info = rate_pid.get_pid_info();
-    auto &pinfo = _pid_info;
-
-    const float deg_scale = degrees(1);
-    pinfo.FF = ff;
-    pinfo.P *= deg_scale;
-    pinfo.I *= deg_scale;
-    pinfo.D *= deg_scale;
-    pinfo.DFF *= deg_scale;
-
-    // fix the logged target and actual values to not have the scalers applied
-    pinfo.target = desired_rate;
-    pinfo.actual = degrees(rate_x);
-
-    // sum components
-    float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D + pinfo.DFF;
-    if (ground_mode) {
-        // when on ground suppress D term to prevent oscillations
-        out -= pinfo.D + 0.5*pinfo.P;
-    }
-
-    // remember the last output to trigger the I limit
-    _last_out = out;
-
-    if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min) {
-        // let autotune have a go at the values
-        autotune->update(pinfo, scaler, angle_err_deg);
-    }
-
-    // output is scaled to notional centidegrees of deflection
-    return constrain_float(out * 100, -4500, 4500);
+    return aspeed;
 }
 
-/*
- Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
- A positive demand is up
- Inputs are:
- 1) desired roll rate in degrees/sec
- 2) control gain scaler = scaling_speed / aspeed
-*/
-float AP_RollController::get_rate_out(float desired_rate, float scaler)
+bool AP_RollController::is_underspeed(const float aspeed) const
 {
-    return _get_rate_out(desired_rate, scaler, false, false);
+    return aspeed <= float(aparm.airspeed_min);
 }
 
 /*
@@ -262,6 +202,24 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
     angle_err_deg = angle_err * 0.01;
     float desired_rate = angle_err_deg/ gains.tau;
 
+    /*
+      prevent indecision in the roll controller when target roll is
+      close to 180 degrees from the current roll
+     */
+    const float indecision_threshold_deg = 160;
+    const float last_desired_rate = _pid_info.target;
+    const float abs_angle_err_deg = fabsf(angle_err_deg);
+    if (abs_angle_err_deg > indecision_threshold_deg &&
+        angle_err_deg <= 180) {
+        if (desired_rate * last_desired_rate < 0) {
+            desired_rate = -desired_rate;
+            // increase the desired rate in proportion to the extra
+            // angle we are requesting
+            const float new_angle_err_deg = abs_angle_err_deg + (180 - abs_angle_err_deg)*2;
+            desired_rate *= new_angle_err_deg / abs_angle_err_deg;
+        }
+    }
+
     // Limit the demanded roll rate
     if (gains.rmax_pos && desired_rate < -gains.rmax_pos) {
         desired_rate = - gains.rmax_pos;
@@ -269,12 +227,7 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
         desired_rate = gains.rmax_pos;
     }
 
-    return _get_rate_out(desired_rate, scaler, disable_integrator, ground_mode);
-}
-
-void AP_RollController::reset_I()
-{
-    rate_pid.reset_I();
+    return _get_rate_out(desired_rate, scaler, disable_integrator, get_airspeed(), ground_mode);
 }
 
 /*
@@ -305,33 +258,4 @@ void AP_RollController::convert_pid()
     rate_pid.kP().set_and_save_ifchanged(old_d);
     rate_pid.kD().set_and_save_ifchanged(0);
     rate_pid.kIMAX().set_and_save_ifchanged(old_imax/4500.0);
-}
-
-/*
-  start an autotune
- */
-void AP_RollController::autotune_start(void)
-{
-    if (autotune == nullptr) {
-        autotune = NEW_NOTHROW AP_AutoTune(gains, AP_AutoTune::AUTOTUNE_ROLL, aparm, rate_pid);
-        if (autotune == nullptr) {
-            if (!failed_autotune_alloc) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AutoTune: failed roll allocation");
-            }
-            failed_autotune_alloc = true;
-        }
-    }
-    if (autotune != nullptr) {
-        autotune->start();
-    }
-}
-
-/*
-  restore autotune gains
- */
-void AP_RollController::autotune_restore(void)
-{
-    if (autotune != nullptr) {
-        autotune->stop();
-    }
 }

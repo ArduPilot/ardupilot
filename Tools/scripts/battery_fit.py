@@ -31,10 +31,13 @@ def SOC_model(cell_volt, c):
     '''simple model of state of charge versus resting voltage.
     With thanks to Roho for the form of the equation
     https://electronics.stackexchange.com/questions/435837/calculate-battery-percentage-on-lipo-battery
+
+    Adjusted to also fit other battery chemistries such as Li-ion.
     '''
-    p0 = 80.0
+    p0 = c[3]
     p1 = c[2]
-    return constrain(c[0]*(1.0-1.0/math.pow(1+math.pow(cell_volt/c[1],p0),p1)),0,100)
+
+    return constrain(c[0] * (1.0 - 1.0 / math.pow(1 + math.pow(cell_volt / c[1], p0), p1)), 0, 100)
 
 def fit_batt(data):
     '''fit a set of battery data to the SOC model'''
@@ -50,8 +53,8 @@ def fit_batt(data):
         ret /= len(data)
         return ret
 
-    p = [123.0, 3.7, 0.165]
-    bounds = [(100.0, 10000.0), (3.0,3.9), (0.001, 0.4)]
+    p = [123.0, 3.7, 0.165, 80.0]
+    bounds = [(100.0, 10000.0), (3.0, 3.9), (0.001, 0.4), (5.0, 100.0)]
 
     (p,err,iterations,imode,smode) = optimize.fmin_slsqp(fit_error, p, bounds=bounds, iter=10000, full_output=True)
     if imode != 0:
@@ -74,7 +77,12 @@ def ExtractDataLog(logfile):
         if msg is None:
             break
 
-        if msg.get_type() == 'BAT' and msg.Instance == args.batidx-1 and msg.VoltR > 1:
+        if (
+            msg.get_type() == 'BAT'
+            and (getattr(msg, 'Inst', None) == args.batidx - 1
+                 or getattr(msg, 'Instance', None) == args.batidx - 1)
+            and msg.VoltR > 1
+        ):
             current = msg.Curr
             voltR = msg.VoltR
             if last_voltR is not None and voltR > last_voltR:
@@ -135,7 +143,7 @@ def BattFit(fit_data, num_cells):
     fit_data = [ (v/num_cells,p) for (v,p) in fit_data ]
 
     c = fit_batt(fit_data)
-    print("Coefficients C1=%.4f C2=%.4f C3=%.4f" % (c[0], c[1], c[2]))
+    print("Coefficients C1=%.4f C2=%.4f C3=%.4f C4=%.4f" % (c[0], c[1], c[2], c[3]))
 
     if args.no_graph:
         return

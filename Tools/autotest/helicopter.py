@@ -4,8 +4,6 @@ Fly Helicopter in SITL
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import print_function
-
 from arducopter import AutoTestCopter
 
 import vehicle_test_suite
@@ -58,7 +56,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Skipping loiter-requires-position for heli; rotor runup issues")
 
     def get_collective_out(self):
-        servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+        servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
         chan_pwm = (servo.servo1_raw + servo.servo2_raw + servo.servo3_raw)/3.0
         return chan_pwm
 
@@ -70,7 +68,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.change_mode('LOITER')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+        servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
         coll = servo.servo1_raw
         coll = coll + 50
         self.set_parameter("H_RSC_RUNUP_TIME", TARGET_RUNUP_TIME)
@@ -80,7 +78,10 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Collective threshold PWM %u" % coll)
         tstart = self.get_sim_time()
         self.progress("Wait that collective PWM pass threshold value")
-        servo = self.mav.recv_match(condition='SERVO_OUTPUT_RAW.servo1_raw>%u' % coll, blocking=True)
+        servo = self.assert_receive_message(
+            "SERVO_OUTPUT_RAW",
+            condition=f'SERVO_OUTPUT_RAW.servo1_raw>{coll}'
+        )
         runup_time = self.get_sim_time() - tstart
         self.progress("Collective is now at PWM %u" % servo.servo1_raw)
         self.mav.wait_heartbeat()
@@ -764,7 +765,7 @@ class AutoTestHelicopter(AutoTestCopter):
             "SERVO%u_FUNCTION" % roll_servo: 8,  # pitch
             "SERVO%u_FUNCTION" % open_servo: 9,  # mount open
             "MNT1_OPTIONS": 2,  # retract
-            "MNT1_DEFLT_MODE": 3,  # RC targettting
+            "MNT1_DEFLT_MODE": 3,  # RC targeting
             "MNT1_ROLL_MIN": -roll_limit,
             "MNT1_ROLL_MAX": roll_limit,
         })
@@ -930,7 +931,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(6, 2000)
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 2:
-            servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1050:
                 raise NotAchievedException("Turbine Start activated while disarmed")
         self.set_rc(6, 1000)
@@ -943,7 +944,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(6, 2000)
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 5:
-            servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1660:
                 raise NotAchievedException("Turbine Start activated with interlock enabled")
 
@@ -961,7 +962,7 @@ class AutoTestHelicopter(AutoTestCopter):
         while True:
             if self.get_sim_time() - tstart > 5:
                 raise AutoTestTimeoutException("Turbine Start did not activate")
-            servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1800:
                 break
 
@@ -974,7 +975,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(6, 2000)
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 5:
-            servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1660:
                 raise NotAchievedException("Turbine Start activated with interlock enabled")
         self.set_rc(6, 1000)

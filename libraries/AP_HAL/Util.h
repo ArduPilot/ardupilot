@@ -219,3 +219,8 @@ protected:
     bool soft_armed = false;
     uint32_t last_armed_change_ms;
 };
+
+extern "C" {
+    void AP_stack_overflow(const char *thread_name);
+    void AP_memory_guard_error(uint32_t size);
+}

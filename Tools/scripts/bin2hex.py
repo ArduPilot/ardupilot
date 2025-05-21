@@ -33,7 +33,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 # EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-'''Intel HEX file format bin2hex convertor utility.'''
+'''Intel HEX file format bin2hex converter utility.'''
 
 VERSION = '1.5'
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
     from intelhex import bin2hex
 
-    usage = '''Bin2Hex convertor utility.
+    usage = '''Bin2Hex converter utility.
 Usage:
     python bin2hex.py [options] INFILE [OUTFILE]
 

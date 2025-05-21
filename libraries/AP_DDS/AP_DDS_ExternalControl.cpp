@@ -65,6 +65,14 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
             float(cmd_vel.twist.linear.x),
             float(cmd_vel.twist.linear.y),
             float(-cmd_vel.twist.linear.z) };
+
+        if (isnan(linear_velocity_base_link.y) && isnan(linear_velocity_base_link.z)) {
+            // Assume it's an airspeed command so ignore the angular data.
+            // While MAV_CMD_GUIDED_CHANGE_SPEED supports commands of ground speed and airspeed,
+            // ROS users likely care more about airspeed control for a low level velocity control interface like this.
+            return external_control->set_airspeed(linear_velocity_base_link.x);
+        }
+
         const float yaw_rate = -cmd_vel.twist.angular.z;
 
         auto &ahrs = AP::ahrs();

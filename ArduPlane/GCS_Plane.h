@@ -18,14 +18,12 @@ public:
 
 protected:
 
-    uint8_t sysid_this_mav() const override;
     void update_vehicle_sensor_status_flags(void) override;
     uint32_t custom_mode() const override;
     MAV_TYPE frame_type() const override;
 
-    GCS_MAVLINK_Plane *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-                                               AP_HAL::UARTDriver &uart) override {
-        return NEW_NOTHROW GCS_MAVLINK_Plane(params, uart);
+    GCS_MAVLINK_Plane *new_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) override {
+        return NEW_NOTHROW GCS_MAVLINK_Plane(uart);
     }
 
     AP_GPS::GPS_Status min_status_for_gps_healthy() const override {

@@ -324,6 +324,27 @@ public:
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 
+    class ViconParms {
+    public:
+        ViconParms(void) {
+            AP_Param::setup_object_defaults(this, var_info);
+        }
+        static const struct AP_Param::GroupInfo var_info[];
+
+        // vicon parameters
+        AP_Vector3f pos_offset;   // XYZ position of the vicon sensor relative to the body frame origin (m)
+        AP_Vector3f glitch;   // glitch in meters in vicon's local NED frame
+        AP_Float pos_stddev;       // noise in meters in vicon's local NED frame
+        AP_Float vel_stddev;       // noise in m/s in vicon's local NED frame
+        AP_Int8 fail;         // trigger vicon failure
+        AP_Int16 yaw;         // vicon local yaw in degrees
+        AP_Int16 yaw_error;   // vicon yaw error in degrees (added to reported yaw sent to vehicle)
+        AP_Int8 type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
+        AP_Vector3f vel_glitch;   // velocity glitch in m/s in vicon's local frame
+        AP_Int16 rate_hz;     // vicon data rate in Hz
+    };
+    ViconParms vicon;
+
     // physics model parameters
     class ModelParm {
     public:
@@ -399,7 +420,6 @@ public:
     AP_Vector3f imu_pos_offset;     // XYZ position of the IMU accelerometer relative to the body frame origin (m)
     AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
-    AP_Vector3f vicon_pos_offset;   // XYZ position of the vicon sensor relative to the body frame origin (m)
 
     // barometer temperature control
     AP_Float temp_start;            // [deg C] Barometer start temperature
@@ -448,6 +468,8 @@ public:
     } twist;
 
     AP_Int8 gnd_behav;
+
+    AP_Enum<Rotation> imu_orientation;
 
     struct {
         AP_Int8 enable;     // 0: disabled, 1: roll and pitch, 2: roll, pitch and heave
@@ -536,14 +558,6 @@ public:
 
     AP_Int8 led_layout;
 
-    // vicon parameters
-    AP_Vector3f vicon_glitch;   // glitch in meters in vicon's local NED frame
-    AP_Int8 vicon_fail;         // trigger vicon failure
-    AP_Int16 vicon_yaw;         // vicon local yaw in degrees
-    AP_Int16 vicon_yaw_error;   // vicon yaw error in degrees (added to reported yaw sent to vehicle)
-    AP_Int8 vicon_type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
-    AP_Vector3f vicon_vel_glitch;   // velocity glitch in m/s in vicon's local frame
-
     // get the rangefinder reading for the desired instance, returns -1 for no data
     float get_rangefinder(uint8_t instance);
 
@@ -604,6 +618,12 @@ public:
     // This gives more realistic data rates for testing links
     void set_stop_MAVLink_sim_state() { stop_MAVLink_sim_state = true; }
     bool stop_MAVLink_sim_state;
+
+    /*
+      used by scripting to control simulated aircraft position
+     */
+    bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat,
+                  const Vector3f &velocity_ef, const Vector3f &gyro_rads);
 };
 
 } // namespace SITL

@@ -10,8 +10,8 @@ OSCILLATOR_HZ 16000000
 # ChibiOS system timer
 STM32_ST_USE_TIMER 2
 
-# board ID for firmware load
-APJ_BOARD_ID 57
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_ARK_FMU_V6X
 
 # Enable all IMUs to be used and therefore three active EKF Lanes
 define HAL_EKF_IMU_MASK_DEFAULT 7
@@ -25,7 +25,6 @@ env USE_ALT_RAM_MAP 1
 # flash size
 FLASH_SIZE_KB 2048
 
-env OPTIMIZE -O2
 
 # order of UARTs (and USB) no IO MCU
 SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 USART6 OTG2
@@ -86,6 +85,7 @@ PD9 USART3_RX USART3
 # used for RC SBUS
 PC6 USART6_TX USART6
 PC7 USART6_RX USART6
+define DEFAULT_SERIAL8_PROTOCOL SerialProtocol_RCIN
 
 # Uncomment this line for carriers boards with an IO MCU
 # IOMCU_UART USART6
@@ -106,7 +106,7 @@ define HAL_GPIO_ETH_ENABLE 113
 
 define BOARD_PHY_ID  MII_LAN8742A_ID
 define BOARD_PHY_RMII
-define HAL_PERIPH_ENABLE_NETWORKING
+define AP_PERIPH_NETWORKING_ENABLED 1
 
 # ADC
 PA0 SCALED1_V3V3 ADC1 SCALE(2)

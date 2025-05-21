@@ -149,11 +149,6 @@ bool RC_Channels::has_active_overrides()
     return false;
 }
 
-bool RC_Channels::receiver_bind(const int dsmMode)
-{
-    return hal.rcin->rc_bind(dsmMode);
-}
-
 
 // support for auxiliary switches:
 // read_aux_switches - checks aux switch positions and invokes configured actions
@@ -337,6 +332,14 @@ RC_Channel &RC_Channels::get_throttle_channel()
 RC_Channel &RC_Channels::get_yaw_channel()
 {
     return get_rcmap_channel_nonnull(AP::rcmap()->yaw());
+};
+RC_Channel &RC_Channels::get_forward_channel()
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->forward());
+};
+RC_Channel &RC_Channels::get_lateral_channel()
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->lateral());
 };
 #endif  // AP_RCMAPPER_ENABLED
 

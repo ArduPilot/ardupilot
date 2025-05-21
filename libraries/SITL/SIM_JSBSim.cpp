@@ -435,9 +435,12 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     gyro = Vector3f(p, q, r);
 
     velocity_ef = Vector3f(fdm.v_north, fdm.v_east, fdm.v_down) * FEET_TO_METERS;
-    location.lat = RAD_TO_DEG_DOUBLE * fdm.latitude * 1.0e7;
-    location.lng = RAD_TO_DEG_DOUBLE * fdm.longitude * 1.0e7;
-    location.alt = fdm.agl*100 + home.alt;
+    location = {
+        int32_t(RAD_TO_DEG_DOUBLE * fdm.latitude * 1.0e7),
+        int32_t(RAD_TO_DEG_DOUBLE * fdm.longitude * 1.0e7),
+        int32_t(fdm.agl*100 + home.alt),
+        Location::AltFrame::ABSOLUTE
+    };
     dcm.from_euler(fdm.phi, fdm.theta, fdm.psi);
     airspeed = fdm.vcas * KNOTS_TO_METERS_PER_SECOND;
     airspeed_pitot = airspeed;

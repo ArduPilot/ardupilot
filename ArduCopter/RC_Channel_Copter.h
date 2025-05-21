@@ -11,7 +11,7 @@ public:
 
 protected:
 
-    void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos) override;
+    __INITFUNC__ void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos) override;
     bool do_aux_function(const AuxFuncTrigger &trigger) override;
 
 private:
@@ -45,6 +45,18 @@ public:
 
     // returns true if throttle arming checks should be run
     bool arming_check_throttle() const override;
+
+    // support for trimming AHRS using RC stick inputs, enabled via an
+    // aux function
+#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+    void do_aux_function_ahrs_auto_trim(const RC_Channel::AuxSwitchPos ch_flag);
+    struct {
+        bool running;
+    } auto_trim;
+    void auto_trim_run();
+    void auto_trim_cancel();
+#endif  // AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+    void save_trim();
 
 protected:
 

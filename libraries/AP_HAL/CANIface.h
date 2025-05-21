@@ -125,7 +125,7 @@ public:
     typedef uint16_t CanIOFlags;
     static const CanIOFlags Loopback = 1;
     static const CanIOFlags AbortOnError = 2;
-    static const CanIOFlags IsMAVCAN = 4;
+    static const CanIOFlags IsForwardedFrame = 4;
 
     // Single Rx Frame with related info
     struct CanRxItem {
@@ -259,7 +259,7 @@ public:
     // return true if init was called and successful
     virtual bool is_initialized() const = 0;
 
-    FUNCTOR_TYPEDEF(FrameCb, void, uint8_t, const AP_HAL::CANFrame &);
+    FUNCTOR_TYPEDEF(FrameCb, void, uint8_t, const AP_HAL::CANFrame &, CanIOFlags);
 
     // register a frame callback function
     virtual bool register_frame_callback(FrameCb cb, uint8_t &cb_id);

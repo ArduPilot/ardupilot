@@ -20,7 +20,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_ADSB
+#if AP_PERIPH_ADSB_ENABLED
 
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <dronecan_msgs.h>
@@ -148,4 +148,4 @@ void AP_Periph_FW::can_send_ADSB(struct __mavlink_adsb_vehicle_t &msg)
                     total_size);
 }
 
-#endif // HAL_PERIPH_ENABLE_ADSB
+#endif // AP_PERIPH_ADSB_ENABLED

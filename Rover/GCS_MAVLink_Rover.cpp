@@ -15,7 +15,7 @@ MAV_TYPE GCS_Rover::frame_type() const
     return MAV_TYPE_GROUND_ROVER;
 }
 
-MAV_MODE GCS_MAVLINK_Rover::base_mode() const
+uint8_t GCS_MAVLINK_Rover::base_mode() const
 {
     uint8_t _base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
@@ -49,7 +49,7 @@ MAV_MODE GCS_MAVLINK_Rover::base_mode() const
     // indicate we have set a custom mode
     _base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    return (MAV_MODE)_base_mode;
+    return _base_mode;
 }
 
 uint32_t GCS_Rover::custom_mode() const
@@ -155,7 +155,7 @@ int16_t GCS_MAVLINK_Rover::vfr_hud_throttle() const
     return rover.g2.motors.get_throttle();
 }
 
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 void GCS_MAVLINK_Rover::send_rangefinder() const
 {
     float distance = 0;
@@ -185,7 +185,9 @@ void GCS_MAVLINK_Rover::send_rangefinder() const
         distance,
         voltage);
 }
+#endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 
+#if AP_RANGEFINDER_ENABLED
 void GCS_MAVLINK_Rover::send_water_depth()
 {
     if (!HAVE_PAYLOAD_SPACE(chan, WATER_DEPTH)) {
@@ -413,21 +415,6 @@ void Rover::send_wheel_encoder_distance(const mavlink_channel_t chan)
     }
 }
 
-uint8_t GCS_MAVLINK_Rover::sysid_my_gcs() const
-{
-    return rover.g.sysid_my_gcs;
-}
-
-bool GCS_MAVLINK_Rover::sysid_enforce() const
-{
-    return rover.g2.sysid_enforce;
-}
-
-uint32_t GCS_MAVLINK_Rover::telem_delay() const
-{
-    return static_cast<uint32_t>(rover.g.telem_delay);
-}
-
 bool GCS_Rover::vehicle_initialised() const
 {
     return rover.control_mode != &rover.mode_initializing;
@@ -479,245 +466,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     }
     return true;
 }
-
-void GCS_MAVLINK_Rover::packetReceived(const mavlink_status_t &status, const mavlink_message_t &msg)
-{
-#if AP_FOLLOW_ENABLED
-    // pass message to follow library
-    rover.g2.follow.handle_msg(msg);
-#endif
-    GCS_MAVLINK::packetReceived(status, msg);
-}
-
-/*
-  default stream rates to 1Hz
- */
-const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-    // @Param: RAW_SENS
-    // @DisplayName: Raw sensor stream rate
-    // @Description: MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3 and AIRSPEED
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK_Parameters, streamRates[0],  1),
-
-    // @Param: EXT_STAT
-    // @DisplayName: Extended status stream rate
-    // @Description: MAVLink Stream rate of SYS_STATUS, POWER_STATUS, MCU_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW_INT (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, FENCE_STATUS, and GLOBAL_TARGET_POS_INT
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK_Parameters, streamRates[1],  1),
-
-    // @Param: RC_CHAN
-    // @DisplayName: RC Channel stream rate
-    // @Description: MAVLink Stream rate of SERVO_OUTPUT_RAW and RC_CHANNELS
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK_Parameters, streamRates[2],  1),
-
-    // @Param: RAW_CTRL
-    // @DisplayName: Raw Control stream rate
-    // @Description: MAVLink Raw Control stream rate of SERVO_OUT
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK_Parameters, streamRates[3],  1),
-
-    // @Param: POSITION
-    // @DisplayName: Position stream rate
-    // @Description: MAVLink Stream rate of GLOBAL_POSITION_INT and LOCAL_POSITION_NED
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK_Parameters, streamRates[4],  1),
-
-    // @Param: EXTRA1
-    // @DisplayName: Extra data type 1 stream rate to ground station
-    // @Description: MAVLink Stream rate of ATTITUDE, SIMSTATE (SIM only), AHRS2 and PID_TUNING
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK_Parameters, streamRates[5],  1),
-
-    // @Param: EXTRA2
-    // @DisplayName: Extra data type 2 stream rate
-    // @Description: MAVLink Stream rate of VFR_HUD
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK_Parameters, streamRates[6],  1),
-
-    // @Param: EXTRA3
-    // @DisplayName: Extra data type 3 stream rate
-    // @Description: MAVLink Stream rate of AHRS, SYSTEM_TIME, WIND, RANGEFINDER, DISTANCE_SENSOR, BATTERY2, BATTERY_STATUS, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION, RPM, ESC TELEMETRY, and WHEEL_DISTANCE
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK_Parameters, streamRates[7],  1),
-
-    // @Param: PARAMS
-    // @DisplayName: Parameter stream rate
-    // @Description: MAVLink Stream rate of PARAM_VALUE
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK_Parameters, streamRates[8],  10),
-
-    // @Param: ADSB
-    // @DisplayName: ADSB stream rate
-    // @Description: MAVLink ADSB (AIS) stream rate
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("ADSB",   9, GCS_MAVLINK_Parameters, streamRates[9],  0),
-
-    AP_GROUPEND
-};
-
-static const ap_message STREAM_RAW_SENSORS_msgs[] = {
-    MSG_RAW_IMU,
-    MSG_SCALED_IMU2,
-    MSG_SCALED_IMU3,
-    MSG_SCALED_PRESSURE,
-    MSG_SCALED_PRESSURE2,
-    MSG_SCALED_PRESSURE3,
-#if AP_AIRSPEED_ENABLED
-    MSG_AIRSPEED,
-#endif
-};
-static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
-    MSG_SYS_STATUS,
-    MSG_POWER_STATUS,
-#if HAL_WITH_MCU_MONITORING
-    MSG_MCU_STATUS,
-#endif
-    MSG_MEMINFO,
-    MSG_CURRENT_WAYPOINT,
-#if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
-    MSG_GPS_RAW,
-#endif
-#if AP_GPS_GPS_RTK_SENDING_ENABLED
-    MSG_GPS_RTK,
-#endif
-#if AP_GPS_GPS2_RAW_SENDING_ENABLED
-    MSG_GPS2_RAW,
-#endif
-#if AP_GPS_GPS2_RTK_SENDING_ENABLED
-    MSG_GPS2_RTK,
-#endif
-    MSG_NAV_CONTROLLER_OUTPUT,
-#if AP_FENCE_ENABLED
-    MSG_FENCE_STATUS,
-#endif
-    MSG_POSITION_TARGET_GLOBAL_INT,
-};
-static const ap_message STREAM_POSITION_msgs[] = {
-    MSG_LOCATION,
-    MSG_LOCAL_POSITION
-};
-static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
-    MSG_SERVO_OUT,
-};
-static const ap_message STREAM_RC_CHANNELS_msgs[] = {
-    MSG_SERVO_OUTPUT_RAW,
-    MSG_RC_CHANNELS,
-#if AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
-    MSG_RC_CHANNELS_RAW, // only sent on a mavlink1 connection
-#endif
-};
-static const ap_message STREAM_EXTRA1_msgs[] = {
-    MSG_ATTITUDE,
-#if AP_SIM_ENABLED
-    MSG_SIMSTATE,
-#endif
-    MSG_AHRS2,
-    MSG_PID_TUNING,
-};
-static const ap_message STREAM_EXTRA2_msgs[] = {
-    MSG_VFR_HUD
-};
-static const ap_message STREAM_EXTRA3_msgs[] = {
-    MSG_AHRS,
-    MSG_WIND,
-#if AP_RANGEFINDER_ENABLED
-    MSG_RANGEFINDER,
-    MSG_WATER_DEPTH,
-#endif
-    MSG_DISTANCE_SENSOR,
-    MSG_SYSTEM_TIME,
-#if AP_BATTERY_ENABLED
-    MSG_BATTERY_STATUS,
-#endif
-#if HAL_MOUNT_ENABLED
-    MSG_GIMBAL_DEVICE_ATTITUDE_STATUS,
-#endif
-#if AP_OPTICALFLOW_ENABLED
-    MSG_OPTICAL_FLOW,
-#endif
-#if COMPASS_CAL_ENABLED
-    MSG_MAG_CAL_REPORT,
-    MSG_MAG_CAL_PROGRESS,
-#endif
-    MSG_EKF_STATUS_REPORT,
-    MSG_VIBRATION,
-#if AP_RPM_ENABLED
-    MSG_RPM,
-#endif
-    MSG_WHEEL_DISTANCE,
-#if HAL_WITH_ESC_TELEM
-    MSG_ESC_TELEMETRY,
-#endif
-#if HAL_EFI_ENABLED
-    MSG_EFI_STATUS,
-#endif
-};
-static const ap_message STREAM_PARAMS_msgs[] = {
-    MSG_NEXT_PARAM,
-    MSG_AVAILABLE_MODES
-};
-static const ap_message STREAM_ADSB_msgs[] = {
-    MSG_ADSB_VEHICLE,
-#if AP_AIS_ENABLED
-    MSG_AIS_VESSEL,
-#endif
-};
-
-const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
-    MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
-    MAV_STREAM_ENTRY(STREAM_EXTENDED_STATUS),
-    MAV_STREAM_ENTRY(STREAM_POSITION),
-    MAV_STREAM_ENTRY(STREAM_RAW_CONTROLLER),
-    MAV_STREAM_ENTRY(STREAM_RC_CHANNELS),
-    MAV_STREAM_ENTRY(STREAM_EXTRA1),
-    MAV_STREAM_ENTRY(STREAM_EXTRA2),
-    MAV_STREAM_ENTRY(STREAM_EXTRA3),
-    MAV_STREAM_ENTRY(STREAM_ADSB),
-    MAV_STREAM_ENTRY(STREAM_PARAMS),
-    MAV_STREAM_TERMINATOR // must have this at end of stream_entries
-};
-
 bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     if (!rover.control_mode->in_guided_mode()) {
@@ -929,6 +677,14 @@ void GCS_MAVLINK_Rover::handle_set_attitude_target(const mavlink_message_t &msg)
     }
 }
 
+// if we receive a message where the user has not masked out
+// acceleration from the input packet we send a curt message
+// informing them:
+void GCS_MAVLINK_Rover::send_acc_ignore_must_be_set_message(const char *msgname)
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Ignoring %s; set ACC_IGNORE in mask", msgname);
+}
+
 void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_message_t &msg)
 {
     // decode packet
@@ -1034,6 +790,12 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
         }
     }
 
+    if (!acc_ignore) {
+        // ignore any command where acceleration is not ignored
+        send_acc_ignore_must_be_set_message("SET_POSITION_TARGET_LOCAL_NED");
+        return;
+    }
+
     // set guided mode targets
     if (!pos_ignore) {
         // consume position target
@@ -1041,19 +803,22 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
             // GCS will need to monitor desired location to
             // see if they are having an effect.
         }
-    } else if (!vel_ignore && acc_ignore && yaw_ignore && yaw_rate_ignore) {
+        return;
+    }
+
+    if (!vel_ignore && yaw_ignore && yaw_rate_ignore) {
         // consume velocity
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
-    } else if (!vel_ignore && acc_ignore && yaw_ignore && !yaw_rate_ignore) {
+    } else if (!vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume velocity and turn rate
         rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, speed_dir * target_speed);
-    } else if (!vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
+    } else if (!vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume velocity and heading
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
-    } else if (vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
+    } else if (vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume just target heading (probably only skid steering vehicles can do this)
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, 0.0f);
-    } else if (vel_ignore && acc_ignore && yaw_ignore && !yaw_rate_ignore) {
+    } else if (vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume just turn rate (probably only skid steering vehicles can do this)
         rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, 0.0f);
     }
@@ -1135,6 +900,12 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
         }
     }
 
+    if (!acc_ignore) {
+        // ignore any command where acceleration is not ignored
+        send_acc_ignore_must_be_set_message("SET_POSITION_TARGET_GLOBAL_INT");
+        return;
+    }
+
     // set guided mode targets
     if (!pos_ignore) {
         // consume position target
@@ -1142,19 +913,22 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
             // GCS will just need to look at desired location
             // outputs to see if it having an effect.
         }
-    } else if (!vel_ignore && acc_ignore && yaw_ignore && yaw_rate_ignore) {
+        return;
+    }
+
+    if (!vel_ignore && yaw_ignore && yaw_rate_ignore) {
         // consume velocity
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
-    } else if (!vel_ignore && acc_ignore && yaw_ignore && !yaw_rate_ignore) {
+    } else if (!vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume velocity and turn rate
         rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, speed_dir * target_speed);
-    } else if (!vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
+    } else if (!vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume velocity
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
-    } else if (vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
+    } else if (vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume just target heading (probably only skid steering vehicles can do this)
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, 0.0f);
-    } else if (vel_ignore && acc_ignore && yaw_ignore && !yaw_rate_ignore) {
+    } else if (vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume just turn rate(probably only skid steering vehicles can do this)
         rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, 0.0f);
     }

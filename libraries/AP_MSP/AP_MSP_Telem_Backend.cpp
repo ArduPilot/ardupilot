@@ -1261,7 +1261,7 @@ void AP_MSP_Telem_Backend::msp_displayport_draw_screen()
     msp_send_packet(MSP_DISPLAYPORT, MSP::MSP_V1, subcmd, sizeof(subcmd), false);
 }
 
-void AP_MSP_Telem_Backend::msp_displayport_write_string(uint8_t col, uint8_t row, bool blink, const char *string)
+void AP_MSP_Telem_Backend::msp_displayport_write_string(uint8_t col, uint8_t row, bool blink, const char *string, const uint8_t font_table)
 {
     const uint8_t len = strnlen(string, OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH);
 
@@ -1276,6 +1276,7 @@ void AP_MSP_Telem_Backend::msp_displayport_write_string(uint8_t col, uint8_t row
     packet.sub_cmd = msp_displayport_subcmd_e::MSP_DISPLAYPORT_WRITE_STRING;
     packet.row = row;
     packet.col = col;
+    packet.attr |= (font_table & 0x03); // first 2 bits are for the table index
     if (blink) {
         packet.attr |= DISPLAYPORT_MSP_ATTR_BLINK;
     }

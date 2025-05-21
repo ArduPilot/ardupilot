@@ -107,7 +107,7 @@ public:
     // check settings are valid
     bool arming_checks(size_t buflen, char *buffer) const;
 
-#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+#if AP_RPM_STREAM_ENABLED
     // Return the sensor id to use for streaming over DroneCAN, negative number disables
     int8_t get_dronecan_sensor_id(uint8_t instance) const;
 #endif

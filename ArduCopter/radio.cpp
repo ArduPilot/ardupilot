@@ -20,7 +20,7 @@ void Copter::default_dead_zones()
 
 void Copter::init_rc_in()
 {
-    // the library gaurantees that these are non-nullptr:
+    // the library guarantees that these are non-nullptr:
     channel_roll     = &rc().get_roll_channel();
     channel_pitch    = &rc().get_pitch_channel();
     channel_throttle = &rc().get_throttle_channel();
@@ -128,6 +128,7 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
     // if failsafe not enabled pass through throttle and exit
     if(g.failsafe_throttle == FS_THR_DISABLED) {
+        set_failsafe_radio(false);
         return;
     }
 

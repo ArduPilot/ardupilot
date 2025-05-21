@@ -52,6 +52,9 @@ public:
         abort();
     }
 
+    bool transfer_fullduplex(uint8_t *send_recv, uint32_t len) override {
+        abort();
+    }
 
     AP_HAL::Semaphore *get_semaphore() override;
 
@@ -72,7 +75,7 @@ public:
 
     SPIDeviceManager();
 
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override;
+    AP_HAL::SPIDevice *get_device_ptr(const char *name) override;
 
     static SPIDesc device_table[];
     static SPIBus *buses;

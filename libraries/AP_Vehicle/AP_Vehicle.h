@@ -71,6 +71,7 @@
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <Filter/AP_Filter.h>
 #include <AP_Stats/AP_Stats.h>              // statistics library
+#include <AP_DDS/AP_DDS_config.h>
 #if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
@@ -428,7 +429,7 @@ protected:
     AP_Generator generator;
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     AP_ExternalAHRS externalAHRS;
 #endif
 
@@ -473,6 +474,14 @@ protected:
 
 #if AP_FENCE_ENABLED
     AC_Fence fence;
+    struct {
+        bool have_updates;      // true if new breache statuses have been captured but not actioned
+        uint8_t new_breaches;   // the new breaches that are available
+        uint32_t last_check_ms; // last time the fence check was run
+    } fence_breaches;
+
+    void fence_init();
+    virtual void fence_checks_async() {};
 #endif
 
 #if AP_TEMPERATURE_SENSOR_ENABLED

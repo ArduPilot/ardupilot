@@ -225,7 +225,7 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
         hal.gpio->write(_manual_pin, mode==AFS_MANUAL);
     }
 
-    const uint32_t last_heartbeat_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    const uint32_t last_heartbeat_ms = gcs().sysid_mygcs_last_seen_time_ms();
     uint32_t now = AP_HAL::millis();
     bool gcs_link_ok = ((now - last_heartbeat_ms) < (_gcs_fail_time_seconds*1000.0f));
     bool gps_lock_ok = ((now - AP::gps().last_fix_time_ms()) < 3000);
@@ -359,6 +359,27 @@ AP_AdvancedFailsafe::heartbeat(void)
     }    
 }
 
+bool
+AP_AdvancedFailsafe::gps_altitude_ok() const
+{
+    if (_amsl_margin_gps == -1) {
+        return false;
+    }
+    const AP_GPS &gps = AP::gps();
+    if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+        return false;
+    }
+    const auto &location = gps.location();
+    float alt;
+    if (!location.get_alt_m(Location::AltFrame::ABSOLUTE, alt)) {
+        return false;
+    }
+    if (alt > _amsl_limit - _amsl_margin_gps) {
+        return false;
+    }
+    return true;
+}
+
 // check for altitude limit breach
 bool
 AP_AdvancedFailsafe::check_altlimit(void)
@@ -373,12 +394,9 @@ AP_AdvancedFailsafe::check_altlimit(void)
 
     // see if the barometer is dead
     const AP_Baro &baro = AP::baro();
-    const AP_GPS &gps = AP::gps();
     if (AP_HAL::millis() - baro.get_last_update() > 5000) {
         // the barometer has been unresponsive for 5 seconds. See if we can switch to GPS
-        if (_amsl_margin_gps != -1 &&
-            gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
-            gps.location().alt*0.01f <= _amsl_limit - _amsl_margin_gps) {
+        if (gps_altitude_ok()) {
             // GPS based altitude OK
             return false;
         }

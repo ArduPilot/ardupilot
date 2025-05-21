@@ -82,10 +82,14 @@ void Copter::motor_test_output()
         }
 
         // sanity check throttle values
-        if (pwm >= RC_Channel::RC_MIN_LIMIT_PWM && pwm <= RC_Channel::RC_MAX_LIMIT_PWM) {
-            // turn on motor to specified pwm value
-            motors->output_test_seq(motor_test_seq, pwm);
-        } else {
+        if (pwm < RC_Channel::RC_MIN_LIMIT_PWM || pwm > RC_Channel::RC_MAX_LIMIT_PWM) {
+            motor_test_stop();
+            return;
+        }
+
+        // turn on motor to specified pwm value
+        if (!motors->output_test_seq(motor_test_seq, pwm)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Motor Test: cancelled");
             motor_test_stop();
         }
     }

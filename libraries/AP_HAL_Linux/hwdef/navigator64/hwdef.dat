@@ -1,0 +1,3 @@
+include ../navigator/hwdef.dat
+
+env TOOLCHAIN aarch64-linux-gnu

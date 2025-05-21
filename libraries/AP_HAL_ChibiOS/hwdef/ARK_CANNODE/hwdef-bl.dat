@@ -5,8 +5,8 @@
 # note: the device is STM32F412CE, not all F412 pins are available
 MCU STM32F4xx STM32F412Rx
 
-# board ID for firmware load
-APJ_BOARD_ID 83
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_ARK_CANNODE
 
 env AP_PERIPH 1
 

@@ -18,7 +18,7 @@
 
 #include "AP_ExternalAHRS_config.h"
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
 
 #include "AP_ExternalAHRS.h"
 #include "AP_ExternalAHRS_backend.h"
@@ -174,6 +174,11 @@ bool AP_ExternalAHRS::get_origin(Location &loc)
 {
     if (state.have_origin) {
         WITH_SEMAPHORE(state.sem);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (!state.origin.initialised()) {
+            AP_HAL::panic("Uninitialized origin in AP_ExternalAHRS.");
+        }
+#endif
         loc = state.origin;
         return true;
     }
@@ -198,6 +203,11 @@ bool AP_ExternalAHRS::get_location(Location &loc)
     }
     WITH_SEMAPHORE(state.sem);
     loc = state.location;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!loc.initialised()) {
+        AP_HAL::panic("Uninitialized location in AP_ExternalAHRS.");
+    }
+#endif
 
     if (state.last_location_update_us != 0 &&
         state.have_velocity) {
@@ -459,5 +469,5 @@ AP_ExternalAHRS &externalAHRS()
 
 };
 
-#endif  // HAL_EXTERNAL_AHRS_ENABLED
+#endif  // AP_EXTERNAL_AHRS_ENABLED
 

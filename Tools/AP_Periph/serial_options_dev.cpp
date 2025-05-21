@@ -18,7 +18,7 @@
 
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+#if AP_PERIPH_SERIAL_OPTIONS_ENABLED
 
 #include "serial_options.h"
 
@@ -44,4 +44,4 @@ const AP_Param::GroupInfo SerialOptionsDev::var_info[] {
     AP_GROUPEND
 };
 
-#endif  // HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+#endif  // AP_PERIPH_SERIAL_OPTIONS_ENABLED

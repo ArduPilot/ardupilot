@@ -207,10 +207,11 @@ void AP_BattMonitor_INA3221::init()
     }
 
     AddressDriver *d = &address_driver[address_driver_count];
-    d->dev = std::move(hal.i2c_mgr->get_device(i2c_bus, i2c_address, 100000, true, 20));
+    d->dev = hal.i2c_mgr->get_device_ptr(i2c_bus, i2c_address, 100000, true, 20);
     if (!d->dev) {
         return;
     }
+
     d->bus = i2c_bus;
     d->address = i2c_address;
 

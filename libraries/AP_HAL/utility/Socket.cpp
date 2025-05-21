@@ -18,7 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Networking/AP_Networking_Config.h>
-#if AP_NETWORKING_SOCKETS_ENABLED
+#if AP_NETWORKING_SOCKETS_ENABLED || defined(AP_SOCKET_NATIVE_ENABLED)
 
 #ifndef SOCKET_CLASS_NAME
 #define SOCKET_CLASS_NAME SocketAPM
@@ -167,7 +167,9 @@ bool SOCKET_CLASS_NAME::connect(const char *address, uint16_t port)
         // for bi-directional UDP broadcast we need 2 sockets
         struct sockaddr_in send_addr;
         socklen_t send_len = sizeof(send_addr);
-        ret = CALL_PREFIX(getsockname)(fd, (struct sockaddr *)&send_addr, &send_len);
+        if (CALL_PREFIX(getsockname)(fd, (struct sockaddr *)&send_addr, &send_len) == -1) {
+            return false;
+        }
         fd_in = CALL_PREFIX(socket)(AF_INET, SOCK_DGRAM, 0);
         if (fd_in == -1) {
             goto fail_multi;

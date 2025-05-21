@@ -52,9 +52,6 @@
 
 # AP_FLAKE8_CLEAN
 
-# for python2.7 compatibility
-from __future__ import print_function
-
 import sys
 import argparse
 import binascii
@@ -390,7 +387,7 @@ class uploader(object):
             return True
 
         except NotImplementedError:
-            raise RuntimeError("Programing not supported for this version of silicon!\n"
+            raise RuntimeError("Programming not supported for this version of silicon!\n"
                                "See https://pixhawk.org/help/errata")
         except RuntimeError:
             # timeout, no response yet
@@ -434,8 +431,8 @@ class uploader(object):
         self.__getSync()
         if runningPython3:
             value = value.decode('ascii')
-        peices = value.split(",")
-        return peices
+        pieces = value.split(",")
+        return pieces
 
     def __drawProgressBar(self, label, progress, maxVal):
         if maxVal < progress:
@@ -882,6 +879,20 @@ class uploader(object):
             print("Failed to get name: %s" % str(e))
         return None
 
+    # Verify firmware version on board matches provided version
+    def verify_firmware_is(self, fw, boot_delay=None):
+        if self.bl_rev == 2:
+            self.__verify_v2("Verify ", fw)
+        else:
+            self.__verify_v3("Verify ", fw)
+
+        if boot_delay is not None:
+            self.__set_boot_delay(boot_delay)
+
+        print("\nRebooting.\n")
+        self.__reboot()
+        self.port.close()
+
     # upload the firmware
     def upload(self, fw, force=False, boot_delay=None):
         # Make sure we are doing the right thing
@@ -1120,6 +1131,8 @@ def main():
     )
     parser.add_argument('--download', action='store_true', default=False, help='download firmware from board')
     parser.add_argument('--identify', action="store_true", help="Do not flash firmware; simply dump information about board")
+    parser.add_argument('--verify-firmware-is', action="store_true",
+                        help="Do not flash firmware; verify that the firmware on the board matches the supplied firmware")
     parser.add_argument('--no-extf', action="store_true", help="Do not attempt external flash operations")
     parser.add_argument('--erase-extflash', type=lambda x: int(x, 0), default=None,
                         help="Erase sectors containing specified amount of bytes from ext flash")
@@ -1183,6 +1196,8 @@ def main():
                         up.dump_board_info()
                     elif args.download:
                         up.download(args.firmware)
+                    elif args.verify_firmware_is:
+                        up.verify_firmware_is(fw, boot_delay=args.boot_delay)
                     elif args.erase_extflash:
                         up.erase_extflash('Erase ExtF', args.erase_extflash)
                         print("\nExtF Erase Finished")

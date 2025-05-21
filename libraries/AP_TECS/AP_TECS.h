@@ -286,7 +286,7 @@ private:
     float _hgt_dem_in;          // height demand input from autopilot after unachievable climb or descent limiting (m)
     float _hgt_dem_in_prev;     // previous value of _hgt_dem_in (m)
     float _hgt_dem_lpf;         // height demand after application of low pass filtering (m)
-    float _flare_hgt_dem_adj;   // height rate demand duirng flare adjusted for height tracking offset at flare entry (m)
+    float _flare_hgt_dem_adj;   // height rate demand during flare adjusted for height tracking offset at flare entry (m)
     float _flare_hgt_dem_ideal; // height we want to fly at during flare (m)
     float _hgt_dem;             // height demand sent to control loops (m)
     float _hgt_dem_prev;        // _hgt_dem from previous frame (m)

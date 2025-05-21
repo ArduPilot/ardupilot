@@ -4,8 +4,11 @@ include ../CubeNode/hwdef.dat
 undef PE0
 undef PE1
 undef PC12
-undef HAL_PERIPH_ENABLE_IMU
+undef AP_PERIPH_IMU_ENABLED
 undef HAL_GCS_ENABLED
+
+# disable IMU
+def AP_PERIPH_IMU_ENABLED 0
 
 # need to use UART8 to get RTS/CTS
 PE1 UART8_TX UART8

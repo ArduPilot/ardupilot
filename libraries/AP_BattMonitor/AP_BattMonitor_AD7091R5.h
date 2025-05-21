@@ -3,12 +3,11 @@
 #include "AP_BattMonitor_Backend.h"
 
 #ifndef AP_BATTERY_AD7091R5_ENABLED
-#define AP_BATTERY_AD7091R5_ENABLED (BOARD_FLASH_SIZE > 1024)
+#define AP_BATTERY_AD7091R5_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
 #endif
 
 #if AP_BATTERY_AD7091R5_ENABLED
 
-#include <AP_HAL/utility/OwnPtr.h>
 #include <AP_HAL/I2CDevice.h>
 
 #define AD7091R5_NO_OF_CHANNELS  4
@@ -57,7 +56,7 @@ private:
     static bool _health;
 
     HAL_Semaphore sem; // semaphore for access to shared frontend data
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice *_dev;
     uint8_t volt_buff_pt;
     uint8_t curr_buff_pt;
 

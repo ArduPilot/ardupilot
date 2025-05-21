@@ -188,9 +188,9 @@ bool AP_Avoidance_Copter::handle_avoidance_vertical(const AP_Avoidance::Obstacle
     // get best vector away from obstacle
     Vector3f velocity_neu;
     if (should_climb) {
-        velocity_neu.z = copter.wp_nav->get_default_speed_up();
+        velocity_neu.z = copter.wp_nav->get_default_speed_up_cms();
     } else {
-        velocity_neu.z = -copter.wp_nav->get_default_speed_down();
+        velocity_neu.z = -copter.wp_nav->get_default_speed_down_cms();
         // do not descend if below minimum altitude
         if (copter.current_loc.alt < get_altitude_minimum()) {
             velocity_neu.z = 0.0f;
@@ -221,8 +221,8 @@ bool AP_Avoidance_Copter::handle_avoidance_horizontal(const AP_Avoidance::Obstac
         // re-normalise
         velocity_neu.normalize();
         // convert horizontal components to velocities
-        velocity_neu.x *= copter.wp_nav->get_default_speed_xy();
-        velocity_neu.y *= copter.wp_nav->get_default_speed_xy();
+        velocity_neu.x *= copter.wp_nav->get_default_speed_NE_cms();
+        velocity_neu.y *= copter.wp_nav->get_default_speed_NE_cms();
         // send target velocity
         copter.mode_avoid_adsb.set_velocity(velocity_neu);
         return true;
@@ -243,13 +243,13 @@ bool AP_Avoidance_Copter::handle_avoidance_perpendicular(const AP_Avoidance::Obs
     Vector3f velocity_neu;
     if (get_vector_perpendicular(obstacle, velocity_neu)) {
         // convert horizontal components to velocities
-        velocity_neu.x *= copter.wp_nav->get_default_speed_xy();
-        velocity_neu.y *= copter.wp_nav->get_default_speed_xy();
+        velocity_neu.x *= copter.wp_nav->get_default_speed_NE_cms();
+        velocity_neu.y *= copter.wp_nav->get_default_speed_NE_cms();
         // use up and down waypoint speeds
         if (velocity_neu.z > 0.0f) {
-            velocity_neu.z *= copter.wp_nav->get_default_speed_up();
+            velocity_neu.z *= copter.wp_nav->get_default_speed_up_cms();
         } else {
-            velocity_neu.z *= copter.wp_nav->get_default_speed_down();
+            velocity_neu.z *= copter.wp_nav->get_default_speed_down_cms();
             // do not descend if below minimum altitude
             if (copter.current_loc.alt < get_altitude_minimum()) {
                 velocity_neu.z = 0.0f;

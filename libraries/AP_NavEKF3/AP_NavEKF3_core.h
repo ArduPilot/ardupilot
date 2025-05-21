@@ -464,6 +464,12 @@ public:
     // get a yaw estimator instance
     const EKFGSF_yaw *get_yawEstimator(void) const { return yawEstimator; }
 
+    // per-core pre-arm checks. returns false if we fail arming
+    // checks, in which case the buffer will be populated with a
+    // failure message
+    // requires_position should be true if horizontal position configuration should be checked
+    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const;
+    
 private:
     EKFGSF_yaw *yawEstimator;
     AP_DAL &dal;
@@ -792,6 +798,9 @@ private:
 
     // try changing compasses on compass failure or timeout
     void tryChangeCompass(void);
+
+    // try changing to a specific compass index
+    void tryChangeCompass(uint8_t compass_index);
 
     // check for new airspeed data and update stored measurements if available
     void readAirSpdData();

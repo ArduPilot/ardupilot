@@ -106,14 +106,6 @@ bool RC_Channel_Blimp::do_aux_function(const AuxFuncTrigger &trigger)
 
     switch (ch_option) {
 
-    case AUX_FUNC::SAVE_TRIM:
-        if ((ch_flag == AuxSwitchPos::HIGH) &&
-            (blimp.control_mode <= Mode::Number::MANUAL) &&
-            (blimp.channel_up->get_control_in() == 0)) {
-            blimp.save_trim();
-        }
-        break;
-
     case AUX_FUNC::LOITER:
         do_aux_function_change_mode(Mode::Number::LOITER, ch_flag);
         break;
@@ -126,70 +118,4 @@ bool RC_Channel_Blimp::do_aux_function(const AuxFuncTrigger &trigger)
         return RC_Channel::do_aux_function(trigger);
     }
     return true;
-}
-
-// save_trim - adds roll and pitch trims from the radio to ahrs
-void Blimp::save_trim()
-{
-    // save roll and pitch trim
-    float roll_trim = ToRad((float)channel_right->get_control_in()*0.01f);
-    float pitch_trim = ToRad((float)channel_front->get_control_in()*0.01f);
-    ahrs.add_trim(roll_trim, pitch_trim);
-    LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
-    gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
-}
-
-// auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
-// meant to be called continuously while the pilot attempts to keep the blimp level
-void Blimp::auto_trim_cancel()
-{
-    auto_trim_counter = 0;
-    AP_Notify::flags.save_trim = false;
-    gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim cancelled");
-}
-
-void Blimp::auto_trim()
-{
-    if (auto_trim_counter > 0) {
-        if (blimp.flightmode != &blimp.mode_manual ||
-            !blimp.motors->armed()) {
-            auto_trim_cancel();
-            return;
-        }
-
-        // flash the leds
-        AP_Notify::flags.save_trim = true;
-
-        if (!auto_trim_started) {
-            if (ap.land_complete) {
-                // haven't taken off yet
-                return;
-            }
-            auto_trim_started = true;
-        }
-
-        if (ap.land_complete) {
-            // landed again.
-            auto_trim_cancel();
-            return;
-        }
-
-        auto_trim_counter--;
-
-        // calculate roll trim adjustment
-        float roll_trim_adjustment = ToRad((float)channel_right->get_control_in() / 4000.0f);
-
-        // calculate pitch trim adjustment
-        float pitch_trim_adjustment = ToRad((float)channel_front->get_control_in() / 4000.0f);
-
-        // add trim to ahrs object
-        // save to eeprom on last iteration
-        ahrs.add_trim(roll_trim_adjustment, pitch_trim_adjustment, (auto_trim_counter == 0));
-
-        // on last iteration restore leds and accel gains to normal
-        if (auto_trim_counter == 0) {
-            AP_Notify::flags.save_trim = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim: Trims saved");
-        }
-    }
 }

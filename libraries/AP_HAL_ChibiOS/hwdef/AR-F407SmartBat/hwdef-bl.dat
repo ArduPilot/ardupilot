@@ -6,8 +6,8 @@ MCU CKS32F4xx CKS32F407xx
 # crystal frequency
 OSCILLATOR_HZ 8000000
 
-# board ID for firmware load
-APJ_BOARD_ID 1134
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_AR-F407SmartBat
 
 # CKS32F407 does not work in bootloader with normal optimisation
 env OPTIMIZE -Og

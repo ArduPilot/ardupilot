@@ -112,7 +112,7 @@ class CoverageRunner(object):
             for line in searchfile:
                 if "-ftest-coverage" in line:
                     return True
-            self.progress("%s was't built with coverage support" % name)
+            self.progress("%s wasn't built with coverage support" % name)
             return False
 
     def run_build(self, use_example=False) -> None:
@@ -199,7 +199,7 @@ class CoverageRunner(object):
         with open(self.LCOV_LOG, 'a') as log_file:
             # we cannot use subprocess.PIPE and result.stdout to get the output as it will be too long and trigger
             # BlockingIOError: [Errno 11] write could not complete without blocking
-            # thus we ouput to temp file, and print the file line by line...
+            # thus we output to temp file, and print the file line by line...
             with tempfile.NamedTemporaryFile(mode="w+") as tmp_file:
                 try:
                     self.progress("Capturing Coverage statistics")
@@ -225,7 +225,7 @@ class CoverageRunner(object):
                         tmp_file.seek(0)
                         content = tmp_file.read().splitlines()
                         for line in content:
-                            # print(line, flush=True)  # not usefull to print
+                            # print(line, flush=True)  # not useful to print
                             log_file.write(line)
                     # remove files we do not intentionally test:
                     self.progress("Removing unwanted coverage statistics")
@@ -248,7 +248,7 @@ class CoverageRunner(object):
                         tmp_file.seek(0)
                         content = tmp_file.read().splitlines()
                         for line in content:
-                            # print(line, flush=True)  # not usefull to print
+                            # print(line, flush=True)  # not useful to print
                             log_file.write(line)
 
                 except subprocess.CalledProcessError as err:

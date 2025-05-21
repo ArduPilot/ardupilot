@@ -286,6 +286,14 @@ int AP_Filesystem::closedir(DirHandle *dirp)
     return ret;
 }
 
+// return number of bytes that should be written before fsync for optimal
+// streaming performance/robustness. if zero, any number can be written.
+uint32_t AP_Filesystem::bytes_until_fsync(int fd)
+{
+    const Backend &backend = backend_by_fd(fd);
+    return backend.fs.bytes_until_fsync(fd);
+}
+
 // return free disk space in bytes
 int64_t AP_Filesystem::disk_free(const char *path)
 {

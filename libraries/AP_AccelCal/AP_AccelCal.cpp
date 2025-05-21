@@ -354,7 +354,6 @@ void AP_AccelCal::update_status() {
     }
 
     _status = ACCEL_CAL_SUCCESS;    // we have succeeded calibration if all the calibrators have
-    return;
 }
 
 bool AP_AccelCal::client_active(uint8_t client_num)

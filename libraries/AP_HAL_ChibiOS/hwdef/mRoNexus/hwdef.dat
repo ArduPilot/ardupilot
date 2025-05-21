@@ -7,8 +7,8 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1015
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MRO_NEXUS
 
 # crystal frequency
 OSCILLATOR_HZ 25000000
@@ -16,8 +16,6 @@ OSCILLATOR_HZ 25000000
 
 FLASH_SIZE_KB 2048
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
 
 # start on 2th sector (1st sector for bootloader)
 FLASH_RESERVE_START_KB 128

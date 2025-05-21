@@ -96,7 +96,7 @@ public:
 
     // the number of and storage for i2c devices
     uint8_t num_i2c_devices;
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> *_i2c_dev[SCRIPTING_MAX_NUM_I2C_DEVICE];
+    AP_HAL::I2CDevice *_i2c_dev[SCRIPTING_MAX_NUM_I2C_DEVICE];
 
 #if AP_SCRIPTING_CAN_SENSOR_ENABLED
     // Scripting CAN sensor

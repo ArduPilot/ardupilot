@@ -494,7 +494,7 @@ static SerialConfig forward_sercfg;
 static uint32_t otg2_serial_deadline_ms;
 bool update_otg2_serial_forward()
 {
-    // get baudrate set on SDU2 and set it on HAL_FORWARD_OTG2_SERIAL if changed
+    // get baudrate set on SDU2 and set it on BOOTLOADER_FORWARD_OTG2_SERIAL if changed
     if (forward_sercfg.speed != BOOTLOADER_FORWARD_OTG2_SERIAL_BAUDRATE) {
         forward_sercfg.speed = BOOTLOADER_FORWARD_OTG2_SERIAL_BAUDRATE;
 #if defined(BOOTLOADER_FORWARD_OTG2_SERIAL_SWAP) && BOOTLOADER_FORWARD_OTG2_SERIAL_SWAP
@@ -502,11 +502,11 @@ bool update_otg2_serial_forward()
 #endif
         sdStart(&BOOTLOADER_FORWARD_OTG2_SERIAL, &forward_sercfg);
     }
-    // check how many bytes are available to read from HAL_FORWARD_OTG2_SERIAL
+    // check how many bytes are available to read from BOOTLOADER_FORWARD_OTG2_SERIAL
     uint8_t data[SERIAL_BUFFERS_SIZE]; // read upto SERIAL_BUFFERS_SIZE at a time
     int n = chnReadTimeout(&SDU2, data, SERIAL_BUFFERS_SIZE, TIME_IMMEDIATE);
     if (n > 0) {
-        // do a blocking write to HAL_FORWARD_OTG2_SERIAL
+        // do a blocking write to BOOTLOADER_FORWARD_OTG2_SERIAL
         chnWriteTimeout(&BOOTLOADER_FORWARD_OTG2_SERIAL, data, n, TIME_IMMEDIATE);
         otg2_serial_deadline_ms = AP_HAL::millis() + 1000;
     }
@@ -544,7 +544,7 @@ void port_setbaud(uint32_t baudrate)
 }
 #endif // BOOTLOADER_DEV_LIST
 
-#if defined(STM32H7) && CH_CFG_USE_HEAP
+#if AP_FLASH_ECC_CHECK_ENABLED
 /*
   check if flash has any ECC errors and if it does then erase all of
   flash
@@ -591,5 +591,4 @@ void check_ecc_errors(void)
     }
     __enable_fault_irq();
 }
-#endif // defined(STM32H7) && CH_CFG_USE_HEAP
-
+#endif // AP_FLASH_ECC_CHECK_ENABLED

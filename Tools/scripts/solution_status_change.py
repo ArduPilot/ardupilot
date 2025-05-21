@@ -7,8 +7,6 @@ AP_FLAKE8_CLEAN
 
 """
 
-from __future__ import print_function
-
 import optparse
 import sys
 import time
@@ -49,7 +47,9 @@ class SolutionStatusChange(object):
             "using_gps": 13,
             "gps_glitching": 14,
             "gps_quality_good": 15,
-            "initalized": 16,
+            "initialized": 16,
+            "rejecting_airspeed": 17,
+            "deadreckoning": 18,
         }
 
         desired_type = "XKF4"

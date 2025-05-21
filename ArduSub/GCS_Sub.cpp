@@ -2,11 +2,6 @@
 
 #include "Sub.h"
 
-uint8_t GCS_Sub::sysid_this_mav() const
-{
-    return sub.g.sysid_this_mav;
-}
-
 void GCS_Sub::update_vehicle_sensor_status_flags()
 {
     // mode-specific sensors:

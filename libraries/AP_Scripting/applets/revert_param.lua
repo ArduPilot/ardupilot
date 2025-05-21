@@ -175,8 +175,7 @@ function protected_wrapper()
      gcs:send_text(MAV_SEVERITY.EMERGENCY, "Internal Error: " .. err)
      -- when we fault we run the update function again after 1s, slowing it
      -- down a bit so we don't flood the console with errors
-     --return protected_wrapper, 1000
-     return
+     return protected_wrapper, 1000
   end
   return protected_wrapper, 1000/UPDATE_RATE_HZ
 end

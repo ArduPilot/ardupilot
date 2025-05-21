@@ -14,8 +14,8 @@ FLASH_RESERVE_START_KB 64
 STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 8192
 
-# board ID for firmware load
-APJ_BOARD_ID 1085
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_C_RTK2_HP
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -71,9 +71,6 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 
 define HAL_NO_GPIO_IRQ
 
-# avoid RCIN thread to save memory
-define HAL_USE_RTC FALSE
-
 define DMA_RESERVE_SIZE 0
 
 # enable CAN support
@@ -98,10 +95,10 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 256
 define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 
-define HAL_PERIPH_ENABLE_GPS
+define AP_PERIPH_GPS_ENABLED 1
 define GPS_MOVING_BASELINE 1
 
-define HAL_PERIPH_ENABLE_MAG
+define AP_PERIPH_MAG_ENABLED 1
 define HAL_COMPASS_MAX_SENSORS 1
 
 define AP_GPS_BACKEND_DEFAULT_ENABLED 0

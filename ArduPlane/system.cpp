@@ -141,7 +141,7 @@ void Plane::init_ardupilot()
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
-    gcs().sysid_myggcs_seen(AP_HAL::millis());
+    gcs().sysid_mygcs_seen(AP_HAL::millis());
 
     // don't initialise aux rc output until after quadplane is setup as
     // that can change initial values of channels
@@ -245,7 +245,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 
 #if HAL_QUADPLANE_ENABLED
     if (new_mode.is_vtol_mode() && !plane.quadplane.available()) {
-        // dont try and switch to a Q mode if quadplane is not enabled and initalized
+        // dont try and switch to a Q mode if quadplane is not enabled and initialized
         gcs().send_text(MAV_SEVERITY_INFO,"Q_ENABLE 0");
         // make sad noise
         if (reason != ModeReason::INITIALISED) {
@@ -352,7 +352,7 @@ bool Plane::set_mode_by_number(const Mode::Number new_mode_number, const ModeRea
 
 void Plane::check_long_failsafe()
 {
-    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    const uint32_t gcs_last_seen_ms = gcs().sysid_mygcs_last_seen_time_ms();
     const uint32_t tnow = millis();
     // only act on changes
     // -------------------
@@ -381,7 +381,7 @@ void Plane::check_long_failsafe()
             failsafe_long_on_event(FAILSAFE_GCS, ModeReason::GCS_FAILSAFE);
         }
     } else {
-        uint32_t timeout_seconds = g.fs_timeout_long;
+        float timeout_seconds = g.fs_timeout_long;
         if (g.fs_action_short != FS_ACTION_SHORT_DISABLED) {
             // avoid dropping back into short timeout
             timeout_seconds = g.fs_timeout_short;

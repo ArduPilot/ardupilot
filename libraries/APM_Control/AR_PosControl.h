@@ -78,9 +78,6 @@ public:
     AC_P_2D& get_pos_p() { return _p_pos; }
     AC_PID_2D& get_vel_pid() { return _pid_vel; }
 
-    // get the slew rate value for velocity.  used for oscillation detection in lua scripts
-    void get_srate(float &velocity_srate);
-
     // write PSC logs
     void write_log();
 

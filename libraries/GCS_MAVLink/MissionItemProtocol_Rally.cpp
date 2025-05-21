@@ -150,12 +150,13 @@ bool MissionItemProtocol_Rally::get_item_as_mission_item(uint16_t seq,
     return true;
 }
 
-MAV_MISSION_RESULT MissionItemProtocol_Rally::get_item(const GCS_MAVLINK &_link,
-                                                       const mavlink_message_t &msg,
-                                                       const mavlink_mission_request_int_t &packet,
-                                                       mavlink_mission_item_int_t &ret_packet)
+MAV_MISSION_RESULT MissionItemProtocol_Rally::get_item(uint16_t seq, mavlink_mission_item_int_t &ret_packet)
 {
-    if (!get_item_as_mission_item(packet.seq, ret_packet)) {
+    if (seq >= item_count()) {
+        return MAV_MISSION_INVALID_SEQUENCE;
+    }
+
+    if (!get_item_as_mission_item(seq, ret_packet)) {
         return MAV_MISSION_INVALID_SEQUENCE;
     }
     return MAV_MISSION_ACCEPTED;

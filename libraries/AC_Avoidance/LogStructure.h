@@ -37,10 +37,10 @@ struct PACKED log_OABendyRuler {
     float margin;
     int32_t final_lat;
     int32_t final_lng;
-    int32_t final_alt;
+    float final_alt;
     int32_t oa_lat;
     int32_t oa_lng;
-    int32_t oa_alt;
+    float oa_alt;
 };
 
 // @LoggerMessage: OADJ
@@ -110,7 +110,7 @@ struct PACKED log_OD_Visgraph {
 #if AP_AVOIDANCE_ENABLED
 #define LOG_STRUCTURE_FROM_AVOIDANCE \
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
-      "OABR","QBBHHHBfLLiLLi","TimeUS,Type,Act,DYaw,Yaw,DP,RChg,Mar,DLt,DLg,DAlt,OLt,OLg,OAlt", "s--ddd-mDUmDUm", "F-------GGBGGB" , true }, \
+      "OABR","QBBHHHBfLLfLLf","TimeUS,Type,Act,DYaw,Yaw,DP,RChg,Mar,DLt,DLg,DAlt,OLt,OLg,OAlt", "s--ddd-mDUmDUm", "F-------GG0GG0" , true }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
       "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "s----DUDU", "F----GGGG" , true }, \
     { LOG_SIMPLE_AVOID_MSG, sizeof(log_SimpleAvoid), \

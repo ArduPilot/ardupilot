@@ -123,7 +123,7 @@ private:
     // with slow tilt rates the tilt angle can lag
     bool angle_achieved;
 
-    // refences for convenience
+    // references for convenience
     QuadPlane& quadplane;
     AP_MotorsMulticopter*& motors;
 
@@ -142,6 +142,8 @@ public:
     bool update_yaw_target(float& yaw_target_cd) override;
 
     bool show_vtol_view() const override;
+
+    bool use_multirotor_control_in_fwd_transition() const override;
 
 private:
 

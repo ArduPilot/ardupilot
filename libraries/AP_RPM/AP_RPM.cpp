@@ -325,7 +325,7 @@ void AP_RPM::Log_RPM() const
 }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+#if AP_RPM_STREAM_ENABLED
 // Return the sensor id to use for streaming over DroneCAN, negative number disables
 int8_t AP_RPM::get_dronecan_sensor_id(uint8_t instance) const
 {

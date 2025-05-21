@@ -39,6 +39,12 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
+
+#include <AP_Mission/AP_Mission_config.h>
+#if AP_MISSION_ENABLED
+#include <AP_Mission/AP_Mission.h>
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -223,6 +229,8 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
 // init sets up INS board orientation
 void AP_AHRS::init()
 {
+    update_orientation();
+
     // EKF1 is no longer supported - handle case where it is selected
     if (_ekf_type.get() == 1) {
         AP_BoardConfig::config_error("EKF1 not available");
@@ -340,8 +348,15 @@ void AP_AHRS::reset_gyro_drift(void)
  */
 void AP_AHRS::update_state(void)
 {
+    const uint8_t primary_gyro = _get_primary_gyro_index();
+#if AP_INERTIALSENSOR_ENABLED
+    // tell the IMUS about primary changes
+    if (primary_gyro != state.primary_gyro) {
+        AP::ins().set_primary(primary_gyro);
+    }
+#endif
     state.primary_IMU = _get_primary_IMU_index();
-    state.primary_gyro = _get_primary_gyro_index();
+    state.primary_gyro = primary_gyro;
     state.primary_accel = _get_primary_accel_index();
     state.primary_core = _get_primary_core_index();
     state.wind_estimate_ok = _wind_estimate(state.wind_estimate);
@@ -361,6 +376,7 @@ void AP_AHRS::update_state(void)
     state.velocity_NED_ok = _get_velocity_NED(state.velocity_NED);
 }
 
+// update run at loop rate
 void AP_AHRS::update(bool skip_ins_update)
 {
     // periodically checks to see if we should update the AHRS
@@ -2984,6 +3000,14 @@ bool AP_AHRS::set_home(const Location &loc)
     pd.home_lat = loc.lat;
     pd.home_lon = loc.lng;
     pd.home_alt_cm = loc.alt;
+
+#if AP_MISSION_ENABLED
+    // Save home to mission
+    AP_Mission *mission = AP::mission();
+    if (mission != nullptr) {
+        mission->write_home_to_storage();
+    }
+#endif
 
     return true;
 }

@@ -55,27 +55,38 @@ int lua_mavlink_init(lua_State *L) {
     const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
 
     binding_argcheck(L, 2+arg_offset);
-    WITH_SEMAPHORE(AP::scripting()->mavlink_data.sem);
     // get the depth of receive queue
     const uint32_t queue_size = get_uint32(L, 1+arg_offset, 0, 25);
     // get number of msgs to accept
     const uint32_t num_msgs = get_uint32(L, 2+arg_offset, 0, 25);
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
-    if (data.rx_buffer == nullptr) {
-        data.rx_buffer = NEW_NOTHROW ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
+    bool failed = false;
+    {
+        WITH_SEMAPHORE(data.sem);
         if (data.rx_buffer == nullptr) {
-            return luaL_error(L, "Failed to allocate mavlink rx buffer");
+            data.rx_buffer = NEW_NOTHROW ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
         }
-    }
-    if (data.accept_msg_ids == nullptr) {
-        data.accept_msg_ids = NEW_NOTHROW uint32_t[num_msgs];
         if (data.accept_msg_ids == nullptr) {
-            return luaL_error(L, "Failed to allocate mavlink rx registry");
+            data.accept_msg_ids = NEW_NOTHROW uint32_t[num_msgs];
         }
-        data.accept_msg_ids_size = num_msgs;
-        memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
+        if ((data.rx_buffer == nullptr) || (data.accept_msg_ids == nullptr)) {
+            delete data.rx_buffer;
+            delete[] data.accept_msg_ids;
+            data.rx_buffer = nullptr;
+            data.accept_msg_ids = nullptr;
+            data.accept_msg_ids_size = 0;
+            failed = true;
+        } else {
+            data.accept_msg_ids_size = num_msgs;
+            memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
+        }
+    } // release semaphore here as luaL_error will NOT do that!
+
+    if (failed) {
+        return luaL_error(L, "out of memory");
     }
+
     return 0;
 }
 
@@ -90,14 +101,11 @@ int lua_mavlink_receive_chan(lua_State *L) {
     ObjectBuffer<struct AP_Scripting::mavlink_msg> *rx_buffer = AP::scripting()->mavlink_data.rx_buffer;
 
     if (rx_buffer == nullptr) {
-        return luaL_error(L, "Never subscribed to a message");
+        return luaL_error(L, "RX not initialized");
     }
 
     if (rx_buffer->pop(msg)) {
-        luaL_Buffer b;
-        luaL_buffinit(L, &b);
-        luaL_addlstring(&b, (char *)&msg.msg, sizeof(msg.msg));
-        luaL_pushresult(&b);
+        lua_pushlstring(L, (char *)&msg.msg, sizeof(msg.msg));
         lua_pushinteger(L, msg.chan);
         *new_uint32_t(L) = msg.timestamp_ms;
         return 3;
@@ -134,7 +142,7 @@ int lua_mavlink_register_rx_msgid(lua_State *L) {
     }
 
     if (i >= data.accept_msg_ids_size) {
-        return luaL_error(L, "Out of MAVLink ID's to monitor");
+        return luaL_error(L, "no registrations free");
     }
 
     {
@@ -591,18 +599,13 @@ int lua_get_i2c_device(lua_State *L) {
         return luaL_argerror(L, 1, "no i2c devices available");
     }
 
-    scripting->_i2c_dev[scripting->num_i2c_devices] = NEW_NOTHROW AP_HAL::OwnPtr<AP_HAL::I2CDevice>;
+    scripting->_i2c_dev[scripting->num_i2c_devices] = hal.i2c_mgr->get_device_ptr(bus, address, bus_clock, use_smbus);
+
     if (scripting->_i2c_dev[scripting->num_i2c_devices] == nullptr) {
         return luaL_argerror(L, 1, "i2c device nullptr");
     }
 
-    *scripting->_i2c_dev[scripting->num_i2c_devices] = std::move(hal.i2c_mgr->get_device(bus, address, bus_clock, use_smbus));
-
-    if (scripting->_i2c_dev[scripting->num_i2c_devices] == nullptr || scripting->_i2c_dev[scripting->num_i2c_devices]->get() == nullptr) {
-        return luaL_argerror(L, 1, "i2c device nullptr");
-    }
-
-    *new_AP_HAL__I2CDevice(L) = scripting->_i2c_dev[scripting->num_i2c_devices]->get();
+    *new_AP_HAL__I2CDevice(L) = scripting->_i2c_dev[scripting->num_i2c_devices];
 
     scripting->num_i2c_devices++;
 
@@ -810,7 +813,7 @@ int lua_serial_writestring(lua_State *L)
 
     // get the bytes the user wants to write, along with their length
     size_t req_bytes;
-    const char *data = lua_tolstring(L, 2, &req_bytes);
+    const char *data = luaL_checklstring(L, 2, &req_bytes);
 
     // write up to that number of bytes
     const uint32_t written_bytes = port->write((const uint8_t*)data, req_bytes);

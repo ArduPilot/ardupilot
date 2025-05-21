@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_IMU
+#if AP_PERIPH_IMU_ENABLED
 #include <dronecan_msgs.h>
 
 extern const AP_HAL::HAL &hal;
@@ -59,4 +59,4 @@ void AP_Periph_FW::can_imu_update(void)
                          total_size);
     }
 }
-#endif // HAL_PERIPH_ENABLE_IMU
+#endif // AP_PERIPH_IMU_ENABLED

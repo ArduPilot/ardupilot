@@ -9,7 +9,7 @@
 #include <AP_Math/definitions.h>
 #include <string.h>
 
-#ifdef HAL_PERIPH_ENABLE_ESC_APD
+#if AP_PERIPH_ESC_APD_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -95,4 +95,4 @@ float ESC_APD_Telem::convert_temperature(uint16_t raw) const {
     return temperature;
 }
 
-#endif // HAL_PERIPH_ENABLE_ESC_APD
+#endif // AP_PERIPH_ESC_APD_ENABLED

@@ -92,7 +92,7 @@
 #include "GCS_MAVLink_Copter.h"
 #include "GCS_Copter.h"
 #include "AP_Rally.h"           // Rally point library
-#include "AP_Arming.h"
+#include "AP_Arming_Copter.h"
 
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #if AP_EXTERNAL_CONTROL_ENABLED
@@ -270,7 +270,7 @@ private:
         //   measured ground or ceiling level measured using the range finder.
         void update_surface_offset();
 
-        // target has already been set by terrain following so do not initalise again
+        // target has already been set by terrain following so do not initialise again
         // this should be called by flight modes when switching from terrain following to surface tracking (e.g. ZigZag)
         void external_init();
 
@@ -335,7 +335,6 @@ private:
     // thus failsafes should be triggered on filtered values in order to avoid transient errors 
     LowPassFilterFloat pos_variance_filt;
     LowPassFilterFloat vel_variance_filt;
-    LowPassFilterFloat hgt_variance_filt;
     bool variances_valid;
     uint32_t last_ekf_check_us;
 
@@ -497,10 +496,6 @@ private:
     // arm_time_ms - Records when vehicle was armed. Will be Zero if we are disarmed.
     uint32_t arm_time_ms;
 
-    // Used to exit the roll and pitch auto trim function
-    uint8_t auto_trim_counter;
-    bool auto_trim_started = false;
-
     // Camera
 #if AP_CAMERA_ENABLED
     AP_Camera camera{MASK_LOG_CAMERA};
@@ -633,7 +628,6 @@ private:
         DISABLE_THRUST_LOSS_CHECK     = (1<<0),   // 1
         DISABLE_YAW_IMBALANCE_WARNING = (1<<1),   // 2
         RELEASE_GRIPPER_ON_THRUST_LOSS = (1<<2),  // 4
-        REQUIRE_POSITION_FOR_ARMING =   (1<<3),   // 8
     };
 
     // type of fast rate attitude controller in operation
@@ -738,7 +732,7 @@ private:
 
     // Attitude.cpp
     void update_throttle_hover();
-    float get_pilot_desired_climb_rate(float throttle_control);
+    float get_pilot_desired_climb_rate();
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
@@ -846,6 +840,7 @@ private:
     // fence.cpp
 #if AP_FENCE_ENABLED
     void fence_check();
+    void fence_checks_async() override;
 #endif
 
     // heli.cpp
@@ -998,11 +993,6 @@ private:
 
     // takeoff_check.cpp
     void takeoff_check();
-
-    // RC_Channel.cpp
-    void save_trim();
-    void auto_trim();
-    void auto_trim_cancel();
 
     // system.cpp
     void init_ardupilot() override;

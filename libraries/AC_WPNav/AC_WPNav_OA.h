@@ -22,15 +22,15 @@ public:
     /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
     ///     terrain_alt should be true if destination.z is a desired altitude above terrain
     ///     returns false on failure (likely caused by missing terrain data)
-    bool set_wp_destination(const Vector3f& destination, bool terrain_alt = false) override;
+    bool set_wp_destination_NEU_cm(const Vector3f& destination, bool terrain_alt = false) override;
 
     /// get horizontal distance to destination in cm
     /// always returns distance to final destination (i.e. does not use oa adjusted destination)
-    float get_wp_distance_to_destination() const override;
+    float get_wp_distance_to_destination_cm() const override;
 
     /// get bearing to next waypoint in centi-degrees
     /// always returns bearing to final destination (i.e. does not use oa adjusted destination)
-    int32_t get_wp_bearing_to_destination() const override;
+    int32_t get_wp_bearing_to_destination_cd() const override;
 
     /// true when we have come within RADIUS cm of the final destination
     bool reached_wp_destination() const override;
@@ -42,9 +42,9 @@ protected:
 
     // oa path planning variables
     AP_OAPathPlanner::OA_RetState _oa_state;    // state of object avoidance, if OA_SUCCESS we use _oa_destination to avoid obstacles
-    Vector3f    _origin_oabak;          // backup of _origin so it can be restored when oa completes
-    Vector3f    _destination_oabak;     // backup of _destination so it can be restored when oa completes
-    Vector3f    _next_destination_oabak;// backup of _next_destination so it can be restored when oa completes
+    Vector3f    _origin_oabak_neu_cm;          // backup of _origin_neu_cm so it can be restored when oa completes
+    Vector3f    _destination_oabak_neu_cm;     // backup of _destination_neu_cm so it can be restored when oa completes
+    Vector3f    _next_destination_oabak_neu_cm;// backup of _next_destination_neu_cm so it can be restored when oa completes
     bool        _terrain_alt_oabak;     // true if backup origin and destination z-axis are terrain altitudes
     Location    _oa_destination;        // intermediate destination during avoidance
     Location    _oa_next_destination;   // intermediate next destination during avoidance

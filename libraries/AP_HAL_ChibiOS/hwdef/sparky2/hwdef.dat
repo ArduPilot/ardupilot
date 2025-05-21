@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
-APJ_BOARD_ID 130
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_SPARKYV2
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -117,7 +117,7 @@ FLASH_RESERVE_START_KB 64
 IMU Invensense SPI:mpu9250 ROTATION_NONE
 
 # one baro
-BARO MS56XX I2C:0:0x77
+BARO MS5611 I2C:0:0x77
 
 # one compass in mpu9250
 COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE

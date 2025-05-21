@@ -17,7 +17,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include "Scheduler.h"
 #include "Semaphores.h"
 #include "interface.h"
@@ -112,8 +111,8 @@ bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
     return bus.adjust_timer(h, period_usec);
 }
 
-AP_HAL::OwnPtr<AP_HAL::SPIDevice>
-SPIDeviceManager::get_device(const char *name)
+AP_HAL::SPIDevice *
+SPIDeviceManager::get_device_ptr(const char *name)
 {
     uint8_t i;
     for (i = 0; i<ARRAY_SIZE(device_names); i++) {
@@ -122,13 +121,13 @@ SPIDeviceManager::get_device(const char *name)
         }
     }
     if (i == ARRAY_SIZE(device_names)) {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
+        return nullptr;
     }
 
     if (spi_bus == nullptr) {
         spi_bus = new SPIBus();
     }
 
-    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(name, *spi_bus));
+    return new SPIDevice(name, *spi_bus);
 }
 

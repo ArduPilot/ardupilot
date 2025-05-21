@@ -6,13 +6,11 @@ MCU STM32H7xx STM32H743xx
 # crystal frequency
 OSCILLATOR_HZ 16000000
 
-# board ID for firmware load
-APJ_BOARD_ID 1009
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CUAV_NORA
 
 FLASH_SIZE_KB 2048
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 2
@@ -29,7 +27,6 @@ PA12 OTG_FS_DP OTG1
 
 # Port switching for USB HS and FS,high = USB_FS , LOW = USB_HS
 PH15 USB_HS_ENABLE OUTPUT HIGH
-define USB_HW_ENABLE_HS 0
 
 # these are the pins for SWD debugging with a STlinkv2 or black-magic probe
 PA13 JTMS-SWDIO SWD
@@ -238,8 +235,8 @@ SPIDEV icm20689_board SPI6 DEVID2  ICM20689_BOARD_CS MODE3  2*MHZ  8*MHZ
 SPIDEV icm42688       SPI4 DEVID2  ICM42688_CS     MODE3  2*MHZ  16*MHZ
 
 # two baro
-BARO MS56XX SPI:ms5611_imu
-BARO MS56XX SPI:ms5611_board
+BARO MS5611 SPI:ms5611_imu
+BARO MS5611 SPI:ms5611_board
 
 # three IMUs
 IMU Invensense   SPI:icm20689 ROTATION_NONE

@@ -99,11 +99,13 @@ void Scrimmage::recv_fdm(const struct sitl_input &input)
 
     velocity_ef = Vector3f(pkt.speedN, pkt.speedE, pkt.speedD);
 
-    location.lat = pkt.latitude * 1.0e7;
-    location.lng = pkt.longitude * 1.0e7;
-    location.alt = pkt.altitude * 1.0e2;
-    position.z = (home.alt - location.alt) * 1.0e-2;
-
+    location = {
+        int32_t(pkt.latitude * 1.0e7),
+        int32_t(pkt.longitude * 1.0e7),
+        int32_t(pkt.altitude * 1.0e2),
+        Location::AltFrame::ABSOLUTE
+    };
+    UNUSED_RESULT(home.get_height_above(location, position.z));
 
     // velocity relative to air mass, in earth frame TODO
     velocity_air_ef = velocity_ef - wind_ef;

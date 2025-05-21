@@ -20,7 +20,7 @@
 
 #include "AP_ExternalAHRS.h"
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
 
 class AP_ExternalAHRS_backend {
 public:
@@ -84,5 +84,5 @@ private:
     AP_ExternalAHRS &frontend;
 };
 
-#endif  // HAL_EXTERNAL_AHRS_ENABLED
+#endif  // AP_EXTERNAL_AHRS_ENABLED
 

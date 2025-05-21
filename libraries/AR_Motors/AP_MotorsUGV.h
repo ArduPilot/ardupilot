@@ -172,7 +172,7 @@ private:
 
     // output throttle (-100 ~ +100) to a throttle channel.  Sets relays if required
     // dt is the main loop time interval and is required when rate control is required
-    void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt = 0.0f);
+    void output_throttle(SRV_Channel::Function function, float throttle, float dt = 0.0f);
 
     // output for sailboat's mainsail in the range of 0 to 100 and wing sail in the range +- 100
     void output_sail();
@@ -190,7 +190,7 @@ private:
     float get_scaled_throttle(float throttle) const;
 
     // use rate controller to achieve desired throttle
-    float get_rate_controlled_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt);
+    float get_rate_controlled_throttle(SRV_Channel::Function function, float throttle, float dt);
 
     // external references
     AP_WheelRateControl &_rate_controller;

@@ -332,7 +332,7 @@ void AP_InertialSensor_ADIS1647x::read_sensor16(void)
         WITH_SEMAPHORE(dev->get_semaphore());
         data.cmd[0] = REG_GLOB_CMD;
         DEBUG_SET_PIN(2, 1);
-        if (!dev->transfer((const uint8_t *)&data, sizeof(data), (uint8_t *)&data, sizeof(data))) {
+        if (!dev->transfer_fullduplex((uint8_t *)&data, sizeof(data))) {
             break;
         }
         DEBUG_SET_PIN(2, 0);
@@ -424,7 +424,7 @@ void AP_InertialSensor_ADIS1647x::read_sensor32(void)
         WITH_SEMAPHORE(dev->get_semaphore());
         data.cmd[0] = REG_GLOB_CMD;
         DEBUG_SET_PIN(2, 1);
-        if (!dev->transfer((const uint8_t *)&data, sizeof(data), (uint8_t *)&data, sizeof(data))) {
+        if (!dev->transfer_fullduplex((uint8_t *)&data, sizeof(data))) {
             break;
         }
         DEBUG_SET_PIN(2, 0);
@@ -516,7 +516,7 @@ void AP_InertialSensor_ADIS1647x::read_sensor32_delta(void)
         WITH_SEMAPHORE(dev->get_semaphore());
         data.cmd[0] = REG_GLOB_CMD;
         DEBUG_SET_PIN(2, 1);
-        if (!dev->transfer((const uint8_t *)&data, sizeof(data), (uint8_t *)&data, sizeof(data))) {
+        if (!dev->transfer_fullduplex((uint8_t *)&data, sizeof(data))) {
             break;
         }
         DEBUG_SET_PIN(2, 0);

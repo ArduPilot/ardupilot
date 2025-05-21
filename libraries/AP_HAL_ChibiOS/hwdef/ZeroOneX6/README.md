@@ -1,6 +1,6 @@
 ## ZeroOneX6 Flight Controller
 The ZeroOne X6 is a flight controller manufactured by ZeroOne, which is based on the open-source FMU v6X architecture and Pixhawk Autopilot Bus open source specifications.
-![Uploading ZeroOneX6.jpg…]()
+![Uploading ZeroOneX6.jpg…](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6-250103/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6/ZeroOneX6.jpg?raw=true)
 
 
 ## Features:
@@ -13,18 +13,18 @@ The ZeroOne X6 is a flight controller manufactured by ZeroOne, which is based on
    STM32F103
 - Sensors
 - IMU: 
-   Internal Vibration Isolation for IMUs
-   IMU constant temperature heating(1 W heating power).
-   With Triple Synced IMUs, BalancedGyro technology, low noise and more shock-resistant:
-   IMU1-ICM45686(With vibration isolation) 
-   IMU2-BMI088(With vibration isolation) 
-   IMU3- ICM45686(No vibration isolation)
+   Internal Vibration Isolation for IMUs  
+   IMU constant temperature heating(1 W heating power).  
+   With Triple Synced IMUs, BalancedGyro technology, low noise and more shock-resistant:  
+   IMU1-ICM45686(With vibration isolation)  
+   IMU2-BMI088(With vibration isolation)  
+   IMU3- ICM45686(No vibration isolation) 
 - Baro:
-   Two barometers:2 x ICP20100
-  Magnetometer:   Builtin RM3100 magnetometer
+   Two barometers:2 x ICP20100  
+   Magnetometer:   Builtin RM3100 magnetometer
 
 ## Pinout
-![ZeroOneX6 Pinout](https://github.com/ZeroOne-Aero/ardupilot/blob/zeroOneBootLoader/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6/ZeroOneX6Pinout.jpg "ZeroOneX6")
+![ZeroOneX6 Pinout](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6-250103/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6/ZeroOneX6Pinout.jpg "ZeroOneX6")
 
 
 ## UART Mapping

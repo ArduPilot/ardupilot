@@ -154,15 +154,7 @@ bool RC_Channel_Rover::do_aux_function(const AuxFuncTrigger &trigger)
                 }
                 break;
             }
-
-            // record the waypoint if not in auto mode
-            if (rover.control_mode != &rover.mode_auto) {
-                if (rover.mode_auto.mission.num_commands() == 0) {
-                    // add a home location....
-                    add_waypoint_for_current_loc();
-                }
-                add_waypoint_for_current_loc();
-            }
+            add_waypoint_for_current_loc();
         }
         break;
 

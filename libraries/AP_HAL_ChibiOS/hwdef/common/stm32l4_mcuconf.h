@@ -32,6 +32,18 @@
 #define STM32_PLLM_VALUE                    2
 #define STM32_PLLSRC                        STM32_PLLSRC_HSI16
 
+#elif STM32_HSECLK == 32768U
+// low speed external oscillator
+#define STM32_LSE_ENABLED                   TRUE
+#define STM32_HSE_ENABLED                   FALSE
+#define STM32_HSI16_ENABLED                 FALSE
+#define STM32_MSI_ENABLED                   TRUE
+#define STM32_PLLM_VALUE                    1
+#define STM32_PLLN_VALUE                    40
+#define STM32_PLLSAI1N_VALUE                24
+#define STM32_PLLSRC                        STM32_PLLSRC_MSI
+#define STM32_MSIPLL_ENABLED                TRUE
+
 #elif STM32_HSECLK == 8000000U
 #define STM32_HSE_ENABLED                   TRUE
 #define STM32_HSI16_ENABLED                 FALSE
@@ -72,8 +84,12 @@
 #define STM32_PLS                           STM32_PLS_LEV0
 #define STM32_HSI48_ENABLED                 FALSE
 #define STM32_LSI_ENABLED                   FALSE
+#ifndef STM32_LSE_ENABLED
 #define STM32_LSE_ENABLED                   FALSE
+#endif
+#ifndef STM32_MSIPLL_ENABLED
 #define STM32_MSIPLL_ENABLED                FALSE
+#endif
 #define STM32_MSIRANGE                      STM32_MSIRANGE_4M
 #define STM32_MSISRANGE                     STM32_MSISRANGE_4M
 #define STM32_SW                            STM32_SW_PLL

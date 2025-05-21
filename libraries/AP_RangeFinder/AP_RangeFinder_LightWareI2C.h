@@ -44,7 +44,7 @@ private:
     void sf20_disable_address_tagging();
     bool sf20_send_and_expect(const char* send, const char* expected_reply);
     bool sf20_set_lost_signal_confirmations();
-    void sf20_get_version(const char* send_msg, const char *reply_prefix, char reply[5]);
+    void sf20_get_version(const char* send_msg, const char *reply_prefix, char *reply, uint8_t reply_len);
     bool sf20_wait_on_reply(uint8_t *rx_two_bytes);
     bool init();
     bool legacy_init();

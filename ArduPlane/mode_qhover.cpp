@@ -6,8 +6,8 @@
 bool ModeQHover::_enter()
 {
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_speed_z_max_up*100, quadplane.pilot_accel_z*100);
-    pos_control->set_correction_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_speed_z_max_up*100, quadplane.pilot_accel_z*100);
+    pos_control->set_max_speed_accel_U_cm(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_speed_z_max_up*100, quadplane.pilot_accel_z*100);
+    pos_control->set_correction_speed_accel_U_cmss(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_speed_z_max_up*100, quadplane.pilot_accel_z*100);
     quadplane.set_climb_rate_cms(0);
 
     quadplane.init_throttle_wait();
@@ -24,6 +24,8 @@ void ModeQHover::update()
  */
 void ModeQHover::run()
 {
+    quadplane.assist.check_VTOL_recovery();
+
     const uint32_t now = AP_HAL::millis();
     if (quadplane.tailsitter.in_vtol_transition(now)) {
         // Tailsitters in FW pull up phase of VTOL transition run FW controllers
@@ -35,7 +37,7 @@ void ModeQHover::run()
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
         quadplane.relax_attitude_control();
-        pos_control->relax_z_controller(0);
+        pos_control->relax_U_controller(0);
     } else {
         plane.quadplane.assign_tilt_to_fwd_thr();
         quadplane.hold_hover(quadplane.get_pilot_desired_climb_rate_cms());
@@ -44,6 +46,12 @@ void ModeQHover::run()
     // Stabilize with fixed wing surfaces
     plane.stabilize_roll();
     plane.stabilize_pitch();
+
+    // Center rudder
+    output_rudder_and_steering(0.0);
+
+    // possibly apply spin recovery
+    quadplane.assist.output_spin_recovery();
 }
 
 #endif

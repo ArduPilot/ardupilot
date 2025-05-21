@@ -27,8 +27,8 @@ define BOARD_TYPE_DEFAULT 20
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board ID for firmware load
-APJ_BOARD_ID 136
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MRO_X2V1_777
 
 # on some boards you will need to also set the various PLL values. See
 # the defaults in common/mcuconf.h, and use the define mechanism
@@ -52,7 +52,6 @@ STM32_ST_USE_TIMER 5
 # flash size
 FLASH_SIZE_KB 2048
 
-env OPTIMIZE -O2
 
 # now define which UART is used for printf(). We rarely use printf()
 # in ChibiOS, so this is really only for debugging very early startup

@@ -6,7 +6,7 @@ MCU STM32L431 STM32L431xx
 # crystal frequency
 OSCILLATOR_HZ 8000000
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID 1062
 
 # setup build for a peripheral firmware

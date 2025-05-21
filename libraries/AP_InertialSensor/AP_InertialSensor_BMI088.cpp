@@ -130,7 +130,7 @@ bool AP_InertialSensor_BMI088::read_accel_registers(uint8_t reg, uint8_t *data, 
     uint8_t b[len+2];
     b[0] = reg | 0x80;
     memset(&b[1], 0, len+1);
-    if (!dev_accel->transfer(b, len+2, b, len+2)) {
+    if (!dev_accel->transfer_fullduplex(b, len+2)) {
         return false;
     }
     memcpy(data, &b[2], len);

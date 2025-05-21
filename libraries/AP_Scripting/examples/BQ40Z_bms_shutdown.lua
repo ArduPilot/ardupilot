@@ -30,8 +30,8 @@ local MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN = 246
 local MAV_RESULT_ACCEPTED = 0
 local MAV_RESULT_FAILED = 4
 
--- Initialize MAVLink rx with number of messages, and buffer depth
-mavlink:init(1, 10)
+-- initialize MAVLink rx with buffer depth and number of rx message IDs to register
+mavlink:init(10, 1)
 -- Register message id to receive
 mavlink:register_rx_msgid(COMMAND_LONG_ID)
 -- Block MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN so we can handle the ACK

@@ -25,7 +25,7 @@ void AP_TemperatureSensor_MLX90614::init()
 {
     _params.bus_address.set_default(MLX90614_I2CDEFAULTADDR);
     
-    _dev = std::move(hal.i2c_mgr->get_device(_params.bus, _params.bus_address));
+    _dev = hal.i2c_mgr->get_device_ptr(_params.bus, _params.bus_address);
     if (!_dev) {
         return;
     }

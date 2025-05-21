@@ -87,7 +87,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Path: AP_Proximity_MR72_CAN.cpp
     AP_SUBGROUPVARPTR(drivers[0], "1_",  26, AP_Proximity, backend_var_info[0]),
 
-#if PROXIMITY_MAX_INSTANCES > 1
+#if AP_PROXIMITY_MAX_INSTANCES > 1
     // @Group: 2
     // @Path: AP_Proximity_Params.cpp
     AP_SUBGROUPINFO(params[1], "2", 22, AP_Proximity, AP_Proximity_Params),
@@ -97,7 +97,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     AP_SUBGROUPVARPTR(drivers[1], "2_",  27, AP_Proximity, backend_var_info[1]),
 #endif
 
-#if PROXIMITY_MAX_INSTANCES > 2
+#if AP_PROXIMITY_MAX_INSTANCES > 2
     // @Group: 3
     // @Path: AP_Proximity_Params.cpp
     AP_SUBGROUPINFO(params[2], "3", 23, AP_Proximity, AP_Proximity_Params),
@@ -107,7 +107,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     AP_SUBGROUPVARPTR(drivers[2], "3_",  28, AP_Proximity, backend_var_info[2]),
 #endif
 
-#if PROXIMITY_MAX_INSTANCES > 3
+#if AP_PROXIMITY_MAX_INSTANCES > 3
     // @Group: 4
     // @Path: AP_Proximity_Params.cpp
     AP_SUBGROUPINFO(params[3], "4", 24, AP_Proximity, AP_Proximity_Params),
@@ -117,10 +117,20 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     AP_SUBGROUPVARPTR(drivers[3], "4_",  29, AP_Proximity, backend_var_info[3]),
 #endif
 
+#if AP_PROXIMITY_MAX_INSTANCES > 4
+    // @Group: 5
+    // @Path: AP_Proximity_Params.cpp
+    AP_SUBGROUPINFO(params[4], "5", 30, AP_Proximity, AP_Proximity_Params),
+
+    // @Group: 5_
+    // @Path: AP_Proximity_MR72_CAN.cpp
+    AP_SUBGROUPVARPTR(drivers[4], "5_",  31, AP_Proximity, backend_var_info[4]),
+#endif
+
     AP_GROUPEND
 };
 
-const AP_Param::GroupInfo *AP_Proximity::backend_var_info[PROXIMITY_MAX_INSTANCES];
+const AP_Param::GroupInfo *AP_Proximity::backend_var_info[AP_PROXIMITY_MAX_INSTANCES];
 
 AP_Proximity::AP_Proximity()
 {
@@ -145,7 +155,7 @@ void AP_Proximity::init()
     // instantiate backends
     uint8_t serial_instance = 0;
     (void)serial_instance;  // in case no serial backends are compiled in
-    for (uint8_t instance=0; instance<PROXIMITY_MAX_INSTANCES; instance++) {
+    for (uint8_t instance=0; instance<AP_PROXIMITY_MAX_INSTANCES; instance++) {
         switch (get_type(instance)) {
         case Type::None:
             break;
@@ -226,12 +236,17 @@ void AP_Proximity::init()
             drivers[instance] = NEW_NOTHROW AP_Proximity_Scripting(*this, state[instance], params[instance]);
         break;
 #endif
+#if AP_PROXIMITY_MR72_DRIVER_ENABLED
 #if AP_PROXIMITY_MR72_ENABLED
         case Type::MR72:
+#endif  // AP_PROXIMITY_MR72_ENABLED
+#if AP_PROXIMITY_HEXSOONRADAR_ENABLED
+        case Type::Hexsoon_Radar:
+#endif  // AP_PROXIMITY_HEXSOONRADAR_ENABLED
             state[instance].instance = instance;
             drivers[instance] = NEW_NOTHROW AP_Proximity_MR72_CAN(*this, state[instance], params[instance]);
             break;
-# endif
+#endif  // AP_PROXIMITY_MR72_DRIVER_ENABLED
 #if AP_PROXIMITY_SITL_ENABLED
         case Type::SITL:
             state[instance].instance = instance;
@@ -291,7 +306,7 @@ void AP_Proximity::update()
 
 AP_Proximity::Type AP_Proximity::get_type(uint8_t instance) const
 {
-    if (instance < PROXIMITY_MAX_INSTANCES) {
+    if (instance < AP_PROXIMITY_MAX_INSTANCES) {
         return (Type)((uint8_t)params[instance].type);
     }
     return Type::None;
@@ -561,7 +576,7 @@ void AP_Proximity::log()
 // return true if the given instance exists
 bool AP_Proximity::valid_instance(uint8_t i) const
 {
-    if (i >= PROXIMITY_MAX_INSTANCES) {
+    if (i >= AP_PROXIMITY_MAX_INSTANCES) {
         return false;
     }
 

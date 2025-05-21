@@ -28,7 +28,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
+    AP_HAL::I2CDevice *dev;
 
     enum class DevType : uint8_t {
         UNKNOWN = 0,

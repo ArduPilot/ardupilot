@@ -15,8 +15,8 @@ define HAL_STORAGE_SIZE 800
 STM32_ST_USE_TIMER 15
 define CH_CFG_ST_RESOLUTION 16
 
-# board ID for firmware load
-APJ_BOARD_ID 5302
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_Sierra-TrueNavIC
 
 # crystal frequency
 OSCILLATOR_HZ 16000000
@@ -87,10 +87,10 @@ PA10 USART1_RX USART1 SPEED_HIGH
 env ROMFS_UNCOMPRESSED True
 
 # enable GPS and compass
-define HAL_PERIPH_ENABLE_GPS
+define AP_PERIPH_GPS_ENABLED 1
 define GPS_MAX_RATE_MS 200
-define HAL_PERIPH_ENABLE_MAG
-define HAL_PERIPH_ENABLE_BARO
+define AP_PERIPH_MAG_ENABLED 1
+define AP_PERIPH_BARO_ENABLED 1
 
 # disable dual GPS and GPS blending to save flash space
 define GPS_MAX_RECEIVERS 1

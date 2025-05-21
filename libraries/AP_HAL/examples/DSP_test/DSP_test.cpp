@@ -57,10 +57,6 @@ public:
 // create fake gcs object
 GCS_Dummy _gcs;
 
-const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-        AP_GROUPEND
-};
-
 uint32_t frame_num = 0;
 
 void setup()

@@ -8,8 +8,6 @@ based on build_binaries.sh by Andrew Tridgell, March 2013
 AP_FLAKE8_CLEAN
 """
 
-from __future__ import print_function
-
 import datetime
 import optparse
 import os
@@ -548,7 +546,7 @@ is bob we will attempt to checkout bob-AVR'''
                         if not os.path.exists(tdir):
                             self.mkpath(tdir)
                         # must addfwversion even if path already
-                        # exists as we re-use the "beta" directories
+                        # exists as we reuse the "beta" directories
                         self.addfwversion(tdir, vehicle)
                         features_filepath = os.path.join(tdir, "features.txt")
                         if features_text is not None:
@@ -767,7 +765,7 @@ if __name__ == '__main__':
     tags = cmd_opts.tags
     if len(tags) == 0:
         # FIXME: wedge this defaulting into parser somehow
-        tags = ["stable", "beta-4.3", "beta", "latest"]
+        tags = ["stable", "beta", "latest"]
 
     bb = build_binaries(tags)
     bb.run()

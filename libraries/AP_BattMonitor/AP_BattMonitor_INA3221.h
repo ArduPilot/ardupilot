@@ -81,7 +81,7 @@ private:
         void timer(void);
         void register_timer();
 
-        AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
+        AP_HAL::I2CDevice *dev;
         uint8_t bus;
         uint8_t address;
         uint8_t channel_mask;

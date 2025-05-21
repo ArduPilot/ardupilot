@@ -22,7 +22,6 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <AP_HAL/I2CDevice.h>
-#include <AP_HAL/utility/OwnPtr.h>
 
 #include "AP_HAL_SITL_Namespace.h"
 #include "Semaphores.h"
@@ -118,10 +117,10 @@ public:
     void _timer_tick(); // in lieu of a thread-per-bus
 
     /* AP_HAL::I2CDeviceManager implementation */
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
-                                                 uint32_t bus_clock=400000,
-                                                 bool use_smbus = false,
-                                                 uint32_t timeout_ms=4) override;
+    AP_HAL::I2CDevice *get_device_ptr(uint8_t bus, uint8_t address,
+                                      uint32_t bus_clock=400000,
+                                      bool use_smbus = false,
+                                      uint32_t timeout_ms=4) override;
 
 protected:
 

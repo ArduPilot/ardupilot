@@ -243,25 +243,27 @@ class TestOutputParams(unittest.TestCase):
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
     @patch('extract_param_defaults.print')
-    def test_output_params_qgcs_SYSID_THISMAV(self, mock_print):
+    def test_output_params_qgcs_MAV_SYSID(self, mock_print):
         # Prepare a dummy defaults dictionary
-        defaults = {'PARAM2': 2.0, 'PARAM1': 1.0, 'SYSID_THISMAV': 3.0}
+        defaults = {'PARAM2': 2.0, 'PARAM1': 1.0, 'MAV_SYSID': 3.0}
 
         # Call the function with the dummy dictionary, 'qgcs' format type and 'qgcs' sort type
         defaults = sort_params(defaults, 'qgcs')
         output_params(defaults, 'qgcs', -1, 7)
 
         # Check if the print function was called with the correct parameters
-        expected_calls = [unittest.mock.call("\n# # Vehicle-Id Component-Id Name Value Type\n"),
-                          unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM1', 1.0, 9)),
-                          unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM2', 2.0, 9)),
-                          unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'SYSID_THISMAV', 3.0, 9))]
+        expected_calls = [
+            unittest.mock.call("\n# # Vehicle-Id Component-Id Name Value Type\n"),
+            unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'MAV_SYSID', 3.0, 9)),
+            unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM1', 1.0, 9)),
+            unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM2', 2.0, 9)),
+        ]
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
     @patch('extract_param_defaults.print')
     def test_output_params_qgcs_SYSID_INVALID(self, mock_print):
         # Prepare a dummy defaults dictionary
-        defaults = {'PARAM2': 2.0, 'PARAM1': 1.0, 'SYSID_THISMAV': -1.0}
+        defaults = {'PARAM2': 2.0, 'PARAM1': 1.0, 'MAV_SYSID': -1.0}
 
         # Assert that a SystemExit is raised with the correct message when an invalid sysid is used
         with self.assertRaises(SystemExit) as cm:

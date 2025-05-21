@@ -32,32 +32,53 @@ class ParamChange():
         return f"{self.old_name}={self.old_value}->{self.new_name}={self.new_value}"
 
 
-class TestParamUpgradeTestSuiteSetParameters(vehicle_test_suite.TestSuite):
-    def __init__(self, binary, param_changes):
-        super(TestParamUpgradeTestSuiteSetParameters, self).__init__(binary)
-        self.param_changes = param_changes
+class TestParamUpgradeTestSuite(vehicle_test_suite.TestSuite):
+    def __init__(self, binary):
+        super(TestParamUpgradeTestSuite, self).__init__(binary)
 
     def sysid_thismav(self):
         if "antennatracker" in self.binary:
             return 2
-        return super(TestParamUpgradeTestSuiteSetParameters, self).sysid_thismav()
+        return super(TestParamUpgradeTestSuite, self).sysid_thismav()
 
     def vehicleinfo_key(self):
         '''magically guess vehicleinfo_key from filepath'''
         path = self.binary.lower()
-        if "plane" in path:
-            return "ArduPlane"
+        if "blimp" in path:
+            return "Blimp"
         if "copter" in path:
             return "ArduCopter"
-        raise ValueError("Can't determine vehicleinfo_key from binary path")
+        if "plane" in path:
+            return "ArduPlane"
+        if "rover" in path:
+            return "Rover"
+        if "sub" in path:
+            return "ArduSub"
+        if "tracker" in path:
+            return "AntennaTracker"
+        raise ValueError(f"Can't determine vehicleinfo_key from binary path {path}")
 
     def model(self):
         path = self.binary.lower()
-        if "plane" in path:
-            return "quadplane"
+        if "blimp" in path:
+            return "blimp"
         if "copter" in path:
             return "X"
-        raise ValueError("Can't determine vehicleinfo_key from binary path")
+        if "plane" in path:
+            return "quadplane"
+        if "rover" in path:
+            return "rover"
+        if "sub" in path:
+            return "vectored"
+        if "tracker" in path:
+            return "tracker"
+        raise ValueError(f"Can't determine model from binary path {path}")
+
+
+class TestParamUpgradeTestSuiteSetParameters(TestParamUpgradeTestSuite):
+    def __init__(self, binary, param_changes):
+        super(TestParamUpgradeTestSuiteSetParameters, self).__init__(binary)
+        self.param_changes = param_changes
 
     def run(self):
         self.start_SITL(
@@ -79,33 +100,11 @@ class TestParamUpgradeTestSuiteSetParameters(vehicle_test_suite.TestSuite):
         self.stop_SITL()
 
 
-class TestParamUpgradeTestSuiteCheckParameters(vehicle_test_suite.TestSuite):
+class TestParamUpgradeTestSuiteCheckParameters(TestParamUpgradeTestSuite):
     def __init__(self, binary, param_changes, epsilon=0.0001):
         super(TestParamUpgradeTestSuiteCheckParameters, self).__init__(binary)
         self.param_changes = param_changes
         self.epsilon = epsilon
-
-    def sysid_thismav(self):
-        if "antennatracker" in self.binary:
-            return 2
-        return super(TestParamUpgradeTestSuiteCheckParameters, self).sysid_thismav()
-
-    def vehicleinfo_key(self):
-        '''magically guess vehicleinfo_key from filepath'''
-        path = self.binary.lower()
-        if "plane" in path:
-            return "ArduPlane"
-        if "copter" in path:
-            return "ArduCopter"
-        raise ValueError("Can't determine vehicleinfo_key from binary path")
-
-    def model(self):
-        path = self.binary.lower()
-        if "plane" in path:
-            return "quadplane"
-        if "copter" in path:
-            return "X"
-        raise ValueError("Can't determine vehicleinfo_key from binary path")
 
     def run(self):
         self.start_SITL(

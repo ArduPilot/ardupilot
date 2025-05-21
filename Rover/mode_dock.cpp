@@ -23,7 +23,7 @@ const AP_Param::GroupInfo ModeDock::var_info[] = {
 
     // @Param: _HDG_CORR_EN
     // @DisplayName: Dock mode heading correction enable/disable
-    // @Description: When enabled, the autopilot modifies the path to approach the target head-on along desired line of approch in dock mode
+    // @Description: When enabled, the autopilot modifies the path to approach the target head-on along desired line of approach in dock mode
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("_HDG_CORR_EN", 3, ModeDock, hdg_corr_enable, 0),
@@ -102,7 +102,7 @@ void ModeDock::update()
     // if docking is complete, rovers stop and boats loiter
     if (_docking_complete) {
         // rovers stop, boats loiter 
-        // note that loiter update must be called after successfull initialisation on mode loiter
+        // note that loiter update must be called after successful initialisation on mode loiter
         if (_loitering) {
             // mode loiter must be initialised before calling update method
             rover.mode_loiter.update();

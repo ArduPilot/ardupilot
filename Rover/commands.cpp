@@ -29,9 +29,6 @@ bool Rover::set_home(const Location& loc, bool lock)
         ahrs.lock_home();
     }
 
-    // Save Home to EEPROM
-    mode_auto.mission.write_home_to_storage();
-
     // send text of home position to ground stations
     gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %.2fm",
             static_cast<double>(loc.lat * 1.0e-7f),

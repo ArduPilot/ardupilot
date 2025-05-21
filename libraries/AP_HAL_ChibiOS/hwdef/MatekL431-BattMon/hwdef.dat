@@ -1,7 +1,7 @@
 include ../MatekL431/hwdef.inc
 
 # enable battery monitor
-define HAL_PERIPH_ENABLE_BATTERY
+define AP_PERIPH_BATTERY_ENABLED 1
 define AP_BATTERY_INA239_ENABLED 1
 define AP_BATTERY_INA239_SPI_DEVICE "INA23X"
 define HAL_BATT_MONITOR_DEFAULT 26

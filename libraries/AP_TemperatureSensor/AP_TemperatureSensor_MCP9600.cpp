@@ -64,7 +64,7 @@ void AP_TemperatureSensor_MCP9600::init()
 {
     constexpr char name[] = "MCP9600";
 
-    _dev = std::move(hal.i2c_mgr->get_device(_params.bus, _params.bus_address));
+    _dev = hal.i2c_mgr->get_device_ptr(_params.bus, _params.bus_address);
     if (!_dev) {
         // device not found
         return;

@@ -12,8 +12,8 @@ FLASH_RESERVE_START_KB 40
 STORAGE_FLASH_PAGE 18
 define HAL_STORAGE_SIZE 800
 
-# board ID for firmware load
-APJ_BOARD_ID 1040
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_Nucleo491
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

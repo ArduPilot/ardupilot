@@ -9,7 +9,9 @@
 #include "quadplane.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>
+#include "config.h"
 #include "pullup.h"
+#include "systemid.h"
 
 #ifndef AP_QUICKTUNE_ENABLED
 #define AP_QUICKTUNE_ENABLED HAL_QUADPLANE_ENABLED
@@ -167,6 +169,11 @@ public:
     virtual bool supports_quicktune() const { return false; }
 #endif
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support systemid?
+    virtual bool supports_systemid() const { return false; }
+#endif
+    
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -356,6 +363,11 @@ public:
 
     // handle a guided target request from GCS
     bool handle_guided_request(Location target_loc) override;
+
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+    // handle a guided airspeed command, typically from companion computer
+    bool handle_change_airspeed(const float airspeed, const float acceleration);
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 
     void set_radius_and_direction(const float radius, const bool direction_is_ccw);
 
@@ -697,6 +709,11 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support systemid?
+    bool supports_systemid() const override { return true; }
+#endif
+    
 protected:
 private:
 
@@ -721,6 +738,11 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support systemid?
+    bool supports_systemid() const override { return true; }
+#endif
+    
 protected:
 
     bool _enter() override;
@@ -749,6 +771,11 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support systemid?
+    bool supports_systemid() const override { return true; }
+#endif
+    
 protected:
 
     bool _enter() override;
@@ -931,6 +958,8 @@ public:
 
     bool does_auto_throttle() const override { return true; }
     
+    bool is_landing() const override;
+    
     void check_takeoff_direction(void);
 
     // return true when lined up correctly from the LOITER_TO_ALT
@@ -946,6 +975,7 @@ public:
     AP_Int16 final_wp_dist;
     AP_Int16 landing_dir_off;
     AP_Int8  options;
+    AP_Int16 terrain_alt_min;
 
     // Bitfields of AUTOLAND_OPTIONS
     enum class AutoLandOption {
@@ -953,6 +983,7 @@ public:
     };
 
     enum class AutoLandStage {
+        CLIMB,
         LOITER,
         LANDING
     };
@@ -963,6 +994,7 @@ public:
 
 protected:
     bool _enter() override;
+    AP_Mission::Mission_Command cmd_climb;
     AP_Mission::Mission_Command cmd_loiter;
     AP_Mission::Mission_Command cmd_land;
     Location land_start;

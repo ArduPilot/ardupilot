@@ -13,8 +13,8 @@ FLASH_SIZE_KB 1024
 STORAGE_FLASH_PAGE 1
 define HAL_STORAGE_SIZE 15360
 
-# board ID for firmware load
-APJ_BOARD_ID 1158
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CSKY405
 
 define STM32_ST_USE_TIMER 5
 define CH_CFG_ST_RESOLUTION 32
