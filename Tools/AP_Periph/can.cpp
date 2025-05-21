@@ -699,7 +699,7 @@ void AP_Periph_FW::handle_notify_state(CanardInstance* canard_instance, CanardRx
     if (msg.aux_data.len == 2 && msg.aux_data_type == ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_YAW_EARTH_CENTIDEGREES) {
         uint16_t tmp = 0;
         memcpy(&tmp, msg.aux_data.data, sizeof(tmp));
-        yaw_earth = radians((float)tmp * 0.01f);
+        yaw_earth = (float)tmp * radians(0.01f);
     }
     vehicle_state = msg.vehicle_state;
     last_vehicle_state = AP_HAL::millis();

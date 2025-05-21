@@ -123,8 +123,8 @@ void AC_Loiter::init_target()
 
     // initialise predicted acceleration and angles from the position controller
     _predicted_accel_ne_cmss = _pos_control.get_accel_target_NEU_cmss().xy();
-    _predicted_euler_angle_rad.x = radians(_pos_control.get_roll_cd() * 0.01f);
-    _predicted_euler_angle_rad.y = radians(_pos_control.get_pitch_cd() * 0.01f);
+    _predicted_euler_angle_rad.x = _pos_control.get_roll_cd() * radians(0.01f);
+    _predicted_euler_angle_rad.y = _pos_control.get_pitch_cd() * radians(0.01f);
     _brake_accel_cmss = 0.0f;
 }
 
@@ -140,8 +140,8 @@ void AC_Loiter::set_pilot_desired_acceleration_cd(float euler_roll_angle_cd, flo
 {
     const float dt = _attitude_control.get_dt();
     // Convert from centidegrees on public interface to radians
-    const float euler_roll_angle_rad = radians(euler_roll_angle_cd * 0.01f);
-    const float euler_pitch_angle_rad = radians(euler_pitch_angle_cd * 0.01f);
+    const float euler_roll_angle_rad = euler_roll_angle_cd * radians(0.01f);
+    const float euler_pitch_angle_rad = euler_pitch_angle_cd * radians(0.01f);
 
     // convert our desired attitude to an acceleration vector assuming we are not accelerating vertically
     const Vector3f desired_euler_rad {euler_roll_angle_rad, euler_pitch_angle_rad, _ahrs.yaw};
