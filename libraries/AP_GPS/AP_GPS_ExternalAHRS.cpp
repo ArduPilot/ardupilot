@@ -63,6 +63,16 @@ void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_messag
     state.location = loc;
     state.hdop = pkt.hdop;
     state.vdop = pkt.vdop;
+    
+    state.have_gps_yaw = pkt.has_yaw;
+    state.have_gps_yaw_accuracy = pkt.has_yaw;
+    if (pkt.has_yaw) {
+        state.gps_yaw = pkt.yaw;
+        state.gps_yaw_accuracy = pkt.yaw_accuracy;
+        // the EKF discards a yaw measurement unless this timestamp advances
+        state.gps_yaw_time_ms = AP_HAL::millis();
+        state.gps_yaw_configured = true;
+    }
 
     state.have_vertical_velocity = true;
     state.velocity.x = pkt.ned_vel_north;
