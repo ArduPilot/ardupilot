@@ -37,8 +37,19 @@ bool ModeAutorotate::init(bool ignore_checks)
         return false;
     }
 
+    // Identify which navigation mode we are going to use. If previous control mode was acro, stab, or alt hold
+    // then pilot has control of heading.  if init from any other mode then controller will use heading to manage
+    // cross track along a vector aligned to the vehicles heading on init.
+    bool cross_track_control = !(copter.flightmode->mode_number() == Mode::Number::ACRO ||
+                                 copter.flightmode->mode_number() == Mode::Number::STABILIZE ||
+                                 copter.flightmode->mode_number() == Mode::Number::ALT_HOLD);
+
+    if (cross_track_control) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AROT: XTrack Control Enabled");
+    }
+
     // Initialise controller
-    g2.arot.init();
+    g2.arot.init(cross_track_control);
 
     // Setting default starting state
     current_phase = Phase::ENTRY_INIT;
