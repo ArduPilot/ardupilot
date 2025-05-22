@@ -87,6 +87,8 @@ public:
     void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
+    
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 };
 
 #endif
