@@ -63,6 +63,13 @@ void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_messag
     state.location = loc;
     state.hdop = pkt.hdop;
     state.vdop = pkt.vdop;
+    
+    if(pkt.has_yaw)
+    {
+        state.have_gps_yaw = true;
+        state.gps_yaw = pkt.yaw;
+        state.gps_yaw_accuracy = pkt.yaw_accuracy;
+    }
 
     state.have_vertical_velocity = true;
     state.velocity.x = pkt.ned_vel_north;
