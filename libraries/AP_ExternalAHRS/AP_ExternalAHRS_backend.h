@@ -67,11 +67,21 @@ protected:
     bool gnss_is_disabled(void) const {
         return frontend.gnss_is_disabled;
     }
+    
 
     /*
       return true when we are in fixed wing flight
      */
     bool in_fly_forward(void) const;
+    
+    /*
+      return the log rate
+    */
+    int16_t log_rate() const
+    {
+      return frontend.log_rate.get();
+    }
+
 
     /*
       scale factors for get_variances() to return normalised values from SI units
