@@ -10,6 +10,7 @@
 #include <AC_PID/AC_PID_Basic.h>
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AP_SurfaceDistance/AP_SurfaceDistance.h>
+#include <AP_L1_Control/AP_L1_Control.h>
 
 class AC_Autorotation
 {
@@ -18,25 +19,25 @@ public:
     //Constructor
     AC_Autorotation(AP_MotorsHeli*& motors, AC_AttitudeControl*& att_crtl, AP_InertialNav& inav);
 
-    void init(void);
+    void init(bool cross_track_control);
 
     bool enabled(void) const { return _param_enable.get() > 0; }
 
     // Init and run entry phase controller
     void init_entry(void);
-    void run_entry(float pilot_norm_accel);
+    void run_entry(float des_lat_accel_norm);
 
     // Init and run the glide phase controller
     void init_glide(void);
-    void run_glide(float pilot_norm_accel);
+    void run_glide(float des_lat_accel_norm);
 
     // Init and run the flare phase controller
     void init_flare(void);
-    void run_flare(float pilot_norm_accel);
+    void run_flare(float des_lat_accel_norm);
 
     // Init and run the touch down phase controller
     void init_touchdown(void);
-    void run_touchdown(float pilot_norm_accel);
+    void run_touchdown(float des_lat_accel_norm);
 
     // Run the landed phase controller to zero the desired vels and accels
     void run_landed(void);
@@ -74,6 +75,7 @@ private:
     // References to other libraries
     AP_MotorsHeli*&    _motors_heli;
     AC_AttitudeControl*& _attitude_control;
+    AP_L1_Control _L1_controller;
 
     // A helper class that allows the setting of heights that have a minimum
     // protection value and prevents direct access to the height value
@@ -125,12 +127,18 @@ private:
 
 
     // Forward speed controller
-    void update_forward_speed_controller(float pilot_norm_accel);
+    void update_forward_speed_controller(float des_lat_accel_norm);
     AC_PID_Basic _fwd_speed_pid{0.75, 1.0, 0.1, 0.1, 4.0, 0.0, 10.0};  // PID object for vel to accel controller, Default values for kp, ki, kd, kff, imax, filt E Hz, filt D Hz
     bool _limit_accel;            // Flag used for limiting integrator wind up if vehicle is against an accel or angle limit
     float _desired_vel;           // (m/s) This is the velocity that we want.  This is the variable that is set by the invoking function to request a certain speed
     float _target_vel;            // (m/s) This is the acceleration constrained velocity that we are allowed
     float _last_pilot_input;      // We save the last pilot input so that we can smoothly zero it when we transition to the flare phase
+
+    // Navigation control
+    bool calc_lateral_accel(float& lat_accel);
+    bool _use_cross_track_control; // True if we are using automated cross track control
+    Location _track_origin;        // Location origin used to define the direction of travel.
+    Location _track_dest;          // Location destination used to define the direction of travel.
 
     // Head speed controller variables
     void update_headspeed_controller(void);  // Update controller used to drive head speed with collective

@@ -200,13 +200,18 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FLR_MAX_HGT", 17, AC_Autorotation, _flare_hgt.max_height, 30),
 
+    // @Group: L1_
+    // @Path: ../AP_L1_Control/AP_L1_Control.cpp
+    AP_SUBGROUPINFO(_L1_controller, "L1_", 18, AC_Autorotation, AP_L1_Control),
+
     AP_GROUPEND
 };
 
 // Constructor
 AC_Autorotation::AC_Autorotation(AP_MotorsHeli*& motors, AC_AttitudeControl*& att_crtl, AP_InertialNav& inav) :
     _motors_heli(motors),
-    _attitude_control(att_crtl)
+    _attitude_control(att_crtl),
+    _L1_controller{AP::ahrs(), nullptr} // We don't need TECs so pass nullptr
     {
     #if AP_RANGEFINDER_ENABLED
         _ground_surface = new AP_SurfaceDistance(ROTATION_PITCH_270, inav, 2U); // taking the 3rd instance of SurfaceDistance to not conflict with the first two already in copter
@@ -214,8 +219,45 @@ AC_Autorotation::AC_Autorotation(AP_MotorsHeli*& motors, AC_AttitudeControl*& at
         AP_Param::setup_object_defaults(this, var_info);
     }
 
-void AC_Autorotation::init(void)
+void AC_Autorotation::init(bool cross_track_control)
 {
+    // Establish means of navigation
+    _use_cross_track_control = cross_track_control;
+    if (_use_cross_track_control) {
+
+        const AP_AHRS &ahrs = AP::ahrs();
+
+        // we use position on the line at mode init to define origin of the desired 
+        // vector of travel, if the get position method fails we cannot use this cross track method
+        Vector3f orig;
+        _use_cross_track_control &= ahrs.get_relative_position_NED_origin(orig);
+        // Convert to Locations as L1 controller expects Locations as arguments
+        _use_cross_track_control &= ahrs.get_location_from_origin_offset_NED(_track_origin, Vector3p(orig));
+
+        // Calculate the direction vector of travel based on the velocity vector at the point of init
+        Vector2f ground_speed_NE = ahrs.groundspeed_vector();
+
+        Vector2f track_vector;
+        if (ground_speed_NE.length() > 3.0) {
+            // We are moving with sufficient speed that the vehicle is moving "with purpose" and the
+            // ground velocity vector can be used to define the track vector
+            track_vector = ground_speed_NE.normalized();
+        } else {
+            // We are better off using the vehicle's current heading to define the track vector.
+            Vector2f unit_vec = {1.0, 0.0};
+            track_vector = ahrs.body_to_earth2D(unit_vec);
+        }
+
+        // To play nicely with the L1 controller we need to calculate a destination location based on
+        // the ground track. We do not expect a glide ratio much better than 1:1 so a very conservative
+        // distance to scale the unit vector by, is 4 x the height above origin. This way it is extremely
+        // unlikely that we will reach the destination in the L1 controller
+        const float scale = fabsf(orig.z) * 4.0;
+        track_vector *= scale;
+        const Vector3p dest = Vector3f{track_vector, 0.0} + orig;
+        _use_cross_track_control &= ahrs.get_location_from_origin_offset_NED(_track_dest, dest);
+    }
+
     // Initialisation of head speed controller
     // Set initial collective position to be the current collective position for smooth init
     const float collective_out = _motors_heli->get_throttle();
@@ -315,11 +357,14 @@ void AC_Autorotation::init_glide(void)
 }
 
 // Maintain head speed and forward speed as we glide to the ground
-void AC_Autorotation::run_glide(float pilot_norm_accel)
+void AC_Autorotation::run_glide(float des_lat_accel_norm)
 {
     update_headspeed_controller();
 
-    update_forward_speed_controller(pilot_norm_accel);
+    if (_use_cross_track_control) {
+        _use_cross_track_control &= calc_lateral_accel(des_lat_accel_norm);
+    }
+    update_forward_speed_controller(des_lat_accel_norm);
 
     // Keep flare altitude estimate up to date so state machine can decide when to flare
     update_flare_hgt();
@@ -337,7 +382,7 @@ void AC_Autorotation::init_flare(void)
     _flare_entry_fwd_speed = get_bf_speed_forward();
 }
 
-void AC_Autorotation::run_flare(float pilot_norm_accel)
+void AC_Autorotation::run_flare(float des_lat_accel_norm)
 {
     // Update head speed/ collective controller
     update_headspeed_controller();
@@ -346,8 +391,12 @@ void AC_Autorotation::run_flare(float pilot_norm_accel)
     // reach the touch down alt for the start of the touch down phase
     _desired_vel = linear_interpolate(0.0f, _flare_entry_fwd_speed, _hagl, _touch_down_hgt.get(), _flare_hgt.get());
 
+    if (_use_cross_track_control) {
+        _use_cross_track_control &= calc_lateral_accel(des_lat_accel_norm);
+    }
+
     // Run forward speed controller
-    update_forward_speed_controller(pilot_norm_accel);
+    update_forward_speed_controller(des_lat_accel_norm);
 }
 
 void AC_Autorotation::init_touchdown(void)
@@ -359,7 +408,7 @@ void AC_Autorotation::init_touchdown(void)
     _touchdown_init_hgt = _hagl;
 }
 
-void AC_Autorotation::run_touchdown(float pilot_norm_accel)
+void AC_Autorotation::run_touchdown(float des_lat_accel_norm)
 {
     const float climb_rate = get_ef_velocity_up();
 
@@ -384,8 +433,13 @@ void AC_Autorotation::run_touchdown(float pilot_norm_accel)
     // keep driving the desired speed to zero. This will help with getting the vehicle level for touch down
     _desired_vel *= 1 - (_dt / get_touchdown_time());
 
+
+    if (_use_cross_track_control) {
+        _use_cross_track_control &= calc_lateral_accel(des_lat_accel_norm);
+    }
+
     // Update forward speed controller
-    update_forward_speed_controller(pilot_norm_accel);
+    update_forward_speed_controller(des_lat_accel_norm);
 
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: ARCR
@@ -580,7 +634,42 @@ void AC_Autorotation::update_forward_speed_controller(float pilot_norm_accel)
                                 bf_accel_target.x,
                                 bf_accel_target.y,
                                 angle_target.y);
+
+    // @LoggerMessage: ARXT
+    // @Vehicles: Copter
+    // @Description: Helicopter AutoRotation Cross(X) Track (ARXT) information 
+    // @Field: TimeUS: Time since system startup
+    // @Field: Des: Desired lateral accel
+
+    AP::logger().WriteStreaming("ARXT",
+                                "TimeUS,Des",
+                                "sn",
+                                "F0",
+                                "Qf",
+                                AP_HAL::micros64(),
+                                pilot_norm_accel);
 #endif
+}
+
+bool AC_Autorotation::calc_lateral_accel(float& lat_accel)
+{
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    // we need position relative to the desired vector of travel, if the get position
+    // method fails we cannot use this cross track method
+    Vector2f current_pos_NED;
+    if (!ahrs.get_relative_position_NE_origin(current_pos_NED)) {
+        return false;
+    }
+
+    // Use the L1 controller to manage the aircraft's cross-track in the wind
+    _L1_controller.update_waypoint(_track_origin, _track_dest);
+    lat_accel = _L1_controller.lateral_acceleration();
+
+    // we need to normalise the lat accel to be consistant with the pilot input in the other navigation mode
+    lat_accel = MIN(lat_accel / get_accel_max(), 1.0);
+
+    return true;
 }
 
 // Calculate an initial estimate of when the aircraft needs to flare
