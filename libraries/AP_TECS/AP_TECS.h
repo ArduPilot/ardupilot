@@ -211,10 +211,14 @@ private:
     AP_Float _flare_holdoff_hgt;
     AP_Float _hgt_dem_tconst;
 
-    enum {
-        OPTION_GLIDER_ONLY=(1<<0),
-        OPTION_DESCENT_SPEEDUP=(1<<1)
+    enum class Option {
+        GLIDER_ONLY     = (1<<0),
+        DESCENT_SPEEDUP = (1<<1)
     };
+
+    bool option_is_set(const Option option) const {
+        return (_options.get() & int32_t(option)) != 0;
+    }
 
     AP_Float _pitch_ff_v0;
     AP_Float _pitch_ff_k;
