@@ -1291,6 +1291,7 @@ protected:
     virtual GCS_MAVLINK *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                  AP_HAL::UARTDriver &uart) = 0;
 
+    HAL_Semaphore control_sensors_sem; // protects the three bitmasks
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
