@@ -476,7 +476,7 @@ void AP_TECS::_update_speed(float DT)
 
 void AP_TECS::_update_speed_demand(void)
 {
-    if (_options & OPTION_DESCENT_SPEEDUP) {
+    if (option_is_set(Option::DESCENT_SPEEDUP)) {
         // Allow demanded speed to  go to maximum when descending at maximum descent rate
         _TAS_dem = _TAS_dem + (_TASmax - _TAS_dem) * _sink_fraction;
     }
@@ -1354,7 +1354,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Detect bad descent due to demanded airspeed being too high
     _detect_bad_descent();
 
-    if (_options & OPTION_GLIDER_ONLY) {
+    if (option_is_set(Option::GLIDER_ONLY)) {
         _flags.badDescent = false;
     }
 
