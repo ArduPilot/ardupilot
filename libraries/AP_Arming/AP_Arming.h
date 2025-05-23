@@ -332,6 +332,9 @@ private:
     bool last_prearm_checks_result; // result of last prearm check
     bool report_immediately; // set to true when check goes from true to false, to trigger immediate report
 
+    // true if once-only AP_Arming library initialisation has been done:
+    bool init_done;
+
     void update_arm_gpio();
 
 #if !AP_GPS_BLENDED_ENABLED

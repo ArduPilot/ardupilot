@@ -85,6 +85,12 @@
   #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMDISARM
 #endif
 
+// this is the time the gyros must be consistent before we consider
+// them good enough to arm:
+#ifndef AP_ARMING_GYRO_CONSISTENT_TIME_MS
+#define AP_ARMING_GYRO_CONSISTENT_TIME_MS 10000
+#endif
+
 // find a default value for ARMING_NEED_POS parameter, and determine
 // whether the parameter should be shown:
 #ifndef AP_ARMING_NEED_LOC_PARAMETER_ENABLED
@@ -222,6 +228,16 @@ AP_Arming::AP_Arming()
 // performs pre-arm checks. expects to be called at 1hz.
 void AP_Arming::update(void)
 {
+    if (init_done == false) {
+        init_done = true;
+        // initialise the gyros as having been consistent 10 seconds
+        // ago.  This means we assume the gyros are consistent at boot
+        // and they have to prove otherwise.  We will check them for
+        // actual consistency below (where this timer may be set to
+        // zero again!):
+        last_gyro_pass_ms = AP_HAL::millis() - AP_ARMING_GYRO_CONSISTENT_TIME_MS - 1;
+    }
+
 #if AP_ARMING_CRASHDUMP_ACK_ENABLED
     // if we boot with no crashdump data present, reset the "ignore"
     // parameter so the user will need to acknowledge future crashes
@@ -428,7 +444,7 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
 
     // if accels can in theory be inconsistent,
     // must pass for at least 10 seconds before we're considered consistent:
-    if (ins.get_accel_count() > 1 && now - last_accel_pass_ms < 10000) {
+    if (ins.get_accel_count() > 1 && now - last_accel_pass_ms < AP_ARMING_GYRO_CONSISTENT_TIME_MS) {
         return false;
     }
 
@@ -453,7 +469,7 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
 
     // if gyros can in theory be inconsistent,
     // must pass for at least 10 seconds before we're considered consistent:
-    if (ins.get_gyro_count() > 1 && now - last_gyro_pass_ms < 10000) {
+    if (ins.get_gyro_count() > 1 && now - last_gyro_pass_ms < AP_ARMING_GYRO_CONSISTENT_TIME_MS) {
         return false;
     }
 
