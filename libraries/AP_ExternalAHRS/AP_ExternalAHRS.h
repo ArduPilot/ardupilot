@@ -35,6 +35,7 @@ class AP_ExternalAHRS {
 public:
     friend class AP_ExternalAHRS_backend;
     friend class AP_ExternalAHRS_VectorNav;
+    friend class AP_ExternalAHRS_AdvancedNavigation;
 
     AP_ExternalAHRS();
 
@@ -49,6 +50,9 @@ public:
 #endif
 #if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
         MicroStrain5 = 2,
+#endif
+#if AP_EXTERNAL_AHRS_ADNAV_ENABLED
+        AdNav = 3,
 #endif
 #if AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
         InertialLabs = 5,
@@ -154,6 +158,9 @@ public:
         float  ned_vel_north;
         float  ned_vel_east;
         float  ned_vel_down;
+        float yaw;                   // degrees
+        float yaw_accuracy;
+        bool has_yaw;
     } gps_data_message_t;
 
     typedef struct {
@@ -176,7 +183,9 @@ protected:
 
     enum class OPTIONS {
         VN_UNCOMP_IMU = 1U << 0,
+        ARSP_AID = 1U << 1,
     };
+    
     bool option_is_set(OPTIONS option) const { return (options.get() & int32_t(option)) != 0; }
 
 private:
