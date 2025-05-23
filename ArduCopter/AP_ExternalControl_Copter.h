@@ -21,6 +21,11 @@ public:
       Sets the target global position for a loiter point.
     */
     bool set_global_position(const Location& loc) override WARN_IF_UNUSED;
+
+    /*
+      Sets actuator output.
+    */
+    bool set_actuator_output(float actuator[]) override WARN_IF_UNUSED;
 private:
     /*
       Return true if Copter is ready to handle external control data.
