@@ -99,7 +99,7 @@ uint8_t AP_RCTelemetry::run_wfq_scheduler(const bool use_shaper)
     float delay = 0;
     bool packet_ready = false;
 
-    // build message queue for sensor_status_flags
+    // build message queue for unhealthy_sensors()
     check_sensor_status_flags();
     // build message queue for ekf_status
     check_ekf_status();
@@ -187,13 +187,13 @@ void AP_RCTelemetry::queue_message(MAV_SEVERITY severity, const char *text)
 }
 
 /*
- * add sensor_status_flags information to message cue, normally passed as sys_status mavlink messages to the GCS, for transmission through FrSky link
+ * add unhealthy_sensors() information to message cue, normally passed as sys_status mavlink messages to the GCS, for transmission through FrSky link
  */
 void AP_RCTelemetry::check_sensor_status_flags(void)
 {
     uint32_t now = AP_HAL::millis();
 
-    const uint32_t _sensor_status_flags = sensor_status_flags();
+    const uint32_t _sensor_status_flags = unhealthy_sensors();
 
     if ((now - check_sensor_status_timer) >= 5000) { // prevent repeating any system_status messages unless 5 seconds have passed
         // only one error is reported at a time (in order of preference). Same setup and displayed messages as Mission Planner.
@@ -279,7 +279,9 @@ void AP_RCTelemetry::check_ekf_status(void)
     }
 }
 
-uint32_t AP_RCTelemetry::sensor_status_flags() const
+// returns a bitmask of sensors which are present and enabled but also
+// not healthy
+uint32_t AP_RCTelemetry::unhealthy_sensors() const
 {
     uint32_t present;
     uint32_t enabled;
