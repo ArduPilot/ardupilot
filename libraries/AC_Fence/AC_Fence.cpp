@@ -414,6 +414,11 @@ bool AC_Fence::pre_arm_check_polygon(char *failure_msg, const uint8_t failure_ms
 // additional checks for the circle fence:
 bool AC_Fence::pre_arm_check_circle(char *failure_msg, const uint8_t failure_msg_len) const
 {
+    if (!(_configured_fences & AC_FENCE_TYPE_CIRCLE)) {
+        // not enabled; all good
+        return true;
+    }
+
     if (_circle_radius < 0) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Invalid Circle FENCE_RADIUS value");
         return false;
@@ -429,12 +434,12 @@ bool AC_Fence::pre_arm_check_circle(char *failure_msg, const uint8_t failure_msg
 // additional checks for the alt fence:
 bool AC_Fence::pre_arm_check_alt(char *failure_msg, const uint8_t failure_msg_len) const
 {
-    if (_alt_max < 0.0f) {
+    if ((_configured_fences & AC_FENCE_TYPE_ALT_MAX) && (_alt_max < 0.0f)) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Invalid FENCE_ALT_MAX value");
         return false;
     }
 
-    if (_alt_min < -100.0f) {
+    if ((_configured_fences & AC_FENCE_TYPE_ALT_MIN) && (_alt_min < -100.0f)) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Invalid FENCE_ALT_MIN value");
         return false;
     }
