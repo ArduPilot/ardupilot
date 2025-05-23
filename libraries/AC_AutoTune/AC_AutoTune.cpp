@@ -183,6 +183,9 @@ void AC_AutoTune::send_step_string()
     case TESTING:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Testing");
         return;
+    case COMPLETE:
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Complete");
+        break;
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: unknown step");
 }
@@ -385,11 +388,6 @@ void AC_AutoTune::control_attitude()
             step = TESTING;
             step_start_time_ms = now;
             step_time_limit_ms = get_testing_step_timeout_ms();
-            // set gains to their to-be-tested values
-            load_gains(GAIN_TEST);
-        } else {
-            // when waiting for level we use the intra-test gains
-            load_gains(GAIN_INTRA_TEST);
         }
 
         // Initialize test-specific variables
@@ -417,9 +415,6 @@ void AC_AutoTune::control_attitude()
 
     case TESTING: {
         // Run the twitching step
-        load_gains(GAIN_TEST);
-
-        // run the test
         test_run(axis, direction_sign);
 
         // Check for failure causing reverse response
@@ -567,9 +562,7 @@ void AC_AutoTune::control_attitude()
                     update_gcs(AUTOTUNE_MESSAGE_SUCCESS);
                     LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_SUCCESS);
                     AP_Notify::events.autotune_complete = true;
-
-                    // Return to original gains for landing
-                    load_gains(GainType::GAIN_ORIGINAL);
+                    step = COMPLETE;
                 } else {
                     AP_Notify::events.autotune_next_axis = true;
                     reset_update_gain_variables();
@@ -584,15 +577,38 @@ void AC_AutoTune::control_attitude()
             attitude_control->input_euler_angle_roll_pitch_yaw_cd(0.0f, 0.0f, ahrs_view->yaw_sensor, false);
         }
 
-        // set gains to their intra-test values (which are very close to the original gains)
-        load_gains(GAIN_INTRA_TEST);
-
         // reset testing step
         step = WAITING_FOR_LEVEL;
         positive_direction = twitch_reverse_direction();
         step_start_time_ms = now;
         level_start_time_ms = now;
         step_time_limit_ms = AUTOTUNE_REQUIRED_LEVEL_TIME_MS;
+        break;
+
+    case COMPLETE:
+        // we don't need to do anything
+        break;
+    }
+
+    // Load the appropriate gains
+    switch (step) {
+    case WAITING_FOR_LEVEL:
+        // when waiting for level we use the intra-test gains
+        load_gains(GAIN_INTRA_TEST);
+        break;
+    case TESTING:
+        // set gains to their to-be-tested values
+        load_gains(GAIN_TEST);
+        break;
+    case UPDATE_GAINS:
+        FALLTHROUGH;
+    case ABORT:
+        // set gains to their intra-test values (which are very close to the original gains)
+        load_gains(GAIN_INTRA_TEST);
+        break;
+    case COMPLETE:
+        // Return to original gains for landing
+        load_gains(GainType::GAIN_ORIGINAL);
         break;
     }
 }
