@@ -78,12 +78,6 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxT
     if (pkt.target_node != canardGetLocalNodeID(canard_ins)) {
         return;
     }
-    if (uart_monitor.buffer == nullptr) {
-        uart_monitor.buffer = NEW_NOTHROW ByteBuffer(1024);
-        if (uart_monitor.buffer == nullptr) {
-            return;
-        }
-    }
     int8_t uart_num = pkt.serial_id;
     if (uart_num == -1) {
         uart_num = get_default_tunnel_serial_port();
@@ -91,20 +85,25 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxT
     if (uart_num < 0) {
         return;
     }
-    auto *uart = hal.serial(uart_num);
-    if (uart == nullptr) {
+    if (uint8_t(uart_num) > ARRAY_SIZE(uart_monitors)) {
         return;
     }
-    if (uart_monitor.uart_num != uart_num && uart_monitor.uart != nullptr) {
-        // remove monitor from previous uart
-        hal.serial(uart_monitor.uart_num)->set_monitor_read_buffer(nullptr);
-    }
-    uart_monitor.uart_num = uart_num;
-    if (uart != uart_monitor.uart) {
-        // change of uart or expired, clear old data
-        uart_monitor.buffer->clear();
-        uart_monitor.uart = uart;
+    auto &uart_monitor = uart_monitors[uart_num];
+    if (uart_monitor.uart == nullptr) {
+        auto *uart = hal.serial(uart_num);
+        if (uart == nullptr) {
+            return;
+        }
+        if (uart_monitor.buffer == nullptr) {
+            uart_monitor.buffer = NEW_NOTHROW ByteBuffer(1024);
+            if (uart_monitor.buffer == nullptr) {
+                return;
+            }
+            uart_monitor.uart_num = uart_num;
+        }
         uart_monitor.baudrate = 0;
+        uart_monitor.uart = uart;  // setting this indicates the monitor is set up
+        uart_monitor.uart->set_monitor_read_buffer(uart_monitor.buffer);
     }
     if (uart_monitor.uart == nullptr) {
         return;
@@ -130,7 +129,6 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxT
         }
         uart_monitor.baudrate = pkt.baudrate;
     }
-    uart_monitor.uart->set_monitor_read_buffer(uart_monitor.buffer);
     uart_monitor.last_request_ms = AP_HAL::millis();
 
     // write to device
@@ -150,6 +148,13 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxT
   send tunnelled serial data
  */
 void AP_Periph_FW::send_serial_monitor_data()
+{
+    for (auto &m : uart_monitors) {
+        send_serial_monitor_data_instance(m);
+    }
+}
+
+void AP_Periph_FW::send_serial_monitor_data_instance(AP_Periph_FW::UARTMonitor &uart_monitor)
 {
     if (uart_monitor.uart == nullptr ||
         uart_monitor.node_id == 0 ||
