@@ -1107,6 +1107,32 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         if m is None:
             raise NotAchievedException("Did not get good TEMP message")
 
+    def SurfaceSensorless(self):
+        """Test surface mode with sensorless thrust"""
+        # set GCS failsafe to SURFACE
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode("STABILIZE")
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+
+        self.set_rc(Joystick.Throttle, 1100)
+        self.wait_altitude(altitude_min=-10, altitude_max=-9, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        self.context_push()
+        self.setGCSfailsafe(4)
+        self.set_parameter("SIM_BARO_DISABLE", 1)
+        self.set_heartbeat_rate(0)
+        self.wait_mode("SURFACE")
+        self.progress("Surface mode engaged")
+        self.wait_altitude(altitude_min=-1, altitude_max=0, relative=False, timeout=60)
+        self.progress("Vehicle resurfaced")
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        self.progress("Baro-less Surface mode OK")
+        self.disarm_vehicle()
+        self.context_pop()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -1143,6 +1169,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.INA3221,
             self.PosHoldBounceBack,
             self.SHT3X,
+            self.SurfaceSensorless,
         ])
 
         return ret
