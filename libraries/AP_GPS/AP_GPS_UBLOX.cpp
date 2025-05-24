@@ -1673,18 +1673,18 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.have_undulation = true;
         state.undulation = (_buffer.pvt.h_msl - _buffer.pvt.h_ellipsoid) * 0.001;
         set_alt_amsl_cm(state, _buffer.pvt.h_msl / 10);
-        switch (_buffer.pvt.fix_type)
-        {
-            case 0:
+        switch (_buffer.pvt.fix_type) {
+        case 0:  // no fix
                 state.status = AP_GPS::NO_FIX;
                 break;
-            case 1:
+        case 1:  // dead-reckoning only
                 state.status = AP_GPS::NO_FIX;
                 break;
-            case 2:
+        case 2:  // 2D-fix
                 state.status = AP_GPS::GPS_OK_FIX_2D;
                 break;
-            case 3:
+        case 3:  // 3D-fix
+        case 4:  // GNSS + dead-reckoning combined
                 state.status = AP_GPS::GPS_OK_FIX_3D;
                 if (_buffer.pvt.flags & 0b00000010)  // diffsoln
                     state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
@@ -1693,15 +1693,10 @@ AP_GPS_UBLOX::_parse_gps(void)
                 if (_buffer.pvt.flags & 0b10000000)  // carrsoln - fixed
                     state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                 break;
-            case 4:
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                                "Unexpected state %d", _buffer.pvt.flags);
-                state.status = AP_GPS::GPS_OK_FIX_3D;
-                break;
-            case 5:
+        case 5:  // time only fix
                 state.status = AP_GPS::NO_FIX;
                 break;
-            default:
+        default:
                 state.status = AP_GPS::NO_FIX;
                 break;
         }
