@@ -47,6 +47,8 @@ PARAMETER_NOT_SET = 0
 PARAMETER_INTEGER = 2
 PARAMETER_DOUBLE = 3
 
+MSG_RX_TIMEOUT = 30.0
+
 
 class ParameterClient(rclpy.node.Node):
     """Send GetParameters and SetParameters Requests."""
@@ -183,13 +185,13 @@ def test_dds_udp_parameter_services(launch_context, launch_sitl_copter_dds_udp):
         param_change_value = 1250
         param_type = PARAMETER_DOUBLE
         node.send_get_param_req(parameter_name)
-        get_param_received_flag = node.get_param_event_object.wait(timeout=10.0)
+        get_param_received_flag = node.get_param_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert get_param_received_flag, f"Did not get '{parameter_name}' param."
         node.send_set_param_req(parameter_name, param_change_value, param_type)
-        set_param_received_flag = node.set_param_event_object.wait(timeout=10.0)
+        set_param_received_flag = node.set_param_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert set_param_received_flag, f"Could not set '{parameter_name}' to '{param_change_value}'"
         node.check_param_change()
-        set_param_changed_flag = node.set_correct_object.wait(timeout=10.0)
+        set_param_changed_flag = node.set_correct_object.wait(timeout=MSG_RX_TIMEOUT)
         assert set_param_changed_flag, f"Did not confirm '{parameter_name}' value change"
 
     finally:

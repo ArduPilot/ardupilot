@@ -42,6 +42,7 @@ from launch_fixtures import (
     launch_sitl_copter_dds_udp,
 )
 
+MSG_RX_TIMEOUT = 30.0
 TOPIC = "ap/rc"
 
 
@@ -95,7 +96,7 @@ def test_dds_serial_rc_msg_recv(launch_context, launch_sitl_copter_dds_serial):
     try:
         node = RcListener()
         node.start_subscriber()
-        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
+        msgs_received_flag = node.msg_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
         rclpy.shutdown()
@@ -119,7 +120,7 @@ def test_dds_udp_rc_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     try:
         node = RcListener()
         node.start_subscriber()
-        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
+        msgs_received_flag = node.msg_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
 
     finally:

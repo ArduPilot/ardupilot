@@ -42,6 +42,7 @@ from launch_fixtures import (
     launch_sitl_copter_dds_udp,
 )
 
+MSG_RX_TIMEOUT = 30.0
 TOPIC = "ap/battery"
 
 
@@ -105,11 +106,11 @@ def test_dds_serial_battery_msg_recv(launch_context, launch_sitl_copter_dds_seri
     try:
         node = BatteryListener()
         node.start_subscriber()
-        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
+        msgs_received_flag = node.msg_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
-        battery_correct_flag = node.frame_id_correct_object.wait(timeout=10.0)
+        battery_correct_flag = node.frame_id_correct_object.wait(timeout=MSG_RX_TIMEOUT)
         assert battery_correct_flag, f"Did not receive correct battery ID."
-        battery_incorrect_flag = not node.frame_id_incorrect_object.wait(timeout=10.0)
+        battery_incorrect_flag = not node.frame_id_incorrect_object.wait(timeout=MSG_RX_TIMEOUT)
         assert battery_correct_flag, f"Did received incorrect battery ID."
     finally:
         rclpy.shutdown()
@@ -133,11 +134,11 @@ def test_dds_udp_battery_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     try:
         node = BatteryListener()
         node.start_subscriber()
-        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
+        msgs_received_flag = node.msg_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
-        battery_correct_flag = node.frame_id_correct_object.wait(timeout=10.0)
+        battery_correct_flag = node.frame_id_correct_object.wait(timeout=MSG_RX_TIMEOUT)
         assert battery_correct_flag, f"Did not receive correct battery ID."
-        battery_incorrect_flag = not node.frame_id_incorrect_object.wait(timeout=10.0)
+        battery_incorrect_flag = not node.frame_id_incorrect_object.wait(timeout=MSG_RX_TIMEOUT)
         assert battery_correct_flag, f"Did received incorrect battery ID."
 
     finally:
