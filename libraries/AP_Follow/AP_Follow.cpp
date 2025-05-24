@@ -442,14 +442,26 @@ bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &ve
 }
 
 // Retrieves the estimated target heading in degrees (0° = North, 90° = East) for LUA bindings.
-bool AP_Follow::get_target_heading_deg(float &heading)
+bool AP_Follow::get_target_heading_deg(float &heading_deg)
 {
     if (!update_estimate()) {
         return false;
     }
 
     // return latest heading estimate
-    heading = degrees(_estimate_heading_rad);
+    heading_deg = degrees(_estimate_heading_rad);
+    return true;
+}
+
+// Retrieves the estimated target heading in degrees (0° = North, 90° = East) for LUA bindings.
+bool AP_Follow::get_target_heading_rate_degs(float &heading_rate_degs)
+{
+    if (!update_estimate()) {
+        return false;
+    }
+
+    // return latest heading estimate
+    heading_rate_degs = degrees(_estimate_heading_rate_rads);
     return true;
 }
 
@@ -770,10 +782,9 @@ void AP_Follow::init_offsets_if_required()
     }
     const Vector3f dist_vec_ned_m = (_target_pos_ned_m - current_position_ned_m).tofloat();
 
-    float target_heading_deg;
-    if ((_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) && get_target_heading_deg(target_heading_deg)) {
+    if ((_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE)) {
         // rotate offset into vehicle-relative frame based on heading
-        _offset_m.set(rotate_vector(-dist_vec_ned_m, -target_heading_deg));
+        _offset_m.set(rotate_vector(-dist_vec_ned_m, -degrees(_estimate_heading_rad)));
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Relative follow offset loaded");
     } else {
         // initialize offset in NED frame (no heading rotation)

@@ -105,6 +105,9 @@ public:
     // Retrieves the estimated target heading in degrees (0° = North, 90° = East) for LUA bindings.
     bool get_target_heading_deg(float &heading);
 
+    // Retrieves the estimated target heading rate in degrees per second.
+    bool get_target_heading_rate_degs(float &_target_heading_rate_degs);
+
     // Retrieves the distance vector to the target, the distance vector including configured offsets, and the target’s velocity in the NED frame (units: meters).
     bool get_target_dist_and_vel_NED_m(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
 
