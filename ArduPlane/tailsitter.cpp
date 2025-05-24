@@ -240,7 +240,7 @@ void Tailsitter::setup()
 
         // Do not allow arming in forward flight modes
         // motors will become active due to assisted flight airmode, the vehicle will try very hard to get level
-        quadplane.options.set(quadplane.options.get() | int32_t(QuadPlane::OPTION::ONLY_ARM_IN_QMODE_OR_AUTO));
+        quadplane.options.set(quadplane.options.get() | int32_t(QuadPlane::Option::ONLY_ARM_IN_QMODE_OR_AUTO));
     }
 
     transition = NEW_NOTHROW Tailsitter_Transition(quadplane, motors, *this);
@@ -372,7 +372,7 @@ void Tailsitter::output(void)
         quadplane.hold_stabilize(throttle);
         quadplane.motors_output(true);
 
-        if (quadplane.option_is_set(QuadPlane::OPTION::TAILSIT_Q_ASSIST_MOTORS_ONLY)) {
+        if (quadplane.option_is_set(QuadPlane::Option::TAILSIT_Q_ASSIST_MOTORS_ONLY)) {
             // only use motors for Q assist, control surfaces remain under plane control. Zero copter I terms and use plane.
             // Smoothly relax to zero so there is no step change in output, must also set limit flags so integrator cannot build faster than the relax.
             // Assume there is always roll control surfaces, otherwise motors only assist should not be set.
