@@ -551,6 +551,10 @@ public:
     void set_desired_heading_delta_and_speed(float yaw_delta_cd, float target_speed);
     void set_desired_turn_rate_and_speed(float turn_rate_cds, float target_speed);
 
+    // set desired turn rate and heading
+    void set_desired_turn_rate_and_heading(float yaw_angle_cd, float turn_rate_cds, int8_t direction);
+    void set_desired_turn_rate_and_heading_delta(float yaw_delta_cd, float turn_rate_cds, int8_t direction);
+
     // set steering and throttle (-1 to +1).  Only called from scripts
     void set_steering_and_throttle(float steering, float throttle);
 
@@ -574,7 +578,8 @@ protected:
         TurnRateAndSpeed,
         Loiter,
         SteeringAndThrottle,
-        Stop
+        Stop,
+        TurnRateAndHeading
     };
 
     // enum for GUID_OPTIONS parameter
