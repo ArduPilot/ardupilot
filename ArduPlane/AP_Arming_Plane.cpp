@@ -51,6 +51,10 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         // then skip the checks
         return true;
     }
+    if (!hal.scheduler->is_system_initialized()) {
+        check_failed(display_failure, "System not initialised");
+        return false;
+    }
     //are arming checks disabled?
     if (checks_to_perform == 0) {
         return mandatory_checks(display_failure);
