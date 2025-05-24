@@ -156,6 +156,12 @@
 #include <AC_CustomControl/AC_CustomControl.h>                  // Custom control library
 #endif
 
+#ifdef SIMULINK_APP_ENABLED
+#include <AP_Simulink/AC_Simulink_ControllerInterfaces.h> // Simulink controller interface 
+#include <AP_Simulink/AP_Simulink_Base.h>
+#include <AP_Simulink/AP_Simulink_Factory.h>
+#endif
+
 #if AP_AVOIDANCE_ENABLED && !AP_FENCE_ENABLED
   #error AC_Avoidance relies on AP_FENCE_ENABLED which is disabled
 #endif
@@ -487,6 +493,13 @@ private:
     AC_CustomControl custom_control{ahrs_view, attitude_control, motors, scheduler.get_loop_period_s()};
 #endif
 
+#ifdef SIMULINK_APP_ENABLED
+#if FRAME_CONFIG == MULTICOPTER_FRAME
+    AC_Simulink_ControllerInterfaces ac_sl_interfaces{ahrs_view, attitude_control, pos_control, motors};
+#endif
+    AP_Simulink_Base *ac_simulink = AP_Simulink_Factory::createSimulinkInstance();
+#endif
+
 #if MODE_CIRCLE_ENABLED
     AC_Circle *circle_nav;
 #endif
@@ -759,6 +772,10 @@ private:
 
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     void run_custom_controller() { custom_control.update(); }
+#endif
+
+#ifdef SIMULINK_APP_ENABLED
+    void run_simulink_step() { ac_simulink->update(); }
 #endif
 
     // avoidance.cpp
