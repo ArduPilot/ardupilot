@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file   AC_P_2D.h
-/// @brief  2-axis P controller with EEPROM-backed storage of constants.
+/// @brief  2D P controller with output limiting, derivative constraint, and EEPROM-backed gain storage.
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -11,25 +11,28 @@
 class AC_P_2D {
 public:
 
-    // constructor
+    /// Constructor for 2D P controller with initial gain.
     AC_P_2D(float initial_p);
 
     CLASS_NO_COPY(AC_P_2D);
 
-    // set target and measured inputs to P controller and calculate outputs
+    // Computes the P controller output given a target and measurement.
+    // Applies position error clamping based on configured limits.
+    // Optionally constrains output slope using the sqrt_controller.
     Vector2f update_all(Vector2p &target, const Vector2p &measurement) WARN_IF_UNUSED;
 
-    // set_limits - sets the maximum error to limit output and first and second derivative of output
+    // Sets limits on output, output slope (D1), and output acceleration (D2).
+    // For position controllers: output = velocity, D1 = acceleration, D2 = jerk.
     void set_limits(float output_max, float D_Out_max = 0.0f, float D2_Out_max = 0.0f);
 
-    // set_error_max - reduce maximum position error to error_max
-    // to be called after setting limits
+    // Reduces the maximum allowable error after limit initialization.
+    // Intended to be called after set_limits().
     void set_error_max(float error_max);
 
-    // get_error_max - return maximum position error
+    // Returns the current error clamp limit in controller units.
     float get_error_max() { return _error_max; }
 
-    // save gain to eeprom
+    // Saves controller configuration from EEPROM. (not used)
     void save_gains() { _kp.save(); }
 
     // get accessors
