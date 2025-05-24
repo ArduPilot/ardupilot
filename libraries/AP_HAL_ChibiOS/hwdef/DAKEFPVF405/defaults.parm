@@ -1,0 +1,11 @@
+# setup SERIAL2 for RCIN
+SERIAL2_PROTOCOL 23
+
+# disable GPS on Serial 4
+SERIAL4_PROTOCOL -1
+
+# setup SERIAL1 for GPS
+SERIAL1_PROTOCOL 5
+
+# Onboard ELRS
+RC2_REVERSED 1 # Prevent inverse pitch controls
