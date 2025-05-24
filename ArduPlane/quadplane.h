@@ -584,7 +584,7 @@ private:
 
     // additional options
     AP_Int32 options;
-    enum class OPTION {
+    enum class Option {
         LEVEL_TRANSITION=(1<<0),
         ALLOW_FW_TAKEOFF=(1<<1),
         ALLOW_FW_LAND=(1<<2),
@@ -609,7 +609,7 @@ private:
         DISARMED_TILT_UP=(1<<21),
         SCALE_FF_ANGLE_P=(1<<22),
     };
-    bool option_is_set(OPTION option) const {
+    bool option_is_set(Option option) const {
         return (options.get() & int32_t(option)) != 0;
     }
 
