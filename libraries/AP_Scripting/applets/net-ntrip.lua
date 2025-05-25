@@ -95,9 +95,6 @@ local function process_rtcm_buffer()
 
         gps:inject_data(complete_message, #complete_message)
 
-        if #rtcm_buffer >= 3 then
-            process_rtcm_buffer() -- recurse
-        end
     end
 end
 
