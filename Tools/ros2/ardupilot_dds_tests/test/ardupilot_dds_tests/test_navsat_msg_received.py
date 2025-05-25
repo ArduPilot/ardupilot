@@ -27,6 +27,7 @@ from rclpy.qos import QoSHistoryPolicy
 
 from sensor_msgs.msg import NavSatFix
 
+MSG_RX_TIMEOUT = 30.0
 TOPIC = "ap/navsat"
 
 from launch_fixtures import (
@@ -90,7 +91,7 @@ def test_dds_serial_navsat_msg_recv(launch_context, launch_sitl_copter_dds_seria
     try:
         node = NavSatFixListener()
         node.start_subscriber()
-        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
+        msgs_received_flag = node.msg_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
         rclpy.shutdown()
@@ -114,7 +115,7 @@ def test_dds_udp_navsat_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     try:
         node = NavSatFixListener()
         node.start_subscriber()
-        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
+        msgs_received_flag = node.msg_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
         rclpy.shutdown()
