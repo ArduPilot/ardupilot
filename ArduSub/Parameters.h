@@ -219,6 +219,9 @@ public:
         k_param_flight_mode6,
         k_param_simple_modes,
         k_param_flight_mode_chan,
+#if AP_RSSI_ENABLED
+        k_param_rssi,
+#endif 
         
         // Acro Mode parameters
         k_param_acro_yaw_p = 220, // Used in all modes for get_pilot_desired_yaw_rate
@@ -366,7 +369,7 @@ public:
     AP_Int8         flight_mode6;
     AP_Int8         simple_modes;
     AP_Int8         flight_mode_chan;
-#endif    
+#endif 
 
     AP_Float                surface_depth;
     AP_Int8                 frame_configuration;
