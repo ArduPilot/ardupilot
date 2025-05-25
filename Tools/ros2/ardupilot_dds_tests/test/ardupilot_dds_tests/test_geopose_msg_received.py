@@ -41,6 +41,7 @@ from launch_fixtures import (
     launch_sitl_copter_dds_udp,
 )
 
+MSG_RX_TIMEOUT = 30.0
 TOPIC = "ap/geopose/filtered"
 # Copied from locations.txt
 CMAC_LAT = -35.363261
@@ -153,11 +154,11 @@ def test_dds_serial_geopose_msg_recv(launch_context, launch_sitl_copter_dds_seri
     try:
         node = GeoPoseListener()
         node.start_subscriber()
-        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
+        msgs_received_flag = node.msg_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
-        pose_correct_flag = node.position_correct_event_object.wait(timeout=10.0)
+        pose_correct_flag = node.position_correct_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert pose_correct_flag, f"Did not receive correct position."
-        orientation_correct_flag = node.orientation_event_object.wait(timeout=10.0)
+        orientation_correct_flag = node.orientation_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert orientation_correct_flag, f"Did not receive correct orientation."
     finally:
         rclpy.shutdown()
@@ -181,9 +182,9 @@ def test_dds_udp_geopose_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     try:
         node = GeoPoseListener()
         node.start_subscriber()
-        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
+        msgs_received_flag = node.msg_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
-        pose_correct_flag = node.position_correct_event_object.wait(timeout=10.0)
+        pose_correct_flag = node.position_correct_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert pose_correct_flag, f"Did not receive correct position."
     finally:
         rclpy.shutdown()

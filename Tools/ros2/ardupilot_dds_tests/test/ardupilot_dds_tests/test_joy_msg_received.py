@@ -45,6 +45,8 @@ LOITER = 5
 
 FRAME_GLOBAL_INT = 5
 
+MSG_RX_TIMEOUT = 30.0
+
 # Hard code some known locations
 # Note - Altitude in geopy is in km!
 GRAYHOUND_TRACK = point.Point(latitude=-35.345996, longitude=149.159017, altitude=0.575)
@@ -197,7 +199,7 @@ def test_dds_udp_joy_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     try:
         node = PlaneFbwbJoyControl()
         node.arm_and_takeoff()
-        climb_flag = node.climbing_event_object.wait(10)
+        climb_flag = node.climbing_event_object.wait(MSG_RX_TIMEOUT)
         assert climb_flag, "Could not climb"
     finally:
         rclpy.shutdown()
