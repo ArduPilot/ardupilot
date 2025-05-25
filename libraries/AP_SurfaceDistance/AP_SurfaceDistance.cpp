@@ -61,8 +61,15 @@ void AP_SurfaceDistance::update()
         status |= (uint8_t)Surface_Distance_Status::Enabled;
     }
 
+    // remember inertial alt to allow us to interpolate rangefinder
+    float pos_d_m;
+    const bool inertial_alt_ok = AP::ahrs().get_relative_position_D_origin_float(pos_d_m);
+    if (inertial_alt_ok) {
+        inertial_alt_cm = -pos_d_m * 100.0f; // convert from m to cm
+    }
+
     // update health
-    alt_healthy = (rangefinder->status_orient(rotation) == RangeFinder::Status::Good) &&
+    alt_healthy = inertial_alt_ok && (rangefinder->status_orient(rotation) == RangeFinder::Status::Good) &&
                             (rangefinder->range_valid_count_orient(rotation) >= RANGEFINDER_HEALTH_MIN);
     if (!alt_healthy) {
         status |= (uint8_t)Surface_Distance_Status::Unhealthy;
@@ -70,9 +77,6 @@ void AP_SurfaceDistance::update()
 
     // tilt corrected but unfiltered, not glitch protected alt
     alt_cm = tilt_correction * rangefinder->distance_orient(rotation)*100;
-
-    // remember inertial alt to allow us to interpolate rangefinder
-    inertial_alt_cm = inertial_nav.get_position_z_up_cm();
 
     // glitch handling.  rangefinder readings more than RANGEFINDER_GLITCH_ALT_CM from the last good reading
     // are considered a glitch and glitch_count becomes non-zero
@@ -139,8 +143,15 @@ bool AP_SurfaceDistance::get_rangefinder_height_interpolated_cm(int32_t& ret) co
     if (!enabled_and_healthy()) {
         return false;
     }
+
+    // get inertial alt
+    float pos_d_m;
+    if (!AP::ahrs().get_relative_position_D_origin_float(pos_d_m)) {
+        return false;
+    }
+
     ret = alt_cm_filt.get();
-    ret += inertial_nav.get_position_z_up_cm() - inertial_alt_cm;
+    ret += (-pos_d_m * 100.0) - inertial_alt_cm;
     return true;
 }
 

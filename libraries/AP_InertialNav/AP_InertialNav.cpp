@@ -50,7 +50,7 @@ void AP_InertialNav::update(bool high_vibes)
  */
 nav_filter_status AP_InertialNav::get_filter_status() const
 {
-    nav_filter_status status;
+    nav_filter_status status {};
     _ahrs_ekf.get_filter_status(status);
     return status;
 }

@@ -846,15 +846,18 @@ void ToyMode::throttle_adjust(float &throttle_control)
     }
 
     // limit descent rate close to the ground
-    float height = copter.inertial_nav.get_position_z_up_cm() * 0.01 - copter.arming_altitude_m;
-    if (throttle_control < 500 &&
-        height < TOY_DESCENT_SLOW_HEIGHT + TOY_DESCENT_SLOW_RAMP &&
-        copter.motors->armed() && !copter.ap.land_complete) {
-        float limit = linear_interpolate(TOY_DESCENT_SLOW_MIN, 0, height,
-                                         TOY_DESCENT_SLOW_HEIGHT, TOY_DESCENT_SLOW_HEIGHT+TOY_DESCENT_SLOW_RAMP);
-        if (throttle_control < limit) {
-            // limit descent rate close to the ground
-            throttle_control = limit;
+    float pos_d_m;
+    if (AP::ahrs().get_relative_position_D_origin_float(pos_d_m)) {
+        float height = -pos_d_m - copter.arming_altitude_m;
+        if (throttle_control < 500 &&
+            height < TOY_DESCENT_SLOW_HEIGHT + TOY_DESCENT_SLOW_RAMP &&
+            copter.motors->armed() && !copter.ap.land_complete) {
+            float limit = linear_interpolate(TOY_DESCENT_SLOW_MIN, 0, height,
+                                            TOY_DESCENT_SLOW_HEIGHT, TOY_DESCENT_SLOW_HEIGHT+TOY_DESCENT_SLOW_RAMP);
+            if (throttle_control < limit) {
+                // limit descent rate close to the ground
+                throttle_control = limit;
+            }
         }
     }
 }

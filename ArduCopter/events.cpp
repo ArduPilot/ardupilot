@@ -299,7 +299,8 @@ void Copter::failsafe_terrain_on_event()
 void Copter::gpsglitch_check()
 {
     // get filter status
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
+    nav_filter_status filt_status {};
+    AP::ahrs().get_filter_status(filt_status);
     bool gps_glitching = filt_status.flags.gps_glitching;
 
     // log start or stop of gps glitch.  AP_Notify update is handled from within AP_AHRS
@@ -322,7 +323,9 @@ void Copter::failsafe_deadreckon_check()
     const char* dr_prefix_str = "Dead Reckoning";
 
     // get EKF filter status
-    bool ekf_dead_reckoning = inertial_nav.get_filter_status().flags.dead_reckoning;
+    nav_filter_status filt_status {};
+    AP::ahrs().get_filter_status(filt_status);
+    bool ekf_dead_reckoning = filt_status.flags.dead_reckoning;
 
     // alert user to start or stop of dead reckoning
     const uint32_t now_ms = AP_HAL::millis();
