@@ -681,7 +681,7 @@ void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw_cd(float roll_angle_
 // Command an rate step (i.e change) in body frame rate
 // Used to command a step in rate without exciting the orthogonal axis during autotune
 // Done as a single thread-safe function to avoid intermediate zero values being seen by the attitude controller
-void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_cd(float roll_rate_step_bf_cd, float pitch_rate_step_bf_cd, float yaw_rate_step_bf_cd)
+void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_cds(float roll_rate_step_bf_cd, float pitch_rate_step_bf_cd, float yaw_rate_step_bf_cd)
 {
     // Update the unused targets attitude based on current attitude to condition mode change
     _ahrs.get_quat_body_to_ned(_attitude_target);
