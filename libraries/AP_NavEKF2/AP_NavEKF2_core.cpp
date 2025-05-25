@@ -1575,10 +1575,10 @@ void NavEKF2_core::ConstrainStates()
 // calculate the NED earth spin vector in rad/sec
 void NavEKF2_core::calcEarthRateNED(Vector3F &omega, int32_t latitude) const
 {
-    ftype lat_rad = radians(latitude*1.0e-7f);
-    omega.x  = earthRate*cosF(lat_rad);
+    ftype lat_rad = latitude * radians(1.0e-7f);
+    omega.x  = earthRate * cosF(lat_rad);
     omega.y  = 0;
-    omega.z  = -earthRate*sinF(lat_rad);
+    omega.z  = -earthRate * sinF(lat_rad);
 }
 
 // initialise the earth magnetic field states using declination, suppled roll/pitch

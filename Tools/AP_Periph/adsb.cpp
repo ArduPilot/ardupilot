@@ -103,7 +103,7 @@ void AP_Periph_FW::can_send_ADSB(struct __mavlink_adsb_vehicle_t &msg)
     pkt.longitude_deg_1e7 = msg.lon;
     pkt.alt_m = msg.altitude * 1e-3;
 
-    pkt.heading = radians(msg.heading * 1e-2);
+    pkt.heading = msg.heading * radians(1e-2);
 
     pkt.velocity[0] = cosf(pkt.heading) * msg.hor_velocity * 1e-2;
     pkt.velocity[1] = sinf(pkt.heading) * msg.hor_velocity * 1e-2;

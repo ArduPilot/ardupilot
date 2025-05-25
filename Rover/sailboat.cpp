@@ -317,7 +317,7 @@ float Sailboat::get_VMG() const
         return speed;
     }
 
-    return (speed * cosf(wrap_PI(radians(rover.g2.wp_nav.wp_bearing_cd() * 0.01f) - rover.ahrs.get_yaw())));
+    return (speed * cosf(wrap_PI(rover.g2.wp_nav.wp_bearing_cd() * radians(0.01f) - rover.ahrs.get_yaw())));
 }
 
 // handle user initiated tack while in acro mode
@@ -384,7 +384,7 @@ bool Sailboat::use_indirect_route(float desired_heading_cd) const
     }
 
     // convert desired heading to radians
-    const float desired_heading_rad = radians(desired_heading_cd * 0.01f);
+    const float desired_heading_rad = desired_heading_cd * radians(0.01f);
 
     // check if desired heading is in the no go zone, if it is we can't go direct
     // pad no go zone, this allows use of heading controller rather than L1 when close to the wind
@@ -404,7 +404,7 @@ float Sailboat::calc_heading(float desired_heading_cd)
     const AP_WindVane::Sailboat_Tack current_tack = rover.g2.windvane.get_current_tack();
 
     // convert desired heading to radians
-    const float desired_heading_rad = radians(desired_heading_cd * 0.01f);
+    const float desired_heading_rad = desired_heading_cd * radians(0.01f);
 
     // if the desired heading is outside the no go zone there is no need to change it
     // this allows use of heading controller rather than L1 when desired

@@ -2062,7 +2062,7 @@ void NavEKF3_core::ConstrainStates()
 // calculate the NED earth spin vector in rad/sec
 void NavEKF3_core::calcEarthRateNED(Vector3F &omega, int32_t latitude) const
 {
-    ftype lat_rad = radians(latitude*1.0e-7f);
+    ftype lat_rad = latitude * radians(1.0e-7f);
     omega.x  = earthRate*cosF(lat_rad);
     omega.y  = 0;
     omega.z  = -earthRate*sinF(lat_rad);

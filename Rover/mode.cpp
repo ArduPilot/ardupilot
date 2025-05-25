@@ -496,7 +496,7 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
 void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max_degs)
 {
     // call heading controller
-    const float steering_out = attitude_control.get_steering_out_heading(radians(desired_heading_cd*0.01f),
+    const float steering_out = attitude_control.get_steering_out_heading(desired_heading_cd * radians(0.01f),
                                                                          radians(rate_max_degs),
                                                                          g2.motors.limit.steer_left,
                                                                          g2.motors.limit.steer_right,

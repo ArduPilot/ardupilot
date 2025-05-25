@@ -930,7 +930,7 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
                 float yaw2roll_scale = roll_limit / yaw_rate_limit;
 
                 // Rotate as a function of Euler pitch and swap roll/yaw
-                float euler_pitch = radians(.01f * plane.nav_pitch_cd);
+                float euler_pitch = radians(.01f) * plane.nav_pitch_cd;
                 float spitch = fabsf(sinf(euler_pitch));
                 float y2r_scale = linear_interpolate(1, yaw2roll_scale, spitch, 0, 1);
 
@@ -1136,7 +1136,7 @@ void QuadPlane::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_o
     }
 
     // apply lateral tilt to euler roll conversion
-    roll_out_cd = 100 * degrees(atanf(cosf(radians(pitch_out_cd*0.01))*tanf(radians(roll_out_cd*0.01))));
+    roll_out_cd = 100 * degrees(atanf(cosf(pitch_out_cd * radians(0.01)) * tanf(roll_out_cd * radians(0.01))));
 }
 
 /*

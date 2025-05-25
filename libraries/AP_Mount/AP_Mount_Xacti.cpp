@@ -501,7 +501,7 @@ void AP_Mount_Xacti::handle_gimbal_attitude_status(AP_DroneCAN* ap_dronecan, con
     }
 
     // convert body-frame Euler angles to Quaternion.  Note yaw direction is reversed from normal
-    driver->_current_attitude_quat.from_euler(radians(msg.gimbal_roll * 0.01), radians(msg.gimbal_pitch * 0.01), radians(-msg.gimbal_yaw * 0.01));
+    driver->_current_attitude_quat.from_euler(msg.gimbal_roll * radians(0.01), msg.gimbal_pitch * radians(0.01), -msg.gimbal_yaw * radians(0.01));
     driver->_last_current_attitude_quat_ms = AP_HAL::millis();
 }
 

@@ -852,28 +852,28 @@ void AC_AutoTune_Heli::dwell_test_run(sweep_info &test_data)
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_angle_cd + trim_angle_cd.x, trim_angle_cd.y, 0.0f);
         command_reading = motors->get_roll();
         if (test_calc_type == DRB) {
-            tgt_rate_reading = radians(target_angle_cd * 0.01f);
-            gyro_reading = radians(((float)ahrs_view->roll_sensor + trim_angle_cd.x - target_angle_cd) * 0.01f);
+            tgt_rate_reading = target_angle_cd * radians(0.01f);
+            gyro_reading = ((float)ahrs_view->roll_sensor + trim_angle_cd.x - target_angle_cd) * radians(0.01f);
         } else if (test_calc_type == RATE) {
             tgt_rate_reading = attitude_control->rate_bf_targets().x;
             gyro_reading = ahrs_view->get_gyro().x;
         } else {
-            tgt_rate_reading = radians((float)attitude_control->get_att_target_euler_cd().x * 0.01f);
-            gyro_reading = radians((float)ahrs_view->roll_sensor * 0.01f);
+            tgt_rate_reading = (float)attitude_control->get_att_target_euler_cd().x * radians(0.01f);
+            gyro_reading = (float)ahrs_view->roll_sensor * radians(0.01f);
         }
         break;
     case AxisType::PITCH:
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(trim_angle_cd.x, target_angle_cd + trim_angle_cd.y, 0.0f);
         command_reading = motors->get_pitch();
         if (test_calc_type == DRB) {
-            tgt_rate_reading = radians(target_angle_cd * 0.01f);
-            gyro_reading = radians(((float)ahrs_view->pitch_sensor + trim_angle_cd.y - target_angle_cd) * 0.01f);
+            tgt_rate_reading = target_angle_cd * radians(0.01f);
+            gyro_reading = ((float)ahrs_view->pitch_sensor + trim_angle_cd.y - target_angle_cd) * radians(0.01f);
         } else if (test_calc_type == RATE) {
             tgt_rate_reading = attitude_control->rate_bf_targets().y;
             gyro_reading = ahrs_view->get_gyro().y;
         } else {
-            tgt_rate_reading = radians((float)attitude_control->get_att_target_euler_cd().y * 0.01f);
-            gyro_reading = radians((float)ahrs_view->pitch_sensor * 0.01f);
+            tgt_rate_reading = (float)attitude_control->get_att_target_euler_cd().y * radians(0.01f);
+            gyro_reading = (float)ahrs_view->pitch_sensor * radians(0.01f);
         }
         break;
     case AxisType::YAW:
@@ -881,14 +881,14 @@ void AC_AutoTune_Heli::dwell_test_run(sweep_info &test_data)
         attitude_control->input_euler_angle_roll_pitch_yaw_cd(trim_angle_cd.x, trim_angle_cd.y, wrap_180_cd(trim_yaw_tgt_reading_cd + target_angle_cd), false);
         command_reading = motors->get_yaw();
         if (test_calc_type == DRB) {
-            tgt_rate_reading = radians(target_angle_cd * 0.01f);
-            gyro_reading = radians((wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading_cd - target_angle_cd)) * 0.01f);
+            tgt_rate_reading = target_angle_cd * radians(0.01f);
+            gyro_reading = (wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading_cd - target_angle_cd)) * radians(0.01f);
         } else if (test_calc_type == RATE) {
             tgt_rate_reading = attitude_control->rate_bf_targets().z;
             gyro_reading = ahrs_view->get_gyro().z;
         } else {
-            tgt_rate_reading = radians((wrap_180_cd((float)attitude_control->get_att_target_euler_cd().z - trim_yaw_tgt_reading_cd)) * 0.01f);
-            gyro_reading = radians((wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading_cd)) * 0.01f);
+            tgt_rate_reading = (wrap_180_cd((float)attitude_control->get_att_target_euler_cd().z - trim_yaw_tgt_reading_cd)) * radians(0.01f);
+            gyro_reading = (wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading_cd)) * radians(0.01f);
         }
         break;
     }

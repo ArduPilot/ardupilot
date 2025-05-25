@@ -1260,16 +1260,16 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
         switch (test_axis) {
         case AxisType::ROLL:
             // override body-frame roll rate
-            attitude_control->input_rate_step_bf_roll_pitch_yaw_cd(dir_sign * target_rate + start_rate, 0.0f, 0.0f);
+            attitude_control->input_rate_step_bf_roll_pitch_yaw_cds(dir_sign * target_rate + start_rate, 0.0f, 0.0f);
             break;
         case AxisType::PITCH:
             // override body-frame pitch rate
-            attitude_control->input_rate_step_bf_roll_pitch_yaw_cd(0.0f, dir_sign * target_rate + start_rate, 0.0f);
+            attitude_control->input_rate_step_bf_roll_pitch_yaw_cds(0.0f, dir_sign * target_rate + start_rate, 0.0f);
             break;
         case AxisType::YAW:
         case AxisType::YAW_D:
             // override body-frame yaw rate
-            attitude_control->input_rate_step_bf_roll_pitch_yaw_cd(0.0f, 0.0f, dir_sign * target_rate + start_rate);
+            attitude_control->input_rate_step_bf_roll_pitch_yaw_cds(0.0f, 0.0f, dir_sign * target_rate + start_rate);
             break;
         }
     }
