@@ -6315,6 +6315,21 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_distance_to_home(0, 5, timeout=30)
         self.disarm_vehicle()
 
+    def MAV_CMD_CONDITION_YAW(self):
+        '''simple test for CONDITION_YAW command'''
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('GUIDED')
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            p1=60,  # target angle
+            p2=10,  # degrees/second
+            p3=1,   # -1 is counter-clockwise, 1 clockwise
+            p4=0,   # 1 for relative, 0 for absolute
+        )
+        self.wait_heading(60)
+        self.disarm_vehicle()
+
     def MAV_CMD_MISSION_START(self):
         '''simple test for starting missing using this command'''
         # home and 1 waypoint a long way away:
@@ -6946,6 +6961,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.SET_POSITION_TARGET_LOCAL_NED,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,
             self.MAV_CMD_DO_CHANGE_SPEED,
+            self.MAV_CMD_CONDITION_YAW,
             self.MAV_CMD_MISSION_START,
             self.MAV_CMD_NAV_SET_YAW_SPEED,
             self.Button,

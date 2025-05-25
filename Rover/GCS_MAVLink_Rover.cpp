@@ -500,6 +500,9 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
 {
     switch (packet.command) {
 
+    case MAV_CMD_CONDITION_YAW:
+        return handle_command_condition_yaw(packet);
+
     case MAV_CMD_DO_CHANGE_SPEED:
         // param1 : unused
         // param2 : new speed in m/s
@@ -577,6 +580,29 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_nav_set_yaw_speed(const mavlink_com
         return MAV_RESULT_ACCEPTED;
 }
 #endif
+
+MAV_RESULT GCS_MAVLINK_Rover::handle_command_condition_yaw(const mavlink_command_int_t &packet)
+{
+        // param1 : target angle [0-360]
+        // param2 : speed during change [deg per second]
+        // param3 : direction (-1:ccw, +1:cw)
+        // param4 : relative offset (1) or absolute angle (0)
+        
+        // exit if vehicle is not in Guided mode
+        if (!rover.control_mode->in_guided_mode()) {
+            return MAV_RESULT_FAILED;
+        }
+
+        // get final angle, 1 = Relative, 0 = Absolute
+        if (packet.param4 > 0) {
+            // relative angle
+            rover.mode_guided.set_desired_turn_rate_and_heading_delta(packet.param1 * 100.0f, packet.param2 * 100.0f, packet.param3);
+        } else {
+            // absolute angle
+            rover.mode_guided.set_desired_turn_rate_and_heading(packet.param1 * 100.0f, packet.param2 * 100.0f, packet.param3);
+        }
+        return MAV_RESULT_ACCEPTED;
+}
 
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
 {
