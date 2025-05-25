@@ -3092,22 +3092,6 @@ class TestSuite(ABC):
         '''returns a set of messages should should be documented but
         are currently known as undocumented'''
         return set([
-
-            "SAF1",  # blimp-sim
-            "SAN1",  # blimp-sim
-            "SAN2",  # blimp-sim
-            "SBA1",  # blimp-sim
-            "SBLM",  # blimp-sim
-            "SFA1",  # blimp-sim
-            "SFAN",  # blimp-sim
-            "SFN",   # blimp-sim
-            "SFT",   # blimp-sim
-            "SFV1",  # blimp-sim
-            "SMGC",  # blimp-sim
-            "SRT1",  # blimp-sim
-            "SRT2",  # blimp-sim
-            "SRT3",  # blimp-sim
-            "SSAN",  # blimp-sim
         ])
 
     def LoggerDocumentation_whitelist(self):
