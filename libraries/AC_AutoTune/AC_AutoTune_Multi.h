@@ -127,17 +127,17 @@ protected:
         // this should never happen
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
-    void Log_Write_AutoTune(AxisType axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
+    void Log_Write_AutoTune(AxisType axis, TuneType tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
 #endif
 
     void set_tune_sequence() override {
-        tune_seq[0] = RD_UP;
-        tune_seq[1] = RD_DOWN;
-        tune_seq[2] = RP_UP;
-        tune_seq[3] = SP_DOWN;
-        tune_seq[4] = SP_UP;
-        tune_seq[5] = TUNE_COMPLETE;
+        tune_seq[0] = TuneType::RD_UP;
+        tune_seq[1] = TuneType::RD_DOWN;
+        tune_seq[2] = TuneType::RP_UP;
+        tune_seq[3] = TuneType::SP_DOWN;
+        tune_seq[4] = TuneType::SP_UP;
+        tune_seq[5] = TuneType::TUNE_COMPLETE;
     }
 
     // get_axis_bitmask accessor
