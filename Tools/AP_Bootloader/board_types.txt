@@ -462,6 +462,9 @@ AP_HW_MFE_RTK_CAN                    6102
 AP_HW_MFE_AirSpeed_CAN               6103
 AP_HW_PixSurveyA2-IND                6104
 
+# IDs 6110 - 6119 for S-vehicle
+AP_HW_SVehicle-E2                    6110
+
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
 # IDs 6900-6909 reserved for Easy Aerial
