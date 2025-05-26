@@ -2940,9 +2940,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def AutoTuneYawD(self):
         """Test autotune mode"""
 
-        rlld = self.get_parameter("ATC_RAT_RLL_D")
-        rlli = self.get_parameter("ATC_RAT_RLL_I")
-        rllp = self.get_parameter("ATC_RAT_RLL_P")
+        gain_names = [
+            "ATC_RAT_RLL_D",
+            "ATC_RAT_RLL_I",
+            "ATC_RAT_RLL_P",
+        ]
+        ogains = self.get_parameters(gain_names)
+        # set these parameters so they get reverted at the end of the test:
+        self.set_parameters(ogains)
+
         self.set_parameter("ATC_RAT_RLL_SMAX", 1)
         self.set_parameter("AUTOTUNE_AXES", 15)
         self.takeoff(10)
@@ -2967,10 +2973,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.change_mode('LAND')
                 self.wait_landed_and_disarmed()
                 # check the original gains have been re-instated
-                if (rlld != self.get_parameter("ATC_RAT_RLL_D") or
-                        rlli != self.get_parameter("ATC_RAT_RLL_I") or
-                        rllp != self.get_parameter("ATC_RAT_RLL_P")):
-                    raise NotAchievedException("AUTOTUNE gains still present")
+                ngains = self.get_parameters(gain_names)
+                for g in ngains.keys():
+                    if ogains[g] != ngains[g]:
+                        raise NotAchievedException(f"AUTOTUNE gains still present {ogains=} {ngains=}")
                 return
 
         raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
