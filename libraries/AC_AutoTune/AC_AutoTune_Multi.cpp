@@ -216,6 +216,7 @@ void AC_AutoTune_Multi::backup_gains_and_initialise()
 //  called by stop and failed functions
 void AC_AutoTune_Multi::load_orig_gains()
 {
+    attitude_control->use_sqrt_controller(true);
     attitude_control->bf_feedforward(orig_bf_feedforward);
     if (roll_enabled()) {
         if (!is_zero(orig_roll_rp)) {
@@ -262,6 +263,7 @@ void AC_AutoTune_Multi::load_orig_gains()
 // load_tuned_gains - load tuned gains
 void AC_AutoTune_Multi::load_tuned_gains()
 {
+    attitude_control->use_sqrt_controller(true);
     if (!attitude_control->get_bf_feedforward()) {
         attitude_control->bf_feedforward(true);
         attitude_control->set_accel_roll_max_cdss(0.0);
@@ -308,6 +310,7 @@ void AC_AutoTune_Multi::load_intra_test_gains()
 {
     // we are restarting tuning so reset gains to tuning-start gains (i.e. low I term)
     // sanity check the gains
+    attitude_control->use_sqrt_controller(true);
     attitude_control->bf_feedforward(true);
     if (roll_enabled()) {
         attitude_control->get_rate_roll_pid().set_kP(orig_roll_rp);
@@ -346,6 +349,7 @@ void AC_AutoTune_Multi::load_intra_test_gains()
 // called by control_attitude() just before it beings testing a gain (i.e. just before it twitches)
 void AC_AutoTune_Multi::load_test_gains()
 {
+    attitude_control->use_sqrt_controller(false);
     switch (axis) {
     case AxisType::ROLL:
         attitude_control->get_rate_roll_pid().set_kP(tune_roll_rp);
@@ -751,7 +755,7 @@ void AC_AutoTune_Multi::updating_angle_p_down_all(AxisType test_axis)
 }
 
 // set gains post tune for the tune type
-void AC_AutoTune_Multi::set_gains_post_tune(AxisType test_axis)
+void AC_AutoTune_Multi::set_tuning_gains_with_backoff(AxisType test_axis)
 {
     switch (tune_type) {
     case TuneType::RD_UP:
@@ -1233,8 +1237,6 @@ void AC_AutoTune_Multi::twitch_test_init()
 //run twitch test
 void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign)
 {
-    // disable rate limits
-    attitude_control->use_sqrt_controller(false);
     // hold current attitude
 
     if ((tune_type == TuneType::SP_DOWN) || (tune_type == TuneType::SP_UP)) {
