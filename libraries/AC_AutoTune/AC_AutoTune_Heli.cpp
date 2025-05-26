@@ -274,8 +274,6 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
 
         load_gains(GainType::GAIN_ORIGINAL);
 
-        attitude_control->use_sqrt_controller(true);
-
         get_poshold_attitude(roll_cd, pitch_cd, desired_yaw_cd);
 
         // hold level attitude
@@ -467,6 +465,7 @@ void AC_AutoTune_Heli::backup_gains_and_initialise()
 //  called by stop and failed functions
 void AC_AutoTune_Heli::load_orig_gains()
 {
+    attitude_control->use_sqrt_controller(true);
     attitude_control->bf_feedforward(orig_bf_feedforward);
     if (roll_enabled()) {
         load_gain_set(AxisType::ROLL, orig_roll_rp, orig_roll_ri, orig_roll_rd, orig_roll_rff, orig_roll_sp, orig_roll_accel, orig_roll_fltt, 0.0f, orig_roll_smax, orig_roll_rate);
@@ -482,6 +481,7 @@ void AC_AutoTune_Heli::load_orig_gains()
 // load_tuned_gains - load tuned gains
 void AC_AutoTune_Heli::load_tuned_gains()
 {
+    attitude_control->use_sqrt_controller(true);
     if (!attitude_control->get_bf_feedforward()) {
         attitude_control->bf_feedforward(true);
         attitude_control->set_accel_roll_max_cdss(0.0f);
@@ -504,6 +504,7 @@ void AC_AutoTune_Heli::load_intra_test_gains()
 {
     // we are restarting tuning so reset gains to tuning-start gains (i.e. low I term)
     // sanity check the gains
+    attitude_control->use_sqrt_controller(true);
     attitude_control->bf_feedforward(true);
     if (roll_enabled()) {
         load_gain_set(AxisType::ROLL, orig_roll_rp, orig_roll_rff * AUTOTUNE_FFI_RATIO_FOR_TESTING, orig_roll_rd, orig_roll_rff, orig_roll_sp, orig_roll_accel, orig_roll_fltt, 0.0f, orig_roll_smax, orig_roll_rate);
@@ -520,6 +521,7 @@ void AC_AutoTune_Heli::load_intra_test_gains()
 // called by control_attitude() just before it beings testing a gain (i.e. just before it twitches)
 void AC_AutoTune_Heli::load_test_gains()
 {
+    attitude_control->use_sqrt_controller(false);
     float rate_p, rate_i, rate_d, rate_test_max, accel_test_max;
     switch (axis) {
     case AxisType::ROLL:
@@ -1164,7 +1166,7 @@ void AC_AutoTune_Heli::updating_max_gains_all(AxisType test_axis)
 }
 
 // set gains post tune for the tune type
-void AC_AutoTune_Heli::set_gains_post_tune(AxisType test_axis)
+void AC_AutoTune_Heli::set_tuning_gains_with_backoff(AxisType test_axis)
 {
     switch (tune_type) {
     case TuneType::RD_UP:
