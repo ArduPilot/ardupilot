@@ -1018,7 +1018,6 @@ void AC_AutoTune_Multi::updating_angle_p_down(float &tune_p, float tune_p_min, f
         // stop tuning if we hit maximum P
         if (tune_p <= tune_p_min) {
             tune_p = tune_p_min;
-            counter = AUTOTUNE_SUCCESS_COUNT;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Angle P Gain Determination Failed");
             mode = TuneMode::FAILED;
