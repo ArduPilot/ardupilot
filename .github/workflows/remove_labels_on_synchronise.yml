@@ -1,0 +1,50 @@
+name: Remove Label on PR Update
+
+# Caution: pull_request_target runs in the context of the base repository but can run attacker-controlled code from the fork — so never checkout or run fork code directly in those workflows
+on:
+  pull_request_target:
+    types: [synchronize]
+
+jobs:
+  remove-label-and-comment:
+    runs-on: ubuntu-latest
+
+    permissions:
+      pull-requests: write  # Needed to modify PR labels and post comments
+
+    steps:
+      - name: Remove label and comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labelToRemove = "MergeOnCIPass";
+
+            const pr = context.payload.pull_request;
+            const prNumber = pr.number;
+            const labels = pr.labels.map(label => label.name);
+
+            if (labels.includes(labelToRemove)) {
+              core.info('Label "${labelToRemove}" is present. Removing it...');
+
+              // Remove the label
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                name: labelToRemove
+              });
+
+              // Add a comment explaining why
+              const commentBody = '🔄 New commits were pushed to this branch, so the "${labelToRemove}" label has been removed. Please re-request review when ready.';
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+
+              core.info("Label removed and comment posted.");
+            } else {
+              core.info('Label "${labelToRemove}" is not present. No action taken.');
+            }
