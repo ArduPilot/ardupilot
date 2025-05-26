@@ -581,14 +581,16 @@ void AC_AutoTune_Multi::twitching_abort_rate(float angle, float rate, float angl
             // reduce the maximum target rate
             if (step_scaler > 0.2f) {
                 step_scaler *= 0.9f;
+                // ignore result and start test again
+                step = ABORT;
             } else {
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Twitch Size Determination Failed");
                 mode = FAILED;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+                // Load Original Gains
+                step = COMPLETE;
             }
-            // ignore result and start test again
-            step = ABORT;
         } else {
             step = UPDATE_GAINS;
         }
@@ -960,6 +962,8 @@ void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_mi
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Rate D Gain Determination Failed");
                 mode = FAILED;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+                // Load Original Gains
+                step = COMPLETE;
             }
         }
         // decrease P gain to match D gain reduction
@@ -970,6 +974,8 @@ void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_mi
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Rate P Gain Determination Failed");
             mode = FAILED;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+            // Load Original Gains
+            step = COMPLETE;
         }
     } else {
         if (ignore_next == false) {
@@ -1019,6 +1025,8 @@ void AC_AutoTune_Multi::updating_angle_p_down(float &tune_p, float tune_p_min, f
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Angle P Gain Determination Failed");
             mode = FAILED;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+            // Load Original Gains
+            step = COMPLETE;
        }
     }
 }

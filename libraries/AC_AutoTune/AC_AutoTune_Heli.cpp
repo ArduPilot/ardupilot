@@ -286,6 +286,8 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
             mode = FAILED;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
             update_gcs(AUTOTUNE_MESSAGE_FAILED);
+            // Load Original Gains
+            step = COMPLETE;
         } else if ((tune_type == MAX_GAINS || tune_type == RP_UP || tune_type == RD_UP || tune_type == SP_UP) && exceeded_freq_range(start_freq)){
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Exceeded frequency range");
             mode = FAILED;
