@@ -1,0 +1,202 @@
+
+# ORBITH743
+
+![ORBITH743](orbith743.jpg "ORBITH743")
+
+The above image and some content courtesy of [orbitteknoloji.com.tr](https://orbitteknoloji.com.tr/)
+
+## Specifications
+
+### **Processor**
+- STM32H743VIH6 (480MHz)
+- 256MB Flash for data logging
+
+### **Sensors**
+- InvenSense 2x ICM42688 IMU (accel, gyro)
+- DPS368 barometer
+- Voltage & Current sensor
+
+### **Power**
+- 2–6S LiPo input power
+- 5V 2.5A BEC for peripherals
+- 10V 3A BEC for video
+
+### **Interfaces**
+- USB Type-C port
+- 8x UARTs
+- 12x PWM outputs via two 8-pin ESC connectors and/or solder pads
+- 1x RC input (PWM/SBUS)
+- I2C port for external compass, airspeed sensor, etc.
+- DJI Air Unit support
+- 2x Power Monitor
+- Buzzer and LED stripe
+- Built-in OSD
+
+### **Size and Dimensions**
+- 38.3 mm x 39.8 mm
+- 8.4 g
+
+### **Mounting Hole**
+- 30.5 mm x 30.5 mm
+
+## Default UART Order
+
+- `SERIAL0` = USB (MAVLink2)  
+- `SERIAL1` = UART1 (ESC Telemetry)  
+- `SERIAL2` = UART2 (USER)  
+- `SERIAL3` = UART3 (DJI HD Air Unit)  
+- `SERIAL4` = UART4 (VTX)  
+- `SERIAL5` = UART5 (RC Input)  
+- `SERIAL6` = UART6 (GPS)  
+- `SERIAL7` = UART7 (USER)  
+- `SERIAL8` = UART8 (USER)  
+
+> **Note:** Serial port protocols (Telem, GPS, etc.) can be adjusted based on personal preferences.
+
+## RC Input
+
+RC input is configured by default on `SERIAL5` (UART5). The 4V5 pin is powered by both USB and the onboard 5V BEC from the battery.
+
+- PPM is supported.  
+- SBUS/DSM/SRXL connects to the RX5 pin.  
+- FPort requires connection to TX5. Set `SERIAL5_OPTIONS = 7`.  
+- CRSF also requires both TX5 and RX5 connections and provides telemetry automatically.
+
+Any UART can be used for RC system connections in ArduPilot. See the [common RC systems](https://ardupilot.org) documentation for details.
+
+## RSSI
+
+Analog inputs are supported.
+
+- RSSI reference pin number: **8**
+
+> **Note:** Set `RSSI_TYPE = 1` for analog RSSI, or `= 3` for RSSI provided by RC protocols like CRSF.
+
+## OSD Support
+
+The ORBITH743 has an onboard OSD using `OSD_TYPE = 1` (MAX7456 driver). The CAM and VTX pins provide connections for using the internal OSD.
+
+## DJI Video and OSD
+
+An **SH1.0 6P** connector supports a standard DJI HD VTX. `SERIAL3` is configured by default. Pin 1 provides 10V—**do not** connect peripherals that require 5V to this pin.
+
+## DShot Capability
+
+All motor outputs (M1–M8) support:
+- DShot
+- Bi-directional DShot (for BIDIR motors)
+- PWM
+
+BIDIR DShot is supported on:
+- M1 (PA0)
+- M3 (PA2)
+- M5 (PB0)
+- M7 (PB4)
+
+> **Important:** Mixing DShot and PWM within the same timer group is **not allowed**. Groups must be uniformly configured. Timer groups are:  
+1/2, 3/4, 5/6, 7/8.
+
+Servo outputs (S1–S4) on PA15, PB3, PD12, and PD13 (TIM2 and TIM4 timers) are PWM only. Output 13 (LED) is in a separate group and not DShot-capable.
+
+## GPIOs
+
+ORBITH743 outputs can be used as GPIOs (relays, buttons, RPM, etc.).  
+Set the `SERVOx_FUNCTION = -1` to enable GPIO functionality. See [ArduPilot GPIO docs](https://ardupilot.org) for more info.
+
+### GPIO Pin Mapping
+
+- PWM1 → 50  
+- PWM2 → 51  
+- PWM3 → 52  
+- PWM4 → 53  
+- PWM5 → 54  
+- PWM6 → 55  
+- PWM7 → 56  
+- PWM8 → 57  
+- PWM9 → 58  
+- PWM10 → 59  
+- PWM11 → 60  
+- PWM12 → 61  
+- LED → 62  
+- BUZZER → 80  
+- PINIO1 → 81 (internal)  
+- PINIO2 → 82 (internal)
+
+## VTX Power Control
+
+GPIO 81 controls the 10V VTX BEC output.  
+Setting GPIO 81 **low** disables voltage to the pins.
+
+Example (using Channel 10 to toggle VTX BEC using Relay 2):
+```text
+RELAY2_PIN = 81  
+RC10_OPTION = 34  ; Relay2 Control
+```
+
+> ⚠️ **Warning:** PINIO1 controls the 10V DC-DC converter (HIGH = on, LOW = off). Default: ON. Always install an antenna on the VTX when battery-powered.
+
+## Camera Switch Control
+
+GPIO 82 controls camera switching via PINIO2. Set high or low to toggle between cameras (e.g., front/rear).
+
+Example (using Channel 11 to control camera switch via Relay 2):
+
+```text
+RELAY2_PIN = 82  
+RC11_OPTION = 34  ; Relay2 Control
+```
+
+> ⚠️ **Warning:** PINIO2 toggles camera input (HIGH/LOW). Ensure wiring matches desired switching behavior.
+
+## Connecting a GPS/Compass Module
+
+This board does **not** include GPS or compass modules. An [external GPS/compass](https://ardupilot.org) must be connected for autonomous features.
+
+> **Note:** If GPS is powered via 5V and connected to UART6, a battery is required for power.
+
+> **Tip:** The 4V5 pin can power both RC and GPS for bench setup (without battery), as long as the total current does not exceed USB limits (typically 1A).
+
+## Battery Monitor Settings
+
+These are set by default. If reset:
+
+Enable battery monitor with:
+
+```text
+BATT_MONITOR = 4
+```
+
+Then reboot.
+
+**First battery monitor:**
+
+* `BATT_VOLT_PIN = 10`
+* `BATT_CURR_PIN = 11`
+* `BATT_VOLT_MULT = 10.1`
+* `BATT_AMP_PERVLT = 80.0` *(Calibrate as needed)*
+
+**Second battery monitor:**
+
+* `BATT2_VOLT_PIN = 4`
+* `BATT2_CURR_PIN = 18`
+* `BATT2_VOLT_MULT = 10.1`
+* `BATT2_AMP_PERVLT = 80.0` *(Calibrate as needed)*
+
+> **Note:** The autopilot uses a high-precision current sensor that is sensitive to ESC noise. Add low-ESR capacitors if needed.
+
+## Where to Buy
+
+* [orbitteknoloji.com.tr](https://orbitteknoloji.com.tr)
+
+## Firmware
+
+This board does **not** ship with ArduPilot pre-installed.
+Follow [this guide](https://ardupilot.org/copter/docs/common-loading-firmware-onto-chibios-only-boards.html) to load it for the first time.
+
+Firmware can be found in [ArduPilot firmware repo](https://firmware.ardupilot.org) under the `ORBITH743` sub-folder.
+
+> **Note:** If the board fails to initialize after powering up, refer to [H7 troubleshooting section](https://ardupilot.org/copter/docs/common-when-problems-arise.html) in the ArduPilot docs.
+
+## Wiring Diagram
+
+![ORBITH743 Wiring](orbith743-wiring.jpg "ORBITH743 Wiring")
