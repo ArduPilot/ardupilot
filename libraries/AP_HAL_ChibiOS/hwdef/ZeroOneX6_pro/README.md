@@ -24,7 +24,7 @@ The ZeroOne X6 Pro is a flight controller manufactured by ZeroOne, which is base
    Magnetometer:   Builtin RM3100 magnetometer
 
 ## Pinout
-![ZeroOneX6Pro Pinout](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6_Pro-250526/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6_pro/ZeroOneX6_ProPinout.jpg "ZeroOneX6_Pro")
+![Uploading ZeroOneX6.jpg…](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6_Pro-250526/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6_pro/ZeroOneX6_ProPinout.jpg)
 
 
 ## UART Mapping
