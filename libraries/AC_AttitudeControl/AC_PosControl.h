@@ -10,7 +10,6 @@
 #include <AC_PID/AC_PI_2D.h>        // PI library (2-axis)
 #include <AC_PID/AC_PID_Basic.h>    // PID library (1-axis)
 #include <AC_PID/AC_PID_2D.h>       // PID library (2-axis)
-#include <AP_InertialNav/AP_InertialNav.h>  // Inertial Navigation library
 #include <AP_Scripting/AP_Scripting_config.h>
 #include "AC_AttitudeControl.h"     // Attitude control library
 
