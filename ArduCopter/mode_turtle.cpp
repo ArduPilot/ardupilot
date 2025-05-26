@@ -48,7 +48,7 @@ void ModeTurtle::arm_motors()
     // disable throttle and gps failsafe
     g.failsafe_throttle.set(FS_THR_DISABLED);
     g.failsafe_gcs.set(FS_GCS_DISABLED);
-    g.fs_ekf_action.set(0);
+    g.fs_ekf_action.set(FS_EKF_ACTION_REPORT_ONLY);
 
     // arm
     motors->armed(true);
