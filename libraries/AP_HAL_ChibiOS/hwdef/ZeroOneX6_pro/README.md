@@ -1,6 +1,6 @@
 ## ZeroOneX6 Pro Flight Controller
 The ZeroOne X6 Pro is a flight controller manufactured by ZeroOne, which is based on the open-source FMU v6X architecture and Pixhawk Autopilot Bus open source specifications.
-![Uploading ZeroOneX6.jpg…](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6-250103/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6/ZeroOneX6.jpg?raw=true)
+![Uploading ZeroOneX6.jpg…](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6_Pro-250526/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6_pro/ZeroOneX6_Pro.png)
 
 
 ## Features:
@@ -24,7 +24,7 @@ The ZeroOne X6 Pro is a flight controller manufactured by ZeroOne, which is base
    Magnetometer:   Builtin RM3100 magnetometer
 
 ## Pinout
-![ZeroOneX6 Pinout](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6-250103/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6/ZeroOneX6Pinout.jpg "ZeroOneX6")
+![ZeroOneX6Pro Pinout](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6_Pro-250526/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6_pro/ZeroOneX6_ProPinout.jpg "ZeroOneX6_Pro")
 
 
 ## UART Mapping
