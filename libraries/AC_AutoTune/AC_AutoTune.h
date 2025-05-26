@@ -154,7 +154,7 @@ protected:
     virtual void updating_angle_p_down_all(AxisType test_axis)=0;
 
     // set gains post tune for the tune type
-    virtual void set_gains_post_tune(AxisType test_axis)=0;
+    virtual void set_tuning_gains_with_backoff(AxisType test_axis)=0;
 
     // reverse direction for twitch test
     virtual bool twitch_reverse_direction() = 0;
@@ -255,7 +255,7 @@ protected:
     enum class TuneMode {
         UNINITIALISED = 0,        // autotune has never been run
         TUNING = 1,               // autotune is testing gains
-        SUCCESS = 2,              // tuning has completed, user is flight testing the new gains
+        FINISHED = 2,              // tuning has completed, user is flight testing the new gains
         FAILED = 3,               // tuning has failed, user is flying on original gains
     };
     TuneMode mode;                       // see TuneMode for what modes are allowed
