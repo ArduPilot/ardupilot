@@ -775,6 +775,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ORIGIN_ALT", 21, ParametersG2, backup_origin_alt, 0),
 
+    // @Group: ACTUATOR
+    // @Path: ../libraries/Actuators.cpp
+    AP_SUBGROUPINFO(actuators, "ACTUATOR", 22, ParametersG2, Actuators),
+
     AP_GROUPEND
 };
 

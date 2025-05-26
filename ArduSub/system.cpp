@@ -155,6 +155,7 @@ void Sub::init_ardupilot()
     mainloop_failsafe_enable();
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
+    g2.actuators.initialize_servos();
 
     // flag that initialisation has completed
     ap.initialised = true;
