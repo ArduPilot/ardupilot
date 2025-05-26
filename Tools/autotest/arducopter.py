@@ -2944,6 +2944,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "ATC_RAT_RLL_D",
             "ATC_RAT_RLL_I",
             "ATC_RAT_RLL_P",
+            "ATC_RAT_YAW_D",
         ]
         ogains = self.get_parameters(gain_names)
         # set these parameters so they get reverted at the end of the test:
