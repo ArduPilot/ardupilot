@@ -115,7 +115,7 @@ protected:
     }
 
     // set gains post tune for the tune type
-    void set_gains_post_tune(AxisType test_axis) override;
+    void set_tuning_gains_with_backoff(AxisType test_axis) override;
 
     // reverse direction for twitch test
     bool twitch_reverse_direction() override { return !positive_direction; }
