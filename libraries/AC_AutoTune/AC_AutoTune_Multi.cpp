@@ -7,6 +7,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 /*
  * autotune support for multicopters
@@ -58,7 +59,13 @@
 #define AUTOTUNE_FLTE_MIN                  2.5     // minimum Rate Yaw error filter value
 #define AUTOTUNE_RP_MIN                   0.01     // minimum Rate P value
 #define AUTOTUNE_RP_MAX                    2.0     // maximum Rate P value
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+ #define AUTOTUNE_SP_MAX                   10.0     // maximum Stab P value
+#else
 #define AUTOTUNE_SP_MAX                   40.0     // maximum Stab P value
+#endif
+
 #define AUTOTUNE_SP_MIN                    0.5     // maximum Stab P value
 #define AUTOTUNE_RP_ACCEL_MIN            4000.0    // Minimum acceleration for Roll and Pitch
 #define AUTOTUNE_Y_ACCEL_MIN             1000.0    // Minimum acceleration for Yaw
