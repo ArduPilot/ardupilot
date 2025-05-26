@@ -106,7 +106,7 @@ protected:
 #if HAL_LOGGING_ENABLED
     // methods to log autotune summary data
     void Log_AutoTune() override;
-    void Log_Write_AutoTune(AxisType _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel);
+    void Log_Write_AutoTune(AxisType _axis, TuneType tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel);
 
     // methods to log autotune time history results for command, angular rate, and attitude.
     void Log_AutoTuneDetails() override;

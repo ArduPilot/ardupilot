@@ -71,7 +71,7 @@ protected:
 
     // reset Autotune so that gains are not saved again and autotune can be run again.
     void reset() {
-        mode = UNINITIALISED;
+        mode = TuneMode::UNINITIALISED;
         axes_completed = 0;
         have_pilot_testing_command = false;
     }
@@ -203,15 +203,16 @@ protected:
     virtual void updating_max_gains_all(AxisType test_axis)=0;
 
     // steps performed while in the tuning mode
-    enum StepType {
+    enum class StepType {
         WAITING_FOR_LEVEL = 0,    // autotune is waiting for vehicle to return to level before beginning the next twitch
         TESTING           = 1,    // autotune has begun a test and is watching the resulting vehicle movement
         UPDATE_GAINS      = 2,    // autotune has completed a test and is updating the gains based on the results
         ABORT             = 3     // load normal gains and return to WAITING_FOR_LEVEL
     };
+    StepType step;                       // see StepType for what steps are performed
 
     // mini steps performed while in Tuning mode, Testing step
-    enum TuneType {
+    enum class TuneType {
         RD_UP = 0,                // rate D is being tuned up
         RD_DOWN = 1,              // rate D is being tuned down
         RP_UP = 2,                // rate P is being tuned up
@@ -222,6 +223,7 @@ protected:
         TUNE_CHECK = 7,           // frequency sweep with tuned gains
         TUNE_COMPLETE = 8         // Reached end of tuning
     };
+    TuneType tune_type;           // see TuneType
     TuneType tune_seq[6];         // holds sequence of tune_types to be performed
     uint8_t tune_seq_curr;        // current tune sequence step
 
@@ -241,7 +243,7 @@ protected:
     void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
 
     // type of gains to load
-    enum GainType {
+    enum class GainType {
         GAIN_ORIGINAL   = 0,
         GAIN_TEST       = 1,
         GAIN_INTRA_TEST = 2,
@@ -250,7 +252,7 @@ protected:
     void load_gains(enum GainType gain_type);
 
     // autotune modes (high level states)
-    enum TuneMode {
+    enum class TuneMode {
         UNINITIALISED = 0,        // autotune has never been run
         TUNING = 1,               // autotune is testing gains
         SUCCESS = 2,              // tuning has completed, user is flight testing the new gains
@@ -266,8 +268,6 @@ protected:
 
     AxisType axis;                       // current axis being tuned. see AxisType enum
     bool     positive_direction;         // false = tuning in negative direction (i.e. left for roll), true = positive direction (i.e. right for roll)
-    StepType step;                       // see StepType for what steps are performed
-    TuneType tune_type;                  // see TuneType
     bool     twitch_first_iter;          // true on first iteration of a twitch (used to signal we must step the attitude or rate target)
     uint8_t  axes_completed;             // bitmask of completed axes
     uint32_t step_start_time_ms;                    // start time of current tuning step (used for timeout checks)
