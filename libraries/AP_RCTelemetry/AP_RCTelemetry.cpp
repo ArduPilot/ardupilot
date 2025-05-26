@@ -99,7 +99,7 @@ uint8_t AP_RCTelemetry::run_wfq_scheduler(const bool use_shaper)
     float delay = 0;
     bool packet_ready = false;
 
-    // build message queue for unhealthy_sensors()
+    // queue messages for any unhealthy sensors
     check_sensor_status_flags();
     // build message queue for ekf_status
     check_ekf_status();
