@@ -3088,12 +3088,6 @@ class TestSuite(ABC):
 
         return ids
 
-    def LoggerDocumentation_greylist(self):
-        '''returns a set of messages should should be documented but
-        are currently known as undocumented'''
-        return set([
-        ])
-
     def LoggerDocumentation_whitelist(self):
         '''returns a set of messages which we do not want to see
         documentation for'''
@@ -3192,7 +3186,6 @@ class TestSuite(ABC):
         tree = objectify.fromstring(xml)
 
         whitelist = self.LoggerDocumentation_whitelist()
-        greylist = self.LoggerDocumentation_greylist()
 
         docco_ids = {}
         for thing in tree.logformat:
@@ -3219,9 +3212,6 @@ class TestSuite(ABC):
         overdocumented = set()
         for name in sorted(code_ids.keys()):
             if name not in docco_ids:
-                if name in greylist:
-                    self.progress(f"{name} should be documented but isn't")
-                    continue
                 if name not in whitelist:
                     undocumented.add(name)
                 continue
@@ -3271,11 +3261,6 @@ class TestSuite(ABC):
                                                (name, label))
         if len(missing) > 0:
             raise NotAchievedException("Documented messages (%s) not in code" % missing)
-
-        # ensure things in the whitelist are not documented:
-        for g in greylist:
-            if g in docco_ids:
-                raise NotAchievedException(f"greylisted ({g}) is actually documented")
 
     def initialise_after_reboot_sitl(self):
 
