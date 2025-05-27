@@ -105,12 +105,12 @@ float AP_L1_Control::lateral_acceleration(void) const
 
 int32_t AP_L1_Control::nav_bearing_cd(void) const
 {
-    return wrap_180_cd(RadiansToCentiDegrees(_nav_bearing));
+    return wrap_180_cd(rad_to_cd(_nav_bearing));
 }
 
 int32_t AP_L1_Control::bearing_error_cd(void) const
 {
-    return RadiansToCentiDegrees(_bearing_error);
+    return rad_to_cd(_bearing_error);
 }
 
 int32_t AP_L1_Control::target_bearing_cd(void) const
