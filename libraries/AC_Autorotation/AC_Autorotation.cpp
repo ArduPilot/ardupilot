@@ -326,14 +326,6 @@ void AC_Autorotation::init_entry(void)
 // The entry controller just a special case of the glide controller with head speed target slewing
 void AC_Autorotation::run_entry(float pilot_norm_accel)
 {
-    // Slowly change the target head speed until the target head speed matches the parameter defined value
-    float head_speed_norm;
-    if (!get_norm_head_speed(head_speed_norm)) {
-        // RPM sensor is bad, so we don't attempt to slew the head speed target as we do not know what head speed actually is
-        // The collective output handling of the rpm sensor failure is handled later in the head speed controller 
-         head_speed_norm = HEAD_SPEED_TARGET_RATIO;
-    }
-
     // Slew the head speed target from the initial condition to the target head speed ratio for the glide
     const float max_change = _hs_accel * _dt;
     _target_head_speed = constrain_float(HEAD_SPEED_TARGET_RATIO, _target_head_speed - max_change, _target_head_speed + max_change);
