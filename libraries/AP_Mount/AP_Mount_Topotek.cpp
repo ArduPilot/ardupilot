@@ -960,9 +960,9 @@ void AP_Mount_Topotek::gimbal_angle_analyse()
     int16_t roll_angle_cd = hexchar4_to_int16(_msg_buff[18], _msg_buff[19], _msg_buff[20], _msg_buff[21]);
 
     // convert cd to radians
-    _current_angle_rad.x = radians(roll_angle_cd * 0.01);
-    _current_angle_rad.y = radians(pitch_angle_cd * 0.01);
-    _current_angle_rad.z = radians(yaw_angle_cd * 0.01);
+    _current_angle_rad.x = cd_to_rad(roll_angle_cd);
+    _current_angle_rad.y = cd_to_rad(pitch_angle_cd);
+    _current_angle_rad.z = cd_to_rad(yaw_angle_cd);
     _last_current_angle_ms = AP_HAL::millis();
 
     return;
