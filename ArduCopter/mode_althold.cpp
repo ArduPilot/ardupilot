@@ -40,7 +40,7 @@ void ModeAltHold::run()
 
     // get pilot desired climb rate
     float target_climb_rate = get_pilot_desired_climb_rate();
-    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), constrain_int16(g.pilot_speed_up, 50, 500));
 
     // Alt Hold State Machine Determination
     AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate);
