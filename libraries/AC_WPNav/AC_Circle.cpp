@@ -209,7 +209,7 @@ bool AC_Circle::update_cms(float climb_rate_cms)
 
     } else {
         // heading is same as _angle_rad but converted to centi-degrees
-        _yaw_cd = _angle_rad * DEGX100;
+        _yaw_cd = rad_to_cd(_angle_rad);
     }
 
     // update position controller target
