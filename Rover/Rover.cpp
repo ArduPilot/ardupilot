@@ -323,6 +323,10 @@ void Rover::ahrs_update()
     } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         ground_speed = ahrs.groundspeed();
     }
+    
+#if AP_FOLLOW_ENABLED
+    g2.follow.update_estimates();
+#endif
 
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
