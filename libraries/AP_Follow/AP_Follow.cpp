@@ -232,6 +232,8 @@ AP_Follow::AP_Follow() :
 // Projects and updates the estimated target position, velocity, and heading based on last known data and configured input shaping.
 void AP_Follow::update_estimates()
 {
+    WITH_SEMAPHORE(_follow_sem);
+
     // check for target: if no valid target, invalidate estimate
     if (!have_target()) {
         clear_dist_and_bearing_to_target();
@@ -371,8 +373,10 @@ bool AP_Follow::get_ofs_pos_vel_accel_NED_m(Vector3p &pos_ofs_ned_m, Vector3f &v
 }
 
 // Retrieves distance vectors (with and without configured offsets) and the target’s velocity, all in the NED frame.
-bool AP_Follow::get_target_dist_and_vel_NED_m(Vector3f &dist_ned, Vector3f &dist_with_offs, Vector3f &vel_ned) const
+bool AP_Follow::get_target_dist_and_vel_NED_m(Vector3f &dist_ned, Vector3f &dist_with_offs, Vector3f &vel_ned)
 {
+    WITH_SEMAPHORE(_follow_sem);
+    
     if (!_estimate_valid) {
         return false;
     }
@@ -405,8 +409,10 @@ bool AP_Follow::get_heading_heading_rate_rad(float &heading_rad, float &heading_
 }
 
 // Retrieves the target's estimated global location and velocity, adjusting altitude frame if relative mode is set (for LUA bindings).
-bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const
+bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned)
 {
+    WITH_SEMAPHORE(_follow_sem);
+
     if (!_estimate_valid) {
         return false;
     }
@@ -424,8 +430,10 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 }
 
 // Retrieves the target's estimated global location and velocity, including configured offsets, for LUA bindings.
-bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned) const
+bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned)
 {
+    WITH_SEMAPHORE(_follow_sem);
+
     if (!_estimate_valid) {
         return false;
     }
@@ -441,8 +449,10 @@ bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &ve
 }
 
 // Retrieves the estimated target heading in degrees (0° = North, 90° = East) for LUA bindings.
-bool AP_Follow::get_target_heading_deg(float &heading_deg) const
+bool AP_Follow::get_target_heading_deg(float &heading_deg)
 {
+    WITH_SEMAPHORE(_follow_sem);
+    
     if (!_estimate_valid) {
         return false;
     }
@@ -453,8 +463,10 @@ bool AP_Follow::get_target_heading_deg(float &heading_deg) const
 }
 
 // Retrieves the estimated target heading in degrees (0° = North, 90° = East) for LUA bindings.
-bool AP_Follow::get_target_heading_rate_degs(float &heading_rate_degs) const
+bool AP_Follow::get_target_heading_rate_degs(float &heading_rate_degs)
 {
+    WITH_SEMAPHORE(_follow_sem);
+    
     if (!_estimate_valid) {
         return false;
     }

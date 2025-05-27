@@ -97,19 +97,19 @@ public:
     //==========================================================================
 
     // Retrieves the estimated global location and velocity of the target. Adjusts altitude frame to relative if configured (for LUA bindings).
-    bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const;
+    bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned);
 
     // Retrieves the estimated global location and velocity of the target, including configured positional offsets (for LUA bindings).
-    bool get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned) const;
+    bool get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned);
 
     // Retrieves the estimated target heading in degrees (0° = North, 90° = East) for LUA bindings.
-    bool get_target_heading_deg(float &heading) const;
+    bool get_target_heading_deg(float &heading);
 
     // Retrieves the estimated target heading rate in degrees per second.
-    bool get_target_heading_rate_degs(float &_target_heading_rate_degs) const;
+    bool get_target_heading_rate_degs(float &_target_heading_rate_degs);
 
     // Retrieves the distance vector to the target, the distance vector including configured offsets, and the target’s velocity in the NED frame (units: meters).
-    bool get_target_dist_and_vel_NED_m(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned) const;
+    bool get_target_dist_and_vel_NED_m(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
 
     //==========================================================================
     // Accessor Methods
@@ -241,6 +241,8 @@ private:
     float       _bearing_to_target_deg;         // Bearing to target from vehicle (degrees, 0 = North)
     bool        _offsets_were_zero;             // True if initial offset was zero before being initialized
     bool        _using_follow_target;           // True if FOLLOW_TARGET messages are being used instead of GLOBAL_POSITION_INT
+
+    HAL_Semaphore   _follow_sem;                // semaphore for multi-thread use of update_estimates and LUA calls
 
     //==========================================================================
     // Utilities
