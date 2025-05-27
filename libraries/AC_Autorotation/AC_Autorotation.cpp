@@ -701,9 +701,9 @@ void AC_Autorotation::initial_flare_hgt_estimate(void)
     float des_spd_fwd = _param_target_speed.get();
     calc_flare_hgt(des_spd_fwd, -1.0 * sink_rate);
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Ct/sigma=%f W=%f kg flare_alt=%f", c_t_hover/get_solidity(), _hover_thrust/GRAVITY_MSS, _flare_hgt.get());
-    gcs().send_text(MAV_SEVERITY_INFO, "sink rate=%f", sink_rate);
-    gcs().send_text(MAV_SEVERITY_INFO, "inflow spd=%f", lambda_eq*tip_speed_auto);
+    gcs().send_text(MAV_SEVERITY_INFO, "Ct/sigma=%.4f W=%.2f kg flare_alt=%.2f", c_t_hover/get_solidity(), _hover_thrust/GRAVITY_MSS, _flare_hgt.get());
+    gcs().send_text(MAV_SEVERITY_INFO, "sink rate=%.3f", sink_rate);
+    gcs().send_text(MAV_SEVERITY_INFO, "inflow spd=%.3f", lambda_eq*tip_speed_auto);
 }
 
 void AC_Autorotation::calc_flare_hgt(const float fwd_speed, float climb_rate)
