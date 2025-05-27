@@ -88,7 +88,7 @@ private:
     // parameters
     AP_Int16        _queue_size_param;                      // queue size
     AP_Int16        _database_size_param;                   // db size
-    AP_Int8         _database_expiry_seconds;               // objects expire after this timeout
+    AP_Int16        _database_expiry_seconds;               // objects expire after this timeout
     AP_Enum<OutputLevel> _output_level;                     // controls which items should be sent to GCS
     AP_Float        _beam_width;                            // beam width used when converting lidar readings to object radius
     AP_Float        _radius_min;                            // objects minimum radius (in meters)
