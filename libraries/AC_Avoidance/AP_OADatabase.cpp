@@ -76,7 +76,7 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
 
     // @Param: BEAM_WIDTH
     // @DisplayName: OADatabase beam width
-    // @Description: Beam width of incoming lidar data
+    // @Description: Beam width of incoming lidar data, used to calculate a object radius if none is provided by the data source.
     // @Units: deg
     // @Range: 1 10
     // @User: Advanced
@@ -149,8 +149,15 @@ void AP_OADatabase::update()
     database_items_remove_all_expired();
 }
 
-// push a location into the database
-void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float distance)
+// Push an object into the database. Pos is the offset in meters from the EKF origin, measurement timestamp in ms, distance in meters
+void AP_OADatabase::queue_push(const Vector3f &pos, const uint32_t timestamp_ms, const float distance)
+{
+    // Push with radius calculated from beam width
+    queue_push(pos, timestamp_ms, distance, distance * dist_to_radius_scalar);
+}
+
+// Push an object into the database. Pos is the offset in meters from the EKF origin, measurement timestamp in ms, distance in meters, radius in meters
+void AP_OADatabase::queue_push(const Vector3f &pos, const uint32_t timestamp_ms, const float distance, float radius)
 {
     if (!healthy()) {
         return;
@@ -173,13 +180,19 @@ void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float
         }
     }
 #endif
-    
-    // ignore objects that are far away
-    if ((_dist_max > 0.0f) && (distance > _dist_max)) {
-        return;
+
+    // Apply min radius parameter
+    radius = MAX(_radius_min, radius);
+
+    // ignore objects that outside of the max distance
+    if (is_positive(_dist_max)) {
+        const float closest_point = distance - radius;
+        if (closest_point > _dist_max) {
+            return;
+        }
     }
 
-    const OA_DbItem item = {pos, timestamp_ms, MAX(_radius_min, distance * dist_to_radius_scalar), 0, AP_OADatabase::OA_DbItemImportance::Normal};
+    const OA_DbItem item = {pos, timestamp_ms, radius, 0, AP_OADatabase::OA_DbItemImportance::Normal};
     {
         WITH_SEMAPHORE(_queue.sem);
         _queue.items->push(item);
