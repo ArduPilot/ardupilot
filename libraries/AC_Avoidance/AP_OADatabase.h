@@ -66,7 +66,7 @@ private:
 
     // database item management
     void database_item_add(const OA_DbItem &item);
-    void database_item_refresh(const uint16_t index, const uint32_t timestamp_ms, const float radius);
+    void database_item_refresh(const uint16_t index, const OA_DbItem &item);
     void database_item_remove(const uint16_t index);
     void database_items_remove_all_expired();
 

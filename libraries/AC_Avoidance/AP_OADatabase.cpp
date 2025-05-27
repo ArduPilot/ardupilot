@@ -272,7 +272,7 @@ bool AP_OADatabase::process_queue()
         bool found = false;
         for (uint16_t i=0; i<_database.count; i++) {
             if (is_close_to_item_in_database(i, item)) {
-                database_item_refresh(i, item.timestamp_ms, item.radius);
+                database_item_refresh(i, item);
                 found = true;
                 break;
             }
@@ -318,7 +318,7 @@ void AP_OADatabase::database_item_remove(const uint16_t index)
     }
 }
 
-void AP_OADatabase::database_item_refresh(const uint16_t index, const uint32_t timestamp_ms, const float radius)
+void AP_OADatabase::database_item_refresh(const uint16_t index, const OA_DbItem &item)
 {
     if (index >= _database.count) {
         // index out of range
@@ -326,14 +326,15 @@ void AP_OADatabase::database_item_refresh(const uint16_t index, const uint32_t t
     }
 
     const bool is_different =
-            (!is_equal(_database.items[index].radius, radius)) ||
-            (timestamp_ms - _database.items[index].timestamp_ms >= 500);
+            (!is_equal(_database.items[index].radius, item.radius)) ||
+            (item.timestamp_ms - _database.items[index].timestamp_ms >= 500);
 
     if (is_different) {
         // update timestamp and radius on close object so it stays around longer
         // and trigger resending to GCS
-        _database.items[index].timestamp_ms = timestamp_ms;
-        _database.items[index].radius = radius;
+        _database.items[index].timestamp_ms = item.timestamp_ms;
+        _database.items[index].radius = item.radius;
+        _database.items[index].pos = item.pos;
         _database.items[index].send_to_gcs = get_send_to_gcs_flags(_database.items[index].importance);
     }
 }
@@ -369,7 +370,7 @@ bool AP_OADatabase::is_close_to_item_in_database(const uint16_t index, const OA_
     }
 
     const float distance_sq = (_database.items[index].pos - item.pos).length_squared();
-    return ((distance_sq < sq(item.radius)) || (distance_sq < sq(_database.items[index].radius)));
+    return distance_sq < sq(MIN(item.radius, _database.items[index].radius));
 }
 
 #if HAL_GCS_ENABLED
