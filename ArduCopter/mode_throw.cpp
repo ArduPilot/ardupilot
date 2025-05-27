@@ -251,9 +251,14 @@ void ModeThrow::run()
 
 bool ModeThrow::throw_detected()
 {
-    // Check that we have a valid navigation solution
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-    if (!filt_status.flags.attitude || !filt_status.flags.horiz_pos_abs || !filt_status.flags.vert_pos) {
+    // Check that the AHRS is healthy enough for us to be doing detection:
+    if (!ahrs.has_status(AP_AHRS::Status::ATTITUDE_VALID)) {
+        return false;
+    }
+    if (!ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
+        return false;
+    }
+    if (!ahrs.has_status(AP_AHRS::Status::VERT_POS)) {
         return false;
     }
 
