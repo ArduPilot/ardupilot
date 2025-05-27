@@ -84,32 +84,32 @@ public:
     void update_estimates();
 
     // Retrieves the estimated target position, velocity, and acceleration in the NED frame relative to the origin (units: meters and meters/second).
-    bool get_target_pos_vel_accel_NED_m(Vector3p &pos_ned_m, Vector3f &vel_ned_ms, Vector3f &accel_ned_mss);
+    bool get_target_pos_vel_accel_NED_m(Vector3p &pos_ned_m, Vector3f &vel_ned_ms, Vector3f &accel_ned_mss) const;
 
     // Retrieves the estimated target position, velocity, and acceleration in the NED frame, including configured positional offsets.
-    bool get_ofs_pos_vel_accel_NED_m(Vector3p &pos_ofs_ned_m, Vector3f &vel_ofs_ned_ms, Vector3f &accel_ofs_ned_mss);
+    bool get_ofs_pos_vel_accel_NED_m(Vector3p &pos_ofs_ned_m, Vector3f &vel_ofs_ned_ms, Vector3f &accel_ofs_ned_mss) const;
 
     // Retrieves the estimated target heading and heading rate in radians.
-    bool get_heading_heading_rate_rad(float &heading_rad, float &heading_rate_rads);
+    bool get_heading_heading_rate_rad(float &heading_rad, float &heading_rate_rads) const;
 
     //==========================================================================
     // Global Location and Velocity Retrieval (LUA Bindings)
     //==========================================================================
 
     // Retrieves the estimated global location and velocity of the target. Adjusts altitude frame to relative if configured (for LUA bindings).
-    bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned);
+    bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const;
 
     // Retrieves the estimated global location and velocity of the target, including configured positional offsets (for LUA bindings).
-    bool get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned);
+    bool get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned) const;
 
     // Retrieves the estimated target heading in degrees (0° = North, 90° = East) for LUA bindings.
-    bool get_target_heading_deg(float &heading);
+    bool get_target_heading_deg(float &heading) const;
 
     // Retrieves the estimated target heading rate in degrees per second.
-    bool get_target_heading_rate_degs(float &_target_heading_rate_degs);
+    bool get_target_heading_rate_degs(float &_target_heading_rate_degs) const;
 
     // Retrieves the distance vector to the target, the distance vector including configured offsets, and the target’s velocity in the NED frame (units: meters).
-    bool get_target_dist_and_vel_NED_m(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
+    bool get_target_dist_and_vel_NED_m(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned) const;
 
     //==========================================================================
     // Accessor Methods
