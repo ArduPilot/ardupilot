@@ -33,6 +33,7 @@
 #include "AP_AHRS_DCM.h"
 #include "AP_AHRS_SIM.h"
 #include "AP_AHRS_External.h"
+#include <AP_NavEKF/AP_Nav_Common.h>
 
 // forward declare view class
 class AP_AHRS_View;
@@ -47,9 +48,18 @@ class AP_AHRS {
     friend class AP_AHRS_View;
 public:
 
+    // copy this into our namespace
+    using Status = NavFilterStatusBit;
+
     enum Flags {
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
+
+    // has_status returns information about the EKF health and
+    // capabilities.  It is currently invalid to call this when a
+    // backend is in charge which returns false for get_filter_status
+    // - so this will simply return false for DCM, for example.
+    bool has_status(Status status) const;
 
     // Constructor
     AP_AHRS(uint8_t flags = 0);
