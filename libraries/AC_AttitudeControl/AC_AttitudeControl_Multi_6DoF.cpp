@@ -74,7 +74,7 @@ void AC_AttitudeControl_Multi_6DoF::set_forward_lateral(float &euler_pitch_angle
 {
     // pitch/forward
     if (forward_enable) {
-        _motors.set_forward(-sinf(radians(euler_pitch_angle_cd * 0.01f)));
+        _motors.set_forward(-sinf(cd_to_rad(euler_pitch_angle_cd)));
         euler_pitch_angle_cd = pitch_offset_deg * 100.0f;
     } else {
         _motors.set_forward(0.0f);
@@ -84,7 +84,7 @@ void AC_AttitudeControl_Multi_6DoF::set_forward_lateral(float &euler_pitch_angle
 
     // roll/lateral
     if (lateral_enable) {
-        _motors.set_lateral(sinf(radians(euler_roll_angle_cd * 0.01f)));
+        _motors.set_lateral(sinf(cd_to_rad(euler_roll_angle_cd)));
         euler_roll_angle_cd = roll_offset_deg * 100.0f;
     } else {
         _motors.set_lateral(0.0f);
