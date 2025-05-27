@@ -175,7 +175,7 @@ void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_
     }
 
     // calculate angle of input stick vector
-    heading_out = wrap_360_cd(atan2f(desired_steering, desired_throttle) * DEGX100);
+    heading_out = wrap_360_cd(rad_to_cd(atan2f(desired_steering, desired_throttle)));
 
     // calculate throttle using magnitude of input stick vector
     const float throttle = MIN(safe_sqrt(sq(desired_throttle) + sq(desired_steering)), 1.0f);
