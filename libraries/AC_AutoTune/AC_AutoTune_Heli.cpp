@@ -853,7 +853,7 @@ void AC_AutoTune_Heli::dwell_test_run(sweep_info &test_data)
         command_reading = motors->get_roll();
         if (test_calc_type == DRB) {
             tgt_rate_reading = cd_to_rad(target_angle_cd);
-            gyro_reading = cd_to_rad(((float)ahrs_view->roll_sensor + trim_angle_cd.x - target_angle_cd));
+            gyro_reading = cd_to_rad((float)ahrs_view->roll_sensor + trim_angle_cd.x - target_angle_cd);
         } else if (test_calc_type == RATE) {
             tgt_rate_reading = attitude_control->rate_bf_targets().x;
             gyro_reading = ahrs_view->get_gyro().x;
@@ -867,7 +867,7 @@ void AC_AutoTune_Heli::dwell_test_run(sweep_info &test_data)
         command_reading = motors->get_pitch();
         if (test_calc_type == DRB) {
             tgt_rate_reading = cd_to_rad(target_angle_cd);
-            gyro_reading = cd_to_rad(((float)ahrs_view->pitch_sensor + trim_angle_cd.y - target_angle_cd));
+            gyro_reading = cd_to_rad((float)ahrs_view->pitch_sensor + trim_angle_cd.y - target_angle_cd);
         } else if (test_calc_type == RATE) {
             tgt_rate_reading = attitude_control->rate_bf_targets().y;
             gyro_reading = ahrs_view->get_gyro().y;
@@ -882,12 +882,12 @@ void AC_AutoTune_Heli::dwell_test_run(sweep_info &test_data)
         command_reading = motors->get_yaw();
         if (test_calc_type == DRB) {
             tgt_rate_reading = cd_to_rad(target_angle_cd);
-            gyro_reading = cd_to_rad((wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading_cd - target_angle_cd)));
+            gyro_reading = cd_to_rad(wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading_cd - target_angle_cd));
         } else if (test_calc_type == RATE) {
             tgt_rate_reading = attitude_control->rate_bf_targets().z;
             gyro_reading = ahrs_view->get_gyro().z;
         } else {
-            tgt_rate_reading = cd_to_rad((wrap_180_cd((float)attitude_control->get_att_target_euler_cd().z - trim_yaw_tgt_reading_cd)));
+            tgt_rate_reading = cd_to_rad(wrap_180_cd((float)attitude_control->get_att_target_euler_cd().z - trim_yaw_tgt_reading_cd));
             gyro_reading = cd_to_rad((wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading_cd)));
         }
         break;

@@ -588,7 +588,7 @@ void ModePosHold::update_wind_comp_estimate()
     }
 
     // limit acceleration
-    const float accel_lim_cmss = tanf(radians(POSHOLD_WIND_COMP_LEAN_PCT_MAX * copter.aparm.angle_max * 0.01f)) * (GRAVITY_MSS*100);
+    const float accel_lim_cmss = tanf(cd_to_rad(POSHOLD_WIND_COMP_LEAN_PCT_MAX * copter.aparm.angle_max)) * (GRAVITY_MSS*100);
     const float wind_comp_ef_len = wind_comp_ef.length();
     if (!is_zero(accel_lim_cmss) && (wind_comp_ef_len > accel_lim_cmss)) {
         wind_comp_ef *= accel_lim_cmss / wind_comp_ef_len;
