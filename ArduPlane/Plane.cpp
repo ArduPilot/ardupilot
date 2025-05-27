@@ -206,7 +206,10 @@ void Plane::ahrs_update()
     quadplane.inertial_nav.update();
     if (quadplane.available()) {  
         quadplane.pos_control->update_estimates();  
-    }  
+    }
+#endif
+#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+        g2.follow.update_estimates();
 #endif
 
 #if HAL_LOGGING_ENABLED
