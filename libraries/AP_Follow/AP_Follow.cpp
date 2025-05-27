@@ -230,20 +230,14 @@ AP_Follow::AP_Follow() :
 //==============================================================================
 
 // Projects and updates the estimated target position, velocity, and heading based on last known data and configured input shaping.
-bool AP_Follow::update_estimate()
+void AP_Follow::update_estimates()
 {
     // check for target: if no valid target, invalidate estimate
     if (!have_target()) {
         clear_dist_and_bearing_to_target();
         _estimate_valid = false;
-        return _estimate_valid;
+        return;
     }
-
-    // skip if update has already been processed this scheduler tick
-    if (_estimate_valid && (AP::scheduler().ticks32() - _last_update_ticks == 0)) {
-        return _estimate_valid;
-    }
-    _last_update_ticks = AP::scheduler().ticks32();
 
     // if sysid changed, reset the estimation state
     if (_sysid != _sysid_used) {
@@ -311,11 +305,16 @@ bool AP_Follow::update_estimate()
     } else {
         // offsets are in FRD frame: rotate by heading
         offset_m.xy().rotate(_estimate_heading_rad);
-        Vector3f offset_cross = offset_m.cross(Vector3f{0.0, 0.0, 1.0});
-        float offset_length_m = offset_m.length();
         _ofs_estimate_pos_ned_m = _estimate_pos_ned_m + offset_m.topostype();
-        _ofs_estimate_vel_ned_ms = _estimate_vel_ned_ms + offset_cross * offset_length_m * _estimate_heading_rate_rads;
-        _ofs_estimate_accel_ned_mss = _estimate_accel_ned_mss + offset_cross * offset_length_m * _estimate_heading_accel_radss;
+        _ofs_estimate_vel_ned_ms = _estimate_vel_ned_ms;
+        _ofs_estimate_accel_ned_mss = _estimate_accel_ned_mss;
+        // with kinematic shaping of heading we can improve our offset velocity and acceleration of the offset
+        if (valid_kinematic_params) {
+            Vector3f offset_cross = offset_m.cross(Vector3f{0.0, 0.0, 1.0});
+            float offset_length_m = offset_m.length();
+            _ofs_estimate_vel_ned_ms += offset_cross * offset_length_m * _estimate_heading_rate_rads;
+            _ofs_estimate_accel_ned_mss += offset_cross * offset_length_m * _estimate_heading_accel_radss;
+        }
     }
 
     // update the distance and bearing to the target
@@ -326,16 +325,16 @@ bool AP_Follow::update_estimate()
     // Check if the target is within the maximum distance
     Vector3p current_position_ned_m;
     if (!AP::ahrs().get_relative_position_NED_origin(current_position_ned_m)) {
-        return false;
+        // no idea where we are; knowing where other things are won't help.
+        _estimate_valid = false;
+        return;
     }
     const Vector3p dist_vec_ned_m = _target_pos_ned_m - current_position_ned_m;
-    
     // If _dist_max_m is not positive, we don't check the distance
     if (is_positive(_dist_max_m.get()) && (dist_vec_ned_m.length() > _dist_max_m)) {
-        return false;
+        // target is too far away, mark the estimate invalid
+        _estimate_valid = false;
     }
-    
-    return true;
 }
 
 
@@ -346,7 +345,7 @@ bool AP_Follow::update_estimate()
 // Retrieves the estimated target position, velocity, and acceleration in the NED frame (relative to origin).
 bool AP_Follow::get_target_pos_vel_accel_NED_m(Vector3p &pos_ned_m, Vector3f &vel_ned_ms, Vector3f &accel_ned_mss)
 {
-    if (!update_estimate()) {
+    if (!_estimate_valid) {
         return false;
     }
 
@@ -360,7 +359,7 @@ bool AP_Follow::get_target_pos_vel_accel_NED_m(Vector3p &pos_ned_m, Vector3f &ve
 // Retrieves the estimated target position, velocity, and acceleration in the NED frame, including configured offsets.
 bool AP_Follow::get_ofs_pos_vel_accel_NED_m(Vector3p &pos_ofs_ned_m, Vector3f &vel_ofs_ned_ms, Vector3f &accel_ofs_ned_mss)
 {
-    if (!update_estimate()) {
+    if (!_estimate_valid) {
         return false;
     }
 
@@ -374,7 +373,7 @@ bool AP_Follow::get_ofs_pos_vel_accel_NED_m(Vector3p &pos_ofs_ned_m, Vector3f &v
 // Retrieves distance vectors (with and without configured offsets) and the target’s velocity, all in the NED frame.
 bool AP_Follow::get_target_dist_and_vel_NED_m(Vector3f &dist_ned, Vector3f &dist_with_offs, Vector3f &vel_ned)
 {
-    if (!update_estimate()) {
+    if (!_estimate_valid) {
         return false;
     }
 
@@ -395,7 +394,7 @@ bool AP_Follow::get_target_dist_and_vel_NED_m(Vector3f &dist_ned, Vector3f &dist
 // Retrieves the estimated target heading and heading rate in radians.
 bool AP_Follow::get_heading_heading_rate_rad(float &heading_rad, float &heading_rate_rads)
 {
-    if (!update_estimate()) {
+    if (!_estimate_valid) {
         return false;
     }
 
@@ -408,7 +407,7 @@ bool AP_Follow::get_heading_heading_rate_rad(float &heading_rad, float &heading_
 // Retrieves the target's estimated global location and velocity, adjusting altitude frame if relative mode is set (for LUA bindings).
 bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned)
 {
-    if (!update_estimate()) {
+    if (!_estimate_valid) {
         return false;
     }
 
@@ -427,7 +426,7 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 // Retrieves the target's estimated global location and velocity, including configured offsets, for LUA bindings.
 bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned)
 {
-    if (!update_estimate()) {
+    if (!_estimate_valid) {
         return false;
     }
     if (!AP::ahrs().get_location_from_origin_offset_NED(loc, _ofs_estimate_pos_ned_m)) {
@@ -444,7 +443,7 @@ bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &ve
 // Retrieves the estimated target heading in degrees (0° = North, 90° = East) for LUA bindings.
 bool AP_Follow::get_target_heading_deg(float &heading_deg)
 {
-    if (!update_estimate()) {
+    if (!_estimate_valid) {
         return false;
     }
 
@@ -456,7 +455,7 @@ bool AP_Follow::get_target_heading_deg(float &heading_deg)
 // Retrieves the estimated target heading in degrees (0° = North, 90° = East) for LUA bindings.
 bool AP_Follow::get_target_heading_rate_degs(float &heading_rate_degs)
 {
-    if (!update_estimate()) {
+    if (!_estimate_valid) {
         return false;
     }
 
@@ -771,7 +770,7 @@ void AP_Follow::init_offsets_if_required()
     }
     _offsets_were_zero = true;
 
-    if (!update_estimate()) {
+    if (!_estimate_valid) {
         return;
     }
 

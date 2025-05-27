@@ -81,7 +81,7 @@ public:
     bool have_target() const;
 
     // Projects the target’s position, velocity, and heading forward using the latest updates, smoothing with input shaping if necessary 
-    bool update_estimate();
+    void update_estimates();
 
     // Retrieves the estimated target position, velocity, and acceleration in the NED frame relative to the origin (units: meters and meters/second).
     bool get_target_pos_vel_accel_NED_m(Vector3p &pos_ned_m, Vector3f &vel_ned_ms, Vector3f &accel_ned_mss);
@@ -216,7 +216,6 @@ private:
 
     uint32_t    _last_location_update_ms;       // Time of last target position update (ms)
     uint32_t    _last_estimation_update_ms;     // Time of last estimate update (ms)
-    uint32_t    _last_update_ticks;             // Scheduler tick count at last estimate update
 
     Vector3p    _target_pos_ned_m;              // Latest received target position (NED frame, meters)
     Vector3f    _target_vel_ned_ms;             // Latest received target velocity (NED frame, m/s)
