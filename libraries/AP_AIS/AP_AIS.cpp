@@ -33,6 +33,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/ExpandingString.h>
+#include <AC_Avoidance/AP_OADatabase.h>
 
 const AP_Param::GroupInfo AP_AIS::var_info[] = {
 
@@ -272,6 +273,92 @@ void AP_AIS::send(mavlink_channel_t chan)
     }
 }
 
+#if AP_OADATABASE_ENABLED
+// Send a AIS vessel to the object avoidance database if its postion is valid
+void AP_AIS::send_to_object_avoidance_database(const struct ais_vehicle_t &vessel)
+{
+    // No point if database is not enabled
+    AP_OADatabase *oaDb = AP::oadatabase();
+    if (oaDb == nullptr || !oaDb->healthy()) {
+        return;
+    }
+
+    // Need a location to avoid
+    if (!check_location(vessel.info.lat, vessel.info.lon)) {
+        return;
+    }
+
+    // Populate location object
+    const Location loc { vessel.info.lat, vessel.info.lon, 0, Location::AltFrame::ABOVE_ORIGIN };
+
+    // Get position relative to origin
+    Vector3f pos;
+    if (!loc.get_vector_from_origin_NEU_m(pos)) {
+        return;
+    }
+
+    // Need current position to calculate distance
+    Vector2f current_pos;
+    if (!AP::ahrs().get_relative_position_NE_origin_float(current_pos)) {
+        return;
+    }
+    float distance = (pos.xy() - current_pos).length();
+
+    if ((vessel.info.flags & AIS_FLAGS_VALID_DIMENSIONS) == 0) {
+        // No dimensions, let the database calculate from the configured beam width
+        oaDb->queue_push(pos, vessel.last_update_ms, distance);
+        return;
+    }
+
+    // Strictly even if we do have a valid dimension the "LARGE_DIMENSION" flags could be set meaning
+    // the value is larger than what can be sent over AIS. Depending on where the receiver is mounted
+    // on the vessel this may happen on vessels longer than 511m or wider than 63m it will always happen
+    // on vessels longer than 1022m or wider than 126m
+    // There is currently no real vessel that would cause this.
+
+    if ((vessel.info.heading == 0) || (vessel.info.heading > 360 * 100)) {
+        // Heading invalid, use max dimension as radius
+        float radius = vessel.info.dimension_bow;
+        radius = MAX(radius, vessel.info.dimension_stern);
+        radius = MAX(radius, vessel.info.dimension_port);
+        radius = MAX(radius, vessel.info.dimension_starboard);
+        oaDb->queue_push(pos, vessel.last_update_ms, distance, radius);
+        return;
+    }
+
+    // With heading we can offset the location to be in the center of the vessel
+    Vector2f offset {
+        (vessel.info.dimension_bow - vessel.info.dimension_stern) * 0.5,
+        (vessel.info.dimension_starboard - vessel.info.dimension_port) * 0.5
+    };
+    offset.rotate(cd_to_rad(vessel.info.heading));
+    pos.xy() += offset;
+
+    // Update distance for new position
+    distance = (pos.xy() - current_pos).length();
+
+    // Radius is now the largest average dimension
+    const float radius = MAX(
+        (vessel.info.dimension_bow + vessel.info.dimension_stern) * 0.5,
+        (vessel.info.dimension_starboard + vessel.info.dimension_port) * 0.5
+    );
+
+    oaDb->queue_push(pos, vessel.last_update_ms, distance, radius);
+}
+#endif
+
+// Return true if location is valid
+bool AP_AIS::check_location(int32_t lat, int32_t lng) const
+{
+    // Check for zero zero
+    if (lat == 0 && lng == 0) {
+        return false;
+    }
+
+    // Invalid lat is sent as 181 degrees and invalid lon as 91. Check both at in range
+    return check_latlng(lat, lng);
+}
+
 // remove the given index from the AIVDM buffer and shift following elements up
 void AP_AIS::buffer_shift(uint8_t i)
 {
@@ -290,7 +377,7 @@ void AP_AIS::buffer_shift(uint8_t i)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions related to the vessel list
 
-// find vessel index in existing list, if not then return NEW_NOTHROW index if possible
+// find vessel index in existing list, if not then return new index if possible, returns true if index is valid
 bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, uint32_t lat, uint32_t lon)
 {
     const uint16_t list_size = _list.max_items();
@@ -327,7 +414,7 @@ bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, uint32_t lat, uint
 
     // could not expand list, either because of memory or max list param
     // if we have a valid incoming location we can bump a further item from the list
-    if (lat == 0 && lon == 0) {
+    if (!check_location(lat, lon)) {
         return false;
     }
 
@@ -340,6 +427,13 @@ bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, uint32_t lat, uint
     float dist;
     float max_dist = 0;
     for (uint16_t i = 0; i < list_size; i++) {
+        if (!check_location(_list[i].info.lat, _list[i].info.lon)) {
+            // Remove vessel with invalid location
+            index = i;
+            clear_list_item(index);
+            _list[index].info.MMSI = mmsi;
+            return true;
+        }
         loc.lat = _list[i].info.lat;
         loc.lng = _list[i].info.lon;
         dist = loc.get_distance(current_loc);
@@ -493,6 +587,10 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
     _list[index].info.navigational_status = nav; // uint8_t Navigational status
     _list[index].last_update_ms = AP_HAL::millis();
 
+#if AP_OADATABASE_ENABLED
+    send_to_object_avoidance_database(_list[index]);
+#endif
+
     return true;
 }
 
@@ -563,6 +661,10 @@ bool AP_AIS::decode_base_station_report(const char *payload)
     _list[index].info.lat = lat; // int32_t [degE7] Latitude
     _list[index].info.lon = lon; // int32_t [degE7] Longitude
     _list[index].last_update_ms = AP_HAL::millis();
+
+#if AP_OADATABASE_ENABLED
+    send_to_object_avoidance_database(_list[index]);
+#endif
 
     return true;
 }
