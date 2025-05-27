@@ -736,10 +736,10 @@ void AC_Autorotation::calc_flare_hgt(const float fwd_speed, float climb_rate)
 
     // Protect against div by 0 case
     if (is_zero(final_sink_rate + k_1)) {
-        climb_rate -= 0.05;
+        climb_rate -= ASYMPT_THRESHOLD;
     }
     if (is_zero(entry_inflow + k_1)) {
-        entry_inflow -= 0.05;
+        entry_inflow -= ASYMPT_THRESHOLD;
     }
 
     // Estimate flare duration
