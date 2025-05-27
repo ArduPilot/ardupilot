@@ -345,9 +345,9 @@ void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vec
 void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float euler_roll_angle_rad = radians(euler_roll_angle_cd * 0.01f);
-    const float euler_pitch_angle_rad = radians(euler_pitch_angle_cd * 0.01f);
-    const float euler_yaw_rate_rads = radians(euler_yaw_rate_cds * 0.01f);
+    float euler_roll_angle_rad = cd_to_rad(euler_roll_angle_cd);
+    const float euler_pitch_angle_rad = cd_to_rad(euler_pitch_angle_cd);
+    const float euler_yaw_rate_rads = cd_to_rad(euler_yaw_rate_cds);
 
     // update attitude target
     update_attitude_target();
@@ -399,9 +399,9 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_cd(float eu
 void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
 {
     // Convert from centidegrees on public interface to radians
-    float euler_roll_angle_rad = radians(euler_roll_angle_cd * 0.01f);
-    const float euler_pitch_angle_rad = radians(euler_pitch_angle_cd * 0.01f);
-    const float euler_yaw_angle_rad = radians(euler_yaw_angle_cd * 0.01f);
+    float euler_roll_angle_rad = cd_to_rad(euler_roll_angle_cd);
+    const float euler_pitch_angle_rad = cd_to_rad(euler_pitch_angle_cd);
+    const float euler_yaw_angle_rad = cd_to_rad(euler_yaw_angle_cd);
 
     // update attitude target
     update_attitude_target();
@@ -461,9 +461,9 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_cd(float euler_roll_an
 void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_cds(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
-    const float euler_roll_rate_rads = radians(euler_roll_rate_cds * 0.01f);
-    const float euler_pitch_rate_rads = radians(euler_pitch_rate_cds * 0.01f);
-    const float euler_yaw_rate_rads = radians(euler_yaw_rate_cds * 0.01f);
+    const float euler_roll_rate_rads = cd_to_rad(euler_roll_rate_cds);
+    const float euler_pitch_rate_rads = cd_to_rad(euler_pitch_rate_cds);
+    const float euler_yaw_rate_rads = cd_to_rad(euler_yaw_rate_cds);
 
     // update attitude target
     update_attitude_target();
@@ -507,9 +507,9 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_cds(float euler_roll_ra
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
-    const float roll_rate_bf_rads = radians(roll_rate_bf_cds * 0.01f);
-    const float pitch_rate_bf_rads = radians(pitch_rate_bf_cds * 0.01f);
-    const float yaw_rate_bf_rads = radians(yaw_rate_bf_cds * 0.01f);
+    const float roll_rate_bf_rads = cd_to_rad(roll_rate_bf_cds);
+    const float pitch_rate_bf_rads = cd_to_rad(pitch_rate_bf_cds);
+    const float yaw_rate_bf_rads = cd_to_rad(yaw_rate_bf_cds);
 
     // update attitude target
     update_attitude_target();
@@ -548,9 +548,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_cds(float roll_rate_bf_cds
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
-    const float roll_rate_bf_rads = radians(roll_rate_bf_cds * 0.01f);
-    const float pitch_rate_bf_rads = radians(pitch_rate_bf_cds * 0.01f);
-    const float yaw_rate_bf_rads = radians(yaw_rate_bf_cds * 0.01f);
+    const float roll_rate_bf_rads = cd_to_rad(roll_rate_bf_cds);
+    const float pitch_rate_bf_rads = cd_to_rad(pitch_rate_bf_cds);
+    const float yaw_rate_bf_rads = cd_to_rad(yaw_rate_bf_cds);
 
     // Compute acceleration-limited body frame rates
     // When acceleration limiting is enabled, the input shaper constrains angular acceleration about the axis, slewing
@@ -574,9 +574,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2_cds(float roll_rate_bf_c
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
-    const float roll_rate_bf_rads = radians(roll_rate_bf_cds * 0.01f);
-    const float pitch_rate_bf_rads = radians(pitch_rate_bf_cds * 0.01f);
-    const float yaw_rate_bf_rads = radians(yaw_rate_bf_cds * 0.01f);
+    const float roll_rate_bf_rads = cd_to_rad(roll_rate_bf_cds);
+    const float pitch_rate_bf_rads = cd_to_rad(pitch_rate_bf_cds);
+    const float yaw_rate_bf_rads = cd_to_rad(yaw_rate_bf_cds);
 
     // Update attitude error
     Vector3f attitude_error;
@@ -633,9 +633,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3_cds(float roll_rate_bf_c
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_no_shaping_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
-    const float roll_rate_bf_rads = radians(roll_rate_bf_cds * 0.01f);
-    const float pitch_rate_bf_rads = radians(pitch_rate_bf_cds * 0.01f);
-    const float yaw_rate_bf_rads = radians(yaw_rate_bf_cds * 0.01f);
+    const float roll_rate_bf_rads = cd_to_rad(roll_rate_bf_cds);
+    const float pitch_rate_bf_rads = cd_to_rad(pitch_rate_bf_cds);
+    const float yaw_rate_bf_rads = cd_to_rad(yaw_rate_bf_cds);
 
     _ang_vel_target_rads.x = roll_rate_bf_rads;
     _ang_vel_target_rads.y = pitch_rate_bf_rads;
@@ -657,9 +657,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_no_shaping_cds(float roll_
 void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw_cd(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd)
 {
     // Convert from centidegrees on public interface to radians
-    const float roll_angle_step_bf_rad = radians(roll_angle_step_bf_cd * 0.01f);
-    const float pitch_angle_step_bf_rad = radians(pitch_angle_step_bf_cd * 0.01f);
-    const float yaw_angle_step_bf_rad = radians(yaw_angle_step_bf_cd * 0.01f);
+    const float roll_angle_step_bf_rad = cd_to_rad(roll_angle_step_bf_cd);
+    const float pitch_angle_step_bf_rad = cd_to_rad(pitch_angle_step_bf_cd);
+    const float yaw_angle_step_bf_rad = cd_to_rad(yaw_angle_step_bf_cd);
 
     // rotate attitude target by desired step
     Quaternion attitude_target_update;
@@ -701,7 +701,7 @@ void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_cds(float roll_rate_s
 void AC_AttitudeControl::input_thrust_vector_rate_heading_cds(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw)
 {
     // Convert from centidegrees on public interface to radians
-    float heading_rate_rads = radians(heading_rate_cds * 0.01f);
+    float heading_rate_rads = cd_to_rad(heading_rate_cds);
     if (slew_yaw) {
         // a zero _angle_vel_yaw_max means that setting is disabled
         const float slew_yaw_max_rads = get_slew_yaw_max_rads();
@@ -760,8 +760,8 @@ void AC_AttitudeControl::input_thrust_vector_heading_cd(const Vector3f& thrust_v
     const float slew_yaw_max_rads = get_slew_yaw_max_rads();
 
     // Convert from centidegrees on public interface to radians
-    float heading_rate_rads = constrain_float(radians(heading_rate_cds * 0.01f), -slew_yaw_max_rads, slew_yaw_max_rads);
-    float heading_angle_rad = radians(heading_angle_cd * 0.01f);
+    float heading_rate_rads = constrain_float(cd_to_rad(heading_rate_cds), -slew_yaw_max_rads, slew_yaw_max_rads);
+    float heading_angle_rad = cd_to_rad(heading_angle_cd);
 
     // update attitude target
     update_attitude_target();
