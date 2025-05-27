@@ -53,7 +53,7 @@ void Copter::update_ground_effect_detector(void)
     }
 
     // landing logic
-    Vector3f angle_target_rad = attitude_control->get_att_target_euler_cd() * radians(0.01f);
+    Vector3f angle_target_rad = attitude_control->get_att_target_euler_rad();
     bool small_angle_request = cosf(angle_target_rad.x)*cosf(angle_target_rad.y) > cosf(radians(7.5f));
     bool xy_speed_low = (position_ok() || ekf_has_relative_position()) && xy_speed_cms <= 125.0f;
     bool xy_speed_demand_low = pos_control->is_active_NE() && xy_des_speed_cms <= 125.0f;
