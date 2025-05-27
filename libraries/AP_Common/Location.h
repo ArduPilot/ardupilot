@@ -141,7 +141,7 @@ public:
 
     // return bearing in centi-degrees from location to loc2, return is 0 to 35999
     int32_t get_bearing_to(const Location &loc2) const {
-        return int32_t(get_bearing(loc2) * DEGX100 + 0.5);
+        return int32_t(rad_to_cd(get_bearing(loc2)) + 0.5);
     }
 
     // check if lat and lng match. Ignore altitude and options
