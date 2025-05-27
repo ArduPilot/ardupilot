@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
     // @DisplayName: OADatabase item timeout
     // @Description: OADatabase item timeout. The time an item will linger without any updates before it expires. Zero means never expires which is useful for a sent-once static environment but terrible for dynamic ones.
     // @Units: s
-    // @Range: 0 127
+    // @Range: 0 500
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("EXPIRE", 2, AP_OADatabase, _database_expiry_seconds, AP_OADATABASE_TIMEOUT_SECONDS_DEFAULT),
@@ -122,6 +122,9 @@ AP_OADatabase::AP_OADatabase()
 
 void AP_OADatabase::init()
 {
+    // PARAMETER_CONVERSION - Added: JUN-2025
+    _database_expiry_seconds.convert_parameter_width(AP_PARAM_INT8);
+
     init_database();
     init_queue();
 
