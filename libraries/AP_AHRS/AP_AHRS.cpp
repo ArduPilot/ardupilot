@@ -374,6 +374,7 @@ void AP_AHRS::update_state(void)
     _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
     state.origin_ok = _get_origin(state.origin);
     state.velocity_NED_ok = _get_velocity_NED(state.velocity_NED);
+    _get_filter_status(state.filter_status);
 }
 
 // update run at loop rate
@@ -2397,37 +2398,38 @@ bool AP_AHRS::initialised(void) const
 };
 
 // get_filter_status : returns filter status as a series of flags
-bool AP_AHRS::get_filter_status(nav_filter_status &status) const
+void AP_AHRS::_get_filter_status(nav_filter_status &status) const
 {
     switch (ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return dcm.get_filter_status(status);
+        dcm.get_filter_status(status);
+        return;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         EKF2.getFilterStatus(status);
-        return true;
+        return;
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         EKF3.getFilterStatus(status);
-        return true;
+        return;
 #endif
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.get_filter_status(status);
+        sim.get_filter_status(status);
+        return;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        return external.get_filter_status(status);
+        external.get_filter_status(status);
+        return;
 #endif
     }
-
-    return false;
 }
 
 // write optical flow data to EKF
