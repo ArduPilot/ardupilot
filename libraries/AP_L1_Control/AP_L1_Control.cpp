@@ -498,11 +498,11 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
 
     // copy to _target_bearing_cd and _nav_bearing
     _target_bearing_cd = wrap_180_cd(navigation_heading_cd);
-    _nav_bearing = radians(navigation_heading_cd * 0.01f);
+    _nav_bearing = cd_to_rad(navigation_heading_cd);
 
     Nu_cd = _target_bearing_cd - wrap_180_cd(_ahrs.yaw_sensor);
     Nu_cd = wrap_180_cd(Nu_cd);
-    Nu = radians(Nu_cd * 0.01f);
+    Nu = cd_to_rad(Nu_cd);
 
     Vector2f _groundspeed_vector = _ahrs.groundspeed_vector();
 
