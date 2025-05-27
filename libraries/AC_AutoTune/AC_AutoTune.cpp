@@ -31,14 +31,12 @@ AC_AutoTune::AC_AutoTune()
 bool AC_AutoTune::init_internals(bool _use_poshold,
                                  AC_AttitudeControl *_attitude_control,
                                  AC_PosControl *_pos_control,
-                                 AP_AHRS_View *_ahrs_view,
-                                 AP_InertialNav *_inertial_nav)
+                                 AP_AHRS_View *_ahrs_view)
 {
     use_poshold = _use_poshold;
     attitude_control = _attitude_control;
     pos_control = _pos_control;
     ahrs_view = _ahrs_view;
-    inertial_nav = _inertial_nav;
     motors = AP_Motors::get_singleton();
     const uint32_t now = AP_HAL::millis();
 
@@ -161,7 +159,7 @@ bool AC_AutoTune::init_position_controller(void)
     init_z_limits();
 
     // initialise the vertical position controller
-    pos_control->init_z_controller();
+    pos_control->init_U_controller();
 
     return true;
 }
@@ -244,7 +242,7 @@ void AC_AutoTune::run()
     if (!motors->armed() || !motors->get_interlock()) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0.0f, true, 0.0f);
-        pos_control->relax_z_controller(0.0f);
+        pos_control->relax_U_controller(0.0f);
         return;
     }
 
@@ -301,7 +299,7 @@ void AC_AutoTune::run()
 
     // if pilot override call attitude controller
     if (pilot_override || mode != TUNING) {
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
     } else {
         // somehow get attitude requests from autotuning
         control_attitude();
@@ -310,8 +308,8 @@ void AC_AutoTune::run()
     }
 
     // call position controller
-    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate_cms);
-    pos_control->update_z_controller();
+    pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
+    pos_control->update_U_controller();
 
 }
 
@@ -373,7 +371,7 @@ void AC_AutoTune::control_attitude()
         get_poshold_attitude(roll_cd, pitch_cd, desired_yaw_cd);
 
         // hold level attitude
-        attitude_control->input_euler_angle_roll_pitch_yaw(roll_cd, pitch_cd, desired_yaw_cd, true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(roll_cd, pitch_cd, desired_yaw_cd, true);
 
         // hold the copter level for 0.5 seconds before we begin a twitch
         // reset counter if we are no longer level
@@ -583,7 +581,7 @@ void AC_AutoTune::control_attitude()
     case ABORT:
         if (axis == AxisType::YAW || axis == AxisType::YAW_D) {
             // todo: check to make sure we need this
-            attitude_control->input_euler_angle_roll_pitch_yaw(0.0f, 0.0f, ahrs_view->yaw_sensor, false);
+            attitude_control->input_euler_angle_roll_pitch_yaw_cd(0.0f, 0.0f, ahrs_view->yaw_sensor, false);
         }
 
         // set gains to their intra-test values (which are very close to the original gains)
@@ -727,7 +725,8 @@ bool AC_AutoTune::position_ok(void)
     }
 
     // with EKF use filter status and ekf check
-    nav_filter_status filt_status = inertial_nav->get_filter_status();
+    nav_filter_status filt_status {}; 
+    AP::ahrs().get_filter_status(filt_status);
 
     // require a good absolute position and EKF must not be in const_pos_mode
     return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
@@ -750,7 +749,7 @@ void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, 
 
     if (!have_position) {
         have_position = true;
-        start_position = inertial_nav->get_position_neu_cm();
+        start_position = pos_control->get_pos_estimate_NEU_cm().tofloat();
     }
 
     // don't go past 10 degrees, as autotune result would deteriorate too much
@@ -763,7 +762,7 @@ void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, 
     // target position. That corresponds to a lean angle of 2.5 degrees
     const float yaw_dist_limit_cm = 500;
 
-    Vector3f pdiff = inertial_nav->get_position_neu_cm() - start_position;
+    Vector3f pdiff = pos_control->get_pos_estimate_NEU_cm().tofloat() - start_position;
     pdiff.z = 0;
     float dist_cm = pdiff.length();
     if (dist_cm < 10) {

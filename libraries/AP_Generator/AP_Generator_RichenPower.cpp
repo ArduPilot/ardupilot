@@ -329,8 +329,18 @@ void AP_Generator_RichenPower::Log_Write()
     }
     last_logged_reading_ms = last_reading_ms;
 
+// @LoggerMessage: RICH
+// @Description: Richenpower generator telemetry
+// @Field: TimeUS: Time since system startup
+// @Field: runTime: total generator runtime
+// @Field: maintTime: time until generator requires maintenance
+// @Field: errors: bitmask of error received from generator
+// @Field: rpm: current generator RPM
+// @Field: ovolt: output voltage
+// @Field: ocurr: output current
+// @Field: mode: generator mode; idle/run/charge/balance
     AP::logger().WriteStreaming(
-        "GEN",
+        "RICH",
         "TimeUS,runTime,maintTime,errors,rpm,ovolt,ocurr,mode",
         "s-------",
         "F-------",

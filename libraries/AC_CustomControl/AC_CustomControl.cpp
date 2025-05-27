@@ -178,6 +178,12 @@ bool AC_CustomControl::is_safe_to_run(void) {
 
 // log when the custom controller is switch into
 void AC_CustomControl::log_switch(void) {
+    // @LoggerMessage: CC
+    // @Description: Custom Controller data
+    // @Field: TimeUS: Time since system startup
+    // @Field: Type: controller type
+    // @FieldValueEnum: Type: AC_CustomControl::CustomControlType
+    // @Field: Act: true if controller is active
     AP::logger().Write("CC", "TimeUS,Type,Act","QBB",
                             AP_HAL::micros64(),
                             _controller_type,

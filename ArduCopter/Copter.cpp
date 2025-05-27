@@ -474,13 +474,13 @@ AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, c
 // circle mode controls
 bool Copter::get_circle_radius(float &radius_m)
 {
-    radius_m = circle_nav->get_radius() * 0.01f;
+    radius_m = circle_nav->get_radius_cm() * 0.01f;
     return true;
 }
 
-bool Copter::set_circle_rate(float rate_dps)
+bool Copter::set_circle_rate(float rate_degs)
 {
-    circle_nav->set_rate(rate_dps);
+    circle_nav->set_rate_degs(rate_degs);
     return true;
 }
 #endif
@@ -802,7 +802,7 @@ void Copter::one_hz_loop()
     if (!using_rate_thread) {
         attitude_control->set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
     }
-    pos_control->get_accel_z_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    pos_control->get_accel_U_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     custom_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #endif
@@ -852,6 +852,11 @@ void Copter::update_simple_mode(void)
 
     // mark radio frame as consumed
     ap.new_radio_frame = false;
+
+    // avoid processing bind-time RC values:
+    if (!rc().has_valid_input()) {
+        return;
+    }
 
     if (simple_mode == SimpleMode::SIMPLE) {
         // rotate roll, pitch input by -initial simple heading (i.e. north facing)
@@ -925,7 +930,7 @@ void Copter::update_altitude()
 bool Copter::get_wp_distance_m(float &distance) const
 {
     // see GCS_MAVLINK_Copter::send_nav_controller_output()
-    distance = flightmode->wp_distance() * 0.01;
+    distance = flightmode->wp_distance_m();
     return true;
 }
 

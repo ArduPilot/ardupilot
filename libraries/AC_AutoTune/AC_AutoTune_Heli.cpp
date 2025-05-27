@@ -279,7 +279,7 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
         get_poshold_attitude(roll_cd, pitch_cd, desired_yaw_cd);
 
         // hold level attitude
-        attitude_control->input_euler_angle_roll_pitch_yaw(roll_cd, pitch_cd, desired_yaw_cd, true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(roll_cd, pitch_cd, desired_yaw_cd, true);
 
         if ((tune_type == RP_UP || tune_type == RD_UP) && (max_rate_p.max_allowed <= 0.0f || max_rate_d.max_allowed <= 0.0f)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Max Gain Determination Failed");
@@ -849,7 +849,7 @@ void AC_AutoTune_Heli::dwell_test_run(sweep_info &test_data)
 
     switch (axis) {
     case AxisType::ROLL:
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_angle_cd + trim_angle_cd.x, trim_angle_cd.y, 0.0f);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_angle_cd + trim_angle_cd.x, trim_angle_cd.y, 0.0f);
         command_reading = motors->get_roll();
         if (test_calc_type == DRB) {
             tgt_rate_reading = radians(target_angle_cd * 0.01f);
@@ -863,7 +863,7 @@ void AC_AutoTune_Heli::dwell_test_run(sweep_info &test_data)
         }
         break;
     case AxisType::PITCH:
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(trim_angle_cd.x, target_angle_cd + trim_angle_cd.y, 0.0f);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(trim_angle_cd.x, target_angle_cd + trim_angle_cd.y, 0.0f);
         command_reading = motors->get_pitch();
         if (test_calc_type == DRB) {
             tgt_rate_reading = radians(target_angle_cd * 0.01f);
@@ -878,7 +878,7 @@ void AC_AutoTune_Heli::dwell_test_run(sweep_info &test_data)
         break;
     case AxisType::YAW:
     case AxisType::YAW_D:
-        attitude_control->input_euler_angle_roll_pitch_yaw(trim_angle_cd.x, trim_angle_cd.y, wrap_180_cd(trim_yaw_tgt_reading_cd + target_angle_cd), false);
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(trim_angle_cd.x, trim_angle_cd.y, wrap_180_cd(trim_yaw_tgt_reading_cd + target_angle_cd), false);
         command_reading = motors->get_yaw();
         if (test_calc_type == DRB) {
             tgt_rate_reading = radians(target_angle_cd * 0.01f);

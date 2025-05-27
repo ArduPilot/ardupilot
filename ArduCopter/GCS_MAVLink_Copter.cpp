@@ -37,7 +37,7 @@ uint8_t GCS_MAVLINK_Copter::base_mode() const
     // only get useful information from the custom_mode, which maps to
     // the APM flight mode and has a well defined meaning in the
     // ArduPlane documentation
-    if ((copter.pos_control != nullptr) && copter.pos_control->is_active_xy()) {
+    if ((copter.pos_control != nullptr) && copter.pos_control->is_active_NE()) {
         _base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
@@ -216,8 +216,8 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
         targets.y * 1.0e-2f,
         targets.z * 1.0e-2f,
         flightmode->wp_bearing() * 1.0e-2f,
-        MIN(flightmode->wp_distance() * 1.0e-2f, UINT16_MAX),
-        copter.pos_control->get_pos_error_z_cm() * 1.0e-2f,
+        MIN(flightmode->wp_distance_m(), UINT16_MAX),
+        copter.pos_control->get_pos_error_U_cm() * 1.0e-2f,
         0,
         flightmode->crosstrack_error() * 1.0e-2f);
 }
@@ -281,7 +281,7 @@ void GCS_MAVLINK_Copter::send_pid_tuning()
             pid_info = &copter.attitude_control->get_rate_yaw_pid().get_pid_info();
             break;
         case PID_TUNING_ACCZ:
-            pid_info = &copter.pos_control->get_accel_z_pid().get_pid_info();
+            pid_info = &copter.pos_control->get_accel_U_pid().get_pid_info();
             break;
         default:
             continue;
@@ -1010,10 +1010,10 @@ void GCS_MAVLINK_Copter::handle_message_set_attitude_target(const mavlink_messag
                 climb_rate_or_thrust = 0.0f;
             } else if (packet.thrust > 0.5f) {
                 // climb at up to WPNAV_SPEED_UP
-                climb_rate_or_thrust = (packet.thrust - 0.5f) * 2.0f * copter.wp_nav->get_default_speed_up();
+                climb_rate_or_thrust = (packet.thrust - 0.5f) * 2.0f * copter.wp_nav->get_default_speed_up_cms();
             } else {
                 // descend at up to WPNAV_SPEED_DN
-                climb_rate_or_thrust = (0.5f - packet.thrust) * 2.0f * -copter.wp_nav->get_default_speed_down();
+                climb_rate_or_thrust = (0.5f - packet.thrust) * 2.0f * -copter.wp_nav->get_default_speed_down_cms();
             }
         }
 
@@ -1211,7 +1211,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
                 return;
             }
             Vector3f pos_neu_cm;
-            if (!loc.get_vector_from_origin_NEU(pos_neu_cm)) {
+            if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
                 // input is not valid so stop
                 copter.mode_guided.init(true);
                 return;
@@ -1340,7 +1340,7 @@ int16_t GCS_MAVLINK_Copter::high_latency_target_altitude() const
 
     //return units are m
     if (copter.ap.initialised) {
-        return 0.01 * (global_position_current.alt + copter.pos_control->get_pos_error_z_cm());
+        return 0.01 * (global_position_current.alt + copter.pos_control->get_pos_error_U_cm());
     }
     return 0;
     
@@ -1362,7 +1362,7 @@ uint16_t GCS_MAVLINK_Copter::high_latency_tgt_dist() const
     if (copter.ap.initialised) {
         // return units are dm
         const Mode *flightmode = copter.flightmode;
-        return MIN(flightmode->wp_distance() * 1.0e-2, UINT16_MAX) / 10;
+        return MIN(flightmode->wp_distance_m(), UINT16_MAX) / 10;
     }
     return 0;
 }
@@ -1371,7 +1371,7 @@ uint8_t GCS_MAVLINK_Copter::high_latency_tgt_airspeed() const
 {
     if (copter.ap.initialised) {
         // return units are m/s*5
-        return MIN(copter.pos_control->get_vel_target_cms().length() * 5.0e-2, UINT8_MAX);
+        return MIN(copter.pos_control->get_vel_target_NEU_cms().length() * 5.0e-2, UINT8_MAX);
     }
     return 0;  
 }

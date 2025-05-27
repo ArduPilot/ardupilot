@@ -131,7 +131,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::THERMAL:
     case Mode::Number::TAKEOFF:
         if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF && !(g.fs_action_long == FS_ACTION_LONG_GLIDE || g.fs_action_long == FS_ACTION_LONG_PARACHUTE)) {
-            // don't failsafe if in inital climb of TAKEOFF mode and FS action is not parachute or glide
+            // don't failsafe if in initial climb of TAKEOFF mode and FS action is not parachute or glide
             // long failsafe will be re-called if still in fs after initial climb
             long_failsafe_pending = true;
             break;

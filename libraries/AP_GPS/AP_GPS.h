@@ -262,7 +262,7 @@ public:
 #if HAL_MSP_GPS_ENABLED
     void handle_msp(const MSP::msp_gps_data_message_t &pkt);
 #endif
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     // Retrieve the first instance ID that is configured as type GPS_TYPE_EXTERNAL_AHRS.
     // Can be used by external AHRS systems that only report one GPS to get the instance ID.
     // Returns true if an instance was found, false otherwise.

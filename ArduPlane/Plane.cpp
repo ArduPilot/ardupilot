@@ -204,6 +204,9 @@ void Plane::ahrs_update()
 
     // update inertial_nav for quadplane
     quadplane.inertial_nav.update();
+    if (quadplane.available()) {  
+        quadplane.pos_control->update_estimates();  
+    }  
 #endif
 
 #if HAL_LOGGING_ENABLED
@@ -837,7 +840,7 @@ bool Plane::get_wp_distance_m(float &distance) const
     }
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode()) {
-        distance = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_distance_to_destination() * 0.01 : 0;
+        distance = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_distance_to_destination_cm() * 0.01 : 0;
         return true;
     }
 #endif
@@ -853,7 +856,7 @@ bool Plane::get_wp_bearing_deg(float &bearing) const
     }
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode()) {
-        bearing = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_bearing_to_destination() : 0;
+        bearing = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_bearing_to_destination_cd() : 0;
         return true;
     }
 #endif

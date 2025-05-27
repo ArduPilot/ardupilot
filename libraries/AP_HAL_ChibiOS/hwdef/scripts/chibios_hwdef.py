@@ -684,6 +684,12 @@ class ChibiOSHWDef(hwdef.HWDef):
             line = "0"
         return line
 
+    def disable_can(self, f):
+        '''setup for a non-CAN enabled board'''
+        f.write("#define HAL_NUM_CAN_IFACES 0\n")
+        f.write("#undef HAL_ENABLE_DRONECAN_DRIVERS\n")
+        f.write("#define HAL_ENABLE_DRONECAN_DRIVERS 0\n")
+
     def enable_can(self, f):
         '''setup for a CAN enabled board'''
         if self.mcu_series.startswith("STM32H7") or self.mcu_series.startswith("STM32G4"):
@@ -949,7 +955,6 @@ class ChibiOSHWDef(hwdef.HWDef):
 #define STM32_ETH_BUFFERS_EXTERN
 
 ''')
-
         defines = self.get_mcu_config('DEFINES', False)
         if defines is not None:
             for d in defines.keys():
@@ -1011,6 +1016,8 @@ class ChibiOSHWDef(hwdef.HWDef):
 
         if self.have_type_prefix('CAN') and not using_chibios_can:
             self.enable_can(f)
+        else:
+            self.disable_can(f)
         flash_size = self.get_config('FLASH_SIZE_KB', type=int)
         f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
         self.env_vars['BOARD_FLASH_SIZE'] = flash_size
@@ -1057,6 +1064,8 @@ class ChibiOSHWDef(hwdef.HWDef):
                 # storage at end of flash - leave room
                 if offset > bl_offset:
                     flash_reserve_end = flash_size - offset
+            if self.is_bootloader_fw():
+                f.write('#define STORAGE_FLASH_START_PAGE %u\n' % storage_flash_page)
 
         crashdump_enabled = bool(self.intdefines.get('AP_CRASHDUMP_ENABLED', (flash_size >= 2048 and not self.is_bootloader_fw())))  # noqa
         # lets pick a flash sector for Crash log

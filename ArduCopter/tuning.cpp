@@ -71,40 +71,40 @@ void Copter::tuning()
 
     // Altitude and throttle tuning
     case TUNING_ALTITUDE_HOLD_KP:
-        pos_control->get_pos_z_p().set_kP(tuning_value);
+        pos_control->get_pos_U_p().set_kP(tuning_value);
         break;
 
     case TUNING_THROTTLE_RATE_KP:
-        pos_control->get_vel_z_pid().set_kP(tuning_value);
+        pos_control->get_vel_U_pid().set_kP(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KP:
-        pos_control->get_accel_z_pid().set_kP(tuning_value);
+        pos_control->get_accel_U_pid().set_kP(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KI:
-        pos_control->get_accel_z_pid().set_kI(tuning_value);
+        pos_control->get_accel_U_pid().set_kI(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KD:
-        pos_control->get_accel_z_pid().set_kD(tuning_value);
+        pos_control->get_accel_U_pid().set_kD(tuning_value);
         break;
 
     // Loiter and navigation tuning
     case TUNING_LOITER_POSITION_KP:
-        pos_control->get_pos_xy_p().set_kP(tuning_value);
+        pos_control->get_pos_NE_p().set_kP(tuning_value);
         break;
 
     case TUNING_VEL_XY_KP:
-        pos_control->get_vel_xy_pid().set_kP(tuning_value);
+        pos_control->get_vel_NE_pid().set_kP(tuning_value);
         break;
 
     case TUNING_VEL_XY_KI:
-        pos_control->get_vel_xy_pid().set_kI(tuning_value);
+        pos_control->get_vel_NE_pid().set_kI(tuning_value);
         break;
 
     case TUNING_WP_SPEED:
-        wp_nav->set_speed_xy(tuning_value);
+        wp_nav->set_speed_NE_cms(tuning_value);
         break;
 
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
@@ -145,7 +145,7 @@ void Copter::tuning()
 
 #if MODE_CIRCLE_ENABLED
     case TUNING_CIRCLE_RATE:
-        circle_nav->set_rate(tuning_value);
+        circle_nav->set_rate_degs(tuning_value);
         break;
 #endif
 
@@ -198,7 +198,7 @@ void Copter::tuning()
         break;
 
     case TUNING_LOITER_MAX_XY_SPEED:
-        loiter_nav->set_max_xy_speed(tuning_value);
+        loiter_nav->set_speed_max_NE_cms(tuning_value);
         break;
     }
 }

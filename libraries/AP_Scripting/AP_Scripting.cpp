@@ -24,6 +24,7 @@
 #include <AP_Arming/AP_Arming.h>
 
 #include "lua_scripts.h"
+#include "AP_Scripting_helpers.h"
 
 // ensure that we have a set of stack sizes, and enforce constraints around it
 // except for the minimum size, these are allowed to be defined by the build system

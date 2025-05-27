@@ -493,7 +493,7 @@ void GCS_MAVLINK::send_distance_sensor()
 #endif
 }
 
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 void GCS_MAVLINK::send_rangefinder() const
 {
     RangeFinder *rangefinder = RangeFinder::get_singleton();
@@ -509,7 +509,7 @@ void GCS_MAVLINK::send_rangefinder() const
             s->distance(),
             s->voltage_mv() * 0.001f);
 }
-#endif
+#endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 
 #if HAL_PROXIMITY_ENABLED
 void GCS_MAVLINK::send_proximity()
@@ -1065,9 +1065,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif
         { MAVLINK_MSG_ID_HWSTATUS,              MSG_HWSTATUS},
         { MAVLINK_MSG_ID_WIND,                  MSG_WIND},
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
         { MAVLINK_MSG_ID_RANGEFINDER,           MSG_RANGEFINDER},
-#endif
+#endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
         { MAVLINK_MSG_ID_DISTANCE_SENSOR,       MSG_DISTANCE_SENSOR},
 #if AP_TERRAIN_AVAILABLE
         { MAVLINK_MSG_ID_TERRAIN_REQUEST,       MSG_TERRAIN_REQUEST},
@@ -1382,6 +1382,9 @@ int8_t GCS_MAVLINK::deferred_message_to_send_index(uint16_t now16_ms)
         return -1;
     }
 
+    // an intermediate 16-bit variable is used here to strictly avoid
+    // type promotion creating 32-bit (or higher) maths here.  Do not
+    // be tempted to remove ms_since_last_sent here.
     const uint16_t ms_since_last_sent = now16_ms - deferred_message[next_deferred_message_to_send_cache].last_sent_ms;
     if (ms_since_last_sent < deferred_message[next_deferred_message_to_send_cache].interval_ms) {
         return -1;
@@ -2978,7 +2981,7 @@ void GCS_MAVLINK::send_local_position() const
     const AP_AHRS &ahrs = AP::ahrs();
 
     Vector3f local_position, velocity;
-    if (!ahrs.get_relative_position_NED_origin(local_position) ||
+    if (!ahrs.get_relative_position_NED_origin_float(local_position) ||
         !ahrs.get_velocity_NED(velocity)) {
         // we don't know the position and velocity
         return;
@@ -3036,7 +3039,7 @@ void GCS_MAVLINK::send_home_position() const
 
     // get home position from origin
     Vector3f home_pos_ned;
-    if (home.get_vector_from_origin_NEU(home_pos_ned)) {
+    if (home.get_vector_from_origin_NEU_cm(home_pos_ned)) {
         // convert NEU in cm to NED in meters
         home_pos_ned *= 0.01f;
         home_pos_ned.z *= -1;
@@ -3132,7 +3135,9 @@ MAV_RESULT GCS_MAVLINK::set_message_interval(uint32_t msg_id, int32_t interval_u
 {
     const ap_message id = mavlink_id_to_ap_message_id(msg_id);
     if (id == MSG_LAST) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No ap_message for mavlink id (%u)", (unsigned int)msg_id);
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
         return MAV_RESULT_DENIED;
     }
 
@@ -3202,6 +3207,12 @@ uint8_t GCS::get_channel_from_port_number(uint8_t port_num)
 MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int_t &packet)
 {
     const uint32_t mavlink_id = (uint32_t)packet.param1;
+
+    if (mavlink_id == MAVLINK_MSG_ID_MESSAGE_INTERVAL) {
+        const mavlink_command_int_t msg_interval_cmd = { .param1 = packet.param2, };
+        return handle_command_get_message_interval(msg_interval_cmd);
+    }
+
     const ap_message id = mavlink_id_to_ap_message_id(mavlink_id);
     if (id == MSG_LAST) {
         return MAV_RESULT_FAILED;
@@ -3506,7 +3517,9 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
+#if !defined(__clang__)  // avoid -Wunknown-warning-option
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
             *foo = 0xab;
 #pragma GCC diagnostic pop
 
@@ -3524,7 +3537,9 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
             // String is kept short for space reasons.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
+#if !defined(__clang__)  // avoid -Wunknown-warning-option
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
             send_text(MAV_SEVERITY_INFO, "x: %u", (unsigned)*foo);
 #pragma GCSS diagnostic pop
 
@@ -3814,11 +3829,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_int_t &packe
 #if AP_AHRS_ENABLED
 // sets ekf_origin if it has not been set.
 //  should only be used when there is no GPS to provide an absolute position
-void GCS_MAVLINK::set_ekf_origin(const Location& loc)
+MAV_RESULT GCS_MAVLINK::set_ekf_origin(const Location& loc)
 {
     // check location is valid
+    if (loc.is_zero()) {
+        return MAV_RESULT_DENIED;
+    }
     if (!loc.check_latlng()) {
-        return;
+        return MAV_RESULT_DENIED;
     }
 
     AP_AHRS &ahrs = AP::ahrs();
@@ -3826,11 +3844,11 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
     // check if EKF origin has already been set
     Location ekf_origin;
     if (ahrs.get_origin(ekf_origin)) {
-        return;
+        return MAV_RESULT_FAILED;
     }
 
     if (!ahrs.set_origin(loc)) {
-        return;
+        return MAV_RESULT_FAILED;
     }
 
     // send ekf origin to GCS
@@ -3838,8 +3856,10 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
         // try again later
         send_message(MSG_ORIGIN);
     }
+    return MAV_RESULT_ACCEPTED;
 }
 
+#if AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
 void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t &msg)
 {
     mavlink_set_gps_global_origin_t packet;
@@ -3851,12 +3871,16 @@ void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t &msg)
         return;
     }
 
-    Location ekf_origin {};
-    ekf_origin.lat = packet.latitude;
-    ekf_origin.lng = packet.longitude;
-    ekf_origin.alt = packet.altitude / 10;
+    const Location ekf_origin {
+        packet.latitude,
+        packet.longitude,
+        int32_t(packet.altitude * 0.1f),  // mm -> cm
+        Location::AltFrame::ABSOLUTE
+    };
     set_ekf_origin(ekf_origin);
 }
+#endif  // AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
+
 #endif  // AP_AHRS_ENABLED
 
 /*
@@ -4240,7 +4264,7 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         handle_common_param_message(msg);
         break;
 
-#if AP_AHRS_ENABLED
+#if AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
     case MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN:
         handle_set_gps_global_origin(msg);
         break;
@@ -4704,6 +4728,18 @@ void GCS_MAVLINK::send_sim_state() const
 }
 #endif
 
+#if AP_AHRS_ENABLED
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_global_origin(const mavlink_command_int_t &packet)
+{
+    Location global_origin;
+    if (!location_from_command_t(packet, global_origin)) {
+        return MAV_RESULT_DENIED;
+    }
+
+    return set_ekf_origin(global_origin);
+}
+#endif  // AP_AHRS_ENABLED
+
 #if AP_BOOTLOADER_FLASHING_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_int_t &packet)
 {
@@ -4740,7 +4776,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink
 #if AP_AIRSPEED_ENABLED
 
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
+    if (airspeed != nullptr && airspeed->enabled()) {
         GCS_MAVLINK_InProgress *task = GCS_MAVLINK_InProgress::get_task(MAV_CMD_PREFLIGHT_CALIBRATION, GCS_MAVLINK_InProgress::Type::AIRSPEED_CAL, msg.sysid, msg.compid, chan);
         if (task == nullptr) {
             return MAV_RESULT_TEMPORARILY_REJECTED;
@@ -5145,6 +5181,7 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
     // case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_DO_REPOSITION:
     case MAV_CMD_EXTERNAL_POSITION_ESTIMATE:
+    case MAV_CMD_DO_SET_GLOBAL_ORIGIN:
         return true;
     default:
         return false;
@@ -5525,6 +5562,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         }
         return  MAV_RESULT_FAILED;
 #endif
+
+#if AP_AHRS_ENABLED
+    case MAV_CMD_DO_SET_GLOBAL_ORIGIN:
+        return handle_command_do_set_global_origin(packet);
+#endif  // AP_AHRS_ENABLED
 
 #if AP_RC_CHANNEL_ENABLED
     case MAV_CMD_DO_AUX_FUNCTION:
@@ -6328,12 +6370,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif
 
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     case MSG_RANGEFINDER:
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         send_rangefinder();
         break;
-#endif
+#endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 
     case MSG_DISTANCE_SENSOR:
         send_distance_sensor();

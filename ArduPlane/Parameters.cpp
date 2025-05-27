@@ -30,7 +30,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: AUTOTUNE_OPTIONS
     // @DisplayName: Autotune options bitmask
-    // @Description: Fixed Wing Autotune specific options. Useful on QuadPlanes with higher INS_GYRO_FILTER settings to prevent these filter values from being set too agressively during Fixed Wing Autotune.
+    // @Description: Fixed Wing Autotune specific options. Useful on QuadPlanes with higher INS_GYRO_FILTER settings to prevent these filter values from being set too aggressively during Fixed Wing Autotune.
     // @Bitmask: 0: Disable FLTD update by Autotune
     // @Bitmask: 1: Disable FLTT update by Autotune
     // @User: Advanced
@@ -106,7 +106,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: TKOFF_THR_MINACC
     // @DisplayName: Takeoff throttle min acceleration
-    // @Description: Minimum forward acceleration in m/s/s before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches and bungee launches this should be set to around 15. Also see TKOFF_ACCEL_CNT paramter for control of full "shake to arm".
+    // @Description: Minimum forward acceleration in m/s/s before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches and bungee launches this should be set to around 15. Also see TKOFF_ACCEL_CNT parameter for control of full "shake to arm".
     // @Units: m/s/s
     // @Range: 0 30
     // @Increment: 0.1
@@ -255,7 +255,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: WP_LOITER_RAD
     // @DisplayName: Waypoint Loiter Radius
-    // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter. If you set this value to a negative number then the default loiter direction will be counter-clockwise instead of clockwise.
+    // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter. If you set this value to a negative number then the default loiter direction will be counter-clockwise instead of clockwise. If this value is too close to zero, the achieved loiter radius will be determined by ROLL_LIMIT_DEG.
     // @Units: m
     // @Range: -32767 32767
     // @Increment: 1
@@ -305,7 +305,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: AIRSPEED_STALL
     // @DisplayName: Stall airspeed
-    // @Description: If stall prevention is enabled this speed is used for its calculations. If set to 0 then AIRSPEED_MIN is used instead. Typically set slightly higher than the true stall speed. Value is as an indicated (calibrated/apparent) airspeed.
+    // @Description: If stall prevention is enabled this speed is used to calculate the minimum airspeed while banking. It is also used during landing final as the minimum airspeed that can be demanded by the TECS, which allows using TECS_LAND_ARSPD or LAND_PF_ARSPD to achieve landings slower than AIRSPEED_MIN. If this is set to 0 then the stall speed is assumed to be the minimum airspeed speed. Typically set slightly higher then true stall speed.
     // @Units: m/s
     // @Range: 5 75
     // @User: Standard
@@ -734,7 +734,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: CRASH_ACC_THRESH
     // @DisplayName: Crash Deceleration Threshold
-    // @Description: X-Axis deceleration threshold to notify the crash detector that there was a possible impact which helps disarm the motor quickly after a crash. This value should be much higher than normal negative x-axis forces during normal flight, check flight log files to determine the average IMU.x values for your aircraft and motor type. Higher value means less sensative (triggers on higher impact). For electric planes that don't vibrate much during fight a value of 25 is good (that's about 2.5G). For petrol/nitro planes you'll want a higher value. Set to 0 to disable the collision detector.
+    // @Description: X-Axis deceleration threshold to notify the crash detector that there was a possible impact which helps disarm the motor quickly after a crash. This value should be much higher than normal negative x-axis forces during normal flight, check flight log files to determine the average IMU.x values for your aircraft and motor type. Higher value means less sensitive (triggers on higher impact). For electric planes that don't vibrate much during fight a value of 25 is good (that's about 2.5G). For petrol/nitro planes you'll want a higher value. Set to 0 to disable the collision detector.
     // @Units: m/s/s
     // @Range: 10 127
     // @Increment: 1
@@ -1058,7 +1058,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     
     // @Param: HOME_RESET_ALT
     // @DisplayName: Home reset altitude threshold
-    // @Description: When the aircraft is within this altitude of the home waypoint, while disarmed it will automatically update the home position. Set to 0 to continously reset it.
+    // @Description: When the aircraft is within this altitude of the home waypoint, while disarmed it will automatically update the home position. Set to 0 to continuously reset it.
     // @Values: -1:Never reset,0:Always reset
     // @Range: -1 127
     // @Units: m
@@ -1076,7 +1076,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 3: Force target airspeed to trim airspeed in Cruise or FBWB
     // @Bitmask: 4: Climb to RTL_ALTITUDE before turning for RTL
     // @Bitmask: 5: Enable yaw damper in acro mode
-    // @Bitmask: 6: Supress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airspeed sensor.
+    // @Bitmask: 6: Suppress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airspeed sensor.
     // @Bitmask: 7: EnableDefaultAirspeed for takeoff
     // @Bitmask: 8: Remove the PTCH_TRIM_DEG on the GCS horizon
     // @Bitmask: 9: Remove the PTCH_TRIM_DEG on the OSD horizon
@@ -1363,6 +1363,8 @@ void Plane::load_parameters(void)
         }
     }
 
+
+// PARAMETER_CONVERSION - Added: March 2021 for ArduPlane-4.1
 #if AP_FENCE_ENABLED
     enum ap_var_type ptype_fence_type;
     AP_Int8 *fence_type_new = (AP_Int8*)AP_Param::find("FENCE_TYPE", &ptype_fence_type);
@@ -1410,22 +1412,22 @@ void Plane::load_parameters(void)
     if (AP_Param::find_old_parameter(&fence_action_info_old, &fence_action_old)) {
         enum ap_var_type ptype;
         AP_Int8 *fence_action_new = (AP_Int8*)AP_Param::find(&fence_action_info_old.new_name[0], &ptype);
-        uint8_t fence_action_new_val;
+        AC_Fence::Action fence_action_new_val;
         if (fence_action_new && !fence_action_new->configured()) {
             switch(fence_action_old.get()) {
                 case 0: // FENCE_ACTION_NONE
                 case 2: // FENCE_ACTION_REPORT_ONLY
                 default:
-                    fence_action_new_val = AC_FENCE_ACTION_REPORT_ONLY;
+                    fence_action_new_val = AC_Fence::Action::REPORT_ONLY;
                     break;
                 case 1: // FENCE_ACTION_GUIDED
-                    fence_action_new_val = AC_FENCE_ACTION_GUIDED;
+                    fence_action_new_val = AC_Fence::Action::GUIDED;
                     break;
                 case 3: // FENCE_ACTION_GUIDED_THR_PASS
-                    fence_action_new_val = AC_FENCE_ACTION_GUIDED_THROTTLE_PASS;
+                    fence_action_new_val = AC_Fence::Action::GUIDED_THROTTLE_PASS;
                     break;
                 case 4: // FENCE_ACTION_RTL
-                    fence_action_new_val = AC_FENCE_ACTION_RTL_AND_LAND;
+                    fence_action_new_val = AC_Fence::Action::RTL_AND_LAND;
                     break;
             }
             fence_action_new->set_and_save((int8_t)fence_action_new_val);

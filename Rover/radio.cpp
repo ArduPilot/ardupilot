@@ -6,7 +6,7 @@
 void Rover::set_control_channels(void)
 {
     // check change on RCMAP
-    // the library gaurantees that these are non-nullptr:
+    // the library guarantees that these are non-nullptr:
     channel_steer    = &rc().get_roll_channel();
     channel_throttle = &rc().get_throttle_channel();
     channel_lateral  = &rc().get_yaw_channel();
@@ -146,6 +146,7 @@ void Rover::radio_failsafe_check(uint16_t pwm)
 {
     if (!g.fs_throttle_enabled) {
         // radio failsafe disabled
+        AP_Notify::flags.failsafe_radio = false;
         return;
     }
 

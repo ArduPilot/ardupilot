@@ -300,8 +300,8 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(esc_calibrate, "ESC_CALIBRATION",       0),
 
     // @Param: TUNE
-    // @DisplayName: Channel 6 Tuning
-    // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
+    // @DisplayName: Tuning Parameter
+    // @Description: Selects parameter (normally a PID gain) that is being tuned with an RC transmitter's knob. The RC input channel used is assigned by setting RCx_OPTION to 219.
     // @User: Standard
     // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,56:Rate Yaw Filter,55:Motor Yaw Headroom,14:AltHold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,12:Loiter Pos kP,22:Velocity XY kP,28:Velocity XY kI,10:WP Speed,25:Acro Roll/Pitch deg/s,40:Acro Yaw deg/s,45:RC Feel,13:Heli Ext Gyro,38:Declination,39:Circle Rate,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF,58:SysID Magnitude,59:PSC Angle Max,60:Loiter Speed
     GSCALAR(radio_tuning, "TUNE",                   0),
@@ -648,6 +648,20 @@ const AP_Param::Info Copter::var_info[] = {
     // @Units: m
     // @User: Advanced
     GSCALAR(throw_altitude_max, "THROW_ALT_MAX", 0),
+
+    // @Param: THROW_ALT_DCSND
+    // @DisplayName: Throw mode target altitude to descend
+    // @Description: Target altitude to descend during a drop, (must be positive). This allows for rapidly clearing surrounding obstacles.
+    // @Units: m
+    // @User: Advanced
+    GSCALAR(throw_altitude_descend, "THROW_ALT_DCSND", 1.0),
+
+    // @Param: THROW_ALT_ACSND
+    // @DisplayName: Throw mode target altitude to ascsend
+    // @Description: Target altitude to ascend during a throw upwards (must be positive). This allows for rapidly clearing surrounding obstacles.
+    // @Units: m
+    // @User: Advanced
+    GSCALAR(throw_altitude_ascend, "THROW_ALT_ACSND", 3.0),
 #endif
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED

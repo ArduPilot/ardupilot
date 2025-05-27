@@ -224,7 +224,7 @@ bool AP_VisualOdom_IntelT265::align_position_to_ahrs(const Vector3f &sensor_pos,
 {
     // fail immediately if ahrs cannot provide position
     Vector3f ahrs_pos_ned;
-    if (!AP::ahrs().get_relative_position_NED_origin(ahrs_pos_ned)) {
+    if (!AP::ahrs().get_relative_position_NED_origin_float(ahrs_pos_ned)) {
         return false;
     }
 

@@ -402,19 +402,18 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.takeoff(15, mode='GUIDED')
         self.set_rc(3, 1500)
         self.change_mode("QLOITER")
-        self.change_mode("QAUTOTUNE")
         tstart = self.get_sim_time()
         self.context_collect('STATUSTEXT')
-        while True:
-            now = self.get_sim_time_cached()
-            if now - tstart > 5000:
-                raise NotAchievedException("Did not get success message")
-            try:
-                self.wait_text("AutoTune: Success", timeout=1, check_context=True)
-            except AutoTestTimeoutException:
-                continue
-            # got success message
-            break
+        self.change_mode("QAUTOTUNE")
+        self.wait_text(
+            "AutoTune: (Success|Failed to level).*",
+            timeout=5000,
+            check_context=True,
+            regex=True,
+        )
+        if self.re_match.group(1) != "Success":
+            raise NotAchievedException("autotune did not succeed")
+        now = self.get_sim_time()
         self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
         self.context_clear_collection('STATUSTEXT')
 
@@ -1565,6 +1564,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "SCR_ENABLE": 1,
             "SIM_SHIP_ENABLE": 1,
             "SIM_SHIP_SPEED": 5,
+            "Q_WP_SPEED": 700,
             "SIM_SHIP_DSIZE": 10,
             "FOLL_ENABLE": 1,
             "FOLL_SYSID": 17,
@@ -1604,6 +1604,24 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # deck is just 10m in size, so we must be within 10m if we are moving
         # with the deck
         self.wait_groundspeed(4.8, 5.2)
+
+        tstart = self.get_sim_time_cached()
+        ship_gpi = None
+        vehicle_gpi = None
+        while ship_gpi is None or vehicle_gpi is None:
+            if self.get_sim_time_cached() - tstart > 5:
+                raise NotAchievedException("Did not get GPI for ship")
+            gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
+            if gpi.get_srcSystem() == 17:
+                ship_gpi = gpi
+            elif gpi.get_srcSystem() == 1:
+                vehicle_gpi = gpi
+
+        distance = self.get_distance_int(vehicle_gpi, ship_gpi)
+        self.progress(f"{distance=}")
+        max_distance = 1
+        if distance > max_distance:
+            raise NotAchievedException(f"Did not land within {max_distance}m of ship {distance=}")
 
     def RCDisableAirspeedUse(self):
         '''check disabling airspeed using RC switch'''

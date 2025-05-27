@@ -40,6 +40,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_GSOF',
     'AP_HAL',
     'AP_HAL_Empty',
+    'AP_DDS',
     'AP_InertialSensor',
     'AP_Math',
     'AP_Mission',
@@ -166,7 +167,6 @@ def set_double_precision_flags(flags):
 IGNORED_AP_LIBRARIES = [
     'doc',
     'AP_Scripting', # this gets explicitly included when it is needed and should otherwise never be globbed in
-    'AP_DDS',
 ]
 
 

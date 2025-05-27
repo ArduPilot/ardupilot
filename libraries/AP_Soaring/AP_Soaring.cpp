@@ -407,6 +407,17 @@ void SoaringController::update_cruising()
     _speedToFly.update(wx, wz, thermal_vspeed, CLmin, CLmax);
 
 #if HAL_LOGGING_ENABLED
+    // @LoggerMessage: SORC
+    // @Vehicles: Plane
+    // @Description: Soaring Cruise-phase data
+    // @URL: https://ardupilot.org/plane/docs/soaring.html
+    // @Field: TimeUS: Time since system startup
+    // @Field: wx: body-frame wind estimate, x-axis
+    // @Field: wz: body-frame wind estimate, z-axis
+    // @Field: wexp: estimated thermal vertical speed
+    // @Field: CLmin: expected climb-rate lower-limit
+    // @Field: CLmax: expected climb-rate upper-limit
+    // @Field: Vopt: calculated optimal speed to fly
     AP::logger().WriteStreaming("SORC", "TimeUS,wx,wz,wexp,CLmin,CLmax,Vopt", "Qffffff",
                                        AP_HAL::micros64(),
                                        (double)wx,

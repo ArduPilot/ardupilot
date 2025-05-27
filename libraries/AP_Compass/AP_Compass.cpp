@@ -1192,7 +1192,6 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
 #endif  // AP_COMPASS_QMC5883P_ENABLED
 
-#ifndef HAL_BUILD_AP_PERIPH
     // AK09916 on ICM20948
 #if AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
     FOREACH_I2C_EXTERNAL(i) {
@@ -1215,7 +1214,6 @@ void Compass::_probe_external_i2c_compasses(void)
     }
 #endif
 #endif  // AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
-#endif // HAL_BUILD_AP_PERIPH
 
 #if AP_COMPASS_LIS3MDL_ENABLED
     // lis3mdl on bus 0 with default address

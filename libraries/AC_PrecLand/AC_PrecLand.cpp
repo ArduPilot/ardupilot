@@ -350,7 +350,7 @@ void AC_PrecLand::check_target_status(float rangefinder_alt_m, bool rangefinder_
     if (_current_target_state == TargetState::TARGET_RECENTLY_LOST) {
         // check if it's nearby/found recently, else the status will be demoted to "TARGET_LOST"
         Vector2f curr_pos;
-        if (AP::ahrs().get_relative_position_NE_origin(curr_pos)) {
+        if (AP::ahrs().get_relative_position_NE_origin_float(curr_pos)) {
             const float dist_to_last_target_loc_xy = (curr_pos - Vector2f{_last_target_pos_rel_origin_NED.x, _last_target_pos_rel_origin_NED.y}).length();
             const float dist_to_last_loc_xy = (curr_pos - Vector2f{_last_vehicle_pos_NED.x, _last_vehicle_pos_NED.y}).length();
             if ((AP_HAL::millis() - _last_valid_target_ms) > LANDING_TARGET_LOST_TIMEOUT_MS) {
@@ -418,7 +418,7 @@ bool AC_PrecLand::get_target_position_cm(Vector2f& ret)
         return false;
     }
     Vector2f curr_pos;
-    if (!AP::ahrs().get_relative_position_NE_origin(curr_pos)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(curr_pos)) {
         return false;
     }
     ret.x = (_target_pos_rel_out_NE.x + curr_pos.x) * 100.0f;   // m to cm
@@ -681,7 +681,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
             // store the current relative down position so that if we need to retry landing, we know at this height landing target can be found
             const AP_AHRS &_ahrs = AP::ahrs();
             Vector3f pos_NED;
-            if (_ahrs.get_relative_position_NED_origin(pos_NED)) {
+            if (_ahrs.get_relative_position_NED_origin_float(pos_NED)) {
                 _last_target_pos_rel_origin_NED.z = pos_NED.z;
                 _last_vehicle_pos_NED = pos_NED;
             }

@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file	AC_PID_2D.h
-/// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
+/// @brief	2D PID controller with vector support, input filtering, integrator clamping, and EEPROM-backed gain storage.
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -14,20 +14,20 @@
 class AC_PID_2D {
 public:
 
-    // Constructor for PID
+    /// Constructor for 2D PID controller with EEPROM-backed gain.
+    /// Parameters are initialized from defaults or EEPROM at runtime.
     AC_PID_2D(float initial_kP, float initial_kI, float initial_kD, float initial_kFF, float initial_imax, float initial_filt_hz, float initial_filt_d_hz);
 
     CLASS_NO_COPY(AC_PID_2D);
 
-    // update_all - set target and measured inputs to PID controller and calculate outputs
-    // target and error are filtered
-    // the derivative is then calculated and filtered
-    // the integral is then updated if it does not increase in the direction of the limit vector
+    // Computes the 2D PID output from target and measurement vectors.
+    // Applies filtering to error and derivative terms.
+    // Integrator is updated only if it does not grow in the direction of the specified limit vector.
     Vector2f update_all(const Vector2f &target, const Vector2f &measurement, float dt, const Vector2f &limit);
     Vector2f update_all(const Vector3f &target, const Vector3f &measurement, float dt, const Vector3f &limit);
 
-    // update the integral
-    // if the limit flag is set the integral is only allowed to shrink
+    // Updates the 2D integrator using the filtered error.
+    // The integrator is only allowed to grow if it does not push further in the direction of the limit vector.
     void update_i(float dt, const Vector2f &limit);
 
     // get results from pid controller
@@ -40,10 +40,10 @@ public:
     // reset the integrator
     void reset_I();
 
-    // reset_filter - input and D term filter will be reset to the next value provided to set_input()
+    // Flags the input and derivative filters for reset on the next call to update_all().
     void reset_filter() { _reset_filter = true; }
 
-    // save gain to eeprom
+    // Saves controller configuration from EEPROM, including gains and filter frequencies. (not used)
     void save_gains();
 
     // get accessors
@@ -66,7 +66,8 @@ public:
     void set_filt_E_hz(float hz) { _filt_E_hz.set(fabsf(hz)); }
     void set_filt_D_hz(float hz) { _filt_D_hz.set(fabsf(hz)); }
 
-    // integrator setting functions
+    // Sets the integrator directly or based on a target, measurement, or error.
+    // Result is clamped to IMAX length.
     void set_integrator(const Vector2f& target, const Vector2f& measurement, const Vector2f& i);
     void set_integrator(const Vector2f& error, const Vector2f& i);
     void set_integrator(const Vector3f& i) { set_integrator(Vector2f{i.x, i.y}); }

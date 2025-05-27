@@ -236,7 +236,7 @@ bool Location::get_alt_m(AltFrame desired_frame, float &ret_alt) const
 // converts location to a vector from origin; if this method returns
 // false then vec_ne is unmodified
 template<typename T>
-bool Location::get_vector_xy_from_origin_NE(T &vec_ne) const
+bool Location::get_vector_xy_from_origin_NE_cm(T &vec_ne) const
 {
     Location ekf_origin;
     if (!AP::ahrs().get_origin(ekf_origin)) {
@@ -248,15 +248,15 @@ bool Location::get_vector_xy_from_origin_NE(T &vec_ne) const
 }
 
 // define for float and position vectors
-template bool Location::get_vector_xy_from_origin_NE<Vector2f>(Vector2f &vec_ne) const;
+template bool Location::get_vector_xy_from_origin_NE_cm<Vector2f>(Vector2f &vec_ne) const;
 #if HAL_WITH_POSTYPE_DOUBLE
-template bool Location::get_vector_xy_from_origin_NE<Vector2p>(Vector2p &vec_ne) const;
+template bool Location::get_vector_xy_from_origin_NE_cm<Vector2p>(Vector2p &vec_ne) const;
 #endif
 
 // converts location to a vector from origin; if this method returns
 // false then vec_neu is unmodified
 template<typename T>
-bool Location::get_vector_from_origin_NEU(T &vec_neu) const
+bool Location::get_vector_from_origin_NEU_cm(T &vec_neu) const
 {
     // convert altitude
     int32_t alt_above_origin_cm = 0;
@@ -265,7 +265,7 @@ bool Location::get_vector_from_origin_NEU(T &vec_neu) const
     }
 
     // convert lat, lon
-    if (!get_vector_xy_from_origin_NE(vec_neu.xy())) {
+    if (!get_vector_xy_from_origin_NE_cm(vec_neu.xy())) {
         return false;
     }
 
@@ -273,12 +273,49 @@ bool Location::get_vector_from_origin_NEU(T &vec_neu) const
 
     return true;
 }
+template<typename T>
+bool Location::get_vector_from_origin_NEU(T &vec_neu) const
+{
+    return get_vector_from_origin_NEU_cm(vec_neu);
+}
 
 // define for float and position vectors
+template bool Location::get_vector_from_origin_NEU_cm<Vector3f>(Vector3f &vec_neu) const;
 template bool Location::get_vector_from_origin_NEU<Vector3f>(Vector3f &vec_neu) const;
 #if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_from_origin_NEU_cm<Vector3p>(Vector3p &vec_neu) const;
 template bool Location::get_vector_from_origin_NEU<Vector3p>(Vector3p &vec_neu) const;
 #endif
+
+template<typename T>
+bool Location::get_vector_xy_from_origin_NE_m(T &vec_ne) const
+{
+    if (!get_vector_xy_from_origin_NE_cm(vec_ne)) {
+        return false;
+    }
+    vec_ne *= 0.01;
+    return true;
+}
+template bool Location::get_vector_xy_from_origin_NE_m<Vector2f>(Vector2f &vec_ne) const;
+#if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_xy_from_origin_NE_m<Vector2p>(Vector2p &vec_ne) const;
+#endif
+
+template<typename T>
+bool Location::get_vector_from_origin_NEU_m(T &vec_neu) const
+{
+    if (!get_vector_from_origin_NEU_cm(vec_neu)) {
+        return false;
+    }
+    vec_neu *= 0.01;
+    return true;
+}
+// define for float and position vectors
+template bool Location::get_vector_from_origin_NEU_m<Vector3f>(Vector3f &vec_neu) const;
+#if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_from_origin_NEU_m<Vector3p>(Vector3p &vec_neu) const;
+#endif
+
 
 #endif  // AP_AHRS_ENABLED
 
@@ -338,6 +375,13 @@ Vector3f Location::get_distance_NED(const Location &loc2) const
                     (alt - loc2.alt) * 0.01);
 }
 
+Vector3p Location::get_distance_NED_postype(const Location &loc2) const
+{
+    return Vector3p((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
+                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((lat+loc2.lat)/2),
+                    (alt - loc2.alt) * 0.01);
+}
+
 // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
 Vector3d Location::get_distance_NED_double(const Location &loc2) const
 {
@@ -362,6 +406,12 @@ Vector3f Location::get_distance_NED_alt_frame(const Location &loc2) const
 Vector2d Location::get_distance_NE_double(const Location &loc2) const
 {
     return Vector2d((loc2.lat - lat) * double(LOCATION_SCALING_FACTOR),
+                    diff_longitude(loc2.lng,lng) * double(LOCATION_SCALING_FACTOR) * longitude_scale((lat+loc2.lat)/2));
+}
+
+Vector2p Location::get_distance_NE_postype(const Location &loc2) const
+{
+    return Vector2p((loc2.lat - lat) * double(LOCATION_SCALING_FACTOR),
                     diff_longitude(loc2.lng,lng) * double(LOCATION_SCALING_FACTOR) * longitude_scale((lat+loc2.lat)/2));
 }
 
