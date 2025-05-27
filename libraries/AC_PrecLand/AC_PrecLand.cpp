@@ -619,7 +619,7 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
         _last_backend_los_meas_ms = los_meas_time_ms;
         if (!is_zero(_yaw_align)) {
             // Apply sensor yaw alignment rotation
-            target_vec_unit_body.rotate_xy(radians(_yaw_align*0.01f));
+            target_vec_unit_body.rotate_xy(cd_to_rad(_yaw_align));
         }
 
 
