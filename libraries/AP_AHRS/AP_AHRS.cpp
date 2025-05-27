@@ -286,6 +286,18 @@ void AP_AHRS::init()
 #endif  // AP_CUSTOMROTATIONS_ENABLED
 }
 
+// has_status returns information about the EKF health and
+// capabilities.  It is currently invalid to call this when a
+// backend is in charge which returns false for get_filter_status
+// - so this will simply return false for DCM, for example.
+bool AP_AHRS::has_status(Status status) const {
+    nav_filter_status filter_status;
+    if (!get_filter_status(filter_status)) {
+        return false;
+    }
+    return (filter_status.value & uint32_t(status)) != 0;
+}
+
 // updates matrices responsible for rotating vectors from vehicle body
 // frame to autopilot body frame from _trim variables
 void AP_AHRS::update_trim_rotation_matrices()
