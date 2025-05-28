@@ -26,6 +26,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
 
+#include "AP_InertialSensor_rate_config.h"
 #include "AP_InertialSensor_Invensense.h"
 #include <GCS_MAVLink/GCS.h>
 
@@ -481,6 +482,21 @@ bool AP_InertialSensor_Invensense::update() /* front end */
     }
 
     return true;
+}
+
+void AP_InertialSensor_Invensense::set_primary(bool _is_primary)
+{
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    if (_imu.is_dynamic_fifo_enabled(gyro_instance)) {
+        if (_is_primary) {
+            _dev->adjust_periodic_callback(periodic_handle, 1000000UL / _gyro_backend_rate_hz);
+        } else {
+            // scale down non-primary to 2x loop rate, but no greater than the default sampling rate
+            _dev->adjust_periodic_callback(periodic_handle,
+                                          1000000UL / constrain_int16(get_loop_rate_hz() * 2, 400, 1000));
+        }
+    }
+#endif
 }
 
 /*
