@@ -378,9 +378,9 @@ void ModeGuided::guided_set_angle(const Quaternion &q, float climb_rate_cms)
 
     // convert quaternion to euler angles
     q.to_euler(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd);
-    guided_angle_state.roll_cd = ToDeg(guided_angle_state.roll_cd) * 100.0f;
-    guided_angle_state.pitch_cd = ToDeg(guided_angle_state.pitch_cd) * 100.0f;
-    guided_angle_state.yaw_cd = wrap_180_cd(ToDeg(guided_angle_state.yaw_cd) * 100.0f);
+    guided_angle_state.roll_cd = degrees(guided_angle_state.roll_cd) * 100.0f;
+    guided_angle_state.pitch_cd = degrees(guided_angle_state.pitch_cd) * 100.0f;
+    guided_angle_state.yaw_cd = wrap_180_cd(degrees(guided_angle_state.yaw_cd) * 100.0f);
 
     guided_angle_state.climb_rate_cms = climb_rate_cms;
     guided_angle_state.update_time_ms = AP_HAL::millis();
