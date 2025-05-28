@@ -424,6 +424,8 @@ void AP_SerialManager::init_console()
 // init - // init - initialise serial ports
 void AP_SerialManager::init()
 {
+    convert_parameters();
+
     // always reset passthru port2 on boot
     passthru_port2.set_and_save_ifchanged(-1);
 
@@ -587,6 +589,12 @@ void AP_SerialManager::init()
     }
 }
 
+void AP_SerialManager::convert_parameters()
+{
+    for (auto &_state : state) {
+        _state.options.convert_parameter_width(AP_PARAM_INT16);
+    }
+}
 
 const AP_SerialManager::UARTState *AP_SerialManager::find_protocol_instance(enum SerialProtocol protocol, uint8_t instance) const
 {
