@@ -159,12 +159,29 @@ bool GCS_MAVLINK::init(uint8_t instance)
     // REQUEST_DATA_STREAM.  We moved that into the MAVn_OPTIONS, this
     // is the conversion:
     if (!options_were_converted) {
+        auto &sm = AP::serialmanager();
         options_were_converted.set_and_save(1);
         if (_port->option_is_set(AP_HAL::UARTDriver::Option::OPTION_MAVLINK_NO_FORWARD_old)) {
             enable_option(Option::NO_FORWARD);
+            // turn the bit off in the UART options.  We can only get
+            // away with this because we are (in a very nearby commit)
+            // changing the width of the SERIALn_OPTIONS.  This means
+            // older firmwares will still see the SERIALn_OPTIONS bits
+            // as set, newer firmwares will see zeroes.  We have a
+            // prearm check that users have not set the old bit.
+            // Sorry.
+            sm.disable_option(uartstate->idx, AP_HAL::UARTDriver::Option::OPTION_MAVLINK_NO_FORWARD_old);
         }
         if (_port->option_is_set(AP_HAL::UARTDriver::Option::OPTION_NOSTREAMOVERRIDE_old)) {
             enable_option(Option::NOSTREAMOVERRIDE);
+            // turn the bit off in the UART options.  We can only get
+            // away with this because we are (in a very nearby commit)
+            // changing the width of the SERIALn_OPTIONS.  This means
+            // older firmwares will still see the SERIALn_OPTIONS bits
+            // as set, newer firmwares will see zeroes.  We have a
+            // prearm check that users have not set the old bit.
+            // Sorry.
+            sm.disable_option(uartstate->idx, AP_HAL::UARTDriver::Option::OPTION_NOSTREAMOVERRIDE_old);
         }
     }
 
