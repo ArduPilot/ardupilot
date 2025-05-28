@@ -5901,6 +5901,12 @@ void GCS_MAVLINK::send_sys_status()
     const uint16_t errors2 = (errors>>16) & 0xffff;
     const uint16_t errors4 = AP::internalerror().count() & 0xffff;
 
+#if HAL_LOGGING_ENABLED
+    const uint16_t dropped_logmessage_count = AP::logger().num_dropped();
+#else
+    const uint16_t dropped_logmessage_count = -1;
+#endif  // HAL_LOGGING_ENABLED
+
     mavlink_msg_sys_status_send(
         chan,
         control_sensors_present,
@@ -5924,7 +5930,7 @@ void GCS_MAVLINK::send_sys_status()
         0,  // comm drops in pkts,
         errors1,
         errors2,
-        0,  // errors3
+        dropped_logmessage_count,  // errors3
         errors4); // errors4
 }
 
