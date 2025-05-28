@@ -582,7 +582,7 @@ int16_t Plane::calc_nav_yaw_ground(void)
         steering = steerController.get_steering_out_rate(steer_rate);
     } else {
         // use a error controller on the summed error
-        int32_t yaw_error_cd = -ToDeg(steer_state.locked_course_err)*100;
+        int32_t yaw_error_cd = -degrees(steer_state.locked_course_err)*100;
         steering = steerController.get_steering_out_angle_error(yaw_error_cd);
     }
     return constrain_int16(steering, -4500, 4500);
