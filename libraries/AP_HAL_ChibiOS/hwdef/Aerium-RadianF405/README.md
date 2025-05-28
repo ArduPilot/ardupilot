@@ -48,11 +48,19 @@ For detailed pin definitions and usage, refer to the [Radian documentation porta
 
 ## UART Port Mapping
 
-| ArduPilot SERIALx | Connector | Function                              |
-|-------------------|-----------|----------------------------------------|
-| SERIAL1           | TELEM1    | Primary telemetry                      |
-| SERIAL2           | TELEM2    | Secondary telemetry or companion link |
-| SERIAL3           | GPS       | GNSS module                            |
+| ArduPilot SERIALx | Connector | Function                                | DMA           |
+|-------------------|-----------|-----------------------------------------|---------------|
+| SERIAL1           | TELEM1    | Primary telemetry                       | DMA Enabled   |
+| SERIAL2           | TELEM2    | Secondary telemetry or companion link   | DMA Enabled   |
+| SERIAL3           | GPS       | GNSS module                             | DMA Disabled  |
+
+## Alt Config
+the RadianF405 supports alt config that converts SERIAL2/TELEM2 to I2C port according to the following pinout:
+
+| BRD_ALT_CONFIG=0  | BRD_ALT_CONFIG=1 |
+|-------------------|------------------|
+| TELEM2_TX         | I2C2_SCL         |
+| TELEM2_RX         | I2C2_SDA         |
 
 ## PWM / Servo Outputs
 
@@ -62,14 +70,19 @@ For detailed pin definitions and usage, refer to the [Radian documentation porta
   - PWM 1-3 in group1
   - PWM 4-6 in group2
   - PWM 7,8 in group3
-
 - Channels within the same group need to use the same output.
 - If any channel in a group uses DShot then all channels in the group need to use DShot.  
 
+The following outputs support Bi_Directional DShot:
+  - PWM 1
+  - PWM 2
+  - PWM 3
+  - PWM 6
+
 ## RC Input
 
-- Supports PPM-Sum, S.Bus, and iBUS protocols via the RC input port  
-- Additional receiver types can be connected via configurable serial ports  
+- RC input is on the RC_IN pin which is ties to the UART5 RX pin.
+- It supports all ArduPilot compatible uni-directional protocols.
 - For setup instructions, consult the [ArduPilot RC systems guide](https://ardupilot.org/copter/docs/common-rc-systems.html)
 
 ## Power supply & Battery Monitoring
@@ -85,6 +98,23 @@ For detailed pin definitions and usage, refer to the [Radian documentation porta
 |--------------|--------------|---------------------|
 | 5V | from 5V BEC | 20W (4A) |
 | BAT | directly from battery | (5A) |
+
+default paramters for battery monitors:
+| Paramter Name    | Default Value  |
+|------------------|----------------|
+|BATT_MONITOR      |      4         |
+|BATT_VOLT_PIN     |      10        |
+|BATT_CURR_PIN     |      15        |
+|BATT_VOLT_SCALE   |      1         |
+|BATT_CURR_SCALE   |      1         |
+
+| Paramter Name    | Default Value  |
+|------------------|----------------|
+|BATT2_MONITOR     |      4         |
+|BATT2_VOLT_PIN    |      12        |
+|BATT2_CURR_PIN    |      11        |
+|BATT2_VOLT_SCALE  |      1         |
+|BATT2_CURR_SCALE  |      1         |
 
 ## Compass Configuration
 
