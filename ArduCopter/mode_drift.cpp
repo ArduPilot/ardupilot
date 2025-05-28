@@ -46,7 +46,7 @@ void ModeDrift::run()
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // Grab inertial velocity
-    const Vector3f& vel = inertial_nav.get_velocity_neu_cms();
+    const Vector3f& vel = pos_control->get_vel_estimate_NEU_cms();
 
     // rotate roll, pitch input from north facing to vehicle's perspective
     float roll_vel =  vel.y * ahrs.cos_yaw() - vel.x * ahrs.sin_yaw(); // body roll vel

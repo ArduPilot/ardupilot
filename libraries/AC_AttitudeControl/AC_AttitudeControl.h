@@ -91,7 +91,7 @@ public:
 
     // get the roll acceleration limit in centidegrees/s/s or radians/s/s
     float get_accel_roll_max_cdss() const { return _accel_roll_max_cdss; }
-    float get_accel_roll_max_radss() const { return radians(_accel_roll_max_cdss * 0.01f); }
+    float get_accel_roll_max_radss() const { return cd_to_rad(_accel_roll_max_cdss); }
 
     // Sets the roll acceleration limit in centidegrees/s/s
     void set_accel_roll_max_cdss(float accel_roll_max) { _accel_roll_max_cdss.set(accel_roll_max); }
@@ -101,7 +101,7 @@ public:
 
     // get the pitch acceleration limit in centidegrees/s/s or radians/s/s
     float get_accel_pitch_max_cdss() const { return _accel_pitch_max_cdss; }
-    float get_accel_pitch_max_radss() const { return radians(_accel_pitch_max_cdss * 0.01f); }
+    float get_accel_pitch_max_radss() const { return cd_to_rad(_accel_pitch_max_cdss); }
 
     // Sets the pitch acceleration limit in centidegrees/s/s
     void set_accel_pitch_max_cdss(float accel_pitch_max) { _accel_pitch_max_cdss.set(accel_pitch_max); }
@@ -111,7 +111,7 @@ public:
 
     // get the yaw acceleration limit in centidegrees/s/s or radians/s/s
     float get_accel_yaw_max_cdss() const { return _accel_yaw_max_cdss; }
-    float get_accel_yaw_max_radss() const { return radians(_accel_yaw_max_cdss * 0.01f); }
+    float get_accel_yaw_max_radss() const { return cd_to_rad(_accel_yaw_max_cdss); }
 
     // Sets the yaw acceleration limit in centidegrees/s/s
     void set_accel_yaw_max_cdss(float accel_yaw_max) { _accel_yaw_max_cdss.set(accel_yaw_max); }
@@ -231,7 +231,7 @@ public:
     virtual void input_angle_step_bf_roll_pitch_yaw_cd(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
 
     // Applies a one-time angular velocity offset in body-frame roll/pitch/yaw (centidegrees per second)
-    virtual void input_rate_step_bf_roll_pitch_yaw_cd(float roll_rate_step_bf_cd, float pitch_rate_step_bf_cd, float yaw_rate_step_bf_cd);
+    virtual void input_rate_step_bf_roll_pitch_yaw_cds(float roll_rate_step_bf_cd, float pitch_rate_step_bf_cd, float yaw_rate_step_bf_cd);
 
     // Command a thrust vector in the earth frame and a heading angle and/or rate
     virtual void input_thrust_vector_rate_heading_cds(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw = true);
@@ -281,7 +281,7 @@ public:
     float get_att_error_angle_deg() const { return degrees(_thrust_error_angle_rad); }
 
     // Set z-axis angular velocity in centidegrees/s
-    void rate_bf_yaw_target(float rate_cds) { _ang_vel_body_rads.z = radians(rate_cds * 0.01f); }
+    void rate_bf_yaw_target(float rate_cds) { _ang_vel_body_rads.z = cd_to_rad(rate_cds); }
 
     // Set x-axis system identification angular velocity in radians/s
     void rate_bf_roll_sysid_rads(float rate_rads) { _sysid_ang_vel_body_rads.x = rate_rads; }

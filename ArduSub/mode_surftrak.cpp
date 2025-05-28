@@ -51,7 +51,14 @@ bool ModeSurftrak::init(bool ignore_checks)
 void ModeSurftrak::run()
 {
     run_pre();
-    control_range();
+
+    if (!motors.armed()) {
+        // Forget rangefinder target
+        reset();
+    } else {
+        control_range();
+    }
+
     run_post();
 }
 

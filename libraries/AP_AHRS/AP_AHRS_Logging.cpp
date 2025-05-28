@@ -98,7 +98,7 @@ void AP_AHRS::Write_POS() const
 
     const auto nanf = AP::logger().quiet_nanf();
     float origin_pos_up;
-    if (get_relative_position_D_origin(origin_pos_up)) {
+    if (get_relative_position_D_origin_float(origin_pos_up)) {
         origin_pos_up *= -1;  // down -> up
     } else {
         origin_pos_up = nanf;

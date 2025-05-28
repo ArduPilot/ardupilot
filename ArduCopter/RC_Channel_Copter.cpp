@@ -728,8 +728,8 @@ void RC_Channels_Copter::save_trim()
     } else {
 #endif
     // save roll and pitch trim
-    roll_trim = ToRad((float)get_roll_channel().get_control_in()*0.01f);
-    pitch_trim = ToRad((float)get_pitch_channel().get_control_in()*0.01f);
+    roll_trim = cd_to_rad((float)get_roll_channel().get_control_in());
+    pitch_trim = cd_to_rad((float)get_pitch_channel().get_control_in());
 #if AP_COPTER_AHRS_AUTO_TRIM_ENABLED    
     }
 #endif

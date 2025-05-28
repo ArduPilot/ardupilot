@@ -264,7 +264,15 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PTCH_FF_K", 30, AP_TECS, _pitch_ff_k, 0.0),
 
-    // 31 previously used by TECS_LAND_PTRIM
+    // 31 previously used by AP_Int8 TECS_LAND_PTRIM which was removed in November 2022
+
+    // @Param: THR_ERATE
+    // @DisplayName: Forward throttle external limit slew rate
+    // @Description: The externally set forward throttle lower limit applied within TECS will be reduced by this many percentage points per second after being set. Set to a non positive value to hold the lower limit for one frame only.
+    // @Units: %/s
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("THR_ERATE", 31, AP_TECS, _thr_min_pct_ext_rate_lim, 20),
 
     // @Param: FLARE_HGT
     // @DisplayName: Flare holdoff height
@@ -276,7 +284,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: HDEM_TCONST
     // @DisplayName: Height Demand Time Constant
-    // @Description: This sets the time constant of the low pass filter that is applied to the height demand input when bit 1 of TECS_OPTIONS is not selected.
+    // @Description: This sets the time constant of the low pass filter that is applied to the height demand input when bit 0 of TECS_OPTIONS is not selected.
     // @Range: 1.0 5.0
     // @Units: s
     // @Increment: 0.2
@@ -468,7 +476,7 @@ void AP_TECS::_update_speed(float DT)
 
 void AP_TECS::_update_speed_demand(void)
 {
-    if (_options & OPTION_DESCENT_SPEEDUP) {
+    if (option_is_set(Option::DESCENT_SPEEDUP)) {
         // Allow demanded speed to  go to maximum when descending at maximum descent rate
         _TAS_dem = _TAS_dem + (_TASmax - _TAS_dem) * _sink_fraction;
     }
@@ -844,6 +852,25 @@ void AP_TECS::_update_throttle_with_airspeed(void)
                                         (double)SPE_err_min,
                                         (double)SPE_err_max);
         }
+        // @LoggerMessage: TEC4
+        // @Vehicles: Plane
+        // @Description: Additional additional additional information about the Total Energy Control System
+        // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+        // @Field: TimeUS: Time since system startup
+        // @Field: P: estimate of potential energy
+        // @Field: K: estimate of kinetic energy
+        // @Field: Pdem: demanded potential energy
+        // @Field: Kdem: demanded kinetic energy
+        AP::logger().WriteStreaming(
+            "TEC4",
+            "TimeUS," "P," "K," "Pdem," "Kdem",
+            "Q"       "f"  "f"  "f"     "f",
+            AP_HAL::micros64(),
+            (double)_SPE_est,
+            (double)_SKE_est,
+            (double)_SPE_dem,
+            (double)_SKE_dem
+            );
 #endif
     }
 
@@ -1327,7 +1354,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Detect bad descent due to demanded airspeed being too high
     _detect_bad_descent();
 
-    if (_options & OPTION_GLIDER_ONLY) {
+    if (option_is_set(Option::GLIDER_ONLY)) {
         _flags.badDescent = false;
     }
 
@@ -1378,11 +1405,16 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 }
 
 // set minimum throttle override, [-1, -1] range
-// it is applicable for one control cycle only
-void AP_TECS::set_throttle_min(const float thr_min) {
+// if reset_output is true the output slew limiter will also be reset to respect the lower limit
+// its decay is controlled by TECS_THR_ERATE
+void AP_TECS::set_throttle_min(const float thr_min, bool reset_output) {
     // Don't change the limit if it is already covered.
     if (thr_min > _THRminf_ext) {
         _THRminf_ext = thr_min;
+        if (reset_output) {
+            _last_throttle_dem = MAX(_last_throttle_dem, _THRminf_ext);
+            _throttle_dem = _last_throttle_dem;
+        }
     }
 }
 
@@ -1417,7 +1449,12 @@ void AP_TECS::_update_throttle_limits() {
     
     // Reset the external throttle limits.
     // Caller will have to reset them in the next iteration.
-    _THRminf_ext = -1.0f;
+    if (_thr_min_pct_ext_rate_lim > 0) {
+        _THRminf_ext -= 0.01f * float(_thr_min_pct_ext_rate_lim) * _DT;
+        _THRminf_ext = MAX(_THRminf_ext, -1.0f);
+    } else {
+        _THRminf_ext = -1.0f;
+    }
     _THRmaxf_ext = 1.0f;
 }
 
@@ -1503,7 +1540,7 @@ void AP_TECS::_update_pitch_limits(const int32_t ptchMinCO_cd) {
     if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF
         || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)
     {
-        _PITCHminf = CentiDegreesToRadians(ptchMinCO_cd);
+        _PITCHminf = cd_to_rad(ptchMinCO_cd);
     }
 
     // Apply external limits.

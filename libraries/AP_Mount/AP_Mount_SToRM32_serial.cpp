@@ -111,7 +111,7 @@ void AP_Mount_SToRM32_serial::update()
 // get attitude as a quaternion.  returns true on success
 bool AP_Mount_SToRM32_serial::get_attitude_quaternion(Quaternion& att_quat)
 {
-    att_quat.from_euler(radians(_current_angle.x * 0.01f), radians(_current_angle.y * 0.01f), radians(_current_angle.z * 0.01f));
+    att_quat.from_euler(cd_to_rad(_current_angle.x), cd_to_rad(_current_angle.y), cd_to_rad(_current_angle.z));
     return true;
 }
 

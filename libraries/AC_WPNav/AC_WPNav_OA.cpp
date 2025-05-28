@@ -6,8 +6,8 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include "AC_WPNav_OA.h"
 
-AC_WPNav_OA::AC_WPNav_OA(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control) :
-    AC_WPNav(inav, ahrs, pos_control, attitude_control)
+AC_WPNav_OA::AC_WPNav_OA(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control) :
+    AC_WPNav(ahrs, pos_control, attitude_control)
 {
 }
 
@@ -48,7 +48,7 @@ float AC_WPNav_OA::get_wp_distance_to_destination_cm() const
         return AC_WPNav::get_wp_distance_to_destination_cm();
     }
 
-    return get_horizontal_distance_cm(_inav.get_position_xy_cm(), _destination_oabak_neu_cm.xy());
+    return get_horizontal_distance_cm(_pos_control.get_pos_estimate_NEU_cm().xy().tofloat(), _destination_oabak_neu_cm.xy());
 }
 
 /// get_wp_bearing_to_destination - get bearing to next waypoint in centi-degrees
@@ -59,7 +59,7 @@ int32_t AC_WPNav_OA::get_wp_bearing_to_destination_cd() const
         return AC_WPNav::get_wp_bearing_to_destination_cd();
     }
 
-    return get_bearing_cd(_inav.get_position_xy_cm(), _destination_oabak_neu_cm.xy());
+    return get_bearing_cd(_pos_control.get_pos_estimate_NEU_cm().xy().tofloat(), _destination_oabak_neu_cm.xy());
 }
 
 /// true when we have come within RADIUS cm of the waypoint

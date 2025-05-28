@@ -251,6 +251,16 @@ void Volz::update_sitl_input_pwm(struct sitl_input &input)
 #if HAL_LOGGING_ENABLED
 void Volz::log_Servo(const Volz::Servo &servo, const uint32_t now_us)
 {
+    // @LoggerMessage: SMVZ
+    // @Description: Simulated Volz servo information
+    // @Field: TimeUS: Time since system startup
+    // @Field: Id: Volz servo ID
+    // @Field: Pos: Current Simulated Position
+    // @Field: DesPos: Desired Simulated Position
+    // @Field: V: simulated servo voltage
+    // @Field: A: simulated servo current
+    // @Field: PCBT: simulated PCB Temperature
+    // @Field: MotT: simulated motor Temperature
     AP::logger().WriteStreaming(
         "SMVZ",
         "TimeUS," "Id," "Pos," "DesPos," "V," "A," "PCBT," "MotT" ,

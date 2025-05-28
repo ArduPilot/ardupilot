@@ -61,7 +61,7 @@ void ModeCruise::navigate()
 
     // check if we are moving in the direction of the front of the vehicle
     const int32_t ground_course_cd = plane.gps.ground_course_cd();
-    const bool moving_forwards = fabsf(wrap_PI(radians(ground_course_cd * 0.01) - plane.ahrs.get_yaw())) < M_PI_2;
+    const bool moving_forwards = fabsf(wrap_PI(cd_to_rad(ground_course_cd) - plane.ahrs.get_yaw())) < M_PI_2;
 
     if (!locked_heading &&
         plane.channel_roll->get_control_in() == 0 &&

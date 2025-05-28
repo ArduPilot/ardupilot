@@ -14,7 +14,7 @@ class AC_Loiter
 public:
 
     /// Constructor
-    AC_Loiter(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
+    AC_Loiter(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
     /// initialise loiter target to a position in cm from ekf origin
     void init_target_cm(const Vector2f& position_neu_cm);
@@ -72,7 +72,6 @@ protected:
     void calc_desired_velocity(bool avoidance_on = true);
 
     // references and pointers to external libraries
-    const AP_InertialNav&   _inav;
     const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;

@@ -2902,79 +2902,72 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def AutoTune(self):
         """Test autotune mode"""
 
-        rlld = self.get_parameter("ATC_RAT_RLL_D")
-        rlli = self.get_parameter("ATC_RAT_RLL_I")
-        rllp = self.get_parameter("ATC_RAT_RLL_P")
+        gain_names = [
+            "ATC_RAT_RLL_D",
+            "ATC_RAT_RLL_I",
+            "ATC_RAT_RLL_P",
+        ]
+
+        ogains = self.get_parameters(gain_names)
+        # set these parameters so they get reverted at the end of the test:
+        self.set_parameters(ogains)
+
         self.set_parameter("ATC_RAT_RLL_SMAX", 1)
         self.takeoff(10)
 
-        # hold position in loiter
+        tstart = self.get_sim_time()
+
         self.change_mode('AUTOTUNE')
 
-        tstart = self.get_sim_time()
-        sim_time_expected = 5000
-        deadline = tstart + sim_time_expected
-        while self.get_sim_time_cached() < deadline:
-            now = self.get_sim_time_cached()
-            m = self.mav.recv_match(type='STATUSTEXT',
-                                    blocking=True,
-                                    timeout=1)
-            if m is None:
-                continue
-            self.progress("STATUSTEXT (%u<%u): %s" % (now, deadline, m.text))
-            if "AutoTune: Success" in m.text:
-                self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
-                # near enough for now:
-                self.change_mode('LAND')
-                self.wait_landed_and_disarmed()
-                # check the original gains have been re-instated
-                if (rlld != self.get_parameter("ATC_RAT_RLL_D") or
-                        rlli != self.get_parameter("ATC_RAT_RLL_I") or
-                        rllp != self.get_parameter("ATC_RAT_RLL_P")):
-                    raise NotAchievedException("AUTOTUNE gains still present")
-                return
+        self.wait_statustext("AutoTune: Success", timeout=5000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
 
-        raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
-                                   (self.get_sim_time() - tstart))
+        # near enough for now:
+        self.change_mode('LAND')
+        self.wait_landed_and_disarmed()
+
+        self.progress("checking the original gains have been re-instated")
+        ngains = self.get_parameters(gain_names)
+        for g in ngains.keys():
+            if ogains[g] != ngains[g]:
+                raise NotAchievedException(f"AUTOTUNE gains not discarded {ogains=} {ngains=}")
 
     def AutoTuneYawD(self):
         """Test autotune mode"""
 
-        rlld = self.get_parameter("ATC_RAT_RLL_D")
-        rlli = self.get_parameter("ATC_RAT_RLL_I")
-        rllp = self.get_parameter("ATC_RAT_RLL_P")
+        gain_names = [
+            "ATC_RAT_RLL_D",
+            "ATC_RAT_RLL_I",
+            "ATC_RAT_RLL_P",
+            "ATC_RAT_YAW_D",
+        ]
+        ogains = self.get_parameters(gain_names)
+        # set these parameters so they get reverted at the end of the test:
+        self.set_parameters(ogains)
+
         self.set_parameter("ATC_RAT_RLL_SMAX", 1)
         self.set_parameter("AUTOTUNE_AXES", 15)
         self.takeoff(10)
 
+        tstart = self.get_sim_time()
+
         # hold position in loiter
         self.change_mode('AUTOTUNE')
 
-        tstart = self.get_sim_time()
-        sim_time_expected = 5000
-        deadline = tstart + sim_time_expected
-        while self.get_sim_time_cached() < deadline:
-            now = self.get_sim_time_cached()
-            m = self.mav.recv_match(type='STATUSTEXT',
-                                    blocking=True,
-                                    timeout=1)
-            if m is None:
-                continue
-            self.progress("STATUSTEXT (%u<%u): %s" % (now, deadline, m.text))
-            if "AutoTune: Success" in m.text:
-                self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
-                # near enough for now:
-                self.change_mode('LAND')
-                self.wait_landed_and_disarmed()
-                # check the original gains have been re-instated
-                if (rlld != self.get_parameter("ATC_RAT_RLL_D") or
-                        rlli != self.get_parameter("ATC_RAT_RLL_I") or
-                        rllp != self.get_parameter("ATC_RAT_RLL_P")):
-                    raise NotAchievedException("AUTOTUNE gains still present")
-                return
+        self.wait_statustext("AutoTune: Success", timeout=5000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
 
-        raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
-                                   (self.get_sim_time() - tstart))
+        # near enough for now:
+        self.change_mode('LAND')
+        self.wait_landed_and_disarmed()
+
+        self.progress("checking the original gains have been re-instated")
+        ngains = self.get_parameters(gain_names)
+        for g in ngains.keys():
+            if ogains[g] != ngains[g]:
+                raise NotAchievedException(f"AUTOTUNE gains not discarded {ogains=} {ngains=}")
 
     def AutoTuneSwitch(self):
         """Test autotune on a switch with gains being saved"""
@@ -7963,14 +7956,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         sensors = [  # tuples of name, prx_type
             ('ld06', 16, {
-                mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 273,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 275,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_45: 256,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_90: 1130,
-                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_135: 696,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_135: 1200,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_180: 625,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_225: 967,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_270: 760,
-                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_315: 771,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_315: 765,
             }),
             ('sf45b', 8, {
                 mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 270,
@@ -13882,6 +13875,50 @@ RTL_ALT 111
         self.set_parameter('SIM_PLD_ENABLE', 1)
         self.wait_statustext('Set SIM_PLD_LAT, SIM_PLD_LAT and SIM_PLD_ALT')
 
+    def LuaParamSet(self):
+        '''test param-set.lua applet'''
+        self.install_applet_script_context("param-set.lua")
+        self.set_parameters({
+            'SCR_ENABLE': 1,
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()  # scripts will be ready by now!
+        self.start_subtest("set RTL_ALT freely")
+        self.set_parameter("RTL_ALT", 23)
+        self.set_parameter("RTL_ALT", 28)
+
+        self.start_subtest("Unable to set DISARM_DELAY freely")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        old_disarm_delay_value = self.get_parameter('DISARM_DELAY')
+        self.send_set_parameter_direct('DISARM_DELAY', 78)
+        self.wait_statustext('param-set: param set denied (DISARM_DELAY)', check_context=True)
+        self.assert_parameter_value('DISARM_DELAY', old_disarm_delay_value)
+        self.context_pop()
+
+        self.start_subtest("Disabling applet via parameter should allow freely setting DISARM_DELAY")
+        self.set_parameter("PARAM_SET_ENABLE", 0)
+        self.set_parameter("DISARM_DELAY", 56)
+
+        self.start_subtest("Re-enabling applet via parameter should stop freely setting DISARM_DELAY")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("PARAM_SET_ENABLE", 1)
+        old_disarm_delay_value = self.get_parameter('DISARM_DELAY')
+        self.send_set_parameter_direct('DISARM_DELAY', 78)
+        self.wait_statustext('param-set: param set denied (DISARM_DELAY)', check_context=True)
+        self.assert_parameter_value('DISARM_DELAY', old_disarm_delay_value)
+        self.context_pop()
+
+        self.start_subtest("Ensure that parameter values are persistent")
+        self.set_parameter('DISARM_DELAY', 111)
+        self.reboot_sitl()
+        self.assert_parameter_value('DISARM_DELAY', 111)
+
+        # very bad things happen if we don't turn things off at the end..
+        self.set_parameter("PARAM_SET_ENABLE", 0)
+
     def do_land(self):
         self.change_mode('LAND')
         self.wait_disarmed()
@@ -13896,6 +13933,7 @@ RTL_ALT 111
             self.DynamicRpmNotchesRateThread,
             self.PIDNotches,
             self.StaticNotches,
+            self.LuaParamSet,
             self.RefindGPS,
             Test(self.GyroFFT, attempts=1, speedup=8),
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),

@@ -115,7 +115,6 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
 void _AutoTakeoff::run()
 {
     const auto &g2 = copter.g2;
-    const auto &inertial_nav = copter.inertial_nav;
     const auto &wp_nav = copter.wp_nav;
     auto *motors = copter.motors;
     auto *pos_control = copter.pos_control;
@@ -126,7 +125,7 @@ void _AutoTakeoff::run()
         // do not spool down tradheli when on the ground with motor interlock enabled
         copter.flightmode->make_safe_ground_handling(copter.is_tradheli() && motors->get_interlock());
         // update auto_takeoff_no_nav_alt_cm
-        no_nav_alt_cm = inertial_nav.get_position_z_up_cm() + g2.wp_navalt_min * 100;
+        no_nav_alt_cm = pos_control->get_pos_estimate_NEU_cm().z + g2.wp_navalt_min * 100;
         return;
     }
 
@@ -152,7 +151,7 @@ void _AutoTakeoff::run()
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), 0.0);
         // update auto_takeoff_no_nav_alt_cm
-        no_nav_alt_cm = inertial_nav.get_position_z_up_cm() + g2.wp_navalt_min * 100;
+        no_nav_alt_cm = pos_control->get_pos_estimate_NEU_cm().z + g2.wp_navalt_min * 100;
         return;
     }
     
@@ -170,7 +169,7 @@ void _AutoTakeoff::run()
         if (throttle >= MIN(copter.g2.takeoff_throttle_max, 0.9) || 
             (copter.pos_control->get_measured_accel_U_cmss() >= 0.5 * copter.pos_control->get_max_accel_U_cmss()) ||
             (copter.pos_control->get_vel_desired_NEU_cms().z >= 0.1 * copter.pos_control->get_max_speed_up_cms()) || 
-            ( no_nav_active && (inertial_nav.get_position_z_up_cm() >= no_nav_alt_cm))) {
+            ( no_nav_active && (pos_control->get_pos_estimate_NEU_cm().z >= no_nav_alt_cm))) {
             // throttle > 90%
             // acceleration > 50% maximum acceleration
             // velocity > 10% maximum velocity
@@ -183,7 +182,7 @@ void _AutoTakeoff::run()
     // check if we are not navigating because of low altitude
     if (no_nav_active) {
         // check if vehicle has reached no_nav_alt threshold
-        if (inertial_nav.get_position_z_up_cm() >= no_nav_alt_cm) {
+        if (pos_control->get_pos_estimate_NEU_cm().z >= no_nav_alt_cm) {
             no_nav_active = false;
         }
         pos_control->relax_velocity_controller_NE();
@@ -229,8 +228,7 @@ void _AutoTakeoff::start(float _complete_alt_cm, bool _terrain_alt)
     complete = false;
     // initialise auto_takeoff_no_nav_alt_cm
     const auto &g2 = copter.g2;
-    const auto &inertial_nav = copter.inertial_nav;
-    no_nav_alt_cm = inertial_nav.get_position_z_up_cm() + g2.wp_navalt_min * 100;
+    no_nav_alt_cm = copter.pos_control->get_pos_estimate_NEU_cm().z + g2.wp_navalt_min * 100;
     if ((g2.wp_navalt_min > 0) && (copter.flightmode->is_disarmed_or_landed() || !copter.motors->get_interlock())) {
         // we are not flying, climb with no navigation to current alt-above-ekf-origin + wp_navalt_min
         no_nav_active = true;

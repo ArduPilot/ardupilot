@@ -1282,7 +1282,7 @@ bool AP_AHRS_DCM::get_origin(Location &ret) const
     return !ret.is_zero();
 }
 
-bool AP_AHRS_DCM::get_relative_position_NED_origin(Vector3f &posNED) const
+bool AP_AHRS_DCM::get_relative_position_NED_origin(Vector3p &posNED) const
 {
     Location origin;
     if (!AP_AHRS_DCM::get_origin(origin)) {
@@ -1292,13 +1292,13 @@ bool AP_AHRS_DCM::get_relative_position_NED_origin(Vector3f &posNED) const
     if (!AP_AHRS_DCM::get_location(loc)) {
         return false;
     }
-    posNED = origin.get_distance_NED(loc);
+    posNED = origin.get_distance_NED_postype(loc);
     return true;
 }
 
-bool AP_AHRS_DCM::get_relative_position_NE_origin(Vector2f &posNE) const
+bool AP_AHRS_DCM::get_relative_position_NE_origin(Vector2p &posNE) const
 {
-    Vector3f posNED;
+    Vector3p posNED;
     if (!AP_AHRS_DCM::get_relative_position_NED_origin(posNED)) {
         return false;
     }
@@ -1306,9 +1306,9 @@ bool AP_AHRS_DCM::get_relative_position_NE_origin(Vector2f &posNE) const
     return true;
 }
 
-bool AP_AHRS_DCM::get_relative_position_D_origin(float &posD) const
+bool AP_AHRS_DCM::get_relative_position_D_origin(postype_t &posD) const
 {
-    Vector3f posNED;
+    Vector3p posNED;
     if (!AP_AHRS_DCM::get_relative_position_NED_origin(posNED)) {
         return false;
     }

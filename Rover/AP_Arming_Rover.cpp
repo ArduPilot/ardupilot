@@ -78,6 +78,11 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
         return true;
     }
 
+    if (!hal.scheduler->is_system_initialized()) {
+        check_failed(report, "System not initialised");
+        return false;
+    }
+
     //are arming checks disabled?
     if (checks_to_perform == 0) {
         return mandatory_checks(report);

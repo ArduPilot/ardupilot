@@ -85,19 +85,35 @@ class Board:
         if cfg.options.no_gcs:
             env.CXXFLAGS += ['-DHAL_GCS_ENABLED=0']
 
-        # configurations for XRCE-DDS
-        if cfg.options.enable_dds:
-            cfg.recurse('libraries/AP_DDS')
-            env.ENABLE_DDS = True
-            env.AP_LIBRARIES += [
-                'AP_DDS'
-            ]
-            env.DEFINES.update(AP_DDS_ENABLED = 1)
-            # check for microxrceddsgen
-            cfg.find_program('microxrceddsgen',mandatory=True)
+        # Setup DDS
+        if env.BOARD_CLASS == "ChibiOS" or env.BOARD_CLASS == "Linux":
+            # need to check the hwdef.h file for the board to see if dds is enabled
+            # the issue here is that we need to configure the env properly to include
+            # the DDS library, but the definition is the the hwdef file
+            # and can be overriden by the commandline options
+            with open(env.BUILDROOT + "/hwdef.h", 'r', encoding="utf8") as file:
+                if "#define AP_DDS_ENABLED 1" in file.read():
+                    # Enable DDS if the hwdef file has it enabled
+                    cfg.env.OPTIONS['enable_DDS'] = True
+                elif cfg.env.OPTIONS['enable_DDS']:
+                    # Add the define enabled if the hwdef file does not have it and the commandline option is set
+                    env.DEFINES.update(
+                        AP_DDS_ENABLED=1,
+                    )
+                else:
+                    # Add the define disabled if the hwdef file does not have it and the commandline option is not set
+                    env.DEFINES.update(
+                        AP_DDS_ENABLED=0,
+                    )
         else:
-            env.ENABLE_DDS = False
-            env.DEFINES.update(AP_DDS_ENABLED = 0)
+            if cfg.options.enable_DDS:
+                env.DEFINES.update(
+                    AP_DDS_ENABLED=1,
+                )
+            else:
+                env.DEFINES.update(
+                    AP_DDS_ENABLED=0,
+                )
 
         # setup for supporting onvif cam control
         if cfg.options.enable_onvif:

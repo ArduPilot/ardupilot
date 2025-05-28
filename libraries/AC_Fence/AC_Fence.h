@@ -19,17 +19,6 @@
 #define AC_FENCE_ARMING_FENCES  (AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)
 #define AC_FENCE_ALL_FENCES (AC_FENCE_ARMING_FENCES | AC_FENCE_TYPE_ALT_MIN)
 
-// valid actions should a fence be breached
-#define AC_FENCE_ACTION_REPORT_ONLY                 0       // report to GCS that boundary has been breached but take no further action
-#define AC_FENCE_ACTION_RTL_AND_LAND                1       // return to launch and, if that fails, land
-#define AC_FENCE_ACTION_ALWAYS_LAND                 2       // always land
-#define AC_FENCE_ACTION_SMART_RTL                   3       // smartRTL, if that fails, RTL, it that still fails, land
-#define AC_FENCE_ACTION_BRAKE                       4       // brake, if that fails, land
-#define AC_FENCE_ACTION_SMART_RTL_OR_LAND           5       // SmartRTL, if that fails, Land
-#define AC_FENCE_ACTION_GUIDED                      6       // guided mode, with target waypoint as fence return point
-#define AC_FENCE_ACTION_GUIDED_THROTTLE_PASS        7       // guided mode, but pilot retains manual throttle control
-#define AC_FENCE_ACTION_AUTOLAND_OR_RTL             8       // fixed wing autoland,if enabled, or RTL
-
 // give up distance
 #define AC_FENCE_GIVE_UP_DISTANCE                   100.0f  // distance outside the fence at which we should give up and just land.  Note: this is not used by library directly but is intended to be used by the main code
 
@@ -37,6 +26,19 @@ class AC_Fence
 {
 public:
     friend class AC_PolyFence_loader;
+
+// valid actions should a fence be breached
+    enum class Action {
+        REPORT_ONLY          = 0, // report to GCS that boundary has been breached but take no further action
+        RTL_AND_LAND         = 1, // return to launch and, if that fails, land
+        ALWAYS_LAND          = 2, // always land
+        SMART_RTL            = 3, // smartRTL, if that fails, RTL, and if that still fails, land
+        BRAKE                = 4, // brake, if that fails, land
+        SMART_RTL_OR_LAND    = 5, // SmartRTL, if that fails, Land
+        GUIDED               = 6, // guided mode, with target waypoint as fence return point
+        GUIDED_THROTTLE_PASS = 7, // guided mode, but pilot retains manual throttle control
+        AUTOLAND_OR_RTL      = 8, // fixed wing autoland,if enabled, or RTL
+    };
 
     enum class AutoEnable : uint8_t
     {
@@ -142,7 +144,7 @@ public:
     float get_breach_distance(uint8_t fence_type) const;
 
     /// get_action - getter for user requested action on limit breach
-    uint8_t get_action() const { return _action.get(); }
+    Action get_action() const { return _action; }
 
     /// get_safe_alt - returns maximum safe altitude (i.e. alt_max - margin)
     float get_safe_alt_max() const { return _alt_max - _margin; }
@@ -242,7 +244,7 @@ private:
     AP_Int8         _auto_enabled;          // top level flag for auto enabling fence
     uint8_t         _last_auto_enabled;     // value of auto_enabled last time we checked
     AP_Int8         _configured_fences;     // bit mask holding which fences are enabled
-    AP_Int8         _action;                // recovery action specified by user
+    AP_Enum<Action> _action;                // recovery action specified by user
     AP_Float        _alt_max;               // altitude upper limit in meters
     AP_Float        _alt_min;               // altitude lower limit in meters
     AP_Float        _circle_radius;         // circle fence radius in meters

@@ -2981,7 +2981,7 @@ void GCS_MAVLINK::send_local_position() const
     const AP_AHRS &ahrs = AP::ahrs();
 
     Vector3f local_position, velocity;
-    if (!ahrs.get_relative_position_NED_origin(local_position) ||
+    if (!ahrs.get_relative_position_NED_origin_float(local_position) ||
         !ahrs.get_velocity_NED(velocity)) {
         // we don't know the position and velocity
         return;
@@ -3135,7 +3135,9 @@ MAV_RESULT GCS_MAVLINK::set_message_interval(uint32_t msg_id, int32_t interval_u
 {
     const ap_message id = mavlink_id_to_ap_message_id(msg_id);
     if (id == MSG_LAST) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No ap_message for mavlink id (%u)", (unsigned int)msg_id);
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
         return MAV_RESULT_DENIED;
     }
 
@@ -4774,7 +4776,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink
 #if AP_AIRSPEED_ENABLED
 
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
+    if (airspeed != nullptr && airspeed->enabled()) {
         GCS_MAVLINK_InProgress *task = GCS_MAVLINK_InProgress::get_task(MAV_CMD_PREFLIGHT_CALIBRATION, GCS_MAVLINK_InProgress::Type::AIRSPEED_CAL, msg.sysid, msg.compid, chan);
         if (task == nullptr) {
             return MAV_RESULT_TEMPORARILY_REJECTED;

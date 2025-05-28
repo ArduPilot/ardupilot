@@ -324,7 +324,7 @@ AC_AttitudeControl_Heli::AC_AttitudeControl_Heli(AP_AHRS_View &ahrs, const AP_Mu
 void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds)
 {
     // convert from centidegrees on public interface to radians
-    float yaw_rate_bf_rads = radians(yaw_rate_bf_cds * 0.01f);
+    float yaw_rate_bf_rads = cd_to_rad(yaw_rate_bf_cds);
 
     // store roll, pitch and passthroughs
     // NOTE: this abuses yaw_rate_bf_rads

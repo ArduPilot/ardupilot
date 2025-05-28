@@ -3088,49 +3088,6 @@ class TestSuite(ABC):
 
         return ids
 
-    def LoggerDocumentation_greylist(self):
-        '''returns a set of messages should should be documented but
-        are currently known as undocumented'''
-        return set([
-            "FTN3",  # gyrofft
-            "IE24",  # generator
-            "IEFC",  # generator
-            "SBRE",  # septentrio
-
-            "SAF1",  # blimp-sim
-            "SAN1",  # blimp-sim
-            "SAN2",  # blimp-sim
-            "SBA1",  # blimp-sim
-            "SBLM",  # blimp-sim
-            "SCTL",  # glider-sim
-            "SFA1",  # blimp-sim
-            "SFAN",  # blimp-sim
-            "SFN",   # blimp-sim
-            "SFT",   # blimp-sim
-            "SFV1",  # blimp-sim
-            "SMGC",  # blimp-sim
-            "SRT1",  # blimp-sim
-            "SRT2",  # blimp-sim
-            "SRT3",  # blimp-sim
-            "SSAN",  # blimp-sim
-
-            "GLT",  # glider sim
-            "SL2",  # glider-sim
-            "SLD",  # glider-sim
-
-            "SMVZ",  # Sim-Volz
-
-            "SORC",  # Soaring
-
-            "TCLR",  # tempcal
-            "TEMP",  # temperature sensor library
-
-            "CC",    # AC_CustomControl
-
-            "FWDT",  # quadplane
-            "QBRK",  # quadplane
-        ])
-
     def LoggerDocumentation_whitelist(self):
         '''returns a set of messages which we do not want to see
         documentation for'''
@@ -3165,6 +3122,7 @@ class TestSuite(ABC):
                 "TECS",  # only Plane has TECS
                 "TEC2",  # only Plane has TECS
                 "TEC3",  # only Plane has TECS
+                "TEC4",  # only Plane has TECS
                 "SOAR",  # only Planes can truly soar
                 "SORC",  # soaring is pure magic
                 "QBRK",  # quadplane
@@ -3182,10 +3140,6 @@ class TestSuite(ABC):
                 "GMB1",    # sologimbal
                 "GMB2",    # sologimbal
                 "SURF",    # surface-tracking
-            ])
-        if vinfo_key == 'ArduCopter':
-            ret.update([
-                "CC",    # only Copter has the CustomController
             ])
         # end not-expected-to-be-fixed block
 
@@ -3232,7 +3186,6 @@ class TestSuite(ABC):
         tree = objectify.fromstring(xml)
 
         whitelist = self.LoggerDocumentation_whitelist()
-        greylist = self.LoggerDocumentation_greylist()
 
         docco_ids = {}
         for thing in tree.logformat:
@@ -3259,9 +3212,6 @@ class TestSuite(ABC):
         overdocumented = set()
         for name in sorted(code_ids.keys()):
             if name not in docco_ids:
-                if name in greylist:
-                    self.progress(f"{name} should be documented but isn't")
-                    continue
                 if name not in whitelist:
                     undocumented.add(name)
                 continue
@@ -3311,11 +3261,6 @@ class TestSuite(ABC):
                                                (name, label))
         if len(missing) > 0:
             raise NotAchievedException("Documented messages (%s) not in code" % missing)
-
-        # ensure things in the whitelist are not documented:
-        for g in greylist:
-            if g in docco_ids:
-                raise NotAchievedException(f"greylisted ({g}) is actually documented")
 
     def initialise_after_reboot_sitl(self):
 

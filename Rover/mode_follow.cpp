@@ -67,7 +67,7 @@ void ModeFollow::update()
     }
 
     // calculate vehicle heading
-    const float desired_yaw_cd = wrap_180_cd(atan2f(desired_velocity_ne.y, desired_velocity_ne.x) * DEGX100);
+    const float desired_yaw_cd = wrap_180_cd(rad_to_cd(atan2f(desired_velocity_ne.y, desired_velocity_ne.x)));
 
     // run steering and throttle controllers
     calc_steering_to_heading(desired_yaw_cd);

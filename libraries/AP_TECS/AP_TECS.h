@@ -129,8 +129,9 @@ public:
     }
 
     // set minimum throttle override, [-1, -1] range
-    // it is applicable for one control cycle only
-    void set_throttle_min(const float thr_min);
+    // if reset_output is true the output slew limiter will also be reset to respect the lower limit
+    // its decay is controlled by TECS_THR_ERATE
+    void set_throttle_min(const float thr_min, bool reset_output = false);
 
     // set maximum throttle override, [0, -1] range
     // it is applicable for one control cycle only
@@ -210,14 +211,19 @@ private:
     AP_Float _flare_holdoff_hgt;
     AP_Float _hgt_dem_tconst;
 
-    enum {
-        OPTION_GLIDER_ONLY=(1<<0),
-        OPTION_DESCENT_SPEEDUP=(1<<1)
+    enum class Option {
+        GLIDER_ONLY     = (1<<0),
+        DESCENT_SPEEDUP = (1<<1)
     };
+
+    bool option_is_set(const Option option) const {
+        return (_options.get() & int32_t(option)) != 0;
+    }
 
     AP_Float _pitch_ff_v0;
     AP_Float _pitch_ff_k;
     AP_Float _accel_gf;
+    AP_Int8 _thr_min_pct_ext_rate_lim;
 
     // current height estimate (above field elevation)
     float _height;
