@@ -776,7 +776,7 @@ void AP_GyroFFT::stop_notch_tune()
     float harmonic = calculate_notch_frequency(freqs, numpeaks, _harmonic_fit, harmonics);
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "FFT: Found peaks at %.1f/%.1f/%.1fHz", freqs[0], freqs[1], freqs[2]);
-    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "FFT: Selected %.1fHz\n", harmonic);
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "FFT: Selected %.1fHz", harmonic);
 
     // if we don't have a throttle value then all bets are off
     if (is_zero(_avg_throttle_out) || is_zero(harmonic)) {
