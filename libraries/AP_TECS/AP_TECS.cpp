@@ -284,7 +284,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: HDEM_TCONST
     // @DisplayName: Height Demand Time Constant
-    // @Description: This sets the time constant of the low pass filter that is applied to the height demand input when bit 1 of TECS_OPTIONS is not selected.
+    // @Description: This sets the time constant of the low pass filter that is applied to the height demand input when bit 0 of TECS_OPTIONS is not selected.
     // @Range: 1.0 5.0
     // @Units: s
     // @Increment: 0.2
