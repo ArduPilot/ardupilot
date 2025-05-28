@@ -1430,7 +1430,7 @@ float AP_GyroFFT::self_test(float frequency, FloatBuffer& test_window)
 {
     test_window.clear();
     for(uint16_t i = 0; i < _state->_window_size; i++) {
-        if (!test_window.push(sinf(2.0f * M_PI * frequency * i / _fft_sampling_rate_hz) * ToRad(20) * 2000)) {
+        if (!test_window.push(sinf(2.0f * M_PI * frequency * i / _fft_sampling_rate_hz) * radians(20) * 2000)) {
             AP_HAL::panic("Could not create FFT test window");
         }
     }
