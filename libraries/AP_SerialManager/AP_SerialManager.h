@@ -177,6 +177,14 @@ public:
     const UARTState *find_protocol_instance(enum SerialProtocol protocol,
                                             uint8_t instance) const;
 
+    // disable an option on a serial port:
+    void disable_option(uint8_t instance, uint32_t option) {
+        if (instance >= ARRAY_SIZE(state)) {
+            return;
+        }
+        state[instance].options.set_and_notify(state[instance].options & ~option);
+    }
+
 #if AP_SERIALMANAGER_REGISTER_ENABLED
     /*
       a class for a externally registered port
