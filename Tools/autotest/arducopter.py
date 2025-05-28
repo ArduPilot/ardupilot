@@ -3036,22 +3036,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if "AutoTune: Success" in m.text:
                 self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
                 post_gains = get_roll_gains("post")
-                if gains_same(original_gains, post_gains):
-                    raise NotAchievedException("AUTOTUNE gains not changed")
-
-                # because of the way AutoTune works, once autotune is
-                # complete we return the original parameters via
-                # parameter-fetching, but fly on the tuned parameters
-                # (both sets with the I term scaled down).  This test
-                # makes sure that's still the case.  It would be nice
-                # if the PIDs parameters were `set` on success, but
-                # they aren't...  Note that if we use the switch to
-                # restore the original gains and then start testing
-                # again (with the switch) then we see the new gains!
-
-                # gains are scaled during the testing phase:
-                if not gains_same(scaled_original_gains, post_gains):
-                    raise NotAchievedException("AUTOTUNE gains were reported as just original gains in test-mode.  If you're fixing this, good!")  # noqa
+                self.progress("Check original gains are used after tuning finished")
+                if not gains_same(original_gains, post_gains):
+                    raise NotAchievedException("AUTOTUNE original gains not restored")
 
                 self.progress("Check original gains are re-instated by switch")
                 self.set_rc(8, 1100)
