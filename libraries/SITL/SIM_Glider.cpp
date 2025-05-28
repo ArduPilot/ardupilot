@@ -292,7 +292,7 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
         // release at burst height or when balloon cut output goes high
         if (hal.scheduler->is_system_initialized() &&
             (height_AMSL > balloon_burst_amsl || balloon_cut > 0.8)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "pre-release at %i m AMSL\n", (int)height_AMSL);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "pre-release at %i m AMSL", (int)height_AMSL);
             carriage_state = carriageState::PRE_RELEASE;
         }
     } else if (carriage_state == carriageState::PRE_RELEASE) {
@@ -302,7 +302,7 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
         if (balloon_velocity.length() < 0.5) {
             carriage_state = carriageState::RELEASED;
             use_smoothing = false;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "released at %.0f m AMSL\n", (0.01f * home.alt) - position.z);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "released at %.0f m AMSL", (0.01f * home.alt) - position.z);
         }
     } else if (carriage_state == carriageState::WAITING_FOR_PICKUP) {
         // Don't allow the balloon to drag sideways until the pickup
