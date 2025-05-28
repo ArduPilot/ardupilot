@@ -552,7 +552,7 @@ bool Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
             continue;
         }
         if (!healthy(i)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag[%u]: unhealthy\n", i);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag[%u]: unhealthy", i);
             return false;
         }
 
