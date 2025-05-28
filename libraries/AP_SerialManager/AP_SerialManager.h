@@ -153,7 +153,7 @@ public:
             return AP_SerialManager::SerialProtocol(protocol.get());
         }
         AP_Int32 baud;
-        AP_Int16 options;
+        AP_Int32 options;
         AP_Int8 protocol;
 
         // serial index number
@@ -221,6 +221,8 @@ private:
     void set_options(uint16_t i);
 
     bool init_console_done;
+
+    void convert_parameters();
 };
 
 namespace AP {
