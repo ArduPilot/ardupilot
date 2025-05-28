@@ -78,6 +78,8 @@ public:
     // 24G, but they are not guaranteed to be remotely linear past
     // 16G
     const uint16_t multiplier_accel = INT16_MAX/(26*GRAVITY_MSS);
+protected:
+    void set_primary(bool _is_primary) override;
 
 private:
     AP_InertialSensor_Invensense(AP_InertialSensor &imu,
