@@ -3092,15 +3092,7 @@ class TestSuite(ABC):
         '''returns a set of messages which we do not want to see
         documentation for'''
 
-        # we allow for no docs for replay messages, as these are not for end-users. They are
-        # effectively binary blobs for replay
-        # Documenting these is still useful! -pb
-        REPLAY_MSGS = ['RFRH', 'RFRF', 'REV2', 'RSO2', 'RWA2', 'REV3', 'RSO3', 'RWA3', 'RMGI',
-                       'REY3', 'RISH', 'RISI', 'RISJ', 'RBRH', 'RBRI', 'RRNH', 'RRNI',
-                       'RGPH', 'RGPI', 'RGPJ', 'RASH', 'RASI', 'RBCH', 'RBCI', 'RVOH', 'RMGH',
-                       'ROFH', 'REPH', 'REVH', 'RWOH', 'RBOH', 'RSLL']
-
-        ret = set(REPLAY_MSGS)
+        ret = set()
 
         # messages not expected to be on particular vehicles.  Nothing
         # needs fixing below this point, unless you can come up with a
@@ -3111,7 +3103,8 @@ class TestSuite(ABC):
         # those messages.  We *do* care about the documented messages
         # for a vehicle as we follow the tree created by the
         # documentation (eg. @Path:
-        # ../libraries/AP_LandingGear/AP_LandingGear.cpp).
+        # ../libraries/AP_LandingGear/AP_LandingGear.cpp).  The lists
+        # here have been created to fix this discrepancy.
         vinfo_key = self.vehicleinfo_key()
         if vinfo_key != 'ArduPlane' and vinfo_key != 'ArduCopter' and vinfo_key != 'Helicopter':
             ret.update([
