@@ -760,8 +760,8 @@ void AC_AttitudeControl::input_thrust_vector_heading_cd(const Vector3f& thrust_v
     const float slew_yaw_max_rads = get_slew_yaw_max_rads();
 
     // Convert from centidegrees on public interface to radians
-    float heading_rate_rads = constrain_float(cd_to_rad(heading_rate_cds), -slew_yaw_max_rads, slew_yaw_max_rads);
-    float heading_angle_rad = cd_to_rad(heading_angle_cd);
+    const float heading_rate_rads = constrain_float(cd_to_rad(heading_rate_cds), -slew_yaw_max_rads, slew_yaw_max_rads);
+    const float heading_angle_rad = cd_to_rad(heading_angle_cd);
 
     // update attitude target
     update_attitude_target();
