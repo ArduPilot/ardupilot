@@ -51,7 +51,7 @@ public:
     float get_rate_degs() const { return _rate_degs; }
 
     /// get_rate_current - returns actual calculated rate target in deg/sec, which may be less than _rate_degs
-    float get_rate_current() const { return ToDeg(_angular_vel_rads); }
+    float get_rate_current() const { return degrees(_angular_vel_rads); }
 
     /// set_rate - set circle rate in degrees per second
     void set_rate_degs(float rate_degs);
