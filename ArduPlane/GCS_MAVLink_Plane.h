@@ -63,6 +63,7 @@ private:
     MAV_RESULT handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_DO_PARACHUTE(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_DO_VTOL_TRANSITION(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_DO_SET_REL_ALT_FROM_DIST_SENSOR(const mavlink_command_int_t &packet);
 
     void handle_set_position_target_global_int(const mavlink_message_t &msg);
     void handle_set_position_target_local_ned(const mavlink_message_t &msg);
