@@ -5906,7 +5906,7 @@ void GCS_MAVLINK::send_sys_status()
 #if HAL_LOGGING_ENABLED
     const uint16_t dropped_logmessage_count = AP::logger().num_dropped();
 #else
-    const uint16_t dropped_logmessage_count = -1;
+    const uint16_t dropped_logmessage_count = UINT16_MAX;
 #endif  // HAL_LOGGING_ENABLED
 
     mavlink_msg_sys_status_send(
