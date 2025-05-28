@@ -720,18 +720,18 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Status& msg)
     uint8_t fs_iter = 0;
     msg.failsafe_size = 0;
     if (rc().in_rc_failsafe()) {
-        msg.failsafe[fs_iter++] = FS_RADIO;
+        msg.failsafe[fs_iter++] = Status::FS_RADIO;
     }
     if (battery.has_failsafed()) {
-        msg.failsafe[fs_iter++] = FS_BATTERY;
+        msg.failsafe[fs_iter++] = Status::FS_BATTERY;
     }
     // TODO: replace flag with function.
     if (AP_Notify::flags.failsafe_gcs) {
-        msg.failsafe[fs_iter++] = FS_GCS;
+        msg.failsafe[fs_iter++] = Status::FS_GCS;
     }
     // TODO: replace flag with function.
     if (AP_Notify::flags.failsafe_ekf) {
-        msg.failsafe[fs_iter++] = FS_EKF;
+        msg.failsafe[fs_iter++] = Status::FS_EKF;
     }
     msg.failsafe_size = fs_iter;
 
@@ -1051,13 +1051,13 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             bool param_isinf = true;
             float param_value = 0.0f;
             switch (param.value.type) {
-            case PARAMETER_INTEGER: {
+            case ParameterType::PARAMETER_INTEGER: {
                 param_isnan = isnan(param.value.integer_value);
                 param_isinf = isinf(param.value.integer_value);
                 param_value = float(param.value.integer_value);
                 break;
             }
-            case PARAMETER_DOUBLE: {
+            case ParameterType::PARAMETER_DOUBLE: {
                 param_isnan = isnan(param.value.double_value);
                 param_isinf = isinf(param.value.double_value);
                 param_value = float(param.value.double_value);
@@ -1151,38 +1151,38 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 
             vp = AP_Param::find(param_key, &var_type);
             if (vp == nullptr) {
-                get_parameters_response.values[i].type = PARAMETER_NOT_SET;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_NOT_SET;
                 successful_read &= false;
                 continue;
             }
 
             switch (var_type) {
             case AP_PARAM_INT8: {
-                get_parameters_response.values[i].type = PARAMETER_INTEGER;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
                 get_parameters_response.values[i].integer_value = ((AP_Int8 *)vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_INT16: {
-                get_parameters_response.values[i].type = PARAMETER_INTEGER;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
                 get_parameters_response.values[i].integer_value = ((AP_Int16 *)vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_INT32: {
-                get_parameters_response.values[i].type = PARAMETER_INTEGER;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
                 get_parameters_response.values[i].integer_value = ((AP_Int32 *)vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_FLOAT: {
-                get_parameters_response.values[i].type = PARAMETER_DOUBLE;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_DOUBLE;
                 get_parameters_response.values[i].double_value = vp->cast_to_float(var_type);
                 successful_read &= true;
                 break;
             }
             default: {
-                get_parameters_response.values[i].type = PARAMETER_NOT_SET;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_NOT_SET;
                 successful_read &= false;
                 break;
             }
@@ -1852,3 +1852,4 @@ int clock_gettime(clockid_t clockid, struct timespec *ts)
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
 #endif // AP_DDS_ENABLED
+
