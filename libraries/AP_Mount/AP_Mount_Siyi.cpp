@@ -9,6 +9,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -16,9 +17,15 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_SIYI_HEADER2       0x66    // second header byte
 #define AP_MOUNT_SIYI_PACKETLEN_MIN 10      // minimum number of bytes in a packet.  this is a packet with no data bytes
 #define AP_MOUNT_SIYI_DATALEN_MAX   (AP_MOUNT_SIYI_PACKETLEN_MAX-AP_MOUNT_SIYI_PACKETLEN_MIN) // max bytes for data portion of packet
-#define AP_MOUNT_SIYI_RATE_MAX_RADS radians(90) // maximum physical rotation rate of gimbal in radans/sec
-#define AP_MOUNT_SIYI_PITCH_P       1.50    // pitch controller P gain (converts pitch angle error to target rate)
-#define AP_MOUNT_SIYI_YAW_P         1.50    // yaw controller P gain (converts yaw angle error to target rate)
+#define AP_MOUNT_SIYI_RATE_MAX_RADS radians(70) // maximum physical rotation rate of gimbal in radans/sec
+#define AP_MOUNT_SIYI_ACCEL_MAX_RADSS radians(100) // maximum acceleration of gimbal in rad/s/s
+#define AP_MOUNT_SIYI_UPDATE_DT     0.02    // update called at 50hz
+#define AP_MOUNT_SIYI_PITCH_P       1.5     // pitch controller P gain (converts pitch angle error to target rate)
+#define AP_MOUNT_SIYI_PITCH_I       0.5     // pitch controller I gain (converts persistent pitch angle error to target rate)
+#define AP_MOUNT_SIYI_PITCH_IMAX    0.3     // pitch controller IMAX (limits maximum I output)
+#define AP_MOUNT_SIYI_YAW_P         1.5     // yaw controller P gain (converts yaw angle error to target rate)
+#define AP_MOUNT_SIYI_YAW_I         0.5     // yaw controller I gain (converts persistent yaw angle error to target rate)
+#define AP_MOUNT_SIYI_YAW_IMAX      0.3     // yaw controller IMAX (limits maximum I output)
 #define AP_MOUNT_SIYI_TIMEOUT_MS    1000    // timeout for health and rangefinder readings
 #define AP_MOUNT_SIYI_THERM_TIMEOUT_MS  3000// timeout for temp min/max readings
 
@@ -34,6 +41,26 @@ const AP_Mount_Siyi::HWInfo AP_Mount_Siyi::hardware_lookup_table[] {
         {{'7','8'}, "ZR30"},
         {{'8','3'}, "ZT6"},
         {{'7','A'}, "ZT30"},
+};
+
+// rate mapping from radians/sec to scalars that can be sent to the gimbal (e.g. -100 to +100)
+const AP_Mount_Siyi::RateMapping AP_Mount_Siyi::rate_mapping[] {
+    {radians(0), 0.0},
+    {radians(4), 0.0},
+    {radians(5), 1.75},
+    {radians(6), 3.0},
+    {radians(7), 4.7},
+    {radians(8), 6.0},
+    {radians(9), 7.5},
+    {radians(10), 9.0},
+    {radians(15), 16.2},
+    {radians(20), 23.8},
+    {radians(25), 31.2},
+    {radians(30), 38.6},
+    {radians(40), 53.4},
+    {radians(50), 68.1},
+    {radians(60), 83.4},
+    {radians(70), 98.0}
 };
 
 // update mount position - should be called periodically
@@ -687,13 +714,92 @@ bool AP_Mount_Siyi::set_motion_mode(const GimbalMotionMode mode, const bool forc
     return sent;
 }
 
+// convert a rate in radians/sec to a scalar that can be sent to the gimbal (e.g. -100 to +100)
+float AP_Mount_Siyi::get_rate_scalar(float rate_rads) const
+{
+    // use absolute rate
+    float rate_rads_abs = fabsf(rate_rads);
+
+    // find first mapping array element with a desired rate greater than rate_rads_abs
+    uint8_t high_index = 0;
+    while (high_index < ARRAY_SIZE(rate_mapping) && (rate_rads_abs > rate_mapping[high_index].desired_rate_rads)) {
+        high_index++;
+    }
+
+    // check for out of range
+    if (high_index == 0) {
+        return 0.0;
+    }
+
+    // linear interpolate to find rate scalar
+    const float dir = rate_rads >= 0 ? 1.0 : -1.0;
+    const float rate_scalar = dir * linear_interpolate(rate_mapping[high_index-1].rate_scalar,
+                                                       rate_mapping[high_index].rate_scalar,
+                                                       rate_rads_abs,
+                                                       rate_mapping[high_index-1].desired_rate_rads,
+                                                       rate_mapping[high_index].desired_rate_rads);
+    return rate_scalar;
+}
+
 // send target pitch and yaw rates to gimbal
 // yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
 void AP_Mount_Siyi::send_target_rates(float pitch_rads, float yaw_rads, bool yaw_is_ef)
 {
-    const float pitch_rate_scalar = constrain_float(100.0 * pitch_rads / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
-    const float yaw_rate_scalar = constrain_float(100.0 * yaw_rads / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
-    rotate_gimbal(pitch_rate_scalar, yaw_rate_scalar, yaw_is_ef);
+    // calculate maximum rate change
+    const float rate_change_max = AP_MOUNT_SIYI_ACCEL_MAX_RADSS * AP_MOUNT_SIYI_UPDATE_DT;
+
+    // apply limits to pitch rate
+    _pitch_control.rate_limited = (pitch_rads > _pitch_control.rate_prev + rate_change_max) || (pitch_rads < _pitch_control.rate_prev - rate_change_max) || (fabsf(pitch_rads) > AP_MOUNT_SIYI_RATE_MAX_RADS);
+    pitch_rads = constrain_float(pitch_rads, _pitch_control.rate_prev - rate_change_max, _pitch_control.rate_prev + rate_change_max);
+    pitch_rads = constrain_float(pitch_rads, -AP_MOUNT_SIYI_RATE_MAX_RADS, AP_MOUNT_SIYI_RATE_MAX_RADS);
+    _pitch_control.rate_prev = pitch_rads;
+
+    // apply limits to yaw rate
+    _yaw_control.rate_limited = (yaw_rads > _yaw_control.rate_prev + rate_change_max) || (yaw_rads < _yaw_control.rate_prev - rate_change_max) || (fabsf(yaw_rads) > AP_MOUNT_SIYI_RATE_MAX_RADS);
+    yaw_rads = constrain_float(yaw_rads, _yaw_control.rate_prev - rate_change_max, _yaw_control.rate_prev + rate_change_max);
+    yaw_rads = constrain_float(yaw_rads, -AP_MOUNT_SIYI_RATE_MAX_RADS, AP_MOUNT_SIYI_RATE_MAX_RADS);
+    _yaw_control.rate_prev = yaw_rads;
+
+    rotate_gimbal(get_rate_scalar(pitch_rads), get_rate_scalar(yaw_rads), yaw_is_ef);
+
+#if AP_MOUNT_SIYI_DEBUG
+    // calculate actual pitch and yaw rates
+    static Vector3f prev_angle_rad;
+    static uint32_t prev_angle_rad_ms;
+    float dt = (_last_current_angle_rad_ms - prev_angle_rad_ms) / 1000.0;
+    if (!is_positive(dt)) {
+        return;
+    }
+    const Vector3f actual_rate = (_current_angle_rad - prev_angle_rad) / dt;
+    prev_angle_rad = _current_angle_rad;
+    prev_angle_rad_ms = _last_current_angle_rad_ms;
+
+    // @Description: Siyi Rate Debug
+    // @Field: TimeUS: Time since system startup
+    // @Field: DPR: Desired pitch rate
+    // @Field: PR: Actual pitch rate
+    // @Field: POut: Pitch controller output
+    // @Field: PL: Pitch controller rate limited
+    // @Field: DYaw: Desired yaw angle
+    // @Field: Yaw: Actual yaw angle
+    // @Field: YOut: Yaw controller output
+    // @Field: YL: Yaw controller rate limited
+    AP::logger().WriteStreaming(
+        "SIYR",
+        "TimeUS,DPR,PR,POut,PL,DYR,YR,YOut,YL",
+        "sdd--dd--",
+        "F00000000",
+        "Qfffbfffb",
+        AP_HAL::micros64(),
+        (double)degrees(pitch_rads),
+        (double)degrees(actual_rate.y),
+        (double)get_rate_scalar(pitch_rads),
+        (int)_pitch_control.rate_limited,
+        (double)degrees(yaw_rads),
+        (double)degrees(actual_rate.z),
+        (double)get_rate_scalar(yaw_rads),
+        (int)_yaw_control.rate_limited);
+#endif // AP_MOUNT_SIYI_DEBUG
 }
 
 // send target pitch and yaw angles to gimbal
@@ -703,7 +809,9 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
     // stop gimbal if no recent actual angles
     uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _last_current_angle_rad_ms >= 200) {
-        rotate_gimbal(0, 0, false);
+        send_target_rates(0, 0, false);
+        _pitch_control.integrator = 0;
+        _yaw_control.integrator = 0;
         return;
     }
 
@@ -714,9 +822,14 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
         current_angle_transformed.z = -_current_angle_rad.z;
     }
 
-    // use simple P controller to convert pitch angle error (in radians) to a target rate scalar (-100 to +100)
-    const float pitch_err_rad = (pitch_rad - current_angle_transformed.y);
-    const float pitch_rate_scalar = constrain_float(100.0 * pitch_err_rad * AP_MOUNT_SIYI_PITCH_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
+    // use PI controller to convert pitch angle error (in radians) to a target rate
+    const float pitch_err_rad = pitch_rad - current_angle_transformed.y;
+    const float pitch_control_P = pitch_err_rad * AP_MOUNT_SIYI_PITCH_P;
+    // calculate I term if not limited or error reduces I term
+    if (!_pitch_control.rate_limited || (pitch_err_rad > 0 && _pitch_control.integrator < 0) || (pitch_err_rad < 0 && _pitch_control.integrator > 0)) {
+        _pitch_control.integrator = constrain_float(_pitch_control.integrator + pitch_err_rad * AP_MOUNT_SIYI_PITCH_I * AP_MOUNT_SIYI_UPDATE_DT, -AP_MOUNT_SIYI_PITCH_IMAX, AP_MOUNT_SIYI_PITCH_IMAX);
+    }
+    const float pitch_rate_rads = pitch_control_P + _pitch_control.integrator;
 
     // convert yaw angle to body-frame
     float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw()) : yaw_rad;
@@ -729,12 +842,59 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
         yaw_is_ef = false;
     }
 
-    // use simple P controller to convert yaw angle error to a target rate scalar (-100 to +100)
-    const float yaw_err_rad = (yaw_bf_rad - current_angle_transformed.z);
-    const float yaw_rate_scalar = constrain_float(100.0 * yaw_err_rad * AP_MOUNT_SIYI_YAW_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
+    // use PI controller to convert yaw angle error (in radians) to a target rate
+    const float yaw_err_rad = yaw_bf_rad - current_angle_transformed.z;
+    const float yaw_control_P = yaw_err_rad * AP_MOUNT_SIYI_YAW_P;
+    // calculate I term if not limited or error reduces I term
+    if (!_yaw_control.rate_limited || (yaw_err_rad > 0 && _yaw_control.integrator < 0) || (yaw_err_rad < 0 && _yaw_control.integrator > 0)) {
+        _yaw_control.integrator = constrain_float(_yaw_control.integrator + yaw_err_rad * AP_MOUNT_SIYI_YAW_I * AP_MOUNT_SIYI_UPDATE_DT, -AP_MOUNT_SIYI_YAW_IMAX, AP_MOUNT_SIYI_YAW_IMAX);
+    }
+    const float yaw_rate_rads = yaw_control_P + _yaw_control.integrator;
 
-    // rotate gimbal.  pitch_rate and yaw_rate are scalars in the range -100 ~ +100
-    rotate_gimbal(pitch_rate_scalar, yaw_rate_scalar, yaw_is_ef);
+    // send target rates to gimbal
+    send_target_rates(pitch_rate_rads, yaw_rate_rads, yaw_is_ef);
+
+#if AP_MOUNT_SIYI_DEBUG
+    const float pitch_rate_scalar = get_rate_scalar(pitch_rate_rads);
+    const float yaw_rate_scalar = get_rate_scalar(yaw_rate_rads);
+    // @Description: Siyi Pitch Yaw Control
+    // @Field: TimeUS: Time since system startup
+    // @Field: DPit: Desired pitch angle
+    // @Field: Pit: Actual pitch angle
+    // @Field: PErr: Pitch angle error
+    // @Field: PP: Pitch controller P output
+    // @Field: PI: Pitch controller I output
+    // @Field: POut: Pitch controller output
+    // @Field: PL: Pitch controller rate limited
+    // @Field: DYaw: Desired yaw angle
+    // @Field: Yaw: Actual yaw angle
+    // @Field: YErr: Yaw angle error
+    // @Field: YP: Yaw controller P output
+    // @Field: YI: Yaw controller I output
+    // @Field: YOut: Yaw controller output
+    // @Field: YL: Yaw controller rate limited
+    AP::logger().WriteStreaming(
+        "SIYI",
+        "TimeUS,DPit,Pit,PErr,PP,PI,POut,PL,DYaw,Yaw,YErr,YP,YI,YOut,YL",
+        "sddd----ddd----",
+        "F00000000000000",
+        "Qffffffbffffffb",
+        AP_HAL::micros64(),
+        (double)degrees(pitch_rad),
+        (double)degrees(current_angle_transformed.y),
+        (double)degrees(pitch_err_rad),
+        (double)pitch_control_P,
+        (double)_pitch_control.integrator,
+        (double)pitch_rate_scalar,
+        (int)_pitch_control.rate_limited,
+        (double)degrees(yaw_bf_rad),
+        (double)degrees(current_angle_transformed.z),
+        (double)degrees(yaw_err_rad),
+        (double)yaw_control_P,
+        (double)_yaw_control.integrator,
+        (double)yaw_rate_scalar,
+        (int)_yaw_control.rate_limited);
+#endif // AP_MOUNT_SIYI_DEBUG
 }
 
 // take a picture.  returns true on success
