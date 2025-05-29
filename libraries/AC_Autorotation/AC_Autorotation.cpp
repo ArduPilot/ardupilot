@@ -182,15 +182,6 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @User: Advanced
     AP_SUBGROUPINFO(_p_col_td, "TD_COL_", 15, AC_Autorotation, AC_P),
 
-    // @Param: TD_MAX_ANG
-    // @DisplayName: Max angle at touch down
-    // @Description: This should be the maximum angle the vehicle can lean back on its landing gear without experiencing a tail rotor strike. As the vehicle flares and touches down the maximum angle that the copter can lean back is linearly reduced from ANGLE_MAX at the top of the flare to TD_MAX_ANG at 0.5 m above the ground.
-    // @Units: deg
-    // @Range: 5 20
-    // @Increment: 0.01
-    // @User: Advanced
-    AP_GROUPINFO("TD_MAX_ANG", 16, AC_Autorotation, _param_max_touchdown_angle, 10),
-
     // @Param: FLR_MAX_HGT
     // @DisplayName: Maximum Flare Height
     // @Description: A safety cutoff feature to ensure that the calculated flare height cannot go above this value. This is the absolute maximum height above ground that the flare will initiate. Ensure that this is appropriate for your vehicle.

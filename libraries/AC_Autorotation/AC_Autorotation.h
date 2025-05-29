@@ -123,8 +123,6 @@ private:
     AP_Float _param_solidity;
     AP_Float _param_diameter;
     AP_Float _param_touchdown_time;
-    AP_Float _param_max_touchdown_angle;
-
 
     // Forward speed controller
     void update_forward_speed_controller(float des_lat_accel_norm);
