@@ -67,8 +67,8 @@ bool AP_DAC_MCP40D1x::set_voltage(uint8_t chan, float v)
 
     // convert voltage to 7-bit value
     uint8_t wiper = uint8_t(roundf(AP_DAC_MCP40D1X_CONVERSION_EQ(v, params.voltage_reference)));
-    if (wiper > 127) {
-        wiper = 127;
+    if (wiper > INT8_MAX) {
+        wiper = INT8_MAX;
     }
 
     // Currently only suitable for AP_Periph as called from the main thread
