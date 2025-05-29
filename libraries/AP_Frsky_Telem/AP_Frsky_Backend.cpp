@@ -3,9 +3,15 @@
 #if AP_FRSKY_TELEM_ENABLED
 
 #include <AP_Baro/AP_Baro.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_RPM/AP_RPM.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RCTelemetry/AP_RCTelemetry.h>
+#include <GCS_MAVLink/GCS.h>
+
+
 
 extern const AP_HAL::HAL& hal;
 
@@ -117,6 +123,7 @@ void AP_Frsky_Backend::calc_gps_position(void)
  */
 bool AP_Frsky_Backend::calc_rpm(const uint8_t instance, int32_t &value) const
 {
+
 #if AP_RPM_ENABLED
     const AP_RPM* rpm = AP::rpm();
     if (rpm == nullptr) {
@@ -132,6 +139,79 @@ bool AP_Frsky_Backend::calc_rpm(const uint8_t instance, int32_t &value) const
 #else
     return false;
 #endif
+
 }
+
+void AP_Frsky_Backend::calc_power(uint8_t cells_count)
+{
+    float cell_mvolts = 0;
+    const AP_BattMonitor &_battery = AP::battery();
+    const auto &cells_mvolts = _battery.get_cell_voltages();
+      
+    _SPort_data.batt_volt = _battery.voltage()*1000;
+
+    
+    for (uint8_t i = 0; i < cells_count; i++) {
+        
+        //from battery object
+        cell_mvolts = cells_mvolts.cells[i];
+        
+        //or calc it from total voltage - default !!!
+        cell_mvolts = _battery.voltage()*1000/cells_count;
+
+        _SPort_data.cells_mvolts[i] = (uint16_t)cell_mvolts;
+
+    }
+    
+    float current;
+    if (_battery.current_amps(current)) {
+        _SPort_data.power_ampers = current;
+        _SPort_data.power_volts = _battery.voltage(); 
+    }
+    
+}
+
+void AP_Frsky_Backend::calc_time(void)
+{
+        
+    uint16_t time_passed_s = AP_HAL::millis()/1000;   //AP running time in seconds
+    _SPort_data.hours= (uint8_t)(time_passed_s/3600);                 // time since start in hours
+    _SPort_data.minutes = (uint8_t)((time_passed_s % 3600)/60);       // minutes
+    _SPort_data.seconds = (uint8_t)(time_passed_s % 60);              // seconds       
+
+}
+
+void AP_Frsky_Backend::calc_temp(void)
+{
+    // float temp1 = 0;
+    // float temp2 = 0;
+    // AP::baro().get_temperature(temp1, temp2);
+    // _SPort_data.temp1 = (temp1);
+    // _SPort_data.temp2 = (temp2);    
+
+    _SPort_data.temp1 = gcs().custom_mode();                            // flight mode
+    _SPort_data.temp2 = AP::gps().num_sats() * 10 + AP::gps().status(); // number of satellites * 10 + status
+
+}
+
+
+void AP_Frsky_Backend::calc_acc(void)
+{   
+    // 1 >> 0.001  
+
+    // Vector3f acc = AP::ahrs().get_accel_ef();
+    Vector3f acc = AP::ahrs().get_gyro_drift();
+    // Vector3f acc = AP::ahrs().get_gyro_latest();
+    _SPort_data.acc_x = acc.x;
+    _SPort_data.acc_y = acc.y;
+    _SPort_data.acc_z = acc.z;
+
+    _SPort_data.acc_x = 1;
+    _SPort_data.acc_y = 2;
+    _SPort_data.acc_z = 3;
+
+}
+
+
 
 #endif  // AP_FRSKY_TELEM_ENABLED
