@@ -163,6 +163,8 @@ private:
     float _touchdown_init_climb_rate;    // (m/s) The measured climb rate (positive up) when the touch down phase is init
     float _touchdown_init_hgt;           // (m) The measured height above the ground when the touch down phase is init
     AC_P _p_col_td{0.2};                 // Touch down collective p controller
+    Vector2f _last_ang_targ;      // (deg) Stow the last angle target so we can use it in the touchdown phase
+    Vector2f _rp_rate_deg_s;             // (deg/s) The calculated Roll-Pitch rates needed to level the copter
 
 
     // Flags used to check if we believe the aircraft has landed

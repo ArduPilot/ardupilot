@@ -275,6 +275,10 @@ void AC_Autorotation::init(bool cross_track_control)
     // set the guarded heights
     _touch_down_hgt.max_height = _flare_hgt.min_height;
 
+    // Reset the angle history and target rates for the touch down controller
+    _last_ang_targ.zero();
+    _rp_rate_deg_s.zero();
+
     // ensure the AP_SurfaceDistance object is enabled
 #if AP_RANGEFINDER_ENABLED
     _ground_surface->enabled = true;
@@ -389,6 +393,9 @@ void AC_Autorotation::init_touchdown(void)
     // store the descent speed and height at the start of the touch down
     _touchdown_init_climb_rate = get_ef_velocity_up();
     _touchdown_init_hgt = _hagl;
+
+    // Calculate the angle rates needed to level the copter in time with touchdown time
+    _rp_rate_deg_s = _last_ang_targ / get_touchdown_time();
 }
 
 void AC_Autorotation::run_touchdown(float des_lat_accel_norm)
@@ -421,8 +428,20 @@ void AC_Autorotation::run_touchdown(float des_lat_accel_norm)
         _use_cross_track_control &= calc_lateral_accel(des_lat_accel_norm);
     }
 
-    // Update forward speed controller
-    update_forward_speed_controller(des_lat_accel_norm);
+    // We calculate a yaw rate in a way that it will at least be familiar in feeling to the other phases.
+    // To do this we have to assume a forward speed to make the maths work
+    const float bf_lat_accel_target = des_lat_accel_norm * get_accel_max() * 0.5;
+    const float assumed_fwd_speed = 2.0;
+    const float yaw_rate_cds = degrees(bf_lat_accel_target / assumed_fwd_speed) * 100.0;
+
+    // Move angle target towards zero at the calculated rate
+    const float des_angle = 0;
+    const Vector2f delta = _rp_rate_deg_s * _dt;
+    _last_ang_targ.x = constrain_float(des_angle, _last_ang_targ.x - fabsf(delta.x), _last_ang_targ.x + fabsf(delta.x));
+    _last_ang_targ.y = constrain_float(des_angle, _last_ang_targ.y - fabsf(delta.y), _last_ang_targ.y + fabsf(delta.y));
+
+    // Output to attitude controller
+    _attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(_last_ang_targ.x * 100.0, _last_ang_targ.y * 100.0, yaw_rate_cds);
 
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: ARCR
@@ -582,6 +601,9 @@ void AC_Autorotation::update_forward_speed_controller(float pilot_norm_accel)
 
     // Output to attitude controller
     _attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(angle_target.x * 100.0, angle_target.y * 100.0, yaw_rate_cds);
+
+    // Stow the last angle target so we can use it in the touchdown phase
+    _last_ang_targ = angle_target;
 
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: ARSC
