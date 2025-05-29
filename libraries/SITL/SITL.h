@@ -599,6 +599,10 @@ public:
     // clamp simulation - servo channel starting at offset 1 (usually ailerons)
     AP_Int8 clamp_ch;
 
+    // AIS vessel simulation
+    AP_Int8 ais_vessel_count;
+    AP_Float ais_radius_m;
+
 #if AP_SIM_INS_FILE_ENABLED
     enum INSFileMode {
         INS_FILE_NONE = 0,
