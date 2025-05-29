@@ -443,6 +443,10 @@ void AC_Autorotation::run_touchdown(float des_lat_accel_norm)
     // Output to attitude controller
     _attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(_last_ang_targ.x * 100.0, _last_ang_targ.y * 100.0, yaw_rate_cds);
 
+    // Start zeroing the desired velocity to help with the landed checks later.
+    // TODO: Review this, we may want to stop using the forward speed controller in the landed cases anyway.
+    _desired_vel *= 0.95;
+
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: ARCR
     // @Vehicles: Copter
