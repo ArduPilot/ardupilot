@@ -188,7 +188,7 @@ struct PACKED log_XKF3 {
 // @Field: FS: Filter fault status
 // @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement, 5:drag measurement)
 // @Field: SS: Filter solution status
-// @FieldBitmaskEnum: SS: NavFilterStatusBit
+// @FieldBitmaskEnum: SS: AP_AHRS::Status
 // @Field: GPS: Filter GPS status
 // @Field: PI: Primary core index
 struct PACKED log_XKF4 {
