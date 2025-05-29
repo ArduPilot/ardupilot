@@ -769,17 +769,22 @@ void AC_Autorotation::calc_flare_hgt(const float fwd_speed, float climb_rate)
     const float flare_distance = ((k_1 / k_3) * (k_4 - logf(fabsf(1-expf(k_4))) - (2 * k_2 * k_3 - logf(fabsf(1 - expf(2 * k_2 * k_3)))))) - k_1 * delta_t_flare;
     const float delta_h = -flare_distance * cosf(radians(AP_ALPHA_TPP));
 
-    // Estimate altitude to begin touch down phase
+    // Estimate altitude to begin touch down phase. This value is preserved for logging without constraining it to the min/max allowable
     _calculated_touch_down_hgt = -1.0 * climb_rate * get_touchdown_time();
 
+    // Ensure that we keep the calculated touch down height within the allowable min/max values
+    // before it is used in the _calculated_flare_hgt. Not doing this can lead to a zero-ground speed 
+    // condition before the state machine is permited to progress onto the touchdown phase.
+    const float calc_td_hgt = constrain_float(_calculated_touch_down_hgt, _touch_down_hgt.min_height.get(), _touch_down_hgt.max_height.get());
+
     // Total delta altitude to ground
-    _calculated_flare_hgt = _calculated_touch_down_hgt + delta_h;
+    _calculated_flare_hgt = calc_td_hgt + delta_h;
 
     // Save these calculated values for use, if the conditions were appropriate for us to consider the value reliable
     if (fabsf(_fwd_speed_pid.get_error()) < 0.2 * _param_target_speed.get() &&  // Check that our forward speed is withing 20% of target
         fabsf(_lagged_vel_z.get() - get_ef_velocity_up()) < 1.0) // Sink rate can be considered approx steady
     {
-        _touch_down_hgt.set(_calculated_touch_down_hgt);
+        _touch_down_hgt.set(calc_td_hgt);
         _flare_hgt.set(_calculated_flare_hgt);
     }
 }
