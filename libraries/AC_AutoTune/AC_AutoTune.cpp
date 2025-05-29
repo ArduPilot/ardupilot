@@ -78,8 +78,9 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
         break;
 
     case TuneMode::FINISHED:
+    case TuneMode::TESTING:
         // we have completed a tune and the pilot wishes to test the new gains
-        load_gains(GainType::GAIN_TUNED);
+        mode = TuneMode::TESTING;
         update_gcs(AUTOTUNE_MESSAGE_TESTING);
         LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_PILOT_TESTING);
         break;
@@ -308,6 +309,11 @@ void AC_AutoTune::run()
 
     case TuneMode::FINISHED:
         load_gains(GainType::GAIN_ORIGINAL);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
+        break;
+        
+    case TuneMode::TESTING:
+        load_gains(GainType::GAIN_TUNED);
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
         break;
     }

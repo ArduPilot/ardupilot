@@ -257,6 +257,7 @@ protected:
         TUNING = 1,               // autotune is testing gains
         FINISHED = 2,              // tuning has completed, user is flight testing the new gains
         FAILED = 3,               // tuning has failed, user is flying on original gains
+        TESTING = 4,        // tuning has completed, user is flight testing the new gains
     };
     TuneMode mode;                       // see TuneMode for what modes are allowed
 
