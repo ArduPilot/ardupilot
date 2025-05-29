@@ -509,7 +509,7 @@ void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
 
     Vector3f wind = landing.ahrs.wind_estimate();
     // TODO: Support a user defined approach heading
-    target_heading_deg = use_current_heading ? landing.ahrs.yaw_sensor * 1e-2 : (degrees(atan2f(-wind.y, -wind.x)));
+    target_heading_deg = use_current_heading ? landing.ahrs.get_yaw_deg() : (degrees(atan2f(-wind.y, -wind.x)));
 
     memcpy(&extended_approach, &landing_point, sizeof(Location));
     memcpy(&arc_exit, &landing_point, sizeof(Location));
