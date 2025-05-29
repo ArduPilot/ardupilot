@@ -487,6 +487,25 @@ bool AP_AIS::payload_decode(const char *payload)
     }
 }
 
+// Apply scale to lat lon felids, avoiding integer overflow
+int32_t AP_AIS::scale_lat_lon(const int32_t val) const
+{
+    // This is 16.66666...
+    const double scale_factor = (1.0 / 600000.0) * 1e7;
+
+    // Because the scale factor is larger than 1 if we do this straight into the integer its
+    // possible that the value would overflow causing a floating point error
+    // That should never happen with correctly formatted NMEA, but can happen with bad data.
+    const double ret = val * scale_factor;
+    if (ret > INT32_MAX || ret < INT32_MIN) {
+        // This is outside the range of valid lat/lon
+        // This means that both the lat and lon will be ignored
+        // If we just set to 0 the lat/lon pair might look valid
+        return INT32_MAX;
+    }
+    return ret;
+}
+
 bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
 {
     if (strlen(payload) != 28) {
@@ -499,10 +518,10 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
     int8_t rot  = get_bits_signed(payload, 42, 49);
     uint16_t sog       = get_bits(payload, 50, 59);
     bool pos_acc       = get_bits(payload, 60, 60);
-    int32_t lon = get_bits_signed(payload, 61, 88)  * ((1.0f / 600000.0f)*1e7);
-    int32_t lat = get_bits_signed(payload, 89, 115) * ((1.0f / 600000.0f)*1e7);
-    uint16_t cog       = get_bits(payload, 116, 127) * 10;
-    uint16_t head      = get_bits(payload, 128, 136) * 100;
+    int32_t lon = scale_lat_lon(get_bits_signed(payload, 61, 88));
+    int32_t lat = scale_lat_lon(get_bits_signed(payload, 89, 115));
+    uint16_t cog       = get_bits(payload, 116, 127) * 10;  // convert from 0.1 deg to centi-deg
+    uint16_t head      = get_bits(payload, 128, 136) * 100; // convert from deg to centi-deg
     uint8_t sec_utc    = get_bits(payload, 137, 142);
     uint8_t maneuver   = get_bits(payload, 143, 144);
     // 145 - 147: spare
@@ -535,12 +554,6 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
     }
 #else
     (void)repeat;
-    (void)nav;
-    (void)rot;
-    (void)sog;
-    (void)pos_acc;
-    (void)cog;
-    (void)head;
     (void)sec_utc;
     (void)maneuver;
     (void)raim;
@@ -553,35 +566,61 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
         return true;
     }
 
-    // mask of flags that we receive in this message
+    // mask of flags that we update in this message
     const uint16_t mask = ~(AIS_FLAGS_POSITION_ACCURACY | AIS_FLAGS_VALID_COG | AIS_FLAGS_VALID_VELOCITY | AIS_FLAGS_VALID_TURN_RATE | AIS_FLAGS_TURN_RATE_SIGN_ONLY);
     uint16_t flags = _list[index].info.flags & mask; // clear all flags that will be updated
+
+    // Position accuracy
     if (pos_acc) {
         flags |= AIS_FLAGS_POSITION_ACCURACY;
     }
+
+    // Course over ground
     if (cog < 36000) {
         flags |= AIS_FLAGS_VALID_COG;
+    } else {
+        // zero for invalid
+        cog = 0;
     }
+
+    // Speed over ground
+    uint16_t sog_cms = 0;
     if (sog < 1023) {
         flags |= AIS_FLAGS_VALID_VELOCITY;
+        // Convert 0.1 knots to cm/s
+        sog_cms = sog * 0.1 * KNOTS_TO_M_PER_SEC * 100.0;
+
+        // More than 102.2 knots, don't know by how much
+        if (sog == 1022) {
+            flags |= AIS_FLAGS_HIGH_VELOCITY;
+        }
     }
-    if (sog == 1022) {
-        flags |= AIS_FLAGS_HIGH_VELOCITY;
-    }
-    if (rot > -128) {
-        flags |= AIS_FLAGS_VALID_TURN_RATE;
-    }
-    if (rot == 127 || rot == -127) {
-        flags |= AIS_FLAGS_TURN_RATE_SIGN_ONLY;
+
+    // Rate of turn
+    if (rot <= -128) {
+        // Invalid
+        rot = 0;
+
     } else {
-        rot = powf((rot / 4.733f),2.0f) / 6.0f;
+        // Valid value
+        flags |= AIS_FLAGS_VALID_TURN_RATE;
+        const int8_t sign = rot > 0 ? 1 : -1;
+        if (rot == 127 || rot == -127) {
+            flags |= AIS_FLAGS_TURN_RATE_SIGN_ONLY;
+            rot = sign;
+
+        } else {
+            // Apply expo formula and convert from deg per min to cdeg per second
+            // constrain to avoid overflow, probably need to change the units or increase to int16
+            rot = sign * MIN(sq(rot / 4.733) * (100.0 / 60.0), INT8_MAX - 1);
+        }
     }
 
     _list[index].info.lat = lat; // int32_t [degE7] Latitude
     _list[index].info.lon = lon; // int32_t [degE7] Longitude
     _list[index].info.COG = cog; // uint16_t [cdeg] Course over ground
     _list[index].info.heading = head; // uint16_t [cdeg] True heading
-    _list[index].info.velocity = sog; // uint16_t [cm/s] Speed over ground
+    _list[index].info.velocity = sog_cms; // uint16_t [cm/s] Speed over ground
     _list[index].info.flags = flags; // uint16_t Bitmask to indicate various statuses including valid data fields
     _list[index].info.turn_rate = rot; // int8_t [cdeg/s] Turn rate
     _list[index].info.navigational_status = nav; // uint8_t Navigational status
@@ -609,8 +648,8 @@ bool AP_AIS::decode_base_station_report(const char *payload)
     uint8_t minute     = get_bits(payload, 66, 71);
     uint8_t second     = get_bits(payload, 72, 77);
     bool fix           = get_bits(payload, 78, 78);
-    int32_t lon = get_bits_signed(payload, 79, 106)  * ((1.0f / 600000.0f)*1e7);
-    int32_t lat = get_bits_signed(payload, 107, 133) * ((1.0f / 600000.0f)*1e7);
+    int32_t lon = scale_lat_lon(get_bits_signed(payload, 79, 106));
+    int32_t lat = scale_lat_lon(get_bits_signed(payload, 107, 133));
     uint8_t epfd       = get_bits(payload, 134, 137);
     // 138 - 147: spare
     bool raim          = get_bits(payload, 148, 148);
