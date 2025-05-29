@@ -500,7 +500,7 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
     } else {
         // use yaw based bearing hold
         steer_state.hold_course_cd = wrap_360_cd(ahrs.yaw_sensor);
-        bearing = ahrs.yaw_sensor * 0.01f;
+        bearing = ahrs.get_yaw_deg();
         next_WP_loc.offset_bearing(bearing, 1000); // push it out 1km
     }
 

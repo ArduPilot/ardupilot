@@ -301,7 +301,7 @@ bool ModeAutoLand::landing_lined_up(void)
 void ModeAutoLand::arm_check(void)
 {
     if (plane.ahrs.use_compass() && autoland_option_is_set(ModeAutoLand::AutoLandOption::AUTOLAND_DIR_ON_ARM)) {
-        set_autoland_direction(plane.ahrs.yaw_sensor * 0.01);
+        set_autoland_direction(plane.ahrs.get_yaw_deg());
     }
 }
 
