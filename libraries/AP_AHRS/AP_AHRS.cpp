@@ -922,7 +922,7 @@ float AP_AHRS::wind_alignment(const float heading_deg) const
  */
 float AP_AHRS::head_wind(void) const
 {
-    const float alignment = wind_alignment(yaw_sensor*0.01f);
+    const float alignment = wind_alignment(get_yaw_deg());
     return alignment * wind_estimate().xy().length();
 }
 
