@@ -81,7 +81,7 @@ void Mode::AutoYaw::set_mode(Mode yaw_mode)
 
     case Mode::LOOK_AHEAD:
         // Commanded Yaw to automatically look ahead.
-        _look_ahead_yaw = copter.ahrs.yaw_sensor * 0.01;  // cdeg -> deg
+        _look_ahead_yaw = copter.ahrs.get_yaw_deg();
         break;
 
     case Mode::RESETTOARMEDYAW:
