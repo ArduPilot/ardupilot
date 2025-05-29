@@ -553,15 +553,16 @@ void AC_Autorotation::update_forward_speed_controller(float pilot_norm_accel)
     _limit_accel = bf_accel_target.limit_length(get_accel_max());
 
     // Calculate roll and pitch targets from angles, negative accel for negative pitch (pitch forward)
-    Vector2f angle_target = { accel_to_angle(-bf_accel_target.x), // Pitch
-                              accel_to_angle(bf_accel_target.y)}; // Roll
+    Vector2f angle_target = { accel_to_angle(bf_accel_target.y),    // Roll
+                              accel_to_angle(-bf_accel_target.x) }; // Pitch
+
 
     // Ensure that the requested angles do not exceed angle max
     _limit_accel |= angle_target.limit_length(_attitude_control->lean_angle_max_cd());
 
     // we may have scaled the lateral accel in the angle limit scaling, so we need to
     // back calculate the resulting accel from this constrained angle for the yaw rate calc
-    const float bf_lat_accel_target = angle_to_accel(angle_target.y);
+    const float bf_lat_accel_target = angle_to_accel(angle_target.x);
 
     // Calc yaw rate from desired body-frame accels
     // this seems suspiciously simple, but it is correct
@@ -580,7 +581,7 @@ void AC_Autorotation::update_forward_speed_controller(float pilot_norm_accel)
     }
 
     // Output to attitude controller
-    _attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(angle_target.y * 100.0, angle_target.x * 100.0, yaw_rate_cds);
+    _attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(angle_target.x * 100.0, angle_target.y * 100.0, yaw_rate_cds);
 
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: ARSC
