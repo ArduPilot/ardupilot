@@ -545,8 +545,9 @@ void GPS::update()
     // Applying GPS glitch
     // Using first gps glitch
     Vector3f glitch_offsets = params.glitch;
-    d.latitude += glitch_offsets.x;
-    d.longitude += glitch_offsets.y;
+    // 1 meter at the equator is 1.113195e-5 degrees
+    d.latitude += glitch_offsets.x +  params.accuracy * 0.3 * sinf(now_ms * 0.0005f) * 1.113195e-5;
+    d.longitude += glitch_offsets.y + params.accuracy * 0.3 * cosf(now_ms * 0.0005f) * 1.113195e-5;
     d.altitude += glitch_offsets.z;
 
     if (params.jam == 1) {
