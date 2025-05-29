@@ -212,9 +212,9 @@ void AP_Camera_Backend::send_camera_feedback(mavlink_channel_t chan)
         camera_feedback.location.lng,       // longitude
         altitude*1e-2f,                     // alt MSL
         altitude_rel*1e-2f,                 // alt relative to home
-        camera_feedback.roll_sensor*1e-2f,  // roll angle (deg)
-        camera_feedback.pitch_sensor*1e-2f, // pitch angle (deg)
-        camera_feedback.yaw_sensor*1e-2f,   // yaw angle (deg)
+        camera_feedback.get_roll_deg(),     // roll angle (deg)
+        camera_feedback.get_pitch_deg(),    // pitch angle (deg)
+        camera_feedback.get_yaw_deg(),      // yaw angle (deg)
         0.0f,                               // focal length
         CAMERA_FEEDBACK_PHOTO,              // flags
         camera_feedback.feedback_trigger_logged_count); // completed image captures
