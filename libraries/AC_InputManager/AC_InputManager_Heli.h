@@ -27,6 +27,9 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AC_InputManager_Heli);
 
+    //pass the last collective output from non-manual throttle mode
+    void set_last_coll_output(float coll) { _last_auto_coll = coll; }
+
     // get_pilot_desired_collective - rescale's pilot collective pitch input in Stabilize and Acro modes
     float get_pilot_desired_collective(int16_t control_in);
 
@@ -36,6 +39,8 @@ public:
     // set_heli_stab_col_ramp - setter function
     void set_stab_col_ramp(float ramp) { _stab_col_ramp = constrain_float(ramp, 0.0, 1.0); }
 
+    void transition_to_manual(bool transition, float ramp_to_manual) { _im_flags_heli.trans_to_manual = transition, _man_trans_ramp = ramp_to_manual; }
+
     // parameter_check - returns true if input manager specific parameters are sensible, used for pre-arm check
     bool parameter_check(char* fail_msg, uint8_t fail_msg_len) const;
 
@@ -44,10 +49,17 @@ public:
 private:
     struct InputManagerHeliFlags {
         uint8_t use_stab_col        :   1;  // 1 if we should use Stabilise mode collective range, 0 for Acro range
+        uint8_t trans_to_manual        :   1;
     } _im_flags_heli;
 
     //  factor used to smoothly ramp collective from Acro value to Stab-Col value
     float _stab_col_ramp = 0;
+
+    //last collective output from non-manual throttle modes
+    float _last_auto_coll = 0;
+
+    // factor used to smoothly ramp collective from non-manual to manual collective modes
+   float _man_trans_ramp = 0;
 
     AP_Int16        _heli_stab_col_min;             // minimum collective pitch setting at zero throttle input in Stabilize mode
     AP_Int16        _heli_stab_col_low;             // collective pitch setting at mid-low throttle input in Stabilize mode

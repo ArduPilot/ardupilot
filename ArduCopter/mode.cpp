@@ -436,15 +436,24 @@ void Copter::exit_mode(Mode *&old_flightmode,
         motors->set_acro_tail(false);
     }
 
+    //last auto-throttle collective output
+    if(!copter.flightmode->has_manual_throttle()){
+           input_manager.set_last_coll_output(motors->get_throttle());
+       }
+
     // if we are changing from a mode that did not use manual throttle,
     // stab col ramp value should be pre-loaded to the correct value to avoid a twitch
     // heli_stab_col_ramp should really only be active switching between Stabilize and Acro modes
     if (!old_flightmode->has_manual_throttle()){
         if (new_flightmode == &mode_stabilize){
             input_manager.set_stab_col_ramp(1.0);
+            input_manager.transition_to_manual(true,1.0);
         } else if (new_flightmode == &mode_acro){
             input_manager.set_stab_col_ramp(0.0);
+            input_manager.transition_to_manual(true,1.0);
         }
+    }else{
+       input_manager.transition_to_manual(false,0);
     }
 
     // Make sure inverted flight is disabled if not supported in the new mode
