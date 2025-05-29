@@ -73,8 +73,10 @@ protected:
     float angle_lim_max_rp_cd() const override;
     float angle_lim_neg_rpy_cd() const override;
 
-    // Prepares all tuning state variables and target values for a new twitch test.
+    // Prepares state and targets for a new twitch test
     void test_init() override;
+
+    // Executes one twitch step for the specified axis and direction
     void test_run(AxisType test_axis, const float dir_sign) override;
 
     // Sends regular status messages to the ground station
@@ -137,14 +139,8 @@ protected:
     uint32_t get_testing_step_timeout_ms() const override;
 
 private:
-    // twitch test functions for multicopter
-    void twitch_test_init();
-
-    // Executes a single twitch iteration for the specified axis and direction.
-    // Configures attitude or rate commands based on the current TuneType.
-    void twitch_test_run(AxisType test_axis, const float dir_sign);
-
-
+    // Helpers for twitch-based test monitoring
+    
     void twitching_test_rate(float angle, float rate, float rate_target,
                              float &meas_rate_min, float &meas_rate_max, float &meas_angle_min);
 
