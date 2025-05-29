@@ -8861,7 +8861,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.set_parameters({
             "SERIAL5_PROTOCOL": 2,    # mavlink
-            "SERIAL5_OPTIONS": 1024,  # private
+            "MAV3_OPTIONS": 2,        # private
             "GEN_TYPE": 4,            # loweheiser
             "EFI_TYPE": 4,            # loweheiser
             "SIM_EFI_TYPE": 2,        # loweheiser sim
