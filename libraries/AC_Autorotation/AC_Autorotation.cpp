@@ -269,7 +269,6 @@ void AC_Autorotation::init_entry(void)
 
     // Set speed target to maintain the current speed whilst we enter the autorotation
     _desired_vel = _param_target_speed.get();
-    _target_vel = get_bf_speed_forward();
 }
 
 // The entry controller just a special case of the glide controller with head speed target slewing
@@ -518,13 +517,16 @@ void AC_Autorotation::update_NE_speed_controller(void)
     const AP_AHRS &ahrs = AP::ahrs();
 
     // Convert from body-frame to earth-frame
-    // TODO: Check/convert these to 3D conversions we just need to ignore the z component???
-    _desired_velocity_ef = ahrs.body_to_earth2D(_desired_velocity_bf);
-    _desired_accel_ef = ahrs.body_to_earth2D(_desired_accel_bf);
+    _desired_velocity_ef = ahrs.body_to_earth(_desired_velocity_bf);
+    _desired_accel_ef = ahrs.body_to_earth(_desired_accel_bf);
+
+    // Convert vectors to 2D and go from m to cm
+    Vector2f desired_velocity_ef_cm = {_desired_velocity_ef.x, _desired_velocity_ef.y};
+    Vector2f desired_accel_ef_cm = {_desired_accel_ef.x, _desired_accel_ef.y};
+    desired_velocity_ef_cm *= 100.0;
+    desired_accel_ef_cm *= 100.0;
 
     // Update the position controller
-    Vector2f desired_velocity_ef_cm = _desired_velocity_ef * 100.0;
-    Vector2f desired_accel_ef_cm = _desired_accel_ef * 100.0;
     _pos_control->input_vel_accel_NE_cm(desired_velocity_ef_cm, desired_accel_ef_cm, true);
     _pos_control->update_NE_controller();
 
@@ -535,42 +537,14 @@ void AC_Autorotation::update_NE_speed_controller(void)
 // Update speed controller
 void AC_Autorotation::update_forward_speed_controller(float pilot_norm_accel)
 {
-    // Limiting the desired velocity based on the max acceleration limit to get an update target
-    const float min_vel = _target_vel - get_accel_max() * _dt;
-    const float max_vel = _target_vel + get_accel_max() * _dt;
-    _target_vel = constrain_float(_desired_vel, min_vel, max_vel); // (m/s)
-
     // Set body frame velocity targets
-    _desired_velocity_bf.x = _target_vel;
+    _desired_velocity_bf.x = _desired_vel;
     _desired_velocity_bf.y = 0.0; // Always want zero side slip
-
-    // Build the body frame XY accel vector.
-    // First calculate the desired accel
-    // float fwd_accel_target = get_accel_max();
-    // if (!is_zero(_dt)) {
-    //     const float des_accel = (_target_vel - get_bf_speed_forward()) / _dt;
-    //     fwd_accel_target = constrain_float(des_accel, -1.0 * get_accel_max(), get_accel_max());
-    // }
+    _desired_velocity_bf.z = get_bf_speed_down(); // Always match the current vz.  We add this in because the vz is significant proportion of the speed that needs to be accounted for when we rotate from body frame to earth frame
 
     // Pilot can request as much as 1/2 of the max accel laterally to perform a turn.
     // We only allow up to half as we need to prioritize building/maintaining airspeed.
-    // _desired_accel_bf = {fwd_accel_target, pilot_norm_accel * get_accel_max() * 0.5};
-    _desired_accel_bf = {0, pilot_norm_accel * get_accel_max() * 0.5};
-
-    // Ensure we do not exceed the accel limit
-    // _limit_accel = _desired_accel_bf.limit_length(get_accel_max());
-
-    // Calculate roll and pitch targets from angles, negative accel for negative pitch (pitch forward)
-    // Vector2f angle_target = { accel_to_angle(_desired_accel_bf.y),    // Roll
-                            //   accel_to_angle(-_desired_accel_bf.x) }; // Pitch
-
-
-    // Ensure that the requested angles do not exceed angle max
-    // _limit_accel |= angle_target.limit_length(_attitude_control->lean_angle_max_cd());
-
-    // we may have scaled the lateral accel in the angle limit scaling, so we need to
-    // back calculate the resulting accel from this constrained angle for the yaw rate calc
-    // const float bf_lat_accel_target = angle_to_accel(angle_target.x);
+    _desired_accel_bf = {0.0, pilot_norm_accel * get_accel_max() * 0.5, 0.0};
 
     // Calc yaw rate from desired body-frame accels
     // this seems suspiciously simple, but it is correct
@@ -584,42 +558,38 @@ void AC_Autorotation::update_forward_speed_controller(float pilot_norm_accel)
     // accel = s * w
     // w = accel / s
     _desired_heading.yaw_rate_cds = 0.0;
-    if (!is_zero(_target_vel)) {
-        // _desired_heading.yaw_rate_cds = degrees(bf_lat_accel_target / _target_vel) * 100.0;
-        _desired_heading.yaw_rate_cds = degrees(_desired_accel_bf.y / _target_vel) * 100.0;
+    if (!is_zero(_desired_velocity_bf.x)) {
+        _desired_heading.yaw_rate_cds = degrees(_desired_accel_bf.y / _desired_velocity_bf.x) * 100.0;
     }
 
     // Update the position controller
     update_NE_speed_controller();
 
-    // Stow the last angle target so we can use it in the touchdown phase
-    // _last_ang_targ = angle_target;
-
 #if HAL_LOGGING_ENABLED
+
+    // TODO: When happy with this code, we can remove the earth frame vels and accels 
+    // from the logging and class variables as the desired accels will just match the 
+    // desired in position controller.  We could add in the z component stuff in the BF though
+
     // @LoggerMessage: ARSC
     // @Vehicles: Copter
     // @Description: Helicopter AutoRotation Speed Controller (ARSC) information 
     // @Field: TimeUS: Time since system startup
-    // @Field: Des: Desired forward velocity
-    // @Field: Tar: Target forward velocity
-    // @Field: VXB: Desired velocity X in body frame
-    // @Field: VYB: Desired velocity Y in body frame
-    // @Field: AXB: Desired Acceleration X in body frame
-    // @Field: AYB: Desired Acceleration Y in body frame
-    // @Field: VXE: Desired velocity X in earth frame
-    // @Field: VYE: Desired velocity Y in earth frame
-    // @Field: AXE: Desired Acceleration X in earth frame
-    // @Field: AYE: Desired Acceleration Y in earth frame
-
+    // @Field: VX: Desired velocity X in body frame
+    // @Field: VY: Desired velocity Y in body frame
+    // @Field: AX: Desired Acceleration X in body frame
+    // @Field: AY: Desired Acceleration Y in body frame
+    // @Field: VN: Desired velocity North in earth frame
+    // @Field: VE: Desired velocity East in earth frame
+    // @Field: AN: Desired Acceleration North in earth frame
+    // @Field: AE: Desired Acceleration East in earth frame
 
     AP::logger().WriteStreaming("ARSC",
-                                "TimeUS,Des,Targ,VXB,VYB,AXB,AYB,VXE,VYE,AXE,AYE",
-                                "snnnnoonnoo",
-                                "F0000000000",
-                                "Qffffffffff",
+                                "TimeUS,VX,VY,AX,AY,VN,VE,AN,AE",
+                                "snnoonnoo",
+                                "F00000000",
+                                "Qffffffff",
                                 AP_HAL::micros64(),
-                                _desired_vel,
-                                _target_vel,
                                 _desired_velocity_bf.x,
                                 _desired_velocity_bf.y,
                                 _desired_accel_bf.x,
@@ -748,8 +718,8 @@ void AC_Autorotation::calc_flare_hgt(const float fwd_speed, float climb_rate)
     _calculated_flare_hgt = calc_td_hgt + delta_h;
 
     // Save these calculated values for use, if the conditions were appropriate for us to consider the value reliable
-    const float speed_error = fabsf(_target_vel - get_bf_speed_forward());
-    if (speed_error < 0.2 * _target_vel &&  // Check that our forward speed is withing 20% of target
+    const float speed_error = fabsf(_desired_vel - get_bf_speed_forward());
+    if (speed_error < 0.2 * _desired_vel &&  // Check that our forward speed is withing 20% of target
         fabsf(_lagged_vel_z.get() - get_ef_velocity_up()) < 1.0) // Sink rate can be considered approx steady
     {
         _touch_down_hgt.set(calc_td_hgt);
@@ -825,13 +795,25 @@ void AC_Autorotation::run_landed(void)
 // Determine the body frame forward speed in m/s
 float AC_Autorotation::get_bf_speed_forward(void) const
 {
+    return get_bf_vel().x;
+}
+
+// Determine the body frame down speed in m/s
+float AC_Autorotation::get_bf_speed_down(void) const
+{
+    return get_bf_vel().z;
+}
+
+// Determine the body frame forward speed in m/s
+Vector3f AC_Autorotation::get_bf_vel(void) const
+{
     Vector3f vel_NED = {0,0,0};
     const AP_AHRS &ahrs = AP::ahrs();
     if (ahrs.get_velocity_NED(vel_NED)) {
         vel_NED = ahrs.earth_to_body(vel_NED);
     }
     // TODO: need to improve the handling of the velocity NED not ok case
-    return vel_NED.x;
+    return vel_NED;
 }
 
 // Determine the earth frame forward speed in m/s

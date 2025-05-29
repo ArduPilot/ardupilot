@@ -95,8 +95,10 @@ private:
 #endif
     uint32_t _last_gnd_surf_update;
 
-    // Determine the body frame forward speed in m/s
+    // Determine the body frame speeds in m/s
     float get_bf_speed_forward(void) const;
+    float get_bf_speed_down(void) const;
+    Vector3f get_bf_vel(void) const;
 
     // Determine the earth frame forward speed in m/s
     float get_ef_speed_forward(void) const;
@@ -134,10 +136,10 @@ private:
     // Position controller 
     void update_NE_speed_controller(void);
     AC_AttitudeControl::HeadingCommand _desired_heading;
-    Vector2f _desired_accel_bf;
-    Vector2f _desired_velocity_bf;
-    Vector2f _desired_accel_ef;
-    Vector2f _desired_velocity_ef;
+    Vector3f _desired_accel_bf;
+    Vector3f _desired_velocity_bf;
+    Vector3f _desired_accel_ef;
+    Vector3f _desired_velocity_ef;
 
     // Navigation control
     bool _use_cross_track_control; // True if we are using automated cross track control
