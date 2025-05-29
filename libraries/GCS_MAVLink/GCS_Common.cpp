@@ -3420,7 +3420,7 @@ void GCS_MAVLINK::send_vfr_hud()
         chan,
         vfr_hud_airspeed(),
         ahrs.groundspeed(),
-        (ahrs.yaw_sensor / 100) % 360,
+        ahrs.get_yaw_deg(),
         abs(vfr_hud_throttle()),
         vfr_hud_alt(),
         vfr_hud_climbrate());
@@ -7386,8 +7386,6 @@ void GCS_MAVLINK::send_high_latency2() const
         }
     }
 
-    //send_text(MAV_SEVERITY_INFO, "Yaw: %u", (((uint16_t)ahrs.yaw_sensor / 100) % 360));
-
     mavlink_msg_high_latency2_send(chan, 
         AP_HAL::millis(), //[ms] Timestamp (milliseconds since boot or Unix epoch)
         gcs().frame_type(), // Type of the MAV (quadrotor, helicopter, etc.)
@@ -7397,7 +7395,7 @@ void GCS_MAVLINK::send_high_latency2() const
         global_position_current.lng, // [degE7] Longitude
         global_position_current.alt * 0.01f, // [m] Altitude above mean sea level
         high_latency_target_altitude(), // [m] Altitude setpoint
-        (((uint16_t)ahrs.yaw_sensor / 100) % 360) / 2, // [deg/2] Heading
+        uint16_t(ahrs.get_yaw_deg()) / 2, // [deg/2] Heading
         high_latency_tgt_heading(), // [deg/2] Heading setpoint
         high_latency_tgt_dist(), // [dam] Distance to target waypoint or position
         abs(vfr_hud_throttle()), // [%] Throttle
