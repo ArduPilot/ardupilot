@@ -10,14 +10,14 @@
 #include <AC_PID/AC_PID_Basic.h>
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AP_SurfaceDistance/AP_SurfaceDistance.h>
-#include <AP_L1_Control/AP_L1_Control.h>
+#include <AC_AttitudeControl/AC_PosControl.h>
 
 class AC_Autorotation
 {
 public:
 
     //Constructor
-    AC_Autorotation(AP_MotorsHeli*& motors, AC_AttitudeControl*& att_crtl, AP_InertialNav& inav);
+    AC_Autorotation(AP_MotorsHeli*& motors, AC_AttitudeControl*& att_crtl, AP_InertialNav& inav, AC_PosControl*& pos_ctrl);
 
     void init(bool cross_track_control);
 
@@ -75,7 +75,7 @@ private:
     // References to other libraries
     AP_MotorsHeli*&    _motors_heli;
     AC_AttitudeControl*& _attitude_control;
-    AP_L1_Control _L1_controller;
+    AC_PosControl*&    _pos_control;
 
     // A helper class that allows the setting of heights that have a minimum
     // protection value and prevents direct access to the height value
@@ -126,14 +126,20 @@ private:
 
     // Forward speed controller
     void update_forward_speed_controller(float des_lat_accel_norm);
-    AC_PID_Basic _fwd_speed_pid{0.75, 1.0, 0.1, 0.1, 4.0, 0.0, 10.0};  // PID object for vel to accel controller, Default values for kp, ki, kd, kff, imax, filt E Hz, filt D Hz
     bool _limit_accel;            // Flag used for limiting integrator wind up if vehicle is against an accel or angle limit
     float _desired_vel;           // (m/s) This is the velocity that we want.  This is the variable that is set by the invoking function to request a certain speed
     float _target_vel;            // (m/s) This is the acceleration constrained velocity that we are allowed
     float _last_pilot_input;      // We save the last pilot input so that we can smoothly zero it when we transition to the flare phase
 
+    // Position controller 
+    void update_NE_speed_controller(void);
+    AC_AttitudeControl::HeadingCommand _desired_heading;
+    Vector2f _desired_accel_bf;
+    Vector2f _desired_velocity_bf;
+    Vector2f _desired_accel_ef;
+    Vector2f _desired_velocity_ef;
+
     // Navigation control
-    bool calc_lateral_accel(float& lat_accel);
     bool _use_cross_track_control; // True if we are using automated cross track control
     Location _track_origin;        // Location origin used to define the direction of travel.
     Location _track_dest;          // Location destination used to define the direction of travel.
@@ -163,9 +169,8 @@ private:
     float _touchdown_init_climb_rate;    // (m/s) The measured climb rate (positive up) when the touch down phase is init
     float _touchdown_init_hgt;           // (m) The measured height above the ground when the touch down phase is init
     AC_P _p_col_td{0.2};                 // Touch down collective p controller
-    Vector2f _last_ang_targ;      // (deg) Stow the last angle target so we can use it in the touchdown phase
+    Vector2f _last_ang_targ;             // (deg) Stow the last angle target so we can use it in the touchdown phase
     Vector2f _rp_rate_deg_s;             // (deg/s) The calculated Roll-Pitch rates needed to level the copter
-
 
     // Flags used to check if we believe the aircraft has landed
     struct {
