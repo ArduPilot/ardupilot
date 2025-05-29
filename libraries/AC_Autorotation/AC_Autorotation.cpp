@@ -798,6 +798,17 @@ bool AC_Autorotation::should_begin_touchdown(void) const
         return false;
     }
 
+    // We maybe descending with significant descent rate that could lead to an early
+    // progression into the touchdown phase. Either we still have significant ground speed
+    // and we want to let the flare do more work to reduce the speed (both vertical and forward)
+    // or we have low ground speed in which case we still want the head speed controller to manage
+    // the energy in the head in the flare controller.  Hence we will not allow the touch down
+    // phase to begin.
+    if (_hagl > _touch_down_hgt.max_height) {
+        return false;
+    }
+
+    // Calculate the time to impact assuming a constant descent speed
     float time_to_ground = fabsf(_hagl / vz);
     const bool time_check = time_to_ground <= get_touchdown_time();
 
