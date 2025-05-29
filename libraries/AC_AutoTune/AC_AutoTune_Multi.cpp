@@ -130,14 +130,15 @@ AC_AutoTune_Multi::AC_AutoTune_Multi()
 
 void AC_AutoTune_Multi::do_gcs_announcements()
 {
-    const uint32_t now = AP_HAL::millis();
-    if (now - announce_time < AUTOTUNE_ANNOUNCE_INTERVAL_MS) {
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_announce_ms < AUTOTUNE_ANNOUNCE_INTERVAL_MS) {
         return;
     }
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: %s %s %u%%", axis_string(), type_string(), (counter * (100/AUTOTUNE_SUCCESS_COUNT)));
-    announce_time = now;
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: %s %s %u%%", get_axis_name(), get_tune_type_name(), (success_counter * (100/AUTOTUNE_SUCCESS_COUNT)));
+    last_announce_ms = now_ms;
 }
 
+// Prepares all tuning state variables and target values for a new twitch test.
 void AC_AutoTune_Multi::test_init()
 {
     twitch_test_init();
@@ -531,11 +532,11 @@ void AC_AutoTune_Multi::report_axis_gains(const char* axis_string, float rate_P,
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: %s Angle P:%0.3f, Max Accel:%0.0f",axis_string,angle_P,max_accel);
 }
 
-// twitching_test_rate - twitching tests
-// update min and max and test for end conditions
+// Measures peak angular rates and bounce-back behavior during rate tuning.
+// Updates step timer and determines if tuning step is complete.
 void AC_AutoTune_Multi::twitching_test_rate(float angle, float rate, float rate_target_max, float &meas_rate_min, float &meas_rate_max, float &meas_angle_min)
 {
-    const uint32_t now = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
 
     // capture maximum rate
     if (rate > meas_rate_max) {
@@ -555,8 +556,8 @@ void AC_AutoTune_Multi::twitching_test_rate(float angle, float rate, float rate_
     // calculate early stopping time based on the time it takes to get to 63.21%
     if (meas_rate_max < rate_target_max * 0.6321) {
         // the measurement not reached the 63.21% threshold yet
-        step_time_limit_ms = (now - step_start_time_ms) * 3;
-        step_time_limit_ms = MIN(step_time_limit_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
+        step_timeout_ms = (now_ms - step_start_time_ms) * 3;
+        step_timeout_ms = MIN(step_timeout_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
     }
 
     if (meas_rate_max > rate_target_max) {
@@ -569,7 +570,7 @@ void AC_AutoTune_Multi::twitching_test_rate(float angle, float rate, float rate_
         step = StepType::UPDATE_GAINS;
     }
 
-    if (now - step_start_time_ms >= step_time_limit_ms) {
+    if (now_ms - step_start_time_ms >= step_timeout_ms) {
         // we have passed the maximum stop time
         step = StepType::UPDATE_GAINS;
     }
@@ -603,7 +604,7 @@ void AC_AutoTune_Multi::twitching_abort_rate(float angle, float rate, float angl
 // update min and max and test for end conditions
 void AC_AutoTune_Multi::twitching_test_angle(float angle, float rate, float angle_target_max, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max)
 {
-    const uint32_t now = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
 
     // capture maximum angle
     if (angle > meas_angle_max) {
@@ -634,8 +635,8 @@ void AC_AutoTune_Multi::twitching_test_angle(float angle, float rate, float angl
     // calculate early stopping time based on the time it takes to get to 63.21%
     if (meas_angle_max < angle_target_max * 0.6321) {
         // the measurement not reached the 63.21% threshold yet
-        step_time_limit_ms = (now - step_start_time_ms) * 3;
-        step_time_limit_ms = MIN(step_time_limit_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
+        step_timeout_ms = (now_ms - step_start_time_ms) * 3;
+        step_timeout_ms = MIN(step_timeout_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
     }
 
     if (meas_angle_max > angle_target_max) {
@@ -648,7 +649,7 @@ void AC_AutoTune_Multi::twitching_test_angle(float angle, float rate, float angl
         step = StepType::UPDATE_GAINS;
     }
 
-    if (now - step_start_time_ms >= step_time_limit_ms) {
+    if (now_ms - step_start_time_ms >= step_timeout_ms) {
         // we have passed the maximum stop time
         step = StepType::UPDATE_GAINS;
     }
@@ -758,9 +759,9 @@ void AC_AutoTune_Multi::updating_angle_p_down_all(AxisType test_axis)
 void AC_AutoTune_Multi::set_tuning_gains_with_backoff(AxisType test_axis)
 {
     switch (tune_type) {
-    case TuneType::RD_UP:
+    case TuneType::RATE_D_UP:
         break;
-    case TuneType::RD_DOWN:
+    case TuneType::RATE_D_DOWN:
         switch (test_axis) {
         case AxisType::ROLL:
             tune_roll_rd = MAX(min_d, tune_roll_rd * AUTOTUNE_RD_BACKOFF);
@@ -780,7 +781,7 @@ void AC_AutoTune_Multi::set_tuning_gains_with_backoff(AxisType test_axis)
             break;
         }
         break;
-    case TuneType::RP_UP:
+    case TuneType::RATE_P_UP:
         switch (test_axis) {
         case AxisType::ROLL:
             tune_roll_rp = MAX(AUTOTUNE_RP_MIN, tune_roll_rp * AUTOTUNE_RP_BACKOFF);
@@ -794,26 +795,26 @@ void AC_AutoTune_Multi::set_tuning_gains_with_backoff(AxisType test_axis)
             break;
         }
         break;
-    case TuneType::SP_DOWN:
+    case TuneType::ANGLE_P_DOWN:
         break;
-    case TuneType::SP_UP:
+    case TuneType::ANGLE_P_UP:
         switch (test_axis) {
         case AxisType::ROLL:
             tune_roll_sp = MAX(AUTOTUNE_SP_MIN, tune_roll_sp * AUTOTUNE_SP_BACKOFF);
-            tune_roll_accel = MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_RP_BACKOFF);
+            tune_roll_accel = MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max_cdss * AUTOTUNE_ACCEL_RP_BACKOFF);
             break;
         case AxisType::PITCH:
             tune_pitch_sp = MAX(AUTOTUNE_SP_MIN, tune_pitch_sp * AUTOTUNE_SP_BACKOFF);
-            tune_pitch_accel = MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_RP_BACKOFF);
+            tune_pitch_accel = MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max_cdss * AUTOTUNE_ACCEL_RP_BACKOFF);
             break;
         case AxisType::YAW:
         case AxisType::YAW_D:
             tune_yaw_sp = MAX(AUTOTUNE_SP_MIN, tune_yaw_sp * AUTOTUNE_SP_BACKOFF);
-            tune_yaw_accel = MAX(AUTOTUNE_Y_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_Y_BACKOFF);
+            tune_yaw_accel = MAX(AUTOTUNE_Y_ACCEL_MIN, test_accel_max_cdss * AUTOTUNE_ACCEL_Y_BACKOFF);
             break;
         }
         break;
-    case TuneType::RFF_UP:
+    case TuneType::RATE_FF_UP:
     case TuneType::MAX_GAINS:
     case TuneType::TUNE_CHECK:
         // this should never happen
@@ -839,7 +840,7 @@ void AC_AutoTune_Multi::updating_rate_d_up(float &tune_d, float tune_d_min, floa
             if (tune_d <= tune_d_min) {
                 // We have reached minimum D gain so stop tuning
                 tune_d = tune_d_min;
-                counter = AUTOTUNE_SUCCESS_COUNT;
+                success_counter = AUTOTUNE_SUCCESS_COUNT;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
                 // This may be mean AGGR should be increased or MIN_D decreased
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Min Rate D limit reached");
@@ -859,19 +860,19 @@ void AC_AutoTune_Multi::updating_rate_d_up(float &tune_d, float tune_d_min, floa
             // ignore the next result unless it is the same as this one
             ignore_next = true;
             // bounce back is bigger than our threshold so increment the success counter
-            counter++;
+            success_counter++;
         } else {
             if (ignore_next == false) {
                 // bounce back is smaller than our threshold so decrement the success counter
-                if (counter > 0) {
-                    counter--;
+                if (success_counter > 0) {
+                    success_counter--;
                 }
                 // increase D gain (which should increase bounce back)
                 tune_d += tune_d*tune_d_step_ratio * 2.0;
                 // stop tuning if we hit maximum D
                 if (tune_d >= tune_d_max) {
                     tune_d = tune_d_max;
-                    counter = AUTOTUNE_SUCCESS_COUNT;
+                    success_counter = AUTOTUNE_SUCCESS_COUNT;
                     LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
                 }
             } else {
@@ -896,7 +897,7 @@ void AC_AutoTune_Multi::updating_rate_d_down(float &tune_d, float tune_d_min, fl
             if (tune_d <= tune_d_min) {
                 // We have reached minimum D so stop tuning
                 tune_d = tune_d_min;
-                counter = AUTOTUNE_SUCCESS_COUNT;
+                success_counter = AUTOTUNE_SUCCESS_COUNT;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
                 // This may be mean AGGR should be increased or MIN_D decreased
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Min Rate D limit reached");
@@ -915,7 +916,7 @@ void AC_AutoTune_Multi::updating_rate_d_down(float &tune_d, float tune_d_min, fl
         if (meas_rate_max - meas_rate_min < meas_rate_max * aggressiveness) {
             if (ignore_next == false) {
                 // bounce back is less than our threshold so increment the success counter
-                counter++;
+                success_counter++;
             } else {
                 ignore_next = false;
             }
@@ -923,15 +924,15 @@ void AC_AutoTune_Multi::updating_rate_d_down(float &tune_d, float tune_d_min, fl
             // ignore the next result unless it is the same as this one
             ignore_next = true;
             // bounce back is larger than our threshold so decrement the success counter
-            if (counter > 0) {
-                counter--;
+            if (success_counter > 0) {
+                success_counter--;
             }
             // decrease D gain (which should decrease bounce back)
             tune_d -= tune_d * tune_d_step_ratio;
             // stop tuning if we hit minimum D
             if (tune_d <= tune_d_min) {
                 tune_d = tune_d_min;
-                counter = AUTOTUNE_SUCCESS_COUNT;
+                success_counter = AUTOTUNE_SUCCESS_COUNT;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
                 // This may be mean AGGR should be increased or MIN_D decreased
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Min Rate D limit reached");
@@ -948,13 +949,13 @@ void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_mi
         // ignore the next result unless it is the same as this one
         ignore_next = true;
         // if maximum measurement was greater than target so increment the success counter
-        counter++;
+        success_counter++;
     } else if ((meas_rate_max < rate_target) && (meas_rate_max > rate_target * (1.0 - AUTOTUNE_D_UP_DOWN_MARGIN)) && (meas_rate_max - meas_rate_min > meas_rate_max * aggressiveness) && (tune_d > tune_d_min)) {
         // if bounce back was larger than the threshold so decrement the success counter
-        if (counter > 0) {
-            counter--;
+        if (success_counter > 0) {
+            success_counter--;
         }
-        // decrease D gain (which should decrease bounce back)
+        // Reduce D gain if bounce-back exceeds threshold.
         tune_d -= tune_d * tune_d_step_ratio;
         // do not decrease the D term past the minimum
         if (tune_d <= tune_d_min) {
@@ -978,15 +979,15 @@ void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_mi
     } else {
         if (ignore_next == false) {
             // if maximum measurement was lower than target so decrement the success counter
-            if (counter > 0) {
-                counter--;
+            if (success_counter > 0) {
+                success_counter--;
             }
             // increase P gain (which should increase the maximum)
             tune_p += tune_p * tune_p_step_ratio;
             // stop tuning if we hit maximum P
             if (tune_p >= tune_p_max) {
                 tune_p = tune_p_max;
-                counter = AUTOTUNE_SUCCESS_COUNT;
+                success_counter = AUTOTUNE_SUCCESS_COUNT;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
             }
         } else {
@@ -1002,7 +1003,7 @@ void AC_AutoTune_Multi::updating_angle_p_down(float &tune_p, float tune_p_min, f
     if (meas_angle_max < angle_target * (1 + 0.5 * aggressiveness)) {
         if (ignore_next == false) {
             // if maximum measurement was lower than target so increment the success counter
-            counter++;
+            success_counter++;
         } else {
             ignore_next = false;
         }
@@ -1010,8 +1011,8 @@ void AC_AutoTune_Multi::updating_angle_p_down(float &tune_p, float tune_p_min, f
         // ignore the next result unless it is the same as this one
         ignore_next = true;
         // if maximum measurement was higher than target so decrement the success counter
-        if (counter > 0) {
-            counter--;
+        if (success_counter > 0) {
+            success_counter--;
         }
         // decrease P gain (which should decrease the maximum)
         tune_p -= tune_p*tune_p_step_ratio;
@@ -1035,19 +1036,19 @@ void AC_AutoTune_Multi::updating_angle_p_up(float &tune_p, float tune_p_max, flo
         // ignore the next result unless it is the same as this one
         ignore_next = true;
         // if maximum measurement was greater than target so increment the success counter
-        counter++;
+        success_counter++;
     } else {
         if (ignore_next == false) {
             // if maximum measurement was lower than target so decrement the success counter
-            if (counter > 0) {
-                counter--;
+            if (success_counter > 0) {
+                success_counter--;
             }
             // increase P gain (which should increase the maximum)
             tune_p += tune_p * tune_p_step_ratio;
             // stop tuning if we hit maximum P
             if (tune_p >= tune_p_max) {
                 tune_p = tune_p_max;
-                counter = AUTOTUNE_SUCCESS_COUNT;
+                success_counter = AUTOTUNE_SUCCESS_COUNT;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
             }
         } else {
@@ -1059,34 +1060,34 @@ void AC_AutoTune_Multi::updating_angle_p_up(float &tune_p, float tune_p_max, flo
 #if HAL_LOGGING_ENABLED
 void AC_AutoTune_Multi::Log_AutoTune()
 {
-    if ((tune_type == TuneType::SP_DOWN) || (tune_type == TuneType::SP_UP)) {
+    if ((tune_type == TuneType::ANGLE_P_DOWN) || (tune_type == TuneType::ANGLE_P_UP)) {
         switch (axis) {
         case AxisType::ROLL:
-            Log_Write_AutoTune(axis, tune_type, target_angle, test_angle_min, test_angle_max, tune_roll_rp, tune_roll_rd, tune_roll_sp, test_accel_max);
+            Log_Write_AutoTune(axis, tune_type, target_angle, test_angle_min, test_angle_max, tune_roll_rp, tune_roll_rd, tune_roll_sp, test_accel_max_cdss);
             break;
         case AxisType::PITCH:
-            Log_Write_AutoTune(axis, tune_type, target_angle, test_angle_min, test_angle_max, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, test_accel_max);
+            Log_Write_AutoTune(axis, tune_type, target_angle, test_angle_min, test_angle_max, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, test_accel_max_cdss);
             break;
         case AxisType::YAW:
-            Log_Write_AutoTune(axis, tune_type, target_angle, test_angle_min, test_angle_max, tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, test_accel_max);
+            Log_Write_AutoTune(axis, tune_type, target_angle, test_angle_min, test_angle_max, tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, test_accel_max_cdss);
             break;
         case AxisType::YAW_D:
-            Log_Write_AutoTune(axis, tune_type, target_angle, test_angle_min, test_angle_max, tune_yaw_rp, tune_yaw_rd, tune_yaw_sp, test_accel_max);
+            Log_Write_AutoTune(axis, tune_type, target_angle, test_angle_min, test_angle_max, tune_yaw_rp, tune_yaw_rd, tune_yaw_sp, test_accel_max_cdss);
             break;
         }
     } else {
         switch (axis) {
         case AxisType::ROLL:
-            Log_Write_AutoTune(axis, tune_type, target_rate, test_rate_min, test_rate_max, tune_roll_rp, tune_roll_rd, tune_roll_sp, test_accel_max);
+            Log_Write_AutoTune(axis, tune_type, target_rate, test_rate_min, test_rate_max, tune_roll_rp, tune_roll_rd, tune_roll_sp, test_accel_max_cdss);
             break;
         case AxisType::PITCH:
-            Log_Write_AutoTune(axis, tune_type, target_rate, test_rate_min, test_rate_max, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, test_accel_max);
+            Log_Write_AutoTune(axis, tune_type, target_rate, test_rate_min, test_rate_max, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, test_accel_max_cdss);
             break;
         case AxisType::YAW:
-            Log_Write_AutoTune(axis, tune_type, target_rate, test_rate_min, test_rate_max, tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, test_accel_max);
+            Log_Write_AutoTune(axis, tune_type, target_rate, test_rate_min, test_rate_max, tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, test_accel_max_cdss);
             break;
         case AxisType::YAW_D:
-            Log_Write_AutoTune(axis, tune_type, target_rate, test_rate_min, test_rate_max, tune_yaw_rp, tune_yaw_rd, tune_yaw_sp, test_accel_max);
+            Log_Write_AutoTune(axis, tune_type, target_rate, test_rate_min, test_rate_max, tune_yaw_rp, tune_yaw_rd, tune_yaw_sp, test_accel_max_cdss);
             break;
         }
     }
@@ -1219,13 +1220,13 @@ void AC_AutoTune_Multi::twitch_test_init()
         break;
     }
 
-    if ((tune_type == TuneType::SP_DOWN) || (tune_type == TuneType::SP_UP)) {
-        // todo: consider if this should be done for other axis
+    if ((tune_type == TuneType::ANGLE_P_DOWN) || (tune_type == TuneType::ANGLE_P_UP)) {
+        // TODO: Evaluate whether initializing rotation_rate_filt with start_rate improves results for other axes
         rotation_rate_filt.reset(start_rate);
     } else {
         rotation_rate_filt.reset(0.0);
     }
-    twitch_first_iter = true;
+    angle_step_commanded = false;
     test_rate_max = 0.0;
     test_rate_min = 0.0;
     test_angle_max = 0.0;
@@ -1233,15 +1234,16 @@ void AC_AutoTune_Multi::twitch_test_init()
     accel_measure_rate_max = 0.0;
 }
 
-//run twitch test
+// Executes a single twitch iteration for the specified axis and direction.
+// Configures attitude or rate commands based on the current TuneType.
 void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign)
 {
     // hold current attitude
 
-    if ((tune_type == TuneType::SP_DOWN) || (tune_type == TuneType::SP_UP)) {
+    if ((tune_type == TuneType::ANGLE_P_DOWN) || (tune_type == TuneType::ANGLE_P_UP)) {
         // step angle targets on first iteration
-        if (twitch_first_iter) {
-            twitch_first_iter = false;
+        if (!angle_step_commanded) {
+            angle_step_commanded = true;
             // Testing increasing stabilize P gain so will set lean angle target
             switch (test_axis) {
             case AxisType::ROLL:
@@ -1303,8 +1305,8 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
     // Add filter to measurements
     float filter_value;
     switch (tune_type) {
-    case TuneType::SP_DOWN:
-    case TuneType::SP_UP:
+    case TuneType::ANGLE_P_DOWN:
+    case TuneType::ANGLE_P_UP:
         filter_value = dir_sign * (degrees(gyro_reading) * 100.0);
         break;
     default:
@@ -1315,23 +1317,23 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
                     AP::scheduler().get_loop_period_s());
 
     switch (tune_type) {
-    case TuneType::RD_UP:
-    case TuneType::RD_DOWN:
+    case TuneType::RATE_D_UP:
+    case TuneType::RATE_D_DOWN:
         twitching_test_rate(lean_angle, rotation_rate, target_rate, test_rate_min, test_rate_max, test_angle_min);
-        twitching_measure_acceleration(test_accel_max, rotation_rate, accel_measure_rate_max);
+        twitching_measure_acceleration(test_accel_max_cdss, rotation_rate, accel_measure_rate_max);
         twitching_abort_rate(lean_angle, rotation_rate, angle_abort, test_rate_min, test_angle_min);
         break;
-    case TuneType::RP_UP:
+    case TuneType::RATE_P_UP:
         twitching_test_rate(lean_angle, rotation_rate, target_rate * (1 + 0.5 * aggressiveness), test_rate_min, test_rate_max, test_angle_min);
-        twitching_measure_acceleration(test_accel_max, rotation_rate, accel_measure_rate_max);
+        twitching_measure_acceleration(test_accel_max_cdss, rotation_rate, accel_measure_rate_max);
         twitching_abort_rate(lean_angle, rotation_rate, angle_abort, test_rate_min, test_angle_min);
         break;
-    case TuneType::SP_DOWN:
-    case TuneType::SP_UP:
+    case TuneType::ANGLE_P_DOWN:
+    case TuneType::ANGLE_P_UP:
         twitching_test_angle(lean_angle, rotation_rate, target_angle * (1 + 0.5 * aggressiveness), test_angle_min, test_angle_max, test_rate_min, test_rate_max);
-        twitching_measure_acceleration(test_accel_max, rotation_rate - dir_sign * start_rate, accel_measure_rate_max);
+        twitching_measure_acceleration(test_accel_max_cdss, rotation_rate - dir_sign * start_rate, accel_measure_rate_max);
         break;
-    case TuneType::RFF_UP:
+    case TuneType::RATE_FF_UP:
     case TuneType::MAX_GAINS:
     case TuneType::TUNE_CHECK:
         // this should never happen

@@ -70,7 +70,7 @@ protected:
     // reset the update gain variables for heli
     void reset_update_gain_variables() override;
 
-    // initializes test
+    // Prepares all tuning state variables and target values for a new twitch test.
     void test_init() override;
 
     // runs test
