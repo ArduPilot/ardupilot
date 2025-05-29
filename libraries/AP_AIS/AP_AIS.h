@@ -110,6 +110,9 @@ private:
     // decode the payload
     bool payload_decode(const char *payload) WARN_IF_UNUSED;
 
+    // Apply scale to lat lon felids, avoiding integer overflow
+    int32_t scale_lat_lon(const int32_t val) const;
+
     // decode specific message types
     bool decode_position_report(const char *payload, uint8_t type) WARN_IF_UNUSED;
     bool decode_base_station_report(const char *payload) WARN_IF_UNUSED;
