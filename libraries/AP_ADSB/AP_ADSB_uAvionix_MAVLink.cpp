@@ -43,8 +43,9 @@ void AP_ADSB_uAvionix_MAVLink::update()
     // send static configuration data to transceiver, every 5s
     if (_frontend.out_state.chan_last_ms > 0 && now - _frontend.out_state.chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
         // haven't gotten a heartbeat health status packet in a while, assume hardware failure
-        // TODO: reset out_state.chan
         _frontend.out_state.chan = -1;
+        // Commit 25a118c in Master Fix spam of lost transciever message at update() rate
+        _frontend.out_state.chan_last_ms = 0;
         gcs().send_text(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
     } else if (_frontend.out_state.chan >= 0 && !_frontend._my_loc.is_zero() && _frontend.out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
         const mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + _frontend.out_state.chan);
