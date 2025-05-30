@@ -93,6 +93,12 @@ public:
         , y(v0.y)
         , z(z0) {}
 
+    // cast operator
+    template <typename U>
+    operator Vector3<U>() const {
+        return Vector3<U>{static_cast<U>(x), static_cast<U>(y), static_cast<U>(z)};
+    }
+
     // test for equality
     bool operator ==(const Vector3<T> &v) const;
 

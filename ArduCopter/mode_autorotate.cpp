@@ -18,6 +18,12 @@ bool ModeAutorotate::init(bool ignore_checks)
     return false;
 #endif
 
+#if !AP_RANGEFINDER_ENABLED
+    // We rely too heavily on AP_RangeFinder and AP_SurfaceDist to allow the use of this mode if rangefinder has not been compiled in
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AROT: No Rangefinder");
+    return false;
+#endif
+
     // Check that mode is enabled, make sure this is the first check as this is the most
     // important thing for users to fix if they are planning to use autorotation mode
     if (!g2.arot.enabled()) {
@@ -52,8 +58,11 @@ void ModeAutorotate::run()
     const uint32_t now_ms = millis();
 
     // Set dt in library
-    float const last_loop_time_s = AP::scheduler().get_last_loop_time_s();
+    const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
     g2.arot.set_dt(last_loop_time_s);
+
+    // Update the height above ground measurement in the autorotation lib
+    g2.arot.update_hagl();
 
     //----------------------------------------------------------------
     //                  State machine logic
@@ -61,9 +70,21 @@ void ModeAutorotate::run()
     // State machine progresses through the autorotation phases as you read down through the if statements.
     // More urgent phases (the ones closer to the ground) take precedence later in the if statements.
 
-    if (current_phase < Phase::GLIDE_INIT && ((now_ms - _entry_time_start_ms) > g2.arot.entry_time_ms)) {
+    if (current_phase < Phase::GLIDE_INIT && !g2.arot.below_flare_height() && ((now_ms - _entry_time_start_ms) > g2.arot.entry_time_ms)) {
         // Flight phase can be progressed to steady state glide
         current_phase = Phase::GLIDE_INIT;
+    }
+
+    // Check if we are between the flare start height and the touchdown height
+    if (current_phase < Phase::FLARE_INIT && g2.arot.below_flare_height() && !g2.arot.should_begin_touchdown()) {
+        current_phase = Phase::FLARE_INIT;
+    }
+
+    // TODO: hover entry init
+
+    // Begin touch down if within touch down time
+    if (current_phase < Phase::TOUCH_DOWN_INIT && g2.arot.should_begin_touchdown()) {
+        current_phase = Phase::TOUCH_DOWN_INIT;
     }
 
     // Check if we believe we have landed. We need the landed state to zero all
@@ -108,9 +129,23 @@ void ModeAutorotate::run()
             break;
 
         case Phase::FLARE_INIT:
+            g2.arot.init_flare();
+            current_phase = Phase::FLARE;
+            FALLTHROUGH;
+
         case Phase::FLARE:
+            // Smoothly slow the aircraft to a stop by pitching up, maintaining set point head speed throughout.
+            g2.arot.run_flare(pilot_norm_input);
+            break;
+
         case Phase::TOUCH_DOWN_INIT:
+            g2.arot.init_touchdown();
+            current_phase = Phase::TOUCH_DOWN;
+            FALLTHROUGH;
+
         case Phase::TOUCH_DOWN:
+            // Ensure vehicle is level and use energy stored in head to gently touch down on the ground
+            g2.arot.run_touchdown(pilot_norm_input);
             break;
 
         case Phase::LANDED_INIT:
@@ -132,5 +167,10 @@ void ModeAutorotate::run()
     }
 
 } // End function run()
+
+void ModeAutorotate::exit()
+{
+    g2.arot.exit();
+}
 
 #endif
