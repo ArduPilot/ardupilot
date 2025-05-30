@@ -129,7 +129,16 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: DroneCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:HobbyWingESC,8:EnableStats,9:EnableFlexDebug
+    // @Bitmask: 0: Clear dynamic node allocation database
+    // @Bitmask: 1: Ignore dynamic node allocation conflicts
+    // @Bitmask: 2: Enable CANFD support
+    // @Bitmask: 3: Ignore unhealthy nodes in dynamic node allocation
+    // @Bitmask: 4: Send servo commands as PWM
+    // @Bitmask: 5: Send GNSS packets onto the bus
+    // @Bitmask: 6: Use Himark servo protocol
+    // @Bitmask: 7: Use HobbyWing ESC protocol
+    // @Bitmask: 8: Enable DroneCAN statistics
+    // @Bitmask: 9: Enable DroneCAN FlexDebug messages
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_DroneCAN, _options, 0),
     
