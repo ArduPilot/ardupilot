@@ -143,6 +143,13 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FLR_MAX_HGT", 17, AC_Autorotation, _flare_hgt.max_height, 30),
 
+    // @Param: NAV_MODE
+    // @DisplayName: Autorotation Navigation Mode
+    // @Description: Select the navigation mode to use when in the autonomous autorotation.
+    // @Values: 0:Pilot lateral accel control,1:Turn into wind,2:Maintain velocity vector with cross track.
+    // @User: Standard
+    AP_GROUPINFO("NAV_MODE", 18, AC_Autorotation, _param_nav_mode, 0),
+
     AP_GROUPEND
 };
 
@@ -159,44 +166,47 @@ AC_Autorotation::AC_Autorotation(AP_MotorsHeli*& motors, AC_AttitudeControl*& at
         _desired_heading.heading_mode = AC_AttitudeControl::HeadingMode::Rate_Only;
     }
 
-void AC_Autorotation::init(bool cross_track_control)
+void AC_Autorotation::init(void)
 {
     const AP_AHRS &ahrs = AP::ahrs();
 
     // Establish means of navigation
-    _use_cross_track_control = cross_track_control;
-    if (_use_cross_track_control) {
+    // _use_cross_track_control = cross_track_control;
+    // Location _track_origin;        // Location origin used to define the direction of travel.
+    // Location _track_dest;          // Location destination used to define the direction of travel.
 
-        // we use position on the line at mode init to define origin of the desired 
-        // vector of travel, if the get position method fails we cannot use this cross track method
-        Vector3f orig;
-        _use_cross_track_control &= ahrs.get_relative_position_NED_origin(orig);
-        // Convert to Locations as L1 controller expects Locations as arguments
-        _use_cross_track_control &= ahrs.get_location_from_origin_offset_NED(_track_origin, Vector3p(orig));
+    // if (_use_cross_track_control) {
 
-        // Calculate the direction vector of travel based on the velocity vector at the point of init
-        Vector2f ground_speed_NE = ahrs.groundspeed_vector();
+    //     // we use position on the line at mode init to define origin of the desired 
+    //     // vector of travel, if the get position method fails we cannot use this cross track method
+    //     Vector3f orig;
+    //     _use_cross_track_control &= ahrs.get_relative_position_NED_origin(orig);
+    //     // Convert to Locations as L1 controller expects Locations as arguments
+    //     _use_cross_track_control &= ahrs.get_location_from_origin_offset_NED(_track_origin, Vector3p(orig));
 
-        Vector2f track_vector;
-        if (ground_speed_NE.length() > 3.0) {
-            // We are moving with sufficient speed that the vehicle is moving "with purpose" and the
-            // ground velocity vector can be used to define the track vector
-            track_vector = ground_speed_NE.normalized();
-        } else {
-            // We are better off using the vehicle's current heading to define the track vector.
-            Vector2f unit_vec = {1.0, 0.0};
-            track_vector = ahrs.body_to_earth2D(unit_vec);
-        }
+    //     // Calculate the direction vector of travel based on the velocity vector at the point of init
+    //     Vector2f ground_speed_NE = ahrs.groundspeed_vector();
 
-        // To play nicely with the L1 controller we need to calculate a destination location based on
-        // the ground track. We do not expect a glide ratio much better than 1:1 so a very conservative
-        // distance to scale the unit vector by, is 4 x the height above origin. This way it is extremely
-        // unlikely that we will reach the destination in the L1 controller
-        const float scale = fabsf(orig.z) * 4.0;
-        track_vector *= scale;
-        const Vector3p dest = Vector3f{track_vector, 0.0} + orig;
-        _use_cross_track_control &= ahrs.get_location_from_origin_offset_NED(_track_dest, dest);
-    }
+    //     Vector2f track_vector;
+    //     if (ground_speed_NE.length() > 3.0) {
+    //         // We are moving with sufficient speed that the vehicle is moving "with purpose" and the
+    //         // ground velocity vector can be used to define the track vector
+    //         track_vector = ground_speed_NE.normalized();
+    //     } else {
+    //         // We are better off using the vehicle's current heading to define the track vector.
+    //         Vector2f unit_vec = {1.0, 0.0};
+    //         track_vector = ahrs.body_to_earth2D(unit_vec);
+    //     }
+
+    //     // To play nicely with the L1 controller we need to calculate a destination location based on
+    //     // the ground track. We do not expect a glide ratio much better than 1:1 so a very conservative
+    //     // distance to scale the unit vector by, is 4 x the height above origin. This way it is extremely
+    //     // unlikely that we will reach the destination in the L1 controller
+    //     const float scale = fabsf(orig.z) * 4.0;
+    //     track_vector *= scale;
+    //     const Vector3p dest = Vector3f{track_vector, 0.0} + orig;
+    //     _use_cross_track_control &= ahrs.get_location_from_origin_offset_NED(_track_dest, dest);
+    // }
 
     // Initialisation of head speed controller
     // Set initial collective position to be the current collective position for smooth init
@@ -233,10 +243,6 @@ void AC_Autorotation::init(bool cross_track_control)
     // set the guarded heights
     _touch_down_hgt.max_height = _flare_hgt.min_height;
 
-    // Reset the angle history and target rates for the touch down controller
-    _last_ang_targ.zero();
-    _rp_rate_deg_s.zero();
-
     // ensure the AP_SurfaceDistance object is enabled
 #if AP_RANGEFINDER_ENABLED
     _ground_surface->enabled = true;
@@ -269,6 +275,11 @@ void AC_Autorotation::init_entry(void)
 
     // Set speed target to maintain the current speed whilst we enter the autorotation
     _desired_vel = _param_target_speed.get();
+
+    // When entering the autorotation we can have some roll target applied depending on what condition that
+    // the position controller initialised on. If we are in the TURN_INTO_WIND navigation mode we want to 
+    // prevent changes in heading initially as the roll target may lead us in the wrong direction
+    _heading_hold = Nav_Mode(_param_nav_mode.get()) == Nav_Mode::TURN_INTO_WIND;
 }
 
 // The entry controller just a special case of the glide controller with head speed target slewing
@@ -294,6 +305,9 @@ void AC_Autorotation::init_glide(void)
 
     // Ensure desired forward speed target is set to param value
     _desired_vel = _param_target_speed.get();
+
+    // unlock any heading hold if we had one
+    _heading_hold = false;
 }
 
 // Maintain head speed and forward speed as we glide to the ground
@@ -301,10 +315,7 @@ void AC_Autorotation::run_glide(float des_lat_accel_norm)
 {
     update_headspeed_controller();
 
-    // if (_use_cross_track_control) {
-    //     _use_cross_track_control &= calc_lateral_accel(des_lat_accel_norm);
-    // }
-    update_forward_speed_controller(des_lat_accel_norm);
+    update_navigation_controller(des_lat_accel_norm);
 
     // Keep flare altitude estimate up to date so state machine can decide when to flare
     update_flare_hgt();
@@ -320,6 +331,9 @@ void AC_Autorotation::init_flare(void)
     _target_head_speed = HEAD_SPEED_TARGET_RATIO;
 
     _flare_entry_fwd_speed = get_bf_speed_forward();
+
+    // unlock any heading hold if we had one
+    _heading_hold = false;
 }
 
 void AC_Autorotation::run_flare(float des_lat_accel_norm)
@@ -331,12 +345,8 @@ void AC_Autorotation::run_flare(float des_lat_accel_norm)
     // reach the touch down alt for the start of the touch down phase
     _desired_vel = linear_interpolate(0.0f, _flare_entry_fwd_speed, _hagl, _touch_down_hgt.get(), _flare_hgt.get());
 
-    // if (_use_cross_track_control) {
-    //     _use_cross_track_control &= calc_lateral_accel(des_lat_accel_norm);
-    // }
-
     // Run forward speed controller
-    update_forward_speed_controller(des_lat_accel_norm);
+    update_navigation_controller(des_lat_accel_norm);
 }
 
 void AC_Autorotation::init_touchdown(void)
@@ -347,8 +357,9 @@ void AC_Autorotation::init_touchdown(void)
     _touchdown_init_climb_rate = get_ef_velocity_up();
     _touchdown_init_hgt = _hagl;
 
-    // Calculate the angle rates needed to level the copter in time with touchdown time
-    _rp_rate_deg_s = _last_ang_targ / get_touchdown_time();
+    // unlock any heading hold if we had one
+    _heading_hold = false;
+
 }
 
 void AC_Autorotation::run_touchdown(float des_lat_accel_norm)
@@ -376,29 +387,7 @@ void AC_Autorotation::run_touchdown(float des_lat_accel_norm)
     // keep driving the desired speed to zero. This will help with getting the vehicle level for touch down
     _desired_vel *= 1 - (_dt / get_touchdown_time());
 
-
-    // if (_use_cross_track_control) {
-    //     _use_cross_track_control &= calc_lateral_accel(des_lat_accel_norm);
-    // }
-
-    // We calculate a yaw rate in a way that it will at least be familiar in feeling to the other phases.
-    // To do this we have to assume a forward speed to make the maths work
-    const float bf_lat_accel_target = des_lat_accel_norm * get_accel_max() * 0.5;
-    const float assumed_fwd_speed = 2.0;
-    const float yaw_rate_cds = degrees(bf_lat_accel_target / assumed_fwd_speed) * 100.0;
-
-    // Move angle target towards zero at the calculated rate
-    const float des_angle = 0;
-    const Vector2f delta = _rp_rate_deg_s * _dt;
-    _last_ang_targ.x = constrain_float(des_angle, _last_ang_targ.x - fabsf(delta.x), _last_ang_targ.x + fabsf(delta.x));
-    _last_ang_targ.y = constrain_float(des_angle, _last_ang_targ.y - fabsf(delta.y), _last_ang_targ.y + fabsf(delta.y));
-
-    // Output to attitude controller
-    _attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(_last_ang_targ.x * 100.0, _last_ang_targ.y * 100.0, yaw_rate_cds);
-
-    // Start zeroing the desired velocity to help with the landed checks later.
-    // TODO: Review this, we may want to stop using the forward speed controller in the landed cases anyway.
-    _desired_vel *= 0.95;
+    update_navigation_controller(des_lat_accel_norm);
 
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: ARCR
@@ -535,31 +524,83 @@ void AC_Autorotation::update_NE_speed_controller(void)
 }
 
 // Update speed controller
-void AC_Autorotation::update_forward_speed_controller(float pilot_norm_accel)
+void AC_Autorotation::update_navigation_controller(float pilot_norm_accel)
 {
     // Set body frame velocity targets
     _desired_velocity_bf.x = _desired_vel;
-    _desired_velocity_bf.y = 0.0; // Always want zero side slip
-    _desired_velocity_bf.z = get_bf_speed_down(); // Always match the current vz.  We add this in because the vz is significant proportion of the speed that needs to be accounted for when we rotate from body frame to earth frame
+    _desired_velocity_bf.y = 0.0; // Start with the assumption that we want zero side slip
+    _desired_velocity_bf.z = get_bf_speed_down(); // Always match the current vz. We add this in because the vz is significant proportion of the speed that needs to be accounted for when we rotate from body frame to earth frame.
 
-    // Pilot can request as much as 1/2 of the max accel laterally to perform a turn.
-    // We only allow up to half as we need to prioritize building/maintaining airspeed.
-    _desired_accel_bf = {0.0, pilot_norm_accel * get_accel_max() * 0.5, 0.0};
-
-    // Calc yaw rate from desired body-frame accels
-    // this seems suspiciously simple, but it is correct
-    // accel = r * w^2, r = radius and w = angular rate
-    // radius can be calculated as the distance traveled in the time it takes to do 360 deg
-    // One rotation takes: (2*pi)/w seconds
-    // Distance traveled in that time: (s*2*pi)/w
-    // radius for that distance: ((s*2*pi)/w) / (2*pi)
-    // r = s / w
-    // accel = (s / w) * w^2
-    // accel = s * w
-    // w = accel / s
+    // Reset desired accels and yaw rate
+    _desired_accel_bf = {0.0, 0.0, 0.0};
     _desired_heading.yaw_rate_cds = 0.0;
-    if (!is_zero(_desired_velocity_bf.x)) {
-        _desired_heading.yaw_rate_cds = degrees(_desired_accel_bf.y / _desired_velocity_bf.x) * 100.0;
+
+    const float MIN_HANDLING_SPEED = 2.0; // (m/s)
+
+    switch (Nav_Mode(_param_nav_mode.get())) {
+        case Nav_Mode::TURN_INTO_WIND: {
+            // We will be rolling into the wind to resist the error introduced by the wind pushing us
+            // Get the current roll angle target from the attitude controller
+            float target_roll_deg = _attitude_control->get_att_target_euler_cd().x * 0.01;
+
+            const float roll_deadzone_deg = 3.0;
+            if (fabsf(target_roll_deg) < roll_deadzone_deg) {
+                target_roll_deg = 0.0;
+            }
+
+            // Convert it to a lateral acceleration
+            float lat_accel = angle_to_accel(target_roll_deg);
+
+            // Maintain the same accel limit that we impose on the pilot inputs so as to prioritize managing forward accels/speeds
+            lat_accel = MIN(lat_accel, get_accel_max() * 0.5);
+
+            // Calculate the yaw rate from the lateral acceleration
+            float yaw_rate_rad = 0.0;
+            if (fabsf(_desired_velocity_bf.x) > MIN_HANDLING_SPEED) {
+                yaw_rate_rad = lat_accel / _desired_velocity_bf.x;
+
+                // Only apply the acceleration if we are going to apply the yaw rate
+                _desired_accel_bf.y = lat_accel;
+            }
+
+            _desired_heading.yaw_rate_cds = degrees(yaw_rate_rad) * 100.0;
+
+            // Rotate the body frame targets so that the vehicle will cross track
+            // _desired_velocity_bf.rotate_xy(yaw_rate_rad * _dt);
+
+            break;
+        }
+        case Nav_Mode::CROSS_TRACK: {
+            break;
+        }
+        case Nav_Mode::PILOT_LAT_ACCEL:
+        default: {
+            // Pilot can request as much as 1/2 of the max accel laterally to perform a turn.
+            // We only allow up to half as we need to prioritize building/maintaining airspeed.
+            const float lat_accel = pilot_norm_accel * get_accel_max() * 0.5;
+
+            // Calc yaw rate from desired body-frame accels
+            // this seems suspiciously simple, but it is correct
+            // accel = r * w^2, r = radius and w = angular rate
+            // radius can be calculated as the distance traveled in the time it takes to do 360 deg
+            // One rotation takes: (2*pi)/w seconds
+            // Distance traveled in that time: (s*2*pi)/w
+            // radius for that distance: ((s*2*pi)/w) / (2*pi)
+            // r = s / w
+            // accel = (s / w) * w^2
+            // accel = s * w
+            // w = accel / s
+            if (fabsf(_desired_velocity_bf.x) > MIN_HANDLING_SPEED) {
+                _desired_accel_bf.y = lat_accel;
+                _desired_heading.yaw_rate_cds = degrees(_desired_accel_bf.y / _desired_velocity_bf.x) * 100.0;
+            }
+        }
+    }
+
+    // zero lat accel and yaw rate if we are in a heading hold
+    if (_heading_hold) {
+        _desired_accel_bf.y = 0.0;
+        _desired_heading.yaw_rate_cds = 0.0;
     }
 
     // Update the position controller

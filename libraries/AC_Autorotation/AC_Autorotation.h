@@ -19,7 +19,7 @@ public:
     //Constructor
     AC_Autorotation(AP_MotorsHeli*& motors, AC_AttitudeControl*& att_crtl, AP_InertialNav& inav, AC_PosControl*& pos_ctrl);
 
-    void init(bool cross_track_control);
+    void init(void);
 
     bool enabled(void) const { return _param_enable.get() > 0; }
 
@@ -125,26 +125,24 @@ private:
     AP_Float _param_solidity;
     AP_Float _param_diameter;
     AP_Float _param_touchdown_time;
+    AP_Int8  _param_nav_mode;
 
-    // Forward speed controller
-    void update_forward_speed_controller(float des_lat_accel_norm);
-    bool _limit_accel;            // Flag used for limiting integrator wind up if vehicle is against an accel or angle limit
-    float _desired_vel;           // (m/s) This is the velocity that we want.  This is the variable that is set by the invoking function to request a certain speed
-    float _target_vel;            // (m/s) This is the acceleration constrained velocity that we are allowed
-    float _last_pilot_input;      // We save the last pilot input so that we can smoothly zero it when we transition to the flare phase
-
-    // Position controller 
+    // Navigation controller
+    void update_navigation_controller(float des_lat_accel_norm);
     void update_NE_speed_controller(void);
+    bool _heading_hold;           // A flag used to tell the navigation controller to maintain the current heading.
+    float _desired_vel;           // (m/s) This is the velocity that we want.  This is the variable that is set by the invoking function to request a certain speed
     AC_AttitudeControl::HeadingCommand _desired_heading;
     Vector3f _desired_accel_bf;
     Vector3f _desired_velocity_bf;
     Vector3f _desired_accel_ef;
     Vector3f _desired_velocity_ef;
 
-    // Navigation control
-    bool _use_cross_track_control; // True if we are using automated cross track control
-    Location _track_origin;        // Location origin used to define the direction of travel.
-    Location _track_dest;          // Location destination used to define the direction of travel.
+    enum class Nav_Mode : int8_t {
+        PILOT_LAT_ACCEL = 0, // Pilot controls direction, using yaw stick to request lateral accelerations, coordinated turns are performed.
+        TURN_INTO_WIND  = 1, // Aircraft attempts to turn into wind.
+        CROSS_TRACK     = 2, // Aircraft attempts to maintain velocity vector or heading at entry, yaw is used to maintain cross track.
+    };
 
     // Head speed controller variables
     void update_headspeed_controller(void);  // Update controller used to drive head speed with collective
@@ -171,8 +169,6 @@ private:
     float _touchdown_init_climb_rate;    // (m/s) The measured climb rate (positive up) when the touch down phase is init
     float _touchdown_init_hgt;           // (m) The measured height above the ground when the touch down phase is init
     AC_P _p_col_td{0.2};                 // Touch down collective p controller
-    Vector2f _last_ang_targ;             // (deg) Stow the last angle target so we can use it in the touchdown phase
-    Vector2f _rp_rate_deg_s;             // (deg/s) The calculated Roll-Pitch rates needed to level the copter
 
     // Flags used to check if we believe the aircraft has landed
     struct {
