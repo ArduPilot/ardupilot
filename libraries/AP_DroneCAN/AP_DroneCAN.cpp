@@ -139,6 +139,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Bitmask: 7: Use HobbyWing ESC protocol
     // @Bitmask: 8: Enable DroneCAN statistics
     // @Bitmask: 9: Enable DroneCAN FlexDebug messages
+    // @Bitmask: 10: Ignore ESC offset on receive
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_DroneCAN, _options, 0),
     
@@ -631,8 +632,11 @@ bool AP_DroneCAN::hobbywing_find_esc_index(uint8_t node_id, uint8_t &esc_index) 
 {
     for (uint8_t i=0; i<HOBBYWING_MAX_ESC; i++) {
         if (hobbywing.thr_chan[i] == node_id) {
-            const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
-            esc_index = i + esc_offset;
+            esc_index = i;
+            if (!option_is_set(Options::IGNORE_ESC_OFFSET_RECEIVE)) {
+                const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+                esc_index += esc_offset;
+            }
             return true;
         }
     }
@@ -1481,7 +1485,10 @@ void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, 
 void AP_DroneCAN::handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg)
 {
 #if HAL_WITH_ESC_TELEM
-    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    uint8_t esc_offset = 0;
+    if (!option_is_set(Options::IGNORE_ESC_OFFSET_RECEIVE)) {
+        esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    }
     const uint8_t esc_index = msg.esc_index + esc_offset;
 
     if (!is_esc_data_index_valid(esc_index)) {
@@ -1515,7 +1522,10 @@ void AP_DroneCAN::handle_ESC_status(const CanardRxTransfer& transfer, const uavc
  */
 void AP_DroneCAN::handle_esc_ext_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_StatusExtended& msg)
 {
-    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    uint8_t esc_offset = 0;
+    if (!option_is_set(Options::IGNORE_ESC_OFFSET_RECEIVE)) {
+        esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    }
     const uint8_t esc_index = msg.esc_index + esc_offset;
 
     if (!is_esc_data_index_valid(esc_index)) {
