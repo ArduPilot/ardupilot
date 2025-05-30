@@ -394,6 +394,11 @@ void NavEKF3_core::detectFlight()
             if ((rangeDataNew.rng - rngAtStartOfFlight) < -0.5f) {
                 inFlight = true;
             }
+
+            // If OF ground distance has decreased since arming, then we definitely are diving
+            if ((ofDataNew.ground_distance - grndDistAtStartOfFlight) < -0.5f) {
+                inFlight = true;
+            }
 #else
             // If height has increased since exiting on-ground, then we definitely are flying
             if ((stateStruct.position.z - posDownAtTakeoff) < -1.5f) {
@@ -402,6 +407,11 @@ void NavEKF3_core::detectFlight()
 
             // If rangefinder has increased since exiting on-ground, then we definitely are flying
             if ((rangeDataNew.rng - rngAtStartOfFlight) > 0.5f) {
+                inFlight = true;
+            }
+
+            // If OF ground distance has increased since exiting on-ground, then we definitely are flying
+            if ((ofDataNew.ground_distance - grndDistAtStartOfFlight) > 0.5f) {
                 inFlight = true;
             }
 #endif
@@ -421,6 +431,8 @@ void NavEKF3_core::detectFlight()
         posDownAtTakeoff = stateStruct.position.z;
         // store the range finder measurement which will be used as a reference to detect when we have taken off
         rngAtStartOfFlight = rangeDataNew.rng;
+        // store the mav optical flow ground distance measurement which will be used to detect when we have taken off
+        grndDistAtStartOfFlight = ofDataNew.ground_distance;
         // if the magnetic field states have been set, then continue to update the vertical position
         // quaternion and yaw innovation snapshots to use as a reference when we start to fly.
         if (magStateInitComplete) {
@@ -473,7 +485,7 @@ void NavEKF3_core::detectOptFlowTakeoff(void)
         getGyroBias(gyroBias);
         angRateVec = ins.get_gyro(gyro_index_active) - gyroBias;
 
-        takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rangeDataNew.rng > (rngAtStartOfFlight + 0.1f)));
+        takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rangeDataNew.rng > (rngAtStartOfFlight + 0.1f)) || ofDataNew.ground_distance > (grndDistAtStartOfFlight + 0.1f));
     } else if (onGround) {
         // we are confidently on the ground so set the takeoff detected status to false
         takeOffDetected = false;
