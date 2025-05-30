@@ -130,6 +130,7 @@ private:
     // Navigation controller
     void update_navigation_controller(float des_lat_accel_norm);
     void update_NE_speed_controller(void);
+    void calc_yaw_rate_from_roll_target(float& yaw_rate_rad, float& lat_accel);
     bool _heading_hold;           // A flag used to tell the navigation controller to maintain the current heading.
     float _desired_vel;           // (m/s) This is the velocity that we want.  This is the variable that is set by the invoking function to request a certain speed
     AC_AttitudeControl::HeadingCommand _desired_heading;
@@ -137,6 +138,7 @@ private:
     Vector3f _desired_velocity_bf;
     Vector3f _desired_accel_ef;
     Vector3f _desired_velocity_ef;
+    Vector2f _track_vector;       // The velocity or heading vector stored at init and used as a navigation target for CROSS_TRACK mode
 
     enum class Nav_Mode : int8_t {
         PILOT_LAT_ACCEL = 0, // Pilot controls direction, using yaw stick to request lateral accelerations, coordinated turns are performed.
@@ -181,5 +183,7 @@ private:
     float get_accel_max(void) const { return MAX(_param_accel_max.get(), 0.5); }
     float get_touchdown_time(void) const { return MAX(_param_touchdown_time.get(), 0.3); }
     float get_solidity(void) const { return MAX(_param_solidity.get(), 0.01); }
+
+    const float MIN_MANOEUVERING_SPEED = 2.0; // (m/s)
 
 };

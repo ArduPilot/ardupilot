@@ -168,43 +168,21 @@ void AC_Autorotation::init(void)
 {
     const AP_AHRS &ahrs = AP::ahrs();
 
-    // Establish means of navigation
-    // _use_cross_track_control = cross_track_control;
-    // Location _track_origin;        // Location origin used to define the direction of travel.
-    // Location _track_dest;          // Location destination used to define the direction of travel.
+    // Calculate the direction vector for use in CROSS_TRACK navigation control
+    Vector2f ground_speed_NE = ahrs.groundspeed_vector();
 
-    // if (_use_cross_track_control) {
+    // TODO add a constrain so that the track vector must be within +/- 90 of heading (heli going backwards aint pretty)
 
-    //     // we use position on the line at mode init to define origin of the desired 
-    //     // vector of travel, if the get position method fails we cannot use this cross track method
-    //     Vector3f orig;
-    //     _use_cross_track_control &= ahrs.get_relative_position_NED_origin(orig);
-    //     // Convert to Locations as L1 controller expects Locations as arguments
-    //     _use_cross_track_control &= ahrs.get_location_from_origin_offset_NED(_track_origin, Vector3p(orig));
+    if (ground_speed_NE.length() > MIN_MANOEUVERING_SPEED) {
+        // We are moving with sufficient speed that the vehicle is moving "with purpose" and the
+        // ground velocity vector can be used to define the track vector
+        _track_vector = ground_speed_NE.normalized();
 
-    //     // Calculate the direction vector of travel based on the velocity vector at the point of init
-    //     Vector2f ground_speed_NE = ahrs.groundspeed_vector();
-
-    //     Vector2f track_vector;
-    //     if (ground_speed_NE.length() > 3.0) {
-    //         // We are moving with sufficient speed that the vehicle is moving "with purpose" and the
-    //         // ground velocity vector can be used to define the track vector
-    //         track_vector = ground_speed_NE.normalized();
-    //     } else {
-    //         // We are better off using the vehicle's current heading to define the track vector.
-    //         Vector2f unit_vec = {1.0, 0.0};
-    //         track_vector = ahrs.body_to_earth2D(unit_vec);
-    //     }
-
-    //     // To play nicely with the L1 controller we need to calculate a destination location based on
-    //     // the ground track. We do not expect a glide ratio much better than 1:1 so a very conservative
-    //     // distance to scale the unit vector by, is 4 x the height above origin. This way it is extremely
-    //     // unlikely that we will reach the destination in the L1 controller
-    //     const float scale = fabsf(orig.z) * 4.0;
-    //     track_vector *= scale;
-    //     const Vector3p dest = Vector3f{track_vector, 0.0} + orig;
-    //     _use_cross_track_control &= ahrs.get_location_from_origin_offset_NED(_track_dest, dest);
-    // }
+    } else {
+        // We are better off using the vehicle's current heading to define the track vector.
+        Vector2f unit_vec = {1.0, 0.0};
+        _track_vector = ahrs.body_to_earth2D(unit_vec);
+    }
 
     // Initialisation of head speed controller
     // Set initial collective position to be the current collective position for smooth init
@@ -275,9 +253,10 @@ void AC_Autorotation::init_entry(void)
     _desired_vel = _param_target_speed.get();
 
     // When entering the autorotation we can have some roll target applied depending on what condition that
-    // the position controller initialised on. If we are in the TURN_INTO_WIND navigation mode we want to 
-    // prevent changes in heading initially as the roll target may lead us in the wrong direction
-    _heading_hold = Nav_Mode(_param_nav_mode.get()) == Nav_Mode::TURN_INTO_WIND;
+    // the position controller initialised on. If we are in the TURN_INTO_WIND or CROSS_TRACK navigation mode
+    // we want to prevent changes in heading initially as the roll target may turn the aircraft in the wrong direction
+    _heading_hold = Nav_Mode(_param_nav_mode.get()) == Nav_Mode::TURN_INTO_WIND ||
+                    Nav_Mode(_param_nav_mode.get()) == Nav_Mode::CROSS_TRACK;
 }
 
 // The entry controller just a special case of the glide controller with head speed target slewing
@@ -521,6 +500,42 @@ void AC_Autorotation::update_NE_speed_controller(void)
     _attitude_control->input_thrust_vector_heading_cd(_pos_control->get_thrust_vector(), _desired_heading);
 }
 
+void AC_Autorotation::calc_yaw_rate_from_roll_target(float& yaw_rate_rad, float& lat_accel) {
+    // We will be rolling into the wind to resist the error introduced by the wind pushing us
+    // Get the current roll angle target from the attitude controller
+    float target_roll_deg = _attitude_control->get_att_target_euler_cd().x * 0.01;
+
+    const float roll_deadzone_deg = 2.0;
+    if (fabsf(target_roll_deg) < roll_deadzone_deg) {
+        target_roll_deg = 0.0;
+
+    } else if (is_positive(target_roll_deg)) {
+        // smooth out steps in target accels when coming out of the dead zone
+        target_roll_deg -= roll_deadzone_deg;
+    } else {
+        // smooth out steps in target accels when coming out of the dead zone
+        target_roll_deg += roll_deadzone_deg;
+    }
+
+    // protect against math error in the angle_to_accel calc
+    target_roll_deg = constrain_float(target_roll_deg, -85, 85);
+
+    // Convert it to a lateral acceleration
+    float accel = angle_to_accel(target_roll_deg);
+
+    // Maintain the same accel limit that we impose on the pilot inputs so as to prioritize managing forward accels/speeds
+    accel = MIN(accel, get_accel_max() * 0.5);
+
+    // Calculate the yaw rate from the lateral acceleration
+    if (fabsf(_desired_vel) > MIN_MANOEUVERING_SPEED) {
+        yaw_rate_rad = accel / _desired_vel;
+
+        // Only apply the acceleration if we are going to apply the yaw rate
+        lat_accel = accel;
+    }
+}
+
+
 // Update speed controller
 void AC_Autorotation::update_navigation_controller(float pilot_norm_accel)
 {
@@ -533,42 +548,37 @@ void AC_Autorotation::update_navigation_controller(float pilot_norm_accel)
     _desired_accel_bf = {0.0, 0.0, 0.0};
     _desired_heading.yaw_rate_cds = 0.0;
 
-    const float MIN_HANDLING_SPEED = 2.0; // (m/s)
-
     switch (Nav_Mode(_param_nav_mode.get())) {
         case Nav_Mode::TURN_INTO_WIND: {
-            // We will be rolling into the wind to resist the error introduced by the wind pushing us
-            // Get the current roll angle target from the attitude controller
-            float target_roll_deg = _attitude_control->get_att_target_euler_cd().x * 0.01;
 
-            const float roll_deadzone_deg = 3.0;
-            if (fabsf(target_roll_deg) < roll_deadzone_deg) {
-                target_roll_deg = 0.0;
-            }
-
-            // Convert it to a lateral acceleration
-            float lat_accel = angle_to_accel(target_roll_deg);
-
-            // Maintain the same accel limit that we impose on the pilot inputs so as to prioritize managing forward accels/speeds
-            lat_accel = MIN(lat_accel, get_accel_max() * 0.5);
-
-            // Calculate the yaw rate from the lateral acceleration
             float yaw_rate_rad = 0.0;
-            if (fabsf(_desired_velocity_bf.x) > MIN_HANDLING_SPEED) {
-                yaw_rate_rad = lat_accel / _desired_velocity_bf.x;
-
-                // Only apply the acceleration if we are going to apply the yaw rate
-                _desired_accel_bf.y = lat_accel;
-            }
+            calc_yaw_rate_from_roll_target(yaw_rate_rad, _desired_accel_bf.y);
 
             _desired_heading.yaw_rate_cds = degrees(yaw_rate_rad) * 100.0;
-
-            // Rotate the body frame targets so that the vehicle will cross track
-            // _desired_velocity_bf.rotate_xy(yaw_rate_rad * _dt);
 
             break;
         }
         case Nav_Mode::CROSS_TRACK: {
+
+            const AP_AHRS &ahrs = AP::ahrs();
+
+            // Find the angle between the vehicles current heading and the desired track vector
+            // Get unit vector for current heading
+            Vector2f unit_vec = {1.0, 0.0};
+            Vector2f heading_vector = ahrs.body_to_earth2D(unit_vec);
+
+            // Calculate angle between the two vectors (both vectors are unit vectors)
+            const float heading = acosf(_track_vector * heading_vector);
+
+            // Rotate the body frame target to maintain the velocity vector regardless of aircraft heading
+            _desired_velocity_bf.rotate_xy(heading);
+
+            float yaw_rate_rad = 0.0;
+            float unused_lat_accel = 0.0;
+            calc_yaw_rate_from_roll_target(yaw_rate_rad, unused_lat_accel);
+
+            _desired_heading.yaw_rate_cds = degrees(yaw_rate_rad) * 100.0;
+
             break;
         }
         case Nav_Mode::PILOT_LAT_ACCEL:
@@ -588,7 +598,7 @@ void AC_Autorotation::update_navigation_controller(float pilot_norm_accel)
             // accel = (s / w) * w^2
             // accel = s * w
             // w = accel / s
-            if (fabsf(_desired_velocity_bf.x) > MIN_HANDLING_SPEED) {
+            if (fabsf(_desired_velocity_bf.x) > MIN_MANOEUVERING_SPEED) {
                 _desired_accel_bf.y = lat_accel;
                 _desired_heading.yaw_rate_cds = degrees(_desired_accel_bf.y / _desired_velocity_bf.x) * 100.0;
             }
