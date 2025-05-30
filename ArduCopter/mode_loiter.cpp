@@ -9,20 +9,16 @@
 // loiter_init - initialise loiter controller
 bool ModeLoiter::init(bool ignore_checks)
 {
-    if (!copter.failsafe.radio) {
-        float target_roll, target_pitch;
-        // apply SIMPLE mode transform to pilot inputs
-        update_simple_mode();
+    float target_roll, target_pitch;
+    // apply SIMPLE mode transform to pilot inputs
+    update_simple_mode();
 
-        // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    // convert pilot input to lean angles
+    get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
-        // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
-    } else {
-        // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
-        loiter_nav->clear_pilot_desired_acceleration();
-    }
+    // process pilot's roll and pitch input
+    loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
+
     loiter_nav->init_target();
 
     // initialise the vertical position controller
@@ -65,10 +61,10 @@ void ModeLoiter::precision_loiter_xy()
     loiter_nav->clear_pilot_desired_acceleration();
     Vector2f target_pos, target_vel;
     if (!copter.precland.get_target_position_cm(target_pos)) {
-        target_pos = inertial_nav.get_position_xy_cm();
+        target_pos = pos_control->get_pos_estimate_NEU_cm().xy().tofloat();
     }
     // get the velocity of the target
-    copter.precland.get_target_velocity_cms(inertial_nav.get_velocity_xy_cms(), target_vel);
+    copter.precland.get_target_velocity_cms(pos_control->get_vel_estimate_NEU_cms().xy(), target_vel);
 
     Vector2f zero;
     Vector2p landing_pos = target_pos.topostype();
@@ -90,27 +86,21 @@ void ModeLoiter::run()
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
-    // process pilot inputs unless we are in radio failsafe
-    if (!copter.failsafe.radio) {
-        // apply SIMPLE mode transform to pilot inputs
-        update_simple_mode();
+    // apply SIMPLE mode transform to pilot inputs
+    update_simple_mode();
 
-        // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    // convert pilot input to lean angles
+    get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
-        // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
+    // process pilot's roll and pitch input
+    loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
 
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate();
+    // get pilot's desired yaw rate
+    target_yaw_rate = get_pilot_desired_yaw_rate();
 
-        // get pilot desired climb rate
-        target_climb_rate = get_pilot_desired_climb_rate();
-        target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
-    } else {
-        // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
-        loiter_nav->clear_pilot_desired_acceleration();
-    }
+    // get pilot desired climb rate
+    target_climb_rate = get_pilot_desired_climb_rate();
+    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
@@ -205,9 +195,9 @@ void ModeLoiter::run()
     pos_control->update_U_controller();
 }
 
-uint32_t ModeLoiter::wp_distance() const
+float ModeLoiter::wp_distance_m() const
 {
-    return loiter_nav->get_distance_to_target_cm();
+    return loiter_nav->get_distance_to_target_cm() * 0.01f;
 }
 
 int32_t ModeLoiter::wp_bearing() const

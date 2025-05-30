@@ -493,7 +493,7 @@ void GCS_MAVLINK::send_distance_sensor()
 #endif
 }
 
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 void GCS_MAVLINK::send_rangefinder() const
 {
     RangeFinder *rangefinder = RangeFinder::get_singleton();
@@ -509,7 +509,7 @@ void GCS_MAVLINK::send_rangefinder() const
             s->distance(),
             s->voltage_mv() * 0.001f);
 }
-#endif
+#endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 
 #if HAL_PROXIMITY_ENABLED
 void GCS_MAVLINK::send_proximity()
@@ -1065,9 +1065,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif
         { MAVLINK_MSG_ID_HWSTATUS,              MSG_HWSTATUS},
         { MAVLINK_MSG_ID_WIND,                  MSG_WIND},
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
         { MAVLINK_MSG_ID_RANGEFINDER,           MSG_RANGEFINDER},
-#endif
+#endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
         { MAVLINK_MSG_ID_DISTANCE_SENSOR,       MSG_DISTANCE_SENSOR},
 #if AP_TERRAIN_AVAILABLE
         { MAVLINK_MSG_ID_TERRAIN_REQUEST,       MSG_TERRAIN_REQUEST},
@@ -2981,7 +2981,7 @@ void GCS_MAVLINK::send_local_position() const
     const AP_AHRS &ahrs = AP::ahrs();
 
     Vector3f local_position, velocity;
-    if (!ahrs.get_relative_position_NED_origin(local_position) ||
+    if (!ahrs.get_relative_position_NED_origin_float(local_position) ||
         !ahrs.get_velocity_NED(velocity)) {
         // we don't know the position and velocity
         return;
@@ -3135,7 +3135,9 @@ MAV_RESULT GCS_MAVLINK::set_message_interval(uint32_t msg_id, int32_t interval_u
 {
     const ap_message id = mavlink_id_to_ap_message_id(msg_id);
     if (id == MSG_LAST) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No ap_message for mavlink id (%u)", (unsigned int)msg_id);
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
         return MAV_RESULT_DENIED;
     }
 
@@ -3155,6 +3157,8 @@ MAV_RESULT GCS_MAVLINK::set_message_interval(uint32_t msg_id, int32_t interval_u
     } else if (interval_us == -1) {
         // minus-one is "stop sending"
         interval_ms = 0;
+    } else if (interval_us < 0) {  
+        return MAV_RESULT_DENIED; 
     } else if (interval_us < 1000) {
         // don't squash sub-ms times to zero
         interval_ms = 1;
@@ -4774,7 +4778,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink
 #if AP_AIRSPEED_ENABLED
 
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
+    if (airspeed != nullptr && airspeed->enabled()) {
         GCS_MAVLINK_InProgress *task = GCS_MAVLINK_InProgress::get_task(MAV_CMD_PREFLIGHT_CALIBRATION, GCS_MAVLINK_InProgress::Type::AIRSPEED_CAL, msg.sysid, msg.compid, chan);
         if (task == nullptr) {
             return MAV_RESULT_TEMPORARILY_REJECTED;
@@ -5899,6 +5903,12 @@ void GCS_MAVLINK::send_sys_status()
     const uint16_t errors2 = (errors>>16) & 0xffff;
     const uint16_t errors4 = AP::internalerror().count() & 0xffff;
 
+#if HAL_LOGGING_ENABLED
+    const uint16_t dropped_logmessage_count = AP::logger().num_dropped();
+#else
+    const uint16_t dropped_logmessage_count = -1;
+#endif  // HAL_LOGGING_ENABLED
+
     mavlink_msg_sys_status_send(
         chan,
         control_sensors_present,
@@ -5922,7 +5932,7 @@ void GCS_MAVLINK::send_sys_status()
         0,  // comm drops in pkts,
         errors1,
         errors2,
-        0,  // errors3
+        dropped_logmessage_count,  // errors3
         errors4); // errors4
 }
 
@@ -6368,12 +6378,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif
 
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     case MSG_RANGEFINDER:
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         send_rangefinder();
         break;
-#endif
+#endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 
     case MSG_DISTANCE_SENSOR:
         send_distance_sensor();

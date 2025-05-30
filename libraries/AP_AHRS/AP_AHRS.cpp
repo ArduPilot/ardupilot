@@ -286,6 +286,18 @@ void AP_AHRS::init()
 #endif  // AP_CUSTOMROTATIONS_ENABLED
 }
 
+// has_status returns information about the EKF health and
+// capabilities.  It is currently invalid to call this when a
+// backend is in charge which returns false for get_filter_status
+// - so this will simply return false for DCM, for example.
+bool AP_AHRS::has_status(Status status) const {
+    nav_filter_status filter_status;
+    if (!get_filter_status(filter_status)) {
+        return false;
+    }
+    return (filter_status.value & uint32_t(status)) != 0;
+}
+
 // updates matrices responsible for rotating vectors from vehicle body
 // frame to autopilot body frame from _trim variables
 void AP_AHRS::update_trim_rotation_matrices()
@@ -1712,7 +1724,7 @@ bool AP_AHRS::get_hagl(float &height) const
 /*
   return a relative NED position from the origin in meters
 */
-bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
+bool AP_AHRS::get_relative_position_NED_origin(Vector3p &vec) const
 {
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
@@ -1721,8 +1733,8 @@ bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
 #endif
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO: {
-        Vector2f posNE;
-        float posD;
+        Vector2p posNE;
+        postype_t posD;
         if (EKF2.getPosNE(posNE) && EKF2.getPosD(posD)) {
             // position is valid
             vec.x = posNE.x;
@@ -1736,8 +1748,8 @@ bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE: {
-            Vector2f posNE;
-            float posD;
+            Vector2p posNE;
+            postype_t posD;
             if (EKF3.getPosNE(posNE) && EKF3.getPosD(posD)) {
                 // position is valid
                 vec.x = posNE.x;
@@ -1763,6 +1775,16 @@ bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
     return false;
 }
 
+bool AP_AHRS::get_relative_position_NED_origin_float(Vector3f &vec) const
+{
+    Vector3p tmp_posNED;
+    if (!get_relative_position_NED_origin(tmp_posNED)) {
+        return false;
+    }
+    vec = tmp_posNED.tofloat();
+    return true;
+}
+
 /*
  return a relative ground position from home in meters
 */
@@ -1780,7 +1802,7 @@ bool AP_AHRS::get_relative_position_NED_home(Vector3f &vec) const
 /*
   return a relative position estimate from the origin in meters
 */
-bool AP_AHRS::get_relative_position_NE_origin(Vector2f &posNE) const
+bool AP_AHRS::get_relative_position_NE_origin(Vector2p &posNE) const
 {
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
@@ -1815,6 +1837,16 @@ bool AP_AHRS::get_relative_position_NE_origin(Vector2f &posNE) const
     return false;
 }
 
+bool AP_AHRS::get_relative_position_NE_origin_float(Vector2f &posNE) const
+{
+    Vector2p tmp_posNE;
+    if (!get_relative_position_NE_origin(tmp_posNE)) {
+        return false;
+    }
+    posNE = tmp_posNE.tofloat();
+    return true;
+}
+
 /*
  return a relative ground position from home in meters North/East
 */
@@ -1836,7 +1868,7 @@ bool AP_AHRS::get_relative_position_NE_home(Vector2f &posNE) const
 /*
   return a relative ground position from the origin in meters, down
 */
-bool AP_AHRS::get_relative_position_D_origin(float &posD) const
+bool AP_AHRS::get_relative_position_D_origin(postype_t &posD) const
 {
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
@@ -1870,6 +1902,16 @@ bool AP_AHRS::get_relative_position_D_origin(float &posD) const
     return false;
 }
 
+bool AP_AHRS::get_relative_position_D_origin_float(float &posD) const
+{
+    postype_t tmp_posD;
+    if (!get_relative_position_D_origin(tmp_posD)) {
+        return false;
+    }
+    posD = float(tmp_posD);
+    return true;
+}
+
 /*
   return relative position from home in meters
 */
@@ -1883,7 +1925,7 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
     }
 
     Location originLLH;
-    float originD;
+    postype_t originD;
     if (!get_relative_position_D_origin(originD) ||
         !_get_origin(originLLH)) {
 #if AP_GPS_ENABLED

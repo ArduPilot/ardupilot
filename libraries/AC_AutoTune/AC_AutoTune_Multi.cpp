@@ -1182,16 +1182,16 @@ void AC_AutoTune_Multi::twitch_test_init()
     case AxisType::ROLL:
         angle_abort = target_angle_max_rp_cd();
         target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler * AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
-        target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_roll()) * 100.0, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
-        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_roll()) * 100.0, target_angle_min_rp_cd(), target_angle_max_rp_cd());
+        target_rate = constrain_float(degrees(attitude_control->max_rate_step_bf_roll()) * 100.0, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
+        target_angle = constrain_float(degrees(attitude_control->max_angle_step_bf_roll()) * 100.0, target_angle_min_rp_cd(), target_angle_max_rp_cd());
         rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_roll_pid().filt_D_hz() * 2.0);
         break;
 
     case AxisType::PITCH:
         angle_abort = target_angle_max_rp_cd();
         target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler * AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
-        target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_pitch()) * 100.0, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
-        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_pitch()) * 100.0, target_angle_min_rp_cd(), target_angle_max_rp_cd());
+        target_rate = constrain_float(degrees(attitude_control->max_rate_step_bf_pitch()) * 100.0, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
+        target_angle = constrain_float(degrees(attitude_control->max_angle_step_bf_pitch()) * 100.0, target_angle_min_rp_cd(), target_angle_max_rp_cd());
         rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_pitch_pid().filt_D_hz() * 2.0);
         break;
 
@@ -1199,8 +1199,8 @@ void AC_AutoTune_Multi::twitch_test_init()
     case AxisType::YAW_D:
         angle_abort = target_angle_max_y_cd();
         target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, step_scaler*AUTOTUNE_TARGET_RATE_YAW_CDS);
-        target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_yaw() * 0.75) * 100.0, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, target_max_rate);
-        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_yaw() * 0.75) * 100.0, target_angle_min_y_cd(), target_angle_max_y_cd());
+        target_rate = constrain_float(degrees(attitude_control->max_rate_step_bf_yaw() * 0.75) * 100.0, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, target_max_rate);
+        target_angle = constrain_float(degrees(attitude_control->max_angle_step_bf_yaw() * 0.75) * 100.0, target_angle_min_y_cd(), target_angle_max_y_cd());
         if (axis == AxisType::YAW_D) {
             rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_yaw_pid().filt_D_hz() * 2.0);
         } else {
@@ -1260,16 +1260,16 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
         switch (test_axis) {
         case AxisType::ROLL:
             // override body-frame roll rate
-            attitude_control->input_rate_step_bf_roll_pitch_yaw_cd(dir_sign * target_rate + start_rate, 0.0f, 0.0f);
+            attitude_control->input_rate_step_bf_roll_pitch_yaw_cds(dir_sign * target_rate + start_rate, 0.0f, 0.0f);
             break;
         case AxisType::PITCH:
             // override body-frame pitch rate
-            attitude_control->input_rate_step_bf_roll_pitch_yaw_cd(0.0f, dir_sign * target_rate + start_rate, 0.0f);
+            attitude_control->input_rate_step_bf_roll_pitch_yaw_cds(0.0f, dir_sign * target_rate + start_rate, 0.0f);
             break;
         case AxisType::YAW:
         case AxisType::YAW_D:
             // override body-frame yaw rate
-            attitude_control->input_rate_step_bf_roll_pitch_yaw_cd(0.0f, 0.0f, dir_sign * target_rate + start_rate);
+            attitude_control->input_rate_step_bf_roll_pitch_yaw_cds(0.0f, 0.0f, dir_sign * target_rate + start_rate);
             break;
         }
     }
@@ -1297,10 +1297,10 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
     switch (tune_type) {
     case SP_DOWN:
     case SP_UP:
-        filter_value = dir_sign * (ToDeg(gyro_reading) * 100.0);
+        filter_value = dir_sign * (degrees(gyro_reading) * 100.0);
         break;
     default:
-        filter_value = dir_sign * (ToDeg(gyro_reading) * 100.0 - start_rate);
+        filter_value = dir_sign * (degrees(gyro_reading) * 100.0 - start_rate);
         break;
     }
     rotation_rate = rotation_rate_filt.apply(filter_value,

@@ -115,8 +115,10 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param{Plane, Rover}: REQUIRE
     // @DisplayName: Require Arming Motors 
-    // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, sends the minimum throttle PWM value to the throttle channel when disarmed. If 2, send 0 PWM (no signal) to throttle channel when disarmed. On planes with ICE enabled and the throttle while disarmed option set in ICE_OPTIONS, the motor will always get THR_MIN when disarmed. Arming will occur using either rudder stick arming (if enabled) or GCS command when all mandatory and ARMING_CHECK items are satisfied. Note, when setting this parameter to 0, a reboot is required to immediately arm the plane.
-    // @Values: 0:Disabled,1:minimum PWM when disarmed,2:0 PWM when disarmed
+    // @Description{Plane}: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, sends the minimum throttle PWM value to the throttle channel when disarmed. If 2, send 0 PWM (no signal) to throttle channel when disarmed. On planes with ICE enabled and the throttle while disarmed option set in ICE_OPTIONS, the motor will always get THR_MIN when disarmed. Arming will be blocked until all mandatory and ARMING_CHECK items are satisfied; arming can then be accomplished via (eg.) rudder gesture or GCS command.
+    // @Description{Rover}: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, all checks specified by ARMING_CHECKS must pass before the vehicle can be armed (for example, via rudder stick or GCS command).  If 3, Arm immediately once pre-arm/arm checks are satisfied, but only one time per boot up.  Note that a reboot is NOT required when setting to 0 but IS require when setting to 3.
+    // @Values{Plane}: 0:Disabled,1:Yes(minimum PWM when disarmed),2:Yes(0 PWM when disarmed)
+    // @Values{Rover}: 0:No,1:Yes(minimum PWM when disarmed),3:No(AutoArmOnce after checks are passed)
     // @User: Advanced
     AP_GROUPINFO_FLAGS_FRAME("REQUIRE",     0,      AP_Arming,  require, float(Required::YES_MIN_PWM),
                              AP_PARAM_FLAG_NO_SHIFT,
@@ -2065,6 +2067,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
         case Method::TOYMODELANDFORCE:
         case Method::LANDING:
         case Method::DDS:
+        case Method::AUTO_ARM_ONCE:
         case Method::UNKNOWN:
             AP::logger().set_long_log_persist(false);
             return;

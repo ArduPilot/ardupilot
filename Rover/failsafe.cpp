@@ -101,6 +101,11 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
                     set_mode(mode_hold, ModeReason::FAILSAFE);
                 }
                 break;
+            case FailsafeAction::Loiter_Hold:
+                if (!set_mode(mode_loiter, ModeReason::FAILSAFE)) {
+                    set_mode(mode_hold, ModeReason::FAILSAFE);
+                }
+                break;
             case FailsafeAction::Terminate:
                 arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
                 break;
@@ -126,6 +131,11 @@ void Rover::handle_battery_failsafe(const char* type_str, const int8_t action)
                 FALLTHROUGH;
             case FailsafeAction::Hold:
                 set_mode(mode_hold, ModeReason::BATTERY_FAILSAFE);
+                break;
+            case FailsafeAction::Loiter_Hold:
+                if (!set_mode(mode_loiter, ModeReason::BATTERY_FAILSAFE)) {
+                    set_mode(mode_hold, ModeReason::BATTERY_FAILSAFE);
+                }
                 break;
             case FailsafeAction::SmartRTL_Hold:
                 if (!set_mode(mode_smartrtl, ModeReason::BATTERY_FAILSAFE)) {

@@ -1,5 +1,5 @@
 /// @file	AC_PID.cpp
-/// @brief	Generic PID algorithm
+/// @brief	General-purpose PID controller with input, error, and derivative filtering, plus slew rate limiting and EEPROM gain storage.
 
 #include <AP_Math/AP_Math.h>
 #include "AC_PID.h"
@@ -42,19 +42,19 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
 
     // @Param: FLTT
     // @DisplayName: PID Target filter frequency in Hz
-    // @Description: Target filter frequency in Hz
+    // @Description: Low-pass filter frequency applied to the target input (Hz)
     // @Units: Hz
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FLTT", 9, AC_PID, _filt_T_hz, default_filt_T_hz),
 
     // @Param: FLTE
     // @DisplayName: PID Error filter frequency in Hz
-    // @Description: Error filter frequency in Hz
+    // @Description: Low-pass filter frequency applied to the error (Hz)
     // @Units: Hz
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FLTE", 10, AC_PID, _filt_E_hz, default_filt_E_hz),
 
     // @Param: FLTD
     // @DisplayName: PID Derivative term filter frequency in Hz
-    // @Description: Derivative filter frequency in Hz
+    // @Description: Low-pass filter frequency applied to the derivative (Hz)
     // @Units: Hz
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FLTD", 11, AC_PID, _filt_D_hz, default_filt_D_hz),
 
@@ -129,19 +129,19 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
     _slew_limit_scale = 1;
 }
 
-// filt_T_hz - set target filter hz
+// Sets the target low-pass filter frequency (Hz)
 void AC_PID::set_filt_T_hz(float hz)
 {
     _filt_T_hz.set(fabsf(hz));
 }
 
-// filt_E_hz - set error filter hz
+// Sets the error low-pass filter frequency (Hz)
 void AC_PID::set_filt_E_hz(float hz)
 {
     _filt_E_hz.set(fabsf(hz));
 }
 
-// filt_D_hz - set derivative filter hz
+// Sets the derivative low-pass filter frequency (Hz)
 void AC_PID::set_filt_D_hz(float hz)
 {
     _filt_D_hz.set(fabsf(hz));
@@ -153,6 +153,8 @@ void AC_PID::set_slew_limit(float smax)
     _slew_rate_max.set(fabsf(smax));
 }
 
+// Configures optional notch filters for target and error signals using the given sample rate.
+// Filters are dynamically allocated and validated via the AP_Filter API.
 void AC_PID::set_notch_sample_rate(float sample_rate)
 {
 #if AP_FILTER_ENABLED
@@ -164,11 +166,12 @@ void AC_PID::set_notch_sample_rate(float sample_rate)
         if (_target_notch == nullptr) {
             _target_notch = NEW_NOTHROW NotchFilterFloat();
         }
+        // Lookup filter definition and initialize if valid
         AP_Filter* filter = AP::filters().get_filter(_notch_T_filter);
         if (filter != nullptr && !filter->setup_notch_filter(*_target_notch, sample_rate)) {
             delete _target_notch;
             _target_notch = nullptr;
-            _notch_T_filter.set(0);
+            _notch_T_filter.set(0);  // disable filter if setup fails
         }
     }
 
@@ -176,30 +179,32 @@ void AC_PID::set_notch_sample_rate(float sample_rate)
         if (_error_notch == nullptr) {
             _error_notch = NEW_NOTHROW NotchFilterFloat();
         }
+        // Lookup filter definition and initialize if valid
         AP_Filter* filter = AP::filters().get_filter(_notch_E_filter);
         if (filter != nullptr && !filter->setup_notch_filter(*_error_notch, sample_rate)) {
             delete _error_notch;
             _error_notch = nullptr;
-            _notch_E_filter.set(0);
+            _notch_E_filter.set(0);  // disable filter if setup fails
         }
     }
 #endif
 }
 
-//  update_all - set target and measured inputs to PID controller and calculate outputs
-//  target and error are filtered
-//  the derivative is then calculated and filtered
-//  the integral is then updated based on the setting of the limit flag
-float AC_PID::update_all(float target, float measurement, float dt, bool limit, float boost)
+// Computes the PID output using a target and measurement input.
+// Applies filters to the target and error, calculates the derivative and updates the integrator.
+// If `limit` is true, the integrator is allowed to shrink but not grow.
+float AC_PID::update_all(float target, float measurement, float dt, bool limit, float pd_scale)
 {
-    // don't process inf or NaN
+    // Return zero if input is invalid (NaN or infinite)
     if (!isfinite(target) || !isfinite(measurement)) {
         return 0.0f;
     }
 
-    // reset input filter to value received
+    // Flag used for logging to indicate a filter reset occurred
     _pid_info.reset = _flags._reset_filter;
+    // Reset filters to match the current input (first sample or after reset)
     if (_flags._reset_filter) {
+        // Reset filters to match the current inputs
         _flags._reset_filter = false;
 
         // Reset target filter
@@ -219,7 +224,7 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
             _error = _error_notch->apply(_error);
         }
 #endif
-        // Zero derivatives
+        // Clear derivative history to avoid spikes after reset
         _derivative = 0.0f;
         _target_derivative = 0.0f;
 
@@ -228,11 +233,12 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
         // Apply target filters
         const float target_last = _target;
 #if AP_FILTER_ENABLED
-        // apply notch filters before FTLD/FLTE to avoid shot noise
         if (_target_notch != nullptr) {
+            // Allocate and set up target notch filter
             target = _target_notch->apply(target);
         }
 #endif
+        // Apply first-order low-pass filter to target value
         _target += get_filt_T_alpha(dt) * (target - _target);
 
         // Calculate error and apply error filter
@@ -240,44 +246,49 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
         float error = _target - measurement;
 #if AP_FILTER_ENABLED
         if (_error_notch != nullptr) {
+            // Allocate and set up error notch filter
             error = _error_notch->apply(error);
         }
 #endif
+        // apply notch filters before FTLD/FLTE to minimize shot noise
         _error += get_filt_E_alpha(dt) * (error - _error);
 
-        // calculate and filter derivative
         if (is_positive(dt)) {
+            // Compute and low-pass filter the error derivative (D term)
             float derivative = (_error - error_last) / dt;
             _derivative += get_filt_D_alpha(dt) * (derivative - _derivative);
+            // Calculate target derivative for D_FF contribution
             _target_derivative = (_target - target_last) / dt;
         }
     }
 
-    // update I term
+    // Integrate error (with wind-up protection if limit is active)
+    // If limit is active, allow I-term to shrink but not grow
     update_i(dt, limit);
 
     float P_out = (_error * _kp);
     float D_out = (_derivative * _kd);
 
-    // calculate slew limit modifier for P+D
+    // Calculate dynamic modifier to reduce P+D output based on slew rate limiter
     _pid_info.Dmod = _slew_limiter.modifier((_pid_info.P + _pid_info.D) * _slew_limit_scale, dt);
     _pid_info.slew_rate = _slew_limiter.get_slew_rate();
 
+    // This modifier is used to reduce control effort under fast transients
     P_out *= _pid_info.Dmod;
     D_out *= _pid_info.Dmod;
 
-    // boost output if required
-    P_out *= boost;
-    D_out *= boost;
+    // scale pd output if required
+    P_out *= pd_scale;
+    D_out *= pd_scale;
 
     _pid_info.PD_limit = false;
     // Apply PD sum limit if enabled
     if (is_positive(_kpdmax)) {
         const float PD_sum_abs = fabsf(P_out + D_out);
         if (PD_sum_abs > _kpdmax) {
-            const float PD_scale = _kpdmax / PD_sum_abs;
-            P_out *= PD_scale;
-            D_out *= PD_scale;
+            const float pd_limit_scale = _kpdmax / PD_sum_abs;
+            P_out *= pd_limit_scale;
+            D_out *= pd_limit_scale;
             _pid_info.PD_limit = true;
         }
     }
@@ -293,11 +304,9 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
     return P_out + D_out + _integrator;
 }
 
-//  update_error - set error input to PID controller and calculate outputs
-//  target is set to zero and error is set and filtered
-//  the derivative then is calculated and filtered
-//  the integral is then updated based on the setting of the limit flag
-//  Target and Measured must be set manually for logging purposes.
+// Computes the PID output from an error input only (target assumed to be zero).
+// Applies error filtering and updates the derivative and integrator.
+// Target and measurement must be set separately for logging.
 // todo: remove function when it is no longer used.
 float AC_PID::update_error(float error, float dt, bool limit)
 {
@@ -307,8 +316,8 @@ float AC_PID::update_error(float error, float dt, bool limit)
     }
 
     // Reuse update all code path, zero target and pass negative error as measurement
-    // Passing as measurement bypasses any target filtering to maintain behaviour
-    // Negate as update all calculates error as target - measurement
+    // Pass negative error as "measurement" so that error = target - measurement evaluates correctly
+    // Bypasses target filtering for legacy compatibility
     _target = 0.0;
     const float output = update_all(0.0, -error, dt, limit);
 
@@ -319,12 +328,12 @@ float AC_PID::update_error(float error, float dt, bool limit)
     return output;
 }
 
-//  update_i - update the integral
-//  If the limit flag is set the integral is only allowed to shrink
+// Updates the integrator based on current error and dt.
+// If `limit` is true, the integrator is only allowed to shrink to avoid wind-up.
 void AC_PID::update_i(float dt, bool limit)
 {
     if (!is_zero(_ki) && is_positive(dt)) {
-        // Ensure that integrator can only be reduced if the output is saturated
+        // Allow integrator growth only if not limited, or if error opposes the integrator direction
         if (!limit || ((is_positive(_integrator) && is_negative(_error)) || (is_negative(_integrator) && is_positive(_error)))) {
             _integrator += ((float)_error * _ki) * dt;
             _integrator = constrain_float(_integrator, -_kimax, _kimax);
@@ -360,13 +369,14 @@ float AC_PID::get_ff() const
     return  _pid_info.FF + _pid_info.DFF;
 }
 
+// Used to fully zero the I term between mode changes or initialization
 void AC_PID::reset_I()
 {
     _flags._I_set = true;
     _integrator = 0.0;
 }
 
-// load original gains from eeprom, used by autotune to restore gains after tuning
+// Loads controller configuration from EEPROM, including gains and filter frequencies. (not used)
 void AC_PID::load_gains()
 {
     _kp.load();
@@ -378,7 +388,7 @@ void AC_PID::load_gains()
     _filt_D_hz.load();
 }
 
-// save original gains to eeprom, used by autotune to save gains before tuning
+// Saves controller configuration from EEPROM, including gains and filter frequencies. Used by autotune to save gains before tuning.
 void AC_PID::save_gains()
 {
     _kp.save();
@@ -390,30 +400,33 @@ void AC_PID::save_gains()
     _filt_D_hz.save();
 }
 
-// get_filt_T_alpha - get the target filter alpha
+// Returns alpha value for the target low-pass filter (based on filter frequency and dt)
 float AC_PID::get_filt_T_alpha(float dt) const
 {
     return calc_lowpass_alpha_dt(dt, _filt_T_hz);
 }
 
-// get_filt_E_alpha - get the error filter alpha
+// Returns alpha value for the error low-pass filter (based on filter frequency and dt)
 float AC_PID::get_filt_E_alpha(float dt) const
 {
     return calc_lowpass_alpha_dt(dt, _filt_E_hz);
 }
 
-// get_filt_D_alpha - get the derivative filter alpha
+// Returns alpha value for the derivative low-pass filter (based on filter frequency and dt)
 float AC_PID::get_filt_D_alpha(float dt) const
 {
     return calc_lowpass_alpha_dt(dt, _filt_D_hz);
 }
 
+// Sets the integrator directly, clamped to the IMAX bounds. Also flags I-term as externally set.
 void AC_PID::set_integrator(float integrator)
 {
     _flags._I_set = true;
     _integrator = constrain_float(integrator, -_kimax, _kimax);
 }
 
+// Gradually adjust the integrator toward a desired value using a time constant.
+// Typically used to "relax" the I-term in dynamic conditions.
 void AC_PID::relax_integrator(float integrator, float dt, float time_constant)
 {
     integrator = constrain_float(integrator, -_kimax, _kimax);

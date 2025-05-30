@@ -83,7 +83,7 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros, _prio) SCHED_TASK_CLASS(Copter, &copter, func, _interval_ticks, _max_time_micros, _prio)
+#define SCHED_TASK(func, rate_hz, _max_time_micros, _prio) SCHED_TASK_CLASS(Copter, &copter, func, rate_hz, _max_time_micros, _prio)
 #define FAST_TASK(func) FAST_TASK_CLASS(Copter, &copter, func)
 
 /*
@@ -853,6 +853,11 @@ void Copter::update_simple_mode(void)
     // mark radio frame as consumed
     ap.new_radio_frame = false;
 
+    // avoid processing bind-time RC values:
+    if (!rc().has_valid_input()) {
+        return;
+    }
+
     if (simple_mode == SimpleMode::SIMPLE) {
         // rotate roll, pitch input by -initial simple heading (i.e. north facing)
         rollx = channel_roll->get_control_in()*simple_cos_yaw - channel_pitch->get_control_in()*simple_sin_yaw;
@@ -889,7 +894,7 @@ void Copter::update_super_simple_bearing(bool force_update)
     }
 
     super_simple_last_bearing = bearing;
-    const float angle_rad = radians((super_simple_last_bearing+18000)*0.01f);
+    const float angle_rad = cd_to_rad(super_simple_last_bearing + 18000);
     super_simple_cos_yaw = cosf(angle_rad);
     super_simple_sin_yaw = sinf(angle_rad);
 }
@@ -925,7 +930,7 @@ void Copter::update_altitude()
 bool Copter::get_wp_distance_m(float &distance) const
 {
     // see GCS_MAVLINK_Copter::send_nav_controller_output()
-    distance = flightmode->wp_distance() * 0.01;
+    distance = flightmode->wp_distance_m();
     return true;
 }
 

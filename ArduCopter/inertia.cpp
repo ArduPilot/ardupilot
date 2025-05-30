@@ -5,6 +5,10 @@ void Copter::read_inertia()
 {
     // inertial altitude estimates. Use barometer climb rate during high vibrations
     inertial_nav.update(vibration_check.high_vibes);
+    pos_control->update_estimates(vibration_check.high_vibes);
+#if MODE_FOLLOW_ENABLED
+    g2.follow.update_estimates();
+#endif
 
     // pull position from ahrs
     Location loc;
@@ -13,7 +17,7 @@ void Copter::read_inertia()
     current_loc.lng = loc.lng;
 
     // exit immediately if we do not have an altitude estimate
-    if (!inertial_nav.get_filter_status().flags.vert_pos) {
+    if (!ahrs.has_status(AP_AHRS::Status::VERT_POS)) {
         return;
     }
 

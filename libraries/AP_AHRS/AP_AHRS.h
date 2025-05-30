@@ -33,6 +33,7 @@
 #include "AP_AHRS_DCM.h"
 #include "AP_AHRS_SIM.h"
 #include "AP_AHRS_External.h"
+#include <AP_NavEKF/AP_Nav_Common.h>
 
 // forward declare view class
 class AP_AHRS_View;
@@ -47,9 +48,18 @@ class AP_AHRS {
     friend class AP_AHRS_View;
 public:
 
+    // copy this into our namespace
+    using Status = NavFilterStatusBit;
+
     enum Flags {
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
+
+    // has_status returns information about the EKF health and
+    // capabilities.  It is currently invalid to call this when a
+    // backend is in charge which returns false for get_filter_status
+    // - so this will simply return false for DCM, for example.
+    bool has_status(Status status) const;
 
     // Constructor
     AP_AHRS(uint8_t flags = 0);
@@ -269,17 +279,20 @@ public:
     // return the relative position NED from either home or origin
     // return true if the estimate is valid
     bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED;
-    bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED;
+    bool get_relative_position_NED_origin(Vector3p &vec) const WARN_IF_UNUSED;
+    bool get_relative_position_NED_origin_float(Vector3f &vec) const WARN_IF_UNUSED;
 
     // return the relative position NE from home or origin
     // return true if the estimate is valid
     bool get_relative_position_NE_home(Vector2f &posNE) const WARN_IF_UNUSED;
-    bool get_relative_position_NE_origin(Vector2f &posNE) const WARN_IF_UNUSED;
+    bool get_relative_position_NE_origin(Vector2p &posNE) const WARN_IF_UNUSED;
+    bool get_relative_position_NE_origin_float(Vector2f &posNE) const WARN_IF_UNUSED;
 
     // return the relative position down from home or origin
     // baro will be used for the _home relative one if the EKF isn't
     void get_relative_position_D_home(float &posD) const;
-    bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED;
+    bool get_relative_position_D_origin(postype_t &posD) const WARN_IF_UNUSED;
+    bool get_relative_position_D_origin_float(float &posD) const WARN_IF_UNUSED;
 
     // return location corresponding to vector relative to the
     // vehicle's origin

@@ -641,6 +641,8 @@ public:
     RC_Channel &get_pitch_channel();
     RC_Channel &get_yaw_channel();
     RC_Channel &get_throttle_channel();
+    RC_Channel &get_forward_channel();
+    RC_Channel &get_lateral_channel();
 
 protected:
 

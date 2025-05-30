@@ -79,8 +79,7 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_Loiter::AC_Loiter(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control) :
-    _inav(inav),
+AC_Loiter::AC_Loiter(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control) :
     _ahrs(ahrs),
     _pos_control(pos_control),
     _attitude_control(attitude_control)
@@ -124,8 +123,8 @@ void AC_Loiter::init_target()
 
     // initialise predicted acceleration and angles from the position controller
     _predicted_accel_ne_cmss = _pos_control.get_accel_target_NEU_cmss().xy();
-    _predicted_euler_angle_rad.x = radians(_pos_control.get_roll_cd() * 0.01f);
-    _predicted_euler_angle_rad.y = radians(_pos_control.get_pitch_cd() * 0.01f);
+    _predicted_euler_angle_rad.x = cd_to_rad(_pos_control.get_roll_cd());
+    _predicted_euler_angle_rad.y = cd_to_rad(_pos_control.get_pitch_cd());
     _brake_accel_cmss = 0.0f;
 }
 
@@ -141,8 +140,8 @@ void AC_Loiter::set_pilot_desired_acceleration_cd(float euler_roll_angle_cd, flo
 {
     const float dt = _attitude_control.get_dt();
     // Convert from centidegrees on public interface to radians
-    const float euler_roll_angle_rad = radians(euler_roll_angle_cd * 0.01f);
-    const float euler_pitch_angle_rad = radians(euler_pitch_angle_cd * 0.01f);
+    const float euler_roll_angle_rad = cd_to_rad(euler_roll_angle_cd);
+    const float euler_pitch_angle_rad = cd_to_rad(euler_pitch_angle_cd);
 
     // convert our desired attitude to an acceleration vector assuming we are not accelerating vertically
     const Vector3f desired_euler_rad {euler_roll_angle_rad, euler_pitch_angle_rad, _ahrs.yaw};
@@ -202,7 +201,7 @@ void AC_Loiter::set_speed_max_NE_cms(float speed_max_ne_cms)
 void AC_Loiter::sanity_check_params()
 {
     _speed_max_ne_cms.set(MAX(_speed_max_ne_cms, LOITER_SPEED_MIN));
-    _accel_max_ne_cmss.set(MIN(_accel_max_ne_cmss, GRAVITY_MSS * 100.0f * tanf(ToRad(_attitude_control.lean_angle_max_cd() * 0.01f))));
+    _accel_max_ne_cmss.set(MIN(_accel_max_ne_cmss, GRAVITY_MSS * 100.0f * tanf(cd_to_rad(_attitude_control.lean_angle_max_cd()))));
 }
 
 /// calc_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance

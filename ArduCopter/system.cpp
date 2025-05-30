@@ -242,16 +242,22 @@ bool Copter::ekf_has_absolute_position() const
         return false;
     }
 
-    // with EKF use filter status and ekf check
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-
     // if disarmed we accept a predicted horizontal position
     if (!motors->armed()) {
-        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
-    } else {
-        // once armed we require a good absolute position and EKF must not be in const_pos_mode
-        return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
+        if (ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
+            return true;
+        }
+        if (ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS)) {
+            return true;
+        }
+        return false;
     }
+
+    // once armed we require a good absolute position and EKF must not be in const_pos_mode
+    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+        return false;
+    }
+    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS);
 }
 
 // ekf_has_relative_position - returns true if the EKF can provide a position estimate relative to it's starting position
@@ -281,15 +287,18 @@ bool Copter::ekf_has_relative_position() const
         return false;
     }
 
-    // get filter status from EKF
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-
     // if disarmed we accept a predicted horizontal relative position
     if (!motors->armed()) {
-        return (filt_status.flags.pred_horiz_pos_rel);
-    } else {
-        return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
+        return ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL);
     }
+
+    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+        return false;
+    }
+    if (!ahrs.has_status(AP_AHRS::Status::HORIZ_POS_REL)) {
+        return false;
+    }
+    return true;
 }
 
 // returns true if the ekf has a good altitude estimate (required for modes which do AltHold)
@@ -300,11 +309,14 @@ bool Copter::ekf_alt_ok() const
         return false;
     }
 
-    // with EKF use filter status and ekf check
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-
     // require both vertical velocity and position
-    return (filt_status.flags.vert_vel && filt_status.flags.vert_pos);
+    if (!ahrs.has_status(AP_AHRS::Status::VERT_POS)) {
+        return false;
+    }
+    if (!ahrs.has_status(AP_AHRS::Status::VERT_VEL)) {
+        return false;
+    }
+    return true;
 }
 
 // update_auto_armed - update status of auto_armed flag
@@ -448,30 +460,30 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control_var_info);
         
-    pos_control = NEW_NOTHROW AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control);
+    pos_control = NEW_NOTHROW AC_PosControl(*ahrs_view, *motors, *attitude_control);
     if (pos_control == nullptr) {
         AP_BoardConfig::allocation_error("PosControl");
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
 
 #if AP_OAPATHPLANNER_ENABLED
-    wp_nav = NEW_NOTHROW AC_WPNav_OA(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+    wp_nav = NEW_NOTHROW AC_WPNav_OA(*ahrs_view, *pos_control, *attitude_control);
 #else
-    wp_nav = NEW_NOTHROW AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+    wp_nav = NEW_NOTHROW AC_WPNav(*ahrs_view, *pos_control, *attitude_control);
 #endif
     if (wp_nav == nullptr) {
         AP_BoardConfig::allocation_error("WPNav");
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
-    loiter_nav = NEW_NOTHROW AC_Loiter(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+    loiter_nav = NEW_NOTHROW AC_Loiter(*ahrs_view, *pos_control, *attitude_control);
     if (loiter_nav == nullptr) {
         AP_BoardConfig::allocation_error("LoiterNav");
     }
     AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
 #if MODE_CIRCLE_ENABLED
-    circle_nav = NEW_NOTHROW AC_Circle(inertial_nav, *ahrs_view, *pos_control);
+    circle_nav = NEW_NOTHROW AC_Circle(*ahrs_view, *pos_control);
     if (circle_nav == nullptr) {
         AP_BoardConfig::allocation_error("CircleNav");
     }

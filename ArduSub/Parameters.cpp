@@ -178,6 +178,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(failsafe_temperature_max, "FS_TEMP_MAX", FS_TEMP_MAX_DEFAULT),
 
+    // @Param: SURFACE_MAX_THR
+    // @DisplayName: Surface Maximum Throttle
+    // @Description: Maximum throttle value when the vehicle is at the surface. This value is used to scale throttle linearly from 1. (full) to min as the vehicle approaches the surface. The attenuation starts at 1 meter from surface.  Only upwards throttle is limited.
+    // @Range: 0.0 1.0
+    // @User: Standard
+    // @Increment: 0.01
+    GSCALAR(surface_max_throttle, "SURFACE_MAX_THR", 0.1f),
+
     // @Param: FS_TERRAIN_ENAB
     // @DisplayName: Terrain Failsafe Enable
     // @Description: Controls what action to take if terrain information is lost during AUTO mode
@@ -700,6 +708,12 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
 #endif
 
+#if AP_RSSI_ENABLED
+    // @Group: RSSI_
+    // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
+    GOBJECT(rssi, "RSSI_",  AP_RSSI),
+#endif
+
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
@@ -766,6 +780,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Units: m
     // @User: Standard
     AP_GROUPINFO("ORIGIN_ALT", 21, ParametersG2, backup_origin_alt, 0),
+
+    // @Param: SFC_NOBARO_THST
+    // @DisplayName: Surface mode throttle output when no barometer is available
+    // @Description: Surface mode throttle output when no borometer is available. 100% is full throttle. -100% is maximum throttle downwards
+    // @Units: %
+    // @User: Standard
+    // @Range: -100 100
+    AP_GROUPINFO("SFC_NOBARO_THST", 22, ParametersG2, surface_nobaro_thrust, 10),
 
     AP_GROUPEND
 };

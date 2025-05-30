@@ -3,7 +3,7 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <stdio.h>
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
 
 const extern AP_HAL::HAL& hal;
 
@@ -67,5 +67,5 @@ bool AP_InertialSensor_ExternalAHRS::get_output_banner(char* banner, uint8_t ban
     return true;
 }
 
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_EXTERNAL_AHRS_ENABLED
 

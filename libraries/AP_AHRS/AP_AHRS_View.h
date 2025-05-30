@@ -116,24 +116,24 @@ public:
         return ahrs.get_relative_position_NED_home(vec);
     }
 
-    bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED {
-        return ahrs.get_relative_position_NED_origin(vec);
+    bool get_relative_position_NED_origin_float(Vector3f &vec) const WARN_IF_UNUSED {
+        return ahrs.get_relative_position_NED_origin_float(vec);
     }
 
     bool get_relative_position_NE_home(Vector2f &vecNE) const WARN_IF_UNUSED {
         return ahrs.get_relative_position_NE_home(vecNE);
     }
 
-    bool get_relative_position_NE_origin(Vector2f &vecNE) const WARN_IF_UNUSED {
-        return ahrs.get_relative_position_NE_origin(vecNE);
+    bool get_relative_position_NE_origin_float(Vector2f &vecNE) const WARN_IF_UNUSED {
+        return ahrs.get_relative_position_NE_origin_float(vecNE);
     }
 
     void get_relative_position_D_home(float &posD) const {
         ahrs.get_relative_position_D_home(posD);
     }
 
-    bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED {
-        return ahrs.get_relative_position_D_origin(posD);
+    bool get_relative_position_D_origin_float(float &posD) const WARN_IF_UNUSED {
+        return ahrs.get_relative_position_D_origin_float(posD);
     }
 
     float groundspeed(void) {

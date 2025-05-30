@@ -18,7 +18,7 @@
 
 #include "AP_ExternalAHRS_config.h"
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
 
 #include "AP_ExternalAHRS.h"
 #include "AP_ExternalAHRS_backend.h"
@@ -469,5 +469,5 @@ AP_ExternalAHRS &externalAHRS()
 
 };
 
-#endif  // HAL_EXTERNAL_AHRS_ENABLED
+#endif  // AP_EXTERNAL_AHRS_ENABLED
 

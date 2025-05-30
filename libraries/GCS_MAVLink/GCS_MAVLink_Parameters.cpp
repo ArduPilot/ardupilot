@@ -202,6 +202,18 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("_ADSB",   10, GCS_MAVLINK, streamRates[GCS_MAVLINK::STREAM_ADSB], DRATE(GCS_MAVLINK::STREAM_ADSB)),
+
+    // ------------
+    // IMPORTANT: Add new stream rates *before* the _OPTIONS parameter.
+    // ------------
+
+    // @Param: _OPTIONS
+    // @DisplayName: Bitmask for configuring this telemetry channel
+    // @Description: Bitmask for configuring this telemetry channel. For having effect on all channels, set the relevant mask in all MAVx_OPTIONS parameters. Keep in mind that part of the flags may require a reboot to take action.
+    // @RebootRequired: True
+    // @User: Standard
+    // @Bitmask: 0:Accept unsigned MAVLink2 messages
+    AP_GROUPINFO("_OPTIONS",   20, GCS_MAVLINK, options, 0),
     AP_GROUPEND
 };
 #undef DRATE
@@ -323,12 +335,12 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
 #endif  // AP_AHRS_ENABLED
     MSG_WIND,
-#if AP_RANGEFINDER_ENABLED
+#if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     MSG_RANGEFINDER,
-#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
+#if AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
     MSG_WATER_DEPTH,
-#endif  // APM_BUILD_TYPE(APM_BUILD_Rover)
-#endif
+#endif  // AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
     MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,
 #if AP_TERRAIN_AVAILABLE

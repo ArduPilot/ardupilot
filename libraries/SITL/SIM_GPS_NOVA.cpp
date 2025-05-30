@@ -116,7 +116,7 @@ void GPS_NOVA::publish(const GPS_Data *d)
     header.sequence += 1;
 
     bestvel.horspd = norm(d->speedN, d->speedE);
-    bestvel.trkgnd = ToDeg(atan2f(d->speedE, d->speedN));
+    bestvel.trkgnd = degrees(atan2f(d->speedE, d->speedN));
     bestvel.vertspd = -d->speedD;
 
     nova_send_message((uint8_t*)&header,sizeof(header),(uint8_t*)&bestvel, sizeof(bestvel));

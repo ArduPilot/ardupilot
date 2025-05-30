@@ -15,14 +15,14 @@ void AP_InertialNav::update(bool high_vibes)
 {
     // get the NE position relative to the local earth frame origin
     Vector2f posNE;
-    if (_ahrs_ekf.get_relative_position_NE_origin(posNE)) {
+    if (_ahrs_ekf.get_relative_position_NE_origin_float(posNE)) {
         _relpos_cm.x = posNE.x * 100; // convert from m to cm
         _relpos_cm.y = posNE.y * 100; // convert from m to cm
     }
 
     // get the D position relative to the local earth frame origin
     float posD;
-    if (_ahrs_ekf.get_relative_position_D_origin(posD)) {
+    if (_ahrs_ekf.get_relative_position_D_origin_float(posD)) {
         _relpos_cm.z = - posD * 100; // convert from m in NED to cm in NEU
     }
 
@@ -43,16 +43,6 @@ void AP_InertialNav::update(bool high_vibes)
             _velocity_cm.z = -rate_z * 100; // convert from m/s in NED to cm/s in NEU
         }
     }
-}
-
-/**
- * get_filter_status : returns filter status as a series of flags
- */
-nav_filter_status AP_InertialNav::get_filter_status() const
-{
-    nav_filter_status status;
-    _ahrs_ekf.get_filter_status(status);
-    return status;
 }
 
 /**

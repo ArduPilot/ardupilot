@@ -29,8 +29,22 @@ bool ModeFollow::init(const bool ignore_checks)
     }
 #endif
 
-    // re-use guided mode
-    return ModeGuided::init(ignore_checks);
+    // initialise horizontal speed, acceleration
+    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
+    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
+
+    // initialize vertical speeds and acceleration
+    pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
+    pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
+
+    // initialise velocity controller
+    pos_control->init_U_controller();
+    pos_control->init_NE_controller();
+
+    // initialise yaw
+    auto_yaw.set_mode_to_default(false);
+
+    return true;
 }
 
 // perform cleanup required when leaving follow mode
@@ -47,84 +61,61 @@ void ModeFollow::run()
         return;
     }
 
+    // Initialize follow offset if not yet set.
+    // Prevents vehicle from starting directly on top of the lead vehicle.
+    g2.follow.init_offsets_if_required();
+
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    // re-use guided mode's velocity controller
-    // Note: this is safe from interference from GCSs and companion computer's whose guided mode
-    //       position and velocity requests will be ignored while the vehicle is not in guided mode
+    float yaw_cd = attitude_control->get_att_target_euler_cd().z;
+    float yaw_rate_cds = 0.0f;
 
-    // variables to be sent to velocity controller
-    Vector3f desired_velocity_neu_cms;
-    bool use_yaw = false;
-    float yaw_cd = 0.0f;
+    Vector3p pos_ofs_ned_m;  // vector to lead vehicle + offset
+    Vector3f vel_ofs_ned_ms;  // velocity of lead vehicle + offset
+    Vector3f accel_ofs_ned_mss;  // accel of lead vehicle + offset
+    if (g2.follow.get_ofs_pos_vel_accel_NED_m(pos_ofs_ned_m, vel_ofs_ned_ms, accel_ofs_ned_mss)) {
+        Vector2p pos_ofs_ne_cm = pos_ofs_ned_m.xy() * 100.0;
+        Vector2f vel_ofs_ne_cms = vel_ofs_ned_ms.xy() * 100.0;
+        Vector2f accel_ofs_ne_cmss = accel_ofs_ned_mss.xy() * 100.0;
 
-    Vector3f dist_vec;  // vector to lead vehicle
-    Vector3f dist_vec_offs;  // vector to lead vehicle + offset
-    Vector3f vel_of_target;  // velocity of lead vehicle
-    if (g2.follow.get_target_dist_and_vel_NED_m(dist_vec, dist_vec_offs, vel_of_target)) {
-        // convert dist_vec_offs to cm in NEU
-        const Vector3f dist_vec_offs_neu(dist_vec_offs.x * 100.0f, dist_vec_offs.y * 100.0f, -dist_vec_offs.z * 100.0f);
+        float target_heading_deg = 0.0f;
+        float target_heading_rate_degs = 0.0f;
+        g2.follow.get_target_heading_deg(target_heading_deg);
+        g2.follow.get_target_heading_rate_degs(target_heading_rate_degs);
 
-        // calculate desired relative velocity vector in cm/s in NEU
-        const float kp = g2.follow.get_pos_p().kP();
-        desired_velocity_neu_cms = dist_vec_offs_neu * kp;
+        pos_control->input_pos_vel_accel_NE_cm(pos_ofs_ne_cm, vel_ofs_ne_cms, accel_ofs_ne_cmss, false);
 
-        // create horizontal desired velocity vector (required for slow down calculations)
-        Vector2f desired_velocity_xy_cms(desired_velocity_neu_cms.x, desired_velocity_neu_cms.y);
+        float pos_ofs_u_cm = -pos_ofs_ned_m.z * 100.0;
+        float vel_ofs_u_cms = -vel_ofs_ned_ms.z * 100.0;
+        float accel_ofs_u_cmss = -accel_ofs_ned_mss.z * 100.0;
+        pos_control->input_pos_vel_accel_U_cm(pos_ofs_u_cm, vel_ofs_u_cms, accel_ofs_u_cmss, false);
 
-        // create horizontal unit vector towards target (required for slow down calculations)
-        Vector2f dir_to_target_xy(desired_velocity_xy_cms.x, desired_velocity_xy_cms.y);
-        if (!dir_to_target_xy.is_zero()) {
-            dir_to_target_xy.normalize();
-        }
-
-        // slow down horizontally as we approach target (use 1/2 of maximum deceleration for gentle slow down)
-        const float dist_to_target_xy = Vector2f(dist_vec_offs_neu.x, dist_vec_offs_neu.y).length();
-        copter.avoid.limit_velocity_2D(pos_control->get_pos_NE_p().kP().get(), pos_control->get_max_accel_NE_cmss() * 0.5f, desired_velocity_xy_cms, dir_to_target_xy, dist_to_target_xy, copter.G_Dt);
-        // copy horizontal velocity limits back to 3d vector
-        desired_velocity_neu_cms.xy() = desired_velocity_xy_cms;
-
-        // limit vertical desired_velocity_neu_cms to slow as we approach target (we use 1/2 of maximum deceleration for gentle slow down)
-        const float des_vel_z_max = copter.avoid.get_max_speed(pos_control->get_pos_U_p().kP().get(), pos_control->get_max_accel_U_cmss() * 0.5f, fabsf(dist_vec_offs_neu.z), copter.G_Dt);
-        desired_velocity_neu_cms.z = constrain_float(desired_velocity_neu_cms.z, -des_vel_z_max, des_vel_z_max);
-
-        // Add the target velocity baseline.
-        desired_velocity_neu_cms.xy() += vel_of_target.xy() * 100.0f;
-        desired_velocity_neu_cms.z += -vel_of_target.z * 100.0f;
-
-        // scale desired velocity to stay within horizontal speed limit
-        desired_velocity_neu_cms.xy().limit_length(pos_control->get_max_speed_NE_cms());
-
-        // limit desired velocity to be between maximum climb and descent rates
-        desired_velocity_neu_cms.z = constrain_float(desired_velocity_neu_cms.z, -fabsf(pos_control->get_max_speed_down_cms()), pos_control->get_max_speed_up_cms());
-
-        // limit the velocity for obstacle/fence avoidance
-        copter.avoid.adjust_velocity(desired_velocity_neu_cms, pos_control->get_pos_NE_p().kP().get(), pos_control->get_max_accel_NE_cmss(), pos_control->get_pos_U_p().kP().get(), pos_control->get_max_accel_U_cmss(), G_Dt);
-
-        // calculate vehicle heading
+        // Determine desired yaw behavior based on configured follow mode
         switch (g2.follow.get_yaw_behave()) {
             case AP_Follow::YAW_BEHAVE_FACE_LEAD_VEHICLE: {
-                if (dist_vec.xy().length_squared() > 1.0) {
-                    yaw_cd = get_bearing_cd(Vector2f{}, dist_vec.xy());
-                    use_yaw = true;
+                // Face the target directly
+                Vector3p pos_ned_m;  // vector to lead vehicle
+                Vector3f vel_ned_ms;  // velocity of lead vehicle
+                Vector3f accel_ned_mss;  // accel of lead vehicle
+                if (g2.follow.get_target_pos_vel_accel_NED_m(pos_ned_m, vel_ned_ms, accel_ned_mss))
+                if (pos_ned_m.xy().length_squared() > 1.0) {
+                    yaw_cd = get_bearing_cd(Vector2f{}, (pos_ned_m.xy() - pos_control->get_pos_target_NEU_cm().xy()).tofloat());
                 }
                 break;
             }
 
             case AP_Follow::YAW_BEHAVE_SAME_AS_LEAD_VEHICLE: {
-                float target_hdg = 0.0f;
-                if (g2.follow.get_target_heading_deg(target_hdg)) {
-                    yaw_cd = target_hdg * 100.0f;
-                    use_yaw = true;
-                }
+                // Match the heading of the lead vehicle
+                yaw_cd = target_heading_deg * 100.0;
+                yaw_rate_cds = target_heading_rate_degs * 100.0;
                 break;
             }
 
             case AP_Follow::YAW_BEHAVE_DIR_OF_FLIGHT: {
-                if (desired_velocity_neu_cms.xy().length_squared() > (100.0 * 100.0)) {
-                    yaw_cd = get_bearing_cd(Vector2f{}, desired_velocity_neu_cms.xy());
-                    use_yaw = true;
+                // Face the direction of travel
+                if (vel_ofs_ne_cms.length_squared() > (100.0 * 100.0)) {
+                    yaw_cd = get_bearing_cd(Vector2f{}, vel_ofs_ne_cms);
                 }
                 break;
             }
@@ -135,24 +126,27 @@ void ModeFollow::run()
                break;
 
         }
+    } else {
+        // Target data is invalid; hold position using zero velocity and acceleration inputs
+        Vector2f vel_zero;
+        Vector2f accel_zero;
+        pos_control->input_vel_accel_NE_cm(vel_zero, accel_zero, false);
+        float velz = 0.0;
+        pos_control->input_vel_accel_U_cm(velz, 0.0, false);
+        yaw_rate_cds = 0.0f;
     }
 
-    // log output at 10hz
-    uint32_t now = AP_HAL::millis();
-    bool log_request = false;
-    if ((now - last_log_ms >= 100) || (last_log_ms == 0)) {
-        log_request = true;
-        last_log_ms = now;
-    }
-    // re-use guided mode's velocity controller (takes NEU)
-    ModeGuided::set_velocity(desired_velocity_neu_cms, use_yaw, yaw_cd, false, 0.0f, false, log_request);
+    // update the position controller
+    pos_control->update_NE_controller();
+    pos_control->update_U_controller();
 
-    ModeGuided::run();
+    // call attitude controller
+    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), yaw_cd, yaw_rate_cds);
 }
 
-uint32_t ModeFollow::wp_distance() const
+float ModeFollow::wp_distance_m() const
 {
-    return g2.follow.get_distance_to_target_m() * 100;
+    return g2.follow.get_distance_to_target_m();
 }
 
 int32_t ModeFollow::wp_bearing() const
@@ -160,9 +154,7 @@ int32_t ModeFollow::wp_bearing() const
     return g2.follow.get_bearing_to_target_deg() * 100;
 }
 
-/*
-  get target position for mavlink reporting
- */
+// Returns target location with offset applied, for MAVLink reporting
 bool ModeFollow::get_wp(Location &loc) const
 {
     Vector3f vel;

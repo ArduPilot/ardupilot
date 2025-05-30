@@ -17,7 +17,7 @@ class AC_Circle
 public:
 
     /// Constructor
-    AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control);
+    AC_Circle(const AP_AHRS_View& ahrs, AC_PosControl& pos_control);
 
     /// init - initialise circle controller setting center specifically
     ///     set terrain_alt to true if center_neu_cm.z should be interpreted as an alt-above-terrain. Rate should be +ve in deg/sec for cw turn
@@ -51,7 +51,7 @@ public:
     float get_rate_degs() const { return _rate_degs; }
 
     /// get_rate_current - returns actual calculated rate target in deg/sec, which may be less than _rate_degs
-    float get_rate_current() const { return ToDeg(_angular_vel_rads); }
+    float get_rate_current() const { return degrees(_angular_vel_rads); }
 
     /// set_rate - set circle rate in degrees per second
     void set_rate_degs(float rate_degs);
@@ -131,7 +131,6 @@ private:
     } _flags;
 
     // references to inertial nav and ahrs libraries
-    const AP_InertialNav&       _inav;
     const AP_AHRS_View&         _ahrs;
     AC_PosControl&              _pos_control;
 

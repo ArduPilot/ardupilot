@@ -7,23 +7,10 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-class DummyVehicle {
-public:
-    bool start_cmd(const AP_Mission::Mission_Command& cmd) { return true; };
-    bool verify_cmd(const AP_Mission::Mission_Command& cmd) { return true; };
-    void mission_complete() { };
-    AP_AHRS ahrs{AP_AHRS::FLAG_ALWAYS_USE_EKF};
-
-    AP_Mission mission{
-        FUNCTOR_BIND_MEMBER(&DummyVehicle::start_cmd, bool, const AP_Mission::Mission_Command &),
-        FUNCTOR_BIND_MEMBER(&DummyVehicle::verify_cmd, bool, const AP_Mission::Mission_Command &),
-        FUNCTOR_BIND_MEMBER(&DummyVehicle::mission_complete, void)};
-    AP_Terrain terrain;
-};
+AP_AHRS ahrs{AP_AHRS::FLAG_ALWAYS_USE_EKF};
+AP_Terrain terrain;
 
 GCS_Dummy _gcs;
-
-static DummyVehicle vehicle;
 
 #define EXPECT_VECTOR2F_EQ(v1, v2)              \
 do {                                        \
@@ -210,7 +197,7 @@ TEST(Location, Tests)
         }
     }
     // NO TERRAIN, NO ORIGIN
-    EXPECT_TRUE(vehicle.ahrs.set_home(test_home));
+    EXPECT_TRUE(ahrs.set_home(test_home));
     for (auto current_frame = Location::AltFrame::ABSOLUTE;
          current_frame <= Location::AltFrame::ABOVE_TERRAIN;
          current_frame = static_cast<Location::AltFrame>(
@@ -340,7 +327,7 @@ TEST(Location, Sanitize)
     // we will sanitize test_loc with test_default_loc
     // test_home is just for reference
     const Location test_home{-35362938, 149165085, 100, Location::AltFrame::ABSOLUTE};
-    EXPECT_TRUE(vehicle.ahrs.set_home(test_home));
+    EXPECT_TRUE(ahrs.set_home(test_home));
     const Location test_default_loc{-35362938, 149165085, 200, Location::AltFrame::ABSOLUTE};
     Location test_loc;
     test_loc.set_alt_cm(0, Location::AltFrame::ABOVE_HOME);

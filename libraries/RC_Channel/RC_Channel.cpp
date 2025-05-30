@@ -116,7 +116,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 5:Save Trim
     // @Values{Rover}: 5:Save Trim (4.1 and lower)
     // @Values{Copter, Rover}: 7:Save WP
-    // @Values{Copter, Rover, Plane}: 9:Camera Trigger
+    // @Values{Copter, Rover, Plane, Sub}: 9:Camera Trigger
     // @Values{Copter}: 10:RangeFinder Enable
     // @Values{Copter, Rover, Plane, Sub}: 11:Fence Enable
     // @Values{Copter}: 13:Super Simple Mode
@@ -164,10 +164,10 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Rover}: 59:Simple Mode
     // @Values{Copter}: 60:ZigZag Mode
     // @Values{Copter}: 61:ZigZag SaveWP
-    // @Values{Copter, Rover, Plane}: 62:Compass Learn
+    // @Values{Copter, Rover, Plane, Sub}: 62:Compass Learn
     // @Values{Rover}: 63:Sailboat Tack
     // @Values{Plane}: 64:Reverse Throttle
-    // @Values{Copter, Rover, Plane, Blimp}: 65:GPS Disable
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 65:GPS Disable
     // @Values{Copter, Rover, Plane, Sub}: 66:Relay5 On/Off, 67:Relay6 On/Off
     // @Values{Copter}: 68:STABILIZE Mode
     // @Values{Copter}: 69:POSHOLD Mode
@@ -205,12 +205,13 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Sub}: 102:Camera Mode Toggle
     // @Values{Copter, Rover, Plane, Blimp, Sub, Tracker}: 103: EKF lane switch attempt
     // @Values{Copter, Rover, Plane, Blimp, Sub, Tracker}: 104: EKF yaw reset
-    // @Values{Copter, Rover, Plane}: 105:GPS Disable Yaw
+    // @Values{Copter, Rover, Plane, Sub}: 105:GPS Disable Yaw
     // @Values{Rover, Plane}: 106:Disable Airspeed Use
     // @Values{Plane}: 107:Enable FW Autotune
     // @Values{Plane}: 108:QRTL Mode
     // @Values{Copter}: 109:use Custom Controller
     // @Values{Copter, Rover, Plane, Blimp, Sub}:  110:KillIMU3
+    // @Values{Copter, Rover, Plane, Blimp, Sub}:  111:Loweheiser starter
     // @Values{Copter,Plane,Rover,Blimp,Sub,Tracker}: 112:SwitchExternalAHRS
     // @Values{Copter, Rover, Plane, Sub}: 113:Retract Mount2
     // @Values{Plane}: 150:CRUISE Mode
@@ -256,6 +257,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 210:Airbrakes
     // @Values{Rover}: 211:Walking Height
     // @Values{Copter, Rover, Plane, Sub}: 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw
+    // @Values{Copter, Rover, Plane, Blimp, Sub}:  218:Loweheiser throttle
     // @Values{Copter}: 219:Transmitter Tuning
     // @Values{Copter, Rover, Plane, Sub}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8, 308:Scripting9, 309:Scripting10, 310:Scripting11, 311:Scripting12, 312:Scripting13, 313:Scripting14, 314:Scripting15, 315:Scripting16
     // @User: Standard
@@ -1596,7 +1598,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 #if AP_GPS_ENABLED
     case AUX_FUNC::GPS_DISABLE:
         AP::gps().force_disable(ch_flag == AuxSwitchPos::HIGH);
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
         AP::externalAHRS().set_gnss_disable(ch_flag == AuxSwitchPos::HIGH);
 #endif
         break;
@@ -1852,7 +1854,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         break;
 
     case AUX_FUNC::AHRS_TYPE: {
-#if HAL_NAVEKF3_AVAILABLE && HAL_EXTERNAL_AHRS_ENABLED
+#if HAL_NAVEKF3_AVAILABLE && AP_EXTERNAL_AHRS_ENABLED
         AP::ahrs().set_ekf_type(ch_flag==AuxSwitchPos::HIGH? AP_AHRS::EKFType::EXTERNAL : AP_AHRS::EKFType::THREE);
 #endif
         break;

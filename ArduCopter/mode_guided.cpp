@@ -998,7 +998,7 @@ void ModeGuided::angle_control_run()
 
     // call attitude controller
     if (guided_angle_state.attitude_quat.is_zero()) {
-        attitude_control->input_rate_bf_roll_pitch_yaw_cds(ToDeg(guided_angle_state.ang_vel_body.x) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.y) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.z) * 100.0f);
+        attitude_control->input_rate_bf_roll_pitch_yaw_cds(degrees(guided_angle_state.ang_vel_body.x) * 100.0f, degrees(guided_angle_state.ang_vel_body.y) * 100.0f, degrees(guided_angle_state.ang_vel_body.z) * 100.0f);
     } else {
         attitude_control->input_quaternion(guided_angle_state.attitude_quat, guided_angle_state.ang_vel_body);
     }
@@ -1062,7 +1062,7 @@ void ModeGuided::limit_init_time_and_pos()
     guided_limit.start_time = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos = inertial_nav.get_position_neu_cm();
+    guided_limit.start_pos = pos_control->get_pos_estimate_NEU_cm().tofloat();
 }
 
 // limit_check - returns true if guided mode has breached a limit
@@ -1075,7 +1075,7 @@ bool ModeGuided::limit_check()
     }
 
     // get current location
-    const Vector3f& curr_pos = inertial_nav.get_position_neu_cm();
+    const Vector3f& curr_pos = pos_control->get_pos_estimate_NEU_cm().tofloat();
 
     // check if we have gone below min alt
     if (!is_zero(guided_limit.alt_min_cm) && (curr_pos.z < guided_limit.alt_min_cm)) {
@@ -1114,17 +1114,17 @@ const Vector3f& ModeGuided::get_target_accel() const
     return guided_accel_target_cmss;
 }
 
-uint32_t ModeGuided::wp_distance() const
+float ModeGuided::wp_distance_m() const
 {
     switch(guided_mode) {
     case SubMode::WP:
-        return wp_nav->get_wp_distance_to_destination_cm();
+        return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
     case SubMode::Pos:
-        return get_horizontal_distance_cm(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy());
+        return get_horizontal_distance_cm(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat()) * 0.01f;
     case SubMode::PosVelAccel:
-        return pos_control->get_pos_error_NE_cm();
+        return pos_control->get_pos_error_NE_cm() * 0.01f;
     default:
-        return 0;
+        return 0.0f;
     }
 }
 
@@ -1134,7 +1134,7 @@ int32_t ModeGuided::wp_bearing() const
     case SubMode::WP:
         return wp_nav->get_wp_bearing_to_destination_cd();
     case SubMode::Pos:
-        return get_bearing_cd(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy());
+        return get_bearing_cd(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat());
     case SubMode::PosVelAccel:
         return pos_control->get_bearing_to_target_cd();
     case SubMode::TakeOff:

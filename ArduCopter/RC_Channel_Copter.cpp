@@ -728,8 +728,8 @@ void RC_Channels_Copter::save_trim()
     } else {
 #endif
     // save roll and pitch trim
-    roll_trim = ToRad((float)get_roll_channel().get_control_in()*0.01f);
-    pitch_trim = ToRad((float)get_pitch_channel().get_control_in()*0.01f);
+    roll_trim = cd_to_rad((float)get_roll_channel().get_control_in());
+    pitch_trim = cd_to_rad((float)get_pitch_channel().get_control_in());
 #if AP_COPTER_AHRS_AUTO_TRIM_ENABLED    
     }
 #endif
@@ -793,10 +793,10 @@ void RC_Channels_Copter::auto_trim_run()
             return;
         }
         // calculate roll trim adjustment, divisor set subjectively to give same "feel" as previous RC input method
-        float roll_trim_adjustment = ToRad(copter.attitude_control->get_att_target_euler_cd().x / 2000.0f);
+        float roll_trim_adjustment = radians(copter.attitude_control->get_att_target_euler_cd().x / 2000.0f);
 
         // calculate pitch trim adjustment, divisor set subjectively to give same "feel" as previous RC input method
-        float pitch_trim_adjustment = ToRad(copter.attitude_control->get_att_target_euler_cd().y / 2000.0f);
+        float pitch_trim_adjustment = radians(copter.attitude_control->get_att_target_euler_cd().y / 2000.0f);
 
         // add trim to ahrs object, but do not save to permanent storage:
         AP::ahrs().add_trim(roll_trim_adjustment, pitch_trim_adjustment, false);

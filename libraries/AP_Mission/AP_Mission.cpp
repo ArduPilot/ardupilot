@@ -916,6 +916,12 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_PAYLOAD_PLACE:
+    case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION:
+    case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION:
+    case MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION:
+    case MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION:
+    case MAV_CMD_NAV_FENCE_RETURN_POINT:
+    case MAV_CMD_NAV_RALLY_POINT:
         return true;
     default:
         return false;

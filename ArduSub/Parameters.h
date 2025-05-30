@@ -208,7 +208,8 @@ public:
         k_param_throttle_gain,
         k_param_cam_tilt_center, // deprecated
         k_param_frame_configuration,
-
+        k_param_surface_max_throttle,
+        k_param_surface_nobaro_thrust,
         // 200: flight modes
         k_param_flight_mode1 = 200,
         k_param_flight_mode2,
@@ -218,6 +219,9 @@ public:
         k_param_flight_mode6,
         k_param_simple_modes,
         k_param_flight_mode_chan,
+#if AP_RSSI_ENABLED
+        k_param_rssi,
+#endif 
         
         // Acro Mode parameters
         k_param_acro_yaw_p = 220, // Used in all modes for get_pilot_desired_yaw_rate
@@ -365,10 +369,12 @@ public:
     AP_Int8         flight_mode6;
     AP_Int8         simple_modes;
     AP_Int8         flight_mode_chan;
-#endif    
+#endif 
 
     AP_Float                surface_depth;
     AP_Int8                 frame_configuration;
+
+    AP_Float surface_max_throttle;
 
     // Note: keep initializers here in the same order as they are declared
     // above.
@@ -401,6 +407,7 @@ public:
     AP_Float backup_origin_lat;
     AP_Float backup_origin_lon;
     AP_Float backup_origin_alt;
+    AP_Float surface_nobaro_thrust;
 };
 
 extern const AP_Param::Info        var_info[];
@@ -417,6 +424,10 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "RC3_TRIM",            1500},
     { "COMPASS_OFFS_MAX",    1000},
     { "INS_GYR_CAL",         0},
+    { "RCMAP_ROLL",          2},
+    { "RCMAP_PITCH",         1},
+    { "RCMAP_FORWARD",       5},
+    { "RCMAP_LATERAL",       6},
 #if HAL_MOUNT_ENABLED
     { "MNT1_TYPE",           1},
     { "MNT1_DEFLT_MODE",     MAV_MOUNT_MODE_RC_TARGETING},

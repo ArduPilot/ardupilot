@@ -333,6 +333,14 @@ RC_Channel &RC_Channels::get_yaw_channel()
 {
     return get_rcmap_channel_nonnull(AP::rcmap()->yaw());
 };
+RC_Channel &RC_Channels::get_forward_channel()
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->forward());
+};
+RC_Channel &RC_Channels::get_lateral_channel()
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->lateral());
+};
 #endif  // AP_RCMAPPER_ENABLED
 
 

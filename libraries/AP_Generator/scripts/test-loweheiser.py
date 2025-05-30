@@ -8,8 +8,6 @@ AP_FLAKE8_CLEAN
 
 """
 
-from __future__ import print_function
-
 import sys
 import time
 import optparse
@@ -22,12 +20,6 @@ os.environ['MAVLINK20'] = '1'
 from pymavlink import mavutil  # NOQA
 
 mavutil.set_dialect("all")
-
-# Detect python version
-if sys.version_info[0] < 3:
-    runningPython3 = False
-else:
-    runningPython3 = True
 
 
 class TestLoweheiser(object):

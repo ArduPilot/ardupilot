@@ -752,18 +752,18 @@ bool QuadPlane::setup(void)
     }
 
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
-    pos_control = NEW_NOTHROW AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control);
+    pos_control = NEW_NOTHROW AC_PosControl(*ahrs_view, *motors, *attitude_control);
     if (!pos_control) {
         AP_BoardConfig::allocation_error("pos_control");
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
-    wp_nav = NEW_NOTHROW AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+    wp_nav = NEW_NOTHROW AC_WPNav(*ahrs_view, *pos_control, *attitude_control);
     if (!wp_nav) {
         AP_BoardConfig::allocation_error("wp_nav");
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
-    loiter_nav = NEW_NOTHROW AC_Loiter(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+    loiter_nav = NEW_NOTHROW AC_Loiter(*ahrs_view, *pos_control, *attitude_control);
     if (!loiter_nav) {
         AP_BoardConfig::allocation_error("loiter_nav");
     }
@@ -1136,7 +1136,7 @@ void QuadPlane::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_o
     }
 
     // apply lateral tilt to euler roll conversion
-    roll_out_cd = 100 * degrees(atanf(cosf(radians(pitch_out_cd*0.01))*tanf(radians(roll_out_cd*0.01))));
+    roll_out_cd = 100 * degrees(atanf(cosf(cd_to_rad(pitch_out_cd)) * tanf(cd_to_rad(roll_out_cd))));
 }
 
 /*
@@ -1432,7 +1432,7 @@ float QuadPlane::desired_auto_yaw_rate_cds(void) const
     if (aspeed < 1) {
         aspeed = 1;
     }
-    float yaw_rate = degrees(GRAVITY_MSS * tanf(radians(plane.nav_roll_cd*0.01f))/aspeed) * 100;
+    float yaw_rate = degrees(GRAVITY_MSS * tanf(cd_to_rad(plane.nav_roll_cd))/aspeed) * 100;
     return yaw_rate;
 }
 
@@ -1478,6 +1478,14 @@ void SLT_Transition::update()
     // the tilt will decrease rapidly)
     if (quadplane.tiltrotor.fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
         if (transition_state == TRANSITION_TIMER) {
+            float throttle;
+            if (plane.quadplane.tiltrotor.get_forward_throttle(throttle)) {
+                // Reset the TECS minimum throttle to match throttle of forward thrust motors
+                // and set the throttle channel slew rate limiter to prevent a sudden drop in throttle
+                plane.TECS_controller.set_throttle_min(throttle, true);
+                SRV_Channels::set_slew_last_scaled_output(SRV_Channel::k_throttle, throttle * 100);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle * 100);
+            }
             gcs().send_text(MAV_SEVERITY_INFO, "Transition FW done");
         }
         transition_state = TRANSITION_DONE;
@@ -1584,15 +1592,24 @@ void SLT_Transition::update()
         
     case TRANSITION_TIMER: {
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-        // after airspeed is reached we degrade throttle over the
-        // transition time, but continue to stabilize
+        // after airspeed is reached we degrade throttle over the transition time, but continue
+        // to stabilize and wait for any required forward tilt to complete and the timer to expire
         const uint32_t transition_timer_ms = now - transition_low_airspeed_ms;
         const float trans_time_ms = constrain_float(quadplane.transition_time_ms,500,30000);
-        if (transition_timer_ms > unsigned(trans_time_ms)) {
+        const bool tilt_fwd_complete = !quadplane.tiltrotor.enabled() || quadplane.tiltrotor.tilt_angle_achieved();
+        if (transition_timer_ms > unsigned(trans_time_ms) && tilt_fwd_complete) {
             transition_state = TRANSITION_DONE;
             in_forced_transition = false;
             transition_start_ms = 0;
             transition_low_airspeed_ms = 0;
+            float throttle;
+            if (plane.quadplane.tiltrotor.get_forward_throttle(throttle)) {
+                // Reset the TECS minimum throttle to match throttle of forward thrust motors
+                // and set the throttle channel slew rate limiter to prevent a sudden drop in throttle
+                plane.TECS_controller.set_throttle_min(throttle, true);
+                SRV_Channels::set_slew_last_scaled_output(SRV_Channel::k_throttle, throttle * 100);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle * 100);
+            }
             gcs().send_text(MAV_SEVERITY_INFO, "Transition done");
         }
 
@@ -2530,7 +2547,7 @@ void QuadPlane::vtol_position_controller(void)
         // calculate speed we should be at to reach the position2
         // target speed at the position2 distance threshold, assuming
         // Q_TRANS_DECEL is correct
-        const float stopping_speed = safe_sqrt(MAX(0, distance-position2_dist_threshold) * 2 * transition_decel) + position2_target_speed;
+        const float stopping_speed = safe_sqrt(MAX(0, distance-position2_dist_threshold) * 2 * transition_decel + sq(position2_target_speed));
 
         float target_speed = stopping_speed;
 
@@ -2959,6 +2976,13 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
         plane.nav_pitch_cd = MIN(plane.nav_pitch_cd, (int32_t)q_bck_pitch_lim_cd);
 
 #if HAL_LOGGING_ENABLED
+        // @LoggerMessage: QBRK
+        // @Description: Quadplane Braking
+        // @Field: TimeUS: Time since system startup
+        // @Field: SpdScaler: braking speed scaler
+        // @Field: NPULCD: upper limit for navigation pitch
+        // @Field: QBPLCD: upper limit for back transition pitch
+        // @Field: NPCD: demanded navigation pitch
         AP::logger().WriteStreaming("QBRK",
                                 "TimeUS,SpdScaler,NPULCD,QBPLCD,NPCD",  // labels
                                 "Qffii",    // fmt
@@ -2990,6 +3014,15 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
 
 #if HAL_LOGGING_ENABLED
     // Diagnostics logging - remove when feature is fully flight tested.
+    // @LoggerMessage: FWDT
+    // @Description: Forward Throttle calculations
+    // @Field: TimeUS: Time since system startup
+    // @Field: fts: forward throttle scaler
+    // @Field: qfplcd: quadplane forward pitch limit
+    // @Field: npllcd: navigation pitch lower limit
+    // @Field: npcd: demanded navigation pitch
+    // @Field: qft: quadplane forward throttle
+    // @Field: npulcd: upper limit for navigation pitch
     AP::logger().WriteStreaming("FWDT",
                                 "TimeUS,fts,qfplcd,npllcd,npcd,qft,npulcd",  // labels
                                 "Qffffff",    // fmt

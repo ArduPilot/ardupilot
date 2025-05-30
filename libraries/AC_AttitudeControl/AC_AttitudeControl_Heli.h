@@ -27,7 +27,7 @@
 #define AC_ATTITUDE_HELI_RATE_RP_FF_FILTER          20.0f
 #define AC_ATTITUDE_HELI_RATE_Y_FF_FILTER          20.0f
 #define AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT    300
-#define AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD   ToRad(30.0f)
+#define AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD   radians(30.0f)
 #define AC_ATTITUDE_HELI_INVERTED_TRANSITION_TIME    3.0f
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
@@ -136,7 +136,7 @@ private:
     float _passthrough_yaw;
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
-    float get_roll_trim_rad() override { return radians(get_roll_trim_cd() * 0.01); }
+    float get_roll_trim_rad() override { return cd_to_rad(get_roll_trim_cd()); }
 
     // internal variables
     float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim

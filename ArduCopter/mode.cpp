@@ -354,7 +354,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #endif
 
 #if AP_FENCE_ENABLED
-    if (fence.get_action() != AC_FENCE_ACTION_REPORT_ONLY) {
+    if (fence.get_action() != AC_Fence::Action::REPORT_ONLY) {
         // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
         // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
         // but it should be harmless to disable the fence temporarily in these situations as well
@@ -654,7 +654,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
             Vector2f target_pos;
             float target_error_cm = 0.0f;
             if (copter.precland.get_target_position_cm(target_pos)) {
-                const Vector2f current_pos = inertial_nav.get_position_xy_cm();
+                const Vector2f current_pos = pos_control->get_pos_estimate_NEU_cm().xy().tofloat();
                 // target is this many cm away from the vehicle
                 target_error_cm = (target_pos - current_pos).length();
             }
@@ -738,10 +738,10 @@ void Mode::land_run_horizontal_control()
     if (copter.ap.prec_land_active) {
         Vector2f target_pos, target_vel;
         if (!copter.precland.get_target_position_cm(target_pos)) {
-            target_pos = inertial_nav.get_position_xy_cm();
+            target_pos = pos_control->get_pos_estimate_NEU_cm().xy().tofloat();
         }
          // get the velocity of the target
-        copter.precland.get_target_velocity_cms(inertial_nav.get_velocity_xy_cms(), target_vel);
+        copter.precland.get_target_velocity_cms(pos_control->get_vel_estimate_NEU_cms().xy(), target_vel);
 
         Vector2f zero;
         Vector2p landing_pos = target_pos.topostype();
@@ -768,7 +768,7 @@ void Mode::land_run_horizontal_control()
         // interpolate for 1m above that
         const float attitude_limit_cd = linear_interpolate(700, copter.aparm.angle_max, get_alt_above_ground_cm(),
                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
-        const float thrust_vector_max = sinf(radians(attitude_limit_cd * 0.01f)) * GRAVITY_MSS * 100.0f;
+        const float thrust_vector_max = sinf(cd_to_rad(attitude_limit_cd)) * GRAVITY_MSS * 100.0f;
         const float thrust_vector_mag = thrust_vector.xy().length();
         if (thrust_vector_mag > thrust_vector_max) {
             float ratio = thrust_vector_max / thrust_vector_mag;

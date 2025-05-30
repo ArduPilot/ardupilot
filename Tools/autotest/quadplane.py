@@ -402,19 +402,18 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.takeoff(15, mode='GUIDED')
         self.set_rc(3, 1500)
         self.change_mode("QLOITER")
-        self.change_mode("QAUTOTUNE")
         tstart = self.get_sim_time()
         self.context_collect('STATUSTEXT')
-        while True:
-            now = self.get_sim_time_cached()
-            if now - tstart > 5000:
-                raise NotAchievedException("Did not get success message")
-            try:
-                self.wait_text("AutoTune: Success", timeout=1, check_context=True)
-            except AutoTestTimeoutException:
-                continue
-            # got success message
-            break
+        self.change_mode("QAUTOTUNE")
+        self.wait_text(
+            "AutoTune: (Success|Failed to level).*",
+            timeout=5000,
+            check_context=True,
+            regex=True,
+        )
+        if self.re_match.group(1) != "Success":
+            raise NotAchievedException("autotune did not succeed")
+        now = self.get_sim_time()
         self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
         self.context_clear_collection('STATUSTEXT')
 
@@ -1565,6 +1564,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "SCR_ENABLE": 1,
             "SIM_SHIP_ENABLE": 1,
             "SIM_SHIP_SPEED": 5,
+            "Q_WP_SPEED": 700,
             "SIM_SHIP_DSIZE": 10,
             "FOLL_ENABLE": 1,
             "FOLL_SYSID": 17,

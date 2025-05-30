@@ -48,7 +48,9 @@ singleton AP_AHRS method head_wind float'skip_check
 singleton AP_AHRS method groundspeed_vector Vector2f
 singleton AP_AHRS method get_velocity_NED boolean Vector3f'Null
 singleton AP_AHRS method get_relative_position_NED_home boolean Vector3f'Null
-singleton AP_AHRS method get_relative_position_NED_origin boolean Vector3f'Null
+singleton AP_AHRS method get_relative_position_NED_origin_float boolean Vector3f'Null
+singleton AP_AHRS method get_relative_position_NED_origin_float rename get_relative_position_NED_origin
+
 singleton AP_AHRS method get_relative_position_D_home void float'Ref
 singleton AP_AHRS method home_is_set boolean
 singleton AP_AHRS method healthy boolean
@@ -315,6 +317,11 @@ singleton GCS method get_high_latency_status depends HAL_HIGH_LATENCY2_ENABLED =
 singleton GCS method enable_high_latency_connections void boolean
 singleton GCS method enable_high_latency_connections depends HAL_HIGH_LATENCY2_ENABLED == 1
 singleton GCS manual run_command_int lua_GCS_command_int 2 1
+
+-- GCS methods to enable/disable setting of parameters via the GCS
+--   PARAM_SET handling and the MAVFTP param-file-upload method:
+singleton GCS method get_allow_param_set boolean
+singleton GCS method set_allow_param_set void boolean
 
 include AP_ONVIF/AP_ONVIF.h depends ENABLE_ONVIF == 1
 singleton AP_ONVIF depends ENABLE_ONVIF == 1
@@ -1103,4 +1110,11 @@ singleton SITL::SIM depends AP_SIM_ENABLED
 singleton SITL::SIM rename sim
 singleton SITL::SIM method set_pose boolean uint8_t'skip_check Location Quaternion Vector3f Vector3f
 
+userdata DroneCAN_Handle depends HAL_ENABLE_DRONECAN_DRIVERS
+userdata DroneCAN_Handle creation DroneCAN_Handle::new_handle 4
+userdata DroneCAN_Handle manual broadcast DroneCAN_Handle::broadcast 1 1
+userdata DroneCAN_Handle manual request DroneCAN_Handle::request 2 1
+userdata DroneCAN_Handle method subscribe boolean
+userdata DroneCAN_Handle manual check_message DroneCAN_Handle::check_message 0 4
+userdata DroneCAN_Handle manual_operator __gc DroneCAN_Handle::__gc
 
