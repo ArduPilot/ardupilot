@@ -538,11 +538,6 @@ float Plane::apply_throttle_limits(float throttle_in)
     int8_t min_throttle = aparm.throttle_min.get();
     int8_t max_throttle = aparm.throttle_max.get();
 
-#if AP_ICENGINE_ENABLED
-    // Apply idle governor.
-    g2.ice_control.update_idle_governor(min_throttle);
-#endif
-
     // If reverse thrust is enabled not allowed right now, the minimum throttle must not fall below 0.
     if (min_throttle < 0 && !allow_reverse_thrust()) {
         // reverse thrust is available but inhibited.
@@ -889,6 +884,20 @@ void Plane::set_servos(void)
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
         }
     }
+
+#if AP_ICENGINE_ENABLED
+    const bool idle_throttle_allowed = arming.is_armed_and_safety_off() || g2.ice_control.allow_throttle_while_disarmed();
+    bool mode_uses_governor = control_mode->use_throttle_limits();
+#if HAL_QUADPLANE_ENABLED
+    mode_uses_governor = mode_uses_governor || quadplane.in_vtol_mode();
+#endif
+    if (idle_throttle_allowed && mode_uses_governor) {
+        int8_t min_throttle = aparm.throttle_min.get();
+        g2.ice_control.update_idle_governor(min_throttle);
+        float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, MAX(min_throttle, throttle));
+    }
+#endif
 
     // Warn AHRS if we might take off soon
     set_takeoff_expected();
