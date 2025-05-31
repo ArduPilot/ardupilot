@@ -94,15 +94,24 @@ private:
 
     uint16_t _send_index; // index of the last vessel send over mavlink
 
+    // Send a AIS vessel to the object avoidance data base if its postion is valid
+    void send_to_object_avoidance_database(const struct ais_vehicle_t &vessel);
+
+    // Return true if location is valid
+    bool check_location(int32_t lat, int32_t lng) const;
+
     // removed the given index from the AIVDM buffer shift following elements
     void buffer_shift(uint8_t i);
 
-    // find vessel in existing list, if not then return NEW_NOTHROW index if possible
+    // find vessel index in existing list, if not then return new index if possible, returns true if index is valid
     bool get_vessel_index(uint32_t mmsi, uint16_t &index, uint32_t lat = 0, uint32_t lon = 0) WARN_IF_UNUSED;
     void clear_list_item(uint16_t index);
 
     // decode the payload
     bool payload_decode(const char *payload) WARN_IF_UNUSED;
+
+    // Apply scale to lat lon felids, avoiding integer overflow
+    int32_t scale_lat_lon(const int32_t val) const;
 
     // decode specific message types
     bool decode_position_report(const char *payload, uint8_t type) WARN_IF_UNUSED;
