@@ -507,6 +507,11 @@ bool FlightAxis::wait_for_sample(const struct sitl_input &input)
     }
 #if HAL_LOGGING_ENABLED
     uint64_t time_now = uint64_t(state.m_currentPhysicsTime_SEC * 1.0e6);
+// @LoggerMessage: RF
+// @Description: RealFlight mode messages
+// @Field: TimeUS: Time since system startup
+// @Field: Dt: delta time between this frame and the previous frae=me
+// @Field: Fps: frames-per-second implied by the current delta time
     AP::logger().WriteStreaming("RF", "TimeUS,Dt,Fps", "QdI", time_now, dt, uint32_t(roundf(1/dt)));
 #endif
     if (last_time_s > 0) {
