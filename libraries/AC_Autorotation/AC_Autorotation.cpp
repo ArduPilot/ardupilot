@@ -480,14 +480,22 @@ bool AC_Autorotation::get_norm_head_speed(float& norm_rpm) const
 // During the entry and glide phases the pilot can navigate via a yaw rate input and coordinated roll is calculated.
 void AC_Autorotation::update_NE_speed_controller(void)
 {
-    const AP_AHRS &ahrs = AP::ahrs();
 
-    // Convert from body-frame to earth-frame
-    _desired_velocity_ef = ahrs.body_to_earth(_desired_velocity_bf);
-    _desired_accel_ef = ahrs.body_to_earth(_desired_accel_bf);
+    Vector2f desired_velocity_ef_cm;
+    if (Nav_Mode(_param_nav_mode.get()) == Nav_Mode::CROSS_TRACK) {
+        // compute the EF vel targets directly from unit _track_vector
+        desired_velocity_ef_cm = _track_vector * _desired_vel;
 
-    // Convert vectors to 2D and go from m to cm
-    Vector2f desired_velocity_ef_cm = {_desired_velocity_ef.x, _desired_velocity_ef.y};
+    } else {
+        const AP_AHRS &ahrs = AP::ahrs();
+
+        // Convert from body-frame to earth-frame
+        _desired_velocity_ef = ahrs.body_to_earth(_desired_velocity_bf);
+        _desired_accel_ef = ahrs.body_to_earth(_desired_accel_bf);
+
+        desired_velocity_ef_cm = {_desired_velocity_ef.x, _desired_velocity_ef.y};
+    }
+
     Vector2f desired_accel_ef_cm = {_desired_accel_ef.x, _desired_accel_ef.y};
     desired_velocity_ef_cm *= 100.0;
     desired_accel_ef_cm *= 100.0;
@@ -548,6 +556,9 @@ void AC_Autorotation::update_navigation_controller(float pilot_norm_accel)
     _desired_accel_bf = {0.0, 0.0, 0.0};
     _desired_heading.yaw_rate_cds = 0.0;
 
+    float heading = 0.0;
+    Vector2f heading_vector = {0.0, 0.0};
+
     switch (Nav_Mode(_param_nav_mode.get())) {
         case Nav_Mode::TURN_INTO_WIND: {
 
@@ -560,24 +571,27 @@ void AC_Autorotation::update_navigation_controller(float pilot_norm_accel)
         }
         case Nav_Mode::CROSS_TRACK: {
 
-            const AP_AHRS &ahrs = AP::ahrs();
+            // const AP_AHRS &ahrs = AP::ahrs();
 
             // Find the angle between the vehicles current heading and the desired track vector
             // Get unit vector for current heading
-            Vector2f unit_vec = {1.0, 0.0};
-            Vector2f heading_vector = ahrs.body_to_earth2D(unit_vec);
+            // Vector2f unit_vec = {1.0, 0.0};
+            // heading_vector = ahrs.body_to_earth2D(unit_vec);
 
-            // Calculate angle between the two vectors (both vectors are unit vectors)
-            const float heading = acosf(_track_vector * heading_vector);
+            // // Calculate angle between the two vectors (both vectors are unit vectors)
+            // heading = acosf(_track_vector * heading_vector);
 
-            // Rotate the body frame target to maintain the velocity vector regardless of aircraft heading
-            _desired_velocity_bf.rotate_xy(heading);
+            // // Rotate the body frame target to maintain the velocity vector regardless of aircraft heading
+            // _desired_velocity_bf.rotate_xy(heading);
 
             float yaw_rate_rad = 0.0;
             float unused_lat_accel = 0.0;
             calc_yaw_rate_from_roll_target(yaw_rate_rad, unused_lat_accel);
 
             _desired_heading.yaw_rate_cds = degrees(yaw_rate_rad) * 100.0;
+
+            // We already have the earth-frame unit vector that we want to maintain the velocity vector along
+            // so we just use that to calculate the earth frame target vel directly (done in update_NE_speed_controller())
 
             break;
         }
@@ -628,25 +642,23 @@ void AC_Autorotation::update_navigation_controller(float pilot_norm_accel)
     // @Field: VY: Desired velocity Y in body frame
     // @Field: AX: Desired Acceleration X in body frame
     // @Field: AY: Desired Acceleration Y in body frame
-    // @Field: VN: Desired velocity North in earth frame
-    // @Field: VE: Desired velocity East in earth frame
-    // @Field: AN: Desired Acceleration North in earth frame
-    // @Field: AE: Desired Acceleration East in earth frame
+    // @Field: H: Angle to target track vector
 
     AP::logger().WriteStreaming("ARSC",
-                                "TimeUS,VX,VY,AX,AY,VN,VE,AN,AE",
-                                "snnoonnoo",
-                                "F00000000",
-                                "Qffffffff",
+                                "TimeUS,VX,VY,AX,AY,H,TX,TY,HX,HY",
+                                "snnoodmmmm",
+                                "F000000000",
+                                "Qfffffffff",
                                 AP_HAL::micros64(),
                                 _desired_velocity_bf.x,
                                 _desired_velocity_bf.y,
                                 _desired_accel_bf.x,
                                 _desired_accel_bf.y,
-                                _desired_velocity_ef.x,
-                                _desired_velocity_ef.y,
-                                _desired_accel_ef.x,
-                                _desired_accel_ef.y);
+                                heading,
+                                _track_vector.x,
+                                _track_vector.y,
+                                heading_vector.x,
+                                heading_vector.y);
 
     // @LoggerMessage: ARXT
     // @Vehicles: Copter
