@@ -119,6 +119,12 @@ public:
     // extrapolate latitude/longitude given distances (in meters) north
     // and east. Note that this is metres, *even for the altitude*.
     void offset(const Vector3p &ofs_ned);
+    void offset_up_cm(int32_t alt_offset_cm) {
+        alt += alt_offset_cm;
+    }
+    void offset_up_m(float alt_offset_m) {
+        alt += alt_offset_m * 100;
+    }
 
     // extrapolate latitude/longitude given bearing and distance
     void offset_bearing(ftype bearing_deg, ftype distance);
