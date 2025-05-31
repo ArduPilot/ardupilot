@@ -422,10 +422,6 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
     }
     vel_ned = _estimate_vel_ned_ms;
 
-    if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
-        loc.change_alt_frame(Location::AltFrame::ABOVE_HOME);
-    }
-
     return true;
 }
 
@@ -439,9 +435,6 @@ bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &ve
     }
     if (!AP::ahrs().get_location_from_origin_offset_NED(loc, _ofs_estimate_pos_ned_m)) {
         return false;
-    }
-    if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
-        loc.change_alt_frame(Location::AltFrame::ABOVE_HOME);
     }
 
     vel_ned = _ofs_estimate_vel_ned_ms;
@@ -879,10 +872,6 @@ void AP_Follow::Log_Write_FOLL()
 
     Location _target_location;
     UNUSED_RESULT(AP::ahrs().get_location_from_origin_offset_NED(_target_location, _target_pos_ned_m));
-
-    if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
-        _target_location.change_alt_frame(Location::AltFrame::ABOVE_HOME);
-    }
 
     // log the lead target's reported position and vehicle's estimated position
     // @LoggerMessage: FOLL
