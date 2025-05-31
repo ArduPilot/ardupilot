@@ -118,9 +118,11 @@ private:
 
     // Navigation controller state
     struct NavStatus {
-        float bearing;                  // bearing to vehicle in centi-degrees
+        float bearing;                  // desired bearing in degrees
+        float bearing_to_target;        // bearing to vehicle in degrees
         float distance;                 // distance to vehicle in meters
-        float pitch;                    // pitch to vehicle in degrees (positive means vehicle is above tracker, negative means below)
+        float pitch;                    // desired pitch in degrees (positive means vehicle is above tracker, negative means below)
+        float pitch_to_target;          // pitch to vehicle in degrees (positive means vehicle is above tracker, negative means below)
         float angle_error_pitch;        // angle error between target and current pitch in centi-degrees
         float angle_error_yaw;          // angle error between target and current yaw in centi-degrees
         float alt_difference_baro;      // altitude difference between tracker and vehicle in meters according to the barometer.  positive value means vehicle is above tracker
