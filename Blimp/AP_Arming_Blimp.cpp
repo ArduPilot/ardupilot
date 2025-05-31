@@ -61,8 +61,10 @@ bool AP_Arming_Blimp::barometer_checks(bool display_failure)
         // that may differ from the baro height due to baro drift.
         const auto &ahrs = AP::ahrs();
         const bool using_baro_ref = !ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL) && ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS);
+        float pos_d_m = 0;
+        UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
         if (using_baro_ref) {
-            if (fabsf(blimp.inertial_nav.get_position_z_up_cm() - blimp.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
+            if (fabsf(-pos_d_m * 100.0 - blimp.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
                 check_failed(Check::BARO, display_failure, "Altitude disparity");
                 ret = false;
             }
@@ -331,17 +333,11 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
         ahrs.resetHeightDatum();
         LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
-
-        // we have reset height, so arming height is zero
-        blimp.arming_altitude_m = 0;
     } else if (!ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
         if (!blimp.set_home_to_current_location(false)) {
             // ignore failure
         }
-
-        // remember the height when we armed
-        blimp.arming_altitude_m = blimp.inertial_nav.get_position_z_up_cm() * 0.01;
     }
 
     hal.util->set_soft_armed(true);
