@@ -292,7 +292,6 @@ Blimp::Blimp(void)
       flight_modes(&g.flight_mode1),
       control_mode(Mode::Number::MANUAL),
       rc_throttle_control_in_filter(1.0f),
-      inertial_nav(ahrs),
       param_loader(var_info),
       flightmode(&mode_manual)
 {
