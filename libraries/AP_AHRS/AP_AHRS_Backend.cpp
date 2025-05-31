@@ -157,6 +157,10 @@ void AP_AHRS::update_cd_values(void)
     yaw_sensor   = degrees(yaw) * 100;
     if (yaw_sensor < 0)
         yaw_sensor += 36000;
+
+    rpy_deg[0] = degrees(roll);
+    rpy_deg[1] = degrees(pitch);
+    rpy_deg[2] = wrap_360(degrees(yaw));  // we are probably already in trouble if this is required
 }
 
 /*

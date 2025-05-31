@@ -190,7 +190,7 @@ void Tracker::set_mode(Mode &newmode, const ModeReason reason)
 #endif
     gcs().send_message(MSG_HEARTBEAT);
 
-    nav_status.bearing = ahrs.yaw_sensor * 0.01f;
+    nav_status.bearing = ahrs.get_yaw_deg();
 }
 
 bool Tracker::set_mode(const uint8_t new_mode, const ModeReason reason)

@@ -431,8 +431,8 @@ void Plane::airspeed_ratio_update(void)
         return;
     }
     if (labs(ahrs.roll_sensor) > roll_limit_cd ||
-        ahrs.pitch_sensor > aparm.pitch_limit_max*100 ||
-        ahrs.pitch_sensor < pitch_limit_min*100) {
+        ahrs.get_pitch_deg() > aparm.pitch_limit_max ||
+        ahrs.get_pitch_deg() < pitch_limit_min) {
         // don't calibrate when going beyond normal flight envelope
         return;
     }

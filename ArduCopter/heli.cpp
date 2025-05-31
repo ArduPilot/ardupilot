@@ -39,7 +39,7 @@ void Copter::check_dynamic_flight(void)
         moving = (vel_ned_ms.xy().length() * 100.0 >= HELI_DYNAMIC_FLIGHT_SPEED_MIN);
     } else {
         // with no GPS lock base it on throttle and forward lean angle
-        moving = (motors->get_throttle() > 0.8f || ahrs.pitch_sensor < -1500);
+        moving = (motors->get_throttle() > 0.8f || ahrs.get_pitch_deg() < -15);
     }
 
 #if AP_RANGEFINDER_ENABLED

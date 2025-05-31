@@ -132,8 +132,8 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
 
         if (angle_error.update(!inside_envelope && !inside_angle_error, now_ms, tigger_delay_ms, clear_delay_ms)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Angle assist r=%d p=%d",
-                                         (int)(plane.ahrs.roll_sensor/100),
-                                         (int)(plane.ahrs.pitch_sensor/100));
+                            (int)plane.ahrs.get_roll_deg(),
+                            (int)plane.ahrs.get_pitch_deg());
         }
     }
 
@@ -194,7 +194,7 @@ bool VTOL_Assist::check_VTOL_recovery(void)
             fabsf(gyro.x) > radians(30) &&
             fabsf(gyro.y) > radians(30) &&
             gyro.x * gyro.z < 0 &&
-            plane.ahrs.pitch_sensor < -4500;
+            plane.ahrs.get_pitch_deg() < -45;
     } else {
         quadplane.in_spin_recovery = false;
     }

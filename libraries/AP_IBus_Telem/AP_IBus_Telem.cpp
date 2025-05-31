@@ -572,7 +572,7 @@ AP_IBus_Telem::SensorValue AP_IBus_Telem::get_sensor_value(const uint8_t sensor_
 
 #if AP_AHRS_ENABLED
     case IBUS_SENSOR_TYPE_COMPASS_HEADING:
-        value.uint16 = AP::ahrs().yaw_sensor * 0.01;
+        value.uint16 = uint16_t(AP::ahrs().get_yaw_deg());
         break;
 #endif
 
