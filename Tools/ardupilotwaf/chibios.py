@@ -670,6 +670,8 @@ def pre_build(bld):
 
 def build(bld):
 
+    # make ccache effective on ChibiOS builds
+    os.environ['CCACHE_IGNOREOPTIONS'] = '--specs=nano.specs --specs=nosys.specs'
 
     hwdef_rule="%s '%s/hwdef/scripts/chibios_hwdef.py' -D '%s' --params '%s' '%s'" % (
             bld.env.get_flat('PYTHON'),
