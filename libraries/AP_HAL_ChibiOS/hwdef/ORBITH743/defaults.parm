@@ -1,0 +1,8 @@
+# setup for LEDs on chan13
+SERVO13_FUNCTION 120
+
+# USART1 for ESC Telemetry
+SERIAL1_PROTOCOL 16
+
+# UsART3 for DJI Goggles
+SERIAL3_PROTOCOL 42
