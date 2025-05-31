@@ -603,7 +603,7 @@ void NavEKF2_core::readGpsData()
                 Location gpsloc_fieldelevation = gpsloc;
                 // if flying, correct for height change from takeoff so that the origin is at field elevation
                 if (inFlight) {
-                    gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);
+                    gpsloc_fieldelevation.offset_up_m(stateStruct.position.z);
                 }
 
                 if (!setOrigin(gpsloc_fieldelevation)) {
