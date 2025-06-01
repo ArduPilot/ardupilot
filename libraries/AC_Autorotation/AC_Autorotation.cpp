@@ -161,7 +161,6 @@ AC_Autorotation::AC_Autorotation(AP_MotorsHeli*& motors, AC_AttitudeControl*& at
         _ground_surface = new AP_SurfaceDistance(ROTATION_PITCH_270, inav, 2U); // taking the 3rd instance of SurfaceDistance to not conflict with the first two already in copter
     #endif
         AP_Param::setup_object_defaults(this, var_info);
-        _desired_heading.heading_mode = AC_AttitudeControl::HeadingMode::Rate_Only;
     }
 
 void AC_Autorotation::init(void)
@@ -203,9 +202,6 @@ void AC_Autorotation::init(void)
     _pos_control->set_correction_speed_accel_NE_cm(_param_target_speed.get()*100.0, _param_accel_max.get()*100.0);
     _pos_control->set_pos_error_max_NE_cm(1000);
     _pos_control->init_NE_controller();
-
-    // Init to current vehicle yaw rate
-    _desired_heading.yaw_rate_cds = ahrs.get_yaw_rate_earth() * 100.0;
 
     // Reset the landed reason
     _landed_reason.min_speed = false;
@@ -475,39 +471,6 @@ bool AC_Autorotation::get_norm_head_speed(float& norm_rpm) const
     return true;
 }
 
-// Update speed controller
-// Vehicle is trying to achieve and maintain the desired speed in the body-frame forward direction.
-// During the entry and glide phases the pilot can navigate via a yaw rate input and coordinated roll is calculated.
-void AC_Autorotation::update_NE_speed_controller(void)
-{
-
-    Vector2f desired_velocity_ef_cm;
-    if (Nav_Mode(_param_nav_mode.get()) == Nav_Mode::CROSS_TRACK) {
-        // compute the EF vel targets directly from unit _track_vector
-        desired_velocity_ef_cm = _track_vector * _desired_vel;
-
-    } else {
-        const AP_AHRS &ahrs = AP::ahrs();
-
-        // Convert from body-frame to earth-frame
-        _desired_velocity_ef = ahrs.body_to_earth(_desired_velocity_bf);
-        _desired_accel_ef = ahrs.body_to_earth(_desired_accel_bf);
-
-        desired_velocity_ef_cm = {_desired_velocity_ef.x, _desired_velocity_ef.y};
-    }
-
-    Vector2f desired_accel_ef_cm = {_desired_accel_ef.x, _desired_accel_ef.y};
-    desired_velocity_ef_cm *= 100.0;
-    desired_accel_ef_cm *= 100.0;
-
-    // Update the position controller
-    _pos_control->input_vel_accel_NE_cm(desired_velocity_ef_cm, desired_accel_ef_cm, true);
-    _pos_control->update_NE_controller();
-
-    // Output to the attitude controller
-    _attitude_control->input_thrust_vector_heading_cd(_pos_control->get_thrust_vector(), _desired_heading);
-}
-
 void AC_Autorotation::calc_yaw_rate_from_roll_target(float& yaw_rate_rad, float& lat_accel) {
     // We will be rolling into the wind to resist the error introduced by the wind pushing us
     // Get the current roll angle target from the attitude controller
@@ -536,6 +499,17 @@ void AC_Autorotation::calc_yaw_rate_from_roll_target(float& yaw_rate_rad, float&
 
     // Calculate the yaw rate from the lateral acceleration
     if (fabsf(_desired_vel) > MIN_MANOEUVERING_SPEED) {
+        // Calc yaw rate from desired body-frame accels
+        // this seems suspiciously simple, but it is correct
+        // accel = r * w^2, r = radius and w = angular rate
+        // radius can be calculated as the distance traveled in the time it takes to do 360 deg
+        // One rotation takes: (2*pi)/w seconds
+        // Distance traveled in that time: (s*2*pi)/w
+        // radius for that distance: ((s*2*pi)/w) / (2*pi)
+        // r = s / w
+        // accel = (s / w) * w^2
+        // accel = s * w
+        // w = accel / s
         yaw_rate_rad = accel / _desired_vel;
 
         // Only apply the acceleration if we are going to apply the yaw rate
@@ -543,63 +517,80 @@ void AC_Autorotation::calc_yaw_rate_from_roll_target(float& yaw_rate_rad, float&
     }
 }
 
-
 // Update speed controller
 void AC_Autorotation::update_navigation_controller(float pilot_norm_accel)
 {
-    // Set body frame velocity targets
-    _desired_velocity_bf.x = _desired_vel;
-    _desired_velocity_bf.y = 0.0; // Start with the assumption that we want zero side slip
-    _desired_velocity_bf.z = get_bf_speed_down(); // Always match the current vz. We add this in because the vz is significant proportion of the speed that needs to be accounted for when we rotate from body frame to earth frame.
+    const AP_AHRS &ahrs = AP::ahrs();
 
-    // Reset desired accels and yaw rate
-    _desired_accel_bf = {0.0, 0.0, 0.0};
-    _desired_heading.yaw_rate_cds = 0.0;
+    // Accel limit the desired velocity
+    // TODO?????????????????????????????????????????
 
-    float heading = 0.0;
-    Vector2f heading_vector = {0.0, 0.0};
+    // Set up yaw rate
+    AC_AttitudeControl::HeadingCommand desired_heading;
+    desired_heading.heading_mode = AC_AttitudeControl::HeadingMode::Rate_Only;
+    desired_heading.yaw_rate_cds = 0.0;
+
+    Vector3f desired_velocity_bf;
+    Vector3f desired_accel_bf;
+    Vector3f desired_velocity_NED;
+    Vector3f desired_accel_NED;
 
     switch (Nav_Mode(_param_nav_mode.get())) {
         case Nav_Mode::TURN_INTO_WIND: {
+            // Mode seeks to maintain body frame velocity target whilst turning into wind.
 
+            // Set body frame velocity targets
+            desired_velocity_bf.x = _desired_vel;
+            desired_velocity_bf.y = 0.0; // Start with the assumption that we want zero side slip
+            desired_velocity_bf.z = get_bf_speed_down(); // Always match the current vz. We add this in because the vz is significant proportion of the speed that needs to be accounted for when we rotate from body frame to earth frame.
+
+            // The position controller will be resisting the wind by rolling into the wind.
+            // Calc the needed lateral accel and yaw rate to make a co-ordinated turn into roll.
             float yaw_rate_rad = 0.0;
-            calc_yaw_rate_from_roll_target(yaw_rate_rad, _desired_accel_bf.y);
+            calc_yaw_rate_from_roll_target(yaw_rate_rad, desired_accel_bf.y);
+            desired_heading.yaw_rate_cds = degrees(yaw_rate_rad) * 100.0;
 
-            _desired_heading.yaw_rate_cds = degrees(yaw_rate_rad) * 100.0;
+            // Convert body frame targets into earth frame
+            desired_velocity_NED = ahrs.body_to_earth(desired_velocity_bf);
+            desired_accel_NED = ahrs.body_to_earth(desired_accel_bf);
 
             break;
         }
         case Nav_Mode::CROSS_TRACK: {
+            // Mode seeks to maintain either the velocity vector or the heading (slow speed case)
+            // recorded on mode init, then yawing into wind to cross-track, reducing drag and roll angle.
 
-            // const AP_AHRS &ahrs = AP::ahrs();
-
-            // Find the angle between the vehicles current heading and the desired track vector
-            // Get unit vector for current heading
-            // Vector2f unit_vec = {1.0, 0.0};
-            // heading_vector = ahrs.body_to_earth2D(unit_vec);
-
-            // // Calculate angle between the two vectors (both vectors are unit vectors)
-            // heading = acosf(_track_vector * heading_vector);
-
-            // // Rotate the body frame target to maintain the velocity vector regardless of aircraft heading
-            // _desired_velocity_bf.rotate_xy(heading);
-
+            // The position controller will be resisting the wind by rolling into the wind.
+            // Calc the needed yaw rate needed to turn into wind and to cross track.
             float yaw_rate_rad = 0.0;
             float unused_lat_accel = 0.0;
             calc_yaw_rate_from_roll_target(yaw_rate_rad, unused_lat_accel);
-
-            _desired_heading.yaw_rate_cds = degrees(yaw_rate_rad) * 100.0;
+            desired_heading.yaw_rate_cds = degrees(yaw_rate_rad) * 100.0;
 
             // We already have the earth-frame unit vector that we want to maintain the velocity vector along
-            // so we just use that to calculate the earth frame target vel directly (done in update_NE_speed_controller())
+            // so we just use that to calculate the earth frame target vel directly
+            desired_velocity_NED = Vector3f{_track_vector, 0.0} * _desired_vel;
 
             break;
         }
         case Nav_Mode::PILOT_LAT_ACCEL:
         default: {
+            // Mode lets pilot request a lateral acceleration. The roll and yaw rates
+            // are then calculated to perform a coordinated turn.
+
+            // Set body frame velocity targets
+            desired_velocity_bf.x = _desired_vel;
+            desired_velocity_bf.y = 0.0; // Start with the assumption that we want zero side slip
+            desired_velocity_bf.z = get_bf_speed_down(); // Always match the current vz. We add this in because the vz is significant proportion of the speed that needs to be accounted for when we rotate from body frame to earth frame.
+
             // Pilot can request as much as 1/2 of the max accel laterally to perform a turn.
             // We only allow up to half as we need to prioritize building/maintaining airspeed.
-            const float lat_accel = pilot_norm_accel * get_accel_max() * 0.5;
+            desired_accel_bf.y = pilot_norm_accel * get_accel_max() * 0.5;
+
+            // In the case where we have low ground speed (e.g. touch down phase) we still want to let the
+            // pilot yaw. We use the min manoeuvering speed as the default "time constant" so that the yaw
+            // feels consistant below the min ground speed and to avoid a div by zero.
+            float yaw_rate_tc = MAX(fabsf(desired_velocity_bf.x), MIN_MANOEUVERING_SPEED);
 
             // Calc yaw rate from desired body-frame accels
             // this seems suspiciously simple, but it is correct
@@ -612,28 +603,36 @@ void AC_Autorotation::update_navigation_controller(float pilot_norm_accel)
             // accel = (s / w) * w^2
             // accel = s * w
             // w = accel / s
-            if (fabsf(_desired_velocity_bf.x) > MIN_MANOEUVERING_SPEED) {
-                _desired_accel_bf.y = lat_accel;
-                _desired_heading.yaw_rate_cds = degrees(_desired_accel_bf.y / _desired_velocity_bf.x) * 100.0;
+            desired_heading.yaw_rate_cds = degrees(desired_accel_bf.y / yaw_rate_tc) * 100.0;
+
+            // Only perform coordinated turns when above the min manoeuvering speed
+            if (fabsf(desired_velocity_bf.x) < MIN_MANOEUVERING_SPEED) {
+                desired_accel_bf.y = 0.0;
             }
+
+            // Convert body frame targets into earth frame
+            desired_velocity_NED = ahrs.body_to_earth(desired_velocity_bf);
+            desired_accel_NED = ahrs.body_to_earth(desired_accel_bf);
         }
     }
 
-    // zero lat accel and yaw rate if we are in a heading hold
+    // zero yaw rate if we are in a heading hold
     if (_heading_hold) {
-        _desired_accel_bf.y = 0.0;
-        _desired_heading.yaw_rate_cds = 0.0;
+        desired_heading.yaw_rate_cds = 0.0;
     }
 
+    // We only use 2D NE position controller so discard z target and convert to cm
+    Vector2f desired_velocity_NE_cm = {desired_velocity_NED.x * 100.0, desired_velocity_NED.y * 100.0};
+    Vector2f desired_accel_NE_cm = {desired_accel_NED.x * 100.0, desired_accel_NED.y * 100.0};
+
     // Update the position controller
-    update_NE_speed_controller();
+    _pos_control->input_vel_accel_NE_cm(desired_velocity_NE_cm, desired_accel_NE_cm, true);
+    _pos_control->update_NE_controller();
+
+    // Output to the attitude controller
+    _attitude_control->input_thrust_vector_heading_cd(_pos_control->get_thrust_vector(), desired_heading);
 
 #if HAL_LOGGING_ENABLED
-
-    // TODO: When happy with this code, we can remove the earth frame vels and accels 
-    // from the logging and class variables as the desired accels will just match the 
-    // desired in position controller.  We could add in the z component stuff in the BF though
-
     // @LoggerMessage: ARSC
     // @Vehicles: Copter
     // @Description: Helicopter AutoRotation Speed Controller (ARSC) information 
@@ -642,37 +641,21 @@ void AC_Autorotation::update_navigation_controller(float pilot_norm_accel)
     // @Field: VY: Desired velocity Y in body frame
     // @Field: AX: Desired Acceleration X in body frame
     // @Field: AY: Desired Acceleration Y in body frame
-    // @Field: H: Angle to target track vector
 
     AP::logger().WriteStreaming("ARSC",
-                                "TimeUS,VX,VY,AX,AY,H,TX,TY,HX,HY",
-                                "snnoodmmmm",
-                                "F000000000",
-                                "Qfffffffff",
+                                "TimeUS,VX,VY,VZ,AX,AY,TX,TY",
+                                "snnnoo--",
+                                "F0000000",
+                                "Qfffffff",
                                 AP_HAL::micros64(),
-                                _desired_velocity_bf.x,
-                                _desired_velocity_bf.y,
-                                _desired_accel_bf.x,
-                                _desired_accel_bf.y,
-                                heading,
+                                desired_velocity_bf.x,
+                                desired_velocity_bf.y,
+                                desired_velocity_bf.z,
+                                desired_accel_bf.x,
+                                desired_accel_bf.y,
                                 _track_vector.x,
-                                _track_vector.y,
-                                heading_vector.x,
-                                heading_vector.y);
+                                _track_vector.y);
 
-    // @LoggerMessage: ARXT
-    // @Vehicles: Copter
-    // @Description: Helicopter AutoRotation Cross(X) Track (ARXT) information 
-    // @Field: TimeUS: Time since system startup
-    // @Field: Des: Desired lateral accel
-
-    AP::logger().WriteStreaming("ARXT",
-                                "TimeUS,Des",
-                                "sn",
-                                "F0",
-                                "Qf",
-                                AP_HAL::micros64(),
-                                pilot_norm_accel);
 #endif
 }
 
@@ -844,13 +827,21 @@ bool AC_Autorotation::should_begin_touchdown(void) const
     return time_check || min_height_check;
 }
 
-// smoothly zero velocity and accel
+// Zero velocity and accel to bring all of the controls into position to trip Copter's landing detector.
 void AC_Autorotation::run_landed(void)
 {
-    _desired_velocity_bf *= 0.95;
-    _desired_accel_bf *= 0.95;
-    update_NE_speed_controller();
+    // Update the position controller with zero vels and accels
+    Vector2f desired_velocity_NE_cm;
+    Vector2f desired_accel_NE_cm;
+    _pos_control->input_vel_accel_NE_cm(desired_velocity_NE_cm, desired_accel_NE_cm, true);
     _pos_control->soften_for_landing_NE();
+    _pos_control->update_NE_controller();
+
+    // Output to the attitude controller
+    AC_AttitudeControl::HeadingCommand desired_heading;
+    desired_heading.heading_mode = AC_AttitudeControl::HeadingMode::Rate_Only;
+    desired_heading.yaw_rate_cds = 0.0;
+    _attitude_control->input_thrust_vector_heading_cd(_pos_control->get_thrust_vector(), desired_heading);
 }
 
 // Determine the body frame forward speed in m/s
