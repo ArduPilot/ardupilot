@@ -3105,7 +3105,7 @@ bool AP_Mission::calc_rewind_pos(Mission_Command& rewind_cmd)
 
     // calculate the resume wp position
     rewind_cmd.content.location.offset(dist_vec.x * leg_percent, dist_vec.y * leg_percent);
-    rewind_cmd.content.location.alt -= dist_vec.z * leg_percent * 100; //(cm)
+    rewind_cmd.content.location.offset_up_m(-dist_vec.z * leg_percent);
 
     // The rewind_cmd.index has the index of the 'last passed wp' from the history array.  This ensures that the mission order
     // continues as planned without further intervention.  The resume wp is not written to memory so will not perminantely change the mission.
