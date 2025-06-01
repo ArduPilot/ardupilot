@@ -573,7 +573,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI_NONE:
     case MAV_CMD_DO_SET_ROI:
-        if (cmd.content.location.alt == 0 && cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
+        if (!cmd.content.location.initialised()) {
             // switch off the camera tracking if enabled
             if (rover.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
                 rover.camera_mount.set_mode_to_default();
