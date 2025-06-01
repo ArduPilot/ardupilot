@@ -101,6 +101,8 @@ public:
     // init - initialise serial ports
     void init();
 
+    bool pre_arm_checks(char *failure_msg, const uint8_t failure_msg_len);
+
     // find_serial - searches available serial ports that allows the given protocol
     //  instance should be zero if searching for the first instance, 1 for the second, etc
     //  returns uart on success, nullptr if a serial port cannot be found

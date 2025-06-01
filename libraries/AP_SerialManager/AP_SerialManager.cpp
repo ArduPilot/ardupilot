@@ -839,6 +839,26 @@ void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol
         state[sernum].baud.set_and_default(baudrate);
     }
 }
+bool AP_SerialManager::pre_arm_checks(char *failure_msg, const uint8_t failure_msg_len)
+{
+    // PARAMETER_CONVERSION - Added May 2028 for ArduPilot-4.7
+    // ArduPilot 4.7 pre-arm fails if either bit is set when conversion should have nuked them
+    // ArduPilot 4.8 pre-arm fails if either bit is set when conversion should have nuked them
+    // ArduPilot 4.9 pre-arm fails if either bit is set when conversion should have nuked them
+    // ArduPilot 4.9++ removes the pre-arm failure
+    for (uint8_t i=0; i<ARRAY_SIZE(state); i++) {
+        const auto &_state = state[i];
+        if (_state.options & AP_HAL::UARTDriver::Option::OPTION_MAVLINK_NO_FORWARD_old) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "SERIAL%u_OPTIONS bit 10 ('no forward mavlink') must not be set; use MAVn_OPTIONS bit 1 instead", unsigned(i));
+            return false;
+        }
+        if (_state.options & AP_HAL::UARTDriver::Option::OPTION_NOSTREAMOVERRIDE_old) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "SERIAL%u_OPTIONS bit 12 ('no stream overrides') must not be set; use MAVn_OPTIONS bit 2 instead", unsigned(i));
+            return false;
+        }
+    }
+    return true;
+}
 
 #if AP_SERIALMANAGER_REGISTER_ENABLED
 /*
