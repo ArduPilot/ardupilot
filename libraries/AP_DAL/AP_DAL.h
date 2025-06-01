@@ -238,9 +238,12 @@ public:
     }
     void handle_message(const log_RFRN &msg) {
         _RFRN = msg;
-        _home.lat = msg.lat;
-        _home.lng = msg.lng;
-        _home.alt = msg.alt;
+        _home = {
+            msg.lat,
+            msg.lng,
+            msg.alt,
+            Location::AltFrame::ABSOLUTE
+        };
     }
     void handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
 
