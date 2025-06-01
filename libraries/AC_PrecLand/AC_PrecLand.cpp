@@ -783,7 +783,7 @@ bool AC_PrecLand::get_target_location(Location &loc)
         return false;
     }
     loc.offset(_last_target_pos_rel_origin_NED.x, _last_target_pos_rel_origin_NED.y);
-    loc.alt -= _last_target_pos_rel_origin_NED.z*100;
+    loc.offset_up_m(-_last_target_pos_rel_origin_NED.z);
     return true;
 }
 
