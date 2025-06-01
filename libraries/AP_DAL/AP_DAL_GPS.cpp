@@ -50,8 +50,11 @@ void AP_DAL_GPS::start_frame()
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPI, RGPI, old_RGPI);
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPJ, RGPJ, old_RGPJ);
 
-        tmp_location[i].lat = RGPJ.lat;
-        tmp_location[i].lng = RGPJ.lng;
-        tmp_location[i].alt = RGPJ.alt;
+        tmp_location[i] = {
+            RGPJ.lat,
+            RGPJ.lng,
+            RGPJ.alt,
+            Location::AltFrame::ABSOLUTE
+        };
     }
 }
