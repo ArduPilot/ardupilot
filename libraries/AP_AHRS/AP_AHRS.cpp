@@ -3018,7 +3018,7 @@ bool AP_AHRS::set_home(const Location &loc)
 {
     WITH_SEMAPHORE(_rsem);
     // check location is valid
-    if (loc.lat == 0 && loc.lng == 0 && loc.alt == 0) {
+    if (!loc.initialised()) {
         return false;
     }
     if (!loc.check_latlng()) {
