@@ -18,7 +18,7 @@ The above image and some content courtesy of [orbitteknoloji.com.tr](https://orb
 
 ### **Power**
 - 2–6S LiPo input power
-- 5V 2.5A BEC for peripherals
+- 5V 3A BEC for peripherals
 - 10V 3A BEC for video, GPIO controlled
 
 ### **Interfaces**
@@ -89,12 +89,6 @@ All motor outputs (M1–M8) support:
 - DShot
 - Bi-directional DShot (for BIDIR motors)
 - PWM
-
-BIDIR DShot is supported on:
-- M1 (PA0)
-- M3 (PA2)
-- M5 (PB0)
-- M7 (PB4)
 
 > **Important:** Mixing DShot and PWM within the same timer group is **not allowed**. Groups must be uniformly configured. Timer groups are:  
 1/2, 3/4, 5/6, 7/8.
@@ -174,19 +168,17 @@ Then reboot.
 
 **First battery monitor is enabled by default:**
 
-* `BATT_VOLT_PIN = 10`
-* `BATT_CURR_PIN = 11`
-* `BATT_VOLT_MULT = 10.1`
-* `BATT_AMP_PERVLT = 80.0` *(Calibrate as needed)*
+* :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN>` = 10
+* :ref:`BATT_CURR_PIN<BATT_CURR_PIN>` = 11
+* :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT>` = 10.1
+* :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT>` = 80.0 *(Calibrate as needed, depending on current sensor.)*
 
 **The second battery monitor is not enabled by default, but its parameter defaults have been set:**
 
-* `BATT2_VOLT_PIN = 4`
-* `BATT2_CURR_PIN = 18`
-* `BATT2_VOLT_MULT = 10.1`
-* `BATT2_AMP_PERVLT = 80.0` *(Calibrate as needed)*
-
-> **Note:** The autopilot uses a high-precision current sensor that is sensitive to ESC noise. Add low-ESR capacitors if needed.
+* :ref:`BATT2_VOLT_PIN<BATT2_VOLT_PIN>` = 4
+* :ref:`BATT2_CURR_PIN<BATT2_CURR_PIN>` = 18
+* :ref:`BATT2_VOLT_MULT<BATT2_VOLT_MULT>` = 10.1
+* :ref:`BATT2_AMP_PERVLT<BATT2_AMP_PERVLT>` = 80.0 *(Calibrate as needed, depending on current sensor)*
 
 ## Where to Buy
 
