@@ -238,7 +238,7 @@ void Sub::do_nav_wp(const AP_Mission::Mission_Command& cmd)
             target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
         } else {
             // default to current altitude as alt-above-home
-            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
+            target_loc.copy_alt_from(current_loc);
         }
     }
 
@@ -323,7 +323,7 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
             target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
         } else {
             // default to current altitude as alt-above-home
-            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
+            target_loc.copy_alt_from(current_loc);
         }
     }
 
@@ -344,14 +344,14 @@ void Sub::do_circle(const AP_Mission::Mission_Command& cmd)
     }
 
     // default target altitude to current altitude if not provided
-    if (circle_center.alt == 0) {
+    if (circle_center.alt_is_zero()) {
         int32_t curr_alt;
         if (current_loc.get_alt_cm(circle_center.get_alt_frame(),curr_alt)) {
             // circle altitude uses frame from command
             circle_center.set_alt_cm(curr_alt,circle_center.get_alt_frame());
         } else {
             // default to current altitude above origin
-            circle_center.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
+            circle_center.copy_alt_from(current_loc);
             LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
         }
     }
@@ -672,7 +672,7 @@ void Sub::do_change_speed(const AP_Mission::Mission_Command& cmd)
 
 void Sub::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
+    if (cmd.p1 == 1 || !cmd.content.location.initialised()) {
         if (!set_home_to_current_location(false)) {
             // silently ignore this failure
         }
