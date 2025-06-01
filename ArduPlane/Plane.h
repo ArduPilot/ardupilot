@@ -578,7 +578,7 @@ private:
     } nav_scripting;
 #endif
 
-    struct {
+    struct GuidedState {
         // roll pitch yaw commanded from external controller in centidegrees
         Vector3l forced_rpy_cd;
         // last time we heard from the external controller
@@ -596,6 +596,9 @@ private:
 
         // altitude adjustments
         Location target_location;
+        // target_location altitude is uses to hold some flag values:
+        bool target_location_alt_is_minus_one() const;
+
         float target_alt_rate;
         uint32_t target_alt_time_ms = 0;
         uint8_t target_mav_frame = -1;
