@@ -16,7 +16,7 @@ void Tracker::update_vehicle_pos_estimate()
         float north_offset = vehicle.vel.x * dt;
         float east_offset = vehicle.vel.y * dt;
         vehicle.location_estimate.offset(north_offset, east_offset);
-    	vehicle.location_estimate.alt += vehicle.vel.z * 100.0f * dt;
+    	vehicle.location_estimate.offset_up_m(vehicle.vel.z * dt);
         // set valid_location flag
         vehicle.location_valid = true;
     } else {
