@@ -526,7 +526,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
         Location circle_edge(circle_edge_neu, Location::AltFrame::ABOVE_ORIGIN);
 
         // convert altitude to same as command
-        circle_edge.set_alt_cm(circle_center.alt, circle_center.get_alt_frame());
+        circle_edge.copy_alt_from(circle_center);
 
         // initialise wpnav to move to edge of circle
         if (!wp_nav->set_wp_destination_loc(circle_edge)) {
@@ -1538,7 +1538,7 @@ Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Lo
             ret.set_alt_cm(default_alt, ret.get_alt_frame());
         } else {
             // default to default_loc's altitude and frame
-            ret.set_alt_cm(default_loc.alt, default_loc.get_alt_frame());
+            ret.copy_alt_from(default_loc);
         }
     }
     return ret;
@@ -1964,7 +1964,7 @@ void ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
 
 void ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
+    if (cmd.p1 == 1 || !cmd.content.location.initialised()) {
         if (!copter.set_home_to_current_location(false)) {
             // ignore failure
         }
