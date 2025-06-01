@@ -554,7 +554,7 @@ void port_setbaud(uint32_t baudrate)
  */
 #define ECC_CHECK_CHUNK_SIZE (32*sizeof(uint32_t))
 
-void check_ecc_flash_region(uint16_t start_page, uint16_t num_pages_chk)
+bool check_ecc_flash_region(uint16_t start_page, uint16_t num_pages_chk)
 {
     auto *dma = dmaStreamAlloc(STM32_DMA_STREAM_ID(1, 1), 0, nullptr, nullptr);
 
@@ -562,7 +562,7 @@ void check_ecc_flash_region(uint16_t start_page, uint16_t num_pages_chk)
 
     if (buf == nullptr) {
         // DMA'ble memory not available
-        return;
+        return true;
     }
     uint32_t page_size = stm32_flash_getpagesize(start_page);
     uint32_t ofs = page_size * start_page;
@@ -599,6 +599,7 @@ void check_ecc_flash_region(uint16_t start_page, uint16_t num_pages_chk)
 #if BOARD_FLASH_SIZE > 1024
     FLASH->CCR2 |= FLASH_CCR_CLR_DBECCERR;
 #endif
+    return ofs >= ofs_hwm;
 }
 
 void check_ecc_errors(void)
@@ -614,7 +615,18 @@ void check_ecc_errors(void)
     check_ecc_flash_region(flash_base_page, num_pages);
 
 #ifdef STORAGE_FLASH_START_PAGE   // now check the parameter storage area if its in flash
-    check_ecc_flash_region(STORAGE_FLASH_START_PAGE, 2);
+    bool page1 = check_ecc_flash_region(STORAGE_FLASH_START_PAGE, 1);
+    bool page2 = check_ecc_flash_region(STORAGE_FLASH_START_PAGE + 1, 1);
+    if (page1 && !page2) {
+        // we have one good page and one bad page, copy the good page to the bad page to preserve parameters
+        stm32_flash_write(stm32_flash_getpageaddr(page2),
+                          (void*)stm32_flash_getpageaddr(page1),
+                          stm32_flash_getpagesize(page2));
+    } else if (page2 && !page1) {
+        stm32_flash_write(stm32_flash_getpageaddr(page1),
+                          (void*)stm32_flash_getpageaddr(page2),
+                          stm32_flash_getpagesize(page1));
+    }
 #endif // STORAGE_FLASH_START_PAGE
 
     __enable_fault_irq();

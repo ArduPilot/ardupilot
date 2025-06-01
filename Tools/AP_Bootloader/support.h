@@ -60,7 +60,7 @@ void custom_startup(void);
 
 #if AP_FLASH_ECC_CHECK_ENABLED
 void check_ecc_errors(void);
-void check_ecc_flash_region(uint16_t start_page, uint16_t num_pages_chk);
+bool check_ecc_flash_region(uint16_t start_page, uint16_t num_pages_chk);
 #endif
 
 // printf to debug uart (or USB)
