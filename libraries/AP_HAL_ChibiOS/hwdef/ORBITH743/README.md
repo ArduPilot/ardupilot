@@ -19,7 +19,7 @@ The above image and some content courtesy of [orbitteknoloji.com.tr](https://orb
 ### **Power**
 - 2–6S LiPo input power
 - 5V 2.5A BEC for peripherals
-- 10V 3A BEC for video
+- 10V 3A BEC for video, GPIO controlled
 
 ### **Interfaces**
 - USB Type-C port
@@ -27,9 +27,10 @@ The above image and some content courtesy of [orbitteknoloji.com.tr](https://orb
 - 12x PWM outputs via two 8-pin ESC connectors and/or solder pads
 - 1x RC input (PWM/SBUS)
 - I2C port for external compass, airspeed sensor, etc.
-- DJI Air Unit support
+- HD VTX support
+- Dual switchable analog Camera inputs
 - 2x Power Monitor
-- Buzzer and LED stripe
+- Buzzer and LED strip
 - Built-in OSD
 
 ### **Size and Dimensions**
@@ -51,6 +52,8 @@ The above image and some content courtesy of [orbitteknoloji.com.tr](https://orb
 - `SERIAL7` = UART7 (USER)  
 - `SERIAL8` = UART8 (USER)  
 
+All UARTs, except UART1, are DMA capable.
+
 > **Note:** Serial port protocols (Telem, GPS, etc.) can be adjusted based on personal preferences.
 
 ## RC Input
@@ -59,7 +62,7 @@ RC input is configured by default on `SERIAL5` (UART5). The 4V5 pin is powered b
 
 - PPM is supported.  
 - SBUS/DSM/SRXL connects to the RX5 pin.  
-- FPort requires connection to TX5. Set `SERIAL5_OPTIONS = 7`.  
+- FPort requires connection to TX5. Set :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>` = 7  
 - CRSF also requires both TX5 and RX5 connections and provides telemetry automatically.
 
 Any UART can be used for RC system connections in ArduPilot. See the [common RC systems](https://ardupilot.org) documentation for details.
@@ -70,15 +73,15 @@ Analog inputs are supported.
 
 - RSSI reference pin number: **8**
 
-> **Note:** Set `RSSI_TYPE = 1` for analog RSSI, or `= 3` for RSSI provided by RC protocols like CRSF.
+> **Note:** Set :ref:`RSSI_TYPE<RSSI_TYPE>` = 1 for analog RSSI, or = 3 for RSSI provided by RC protocols like CRSF.
 
 ## OSD Support
 
-The ORBITH743 has an onboard OSD using `OSD_TYPE = 1` (MAX7456 driver). The CAM and VTX pins provide connections for using the internal OSD.
+The ORBITH743 has an onboard OSD using a MAX7456 chip and is enabled by default. The CAM1/2 and VTX pins provide connections for using the internal OSD. Simultaneous DisplayPort OSD is possible by setting :ref:`OSD_TYPE2<OSD_TYPE2>` = 5.
 
 ## DJI Video and OSD
 
-An **SH1.0 6P** connector supports a standard DJI HD VTX. `SERIAL3` is configured by default. Pin 1 provides 10V—**do not** connect peripherals that require 5V to this pin.
+An **SH1.0 6P** connector supports a standard DJI HD VTX. `SERIAL3` is configured by default. Pin 1 provides 10V which is controlled by GPIO81—**do not** connect peripherals that require 5V to this pin.
 
 ## DShot Capability
 
@@ -119,8 +122,8 @@ Set the `SERVOx_FUNCTION = -1` to enable GPIO functionality. See [ArduPilot GPIO
 - PWM12 → 61  
 - LED → 62  
 - BUZZER → 80  
-- PINIO1 → 81 (internal)  
-- PINIO2 → 82 (internal)
+-VTX PWR → 81 (internal)  
+- CAM SW→ 82 (internal)
 
 ## VTX Power Control
 
@@ -129,11 +132,12 @@ Setting GPIO 81 **low** disables voltage to the pins.
 
 Example (using Channel 10 to toggle VTX BEC using Relay 2):
 ```text
-RELAY2_PIN = 81  
+:ref:`RELAY2_FUNCTION<RELAY2_FUNCTION>` = 1
+:ref::`RELAY2_PIN<RELAY2_PIN>` = 81  
 RC10_OPTION = 34  ; Relay2 Control
 ```
 
-> ⚠️ **Warning:** PINIO1 controls the 10V DC-DC converter (HIGH = on, LOW = off). Default: ON. Always install an antenna on the VTX when battery-powered.
+> ⚠️ **Warning:** GPIO81 controls the 10V DC-DC converter (HIGH = on, LOW = off). Default: ON. Always install an antenna on the VTX when battery-powered.
 
 ## Camera Switch Control
 
@@ -143,16 +147,16 @@ Example (using Channel 11 to control camera switch via Relay 2):
 
 ```text
 RELAY2_PIN = 82  
-RC11_OPTION = 34  ; Relay2 Control
+:ref:`RC11_OPTION<RC11_OPTION>` = 35  ; Relay3 Control
 ```
 
-> ⚠️ **Warning:** PINIO2 toggles camera input (HIGH/LOW). Ensure wiring matches desired switching behavior.
+> ⚠️ **Warning:** GPIO82 toggles camera input (HIGH/LOW). Ensure wiring matches desired switching behavior.
 
 ## Connecting a GPS/Compass Module
 
 This board does **not** include GPS or compass modules. An [external GPS/compass](https://ardupilot.org) must be connected for autonomous features.
 
-> **Note:** If GPS is powered via 5V and connected to UART6, a battery is required for power.
+> **Note:** If GPS is powered via 5V , a battery is required for power.
 
 > **Tip:** The 4V5 pin can power both RC and GPS for bench setup (without battery), as long as the total current does not exceed USB limits (typically 1A).
 
@@ -163,19 +167,19 @@ These are set by default. If reset:
 Enable battery monitor with:
 
 ```text
-BATT_MONITOR = 4
+:ref:`BATT_MONITOR<BATT_MONITOR>` = 4
 ```
 
 Then reboot.
 
-**First battery monitor:**
+**First battery monitor is enabled by default:**
 
 * `BATT_VOLT_PIN = 10`
 * `BATT_CURR_PIN = 11`
 * `BATT_VOLT_MULT = 10.1`
 * `BATT_AMP_PERVLT = 80.0` *(Calibrate as needed)*
 
-**Second battery monitor:**
+**The second battery monitor is not enabled by default, but its parameter defaults have been set:**
 
 * `BATT2_VOLT_PIN = 4`
 * `BATT2_CURR_PIN = 18`
