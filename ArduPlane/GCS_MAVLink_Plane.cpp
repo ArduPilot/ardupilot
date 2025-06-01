@@ -511,7 +511,7 @@ void GCS_MAVLINK_Plane::handle_change_alt_request(Location &location)
     plane.fix_terrain_WP(location, __LINE__);
 
     if (location.terrain_alt) {
-        plane.next_WP_loc.set_alt_cm(location.alt, Location::AltFrame::ABOVE_TERRAIN);
+        plane.next_WP_loc.copy_alt_from(location);
     } else {
         // convert to absolute alt
         float abs_alt_m;
