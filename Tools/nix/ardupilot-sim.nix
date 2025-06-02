@@ -2,30 +2,40 @@
   let supported-systems = with flake-utils.lib.system; [
     x86_64-linux
     aarch64-linux
+    aarch64-darwin
   ];
 in flake-utils.lib.eachSystem supported-systems (system:
-    let:
-        pkgs = import nixpkgs { inherit system overlays; };
-        inherit (pkgs) lib;
-        python = (pkgs.python39.withPackages
-        (ps: with ps; [ setuptools future pexpect empy ]));
+    let
+        pkgs = import nixpkgs { inherit system; };
+
+    nixpkgs_22_05 = import (builtins.fetchTarball {
+      url    = "https://github.com/NixOS/nixpkgs/archive/refs/tags/22.05.tar.gz";
+      sha256 = "0d643wp3l77hv2pmg2fi7vyxn4rwy0iyr8djcw1h5x72315ck9ik";
+    }) { inherit system; };
+
+    python = nixpkgs_22_05.python310.withPackages (ps: with ps; [
+      ps.setuptools
+      ps.future
+      ps.pexpect
+      ps.empy     
+    ]);
+
   in {
     packages = flake-utils.lib.flattenTree {
       ardusim = pkgs.stdenv.mkDerivation {
         name = "ardusim";
         src = builtins.fetchGit {
           url = "https://github.com/ArduPilot/ardupilot.git";
-          rev = "df2be63e21217b626be53c7c9e98f37410b12126";
-          ref = "Rover-4.4";
+          rev = "9cc2b9d59a54868be94e53bd45fc4279e33f6b9f";
+          ref = "Rover-4.6";
           submodules = true;
         };
         buildInputs = [ python pkgs.git pkgs.rsync pkgs.gcc ];
 
         nativeBuildInputs = [ pkgs.wafHook ];
         patches = [
-          ./patches/ardusim_patches/runnable_status.patch
-          ./patches/ardusim_patches/remove_gcc_Werror.patch
-          ./patches/ardusim_patches/fake_git_rev.patch
+          ./patches/remove_gcc_Werror.patch
+          ./patches/fake_git_rev.patch
         ];
         wafPath = "modules/waf/waf-light";
         wafConfigureFlags = [ "--board sitl" ];
