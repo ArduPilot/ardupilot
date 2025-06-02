@@ -527,12 +527,18 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
         return false;
     }
 
+    int8_t min_percent = idle_percent.get();
+#if AP_RPM_ENABLED
+    // if the idle governor is enabled then use the idle RPM to determine the idle percentage
+    update_idle_governor(min_percent);
+#endif // AP_RPM_ENABLED
+
     if (state == ICE_RUNNING &&
-        idle_percent > 0 &&
-        idle_percent < 100 &&
-        idle_percent > percentage)
+        min_percent > 0 &&
+        min_percent < 100 &&
+        min_percent > percentage)
     {
-        percentage = idle_percent;
+        percentage = min_percent;
         if (allow_throttle_while_disarmed() && !hal.util->get_soft_armed()) {
             percentage = MAX(percentage, base_throttle);
         }
