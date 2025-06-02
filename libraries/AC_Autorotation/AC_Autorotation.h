@@ -62,6 +62,11 @@ public:
     // Update the height above ground estimate in meters
     void update_hagl(void);
 
+    // Functions to support NAV_CONTROLLER_OUTPUT telemetry
+    int32_t get_wp_bearing(void) const;
+    float wp_distance_m(void) const;
+    float crosstrack_error(void) const;
+
     // A helper function to tidy up on mode exit
     void exit(void);
 
@@ -133,6 +138,7 @@ private:
     bool _heading_hold;           // A flag used to tell the navigation controller to maintain the current heading.
     float _desired_vel;           // (m/s) This is the velocity that we want.  This is the variable that is set by the invoking function to request a certain speed
     Vector2f _track_vector;       // The velocity or heading vector stored at init and used as a navigation target for CROSS_TRACK mode
+    Vector2f _bearing_vector;     // Unit vector calculated from NE vel targets to report bearing over telemetry
 
     enum class Nav_Mode : int8_t {
         PILOT_LAT_ACCEL = 0, // Pilot controls direction, using yaw stick to request lateral accelerations, coordinated turns are performed.

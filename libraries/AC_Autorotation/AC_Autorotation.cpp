@@ -632,6 +632,14 @@ void AC_Autorotation::update_navigation_controller(float pilot_norm_accel)
     // Output to the attitude controller
     _attitude_control->input_thrust_vector_heading_cd(_pos_control->get_thrust_vector(), desired_heading);
 
+    // Calculate the unit velocity vector for wp bearing telemetry data
+    if (desired_velocity_NE_cm.length() > MIN_MANOEUVERING_SPEED * 100.0) {
+        _bearing_vector = desired_velocity_NE_cm;
+        _bearing_vector.normalize();
+    } else {
+        _bearing_vector = {0.0, 0.0};
+    }
+
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: ARSC
     // @Vehicles: Copter
@@ -1068,6 +1076,38 @@ void AC_Autorotation::set_dt(float delta_sec)
         return;
     }
     _dt = 2.5e-3; // Assume 400 Hz
+}
+
+int32_t AC_Autorotation::get_wp_bearing(void) const
+{
+    Vector2f origin;
+    return get_bearing_cd(origin, _bearing_vector);
+}
+
+float AC_Autorotation::wp_distance_m(void) const
+{
+    if (is_positive(_hagl) && _hagl_valid) {
+    // We don't have waypoints to fly towards in this mode, so instead we send a crude estimate of
+    // where we think we might land if we continue on this course.  We will likely be getting a glide
+    // ratio of roughly 1:1 so reporting the HAGL will give an approximate distance travelled.
+        return _hagl;
+    }
+
+    // We may not be in rangefinder range in which case we just return height above origin
+    const AP_AHRS &ahrs = AP::ahrs();
+    float down;
+    if (ahrs.get_relative_position_D_origin(down)) {
+        return fabsf(down);
+    }
+
+    // If we got this far things went really wrong, just return a fixed value so a direction vector
+    // at least displays in GCS
+    return 200.0;
+}
+
+float AC_Autorotation::crosstrack_error(void) const
+{
+    return _pos_control->crosstrack_error();
 }
 
 void AC_Autorotation::exit(void)
