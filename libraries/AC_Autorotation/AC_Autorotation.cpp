@@ -305,8 +305,9 @@ void AC_Autorotation::init_flare(void)
 
     _flare_entry_fwd_speed = get_bf_speed_forward();
 
-    // unlock any heading hold if we had one
-    _heading_hold = false;
+    // Lock heading for the flare if the navigation mode uses roll components in the calculations
+    _heading_hold = Nav_Mode(_param_nav_mode.get()) == Nav_Mode::TURN_INTO_WIND ||
+                    Nav_Mode(_param_nav_mode.get()) == Nav_Mode::CROSS_TRACK;
 }
 
 void AC_Autorotation::run_flare(float des_lat_accel_norm)
