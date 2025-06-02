@@ -2031,6 +2031,11 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return false; };
 
+    // Functions to support NAV_CONTROLLER_OUTPUT telemetry
+    int32_t wp_bearing() const override;
+    float wp_distance_m() const override;
+    float crosstrack_error() const override;
+
     static const struct AP_Param::GroupInfo  var_info[];
 
 protected:

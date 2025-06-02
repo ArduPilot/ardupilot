@@ -168,6 +168,21 @@ void ModeAutorotate::run()
 
 } // End function run()
 
+int32_t ModeAutorotate::wp_bearing() const
+{
+    return g2.arot.get_wp_bearing();
+}
+
+float ModeAutorotate::wp_distance_m() const
+{
+    return g2.arot.wp_distance_m();
+}
+
+float ModeAutorotate::crosstrack_error() const
+{
+    return g2.arot.crosstrack_error();
+}
+
 void ModeAutorotate::exit()
 {
     g2.arot.exit();
