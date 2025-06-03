@@ -1097,7 +1097,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 const float breakout_direction_rad = radians(vtol_approach_s.approach_direction_deg + (direction > 0 ? 270 : 90));
 
                 // breakout when within 5 degrees of the opposite direction
-                if (fabsF(wrap_PI(ahrs.get_yaw() - breakout_direction_rad)) < radians(5.0f)) {
+                if (fabsF(wrap_PI(ahrs.get_yaw_rad() - breakout_direction_rad)) < radians(5.0f)) {
                     gcs().send_text(MAV_SEVERITY_INFO, "Starting VTOL land approach path");
                     vtol_approach_s.approach_stage = VTOLApproach::Stage::APPROACH_LINE;
                     set_next_WP(cmd.content.location);
