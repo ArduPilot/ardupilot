@@ -211,11 +211,11 @@ bool AP_Baro_SPL06::_init()
         _c40 = get_twos_complement((((uint32_t)buf[19] & 0x0F) << 8) | (uint32_t)buf[20], 12);
 	}
 
-    // setup temperature and pressure measurements
-    _dev->setup_checked_registers(3, 20);
-
     const uint8_t tmp_sensor = (type == Type::SPA06 ? 0 : SPL06_TEMP_USE_EXT_SENSOR);
 #if AP_BARO_SPL06_BACKGROUND_ENABLE
+    // setup temperature and pressure measurements
+    _dev->setup_checked_registers(4, 20);
+
     //set rate and oversampling
 	_dev->write_register(SPL06_REG_TEMPERATURE_CFG, tmp_sensor | SPL06_TEMP_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
 	_dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_PRES_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
@@ -223,6 +223,9 @@ bool AP_Baro_SPL06::_init()
 	//enable background mode
 	_dev->write_register(SPL06_REG_MODE_AND_STATUS, SPL06_MEAS_CON_PRE_TEM, true);
 #else
+    // setup temperature and pressure measurements
+    _dev->setup_checked_registers(3, 20);
+
     _dev->write_register(SPL06_REG_TEMPERATURE_CFG, tmp_sensor | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
     _dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
 #endif //AP_BARO_SPL06_BACKGROUND_ENABLE
