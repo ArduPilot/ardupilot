@@ -3785,15 +3785,30 @@ function ahrs:get_position() end
 
 -- Returns the current vehicle euler yaw angle in radians.
 ---@return number -- yaw angle in radians.
+---@deprecated -- get_yaw_rad
 function ahrs:get_yaw() end
 
 -- Returns the current vehicle euler pitch angle in radians.
 ---@return number -- pitch angle in radians.
+---@deprecated -- get_pitch_rad
 function ahrs:get_pitch() end
 
 -- Returns the current vehicle euler roll angle in radians.
 ---@return number -- roll angle in radians
+---@deprecated -- get_roll_rad
 function ahrs:get_roll() end
+
+-- Returns the current vehicle euler yaw angle in radians.
+---@return number -- yaw angle in radians (0 to 2*Pi).
+function ahrs:get_yaw_rad() end
+
+-- Returns the current vehicle euler pitch angle in radians.
+---@return number -- pitch angle in radians.
+function ahrs:get_pitch_rad() end
+
+-- Returns the current vehicle euler roll angle in radians.
+---@return number -- roll angle in radians
+function ahrs:get_roll_rad() end
 
 -- desc
 AC_AttitudeControl = {}

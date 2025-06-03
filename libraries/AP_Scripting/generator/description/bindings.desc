@@ -34,11 +34,14 @@ singleton AP_AHRS rename ahrs
 singleton AP_AHRS depends AP_AHRS_ENABLED
 singleton AP_AHRS semaphore
 singleton AP_AHRS method get_roll_rad float
-singleton AP_AHRS method get_roll_rad alias get_roll
+singleton AP_AHRS method get_roll float
+singleton AP_AHRS method get_roll deprecate Use get_roll_rad
 singleton AP_AHRS method get_pitch_rad float
-singleton AP_AHRS method get_pitch_rad alias get_pitch
+singleton AP_AHRS method get_pitch float
+singleton AP_AHRS method get_pitch deprecate Use get_pitch_rad
 singleton AP_AHRS method get_yaw_rad float
-singleton AP_AHRS method get_yaw_rad alias get_yaw
+singleton AP_AHRS method get_yaw float
+singleton AP_AHRS method get_yaw deprecate Use get_yaw_rad
 singleton AP_AHRS method get_location boolean Location'Null
 singleton AP_AHRS method get_location alias get_position
 singleton AP_AHRS method get_home Location
