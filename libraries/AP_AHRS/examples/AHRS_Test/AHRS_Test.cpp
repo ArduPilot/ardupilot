@@ -92,9 +92,9 @@ void loop(void)
         hal.console->printf(
                 "r:%4.1f  p:%4.1f y:%4.1f "
                     "drift=(%5.1f %5.1f %5.1f) hdg=%.1f rate=%.1f\n",
-                (double)degrees(ahrs.get_roll()),
-                (double)degrees(ahrs.get_pitch()),
-                (double)degrees(ahrs.get_yaw()),
+                (double)ahrs.get_roll_deg(),
+                (double)ahrs.get_pitch_deg(),
+                (double)ahrs.get_yaw_deg(),
                 (double)degrees(drift.x),
                 (double)degrees(drift.y),
                 (double)degrees(drift.z),
