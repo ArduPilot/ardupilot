@@ -573,9 +573,9 @@ public:
      */
 
     // roll/pitch/yaw euler angles, all in radians
-    float get_roll() const { return roll; }
-    float get_pitch() const { return pitch; }
-    float get_yaw() const { return yaw; }
+    float get_roll_rad() const { return roll; }
+    float get_pitch_rad() const { return pitch; }
+    float get_yaw_rad() const { return yaw; }
 
     // roll/pitch/yaw euler angles, all in degrees
     float get_roll_deg() const { return rpy_deg[0]; }
