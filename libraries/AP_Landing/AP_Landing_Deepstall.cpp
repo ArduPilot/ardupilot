@@ -646,7 +646,7 @@ float AP_Landing_Deepstall::update_steering()
             L1_xtrack_i = constrain_float(L1_xtrack_i, -0.5f, 0.5f);
             nu1 += L1_xtrack_i;
         }
-        desired_change = wrap_PI(radians(target_heading_deg) + nu1 - landing.ahrs.get_yaw()) / time_constant;
+        desired_change = wrap_PI(radians(target_heading_deg) + nu1 - landing.ahrs.get_yaw_rad()) / time_constant;
     }
 
     float yaw_rate = landing.ahrs.get_gyro().z;
