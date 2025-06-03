@@ -121,8 +121,10 @@ void Tracker::update_tracking(void)
     }
 
     // convert servo_out to radio_out and send to servo
+    auto &srv = AP::srv();
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
+    srv.push();
     return;
 }
 
