@@ -82,6 +82,9 @@ public:
     // during sensor calibration
     void heartbeat(void);
 
+    //return true if we should jump to _wp_comms_hold
+    bool should_use_comms_hold(void);
+
     // return true if we are terminating (deliberately crashing the vehicle)
     bool should_crash_vehicle(void);
 
@@ -171,6 +174,7 @@ private:
     enum class Option {
         CONTINUE_AFTER_RECOVERED = (1U<<0),
         GCS_FS_ALL_AUTONOMOUS_MODES = (1U<<1),
+        CONTINUE_IF_ALREADY_IN_RETURN_PATH = (1U<<2),
     };
     bool option_is_set(Option option) const {
         return (options.get() & int16_t(option)) != 0;
