@@ -30,7 +30,7 @@ protected:
 
 private:
 
-    void packetReceived(const mavlink_status_t &status, const mavlink_message_t &msg) override;
+    void packetReceived(uint8_t framing_status, const mavlink_status_t &status, const mavlink_message_t &msg) override;
     void mavlink_check_target(const mavlink_message_t &msg);
     void handle_message(const mavlink_message_t &msg) override;
     void handle_message_mission_write_partial_list(const mavlink_message_t &msg);
