@@ -538,7 +538,7 @@ bool Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
     field = R * field;
 
     Matrix3f dcm;
-    dcm.from_euler(AP::ahrs().get_roll(), AP::ahrs().get_pitch(), radians(yaw_deg));
+    dcm.from_euler(AP::ahrs().get_roll_rad(), AP::ahrs().get_pitch_rad(), radians(yaw_deg));
 
     // Rotate into body frame using provided yaw
     field = dcm.transposed() * field;
