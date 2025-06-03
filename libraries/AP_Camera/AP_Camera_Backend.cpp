@@ -316,7 +316,7 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
 
     // calculate attitude quaternion in earth frame using AHRS yaw
     Quaternion quat_ef;
-    quat_ef.from_euler(0, 0, AP::ahrs().get_yaw());
+    quat_ef.from_euler(0, 0, AP::ahrs().get_yaw_rad());
     quat_ef *= quat;
 
     // send camera fov status message only if the last calculated values aren't stale
