@@ -347,10 +347,12 @@ private:
         // true when a reset of airspeed and height states to current is performed on this frame
         bool reset:1;
 
+        // Overspeed condition
+        bool overspeed:1;
     };
     union {
         struct flags _flags;
-        uint8_t _flags_byte;
+        uint16_t _flags_byte;
     };
 
     // time when underspeed started
@@ -469,6 +471,9 @@ private:
 
     // Detect an underspeed condition
     void _detect_underspeed(void);
+
+    // Detect an underspeed condition
+    void _detect_overspeed(void);
 
     // Update Specific Energy Quantities
     void _update_energies(void);
