@@ -52,7 +52,7 @@ void ModeGuided::update()
 
         float error = 0.0f;
         if (plane.guided_state.target_heading_type == GUIDED_HEADING_HEADING) {
-            error = wrap_PI(plane.guided_state.target_heading - AP::ahrs().get_yaw());
+            error = wrap_PI(plane.guided_state.target_heading - AP::ahrs().get_yaw_rad());
         } else {
             Vector2f groundspeed = AP::ahrs().groundspeed_vector();
             error = wrap_PI(plane.guided_state.target_heading - atan2f(-groundspeed.y, -groundspeed.x) + M_PI);
