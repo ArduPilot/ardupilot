@@ -995,8 +995,8 @@ void AP_Vehicle::publish_osd_info()
 void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {
 #if AP_AHRS_ENABLED
-    roll = ahrs.get_roll();
-    pitch = ahrs.get_pitch();
+    roll = ahrs.get_roll_rad();
+    pitch = ahrs.get_pitch_rad();
 #else
     roll = 0.0;
     pitch = 0.0;
