@@ -244,9 +244,9 @@ void GCS_MAVLINK_Rover::send_water_depth()
             loc.lat,            // latitude of vehicle
             loc.lng,            // longitude of vehicle
             loc.alt * 0.01f,    // altitude of vehicle (MSL)
-            ahrs.get_roll(),    // roll in radians
-            ahrs.get_pitch(),   // pitch in radians
-            ahrs.get_yaw(),     // yaw in radians
+            ahrs.get_roll_rad(),    // roll in radians
+            ahrs.get_pitch_rad(),   // pitch in radians
+            ahrs.get_yaw_rad(),     // yaw in radians
             s->distance(),    // distance in meters
             temp_C);            // temperature in degC
 
