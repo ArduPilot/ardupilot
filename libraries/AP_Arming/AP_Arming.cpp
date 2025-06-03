@@ -1581,6 +1581,11 @@ bool AP_Arming::serial_protocol_checks(bool display_failure)
        check_failed(display_failure, "Multiple SERIAL ports configured for RC input");
        return false;
     }
+    char failure_msg[100] = {};
+    if (!AP::serialmanager().pre_arm_checks(failure_msg, ARRAY_SIZE(failure_msg))) {
+        check_failed(display_failure, "%s", failure_msg);
+        return false;
+    }
     return true;
 }
 

@@ -590,11 +590,11 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         bool yaw_relative = false;
         float yaw_rate_cds = 0.0f;
         if (!yaw_ignore) {
-            yaw_cd = ToDeg(packet.yaw) * 100.0f;
+            yaw_cd = degrees(packet.yaw) * 100.0f;
             yaw_relative = packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED;
         }
         if (!yaw_rate_ignore) {
-            yaw_rate_cds = ToDeg(packet.yaw_rate) * 100.0f;
+            yaw_rate_cds = degrees(packet.yaw_rate) * 100.0f;
         }
 
         // send request

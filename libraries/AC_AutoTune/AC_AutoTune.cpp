@@ -338,13 +338,13 @@ bool AC_AutoTune::currently_level()
     if (fabsf(wrap_180_cd(ahrs_view->yaw_sensor - desired_yaw_cd)) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
         return false;
     }
-    if ((ToDeg(ahrs_view->get_gyro().x) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_RP_CD) {
+    if ((degrees(ahrs_view->get_gyro().x) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_RP_CD) {
         return false;
     }
-    if ((ToDeg(ahrs_view->get_gyro().y) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_RP_CD) {
+    if ((degrees(ahrs_view->get_gyro().y) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_RP_CD) {
         return false;
     }
-    if ((ToDeg(ahrs_view->get_gyro().z) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_Y_CD) {
+    if ((degrees(ahrs_view->get_gyro().z) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_Y_CD) {
         return false;
     }
     return true;
@@ -395,16 +395,16 @@ void AC_AutoTune::control_attitude()
         // Initialize test-specific variables
         switch (axis) {
         case AxisType::ROLL:
-            start_rate = ToDeg(ahrs_view->get_gyro().x) * 100.0f;
+            start_rate = degrees(ahrs_view->get_gyro().x) * 100.0f;
             start_angle = ahrs_view->roll_sensor;
             break;
         case AxisType::PITCH:
-            start_rate = ToDeg(ahrs_view->get_gyro().y) * 100.0f;
+            start_rate = degrees(ahrs_view->get_gyro().y) * 100.0f;
             start_angle = ahrs_view->pitch_sensor;
             break;
         case AxisType::YAW:
         case AxisType::YAW_D:
-            start_rate = ToDeg(ahrs_view->get_gyro().z) * 100.0f;
+            start_rate = degrees(ahrs_view->get_gyro().z) * 100.0f;
             start_angle = ahrs_view->yaw_sensor;
             break;
         }

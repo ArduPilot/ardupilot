@@ -230,7 +230,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 
     // Subtract the steady turn component of rate from the measured rate
     // to calculate the rate relative to the turn requirement in degrees/sec
-    float rate_hp_in = ToDeg(omega_z - rate_offset);
+    float rate_hp_in = degrees(omega_z - rate_offset);
 
     // Apply a high-pass filter to the rate to washout any steady state error
     // due to bias errors in rate_offset

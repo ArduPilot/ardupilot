@@ -1225,7 +1225,7 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
 float AC_AttitudeControl::get_althold_lean_angle_max_cd() const
 {
     // convert to centi-degrees for public interface
-    return MAX(ToDeg(_althold_lean_angle_max_rad), AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN) * 100.0f;
+    return MAX(degrees(_althold_lean_angle_max_rad), AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN) * 100.0f;
 }
 
 // Return roll rate step size in centidegrees/s that results in maximum output after 4 time steps

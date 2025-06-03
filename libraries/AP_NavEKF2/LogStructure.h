@@ -181,6 +181,7 @@ struct PACKED log_NKF3 {
 // @Field: FS: Filter fault status
 // @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement)
 // @Field: SS: Filter solution status
+// @FieldBitmaskEnum: SS: NavFilterStatusBit
 // @Field: GPS: Filter GPS status
 // @Field: PI: Primary core index
 struct PACKED log_NKF4 {

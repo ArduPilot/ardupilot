@@ -209,6 +209,7 @@ private:
     AP_Float _vector_angle_max;  // angle between steering's middle position and maximum position when using vectored thrust.  zero to disable vectored thrust
     AP_Float _speed_scale_base;  // speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
     AP_Float _steering_throttle_mix; // Steering vs Throttle priorisation.  Higher numbers prioritise steering, lower numbers prioritise throttle.  Only valid for Skid Steering vehicles
+    AP_Float _reverse_delay; // delay in seconds when reversing motor
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
@@ -230,6 +231,17 @@ private:
     float   _steering_factor[AP_MOTORS_NUM_MOTORS_MAX];
     float   _lateral_factor[AP_MOTORS_NUM_MOTORS_MAX];
     uint8_t   _motors_num;
+
+    /*
+      3 reversal handling structures, for k_throttle, k_throttleLeft and k_throttleRight
+     */
+    struct ReverseThrottle {
+        float last_throttle;
+        uint32_t last_output_ms;
+
+        // output with delay for reversal
+        void output(SRV_Channel::Function function, float throttle, float delay);
+    } rev_delay_throttle, rev_delay_throttleLeft, rev_delay_throttleRight;
 
     static AP_MotorsUGV *_singleton;
 };

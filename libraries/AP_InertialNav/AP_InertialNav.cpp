@@ -46,16 +46,6 @@ void AP_InertialNav::update(bool high_vibes)
 }
 
 /**
- * get_filter_status : returns filter status as a series of flags
- */
-nav_filter_status AP_InertialNav::get_filter_status() const
-{
-    nav_filter_status status;
-    _ahrs_ekf.get_filter_status(status);
-    return status;
-}
-
-/**
  * get_position_neu_cm - returns the current position relative to the EKF origin in cm.
  *
  * @return

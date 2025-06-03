@@ -125,7 +125,9 @@ void Copter::update_land_detector()
         SET_LOG_FLAG(accel_stationary, LandDetectorLoggingFlag::ACCEL_STATIONARY);
 
         // check that vertical speed is within 1m/s of zero
-        bool descent_rate_low = fabsf(inertial_nav.get_velocity_z_up_cms()) < 100.0 * LAND_DETECTOR_VEL_Z_MAX * land_detector_scalar;
+        float vel_d_ms = 0;
+        UNUSED_RESULT(AP::ahrs().get_velocity_D(vel_d_ms, copter.vibration_check.high_vibes));
+        const bool descent_rate_low = fabsf(vel_d_ms) < LAND_DETECTOR_VEL_Z_MAX * land_detector_scalar;
         SET_LOG_FLAG(descent_rate_low, LandDetectorLoggingFlag::DESCENT_RATE_LOW);
 
         // if we have a healthy rangefinder only allow landing detection below 2 meters

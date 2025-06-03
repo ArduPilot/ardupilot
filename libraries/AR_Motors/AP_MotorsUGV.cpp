@@ -118,6 +118,15 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THST_ASYM", 14, AP_MotorsUGV, _thrust_asymmetry, 1.0f),
 
+    // @Param: REV_DELAY
+    // @DisplayName: Motor reversal delay
+    // @Description: For reversible motors that need a delay before they can change direction. When greater than zero the throttle will go to zero for this amount of time before outputting the new throttle when the demanded motor direction changes.
+    // @Units: s
+    // @Range: 0.1 1.0
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("REV_DELAY", 15, AP_MotorsUGV, _reverse_delay, 0),
+    
     AP_GROUPEND
 };
 
@@ -1028,6 +1037,23 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Function function, float throttl
     }
 #endif  // AP_RELAY_ENABLED
 
+    if (_reverse_delay > 0) {
+        switch (function) {
+        case SRV_Channel::k_throttle:
+            rev_delay_throttle.output(function, throttle, _reverse_delay);
+            return;
+        case SRV_Channel::k_throttleLeft:
+            rev_delay_throttleLeft.output(function, throttle * 10, _reverse_delay);
+            return;
+        case SRV_Channel::k_throttleRight:
+            rev_delay_throttleRight.output(function, throttle * 10, _reverse_delay);
+            return;
+        default:
+            // fall through to other non-delayed outputs
+            break;
+        }
+    }
+
     // output to servo channel
     switch (function) {
         case SRV_Channel::k_throttle:
@@ -1170,6 +1196,25 @@ bool AP_MotorsUGV::is_digital_pwm_type() const
         break;
     }
     return false;
+}
+
+/*
+  handle delay on reversal for a throttle
+ */
+void AP_MotorsUGV::ReverseThrottle::output(SRV_Channel::Function function, float throttle, float delay)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    if (is_zero(throttle)) {
+        // pass through, no change, don't update the last throttle
+    } else if (throttle * last_throttle < 0 &&
+        now_ms - last_output_ms < delay*1000) {
+        // sign change, add pause
+        throttle = 0;
+    } else {
+        last_output_ms = now_ms;
+        last_throttle = throttle;
+    }
+    SRV_Channels::set_output_scaled(function, throttle);
 }
 
 namespace AP {

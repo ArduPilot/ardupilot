@@ -33,6 +33,7 @@
 #include "AP_AHRS_DCM.h"
 #include "AP_AHRS_SIM.h"
 #include "AP_AHRS_External.h"
+#include <AP_NavEKF/AP_Nav_Common.h>
 
 // forward declare view class
 class AP_AHRS_View;
@@ -47,9 +48,18 @@ class AP_AHRS {
     friend class AP_AHRS_View;
 public:
 
+    // copy this into our namespace
+    using Status = NavFilterStatusBit;
+
     enum Flags {
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
+
+    // has_status returns information about the EKF health and
+    // capabilities.  It is currently invalid to call this when a
+    // backend is in charge which returns false for get_filter_status
+    // - so this will simply return false for DCM, for example.
+    bool has_status(Status status) const;
 
     // Constructor
     AP_AHRS(uint8_t flags = 0);
@@ -288,6 +298,10 @@ public:
     // vehicle's origin
     bool get_location_from_origin_offset_NED(Location &loc, const Vector3p &offset_ned) const WARN_IF_UNUSED;
     bool get_location_from_home_offset_NED(Location &loc, const Vector3p &offset_ned) const WARN_IF_UNUSED;
+
+    // get velocity down in m/s.  This returns get_velocity_NED.z() if available, otherwise falls back to get_vert_pos_rate_D()
+    // if high_vibes is true then this is equivalent to get_vert_pos_rate_D
+    bool get_velocity_D(float &velD, bool high_vibes = false) const WARN_IF_UNUSED;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
@@ -563,6 +577,11 @@ public:
     float get_pitch() const { return pitch; }
     float get_yaw() const { return yaw; }
 
+    // roll/pitch/yaw euler angles, all in degrees
+    float get_roll_deg() const { return rpy_deg[0]; }
+    float get_pitch_deg() const { return rpy_deg[1]; }
+    float get_yaw_deg() const { return rpy_deg[2]; }
+
     // helper trig value accessors
     float cos_roll() const  {
         return _cos_roll;
@@ -582,6 +601,9 @@ public:
     float sin_yaw() const   {
         return _sin_yaw;
     }
+
+    // floating point Euler angles (Degrees)
+    float rpy_deg[3];
 
     // integer Euler angles (Degrees * 100)
     int32_t roll_sensor;

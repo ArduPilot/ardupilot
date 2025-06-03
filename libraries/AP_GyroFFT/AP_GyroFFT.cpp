@@ -776,7 +776,7 @@ void AP_GyroFFT::stop_notch_tune()
     float harmonic = calculate_notch_frequency(freqs, numpeaks, _harmonic_fit, harmonics);
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "FFT: Found peaks at %.1f/%.1f/%.1fHz", freqs[0], freqs[1], freqs[2]);
-    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "FFT: Selected %.1fHz\n", harmonic);
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "FFT: Selected %.1fHz", harmonic);
 
     // if we don't have a throttle value then all bets are off
     if (is_zero(_avg_throttle_out) || is_zero(harmonic)) {
@@ -1430,7 +1430,7 @@ float AP_GyroFFT::self_test(float frequency, FloatBuffer& test_window)
 {
     test_window.clear();
     for(uint16_t i = 0; i < _state->_window_size; i++) {
-        if (!test_window.push(sinf(2.0f * M_PI * frequency * i / _fft_sampling_rate_hz) * ToRad(20) * 2000)) {
+        if (!test_window.push(sinf(2.0f * M_PI * frequency * i / _fft_sampling_rate_hz) * radians(20) * 2000)) {
             AP_HAL::panic("Could not create FFT test window");
         }
     }

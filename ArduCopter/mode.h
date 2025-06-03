@@ -173,7 +173,7 @@ public:
     virtual bool set_speed_up(float speed_xy_cms) {return false;}
     virtual bool set_speed_down(float speed_xy_cms) {return false;}
 
-    int32_t get_alt_above_ground_cm(void);
+    virtual int32_t get_alt_above_ground_cm(void);
 
     // pilot input processing
     void get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
@@ -259,7 +259,6 @@ protected:
     AC_WPNav *&wp_nav;
     AC_Loiter *&loiter_nav;
     AC_PosControl *&pos_control;
-    AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
     AC_AttitudeControl *&attitude_control;
     MOTOR_CLASS *&motors;
@@ -606,6 +605,9 @@ public:
 #if WEATHERVANE_ENABLED
     bool allows_weathervaning(void) const override;
 #endif
+
+    // Get height above ground, uses landing height if available
+    int32_t get_alt_above_ground_cm() override;
 
 protected:
 

@@ -4,7 +4,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Location.h>
-#include <AP_InertialNav/AP_InertialNav.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_Avoidance/AC_Avoid.h>

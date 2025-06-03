@@ -140,7 +140,7 @@ void Copter::tuning()
 #endif
 
     case TUNING_DECLINATION:
-        compass.set_declination(ToRad(tuning_value), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
+        compass.set_declination(radians(tuning_value), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
         break;
 
 #if MODE_CIRCLE_ENABLED

@@ -81,16 +81,16 @@ public:
     bool have_target() const;
 
     // Projects the target’s position, velocity, and heading forward using the latest updates, smoothing with input shaping if necessary 
-    bool update_estimate();
+    void update_estimates();
 
     // Retrieves the estimated target position, velocity, and acceleration in the NED frame relative to the origin (units: meters and meters/second).
-    bool get_target_pos_vel_accel_NED_m(Vector3p &pos_ned_m, Vector3f &vel_ned_ms, Vector3f &accel_ned_mss);
+    bool get_target_pos_vel_accel_NED_m(Vector3p &pos_ned_m, Vector3f &vel_ned_ms, Vector3f &accel_ned_mss) const;
 
     // Retrieves the estimated target position, velocity, and acceleration in the NED frame, including configured positional offsets.
-    bool get_ofs_pos_vel_accel_NED_m(Vector3p &pos_ofs_ned_m, Vector3f &vel_ofs_ned_ms, Vector3f &accel_ofs_ned_mss);
+    bool get_ofs_pos_vel_accel_NED_m(Vector3p &pos_ofs_ned_m, Vector3f &vel_ofs_ned_ms, Vector3f &accel_ofs_ned_mss) const;
 
     // Retrieves the estimated target heading and heading rate in radians.
-    bool get_heading_heading_rate_rad(float &heading_rad, float &heading_rate_rads);
+    bool get_heading_heading_rate_rad(float &heading_rad, float &heading_rate_rads) const;
 
     //==========================================================================
     // Global Location and Velocity Retrieval (LUA Bindings)
@@ -216,7 +216,6 @@ private:
 
     uint32_t    _last_location_update_ms;       // Time of last target position update (ms)
     uint32_t    _last_estimation_update_ms;     // Time of last estimate update (ms)
-    uint32_t    _last_update_ticks;             // Scheduler tick count at last estimate update
 
     Vector3p    _target_pos_ned_m;              // Latest received target position (NED frame, meters)
     Vector3f    _target_vel_ned_ms;             // Latest received target velocity (NED frame, m/s)
@@ -242,6 +241,8 @@ private:
     float       _bearing_to_target_deg;         // Bearing to target from vehicle (degrees, 0 = North)
     bool        _offsets_were_zero;             // True if initial offset was zero before being initialized
     bool        _using_follow_target;           // True if FOLLOW_TARGET messages are being used instead of GLOBAL_POSITION_INT
+
+    HAL_Semaphore   _follow_sem;                // semaphore for multi-thread use of update_estimates and LUA calls
 
     //==========================================================================
     // Utilities

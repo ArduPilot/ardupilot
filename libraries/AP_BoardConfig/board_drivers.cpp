@@ -35,7 +35,7 @@ void AP_BoardConfig::board_init_safety()
 {
     bool force_safety_off = (state.safety_enable.get() == 0);
     if (!force_safety_off && hal.util->was_watchdog_safety_off()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing safety off for watchdog\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing safety off for watchdog");
         force_safety_off = true;
     }
     if (force_safety_off) {

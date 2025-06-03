@@ -286,6 +286,18 @@ void AP_AHRS::init()
 #endif  // AP_CUSTOMROTATIONS_ENABLED
 }
 
+// has_status returns information about the EKF health and
+// capabilities.  It is currently invalid to call this when a
+// backend is in charge which returns false for get_filter_status
+// - so this will simply return false for DCM, for example.
+bool AP_AHRS::has_status(Status status) const {
+    nav_filter_status filter_status;
+    if (!get_filter_status(filter_status)) {
+        return false;
+    }
+    return (filter_status.value & uint32_t(status)) != 0;
+}
+
 // updates matrices responsible for rotating vectors from vehicle body
 // frame to autopilot body frame from _trim variables
 void AP_AHRS::update_trim_rotation_matrices()
@@ -910,7 +922,7 @@ float AP_AHRS::wind_alignment(const float heading_deg) const
  */
 float AP_AHRS::head_wind(void) const
 {
-    const float alignment = wind_alignment(yaw_sensor*0.01f);
+    const float alignment = wind_alignment(get_yaw_deg());
     return alignment * wind_estimate().xy().length();
 }
 
@@ -1640,6 +1652,18 @@ bool AP_AHRS::get_mag_field_correction(Vector3f &vec) const
     }
     // since there is no default case above, this is unreachable
     return false;
+}
+
+// get velocity down in m/s.  This returns get_velocity_NED.z() if available, otherwise falls back to get_vert_pos_rate_D()
+// if high_vibes is true then this is equivalent to get_vert_pos_rate_D
+bool AP_AHRS::get_velocity_D(float &velD, bool high_vibes) const
+{
+    Vector3f velNED;
+    if (!high_vibes && get_velocity_NED(velNED)) {
+        velD = velNED.z;
+        return true;
+    }
+    return get_vert_pos_rate_D(velD);
 }
 
 // Get a derivative of the vertical position which is kinematically consistent with the vertical position is required by some control loops.

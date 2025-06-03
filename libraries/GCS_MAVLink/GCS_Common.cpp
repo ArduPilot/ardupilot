@@ -152,11 +152,43 @@ bool GCS_MAVLINK::init(uint8_t instance)
         return false;
     }
 
+    // PARAMETER_CONVERSION - Added: May-2025 for ArduPilot-4.7
+    // convert parameters; we used to use bits in the UARTDriver to
+    // remember whether the mavlink connection on that interface was
+    // "private" or not, and whether to ignore streamrate sets via
+    // REQUEST_DATA_STREAM.  We moved that into the MAVn_OPTIONS, this
+    // is the conversion:
+    if (!options_were_converted) {
+        auto &sm = AP::serialmanager();
+        options_were_converted.set_and_save(1);
+        if (_port->option_is_set(AP_HAL::UARTDriver::Option::OPTION_MAVLINK_NO_FORWARD_old)) {
+            enable_option(Option::NO_FORWARD);
+            // turn the bit off in the UART options.  We can only get
+            // away with this because we are (in a very nearby commit)
+            // changing the width of the SERIALn_OPTIONS.  This means
+            // older firmwares will still see the SERIALn_OPTIONS bits
+            // as set, newer firmwares will see zeroes.  We have a
+            // prearm check that users have not set the old bit.
+            // Sorry.
+            sm.disable_option(uartstate->idx, AP_HAL::UARTDriver::Option::OPTION_MAVLINK_NO_FORWARD_old);
+        }
+        if (_port->option_is_set(AP_HAL::UARTDriver::Option::OPTION_NOSTREAMOVERRIDE_old)) {
+            enable_option(Option::NOSTREAMOVERRIDE);
+            // turn the bit off in the UART options.  We can only get
+            // away with this because we are (in a very nearby commit)
+            // changing the width of the SERIALn_OPTIONS.  This means
+            // older firmwares will still see the SERIALn_OPTIONS bits
+            // as set, newer firmwares will see zeroes.  We have a
+            // prearm check that users have not set the old bit.
+            // Sorry.
+            sm.disable_option(uartstate->idx, AP_HAL::UARTDriver::Option::OPTION_NOSTREAMOVERRIDE_old);
+        }
+    }
+
     // and init the gcs instance
 
-    // whether this port is considered "private" is stored on the uart
-    // rather than in our own parameters:
-    if (uartstate->option_enabled(AP_HAL::UARTDriver::OPTION_MAVLINK_NO_FORWARD)) {
+    // whether this port is considered "private":
+    if (option_enabled(Option::NO_FORWARD)) {
         set_channel_private(chan);
     }
 
@@ -3157,6 +3189,8 @@ MAV_RESULT GCS_MAVLINK::set_message_interval(uint32_t msg_id, int32_t interval_u
     } else if (interval_us == -1) {
         // minus-one is "stop sending"
         interval_ms = 0;
+    } else if (interval_us < 0) {  
+        return MAV_RESULT_DENIED; 
     } else if (interval_us < 1000) {
         // don't squash sub-ms times to zero
         interval_ms = 1;
@@ -3418,7 +3452,7 @@ void GCS_MAVLINK::send_vfr_hud()
         chan,
         vfr_hud_airspeed(),
         ahrs.groundspeed(),
-        (ahrs.yaw_sensor / 100) % 360,
+        ahrs.get_yaw_deg(),
         abs(vfr_hud_throttle()),
         vfr_hud_alt(),
         vfr_hud_climbrate());
@@ -4417,10 +4451,12 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 #endif
 
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
-        // only pass if override is not selected 
-        if (!(_port->get_options() & _port->OPTION_NOSTREAMOVERRIDE)) {
-            handle_request_data_stream(msg);
+        if (option_enabled(Option::NOSTREAMOVERRIDE)) {
+            // options indicate we are to ignore this stream rate
+            // request
+            break;
         }
+        handle_request_data_stream(msg);
         break;
 
     case MAVLINK_MSG_ID_DATA96:
@@ -5900,6 +5936,17 @@ void GCS_MAVLINK::send_sys_status()
     const uint16_t errors1 = errors & 0xffff;
     const uint16_t errors2 = (errors>>16) & 0xffff;
     const uint16_t errors4 = AP::internalerror().count() & 0xffff;
+    uint16_t errors_comm = 0;
+    mavlink_status_t *ms = mavlink_get_channel_status(chan);
+    if (ms) {
+        errors_comm = ms->packet_rx_drop_count;
+    }
+
+#if HAL_LOGGING_ENABLED
+    const uint16_t dropped_logmessage_count = AP::logger().num_dropped();
+#else
+    const uint16_t dropped_logmessage_count = UINT16_MAX;
+#endif  // HAL_LOGGING_ENABLED
 
     mavlink_msg_sys_status_send(
         chan,
@@ -5921,10 +5968,10 @@ void GCS_MAVLINK::send_sys_status()
         -1,
 #endif
         0,  // comm drops %,
-        0,  // comm drops in pkts,
+        errors_comm,  // comm drops in pkts,
         errors1,
         errors2,
-        0,  // errors3
+        dropped_logmessage_count,  // errors3
         errors4); // errors4
 }
 
@@ -7373,8 +7420,6 @@ void GCS_MAVLINK::send_high_latency2() const
         }
     }
 
-    //send_text(MAV_SEVERITY_INFO, "Yaw: %u", (((uint16_t)ahrs.yaw_sensor / 100) % 360));
-
     mavlink_msg_high_latency2_send(chan, 
         AP_HAL::millis(), //[ms] Timestamp (milliseconds since boot or Unix epoch)
         gcs().frame_type(), // Type of the MAV (quadrotor, helicopter, etc.)
@@ -7384,7 +7429,7 @@ void GCS_MAVLINK::send_high_latency2() const
         global_position_current.lng, // [degE7] Longitude
         global_position_current.alt * 0.01f, // [m] Altitude above mean sea level
         high_latency_target_altitude(), // [m] Altitude setpoint
-        (((uint16_t)ahrs.yaw_sensor / 100) % 360) / 2, // [deg/2] Heading
+        uint16_t(ahrs.get_yaw_deg()) / 2, // [deg/2] Heading
         high_latency_tgt_heading(), // [deg/2] Heading setpoint
         high_latency_tgt_dist(), // [dam] Distance to target waypoint or position
         abs(vfr_hud_throttle()), // [%] Throttle

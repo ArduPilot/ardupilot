@@ -1389,7 +1389,7 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
     }
 
     const AP_Servo_Telem::TelemetryData telem_data {
-        .measured_position = ToDeg(msg.position),
+        .measured_position = degrees(msg.position),
         .force = msg.force,
         .speed = msg.speed,
         .duty_cycle = msg.power_rating_pct,
@@ -1444,7 +1444,7 @@ void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, 
     }
 
     const AP_Servo_Telem::TelemetryData telem_data {
-        .measured_position = ToDeg(msg.actual_position),
+        .measured_position = degrees(msg.actual_position),
         .voltage = msg.voltage * 0.2,
         .current = msg.current * 0.025,
         .duty_cycle = uint8_t(msg.motor_pwm * (100.0/255.0)),
