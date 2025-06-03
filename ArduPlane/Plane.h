@@ -29,6 +29,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <Eagle/Eagle.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Airspeed/AP_Airspeed.h>
@@ -179,6 +180,7 @@ public:
     Plane(void);
 
 private:
+    Eagle eagle;
 
     // key aircraft parameters passed to multiple libraries
     AP_FixedWing aparm;

@@ -717,6 +717,10 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(custom_control, "CC", AC_CustomControl),
 #endif
 
+    // @Group: EAGLE
+    // @Path: ../libraries/Eagle/Eagle.cpp
+    GOBJECT(eagle, "EAGLE", Eagle),
+
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),

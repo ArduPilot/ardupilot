@@ -358,22 +358,7 @@ public:
         k_param_autotune_options,
         k_param_takeoff_nogps,
 
-        k_param_eagle_f0 = 300,
-        k_param_eagle_f1,
-        k_param_eagle_f2,
-        k_param_eagle_f3,
-        k_param_eagle_f4,
-        k_param_eagle_f5,
-        k_param_eagle_f6,
-        k_param_eagle_f7,
-        k_param_eagle_f8,
-        k_param_eagle_f9,
-        k_param_eagle_i0,
-        k_param_eagle_i1,
-        k_param_eagle_i2,
-        k_param_eagle_i3,
-        k_param_eagle_i4,
-        k_param_eagle_i5,
+        k_param_eagle = 300,
     };
 
     AP_Int16 format_version;
@@ -485,23 +470,6 @@ public:
     AP_Int8 override_channel;
 #endif
     AP_Int16 gcs_pid_mask;
-
-    AP_Float eagle_f0;
-    AP_Float eagle_f1;
-    AP_Float eagle_f2;
-    AP_Float eagle_f3;
-    AP_Float eagle_f4;
-    AP_Float eagle_f5;
-    AP_Float eagle_f6;
-    AP_Float eagle_f7;
-    AP_Float eagle_f8;
-    AP_Float eagle_f9;
-    AP_Int32 eagle_i0;
-    AP_Int32 eagle_i1;
-    AP_Int32 eagle_i2;
-    AP_Int32 eagle_i3;
-    AP_Int32 eagle_i4;
-    AP_Int32 eagle_i5;
 };
 
 /*

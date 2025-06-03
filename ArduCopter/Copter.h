@@ -72,6 +72,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Winch/AP_Winch_config.h>
 #include <AP_SurfaceDistance/AP_SurfaceDistance.h>
+#include <Eagle/Eagle.h>
 
 // Configuration
 #include "defines.h"
@@ -231,6 +232,7 @@ public:
     Copter(void);
 
 private:
+    Eagle eagle;
 
     // key aircraft parameters passed to multiple libraries
     AP_MultiCopter aparm;
