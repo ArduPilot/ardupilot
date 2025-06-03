@@ -20,7 +20,7 @@ void Rover::crash_check()
     }
 
     // Crashed if pitch/roll > crash_angle
-    if ((g2.crash_angle != 0) && ((fabsf(ahrs.get_pitch()) > radians(g2.crash_angle)) || (fabsf(ahrs.get_roll()) > radians(g2.crash_angle)))) {
+    if ((g2.crash_angle != 0) && ((fabsf(ahrs.get_pitch_rad()) > radians(g2.crash_angle)) || (fabsf(ahrs.get_roll_rad()) > radians(g2.crash_angle)))) {
         crashed = true;
     }
 
