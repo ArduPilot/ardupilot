@@ -1375,7 +1375,7 @@ bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, Vector3f &
     if (view != nullptr) {
         // Use pitch to guess which axis the user is trying to trim
         // 5 deg buffer to favor normal AHRS and avoid floating point funny business
-        if (fabsf(view->pitch) < (fabsf(AP::ahrs().get_pitch())+radians(5)) ) {
+        if (fabsf(view->pitch) < (fabsf(AP::ahrs().get_pitch_rad())+radians(5)) ) {
             // user is trying to calibrate view
             rotation = view->get_rotation();
             if (!is_zero(view->get_pitch_trim())) {
