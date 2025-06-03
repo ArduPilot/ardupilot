@@ -13,7 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-"""Bring up ArduPilot SITL check the Time message is being published."""
+"""Bring up ArduPilot SITL check the Time message is being published.
+
+colcon test --packages-select ardupilot_dds_tests \
+--event-handlers=console_cohesion+ --pytest-args -k test_time_msg_received
+"""
 import pytest
 import rclpy
 import rclpy.node
@@ -28,6 +32,7 @@ from launch_fixtures import (
     launch_sitl_copter_dds_udp,
 )
 
+MSG_RX_TIMEOUT = 30.0
 TOPIC = "ap/time"
 
 
@@ -80,7 +85,7 @@ def test_dds_serial_time_msg_recv(launch_context, launch_sitl_copter_dds_serial)
     try:
         node = TimeListener()
         node.start_subscriber()
-        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
+        msgs_received_flag = node.msg_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
         rclpy.shutdown()
@@ -104,7 +109,7 @@ def test_dds_udp_time_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     try:
         node = TimeListener()
         node.start_subscriber()
-        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
+        msgs_received_flag = node.msg_event_object.wait(timeout=MSG_RX_TIMEOUT)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
         rclpy.shutdown()

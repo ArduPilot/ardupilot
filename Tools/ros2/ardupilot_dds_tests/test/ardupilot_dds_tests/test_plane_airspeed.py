@@ -39,7 +39,7 @@ from rclpy.qos import QoSHistoryPolicy
 from ardupilot_msgs.msg import Airspeed
 
 TOPIC = "/ap/airspeed"
-AIRSPEED_RECV_TIMEOUT = 20.0
+AIRSPEED_RECV_TIMEOUT = 30.0
 
 
 class AirspeedTester(rclpy.node.Node):

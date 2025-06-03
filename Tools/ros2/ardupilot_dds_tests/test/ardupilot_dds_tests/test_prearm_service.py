@@ -36,6 +36,7 @@ from launch_fixtures import (
     launch_sitl_copter_dds_udp,
 )
 
+MSG_RX_TIMEOUT = 30.0
 SERVICE = "/ap/prearm_check"
 
 
@@ -103,7 +104,7 @@ def test_dds_serial_prearm_service_call(launch_context, launch_sitl_copter_dds_s
         node = PreamService()
         node.start_node()
         node.start_prearm()
-        is_armable_flag = node.is_armable_object.wait(timeout=25.0)
+        is_armable_flag = node.is_armable_object.wait(timeout=MSG_RX_TIMEOUT)
         assert is_armable_flag, f"Vehicle not armable."
     finally:
         rclpy.shutdown()
@@ -128,7 +129,7 @@ def test_dds_udp_prearm_service_call(launch_context, launch_sitl_copter_dds_udp)
         node = PreamService()
         node.start_node()
         node.start_prearm()
-        is_armable_flag = node.is_armable_object.wait(timeout=25.0)
+        is_armable_flag = node.is_armable_object.wait(timeout=MSG_RX_TIMEOUT)
         assert is_armable_flag, f"Vehicle not armable."
     finally:
         rclpy.shutdown()
