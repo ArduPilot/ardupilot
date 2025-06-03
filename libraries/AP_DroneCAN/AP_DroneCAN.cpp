@@ -1060,7 +1060,7 @@ void AP_DroneCAN::notify_state_send()
 #endif // HAL_BUILD_AP_PERIPH
 
     msg.aux_data_type = ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_YAW_EARTH_CENTIDEGREES;
-    uint16_t yaw_cd = (uint16_t)(360.0f - degrees(AP::ahrs().get_yaw()))*100.0f;
+    uint16_t yaw_cd = (uint16_t)(360.0f - degrees(AP::ahrs().get_yaw_rad()))*100.0f;
     const uint8_t *data = (uint8_t *)&yaw_cd;
     for (uint8_t i=0; i<2; i++) {
         msg.aux_data.data[i] = data[i];
