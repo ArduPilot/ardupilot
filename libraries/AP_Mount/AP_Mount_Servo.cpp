@@ -173,7 +173,7 @@ void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
     }
 
     // retrieve lean angles from ahrs
-    Vector2f ahrs_angle_rad = {ahrs.get_roll(), ahrs.get_pitch()};
+    Vector2f ahrs_angle_rad = {ahrs.get_roll_rad(), ahrs.get_pitch_rad()};
 
     // rotate ahrs roll and pitch angles to gimbal yaw
     if (has_pan_control()) {
@@ -187,7 +187,7 @@ void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
     // lead filter
     const Vector3f &gyro = ahrs.get_gyro();
 
-    if (!is_zero(_params.roll_stb_lead) && fabsf(ahrs.get_pitch()) < M_PI/3.0f) {
+    if (!is_zero(_params.roll_stb_lead) && fabsf(ahrs.get_pitch_rad()) < M_PI/3.0f) {
         // Compute rate of change of euler roll angle
         float roll_rate = gyro.x + (ahrs.sin_pitch() / ahrs.cos_pitch()) * (gyro.y * ahrs.sin_roll() + gyro.z * ahrs.cos_roll());
         _angle_bf_output_rad.x -= roll_rate * _params.roll_stb_lead;
