@@ -5988,9 +5988,9 @@ void GCS_MAVLINK::send_attitude() const
     mavlink_msg_attitude_send(
         chan,
         AP_HAL::millis(),
-        ahrs.get_roll(),
-        ahrs.get_pitch(),
-        ahrs.get_yaw(),
+        ahrs.get_roll_rad(),
+        ahrs.get_pitch_rad(),
+        ahrs.get_yaw_rad(),
         omega.x,
         omega.y,
         omega.z);
