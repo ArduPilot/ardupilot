@@ -163,7 +163,7 @@ bool AP_VisualOdom_IntelT265::align_yaw_to_ahrs(const Vector3f &position, const 
         return false;
     }
 
-    align_yaw(position, attitude, AP::ahrs().get_yaw());
+    align_yaw(position, attitude, AP::ahrs().get_yaw_rad());
     return true;
 }
 
