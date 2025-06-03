@@ -1057,7 +1057,7 @@ bool AP_Logger_File::io_thread_alive() const
     // disk.  Unfortunately these hardware devices do not obey our
     // SITL speedup options, so we allow for it here.
     SITL::SIM *sitl = AP::sitl();
-    if (sitl != nullptr) {
+    if (sitl != nullptr && sitl->speedup > 0) {
         timeout_ms *= sitl->speedup;
     }
 #endif
