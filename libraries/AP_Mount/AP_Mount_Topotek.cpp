@@ -941,7 +941,7 @@ bool AP_Mount_Topotek::send_location_info()
 
     // prepare and send vehicle yaw
     // sample command: #tpUD5wAZI359.9, similar format to $GPRMC
-    const float veh_yaw_deg = wrap_360(degrees(AP::ahrs().get_yaw()));
+    const float veh_yaw_deg = wrap_360(degrees(AP::ahrs().get_yaw_rad()));
     uint8_t databuff_azimuth[6];
     hal.util->snprintf((char*)databuff_azimuth, ARRAY_SIZE(databuff_azimuth), "%05.1f", veh_yaw_deg);
     if (!send_variablelen_packet(HeaderType::VARIABLE_LEN, AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_SET_AZIMUTH, true, (uint8_t*)databuff_azimuth, ARRAY_SIZE(databuff_azimuth)-1)) {
