@@ -389,7 +389,7 @@ void ModeGuided::guided_set_angle(const Quaternion &q, float climb_rate_cms)
 // helper function to set yaw state and targets
 void ModeGuided::guided_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle)
 {    
-    float current_yaw = wrap_2PI(AP::ahrs().get_yaw());
+    float current_yaw = wrap_2PI(AP::ahrs().get_yaw_rad());
     float euler_yaw_angle;
     float yaw_error;
 
