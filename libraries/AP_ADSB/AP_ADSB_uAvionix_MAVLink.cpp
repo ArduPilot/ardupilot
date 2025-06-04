@@ -23,7 +23,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
 
-#define ADSB_CHAN_TIMEOUT_MS            15000
+#define ADSB_CHAN_TIMEOUT_MS            15500
 
 
 extern const AP_HAL::HAL& hal;
