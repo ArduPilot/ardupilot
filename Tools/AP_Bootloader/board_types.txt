@@ -490,6 +490,7 @@ AP_HW_Pixhawk6_ODID                 10053
 AP_HW_CUAVv5Nano_ODID               10050
 AP_HW_CUAVv5_ODID                   10050
 AP_HW_CUAV-Nora_ODID                11009
+AP_HW_CUAV-X7_ODID                  11010
 
 # do not allocate board IDs above 10,000 for non-ODID boards.
 # do not allocate board IDs above 19,999 in this file.
