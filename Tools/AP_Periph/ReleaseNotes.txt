@@ -1,4 +1,4 @@
-Release 1.8.0 27th May 2025
+Release 1.8.0 4th June 2025
 ---------------------------
 
 This is a major AP_Periph release with the following changes:
