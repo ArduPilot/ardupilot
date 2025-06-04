@@ -1,0 +1,9 @@
+# setup for LEDs on chan13
+SERVO13_FUNCTION 120
+
+#enable DisplayPort OSD
+OSD_TYPE2 5
+
+#relay setup
+RELAY2_FUNCTION 1
+RELAY3_FUCNTION 1
