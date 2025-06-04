@@ -778,6 +778,8 @@ private:
         float up;     // desired speed upwards in m/s. 0 if unset
         float down;   // desired speed downwards in m/s. 0 if unset
     } desired_speed_override;
+
+    float circle_last_num_complete;
 };
 
 #if AUTOTUNE_ENABLED
