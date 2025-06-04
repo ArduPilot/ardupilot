@@ -183,6 +183,51 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
     return true;
 }
 
+bool AP_Terrain::gradient(const Location &loc, Vector2f& gradient)
+{
+    if (!allocate()) {
+        return false;
+    }
+
+    struct grid_info info;
+
+    calculate_grid_info(loc, info);
+
+    // find the grid
+    const struct grid_block &grid = find_grid_cache(info).grid;
+
+    /*
+      note that we rely on the one square overlap to ensure these
+      calculations don't go past the end of the arrays
+     */
+    ASSERT_RANGE(info.idx_x, 0, TERRAIN_GRID_BLOCK_SIZE_X-2);
+    ASSERT_RANGE(info.idx_y, 0, TERRAIN_GRID_BLOCK_SIZE_Y-2);
+
+
+    // check we have all 4 required heights
+    if (!check_bitmap(grid, info.idx_x,   info.idx_y) ||
+        !check_bitmap(grid, info.idx_x,   info.idx_y+1) ||
+        !check_bitmap(grid, info.idx_x+1, info.idx_y) ||
+        !check_bitmap(grid, info.idx_x+1, info.idx_y+1)) {
+        return false;
+    }
+
+    // hXY are the heights of the 4 surrounding grid points
+    int16_t h00, h01, h10;
+
+    h00 = grid.height[info.idx_x+0][info.idx_y+0];
+    h01 = grid.height[info.idx_x+0][info.idx_y+1];
+    h10 = grid.height[info.idx_x+1][info.idx_y+0];
+    // h11 = grid.height[info.idx_x+1][info.idx_y+1];
+
+    // Positive X gradient means terrain faces east.
+    gradient.x = float(h00 - h10) / grid.spacing;
+    // Positive Y gradient means terrain faces north.
+    gradient.y = float(h01 - h01) / grid.spacing;
+    
+    return true;
+}
+
 
 /* 
    find difference between home terrain height and the terrain

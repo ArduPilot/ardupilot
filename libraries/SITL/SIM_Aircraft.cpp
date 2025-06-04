@@ -887,7 +887,10 @@ void Aircraft::update_wind(const struct sitl_input &input)
                        sinf(radians(input.wind.direction))*cosf(radians(input.wind.dir_z)), 
                        sinf(radians(input.wind.dir_z))) * input.wind.speed;
 
-    wind_ef.z += get_local_updraft(position + home.get_distance_NED_double(origin));
+    auto const curr_pos = position + home.get_distance_NED_double(origin);
+    wind_ef.z += get_local_updraft(curr_pos);
+    wind_ef.z += get_topo_lift(location);
+    // wind_ef.z += get_topo_lift(location);
 
     const float wind_turb = input.wind.turbulence * 10.0f;  // scale input.wind.turbulence to match standard deviation when using iir_coef=0.98
     const float iir_coef = 0.98f;  // filtering high frequencies from turbulence
@@ -1283,6 +1286,29 @@ float Aircraft::get_local_updraft(const Vector3d &currentPos)
     }
 
     return w;
+}
+
+
+float Aircraft::get_topo_lift(const Location &loc)
+{
+    const float speed = AP::sitl()->wind_speed;
+    // A SITL wind of 0 is N wind (from N to S).
+    // A SITL wind of 90 is E wind (from E to W).
+
+    // This dir will be 0 with east wind.
+    const float dir = radians(AP::sitl()->wind_direction - 90.0);
+
+    // Wind in the topographic frame. X points east, Y points north.
+    // East wind will be [speed, 0]
+    // North wind will be [0, speed]
+    const Vector2f wind_topo(cosf(dir) * speed, sinf(dir) * speed);
+    // auto const wind_topo = Vector2f()
+    float lift;
+    if (topo_lift_estimate.calc_lift(loc, lift, wind_topo)) {
+        return lift;
+    } else {
+        return 0.0;
+    }   
 }
 
 void Aircraft::add_twist_forces(Vector3f &rot_accel)

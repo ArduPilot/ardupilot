@@ -81,6 +81,11 @@
 #include <AP_Gripper/AP_Gripper.h>
 #endif
 
+#include <AP_TopoLift/AP_TopoLift_config.h>
+#if AP_TOPO_LIFT_ENABLED
+#include <AP_TopoLift/AP_TopoLiftSinglePointEstimate.h>
+#endif
+
 #include <AP_IBus_Telem/AP_IBus_Telem.h>
 
 class AP_DDS_Client;
@@ -578,6 +583,10 @@ private:
 
 #if AP_FILTER_ENABLED
     AP_Filters filters;
+#endif
+
+#if AP_TOPO_LIFT_ENABLED
+    AP_TopoLiftSinglePointEstimate topo_lift;
 #endif
 
     // Bitmask of modes to disable from gcs
