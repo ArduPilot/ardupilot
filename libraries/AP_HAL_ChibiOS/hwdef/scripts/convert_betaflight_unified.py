@@ -360,6 +360,8 @@ define HAL_BATT_CURR_SCALE %.1f
     nmotors = 0
     # PIN  TIMx_CHy TIMx PWM(p) GPIO(g)
     for pin, motor in functions["MOTOR"].items():
+        if not pin in timers:
+            continue
         timer = timers[pin]
         nmotors = max(nmotors, int(motor[0]))
         # for safety don't share the _UP channel
