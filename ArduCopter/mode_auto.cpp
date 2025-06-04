@@ -1721,6 +1721,8 @@ void ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
 
     // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
     circle_movetoedge_start(circle_center, circle_radius_m, circle_direction_ccw);
+
+    circle_last_num_complete = -1;
 }
 
 // do_loiter_time - initiate loitering at a point for a given time period
@@ -2266,8 +2268,14 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
 
     const float turns = cmd.get_loiter_turns();
 
+    const auto num_circles_completed = fabsf(copter.circle_nav->get_angle_total_rad()/float(M_2PI));
+    if (int(num_circles_completed) != int(circle_last_num_complete)) {
+        circle_last_num_complete = num_circles_completed;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: starting circle %u/%u", unsigned(num_circles_completed)+1, unsigned(turns));
+    }
+
     // check if we have completed circling
-    return fabsf(copter.circle_nav->get_angle_total_rad()/float(M_2PI)) >= turns;
+    return num_circles_completed >= turns;
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline
