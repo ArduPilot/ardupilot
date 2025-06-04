@@ -119,9 +119,9 @@ local function init()
     end
 
     -- Record start attitude to be used in recovery stage
-    start_attitude.roll = math.deg(ahrs:get_roll())
-    start_attitude.pitch = math.deg(ahrs:get_pitch())
-    start_attitude.yaw = math.deg(ahrs:get_yaw())
+    start_attitude.roll = math.deg(ahrs:get_roll_rad())
+    start_attitude.pitch = math.deg(ahrs:get_pitch_rad())
+    start_attitude.yaw = math.deg(ahrs:get_yaw_rad())
 
 end
 
@@ -139,8 +139,8 @@ local function run()
         return
     end
 
-    local roll_deg = math.deg(ahrs:get_roll())
-    local pitch_deg = math.deg(ahrs:get_pitch())
+    local roll_deg = math.deg(ahrs:get_roll_rad())
+    local pitch_deg = math.deg(ahrs:get_pitch_rad())
 
     if state == FLIP_STATE.RECOVER then
         -- Target original attitude with 0 climb rate
