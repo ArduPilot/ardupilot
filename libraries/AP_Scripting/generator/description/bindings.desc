@@ -436,6 +436,8 @@ include AP_Scripting/AP_Scripting_SerialAccess.h
 -- don't let user create access objects
 userdata AP_Scripting_SerialAccess creation null -1
 userdata AP_Scripting_SerialAccess method begin void uint32_t 1U UINT32_MAX
+userdata AP_Scripting_SerialAccess method configure_parity void uint8_t 0 2
+userdata AP_Scripting_SerialAccess method set_stop_bits void uint8_t 1 2
 userdata AP_Scripting_SerialAccess method write uint32_t uint8_t'skip_check
 userdata AP_Scripting_SerialAccess manual writestring lua_serial_writestring 1 1
 userdata AP_Scripting_SerialAccess method read int16_t
