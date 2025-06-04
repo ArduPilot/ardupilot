@@ -1,21 +1,17 @@
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
-
 #include "AP_GSOF_config.h"
-#include "AP_GSOF.h"
 
 #if AP_GSOF_ENABLED
 
-
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <GCS_MAVLink/GCS.h>
-
-extern const AP_HAL::HAL& hal;
+#include <AP_GSOF/AP_GSOF.h>
 
 #define gsof_DEBUGGING 0
-
 #if gsof_DEBUGGING
+extern const AP_HAL::HAL& hal;
 # define Debug(fmt, args ...)                  \
 do {                                            \
     hal.console->printf("%s:%d: " fmt "\n",     \
@@ -87,17 +83,18 @@ AP_GSOF::process_message(MsgTypes& parsed_msgs)
 {
     if (msg.packettype == 0x40) { // GSOF
         // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_TIME.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____25
-#if gsof_DEBUGGING
-        const uint8_t trans_number = msg.data[0];
-        const uint8_t pageidx = msg.data[1];
-        const uint8_t maxpageidx = msg.data[2];
-
-        Debug("GSOF page: %u of %u (trans_number=%u)",
-              pageidx, maxpageidx, trans_number);
-#endif
 
         for (uint32_t a = 3; a < msg.length; a++) {
             const uint8_t output_type = msg.data[a];
+
+            if (output_type >= parsed_msgs.size()) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                AP_HAL::panic("Invalid output type.");
+#else
+                return false;
+#endif
+            }
+
             parsed_msgs.set(output_type);
             a++;
             const uint8_t output_length = msg.data[a];
@@ -120,7 +117,17 @@ AP_GSOF::process_message(MsgTypes& parsed_msgs)
             case POS_SIGMA:
                 parse_pos_sigma(a);
                 break;
+            case INS_FULL_NAV:
+                parse_ins_full_nav(a);
+                break;
+            case INS_RMS:
+                parse_ins_rms(a);
+                break;
+            case LLH_MSL:
+                parse_llh_msl(a);
+                break;
             default:
+                // TODO log warning unparsed packet.
                 break;
             }
 
@@ -136,7 +143,7 @@ AP_GSOF::process_message(MsgTypes& parsed_msgs)
 
 void AP_GSOF::parse_pos_time(uint32_t a)
 {
-    // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_TIME.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____25
+    // https://receiverhelp.trimble.com/oem-gnss/gsof-messages-time.html
     pos_time.time_week_ms = be32toh_ptr(msg.data + a);
     pos_time.time_week = be32toh_ptr(msg.data + a + 4);
     pos_time.num_sats = msg.data[a + 6];
@@ -146,16 +153,16 @@ void AP_GSOF::parse_pos_time(uint32_t a)
 
 void AP_GSOF::parse_pos(uint32_t a)
 {
-    // This packet is not documented in Trimble's receiver help as of May 18, 2023
+    // https://receiverhelp.trimble.com/oem-gnss/gsof-messages-llh.html
     position.latitude_rad = be64todouble_ptr(msg.data, a);
     position.longitude_rad = be64todouble_ptr(msg.data, a + 8);
+    // Altitude is "Height from WGS-84 datum" -> Likely ellipsoid
     position.altitude = be64todouble_ptr(msg.data, a + 16);
 }
 
 void AP_GSOF::parse_vel(uint32_t a)
 {
-    // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_Velocity.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____32
-    vel.velocity_flags = msg.data[a];
+    // https://receiverhelp.trimble.com/oem-gnss/gsof-messages-velocity.html
 
     constexpr uint8_t BIT_VELOCITY_VALID = 0;
     if (BIT_IS_SET(vel.velocity_flags, BIT_VELOCITY_VALID)) {
@@ -171,18 +178,58 @@ void AP_GSOF::parse_vel(uint32_t a)
 
 void AP_GSOF::parse_dop(uint32_t a)
 {
-    // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_PDOP.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____12
+    // https://receiverhelp.trimble.com/oem-gnss/gsof-messages-pdop.html
     // Skip pdop.
     dop.hdop = be32tofloat_ptr(msg.data, a + 4);
 }
 
 void AP_GSOF::parse_pos_sigma(uint32_t a)
 {
-    // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_SIGMA.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____24
+    // https://receiverhelp.trimble.com/oem-gnss/gsof-messages-sigma.html
     // Skip pos_rms
     pos_sigma.sigma_east = be32tofloat_ptr(msg.data, a + 4);
     pos_sigma.sigma_north = be32tofloat_ptr(msg.data, a + 8);
     pos_sigma.sigma_up = be32tofloat_ptr(msg.data, a + 16);
 }
+
+void AP_GSOF::parse_ins_full_nav(uint32_t a)
+{
+    // https://receiverhelp.trimble.com/oem-gnss/gsof-messages-ins-full-nav.html
+    ins_full_nav.gps_week = be16toh_ptr(msg.data + a);
+    ins_full_nav.gps_time_ms = be32toh_ptr(msg.data + a + 2);
+    ins_full_nav.imu_alignment_status = ImuAlignmentStatus(msg.data[a + 6]);
+    ins_full_nav.gnss_status = GnssStatus(msg.data[a + 7]);
+    ins_full_nav.latitude = be64todouble_ptr(msg.data, a + 8);
+    ins_full_nav.longitude = be64todouble_ptr(msg.data, a + 16);
+    ins_full_nav.altitude = be64todouble_ptr(msg.data, a + 24);
+    ins_full_nav.vel_n = be32tofloat_ptr(msg.data, a + 32);
+    ins_full_nav.vel_e = be32tofloat_ptr(msg.data, a + 36);
+    ins_full_nav.vel_d = be32tofloat_ptr(msg.data, a + 40);
+    ins_full_nav.speed = be32tofloat_ptr(msg.data, a + 44);
+    ins_full_nav.roll_deg = be64todouble_ptr(msg.data, a + 48);
+    ins_full_nav.pitch_deg = be64todouble_ptr(msg.data, a + 56);
+    ins_full_nav.heading_deg = be64todouble_ptr(msg.data, a + 64);
+    ins_full_nav.track_angle_deg = be64todouble_ptr(msg.data, a + 72);
+    // Remaining data is currently unused.
+}
+
+void AP_GSOF::parse_ins_rms(uint32_t a)
+{
+    // https://receiverhelp.trimble.com/oem-gnss/gsof-messages-ins-rms.html
+    ins_rms.gps_week = be16toh_ptr(msg.data + a);
+    ins_rms.gps_time_ms = be32toh_ptr(msg.data + a + 2);
+    ins_rms.imu_alignment_status = ImuAlignmentStatus(msg.data[a + 6]);
+    ins_rms.gnss_status = GnssStatus(msg.data[a + 7]);
+}
+
+void AP_GSOF::parse_llh_msl(uint32_t a)
+{
+    // https://receiverhelp.trimble.com/oem-gnss/gsof-messages-llmsl.html
+    llh_msl.latitude = RAD_TO_DEG_DOUBLE * be64todouble_ptr(msg.data, a);
+    llh_msl.longitude = RAD_TO_DEG_DOUBLE * be64todouble_ptr(msg.data, a + 8);
+    llh_msl.altitude_msl = be64todouble_ptr(msg.data, a + 16);
+    // Assume the model is EGM96.
+}
+
 #endif // AP_GSOF_ENABLED
 
