@@ -760,6 +760,10 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
     clear_breach(~_configured_fences);
     // clear any breach from disabled fences
     clear_breach(fences_to_disable);
+    // clear any margin breach from a non-enabled fence
+    clear_margin_breach(~_configured_fences);
+    // clear any marginbreach from disabled fences
+    clear_margin_breach(fences_to_disable);
 
     if (_min_alt_state == MinAltState::MANUALLY_ENABLED) {
         // if user has manually enabled the min-alt fence then don't auto-disable
