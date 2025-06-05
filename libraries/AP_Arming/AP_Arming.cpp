@@ -1709,15 +1709,6 @@ bool AP_Arming::pre_arm_checks(bool report)
 bool AP_Arming::arm_checks(AP_Arming::Method method)
 {
 #if AP_RC_CHANNEL_ENABLED
-    if (method == AP_Arming::Method::RUDDER) {
-        // only permit arming if the vehicle isn't being commanded to
-        // move via RC input
-        const auto c = rc().get_throttle_channel();
-        if (c.get_control_in() != 0) {
-            return false;
-        }
-    }
-
     if (check_enabled(Check::RC)) {
         if (!rc_arm_checks(method)) {
             return false;
