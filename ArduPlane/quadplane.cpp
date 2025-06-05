@@ -3994,10 +3994,22 @@ bool QuadPlane::using_wp_nav(void) const
  */
 MAV_TYPE QuadPlane::get_mav_type(void) const
 {
-    if (mav_type.get() == 0) {
+    if (mav_type.get() != 0) {
+        return MAV_TYPE(mav_type.get());
+    }
+    if (!available()) {
         return MAV_TYPE_FIXED_WING;
     }
-    return MAV_TYPE(mav_type.get());
+    if (tiltrotor.enabled()) {
+        return MAV_TYPE_VTOL_TILTROTOR;
+    }
+    switch (motors->get_frame_mav_type()) {
+    case MAV_TYPE_QUADROTOR:
+        return MAV_TYPE_VTOL_QUADROTOR;
+    default:
+        break;
+    }
+    return MAV_TYPE_FIXED_WING;
 }
 
 /*
