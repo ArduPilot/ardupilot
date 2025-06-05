@@ -419,15 +419,14 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
                 interim_state.have_speed_accuracy = false;
             }
         }
-
-        interim_state.num_sats = msg.sats_used;
     } else {
         interim_state.have_vertical_velocity = false;
         interim_state.have_vertical_accuracy = false;
         interim_state.have_horizontal_accuracy = false;
         interim_state.have_speed_accuracy = false;
-        interim_state.num_sats = 0;
     }
+
+    interim_state.num_sats = msg.sats_used;
 
     if (!seen_aux) {
         // if we haven't seen an Aux message then populate vdop and
