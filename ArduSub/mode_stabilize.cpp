@@ -4,7 +4,7 @@
 bool ModeStabilize::init(bool ignore_checks) {
     // set target altitude to zero for reporting
     position_control->set_pos_desired_U_cm(0);
-    sub.last_pilot_heading = ahrs.yaw_sensor;
+    sub.last_pilot_heading_rad = ahrs.get_yaw_rad();
 
     return true;
     return true;
@@ -20,7 +20,7 @@ void ModeStabilize::run()
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
-        sub.last_pilot_heading = ahrs.yaw_sensor;
+        sub.last_pilot_heading_rad = ahrs.get_yaw_rad();
         return;
     }
 
@@ -40,7 +40,7 @@ void ModeStabilize::run()
 
     if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
-        sub.last_pilot_heading = ahrs.yaw_sensor;
+        sub.last_pilot_heading_rad = ahrs.get_yaw_rad();
         sub.last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
 
     } else { // hold current heading
@@ -52,10 +52,10 @@ void ModeStabilize::run()
 
             // call attitude controller with target yaw rate = 0 to decelerate on yaw axis
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
-            sub.last_pilot_heading = ahrs.yaw_sensor; // update heading to hold
+            sub.last_pilot_heading_rad = ahrs.get_yaw_rad(); // update heading to hold
 
         } else { // call attitude controller holding absolute absolute bearing
-            attitude_control->input_euler_angle_roll_pitch_yaw_cd(target_roll, target_pitch, sub.last_pilot_heading, true);
+            attitude_control->input_euler_angle_roll_pitch_yaw_cd(target_roll, target_pitch, rad_to_cd(sub.last_pilot_heading_rad), true);
         }
     }
 

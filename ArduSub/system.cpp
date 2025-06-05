@@ -130,7 +130,7 @@ void Sub::init_ardupilot()
 
     leak_detector.init();
 
-    last_pilot_heading = ahrs.yaw_sensor;
+    last_pilot_heading_rad = ahrs.get_yaw_rad();
 
     // initialise rangefinder
 #if AP_RANGEFINDER_ENABLED
