@@ -1714,7 +1714,6 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         // move via RC input
         const auto c = rc().get_throttle_channel();
         if (c.get_control_in() != 0) {
-            check_failed(true, "Non-zero throttle");
             return false;
         }
     }
