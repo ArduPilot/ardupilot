@@ -110,11 +110,13 @@ SPIDEV imu%s   SPI%s DEVID1 GYRO%s_CS   MODE3   1*MHZ   8*MHZ
 ''' % (n, bus, n))
 
     c = 0
+    found_imu = False
     for define in defines:
         for imudefine in ['USE_GYRO_SPI_', 'USE_ACCGYRO_']:
             if define.startswith(imudefine):
                 imu = define[len(imudefine):]
                 c = c + 1
+                found_imu = True
                 if c == int(n):
                     if imu == 'ICM42688P':
                         imudriver = 'Invensensev3'
@@ -125,6 +127,11 @@ SPIDEV imu%s   SPI%s DEVID1 GYRO%s_CS   MODE3   1*MHZ   8*MHZ
                     f.write('''
 IMU %s SPI:imu%s %s
 ''' % (imudriver, n, alignment[align]))
+    # no driver found, pick v3 by default
+    if not found_imu:
+        f.write('''
+IMU %s SPI:imu%s %s
+''' % ('Invensensev3', n, alignment[align]))
 
     dma = "SPI" + bus + "*"
     dma_noshare[dma] = dma
