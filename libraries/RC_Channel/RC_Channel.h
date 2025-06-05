@@ -405,8 +405,10 @@ protected:
 
 private:
 
-    // pwm is stored here
+    // pwm is stored here; if an override is active, override_value is stored instead
     int16_t     radio_in;
+    // stores the raw pwm value read from hal.rcin
+    int16_t     raw_radio_in;
 
     // value generated from PWM normalised to configured scale
     int16_t    control_in;
@@ -424,6 +426,10 @@ private:
     // overrides
     uint16_t override_value;
     uint32_t last_override_time;
+
+    // return true if raw input is within deadzone of trim
+    bool in_raw_trim_dz() const;
+    int16_t get_raw_radio_in() const { return raw_radio_in; }
 
     float pwm_to_angle() const;
     float pwm_to_angle_dz(uint16_t dead_zone) const;
@@ -560,6 +566,7 @@ public:
         USE_CRSF_LQ_AS_RSSI     = (1U << 11), // returns CRSF link quality as RSSI value, instead of RSSI
         CRSF_FM_DISARM_STAR     = (1U << 12), // when disarmed, add a star at the end of the flight mode in CRSF telemetry
         ELRS_420KBAUD           = (1U << 13), // use 420kbaud for ELRS protocol
+        CLEAR_OVERRIDES_BY_RC   = (1U << 14), // clear MAVLink overrides if pilot inputs Roll/Pitch/Throttle/Yaw sticks
     };
 
     bool option_is_enabled(Option option) const {
@@ -660,6 +667,7 @@ private:
     bool has_new_overrides;
     bool _has_had_rc_receiver; // true if we have had a direct detach RC receiver, does not include overrides
     bool _has_had_override; // true if we have had an override on any channel
+    int16_t override_start_throttle; // throttle value at the moment an override was activated
 
     AP_Float _override_timeout;
     AP_Int32  _options;
@@ -687,6 +695,10 @@ private:
 #endif
 
     RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number) const;
+
+    // returns true if pilot stick input has exited any deadzone (or throttle moved)
+    bool should_ignore_overrides(void);
+    void set_override_start_throttle(int16_t pwm) { override_start_throttle = pwm; }
 };
 
 RC_Channels &rc();
