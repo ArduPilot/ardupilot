@@ -323,15 +323,15 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
     // @Param: _PASS2
     // @DisplayName: Serial passthru second port
-    // @Description: This sets one side of pass-through between two serial ports. Once both sides are set then all data received on either port will be passed to the other port
+    // @Description: This sets one side of pass-through between two serial ports. Once both sides are set then all data received on either port will be passed to the other port. This parameter is normally reset to -1 on reboot, disabling passthrough. If SERIAL_PASSTIMO is set to -1 then it is not reset on reboot.
     // @Values: -1:Disabled,0:Serial0,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
     // @User: Advanced
     AP_GROUPINFO("_PASS2",  21, AP_SerialManager, passthru_port2, -1),
 
     // @Param: _PASSTIMO
     // @DisplayName: Serial passthru timeout
-    // @Description: This sets a timeout for serial pass-through in seconds. When the pass-through is enabled by setting the SERIAL_PASS1 and SERIAL_PASS2 parameters then it remains in effect until no data comes from the first port for SERIAL_PASSTIMO seconds. This allows the port to revent to its normal usage (such as MAVLink connection to a GCS) when it is no longer needed. A value of 0 means no timeout.
-    // @Range: 0 120
+    // @Description: This sets a timeout for serial pass-through in seconds. When the pass-through is enabled by setting the SERIAL_PASS1 and SERIAL_PASS2 parameters then it remains in effect until no data comes from the first port for SERIAL_PASSTIMO seconds. This allows the port to revent to its normal usage (such as MAVLink connection to a GCS) when it is no longer needed. A value of 0 means no timeout. A value of -1 means no timeout and the SERIAL_PASS2 parameter is not reset on reboot.
+    // @Range: -1 120
     // @Units: s
     // @User: Advanced
     AP_GROUPINFO("_PASSTIMO",  22, AP_SerialManager, passthru_timeout, 15),
@@ -426,8 +426,10 @@ void AP_SerialManager::init()
 {
     convert_parameters();
 
-    // always reset passthru port2 on boot
-    passthru_port2.set_and_save_ifchanged(-1);
+    // reset passthru port2 on boot if timeout is not -1
+    if (passthru_timeout != -1) {
+        passthru_port2.set_and_save_ifchanged(-1);
+    }
 
 #ifdef HAL_OTG1_CONFIG
     /*
