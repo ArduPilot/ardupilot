@@ -361,16 +361,28 @@ void RC_Channels::rudder_arm_disarm_check()
         return;
     }
 
-    const auto control_in = abs(channel->get_control_in());
+    const auto control_in = channel->get_control_in();
+    const auto abs_control_in = abs(control_in);
 
-    if (control_in == 0) {
+    if (abs_control_in == 0) {
         have_seen_neutral_rudder = true;
     }
 
-    if (control_in <= 4000) {
+    if (abs_control_in <= 4000) {
         // not trying to (or no longer trying to) arm or disarm
         rudder_arm_timer = 0;
         return;
+    }
+
+    // enforce correct stick gesture for arming (but not disarming):
+    if (arming_check_throttle() && control_in > 4000) {
+        // only permit arming if the vehicle isn't being commanded to
+        // move via RC input
+        const auto &c = rc().get_throttle_channel();
+        if (c.get_control_in() != 0) {
+            rudder_arm_timer = 0;
+            return;
+        }
     }
 
     const uint32_t now = AP_HAL::millis();
@@ -387,7 +399,7 @@ void RC_Channels::rudder_arm_disarm_check()
 
     // time to try to arm or disarm:
     rudder_arm_timer = 0;
-    if (channel->get_control_in() > 4000) {
+    if (control_in > 4000) {
         AP::arming().arm(AP_Arming::Method::RUDDER);
         have_seen_neutral_rudder = false;
     } else {
