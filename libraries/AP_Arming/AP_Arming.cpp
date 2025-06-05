@@ -2079,6 +2079,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
             return;
 
         case Method::RUDDER:
+        case Method::TOYMODE:
         case Method::MAVLINK:
         case Method::AUXSWITCH:
         case Method::MOTORTEST:
