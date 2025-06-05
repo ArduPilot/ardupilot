@@ -138,10 +138,16 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: read
+      actions: write
+
     runs-on: ubuntu-22.04
+
     container:
       image: ardupilot/ardupilot-dev-ros:latest
       options: --user 1001
+
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:

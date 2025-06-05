@@ -1,4 +1,8 @@
 name: test environment setup
+
+permissions:
+  contents: read
+
 on:
   schedule:
     - cron: '0 0 * * 6'  # every saturday at midnight

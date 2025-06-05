@@ -142,6 +142,10 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: read
+      actions: write
+
     runs-on: 'windows-latest'
 
     steps:

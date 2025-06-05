@@ -1,5 +1,8 @@
 name: test ap_periph
 
+permissions:
+  contents: read
+
 on: 
   push:
     paths-ignore:

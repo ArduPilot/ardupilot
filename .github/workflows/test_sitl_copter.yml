@@ -161,6 +161,8 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: read
     runs-on: ubuntu-22.04
     container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.3
     strategy:
@@ -206,6 +208,10 @@ jobs:
           ccache -z
 
   autotest:
+    permissions:
+      actions: write
+      contents: read
+
     needs: build  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
     runs-on: ubuntu-22.04
     container:
@@ -288,6 +294,8 @@ jobs:
            retention-days: 7
 
   build-gcc-heli:
+    permissions:
+      contents: read
     runs-on: ubuntu-22.04
     container:
       image: ardupilot/ardupilot-dev-base:v0.1.3
@@ -323,6 +331,10 @@ jobs:
           ccache -z
 
   autotest-heli:
+    permissions:
+      contents: read
+      actions: write
+
     needs: build-gcc-heli  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
     runs-on: ubuntu-22.04
     container: ardupilot/ardupilot-dev-base:v0.1.3
