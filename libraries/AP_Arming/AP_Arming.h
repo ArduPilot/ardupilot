@@ -84,6 +84,7 @@ public:
         DDS = 35,
         AUTO_ARM_ONCE = 36,
         TURTLE_MODE = 37,
+        TOYMODE = 38,
         UNKNOWN = 100,
     };
 
