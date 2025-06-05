@@ -568,7 +568,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 {
     if (method == AP_Arming::Method::RUDDER) {
 #if TOY_MODE_ENABLED
-        if (g2.toy_mode.enabled()) {
+        if (copter.g2.toy_mode.enabled()) {
             // not armed with sticks in toy mode
             check_failed(true, "Rudder-arming: disabled in toy mode");
             return false;
