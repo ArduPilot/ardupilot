@@ -1,5 +1,8 @@
 name: Macos Build
 
+permissions:
+  contents: read
+
 on:
   push:
     paths-ignore:

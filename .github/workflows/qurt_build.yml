@@ -143,7 +143,13 @@ concurrency:
 jobs:
   build:
     if: github.repository == 'ArduPilot/ardupilot'
+
+    permissions:
+      contents: read
+      actions: write
+
     runs-on: 'ardupilot-qurt'
+
     steps:
       - uses: actions/checkout@v4
         with:
