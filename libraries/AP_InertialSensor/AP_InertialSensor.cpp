@@ -575,6 +575,18 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Path: ../Filter/HarmonicNotchFilter.cpp
     AP_SUBGROUPINFO(harmonic_notches[1].params, "_HNTC2_",  53, AP_InertialSensor, HarmonicNotchFilterParams),
 #endif
+
+#if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 2
+    // @Group: _HNTC3_
+    // @Path: ../Filter/HarmonicNotchFilter.cpp
+    AP_SUBGROUPINFO(harmonic_notches[2].params, "_HNTC3_",  57, AP_InertialSensor, HarmonicNotchFilterParams),
+#endif
+
+#if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 3
+    // @Group: _HNTC4_
+    // @Path: ../Filter/HarmonicNotchFilter.cpp
+    AP_SUBGROUPINFO(harmonic_notches[3].params, "_HNTC4_",  58, AP_InertialSensor, HarmonicNotchFilterParams),
+#endif
 #endif
 
     // @Param: _GYRO_RATE
@@ -683,6 +695,8 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Bitmask: 0:Log primary gyro only, 1:Log all gyros, 2:Post filter, 3: Pre and post filter
     // @User: Advanced
     AP_GROUPINFO("_RAW_LOG_OPT", 56, AP_InertialSensor, raw_logging_options, 0),
+
+    // indexes 57 and 58 used by INS_HNTC3 and INS_HNTC4
 
     /*
       NOTE: parameter indexes have gaps above. When adding new
