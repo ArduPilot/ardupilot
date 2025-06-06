@@ -69,7 +69,7 @@ public:
     void set_notch_sample_rate(float sample_rate) override;
 
     // Command an euler roll and pitch angle and a yaw angle, slewing the yaw target to limit angular rate
-    void input_euler_angle_roll_pitch_slew_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float slew_yaw);
+    void input_euler_angle_roll_pitch_slew_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float slew_yaw);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
