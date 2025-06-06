@@ -54,7 +54,7 @@ protected:
 
     uint8_t num_gps_sensors(void) const override
     {
-        return 0;
+        return 1;
     }
 
 private:
