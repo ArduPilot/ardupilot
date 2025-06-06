@@ -1143,6 +1143,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Bad relalt (want=%f vs got=%f)" % (takeoff_alt, x.alt_rel))
         if abs(x.alt_msl - (original_alt+30)) > 10:
             raise NotAchievedException("Bad absalt (want=%f vs got=%f)" % (original_alt+30, x.alt_msl))
+
+        self.change_mode('LOITER')
+        self.delay_sim_time(10)
+
+        self.context_collect('CAMERA_FEEDBACK')
+        self.set_rc(12, 2000)
+        self.delay_sim_time(1)
+        self.set_rc(12, 1000)
+        self.assert_received_message_field_values('CAMERA_FEEDBACK', {
+            "roll": math.degrees(self.assert_receive_message('ATTITUDE').roll),
+        }, check_context=True, epsilon=5.0)
+
         self.fly_home_land_and_disarm()
 
     def ThrottleFailsafe(self):
