@@ -51,6 +51,7 @@ public:
         VTX_SA_ONE_STOP_BIT   = (1 << 5),
         VTX_SA_IGNORE_CRC     = (1 << 6),
         VTX_CRSF_IGNORE_STAT  = (1 << 7),
+        VTX_TRAMP_IGNORE_FIRST_BYTE  = (1 << 8),
     };
 
     static const char *band_names[];
