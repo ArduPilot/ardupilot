@@ -80,14 +80,25 @@ public:
     // calculate total body frame throttle required to produce the given earth frame throttle
     float get_throttle_boosted(float throttle_in);
 
-    // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
+    // Sets desired roll and pitch angles (in radians) and yaw rate (in radians/s).
+    // Used when roll/pitch stabilization is needed with manual or autonomous yaw rate control.
+    // Applies acceleration-limited input shaping for smooth transitions and computes body-frame angular velocity targets.
     void input_euler_angle_roll_pitch_euler_rate_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_rate_rads) override;
 
-    // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
+    // Sets desired roll, pitch, and yaw angles (in radians).
+    // Used to follow an absolute attitude setpoint. Input shaping and yaw slew limits are applied.
+    // Outputs are passed to the rate controller via shaped angular velocity targets.
     void input_euler_angle_roll_pitch_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_angle_rad, bool slew_yaw) override;
     
-    // Command a thrust vector in the earth frame and a heading angle and/or rate
+    // Sets desired thrust vector and heading rate (in radians/s).
+    // Used for tilt-based navigation with independent yaw control.
+    // The thrust vector defines the desired orientation (e.g., pointing direction for vertical thrust),
+    // while the heading rate adjusts yaw. The input is shaped by acceleration and slew limits.
     void input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw = true) override;
+    
+    // Sets desired thrust vector and heading (in radians) with heading rate (in radians/s).
+    // Used for advanced attitude control where thrust direction is separated from yaw orientation.
+    // Heading slew is constrained based on configured limits.
     void input_thrust_vector_heading_rad(const Vector3f& thrust_vector, float heading_angle_rad, float heading_rate_rads) override;
 
     // enable/disable inverted flight

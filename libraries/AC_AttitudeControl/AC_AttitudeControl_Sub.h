@@ -68,7 +68,9 @@ public:
     // set the PID notch sample rates
     void set_notch_sample_rate(float sample_rate) override;
 
-    // Command an euler roll and pitch angle and a yaw angle, slewing the yaw target to limit angular rate
+    // Sets desired roll, pitch, and yaw angles (in centidegrees), with yaw slewing.
+    // Slews toward target yaw at a fixed rate (in centidegrees/s) until the error is within 5 degrees.
+    // Used to enforce consistent heading changes without large instantaneous yaw errors.
     void input_euler_angle_roll_pitch_slew_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float slew_yaw);
 
     // user settable parameters
@@ -76,10 +78,14 @@ public:
 
 protected:
 
-    // Slews the current throttle-to-attitude mix ratio toward the target (_throttle_rpy_mix_desired)
+    // Slews the throttle-to-attitude mix ratio (_throttle_rpy_mix) toward the requested value (_throttle_rpy_mix_desired).
+    // Increases rapidly and decreases more slowly to ensure stability during transitions.
     void update_throttle_rpy_mix();
 
-    // Get throttle limit based on priority of attitude vs throttle control (used for blending during low thrust)
+    // Returns a throttle value that accounts for the priority of attitude control over throttle.
+    // This allows graceful reduction of control authority as thrust approaches its minimum.
+    // returns a throttle including compensation for roll/pitch angle
+    // throttle value should be 0 ~ 1
     float get_throttle_avg_max(float throttle_in);
 
     AP_MotorsMulticopter& _motors_multi;

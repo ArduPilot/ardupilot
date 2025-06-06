@@ -298,8 +298,8 @@ void AC_AttitudeControl::landed_gain_reduction(bool landed)
 //    corrected by first correcting the thrust vector until the angle between the target thrust vector measured
 //    trust vector drops below 2*AC_ATTITUDE_THRUST_ERROR_ANGLE_RAD. At this point the heading is also corrected.
 
-// Command a Quaternion attitude with feedforward and smoothing
-// attitude_desired_quat: is updated on each time_step by the integral of the body frame angular velocity
+// Sets a desired attitude using a quaternion and body-frame angular velocity (rad/s).
+// The desired quaternion is incrementally updated each timestep. Angular velocity is shaped by acceleration limits and feedforward.
 void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_body_rads)
 {
     // update attitude target
@@ -341,7 +341,8 @@ void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vec
     attitude_controller_run_quat();
 }
 
-// Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
+// Sets desired roll and pitch angles (in centidegrees) and yaw rate (in centidegrees/s).
+// See input_euler_angle_roll_pitch_euler_rate_yaw_rad() for full details.
 void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
@@ -399,7 +400,8 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad(float e
     attitude_controller_run_quat();
 }
 
-// Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
+// Sets desired roll, pitch, and yaw angles (in centidegrees).
+// See input_euler_angle_roll_pitch_yaw_rad() for full details.
 void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
 {
     // Convert from centidegrees on public interface to radians
@@ -410,6 +412,9 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_cd(float euler_roll_an
     input_euler_angle_roll_pitch_yaw_rad(euler_roll_angle_rad, euler_pitch_angle_rad, euler_yaw_angle_rad, slew_yaw);
 }
 
+// Sets desired roll, pitch, and yaw angles (in radians).
+// Used to follow an absolute attitude setpoint. Input shaping and yaw slew limits are applied.
+// Outputs are passed to the rate controller via shaped angular velocity targets.
 void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_angle_rad, bool slew_yaw)
 {
     // update attitude target
@@ -466,7 +471,8 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(float euler_roll_a
     attitude_controller_run_quat();
 }
 
-// Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
+// Sets desired roll, pitch, and yaw angular rates (in centidegrees/s).
+// See input_euler_rate_roll_pitch_yaw_rads() for full details.
 void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_cds(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
@@ -477,6 +483,11 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_cds(float euler_roll_ra
     input_euler_rate_roll_pitch_yaw_rads(euler_roll_rate_rads, euler_pitch_rate_rads, euler_yaw_rate_rads);
 }
 
+// Sets desired roll, pitch, and yaw angular rates (in radians/s).
+// This command is used to apply angular rate targets in the earth frame.
+// The inputs are shaped using acceleration limits and time constants.
+// Resulting targets are converted into body-frame angular velocities
+// and passed to the rate controller.
 void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_rads(float euler_roll_rate_rads, float euler_pitch_rate_rads, float euler_yaw_rate_rads)
 {
     // update attitude target
@@ -517,7 +528,8 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_rads(float euler_roll_r
 }
 
 // Fully stabilized acro
-// Command an angular velocity with angular velocity feedforward and smoothing
+// Sets desired roll, pitch, and yaw angular rates (in centidegrees/s).
+// See input_rate_bf_roll_pitch_yaw_rads() for full details.
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
@@ -528,6 +540,10 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_cds(float roll_rate_bf_cds
     input_rate_bf_roll_pitch_yaw_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
 
+// Sets desired roll, pitch, and yaw angular rates in body-frame (in radians/s).
+// This command is used by fully stabilized acro modes.
+// It applies angular velocity targets in the body frame,
+// shaped using acceleration limits and passed to the rate controller.
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads)
 {
     // update attitude target
@@ -562,8 +578,8 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_ra
     attitude_controller_run_quat();
 }
 
-// Rate-only acro with no attitude feedback - used only by Copter rate-only acro
-// Command an angular velocity with angular velocity smoothing using rate loops only with no attitude loop stabilization
+// Sets desired roll, pitch, and yaw angular rates in body-frame (in centidegrees/s).
+// See input_rate_bf_roll_pitch_yaw_2_rads() for full details.
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
@@ -574,6 +590,10 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2_cds(float roll_rate_bf_c
     input_rate_bf_roll_pitch_yaw_2_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
 
+// Sets desired roll, pitch, and yaw angular rates in body-frame (in radians/s).
+// Used by Copter's rate-only acro mode.
+// Applies raw angular velocity targets directly to the rate controller with smoothing
+// and no attitude feedback or stabilization.
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads)
 {
     // Compute acceleration-limited body frame rates
@@ -593,8 +613,8 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2_rads(float roll_rate_bf_
     _ang_vel_body_rads = _ang_vel_target_rads;
 }
 
-// Acro with attitude feedback that does not rely on attitude - used only by Plane acro
-// Command an angular velocity with angular velocity smoothing using rate loops only with integrated rate error stabilization
+// Sets desired roll, pitch, and yaw angular rates in body-frame (in centidegrees/s).
+// See input_rate_bf_roll_pitch_yaw_3_rads() for full details.
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
@@ -605,6 +625,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3_cds(float roll_rate_bf_c
     input_rate_bf_roll_pitch_yaw_3_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
 
+// Sets desired roll, pitch, and yaw angular rates in body-frame (in radians/s).
+// Used by Plane's acro mode with rate error integration.
+// Integrates attitude error over time to generate target angular rates.
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads)
 {
     // Update attitude error
@@ -659,6 +682,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3_rads(float roll_rate_bf_
   quadplane code when we want to slave the VTOL controller rates to
   the fixed wing rates
  */
+
+// Directly sets the body-frame angular rates without smoothing (in centidegrees/s).
+// See input_rate_bf_roll_pitch_yaw_no_shaping_rads() for full details.
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_no_shaping_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
@@ -669,6 +695,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_no_shaping_cds(float roll_
     input_rate_bf_roll_pitch_yaw_no_shaping_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
 
+// Directly sets the body-frame angular rates without smoothing (in radians/s).
+// This command is used when external control logic (e.g. fixed-wing controller)
+// dictates VTOL rates. No smoothing or shaping is applied.
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_no_shaping_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads)
 {
 
@@ -687,8 +716,8 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_no_shaping_rads(float roll
     _ang_vel_body_rads = _ang_vel_target_rads;
 }
 
-// Command an angular step (i.e change) in body frame angle
-// Used to command a step in angle without exciting the orthogonal axis during autotune
+// Applies a one-time angular offset in body-frame roll/pitch/yaw angles (in centidegrees).
+// See input_angle_step_bf_roll_pitch_yaw_rad() for full details.
 void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw_cd(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd)
 {
     // Convert from centidegrees on public interface to radians
@@ -699,6 +728,9 @@ void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw_cd(float roll_angle_
     input_angle_step_bf_roll_pitch_yaw_rad(roll_angle_step_bf_rad, pitch_angle_step_bf_rad, yaw_angle_step_bf_rad);
 }
 
+
+// Applies a one-time angular offset in body-frame roll/pitch/yaw angles (in radians).
+// Used for initiating step responses during autotuning or manual test inputs.
 void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw_rad(float roll_angle_step_bf_rad, float pitch_angle_step_bf_rad, float yaw_angle_step_bf_rad)
 {
     // rotate attitude target by desired step
@@ -718,9 +750,8 @@ void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw_rad(float roll_angle
     attitude_controller_run_quat();
 }
 
-// Command an rate step (i.e change) in body frame rate
-// Used to command a step in rate without exciting the orthogonal axis during autotune
-// Done as a single thread-safe function to avoid intermediate zero values being seen by the attitude controller
+// Applies a one-time angular velocity offset in body-frame roll/pitch/yaw (in centidegrees/s).
+// See input_rate_step_bf_roll_pitch_yaw_rads() for full details.
 void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_cds(float roll_rate_step_bf_cds, float pitch_rate_step_bf_cds, float yaw_rate_step_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
@@ -731,6 +762,8 @@ void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_cds(float roll_rate_s
     input_rate_step_bf_roll_pitch_yaw_rads(roll_rate_step_bf_rads, pitch_rate_step_bf_rads, yaw_rate_step_bf_rads);
 }
 
+// Applies a one-time angular velocity offset in body-frame roll/pitch/yaw (in radians/s).
+// Used to apply discrete disturbances or step inputs for system identification.
 void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_rads(float roll_rate_step_bf_rads, float pitch_rate_step_bf_rads, float yaw_rate_step_bf_rads)
 {
     // Update the unused targets attitude based on current attitude to condition mode change
@@ -745,7 +778,8 @@ void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_rads(float roll_rate_
     _ang_vel_body_rads = Vector3f{roll_rate_step_bf_rads, pitch_rate_step_bf_rads, yaw_rate_step_bf_rads};
 }
 
-// Command a thrust vector and heading rate
+// Sets desired thrust vector and heading rate (in centidegrees/s).
+// See input_thrust_vector_rate_heading_rads() for full details.
 void AC_AttitudeControl::input_thrust_vector_rate_heading_cds(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw)
 {
     // Convert from centidegrees on public interface to radians
@@ -754,6 +788,10 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading_cds(const Vector3f& th
     input_thrust_vector_rate_heading_rads(thrust_vector, heading_rate_rads, slew_yaw);
 }
 
+// Sets desired thrust vector and heading rate (in radians/s).
+// Used for tilt-based navigation with independent yaw control.
+// The thrust vector defines the desired orientation (e.g., pointing direction for vertical thrust),
+// while the heading rate adjusts yaw. The input is shaped by acceleration and slew limits.
 void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw)
 {
     if (slew_yaw) {
@@ -807,7 +845,8 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& t
     attitude_controller_run_quat();
 }
 
-// Command a thrust vector, heading and heading rate
+// Sets desired thrust vector and heading (in centidegrees) with heading rate (in centidegrees/s).
+// See input_thrust_vector_heading_rad() for full details.
 void AC_AttitudeControl::input_thrust_vector_heading_cd(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
@@ -817,12 +856,13 @@ void AC_AttitudeControl::input_thrust_vector_heading_cd(const Vector3f& thrust_v
     input_thrust_vector_heading_rad(thrust_vector, heading_angle_rad, heading_rate_rads);
 }
 
+// Sets desired thrust vector and heading (in radians) with heading rate (in radians/s).
+// Used for advanced attitude control where thrust direction is separated from yaw orientation.
+// Heading slew is constrained based on configured limits.
 void AC_AttitudeControl::input_thrust_vector_heading_rad(const Vector3f& thrust_vector, float heading_angle_rad, float heading_rate_rads)
 {
     // a zero _angle_vel_yaw_max means that setting is disabled
     const float slew_yaw_max_rads = get_slew_yaw_max_rads();
-
-    // Convert from centidegrees on public interface to radians
     heading_rate_rads = constrain_float(heading_rate_rads, -slew_yaw_max_rads, slew_yaw_max_rads);
 
     // update attitude target

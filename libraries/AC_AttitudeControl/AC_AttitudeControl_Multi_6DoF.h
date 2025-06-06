@@ -18,21 +18,33 @@ public:
         return _singleton;
     }
 
-    // Command a Quaternion attitude with feedforward and smoothing
-    // attitude_desired_quat: is updated on each time_step (_dt) by the integral of the angular velocity
+    // Sets a desired attitude using a quaternion and body-frame angular velocity (rad/s).
+    // The desired quaternion is incrementally updated each timestep. Angular velocity is shaped by acceleration limits and feedforward.
     void input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_body) override;
     /*
         override input functions to attitude controller and convert desired angles into thrust angles and substitute for offset angles
     */
 
-    // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
+    // Sets desired roll and pitch angles (in radians) and yaw rate (in radians/s).
+    // Used when roll/pitch stabilization is needed with manual or autonomous yaw rate control.
+    // Applies acceleration-limited input shaping for smooth transitions and computes body-frame angular velocity targets.
     void input_euler_angle_roll_pitch_euler_rate_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_rate_rads)  override;
 
-    // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
+
+    // Sets desired roll, pitch, and yaw angles (in radians).
+    // Used to follow an absolute attitude setpoint. Input shaping and yaw slew limits are applied.
+    // Outputs are passed to the rate controller via shaped angular velocity targets.
     void input_euler_angle_roll_pitch_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_angle_rad, bool slew_yaw) override;
 
-    // Command a thrust vector in the earth frame and a heading angle and/or rate
+    // Sets desired thrust vector and heading rate (in radians/s).
+    // Used for tilt-based navigation with independent yaw control.
+    // The thrust vector defines the desired orientation (e.g., pointing direction for vertical thrust),
+    // while the heading rate adjusts yaw. The input is shaped by acceleration and slew limits.
     void input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw = true) override;
+    
+    // Sets desired thrust vector and heading (in radians) with heading rate (in radians/s).
+    // Used for advanced attitude control where thrust direction is separated from yaw orientation.
+    // Heading slew is constrained based on configured limits.
     void input_thrust_vector_heading_rad(const Vector3f& thrust_vector, float heading_angle_rad, float heading_rate_rads) override;
 
     /*
@@ -46,16 +58,27 @@ public:
     // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
     void input_euler_rate_roll_pitch_yaw_rads(float euler_roll_rate_rads, float euler_pitch_rate_rads, float euler_yaw_rate_rads) override;
 
-     // Command an angular velocity with angular velocity feedforward and smoothing
+
+    // Sets desired roll, pitch, and yaw angular rates in body-frame (in radians/s).
+    // This command is used by fully stabilized acro modes.
+    // It applies angular velocity targets in the body frame,
+    // shaped using acceleration limits and passed to the rate controller.
     void input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads) override;
 
-    // Command an angular velocity with angular velocity feedforward and smoothing
+    // Sets desired roll, pitch, and yaw angular rates in body-frame (in radians/s).
+    // Used by Copter's rate-only acro mode.
+    // Applies raw angular velocity targets directly to the rate controller with smoothing
+    // and no attitude feedback or stabilization.
     void input_rate_bf_roll_pitch_yaw_2_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads) override;
 
-    // Command an angular velocity with angular velocity smoothing using rate loops only with integrated rate error stabilization
+
+    // Sets desired roll, pitch, and yaw angular rates in body-frame (in radians/s).
+    // Used by Plane's acro mode with rate error integration.
+    // Integrates attitude error over time to generate target angular rates.
     void input_rate_bf_roll_pitch_yaw_3_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads) override;
 
-    // Command an angular step (i.e change) in body frame angle
+    // Applies a one-time angular offset in body-frame roll/pitch/yaw angles (in radians).
+    // Used for initiating step responses during autotuning or manual test inputs.
     void input_angle_step_bf_roll_pitch_yaw_rad(float roll_angle_step_bf_rad, float pitch_angle_step_bf_rad, float yaw_angle_step_bf_rad) override;
 
     // run lowest level body-frame rate controller and send outputs to the motors
