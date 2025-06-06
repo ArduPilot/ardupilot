@@ -1894,7 +1894,17 @@ void NavEKF3_core::ConstrainVariances()
 
     // if vibration affected use sensor observation variances to set a floor on the state variances
     if (badIMUdata) {
-        P[6][6] = fmaxF(P[6][6], sq(frontend->_gpsVertVelNoise));
+#if EK3_FEATURE_EXTERNAL_NAV
+        if (useExtNavVel) {
+            P[6][6] = fmaxF(P[6][6], sq(extNavVelDelayed.err));
+        } else 
+#endif
+        if (gpsDataToFuse) {
+            P[6][6] = fmaxF(P[6][6], sq(frontend->_gpsVertVelNoise));
+        }
+        else {
+            // TODO (EF): other vel source case?
+        }
         P[9][9] = fmaxF(P[9][9], sq(frontend->_baroAltNoise));
     } else if (P[6][6] < VEL_STATE_MIN_VARIANCE) {
         // handle collapse of the vertical velocity variance
@@ -1912,10 +1922,13 @@ void NavEKF3_core::ConstrainVariances()
         #if EK3_FEATURE_EXTERNAL_NAV
             if (useExtNavVel) {
                 P[6][6] = sq(extNavVelDelayed.err);
-            } else
+            } else 
         #endif
-            {
+            if (gpsDataToFuse) {
                 P[6][6] = sq(frontend->_gpsVertVelNoise);
+            }
+            else {
+                // TODO (EF): other vel source case?
             }
             vertVelVarClipCounter = 0;
         }
