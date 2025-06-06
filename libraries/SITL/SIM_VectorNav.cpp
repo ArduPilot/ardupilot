@@ -211,12 +211,12 @@ void VectorNav::send_ins_gnss_packet(void)
     pkt.velNed1[2] = fdm.speedD;
 
     pkt.posU1[0] = 1;
-    pkt.posU1[0] = 1;
-    pkt.posU1[0] = 1.5;
+    pkt.posU1[1] = 1;
+    pkt.posU1[2] = 1.5;
 
     pkt.velNed1[0] = 0.05;
-    pkt.velNed1[0] = 0.05;
-    pkt.velNed1[0] = 0.05;
+    pkt.velNed1[1] = 0.05;
+    pkt.velNed1[2] = 0.05;
     // pkt.dop1 =
     pkt.numSats2 = 18;
     pkt.fix2 = 3;
