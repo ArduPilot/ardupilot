@@ -183,6 +183,8 @@ public:
     // (implemented only in AC_AttitudeControl_TS for tailsitter quadplanes)
     virtual void input_euler_rate_yaw_euler_angle_pitch_bf_roll_cd(bool plane_controls, float euler_roll_angle_cd, 
         float euler_pitch_angle_cd, float euler_yaw_rate_cds) {}
+    virtual void input_euler_rate_yaw_euler_angle_pitch_bf_roll_rad(bool plane_controls, float euler_roll_angle_rad, 
+        float euler_pitch_angle_rad, float euler_yaw_rate_rads) {}
 
     ////// begin rate update functions //////
     // These functions all update _ang_vel_body_rads which is used as the rate target by the rate controller.
