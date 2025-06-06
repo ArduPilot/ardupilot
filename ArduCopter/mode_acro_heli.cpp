@@ -98,24 +98,24 @@ void ModeAcro_Heli::run()
           for fly-bar passthrough use control_in values with no
           deadzone. This gives true pass-through.
          */
-        float roll_in = channel_roll->get_control_in_zero_dz();
-        float pitch_in = channel_pitch->get_control_in_zero_dz();
-        float yaw_in;
+        float roll_in_cd = channel_roll->get_control_in_zero_dz();
+        float pitch_in_cd = channel_pitch->get_control_in_zero_dz();
+        float yaw_in_cd;
         
         if (motors->supports_yaw_passthrough()) {
             // if the tail on a flybar heli has an external gyro then
             // also use no deadzone for the yaw control and
             // pass-through the input direct to output.
-            yaw_in = channel_yaw->get_control_in_zero_dz();
+            yaw_in_cd = channel_yaw->get_control_in_zero_dz();
         } else {
             // if there is no external gyro then run the usual
             // ACRO_YAW_P gain on the input control, including
             // deadzone
-            yaw_in = get_pilot_desired_yaw_rate();
+            yaw_in_cd = get_pilot_desired_yaw_rate();
         }
 
         // run attitude controller
-        attitude_control->passthrough_bf_roll_pitch_rate_yaw(roll_in, pitch_in, yaw_in);
+        attitude_control->passthrough_bf_roll_pitch_rate_yaw_cd(roll_in_cd, pitch_in_cd, yaw_in_cd);
     }
 
     // get pilot's desired throttle
