@@ -119,6 +119,7 @@ private:
     // Navigation controller state
     struct NavStatus {
         float bearing;                  // bearing to vehicle in centi-degrees
+        float target_bearing;           // target bearing in auto modes
         float distance;                 // distance to vehicle in meters
         float pitch;                    // pitch to vehicle in degrees (positive means vehicle is above tracker, negative means below)
         float angle_error_pitch;        // angle error between target and current pitch in centi-degrees
