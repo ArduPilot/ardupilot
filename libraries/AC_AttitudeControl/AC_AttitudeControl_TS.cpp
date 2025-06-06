@@ -58,15 +58,15 @@ void AC_AttitudeControl_TS::relax_attitude_controllers(bool exclude_pitch)
 // Command euler yaw rate and pitch angle with roll angle specified in body frame
 // (used only by tailsitter quadplanes)
 // If plane_controls is true, swap the effects of roll and yaw as euler pitch approaches 90 degrees
-void AC_AttitudeControl_TS::input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool plane_controls, float body_roll_cd, float euler_pitch_cd, float euler_yaw_rate_cds)
+void AC_AttitudeControl_TS::input_euler_rate_yaw_euler_angle_pitch_bf_roll_cd(bool plane_controls, float body_roll_cd, float euler_pitch_cd, float euler_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float euler_yaw_rate = cd_to_rad(euler_yaw_rate_cds);
-    float euler_pitch    = cd_to_rad(constrain_float(euler_pitch_cd, -9000.0f, 9000.0f));
-    float body_roll      = cd_to_rad(-body_roll_cd);
+    float euler_yaw_rate_rads = cd_to_rad(euler_yaw_rate_cds);
+    float euler_pitch_rad    = cd_to_rad(constrain_float(euler_pitch_cd, -9000.0f, 9000.0f));
+    float body_roll_rad      = cd_to_rad(-body_roll_cd);
 
-    const float cpitch = cosf(euler_pitch);
-    const float spitch = fabsf(sinf(euler_pitch));
+    const float cpitch = cosf(euler_pitch_rad);
+    const float spitch = fabsf(sinf(euler_pitch_rad));
 
     // Compute attitude error
     Quaternion attitude_body;
@@ -77,32 +77,32 @@ void AC_AttitudeControl_TS::input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool 
     error_quat.to_axis_angle(att_error);
 
     // update heading
-    float yaw_rate = euler_yaw_rate;
+    float yaw_rate_rad = euler_yaw_rate_rads;
     if (plane_controls) {
-        yaw_rate = (euler_yaw_rate * spitch) + (body_roll * cpitch);
+        yaw_rate_rad = (euler_yaw_rate_rads * spitch) + (body_roll_rad * cpitch);
     }
     // limit yaw error
     float yaw_error = fabsf(att_error.z);
     float error_ratio = yaw_error / M_PI_2;
     if (error_ratio > 1) {
-        yaw_rate /= (error_ratio * error_ratio);
+        yaw_rate_rad /= (error_ratio * error_ratio);
     }
-    _euler_angle_target_rad.z = wrap_PI(_euler_angle_target_rad.z + yaw_rate * _dt);
+    _euler_angle_target_rad.z = wrap_PI(_euler_angle_target_rad.z + yaw_rate_rad * _dt);
 
     // init attitude target to desired euler yaw and pitch with zero roll
-    _attitude_target.from_euler(0, euler_pitch, _euler_angle_target_rad.z);
+    _attitude_target.from_euler(0, euler_pitch_rad, _euler_angle_target_rad.z);
 
     // apply body-frame yaw/roll (this is roll/yaw for a tailsitter in forward flight)
-    // rotate body_roll axis by |sin(pitch angle)|
+    // rotate body_roll_rad axis by |sin(pitch angle)|
     Quaternion bf_roll_Q;
-    bf_roll_Q.from_axis_angle(Vector3f(0, 0, spitch * body_roll));
+    bf_roll_Q.from_axis_angle(Vector3f(0, 0, spitch * body_roll_rad));
 
     // rotate body_yaw axis by cos(pitch angle)
     Quaternion bf_yaw_Q;
     if (plane_controls) {
-        bf_yaw_Q.from_axis_angle(Vector3f(cpitch, 0, 0), euler_yaw_rate);
+        bf_yaw_Q.from_axis_angle(Vector3f(cpitch, 0, 0), euler_yaw_rate_rads);
     } else {
-        bf_yaw_Q.from_axis_angle(Vector3f(-cpitch * body_roll, 0, 0));
+        bf_yaw_Q.from_axis_angle(Vector3f(-cpitch * body_roll_rad, 0, 0));
     }
     _attitude_target = _attitude_target * bf_roll_Q * bf_yaw_Q;
 
@@ -111,7 +111,7 @@ void AC_AttitudeControl_TS::input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool 
     // Also note that _attitude_target.from_euler() should only be used in special circumstances
     // such as when attitude is specified directly in terms of Euler angles.
     //    _euler_angle_target_rad.x = _attitude_target.get_euler_roll();
-    //    _euler_angle_target_rad.y = euler_pitch;
+    //    _euler_angle_target_rad.y = euler_pitch_rad;
 
     // Set rate feedforward requests to zero
     _euler_rate_target_rads.zero();
