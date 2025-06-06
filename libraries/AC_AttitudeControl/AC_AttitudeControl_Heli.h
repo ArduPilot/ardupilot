@@ -45,7 +45,7 @@ public:
     const AC_PID& get_rate_yaw_pid() const override { return _pid_rate_yaw; }
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
-    void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) override;
+    void passthrough_bf_roll_pitch_rate_yaw_cd(float roll_passthrough_cd, float pitch_passthrough_cd, float yaw_rate_bf_cds) override;
 
     // subclass non-passthrough too, for external gyro, no flybar
     void input_rate_bf_roll_pitch_yaw_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds) override;
@@ -129,11 +129,11 @@ private:
     //
     
     // pass through for roll and pitch
-    float _passthrough_roll;
-    float _passthrough_pitch;
+    float _passthrough_roll_cd;
+    float _passthrough_pitch_cd;
 
     // pass through for yaw if tail_passthrough is set
-    float _passthrough_yaw;
+    float _passthrough_yaw_cd;
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
     float get_roll_trim_rad() override { return cd_to_rad(get_roll_trim_cd()); }
@@ -149,7 +149,7 @@ private:
 
     // parameters
     AP_Int8         _piro_comp_enabled;             // Flybar present or not.  Affects attitude controller used during ACRO flight mode
-    AP_Int16        _hover_roll_trim;               // Angle in centi-degrees used to counter tail rotor thrust in hover
+    AP_Int16        _hover_roll_trim_cd;               // Angle in centi-degrees used to counter tail rotor thrust in hover
 
     // Roll and Pitch rate PIDs share the same defaults:
     const AC_PID::Defaults rp_defaults {
