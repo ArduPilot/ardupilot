@@ -393,6 +393,8 @@ float AC_AttitudeControl_Sub::get_throttle_boosted(float throttle_in)
     return throttle_out;
 }
 
+// Returns a throttle value that accounts for the priority of attitude control over throttle.
+// This allows graceful reduction of control authority as thrust approaches its minimum.
 // returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1
 float AC_AttitudeControl_Sub::get_throttle_avg_max(float throttle_in)
@@ -401,7 +403,8 @@ float AC_AttitudeControl_Sub::get_throttle_avg_max(float throttle_in)
     return MAX(throttle_in, throttle_in*MAX(0.0f,1.0f-_throttle_rpy_mix)+_motors.get_throttle_hover()*_throttle_rpy_mix);
 }
 
-// update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
+// Slews the throttle-to-attitude mix ratio (_throttle_rpy_mix) toward the requested value (_throttle_rpy_mix_desired).
+// Increases rapidly and decreases more slowly to ensure stability during transitions.
 void AC_AttitudeControl_Sub::update_throttle_rpy_mix()
 {
     // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
@@ -451,7 +454,9 @@ void AC_AttitudeControl_Sub::parameter_sanity_check()
     }
 }
 
-// This function ensures that the ROV reaches the target orientation with the desired yaw rate
+// Sets desired roll, pitch, and yaw angles (in centidegrees), with yaw slewing.
+// Slews toward target yaw at a fixed rate (in centidegrees/s) until the error is within 5 degrees.
+// Used to enforce consistent heading changes without large instantaneous yaw errors.
 void AC_AttitudeControl_Sub::input_euler_angle_roll_pitch_slew_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float target_yaw_rate)
 {
     // Convert from centidegrees on public interface to radians
