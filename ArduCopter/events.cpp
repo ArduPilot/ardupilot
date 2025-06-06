@@ -39,6 +39,12 @@ void Copter::failsafe_radio_on_event()
         case FS_THR_ENABLED_BRAKE_OR_LAND:
             desired_action = FailsafeAction::BRAKE_LAND;
             break;
+#if MODE_FAILSAFE_COMPASS_ENABLED
+        case FS_THR_ENABLED_COMPASS:
+            // For POC, directly switch to failsafe compass mode
+            set_mode(Mode::Number::FAILSAFE_COMPASS, ModeReason::RADIO_FAILSAFE);
+            return;  // Exit early as we've handled the mode change
+#endif
         default:
             desired_action = FailsafeAction::LAND;
     }

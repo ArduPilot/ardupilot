@@ -667,6 +667,11 @@ public:
     AP_Int16                failsafe_dr_timeout;
     AP_Float                surftrak_tc;
 
+#if MODE_FAILSAFE_COMPASS_ENABLED
+    // Failsafe compass heading parameter
+    AP_Int16                fs_compass_heading;     // Target heading in degrees (0-359)
+#endif
+
     // ramp time of throttle during take-off
     AP_Float takeoff_throttle_slew_time;
     AP_Float takeoff_throttle_max;

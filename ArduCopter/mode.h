@@ -100,6 +100,7 @@ public:
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
+        FAILSAFE_COMPASS = 29,  // Failsafe mode using compass heading only
 
         // Mode number 30 reserved for "offboard" for external/lua control.
 
@@ -2057,5 +2058,50 @@ private:
         LANDED,
     } current_phase;
 
+};
+#endif
+
+#if MODE_FAILSAFE_COMPASS_ENABLED
+class ModeFailsafeCompass : public Mode {
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+    Number mode_number() const override { return Number::FAILSAFE_COMPASS; }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    // Does not require GPS
+    bool requires_GPS() const override { return false; }
+    // Failsafe controls throttle
+    bool has_manual_throttle() const override { return false; }
+    // This is an autopilot mode
+    bool is_autopilot() const override { return true; }
+    // Generally should not allow arming in failsafe mode
+    bool allows_arming(AP_Arming::Method method) const override { return false; }
+    
+    // Interface for navigation info
+    float wp_distance_m() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return 0.0f; }
+
+protected:
+    const char *name() const override { return "FAILSAFE_COMPASS"; }
+    const char *name4() const override { return "FSCP"; }
+
+private:
+    // Configuration constants for POC
+    static constexpr float FAILSAFE_COMPASS_SPEED_CMS = 500.0f;     // 5 m/s forward speed
+    static constexpr float FAILSAFE_COMPASS_PITCH_DEG = 10.0f;      // 10 degree forward pitch  
+    static constexpr float FAILSAFE_COMPASS_VEL_P_GAIN = 2.0f;      // Velocity to angle P gain
+    static constexpr float FAILSAFE_COMPASS_ALT_TOLERANCE_CM = 200.0f; // 2m altitude tolerance
+
+    // Target heading in degrees
+    float _target_heading_deg;
+    
+    // Target velocity components (NED frame)
+    float _target_vel_x;
+    float _target_vel_y;
 };
 #endif

@@ -205,7 +205,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
     // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
-    // @Values:  0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode (Removed in 4.0+),3:Enabled always Land,4:Enabled always SmartRTL or RTL,5:Enabled always SmartRTL or Land,6:Enabled Auto DO_LAND_START/DO_RETURN_PATH_START or RTL,7:Enabled always Brake or Land
+    // @Values:  0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode (Removed in 4.0+),3:Enabled always Land,4:Enabled always SmartRTL or RTL,5:Enabled always SmartRTL or Land,6:Enabled Auto DO_LAND_START/DO_RETURN_PATH_START or RTL,7:Enabled always Brake or Land,8:Enabled Compass Failsafe
     // @User: Standard
     GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   FS_THR_ENABLED_ALWAYS_RTL),
 
@@ -1204,6 +1204,17 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Advanced
     // @Range: 1 10
     AP_GROUPINFO("FSTRATE_DIV", 10, ParametersG2, att_decimation, 1),
+#endif
+
+#if MODE_FAILSAFE_COMPASS_ENABLED
+    // @Param: FS_COMPASS_HDG
+    // @DisplayName: Failsafe Compass Heading
+    // @Description: Target heading in degrees (0-359) for failsafe compass mode. Aircraft will turn to and maintain this heading when radio failsafe triggers and this mode is enabled
+    // @Units: deg
+    // @Range: 0 359
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FS_COMPASS_HDG", 11, ParametersG2, fs_compass_heading, 0),
 #endif
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
