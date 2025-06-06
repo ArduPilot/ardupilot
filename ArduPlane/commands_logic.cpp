@@ -893,8 +893,8 @@ bool ModeAuto::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
 // verify_nav_delay - check if we have waited long enough
 bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (AP::arming().is_armed_and_safety_off()) {
-        // don't delay while armed, we need a nav controller running
+    if (AP::arming().is_armed_and_safety_off() && !plane.quadplane.in_vtol_mode()) {
+        // don't delay while armed and not in VTOL mode, we need a nav controller running
         return true;
     }
     if (millis() - nav_delay.time_start_ms > nav_delay.time_max_ms) {
