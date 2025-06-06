@@ -452,7 +452,7 @@ void AC_AttitudeControl_Sub::parameter_sanity_check()
 }
 
 // This function ensures that the ROV reaches the target orientation with the desired yaw rate
-void AC_AttitudeControl_Sub::input_euler_angle_roll_pitch_slew_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float target_yaw_rate)
+void AC_AttitudeControl_Sub::input_euler_angle_roll_pitch_slew_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float target_yaw_rate)
 {
     // Convert from centidegrees on public interface to radians
     const float euler_yaw_angle = wrap_PI(cd_to_rad(euler_yaw_angle_cd));
@@ -470,7 +470,6 @@ void AC_AttitudeControl_Sub::input_euler_angle_roll_pitch_slew_yaw(float euler_r
     }
 
     target_yaw_rate *= direction;
-
 
     if (fabsf(yaw_error) > MAX_YAW_ERROR) {
         // rotate the rov with desired yaw rate towards the target yaw
