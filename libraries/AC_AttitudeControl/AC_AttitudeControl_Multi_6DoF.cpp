@@ -35,62 +35,62 @@ void AC_AttitudeControl_Multi_6DoF::rate_controller_run() {
 */
 
 // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
-void AC_AttitudeControl_Multi_6DoF::input_euler_angle_roll_pitch_euler_rate_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds) {
+void AC_AttitudeControl_Multi_6DoF::input_euler_angle_roll_pitch_euler_rate_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_rate_rads) {
 
-    set_forward_lateral_cd(euler_pitch_angle_cd, euler_roll_angle_cd);
+    set_forward_lateral_rad(euler_pitch_angle_rad, euler_roll_angle_rad);
 
-    AC_AttitudeControl_Multi::input_euler_angle_roll_pitch_euler_rate_yaw_cd(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_rate_cds);
+    AC_AttitudeControl_Multi::input_euler_angle_roll_pitch_euler_rate_yaw_rad(euler_roll_angle_rad, euler_pitch_angle_rad, euler_yaw_rate_rads);
 }
 
 // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
-void AC_AttitudeControl_Multi_6DoF::input_euler_angle_roll_pitch_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw) {
+void AC_AttitudeControl_Multi_6DoF::input_euler_angle_roll_pitch_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_angle_rad, bool slew_yaw) {
 
-    set_forward_lateral_cd(euler_pitch_angle_cd, euler_roll_angle_cd);
+    set_forward_lateral_rad(euler_pitch_angle_rad, euler_roll_angle_rad);
 
-    AC_AttitudeControl_Multi::input_euler_angle_roll_pitch_yaw_cd(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_angle_cd, slew_yaw);
+    AC_AttitudeControl_Multi::input_euler_angle_roll_pitch_yaw_rad(euler_roll_angle_rad, euler_pitch_angle_rad, euler_yaw_angle_rad, slew_yaw);
 }
 
 // Command a thrust vector and heading rate
-void AC_AttitudeControl_Multi_6DoF::input_thrust_vector_rate_heading_cds(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw)
+void AC_AttitudeControl_Multi_6DoF::input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw)
 {
     // convert thrust vector to a roll and pitch angles
     // this negates the advantage of using thrust vector control, but works just fine
     Vector3f angle_target = attitude_from_thrust_vector(thrust_vector, _ahrs.yaw).to_vector312();
 
-    input_euler_angle_roll_pitch_euler_rate_yaw_cd(degrees(angle_target.x) * 100.0f, degrees(angle_target.y) * 100.0f, heading_rate_cds);
+    input_euler_angle_roll_pitch_euler_rate_yaw_rad(angle_target.x, angle_target.y, heading_rate_rads);
 }
 
 // Command a thrust vector, heading and heading rate
-void AC_AttitudeControl_Multi_6DoF::input_thrust_vector_heading_cd(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds)
+void AC_AttitudeControl_Multi_6DoF::input_thrust_vector_heading_rad(const Vector3f& thrust_vector, float heading_angle_rad, float heading_rate_rads)
 {
     // convert thrust vector to a roll and pitch angles
     Vector3f angle_target = attitude_from_thrust_vector(thrust_vector, _ahrs.yaw).to_vector312();
 
     // note that we are throwing away heading rate here
-    input_euler_angle_roll_pitch_yaw_cd(degrees(angle_target.x) * 100.0f, degrees(angle_target.y) * 100.0f, heading_angle_cd, true);
+    input_euler_angle_roll_pitch_yaw_rad(angle_target.x, angle_target.y, heading_angle_rad, true);
 }
 
-void AC_AttitudeControl_Multi_6DoF::set_forward_lateral_cd(float &euler_pitch_angle_cd, float &euler_roll_angle_cd)
+void AC_AttitudeControl_Multi_6DoF::set_forward_lateral_rad(float &euler_pitch_angle_rad, float &euler_roll_angle_rad)
 {
     // pitch/forward
     if (forward_enable) {
-        _motors.set_forward(-sinf(cd_to_rad(euler_pitch_angle_cd)));
-        euler_pitch_angle_cd = pitch_offset_deg * 100.0f;
+        _motors.set_forward(-sinf(euler_pitch_angle_rad));
+        euler_pitch_angle_rad = radians(pitch_offset_deg);
     } else {
         _motors.set_forward(0.0f);
-        euler_pitch_angle_cd += pitch_offset_deg * 100.0f;
+        euler_pitch_angle_rad += radians(pitch_offset_deg);
     }
-    euler_pitch_angle_cd = wrap_180_cd(euler_pitch_angle_cd);
+    euler_pitch_angle_rad = wrap_PI(euler_pitch_angle_rad);
 
     // roll/lateral
     if (lateral_enable) {
-        _motors.set_lateral(sinf(cd_to_rad(euler_roll_angle_cd)));
-        euler_roll_angle_cd = roll_offset_deg * 100.0f;
+        _motors.set_lateral(sinf(euler_roll_angle_rad));
+        euler_roll_angle_rad = radians(roll_offset_deg);
     } else {
         _motors.set_lateral(0.0f);
-        euler_roll_angle_cd += roll_offset_deg * 100.0f;
+        euler_roll_angle_rad += radians(roll_offset_deg);
     }
-    euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd);
+    euler_roll_angle_rad = wrap_PI(euler_roll_angle_rad);
 }
 
 /*
@@ -99,51 +99,51 @@ void AC_AttitudeControl_Multi_6DoF::set_forward_lateral_cd(float &euler_pitch_an
 
 // Command euler yaw rate and pitch angle with roll angle specified in body frame
 // (used only by tailsitter quadplanes)
-void AC_AttitudeControl_Multi_6DoF::input_euler_rate_yaw_euler_angle_pitch_bf_roll_cd(bool plane_controls, float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds) {
+void AC_AttitudeControl_Multi_6DoF::input_euler_rate_yaw_euler_angle_pitch_bf_roll_rad(bool plane_controls, float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_rate_rads) {
     _motors.set_lateral(0.0f);
     _motors.set_forward(0.0f);
 
-    AC_AttitudeControl_Multi::input_euler_rate_yaw_euler_angle_pitch_bf_roll_cd(plane_controls, euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_rate_cds);
+    AC_AttitudeControl_Multi::input_euler_rate_yaw_euler_angle_pitch_bf_roll_rad(plane_controls, euler_roll_angle_rad, euler_pitch_angle_rad, euler_yaw_rate_rads);
 }
 
 // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
-void AC_AttitudeControl_Multi_6DoF::input_euler_rate_roll_pitch_yaw_cds(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds) {
+void AC_AttitudeControl_Multi_6DoF::input_euler_rate_roll_pitch_yaw_rads(float euler_roll_rate_rads, float euler_pitch_rate_rads, float euler_yaw_rate_rads) {
     _motors.set_lateral(0.0f);
     _motors.set_forward(0.0f);
 
-    AC_AttitudeControl_Multi::input_euler_rate_roll_pitch_yaw_cds(euler_roll_rate_cds, euler_pitch_rate_cds, euler_yaw_rate_cds);
+    AC_AttitudeControl_Multi::input_euler_rate_roll_pitch_yaw_rads(euler_roll_rate_rads, euler_pitch_rate_rads, euler_yaw_rate_rads);
 }
 
 // Command an angular velocity with angular velocity feedforward and smoothing
-void AC_AttitudeControl_Multi_6DoF::input_rate_bf_roll_pitch_yaw_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds) {
+void AC_AttitudeControl_Multi_6DoF::input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads) {
     _motors.set_lateral(0.0f);
     _motors.set_forward(0.0f);
 
-    AC_AttitudeControl_Multi::input_rate_bf_roll_pitch_yaw_cds(roll_rate_bf_cds, pitch_rate_bf_cds, yaw_rate_bf_cds);
+    AC_AttitudeControl_Multi::input_rate_bf_roll_pitch_yaw_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
 
 // Command an angular velocity with angular velocity feedforward and smoothing
-void AC_AttitudeControl_Multi_6DoF::input_rate_bf_roll_pitch_yaw_2_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds) {
+void AC_AttitudeControl_Multi_6DoF::input_rate_bf_roll_pitch_yaw_2_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads) {
     _motors.set_lateral(0.0f);
     _motors.set_forward(0.0f);
 
-    AC_AttitudeControl_Multi::input_rate_bf_roll_pitch_yaw_2_cds(roll_rate_bf_cds, pitch_rate_bf_cds, yaw_rate_bf_cds);
+    AC_AttitudeControl_Multi::input_rate_bf_roll_pitch_yaw_2_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
 
 // Command an angular velocity with angular velocity smoothing using rate loops only with integrated rate error stabilization
-void AC_AttitudeControl_Multi_6DoF::input_rate_bf_roll_pitch_yaw_3_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds) {
+void AC_AttitudeControl_Multi_6DoF::input_rate_bf_roll_pitch_yaw_3_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads) {
     _motors.set_lateral(0.0f);
     _motors.set_forward(0.0f);
 
-    AC_AttitudeControl_Multi::input_rate_bf_roll_pitch_yaw_3_cds(roll_rate_bf_cds, pitch_rate_bf_cds, yaw_rate_bf_cds);
+    AC_AttitudeControl_Multi::input_rate_bf_roll_pitch_yaw_3_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
 
 // Command an angular step (i.e change) in body frame angle
-void AC_AttitudeControl_Multi_6DoF::input_angle_step_bf_roll_pitch_yaw_cd(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd) {
+void AC_AttitudeControl_Multi_6DoF::input_angle_step_bf_roll_pitch_yaw_rad(float roll_angle_step_bf_rad, float pitch_angle_step_bf_rad, float yaw_angle_step_bf_rad) {
     _motors.set_lateral(0.0f);
     _motors.set_forward(0.0f);
 
-    AC_AttitudeControl_Multi::input_angle_step_bf_roll_pitch_yaw_cd(roll_angle_step_bf_cd, pitch_angle_step_bf_cd, yaw_angle_step_bf_cd);
+    AC_AttitudeControl_Multi::input_angle_step_bf_roll_pitch_yaw_rad(roll_angle_step_bf_rad, pitch_angle_step_bf_rad, yaw_angle_step_bf_rad);
 }
 
 // Command a Quaternion attitude with feedforward and smoothing
