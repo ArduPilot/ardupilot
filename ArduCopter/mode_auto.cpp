@@ -2266,12 +2266,12 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
-    const float turns = cmd.get_loiter_turns();
+    const int turns = cmd.get_loiter_turns();  // 0 to 255 turns
 
-    const auto num_circles_completed = fabsf(copter.circle_nav->get_angle_total_rad()/float(M_2PI));
-    if (int(num_circles_completed) != int(circle_last_num_complete)) {
+    const int num_circles_completed = fabsf(copter.circle_nav->get_angle_total_rad()/float(M_2PI));
+    if (num_circles_completed != circle_last_num_complete) {
         circle_last_num_complete = num_circles_completed;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: starting circle %u/%u", unsigned(num_circles_completed)+1, unsigned(turns));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: starting circle %u/%u", num_circles_completed+1, unsigned(turns));
     }
 
     // check if we have completed circling
