@@ -14,7 +14,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 10
     // @Range: 0 1000
     // @User: Advanced
-    AP_GROUPINFO("HOVR_ROL_TRM",    1, AC_AttitudeControl_Heli, _hover_roll_trim, AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT),
+    AP_GROUPINFO("HOVR_ROL_TRM",    1, AC_AttitudeControl_Heli, _hover_roll_trim_cd, AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT),
 
     // @Param: RAT_RLL_P
     // @DisplayName: Roll axis rate controller P gain
@@ -321,16 +321,16 @@ AC_AttitudeControl_Heli::AC_AttitudeControl_Heli(AP_AHRS_View &ahrs, const AP_Mu
 }
 
 // passthrough_bf_roll_pitch_rate_yaw - passthrough the pilots roll and pitch inputs directly to swashplate for flybar acro mode
-void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds)
+void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw_cd(float roll_passthrough_cd, float pitch_passthrough_cd, float yaw_rate_bf_cds)
 {
     // convert from centidegrees on public interface to radians
     float yaw_rate_bf_rads = cd_to_rad(yaw_rate_bf_cds);
 
     // store roll, pitch and passthroughs
     // NOTE: this abuses yaw_rate_bf_rads
-    _passthrough_roll = roll_passthrough;
-    _passthrough_pitch = pitch_passthrough;
-    _passthrough_yaw = degrees(yaw_rate_bf_rads) * 100.0f;
+    _passthrough_roll_cd = roll_passthrough_cd;
+    _passthrough_pitch_cd = pitch_passthrough_cd;
+    _passthrough_yaw_cd = degrees(yaw_rate_bf_rads) * 100.0f;
 
     // set rate controller to use pass through
     _flags_heli.flybar_passthrough = true;
@@ -404,7 +404,7 @@ void AC_AttitudeControl_Heli::integrate_bf_rate_error_to_angle_errors()
 // subclass non-passthrough too, for external gyro, no flybar
 void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
-    _passthrough_yaw = yaw_rate_bf_cds;
+    _passthrough_yaw_cd = yaw_rate_bf_cds;
 
     AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_cds(roll_rate_bf_cds, pitch_rate_bf_cds, yaw_rate_bf_cds);
 }
@@ -425,13 +425,13 @@ void AC_AttitudeControl_Heli::rate_controller_run()
     // call rate controllers and send output to motors object
     // if using a flybar passthrough roll and pitch directly to motors
     if (_flags_heli.flybar_passthrough) {
-        _motors.set_roll(_passthrough_roll / 4500.0f);
-        _motors.set_pitch(_passthrough_pitch / 4500.0f);
+        _motors.set_roll(_passthrough_roll_cd / 4500.0f);
+        _motors.set_pitch(_passthrough_pitch_cd / 4500.0f);
     } else {
         rate_bf_to_motor_roll_pitch(_rate_gyro_rads, _ang_vel_body_rads.x, _ang_vel_body_rads.y);
     }
     if (_flags_heli.tail_passthrough) {
-        _motors.set_yaw(_passthrough_yaw / 4500.0f);
+        _motors.set_yaw(_passthrough_yaw_cd / 4500.0f);
     } else {
         _motors.set_yaw(rate_target_to_motor_yaw(_rate_gyro_rads.z, _ang_vel_body_rads.z));
     }
@@ -578,7 +578,7 @@ float AC_AttitudeControl_Heli::get_roll_trim_cd()
 {
     // hover roll trim is given the opposite sign in inverted flight since the tail rotor thrust is pointed in the opposite direction. 
     float inverted_factor = constrain_float(2.0f * _ahrs.cos_roll(), -1.0f, 1.0f);
-    return constrain_float(_hover_roll_trim_scalar * _hover_roll_trim * inverted_factor, -1000.0f,1000.0f);
+    return constrain_float(_hover_roll_trim_scalar * _hover_roll_trim_cd * inverted_factor, -1000.0f,1000.0f);
 }
 
 // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
