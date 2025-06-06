@@ -137,4 +137,9 @@ void AP_AHRS_External::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVe
     ekfNavVelGainScaler = 0.5;
 }
 
+bool AP_AHRS_External::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+{
+    return AP::externalAHRS().get_variances(velVar, posVar, hgtVar, magVar, tasVar);
+}
+
 #endif

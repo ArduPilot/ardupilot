@@ -24,6 +24,7 @@
 #include "AP_ExternalAHRS_backend.h"
 #include "AP_ExternalAHRS_VectorNav.h"
 #include "AP_ExternalAHRS_MicroStrain5.h"
+#include "AP_ExternalAHRS_AdvancedNavigation.h"
 #include "AP_ExternalAHRS_MicroStrain7.h"
 #include "AP_ExternalAHRS_InertialLabs.h"
 
@@ -115,6 +116,12 @@ void AP_ExternalAHRS::init(void)
 #if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
     case DevType::MicroStrain5:
         backend = NEW_NOTHROW AP_ExternalAHRS_MicroStrain5(this, state);
+        return;
+#endif
+
+#if AP_EXTERNAL_AHRS_ADNAV_ENABLED
+    case DevType::AdNav:
+        backend = NEW_NOTHROW AP_ExternalAHRS_AdvancedNavigation(this, state);
         return;
 #endif
 
