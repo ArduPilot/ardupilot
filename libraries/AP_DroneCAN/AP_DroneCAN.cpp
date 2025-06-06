@@ -129,7 +129,17 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: DroneCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:HobbyWingESC,8:EnableStats,9:EnableFlexDebug
+    // @Bitmask: 0: Clear dynamic node allocation database
+    // @Bitmask: 1: Ignore dynamic node allocation conflicts
+    // @Bitmask: 2: Enable CANFD support
+    // @Bitmask: 3: Ignore unhealthy nodes in dynamic node allocation
+    // @Bitmask: 4: Send servo commands as PWM
+    // @Bitmask: 5: Send GNSS packets onto the bus
+    // @Bitmask: 6: Use Himark servo protocol
+    // @Bitmask: 7: Use HobbyWing ESC protocol
+    // @Bitmask: 8: Enable DroneCAN statistics
+    // @Bitmask: 9: Enable DroneCAN FlexDebug messages
+    // @Bitmask: 10: Ignore ESC offset on receive
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_DroneCAN, _options, 0),
     
@@ -622,8 +632,11 @@ bool AP_DroneCAN::hobbywing_find_esc_index(uint8_t node_id, uint8_t &esc_index) 
 {
     for (uint8_t i=0; i<HOBBYWING_MAX_ESC; i++) {
         if (hobbywing.thr_chan[i] == node_id) {
-            const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
-            esc_index = i + esc_offset;
+            esc_index = i;
+            if (!option_is_set(Options::IGNORE_ESC_OFFSET_RECEIVE)) {
+                const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+                esc_index += esc_offset;
+            }
             return true;
         }
     }
@@ -1466,7 +1479,10 @@ void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, 
 void AP_DroneCAN::handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg)
 {
 #if HAL_WITH_ESC_TELEM
-    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    uint8_t esc_offset = 0;
+    if (!option_is_set(Options::IGNORE_ESC_OFFSET_RECEIVE)) {
+        esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    }
     const uint8_t esc_index = msg.esc_index + esc_offset;
 
     if (!is_esc_data_index_valid(esc_index)) {
@@ -1500,7 +1516,10 @@ void AP_DroneCAN::handle_ESC_status(const CanardRxTransfer& transfer, const uavc
  */
 void AP_DroneCAN::handle_esc_ext_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_StatusExtended& msg)
 {
-    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    uint8_t esc_offset = 0;
+    if (!option_is_set(Options::IGNORE_ESC_OFFSET_RECEIVE)) {
+        esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    }
     const uint8_t esc_index = msg.esc_index + esc_offset;
 
     if (!is_esc_data_index_valid(esc_index)) {
