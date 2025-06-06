@@ -2,7 +2,7 @@
 
 ## What is Failsafe Compass Mode?
 
-Failsafe Compass Mode is a new emergency feature for ArduCopter that helps your drone escape from its current location when radio contact is lost. Unlike RTL (Return to Launch) which requires GPS, this mode only needs a compass and can work indoors or in areas with poor GPS reception.
+Failsafe Compass Mode is a new emergency feature for ArduCopter that helps your drone escape from its current location when radio contact is lost. Unlike RTL (Return to Launch) which requires GPS, this mode only needs a compass and barometer - no GPS or velocity sensors required. It can work completely indoors or in areas with no GPS reception.
 
 When activated, your drone will:
 1. Climb to a safe altitude
@@ -56,7 +56,7 @@ When your transmitter signal is lost:
 1. **Immediate Response**: The drone detects radio failsafe
 2. **Climb Phase**: Climbs to RTL altitude to clear obstacles
 3. **Turn Phase**: Rotates to face your preset compass heading
-4. **Escape Phase**: Flies forward at 5 m/s (18 km/h) in that direction
+4. **Escape Phase**: Pitches forward at a fixed 10-degree angle in that direction
 5. **Recovery**: Continues until you regain radio control
 
 ## Important Safety Information
@@ -64,6 +64,7 @@ When your transmitter signal is lost:
 ### Limitations
 - **No obstacle avoidance** - The drone will fly straight into anything in its path
 - **No position holding** - Wind will push the drone off course
+- **No velocity control** - Speed depends on pitch angle and environmental conditions
 - **No return home** - It keeps flying in one direction
 - **Battery limits** - Will fly until battery dies if you don't regain control
 

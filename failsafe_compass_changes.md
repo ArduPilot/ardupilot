@@ -19,10 +19,10 @@ This document details all code changes made to implement the Failsafe Compass mo
 
 #### `/ArduCopter/mode.h`
 - **Line 103**: Added `FAILSAFE_COMPASS = 29` to Mode::Number enum
-- **Lines 2064-2107**: Added `ModeFailsafeCompass` class declaration with:
+- **Lines 2064-2101**: Added `ModeFailsafeCompass` class declaration with:
   - Mode configuration (no GPS required, autopilot mode, no manual throttle)
   - Navigation interface methods
-  - Private member variables for heading and velocity targets
+  - Private member variable for heading target only
 
 #### `/ArduCopter/config.h`
 - **Lines 241-245**: Added `MODE_FAILSAFE_COMPASS_ENABLED` definition (enabled by default)
@@ -64,15 +64,16 @@ This document details all code changes made to implement the Failsafe Compass mo
    - Maintains heading using yaw control
 
 3. **Forward Flight**:
-   - Fixed 5 m/s forward speed
-   - Uses 10-degree pitch angle
-   - Simple velocity-to-pitch P controller
+   - Open-loop control with fixed 10-degree pitch angle
+   - No velocity feedback required (GPS-free operation)
+   - Simple pitch command in target heading direction
 
 ### Technical Notes
 - Uses UP axis position controller APIs (unified position)
-- Gets velocity from AHRS NED output
+- Open-loop control - no velocity feedback needed
 - No position control - pure heading and pitch based flight
 - No obstacle avoidance or terrain following
+- Completely GPS-free operation
 
 ## Build System
 - No changes needed to wscript - mode files are automatically included

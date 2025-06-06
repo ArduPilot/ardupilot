@@ -2092,16 +2092,10 @@ protected:
 
 private:
     // Configuration constants for POC
-    static constexpr float FAILSAFE_COMPASS_SPEED_CMS = 500.0f;     // 5 m/s forward speed
     static constexpr float FAILSAFE_COMPASS_PITCH_DEG = 10.0f;      // 10 degree forward pitch  
-    static constexpr float FAILSAFE_COMPASS_VEL_P_GAIN = 2.0f;      // Velocity to angle P gain
     static constexpr float FAILSAFE_COMPASS_ALT_TOLERANCE_CM = 200.0f; // 2m altitude tolerance
 
     // Target heading in degrees
     float _target_heading_deg;
-    
-    // Target velocity components (NED frame)
-    float _target_vel_x;
-    float _target_vel_y;
 };
 #endif

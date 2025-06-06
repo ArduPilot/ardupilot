@@ -16,13 +16,6 @@ bool ModeFailsafeCompass::init(bool ignore_checks)
 
     // set initial target heading to configured failsafe heading
     _target_heading_deg = g2.fs_compass_heading;
-    
-    // convert heading to radians
-    float target_heading_rad = radians(_target_heading_deg);
-    
-    // calculate target velocity vector from heading and default speed
-    _target_vel_x = FAILSAFE_COMPASS_SPEED_CMS * sinf(target_heading_rad);
-    _target_vel_y = FAILSAFE_COMPASS_SPEED_CMS * cosf(target_heading_rad);
 
     return true;
 }
@@ -61,38 +54,15 @@ void ModeFailsafeCompass::run()
     // Send the commanded climb rate to the position controller
     pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate);
 
-    // Convert target heading to radians
-    float target_heading_rad = radians(_target_heading_deg);
+    // Open-loop control: Calculate fixed pitch based on target heading
+    // Pitch forward in the direction of the target heading
+    float target_pitch_cd = FAILSAFE_COMPASS_PITCH_DEG * 100;  // Fixed 10 degrees forward pitch
+    float target_roll_cd = 0;  // No roll for straight flight
     
-    // Calculate target velocity vector from heading and default speed
-    float target_vel_x = FAILSAFE_COMPASS_SPEED_CMS * sinf(target_heading_rad);
-    float target_vel_y = FAILSAFE_COMPASS_SPEED_CMS * cosf(target_heading_rad);
-    
-    // Get current velocity from AHRS
-    Vector3f vel_ned;
-    if (!ahrs.get_velocity_NED(vel_ned)) {
-        // If we can't get velocity, use zero
-        vel_ned.zero();
-    }
-    // Convert from m/s to cm/s and extract horizontal components
-    Vector2f curr_vel(vel_ned.x * 100.0f, vel_ned.y * 100.0f);
-    
-    // Calculate velocity error
-    float vel_error_x = target_vel_x - curr_vel.x;
-    float vel_error_y = target_vel_y - curr_vel.y;
-    
-    // Convert velocity error to lean angles using simple P controller
-    float target_roll_cd = -vel_error_y * FAILSAFE_COMPASS_VEL_P_GAIN;
-    float target_pitch_cd = vel_error_x * FAILSAFE_COMPASS_VEL_P_GAIN;
-    
-    // Constrain lean angles to fixed 10 degrees for POC
-    target_roll_cd = constrain_float(target_roll_cd, -FAILSAFE_COMPASS_PITCH_DEG * 100, FAILSAFE_COMPASS_PITCH_DEG * 100);
-    target_pitch_cd = constrain_float(target_pitch_cd, -FAILSAFE_COMPASS_PITCH_DEG * 100, FAILSAFE_COMPASS_PITCH_DEG * 100);
-
     // Calculate target yaw from target heading
-    float target_yaw_cd = target_heading_rad * RAD_TO_DEG * 100.0f;
+    float target_yaw_cd = _target_heading_deg * 100.0f;
     
-    // Call attitude controller
+    // Call attitude controller with fixed angles (open-loop)
     attitude_control->input_euler_angle_roll_pitch_yaw_cd(target_roll_cd, target_pitch_cd, target_yaw_cd, true);
     
     // Update altitude controller
