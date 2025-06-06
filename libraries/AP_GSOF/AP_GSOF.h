@@ -205,6 +205,12 @@ private:
     void parse_ins_rms(uint32_t a);
     void parse_llh_msl(uint32_t a);
 
+#if HAL_LOGGING_ENABLED
+    void log_pos_time() const;
+    void log_ins_full_nav() const;
+    void log_ins_rms() const;
+    void log_llh_msl() const;
+#endif // HAL_LOGGING_ENABLED
 
     struct Msg_Parser {
 

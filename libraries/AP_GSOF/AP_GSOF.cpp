@@ -112,7 +112,7 @@ AP_GSOF::process_message(MsgTypes& parsed_msgs)
                 parse_vel(a);
                 break;
             case DOP:
-                parse_dop(a);
+                parse_dop(a);     
                 break;
             case POS_SIGMA:
                 parse_pos_sigma(a);
@@ -149,6 +149,8 @@ void AP_GSOF::parse_pos_time(uint32_t a)
     pos_time.num_sats = msg.data[a + 6];
     pos_time.pos_flags1 = msg.data[a + 7];
     pos_time.pos_flags2 = msg.data[a + 8];
+
+    log_pos_time();
 }
 
 void AP_GSOF::parse_pos(uint32_t a)
@@ -210,7 +212,14 @@ void AP_GSOF::parse_ins_full_nav(uint32_t a)
     ins_full_nav.pitch_deg = be64todouble_ptr(msg.data, a + 56);
     ins_full_nav.heading_deg = be64todouble_ptr(msg.data, a + 64);
     ins_full_nav.track_angle_deg = be64todouble_ptr(msg.data, a + 72);
-    // Remaining data is currently unused.
+    ins_full_nav.ang_rate_x = be32tofloat_ptr(msg.data, a + 80);
+    ins_full_nav.ang_rate_y = be32tofloat_ptr(msg.data, a + 84);
+    ins_full_nav.ang_rate_z = be32tofloat_ptr(msg.data, a + 88);
+    ins_full_nav.acc_x = be32tofloat_ptr(msg.data, a + 92);
+    ins_full_nav.acc_y = be32tofloat_ptr(msg.data, a + 96);
+    ins_full_nav.acc_z = be32tofloat_ptr(msg.data, a + 100);
+
+    log_ins_full_nav();
 }
 
 void AP_GSOF::parse_ins_rms(uint32_t a)
@@ -220,6 +229,17 @@ void AP_GSOF::parse_ins_rms(uint32_t a)
     ins_rms.gps_time_ms = be32toh_ptr(msg.data + a + 2);
     ins_rms.imu_alignment_status = ImuAlignmentStatus(msg.data[a + 6]);
     ins_rms.gnss_status = GnssStatus(msg.data[a + 7]);
+    ins_rms.pos_rms_n = be32tofloat_ptr(msg.data, a + 8);
+    ins_rms.pos_rms_e = be32tofloat_ptr(msg.data, a + 12);
+    ins_rms.pos_rms_d = be32tofloat_ptr(msg.data, a + 16);
+    ins_rms.vel_rms_n = be32tofloat_ptr(msg.data, a + 20);
+    ins_rms.vel_rms_e = be32tofloat_ptr(msg.data, a + 24);
+    ins_rms.vel_rms_d = be32tofloat_ptr(msg.data, a + 28);
+    ins_rms.roll_rms_deg = be32tofloat_ptr(msg.data, a + 32);
+    ins_rms.pitch_rms_deg = be32tofloat_ptr(msg.data, a + 36);
+    ins_rms.yaw_rms_deg = be32tofloat_ptr(msg.data, a + 40);
+
+    log_ins_rms();
 }
 
 void AP_GSOF::parse_llh_msl(uint32_t a)
@@ -228,8 +248,189 @@ void AP_GSOF::parse_llh_msl(uint32_t a)
     llh_msl.latitude = RAD_TO_DEG_DOUBLE * be64todouble_ptr(msg.data, a);
     llh_msl.longitude = RAD_TO_DEG_DOUBLE * be64todouble_ptr(msg.data, a + 8);
     llh_msl.altitude_msl = be64todouble_ptr(msg.data, a + 16);
-    // Assume the model is EGM96.
+    // Assume the model is EGM96 in ArduPilot, but log for BIN analysis.
+    memcpy(llh_msl.model, msg.data + a + 24, sizeof(llh_msl.model));
+    llh_msl.model[sizeof(llh_msl.model) - 1] = '\0';  // ensure null-termination
+
+    log_llh_msl();
 }
+
+#if HAL_LOGGING_ENABLED
+void AP_GSOF::log_pos_time() const
+{
+
+    // @LoggerMessage: GSPT
+    // @Description: GPS Position Time Metadata from GSOF1
+    // @Field: TimeUS: Time since system startup
+    // @Field: TOWms: Time of week in milliseconds
+    // @Field: Week: GPS week number
+    // @Field: Sats: Number of satellites
+    // @Field: Flags1: Positioning flags byte 1
+    // @Field: Flags2: Positioning flags byte 2
+    // @Field: InitNum: Initialization count
+    AP::logger().WriteStreaming(
+        "GSPT",                                         // Message name
+        "TimeUS,TOWms,Week,Sats,Flags1,Flags2,InitNum", // Field names
+        "Q"    "I"   "H"  "B"  "B"    "B"     "B",      // Field types: Q=uint64_t, I=uint32_t, H=uint16_t, B=uint8_t
+        AP_HAL::micros64(),                             // TimeUS
+        pos_time.time_week_ms,                          // TOWms
+        pos_time.time_week,                             // Week
+        pos_time.num_sats,                              // Sats
+        pos_time.pos_flags1,                            // Flags1
+        pos_time.pos_flags2,                            // Flags2
+        pos_time.initialized_number                     // InitNum
+    );
+}
+
+void AP_GSOF::log_ins_full_nav() const
+{
+    // @LoggerMessage: GSIN
+    // @Description: GSOF49 Full INS Navigation Solution
+    // @Field: TimeUS:          Time since system startup [µs]
+    // @Field: GpsWeek:         GPS week number since Jan 1980
+    // @Field: GpsTimeMs:       GPS time of week [ms]
+    // @Field: ImuAlignStat:    IMU alignment status (enum)
+    //          0=GPS_ONLY
+    //          1=COARSE_LEVELING
+    //          2=DEGRADED
+    //          3=ALIGNED
+    //          4=FULL_NAV
+    // @Field: GnssStat:        GNSS status (enum)
+    //          0=FIX_NOT_AVAILABLE
+    //          1=GNSS_SPS_MODE
+    //          2=DGPS_SPS_MODE
+    //          3=GNSS_PPS_MODE
+    //          4=FIXED_RTK_MODE
+    //          5=FLOAT_RTK_MODE
+    //          6=DR_MODE
+    // @Field: Lat:             Latitude [degrees]
+    // @Field: Lng:             Longitude [degrees]
+    // @Field: Alt:             Altitude in ITRF 2020 [meters]
+    // @Field: VN:              Velocity North [m/s]
+    // @Field: VE:              Velocity East [m/s]
+    // @Field: VD:              Velocity Down [m/s]
+    // @Field: Spd:             3D Speed [m/s]
+    // @Field: Roll:            Roll [degrees]
+    // @Field: Pitch:           Pitch [degrees]
+    // @Field: Heading:         Heading [degrees]
+    // @Field: Track:           Track angle [degrees]
+    // @Field: RateX:           Angular rate X [deg/s]
+    // @Field: RateY:           Angular rate Y [deg/s]
+    // @Field: RateZ:           Angular rate Z [m/s]
+    // @Field: AccX:            Acceleration X [m/s^2]
+    // @Field: AccY:            Acceleration Y [m/s^2]
+    // @Field: AccZ:            Acceleration Z [m/s^2]
+    AP::logger().WriteStreaming(
+        "GSIN",
+        "TimeUS," "GpsWeek," "GpsTimeMs," "ImuAlignStat," "GnssStat,"
+        "Lat,"     "Lng,"    "Alt,"
+        "VN,"      "VE,"     "VD,"        "Spd,"
+        "Roll,"    "Pitch,"  "Heading,"   "Track,"
+        "RateX,"   "RateY,"  "RateZ,"
+        "AccX,"    "AccY,"   "AccZ,",
+        "Q"        "H"       "I"          "B"             "B"
+        "d"        "d"       "d"
+        "f"        "f"       "f"          "f"
+        "d"        "d"       "d"          "d"
+        "f"        "f"       "f"
+        "f"        "f"       "f",
+        AP_HAL::micros64(),
+        ins_full_nav.gps_week,
+        ins_full_nav.gps_time_ms,
+        static_cast<uint8_t>(ins_full_nav.imu_alignment_status),
+        static_cast<uint8_t>(ins_full_nav.gnss_status),
+        ins_full_nav.latitude,
+        ins_full_nav.longitude,
+        ins_full_nav.altitude,
+        ins_full_nav.vel_n,
+        ins_full_nav.vel_e,
+        ins_full_nav.vel_d,
+        ins_full_nav.speed,
+        ins_full_nav.roll_deg,
+        ins_full_nav.pitch_deg,
+        ins_full_nav.heading_deg,
+        ins_full_nav.track_angle_deg,
+        ins_full_nav.ang_rate_x,
+        ins_full_nav.ang_rate_y,
+        ins_full_nav.ang_rate_z,
+        ins_full_nav.acc_x,
+        ins_full_nav.acc_y,
+        ins_full_nav.acc_z
+    );
+}
+
+void AP_GSOF::log_ins_rms() const
+{
+    // @LoggerMessage: GSIR
+    // @Description: GSOF50 INS Solution RMS Values
+    // @Field: TimeUS:        Time since system startup [µs]
+    // @Field: GpsWeek:       GPS week number since Jan 1980
+    // @Field: GpsTimeMs:     GPS time of week [ms]
+    // @Field: ImuAlignStat:  IMU alignment status (enum)
+    //         0=GPS_ONLY
+    //         1=COARSE_LEVELING
+    //         2=DEGRADED
+    //         3=ALIGNED
+    //         4=FULL_NAV
+    // @Field: GnssStat:      GNSS status (enum)
+    //         0=FIX_NOT_AVAILABLE
+    //         1=GNSS_SPS_MODE
+    //         2=DGPS_SPS_MODE
+    //         3=GNSS_PPS_MODE
+    //         4=FIXED_RTK_MODE
+    //         5=FLOAT_RTK_MODE
+    //         6=DR_MODE
+    // @Field: PosRMSN:       North Position RMS [m]
+    // @Field: PosRMSE:       East Position RMS [m]
+    // @Field: PosRMSD:       Down Position RMS [m]
+    // @Field: VelRMSN:       North Velocity RMS [m/s]
+    // @Field: VelRMSE:       East Velocity RMS [m/s]
+    // @Field: VelRMSD:       Down Velocity RMS [m/s]
+    // @Field: RollRMS:       Roll RMS [deg]
+    // @Field: PitchRMS:      Pitch RMS [deg]
+    // @Field: YawRMS:        Yaw RMS [deg]
+    AP::logger().WriteStreaming(
+        "GSIR",
+        "TimeUS,GpsWeek,GpsTimeMs,ImuAlignStat,GnssStat,PosRMSN,PosRMSE,PosRMSD,VelRMSN,VelRMSE,VelRMSD,RollRMS,PitchRMS,YawRMS",
+        "Q"     "H"      "I"        "B"          "B"      "f"      "f"      "f"      "f"      "f"      "f"     "f"      "f"      "f",
+        AP_HAL::micros64(),
+        ins_rms.gps_week,
+        ins_rms.gps_time_ms,
+        static_cast<uint8_t>(ins_rms.imu_alignment_status),
+        static_cast<uint8_t>(ins_rms.gnss_status),
+        ins_rms.pos_rms_n,
+        ins_rms.pos_rms_e,
+        ins_rms.pos_rms_d,
+        ins_rms.vel_rms_n,
+        ins_rms.vel_rms_e,
+        ins_rms.vel_rms_d,
+        ins_rms.roll_rms_deg,
+        ins_rms.pitch_rms_deg,
+        ins_rms.yaw_rms_deg
+    );
+
+}
+void AP_GSOF::log_llh_msl() const
+{
+    // @LoggerMessage: GSLH
+    // @Description: GSOF70 LLH with MSL Altitude
+    // @Field: TimeUS:    Time since system startup [µs]
+    // @Field: Lat:       Latitude [deg]
+    // @Field: Lng:       Longitude [deg]
+    // @Field: AltMSL:    Altitude above mean sea level [m]
+    // @Field: Model:     Geoid model used (null-terminated string)
+    AP::logger().WriteStreaming(
+        "GSLH",
+        "TimeUS,Lat,Lng,AltMSL,Model",
+        "Q"     "d"  "d"  "d"    "Z",
+        AP_HAL::micros64(),
+        llh_msl.latitude,
+        llh_msl.longitude,
+        llh_msl.altitude_msl,
+        llh_msl.model
+    );
+}
+#endif  // HAL_LOGGING_ENABLED
 
 #endif // AP_GSOF_ENABLED
 
