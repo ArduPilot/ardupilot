@@ -75,9 +75,9 @@ void AP_MAVLinkCAN::handle_can_frame(const mavlink_message_t &msg)
 {
     if (frame_buffer == nullptr) {
         // allocate frame buffer
-        WITH_SEMAPHORE(can_forward.sem);
         // 20 is good for firmware upload
         uint8_t buffer_size = 20;
+        WITH_SEMAPHORE(frame_buffer_sem);
         while (frame_buffer == nullptr && buffer_size > 0) {
             // we'd like 20 frames, but will live with less
             frame_buffer = NEW_NOTHROW ObjectBuffer<BufferFrame>(buffer_size);
@@ -107,8 +107,10 @@ void AP_MAVLinkCAN::handle_can_frame(const mavlink_message_t &msg)
             bus : p.bus,
             frame : AP_HAL::CANFrame(p.id, p.data, p.len)
         };
-        WITH_SEMAPHORE(can_forward.sem);
-        frame_buffer->push(frame);
+        {
+            WITH_SEMAPHORE(frame_buffer_sem);
+            frame_buffer->push(frame);
+        }
         break;
     }
 #if HAL_CANFD_SUPPORTED
@@ -122,8 +124,10 @@ void AP_MAVLinkCAN::handle_can_frame(const mavlink_message_t &msg)
             bus : p.bus,
             frame : AP_HAL::CANFrame(p.id, p.data, p.len, true)
         };
-        WITH_SEMAPHORE(can_forward.sem);
-        frame_buffer->push(frame);
+        {
+            WITH_SEMAPHORE(frame_buffer_sem);
+            frame_buffer->push(frame);
+        }
         break;
     }
 #endif
@@ -137,7 +141,7 @@ void AP_MAVLinkCAN::handle_can_frame(const mavlink_message_t &msg)
 void AP_MAVLinkCAN::process_frame_buffer()
 {
     while (frame_buffer) {
-        WITH_SEMAPHORE(can_forward.sem);
+        WITH_SEMAPHORE(frame_buffer_sem);
         struct BufferFrame frame;
         const uint16_t timeout_us = 2000;
         if (!frame_buffer->peek(frame)) {
@@ -252,53 +256,64 @@ void AP_MAVLinkCAN::handle_can_filter_modify(const mavlink_message_t &msg)
  */
 void AP_MAVLinkCAN::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame, AP_HAL::CANIface::CanIOFlags flags)
 {
-    WITH_SEMAPHORE(can_forward.sem);
-    if (bus != can_forward.callback_bus) {
-        // we are not registered for forwarding this bus, discard frame
-        return;
-    }
-    if (can_forward.frame_counter++ == 100) {
-        // check every 100 frames for disabling CAN_FRAME send
-        // we stop sending after 5s if the client stops
-        // sending MAV_CMD_CAN_FORWARD requests
-        if (can_forward.callback_id != 0 &&
-            AP_HAL::millis() - can_forward.last_callback_enable_ms > 5000) {
-            hal.can[bus]->unregister_frame_callback(can_forward.callback_id);
-            can_forward.callback_id = 0;
+    mavlink_channel_t chan;
+    uint8_t system_id;
+    uint8_t component_id;
+    {
+        WITH_SEMAPHORE(can_forward.sem);
+        if (bus != can_forward.callback_bus) {
+            // we are not registered for forwarding this bus, discard frame
             return;
         }
-        can_forward.frame_counter = 0;
-    }
-    WITH_SEMAPHORE(comm_chan_lock(can_forward.chan));
-    if (can_forward.filter_ids != nullptr) {
-        // work out ID of this frame
-        uint16_t id = 0;
-        if ((frame.id&0xff) != 0) {
-            // not anonymous
-            if (frame.id & 0x80) {
-                // service message
-                id = uint8_t(frame.id>>16);
-            } else {
-                // message frame
-                id = uint16_t(frame.id>>8);
+        if (can_forward.frame_counter++ == 100) {
+            // check every 100 frames for disabling CAN_FRAME send
+            // we stop sending after 5s if the client stops
+            // sending MAV_CMD_CAN_FORWARD requests
+            if (can_forward.callback_id != 0 &&
+                AP_HAL::millis() - can_forward.last_callback_enable_ms > 5000) {
+                hal.can[bus]->unregister_frame_callback(can_forward.callback_id);
+                can_forward.callback_id = 0;
+                return;
+            }
+            can_forward.frame_counter = 0;
+        }
+        if (can_forward.filter_ids != nullptr) {
+            // work out ID of this frame
+            uint16_t id = 0;
+            if ((frame.id&0xff) != 0) {
+                // not anonymous
+                if (frame.id & 0x80) {
+                    // service message
+                    id = uint8_t(frame.id>>16);
+                } else {
+                    // message frame
+                    id = uint16_t(frame.id>>8);
+                }
+            }
+            if (!bisect_search_uint16(can_forward.filter_ids, can_forward.num_filter_ids, id)) {
+                return;
             }
         }
-        if (!bisect_search_uint16(can_forward.filter_ids, can_forward.num_filter_ids, id)) {
-            return;
-        }
+        // remeber destination while we hold the mutex
+        chan = can_forward.chan;
+        system_id = can_forward.system_id;
+        component_id = can_forward.component_id;
     }
+
+    // the rest is run without the can_forward.sem
+    WITH_SEMAPHORE(comm_chan_lock(chan));
     const uint8_t data_len = AP_HAL::CANFrame::dlcToDataLength(frame.dlc);
 #if HAL_CANFD_SUPPORTED
     if (frame.isCanFDFrame()) {
-        if (HAVE_PAYLOAD_SPACE(can_forward.chan, CANFD_FRAME)) {
-            mavlink_msg_canfd_frame_send(can_forward.chan, can_forward.system_id, can_forward.component_id,
+        if (HAVE_PAYLOAD_SPACE(chan, CANFD_FRAME)) {
+            mavlink_msg_canfd_frame_send(chan, system_id, component_id,
                                          bus, data_len, frame.id, const_cast<uint8_t*>(frame.data));
         }
     } else
 #endif
     {
-        if (HAVE_PAYLOAD_SPACE(can_forward.chan, CAN_FRAME)) {
-            mavlink_msg_can_frame_send(can_forward.chan, can_forward.system_id, can_forward.component_id,
+        if (HAVE_PAYLOAD_SPACE(chan, CAN_FRAME)) {
+            mavlink_msg_can_frame_send(chan, system_id, component_id,
                                        bus, data_len, frame.id, const_cast<uint8_t*>(frame.data));
         }
     }
