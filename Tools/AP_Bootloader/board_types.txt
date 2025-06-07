@@ -170,7 +170,7 @@ AP_HW_ICSI_Kestrel                   1049
 AP_HW_SierraL431                     1050
 AP_HW_NucleoL476                     1051
 AP_HW_SierraF405                     1052
-AP_HW_CarbonixL496                   1053
+AP_HW_HolybroG4_GPS                  1053
 AP_HW_MatekF405_TE                   1054
 AP_HW_SierraF412                     1055
 AP_HW_BEASTH7v2                      1056
