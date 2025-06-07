@@ -21,6 +21,10 @@ concurrency:
 
 jobs:
   test-scripting:
+    permissions:
+      contents: read
+      actions: write
+
     runs-on: ubuntu-22.04
     container: ardupilot/ardupilot-dev-base:v0.1.3
     steps:

@@ -1,5 +1,8 @@
 name: test scripts
 
+permissions:
+  contents: read
+
 on: [push, pull_request, workflow_dispatch]
 
 concurrency:

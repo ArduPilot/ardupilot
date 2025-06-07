@@ -100,6 +100,10 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: read
+      actions: write
+
     runs-on: ubuntu-22.04
     container:
       image: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.3

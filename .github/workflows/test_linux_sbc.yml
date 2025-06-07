@@ -1,5 +1,8 @@
 name: test Linux SBC
 
+permissions:
+  contents: read
+
 on:
   push:
     paths-ignore:

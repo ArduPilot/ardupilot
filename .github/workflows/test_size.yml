@@ -1,5 +1,8 @@
 name: test size
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     paths-ignore:  # ignore autotest stuffs
