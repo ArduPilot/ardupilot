@@ -136,11 +136,13 @@ void ModeAcro::get_pilot_desired_angle_rates(float roll_in, float pitch_in, floa
 
         // Calculate trainer mode earth frame rate command for roll
         int32_t roll_angle = wrap_180_cd(att_target.x);
-        rate_ef_level_cd.x = -constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
+        float limited_acro_balance_roll = constrain_float(g.acro_balance_roll, 0.0f, 3.0f);
+        rate_ef_level_cd.x = -constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * limited_acro_balance_roll;
 
         // Calculate trainer mode earth frame rate command for pitch
         int32_t pitch_angle = wrap_180_cd(att_target.y);
-        rate_ef_level_cd.y = -constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
+        float limited_acro_balance_pitch = constrain_float(g.acro_balance_pitch, 0.0f, 3.0f);
+        rate_ef_level_cd.y = -constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * limited_acro_balance_pitch;
 
         // Calculate trainer mode earth frame rate command for yaw
         rate_ef_level_cd.z = 0;

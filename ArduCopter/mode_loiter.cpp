@@ -100,7 +100,7 @@ void ModeLoiter::run()
 
     // get pilot desired climb rate
     target_climb_rate = get_pilot_desired_climb_rate();
-    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), constrain_int16(g.pilot_speed_up, 50, 500));
 
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
