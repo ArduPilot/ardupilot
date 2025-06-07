@@ -372,13 +372,13 @@ void AC_AutoTune::control_attitude()
     switch (step) {
 
     case StepType::WAITING_FOR_LEVEL: {
-        // Use intra-test gains while holding level between twitches
+        // Use intra-test gains while holding level between tests
         load_gains(GainType::INTRA_TEST);
 
         get_poshold_attitude(roll_cd, pitch_cd, desired_yaw_cd);
         attitude_control->input_euler_angle_roll_pitch_yaw_cd(roll_cd, pitch_cd, desired_yaw_cd, true);
 
-        // Require a short stable period before executing the next twitch
+        // Require a short stable period before executing the next test
         if (!currently_level()) {
             step_start_time_ms = now_ms;
         }
@@ -549,7 +549,7 @@ void AC_AutoTune::control_attitude()
         load_gains(GainType::INTRA_TEST);
 
         step = StepType::WAITING_FOR_LEVEL;
-        positive_direction = twitch_reverse_direction();
+        positive_direction = reverse_test_direction();
         step_start_time_ms = now_ms;
         level_start_time_ms = now_ms;
         step_timeout_ms = AUTOTUNE_REQUIRED_LEVEL_TIME_MS;
@@ -747,7 +747,7 @@ void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, 
     }
 
     /*
-      also point so that twitching occurs perpendicular to the wind,
+      also point so that test occurs perpendicular to the wind,
       if we have drifted more than yaw_dist_limit_cm from the desired
       position. This ensures that autotune doesn't have to deal with
       more than 2.5 degrees of attitude on the axis it is tuning

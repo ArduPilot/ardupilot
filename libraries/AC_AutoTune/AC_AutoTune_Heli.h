@@ -70,7 +70,7 @@ protected:
     // reset the update gain variables for heli
     void reset_update_gain_variables() override;
 
-    // Prepares all tuning state variables and target values for a new twitch test.
+    // Prepares all tuning state variables and target values for a new test.
     void test_init() override;
 
     // runs test
@@ -100,8 +100,8 @@ protected:
     // set gains post tune for the tune type
     void set_tuning_gains_with_backoff(AxisType test_axis) override;
 
-    // reverse direction for twitch test
-    bool twitch_reverse_direction() override { return positive_direction; }
+    // reverse the direction of the next test
+    bool reverse_test_direction() override { return positive_direction; }
 
 #if HAL_LOGGING_ENABLED
     // methods to log autotune summary data
