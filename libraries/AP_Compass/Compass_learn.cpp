@@ -1,3 +1,7 @@
+#include "AP_Compass_config.h"
+
+#if COMPASS_LEARN_ENABLED
+
 #include <AP_AHRS/AP_AHRS.h>
 
 #include <AP_Compass/AP_Compass.h>
@@ -6,10 +10,6 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_NavEKF/EKFGSF_yaw.h>
-
-#if COMPASS_LEARN_ENABLED
-
-#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
 

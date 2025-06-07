@@ -2359,18 +2359,20 @@ void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_chan
 // the relevant fields as 0.
 void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature, int16_t temperature_press_diff))
 {
-    const AP_Baro &barometer = AP::baro();
-
     bool have_data = false;
 
     float press_abs = 0.0f;
     int16_t temperature = 0; // Absolute pressure temperature
     int16_t temperature_press_diff = 0; // Differential pressure temperature
+#if AP_BARO_ENABLED
+    const AP_Baro &barometer = AP::baro();
+
     if (instance < barometer.num_instances()) {
         press_abs = barometer.get_pressure(instance) * 0.01f;
         temperature = barometer.get_temperature(instance)*100;
         have_data = true;
     }
+#endif
 
     float press_diff = 0; // pascal
 #if AP_AIRSPEED_ENABLED
@@ -4804,10 +4806,12 @@ MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_in
 
 MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink_message_t &msg)
 {
+#if AP_BARO_ENABLED
     // fast barometer calibration
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Updating barometer calibration");
     AP::baro().update_calibration();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer calibration complete");
+#endif
 
 #if AP_AIRSPEED_ENABLED
 
