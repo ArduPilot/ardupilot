@@ -48,8 +48,15 @@ void ModeFollow::update()
     desired_velocity_ne.x = vel_of_target.x + (dist_vec_offs.x * kp);
     desired_velocity_ne.y = vel_of_target.y + (dist_vec_offs.y * kp);
 
-    // if desired velocity is zero stop vehicle
-    if (is_zero(desired_velocity_ne.x) && is_zero(desired_velocity_ne.y)) {
+    // if the desired velocity is less than 3cm/sec, stop vehicle
+    if (desired_velocity_ne.length() < 0.03f) {
+        _reached_destination = true;
+        stop_vehicle();
+        return;
+    }
+
+    //if the target vehicle velocity is less than 3cm/sec and the distance to the target vehicle is less than the turn radius, stop vehicle
+    if (vel_of_target.length() < 0.03f && dist_vec_offs.length() < g2.turn_radius) {
         _reached_destination = true;
         stop_vehicle();
         return;
