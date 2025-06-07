@@ -230,7 +230,7 @@ void ToyMode::update()
     uint16_t ch6_in = RC_Channels::get_radio_in(CH_6);
     uint16_t ch7_in = RC_Channels::get_radio_in(CH_7);
 
-    if (copter.failsafe.radio || ch5_in < 900) {
+    if (!rc().has_valid_input() || ch5_in < 900) {
         // failsafe handling is outside the scope of toy mode, it does
         // normal failsafe actions, just setup a blink pattern
         green_blink_pattern = BLINK_NO_RX;
@@ -693,7 +693,7 @@ bool ToyMode::set_and_remember_mode(Mode::Number mode, ModeReason reason)
  */
 void ToyMode::trim_update(void)
 {
-    if (hal.util->get_soft_armed() || copter.failsafe.radio) {
+    if (hal.util->get_soft_armed() || !rc().has_valid_input()) {
         // only when disarmed and with RC link
         trim.start_ms = 0;
         return;
