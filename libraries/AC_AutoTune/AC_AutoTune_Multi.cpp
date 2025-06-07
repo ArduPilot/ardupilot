@@ -708,17 +708,17 @@ void AC_AutoTune_Multi::twitching_test_rate(float angle, float rate, float rate_
 
     if (meas_rate_max > rate_target_max) {
         // the measured rate has passed the maximum target rate
-        step = StepType::UPDATE_GAINS;
+        step = Step::UPDATE_GAINS;
     }
 
     if (meas_rate_max - meas_rate_min > meas_rate_max * aggressiveness) {
         // the measurement has passed 50% of the maximum rate and bounce back is larger than the threshold
-        step = StepType::UPDATE_GAINS;
+        step = Step::UPDATE_GAINS;
     }
 
     if (now_ms - step_start_time_ms >= step_timeout_ms) {
         // we have passed the maximum stop time
-        step = StepType::UPDATE_GAINS;
+        step = Step::UPDATE_GAINS;
     }
 }
 
@@ -739,9 +739,9 @@ void AC_AutoTune_Multi::twitching_abort_rate(float angle, float rate, float angl
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
             }
             // ignore result and start test again
-            step = StepType::ABORT;
+            step = Step::ABORT;
         } else {
-            step = StepType::UPDATE_GAINS;
+            step = Step::UPDATE_GAINS;
         }
     }
 }
@@ -787,17 +787,17 @@ void AC_AutoTune_Multi::twitching_test_angle(float angle, float rate, float angl
 
     if (meas_angle_max > angle_target_max) {
         // the measurement has passed the maximum angle
-        step = StepType::UPDATE_GAINS;
+        step = Step::UPDATE_GAINS;
     }
 
     if (meas_angle_max - meas_angle_min > meas_angle_max * aggressiveness) {
         // the measurement has passed 50% of the maximum angle and bounce back is larger than the threshold
-        step = StepType::UPDATE_GAINS;
+        step = Step::UPDATE_GAINS;
     }
 
     if (now_ms - step_start_time_ms >= step_timeout_ms) {
         // we have passed the maximum stop time
-        step = StepType::UPDATE_GAINS;
+        step = Step::UPDATE_GAINS;
     }
 }
 
