@@ -136,7 +136,7 @@ AC_AutoTune_Heli::AC_AutoTune_Heli()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// Prepares all tuning state variables and target values for a new twitch test.
+// Prepares all tuning state variables and target values for a new test.
 void AC_AutoTune_Heli::test_init()
 {
     AC_AutoTune_FreqResp::ResponseType resp_type = AC_AutoTune_FreqResp::ResponseType::RATE;
@@ -518,7 +518,7 @@ void AC_AutoTune_Heli::load_intra_test_gains()
 }
 
 // load_test_gains - load the to-be-tested gains for a single axis
-// called by control_attitude() just before it beings testing a gain (i.e. just before it twitches)
+// called by control_attitude() just before it beings testing a gain
 void AC_AutoTune_Heli::load_test_gains()
 {
     attitude_control->use_sqrt_controller(true);

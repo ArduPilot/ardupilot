@@ -100,7 +100,7 @@ protected:
     virtual void init_z_limits() = 0;
 
 #if HAL_LOGGING_ENABLED
-    // log PIDs at full rate for during twitch
+    // log PIDs at full rate for during test
     virtual void log_pids() = 0;
 #endif
 
@@ -157,8 +157,8 @@ protected:
     // set gains post tune for the tune type
     virtual void set_tuning_gains_with_backoff(AxisType test_axis)=0;
 
-    // reverse direction for twitch test
-    virtual bool twitch_reverse_direction() = 0;
+    // reverse the direction of the next test
+    virtual bool reverse_test_direction() = 0;
 
 
 #if HAL_LOGGING_ENABLED
@@ -205,8 +205,8 @@ protected:
 
     // steps performed while in the tuning mode
     enum class StepType {
-        WAITING_FOR_LEVEL   = 0,    // Waiting for the vehicle to stabilize at level before starting a twitch test.
-        EXECUTING_TEST      = 1,    // Performing a twitch test and monitoring the vehicle's response.
+        WAITING_FOR_LEVEL   = 0,    // Waiting for the vehicle to stabilize at level before starting a test.
+        EXECUTING_TEST      = 1,    // Performing a test and monitoring the vehicle's response.
         UPDATE_GAINS        = 2,    // Updating gains based on test results.
         ABORT               = 3     // Aborting the current test; revert to safe gains and return to WAITING_FOR_LEVEL.
     };
@@ -270,7 +270,7 @@ protected:
 
     AxisType axis;                  // current axis being tuned. see AxisType enum
     bool     positive_direction;    // false = tuning in negative direction (i.e. left for roll), true = positive direction (i.e. right for roll)
-    bool     angle_step_commanded;  // true on first iteration of a twitch (used to signal we must step the attitude or rate target)
+    bool     angle_step_commanded;  // true on first iteration of the tests (used to signal we must step the attitude or rate target)
     uint8_t  axes_completed;        // bitmask of completed axes
     uint32_t step_start_time_ms;    // start time of current tuning step (used for timeout checks)
     uint32_t step_timeout_ms;       // time limit of current autotune process
