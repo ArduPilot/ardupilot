@@ -521,7 +521,7 @@ void AC_AutoTune_Heli::load_intra_test_gains()
 // called by control_attitude() just before it beings testing a gain (i.e. just before it twitches)
 void AC_AutoTune_Heli::load_test_gains()
 {
-    attitude_control->use_sqrt_controller(false);
+    attitude_control->use_sqrt_controller(true);
     float rate_p, rate_i, rate_d, rate_test_max, accel_test_max;
     switch (axis) {
     case AxisType::ROLL:
