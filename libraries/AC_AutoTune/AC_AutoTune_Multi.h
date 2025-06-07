@@ -106,8 +106,8 @@ protected:
     // Applies gain margin (backoff) at the end of a TuneType
     void set_tuning_gains_with_backoff(AxisType test_axis) override;
 
-    // Reverses twitch direction for next test
-    bool twitch_reverse_direction() override { return !positive_direction; }
+    // reverse the direction of the next test
+    bool reverse_test_direction() override { return !positive_direction; }
 
 #if HAL_LOGGING_ENABLED
     void Log_AutoTune() override;
