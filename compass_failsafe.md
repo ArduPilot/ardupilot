@@ -22,7 +22,7 @@ When radio communication is lost, the aircraft will:
 **Features**:
 
 - Single parameter: `FS_COMPASS_HDG` (0-359 degrees)
-- Fixed pitch angle: 10 degrees
+- Fixed pitch angle: 5 degrees
 - Use existing RTL altitude parameter for climb target
 - No adjustable parameters during flight
 
@@ -32,7 +32,7 @@ When radio communication is lost, the aircraft will:
 On Radio Failsafe:
 1. Climb to FS_ALT_MIN (existing param)
 2. Turn to FS_COMPASS_HDG
-3. Apply 10° forward pitch
+3. Apply 5° forward pitch
 4. Continue until manual recovery
 ```
 
@@ -42,9 +42,8 @@ On Radio Failsafe:
 
 **New Parameters**:
 
-- `FS_COMPASS_MODE`: Enable/disable (0/1)
 - `FS_COMPASS_HDG`: Target heading (0-359°)
-- `FS_COMPASS_PITCH`: Forward pitch angle (5-20°, default 10°)
+- `FS_COMPASS_PITCH`: Forward pitch angle (5-20°, default 5°)
 - `FS_COMPASS_HDG_SRC`:
     - 0 = Use FS_COMPASS_HDG value
     - 1 = Use home direction if available (investigate feasibility)
@@ -58,7 +57,7 @@ On Radio Failsafe:
 **Behavior**:
 
 ```
-On Radio Failsafe (if FS_COMPASS_MODE enabled):
+On Radio Failsafe (if FS_COMPASS_MODE failsafe action is selected. Same as POC):
 1. Check heading source:
    - If HDG_SRC=1 and home direction available: use it
    - Otherwise: use FS_COMPASS_HDG
@@ -75,15 +74,15 @@ On Radio Failsafe (if FS_COMPASS_MODE enabled):
 **Additional Parameters**:
 
 - `FS_COMPASS_HDG_CH`: RC channel for heading adjustment (0=disabled)
-- `FS_COMPASS_THR_MOD`: Throttle modifier (±20% from hover)
-- `FS_COMPASS_TIMEOUT`: Max flight time before auto-land (0=disabled)
+- `FS_COMPASS_THR_CTRL_ENABLED`: Enables or disables advanced throttle control
+- `FS_COMPASS_TARGET_THR`: Target throttle
+- `FS_COMPASS_PITCH_MIN`: Target throttle
+- `FS_COMPASS_PITCH_MAX`: Target throttle
 
 **Features**:
 
-- RC-adjustable heading (when link available before failsafe)
-- Throttle adjustment for heavy/light loads
-- Optional timeout with auto-land
-- Battery monitoring with emergency land
+- RC-adjustable heading (when link available before failsafe).
+- Throttle target for heavy/light loads. Allows to maintain throttle if possible and adjust pitch manually.
 
 **Enhanced Behavior**:
 
@@ -93,12 +92,11 @@ Before failsafe:
 
 On Radio Failsafe:
 1. Use last known heading from RC channel (if configured)
-2. Climb to altitude with THR_MOD adjustment
-3. Maintain heading and pitch
-4. Monitor:
-   - Battery voltage → land if critical
-   - Timeout → land if exceeded
-   - RC recovery → await manual mode change
+2. Climb to altitude
+3. Maintain heading, pitch, and throttle.
+	1. We have to maintain the throttle here, but it will be simpler to adjust pitch, allow the Z controller to maintain throttle, and adjust pitch if needed.
+	   Details: At the beginning, select a pitch between the min and max params. Monitor throttle if it's +- 5% from target - continue as is. If not, start increasing or decreasing pitch correspondingly. We probably need PID or other controller here.
+4. Continue until manual recovery
 ```
 
 ## Technical Implementation Notes
@@ -167,10 +165,12 @@ On Radio Failsafe:
 
 ### POC Testing
 
-1. Bench test compass heading control
-2. Controlled environment test without GPS
-3. Verify altitude climb and hold
-4. Test manual recovery
+1. Test if a drone flies well in alt hold.
+2. Detect where north is and a safe pitch during that flight.
+3. Hardcode the needed pitch and set the needed heading parameter. Set the mode to some switch.
+4. Fly in the opposite direction. Enable failsafe mode manually.
+5. The drone should go more or less back.
+6. Disable failsafe mode manually.
 
 ### MVP Testing
 

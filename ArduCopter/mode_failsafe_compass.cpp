@@ -47,8 +47,7 @@ void ModeFailsafeCompass::run()
         // Need to climb
         target_climb_rate = g.pilot_speed_up;
     } else if (alt_diff_cm < -FAILSAFE_COMPASS_ALT_TOLERANCE_CM) {
-        // Need to descend
-        target_climb_rate = -get_pilot_speed_dn();
+        // Do nothing, altitude should be >= target_alt_cm
     }
     
     // Send the commanded climb rate to the position controller

@@ -2092,7 +2092,7 @@ protected:
 
 private:
     // Configuration constants for POC
-    static constexpr float FAILSAFE_COMPASS_PITCH_DEG = 10.0f;      // 10 degree forward pitch  
+    static constexpr float FAILSAFE_COMPASS_PITCH_DEG = 5.0f;      // 5 degree forward pitch  
     static constexpr float FAILSAFE_COMPASS_ALT_TOLERANCE_CM = 200.0f; // 2m altitude tolerance
 
     // Target heading in degrees

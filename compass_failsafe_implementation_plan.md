@@ -13,34 +13,34 @@ This document outlines the implementation plan for the Failsafe_Compass mode in 
 #### Tasks:
 
 1. **Create the new flight mode class**
-   - Create `mode_failsafe_compass.cpp` file in ArduCopter directory
-   - Define `ModeFailsafeCompass` class inheriting from `Mode`
-   - Implement basic mode structure with required virtual methods
+   - [x] Create `mode_failsafe_compass.cpp` file in ArduCopter directory
+   - [x] Define `ModeFailsafeCompass` class inheriting from `Mode`
+   - [x] Implement basic mode structure with required virtual methods
 
 2. **Add mode to flight mode system**
-   - Add `FAILSAFE_COMPASS` enum to flight mode definitions
-   - Register the mode in the flight mode system
-   - Update mode switching logic
+   - [x] Add `FAILSAFE_COMPASS` enum to flight mode definitions
+   - [x] Register the mode in the flight mode system
+   - [x] Update mode switching logic
 
 3. **Implement basic parameters**
-   - Add `FS_COMPASS_HDG` parameter (0-359 degrees) to Parameters.h
-   - Add parameter definitions and validation
+   - [x] Add `FS_COMPASS_HDG` parameter (0-359 degrees) to Parameters.h
+   - [x] Add parameter definitions and validation
 
 4. **Implement core flight behavior**
-   - Altitude control: Climb to existing `FS_ALT_MIN` parameter
-   - Heading control: Turn to `FS_COMPASS_HDG` using compass data
-   - Pitch control: Apply fixed 10° forward pitch
-   - Use existing attitude control systems
+   - [x] Altitude control: Climb to existing `FS_ALT_MIN` parameter
+   - [x] Heading control: Turn to `FS_COMPASS_HDG` using compass data
+   - [x] Pitch control: Apply fixed 5° forward pitch
+   - [x] Use existing attitude control systems
 
 5. **Integrate with failsafe system**
-   - Add failsafe_compass as an option in radio failsafe actions
-   - Implement mode entry logic during radio failsafe
-   - Ensure proper mode exit on manual recovery
+   - [x] Add failsafe_compass as an option in radio failsafe actions
+   - [x] Implement mode entry logic during radio failsafe
+   - [x] Ensure proper mode exit on manual recovery
 
 6. **Basic testing and validation**
-   - SITL testing for basic functionality
-   - Verify compass heading control
-   - Test altitude climb and hold behavior
+   - [ ] SITL testing for basic functionality
+   - [ ] Verify compass heading control
+   - [ ] Test altitude climb and hold behavior
 
 ### Phase 2: MVP (Minimum Viable Product)
 
@@ -49,28 +49,28 @@ This document outlines the implementation plan for the Failsafe_Compass mode in 
 #### Tasks:
 
 1. **Expand parameter system**
-   - Add `FS_COMPASS_MODE` parameter (enable/disable)
-   - Add `FS_COMPASS_PITCH` parameter (5-20°, default 10°)
-   - Add `FS_COMPASS_HDG_SRC` parameter (0=fixed heading, 1=home direction)
+   - [ ] Add `FS_COMPASS_MODE` parameter (enable/disable)
+   - [ ] Add `FS_COMPASS_PITCH` parameter (5-20°, default 5°)
+   - [ ] Add `FS_COMPASS_HDG_SRC` parameter (0=fixed heading, 1=home direction)
 
 2. **Implement configurable pitch control**
-   - Replace fixed 10° pitch with configurable `FS_COMPASS_PITCH`
-   - Add parameter validation and range checking
+   - [ ] Replace fixed 5° pitch with configurable `FS_COMPASS_PITCH`
+   - [ ] Add parameter validation and range checking
 
 3. **Investigate and implement home direction option**
-   - Research how to calculate heading to home without GPS
-   - Implement home direction calculation using compass and stored home position
-   - Add logic to switch between fixed heading and home direction
+   - [ ] Research how to calculate heading to home without GPS
+   - [ ] Implement home direction calculation using compass and stored home position
+   - [ ] Add logic to switch between fixed heading and home direction
 
 4. **Enhanced safety features**
-   - Add parameter validation on mode entry
-   - Implement proper error handling for invalid configurations
-   - Add status reporting to GCS
+   - [ ] Add parameter validation on mode entry
+   - [ ] Implement proper error handling for invalid configurations
+   - [ ] Add status reporting to GCS
 
 5. **Extended testing**
-   - Test with various pitch angles
-   - Validate home direction functionality (if feasible)
-   - Test parameter validation
+   - [ ] Test with various pitch angles
+   - [ ] Validate home direction functionality (if feasible)
+   - [ ] Test parameter validation
 
 ### Phase 3: V2 (Enhanced Version)
 
@@ -79,30 +79,33 @@ This document outlines the implementation plan for the Failsafe_Compass mode in 
 #### Tasks:
 
 1. **RC channel heading adjustment**
-   - Add `FS_COMPASS_HDG_CH` parameter for RC channel selection
-   - Implement pre-failsafe heading monitoring from RC channel
-   - Store last known heading before failsafe
+   - [ ] Add `FS_COMPASS_HDG_CH` parameter for RC channel selection
+   - [ ] Implement pre-failsafe heading monitoring from RC channel
+   - [ ] Store last known heading before failsafe
 
-2. **Throttle modification**
-   - Add `FS_COMPASS_THR_MOD` parameter (±20% from hover)
-   - Implement throttle adjustment for different aircraft loads
-   - Integrate with altitude control system
+2. **Advanced throttle control**
+   - [ ] Add `FS_COMPASS_THR_CTRL_ENABLED` parameter
+   - [ ] Add `FS_COMPASS_TARGET_THR` parameter
+   - [ ] Add `FS_COMPASS_PITCH_MIN` parameter
+   - [ ] Add `FS_COMPASS_PITCH_MAX` parameter
+   - [ ] Implement throttle target maintenance with pitch adjustment
+   - [ ] Integrate PID controller for pitch adjustment based on throttle feedback
 
 3. **Timeout and auto-land**
-   - Add `FS_COMPASS_TIMEOUT` parameter
-   - Implement flight time tracking
-   - Add automatic land mode transition on timeout
+   - [ ] Add `FS_COMPASS_TIMEOUT` parameter
+   - [ ] Implement flight time tracking
+   - [ ] Add automatic land mode transition on timeout
 
 4. **Battery monitoring integration**
-   - Integrate with existing battery failsafe system
-   - Implement emergency land on critical battery
-   - Add proper priority handling between different failsafe conditions
+   - [ ] Integrate with existing battery failsafe system
+   - [ ] Implement emergency land on critical battery
+   - [ ] Add proper priority handling between different failsafe conditions
 
 5. **Comprehensive testing**
-   - Test RC channel heading adjustment
-   - Validate timeout and auto-land functionality
-   - Test battery failsafe integration
-   - Extended flight duration testing
+   - [ ] Test RC channel heading adjustment
+   - [ ] Validate timeout and auto-land functionality
+   - [ ] Test battery failsafe integration
+   - [ ] Extended flight duration testing
 
 ## Technical Implementation Details
 
@@ -163,6 +166,9 @@ ArduCopter/
 - [ ] Aircraft turns to and maintains configured heading
 - [ ] Aircraft maintains forward flight with fixed pitch
 - [ ] Pilot can regain control and exit mode
+- [ ] Code compiles successfully for target board
+- [ ] SITL testing validates functionality
+- [ ] Real-world testing confirms GPS-free operation
 
 ### MVP Success Criteria
 - [ ] All parameters are configurable and validated
