@@ -60,6 +60,10 @@ void Sub::init_ardupilot()
     relay.init();
 #endif
 
+#if OSD_ENABLED
+    osd.init();
+#endif
+
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
      *  the RC library being initialised.

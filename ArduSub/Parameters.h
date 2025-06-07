@@ -48,6 +48,7 @@ public:
         k_param_g2, // 2nd block of parameters
 
         k_param_sitl, // Simulation
+        k_param_osd, //OSD
 
         // Telemetry
         k_param_gcs0_unused = 10,      // unused in ArduPilot-4.7
