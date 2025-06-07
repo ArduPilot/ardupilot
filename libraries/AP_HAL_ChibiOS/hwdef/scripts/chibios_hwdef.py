@@ -119,6 +119,9 @@ class ChibiOSHWDef(hwdef.HWDef):
         # list of shared up timers
         self.shared_up = []
 
+        # board name
+        self.board_mame = ""
+
     def get_mcu_lib(self, mcu):
         '''get library file for the chosen MCU'''
         import importlib
@@ -1677,8 +1680,7 @@ INCLUDE common.ld
             return default
         return p.extra_value(name, type=str, default=default)
 
-    def write_UART_config(self, f):
-        '''write UART config defines'''
+    def get_UART_list(self):
         serial_list = self.get_config('SERIAL_ORDER', required=False, aslist=True)
         hide_iomcu_uart = False
         if 'IOMCU_UART' in self.config:
@@ -1686,6 +1688,11 @@ INCLUDE common.ld
 
         if 'IOMCU_UART' in self.config and self.config['IOMCU_UART'][0] not in serial_list:
             serial_list.append(self.config['IOMCU_UART'][0])
+        return serial_list
+
+    def write_UART_config(self, f):
+        '''write UART config defines'''
+        serial_list = self.get_UART_list()
         if serial_list is None:
             return
         while len(serial_list) < 3: # enough ports for CrashCatcher UART discovery
@@ -2724,6 +2731,9 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
     def write_processed_defaults_file(self, filepath):
         # see if board has a defaults.parm file or a --default-parameters file was specified
+        if not self.hwdef[0] or not args.params:
+            return
+
         defaults_filename = os.path.join(os.path.dirname(self.hwdef[0]), 'defaults.parm')
         defaults_path = os.path.join(os.path.dirname(self.hwdef[0]), args.params)
 
@@ -3107,6 +3117,214 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.romfs_add('defaults.parm', filepath)
         self.have_defaults_file = True
 
+    def readme_write_intro(self, f):
+        f.write('''
+# %s Flight Controller
+
+The %s is a flight controller designed and produced by [%s].
+''' % (self.board_name, self.board_name, self.board_name))
+        f.write('''
+## Features
+
+ - MCU - %s 32-bit processor running at 480 MHz
+''' % self.mcu_type)
+        count = 1
+        for dev in self.imu_list:
+            f.write('''
+ - IMU%u - %s
+''' % (count, dev[0]))
+            count = count+1
+        if self.baro_list:
+            f.write('''
+ - Barometer - %s
+''' % self.baro_list[0][0])
+        if self.compass_list:
+            f.write('''
+ - Magnetometer - %s
+''' % self.compass_list[0][0])
+        f.write('''
+ - OSD - AT7456E
+''')
+        if len(self.dataflash_list) > 0:
+            f.write('''
+ - flash-based logging
+''')
+        elif (self.have_type_prefix('SDIO') or
+            self.have_type_prefix('SDMMC2') or
+            self.have_type_prefix('SDMMC') or
+            self.has_sdcard_spi()):
+            f.write('''
+ - microSD card slot
+''')
+        serial_list = self.get_UART_list()
+        f.write('''
+ - %ux UARTs
+''' % len(serial_list))
+        f.write('''
+ - CAN support
+''')
+        f.write('''
+ - 13x PWM Outputs (12 Motor Output, 1 LED)
+''')
+
+    def readme_write_uarts(self, f):
+        f.write('''
+## UART Mapping
+
+The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
+receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
+
+''')
+        for num, dev in enumerate(self.get_UART_list()):
+            if not dev.startswith('UART') and not dev.startswith('USART'):
+                continue
+            have_DMA = True
+            rx_port = dev + '_RX'
+            if rx_port in self.bylabel and self.bylabel[rx_port].has_extra('NODMA'):
+                have_DMA = False
+            tx_port = dev + '_TX'
+            if tx_port in self.bylabel and self.bylabel[tx_port].has_extra('NODMA'):
+                have_DMA = False
+
+            print(dev)
+            f.write(' - SERIAL%u -> %s (MAVLink2)\n' % (num, dev))
+
+        f.write('''
+ - SERIAL0 -> USB (MAVLink2)
+ - SERIAL1 -> UART1 (RX1 is SBUS in HD VTX connector)
+ - SERIAL2 -> UART2 (GPS, DMA-enabled)
+ - SERIAL3 -> UART3 (DisplayPort, DMA-enabled)
+ - SERIAL4 -> UART4 (MAVLink2, Telem1)
+ - SERIAL6 -> UART6 (RC Input, DMA-enabled)
+ - SERIAL7 -> UART7 (MAVLink2, Telem2, DMA and flow-control enabled)
+ - SERIAL8 -> UART8 (ESC Telemetry, RX8 on ESC connector for telem)
+''')
+
+    def readme_write_rcinput(self, f):
+        f.write('''
+## RC Input
+
+The default RC input is configured on the UART6. The SBUS pin is inverted and connected to RX6. Non SBUS, single wire serial inputs can be 
+directly tied to RX6 if SBUS pin is left unconnected. RC could  be applied instead to a different UART port such as UART1, UART4 or UART8, 
+and set the protocol to receive RC data ``SERIALn_PROTOCO`` =23 and change :ref:`SERIAL5 _PROTOCOL <SERIAL5 _PROTOCOL>` to something other than '23'. 
+For rc protocols other than unidirectional, the TX6 pin will need to be used:
+
+ - :ref:`SERIAL5_PROTOCOL<SERIAL5_PROTOCOL>` should be set to "23".
+ - FPort would require :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>` be set to "15".
+ - CRSF would require :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>` be set to "0".
+ - SRXL2 would require :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>` be set to "4" and connects only the TX pin.
+''')
+    def readme_write_osd(self, f):
+        f.write('''
+## OSD Support
+
+The TBS LUCID H7 supports OSD using OSD_TYPE 1 (MAX7456 driver) and simultaneously DisplayPort using TX3/RX3 on the HD VTX connector.
+
+## VTX Support
+
+The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 9v so 
+be careful not to connect this to a peripheral that can not tolerate this voltage.
+''')
+
+    def readme_write_pwm(self, f):
+        f.write('''
+## PWM Output
+
+The TBS LUCID H7 supports up to 13 PWM or DShot outputs. The pads for motor output
+M1 to M4 are provided on both the motor connectors and on separate pads, plus
+M9-13 on a separate pads for LED strip and other PWM outputs.
+
+The PWM is in 4 groups:
+
+ - PWM 1-2   in group1
+ - PWM 3-4   in group2
+ - PWM 5-6   in group3
+ - PWM 7-10  in group4
+ - PWM 11-12 in group5
+ - PWM 13    in group6
+
+Channels within the same group need to use the same output rate. If
+any channel in a group uses DShot then all channels in the group need
+to use DShot. Channels 1-10 support bi-directional dshot.
+''')
+
+    def readme_write_battery(self, f):
+        f.write('''
+## Battery Monitoring
+
+The board has a internal voltage sensor and connections on the ESC connector for an external current sensor input.
+The voltage sensor can handle up to 6S LiPo batteries.
+
+The default battery parameters are:
+
+ - :ref:BATT_MONITOR<BATT_MONITOR> = 4
+ - :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 10
+ - :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 11 (CURR pin)
+ - :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 21.12
+ - :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 40.2
+''')
+
+    def readme_write_airspeed(self, f):
+        f.write('''
+## Analog RSSI and AIRSPEED inputs
+
+Analog RSSI uses RSSI_PIN 8
+Analog Airspeed sensor would use ARSPD_PIN 4
+''')
+
+    def readme_write_MAG(self, f):
+        f.write('''
+## Compass
+
+The TBS LUCID H7 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+''')
+
+    def readme_write_vtx(self, f):
+        f.write('''
+## VTX power control
+
+GPIO 81 controls the VSW pins which can be set to output either VBAT or 5V via a board jumper. Setting this GPIO high removes
+voltage supply to pins. RELAY2 is configured by default to control this GPIO and is low by default.
+
+GPIO 83 controls the VTX BEC output to pins marked "9V" and is included on the HD VTX connector. Setting this GPIO low removes
+voltage supply to this pin/pad. By default RELAY4 is configured to control this pin and sets the GPIO high.
+
+## Camera control
+
+GPIO 82 controls the camera output to the connectors marked "CAM1" and "CAM2". Setting this GPIO low switches the video output
+from CAM1 to CAM2. By default RELAY3 is configured to control this pin and sets the GPIO high.
+''')
+
+    def readme_write_firmware(self, f):
+        f.write('''
+## Loading Firmware
+
+Firmware for these boards can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "CORVON743V_1".
+
+Initial firmware load can be done with DFU by plugging in USB with the
+bootloader button pressed. Then you should load the "with_bl.hex"
+firmware, using your favourite DFU loading tool.
+
+Once the initial firmware is loaded you can update the firmware using
+any ArduPilot ground station software. Updates should be done with the
+*.apj firmware files.
+''')
+
+    def write_readme(self, readme):
+        this_hwdef = self.hwdef[0]
+        self.board_name = os.path.basename(os.path.dirname(this_hwdef))
+        f = open(readme, 'w')
+        self.readme_write_intro(f)
+        self.readme_write_uarts(f)
+        self.readme_write_rcinput(f)
+        self.readme_write_osd(f)
+        self.readme_write_pwm(f)
+        self.readme_write_battery(f)
+        self.readme_write_airspeed(f)
+        self.readme_write_MAG(f)
+        self.readme_write_vtx(f)
+        self.readme_write_firmware(f)
+
     def run(self):
         # process input file
         self.process_hwdefs()
@@ -3119,6 +3337,10 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         # build a list for peripherals for DMA resolver
         self.periph_list = self.build_peripheral_list()
+
+        if args.generate_readme:
+            self.write_readme(os.path.join(self.outdir, "README.md"))
+            return
 
         # write out a default parameters file, decide how to use it:
         self.write_default_parameters()
@@ -3162,6 +3384,8 @@ if __name__ == '__main__':
         '--params', type=str, default=None, help='user default params path')
     parser.add_argument(
         '--quiet', action='store_true', default=False, help='quiet running')
+    parser.add_argument(
+        '--generate-readme', action='store_true', default=False, help='Generate a REAME.md')
 
     args = parser.parse_args()
 

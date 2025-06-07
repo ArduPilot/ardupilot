@@ -39,6 +39,9 @@ class HWDef:
         # integer defines
         self.intdefines = {}
 
+        # text defines
+        self.textdefines = {}
+
         # boolean indicating whether we have read and processed self.hwdef
         self.processed_hwdefs = False
 
@@ -245,6 +248,18 @@ class HWDef:
                     # raise ValueError(msg)
 
             self.intdefines[name] = intvalue
+            return
+
+        result = re.match(r'define\s*([A-Z_0-9]+)\s+([A-Z_0-9]+)', line)
+        if result:
+            (name, textvalue) = (result.group(1), result.group(2))
+            if name in self.textdefines and self.textdefines[name] == textvalue:
+                msg = f"{name} already in defines with same value"
+                if depth == 0:
+                    print(msg)
+                    # raise ValueError(msg)
+
+            self.textdefines[name] = textvalue
 
     def parse_spi_device(self, dev):
         '''parse a SPI:xxx device item'''
