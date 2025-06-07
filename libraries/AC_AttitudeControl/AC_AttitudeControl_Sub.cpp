@@ -457,7 +457,7 @@ void AC_AttitudeControl_Sub::input_euler_angle_roll_pitch_slew_yaw(float euler_r
     // Convert from centidegrees on public interface to radians
     const float euler_yaw_angle = wrap_PI(cd_to_rad(euler_yaw_angle_cd));
 
-    const float current_yaw = AP::ahrs().get_yaw();
+    const float current_yaw = AP::ahrs().get_yaw_rad();
 
     // Compute angle error
     const float yaw_error = wrap_PI(euler_yaw_angle - current_yaw);

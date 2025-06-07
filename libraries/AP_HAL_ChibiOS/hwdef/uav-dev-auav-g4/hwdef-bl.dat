@@ -1,0 +1,56 @@
+# hw definition file for AUAV airspeed sensor from UAV-DEV GmbH
+
+# MCU class and specific type
+MCU STM32G4xx STM32G474xx
+
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 32
+
+# reserve some space for params
+APP_START_OFFSET_KB 4
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_UAV-DEV-AUAV-G4
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# node name
+define CAN_APP_NODE_NAME "com.uav-dev.auav"
+
+# debug on USART3
+STDOUT_SERIAL SD3
+STDOUT_BAUDRATE 57600
+
+# order of UARTs
+SERIAL_ORDER USART3
+
+# USART3
+PB10 USART3_TX USART3
+PB11 USART3_RX USART3
+
+# LED
+define HAL_LED_ON 0
+PC13 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CAN
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PA8 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+PB12 CAN2_RX CAN2
+PB13 CAN2_TX CAN2
+PB15 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+# use a smaller bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 1000

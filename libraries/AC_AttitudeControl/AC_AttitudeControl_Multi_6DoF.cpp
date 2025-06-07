@@ -20,10 +20,10 @@ void AC_AttitudeControl_Multi_6DoF::rate_controller_run() {
     // if 6DoF control, always point directly up
     // this stops horizontal drift due to error between target and true attitude
     if (lateral_enable) {
-        roll_deg = degrees(AP::ahrs().get_roll());
+        roll_deg = degrees(AP::ahrs().get_roll_rad());
     }
     if (forward_enable) {
-        pitch_deg = degrees(AP::ahrs().get_pitch());
+        pitch_deg = degrees(AP::ahrs().get_pitch_rad());
     }
     _motors.set_roll_pitch(roll_deg,pitch_deg);
 

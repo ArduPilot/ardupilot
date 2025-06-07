@@ -244,7 +244,7 @@ void Blimp::read_AHRS(void)
                                 pos_ned.x,
                                 pos_ned.y,
                                 pos_ned.z,
-                                blimp.ahrs.get_yaw());
+                                blimp.ahrs.get_yaw_rad());
 #endif
 }
 

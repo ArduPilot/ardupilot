@@ -572,10 +572,18 @@ public:
      * Attitude-related public methods and attributes:
      */
 
-    // roll/pitch/yaw euler angles, all in radians
+#if AP_SCRIPTING_ENABLED
+    // deprecated functions for accessing rpy.  Do not use, these will
+    // be removed.
     float get_roll() const { return roll; }
     float get_pitch() const { return pitch; }
     float get_yaw() const { return yaw; }
+#endif  // AP_SCRIPTING_ENABLED
+
+    // roll/pitch/yaw euler angles, all in radians
+    float get_roll_rad() const { return roll; }
+    float get_pitch_rad() const { return pitch; }
+    float get_yaw_rad() const { return yaw; }
 
     // roll/pitch/yaw euler angles, all in degrees
     float get_roll_deg() const { return rpy_deg[0]; }

@@ -7,6 +7,9 @@ local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTI
 local PARAM_TABLE_KEY = 106
 local PARAM_TABLE_PREFIX = "LTE_"
 
+-- local MAVLINK2 = 2
+local PPP = 48
+
 -- add a parameter and bind it to a variable
 local function bind_add_param(name, idx, default_value)
     assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', name))
@@ -50,7 +53,7 @@ local LTE_SCRPORT = bind_add_param('SCRPORT',  3, 0)
     // @Range: 0 255
     // @User: Standard
 --]]
-local LTE_SERVER_IP0  = bind_add_param('SERVER_IP0',  4, 157)
+local LTE_SERVER_IP0  = bind_add_param('SERVER_IP0',  4, 0)
 
 --[[
     // @Param: LTE_SERVER_IP1
@@ -59,7 +62,7 @@ local LTE_SERVER_IP0  = bind_add_param('SERVER_IP0',  4, 157)
     // @Range: 0 255
     // @User: Standard
 --]]
-local LTE_SERVER_IP1  = bind_add_param('SERVER_IP1',  5, 245)
+local LTE_SERVER_IP1  = bind_add_param('SERVER_IP1',  5, 0)
 
 --[[
     // @Param: LTE_SERVER_IP2
@@ -68,7 +71,7 @@ local LTE_SERVER_IP1  = bind_add_param('SERVER_IP1',  5, 245)
     // @Range: 0 255
     // @User: Standard
 --]]
-local LTE_SERVER_IP2  = bind_add_param('SERVER_IP2',  6, 83)
+local LTE_SERVER_IP2  = bind_add_param('SERVER_IP2',  6, 0)
 
 --[[
     // @Param: LTE_SERVER_IP3
@@ -77,7 +80,7 @@ local LTE_SERVER_IP2  = bind_add_param('SERVER_IP2',  6, 83)
     // @Range: 0 255
     // @User: Standard
 --]]
-local LTE_SERVER_IP3  = bind_add_param('SERVER_IP3',  7, 174)
+local LTE_SERVER_IP3  = bind_add_param('SERVER_IP3',  7, 0)
 
 --[[
     // @Param: LTE_SERVER_PORT
@@ -91,8 +94,8 @@ local LTE_SERVER_PORT = bind_add_param('SERVER_PORT',  8, 0)
 --[[
     // @Param: LTE_BAUD
     // @DisplayName: Serial Baud Rate
-    // @Description: Baud rate for the serial port to the LTE modem. If using something other than 115200 you need to connect to the modem and use AT+IPREX=BAUD to set the baud rate and save with AT&W
-    // @Values: 19200:19200,38400:38400,57600:57600,115200:115200,230400:230400,460800:460800,921600:921600
+    // @Description: Baud rate for the serial port to the LTE modem. If using something other than 115200 you need to connect to the modem and use AT+IPREX=BAUD to set the baud rate and save with AT&W. The fastest supported baudrate is 3686400.
+    // @Values: 19200:19200,38400:38400,57600:57600,115200:115200,230400:230400,460800:460800,921600:921600,3686400:3686400
     // @User: Standard
 --]]
 local LTE_BAUD        = bind_add_param('BAUD',  9, 115200)
@@ -107,30 +110,26 @@ local LTE_BAUD        = bind_add_param('BAUD',  9, 115200)
 --]]
 local LTE_TIMEOUT     = bind_add_param('TIMEOUT', 10, 10)
 
+--[[
+    // @Param: LTE_PROTOCOL
+    // @DisplayName: LTE protocol
+    // @Description: The protocol that we will use in communication with the LTE modem. If this is PPP then the LTE_SERVER parameters are not used and instead a PPP connection will be established and you should use the NET_ parameters to enable network ports. If this is MAVLink2 then the LTE_SERVER parameters are used to create a TCP connection to a single TCP server.
+    // @Values: 2:MavLink2,48:PPP
+    // @User: Standard
+--]]
+local LTE_PROTOCOL     = bind_add_param('PROTOCOL', 11, 48)
+
 local uart = serial:find_serial(LTE_SERPORT:get())
 if not uart then
     gcs:send_text(MAV_SEVERITY.ERROR, 'SIM7600: could not find serial port')
     return
 end
 
-local MAVLINK2 = 2
-
-local ser_device = serial:find_simulated_device(MAVLINK2, LTE_SCRPORT:get())
+local ser_device = serial:find_simulated_device(LTE_PROTOCOL:get(), LTE_SCRPORT:get())
 if not ser_device then
-    gcs:send_text(MAV_SEVERITY.ERROR, 'SIM7600: could not find simulated device')
+    gcs:send_text(MAV_SEVERITY.ERROR, 'SIM7600: could not find SCR_SDEV device')
     return
 end
-
---[[
-    steps to connect the modem:
-    1. send "ATI" to get modem info and confirm communication
-    2. send AT+CIPMODE=1 to set to transparent mode
-    3. send AT+NETOPEN to open the network stack
-    4. send AT+CIPOPEN=0,"TCP","<server_ip>",<server_port> to open a TCP connection
-
-    Once connected we have a transparent connection to the server.
-    If we see "\r\nCLOSED\r\n" we need to reconnect.
---]]
 
 local step = "ATI"
 
@@ -178,7 +177,7 @@ local ati_sequence = 0
     it uses AIT command to get the modem info, and +++ if needed
     to break out of transparent mode
 --]]
-local function confirm_connection()
+local function step_ATI()
     local s = uart_read()
     if s and s:find('IMEI: ') then
         gcs:send_text(MAV_SEVERITY.INFO, 'SIM7600: found modem')
@@ -197,14 +196,18 @@ end
 --[[
     confirm we are registered on the network
 --]]
-local function confirm_registration()
+local function step_CREG()
     local s = uart_read()
     if handle_error(s) then
         return
     end
     if s and s:find('CREG: 0,1\r\n') then
         gcs:send_text(MAV_SEVERITY.INFO, 'SIM7600: CREG OK')
-        step = "CIPMODE"
+        if LTE_PROTOCOL:get() == PPP then
+            step = "PPPOPEN"
+        else
+            step = "CIPMODE"
+        end
         return
     end
     uart:writestring('AT+CREG?\r\n')
@@ -213,7 +216,7 @@ end
 --[[
     set the modem to transparent mode
 --]]
-local function set_transparent()
+local function step_CIPMODE()
     local s = uart_read()
     if handle_error(s) then
         return
@@ -230,7 +233,7 @@ end
     open the network stack
     needed to be able to open a TCP connection
 --]]
-local function open_network()
+local function step_NETOPEN()
     local s = uart_read()
     if handle_error(s) then
         return
@@ -248,10 +251,30 @@ local pending_to_modem = ""
 local pending_to_fc = ""
 
 --[[
+    open PPP mode
+--]]
+local function step_PPPOPEN()
+    local s = uart_read()
+    if handle_error(s) then
+        return
+    end
+
+    if s and s:find('CONNECT ') then
+        gcs:send_text(MAV_SEVERITY.INFO, 'SIM7600: connected')
+        last_data_ms = millis()
+        pending_to_modem = ""
+        pending_to_fc = ""
+        step = "CONNECTED"
+        return
+    end
+    uart:writestring(string.format('AT+CGDATA="PPP",1\r\n'))
+end
+
+--[[
     open a TCP connection to the server
     the server IP and port are defined in the parameters
 --]]
-local function open_connection()
+local function step_CIPOPEN()
     local s = uart_read()
     if handle_error(s) then
         return
@@ -277,17 +300,18 @@ end
 --[[
     handle data while connected
 --]]
-local function handle_connection()
+local function step_CONNECTED()
     local s = uart:readstring(512)
     if s and s:find('\r\nCLOSED\r\n') then
         gcs:send_text(MAV_SEVERITY.INFO, 'SIM7600: connection closed, reconnecting')
         step = "CIPOPEN"
         return
     end
+    local now_ms = millis()
     if s and #s > 0 then
-        last_data_ms = millis()
+        last_data_ms = now_ms
         pending_to_fc = pending_to_fc .. s
-    elseif millis() - last_data_ms > uint32_t(LTE_TIMEOUT:get() * 1000) then
+    elseif now_ms - last_data_ms > uint32_t(LTE_TIMEOUT:get() * 1000) then
         gcs:send_text(MAV_SEVERITY.ERROR, 'SIM7600: timeout')
         step = "ATI"
         return
@@ -327,39 +351,47 @@ local function update()
     if LTE_ENABLE:get() == 0 then
         return update, 500
     end
-    if step ~= "CONNECTED" then
-        gcs:send_text(MAV_SEVERITY.INFO, string.format('SIM7600: step %s', step))
+
+    if step == "CONNECTED" then
+        -- run the connected step at 200Hz
+        step_CONNECTED()
+        return update, 5
     end
 
+    gcs:send_text(MAV_SEVERITY.INFO, string.format('SIM7600: step %s', step))
+
     if step == "ATI" then
-        confirm_connection()
+        step_ATI()
         return update, 1100
     end
 
     if step == "CREG" then
-        confirm_registration()
+        step_CREG()
         return update, 500
     end
     
     if step == "CIPMODE" then
-        set_transparent()
+        step_CIPMODE()
         return update, 500
     end
 
     if step == "NETOPEN" then
-        open_network()
+        step_NETOPEN()
         return update, 500
     end
 
+    if step == "PPPOPEN" then
+        step_PPPOPEN()
+        return update, 500
+    end
+    
     if step == "CIPOPEN" then
-        open_connection()
+        step_CIPOPEN()
         return update, 500
     end
 
-    if step == "CONNECTED" then
-        handle_connection()
-        return update, 10
-    end
+    gcs:send_text(MAV_SEVERITY.ERROR, string.format("SIM7600: bad step %s", step))
+    step = "ATI"
 end
 
 gcs:send_text(MAV_SEVERITY.INFO, 'SIM7600: starting')

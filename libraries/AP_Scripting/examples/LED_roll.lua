@@ -72,7 +72,7 @@ end
 We will set the colour of the LEDs based on roll of the aircraft
 --]]
 function update_LEDs()
-  local roll = constrain(ahrs:get_roll(), math.rad(-60), math.rad(60))
+  local roll = constrain(ahrs:get_roll_rad(), math.rad(-60), math.rad(60))
 
   for led = 0, num_leds-1 do
     local v  = constrain(0.5 + 0.5 * math.sin(roll * (led - num_leds/2) / (num_leds/2)), 0, 1)

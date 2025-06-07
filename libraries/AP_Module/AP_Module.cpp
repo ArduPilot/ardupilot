@@ -167,9 +167,9 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS &ahrs)
     state.quat[2] = q[2];
     state.quat[3] = q[3];
 
-    state.eulers[0] = ahrs.get_roll();
-    state.eulers[1] = ahrs.get_pitch();
-    state.eulers[2] = ahrs.get_yaw();
+    state.eulers[0] = ahrs.get_roll_rad();
+    state.eulers[1] = ahrs.get_pitch_rad();
+    state.eulers[2] = ahrs.get_yaw_rad();
 
     Location loc;
     if (ahrs.get_origin(loc)) {

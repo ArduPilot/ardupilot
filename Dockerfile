@@ -47,7 +47,7 @@ RUN git config --global --add safe.directory $PWD
 # Check that local/bin are in PATH for pip --user installed package
 RUN echo "if [ -d \"\$HOME/.local/bin\" ] ; then\nPATH=\"\$HOME/.local/bin:\$PATH\"\nfi" >> ~/.ardupilot_env
 
-# Clone & install Micro-XRCE-DDS-Gen dependancy
+# Clone & install Micro-XRCE-DDS-Gen dependency
 RUN git clone --recurse-submodules https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git /home/${USER_NAME}/Micro-XRCE-DDS-Gen \
     && cd /home/${USER_NAME}/Micro-XRCE-DDS-Gen \
     && ./gradlew assemble \

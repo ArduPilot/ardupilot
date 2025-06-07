@@ -455,9 +455,9 @@ void AP_Mount_XFRobot::send_target_angles(const MountTarget& angle_target_rad)
     // byte 12~13: absolute roll angle of vehicle (int16, -18000 ~ +18000)
     // byte 14~15: absolute pitch angle of vehicle (int16, -9000 ~ +9000)
     // byte 16~17: absolute yaw angle of vehicle (uint16, 0 ~ 36000)
-    set_attitude_packet.content.main.roll_abs = htole16(constrain_int16(degrees(AP::ahrs().get_roll()) * 100, -18000, 18000));
-    set_attitude_packet.content.main.pitch_abs = htole16(constrain_int16(degrees(AP::ahrs().get_pitch()) * 100, -9000, 9000));
-    set_attitude_packet.content.main.yaw_abs = htole16(constrain_int16(degrees(wrap_PI(AP::ahrs().get_yaw())) * 100, -18000, 18000));
+    set_attitude_packet.content.main.roll_abs = htole16(constrain_int16(degrees(AP::ahrs().get_roll_rad()) * 100, -18000, 18000));
+    set_attitude_packet.content.main.pitch_abs = htole16(constrain_int16(degrees(AP::ahrs().get_pitch_rad()) * 100, -9000, 9000));
+    set_attitude_packet.content.main.yaw_abs = htole16(constrain_int16(degrees(wrap_PI(AP::ahrs().get_yaw_rad())) * 100, -18000, 18000));
 
     // byte 18~19: North acceleration of vehicle (int16, cm/s/s)
     // byte 20~21: East acceleration of vehicle (int16, cm/s/s)
