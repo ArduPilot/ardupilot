@@ -35,7 +35,6 @@ const AP_Param::GroupInfo AP_Stats::var_info[] = {
     // @DisplayName: Statistics Reset Time
     // @Description: Seconds since January 1st 2016 (Unix epoch+1451606400) since statistics reset (set to 0 to reset statistics, other set values will be ignored)
     // @Units: s
-    // @ReadOnly: True
     // @User: Standard
     AP_GROUPINFO("_RESET",    3, AP_Stats, params.reset, 1),
 
