@@ -118,6 +118,7 @@ known_units = {
 # compound
 
              'kB'      : 'kilobytes'               ,
+             'KiB'     : 'kibibytes',
              'MB'      : 'megabyte'                ,
              'm.m/s/s' : 'square meter per square second',
              'deg/m/s' : 'degrees per meter per second'  ,
