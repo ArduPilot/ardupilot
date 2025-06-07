@@ -140,13 +140,7 @@ protected:
 
 private:
     // Helpers for twitch-based test monitoring
-
-
-
-
-
-
-
+    
     void twitching_test_rate(float angle, float rate, float rate_target,
                              float &meas_rate_min, float &meas_rate_max, float &meas_angle_min);
 
