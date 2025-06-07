@@ -65,7 +65,7 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
     case TuneMode::TUNING:
         // Resuming from previous tuning session, restart from current axis and tune step
         reset_vehicle_test_variables();
-        step = StepType::WAITING_FOR_LEVEL;
+        step = Step::WAITING_FOR_LEVEL;
         step_start_time_ms = now_ms;
         level_start_time_ms = now_ms;
         // Reload gains with low I-term and restart logging
@@ -165,16 +165,16 @@ void AC_AutoTune::send_step_string()
         return;
     }
     switch (step) {
-    case StepType::WAITING_FOR_LEVEL:
+    case Step::WAITING_FOR_LEVEL:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Leveling");
         return;
-    case StepType::UPDATE_GAINS:
+    case Step::UPDATE_GAINS:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Updating Gains");
         return;
-    case StepType::ABORT:
+    case Step::ABORT:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Aborting Test");
         return;
-    case StepType::EXECUTING_TEST:
+    case Step::EXECUTING_TEST:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Testing");
         return;
     }
@@ -272,7 +272,7 @@ void AC_AutoTune::run()
             // Check if pilot has released sticks long enough to resume tuning
             if (now_ms - override_time > AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS) {
                 pilot_override = false;
-                step = StepType::WAITING_FOR_LEVEL;
+                step = Step::WAITING_FOR_LEVEL;
                 step_start_time_ms = now_ms;
                 level_start_time_ms = now_ms;
                 // TODO: Consider using our current target.
@@ -371,7 +371,7 @@ void AC_AutoTune::control_attitude()
 
     switch (step) {
 
-    case StepType::WAITING_FOR_LEVEL: {
+    case Step::WAITING_FOR_LEVEL: {
         // Use intra-test gains while holding level between tests
         load_gains(GainType::INTRA_TEST);
 
@@ -385,7 +385,7 @@ void AC_AutoTune::control_attitude()
 
         if (now_ms - step_start_time_ms > AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
             // Begin the test phase
-            step = StepType::EXECUTING_TEST;
+            step = Step::EXECUTING_TEST;
             step_start_time_ms = now_ms;
             step_timeout_ms = get_testing_step_timeout_ms();
 
@@ -413,7 +413,7 @@ void AC_AutoTune::control_attitude()
         break;
     }
 
-    case StepType::EXECUTING_TEST: {
+    case Step::EXECUTING_TEST: {
         // Run the test with current trial gains
         load_gains(GainType::TEST);
         test_run(axis, direction_sign);
@@ -421,7 +421,7 @@ void AC_AutoTune::control_attitude()
         // Detect failure due to reverse response or excessive lean angle
         if (lean_angle <= -angle_lim_neg_rpy_cd() ||
             attitude_control->lean_angle_deg() * 100 > angle_lim_max_rp_cd()) {
-            step = StepType::ABORT;
+            step = Step::ABORT;
         }
 
 #if HAL_LOGGING_ENABLED
@@ -437,7 +437,7 @@ void AC_AutoTune::control_attitude()
         break;
     }
 
-    case StepType::UPDATE_GAINS:
+    case Step::UPDATE_GAINS:
 
 #if HAL_LOGGING_ENABLED
         Log_AutoTune(); // Log gain adjustment results
@@ -540,7 +540,7 @@ void AC_AutoTune::control_attitude()
         }
         FALLTHROUGH;
 
-    case StepType::ABORT:
+    case Step::ABORT:
         // Recover from failed test or move on after a successful one
 
         get_poshold_attitude(roll_cd, pitch_cd, desired_yaw_cd);
@@ -548,7 +548,7 @@ void AC_AutoTune::control_attitude()
 
         load_gains(GainType::INTRA_TEST);
 
-        step = StepType::WAITING_FOR_LEVEL;
+        step = Step::WAITING_FOR_LEVEL;
         positive_direction = reverse_test_direction();
         step_start_time_ms = now_ms;
         level_start_time_ms = now_ms;
@@ -582,7 +582,7 @@ void AC_AutoTune::backup_gains_and_initialise()
     // start at the beginning of tune sequence
     next_tune_type(tune_type, true);
 
-    step = StepType::WAITING_FOR_LEVEL;
+    step = Step::WAITING_FOR_LEVEL;
     positive_direction = false;
     step_start_time_ms = now_ms;
     level_start_time_ms = now_ms;

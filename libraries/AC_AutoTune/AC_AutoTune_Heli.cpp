@@ -291,7 +291,7 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
             update_gcs(AUTOTUNE_MESSAGE_FAILED);
         } else if (tune_type == TuneType::TUNE_COMPLETE) {
             success_counter = AUTOTUNE_SUCCESS_COUNT;
-            step = StepType::UPDATE_GAINS;
+            step = Step::UPDATE_GAINS;
         }
         return;
     }
@@ -366,7 +366,7 @@ void AC_AutoTune_Heli::do_post_test_gcs_announcements() {
         break;
     }
 
-    if (step == StepType::UPDATE_GAINS) {
+    if (step == Step::UPDATE_GAINS) {
         switch (tune_type) {
         case TuneType::RATE_FF_UP:
         case TuneType::RATE_P_UP:
@@ -1023,7 +1023,7 @@ void AC_AutoTune_Heli::dwell_test_run(sweep_info &test_data)
         if (now_ms - step_start_time_ms >= sweep_time_ms + 200) {
             // we have passed the maximum stop time
             sweep_complete = true;
-            step = StepType::UPDATE_GAINS;
+            step = Step::UPDATE_GAINS;
         }
     } else {
         if (now_ms - step_start_time_ms >= step_timeout_ms || (freqresp_tgt.is_cycle_complete() && freqresp_mtr.is_cycle_complete())) {
@@ -1033,7 +1033,7 @@ void AC_AutoTune_Heli::dwell_test_run(sweep_info &test_data)
             cycle_complete_tgt = false;
             cycle_complete_tgt = false;
             // we have passed the maximum stop time
-            step = StepType::UPDATE_GAINS;
+            step = Step::UPDATE_GAINS;
         }
     }
 }

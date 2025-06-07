@@ -204,13 +204,13 @@ protected:
     virtual void updating_max_gains_all(AxisType test_axis)=0;
 
     // steps performed while in the tuning mode
-    enum class StepType {
+    enum class Step {
         WAITING_FOR_LEVEL   = 0,    // Waiting for the vehicle to stabilize at level before starting a test.
         EXECUTING_TEST      = 1,    // Performing a test and monitoring the vehicle's response.
         UPDATE_GAINS        = 2,    // Updating gains based on test results.
         ABORT               = 3     // Aborting the current test; revert to safe gains and return to WAITING_FOR_LEVEL.
     };
-    StepType step;              // see StepType for what steps are performed
+    Step step;              // see StepType for what steps are performed
 
     // mini steps performed while in Tuning mode, Testing step
     enum class TuneType {
