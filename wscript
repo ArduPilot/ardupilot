@@ -571,7 +571,7 @@ def configure(cfg):
 
     # require python 3.8.x or later
     cfg.load('python')
-    cfg.check_python_version(minver=(3,6,9))
+    cfg.check_python_version(minver=(3,8,0))
 
     cfg.load('ap_library')
 
