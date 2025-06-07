@@ -168,11 +168,12 @@ jobs:
           PATH: /usr/bin:$(cygpath ${SYSTEMROOT})/system32
         shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
         run: >-
-          mkdir -p /cygdrive/d/a/ardupilot/ardupilot/ccache &&
+          CYGPATH_GITHUB_WORKSPACE=$(cygpath -u "$GITHUB_WORKSPACE") &&
+          mkdir -p "${CYGPATH_GITHUB_WORKSPACE}/ccache" &&
           mkdir -p /usr/local/etc &&
           echo "export CCACHE_SLOPPINESS=file_stat_matches" >> ~/ccache.conf &&
-          echo "export CCACHE_DIR=/cygdrive/d/a/ardupilot/ardupilot/ccache" >> ~/ccache.conf &&
-          echo "export CCACHE_BASEDIR=/cygdrive/d/a/ardupilot/ardupilot" >> ~/ccache.conf &&
+          echo "export CCACHE_DIR=${CYGPATH_GITHUB_WORKSPACE}/ccache" >> ~/ccache.conf &&
+          echo "export CCACHE_BASEDIR=${CYGPATH_GITHUB_WORKSPACE}" >> ~/ccache.conf &&
           echo "export CCACHE_COMPRESS=1" >> ~/ccache.conf &&
           echo "export CCACHE_COMPRESSLEVEL=6" >> ~/ccache.conf &&
           echo "export CCACHE_MAXSIZE=400M" >> ~/ccache.conf &&
@@ -202,7 +203,9 @@ jobs:
           PATH: /usr/bin:$(cygpath ${SYSTEMROOT})/system32
         shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
         run: >-
-          git config --global --add safe.directory /cygdrive/d/a/${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}/${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/} &&
+          echo "GITHUB_WORKSPACE=${GITHUB_WORKSPACE}" &&
+          CYGPATH_GITHUB_WORKSPACE=$(cygpath -u "$GITHUB_WORKSPACE") &&
+          git config --global --add safe.directory "${CYGPATH_GITHUB_WORKSPACE}" &&
           export PATH=/usr/local/bin:/usr/bin:$(cygpath ${SYSTEMROOT})/system32 &&
           source ~/ccache.conf &&
           Tools/scripts/cygwin_build.sh &&
