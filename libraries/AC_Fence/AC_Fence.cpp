@@ -979,6 +979,7 @@ void AC_Fence::clear_margin_breach(uint8_t fence_type)
 /// of the given fences.  fence_type is a bitmask here.
 float AC_Fence::get_breach_distance(uint8_t fence_type) const
 {
+    fence_type = fence_type & present();
     float max = -FLT_MAX;
 
     if (fence_type & AC_FENCE_TYPE_ALT_MAX) {
