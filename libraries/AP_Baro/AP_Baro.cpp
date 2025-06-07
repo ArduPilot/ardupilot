@@ -727,11 +727,13 @@ void AP_Baro::_probe_i2c_barometers(void)
     uint32_t probe = _baro_probe_ext.get();
     (void)probe;  // may be unused if most baros compiled out
     uint32_t mask = hal.i2c_mgr->get_bus_mask_external();
+#if AP_FEATURE_BOARD_DETECT
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
         // for the purpose of baro probing, treat CubeBlack internal i2c as external. It has
         // no internal i2c baros, so this is safe
         mask |= hal.i2c_mgr->get_bus_mask_internal();
     }
+#endif  // AP_FEATURE_BOARD_DETECT
     // if the user has set BARO_EXT_BUS then probe the bus given by that parameter
     int8_t ext_bus = _ext_bus;
     if (ext_bus >= 0) {
