@@ -1680,8 +1680,7 @@ INCLUDE common.ld
             return default
         return p.extra_value(name, type=str, default=default)
 
-    def write_UART_config(self, f):
-        '''write UART config defines'''
+    def get_UART_list(self):
         serial_list = self.get_config('SERIAL_ORDER', required=False, aslist=True)
         hide_iomcu_uart = False
         if 'IOMCU_UART' in self.config:
@@ -1689,6 +1688,11 @@ INCLUDE common.ld
 
         if 'IOMCU_UART' in self.config and self.config['IOMCU_UART'][0] not in serial_list:
             serial_list.append(self.config['IOMCU_UART'][0])
+        return serial_list
+
+    def write_UART_config(self, f):
+        '''write UART config defines'''
+        serial_list = self.get_UART_list()
         if serial_list is None:
             return
         while len(serial_list) < 3: # enough ports for CrashCatcher UART discovery
@@ -3152,12 +3156,7 @@ The %s is a flight controller designed and produced by [%s].
             f.write('''
  - microSD card slot
 ''')
-        serial_list = self.get_config('SERIAL_ORDER', required=False, aslist=True)
-        hide_iomcu_uart = False
-        if 'IOMCU_UART' in self.config:
-            hide_iomcu_uart = self.config['IOMCU_UART'][0] not in serial_list
-        if 'IOMCU_UART' in self.config and self.config['IOMCU_UART'][0] not in serial_list:
-            serial_list.append(self.config['IOMCU_UART'][0])
+        serial_list = self.get_UART_list()
         f.write('''
  - %ux UARTs
 ''' % len(serial_list))
@@ -3175,6 +3174,22 @@ The %s is a flight controller designed and produced by [%s].
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
+''')
+        for num, dev in enumerate(self.get_UART_list()):
+            if not dev.startswith('UART') and not dev.startswith('USART'):
+                continue
+            have_DMA = True
+            rx_port = dev + '_RX'
+            if rx_port in self.bylabel and self.bylabel[rx_port].has_extra('NODMA'):
+                have_DMA = False
+            tx_port = dev + '_TX'
+            if tx_port in self.bylabel and self.bylabel[tx_port].has_extra('NODMA'):
+                have_DMA = False
+
+            print(dev)
+            f.write(' - SERIAL%u -> %s (MAVLink2)\n' % (num, dev))
+
+        f.write('''
  - SERIAL0 -> USB (MAVLink2)
  - SERIAL1 -> UART1 (RX1 is SBUS in HD VTX connector)
  - SERIAL2 -> UART2 (GPS, DMA-enabled)
