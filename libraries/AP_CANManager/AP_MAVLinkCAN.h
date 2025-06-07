@@ -69,6 +69,7 @@ private:
     };
     
     // Frame buffer for queuing frames
+    HAL_Semaphore frame_buffer_sem;
     ObjectBuffer<BufferFrame> *frame_buffer;
 };
 
