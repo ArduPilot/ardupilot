@@ -52,7 +52,7 @@ compass_types = {
     0x05 : "DEVTYPE_BMM150 ",
     0x06 : "DEVTYPE_LSM9DS1",
     0x08 : "DEVTYPE_LIS3MDL",
-    0x09 : "DEVTYPE_AK09916",
+    0x09 : "DEVTYPE_AK0991x",
     0x0A : "DEVTYPE_IST8310",
     0x0B : "DEVTYPE_ICM20948",
     0x0C : "DEVTYPE_MMC3416",
