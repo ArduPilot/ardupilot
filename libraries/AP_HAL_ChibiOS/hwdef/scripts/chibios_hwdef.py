@@ -119,6 +119,9 @@ class ChibiOSHWDef(hwdef.HWDef):
         # list of shared up timers
         self.shared_up = []
 
+        # board name
+        self.board_mame = ""
+
     def get_mcu_lib(self, mcu):
         '''get library file for the chosen MCU'''
         import importlib
@@ -1677,8 +1680,7 @@ INCLUDE common.ld
             return default
         return p.extra_value(name, type=str, default=default)
 
-    def write_UART_config(self, f):
-        '''write UART config defines'''
+    def get_UART_list(self):
         serial_list = self.get_config('SERIAL_ORDER', required=False, aslist=True)
         hide_iomcu_uart = False
         if 'IOMCU_UART' in self.config:
@@ -1686,6 +1688,14 @@ INCLUDE common.ld
 
         if 'IOMCU_UART' in self.config and self.config['IOMCU_UART'][0] not in serial_list:
             serial_list.append(self.config['IOMCU_UART'][0])
+        return serial_list
+
+    def write_UART_config(self, f):
+        '''write UART config defines'''
+        serial_list = self.get_UART_list()
+        hide_iomcu_uart = False
+        if 'IOMCU_UART' in self.config:
+            hide_iomcu_uart = self.config['IOMCU_UART'][0] not in serial_list
         if serial_list is None:
             return
         while len(serial_list) < 3: # enough ports for CrashCatcher UART discovery
@@ -2725,6 +2735,9 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
     def write_processed_defaults_file(self, filepath):
         # see if board has a defaults.parm file or a --default-parameters file was specified
+        if not self.hwdef[0] or not args.params:
+            return
+
         defaults_filename = os.path.join(os.path.dirname(self.hwdef[0]), 'defaults.parm')
         defaults_path = os.path.join(os.path.dirname(self.hwdef[0]), self.default_params_filepath)
 
@@ -3096,6 +3109,299 @@ Please run: Tools/scripts/build_bootloaders.py %s
         })
         return ret
 
+    def readme_write_intro(self, f):
+        f.write('''
+# %s Flight Controller
+
+The %s is a flight controller designed and produced by [%s].
+''' % (self.board_name, self.board_name, self.board_name))
+        f.write('''
+## Features
+
+ - MCU - %s 32-bit processor running at %u MHz\n''' % 
+ (self.mcu_type, 480 if self.mcu_series.startswith("STM32H7") else 216 if self.mcu_series.startswith("STM32F7") else 168))
+        count = 1
+        for dev in self.imu_list:
+            f.write(' - IMU%u - %s\n' % (count, dev[0]))
+            count = count+1
+        if self.baro_list:
+            f.write(' - Barometer - %s\n' % self.baro_list[0][0])
+        if self.compass_list:
+            f.write(' - Magnetometer - %s\n' % self.compass_list[0][0])
+        if self.intdefines.get('OSD_ENABLED', 0) == 1:
+            f.write(' - OSD - AT7456E\n')
+        if len(self.dataflash_list) > 0:
+            f.write(' - flash-based logging\n')
+        elif (self.have_type_prefix('SDIO') or
+            self.have_type_prefix('SDMMC2') or
+            self.have_type_prefix('SDMMC') or
+            self.has_sdcard_spi()):
+            f.write(' - microSD card slot\n')
+        serial_list = self.get_UART_list()
+        f.write(' - %ux UARTs\n' % (len([item for item in serial_list if item != "EMPTY"]) - 1))
+        if self.have_type_prefix('CAN'):
+            f.write(' - CAN support\n')
+        pwm = 0
+        for label in self.bylabel.keys():
+            p = self.bylabel[label]
+            if p.extra_value('PWM', type=int) is not None:
+                pwm = pwm + 1
+
+        f.write(' - %ux PWM Outputs (%u Motor Output, 1 LED)\n' % (pwm, pwm - 1))
+
+    def readme_write_uarts(self, f):
+        f.write('''
+## UART Mapping
+
+The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
+receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
+
+ - SERIAL0 -> USB (MAVLink2)
+''')
+        for num, dev in enumerate(self.get_UART_list()):
+            if not dev.startswith('UART') and not dev.startswith('USART'):
+                continue
+            have_DMA = True
+            rx_port = dev + '_RX'
+            if rx_port in self.bylabel and self.bylabel[rx_port].has_extra('NODMA'):
+                have_DMA = False
+            tx_port = dev + '_TX'
+            if tx_port in self.bylabel and self.bylabel[tx_port].has_extra('NODMA'):
+                have_DMA = False
+
+            protocol  = self.textdefines.get('DEFAULT_SERIAL%u_PROTOCOL' % num)
+            if protocol is None:
+                if num <= 3:
+                    protocol = "MAVLink2"
+                elif num == 4 or num == 5:
+                    protocol = "GPS"
+                else:
+                    protocol = "Spare"
+            else:
+                protocol = protocol.removeprefix('SerialProtocol_')
+                protocol = protocol.replace('_', ' ')
+                if protocol == 'None':
+                    protocol = 'Spare'
+            f.write(' - SERIAL%u -> %s (%s%s)\n' % (num, dev, protocol, ', DMA-enabled' if have_DMA else ''))
+
+    def get_serial_protocol(self, protocol):
+        for num, dev in enumerate(self.get_UART_list()):
+            if self.textdefines.get('DEFAULT_SERIAL%u_PROTOCOL' % num) == protocol:
+                return dev
+
+    def readme_write_rcinput(self, f):
+        spare = ''
+        for num, dev in enumerate(self.get_UART_list()):
+            if (num > 5 and self.textdefines.get('DEFAULT_SERIAL%u_PROTOCOL' % num) is None
+                or self.textdefines.get('DEFAULT_SERIAL%u_PROTOCOL' % num) == "SerialProtocol_NONE"):
+                spare = spare + dev + ', '
+        for num, dev in enumerate(self.get_UART_list()):
+            protocol  = self.textdefines.get('DEFAULT_SERIAL%u_PROTOCOL' % num)
+            if protocol != "SerialProtocol_RCIN":
+                continue
+            f.write('''
+## RC Input
+
+The default RC input is configured on %s. RC could  be applied instead to a different UART port such as %s and set
+the protocol to receive RC data ``SERIALn_PROTOCOL`` = 23 and change :ref:`SERIAL%u _PROTOCOL <SERIAL%u _PROTOCOL>`
+to something other than '23'. For rc protocols other than unidirectional, the %s_TX pin will need to be used:
+
+ - :ref:`SERIAL%u_PROTOCOL<SERIAL%u_PROTOCOL>` should be set to "23".
+ - FPort would require :ref:`SERIAL%u_OPTIONS<SERIAL%u_OPTIONS>` be set to "15".
+ - CRSF would require :ref:`SERIAL%u_OPTIONS<SERIAL%u_OPTIONS>` be set to "0".
+ - SRXL2 would require :ref:`SERIAL%u_OPTIONS<SERIAL%u_OPTIONS>` be set to "4" and connects only the TX pin.
+''' % (dev, spare, num, num, dev, num, num, num, num, num, num, num, num))
+
+    def readme_write_osd(self, f):
+        if self.intdefines.get('OSD_ENABLED', 0) == 1:
+            f.write('''
+## OSD Support
+
+The %s supports OSD using OSD_TYPE 1 (MAX7456 driver)
+''' % self.board_name)
+            dev = self.get_serial_protocol('SerialProtocol_MSP_DisplayPort')
+            if dev is not None:
+                f.write(''' and simultaneously DisplayPort using %s on the HD VTX connector.
+
+## VTX Support
+
+The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 9v so 
+be careful not to connect this to a peripheral that can not tolerate this voltage.
+''' % dev)
+
+    def abbreviate_ranges(self, nums):
+        if not nums:
+            return ""
+
+        nums = sorted(set(nums))  # Remove duplicates and sort
+        ranges = []
+        start = prev = nums[0]
+
+        for num in nums[1:]:
+            if num == prev + 1:
+                prev = num
+            else:
+                ranges.append(f"{start}-{prev}" if start != prev else f"{start}")
+                start = prev = num
+
+        ranges.append(f"{start}-{prev}" if start != prev else f"{start}")
+        return ",".join(ranges)
+
+    def readme_write_pwm(self, f):
+        pwm_out = []
+        pwm_groups = {}
+        chan_groups = {}
+        bidir = []
+        for label in self.bylabel.keys():
+            p = self.bylabel[label]
+            if p.type.startswith('TIM'):
+                group = pwm_groups.get(p.type)
+                pwm = p.extra_value('PWM', type=int)
+                (n, chan, compl) = self.parse_timer(p.label)
+                if group is None:
+                    group = [ pwm ]
+                    chans = [ chan ]
+                else:
+                    group.append(pwm)
+                    chans.append(chan)
+                pwm_groups[p.type] = group
+                chan_groups[p.type] = chans
+                if pwm is not None:
+                    pwm_out.append(pwm)
+                if p.has_extra('BIDIR'):
+                    bidir.append(pwm)
+                else:
+                    if (chan == 1 and 2 in chans 
+                        or chan == 2 and 1 in chans
+                        or chan == 3 and 4 in chans
+                        or chan == 4 and 3 in chans):
+                        bidir.append(pwm)
+        f.write('''
+## PWM Output
+
+The %s supports up to %u PWM or DShot outputs. The pads for motor output
+M%u to M%u are provided on both the motor connectors and on separate pads, plus
+separate pads for LED strip and other PWM outputs.
+
+The PWM is in %u groups:
+
+''' % (self.board_name, len(pwm_out), pwm_out[0], pwm_out[-1], len(pwm_groups)))
+        for num, group in enumerate(pwm_groups.values()):
+            f.write(' - PWM %s   in group%u\n' % (self.abbreviate_ranges(group), num+1))
+
+        f.write('''
+Channels within the same group need to use the same output rate. If
+any channel in a group uses DShot then all channels in the group need
+to use DShot.''')
+        if len(bidir) > 0:
+            f.write(' Channels %s support bi-directional dshot.\n' % self.abbreviate_ranges(bidir))
+
+    def readme_write_battery(self, f):
+        battmon = self.textdefines.get('HAL_BATT_MONITOR_DEFAULT')
+        if not battmon:
+            return
+        f.write('''
+## Battery Monitoring
+
+The board has a internal voltage sensor and connections on the ESC connector for an external current sensor input.
+The voltage sensor can handle up to 6S LiPo batteries.
+
+The default battery parameters are:
+
+ - :ref:`BATT_MONITOR<BATT_MONITOR>` = %s
+ - :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = %s
+ - :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = %s (CURR pin)
+ - :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = %s
+ - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = %s
+''' % (battmon, self.textdefines.get('HAL_BATT_VOLT_PIN'),
+        self.textdefines.get('HAL_BATT_CURR_PIN'), self.textdefines.get('HAL_BATT_VOLT_SCALE'),
+        self.textdefines.get('HAL_BATT_CURR_SCALE')))
+
+    def readme_write_airspeed(self, f):
+        rssi = self.textdefines.get('BOARD_RSSI_ANA_PIN')
+        if rssi:
+            f.write('''
+## Analog RSSI input
+
+Analog RSSI uses :ref:`RSSI_PIN<RSSI_PIN>` %s
+''' % rssi)
+
+        airspeed = self.textdefines.get('HAL_DEFAULT_AIRSPEED_PIN')
+        if airspeed:
+            f.write('''
+## Analog AIRSPEED inputs
+
+Analog Airspeed sensor would use ARSPD_PIN %s
+''' % airspeed)
+
+    def readme_write_MAG(self, f):
+        f.write('''
+## Compass
+
+The %s does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+''' % self.board_name)
+
+    def get_relay(self, gpiopin):
+        for name, val in self.intdefines.items():
+            if val == gpiopin:
+                return name.split('_')[0]
+        return None
+
+    def readme_write_vtx(self, f):
+        vtx_pwr = self.get_gpio_bylabel('VTX_PWR')
+        if vtx_pwr > 0:
+            relay = self.get_relay(vtx_pwr)
+            f.write('''
+## VTX power control
+
+GPIO %u controls the VTX BEC output to pins marked "9V" and is included on the HD VTX connector. Setting this GPIO low removes
+voltage supply to this pin/pad.''' % vtx_pwr)
+            if relay:
+                f.write(' By default %s is configured to control this pin and sets the GPIO high.' % relay)
+            f.write('\n')
+
+        cam_sw = self.get_gpio_bylabel('CAM_SW')
+        if cam_sw > 0:
+            relay = self.get_relay(cam_sw)
+            f.write('''
+## Camera control
+
+GPIO %u controls the camera output to the connectors marked "CAM1" and "CAM2". Setting this GPIO low switches the video output
+from CAM1 to CAM2.''' % cam_sw)
+            if relay:
+                f.write(' By default %s is configured to control this pin and sets the GPIO high.' % relay)
+            f.write('\n')
+
+    def readme_write_firmware(self, f):
+        f.write('''
+## Loading Firmware
+
+Firmware for these boards can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "%s".
+
+Initial firmware load can be done with DFU by plugging in USB with the
+bootloader button pressed. Then you should load the "with_bl.hex"
+firmware, using your favourite DFU loading tool.
+
+Once the initial firmware is loaded you can update the firmware using
+any ArduPilot ground station software. Updates should be done with the
+*.apj firmware files.
+''' % self.board_name)
+
+    def write_readme(self, readme):
+        this_hwdef = self.hwdef[0]
+        self.board_name = os.path.basename(os.path.dirname(this_hwdef))
+        f = open(readme, 'w')
+        self.readme_write_intro(f)
+        self.readme_write_uarts(f)
+        self.readme_write_rcinput(f)
+        self.readme_write_osd(f)
+        self.readme_write_pwm(f)
+        self.readme_write_battery(f)
+        self.readme_write_airspeed(f)
+        self.readme_write_MAG(f)
+        self.readme_write_vtx(f)
+        self.readme_write_firmware(f)
+
     def run(self):
         # process input file
         self.process_hwdefs()
@@ -3114,6 +3420,10 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         # build a list for peripherals for DMA resolver
         self.periph_list = self.build_peripheral_list()
+
+        if args.generate_readme:
+            self.write_readme(os.path.join(self.outdir, "README.md"))
+            return
 
         # write out a default parameters file, decide how to use it:
         self.write_default_parameters()
@@ -3156,6 +3466,8 @@ if __name__ == '__main__':
         '--params', type=str, default=None, help='user default params path')
     parser.add_argument(
         '--quiet', action='store_true', default=False, help='quiet running')
+    parser.add_argument(
+        '--generate-readme', action='store_true', default=False, help='Generate a REAME.md')
 
     args = parser.parse_args()
 
