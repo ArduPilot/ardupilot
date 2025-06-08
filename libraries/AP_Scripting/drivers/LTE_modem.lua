@@ -1,5 +1,7 @@
 --[[
-    driver for SIM7600 LTE modems
+    driver for LTE modems with AT command set
+    supported chipsets:
+      - SIM7600
 --]]
 
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
@@ -17,7 +19,7 @@ local function bind_add_param(name, idx, default_value)
 end
 
 -- Setup Parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 20), 'SIM7600: could not add param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 20), 'LTE_modem: could not add param table')
 
 --[[
     // @Param: LTE_ENABLE
@@ -119,15 +121,31 @@ local LTE_TIMEOUT     = bind_add_param('TIMEOUT', 10, 10)
 --]]
 local LTE_PROTOCOL     = bind_add_param('PROTOCOL', 11, 48)
 
+--[[
+    // @Param: LTE_OPTIONS
+    // @DisplayName: LTE options
+    // @Description: Options to control the LTE modem driver
+    // @Bitmask: 0:LogAllData
+    // @User: Standard
+--]]
+local LTE_OPTIONS     = bind_add_param('OPTIONS', 12, 0)
+
+local LTE_OPTIONS_LOGALL = (1<<0)
+
+if LTE_ENABLE:get() == 0 then
+    -- disabled
+    return
+end
+
 local uart = serial:find_serial(LTE_SERPORT:get())
 if not uart then
-    gcs:send_text(MAV_SEVERITY.ERROR, 'SIM7600: could not find serial port')
+    gcs:send_text(MAV_SEVERITY.ERROR, 'LTE_modem: could not find serial port')
     return
 end
 
 local ser_device = serial:find_simulated_device(LTE_PROTOCOL:get(), LTE_SCRPORT:get())
 if not ser_device then
-    gcs:send_text(MAV_SEVERITY.ERROR, 'SIM7600: could not find SCR_SDEV device')
+    gcs:send_text(MAV_SEVERITY.ERROR, 'LTE_modem: could not find SCR_SDEV device')
     return
 end
 
@@ -139,7 +157,17 @@ uart:begin(LTE_BAUD:get())
     Open a log file to log the output from the modem
     This is useful for debugging the connection process
 --]]
-local log_file = io.open('SIM7600.log', 'w')
+local log_file = io.open('LTE_modem.log', 'w')
+
+--[[
+    log data to log_file
+--]]
+local function log_data(s, marker)
+    if s and #s > 0 and log_file then
+        log_file:write(marker .. '[' .. s .. ']\n')
+        log_file:flush()
+    end
+end
 
 --[[
     Function to read from the UART and log the output
@@ -148,10 +176,16 @@ local log_file = io.open('SIM7600.log', 'w')
 --]]
 local function uart_read()
     local s = uart:readstring(512)
-    if s and #s > 0 and log_file then
-        log_file:write('[' .. s .. ']\n')
-        log_file:flush()
-    end
+    log_data(s, '<<<')
+    return s
+end
+
+--[[
+    Function to write to the UART and log the command
+--]]
+local function uart_write(s)
+    uart:writestring(s)
+    log_data(s, '>>>')
     return s
 end
 
@@ -162,8 +196,8 @@ end
 --]]
 local function handle_error(s)
     if s and s:find('\nERROR\r\n') then
-        gcs:send_text(MAV_SEVERITY.ERROR, 'SIM7600: error response from modem')
-        uart:writestring('AT+CRESET\r\n')
+        gcs:send_text(MAV_SEVERITY.ERROR, 'LTE_modem: error response from modem')
+        uart_write('ATH\r\nAT+CRESET;\r\n')
         step = "ATI"
         return true
     end
@@ -180,15 +214,15 @@ local ati_sequence = 0
 local function step_ATI()
     local s = uart_read()
     if s and s:find('IMEI: ') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'SIM7600: found modem')
+        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: found modem')
         step = "CREG"
         return
     end
     if ati_sequence == 1 then
-        uart:writestring('+++')
+        uart_write('+++')
         ati_sequence = 0
     else
-        uart:writestring('\r\nATI\r\n')
+        uart_write('\r\nATI\r\n')
         ati_sequence = 1
     end
 end
@@ -202,7 +236,7 @@ local function step_CREG()
         return
     end
     if s and s:find('CREG: 0,1\r\n') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'SIM7600: CREG OK')
+        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: CREG OK')
         if LTE_PROTOCOL:get() == PPP then
             step = "PPPOPEN"
         else
@@ -210,7 +244,27 @@ local function step_CREG()
         end
         return
     end
-    uart:writestring('AT+CREG?\r\n')
+    uart_write('AT+CREG?\r\n')
+end
+
+--[[
+    setup automatic signal reporting
+--]]
+local function step_AUTOCSQ()
+    local s = uart_read()
+    if handle_error(s) then
+        return
+    end
+    if s and s:find('AUTOCSQ=1,1\r\r\nOK\r') then
+        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: AUTOCSQ OK')
+        if LTE_PROTOCOL:get() == PPP then
+            step = "PPPOPEN"
+        else
+            step = "CIPMODE"
+        end
+        return
+    end
+    uart_write('AT+AUTOCSQ=1,1\r\n')
 end
 
 --[[
@@ -222,11 +276,11 @@ local function step_CIPMODE()
         return
     end
     if s and s:find('CIPMODE=1\r\r\nOK\r') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'SIM7600: transparent mode set')
+        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: transparent mode set')
         step = "NETOPEN"
         return
     end
-    uart:writestring('AT+CIPMODE=1\r\n')
+    uart_write('AT+CIPMODE=1\r\n')
 end
 
 --[[
@@ -239,11 +293,11 @@ local function step_NETOPEN()
         return
     end
     if s and s:find('NETOPEN\r\r\nOK\r\n') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'SIM7600: network opened')
+        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: network opened')
         step = "CIPOPEN"
         return
     end
-    uart:writestring('AT+NETOPEN\r\n')
+    uart_write('AT+NETOPEN\r\n')
 end
 
 local last_data_ms = millis()
@@ -260,14 +314,14 @@ local function step_PPPOPEN()
     end
 
     if s and s:find('CONNECT ') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'SIM7600: connected')
+        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: connected')
         last_data_ms = millis()
         pending_to_modem = ""
         pending_to_fc = ""
         step = "CONNECTED"
         return
     end
-    uart:writestring(string.format('AT+CGDATA="PPP",1\r\n'))
+    uart_write('AT+CGDATA="PPP",1\r\n')
 end
 
 --[[
@@ -281,7 +335,7 @@ local function step_CIPOPEN()
     end
 
     if s and s:find('CONNECT ') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'SIM7600: connected')
+        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: connected')
         last_data_ms = millis()
         pending_to_modem = ""
         pending_to_fc = ""
@@ -292,7 +346,7 @@ local function step_CIPOPEN()
         gcs:send_text(MAV_SEVERITY.ERROR, "Must set LTE_SERVER_PORT")
         return
     end
-    uart:writestring(string.format('AT+CIPOPEN=0,"TCP","%d.%d.%d.%d",%d\r\n',
+    uart_write(string.format('AT+CIPOPEN=0,"TCP","%d.%d.%d.%d",%d\r\n',
                                    LTE_SERVER_IP0:get(), LTE_SERVER_IP1:get(), LTE_SERVER_IP2:get(), LTE_SERVER_IP3:get(),
                                    LTE_SERVER_PORT:get()))
 end
@@ -302,8 +356,11 @@ end
 --]]
 local function step_CONNECTED()
     local s = uart:readstring(512)
+    if LTE_OPTIONS:get() & LTE_OPTIONS_LOGALL then
+        log_data(s, '<<<')
+    end
     if s and s:find('\r\nCLOSED\r\n') then
-        gcs:send_text(MAV_SEVERITY.INFO, 'SIM7600: connection closed, reconnecting')
+        gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: connection closed, reconnecting')
         step = "CIPOPEN"
         return
     end
@@ -312,11 +369,14 @@ local function step_CONNECTED()
         last_data_ms = now_ms
         pending_to_fc = pending_to_fc .. s
     elseif now_ms - last_data_ms > uint32_t(LTE_TIMEOUT:get() * 1000) then
-        gcs:send_text(MAV_SEVERITY.ERROR, 'SIM7600: timeout')
+        gcs:send_text(MAV_SEVERITY.ERROR, 'LTE_modem: timeout')
         step = "ATI"
         return
     end
     s = ser_device:readstring(512)
+    if LTE_OPTIONS:get() & LTE_OPTIONS_LOGALL then
+        log_data(s, '>>>')
+    end
     if s then
         pending_to_modem = pending_to_modem .. s
     end
@@ -358,7 +418,7 @@ local function update()
         return update, 5
     end
 
-    gcs:send_text(MAV_SEVERITY.INFO, string.format('SIM7600: step %s', step))
+    gcs:send_text(MAV_SEVERITY.INFO, string.format('LTE_modem: step %s', step))
 
     if step == "ATI" then
         step_ATI()
@@ -367,6 +427,11 @@ local function update()
 
     if step == "CREG" then
         step_CREG()
+        return update, 500
+    end
+
+    if step == "AUTOCSQ" then
+        step_AUTOCSQ()
         return update, 500
     end
     
@@ -390,10 +455,10 @@ local function update()
         return update, 500
     end
 
-    gcs:send_text(MAV_SEVERITY.ERROR, string.format("SIM7600: bad step %s", step))
+    gcs:send_text(MAV_SEVERITY.ERROR, string.format("LTE_modem: bad step %s", step))
     step = "ATI"
 end
 
-gcs:send_text(MAV_SEVERITY.INFO, 'SIM7600: starting')
+gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: starting')
 
 return update,500
