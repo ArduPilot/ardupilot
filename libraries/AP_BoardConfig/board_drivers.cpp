@@ -109,6 +109,7 @@ void AP_BoardConfig::board_setup_drivers(void)
     case FMUV6_BOARD_HOLYBRO_6X_REV6:
     case FMUV6_BOARD_HOLYBRO_6X_45686:
     case FMUV6_BOARD_CUAV_6X:
+    case FMUV6_BOARD_GODWIT_GA1:
         break;
     default:
         config_error("Unknown board type");
@@ -524,6 +525,12 @@ void AP_BoardConfig::detect_fmuv6_variant()
                spi_check_register("icm45686", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686)) {
         state.board_type.set_and_notify(FMUV6_BOARD_HOLYBRO_6X_REV6);
         DEV_PRINTF("Detected Holybro 6X_Rev6\n");
+    } else if ((spi_check_register("icm42688-2", INV3REG_WHOAMI, INV3_WHOAMI_ICM42688) &&
+                spi_check_register("icm42688", INV3REG_WHOAMI, INV3_WHOAMI_ICM42688) &&
+                spi_check_register("bmi088_g", BMI088REG_CHIPID, CHIPID_BMI088_G))) {
+        state.board_type.set_and_notify(FMUV6_BOARD_GODWIT_GA1);
+        DEV_PRINTF("Detected GODWIT GA1\n");
+        AP_Param::load_defaults_file("@ROMFS/param/GODWIT_GA1_defaults.parm", false);
     }
 }
 #endif
