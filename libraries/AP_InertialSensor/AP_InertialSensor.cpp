@@ -1295,18 +1295,6 @@ AP_InertialSensor::detect_backends(void)
         ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU6500_NAME), ROTATION_YAW_270));
         break;
 
-    case AP_BoardConfig::VRX_BOARD_BRAIN54:
-        _fast_sampling_mask.set_default(7);
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME), ROTATION_YAW_180));
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_EXT_NAME), ROTATION_YAW_180));
-#ifdef HAL_INS_MPU60x0_IMU_NAME
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_IMU_NAME), ROTATION_YAW_180));
-#endif
-        break;
-
-    case AP_BoardConfig::VRX_BOARD_BRAIN51:
-    case AP_BoardConfig::VRX_BOARD_BRAIN52:
-    case AP_BoardConfig::VRX_BOARD_BRAIN52E:
     case AP_BoardConfig::VRX_BOARD_CORE10:
     case AP_BoardConfig::VRX_BOARD_UBRAIN51:
     case AP_BoardConfig::VRX_BOARD_UBRAIN52:
