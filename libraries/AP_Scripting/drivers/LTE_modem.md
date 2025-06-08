@@ -83,22 +83,24 @@ Range: 1-65525. This is not used with PPP.
 
 ## LTE_BAUD
 
-This sets the baud rate for the serial port to the LTE modem. Common
-values are 9600, 57600, or 115200. The modem must be configured to use
-the same baud rate. Range: 9600-3686400. Default: 115200.
+This sets the baud rate for the serial port to the LTE modem to use
+for data transfer. Common values are 115200 or 921600. Default:
+115200.
 
-If using something other than 115200 you need to connect to the modem
-with a terminal program and use AT+IPREX=BAUD to set the baud rate and
-then save with AT&W. If the modem is wired to a flight controller then
-you can use the SERIAL_PASS parameters to give temporary control of
-the modem to a USB port so you can use a terminal protocol to
-configure the modem.
+## LTE_IBAUD
+
+The initial baud rate when the modem is powered on. This is normally
+115200 but can be changed in the modem using the AT+IREX terminal command.
 
 ## LTE_TIMEOUT
 
 This sets the timeout in seconds for the LTE connection. If no data is
 received for this time, the connection will be reset and the driver
 will attempt to reconnect. Range: 1-60 seconds. Default: 10 seconds.
+
+## LTE_OPTIONS
+
+This sets options for debugging and data display
 
 # Operation
 
@@ -131,7 +133,6 @@ port 20001. It assumes you have the modem on Telem1 (SERIAL1)
  - SCR_SDEV1_PROTO 48
  - SERIAL1_PROTOCOL 28
  - LTE_PROTOCOL 48
- - LTE_BAUD 115200
  - NET_ENABLE 1
  - NET_P1_TYPE 3
  - NET_P1_IP0 157
@@ -148,7 +149,6 @@ the support server is used and modem is attached on SERAL1 (no PPP used)
  - SCR_SDEV1_PROTO 2
  - SERIAL1_PROTOCOL 28
  - LTE_PROTOCOL 2
- - LTE_BAUD 115200
  - LTE_SERVER_IP0 157
  - LTE_SERVER_IP1 245
  - LTE_SERVER_IP2 83
@@ -194,3 +194,11 @@ Common issues:
 
 If the connection fails or is lost, the driver will automatically attempt
 to reconnect by restarting the connection sequence.
+
+# Logging
+
+A LTE log message is saved in the onboard log. That has signal
+strength information and data transfer statistics.
+
+A NAMED_VALUE_FLOAT MAVLink message "LTE_RSSI" is sent with the RSSI
+signal strength.
