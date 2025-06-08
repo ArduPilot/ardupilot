@@ -1437,10 +1437,8 @@ void Compass::probe_i2c_spi_compasses(void)
     case AP_BoardConfig::PX4_BOARD_AUAV21:
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
-    case AP_BoardConfig::PX4_BOARD_MINDPXV2:
     case AP_BoardConfig::PX4_BOARD_FMUV5:
     case AP_BoardConfig::PX4_BOARD_FMUV6:
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
     case AP_BoardConfig::PX4_BOARD_AEROFC:
         _probe_external_i2c_compasses();
         CHECK_UNREG_LIMIT_RETURN;
@@ -1527,16 +1525,6 @@ void Compass::probe_i2c_spi_compasses(void)
 #endif
         break;
 
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
-#if AP_COMPASS_AK8963_ENABLED
-        ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(0, ROTATION_ROLL_180_YAW_90));
-#endif
-#if AP_COMPASS_LIS3MDL_ENABLED
-        ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(hal.spi->get_device(HAL_COMPASS_LIS3MDL_NAME),
-                    false, ROTATION_NONE));
-#endif  // AP_COMPASS_LIS3MDL_ENABLED
-        break;
-
     case AP_BoardConfig::PX4_BOARD_PHMINI:
 #if AP_COMPASS_AK8963_ENABLED
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(0, ROTATION_ROLL_180));
@@ -1552,16 +1540,6 @@ void Compass::probe_i2c_spi_compasses(void)
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
 #if AP_COMPASS_AK8963_ENABLED
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(0, ROTATION_YAW_270));
-#endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_MINDPXV2:
-#if AP_COMPASS_HMC5843_ENABLED
-        ADD_BACKEND(DRIVER_HMC5843, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(0, HAL_COMPASS_HMC5843_I2C_ADDR),
-                    false, ROTATION_YAW_90));
-#endif
-#if AP_COMPASS_LSM303D_ENABLED
-        ADD_BACKEND(DRIVER_LSM303D, AP_Compass_LSM303D::probe(hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME), ROTATION_PITCH_180_YAW_270));
 #endif
         break;
 
