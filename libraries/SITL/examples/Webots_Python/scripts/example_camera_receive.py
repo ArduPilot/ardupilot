@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #
-# An example script that receives images from a WebotsArduVehicle 
+# An example script that receives images from a WebotsArduVehicle
 # on port 5599 and displays using OpenCV.
 # Requires opencv-python (`pip3 install opencv-python`)
 #

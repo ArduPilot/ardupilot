@@ -63,7 +63,7 @@ mcu = {
     ],
 
     'EXPECTED_CLOCK' : 400000000,
-    
+
 	'EXPECTED_CLOCKS' : [
 		('STM32_SYS_CK',	520000000),
 		('STM32_OSPICLK', 	200000000),
@@ -100,7 +100,7 @@ pincount = {
     'J': 16,
     'K': 16
 }
-    
+
 # no DMA map as we will dynamically allocate DMA channels using the DMAMUX
 DMA_Map = None
 

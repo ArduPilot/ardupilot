@@ -409,7 +409,7 @@ AltFunction_map = {
 	"PF10:SPI2_SCK"     	:	4,
 	"PF10:TIM15_CH2"    	:	2,
 }
-    
+
 ADC1_map = {
 	# format is PIN : ADC1_CHAN
 	# extracted from tabula-addfunc-F303.csv

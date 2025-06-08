@@ -2,8 +2,8 @@
 
 import re, sys, operator, os
 
-code_line = re.compile("^\s*\d+:/")
-frame_line = re.compile("^\s*\d+\s+/\* frame size = (\d+) \*/")
+code_line = re.compile(r"^\s*\d+:/")
+frame_line = re.compile(r"^\s*\d+\s+/\* frame size = (\d+) \*/")
 
 class frame(object):
     def __init__(self, code, frame_size):
@@ -41,4 +41,3 @@ print("FrameSize   Code")
 for frame in sorted_frames:
     if frame.frame_size > 0:
         print("%9u   %s" % (frame.frame_size, frame.code))
-    

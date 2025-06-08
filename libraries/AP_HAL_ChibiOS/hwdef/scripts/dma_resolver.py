@@ -48,10 +48,10 @@ def check_possibility(periph, dma_stream, curr_dict, dma_map, check_list, cannot
                             print ('....................... Resolving', other_periph, stream)
                         return True
                 if debug:
-                    print ('....................... UnSolved !!!!!!!!', periph, dma_stream)                    
+                    print ('....................... UnSolved !!!!!!!!', periph, dma_stream)
                 return False
     if debug:
-        print ('....................... Solved ..........', periph, dma_stream)    
+        print ('....................... Solved ..........', periph, dma_stream)
     return True
 
 def can_share(periph, noshare_list):
@@ -179,7 +179,7 @@ def generate_DMAMUX_map_mask(peripheral_list, channel_mask, noshare_list, dma_ex
                 if (dma,stream) in dma_map[p]:
                     # this peripheral is already using the stream
                     continue
-                
+
                 # prevent attempts to share with other half of same peripheral
                 if p.endswith('RX'):
                     other = p[:-2] + 'TX'
@@ -432,7 +432,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
         if len(stream_assign[stream]) > 1:
             if not check_sharing(stream_assign[stream]):
                 sys.exit(1)
-    
+
     if debug:
         print(stream_assign)
 
@@ -508,7 +508,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                         if chkey not in timer_ch_periph:
                             continue
                         f.write("#define %-30s %s\n" %
-                                (chibios_dma_define_name(chkey)+'CHAN', 
+                                (chibios_dma_define_name(chkey)+'CHAN',
                                 chan.replace('_UP', '_CH{}'.format(ch))))
                 break
 
@@ -600,4 +600,3 @@ if __name__ == '__main__':
 
     f = open("dma.h", "w")
     write_dma_header(f, plist, mcu_type)
-

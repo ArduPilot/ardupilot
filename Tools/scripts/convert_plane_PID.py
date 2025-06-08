@@ -50,7 +50,7 @@ def process_file(fname):
             return
         # maintain separator if possible
         sep = " "
-        m = re.match("[A-Z_0-9]+([\s,]+)[0-9.-]+", lines[i])
+        m = re.match(r"[A-Z_0-9]+([\s,]+)[0-9.-]+", lines[i])
         if m is not None:
             sep = m.group(1)
         changed_param = True

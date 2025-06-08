@@ -55,7 +55,7 @@ mcu = {
         (0x30040000,  32, 8), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
-    
+
     'EXPECTED_CLOCK' : 400000000,
 
 	'EXPECTED_CLOCKS' : [
@@ -90,7 +90,7 @@ pincount = {
     'J': 16,
     'K': 16
 }
-    
+
 # no DMA map as we will dynamically allocate DMA channels using the DMAMUX
 DMA_Map = None
 

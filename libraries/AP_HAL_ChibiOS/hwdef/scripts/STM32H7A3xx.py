@@ -46,7 +46,7 @@ mcu = {
 
 	# this MCU has a strange OTG setup
     'STM32_OTG2_IS_OTG1' : 1,
-    
+
     # this MCU has M7 instructions and hardware double precision
     'CORTEX'    : 'cortex-m7',
     'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
@@ -71,7 +71,7 @@ pincount = {
     'J': 16,
     'K': 16
 }
-    
+
 # no DMA map as we will dynamically allocate DMA channels using the DMAMUX
 DMA_Map = None
 

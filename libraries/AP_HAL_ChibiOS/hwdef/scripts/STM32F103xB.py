@@ -52,7 +52,7 @@ ADC1_map = {
 	"PC4"	:	14,
 	"PC5"	:	15,
 }
-    
+
 
 DMA_Map = {
     # format is (DMA_TABLE, StreamNum, Channel)
@@ -105,4 +105,3 @@ DMA_Map = {
     "USART3_RX"    	:	[(1,3,0)],
     "USART3_TX"    	:	[(1,2,0)],
 }
-

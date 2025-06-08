@@ -125,7 +125,7 @@ class CheckReplayBranch(object):
                 m = dfreader.recv_match(type='MSG')
                 if m is None:
                     break
-                match = re.match(".*Running replay on \(([^)]+)\).*", m.Message)
+                match = re.match(r".*Running replay on \(([^)]+)\).*", m.Message)
                 if match is None:
                     continue
                 replayed_logs.add(match.group(1))

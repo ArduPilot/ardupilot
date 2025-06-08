@@ -283,7 +283,7 @@ define HAL_BUZZER_PIN 80
         name = ("USART" if int(uartn) < 4 or int(uartn) == 6 else "UART") + uart
         usarts += (" " + name)
         uartn = uartn + 1
-    
+
     f.write(usarts)
     f.write('''
 # PA10 IO-debug-console
@@ -311,7 +311,7 @@ PA12 OTG_FS_DP OTG1
     for i2c in sorted(list(set([i2c[0] for i2c in functions["I2C"].values()]))):
         i2cs += (" " + "I2C" + i2c)
         i2cn = i2cn + 1
-    
+
     f.write(i2cs)
 
     # PIN FN I2C

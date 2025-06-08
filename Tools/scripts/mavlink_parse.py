@@ -107,7 +107,7 @@ class MAVLinkDetector:
     # regex for commands handled by the autopilot
     INCOMING_COMMANDS = re.compile(r'case (MAV_CMD_[A-Z0-9_]*)')
     # regex for messages that can be requested from the autopilot
-    REQUESTABLE_REGION = re.compile(' map\[\]([^;]*);')
+    REQUESTABLE_REGION = re.compile(r' map\[\]([^;]*);')
     REQUESTABLE_MAP = re.compile(r'MAVLINK_MSG_ID_([A-Z0-9_]*),\s*MSG_([A-Z0-9_]*)')
     # regex for messages the autopilot might send, but cannot be requested
     OUTGOING_MESSAGES = re.compile(r'mavlink_msg_([a-z0-9_]*)_send\(')
@@ -147,7 +147,7 @@ class MAVLinkDetector:
         'messages': MAVLinkMessage,
         'commands': MAVLinkCommand,
     }
-        
+
     MAVLINK_URL = 'https://mavlink.io/en/messages/{dialect}.html#{message_name}'
     ARDUPILOT_URL = 'https://github.com/ArduPilot/ardupilot/tree/{branch}/{source}'
     EXPORT_FILETYPES = {
@@ -176,7 +176,7 @@ class MAVLinkDetector:
                  exclude_libraries=['SITL', 'AP_Scripting']):
         self.vehicle = vehicle
         vehicles = [vehicle] if vehicle != 'ALL' else self.VEHICLES
-        files = chain(*((self.BASE_DIR / vehicle).glob('**/*.cpp') 
+        files = chain(*((self.BASE_DIR / vehicle).glob('**/*.cpp')
                         for vehicle in vehicles),
                       common_files)
         self.incoming_messages = {}
@@ -211,7 +211,7 @@ class MAVLinkDetector:
                 for name in new_names:
                     names[name] = MAVLinkMessage(f'NAMED_VALUE_{type_.upper()}:{name}',
                                                  source, MAVLinkDialect.COMMON)
-            
+
             for method, data, type_ in (
                 (self.find_incoming_messages, self.incoming_messages, 'messages'),
                 (self.find_incoming_commands, self.incoming_commands, 'commands'),
@@ -243,14 +243,14 @@ class MAVLinkDetector:
 
     @classmethod
     def find_outgoing_messages(cls, text: str):
-        return (msg.upper() for msg in 
+        return (msg.upper() for msg in
                 cls.OUTGOING_MESSAGES.findall(text))
 
     @classmethod
     def find_requestable_messages(cls, text: str):
         region = cls.REQUESTABLE_REGION.search(text).group()
         return cls.REQUESTABLE_MAP.findall(region)
-        
+
     @classmethod
     def find_named_floats(cls, text: str):
         return cls.NAMED_FLOAT.findall(text)
@@ -351,7 +351,7 @@ class MAVLinkDetector:
                 case MAVLinkMessage() as message:
                     print(*message.as_tuple(), current_type, sep=',', file=file)
 
-    def export_markdown(self, file, iterable, branch='master', header=None, 
+    def export_markdown(self, file, iterable, branch='master', header=None,
                         use_intro=True, **extra_kwargs):
         if header == 'ArduSub':
             import time
@@ -389,12 +389,12 @@ class MAVLinkDetector:
                     ' specified rate.'
                 )
             vehicle = self.vehicle.replace('ALL', 'ArduPilot')
-             
+
             print(self.MARKDOWN_INTRO.format(
-                vehicle=vehicle, commands=commands, 
+                vehicle=vehicle, commands=commands,
                 stream_groups=stream_groups, unsupported=unsupported
             ), file=file)
-            
+
         for data in iterable:
             match data:
                 case str() as type_:
@@ -415,7 +415,7 @@ class MAVLinkDetector:
                         name = f'[{name}]({msg_url})'
                     if source != 'UNSUPPORTED' and not source.startswith('SRn'):
                         folder = source.split('/')[0]
-                        base = 'libraries/' if folder not in self.VEHICLES else '' 
+                        base = 'libraries/' if folder not in self.VEHICLES else ''
                         code_url = self.ARDUPILOT_URL.format(branch=branch,
                                                              source=base+source)
                         source = f'[{source}]({code_url})'
@@ -458,7 +458,7 @@ if __name__ == '__main__':
     export_opts.add_argument('--header', help='Header for the markdown file.')
     export_opts.add_argument('--no-intro', action='store_true',
                              help="Flag to not use the automatic markdown intro.")
-    
+
     args = parser.parse_args()
 
     assert (args.vehicle in MAVLinkDetector.VEHICLES
@@ -497,6 +497,6 @@ if __name__ == '__main__':
             args.filename or
             f'{args.vehicle}_{branch}_MAVLink_Messages.{ext}'
         )
-        
+
         messages.export(filename, type=args.format, branch=branch, header=args.header,
                         use_intro=not args.no_intro, **include_options)

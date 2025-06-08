@@ -298,4 +298,3 @@ def check_SFML_Audio(cfg, env):
             return False
     env.LIB += libs
     return True
-

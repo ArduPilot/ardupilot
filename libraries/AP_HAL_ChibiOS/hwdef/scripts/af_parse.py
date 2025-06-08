@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
- create alternate function tables 
+ create alternate function tables
 
 This assumes a csv file extracted from the datasheet using tablula:
 

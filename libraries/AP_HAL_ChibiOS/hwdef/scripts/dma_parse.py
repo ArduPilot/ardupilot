@@ -62,7 +62,7 @@ def check_full_table(table):
                 error("Missing channel %u for dma table %u" % (c, i))
             if not ((1<<c) & stream_mask[i]):
                 error("Missing stream %u for dma table %u" % (c, i))
-    
+
 
 table = {}
 

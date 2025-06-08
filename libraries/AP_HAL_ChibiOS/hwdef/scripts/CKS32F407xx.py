@@ -25,4 +25,3 @@ mcu['RAM_MAP'] = [
         (0x20000000, 128, 1), # main memory - DMA safe
         (0x20020000, 128, 2)  # CCM memory, fast but not DMA safe
     ]
-

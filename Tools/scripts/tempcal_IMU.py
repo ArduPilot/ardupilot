@@ -61,7 +61,7 @@ class Coefficients:
         if imu not in self.gcoef:
             self.gcoef[imu] = {}
         self.gcoef[imu][axis] = values
-        
+
     def set_acoeff(self, imu, axis, order, value):
         if imu not in self.acoef:
             self.acoef[imu] = {}
@@ -85,7 +85,7 @@ class Coefficients:
         if imu not in self.gofs:
             self.gofs[imu] = {}
         self.gofs[imu][axis] = value
-        
+
     def set_tmin(self, imu, tmin):
         self.tmin[imu] = tmin
 
@@ -147,7 +147,7 @@ class Coefficients:
             for axis in AXES:
                 params += 'INS_TCAL%u_GYR%u_%s %.9f\n' % (imu+1, p+1, axis, self.gcoef[imu][axis][POLY_ORDER-(p+1)]*SCALE_FACTOR)
         return params
-    
+
 
 class OnlineIMUfit:
     '''implement the online learning used in ArduPilot'''
@@ -162,7 +162,7 @@ class OnlineIMUfit:
             for j in range(i - k, k-1, -1):
                 self.mat[j][i-j] += temp
             temp *= x
-    
+
         temp = 1.0
         for i in range(self.porder-1, -1, -1):
             self.vec[i] += y * temp
@@ -298,7 +298,7 @@ def IMUfit(logfile):
         if msg.get_type() == 'PARM':
             # build up the old coefficients so we can remove the impact of
             # existing coefficients from the data
-            m = re.match("^INS_TCAL(\d)_ENABLE$", msg.Name)
+            m = re.match(r"^INS_TCAL(\d)_ENABLE$", msg.Name)
             if m:
                 imu = int(m.group(1))-1
                 if stop_capture[imu]:
@@ -312,7 +312,7 @@ def IMUfit(logfile):
                     stop_capture[imu] = True
                     continue
                 c.set_enable(imu, msg.Value)
-            m = re.match("^INS_TCAL(\d)_(ACC|GYR)([1-3])_([XYZ])$", msg.Name)
+            m = re.match(r"^INS_TCAL(\d)_(ACC|GYR)([1-3])_([XYZ])$", msg.Name)
             if m:
                 imu = int(m.group(1))-1
                 stype = m.group(2)
@@ -324,31 +324,31 @@ def IMUfit(logfile):
                     c.set_acoeff(imu, axis, p, msg.Value/SCALE_FACTOR)
                 if stype == 'GYR':
                     c.set_gcoeff(imu, axis, p, msg.Value/SCALE_FACTOR)
-            m = re.match("^INS_TCAL(\d)_TMIN$", msg.Name)
+            m = re.match(r"^INS_TCAL(\d)_TMIN$", msg.Name)
             if m:
                 imu = int(m.group(1))-1
                 if stop_capture[imu]:
                     continue
                 c.set_tmin(imu, msg.Value)
-            m = re.match("^INS_TCAL(\d)_TMAX", msg.Name)
+            m = re.match(r"^INS_TCAL(\d)_TMAX", msg.Name)
             if m:
                 imu = int(m.group(1))-1
                 if stop_capture[imu]:
                     continue
                 c.set_tmax(imu, msg.Value)
-            m = re.match("^INS_GYR(\d)_CALTEMP", msg.Name)
+            m = re.match(r"^INS_GYR(\d)_CALTEMP", msg.Name)
             if m:
                 imu = int(m.group(1))-1
                 if stop_capture[imu]:
                     continue
                 c.set_gyro_tcal(imu, msg.Value)
-            m = re.match("^INS_ACC(\d)_CALTEMP", msg.Name)
+            m = re.match(r"^INS_ACC(\d)_CALTEMP", msg.Name)
             if m:
                 imu = int(m.group(1))-1
                 if stop_capture[imu]:
                     continue
                 c.set_accel_tcal(imu, msg.Value)
-            m = re.match("^INS_(ACC|GYR)(\d?)OFFS_([XYZ])$", msg.Name)
+            m = re.match(r"^INS_(ACC|GYR)(\d?)OFFS_([XYZ])$", msg.Name)
             if m:
                 stype = m.group(1)
                 if m.group(2) == "":
@@ -513,11 +513,9 @@ def IMUfit(logfile):
         ax2.legend(loc='upper right')
         axs[imu].legend(loc='upper left')
         axs[imu].set_title('IMU[%u] Accel (m/s^2)' % imu)
-        
+
     pyplot.show()
 
 
 
 IMUfit(args.log)
-
-

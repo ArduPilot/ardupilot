@@ -49,7 +49,7 @@ def gcr_encode(value):
         while value & 1 == 0:
             value >>= 1
             expo = expo + 1
-    
+
     value = (value & 0x1FF) | (expo << 9)
     value = dshot_encode(value)
 
@@ -110,4 +110,3 @@ else:
 encoded_value = gcr_encode(value)
 print("0b{:020b}".format(encoded_value))
 print_signal(encoded_value)
-

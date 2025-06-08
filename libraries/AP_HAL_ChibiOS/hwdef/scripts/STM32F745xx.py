@@ -25,7 +25,7 @@ mcu = {
     'DEFINES' : {
         'STM32F7' : '1',
     },
-    
+
     # this board has M7 instructions, but single precision only FPU
     # we build as m4 as it makes for a smaller build, and given the 1M
     # flash limit we care more about size
@@ -899,7 +899,7 @@ if __name__ == '__main__':
             print("Error: %s=%u is under min of %u" % (name, value, minv))
         if value > maxv:
             print("Error: %s=%u is over max of %u" % (name, value, maxv))
-    
+
     import sys
     STM32_LSECLK_MIN = 32768
     STM32_PLLIN_MAX  = 2100000
@@ -911,10 +911,10 @@ if __name__ == '__main__':
     STM32_PLLN_VALUE = 432
     STM32_PLLP_VALUE = 2
     STM32_PLLQ_VALUE = 9
-    
+
     OSCILLATOR_HZ = int(sys.argv[1])
     STM32_HSECLK = OSCILLATOR_HZ
-    
+
     STM32_PLLCLKIN = (STM32_HSECLK / STM32_PLLM_VALUE)
     STM32_PLLVCO   = (STM32_PLLCLKIN * STM32_PLLN_VALUE)
 
@@ -923,4 +923,3 @@ if __name__ == '__main__':
 
     check_range('STM32_PLLCLKIN', STM32_PLLCLKIN, STM32_PLLIN_MIN, STM32_PLLIN_MAX)
     check_range('STM32_PLLVCO', STM32_PLLVCO, STM32_PLLVCO_MIN, STM32_PLLVCO_MAX)
-
