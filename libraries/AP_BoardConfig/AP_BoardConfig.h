@@ -48,7 +48,7 @@ public:
         PX4_BOARD_PX4V1    = 1,
         PX4_BOARD_PIXHAWK  = 2,
         PX4_BOARD_PIXHAWK2 = 3,
-        PX4_BOARD_PIXRACER = 4,
+        // PX4_BOARD_PIXRACER = 4,
         PX4_BOARD_PHMINI   = 5,
         PX4_BOARD_PH2SLIM  = 6,
         PX4_BOARD_AEROFC   = 13,

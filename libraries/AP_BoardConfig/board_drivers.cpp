@@ -90,7 +90,6 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_FMUV5:
     case PX4_BOARD_FMUV6:
     case PX4_BOARD_SP01:
-    case PX4_BOARD_PIXRACER:
     case PX4_BOARD_PHMINI:
     case PX4_BOARD_AUAV21:
     case PX4_BOARD_PH2SLIM:
@@ -341,10 +340,6 @@ void AP_BoardConfig::board_autodetect(void)
     } else {
         config_error("Unable to detect board type");
     }
-#elif defined(HAL_CHIBIOS_ARCH_FMUV4)
-    // only one choice
-    state.board_type.set_and_notify(PX4_BOARD_PIXRACER);
-    DEV_PRINTF("Detected Pixracer\n");
 #elif defined(HAL_CHIBIOS_ARCH_MINDPXV2)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_MINDPXV2);
