@@ -11,7 +11,7 @@
 
 class AP_Logger_Block : public AP_Logger_Backend {
 public:
-    AP_Logger_Block(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer);
+    AP_Logger_Block(AP_LoggerThread &front, LoggerMessageWriter_DFLogStart *writer);
 
     virtual void Init(void) override;
     virtual bool CardInserted(void) const override = 0;

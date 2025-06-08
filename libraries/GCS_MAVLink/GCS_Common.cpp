@@ -1551,12 +1551,6 @@ void GCS_MAVLINK_InProgress::check_tasks()
 
 void GCS_MAVLINK::update_send()
 {
-#if HAL_LOGGING_ENABLED
-    if (!hal.scheduler->in_delay_callback()) {
-        // AP_Logger will not send log data if we are armed.
-        AP::logger().handle_log_send();
-    }
-#endif
     if (!deferred_messages_initialised) {
         initialise_message_intervals_from_streamrates();
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
