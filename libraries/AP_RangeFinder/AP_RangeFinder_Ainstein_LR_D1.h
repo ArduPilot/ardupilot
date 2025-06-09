@@ -75,7 +75,7 @@ private:
     // "original" packet and the new-style packet by looking at the
     // "byte 12" (at offset 11).  If it is not 0xff then we consider
     // the packet to be of the "v19.0.0" format.  In this new format
-    // there is no objectt count, there are 16 malfunction alert bits,
+    // there is no object count, there are 16 malfunction alert bits,
     // "byte 12" contains the unit's self-assessed height-valid
     // information a lot of fields move from "other object readings"
     // to "reserved"

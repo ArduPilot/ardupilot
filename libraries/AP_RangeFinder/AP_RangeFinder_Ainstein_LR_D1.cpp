@@ -108,7 +108,7 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_one_reading(float &reading_m)
 
     // distinguish between old and new packet format by inspecting
     // "byte 12" (offset 11); in the old format this will always be
-    // 0xff.
+    // 0xff.  This was offset count, now is error flags.
     const bool is_v19000 = (u.packet_v19000.out_of_range_indication != 0xff);
 
     // same for both packet formats:
