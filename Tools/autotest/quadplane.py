@@ -1417,6 +1417,29 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, -1)
         self.disarm_vehicle()
 
+    def MAV_CMD_NAV_DELAY(self, target_system=1, target_component=1):
+        '''ensure nav delay works in quadplane mode but not in fixed-wing mode'''
+        self.load_mission('mission.txt')
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_current_waypoint(5, timeout=240)
+        # mission item 5 is the first NAV_DELAY.  We are in quadplane mode so it shouldn't be ignored.
+        self.delay_sim_time(30)
+        if self.current_waypoint() != 5:
+            raise NotAchievedException("Should currently be delaying at mission item 5")
+
+        # since the mission item 10 delay should be skipped, it might be missed by using wait_current_waypoint(10)
+        # instead, wait until we're close to reaching WP 9 to start checking if we're delaying
+        self.wait_current_waypoint(9, timeout=720)
+        self.wait_distance_to_waypoint(9, 0, 10)
+        self.delay_sim_time(10)
+        # item 10 should have been immediately skipped
+        if self.current_waypoint() == 10:
+            raise NotAchievedException("Should immediately skip mission item 10 delay")
+
+        self.wait_disarmed(timeout=300)
+
     def MAV_CMD_NAV_LOITER_TO_ALT(self, target_system=1, target_component=1):
         '''ensure consecutive loiter to alts work'''
         self.load_mission('mission.txt')
@@ -3050,6 +3073,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.BootInAUTO,
             self.Ship,
             self.WindEstimateConsistency,
+            self.MAV_CMD_NAV_DELAY,
             self.MAV_CMD_NAV_LOITER_TO_ALT,
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
