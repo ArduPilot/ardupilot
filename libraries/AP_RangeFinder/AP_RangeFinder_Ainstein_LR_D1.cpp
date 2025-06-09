@@ -111,6 +111,12 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_one_reading(float &reading_m)
     // 0xff.  This was reserved for "offset count", now is altitude-valid.
     const bool is_v19000 = (u.packet_v19000.altitude_valid != 0xff);
 
+    static uint8_t last_altitude_valid = -1;
+    if (u.packet_v19000.altitude_valid != last_altitude_valid) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "out_of_range_field = %u", u.packet_v19000.altitude_valid);
+        last_altitude_valid = u.packet_v19000.altitude_valid;
+    }
+
     // same for both packet formats:
     reading_m = be16toh(u.packet.object1_alt) * 0.01;
 
