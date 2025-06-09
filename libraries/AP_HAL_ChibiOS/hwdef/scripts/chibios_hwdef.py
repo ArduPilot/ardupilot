@@ -1688,11 +1688,14 @@ INCLUDE common.ld
 
         if 'IOMCU_UART' in self.config and self.config['IOMCU_UART'][0] not in serial_list:
             serial_list.append(self.config['IOMCU_UART'][0])
-        return serial_list, hide_iomcu_uart
+        return serial_list
 
     def write_UART_config(self, f):
         '''write UART config defines'''
-        serial_list, hide_iomcu_uart = self.get_UART_list()
+        serial_list = self.get_UART_list()
+        hide_iomcu_uart = False
+        if 'IOMCU_UART' in self.config:
+            hide_iomcu_uart = self.config['IOMCU_UART'][0] not in serial_list
         if serial_list is None:
             return
         while len(serial_list) < 3: # enough ports for CrashCatcher UART discovery
