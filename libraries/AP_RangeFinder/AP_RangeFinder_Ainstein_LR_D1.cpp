@@ -111,6 +111,12 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_one_reading(float &reading_m)
     // 0xff.  This was offset count, now is error flags.
     const bool is_v19000 = (u.packet_v19000.out_of_range_indication != 0xff);
 
+    static uint8_t last_out_of_range_indication = -1;
+    if (u.packet_v19000.out_of_range_indication != last_out_of_range_indication) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "out_of_range_field = %u", u.packet_v19000.out_of_range_indication);
+        last_out_of_range_indication = u.packet_v19000.out_of_range_indication;
+    }
+
     // same for both packet formats:
     reading_m = be16toh(u.packet.object1_alt) * 0.01;
 
