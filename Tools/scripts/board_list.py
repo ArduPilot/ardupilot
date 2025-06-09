@@ -3,6 +3,7 @@
 import os
 import re
 import fnmatch
+from collections.abc import Collection
 
 '''
 list of boards for build_binaries.py and custom build server
@@ -27,10 +28,10 @@ class Board(object):
         ]
 
 
-def in_blacklist(blacklist, b):
-    '''return true if board b is in the blacklist, including wildcards'''
-    for bl in blacklist:
-        if fnmatch.fnmatch(b, bl):
+def in_boardlist(boards : Collection[str], board : str) -> bool:
+    '''return true if board is in a collection of wildcard patterns'''
+    for pattern in boards:
+        if fnmatch.fnmatch(board, pattern):
             return True
     return False
 
@@ -145,7 +146,7 @@ class BoardList(object):
                 ret += [line]
         return ret
 
-    def find_autobuild_boards(self, build_target=None):
+    def find_autobuild_boards(self, build_target=None, skip : Collection[str] = None):
         ret = []
         for board in self.boards:
             if board.is_ap_periph:
@@ -156,33 +157,34 @@ class BoardList(object):
         # Omitting them for backwards-compatability here - but we
         # should probably have a line in the hwdef indicating they
         # shouldn't be auto-built...
-        blacklist = [
-            # IOMCU:
-            "iomcu",
-            'iomcu_f103_8MHz',
+        if skip is None:
+            skip = [
+                # IOMCU:
+                "iomcu",
+                'iomcu_f103_8MHz',
 
-            # bdshot
-            "fmuv3-bdshot",
+                # bdshot
+                "fmuv3-bdshot",
 
-            # renamed to KakuteH7Mini-Nand
-            "KakuteH7Miniv2",
+                # renamed to KakuteH7Mini-Nand
+                "KakuteH7Miniv2",
 
-            # renamed to AtomRCF405NAVI
-            "AtomRCF405"
+                # renamed to AtomRCF405NAVI
+                "AtomRCF405"
 
-            # other
-            "crazyflie2",
-            "CubeOrange-joey",
-            "luminousbee4",
-            "MazzyStarDrone",
-            "omnibusf4pro-one",
-            "skyviper-f412-rev1",
-            "SkystarsH7HD",
-            "*-ODID",
-            "*-ODID-heli",
-        ]
+                # other
+                "crazyflie2",
+                "CubeOrange-joey",
+                "luminousbee4",
+                "MazzyStarDrone",
+                "omnibusf4pro-one",
+                "skyviper-f412-rev1",
+                "SkystarsH7HD",
+                "*-ODID",
+                "*-ODID-heli",
+            ]
 
-        ret = filter(lambda x : not in_blacklist(blacklist, x), ret)
+        ret = filter(lambda x : not in_boardlist(skip, x), ret)
 
         # if the caller has supplied a vehicle to limit to then we do that here:
         if build_target is not None:
@@ -199,18 +201,19 @@ class BoardList(object):
 
         return sorted(list(ret))
 
-    def find_ap_periph_boards(self):
-        blacklist = [
-            "CubeOrange-periph-heavy",
-            "f103-HWESC",
-            "f103-Trigger",
-            "G4-ESC",
-        ]
+    def find_ap_periph_boards(self, skip : Collection[str] = None):
+        if skip is None:
+            skip = [
+                "CubeOrange-periph-heavy",
+                "f103-HWESC",
+                "f103-Trigger",
+                "G4-ESC",
+            ]
         ret = []
         for x in self.boards:
             if not x.is_ap_periph:
                 continue
-            if x.name in blacklist:
+            if in_boardlist(skip, x.name):
                 continue
             ret.append(x.name)
         return sorted(list(ret))
