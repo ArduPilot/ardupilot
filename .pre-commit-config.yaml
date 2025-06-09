@@ -31,12 +31,9 @@ repos:
               )$
         -   id: check-added-large-files
         -   id: check-executables-have-shebangs
+            files: ^Tools/
         -   id: check-shebang-scripts-are-executable
-            exclude: |
-              (?x)^(
-                .*\/wscript |
-                wscript
-              )$
+            files: ^Tools/
         -   id: check-merge-conflict
         -   id: check-xml
         -   id: check-yaml
@@ -55,8 +52,8 @@ repos:
       rev: 7.2.0
       hooks:
       -   id: flake8
-          args:
-            - Tools
+          files: ^Tools/
+
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
 #       rev: 5.12.0
