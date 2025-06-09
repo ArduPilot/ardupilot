@@ -141,7 +141,7 @@ void AP_Proximity_Backend::database_push(float angle, float pitch, float distanc
     //Convert the vector to a NEU frame from NED
     temp_pos.z = temp_pos.z * -1.0f;
 
-    oaDb->queue_push(temp_pos, timestamp_ms, distance);
+    oaDb->queue_push(temp_pos, timestamp_ms, distance, AP_OADatabase::OA_DbItem::Source::proximity);
 #endif  // AP_OADATABASE_ENABLED
 }
 
