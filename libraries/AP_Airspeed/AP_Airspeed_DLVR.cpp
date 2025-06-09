@@ -34,8 +34,8 @@ extern const AP_HAL::HAL &hal;
 #endif
 
 
-AP_Airspeed_DLVR::AP_Airspeed_DLVR(AP_Airspeed &_frontend, uint8_t _instance, const float _range_inH2O) :
-    AP_Airspeed_Backend(_frontend, _instance),
+AP_Airspeed_DLVR::AP_Airspeed_DLVR(AP_Airspeed &_frontend, class AP_Airspeed::airspeed_state &_state, class AP_Airspeed_Params &_params, const float _range_inH2O) :
+    AP_Airspeed_Backend(_frontend, _state, _params),
     range_inH2O(_range_inH2O)
 {}
 
@@ -43,14 +43,15 @@ AP_Airspeed_DLVR::AP_Airspeed_DLVR(AP_Airspeed &_frontend, uint8_t _instance, co
   probe for a sensor on a given i2c address
  */
 AP_Airspeed_Backend *AP_Airspeed_DLVR::probe(AP_Airspeed &_frontend,
-                                             uint8_t _instance,
+                                             class AP_Airspeed::airspeed_state &_state,
+                                             class AP_Airspeed_Params &_params,
                                              AP_HAL::I2CDevice *_dev,
                                              const float _range_inH2O)
 {
     if (!_dev) {
         return nullptr;
     }
-    AP_Airspeed_DLVR *sensor = NEW_NOTHROW AP_Airspeed_DLVR(_frontend, _instance, _range_inH2O);
+    AP_Airspeed_DLVR *sensor = NEW_NOTHROW AP_Airspeed_DLVR(_frontend, _state, _params, _range_inH2O);
     if (!sensor) {
         return nullptr;
     }

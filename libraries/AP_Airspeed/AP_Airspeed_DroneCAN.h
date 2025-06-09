@@ -28,7 +28,7 @@ public:
 
     static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
-    static AP_Airspeed_Backend* probe(AP_Airspeed &_frontend, uint8_t _instance, uint32_t previous_devid);
+    static AP_Airspeed_Backend* probe(AP_Airspeed &_frontend, class AP_Airspeed::airspeed_state &_state, class AP_Airspeed_Params &_params, uint32_t previous_devid);
 
 private:
 

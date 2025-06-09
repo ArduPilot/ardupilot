@@ -2,10 +2,10 @@
 
 #if AP_AIRSPEED_EXTERNAL_ENABLED
 
-AP_Airspeed_External::AP_Airspeed_External(AP_Airspeed &_frontend, uint8_t _instance) :
-    AP_Airspeed_Backend(_frontend, _instance)
+AP_Airspeed_External::AP_Airspeed_External(AP_Airspeed &_frontend, class AP_Airspeed::airspeed_state &_state, class AP_Airspeed_Params &_params) :
+    AP_Airspeed_Backend(_frontend, _state, _params)
 {
-    set_bus_id(AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SERIAL,0,_instance,0));
+    set_bus_id(AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SERIAL,0,_state.instance,0));
 }
 
 // return the current differential_pressure in Pascal
