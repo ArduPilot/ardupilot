@@ -306,7 +306,7 @@ void AP_AIS::send_to_object_avoidance_database(const struct ais_vehicle_t &vesse
 
     if ((vessel.info.flags & AIS_FLAGS_VALID_DIMENSIONS) == 0) {
         // No dimensions, let the database calculate from the configured beam width
-        oaDb->queue_push(pos, vessel.last_update_ms, distance);
+        oaDb->queue_push(pos, vessel.last_update_ms, distance, AP_OADatabase::OA_DbItem::Source::AIS, vessel.info.MMSI);
         return;
     }
 
@@ -322,7 +322,7 @@ void AP_AIS::send_to_object_avoidance_database(const struct ais_vehicle_t &vesse
         radius = MAX(radius, vessel.info.dimension_stern);
         radius = MAX(radius, vessel.info.dimension_port);
         radius = MAX(radius, vessel.info.dimension_starboard);
-        oaDb->queue_push(pos, vessel.last_update_ms, distance, radius);
+        oaDb->queue_push(pos, vessel.last_update_ms, distance, radius, AP_OADatabase::OA_DbItem::Source::AIS, vessel.info.MMSI);
         return;
     }
 
@@ -343,7 +343,7 @@ void AP_AIS::send_to_object_avoidance_database(const struct ais_vehicle_t &vesse
         (vessel.info.dimension_starboard + vessel.info.dimension_port) * 0.5
     );
 
-    oaDb->queue_push(pos, vessel.last_update_ms, distance, radius);
+    oaDb->queue_push(pos, vessel.last_update_ms, distance, radius, AP_OADatabase::OA_DbItem::Source::AIS, vessel.info.MMSI);
 }
 #endif
 
