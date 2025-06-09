@@ -1270,9 +1270,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(systemid, "SID", 38, ParametersG2, AP_SystemID),
 #endif
 
-    // @Group: MIXING_
+    // @Group: MIX_
     // @Path: mixing.cpp
-    AP_SUBGROUPINFO(mixing, "MIXING_", 39, ParametersG2, AP_Mixing),
+    AP_SUBGROUPINFO(mixing, "MIX_", 39, ParametersG2, AP_Mixing),
     
     AP_GROUPEND
 };
