@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# flake8: noqa
+
 '''
 script to create ap_romfs_embedded.h from a set of static files
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# flake8: noqa
+
 """
 script to build all of our bootloaders using AP_Bootloader and put the resulting binaries in Tools/bootloaders
 """
