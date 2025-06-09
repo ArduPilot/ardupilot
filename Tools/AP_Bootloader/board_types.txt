@@ -487,6 +487,7 @@ AP_HW_AEROFOX_H7                     7110
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140
 AP_HW_Pixhawk6_ODID                 10053
+AP_HW_FMU_V5_ODID                   10050
 
 # do not allocate board IDs above 10,000 for non-ODID boards.
 # do not allocate board IDs above 19,999 in this file.
