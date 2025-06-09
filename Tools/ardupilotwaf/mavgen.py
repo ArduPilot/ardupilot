@@ -1,6 +1,8 @@
 # encoding: utf-8
 # (c) Siddharth Bharat Purohit, 3DRobotics Inc.
 
+# flake8: noqa
+
 """
 The **mavgen.py** program is a code generator which creates mavlink header files.
 """

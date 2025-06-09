@@ -12,6 +12,9 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# flake8: noqa
+
 """
 Waf tool for Ardupilot libraries. The function bld.ap_library() creates the
 necessary task generators for creating the objects of a library for a vehicle.

@@ -1,3 +1,5 @@
+# flake8: noqa
+
 """
 Emit parameter documentation in markdown format
 """

@@ -1,3 +1,5 @@
+# flake8: noqa
+
 
 class Parameter(object):
     def __init__(self, name, real_path):
