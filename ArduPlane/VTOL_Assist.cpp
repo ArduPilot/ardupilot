@@ -121,19 +121,22 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
         /*
         now check if we should provide assistance due to attitude error
         */
-        const uint16_t allowed_envelope_error_cd = 500U;
-        const bool inside_envelope = (labs(plane.ahrs.roll_sensor) <= (plane.aparm.roll_limit*100 + allowed_envelope_error_cd)) &&
-                                     (plane.ahrs.pitch_sensor < (plane.aparm.pitch_limit_max*100 + allowed_envelope_error_cd)) &&
-                                     (plane.ahrs.pitch_sensor > (plane.aparm.pitch_limit_min*100 - allowed_envelope_error_cd));
+        const auto ahrs_roll_deg = plane.ahrs.get_roll_deg();
+        const auto ahrs_pitch_deg = plane.ahrs.get_pitch_deg();
+        constexpr float allowed_envelope_error_deg = 5.0;
+        const bool inside_envelope =
+            (fabsf(ahrs_roll_deg) <= (plane.aparm.roll_limit + allowed_envelope_error_deg)) &&
+            (ahrs_pitch_deg < (plane.aparm.pitch_limit_max + allowed_envelope_error_deg)) &&
+            (ahrs_pitch_deg > (plane.aparm.pitch_limit_min - allowed_envelope_error_deg));
 
-        const int32_t max_angle_cd = 100U*angle;
-        const bool inside_angle_error = (labs(plane.ahrs.roll_sensor - plane.nav_roll_cd) < max_angle_cd) &&
-                                        (labs(plane.ahrs.pitch_sensor - plane.nav_pitch_cd) < max_angle_cd);
+        const bool inside_angle_error =
+            (fabsf(ahrs_roll_deg - plane.nav_roll_cd*0.01) < angle) &&
+            (fabsf(ahrs_pitch_deg - plane.nav_pitch_cd*0.01) < angle);
 
         if (angle_error.update(!inside_envelope && !inside_angle_error, now_ms, tigger_delay_ms, clear_delay_ms)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Angle assist r=%d p=%d",
-                            (int)plane.ahrs.get_roll_deg(),
-                            (int)plane.ahrs.get_pitch_deg());
+                            (int)ahrs_roll_deg,
+                            (int)ahrs_pitch_deg);
         }
     }
 
