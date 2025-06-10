@@ -1534,7 +1534,9 @@ AP_GPS_UBLOX::_parse_gps(void)
               _buffer.status.fix_type);
         _check_new_itow(_buffer.status.itow);
         if (havePvtMsg) {
-            _unconfigured_messages |= CONFIG_RATE_STATUS;
+            // when we have PVT we don't need status, just change the rate for STATUS to zero
+            _unconfigured_messages &= ~CONFIG_RATE_STATUS;
+            _configure_message_rate(CLASS_NAV, _msg_id, 0);
             break;
         }
         if (_buffer.status.fix_status & NAV_STATUS_FIX_VALID) {
@@ -1664,6 +1666,10 @@ AP_GPS_UBLOX::_parse_gps(void)
         Debug("MSG_PVT");
 
         havePvtMsg = true;
+
+        // if we have PVT we don't want MSG_STATUS
+        _unconfigured_messages &= ~CONFIG_RATE_STATUS;
+
         // position
         _check_new_itow(_buffer.pvt.itow);
         _last_pvt_itow = _buffer.pvt.itow;
