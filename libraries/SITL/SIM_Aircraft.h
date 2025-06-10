@@ -48,6 +48,18 @@
 
 namespace SITL {
 
+// Class for testing multiple rangefinders that are set at different pitch angles
+// Given HAGL measurement it rotates the measurement to account for the bf pitch angle 
+// of the installation and then the measurement due to the attitude of the vehicle
+class AngleRangeFinder {
+    public:
+        void set_installed_angle(float bf_pitch_angle_deg);
+        float calc_reading(float hagl, Matrix3f dcm) const;
+    private:
+        float bf_install_angle; // The pitch angle that the rangefinder is installed at
+};
+
+
 /*
   parent class for all simulator types
  */
@@ -287,6 +299,8 @@ protected:
         GROUND_BEHAVIOR_FWD_ONLY,
         GROUND_BEHAVIOR_TAILSITTER,
     } ground_behavior;
+
+    AngleRangeFinder installed_rangefinders[3];
 
     bool use_smoothing;
     bool disable_origin_movement;

@@ -143,6 +143,11 @@ FlightAxis::FlightAxis(const char *frame_str) :
                                       AP_HAL::Scheduler::PRIORITY_BOOST, 0)) {
         printf("Failed to create socket_creator thread\n");
     }
+
+    // Set angles on rangefinders
+    installed_rangefinders[0].set_installed_angle(25);  //Forward most
+    installed_rangefinders[1].set_installed_angle(5);   // middle
+    installed_rangefinders[2].set_installed_angle(-15); // Rear most
 }
     
 /*
@@ -571,11 +576,13 @@ void FlightAxis::update(const struct sitl_input &input)
     // update magnetic field
     update_mag_field_bf();
 
-    // one rangefinder
-    if (is_positive(dcm.c.z)) {
-        rangefinder_m[0] = state.m_altitudeAGL_MTR / dcm.c.z;
-    } else {
-        rangefinder_m[0] = nanf("");
+    float hagl = state.m_altitudeAGL_MTR;
+
+    for (uint8_t i = 0; i < sizeof(installed_rangefinders); i++) {
+        // SITL rangefinder uses the AP rangefinder to get an instance from sitl state
+        // we are using rangefinders 2,3,4 for the array from sitl
+        const uint8_t inst = i + 1;
+        rangefinder_m[inst] = installed_rangefinders[i].calc_reading(hagl, dcm);
     }
 
     report_FPS();
@@ -634,5 +641,36 @@ void FlightAxis::socket_creator(void)
         }
     }
 }
+
+// Constructor for angled rangefinder
+void AngleRangeFinder::set_installed_angle(float bf_pitch_angle_deg)
+{
+    bf_install_angle = radians(bf_pitch_angle_deg);
+}
+
+// Calc the rangefinder reading accounting for installation angle and vehicle attitude
+float AngleRangeFinder::calc_reading(float hagl, Matrix3f dcm) const
+{
+    // Account for setting angle in the measurement
+    float installed_reading = 0;
+    const float cp = cosf(bf_install_angle);
+    if (!is_zero(cp)) {
+        installed_reading = hagl / cp;
+    } else {
+        installed_reading = nanf("");
+    }
+
+    // Correct for the pitch attitude of the vehicle
+    if (is_positive(dcm.c.z)) {
+        installed_reading = installed_reading / dcm.c.z;
+    } else {
+        installed_reading = nanf("");
+    }
+
+    return installed_reading;
+
+}
+
+
 
 #endif // AP_SIM_FLIGHTAXIS_ENABLED
