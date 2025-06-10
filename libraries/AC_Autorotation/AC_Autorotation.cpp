@@ -912,9 +912,9 @@ void AC_Autorotation::update_hagl(void)
     }
 
     // Get the height above ground estimate from the surface tracker library. The rangefinder may go out of range low
-    // as we are landing so we allow 10 s of grace whereby we use inertial nav to extrapolate from the last good measurement
+    // as we are landing so we allow 5 s of grace whereby we use inertial nav to extrapolate from the last good measurement
     int32_t hagl = 0;
-    static const uint32_t oor_low_timer_ms = 10000;
+    static const uint32_t oor_low_timer_ms = 5000;
     if (_ground_surface->get_rangefinder_height_interpolated_cm(hagl, oor_low_timer_ms)) {
         _hagl = float(hagl) * 0.01;
         _hagl_valid = true;
