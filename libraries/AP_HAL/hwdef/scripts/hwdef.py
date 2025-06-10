@@ -24,6 +24,12 @@ class HWDef:
         self.hwdef = hwdef
         self.quiet = quiet
 
+        # list of alt configs by type
+        self.alttype = {}
+
+        # list of configs by type
+        self.bytype = {}
+
         # dictionary of all config lines, indexed by first word
         self.config = {}
 
@@ -209,6 +215,44 @@ class HWDef:
         elif a[0] == 'BARO':
             self.baro_list.append(a[1:])
 
+    def get_config(self, name, column=0, required=True, default=None, type=None, spaces=False, aslist=False):
+        '''get a value from config dictionary'''
+        if name not in self.config:
+            if required and default is None:
+                self.error("missing required value %s in hwdef.dat" % name)
+            return default
+        if aslist:
+            return self.config[name]
+        if len(self.config[name]) < column + 1:
+            if not required:
+                return None
+            self.error("missing required value %s in hwdef.dat (column %u)" %
+                       (name, column))
+        if spaces:
+            ret = ' '.join(self.config[name][column:])
+        else:
+            ret = self.config[name][column]
+
+        if type is not None:
+            if type == int and ret.startswith('0x'):
+                try:
+                    ret = int(ret, 16)
+                except Exception:
+                    self.error("Badly formed config value %s (got %s)" % (name, ret))
+            else:
+                try:
+                    ret = type(ret)
+                except Exception:
+                    self.error("Badly formed config value %s (got %s)" % (name, ret))
+        return ret
+
+    def have_type_prefix(self, ptype):
+        '''return True if we have a peripheral starting with the given peripheral type'''
+        for t in list(self.bytype.keys()) + list(self.alttype.keys()):
+            if t.startswith(ptype):
+                return True
+        return False
+
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:
             self.progress("Removing %s" % u)
@@ -378,6 +422,9 @@ class HWDef:
             f.write(f"#undef AP_BARO_{driver}_ENABLED\n#define AP_BARO_{driver}_ENABLED 1\n")
         if len(devlist) > 0:
             f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
+
+    def has_sdcard_spi(self):
+        return False
 
     def write_env_py(self, filename):
         '''write out env.py for environment variables to control the build process'''
