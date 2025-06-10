@@ -321,17 +321,6 @@ AC_AttitudeControl_Heli::AC_AttitudeControl_Heli(AP_AHRS_View &ahrs, const AP_Mu
 }
 
 // passthrough_bf_roll_pitch_rate_yaw - passthrough the pilots roll and pitch inputs directly to swashplate for flybar acro mode
-void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw_cd(float roll_passthrough_cd, float pitch_passthrough_cd, float yaw_rate_bf_cds)
-{
-    // convert from centidegrees on public interface to radians
-    float roll_passthrough_rad = cd_to_rad(roll_passthrough_cd);
-    float pitch_passthrough_rad = cd_to_rad(pitch_passthrough_cd);
-    float yaw_rate_bf_rads = cd_to_rad(yaw_rate_bf_cds);
-
-    passthrough_bf_roll_pitch_rate_yaw_rad(roll_passthrough_rad, pitch_passthrough_rad, yaw_rate_bf_rads);
-}
-
-// passthrough_bf_roll_pitch_rate_yaw - passthrough the pilots roll and pitch inputs directly to swashplate for flybar acro mode
 void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw_rad(float roll_passthrough_rad, float pitch_passthrough_rad, float yaw_rate_bf_rads)
 {
     // store roll, pitch and passthroughs
