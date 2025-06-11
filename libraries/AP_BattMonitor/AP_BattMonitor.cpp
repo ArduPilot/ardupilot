@@ -28,6 +28,7 @@
 #include "AP_BattMonitor_Synthetic_Current.h"
 #include "AP_BattMonitor_AD7091R5.h"
 #include "AP_BattMonitor_Scripting.h"
+#include "AP_BattMonitor_Astra.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -594,6 +595,11 @@ AP_BattMonitor::init()
 #if AP_BATTERY_SMBUS_GENERIC_ENABLED
             case Type::SMBus_Generic:
                 drivers[instance] = NEW_NOTHROW AP_BattMonitor_SMBus_Generic(*this, state[instance], _params[instance]);
+                break;
+#endif
+#if AP_BATTERY_ASTRA_ENABLED
+            case Type::ASTRA:
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_Astra(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_SMBUS_SUI_ENABLED

@@ -32,6 +32,8 @@ public:
         BATTMONITOR_SMBUS_SERIAL = 0x1C,               // Serial Number
         BATTMONITOR_SMBUS_MANUFACTURE_NAME = 0x20,     // Manufacture Name
         BATTMONITOR_SMBUS_MANUFACTURE_DATA = 0x23,     // Manufacture Data
+        BATTMONITOR_SMBUS_SOH = 0x4f    // state of health
+        
     };
 
     /// Constructor
@@ -83,6 +85,7 @@ protected:
 
     // reads the battery's cycle count
     void read_cycle_count();
+    void read_soh();
 
      // read word from register
      // returns true if read was successful, false if failed
@@ -102,6 +105,7 @@ protected:
     uint16_t _full_charge_capacity; // full charge capacity, used to stash the value before setting the parameter
     bool _has_cell_voltages;        // smbus backends flag this as true once they have received a valid cell voltage report
     uint16_t _cycle_count = 0;      // number of cycles the battery has experienced. An amount of discharge approximately equal to the value of DesignCapacity.
+    uint16_t _soh = 0;              // state of health of the battery pack
     bool _has_cycle_count;          // true if cycle count has been retrieved from the battery
     bool _has_temperature;
 
