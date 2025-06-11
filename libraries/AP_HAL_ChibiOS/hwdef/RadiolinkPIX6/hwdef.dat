@@ -179,7 +179,7 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
 # probe external I2C compasses plus some internal IST8310
 # we also probe some external IST8310 with a non-standard orientation
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 # we need to stop the probe of an IST8310 as an internal compass with PITCH_180
 define HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE

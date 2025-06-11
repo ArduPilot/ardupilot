@@ -75,7 +75,7 @@ COMPASS AK8963:probe_mpu9250 1 ROTATION_YAW_270
 COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
 
 # also probe for external compasses
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 # This defines an output pin which will default to output HIGH. It is
 # a pin that enables peripheral power on this board. It starts in the
