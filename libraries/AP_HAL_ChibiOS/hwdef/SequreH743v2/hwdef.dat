@@ -1,0 +1,13 @@
+
+# hw definition file for processing by chibios_hwdef.py
+# for SEQUREH7V2 hardware.
+# thanks to betaflight for pin information
+
+include ../SequreH743/hwdef.dat
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_SEQUREH743V2
+
+# IMU setup
+SPIDEV icm42688   SPI2 DEVID1 GYRO1_CS   MODE3   1*MHZ   16*MHZ
+IMU Invensensev3 SPI:icm42688 ROTATION_PITCH_180_YAW_270
