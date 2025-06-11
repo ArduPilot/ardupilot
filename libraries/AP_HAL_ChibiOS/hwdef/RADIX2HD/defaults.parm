@@ -14,3 +14,4 @@ SERIAL4_PROTOCOL 16
 
 # 9V regulator switch, ON on boot
 RELAY2_DEFAULT 1
+RELAY2_FUNCTION 1

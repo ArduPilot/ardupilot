@@ -10,3 +10,4 @@ MOT_PWM_TYPE 6
 
 # io on alternate config is on
 RELAY2_DEFAULT 1
+RELAY2_FUNCTION 1

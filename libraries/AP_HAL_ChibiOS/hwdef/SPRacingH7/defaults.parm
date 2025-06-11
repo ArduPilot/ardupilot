@@ -7,4 +7,4 @@ SERIAL2_OPTIONS 15
 
 # currently using both IMUs is too CPU intensive
 INS_ENABLE_MASK 1
-
+RELAY2_FUNCTION 1
