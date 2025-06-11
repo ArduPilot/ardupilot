@@ -531,6 +531,10 @@ void AC_Autorotation::update_navigation_controller(float pilot_norm_accel)
     desired_heading.heading_mode = AC_AttitudeControl::HeadingMode::Rate_Only;
     desired_heading.yaw_rate_cds = 0.0;
 
+
+    // Check with motors that we have not saturated
+
+
     Vector3f desired_velocity_bf;
     Vector3f desired_accel_bf;
     Vector3f desired_velocity_NED;
@@ -568,9 +572,28 @@ void AC_Autorotation::update_navigation_controller(float pilot_norm_accel)
             calc_yaw_rate_from_roll_target(yaw_rate_rad, unused_lat_accel);
             desired_heading.yaw_rate_cds = degrees(yaw_rate_rad) * 100.0;
 
+            // We want to account for the descent rate in the desired velocity
+            // const float vel_down = get_ef_velocity_up() * -1.0;
+            // // Desired velocity is the total XY vector length, which is apportioned direction in the next step,
+            // // so we just use simple 2D pythag to get the desired XY vector length
+            // const float des_ef_XY_speed = safe_sqrt(_desired_vel * _desired_vel - vel_down * vel_down);
+
+
+            // Set body frame velocity targets
+            desired_velocity_bf.x = _desired_vel;
+            desired_velocity_bf.y = 0.0; // Start with the assumption that we want zero side slip
+            desired_velocity_bf.z = get_bf_speed_down(); // Always match the current vz. We add this in because the vz is significant proportion of the speed that needs to be accounted for when we rotate from body frame to earth frame.
+
+            // Convert body frame targets into earth frame
+            desired_velocity_NED = ahrs.body_to_earth(desired_velocity_bf);
+            desired_velocity_NED.z = 0.0;
+            const float desired_NE_speed = desired_velocity_NED.length();
+
             // We already have the earth-frame unit vector that we want to maintain the velocity vector along
             // so we just use that to calculate the earth frame target vel directly
-            desired_velocity_NED = Vector3f{_track_vector, 0.0} * _desired_vel;
+
+            // Now we can use the track vector to apportion the vector direction proportions
+            desired_velocity_NED = Vector3f{_track_vector, 0.0} * desired_NE_speed;
 
             break;
         }
