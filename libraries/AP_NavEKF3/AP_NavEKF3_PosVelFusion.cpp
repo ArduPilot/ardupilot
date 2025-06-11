@@ -190,35 +190,92 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
 // Returns true if the set was successful
 bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
 {
-    if ((imuSampleTime_ms - lastGpsPosPassTime_ms) < frontend->deadReckonDeclare_ms ||
+    if (((imuSampleTime_ms - lastGpsPosPassTime_ms) < frontend->deadReckonDeclare_ms && !frontend->option_is_enabled(NavEKF3::Option::SetLatLngFusion))  ||
         (PV_AidingMode == AID_NONE)
         || !validOrigin) {
         return false;
     }
 
-    // Store the position before the reset so that we can record the reset delta
-    posResetNE.x = stateStruct.position.x;
-    posResetNE.y = stateStruct.position.y;
-
-    // reset the corresponding covariances
-    zeroRows(P,7,8);
-    zeroCols(P,7,8);
-
-    // handle unknown accuracy
-    if (isnan(posAccuracy)) {
-        posAccuracy = 0.0f; // will be ignored due to MAX below
-    }
-
-    // set the variances using the position measurement noise parameter
-    P[7][7] = P[8][8] = sq(MAX(posAccuracy,frontend->_gpsHorizPosNoise));
-
     // Correct the position for time delay relative to fusion time horizon assuming a constant velocity
-    // Limit time stamp to a range between current time and 5 seconds ago
-    const uint32_t timeStampConstrained_ms = MAX(MIN(timestamp_ms, imuSampleTime_ms), imuSampleTime_ms - 5000);
+    // Don't use data more than 5 seconds old
+    if (imuSampleTime_ms - timestamp_ms > 5000) {
+        return false;
+    }
+    // Don't allow data to time travel into the future
+    const uint32_t timeStampConstrained_ms = MIN(timestamp_ms, imuSampleTime_ms);
     const int32_t delta_ms = int32_t(imuDataDelayed.time_ms - timeStampConstrained_ms);
     const ftype delaySec = 1E-3F * ftype(delta_ms);
     const Vector2F newPosNE = EKF_origin.get_distance_NE_ftype(loc) + stateStruct.velocity.xy() * delaySec;
-    ResetPositionNE(newPosNE.x,newPosNE.y);
+
+
+    // handle unknown accuracy
+    if (isnan(posAccuracy)) {
+        setLatLngPosAcc = frontend->_gpsHorizPosNoise;
+    } else {
+        setLatLngPosAcc = MAX(posAccuracy, frontend->_gpsHorizPosNoise);
+    }
+
+    // without air data aiding, the position time offset creates a circular data dependency
+    // that can destabilise the state estimates if the observation noise variance set is too
+    // low and the vehicle abruptly manoeuvres. Raise the observation noise to take this into
+    //  account when maneouvring assuming a 1/2 g horizontal acceleration used to manoeuvre.
+    const float manoeuvre_accel = GRAVITY_MSS * 0.5f;
+    const ftype posPredictError = 0.5f * manoeuvre_accel * sq(delaySec);
+    setLatLngPosAcc = sqrtf(sq(setLatLngPosAcc) + sq(posPredictError));
+
+    if (frontend->option_is_enabled(NavEKF3::Option::SetLatLngFusion)) {
+        // treat as an alternative position source
+        // if GPS is passing alignment quality checks and is being fused, then update an offset to allow for drift
+        // of this position source.
+        const uint32_t timeoutThreshold = (uint32_t)MAX(((int32_t)frontend->posRetryTimeNoVel_ms-(int32_t)1000),1000);
+        const bool gpsVelTimeout = (imuSampleTime_ms - lastVelPassTime_ms) > timeoutThreshold;
+        const bool gpsPosTimeout = (imuSampleTime_ms - lastGpsPosPassTime_ms) > timeoutThreshold;
+        useSetLatLngAsMeasurement = gpsVelTimeout || gpsPosTimeout || (imuSampleTime_ms - lastTimeGpsReceived_ms) > 1000;
+        if (frontend->option_is_enabled(NavEKF3::Option::JammingExpected)) {
+            useSetLatLngAsMeasurement = useSetLatLngAsMeasurement || !gpsGoodToAlign;
+        }
+        if (useSetLatLngAsMeasurement) {
+            velPosObs[3] = newPosNE.x + setLatLngPosOffsetNE.x;
+            velPosObs[4] = newPosNE.y + setLatLngPosOffsetNE.y;
+            if ((imuSampleTime_ms - lastSetlatLngPassTime_ms) < 5000) {
+                fusePosData = true;
+                setLatLngDataToFuse = true;
+                FuseVelPosNED();
+                setLatLngDataToFuse = false;
+            } else {
+                // reset the corresponding covariances
+                zeroRows(P,7,8);
+                zeroCols(P,7,8);
+
+                P[7][7] = P[8][8] = sq(setLatLngPosAcc);
+
+                ResetPositionNE(velPosObs[3], velPosObs[4]);
+
+                zeroRows(P,22,23);
+                zeroCols(P,22,23);
+
+                lastSetlatLngPassTime_ms = imuSampleTime_ms;
+                lastResetlatLngTime_ms = imuSampleTime_ms;
+            }
+        } else {
+            if (frontend->option_is_enabled(NavEKF3::Option::SetLatLngOffset)) {
+                setLatLngPosOffsetNE.x = stateStruct.position.x - newPosNE.x;
+                setLatLngPosOffsetNE.y = stateStruct.position.y - newPosNE.y;
+            } else {
+                setLatLngPosOffsetNE.zero();
+            }
+        }
+    } else {
+        // reset the corresponding covariances
+        zeroRows(P,7,8);
+        zeroCols(P,7,8);
+
+        P[7][7] = P[8][8] = sq(setLatLngPosAcc);
+
+        ResetPositionNE(newPosNE.x,newPosNE.y);
+
+        useSetLatLngAsMeasurement = false;
+    }
 
     return true;
 }
@@ -610,6 +667,13 @@ void NavEKF3_core::SelectVelPosFusion()
     // Select height data to be fused from the available baro, range finder and GPS sources
     selectHeightForFusion();
 
+    if (gpsDataToFuse && gpsGoodToAlign && ((imuSampleTime_ms - lastResetlatLngTime_ms) < 10000 || filterStatus.flags.dead_reckoning)) {
+        // prior bad data is likely so states are suspect and should be reset
+        ResetVelocity(resetDataSource::GPS);
+        ResetPosition(resetDataSource::GPS);
+        lastResetlatLngTime_ms = 0;
+    }
+
     // if we are using GPS, check for a change in receiver and reset position and height
     if (gpsDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (posxy_source == AP_NavEKF_Source::SourceXY::GPS) && (gpsDataDelayed.sensor_idx != last_gps_idx || posxy_source_reset)) {
         // mark a source reset as consumed
@@ -742,13 +806,17 @@ void NavEKF3_core::FuseVelPosNED()
                 R_OBS[2] = sq(constrain_ftype(frontend->_gpsVertVelNoise,  0.05f, 5.0f)) + sq(frontend->gpsDVelVarAccScale  * accNavMag);
             }
             R_OBS[1] = R_OBS[0];
-            // Use GPS reported position accuracy if available and floor at value set by GPS position noise parameter
+
+            if (setLatLngDataToFuse) {
+                R_OBS[3] = sq(setLatLngPosAcc);
+            } else
 #if EK3_FEATURE_EXTERNAL_NAV
             if (extNavUsedForPos) {
                 R_OBS[3] = sq(constrain_ftype(extNavDataDelayed.posErr, 0.01f, 100.0f));
             } else
 #endif
             if (gpsPosAccuracy > 0.0f) {
+                // Use GPS reported position accuracy if available and floor at value set by GPS position noise parameter
                 R_OBS[3] = sq(constrain_ftype(gpsPosAccuracy, frontend->_gpsHorizPosNoise, 100.0f));
             } else {
                 // calculate additional error in GPS position caused by manoeuvring
@@ -760,6 +828,9 @@ void NavEKF3_core::FuseVelPosNED()
             // For horizontal GPS velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPS performance
             // plus a margin for manoeuvres. It is better to reject GPS horizontal velocity errors early
             ftype obs_data_chk;
+            if (setLatLngDataToFuse) {
+                obs_data_chk = sq(setLatLngPosAcc);
+            } else
 #if EK3_FEATURE_EXTERNAL_NAV
             if (extNavUsedForVel) {
                 obs_data_chk = sq(constrain_ftype(extNavVelDelayed.err, 0.05f, 5.0f)) + sq(frontend->extNavVelVarAccScale * accNavMag);
@@ -824,6 +895,9 @@ void NavEKF3_core::FuseVelPosNED()
             if (posTestRatio < 1.0f || (PV_AidingMode == AID_NONE)) {
                 posCheckPassed = true;
                 lastGpsPosPassTime_ms = imuSampleTime_ms;
+                if (setLatLngDataToFuse) {
+                    lastSetlatLngPassTime_ms = imuSampleTime_ms;
+                }
             } else if ((frontend->_gpsGlitchRadiusMax <= 0) && (PV_AidingMode != AID_NONE)) {
                 // Handle the special case where the glitch radius parameter has been set to a non-positive number.
                 // The innovation variance is increased to limit the state update to an amount corresponding
@@ -832,7 +906,9 @@ void NavEKF3_core::FuseVelPosNED()
                 varInnovVelPos[3] *= posTestRatio;
                 varInnovVelPos[4] *= posTestRatio;
                 posCheckPassed = true;
-                lastGpsPosPassTime_ms = imuSampleTime_ms;
+                if (setLatLngDataToFuse) {
+                    lastSetlatLngPassTime_ms = imuSampleTime_ms;
+                }
             }
 
             // Use position data if healthy or timed out or bad IMU data
