@@ -168,7 +168,7 @@ bool AP_Radio::init(void)
         driver = NEW_NOTHROW AP_Radio_beken(*this);
         break;
 #endif
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
+#if AP_RADIO_AUTO_ENABLED
     case RADIO_TYPE_AUTO:
         // auto-detect between cc2500 and beken radios
 #if AP_RADIO_CC2500_ENABLED
@@ -182,7 +182,7 @@ bool AP_Radio::init(void)
         }
 #endif
         break;
-#endif  // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
+#endif  // AP_RADIO_AUTO_ENABLED
     default:
         break;
     }
