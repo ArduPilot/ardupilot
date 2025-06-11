@@ -44,8 +44,15 @@ const AP_Param::GroupInfo FlightAxis::var_info[] = {
     // @Bitmask: 1: Swap first 4 and last 4 servos (for quadplane testing)
     // @Bitmask: 2: Demix heli servos and send roll/pitch/collective/yaw
     // @Bitmask: 3: Don't print frame rate stats
+    // @Bitmask: 4: Don't log Dt stats
     // @User: Advanced
     AP_GROUPINFO("OPTS", 1, FlightAxis, _options, uint32_t(Option::ResetPosition)),
+
+    // @Param: SAMPLEHZ
+    // @DisplayName: FlightAxis IMU synthetic sample rate
+    // @Description: FlightAxis IMU synthetic sample rate
+    // @User: Advanced
+    AP_GROUPINFO("SAMPLEHZ", 2, FlightAxis, _samplehz, 5000),
     AP_GROUPEND
 };
 
@@ -59,10 +66,6 @@ static HAL_BinarySemaphore sockcond2;
 
 // the asprintf() calls are not worth checking for SITL
 #pragma GCC diagnostic ignored "-Wunused-result"
-
-#define SAMPLE_INTERVAL_S 100.0e-6  // 100us
-#define SAMPLE_INTERVAL_MIN_S (SAMPLE_INTERVAL_S/2)   // smallest interval before moving on to the next
-#define FRAMES_PER_REPORT 10000
 
 static const struct {
     const char *name;
@@ -460,6 +463,8 @@ bool FlightAxis::wait_for_sample(const struct sitl_input &input)
     uint32_t frame_count = 0;
     uint32_t frame_tries = 0;
     double dt_seconds = 0;
+    const float SAMPLE_INTERVAL_S = 1.0f / _samplehz.get();
+    const float SAMPLE_INTERVAL_MIN_S = (SAMPLE_INTERVAL_S/2);   // smallest interval before moving on to the next
 
     double lastt_s = state.m_currentPhysicsTime_SEC;
 
@@ -506,13 +511,15 @@ bool FlightAxis::wait_for_sample(const struct sitl_input &input)
         average_frame_time_s = average_frame_time_s * 0.98 + dt * 0.02;
     }
 #if HAL_LOGGING_ENABLED
-    uint64_t time_now = uint64_t(state.m_currentPhysicsTime_SEC * 1.0e6);
+    if (!(option_is_set(Option::NoDtLog))) {
+        uint64_t time_now = uint64_t(state.m_currentPhysicsTime_SEC * 1.0e6);
 // @LoggerMessage: RF
 // @Description: RealFlight mode messages
 // @Field: TimeUS: Time since system startup
 // @Field: Dt: delta time between this frame and the previous frae=me
 // @Field: Fps: frames-per-second implied by the current delta time
-    AP::logger().WriteStreaming("RF", "TimeUS,Dt,Fps", "QdI", time_now, dt, uint32_t(roundf(1/dt)));
+        AP::logger().WriteStreaming("RF", "TimeUS,Dt,Fps", "QdI", time_now, dt, uint32_t(roundf(1/dt)));
+    }
 #endif
     if (last_time_s > 0) {
         if (dt_seconds > 0 && dt_seconds < 0.1) {
@@ -548,7 +555,9 @@ void FlightAxis::update(const struct sitl_input &input)
         return;
     }
     
+    // initialize timer
     if (initial_time_s <= 0) {
+        time_now_us = 1;    // prevent time going backwards
         dt_seconds = 0.001f;
         initial_time_s = state.m_currentPhysicsTime_SEC - dt_seconds;
     }
@@ -723,14 +732,14 @@ struct FlightAxis::state FlightAxis::interpolate_frame(struct state& new_state, 
  */
 void FlightAxis::report_FPS(void)
 {
-    if (frame_counter++ % FRAMES_PER_REPORT == 0) {
+    if (frame_counter++ % _samplehz == 0) {
         if (!is_zero(last_frame_count_s)) {
             uint64_t frames = socket_frame_counter - last_socket_frame_counter;
             last_socket_frame_counter = socket_frame_counter;
             double dt = state.m_currentPhysicsTime_SEC - last_frame_count_s;
             if(!option_is_set(Option::SilenceFPS)) {
                 printf("%.2f/%.2f FPS avg=%.2f FPS net=%.2f glitches=%u\n",
-                    frames / dt, FRAMES_PER_REPORT / dt, 1.0/average_frame_time_s, 1.0/average_delta_time_s, unsigned(glitch_count));
+                    frames / dt, _samplehz / dt, 1.0/average_frame_time_s, 1.0/average_delta_time_s, unsigned(glitch_count));
             }
         } else {
             printf("Initial position %f %f %f\n", position.x, position.y, position.z);

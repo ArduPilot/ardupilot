@@ -181,12 +181,14 @@ private:
     struct state interpolate_frame(struct state& new_state, struct state& old_state, double new_time);
 
     AP_Int32 _options;
+    AP_Int16 _samplehz;
 
     enum class Option : uint32_t{
         ResetPosition = (1U<<0),
         Rev4Servos    = (1U<<1),
         HeliDemix     = (1U<<2),
         SilenceFPS    = (1U<<3),
+        NoDtLog       = (1U<<4),
     };
 
     // return true if an option is set
