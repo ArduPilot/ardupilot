@@ -264,6 +264,19 @@ class VehicleInfo(object):
             },
         },
     },
+    "StateSpace": {
+        "default_frame": "statespace-multi",
+        "frames": {
+            "statespace-multi": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter.parm",
+            },
+            "statespace-heli": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": "default_params/copter-heli.parm",
+            },
+        },
+    },
     "Blimp": {
         "default_frame": "Blimp",
         "frames": {
@@ -528,6 +541,7 @@ class VehicleInfo(object):
                 if frame.startswith(p):
                     ret = self.options[vehicle]["frames"][p]
                     break
+        print("ret is (%s)" % ret)
         if ret is None:
             if frame.endswith("-heli"):
                 ret = self.options[vehicle]["frames"]["heli"]
