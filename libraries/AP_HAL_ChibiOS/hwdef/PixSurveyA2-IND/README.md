@@ -29,7 +29,7 @@ The PixSurveyA2-IND flight controller is sold by a range of resellers listed on 
 
 ## Pinout
 
-![PixSurveyA2-IND](PixSurveyA2-IND-1.png "PixSurveyA2-IND-1")
+![PixSurveyA2-IND](PixSurveyA2-IND-1.jpg "PixSurveyA2-IND-1")
 
 ## UART Mapping
 

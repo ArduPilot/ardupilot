@@ -2,7 +2,7 @@
 
 The AEROFOX-H7 is a flight controller produced by AEROFOX(http://aerofox.cn)
 
-<img src="AEROFOX-H7_IMG.png" alt="" width="400">
+<img src="AEROFOX-H7_IMG.jpg" alt="" width="400">
 
 ## Features
     Processor
@@ -33,7 +33,7 @@ The AEROFOX-H7 is a flight controller produced by AEROFOX(http://aerofox.cn)
         The connector includes an SPI, an I2C, an PWM IMU heating control pin.
 
 ## Pinout
-<img src="AEROFOX-H7_pinout.png" alt="" width="800">
+<img src="AEROFOX-H7_pinout.jpg" alt="" width="800">
 
 ## UART Mapping
 
