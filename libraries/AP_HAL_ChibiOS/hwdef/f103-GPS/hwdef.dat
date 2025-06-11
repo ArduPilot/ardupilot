@@ -1,7 +1,7 @@
 include ../f103-periph/hwdef.inc
 
 
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 # support an expliclty defined set of compasses:
 define AP_COMPASS_BACKEND_DEFAULT_ENABLED 0
