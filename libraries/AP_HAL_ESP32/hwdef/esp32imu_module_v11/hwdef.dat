@@ -11,7 +11,7 @@ IMU Invensense I2C:0:0x68 ROTATION_NONE
 # here for binary compatibility:
 define INS_MAX_INSTANCES 3
 
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES 1 
+define AP_COMPASS_PROBING_ENABLED 1
 
 # one Baro:
 BARO BMP280 I2C:0:0x77
