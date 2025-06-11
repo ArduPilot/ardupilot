@@ -154,7 +154,7 @@ define HAL_I2C_INTERNAL_MASK 0
 I2C_ORDER I2C1
 
 # also probe all types of external I2C compasses
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 #------------------- SPI -----------------------------
 # spi bus for Sensors
