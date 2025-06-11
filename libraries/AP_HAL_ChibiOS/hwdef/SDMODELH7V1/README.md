@@ -1,8 +1,8 @@
 ## SDMODEL SDH7 V1
 
-![SDH7V1](SDH7V1_top.png)
+![SDH7V1](SDH7V1_top.jpg)
 
-![SDH7V1](SDH7V1_bottom.png)
+![SDH7V1](SDH7V1_bottom.jpg)
 
 above image and some content courtesy of SDMODEL
 
