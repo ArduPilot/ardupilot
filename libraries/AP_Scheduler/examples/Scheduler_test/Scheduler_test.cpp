@@ -21,7 +21,6 @@ class SchedTest {
 public:
     void setup();
     void loop();
-
 private:
 
 #if AP_EXTERNAL_AHRS_ENABLED
@@ -32,13 +31,14 @@ private:
     uint32_t ins_counter;
     uint32_t count_5s;
     uint32_t count_1s;
+    
     static const AP_Scheduler::Task scheduler_tasks[];
 
     void ins_update(void);
     void one_hz_print(void);
     void five_second_call(void);
 };
-
+static AP_InertialSensor ins;
 static AP_BoardConfig board_config;
 static SchedTest schedtest;
 
@@ -74,11 +74,11 @@ const AP_Scheduler::Task SchedTest::scheduler_tasks[] = {
     SCHED_TASK(five_second_call,      0.2,   1800, 9),
 };
 
-
 void SchedTest::setup(void)
 {
-
+    
     board_config.init();
+    ins.init(100);
 
     // initialise the scheduler
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), (uint32_t)-1);
@@ -87,6 +87,7 @@ void SchedTest::setup(void)
 void SchedTest::loop(void)
 {
     // run all tasks
+    ins.update();
     scheduler.loop();
     if (ins_counter == 1000) {
         bool ok = true;
