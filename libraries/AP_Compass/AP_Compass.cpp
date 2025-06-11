@@ -1400,11 +1400,11 @@ void Compass::_detect_backends(void)
     CHECK_UNREG_LIMIT_RETURN;
 #endif
 
-#ifdef HAL_PROBE_EXTERNAL_I2C_COMPASSES
+#if AP_COMPASS_PROBING_ENABLED
     // allow boards to ask for external probing of all i2c compass types in hwdef.dat
     _probe_external_i2c_compasses();
     CHECK_UNREG_LIMIT_RETURN;
-#endif
+#endif  // AP_COMPASS_PROBING_ENABLED
 
 #if AP_COMPASS_MSP_ENABLED
     for (uint8_t i=0; i<8; i++) {
