@@ -165,9 +165,9 @@ void AP_NavEKF_Source::setPosVelYawSourceSet(AP_NavEKF_Source::SourceSetSelectio
 }
 
 // true/false of whether velocity source should be used
-bool AP_NavEKF_Source::useVelXYSource(SourceXY velxy_source, uint8_t core_number) const
+bool AP_NavEKF_Source::useVelXYSource(SourceXY velxy_source, uint8_t core_index) const
 {
-    if (velxy_source == _source_set[getActiveSourceSet(core_number)].velxy) {
+    if (velxy_source == _source_set[getActiveSourceSet(core_index)].velxy) {
         return true;
     }
 
@@ -184,9 +184,9 @@ bool AP_NavEKF_Source::useVelXYSource(SourceXY velxy_source, uint8_t core_number
     return false;
 }
 
-bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source, uint8_t core_number) const
+bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source, uint8_t core_index) const
 {
-    if (velz_source == _source_set[getActiveSourceSet(core_number)].velz) {
+    if (velz_source == _source_set[getActiveSourceSet(core_index)].velz) {
         return true;
     }
 
@@ -204,9 +204,9 @@ bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source, uint8_t core_number) c
 }
 
 // true if a velocity source is configured
-bool AP_NavEKF_Source::haveVelZSource(uint8_t core_number) const
+bool AP_NavEKF_Source::haveVelZSource(uint8_t core_index) const
 {
-    if (_source_set[getActiveSourceSet(core_number)].velz != SourceZ::NONE) {
+    if (_source_set[getActiveSourceSet(core_index)].velz != SourceZ::NONE) {
         return true;
     }
 
@@ -224,10 +224,10 @@ bool AP_NavEKF_Source::haveVelZSource(uint8_t core_number) const
 }
 
 // get yaw source
-AP_NavEKF_Source::SourceYaw AP_NavEKF_Source::getYawSource(uint8_t core_number) const
+AP_NavEKF_Source::SourceYaw AP_NavEKF_Source::getYawSource(uint8_t core_index) const
 {
     // check for special case of disabled compasses
-    if ((_source_set[getActiveSourceSet(core_number)].yaw == SourceYaw::COMPASS) && (AP::dal().compass().get_num_enabled() == 0)) {
+    if ((_source_set[getActiveSourceSet(core_index)].yaw == SourceYaw::COMPASS) && (AP::dal().compass().get_num_enabled() == 0)) {
         return SourceYaw::NONE;
     }
 
@@ -235,15 +235,15 @@ AP_NavEKF_Source::SourceYaw AP_NavEKF_Source::getYawSource(uint8_t core_number) 
 }
 
 // get pos Z source
-AP_NavEKF_Source::SourceZ AP_NavEKF_Source::getPosZSource(uint8_t core_number) const
+AP_NavEKF_Source::SourceZ AP_NavEKF_Source::getPosZSource(uint8_t core_index) const
 {
 #ifdef HAL_BARO_ALLOW_INIT_NO_BARO
     // check for special case of missing baro
-    if ((_source_set[getActiveSourceSet(core_number)].posz == SourceZ::BARO) && (AP::dal().baro().num_instances() == 0)) {
+    if ((_source_set[getActiveSourceSet(core_index)].posz == SourceZ::BARO) && (AP::dal().baro().num_instances() == 0)) {
         return SourceZ::NONE;
     }
 #endif
-    return _source_set[getActiveSourceSet(core_number)].posz;
+    return _source_set[getActiveSourceSet(core_index)].posz;
 }
 
 // align position of inactive sources to ahrs
@@ -292,13 +292,13 @@ void AP_NavEKF_Source::align_inactive_sources(uint8_t core_number)
 }
 
 // sensor specific helper functions
-bool AP_NavEKF_Source::usingGPS(uint8_t core_number) const
+bool AP_NavEKF_Source::usingGPS(uint8_t core_index) const
 {
-    return getPosXYSource(core_number) == SourceXY::GPS ||
-           getPosZSource(core_number) == SourceZ::GPS ||
-           getVelXYSource(core_number) == SourceXY::GPS ||
-           getVelZSource(core_number) == SourceZ::GPS ||
-           getYawSource(core_number) == SourceYaw::GSF;
+    return getPosXYSource(core_index) == SourceXY::GPS ||
+           getPosZSource(core_index) == SourceZ::GPS ||
+           getVelXYSource(core_index) == SourceXY::GPS ||
+           getVelZSource(core_index) == SourceZ::GPS ||
+           getYawSource(core_index) == SourceYaw::GSF;
 }
 
 // true if some parameters have been configured (used during parameter conversion)
