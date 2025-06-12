@@ -1337,7 +1337,7 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
 #endif  // AP_COMPASS_RM3100_ENABLED
 
-#if AP_COMPASS_BMM150_DETECT_BACKENDS_ENABLED
+#if AP_COMPASS_BMM150_ENABLED
     // BMM150 on I2C
     FOREACH_I2C_EXTERNAL(i) {
         for (uint8_t addr=BMM150_I2C_ADDR_MIN; addr <= BMM150_I2C_ADDR_MAX; addr++) {
@@ -1345,7 +1345,7 @@ void Compass::_probe_external_i2c_compasses(void)
                         AP_Compass_BMM150::probe(GET_I2C_DEVICE(i, addr), true, ROTATION_NONE));
         }
     }
-#endif // AP_COMPASS_BMM150_ENABLED
+#endif  // AP_COMPASS_BMM150_ENABLED
 
 #if AP_COMPASS_BMM350_ENABLED
     // BMM350 on I2C
@@ -1444,12 +1444,6 @@ void Compass::probe_i2c_spi_compasses(void)
         CHECK_UNREG_LIMIT_RETURN;
         break;
 
-    case AP_BoardConfig::PX4_BOARD_PCNC1:
-#if AP_COMPASS_BMM150_ENABLED
-        ADD_BACKEND(DRIVER_BMM150,
-                    AP_Compass_BMM150::probe(GET_I2C_DEVICE(0, 0x10), false, ROTATION_NONE));
-#endif
-        break;
     case AP_BoardConfig::VRX_BOARD_CORE10:
     case AP_BoardConfig::VRX_BOARD_UBRAIN51:
     case AP_BoardConfig::VRX_BOARD_UBRAIN52: {
