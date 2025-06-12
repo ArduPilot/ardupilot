@@ -19,7 +19,7 @@ parser = ArgumentParser(description='make_secure_bl')
 parser.add_argument("--signing-key", type=str, default=None, help="signing key for secure bootloader")
 parser.add_argument("--debug", action='store_true', default=False, help="build with debug symbols")
 parser.add_argument("--periph-only", action='store_true', default=False, help="only build AP_Periph boards")
-parser.add_argument("pattern", type=str, default='*', help="board wildcard pattern")
+parser.add_argument("pattern", type=str, default='*', help="board wildcard pattern", nargs='?')
 args = parser.parse_args()
 
 if args.signing_key is not None and os.path.basename(args.signing_key).lower().find("private") != -1:
