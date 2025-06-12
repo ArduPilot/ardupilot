@@ -378,7 +378,6 @@ bool AP_Param::setup(void)
             hdr2.revision == k_EEPROM_revision &&
             _storage.copy_area(_storage_bak)) {
             // restored from backup
-            INTERNAL_ERROR(AP_InternalError::error_t::params_restored);
             return true;
         }
 #endif // AP_PARAM_STORAGE_BAK_ENABLED
