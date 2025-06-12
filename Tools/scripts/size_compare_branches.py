@@ -41,6 +41,16 @@ class SizeCompareBranchesResult(object):
         self.identical = identical
 
 
+class FeatureCompareBranchesResult(object):
+    '''object to return results from a comparison'''
+
+    def __init__(self, board, vehicle, delta_features_in, delta_features_out):
+        self.board = board
+        self.vehicle = vehicle
+        self.delta_features_in = delta_features_in
+        self.delta_features_out = delta_features_out
+
+
 class SizeCompareBranches(object):
     '''script to build and compare branches using elf_diff'''
 
@@ -62,7 +72,9 @@ class SizeCompareBranches(object):
                  extra_hwdef_branch=[],
                  extra_hwdef_master=[],
                  parallel_copies=None,
-                 jobs=None):
+                 jobs=None,
+                 features=False,
+                 ):
 
         if branch is None:
             branch = self.find_current_git_branch_or_sha1()
@@ -84,6 +96,7 @@ class SizeCompareBranches(object):
         self.show_unchanged = show_unchanged
         self.parallel_copies = parallel_copies
         self.jobs = jobs
+        self.features = features
 
         if self.bin_dir is None:
             self.bin_dir = self.find_bin_dir()
@@ -488,7 +501,8 @@ class SizeCompareBranches(object):
             for task in tasks:
                 task_results.append(self.gather_results_for_task(task))
             # progress CSV:
-            csv_for_results = self.csv_for_results(self.compare_task_results(task_results, no_elf_diff=True))
+            pairs = self.pairs_from_task_results(task_results)
+            csv_for_results = self.csv_for_results(self.compare_task_results_sizes(pairs))
             path = pathlib.Path("/tmp/some.csv")
             path.write_text(csv_for_results)
 
@@ -521,7 +535,7 @@ class SizeCompareBranches(object):
         def __str__(self):
             return f"Task({self.board}, {self.commitish}, {self.outdir}, {self.vehicles_to_build}, {self.extra_hwdef_file} {self.toolchain})"  # NOQA:E501
 
-    def run_all(self):
+    def run(self):
         '''run tests for boards and vehicles passed in constructor'''
 
         tmpdir = tempfile.mkdtemp()
@@ -573,7 +587,8 @@ class SizeCompareBranches(object):
 
                 # progress CSV:
                 with open("/tmp/some.csv", "w") as f:
-                    f.write(self.csv_for_results(self.compare_task_results(task_results, no_elf_diff=True)))
+                    pairs = self.pairs_from_task_results(task_results)
+                    f.write(self.csv_for_results(self.compare_task_results_sizes(pairs)))
 
         return self.compare_task_results(task_results)
 
@@ -621,8 +636,7 @@ class SizeCompareBranches(object):
 
             self.run_program("SCB", elf_diff_commandline)
 
-    def compare_task_results(self, task_results, no_elf_diff=False):
-        # pair off results, master and branch:
+    def pairs_from_task_results(self, task_results : list):
         pairs = {}
         for res in task_results:
             board = res.board
@@ -634,7 +648,21 @@ class SizeCompareBranches(object):
                 pairs[board]["branch"] = res
             else:
                 raise ValueError(res["branch"])
+        return pairs
 
+    def compare_task_results(self, task_results):
+        # pair off results, master and branch:
+        pairs = self.pairs_from_task_results(task_results)
+
+        self.emit_csv_for_results(self.compare_task_results_sizes(pairs))
+
+        if self.run_elf_diff:
+            self.compare_task_results_elf_diff(pairs)
+
+        if self.features:
+            self.compare_task_results_features(pairs)
+
+    def compare_task_results_sizes(self, pairs):
         results = {}
         for pair in pairs.values():
             if "master" not in pair or "branch" not in pair:
@@ -643,13 +671,21 @@ class SizeCompareBranches(object):
             master = pair["master"]
             board = master.board
             try:
-                results[board] = self.compare_results(master, pair["branch"])
-                if self.run_elf_diff and not no_elf_diff:
-                    self.elf_diff_results(master, pair["branch"])
+                results[board] = self.compare_results_sizes(master, pair["branch"])
             except FileNotFoundError:
                 pass
 
         return results
+
+    def compare_task_results_elf_diff(self, pairs):
+        for pair in pairs.values():
+            if "master" not in pair or "branch" not in pair:
+                # probably incomplete:
+                continue
+            try:
+                self.elf_diff_results(pair["master"], pair["branch"])
+            except Exception as e:
+                print(f"Exception calling elf_diff: {e}")
 
     def emit_csv_for_results(self, results):
         '''emit dictionary of dictionaries as a CSV'''
@@ -663,19 +699,24 @@ class SizeCompareBranches(object):
             all_vehicles.update(list(results[board].keys()))
         sorted_all_vehicles = sorted(list(all_vehicles))
         ret = ""
-        ret += ",".join(["Board"] + sorted_all_vehicles) + "\n"
+        headings = ["Board"] + sorted_all_vehicles
+        ret += ",".join(headings) + "\n"
         for board in boards:
             line = [board]
             board_results = results[board]
             for vehicle in sorted_all_vehicles:
-                bytes_delta = ""
+                cell_value = ""
                 if vehicle in board_results:
                     result = board_results[vehicle]
-                    if result.identical:
-                        bytes_delta = "*"
+                    if isinstance(result, FeatureCompareBranchesResult):
+                        cell_value = '"' + "\n".join(result.delta_features_in + result.delta_features_out) + '"'
                     else:
-                        bytes_delta = result.bytes_delta
-                line.append(str(bytes_delta))
+                        if result.identical:
+                            bytes_delta = "*"
+                        else:
+                            bytes_delta = result.bytes_delta
+                        cell_value = bytes_delta
+                line.append(str(cell_value))
             # do not add to ret value if we're not showing empty results:
             if not self.show_empty:
                 if len(list(filter(lambda x : x != "", line[1:]))) == 0:
@@ -687,10 +728,6 @@ class SizeCompareBranches(object):
                     continue
             ret += ",".join(line) + "\n"
         return ret
-
-    def run(self):
-        results = self.run_all()
-        self.emit_csv_for_results(results)
 
     def files_are_identical(self, file1, file2):
         '''returns true if the files have the same content'''
@@ -787,7 +824,61 @@ class SizeCompareBranches(object):
 
         return stripped_path
 
-    def compare_results(self, result_master : Result, result_branch : Result):
+    def get_features(self, path):
+        from extract_features import ExtractFeatures
+        x = ExtractFeatures(path)
+        return x.extract()
+
+    def compare_results_features(self, result_master : Result, result_branch : Result):
+        ret = {}
+        for vehicle in result_master.vehicle.keys():
+            # check for the difference in size (and identicality)
+            # of the two binaries:
+            master_elf_dir = result_master.vehicle[vehicle]["elf_dir"]
+            new_elf_dir = result_branch.vehicle[vehicle]["elf_dir"]
+
+            elf_filename = result_master.vehicle[vehicle]["elf_filename"]
+            master_path = os.path.join(master_elf_dir, elf_filename)
+            new_path = os.path.join(new_elf_dir, elf_filename)
+
+            if not os.path.exists(master_path):
+                continue
+            if not os.path.exists(new_path):
+                continue
+            (master_features_in, master_features_out) = self.get_features(master_path)
+            (new_features_in, new_features_out) = self.get_features(new_path)
+
+            board = result_master.board
+            in_delta = []
+            for master_feature_in in sorted(master_features_in):
+                if master_feature_in not in new_features_in:
+                    in_delta.append("-" + master_feature_in)
+            for new_feature_in in sorted(new_features_in):
+                if new_feature_in not in master_features_in:
+                    in_delta.append("+" + new_feature_in)
+
+            out_delta = []
+            for master_feature_out in sorted(master_features_out):
+                if master_feature_out not in new_features_out:
+                    out_delta.append("-!" + master_feature_out)
+            for new_feature_out in sorted(new_features_out):
+                if new_feature_out not in master_features_out:
+                    out_delta.append("+!" + new_feature_out)
+
+            ret[vehicle] = FeatureCompareBranchesResult(board, vehicle, in_delta, out_delta)
+
+        return ret
+
+    def compare_task_results_features(self, pairs):
+        results = {}
+        for pair in pairs.values():
+            if "master" not in pair or "branch" not in pair:
+                # probably incomplete:
+                continue
+            results[pair["master"].board] = self.compare_results_features(pair["master"], pair["branch"])
+        print(self.csv_for_results(results))
+
+    def compare_results_sizes(self, result_master, result_branch):
         ret = {}
         for vehicle in result_master.vehicle.keys():
             # check for the difference in size (and identicality)
@@ -901,6 +992,13 @@ def main():
                       default=[],
                       action="append",
                       help="exclude any board which matches this pattern")
+    parser.add_option(
+        "",
+        "--features",
+        default=False,
+        action="store_true",
+        help="compare features",
+    )
     parser.add_option("",
                       "--all-vehicles",
                       action='store_true',
@@ -948,6 +1046,7 @@ def main():
         show_unchanged=not cmd_opts.hide_unchanged,
         parallel_copies=cmd_opts.parallel_copies,
         jobs=cmd_opts.jobs,
+        features=cmd_opts.features,
     )
     x.run()
 
