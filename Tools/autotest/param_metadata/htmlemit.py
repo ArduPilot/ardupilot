@@ -1,3 +1,5 @@
+# flake8: noqa
+
 """
 Emit docs in a form acceptable to the old Ardupilot wordpress docs site
 """

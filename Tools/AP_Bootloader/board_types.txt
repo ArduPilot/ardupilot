@@ -307,6 +307,8 @@ AP_HW_CORVON405V2_1                  1187
 AP_HW_NarinH5                        1188
 AP_HW_CORVON743V1                    1189
 AP_HW_DAKEFPVF405                    1190
+AP_HW_ORBITH743                      1191
+AP_HW_AERIUM_RADIANF405              1192
 
 AP_HW_JFB200                         1200
 

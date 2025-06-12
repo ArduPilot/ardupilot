@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+# flake8: noqa
+
 from waflib import Build, ConfigSet, Configure, Context, Errors, Logs, Options, Utils, Task
 from waflib.Configure import conf
 from waflib.Scripting import run_command
