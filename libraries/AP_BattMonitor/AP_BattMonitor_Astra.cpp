@@ -102,7 +102,7 @@ void AP_BattMonitor_Astra::timer()
 
     // read current (A)
     if (read_word(BATTMONITOR_SMBUS_CURRENT, data)) {
-        _state.current_amps = -(float)((int16_t)data) * 0.0001f;
+        _state.current_amps = -(float)((int16_t)data) * 0.01f;
         _state.last_time_micros = tnow;
     }
 
