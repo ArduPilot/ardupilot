@@ -6868,6 +6868,17 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_current_waypoint(4)
         self.fly_home_land_and_disarm()
 
+    def RudderArmedTakeoffRequiresNeutralThrottle(self):
+        '''auto-takeoff should not occur while rudder continues to be held over'''
+        self.change_mode('TAKEOFF')
+        self.wait_ready_to_arm()
+        self.set_rc(4, 1000)
+        self.wait_armed()
+        self.wait_groundspeed(0, 1, minimum_duration=10)
+        self.set_rc(4, 1500)
+        self.wait_groundspeed(5, 100)
+        self.fly_home_land_and_disarm()
+
     def VolzMission(self):
         '''test Volz serially-connected servos in a mission'''
         volz_motor_mask = ((1 << 0) | (1 << 1) | (1 << 3) | (1 << 8) | (1 << 9) | (1 << 11))
@@ -7119,6 +7130,23 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
         self.set_parameter("SIM_ARSPD_FAIL", 0)
         self.fly_home_land_and_disarm()
+
+    def RudderArmingWithArmingChecksZero(self):
+        '''check we can't arm with rudder even if checks are disabled'''
+        self.set_parameters({
+            "ARMING_RUDDER": 0,
+            "ARMING_CHECK": 0,
+            "RC4_REVERSED": 0,
+        })
+        self.reboot_sitl()
+        self.delay_sim_time(5)
+        self.set_rc(4, 2000)
+        w = vehicle_test_suite.WaitAndMaintainDisarmed(
+            self,
+            minimum_duration=30,
+            timeout=60,
+        )
+        w.run()
 
     def Volz(self):
         '''test Volz serially-connected'''
@@ -7432,6 +7460,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             Test(self.GCSFailsafe, speedup=8),
             self.SDCardWPTest,
             self.NoArmWithoutMissionItems,
+            self.RudderArmedTakeoffRequiresNeutralThrottle,
             self.MODE_SWITCH_RESET,
             self.ExternalPositionEstimate,
             self.SagetechMXS,
@@ -7469,6 +7498,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.DO_CHANGE_ALTITUDE,
             self.SET_POSITION_TARGET_GLOBAL_INT_for_altitude,
             self.MAV_CMD_NAV_LOITER_TURNS_zero_turn,
+            self.RudderArmingWithArmingChecksZero,
         ]
 
     def disabled_tests(self):
