@@ -18,6 +18,7 @@
 #include <AP_DAL/AP_DAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_HAL/AP_HAL.h>
+#include "AP_Nav_Common.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -247,47 +248,81 @@ AP_NavEKF_Source::SourceZ AP_NavEKF_Source::getPosZSource(uint8_t core_index) co
 }
 
 // align position of inactive sources to ahrs
-void AP_NavEKF_Source::align_inactive_sources(uint8_t core_number)
+void AP_NavEKF_Source::align_inactive_sources()
 {
-    // align visual odometry
 #if HAL_VISUALODOM_ENABLED
-
     auto *visual_odom = AP::dal().visualodom();
     if (!visual_odom || !visual_odom->enabled()) {
         return;
     }
 
-    // consider aligning ExtNav XY position:
-    bool align_posxy = false;
-    if ((getPosXYSource(core_number) == SourceXY::GPS) ||
-        (getPosXYSource(core_number) == SourceXY::BEACON) ||
-        ((getVelXYSource(core_number) == SourceXY::OPTFLOW) && option_is_set(SourceOptions::ALIGN_EXTNAV_POS_WHEN_USING_OPTFLOW))) {
-        // align ExtNav position if active source is GPS, Beacon or (optionally) Optflow
-        for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if (_source_set[i].posxy == SourceXY::EXTNAV) {
-                // ExtNav could potentially be used, so align it
-                align_posxy = true;
-                break;
-            }
+    bool allow_align_posxy = true;
+    bool allow_align_posz = true;
+
+    // Check active XY sources across all EKF cores
+    for (uint8_t i = 0; i < MAX_EKF_CORES; i++) {
+        const SourceXY pos_xy_source = getPosXYSource(i);
+        const SourceXY vel_xy_source = getVelXYSource(i);
+
+        if (pos_xy_source == SourceXY::EXTNAV) {
+            // ExtNav is actively being used, do not align XY
+            allow_align_posxy = false;
+            break;
+        }
+
+        const bool valid_xy =
+            (pos_xy_source == SourceXY::GPS) ||
+            (pos_xy_source == SourceXY::BEACON) ||
+            ((vel_xy_source == SourceXY::OPTFLOW) &&
+             option_is_set(SourceOptions::ALIGN_EXTNAV_POS_WHEN_USING_OPTFLOW));
+
+        if (!valid_xy) {
+            allow_align_posxy = false;
+            break;
         }
     }
 
-    // consider aligning Z position:
-    bool align_posz = false;
-    if ((getPosZSource(core_number) == SourceZ::BARO) ||
-        (getPosZSource(core_number) == SourceZ::RANGEFINDER) ||
-        (getPosZSource(core_number) == SourceZ::GPS) ||
-        (getPosZSource(core_number) == SourceZ::BEACON)) {
-        // ExtNav is not the active source; we do not want to align active source!
-        for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if (_source_set[i].posz == SourceZ::EXTNAV) {
-                // ExtNav could potentially be used, so align it
-                align_posz = true;
-                break;
-            }
+    // Check active Z sources across all EKF cores
+    for (uint8_t i = 0; i < MAX_EKF_CORES; i++) {
+        const SourceZ pos_z_source = getPosZSource(i);
+
+        if (pos_z_source == SourceZ::EXTNAV) {
+            // ExtNav is actively being used, do not align Z
+            allow_align_posz = false;
+            break;
+        }
+
+        const bool valid_z =
+            (pos_z_source == SourceZ::BARO) ||
+            (pos_z_source == SourceZ::RANGEFINDER) ||
+            (pos_z_source == SourceZ::GPS) ||
+            (pos_z_source == SourceZ::BEACON);
+
+        if (!valid_z) {
+            allow_align_posz = false;
+            break;
         }
     }
-    visual_odom->align_position_to_ahrs(align_posxy, align_posz);
+
+    // Check if ExtNav is available in any source set
+    bool extnav_available_xy = false;
+    bool extnav_available_z = false;
+
+    for (uint8_t i = 0; i < AP_NAKEKF_SOURCE_SET_MAX; i++) {
+        if (_source_set[i].posxy == SourceXY::EXTNAV) {
+            extnav_available_xy = true;
+        }
+        if (_source_set[i].posz == SourceZ::EXTNAV) {
+            extnav_available_z = true;
+        }
+    }
+
+    // Align only if allowed and ExtNav source available
+    visual_odom->align_position_to_ahrs(
+        allow_align_posxy && extnav_available_xy,
+        allow_align_posz && extnav_available_z
+    );
+
 #endif
 }
 
