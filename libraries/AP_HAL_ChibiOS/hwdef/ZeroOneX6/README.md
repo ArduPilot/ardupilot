@@ -1,6 +1,6 @@
 ## ZeroOneX6 Flight Controller
-The ZeroOne X6 is a flight controller manufactured by ZeroOne, which is based on the open-source FMU v6X architecture and Pixhawk Autopilot Bus open source specifications.
-![Uploading ZeroOneX6.jpg…](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6-250103/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6/ZeroOneX6.jpg?raw=true)
+The ZeroOne X6 is a series of flight controllers manufactured by ZeroOne, which is based on the open-source FMU v6X architecture and Pixhawk Autopilot Bus open source specifications.
+![Uploading X6_and_X6Pro.png…](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6_Pro-250526/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6/X6_and_X6Pro.png?raw=true)
 
 
 ## Features:
@@ -12,19 +12,26 @@ The ZeroOne X6 is a flight controller manufactured by ZeroOne, which is based on
 - IO MCU
    STM32F103
 - Sensors
-- IMU: 
-   Internal Vibration Isolation for IMUs  
-   IMU constant temperature heating(1 W heating power).  
-   With Triple Synced IMUs, BalancedGyro technology, low noise and more shock-resistant:  
-   IMU1-ICM45686(With vibration isolation)  
-   IMU2-BMI088(With vibration isolation)  
-   IMU3- ICM45686(No vibration isolation) 
-- Baro:
-   Two barometers:2 x ICP20100  
-   Magnetometer:   Builtin RM3100 magnetometer
+    - IMU:   
+       Internal Vibration Isolation for IMUs  
+       IMU constant temperature heating(1 W heating power).  
+       With Triple Synced IMUs, BalancedGyro technology, low noise and more shock-resistant:
+      - **X6**:  
+       IMU1-ICM45686(With vibration isolation)  
+       IMU2-BMI088(With vibration isolation)  
+       IMU3- ICM45686(No vibration isolation)
+      - **X6 Pro**：  
+       IMU1-IIM42653(With vibration isolation)  
+       IMU2-BMI088(With vibration isolation)  
+       IMU3-IIM42653(No vibration isolation) 
+    - Baro:  
+       Two barometers:  2 x ICP20100    
+    - Magnetometer:   
+       Builtin RM3100 magnetometer
+
 
 ## Pinout
-![ZeroOneX6 Pinout](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6-250103/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6/ZeroOneX6Pinout.jpg "ZeroOneX6")
+![ZeroOneX6 Pinout](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6_Pro-250526/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6/ZeroOneX6Pinout.jpg "ZeroOneX6")
 
 
 ## UART Mapping
