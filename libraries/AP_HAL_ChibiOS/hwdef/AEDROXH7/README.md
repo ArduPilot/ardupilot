@@ -78,7 +78,7 @@ The remaining 3 outputs (labelled AUX1 to AUX3) are the "auxiliary" outputs. The
 
 The numbering of the GPIOs for PIN variables in ardupilot is:
 
- - AUX1 - PA2 - 81
+ - GPIO1 pin is ArduPilot GPIO 81
  - AUX2 - PA3 - 82
  - AUX3 - PB12 - 83  #10V power supply ON/OFF switch
 
