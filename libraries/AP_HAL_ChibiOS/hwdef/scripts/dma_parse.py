@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+# flake8: noqa
 '''
 extra DMA mapping tables from a stm32 datasheet
 
