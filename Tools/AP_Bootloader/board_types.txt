@@ -308,7 +308,7 @@ AP_HW_NarinH5                        1188
 AP_HW_CORVON743V1                    1189
 AP_HW_DAKEFPVF405                    1190
 AP_HW_ORBITH743                      1191
-AP_HW_AERIUM_RADIANF405              1192
+
 AP_HW_DAKEFPVH743                    1193
 AP_HW_DAKEFPVH743PRO                 1194
 
@@ -368,6 +368,9 @@ AP_HW_SakuraRC-H743                  2714
 
 # IDs 4000-4009 reserved for Karshak Drones
 AP_HW_KRSHKF7_MINI                   4000
+
+# IDs 4010-4019 reserved for Aerium
+AP_HW_AERIUM_RADIANF405              4010
 
 # IDs 4200-4220 reserved for HAKRC
 AP_HW_HAKRC_F405                     4200
