@@ -31,7 +31,12 @@
 
 ## RC Input
 
-The default RC input is configured on the UART3 (SBUS). Non SBUS,  single wire serial inputs can be directly tied to RX3 if SBUS pin is left unconnected. RC could  be applied instead at a different UART port such as UART1, UART4 or UART8, and set the protocol to receive RC data: `SERIALn_PROTOCOL=23` and change SERIAL3 _Protocol to something other than '23'.
+The default RC input is configured on the UART3 (RX3/SBUS). Non SBUS,  single wire serial inputs can be directly tied to RX3 if SBUS pin is left unconnected. RC could  be applied instead at a different UART port such as UART4 or UART8, and set the protocol to receive RC data: ``SERIALn_PROTOCOL = 23`` and change SERIAL3 _Protocol to something other than '23'.
+
+- PPM is supported.  
+- SBUS/DSM/SRXL connects to the RX3 pin.  
+- FPort requires connection to TX3. Set :ref:`SERIAL3_OPTIONS<SERIAL3_OPTIONS>` = 7  
+- CRSF/ELRS also requires both TX3and RX3connections and provides telemetry automatically.
 
 
 ## VTX Support
