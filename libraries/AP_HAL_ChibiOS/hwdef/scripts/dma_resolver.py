@@ -101,7 +101,7 @@ def chibios_dma_define_name(key):
         return 'STM32_UART_%s_' % dma_key
     elif key.startswith('UART'):
         return 'STM32_UART_%s_' % dma_key
-    elif key.startswith('SDIO') or key.startswith('SDMMC'):
+    elif key.startswith(('SDIO', 'SDMMC')):
         return 'STM32_SDC_%s_' % dma_key
     elif key.startswith('TIM'):
         return 'STM32_TIM_%s_' % dma_key
@@ -267,7 +267,7 @@ def check_sharing(shared):
     '''check if DMA channel sharing is OK'''
     for p in shared:
         # don't share UART RX with anything
-        if (p.startswith("UART") or p.startswith("USART")) and p.endswith("_RX"):
+        if p.startswith(("UART", "USART")) and p.endswith("_RX"):
             print("Illegal sharing of %s" % p)
             return False
 
