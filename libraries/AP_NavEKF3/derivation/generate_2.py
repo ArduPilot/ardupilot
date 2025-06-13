@@ -2,6 +2,8 @@
 # Copied from https://github.com/PX4/ecl/commit/264c8c4e8681704e4719d0a03b848df8617c0863
 # and modified for ArduPilot
 # this file was originally from ArduPilot commit f81abd73d6bf73dd1cd1d009f355f6f8c025325b
+
+# flake8: noqa
 from sympy import __version__ as __sympy__version__
 from sympy import *
 from code_gen import *
