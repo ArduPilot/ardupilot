@@ -631,14 +631,6 @@ void AP_Baro::init(void)
 #endif  // AP_BARO_MS5607_ENABLED
         break;
 
-    case AP_BoardConfig::PX4_BOARD_PCNC1:
-#if AP_BARO_ICM20789_ENABLED
-        ADD_BACKEND(AP_Baro_ICM20789::probe(*this,
-                                            std::move(GET_I2C_DEVICE(1, 0x63)),
-                                            std::move(hal.spi->get_device(HAL_INS_MPU60x0_NAME))));
-#endif
-        break;
-
     default:
         break;
     }

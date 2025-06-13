@@ -54,7 +54,7 @@ public:
         PX4_BOARD_AEROFC   = 13,
         PX4_BOARD_PIXHAWK_PRO = 14,
         PX4_BOARD_AUAV21   = 20,
-        PX4_BOARD_PCNC1    = 21,
+        // PX4_BOARD_PCNC1    = 21,
         PX4_BOARD_MINDPXV2 = 22,
         PX4_BOARD_SP01     = 23,
         PX4_BOARD_FMUV5    = 24,
