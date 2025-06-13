@@ -26,7 +26,7 @@
  - SERIAL2 -> UART2 (GPS, DMA-enabled)
  - SERIAL3 -> UART3 (RCIN, DMA-enabled) 
  - SERIAL4 -> UART4 (MAVLink2, DMA-enabled)
- - SERIAL5 -> UART7 (ESC Telemetry, DMA-enabled)
+ - SERIAL7 -> UART7 (ESC Telemetry, DMA-enabled)
  - SERIAL8-> UART8 (DisplayPort, DMA-enabled)
 
 ## RC Input
