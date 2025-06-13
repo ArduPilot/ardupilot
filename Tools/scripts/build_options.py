@@ -27,6 +27,9 @@ class Feature:
         '''the name of the configure option to be used by waf'''
         return "enable-" + self.label.replace(" ", "-")
 
+    def __hash__(self):
+        return hash(self.label)
+
 
 # list of build options to offer NOTE: the dependencies must be
 # written as a single string with commas and no spaces,
@@ -464,6 +467,41 @@ BUILD_OPTIONS = [
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
+
+
+class BuildOptions():
+    '''convenience methods for working with build options'''
+
+    # the following method was copied from build_options.py; consider
+    # consolidating
+    def update_get_required_features_for_feature(self, ret : set[Feature], feature : Feature) -> None:
+        '''recursive function to turn on required feature and what it depends
+        on'''
+        ret.add(feature)
+        if feature.dependency is None:
+            return
+        for depname in feature.dependency.split(','):
+            dep = None
+            for f in BUILD_OPTIONS:
+                if f.label == depname:
+                    dep = f
+            if dep is None:
+                raise ValueError("Invalid dep (%s) for feature (%s)" %
+                                 (depname, feature.label))
+            self.update_get_required_features_for_feature(ret, dep)
+
+    def get_required_features_for_feature(self, feature : Feature) -> set[Feature]:
+        ret = set()
+        self.update_get_required_features_for_feature(ret, feature)
+        return ret
+
+    def get_enable_defines_for_feature(self, feature : Feature) -> set[str]:
+        '''returns defines required to turn feature on'''
+        ret = set()
+        for f in self.get_required_features_for_feature(feature):
+            ret.add(f.define)
+        return ret
+
 
 # sanity check the list to ensure names don't get too long.  These are
 # used in various displays, so a good English "name" for the feature
