@@ -6,7 +6,7 @@
 - STM32H743 microcontroller
 - ICM42688-P IMU with external clock
 - DPS368 barometer
-- 10V 2.3A BEC; 5V 2.3A BEC
+- 10V 2.3A BEC, GPIO controlled; 5V 2.3A BEC
 - Flash Memory
 - 6x UART
 - 8x PWM
