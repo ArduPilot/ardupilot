@@ -14,12 +14,12 @@ The ZeroOne X6 is a series of flight controllers manufactured by ZeroOne, which 
 - Sensors
     - IMU:   
        Internal Vibration Isolation for IMUs  
-       IMU constant temperature heating(1 W heating power).  
+       IMU constant temperature heating(2W heating power).  
        With Triple Synced IMUs, BalancedGyro technology, low noise and more shock-resistant:
       - **X6**:  
        IMU1-ICM45686(With vibration isolation)  
        IMU2-BMI088(With vibration isolation)  
-       IMU3- ICM45686(No vibration isolation)
+       IMU3-ICM45686(No vibration isolation)
       - **X6 Pro**：  
        IMU1-IIM42653(With vibration isolation)  
        IMU2-BMI088(With vibration isolation)  
@@ -49,7 +49,13 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 | SERIAL8 | OTG-SLCAN| USB      |
 
 ## RC Input
-The remote control signal should be connected to the SBUS RC IN port or DSM/PPM RC Port.It will support ALL unidirectional RC protocols.
+The SBUS pin, can be used for all ArduPilot supported receiver protocols, except CRSF/ELRS and SRXL2 which require a true UART connection. However, FPort, when connected in this manner, will only provide RC without telemetry. 
+To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL6 (UART4) would need to be used for receiver connections. Below are setups using Serial6.
+- :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` should be set to "23".
+- FPort would require :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` be set to "15".
+- CRSF/ELRS would require :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` be set to "0".
+- SRXL2 would require :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` be set to "4" and connects only the TX pin.
+Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See :ref:`common-rc-systems` for details.
 
 ## PWM Output
 The X6 flight controller supports up to 16 PWM outputs. 
@@ -105,6 +111,13 @@ The X6 flight controller has 2 analog inputs.
 
 ## 5V PWM Voltage 
 The X6 flight controller supports switching between 5V and 3.3V PWM levels. Switch PWM output pulse level by configuring parameter BRD_PWM_VOL_SEL. 0 for 3.3V and 1 for 5V output. 
+
+Loading Firmware
+================
+The board comes pre-installed with an ArduPilot compatible bootloader,
+allowing the loading of xxxxxx.apj firmware files with any ArduPilot
+compatible ground station.
+Firmware for these boards can be found `here <https://firmware.ardupilot.org>`_ in  sub-folders labeled "ZeroOneX6".
 
 ## Where to Buy
 https://www.01aero.cn
