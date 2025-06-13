@@ -108,7 +108,6 @@ void AP_BattMonitor_Astra::timer()
 
     read_full_charge_capacity();
 
-    // FIXME: Perform current integration if the remaining capacity ctan't be requested
     read_remaining_capacity();
 
     read_temp();
