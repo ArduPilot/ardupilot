@@ -4,5 +4,5 @@
 def build(bld):
     bld.ap_find_tests(
         use='ap',
-        DOUBLE_PRECISION_SOURCES = ['test_math_double.cpp', 'test_vector3.cpp']
+        DOUBLE_PRECISION_SOURCES=['test_math_double.cpp', 'test_vector3.cpp']
     )
