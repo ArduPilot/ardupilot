@@ -53,7 +53,7 @@ PWM outputs are grouped and every group must use the same output protocol:
 
 5, 6, 7, 8 are Group 2;
 
-
+9 *(LED) is Group 3;
 
 ## Battery Monitoring
 
