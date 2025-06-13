@@ -43,7 +43,7 @@ static void check_result(const char *msg,
                             (double)yaw);
     }
 
-    if (rad_diff(roll2,roll) > ToRad(179)) {
+    if (rad_diff(roll2,roll) > radians(179)) {
         // reverse all 3
         roll2 += fmodf(roll2 + M_PI, 2 * M_PI);
         pitch2 += fmodf(pitch2 + M_PI, 2 * M_PI);
@@ -55,24 +55,24 @@ static void check_result(const char *msg,
         rad_diff(yaw2, yaw) > 0.01f) {
         if (pitch >= M_PI/2 ||
             pitch <= -M_PI/2 ||
-            ToDeg(rad_diff(pitch, M_PI/2)) < 1 ||
-            ToDeg(rad_diff(pitch, -M_PI/2)) < 1) {
+            degrees(rad_diff(pitch, M_PI/2)) < 1 ||
+            degrees(rad_diff(pitch, -M_PI/2)) < 1) {
             // we expect breakdown at these poles
 #if SHOW_POLES_BREAKDOWN
             hal.console->printf(
                 "%s breakdown eulers roll=%f/%f pitch=%f/%f yaw=%f/%f\n",
                 msg,
-                (double)ToDeg(roll), (double)ToDeg(roll2),
-                (double)ToDeg(pitch), (double)ToDeg(pitch2),
-                (double)ToDeg(yaw), (double)ToDeg(yaw2));
+                (double)degrees(roll), (double)degrees(roll2),
+                (double)degrees(pitch), (double)degrees(pitch2),
+                (double)degrees(yaw), (double)degrees(yaw2));
 #endif
         } else {
             hal.console->printf(
                 "%s incorrect eulers roll=%f/%f pitch=%f/%f yaw=%f/%f\n",
                 msg,
-                (double)ToDeg(roll), (double)ToDeg(roll2),
-                (double)ToDeg(pitch), (double)ToDeg(pitch2),
-                (double)ToDeg(yaw), (double)ToDeg(yaw2));
+                (double)degrees(roll), (double)degrees(roll2),
+                (double)degrees(pitch), (double)degrees(pitch2),
+                (double)degrees(yaw), (double)degrees(yaw2));
         }
     }
 }
@@ -144,13 +144,13 @@ void test_quaternion_eulers(void)
     test_quaternion(1, -M_PI/4, 1);
     test_quaternion(1, 1, -M_PI/4);
 
-    test_quaternion(ToRad(89), 0, 0.1f);
-    test_quaternion(0, ToRad(89), 0.1f);
-    test_quaternion(0.1f, 0, ToRad(89));
+    test_quaternion(radians(89), 0, 0.1f);
+    test_quaternion(0, radians(89), 0.1f);
+    test_quaternion(0.1f, 0, radians(89));
 
-    test_quaternion(ToRad(91), 0, 0.1f);
-    test_quaternion(0, ToRad(91), 0.1f);
-    test_quaternion(0.1f, 0, ToRad(91));
+    test_quaternion(radians(91), 0, 0.1f);
+    test_quaternion(0, radians(91), 0.1f);
+    test_quaternion(0.1f, 0, radians(91));
 
     for (uint8_t i = 0; i < N; i++)
         for (uint8_t j = 0; j < N; j++)
@@ -217,9 +217,9 @@ void test_frame_transforms(void)
 
     hal.console->printf("frame transform tests\n\n");
 
-    q.from_euler(ToRad(45), ToRad(45), ToRad(45));
+    q.from_euler(radians(45), radians(45), radians(45));
     q.normalize();
-    m.from_euler(ToRad(45), ToRad(45), ToRad(45));
+    m.from_euler(radians(45), radians(45), radians(45));
 
     v2 = v = Vector3f(0.0f, 0.0f, 1.0f);
     q.earth_to_body(v2);

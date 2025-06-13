@@ -5,7 +5,7 @@
 #if AP_FENCE_ENABLED
 
 // async fence checking io callback at 1Khz
-void Plane::fence_run_checks()
+void Plane::fence_checks_async()
 {
     const uint32_t now = AP_HAL::millis();
 
@@ -60,10 +60,10 @@ void Plane::fence_check()
         // Switch back to the chosen control mode if still in
         // GUIDED to the return point
         switch(fence.get_action()) {
-            case AC_FENCE_ACTION_GUIDED:
-            case AC_FENCE_ACTION_GUIDED_THROTTLE_PASS:
-            case AC_FENCE_ACTION_RTL_AND_LAND:
-            case AC_FENCE_ACTION_AUTOLAND_OR_RTL:
+            case AC_Fence::Action::GUIDED:
+            case AC_Fence::Action::GUIDED_THROTTLE_PASS:
+            case AC_Fence::Action::RTL_AND_LAND:
+            case AC_Fence::Action::AUTOLAND_OR_RTL:
                 if (plane.control_mode_reason == ModeReason::FENCE_BREACHED &&
                     control_mode->is_guided_mode()) {
                     set_mode(*previous_mode, ModeReason::FENCE_RETURN_PREVIOUS_MODE);
@@ -108,13 +108,20 @@ void Plane::fence_check()
         fence.print_fence_message("breached", fence_breaches.new_breaches);
 
         // if the user wants some kind of response and motors are armed
-        const uint8_t fence_act = fence.get_action();
+        const auto fence_act = fence.get_action();
         switch (fence_act) {
-        case AC_FENCE_ACTION_REPORT_ONLY:
+        case AC_Fence::Action::REPORT_ONLY:
             break;
 
-        case AC_FENCE_ACTION_AUTOLAND_OR_RTL:
-        case AC_FENCE_ACTION_RTL_AND_LAND:
+        case AC_Fence::Action::ALWAYS_LAND:
+        case AC_Fence::Action::SMART_RTL:
+        case AC_Fence::Action::SMART_RTL_OR_LAND:
+        case AC_Fence::Action::BRAKE:
+            // invalid enumeration value for Plane
+            break;
+
+        case AC_Fence::Action::AUTOLAND_OR_RTL:
+        case AC_Fence::Action::RTL_AND_LAND:
             if (control_mode == &mode_auto &&
                 mission.get_in_landing_sequence_flag() &&
                 (g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START ||
@@ -127,15 +134,15 @@ void Plane::fence_check()
                 // Already landing
                 return;
             }
-            if ((fence_act == AC_FENCE_ACTION_AUTOLAND_OR_RTL) && set_mode(mode_autoland, ModeReason::FENCE_BREACHED)) {
+            if ((fence_act == AC_Fence::Action::AUTOLAND_OR_RTL) && set_mode(mode_autoland, ModeReason::FENCE_BREACHED)) {
                 break;
             }
 #endif
             set_mode(mode_rtl, ModeReason::FENCE_BREACHED);
             break;
 
-        case AC_FENCE_ACTION_GUIDED:
-        case AC_FENCE_ACTION_GUIDED_THROTTLE_PASS:
+        case AC_Fence::Action::GUIDED:
+        case AC_Fence::Action::GUIDED_THROTTLE_PASS:
             set_mode(mode_guided, ModeReason::FENCE_BREACHED);
 
             Location loc;
@@ -174,7 +181,7 @@ void Plane::fence_check()
             setup_terrain_target_alt(loc);
             set_guided_WP(loc);
 
-            if (fence.get_action() == AC_FENCE_ACTION_GUIDED_THROTTLE_PASS) {
+            if (fence.get_action() == AC_Fence::Action::GUIDED_THROTTLE_PASS) {
                 guided_throttle_passthru = true;
             }
             break;

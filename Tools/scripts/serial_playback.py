@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+# flake8: noqa
+
 '''
 playback a capture from ardupilot with timing
 the file format is a sequence of:

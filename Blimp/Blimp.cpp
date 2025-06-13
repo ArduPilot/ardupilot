@@ -223,7 +223,7 @@ void Blimp::read_AHRS(void)
     ahrs.update(true);
 
     IGNORE_RETURN(ahrs.get_velocity_NED(vel_ned));
-    IGNORE_RETURN(ahrs.get_relative_position_NED_origin(pos_ned));
+    IGNORE_RETURN(ahrs.get_relative_position_NED_origin_float(pos_ned));
 
     vel_yaw = ahrs.get_yaw_rate_earth();
     Vector2f vel_xy_filtd = vel_xy_filter.apply({vel_ned.x, vel_ned.y});
@@ -244,7 +244,7 @@ void Blimp::read_AHRS(void)
                                 pos_ned.x,
                                 pos_ned.y,
                                 pos_ned.z,
-                                blimp.ahrs.get_yaw());
+                                blimp.ahrs.get_yaw_rad());
 #endif
 }
 

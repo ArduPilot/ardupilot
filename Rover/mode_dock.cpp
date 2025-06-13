@@ -23,7 +23,7 @@ const AP_Param::GroupInfo ModeDock::var_info[] = {
 
     // @Param: _HDG_CORR_EN
     // @DisplayName: Dock mode heading correction enable/disable
-    // @Description: When enabled, the autopilot modifies the path to approach the target head-on along desired line of approch in dock mode
+    // @Description: When enabled, the autopilot modifies the path to approach the target head-on along desired line of approach in dock mode
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("_HDG_CORR_EN", 3, ModeDock, hdg_corr_enable, 0),
@@ -60,13 +60,13 @@ bool ModeDock::_enter()
 {
     // refuse to enter the mode if dock is not in sight
     if (!rover.precland.enabled() || !rover.precland.target_acquired()) {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Dock: target not acquired");
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Dock: target not acquired");
         return false;
     }
 
     if (hdg_corr_enable && is_negative(desired_dir)) {
         // DOCK_DIR is required for heading correction
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Dock: Set DOCK_DIR or disable heading correction");
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Dock: Set DOCK_DIR or disable heading correction");
         return false;
     }
 
@@ -102,7 +102,7 @@ void ModeDock::update()
     // if docking is complete, rovers stop and boats loiter
     if (_docking_complete) {
         // rovers stop, boats loiter 
-        // note that loiter update must be called after successfull initialisation on mode loiter
+        // note that loiter update must be called after successful initialisation on mode loiter
         if (_loitering) {
             // mode loiter must be initialised before calling update method
             rover.mode_loiter.update();
@@ -132,7 +132,7 @@ void ModeDock::update()
         _docking_complete = true;
 
         // send a one time notification to GCS
-        gcs().send_text(MAV_SEVERITY_INFO, "Dock: Docking complete");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Dock: Docking complete");
 
         // initialise mode loiter if it is a boat
         if (rover.is_boat()) {
@@ -248,7 +248,7 @@ float ModeDock::apply_slowdown(float desired_speed)
 // we can calculate it based on most recent value from precland because the dock is assumed stationary wrt ekf origin
 bool ModeDock::calc_dock_pos_rel_vehicle_NE(Vector2f &dock_pos_rel_vehicle) const {
     Vector2f current_pos_m;
-    if (!AP::ahrs().get_relative_position_NE_origin(current_pos_m)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(current_pos_m)) {
         return false;
     }
  

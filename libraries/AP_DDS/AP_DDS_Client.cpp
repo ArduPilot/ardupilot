@@ -4,7 +4,9 @@
 #if AP_DDS_ENABLED
 #include <uxr/client/util/ping.h>
 
+#if AP_DDS_NEEDS_GPS
 #include <AP_GPS/AP_GPS.h>
+#endif // AP_DDS_NEEDS_GPS
 #include <AP_HAL/AP_HAL.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RTC/AP_RTC.h>
@@ -32,6 +34,9 @@
 #if AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
 #include "ardupilot_msgs/srv/Takeoff.h"
 #endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+#if AP_DDS_RC_PUB_ENABLED
+#include "AP_RSSI/AP_RSSI.h"
+#endif // AP_DDS_RC_PUB_ENABLED
 
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
@@ -65,6 +70,9 @@ static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = AP_DDS_DELAY_LOCAL_VEL
 #if AP_DDS_AIRSPEED_PUB_ENABLED
 static constexpr uint16_t DELAY_AIRSPEED_TOPIC_MS = AP_DDS_DELAY_AIRSPEED_TOPIC_MS;
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_RC_PUB_ENABLED
+static constexpr uint16_t DELAY_RC_TOPIC_MS = AP_DDS_DELAY_RC_TOPIC_MS;
+#endif // AP_DDS_RC_PUB_ENABLED
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = AP_DDS_DELAY_GEO_POSE_TOPIC_MS;
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
@@ -496,7 +504,7 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_TwistStamped& msg)
 }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
 #if AP_DDS_AIRSPEED_PUB_ENABLED
-bool AP_DDS_Client::update_topic(geometry_msgs_msg_Vector3Stamped& msg)
+bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Airspeed& msg)
 {
     update_topic(msg.header.stamp);
     STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
@@ -515,14 +523,47 @@ bool AP_DDS_Client::update_topic(geometry_msgs_msg_Vector3Stamped& msg)
     Vector3f true_airspeed_vec_bf;
     bool is_airspeed_available {false};
     if (ahrs.airspeed_vector_true(true_airspeed_vec_bf)) {
-        msg.vector.x = true_airspeed_vec_bf[0];
-        msg.vector.y = -true_airspeed_vec_bf[1];
-        msg.vector.z = -true_airspeed_vec_bf[2];
+        msg.true_airspeed.x = true_airspeed_vec_bf[0];
+        msg.true_airspeed.y = -true_airspeed_vec_bf[1];
+        msg.true_airspeed.z = -true_airspeed_vec_bf[2];
+        msg.eas_2_tas = ahrs.get_EAS2TAS();
         is_airspeed_available = true;
     }
     return is_airspeed_available;
 }
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
+
+#if AP_DDS_RC_PUB_ENABLED
+bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Rc& msg)
+{
+    update_topic(msg.header.stamp);
+    AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
+    auto rc = RC_Channels::get_singleton();
+    static int16_t counter = 0;
+
+    // Is connected if not in failsafe.
+    // This is only valid if the RC has been connected at least once
+    msg.is_connected = !rc->in_rc_failsafe();
+    // Receiver RSSI is reported between 0.0 and 1.0.
+    msg.receiver_rssi = static_cast<uint8_t>(ap_rssi->read_receiver_rssi()*100.f);
+
+    // Limit the max number of available channels to 8
+    msg.channels_size = MIN(static_cast<uint32_t>(rc->get_valid_channel_count()), 32U);
+    msg.active_overrides_size = msg.channels_size;
+    if (msg.channels_size) {
+        for (uint8_t i = 0; i < static_cast<uint8_t>(msg.channels_size); i++) {
+            msg.channels[i] = rc->rc_channel(i)->get_radio_in();
+            msg.active_overrides[i] = rc->rc_channel(i)->has_override();
+        }
+    } else {
+        // If no channels are available, the RC is disconnected.
+        msg.is_connected = false;
+    }
+
+    // Return true if Radio is connected, or once every 10 steps to reduce useless traffic.
+    return msg.is_connected ? true : (counter++ % 10 == 0);
+}
+#endif // AP_DDS_RC_PUB_ENABLED
 
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
@@ -679,18 +720,18 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Status& msg)
     uint8_t fs_iter = 0;
     msg.failsafe_size = 0;
     if (rc().in_rc_failsafe()) {
-        msg.failsafe[fs_iter++] = FS_RADIO;
+        msg.failsafe[fs_iter++] = Status::FS_RADIO;
     }
     if (battery.has_failsafed()) {
-        msg.failsafe[fs_iter++] = FS_BATTERY;
+        msg.failsafe[fs_iter++] = Status::FS_BATTERY;
     }
     // TODO: replace flag with function.
     if (AP_Notify::flags.failsafe_gcs) {
-        msg.failsafe[fs_iter++] = FS_GCS;
+        msg.failsafe[fs_iter++] = Status::FS_GCS;
     }
     // TODO: replace flag with function.
     if (AP_Notify::flags.failsafe_ekf) {
-        msg.failsafe[fs_iter++] = FS_EKF;
+        msg.failsafe[fs_iter++] = Status::FS_EKF;
     }
     msg.failsafe_size = fs_iter;
 
@@ -1010,13 +1051,13 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             bool param_isinf = true;
             float param_value = 0.0f;
             switch (param.value.type) {
-            case PARAMETER_INTEGER: {
+            case ParameterType::PARAMETER_INTEGER: {
                 param_isnan = isnan(param.value.integer_value);
                 param_isinf = isinf(param.value.integer_value);
                 param_value = float(param.value.integer_value);
                 break;
             }
-            case PARAMETER_DOUBLE: {
+            case ParameterType::PARAMETER_DOUBLE: {
                 param_isnan = isnan(param.value.double_value);
                 param_isinf = isinf(param.value.double_value);
                 param_value = float(param.value.double_value);
@@ -1110,38 +1151,38 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 
             vp = AP_Param::find(param_key, &var_type);
             if (vp == nullptr) {
-                get_parameters_response.values[i].type = PARAMETER_NOT_SET;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_NOT_SET;
                 successful_read &= false;
                 continue;
             }
 
             switch (var_type) {
             case AP_PARAM_INT8: {
-                get_parameters_response.values[i].type = PARAMETER_INTEGER;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
                 get_parameters_response.values[i].integer_value = ((AP_Int8 *)vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_INT16: {
-                get_parameters_response.values[i].type = PARAMETER_INTEGER;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
                 get_parameters_response.values[i].integer_value = ((AP_Int16 *)vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_INT32: {
-                get_parameters_response.values[i].type = PARAMETER_INTEGER;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
                 get_parameters_response.values[i].integer_value = ((AP_Int32 *)vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_FLOAT: {
-                get_parameters_response.values[i].type = PARAMETER_DOUBLE;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_DOUBLE;
                 get_parameters_response.values[i].double_value = vp->cast_to_float(var_type);
                 successful_read &= true;
                 break;
             }
             default: {
-                get_parameters_response.values[i].type = PARAMETER_NOT_SET;
+                get_parameters_response.values[i].type = ParameterType::PARAMETER_NOT_SET;
                 successful_read &= false;
                 break;
             }
@@ -1557,9 +1598,9 @@ void AP_DDS_Client::write_tx_local_airspeed_topic()
     WITH_SEMAPHORE(csem);
     if (connected) {
         ucdrBuffer ub {};
-        const uint32_t topic_size = geometry_msgs_msg_Vector3Stamped_size_of_topic(&tx_local_airspeed_topic, 0);
+        const uint32_t topic_size = ardupilot_msgs_msg_Airspeed_size_of_topic(&tx_local_airspeed_topic, 0);
         uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::LOCAL_AIRSPEED_PUB)].dw_id, &ub, topic_size);
-        const bool success = geometry_msgs_msg_Vector3Stamped_serialize_topic(&ub, &tx_local_airspeed_topic);
+        const bool success = ardupilot_msgs_msg_Airspeed_serialize_topic(&ub, &tx_local_airspeed_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
             // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
@@ -1567,6 +1608,22 @@ void AP_DDS_Client::write_tx_local_airspeed_topic()
     }
 }
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_RC_PUB_ENABLED
+void AP_DDS_Client::write_tx_local_rc_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = ardupilot_msgs_msg_Rc_size_of_topic(&tx_local_rc_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::LOCAL_RC_PUB)].dw_id, &ub, topic_size);
+        const bool success = ardupilot_msgs_msg_Rc_serialize_topic(&ub, &tx_local_rc_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+#endif // AP_DDS_RC_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::write_imu_topic()
 {
@@ -1719,6 +1776,14 @@ void AP_DDS_Client::update()
         }
     }
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_RC_PUB_ENABLED
+    if (cur_time_ms - last_rc_time_ms > DELAY_RC_TOPIC_MS) {
+        last_rc_time_ms = cur_time_ms;
+        if (update_topic(tx_local_rc_topic)) {
+            write_tx_local_rc_topic();
+        }
+    }
+#endif // AP_DDS_RC_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
     if (cur_time_ms - last_imu_time_ms > DELAY_IMU_TOPIC_MS) {
         update_topic(imu_topic);

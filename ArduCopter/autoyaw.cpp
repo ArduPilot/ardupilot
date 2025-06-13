@@ -5,17 +5,23 @@ Mode::AutoYaw Mode::auto_yaw;
 // roi_yaw - returns heading towards location held in roi
 float Mode::AutoYaw::roi_yaw() const
 {
-    return get_bearing_cd(copter.inertial_nav.get_position_xy_cm(), roi.xy());
+    Vector2f pos_ne_m;
+    if (AP::ahrs().get_relative_position_NE_origin_float(pos_ne_m)){
+        return get_bearing_cd(pos_ne_m * 100.0, roi.xy());
+    }
+    return copter.attitude_control->get_att_target_euler_cd().z;
 }
 
 // returns a yaw in degrees, direction of vehicle travel:
 float Mode::AutoYaw::look_ahead_yaw()
 {
-    const Vector3f& vel = copter.inertial_nav.get_velocity_neu_cms();
-    const float speed_sq = vel.xy().length_squared();
     // Commanded Yaw to automatically look ahead.
-    if (copter.position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED))) {
-        _look_ahead_yaw = degrees(atan2f(vel.y,vel.x));
+    Vector3f vel_ned_ms;
+    if (copter.position_ok() && AP::ahrs().get_velocity_NED(vel_ned_ms)) {
+        const float speed_sq = vel_ned_ms.xy().length_squared() * 10000.0;
+        if (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED)) {
+            _look_ahead_yaw = degrees(atan2f(vel_ned_ms.y,vel_ned_ms.x));
+        }
     }
     return _look_ahead_yaw;
 }
@@ -81,7 +87,7 @@ void Mode::AutoYaw::set_mode(Mode yaw_mode)
 
     case Mode::LOOK_AHEAD:
         // Commanded Yaw to automatically look ahead.
-        _look_ahead_yaw = copter.ahrs.yaw_sensor * 0.01;  // cdeg -> deg
+        _look_ahead_yaw = copter.ahrs.get_yaw_deg();
         break;
 
     case Mode::RESETTOARMEDYAW:
@@ -176,7 +182,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
 #if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the quad
         if (!copter.camera_mount.has_pan_control()) {
-            if (roi_location.get_vector_from_origin_NEU(roi)) {
+            if (roi_location.get_vector_from_origin_NEU_cm(roi)) {
                 auto_yaw.set_mode(Mode::ROI);
             }
         }
@@ -191,7 +197,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
         //      4: point at a target given a target id (can't be implemented)
 #else
         // if we have no camera mount aim the quad at the location
-        if (roi_location.get_vector_from_origin_NEU(roi)) {
+        if (roi_location.get_vector_from_origin_NEU_cm(roi)) {
             auto_yaw.set_mode(Mode::ROI);
         }
 #endif  // HAL_MOUNT_ENABLED
@@ -257,7 +263,7 @@ float Mode::AutoYaw::yaw_cd()
     case Mode::CIRCLE:
 #if MODE_CIRCLE_ENABLED
         if (copter.circle_nav->is_active()) {
-            _yaw_angle_cd = copter.circle_nav->get_yaw();
+            _yaw_angle_cd = copter.circle_nav->get_yaw_cd();
         }
 #endif
         break;
@@ -324,7 +330,7 @@ AC_AttitudeControl::HeadingCommand Mode::AutoYaw::get_heading()
 {
     // process pilot's yaw input
     _pilot_yaw_rate_cds = 0.0;
-    if (!copter.failsafe.radio && copter.flightmode->use_pilot_yaw()) {
+    if (rc().has_valid_input() && copter.flightmode->use_pilot_yaw()) {
         // get pilot's desired yaw rate
         _pilot_yaw_rate_cds = copter.flightmode->get_pilot_desired_yaw_rate();
         if (!is_zero(_pilot_yaw_rate_cds)) {

@@ -46,7 +46,6 @@ PA12 OTG_FS_DP OTG1
 
 # Port switching for USB HS and FS,high = USB_FS , LOW = USB_HS
 PH15 USB_HS_ENABLE OUTPUT HIGH
-define USB_HW_ENABLE_HS 0
 
 # these are the pins for SWD debugging with a STlinkv2 or black-magic probe
 PA13 JTMS-SWDIO SWD
@@ -260,8 +259,8 @@ SPIDEV rm3100-1       SPI1 DEVID1  RM3100_CS       MODE3  1*MHZ  1*MHZ
 SPIDEV rm3100-2       SPI2 DEVID2  RM3100_CS       MODE3  1*MHZ  1*MHZ
 
 # two baro
-BARO MS56XX SPI:ms5611_imu
-BARO MS56XX SPI:ms5611_board
+BARO MS5611 SPI:ms5611_imu
+BARO MS5611 SPI:ms5611_board
 
 # three IMUs, only one of ICM20689 and ADIS16470 will be included
 IMU ADIS1647x    SPI:adis16470 ROTATION_PITCH_180_YAW_270 ADIS_DRDY_PIN

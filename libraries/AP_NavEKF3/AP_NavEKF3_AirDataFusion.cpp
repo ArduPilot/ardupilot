@@ -475,8 +475,8 @@ void NavEKF3_core::FuseSideslip()
 void NavEKF3_core::FuseDragForces()
 {
     // drag model parameters
-    const ftype bcoef_x = frontend->_ballisticCoef_x;
-    const ftype bcoef_y = frontend->_ballisticCoef_y;
+    const ftype bcoef_x = frontend->_ballisticCoef_x.get();
+    const ftype bcoef_y = frontend->_ballisticCoef_y.get();
     const ftype mcoef = frontend->_momentumDragCoef.get();
     const bool using_bcoef_x = bcoef_x > 1.0f;
     const bool using_bcoef_y = bcoef_y > 1.0f;

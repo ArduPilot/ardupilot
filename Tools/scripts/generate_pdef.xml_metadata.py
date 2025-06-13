@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# flake8: noqa
+
 '''
 Rsync apm.pdef.xml files for different versions of the ArduPilot firmware
 For each version, it checks out the corresponding tag, generates parameter metadata,

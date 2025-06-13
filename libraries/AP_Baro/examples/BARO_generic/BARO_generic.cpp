@@ -35,9 +35,9 @@ static AP_Int32 log_bitmask;
 static AP_Logger logger;
 static AP_AHRS ahrs;
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
  static AP_ExternalAHRS eAHRS;
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_EXTERNAL_AHRS_ENABLED
 
 static uint32_t timer;
 static AP_BoardConfig board_config;

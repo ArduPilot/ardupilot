@@ -24,7 +24,7 @@
 // enumeration corresponding to buts within nav_filter_status union.
 // Only used for documentation purposes.
 enum class NavFilterStatusBit {
-    ATTITUDE           =      1, // attitude estimate valid
+    ATTITUDE_VALID     =      1, // attitude estimate valid
     HORIZ_VEL          =      2, // horizontal velocity estimate valid
     VERT_VEL           =      4, // vertical velocity estimate valid
     HORIZ_POS_REL      =      8, // relative horizontal position estimate valid

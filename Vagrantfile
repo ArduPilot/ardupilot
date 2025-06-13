@@ -9,10 +9,10 @@
 # sim_vehicle.py --debug --valgrind
 #
 # Make testing rather faster:
-# time rsync -aPH /vagrant/ $HOME/ardupilot  # real	8m13.712s
-# time (cd $HOME/ardupilot && ./waf configure --board=fmuv2 && ./waf build --target=bin/ardusub) # ~9 minutes
-# time (cd $HOME/ardupilot && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~ minutes (after building fmuv2)
-# time (cd $HOME/ardupilot && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)
+# time rsync -aPH /vagrant/ $HOME/ardupilot  # real	50s
+# time (cd $HOME/ardupilot && ./waf configure --board=fmuv2 && ./waf build --target=bin/ardusub) # ~4 minutes
+# time (cd $HOME/ardupilot && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~4 minutes (after building fmuv2)
+# time (cd $HOME/ardupilot && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)  # ~6 minutes
 # time (cd $HOME/ardupilot && ./Tools/autotest/sim_vehicle.py --map --console -v ArduPlane -f jsbsim) # should test JSBSim
 # time (cd $HOME/ardupilot && ./Tools/autotest/autotest.py build.Rover test.Rover)
 
@@ -155,7 +155,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   # 24.10 end of standard support ??
-  # note the use of "bento" here; Ubuntu stopped providing Vagrant
+  # note the use of "alvistack" here; Ubuntu stopped providing Vagrant
   # images due to Hashicorp adopting the "Business Source License".
   config.vm.define "oracular", autostart: false do |oracular|
     oracular.vm.box = "alvistack/ubuntu-24.10"
@@ -173,5 +173,26 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.gui = true
     end
     oracular.vm.boot_timeout = 1200
+  end
+
+  # 25.04 end of standard support ??
+  # note the use of "alvistack" here; Ubuntu stopped providing Vagrant
+  # images due to Hashicorp adopting the "Business Source License".
+  config.vm.define "plucky", autostart: false do |plucky|
+    plucky.vm.box = "alvistack/ubuntu-25.04"
+    plucky.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    plucky.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (plucky)"
+    end
+    plucky.vm.boot_timeout = 1200
+  end
+  config.vm.define "plucky-desktop", autostart: false do |plucky|
+    plucky.vm.box = "alvistack/ubuntu-25.04"
+    plucky.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    plucky.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (plucky-desktop)"
+      vb.gui = true
+    end
+    plucky.vm.boot_timeout = 1200
   end
 end

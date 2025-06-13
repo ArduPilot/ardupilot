@@ -746,7 +746,7 @@ function update()
     if roll_deg and pitch_deg and yaw_deg then
       if yaw_is_ef then
         -- convert to body-frame
-        yaw_deg = wrap_180(yaw_deg - math.deg(ahrs:get_yaw()))
+        yaw_deg = wrap_180(yaw_deg - math.deg(ahrs:get_yaw_rad()))
       end
       send_target_angles(roll_deg, pitch_deg, yaw_deg, 1)
       return update, UPDATE_INTERVAL_MS

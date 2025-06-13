@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# flake8: noqa
+
 """
 script to test build all of our peripheral firmwares
 """

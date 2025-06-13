@@ -41,6 +41,9 @@ public:
 
 private:
 
+    // Configure the GPS device
+    bool configure();
+
     // A subset of the port identifiers in the GSOF protocol that are used for serial.
     // Ethernet, USB, etc are not supported by the GPS driver at this time so they are omitted.
     // These values are not documented in the API.

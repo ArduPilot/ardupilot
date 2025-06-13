@@ -165,7 +165,7 @@ public:
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) const { return false; };
     virtual int32_t wp_bearing() const { return 0; }
-    virtual uint32_t wp_distance() const { return 0; }
+    virtual float wp_distance_m() const { return 0.0f; }
     virtual float crosstrack_error() const { return 0.0f;}
 
     // functions to support MAV_CMD_DO_CHANGE_SPEED
@@ -173,7 +173,7 @@ public:
     virtual bool set_speed_up(float speed_xy_cms) {return false;}
     virtual bool set_speed_down(float speed_xy_cms) {return false;}
 
-    int32_t get_alt_above_ground_cm(void);
+    virtual int32_t get_alt_above_ground_cm(void);
 
     // pilot input processing
     void get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
@@ -259,7 +259,6 @@ protected:
     AC_WPNav *&wp_nav;
     AC_Loiter *&loiter_nav;
     AC_PosControl *&pos_control;
-    AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
     AC_AttitudeControl *&attitude_control;
     MOTOR_CLASS *&motors;
@@ -390,7 +389,7 @@ public:
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
-    float get_pilot_desired_climb_rate(float throttle_control);
+    float get_pilot_desired_climb_rate();
     float get_non_takeoff_throttle(void);
     void update_simple_mode(void);
     bool set_mode(Mode::Number mode, ModeReason reason);
@@ -607,12 +606,15 @@ public:
     bool allows_weathervaning(void) const override;
 #endif
 
+    // Get height above ground, uses landing height if available
+    int32_t get_alt_above_ground_cm() override;
+
 protected:
 
     const char *name() const override { return auto_RTL? "AUTO RTL" : "AUTO"; }
     const char *name4() const override { return auto_RTL? "ARTL" : "AUTO"; }
 
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
     bool get_wp(Location &loc) const override;
@@ -776,6 +778,8 @@ private:
         float up;     // desired speed upwards in m/s. 0 if unset
         float down;   // desired speed downwards in m/s. 0 if unset
     } desired_speed_override;
+
+    float circle_last_num_complete;
 };
 
 #if AUTOTUNE_ENABLED
@@ -882,7 +886,7 @@ protected:
     const char *name() const override { return "CIRCLE"; }
     const char *name4() const override { return "CIRC"; }
 
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
 
 private:
@@ -954,7 +958,7 @@ private:
         Abandon
     };
     FlipState _state;               // current state of flip
-    Mode::Number   orig_control_mode;   // flight mode when flip was initated
+    Mode::Number   orig_control_mode;   // flight mode when flip was initiated
     uint32_t  start_time_ms;          // time since flip began
     int8_t    roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
     int8_t    pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
@@ -1159,7 +1163,7 @@ protected:
     const char *name() const override { return "GUIDED"; }
     const char *name4() const override { return "GUID"; }
 
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override;
 
@@ -1331,7 +1335,7 @@ protected:
     const char *name() const override { return "LOITER"; }
     const char *name4() const override { return "LOIT"; }
 
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return pos_control->crosstrack_error();}
 
@@ -1500,7 +1504,7 @@ protected:
     const char *name4() const override { return "RTL "; }
 
     // for reporting to GCS
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
@@ -1591,7 +1595,7 @@ protected:
 
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
@@ -1909,7 +1913,7 @@ protected:
 
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
-    uint32_t wp_distance() const override;
+    float  wp_distance_m() const override;
     int32_t wp_bearing() const override;
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
@@ -1964,7 +1968,7 @@ protected:
 
     const char *name() const override { return "ZIGZAG"; }
     const char *name4() const override { return "ZIGZ"; }
-    uint32_t wp_distance() const override;
+    float wp_distance_m() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override;
 

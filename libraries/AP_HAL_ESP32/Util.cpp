@@ -186,7 +186,7 @@ Util::FlashBootloader Util::flash_bootloader()
 #endif // !HAL_NO_FLASH_SUPPORT && !HAL_NO_ROMFS_SUPPORT
 
 /*
-  display system identifer - board type and serial number
+  display system identifier - board type and serial number
  */
 
 
@@ -209,7 +209,7 @@ bool Util::get_system_id(char buf[50])
     //board_name[13] = 0;
     board_mac[19] = 0;
 
-    // tack strings togehter
+    // tack strings together
     snprintf(buf, 40, "%s %s", board_name, board_mac);
     // and null terminate that too..
     buf[39] = 0;

@@ -77,9 +77,6 @@
 
 #define NORETURN __attribute__ ((noreturn))
 
-#define ToRad(x) radians(x)	// *pi/180
-#define ToDeg(x) degrees(x)	// *180/pi
-
 /* Declare and implement const and non-const versions of the array subscript
  * operator. The object is treated as an array of type_ values. */
 #define DEFINE_BYTE_ARRAY_METHODS                                                                   \

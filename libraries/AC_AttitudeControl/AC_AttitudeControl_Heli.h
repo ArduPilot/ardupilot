@@ -27,7 +27,7 @@
 #define AC_ATTITUDE_HELI_RATE_RP_FF_FILTER          20.0f
 #define AC_ATTITUDE_HELI_RATE_Y_FF_FILTER          20.0f
 #define AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT    300
-#define AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD   ToRad(30.0f)
+#define AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD   radians(30.0f)
 #define AC_ATTITUDE_HELI_INVERTED_TRANSITION_TIME    3.0f
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
@@ -48,7 +48,7 @@ public:
     void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) override;
 
     // subclass non-passthrough too, for external gyro, no flybar
-    void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds) override;
+    void input_rate_bf_roll_pitch_yaw_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds) override;
 
 	// rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
 	// should be called at 100hz or more
@@ -80,14 +80,14 @@ public:
     float get_throttle_boosted(float throttle_in);
 
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
-    void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds) override;
+    void input_euler_angle_roll_pitch_euler_rate_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds) override;
 
     // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
-    void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw) override;
+    void input_euler_angle_roll_pitch_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw) override;
     
     // Command a thrust vector in the earth frame and a heading angle and/or rate
-    void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw = true) override;
-    void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds) override;
+    void input_thrust_vector_rate_heading_cds(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw = true) override;
+    void input_thrust_vector_heading_cd(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds) override;
 
     // enable/disable inverted flight
     void set_inverted_flight(bool inverted) override { _inverted_flight = inverted; }
@@ -136,7 +136,7 @@ private:
     float _passthrough_yaw;
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
-    float get_roll_trim_rad() override { return radians(get_roll_trim_cd() * 0.01); }
+    float get_roll_trim_rad() override { return cd_to_rad(get_roll_trim_cd()); }
 
     // internal variables
     float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim

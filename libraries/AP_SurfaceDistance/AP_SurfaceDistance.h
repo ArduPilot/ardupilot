@@ -2,14 +2,12 @@
 
 #include <AP_Math/AP_Math.h>
 #include <Filter/LowPassFilter.h>
-#include <AP_InertialNav/AP_InertialNav.h>
 #include <AP_HAL/Semaphores.h>
 
 class AP_SurfaceDistance {
 public:
-    AP_SurfaceDistance(Rotation rot, const AP_InertialNav& inav, uint8_t i) :
+    AP_SurfaceDistance(Rotation rot, uint8_t i) :
         instance(i),
-        inertial_nav(inav),
         rotation(rot)
     {};
 
@@ -46,6 +44,5 @@ private:
     uint8_t status;
     uint32_t last_healthy_ms;
 
-    const AP_InertialNav& inertial_nav;
     const Rotation rotation;
 };

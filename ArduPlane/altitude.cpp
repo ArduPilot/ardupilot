@@ -946,7 +946,7 @@ void Plane::fix_terrain_WP(Location &loc, uint32_t linenum)
     if (loc.terrain_alt && !loc.relative_alt) {
         AP::internalerror().error(AP_InternalError::error_t::flow_of_control, linenum);
         /*
-          we definately have a bug, now we need to guess what was
+          we definitely have a bug, now we need to guess what was
           really meant. The lack of the relative_alt flag notionally
           means that home.alt has been added to loc.alt, so remove it,
           but only if it doesn't lead to a negative terrain altitude

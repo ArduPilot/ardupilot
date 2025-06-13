@@ -22,6 +22,16 @@
 //    param set GPS1_TYPE 11 // GSOF
 //    param set SERIAL3_PROTOCOL 5 // GPS
 //
+// Usage with NET parameters and ethernet in SITL with hardware:
+//     param set NET_ENABLE 1
+//     param set NET_P1_TYPE 2
+//     param set NET_P1_PROTOCOL 5
+//     param set SERIAL3_PROTOCOL 0
+//     param set SIM_GPS1_TYPE 0
+//     param set NET_P1_PORT 44444
+//     param set GPS1_TYPE 11
+//     param set GPS_AUTO_CONFIG 0
+// 
 //  Pure SITL usage:
 //    sim_vehicle.py -v Plane --console --map -DG
 //    param set SIM_GPS1_TYPE 11 // GSOF
@@ -73,16 +83,16 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps,
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has invalid COM port setting of %d", state.instance, (unsigned)com_port);
         return;
     }
-    requestBaud(static_cast<HW_Port>(unsigned(com_port)));
+
+    if (gps._auto_config >= AP_GPS::GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
+        requestBaud(static_cast<HW_Port>(unsigned(com_port)));
+    }
 
     const uint32_t now = AP_HAL::millis();
     gsofmsg_time = now + 110;
 }
 
-// Process all bytes available from the stream
-//
-bool
-AP_GPS_GSOF::read(void)
+bool AP_GPS_GSOF::configure(void)
 {
     const uint32_t now = AP_HAL::millis();
 
@@ -105,7 +115,17 @@ AP_GPS_GSOF::read(void)
             next_req_gsof++;
         }
     }
+    return true;
+}
 
+// Process all bytes available from the stream
+//
+bool
+AP_GPS_GSOF::read(void)
+{
+    if (gps._auto_config >= AP_GPS::GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
+        if (!configure()) return false;
+    }
     while (port->available() > 0) {
         const uint8_t temp = port->read();
 #if AP_GPS_DEBUG_LOGGING_ENABLED

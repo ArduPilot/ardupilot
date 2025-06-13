@@ -30,7 +30,7 @@ static AP_InertialSensor ins;
 static AP_Baro baro;
 AP_Int32 logger_bitmask;
 static AP_Logger logger;
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
 static AP_ExternalAHRS external_ahrs;
 #endif
 static SITL::SIM sitl;

@@ -327,7 +327,7 @@ private:
 #endif
 #if AP_FENCE_ENABLED
     // fence.cpp
-    void fence_run_checks() override;
+    void fence_checks_async() override;
     void fence_check();
 #endif
     // GCS_Mavlink.cpp
@@ -416,7 +416,8 @@ private:
         Hold          = 2,
         SmartRTL      = 3,
         SmartRTL_Hold = 4,
-        Terminate     = 5
+        Terminate     = 5,
+        Loiter_Hold   = 6,
     };
 
     enum class Failsafe_Options : uint32_t {
@@ -450,6 +451,14 @@ public:
 
     // Simple mode
     float simple_sin_yaw;
+
+#if AP_ROVER_AUTO_ARM_ONCE_ENABLED
+    struct {
+        uint32_t last_arm_attempt_ms;
+        bool done;
+    } auto_arm_once;
+    void handle_auto_arm_once();
+#endif  // AP_ROVER_AUTO_ARM_ONCE_ENABLED
 };
 
 extern Rover rover;

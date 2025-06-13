@@ -317,7 +317,7 @@ function update()
       -- change to Guided_NoGPS and initialise stage2
       if (vehicle:set_mode(copter_guided_nogps_mode)) then
         flight_stage = 2
-        target_yaw = math.deg(ahrs:get_yaw())
+        target_yaw = math.deg(ahrs:get_yaw_rad())
         stage2_start_time_ms = now_ms
       else
         -- warn user of unexpected failure

@@ -26,8 +26,8 @@ local function update()
     else
         -- Generate the smiley
         local width = (displayWidth / 2)
-        local roll = math.floor(width + (ahrs:get_roll() * width)) - 4
-        local pitch = math.floor(ahrs:get_pitch() * 6) + 2;
+        local roll = math.floor(width + (ahrs:get_roll_rad() * width)) - 4
+        local pitch = math.floor(ahrs:get_pitch_rad() * 6) + 2;
         local sub = 5 - roll
         if sub < 0 then
             sub = 0

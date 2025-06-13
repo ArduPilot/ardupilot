@@ -215,7 +215,7 @@ function update()
 
   -- get gimbal mount's pitch and yaw
   local mount_pitch_deg = pitch_deg
-  local mount_yaw_ef_deg = wrap_180(yaw_bf_deg + math.deg(ahrs:get_yaw()))
+  local mount_yaw_ef_deg = wrap_180(yaw_bf_deg + math.deg(ahrs:get_yaw_rad()))
   local dist_increment_m = TERRAIN_SPACING:get()
 
   -- initialise total distance test_loc has moved

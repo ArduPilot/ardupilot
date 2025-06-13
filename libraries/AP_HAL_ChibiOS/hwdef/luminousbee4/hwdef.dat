@@ -179,7 +179,7 @@ COMPASS LIS3MDL SPI:lis3mdl false ROTATION_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 
 # Barometer ( DPS310 under test on micro frame )
-BARO MS56XX SPI:ms5611_int
+BARO MS5611 SPI:ms5611_int
 # BARO DPS310      SPI:dps310
 
 # reserve plenty of memory for DMA for LED buffers

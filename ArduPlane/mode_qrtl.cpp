@@ -21,7 +21,7 @@ bool ModeQRTL::_enter()
         const float dist = plane.current_loc.get_distance(destination);
         const float radius = get_VTOL_return_radius();
 
-        // Climb at least to a cone around home of hight of QRTL alt and radius of radius
+        // Climb at least to a cone around home of height of QRTL alt and radius of radius
         // Always climb up to at least Q_RTL_ALT_MIN, constrain Q_RTL_ALT_MIN between Q_LAND_FINAL_ALT and Q_RTL_ALT
         const float min_climb = constrain_float(quadplane.qrtl_alt_min, quadplane.land_final_alt, quadplane.qrtl_alt);
         const float target_alt = MAX(quadplane.qrtl_alt * (dist / MAX(radius, dist)), min_climb);
@@ -49,7 +49,7 @@ bool ModeQRTL::_enter()
             return true;
 
         } else if (dist < radius) {
-            // Above home "cone", return at curent altitude if lower than QRTL alt
+            // Above home "cone", return at current altitude if lower than QRTL alt
             int32_t current_alt_abs_cm;
             if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, current_alt_abs_cm)) {
                 RTL_alt_abs_cm = MIN(RTL_alt_abs_cm, current_alt_abs_cm);
@@ -97,7 +97,7 @@ void ModeQRTL::run()
         case SubMode::climb: {
             // request zero velocity
             Vector2f vel, accel;
-            pos_control->input_vel_accel_xy(vel, accel);
+            pos_control->input_vel_accel_NE_cm(vel, accel);
             quadplane.run_xy_controller();
 
             // nav roll and pitch are controller by position controller
@@ -107,21 +107,21 @@ void ModeQRTL::run()
             plane.quadplane.assign_tilt_to_fwd_thr();
 
             if (quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
-                pos_control->set_externally_limited_xy();
+                pos_control->set_externally_limited_NE();
             }
             // weathervane with no pilot input
             quadplane.disable_yaw_rate_time_constant();
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
                                                                           plane.nav_pitch_cd,
                                                                           quadplane.get_weathervane_yaw_rate_cds());
 
             // climb at full WP nav speed
-            quadplane.set_climb_rate_cms(quadplane.wp_nav->get_default_speed_up());
+            quadplane.set_climb_rate_cms(quadplane.wp_nav->get_default_speed_up_cms());
             quadplane.run_z_controller();
 
             // Climb done when stopping point reaches target altitude
             Vector3p stopping_point;
-            pos_control->get_stopping_point_z_cm(stopping_point.z);
+            pos_control->get_stopping_point_U_cm(stopping_point.z);
             Location stopping_loc = Location(stopping_point.tofloat(), Location::AltFrame::ABOVE_ORIGIN);
 
             ftype alt_diff;

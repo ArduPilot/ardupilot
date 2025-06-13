@@ -174,55 +174,32 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1500)
         self.progress("Circuit complete")
 
-    # def test_throttle_failsafe(self, home, distance_min=10, side=60,
-    #                            timeout=300):
-    #     """Fly east, Failsafe, return, land."""
-    #
-    #     self.mavproxy.send('switch 6\n')  # manual mode
-    #     self.wait_mode('MANUAL')
-    #     self.mavproxy.send("param set FS_ACTION 1\n")
-    #
-    #     # first aim east
-    #     self.progress("turn east")
-    #     if not self.reach_heading_manual(135):
-    #         return False
-    #
-    #     # fly east 60 meters
-    #     self.progress("# Going forward %u meters" % side)
-    #     if not self.reach_distance_manual(side):
-    #         return False
-    #
-    #     # pull throttle low
-    #     self.progress("# Enter Failsafe")
-    #     self.mavproxy.send('rc 3 900\n')
-    #
-    #     tstart = self.get_sim_time()
-    #     success = False
-    #     while self.get_sim_time() < tstart + timeout and not success:
-    #         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-    #         pos = self.mav.location()
-    #         home_distance = self.get_distance(home, pos)
-    #         self.progress("Alt: %u  HomeDistance: %.0f" %
-    #                       (m.alt, home_distance))
-    #         # check if we've reached home
-    #         if home_distance <= distance_min:
-    #             self.progress("RTL Complete")
-    #             success = True
-    #
-    #     # reduce throttle
-    #     self.mavproxy.send('rc 3 1500\n')
-    #     self.mavproxy.expect('AP: Failsafe ended')
-    #     self.mavproxy.send('switch 2\n')  # manual mode
-    #     self.wait_heartbeat()
-    #     self.wait_mode('MANUAL')
-    #
-    #     if success:
-    #         self.progress("Reached failsafe home OK")
-    #         return True
-    #     else:
-    #         self.progress("Failed to reach Home on failsafe RTL - "
-    #         "timed out after %u seconds" % timeout)
-    #         return False
+    def ThrottleFailsafe(self):
+        """Trigger throttle failsafes"""
+        self.progress("Testing throttle failsafe")
+        # set failsafe to Loiter_or_Hold
+        self.set_parameters({
+            "FS_THR_ENABLE": 1,
+            "FS_ACTION": 6,
+        })
+        self.change_mode("MANUAL")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.progress("Testing failsafe to loiter")
+        self.set_parameter("SIM_RC_FAIL", 1)  # no-pulses failsafe
+        self.wait_mode("LOITER", timeout=10)
+
+        # restore RC and prepare to test hold fallback
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.change_mode("MANUAL")
+
+        self.progress("Testing failsafe to hold")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_mode("HOLD", timeout=10)
+        self.disarm_vehicle()
+        self.progress("Loiter or Hold as throttle failsafe OK")
 
     def Sprayer(self):
         """Test sprayer functionality."""
@@ -6200,7 +6177,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # ensure setting the private channel mask doesn't cause us to
         # execute these commands:
-        self.set_parameter("SERIAL2_OPTIONS", 1024)
+        self.set_parameter("MAV3_OPTIONS", 2)
         self.reboot_sitl()  # mavlink-private is reboot-required
         mav2 = mavutil.mavlink_connection("tcp:localhost:5763",
                                           robust_parsing=True,
@@ -6884,6 +6861,32 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def GetMessageInterval(self):
+        '''check that the two methods for requesting a MESSAGE_INTERVAL message are equivalent'''
+        target_msg = mavutil.mavlink.MAVLINK_MSG_ID_HOME_POSITION
+        old_cmd = (mavutil.mavlink.MAV_CMD_GET_MESSAGE_INTERVAL, target_msg, 0)
+        new_cmd = (mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, mavutil.mavlink.MAVLINK_MSG_ID_MESSAGE_INTERVAL, target_msg)
+
+        interval_us = None
+
+        for run_command in self.run_cmd, self.run_cmd_int:
+            for cmd in old_cmd, new_cmd:
+                cmd_id, p1, p2 = cmd
+
+                self.context_collect("MESSAGE_INTERVAL")
+                run_command(cmd_id, p1=p1, p2=p2)
+                m = self.assert_receive_message('MESSAGE_INTERVAL', timeout=1, check_context=True)
+                self.context_clear_collection("MESSAGE_INTERVAL")
+
+                if m.message_id != target_msg:
+                    raise NotAchievedException(f"Unexpected ID in MESSAGE_INTERVAL (want={target_msg}, got={m.message_id})")
+
+                if interval_us is None:
+                    interval_us = m.interval_us
+
+                if m.interval_us != interval_us:
+                    raise NotAchievedException(f"Unexpected interval_us (want={interval_us}, got={m.interval_us})")
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6984,6 +6987,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.JammingSimulation,
             self.BatteryInvalid,
             self.REQUIRE_LOCATION_FOR_ARMING,
+            self.GetMessageInterval,
+            self.ThrottleFailsafe,
         ])
         return ret
 

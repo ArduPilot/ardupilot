@@ -63,7 +63,7 @@ struct PACKED log_GPS {
 // @Field: VV: true if vertical velocity is available
 // @Field: SMS: time since system startup this sample was taken
 // @Field: Delta: system time delta between the last two reported positions
-// @Field: Und: Undulation
+// @Field: AEl: altitude above WGS-84 ellipsoid; INT32_MIN (-2147483648) if unknown
 // @Field: RTCMFU: RTCM fragments used
 // @Field: RTCMFD: RTCM fragments discarded
 struct PACKED log_GPA {
@@ -78,7 +78,7 @@ struct PACKED log_GPA {
     uint8_t  have_vv;
     uint32_t sample_ms;
     uint16_t delta_ms;
-    float undulation;
+    int32_t  alt_ellipsoid;
     uint16_t rtcm_fragments_used;
     uint16_t rtcm_fragments_discarded;
 };
@@ -207,7 +207,7 @@ struct PACKED log_GPS_RAWS {
     { LOG_GPS_MSG, sizeof(log_GPS), \
       "GPS",  "QBBIHBcLLeffffB", "TimeUS,I,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U", "s#-s-S-DUmnhnh-", "F--C-0BGGB000--" , true }, \
     { LOG_GPA_MSG,  sizeof(log_GPA), \
-      "GPA",  "QBCCCCfBIHfHH", "TimeUS,I,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta,Und,RTCMFU,RTCMFD", "s#-mmnd-ssm--", "F-BBBB0-CC0--" , true }, \
+      "GPA",  "QBCCCCfBIHeHH", "TimeUS,I,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta,AEl,RTCMFU,RTCMFD", "s#-mmnd-ssm--", "F-BBBB0-CCB--" , true }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
       "UBX1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config", "s#-----", "F------"  , true }, \
     { LOG_GPS_UBX2_MSG, sizeof(log_Ubx2), \

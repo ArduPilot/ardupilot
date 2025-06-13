@@ -22,7 +22,7 @@ function wrap_360(angle)
 end
 
 function update()
-   local yaw_deg = wrap_360(math.deg(ahrs:get_yaw() - COMPASS_DEC:get()))
+   local yaw_deg = wrap_360(math.deg(ahrs:get_yaw_rad() - COMPASS_DEC:get()))
    local gspd = ahrs:groundspeed_vector()
    local gcrs_deg = wrap_360(math.deg(math.atan(gspd:y(), gspd:x()) - COMPASS_DEC:get()))
    gcs:send_named_float("MAG_HEAD", yaw_deg)

@@ -441,6 +441,10 @@ bool AP_Terrain::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) cons
         hal.util->snprintf(failure_msg, failure_msg_len, "waiting for terrain data");
         return false;
     }
+    if (grid_spacing <= 0) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "TERRAIN_SPACING can't be <= 0");
+        return false;
+    }
 
     return true;
 }

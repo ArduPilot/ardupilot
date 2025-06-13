@@ -719,7 +719,7 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
     const float pitch_rate_scalar = constrain_float(100.0 * pitch_err_rad * AP_MOUNT_SIYI_PITCH_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
 
     // convert yaw angle to body-frame
-    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw()) : yaw_rad;
+    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw_rad()) : yaw_rad;
 
     // enforce body-frame yaw angle limits.  If beyond limits always use body-frame control
     const float yaw_bf_min = radians(_params.yaw_angle_min);
@@ -1199,15 +1199,16 @@ void AP_Mount_Siyi::check_firmware_version() const
     FirmwareVersion minimum_ver {};
     switch (_hardware_model) {
         case HardwareModel::A8:
-            minimum_ver.camera.major = 0;
-            minimum_ver.camera.minor = 2;
-            minimum_ver.camera.patch = 1;
+        	minimum_ver.camera = {.major = 0, .minor = 2, .patch = 1};
+            break;
+
+        case HardwareModel::ZT6:
+            minimum_ver.camera = {.major = 0, .minor = 1, .patch = 9};
             break;
 
         case HardwareModel::A2:
         case HardwareModel::ZR10:
         case HardwareModel::ZR30:
-        case HardwareModel::ZT6:
         case HardwareModel::ZT30:
             // TBD
             break;
@@ -1269,9 +1270,9 @@ void AP_Mount_Siyi::send_attitude_position(void)
     const uint32_t now_ms = AP_HAL::millis();
 
     attitude.time_boot_ms = now_ms;
-    attitude.roll = ahrs.get_roll();
-    attitude.pitch = ahrs.get_pitch();
-    attitude.yaw = ahrs.get_yaw();
+    attitude.roll = ahrs.get_roll_rad();
+    attitude.pitch = ahrs.get_pitch_rad();
+    attitude.yaw = ahrs.get_yaw_rad();
     attitude.rollspeed = gyro.x;
     attitude.pitchspeed = gyro.y;
     attitude.yawspeed = gyro.z;

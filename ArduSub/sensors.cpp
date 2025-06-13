@@ -66,11 +66,11 @@ void Sub::read_rangefinder()
     }
 
     // send rangefinder altitude and health to waypoint navigation library
-    wp_nav.set_rangefinder_terrain_offset(
+    wp_nav.set_rangefinder_terrain_offset_cm(
             rangefinder_state.enabled,
             rangefinder_state.alt_healthy,
             rangefinder_state.rangefinder_terrain_offset_cm);
-    circle_nav.set_rangefinder_terrain_offset(
+    circle_nav.set_rangefinder_terrain_offset_cm(
             rangefinder_state.enabled && wp_nav.rangefinder_used(),
             rangefinder_state.alt_healthy,
             rangefinder_state.rangefinder_terrain_offset_cm);

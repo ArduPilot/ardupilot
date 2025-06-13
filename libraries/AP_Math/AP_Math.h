@@ -227,6 +227,18 @@ static inline constexpr float radians(int deg)
     return deg * DEG_TO_RAD;
 }
 
+// centidegrees -> radians
+static inline constexpr float cd_to_rad(float cdeg)
+{
+    return cdeg * CDEG_TO_RAD;
+}
+
+// radians -> centidegrees
+static inline constexpr float rad_to_cd(float rad)
+{
+    return rad * RAD_TO_CDEG;
+}
+
 // radians -> degrees
 static inline constexpr float degrees(float rad)
 {

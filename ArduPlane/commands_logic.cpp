@@ -384,6 +384,7 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
     next_WP_loc.lat = home.lat + 10;
     next_WP_loc.lng = home.lng + 10;
     auto_state.takeoff_complete = false; // set flag to use gps ground course during TO. IMU will be doing yaw drift correction.
+    auto_state.rotation_complete = false;
     auto_state.height_below_takeoff_to_level_off_cm = 0;
     // Flag also used to override "on the ground" throttle disable
 
@@ -499,7 +500,7 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
     } else {
         // use yaw based bearing hold
         steer_state.hold_course_cd = wrap_360_cd(ahrs.yaw_sensor);
-        bearing = ahrs.yaw_sensor * 0.01f;
+        bearing = ahrs.get_yaw_deg();
         next_WP_loc.offset_bearing(bearing, 1000); // push it out 1km
     }
 
@@ -743,8 +744,10 @@ bool Plane::verify_loiter_turns(const AP_Mission::Mission_Command &cmd)
     // LOITER_TURNS makes no sense as VTOL
     auto_state.vtol_loiter = false;
 
-    if (condition_value != 0) {
-        // primary goal, loiter time
+    if (!reached_loiter_target()) {
+        result = false;
+    } else if (condition_value != 0) {
+        // primary goal, loiter turns
         if (loiter.sum_cd > loiter.total_cd && loiter.sum_cd > 1) {
             // primary goal completed, initialize secondary heading goal
             condition_value = 0;
@@ -1057,7 +1060,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 // fly home and loiter at RTL alt
                 nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
                 if (plane.reached_loiter_target()) {
-                    // decend to Q RTL alt
+                    // descend to Q RTL alt
                     plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt*100UL);
                     plane.loiter_angle_reset();
                     vtol_approach_s.approach_stage = VTOLApproach::Stage::LOITER_TO_ALT;
@@ -1096,7 +1099,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 const float breakout_direction_rad = radians(vtol_approach_s.approach_direction_deg + (direction > 0 ? 270 : 90));
 
                 // breakout when within 5 degrees of the opposite direction
-                if (fabsF(wrap_PI(ahrs.get_yaw() - breakout_direction_rad)) < radians(5.0f)) {
+                if (fabsF(wrap_PI(ahrs.get_yaw_rad() - breakout_direction_rad)) < radians(5.0f)) {
                     gcs().send_text(MAV_SEVERITY_INFO, "Starting VTOL land approach path");
                     vtol_approach_s.approach_stage = VTOLApproach::Stage::APPROACH_LINE;
                     set_next_WP(cmd.content.location);
@@ -1108,7 +1111,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
             }
         case VTOLApproach::Stage::APPROACH_LINE:
             {
-                // project an apporach path
+                // project an approach path
                 Location start = cmd.content.location;
                 Location end = cmd.content.location;
 

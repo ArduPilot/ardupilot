@@ -36,8 +36,8 @@ void Copter::Log_Write_Control_Tuning()
     float des_alt_m = 0.0f;
     int16_t target_climb_rate_cms = 0;
     if (!flightmode->has_manual_throttle()) {
-        des_alt_m = pos_control->get_pos_target_z_cm() * 0.01f;
-        target_climb_rate_cms = pos_control->get_vel_target_z_cms();
+        des_alt_m = pos_control->get_pos_target_U_cm() * 0.01f;
+        target_climb_rate_cms = pos_control->get_vel_target_U_cms();
     }
 
     float desired_rangefinder_alt;
@@ -58,7 +58,7 @@ void Copter::Log_Write_Control_Tuning()
         throttle_out        : motors->get_throttle(),
         throttle_hover      : motors->get_throttle_hover(),
         desired_alt         : des_alt_m,
-        inav_alt            : inertial_nav.get_position_z_up_cm() * 0.01f,
+        inav_alt            : float(pos_control->get_pos_estimate_NEU_cm().z) * 0.01,
         baro_alt            : baro_alt,
         desired_rangefinder_alt : desired_rangefinder_alt,
 #if AP_RANGEFINDER_ENABLED
@@ -68,7 +68,7 @@ void Copter::Log_Write_Control_Tuning()
 #endif
         terr_alt            : terr_alt,
         target_climb_rate   : target_climb_rate_cms,
-        climb_rate          : int16_t(inertial_nav.get_velocity_z_up_cms()) // float -> int16_t
+        climb_rate          : int16_t(pos_control->get_vel_estimate_NEU_cms().z) // float -> int16_t
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -91,10 +91,10 @@ void Copter::Log_Write_PIDS()
         logger.Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
         logger.Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
         logger.Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
-        logger.Write_PID(LOG_PIDA_MSG, pos_control->get_accel_z_pid().get_pid_info() );
+        logger.Write_PID(LOG_PIDA_MSG, pos_control->get_accel_U_pid().get_pid_info() );
         if (should_log(MASK_LOG_NTUN) && (flightmode->requires_GPS() || landing_with_GPS())) {
-            logger.Write_PID(LOG_PIDN_MSG, pos_control->get_vel_xy_pid().get_pid_info_x());
-            logger.Write_PID(LOG_PIDE_MSG, pos_control->get_vel_xy_pid().get_pid_info_y());
+            logger.Write_PID(LOG_PIDN_MSG, pos_control->get_vel_NE_pid().get_pid_info_x());
+            logger.Write_PID(LOG_PIDE_MSG, pos_control->get_vel_NE_pid().get_pid_info_y());
         }
     }
 }

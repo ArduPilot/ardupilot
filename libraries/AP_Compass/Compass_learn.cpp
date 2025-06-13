@@ -43,7 +43,7 @@ void CompassLearn::update(void)
         // no GSF available
         return;
     }
-    if (degrees(fabsf(ahrs.get_pitch())) > 50) {
+    if (degrees(fabsf(ahrs.get_pitch_rad())) > 50) {
         // we don't want to be too close to nose up, or yaw gets
         // problematic. Tailsitters need to wait till they are in
         // forward flight

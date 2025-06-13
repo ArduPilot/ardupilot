@@ -534,11 +534,11 @@ bool Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
     // create a field vector and rotate to the required orientation
     Vector3f field(1e3f * intensity, 0.0f, 0.0f);
     Matrix3f R;
-    R.from_euler(0.0f, -ToRad(inclination), ToRad(declination));
+    R.from_euler(0.0f, -radians(inclination), radians(declination));
     field = R * field;
 
     Matrix3f dcm;
-    dcm.from_euler(AP::ahrs().get_roll(), AP::ahrs().get_pitch(), radians(yaw_deg));
+    dcm.from_euler(AP::ahrs().get_roll_rad(), AP::ahrs().get_pitch_rad(), radians(yaw_deg));
 
     // Rotate into body frame using provided yaw
     field = dcm.transposed() * field;
@@ -552,7 +552,7 @@ bool Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
             continue;
         }
         if (!healthy(i)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag[%u]: unhealthy\n", i);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag[%u]: unhealthy", i);
             return false;
         }
 

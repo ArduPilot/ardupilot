@@ -9,7 +9,7 @@
 bool ModeLoiter::init(bool ignore_checks)
 {
     target_pos = blimp.pos_ned;
-    target_yaw = blimp.ahrs.get_yaw();
+    target_yaw = blimp.ahrs.get_yaw_rad();
 
     return true;
 }
@@ -41,7 +41,7 @@ void ModeLoiter::run()
     if (fabsf(target_pos.z-blimp.pos_ned.z) < (g.max_pos_z*POS_LAG)) {
         target_pos.z += pilot.z;
     }
-    if (fabsf(wrap_PI(target_yaw-ahrs.get_yaw())) < (g.max_pos_yaw*POS_LAG)) {
+    if (fabsf(wrap_PI(target_yaw-ahrs.get_yaw_rad())) < (g.max_pos_yaw*POS_LAG)) {
         target_yaw = wrap_PI(target_yaw + pilot_yaw);
     }
 

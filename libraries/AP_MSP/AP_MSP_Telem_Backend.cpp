@@ -312,7 +312,7 @@ void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, uint8_t
         const char* unit = (units == OSD_UNIT_METRIC) ? "m/s" : "f/s";
 
         if (v_length > 1.0f) {
-            const int32_t angle = wrap_360_cd(DEGX100 * atan2f(v.y, v.x) - ahrs.yaw_sensor);
+            const int32_t angle = wrap_360_cd(rad_to_cd(atan2f(v.y, v.x)) - ahrs.yaw_sensor);
             const int32_t interval = 36000 / ARRAY_SIZE(arrows);
             uint8_t arrow = arrows[((angle + interval / 2) / interval) % ARRAY_SIZE(arrows)];
             snprintf(flight_mode_str, size, "%s %d%s%c%c%c", notify->get_flight_mode_str(),  (uint8_t)roundf(v_length), unit, 0xE2, 0x86, arrow);
@@ -904,9 +904,9 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_attitude(sbuf_t *dst)
         int16_t pitch;
         int16_t yaw;
     } attitude {
-        roll : int16_t(ahrs.roll_sensor * 0.1),     // centidegress to decidegrees
-        pitch : int16_t(ahrs.pitch_sensor * 0.1),   // centidegress to decidegrees
-        yaw : int16_t(ahrs.yaw_sensor * 0.01)       // centidegress to degrees
+        roll : int16_t(ahrs.get_roll_deg() * 10),     // degress to decidegrees
+        pitch : int16_t(ahrs.get_pitch_deg() * 10),   // degress to decidegrees
+        yaw : int16_t(ahrs.get_yaw_deg())
     };
 
     sbuf_write_data(dst, &attitude, sizeof(attitude));

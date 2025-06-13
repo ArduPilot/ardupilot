@@ -168,7 +168,7 @@ bool AP_OSD_MAX7456::update_font()
     const uint8_t *font_data = fd->data;
     uint32_t font_size = fd->length;
     if (font_size != NVM_RAM_SIZE * 256) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AP_OSD: bad font size %u\n", unsigned(font_size));
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AP_OSD: bad font size %u", unsigned(font_size));
         delete fd;
         return false;
     }

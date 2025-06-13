@@ -67,8 +67,8 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
     if (!quadplane.tailsitter.enabled() && !( (plane.control_mode->does_auto_throttle() && !plane.throttle_suppressed)
                                                                       || is_positive(plane.get_throttle_input()) 
                                                                       || plane.is_flying() ) ) {
-        // not in a flight mode and condition where it would be safe to turn on vertial lift motors
-        // skip this check for tailsitters because the forward and vertial motors are the same and are controled directly by throttle imput unlike other quadplanes
+        // not in a flight mode and condition where it would be safe to turn on vertical lift motors
+        // skip this check for tailsitters because the forward and vertical motors are the same and are controlled directly by throttle input unlike other quadplanes
         reset();
         return false;
     }
@@ -132,8 +132,8 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
 
         if (angle_error.update(!inside_envelope && !inside_angle_error, now_ms, tigger_delay_ms, clear_delay_ms)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Angle assist r=%d p=%d",
-                                         (int)(plane.ahrs.roll_sensor/100),
-                                         (int)(plane.ahrs.pitch_sensor/100));
+                            (int)plane.ahrs.get_roll_deg(),
+                            (int)plane.ahrs.get_pitch_deg());
         }
     }
 
@@ -171,7 +171,7 @@ bool VTOL_Assist::check_VTOL_recovery(void)
             quadplane.force_fw_control_recovery = false;
             quadplane.attitude_control->reset_target_and_rate(false);
 
-            if (ahrs.groundspeed() > quadplane.wp_nav->get_default_speed_xy()*0.01) {
+            if (ahrs.groundspeed() > quadplane.wp_nav->get_default_speed_NE_cms()*0.01) {
                 /* if moving at high speed also reset position
                    controller and height controller
 
@@ -179,8 +179,8 @@ bool VTOL_Assist::check_VTOL_recovery(void)
                    controller may limit pitch after a strong
                    acceleration event
                 */
-                quadplane.pos_control->init_z_controller();
-                quadplane.pos_control->init_xy_controller();
+                quadplane.pos_control->init_U_controller();
+                quadplane.pos_control->init_NE_controller();
             }
         }
     }
@@ -194,7 +194,7 @@ bool VTOL_Assist::check_VTOL_recovery(void)
             fabsf(gyro.x) > radians(30) &&
             fabsf(gyro.y) > radians(30) &&
             gyro.x * gyro.z < 0 &&
-            plane.ahrs.pitch_sensor < -4500;
+            plane.ahrs.get_pitch_deg() < -45;
     } else {
         quadplane.in_spin_recovery = false;
     }

@@ -189,10 +189,18 @@ jobs:
         working-directory: ./src/ardupilot/modules/mavlink/pymavlink
         run: |
           python3 -m pip install . -U --user
+      # install Micro-XRCE-DDS-Gen from source until image is updated
+      - name: install Micro-XRCE-DDS-Gen from source
+        run: |
+          cd /tmp
+          git clone --recurse-submodules https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git
+          cd Micro-XRCE-DDS-Gen
+          ./gradlew assemble
       - name: Build with colcon
         shell: 'bash'
         run: |
           source /opt/ros/humble/setup.bash
+          PATH="/tmp/Micro-XRCE-DDS-Gen/scripts:$PATH"
           colcon build --packages-up-to ardupilot_dds_tests --cmake-args -DBUILD_TESTING=ON
       - name: Test with colcon
         shell: 'bash'

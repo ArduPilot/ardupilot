@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+# flake8: noqa
+
 '''
 sign an ArduPilot APJ firmware with a private key
 '''

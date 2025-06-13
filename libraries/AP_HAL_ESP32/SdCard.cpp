@@ -141,7 +141,7 @@ void mount_sdcard_mmc()
     // Pin 13 / chip-select  - is an interesting one, because if its the only thing on this
     //   spi bus(it is), then NOT connecting the SD to this pin, and instead directly to a pull-up
     //   also asserts the CS pin 'permanently high' to the SD card, without the micro being involved..
-    //   which means pin 13 on micro can be re-used elsewhere. If one of these isnt true for u,
+    //   which means pin 13 on micro can be re-used elsewhere. If one of these isn't true for u,
     //   then uncomment this line and connect it electrically to the CS pin on the SDcard.
     //gpio_set_pull_mode(GPIO_NUM_13, GPIO_PULLUP_ONLY);   // D3, needed in 4- and 1-line modes
 

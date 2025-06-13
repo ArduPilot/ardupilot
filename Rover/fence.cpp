@@ -3,7 +3,7 @@
 #if AP_FENCE_ENABLED
 
 // async fence checking io callback at 1Khz
-void Rover::fence_run_checks()
+void Rover::fence_checks_async()
 {
     const uint32_t now = AP_HAL::millis();
 
@@ -64,6 +64,11 @@ void Rover::fence_check()
                     break;
                 case FailsafeAction::SmartRTL_Hold:
                     if (!set_mode(mode_smartrtl, ModeReason::FENCE_BREACHED)) {
+                        set_mode(mode_hold, ModeReason::FENCE_BREACHED);
+                    }
+                    break;
+                case FailsafeAction::Loiter_Hold:
+                    if (!set_mode(mode_loiter, ModeReason::FENCE_BREACHED)) {
                         set_mode(mode_hold, ModeReason::FENCE_BREACHED);
                     }
                     break;
