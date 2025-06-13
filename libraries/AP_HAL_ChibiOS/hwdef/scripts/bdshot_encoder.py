@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# flake8: noqa
+
 """
 script to encode a telemetry value using dshot and gcr and then display in binary and ascii art
 see https://github.com/betaflight/betaflight/pull/8554#issuecomment-512507625

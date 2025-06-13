@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+# flake8: noqa
 '''
 convert a betaflight unified configuration file into a hwdef.dat
 currently very approximate, file requires cleanup afterwards
