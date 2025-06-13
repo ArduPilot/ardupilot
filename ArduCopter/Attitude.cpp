@@ -71,7 +71,7 @@ void Copter::update_throttle_hover()
 float Copter::get_pilot_desired_climb_rate()
 {
     // throttle failsafe check
-    if (failsafe.radio || !rc().has_ever_seen_rc_input()) {
+    if (!rc().has_valid_input()) {
         return 0.0f;
     }
 

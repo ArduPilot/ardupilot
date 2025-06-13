@@ -55,7 +55,7 @@ void ModeCircle::run()
 
     // pilot changes to circle rate and radius
     // skip if in radio failsafe
-    if (!copter.failsafe.radio && copter.circle_nav->pilot_control_enabled()) {
+    if (rc().has_valid_input() && copter.circle_nav->pilot_control_enabled()) {
         // update the circle controller's radius target based on pilot pitch stick inputs
         const float radius_current = copter.circle_nav->get_radius_cm();           // circle controller's radius target, which begins as the circle_radius parameter
         const float pitch_stick = channel_pitch->norm_input_dz();               // pitch stick normalized -1 to 1

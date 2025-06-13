@@ -760,6 +760,10 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
     clear_breach(~_configured_fences);
     // clear any breach from disabled fences
     clear_breach(fences_to_disable);
+    // clear any margin breach from a non-enabled fence
+    clear_margin_breach(~_configured_fences);
+    // clear any marginbreach from disabled fences
+    clear_margin_breach(fences_to_disable);
 
     if (_min_alt_state == MinAltState::MANUALLY_ENABLED) {
         // if user has manually enabled the min-alt fence then don't auto-disable
@@ -979,6 +983,7 @@ void AC_Fence::clear_margin_breach(uint8_t fence_type)
 /// of the given fences.  fence_type is a bitmask here.
 float AC_Fence::get_breach_distance(uint8_t fence_type) const
 {
+    fence_type = fence_type & present();
     float max = -FLT_MAX;
 
     if (fence_type & AC_FENCE_TYPE_ALT_MAX) {

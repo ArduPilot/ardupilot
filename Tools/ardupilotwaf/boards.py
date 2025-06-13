@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+# flake8: noqa
+
 from collections import OrderedDict
 import re
 import sys, os

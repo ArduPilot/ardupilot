@@ -1656,6 +1656,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         break;
 #endif
 
+#if AP_AHRS_ENABLED
     case AUX_FUNC::EKF_SOURCE_SET: {
         AP_NavEKF_Source::SourceSetSelection source_set = AP_NavEKF_Source::SourceSetSelection::PRIMARY;
         switch (ch_flag) {
@@ -1676,6 +1677,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Using EKF Source Set %u", uint8_t(source_set)+1);
         break;
     }
+#endif  // AP_AHRS_ENABLED
 
 #if AP_OPTICALFLOW_CALIBRATOR_ENABLED
     case AUX_FUNC::OPTFLOW_CAL: {
@@ -1824,6 +1826,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
     }
 #endif
 
+#if AP_ARMING_ENABLED
     case AUX_FUNC::ARM_EMERGENCY_STOP: {
         switch (ch_flag) {
         case AuxSwitchPos::HIGH:
@@ -1842,6 +1845,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         }
         break;
     }
+#endif  // AP_ARMING_ENABLED
 
 #if AP_AHRS_ENABLED
     case AUX_FUNC::EKF_LANE_SWITCH:
