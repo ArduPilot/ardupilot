@@ -45,7 +45,7 @@ The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol def
 
 ## PWM Output
 
-The AEDROXH7 supports up to 8 PWM outputs. All channels support bi-directional DShot.
+The AEDROXH7 supports up to 9 PWM (8 + LED) outputs. All channels support PWM, DShot, and bi-directional DShot.
 
 PWM outputs are grouped and every group must use the same output protocol:
 
