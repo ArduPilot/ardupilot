@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # encoding: utf-8
+# flake8: noqa
 
 import os.path
 import os
