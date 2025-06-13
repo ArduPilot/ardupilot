@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# flake8: noqa
 '''
 A tool to view MSP telemetry, simulating a DJI FPV display
 This is used for testing changes to the ArduPilot implementation of MSP telemetry for FPV
