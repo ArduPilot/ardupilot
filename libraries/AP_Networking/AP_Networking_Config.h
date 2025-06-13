@@ -2,8 +2,9 @@
 #include <AP_SerialManager/AP_SerialManager_config.h>
 
 #if defined(AP_NETWORKING_BACKEND_PPP) && !defined(AP_NETWORKING_ENABLED)
-// allow --enable-PPP to enable networking
-#define AP_NETWORKING_ENABLED AP_NETWORKING_BACKEND_PPP
+// we used to magically set A from B here.  The tooling and/or hwdef
+// should take care of this now, but give the user a helpful error:
+#error AP_NETWORKING_ENABLED must be set if AP_NETWORKING_BACKEND_PPP is set
 #endif
 
 
