@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
-
+# flake8: noqa
 def build(bld):
     if bld.env.BOOTLOADER:
         bld.ap_program(
@@ -11,4 +11,4 @@ def build(bld):
         )
         bld.ap_stlib(name= 'JEDEC_libs',
                     ap_vehicle='AP_Bootloader',
-                    ap_libraries= ['AP_FlashIface', 'AP_HAL_Empty'])
+                    ap_libraries=['AP_FlashIface', 'AP_HAL_Empty'])

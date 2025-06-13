@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+# flake8: noqa
 '''
 build generated bindings from bindings.desc for AP_Scripting
 '''
