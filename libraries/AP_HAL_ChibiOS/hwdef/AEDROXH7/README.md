@@ -8,7 +8,7 @@
 - DPS368 barometer
 - 10V 2.3A BEC; 5V 2.3A BEC
 - Flash Memory
-- 7x UART
+- 6x UART
 - 8x PWM
 - 1x I2C
 - 1x SPI
