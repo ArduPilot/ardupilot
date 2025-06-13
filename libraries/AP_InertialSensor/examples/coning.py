@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# flake8: noqa
+
 from math import *
 from pymavlink.rotmat import Vector3, Matrix3
 from numpy import linspace
