@@ -355,25 +355,25 @@ struct PACKED log_Rate_Thread_Dt {
 };
 
 // Write a Guided mode position target
-// pos_target is lat, lon, alt OR offset from ekf origin in cm
-// terrain should be 0 if pos_target.z is alt-above-ekf-origin, 1 if alt-above-terrain
-// vel_target is cm/s
-void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target)
+// pos_target_cm is lat, lon, alt OR offset from ekf origin in cm
+// terrain should be 0 if pos_target_cm.z is alt-above-ekf-origin, 1 if alt-above-terrain
+// vel_target_cms is cm/s
+void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target_cm, bool terrain_alt, const Vector3f& vel_target_cms, const Vector3f& accel_target_cmss)
 {
     const log_Guided_Position_Target pkt {
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_POSITION_TARGET_MSG),
         time_us         : AP_HAL::micros64(),
         type            : (uint8_t)target_type,
-        pos_target_x    : pos_target.x,
-        pos_target_y    : pos_target.y,
-        pos_target_z    : pos_target.z,
+        pos_target_x    : pos_target_cm.x * 0.01f,
+        pos_target_y    : pos_target_cm.y * 0.01f,
+        pos_target_z    : pos_target_cm.z * 0.01f,
         terrain         : terrain_alt,
-        vel_target_x    : vel_target.x,
-        vel_target_y    : vel_target.y,
-        vel_target_z    : vel_target.z,
-        accel_target_x  : accel_target.x,
-        accel_target_y  : accel_target.y,
-        accel_target_z  : accel_target.z
+        vel_target_x    : vel_target_cms.x * 0.01f,
+        vel_target_y    : vel_target_cms.y * 0.01f,
+        vel_target_z    : vel_target_cms.z * 0.01f,
+        accel_target_x  : accel_target_cmss.x * 0.01f,
+        accel_target_y  : accel_target_cmss.y * 0.01f,
+        accel_target_z  : accel_target_cmss.z * 0.01f
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
