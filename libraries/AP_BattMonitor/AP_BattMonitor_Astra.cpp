@@ -1,6 +1,6 @@
 #include "AP_BattMonitor_config.h"
 
-#if AP_BATTERY_ASTRA_ENABLED
+#if AP_BATTERY_SMBUS_ENABLED && AP_BATTERY_ASTRA_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -163,4 +163,4 @@ bool AP_BattMonitor_Astra::check_pec_support()
 	return true;
 }
 
-#endif  // AP_BATTERY_ASTRA_ENABLED
+#endif  //AP_BATTERY_SMBUS_ENABLED && AP_BATTERY_ASTRA_ENABLED

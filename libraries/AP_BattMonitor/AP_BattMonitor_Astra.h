@@ -2,7 +2,7 @@
 
 #include "AP_BattMonitor_SMBus.h"
 
-#if AP_BATTERY_ASTRA_ENABLED
+#if AP_BATTERY_SMBUS_ENABLED && AP_BATTERY_ASTRA_ENABLED
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #define BATTMONITOR_SMBUS_NUM_CELLS_MAX 14
@@ -34,4 +34,4 @@ private:
     bool _cell_count_fixed; // true when cell count check is complete
 };
 
-#endif  // AP_BATTERY_ASTRA_ENABLED
+#endif  //AP_BATTERY_ASTRA_ENABLED
