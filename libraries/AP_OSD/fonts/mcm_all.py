@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# flake8: noqa
+
 def convert(in_file, out_file):
     '''Compile mcm file to binary'''
     with open(in_file) as inp:
