@@ -13,6 +13,7 @@
 - 1x I2C
 - 1x SPI
 - 1x SWD
+- 2x GPIOs
 
 ## Pinout
 
