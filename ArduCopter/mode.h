@@ -1379,12 +1379,12 @@ protected:
 
 private:
 
-    void update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
+    void update_pilot_lean_angle_cd(float &lean_angle_filtered, float &lean_angle_raw);
     float mix_controls(float mix_ratio, float first_control, float second_control);
-    void update_brake_angle_from_velocity(float &brake_angle, float velocity);
+    void update_brake_angle_from_velocity(float &brake_angle_cd, float velocity_cms);
     void init_wind_comp_estimate();
     void update_wind_comp_estimate();
-    void get_wind_comp_lean_angles(float &roll_angle, float &pitch_angle);
+    void get_wind_comp_lean_angles(float &roll_angle_cd, float &pitch_angle_cd);
     void roll_controller_to_pilot_override();
     void pitch_controller_to_pilot_override();
 
@@ -1401,8 +1401,8 @@ private:
     RPMode pitch_mode;
 
     // pilot input related variables
-    float pilot_roll;                         // pilot requested roll angle (filtered to slow returns to zero)
-    float pilot_pitch;                        // pilot requested roll angle (filtered to slow returns to zero)
+    float pilot_roll_cd;                    // pilot requested roll angle (filtered to slow returns to zero)
+    float pilot_pitch_cd;                   // pilot requested roll angle (filtered to slow returns to zero)
 
     // braking related variables
     struct {
@@ -1410,31 +1410,31 @@ private:
         uint8_t time_updated_pitch  : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
 
         float gain;                         // gain used during conversion of vehicle's velocity to lean angle during braking (calculated from rate)
-        float roll;                         // target roll angle during braking periods
-        float pitch;                        // target pitch angle during braking periods
+        float roll_cd;                      // target roll angle during braking periods
+        float pitch_cd;                     // target pitch angle during braking periods
         int16_t timeout_roll;               // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
         int16_t timeout_pitch;              // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
-        float angle_max_roll;               // maximum lean angle achieved during braking.  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
-        float angle_max_pitch;              // maximum lean angle achieved during braking  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
+        float angle_max_roll_cd;            // maximum lean angle achieved during braking. Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
+        float angle_max_pitch_cd;           // maximum lean angle achieved during braking. Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
         int16_t to_loiter_timer;            // cycles to mix brake and loiter controls in POSHOLD_TO_LOITER
     } brake;
 
     // loiter related variables
     int16_t controller_to_pilot_timer_roll;     // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
     int16_t controller_to_pilot_timer_pitch;    // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
-    float controller_final_roll;                // final roll angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
-    float controller_final_pitch;               // final pitch angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
+    float controller_final_roll_cd;             // final roll angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
+    float controller_final_pitch_cd;            // final pitch angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
 
     // wind compensation related variables
     Vector2f wind_comp_ef;                      // wind compensation in earth frame, filtered lean angles from position controller
-    float wind_comp_roll;                       // roll angle to compensate for wind
-    float wind_comp_pitch;                      // pitch angle to compensate for wind
+    float wind_comp_roll_cd;                    // roll angle to compensate for wind
+    float wind_comp_pitch_cd;                   // pitch angle to compensate for wind
     uint16_t wind_comp_start_timer;             // counter to delay start of wind compensation for a short time after loiter is engaged
     int8_t  wind_comp_timer;                    // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
 
     // final output
-    float roll;   // final roll angle sent to attitude controller
-    float pitch;  // final pitch angle sent to attitude controller
+    float roll_cd;   // final roll angle sent to attitude controller
+    float pitch_cd;  // final pitch angle sent to attitude controller
 
 };
 
