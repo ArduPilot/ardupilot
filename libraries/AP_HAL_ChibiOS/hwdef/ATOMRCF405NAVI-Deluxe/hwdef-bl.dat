@@ -5,7 +5,7 @@
 MCU STM32F4xx STM32F405xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1143
+APJ_BOARD_ID AP_HW_ATOMRCF405NAVI_DLX
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
