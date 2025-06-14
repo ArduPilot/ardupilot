@@ -459,6 +459,7 @@ AP_HW_DroneerF405                    5800
 
 #IDs 5810-5819 reserved for Brother Hobby
 AP_HW_BrotherHobbyH743               5810
+AP_HW_BrotherHobbyF405v3             5811
 
 # IDs 6000-6099 reserved for SpektreWorks
 AP_HW_sw-spar-f407                   6000
