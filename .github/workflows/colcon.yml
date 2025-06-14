@@ -193,7 +193,7 @@ jobs:
       - name: install Micro-XRCE-DDS-Gen from source
         run: |
           cd /tmp
-          git clone --recurse-submodules https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git
+          git clone --depth 1 --recurse-submodules --branch v4.7.0 https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git
           cd Micro-XRCE-DDS-Gen
           ./gradlew assemble
       - name: Build with colcon
