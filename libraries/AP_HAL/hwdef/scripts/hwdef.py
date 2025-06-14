@@ -92,6 +92,15 @@ class HWDef:
             if m.group('name') == some_id:
                 return m.group('board_id')
 
+        # upstream's portion of the board_list.txt has a bunch of
+        # boards in a "reserved" section for no apparent reason.
+        # They're a mess to parse, so just hack it up:
+        custom_map = {
+            '"PX4 [BL] FMU v6C.x"': 56,
+        }
+        if some_id in custom_map:
+            return custom_map[some_id]
+
         raise ValueError("Unable to map (%s) to a board ID using %s" %
                          (some_id, board_types_filepath))
 
