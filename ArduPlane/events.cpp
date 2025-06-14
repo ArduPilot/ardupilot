@@ -22,7 +22,6 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
 {
     // This is how to handle a short loss of control signal failsafe.
     failsafe.state = fstype;
-    failsafe.short_timer_ms = millis();
     failsafe.saved_mode_number = control_mode->mode_number();
     switch (control_mode->mode_number())
     {
@@ -113,7 +112,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 {
 
     // This is how to handle a long loss of control signal failsafe.
-    //  If the GCS is locked up we allow control to revert to RC
+    // If the GCS is locked up we allow control to revert to RC
     RC_Channels::clear_overrides();
     failsafe.state = fstype;
     switch (control_mode->mode_number())
@@ -234,13 +233,13 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 #endif
         break;
     }
-    gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe On: %s", (reason == ModeReason:: GCS_FAILSAFE) ? "GCS" : "RC Long", control_mode->name());
+    gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe On: switched to %s", (reason == ModeReason:: GCS_FAILSAFE) ? "GCS" : "RC Long", control_mode->name());
 }
 
 void Plane::failsafe_short_off_event(ModeReason reason)
 {
     // We're back in radio contact
-    gcs().send_text(MAV_SEVERITY_WARNING, "Short Failsafe Cleared");
+    gcs().send_text(MAV_SEVERITY_WARNING, "RC Short Failsafe Cleared");
     failsafe.state = FAILSAFE_NONE;
     // restore entry mode if desired but check that our current mode is still due to failsafe
     if (control_mode_reason == ModeReason::RADIO_FAILSAFE) { 
@@ -254,7 +253,7 @@ void Plane::failsafe_long_off_event(ModeReason reason)
     long_failsafe_pending = false;
     // We're back in radio contact with RC or GCS
     if (reason == ModeReason:: GCS_FAILSAFE) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe Off");
+        gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe Cleared");
     }
     else {
         gcs().send_text(MAV_SEVERITY_WARNING, "RC Long Failsafe Cleared");
