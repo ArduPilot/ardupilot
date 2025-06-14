@@ -1624,8 +1624,10 @@ bool AC_PolyFence_loader::contains_compatible_fence() const
             }
             seen_poly_inclusion = true;
             break;
+#if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
         case AC_PolyFenceType::CIRCLE_INCLUSION_INT:
         case AC_PolyFenceType::CIRCLE_EXCLUSION_INT:
+#endif  // AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
         case AC_PolyFenceType::POLYGON_EXCLUSION:
         case AC_PolyFenceType::CIRCLE_INCLUSION:
         case AC_PolyFenceType::CIRCLE_EXCLUSION:
