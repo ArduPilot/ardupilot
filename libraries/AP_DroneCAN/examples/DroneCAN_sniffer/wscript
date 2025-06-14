@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+# flake8: noqa
 from waflib.TaskGen import after_method, before_method, feature
 
 def build(bld):

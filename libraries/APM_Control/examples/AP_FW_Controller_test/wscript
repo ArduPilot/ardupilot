@@ -21,4 +21,3 @@ def build(bld):
         use='AP_FW_Controller_test_libs',
         program_groups=['examples'],
     )
-
