@@ -353,17 +353,15 @@ bool Plane::set_mode_by_number(const Mode::Number new_mode_number, const ModeRea
 void Plane::check_long_failsafe()
 {
     const uint32_t gcs_last_seen_ms = gcs().sysid_mygcs_last_seen_time_ms();
+    const uint32_t rc_last_seen_ms = failsafe.last_valid_rc_ms;
     const uint32_t tnow = millis();
     // only act on changes
     // -------------------
-    if (failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS && flight_stage != AP_FixedWing::FlightStage::LAND) {
-        uint32_t radio_timeout_ms = failsafe.last_valid_rc_ms;
-        if (failsafe.state == FAILSAFE_SHORT) {
-            // time is relative to when short failsafe enabled
-            radio_timeout_ms = failsafe.short_timer_ms;
-        }
+    if (failsafe.state != FAILSAFE_LONG &&
+        failsafe.state != FAILSAFE_GCS &&
+        flight_stage != AP_FixedWing::FlightStage::LAND) {
         if (failsafe.rc_failsafe &&
-            (tnow - radio_timeout_ms) > g.fs_timeout_long*1000) {
+            (tnow - rc_last_seen_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_LONG, ModeReason::RADIO_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && control_mode == &mode_auto &&
                    gcs_last_seen_ms != 0 &&
@@ -397,22 +395,25 @@ void Plane::check_long_failsafe()
     }
 }
 
-void Plane::check_short_failsafe()
+void Plane::check_short_rc_failsafe()
 {
+    const uint32_t rc_last_seen_ms = failsafe.last_valid_rc_ms;
+    const uint32_t tnow = millis();
     // only act on changes
     // -------------------
     if (g.fs_action_short != FS_ACTION_SHORT_DISABLED &&
-       failsafe.state == FAILSAFE_NONE &&
-       flight_stage != AP_FixedWing::FlightStage::LAND) {
+        failsafe.state == FAILSAFE_NONE &&
+        flight_stage != AP_FixedWing::FlightStage::LAND) {
         // The condition is checked and the flag rc_failsafe is set in radio.cpp
-        if(failsafe.rc_failsafe) {
-            failsafe_short_on_event(FAILSAFE_SHORT, ModeReason::RADIO_FAILSAFE);
+        if (failsafe.rc_failsafe &&
+            (tnow - rc_last_seen_ms) > g.fs_timeout_short*1000) {
+            rc_failsafe_short_on_event();
         }
     }
 
     if(failsafe.state == FAILSAFE_SHORT) {
         if(!failsafe.rc_failsafe || g.fs_action_short == FS_ACTION_SHORT_DISABLED) {
-            failsafe_short_off_event(ModeReason::RADIO_FAILSAFE);
+            rc_failsafe_short_off_event();
         }
     }
 }
