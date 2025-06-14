@@ -74,11 +74,16 @@ class HWDef:
             ret.append(line)
         return ret
 
+    def running_in_CI(self):
+        return os.getenv("GITHUB_ACTIONS") == "true"
+
     def get_numeric_board_id(self):
         '''return a numeric board ID, which may require mapping a string to a
         number via board_list.txt'''
         some_id = self.get_config('APJ_BOARD_ID')
         if some_id.isnumeric():
+            if self.running_in_CI():
+                raise ValueError(f"Numeric board ID found ({some_id}).  Your APJ_BOARD_ID must not use a number.  Change the number to be the name of the board used in Tools/AP_Bootloader/board_types.txt")  # noqa:E501
             return some_id
 
         board_types_filename = "board_types.txt"
