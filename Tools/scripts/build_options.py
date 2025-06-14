@@ -55,6 +55,7 @@ BUILD_OPTIONS = [
     Feature('Battery', 'BATTERY_FUELLEVEL_PWM', 'AP_BATTERY_FUELLEVEL_PWM_ENABLED', 'Enable PWM Fuel level battery monitor', 0, None),  # noqa: E501
     Feature('Battery', 'BATTERY_FUELLEVEL_ANALOG', 'AP_BATTERY_FUELLEVEL_ANALOG_ENABLED', 'Enable Analog Fuel level battry monitor', 0, None),  # noqa: E501
     Feature('Battery', 'BATTERY_SMBUS', 'AP_BATTERY_SMBUS_ENABLED', 'Enable SMBUS battery monitor', 0, None),
+    Feature('Battery', 'BATTERY_ASTRA', 'AP_BATTERY_ASTRA_ENABLED', 'Enable Astra battery monitor', 0, 'BATTERY_SMBUS'),
     Feature('Battery', 'BATTERY_INA2XX', 'AP_BATTERY_INA2XX_ENABLED', 'Enable INA2XX battery monitor', 0, None),
     Feature('Battery', 'BATTERY_INA3221', 'AP_BATTERY_INA3221_ENABLED', 'Enable INA3221 battery monitor', 0, None),
     Feature('Battery', 'BATTERY_SYNTHETIC_CURRENT', 'AP_BATTERY_SYNTHETIC_CURRENT_ENABLED', 'Enable Synthetic Current monitor', 0, None), # noqa: E501
