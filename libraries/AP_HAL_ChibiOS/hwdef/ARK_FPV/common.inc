@@ -2,7 +2,7 @@
 MCU STM32H7xx STM32H743xx
 
 # board ID for firmware load
-APJ_BOARD_ID 59
+APJ_BOARD_ID TARGET_HW_ARK_FPV
 
 # crystal frequency
 OSCILLATOR_HZ 16000000

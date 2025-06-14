@@ -7,7 +7,7 @@
 MCU STM32F4xx STM32F405xx
 
 # board ID for firmware load
-APJ_BOARD_ID 5811
+APJ_BOARD_ID AP_HW_BrotherHobbyF405v3
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
