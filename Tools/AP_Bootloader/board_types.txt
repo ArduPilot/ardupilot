@@ -503,5 +503,7 @@ AP_HW_CUAV_NORA_ODID                11009
 AP_HW_CUAV_X7_PRO_ODID              11010
 AP_HW_CUAV-7-NANO_ODID              17000
 
+AP_HW_CUBEORANGEPLUS_ODID           11063
+
 # do not allocate board IDs above 10,000 for non-ODID boards.
 # do not allocate board IDs above 19,999 in this file.
