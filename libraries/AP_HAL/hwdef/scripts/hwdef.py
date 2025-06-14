@@ -79,7 +79,7 @@ class HWDef:
         number via board_list.txt'''
         some_id = self.get_config('APJ_BOARD_ID')
         if some_id.isnumeric():
-            return some_id
+            raise ValueError(f"Numeric board ID found ({some_id}).  Your APJ_BOARD_ID must not use a number.  Change the number to be the name of the board used in Tools/AP_Bootloader/board_types.txt")  # noqa:E501
 
         board_types_filename = "board_types.txt"
         topdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../..')
