@@ -240,16 +240,16 @@ void AC_AutoTune::run()
         return;
     }
 
-    float target_roll_cd, target_pitch_cd, target_yaw_rate_cds;
-    get_pilot_desired_rp_yrate_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
+    float desired_yaw_rate_cds;  // used during manual control
+    get_pilot_desired_rp_yrate_cd(desired_roll_cd, desired_pitch_cd, desired_yaw_rate_cds);
 
     // Get pilot's desired climb rate
     const float target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
 
-    const bool zero_rp_input = is_zero(target_roll_cd) && is_zero(target_pitch_cd);
+    const bool zero_rp_input = is_zero(desired_roll_cd) && is_zero(desired_pitch_cd);
     if (zero_rp_input) {
         // Use position hold if enabled
-        get_poshold_attitude(target_roll_cd, target_pitch_cd, desired_yaw_cd);
+        get_poshold_attitude(desired_roll_cd, desired_pitch_cd, desired_yaw_cd);
     }
 
     const uint32_t now_ms = AP_HAL::millis();
@@ -257,7 +257,7 @@ void AC_AutoTune::run()
     switch (mode) {
     case TuneMode::TUNING:
         // Detect pilot override
-        if (!zero_rp_input || !is_zero(target_yaw_rate_cds) || !is_zero(target_climb_rate_cms)) {
+        if (!zero_rp_input || !is_zero(desired_yaw_rate_cds) || !is_zero(target_climb_rate_cms)) {
             if (!pilot_override) {
                 pilot_override = true;
                 // Restore original gains while pilot is in control
@@ -287,7 +287,7 @@ void AC_AutoTune::run()
                 last_pilot_override_warning = now_ms;
             }
             load_gains(GainType::ORIGINAL);
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(desired_roll_cd, desired_pitch_cd, desired_yaw_rate_cds);
         } else {
             // Autotune controls the aircraft
             control_attitude();
@@ -306,13 +306,13 @@ void AC_AutoTune::run()
     case TuneMode::FINISHED:
         // Tuning is complete or failed; fly using original gains
         load_gains(GainType::ORIGINAL);
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(desired_roll_cd, desired_pitch_cd, desired_yaw_rate_cds);
         break;
 
     case TuneMode::VALIDATING:
         // Pilot is evaluating tuned gains
         load_gains(GainType::TUNED);
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(desired_roll_cd, desired_pitch_cd, desired_yaw_rate_cds);
         break;
     }
 
@@ -338,11 +338,11 @@ bool AC_AutoTune::currently_level()
     // relax threshold if we pass AUTOTUNE_LEVEL_TIMEOUT_MS
     const float threshold_mul = constrain_float((float)(now_ms - level_start_time_ms) / (float)AUTOTUNE_LEVEL_TIMEOUT_MS, 0.0, 2.0);
 
-    if (fabsf(ahrs_view->roll_sensor - roll_cd) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
+    if (fabsf(ahrs_view->roll_sensor - desired_roll_cd) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
         return false;
     }
 
-    if (fabsf(ahrs_view->pitch_sensor - pitch_cd) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
+    if (fabsf(ahrs_view->pitch_sensor - desired_pitch_cd) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
         return false;
     }
     if (fabsf(wrap_180_cd(ahrs_view->yaw_sensor - desired_yaw_cd)) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
@@ -374,9 +374,8 @@ void AC_AutoTune::control_attitude()
     case Step::WAITING_FOR_LEVEL: {
         // Use intra-test gains while holding level between tests
         load_gains(GainType::INTRA_TEST);
-
-        get_poshold_attitude(roll_cd, pitch_cd, desired_yaw_cd);
-        attitude_control->input_euler_angle_roll_pitch_yaw_cd(roll_cd, pitch_cd, desired_yaw_cd, true);
+        
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(desired_roll_cd, desired_pitch_cd, desired_yaw_cd, true);
 
         // Require a short stable period before executing the next test
         if (!currently_level()) {
@@ -542,9 +541,8 @@ void AC_AutoTune::control_attitude()
 
     case Step::ABORT:
         // Recover from failed test or move on after a successful one
-
-        get_poshold_attitude(roll_cd, pitch_cd, desired_yaw_cd);
-        attitude_control->input_euler_angle_roll_pitch_yaw_cd(roll_cd, pitch_cd, desired_yaw_cd, true);
+        
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(desired_roll_cd, desired_pitch_cd, desired_yaw_cd, true);
 
         load_gains(GainType::INTRA_TEST);
 
