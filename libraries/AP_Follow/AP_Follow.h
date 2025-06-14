@@ -96,7 +96,7 @@ public:
     // Global Location and Velocity Retrieval (LUA Bindings)
     //==========================================================================
 
-    // Retrieves the estimated global location and velocity of the target. Adjusts altitude frame to relative if configured (for LUA bindings).
+    // Retrieves the estimated global location and velocity of the target
     bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned);
 
     // Retrieves the estimated global location and velocity of the target, including configured positional offsets (for LUA bindings).
