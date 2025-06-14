@@ -44,7 +44,7 @@ The PixSurveyA1-IND flight controller is an upgrade to PixSurveyA1, with better 
 
 ## Pinout
 
-![PixSurveyA1-IND](PixSurveyA1-IND.png "PixSurveyA1-IND")
+![PixSurveyA1-IND](PixSurveyA1-IND.jpg "PixSurveyA1-IND")
 
 UART Mapping
 ============

@@ -11,4 +11,4 @@ Vimdrones CAN Servo Hub peripheral with 4 channels PWM output and 4 channel Serv
 
 #### Wiring Diagram
 
-![Vimdrones CAN Servo Hub 4CHP Wiring Diagram](vimdrones_can_servo_hub_4chp_wiring.png)
+![Vimdrones CAN Servo Hub 4CHP Wiring Diagram](vimdrones_can_servo_hub_4chp_wiring.jpg)
