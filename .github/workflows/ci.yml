@@ -12,11 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+            submodules: recursive
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
       - run: pip install --upgrade pip
-      - run: pip install build pytest
-      - run: build || true
+      - run: pip install ament-lint-pep257 build numpy pysim pytest
+                 # ament_copyright ament_pep257 ccache vehicle_test_suite
+      - run: python -m build || true
       - run: pytest
