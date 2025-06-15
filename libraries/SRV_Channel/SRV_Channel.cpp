@@ -194,6 +194,26 @@ uint16_t SRV_Channel::pwm_from_range(float scaled_value) const
     return servo_min + uint16_t( (scaled_value * (float)(servo_max - servo_min)) / (float)high_out );
 }
 
+// convert a pwm to a 0..1 value
+float SRV_Channel::range_from_pwm() const
+{
+    if (servo_max <= servo_min || high_out == 0) {
+        return 0;
+    }
+    if (output_pwm < servo_min) {
+        return 0;
+    }
+    if (output_pwm > servo_max) {
+        return 1;
+    }
+    float full_range = servo_max - servo_min;
+    float value = (float)(output_pwm - servo_min) / full_range;
+    if (reversed) {
+        value = 1 - value;
+    }
+    return value;
+}
+
 // convert a -angle_max..angle_max to a pwm
 uint16_t SRV_Channel::pwm_from_angle(float scaled_value) const
 {
