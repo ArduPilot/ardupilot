@@ -675,16 +675,23 @@ void AP_Periph_FW::handle_act_command(CanardInstance* canard_instance, CanardRxT
         return;
     }
 
+    bool valid_output = false;
     for (uint8_t i=0; i < cmd.commands.len; i++) {
         const auto &c = cmd.commands.data[i];
         switch (c.command_type) {
         case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_UNITLESS:
             rcout_srv_unitless(c.actuator_id, c.command_value);
+            valid_output = true;
             break;
         case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_PWM:
             rcout_srv_PWM(c.actuator_id, c.command_value);
+            valid_output = true;
             break;
         }
+    }
+
+    if (valid_output) {
+        actuator.last_command_ms = AP_HAL::millis();
     }
 }
 #endif // AP_PERIPH_RC_OUT_ENABLED
