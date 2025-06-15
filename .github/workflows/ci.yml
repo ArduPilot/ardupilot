@@ -19,7 +19,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
       - run: pip install --upgrade pip
-      - run: pip install ament-lint-pep257 build numpy pysim pytest
+      - run: pip install build numpy pysim pytest
                  # ament_copyright ament_pep257 ccache vehicle_test_suite
       - run: python -m build || true
       - run: pytest
