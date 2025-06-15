@@ -533,7 +533,7 @@ public:
     void send_serial_monitor_data();
     int8_t get_default_tunnel_serial_port(void) const;
 
-    struct {
+    struct UARTMonitor {
         ByteBuffer *buffer;
         uint32_t last_request_ms;
         AP_HAL::UARTDriver *uart;
@@ -542,7 +542,8 @@ public:
         uint8_t protocol;
         uint32_t baudrate;
         bool locked;
-    } uart_monitor;
+    } uart_monitors[SERIALMANAGER_MAX_PORTS];
+    void send_serial_monitor_data_instance(UARTMonitor &monitor);
 #endif
 
     // handlers for incoming messages

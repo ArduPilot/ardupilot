@@ -14932,8 +14932,12 @@ SERIAL5_BAUD 128
 
         return psd
 
-    def model_defaults_filepath(self, model):
-        vehicle = self.vehicleinfo_key()
+    def model_defaults_filepath(self, model, vehicleinfo_key=None):
+        if vehicleinfo_key is None:
+            vehicle = self.vehicleinfo_key()
+        else:
+            vehicle = vehicleinfo_key
+
         vinfo = vehicleinfo.VehicleInfo()
         defaults_filepath = vinfo.options[vehicle]["frames"][model]["default_params_filename"]
         if isinstance(defaults_filepath, str):
