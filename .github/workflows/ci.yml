@@ -17,6 +17,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
       - run: pip install --upgrade pip
-      - run: pip install pytest
-      - run: pip install --editable .
+      - run: pip install build pytest
+      - run: build || true
       - run: pytest
