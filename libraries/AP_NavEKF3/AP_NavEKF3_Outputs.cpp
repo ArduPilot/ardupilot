@@ -44,7 +44,7 @@ bool NavEKF3_core::pre_arm_check(bool requires_position, char *failure_msg, uint
         const float max_vel_innovation = 2.0;
         const float hvel_innovation = sqrtf(sq(innovVelPos[0])+sq(innovVelPos[1]));
         if (onGround && PV_AidingMode == AID_ABSOLUTE &&
-            frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS) &&
+            frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS, core_index) &&
             hvel_innovation > max_vel_innovation) {
             // more than 2 m/s horizontal velocity innovation on the ground
             dal.snprintf(failure_msg, failure_msg_len,
@@ -91,7 +91,7 @@ float NavEKF3_core::errorScore() const
 bool NavEKF3_core::getHeightControlLimit(float &height) const
 {
     // only ask for limiting if we are doing optical flow navigation
-    if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW) && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
+    if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index) && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
 #if AP_RANGEFINDER_ENABLED
         const auto *_rng = dal.rangefinder();
@@ -104,7 +104,7 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
         return false;
 #endif
         // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
-        if (frontend->sources.getPosZSource() != AP_NavEKF_Source::SourceZ::RANGEFINDER) {
+        if (frontend->sources.getPosZSource(core_index) != AP_NavEKF_Source::SourceZ::RANGEFINDER) {
             height -= terrainState;
         }
         return true;
