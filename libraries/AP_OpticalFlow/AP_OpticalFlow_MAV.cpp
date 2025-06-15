@@ -68,6 +68,9 @@ void AP_OpticalFlow_MAV::update(void)
         // copy average body rate to state structure
         state.bodyRate = { gyro_sum.x / gyro_sum_count, gyro_sum.y / gyro_sum_count };
 
+        // copy average ground distance to state structure
+        state.groundDistance = ground_distance_sum / count;
+
         // we only apply yaw to flowRate as body rate comes from AHRS
         _applyYaw(state.flowRate);
     } else {
@@ -81,6 +84,7 @@ void AP_OpticalFlow_MAV::update(void)
     // reset local buffers
     flow_sum.zero();
     quality_sum = 0;
+    ground_distance_sum = 0.0f;
     count = 0;
 
     // reset gyro sum
@@ -99,9 +103,10 @@ void AP_OpticalFlow_MAV::handle_msg(const mavlink_message_t &msg)
     latest_frame_us = AP_HAL::micros64();
 
     // add sensor values to sum
-    flow_sum.x += packet.flow_x;
-    flow_sum.y += packet.flow_y;
+    flow_sum.x += packet.flow_rate_x;
+    flow_sum.y += packet.flow_rate_y;
     quality_sum += packet.quality;
+    ground_distance_sum += packet.ground_distance;
     count++;
 
     // take sensor id from message
