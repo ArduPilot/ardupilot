@@ -21,7 +21,7 @@ public:
         return _singleton;
     }
 
-    enum OA_DbItemImportance {
+    enum OA_DbItemImportance : uint8_t {
         Low,
         Normal,
         High,
@@ -31,15 +31,26 @@ public:
         Vector3f pos;           // position of the object as an offset in meters from the EKF origin
         uint32_t timestamp_ms;  // system time that object was last updated
         float radius;           // objects radius in meters
+
+        // Unique ID, assigned by the source, not used by all sources
+        uint32_t id;
+
         uint8_t send_to_gcs;    // bitmask of mavlink comports to which details of this object should be sent
         OA_DbItemImportance importance;
+
+        // Source of item, refresh treats sources differently
+        enum class Source : uint8_t {
+            proximity,
+            AIS
+        } source;
     };
 
     void init();
     void update();
 
-    // push an object into the database.  Pos is the offset in meters from the EKF origin, angle is in degrees, distance in meters
-    void queue_push(const Vector3f &pos, uint32_t timestamp_ms, float distance);
+    // Push an object into the database. Pos is the offset in meters from the EKF origin, measurement timestamp in ms, distance in meters, optional radius in meters
+    void queue_push(const Vector3f &pos, const uint32_t timestamp_ms, const float distance, float radius, const OA_DbItem::Source source, const uint32_t id = 0);
+    void queue_push(const Vector3f &pos, const uint32_t timestamp_ms, const float distance, const OA_DbItem::Source source, const uint32_t id = 0);
 
     // returns true if database is healthy
     bool healthy() const { return (_queue.items != nullptr) && (_database.items != nullptr); }
@@ -66,16 +77,16 @@ private:
 
     // database item management
     void database_item_add(const OA_DbItem &item);
-    void database_item_refresh(const uint16_t index, const uint32_t timestamp_ms, const float radius);
+    void database_item_refresh(OA_DbItem &current_item, const OA_DbItem &new_item) const;
     void database_item_remove(const uint16_t index);
     void database_items_remove_all_expired();
 
     // get bitmask of gcs channels item should be sent to based on its importance
     // returns 0xFF (send to all channels) if should be sent or 0 if it should not be sent
-    uint8_t get_send_to_gcs_flags(const OA_DbItemImportance importance);
+    uint8_t get_send_to_gcs_flags(const OA_DbItemImportance importance) const;
 
-    // returns true if database item "index" is close to "item"
-    bool is_close_to_item_in_database(const uint16_t index, const OA_DbItem &item) const;
+    // Return true if item A is likely the same as item B
+    bool item_match(const OA_DbItem& A, const OA_DbItem& B) const;
 
     // enum for use with _OUTPUT parameter
     enum class OutputLevel {
@@ -88,7 +99,7 @@ private:
     // parameters
     AP_Int16        _queue_size_param;                      // queue size
     AP_Int16        _database_size_param;                   // db size
-    AP_Int8         _database_expiry_seconds;               // objects expire after this timeout
+    AP_Int16        _database_expiry_seconds;               // objects expire after this timeout
     AP_Enum<OutputLevel> _output_level;                     // controls which items should be sent to GCS
     AP_Float        _beam_width;                            // beam width used when converting lidar readings to object radius
     AP_Float        _radius_min;                            // objects minimum radius (in meters)
