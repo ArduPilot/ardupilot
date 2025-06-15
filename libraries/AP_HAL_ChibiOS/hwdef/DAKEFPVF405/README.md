@@ -19,13 +19,13 @@ The DAKEFPV F405 is a flight controller produced by [DAKEFPV](https://www.dakefp
 
 ## Pinout
 
-![DAKEFPV F405 Board Top](Top.png "DAKEFPV F405 Top")
-![DAKEFPV F405 Board Bottom](Bottom.png "DAKEFPV F405 Bottom")
+![DAKEFPV F405 Board Top](Top.jpg "DAKEFPV F405 Top")
+![DAKEFPV F405 Board Bottom](Bottom.jpg "DAKEFPV F405 Bottom")
 
 ## DAKEFPV F405 Wiring Diagram
 
-![DAKEFPV F405 Wiring Diagram Top]( WiringDiagramTop.png "DAKEFPV F405 Wiring Diagram Top")
-![DAKEFPV F405 Wiring Diagram Bottom](WiringDiagramBottom.png "DAKEFPV F405 Wiring Diagram Bottom")
+![DAKEFPV F405 Wiring Diagram Top]( WiringDiagramTop.jpg "DAKEFPV F405 Wiring Diagram Top")
+![DAKEFPV F405 Wiring Diagram Bottom](WiringDiagramBottom.jpg "DAKEFPV F405 Wiring Diagram Bottom")
 
 ## UART Mapping
 

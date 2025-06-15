@@ -18,7 +18,7 @@ The TBS LUCID PRO/Freestyle is a flight controller produced by [Team Black Sheep
 
 ## Pinout
 
-![TBS LUCID PRO/Freestyle Board](TopBottom.png "TBS LUCID PRO/Freestyle")
+![TBS LUCID PRO/Freestyle Board](TopBottom.jpg "TBS LUCID PRO/Freestyle")
 
 ## UART Mapping
 

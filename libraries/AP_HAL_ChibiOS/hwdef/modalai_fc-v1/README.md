@@ -52,7 +52,7 @@ For detailed pinout descriptions see [FlightCore Pinout](https://docs.modalai.co
 
 ## Block Diagram
 
-![ModalAI_FC](fc-dk-preliminary-datasheet.png "modal-fc-block")
+![ModalAI_FC](fc-dk-preliminary-datasheet.jpg "modal-fc-block")
 
 ## UART Mapping
 
