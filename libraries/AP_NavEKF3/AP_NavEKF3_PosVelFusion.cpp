@@ -2070,7 +2070,10 @@ void NavEKF3_core::SelectBodyOdomFusion()
     // Check for body odometry data (aka visual position delta) at the fusion time horizon
     const bool bodyOdomDataToFuse = storedBodyOdm.recall(bodyOdmDataDelayed, imuDataDelayed.time_ms);
     if (bodyOdomDataToFuse && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV)) {
-
+        // If VelZ source is set to none, don't use the odometry data for Z velocity
+        if (!frontend->sources.haveVelZSource()) {
+            bodyOdmDataDelayed.vel.z = stateStruct.velocity.z;
+        }
         // Fuse data into the main filter
         FuseBodyVel();
     }
