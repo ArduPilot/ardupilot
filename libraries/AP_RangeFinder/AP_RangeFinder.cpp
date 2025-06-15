@@ -686,7 +686,26 @@ void RangeFinder::handle_msp(const MSP::msp_rangefinder_data_message_t &pkt)
 // return true if we have a range finder with the specified orientation
 bool RangeFinder::has_orientation(enum Rotation orientation) const
 {
-    return (find_instance(orientation) != nullptr);
+    if ((find_instance(orientation) != nullptr)) {
+        // we have a rangefinder with this orientation
+        return true;
+    }
+
+    // special case for DroneCAN
+    // DroneCAN rangefinder backend is not created until we receive a
+    // measurement, so we need to check the params directly
+#if AP_RANGEFINDER_DRONECAN_ENABLED
+     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
+        if ((RangeFinder::Type)params[i].type.get() == RangeFinder::Type::UAVCAN) {
+            if (params[i].orientation.get() == orientation) {
+                return true;
+            }
+        }
+    }
+#endif
+
+    // no rangefinder with this orientation
+    return false;
 }
 
 // find first range finder instance with the specified orientation
