@@ -279,7 +279,6 @@ protected:
     float    start_angle;           // start angle
     float    start_rate;            // start rate - parent and multi
     float    test_accel_max_cdss;   // maximum acceleration variable
-    float    desired_yaw_cd;        // yaw heading during tune - parent and Tradheli
     float    step_scaler;           // scaler to reduce maximum target step - parent and multi
 
     LowPassFilterFloat  rotation_rate_filt; // filtered rotation rate in radians/second
@@ -299,7 +298,7 @@ protected:
     uint32_t last_announce_ms;
     float   lean_angle;
     float   rotation_rate;
-    float   roll_cd, pitch_cd;
+    float   desired_roll_cd, desired_pitch_cd, desired_yaw_cd;  // desired attitude target setpoints and test origins
 
     // heli specific variables
     float    start_freq;    //start freq for dwell test
