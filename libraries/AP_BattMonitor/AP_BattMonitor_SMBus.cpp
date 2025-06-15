@@ -147,6 +147,11 @@ void AP_BattMonitor_SMBus::read_cycle_count()
     _has_cycle_count = read_word(BATTMONITOR_SMBUS_CYCLE_COUNT, _cycle_count);
 }
 
+void AP_BattMonitor_SMBus::read_soh()
+{
+    read_word(BATTMONITOR_SMBUS_SOH, _soh);
+}
+
 // read word from register
 // returns true if read was successful, false if failed
 bool AP_BattMonitor_SMBus::read_word(uint8_t reg, uint16_t& data) const

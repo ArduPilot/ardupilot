@@ -49,6 +49,7 @@ class AP_BattMonitor_Torqeedo;
 class AP_BattMonitor_FuelLevel_Analog;
 class AP_BattMonitor_EFI;
 class AP_BattMonitor_Scripting;
+class AP_BattMonitor_Astra;
 
 
 class AP_BattMonitor
@@ -71,7 +72,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_LTC2946;
     friend class AP_BattMonitor_AD7091R5;
     friend class AP_BattMonitor_INA3221;
-
+    friend class AP_BattMonitor_Astra;
     friend class AP_BattMonitor_Torqeedo;
     friend class AP_BattMonitor_FuelLevel_Analog;
     friend class AP_BattMonitor_Synthetic_Current;
