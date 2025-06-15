@@ -21,7 +21,7 @@ public:
         return _singleton;
     }
 
-    enum OA_DbItemImportance {
+    enum OA_DbItemImportance : uint8_t {
         Low,
         Normal,
         High,
@@ -39,7 +39,7 @@ public:
         OA_DbItemImportance importance;
 
         // Source of item, refresh treats sources differently
-        enum class Source {
+        enum class Source : uint8_t {
             proximity,
             AIS
         } source;
