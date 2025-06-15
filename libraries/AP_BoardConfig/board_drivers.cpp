@@ -107,7 +107,7 @@ void AP_BoardConfig::board_setup_drivers(void)
     case FMUV6_BOARD_CUAV_6X:
         break;
     default:
-        config_error("Unknown board type");
+        config_error("Unknown board type %u", px4_configured_board);
         break;
     }
 }
