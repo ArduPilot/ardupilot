@@ -1480,8 +1480,9 @@ void AP_Periph_FW::process1HzTasks(uint64_t timestamp_usec)
          * record the worst case memory usage.
          */
 
-        if (pool_peak_percent() > 70) {
-            printf("WARNING: ENLARGE MEMORY POOL\n");
+        const float pool_pct = pool_peak_percent();
+        if (pool_pct > 70) {
+            printf("WARNING: ENLARGE MEMORY POOL (peak=%f%%)\n", pool_pct);
         }
     }
 
