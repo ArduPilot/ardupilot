@@ -1,0 +1,29 @@
+name: ci
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+            submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - run: pip install --upgrade pip
+      - run: pip install ament-lint-pep257 numpy pexpect pytest setuptools
+      - run: pip install --editable modules/DroneCAN/pydronecan
+      - run: pip install --editable modules/mavlink/pymavlink
+      - run: pip install --editable Tools/ros2/ardupilot_dds_tests
+      - run: pytest --ignore=modules/gtest
+                    --ignore=modules/mavlink/pymavlink/generator/C/test/posix/sha256_test.py
+                    --ignore=modules/mavlink/pymavlink/tests/test_wp.py
+                    --ignore=modules/waf/playground
+                    --ignore=Tools/autotest/test_build_options.py
+                    --ignore=Tools/autotest/test_param_upgrade.py
+                    --ignore=Tools/FilterTestTool/run_filter_test.py
+                    --ignore=Tools/ros2/ardupilot_dds_tests/test/ardupilot_dds_tests
+                    --ignore=Tools/ros2/ardupilot_dds_tests/test/test_copyright.py
