@@ -1,0 +1,25 @@
+# This file is used by .github/workflows/pre-commit.yml to enable pytest to discover
+# and run tests across the entire codebase.  These settings should NOT be copied into
+# pytest.toml or pyproject.toml as they would negatively affect autotest and build/test.
+
+[tool.pytest.ini_options]
+addopts = [
+    "--ignore=modules",  # Ignore tests in git submodules.
+    "--ignore=Tools/FilterTestTool",  # Auto-runs and it contains no pytests.
+    "--ignore=Tools/ros2/ardupilot_dds_tests/test",  # Requires a special setup.
+]
+filterwarnings = [
+    "ignore:cannot collect test class.*test_build_options:pytest.PytestCollectionWarning",
+    "ignore:cannot collect test class.*test_param_upgrade:pytest.PytestCollectionWarning",
+]
+python_files = [
+    "test_*.py",
+    "*_test.py",
+    "*_unittest.py",
+    "*_unittests.py"
+]
+pythonpath = [
+    "..",
+    "../Tools/autotest",
+    "../Tools/scripts"
+]
