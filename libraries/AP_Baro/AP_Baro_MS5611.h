@@ -28,6 +28,10 @@
 #define HAL_BARO_MS5637_I2C_ADDR 0x76
 #endif
 
+#if AP_BARO_MS5837_ENABLED
+#define MS5837_30BA_02BA_SELECTION_THRESHOLD 37000
+#endif
+
 class AP_Baro_MS56XX : public AP_Baro_Backend
 {
 public:
@@ -55,7 +59,7 @@ protected:
 
     // Internal calibration registers
     struct {
-        uint16_t c1, c2, c3, c4, c5, c6;
+        uint16_t c0, c1, c2, c3, c4, c5, c6;
     } _cal_reg;
 
 private:
@@ -142,9 +146,13 @@ public:
 protected:
     const char *name() const override { return "MS5837"; }
     bool _read_prom(uint16_t *prom) override { return _read_prom_5637(prom); }
-    DevTypes devtype() const override { return DEVTYPE_BARO_MS5837; }
+    DevTypes devtype() const override;
     bool _init() override;
     void _calculate() override;
+    void _calculate_5837_02ba();
+    void _calculate_5837_30ba();
+
+    DevTypes _subtype;
 };
 #endif  // AP_BARO_MS5837_ENABLED
 
