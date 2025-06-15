@@ -1,0 +1,22 @@
+name: ci
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  pytest:
+    strategy:
+      fail-fast: false
+      matrix:  # https://github.com/actions/python-versions/releases
+        python-version: ["3.13", "3.14", "pypy-3.11"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+      - run: pip install --upgrade pip
+      - run: pip install pytest
+      - run: pip install --editable .
+      - run: pytest
