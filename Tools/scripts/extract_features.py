@@ -155,6 +155,7 @@ class ExtractFeatures(object):
             ('AP_FENCE_ENABLED', r'AC_Fence::check\b',),
             ('HAL_RALLY_ENABLED', 'AP_Rally::find_nearest_rally_point',),
             ('AP_AVOIDANCE_ENABLED', 'AC_Avoid::AC_Avoid',),
+            ('AP_ALT_HOLD_AVOIDANCE_ENABLED', 'AC_Avoid::adjust_roll_pitch',),
             ('AP_OAPATHPLANNER_ENABLED', 'AP_OAPathPlanner::AP_OAPathPlanner',),
             ('AC_PAYLOAD_PLACE_ENABLED', 'PayloadPlace::start_descent'),
             ('AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED', ExtractFeatures.FindString('PayloadPlace')),
