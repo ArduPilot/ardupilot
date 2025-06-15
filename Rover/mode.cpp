@@ -504,6 +504,19 @@ void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max_deg
     set_steering(steering_out * 4500.0f);
 }
 
+// calculate steering output to drive towards desired heading
+// rate_max is a maximum turn rate in deg/s.  set to zero to use default turn rate limits
+void Mode::calc_directional_steering_to_heading(float desired_heading_cd, float rate_max_degs)
+{
+    // call heading controller
+    const float steering_out = attitude_control.get_directional_steering_out_heading(radians(desired_heading_cd*0.01f),
+                                                                         radians(rate_max_degs),
+                                                                         g2.motors.limit.steer_left,
+                                                                         g2.motors.limit.steer_right,
+                                                                         rover.G_Dt);
+    set_steering(steering_out * 4500.0f);
+}
+
 void Mode::set_steering(float steering_value)
 {
     if (allows_stick_mixing() && g2.stick_mixing > 0) {
