@@ -79,7 +79,7 @@ class HWDef:
         number via board_list.txt'''
         some_id = self.get_config('APJ_BOARD_ID')
         if some_id.isnumeric():
-            return some_id
+            raise ValueError(f"Numeric board ID found ({some_id}).  Your APJ_BOARD_ID must not use a number.  Change the number to be the name of the board used in Tools/AP_Bootloader/board_types.txt")  # noqa:E501
 
         board_types_filename = "board_types.txt"
         topdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../..')
@@ -91,6 +91,15 @@ class HWDef:
                 continue
             if m.group('name') == some_id:
                 return m.group('board_id')
+
+        # upstream's portion of the board_list.txt has a bunch of
+        # boards in a "reserved" section for no apparent reason.
+        # They're a mess to parse, so just hack it up:
+        custom_map = {
+            '"PX4 [BL] FMU v6C.x"': 56,
+        }
+        if some_id in custom_map:
+            return custom_map[some_id]
 
         raise ValueError("Unable to map (%s) to a board ID using %s" %
                          (some_id, board_types_filepath))
