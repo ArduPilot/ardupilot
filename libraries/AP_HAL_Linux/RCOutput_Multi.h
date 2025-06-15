@@ -20,22 +20,44 @@
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PILOTPI
 
-#include "RCInput.h"
+#include "AP_HAL/RCOutput.h"
 #include <stdarg.h>
 
-namespace Linux {
+namespace Linux
+{
 
-class RCInput_Multi : public RCInput
+class RCOutput_Multi : public AP_HAL::RCOutput
 {
 public:
-    RCInput_Multi(uint8_t num_inputs, ...);
-    void init() override;
-    void _timer_tick(void) override;
+    RCOutput_Multi(uint8_t num_outputs, ...);
+    void     init() override;
+    void     set_freq(uint32_t chmask, uint16_t freq_hz) override;
+    uint16_t get_freq(uint8_t ch) override;
+    void     write(uint8_t ch, uint16_t period_us) override;
+
+    void     cork() override;
+    void     push() override;
+
+    uint16_t read(uint8_t ch) override;
+    void     read(uint16_t* period_us, uint8_t len) override;
+
+    void     enable_ch(uint8_t ch) override;
+    void     disable_ch(uint8_t ch) override;
+    bool     force_safety_on() override;
+    void     force_safety_off() override;
+    bool     supports_gpio() override { return false; };
+
+    typedef struct {
+        uint8_t num_channels;
+        RCOutput *output;
+    } RCOutputGroup;
 
 private:
-    uint8_t num_inputs;
-    RCInput **inputs;
+    uint8_t num_outputs;
+    RCOutputGroup *outputs;
+    bool resolve_channel(uint8_t ch, uint8_t & gid, uint8_t &cid);
 };
-};
+
+}
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE
