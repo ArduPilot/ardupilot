@@ -99,8 +99,8 @@ const AP_Param::Info Sub::var_info[] = {
 #if AP_SUB_RC_ENABLED        
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
-    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
-    // @Values:  0:Disabled,1: Warn only but prevent arming,2:Surface on throttle failsafe 
+    // @Description: The throttle failsafe allows you to configure a software RC failsafe activated by a setting on the throttle input channel. It also enables RC failsafe on absence of RC signals being recieved.
+    // @Values:  0:Disabled,1: Force effective control inputs to trim positions and prevent arming,2:Surface and hold on surface on failsafe 
     // @User: Standard
     GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   0),
 

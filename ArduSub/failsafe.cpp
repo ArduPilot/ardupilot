@@ -536,6 +536,8 @@ void Sub::failsafe_radio_on_event()
             set_mode(Mode::Number::SURFACE, ModeReason::RADIO_FAILSAFE);
             break;
         case FS_THR_WARN:
+            set_neutral_controls();
+            break;
         case FS_THR_DISABLED:
             break;
     }    
