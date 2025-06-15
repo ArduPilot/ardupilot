@@ -213,6 +213,9 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
         return;
     }
 
+    // perform any required parameter conversion
+    convert_params();
+
     // init as target TARGET_NEVER_SEEN, we will update this later
     _current_target_state = TargetState::TARGET_NEVER_SEEN;
 
@@ -270,6 +273,25 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
 
     _approach_vector_body.x = 1;
     _approach_vector_body.rotate(_orient);
+}
+
+void AC_PrecLand::convert_params()
+{
+    //convert _yaw_align to _orient
+    if (_orient.configured()) {
+        // exit immediately if _orient has already been configured
+        return;
+    }
+    int orient = 0;
+    if (AP_Param::get_param_by_index(this, 2, AP_FLOAT, &orient)) {
+        if (orient>22) {
+        orient = (int((orient*0.01)/22.5) -1)/2 + 1;
+        }
+        else {
+            orient=0;
+        }
+        _orient.set_and_save(orient);
+    }
 }
 
 // update - give chance to driver to get updates from sensor
