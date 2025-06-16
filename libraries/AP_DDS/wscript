@@ -5,7 +5,7 @@ import pathlib
 
 
 def configure(cfg):
-    if cfg.env.OPTIONS['enable_DDS'] is False:
+    if cfg.env.OPTIONS.get('enable_DDS', False) is False:
         return
 
     # check for microxrceddsgen
@@ -44,7 +44,7 @@ def configure(cfg):
 
 
 def build(bld):
-    if bld.env.OPTIONS['enable_DDS'] is False:
+    if bld.env.OPTIONS.get('enable_DDS', False) is False:
         return
 
     config_h_in = [
