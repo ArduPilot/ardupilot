@@ -1089,7 +1089,19 @@ class sitl_periph_battery_tag(sitl_periph):
             AP_PERIPH_RTC_ENABLED = 1,
             AP_PERIPH_RTC_GLOBALTIME_ENABLED = 1,
         )
-        
+
+class sitl_periph_can_to_serial(sitl_periph):
+    def configure_env(self, cfg, env):
+        cfg.env.AP_PERIPH = 1
+        super().configure_env(cfg, env)
+        env.DEFINES.update(
+            HAL_BUILD_AP_PERIPH = 1,
+            PERIPH_FW = 1,
+            CAN_APP_NODE_NAME = '"org.ardupilot.serial_passthrough"',
+            APJ_BOARD_ID = 101,
+
+        )
+
 class esp32(Board):
     abstract = True
     toolchain = 'xtensa-esp32-elf'
