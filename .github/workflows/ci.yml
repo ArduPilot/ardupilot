@@ -20,7 +20,7 @@ jobs:
           allow-prereleases: true
       - run: pip install --upgrade pip
       - run: pip install build numpy pytest
-      - run: pip install pysim
+      # - run: pip install pysim
                  # ament_copyright ament_pep257 ccache vehicle_test_suite
       - run: python -m build || true
       - run: pytest
