@@ -18,12 +18,6 @@ int16_t yTrim = 0;
 int16_t x_last, y_last, z_last;
 uint32_t buttons_prev;
 
-// Servo control output channels
-// TODO: Allow selecting output channels
-const uint8_t SERVO_CHAN_1 = 9; // Pixhawk Aux1
-const uint8_t SERVO_CHAN_2 = 10; // Pixhawk Aux2
-const uint8_t SERVO_CHAN_3 = 11; // Pixhawk Aux3
-
 bool controls_reset_since_input_hold = true;
 }
 
@@ -427,177 +421,170 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
 
     ////////////////////////////////////////////////
     // Servo functions
-    // TODO: initialize
 #if AP_SERVORELAYEVENTS_ENABLED
     case JSButton::button_function_t::k_servo_1_inc:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
-        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_1 - 1); // 0-indexed
-        pwm_out = constrain_int16(pwm_out + 50, chan->get_output_min(), chan->get_output_max());
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, pwm_out); // 1-indexed
-    }
+        sub.g2.actuators.increase_actuator(0);
         break;
-    case JSButton::button_function_t::k_servo_1_dec:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
-        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_1 - 1); // 0-indexed
-        pwm_out = constrain_int16(pwm_out - 50, chan->get_output_min(), chan->get_output_max());
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, pwm_out); // 1-indexed
-    }
+    case JSButton::button_function_t::k_servo_2_inc:
+        sub.g2.actuators.increase_actuator(1);
         break;
-    case JSButton::button_function_t::k_servo_1_min:
-    case JSButton::button_function_t::k_servo_1_min_momentary:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_output_min()); // 1-indexed
-    }
+    case JSButton::button_function_t::k_servo_3_inc:
+        sub.g2.actuators.increase_actuator(2);
         break;
-    case JSButton::button_function_t::k_servo_1_min_toggle:
-        if(!held) {
-            SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
-            if(chan->get_output_pwm() != chan->get_output_min()) {
-                ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_output_min()); // 1-indexed
-            } else {
-                ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_trim()); // 1-indexed
-            }
-        }
+    case JSButton::button_function_t::k_servo_4_inc:
+        sub.g2.actuators.increase_actuator(3);
         break;
-    case JSButton::button_function_t::k_servo_1_max:
-    case JSButton::button_function_t::k_servo_1_max_momentary:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_output_max()); // 1-indexed
-    }
+    case JSButton::button_function_t::k_servo_5_inc:
+        sub.g2.actuators.increase_actuator(4);
         break;
-    case JSButton::button_function_t::k_servo_1_max_toggle:
-        if(!held) {
-            SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
-            if(chan->get_output_pwm() != chan->get_output_max()) {
-                ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_output_max()); // 1-indexed
-            } else {
-                ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_trim()); // 1-indexed
-            }
-        }
-        break;
-    case JSButton::button_function_t::k_servo_1_center:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_trim()); // 1-indexed
-    }
+    case JSButton::button_function_t::k_servo_6_inc:
+        sub.g2.actuators.increase_actuator(5);
         break;
 
-    case JSButton::button_function_t::k_servo_2_inc:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
-        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_2 - 1); // 0-indexed
-        pwm_out = constrain_int16(pwm_out + 50, chan->get_output_min(), chan->get_output_max());
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, pwm_out); // 1-indexed
-    }
+    case JSButton::button_function_t::k_servo_1_dec:
+        sub.g2.actuators.decrease_actuator(0);
         break;
     case JSButton::button_function_t::k_servo_2_dec:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
-        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_2 - 1); // 0-indexed
-        pwm_out = constrain_int16(pwm_out - 50, chan->get_output_min(), chan->get_output_max());
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, pwm_out); // 1-indexed
-    }
+        sub.g2.actuators.decrease_actuator(1);
+        break;
+    case JSButton::button_function_t::k_servo_3_dec:
+        sub.g2.actuators.decrease_actuator(2);
+        break;
+    case JSButton::button_function_t::k_servo_4_dec:
+        sub.g2.actuators.decrease_actuator(3);
+        break;
+    case JSButton::button_function_t::k_servo_5_dec:
+        sub.g2.actuators.decrease_actuator(4);
+        break;
+    case JSButton::button_function_t::k_servo_6_dec:
+        sub.g2.actuators.decrease_actuator(5);
+        break;
+
+    case JSButton::button_function_t::k_servo_1_min:
+    case JSButton::button_function_t::k_servo_1_min_momentary:
+        sub.g2.actuators.min_actuator(0);
         break;
     case JSButton::button_function_t::k_servo_2_min:
     case JSButton::button_function_t::k_servo_2_min_momentary:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_output_min()); // 1-indexed
-    }
-        break;
-    case JSButton::button_function_t::k_servo_2_min_toggle:
-        if(!held) {
-            SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
-            if(chan->get_output_pwm() != chan->get_output_min()) {
-                ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_output_min()); // 1-indexed
-            } else {
-                ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_trim()); // 1-indexed
-            }
-        }
-        break;
-    case JSButton::button_function_t::k_servo_2_max:
-    case JSButton::button_function_t::k_servo_2_max_momentary:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_output_max()); // 1-indexed
-    }
-        break;
-    case JSButton::button_function_t::k_servo_2_max_toggle:
-        if(!held) {
-            SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
-            if(chan->get_output_pwm() != chan->get_output_max()) {
-                ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_output_max()); // 1-indexed
-            } else {
-                ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_trim()); // 1-indexed
-            }
-        }
-        break;
-    case JSButton::button_function_t::k_servo_2_center:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_trim()); // 1-indexed
-    }
-        break;
-
-    case JSButton::button_function_t::k_servo_3_inc:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
-        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_3 - 1); // 0-indexed
-        pwm_out = constrain_int16(pwm_out + 50, chan->get_output_min(), chan->get_output_max());
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, pwm_out); // 1-indexed
-    }
-        break;
-    case JSButton::button_function_t::k_servo_3_dec:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
-        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_3 - 1); // 0-indexed
-        pwm_out = constrain_int16(pwm_out - 50, chan->get_output_min(), chan->get_output_max());
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, pwm_out); // 1-indexed
-    }
+        sub.g2.actuators.min_actuator(1);
         break;
     case JSButton::button_function_t::k_servo_3_min:
     case JSButton::button_function_t::k_servo_3_min_momentary:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_output_min()); // 1-indexed
-    }
+        sub.g2.actuators.min_actuator(2);
+        break;
+    case JSButton::button_function_t::k_servo_4_min:
+    case JSButton::button_function_t::k_servo_4_min_momentary:
+        sub.g2.actuators.min_actuator(3);
+        break;
+    case JSButton::button_function_t::k_servo_5_min:
+    case JSButton::button_function_t::k_servo_5_min_momentary:
+        sub.g2.actuators.min_actuator(4);
+        break;
+    case JSButton::button_function_t::k_servo_6_min:
+    case JSButton::button_function_t::k_servo_6_min_momentary:
+        sub.g2.actuators.min_actuator(5);
+        break;
+
+    case JSButton::button_function_t::k_servo_1_min_toggle:
+        if (!held) {
+            sub.g2.actuators.min_toggle_actuator(0);
+        }
+        break;
+    case JSButton::button_function_t::k_servo_2_min_toggle:
+        if (!held) {
+            sub.g2.actuators.min_toggle_actuator(1);
+        }
         break;
     case JSButton::button_function_t::k_servo_3_min_toggle:
-        if(!held) {
-            SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
-            if(chan->get_output_pwm() != chan->get_output_min()) {
-                ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_output_min()); // 1-indexed
-            } else {
-                ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_trim()); // 1-indexed
-            }
+        if (!held) {
+            sub.g2.actuators.min_toggle_actuator(2);
         }
+        break;
+    case JSButton::button_function_t::k_servo_4_min_toggle:
+        if (!held) {
+            sub.g2.actuators.min_toggle_actuator(3);
+        }
+        break;
+    case JSButton::button_function_t::k_servo_5_min_toggle:
+        if (!held) {
+            sub.g2.actuators.min_toggle_actuator(4);
+        }
+        break;
+    case JSButton::button_function_t::k_servo_6_min_toggle:
+        if (!held) {
+            sub.g2.actuators.min_toggle_actuator(5);
+        }
+        break;
+
+    case JSButton::button_function_t::k_servo_1_max:
+    case JSButton::button_function_t::k_servo_1_max_momentary:
+        sub.g2.actuators.max_actuator(0);
+        break;
+    case JSButton::button_function_t::k_servo_2_max:
+    case JSButton::button_function_t::k_servo_2_max_momentary:
+        sub.g2.actuators.max_actuator(1);
         break;
     case JSButton::button_function_t::k_servo_3_max:
     case JSButton::button_function_t::k_servo_3_max_momentary:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_output_max()); // 1-indexed
-    }
+        sub.g2.actuators.max_actuator(2);
         break;
-    case JSButton::button_function_t::k_servo_3_max_toggle:
-        if(!held) {
-            SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
-            if(chan->get_output_pwm() != chan->get_output_max()) {
-                ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_output_max()); // 1-indexed
-            } else {
-                ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_trim()); // 1-indexed
-            }
+    case JSButton::button_function_t::k_servo_4_max:
+    case JSButton::button_function_t::k_servo_4_max_momentary:
+        sub.g2.actuators.max_actuator(3);
+        break;
+    case JSButton::button_function_t::k_servo_5_max:
+    case JSButton::button_function_t::k_servo_5_max_momentary:
+        sub.g2.actuators.max_actuator(4);
+        break;
+
+    case JSButton::button_function_t::k_servo_1_max_toggle:
+        if (!held) {
+            sub.g2.actuators.max_toggle_actuator(0);
         }
         break;
+    case JSButton::button_function_t::k_servo_2_max_toggle:
+        if (!held) {
+            sub.g2.actuators.max_toggle_actuator(1);
+        }
+        break;
+    case JSButton::button_function_t::k_servo_3_max_toggle:
+        if (!held) {
+            sub.g2.actuators.max_toggle_actuator(2);
+        }
+        break;
+    case JSButton::button_function_t::k_servo_4_max_toggle:
+        if (!held) {
+            sub.g2.actuators.max_toggle_actuator(3);
+        }
+        break;
+    case JSButton::button_function_t::k_servo_5_max_toggle:
+        if (!held) {
+            sub.g2.actuators.max_toggle_actuator(4);
+        }
+        break;
+    case JSButton::button_function_t::k_servo_6_max_toggle:
+        if (!held) {
+            sub.g2.actuators.max_toggle_actuator(5);
+        }
+        break;
+
+    case JSButton::button_function_t::k_servo_1_center:
+        sub.g2.actuators.center_actuator(0);
+        break;
+    case JSButton::button_function_t::k_servo_2_center:
+        sub.g2.actuators.center_actuator(1);
+        break;
     case JSButton::button_function_t::k_servo_3_center:
-    {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_trim()); // 1-indexed
-    }
+        sub.g2.actuators.center_actuator(2);
+        break;
+    case JSButton::button_function_t::k_servo_4_center:
+        sub.g2.actuators.center_actuator(3);
+        break;
+    case JSButton::button_function_t::k_servo_5_center:
+        sub.g2.actuators.center_actuator(4);
+        break;
+    case JSButton::button_function_t::k_servo_6_center:
+        sub.g2.actuators.center_actuator(5);
         break;
 #endif  // AP_SERVORELAYEVENTS_ENABLED
 
@@ -671,22 +658,37 @@ void Sub::handle_jsbutton_release(uint8_t _button, bool shift) {
     case JSButton::button_function_t::k_servo_1_min_momentary:
     case JSButton::button_function_t::k_servo_1_max_momentary:
     {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_trim()); // 1-indexed
+        sub.g2.actuators.center_actuator(0);
     }
         break;
     case JSButton::button_function_t::k_servo_2_min_momentary:
     case JSButton::button_function_t::k_servo_2_max_momentary:
     {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_trim()); // 1-indexed
+        sub.g2.actuators.center_actuator(1);
     }
         break;
     case JSButton::button_function_t::k_servo_3_min_momentary:
     case JSButton::button_function_t::k_servo_3_max_momentary:
     {
-        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
-        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_trim()); // 1-indexed
+        sub.g2.actuators.center_actuator(2);
+    }
+        break;
+    case JSButton::button_function_t::k_servo_4_min_momentary:
+    case JSButton::button_function_t::k_servo_4_max_momentary:
+    {
+        sub.g2.actuators.center_actuator(3);
+    }
+        break;
+    case JSButton::button_function_t::k_servo_5_min_momentary:
+    case JSButton::button_function_t::k_servo_5_max_momentary:
+    {
+        sub.g2.actuators.center_actuator(4);
+    }
+        break;
+    case JSButton::button_function_t::k_servo_6_min_momentary:
+    case JSButton::button_function_t::k_servo_6_max_momentary:
+    {
+        sub.g2.actuators.center_actuator(5);
     }
         break;
 #endif
