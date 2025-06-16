@@ -116,6 +116,9 @@ void AP_Periph_FW::rcout_srv_unitless(uint8_t actuator_id, const float command_v
     const SRV_Channel::Function function = SRV_Channel::Function(SRV_Channel::k_rcin1 + actuator_id - 1);
     SRV_Channels::set_output_norm(function, command_value);
 
+    // Add to mask of channels that will be cleared if no commands are received
+    actuator.mask |= SRV_Channels::get_output_channel_mask(function);
+
     rcout_has_new_data_to_update = true;
 #if AP_SIM_ENABLED
     sim_update_actuator(actuator_id);
@@ -128,6 +131,9 @@ void AP_Periph_FW::rcout_srv_PWM(uint8_t actuator_id, const float command_value)
 #if HAL_PWM_COUNT > 0
     const SRV_Channel::Function function = SRV_Channel::Function(SRV_Channel::k_rcin1 + actuator_id - 1);
     SRV_Channels::set_output_pwm(function, uint16_t(command_value+0.5));
+
+    // Add to mask of channels that will be cleared if no commands are received
+    actuator.mask |= SRV_Channels::get_output_channel_mask(function);
 
     rcout_has_new_data_to_update = true;
 #if AP_SIM_ENABLED
@@ -150,6 +156,7 @@ void AP_Periph_FW::rcout_update()
 {
     uint32_t now_ms = AP_HAL::millis();
 
+    // Timeout for ESC commands
     const uint16_t esc_timeout_ms = g.esc_command_timeout_ms >= 0 ? g.esc_command_timeout_ms : 0; // Don't allow negative timeouts!
     const bool has_esc_rawcommand_timed_out = esc_timeout_ms != 0 && ((now_ms - last_esc_raw_command_ms) >= esc_timeout_ms);
     if (last_esc_num_channels > 0 && has_esc_rawcommand_timed_out) {
@@ -158,8 +165,28 @@ void AP_Periph_FW::rcout_update()
         memset(esc_output, 0, sizeof(esc_output));
         rcout_esc(esc_output, last_esc_num_channels);
 
+        // Don't need to run again until new commands have been received
+        last_esc_num_channels = 0;
+    }
+
+    // Timeout for servo actuator commands
+    const uint16_t servo_timeout_ms = g.servo_command_timeout_ms >= 0 ? g.servo_command_timeout_ms : 0; // Don't allow negative timeouts!
+    const bool has_servo_timed_out = servo_timeout_ms != 0 && ((now_ms - actuator.last_command_ms) >= servo_timeout_ms);
+    if (has_servo_timed_out && (actuator.mask != 0)) {
+#if HAL_PWM_COUNT > 0
+        // Output 0 PWM for each channel in the mask
+        for (uint8_t i = 0; i < HAL_PWM_COUNT; i++) {
+            if (((1U<<i) & actuator.mask) != 0) {
+                SRV_Channels::set_output_pwm_chan(i, 0);
+            }
+        }
+
         // register that the output has been changed
         rcout_has_new_data_to_update = true;
+#endif
+
+        // Don't need to run again until new commands have been received
+        actuator.mask = 0;
     }
 
     if (!rcout_has_new_data_to_update) {

@@ -364,6 +364,13 @@ public:
     uint32_t last_esc_raw_command_ms;
     uint8_t  last_esc_num_channels;
 
+    // Track channels that have been output to by actuator commands
+    // Note there is a single timeout, channels are not tracked individually
+    struct {
+        uint32_t last_command_ms;
+        uint32_t mask;
+    } actuator;
+
     void rcout_init();
     void rcout_init_1Hz();
     void rcout_esc(int16_t *rc, uint8_t num_channels);

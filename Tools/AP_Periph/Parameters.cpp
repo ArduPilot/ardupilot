@@ -748,6 +748,16 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(_gcs,           "MAV",  GCS),
 #endif
 
+#if AP_PERIPH_RC_OUT_ENABLED
+    // @Param: SRV_CMD_TIME_OUT
+    // @DisplayName: Servo Command Timeout
+    // @Description: This is the duration (ms) with which to hold the last driven servo command before timing out and zeroing the servo outputs. To disable zeroing of outputs in event of CAN loss, use 0. Use values greater than the expected duration between two CAN frames to ensure Periph is not starved of ESC Raw Commands.
+    // @Range: 0 10000
+    // @Units: ms
+    // @User: Advanced
+    GSCALAR(servo_command_timeout_ms, "SRV_CMD_TIME_OUT", 200),
+#endif
+
     AP_VAREND
 };
 
