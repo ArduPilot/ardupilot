@@ -204,6 +204,7 @@ void Sub::fifty_hz_loop()
 #if !AP_SUB_RC_ENABLED
     rc().read_input();
 #endif
+    g2.actuators.update_actuators();
 }
 
 // update_batt_compass - read battery and compass
