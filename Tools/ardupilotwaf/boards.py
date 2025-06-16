@@ -103,7 +103,7 @@ class Board:
                 if "#define AP_DDS_ENABLED 1" in file.read():
                     # Enable DDS if the hwdef file has it enabled
                     cfg.env.OPTIONS['enable_DDS'] = True
-                elif cfg.env.OPTIONS['enable_DDS']:
+                elif cfg.env.OPTIONS.get('enable_DDS', False):
                     # Add the define enabled if the hwdef file does not have it and the commandline option is set
                     env.DEFINES.update(
                         AP_DDS_ENABLED=1,
