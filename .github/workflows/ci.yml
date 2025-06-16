@@ -23,8 +23,7 @@ jobs:
       # - run: pip install pysim
                  # ament_copyright ament_pep257 ccache vehicle_test_suite
       - run: python -m build || true
-      - run: |
-          pytest \
+      - run: pytest \
                --ignore=modules/DroneCAN/pydronecan/test/dsdl/test_common.py \
                --ignore=modules/DroneCAN/pydronecan/test/dsdl/test_load_dsdl.py \
                --ignore=modules/DroneCAN/pydronecan/test/dsdl/test_parser.py \
