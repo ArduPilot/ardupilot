@@ -376,9 +376,6 @@ private:
         // number of low throttle values
         uint8_t throttle_counter;
 
-        // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
-        uint32_t short_timer_ms;
-
         uint32_t last_valid_rc_ms;
 
         //keeps track of the last valid rc as it relates to the AFS system
