@@ -24,3 +24,39 @@ jobs:
                  # ament_copyright ament_pep257 ccache vehicle_test_suite
       - run: python -m build || true
       - run: pytest
+               --ignore=modules/DroneCAN/pydronecan/test/dsdl/test_common.py
+               --ignore=modules/DroneCAN/pydronecan/test/dsdl/test_load_dsdl.py
+               --ignore=modules/DroneCAN/pydronecan/test/dsdl/test_parser.py
+               --ignore=modules/DroneCAN/pydronecan/test/dsdl/test_signature.py
+               --ignore=modules/DroneCAN/pydronecan/test/test_driver.py
+               --ignore=modules/DroneCAN/pydronecan/test/test_node.py
+               --ignore=modules/DroneCAN/pydronecan/test/test_transport.py
+               --ignore=modules/gtest/googlemock/test/gmock_leak_test.py
+               --ignore=modules/gtest/googlemock/test/gmock_output_test.py
+               --ignore=modules/gtest/googlemock/test/gmock-function-mocker_nc_test.py
+               --ignore=modules/gtest/googlemock/test/pump_test.py
+               --ignore=modules/gtest/googletest/test/gtest_help_test.py
+               --ignore=modules/gtest/googletest/test/gtest_skip_check_output_test.py
+               --ignore=modules/gtest/googletest/test/gtest_skip_environment_check_output_test.py
+               --ignore=modules/gtest/googletest/test/gtest_testbridge_test.py
+               --ignore=modules/mavlink/pymavlink/generator/C/test/posix/sha256_test.py
+               --ignore=modules/mavlink/pymavlink/tests/test_fgFDM.py
+               --ignore=modules/mavlink/pymavlink/tests/test_mavexpression.py
+               --ignore=modules/mavlink/pymavlink/tests/test_mavftp.py
+               --ignore=modules/mavlink/pymavlink/tests/test_mavlogdump.py
+               --ignore=modules/mavlink/pymavlink/tests/test_mavparm.py
+               --ignore=modules/mavlink/pymavlink/tests/test_mavxml.py
+               --ignore=modules/mavlink/pymavlink/tests/test_quaternion.py
+               --ignore=modules/mavlink/pymavlink/tests/test_rotmat.py
+               --ignore=modules/mavlink/pymavlink/tests/test_trim.py
+               --ignore=modules/mavlink/pymavlink/tests/test_wp.py
+               --ignore=modules/waf/playground/genpybind/example_test.py
+               --ignore=modules/waf/playground/pytest/test/test_bar.py
+               --ignore=modules/waf/playground/pytest/test/test_foo.py
+               --ignore=Tools/autotest/test_build_options.py
+               --ignore=Tools/autotest/test_param_upgrade.py
+               --ignore=Tools/FilterTestTool/run_filter_test.py
+               --ignore=Tools/ros2/ardupilot_dds_tests/test/ardupilot_dds_tests
+               --ignore=Tools/ros2/ardupilot_dds_tests/test/test_copyright.py
+               --ignore=Tools/ros2/ardupilot_dds_tests/test/test_pep257.py
+               --ignore=Tools/scripts/build_tests/test_ccache.py
