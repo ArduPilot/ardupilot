@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# flake8: noqa
+
 '''
 combined two aerobatics logs to generate a new log for showing the combined
 path of more than one aircraft

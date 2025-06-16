@@ -17,6 +17,9 @@ This model assumes an X frame quadcopter, so you will need:
   FRAME_CLASS 1
   FRAME_TYPE 1
 '''
+
+# flake8: noqa
+
 from morse.builder import *
 
 # use the ATRV rover
