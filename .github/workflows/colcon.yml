@@ -175,9 +175,7 @@ jobs:
         run: |
           apt update
           rosdep update
-          # Workaround for flake8 attribute error
-          # https://github.com/ArduPilot/ardupilot/pull/24277#issuecomment-1632833433
-          python3 -m pip install flake8==3.7.9
+          python3 -m pip install flake8
           source /opt/ros/humble/setup.bash
           rosdep install --from-paths src --ignore-src --default-yes
       - name: Install MAVProxy
