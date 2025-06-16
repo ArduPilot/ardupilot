@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+# flake8: noqa
+
 """
 Waf tool for defining ardupilot's submodules, so that they are kept up to date.
 Submodules can be considered dynamic sources, since they are updated during the

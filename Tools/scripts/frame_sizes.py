@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# flake8: noqa
+
 import re, sys, operator, os
 
 code_line = re.compile("^\s*\d+:/")

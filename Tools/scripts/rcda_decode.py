@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# flake8: noqa
+
 '''
 decode RCDA messages from a log and optionally play back to a serial port. The RCDA message is
 captures RC input bytes when RC_OPTIONS=16 is set

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# flake8: noqa
+
 """
 script to run configure for all hwdef.dat, to check for syntax errors
 """

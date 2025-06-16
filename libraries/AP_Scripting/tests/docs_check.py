@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# flake8: noqa
+ 
 '''
 Reads two lua docs files and checks for differences
 

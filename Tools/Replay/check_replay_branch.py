@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# flake8: noqa
+
 '''
 Create a replay log using master branch.
 Check out a specified branch, compile and run Replay against replay log

@@ -1,3 +1,5 @@
+# flake8: noqa
+
 class VehicleInfo(object):
 
     def __init__(self):

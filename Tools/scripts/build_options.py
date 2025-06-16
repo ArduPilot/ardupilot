@@ -378,6 +378,7 @@ BUILD_OPTIONS = [
     Feature('Other', 'Logging', 'HAL_LOGGING_ENABLED', 'Enable Logging', 0, None),
     Feature('Other', 'CUSTOM_ROTATIONS', 'AP_CUSTOMROTATIONS_ENABLED', 'Enable Custom  sensor rotations', 0, None),
     Feature('Other', 'PID_FILTERING', 'AP_FILTER_ENABLED', 'Enable PID filtering', 0, None),
+    Feature('Other', 'POLYFENCE_CIRCLE_INT_SUPPORT', 'AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED', 'Fence circle compatability', 0, None),  # NOQA:E501
 
     # MAVLink section for mavlink features and/or message handling,
     # rather than for e.g. mavlink-based sensor drivers
@@ -397,7 +398,7 @@ BUILD_OPTIONS = [
     Feature('MAVLink', 'VIDEO_STREAM_INFORMATION', 'AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'Enable MAVLink VIDEO_STREAM_INFORMATION message', 0, "Camera"), # noqa
     Feature('Other', 'AP_FOLLOW', 'AP_FOLLOW_ENABLED', 'Enable Follow library', 0, None),
     Feature('MAVLink', 'MAVLINK_MSG_FLIGHT_INFORMATION', 'AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'Enable FLIGHT_INFORMATION MAVLink message', 0, None),  # noqa
-    Feature('MAVLink', 'RANGEFINDER_SENDING', 'AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED', 'Enable sending of RANGEFINDER mavlink message', 0, None),  # noqa
+    Feature('MAVLink', 'RANGEFINDER_SENDING', 'AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED', 'Enable sending of RANGEFINDER mavlink message', 0, "RANGEFINDER"),  # noqa
 
     Feature('Developer', 'KILL_IMU', 'AP_INERTIALSENSOR_KILL_IMU_ENABLED', 'Allow IMUs to be disabled at runtime', 0, None),
     Feature('Developer', 'CRASHCATCHER', 'AP_CRASHDUMP_ENABLED', 'Enable CrashCatcher', 0, None),

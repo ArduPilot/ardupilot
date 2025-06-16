@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+# flake8: noqa
+
 """
 Bring up ArduPilot SITL and check the GeoPoseStamped message is being published.
 

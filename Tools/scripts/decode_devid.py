@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+
+# flake8: noqa
+
 '''
 decode a device ID, such as used for COMPASS_DEV_ID, INS_ACC_ID etc
 

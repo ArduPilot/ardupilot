@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# flake8: noqa
+
 import re
 from enum import StrEnum # requires Python >= 3.11
 from pathlib import Path

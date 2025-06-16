@@ -82,7 +82,7 @@ Run the simulator with the following command. If using UDP, the only parameter y
 ```console
 # Wipe params till you see "AP: ArduPilot Ready"
 # Select your favorite vehicle type
-sim_vehicle.py -w -v ArduPlane --console -DG --enable-dds
+sim_vehicle.py -w -v ArduPlane --console -DG --enable-DDS
 
 # Only set this for Serial, which means 115200 baud
 param set SERIAL1_BAUD 115
@@ -115,7 +115,7 @@ Next, follow the associated section for your chosen transport, and finally you c
   ```
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
   ```console
-  sim_vehicle.py -v ArduPlane -DG --console --enable-dds
+  sim_vehicle.py -v ArduPlane -DG --console --enable-DDS
   ```
 
 ### Serial
@@ -136,7 +136,7 @@ Next, follow the associated section for your chosen transport, and finally you c
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
   ```console
   # assuming we are using /dev/pts/1 for Ardupilot SITL
-  sim_vehicle.py -v ArduPlane -DG --console --enable-dds -A "--serial1=uart:/dev/pts/1"
+  sim_vehicle.py -v ArduPlane -DG --console --enable-DDS -A "--serial1=uart:/dev/pts/1"
   ```
 
 ## Use ROS 2 CLI

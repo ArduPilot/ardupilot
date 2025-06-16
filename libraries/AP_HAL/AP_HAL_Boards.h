@@ -54,7 +54,7 @@
    boards do not need a subtype defined. It is only needed if we need
    to use #ifdef'd code to change behaviour
 */
-#define HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412	5000
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412	5000
 #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3         5001
 // #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4         5002
 #define HAL_BOARD_SUBTYPE_CHIBIOS_GENERIC       5009
