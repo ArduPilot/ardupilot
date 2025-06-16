@@ -151,7 +151,7 @@ class ChibiOSHWDef(hwdef.HWDef):
         '''return alternative function number for a pin'''
         lib = self.get_mcu_lib(mcu)
 
-        if function.endswith('_TXINV') or function.endswith('_RXINV'):
+        if function.endswith(('_TXINV', '_RXINV')):
             # RXINV and TXINV are special labels for inversion pins, not alt-functions
             return None
 
@@ -164,8 +164,8 @@ class ChibiOSHWDef(hwdef.HWDef):
                     return 0
             return None
 
-        if function and (function.endswith("_RTS") or function.endswith("_CTS_GPIO")) and (
-                function.startswith('USART') or function.startswith('UART')):
+        if function and function.endswith(("_RTS", "_CTS_GPIO")) and (
+                function.startswith(('USART', 'UART'))):
             # we do software RTS and can do either software CTS or hardware CTS
             return None
 
@@ -768,7 +768,7 @@ class ChibiOSHWDef(hwdef.HWDef):
     def get_flash_pages_sizes(self):
         mcu_series = self.mcu_series
         mcu_type = self.mcu_type
-        if mcu_series.startswith('STM32F4') or mcu_series.startswith('CKS32F4'):
+        if mcu_series.startswith(('STM32F4', 'CKS32F4')):
             if self.get_config('FLASH_SIZE_KB', type=int) == 512:
                 return [16, 16, 16, 16, 64, 128, 128, 128]
             elif self.get_config('FLASH_SIZE_KB', type=int) == 1024:
@@ -798,15 +798,12 @@ class ChibiOSHWDef(hwdef.HWDef):
             return [8] * (self.get_config('FLASH_SIZE_KB', type=int)//8)
         elif mcu_series.startswith('STM32H7'):
             return [128] * (self.get_config('FLASH_SIZE_KB', type=int)//128)
-        elif mcu_series.startswith('STM32F100') or mcu_series.startswith('STM32F103'):
+        elif mcu_series.startswith(('STM32F100', 'STM32F103')):
             return [1] * self.get_config('FLASH_SIZE_KB', type=int)
         elif mcu_series.startswith('STM32L4') and self.mcu_type.startswith('STM32L4R'):
             # STM32L4PLUS
             return [4] * (self.get_config('FLASH_SIZE_KB', type=int)//4)
-        elif (mcu_series.startswith('STM32F105') or
-              mcu_series.startswith('STM32F3') or
-              mcu_series.startswith('STM32G4') or
-              mcu_series.startswith('STM32L4')):
+        elif mcu_series.startswith(('STM32F105', 'STM32F3', 'STM32G4', 'STM32L4')):
             return [2] * (self.get_config('FLASH_SIZE_KB', type=int)//2)
         else:
             raise Exception("Unsupported flash size MCU %s" % mcu_series)
@@ -1550,7 +1547,7 @@ INCLUDE common.ld
         # only the bootloader must run the hal lld (and QSPI clock) otherwise it is not possible to
         # bootstrap into external flash
         for t in list(self.bytype.keys()) + list(self.alttype.keys()):
-            if (t.startswith('QUADSPI') or t.startswith('OCTOSPI')) and not self.is_bootloader_fw():
+            if t.startswith(('QUADSPI', 'OCTOSPI')) and not self.is_bootloader_fw():
                 f.write('#define HAL_XIP_ENABLED TRUE\n')
 
         if len(self.wspidev) == 0:
@@ -1559,7 +1556,7 @@ INCLUDE common.ld
 
         for t in list(self.bytype.keys()) + list(self.alttype.keys()):
             self.progress(t)
-            if t.startswith('QUADSPI') or t.startswith('OCTOSPI'):
+            if t.startswith(('QUADSPI', 'OCTOSPI')):
                 self.wspi_list.append(t)
 
         wspi_list = sorted(self.wspi_list)
@@ -2395,7 +2392,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         '''write peripheral enable lines'''
         f.write('// peripherals enabled\n')
         for type in sorted(list(self.bytype.keys()) + list(self.alttype.keys())):
-            if type.startswith('USART') or type.startswith('UART'):
+            if type.startswith(('USART', 'UART')):
                 dstr = 'STM32_SERIAL_USE_%-6s' % type
                 f.write('#ifndef %s\n' % dstr)
                 f.write('#define %s TRUE\n' % dstr)
@@ -2671,7 +2668,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
             if type.startswith('ADC'):
                 peripherals.append(type)
-            if type.startswith('SDIO') or type.startswith('SDMMC'):
+            if type.startswith(('SDIO', 'SDMMC')):
                 if not self.mcu_series.startswith("STM32H7"):
                     peripherals.append(type)
             if type.startswith('TIM'):
