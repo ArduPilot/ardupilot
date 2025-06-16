@@ -2370,7 +2370,7 @@ bool ModeAuto::paused() const
 /*
   get a height above ground estimate for landing
  */
-int32_t ModeAuto::get_alt_above_ground_cm()
+int32_t ModeAuto::get_alt_above_ground_cm() const
 {
     // Only override if in landing submode
     if (_mode == SubMode::LAND) {

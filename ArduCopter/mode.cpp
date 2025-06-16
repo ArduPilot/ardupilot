@@ -600,7 +600,7 @@ void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
 /*
   get a height above ground estimate for landing
  */
-int32_t Mode::get_alt_above_ground_cm(void)
+int32_t Mode::get_alt_above_ground_cm(void) const
 {
     int32_t alt_above_ground_cm;
     if (copter.get_rangefinder_height_interpolated_cm(alt_above_ground_cm)) {
