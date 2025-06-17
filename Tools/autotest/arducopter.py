@@ -13024,11 +13024,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         gpis = []
         gps_raws = []
+        attitudes = []
 
         self.takeoff(10, mode='GUIDED')
         self.set_rc(12, 2000)
         gpis.append(self.assert_receive_message('GLOBAL_POSITION_INT'))
         gps_raws.append(self.assert_receive_message('GPS_RAW_INT'))
+        attitudes.append(self.assert_receive_message('ATTITUDE'))
         self.set_rc(12, 1000)
 
         self.fly_guided_move_local(0, 0, 20)
@@ -13036,7 +13038,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(12, 2000)
         gpis.append(self.assert_receive_message('GLOBAL_POSITION_INT'))
         gps_raws.append(self.assert_receive_message('GPS_RAW_INT'))
+        attitudes.append(self.assert_receive_message('ATTITUDE'))
         self.set_rc(12, 1000)
+
+        self.change_mode('LOITER')
+        self.set_rc(1, 1000)
+        self.set_rc(2, 1000)
+        self.delay_sim_time(5)
+        self.set_rc(12, 2000)
+        gpis.append(self.assert_receive_message('GLOBAL_POSITION_INT'))
+        gps_raws.append(self.assert_receive_message('GPS_RAW_INT'))
+        attitudes.append(self.assert_receive_message('ATTITUDE'))
+        self.set_rc(12, 1000)
+        self.set_rc(1, 1500)
+        self.set_rc(2, 1500)
 
         dfreader = self.dfreader_for_current_onboard_log()
         self.do_RTL()
@@ -13044,12 +13059,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         for i in range(len(gpis)):
             gpi = gpis[i]
             gps_raw = gps_raws[i]
+            attitude = attitudes[i]
             m = dfreader.recv_match(type="CAM")
 
             things = [
                 ["absalt", gpi.alt*0.001, m.Alt],
                 ["relalt", gpi.relative_alt*0.001, m.RelAlt],
                 ["gpsalt", gps_raw.alt*0.001, m.GPSAlt],  # use GPS_RAW here?
+                ["R", math.degrees(attitude.roll), m.R],
+                ["P", math.degrees(attitude.pitch), m.P],
+                ["Y", mavextra.wrap_360(math.degrees(attitude.yaw)), m.Y],
             ]
             for (name, want, got) in things:
                 if abs(got - want) > 1:
