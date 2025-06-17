@@ -120,7 +120,7 @@ public:
         k_param_rc_13_old,
         k_param_rc_14_old,
         k_param_rally,
-        k_param_poshold_brake_rate,
+        k_param_poshold_brake_rate_degs,
         k_param_poshold_brake_angle_max,
         k_param_pilot_accel_z,
         k_param_serial0_baud,           // deprecated - remove
@@ -413,7 +413,7 @@ public:
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
 
 #if MODE_POSHOLD_ENABLED
-    AP_Int16        poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
+    AP_Int16        poshold_brake_rate_degs;    // PosHold flight mode's rotation rate during braking in deg/sec
     AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
 #endif
 
