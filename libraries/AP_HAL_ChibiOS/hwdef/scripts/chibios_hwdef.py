@@ -2959,29 +2959,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         super(ChibiOSHWDef, self).process_line_env(line, depth, a)
 
-    def process_file(self, filename, depth=0):
-        '''process a hwdef.dat file'''
-        try:
-            f = open(filename, "r")
-        except Exception:
-            self.error("Unable to open file %s" % filename)
-        for line in f.readlines():
-            line = line.split('#')[0] # ensure we discard the comments
-            line = line.strip()
-            if len(line) == 0 or line[0] == '#':
-                continue
-            a = shlex.split(line)
-            if a[0] == "include" and len(a) > 1:
-                include_file = a[1]
-                if include_file[0] != '/':
-                    dir = os.path.dirname(filename)
-                    include_file = os.path.normpath(
-                        os.path.join(dir, include_file))
-                self.progress("Including %s" % include_file)
-                self.process_file(include_file, depth+1)
-            else:
-                self.process_line(line, depth)
-
     def add_apperiph_defaults(self, f):
         '''add default defines for peripherals'''
         if not self.is_periph_fw():
