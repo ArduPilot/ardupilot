@@ -1,31 +1,107 @@
 #!/usr/bin/env python3
 
-import os
-import re
-import fnmatch
-from collections.abc import Collection
-
 '''
 list of boards for build_binaries.py and custom build server
 
 AP_FLAKE8_CLEAN
 '''
 
+import os
+import re
+import sys
+import fnmatch
+from collections.abc import Collection
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL/hwdef/scripts'))
+import hwdef  # noqa:E402
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
+import chibios_hwdef  # noqa:E402
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_Linux/hwdef/scripts'))
+import linux_hwdef  # noqa:E402
+
 
 class Board(object):
-    def __init__(self, name):
+    def __init__(self, name : str, directory : str = None) -> None:
         self.name = name
         self.is_ap_periph = False
         self.toolchain = 'arm-eabi-none'  # FIXME: try to remove this?
         self.autobuild_targets = [
-            'Tracker',
-            'Blimp',
-            'Copter',
-            'Heli',
-            'Plane',
-            'Rover',
-            'Sub',
+            'antennatracker',
+            'blimp',
+            'copter',
+            'heli',
+            'plane',
+            'rover',
+            'sub',
         ]
+        self.directory = directory
+
+    def __repr__(self):
+        return f"Board({self.name})"
+
+    def get_HWDef(self) -> hwdef.HWDef:
+        '''return a HWDef object for the board'''
+        if "AP_HAL_ChibiOS" in self.directory:
+            cls = chibios_hwdef.ChibiOSHWDef
+        elif "AP_HAL_Linux" in self.directory:
+            cls = linux_hwdef.LinuxHWDef
+        else:
+            raise ValueError(f"Unknown hwdef dir {self.directory}")
+
+        hwdef_filepath = os.path.join(self.directory, "hwdef.dat")
+        hwdef = cls(hwdef=[hwdef_filepath], quiet=True)
+        hwdef.process_hwdefs()
+        return hwdef
+
+    def get_HWDef_bootloader(self) -> hwdef.HWDef:
+        '''return a HWDef object for the board - bootloader edition!'''
+        if "AP_HAL_ChibiOS" in self.directory:
+            cls = chibios_hwdef.ChibiOSHWDef
+        elif "AP_HAL_Linux" in self.directory:
+            cls = linux_hwdef.LinuxHWDef
+        else:
+            raise ValueError(f"Unknown hwdef dir {self.directory}")
+
+        hwdef_filepath = os.path.join(self.directory, "hwdef-bl.dat")
+        hwdef = cls(hwdef=[hwdef_filepath], quiet=True)
+        hwdef.process_hwdefs()
+        return hwdef
+
+    def uses_hwdef(self, filepath) -> bool:
+        if self.directory is None:
+            return False
+        try:
+            hwdef = self.get_HWDef()
+        except FileNotFoundError:
+            return False
+        return hwdef.uses_filepath(filepath)
+
+    def uses_hwdef_bootloader(self, filepath) -> bool:
+        if self.directory is None:
+            return False
+        try:
+            non_bootloader_hwdef = self.get_HWDef()
+        except FileNotFoundError:
+            return False
+        if isinstance(non_bootloader_hwdef, linux_hwdef.LinuxHWDef):
+            # this can be removed once we move get_config to HWDef!
+            return False
+        other = non_bootloader_hwdef.get_config(
+            "USE_BOOTLOADER_FROM_BOARD",
+            default=None,
+            required=False,
+        )
+        if other is not None:
+            bl = BoardList()
+            for b in bl.boards:
+                if b.name == other:
+                    return b.uses_hwdef_bootloader(filepath)
+            raise ValueError(f"Bad USE_BOOTLOADER_FROM_BOARD {other} {sorted(bl.boards, key=lambda x : x.name)}")
+
+        hwdef = self.get_HWDef_bootloader()
+        return hwdef.uses_filepath(filepath)
 
 
 def in_boardlist(boards : Collection[str], board : str) -> bool:
@@ -119,17 +195,19 @@ class BoardList(object):
                 continue
             if adir in ["scripts", "common", "STM32CubeConf"]:
                 continue
-            filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
+            directory = os.path.join(hwdef_dir, adir)
+            filepath = os.path.join(directory, "hwdef.dat")
             if not os.path.exists(filepath):
-                continue
-            filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
+                filepath = os.path.join(directory, "hwdef-bl.dat")
+                if not os.path.exists(filepath):
+                    continue
 
             # FIXME: we really should be using hwdef.py to parse
             # these, but it's too slow.  We use board_list in some
             # places we can't afford to be slow.
             text = self.read_hwdef(filepath)
 
-            board = Board(adir)
+            board = Board(adir, directory=directory)
             self.boards.append(board)
             board_toolchain_set = False
             for line in text:
