@@ -640,7 +640,8 @@ def add_dynamic_boards_from_hwdef_dir(base_type, hwdef_dir):
         if d in _board_classes.keys():
             continue
         hwdef = os.path.join(dirname, d, 'hwdef.dat')
-        if os.path.exists(hwdef):
+        hwdef_bl = os.path.join(dirname, d, 'hwdef-bl.dat')
+        if os.path.exists(hwdef) or os.path.exists(hwdef_bl):
             newclass = type(d, (base_type,), {'name': d})
 
 def add_dynamic_boards_esp32():
