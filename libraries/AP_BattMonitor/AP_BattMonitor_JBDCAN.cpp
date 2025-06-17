@@ -19,7 +19,9 @@ AP_BattMonitor_JBDCAN::AP_BattMonitor_JBDCAN(AP_BattMonitor &mon,
     hal.console->printf("[JBDCAN] init full OK (instance=%d)\n", mon_state.instance);
 }
 
-
+bool AP_BattMonitor_JBDCAN::has_current() const {
+    return true;  // giả định BMS có đo dòng. Nếu không thì return false
+}
 void AP_BattMonitor_JBDCAN::read()
 {
     hal.console->printf("[JBDCAN] read() chạy test mỗi vòng\n");
