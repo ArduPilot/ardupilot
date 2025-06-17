@@ -923,14 +923,14 @@ void AC_AttitudeControl::input_thrust_vector_heading_cd(const Vector3f& thrust_v
 }
 
 // passthrough_bf_roll_pitch_rate_yaw - passthrough the pilots roll and pitch inputs directly to swashplate for flybar acro mode
-void AC_AttitudeControl::passthrough_bf_roll_pitch_rate_yaw_cd(float roll_passthrough_cd, float pitch_passthrough_cd, float yaw_rate_bf_cds)
+void AC_AttitudeControl::passthrough_bf_roll_pitch_rate_yaw_cds(float roll_passthrough_cds, float pitch_passthrough_cds, float yaw_rate_bf_cds)
 {
     // convert from centidegrees on public interface to radians
-    float roll_passthrough_rad = cd_to_rad(roll_passthrough_cd);
-    float pitch_passthrough_rad = cd_to_rad(pitch_passthrough_cd);
+    float roll_passthrough_rads = cd_to_rad(roll_passthrough_cds);
+    float pitch_passthrough_rads = cd_to_rad(pitch_passthrough_cds);
     float yaw_rate_bf_rads = cd_to_rad(yaw_rate_bf_cds);
 
-    passthrough_bf_roll_pitch_rate_yaw_rad(roll_passthrough_rad, pitch_passthrough_rad, yaw_rate_bf_rads);
+    passthrough_bf_roll_pitch_rate_yaw_rads(roll_passthrough_rads, pitch_passthrough_rads, yaw_rate_bf_rads);
 }
 
 Quaternion AC_AttitudeControl::attitude_from_thrust_vector(Vector3f thrust_vector, float heading_angle_rad) const

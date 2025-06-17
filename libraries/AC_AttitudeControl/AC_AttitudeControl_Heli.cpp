@@ -321,13 +321,13 @@ AC_AttitudeControl_Heli::AC_AttitudeControl_Heli(AP_AHRS_View &ahrs, const AP_Mu
 }
 
 // passthrough_bf_roll_pitch_rate_yaw - passthrough the pilots roll and pitch inputs directly to swashplate for flybar acro mode
-void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw_rad(float roll_passthrough_rad, float pitch_passthrough_rad, float yaw_rate_bf_rads)
+void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw_rads(float roll_passthrough_rads, float pitch_passthrough_rads, float yaw_rate_bf_rads)
 {
     // store roll, pitch and passthroughs
     // NOTE: this abuses yaw_rate_bf_rads
-    _passthrough_roll_cd = rad_to_cd(roll_passthrough_rad);
-    _passthrough_pitch_cd = rad_to_cd(pitch_passthrough_rad);
-    _passthrough_yaw_cd = rad_to_cd(yaw_rate_bf_rads);
+    _passthrough_roll_cds = rad_to_cd(roll_passthrough_rads);
+    _passthrough_pitch_cds = rad_to_cd(pitch_passthrough_rads);
+    _passthrough_yaw_cds = rad_to_cd(yaw_rate_bf_rads);
 
     // set rate controller to use pass through
     _flags_heli.flybar_passthrough = true;
@@ -405,7 +405,7 @@ void AC_AttitudeControl_Heli::integrate_bf_rate_error_to_angle_errors()
 // subclass non-passthrough too, for external gyro, no flybar
 void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads)
 {
-    _passthrough_yaw_cd = rad_to_cd(yaw_rate_bf_rads);
+    _passthrough_yaw_cds = rad_to_cd(yaw_rate_bf_rads);
 
     AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
@@ -426,13 +426,13 @@ void AC_AttitudeControl_Heli::rate_controller_run()
     // call rate controllers and send output to motors object
     // if using a flybar passthrough roll and pitch directly to motors
     if (_flags_heli.flybar_passthrough) {
-        _motors.set_roll(_passthrough_roll_cd / 4500.0f);
-        _motors.set_pitch(_passthrough_pitch_cd / 4500.0f);
+        _motors.set_roll(_passthrough_roll_cds / 4500.0f);
+        _motors.set_pitch(_passthrough_pitch_cds / 4500.0f);
     } else {
         rate_bf_to_motor_roll_pitch(_rate_gyro_rads, _ang_vel_body_rads.x, _ang_vel_body_rads.y);
     }
     if (_flags_heli.tail_passthrough) {
-        _motors.set_yaw(_passthrough_yaw_cd / 4500.0f);
+        _motors.set_yaw(_passthrough_yaw_cds / 4500.0f);
     } else {
         _motors.set_yaw(rate_target_to_motor_yaw(_rate_gyro_rads.z, _ang_vel_body_rads.z));
     }

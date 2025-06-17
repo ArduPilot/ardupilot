@@ -45,7 +45,7 @@ public:
     const AC_PID& get_rate_yaw_pid() const override { return _pid_rate_yaw; }
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
-    void passthrough_bf_roll_pitch_rate_yaw_rad(float roll_passthrough_rad, float pitch_passthrough_rad, float yaw_rate_bf_rads) override;
+    void passthrough_bf_roll_pitch_rate_yaw_rads(float roll_passthrough_rads, float pitch_passthrough_rads, float yaw_rate_bf_rads) override;
 
     // subclass non-passthrough too, for external gyro, no flybar
     void input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads) override;
@@ -140,11 +140,11 @@ private:
     //
     
     // pass through for roll and pitch
-    float _passthrough_roll_cd;
-    float _passthrough_pitch_cd;
+    float _passthrough_roll_cds;
+    float _passthrough_pitch_cds;
 
     // pass through for yaw if tail_passthrough is set
-    float _passthrough_yaw_cd;
+    float _passthrough_yaw_cds;
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
     float get_roll_trim_rad() override { return cd_to_rad(get_roll_trim_cd()); }
