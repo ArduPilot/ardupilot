@@ -7,3 +7,5 @@ include hwdef.inc
 
 # build ABIN for flash-from-bootloader support:
 env BUILD_ABIN True
+
+define AP_RANGEFINDER_ENABLED 0
