@@ -496,8 +496,9 @@ public:
     virtual float get_roll_trim_cd() { return 0;}
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
-    void passthrough_bf_roll_pitch_rate_yaw_cd(float roll_passthrough_cd, float pitch_passthrough_cd, float yaw_rate_bf_cds);
-    virtual void passthrough_bf_roll_pitch_rate_yaw_rad(float roll_passthrough_rad, float pitch_passthrough_rad, float yaw_rate_bf_rads) {};
+    // this assumes a maximum deflection rate of 45 degrees per second or pi/4 rad/s.
+    void passthrough_bf_roll_pitch_rate_yaw_cds(float roll_passthrough_cds, float pitch_passthrough_cds, float yaw_rate_bf_cds);
+    virtual void passthrough_bf_roll_pitch_rate_yaw_rads(float roll_passthrough_rads, float pitch_passthrough_rads, float yaw_rate_bf_rads) {};
 
     // provide feedback on whether arming would be a good idea right now:
     bool pre_arm_checks(const char *param_prefix,
