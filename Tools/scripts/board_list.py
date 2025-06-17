@@ -80,6 +80,37 @@ class BoardList(object):
         for hwdef_dir in self.hwdef_dir:
             self.add_hwdefs_from_hwdef_dir(hwdef_dir)
 
+        # TODO: move this information into hwdefs:
+        self.bootloader_blacklist = set([
+            'CubeOrange-SimOnHardWare',
+            'CubeOrangePlus-SimOnHardWare',
+            'CubeRedSecondary-IO',
+            'fmuv2',
+            'fmuv3-bdshot',
+            'iomcu',
+            'iomcu-dshot',
+            'iomcu-f103',
+            'iomcu-f103-dshot',
+            'iomcu-f103-8MHz-dshot',
+            'iomcu_f103_8MHz',
+            'luminousbee4',
+            'skyviper-v2450',
+            'skyviper-f412-rev1',
+            'skyviper-journey',
+            'Pixhawk1-1M-bdshot',
+            'Pixhawk1-bdshot',
+            'SITL_arm_linux_gnueabihf',
+            'RADIX2HD',
+            'canzero',
+            'CUAV-Pixhack-v3',  # uses USE_BOOTLOADER_FROM_BOARD
+            'kha_eth',  # no hwdef-bl.dat
+            'TBS-L431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
+            'TBS-L431-BattMon',  # uses USE_BOOTLOADER_FROM_BOARD
+            'TBS-L431-CurrMon',  # uses USE_BOOTLOADER_FROM_BOARD
+            'TBS-L431-PWM',  # uses USE_BOOTLOADER_FROM_BOARD
+            'ARKV6X-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
+        ])
+
     def add_hwdefs_from_hwdef_dir(self, hwdef_dir):
         for adir in os.listdir(hwdef_dir):
             if adir is None:
