@@ -51,7 +51,7 @@ The BROTHERHOBBYH743 supports using its internal OSD (MAX7456 driver). Simultane
 
 ## VTX Support
 
-The SH1.0-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 12v so be careful not to connect incorrecly.
+The SH1.0-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 12v so be careful not to connect incorrectly.
 
 ## PWM Output
 

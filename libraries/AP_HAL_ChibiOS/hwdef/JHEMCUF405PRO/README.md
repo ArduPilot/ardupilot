@@ -31,7 +31,7 @@ The UARTs are marked RXn and TXn in the above pinouts. The RXn pin is the
 receive pin for UARTn. The TXn pin is the transmit pin for UARTn.
 
 In addition to pinouts, the board also has SH6P 1mm connector for digital FPV systems.
-Please note that the board will not enter DFU mode if the receiver (eg. CRSF/ELRS is connected to either USART1/USART3/USART4). If you have it soldered there due to DMA requirement you need to temprarily desolder the wire on the FC's RX pad and solder it back after flashing
+Please note that the board will not enter DFU mode if the receiver (eg. CRSF/ELRS is connected to either USART1/USART3/USART4). If you have it soldered there due to DMA requirement you need to temporarily desolder the wire on the FC's RX pad and solder it back after flashing
 
  - SERIAL0 -> USB
  - SERIAL1 -> USART1 (RCin,DMA-enabled)
@@ -47,7 +47,7 @@ RC input is best configured on the RX1/TX1 (USART1_RX/USART1_TX) pins due to hav
 * PPM is not supported.
 * FPort requires connection to T1 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` be set to “7”.
 * CRSF also requires a T1 connection, in addition to R1, and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to “0”.
-* SRXL2 requires a connecton to T1 and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to “4”.
+* SRXL2 requires a connection to T1 and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to “4”.
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See :ref:`Radio Control Systems <common-rc-systems>` for details.
 
 ## OSD Support

@@ -504,7 +504,7 @@ The Telem1,Telem2 port has RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
 ## RC Input
 
-RC input is configured on the RCIN pin, at one end of the servo rail. This pin supports all unidirectional RC protocols. For bi-directional protocols, such as CRSF/ELRS, UART8 can be set to protocol "23" and the reciever tied to RCIN (shared with UART8 RX) and UART8 TX. In this case, the RC_PROTOCOLS parameter should be set to the expected protocol type to avoid accidental erroneous detection by the RCIN path.
+RC input is configured on the RCIN pin, at one end of the servo rail. This pin supports all unidirectional RC protocols. For bi-directional protocols, such as CRSF/ELRS, UART8 can be set to protocol "23" and the receiver tied to RCIN (shared with UART8 RX) and UART8 TX. In this case, the RC_PROTOCOLS parameter should be set to the expected protocol type to avoid accidental erroneous detection by the RCIN path.
 
 ## PWM Output
 
