@@ -154,6 +154,7 @@ singleton AP_GPS method get_antenna_offset Vector3f uint8_t 0 ud->num_sensors()
 singleton AP_GPS method first_unconfigured_gps boolean uint8_t'Null
 singleton AP_GPS method gps_yaw_deg boolean uint8_t 0 ud->num_sensors() float'Null float'Null uint32_t'Null
 singleton AP_GPS method time_epoch_usec uint64_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS manual inject_data lua_gps_inject_data 1 0
 
 include AP_Math/AP_Math.h
 

@@ -3455,6 +3455,10 @@ function gps:primary_sensor() end
 ---@return integer -- number of sensors
 function gps:num_sensors() end
 
+-- Inject a packet of raw binary to a GPS (e.g., RTCM3)
+---@param data string -- binary data to inject
+function gps:inject_data(data) end
+
 -- desc
 ---@class (exact) BattMonitorScript_State_ud
 local BattMonitorScript_State_ud = {}
