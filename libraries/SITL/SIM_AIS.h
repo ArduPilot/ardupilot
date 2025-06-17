@@ -55,10 +55,16 @@ private:
 // Generate virtual vessels
 class AIS : public SerialDevice {
 public:
-    AIS() {};
+    AIS();
+
     void update(const class Aircraft &aircraft);
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
+
+    AP_Int8 vessel_count;
+    AP_Float radius_m;
 
     struct ais_vessel {
         mavlink_ais_vessel_t info; // Info about the vessel

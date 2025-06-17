@@ -33,6 +33,7 @@
 #include "SIM_DroneCANDevice.h"
 #include "SIM_ADSB_Sagetech_MXS.h"
 #include "SIM_Volz.h"
+#include "SIM_AIS.h"
 
 namespace SITL {
 
@@ -368,6 +369,9 @@ public:
 #if AP_SIM_FLIGHTAXIS_ENABLED
         FlightAxis *flightaxis_ptr;
 #endif
+#if HAL_SIM_AIS_ENABLED
+        class AIS *ais_ptr;
+#endif
     };
     ModelParm models;
     
@@ -598,10 +602,6 @@ public:
 
     // clamp simulation - servo channel starting at offset 1 (usually ailerons)
     AP_Int8 clamp_ch;
-
-    // AIS vessel simulation
-    AP_Int8 ais_vessel_count;
-    AP_Float ais_radius_m;
 
 #if AP_SIM_INS_FILE_ENABLED
     enum INSFileMode {
