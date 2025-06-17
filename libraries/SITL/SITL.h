@@ -321,6 +321,7 @@ public:
         AP_Float accuracy;
         AP_Vector3f vel_err; // Velocity error offsets in NED (x = N, y = E, z = D)
         AP_Int8 jam; // jamming simulation enable
+        AP_Float heading_offset; // heading offset in degrees
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 

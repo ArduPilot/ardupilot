@@ -99,7 +99,6 @@ void AP_BoardConfig::board_setup_drivers(void)
     case VRX_BOARD_CORE10:
     case PX4_BOARD_AEROFC:
     case PX4_BOARD_PIXHAWK_PRO:
-    case PX4_BOARD_PCNC1:
     case PX4_BOARD_MINDPXV2:
     case FMUV6_BOARD_HOLYBRO_6X:
     case FMUV6_BOARD_HOLYBRO_6X_REV6:
