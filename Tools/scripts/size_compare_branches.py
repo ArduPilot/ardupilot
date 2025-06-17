@@ -159,6 +159,10 @@ class SizeCompareBranches(object):
             'canzero',
             'CUAV-Pixhack-v3',  # uses USE_BOOTLOADER_FROM_BOARD
             'kha_eth',  # no hwdef-bl.dat
+            'TBS-L431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
+            'TBS-L431-BattMon',  # uses USE_BOOTLOADER_FROM_BOARD
+            'TBS-L431-CurrMon',  # uses USE_BOOTLOADER_FROM_BOARD
+            'TBS-L431-PWM',  # uses USE_BOOTLOADER_FROM_BOARD
         ])
 
         # blacklist all linux boards for bootloader build:
