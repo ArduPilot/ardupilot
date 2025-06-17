@@ -3094,6 +3094,12 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.mcu_type = self.get_config('MCU', 1)
         self.progress("Setup for MCU %s" % self.mcu_type)
 
+        # put USE_BOOTLOADER_FROM_BOARD into the environment so the
+        # build process can use it when generating hex files:
+        use_bootloader_from_board = self.get_config('USE_BOOTLOADER_FROM_BOARD', default=None, required=False)
+        if use_bootloader_from_board is not None:
+            self.env_vars['USE_BOOTLOADER_FROM_BOARD'] = use_bootloader_from_board
+
         # build a list for peripherals for DMA resolver
         self.periph_list = self.build_peripheral_list()
 
