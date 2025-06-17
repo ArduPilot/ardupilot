@@ -18,8 +18,8 @@
 
     param set SERIAL5_PROTOCOL 40
     param set AIS_TYPE 1
-    param set SIM_AIS_COUNT 10
     reboot
+    param set SIM_AIS_COUNT 10
     module load ais
 
     Dump logged AIS data to the serial port
@@ -47,6 +47,21 @@ extern const AP_HAL::HAL& hal;
 
 using namespace SITL;
 
+const AP_Param::GroupInfo AIS::var_info[] = {
+
+    // @Param: COUNT
+    // @DisplayName: Number of AIS vessels
+    // @Description: Total number of AIS simulated vessels
+    AP_GROUPINFO("COUNT", 1, AIS, vessel_count, -1),
+
+    // @Param: RADIUS
+    // @DisplayName: AIS radius stddev of vessels
+    // @Description: Simulated standard deviation of radius in AIS of a vessel
+    // @Units: m
+    AP_GROUPINFO("RADIUS",  2, AIS, radius_m, 10000),
+
+    AP_GROUPEND
+};
 
 AIS_Replay::AIS_Replay() : SerialDevice::SerialDevice()
 {
@@ -93,17 +108,21 @@ void AIS_Replay::update()
 
 }
 
+AIS::AIS()
+{
+    AP::sitl()->models.ais_ptr = this;
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
 void AIS::update(const class Aircraft &aircraft)
 {
     const SIM *sitl = AP::sitl();
     if (sitl == nullptr) {
         return;
     }
-    const int8_t count = sitl->ais_vessel_count.get();
-    const float radius = sitl->ais_radius_m.get();
 
     // Disabled
-    if (count <= 0) {
+    if (vessel_count <= 0) {
         return;
     }
 
@@ -117,13 +136,13 @@ void AIS::update(const class Aircraft &aircraft)
 
     // Update all vessels, marking any that move too far from the aircraft as in-active
     for (uint8_t i=0; i<ARRAY_SIZE(vessels); i++) {
-        update_simulated_vessel(vessels[i], dt, aircraft_loc, radius, now_ms);
+        update_simulated_vessel(vessels[i], dt, aircraft_loc, radius_m, now_ms);
     }
 
     // Add new vessels until we have the correct number
     for (uint8_t i=0; i<ARRAY_SIZE(vessels); i++) {
         // Disable any extra vessels over the set count
-        if (i >= count) {
+        if (i >= vessel_count) {
             vessels[i].active = false;
             continue;
         }
@@ -134,7 +153,7 @@ void AIS::update(const class Aircraft &aircraft)
         }
 
         // Generate new vessel
-        init_vessel(vessels[i], aircraft_loc, radius);
+        init_vessel(vessels[i], aircraft_loc, radius_m);
     }
 
 }

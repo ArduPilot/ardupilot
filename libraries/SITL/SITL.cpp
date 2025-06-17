@@ -1258,17 +1258,6 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Description: If non-zero the vehicle will be clamped in position until the value on this servo channel passes 1800PWM
     AP_GROUPINFO("CLAMP_CH",     49, SIM, clamp_ch, 0),
 
-    // @Param: AIS_COUNT
-    // @DisplayName: Number of AIS vessels
-    // @Description: Total number of AIS simulated vessels
-    AP_GROUPINFO("AIS_COUNT", 50, SIM,  ais_vessel_count, -1),
-
-    // @Param: AIS_RADIUS
-    // @DisplayName: AIS radius stddev of vessels
-    // @Description: Simulated standard deviation of radius in AIS of a vessel
-    // @Units: m
-    AP_GROUPINFO("AIS_RADIUS", 51, SIM,  ais_radius_m, 10000),
-
     // the IMUT parameters must be last due to the enable parameters
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor_TCal),
@@ -1326,9 +1315,15 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
     AP_SUBGROUPINFO(tether_sim, "TETH_", 6, SIM::ModelParm, TetherSim),
 #endif
 
+#if HAL_SIM_AIS_ENABLED
+    // @Group: AIS_
+    // @Path: ./SIM_AIS.cpp
+    AP_SUBGROUPPTR(ais_ptr, "AIS_", 7, SIM::ModelParm, AIS),
+#endif
+
     AP_GROUPEND
 };
-    
+
 const Location post_origin {
     518752066,
     146487830,
