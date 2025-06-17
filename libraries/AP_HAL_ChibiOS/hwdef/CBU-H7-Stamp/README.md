@@ -134,6 +134,6 @@ The Stamp requires a stable 5v supply input of at least 1.5A. This directly powe
 
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of *.apj firmware files with any ArduPilot compatible ground station. 
 
-Firmware Taget = CBU-H7-Stamp
+Firmware Target = CBU-H7-Stamp
 
 A built in button can be used to activate DFU Mode by being pressed during power up. The DFU Activate pin is broken out to allow remote mounting of this button if required. 

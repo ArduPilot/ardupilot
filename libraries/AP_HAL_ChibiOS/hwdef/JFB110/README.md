@@ -66,7 +66,7 @@ to use DShot.
 The board has two dedicated power monitor ports on 8 pin
 connectors. The correct battery setting parameters are dependent on
 the type of power brick which is connected.
-Recomended input voltage is 4.9 to 5.5 volt.
+Recommended input voltage is 4.9 to 5.5 volt.
 
 ## Compass
 
