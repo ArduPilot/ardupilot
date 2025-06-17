@@ -26,7 +26,7 @@ bool ModeAcro_Heli::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeAcro_Heli::run()
 {
-    float target_roll, target_pitch, target_yaw;
+    float target_roll_cds, target_pitch_cds, target_yaw_cds;
     float pilot_throttle_scaled;
 
     // Tradheli should not reset roll, pitch, yaw targets when motors are not runup while flying, because
@@ -69,53 +69,53 @@ void ModeAcro_Heli::run()
 
     if (!motors->has_flybar()){
         // convert the input to the desired body frame rate
-        get_pilot_desired_angle_rates(channel_roll->norm_input_dz(), channel_pitch->norm_input_dz(), channel_yaw->norm_input_dz(), target_roll, target_pitch, target_yaw);
+        get_pilot_desired_angle_rates(channel_roll->norm_input_dz(), channel_pitch->norm_input_dz(), channel_yaw->norm_input_dz(), target_roll_cds, target_pitch_cds, target_yaw_cds);
         // only mimic flybar response when trainer mode is disabled
         if ((Trainer)g.acro_trainer.get() == Trainer::OFF) {
             // while landed always leak off target attitude to current attitude
             if (copter.ap.land_complete) {
-                virtual_flybar(target_roll, target_pitch, target_yaw, 3.0f, 3.0f);
+                virtual_flybar(target_roll_cds, target_pitch_cds, target_yaw_cds, 3.0f, 3.0f);
             // while flying use acro balance parameters for leak rate
             } else {
-                virtual_flybar(target_roll, target_pitch, target_yaw, g.acro_balance_pitch, g.acro_balance_roll);
+                virtual_flybar(target_roll_cds, target_pitch_cds, target_yaw_cds, g.acro_balance_pitch, g.acro_balance_roll);
             }
         }
         if (motors->supports_yaw_passthrough()) {
             // if the tail on a flybar heli has an external gyro then
             // also use no deadzone for the yaw control and
             // pass-through the input direct to output.
-            target_yaw = channel_yaw->get_control_in_zero_dz();
+            target_yaw_cds = channel_yaw->get_control_in_zero_dz();
         }
 
         // run attitude controller
         if (g2.acro_options.get() & uint8_t(AcroOptions::RATE_LOOP_ONLY)) {
-            attitude_control->input_rate_bf_roll_pitch_yaw_2_cds(target_roll, target_pitch, target_yaw);
+            attitude_control->input_rate_bf_roll_pitch_yaw_2_cds(target_roll_cds, target_pitch_cds, target_yaw_cds);
         } else {
-            attitude_control->input_rate_bf_roll_pitch_yaw_cds(target_roll, target_pitch, target_yaw);
+            attitude_control->input_rate_bf_roll_pitch_yaw_cds(target_roll_cds, target_pitch_cds, target_yaw_cds);
         }
     }else{
         /*
           for fly-bar passthrough use control_in values with no
           deadzone. This gives true pass-through.
          */
-        float roll_in_cd = channel_roll->get_control_in_zero_dz();
-        float pitch_in_cd = channel_pitch->get_control_in_zero_dz();
-        float yaw_in_cd;
+        float roll_in_cds = channel_roll->get_control_in_zero_dz();
+        float pitch_in_cds = channel_pitch->get_control_in_zero_dz();
+        float yaw_in_cds;
         
         if (motors->supports_yaw_passthrough()) {
             // if the tail on a flybar heli has an external gyro then
             // also use no deadzone for the yaw control and
             // pass-through the input direct to output.
-            yaw_in_cd = channel_yaw->get_control_in_zero_dz();
+            yaw_in_cds = channel_yaw->get_control_in_zero_dz();
         } else {
             // if there is no external gyro then run the usual
             // ACRO_YAW_P gain on the input control, including
             // deadzone
-            yaw_in_cd = get_pilot_desired_yaw_rate();
+            yaw_in_cds = get_pilot_desired_yaw_rate();
         }
 
         // run attitude controller
-        attitude_control->passthrough_bf_roll_pitch_rate_yaw_cd(roll_in_cd, pitch_in_cd, yaw_in_cd);
+        attitude_control->passthrough_bf_roll_pitch_rate_yaw_cds(roll_in_cds, pitch_in_cds, yaw_in_cds);
     }
 
     // get pilot's desired throttle
