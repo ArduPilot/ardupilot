@@ -74,7 +74,7 @@ to use DShot.
 
 ## Battery Monitoring
 
-The board has a builting voltage and current sensor. The current
+The board has a built-in voltage and current sensor. The current
 sensor can read up to 130 Amps. The voltage sensor can handle up to 6S
 LiPo batteries.
 
@@ -88,7 +88,7 @@ The correct battery setting parameters are:
 
 ## Compass
 
-The KakuteF7 AIO does not have a builting compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+The KakuteF7 AIO does not have a built-in compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
 ## Loading Firmware
 

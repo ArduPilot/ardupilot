@@ -72,7 +72,7 @@ to use DShot. Channels 1-8 support bi-directional dshot.
 
 ## Battery Monitoring
 
-The board has a builting voltage and current sensor. The current
+The board has a built-in voltage and current sensor. The current
 sensor can read up to 130 Amps. The voltage sensor can handle up to 8S
 LiPo batteries.
 

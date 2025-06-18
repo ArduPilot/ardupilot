@@ -24,7 +24,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
  - SERIAL0 -> USB
  - SERIAL1 -> UART1 (Telem1) (MSP DisplayPort)(DMA Capable)
- - SERIAL2 -> UART2 (Telem2) (connected to internal BT module, not useable by ArduPilot)
+ - SERIAL2 -> UART2 (Telem2) (connected to internal BT module, not usable by ArduPilot)
  - SERIAL3 -> UART3 (RCin)(DMA Capable)
  - SERIAL4 -> UART4 (GPS)
  - SERIAL5 -> not available
@@ -83,7 +83,7 @@ to use DShot.
 
 ## Battery Monitoring
 
-The board has a builting voltage and current sensor. The current
+The board has a built-in voltage and current sensor. The current
 sensor can read up to 130 Amps. The voltage sensor can handle up to 6S
 LiPo batteries.
 
