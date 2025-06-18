@@ -85,7 +85,7 @@ void AP_Camera_Backend::update()
     }
 
     // check vehicle roll angle is less than configured maximum
-    if ((_frontend.get_roll_max() > 0) && (fabsf(ahrs.roll_sensor * 1e-2f) > _frontend.get_roll_max())) {
+    if ((_frontend.get_roll_max() > 0) && (fabsf(ahrs.get_roll_deg()) > _frontend.get_roll_max())) {
         return;
     }
 
