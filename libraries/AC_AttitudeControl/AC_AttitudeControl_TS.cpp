@@ -86,17 +86,17 @@ void AC_AttitudeControl_TS::input_euler_rate_yaw_euler_angle_pitch_bf_roll_rad(b
     error_quat.to_axis_angle(att_error);
 
     // update heading
-    float yaw_rate_rad = euler_yaw_rate_rads;
+    float yaw_rate_rads = euler_yaw_rate_rads;
     if (plane_controls) {
-        yaw_rate_rad = (euler_yaw_rate_rads * spitch) + (body_roll_rad * cpitch);
+        yaw_rate_rads = (euler_yaw_rate_rads * spitch) + (body_roll_rad * cpitch);
     }
     // limit yaw error
     float yaw_error = fabsf(att_error.z);
     float error_ratio = yaw_error / M_PI_2;
     if (error_ratio > 1) {
-        yaw_rate_rad /= (error_ratio * error_ratio);
+        yaw_rate_rads /= (error_ratio * error_ratio);
     }
-    _euler_angle_target_rad.z = wrap_PI(_euler_angle_target_rad.z + yaw_rate_rad * _dt);
+    _euler_angle_target_rad.z = wrap_PI(_euler_angle_target_rad.z + yaw_rate_rads * _dt);
 
     // init attitude target to desired euler yaw and pitch with zero roll
     _attitude_target.from_euler(0, euler_pitch_rad, _euler_angle_target_rad.z);

@@ -71,7 +71,7 @@ public:
     // Sets desired roll, pitch, and yaw angles (in centidegrees), with yaw slewing.
     // Slews toward target yaw at a fixed rate (in centidegrees/s) until the error is within 5 degrees.
     // Used to enforce consistent heading changes without large instantaneous yaw errors.
-    void input_euler_angle_roll_pitch_slew_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float slew_yaw);
+    void input_euler_angle_roll_pitch_slew_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float slew_yaw_rate_cds);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
