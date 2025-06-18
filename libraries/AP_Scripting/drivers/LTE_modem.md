@@ -1,9 +1,10 @@
-# SIM7600 LTE Modem Driver
+# LTE Modem Driver
 
-This driver implements support for SIM7600 LTE modems for establishing
+This driver implements support for LTE modems for establishing
 cellular data connections. It provides either PPP or a transparent TCP
 connectivity to a remote server through the LTE modem, allowing
-network communication over LTE networks without using a companion computer.
+network communication over LTE networks without using a companion
+computer.
 
 The driver best paired with with the ArduPilot remote support server
 https://support.ardupilot.org, but can also be used for any other
@@ -11,6 +12,11 @@ network service.
 
 If you don't have access to the ArduPilot support server you can
 install your own using https://github.com/ArduPilot/UDPProxy
+
+# Supported Hardware
+
+Currently the only modem that is supported is the SIM76xx series of
+modems from SimCom.
 
 # Parameters
 
@@ -77,22 +83,24 @@ Range: 1-65525. This is not used with PPP.
 
 ## LTE_BAUD
 
-This sets the baud rate for the serial port to the LTE modem. Common
-values are 9600, 57600, or 115200. The modem must be configured to use
-the same baud rate. Range: 9600-3686400. Default: 115200.
+This sets the baud rate for the serial port to the LTE modem to use
+for data transfer. Common values are 115200 or 921600. Default:
+115200.
 
-If using something other than 115200 you need to connect to the modem
-with a terminal program and use AT+IPREX=BAUD to set the baud rate and
-then save with AT&W. If the modem is wired to a flight controller then
-you can use the SERIAL_PASS parameters to give temporary control of
-the modem to a USB port so you can use a terminal protocol to
-configure the modem.
+## LTE_IBAUD
+
+The initial baud rate when the modem is powered on. This is normally
+115200 but can be changed in the modem using the AT+IREX terminal command.
 
 ## LTE_TIMEOUT
 
 This sets the timeout in seconds for the LTE connection. If no data is
 received for this time, the connection will be reset and the driver
 will attempt to reconnect. Range: 1-60 seconds. Default: 10 seconds.
+
+## LTE_OPTIONS
+
+This sets options for debugging and data display
 
 # Operation
 
@@ -125,7 +133,6 @@ port 20001. It assumes you have the modem on Telem1 (SERIAL1)
  - SCR_SDEV1_PROTO 48
  - SERIAL1_PROTOCOL 28
  - LTE_PROTOCOL 48
- - LTE_BAUD 115200
  - NET_ENABLE 1
  - NET_P1_TYPE 3
  - NET_P1_IP0 157
@@ -142,7 +149,6 @@ the support server is used and modem is attached on SERAL1 (no PPP used)
  - SCR_SDEV1_PROTO 2
  - SERIAL1_PROTOCOL 28
  - LTE_PROTOCOL 2
- - LTE_BAUD 115200
  - LTE_SERVER_IP0 157
  - LTE_SERVER_IP1 245
  - LTE_SERVER_IP2 83
@@ -154,28 +160,28 @@ the support server is used and modem is attached on SERAL1 (no PPP used)
 The driver provides status messages through the GCS indicating the current
 connection state:
 
-- "SIM7600: starting" - Driver initialization
-- "SIM7600: found modem" - Modem detected and responding
-- "SIM7600: CREG OK" - Network registration successful
-- "SIM7600: transparent mode set" - Modem configured for transparent operation
-- "SIM7600: network opened" - Network stack ready
-- "SIM7600: connected" - TCP connection established
-- "SIM7600: connection closed, reconnecting" - Connection lost, attempting reconnection
-- "SIM7600: timeout" - No data received within timeout period
-- "SIM7600: error response from modem" - Modem returned an error
+- "LTE_modem: starting" - Driver initialization
+- "LTE_modem: found modem" - Modem detected and responding
+- "LTE_modem: CREG OK" - Network registration successful
+- "LTE_modem: transparent mode set" - Modem configured for transparent operation
+- "LTE_modem: network opened" - Network stack ready
+- "LTE_modem: connected" - TCP connection established
+- "LTE_modem: connection closed, reconnecting" - Connection lost, attempting reconnection
+- "LTE_modem: timeout" - No data received within timeout period
+- "LTE_modem: error response from modem" - Modem returned an error
 
 # Physical Connections
 
-The SIM7600 modem should be connected to a flight controller serial
+The modem should be connected to a flight controller serial
 port. You may also want to use a serial port with hardware flow
 control support and set BRD_SERn_RTSCRS to 1 for that port.
 
-Note that the SIM7600 can be quite sensitive to power supply
+Note that the modems can be quite sensitive to power supply
 issues. The power from the serial port will likely not be sufficient.
 
 # Troubleshooting
 
-The driver creates a log file "SIM7600.log" on the SD card that contains
+The driver creates a log file "LTE_modem.log" on the SD card that contains
 all communication with the modem. This log can be useful for debugging
 connection issues.
 
@@ -188,3 +194,11 @@ Common issues:
 
 If the connection fails or is lost, the driver will automatically attempt
 to reconnect by restarting the connection sequence.
+
+# Logging
+
+A LTE log message is saved in the onboard log. That has signal
+strength information and data transfer statistics.
+
+A NAMED_VALUE_FLOAT MAVLink message "LTE_RSSI" is sent with the RSSI
+signal strength.

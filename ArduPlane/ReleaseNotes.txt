@@ -1,5 +1,14 @@
 ArduPilot Plane Release Notes:
 ------------------------------------------------------------------
+Release 4.6.1-beta1 14-Jun-2025
+
+Changes from 4.6.0
+
+1) Bug Fixes
+
+- Prevent firmware erasure on boards using flash for parameter storage
+- bootloaders rebuilt for H7 boards using flash for parameter storage
+------------------------------------------------------------------
 Release 4.6.0 21-May-2025
 
 Changes from 4.6.0-beta6

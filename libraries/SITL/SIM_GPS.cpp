@@ -141,6 +141,11 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Values: 0:Disabled, 1:Enabled
     AP_GROUPINFO("JAM",       16, GPSParms, jam, 0),
 
+    // @Param: HDG_OFS
+    // @DisplayName: GPS heading offset
+    // @Description: GPS heading offset in degrees. how off the simulated GPS heading is from the actual heading
+    // @User: Advanced
+    AP_GROUPINFO("HDG_OFS",  17, GPSParms,  heading_offset, 0),
     AP_GROUPEND
 };
 }
@@ -481,7 +486,7 @@ void GPS::update()
     d.num_sats = params.numsats;
     d.latitude = latitude;
     d.longitude = longitude;
-    d.yaw_deg = _sitl->state.yawDeg;
+    d.yaw_deg = wrap_360(_sitl->state.yawDeg + params.heading_offset);
     d.roll_deg = _sitl->state.rollDeg;
     d.pitch_deg = _sitl->state.pitchDeg;
 
