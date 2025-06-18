@@ -454,6 +454,12 @@ AP_HW_ZeroOne_GNSS                   5602
 AP_HW_DroneBuild_G1                  5700
 AP_HW_DroneBuild_G2                  5701
 
+# IDs 5711-5720 reserved for iomcu-specific "boards"
+AP_HW_IOMCU_F103                     5711
+AP_HW_IOMCU_F103_8MHZ                5712  # some boards are clocked differently
+AP_HW_IOMCU_F100                     5713
+
+
 #IDs 5800-5809 reserved for Droneer
 AP_HW_DroneerF405                    5800
 
