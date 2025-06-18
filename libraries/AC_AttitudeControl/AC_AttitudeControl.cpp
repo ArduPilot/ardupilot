@@ -1334,11 +1334,19 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
     }
 }
 
-// Return tilt angle limit for pilot input that prioritises altitude hold over lean angle
+// Returns maximum allowable tilt angle (in centidegrees) for pilot input when in altitude hold mode.
+// See get_althold_lean_angle_max_rad() for full details.
 float AC_AttitudeControl::get_althold_lean_angle_max_cd() const
 {
     // convert to centi-degrees for public interface
-    return MAX(degrees(_althold_lean_angle_max_rad), AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN) * 100.0f;
+    return rad_to_cd(get_althold_lean_angle_max_rad());
+}
+
+// Returns maximum allowable tilt angle (in radians) for pilot input when in altitude hold mode.
+// Used to limit lean angle based on available thrust margin, prioritising altitude stability.
+float AC_AttitudeControl::get_althold_lean_angle_max_rad() const
+{
+    return MAX(_althold_lean_angle_max_rad, radians(AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN));
 }
 
 // Return roll rate step size in centidegrees/s that results in maximum output after 4 time steps
