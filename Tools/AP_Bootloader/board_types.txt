@@ -489,6 +489,9 @@ AP_HW_VUAV-V7pro                     7100
 # IDs 7110-7119 reserved for AEROFOX
 AP_HW_AEROFOX_H7                     7110
 
+# IDs 7120-7129 reserved for Accton Godwit
+AP_HW_Accton_Godwit_GA1        7120
+
 # please fill gaps in the above ranges rather than adding past ID #7199
 
 
