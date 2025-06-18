@@ -427,8 +427,13 @@ public:
     // Return throttle increase applied for tilt compensation
     float angle_boost() const { return _angle_boost; }
 
-    // Return tilt angle limit for pilot input that prioritises altitude hold over lean angle
-    virtual float get_althold_lean_angle_max_cd() const;
+    // Returns maximum allowable tilt angle (in radians) for pilot input when in altitude hold mode.
+    // Used to limit lean angle based on available thrust margin, prioritising altitude stability.
+    virtual float get_althold_lean_angle_max_rad() const;
+
+    // Returns maximum allowable tilt angle (in centidegrees) for pilot input when in altitude hold mode.
+    // See get_althold_lean_angle_max_rad() for full details.
+    float get_althold_lean_angle_max_cd() const;
 
     // Return configured tilt angle limit in centidegrees
     float lean_angle_max_cd() const { return _aparm.angle_max; }
