@@ -52,7 +52,7 @@ public:
         PX4_BOARD_PHMINI   = 5,
         PX4_BOARD_PH2SLIM  = 6,
         PX4_BOARD_AEROFC   = 13,
-        PX4_BOARD_PIXHAWK_PRO = 14,
+        // PX4_BOARD_PIXHAWK_PRO = 14,
         PX4_BOARD_AUAV21   = 20,
         // PX4_BOARD_PCNC1    = 21,
         PX4_BOARD_MINDPXV2 = 22,

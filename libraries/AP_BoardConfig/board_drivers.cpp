@@ -97,7 +97,6 @@ void AP_BoardConfig::board_setup_drivers(void)
     case VRX_BOARD_UBRAIN52:
     case VRX_BOARD_CORE10:
     case PX4_BOARD_AEROFC:
-    case PX4_BOARD_PIXHAWK_PRO:
     case PX4_BOARD_MINDPXV2:
     case FMUV6_BOARD_HOLYBRO_6X:
     case FMUV6_BOARD_HOLYBRO_6X_REV6:
@@ -344,10 +343,6 @@ void AP_BoardConfig::board_autodetect(void)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_MINDPXV2);
     DEV_PRINTF("Detected MindPX-V2\n");
-#elif defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
-    // only one choice
-    state.board_type.set_and_notify(PX4_BOARD_PIXHAWK_PRO);
-    DEV_PRINTF("Detected Pixhawk Pro\n");	
 #elif defined(HAL_CHIBIOS_ARCH_FMUV5)
     state.board_type.set_and_notify(PX4_BOARD_FMUV5);
     DEV_PRINTF("Detected FMUv5\n");
