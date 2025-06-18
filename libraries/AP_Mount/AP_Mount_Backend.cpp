@@ -189,14 +189,6 @@ void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
     }
 }
 
-#if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
-// process MOUNT_CONFIGURE messages received from GCS. deprecated.
-void AP_Mount_Backend::handle_mount_configure(const mavlink_mount_configure_t &packet)
-{
-    set_mode((MAV_MOUNT_MODE)packet.mount_mode);
-}
-#endif
-
 #if HAL_GCS_ENABLED
 // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
 void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan)
@@ -298,44 +290,6 @@ void AP_Mount_Backend::send_gimbal_manager_status(mavlink_channel_t chan)
                                            0,                           // secondary control system id
                                            0);                          // secondary control component id
 }
-
-#if AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
-// process MOUNT_CONTROL messages received from GCS. deprecated.
-void AP_Mount_Backend::handle_mount_control(const mavlink_mount_control_t &packet)
-{
-    switch (get_mode()) {
-    case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-        // input_a : Pitch in centi-degrees (earth-frame)
-        // input_b : Roll in centi-degrees (earth-frame)
-        // input_c : Yaw in centi-degrees (interpreted as body-frame)
-        set_angle_target(packet.input_b * 0.01, packet.input_a * 0.01, packet.input_c * 0.01, false);
-        break;
-
-    case MAV_MOUNT_MODE_GPS_POINT: {
-        // input_a : lat in degE7
-        // input_b : lon in degE7
-        // input_c : alt  in cm (interpreted as above home)
-        const Location target_location {
-            packet.input_a,
-            packet.input_b,
-            packet.input_c,
-            Location::AltFrame::ABOVE_HOME
-        };
-        set_roi_target(target_location);
-        break;
-    }
-
-    case MAV_MOUNT_MODE_RETRACT:
-    case MAV_MOUNT_MODE_NEUTRAL:
-    case MAV_MOUNT_MODE_RC_TARGETING:
-    case MAV_MOUNT_MODE_SYSID_TARGET:
-    case MAV_MOUNT_MODE_HOME_LOCATION:
-    default:
-        // no effect in these modes
-        break;
-    }
-}
-#endif
 
 // handle do_mount_control command.  Returns MAV_RESULT_ACCEPTED on success
 MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_command_int_t &packet)
@@ -462,7 +416,7 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
 void AP_Mount_Backend::write_log(uint64_t timestamp_us)
 {
     // return immediately if no yaw estimate
-    float ahrs_yaw = AP::ahrs().get_yaw();
+    float ahrs_yaw = AP::ahrs().get_yaw_rad();
     if (isnan(ahrs_yaw)) {
         return;
     }
@@ -581,7 +535,7 @@ void AP_Mount_Backend::calculate_poi()
         // iteratively move test_loc forward until its alt-above-sea-level is below terrain-alt-above-sea-level
         const float dist_increment_m = MAX(terrain->get_grid_spacing(), 10);
         const float mount_pitch_deg = degrees(quat.get_euler_pitch());
-        const float mount_yaw_ef_deg = wrap_180(degrees(quat.get_euler_yaw()) + degrees(ahrs.get_yaw()));
+        const float mount_yaw_ef_deg = wrap_180(degrees(quat.get_euler_yaw()) + degrees(ahrs.get_yaw_rad()));
         float total_dist_m = 0;
         bool get_terrain_alt_success = true;
         float prev_terrain_amsl_m = terrain_amsl_m;
@@ -754,7 +708,7 @@ bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountTa
         return false;
     }
 
-    const float GPS_vector_x = Location::diff_longitude(loc.lng, current_loc.lng)*cosf(ToRad((current_loc.lat + loc.lat) * 0.00000005f)) * 0.01113195f;
+    const float GPS_vector_x = Location::diff_longitude(loc.lng, current_loc.lng)*cosf(radians((current_loc.lat + loc.lat) * 0.00000005f)) * 0.01113195f;
     const float GPS_vector_y = (loc.lat - current_loc.lat) * 0.01113195f;
     int32_t target_alt_cm = 0;
     if (!loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, target_alt_cm)) {
@@ -791,7 +745,7 @@ float AP_Mount_Backend::MountTarget::get_bf_yaw() const
 {
     if (yaw_is_ef) {
         // convert to body-frame
-        return wrap_PI(yaw - AP::ahrs().get_yaw());
+        return wrap_PI(yaw - AP::ahrs().get_yaw_rad());
     }
 
     // target is already body-frame
@@ -807,7 +761,7 @@ float AP_Mount_Backend::MountTarget::get_ef_yaw() const
     }
 
     // convert to earth-frame
-    return wrap_PI(yaw + AP::ahrs().get_yaw());
+    return wrap_PI(yaw + AP::ahrs().get_yaw_rad());
 }
 
 // sets roll, pitch, yaw and yaw_is_ef

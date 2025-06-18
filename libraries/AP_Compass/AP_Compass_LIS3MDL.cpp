@@ -48,8 +48,6 @@
 #define ADDR_WHO_AM_I       0x0f
 #define ID_WHO_AM_I         0x3d
 
-extern const AP_HAL::HAL &hal;
-
 AP_Compass_Backend *AP_Compass_LIS3MDL::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                               bool force_external,
                                               enum Rotation rotation)

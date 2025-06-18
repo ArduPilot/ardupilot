@@ -279,7 +279,7 @@ static bool sitl_flash_write(uint32_t addr, const uint8_t *data, uint32_t length
     }
 #if defined(HAL_FLASH_MIN_WRITE_SIZE) && HAL_FLASH_MIN_WRITE_SIZE == 32
     if ((length % HAL_FLASH_MIN_WRITE_SIZE) != 0 || (addr % HAL_FLASH_MIN_WRITE_SIZE) != 0) {
-        AP_HAL::panic("Attempt to write flash at %u length %u\n", addr, length);
+        AP_HAL::panic("Attempt to write flash at %u length %u", addr, length);
     }
     // emulate H7 requirement that writes be to untouched bytes
     for (uint32_t i=0; i<length; i+= 32) {
@@ -288,7 +288,7 @@ static bool sitl_flash_write(uint32_t addr, const uint8_t *data, uint32_t length
         }
         for (uint32_t j=0; j<32; j++) {
             if (old[i+j] != 0xFF) {
-                AP_HAL::panic("Attempt to write modified flash at %u length %u\n", addr+i+j, length);
+                AP_HAL::panic("Attempt to write modified flash at %u length %u", addr+i+j, length);
             }
         }
     }
@@ -299,12 +299,12 @@ static bool sitl_flash_write(uint32_t addr, const uint8_t *data, uint32_t length
 #if HAL_FLASH_ALLOW_UPDATE
         // emulating flash that allows setting any bit from 1 to 0
         if (data[i] & ~old[i]) {
-            AP_HAL::panic("Attempt to set flash byte 0x%02x from 0x%02x at %u\n", data[i], old[i], addr+i);
+            AP_HAL::panic("Attempt to set flash byte 0x%02x from 0x%02x at %u", data[i], old[i], addr+i);
         }
 #else
         // emulating flash that only allows update if whole byte is 0xFF
         if (data[i] != old[i] && old[i] != 0xFF) {
-            AP_HAL::panic("Attempt to set flash byte 0x%02x from 0x%02x at %u\n", data[i], old[i], addr+i);
+            AP_HAL::panic("Attempt to set flash byte 0x%02x from 0x%02x at %u", data[i], old[i], addr+i);
         }
 #endif
     }

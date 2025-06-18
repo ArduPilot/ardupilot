@@ -113,7 +113,7 @@ void Scheduler::init()
     	hal.console->printf("OK created task _uart_thread on FASTCPU\n");
     }	  
 
-    // we put thos on the SLOW core as it mounts the sd card, and that often isn't conencted.
+    // we put those on the SLOW core as it mounts the sd card, and that often isn't connected.
     if (xTaskCreatePinnedToCore(_io_thread, "SchedulerIO:APM_IO", IO_SS, this, IO_PRIO, &_io_task_handle,SLOWCPU) != pdPASS) {
         hal.console->printf("FAILED to create task _io_thread on SLOWCPU\n");
     } else {
@@ -121,9 +121,9 @@ void Scheduler::init()
     }	 
 
     if (xTaskCreatePinnedToCore(_storage_thread, "APM_STORAGE", STORAGE_SS, this, STORAGE_PRIO, &_storage_task_handle,SLOWCPU) != pdPASS) { //no actual flash writes without this, storage kinda appears to work, but does an erase on every boot and params don't persist over reset etc.
-        hal.console->printf("FAILED to create task _storage_thread\n");
+        hal.console->printf("FAILED to create task _storage_thread on SLOWCPU\n");
     } else {
-    	hal.console->printf("OK created task _storage_thread\n");
+    	hal.console->printf("OK created task _storage_thread on SLOWCPU\n");
     }
 
     //   xTaskCreatePinnedToCore(_print_profile, "APM_PROFILE", IO_SS, this, IO_PRIO, nullptr,SLOWCPU);
@@ -140,6 +140,9 @@ void IRAM_ATTR Scheduler::thread_create_trampoline(void *ctx)
     AP_HAL::MemberProc *t = (AP_HAL::MemberProc *)ctx;
     (*t)();
     free(t);
+
+    // delete the calling task
+    vTaskDelete(NULL);
 }
 
 /*

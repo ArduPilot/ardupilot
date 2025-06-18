@@ -32,6 +32,9 @@ static AP_Filesystem_FATFS fs_local;
 #elif AP_FILESYSTEM_ESP32_ENABLED
 #include "AP_Filesystem_ESP32.h"
 static AP_Filesystem_ESP32 fs_local;
+#elif AP_FILESYSTEM_LITTLEFS_ENABLED
+#include "AP_Filesystem_FlashMemory_LittleFS.h"
+static AP_Filesystem_FlashMemory_LittleFS fs_local;
 #elif AP_FILESYSTEM_POSIX_ENABLED
 #include "AP_Filesystem_posix.h"
 static AP_Filesystem_Posix fs_local;
@@ -192,8 +195,17 @@ int AP_Filesystem::mkdir(const char *pathname)
 
 int AP_Filesystem::rename(const char *oldpath, const char *newpath)
 {
-    const Backend &backend = backend_by_path(oldpath);
-    return backend.fs.rename(oldpath, newpath);
+    const Backend &oldbackend = backend_by_path(oldpath);
+
+    // Don't need the backend again, but we also need to remove the backend pre-fix from the new path.
+    const Backend &newbackend = backend_by_path(newpath);
+
+    // Don't try and rename between backends.
+    if (&oldbackend != &newbackend) {
+        return -1;
+    }
+
+    return oldbackend.fs.rename(oldpath, newpath);
 }
 
 AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
@@ -272,6 +284,14 @@ int AP_Filesystem::closedir(DirHandle *dirp)
     int ret = backend.fs.closedir(dirp->dir);
     delete dirp;
     return ret;
+}
+
+// return number of bytes that should be written before fsync for optimal
+// streaming performance/robustness. if zero, any number can be written.
+uint32_t AP_Filesystem::bytes_until_fsync(int fd)
+{
+    const Backend &backend = backend_by_fd(fd);
+    return backend.fs.bytes_until_fsync(fd);
 }
 
 // return free disk space in bytes

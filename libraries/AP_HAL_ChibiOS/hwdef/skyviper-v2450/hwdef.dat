@@ -4,6 +4,8 @@
 # start with fmuv3 base port
 include ../fmuv3/hwdef.dat
 
+undef HAL_CHIBIOS_ARCH_FMUV3
+
 # remove some unnecessary features inherited from fmuv3
 undef UART8
 undef UART8_TX
@@ -54,6 +56,12 @@ SPIDEV cypress    SPI2 DEVID11 FRAM_CS     MODE0  2*MHZ  2*MHZ
 SPIDEV cc2500     SPI2 DEVID12 FRAM_CS     MODE0  4*MHZ  4*MHZ
 SPIDEV pixartflow SPI4 DEVID13 MPU_EXT_CS  MODE3  2*MHZ  2*MHZ
 
+IMU Invensense SPI:mpu6000 ROTATION_ROLL_180
+
+BARO ICM20789 I2C:1:0x63 SPI:mpu6000
+
+COMPASS BMM150 I2C:0:0x10 false ROTATION_NONE
+
 # SPI2 for the cypress needs exclusive access or we will end up with
 # lost packets
 DMA_PRIORITY SPI2_* SPI* ADC*
@@ -72,14 +80,13 @@ include ../include/skyviper.inc
 define AP_BEACON_ENABLED 0
 define AP_OPTICALFLOW_ENABLED 0
 define AP_FRSKY_TELEM_ENABLED 0
-define HAL_ADSB_SAGETECH_ENABLED 0
-define HAL_ADSB_UAVIONIX_MAVLINK_ENABLED 0
+define HAL_ADSB_ENABLED 0
 define AP_AIS_ENABLED 0
 define AP_BATTERY_BACKEND_DEFAULT_ENABLED 0
 define AP_BATTERY_ANALOG_ENABLED 1
 define HAL_CRSF_TELEM_ENABLED 0
 define HAL_EFI_ENABLED 0
-define HAL_EXTERNAL_AHRS_ENABLED 0
+define AP_EXTERNAL_AHRS_ENABLED 0
 define HAL_GENERATOR_ENABLED 0
 define HAL_HOTT_TELEM_ENABLED 0
 define HAL_MOUNT_ENABLED 0
@@ -103,6 +110,7 @@ define AP_ROBOTISSERVO_ENABLED 0
 define AP_VOLZ_ENABLED 0
 define HAL_SUPPORT_RCOUT_SERIAL 0
 define HAL_TORQEEDO_ENABLED 0
+define AP_SBUSOUTPUT_ENABLED 0
 
 # the SkyViper only has a single Baro:
 define AP_BARO_BACKEND_DEFAULT_ENABLED 0
@@ -123,9 +131,6 @@ define AP_MOTORS_FRAME_QUAD_ENABLED 1
 define COMPASS_MAX_SENSORS 1
 define AP_COMPASS_BACKEND_DEFAULT_ENABLED 0
 define AP_COMPASS_BMM150_ENABLED 1
-# avoid trying to detect BMM150 backends; the one compass is
-#specifed as part of PCNC1:
-define AP_COMPASS_BMM150_DETECT_BACKENDS_ENABLED 0
 
 define BARO_MAX_INSTANCES 1
 define INS_MAX_INSTANCES 1
@@ -195,9 +200,6 @@ define OSD_PARAM_ENABLED 0
 define HAL_WITH_MSP_DISPLAYPORT 0
 define HAL_MSP_ENABLED 0
 
-// no UCP ADSB sensors:
-define HAL_ADSB_UCP_ENABLED 0
-
 // no auxiliary temperature sensors:
 define AP_TEMPERATURE_SENSOR_ENABLED 0
 
@@ -212,12 +214,18 @@ define AP_SCRIPTING_ENABLED 0
 
 // SkyViper does not have a second battery....
 define AP_BATT_MONITOR_MAX_INSTANCES 1
-define AP_MAVLINK_BATTERY2_ENABLED 0
 
 # SkyViper doesn't use the Plane landing library:
 define HAL_LANDING_DEEPSTALL_ENABLED 0
 
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
+
+# no payload place support.  It's lucky to lift itself:
+define AC_PAYLOAD_PLACE_ENABLED 0
+define AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED 0
+
+# don't need so many servo outputs (~850 bytes!)
+define NUM_SERVO_CHANNELS 15
 
 AUTOBUILD_TARGETS Copter

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Copter.h"
 
 class GCS_Copter : public GCS
 {
@@ -28,8 +28,6 @@ public:
     bool simple_input_active() const override;
     bool supersimple_input_active() const override;
 
-    uint8_t sysid_this_mav() const override;
-
 protected:
 
 
@@ -41,9 +39,8 @@ protected:
         return 250;
     }
 
-    GCS_MAVLINK_Copter *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-                                                AP_HAL::UARTDriver &uart) override {
-        return NEW_NOTHROW GCS_MAVLINK_Copter(params, uart);
+    GCS_MAVLINK_Copter *new_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) override {
+        return NEW_NOTHROW GCS_MAVLINK_Copter(uart);
     }
 
 };

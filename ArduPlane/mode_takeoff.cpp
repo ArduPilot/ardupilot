@@ -44,7 +44,7 @@ const AP_Param::GroupInfo ModeTakeoff::var_info[] = {
 
     // @Param: GND_PITCH
     // @DisplayName: Takeoff run pitch demand
-    // @Description: Degrees of pitch angle demanded during the takeoff run before speed reaches TKOFF_ROTATE_SPD. For taildraggers set to 3-point ground pitch angle and use TKOFF_TDRAG_ELEV to prevent nose tipover. For nose-wheel steer aircraft set to the ground pitch angle and if a reduction in nose-wheel load is required as speed rises, use a positive offset in TKOFF_GND_PITCH of up to 5 degrees above the angle on ground, starting at the mesured pitch angle and incrementing in 1 degree steps whilst checking for premature rotation and takeoff with each increment. To increase nose-wheel load, use a negative TKOFF_TDRAG_ELEV and refer to notes on TKOFF_TDRAG_ELEV before making adjustments.
+    // @Description: Degrees of pitch angle demanded during the takeoff run before speed reaches TKOFF_ROTATE_SPD. For taildraggers set to 3-point ground pitch angle and use TKOFF_TDRAG_ELEV to prevent nose tipover. For nose-wheel steer aircraft set to the ground pitch angle and if a reduction in nose-wheel load is required as speed rises, use a positive offset in TKOFF_GND_PITCH of up to 5 degrees above the angle on ground, starting at the measured pitch angle and incrementing in 1 degree steps whilst checking for premature rotation and takeoff with each increment. To increase nose-wheel load, use a negative TKOFF_TDRAG_ELEV and refer to notes on TKOFF_TDRAG_ELEV before making adjustments.
     // @Units: deg
     // @Range: -5.0 10.0
     // @Increment: 0.1
@@ -83,9 +83,12 @@ void ModeTakeoff::update()
     if (!takeoff_mode_setup) {
         plane.auto_state.takeoff_altitude_rel_cm = alt * 100;
         const uint16_t altitude = plane.relative_ground_altitude(false,true);
-        const float direction = degrees(ahrs.get_yaw());
+        const Vector2f &groundspeed2d = ahrs.groundspeed_vector();
+        const float direction = wrap_360(degrees(groundspeed2d.angle()));
+        const float groundspeed = groundspeed2d.length();
+
         // see if we will skip takeoff as already flying
-        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && ahrs.groundspeed() > 3) {
+        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && groundspeed > 3) {
             if (altitude >= alt) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Above TKOFF alt - loitering");
                 plane.next_WP_loc = plane.current_loc;
@@ -115,10 +118,19 @@ void ModeTakeoff::update()
 
             plane.set_flight_stage(AP_FixedWing::FlightStage::TAKEOFF);
 
-            if (!plane.throttle_suppressed) {
+            /*
+              don't lock in the takeoff loiter location until we reach
+              a ground speed of GPS_GND_CRS_MIN_SPD to cope with aircraft
+              with no compass or poor compass. If flying in a very
+              strong headwind then the is_flying() check above will
+              eventually trigger
+             */
+            if (!plane.throttle_suppressed &&
+                groundspeed > GPS_GND_CRS_MIN_SPD) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Takeoff to %.0fm for %.1fm heading %.1f deg",
                                 alt, dist, direction);
                 plane.takeoff_state.start_time_ms = millis();
+                plane.takeoff_state.level_off_start_time_ms = 0;
                 plane.takeoff_state.throttle_max_timer_ms = millis();
                 takeoff_mode_setup = true;
                 plane.steer_state.hold_course_cd = wrap_360_cd(direction*100); // Necessary to allow Plane::takeoff_calc_roll() to function.
@@ -130,7 +142,6 @@ void ModeTakeoff::update()
         plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
         takeoff_mode_setup = false;
     }
-
     // We update the waypoint to follow once we're past TKOFF_LVL_ALT or we
     // pass the target location. The check for target location prevents us
     // flying towards a wrong location if we can't climb.
@@ -154,6 +165,12 @@ void ModeTakeoff::update()
     if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF &&
         (altitude_cm >= (alt*100 - 200) ||
         start_loc.get_distance(plane.current_loc) >= dist)) {
+        plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
+    }
+
+    // If we have timed-out on the attempt to close the final few meters
+    // during pitch level-off, continue to NORMAL flight stage.
+    if (plane.check_takeoff_timeout_level_off()) {
         plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
     }
 

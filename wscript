@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-from __future__ import print_function
-
 import os.path
 import os
 import sys
@@ -16,6 +14,7 @@ import ardupilotwaf
 import boards
 import shutil
 import build_options
+import glob
 
 from waflib import Build, ConfigSet, Configure, Context, Utils
 from waflib.Configure import conf
@@ -82,6 +81,10 @@ Build.BuildContext.execute = ardupilotwaf.ap_autoconfigure(Build.BuildContext.ex
 Configure.ConfigurationContext.post_recurse = ardupilotwaf.ap_configure_post_recurse()
 
 
+# Get the GitHub Actions summary file path
+is_ci = os.getenv('CI')
+
+
 def _set_build_context_variant(board):
     for c in Context.classes:
         if not issubclass(c, Build.BuildContext):
@@ -132,6 +135,37 @@ def init(ctx):
     # define the variant build commands according to the board
     _set_build_context_variant(board)
 
+def add_build_options(g):
+    '''add any option in Tools/scripts/build_options.py'''
+    for opt in build_options.BUILD_OPTIONS:
+        enable_option = "--" + opt.config_option()
+        disable_option = enable_option.replace("--enable", "--disable")
+        enable_description = opt.description
+        if not enable_description.lower().startswith("enable"):
+            enable_description = "Enable " + enable_description
+        disable_description = "Disable " + enable_description[len("Enable "):]
+        g.add_option(enable_option,
+                     action='store_true',
+                     default=False,
+                     help=enable_description)
+        g.add_option(disable_option,
+                     action='store_true',
+                     default=False,
+                     help=disable_description)
+
+def add_script_options(g):
+    '''add any drivers or applets from libraries/AP_Scripting'''
+    driver_list = glob.glob(os.path.join(Context.run_dir, "libraries/AP_Scripting/drivers/*.lua"))
+    applet_list = glob.glob(os.path.join(Context.run_dir, "libraries/AP_Scripting/applets/*.lua"))
+    for d in driver_list + applet_list:
+        bname = os.path.basename(d)
+        embed_name = bname[:-4]
+        embed_option = "--embed-%s" % embed_name
+        g.add_option(embed_option,
+                     action='store_true',
+                     default=False,
+                     help="Embed %s in ROMFS" % bname)
+
 def options(opt):
     opt.load('compiler_cxx compiler_c waf_unit_test python')
     opt.load('ardupilotwaf')
@@ -155,6 +189,11 @@ def options(opt):
         action='store_true',
         default=False,
         help='Add debug symbolds to build.')
+
+    g.add_option('--vs-launch',
+        action='store_true',
+        default=False,
+        help='Generate wscript environment variable to .vscode/setting.json for Visual Studio Code')
     
     g.add_option('--disable-watchdog',
         action='store_true',
@@ -290,9 +329,6 @@ submodules at specific revisions.
     g.add_option('--enable-gps-logging', action='store_true',
                  default=False,
                  help="Enables GPS logging")
-    
-    g.add_option('--enable-dds', action='store_true',
-                 help="Enable the dds client to connect with ROS2/DDS.")
 
     g.add_option('--disable-networking', action='store_true',
                  help="Disable the networking API code")
@@ -303,6 +339,11 @@ submodules at specific revisions.
     g.add_option('--enable-dronecan-tests', action='store_true',
                  default=False,
                  help="Enables DroneCAN tests in sitl")
+
+    g.add_option('--sitl-littlefs', action='store_true',
+                 default=False,
+                 help="Enable littlefs for filesystem access on SITL (under construction)")
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -440,22 +481,10 @@ configuration in order to save typing.
         help='enables checking of new to ensure NEW_NOTHROW is used')
 
     # support enabling any option in build_options.py
-    for opt in build_options.BUILD_OPTIONS:
-        enable_option = "--" + opt.config_option()
-        disable_option = enable_option.replace("--enable", "--disable")
-        enable_description = opt.description
-        if not enable_description.lower().startswith("enable"):
-            enable_description = "Enable " + enable_description
-        disable_description = "Disable " + enable_description[len("Enable "):]
-        g.add_option(enable_option,
-                     action='store_true',
-                     default=False,
-                     help=enable_description)
-        g.add_option(disable_option,
-                     action='store_true',
-                     default=False,
-                     help=disable_description)
-    
+    add_build_options(g)
+
+    # support embedding lua drivers and applets
+    add_script_options(g)
     
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
@@ -476,6 +505,8 @@ def _collect_autoconfig_files(cfg):
                 cfg.files.append(p)
 
 def configure(cfg):
+    if is_ci:
+        print(f"::group::Waf Configure")
 	# we need to enable debug mode when building for gconv, and force it to sitl
     if cfg.options.board is None:
         cfg.options.board = 'sitl'
@@ -502,6 +533,7 @@ def configure(cfg):
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.VS_LAUNCH = cfg.options.vs_launch
     cfg.env.DEBUG_SYMBOLS = cfg.options.debug_symbols
     cfg.env.COVERAGE = cfg.options.coverage
     cfg.env.FORCE32BIT = cfg.options.force_32bit
@@ -565,6 +597,16 @@ def configure(cfg):
     if cfg.options.enable_benchmarks:
         cfg.load('gbenchmark')
     cfg.load('gtest')
+
+    if cfg.env.BOARD == "sitl":
+        cfg.start_msg('Littlefs')
+
+        if cfg.options.sitl_littlefs:
+            cfg.end_msg('enabled')
+        else:
+            cfg.end_msg('disabled', color='YELLOW')
+
+    cfg.load('littlefs')
     cfg.load('static_linking')
     cfg.load('build_summary')
 
@@ -594,6 +636,7 @@ def configure(cfg):
     cfg.recurse('libraries/SITL')
 
     cfg.recurse('libraries/AP_Networking')
+    cfg.recurse('libraries/AP_DDS')
 
     cfg.start_msg('Scripting runtime checks')
     if cfg.options.scripting_checks:
@@ -606,6 +649,13 @@ def configure(cfg):
         cfg.end_msg('enabled')
     else:
         cfg.end_msg('disabled', color='YELLOW')
+
+    if cfg.env.DEBUG:
+        cfg.start_msg('VS Code launch')
+        if cfg.env.VS_LAUNCH:
+            cfg.end_msg('enabled')
+        else:
+            cfg.end_msg('disabled', color='YELLOW')
 
     cfg.start_msg('Coverage build')
     if cfg.env.COVERAGE:
@@ -651,6 +701,13 @@ def configure(cfg):
 
     cfg.remove_target_list()
     _collect_autoconfig_files(cfg)
+    if is_ci:
+        print("::endgroup::")
+
+    if cfg.env.DEBUG and cfg.env.VS_LAUNCH:
+        import vscode_helper
+        vscode_helper.init_launch_json_if_not_exist(cfg)
+        vscode_helper.update_openocd_cfg(cfg)
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
@@ -766,8 +823,7 @@ def _build_dynamic_sources(bld):
             ]
         )
 
-    if bld.env.ENABLE_DDS:
-        bld.recurse("libraries/AP_DDS")
+    bld.recurse("libraries/AP_DDS")
 
     def write_version_header(tsk):
         bld = tsk.generator.bld
@@ -876,6 +932,8 @@ def _load_pre_build(bld):
         brd.pre_build(bld)    
 
 def build(bld):
+    if is_ci:
+        print(f"::group::Waf Build")
     config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
     bld.env.CCDEPS = config_hash
     bld.env.CXXDEPS = config_hash
@@ -894,6 +952,10 @@ def build(bld):
     if bld.get_board().with_can:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['dronecan']
 
+    if bld.get_board().with_littlefs:
+        bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['littlefs']
+        bld.littlefs()
+
     _build_cmd_tweaks(bld)
 
     if bld.env.SUBMODULE_UPDATE:
@@ -911,6 +973,15 @@ def build(bld):
     _build_recursion(bld)
 
     _build_post_funs(bld)
+    if is_ci:
+        def print_ci_endgroup(bld):
+            print(f"::endgroup::")
+        bld.add_post_fun(print_ci_endgroup)
+
+
+    if bld.env.DEBUG and bld.env.VS_LAUNCH:
+        import vscode_helper
+        vscode_helper.update_settings(bld)
 
 ardupilotwaf.build_command('check',
     program_group_list='all',

@@ -20,26 +20,20 @@ Run takeoff test on Copter.
 Warning - This is NOT production code; it's a simple demo of capability.
 """
 
-import math
 import rclpy
 import time
-import errno
 
 from rclpy.node import Node
-from builtin_interfaces.msg import Time
-from ardupilot_msgs.msg import GlobalPosition
 from geographic_msgs.msg import GeoPoseStamped
-from geopy import distance
-from geopy import point
 from ardupilot_msgs.srv import ArmMotors
 from ardupilot_msgs.srv import ModeSwitch
 from ardupilot_msgs.srv import Takeoff
 
 
-
 COPTER_MODE_GUIDED = 4
 
 TAKEOFF_ALT = 10.5
+
 
 class CopterTakeoff(Node):
     """Copter takeoff using guided control."""
@@ -65,7 +59,7 @@ class CopterTakeoff(Node):
         self._client_takeoff = self.create_client(Takeoff, self._takeoff_topic)
         while not self._client_takeoff.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('takeoff service not available, waiting again...')
-        
+
         self.declare_parameter("geopose_topic", "/ap/geopose/filtered")
         self._geopose_topic = self.get_parameter("geopose_topic").get_parameter_value().string_value
         qos = rclpy.qos.QoSProfile(
@@ -83,7 +77,6 @@ class CopterTakeoff(Node):
 
             # Store current state
             self._cur_geopose = msg
-
 
     def arm(self):
         req = ArmMotors.Request()
@@ -113,14 +106,14 @@ class CopterTakeoff(Node):
         """Try to switch mode. Returns true on success, or false if mode switch fails or times out."""
         is_in_desired_mode = False
         start = self.get_clock().now()
-        while not is_in_desired_mode:
+        while not is_in_desired_mode and self.get_clock().now() - start < timeout:
             result = self.switch_mode(desired_mode)
             # Handle successful switch or the case that the vehicle is already in expected mode
             is_in_desired_mode = result.status or result.curr_mode == desired_mode
             time.sleep(1)
 
         return is_in_desired_mode
-    
+
     def takeoff(self, alt):
         req = Takeoff.Request()
         req.alt = alt
@@ -132,16 +125,17 @@ class CopterTakeoff(Node):
         """Try to takeoff. Returns true on success, or false if takeoff fails or times out."""
         takeoff_success = False
         start = self.get_clock().now()
-        while not takeoff_success:
+        while not takeoff_success and self.get_clock().now() - start < timeout:
             result = self.takeoff(alt)
             takeoff_success = result.status
             time.sleep(1)
 
         return takeoff_success
-    
+
     def get_cur_geopose(self):
         """Return latest geopose."""
         return self._cur_geopose
+
 
 def main(args=None):
     """Node entry point."""

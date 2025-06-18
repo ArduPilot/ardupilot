@@ -1,6 +1,7 @@
 # encoding: utf-8
 
-from __future__ import print_function
+# flake8: noqa
+
 from waflib import Build, ConfigSet, Configure, Context, Errors, Logs, Options, Utils, Task
 from waflib.Configure import conf
 from waflib.Scripting import run_command
@@ -26,7 +27,6 @@ COMMON_VEHICLE_DEPENDENT_CAN_LIBRARIES = [
 ]
 
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
-    'AP_Airspeed',
     'AP_AccelCal',
     'AP_ADC',
     'AP_AHRS',
@@ -42,6 +42,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_GSOF',
     'AP_HAL',
     'AP_HAL_Empty',
+    'AP_DDS',
     'AP_InertialSensor',
     'AP_Math',
     'AP_Mission',
@@ -107,6 +108,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_EFI',
     'AP_Hott_Telem',
     'AP_ESC_Telem',
+    'AP_Servo_Telem',
     'AP_Stats',
     'AP_GyroFFT',
     'AP_RCTelemetry',
@@ -129,6 +131,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Arming',
     'AP_RCMapper',
     'AP_MultiHeap',
+    'AP_Follow',
 ]
 
 def get_legacy_defines(sketch_name, bld):
@@ -145,10 +148,27 @@ def get_legacy_defines(sketch_name, bld):
         'AP_BUILD_TARGET_NAME="' + sketch_name + '"',
     ]
 
+def set_double_precision_flags(flags):
+    # set up flags for double precision files:
+    # * remove all single precision constant flags
+    # * set define to allow double precision math in AP headers
+
+    flags = flags[:] # copy the list to avoid affecting other builds
+
+    # remove GCC and clang single precision constant flags
+    for opt in ('-fsingle-precision-constant', '-cl-single-precision-constant'):
+        while True: # might have multiple copies from different sources
+            try:
+                flags.remove(opt)
+            except ValueError:
+                break
+    flags.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+
+    return flags
+
 IGNORED_AP_LIBRARIES = [
     'doc',
     'AP_Scripting', # this gets explicitly included when it is needed and should otherwise never be globbed in
-    'AP_DDS',
 ]
 
 
@@ -475,14 +495,7 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
         )
         filename = os.path.basename(f.abspath())
         if filename in DOUBLE_PRECISION_SOURCES:
-            t.env.CXXFLAGS = t.env.CXXFLAGS[:]
-            single_precision_option='-fsingle-precision-constant'
-            if single_precision_option in t.env.CXXFLAGS:
-                t.env.CXXFLAGS.remove(single_precision_option)
-            single_precision_option='-cl-single-precision-constant'
-            if single_precision_option in t.env.CXXFLAGS:
-                t.env.CXXFLAGS.remove(single_precision_option)
-            t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+            t.env.CXXFLAGS = set_double_precision_flags(t.env.CXXFLAGS)
 
 _versions = []
 
@@ -668,7 +681,7 @@ arducopter and upload it to my board".
         action='store',
         dest='upload_port',
         default=None,
-        help='''Specify the port to be used with the --upload option. For example a port of /dev/ttyS10 indicates that serial port 10 shuld be used.
+        help='''Specify the port to be used with the --upload option. For example a port of /dev/ttyS10 indicates that serial port 10 should be used.
 ''')
 
     g.add_option('--upload-blueos',

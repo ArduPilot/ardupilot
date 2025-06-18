@@ -17,7 +17,6 @@
 #include "Device.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include <stdio.h>
 
 #if HAL_USE_I2C == TRUE || HAL_USE_SPI == TRUE || HAL_USE_WSPI == TRUE

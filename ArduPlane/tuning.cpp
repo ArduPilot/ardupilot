@@ -37,6 +37,9 @@ const uint8_t AP_Tuning_Plane::tuning_set_az[] =               { TUNING_AZ_P, TU
 const uint8_t AP_Tuning_Plane::tuning_set_rate_pitchDP[]=      { TUNING_RATE_PITCH_D, TUNING_RATE_PITCH_P };
 const uint8_t AP_Tuning_Plane::tuning_set_rate_rollDP[]=       { TUNING_RATE_ROLL_D, TUNING_RATE_ROLL_P };
 const uint8_t AP_Tuning_Plane::tuning_set_rate_yawDP[]=        { TUNING_RATE_YAW_D, TUNING_RATE_YAW_P };
+const uint8_t AP_Tuning_Plane::tuning_set_dp_roll_pitch[] =    { TUNING_RLL_D, TUNING_RLL_P, TUNING_PIT_D, TUNING_PIT_P };
+const uint8_t AP_Tuning_Plane::tuning_set_pidff_roll[] =       { TUNING_RLL_P, TUNING_RLL_I, TUNING_RLL_D, TUNING_RLL_FF };
+const uint8_t AP_Tuning_Plane::tuning_set_pidff_pitch[] =      { TUNING_PIT_P, TUNING_PIT_I, TUNING_PIT_D, TUNING_PIT_FF };
 
 // macro to prevent getting the array length wrong
 #define TUNING_ARRAY(v) ARRAY_SIZE(v), v
@@ -53,6 +56,9 @@ const AP_Tuning_Plane::tuning_set AP_Tuning_Plane::tuning_sets[] = {
     { TUNING_SET_RATE_PITCHDP,          TUNING_ARRAY(tuning_set_rate_pitchDP) },
     { TUNING_SET_RATE_ROLLDP,           TUNING_ARRAY(tuning_set_rate_rollDP) },
     { TUNING_SET_RATE_YAWDP,            TUNING_ARRAY(tuning_set_rate_yawDP) },
+    { TUNING_SET_DP_ROLL_PITCH,         TUNING_ARRAY(tuning_set_dp_roll_pitch) },
+    { TUNING_SET_PIDFF_ROLL,            TUNING_ARRAY(tuning_set_pidff_roll) },
+    { TUNING_SET_PIDFF_PITCH,           TUNING_ARRAY(tuning_set_pidff_pitch) },
     { 0, 0, nullptr }
 };
 
@@ -160,28 +166,28 @@ AP_Float *AP_Tuning_Plane::get_param_pointer(uint8_t parm)
         return &plane.quadplane.attitude_control->get_angle_yaw_p().kP();
 
     case TUNING_PXY_P:
-        return &plane.quadplane.pos_control->get_pos_xy_p().kP();
+        return &plane.quadplane.pos_control->get_pos_NE_p().kP();
 
     case TUNING_PZ_P:
-        return &plane.quadplane.pos_control->get_pos_z_p().kP();
+        return &plane.quadplane.pos_control->get_pos_U_p().kP();
 
     case TUNING_VXY_P:
-        return &plane.quadplane.pos_control->get_vel_xy_pid().kP();
+        return &plane.quadplane.pos_control->get_vel_NE_pid().kP();
 
     case TUNING_VXY_I:
-        return &plane.quadplane.pos_control->get_vel_xy_pid().kI();
+        return &plane.quadplane.pos_control->get_vel_NE_pid().kI();
 
     case TUNING_VZ_P:
-        return &plane.quadplane.pos_control->get_vel_z_pid().kP();
+        return &plane.quadplane.pos_control->get_vel_U_pid().kP();
 
     case TUNING_AZ_P:
-        return &plane.quadplane.pos_control->get_accel_z_pid().kP();
+        return &plane.quadplane.pos_control->get_accel_U_pid().kP();
 
     case TUNING_AZ_I:
-        return &plane.quadplane.pos_control->get_accel_z_pid().kI();
+        return &plane.quadplane.pos_control->get_accel_U_pid().kI();
 
     case TUNING_AZ_D:
-        return &plane.quadplane.pos_control->get_accel_z_pid().kD();
+        return &plane.quadplane.pos_control->get_accel_U_pid().kD();
 
     case TUNING_RATE_PITCH_FF:
         return &plane.quadplane.attitude_control->get_rate_pitch_pid().ff();

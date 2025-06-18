@@ -189,11 +189,41 @@ public:
         k_rcin15_mapped         = 154,
         k_rcin16_mapped         = 155,
         k_lift_release          = 156,
+        k_motor13               = 160,
+        k_motor14               = 161,
+        k_motor15               = 162,
+        k_motor16               = 163,
+        k_motor17               = 164,
+        k_motor18               = 165,
+        k_motor19               = 166,
+        k_motor20               = 167,
+        k_motor21               = 168,
+        k_motor22               = 169,
+        k_motor23               = 170,
+        k_motor24               = 171,
+        k_motor25               = 172,
+        k_motor26               = 173,
+        k_motor27               = 174,
+        k_motor28               = 175,
+        k_motor29               = 176,
+        k_motor30               = 177,
+        k_motor31               = 178,
+        k_motor32               = 179,
+        k_cam_zoom              = 180,
+        k_lights1               = 181,
+        k_lights2               = 182,
+        k_video_switch          = 183,
+        k_actuator1             = 184,   // Aux channels used for controlling user peripherals
+        k_actuator2             = 185,
+        k_actuator3             = 186,
+        k_actuator4             = 187,
+        k_actuator5             = 188,
+        k_actuator6             = 189,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
-    } Aux_servo_function_t;
+    } Function;
 
     // check if a function is valid for indexing into functions
-    static bool valid_function(Aux_servo_function_t fn) {
+    static bool valid_function(Function fn) {
         return fn >= k_none && fn < k_nr_aux_servo_functions;
     }
     bool valid_function(void) const {
@@ -248,26 +278,21 @@ public:
     }
 
     // return true if function is for a multicopter motor
-    static bool is_motor(SRV_Channel::Aux_servo_function_t function);
+    static bool is_motor(Function function);
 
     // return true if function is for anything that should be stopped in a e-stop situation, ie is dangerous
-    static bool should_e_stop(SRV_Channel::Aux_servo_function_t function);
+    static bool should_e_stop(Function function);
 
     // return true if function is for a control surface
-    static bool is_control_surface(SRV_Channel::Aux_servo_function_t function);
+    static bool is_control_surface(Function function);
 
     // return the function of a channel
-    SRV_Channel::Aux_servo_function_t get_function(void) const {
-        return (SRV_Channel::Aux_servo_function_t)function.get();
+    SRV_Channel::Function get_function(void) const {
+        return (SRV_Channel::Function)function.get();
     }
 
     // return the motor number of a channel, or -1 if not a motor
     int8_t get_motor_num(void) const;
-
-    // set and save function for channel. Used in upgrade of parameters in plane
-    void function_set_and_save(SRV_Channel::Aux_servo_function_t f) {
-        function.set_and_save(int8_t(f));
-    }
 
     // set and save function for reversed. Used in upgrade of parameters in plane
     void reversed_set_and_save_ifchanged(bool r) {
@@ -294,7 +319,7 @@ private:
     AP_Int16 servo_trim;
     // reversal, following convention that 1 means reversed, 0 means normal
     AP_Int8 reversed;
-    AP_Enum16<Aux_servo_function_t> function;
+    AP_Enum16<Function> function;
 
     // a pending output value as PWM
     uint16_t output_pwm;
@@ -365,63 +390,69 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // set the default function for a channel
-    static void set_default_function(uint8_t chan, SRV_Channel::Aux_servo_function_t function);
+    static void set_default_function(uint8_t chan, SRV_Channel::Function function);
 
     // set output value for a function channel as a pwm value
-    static void set_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t value);
+    static void set_output_pwm(SRV_Channel::Function function, uint16_t value);
 
     // set output value for a specific function channel as a pwm value
     static void set_output_pwm_chan(uint8_t chan, uint16_t value);
 
+    // get output value for a specific channel as a pwm value
+    static bool get_output_pwm_chan(uint8_t chan, uint16_t &value);
+    
     // set output value for a specific function channel as a pwm value for specified override time in ms
     static void set_output_pwm_chan_timeout(uint8_t chan, uint16_t value, uint16_t timeout_ms);
 
     // set output value for a function channel as a scaled value. This
     // this should be followed by a call to calc_pwm() to output the pwm values
-    static void set_output_scaled(SRV_Channel::Aux_servo_function_t function, float value);
+    static void set_output_scaled(SRV_Channel::Function function, float value);
 
     // get scaled output for the given function type.
-    static float get_output_scaled(SRV_Channel::Aux_servo_function_t function);
+    static float get_output_scaled(SRV_Channel::Function function);
 
     // get slew limited scaled output for the given function type
-    static float get_slew_limited_output_scaled(SRV_Channel::Aux_servo_function_t function);
+    static float get_slew_limited_output_scaled(SRV_Channel::Function function);
 
     // get pwm output for the first channel of the given function type.
-    static bool get_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t &value);
+    static bool get_output_pwm(SRV_Channel::Function function, uint16_t &value);
 
     // get normalised output (-1 to 1 with 0 at mid point of servo_min/servo_max)
     // Value is taken from pwm value.  Returns zero on error.
-    static float get_output_norm(SRV_Channel::Aux_servo_function_t function);
+    static float get_output_norm(SRV_Channel::Function function);
 
     // set normalised output (-1 to 1 with 0 at mid point of servo_min/servo_max) for the given function
-    static void set_output_norm(SRV_Channel::Aux_servo_function_t function, float value);
+    static void set_output_norm(SRV_Channel::Function function, float value);
 
     // get output channel mask for a function
-    static uint32_t get_output_channel_mask(SRV_Channel::Aux_servo_function_t function);
+    static uint32_t get_output_channel_mask(SRV_Channel::Function function);
 
     // limit slew rate to given limit in percent per second
-    static void set_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, uint16_t range, float dt);
+    static void set_slew_rate(SRV_Channel::Function function, float slew_rate, uint16_t range, float dt);
+
+    // update channels last_scaled_output to match value
+    static void set_slew_last_scaled_output(SRV_Channel::Function function, float value);
 
     // call output_ch() on all channels
     static void output_ch_all(void);
 
     // setup output ESC scaling based on a channels MIN/MAX
-    void set_esc_scaling_for(SRV_Channel::Aux_servo_function_t function);
+    void set_esc_scaling_for(SRV_Channel::Function function);
 
     // return true when auto_trim enabled
     bool auto_trim_enabled(void) const { return auto_trim; }
 
     // adjust trim of a channel by a small increment
-    void adjust_trim(SRV_Channel::Aux_servo_function_t function, float v);
+    void adjust_trim(SRV_Channel::Function function, float v);
 
     // set MIN/MAX parameters for a function
-    static void set_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
+    static void set_output_min_max(SRV_Channel::Function function, uint16_t min_pwm, uint16_t max_pwm);
 
     // set MIN/MAX parameter defaults for a function
-    static void set_output_min_max_defaults(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
+    static void set_output_min_max_defaults(SRV_Channel::Function function, uint16_t min_pwm, uint16_t max_pwm);
 
     // Save MIN/MAX/REVERSED parameters for a function
-    static void save_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
+    static void save_output_min_max(SRV_Channel::Function function, uint16_t min_pwm, uint16_t max_pwm);
 
     // save trims
     void save_trim(void);
@@ -430,46 +461,46 @@ public:
     static void setup_failsafe_trim_all_non_motors(void);
 
     // set output for all channels matching the given function type, allow radio_trim to center servo
-    static void set_output_pwm_trimmed(SRV_Channel::Aux_servo_function_t function, int16_t value);
+    static void set_output_pwm_trimmed(SRV_Channel::Function function, int16_t value);
 
     // set and save the trim for a function channel to the output value
-    static void set_trim_to_servo_out_for(SRV_Channel::Aux_servo_function_t function);
+    static void set_trim_to_servo_out_for(SRV_Channel::Function function);
 
     // set the trim for a function channel to min of the channel honnoring reverse unless ignore_reversed is true
-    static void set_trim_to_min_for(SRV_Channel::Aux_servo_function_t function, bool ignore_reversed = false);
+    static void set_trim_to_min_for(SRV_Channel::Function function, bool ignore_reversed = false);
 
     // set the trim for a function channel to given pwm
-    static void set_trim_to_pwm_for(SRV_Channel::Aux_servo_function_t function, int16_t pwm);
+    static void set_trim_to_pwm_for(SRV_Channel::Function function, int16_t pwm);
 
     // set output to min value
-    static void set_output_to_min(SRV_Channel::Aux_servo_function_t function);
+    static void set_output_to_min(SRV_Channel::Function function);
 
     // set output to max value
-    static void set_output_to_max(SRV_Channel::Aux_servo_function_t function);
+    static void set_output_to_max(SRV_Channel::Function function);
 
     // set output to trim value
-    static void set_output_to_trim(SRV_Channel::Aux_servo_function_t function);
+    static void set_output_to_trim(SRV_Channel::Function function);
 
     // copy radio_in to servo out
-    static void copy_radio_in_out(SRV_Channel::Aux_servo_function_t function, bool do_input_output=false);
+    static void copy_radio_in_out(SRV_Channel::Function function, bool do_input_output=false);
 
     // copy radio_in to servo_out by channel mask
     static void copy_radio_in_out_mask(uint32_t mask);
 
     // setup failsafe for an auxiliary channel function, by pwm
-    static void set_failsafe_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t pwm);
+    static void set_failsafe_pwm(SRV_Channel::Function function, uint16_t pwm);
 
     // setup failsafe for an auxiliary channel function
-    static void set_failsafe_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
+    static void set_failsafe_limit(SRV_Channel::Function function, SRV_Channel::Limit limit);
 
     // set servo to a Limit
-    static void set_output_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
+    static void set_output_limit(SRV_Channel::Function function, SRV_Channel::Limit limit);
 
     // return true if a function is assigned to a channel
-    static bool function_assigned(SRV_Channel::Aux_servo_function_t function);
+    static bool function_assigned(SRV_Channel::Function function);
 
     // set a servo_out value, and angle range, then calc_pwm
-    static void move_servo(SRV_Channel::Aux_servo_function_t function,
+    static void move_servo(SRV_Channel::Function function,
                            int16_t value, int16_t angle_min, int16_t angle_max);
 
     // assign and enable auxiliary channels
@@ -479,28 +510,28 @@ public:
     static void enable_by_mask(uint32_t mask);
 
     // return the current function for a channel
-    static SRV_Channel::Aux_servo_function_t channel_function(uint8_t channel);
+    static SRV_Channel::Function channel_function(uint8_t channel);
 
     // refresh aux servo to function mapping
     static void update_aux_servo_function(void);
 
     // set default channel for an auxiliary function
-    static bool set_aux_channel_default(SRV_Channel::Aux_servo_function_t function, uint8_t channel);
+    static bool set_aux_channel_default(SRV_Channel::Function function, uint8_t channel);
 
     // find first channel that a function is assigned to
-    static bool find_channel(SRV_Channel::Aux_servo_function_t function, uint8_t &chan);
+    static bool find_channel(SRV_Channel::Function function, uint8_t &chan);
 
     // find first channel that a function is assigned to, returning SRV_Channel object
-    static SRV_Channel *get_channel_for(SRV_Channel::Aux_servo_function_t function);
+    static SRV_Channel *get_channel_for(SRV_Channel::Function function);
 
     // call set_angle() on matching channels
-    static void set_angle(SRV_Channel::Aux_servo_function_t function, uint16_t angle);
+    static void set_angle(SRV_Channel::Function function, uint16_t angle);
 
     // call set_range() on matching channels
-    static void set_range(SRV_Channel::Aux_servo_function_t function, uint16_t range);
+    static void set_range(SRV_Channel::Function function, uint16_t range);
 
     // set output refresh frequency on a servo function
-    static void set_rc_frequency(SRV_Channel::Aux_servo_function_t function, uint16_t frequency);
+    static void set_rc_frequency(SRV_Channel::Function function, uint16_t frequency);
 
     // control pass-thru of channels
     void disable_passthrough(bool disable) {
@@ -508,7 +539,7 @@ public:
     }
 
     // constrain to output min/max for function
-    static void constrain_pwm(SRV_Channel::Aux_servo_function_t function);
+    static void constrain_pwm(SRV_Channel::Function function);
 
     // calculate PWM for all channels
     static void calc_pwm(void);
@@ -532,11 +563,14 @@ public:
     static void upgrade_parameters(void);
 
     // given a zero-based motor channel, return the k_motor function for that channel
-    static SRV_Channel::Aux_servo_function_t get_motor_function(uint8_t channel) {
+    static SRV_Channel::Function get_motor_function(uint8_t channel) {
         if (channel < 8) {
-            return SRV_Channel::Aux_servo_function_t(SRV_Channel::k_motor1+channel);
+            return SRV_Channel::Function(SRV_Channel::k_motor1+channel);
         }
-        return SRV_Channel::Aux_servo_function_t((SRV_Channel::k_motor9+(channel-8)));
+        if (channel < 12) {
+            return SRV_Channel::Function((SRV_Channel::k_motor9+(channel-8)));
+        }
+        return SRV_Channel::Function((SRV_Channel::k_motor13+(channel-12)));
     }
 
     void cork();
@@ -675,8 +709,8 @@ private:
 
     // linked list for slew rate handling
     struct slew_list {
-        slew_list(SRV_Channel::Aux_servo_function_t _func) : func(_func) {};
-        const SRV_Channel::Aux_servo_function_t func;
+        slew_list(SRV_Channel::Function _func) : func(_func) {};
+        const SRV_Channel::Function func;
         float last_scaled_output;
         float max_change;
         slew_list * next;

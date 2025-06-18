@@ -41,7 +41,7 @@ void AP_WindVane_SITL::update_direction()
         wind_vector_ef.x += AP::sitl()->state.speedN;
         wind_vector_ef.y += AP::sitl()->state.speedE;
 
-        _frontend._direction_apparent_raw =  wrap_PI(atan2f(wind_vector_ef.y, wind_vector_ef.x) - AP::ahrs().get_yaw());
+        _frontend._direction_apparent_raw =  wrap_PI(atan2f(wind_vector_ef.y, wind_vector_ef.x) - AP::ahrs().get_yaw_rad());
 
     } else { // WINDVANE_SITL_APARRENT
         // directly read the body frame apparent wind set by physics backend

@@ -32,7 +32,7 @@ using namespace Linux;
 
 static void catch_sigbus(int sig)
 {
-    AP_HAL::panic("RCOutputAioPRU.cpp:SIGBUS error generated\n");
+    AP_HAL::panic("RCOutputAioPRU.cpp:SIGBUS error generated");
 }
 void RCOutput_AioPRU::init()
 {

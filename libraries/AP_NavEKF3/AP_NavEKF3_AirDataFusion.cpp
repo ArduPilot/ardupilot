@@ -475,8 +475,8 @@ void NavEKF3_core::FuseSideslip()
 void NavEKF3_core::FuseDragForces()
 {
     // drag model parameters
-    const ftype bcoef_x = frontend->_ballisticCoef_x;
-    const ftype bcoef_y = frontend->_ballisticCoef_y;
+    const ftype bcoef_x = frontend->_ballisticCoef_x.get();
+    const ftype bcoef_y = frontend->_ballisticCoef_y.get();
     const ftype mcoef = frontend->_momentumDragCoef.get();
     const bool using_bcoef_x = bcoef_x > 1.0f;
     const bool using_bcoef_y = bcoef_y > 1.0f;
@@ -485,7 +485,7 @@ void NavEKF3_core::FuseDragForces()
     ZERO_FARRAY(Kfusion);
     Vector24 Hfusion; // Observation Jacobians
     const ftype R_ACC = sq(fmaxF(frontend->_dragObsNoise, 0.5f));
-    const ftype density_ratio = sqrtF(dal.get_EAS2TAS());
+    const ftype density_ratio = 1.0f/sq(dal.get_EAS2TAS());
     const ftype rho = fmaxF(1.225f * density_ratio, 0.1f); // air density
 
     // get latest estimated orientation

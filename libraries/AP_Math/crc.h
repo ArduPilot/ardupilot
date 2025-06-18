@@ -21,7 +21,7 @@
 
 uint16_t crc_crc4(uint16_t *data);
 uint8_t crc_crc8(const uint8_t *p, uint8_t len);
-uint8_t crc8_generic(const uint8_t *buf, const uint16_t buf_len, const uint8_t polynomial);     // CRC8 that does not use a lookup table for generic polynomials
+uint8_t crc8_generic(const uint8_t *buf, const uint16_t buf_len, const uint8_t polynomial, uint8_t initial_value=0);     // CRC8 that does not use a lookup table for generic polynomials
 uint8_t crc8_dvb_s2(uint8_t crc, uint8_t a);
 uint8_t crc8_dvb(uint8_t crc, uint8_t a, uint8_t seed);
 uint8_t crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length);

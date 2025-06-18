@@ -103,6 +103,21 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input
                             float vel_max, float accel_max,
                             float jerk_max, float dt, bool limit_total);
 
+/* shape_angle_vel_accel calculate a jerk limited path from the current angle, angular velocity and angular acceleration to an input angle, angular velocity and angular acceleration.           
+ The function takes the current angle, angular velocity, and angular acceleration and calculates the required jerk limited adjustment to the angular acceleration for the next time dt.
+ The kinematic path is constrained by :
+    maximum angular velocity - angle_vel_max,
+    maximum angular acceleration - angle_accel_max,
+    maximum angular jerk - angle_jerk_max.
+ The function alters the variable accel to follow a jerk limited kinematic path to angle_input, angle_vel_input and angle_accel_input.
+ The angle_vel_max limit can be removed by setting the desired limit to zero.
+ The correction angular velocity is limited to angle_vel_max. If limit_total is true the total angular velocity is limited to angle_vel_max.
+ The correction angular acceleration can is limited to angle_accel_max. If limit_total is true the total angular acceleration is limited to angle_accel_max.
+*/            
+void shape_angle_vel_accel(float angle_input, float angle_vel_input, float angle_accel_input,
+                         float angle, float angle_vel, float& angle_accel,
+                         float angle_vel_max, float angle_accel_max,
+                         float angle_jerk_max, float dt, bool limit_total);
 
 /* limit_accel_xy limits the acceleration to prioritise acceleration perpendicular to the provided velocity vector.
  Input parameters are:

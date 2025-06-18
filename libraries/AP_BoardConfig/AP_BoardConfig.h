@@ -54,17 +54,17 @@ public:
         PX4_BOARD_AEROFC   = 13,
         PX4_BOARD_PIXHAWK_PRO = 14,
         PX4_BOARD_AUAV21   = 20,
-        PX4_BOARD_PCNC1    = 21,
+        // PX4_BOARD_PCNC1    = 21,
         PX4_BOARD_MINDPXV2 = 22,
         PX4_BOARD_SP01     = 23,
         PX4_BOARD_FMUV5    = 24,
-        VRX_BOARD_BRAIN51  = 30,
-        VRX_BOARD_BRAIN52  = 32,
-        VRX_BOARD_BRAIN52E = 33,
+        // VRX_BOARD_BRAIN51  = 30,
+        // VRX_BOARD_BRAIN52  = 32,
+        // VRX_BOARD_BRAIN52E = 33,
         VRX_BOARD_UBRAIN51 = 34,
         VRX_BOARD_UBRAIN52 = 35,
         VRX_BOARD_CORE10   = 36,
-        VRX_BOARD_BRAIN54  = 38,
+        // VRX_BOARD_BRAIN54  = 38,
         PX4_BOARD_FMUV6    = 39,
         FMUV6_BOARD_HOLYBRO_6X = 40,
         FMUV6_BOARD_CUAV_6X = 41,
@@ -246,7 +246,7 @@ private:
         AP_Int16 safety_option;
         AP_Int32 ignore_safety_channels;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        AP_Int8 ser_rtscts[6];
+        AP_Int8 ser_rtscts[9];
         AP_Int8 sbus_out_rate;
 #endif
         AP_Int8 board_type;

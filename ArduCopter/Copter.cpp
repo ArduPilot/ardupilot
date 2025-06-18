@@ -75,6 +75,7 @@
  */
 
 #include "Copter.h"
+#include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 
 #define FORCE_VERSION_H_INCLUDE
 #include "version.h"
@@ -82,7 +83,7 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros, _prio) SCHED_TASK_CLASS(Copter, &copter, func, _interval_ticks, _max_time_micros, _prio)
+#define SCHED_TASK(func, rate_hz, _max_time_micros, _prio) SCHED_TASK_CLASS(Copter, &copter, func, rate_hz, _max_time_micros, _prio)
 #define FAST_TASK(func) FAST_TASK_CLASS(Copter, &copter, func)
 
 /*
@@ -113,7 +114,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     // update INS immediately to get current gyro data populated
     FAST_TASK_CLASS(AP_InertialSensor, &copter.ins, update),
     // run low level rate controllers that only require IMU data
-    FAST_TASK(run_rate_controller),
+    FAST_TASK(run_rate_controller_main),
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     FAST_TASK(run_custom_controller),
 #endif
@@ -121,7 +122,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     FAST_TASK(heli_update_autorotation),
 #endif //HELI_FRAME
     // send outputs to the motors library immediately
-    FAST_TASK(motors_output),
+    FAST_TASK(motors_output_main),
      // run EKF state estimator (expensive)
     FAST_TASK(read_AHRS),
 #if FRAME_CONFIG == HELI_FRAME
@@ -163,7 +164,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(ToyMode,              &copter.g2.toy_mode,         update,          10,  50,  24),
 #endif
     SCHED_TASK(auto_disarm_check,     10,     50,  27),
-    SCHED_TASK(auto_trim,             10,     75,  30),
+#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+    SCHED_TASK_CLASS(RC_Channels_Copter,   &copter.g2.rc_channels,      auto_trim_run,   10,  75,  30),
+#endif
 #if AP_RANGEFINDER_ENABLED
     SCHED_TASK(read_rangefinder,      20,    100,  33),
 #endif
@@ -258,6 +261,10 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
 #if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button,            &copter.button,              update,           5, 100, 168),
+#endif
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // don't delete this, there is an equivalent (virtual) in AP_Vehicle for the non-rate loop case
+    SCHED_TASK(update_dynamic_notch_at_specified_rate_main,                       LOOP_RATE, 200, 215),
 #endif
 };
 
@@ -411,19 +418,69 @@ bool Copter::set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_
     mode_guided.set_angle(q, ang_vel_body, throttle, true);
     return true;
 }
-#endif
+
+// Register a custom mode with given number and names
+AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, const char* full_name, const char* short_name)
+{
+    const Mode::Number number = (Mode::Number)num;
+
+    // See if this mode has been registered already, if it has return the state for it
+    // This allows scripting restarts
+    for (uint8_t i = 0; i < ARRAY_SIZE(mode_guided_custom); i++) {
+        if (mode_guided_custom[i] == nullptr) {
+            break;
+        }
+        if ((mode_guided_custom[i]->mode_number() == number) &&
+            (strcmp(mode_guided_custom[i]->name(), full_name) == 0) &&
+            (strncmp(mode_guided_custom[i]->name4(), short_name, 4) == 0)) {
+            return &mode_guided_custom[i]->state;
+        }
+    }
+
+    // Number already registered to existing mode
+    if (mode_from_mode_num(number) != nullptr) {
+        return nullptr;
+    }
+
+    // Find free slot
+    for (uint8_t i = 0; i < ARRAY_SIZE(mode_guided_custom); i++) {
+        if (mode_guided_custom[i] == nullptr) {
+            // Duplicate strings so were not pointing to unknown memory
+            const char* full_name_copy = strdup(full_name);
+            const char* short_name_copy = strndup(short_name, 4);
+            if ((full_name_copy != nullptr) && (short_name_copy != nullptr)) {
+                mode_guided_custom[i] = NEW_NOTHROW ModeGuidedCustom(number, full_name_copy, short_name_copy);
+            }
+            if (mode_guided_custom[i] == nullptr) {
+                // Allocation failure
+                free((void*)full_name_copy);
+                free((void*)short_name_copy);
+                return nullptr;
+            }
+
+            // Registration successful, notify the GCS that it should re-request the available modes
+            gcs().available_modes_changed();
+
+            return &mode_guided_custom[i]->state;
+        }
+    }
+
+    // No free slots
+    return nullptr;
+}
+#endif // MODE_GUIDED_ENABLED
 
 #if MODE_CIRCLE_ENABLED
 // circle mode controls
 bool Copter::get_circle_radius(float &radius_m)
 {
-    radius_m = circle_nav->get_radius() * 0.01f;
+    radius_m = circle_nav->get_radius_cm() * 0.01f;
     return true;
 }
 
-bool Copter::set_circle_rate(float rate_dps)
+bool Copter::set_circle_rate(float rate_degs)
 {
-    circle_nav->set_rate(rate_dps);
+    circle_nav->set_rate_degs(rate_degs);
     return true;
 }
 #endif
@@ -570,12 +627,15 @@ void Copter::update_batt_compass(void)
 // should be run at loop rate
 void Copter::loop_rate_logging()
 {
-    if (should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
+   if (should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
         Log_Write_Attitude();
-        Log_Write_PIDS(); // only logs if PIDS bitmask is set
+        if (!using_rate_thread) {
+            Log_Write_Rate();
+            Log_Write_PIDS(); // only logs if PIDS bitmask is set
+        }
     }
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-    if (should_log(MASK_LOG_FTN_FAST)) {
+    if (should_log(MASK_LOG_FTN_FAST) && !using_rate_thread) {
         AP::ins().write_notch_log_messages();
     }
 #endif
@@ -593,10 +653,15 @@ void Copter::ten_hz_logging_loop()
     // log attitude controller data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
         Log_Write_Attitude();
+        if (!using_rate_thread) {
+            Log_Write_Rate();
+        }
     }
     if (!should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
     // log at 10Hz if PIDS bitmask is selected, even if no ATT bitmask is selected; logs at looprate if ATT_FAST and PIDS bitmask set
-        Log_Write_PIDS();
+        if (!using_rate_thread) {
+            Log_Write_PIDS();
+        }
     }
     // log EKF attitude data always at 10Hz unless ATTITUDE_FAST, then do it in the 25Hz loop
     if (!should_log(MASK_LOG_ATTITUDE_FAST)) {
@@ -624,7 +689,6 @@ void Copter::ten_hz_logging_loop()
         AP::ins().Write_Vibration();
     }
     if (should_log(MASK_LOG_CTUN)) {
-        attitude_control->control_monitor_log();
 #if HAL_PROXIMITY_ENABLED
         g2.proximity.log();  // Write proximity sensor distances
 #endif
@@ -655,12 +719,6 @@ void Copter::twentyfive_hz_logging()
         AP::ins().Write_IMU();
     }
 
-#if MODE_AUTOROTATE_ENABLED
-    if (should_log(MASK_LOG_ATTITUDE_MED) || should_log(MASK_LOG_ATTITUDE_FAST)) {
-        //update autorotation log
-        g2.arot.Log_Write_Autorotation();
-    }
-#endif
 #if HAL_GYROFFT_ENABLED
     if (should_log(MASK_LOG_FTN_FAST)) {
         gyro_fft.write_log_messages();
@@ -741,10 +799,25 @@ void Copter::one_hz_loop()
     AP_Notify::flags.flying = !ap.land_complete;
 
     // slowly update the PID notches with the average loop rate
-    attitude_control->set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
-    pos_control->get_accel_z_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    if (!using_rate_thread) {
+        attitude_control->set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    }
+    pos_control->get_accel_U_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     custom_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+#endif
+
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // see if we should have a separate rate thread
+    if (!started_rate_thread && get_fast_rate_type() != FastRateType::FAST_RATE_DISABLED) {
+        if (hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),
+                                         "rate",
+                                         1536, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
+            started_rate_thread = true;
+        } else {
+            AP_BoardConfig::allocation_error("rate thread");
+        }
+    }
 #endif
 }
 
@@ -779,6 +852,11 @@ void Copter::update_simple_mode(void)
 
     // mark radio frame as consumed
     ap.new_radio_frame = false;
+
+    // avoid processing bind-time RC values:
+    if (!rc().has_valid_input()) {
+        return;
+    }
 
     if (simple_mode == SimpleMode::SIMPLE) {
         // rotate roll, pitch input by -initial simple heading (i.e. north facing)
@@ -816,7 +894,7 @@ void Copter::update_super_simple_bearing(bool force_update)
     }
 
     super_simple_last_bearing = bearing;
-    const float angle_rad = radians((super_simple_last_bearing+18000)/100);
+    const float angle_rad = cd_to_rad(super_simple_last_bearing + 18000);
     super_simple_cos_yaw = cosf(angle_rad);
     super_simple_sin_yaw = sinf(angle_rad);
 }
@@ -852,7 +930,7 @@ void Copter::update_altitude()
 bool Copter::get_wp_distance_m(float &distance) const
 {
     // see GCS_MAVLINK_Copter::send_nav_controller_output()
-    distance = flightmode->wp_distance() * 0.01;
+    distance = flightmode->wp_distance_m();
     return true;
 }
 
@@ -892,13 +970,11 @@ Copter::Copter(void)
     flight_modes(&g.flight_mode1),
     pos_variance_filt(FS_EKF_FILT_DEFAULT),
     vel_variance_filt(FS_EKF_FILT_DEFAULT),
-    hgt_variance_filt(FS_EKF_FILT_DEFAULT),
     flightmode(&mode_stabilize),
     simple_cos_yaw(1.0f),
     super_simple_cos_yaw(1.0),
     land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),
     rc_throttle_control_in_filter(1.0f),
-    inertial_nav(ahrs),
     param_loader(var_info)
 {
 }

@@ -22,7 +22,7 @@ void Copter::tuning()
     }
 
     // exit immediately when radio failsafe is invoked or transmitter has not been turned on
-    if (failsafe.radio || failsafe.radio_counter != 0 || rc_tuning->get_radio_in() == 0) {
+    if (!rc().has_valid_input() || rc_tuning->get_radio_in() == 0) {
         return;
     }
 
@@ -71,40 +71,40 @@ void Copter::tuning()
 
     // Altitude and throttle tuning
     case TUNING_ALTITUDE_HOLD_KP:
-        pos_control->get_pos_z_p().set_kP(tuning_value);
+        pos_control->get_pos_U_p().set_kP(tuning_value);
         break;
 
     case TUNING_THROTTLE_RATE_KP:
-        pos_control->get_vel_z_pid().set_kP(tuning_value);
+        pos_control->get_vel_U_pid().set_kP(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KP:
-        pos_control->get_accel_z_pid().set_kP(tuning_value);
+        pos_control->get_accel_U_pid().set_kP(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KI:
-        pos_control->get_accel_z_pid().set_kI(tuning_value);
+        pos_control->get_accel_U_pid().set_kI(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KD:
-        pos_control->get_accel_z_pid().set_kD(tuning_value);
+        pos_control->get_accel_U_pid().set_kD(tuning_value);
         break;
 
     // Loiter and navigation tuning
     case TUNING_LOITER_POSITION_KP:
-        pos_control->get_pos_xy_p().set_kP(tuning_value);
+        pos_control->get_pos_NE_p().set_kP(tuning_value);
         break;
 
     case TUNING_VEL_XY_KP:
-        pos_control->get_vel_xy_pid().set_kP(tuning_value);
+        pos_control->get_vel_NE_pid().set_kP(tuning_value);
         break;
 
     case TUNING_VEL_XY_KI:
-        pos_control->get_vel_xy_pid().set_kI(tuning_value);
+        pos_control->get_vel_NE_pid().set_kI(tuning_value);
         break;
 
     case TUNING_WP_SPEED:
-        wp_nav->set_speed_xy(tuning_value);
+        wp_nav->set_speed_NE_cms(tuning_value);
         break;
 
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
@@ -140,12 +140,12 @@ void Copter::tuning()
 #endif
 
     case TUNING_DECLINATION:
-        compass.set_declination(ToRad(tuning_value), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
+        compass.set_declination(radians(tuning_value), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
         break;
 
 #if MODE_CIRCLE_ENABLED
     case TUNING_CIRCLE_RATE:
-        circle_nav->set_rate(tuning_value);
+        circle_nav->set_rate_degs(tuning_value);
         break;
 #endif
 
@@ -195,6 +195,10 @@ void Copter::tuning()
 
     case TUNING_POS_CONTROL_ANGLE_MAX:
         pos_control->set_lean_angle_max_cd(tuning_value * 100.0);
+        break;
+
+    case TUNING_LOITER_MAX_XY_SPEED:
+        loiter_nav->set_speed_max_NE_cms(tuning_value);
         break;
     }
 }

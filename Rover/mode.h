@@ -28,6 +28,7 @@ public:
         SMART_RTL    = 12,
         GUIDED       = 15,
         INITIALISING = 16,
+        // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
     // Constructor
@@ -417,6 +418,9 @@ public:
 
     Number mode_number() const override { return Number::CIRCLE; }
     const char *name4() const override { return "CIRC"; }
+
+    // return the distance at which the vehicle is considered to be on track along the circle
+    float get_reached_distance() const;
 
     // initialise with specific center location, radius (in meters) and direction
     // replaces use of _enter when initialised from within Auto mode

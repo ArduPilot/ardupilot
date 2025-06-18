@@ -58,15 +58,17 @@ public:
 
     virtual bool allow_stick_mixing() const { return true; }
 
+    virtual bool use_multirotor_control_in_fwd_transition() const { return false; }
+
 protected:
 
-    // refences for convenience
+    // references for convenience
     QuadPlane& quadplane;
     AP_MotorsMulticopter*& motors;
 
 };
 
-// Transition for separate left thrust quadplanes
+// Transition for separate lift thrust quadplanes
 class SLT_Transition : public Transition
 {
 public:

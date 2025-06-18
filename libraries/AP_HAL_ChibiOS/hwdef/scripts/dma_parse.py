@@ -11,7 +11,7 @@ import sys, csv, os
 
 def parse_dma_table(fname, table):
     dma_num = 1
-    csvt = csv.reader(open(fname,'rb'))
+    csvt = csv.reader(open(fname,'r'))
     i = 0
     last_channel = -1
     for row in csvt:
@@ -45,7 +45,7 @@ def error(str):
 
 def check_full_table(table):
     '''check the table is not missing rows or columns
-       we should have at least one entry in every row and one entry in every colum of each dma table
+       we should have at least one entry in every row and one entry in every column of each dma table
     '''
     stream_mask = [0,0]
     channel_mask = [0,0]
@@ -78,7 +78,7 @@ sys.stdout.write("DMA_Map = {\n");
 sys.stdout.write('\t# format is (DMA_TABLE, StreamNum, Channel)\n')
 sys.stdout.write('\t# extracted from %s\n' % os.path.basename(sys.argv[1]))
 
-for k in sorted(table.iterkeys()):
+for k in sorted(table.keys()):
     s = '"%s"' % k
     sys.stdout.write('\t%-10s\t:\t[' % s)
     for i in range(len(table[k])):

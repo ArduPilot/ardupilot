@@ -22,8 +22,22 @@
 //    param set GPS1_TYPE 11 // GSOF
 //    param set SERIAL3_PROTOCOL 5 // GPS
 //
-//  Pure SITL usage
-//     param set SIM_GPS_TYPE 11 // GSOF
+// Usage with NET parameters and ethernet in SITL with hardware:
+//     param set NET_ENABLE 1
+//     param set NET_P1_TYPE 2
+//     param set NET_P1_PROTOCOL 5
+//     param set SERIAL3_PROTOCOL 0
+//     param set SIM_GPS1_TYPE 0
+//     param set NET_P1_PORT 44444
+//     param set GPS1_TYPE 11
+//     param set GPS_AUTO_CONFIG 0
+// 
+//  Pure SITL usage:
+//    sim_vehicle.py -v Plane --console --map -DG
+//    param set SIM_GPS1_TYPE 11 // GSOF
+//    param set GPS1_TYPE 11 // GSOF
+//    param set SERIAL3_PROTOCOL 5 // GPS
+
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
 
 #include "AP_GPS.h"
@@ -36,28 +50,30 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define gsof_DEBUGGING 0
-
-#if gsof_DEBUGGING
-# define Debug(fmt, args ...)                  \
-do {                                            \
-    hal.console->printf("%s:%d: " fmt "\n",     \
-                        __FUNCTION__, __LINE__, \
-                        ## args);               \
-    hal.scheduler->delay(1);                    \
-} while(0)
-#else
-# define Debug(fmt, args ...)
-#endif
-
 AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps,
                          AP_GPS::Params &_params,
                          AP_GPS::GPS_State &_state,
                          AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _params, _state, _port)
 {
+
+    if (port == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has no port", state.instance);
+        return;
+    }
+
+    const uint16_t gsofmsgreq[5] = {
+        AP_GSOF::POS_TIME,
+        AP_GSOF::POS,
+        AP_GSOF::VEL,
+        AP_GSOF::DOP,
+        AP_GSOF::POS_SIGMA
+    };
     // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_Overview.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257COverview%257C_____0
+    // The maximum number of outputs allowed with GSOF is 10
     static_assert(ARRAY_SIZE(gsofmsgreq) <= 10, "The maximum number of outputs allowed with GSOF is 10.");
+    requested_msgs = AP_GSOF::MsgTypes(gsofmsgreq);
+    
 
     constexpr uint8_t default_com_port = static_cast<uint8_t>(HW_Port::COM2);
     params.com_port.set_default(default_com_port);
@@ -67,10 +83,39 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps,
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has invalid COM port setting of %d", state.instance, (unsigned)com_port);
         return;
     }
-    requestBaud(static_cast<HW_Port>(unsigned(com_port)));
+
+    if (gps._auto_config >= AP_GPS::GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
+        requestBaud(static_cast<HW_Port>(unsigned(com_port)));
+    }
 
     const uint32_t now = AP_HAL::millis();
     gsofmsg_time = now + 110;
+}
+
+bool AP_GPS_GSOF::configure(void)
+{
+    const uint32_t now = AP_HAL::millis();
+
+    if (gsofmsgreq_index < (requested_msgs.count())) {
+        const auto com_port = params.com_port.get();
+        if (!validate_com_port(com_port)) {
+            // The user parameter for COM port is not a valid GSOF port
+            return false;
+        }
+        if (now > gsofmsg_time) {
+            for (uint16_t i = next_req_gsof; i < requested_msgs.size(); i++){
+                if (requested_msgs.get(i)) {
+                    next_req_gsof = i;
+                    break;
+                }
+            }
+            requestGSOF(next_req_gsof, static_cast<HW_Port>(com_port), Output_Rate::FREQ_10_HZ);
+            gsofmsg_time = now + 110;
+            gsofmsgreq_index++;
+            next_req_gsof++;
+        }
+    }
+    return true;
 }
 
 // Process all bytes available from the stream
@@ -78,40 +123,31 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps,
 bool
 AP_GPS_GSOF::read(void)
 {
-    const uint32_t now = AP_HAL::millis();
-
-    if (gsofmsgreq_index < (sizeof(gsofmsgreq))) {
-        const auto com_port = params.com_port.get();
-        if (!validate_com_port(com_port)) {
-            // The user parameter for COM port is not a valid GSOF port
-            return false;
-        }
-        if (now > gsofmsg_time) {
-            requestGSOF(gsofmsgreq[gsofmsgreq_index], static_cast<HW_Port>(com_port), Output_Rate::FREQ_10_HZ);
-            gsofmsg_time = now + 110;
-            gsofmsgreq_index++;
-        }
+    if (gps._auto_config >= AP_GPS::GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
+        if (!configure()) return false;
     }
-
-    bool ret = false;
     while (port->available() > 0) {
         const uint8_t temp = port->read();
 #if AP_GPS_DEBUG_LOGGING_ENABLED
         log_data(&temp, 1);
 #endif
-        const int n_gsof_received = parse(temp, ARRAY_SIZE(gsofmsgreq));
-        if(n_gsof_received == UNEXPECTED_NUM_GSOF_PACKETS) {
-            state.status = AP_GPS::NO_FIX;
-            continue;
-        }
-        const bool got_expected_packets = n_gsof_received == ARRAY_SIZE(gsofmsgreq);
-        ret |= got_expected_packets;
-    }
-    if (ret) {
-        pack_state_data();
+        AP_GSOF::MsgTypes parsed;
+        const int parse_status = parse(temp, parsed);
+        if(parse_status == PARSED_GSOF_DATA) {
+            if (parsed.get(AP_GSOF::POS_TIME) &&
+                parsed.get(AP_GSOF::POS) && 
+                parsed.get(AP_GSOF::VEL) && 
+                parsed.get(AP_GSOF::DOP) && 
+                parsed.get(AP_GSOF::POS_SIGMA)
+            )
+            {
+                pack_state_data();
+                return true;
+            }
+        }          
     }
 
-    return ret;
+    return false;
 }
 
 void

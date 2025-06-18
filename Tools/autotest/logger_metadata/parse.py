@@ -4,8 +4,6 @@
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import print_function
-
 import argparse
 import copy
 import os
@@ -228,7 +226,7 @@ class LoggerDocco(object):
                 # Check if we have a defined prefix for this multiplier
                 elif mult_num in mult_prefix_lookup:
                     self.fields[f]["units"] = f"{mult_prefix_lookup[mult_num]}{baseunit}"
-                # If all else fails, set the unit as the multipler and base unit together
+                # If all else fails, set the unit as the multiplier and base unit together
                 else:
                     self.fields[f]["units"] = f"{mult} {baseunit}"
 
@@ -287,7 +285,7 @@ class LoggerDocco(object):
             self.search_for_files(_next)
 
     def parse_messagedef(self, messagedef):
-        # Merge concatinated strings and remove comments
+        # Merge concatenated strings and remove comments
         messagedef = re.sub(r'"\s+"', '', messagedef)
         messagedef = re.sub(r'//[^\n]*', '', messagedef)
         # Extract details from a structure definition

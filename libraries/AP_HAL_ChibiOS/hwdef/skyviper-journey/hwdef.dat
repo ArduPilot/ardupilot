@@ -3,8 +3,8 @@
 
 MCU STM32F4xx STM32F412Rx
 
-# board ID for firmware load
-APJ_BOARD_ID 9
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_CUBE_F4
 
 # short board name override (13 chars) to match original max length; can't change because name is used for transmitter bind CRC
 define CHIBIOS_SHORT_BOARD_NAME "skyviper-jour"
@@ -105,6 +105,8 @@ define AP_RADIO_CC2500_ENABLED 1
 define AP_RADIO_CYRF6936_ENABLED 1
 define AP_RADIO_BK2425_ENABLED 1
 
+define AP_RADIO_AUTO_ENABLED 1
+
 define AP_RCPROTOCOL_ENABLED 1
 define AP_RCPROTOCOL_BACKEND_DEFAULT_ENABLED 0
 define AP_RCPROTOCOL_RADIO_ENABLED 1
@@ -121,15 +123,11 @@ define ALLOW_ARM_NO_COMPASS
 
 COMPASS BMM150 I2C:0:0x10 false ROTATION_NONE
 
-define HAL_BARO_DEFAULT HAL_BARO_20789_I2C_I2C
-define HAL_BARO_20789_I2C_BUS           1
-define HAL_BARO_20789_I2C_ADDR_PRESS 0x63
-define HAL_BARO_20789_I2C_ADDR_ICM   0x68
+BARO ICM20789 I2C:1:0x63 I2C:1:0x68
 
 # unstick 20789 on I2C on boot
 define HAL_I2C_CLEAR_BUS
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
 define OPTICAL_FLOW_TYPE_DEFAULT Type::PIXART
 
 # the web UI uses an abin file for firmware uploads

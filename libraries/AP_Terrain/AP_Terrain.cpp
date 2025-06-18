@@ -154,19 +154,17 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
     }
 
     // hXY are the heights of the 4 surrounding grid points
-    int16_t h00, h01, h10, h11;
-
-    h00 = grid.height[info.idx_x+0][info.idx_y+0];
-    h01 = grid.height[info.idx_x+0][info.idx_y+1];
-    h10 = grid.height[info.idx_x+1][info.idx_y+0];
-    h11 = grid.height[info.idx_x+1][info.idx_y+1];
+    const auto h00 = grid.height[info.idx_x+0][info.idx_y+0];
+    const auto h01 = grid.height[info.idx_x+0][info.idx_y+1];
+    const auto h10 = grid.height[info.idx_x+1][info.idx_y+0];
+    const auto h11 = grid.height[info.idx_x+1][info.idx_y+1];
 
     // do a simple dual linear interpolation. We could do something
     // fancier, but it probably isn't worth it as long as the
     // grid_spacing is kept small enough
-    float avg1 = (1.0f-info.frac_x) * h00  + info.frac_x * h10;
-    float avg2 = (1.0f-info.frac_x) * h01  + info.frac_x * h11;
-    float avg  = (1.0f-info.frac_y) * avg1 + info.frac_y * avg2;
+    const float avg1 = (1.0f-info.frac_x) * h00  + info.frac_x * h10;
+    const float avg2 = (1.0f-info.frac_x) * h01  + info.frac_x * h11;
+    const float avg  = (1.0f-info.frac_y) * avg1 + info.frac_y * avg2;
 
     height = avg;
 
@@ -443,6 +441,10 @@ bool AP_Terrain::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) cons
         hal.util->snprintf(failure_msg, failure_msg_len, "waiting for terrain data");
         return false;
     }
+    if (grid_spacing <= 0) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "TERRAIN_SPACING can't be <= 0");
+        return false;
+    }
 
     return true;
 }
@@ -567,7 +569,7 @@ void AP_Terrain::update_reference_offset(void)
     if (!reference_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm)) {
         return;
     }
-    float adjustment = alt_cm*0.01 - height;
+    const float adjustment = alt_cm*0.01 - height;
     reference_offset = constrain_float(adjustment, -offset_max, offset_max);
     if (fabsf(adjustment) > offset_max.get()+0.5) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Terrain: clamping offset %.0f to %.0f",

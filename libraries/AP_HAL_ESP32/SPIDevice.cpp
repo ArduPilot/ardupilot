@@ -17,7 +17,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include "Scheduler.h"
 #include "Semaphores.h"
 #include <stdio.h>
@@ -60,9 +59,6 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDeviceDesc &_device_desc)
     set_device_bus(bus.bus);
     set_device_address(_device_desc.device);
     set_speed(AP_HAL::Device::SPEED_LOW);
-    esp_rom_gpio_pad_select_gpio(device_desc.cs);
-    gpio_set_direction(device_desc.cs, GPIO_MODE_OUTPUT);
-    gpio_set_level(device_desc.cs, 1);
 
     spi_device_interface_config_t cfg_low;
     memset(&cfg_low, 0, sizeof(cfg_low));
@@ -135,6 +131,11 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     return true;
 }
 
+bool SPIDevice::transfer_fullduplex(uint8_t *send_recv, uint32_t len)
+{
+    return transfer_fullduplex(send_recv, send_recv, len);
+}
+
 bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t len)
 {
 #ifdef SPIDEBUG
@@ -187,8 +188,8 @@ bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
     return bus.adjust_timer(h, period_usec);
 }
 
-AP_HAL::OwnPtr<AP_HAL::SPIDevice>
-SPIDeviceManager::get_device(const char *name)
+AP_HAL::SPIDevice *
+SPIDeviceManager::get_device_ptr(const char *name)
 {
 #ifdef SPIDEBUG
     printf("%s:%d %s\n", __PRETTY_FUNCTION__, __LINE__, name);
@@ -200,7 +201,7 @@ SPIDeviceManager::get_device(const char *name)
         }
     }
     if (i == ARRAY_SIZE(device_desc)) {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
+        return nullptr;
     }
     SPIDeviceDesc &desc = device_desc[i];
 
@@ -226,6 +227,15 @@ SPIDeviceManager::get_device(const char *name)
         }
         busp->next = buses;
         busp->bus = desc.bus;
+        // deassert all CSes on the bus
+        for (i = 0; i<ARRAY_SIZE(device_desc); i++) {
+            SPIDeviceDesc &curr_desc = device_desc[i];
+            if (desc.bus == curr_desc.bus) {
+                esp_rom_gpio_pad_select_gpio(curr_desc.cs);
+                gpio_set_direction(curr_desc.cs, GPIO_MODE_OUTPUT);
+                gpio_set_level(curr_desc.cs, 1);
+            }
+        }
         buses = busp;
     }
 
@@ -233,6 +243,6 @@ SPIDeviceManager::get_device(const char *name)
     printf("%s:%d 444\n", __PRETTY_FUNCTION__, __LINE__);
 #endif
 
-    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(NEW_NOTHROW SPIDevice(*busp, desc));
+    return NEW_NOTHROW SPIDevice(*busp, desc);
 }
 

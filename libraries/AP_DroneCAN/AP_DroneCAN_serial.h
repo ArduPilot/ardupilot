@@ -58,7 +58,21 @@ public:
         uint32_t last_size_rx;
         uint64_t last_recv_us;
 
+        // statistics
+        uint32_t tx_stats_bytes;
+        uint32_t rx_stats_bytes;
+        uint32_t rx_stats_dropped_bytes;
+
         HAL_Semaphore sem;
+
+    protected:
+
+#if HAL_UART_STATS_ENABLED
+        // Getters for cumulative tx and rx counts
+        uint32_t get_total_tx_bytes() const override { return tx_stats_bytes; }
+        uint32_t get_total_rx_bytes() const override { return rx_stats_bytes; }
+        uint32_t get_total_dropped_rx_bytes() const override { return rx_stats_dropped_bytes; }
+#endif
     };
 
     Port ports[AP_DRONECAN_SERIAL_NUM_PORTS];

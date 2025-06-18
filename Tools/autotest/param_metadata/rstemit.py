@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-from __future__ import print_function
+
+# flake8: noqa
+
 import re
 from param import known_param_fields, known_units
 from emit import Emit

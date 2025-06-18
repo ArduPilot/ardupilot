@@ -51,6 +51,7 @@ public:
         MANUAL =       19,  // Pass-through input with no stabilization
         MOTOR_DETECT = 20,  // Automatically detect motors orientation
         SURFTRAK =     21   // Track distance above seafloor (hold range)
+        // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
     // constructor
@@ -63,7 +64,7 @@ public:
     virtual bool init(bool ignore_checks) { return true; }
     virtual void run() = 0;
     virtual bool requires_GPS() const = 0;
-    virtual bool has_manual_throttle() const = 0;
+    virtual bool requires_altitude() const = 0;
     virtual bool allows_arming(bool from_gcs) const = 0;
     virtual bool is_autopilot() const { return false; }
     virtual bool in_guided_mode() const { return false; }
@@ -78,7 +79,7 @@ public:
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) { return false; }
     virtual int32_t wp_bearing() const { return 0; }
-    virtual uint32_t wp_distance() const { return 0; }
+    virtual float wp_distance_m() const { return 0.0f; }
     virtual float crosstrack_error() const { return 0.0f; }
 
   
@@ -197,7 +198,7 @@ public:
     virtual void run() override;
     bool init(bool ignore_checks) override;
     bool requires_GPS() const override { return false; }
-    bool has_manual_throttle() const override { return true; }
+    bool requires_altitude() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return false; }
 
@@ -220,7 +221,7 @@ public:
 
     bool init(bool ignore_checks) override;
     bool requires_GPS() const override { return false; }
-    bool has_manual_throttle() const override { return true; }
+    bool requires_altitude() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return false; }
 
@@ -243,7 +244,7 @@ public:
 
     bool init(bool ignore_checks) override;
     bool requires_GPS() const override { return false; }
-    bool has_manual_throttle() const override { return true; }
+    bool requires_altitude() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return false; }
 
@@ -266,7 +267,7 @@ public:
 
     bool init(bool ignore_checks) override;
     bool requires_GPS() const override { return false; }
-    bool has_manual_throttle() const override { return false; }
+    bool requires_altitude() const override { return true; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return false; }
     void control_depth();
@@ -325,7 +326,7 @@ public:
 
     bool init(bool ignore_checks) override;
     bool requires_GPS() const override { return true; }
-    bool has_manual_throttle() const override { return false; }
+    bool requires_altitude() const override { return true; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
     bool in_guided_mode() const override { return true; }
@@ -379,7 +380,7 @@ public:
 
     bool init(bool ignore_checks) override;
     bool requires_GPS() const override { return true; }
-    bool has_manual_throttle() const override { return false; }
+    bool requires_altitude() const override { return true; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
     bool auto_loiter_start();
@@ -419,8 +420,8 @@ public:
 
     bool init(bool ignore_checks) override;
 
-    bool requires_GPS() const override { return false; }
-    bool has_manual_throttle() const override { return false; }
+    bool requires_GPS() const override { return true; }
+    bool requires_altitude() const override { return true; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
 
@@ -429,6 +430,10 @@ protected:
     const char *name() const override { return "POSHOLD"; }
     const char *name4() const override { return "POSH"; }
     Mode::Number number() const override { return Mode::Number::POSHOLD; }
+
+private:
+
+    void control_horizontal();
 };
 
 
@@ -443,7 +448,7 @@ public:
 
     bool init(bool ignore_checks) override;
     bool requires_GPS() const override { return true; }
-    bool has_manual_throttle() const override { return false; }
+    bool requires_altitude() const override { return true; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
 
@@ -464,16 +469,16 @@ public:
     virtual void run() override;
 
     bool init(bool ignore_checks) override;
-    bool requires_GPS() const override { return true; }
-    bool has_manual_throttle() const override { return false; }
+    bool requires_GPS() const override { return false; }
+    bool requires_altitude() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
 
 protected:
-
     const char *name() const override { return "SURFACE"; }
     const char *name4() const override { return "SURF"; }
-    Mode::Number number() const override { return Mode::Number::CIRCLE; }
+    Mode::Number number() const override { return Mode::Number::SURFACE; }
+    bool nobaro_mode;
 };
 
 
@@ -488,7 +493,7 @@ public:
 
     bool init(bool ignore_checks) override;
     bool requires_GPS() const override { return false; }
-    bool has_manual_throttle() const override { return false; }
+    bool requires_altitude() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
 

@@ -197,7 +197,6 @@ private:
 
     void logging_log_full_update();
     void logging_ext_event();
-    void logging_log_raw_sbp(uint16_t msg_type, uint16_t sender_id, uint8_t msg_len, uint8_t *msg_buff);
 
     int32_t distMod(int32_t tow1_ms, int32_t tow2_ms, int32_t mod);
 

@@ -5,6 +5,9 @@ Test parameter upgrade, master vs branch
 
 ./Tools/autotest/test_param_upgrade.py --vehicle=arduplane --param "GPS_TYPE=17->GPS1_TYPE=17" --param "GPS_TYPE2=37->GPS2_TYPE=37" --param "GPS_GNSS_MODE=21->GPS1_GNSS_MODE=21" --param "GPS_GNSS_MODE2=45->GPS2_GNSS_MODE=45" --param "GPS_RATE_MS=186->GPS1_RATE_MS=186" --param "GPS_RATE_MS2=123->GPS2_RATE_MS=123" --param "GPS_POS1_X=3.75->GPS1_POS_X=3.75" --param "GPS_POS2_X=6.9->GPS2_POS_X=6.9"  --param "GPS_POS1_Y=2.75->GPS1_POS_Y=2.75" --param "GPS_POS2_Y=5.9->GPS2_POS_Y=5.9"  --param "GPS_POS1_Z=12.1->GPS1_POS_Z=12.1" --param "GPS_POS2_Z=-6.9->GPS2_POS_Z=-6.9" --param "GPS_DELAY_MS=987->GPS1_DELAY_MS=987" --param "GPS_DELAY_MS2=2345->GPS2_DELAY_MS=2345" --param "GPS_COM_PORT=19->GPS1_COM_PORT=19" --param "GPS_COM_PORT2=100->GPS2_COM_PORT=100" --param "GPS_CAN_NODEID1=109->GPS1_CAN_NODEID=109" --param "GPS_CAN_NODEID2=102->GPS2_CAN_NODEID=102" --param "GPS1_CAN_OVRIDE=34->GPS1_CAN_OVRIDE=34" --param "GPS2_CAN_OVRIDE=67" --param "GPS_MB1_TYPE=1->GPS1_MB_TYPE=1" --param "GPS_MB1_OFS_X=3.14->GPS1_MB_OFS_X=3.14"  --param "GPS_MB1_OFS_Y=2.18->GPS1_MB_OFS_Y=2.18"  --param "GPS_MB1_OFS_Z=17.6->GPS1_MB_OFS_Z=17.6"  --param "GPS_MB2_TYPE=13->GPS2_MB_TYPE=13" --param "GPS_MB2_OFS_X=17.14->GPS2_MB_OFS_X=17.14"  --param "GPS_MB2_OFS_Y=12.18->GPS2_MB_OFS_Y=12.18"  --param "GPS_MB2_OFS_Z=27.6->GPS2_MB_OFS_Z=27.6"  # noqa
 
+./Tools/autotest/test_param_upgrade.py --vehicle=arduplane --param "SERIAL1_OPTIONS=1024->MAV2_OPTIONS=2" --param "SERIAL2_OPTIONS=4096->MAV3_OPTIONS=4"
+./Tools/autotest/test_param_upgrade.py --vehicle=arduplane --param "SERIAL1_OPTIONS=5120->MAV2_OPTIONS=6"
+
 AP_FLAKE8_CLEAN
 '''
 
@@ -32,32 +35,53 @@ class ParamChange():
         return f"{self.old_name}={self.old_value}->{self.new_name}={self.new_value}"
 
 
-class TestParamUpgradeTestSuiteSetParameters(vehicle_test_suite.TestSuite):
-    def __init__(self, binary, param_changes):
-        super(TestParamUpgradeTestSuiteSetParameters, self).__init__(binary)
-        self.param_changes = param_changes
+class TestParamUpgradeTestSuite(vehicle_test_suite.TestSuite):
+    def __init__(self, binary):
+        super(TestParamUpgradeTestSuite, self).__init__(binary)
 
     def sysid_thismav(self):
         if "antennatracker" in self.binary:
             return 2
-        return super(TestParamUpgradeTestSuiteSetParameters, self).sysid_thismav()
+        return super(TestParamUpgradeTestSuite, self).sysid_thismav()
 
     def vehicleinfo_key(self):
         '''magically guess vehicleinfo_key from filepath'''
         path = self.binary.lower()
-        if "plane" in path:
-            return "ArduPlane"
+        if "blimp" in path:
+            return "Blimp"
         if "copter" in path:
             return "ArduCopter"
-        raise ValueError("Can't determine vehicleinfo_key from binary path")
+        if "plane" in path:
+            return "ArduPlane"
+        if "rover" in path:
+            return "Rover"
+        if "sub" in path:
+            return "ArduSub"
+        if "tracker" in path:
+            return "AntennaTracker"
+        raise ValueError(f"Can't determine vehicleinfo_key from binary path {path}")
 
     def model(self):
         path = self.binary.lower()
-        if "plane" in path:
-            return "quadplane"
+        if "blimp" in path:
+            return "blimp"
         if "copter" in path:
             return "X"
-        raise ValueError("Can't determine vehicleinfo_key from binary path")
+        if "plane" in path:
+            return "quadplane"
+        if "rover" in path:
+            return "rover"
+        if "sub" in path:
+            return "vectored"
+        if "tracker" in path:
+            return "tracker"
+        raise ValueError(f"Can't determine model from binary path {path}")
+
+
+class TestParamUpgradeTestSuiteSetParameters(TestParamUpgradeTestSuite):
+    def __init__(self, binary, param_changes):
+        super(TestParamUpgradeTestSuiteSetParameters, self).__init__(binary)
+        self.param_changes = param_changes
 
     def run(self):
         self.start_SITL(
@@ -79,33 +103,11 @@ class TestParamUpgradeTestSuiteSetParameters(vehicle_test_suite.TestSuite):
         self.stop_SITL()
 
 
-class TestParamUpgradeTestSuiteCheckParameters(vehicle_test_suite.TestSuite):
+class TestParamUpgradeTestSuiteCheckParameters(TestParamUpgradeTestSuite):
     def __init__(self, binary, param_changes, epsilon=0.0001):
         super(TestParamUpgradeTestSuiteCheckParameters, self).__init__(binary)
         self.param_changes = param_changes
         self.epsilon = epsilon
-
-    def sysid_thismav(self):
-        if "antennatracker" in self.binary:
-            return 2
-        return super(TestParamUpgradeTestSuiteCheckParameters, self).sysid_thismav()
-
-    def vehicleinfo_key(self):
-        '''magically guess vehicleinfo_key from filepath'''
-        path = self.binary.lower()
-        if "plane" in path:
-            return "ArduPlane"
-        if "copter" in path:
-            return "ArduCopter"
-        raise ValueError("Can't determine vehicleinfo_key from binary path")
-
-    def model(self):
-        path = self.binary.lower()
-        if "plane" in path:
-            return "quadplane"
-        if "copter" in path:
-            return "X"
-        raise ValueError("Can't determine vehicleinfo_key from binary path")
 
     def run(self):
         self.start_SITL(

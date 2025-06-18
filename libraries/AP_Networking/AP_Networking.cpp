@@ -90,7 +90,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Networking options
     // @Description: Networking options
-    // @Bitmask: 0:EnablePPP Ethernet gateway, 1:Enable CAN1 multicast gateway, 2:Enable CAN2 multicast gateway
+    // @Bitmask: 0:EnablePPP Ethernet gateway, 1:Enable CAN1 multicast endpoint, 2:Enable CAN2 multicast endpoint, 3:Enable CAN1 multicast bridged, 4:Enable CAN2 multicast bridged
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 9,  AP_Networking,    param.options, 0),
@@ -199,14 +199,14 @@ void AP_Networking::init()
     start_tests();
 #endif
 
-#if AP_NETWORKING_CAN_MCAST_ENABLED && !defined(HAL_BOOTLOADER_BUILD)
-    if (option_is_set(OPTION::CAN1_MCAST_GATEWAY) || option_is_set(OPTION::CAN2_MCAST_GATEWAY)) {
+#if AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED
+    if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT) || option_is_set(OPTION::CAN1_MCAST_ENDPOINT)) {
         // get mask of enabled buses
         uint8_t bus_mask = 0;
-        if (option_is_set(OPTION::CAN1_MCAST_GATEWAY)) {
+        if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT)) {
             bus_mask |= (1U<<0);
         }
-        if (option_is_set(OPTION::CAN2_MCAST_GATEWAY)) {
+        if (option_is_set(OPTION::CAN1_MCAST_ENDPOINT)) {
             bus_mask |= (1U<<1);
         }
         mcast_server.start(bus_mask);

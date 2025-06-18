@@ -21,6 +21,7 @@
 #include "SIM_Aircraft.h"
 #include "SIM_ICEngine.h"
 #include <Filter/LowPassFilter.h>
+#include <AP_JSON/AP_JSON.h>
 
 namespace SITL {
 
@@ -44,7 +45,7 @@ protected:
     float angle_of_attack;
     float beta;
 
-    struct {
+    const struct Coefficients {
         // from last_letter skywalker_2013/aerodynamics.yaml
         // thanks to Georacer!
         float s = 0.45;
@@ -88,13 +89,16 @@ protected:
         // the X CoG offset should be -0.02, but that makes the plane too tail heavy
         // in manual flight. Adjusted to -0.15 gives reasonable flight
         Vector3f CGOffset{-0.15, 0, -0.05};
-    } coefficient;
+    } default_coefficients;
+
+    struct Coefficients coefficient;
 
     float thrust_scale;
     bool reverse_thrust;
     bool elevons;
     bool vtail;
     bool dspoilers;
+    bool redundant;
     bool reverse_elevator_rudder;
     bool ice_engine;
     bool tailsitter;
@@ -120,11 +124,18 @@ protected:
         true
     };
 
+    // load aero coefficients from a json model file
+    void load_coeffs(const char *model_json);
     float liftCoeff(float alpha) const;
     float dragCoeff(float alpha) const;
     Vector3f getForce(float inputAileron, float inputElevator, float inputRudder) const;
     Vector3f getTorque(float inputAileron, float inputElevator, float inputRudder, float inputThrust, const Vector3f &force) const;
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel);
+
+private:
+    // json parsing helpers (TODO reduce code duplication)
+    void parse_float(AP_JSON::value val, const char* label, float &param);
+    void parse_vector3(AP_JSON::value val, const char* label, Vector3f &param);
 };
 
 } // namespace SITL

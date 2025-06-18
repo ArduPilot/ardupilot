@@ -43,6 +43,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # Remove change on other workflows
       - '.github/workflows/test_environment.yml'
   pull_request:
@@ -88,6 +89,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # Remove change on other workflows
       - '.github/workflows/test_environment.yml'
   workflow_dispatch:
@@ -111,8 +113,8 @@ jobs:
         ]
         config: [
             unit-tests,
+            examples,
             sitl
-            # examples,
         ]
     steps:
       # git checkout the PR
@@ -159,8 +161,8 @@ jobs:
           PYTHONPATH: "${{ github.workspace }}/Tools/scripts"
         if: matrix.config == 'unit-tests'
         run: |
-          python -m pip install --upgrade pip
-          pip install requests mock
+          python3 -m pip install --upgrade pip
+          python3 -m pip install requests mock
           Tools/autotest/unittest/annotate_params_unittest.py
 
       - name: Archive buildlog artifacts

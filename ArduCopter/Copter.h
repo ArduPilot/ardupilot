@@ -49,7 +49,6 @@
 #include <AP_Motors/AP_Motors.h>            // AP Motors library
 #include <Filter/Filter.h>                  // Filter library
 #include <AP_Vehicle/AP_Vehicle.h>          // needed for AHRS build
-#include <AP_InertialNav/AP_InertialNav.h>  // inertial navigation library
 #include <AC_WPNav/AC_WPNav.h>              // ArduCopter waypoint navigation library
 #include <AC_WPNav/AC_Loiter.h>             // ArduCopter Loiter Mode Library
 #include <AC_WPNav/AC_Circle.h>             // circle navigation library
@@ -87,12 +86,12 @@
  #include <AC_Autorotation/AC_Autorotation.h> // Autorotation controllers
 #endif
 
-#include "RC_Channel.h"         // RC Channel Library
+#include "RC_Channel_Copter.h"         // RC Channel Library
 
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Copter.h"
 #include "GCS_Copter.h"
 #include "AP_Rally.h"           // Rally point library
-#include "AP_Arming.h"
+#include "AP_Arming_Copter.h"
 
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #if AP_EXTERNAL_CONTROL_ENABLED
@@ -162,6 +161,10 @@
 
 #if AP_OAPATHPLANNER_ENABLED && !AP_FENCE_ENABLED
   #error AP_OAPathPlanner relies on AP_FENCE_ENABLED which is disabled
+#endif
+
+#if MODE_AUTOROTATE_ENABLED && !AP_RPM_ENABLED
+  #error AC_Autorotation relies on AP_RPM_ENABLED which is disabled
 #endif
 
 #if HAL_ADSB_ENABLED
@@ -252,8 +255,8 @@ private:
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
 
-    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, inertial_nav, 0U};
-    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, inertial_nav, 1U};
+    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, 0U};
+    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U};
 
     // helper function to get inertially interpolated rangefinder height.
     bool get_rangefinder_height_interpolated_cm(int32_t& ret) const;
@@ -266,7 +269,7 @@ private:
         //   measured ground or ceiling level measured using the range finder.
         void update_surface_offset();
 
-        // target has already been set by terrain following so do not initalise again
+        // target has already been set by terrain following so do not initialise again
         // this should be called by flight modes when switching from terrain following to surface tracking (e.g. ZigZag)
         void external_init();
 
@@ -331,7 +334,6 @@ private:
     // thus failsafes should be triggered on filtered values in order to avoid transient errors 
     LowPassFilterFloat pos_variance_filt;
     LowPassFilterFloat vel_variance_filt;
-    LowPassFilterFloat hgt_variance_filt;
     bool variances_valid;
     uint32_t last_ekf_check_us;
 
@@ -469,9 +471,6 @@ private:
     // Current location of the vehicle (altitude is relative to home)
     Location current_loc;
 
-    // Inertial Navigation
-    AP_InertialNav inertial_nav;
-
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
     AC_AttitudeControl *attitude_control;
@@ -492,10 +491,6 @@ private:
     // --------------
     // arm_time_ms - Records when vehicle was armed. Will be Zero if we are disarmed.
     uint32_t arm_time_ms;
-
-    // Used to exit the roll and pitch auto trim function
-    uint8_t auto_trim_counter;
-    bool auto_trim_started = false;
 
     // Camera
 #if AP_CAMERA_ENABLED
@@ -629,8 +624,18 @@ private:
         DISABLE_THRUST_LOSS_CHECK     = (1<<0),   // 1
         DISABLE_YAW_IMBALANCE_WARNING = (1<<1),   // 2
         RELEASE_GRIPPER_ON_THRUST_LOSS = (1<<2),  // 4
-        REQUIRE_POSITION_FOR_ARMING =   (1<<3),   // 8
     };
+
+    // type of fast rate attitude controller in operation
+    enum class FastRateType : uint8_t {
+        FAST_RATE_DISABLED            = 0,
+        FAST_RATE_DYNAMIC             = 1,
+        FAST_RATE_FIXED_ARMED         = 2,
+        FAST_RATE_FIXED               = 3,
+    };
+
+    FastRateType get_fast_rate_type() const { return FastRateType(g2.att_enable.get()); }
+
     // returns true if option is enabled for this vehicle
     bool option_is_enabled(FlightOption option) const {
         return (g2.flight_options & uint32_t(option)) != 0;
@@ -684,6 +689,8 @@ private:
     bool set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs) override;
     bool set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps, float throttle) override;
 
+    // Register a custom mode with given number and names
+    AP_Vehicle::custom_mode_state* register_custom_mode(const uint8_t number, const char* full_name, const char* short_name) override;
 #endif
 #if MODE_CIRCLE_ENABLED
     bool get_circle_radius(float &radius_m) override;
@@ -721,12 +728,30 @@ private:
 
     // Attitude.cpp
     void update_throttle_hover();
-    float get_pilot_desired_climb_rate(float throttle_control);
+    float get_pilot_desired_climb_rate();
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn() const;
-    void run_rate_controller();
+    void run_rate_controller_main();
+
+    // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    struct RateControllerRates {
+        uint8_t fast_logging_rate;
+        uint8_t medium_logging_rate;
+        uint8_t filter_rate;
+        uint8_t main_loop_rate;
+    };
+
+    uint8_t calc_gyro_decimation(uint8_t gyro_decimation, uint16_t rate_hz);
+    void rate_controller_thread();
+    void rate_controller_filter_update();
+    void rate_controller_log_update();
+    void rate_controller_set_rates(uint8_t rate_decimation, RateControllerRates& rates, bool warn_cpu_high);
+    void enable_fast_rate_loop(uint8_t rate_decimation, RateControllerRates& rates);
+    void disable_fast_rate_loop(RateControllerRates& rates);
+    void update_dynamic_notch_at_specified_rate_main();
+    // endif AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     void run_custom_controller() { custom_control.update(); }
@@ -811,6 +836,7 @@ private:
     // fence.cpp
 #if AP_FENCE_ENABLED
     void fence_check();
+    void fence_checks_async() override;
 #endif
 
     // heli.cpp
@@ -876,6 +902,7 @@ private:
     // Log.cpp
     void Log_Write_Control_Tuning();
     void Log_Write_Attitude();
+    void Log_Write_Rate();
     void Log_Write_EKF_POS();
     void Log_Write_PIDS();
     void Log_Write_Data(LogDataID id, int32_t value);
@@ -890,6 +917,7 @@ private:
     void Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out);
     void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z);
     void Log_Write_Vehicle_Startup_Messages();
+    void Log_Write_Rate_Thread_Dt(float dt, float dtAvg, float dtMax, float dtMin);
 #endif  // HAL_LOGGING_ENABLED
 
     // mode.cpp
@@ -919,7 +947,8 @@ private:
     // motors.cpp
     void arm_motors_check();
     void auto_disarm_check();
-    void motors_output();
+    void motors_output(bool full_push = true);
+    void motors_output_main();
     void lost_vehicle_check();
 
     // navigation.cpp
@@ -934,7 +963,6 @@ private:
     void convert_prx_parameters();
 #endif
     void convert_lgr_parameters(void);
-    void convert_tradheli_parameters(void) const;
 
     // precision_landing.cpp
     void init_precland();
@@ -961,11 +989,6 @@ private:
 
     // takeoff_check.cpp
     void takeoff_check();
-
-    // RC_Channel.cpp
-    void save_trim();
-    void auto_trim();
-    void auto_trim_cancel();
 
     // system.cpp
     void init_ardupilot() override;
@@ -1029,6 +1052,10 @@ private:
 #endif
 #if MODE_GUIDED_ENABLED
     ModeGuided mode_guided;
+#if AP_SCRIPTING_ENABLED
+    // Custom modes registered at runtime
+    ModeGuidedCustom *mode_guided_custom[5];
+#endif
 #endif
     ModeLand mode_land;
 #if MODE_LOITER_ENABLED
@@ -1079,6 +1106,9 @@ private:
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
+
+    bool started_rate_thread;
+    bool using_rate_thread;
 
 public:
     void failsafe_check();      // failsafe.cpp

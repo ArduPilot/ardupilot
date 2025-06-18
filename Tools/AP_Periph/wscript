@@ -1,5 +1,6 @@
-#!/usr/bin/env python
 # encoding: utf-8
+
+# flake8: noqa
 
 import fnmatch
 import sys
@@ -7,13 +8,13 @@ import sys
 try:
     import em
 except ImportError:
-    print("you need to install empy with 'python -m pip install empy==3.3.4'")
+    print("you need to install empy with 'python3 -m pip install empy==3.3.4'")
     sys.exit(1)
 
 try:
     import pexpect
 except ImportError:
-    print("you need to install pexpect with 'python -m pip install pexpect'")
+    print("you need to install pexpect with 'python3 -m pip install pexpect'")
     sys.exit(1)
     
 
@@ -84,6 +85,7 @@ def build(bld):
                      'GCS_MAVLink',
                      'AP_Relay',
                      'AP_MultiHeap',
+                     'AP_DAC'
                      ]
 
     bld.ap_stlib(
@@ -91,7 +93,7 @@ def build(bld):
         dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
         ap_vehicle='AP_Periph',
         ap_libraries= libraries,
-        use='dronecan',
+        use=['dronecan'],
         exclude_src=[
             'libraries/AP_HAL_ChibiOS/Storage.cpp'
         ]
@@ -100,7 +102,7 @@ def build(bld):
     # build external libcanard library
     bld.stlib(source='../../modules/DroneCAN/libcanard/canard.c',
               name='libcanard',
-              use='dronecan',
+              use=['dronecan'],
               target='libcanard')
 
     bld.ap_program(

@@ -37,6 +37,8 @@ namespace SITL {
 class RF_RDS02UF : public SerialRangeFinder {
 public:
 
+    static SerialRangeFinder *create() { return NEW_NOTHROW RF_RDS02UF(); }
+
     uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
 
 };

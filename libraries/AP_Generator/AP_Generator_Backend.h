@@ -35,6 +35,15 @@ public:
     // Use generator mavlink message
     virtual void send_generator_status(const GCS_MAVLINK &channel) {}
 
+    virtual const struct AP_Param::GroupInfo *get_var_info() const {
+        return nullptr;
+    }
+
+    // method to reset the amount of energy remaining in a generator.
+    // This typically means someone has refueled the vehicle without
+    // powering it off, and is indicating that the fuel tank is full.
+    virtual bool reset_consumed_energy() { return false; }
+
 protected:
 
     // Update frontend
@@ -44,6 +53,7 @@ protected:
     float _voltage;
     float _current;
     float _fuel_remaining; // Decimal from 0 to 1
+    float _fuel_remaining_l = -1; // -1 means unused
     float _consumed_mah;
     uint16_t _rpm;
 

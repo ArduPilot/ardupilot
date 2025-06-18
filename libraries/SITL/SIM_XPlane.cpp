@@ -116,7 +116,7 @@ XPlane::XPlane(const char *frame_str) :
 #endif
 
     if (!load_dref_map(XPLANE_JSON)) {
-        AP_HAL::panic("%s failed to load\n", XPLANE_JSON);
+        AP_HAL::panic("%s failed to load", XPLANE_JSON);
     }
 }
 
@@ -206,6 +206,7 @@ bool XPlane::load_dref_map(const char *map_json)
     }
     AP_JSON::value *obj = AP_JSON::load_json(fname);
     if (obj == nullptr) {
+        free((void*)fname);
         return false;
     }
 
@@ -236,7 +237,8 @@ bool XPlane::load_dref_map(const char *map_json)
         const char *label = i->first.c_str();
         const auto &d = i->second;
         if (strchr(label, '/') != nullptr) {
-            const char *type_s = d.get("type").to_str().c_str();
+            const auto str = d.get("type").to_str();
+            const char *type_s = str.c_str();
             if (strcmp(type_s, "angle") == 0) {
                 add_dref(label, DRefType::ANGLE, d);
             } else if (strcmp(type_s, "range") == 0) {

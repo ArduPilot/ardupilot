@@ -9,6 +9,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
@@ -74,6 +75,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
@@ -156,7 +158,7 @@ jobs:
           NAME_DASHED=${WORKFLOWNAME//+( )/_}
           echo "cache-key=${NAME_DASHED}" >> $GITHUB_OUTPUT
 
-      - uses: cygwin/cygwin-install-action@master
+      - uses: cygwin/cygwin-install-action@v5
         with:
           packages: cygwin64 gcc-g++=10.2.0-1 ccache python37 python37-future python37-lxml python37-pip python37-setuptools python37-wheel git procps gettext
           add-to-path: false
@@ -166,11 +168,12 @@ jobs:
           PATH: /usr/bin:$(cygpath ${SYSTEMROOT})/system32
         shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
         run: >-
-          mkdir -p /cygdrive/d/a/ardupilot/ardupilot/ccache &&
+          CYGPATH_GITHUB_WORKSPACE=$(cygpath -u "$GITHUB_WORKSPACE") &&
+          mkdir -p "${CYGPATH_GITHUB_WORKSPACE}/ccache" &&
           mkdir -p /usr/local/etc &&
           echo "export CCACHE_SLOPPINESS=file_stat_matches" >> ~/ccache.conf &&
-          echo "export CCACHE_DIR=/cygdrive/d/a/ardupilot/ardupilot/ccache" >> ~/ccache.conf &&
-          echo "export CCACHE_BASEDIR=/cygdrive/d/a/ardupilot/ardupilot" >> ~/ccache.conf &&
+          echo "export CCACHE_DIR=${CYGPATH_GITHUB_WORKSPACE}/ccache" >> ~/ccache.conf &&
+          echo "export CCACHE_BASEDIR=${CYGPATH_GITHUB_WORKSPACE}" >> ~/ccache.conf &&
           echo "export CCACHE_COMPRESS=1" >> ~/ccache.conf &&
           echo "export CCACHE_COMPRESSLEVEL=6" >> ~/ccache.conf &&
           echo "export CCACHE_MAXSIZE=400M" >> ~/ccache.conf &&
@@ -187,7 +190,6 @@ jobs:
           PATH: /usr/bin:$(cygpath ${SYSTEMROOT})/system32
         shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
         run: >-
-          ln -sf /usr/bin/python3.7 /usr/bin/python && ln -sf /usr/bin/pip3.7 /usr/bin/pip &&
           python3 -m pip install --progress-bar off empy==3.3.4 pexpect &&
           python3 -m pip install --progress-bar off dronecan --upgrade &&
           cp /usr/bin/ccache /usr/local/bin/ &&
@@ -201,7 +203,9 @@ jobs:
           PATH: /usr/bin:$(cygpath ${SYSTEMROOT})/system32
         shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
         run: >-
-          git config --global --add safe.directory /cygdrive/d/a/${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}/${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/} &&
+          echo "GITHUB_WORKSPACE=${GITHUB_WORKSPACE}" &&
+          CYGPATH_GITHUB_WORKSPACE=$(cygpath -u "$GITHUB_WORKSPACE") &&
+          git config --global --add safe.directory "${CYGPATH_GITHUB_WORKSPACE}" &&
           export PATH=/usr/local/bin:/usr/bin:$(cygpath ${SYSTEMROOT})/system32 &&
           source ~/ccache.conf &&
           Tools/scripts/cygwin_build.sh &&

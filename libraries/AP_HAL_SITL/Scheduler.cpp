@@ -414,7 +414,7 @@ void Scheduler::check_thread_stacks(void)
         const uint8_t ncheck = 8;
         for (uint8_t i=0; i<ncheck; i++) {
             if (p->stack_min[i] != stackfill) {
-                AP_HAL::panic("stack overflow in thread %s\n", p->name);
+                AP_HAL::panic("stack overflow in thread %s", p->name);
             }
         }
     }

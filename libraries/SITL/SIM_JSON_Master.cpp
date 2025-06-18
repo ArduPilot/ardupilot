@@ -37,15 +37,15 @@ void JSON_Master::init(const int32_t num_slaves)
         uint16_t port = 9002 + 10 * i;
 
         if (!list->sock_in.reuseaddress()) {
-            AP_HAL::panic("JSON master: socket reuseaddress failed on port: %d - %s\n", port, strerror(errno));
+            AP_HAL::panic("JSON master: socket reuseaddress failed on port: %d - %s", port, strerror(errno));
         }
 
         if (!list->sock_in.bind("127.0.0.1", port)) {
-            AP_HAL::panic("JSON master: socket reuseaddress failed on port: %d - %s\n", port, strerror(errno));
+            AP_HAL::panic("JSON master: socket reuseaddress failed on port: %d - %s", port, strerror(errno));
         }
 
         if (!list->sock_in.set_blocking(false)) {
-            AP_HAL::panic( "JSON master: socket set_blocking(false) failed on port: %d - %s\n", port, strerror(errno));
+            AP_HAL::panic( "JSON master: socket set_blocking(false) failed on port: %d - %s", port, strerror(errno));
         }
 
         printf("Slave %u: listening on %u\n", list->instance, port);

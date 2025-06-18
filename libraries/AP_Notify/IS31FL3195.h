@@ -30,12 +30,14 @@ class IS31FL3195 : public RGBLed
 {
 public:
     IS31FL3195(uint8_t bus, uint8_t addr);
+    ~IS31FL3195() { delete _dev; }
+
     bool init(void) override;
 protected:
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 
 private:
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice *_dev;
     uint8_t _bus;
     uint8_t _addr;
 

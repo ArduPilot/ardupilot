@@ -247,6 +247,11 @@ void AP_Logger_W25NXX::PageToBuffer(uint32_t pageNum)
     }
 }
 
+//#define AP_W25NXX_DEBUG
+#ifdef AP_W25NXX_DEBUG
+static uint32_t block_writes;
+static uint32_t last_write_msg_ms;
+#endif
 void AP_Logger_W25NXX::BufferToPage(uint32_t pageNum)
 {
     if (pageNum == 0 || pageNum > df_NumPages+1) {
@@ -283,6 +288,15 @@ void AP_Logger_W25NXX::BufferToPage(uint32_t pageNum)
         WITH_SEMAPHORE(dev_sem);
         send_command_addr(JEDEC_PROGRAM_EXECUTE, PageAdr);
     }
+
+#ifdef AP_W25NXX_DEBUG
+    block_writes++;
+    if (AP_HAL::millis() - last_write_msg_ms > 5000) {
+        hal.console->printf("W25NXX: writes %lukB/s, pages %lu/s\n", (block_writes*df_PageSize)/(5*1024), block_writes/5);
+        block_writes = 0;
+        last_write_msg_ms = AP_HAL::millis();
+    }
+#endif
 }
 
 /*

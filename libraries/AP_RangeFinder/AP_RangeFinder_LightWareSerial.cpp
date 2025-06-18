@@ -37,7 +37,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
     uint16_t invalid_count = 0; // number of invalid readings
 
     // max distance the sensor can reliably measure - read from parameters
-    const int16_t distance_cm_max = max_distance_cm();
+    const auto distance_cm_max = max_distance()*100;
 
     // read any available lines from the lidar
     for (auto i=0; i<8192; i++) {
@@ -128,7 +128,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
 
     // all readings were invalid so return out-of-range-high value
     if (invalid_count > 0) {
-        reading_m = MIN(MAX(LIGHTWARE_DIST_MAX_CM, distance_cm_max + LIGHTWARE_OUT_OF_RANGE_ADD_CM), UINT16_MAX) * 0.01f;
+        reading_m = MAX(LIGHTWARE_DIST_MAX_CM, distance_cm_max + LIGHTWARE_OUT_OF_RANGE_ADD_CM);
         no_signal = true;
         return true;
     }

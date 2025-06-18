@@ -39,8 +39,8 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Mission options bitmask
-    // @Description: Bitmask of what options to use in missions.
-    // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe,2:ContinueAfterLand
+    // @Description: Bitmask of what options to use in missions. If the DontZeroCounter counter option is set than on completion of a jump loop the counter is left at zero, so the jump will not happen again if the loop is re-entered.
+    // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe,2:ContinueAfterLand, 3:DontZeroCounter
     // @Bitmask{Copter}: 0:Clear Mission on reboot, 2:ContinueAfterLand
     // @Bitmask{Rover, Sub}: 0:Clear Mission on reboot
     // @User: Advanced
@@ -498,6 +498,11 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
 ///     cmd.index is updated with it's new position in the mission
 bool AP_Mission::add_cmd(Mission_Command& cmd)
 {
+    // Add home if its not already present
+    if (_cmd_total < 1) {
+        write_home_to_storage();
+    }
+
     // attempt to write the command to storage
     bool ret = write_cmd_to_storage(_cmd_total, cmd);
 
@@ -519,6 +524,12 @@ bool AP_Mission::replace_cmd(uint16_t index, const Mission_Command& cmd)
     // sanity check index
     if (index >= (unsigned)_cmd_total) {
         return false;
+    }
+
+    // Writing index zero is not allowed, it must be home
+    if (index == 0) {
+        // Really should be returning false in this case, but in order to not break things we return true
+        return true;
     }
 
     // attempt to write the command to storage
@@ -717,6 +728,16 @@ bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet
         return false;
     }
 
+    // Writing index zero is not allowed, it must be home
+    if (index == 0) {
+        // If home is not already loaded add it so cmd_total is incremented to 1 as would be expected when the returning true
+        if (_cmd_total < 1) {
+            write_home_to_storage();
+        }
+        // Really should be returning false in this case, but in order to not break things we return true
+        return true;
+    }
+
     // A request to set the 'next' item after the end is how we add an extra
     //  item to the list, thus allowing us to write entire missions if needed.
     if (index == num_commands()) {
@@ -736,16 +757,9 @@ bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet
         return false;
     }
 
-    // minimal placeholder values during read-from-storage
-    tmp.target_system = 1;     // unused sysid
-    tmp.target_component =  1; // unused compid
-
-    // 0=home, higher number/s = mission item number.
-    tmp.seq = index;
-
     // retrieve mission from eeprom
     AP_Mission::Mission_Command cmd {};
-    if (!read_cmd_from_storage(tmp.seq, cmd)) {
+    if (!read_cmd_from_storage(index, cmd)) {
         return false;
     }
     // convert into mavlink-ish format for lua and friends.
@@ -756,13 +770,7 @@ bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet
     // set packet's current field to 1 if this is the command being executed
     if (cmd.id == (uint16_t)get_current_nav_cmd().index) {
         tmp.current = 1;
-    } else {
-        tmp.current = 0;
     }
-
-    // set auto continue to 1, becasue that's what's done elsewhere.
-    tmp.autocontinue = 1;     // 1 (true), 0 (false)
-    tmp.command = cmd.id;
 
     ret_packet = tmp;
 
@@ -903,10 +911,17 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_DO_RETURN_PATH_START:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_GO_AROUND:
+    case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_PAYLOAD_PLACE:
+    case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION:
+    case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION:
+    case MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION:
+    case MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION:
+    case MAV_CMD_NAV_FENCE_RETURN_POINT:
+    case MAV_CMD_NAV_RALLY_POINT:
         return true;
     default:
         return false;
@@ -970,7 +985,10 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd
     }
 
     // remember when the mission last changed
-    _last_change_time_ms = AP_HAL::millis();
+    if (index != 0) {
+        // Update of home location is not a true change
+        _last_change_time_ms = AP_HAL::millis();
+    }
 
     // return success
     return true;
@@ -984,6 +1002,11 @@ void AP_Mission::write_home_to_storage()
     home_cmd.id = MAV_CMD_NAV_WAYPOINT;
     home_cmd.content.location = AP::ahrs().get_home();
     write_cmd_to_storage(0,home_cmd);
+
+    // Make sure command total reflects that home has been added
+    if (_cmd_total < 1) {
+        _cmd_total.set_and_save(1);
+    }
 }
 
 MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_int_t& packet)
@@ -1225,6 +1248,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_DO_GO_AROUND:                          // MAV ID: 191
+        break;
+
+    case MAV_CMD_DO_SET_ROI_LOCATION:                   // MAV ID: 195
+    case MAV_CMD_DO_SET_ROI_NONE:                       // MAV ID: 197
+        cmd.p1 = packet.param1;                         // gimbal device id
         break;
 
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
@@ -1571,18 +1599,14 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
 //  NOTE: callers to this method current fill parts of "packet" in before calling this method, so do NOT attempt to zero the entire packet in here
 bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_int_t& packet)
 {
-    // command's position in mission list and mavlink id
-    packet.seq = cmd.index;
-    packet.command = cmd.id;
-
-    // set defaults
-    packet.current = 0;     // 1 if we are passing back the mission command that is currently being executed
-    packet.param1 = 0;
-    packet.param2 = 0;
-    packet.param3 = 0;
-    packet.param4 = 0;
-    packet.frame = 0;
-    packet.autocontinue = 1;
+    // Make sure return packed is zeroed
+    // Strictly params 1 to 4 and alt should be defaulted to NaN
+    // x and y should be defaulted to INT32_MAX
+    packet = {
+        seq: cmd.index,
+        command: cmd.id,
+        autocontinue: 1,
+    };
 
     // command specific conversions from mission command to mavlink packet
     switch (cmd.id) {
@@ -1739,6 +1763,11 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_DO_GO_AROUND:                          // MAV ID: 191
+        break;
+
+    case MAV_CMD_DO_SET_ROI_LOCATION:                   // MAV ID: 195
+    case MAV_CMD_DO_SET_ROI_NONE:                       // MAV ID: 197
+        packet.param1 = cmd.p1;                         // gimbal device id
         break;
 
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
@@ -2197,6 +2226,19 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
                 // continue searching from jump target
                 cmd_index = temp_cmd.content.jump.target;
             } else {
+                if (increment_jump_num_times_if_found && !option_is_set(Option::DONT_ZERO_COUNTER)) {
+                    /*
+                      when we have completed a jump loop reset the counter
+                      so if the user changes WP back to restart the loop
+                      they get the count again
+                    */
+                    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
+                        if (_jump_tracking[i].index == cmd_index) {
+                            _jump_tracking[i].num_times_run = 0;
+                            break;
+                        }
+                    }
+                }
                 // jump has been run specified number of times so move search to next command in mission
                 cmd_index++;
             }
@@ -2446,15 +2488,21 @@ bool AP_Mission::jump_to_closest_mission_leg(const Location &current_loc)
     uint16_t landing_start_index = 0;
     float min_distance = -1;
 
+    // This defines the maximum number of waypoints that will be searched, this limits the worst case runtime
+    uint16_t search_remaining = 1000;
+
     // Go through mission and check each DO_RETURN_PATH_START
     for (uint16_t i = 1; i < num_commands(); i++) {
-        Mission_Command tmp;
-        if (read_cmd_from_storage(i, tmp) && (tmp.id == MAV_CMD_DO_RETURN_PATH_START)) {
+        if (get_command_id(i) == uint16_t(MAV_CMD_DO_RETURN_PATH_START)) {
             uint16_t tmp_index;
             float tmp_distance;
-            if (distance_to_mission_leg(i, tmp_distance, tmp_index, current_loc) && (min_distance < 0 || tmp_distance <= min_distance)){
+            if (distance_to_mission_leg(i, search_remaining, tmp_distance, tmp_index, current_loc) && (min_distance < 0 || tmp_distance <= min_distance)){
                 min_distance = tmp_distance;
                 landing_start_index = tmp_index;
+            }
+            if (search_remaining == 0) {
+                // Run out of time to search, stop and return the best so far
+                break;
             }
         }
     }
@@ -2626,7 +2674,7 @@ reset_do_jump_tracking:
 
 // Approximate the distance travelled to return to the mission path. DO_JUMP commands are observed in look forward.
 // Stop searching once reaching a landing or do-land-start
-bool AP_Mission::distance_to_mission_leg(uint16_t start_index, float &rejoin_distance, uint16_t &rejoin_index, const Location& current_loc)
+bool AP_Mission::distance_to_mission_leg(uint16_t start_index, uint16_t &search_remaining, float &rejoin_distance, uint16_t &rejoin_index, const Location& current_loc)
 {
     Location prev_loc;
     Mission_Command temp_cmd;
@@ -2642,7 +2690,7 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, float &rejoin_dis
 
     // run through remainder of mission to approximate a distance to landing
     uint16_t index = start_index;
-    for (uint8_t i=0; i<UINT8_MAX; i++) {
+    for (; search_remaining > 0; search_remaining--) {
         // search until the end of the mission command list
         for (uint16_t cmd_index = index; cmd_index <= (unsigned)_cmd_total; cmd_index++) {
             if (get_next_cmd(cmd_index, temp_cmd, true, false)) {
@@ -2776,6 +2824,10 @@ const char *AP_Mission::Mission_Command::type() const
         return "DigiCamCtrl";
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         return "SetCamTrigDst";
+    case MAV_CMD_DO_SET_ROI_LOCATION:
+        return "SetROILocation";
+    case MAV_CMD_DO_SET_ROI_NONE:
+        return "SetROINone";
     case MAV_CMD_DO_SET_ROI:
         return "SetROI";
     case MAV_CMD_DO_SET_REVERSE:

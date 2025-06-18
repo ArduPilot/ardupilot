@@ -70,7 +70,7 @@ protected:
     // reset the update gain variables for heli
     void reset_update_gain_variables() override;
 
-    // initializes test
+    // Prepares all tuning state variables and target values for a new test.
     void test_init() override;
 
     // runs test
@@ -98,15 +98,15 @@ protected:
     void updating_max_gains_all(AxisType test_axis) override;
 
     // set gains post tune for the tune type
-    void set_gains_post_tune(AxisType test_axis) override;
+    void set_tuning_gains_with_backoff(AxisType test_axis) override;
 
-    // reverse direction for twitch test
-    bool twitch_reverse_direction() override { return positive_direction; }
+    // reverse the direction of the next test
+    bool reverse_test_direction() override { return positive_direction; }
 
 #if HAL_LOGGING_ENABLED
     // methods to log autotune summary data
     void Log_AutoTune() override;
-    void Log_Write_AutoTune(AxisType _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel);
+    void Log_Write_AutoTune(AxisType _axis, TuneType tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel);
 
     // methods to log autotune time history results for command, angular rate, and attitude.
     void Log_AutoTuneDetails() override;

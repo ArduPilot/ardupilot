@@ -117,7 +117,7 @@ void AP_Networking_CAN::mcast_server(void)
         }
 
         if (!cbus->register_frame_callback(
-                FUNCTOR_BIND_MEMBER(&AP_Networking_CAN::can_frame_callback, void, uint8_t, const AP_HAL::CANFrame &),
+                FUNCTOR_BIND_MEMBER(&AP_Networking_CAN::can_frame_callback, void, uint8_t, const AP_HAL::CANFrame &, AP_HAL::CANIface::CanIOFlags),
                 callback_id)) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "CAN_MCAST[%u]: failed to register", unsigned(bus));
             goto de_allocate;
@@ -180,14 +180,30 @@ void AP_Networking_CAN::mcast_server(void)
             */
             AP_HAL::CANFrame frame;
             const uint16_t timeout_us = 2000;
+#if AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED
+            const bool bridged = AP::network().is_can_mcast_ep_bridged(bus);
+#endif
 
             while (frame_buffers[bus]->peek(frame)) {
-                auto retcode = get_caniface(bus)->send(frame,
-                                                      AP_HAL::micros64() + timeout_us,
-                                                      AP_HAL::CANIface::IsMAVCAN);
-                if (retcode == 0) {
+                auto *cbus = get_caniface(bus);
+                if (cbus == nullptr) {
                     break;
                 }
+#if AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED
+                if (bridged) {
+                    auto retcode = cbus->send(frame, AP_HAL::micros64() + timeout_us,
+                                                 AP_HAL::CANIface::IsForwardedFrame);
+                    if (retcode == 0) {
+                        break;
+                    }
+                } else
+#endif
+                {
+                    // only call the AP_HAL::CANIface send if we are not in bridged mode
+                    cbus->AP_HAL::CANIface::send(frame, AP_HAL::micros64() + timeout_us,
+                                                 AP_HAL::CANIface::IsForwardedFrame);
+                }
+
                 // we either sent it or there was an error, either way we discard the frame
                 frame_buffers[bus]->pop();
             }
@@ -199,9 +215,24 @@ void AP_Networking_CAN::mcast_server(void)
   handler for CAN frames from the registered callback, sending frames
   out as multicast UDP
  */
-void AP_Networking_CAN::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame)
+void AP_Networking_CAN::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame, AP_HAL::CANIface::CanIOFlags flags)
 {
     if (bus >= HAL_NUM_CAN_IFACES || mcast_sockets[bus] == nullptr) {
+        return;
+    }
+
+#if AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED
+    // check if bridged mode is enabled
+    const bool bridged = AP::network().is_can_mcast_ep_bridged(bus);
+#else
+    // never bridge in bootloader, as we can cause loops if multiple
+    // bootloaders with mcast are running on the same network and CAN Bus
+    const bool bridged = false;
+#endif
+
+    if ((flags & AP_HAL::CANIface::IsForwardedFrame) && !bridged) {
+        // we don't forward frames that we received from the multicast
+        // server if not in bridged mode
         return;
     }
 
@@ -224,4 +255,4 @@ void AP_Networking_CAN::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &
     mcast_sockets[bus]->send((void*)&pkt, data_length+MCAST_HDR_LENGTH);
 }
 
-#endif // AP_NETWORKING_ENABLED && AP_NETWORKING_CAN_MCAST_ENABLED
+#endif // AP_NETWORKING_ENABLED

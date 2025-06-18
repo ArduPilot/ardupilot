@@ -430,7 +430,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     float alt_limit;
     float curr_alt;
     if (_ahrs.get_hgt_ctrl_limit(alt_limit) &&
-        _ahrs.get_relative_position_D_origin(curr_alt)) {
+        _ahrs.get_relative_position_D_origin_float(curr_alt)) {
         // alt_limit is UP, curr_alt is DOWN:
         const float ctrl_alt_diff = alt_limit + curr_alt;
         if (!limit_max_alt || ctrl_alt_diff < max_alt_diff) {
@@ -917,7 +917,7 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
 
     // get vehicle position
     Vector2f position_NE;
-    if (!AP::ahrs().get_relative_position_NE_origin(position_NE)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(position_NE)) {
         // do not limit velocity if we don't have a position estimate
         return;
     }
@@ -1054,7 +1054,7 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
 
     // get vehicle position
     Vector2f position_NE;
-    if (!AP::ahrs().get_relative_position_NE_origin(position_NE)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(position_NE)) {
         // do not limit velocity if we don't have a position estimate
         return;
     }
@@ -1344,7 +1344,7 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
 
     // do not adjust velocity if vehicle is outside the polygon fence
     Vector2f position_xy;
-    if (!_ahrs.get_relative_position_NE_origin(position_xy)) {
+    if (!_ahrs.get_relative_position_NE_origin_float(position_xy)) {
         // boundary is in earth frame but we have no idea
         // where we are
         return;

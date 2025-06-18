@@ -381,35 +381,35 @@ struct PACKED log_XKTV {
 // @Description: EKF3 State variances (primary core)
 // @Field: TimeUS: Time since system startup
 // @Field: C: EKF3 core this data is for
-// @Field: V00: Variance for state 0
-// @Field: V01: Variance for state 1
-// @Field: V02: Variance for state 2
-// @Field: V03: Variance for state 3
-// @Field: V04: Variance for state 4
-// @Field: V05: Variance for state 5
-// @Field: V06: Variance for state 6
-// @Field: V07: Variance for state 7
-// @Field: V08: Variance for state 8
-// @Field: V09: Variance for state 9
-// @Field: V10: Variance for state 10
-// @Field: V11: Variance for state 11
+// @Field: V00: Variance for state 0 (attitude quaternion)
+// @Field: V01: Variance for state 1 (attitude quaternion)
+// @Field: V02: Variance for state 2 (attitude quaternion)
+// @Field: V03: Variance for state 3 (attitude quaternion)
+// @Field: V04: Variance for state 4 (velocity-north)
+// @Field: V05: Variance for state 5 (velocity-east)
+// @Field: V06: Variance for state 6 (velocity-down)
+// @Field: V07: Variance for state 7 (position-north)
+// @Field: V08: Variance for state 8 (position-east)
+// @Field: V09: Variance for state 9 (position-down)
+// @Field: V10: Variance for state 10 (delta-angle-bias-x)
+// @Field: V11: Variance for state 11 (delta-angle-bias-y)
 
 // @LoggerMessage: XKV2
 // @Description: more EKF3 State Variances (primary core)
 // @Field: TimeUS: Time since system startup
 // @Field: C: EKF3 core this data is for
-// @Field: V12: Variance for state 12
-// @Field: V13: Variance for state 13
-// @Field: V14: Variance for state 14
-// @Field: V15: Variance for state 15
-// @Field: V16: Variance for state 16
-// @Field: V17: Variance for state 17
-// @Field: V18: Variance for state 18
-// @Field: V19: Variance for state 19
-// @Field: V20: Variance for state 20
-// @Field: V21: Variance for state 21
-// @Field: V22: Variance for state 22
-// @Field: V23: Variance for state 23
+// @Field: V12: Variance for state 12 (delta-angle-bias-z)
+// @Field: V13: Variance for state 13 (delta-velocity-bias-x)
+// @Field: V14: Variance for state 14 (delta-velocity-bias-y)
+// @Field: V15: Variance for state 15 (delta-velocity-bias-z)
+// @Field: V16: Variance for state 16 (Earth-frame mag-field-bias-x)
+// @Field: V17: Variance for state 17 (Earth-frame mag-field-bias-y)
+// @Field: V18: Variance for state 18 (Earth-frame mag-field-bias-z)
+// @Field: V19: Variance for state 19 (body-frame mag-field-bias-x)
+// @Field: V20: Variance for state 20 (body-frame mag-field-bias-y)
+// @Field: V21: Variance for state 21 (body-frame mag-field-bias-z)
+// @Field: V22: Variance for state 22 (wind-north)
+// @Field: V23: Variance for state 23 (wind-east)
 struct PACKED log_XKV {
     LOG_PACKET_HEADER;
     uint64_t time_us;

@@ -72,6 +72,7 @@ jobs:
             MatekF405,
             KakuteF7,
             MatekH743-bdshot,
+            MambaH743v4,  # for littlefs support
             Pixhawk1-1M,
             MatekF405-CAN,  # see special "build bootloader" code below
             DrotekP3Pro,  # see special "build bootloader" code below
@@ -268,7 +269,7 @@ jobs:
         shell: bash
         run: |
           cd pr/
-          Tools/scripts/pretty_diff_size.py -m $GITHUB_WORKSPACE/base_branch_bin -s $GITHUB_WORKSPACE/pr_bin
+          Tools/scripts/build_tests/pretty_diff_size.py -m $GITHUB_WORKSPACE/base_branch_bin -s $GITHUB_WORKSPACE/pr_bin
 
       - name: Feature compare with  ${{ github.event.pull_request.base.ref }}
         shell: bash
@@ -298,11 +299,29 @@ jobs:
           EF_BASE_BRANCH_BINARY="$GITHUB_WORKSPACE/base_branch_bin/$EF_BINARY_NAME"
           EF_PR_BRANCH_BINARY="$GITHUB_WORKSPACE/pr_bin/$EF_BINARY_NAME"
 
-          Tools/scripts/extract_features.py "$EF_BASE_BRANCH_BINARY" -nm "${BIN_PREFIX}nm" >features-base_branch.txt
-          Tools/scripts/extract_features.py "$EF_PR_BRANCH_BINARY" -nm "${BIN_PREFIX}nm" >features-pr.txt
+          Tools/scripts/extract_features.py "$EF_BASE_BRANCH_BINARY" --nm "${BIN_PREFIX}nm" >features-base_branch.txt
+          Tools/scripts/extract_features.py "$EF_PR_BRANCH_BINARY" --nm "${BIN_PREFIX}nm" >features-pr.txt
           diff -u features-base_branch.txt features-pr.txt || true
+          diff_output=$(diff -u features-base_branch.txt features-pr.txt || true)
+          echo "### Features Diff Output" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$diff_output" ]; then
+            echo '```diff' >> $GITHUB_STEP_SUMMARY
+            echo "$diff_output" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No differences found." >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Checksum compare with ${{ github.event.pull_request.base.ref }}
         shell: bash
         run: |
           diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.elf --exclude=*.apj || true
+          diff_output=$(diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.elf --exclude=*.apj || true || true)
+          echo "### Checksum Diff Output" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$diff_output" ]; then
+            echo '```diff' >> $GITHUB_STEP_SUMMARY
+            echo "$diff_output" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No differences found." >> $GITHUB_STEP_SUMMARY
+          fi

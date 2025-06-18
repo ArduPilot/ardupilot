@@ -170,7 +170,6 @@ void Sub::handle_battery_failsafe(const char* type_str, const int8_t action)
 // Make sure that we are receiving pilot input at an appropriate interval
 void Sub::failsafe_pilot_input_check()
 {
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (g.failsafe_pilot_input == FS_PILOT_INPUT_DISABLED) {
         failsafe.pilot_input = false;
         return;
@@ -195,7 +194,6 @@ void Sub::failsafe_pilot_input_check()
     if(g.failsafe_pilot_input == FS_PILOT_INPUT_DISARM) {
         arming.disarm(AP_Arming::Method::PILOT_INPUT_FAILSAFE);
     }
-#endif
 }
 
 // Internal pressure failsafe check
@@ -312,7 +310,7 @@ void Sub::failsafe_gcs_check()
         return;
     }
 
-    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    const uint32_t gcs_last_seen_ms = gcs().sysid_mygcs_last_seen_time_ms();
     if (gcs_last_seen_ms == 0) {
         // we've never seen a GCS, so we don't failsafe if we stop seeing it
         return;
@@ -320,12 +318,13 @@ void Sub::failsafe_gcs_check()
 
     uint32_t tnow = AP_HAL::millis();
 
-    // Check if we have gotten a GCS heartbeat recently (GCS sysid must match SYSID_MYGCS parameter)
+    // Check if we have gotten a GCS heartbeat recently (GCS sysid must match MAV_GCS_SYSID parameter)
     const uint32_t gcs_timeout_ms = uint32_t(constrain_float(g.failsafe_gcs_timeout * 1000.0f, 0.0f, UINT32_MAX));
     if (tnow - gcs_last_seen_ms < gcs_timeout_ms) {
         // Log event if we are recovering from previous gcs failsafe
         if (failsafe.gcs) {
             LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"GCS Failsafe Cleared");
         }
         failsafe.gcs = false;
         return;
@@ -338,7 +337,7 @@ void Sub::failsafe_gcs_check()
     // Send a warning every 30 seconds
     if (tnow - failsafe.last_gcs_warn_ms > 30000) {
         failsafe.last_gcs_warn_ms = tnow;
-        gcs().send_text(MAV_SEVERITY_WARNING, "MYGCS: %u, heartbeat lost", g.sysid_my_gcs.get());
+        gcs().send_text(MAV_SEVERITY_WARNING, "MYGCS: %u, heartbeat lost", unsigned(gcs().sysid_gcs()));
     }
 
     // do nothing if we have already triggered the failsafe action, or if the motors are disarmed
@@ -499,3 +498,55 @@ void Sub::failsafe_terrain_act()
         arming.disarm(AP_Arming::Method::TERRAINFAILSAFE);
     }
 }
+
+#if AP_SUB_RC_ENABLED
+void Sub::set_failsafe_radio(bool b)
+{
+  // only act on changes
+    // -------------------
+    if(failsafe.radio != b) {
+
+        // store the value so we don't trip the gate twice
+        // -----------------------------------------------
+        failsafe.radio = b;
+
+        if (failsafe.radio == false) {
+            // We've regained radio contact
+            // ----------------------------
+            failsafe_radio_off_event();
+
+        }else{
+            // We've lost radio contact
+            // ------------------------
+            failsafe_radio_on_event();
+        }
+
+        // update AP_Notify
+        AP_Notify::flags.failsafe_radio = b;
+    }
+}
+
+// failsafe_radio_on_event - RC contact lost
+void Sub::failsafe_radio_on_event()
+{
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_OCCURRED);
+    gcs().send_text(MAV_SEVERITY_WARNING, "RC Failsafe");
+        switch(g.failsafe_throttle) {
+        case FS_THR_SURFACE:
+            set_mode(Mode::Number::SURFACE, ModeReason::RADIO_FAILSAFE);
+            break;
+        case FS_THR_WARN:
+        case FS_THR_DISABLED:
+            break;
+    }    
+}
+
+// failsafe_radio_off event- respond to radio contact being regained
+void Sub::failsafe_radio_off_event()
+{
+    // no need to do anything except log the error as resolved
+    // user can now override roll, pitch, yaw and throttle and even use flight mode switch to restore previous flight mode
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_RESOLVED);
+    gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe Cleared");
+}
+#endif

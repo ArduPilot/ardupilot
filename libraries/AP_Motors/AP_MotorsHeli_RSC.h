@@ -22,7 +22,7 @@ public:
     friend class AP_MotorsHeli_Dual;
     friend class AP_MotorsHeli_Quad;
 
-    AP_MotorsHeli_RSC(SRV_Channel::Aux_servo_function_t aux_fn,
+    AP_MotorsHeli_RSC(SRV_Channel::Function aux_fn,
                       uint8_t default_channel,
                       uint8_t inst) :
         _instance(inst),
@@ -117,7 +117,7 @@ private:
     const uint8_t   _instance;
 
     // channel setup for aux function
-    const SRV_Channel::Aux_servo_function_t _aux_fn;
+    const SRV_Channel::Function _aux_fn;
     const uint8_t _default_channel;
 
     // internal variables

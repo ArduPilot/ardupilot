@@ -57,7 +57,7 @@ void SPIUARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
         _buffer = NEW_NOTHROW uint8_t[rxS];
         if (_buffer == nullptr) {
             hal.console->printf("Not enough memory\n");
-            AP_HAL::panic("Not enough memory\n");
+            AP_HAL::panic("Not enough memory");
         }
     }
 

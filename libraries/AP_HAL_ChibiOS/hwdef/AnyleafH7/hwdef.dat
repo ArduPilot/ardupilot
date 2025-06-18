@@ -1,7 +1,5 @@
 include common.inc
 
-env OPTIMIZE -Os
-
 # bootloader takes first sector
 FLASH_RESERVE_START_KB 128
 

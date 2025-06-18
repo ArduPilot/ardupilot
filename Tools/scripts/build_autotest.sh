@@ -5,18 +5,21 @@ export PYTHONUNBUFFERED=1
 
 cd $HOME/APM || exit 1
 
+ARDUPILOT_ROOT="$PWD/APM"
+
 test -n "$FORCEBUILD" || {
-(cd APM && git fetch > /dev/null 2>&1)
+  pushd APM
+    git fetch > /dev/null 2>&1
+    newtags=$(git fetch --tags --force | wc -l)
+    oldhash=$(git rev-parse origin/master)
+    newhash=$(git rev-parse HEAD)
+  popd
 
-newtags=$(cd APM && git fetch --tags --force | wc -l)
-oldhash=$(cd APM && git rev-parse origin/master)
-newhash=$(cd APM && git rev-parse HEAD)
-
-if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
-    echo "$(date) no change $oldhash $newhash" >> build.log
-    exit 0
-fi
-echo "$(date) Build triggered $oldhash $newhash $newtags" >> build.log
+  if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
+      echo "$(date) no change $oldhash $newhash" >> build.log
+      exit 0
+  fi
+  echo "$(date) Build triggered $oldhash $newhash $newtags" >> build.log
 }
 
 ############################
@@ -50,12 +53,12 @@ lock_file build.lck || {
 #ulimit -v 500000
 
 (
+set -x
+
 date
 
-oldhash=$(cd APM && git rev-parse HEAD)
-
-echo "Updating APM"
-pushd APM
+echo "Updating ArduPilot repository"
+pushd "$ARDUPILOT_ROOT"
 git checkout -f master
 git fetch origin
 git reset --hard origin/master
@@ -83,11 +86,11 @@ popd
 githash=$(cd APM && git rev-parse HEAD)
 hdate=$(date +"%Y-%m-%d-%H:%m")
 
-(cd APM && Tools/scripts/build_parameters.sh)
-
-(cd APM && Tools/scripts/build_log_message_documentation.sh)
-
-(cd APM && Tools/scripts/build_docs.sh)
+pushd $ARDUPILOT_ROOT
+Tools/scripts/build_parameters.sh
+Tools/scripts/build_log_message_documentation.sh
+Tools/scripts/build_docs.sh
+popd
 
 killall -9 JSBSim || /bin/true
 
@@ -100,7 +103,28 @@ export BUILD_BINARIES_PATH=$HOME/build/tmp
 # exit on panic so we don't waste time waiting around
 export SITL_PANIC_EXIT=1
 
-timelimit 144000 python3 APM/Tools/autotest/autotest.py --autotest-server --timeout=143000 > buildlogs/autotest-output.txt 2>&1
+# we run the timelimit shell command to kill autotest if it behaves badly:
+TIMELIMIT_TIME_LIMIT=144000
+# we pass this into autotest.py to get it to time limit itself
+AUTOTEST_TIME_LIMIT=143000
+
+# the autotest python script:
+AUTOTEST="$ARDUPILOT_ROOT/Tools/autotest/autotest.py"
+
+# decide which timelimit command we are working with.  The autotest
+# server has a binary of unknown lineage in
+# /home/autotest/bin/timelimit .  We should move to using the
+# apt-installable version
+
+if timelimit 2>&1 | grep -q SIGQUIT; then
+    TIMELIMIT_CMD="timelimit $TIMELIMIT_TIME_LIMIT"
+else
+    TIMELIMIT_CMD="timelimit -s 9 -t $TIMELIMIT_TIME_LIMIT"
+fi
+
+AUTOTEST_LOG="buildlogs/autotest-output.txt"
+echo "AutoTest log file is ($AUTOTEST_LOG)"
+$TIMELIMIT_CMD python3 $AUTOTEST --autotest-server --timeout=$AUTOTEST_TIME_LIMIT > "$AUTOTEST_LOG" 2>&1
 
 mkdir -p "buildlogs/history/$hdate"
 

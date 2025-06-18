@@ -1,3 +1,5 @@
+# flake8: noqa
+
 """
 Emit parameter documentation in markdown format
 """
@@ -56,7 +58,7 @@ class MDEmit(Emit):
         pname = g.reference
         
         # Check to see this is a parameter group with redundant information
-        rename = re.sub('\d+', 'n', g.reference)
+        rename = re.sub(r'\d+', 'n', g.reference)
         if rename in nparams:
             if rename in self.nparams:
                 return
@@ -82,7 +84,7 @@ class MDEmit(Emit):
             d = param.__dict__
             name = param.name.split(':')[-1]
             if nparam:
-                name = re.sub('\d+', 'n', name, 1)
+                name = re.sub(r'\d+', 'n', name, 1)
             tag = '%s: %s' % (name, param.DisplayName)
             t += '\n\n## %s' % tag
             if d.get('User', None) == 'Advanced':

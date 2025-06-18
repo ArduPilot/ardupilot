@@ -3,8 +3,6 @@
 #include "AP_InertialSensor_config.h"
 
 // Gyro and Accelerometer calibration criteria
-#define AP_INERTIAL_SENSOR_ACCEL_TOT_MAX_OFFSET_CHANGE  4.0f
-#define AP_INERTIAL_SENSOR_ACCEL_MAX_OFFSET             250.0f
 #define AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ     5.0f    // accel vibration floor filter hz
 #define AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ           2.0f    // accel vibration filter hz
 #define AP_INERTIAL_SENSOR_ACCEL_PEAK_DETECT_TIMEOUT_MS 500     // peak-hold detector timeout
@@ -34,6 +32,7 @@
 class AP_InertialSensor_Backend;
 class AuxiliaryBus;
 class AP_AHRS;
+class FastRateBuffer;
 
 /*
   forward declare AP_Logger class. We can't include logger.h
@@ -51,6 +50,7 @@ class AP_Logger;
 class AP_InertialSensor : AP_AccelCal_Client
 {
     friend class AP_InertialSensor_Backend;
+    friend class FastRateBuffer;
 
 public:
     AP_InertialSensor();
@@ -73,7 +73,7 @@ public:
     ///
     /// @param style	The initialisation startup style.
     ///
-    void init(uint16_t sample_rate_hz);
+    __INITFUNC__ void init(uint16_t sample_rate_hz);
 
     // get accel/gyro instance numbers that a backend will get when they register
     bool get_accel_instance(uint8_t &instance) const;
@@ -156,17 +156,20 @@ public:
     uint16_t get_gyro_rate_hz(uint8_t instance) const { return uint16_t(_gyro_raw_sample_rates[instance] * _gyro_over_sampling[instance]); }
     uint16_t get_accel_rate_hz(uint8_t instance) const { return uint16_t(_accel_raw_sample_rates[instance] * _accel_over_sampling[instance]); }
 
+    // validate backend sample rates
+    bool pre_arm_check_gyro_backend_rate_hz(char* fail_msg, uint16_t fail_msg_len) const;
+
     // FFT support access
 #if HAL_GYROFFT_ENABLED
     const Vector3f& get_gyro_for_fft(void) const { return _gyro_for_fft[_first_usable_gyro]; }
     FloatBuffer&  get_raw_gyro_window(uint8_t instance, uint8_t axis) { return _gyro_window[instance][axis]; }
     FloatBuffer&  get_raw_gyro_window(uint8_t axis) { return get_raw_gyro_window(_first_usable_gyro, axis); }
-    uint16_t get_raw_gyro_rate_hz() const { return get_raw_gyro_rate_hz(_first_usable_gyro); }
-    uint16_t get_raw_gyro_rate_hz(uint8_t instance) const { return _gyro_raw_sample_rates[_first_usable_gyro]; }
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     bool has_fft_notch() const;
 #endif
 #endif
+    uint16_t get_raw_gyro_rate_hz(uint8_t instance) const { return _gyro_raw_sample_rates[_first_usable_gyro]; }
+    uint16_t get_raw_gyro_rate_hz() const { return get_raw_gyro_rate_hz(_first_usable_gyro); }
     bool set_gyro_window_size(uint16_t size);
     // get accel offsets in m/s/s
     const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset(i); }
@@ -195,7 +198,7 @@ public:
 
     // return the maximum gyro drift rate in radians/s/s. This
     // depends on what gyro chips are being used
-    float get_gyro_drift_rate(void) const { return ToRad(0.5f/60); }
+    float get_gyro_drift_rate(void) const { return radians(0.5f/60); }
 
     // update gyro and accel values from accumulated samples
     void update(void) __RAMFUNC__;
@@ -263,6 +266,7 @@ public:
     AuxiliaryBus *get_auxiliary_bus(int16_t backend_id, uint8_t instance);
 
     void detect_backends(void);
+    void update_backends();
 
     // accel peak hold detector
     void set_accel_peak_hold(uint8_t instance, const Vector3f &accel);
@@ -279,6 +283,9 @@ public:
 
     // Returns newly calculated trim values if calculated
     bool get_new_trim(Vector3f &trim_rad);
+
+    // notify IMUs of the new primary
+    void set_primary(uint8_t instance);
 
 #if HAL_INS_ACCELCAL_ENABLED
     // initialise and register accel calibrator
@@ -419,7 +426,7 @@ public:
     BatchSampler batchsampler{*this};
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     // handle external AHRS data
     void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt);
 #endif
@@ -602,9 +609,6 @@ private:
     INS_PARAM_WRAPPER(_gyro_offset);
     INS_PARAM_WRAPPER(_accel_pos);
 
-    // accelerometer max absolute offsets to be used for calibration
-    float _accel_max_abs_offsets[INS_MAX_INSTANCES];
-
     // accelerometer and gyro raw sample rate in units of Hz
     float  _accel_raw_sample_rates[INS_MAX_INSTANCES];
     float  _gyro_raw_sample_rates[INS_MAX_INSTANCES];
@@ -656,9 +660,12 @@ private:
     bool _gyro_cal_ok[INS_MAX_INSTANCES];
     bool _accel_id_ok[INS_MAX_INSTANCES];
 
-    // primary accel and gyro
+    // first usable gyro and accel
     uint8_t _first_usable_gyro;
     uint8_t _first_usable_accel;
+
+    // primary instance
+    uint8_t _primary;
 
     // mask of accels and gyros which we will be actively using
     // and this should wait for in wait_for_sample()
@@ -798,6 +805,31 @@ private:
     bool raw_logging_option_set(RAW_LOGGING_OPTION option) const {
         return (raw_logging_options.get() & int32_t(option)) != 0;
     }
+    // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // Support for the fast rate thread in copter
+    FastRateBuffer* fast_rate_buffer;
+    bool fast_rate_buffer_enabled;
+
+public:
+    // enable the fast rate buffer and start pushing samples to it
+    void enable_fast_rate_buffer();
+    // disable the fast rate buffer and stop pushing samples to it
+    void disable_fast_rate_buffer();
+    // get the next available gyro sample from the fast rate buffer
+    bool get_next_gyro_sample(Vector3f& gyro);
+    // get the number of available gyro samples in the fast rate buffer
+    uint32_t get_num_gyro_samples();
+    // set the rate at which samples are collected, unused samples are dropped
+    void set_rate_decimation(uint8_t rdec);
+    // push a new gyro sample into the fast rate buffer
+    bool push_next_gyro_sample(const Vector3f& gyro);
+    // run the filter parmeter update code.
+    void update_backend_filters();
+    // are rate loop samples enabled for this instance?
+    bool is_rate_loop_gyro_enabled(uint8_t instance) const;
+    // is dynamic fifo enabled for this instance
+    bool is_dynamic_fifo_enabled(uint8_t instance) const;
+    // endif AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 };
 
 namespace AP {

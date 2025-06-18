@@ -140,7 +140,7 @@ function update()
     -- first get position offset (cumulative effect of velocity offsets)
     local pos_offset_NED, _, _ = poscontrol:get_posvelaccel_offset()
     if pos_offset_NED == nil then
-        print_warning("unable to get position offset")
+        print("unable to get position offset")
         pos_offset_NED = Vector3f()
     end
     -- test velocity offsets in m/s in NED frame

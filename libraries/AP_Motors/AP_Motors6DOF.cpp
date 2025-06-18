@@ -525,6 +525,8 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
         limit.throttle_upper = true;
     }
 
+    throttle_thrust = constrain_float(throttle_thrust, -1.0f, _max_throttle);
+
     // calculate roll, pitch and Throttle for each motor (only used by vertical thrusters)
     rpt_max = 1; //Initialized to 1 so that normalization will only occur if value is saturated
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {

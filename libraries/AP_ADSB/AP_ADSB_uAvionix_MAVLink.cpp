@@ -177,22 +177,7 @@ uint8_t AP_ADSB_uAvionix_MAVLink::get_encoded_callsign_null_char()
 
     uint8_t encoded_null = 0;
 
-    if (_frontend.out_state.cfg.maxAircraftSpeed_knots <= 0) {
-        // not set or unknown. no bits set
-    } else if (_frontend.out_state.cfg.maxAircraftSpeed_knots <= 75) {
-        encoded_null |= 0x01;
-    } else if (_frontend.out_state.cfg.maxAircraftSpeed_knots <= 150) {
-        encoded_null |= 0x02;
-    } else if (_frontend.out_state.cfg.maxAircraftSpeed_knots <= 300) {
-        encoded_null |= 0x03;
-    } else if (_frontend.out_state.cfg.maxAircraftSpeed_knots <= 600) {
-        encoded_null |= 0x04;
-    } else if (_frontend.out_state.cfg.maxAircraftSpeed_knots <= 1200) {
-        encoded_null |= 0x05;
-    } else {
-        encoded_null |= 0x06;
-    }
-
+    encoded_null = AP_ADSB::convert_maxknots_to_enum(_frontend.out_state.cfg.maxAircraftSpeed_knots);
 
     if (_frontend.out_state.cfg.rf_capable & ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN) {
         encoded_null |= 0x10;
