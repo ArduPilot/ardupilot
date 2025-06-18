@@ -96,7 +96,7 @@ void ModeAcro::air_mode_aux_changed()
 
 float ModeAcro::throttle_hover() const
 {
-    if (g2.acro_thr_mid > 0) {
+    if (is_positive(g2.acro_thr_mid)) {
         return g2.acro_thr_mid;
     }
     return Mode::throttle_hover();
@@ -136,12 +136,12 @@ void ModeAcro::get_pilot_desired_rates_cds(float roll_in_norm, float pitch_in_no
         const Vector3f att_target_euler_cd = attitude_control->get_att_target_euler_cd();
 
         // Calculate trainer mode earth frame rate command for roll
-        int32_t roll_angle_cd = wrap_180_cd(att_target_euler_cd.x);
-        rate_ef_level_cds.x = -constrain_int32(roll_angle_cd, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
+        float roll_angle_cd = wrap_180_cd(att_target_euler_cd.x);
+        rate_ef_level_cds.x = -constrain_float(roll_angle_cd, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
 
         // Calculate trainer mode earth frame rate command for pitch
-        int32_t pitch_angle_cd = wrap_180_cd(att_target_euler_cd.y);
-        rate_ef_level_cds.y = -constrain_int32(pitch_angle_cd, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
+        float pitch_angle_cd = wrap_180_cd(att_target_euler_cd.y);
+        rate_ef_level_cds.y = -constrain_float(pitch_angle_cd, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
 
         // Calculate trainer mode earth frame rate command for yaw
         rate_ef_level_cds.z = 0;
@@ -171,7 +171,7 @@ void ModeAcro::get_pilot_desired_rates_cds(float roll_in_norm, float pitch_in_no
             rate_bf_request_cds.y += rate_bf_level_cds.y;
             rate_bf_request_cds.z += rate_bf_level_cds.z;
         }else{
-            float acro_level_mix = constrain_float(1-float(MAX(MAX(abs(roll_in_norm), abs(pitch_in_norm)), abs(yaw_in_norm))/4500.0), 0, 1) * ahrs.cos_pitch();
+            float acro_level_mix = constrain_float(1-float(MAX(MAX(abs(roll_in_norm), abs(pitch_in_norm)), abs(yaw_in_norm))), 0, 1) * ahrs.cos_pitch();
 
             // Scale levelling rates by stick input
             rate_bf_level_cds = rate_bf_level_cds * acro_level_mix;
