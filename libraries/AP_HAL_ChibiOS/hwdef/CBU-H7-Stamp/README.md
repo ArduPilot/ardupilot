@@ -4,7 +4,7 @@
 
 The [CBUnmanned H743 Stamp](https://cbunmanned.com/store) is a flight controller loosely based on the FMUv6 standards & is designed for low volume OEMs as a drop in way to add ArduPilot to their custom hardware builds. It is a part of CBUnmanned's wider ["Stamp" Eco-System](https://cbunmanned.com), which brings together all the typical avionics hardware into a neat custom carrier PCB. Mounting footprints and symbols are available along with examples of basic usage on the  [Wiki](https://wiki.cbunmanned.com/).
 
-![H743StampFront&Back](H743_SD.png "H743FB")
+![H743StampFront&Back](H743_SD.jpg "H743FB")
 
 ## Features
 - Class leading H7 SOC.
