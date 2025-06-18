@@ -13706,7 +13706,7 @@ RTL_ALT 111
         self.install_example_script_context('set-target-velocity.lua')
         self.reboot_sitl()
 
-        # Should be alowd to enter from alt hold
+        # Should be allowed to enter from alt hold
         self.change_mode("ALT_HOLD")
         self.wait_ready_to_arm()
         self.arm_vehicle()
