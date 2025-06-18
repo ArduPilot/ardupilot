@@ -2684,7 +2684,11 @@ void QuadPlane::vtol_position_controller(void)
                                                   2*position2_dist_threshold + stopping_distance(rel_groundspeed_sq));
 
                 target_speed_xy_cms = diff_wp_norm * target_speed * 100;
-                have_target_yaw = true;
+                if (!tailsitter.enabled()) {
+                  // for tailsitters we want to weathervane as soon as we are in
+                  // vtol mode in position 1
+                  have_target_yaw = true;
+                }
 
                 // adjust target yaw angle for wind. We calculate yaw based on the target speed
                 // we want assuming no speed scaling due to direction
