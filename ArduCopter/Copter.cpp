@@ -679,6 +679,9 @@ void Copter::one_hz_loop()
 #if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
     custom_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #endif
+    gcs().send_text(MAV_SEVERITY_CRITICAL, 
+                "Current altitude: %.1fm",
+                 copter.flightmode->get_alt_above_ground_cm() / 100.0f);
 }
 
 void Copter::init_simple_bearing()
