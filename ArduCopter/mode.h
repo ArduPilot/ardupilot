@@ -427,7 +427,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool init(bool ignore_checks) override;
     void exit() override;
-    // whether an air-mode aux switch has been toggled
+    // Called when air mode is enabled via AUX switch; prevents automatic reset to default air_mode state
     void air_mode_aux_changed();
     bool allows_save_trim() const override { return true; }
     bool allows_flip() const override { return true; }
@@ -438,9 +438,9 @@ protected:
     const char *name() const override { return "ACRO"; }
     const char *name4() const override { return "ACRO"; }
 
-    // get_pilot_desired_angle_rates - transform pilot's normalised roll pitch and yaw input into a desired lean angle rates
+    // get_pilot_desired_rates_cds - transform pilot's normalised roll pitch and yaw input into a desired lean angle rates
     // inputs are -1 to 1 and the function returns desired angle rates in centi-degrees-per-second
-    void get_pilot_desired_angle_rates(float roll_in, float pitch_in, float yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
+    void get_pilot_desired_rates_cds(float roll_in_norm, float pitch_in_norm, float yaw_in_norm, float &roll_out_cds, float &pitch_out_cds, float &yaw_out_cds);
 
     float throttle_hover() const override;
 
@@ -1016,7 +1016,7 @@ private:
     void update_height_estimate(void);
 
     // minimum assumed height
-    const float height_min = 0.1f;
+    const float height_min_m = 0.1f;
 
     // maximum scaling height
     const float height_max = 3.0f;
@@ -1034,16 +1034,16 @@ private:
     Vector2f xy_I;
 
     // accumulated INS delta velocity in north-east form since last flow update
-    Vector2f delta_velocity_ne;
+    Vector2f delta_velocity_ne_ms;
 
     // last flow rate in radians/sec in north-east axis
-    Vector2f last_flow_rate_rps;
+    Vector2f last_flow_rate_rads;
 
     // timestamp of last flow data
     uint32_t last_flow_ms;
 
-    float last_ins_height;
-    float height_offset;
+    float last_ins_height_m;
+    float height_offset_m;
 
     // are we braking after pilot input?
     bool braking;
