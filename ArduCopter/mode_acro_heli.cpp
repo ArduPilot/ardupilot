@@ -69,7 +69,7 @@ void ModeAcro_Heli::run()
 
     if (!motors->has_flybar()){
         // convert the input to the desired body frame rate
-        get_pilot_desired_angle_rates(channel_roll->norm_input_dz(), channel_pitch->norm_input_dz(), channel_yaw->norm_input_dz(), target_roll_cds, target_pitch_cds, target_yaw_cds);
+        get_pilot_desired_rates_cds(channel_roll->norm_input_dz(), channel_pitch->norm_input_dz(), channel_yaw->norm_input_dz(), target_roll_cds, target_pitch_cds, target_yaw_cds);
         // only mimic flybar response when trainer mode is disabled
         if ((Trainer)g.acro_trainer.get() == Trainer::OFF) {
             // while landed always leak off target attitude to current attitude
@@ -127,29 +127,29 @@ void ModeAcro_Heli::run()
 
 
 // virtual_flybar - acts like a flybar by leaking target atttitude back to current attitude
-void ModeAcro_Heli::virtual_flybar( float &roll_out, float &pitch_out, float &yaw_out, float pitch_leak, float roll_leak)
+void ModeAcro_Heli::virtual_flybar( float &roll_out_cds, float &pitch_out_cds, float &yaw_out_cds, float pitch_leak, float roll_leak)
 {
-    Vector3f rate_ef_level, rate_bf_level;
+    Vector3f rate_ef_level_cds, rate_bf_level_cds;
 
     // get attitude targets
-    const Vector3f att_target = attitude_control->get_att_target_euler_cd();
+    const Vector3f att_target_cd = attitude_control->get_att_target_euler_cd();
 
     // Calculate earth frame rate command for roll leak to current attitude
-    rate_ef_level.x = -wrap_180_cd(att_target.x - ahrs.roll_sensor) * roll_leak;
+    rate_ef_level_cds.x = -wrap_180_cd(att_target_cd.x - ahrs.roll_sensor) * roll_leak;
 
     // Calculate earth frame rate command for pitch leak to current attitude
-    rate_ef_level.y = -wrap_180_cd(att_target.y - ahrs.pitch_sensor) * pitch_leak;
+    rate_ef_level_cds.y = -wrap_180_cd(att_target_cd.y - ahrs.pitch_sensor) * pitch_leak;
 
     // Calculate earth frame rate command for yaw
-    rate_ef_level.z = 0;
+    rate_ef_level_cds.z = 0;
 
     // convert earth-frame leak rates to body-frame leak rates
-    attitude_control->euler_rate_to_ang_vel(attitude_control->get_attitude_target_quat(), rate_ef_level, rate_bf_level);
+    attitude_control->euler_rate_to_ang_vel(attitude_control->get_attitude_target_quat(), rate_ef_level_cds, rate_bf_level_cds);
 
     // combine earth frame rate corrections with rate requests
-    roll_out += rate_bf_level.x;
-    pitch_out += rate_bf_level.y;
-    yaw_out += rate_bf_level.z;
+    roll_out_cds += rate_bf_level_cds.x;
+    pitch_out_cds += rate_bf_level_cds.y;
+    yaw_out_cds += rate_bf_level_cds.z;
 
 }
 #endif  //HELI_FRAME
