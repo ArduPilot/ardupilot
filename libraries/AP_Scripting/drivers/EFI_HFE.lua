@@ -1,9 +1,7 @@
 --[[ 
   EFI Scripting backend driver for HFE based on HFEDCN0191 Rev E
 --]]
--- luacheck: only 0
 ---@diagnostic disable: param-type-mismatch
----@diagnostic disable: redundant-parameter
 ---@diagnostic disable: undefined-field
 ---@diagnostic disable: missing-parameter
 ---@diagnostic disable: need-check-nil
@@ -98,7 +96,7 @@ local now_s = get_time_sec()
 --[[
    EFI Engine Object
 --]]
-local function engine_control(_driver)
+local function engine_control(driver)
     local self = {}
 
     -- Build up the EFI_State that is passed into the EFI Scripting backend
@@ -109,7 +107,6 @@ local function engine_control(_driver)
     local rpm = 0
     local air_pressure = 0
     local map_ratio = 0.0
-    local driver = _driver
     local last_rpm_t = get_time_sec()
     local last_state_update_t = get_time_sec()
     local throttle_pos = 0.0
@@ -122,12 +119,6 @@ local function engine_control(_driver)
     local ecu_voltage = 0.0
     local injector_duty = 0.0
     local ignition_angle = 0.0
-
-    -- Generator Data Structure
-    local gen        = {}
-    gen.amps         = 0.0
-    gen.rpm          = 0.0
-    gen.batt_current = 0.0
 
     -- Temperature Data Structure
     local temps = {}
@@ -275,9 +266,9 @@ local function engine_control(_driver)
     
     -- return the instance
     return self
-end -- end function engine_control(_driver)
+end -- end function engine_control(driver)
 
-local engine1 = engine_control(driver1, 1)
+local engine1 = engine_control(driver1)
 
 function update()
    now_s = get_time_sec()

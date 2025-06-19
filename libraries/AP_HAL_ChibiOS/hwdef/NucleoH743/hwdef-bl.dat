@@ -9,8 +9,8 @@ OSCILLATOR_HZ 8000000
 
 define STM32_HSE_BYPASS
 
-# board ID for firmware load
-APJ_BOARD_ID 139
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_DURANDAL
 
 # the nucleo seems to have trouble with flashing the last sector?
 FLASH_SIZE_KB 1920

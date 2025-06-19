@@ -6,7 +6,7 @@ local new_target= nil
 
 function update()
 
-    if not (vehicle:get_mode() == 4) then
+    if vehicle:get_mode() ~= 4 then
         gcs:send_text(0, "not in Guided")
         return update, 1000
     end

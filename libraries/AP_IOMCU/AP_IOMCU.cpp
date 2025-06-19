@@ -21,6 +21,7 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <ch.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -43,6 +44,7 @@ enum ioevents {
     IOEVENT_SET_DSHOT_PERIOD,
     IOEVENT_SET_CHANNEL_MASK,
     IOEVENT_DSHOT,
+    IOEVENT_PROFILED,
 };
 
 // max number of consecutve protocol failures we accept before raising
@@ -77,6 +79,9 @@ void AP_IOMCU::init(void)
 {
     // uart runs at 1.5MBit
     uart.begin(1500*1000, 128, 128);
+#ifdef AP_IOMCU_UART_OPTIONS
+    uart.set_options(AP_IOMCU_UART_OPTIONS);
+#endif
     uart.set_unbuffered_writes(true);
 
 #if IOMCU_DEBUG_ENABLE
@@ -89,7 +94,9 @@ void AP_IOMCU::init(void)
         crc_is_ok = true;
     }
 #endif
-
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    use_safety_as_led = boardconfig->use_safety_as_led();
+#endif
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_IOMCU::thread_main, void), "IOMCU",
                                       1024, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
         AP_HAL::panic("Unable to allocate IOMCU thread");
@@ -300,6 +307,16 @@ void AP_IOMCU::thread_main(void)
         }
         mask &= ~EVENT_MASK(IOEVENT_DSHOT);
 
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+        if (mask & EVENT_MASK(IOEVENT_PROFILED)) {
+            if (!write_registers(PAGE_PROFILED, 0, sizeof(profiled)/sizeof(uint16_t), (const uint16_t*)&profiled)) {
+                event_failed(mask);
+                continue;
+            }
+        }
+        mask &= ~EVENT_MASK(IOEVENT_PROFILED);
+#endif
+
         // check for regular timed events
         uint32_t now = AP_HAL::millis();
         if (now - last_rc_read_ms > 20) {
@@ -422,7 +439,7 @@ void AP_IOMCU::read_erpm()
         for (uint8_t j = 0; j < 4; j++) {
             const uint8_t esc_id = (i * 4 + j);
             if (dshot_erpm.update_mask & 1U<<esc_id) {
-                update_rpm(esc_id, dshot_erpm.erpm[esc_id] * 200U / motor_poles, dshot_telem[i].error_rate[j] / 100.0);
+                update_rpm(esc_id, dshot_erpm.erpm[esc_id] * 200U / motor_poles, dshot_telem[i].error_rate[j] * 0.01);
             }
         }
     }
@@ -1079,10 +1096,11 @@ void AP_IOMCU::send_rc_protocols()
 /*
   check ROMFS firmware against CRC on IOMCU, and if incorrect then upload new firmware
  */
+
 bool AP_IOMCU::check_crc(void)
 {
     // flash size minus 4k bootloader
-	const uint32_t flash_size = 0x10000 - 0x1000;
+	const uint32_t flash_size = AP_IOMCU_FW_FLASH_SIZE;
     const char *path = AP_BoardConfig::io_dshot() ? dshot_fw_name : fw_name;
 
     fw = AP_ROMFS::find_decompress(path, fw_size);
@@ -1175,6 +1193,10 @@ bool AP_IOMCU::healthy(void)
  */
 void AP_IOMCU::shutdown(void)
 {
+    if (!initialised) {
+        // we're not initialised yet, so cannot shutdown
+        return;
+    }
     do_shutdown = true;
     while (!done_shutdown) {
         hal.scheduler->delay(1);
@@ -1194,13 +1216,13 @@ void AP_IOMCU::soft_reboot(void)
 /*
   request bind on a DSM radio
  */
-void AP_IOMCU::bind_dsm(uint8_t mode)
+void AP_IOMCU::bind_dsm()
 {
     if (!is_chibios_backend || AP::arming().is_armed()) {
         // only with ChibiOS IO firmware, and disarmed
         return;
     }
-    uint16_t reg = mode;
+    uint16_t reg = 0;  // this is unused by the IOMCU
     write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM_BIND, 1, &reg);
 }
 
@@ -1439,6 +1461,23 @@ void AP_IOMCU::toggle_GPIO(uint8_t pin)
     trigger_event(IOEVENT_GPIO);
 }
 
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+// set profiled R G B values
+void AP_IOMCU::set_profiled(uint8_t r, uint8_t g, uint8_t b)
+{
+    if (!use_safety_as_led) {
+        return;
+    }
+    if (r == profiled.red && g == profiled.green && b == profiled.blue) {
+        return;
+    }
+    profiled.magic = PROFILED_ENABLE_MAGIC;
+    profiled.red = r;
+    profiled.green = g;
+    profiled.blue = b;
+    trigger_event(IOEVENT_PROFILED);
+}
+#endif
 
 namespace AP {
     AP_IOMCU *iomcu(void) {

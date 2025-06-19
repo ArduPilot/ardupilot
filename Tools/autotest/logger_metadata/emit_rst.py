@@ -1,6 +1,8 @@
-from __future__ import print_function
-
+'''
+AP_FLAKE8_CLEAN
+'''
 import emitter
+
 
 class RSTEmitter(emitter.Emitter):
     def preface(self):
@@ -17,6 +19,7 @@ Onboard Message Log Messages
 This is a list of log messages which may be present in logs produced and stored onboard ArduPilot vehicles.
 
 """
+
     def postface(self):
         return ""
 
@@ -62,7 +65,7 @@ This is a list of log messages which may be present in logs produced and stored 
                     enumeration = enumerations[enum_name]
                     bitmaskrows = []
                     for enumentry in enumeration.entries:
-#                        print("enumentry: %s" % str(enumentry))
+                        # print("enumentry: %s" % str(enumentry))
                         comment = enumentry.comment
                         if comment is None:
                             comment = ""
@@ -85,7 +88,6 @@ This is a list of log messages which may be present in logs produced and stored 
     def stop(self):
         print(self.postface(), file=self.fh)
         self.fh.close()
-
 
     # tablify swiped from rstemit.py
 
@@ -207,4 +209,3 @@ This is a list of log messages which may be present in logs produced and stored 
             ret += bar + "\n"
 
         return ret
-

@@ -30,8 +30,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define AP_ICENGINE_START_CHAN_DEBOUNCE_MS          300
-
 const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // @Param: ENABLE
@@ -241,7 +239,7 @@ void AP_ICEngine::param_conversion()
     // Conversion table giving the old on and off pwm parameter indexes and the function for both starter and ignition
     const struct convert_table {
         uint32_t element[2];
-        SRV_Channel::Aux_servo_function_t fuction;
+        SRV_Channel::Function fuction;
     } conversion_table[] = {
         { {450, 514}, SRV_Channel::k_starter },  // PWM_STRT_ON, PWM_STRT_OFF
         { {322, 386}, SRV_Channel::k_ignition }, // PWM_IGN_ON, PWM_IGN_OFF
@@ -282,6 +280,20 @@ void AP_ICEngine::param_conversion()
     }
 }
 
+// Handle incoming aux function
+void AP_ICEngine::do_aux_function(const RC_Channel::AuxFuncTrigger &trigger)
+{
+    // If triggered from RC apply start chan min
+    if (trigger.source == RC_Channel::AuxFuncTrigger::Source::RC) {
+        RC_Channel *chan = rc().channel(trigger.source_index);
+        if ((chan != nullptr) && (chan->get_radio_in() < start_chan_min_pwm)) {
+            return;
+        }
+    }
+
+    aux_pos = trigger.pos;
+}
+
 /*
   update engine state
  */
@@ -291,51 +303,20 @@ void AP_ICEngine::update(void)
         return;
     }
 
-    uint16_t cvalue = 1500;
-    RC_Channel *c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ICE_START_STOP);
-    if (c != nullptr && rc().has_valid_input()) {
-        // get starter control channel
-        cvalue = c->get_radio_in();
-
-        if (cvalue < start_chan_min_pwm) {
-            cvalue = start_chan_last_value;
-        }
-
-        // snap the input to either 1000, 1500, or 2000
-        // this is useful to compare a debounce changed value
-        // while ignoring tiny noise
-        if (cvalue >= RC_Channel::AUX_PWM_TRIGGER_HIGH) {
-            cvalue = 2000;
-        } else if ((cvalue > 800) && (cvalue <= RC_Channel::AUX_PWM_TRIGGER_LOW)) {
-            cvalue = 1300;
-        } else {
-            cvalue = 1500;
-        }
-    }
-
     bool should_run = false;
     uint32_t now = AP_HAL::millis();
 
 
-    // debounce timer to protect from spurious changes on start_chan rc input
-    // If the cached value is the same, reset timer
-    if (start_chan_last_value == cvalue) {
-        start_chan_last_ms = now;
-    } else if (now - start_chan_last_ms >= AP_ICENGINE_START_CHAN_DEBOUNCE_MS) {
-        // if it has changed, and stayed changed for the duration, then use that new value
-        start_chan_last_value = cvalue;
-    }
-
-    if (state == ICE_START_HEIGHT_DELAY && start_chan_last_value >= RC_Channel::AUX_PWM_TRIGGER_HIGH) {
+    if ((state == ICE_START_HEIGHT_DELAY) && (aux_pos == RC_Channel::AuxSwitchPos::HIGH)) {
         // user is overriding the height start delay and asking for
         // immediate start. Put into ICE_OFF so that the logic below
         // can start the engine now
         state = ICE_OFF;
     }
 
-    if (state == ICE_OFF && start_chan_last_value >= RC_Channel::AUX_PWM_TRIGGER_HIGH) {
+    if ((state == ICE_OFF) && (aux_pos == RC_Channel::AuxSwitchPos::HIGH)) {
         should_run = true;
-    } else if (start_chan_last_value <= RC_Channel::AUX_PWM_TRIGGER_LOW) {
+    } else if (aux_pos == RC_Channel::AuxSwitchPos::LOW) {
         should_run = false;
 
         // clear the single start flag now that we will be stopping the engine
@@ -396,7 +377,7 @@ void AP_ICEngine::update(void)
         Vector3f pos;
         if (!should_run) {
             state = ICE_OFF;
-        } else if (AP::ahrs().get_relative_position_NED_origin(pos)) {
+        } else if (AP::ahrs().get_relative_position_NED_origin_float(pos)) {
             if (height_pending) {
                 height_pending = false;
                 initial_height = -pos.z;
@@ -466,7 +447,7 @@ void AP_ICEngine::update(void)
         if (state == ICE_START_HEIGHT_DELAY) {
             // when disarmed we can be waiting for takeoff
             Vector3f pos;
-            if (AP::ahrs().get_relative_position_NED_origin(pos)) {
+            if (AP::ahrs().get_relative_position_NED_origin_float(pos)) {
                 // reset initial height while disarmed
                 initial_height = -pos.z;
             }
@@ -622,15 +603,13 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: already running");
         return false;
     }
-    RC_Channel *c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ICE_START_STOP);
-    if (c != nullptr && rc().has_valid_input()) {
-        // get starter control channel
-        uint16_t cvalue = c->get_radio_in();
-        if (cvalue >= start_chan_min_pwm && cvalue <= RC_Channel::AUX_PWM_TRIGGER_LOW) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: start control disabled");
-            return false;
-        }
+
+    // get starter control channel
+    if (aux_pos == RC_Channel::AuxSwitchPos::LOW) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: start control disabled by aux function");
+        return false;
     }
+
     if (height_delay > 0) {
         height_pending = true;
         initial_height = 0;

@@ -104,15 +104,12 @@ uint8_t AP_ESC_Telem::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) con
 // ESC_TELEM_DATA_TIMEOUT_MS/ESC_RPM_DATA_TIMEOUT_US
 uint32_t AP_ESC_Telem::get_active_esc_mask() const {
     uint32_t ret = 0;
-    const uint32_t now = AP_HAL::millis();
-    uint32_t now_us = AP_HAL::micros();
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         if (_telem_data[i].last_update_ms == 0 && !was_rpm_data_ever_reported(_rpm_data[i])) {
             // have never seen telem from this ESC
             continue;
         }
-        if (_telem_data[i].stale(now)
-            && !rpm_data_within_timeout(_rpm_data[i], now_us, ESC_RPM_DATA_TIMEOUT_US)) {
+        if (_telem_data[i].stale() && !_rpm_data[i].data_valid) {
             continue;
         }
         ret |= (1U << i);
@@ -125,15 +122,12 @@ uint8_t AP_ESC_Telem::get_max_rpm_esc() const
 {
     uint32_t ret = 0;
     float max_rpm = 0;
-    const uint32_t now = AP_HAL::millis();
-    const uint32_t now_us = AP_HAL::micros();
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         if (_telem_data[i].last_update_ms == 0 && !was_rpm_data_ever_reported(_rpm_data[i])) {
             // have never seen telem from this ESC
             continue;
         }
-        if (_telem_data[i].stale(now)
-            && !rpm_data_within_timeout(_rpm_data[i], now_us, ESC_RPM_DATA_TIMEOUT_US)) {
+        if (_telem_data[i].stale() && !_rpm_data[i].data_valid) {
             continue;
         }
         if (_rpm_data[i].rpm > max_rpm) {
@@ -153,13 +147,12 @@ uint8_t AP_ESC_Telem::get_num_active_escs() const {
 // return the whether all the motors in servo_channel_mask are running
 bool AP_ESC_Telem::are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm) const
 {
-    const uint32_t now = AP_HAL::micros();
 
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         if (BIT_IS_SET(servo_channel_mask, i)) {
             const volatile AP_ESC_Telem_Backend::RpmData& rpmdata = _rpm_data[i];
             // we choose a relatively strict measure of health so that failsafe actions can rely on the results
-            if (!rpm_data_within_timeout(rpmdata, now, ESC_RPM_CHECK_TIMEOUT_US)) {
+            if (!rpm_data_within_timeout(rpmdata, ESC_RPM_CHECK_TIMEOUT_US)) {
                 return false;
             }
             if (rpmdata.rpm < min_rpm) {
@@ -201,7 +194,7 @@ bool AP_ESC_Telem::get_rpm(uint8_t esc_index, float& rpm) const
     }
 
     const uint32_t now = AP_HAL::micros();
-    if (rpm_data_within_timeout(rpmdata, now, ESC_RPM_DATA_TIMEOUT_US)) {
+    if (rpmdata.data_valid) {
         const float slew = MIN(1.0f, (now - rpmdata.last_update_us) * rpmdata.update_rate_hz * (1.0f / 1e6f));
         rpm = (rpmdata.prev_rpm + (rpmdata.rpm - rpmdata.prev_rpm) * slew);
 
@@ -225,9 +218,7 @@ bool AP_ESC_Telem::get_raw_rpm(uint8_t esc_index, float& rpm) const
 
     const volatile AP_ESC_Telem_Backend::RpmData& rpmdata = _rpm_data[esc_index];
 
-    const uint32_t now = AP_HAL::micros();
-
-    if (!rpm_data_within_timeout(rpmdata, now, ESC_RPM_DATA_TIMEOUT_US)) {
+    if (!rpmdata.data_valid) {
         return false;
     }
 
@@ -412,9 +403,6 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
         return;
     }
 
-    const uint32_t now = AP_HAL::millis();
-    const uint32_t now_us = AP_HAL::micros();
-
     // loop through groups of 4 ESCs
     const uint8_t esc_offset = constrain_int16(mavlink_offset, 0, ESC_TELEM_MAX_ESCS-1);
 
@@ -435,8 +423,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
         for (uint8_t j=0; j<4; j++) {
             const uint8_t esc_id = (i * 4 + j) + esc_offset;
             if (esc_id < ESC_TELEM_MAX_ESCS &&
-                (!_telem_data[esc_id].stale(now) ||
-                 rpm_data_within_timeout(_rpm_data[esc_id], now_us, ESC_RPM_DATA_TIMEOUT_US))) {
+                (!_telem_data[esc_id].stale() || _rpm_data[esc_id].data_valid)) {
                 all_stale = false;
                 break;
             }
@@ -593,6 +580,7 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
     telemdata.count++;
     telemdata.types |= data_mask;
     telemdata.last_update_ms = AP_HAL::millis();
+    telemdata.any_data_valid = true;
 }
 
 // record an update to the RPM together with timestamp, this allows the notch values to be slewed
@@ -758,73 +746,87 @@ void AP_ESC_Telem::update()
                                                 telemdata.power_percentage);
                 }
 #endif //AP_EXTENDED_ESC_TELEM_ENABLED
-            }
 
 #if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
-            // Write an EDTv2 message, if there is any update
-            uint16_t edt2_status = telemdata.edt2_status;
-            uint16_t edt2_stress = telemdata.edt2_stress;
-            if (EDT2_HAS_NEW_DATA(edt2_status | edt2_stress)) {
-                // Could probably be faster/smaller with bitmasking, but not sure
-                uint8_t status = 0;
-                if (EDT2_HAS_NEW_DATA(edt2_stress)) {
-                    status |= uint8_t(log_Edt2_Status::HAS_STRESS_DATA);
+                // Write an EDTv2 message, if there is any update
+                uint16_t edt2_status = telemdata.edt2_status;
+                uint16_t edt2_stress = telemdata.edt2_stress;
+                if (EDT2_HAS_NEW_DATA(edt2_status | edt2_stress)) {
+                    // Could probably be faster/smaller with bitmasking, but not sure
+                    uint8_t status = 0;
+                    if (EDT2_HAS_NEW_DATA(edt2_stress)) {
+                        status |= uint8_t(log_Edt2_Status::HAS_STRESS_DATA);
+                    }
+                    if (EDT2_HAS_NEW_DATA(edt2_status)) {
+                        status |= uint8_t(log_Edt2_Status::HAS_STATUS_DATA);
+                    }
+                    if (EDT2_ALERT_BIT_FROM_STATUS(edt2_status)) {
+                        status |= uint8_t(log_Edt2_Status::ALERT_BIT);
+                    }
+                    if (EDT2_WARNING_BIT_FROM_STATUS(edt2_status)) {
+                        status |= uint8_t(log_Edt2_Status::WARNING_BIT);
+                    }
+                    if (EDT2_ERROR_BIT_FROM_STATUS(edt2_status)) {
+                        status |= uint8_t(log_Edt2_Status::ERROR_BIT);
+                    }
+                    // An EDT2 status message is:
+                    //   id: starts from 0
+                    //   stress: the current stress which comes from edt2_stress
+                    //   max_stress: the maximum stress which comes from edt2_status
+                    //   status: the status bits which come from both
+                    const struct log_Edt2 pkt_edt2{
+                        LOG_PACKET_HEADER_INIT(uint8_t(LOG_EDT2_MSG)),
+                        time_us     : now_us64,
+                        instance    : i,
+                        stress      : EDT2_STRESS_FROM_STRESS(edt2_stress),
+                        max_stress  : EDT2_STRESS_FROM_STATUS(edt2_status),
+                        status      : status,
+                    };
+                    if (AP::logger().WriteBlock_first_succeed(&pkt_edt2, sizeof(pkt_edt2))) {
+                        // Only clean the telem_updated bits if the write succeeded.
+                        // This is important because, if rate limiting is enabled,
+                        // the log-on-change behavior may lose a lot of entries
+                        telemdata.edt2_status &= ~EDT2_TELEM_UPDATED;
+                        telemdata.edt2_stress &= ~EDT2_TELEM_UPDATED;
+                    }
                 }
-                if (EDT2_HAS_NEW_DATA(edt2_status)) {
-                    status |= uint8_t(log_Edt2_Status::HAS_STATUS_DATA);
-                }
-                if (EDT2_ALERT_BIT_FROM_STATUS(edt2_status)) {
-                    status |= uint8_t(log_Edt2_Status::ALERT_BIT);
-                }
-                if (EDT2_WARNING_BIT_FROM_STATUS(edt2_status)) {
-                    status |= uint8_t(log_Edt2_Status::WARNING_BIT);
-                }
-                if (EDT2_ERROR_BIT_FROM_STATUS(edt2_status)) {
-                    status |= uint8_t(log_Edt2_Status::ERROR_BIT);
-                }
-                // An EDT2 status message is:
-                //   id: starts from 0
-                //   stress: the current stress which comes from edt2_stress
-                //   max_stress: the maximum stress which comes from edt2_status
-                //   status: the status bits which come from both
-                const struct log_Edt2 pkt_edt2{
-                    LOG_PACKET_HEADER_INIT(uint8_t(LOG_EDT2_MSG)),
-                    time_us     : now_us64,
-                    instance    : i,
-                    stress      : EDT2_STRESS_FROM_STRESS(edt2_stress),
-                    max_stress  : EDT2_STRESS_FROM_STATUS(edt2_status),
-                    status      : status,
-                };
-                if (AP::logger().WriteBlock_first_succeed(&pkt_edt2, sizeof(pkt_edt2))) {
-                    // Only clean the telem_updated bits if the write succeeded.
-                    // This is important because, if rate limiting is enabled,
-                    // the log-on-change behavior may lose a lot of entries
-                    telemdata.edt2_status &= ~EDT2_TELEM_UPDATED;
-                    telemdata.edt2_stress &= ~EDT2_TELEM_UPDATED;
-                }
-            }
 #endif // AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+            }
         }
     }
 #endif  // HAL_LOGGING_ENABLED
 
-    const uint32_t now_us = AP_HAL::micros();
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+        // copy the last_updated_us timestamp to avoid any race issues
+        const uint32_t last_updated_us = _rpm_data[i].last_update_us;
+        const uint32_t now_us = AP_HAL::micros();
         // Invalidate RPM data if not received for too long
-        if ((now_us - _rpm_data[i].last_update_us) > ESC_RPM_DATA_TIMEOUT_US) {
+        if (AP_HAL::timeout_expired(last_updated_us, now_us, ESC_RPM_DATA_TIMEOUT_US)) {
             _rpm_data[i].data_valid = false;
+        }
+        const uint32_t last_telem_data_ms = _telem_data[i].last_update_ms;
+        const uint32_t now_ms = AP_HAL::millis();
+        // Invalidate telemetry data if not received for too long
+        if (AP_HAL::timeout_expired(last_telem_data_ms, now_ms, ESC_TELEM_DATA_TIMEOUT_MS)) {
+            _telem_data[i].any_data_valid = false;
         }
     }
 }
 
-bool AP_ESC_Telem::rpm_data_within_timeout(const volatile AP_ESC_Telem_Backend::RpmData &instance, const uint32_t now_us, const uint32_t timeout_us)
+// NOTE: This function should only be used to check timeouts other than 
+// ESC_RPM_DATA_TIMEOUT_US. Timeouts equal to ESC_RPM_DATA_TIMEOUT_US should
+// use RpmData::data_valid, which is cheaper and achieves the same result.
+bool AP_ESC_Telem::rpm_data_within_timeout(const volatile AP_ESC_Telem_Backend::RpmData &instance, const uint32_t timeout_us)
 {
+    // copy the last_update_us timestamp to avoid any race issues
+    const uint32_t last_update_us = instance.last_update_us;
+    const uint32_t now_us = AP_HAL::micros();
     // easy case, has the time window been crossed so it's invalid
-    if ((now_us - instance.last_update_us) > timeout_us) {
+    if (AP_HAL::timeout_expired(last_update_us, now_us, timeout_us)) {
         return false;
     }
     // we never got a valid data, to it's invalid
-    if (instance.last_update_us == 0) {
+    if (last_update_us == 0) {
         return false;
     }
     // check if things generally expired on us, this is done to handle time wrapping

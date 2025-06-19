@@ -44,6 +44,12 @@ gcs:send_text(MAV_SEVERITY.INFO, "Loaded message_interval.lua")
 function update() -- this is the loop which periodically runs
   for i = 1, #intervals do -- we want to iterate over every specified interval
     local channel, message, interval_hz = table.unpack(intervals[i]) -- this extracts the channel, MAVLink ID, and interval
+
+    -- Lua checks get the unpacked types wrong, these are the correct types
+    ---@cast channel integer
+    ---@cast message uint32_t_ud
+    ---@cast interval_hz number
+
     local interval_us = -1
     if interval_hz > 0 then
       interval_us = math.floor(1000000 / interval_hz) -- convert the interval to microseconds

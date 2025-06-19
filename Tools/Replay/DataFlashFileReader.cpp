@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
@@ -26,6 +27,11 @@ bool AP_LoggerFileReader::open_log(const char *logfile)
     fd = AP::FS().open(logfile, O_RDONLY);
     if (fd == -1) {
         return false;
+    }
+    // Get the file size for percentage calculation
+    struct stat st;
+    if (AP::FS().stat(logfile, &st) == 0) {
+        file_size = st.st_size;
     }
     return true;
 }
@@ -99,4 +105,12 @@ bool AP_LoggerFileReader::update()
 
     message_count++;
     return handle_msg(f, msg);
+}
+
+float AP_LoggerFileReader::get_percent_read()
+{
+    if (file_size == 0) {
+        return 0.0f;
+    }
+    return (float)(bytes_read * 100.0 / file_size);
 }

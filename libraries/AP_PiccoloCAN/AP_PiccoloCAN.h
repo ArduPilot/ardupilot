@@ -131,7 +131,6 @@ private:
     AP_Int16 _ecu_id;       //!< ECU Node ID
     AP_Int16 _ecu_hz;       //!< ECU update rate (Hz)
 
-    HAL_Semaphore _telem_sem;
 };
 
 #endif // HAL_PICCOLO_CAN_ENABLE

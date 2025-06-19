@@ -1,0 +1,8 @@
+# hw definition file for processing by chibios_hwdef.py
+
+include ../CubeOrangePlus/hwdef-bl.dat
+
+undef APJ_BOARD_ID
+APJ_BOARD_ID 11063
+
+define AP_OPENDRONEID_ENABLED 1

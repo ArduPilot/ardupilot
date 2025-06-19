@@ -149,11 +149,6 @@ bool RC_Channels::has_active_overrides()
     return false;
 }
 
-bool RC_Channels::receiver_bind(const int dsmMode)
-{
-    return hal.rcin->rc_bind(dsmMode);
-}
-
 
 // support for auxiliary switches:
 // read_aux_switches - checks aux switch positions and invokes configured actions
@@ -314,7 +309,8 @@ void RC_Channels::set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwi
 // allow use of the pointer without checking it for null-ness.  If an
 // invalid option has been chosen somehow then the returned channel
 // will be a dummy channel.
-RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number)
+static RC_Channel dummy_rcchannel;
+RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number) const
 {
     RC_Channel *ret = RC_Channels::rc_channel(rcmap_number-1);
     if (ret != nullptr) {
@@ -322,21 +318,29 @@ RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number)
     }
     return dummy_rcchannel;
 }
-RC_Channel &RC_Channels::get_roll_channel()
+RC_Channel &RC_Channels::get_roll_channel() const
 {
     return get_rcmap_channel_nonnull(AP::rcmap()->roll());
 };
-RC_Channel &RC_Channels::get_pitch_channel()
+RC_Channel &RC_Channels::get_pitch_channel() const
 {
     return get_rcmap_channel_nonnull(AP::rcmap()->pitch());
 };
-RC_Channel &RC_Channels::get_throttle_channel()
+RC_Channel &RC_Channels::get_throttle_channel() const
 {
     return get_rcmap_channel_nonnull(AP::rcmap()->throttle());
 };
-RC_Channel &RC_Channels::get_yaw_channel()
+RC_Channel &RC_Channels::get_yaw_channel() const
 {
     return get_rcmap_channel_nonnull(AP::rcmap()->yaw());
+};
+RC_Channel &RC_Channels::get_forward_channel() const
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->forward());
+};
+RC_Channel &RC_Channels::get_lateral_channel() const
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->lateral());
 };
 #endif  // AP_RCMAPPER_ENABLED
 

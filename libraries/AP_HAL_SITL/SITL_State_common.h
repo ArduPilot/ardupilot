@@ -14,36 +14,19 @@
 #include <SITL/SIM_ADSB_Sagetech_MXS.h>
 #include <SITL/SIM_EFI_Hirth.h>
 #include <SITL/SIM_Vicon.h>
-#include <SITL/SIM_RF_Ainstein_LR_D1.h>
-#include <SITL/SIM_RF_Benewake_TF02.h>
-#include <SITL/SIM_RF_Benewake_TF03.h>
-#include <SITL/SIM_RF_Benewake_TFmini.h>
-#include <SITL/SIM_RF_NoopLoop.h>
-#include <SITL/SIM_RF_TeraRanger_Serial.h>
-#include <SITL/SIM_RF_JRE.h>
-#include <SITL/SIM_RF_LightWareSerial.h>
-#include <SITL/SIM_RF_LightWareSerialBinary.h>
-#include <SITL/SIM_RF_Lanbao.h>
-#include <SITL/SIM_RF_BLping.h>
-#include <SITL/SIM_RF_LeddarOne.h>
-#include <SITL/SIM_RF_RDS02UF.h>
-#include <SITL/SIM_RF_USD1_v0.h>
-#include <SITL/SIM_RF_USD1_v1.h>
-#include <SITL/SIM_RF_MaxsonarSerialLV.h>
-#include <SITL/SIM_RF_Wasp.h>
-#include <SITL/SIM_RF_NMEA.h>
-#include <SITL/SIM_RF_MAVLink.h>
-#include <SITL/SIM_RF_GYUS42v2.h>
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_MicroStrain.h>
 #include <SITL/SIM_InertialLabs.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
 
+#include <SITL/SIM_SerialRangeFinder.h>
+
 #include <SITL/SIM_Frsky_D.h>
 #include <SITL/SIM_CRSF.h>
 // #include <SITL/SIM_Frsky_SPort.h>
 // #include <SITL/SIM_Frsky_SPortPassthrough.h>
+#include <SITL/SIM_PS_LD06.h>
 #include <SITL/SIM_PS_RPLidarA2.h>
 #include <SITL/SIM_PS_RPLidarA1.h>
 #include <SITL/SIM_PS_TeraRangerTower.h>
@@ -125,52 +108,18 @@ public:
     SITL::Vicon *vicon;
 #endif
 
-    // simulated Ainstein LR-D1 rangefinder:
-    SITL::RF_Ainstein_LR_D1 *ainsteinlrd1;
-    // simulated Benewake tf02 rangefinder:
-    SITL::RF_Benewake_TF02 *benewake_tf02;
-    // simulated Benewake tf03 rangefinder:
-    SITL::RF_Benewake_TF03 *benewake_tf03;
-    //simulated JAE JRE rangefinder:
-    SITL::RF_JRE *jre;
-    // simulated Benewake tfmini rangefinder:
-    SITL::RF_Benewake_TFmini *benewake_tfmini;
-    //simulated NoopLoop TOFSense rangefinder:
-    SITL::RF_Nooploop *nooploop;
-    // simulated TeraRanger Serial:
-    SITL::RF_TeraRanger_Serial *teraranger_serial;
-
-    // simulated LightWareSerial rangefinder - legacy protocol::
-    SITL::RF_LightWareSerial *lightwareserial;
-    // simulated LightWareSerial rangefinder - binary protocol:
-    SITL::RF_LightWareSerialBinary *lightwareserial_binary;
-    // simulated Lanbao rangefinder:
-    SITL::RF_Lanbao *lanbao;
-    // simulated BLping rangefinder:
-    SITL::RF_BLping *blping;
-    // simulated LeddarOne rangefinder:
-    SITL::RF_LeddarOne *leddarone;
-    // simulated RDS02UF rangefinder:
-    SITL::RF_RDS02UF *rds02uf;
-    // simulated USD1 v0 rangefinder:
-    SITL::RF_USD1_v0 *USD1_v0;
-    // simulated USD1 v1 rangefinder:
-    SITL::RF_USD1_v1 *USD1_v1;
-    // simulated MaxsonarSerialLV rangefinder:
-    SITL::RF_MaxsonarSerialLV *maxsonarseriallv;
-    // simulated Wasp rangefinder:
-    SITL::RF_Wasp *wasp;
-    // simulated NMEA rangefinder:
-    SITL::RF_NMEA *nmea;
-    // simulated MAVLink rangefinder:
-    SITL::RF_MAVLink *rf_mavlink;
-    // simulated GYUS42v2 rangefinder:
-    SITL::RF_GYUS42v2 *gyus42v2;
+    SITL::SerialRangeFinder *serial_rangefinders[16];
+    uint8_t num_serial_rangefinders;
 
     // simulated Frsky devices
     SITL::Frsky_D *frsky_d;
     // SITL::Frsky_SPort *frsky_sport;
     // SITL::Frsky_SPortPassthrough *frsky_sportpassthrough;
+
+#if AP_SIM_PS_LD06_ENABLED
+    // simulated LD06:
+    SITL::PS_LD06 *ld06;
+#endif  // AP_SIM_PS_LD06_ENABLED
 
 #if HAL_SIM_PS_RPLIDARA2_ENABLED
     // simulated RPLidarA2:
@@ -217,6 +166,7 @@ public:
 #if HAL_SIM_AIS_ENABLED
     // simulated AIS stream
     SITL::AIS *ais;
+    SITL::AIS_Replay *ais_replay;
 #endif
 
     // simulated EFI MegaSquirt device:

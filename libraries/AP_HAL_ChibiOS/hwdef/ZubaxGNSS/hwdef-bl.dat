@@ -8,8 +8,8 @@ define STM32F107_MCUCONF
 FLASH_RESERVE_START_KB 0
 FLASH_BOOTLOADER_LOAD_KB 34
 
-# board ID for firmware load
-APJ_BOARD_ID 1005
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_ZUBAXGNSS
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

@@ -29,7 +29,7 @@ CompassLearn::CompassLearn(Compass &_compass) :
 void CompassLearn::update(void)
 {
     const AP_Vehicle *vehicle = AP::vehicle();
-    if (compass.get_learn_type() != Compass::LEARN_INFLIGHT ||
+    if (compass.get_learn_type() != Compass::LearnType::INFLIGHT ||
         !hal.util->get_soft_armed() ||
         vehicle->get_time_flying_ms() < 3000) {
         // only learn when flying and with enough time to be clear of
@@ -43,7 +43,7 @@ void CompassLearn::update(void)
         // no GSF available
         return;
     }
-    if (degrees(fabsf(ahrs.get_pitch())) > 50) {
+    if (degrees(fabsf(ahrs.get_pitch_rad())) > 50) {
         // we don't want to be too close to nose up, or yaw gets
         // problematic. Tailsitters need to wait till they are in
         // forward flight
@@ -65,7 +65,7 @@ void CompassLearn::update(void)
     const bool result = compass.mag_cal_fixed_yaw(degrees(yaw_rad), (1U<<HAL_COMPASS_MAX_SENSORS)-1, 0, 0, true);
     if (result) {
         AP_Notify::flags.compass_cal_running = false;
-        compass.set_learn_type(Compass::LEARN_NONE, true);
+        compass.set_learn_type(Compass::LearnType::NONE, true);
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CompassLearn: Finished");
     }
 }

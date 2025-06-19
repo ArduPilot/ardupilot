@@ -34,7 +34,7 @@ typedef Matrix3<float> Matrix3F;
 typedef Quaternion QuaternionF;
 #endif
 
-// define AP_Param types AP_Vector3f and Ap_Matrix3f
+// define AP_Param type AP_Vector3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
 /*
@@ -212,9 +212,31 @@ inline double constrain_double(const double amt, const double low, const double 
 }
 
 // degrees -> radians
-static inline constexpr ftype radians(ftype deg)
+static inline constexpr double radians(double deg)
 {
     return deg * DEG_TO_RAD;
+}
+
+static inline constexpr float radians(float deg)
+{
+    return deg * DEG_TO_RAD;
+}
+
+static inline constexpr float radians(int deg)
+{
+    return deg * DEG_TO_RAD;
+}
+
+// centidegrees -> radians
+static inline constexpr float cd_to_rad(float cdeg)
+{
+    return cdeg * CDEG_TO_RAD;
+}
+
+// radians -> centidegrees
+static inline constexpr float rad_to_cd(float rad)
+{
+    return rad * RAD_TO_CDEG;
 }
 
 // radians -> degrees
@@ -300,13 +322,18 @@ inline constexpr uint32_t usec_to_hz(uint32_t usec)
 
 /*
   linear interpolation based on a variable in a range
-  return value will be in the range [var_low,var_high]
+  return value will be in the range [output_low,output_high]
 
-  Either polarity is supported, so var_low can be higher than var_high
+  Either polarity is supported, so input_low can be higher than input_high
+
+  Read this as, "Take the value 'input_value' as a value between
+  'input_low' and 'input_high'.  Return a value between 'output_low'
+  and 'output_high' proportonal to the position of 'input_value'
+  between 'input_low' and 'input_high'"
  */
-float linear_interpolate(float low_output, float high_output,
-                         float var_value,
-                         float var_low, float var_high);
+float linear_interpolate(float output_low, float output_high,
+                         float input_value,
+                         float input_low, float input_high);
 
 /* cubic "expo" curve generator 
  * alpha range: [0,1] min to max expo
@@ -391,3 +418,9 @@ float int32_to_float_le(const uint32_t& value) WARN_IF_UNUSED;
   Convert from uint64_t to double without breaking Wstrict-aliasing due to type punning
 */
 double uint64_to_double_le(const uint64_t& value) WARN_IF_UNUSED;
+
+/*
+  get a twos-complement value from the first 'length' bits of a uint32_t
+  With thanks to betaflight
+ */
+int32_t get_twos_complement(uint32_t raw, uint8_t length) WARN_IF_UNUSED;

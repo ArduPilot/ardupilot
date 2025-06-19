@@ -18,7 +18,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include "Util.h"
 #include "Scheduler.h"
@@ -293,6 +292,7 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     if (!bus.semaphore.check_owner()) {
         return false;
     }
+    // callers should prefer transfer_fullduplex() to relying on this semantic
     if ((send_len == recv_len && send == recv) || !send || !recv) {
         // simplest cases, needed for DMA
         return do_transfer(send, recv, recv_len?recv_len:send_len);
@@ -323,6 +323,14 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t
         memcpy(recv, buf, len);
     }
     return ret;
+}
+
+bool SPIDevice::transfer_fullduplex(uint8_t *send_recv, uint32_t len)
+{
+    if (!bus.semaphore.check_owner()) {
+        return false;
+    }
+    return do_transfer(send_recv, send_recv, len);
 }
 
 AP_HAL::Semaphore *SPIDevice::get_semaphore()
@@ -445,8 +453,8 @@ bool SPIDevice::set_chip_select(bool set) {
 /*
   return a SPIDevice given a string device name
  */
-AP_HAL::OwnPtr<AP_HAL::SPIDevice>
-SPIDeviceManager::get_device(const char *name)
+AP_HAL::SPIDevice *
+SPIDeviceManager::get_device_ptr(const char *name)
 {
     /* Find the bus description in the table */
     uint8_t i;
@@ -456,7 +464,7 @@ SPIDeviceManager::get_device(const char *name)
         }
     }
     if (i == ARRAY_SIZE(device_table)) {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
+        return nullptr;
     }
 
     SPIDesc &desc = device_table[i];
@@ -480,7 +488,7 @@ SPIDeviceManager::get_device(const char *name)
         buses = busp;
     }
 
-    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(NEW_NOTHROW SPIDevice(*busp, desc));
+    return NEW_NOTHROW SPIDevice(*busp, desc);
 }
 
 void SPIDeviceManager::set_register_rw_callback(const char* name, AP_HAL::Device::RegisterRWCb cb)

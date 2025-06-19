@@ -78,7 +78,7 @@ const AP_Param::GroupInfo AP_RPM_Params::var_info[] = {
     AP_GROUPINFO("ESC_INDEX", 8, AP_RPM_Params, esc_telem_outbound_index, 0),
 #endif
 
-#if AP_RPM_DRONECAN_ENABLED || defined(HAL_PERIPH_ENABLE_RPM_STREAM)
+#if AP_RPM_DRONECAN_ENABLED || AP_RPM_STREAM_ENABLED
     // @Param: DC_ID
     // @DisplayName: DroneCAN Sensor ID
     // @Description: DroneCAN sensor ID to assign to this backend

@@ -51,11 +51,13 @@ graph LR
 ```
 
 
-## Installing Build Dependencies
+## Installation
 
-While DDS support in Ardupilot is mostly through git submodules, another tool needs to be available on your system: Micro XRCE DDS Gen.
+While DDS support in Ardupilot is mostly through git submodules,
+you must install Micro XRCE DDS Gen and create a workspace.
 
-Follow the wiki [here](https://ardupilot.org/dev/docs/ros2.html#installation-ubuntu) to set up your environment.
+Follow the wiki [here](https://ardupilot.org/dev/docs/ros2.html)
+to set up your environment.
 
 ### Serial Only: Set up serial for SITL with DDS
 
@@ -80,7 +82,7 @@ Run the simulator with the following command. If using UDP, the only parameter y
 ```console
 # Wipe params till you see "AP: ArduPilot Ready"
 # Select your favorite vehicle type
-sim_vehicle.py -w -v ArduPlane --console -DG --enable-dds
+sim_vehicle.py -w -v ArduPlane --console -DG --enable-DDS
 
 # Only set this for Serial, which means 115200 baud
 param set SERIAL1_BAUD 115
@@ -94,35 +96,12 @@ param set DDS_ENABLE 0
 REBOOT
 ```
 
-## Setup ROS 2 and micro-ROS
-
-Follow the steps to use the microROS Agent
-
-- Install ROS Humble (as described here)
-
-  - https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html
-
-- Install geographic_msgs
-  ```console
-  sudo apt install ros-humble-geographic-msgs
-  ```
-
-- Install and run the microROS agent (as described here). Make sure to use the `humble` branch.
-  - Follow [the instructions](https://micro.ros.org/docs/tutorials/core/first_application_linux/) for the following:
-
-    - Do "Installing ROS 2 and the micro-ROS build system"
-      - Skip the docker run command, build it locally instead
-    - Skip "Creating a new firmware workspace"
-    - Skip "Building the firmware"
-    - Do "Creating the micro-ROS agent"
-    - Source your ROS workspace
-
 ## Using the ROS 2 CLI to Read Ardupilot Data
 
-After your setups are complete, do the following:
+After your setup is complete, do the following:
 - Source the ROS 2 installation
   ```console
-  source /opt/ros/humble/setup.bash
+  source install/setup.bash
   ```
 
 Next, follow the associated section for your chosen transport, and finally you can use the ROS 2 CLI.
@@ -136,7 +115,7 @@ Next, follow the associated section for your chosen transport, and finally you c
   ```
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
   ```console
-  sim_vehicle.py -v ArduPlane -DG --console --enable-dds
+  sim_vehicle.py -v ArduPlane -DG --console --enable-DDS
   ```
 
 ### Serial
@@ -157,7 +136,7 @@ Next, follow the associated section for your chosen transport, and finally you c
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
   ```console
   # assuming we are using /dev/pts/1 for Ardupilot SITL
-  sim_vehicle.py -v ArduPlane -DG --console --enable-dds -A "--serial1=uart:/dev/pts/1"
+  sim_vehicle.py -v ArduPlane -DG --console --enable-DDS -A "--serial1=uart:/dev/pts/1"
   ```
 
 ## Use ROS 2 CLI
@@ -169,10 +148,12 @@ $ ros2 node list
 /ardupilot_dds
 ```
 
+Depending on what's configured, you will see something similar to this:
+
 ```bash
 $ ros2 topic list -v
 Published topics:
- * /ap/airspeed [geometry_msgs/msg/Vector3] 1 publisher
+ * /ap/airspeed [ardupilot_msgs/msg/Airspeed] 1 publisher
  * /ap/battery [sensor_msgs/msg/BatteryState] 1 publisher
  * /ap/clock [rosgraph_msgs/msg/Clock] 1 publisher
  * /ap/geopose/filtered [geographic_msgs/msg/GeoPoseStamped] 1 publisher
@@ -180,6 +161,8 @@ Published topics:
  * /ap/imu/experimental/data [sensor_msgs/msg/Imu] 1 publisher
  * /ap/navsat [sensor_msgs/msg/NavSatFix] 1 publisher
  * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
+ * /ap/rc [ardupilot_msgs/msg/Rc] 1 publisher
+ * /ap/status [ardupilot_msgs/msg/Status] 1 publisher
  * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher
  * /ap/time [builtin_interfaces/msg/Time] 1 publisher
  * /ap/twist/filtered [geometry_msgs/msg/TwistStamped] 1 publisher
@@ -192,6 +175,8 @@ Subscribed topics:
  * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
  * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
 ```
+
+For a full list of interfaces, see [here](https://ardupilot.org/dev/docs/ros2-interfaces.html).
 
 ```bash
 $ ros2 topic hz /ap/time
@@ -209,6 +194,8 @@ nanosec: 729410000
 $ ros2 service list
 /ap/arm_motors
 /ap/mode_switch
+/ap/prearm_check
+/ap/experimental/takeoff
 ---
 ```
 
@@ -234,6 +221,8 @@ List the available services:
 $ ros2 service list -t
 /ap/arm_motors [ardupilot_msgs/srv/ArmMotors]
 /ap/mode_switch [ardupilot_msgs/srv/ModeSwitch]
+/ap/prearm_check [std_srvs/srv/Trigger]
+/ap/experimental/takeoff [ardupilot_msgs/srv/Takeoff]
 ```
 
 Call the arm motors service:
@@ -254,6 +243,30 @@ requester: making request: ardupilot_msgs.srv.ModeSwitch_Request(mode=4)
 
 response:
 ardupilot_msgs.srv.ModeSwitch_Response(status=True, curr_mode=4)
+```
+
+Call the prearm check service:
+
+```bash
+$ ros2 service call /ap/prearm_check std_srvs/srv/Trigger
+requester: making request: std_srvs.srv.Trigger_Request()
+
+response:
+std_srvs.srv.Trigger_Response(success=False, message='Vehicle is Not Armable')
+
+or
+
+std_srvs.srv.Trigger_Response(success=True, message='Vehicle is Armable')
+```
+
+Call the takeoff service:
+
+```bash
+$ ros2 service call /ap/experimental/takeoff ardupilot_msgs/srv/Takeoff "{alt: 10.5}"
+requester: making request: ardupilot_msgs.srv.Takeoff_Request(alt=10.5)
+
+response:
+ardupilot_msgs.srv.Takeoff_Response(status=True)
 ```
 
 ## Commanding using ROS 2 Topics
@@ -280,7 +293,7 @@ ros2 topic pub /ap/cmd_gps_pose ardupilot_msgs/msg/GlobalPosition "{latitude: 34
 publisher: beginning loop
 publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), coordinate_frame=0, type_mask=0, latitude=34.0, longitude=118.0, altitude=1000.0, velocity=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), acceleration_or_force=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), yaw=0.0)
 ```
-
+ 
 ## Contributing to `AP_DDS` library
 
 ### Adding DDS messages to Ardupilot
@@ -305,7 +318,7 @@ mkdir -p libraries/AP_DDS/Idl/builtin_interfaces/msg/
 # Copy the IDL
 cp /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/builtin_interfaces/msg/
 
-# Build the code again with the `--enable-dds` flag as described above
+# Build the code again with the `--enable-DDS` flag as described above
 ```
 
 If the message is custom for ardupilot, first create the ROS message in `Tools/ros2/ardupilot_msgs/msg/GlobalPosition.msg`.
@@ -393,7 +406,7 @@ SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2
 
 For example, build, flash, and set up OTG2 for DDS
 ```bash
-./waf configure --board Pixhawk6X --enable-dds
+./waf configure --board Pixhawk6X --enable-DDS
 ./waf plane --upload
 mavproxy.py --console
 param set DDS_ENABLE 1

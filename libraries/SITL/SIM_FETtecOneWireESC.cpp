@@ -64,7 +64,7 @@ const AP_Param::GroupInfo FETtecOneWireESC::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ENA", 1, FETtecOneWireESC, _enabled, 0),
 
-    // @Param: PWOF
+    // @Param: POW
     // @DisplayName: Power off FETtec ESC mask
     // @Description: Allows you to turn power off to the simulated ESCs.  Bits correspond to the ESC ID, *NOT* their servo channel.
     // @User: Advanced
@@ -384,7 +384,7 @@ void FETtecOneWireESC::consume_bytes(uint8_t count)
 
 void FETtecOneWireESC::update_input()
 {
-    const ssize_t n = read_from_autopilot((char*)&u.buffer[buflen], ARRAY_SIZE(u.buffer) - buflen - 1);
+    const ssize_t n = read_from_autopilot((char*)&u.buffer[buflen], ARRAY_SIZE(u.buffer) - buflen);
     if (n < 0) {
         // TODO: do better here
         if (errno != EAGAIN && errno != EWOULDBLOCK && errno != 0) {

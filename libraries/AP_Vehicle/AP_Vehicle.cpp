@@ -3,6 +3,7 @@
 #if AP_VEHICLE_ENABLED
 
 #include "AP_Vehicle.h"
+#include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Common/AP_FWVersion.h>
@@ -34,11 +35,8 @@ extern AP_IOMCU iomcu;
   2nd group of parameters
  */
 const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
-#if HAL_RUNCAM_ENABLED
-    // @Group: CAM_RC_
-    // @Path: ../AP_Camera/AP_RunCam.cpp
-    AP_SUBGROUPINFO(runcam, "CAM_RC_", 1, AP_Vehicle, AP_RunCam),
-#endif
+
+    // 1: RunCam
 
 #if HAL_GYROFFT_ENABLED
     // @Group: FFT_
@@ -76,7 +74,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(generator, "GEN_", 7, AP_Vehicle, AP_Generator),
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     // @Group: EAHRS
     // @Path: ../AP_ExternalAHRS/AP_ExternalAHRS.cpp
     AP_SUBGROUPINFO(externalAHRS, "EAHRS", 8, AP_Vehicle, AP_ExternalAHRS),
@@ -358,15 +356,16 @@ void AP_Vehicle::setup()
 #endif
 
 #if AP_SERIALMANAGER_ENABLED
+#if HAL_WITH_IO_MCU
+    if (BoardConfig.io_enabled()) {
+        serial_manager.set_protocol_and_baud(HAL_UART_IOMCU_IDX, AP_SerialManager::SerialProtocol_IOMCU, 0);
+    }
+#endif
     // initialise serial ports
     serial_manager.init();
 #endif
 #if HAL_GCS_ENABLED
     gcs().setup_console();
-#endif
-
-#if AP_NETWORKING_ENABLED
-    networking.init();
 #endif
 
 #if AP_SCRIPTING_ENABLED
@@ -375,6 +374,10 @@ void AP_Vehicle::setup()
     // (in particular mavlink which checks during init_ardupilot())
     scripting.init_serialdevice_ports();
 #endif
+#endif
+
+#if AP_NETWORKING_ENABLED
+    networking.init();
 #endif
 
 #if AP_SCHEDULER_ENABLED
@@ -388,7 +391,7 @@ void AP_Vehicle::setup()
     msp.init();
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     // call externalAHRS init before init_ardupilot to allow for external sensors
     externalAHRS.init();
 #endif
@@ -449,9 +452,6 @@ void AP_Vehicle::setup()
     gyro_fft.init(1000);
 #endif
 #endif
-#if HAL_RUNCAM_ENABLED
-    runcam.init();
-#endif
 #if HAL_HOTT_TELEM_ENABLED
     hott_telem.init();
 #endif
@@ -505,6 +505,7 @@ void AP_Vehicle::setup()
 
 #if AP_FENCE_ENABLED
     fence.init();
+    fence_init();
 #endif
 
 #if AP_CUSTOMROTATIONS_ENABLED
@@ -614,14 +615,11 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_NMEA_OUTPUT_ENABLED
     SCHED_TASK_CLASS(AP_NMEA_Output, &vehicle.nmea,         update,                   50, 50, 180),
 #endif
-#if HAL_RUNCAM_ENABLED
-    SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50, 200),
-#endif
 #if HAL_GYROFFT_ENABLED
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50, 205),
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50, 210),
 #endif
-#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED && !AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
     SCHED_TASK(update_dynamic_notch_at_specified_rate,      LOOP_RATE,                    200, 215),
 #endif
 #if AP_VIDEOTX_ENABLED
@@ -632,7 +630,12 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20, 225),
 #if HAL_WITH_ESC_TELEM
+    // This update function is responsible for checking timeouts and invalidating the ESC telemetry data.
+    // Be mindful of this if you are planning to reduce the frequency from 100Hz.
     SCHED_TASK_CLASS(AP_ESC_Telem, &vehicle.esc_telem,      update,                  100,  50, 230),
+#endif
+#if AP_SERVO_TELEM_ENABLED
+    SCHED_TASK_CLASS(AP_Servo_Telem, &vehicle.servo_telem,  update,                   50,  50, 231),
 #endif
 #if HAL_GENERATOR_ENABLED
     SCHED_TASK_CLASS(AP_Generator, &vehicle.generator,      update,                   10,  50, 235),
@@ -807,7 +810,7 @@ void AP_Vehicle::update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch)
     } else
 #else  // APM_BUILD_Rover
     const AP_MotorsUGV *motors = AP::motors_ugv();
-    const float motors_throttle = motors != nullptr ? abs(motors->get_throttle() / 100.0f) : 0;
+    const float motors_throttle = motors != nullptr ? abs(motors->get_throttle() * 0.01f) : 0;
 #endif
     {
         float throttle_freq = ref_freq * sqrtf(MAX(0,motors_throttle) / ref);
@@ -992,8 +995,8 @@ void AP_Vehicle::publish_osd_info()
 void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {
 #if AP_AHRS_ENABLED
-    roll = ahrs.get_roll();
-    pitch = ahrs.get_pitch();
+    roll = ahrs.get_roll_rad();
+    pitch = ahrs.get_pitch_rad();
 #else
     roll = 0.0;
     pitch = 0.0;
@@ -1054,7 +1057,7 @@ void AP_Vehicle::one_Hz_update(void)
       every 10s check if using a 2M firmware on a 1M board
      */
     if (one_Hz_counter % 10U == 0) {
-#if defined(BOARD_CHECK_F427_USE_1M) && (BOARD_FLASH_SIZE>1024)
+#if defined(BOARD_CHECK_F427_USE_1M) && (HAL_PROGRAM_SIZE_LIMIT_KB>1024)
         if (!hal.util->get_soft_armed() && check_limit_flash_1M()) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, BOARD_CHECK_F427_USE_1M);
         }
@@ -1065,7 +1068,7 @@ void AP_Vehicle::one_Hz_update(void)
       every 30s check if using a 1M firmware on a 2M board
      */
     if (one_Hz_counter % 30U == 0) {
-#if defined(BOARD_CHECK_F427_USE_1M) && (BOARD_FLASH_SIZE<=1024)
+#if defined(BOARD_CHECK_F427_USE_1M) && (HAL_PROGRAM_SIZE_LIMIT_KB<=1024)
         if (!hal.util->get_soft_armed() && !check_limit_flash_1M()) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, BOARD_CHECK_F427_USE_2M);
         }
@@ -1076,8 +1079,12 @@ void AP_Vehicle::one_Hz_update(void)
     scripting.update();
 #endif
 
-#if HAL_LOGGING_ENABLED
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+    // Log data rates of physical and virtual serial ports
     hal.util->uart_log();
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    serial_manager.registered_ports_log();
+#endif
 #endif
 
 }
@@ -1146,6 +1153,13 @@ bool AP_Vehicle::block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_lis
     return false;
 }
 #endif
+
+#if AP_FENCE_ENABLED
+void AP_Vehicle::fence_init()
+{
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Vehicle::fence_checks_async, void));
+}
+#endif  // AP_FENCE_ENABLED
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 

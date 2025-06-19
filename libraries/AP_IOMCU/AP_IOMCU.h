@@ -17,6 +17,11 @@
 typedef uint32_t eventmask_t;
 typedef struct ch_thread thread_t;
 
+#ifndef AP_IOMCU_FW_FLASH_SIZE
+#define AP_IOMCU_FW_FLASH_SIZE (0x10000 - 0x1000)
+#endif
+
+
 class AP_IOMCU
 #ifdef HAL_WITH_ESC_TELEM
   : public AP_ESC_Telem_Backend
@@ -71,7 +76,7 @@ public:
     bool check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_channels);
 
     // Do DSM receiver binding
-    void bind_dsm(uint8_t mode);
+    void bind_dsm();
 
     // get the name of the RC protocol
     const char *get_rc_protocol(void);
@@ -175,6 +180,11 @@ public:
 
     // toggle a output pin
     void toggle_GPIO(uint8_t pin);
+
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    // set profiled values
+    void set_profiled(uint8_t r, uint8_t g, uint8_t b);
+#endif
 
     // channel group masks
     const uint8_t ch_masks[3] = { 0x03,0x0C,0xF0 };
@@ -297,6 +307,11 @@ private:
     // output mode values
     struct page_mode_out mode_out;
 
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    // profiled control
+    struct page_profiled profiled {0, 255, 255, 255}; // by default, white
+#endif
+
     // IMU heater duty cycle
     uint8_t heater_duty_cycle;
 
@@ -310,6 +325,9 @@ private:
     bool detected_io_reset;
     bool initialised;
     bool is_chibios_backend;
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    bool use_safety_as_led;
+#endif
 
     uint32_t protocol_fail_count;
     uint32_t protocol_count;

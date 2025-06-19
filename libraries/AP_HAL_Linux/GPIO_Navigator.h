@@ -1,4 +1,9 @@
 #pragma once
+
+#include <AP_HAL/HAL.h>
+
+#if HAL_LINUX_GPIO_NAVIGATOR_ENABLED
+
 #include "GPIO_RPI.h"
 
 using namespace Linux;
@@ -22,4 +27,4 @@ private:
     bool    pinAllowed(uint8_t pin);
 };
 
-
+#endif  // HAL_LINUX_GPIO_NAVIGATOR_ENABLED

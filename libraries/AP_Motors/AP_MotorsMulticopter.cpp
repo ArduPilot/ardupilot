@@ -133,7 +133,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: THST_HOVER
     // @DisplayName: Thrust Hover Value
     // @Description: Motor thrust needed to hover expressed as a number from 0 to 1
-    // @Range: 0.2 0.8
+    // @Range: 0.125 0.6875
     // @User: Advanced
     AP_GROUPINFO("THST_HOVER", 21, AP_MotorsMulticopter, _throttle_hover, AP_MOTORS_THST_HOVER_DEFAULT),
 
@@ -191,7 +191,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: SLEW_UP_TIME
     // @DisplayName: Output slew time for increasing throttle
     // @Description: Time in seconds to slew output from zero to full. This is used to limit the rate at which output can change. Range is constrained between 0 and 0.5.
-    // @Range: 0 .5
+    // @Range: 0 0.5
     // @Units: s
     // @Increment: 0.001
     // @User: Advanced
@@ -200,7 +200,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: SLEW_DN_TIME
     // @DisplayName: Output slew time for decreasing throttle
     // @Description: Time in seconds to slew output from full to zero. This is used to limit the rate at which output can change.  Range is constrained between 0 and 0.5.
-    // @Range: 0 .5
+    // @Range: 0 0.5
     // @Units: s
     // @Increment: 0.001
     // @User: Advanced
@@ -740,7 +740,7 @@ void AP_MotorsMulticopter::set_throttle_passthrough_for_esc_calibration(float th
 // output a thrust to all motors that match a given motor mask. This
 // is used to control tiltrotor motors in forward flight. Thrust is in
 // the range 0 to 1
-void AP_MotorsMulticopter::output_motor_mask(float thrust, uint16_t mask, float rudder_dt)
+void AP_MotorsMulticopter::output_motor_mask(float thrust, uint32_t mask, float rudder_dt)
 {
     const int16_t pwm_min = get_pwm_output_min();
     const int16_t pwm_range = get_pwm_output_max() - pwm_min;
@@ -806,7 +806,7 @@ bool AP_MotorsMulticopter::arming_checks(size_t buflen, char *buffer) const
             continue;
         }
         uint8_t chan;
-        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
+        SRV_Channel::Function function = SRV_Channels::get_motor_function(i);
         if (!SRV_Channels::find_channel(function, chan)) {
             hal.util->snprintf(buffer, buflen, "no SERVOx_FUNCTION set to Motor%u", i + 1);
             return false;
@@ -827,6 +827,17 @@ bool AP_MotorsMulticopter::arming_checks(size_t buflen, char *buffer) const
         return false;
     }
 
+    return true;
+}
+
+// return raw throttle out fraction for motor motor_num, returns true if value is valid, false otherwise
+bool AP_MotorsMulticopter::get_raw_motor_throttle(uint8_t motor_num, float& thr_out) const
+{
+    if (motor_num >= AP_MOTORS_MAX_NUM_MOTORS || !motor_enabled[motor_num]) {
+        return false;
+    }
+
+    thr_out = constrain_float(_actuator[motor_num], 0.0f, 1.0f);
     return true;
 }
 

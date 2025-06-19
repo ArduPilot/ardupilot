@@ -27,27 +27,53 @@
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef HAL_IOMCU_DSM_SERIAL_DRIVER
+#define HAL_IOMCU_DSM_SERIAL_DRIVER SD1
+#endif
+
+#ifndef HAL_IOMCU_RCIN_SERIAL_DRIVER
+#define HAL_IOMCU_RCIN_SERIAL_DRIVER SD3
+#endif
+
+#ifndef HAL_IOMCU_SBUS_OUT_SERIAL_DRIVER
+#define HAL_IOMCU_SBUS_OUT_SERIAL_DRIVER SD3
+#endif
+
+#ifndef HAL_IOMCU_SEPARATE_SBUS_OUT_RCIN
+#define HAL_IOMCU_SEPARATE_SBUS_OUT_RCIN 0
+#endif
+
 // usart3 is for SBUS input and output
 static const SerialConfig sbus_cfg = {
     100000,   // speed
     USART_CR1_PCE | USART_CR1_M, // cr1, enable even parity
-    USART_CR2_STOP_1,            // cr2, two stop bits
+    USART_CR2_STOP_1            // cr2, two stop bits
+#if defined(HAL_SERIAL_SBUS_SWAPPED) && HAL_SERIAL_SBUS_SWAPPED
+    | USART_CR2_SWAP
+#endif
+    ,
     0,        // cr3
     nullptr,  // irq_cb
     nullptr,  // ctx
 };
 
-// listen for parity errors on sd3 input
-static event_listener_t sd3_listener;
+// listen for parity errors on sbus out input
+static event_listener_t serial_rcin_listener;
 
-static uint8_t sd3_config;
+static uint8_t sbus_out_config;
+
+#if HAL_IOMCU_SEPARATE_SBUS_OUT_RCIN
+static uint8_t serial_rcin_config;
+#else
+#define serial_rcin_config sbus_out_config
+#endif
 
 void sbus_out_write(uint16_t *channels, uint8_t nchannels)
 {
-    if (sd3_config == 0) {
+    if (sbus_out_config == 0) {
         uint8_t buffer[25];
         AP_SBusOut::sbus_format_frame(channels, nchannels, buffer);
-        chnWrite(&SD3, buffer, sizeof(buffer));
+        chnWrite(&HAL_IOMCU_SBUS_OUT_SERIAL_DRIVER, buffer, sizeof(buffer));
     }
 }
 
@@ -72,10 +98,15 @@ static enum {
  */
 void AP_IOMCU_FW::rcin_serial_init(void)
 {
-    sdStart(&SD1, &dsm_cfg);
-    sdStart(&SD3, &sbus_cfg);
-    chEvtRegisterMaskWithFlags(chnGetEventSource(&SD3),
-                               &sd3_listener,
+    sdStart(&HAL_IOMCU_DSM_SERIAL_DRIVER, &dsm_cfg);
+    sdStart(&HAL_IOMCU_SBUS_OUT_SERIAL_DRIVER, &sbus_cfg);
+
+#if HAL_IOMCU_SEPARATE_SBUS_OUT_RCIN
+    sdStart(&HAL_IOMCU_RCIN_SERIAL_DRIVER, &sbus_cfg);
+#endif
+
+    chEvtRegisterMaskWithFlags(chnGetEventSource(&HAL_IOMCU_RCIN_SERIAL_DRIVER),
+                               &serial_rcin_listener,
                                EVENT_MASK(1),
                                SD_PARITY_ERROR);
     // disable input for SBUS with pulses, we will use the UART for
@@ -115,10 +146,10 @@ void AP_IOMCU_FW::rcin_serial_update(void)
 
     // read from DSM port
     if ((rc_state == RC_SEARCHING || rc_state == RC_DSM_PORT) &&
-        (n = chnReadTimeout(&SD1, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
+        (n = chnReadTimeout(&HAL_IOMCU_DSM_SERIAL_DRIVER, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
         n = MIN(n, sizeof(b));
         // don't mix two 115200 uarts
-        if (sd3_config == 0) {
+        if (serial_rcin_config == 0) {
             rc_stats.num_dsm_bytes += n;
             for (uint8_t i=0; i<n; i++) {
                 if (rc.process_byte(b[i], 115200)) {
@@ -134,16 +165,16 @@ void AP_IOMCU_FW::rcin_serial_update(void)
 
     // read from SBUS port
     if ((rc_state == RC_SEARCHING || rc_state == RC_SBUS_PORT) &&
-        (n = chnReadTimeout(&SD3, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
+        (n = chnReadTimeout(&HAL_IOMCU_RCIN_SERIAL_DRIVER, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
         eventflags_t flags;
-        if (sd3_config == 0 && ((flags = chEvtGetAndClearFlags(&sd3_listener)) & SD_PARITY_ERROR)) {
+        if (serial_rcin_config == 0 && ((flags = chEvtGetAndClearFlags(&serial_rcin_listener)) & SD_PARITY_ERROR)) {
             rc_stats.sbus_error = flags;
             rc_stats.num_sbus_errors++;
         } else {
             n = MIN(n, sizeof(b));
             rc_stats.num_sbus_bytes += n;
             for (uint8_t i=0; i<n; i++) {
-                if (rc.process_byte(b[i], sd3_config==0?100000:115200)) {
+                if (rc.process_byte(b[i], serial_rcin_config==0?100000:115200)) {
                     rc_stats.last_good_ms = now;
                     if (!rc.should_search(now)) {
                         rc_state = RC_SBUS_PORT;
@@ -159,14 +190,16 @@ void AP_IOMCU_FW::rcin_serial_update(void)
       we need to disable this as the uart is shared between input and
       output
      */
+#if !HAL_IOMCU_SEPARATE_SBUS_OUT_RCIN
     const bool sbus_out_enabled = (reg_setup.features & P_SETUP_FEATURES_SBUS1_OUT) != 0;
     if (rc_state == RC_SEARCHING &&
-        now - rc_stats.last_good_ms > 2000 && (sd3_config==1 || !sbus_out_enabled)) {
+        now - rc_stats.last_good_ms > 2000 && (sbus_out_config==1 || !sbus_out_enabled)) {
         rc_stats.last_good_ms = now;
-        sd3_config ^= 1;
-        sdStop(&SD3);
-        sdStart(&SD3, sd3_config==0?&sbus_cfg:&dsm_cfg);
+        sbus_out_config ^= 1;
+        sdStop(&HAL_IOMCU_SBUS_OUT_SERIAL_DRIVER);
+        sdStart(&HAL_IOMCU_SBUS_OUT_SERIAL_DRIVER, sbus_out_config==0?&sbus_cfg:&dsm_cfg);
     }
+#endif
 }
 
 /*

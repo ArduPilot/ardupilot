@@ -42,7 +42,7 @@ static Storage sitlStorage;
 static SITL_State sitlState;
 static Scheduler sitlScheduler(&sitlState);
 #if AP_RCPROTOCOL_ENABLED
-static RCInput sitlRCInput(&sitlState);
+static RCInput sitlRCInput;
 #else
 static Empty::RCInput  sitlRCInput;
 #endif

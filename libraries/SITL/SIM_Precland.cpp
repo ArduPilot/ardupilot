@@ -21,6 +21,7 @@
 #include "AP_Common/Location.h"
 #include "SITL.h"
 #include <stdio.h>
+#include <GCS_MAVLink/GCS.h>
 
 using namespace SITL;
 
@@ -85,7 +86,7 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TYPE", 6, SIM_Precland, _type, SIM_Precland::PRECLAND_TYPE_CYLINDER),
 
-    // @Param: ALT_LIMIT
+    // @Param: ALT_LMT
     // @DisplayName: Precland device alt range
     // @Description: Precland device maximum range altitude
     // @Units: m
@@ -93,7 +94,7 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ALT_LMT", 7, SIM_Precland, _alt_limit, 15),
 
-    // @Param: DIST_LIMIT
+    // @Param: DIST_LMT
     // @DisplayName: Precland device lateral range
     // @Description: Precland device maximum lateral range
     // @Units: m
@@ -142,6 +143,16 @@ void SIM_Precland::update(const Location &loc)
                            static_cast<int32_t>(_device_lon * 1.0e7f),
                            static_cast<int32_t>(_device_height*100),
                            Location::AltFrame::ABOVE_ORIGIN);
+
+    if (device_center.lat == 0 && device_center.lng == 0 && device_center.alt == 0) {
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - last_set_parameters_warning_ms > 5000) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Set SIM_PLD_LAT, SIM_PLD_LAT and SIM_PLD_ALT");
+            last_set_parameters_warning_ms = now_ms;
+        }
+        _healthy = false;
+        return;
+    }
 
 #if AP_SIM_SHIP_ENABLED
     if (_ship == 1) {

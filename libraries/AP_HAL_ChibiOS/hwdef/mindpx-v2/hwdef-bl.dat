@@ -6,8 +6,8 @@ MCU STM32F4xx STM32F427xx
 
 define HAL_CHIBIOS_ARCH_MINDPXV2 1
 
-# board ID for firmware load
-APJ_BOARD_ID 88
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_MINDPX_V2
 
 # crystal frequency
 OSCILLATOR_HZ 8000000

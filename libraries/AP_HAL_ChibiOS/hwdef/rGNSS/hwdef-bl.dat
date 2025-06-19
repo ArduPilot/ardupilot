@@ -12,8 +12,8 @@ APP_START_OFFSET_KB 4
 # 128k flash part
 FLASH_SIZE_KB 256
 
-# board ID for firmware load
-APJ_BOARD_ID 1103
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_rGNSS
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

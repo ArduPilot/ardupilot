@@ -434,6 +434,16 @@ void SRV_Channels::set_output_pwm_chan(uint8_t chan, uint16_t value)
     }
 }
 
+// get output value for a specific channel as a pwm value
+bool SRV_Channels::get_output_pwm_chan(uint8_t chan, uint16_t &value)
+{
+    if (chan >= NUM_SERVO_CHANNELS) {
+        return false;
+    }
+    value = channels[chan].get_output_pwm();
+    return true;
+}
+
 #if AP_SCRIPTING_ENABLED && AP_SCHEDULER_ENABLED
 // set output value for a specific function channel as a pwm value with loop based timeout
 // timeout_ms of zero will clear override of the channel

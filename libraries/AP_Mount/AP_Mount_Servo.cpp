@@ -95,7 +95,7 @@ void AP_Mount_Servo::update()
             FALLTHROUGH;
         case MountTargetType::ANGLE:
             // update _angle_bf_output_rad based on angle target
-            if ((mount_mode != MAV_MOUNT_MODE_RETRACT) & (mount_mode != MAV_MOUNT_MODE_NEUTRAL)) {
+            if ((mount_mode != MAV_MOUNT_MODE_RETRACT) && (mount_mode != MAV_MOUNT_MODE_NEUTRAL)) {
                 update_angle_outputs(mnt_target.angle_rad);
             }
             break;
@@ -173,7 +173,7 @@ void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
     }
 
     // retrieve lean angles from ahrs
-    Vector2f ahrs_angle_rad = {ahrs.get_roll(), ahrs.get_pitch()};
+    Vector2f ahrs_angle_rad = {ahrs.get_roll_rad(), ahrs.get_pitch_rad()};
 
     // rotate ahrs roll and pitch angles to gimbal yaw
     if (has_pan_control()) {
@@ -187,7 +187,7 @@ void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
     // lead filter
     const Vector3f &gyro = ahrs.get_gyro();
 
-    if (!is_zero(_params.roll_stb_lead) && fabsf(ahrs.get_pitch()) < M_PI/3.0f) {
+    if (!is_zero(_params.roll_stb_lead) && fabsf(ahrs.get_pitch_rad()) < M_PI/3.0f) {
         // Compute rate of change of euler roll angle
         float roll_rate = gyro.x + (ahrs.sin_pitch() / ahrs.cos_pitch()) * (gyro.y * ahrs.sin_roll() + gyro.z * ahrs.cos_roll());
         _angle_bf_output_rad.x -= roll_rate * _params.roll_stb_lead;
@@ -203,6 +203,6 @@ void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
 // move_servo - moves servo with the given id to the specified angle.  all angles are in degrees * 10
 void AP_Mount_Servo::move_servo(uint8_t function_idx, int16_t angle, int16_t angle_min, int16_t angle_max)
 {
-	SRV_Channels::move_servo((SRV_Channel::Aux_servo_function_t)function_idx, angle, angle_min, angle_max);
+	SRV_Channels::move_servo((SRV_Channel::Function)function_idx, angle, angle_min, angle_max);
 }
 #endif // HAL_MOUNT_SERVO_ENABLED

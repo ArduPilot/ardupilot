@@ -45,6 +45,9 @@ public:
     // acclerometers on Invensense sensors will return values up to 32G
     const uint16_t multiplier_accel = INT16_MAX/(32*GRAVITY_MSS);
 
+protected:
+    void set_primary(bool _is_primary) override;
+
 private:
     AP_InertialSensor_Invensensev3(AP_InertialSensor &imu,
                                    AP_HAL::OwnPtr<AP_HAL::Device> dev,
@@ -58,7 +61,7 @@ private:
     void set_filter_and_scaling_icm42670(void);
     void set_filter_and_scaling_icm456xy(void);
     void fifo_reset();
-    uint16_t calculate_fast_sampling_backend_rate(uint16_t base_odr, uint16_t max_odr) const;
+    uint16_t calculate_fast_sampling_backend_rate(uint16_t base_backend_rate, uint16_t max_backend_rate) const;
 
     /* Read samples from FIFO */
     void read_fifo();
@@ -74,6 +77,11 @@ private:
 
     bool accumulate_samples(const struct FIFOData *data, uint8_t n_samples);
     bool accumulate_highres_samples(const struct FIFODataHighRes *data, uint8_t n_samples);
+
+    // get the gyro backend rate in Hz at which the FIFO is being read
+    uint16_t get_gyro_backend_rate_hz() const override {
+        return backend_rate_hz;
+    }
 
     // reset FIFO configure1 register
     uint8_t fifo_config1;
@@ -141,4 +149,5 @@ private:
 
     float temp_filtered;
     LowPassFilter2pFloat temp_filter;
+    uint32_t sampling_rate_hz;
 };

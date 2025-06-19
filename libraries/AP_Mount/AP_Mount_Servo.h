@@ -59,10 +59,10 @@ private:
     const bool requires_stabilization;
 
     // SRV_Channel - different id numbers are used depending upon the instance number
-    SRV_Channel::Aux_servo_function_t    _roll_idx;  // SRV_Channel mount roll function index
-    SRV_Channel::Aux_servo_function_t    _tilt_idx;  // SRV_Channel mount tilt function index
-    SRV_Channel::Aux_servo_function_t    _pan_idx;   // SRV_Channel mount pan  function index
-    SRV_Channel::Aux_servo_function_t    _open_idx;  // SRV_Channel mount open function index
+    SRV_Channel::Function    _roll_idx;  // SRV_Channel mount roll function index
+    SRV_Channel::Function    _tilt_idx;  // SRV_Channel mount tilt function index
+    SRV_Channel::Function    _pan_idx;   // SRV_Channel mount pan  function index
+    SRV_Channel::Function    _open_idx;  // SRV_Channel mount open function index
 
     Vector3f _angle_bf_output_rad;  // final body frame output angle in radians
 };

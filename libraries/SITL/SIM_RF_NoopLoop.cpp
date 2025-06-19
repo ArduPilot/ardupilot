@@ -22,6 +22,12 @@ using namespace SITL;
 
 uint32_t RF_Nooploop::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
 {
+    // the NoopLoop driver considers a value of zero invalid and won't
+    // consider it a reading, so you end up with no readings at all
+    // from the driver.  Fudge it here:
+    if (alt_cm == 0) {
+        alt_cm = 1;
+    }
 
     int32_t alt_scaled = 2560*alt_cm;
     buffer[0] = 0x57;

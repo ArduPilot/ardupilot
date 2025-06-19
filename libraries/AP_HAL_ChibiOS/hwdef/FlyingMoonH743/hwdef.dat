@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1112
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_FlyingMoonH743
 
 FLASH_SIZE_KB 2048
 define HAL_STORAGE_SIZE 32768
@@ -13,7 +13,6 @@ define HAL_STORAGE_SIZE 32768
 # bootloader takes first sector
 FLASH_RESERVE_START_KB 128
 
-env OPTIMIZE -O2
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -109,7 +108,7 @@ IMU Invensensev3 SPI:icm42605 ROTATION_ROLL_180_YAW_90
 
 # Two baro
 BARO SPL06     I2C:0:0x76
-BARO MS56XX    I2C:0:0x77
+BARO MS5611    I2C:0:0x77
 
 # compass
 COMPASS RM3100 SPI:rm3100 false ROTATION_NONE

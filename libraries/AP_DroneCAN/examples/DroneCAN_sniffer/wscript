@@ -11,6 +11,7 @@ def build(bld):
         dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'AP_OSD',
+            'AP_Avoidance',
         ],
     )
     bld.ap_program(

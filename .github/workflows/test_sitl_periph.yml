@@ -12,6 +12,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/bootloaders/**'
       - 'Tools/CHDK-Script/**'
@@ -86,6 +87,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/bootloaders/**'
       - 'Tools/CHDK-Script/**'
@@ -184,8 +186,8 @@ jobs:
       - name: run dronecan dsdlc generator test
         run: |
           PATH="/github/home/.local/bin:$PATH"
-          python -m pip install --upgrade dronecan
-          python modules/DroneCAN/dronecan_dsdlc/dronecan_dsdlc.py -O dsdlc_generated modules/DroneCAN/DSDL/uavcan modules/DroneCAN/DSDL/dronecan modules/DroneCAN/DSDL/com --run-test
+          python3 -m pip install --upgrade dronecan
+          python3 modules/DroneCAN/dronecan_dsdlc/dronecan_dsdlc.py -O dsdlc_generated modules/DroneCAN/DSDL/uavcan modules/DroneCAN/DSDL/dronecan modules/DroneCAN/DSDL/com --run-test
 
       - name: build sitl_periph_universal
         shell: bash

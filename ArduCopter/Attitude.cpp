@@ -4,18 +4,21 @@
  *  Attitude Rate controllers and timing
  ****************************************************************/
 
-// update rate controllers and output to roll, pitch and yaw actuators
-//  called at 400hz by default
-void Copter::run_rate_controller()
+/*
+  update rate controller when run from main thread (normal operation)
+*/
+void Copter::run_rate_controller_main()
 {
     // set attitude and position controller loop time
     const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
-    motors->set_dt(last_loop_time_s);
-    attitude_control->set_dt(last_loop_time_s);
     pos_control->set_dt(last_loop_time_s);
+    attitude_control->set_dt(last_loop_time_s);
 
-    // run low level rate controllers that only require IMU data
-    attitude_control->rate_controller_run();
+    if (!using_rate_thread) {
+        motors->set_dt(last_loop_time_s);
+        // only run the rate controller if we are not using the rate thread
+        attitude_control->rate_controller_run();
+    }
     // reset sysid and other temporary inputs
     attitude_control->rate_controller_target_reset();
 }
@@ -39,7 +42,13 @@ void Copter::update_throttle_hover()
     }
 
     // do not update while climbing or descending
-    if (!is_zero(pos_control->get_vel_desired_cms().z)) {
+    if (!is_zero(pos_control->get_vel_desired_NEU_cms().z)) {
+        return;
+    }
+
+    // do not update if no vertical velocity estimate
+    float vel_d_ms;
+    if (!AP::ahrs().get_velocity_D(vel_d_ms, vibration_check.high_vibes)) {
         return;
     }
 
@@ -47,7 +56,7 @@ void Copter::update_throttle_hover()
     float throttle = motors->get_throttle();
 
     // calc average throttle if we are in a level hover.  accounts for heli hover roll trim
-    if (throttle > 0.0f && fabsf(inertial_nav.get_velocity_z_up_cms()) < 60 &&
+    if (throttle > 0.0f && fabsf(vel_d_ms) < 0.6 &&
         fabsf(ahrs.roll_sensor-attitude_control->get_roll_trim_cd()) < 500 && labs(ahrs.pitch_sensor) < 500) {
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);
@@ -59,12 +68,14 @@ void Copter::update_throttle_hover()
 
 // get_pilot_desired_climb_rate - transform pilot's throttle input to climb rate in cm/s
 // without any deadzone at the bottom
-float Copter::get_pilot_desired_climb_rate(float throttle_control)
+float Copter::get_pilot_desired_climb_rate()
 {
     // throttle failsafe check
-    if (failsafe.radio || !rc().has_ever_seen_rc_input()) {
+    if (!rc().has_valid_input()) {
         return 0.0f;
     }
+
+    float throttle_control = copter.channel_throttle->get_control_in();
 
 #if TOY_MODE_ENABLED
     if (g2.toy_mode.enabled()) {
@@ -112,7 +123,7 @@ void Copter::set_accel_throttle_I_from_pilot_throttle()
     // get last throttle input sent to attitude controller
     float pilot_throttle = constrain_float(attitude_control->get_throttle_in(), 0.0f, 1.0f);
     // shift difference between pilot's throttle and hover throttle into accelerometer I
-    pos_control->get_accel_z_pid().set_integrator((pilot_throttle-motors->get_throttle_hover()) * 1000.0f);
+    pos_control->get_accel_U_pid().set_integrator((pilot_throttle-motors->get_throttle_hover()) * 1000.0f);
 }
 
 // rotate vector from vehicle's perspective to North-East frame

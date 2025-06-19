@@ -20,7 +20,7 @@ void Sub::init_rangefinder()
 #if AP_RANGEFINDER_ENABLED
     rangefinder.set_log_rfnd_bit(MASK_LOG_CTUN);
     rangefinder.init(ROTATION_PITCH_270);
-    rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
+    rangefinder_state.alt_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
     rangefinder_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_270);
 #endif
 }
@@ -39,48 +39,42 @@ void Sub::read_rangefinder()
             (rangefinder.range_valid_count_orient(ROTATION_PITCH_270) >= RANGEFINDER_HEALTH_MAX) &&
             (signal_quality_pct == -1 || signal_quality_pct >= g.rangefinder_signal_min);
 
-    int16_t temp_alt = rangefinder.distance_cm_orient(ROTATION_PITCH_270);
+    float temp_alt_m = rangefinder.distance_orient(ROTATION_PITCH_270);
 
 #if RANGEFINDER_TILT_CORRECTION
     // correct alt for angle of the rangefinder
-    temp_alt = (float)temp_alt * MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
+    temp_alt_m = temp_alt_m * MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
 #endif
 
-    rangefinder_state.alt_cm = temp_alt;
+    rangefinder_state.alt = temp_alt_m;
     rangefinder_state.inertial_alt_cm = inertial_nav.get_position_z_up_cm();
-    rangefinder_state.min_cm = rangefinder.min_distance_cm_orient(ROTATION_PITCH_270);
-    rangefinder_state.max_cm = rangefinder.max_distance_cm_orient(ROTATION_PITCH_270);
+    rangefinder_state.min = rangefinder.min_distance_orient(ROTATION_PITCH_270);
+    rangefinder_state.max = rangefinder.max_distance_orient(ROTATION_PITCH_270);
 
     // calculate rangefinder_terrain_offset_cm
     if (rangefinder_state.alt_healthy) {
         uint32_t now = AP_HAL::millis();
         if (now - rangefinder_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS) {
             // reset filter if we haven't used it within the last second
-            rangefinder_state.alt_cm_filt.reset(rangefinder_state.alt_cm);
+            rangefinder_state.alt_filt.reset(rangefinder_state.alt);
         } else {
-            rangefinder_state.alt_cm_filt.apply(rangefinder_state.alt_cm, 0.05f);
+            rangefinder_state.alt_filt.apply(rangefinder_state.alt, 0.05f);
         }
         rangefinder_state.last_healthy_ms = now;
         rangefinder_state.rangefinder_terrain_offset_cm =
-                sub.rangefinder_state.inertial_alt_cm - sub.rangefinder_state.alt_cm_filt.get();
+            sub.rangefinder_state.inertial_alt_cm - (sub.rangefinder_state.alt_filt.get() * 100);
     }
 
     // send rangefinder altitude and health to waypoint navigation library
-    wp_nav.set_rangefinder_terrain_offset(
+    wp_nav.set_rangefinder_terrain_offset_cm(
             rangefinder_state.enabled,
             rangefinder_state.alt_healthy,
             rangefinder_state.rangefinder_terrain_offset_cm);
-    circle_nav.set_rangefinder_terrain_offset(
+    circle_nav.set_rangefinder_terrain_offset_cm(
             rangefinder_state.enabled && wp_nav.rangefinder_used(),
             rangefinder_state.alt_healthy,
             rangefinder_state.rangefinder_terrain_offset_cm);
-#else
-    rangefinder_state.enabled = false;
-    rangefinder_state.alt_healthy = false;
-    rangefinder_state.alt_cm = 0;
-    rangefinder_state.inertial_alt_cm = 0;
-    rangefinder_state.rangefinder_terrain_offset_cm = 0;
-#endif
+#endif  // AP_RANGEFINDER_ENABLED
 }
 
 // return true if rangefinder_alt can be used

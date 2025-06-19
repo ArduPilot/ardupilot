@@ -1249,7 +1249,7 @@ private:
     // constructor
     AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
-    bool init(DistanceMode mode);
+    __INITFUNC__ bool init(DistanceMode mode);
     void timer();
 
     // check sensor ID

@@ -10,12 +10,11 @@ void Blimp::default_dead_zones()
     channel_front->set_default_dead_zone(20);
     channel_up->set_default_dead_zone(30);
     channel_yaw->set_default_dead_zone(20);
-    rc().channel(CH_6)->set_default_dead_zone(0);
 }
 
 void Blimp::init_rc_in()
 {
-    // the library gaurantees that these are non-nullptr:
+    // the library guarantees that these are non-nullptr:
     channel_right = &rc().get_roll_channel();
     channel_front = &rc().get_pitch_channel();
     channel_up    = &rc().get_throttle_channel();
@@ -100,6 +99,7 @@ void Blimp::set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
     // if failsafe not enabled pass through throttle and exit
     if (g.failsafe_throttle == FS_THR_DISABLED) {
+        set_failsafe_radio(false);
         return;
     }
 

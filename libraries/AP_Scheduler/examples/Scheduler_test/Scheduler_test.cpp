@@ -11,9 +11,6 @@
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <stdio.h>
 
-const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
-    AP_GROUPEND
-};
 GCS_Dummy _gcs;
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
@@ -27,9 +24,9 @@ public:
 
 private:
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     AP_ExternalAHRS eAHRS;
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_EXTERNAL_AHRS_ENABLED
     AP_Scheduler scheduler;
 
     uint32_t ins_counter;
@@ -45,7 +42,7 @@ private:
 static AP_BoardConfig board_config;
 static SchedTest schedtest;
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros, _priority) SCHED_TASK_CLASS(SchedTest, &schedtest, func, _interval_ticks, _max_time_micros, _priority)
+#define SCHED_TASK(func, rate_hz, _max_time_micros, _priority) SCHED_TASK_CLASS(SchedTest, &schedtest, func, rate_hz, _max_time_micros, _priority)
 
 /*
   scheduler table - all regular tasks should be listed here.

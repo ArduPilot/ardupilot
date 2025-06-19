@@ -845,7 +845,7 @@ void AP_Mount_Topotek::send_rate_target(const MountTarget& rate_rads)
 
     // convert and constrain rates
     const uint8_t roll_angle_speed = constrain_int16(degrees(rate_rads.roll) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
-    const uint8_t pitch_angle_speed = constrain_int16(degrees(rate_rads.pitch) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
+    const uint8_t pitch_angle_speed = constrain_int16(-degrees(rate_rads.pitch) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
     const uint8_t yaw_angle_speed = constrain_int16(degrees(rate_rads.yaw) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
 
     // send stop rotation command three times if target roll, pitch and yaw are zero
@@ -941,7 +941,7 @@ bool AP_Mount_Topotek::send_location_info()
 
     // prepare and send vehicle yaw
     // sample command: #tpUD5wAZI359.9, similar format to $GPRMC
-    const float veh_yaw_deg = wrap_360(degrees(AP::ahrs().get_yaw()));
+    const float veh_yaw_deg = wrap_360(degrees(AP::ahrs().get_yaw_rad()));
     uint8_t databuff_azimuth[6];
     hal.util->snprintf((char*)databuff_azimuth, ARRAY_SIZE(databuff_azimuth), "%05.1f", veh_yaw_deg);
     if (!send_variablelen_packet(HeaderType::VARIABLE_LEN, AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_SET_AZIMUTH, true, (uint8_t*)databuff_azimuth, ARRAY_SIZE(databuff_azimuth)-1)) {
@@ -960,9 +960,9 @@ void AP_Mount_Topotek::gimbal_angle_analyse()
     int16_t roll_angle_cd = hexchar4_to_int16(_msg_buff[18], _msg_buff[19], _msg_buff[20], _msg_buff[21]);
 
     // convert cd to radians
-    _current_angle_rad.x = radians(roll_angle_cd * 0.01);
-    _current_angle_rad.y = radians(pitch_angle_cd * 0.01);
-    _current_angle_rad.z = radians(yaw_angle_cd * 0.01);
+    _current_angle_rad.x = cd_to_rad(roll_angle_cd);
+    _current_angle_rad.y = cd_to_rad(pitch_angle_cd);
+    _current_angle_rad.z = cd_to_rad(yaw_angle_cd);
     _last_current_angle_ms = AP_HAL::millis();
 
     return;

@@ -25,6 +25,12 @@
 #include "analog.h"
 #include "rc.h"
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
+#if defined(__DCACHE_PRESENT)
+#include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
+#else
+#define stm32_cacheBufferInvalidate(addr, size) do {} while(0)
+#define stm32_cacheBufferFlush(addr, size) do {} while(0)
+#endif
 
 extern const AP_HAL::HAL &hal;
 
@@ -37,6 +43,27 @@ static AP_IOMCU_FW iomcu;
 
 void setup();
 void loop();
+
+#ifndef HAL_IO_FMU_COMMS
+#define HAL_IO_FMU_COMMS UARTD2
+#endif
+
+#ifndef HAL_IOMCU_APP_SIZE_MAX
+#define HAL_IOMCU_APP_SIZE_MAX 0xf000
+#define HAL_IOMCU_APP_LOAD_ADDRESS 0x08001000
+#endif
+
+#define HAL_IOMCU_MAGIC_ADDRESS ((uint32_t*)(HAL_IOMCU_APP_LOAD_ADDRESS + HAL_IOMCU_APP_SIZE_MAX - 4))
+#define HAL_IOMCU_MAGIC 0x937E638A
+
+#define DEBUG_ENABLED 0
+
+#if defined(IOMCU_DEBUG) && DEBUG_ENABLED
+#include "chprintf.h"
+#define DEBUG(...) do { chprintf((BaseSequentialStream*)&IOMCU_DEBUG, __VA_ARGS__); } while (0)
+#else
+#define DEBUG(...)
+#endif
 
 #undef CH_DBG_ENABLE_STACK_CHECK
 #define CH_DBG_ENABLE_STACK_CHECK FALSE
@@ -73,9 +100,17 @@ static void setup_rx_dma(hal_uart_driver* uart)
     dmaStreamDisable(uart->dmarx);
     dmaStreamSetMemory0(uart->dmarx, &iomcu.rx_io_packet);
     dmaStreamSetTransactionSize(uart->dmarx, sizeof(iomcu.rx_io_packet));
+#if defined(STM32H7)
+    dmaStreamSetPeripheral(uart->dmarx, &(uart->usart->RDR));
+#else
     dmaStreamSetPeripheral(uart->dmarx, &(uart->usart->DR));
+#endif
     dmaStreamSetMode(uart->dmarx, uart->dmarxmode    | STM32_DMA_CR_DIR_P2M |
-                     STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
+                     STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE
+#if defined(STM32H7)
+                     | DMA_SxCR_TRBUFF
+#endif
+                     );
     dmaStreamEnable(uart->dmarx);
     uart->usart->CR3 |= USART_CR3_DMAR;
 }
@@ -87,11 +122,23 @@ static void setup_tx_dma(hal_uart_driver* uart)
     dmaStreamSetMemory0(uart->dmatx, &iomcu.tx_io_packet);
     dmaStreamSetTransactionSize(uart->dmatx, iomcu.tx_io_packet.get_size());
     // starting the UART allocates the peripheral statically, so we need to reinstate it after swapping
+#if defined(STM32H7)
+    dmaStreamSetPeripheral(uart->dmatx, &(uart->usart->TDR));
+#else
     dmaStreamSetPeripheral(uart->dmatx, &(uart->usart->DR));
+#endif
     dmaStreamSetMode(uart->dmatx, uart->dmatxmode    | STM32_DMA_CR_DIR_M2P |
-                     STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
+                     STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE
+#if defined(STM32H7)
+                     | DMA_SxCR_TRBUFF
+#endif
+                     );
     // enable transmission complete interrupt
+#if defined(STM32H7)
+    uart->usart->ICR |= USART_ICR_TCCF;
+#else
     uart->usart->SR &= ~USART_SR_TC;
+#endif
     uart->usart->CR1 |= USART_CR1_TCIE;
 
     dmaStreamEnable(uart->dmatx);
@@ -106,8 +153,12 @@ static void dma_rx_end_cb(hal_uart_driver *uart)
 
     dmaStreamDisable(uart->dmarx);
 
-    iomcu.process_io_packet();
+    // reload the rx packet into CPU cache from RAM
+    stm32_cacheBufferInvalidate(&iomcu.rx_io_packet, sizeof(iomcu.rx_io_packet));
 
+    iomcu.process_io_packet();
+    // flush the tx packet from CPU cache to RAM
+    stm32_cacheBufferFlush(&iomcu.tx_io_packet, sizeof(iomcu.tx_io_packet));
     setup_rx_dma(uart);
 
 #if AP_HAL_SHARED_DMA_ENABLED
@@ -129,9 +180,15 @@ static void dma_tx_end_cb(hal_uart_driver *uart)
     // DMA stream has already been disabled at this point
     uart->usart->CR3 &= ~USART_CR3_DMAT;
 
+#if defined(STM32H7)
+    (void)uart->usart->ICR;
+    (void)uart->usart->TDR;
+    (void)uart->usart->TDR;
+#else
     (void)uart->usart->SR;
     (void)uart->usart->DR;
     (void)uart->usart->DR;
+#endif
 
 #ifdef HAL_GPIO_LINE_GPIO108
     TOGGLE_PIN_DEBUG(108);
@@ -147,8 +204,34 @@ static void dma_tx_end_cb(hal_uart_driver *uart)
 /* replacement for ChibiOS uart_lld_serve_interrupt() */
 static void idle_rx_handler(hal_uart_driver *uart)
 {
+#if defined(STM32H7)
+    #define USART_SR_REG uart->usart->ISR
+    #define USART_DR_REG uart->usart->RDR
+    #define USART_SR_LBD USART_ISR_LBDF
+    #define USART_SR_ORE USART_ISR_ORE
+    #define USART_SR_NE USART_ISR_NE
+    #define USART_SR_FE USART_ISR_FE
+    #define USART_SR_PE USART_ISR_PE
+    #define USART_SR_TC USART_ISR_TC
+    #define USART_SR_IDLE USART_ISR_IDLE
+    #define CLEAR_ISR_FLAG(flag) uart->usart->ICR = USART_ICR_##flag##CF
+    #define CLEAR_LBD_FLAG CLEAR_ISR_FLAG(LBD)
+    #define CLEAR_TC_FLAG  CLEAR_ISR_FLAG(TC)
+    #define SEND_BREAK() uart->usart->RQR = USART_RQR_SBKRQ
+    #define CLEAR_IDLE() uart->usart->ICR = USART_ICR_IDLECF
+    #define CLEAR_ERRORS() uart->usart->ICR = USART_ICR_ORECF | USART_ICR_NECF | USART_ICR_FECF | USART_ICR_PECF
+#else
+    #define USART_SR_REG uart->usart->SR
+    #define USART_DR_REG uart->usart->DR
+    #define CLEAR_LBD_FLAG uart->usart->SR = ~USART_SR_LBD
+    #define CLEAR_TC_FLAG  uart->usart->SR &= ~USART_SR_TC
+    #define SEND_BREAK() uart->usart->CR1 = cr1 | USART_CR1_SBK
+    #define CLEAR_IDLE() (void)uart->usart->DR
+    #define CLEAR_ERRORS() (void)USART_DR_REG
+#endif
+
     volatile uint16_t sr;
-    sr = uart->usart->SR; /* SR reset step 1.*/
+    sr = USART_SR_REG; /* SR reset step 1.*/
     uint32_t cr1 = uart->usart->CR1;
 
     if (sr & (USART_SR_LBD | USART_SR_ORE |	/* overrun error - packet was too big for DMA or DMA was too slow */
@@ -156,13 +239,11 @@ static void idle_rx_handler(hal_uart_driver *uart)
               USART_SR_FE |
               USART_SR_PE)) {		/* framing error - start/stop bit lost or line break */
 
-        (void)uart->usart->DR;  /* SR reset step 2 - clear ORE | FE.*/
-
+        CLEAR_ERRORS(); /* SR reset step 2 - clear ORE | FE.*/
         /* send a line break - this will abort transmission/reception on the other end */
         chSysLockFromISR();
-        uart->usart->SR = ~USART_SR_LBD;
-        uart->usart->CR1 = cr1 | USART_CR1_SBK;
-
+        CLEAR_LBD_FLAG;
+        SEND_BREAK();
         iomcu.reg_status.num_errors++;
         iomcu.reg_status.err_uart++;
 
@@ -176,7 +257,7 @@ static void idle_rx_handler(hal_uart_driver *uart)
 
     if ((sr & USART_SR_TC) && (cr1 & USART_CR1_TCIE)) {
         /* TC interrupt cleared and disabled.*/
-        uart->usart->SR &= ~USART_SR_TC;
+        CLEAR_TC_FLAG;
         uart->usart->CR1 = cr1 & ~USART_CR1_TCIE;
 #ifdef HAL_GPIO_LINE_GPIO105
         TOGGLE_PIN_DEBUG(105);
@@ -187,7 +268,7 @@ static void idle_rx_handler(hal_uart_driver *uart)
     }
 
     if ((sr & USART_SR_IDLE) && (cr1 & USART_CR1_IDLEIE)) {
-        (void)uart->usart->DR;  /* SR reset step 2 - clear IDLE.*/
+        CLEAR_IDLE();  /* SR reset step 2 - clear IDLE.*/
 
         /* the DMA size is the maximum packet size, but smaller packets are perfectly possible leading to 
            an IDLE ISR. The data still must be processed. */
@@ -200,6 +281,11 @@ static void idle_rx_handler(hal_uart_driver *uart)
 using namespace ChibiOS;
 
 #if AP_HAL_SHARED_DMA_ENABLED
+#ifndef HAL_IO_FMU_COMMS_TX_DMA_STREAM
+#define HAL_IO_FMU_COMMS_TX_DMA_STREAM STM32_UART_USART2_TX_DMA_STREAM
+#define HAL_IO_FMU_COMMS_TX_IRQ_PRIORITY STM32_UART_USART2_IRQ_PRIORITY
+#endif
+
 /*
  copy of uart_lld_serve_tx_end_irq() from ChibiOS hal_uart_lld
  that is re-instated upon switching the DMA channel
@@ -214,13 +300,13 @@ static void uart_lld_serve_tx_end_irq(hal_uart_driver *uart, uint32_t flags)
 
 void AP_IOMCU_FW::tx_dma_allocate(Shared_DMA *ctx)
 {
-    hal_uart_driver *uart = &UARTD2;
+    hal_uart_driver *uart = &HAL_IO_FMU_COMMS;
     chSysLock();
     if (uart->dmatx == nullptr) {
-        uart->dmatx = dmaStreamAllocI(STM32_UART_USART2_TX_DMA_STREAM,
-                                        STM32_UART_USART2_IRQ_PRIORITY,
-                                        (stm32_dmaisr_t)uart_lld_serve_tx_end_irq,
-                                        (void *)uart);
+        uart->dmatx = dmaStreamAllocI(HAL_IO_FMU_COMMS_TX_DMA_STREAM,
+                                      HAL_IO_FMU_COMMS_TX_IRQ_PRIORITY,
+                                      (stm32_dmaisr_t)uart_lld_serve_tx_end_irq,
+                                      (void *)uart);
     }
     chSysUnlock();
 }
@@ -230,7 +316,7 @@ void AP_IOMCU_FW::tx_dma_allocate(Shared_DMA *ctx)
  */
 void AP_IOMCU_FW::tx_dma_deallocate(Shared_DMA *ctx)
 {
-    hal_uart_driver *uart = &UARTD2;
+    hal_uart_driver *uart = &HAL_IO_FMU_COMMS;
     chSysLock();
     if (uart->dmatx != nullptr) {
         // defensively make sure the DMA is fully shutdown before swapping
@@ -255,11 +341,30 @@ static UARTConfig uart_cfg = {
     nullptr,            // error
     idle_rx_handler,    // global irq
     nullptr,            // idle
+#if defined(STM32H7)
+0,                 // timeout
+#endif
     1500000,      //1.5MBit
-    USART_CR1_IDLEIE,
+    USART_CR1_IDLEIE
+#if defined(STM32H7)
+     | USART_CR1_FIFOEN
+#endif
+    ,
     0,
     0
 };
+
+#ifdef IOMCU_DEBUG
+// usart3 is for SBUS input and output
+static const SerialConfig debug_serial_cfg = {
+    2000000,   // speed
+    0, // cr1, enable even parity
+    0,            // cr2, two stop bits
+    0,        // cr3
+    nullptr,  // irq_cb
+    nullptr,  // ctx
+};
+#endif
 
 void setup(void)
 {
@@ -267,16 +372,19 @@ void setup(void)
     hal.rcout->init();
     iomcu.init();
 
-    iomcu.calculate_fw_crc();
+#ifdef IOMCU_DEBUG
+    sdStart(&IOMCU_DEBUG, &debug_serial_cfg);
+#endif
 
-    uartStart(&UARTD2, &uart_cfg);
-    uartStartReceive(&UARTD2, sizeof(iomcu.rx_io_packet), &iomcu.rx_io_packet);
+    iomcu.calculate_fw_crc();
+    uartStart(&HAL_IO_FMU_COMMS, &uart_cfg);
+    uartStartReceive(&HAL_IO_FMU_COMMS, sizeof(iomcu.rx_io_packet), &iomcu.rx_io_packet);
 #if AP_HAL_SHARED_DMA_ENABLED
     iomcu.tx_dma_handle->unlock();
 #endif
     // disable the pieces from the UART which will get enabled later
     chSysLock();
-    UARTD2.usart->CR3 &= ~USART_CR3_DMAT;
+    HAL_IO_FMU_COMMS.usart->CR3 &= ~USART_CR3_DMAT;
     chSysUnlock();
 }
 
@@ -303,7 +411,7 @@ void AP_IOMCU_FW::init()
     thread_ctx = chThdGetSelfX();
 
 #if AP_HAL_SHARED_DMA_ENABLED
-    tx_dma_handle = NEW_NOTHROW ChibiOS::Shared_DMA(STM32_UART_USART2_TX_DMA_STREAM, SHARED_DMA_NONE,
+    tx_dma_handle = NEW_NOTHROW ChibiOS::Shared_DMA(HAL_IO_FMU_COMMS_TX_DMA_STREAM, SHARED_DMA_NONE,
                         FUNCTOR_BIND_MEMBER(&AP_IOMCU_FW::tx_dma_allocate, void, Shared_DMA *),
                         FUNCTOR_BIND_MEMBER(&AP_IOMCU_FW::tx_dma_deallocate, void, Shared_DMA *));
     tx_dma_handle->lock();
@@ -311,6 +419,7 @@ void AP_IOMCU_FW::init()
     tx_dma_deallocate(tx_dma_handle);
 #endif
 
+#ifdef HAL_GPIO_PIN_IO_HW_DETECT1
     if (palReadLine(HAL_GPIO_PIN_IO_HW_DETECT1) == 1 && palReadLine(HAL_GPIO_PIN_IO_HW_DETECT2) == 0) {
         has_heater = true;
     }
@@ -321,6 +430,9 @@ void AP_IOMCU_FW::init()
     } else {
         palSetLineMode(HAL_GPIO_PIN_HEATER, PAL_MODE_OUTPUT_OPENDRAIN);
     }
+#else
+    has_heater = false;
+#endif
 
     adc_init();
     rcin_serial_init();
@@ -436,7 +548,7 @@ void AP_IOMCU_FW::update()
     // send a response if required
     if (mask & IOEVENT_TX_BEGIN) {
         chSysLock();
-        setup_tx_dma(&UARTD2);
+        setup_tx_dma(&HAL_IO_FMU_COMMS);
         chSysUnlock();
     }
 #endif
@@ -447,7 +559,7 @@ void AP_IOMCU_FW::update()
     loop_counter++;
 
     if (do_reboot && (last_ms > reboot_time)) {
-        hal.scheduler->reboot(true);
+        hal.scheduler->reboot(false);
         while (true) {}
     }
     if ((mask & IOEVENT_PWM) ||
@@ -489,6 +601,10 @@ void AP_IOMCU_FW::update()
         last_status_ms = now;
         page_status_update();
     }
+
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    profiled_update();
+#endif
 #ifdef HAL_WITH_BIDIR_DSHOT
     // EDT updates are semt at ~1Hz per ESC, but we want to make sure
     // that we don't delay updates unduly so sample at 5Hz
@@ -554,6 +670,7 @@ void AP_IOMCU_FW::pwm_out_update()
 
 void AP_IOMCU_FW::heater_update()
 {
+#ifdef HAL_GPIO_PIN_HEATER
     uint32_t now = last_ms;
     if (!has_heater) {
         // use blue LED as heartbeat, run it 4x faster when override active
@@ -572,6 +689,7 @@ void AP_IOMCU_FW::heater_update()
         bool heater_on = (get_random16() < uint32_t(reg_setup.heater_duty_cycle) * 0xFFFFU / 100U);
         HEATER_SET(heater_on? heater_pwm_polarity : !heater_pwm_polarity);
     }
+#endif
 }
 
 void AP_IOMCU_FW::rcin_update()
@@ -902,13 +1020,18 @@ bool AP_IOMCU_FW::handle_code_write()
 
                 // we need to release the JTAG reset pin to be used as a GPIO, otherwise we can't enable
                 // or disable SBUS out
+#ifdef AFIO_MAPR_SWJ_CFG_NOJNTRST
                 AFIO->MAPR = AFIO_MAPR_SWJ_CFG_NOJNTRST;
-
+#endif
                 adc_disable_vrssi();
+#ifdef HAL_GPIO_PIN_SBUS_OUT_EN
                 palClearLine(HAL_GPIO_PIN_SBUS_OUT_EN);
+#endif
             } else {
                 adc_enable_vrssi();
+#ifdef HAL_GPIO_PIN_SBUS_OUT_EN
                 palSetLine(HAL_GPIO_PIN_SBUS_OUT_EN);
+#endif
             }
             if (reg_setup.features & P_SETUP_FEATURES_HEATER) {
                 has_heater = true;
@@ -1029,6 +1152,20 @@ bool AP_IOMCU_FW::handle_code_write()
         break;
     }
 
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    case PAGE_PROFILED:
+        if (rx_io_packet.count != 2 || (rx_io_packet.regs[0] & 0xFF) != PROFILED_ENABLE_MAGIC) {
+            return false;
+        }
+        profiled_brg[0] = rx_io_packet.regs[0] >> 8;
+        profiled_brg[1] = rx_io_packet.regs[1] & 0xFF;
+        profiled_brg[2] = rx_io_packet.regs[1] >> 8;
+        // push new led data
+        profiled_num_led_pushed = 0;
+        profiled_control_enabled = true;
+        break;
+#endif
+
     default:
         break;
     }
@@ -1049,13 +1186,11 @@ void AP_IOMCU_FW::schedule_reboot(uint32_t time_ms)
 
 void AP_IOMCU_FW::calculate_fw_crc(void)
 {
-#define APP_SIZE_MAX 0xf000
-#define APP_LOAD_ADDRESS 0x08001000
     // compute CRC of the current firmware
     uint32_t sum = 0;
 
-    for (unsigned p = 0; p < APP_SIZE_MAX; p += 4) {
-        uint32_t bytes = *(uint32_t *)(p + APP_LOAD_ADDRESS);
+    for (unsigned p = 0; p < HAL_IOMCU_APP_SIZE_MAX; p += 4) {
+        uint32_t bytes = *(uint32_t *)(p + HAL_IOMCU_APP_LOAD_ADDRESS);
         sum = crc32_small(sum, (const uint8_t *)&bytes, sizeof(bytes));
     }
 
@@ -1063,6 +1198,48 @@ void AP_IOMCU_FW::calculate_fw_crc(void)
     reg_setup.crc[1] = sum >> 16;
 }
 
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+// bitbang profiled bitstream, 8-10 chunks at a time
+// Max time taken per call is ~7us
+void AP_IOMCU_FW::profiled_update(void)
+{
+    if (profiled_num_led_pushed > PROFILED_LED_LEN) {
+        profiled_byte_index = 0;
+        profiled_leading_zeros = PROFILED_LEADING_ZEROS;
+        return;
+    }
+
+    // push 10 zero leading bits at a time
+    if (profiled_leading_zeros != 0) {
+        for (uint8_t i = 0; i < 10; i++) {
+            palClearLine(HAL_GPIO_PIN_SAFETY_INPUT);
+            palSetLine(HAL_GPIO_PIN_SAFETY_INPUT);
+            profiled_leading_zeros--;
+        }
+        return;
+    }
+
+    if ((profiled_byte_index == 0) ||
+        (profiled_byte_index == PROFILED_OUTPUT_BYTE_LEN)) {
+        // start bit
+        palClearLine(HAL_GPIO_PIN_SAFETY_INPUT);
+        palSetLine(HAL_GPIO_PIN_SAFETY_LED);
+        palSetLine(HAL_GPIO_PIN_SAFETY_INPUT);
+        profiled_byte_index = 0;
+        profiled_num_led_pushed++;
+    }
+
+    uint8_t byte_val = profiled_brg[profiled_byte_index];
+    for (uint8_t i = 0; i < 8; i++) {
+        palClearLine(HAL_GPIO_PIN_SAFETY_INPUT);
+        palWriteLine(HAL_GPIO_PIN_SAFETY_LED, byte_val & 1);
+        byte_val >>= 1;
+        palSetLine(HAL_GPIO_PIN_SAFETY_INPUT);
+    }
+
+    profiled_byte_index++;
+}
+#endif
 
 /*
   update safety state
@@ -1075,6 +1252,15 @@ void AP_IOMCU_FW::safety_update(void)
         return;
     }
     safety_update_ms = now;
+
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    if (profiled_control_enabled) {
+        // set line mode to output for safety input pin
+        palSetLineMode(HAL_GPIO_PIN_SAFETY_INPUT, PAL_MODE_OUTPUT_PUSHPULL);
+        palSetLineMode(HAL_GPIO_PIN_SAFETY_LED, PAL_MODE_OUTPUT_PUSHPULL);
+        return;
+    }
+#endif
 
     bool safety_pressed = palReadLine(HAL_GPIO_PIN_SAFETY_INPUT);
     if (safety_pressed) {

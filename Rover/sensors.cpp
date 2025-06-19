@@ -8,15 +8,6 @@ void Rover::update_compass(void)
     compass.read();
 }
 
-// Save compass offsets
-void Rover::compass_save() {
-    if (AP::compass().available() &&
-        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
-        !arming.is_armed()) {
-        compass.save_offsets();
-    }
-}
-
 // update wheel encoders
 void Rover::update_wheel_encoder()
 {

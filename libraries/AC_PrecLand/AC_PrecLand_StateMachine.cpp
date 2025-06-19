@@ -195,7 +195,7 @@ AC_PrecLand_StateMachine::Status AC_PrecLand_StateMachine::retry_landing(Vector3
         // continue converging towards the target till we are close by
         retry_pos_m = go_to_pos;
         Vector3f pos;
-        if (!AP::ahrs().get_relative_position_NED_origin(pos)) {
+        if (!AP::ahrs().get_relative_position_NED_origin_float(pos)) {
             return Status::ERROR;
         }
         const float dist_to_target = (go_to_pos-pos).length();
@@ -210,7 +210,7 @@ AC_PrecLand_StateMachine::Status AC_PrecLand_StateMachine::retry_landing(Vector3
         // descend a little bit before completing the retry
         // This will descend to the original height of where landing target was first detected
         Vector3f pos;
-        if (!AP::ahrs().get_relative_position_NED_origin(pos)) {
+        if (!AP::ahrs().get_relative_position_NED_origin_float(pos)) {
             return Status::ERROR;
         }
         // z_target is in "D" frame

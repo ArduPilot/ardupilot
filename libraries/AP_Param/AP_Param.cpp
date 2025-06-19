@@ -1448,6 +1448,32 @@ bool AP_Param::is_read_only(void) const
     return false;
 }
 
+// returns true if this parameter should be settable via the
+// MAVLink interface:
+bool AP_Param::allow_set_via_mavlink(uint16_t flags) const
+{
+    if (is_read_only()) {
+        return false;
+    }
+
+    if (flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) {
+        // the user can set BRD_OPTIONS to enable set of internal
+        // parameters, for developer testing or unusual use cases
+        if (!AP_BoardConfig::allow_set_internal_parameters()) {
+            return false;
+        }
+    }
+
+#if HAL_GCS_ENABLED
+    // check the MAVLink library is OK with the concept:
+    if (!gcs().get_allow_param_set()) {
+        return false;
+    }
+#endif  // HAL_GCS_ENABLED
+
+    return true;
+}
+
 // set a AP_Param variable to a specified value
 void AP_Param::set_value(enum ap_var_type type, void *ptr, float value)
 {
@@ -1616,7 +1642,7 @@ void AP_Param::load_defaults_file_from_filesystem(const char *default_file, bool
 #endif
     } else {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        AP_HAL::panic("Failed to load defaults from %s\n", default_file);
+        AP_HAL::panic("Failed to load defaults from %s", default_file);
 #else
         printf("Failed to load defaults from %s\n", default_file);
 #endif

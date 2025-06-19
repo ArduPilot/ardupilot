@@ -58,19 +58,19 @@
 #endif
 
 // Local modules
-#include "AP_Arming.h"
+#include "AP_Arming_Rover.h"
 #include "sailboat.h"
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
 #include "afs_rover.h"
 #endif
 #include "Parameters.h"
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Rover.h"
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
 #if AC_PRECLAND_ENABLED
 #include <AC_PrecLand/AC_PrecLand.h>
 #endif
-#include "RC_Channel.h"                  // RC Channel Library
+#include "RC_Channel_Rover.h"                  // RC Channel Library
 
 #include "mode.h"
 
@@ -325,10 +325,11 @@ private:
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     void afs_fs_check(void);
 #endif
-
+#if AP_FENCE_ENABLED
     // fence.cpp
+    void fence_checks_async() override;
     void fence_check();
-
+#endif
     // GCS_Mavlink.cpp
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 
@@ -372,7 +373,6 @@ private:
 
     // sensors.cpp
     void update_compass(void);
-    void compass_save(void);
     void update_wheel_encoder();
 #if AP_RANGEFINDER_ENABLED
     void read_rangefinders(void);
@@ -416,7 +416,8 @@ private:
         Hold          = 2,
         SmartRTL      = 3,
         SmartRTL_Hold = 4,
-        Terminate     = 5
+        Terminate     = 5,
+        Loiter_Hold   = 6,
     };
 
     enum class Failsafe_Options : uint32_t {
@@ -450,6 +451,14 @@ public:
 
     // Simple mode
     float simple_sin_yaw;
+
+#if AP_ROVER_AUTO_ARM_ONCE_ENABLED
+    struct {
+        uint32_t last_arm_attempt_ms;
+        bool done;
+    } auto_arm_once;
+    void handle_auto_arm_once();
+#endif  // AP_ROVER_AUTO_ARM_ONCE_ENABLED
 };
 
 extern Rover rover;

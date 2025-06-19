@@ -13,7 +13,7 @@ class AP_Generator_IE_2400 : public AP_Generator_IE_FuelCell
 
 public:
 
-    void init(void) override;
+    __INITFUNC__ void init(void) override;
 
     AP_BattMonitor::Failsafe update_failsafes() const override;
 
@@ -43,6 +43,9 @@ private:
     // Get the MAV_SEVERITY level of a given error code
     MAV_SEVERITY get_mav_severity(uint32_t err_code) const override;
 #endif
+
+    // Check if we should notify on any change of fuel cell state
+    void check_status(const uint32_t now) override;
 
     // Check for error codes that are deemed critical
     bool is_critical_error(const uint32_t err_in) const;
@@ -130,6 +133,8 @@ private:
         const char *msg_txt;
     };
     static const Lookup_State_V2 lookup_state_V2[];
+
+    uint32_t _last_low_power_warning_ms;
 
 };
 #endif  // AP_GENERATOR_IE_2400_ENABLED

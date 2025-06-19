@@ -4,6 +4,8 @@
 #include <AP_Relay/AP_Relay_config.h>
 #include <AP_Mission/AP_Mission_config.h>
 #include <AP_InertialSensor/AP_InertialSensor_config.h>
+#include <AP_Arming/AP_Arming_config.h>
+#include <AP_RangeFinder/AP_RangeFinder_config.h>
 
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 1
@@ -11,14 +13,6 @@
 
 #ifndef HAL_MAVLINK_BINDINGS_ENABLED
 #define HAL_MAVLINK_BINDINGS_ENABLED HAL_GCS_ENABLED
-#endif
-
-// CODE_REMOVAL
-// BATTERY2 is slated to be removed:
-// ArduPilot 4.6 stops compiling support in
-// ArduPilot 4.7 removes the code entirely
-#ifndef AP_MAVLINK_BATTERY2_ENABLED
-#define AP_MAVLINK_BATTERY2_ENABLED 0
 #endif
 
 #ifndef HAL_HIGH_LATENCY2_ENABLED
@@ -51,7 +45,7 @@
 #endif
 
 #ifndef HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
-#define HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED ((AP_FILESYSTEM_FATFS_ENABLED || AP_FILESYSTEM_POSIX_ENABLED) && BOARD_FLASH_SIZE > 1024)
+#define HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED ((AP_FILESYSTEM_FATFS_ENABLED || AP_FILESYSTEM_LITTLEFS_ENABLED || AP_FILESYSTEM_POSIX_ENABLED) && HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
 #endif
 
 #ifndef AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
@@ -69,18 +63,6 @@
 // ArduPilot 4.8 removes the code entirely
 #ifndef AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED
 #define AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED 0
-#endif
-
-// CODE_REMOVAL
-// ArduPilot 4.5 sends deprecation warnings for MOUNT_CONTROL/MOUNT_CONFIGURE
-// ArduPilot 4.6 stops compiling them in
-// ArduPilot 4.7 removes the code entirely
-#ifndef AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
-#define AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED 0
-#endif
-
-#ifndef AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
-#define AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED 0
 #endif
 
 // this is for both read and write messages:
@@ -106,10 +88,21 @@
 
 // GCS should be using MISSION_REQUEST_INT instead; this is a waste of
 // flash.  MISSION_REQUEST was deprecated in June 2020.  We started
-// sending warnings to the GCS in Sep 2022 if this command was used.
+// sending warnings to the GCS in Sep 2022 if MISSION_REQUEST was used.
 // Copter 4.4.0 sends this warning.
+// CODE_REMOVAL
+// ArduPilot 4.4 sends warnings if MISSION_ITEM used
+// ArduPilot 4.8 stops compiling in MISSION_ITEM but still sends warnings
+// ArduPilot 4.9 removes the code but sends message about MISSION_ITEM not supported
+// ArduPilot 4.10 stops sending the warning
 #ifndef AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
 #define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED AP_MISSION_ENABLED
+#endif
+
+// RANGEFINDER is a subset of the DISTANCE_SENSOR message which we
+// also send.  Rover's send-minimum can be done on the client-side.
+#ifndef AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
+#define AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED AP_RANGEFINDER_ENABLED
 #endif
 
 // all commands can be executed by COMMAND_INT, so COMMAND_LONG isn't
@@ -120,13 +113,26 @@
 #endif
 
 #ifndef AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED
-#define AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED (BOARD_FLASH_SIZE > 1024) && AP_INERTIALSENSOR_ENABLED
+#define AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 1024) && AP_INERTIALSENSOR_ENABLED
 #endif
 
 #ifndef AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
-#define AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED (BOARD_FLASH_SIZE > 1024)
+#define AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
 #endif
 
 #ifndef AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 #define AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED HAL_GCS_ENABLED
 #endif
+
+#ifndef AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
+#define AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED HAL_GCS_ENABLED && AP_ARMING_ENABLED
+#endif  // AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
+
+// deprecated 2025-02, replaced by MAV_CMD_DO_SET_GLOBAL_ORIGIN
+// ArduPilot 4.8 starts to warn if anyone uses this
+// ArduPilot 4.9 continues to warn if anyone uses this
+// ArduPilot 4.10 compiles support out
+// ArduPilot 4.11 removes the code
+#ifndef AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
+#define AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED (HAL_GCS_ENABLED && AP_AHRS_ENABLED)
+#endif  // AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED

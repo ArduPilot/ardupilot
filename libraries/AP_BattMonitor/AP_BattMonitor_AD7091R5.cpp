@@ -84,7 +84,7 @@ const AP_Param::GroupInfo AP_BattMonitor_AD7091R5::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("VLT_OFFSET", 61, AP_BattMonitor_AD7091R5, _volt_offset, 0),
 
-    // Param indexes must be 56 to 61 to avoid conflict with other battery monitor param tables loaded by pointer
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
 
     AP_GROUPEND
 };
@@ -131,7 +131,7 @@ void AP_BattMonitor_AD7091R5::init()
     if (_first) {
         _first = false;
         // probe i2c device
-        _dev = hal.i2c_mgr->get_device(AD7091R5_I2C_BUS, AD7091R5_I2C_ADDR);
+        _dev = hal.i2c_mgr->get_device_ptr(AD7091R5_I2C_BUS, AD7091R5_I2C_ADDR);
 
         if (_dev) {
             WITH_SEMAPHORE(_dev->get_semaphore());

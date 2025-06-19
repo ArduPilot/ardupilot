@@ -200,7 +200,7 @@ AP_GyroFFT::AP_GyroFFT()
 }
 
 // initialize the FFT parameters and engine
-void AP_GyroFFT::init(uint16_t loop_rate_hz)
+__INITFUNC__ void AP_GyroFFT::init(uint16_t loop_rate_hz)
 {
     // if FFT analysis is not enabled we don't want to allocate any of the associated resources
     if (!_enable) {
@@ -477,6 +477,19 @@ uint16_t AP_GyroFFT::run_cycle()
 
 #if AP_SIM_ENABLED && HAL_LOGGING_ENABLED
     // extra logging when running simulations
+    // @LoggerMessage: FTN3
+    // @Description: Additional FFT Noise Frequency Peak
+    // @Field: TimeUS: microseconds since system startup
+    // @Field: Id: update axis
+    // @Field: Pk1: Peak 1 frequency
+    // @Field: Pk2: Peak 2 frequency
+    // @Field: Pk3: Peak 3 Frequency
+    // @Field: Bw1: Peak 1 noise bandwidth
+    // @Field: Bw2: Peak 2 noise bandwidth
+    // @Field: Bw3: Peak 3 noise bandwidth
+    // @Field: En1: Peak 1 Maximum energy
+    // @Field: En2: Peak 2 Maximum energy
+    // @Field: En3: Peak 3 Maximum energy
     AP::logger().WriteStreaming(
         "FTN3",
         "TimeUS,Id,Pk1,Pk2,Pk3,Bw1,Bw2,Bw3,En1,En2,En3",
@@ -763,7 +776,7 @@ void AP_GyroFFT::stop_notch_tune()
     float harmonic = calculate_notch_frequency(freqs, numpeaks, _harmonic_fit, harmonics);
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "FFT: Found peaks at %.1f/%.1f/%.1fHz", freqs[0], freqs[1], freqs[2]);
-    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "FFT: Selected %.1fHz\n", harmonic);
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "FFT: Selected %.1fHz", harmonic);
 
     // if we don't have a throttle value then all bets are off
     if (is_zero(_avg_throttle_out) || is_zero(harmonic)) {
@@ -1417,7 +1430,7 @@ float AP_GyroFFT::self_test(float frequency, FloatBuffer& test_window)
 {
     test_window.clear();
     for(uint16_t i = 0; i < _state->_window_size; i++) {
-        if (!test_window.push(sinf(2.0f * M_PI * frequency * i / _fft_sampling_rate_hz) * ToRad(20) * 2000)) {
+        if (!test_window.push(sinf(2.0f * M_PI * frequency * i / _fft_sampling_rate_hz) * radians(20) * 2000)) {
             AP_HAL::panic("Could not create FFT test window");
         }
     }

@@ -104,7 +104,7 @@ void AP_Motors::set_radio_passthrough(float roll_input, float pitch_input, float
  */
 void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
 {
-    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
+    SRV_Channel::Function function = SRV_Channels::get_motor_function(chan);
     if ((1U<<chan) & _motor_pwm_scaled.mask) {
         // note that PWM_MIN/MAX has been forced to 1000/2000
         SRV_Channels::set_output_scaled(function, float(pwm) - _motor_pwm_scaled.offset);
@@ -118,7 +118,7 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
  */
 void AP_Motors::rc_write_angle(uint8_t chan, int16_t angle_cd)
 {
-    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
+    SRV_Channel::Function function = SRV_Channels::get_motor_function(chan);
     SRV_Channels::set_output_scaled(function, angle_cd);
 }
 
@@ -210,7 +210,7 @@ uint32_t AP_Motors::motor_mask_to_srv_channel_mask(uint32_t mask) const
     for (uint8_t i = 0; i < 32; i++) {
         uint32_t bit = 1UL << i;
         if (mask & bit) {
-            SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
+            SRV_Channel::Function function = SRV_Channels::get_motor_function(i);
             mask2 |= SRV_Channels::get_output_channel_mask(function);
         }
     }
@@ -224,7 +224,7 @@ void AP_Motors::add_motor_num(int8_t motor_num)
 {
     // ensure valid motor number is provided
     if (motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS) {
-        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
+        SRV_Channel::Function function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
     }
 }
@@ -296,11 +296,15 @@ void AP_Motors::set_frame_string(const char * str) {
 // output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_Motors::output_test_seq(uint8_t motor_seq, int16_t pwm)
+//  return true if output was successful, false if not possible
+bool AP_Motors::output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
     if (armed() && _interlock) {
         _output_test_seq(motor_seq, pwm);
+        return true;
     }
+    output_min();
+    return false;
 }
 
 bool AP_Motors::arming_checks(size_t buflen, char *buffer) const

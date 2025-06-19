@@ -4,7 +4,7 @@
 
 FLASH_RESERVE_START_KB 4
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID 3
 
 # crystal frequency
@@ -99,7 +99,6 @@ define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
 
 define HAL_INS_DEFAULT HAL_INS_NONE
-define HAL_BARO_DEFAULT HAL_BARO_NONE
 define HAL_NO_GPIO_IRQ
 #define CH_CFG_USE_DYNAMIC FALSE
 define SERIAL_BUFFERS_SIZE 32
@@ -115,9 +114,8 @@ define AP_HAL_SHARED_DMA_ENABLED 0
 #defined to turn off undef warnings
 define __FPU_PRESENT 0
 
-define HAL_USE_RTC FALSE
 define HAL_NO_FLASH_SUPPORT TRUE
-define HAL_NO_UARTDRIVER TRUE
+define AP_HAL_UARTDRIVER_ENABLED 0
 define HAL_LOGGING_ENABLED 0
 
 define DMA_RESERVE_SIZE 0

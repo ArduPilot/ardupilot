@@ -15,7 +15,7 @@
 
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 
-#ifdef HAL_PERIPH_ENABLE_RCIN
+#if AP_PERIPH_RCIN_ENABLED
 
 #ifndef AP_PERIPH_RC1_PORT_DEFAULT
 #define AP_PERIPH_RC1_PORT_DEFAULT -1
@@ -114,7 +114,7 @@ void AP_Periph_FW::rcin_update()
     }
 
     // log discovered protocols:
-    auto new_rc_protocol = rc.protocol_name();
+    auto new_rc_protocol = rc.detected_protocol_name();
     if (new_rc_protocol != rcin_rc_protocol) {
         can_printf("Decoding (%s)", new_rc_protocol);
         rcin_rc_protocol = new_rc_protocol;
@@ -176,4 +176,4 @@ void AP_Periph_FW::can_send_RCInput(uint8_t quality, uint16_t *values, uint8_t n
                      total_size);
 }
 
-#endif  // HAL_PERIPH_ENABLE_RCIN
+#endif  // AP_PERIPH_RCIN_ENABLED

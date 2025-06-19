@@ -41,6 +41,7 @@ public:
     }
 
     // get altitude (in cm) in the desired frame
+    // does not modify ret_alt_cm unless true is returned
     // returns false on failure to get altitude in the desired frame which can only happen if the original frame or desired frame is:
     // - above-terrain and the terrain database can't supply terrain height amsl
     // - above-home and home is not set
@@ -59,27 +60,48 @@ public:
     // - above-origin and origin is not set
     bool change_alt_frame(AltFrame desired_frame);
 
+    // copy altitude and its frame of other Location object:
+    void copy_alt_from(const Location &other);
+
     // get position as a vector (in cm) from origin (x,y only or
     // x,y,z) return false on failure to get the vector which can only
     // happen if the EKF origin has not been set yet x, y and z are in
     // centimetres.  If this method returns false then vec_ne is
     // unmodified.
     template<typename T>
-    bool get_vector_xy_from_origin_NE(T &vec_ne) const WARN_IF_UNUSED;
+    bool get_vector_xy_from_origin_NE_cm(T &vec_ne) const WARN_IF_UNUSED;
     // converts location to a vector from origin; if this method returns
     // false then vec_neu is unmodified
     template<typename T>
+    bool get_vector_from_origin_NEU_cm(T &vec_neu) const WARN_IF_UNUSED;
+    // same as get_vector_from_origin_NEU_cm, but only here so we can
+    // continue to use it in LUA scripts:
+    template<typename T>
     bool get_vector_from_origin_NEU(T &vec_neu) const WARN_IF_UNUSED;
+
+    // get position as a vector (in metres) from origin (x,y only or
+    // x,y,z) return false on failure to get the vector which can only
+    // happen if the EKF origin has not been set yet x, y and z are in
+    // metres.  If this method returns false then vec_ne is
+    // unmodified.
+    template<typename T>
+    bool get_vector_xy_from_origin_NE_m(T &vec_ne) const;
+    template<typename T>
+    bool get_vector_from_origin_NEU_m(T &vec_neu) const;
 
     // return horizontal distance in meters between two locations
     ftype get_distance(const Location &loc2) const;
 
-    // return the altitude difference in meters taking into account alt frame.
-    bool get_alt_distance(const Location &loc2, ftype &distance) const WARN_IF_UNUSED;
+    // return the altitude difference in meters taking into account
+    // alt frame.  if loc2 is below this location then "distance" will
+    // be positive.  ie. this method returns how far above loc2 this
+    // location is.
+    bool get_height_above(const Location &loc2, ftype &distance) const WARN_IF_UNUSED;
 
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
     // NOT CONSIDERING ALT FRAME!
     Vector3f get_distance_NED(const Location &loc2) const;
+    Vector3p get_distance_NED_postype(const Location &loc2) const;
     Vector3d get_distance_NED_double(const Location &loc2) const;
 
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2 considering alt frame, if altitude cannot be resolved down distance is 0
@@ -87,6 +109,7 @@ public:
 
     // return the distance in meters in North/East plane as a N/E vector to loc2
     Vector2f get_distance_NE(const Location &loc2) const;
+    Vector2p get_distance_NE_postype(const Location &loc2) const;
     Vector2d get_distance_NE_double(const Location &loc2) const;
     Vector2F get_distance_NE_ftype(const Location &loc2) const;
 
@@ -118,7 +141,7 @@ public:
 
     // return bearing in centi-degrees from location to loc2, return is 0 to 35999
     int32_t get_bearing_to(const Location &loc2) const {
-        return int32_t(get_bearing(loc2) * DEGX100 + 0.5);
+        return int32_t(rad_to_cd(get_bearing(loc2)) + 0.5);
     }
 
     // check if lat and lng match. Ignore altitude and options

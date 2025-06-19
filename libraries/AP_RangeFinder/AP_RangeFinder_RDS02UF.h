@@ -23,8 +23,8 @@
 #include "AP_RangeFinder_Backend_Serial.h"
 
 #define RDS02_BUFFER_SIZE           50
-#define RDS02UF_DIST_MAX_CM         2000
-#define RDS02UF_DIST_MIN_CM         150
+#define RDS02UF_DIST_MAX            20.00
+#define RDS02UF_DIST_MIN            1.50
 #define RDS02UF_DATA_LEN            10
 
 class AP_RangeFinder_RDS02UF : public AP_RangeFinder_Backend_Serial
@@ -57,8 +57,12 @@ private:
     uint16_t read_timeout_ms() const override { return 500; }
 
     // make sure readings go out-of-range when necessary
-    int16_t max_distance_cm()const override  { return MIN(params.max_distance_cm, RDS02UF_DIST_MAX_CM); }
-    int16_t min_distance_cm() const override { return MAX(params.min_distance_cm, RDS02UF_DIST_MIN_CM); }
+    float max_distance() const override  {
+        return MIN(AP_RangeFinder_Backend::max_distance(), RDS02UF_DIST_MAX);
+    }
+    float min_distance() const override {
+        return MAX(AP_RangeFinder_Backend::min_distance(), RDS02UF_DIST_MIN);
+    }
 
      // Data Format for Benewake Rds02UF
     // ===============================

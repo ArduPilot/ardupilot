@@ -28,7 +28,7 @@ def is_pin(str):
         return False
 
 def parse_adc_table(fname, table):
-    csvt = csv.reader(open(fname,'rb'))
+    csvt = csv.reader(open(fname,'r'))
     i = 0
     for row in csvt:
         for col in row:

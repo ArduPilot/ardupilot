@@ -60,7 +60,7 @@ public:
     // output a thrust to all motors that match a given motor
     // mask. This is used to control tiltrotor motors in forward
     // flight. Thrust is in the range 0 to 1
-    virtual void        output_motor_mask(float thrust, uint16_t mask, float rudder_dt);
+    virtual void        output_motor_mask(float thrust, uint32_t mask, float rudder_dt);
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -91,6 +91,8 @@ public:
 
     // return thrust for motor motor_num, returns true if value is valid false otherwise
     bool                get_thrust(uint8_t motor_num, float& thr_out) const override;
+
+    bool                get_raw_motor_throttle(uint8_t motor_num, float& thr_out) const override;
 
 #if HAL_LOGGING_ENABLED
     // 10hz logging of voltage scaling and max trust
@@ -204,5 +206,5 @@ protected:
     }
 
     // mask of overridden motors (used by quadplane tiltrotors)
-    uint16_t _motor_mask_override;
+    uint32_t _motor_mask_override;
 };

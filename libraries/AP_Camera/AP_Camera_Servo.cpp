@@ -6,6 +6,14 @@
 
 extern const AP_HAL::HAL& hal;
 
+// initialize the AP_Camera_Servo driver
+void AP_Camera_Servo::init()
+{
+    // set the zoom and focus to the trim point
+    SRV_Channels::set_output_scaled(SRV_Channel::k_cam_zoom, 500);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_cam_focus, 500);
+}
+
 // update - should be called at 50hz
 void AP_Camera_Servo::update()
 {
@@ -22,6 +30,13 @@ void AP_Camera_Servo::update()
     } else {
         SRV_Channels::set_output_pwm(SRV_Channel::k_cam_iso, _params.servo_off_pwm);
     }
+    float current_zoom = SRV_Channels::get_output_scaled(SRV_Channel::k_cam_zoom);
+    float new_zoom = constrain_float(current_zoom + zoom_current_rate, 0, 1000);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_cam_zoom, new_zoom);
+
+    float current_focus = SRV_Channels::get_output_scaled(SRV_Channel::k_cam_focus);
+    float new_focus = constrain_float(current_focus + focus_current_rate, 0, 1000);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_cam_focus, new_focus);
 
     // call parent update
     AP_Camera_Backend::update();
@@ -41,6 +56,40 @@ bool AP_Camera_Servo::trigger_pic()
     trigger_counter = constrain_float(_params.trigger_duration * 50, 0, UINT16_MAX);
 
     return true;
+}
+
+
+bool AP_Camera_Servo::set_zoom(ZoomType zoom_type, float zoom_value)
+{
+    switch (zoom_type) {
+        case ZoomType::RATE:
+            zoom_current_rate = zoom_value;
+            return true;
+        case ZoomType::PCT:
+            // expects to receive a value between 0 and 100
+            // This maps it to our 0-1000 range
+            SRV_Channels::set_output_scaled(SRV_Channel::k_cam_zoom, constrain_float(zoom_value * 10, 0, 1000));
+            return true;
+    }
+    return false;
+}
+
+// set focus specified as rate
+SetFocusResult AP_Camera_Servo::set_focus(FocusType focus_type, float focus_value)
+{
+    switch (focus_type) {
+        case FocusType::RATE:
+            focus_current_rate = focus_value;
+            return SetFocusResult::ACCEPTED;
+        case FocusType::PCT:
+            // expects to receive a value between 0 and 100
+            // This maps it to our 0-1000 range
+            SRV_Channels::set_output_scaled(SRV_Channel::k_cam_focus, constrain_float(focus_value * 10, 0, 1000));
+            return SetFocusResult::ACCEPTED;
+        case FocusType::AUTO:
+            return SetFocusResult::UNSUPPORTED;
+    }
+    return SetFocusResult::UNSUPPORTED;
 }
 
 // configure camera

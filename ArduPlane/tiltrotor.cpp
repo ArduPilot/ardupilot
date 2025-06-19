@@ -119,7 +119,7 @@ void Tiltrotor::setup()
 
     // check if there are any permanent VTOL motors
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
-        if (motors->is_motor_enabled(i) && ((tilt_mask & (1U<<1)) == 0)) {
+        if (motors->is_motor_enabled(i) && !is_motor_tilting(i)) {
             // enabled motor not set in tilt mask
             _have_vtol_motor = true;
             break;
@@ -245,7 +245,7 @@ void Tiltrotor::continuous_update(void)
         }
         if (!quadplane.motor_test.running) {
             // the motors are all the way forward, start using them for fwd thrust
-            const uint16_t mask = is_zero(current_throttle)?0U:tilt_mask.get();
+            const uint32_t mask = is_zero(current_throttle) ? 0U : tilt_mask.get();
             motors->output_motor_mask(current_throttle, mask, plane.rudder_dt);
         }
         return;
@@ -311,7 +311,7 @@ void Tiltrotor::continuous_update(void)
             slew(0);
         } else {
             // manual control of forward throttle up to max VTOL angle
-            float settilt = .01f * quadplane.forward_throttle_pct();
+            float settilt = 0.01f * quadplane.forward_throttle_pct();
             slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
         }
         return;
@@ -365,7 +365,7 @@ void Tiltrotor::binary_update(void)
 
         float new_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01f;
         if (current_tilt >= 1) {
-            const uint16_t mask = is_zero(new_throttle)?0U:tilt_mask.get();
+            const uint32_t mask = is_zero(new_throttle) ? 0 : tilt_mask.get();
             // the motors are all the way forward, start using them for fwd thrust
             motors->output_motor_mask(new_throttle, mask, plane.rudder_dt);
         }
@@ -400,6 +400,11 @@ void Tiltrotor::update(void)
 // Write tiltrotor specific log
 void Tiltrotor::write_log()
 {
+    // Only valid on a tiltrotor
+    if (!enabled()) {
+        return;
+    }
+
     struct log_tiltrotor pkt {
         LOG_PACKET_HEADER_INIT(LOG_TILT_MSG),
         time_us      : AP_HAL::micros64(),
@@ -644,7 +649,7 @@ void Tiltrotor::vectoring(void)
             motors->limit.yaw = true;
         }
 
-        // constrain and scale to ouput range
+        // constrain and scale to output range
         left_tilt = constrain_float(left_tilt,0.0,1.0) * 1000.0;
         right_tilt = constrain_float(right_tilt,0.0,1.0) * 1000.0;
 
@@ -737,10 +742,18 @@ void Tiltrotor::update_yaw_target(void)
     transition_yaw_set_ms = now;
 }
 
+
+/*
+  control use of multirotor rate control in forward transition
+ */
+bool Tiltrotor_Transition::use_multirotor_control_in_fwd_transition() const
+{
+    return tiltrotor.is_vectored() && transition_state <= TRANSITION_TIMER;
+}
+
 bool Tiltrotor_Transition::update_yaw_target(float& yaw_target_cd)
 {
-    if (!(tiltrotor.is_vectored() &&
-        transition_state <= TRANSITION_TIMER)) {
+    if (!use_multirotor_control_in_fwd_transition()) {
         return false;
     }
     tiltrotor.update_yaw_target();
@@ -767,6 +780,34 @@ bool Tiltrotor::tilt_over_max_angle(void) const
 {
     const float tilt_threshold = (max_angle_deg/90.0f);
     return (current_tilt > MIN(tilt_threshold, get_forward_flight_tilt()));
+}
+
+// throttle of forward flight motors including any tilting motors
+bool Tiltrotor::get_forward_throttle(float &throttle) const
+{
+    if (!enabled() || !_is_vectored) {
+        return false;
+    }
+    const float throttle_range = motors->thr_lin.get_spin_max() - motors->thr_lin.get_spin_min();
+    if (!is_positive(throttle_range)) {
+        return false;
+    }
+    float throttle_sum = 0.0f;
+    uint8_t num_vectored_motors = 0;
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
+        if (is_motor_tilting(i)) {
+            float thrust;
+            if (motors->get_thrust(i, thrust)) {
+                throttle_sum += (motors->thr_lin.thrust_to_actuator(thrust) - motors->thr_lin.get_spin_min()) / throttle_range;
+                num_vectored_motors ++;
+            }
+        }
+    }
+    if (num_vectored_motors > 0) {
+        throttle = throttle_sum / (float)num_vectored_motors;
+        return true;
+    }
+    return false;
 }
 
 #endif  // HAL_QUADPLANE_ENABLED

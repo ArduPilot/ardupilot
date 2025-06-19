@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+# flake8: noqa
+
 """
 Bring up ArduPilot SITL and check that the get/set_parameters services are up and running.
 
@@ -73,7 +75,7 @@ class ParameterClient(rclpy.node.Node):
 
         self.set_cli = self.create_client(SetParameters, 'ap/set_parameters')
         while not self.set_cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('SetParameters service not availabel, waiting again...')
+            self.get_logger().info('SetParameters service not available, waiting again...')
 
         # Add a spin thread
         self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))

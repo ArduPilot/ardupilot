@@ -8,6 +8,7 @@
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_NavEKF3/AP_NavEKF3_feature.h>
+#include <AP_NavEKF/AP_Nav_Common.h>
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 #include <AP_NavEKF2/AP_NavEKF2.h>
@@ -554,6 +555,9 @@ void rprintf(const char *format, ...)
     static FILE *f;
     if (!f) {
         f = ::fopen(fname, "w");
+    }
+    if (!f) {
+        return;
     }
     va_list ap;
     va_start(ap, format);

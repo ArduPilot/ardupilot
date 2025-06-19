@@ -31,10 +31,10 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_Logger/AP_Logger.h>
 #include <AP_CANManager/AP_CANManager.h>
 
 #include <AP_EFI/AP_EFI_Currawong_ECU.h>
+#include <AP_Servo_Telem/AP_Servo_Telem.h>
 
 #include <stdio.h>
 
@@ -320,8 +320,6 @@ bool AP_PiccoloCAN::read_frame(AP_HAL::CANFrame &recv_frame, uint32_t timeout_us
 // called from SRV_Channels
 void AP_PiccoloCAN::update()
 {
-    uint64_t timestamp = AP_HAL::micros64();
-
     /* Read out the servo commands from the channel mixer */
     for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_SERVO; ii++) {
 
@@ -329,7 +327,7 @@ void AP_PiccoloCAN::update()
 
             uint16_t output = 0;
 
-            SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(ii);
+            SRV_Channel::Function function = SRV_Channels::channel_function(ii);
 
             if (SRV_Channels::get_output_pwm(function, output)) {
                 _servos[ii].command = output;
@@ -345,7 +343,7 @@ void AP_PiccoloCAN::update()
 
             uint16_t output = 0;
             
-            SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(ii);
+            SRV_Channel::Function motor_function = SRV_Channels::get_motor_function(ii);
 
             if (SRV_Channels::get_output_pwm(motor_function, output)) {
                 _escs[ii].command = output;
@@ -361,46 +359,44 @@ void AP_PiccoloCAN::update()
     }
 #endif // AP_EFI_CURRAWONG_ECU_ENABLED
 
-#if HAL_LOGGING_ENABLED
-    AP_Logger *logger = AP_Logger::get_singleton();
-
-    // Push received telemetry data into the logging system
-    if (logger && logger->logging_enabled()) {
-
-        WITH_SEMAPHORE(_telem_sem);
-
+#if AP_SERVO_TELEM_ENABLED
+    AP_Servo_Telem *servo_telem = AP_Servo_Telem::get_singleton();
+    if (servo_telem != nullptr) {
         for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_SERVO; ii++) {
-
             AP_PiccoloCAN_Servo &servo = _servos[ii];
-
             if (servo.newTelemetry) {
                 union {
                     Servo_ErrorBits_t ebits;
                     uint8_t errors;
                 } err;
                 err.ebits = servo.status.statusA.errors;
-                logger->Write_ServoStatus(
-                    timestamp,
-                    ii,
-                    servo.position(),                       // Servo position (represented in microsecond units)
-                    servo.current() * 0.01f,                // Servo force (actually servo current, 0.01A per bit)
-                    servo.speed(),                          // Servo speed (degrees per second)
-                    servo.dutyCycle(),                      // Servo duty cycle (absolute value as it can be +/- 100%)
-                    uint16_t(servo.commandedPosition()),    // Commanded position
-                    servo.voltage(),                        // Servo voltage
-                    servo.current(),                        // Servo current
-                    servo.temperature(),                    // Servo temperature
-                    servo.temperature(),                    // 
-                    err.errors
-                );
+
+                const AP_Servo_Telem::TelemetryData telem_data {
+                    .command_position = servo.commandedPosition(),
+                    .measured_position = servo.position(),
+                    .speed = servo.speed(),
+                    .voltage = servo.voltage(),
+                    .current = servo.current(),
+                    .duty_cycle = servo.dutyCycle(),
+                    .motor_temperature_cdeg = int16_t(servo.temperature() * 100),
+                    .status_flags = err.errors,
+                    .present_types = AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION |
+                                     AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION |
+                                     AP_Servo_Telem::TelemetryData::Types::SPEED |
+                                     AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
+                                     AP_Servo_Telem::TelemetryData::Types::CURRENT |
+                                     AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE |
+                                     AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP |
+                                     AP_Servo_Telem::TelemetryData::Types::STATUS
+                };
+
+                servo_telem->update_telem_data(ii, telem_data);
 
                 servo.newTelemetry = false;
             }
         }
     }
-#else
-    (void)timestamp;
-#endif  // HAL_LOGGING_ENABLED
+#endif
 }
 
 
@@ -641,7 +637,7 @@ bool AP_PiccoloCAN::is_servo_channel_active(uint8_t chan)
         return false;
     }
 
-    SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(chan);
+    SRV_Channel::Function function = SRV_Channels::channel_function(chan);
 
     // Ignore if the servo channel does not have a function assigned
     if (function <= SRV_Channel::k_none) {
@@ -668,7 +664,7 @@ bool AP_PiccoloCAN::is_esc_channel_active(uint8_t chan)
     }
 
     // Check if a motor function is assigned for this motor channel
-    SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(chan);
+    SRV_Channel::Function motor_function = SRV_Channels::get_motor_function(chan);
 
     if (SRV_Channels::function_assigned(motor_function)) {
         return true;

@@ -27,6 +27,7 @@ def build(bld):
             'AP_Follow',
             'AC_PrecLand',
             'AP_IRLock',
+            'AP_Quicktune',
         ],
     )
 

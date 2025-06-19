@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_QURT.h"
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
@@ -32,19 +33,51 @@ public:
     /*
       force the safety switch on, disabling output from the ESCs/servos
      */
-    bool force_safety_on(void) override { safety_on = true; return true; }
+    bool force_safety_on(void) override
+    {
+        safety_on = true;
+        return true;
+    }
 
     /*
       force the safety switch off, enabling output from the ESCs/servos
      */
-    void force_safety_off(void) override { safety_on = false; }
+    void force_safety_off(void) override
+    {
+        safety_on = false;
+    }
 
 private:
-    const uint32_t baudrate = 2000000;
+    enum {
+        IO_BAUDRATE = 921600,
+        ESC_BAUDRATE = 2000000
+    } baudrate;
 
+    enum class HWType {
+        UNKNOWN = 0,            // Unknown board type
+        ESC = 1,                // ESC
+        IO = 2,                 // IO board
+    };
+    HWType hw_type = HWType::UNKNOWN;
+
+    void scan_for_hardware(void);
     void send_receive(void);
     void check_response(void);
-    void send_esc_packet(uint8_t type, uint8_t *data, uint16_t size);
+    void send_pwm_output(void);
+    void send_io_command(void);
+    void send_esc_command(void);
+    void send_packet(uint8_t type, uint8_t *data, uint16_t size);
+
+    struct PACKED extended_version_info {
+        uint8_t  id;
+        uint16_t sw_version;
+        uint16_t hw_version;
+        uint8_t  unique_id[12];
+        char     firmware_git_version[12];
+        char     bootloader_git_version[12];
+        uint16_t bootloader_version;
+        uint16_t crc;
+    };
 
     struct PACKED esc_response_v2 {
         uint8_t  id_state;     // bits 0:3 = state, bits 4:7 = ID
@@ -64,13 +97,19 @@ private:
         int16_t  current;  //Total Current (8mA resolution)
     };
 
+    void handle_version_feedback(const struct extended_version_info &pkt);
     void handle_esc_feedback(const struct esc_response_v2 &pkt);
     void handle_power_status(const struct esc_power_status &pkt);
 
+    std::string board_id_to_name(uint16_t board_id);
+
     int fd = -1;
     uint16_t enable_mask;
-    static const uint8_t channel_count = 4;
-    uint16_t period[channel_count];
+    static const uint8_t max_channel_count = 8;
+    static const uint8_t esc_channel_count = 4;
+    static const uint8_t io_channel_count = 8;
+    uint16_t period[max_channel_count];
+    uint16_t pwm_output[max_channel_count];
     volatile bool need_write;
     bool corked;
     HAL_Semaphore mutex;

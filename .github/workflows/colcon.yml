@@ -177,7 +177,7 @@ jobs:
           rosdep update
           # Workaround for flake8 attribute error
           # https://github.com/ArduPilot/ardupilot/pull/24277#issuecomment-1632833433
-          python -m pip install flake8==3.7.9
+          python3 -m pip install flake8==3.7.9
           source /opt/ros/humble/setup.bash
           rosdep install --from-paths src --ignore-src --default-yes
       - name: Install MAVProxy
@@ -188,11 +188,19 @@ jobs:
       - name: Install local pymavlink
         working-directory: ./src/ardupilot/modules/mavlink/pymavlink
         run: |
-          pip install . -U --user
+          python3 -m pip install . -U --user
+      # install Micro-XRCE-DDS-Gen from source until image is updated
+      - name: install Micro-XRCE-DDS-Gen from source
+        run: |
+          cd /tmp
+          git clone --recurse-submodules https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git
+          cd Micro-XRCE-DDS-Gen
+          ./gradlew assemble
       - name: Build with colcon
         shell: 'bash'
         run: |
           source /opt/ros/humble/setup.bash
+          PATH="/tmp/Micro-XRCE-DDS-Gen/scripts:$PATH"
           colcon build --packages-up-to ardupilot_dds_tests --cmake-args -DBUILD_TESTING=ON
       - name: Test with colcon
         shell: 'bash'

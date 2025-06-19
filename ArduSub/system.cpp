@@ -60,6 +60,10 @@ void Sub::init_ardupilot()
     relay.init();
 #endif
 
+#if OSD_ENABLED
+    osd.init();
+#endif
+
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
      *  the RC library being initialised.
@@ -155,6 +159,7 @@ void Sub::init_ardupilot()
     mainloop_failsafe_enable();
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
+    g2.actuators.initialize_actuators();
 
     // flag that initialisation has completed
     ap.initialised = true;
@@ -199,16 +204,22 @@ bool Sub::ekf_position_ok()
         return false;
     }
 
-    // with EKF use filter status and ekf check
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-
     // if disarmed we accept a predicted horizontal position
     if (!motors.armed()) {
-        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
+        if (ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
+            return true;
+        }
+        if (ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS)) {
+            return true;
+        }
+        return false;
     }
 
     // once armed we require a good absolute position and EKF must not be in const_pos_mode
-    return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
+    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+        return false;
+    }
+    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS);
 }
 
 // optflow_position_ok - returns true if optical flow based position estimate is ok
@@ -235,14 +246,16 @@ bool Sub::optflow_position_ok()
         return false;
     }
 
-    // get filter status from EKF
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-
     // if disarmed we accept a predicted horizontal relative position
     if (!motors.armed()) {
-        return (filt_status.flags.pred_horiz_pos_rel);
+        return ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL);
     }
-    return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
+
+    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+        return false;
+    }
+
+    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_REL);
 }
 
 #if HAL_LOGGING_ENABLED

@@ -86,6 +86,7 @@ public:
         // Reserving Serial Protocol 47 for SerialProtocol_IQ
         SerialProtocol_PPP = 48,
         SerialProtocol_IBUS_Telem = 49,                // i-BUS telemetry data, ie via sensor port of FS-iA6B
+        SerialProtocol_IOMCU = 50,                     // IOMCU 
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
@@ -99,6 +100,8 @@ public:
 
     // init - initialise serial ports
     void init();
+
+    bool pre_arm_checks(char *failure_msg, const uint8_t failure_msg_len);
 
     // find_serial - searches available serial ports that allows the given protocol
     //  instance should be zero if searching for the first instance, 1 for the second, etc
@@ -130,6 +133,8 @@ public:
     // accessors for AP_Periph to set baudrate and type
     void set_protocol_and_baud(uint8_t sernum, enum SerialProtocol protocol, uint32_t baudrate);
 
+    void set_and_default_baud(enum SerialProtocol protocol, uint8_t instance, uint32_t _baud);
+
     static uint32_t map_baudrate(int32_t rate);
 
     // parameter var table
@@ -150,11 +155,15 @@ public:
             return AP_SerialManager::SerialProtocol(protocol.get());
         }
         AP_Int32 baud;
-        AP_Int16 options;
+        AP_Int32 options;
         AP_Int8 protocol;
 
         // serial index number
         uint8_t idx;
+
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+        AP_HAL::UARTDriver::StatsTracker stats;
+#endif
     };
 
     // get a state from serial index
@@ -167,6 +176,14 @@ public:
     // mavlink1 protocol instances.
     const UARTState *find_protocol_instance(enum SerialProtocol protocol,
                                             uint8_t instance) const;
+
+    // disable an option on a serial port:
+    void disable_option(uint8_t instance, uint32_t option) {
+        if (instance >= ARRAY_SIZE(state)) {
+            return;
+        }
+        state[instance].options.set_and_notify(state[instance].options & ~option);
+    }
 
 #if AP_SERIALMANAGER_REGISTER_ENABLED
     /*
@@ -185,6 +202,12 @@ public:
 
     // register an externally managed port
     void register_port(RegisteredPort *port);
+
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+    // Log UART message for each registered serial port
+    void registered_ports_log();
+    uint32_t registered_ports_last_log_ms;
+#endif
 
 #endif // AP_SERIALMANAGER_REGISTER_ENABLED
 
@@ -208,6 +231,8 @@ private:
     void set_options(uint16_t i);
 
     bool init_console_done;
+
+    void convert_parameters();
 };
 
 namespace AP {

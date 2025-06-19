@@ -6,6 +6,7 @@
 #include <Filter/DerivativeFilter.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Logger/AP_Logger_config.h>
+#include <SRV_Channel/SRV_Channel_config.h>
 
 // offsets for motors in motor_out and _motor_filtered arrays
 #define AP_MOTORS_MOT_1 0U
@@ -20,8 +21,51 @@
 #define AP_MOTORS_MOT_10 9U
 #define AP_MOTORS_MOT_11 10U
 #define AP_MOTORS_MOT_12 11U
+#define AP_MOTORS_MOT_13 12U
+#define AP_MOTORS_MOT_14 13U
+#define AP_MOTORS_MOT_15 14U
+#define AP_MOTORS_MOT_16 15U
+#define AP_MOTORS_MOT_17 16U
+#define AP_MOTORS_MOT_18 17U
+#define AP_MOTORS_MOT_19 18U
+#define AP_MOTORS_MOT_20 19U
+#define AP_MOTORS_MOT_21 20U
+#define AP_MOTORS_MOT_22 21U
+#define AP_MOTORS_MOT_23 22U
+#define AP_MOTORS_MOT_24 23U
+#define AP_MOTORS_MOT_25 24U
+#define AP_MOTORS_MOT_26 25U
+#define AP_MOTORS_MOT_27 26U
+#define AP_MOTORS_MOT_28 27U
+#define AP_MOTORS_MOT_29 28U
+#define AP_MOTORS_MOT_30 29U
+#define AP_MOTORS_MOT_31 30U
+#define AP_MOTORS_MOT_32 31U
 
+#ifndef AP_MOTORS_MAX_NUM_MOTORS
+#if AP_SCRIPTING_ENABLED
+#define AP_MOTORS_MAX_NUM_MOTORS 32
+#else
 #define AP_MOTORS_MAX_NUM_MOTORS 12
+#endif
+
+// doesn't make sense to have more motors than servo channels, so clamp:
+#if NUM_SERVO_CHANNELS < AP_MOTORS_MAX_NUM_MOTORS
+#undef AP_MOTORS_MAX_NUM_MOTORS
+#define AP_MOTORS_MAX_NUM_MOTORS NUM_SERVO_CHANNELS
+#endif
+
+// various Motors backends will not compile if we don't have 16 motors
+// available (eg. AP_Motors6DOF).  Until we stop compiling those
+// backends in when there aren't enough motors to support those
+// backends we will support a minimum of 12 motors, the limit before
+// we moved to 32 motor support:
+#if AP_MOTORS_MAX_NUM_MOTORS < 12
+#undef AP_MOTORS_MAX_NUM_MOTORS
+#define AP_MOTORS_MAX_NUM_MOTORS 12
+#endif
+
+#endif  // defined (AP_MOTORS_MAX_NUM_MOTORS)
 
 #ifndef AP_MOTORS_FRAME_DEFAULT_ENABLED
 #define AP_MOTORS_FRAME_DEFAULT_ENABLED 1
@@ -156,6 +200,7 @@ public:
     float               get_yaw_ff() const { return _yaw_in_ff; }
     float               get_throttle_out() const { return _throttle_out; }
     virtual bool        get_thrust(uint8_t motor_num, float& thr_out) const { return false; }
+    virtual bool        get_raw_motor_throttle(uint8_t motor_num, float& thr_out) const { return false; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(), 0.0f, 1.0f); }
     float               get_throttle_bidirectional() const { return constrain_float(2 * (_throttle_filter.get() - 0.5f), -1.0f, 1.0f); }
     float               get_throttle_slew_rate() const { return _throttle_slew_rate; }
@@ -236,7 +281,8 @@ public:
     // output_test_seq - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    void                output_test_seq(uint8_t motor_seq, int16_t pwm);
+    //  return true if output was successful, false if not possible
+    bool                output_test_seq(uint8_t motor_seq, int16_t pwm);
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict

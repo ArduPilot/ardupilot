@@ -2,7 +2,6 @@
 
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
-#define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
 
 static uint32_t auto_disarm_begin;
@@ -39,7 +38,7 @@ void Copter::arm_motors_check()
     if (yaw_in > 4000) {
 
         // increase the arming counter to a maximum of 1 beyond the auto trim counter
-        if (arming_counter <= AUTO_TRIM_DELAY) {
+        if (arming_counter < ARM_DELAY) {
             arming_counter++;
         }
 
@@ -49,15 +48,6 @@ void Copter::arm_motors_check()
             if (!arming.arm(AP_Arming::Method::RUDDER)) {
                 arming_counter = 0;
             }
-        }
-
-        // arm the motors and configure for flight
-        if (arming_counter == AUTO_TRIM_DELAY && motors->armed() && flightmode->mode_number() == Mode::Number::STABILIZE) {
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim start");
-            auto_trim_counter = 250;
-            auto_trim_started = false;
-            // ensure auto-disarm doesn't trigger immediately
-            auto_disarm_begin = millis();
         }
 
     // full left and rudder disarming is enabled
@@ -133,7 +123,8 @@ void Copter::auto_disarm_check()
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
-void Copter::motors_output()
+// full_push is true when slower rate updates (e.g. servo output) need to be performed at the main loop rate.
+void Copter::motors_output(bool full_push)
 {
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // this is to allow the failsafe module to deliberately crash
@@ -183,7 +174,21 @@ void Copter::motors_output()
     }
 
     // push all channels
-    srv.push();
+    if (full_push) {
+        // motor output including servos and other updates that need to run at the main loop rate
+        srv.push();
+    } else {
+        // motor output only at main loop rate or faster
+        hal.rcout->push();
+    }
+}
+
+// motors_output from main thread at main loop rate
+void Copter::motors_output_main()
+{
+    if (!using_rate_thread) {
+        motors_output();
+    }
 }
 
 // check for pilot stick input to trigger lost vehicle alarm

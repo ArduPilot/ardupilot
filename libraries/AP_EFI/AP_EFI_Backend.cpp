@@ -32,6 +32,11 @@ void AP_EFI_Backend::copy_to_frontend()
     frontend.state = internal_state;
 }
 
+bool AP_EFI_Backend::healthy() const
+{
+    return (AP_HAL::millis() - frontend.state.last_updated_ms) < HEALTHY_LAST_RECEIVED_MS;
+}
+
 float AP_EFI_Backend::get_coef1(void) const
 {
     return frontend.coef1;

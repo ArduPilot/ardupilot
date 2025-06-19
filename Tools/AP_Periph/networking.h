@@ -2,7 +2,7 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#ifdef HAL_PERIPH_ENABLE_NETWORKING
+#if AP_PERIPH_NETWORKING_ENABLED
 
 #include <AP_Networking/AP_Networking.h>
 
@@ -70,4 +70,4 @@ private:
 #endif
 };
 
-#endif // HAL_PERIPH_ENABLE_NETWORKING
+#endif // AP_PERIPH_NETWORKING_ENABLED
