@@ -2,6 +2,8 @@
 
 #include <GCS_MAVLink/GCS.h>
 
+#include "defines.h"
+
 class GCS_MAVLINK_Tracker : public GCS_MAVLINK
 {
 
@@ -27,6 +29,9 @@ protected:
     uint8_t send_available_mode(uint8_t index) const override;
 
     bool try_send_message(enum ap_message id) override;
+#if HAL_LOGGING_ENABLED
+    uint32_t log_radio_bit() const override { return MASK_LOG_RADIO; }
+#endif
 
 private:
 
