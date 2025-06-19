@@ -1,6 +1,6 @@
 ArduPilot Antenna Tracker Release Notes:
 ------------------------------------------------------------------
-Release 4.6.1-beta1 14-Jun-2025
+Release 4.6.1 19-Jun-2025 / 4.6.1-beta1 14-Jun-2025
 
 Changes from 4.6.0
 
