@@ -142,26 +142,11 @@ void ModeTakeoff::update()
         plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
         takeoff_mode_setup = false;
     }
-    // We update the waypoint to follow once we're past TKOFF_LVL_ALT or we
-    // pass the target location. The check for target location prevents us
-    // flying towards a wrong location if we can't climb.
-    // This will correct any yaw estimation errors (caused by EKF reset
-    // or compass interference from max throttle), since it's using position bearing.
-    const float altitude_cm = plane.current_loc.alt - start_loc.alt;
-    if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF
-        && plane.steer_state.hold_course_cd == -1 // This is the enter-once flag.
-        && (altitude_cm >= (level_alt * 100.0f) || start_loc.get_distance(plane.current_loc) >= dist)
-    ) {
-        const float direction = start_loc.get_bearing_to(plane.current_loc) * 0.01;
-        plane.next_WP_loc = start_loc;
-        plane.next_WP_loc.offset_bearing(direction, dist);
-        plane.next_WP_loc.alt += alt*100.0;
-        plane.steer_state.hold_course_cd = wrap_360_cd(direction*100); // Necessary to allow Plane::takeoff_calc_roll() to function.
-    }
-        
+
     // We finish the initial level takeoff if we climb past
     // TKOFF_ALT or we pass the target location. The check for
     // target location prevents us flying forever if we can't climb.
+    const float altitude_cm = plane.current_loc.alt - start_loc.alt;
     if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF &&
         (altitude_cm >= (alt*100 - 200) ||
         start_loc.get_distance(plane.current_loc) >= dist)) {
