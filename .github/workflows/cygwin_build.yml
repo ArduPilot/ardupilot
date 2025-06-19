@@ -190,6 +190,7 @@ jobs:
           PATH: /usr/bin:$(cygpath ${SYSTEMROOT})/system32
         shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
         run: >-
+          python3 --version &&
           python3 -m pip install --progress-bar off empy==3.3.4 pexpect &&
           python3 -m pip install --progress-bar off dronecan --upgrade &&
           cp /usr/bin/ccache /usr/local/bin/ &&

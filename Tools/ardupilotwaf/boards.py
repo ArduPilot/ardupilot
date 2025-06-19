@@ -194,6 +194,13 @@ class Board:
             if getattr(cfg.options, enable_option, False):
                 env.CXXFLAGS += ['-D%s=1' % opt.define]
                 cfg.msg("Enabled %s" % opt.label, 'yes', color='GREEN')
+
+                # now dependencies (marked differently in output):
+                for dep in build_options.BuildOptions().get_required_features_for_feature(opt):
+                    if dep == opt:
+                        continue
+                    env.CXXFLAGS += ['-D%s=1' % dep.define]
+                    cfg.msg(f"Enabled {dep.label} (dep of {opt.label})", 'yes', color='GREEN')
             elif getattr(cfg.options, disable_option, False):
                 env.CXXFLAGS += ['-D%s=0' % opt.define]
                 cfg.msg("Enabled %s" % opt.label, 'no', color='YELLOW')
