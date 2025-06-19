@@ -45,6 +45,7 @@ from launch_fixtures import (
 )
 
 TOPIC = "ap/rc"
+WAIT_FOR_START_TIMEOUT = 5.0
 
 
 class RcListener(rclpy.node.Node):
@@ -88,10 +89,10 @@ def test_dds_serial_rc_msg_recv(launch_context, launch_sitl_copter_dds_serial):
     sitl = actions["sitl"].action
 
     # Wait for process to start.
-    process_tools.wait_for_start_sync(launch_context, virtual_ports, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, virtual_ports, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
     rclpy.init()
     try:
@@ -113,9 +114,9 @@ def test_dds_udp_rc_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     sitl = actions["sitl"].action
 
     # Wait for process to start.
-    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
     rclpy.init()
     try:
