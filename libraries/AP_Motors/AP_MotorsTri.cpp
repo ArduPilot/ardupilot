@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORS_TRI_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -451,3 +455,5 @@ uint8_t AP_MotorsTri::get_motor_test_order(uint8_t i)
     }
 }
 #endif // APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+
+#endif  // AP_MOTORS_TRI_ENABLED
