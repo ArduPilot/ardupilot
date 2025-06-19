@@ -3,6 +3,7 @@
 #include "AP_BattMonitor_Backend.h"
 
 #define AP_BATTMONITOR_JBDCAN_TIMEOUT_MICROS 5000000
+#if AP_BATTERY_JBDCAN_ENABLED 
 
 class AP_BattMonitor_JBDCAN : public AP_BattMonitor_Backend {
 public:
@@ -22,3 +23,4 @@ public:
     bool has_time_remaining() const override { return false; }
     bool has_cell_voltages() const override { return false; }
 };
+#endif 
