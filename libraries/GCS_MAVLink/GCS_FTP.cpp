@@ -493,7 +493,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                           lost packets a lot, which results in overall
                           faster transfers
                          */
-                        uint32_t burst_delay_ms = 0;
+                        uint32_t burst_delay_ms = 5;
                         if (valid_channel(request.chan)) {
                             auto *port = mavlink_comm_port[request.chan];
                             if (port != nullptr && port->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_ENABLE) {
