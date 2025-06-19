@@ -334,6 +334,7 @@ class TestBuildOptions(object):
             # only Plane and Copter instantiate Parachute
             feature_define_whitelist.add('HAL_PARACHUTE_ENABLED')
             # only Plane and Copter have AP_Motors:
+            feature_define_whitelist.add(r'AP_MOTORS_TRI_ENABLED')
 
         if target.lower() not in ["rover", "copter"]:
             # only Plane and Copter instantiate Beacon
