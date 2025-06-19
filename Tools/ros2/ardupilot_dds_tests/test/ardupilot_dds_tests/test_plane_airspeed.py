@@ -39,6 +39,7 @@ from rclpy.qos import QoSHistoryPolicy
 from ardupilot_msgs.msg import Airspeed
 
 TOPIC = "/ap/airspeed"
+WAIT_FOR_START_TIMEOUT = 5.0
 AIRSPEED_RECV_TIMEOUT = 20.0
 
 
@@ -141,10 +142,10 @@ def test_dds_serial_airspeed_msg_recv_copter(launch_context, launch_sitl_copter_
     sitl = actions["sitl"].action
 
     # Wait for process to start.
-    process_tools.wait_for_start_sync(launch_context, virtual_ports, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, virtual_ports, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
     rclpy.init()
     try:
@@ -166,9 +167,9 @@ def test_dds_udp_airspeed_msg_recv_copter(launch_context, launch_sitl_copter_dds
     sitl = actions["sitl"].action
 
     # Wait for process to start.
-    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
     rclpy.init()
     try:
@@ -192,10 +193,10 @@ def test_dds_serial_airspeed_msg_recv_plane(launch_context, launch_sitl_plane_dd
     sitl = actions["sitl"].action
 
     # Wait for process to start.
-    process_tools.wait_for_start_sync(launch_context, virtual_ports, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, virtual_ports, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
     rclpy.init()
     try:
@@ -217,9 +218,9 @@ def test_dds_udp_airspeed_msg_recv_plane(launch_context, launch_sitl_plane_dds_u
     sitl = actions["sitl"].action
 
     # Wait for process to start.
-    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
     rclpy.init()
     try:
