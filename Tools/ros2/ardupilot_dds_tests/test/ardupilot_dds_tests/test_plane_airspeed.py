@@ -67,9 +67,10 @@ class AirspeedTester(rclpy.node.Node):
 
     def airspeed_data_callback(self, msg):
         """Process a airspeed message from the autopilot."""
-        self.msg_event_object.set()
-
         self.get_logger().info(f"From AP : airspeed {msg}")
+
+        # set event last
+        self.msg_event_object.set()
 
 
 @launch_pytest.fixture

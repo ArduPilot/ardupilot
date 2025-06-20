@@ -78,8 +78,6 @@ class BatteryListener(rclpy.node.Node):
 
     def subscriber_callback(self, msg):
         """Process a BatteryState message."""
-        self.msg_event_object.set()
-
         self.get_logger().info("From AP : ID {} Voltage {}".format(msg.header.frame_id, msg.voltage))
 
         if msg.header.frame_id == '0':
@@ -87,6 +85,9 @@ class BatteryListener(rclpy.node.Node):
 
         if msg.header.frame_id == '1':
             self.frame_id_incorrect_object.set()
+
+        # set event last
+        self.msg_event_object.set()
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
