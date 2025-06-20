@@ -112,6 +112,13 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @Units: s
     AP_GROUPINFO_FRAME("_FS_TIMEOUT", 35, RC_CHANNELS_SUBCLASS, _fs_timeout, 1.0, AP_PARAM_FRAME_COPTER),
 
+    // @Param: _PROPO_TYPE
+    // @DisplayName: RC Propo Type
+    // @Description: The PWM signals vary depending on the type of transmitter. By specifying the transmitter type, we can set the calibration values as parameters in ArduPilot. This configuration eliminates the need for manual radio calibration.
+    // @User: Advanced
+    // @Values: 0:RC Calibration,1:Futaba 14SG,2:Skydroid H12,3:Futaba WSC-1
+    AP_GROUPINFO("_PROPO_TYPE", 36, RC_CHANNELS_SUBCLASS, _propo_type, 0),
+
     AP_GROUPEND
 };
 
