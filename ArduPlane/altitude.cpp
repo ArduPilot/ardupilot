@@ -83,16 +83,9 @@ void Plane::setup_alt_slope(void)
             break;
         }
 
-        // we only do glide slide handling in AUTO when above 20m or
-        // when descending. The 20 meter threshold is arbitrary, and
-        // is basically to prevent situations where we try to slowly
-        // gain height at low altitudes, potentially hitting
-        // obstacles.
-        if (adjusted_relative_altitude_cm() > 2000 || above_location_current(next_WP_loc)) {
-            set_offset_altitude_location(prev_WP_loc, next_WP_loc);
-        } else {
-            reset_offset_altitude();
-        }
+        // otherwise we set up an altitude slope for this leg
+        set_offset_altitude_location(prev_WP_loc, next_WP_loc);
+
         break;
     default:
         reset_offset_altitude();
@@ -294,6 +287,18 @@ void Plane::change_target_altitude(int32_t change_cm)
  */
 void Plane::set_target_altitude_proportion(const Location &loc, float proportion)
 {
+    // Only do altitude slope handling when above CLIMB_SLOPE_HGT or when
+    // descending. This is meant to prevent situations where the aircraft tries
+    // to slowly gain height at low altitudes, potentially hitting obstacles.
+    if (target_altitude.offset_cm > 0 &&
+        (adjusted_relative_altitude_cm() <
+         (g2.waypoint_climb_slope_height_min * 100))) {
+        // Use the destination waypoint's altitude to ensure a full-rate climb
+        // past CLIMB_SLOPE_HGT
+        set_target_altitude_location(plane.next_WP_loc);
+        return;
+    }
+
     set_target_altitude_location(loc);
     proportion = constrain_float(proportion, 0.0f, 1.0f);
     change_target_altitude(-target_altitude.offset_cm*proportion);
