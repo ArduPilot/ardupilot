@@ -124,8 +124,6 @@ class GeoPoseListener(rclpy.node.Node):
 
     def subscriber_callback(self, msg):
         """Process a GeoPoseStamped message."""
-        self.msg_event_object.set()
-
         position = msg.pose.position
 
         self.get_logger().info("From AP : Position [lat:{}, lon: {}]".format(position.latitude, position.longitude))
@@ -135,6 +133,9 @@ class GeoPoseListener(rclpy.node.Node):
 
         if validate_heading_cmac(msg.pose.orientation):
             self.orientation_event_object.set()
+
+        # set event last
+        self.msg_event_object.set()
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)

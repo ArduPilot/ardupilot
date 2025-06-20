@@ -66,12 +66,13 @@ class NavSatFixListener(rclpy.node.Node):
 
     def subscriber_callback(self, msg):
         """Process a NavSatFix message."""
-        self.msg_event_object.set()
-
         if msg.latitude:
             self.get_logger().info("From AP : True [lat:{}, lon: {}]".format(msg.latitude, msg.longitude))
         else:
             self.get_logger().info("From AP : False")
+
+        # set event last
+        self.msg_event_object.set()
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)

@@ -54,12 +54,13 @@ class TimeListener(rclpy.node.Node):
 
     def subscriber_callback(self, msg):
         """Process a Time message."""
-        self.msg_event_object.set()
-
         if msg.sec:
             self.get_logger().info("From AP : True [sec:{}, nsec: {}]".format(msg.sec, msg.nanosec))
         else:
             self.get_logger().info("From AP : False")
+
+        # set event last
+        self.msg_event_object.set()
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
