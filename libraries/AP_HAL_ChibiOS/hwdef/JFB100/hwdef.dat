@@ -341,3 +341,8 @@ define EXT_WDOG_INTERVAL_MS 50
 # safety switch
 PE10 SAFETY_IN INPUT PULLUP
 PE12 LED_SAFETY OUTPUT
+
+# special code for Sub to indicate whether pins should be defined as
+# analogue or digital by default:
+define AP_LEAKDETECTOR_PIN_IS_ANALOG 13, 14, 15
+define AP_LEAKDETECTOR_PIN_IS_DIGITAL 50, 51, 52, 53, 54, 55

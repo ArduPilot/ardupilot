@@ -345,3 +345,8 @@ ENABLE_DFU_BOOT 1
 # enable support for dshot on iomcu
 ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_lowpolh.bin
 define HAL_WITH_IO_MCU_DSHOT 1
+
+# special code for Sub to indicate whether pins should be defined as
+# analogue or digital by default:
+define AP_LEAKDETECTOR_PIN_IS_ANALOG 13, 14, 15
+define AP_LEAKDETECTOR_PIN_IS_DIGITAL 50, 51, 52, 53, 54, 55

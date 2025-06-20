@@ -422,3 +422,8 @@ STORAGE_FLASH_PAGE 1
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
+
+# special code for Sub to indicate whether pins should be defined as
+# analogue or digital by default:
+define AP_LEAKDETECTOR_PIN_IS_ANALOG 13, 14, 15
+define AP_LEAKDETECTOR_PIN_IS_DIGITAL 50, 51, 52, 53, 54, 55
