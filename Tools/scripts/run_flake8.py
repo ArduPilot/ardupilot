@@ -8,6 +8,7 @@ they are clean, ensures that they actually are
 """
 
 import os
+import pathlib
 import subprocess
 import sys
 
@@ -45,7 +46,7 @@ class Flake8Checker(object):
                     # is not actually Python...
                     continue
                 filepath = os.path.join(dirpath, filename)
-                content = open(filepath).read()
+                content = pathlib.Path(filepath).read_text()
                 if "AP_FLAKE8_CLEAN" not in content:
                     continue
                 self.files_to_check.append(filepath)
