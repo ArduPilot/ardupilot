@@ -183,12 +183,12 @@ jobs:
       - name: Install MAVProxy
         run: |
           # Install this specific version just to prevent rolling updates.
-          # These are the latest available
-          python3 -m pip install MAVProxy==1.8.67
+          # See the latest available at https://pypi.org/project/MAVProxy
+          python3 -m pip install MAVProxy==1.8.71
       - name: Install local pymavlink
         working-directory: ./src/ardupilot/modules/mavlink/pymavlink
         run: |
-          python3 -m pip install . -U --user
+          python3 -m pip install . --upgrade --user
       # install Micro-XRCE-DDS-Gen from source until image is updated
       - name: install Micro-XRCE-DDS-Gen from source
         run: |
@@ -210,4 +210,3 @@ jobs:
       - name: Report colcon test results
         run: |
           colcon test-result --all --verbose
-
