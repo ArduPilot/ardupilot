@@ -235,7 +235,7 @@ void AP_ExternalAHRS_GSOF::post_filter() const
     state.quat.from_euler(
         radians(ins_full_nav.roll_deg), 
         radians(ins_full_nav.pitch_deg),
-        radians(wrap_360(ins_full_nav.heading_deg)));
+        radians(ins_full_nav.heading_deg));
     state.have_quaternion = true;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
