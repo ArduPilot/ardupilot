@@ -43,6 +43,7 @@ public:
         Scripting                      = 29,
         INA3221                        = 30,
         ANALOG_CURRENT_ONLY            = 31,
+        ASTRA                          = 32,
     };
 
     // low voltage sources (used for BATT_LOW_TYPE parameter)
