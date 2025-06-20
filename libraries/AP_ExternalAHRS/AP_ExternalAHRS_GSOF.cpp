@@ -115,6 +115,7 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
     while (true) {
         // TODO should we ever call begin() again?
         while (uart->available() > 0) {
+            hal.scheduler->delay_microseconds(100);
             const uint8_t c = uart->read();
 
             AP_GSOF::MsgTypes parsed;
@@ -204,7 +205,6 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
                 AP::gps().handle_external(gps_data, instance);
             }
         }
-        hal.scheduler->delay_microseconds(100);
         check_initialise_state();
     }
 }
