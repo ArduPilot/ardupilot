@@ -2,6 +2,8 @@
 #include "AP_LeakDetector_Analog.h"
 #include "AP_LeakDetector_Digital.h"
 
+extern const AP_HAL::HAL &hal;
+
 const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
 
     // @Param: 1_PIN
@@ -20,13 +22,7 @@ const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("1_LOGIC", 2, AP_LeakDetector, _default_reading[0], 0),
 
-    // @Param: 1_TYPE
-    // @DisplayName: Leak detector pin type (analog/digital)
-    // @Description: Enables leak detector 1. Use this parameter to indicate the signal type (0:analog, 1:digital) of an appropriately configured input pin, then specify its pin number using the LEAK1_PIN parameter. NOT FOR USE by default with Pixhawk, Pixhawk 4 or Navigator flight controllers.
-    // @Values: -1:Disabled,0:Analog,1:Digital
-    // @User: Advanced
-    // @RebootRequired: True
-    AP_GROUPINFO("1_TYPE", 7, AP_LeakDetector, _type[0], DISABLED), 
+    // 7 was 1_TYPE, specifying analog or digital input type
 
 #if LEAKDETECTOR_MAX_INSTANCES > 1
     // @Param: 2_PIN
@@ -45,13 +41,7 @@ const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("2_LOGIC", 4, AP_LeakDetector, _default_reading[1], 0),
 
-    // @Param: 2_TYPE
-    // @DisplayName: Leak detector pin type (analog/digital)
-    // @Description: Enables leak detector 2. Use this parameter to indicate the signal type (0:analog, 1:digital) of an appropriately configured input pin, then specify its pin number using the LEAK2_PIN parameter. NOT FOR USE by default with Pixhawk, Pixhawk 4 or Navigator flight controllers.
-    // @Values: -1:Disabled,0:Analog,1:Digital
-    // @User: Advanced
-    // @RebootRequired: True
-    AP_GROUPINFO("2_TYPE", 8, AP_LeakDetector, _type[1], DISABLED),
+    // 8 was 2_TYPE, specifying analog or digital input type
 #endif
 
 #if LEAKDETECTOR_MAX_INSTANCES > 2
@@ -71,13 +61,7 @@ const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("3_LOGIC", 6, AP_LeakDetector, _default_reading[2], 0),
 
-    // @Param: 3_TYPE
-    // @DisplayName: Leak detector pin type (analog/digital)
-    // @Description: Enables leak detector 3. Use this parameter to indicate the signal type (0:analog, 1:digital) of an appropriately configured input pin, then specify its pin number using the LEAK3_PIN parameter. NOT FOR USE by default with Pixhawk, Pixhawk 4 or Navigator flight controllers.
-    // @Values: -1:Disabled,0:Analog,1:Digital
-    // @User: Advanced
-    // @RebootRequired: True
-    AP_GROUPINFO("3_TYPE", 9, AP_LeakDetector, _type[2], DISABLED),
+    // 9 was 3_TYPE, specifying analog or digital input type
 #endif
 
     AP_GROUPEND
@@ -96,31 +80,15 @@ AP_LeakDetector::AP_LeakDetector() :
 void AP_LeakDetector::init()
 {
     for (int i = 0; i < LEAKDETECTOR_MAX_INSTANCES; i++) {
-        switch (_pin[i]) {
-#if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3 || \
-     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5)
-            case 13 ... 15:
-                _type[i].set_default(ANALOG);
-                break;
-            case 50 ... 55:
-                _type[i].set_default(DIGITAL);
-                break;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
-            case 27:
-                _type[i].set_default(DIGITAL);
-                break;
-#endif
+        if (_pin[i] < 0) {
+            continue;
         }
-
-        switch(_type[i]) {
-            case ANALOG:
+        if (hal.analogin->valid_analog_pin(_pin[i])) {
                 _state[i].instance = i;
                 _drivers[i] = NEW_NOTHROW AP_LeakDetector_Analog(*this, _state[i]);
-                break;
-            case DIGITAL:
+        } else {
                 _state[i].instance = i;
                 _drivers[i] = NEW_NOTHROW AP_LeakDetector_Digital(*this, _state[i]);
-                break;
         }
     }
 }
