@@ -90,23 +90,33 @@ AP_LeakDetector::AP_LeakDetector() :
     memset(_drivers,0,sizeof(_drivers));
 };
 
+AP_LeakDetector::_signal_types AP_LeakDetector::get_default_signal_type_for_pin(uint8_t pin) const
+{
+#ifdef AP_LEAKDETECTOR_PIN_IS_ANALOG
+    static const uint8_t analog_pins[] { AP_LEAKDETECTOR_PIN_IS_ANALOG };
+    for (auto apin : analog_pins) {
+        if (apin == pin) {
+            return _signal_types::ANALOG;
+        }
+    }
+#endif  // AP_LEAKDETECTOR_PIN_IS_ANALOG
+#ifdef AP_LEAKDETECTOR_PIN_IS_DIGITAL
+    static const uint8_t digital_pins[] { AP_LEAKDETECTOR_PIN_IS_DIGITAL };
+    for (auto dpin : digital_pins) {
+        if (dpin == pin) {
+            return _signal_types::DIGITAL;
+        }
+    }
+#endif  // AP_LEAKDETECTOR_PIN_IS_DIGITAL
+    return _signal_types::DISABLED;
+}
+
 void AP_LeakDetector::init()
 {
     for (int i = 0; i < LEAKDETECTOR_MAX_INSTANCES; i++) {
-        switch (_pin[i]) {
-#if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3 || \
-     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5)
-            case 13 ... 15:
-                _type[i].set_default(ANALOG);
-                break;
-            case 50 ... 55:
-                _type[i].set_default(DIGITAL);
-                break;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
-            case 27:
-                _type[i].set_default(DIGITAL);
-                break;
-#endif
+        const _signal_types t = get_default_signal_type_for_pin(_pin[i]);
+        if (t != _signal_types::DISABLED) {
+            _type[i].set_default(t);
         }
 
         switch(_type[i]) {
