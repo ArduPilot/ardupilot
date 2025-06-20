@@ -288,6 +288,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Bitmask: 20: Force RTL mode-forces RTL mode on rc failsafe in VTOL modes overriding bit 5(USE_QRTL)
     // @Bitmask: 21: Tilt rotor-tilt motors up when disarmed in FW modes (except manual) to prevent ground strikes.
     // @Bitmask: 22: Scale FF by the ratio of VTOL to plane angle P gains in Position 1 phase of transition into VTOL flight as well as reducing VTOL angle P based on airspeed.
+    // @Bitmask: 23: Suppress VTOL yaw stabilization during transition (ignored on vectored-yaw tiltrotors)
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
@@ -1561,7 +1562,7 @@ void SLT_Transition::update()
         }
         quadplane.hold_hover(climb_rate_cms);
 
-        if (!quadplane.tiltrotor.is_vectored()) {
+        if (!quadplane.tiltrotor.is_vectored() && quadplane.option_is_set(QuadPlane::OPTION::SUPPRESS_YAW_TRANSITION)) {
             // set desired yaw to current yaw in both desired angle
             // and rate request. This reduces wing twist in transition
             // due to multicopter yaw demands. This is disabled when
@@ -1643,7 +1644,7 @@ void SLT_Transition::update()
         // control surfaces at this stage.
         // We disable this for vectored yaw tilt rotors as they do need active
         // yaw control throughout the transition
-        if (!quadplane.tiltrotor.is_vectored()) {
+        if (!quadplane.tiltrotor.is_vectored() && quadplane.option_is_set(QuadPlane::OPTION::SUPPRESS_YAW_TRANSITION)) {
             quadplane.attitude_control->reset_yaw_target_and_rate();
             quadplane.attitude_control->rate_bf_yaw_target(rad_to_cd(quadplane.ahrs.get_gyro().z));
         }
