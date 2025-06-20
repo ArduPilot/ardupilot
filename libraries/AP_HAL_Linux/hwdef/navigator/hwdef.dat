@@ -38,3 +38,7 @@ define AP_BATT_CURR_AMP_OFFSET_DEFAULT    0.330f
 
 // FIXME: use of this define should go away:
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
+
+# special code for Sub to indicate whether pins should be defined as
+# analogue or digital by default (comma-separated list):
+define AP_LEAKDETECTOR_PIN_IS_DIGITAL 27  # see GPS_Navigator.h
