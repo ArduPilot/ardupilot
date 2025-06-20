@@ -500,6 +500,7 @@ AP_HW_Accton_Godwit_GA1        7120
 AP_HW_CubeOrange_ODID               10140
 AP_HW_Pixhawk6_ODID                 10053
 AP_HW_CUAV_NORA_ODID                11009
+AP_HW_CUAV_X7_PRO_ODID              11010
 
 # do not allocate board IDs above 10,000 for non-ODID boards.
 # do not allocate board IDs above 19,999 in this file.
