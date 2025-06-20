@@ -248,7 +248,7 @@ bool Mode::_pre_arm_checks(size_t buflen, char *buffer) const
 {
 #if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.enabled() && !is_vtol_mode() &&
-            plane.quadplane.option_is_set(QuadPlane::OPTION::ONLY_ARM_IN_QMODE_OR_AUTO)) {
+            plane.quadplane.option_is_set(QuadPlane::Option::ONLY_ARM_IN_QMODE_OR_AUTO)) {
         hal.util->snprintf(buffer, buflen, "not Q mode");
         return false;
     }
