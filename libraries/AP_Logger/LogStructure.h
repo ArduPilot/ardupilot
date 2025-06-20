@@ -333,6 +333,7 @@ struct PACKED log_Optflow {
     float flow_y;
     float body_x;
     float body_y;
+    float distZ;
 };
 
 struct PACKED log_POWR {
@@ -825,6 +826,7 @@ struct PACKED log_VER {
 // @Field: flowY: Sensor flow rate,Y-axis
 // @Field: bodyX: derived rotational velocity, X-axis
 // @Field: bodyY: derived rotational velocity, Y-axis
+// @Field: distZ: altitude, Z-axis (mavlink only)
 
 // @LoggerMessage: PARM
 // @Description: parameter value
@@ -1234,7 +1236,7 @@ LOG_STRUCTURE_FROM_FENCE \
       "MAV", "QBHHHBHH",   "TimeUS,chan,txp,rxp,rxdp,flags,ss,tf", "s#----s-", "F-000-C-" },   \
 LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
-      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" , true }, \
+      "OF",   "QBfffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY,distZ", "s-EEEEE", "F-00000" , true }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
       "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" , true }, \
     { LOG_ADSB_MSG, sizeof(log_ADSB), \
