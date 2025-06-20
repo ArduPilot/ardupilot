@@ -712,10 +712,12 @@ bool QuadPlane::setup(void)
     }
 
     switch ((AP_Motors::motor_frame_class)frame_class) {
+#if AP_MOTORS_TRI_ENABLED
     case AP_Motors::MOTOR_FRAME_TRI:
         motors = NEW_NOTHROW AP_MotorsTri(rc_speed);
         motors_var_info = AP_MotorsTri::var_info;
         break;
+#endif  // AP_MOTORS_TRI_ENABLED
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
         // this is a duo-motor tailsitter
         tailsitter.tailsitter_motors = NEW_NOTHROW AP_MotorsTailsitter(rc_speed);

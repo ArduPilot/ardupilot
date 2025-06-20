@@ -381,11 +381,13 @@ void Copter::allocate_motors(void)
             motors = NEW_NOTHROW AP_MotorsMatrix(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix::var_info;
             break;
+#if AP_MOTORS_TRI_ENABLED
         case AP_Motors::MOTOR_FRAME_TRI:
             motors = NEW_NOTHROW AP_MotorsTri(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsTri::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
             break;
+#endif  // AP_MOTORS_TRI_ENABLED
         case AP_Motors::MOTOR_FRAME_SINGLE:
             motors = NEW_NOTHROW AP_MotorsSingle(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsSingle::var_info;
