@@ -53,15 +53,13 @@
 
 /* HAL CHIBIOS sub-types, starting at 5000
 
-   NOTE!! Do not add more subtypes unless they are really needed. Most
-   boards do not need a subtype defined. It is only needed if we need
-   to use #ifdef'd code to change behaviour
+   NOTE!! Do not add more subtypes.  They are no longer needed.
 */
 // #define HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412	5000
-#define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3         5001
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3         5001
 // #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4         5002
 #define HAL_BOARD_SUBTYPE_CHIBIOS_GENERIC       5009
-#define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5         5013
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5         5013
 // #define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V51   5016
 // #define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52   5017
 // #define HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51  5018
