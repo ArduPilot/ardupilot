@@ -48,6 +48,7 @@ NAV_WAYPOINT = 16
 NAV_TAKEOFF = 22
 NAV_LAND = 21
 DO_LAND_START = 189
+LOITER_TO_ALT = 31
 
 TAKEOFF_PITCH = 15
 
@@ -67,12 +68,16 @@ local function wrap_180(angle)
     return res
 end
 
-function create_final_approach_WP(i,bearing,dist,alt) --index,degs,m,m
-   local item = mavlink_mission_item_int_t()
-   local loc = ahrs:get_home()
-   loc:offset_bearing(bearing,dist) ---degs and meters
+function get_final_approach_loc(bearing, dist) --degs,m
+    local loc = ahrs:get_home()
+    loc:offset_bearing(bearing,dist) ---degs and meters
+    return loc
+end
 
-   item:seq(i)
+function create_final_approach_WP(loc,alt) --loc,m
+   local item = mavlink_mission_item_int_t()
+
+   item:seq(4)
    item:frame(FRAME_GLOBAL)
    item:command(NAV_WAYPOINT)
    item:param1(0)
@@ -88,7 +93,7 @@ end
 function create_takeoff_WP(alt)
    local item = mavlink_mission_item_int_t()
    local loc = ahrs:get_home()
-   
+
    item:seq(1)
    item:frame(FRAME_GLOBAL)
    item:command(NAV_TAKEOFF)
@@ -106,7 +111,7 @@ function create_land_WP()
    local item = mavlink_mission_item_int_t()
    local loc = ahrs:get_home()
 
-   item:seq(4)
+   item:seq(5)
    item:frame(FRAME_GLOBAL)
    item:command(NAV_LAND)
    item:param1(15)
@@ -135,6 +140,29 @@ function create_do_land_start_WP()
    return item
 end
 
+function create_loiter_to_alt_WP(bearing,land_start,radius,alt) -- degs,loc,m,m
+   local item = mavlink_mission_item_int_t()
+   local loc = land_start:copy()
+   -- NOTE: Unlike the true AUTOLAND mode, we are creating the waypoints at takeoff
+   -- So we can't know for sure if we'll be left or right of the final approach wp
+   -- Defaulting to clockwise loiter
+   -- NOTE: AUTOLAND uses the navigation controller-sanitized radius and it's not
+   -- exposed via the Lua API apparently, so using the radius as is
+   loc:offset_bearing(wrap_360(bearing-90),radius)
+
+   item:seq(3)
+   item:frame(FRAME_GLOBAL)
+   item:command(LOITER_TO_ALT)
+   item:param1(1)
+   item:param2(radius)
+   item:param3(1)
+   item:param4(0)
+   item:x(loc:lat())
+   item:y(loc:lng())
+   item:z(alt)
+   return item
+end
+
 function update()
   if not arming:is_armed() then --if disarmed, wait until armed
     mission_loaded = false
@@ -148,8 +176,11 @@ function update()
     local alt = baro:get_altitude()
     if location and home and speed > (0.5 * param:get("AIRSPEED_MIN")) then
         local yaw = gps:ground_course(0)
-        mission:set_item(3,create_final_approach_WP(3,wrap_180(yaw+180),final_wp_dist,final_wp_alt))
-        mission:set_item(4,create_land_WP())
+        local land_start = get_final_approach_loc(wrap_180(yaw+180),final_wp_dist)
+        local loiter_radius = math.min(AULND_DIST:get() * 0.333,math.abs(param:get("WP_LOITER_RAD")))
+        mission:set_item(3,create_loiter_to_alt_WP(wrap_180(yaw+180),land_start,loiter_radius,final_wp_alt))
+        mission:set_item(4,create_final_approach_WP(land_start,final_wp_alt))
+        mission:set_item(5,create_land_WP())
         mission_loaded = true
         gcs:send_text(MAV_SEVERITY.NOTICE, string.format("Captured initial takeoff direction = %.1f at %.1f m and %.1f m/s",yaw, alt, speed))
     end
