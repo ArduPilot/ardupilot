@@ -147,6 +147,10 @@ public:
     // get the slew yaw rate limit in deg/s
     float get_slew_yaw_max_degs() const;
 
+    // Returns the maximum allowed yaw rate for setpoint slewing (in rad/s).
+    // This limit applies in modes like Loiter or RTL to constrain sudden yaw changes.
+    float get_slew_yaw_max_rads() const { return radians(get_slew_yaw_max_degs()); }
+
     // get the rate control input smoothing time constant
     float get_input_tc() const { return _input_tc; }
 
@@ -312,7 +316,7 @@ public:
 
     // Sets desired thrust vector and heading (in centidegrees), with zero heading rate.
     // See input_thrust_vector_heading_rad() for full details.
-    void input_thrust_vector_heading_cd(const Vector3f& thrust_vector, float heading_cd) {input_thrust_vector_heading_cd(thrust_vector, heading_cd, 0.0f);}
+    void input_thrust_vector_heading_rad(const Vector3f& thrust_vector, float heading_rad) {input_thrust_vector_heading_rad(thrust_vector, heading_rad, 0.0f);}
 
     ////// end rate update functions //////
 
@@ -564,10 +568,6 @@ protected:
     // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
     virtual float get_roll_trim_rad() { return 0;}
 
-    // Returns the maximum allowed yaw rate for setpoint slewing (in rad/s).
-    // This limit applies in modes like Loiter or RTL to constrain sudden yaw changes.
-    float get_slew_yaw_max_rads() const { return radians(get_slew_yaw_max_degs()); }
-
     // Returns the most recent angular velocity reading (rad/s) for the rate controller.
     // Ensures minimum latency when rate control is run before or after attitude control.
     const Vector3f get_latest_gyro() const;
@@ -720,9 +720,9 @@ public:
         Rate_Only
     };
     struct HeadingCommand {
-        float yaw_angle_cd;
-        float yaw_rate_cds;
+        float yaw_angle_rad;
+        float yaw_rate_rads;
         HeadingMode heading_mode;
     };
-    void input_thrust_vector_heading_cd(const Vector3f& thrust_vector, HeadingCommand heading);
+    void input_thrust_vector_heading(const Vector3f& thrust_vector, HeadingCommand heading);
 };
