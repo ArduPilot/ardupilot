@@ -177,14 +177,14 @@ public:
     virtual int32_t get_alt_above_ground_cm(void) const;
 
     // pilot input processing
-    void get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
+    void get_pilot_desired_lean_angles_cd(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
+    float get_pilot_desired_yaw_rate_cds() const;
     Vector2f get_pilot_desired_velocity(float vel_max) const;
-    float get_pilot_desired_yaw_rate() const;
     float get_pilot_desired_throttle() const;
 
     // returns climb target_rate reduced to avoid obstacles and
     // altitude fence
-    float get_avoidance_adjusted_climbrate(float target_rate);
+    float get_avoidance_adjusted_climbrate_cms(float target_rate_cms);
 
     // send output to the motors, can be overridden by subclasses
     virtual void output_to_motors();
@@ -312,7 +312,7 @@ public:
             ROI =              2,  // point towards a location held in roi (no pilot input accepted)
             FIXED =            3,  // point towards a particular angle (no pilot input accepted)
             LOOK_AHEAD =       4,  // point in the direction the copter is moving
-            RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
+            RESET_TO_ARMED_YAW =  5,  // point towards heading at time motors were armed
             ANGLE_RATE =       6,  // turn at a specified rate from a starting angle
             RATE =             7,  // turn at a specified rate (held in auto_yaw_rate)
             CIRCLE =           8,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
@@ -332,13 +332,13 @@ public:
         void set_roi(const Location &roi_location);
 
         void set_fixed_yaw(float angle_deg,
-                           float turn_rate_dps,
+                           float turn_rate_degs,
                            int8_t direction,
                            bool relative_angle);
 
-        void set_yaw_angle_rate(float yaw_angle_d, float yaw_rate_ds);
+        void set_yaw_angle_and_rate_deg(float yaw_angle_deg, float yaw_rate_degs);
 
-        void set_yaw_angle_offset(const float yaw_angle_offset_d);
+        void set_yaw_offset_deg(const float yaw_angle_offset_deg);
 
         bool reached_fixed_yaw_target();
 
@@ -357,7 +357,7 @@ public:
         float rate_cds();
 
         // returns a yaw in degrees, direction of vehicle travel:
-        float look_ahead_yaw();
+        float look_ahead_yaw_deg();
 
         float roi_yaw() const;
 
@@ -378,7 +378,7 @@ public:
         uint32_t _last_update_ms;
 
         // heading when in yaw_look_ahead_yaw
-        float _look_ahead_yaw;
+        float _look_ahead_yaw_deg;
 
         // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
         float _yaw_angle_cd;
@@ -948,7 +948,7 @@ protected:
 private:
 
     // Flip
-    Vector3f orig_attitude;         // original vehicle attitude before flip
+    Vector3f orig_attitude_euler_cd;         // original vehicle attitude before flip
 
     enum class FlipState : uint8_t {
         Start,

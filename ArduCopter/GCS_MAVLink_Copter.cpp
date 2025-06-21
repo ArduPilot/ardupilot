@@ -609,7 +609,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_int_t 
             !copter.camera_mount.has_pan_control()) {
             // Per the handler in AP_Mount, DO_MOUNT_CONTROL yaw angle is in body frame, which is
             // equivalent to an offset to the current yaw demand.
-            copter.flightmode->auto_yaw.set_yaw_angle_offset(packet.param3);
+            copter.flightmode->auto_yaw.set_yaw_offset_deg(packet.param3);
         }
         break;
     default:
@@ -883,7 +883,7 @@ void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
             // Per the handler in AP_Mount, MOUNT_CONTROL yaw angle is in body frame, which is
             // equivalent to an offset to the current yaw demand.
             const float yaw_offset_d = mavlink_msg_mount_control_get_input_c(&msg) * 0.01f;
-            copter.flightmode->auto_yaw.set_yaw_angle_offset(yaw_offset_d);
+            copter.flightmode->auto_yaw.set_yaw_offset_deg(yaw_offset_d);
             break;
         }
     }

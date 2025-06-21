@@ -277,7 +277,7 @@ protected:
     Vector3f    _origin_neu_cm;             // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination_neu_cm;        // target destination in cm from ekf origin
     Vector3f    _next_destination_neu_cm;   // next target destination in cm from ekf origin
-    float       _track_scalar_dt;           // time compression multiplier to slow the progress along the track
+    float       _track_dt_scalar;           // time compression multiplier to slow the progress along the track
     float       _offset_vel_cms;            // horizontal velocity reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
     float       _offset_accel_cmss;         // horizontal acceleration reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
     bool        _paused;                    // flag for pausing waypoint controller

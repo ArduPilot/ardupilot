@@ -46,7 +46,7 @@ void ModeDrift::run()
 
     // convert pilot input to lean angles
     float target_roll_cd, target_pitch_cd;
-    get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, copter.aparm.angle_max, copter.aparm.angle_max);
+    get_pilot_desired_lean_angles_cd(target_roll_cd, target_pitch_cd, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // Grab inertial velocity
     const Vector3f& vel_NEU_cms = pos_control->get_vel_estimate_NEU_cms();
