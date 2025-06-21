@@ -16,9 +16,11 @@
   simulator connector for XPlane
 */
 
-#include "SIM_XPlane.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_XPLANE_ENABLED
+#if AP_SIM_XPLANE_ENABLED
+
+#include "SIM_XPlane.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -702,4 +704,4 @@ void XPlane::update(const struct sitl_input &input)
     check_reload_dref();
 }
 
-#endif  // HAL_SIM_XPLANE_ENABLED
+#endif  // AP_SIM_XPLANE_ENABLED

@@ -16,9 +16,11 @@
   simulator connector for Scrimmage simulator
 */
 
-#include "SIM_Scrimmage.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_SCRIMMAGE_ENABLED
+#if AP_SIM_SCRIMMAGE_ENABLED
+
+#include "SIM_Scrimmage.h"
 
 #include <stdio.h>
 #include <inttypes.h>
@@ -134,4 +136,4 @@ void Scrimmage::update(const struct sitl_input &input)
 
 } // namespace SITL
 
-#endif
+#endif  // AP_SIM_SCRIMMAGE_ENABLED

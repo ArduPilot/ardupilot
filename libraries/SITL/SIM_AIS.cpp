@@ -31,9 +31,11 @@
     module load ais
 */
 
-#include "SIM_AIS.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_AIS_ENABLED
+#if AP_SIM_AIS_ENABLED
+
+#include "SIM_AIS.h"
 
 #include <SITL/SITL.h>
 
@@ -560,4 +562,4 @@ void AIS::send_static_and_voyage(const mavlink_ais_vessel_t &info) {
     sequence_ID++;
 }
 
-#endif  // HAL_SIM_AIS_ENABLED
+#endif  // AP_SIM_AIS_ENABLED
