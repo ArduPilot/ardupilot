@@ -150,11 +150,11 @@ float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float m
 // The expo should be less than 1.0 but limited to be less than 0.95.
 float input_expo(float input, float expo);
 
-// angle_to_accel converts a maximum lean angle in degrees to an accel limit in m/s/s
-float angle_to_accel(float angle_deg);
+// angle_deg_to_accel_mss converts a maximum lean angle in degrees to an accel limit in m/s/s
+float angle_deg_to_accel_mss(float angle_deg);
 
-// accel_to_angle converts a maximum accel in m/s/s to a lean angle in degrees
-float accel_to_angle(float accel);
+// accel_mss_to_angle_deg converts a maximum accel in m/s/s to a lean angle in degrees
+float accel_mss_to_angle_deg(float accel);
 
 // rc_input_to_roll_pitch - transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
 // roll_in_unit and pitch_in_unit - are normalised roll and pitch stick inputs
