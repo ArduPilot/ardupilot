@@ -54,6 +54,9 @@ class TimeListener(rclpy.node.Node):
 
     def subscriber_callback(self, msg):
         """Process a Time message."""
+        if self.msg_event_object.set():
+            return
+
         if msg.sec:
             self.get_logger().info("From AP : True [sec:{}, nsec: {}]".format(msg.sec, msg.nanosec))
         else:

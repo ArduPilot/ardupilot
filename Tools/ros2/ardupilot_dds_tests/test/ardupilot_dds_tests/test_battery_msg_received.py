@@ -78,6 +78,9 @@ class BatteryListener(rclpy.node.Node):
 
     def subscriber_callback(self, msg):
         """Process a BatteryState message."""
+        if self.msg_event_object.set():
+            return
+
         self.get_logger().info("From AP : ID {} Voltage {}".format(msg.header.frame_id, msg.voltage))
 
         if msg.header.frame_id == '0':
