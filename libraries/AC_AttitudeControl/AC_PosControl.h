@@ -391,10 +391,12 @@ public:
     float get_pitch_cd() const { return _pitch_target_cd; }
 
     /// get desired yaw to be passed to the attitude controller
-    float get_yaw_cd() const { return _yaw_target_cd; }
+    float get_yaw_rad() const { return _yaw_target_rad; }
+    float get_yaw_cd() const { return rad_to_cd(_yaw_target_rad); }
 
     /// get desired yaw rate to be passed to the attitude controller
-    float get_yaw_rate_cds() const { return _yaw_rate_target_cds; }
+    float get_yaw_rate_rads() const { return _yaw_rate_target_rads; }
+    float get_yaw_rate_cds() const { return rad_to_cd(_yaw_rate_target_rads); }
 
     /// get desired roll and pitch to be passed to the attitude controller
     Vector3f get_thrust_vector() const;
@@ -559,8 +561,8 @@ protected:
     // output from controller
     float       _roll_target_cd;            // desired roll angle in centi-degrees calculated by position controller
     float       _pitch_target_cd;           // desired roll pitch in centi-degrees calculated by position controller
-    float       _yaw_target_cd;             // desired yaw in centi-degrees calculated by position controller
-    float       _yaw_rate_target_cds;       // desired yaw rate in centi-degrees per second calculated by position controller
+    float       _yaw_target_rad;             // desired yaw in radians calculated by position controller
+    float       _yaw_rate_target_rads;       // desired yaw rate in radians per second calculated by position controller
 
     // position controller internal variables
     Vector3p    _pos_estimate_neu_cm;

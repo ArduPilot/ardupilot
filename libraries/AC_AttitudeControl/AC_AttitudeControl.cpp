@@ -907,17 +907,17 @@ void AC_AttitudeControl::input_thrust_vector_heading_rad(const Vector3f& thrust_
 }
 
 // Command a thrust vector and heading rate
-void AC_AttitudeControl::input_thrust_vector_heading_cd(const Vector3f& thrust_vector, HeadingCommand heading)
+void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vector, HeadingCommand heading)
 {
     switch (heading.heading_mode) {
     case HeadingMode::Rate_Only:
-        input_thrust_vector_rate_heading_cds(thrust_vector, heading.yaw_rate_cds);
+        input_thrust_vector_rate_heading_rads(thrust_vector, heading.yaw_rate_rads);
         break;
     case HeadingMode::Angle_Only:
-        input_thrust_vector_heading_cd(thrust_vector, heading.yaw_angle_cd, 0.0);
+        input_thrust_vector_heading_rad(thrust_vector, heading.yaw_angle_rad, 0.0);
         break;
     case HeadingMode::Angle_And_Rate:
-        input_thrust_vector_heading_cd(thrust_vector, heading.yaw_angle_cd, heading.yaw_rate_cds);
+        input_thrust_vector_heading_rad(thrust_vector, heading.yaw_angle_rad, heading.yaw_rate_rads);
         break;
     }
 }
