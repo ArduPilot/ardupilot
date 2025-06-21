@@ -37,7 +37,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
  - SERIAL1 -> UART1 (GPS) DMA capable
  - SERIAL2 -> UART2 (MAVLink2)
  - SERIAL3 -> UART3 (ESC Telemetry)
- - SERIAL4 -> UART4 (DisplayPort) TX DMA capable
+ - SERIAL4 -> UART4 (DisplayPort) DMA capable
  - SERIAL5 -> UART5 (RCin) RX DMA capable
  - SERIAL6 -> UART6 (User) DMA capable
  - SERIAL7 -> UART7 (User) DMA Capable
