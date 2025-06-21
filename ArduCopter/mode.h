@@ -177,8 +177,8 @@ public:
     virtual int32_t get_alt_above_ground_cm(void) const;
 
     // pilot input processing
-    void get_pilot_desired_lean_angles_cd(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
-    float get_pilot_desired_yaw_rate_cds() const;
+    void get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_out_rad, float angle_max_rad, float angle_limit_rad) const;
+    float get_pilot_desired_yaw_rate_rads() const;
     Vector2f get_pilot_desired_velocity(float vel_max) const;
     float get_pilot_desired_throttle() const;
 
@@ -801,7 +801,7 @@ public:
 protected:
     bool position_ok() override;
     float get_pilot_desired_climb_rate_cms(void) const override;
-    void get_pilot_desired_rp_yrate_cd(float &roll_cd, float &pitch_cd, float &yaw_rate_cds) override;
+    void get_pilot_desired_rp_yrate_rad(float &des_roll_rad, float &des_pitch_rad, float &des_yaw_rate_rads) override;
     void init_z_limits() override;
 #if HAL_LOGGING_ENABLED
     void log_pids() override;
@@ -948,7 +948,7 @@ protected:
 private:
 
     // Flip
-    Vector3f orig_attitude_euler_cd;         // original vehicle attitude before flip
+    Vector3f orig_attitude_euler_rad;   // original vehicle attitude before flip
 
     enum class FlipState : uint8_t {
         Start,
@@ -958,11 +958,11 @@ private:
         Recover,
         Abandon
     };
-    FlipState _state;               // current state of flip
-    Mode::Number   orig_control_mode;   // flight mode when flip was initiated
-    uint32_t  start_time_ms;          // time since flip began
-    int8_t    roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
-    int8_t    pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
+    FlipState _state;                   // current state of flip
+    Mode::Number  orig_control_mode;    // flight mode when flip was initiated
+    uint32_t start_time_ms;             // time since flip began
+    int8_t roll_dir;                    // roll direction (-1 = roll left, 1 = roll right)
+    int8_t pitch_dir;                   // pitch direction (-1 = pitch forward, 1 = pitch back)
 };
 
 
