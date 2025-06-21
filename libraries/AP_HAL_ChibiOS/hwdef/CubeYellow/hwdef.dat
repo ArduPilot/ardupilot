@@ -6,11 +6,6 @@ define HAL_CHIBIOS_ARCH_CUBE 1
 # MCU class and specific type
 MCU STM32F7xx STM32F777xx
 
-# we set a specific HAL_BOARD_SUBTYPE, allowing for custom config in
-# drivers. For this to be used the subtype needs to be added to
-# AP_HAL/AP_HAL_Boards.h as well
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
-
 # now we need to specify the APJ_BOARD_ID. This is the ID that the
 # bootloader presents to GCS software so it knows if this firmware is
 # suitable for the board. Please see
@@ -450,3 +445,8 @@ ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_cube_dshot_highpolh.bin
 define HAL_WITH_IO_MCU_DSHOT 1
 
 define AP_IOMCU_PROFILED_SUPPORT_ENABLED 1
+
+# special code for Sub to indicate whether pins should be defined as
+# analogue or digital by default:
+define AP_LEAKDETECTOR_PIN_IS_ANALOG 13, 14, 15
+define AP_LEAKDETECTOR_PIN_IS_DIGITAL 50, 51, 52, 53, 54, 55

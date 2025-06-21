@@ -24,7 +24,6 @@ FLASH_RESERVE_START_KB 128
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART2 USART3 USART1 UART4 USART6 UART7 OTG2
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5
 define HAL_CHIBIOS_ARCH_FMUV5 1
 define BOARD_TYPE_DEFAULT 24
 
@@ -345,3 +344,8 @@ ENABLE_DFU_BOOT 1
 # enable support for dshot on iomcu
 ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_lowpolh.bin
 define HAL_WITH_IO_MCU_DSHOT 1
+
+# special code for Sub to indicate whether pins should be defined as
+# analogue or digital by default:
+define AP_LEAKDETECTOR_PIN_IS_ANALOG 13, 14, 15
+define AP_LEAKDETECTOR_PIN_IS_DIGITAL 50, 51, 52, 53, 54, 55

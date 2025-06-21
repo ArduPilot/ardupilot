@@ -7,11 +7,6 @@
 # MCU class and specific type
 MCU STM32F7xx STM32F777xx
 
-# we set a specific HAL_BOARD_SUBTYPE, allowing for custom config in
-# drivers. For this to be used the subtype needs to be added to
-# AP_HAL/AP_HAL_Boards.h as well
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
-
 # Set Proper Sensor Orientation
 define BOARD_TYPE_DEFAULT 20
 
@@ -422,3 +417,8 @@ STORAGE_FLASH_PAGE 1
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
+
+# special code for Sub to indicate whether pins should be defined as
+# analogue or digital by default:
+define AP_LEAKDETECTOR_PIN_IS_ANALOG 13, 14, 15
+define AP_LEAKDETECTOR_PIN_IS_DIGITAL 50, 51, 52, 53, 54, 55
