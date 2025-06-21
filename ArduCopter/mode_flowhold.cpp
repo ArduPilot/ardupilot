@@ -334,7 +334,7 @@ void ModeFlowHold::run()
     bf_angles_cd.x = constrain_float(bf_angles_cd.x, -angle_max_cd, angle_max_cd);
     bf_angles_cd.y = constrain_float(bf_angles_cd.y, -angle_max_cd, angle_max_cd);
 
-#if AP_AVOIDANCE_ENABLED
+#if AP_AVOIDANCE_ENABLED && AP_ALT_HOLD_AVOIDANCE_ENABLED
     // apply avoidance
     copter.avoid.adjust_roll_pitch(bf_angles_cd.x, bf_angles_cd.y, copter.aparm.angle_max);
 #endif
