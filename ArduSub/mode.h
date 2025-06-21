@@ -151,7 +151,7 @@ public:
         // rate_cds(): desired yaw rate in centidegrees/second:
         float rate_cds();
 
-        float look_ahead_yaw();
+        float look_ahead_yaw_deg();
         float roi_yaw();
 
         // auto flight mode's yaw mode
@@ -170,7 +170,7 @@ public:
         int16_t _fixed_yaw_slewrate;
 
         // heading when in yaw_look_ahead_yaw
-        float _look_ahead_yaw;
+        float _look_ahead_yaw_deg;
 
         // used to reduce update rate to 100hz:
         uint8_t roi_yaw_counter;
