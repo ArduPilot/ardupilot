@@ -204,7 +204,7 @@ private:
 
     // parameters
     AP_Int8 _enabled;
-    AP_Int16 _angle_max;           // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
+    AP_Int16 _angle_max_cd;        // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
     AP_Float _dist_max;            // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
     AP_Float _margin;              // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
     AP_Int8 _behavior;             // avoidance behaviour (slide or stop)
