@@ -8,6 +8,7 @@ they are clean, ensures that they actually are
 """
 
 import os
+import pathlib
 import subprocess
 import sys
 
@@ -36,12 +37,16 @@ class Flake8Checker(object):
             self.retcode = 1
 
     def run(self):
-        for (dirpath, dirnames, filenames) in os.walk("Tools"):
+        for (dirpath, dirnames, filenames) in os.walk("."):
             for filename in filenames:
                 if os.path.splitext(filename)[1] != ".py":
                     continue
+                if filename == 'env.py':
+                    # we are generating content into these files which
+                    # is not actually Python...
+                    continue
                 filepath = os.path.join(dirpath, filename)
-                content = open(filepath).read()
+                content = pathlib.Path(filepath).read_text()
                 if "AP_FLAKE8_CLEAN" not in content:
                     continue
                 self.files_to_check.append(filepath)
