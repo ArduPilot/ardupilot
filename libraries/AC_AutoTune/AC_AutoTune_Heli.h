@@ -259,7 +259,6 @@ private:
     sweep_info curr_test_mtr;
     sweep_info curr_test_tgt;
 
-    Vector3f start_angles;                          // aircraft attitude at the start of test
     uint32_t settle_time;                           // time in ms for allowing aircraft to stabilize before initiating test
 
     // variables from dwell test
