@@ -1,6 +1,11 @@
 #include "BetterStream.h"
+#include <AP_HAL/AP_HAL.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include <cstdio>
+#endif
 #include "print_vprintf.h"
+
 
 void AP_HAL::BetterStream::printf(const char *fmt, ...)
 {
@@ -13,6 +18,9 @@ void AP_HAL::BetterStream::printf(const char *fmt, ...)
 void AP_HAL::BetterStream::vprintf(const char *fmt, va_list ap)
 {
     print_vprintf(this, fmt, ap);
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    std::vprintf(fmt, ap);
+#endif
 }
 
 size_t AP_HAL::BetterStream::write(const char *str)
