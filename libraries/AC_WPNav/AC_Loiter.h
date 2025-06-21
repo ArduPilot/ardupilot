@@ -88,6 +88,6 @@ protected:
     Vector2f    _predicted_accel_ne_cmss;   // predicted acceleration in lat/lon frame based on pilot's desired acceleration
     Vector2f    _predicted_euler_angle_rad; // predicted roll/pitch angles in radians based on pilot's desired acceleration
     Vector2f    _predicted_euler_rate;      // predicted roll/pitch rates in radians/sec based on pilot's desired acceleration
-    uint32_t    _brake_timer;               // system time that brake was initiated
+    uint32_t    _brake_timer_ms;            // system time that brake was initiated
     float       _brake_accel_cmss;          // acceleration due to braking from previous iteration (used for jerk limiting)
 };
