@@ -124,6 +124,9 @@ class GeoPoseListener(rclpy.node.Node):
 
     def subscriber_callback(self, msg):
         """Process a GeoPoseStamped message."""
+        if self.msg_event_object.set():
+            return
+
         position = msg.pose.position
 
         self.get_logger().info("From AP : Position [lat:{}, lon: {}]".format(position.latitude, position.longitude))

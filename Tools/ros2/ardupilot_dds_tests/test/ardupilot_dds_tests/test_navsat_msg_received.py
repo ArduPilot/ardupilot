@@ -66,6 +66,9 @@ class NavSatFixListener(rclpy.node.Node):
 
     def subscriber_callback(self, msg):
         """Process a NavSatFix message."""
+        if self.msg_event_object.set():
+            return
+
         if msg.latitude:
             self.get_logger().info("From AP : True [lat:{}, lon: {}]".format(msg.latitude, msg.longitude))
         else:

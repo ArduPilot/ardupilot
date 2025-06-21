@@ -76,6 +76,9 @@ class RcListener(rclpy.node.Node):
 
     def subscriber_callback(self, msg):
         """Process a Rc message."""
+        if self.msg_event_object.set():
+            return
+
         # set event last
         self.msg_event_object.set()
 
