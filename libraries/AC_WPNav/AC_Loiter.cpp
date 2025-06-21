@@ -218,7 +218,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     float gnd_speed_limit_cms = MIN(_speed_max_ne_cms, ekfGndSpdLimit * 100.0f);
     gnd_speed_limit_cms = MAX(gnd_speed_limit_cms, LOITER_SPEED_MIN);
 
-    float pilot_acceleration_max = angle_to_accel(get_angle_max_cd() * 0.01) * 100;
+    float pilot_acceleration_max = angle_deg_to_accel_mss(get_angle_max_cd() * 0.01) * 100;
 
     // range check dt
     if (is_negative(dt)) {
@@ -242,13 +242,13 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         // calculate a braking acceleration if sticks are at zero
         float loiter_brake_accel = 0.0f;
         if (_desired_accel_ne_cmss.is_zero()) {
-            if ((AP_HAL::millis() - _brake_timer) > _brake_delay_s * 1000.0f) {
+            if ((AP_HAL::millis() - _brake_timer_ms) > _brake_delay_s * 1000.0f) {
                 float brake_gain = _pos_control.get_vel_NE_pid().kP() * 0.5f;
                 loiter_brake_accel = constrain_float(sqrt_controller(desired_speed, brake_gain, _brake_jerk_max_cmsss, dt), 0.0f, _brake_accel_max_cmss);
             }
         } else {
             loiter_brake_accel = 0.0f;
-            _brake_timer = AP_HAL::millis();
+            _brake_timer_ms = AP_HAL::millis();
         }
         _brake_accel_cmss += constrain_float(loiter_brake_accel - _brake_accel_cmss, -_brake_jerk_max_cmsss * dt, _brake_jerk_max_cmsss * dt);
         loiter_accel_brake = desired_vel_norm * _brake_accel_cmss;
