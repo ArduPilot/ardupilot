@@ -40,7 +40,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
  - SERIAL4 -> UART4 (DisplayPort) TX DMA capable
  - SERIAL5 -> UART5 (RCin) RX DMA capable
  - SERIAL6 -> UART6 (User) DMA capable
- - SERIAL7 -> UART7 (User)
+ - SERIAL7 -> UART7 (User) DMA Capable
  - SERIAL8 -> UART8 (User)
 
 ## RC Input
