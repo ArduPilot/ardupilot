@@ -7,7 +7,7 @@ MCU STM32L431 STM32L431xx
 OSCILLATOR_HZ 8000000
 
 # board ID. See Tools/AP_Bootloader/board_types.txt
-APJ_BOARD_ID 1062
+APJ_BOARD_ID AP_HW_MatekL431
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

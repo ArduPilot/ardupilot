@@ -454,11 +454,18 @@ AP_HW_ZeroOne_GNSS                   5602
 AP_HW_DroneBuild_G1                  5700
 AP_HW_DroneBuild_G2                  5701
 
+# IDs 5711-5720 reserved for iomcu-specific "boards"
+AP_HW_IOMCU_F103                     5711
+AP_HW_IOMCU_F103_8MHZ                5712  # some boards are clocked differently
+AP_HW_IOMCU_F100                     5713
+
+
 #IDs 5800-5809 reserved for Droneer
 AP_HW_DroneerF405                    5800
 
 #IDs 5810-5819 reserved for Brother Hobby
 AP_HW_BrotherHobbyH743               5810
+AP_HW_BrotherHobbyF405v3             5811
 
 # IDs 6000-6099 reserved for SpektreWorks
 AP_HW_sw-spar-f407                   6000
@@ -499,6 +506,8 @@ AP_HW_Accton_Godwit_GA1        7120
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140
 AP_HW_Pixhawk6_ODID                 10053
+
+AP_HW_CUBEORANGEPLUS_ODID           11063
 
 # do not allocate board IDs above 10,000 for non-ODID boards.
 # do not allocate board IDs above 19,999 in this file.
