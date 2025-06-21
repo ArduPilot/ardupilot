@@ -778,7 +778,7 @@ void Mode::land_run_horizontal_control()
     }
 
     // call attitude controller
-    attitude_control->input_thrust_vector_heading_cd(thrust_vector, auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(thrust_vector, auto_yaw.get_heading());
 
 }
 
@@ -844,8 +844,7 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
     pos_control->update_U_controller();
 
     // call attitude controller
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
-
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // Run precland statemachine. This function should be called from any mode that wants to do precision landing.
