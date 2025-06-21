@@ -952,7 +952,7 @@ void ModeGuided::angle_control_run()
         climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms());
 
         // get avoidance adjusted climb rate
-        climb_rate_cms = get_avoidance_adjusted_climbrate(climb_rate_cms);
+        climb_rate_cms = get_avoidance_adjusted_climbrate_cms(climb_rate_cms);
     }
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
@@ -1018,9 +1018,9 @@ void ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, fl
     if (use_yaw && relative_angle) {
         auto_yaw.set_fixed_yaw(yaw_cd * 0.01f, 0.0f, 0, relative_angle);
     } else if (use_yaw && use_yaw_rate) {
-        auto_yaw.set_yaw_angle_rate(yaw_cd * 0.01f, yaw_rate_cds * 0.01f);
+        auto_yaw.set_yaw_angle_and_rate_deg(yaw_cd * 0.01f, yaw_rate_cds * 0.01f);
     } else if (use_yaw && !use_yaw_rate) {
-        auto_yaw.set_yaw_angle_rate(yaw_cd * 0.01f, 0.0f);
+        auto_yaw.set_yaw_angle_and_rate_deg(yaw_cd * 0.01f, 0.0f);
     } else if (use_yaw_rate) {
         auto_yaw.set_rate(yaw_rate_cds);
     } else {

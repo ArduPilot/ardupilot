@@ -1194,7 +1194,7 @@ void ModeAuto::loiter_to_alt_run()
     target_climb_rate = constrain_float(target_climb_rate, pos_control->get_max_speed_down_cms(), pos_control->get_max_speed_up_cms());
 
     // get avoidance adjusted climb rate
-    target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+    target_climb_rate = get_avoidance_adjusted_climbrate_cms(target_climb_rate);
 
 #if AP_RANGEFINDER_ENABLED
     // update the vertical offset based on the surface measurement
@@ -1220,7 +1220,7 @@ void ModeAuto::nav_attitude_time_run()
     float target_climb_rate_cms = constrain_float(nav_attitude_time.climb_rate * 100.0, pos_control->get_max_speed_down_cms(), pos_control->get_max_speed_up_cms());
 
     // get avoidance adjusted climb rate
-    target_climb_rate_cms = get_avoidance_adjusted_climbrate(target_climb_rate_cms);
+    target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
     // limit and scale lean angles
     const float angle_limit_cd = MAX(1000.0f, MIN(copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd()));
@@ -1992,7 +1992,7 @@ void ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
         !copter.camera_mount.has_pan_control()) {
         // Per the handler in AP_Mount, DO_MOUNT_CONTROL yaw angle is in body frame, which is
         // equivalent to an offset to the current yaw demand.
-        auto_yaw.set_yaw_angle_offset(cmd.content.mount_control.yaw);
+        auto_yaw.set_yaw_offset_deg(cmd.content.mount_control.yaw);
     }
     // pass the target angles to the camera mount
     copter.camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);

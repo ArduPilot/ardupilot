@@ -1086,7 +1086,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 0.01
     // @Values: 0.5:Very Soft, 0.2:Soft, 0.15:Medium, 0.1:Crisp, 0.05:Very Crisp
     // @User: Standard
-    AP_SUBGROUPINFO(command_model_pilot, "PILOT_Y_", 56, ParametersG2, AC_CommandModel),
+    AP_SUBGROUPINFO(command_model_pilot_y, "PILOT_Y_", 56, ParametersG2, AC_CommandModel),
 
     // @Param: TKOFF_SLEW_TIME
     // @DisplayName: Slew time of throttle during take-off
@@ -1263,7 +1263,7 @@ ParametersG2::ParametersG2(void) :
     ,command_model_acro_y(ACRO_Y_RATE_DEFAULT, ACRO_Y_EXPO_DEFAULT, 0.0f)
 #endif
 
-    ,command_model_pilot(PILOT_Y_RATE_DEFAULT, PILOT_Y_EXPO_DEFAULT, 0.0f)
+    ,command_model_pilot_y(PILOT_Y_RATE_DEFAULT, PILOT_Y_EXPO_DEFAULT, 0.0f)
 
 #if WEATHERVANE_ENABLED
     ,weathervane()
