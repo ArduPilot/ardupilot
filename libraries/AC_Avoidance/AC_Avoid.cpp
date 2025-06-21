@@ -515,7 +515,7 @@ void AC_Avoid::adjust_roll_pitch(float &roll_rad, float &pitch_rad, float veh_an
     // get maximum positive and negative roll and pitch percentages from proximity sensor
     get_proximity_roll_pitch_norm(roll_positive, roll_negative, pitch_positive, pitch_negative);
 
-    // add maximum positive and negative percentages together for roll and pitch, convert to centi-degrees
+    // add maximum positive and negative percentages together for roll and pitch, convert to radians
     Vector2f rp_out_rad((roll_positive + roll_negative) * radians(45.0), (pitch_positive + pitch_negative) * radians(45.0));
 
     // apply avoidance angular limits
