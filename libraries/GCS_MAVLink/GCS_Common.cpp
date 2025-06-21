@@ -5265,27 +5265,15 @@ MAV_RESULT GCS_MAVLINK::try_command_long_as_command_int(const mavlink_command_lo
 
     // convert and run the command
     mavlink_command_int_t command_int;
-    convert_COMMAND_LONG_to_COMMAND_INT(packet, command_int, frame);
+    MAV_RESULT conversion_result = convert_COMMAND_LONG_to_COMMAND_INT(packet, command_int, frame);
+    if (conversion_result != MAV_RESULT_ACCEPTED) {
+        return conversion_result;
+    }
 
     return handle_command_int_packet(command_int, msg);
 }
 
-// returns a value suitable for COMMAND_INT.x or y based on a value
-// coming in from COMMAND_LONG.p5 or p6:
-static int32_t convert_COMMAND_LONG_loc_param(float param, bool stores_location)
-{
-    if (isnan(param)) {
-        return 0;
-    }
-
-    if (stores_location) {
-        return param *1e7;
-    }
-
-    return param;
-}
-
-void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
+MAV_RESULT GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
 {
     out = {};
     out.target_system = in.target_system;
@@ -5298,10 +5286,37 @@ void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long
     out.param2 = in.param2;
     out.param3 = in.param3;
     out.param4 = in.param4;
-    const bool stores_location = command_long_stores_location((MAV_CMD)in.command);
-    out.x = convert_COMMAND_LONG_loc_param(in.param5, stores_location);
-    out.y = convert_COMMAND_LONG_loc_param(in.param6, stores_location);
+
+    // Spec calls for NaN in COMMAND_LONG for invalid, INT32_T-max in
+    // COMMAND_INT:
+    float param5 = in.param5;
+    if (isnan(param5)) {
+        param5 = INT32_MAX;
+    }
+    float param6 = in.param6;
+    if (isnan(param6)) {
+        param6 = INT32_MAX;
+    }
+
+    if (!isfinite(param5) || !isfinite(param6)) {
+        return MAV_RESULT_DENIED;
+    }
+
+    if (command_long_stores_location((MAV_CMD)in.command)) {
+        // check parameters are valid latitude/longitude:
+        if (!check_lat(param5) || !check_lng(param6)) {
+            return MAV_RESULT_DENIED;
+        }
+
+        out.x = param5 * 1e7;
+        out.y = param6 * 1e7;
+    } else {
+        out.x = param5;
+        out.y = param6;
+    }
+
     out.z = in.param7;
+    return MAV_RESULT_ACCEPTED;
 }
 
 void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
