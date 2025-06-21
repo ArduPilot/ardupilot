@@ -495,7 +495,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 
 // adjust roll-pitch to push vehicle away from objects
 // roll and pitch value are in centi-degrees
-void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
+void AC_Avoid::adjust_roll_pitch(float &roll_cd, float &pitch_cd, float veh_angle_max_cd)
 {
     // exit immediately if proximity based avoidance is disabled
     if (!proximity_avoidance_enabled()) {
@@ -503,7 +503,7 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
     }
 
     // exit immediately if angle max is zero
-    if (_angle_max <= 0.0f || veh_angle_max <= 0.0f) {
+    if (_angle_max <= 0.0f || veh_angle_max_cd <= 0.0f) {
         return;
     }
 
@@ -513,32 +513,32 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
     float pitch_negative = 0.0f;   // minimum negative pitch value
 
     // get maximum positive and negative roll and pitch percentages from proximity sensor
-    get_proximity_roll_pitch_pct(roll_positive, roll_negative, pitch_positive, pitch_negative);
+    get_proximity_roll_pitch_norm(roll_positive, roll_negative, pitch_positive, pitch_negative);
 
     // add maximum positive and negative percentages together for roll and pitch, convert to centi-degrees
     Vector2f rp_out((roll_positive + roll_negative) * 4500.0f, (pitch_positive + pitch_negative) * 4500.0f);
 
     // apply avoidance angular limits
     // the object avoidance lean angle is never more than 75% of the total angle-limit to allow the pilot to override
-    const float angle_limit = constrain_float(_angle_max, 0.0f, veh_angle_max * AC_AVOID_ANGLE_MAX_PERCENT);
+    const float angle_limit = constrain_float(_angle_max, 0.0f, veh_angle_max_cd * AC_AVOID_ANGLE_MAX_PERCENT);
     float vec_len = rp_out.length();
     if (vec_len > angle_limit) {
         rp_out *= (angle_limit / vec_len);
     }
 
     // add passed in roll, pitch angles
-    rp_out.x += roll;
-    rp_out.y += pitch;
+    rp_out.x += roll_cd;
+    rp_out.y += pitch_cd;
 
     // apply total angular limits
     vec_len = rp_out.length();
-    if (vec_len > veh_angle_max) {
-        rp_out *= (veh_angle_max / vec_len);
+    if (vec_len > veh_angle_max_cd) {
+        rp_out *= (veh_angle_max_cd / vec_len);
     }
 
     // return adjusted roll, pitch
-    roll = rp_out.x;
-    pitch = rp_out.y;
+    roll_cd = rp_out.x;
+    pitch_cd = rp_out.y;
 }
 
 /*
@@ -1475,7 +1475,7 @@ float AC_Avoid::get_stopping_distance(float kP, float accel_cmss, float speed_cm
 }
 
 // convert distance (in meters) to a lean percentage (in 0~1 range) for use in manual flight modes
-float AC_Avoid::distance_to_lean_pct(float dist_m)
+float AC_Avoid::distance_to_lean_norm(float dist_m)
 {
     // ignore objects beyond DIST_MAX
     if (dist_m < 0.0f || dist_m >= _dist_max || _dist_max <= 0.0f) {
@@ -1486,7 +1486,7 @@ float AC_Avoid::distance_to_lean_pct(float dist_m)
 }
 
 // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
-void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
+void AC_Avoid::get_proximity_roll_pitch_norm(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
 {
 #if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP::proximity();
@@ -1506,7 +1506,7 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
         if (_proximity.get_object_angle_and_distance(i, ang_deg, dist_m)) {
             if (dist_m < _dist_max) {
                 // convert distance to lean angle (in 0 to 1 range)
-                const float lean_pct = distance_to_lean_pct(dist_m);
+                const float lean_pct = distance_to_lean_norm(dist_m);
                 // convert angle to roll and pitch lean percentages
                 const float angle_rad = radians(ang_deg);
                 const float roll_pct = -sinf(angle_rad) * lean_pct;
