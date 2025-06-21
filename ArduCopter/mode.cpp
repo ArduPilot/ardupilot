@@ -241,7 +241,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         control_mode_reason = reason;
         // set yaw rate time constant during autopilot startup
         if (reason == ModeReason::INITIALISED && mode == Mode::Number::STABILIZE) {
-            attitude_control->set_yaw_rate_tc(g2.command_model_pilot.get_rate_tc());
+            attitude_control->set_yaw_rate_tc(g2.command_model_pilot_y.get_rate_tc());
         }
         // make happy noise
         if (copter.ap.initialised && (reason != last_reason)) {
@@ -369,7 +369,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
     attitude_control->set_roll_pitch_rate_tc(g2.command_model_acro_rp.get_rate_tc());
 #endif
-    attitude_control->set_yaw_rate_tc(g2.command_model_pilot.get_rate_tc());
+    attitude_control->set_yaw_rate_tc(g2.command_model_pilot_y.get_rate_tc());
 #if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED
     if (mode== Mode::Number::ACRO || mode== Mode::Number::DRIFT) {
         attitude_control->set_yaw_rate_tc(g2.command_model_acro_y.get_rate_tc());
@@ -462,7 +462,7 @@ void Copter::notify_flight_mode() {
 
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
 // returns desired angle in centi-degrees
-void Mode::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const
+void Mode::get_pilot_desired_lean_angles_cd(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const
 {
     if (!rc().has_valid_input()) {
         roll_out_cd = 0.0;
@@ -505,10 +505,10 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
     copter.rotate_body_frame_to_NE(vel.x, vel.y);
 
     // Transform square input range to circular output
-    // vel_scaler is the vector to the edge of the +- 1.0 square in the direction of the current input
-    Vector2f vel_scaler = vel / MAX(fabsf(vel.x), fabsf(vel.y));
+    // vel_scalar is the vector to the edge of the +- 1.0 square in the direction of the current input
+    Vector2f vel_scalar = vel / MAX(fabsf(vel.x), fabsf(vel.y));
     // We scale the output by the ratio of the distance to the square to the unit circle and multiply by vel_max
-    vel *= vel_max / vel_scaler.length();
+    vel *= vel_max / vel_scalar.length();
     return vel;
 }
 
@@ -818,13 +818,13 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
         // allow user to take control during repositioning. Note: copied from land_run_horizontal_control()
         // To-Do: this code exists at several different places in slightly different forms and that should be fixed
         if (g.land_repositioning) {
-            float target_roll = 0.0f;
-            float target_pitch = 0.0f;
+            float target_roll_cd = 0.0f;
+            float target_pitch_cd = 0.0f;
             // convert pilot input to lean angles
-            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+            get_pilot_desired_lean_angles_cd(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
             // record if pilot has overridden roll or pitch
-            if (!is_zero(target_roll) || !is_zero(target_pitch)) {
+            if (!is_zero(target_roll_cd) || !is_zero(target_pitch_cd)) {
                 if (!copter.ap.land_repo_active) {
                     LOGGER_WRITE_EVENT(LogEvent::LAND_REPO_ACTIVE);
                 }
@@ -930,13 +930,13 @@ float Mode::get_pilot_desired_throttle() const
     return throttle_out;
 }
 
-float Mode::get_avoidance_adjusted_climbrate(float target_rate)
+float Mode::get_avoidance_adjusted_climbrate_cms(float target_rate_cms)
 {
 #if AP_AVOIDANCE_ENABLED
-    AP::ac_avoid()->adjust_velocity_z(pos_control->get_pos_U_p().kP(), pos_control->get_max_accel_U_cmss(), target_rate, G_Dt);
-    return target_rate;
+    AP::ac_avoid()->adjust_velocity_z(pos_control->get_pos_U_p().kP(), pos_control->get_max_accel_U_cmss(), target_rate_cms, G_Dt);
+    return target_rate_cms;
 #else
-    return target_rate;
+    return target_rate_cms;
 #endif
 }
 
@@ -1000,7 +1000,7 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
 
 // transform pilot's yaw input into a desired yaw rate
 // returns desired yaw rate in centi-degrees per second
-float Mode::get_pilot_desired_yaw_rate() const
+float Mode::get_pilot_desired_yaw_rate_cds() const
 {
     if (!rc().has_valid_input()) {
         return 0.0f;
@@ -1010,7 +1010,7 @@ float Mode::get_pilot_desired_yaw_rate() const
     const float yaw_in = channel_yaw->norm_input_dz();
 
     // convert pilot input to the desired yaw rate
-    return g2.command_model_pilot.get_rate() * 100.0 * input_expo(yaw_in, g2.command_model_pilot.get_expo());
+    return g2.command_model_pilot_y.get_rate() * 100.0 * input_expo(yaw_in, g2.command_model_pilot_y.get_expo());
 }
 
 // pass-through functions to reduce code churn on conversion;

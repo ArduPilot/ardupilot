@@ -632,7 +632,7 @@ public:
     AC_CommandModel command_model_acro_y;
 #endif
 
-    AC_CommandModel command_model_pilot;
+    AC_CommandModel command_model_pilot_y;
 
 #if MODE_ACRO_ENABLED
     AP_Int8 acro_options;

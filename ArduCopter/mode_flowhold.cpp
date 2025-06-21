@@ -248,7 +248,7 @@ void ModeFlowHold::run()
     target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn(), copter.g.pilot_speed_up);
 
     // get pilot's desired yaw rate
-    float target_yaw_rate_cds = get_pilot_desired_yaw_rate();
+    float target_yaw_rate_cds = get_pilot_desired_yaw_rate_cds();
 
     // Flow Hold State Machine Determination
     AltHoldModeState flowhold_state = get_alt_hold_state(target_climb_rate_cms);
@@ -281,7 +281,7 @@ void ModeFlowHold::run()
         }
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate(target_climb_rate_cms);
+        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
         // set position controller targets adjusted for pilot input
         takeoff.do_pilot_takeoff(target_climb_rate_cms);
@@ -300,7 +300,7 @@ void ModeFlowHold::run()
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate(target_climb_rate_cms);
+        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
 #if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
@@ -319,7 +319,7 @@ void ModeFlowHold::run()
     int16_t roll_in = copter.channel_roll->get_control_in();
     int16_t pitch_in = copter.channel_pitch->get_control_in();
     float angle_max_cd = copter.aparm.angle_max;
-    get_pilot_desired_lean_angles(bf_angles_cd.x, bf_angles_cd.y, angle_max_cd, attitude_control->get_althold_lean_angle_max_cd());
+    get_pilot_desired_lean_angles_cd(bf_angles_cd.x, bf_angles_cd.y, angle_max_cd, attitude_control->get_althold_lean_angle_max_cd());
 
     if (quality_filtered >= flow_min_quality &&
         AP_HAL::millis() - copter.arm_time_ms > 3000) {
