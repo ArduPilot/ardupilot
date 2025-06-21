@@ -356,6 +356,13 @@ RC_Channel &RC_Channels::get_lateral_channel() const
 */
 void RC_Channels::rudder_arm_disarm_check()
 {
+    // run no more code if arm/disarm via rudder input channel is
+    // completely disabled.  Further checks using this parameter are
+    // done below.
+    if (AP::arming().get_rudder_arming_type() == AP_Arming::RudderArming::IS_DISABLED) {
+        return;
+    }
+
     const RC_Channel *channel = get_arming_channel();
     if (channel == nullptr) {
         return;
@@ -403,7 +410,9 @@ void RC_Channels::rudder_arm_disarm_check()
         AP::arming().arm(AP_Arming::Method::RUDDER);
         have_seen_neutral_rudder = false;
     } else {
-        AP::arming().disarm(AP_Arming::Method::RUDDER);
+        if (AP::arming().get_rudder_arming_type() == AP_Arming::RudderArming::ARMDISARM) {
+            AP::arming().disarm(AP_Arming::Method::RUDDER);
+        }
     }
 }
 
