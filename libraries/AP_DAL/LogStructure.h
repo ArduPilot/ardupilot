@@ -465,6 +465,7 @@ struct log_RVOH {
 // @Field: FY: raw flow rate, Y-axis
 // @Field: GX: gyro rate, X-axis
 // @Field: GY: gyro rate, Y-axis
+// @Field: DG: altitude, Z-axis (mavlink only)
 // @Field: Tms: measurement timestamp
 // @Field: PX:gyro rate, X-axis
 // @Field: PY: body-frame offset, Y-axis
@@ -474,6 +475,7 @@ struct log_RVOH {
 struct log_ROFH {
     Vector2f rawFlowRates;
     Vector2f rawGyroRates;
+    float rawGroundDistance;
     uint32_t msecFlowMeas;
     Vector3f posOffset;
     float heightOverride;
@@ -636,7 +638,7 @@ struct log_RBOH {
     { LOG_RVOH_MSG, RLOG_SIZE(RVOH),                                   \
       "RVOH", "fffIBB", "OX,OY,OZ,Del,H,Ena", "------", "------" }, \
     { LOG_ROFH_MSG, RLOG_SIZE(ROFH),                                   \
-      "ROFH", "ffffIffffB", "FX,FY,GX,GY,Tms,PX,PY,PZ,HgtOvr,Qual", "----------", "----------" }, \
+      "ROFH", "fffffIffffB", "FX,FY,GX,GY,DG,Tms,PX,PY,PZ,HgtOvr,Qual", "-----------", "-----------" }, \
     { LOG_REPH_MSG, RLOG_SIZE(REPH),                                   \
       "REPH", "fffffffffIIH", "PX,PY,PZ,Q1,Q2,Q3,Q4,PEr,AEr,TS,RT,D", "------------", "------------" }, \
     { LOG_RSLL_MSG, RLOG_SIZE(RSLL),                         \

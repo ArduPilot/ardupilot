@@ -276,7 +276,7 @@ public:
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     // posOffset is the XYZ flow sensor position in the body frame in m
     // heightOverride is the fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
-    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride);
+    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const float rawGroundDistance, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride);
 
     // retrieve latest corrected optical flow samples (used for calibration)
     bool getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const;
@@ -624,6 +624,7 @@ private:
         Vector2F    flowRadXYcomp;  // motion compensated XY optical flow angular rates about the XY body axes (rad/sec)
         Vector3F    bodyRadXYZ;     // body frame XYZ axis angular rates averaged across the optical flow measurement interval (rad/sec)
         Vector3F    body_offset;    // XYZ position of the optical flow sensor in body frame (m)
+        float       ground_distance;// Distance to ground from flow sensor
         float       heightOverride; // The fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
     };
 
@@ -1184,6 +1185,7 @@ private:
     mag_elements magDataDelayed;    // Magnetometer data at the fusion time horizon
     gps_elements gpsDataNew;        // GPS data at the current time horizon
     gps_elements gpsDataDelayed;    // GPS data at the fusion time horizon
+    of_elements ofDataNew;          // Optical flow data at the current time horizon
     uint8_t last_gps_idx;           // sensor ID of the GPS receiver used for the last fusion or reset
     output_elements outputDataNew;  // output state data at the current time step
     output_elements outputDataDelayed; // output state data at the current time step
@@ -1289,6 +1291,8 @@ private:
     ftype prevPosE;                 // east position at last measurement
     ftype varInnovRng;              // range finder observation innovation variance (m^2)
     ftype innovRng;                 // range finder observation innovation (m)
+    ftype varInnovHgt;              // optical flow ground distance observation innovation variance (m^2)
+    ftype innovHgt;                 // optical flow ground distance observation innovation (m)
     struct {
         uint32_t timestamp_ms;      // system timestamp of last correct optical flow sample (used for calibration)
         Vector2f flowRate;          // latest corrected optical flow flow rate (used for calibration)
@@ -1305,6 +1309,7 @@ private:
     ftype auxRngTestRatio;          // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2F flowGyroBias;          // bias error of optical flow sensor gyro output
     bool rangeDataToFuse;           // true when valid range finder height data has arrived at the fusion time horizon.
+    bool flowHgtToFuse;             // true when valid optical flow height data has arrived at the fusion time horizon.
     bool baroDataToFuse;            // true when valid baro height finder data has arrived at the fusion time horizon.
     bool gpsDataToFuse;             // true when valid GPS data has arrived at the fusion time horizon.
     bool magDataToFuse;             // true when valid magnetometer data has arrived at the fusion time horizon
@@ -1446,6 +1451,7 @@ private:
     bool takeOffDetected;           // true when takeoff for optical flow navigation has been detected
     ftype rngAtStartOfFlight;       // range finder measurement at start of flight
     uint32_t timeAtArming_ms;       // time in msec that the vehicle armed
+    ftype grndDistAtStartOfFlight;  // optical flow ground distance measurement at start of flight
 
     // baro ground effect
     ftype meaHgtAtTakeOff;            // height measured at commencement of takeoff
