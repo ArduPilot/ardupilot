@@ -56,7 +56,7 @@ void ModeBrake::run()
     pos_control->update_NE_controller();
 
     // call attitude controller
-    attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), 0.0f);
+    attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0f);
 
     pos_control->set_pos_target_U_from_climb_rate_cm(0.0f);
     pos_control->update_U_controller();

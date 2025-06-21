@@ -307,17 +307,17 @@ public:
 
         // Autopilot Yaw Mode enumeration
         enum class Mode {
-            HOLD =             0,  // hold zero yaw rate
-            LOOK_AT_NEXT_WP =  1,  // point towards next waypoint (no pilot input accepted)
-            ROI =              2,  // point towards a location held in roi (no pilot input accepted)
-            FIXED =            3,  // point towards a particular angle (no pilot input accepted)
-            LOOK_AHEAD =       4,  // point in the direction the copter is moving
-            RESET_TO_ARMED_YAW =  5,  // point towards heading at time motors were armed
-            ANGLE_RATE =       6,  // turn at a specified rate from a starting angle
-            RATE =             7,  // turn at a specified rate (held in auto_yaw_rate)
-            CIRCLE =           8,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
-            PILOT_RATE =       9,  // target rate from pilot stick
-            WEATHERVANE =     10,  // yaw into wind
+            HOLD =             0,   // hold zero yaw rate
+            LOOK_AT_NEXT_WP =  1,   // point towards next waypoint (no pilot input accepted)
+            ROI =              2,   // point towards a location held in roi (no pilot input accepted)
+            FIXED =            3,   // point towards a particular angle (no pilot input accepted)
+            LOOK_AHEAD =       4,   // point in the direction the copter is moving
+            RESET_TO_ARMED_YAW = 5, // point towards heading at time motors were armed
+            ANGLE_RATE =       6,   // turn at a specified rate from a starting angle
+            RATE =             7,   // turn at a specified rate (held in auto_yaw_rate)
+            CIRCLE =           8,   // use AC_Circle's provided yaw (used during Loiter-Turns commands)
+            PILOT_RATE =       9,   // target rate from pilot stick
+            WEATHERVANE =     10,   // yaw into wind
         };
 
         // mode(): current method of determining desired yaw:
@@ -336,28 +336,28 @@ public:
                            int8_t direction,
                            bool relative_angle);
 
-        void set_yaw_angle_and_rate_deg(float yaw_angle_deg, float yaw_rate_degs);
+        void set_yaw_angle_rate_deg(float yaw_angle_deg, float yaw_rate_degs);
 
-        void set_yaw_offset_deg(const float yaw_angle_offset_deg);
+        void set_yaw_angle_offset_deg(const float yaw_angle_offset_deg);
 
         bool reached_fixed_yaw_target();
 
 #if WEATHERVANE_ENABLED
-        void update_weathervane(const int16_t pilot_yaw_cds);
+        void update_weathervane(const float pilot_yaw_rads);
 #endif
 
         AC_AttitudeControl::HeadingCommand get_heading();
 
     private:
 
-        // yaw_cd(): main product of AutoYaw; the heading:
-        float yaw_cd();
+        // yaw_rad(): main product of AutoYaw; the heading:
+        float yaw_rad();
 
-        // rate_cds(): desired yaw rate in centidegrees/second:
-        float rate_cds();
+        // rate_rads(): desired yaw rate in centidegrees/second:
+        float rate_rads();
 
         // returns a yaw in degrees, direction of vehicle travel:
-        float look_ahead_yaw_deg();
+        float look_ahead_yaw_rad();
 
         float roi_yaw() const;
 
@@ -369,21 +369,21 @@ public:
         Vector3f roi;
 
         // yaw used for YAW_FIXED yaw_mode
-        float _fixed_yaw_offset_cd;
+        float _fixed_yaw_offset_rad;
 
-        // Deg/s we should turn
-        float _fixed_yaw_slewrate_cds;
+        // Radians/s we should turn
+        float _fixed_yaw_slewrate_rads;
 
         // time of the last yaw update
         uint32_t _last_update_ms;
 
         // heading when in yaw_look_ahead_yaw
-        float _look_ahead_yaw_deg;
+        float _look_ahead_yaw_rad;
 
-        // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
-        float _yaw_angle_cd;
-        float _yaw_rate_cds;
-        float _pilot_yaw_rate_cds;
+        // turn heading (rad) and rate (rads) when auto_yaw_mode is set to AUTO_YAW_RATE
+        float _yaw_angle_rad;
+        float _yaw_rate_rads;
+        float _pilot_yaw_rate_rads;
     };
     static AutoYaw auto_yaw;
 
