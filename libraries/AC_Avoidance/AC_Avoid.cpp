@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Increment: 10
     // @Range: 0 4500
     // @User: Standard
-    AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max_cd, 1000, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
 
     // @Param{Copter}: DIST_MAX
     // @DisplayName: Avoidance distance maximum in non-GPS flight modes
@@ -494,8 +494,8 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 }
 
 // adjust roll-pitch to push vehicle away from objects
-// roll and pitch value are in centi-degrees
-void AC_Avoid::adjust_roll_pitch(float &roll_cd, float &pitch_cd, float veh_angle_max_cd)
+// roll and pitch value are in radians
+void AC_Avoid::adjust_roll_pitch(float &roll_rad, float &pitch_rad, float veh_angle_max_rad)
 {
     // exit immediately if proximity based avoidance is disabled
     if (!proximity_avoidance_enabled()) {
@@ -503,7 +503,7 @@ void AC_Avoid::adjust_roll_pitch(float &roll_cd, float &pitch_cd, float veh_angl
     }
 
     // exit immediately if angle max is zero
-    if (_angle_max <= 0.0f || veh_angle_max_cd <= 0.0f) {
+    if (_angle_max_cd <= 0.0f || veh_angle_max_rad <= 0.0f) {
         return;
     }
 
@@ -516,29 +516,29 @@ void AC_Avoid::adjust_roll_pitch(float &roll_cd, float &pitch_cd, float veh_angl
     get_proximity_roll_pitch_norm(roll_positive, roll_negative, pitch_positive, pitch_negative);
 
     // add maximum positive and negative percentages together for roll and pitch, convert to centi-degrees
-    Vector2f rp_out((roll_positive + roll_negative) * 4500.0f, (pitch_positive + pitch_negative) * 4500.0f);
+    Vector2f rp_out_rad((roll_positive + roll_negative) * radians(45.0), (pitch_positive + pitch_negative) * radians(45.0));
 
     // apply avoidance angular limits
     // the object avoidance lean angle is never more than 75% of the total angle-limit to allow the pilot to override
-    const float angle_limit = constrain_float(_angle_max, 0.0f, veh_angle_max_cd * AC_AVOID_ANGLE_MAX_PERCENT);
-    float vec_len = rp_out.length();
-    if (vec_len > angle_limit) {
-        rp_out *= (angle_limit / vec_len);
+    const float angle_limit_rad = constrain_float(cd_to_rad(_angle_max_cd), 0.0f, veh_angle_max_rad * AC_AVOID_ANGLE_MAX_PERCENT);
+    float vec_length_rad = rp_out_rad.length();
+    if (vec_length_rad > angle_limit_rad) {
+        rp_out_rad *= (angle_limit_rad / vec_length_rad);
     }
 
     // add passed in roll, pitch angles
-    rp_out.x += roll_cd;
-    rp_out.y += pitch_cd;
+    rp_out_rad.x += roll_rad;
+    rp_out_rad.y += pitch_rad;
 
     // apply total angular limits
-    vec_len = rp_out.length();
-    if (vec_len > veh_angle_max_cd) {
-        rp_out *= (veh_angle_max_cd / vec_len);
+    vec_length_rad = rp_out_rad.length();
+    if (vec_length_rad > veh_angle_max_rad) {
+        rp_out_rad *= (veh_angle_max_rad / vec_length_rad);
     }
 
     // return adjusted roll, pitch
-    roll_cd = rp_out.x;
-    pitch_cd = rp_out.y;
+    roll_rad = rp_out_rad.x;
+    pitch_rad = rp_out_rad.y;
 }
 
 /*
