@@ -365,7 +365,7 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_Motors& motors, AC_Att
 void AC_PosControl::input_pos_NEU_cm(const Vector3p& pos_neu_cm, float pos_terrain_target_u_cm, float terrain_buffer_cm)
 {
     // Terrain following velocity scalar must be calculated before we remove the position offset
-    const float offset_u_scaler = pos_terrain_U_scaler(pos_terrain_target_u_cm, terrain_buffer_cm);
+    const float offset_u_scalar = pos_terrain_U_scaler(pos_terrain_target_u_cm, terrain_buffer_cm);
     set_pos_terrain_target_U_cm(pos_terrain_target_u_cm);
 
     // calculated increased maximum acceleration and jerk if over speed
@@ -392,7 +392,7 @@ void AC_PosControl::input_pos_NEU_cm(const Vector3p& pos_neu_cm, float pos_terra
     }
 
     // reduce speed if we are reaching the edge of our vertical buffer
-    vel_max_ne_cms *= offset_u_scaler;
+    vel_max_ne_cms *= offset_u_scalar;
 
     Vector2f vel_ne_cms;
     Vector2f accel_ne_cmss;
@@ -526,9 +526,9 @@ void AC_PosControl::init_NE_controller()
     }
 
     // limit acceleration using maximum lean angles
-    float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
-    float accel_max = angle_to_accel(angle_max * 0.01) * 100.0;
-    _accel_target_neu_cmss.xy().limit_length(accel_max);
+    float angle_max_cd = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
+    float accel_max_cmss = angle_deg_to_accel_mss(angle_max_cd * 0.01) * 100.0;
+    _accel_target_neu_cmss.xy().limit_length(accel_max_cmss);
 
     // initialise I terms from lean angles
     _pid_vel_ne.reset_filter();
@@ -700,11 +700,11 @@ void AC_PosControl::update_NE_controller()
     _accel_target_neu_cmss.xy() += _accel_desired_neu_cmss.xy() + _accel_offset_neu_cmss.xy();
 
     // limit acceleration using maximum lean angles
-    float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
-    float accel_max = angle_to_accel(angle_max * 0.01) * 100;
+    float angle_max_cd = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
+    float accel_max_cmss = angle_deg_to_accel_mss(angle_max_cd * 0.01) * 100;
     // Define the limit vector before we constrain _accel_target_neu_cmss 
     _limit_vector.xy() = _accel_target_neu_cmss.xy();
-    if (!limit_accel_xy(_vel_desired_neu_cms.xy(), _accel_target_neu_cmss.xy(), accel_max)) {
+    if (!limit_accel_xy(_vel_desired_neu_cms.xy(), _accel_target_neu_cmss.xy(), accel_max_cmss)) {
         // _accel_target_neu_cmss was not limited so we can zero the xy limit vector
         _limit_vector.xy().zero();
     }
@@ -1446,15 +1446,15 @@ bool AC_PosControl::get_fwd_pitch_is_limited() const
     if (_limit_vector.xy().is_zero()) {  
         return false;  
     }  
-    const float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
-    const float accel_max = angle_to_accel(angle_max * 0.01) * 100;
+    const float angle_max_cd = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
+    const float accel_max_cmss = angle_deg_to_accel_mss(angle_max_cd * 0.01) * 100;
     // Check for pitch limiting in the forward direction
     const float accel_fwd_unlimited = _limit_vector.x * _ahrs.cos_yaw() + _limit_vector.y * _ahrs.sin_yaw();
-    const float pitch_target_unlimited = accel_to_angle(- MIN(accel_fwd_unlimited, accel_max) * 0.01f) * 100;
+    const float pitch_target_unlimited_cd = accel_mss_to_angle_deg(- MIN(accel_fwd_unlimited, accel_max_cmss) * 0.01f) * 100;
     const float accel_fwd_limited = _accel_target_neu_cmss.x * _ahrs.cos_yaw() + _accel_target_neu_cmss.y * _ahrs.sin_yaw();
-    const float pitch_target_limited = accel_to_angle(- accel_fwd_limited * 0.01f) * 100;
+    const float pitch_target_limited_cd = accel_mss_to_angle_deg(- accel_fwd_limited * 0.01f) * 100;
 
-    return is_negative(pitch_target_unlimited) && pitch_target_unlimited < pitch_target_limited;
+    return is_negative(pitch_target_unlimited_cd) && pitch_target_unlimited_cd < pitch_target_limited_cd;
 }
 #endif // APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 
@@ -1487,13 +1487,13 @@ void AC_PosControl::update_terrain()
 void AC_PosControl::accel_NE_cmss_to_lean_angles(float accel_n_cmss, float accel_e_cmss, float& roll_target_cd, float& pitch_target_cd) const
 {
     // rotate accelerations into body forward-right frame
-    const float accel_forward = accel_n_cmss * _ahrs.cos_yaw() + accel_e_cmss * _ahrs.sin_yaw();
-    const float accel_right = -accel_n_cmss * _ahrs.sin_yaw() + accel_e_cmss * _ahrs.cos_yaw();
+    const float accel_forward_cmss = accel_n_cmss * _ahrs.cos_yaw() + accel_e_cmss * _ahrs.sin_yaw();
+    const float accel_right_cmss = -accel_n_cmss * _ahrs.sin_yaw() + accel_e_cmss * _ahrs.cos_yaw();
 
     // update angle targets that will be passed to stabilize controller
-    pitch_target_cd = accel_to_angle(-accel_forward * 0.01) * 100;
+    pitch_target_cd = accel_mss_to_angle_deg(-accel_forward_cmss * 0.01) * 100;
     float cos_pitch_target = cosf(pitch_target_cd * M_PI / 18000.0f);
-    roll_target_cd = accel_to_angle((accel_right * cos_pitch_target)*0.01) * 100;
+    roll_target_cd = accel_mss_to_angle_deg((accel_right_cmss * cos_pitch_target)*0.01) * 100;
 }
 
 // lean_angles_to_accel_NE_cmss - convert roll, pitch lean target angles to NE frame accelerations in cm/s/s
@@ -1516,8 +1516,8 @@ void AC_PosControl::calculate_yaw_and_rate_yaw()
     float turn_rate_rads = 0.0f;
     const float vel_desired_length_ne_cms = _vel_desired_neu_cms.xy().length();
     if (is_positive(vel_desired_length_ne_cms)) {
-        const float accel_forward = (_accel_desired_neu_cmss.x * _vel_desired_neu_cms.x + _accel_desired_neu_cmss.y * _vel_desired_neu_cms.y) / vel_desired_length_ne_cms;
-        const Vector2f accel_turn_ne_cmss = _accel_desired_neu_cmss.xy() - _vel_desired_neu_cms.xy() * accel_forward / vel_desired_length_ne_cms;
+        const float accel_forward_cmss = (_accel_desired_neu_cmss.x * _vel_desired_neu_cms.x + _accel_desired_neu_cmss.y * _vel_desired_neu_cms.y) / vel_desired_length_ne_cms;
+        const Vector2f accel_turn_ne_cmss = _accel_desired_neu_cmss.xy() - _vel_desired_neu_cms.xy() * accel_forward_cmss / vel_desired_length_ne_cms;
         const float accel_turn_length_ne_cmss = accel_turn_ne_cmss.length();
         turn_rate_rads = accel_turn_length_ne_cmss / vel_desired_length_ne_cms;
         if ((accel_turn_ne_cmss.y * _vel_desired_neu_cms.x - accel_turn_ne_cmss.x * _vel_desired_neu_cms.y) < 0.0) {
