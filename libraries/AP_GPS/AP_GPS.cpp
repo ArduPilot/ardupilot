@@ -111,6 +111,8 @@ static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D == (uint32_t)GPS_FIX_T
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS == (uint32_t)GPS_FIX_TYPE_DGPS, "FIX_DGPS incorrect");
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT == (uint32_t)GPS_FIX_TYPE_RTK_FLOAT, "FIX_RTK_FLOAT incorrect");
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED == (uint32_t)GPS_FIX_TYPE_RTK_FIXED, "FIX_RTK_FIXED incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_TYPE_STATIC == (uint32_t)GPS_FIX_TYPE_STATIC, "GPS_FIX_TYPE_STATIC incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_TYPE_PPP == (uint32_t)GPS_FIX_TYPE_PPP, "GPS_FIX_TYPE_PPP incorrect");
 #endif
 
 // ensure that our own enum-class status is equivalent to the
@@ -122,6 +124,10 @@ static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D == (uint8_t)AP_GPS_Fix
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS == (uint8_t)AP_GPS_FixType::DGPS, "FIX_DGPS incorrect");
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT == (uint8_t)AP_GPS_FixType::RTK_FLOAT, "FIX_RTK_FLOAT incorrect");
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED == (uint8_t)AP_GPS_FixType::RTK_FIXED, "FIX_RTK_FIXED incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_TYPE_STATIC == (uint8_t)AP_GPS_FixType::STATIC, "STATIC incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_TYPE_PPP == (uint8_t)AP_GPS_FixType::PPP, "PPP incorrect");
+
+
 
 AP_GPS *AP_GPS::_singleton;
 
@@ -664,7 +670,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
 #endif
 #if AP_EXTERNAL_AHRS_ENABLED
     case GPS_TYPE_EXTERNAL_AHRS:
-        if (AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::GPS) >= 0) {
+        if (AP::externalAHRS().has_sensor(AP_ExternalAHRS::AvailableSensor::GPS)) {
             dstate->auto_detected_baud = false; // specified, not detected
             return NEW_NOTHROW AP_GPS_ExternalAHRS(*this, params[instance], state[instance], nullptr);
         }
@@ -1299,6 +1305,11 @@ bool AP_GPS::get_first_external_instance(uint8_t& instance) const
 void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt, const uint8_t instance)
 {
     if (get_type(instance) == GPS_TYPE_EXTERNAL_AHRS && drivers[instance] != nullptr) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (pkt.longitude == 0 && pkt.latitude == 0) {
+        AP_HAL::panic("Invalid location passed to AP_GPS::handle_external");
+    }
+#endif
         drivers[instance]->handle_external(pkt);
     }
 }
