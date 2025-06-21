@@ -145,15 +145,13 @@ public:
 
     private:
 
-        // yaw_rad(): main product of AutoYaw; the heading:
+        // yaw_cd(): main product of AutoYaw; the heading:
         float yaw_rad();
 
         // rate_rads(): desired yaw rate in centidegrees/second:
         float rate_rads();
 
-        // returns a yaw in degrees, direction of vehicle travel:
         float look_ahead_yaw_rad();
-
         float roi_yaw();
 
         // auto flight mode's yaw mode
