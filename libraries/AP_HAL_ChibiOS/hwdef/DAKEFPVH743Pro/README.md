@@ -61,7 +61,7 @@ You need to set the following parameters to enable support for FrSky S.PORT:
 
 ## PWM Output
 
-The DAKEFPV H743 supports up to 14 PWM or DShot outputs. The pads for motor output
+The DAKEFPV H743 supports up to 14 outputs. The pads for motor output
 M1 to M8 are provided on both the motor connectors and on separate pads, plus
 S1-4, LED on  separate pads for LED strip and other PWM outputs. M1-8,S1,and S2 support B-Directional DShot, S2-4 support only PWM, the LED output supports serial LED or DShot.
 
