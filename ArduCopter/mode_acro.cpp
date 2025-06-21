@@ -118,7 +118,7 @@ void ModeAcro::get_pilot_desired_rates_cds(float roll_in_norm, float pitch_in_no
     }
 
     // calculate roll, pitch rate requests
-    
+
     // roll rate request with input expo applied
     rate_bf_request_cds.x = g2.command_model_acro_rp.get_rate() * 100.0 * input_expo(roll_in_norm, g2.command_model_acro_rp.get_expo());
 
@@ -149,15 +149,15 @@ void ModeAcro::get_pilot_desired_rates_cds(float roll_in_norm, float pitch_in_no
         // Calculate angle limiting earth frame rate commands
         if (g.acro_trainer == (uint8_t)Trainer::LIMITED) {
             const float angle_max_cd = copter.aparm.angle_max;
-            if (roll_angle_cd > angle_max_cd){
+            if (roll_angle_cd > angle_max_cd) {
                 rate_ef_level_cds.x += sqrt_controller(angle_max_cd - roll_angle_cd, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
-            }else if (roll_angle_cd < -angle_max_cd) {
+            } else if (roll_angle_cd < -angle_max_cd) {
                 rate_ef_level_cds.x += sqrt_controller(-angle_max_cd - roll_angle_cd, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
             }
 
-            if (pitch_angle_cd > angle_max_cd){
+            if (pitch_angle_cd > angle_max_cd) {
                 rate_ef_level_cds.y += sqrt_controller(angle_max_cd - pitch_angle_cd, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
-            }else if (pitch_angle_cd < -angle_max_cd) {
+            } else if (pitch_angle_cd < -angle_max_cd) {
                 rate_ef_level_cds.y += sqrt_controller(-angle_max_cd - pitch_angle_cd, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
             }
         }
@@ -170,7 +170,7 @@ void ModeAcro::get_pilot_desired_rates_cds(float roll_in_norm, float pitch_in_no
             rate_bf_request_cds.x += rate_bf_level_cds.x;
             rate_bf_request_cds.y += rate_bf_level_cds.y;
             rate_bf_request_cds.z += rate_bf_level_cds.z;
-        }else{
+        } else {
             float acro_level_mix = constrain_float(1-float(MAX(MAX(abs(roll_in_norm), abs(pitch_in_norm)), abs(yaw_in_norm))), 0, 1) * ahrs.cos_pitch();
 
             // Scale levelling rates by stick input
