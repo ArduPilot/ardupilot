@@ -508,8 +508,8 @@ void AC_PosControl::init_NE_controller()
     const Vector3f &att_target_euler_cd = _attitude_control.get_att_target_euler_cd();
     _roll_target_cd = att_target_euler_cd.x;
     _pitch_target_cd = att_target_euler_cd.y;
-    _yaw_target_cd = att_target_euler_cd.z; // todo: this should be thrust vector heading, not yaw.
-    _yaw_rate_target_cds = 0.0f;
+    _yaw_target_rad = cd_to_rad(att_target_euler_cd.z); // todo: this should be thrust vector heading, not yaw.
+    _yaw_rate_target_rads = 0.0f;
     _angle_max_override_cd = 0.0;
 
     _pos_target_neu_cm.xy() = _pos_estimate_neu_cm.xy();
@@ -1527,14 +1527,14 @@ void AC_PosControl::calculate_yaw_and_rate_yaw()
 
     // update the target yaw if velocity is greater than 5% _vel_max_ne_cms
     if (vel_desired_length_ne_cms > _vel_max_ne_cms * 0.05f) {
-        _yaw_target_cd = degrees(_vel_desired_neu_cms.xy().angle()) * 100.0f;
-        _yaw_rate_target_cds = turn_rate_rads * degrees(100.0f);
+        _yaw_target_rad = _vel_desired_neu_cms.xy().angle();
+        _yaw_rate_target_rads = turn_rate_rads;
         return;
     }
 
     // use the current attitude controller yaw target
-    _yaw_target_cd = _attitude_control.get_att_target_euler_cd().z;
-    _yaw_rate_target_cds = 0;
+    _yaw_target_rad = _attitude_control.get_att_target_euler_rad().z;
+    _yaw_rate_target_rads = 0;
 }
 
 // calculate_overspeed_gain - calculated increased maximum acceleration and jerk if over speed condition is detected
