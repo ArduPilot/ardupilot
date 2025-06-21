@@ -449,7 +449,7 @@ private:
     float super_simple_sin_yaw;
 
     // Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
-    int32_t initial_armed_bearing;
+    float initial_armed_bearing_rad;
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
