@@ -461,23 +461,18 @@ void Copter::notify_flight_mode() {
 }
 
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
-// returns desired angle in centi-degrees
-void Mode::get_pilot_desired_lean_angles_cd(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const
+// returns desired angle in radians
+void Mode::get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_out_rad, float angle_max_rad, float angle_limit_rad) const
 {
+    // throttle failsafe check
     if (!rc().has_valid_input()) {
-        roll_out_cd = 0.0;
-        pitch_out_cd = 0.0;
+        roll_out_rad = 0.0;
+        pitch_out_rad = 0.0;
         return;
     }
 
     //transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
-    float roll_out_deg;
-    float pitch_out_deg;
-    rc_input_to_roll_pitch(channel_roll->get_control_in()*(1.0/ROLL_PITCH_YAW_INPUT_MAX), channel_pitch->get_control_in()*(1.0/ROLL_PITCH_YAW_INPUT_MAX), angle_max_cd * 0.01,  angle_limit_cd * 0.01, roll_out_deg, pitch_out_deg);
-
-    // Convert to centi-degrees
-    roll_out_cd = roll_out_deg * 100.0;
-    pitch_out_cd = pitch_out_deg * 100.0;
+    rc_input_to_roll_pitch_rad(channel_roll->norm_input_dz(), channel_pitch->norm_input_dz(), angle_max_rad,  angle_limit_rad, roll_out_rad, pitch_out_rad);
 }
 
 // transform pilot's roll or pitch input into a desired velocity
@@ -489,13 +484,8 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
         return vel;
     }
     // fetch roll and pitch inputs
-    float roll_out = channel_roll->get_control_in();
-    float pitch_out = channel_pitch->get_control_in();
-
-    // convert roll and pitch inputs to -1 to +1 range
-    float scaler = 1.0 / (float)ROLL_PITCH_YAW_INPUT_MAX;
-    roll_out *= scaler;
-    pitch_out *= scaler;
+    float roll_out = channel_roll->norm_input_dz();
+    float pitch_out = channel_pitch->norm_input_dz();
 
     // convert roll and pitch inputs into velocity in NE frame
     vel = Vector2f(-pitch_out, roll_out);
@@ -546,14 +536,14 @@ void Mode::zero_throttle_and_relax_ac(bool spool_up)
     } else {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     }
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(0.0f, 0.0f, 0.0f);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(0.0f, 0.0f, 0.0f);
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 }
 
 void Mode::zero_throttle_and_hold_attitude()
 {
     // run attitude controller
-    attitude_control->input_rate_bf_roll_pitch_yaw_cds(0.0f, 0.0f, 0.0f);
+    attitude_control->input_rate_bf_roll_pitch_yaw_rads(0.0f, 0.0f, 0.0f);
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 }
 
@@ -594,7 +584,7 @@ void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
     pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
     pos_control->update_U_controller();
     // we may need to move this out
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(0.0f, 0.0f, 0.0f);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(0.0f, 0.0f, 0.0f);
 }
 
 /*
@@ -763,9 +753,9 @@ void Mode::land_run_horizontal_control()
         // there is any position estimate drift after touchdown. We
         // limit attitude to 7 degrees below this limit and linearly
         // interpolate for 1m above that
-        const float attitude_limit_cd = linear_interpolate(700, copter.aparm.angle_max, get_alt_above_ground_cm(),
+        const float attitude_limit_rad = linear_interpolate(radians(7), attitude_control->lean_angle_max_rad(), get_alt_above_ground_cm(),
                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
-        const float thrust_vector_max = sinf(cd_to_rad(attitude_limit_cd)) * GRAVITY_MSS * 100.0f;
+        const float thrust_vector_max = sinf(attitude_limit_rad) * GRAVITY_MSS * 100.0f;
         const float thrust_vector_mag = thrust_vector.xy().length();
         if (thrust_vector_mag > thrust_vector_max) {
             float ratio = thrust_vector_max / thrust_vector_mag;
@@ -818,13 +808,13 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
         // allow user to take control during repositioning. Note: copied from land_run_horizontal_control()
         // To-Do: this code exists at several different places in slightly different forms and that should be fixed
         if (g.land_repositioning) {
-            float target_roll_cd = 0.0f;
-            float target_pitch_cd = 0.0f;
+            float target_roll_rad = 0.0f;
+            float target_pitch_rad = 0.0f;
             // convert pilot input to lean angles
-            get_pilot_desired_lean_angles_cd(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+            get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, loiter_nav->get_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
 
             // record if pilot has overridden roll or pitch
-            if (!is_zero(target_roll_cd) || !is_zero(target_pitch_cd)) {
+            if (!is_zero(target_roll_rad) || !is_zero(target_pitch_rad)) {
                 if (!copter.ap.land_repo_active) {
                     LOGGER_WRITE_EVENT(LogEvent::LAND_REPO_ACTIVE);
                 }
@@ -999,7 +989,7 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
 
 // transform pilot's yaw input into a desired yaw rate
 // returns desired yaw rate in centi-degrees per second
-float Mode::get_pilot_desired_yaw_rate_cds() const
+float Mode::get_pilot_desired_yaw_rate_rads() const
 {
     if (!rc().has_valid_input()) {
         return 0.0f;
@@ -1009,7 +999,7 @@ float Mode::get_pilot_desired_yaw_rate_cds() const
     const float yaw_in = channel_yaw->norm_input_dz();
 
     // convert pilot input to the desired yaw rate
-    return g2.command_model_pilot_y.get_rate() * 100.0 * input_expo(yaw_in, g2.command_model_pilot_y.get_expo());
+    return radians(g2.command_model_pilot_y.get_rate()) * input_expo(yaw_in, g2.command_model_pilot_y.get_expo());
 }
 
 // pass-through functions to reduce code churn on conversion;
