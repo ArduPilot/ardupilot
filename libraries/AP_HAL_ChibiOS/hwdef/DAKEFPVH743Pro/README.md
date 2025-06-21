@@ -53,7 +53,7 @@ RC input is configured by default via the USART5 RX input. It supports all unidi
 
 ## FrSky Telemetry
 
-FrSky Telemetry is supported using an unused UART, such as the TX2 pin (UART5 transmit).
+FrSky Telemetry is supported using an unused UART, such as the TX2 pin (UART2 transmit).
 You need to set the following parameters to enable support for FrSky S.PORT:
 
   - :ref:`SERIAL2_PROTOCOL<SERIAL2_PROTOCOL>` 10
