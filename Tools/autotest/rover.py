@@ -6292,6 +6292,33 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_distance_to_home(0, 5, timeout=30)
         self.disarm_vehicle()
 
+    def MAV_CMD_CONDITION_YAW(self):
+        '''simple test for CONDITION_YAW command'''
+        model = "rover-skid"
+        self.customise_SITL_commandline([],
+                                        model=model,
+                                        defaults_filepath=self.model_defaults_filepath(model))
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('GUIDED')
+
+        for (heading, intermediate_heading, direction) in (170, 90, 1), (300, 90, -1), (200, 250, 0), (300, 250, 0):
+
+            def send_cmd(x, y):
+                self.run_cmd(
+                    mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+                    p1=heading,     # target angle
+                    p2=10,          # degrees/second
+                    p3=direction,   # -1 is counter-clockwise, 1 clockwise
+                    p4=0,           # 1 for relative, 0 for absolute
+                )
+            """check if rotating in correct direction"""
+            self.wait_heading(intermediate_heading-0.5, intermediate_heading+0.5, called_function=send_cmd)
+            """target angle"""
+            self.wait_heading(heading-0.5, heading+0.5, called_function=send_cmd)
+
+        self.disarm_vehicle()
+
     def MAV_CMD_MISSION_START(self):
         '''simple test for starting missing using this command'''
         # home and 1 waypoint a long way away:
@@ -6923,6 +6950,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.SET_POSITION_TARGET_LOCAL_NED,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,
             self.MAV_CMD_DO_CHANGE_SPEED,
+            self.MAV_CMD_CONDITION_YAW,
             self.MAV_CMD_MISSION_START,
             self.MAV_CMD_NAV_SET_YAW_SPEED,
             self.Button,
