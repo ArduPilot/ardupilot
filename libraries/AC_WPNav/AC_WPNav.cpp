@@ -184,7 +184,7 @@ void AC_WPNav::wp_and_spline_init_cm(float speed_cms, Vector3f stopping_point_ne
     _scurve_prev_leg.init();
     _scurve_this_leg.init();
     _scurve_next_leg.init();
-    _track_scalar_dt = 1.0f;
+    _track_dt_scalar = 1.0f;
 
     _flags.reached_destination = true;
     _flags.fast_waypoint = false;
@@ -459,7 +459,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     if (_terrain_alt && !get_terrain_offset_cm(terr_offset_u_cm)) {
         return false;
     }
-    const float offset_u_scaler = _pos_control.pos_terrain_U_scaler(terr_offset_u_cm, get_terrain_margin_m() * 100.0);
+    const float offset_u_scalar = _pos_control.pos_terrain_U_scaler(terr_offset_u_cm, get_terrain_margin_m() * 100.0);
 
     // input shape the terrain offset
     _pos_control.set_pos_terrain_target_U_cm(terr_offset_u_cm);
@@ -473,35 +473,35 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     Vector3f curr_target_vel_neu_cms = _pos_control.get_vel_desired_NEU_cms();
     curr_target_vel_neu_cms.z -= _pos_control.get_vel_offset_U_cms();
 
-    // Use _track_scalar_dt to slow down progression of the position target moving too far in front of aircraft
-    // _track_scalar_dt does not scale the velocity or acceleration
-    float track_scaler_dt = 1.0f;
+    // Use _track_dt_scalar to slow down progression of the position target moving too far in front of aircraft
+    // _track_dt_scalar does not scale the velocity or acceleration
+    float track_dt_scalar = 1.0f;
     // check target velocity is non-zero
     if (is_positive(curr_target_vel_neu_cms.length_squared())) {
         Vector3f track_direction_neu = curr_target_vel_neu_cms.normalized();
         const float track_error_neu_cm = _pos_control.get_pos_error_NEU_cm().dot(track_direction_neu);
         const float track_velocity_neu_cms = _pos_control.get_vel_estimate_NEU_cms().dot(track_direction_neu);
-        // set time scaler to be consistent with the achievable aircraft speed with a 5% buffer for short term variation.
-        track_scaler_dt = constrain_float(0.05f + (track_velocity_neu_cms - _pos_control.get_pos_NE_p().kP() * track_error_neu_cm) / curr_target_vel_neu_cms.length(), 0.0f, 1.0f);
+        // set time scalar to be consistent with the achievable aircraft speed with a 5% buffer for short term variation.
+        track_dt_scalar = constrain_float(0.05f + (track_velocity_neu_cms - _pos_control.get_pos_NE_p().kP() * track_error_neu_cm) / curr_target_vel_neu_cms.length(), 0.0f, 1.0f);
     }
 
-    // Use vel_scaler_dt to slow down the trajectory time
-    // vel_scaler_dt scales the velocity and acceleration to be kinematically consistent
-    float vel_scaler_dt = 1.0;
+    // Use vel_dt_scalar to slow down the trajectory time
+    // vel_dt_scalar scales the velocity and acceleration to be kinematically consistent
+    float vel_dt_scalar = 1.0;
     if (is_positive(_wp_desired_speed_ne_cms)) {
         update_vel_accel(_offset_vel_cms, _offset_accel_cmss, dt, 0.0, 0.0);
-        const float vel_input_cms = !_paused ? _wp_desired_speed_ne_cms * offset_u_scaler : 0.0;
+        const float vel_input_cms = !_paused ? _wp_desired_speed_ne_cms * offset_u_scalar : 0.0;
         shape_vel_accel(vel_input_cms, 0.0, _offset_vel_cms, _offset_accel_cmss, -get_wp_acceleration_cmss(), get_wp_acceleration_cmss(),
                         _pos_control.get_shaping_jerk_NE_cmsss(), dt, true);
-        vel_scaler_dt = _offset_vel_cms / _wp_desired_speed_ne_cms;
+        vel_dt_scalar = _offset_vel_cms / _wp_desired_speed_ne_cms;
     }
 
     // change s-curve time speed with a time constant of maximum acceleration / maximum jerk
-    float track_scaler_tc = 1.0f;
+    float track_dt_scalar_tc = 1.0f;
     if (!is_zero(_wp_jerk_msss)) {
-        track_scaler_tc = 0.01f * get_wp_acceleration_cmss()/_wp_jerk_msss;
+        track_dt_scalar_tc = 0.01f * get_wp_acceleration_cmss()/_wp_jerk_msss;
     }
-    _track_scalar_dt += (track_scaler_dt - _track_scalar_dt) * (dt / track_scaler_tc);
+    _track_dt_scalar += (track_dt_scalar - _track_dt_scalar) * (dt / track_dt_scalar_tc);
 
     // target position, velocity and acceleration from straight line or spline calculators
     Vector3f target_pos_neu_cm, target_vel_neu_cms, target_accel_neu_cmss;
@@ -510,11 +510,11 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     if (!_this_leg_is_spline) {
         // update target position, velocity and acceleration
         target_pos_neu_cm = _origin_neu_cm;
-        s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, _wp_radius_cm, get_corner_acceleration_cmss(), _flags.fast_waypoint, _track_scalar_dt * vel_scaler_dt * dt, target_pos_neu_cm, target_vel_neu_cms, target_accel_neu_cmss);
+        s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, _wp_radius_cm, get_corner_acceleration_cmss(), _flags.fast_waypoint, _track_dt_scalar * vel_dt_scalar * dt, target_pos_neu_cm, target_vel_neu_cms, target_accel_neu_cmss);
     } else {
         // splinetarget_vel
         target_vel_neu_cms = curr_target_vel_neu_cms;
-        _spline_this_leg.advance_target_along_track(_track_scalar_dt * vel_scaler_dt * dt, target_pos_neu_cm, target_vel_neu_cms);
+        _spline_this_leg.advance_target_along_track(_track_dt_scalar * vel_dt_scalar * dt, target_pos_neu_cm, target_vel_neu_cms);
         s_finished = _spline_this_leg.reached_destination();
     }
 
@@ -524,8 +524,8 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         accel_offset_neu_cmss = track_direction_neu * _offset_accel_cmss * target_vel_neu_cms.length() / _wp_desired_speed_ne_cms;
     }
 
-    target_vel_neu_cms *= vel_scaler_dt;
-    target_accel_neu_cmss *= sq(vel_scaler_dt);
+    target_vel_neu_cms *= vel_dt_scalar;
+    target_accel_neu_cmss *= sq(vel_dt_scalar);
     target_accel_neu_cmss += accel_offset_neu_cmss;
 
     // pass new target to the position controller
