@@ -2184,7 +2184,7 @@ void QuadPlane::run_xy_controller(float accel_limit)
     if (!pos_control->is_active_NE()) {
         pos_control->init_NE_controller();
     }
-    pos_control->set_lean_angle_max_cd(MIN(4500, MAX(accel_to_angle(accel_limit)*100, aparm.angle_max)));
+    pos_control->set_lean_angle_max_cd(MIN(4500, MAX(accel_mss_to_angle_deg(accel_limit)*100, aparm.angle_max)));
     if (q_fwd_throttle > 0.95f) {
         // prevent wind up of the velocity controller I term due to a saturated forward throttle
         pos_control->set_externally_limited_NE();
