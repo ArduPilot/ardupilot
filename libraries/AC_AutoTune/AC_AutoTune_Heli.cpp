@@ -260,8 +260,6 @@ void AC_AutoTune_Heli::test_init()
 
     // initialize dwell test method
     dwell_test_init(start_freq, stop_freq, freq_resp_amplitude, filter_freq, freq_resp_input, calc_type, resp_type, input_type);
-
-    start_angles = Vector3f(desired_roll_cd, desired_pitch_cd, desired_yaw_cd);  // heli specific
 }
 
 // run tests for each tune type
@@ -275,7 +273,7 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
         load_gains(GainType::ORIGINAL);
 
         // hold level attitude
-        attitude_control->input_euler_angle_roll_pitch_yaw_cd(desired_roll_cd, desired_pitch_cd, desired_yaw_cd, true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_rad(desired_roll_rad, desired_pitch_rad, desired_yaw_rad, true);
 
         if ((tune_type == TuneType::RATE_P_UP || tune_type == TuneType::RATE_D_UP) && (max_rate_p.max_allowed <= 0.0f || max_rate_d.max_allowed <= 0.0f)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Max Gain Determination Failed");

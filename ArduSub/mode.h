@@ -139,19 +139,19 @@ public:
         void set_roi(const Location &roi_location);
 
         void set_fixed_yaw(float angle_deg,
-                           float turn_rate_dps,
+                           float turn_rate_degs,
                            int8_t direction,
                            bool relative_angle);
 
     private:
 
         // yaw_cd(): main product of AutoYaw; the heading:
-        float yaw_cd();
+        float yaw_rad();
 
-        // rate_cds(): desired yaw rate in centidegrees/second:
-        float rate_cds();
+        // rate_rads(): desired yaw rate in centidegrees/second:
+        float rate_rads();
 
-        float look_ahead_yaw();
+        float look_ahead_yaw_rad();
         float roi_yaw();
 
         // auto flight mode's yaw mode
@@ -164,19 +164,18 @@ public:
         float _roi_yaw;
 
         // yaw used for YAW_FIXED yaw_mode
-        int32_t _fixed_yaw;
+        float _fixed_yaw_offset_rad;
 
-        // Deg/s we should turn
-        int16_t _fixed_yaw_slewrate;
+        // Radians/s we should turn
+        float _fixed_yaw_slewrate_rads;
 
         // heading when in yaw_look_ahead_yaw
-        float _look_ahead_yaw;
+        float _look_ahead_yaw_rad;
 
         // used to reduce update rate to 100hz:
         uint8_t roi_yaw_counter;
 
         GuidedSubMode guided_mode;
-
     };
     static AutoYaw auto_yaw;
 

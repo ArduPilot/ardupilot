@@ -82,11 +82,13 @@ void ModePosHold::run()
     update_simple_mode();
 
     // convert pilot input to lean angles
-    float target_roll_cd, target_pitch_cd;
-    get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd());
+    float target_roll_rad, target_pitch_rad;
+    get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
+    float target_roll_cd = rad_to_cd(target_roll_rad);
+    float target_pitch_cd = rad_to_cd(target_pitch_rad);
 
     // get pilot's desired yaw rate
-    float target_yaw_rate_cds = get_pilot_desired_yaw_rate();
+    float target_yaw_rate_cds = rad_to_cd(get_pilot_desired_yaw_rate_rads());
 
     // get pilot desired climb rate (for alt-hold mode and take-off)
     float target_climb_rate_cms = get_pilot_desired_climb_rate();
@@ -141,7 +143,7 @@ void ModePosHold::run()
         }
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate(target_climb_rate_cms);
+        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
         // set position controller targets adjusted for pilot input
         takeoff.do_pilot_takeoff(target_climb_rate_cms);
@@ -159,7 +161,7 @@ void ModePosHold::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate(target_climb_rate_cms);
+        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
 #if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
