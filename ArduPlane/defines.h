@@ -61,8 +61,8 @@ enum class RtlAutoland {
     RTL_THEN_DO_LAND_START = 1,
     RTL_IMMEDIATE_DO_LAND_START = 2,
     NO_RTL_GO_AROUND = 3,
+    DO_RETURN_PATH_START = 4,
 };
-    
 
 enum ChannelMixing {
     MIXING_DISABLED = 0,
