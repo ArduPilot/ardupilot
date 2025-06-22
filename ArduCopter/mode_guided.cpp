@@ -1128,15 +1128,15 @@ float ModeGuided::wp_distance_m() const
     }
 }
 
-int32_t ModeGuided::wp_bearing() const
+float ModeGuided::wp_bearing_deg() const
 {
     switch(guided_mode) {
     case SubMode::WP:
-        return wp_nav->get_wp_bearing_to_destination_cd();
+        return degrees(wp_nav->get_wp_bearing_to_destination_rad());
     case SubMode::Pos:
-        return get_bearing_cd(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat());
+        return degrees(get_bearing_rad(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat()));
     case SubMode::PosVelAccel:
-        return pos_control->get_bearing_to_target_cd();
+        return degrees(pos_control->get_bearing_to_target_rad());
     case SubMode::TakeOff:
     case SubMode::Accel:
     case SubMode::VelAccel:

@@ -148,7 +148,7 @@ void ModeAcro::get_pilot_desired_rates_rads(float roll_in_norm, float pitch_in_n
 
         // Calculate angle limiting earth frame rate commands
         if (g.acro_trainer == (uint8_t)Trainer::LIMITED) {
-            const float angle_max_rad = cd_to_rad(copter.aparm.angle_max);
+            const float angle_max_rad = attitude_control->lean_angle_max_rad();
             if (roll_angle_rad > angle_max_rad) {
                 rate_ef_level_rads.x += sqrt_controller(angle_max_rad - roll_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / cd_to_rad(ACRO_LEVEL_MAX_OVERSHOOT), attitude_control->get_accel_roll_max_radss(), G_Dt);
             } else if (roll_angle_rad < -angle_max_rad) {

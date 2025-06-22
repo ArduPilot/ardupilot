@@ -2,14 +2,14 @@
 
 Mode::AutoYaw Mode::auto_yaw;
 
-// roi_yaw - returns heading towards location held in roi
-float Mode::AutoYaw::roi_yaw() const
+// roi_yaw_rad - returns heading towards location held in roi
+float Mode::AutoYaw::roi_yaw_rad() const
 {
     Vector2f pos_ne_m;
     if (AP::ahrs().get_relative_position_NE_origin_float(pos_ne_m)){
-        return get_bearing_cd(pos_ne_m * 100.0, roi.xy());
+        return get_bearing_rad(pos_ne_m * 100.0, roi.xy());
     }
-    return copter.attitude_control->get_att_target_euler_cd().z;
+    return copter.attitude_control->get_att_target_euler_rad().z;
 }
 
 // Returns the yaw angle (in radians) representing the direction of horizontal motion.
@@ -236,7 +236,7 @@ float Mode::AutoYaw::yaw_rad()
 
     case Mode::ROI:
         // point towards a location held in roi
-        _yaw_angle_rad = cd_to_rad(roi_yaw());
+        _yaw_angle_rad = roi_yaw_rad();
         break;
 
     case Mode::FIXED: {
@@ -264,7 +264,7 @@ float Mode::AutoYaw::yaw_rad()
     case Mode::CIRCLE:
 #if MODE_CIRCLE_ENABLED
         if (copter.circle_nav->is_active()) {
-            _yaw_angle_rad = cd_to_rad(copter.circle_nav->get_yaw_cd());
+            _yaw_angle_rad = copter.circle_nav->get_yaw_rad();
         }
 #endif
         break;
@@ -286,7 +286,7 @@ float Mode::AutoYaw::yaw_rad()
     case Mode::LOOK_AT_NEXT_WP:
     default:
         // point towards next waypoint.
-        // we don't use wp_bearing because we don't want the copter to turn too much during flight
+        // we don't use wp_bearing_deg because we don't want the copter to turn too much during flight
         _yaw_angle_rad = copter.pos_control->get_yaw_rad();
     break;
     }

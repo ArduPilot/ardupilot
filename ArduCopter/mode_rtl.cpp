@@ -536,9 +536,9 @@ float ModeRTL::wp_distance_m() const
     return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
 }
 
-int32_t ModeRTL::wp_bearing() const
+float ModeRTL::wp_bearing_deg() const
 {
-    return wp_nav->get_wp_bearing_to_destination_cd();
+    return degrees(wp_nav->get_wp_bearing_to_destination_rad());
 }
 
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
