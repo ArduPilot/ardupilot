@@ -78,7 +78,7 @@ public:
 
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) { return false; }
-    virtual int32_t wp_bearing() const { return 0; }
+    virtual float wp_bearing_deg() const { return 0; }
     virtual float wp_distance_m() const { return 0.0f; }
     virtual float crosstrack_error() const { return 0.0f; }
 
@@ -152,7 +152,7 @@ public:
         float rate_rads();
 
         float look_ahead_yaw_rad();
-        float roi_yaw();
+        float roi_yaw_rad();
 
         // auto flight mode's yaw mode
         uint8_t _mode = AUTO_YAW_LOOK_AT_NEXT_WP;
