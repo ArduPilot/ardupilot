@@ -21,11 +21,7 @@ setup(
     maintainer_email='maintainer@ardupilot.org',
     description='Tests for the ArduPilot AP_DDS library',
     license='GPL-3.0',
-    extras_require={
-        'test' : [
-            'pytest'
-        ]
-    },
+    extras_require={'test': ['pytest']},
     entry_points={
         'console_scripts': [
             "time_listener = ardupilot_dds_tests.time_listener:main",
