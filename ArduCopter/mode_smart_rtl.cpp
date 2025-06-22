@@ -78,7 +78,7 @@ void ModeSmartRTL::wait_cleanup_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     wp_nav->update_wpnav();
     pos_control->update_U_controller();
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if return path is computed and if yes, begin journey home
     if (g2.smart_rtl.request_thorough_cleanup()) {
@@ -146,7 +146,7 @@ void ModeSmartRTL::path_follow_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 void ModeSmartRTL::pre_land_position_run()
@@ -168,7 +168,7 @@ void ModeSmartRTL::pre_land_position_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     wp_nav->update_wpnav();
     pos_control->update_U_controller();
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // save current position for use by the smart_rtl flight mode
@@ -201,9 +201,9 @@ float ModeSmartRTL::wp_distance_m() const
     return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
 }
 
-int32_t ModeSmartRTL::wp_bearing() const
+float ModeSmartRTL::wp_bearing_deg() const
 {
-    return wp_nav->get_wp_bearing_to_destination_cd();
+    return degrees(wp_nav->get_bearing_to_target_rad());
 }
 
 bool ModeSmartRTL::use_pilot_yaw() const

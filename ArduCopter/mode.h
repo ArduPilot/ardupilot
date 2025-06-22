@@ -165,7 +165,7 @@ public:
 
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) const { return false; };
-    virtual int32_t wp_bearing() const { return 0; }
+    virtual float wp_bearing_deg() const { return 0; }
     virtual float wp_distance_m() const { return 0.0f; }
     virtual float crosstrack_error() const { return 0.0f;}
 
@@ -177,14 +177,14 @@ public:
     virtual int32_t get_alt_above_ground_cm(void) const;
 
     // pilot input processing
-    void get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
+    void get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_out_rad, float angle_max_rad, float angle_limit_rad) const;
+    float get_pilot_desired_yaw_rate_rads() const;
     Vector2f get_pilot_desired_velocity(float vel_max) const;
-    float get_pilot_desired_yaw_rate() const;
     float get_pilot_desired_throttle() const;
 
     // returns climb target_rate reduced to avoid obstacles and
     // altitude fence
-    float get_avoidance_adjusted_climbrate(float target_rate);
+    float get_avoidance_adjusted_climbrate_cms(float target_rate_cms);
 
     // send output to the motors, can be overridden by subclasses
     virtual void output_to_motors();
@@ -307,17 +307,17 @@ public:
 
         // Autopilot Yaw Mode enumeration
         enum class Mode {
-            HOLD =             0,  // hold zero yaw rate
-            LOOK_AT_NEXT_WP =  1,  // point towards next waypoint (no pilot input accepted)
-            ROI =              2,  // point towards a location held in roi (no pilot input accepted)
-            FIXED =            3,  // point towards a particular angle (no pilot input accepted)
-            LOOK_AHEAD =       4,  // point in the direction the copter is moving
-            RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
-            ANGLE_RATE =       6,  // turn at a specified rate from a starting angle
-            RATE =             7,  // turn at a specified rate (held in auto_yaw_rate)
-            CIRCLE =           8,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
-            PILOT_RATE =       9,  // target rate from pilot stick
-            WEATHERVANE =     10,  // yaw into wind
+            HOLD =             0,   // hold zero yaw rate
+            LOOK_AT_NEXT_WP =  1,   // point towards next waypoint (no pilot input accepted)
+            ROI =              2,   // point towards a location held in roi (no pilot input accepted)
+            FIXED =            3,   // point towards a particular angle (no pilot input accepted)
+            LOOK_AHEAD =       4,   // point in the direction the copter is moving
+            RESET_TO_ARMED_YAW = 5, // point towards heading at time motors were armed
+            ANGLE_RATE =       6,   // turn at a specified rate from a starting angle
+            RATE =             7,   // turn at a specified rate (held in auto_yaw_rate)
+            CIRCLE =           8,   // use AC_Circle's provided yaw (used during Loiter-Turns commands)
+            PILOT_RATE =       9,   // target rate from pilot stick
+            WEATHERVANE =     10,   // yaw into wind
         };
 
         // mode(): current method of determining desired yaw:
@@ -332,34 +332,34 @@ public:
         void set_roi(const Location &roi_location);
 
         void set_fixed_yaw(float angle_deg,
-                           float turn_rate_dps,
+                           float turn_rate_degs,
                            int8_t direction,
                            bool relative_angle);
 
-        void set_yaw_angle_rate(float yaw_angle_d, float yaw_rate_ds);
+        void set_yaw_angle_rate_deg(float yaw_angle_deg, float yaw_rate_degs);
 
-        void set_yaw_angle_offset(const float yaw_angle_offset_d);
+        void set_yaw_angle_offset_deg(const float yaw_angle_offset_deg);
 
         bool reached_fixed_yaw_target();
 
 #if WEATHERVANE_ENABLED
-        void update_weathervane(const int16_t pilot_yaw_cds);
+        void update_weathervane(const float pilot_yaw_rads);
 #endif
 
         AC_AttitudeControl::HeadingCommand get_heading();
 
     private:
 
-        // yaw_cd(): main product of AutoYaw; the heading:
-        float yaw_cd();
+        // yaw_rad(): main product of AutoYaw; the heading:
+        float yaw_rad();
 
-        // rate_cds(): desired yaw rate in centidegrees/second:
-        float rate_cds();
+        // rate_rads(): desired yaw rate in centidegrees/second:
+        float rate_rads();
 
         // returns a yaw in degrees, direction of vehicle travel:
-        float look_ahead_yaw();
+        float look_ahead_yaw_rad();
 
-        float roi_yaw() const;
+        float roi_yaw_rad() const;
 
         // auto flight mode's yaw mode
         Mode _mode = Mode::LOOK_AT_NEXT_WP;
@@ -369,21 +369,21 @@ public:
         Vector3f roi;
 
         // yaw used for YAW_FIXED yaw_mode
-        float _fixed_yaw_offset_cd;
+        float _fixed_yaw_offset_rad;
 
-        // Deg/s we should turn
-        float _fixed_yaw_slewrate_cds;
+        // Radians/s we should turn
+        float _fixed_yaw_slewrate_rads;
 
         // time of the last yaw update
         uint32_t _last_update_ms;
 
         // heading when in yaw_look_ahead_yaw
-        float _look_ahead_yaw;
+        float _look_ahead_yaw_rad;
 
-        // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
-        float _yaw_angle_cd;
-        float _yaw_rate_cds;
-        float _pilot_yaw_rate_cds;
+        // turn heading (rad) and rate (rads) when auto_yaw_mode is set to AUTO_YAW_RATE
+        float _yaw_angle_rad;
+        float _yaw_rate_rads;
+        float _pilot_yaw_rate_rads;
     };
     static AutoYaw auto_yaw;
 
@@ -616,7 +616,7 @@ protected:
     const char *name4() const override { return auto_RTL? "ARTL" : "AUTO"; }
 
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
     bool get_wp(Location &loc) const override;
 
@@ -801,7 +801,7 @@ public:
 protected:
     bool position_ok() override;
     float get_pilot_desired_climb_rate_cms(void) const override;
-    void get_pilot_desired_rp_yrate_cd(float &roll_cd, float &pitch_cd, float &yaw_rate_cds) override;
+    void get_pilot_desired_rp_yrate_rad(float &des_roll_rad, float &des_pitch_rad, float &yaw_rate_rads) override;
     void init_z_limits() override;
 #if HAL_LOGGING_ENABLED
     void log_pids() override;
@@ -888,7 +888,7 @@ protected:
     const char *name4() const override { return "CIRC"; }
 
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
 
 private:
 
@@ -948,7 +948,7 @@ protected:
 private:
 
     // Flip
-    Vector3f orig_attitude;         // original vehicle attitude before flip
+    Vector3f orig_attitude_euler_rad;   // original vehicle attitude before flip
 
     enum class FlipState : uint8_t {
         Start,
@@ -958,11 +958,11 @@ private:
         Recover,
         Abandon
     };
-    FlipState _state;               // current state of flip
-    Mode::Number   orig_control_mode;   // flight mode when flip was initiated
-    uint32_t  start_time_ms;          // time since flip began
-    int8_t    roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
-    int8_t    pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
+    FlipState _state;                   // current state of flip
+    Mode::Number  orig_control_mode;    // flight mode when flip was initiated
+    uint32_t start_time_ms;             // time since flip began
+    int8_t roll_dir;                    // roll direction (-1 = roll left, 1 = roll right)
+    int8_t pitch_dir;                   // pitch direction (-1 = pitch forward, 1 = pitch back)
 };
 
 
@@ -1165,7 +1165,7 @@ protected:
     const char *name4() const override { return "GUID"; }
 
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
     float crosstrack_error() const override;
 
 private:
@@ -1337,7 +1337,7 @@ protected:
     const char *name4() const override { return "LOIT"; }
 
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
     float crosstrack_error() const override { return pos_control->crosstrack_error();}
 
 #if AC_PRECLAND_ENABLED
@@ -1506,7 +1506,7 @@ protected:
 
     // for reporting to GCS
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
     void descent_start();
@@ -1597,7 +1597,7 @@ protected:
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
 private:
@@ -1919,7 +1919,7 @@ protected:
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
     float  wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
@@ -1974,7 +1974,7 @@ protected:
     const char *name() const override { return "ZIGZAG"; }
     const char *name4() const override { return "ZIGZ"; }
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
     float crosstrack_error() const override;
 
 private:

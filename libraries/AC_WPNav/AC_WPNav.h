@@ -145,6 +145,9 @@ public:
     /// get_bearing_to_destination - get bearing to next waypoint in centi-degrees
     virtual int32_t get_wp_bearing_to_destination_cd() const;
 
+    /// get_bearing_to_destination - get bearing to next waypoint in radians
+    virtual float get_bearing_to_target_rad() const;
+
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
     virtual bool reached_wp_destination() const { return _flags.reached_destination; }
 
@@ -203,13 +206,27 @@ public:
     /// shared methods
     ///
 
-    /// get desired roll, pitch which should be fed into stabilize controllers
-    float get_roll() const { return _pos_control.get_roll_cd(); }
-    float get_pitch() const { return _pos_control.get_pitch_cd(); }
+    /// Returns the desired roll angle in radians from the position controller.
+    float get_roll_rad() const { return _pos_control.get_roll_rad(); }
+
+    /// Returns the desired pitch angle in radians from the position controller.
+    float get_pitch_rad() const { return _pos_control.get_pitch_rad(); }
+
+    /// Returns the desired yaw target in radians from the position controller.
+    float get_yaw_rad() const { return _pos_control.get_yaw_rad(); }
+
+    /// Returns the desired thrust direction vector for tilt control from the position controller.
     Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
 
-    // get target yaw in centi-degrees
+    /// Returns the desired roll angle in centidegrees from the position controller.
+    float get_roll() const { return _pos_control.get_roll_cd(); }
+
+    /// Returns the desired pitch angle in centidegrees from the position controller.
+    float get_pitch() const { return _pos_control.get_pitch_cd(); }
+
+    /// Returns the desired yaw target in centidegrees from the position controller.
     float get_yaw() const { return _pos_control.get_yaw_cd(); }
+
     /// advance_wp_target_along_track - move target location along track from origin to destination
     bool advance_wp_target_along_track(float dt);
 
@@ -277,7 +294,7 @@ protected:
     Vector3f    _origin_neu_cm;             // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination_neu_cm;        // target destination in cm from ekf origin
     Vector3f    _next_destination_neu_cm;   // next target destination in cm from ekf origin
-    float       _track_scalar_dt;           // time compression multiplier to slow the progress along the track
+    float       _track_dt_scalar;           // time compression multiplier to slow the progress along the track
     float       _offset_vel_cms;            // horizontal velocity reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
     float       _offset_accel_cmss;         // horizontal acceleration reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
     bool        _paused;                    // flag for pausing waypoint controller

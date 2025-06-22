@@ -34,8 +34,8 @@ void ModeSport::run()
     // get pilot's desired roll and pitch rates
 
     // calculate rate requests
-    float target_roll_rate_cds = channel_roll->get_control_in() * g2.command_model_acro_rp.get_rate() * 100.0 / ROLL_PITCH_YAW_INPUT_MAX;
-    float target_pitch_rate_cds = channel_pitch->get_control_in() * g2.command_model_acro_rp.get_rate() * 100.0 / ROLL_PITCH_YAW_INPUT_MAX;
+    float target_roll_rate_cds = channel_roll->norm_input_dz() * g2.command_model_acro_rp.get_rate() * 100.0;
+    float target_pitch_rate_cds = channel_pitch->norm_input_dz() * g2.command_model_acro_rp.get_rate() * 100.0;
 
     // get attitude targets
     const Vector3f att_target_cd = attitude_control->get_att_target_euler_cd();
@@ -62,7 +62,7 @@ void ModeSport::run()
     }
 
     // get pilot's desired yaw rate
-    float target_yaw_rate_cds = get_pilot_desired_yaw_rate();
+    float target_yaw_rate_cds = rad_to_cd(get_pilot_desired_yaw_rate_rads());
 
     // get pilot desired climb rate
     float target_climb_rate_cms = get_pilot_desired_climb_rate();
@@ -96,7 +96,7 @@ void ModeSport::run()
         }
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate(target_climb_rate_cms);
+        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
         // set position controller targets adjusted for pilot input
         takeoff.do_pilot_takeoff(target_climb_rate_cms);
@@ -106,7 +106,7 @@ void ModeSport::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cms = get_avoidance_adjusted_climbrate(target_climb_rate_cms);
+        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
 #if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
