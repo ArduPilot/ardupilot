@@ -1318,9 +1318,9 @@ void AC_PosControl::get_stopping_point_U_cm(postype_t &stopping_point_u_cm) cons
 }
 
 /// get_bearing_to_target_cd - get bearing to target position in centi-degrees
-int32_t AC_PosControl::get_bearing_to_target_cd() const
+float AC_PosControl::get_bearing_to_target_rad() const
 {
-    return get_bearing_cd(Vector2f{0.0, 0.0}, (_pos_target_neu_cm.xy() - _pos_estimate_neu_cm.xy()).tofloat());
+    return get_bearing_rad(Vector2f{0.0, 0.0}, (_pos_target_neu_cm.xy() - _pos_estimate_neu_cm.xy()).tofloat());
 }
 
 
