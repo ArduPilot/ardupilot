@@ -2732,6 +2732,26 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.zero_throttle()
         self.wait_disarmed(timeout=60)
 
+    def RudderArmingWithARMING_CHECK_THROTTLEUnset(self) -> None:
+        '''check arming behaviour with ARMING_CHECK_THROTTLE unset'''
+        self.wait_ready_to_arm()
+
+        self.start_subtest("Should not be able to arm with mid-stick throttle")
+        self.set_rc(3, 1500)
+        self.set_rc(4, 2000)
+        w = vehicle_test_suite.WaitAndMaintainDisarmed(self, minimum_duration=10)
+        w.run()
+        self.set_rc(4, 1500)
+        self.disarm_vehicle()
+
+        self.clear_parameter_bit("RC_OPTIONS", 5)
+        self.start_subtest("Should be able to arm with mid-stick throttle")
+        self.set_rc(3, 1500)
+        self.set_rc(4, 2000)
+        self.wait_armed()
+        self.set_rc(4, 1500)
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2790,5 +2810,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.FastInvertedRecovery,
             self.CruiseRecovery,
             self.RudderArmedTakeoffRequiresNeutralThrottle,
+            self.RudderArmingWithARMING_CHECK_THROTTLEUnset,
         ])
         return ret
