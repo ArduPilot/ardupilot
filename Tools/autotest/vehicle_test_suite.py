@@ -6314,6 +6314,18 @@ class TestSuite(ABC):
             return True
         return False
 
+    def set_parameter_bit(self, name : str, bit_offset : int) -> None:
+        '''set bit in parameter to true, preserving values of other bits'''
+        value = int(self.get_parameter(name))
+        value |= 1 << bit_offset
+        self.set_parameter(name, value)
+
+    def clear_parameter_bit(self, name : str, bit_offset : int) -> None:
+        '''set bit in parameter to true, preserving values of other bits'''
+        value = int(self.get_parameter(name))
+        value &= ~(1 << bit_offset)
+        self.set_parameter(name, value)
+
     def send_set_parameter_direct(self, name, value):
         self.mav.mav.param_set_send(self.sysid_thismav(),
                                     1,
