@@ -111,7 +111,7 @@ void ModeAcro_Heli::run()
             // if there is no external gyro then run the usual
             // ACRO_YAW_P gain on the input control, including
             // deadzone
-            yaw_in_cds = get_pilot_desired_yaw_rate();
+            yaw_in_cds = get_pilot_desired_yaw_rate_cds();
         }
 
         // run attitude controller

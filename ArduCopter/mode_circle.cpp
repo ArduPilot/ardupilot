@@ -103,7 +103,7 @@ void ModeCircle::run()
     float target_climb_rate = get_pilot_desired_climb_rate();
 
     // get avoidance adjusted climb rate
-    target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+    target_climb_rate = get_avoidance_adjusted_climbrate_cms(target_climb_rate);
 
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
@@ -123,7 +123,7 @@ void ModeCircle::run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 float ModeCircle::wp_distance_m() const
