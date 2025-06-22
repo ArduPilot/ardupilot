@@ -571,6 +571,7 @@ def configure(cfg):
         cfg.env.AP_BOARD_START_TIME = cfg.options.board_start_time
 
     # require python 3.8.x or later
+    # also update `MIN_VER` in `./waf`
     cfg.load('python')
     cfg.check_python_version(minver=(3,8,0))
 
