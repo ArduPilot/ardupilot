@@ -507,6 +507,10 @@ public:
     // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
     virtual float get_roll_trim_cd() { return 0;}
 
+    // Return angle in radians to be added to roll angle. Used by heli to counteract
+    // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
+    float get_roll_trim_rad() { return cd_to_rad(get_roll_trim_cd()); }
+
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     // this assumes a maximum deflection rate of 45 degrees per second or pi/4 rad/s.
     void passthrough_bf_roll_pitch_rate_yaw_cds(float roll_passthrough_cds, float pitch_passthrough_cds, float yaw_rate_bf_cds);
@@ -566,10 +570,6 @@ protected:
 
     // Update rate_target_ang_vel using attitude_error_rot_vec_rad
     Vector3f update_ang_vel_target_from_att_error(const Vector3f &attitude_error_rot_vec_rad);
-
-    // Return angle in radians to be added to roll angle. Used by heli to counteract
-    // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
-    virtual float get_roll_trim_rad() { return 0;}
 
     // Returns the most recent angular velocity reading (rad/s) for the rate controller.
     // Ensures minimum latency when rate control is run before or after attitude control.
