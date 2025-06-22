@@ -1561,16 +1561,6 @@ void SLT_Transition::update()
         }
         quadplane.hold_hover(climb_rate_cms);
 
-        if (!quadplane.tiltrotor.is_vectored()) {
-            // set desired yaw to current yaw in both desired angle
-            // and rate request. This reduces wing twist in transition
-            // due to multicopter yaw demands. This is disabled when
-            // using vectored yaw for tilt-rotors as the yaw control
-            // is needed to maintain good control in forward
-            // transitions
-            quadplane.attitude_control->reset_yaw_target_and_rate();
-            quadplane.attitude_control->rate_bf_yaw_target(0.0);
-        }
         if (quadplane.tiltrotor.enabled() && !quadplane.tiltrotor.has_fw_motor()) {
             // tilt rotors without dedicated fw motors do not have forward throttle output in this stage
             // prevent throttle I wind up
@@ -1637,16 +1627,6 @@ void SLT_Transition::update()
         quadplane.assisted_flight = true;
         quadplane.hold_stabilize(throttle_scaled);
 
-        // set desired yaw to current yaw in both desired angle and
-        // rate request while waiting for transition to
-        // complete. Navigation should be controlled by fixed wing
-        // control surfaces at this stage.
-        // We disable this for vectored yaw tilt rotors as they do need active
-        // yaw control throughout the transition
-        if (!quadplane.tiltrotor.is_vectored()) {
-            quadplane.attitude_control->reset_yaw_target_and_rate();
-            quadplane.attitude_control->rate_bf_yaw_target(0.0);
-        }
         break;
     }
 
