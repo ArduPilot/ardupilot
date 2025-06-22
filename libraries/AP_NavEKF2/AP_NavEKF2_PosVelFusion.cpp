@@ -297,7 +297,7 @@ bool NavEKF2_core::resetHeightDatum(void)
             // altitude. This ensures the reported AMSL alt from
             // getLLH() is equal to GPS altitude, while also ensuring
             // that the relative alt is zero
-            EKF_origin.alt = dal.gps().location().alt;
+            EKF_origin.copy_alt_from(dal.gps().location());
         }
         ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     }
