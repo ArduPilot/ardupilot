@@ -414,7 +414,7 @@ public:
     Vector3f get_thrust_vector() const;
 
     /// Returns the bearing to the position target in centidegrees (0 = North, CW positive).
-    int32_t get_bearing_to_target_cd() const;
+    float get_bearing_to_target_rad() const;
 
     /// Returns the maximum allowed lean angle in radians (roll/pitch) for the attitude controller.
     float get_lean_angle_max_rad() const;
