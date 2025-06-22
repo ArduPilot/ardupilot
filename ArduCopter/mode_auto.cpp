@@ -865,15 +865,15 @@ float ModeAuto::wp_distance_m() const
     }
 }
 
-int32_t ModeAuto::wp_bearing() const
+float ModeAuto::wp_bearing_deg() const
 {
     switch (_mode) {
     case SubMode::CIRCLE:
-        return copter.circle_nav->get_bearing_to_target_cd();
+        return degrees(copter.circle_nav->get_bearing_to_target_rad());
     case SubMode::WP:
     case SubMode::CIRCLE_MOVE_TO_EDGE:
     default:
-        return wp_nav->get_wp_bearing_to_destination_cd();
+        return degrees(wp_nav->get_wp_bearing_to_destination_rad());
     }
 }
 

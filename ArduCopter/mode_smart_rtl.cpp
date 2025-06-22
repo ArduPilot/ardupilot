@@ -201,9 +201,9 @@ float ModeSmartRTL::wp_distance_m() const
     return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
 }
 
-int32_t ModeSmartRTL::wp_bearing() const
+float ModeSmartRTL::wp_bearing_deg() const
 {
-    return wp_nav->get_wp_bearing_to_destination_cd();
+    return degrees(wp_nav->get_wp_bearing_to_destination_rad());
 }
 
 bool ModeSmartRTL::use_pilot_yaw() const
