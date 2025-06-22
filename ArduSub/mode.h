@@ -78,7 +78,7 @@ public:
 
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) { return false; }
-    virtual int32_t wp_bearing() const { return 0; }
+    virtual float wp_bearing_deg() const { return 0; }
     virtual float wp_distance_m() const { return 0.0f; }
     virtual float crosstrack_error() const { return 0.0f; }
 
