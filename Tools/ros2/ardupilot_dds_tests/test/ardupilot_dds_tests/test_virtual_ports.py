@@ -23,6 +23,7 @@ from launch_pytest.tools import process as process_tools
 
 WAIT_FOR_START_TIMEOUT = 5.0
 
+
 @launch_pytest.fixture
 def launch_description(virtual_ports):
     """Launch description fixture."""
