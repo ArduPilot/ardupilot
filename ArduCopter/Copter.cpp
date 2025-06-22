@@ -938,7 +938,7 @@ bool Copter::get_wp_distance_m(float &distance) const
 bool Copter::get_wp_bearing_deg(float &bearing) const
 {
     // see GCS_MAVLINK_Copter::send_nav_controller_output()
-    bearing = flightmode->wp_bearing() * 0.01;
+    bearing = flightmode->wp_bearing_deg();
     return true;
 }
 

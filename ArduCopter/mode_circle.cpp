@@ -131,9 +131,9 @@ float ModeCircle::wp_distance_m() const
     return copter.circle_nav->get_distance_to_target_cm() * 0.01f;
 }
 
-int32_t ModeCircle::wp_bearing() const
+float ModeCircle::wp_bearing_deg() const
 {
-    return copter.circle_nav->get_bearing_to_target_cd();
+    return degrees(copter.circle_nav->get_bearing_to_target_rad());
 }
 
 #endif
