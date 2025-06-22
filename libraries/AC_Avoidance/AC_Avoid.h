@@ -70,10 +70,12 @@ public:
     void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float& backup_speed, float dt);
     void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt);
 
+#if AP_ALT_HOLD_AVOIDANCE_ENABLED
     // adjust roll-pitch to push vehicle away from objects
     // roll and pitch value are in centi-degrees
     // angle_max is the user defined maximum lean angle for the vehicle in centi-degrees
     void adjust_roll_pitch(float &roll, float &pitch, float angle_max);
+#endif
 
     // enable/disable proximity based avoidance
     void proximity_avoidance_enable(bool on_off) { _proximity_enabled = on_off; }
@@ -189,6 +191,7 @@ private:
     */
     void find_max_quadrant_velocity_3D(Vector3f &desired_vel, Vector2f &quad1_vel, Vector2f &quad2_vel, Vector2f &quad3_vel, Vector2f &quad4_vel, float &max_z_vel, float &min_z_vel);
 
+#if AP_ALT_HOLD_AVOIDANCE_ENABLED
     /*
      * methods for avoidance in non-GPS flight modes
      */
@@ -198,13 +201,16 @@ private:
 
     // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
     void get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative);
+#endif
 
     // Logging function
     void Write_SimpleAvoidance(const uint8_t state, const Vector3f& desired_vel, const Vector3f& modified_vel, const bool back_up) const;
 
     // parameters
     AP_Int8 _enabled;
+#if AP_ALT_HOLD_AVOIDANCE_ENABLED
     AP_Int16 _angle_max;           // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
+#endif
     AP_Float _dist_max;            // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
     AP_Float _margin;              // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
     AP_Int8 _behavior;             // avoidance behaviour (slide or stop)
