@@ -165,7 +165,7 @@ void ModeSystemId::run()
     float target_pitch_cd = 0.0f;
     float target_yaw_rate_cds = 0.0f;
     float pilot_throttle_scaled = 0.0f;
-    float target_climb_rate = 0.0f;
+    float target_climb_rate_cms = 0.0f;
     Vector2f input_vel;
 
     if (!is_poscontrol_axis_type()) {
@@ -377,7 +377,7 @@ void ModeSystemId::run()
         attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), target_yaw_rate_cds, false);
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate);
+        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
 
         // run the vertical position controller and set output throttle
         pos_control->update_U_controller();

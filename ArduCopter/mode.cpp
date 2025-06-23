@@ -512,13 +512,13 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
     return vel;
 }
 
-bool Mode::_TakeOff::triggered(const float target_climb_rate) const
+bool Mode::_TakeOff::triggered(const float target_climb_rate_cms) const
 {
     if (!copter.ap.land_complete) {
         // can't take off if we're already flying
         return false;
     }
-    if (target_climb_rate <= 0.0f) {
+    if (target_climb_rate_cms <= 0.0f) {
         // can't takeoff unless we want to go up...
         return false;
     }
