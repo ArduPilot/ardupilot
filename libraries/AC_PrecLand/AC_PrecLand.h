@@ -13,7 +13,7 @@
 
 // declare backend classes
 class AC_PrecLand_Backend;
-class AC_PrecLand_Companion;
+class AC_PrecLand_MAVLink;
 class AC_PrecLand_IRLock;
 class AC_PrecLand_SITL_Gazebo;
 class AC_PrecLand_SITL;
@@ -23,7 +23,7 @@ class AC_PrecLand
 {
     // declare backends as friends
     friend class AC_PrecLand_Backend;
-    friend class AC_PrecLand_Companion;
+    friend class AC_PrecLand_MAVLink;
     friend class AC_PrecLand_IRLock;
     friend class AC_PrecLand_SITL_Gazebo;
     friend class AC_PrecLand_SITL;
@@ -141,8 +141,8 @@ private:
     // types of precision landing (used for PRECLAND_TYPE parameter)
     enum class Type : uint8_t {
         NONE = 0,
-#if AC_PRECLAND_COMPANION_ENABLED
-        COMPANION = 1,
+#if AC_PRECLAND_MAVLINK_ENABLED
+        MAVLINK = 1,
 #endif
 #if AC_PRECLAND_IRLOCK_ENABLED
         IRLOCK = 2,

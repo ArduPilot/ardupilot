@@ -1,25 +1,25 @@
 #include "AC_PrecLand_config.h"
 
-#if AC_PRECLAND_COMPANION_ENABLED
+#if AC_PRECLAND_MAVLINK_ENABLED
 
-#include "AC_PrecLand_Companion.h"
+#include "AC_PrecLand_MAVLink.h"
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
 // perform any required initialisation of backend
-void AC_PrecLand_Companion::init()
+void AC_PrecLand_MAVLink::init()
 {
     // set healthy
     _state.healthy = true;
 }
 
 // retrieve updates from sensor
-void AC_PrecLand_Companion::update()
+void AC_PrecLand_MAVLink::update()
 {
     _have_los_meas = _have_los_meas && AP_HAL::millis()-_los_meas_time_ms <= 1000;
 }
 
-void AC_PrecLand_Companion::handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)
+void AC_PrecLand_MAVLink::handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)
 {
     _distance_to_target = packet.distance;
 
@@ -50,4 +50,4 @@ void AC_PrecLand_Companion::handle_msg(const mavlink_landing_target_t &packet, u
     _have_los_meas = true;
 }
 
-#endif // AC_PRECLAND_COMPANION_ENABLED
+#endif // AC_PRECLAND_MAVLINK_ENABLED
