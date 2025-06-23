@@ -397,6 +397,7 @@ bool AC_PrecLand::check_if_sensor_in_range(float rangefinder_alt_m, bool rangefi
     return true;
 }
 
+// returns true when the landing target has been detected
 bool AC_PrecLand::target_acquired()
 {
     if ((AP_HAL::millis()-_last_update_ms) > LANDING_TARGET_TIMEOUT_MS) {
@@ -412,6 +413,7 @@ bool AC_PrecLand::target_acquired()
     return _target_acquired;
 }
 
+// returns target position relative to the EKF origin
 bool AC_PrecLand::get_target_position_cm(Vector2f& ret)
 {
     if (!target_acquired()) {
@@ -426,12 +428,14 @@ bool AC_PrecLand::get_target_position_cm(Vector2f& ret)
     return true;
 }
 
+// returns target relative position as 3D vector
 void AC_PrecLand::get_target_position_measurement_cm(Vector3f& ret)
 {
     ret = _target_pos_rel_meas_NED*100.0f;
     return;
 }
 
+// returns target position relative to vehicle
 bool AC_PrecLand::get_target_position_relative_cm(Vector2f& ret)
 {
     if (!target_acquired()) {
@@ -441,6 +445,7 @@ bool AC_PrecLand::get_target_position_relative_cm(Vector2f& ret)
     return true;
 }
 
+// returns target velocity relative to vehicle
 bool AC_PrecLand::get_target_velocity_relative_cms(Vector2f& ret)
 {
     if (!target_acquired()) {
@@ -488,6 +493,7 @@ void AC_PrecLand::handle_msg(const mavlink_landing_target_t &packet, uint32_t ti
 // Private methods
 //
 
+// run target position estimator
 void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
     _inertial_data_delayed = (*_inertial_history)[0];
@@ -612,6 +618,7 @@ void AC_PrecLand::check_ekf_init_timeout()
     }
 }
 
+// get vehicle body frame 3D vector from vehicle to target.  returns true on success, false on failure
 bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
 {
     const uint32_t los_meas_time_ms = _backend->los_meas_time_ms();
@@ -641,6 +648,7 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
     return false;
 }
 
+// If a new measurement was retrieved, sets _target_pos_rel_meas_NED and returns true
 bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
     Vector3f target_vec_unit_body;
@@ -691,6 +699,8 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
     return false;
 }
 
+// calculate target's position and velocity relative to the vehicle (used as input to position controller)
+// results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
 void AC_PrecLand::run_output_prediction()
 {
     _target_pos_rel_out_NE = _target_pos_rel_est_NE;
