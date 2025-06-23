@@ -1317,7 +1317,7 @@ void AC_PosControl::get_stopping_point_U_cm(postype_t &stopping_point_u_cm) cons
     stopping_point_u_cm = curr_pos_u_cm + constrain_float(stopping_distance(curr_vel_u_cms, _p_pos_u_cm.kP(), _accel_max_u_cmss), - POSCONTROL_STOPPING_DIST_DOWN_MAX, POSCONTROL_STOPPING_DIST_UP_MAX);
 }
 
-/// get_bearing_to_target_cd - get bearing to target position in centi-degrees
+/// get_bearing_to_target_rad - get bearing to target position in radians
 float AC_PosControl::get_bearing_to_target_rad() const
 {
     return get_bearing_rad(Vector2f{0.0, 0.0}, (_pos_target_neu_cm.xy() - _pos_estimate_neu_cm.xy()).tofloat());
@@ -1449,12 +1449,12 @@ bool AC_PosControl::get_fwd_pitch_is_limited() const
     const float angle_max_rad = MIN(_attitude_control.get_althold_lean_angle_max_rad(), get_lean_angle_max_rad());
     const float accel_max_cmss = angle_rad_to_accel_mss(angle_max_rad) * 100.0;
     // Check for pitch limiting in the forward direction
-    const float accel_fwd_unlimited = _limit_vector.x * _ahrs.cos_yaw() + _limit_vector.y * _ahrs.sin_yaw();
-    const float pitch_target_unlimited_cd = accel_mss_to_angle_deg(- MIN(accel_fwd_unlimited, accel_max_cmss) * 0.01f) * 100;
+    const float accel_fwd_unlimited_cmss = _limit_vector.x * _ahrs.cos_yaw() + _limit_vector.y * _ahrs.sin_yaw();
+    const float pitch_target_unlimited_deg = accel_mss_to_angle_deg(- MIN(accel_fwd_unlimited_cmss, accel_max_cmss) * 0.01f);
     const float accel_fwd_limited = _accel_target_neu_cmss.x * _ahrs.cos_yaw() + _accel_target_neu_cmss.y * _ahrs.sin_yaw();
-    const float pitch_target_limited_cd = accel_mss_to_angle_deg(- accel_fwd_limited * 0.01f) * 100;
+    const float pitch_target_limited_deg = accel_mss_to_angle_deg(- accel_fwd_limited * 0.01f);
 
-    return is_negative(pitch_target_unlimited_cd) && pitch_target_unlimited_cd < pitch_target_limited_cd;
+    return is_negative(pitch_target_unlimited_deg) && pitch_target_unlimited_deg < pitch_target_limited_deg;
 }
 #endif // APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 
