@@ -12,7 +12,7 @@ float Mode::AutoYaw::roi_yaw() const
     return copter.attitude_control->get_att_target_euler_cd().z;
 }
 
-// returns a yaw in degrees, direction of vehicle travel:
+// Returns the yaw angle (in radians) representing the direction of horizontal motion.
 float Mode::AutoYaw::look_ahead_yaw_rad()
 {
     // Commanded Yaw to automatically look ahead.
@@ -111,10 +111,10 @@ void Mode::AutoYaw::set_mode(Mode yaw_mode)
 }
 
 // set_fixed_yaw - sets the yaw look at heading for auto mode
-void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_degs, int8_t direction, bool relative_angle)
+void Mode::AutoYaw::set_fixed_yaw(float yaw_deg, float yaw_rate_degs, int8_t direction, bool relative_angle)
 {
     _last_update_ms = millis();
-    const float angle_rad = radians(angle_deg);
+    const float angle_rad = radians(yaw_deg);
 
     // calculate final angle as relative to vehicle heading or absolute
     if (relative_angle) {
@@ -126,18 +126,18 @@ void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_degs, int8_t 
         // absolute angle
         _fixed_yaw_offset_rad = wrap_PI(angle_rad - _yaw_angle_rad);
         if (direction < 0 && is_positive(_fixed_yaw_offset_rad)) {
-            _fixed_yaw_offset_rad -= 2.0 * M_PI;
+            _fixed_yaw_offset_rad -= M_2PI;
         } else if (direction > 0 && is_negative(_fixed_yaw_offset_rad)) {
-            _fixed_yaw_offset_rad += 2.0 * M_PI;
+            _fixed_yaw_offset_rad += M_2PI;
         }
     }
 
     // get turn speed
-    if (!is_positive(turn_rate_degs)) {
+    if (!is_positive(yaw_rate_degs)) {
         // default to default slew rate
         _fixed_yaw_slewrate_rads = copter.attitude_control->get_slew_yaw_max_rads();
     } else {
-        _fixed_yaw_slewrate_rads = MIN(copter.attitude_control->get_slew_yaw_max_rads(), radians(turn_rate_degs));
+        _fixed_yaw_slewrate_rads = MIN(copter.attitude_control->get_slew_yaw_max_rads(), radians(yaw_rate_degs));
     }
 
     // set yaw mode
@@ -145,7 +145,7 @@ void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_degs, int8_t 
 }
 
 // set_fixed_yaw - sets the yaw look at heading for auto mode
-void Mode::AutoYaw::set_yaw_angle_rate_deg(float yaw_angle_deg, float yaw_rate_degs)
+void Mode::AutoYaw::set_yaw_angle_and_rate_deg(float yaw_angle_deg, float yaw_rate_degs)
 {
     _last_update_ms = millis();
 

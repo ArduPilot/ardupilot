@@ -336,7 +336,7 @@ public:
                            int8_t direction,
                            bool relative_angle);
 
-        void set_yaw_angle_rate_deg(float yaw_angle_deg, float yaw_rate_degs);
+        void set_yaw_angle_and_rate_deg(float yaw_angle_deg, float yaw_rate_degs);
 
         void set_yaw_angle_offset_deg(const float yaw_angle_offset_deg);
 
@@ -356,7 +356,7 @@ public:
         // rate_rads(): desired yaw rate in centidegrees/second:
         float rate_rads();
 
-        // returns a yaw in degrees, direction of vehicle travel:
+        // Returns the yaw angle (in radians) representing the direction of horizontal motion.
         float look_ahead_yaw_rad();
 
         float roi_yaw() const;
