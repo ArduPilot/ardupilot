@@ -134,6 +134,7 @@ baro_types = {
     0x14 : "DEVTYPE_BARO_BMP390",
     0x15 : "DEVTYPE_BARO_BMP581",
     0x16 : "DEVTYPE_BARO_SPA06",
+    0x17 : "DEVTYPE_BARO_AUAV",
 }
 
 airspeed_types = {
@@ -147,8 +148,9 @@ airspeed_types = {
     0x08 : "DEVTYPE_AIRSPEED_ANALOG",
     0x09 : "DEVTYPE_AIRSPEED_NMEA",
     0x0A : "DEVTYPE_AIRSPEED_ASP5033",
+    0x0B : "DEVTYPE_AIRSPEED_AUAV",
 }
-    
+
 decoded_devname = ""
 
 if opts.compass:
