@@ -162,6 +162,12 @@ private:
         PLND_OPTION_FAST_DESCEND = (1 << 2),
     };
 
+    // frames for vectors from vehicle to target
+    enum class VectorFrame : uint8_t {
+        BODY_FRD = 0,     // body frame, forward-right-down relative to the vehicle's attitude
+        LOCAL_FRD = 1,    // forward-right-down where forward is aligned with front of the vehicle in the horizontal plane
+    };
+
     // check the status of the target
     void check_target_status(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
@@ -180,8 +186,8 @@ private:
     // If a new measurement was retrieved, sets _target_pos_rel_meas_NED and returns true
     bool construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
-    // get vehicle body frame 3D vector from vehicle to target.  returns true on success, false on failure
-    bool retrieve_los_meas(Vector3f& target_vec_unit_body);
+    // get 3D vector from vehicle to target and frame.  returns true on success, false on failure
+    bool retrieve_los_meas(Vector3f& target_vec_unit, VectorFrame& frame);
 
     // calculate target's position and velocity relative to the vehicle (used as input to position controller)
     // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
