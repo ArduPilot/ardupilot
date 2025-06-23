@@ -91,6 +91,9 @@ jobs:
           ref: ${{ github.event.pull_request.base.ref }}
           path: base_branch
           submodules: 'recursive'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
       # Put ccache into github cache for faster build
       - name: Prepare ccache timestamp
         id: ccache_cache_timestamp

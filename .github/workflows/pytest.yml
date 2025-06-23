@@ -1,0 +1,20 @@
+name: pytest
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+            submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - run: python3 -m pip install --upgrade pip setuptools
+      - run: python3 -m pip install --editable modules/DroneCAN/pydronecan
+      - run: python3 -m pip install --editable modules/mavlink/pymavlink
+      - run: python3 -m pip install --editable ".[tests]"
+      - run: pytest --ignore=Tools/ros2/ardupilot_dds_tests/test

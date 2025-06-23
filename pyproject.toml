@@ -1,3 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ardupilot"
+version = "4.6.0"
+
+[project.optional-dependencies]
+tests = [
+    "MAVProxy",
+    "mock",
+    "numpy",
+    "pexpect",
+    "pytest",
+    "requests"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--ignore=modules/gtest",
+    "--ignore=modules/mavlink/pymavlink/generator/C/test/posix/sha256_test.py",
+    "--ignore=modules/mavlink/pymavlink/tests/test_wp.py",
+    "--ignore=modules/waf",
+    "--ignore=Tools/autotest/test_build_options.py",
+    "--ignore=Tools/autotest/test_param_upgrade.py",
+    "--ignore=Tools/FilterTestTool",
+]
+
 [tool.isort]
 profile = "black"
 skip = ["./modules/", "./build/"]

@@ -13,20 +13,25 @@ jobs:
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
-        config: [
-            check_autotest_options,
-            param_parse,
-            python-cleanliness,
-            astyle-cleanliness,
-            validate_board_list,
-            logger_metadata,
-            param-file-validation,
-       ]
+        config:
+          - check_autotest_options,
+          - param_parse,
+          - python-cleanliness,
+          - astyle-cleanliness,
+          - validate_board_list,
+          - logger_metadata,
+          - param-file-validation,
     steps:
       # git checkout the PR
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+      - if: matrix.config == 'param-file-validation'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - if: matrix.config == 'param-file-validation'
+        run: python3 -m pip install --editable ".[test]"
       - name: test ${{matrix.config}}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}

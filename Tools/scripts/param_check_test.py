@@ -11,7 +11,8 @@ import time
 import unittest
 import subprocess
 from unittest.mock import MagicMock, patch, mock_open
-from param_check import (
+
+from Tools.scripts.param_check import (
     SkippedChecks,
     load_params,
     check_param,
@@ -164,7 +165,7 @@ class TestParamCheck(unittest.TestCase):
 
         self.assertIn('Error generating metadata for vehicle Plane', str(cm.exception))
 
-    @patch('param_check.generate_metadata')
+    @patch('Tools.scripts.param_check.generate_metadata')
     def test_get_metadata_merges(self, mock_generate_metadata):
         mock_generate_metadata.side_effect = [
             {
@@ -266,7 +267,7 @@ class TestParamCheck(unittest.TestCase):
         del metadata['Values']
         self.assertIsNone(check_param('PARAM', 0, metadata, skip)) # Should pass no matter what
 
-    @patch('param_check.check_param')
+    @patch('Tools.scripts.param_check.check_param')
     def test_check_file(self, mock_check_param):
         mock_skip = SkippedChecks()
 
@@ -334,7 +335,7 @@ class TestParamCheck(unittest.TestCase):
         # Check that no error messages are returned when no-redefinition is enabled
         self.assertEqual(msgs, [])
 
-    @patch('param_check.glob.glob')
+    @patch('Tools.scripts.param_check.glob.glob')
     @patch('sys.argv', ['param_check.py', 'file1.parm', 'file2.parm'])
     def test_parse_arguments_defaults(self, mock_glob):
         # Simulate glob returning the same file names
@@ -345,7 +346,7 @@ class TestParamCheck(unittest.TestCase):
         self.assertEqual(args.vehicle, 'Sub,Plane,Blimp,Copter,Tracker,Rover,AP_Periph')
         self.assertFalse(args.quiet_success)
 
-    @patch('param_check.glob.glob')
+    @patch('Tools.scripts.param_check.glob.glob')
     @patch(
         'sys.argv',
         [
@@ -369,9 +370,9 @@ class TestParamCheck(unittest.TestCase):
         self.assertTrue(args.no_range)
         self.assertTrue(args.no_values)
 
-    @patch('param_check.parse_arguments')
-    @patch('param_check.generate_metadata')
-    @patch('param_check.check_file')
+    @patch('Tools.scripts.param_check.parse_arguments')
+    @patch('Tools.scripts.param_check.generate_metadata')
+    @patch('Tools.scripts.param_check.check_file')
     @patch('builtins.print')
     def test_main(self, mock_print, mock_check_file, mock_generate_metadata, mock_parse_arguments):
 
