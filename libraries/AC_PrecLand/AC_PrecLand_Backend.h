@@ -28,22 +28,20 @@ public:
 
     // provides a unit vector towards the target in body frame
     //  returns same as have_los_meas()
-    bool get_los_body(Vector3f& dir_body) {
-        if (have_los_meas()) {
-            dir_body = _los_meas_body;
-            return true;
+    bool get_los_meas(Vector3f& vec_unit, AC_PrecLand::VectorFrame& frame) const {
+        if (!_los_meas.valid) {
+            return false;
         }
-        return false;
+        vec_unit = _los_meas.vec_unit;
+        frame = _los_meas.frame;
+        return true;
     };
 
     // returns system time in milliseconds of last los measurement
-    uint32_t los_meas_time_ms() { return _los_meas_time_ms; };
-
-    // return true if there is a valid los measurement available
-    bool have_los_meas() { return _have_los_meas; };
+    uint32_t los_meas_time_ms() const { return _los_meas.time_ms; };
 
     // returns distance to target in meters (0 means distance is not known)
-    float distance_to_target() { return _distance_to_target; };
+    float distance_to_target() const { return _distance_to_target; };
 
     // parses a mavlink message from the companion computer
     virtual void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) {};
@@ -55,9 +53,12 @@ protected:
     const AC_PrecLand&  _frontend;          // reference to precision landing front end
     AC_PrecLand::precland_state &_state;    // reference to this instances state
 
-    Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
-    uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
-    bool                _have_los_meas;         // true if there is a valid measurement from the sensor
+    struct {
+        Vector3f vec_unit;  // unit vector pointing towards target in earth or body frame (see frame)
+        AC_PrecLand::VectorFrame frame;  // frame of vector pointing towards target
+        uint32_t time_ms;   // system time in milliseconds when the vector was measured
+        bool valid;         // true if there is a valid measurement from the sensor
+    } _los_meas;
     float               _distance_to_target;    // distance from the sensor to landing target in meters
 };
 

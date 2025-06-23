@@ -618,17 +618,16 @@ void AC_PrecLand::check_ekf_init_timeout()
     }
 }
 
-// get vehicle body frame 3D vector from vehicle to target.  returns true on success, false on failure
-bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
+// get 3D vector from vehicle to target and frame.  returns true on success, false on failure
+bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit, VectorFrame& frame)
 {
     const uint32_t los_meas_time_ms = _backend->los_meas_time_ms();
-    if (los_meas_time_ms != _last_backend_los_meas_ms && _backend->get_los_body(target_vec_unit_body)) {
+    if ((los_meas_time_ms != _last_backend_los_meas_ms) && _backend->get_los_meas(target_vec_unit, frame)) {
         _last_backend_los_meas_ms = los_meas_time_ms;
         if (!is_zero(_yaw_align)) {
             // Apply sensor yaw alignment rotation
-            target_vec_unit_body.rotate_xy(cd_to_rad(_yaw_align));
+            target_vec_unit.rotate_xy(cd_to_rad(_yaw_align));
         }
-
 
         // rotate vector based on sensor orientation to get correct body frame vector
         if (_orient != ROTATION_PITCH_270) {
@@ -639,8 +638,8 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
             // because the rotations are measured with respect to a vector pointing towards front in body frame
             // for eg, if orientation is back, i.e., ROTATION_YAW_180, 
             // the vector is first brought to front and then rotation by YAW 180 to take it to the back of vehicle
-            target_vec_unit_body.rotate(ROTATION_PITCH_90); // bring vector to front
-            target_vec_unit_body.rotate(_orient);           // rotate it to desired orientation
+            target_vec_unit.rotate(ROTATION_PITCH_90); // bring vector to front
+            target_vec_unit.rotate(_orient);           // rotate it to desired orientation
         }
 
         return true;
@@ -651,12 +650,30 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
 // If a new measurement was retrieved, sets _target_pos_rel_meas_NED and returns true
 bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
-    Vector3f target_vec_unit_body;
-    if (retrieve_los_meas(target_vec_unit_body)) {
+    Vector3f target_vec_unit;
+    VectorFrame target_vec_frame;
+    if (retrieve_los_meas(target_vec_unit, target_vec_frame)) {
         _inertial_data_delayed = (*_inertial_history)[0];
 
-        const bool target_vec_valid = target_vec_unit_body.projected(_approach_vector_body).dot(_approach_vector_body) > 0.0f;
-        const Vector3f target_vec_unit_ned = _inertial_data_delayed->Tbn * target_vec_unit_body;
+        // sanity check vector is pointing in the right direction
+        const bool target_vec_valid = target_vec_unit.projected(_approach_vector_body).dot(_approach_vector_body) > 0.0f;
+
+        // calculate 3D vector to target in NED frame
+        Vector3f target_vec_unit_ned;
+        switch (target_vec_frame) {
+        case VectorFrame::BODY_FRD:
+            // convert to NED
+            target_vec_unit_ned = _inertial_data_delayed->Tbn * target_vec_unit;
+            break;
+        case VectorFrame::LOCAL_FRD:
+            // rotate vector using delayed yaw
+            float roll_rad, pitch_rad, yaw_rad;
+            _inertial_data_delayed->Tbn.to_euler(&roll_rad, &pitch_rad, &yaw_rad);
+            target_vec_unit_ned = target_vec_unit;
+            target_vec_unit_ned.rotate_xy(-yaw_rad);
+            break;
+        }
+
         const Vector3f approach_vector_NED = _inertial_data_delayed->Tbn * _approach_vector_body;
         const bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
         if (target_vec_valid && alt_valid) {
