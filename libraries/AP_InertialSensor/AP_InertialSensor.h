@@ -198,7 +198,7 @@ public:
 
     // return the maximum gyro drift rate in radians/s/s. This
     // depends on what gyro chips are being used
-    float get_gyro_drift_rate(void) const { return ToRad(0.5f/60); }
+    float get_gyro_drift_rate(void) const { return radians(0.5f/60); }
 
     // update gyro and accel values from accumulated samples
     void update(void) __RAMFUNC__;
@@ -426,7 +426,7 @@ public:
     BatchSampler batchsampler{*this};
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     // handle external AHRS data
     void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt);
 #endif

@@ -91,7 +91,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_ACTION
     // @DisplayName: Failsafe Action
     // @Description: What to do on a failsafe event
-    // @Values: 0:Nothing,1:RTL,2:Hold,3:SmartRTL or RTL,4:SmartRTL or Hold,5:Terminate
+    // @Values: 0:Nothing,1:RTL,2:Hold,3:SmartRTL or RTL,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
     // @User: Standard
     GSCALAR(fs_action,    "FS_ACTION",     (int8_t)FailsafeAction::Hold),
 
@@ -575,7 +575,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: LOIT_SPEED_GAIN
     // @DisplayName: Loiter speed gain
-    // @Description: Determines how agressively LOITER tries to correct for drift from loiter point. Higher is faster but default should be acceptable.
+    // @Description: Determines how aggressively LOITER tries to correct for drift from loiter point. Higher is faster but default should be acceptable.
     // @Range: 0 5
     // @Increment: 0.01
     // @User: Advanced

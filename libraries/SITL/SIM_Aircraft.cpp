@@ -219,7 +219,7 @@ void Aircraft::update_mag_field_bf()
     // create a field vector and rotate to the required orientation
     Vector3f mag_ef(1e3f * intensity, 0.0f, 0.0f);
     Matrix3f R;
-    R.from_euler(0.0f, -ToRad(inclination), ToRad(declination));
+    R.from_euler(0.0f, -radians(inclination), radians(declination));
     mag_ef = R * mag_ef;
 
     // calculate frame height above ground
@@ -483,7 +483,13 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 #endif
     // for EKF comparison log relhome pos and velocity at loop rate
     static uint16_t last_ticks;
-    uint16_t ticks = AP::scheduler().ticks();
+    // FIXME: stop using AP_Scheduler here!  It's from "the other side"
+    const auto *scheduler = AP_Scheduler::get_singleton();
+    if (scheduler == nullptr) {
+        // not instantiated in examples
+        return;
+    }
+    uint16_t ticks = scheduler->ticks();
     if (last_ticks != ticks) {
         last_ticks = ticks;
 // @LoggerMessage: SIM2

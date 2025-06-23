@@ -250,11 +250,17 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
 
 #if HAL_SIM_AIS_ENABLED
     } else if (streq(name, "AIS")) {
-        if (ais != nullptr) {
+        if ((ais != nullptr) || (ais_replay != nullptr)) {
             AP_HAL::panic("Only one AIS at a time");
         }
         ais = NEW_NOTHROW SITL::AIS();
         return ais;
+    } else if (streq(name, "AISReplay")) {
+        if ((ais != nullptr) || (ais_replay != nullptr)) {
+            AP_HAL::panic("Only one AIS at a time");
+        }
+        ais_replay = NEW_NOTHROW SITL::AIS_Replay();
+        return ais_replay;
 #endif
     } else if (strncmp(name, "gps", 3) == 0) {
         uint8_t x = atoi(arg);
@@ -379,7 +385,10 @@ void SITL_State_Common::sim_update(void)
 
 #if HAL_SIM_AIS_ENABLED
     if (ais != nullptr) {
-        ais->update();
+        ais->update(*sitl_model);
+    }
+    if (ais_replay != nullptr) {
+        ais_replay->update();
     }
 #endif
     for (uint8_t i=0; i<ARRAY_SIZE(gps); i++) {
@@ -434,8 +443,8 @@ void SITL_State_Common::update_voltage_current(struct sitl_input &input, float t
     voltage_pin_voltage = (voltage / 10.1f);
     current_pin_voltage = current/17.0f;
     // fake battery2 as just a 25% gain on the first one
-    voltage2_pin_voltage = voltage_pin_voltage * .25f;
-    current2_pin_voltage = current_pin_voltage * .25f;
+    voltage2_pin_voltage = voltage_pin_voltage * 0.25f;
+    current2_pin_voltage = current_pin_voltage * 0.25f;
 }
 
 #endif // HAL_BOARD_SITL

@@ -33,6 +33,7 @@
 #include "SIM_DroneCANDevice.h"
 #include "SIM_ADSB_Sagetech_MXS.h"
 #include "SIM_Volz.h"
+#include "SIM_AIS.h"
 
 namespace SITL {
 
@@ -321,6 +322,7 @@ public:
         AP_Float accuracy;
         AP_Vector3f vel_err; // Velocity error offsets in NED (x = N, y = E, z = D)
         AP_Int8 jam; // jamming simulation enable
+        AP_Float heading_offset; // heading offset in degrees
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 
@@ -366,6 +368,9 @@ public:
 #endif
 #if AP_SIM_FLIGHTAXIS_ENABLED
         FlightAxis *flightaxis_ptr;
+#endif
+#if HAL_SIM_AIS_ENABLED
+        class AIS *ais_ptr;
 #endif
     };
     ModelParm models;

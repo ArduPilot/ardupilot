@@ -234,8 +234,8 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
     // convert origin and destination to offset from EKF origin
     Vector2f origin_NE;
     Vector2f destination_NE;
-    if (!_origin.get_vector_xy_from_origin_NE(origin_NE) ||
-        !_destination.get_vector_xy_from_origin_NE(destination_NE)) {
+    if (!_origin.get_vector_xy_from_origin_NE_cm(origin_NE) ||
+        !_destination.get_vector_xy_from_origin_NE_cm(destination_NE)) {
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return false;
     }
@@ -269,7 +269,7 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
         if (!_pivot_at_next_wp) {
             // convert next_destination to offset from EKF origin
             Vector2f next_destination_NE;
-            if (!next_destination.get_vector_xy_from_origin_NE(next_destination_NE)) {
+            if (!next_destination.get_vector_xy_from_origin_NE_cm(next_destination_NE)) {
                 INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                 return false;
             }
@@ -405,13 +405,13 @@ void AR_WPNav::advance_wp_target_along_track(const Location &current_loc, float 
     // exit immediately if no current location, destination or disarmed
     Vector2f curr_pos_NE;
     Vector3f curr_vel_NED;
-    if (!AP::ahrs().get_relative_position_NE_origin(curr_pos_NE) || !AP::ahrs().get_velocity_NED(curr_vel_NED)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(curr_pos_NE) || !AP::ahrs().get_velocity_NED(curr_vel_NED)) {
         return;
     }
 
     // exit immediately if we can't convert waypoint origin to offset from ekf origin
     Vector2f origin_NE;
-    if (!_origin.get_vector_xy_from_origin_NE(origin_NE)) {
+    if (!_origin.get_vector_xy_from_origin_NE_cm(origin_NE)) {
         return;
     }
     // convert from cm to meters
@@ -467,7 +467,7 @@ void AR_WPNav::update_psc_input_shaping(float dt)
 {
     // convert destination location to offset from EKF origin (in meters)
     Vector2f pos_target_cm;
-    if (!_destination.get_vector_xy_from_origin_NE(pos_target_cm)) {
+    if (!_destination.get_vector_xy_from_origin_NE_cm(pos_target_cm)) {
         return;
     }
 

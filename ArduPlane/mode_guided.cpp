@@ -52,7 +52,7 @@ void ModeGuided::update()
 
         float error = 0.0f;
         if (plane.guided_state.target_heading_type == GUIDED_HEADING_HEADING) {
-            error = wrap_PI(plane.guided_state.target_heading - AP::ahrs().get_yaw());
+            error = wrap_PI(plane.guided_state.target_heading - AP::ahrs().get_yaw_rad());
         } else {
             Vector2f groundspeed = AP::ahrs().groundspeed_vector();
             error = wrap_PI(plane.guided_state.target_heading - atan2f(-groundspeed.y, -groundspeed.x) + M_PI);
@@ -118,6 +118,38 @@ bool ModeGuided::handle_guided_request(Location target_loc)
 
     return true;
 }
+
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+bool ModeGuided::handle_change_airspeed(const float airspeed, const float acceleration)
+{
+    // reject airspeeds that are outside of the tuning envelope
+    if (airspeed > plane.aparm.airspeed_max || airspeed < plane.aparm.airspeed_min) {
+        return false;
+    }
+
+    // no need to process any new packet/s with the
+    // same airspeed any further, if we are already doing it.
+    float new_target_airspeed_cm = airspeed * 100;
+    if (is_equal(new_target_airspeed_cm,plane.guided_state.target_airspeed_cm)) { 
+        return true;
+    }
+    plane.guided_state.target_airspeed_cm = new_target_airspeed_cm;
+    plane.guided_state.target_airspeed_time_ms = AP_HAL::millis();
+
+    if (is_zero(acceleration)) {
+        // the user wanted /maximum acceleration, pick a large value as close enough
+        plane.guided_state.target_airspeed_accel = 1000.0f;
+    } else {
+        plane.guided_state.target_airspeed_accel = fabsf(acceleration);
+    }
+
+    // assign an acceleration direction
+    if (plane.guided_state.target_airspeed_cm < plane.target_airspeed_cm) {
+        plane.guided_state.target_airspeed_accel *= -1.0f;
+    }
+    return true; 
+}
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 
 void ModeGuided::set_radius_and_direction(const float radius, const bool direction_is_ccw)
 {

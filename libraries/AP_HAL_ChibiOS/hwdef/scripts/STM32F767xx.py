@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+# flake8: noqa
 '''
 these tables are generated from the STM32 datasheet DM00273119.pdf for the
 STM32F765xx, STM32F767xx, STM32F768aX and STM32F769xx

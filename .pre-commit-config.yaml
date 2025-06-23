@@ -16,7 +16,7 @@ exclude: |
 
 repos:
   -   repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v4.4.0
+      rev: v5.0.0
       hooks:
         #-   id: trailing-whitespace
         #-   id: end-of-file-fixer
@@ -42,7 +42,7 @@ repos:
         -   id: check-yaml
 
   -   repo: https://github.com/psf/black
-      rev: 23.7.0
+      rev: 25.1.0
       hooks:
         - id: black
           files: |
@@ -51,6 +51,12 @@ repos:
               Tools/ros2/.*\.py
             )$
 
+  -   repo: https://github.com/pycqa/flake8
+      rev: 7.2.0
+      hooks:
+      -   id: flake8
+          args:
+            - Tools
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
 #       rev: 5.12.0

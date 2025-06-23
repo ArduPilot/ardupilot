@@ -166,6 +166,7 @@ public:
 #if HAL_SIM_AIS_ENABLED
     // simulated AIS stream
     SITL::AIS *ais;
+    SITL::AIS_Replay *ais_replay;
 #endif
 
     // simulated EFI MegaSquirt device:

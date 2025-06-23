@@ -416,7 +416,7 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
 void AP_Mount_Backend::write_log(uint64_t timestamp_us)
 {
     // return immediately if no yaw estimate
-    float ahrs_yaw = AP::ahrs().get_yaw();
+    float ahrs_yaw = AP::ahrs().get_yaw_rad();
     if (isnan(ahrs_yaw)) {
         return;
     }
@@ -535,7 +535,7 @@ void AP_Mount_Backend::calculate_poi()
         // iteratively move test_loc forward until its alt-above-sea-level is below terrain-alt-above-sea-level
         const float dist_increment_m = MAX(terrain->get_grid_spacing(), 10);
         const float mount_pitch_deg = degrees(quat.get_euler_pitch());
-        const float mount_yaw_ef_deg = wrap_180(degrees(quat.get_euler_yaw()) + degrees(ahrs.get_yaw()));
+        const float mount_yaw_ef_deg = wrap_180(degrees(quat.get_euler_yaw()) + degrees(ahrs.get_yaw_rad()));
         float total_dist_m = 0;
         bool get_terrain_alt_success = true;
         float prev_terrain_amsl_m = terrain_amsl_m;
@@ -708,7 +708,7 @@ bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountTa
         return false;
     }
 
-    const float GPS_vector_x = Location::diff_longitude(loc.lng, current_loc.lng)*cosf(ToRad((current_loc.lat + loc.lat) * 0.00000005f)) * 0.01113195f;
+    const float GPS_vector_x = Location::diff_longitude(loc.lng, current_loc.lng)*cosf(radians((current_loc.lat + loc.lat) * 0.00000005f)) * 0.01113195f;
     const float GPS_vector_y = (loc.lat - current_loc.lat) * 0.01113195f;
     int32_t target_alt_cm = 0;
     if (!loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, target_alt_cm)) {
@@ -745,7 +745,7 @@ float AP_Mount_Backend::MountTarget::get_bf_yaw() const
 {
     if (yaw_is_ef) {
         // convert to body-frame
-        return wrap_PI(yaw - AP::ahrs().get_yaw());
+        return wrap_PI(yaw - AP::ahrs().get_yaw_rad());
     }
 
     // target is already body-frame
@@ -761,7 +761,7 @@ float AP_Mount_Backend::MountTarget::get_ef_yaw() const
     }
 
     // convert to earth-frame
-    return wrap_PI(yaw + AP::ahrs().get_yaw());
+    return wrap_PI(yaw + AP::ahrs().get_yaw_rad());
 }
 
 // sets roll, pitch, yaw and yaw_is_ef

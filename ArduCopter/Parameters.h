@@ -120,7 +120,7 @@ public:
         k_param_rc_13_old,
         k_param_rc_14_old,
         k_param_rally,
-        k_param_poshold_brake_rate,
+        k_param_poshold_brake_rate_degs,
         k_param_poshold_brake_angle_max,
         k_param_pilot_accel_z,
         k_param_serial0_baud,           // deprecated - remove
@@ -382,6 +382,8 @@ public:
         k_param_throw_altitude_min,
         k_param_throw_altitude_max,
         k_param__gcs,
+        k_param_throw_altitude_descend,
+        k_param_throw_altitude_ascend,
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
@@ -411,7 +413,7 @@ public:
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
 
 #if MODE_POSHOLD_ENABLED
-    AP_Int16        poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
+    AP_Int16        poshold_brake_rate_degs;    // PosHold flight mode's rotation rate during braking in deg/sec
     AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
 #endif
 
@@ -458,6 +460,9 @@ public:
     AP_Enum<ModeThrow::PreThrowMotorState>         throw_motor_start;
     AP_Int16         throw_altitude_min; // minimum altitude in m above which a throw can be detected
     AP_Int16         throw_altitude_max; // maximum altitude in m below which a throw can be detected
+
+    AP_Float         throw_altitude_descend;    // target altitude (meters) to descend during a drop, (must be positive)
+    AP_Float         throw_altitude_ascend;     // target altitude (meters) to ascend during a throw upwards, (must be positive)
 #endif
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
@@ -627,7 +632,7 @@ public:
     AC_CommandModel command_model_acro_y;
 #endif
 
-    AC_CommandModel command_model_pilot;
+    AC_CommandModel command_model_pilot_y;
 
 #if MODE_ACRO_ENABLED
     AP_Int8 acro_options;

@@ -224,7 +224,7 @@ void setup()
     // Print AHRS state
     float airspeed = -1;
     bool airspeed_ok = ahrs.airspeed_estimate(airspeed);
-    ::printf("AHRS - roll: %f, pitch: %f, airspeed: %f, airspeed OK: %i, EAS2TAS %f, gyro: { %f, %f, %f }\n", ahrs.roll_sensor * 0.01, ahrs.pitch_sensor * 0.01, airspeed, airspeed_ok, ahrs.get_EAS2TAS(), ahrs.get_gyro().x, ahrs.get_gyro().y, ahrs.get_gyro().z);
+    ::printf("AHRS - roll: %f, pitch: %f, airspeed: %f, airspeed OK: %i, EAS2TAS %f, gyro: { %f, %f, %f }\n", ahrs.get_roll_deg(), ahrs.get_pitch_deg(), airspeed, airspeed_ok, ahrs.get_EAS2TAS(), ahrs.get_gyro().x, ahrs.get_gyro().y, ahrs.get_gyro().z);
 
     // Header for results
     ::printf("Time (s), angle error, output, PID target, PID actual, error, P, I, D, FF, DFF, Dmod, Slew rate, limit, PD limit, reset, I term set\n");

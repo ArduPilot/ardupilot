@@ -5,7 +5,7 @@
 #include <AP_Common/AP_Common.h>
 
 #include <AP_Arming/AP_Arming.h>
-
+#include "actuators.h"
 // Global parameter class.
 //
 class Parameters {
@@ -48,6 +48,7 @@ public:
         k_param_g2, // 2nd block of parameters
 
         k_param_sitl, // Simulation
+        k_param_osd, //OSD
 
         // Telemetry
         k_param_gcs0_unused = 10,      // unused in ArduPilot-4.7
@@ -65,6 +66,7 @@ public:
         k_param_notify, // Notify Library, AP_Notify
         k_param_arming = 26, // Arming checks
         k_param_can_mgr,
+        k_param_thr_arming_position,
 
         // Sensor objects
         k_param_ins = 30, // AP_InertialSensor
@@ -207,7 +209,21 @@ public:
         k_param_throttle_gain,
         k_param_cam_tilt_center, // deprecated
         k_param_frame_configuration,
-
+        k_param_surface_max_throttle,
+        k_param_surface_nobaro_thrust,
+        // 200: flight modes
+        k_param_flight_mode1 = 200,
+        k_param_flight_mode2,
+        k_param_flight_mode3,
+        k_param_flight_mode4,
+        k_param_flight_mode5,
+        k_param_flight_mode6,
+        k_param_simple_modes,
+        k_param_flight_mode_chan,
+#if AP_RSSI_ENABLED
+        k_param_rssi,
+#endif 
+        
         // Acro Mode parameters
         k_param_acro_yaw_p = 220, // Used in all modes for get_pilot_desired_yaw_rate
         k_param_acro_trainer,
@@ -232,7 +248,8 @@ public:
         k_param_rangefinder_signal_min,
         k_param_surftrak_depth,
         k_param_pilot_speed,
-
+        k_param_failsafe_throttle,
+        k_param_failsafe_throttle_value,
         k_param_vehicle = 257, // vehicle common block of parameters
         k_param__gcs = 258,
     };
@@ -274,6 +291,10 @@ public:
     // Throttle
     //
     AP_Int16        throttle_deadzone;
+    AP_Int8         failsafe_throttle;
+    AP_Int16        failsafe_throttle_value;
+    AP_Int16        thr_arming_position;
+    
 
     // Misc
     //
@@ -336,9 +357,25 @@ public:
     AP_Float        acro_balance_pitch;
     AP_Int8         acro_trainer;
     AP_Float        acro_expo;
+    
+#if AP_SUB_RC_ENABLED
+
+    // Flight modes
+    //
+    AP_Int8         flight_mode1;
+    AP_Int8         flight_mode2;
+    AP_Int8         flight_mode3;
+    AP_Int8         flight_mode4;
+    AP_Int8         flight_mode5;
+    AP_Int8         flight_mode6;
+    AP_Int8         simple_modes;
+    AP_Int8         flight_mode_chan;
+#endif 
 
     AP_Float                surface_depth;
     AP_Int8                 frame_configuration;
+
+    AP_Float surface_max_throttle;
 
     // Note: keep initializers here in the same order as they are declared
     // above.
@@ -371,6 +408,9 @@ public:
     AP_Float backup_origin_lat;
     AP_Float backup_origin_lon;
     AP_Float backup_origin_alt;
+    AP_Float surface_nobaro_thrust;
+    Actuators actuators;
+
 };
 
 extern const AP_Param::Info        var_info[];
@@ -378,15 +418,19 @@ extern const AP_Param::Info        var_info[];
 // Sub-specific default parameters
 static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "BRD_SAFETY_DEFLT",    0 },
-    { "ARMING_CHECK",        AP_Arming::ARMING_CHECK_RC |
-                             AP_Arming::ARMING_CHECK_VOLTAGE |
-                             AP_Arming::ARMING_CHECK_BATTERY},
+    { "ARMING_CHECK",        uint32_t(AP_Arming::Check::RC) |
+                             uint32_t(AP_Arming::Check::VOLTAGE) |
+                             uint32_t(AP_Arming::Check::BATTERY)},
     { "CIRCLE_RATE",         2.0f},
     { "ATC_ACCEL_Y_MAX",     110000.0f},
     { "ATC_RATE_Y_MAX",      180.0f},
-    { "RC3_TRIM",            1100},
+    { "RC3_TRIM",            1500},
     { "COMPASS_OFFS_MAX",    1000},
     { "INS_GYR_CAL",         0},
+    { "RCMAP_ROLL",          2},
+    { "RCMAP_PITCH",         1},
+    { "RCMAP_FORWARD",       5},
+    { "RCMAP_LATERAL",       6},
 #if HAL_MOUNT_ENABLED
     { "MNT1_TYPE",           1},
     { "MNT1_DEFLT_MODE",     MAV_MOUNT_MODE_RC_TARGETING},
@@ -401,6 +445,9 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "PILOT_SPEED_UP",      100.0f},
     { "PSC_VELXY_P",         6.0f},
     { "EK3_SRC1_VELZ",       0},
+#if AP_SUB_RC_ENABLED
+    { "RC_PROTOCOLS",        0},
+#endif
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
 #if AP_BARO_PROBE_EXT_PARAMETER_ENABLED
     { "BARO_PROBE_EXT",      0},
@@ -409,8 +456,8 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "BATT_CAPACITY",       0},
     { "LEAK1_PIN",           27},
     { "SCHED_LOOP_RATE",     200},
-    { "SERVO13_FUNCTION",    59},    // k_rcin9, lights 1
-    { "SERVO14_FUNCTION",    60},    // k_rcin10, lights 2
+    { "SERVO13_FUNCTION",    181},   // k_lights1
+    { "SERVO14_FUNCTION",    182},   // k_lights2
     { "SERVO16_FUNCTION",    7},     // k_mount_tilt
     { "SERVO16_REVERSED",    1},
 #else

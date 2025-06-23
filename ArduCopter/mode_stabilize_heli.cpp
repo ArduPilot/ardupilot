@@ -21,17 +21,17 @@ bool ModeStabilize_Heli::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeStabilize_Heli::run()
 {
-    float target_roll, target_pitch;
+    float target_roll_cd, target_pitch_cd;
     float pilot_throttle_scaled;
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
+    get_pilot_desired_lean_angles_cd(target_roll_cd, target_pitch_cd, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate();
+    float target_yaw_rate = get_pilot_desired_yaw_rate_cds();
 
     // get pilot's desired throttle
     pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
@@ -75,7 +75,7 @@ void ModeStabilize_Heli::run()
     }
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll_cd, target_pitch_cd, target_yaw_rate);
 
     // output pilot's throttle
     attitude_control->set_throttle_out(pilot_throttle_scaled, true, g.throttle_filt);

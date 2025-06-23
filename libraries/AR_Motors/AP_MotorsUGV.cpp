@@ -29,7 +29,7 @@ AP_MotorsUGV *AP_MotorsUGV::_singleton;
 const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Param: PWM_TYPE
     // @DisplayName: Motor Output PWM type
-    // @Description: This selects the output PWM type as regular PWM, OneShot, Brushed motor support using PWM (duty cycle) with separated direction signal, Brushed motor support with separate throttle and direction PWM (duty cyle)
+    // @Description: This selects the output PWM type as regular PWM, OneShot, Brushed motor support using PWM (duty cycle) with separated direction signal, Brushed motor support with separate throttle and direction PWM (duty cycle)
     // @Values: 0:Normal,1:OneShot,2:OneShot125,3:BrushedWithRelay,4:BrushedBiPolar,5:DShot150,6:DShot300,7:DShot600,8:DShot1200
     // @User: Advanced
     // @RebootRequired: True
@@ -113,11 +113,20 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
 
     // @Param: THST_ASYM
     // @DisplayName: Motor Thrust Asymmetry
-    // @Description: Thrust Asymetry. Used for skid-steering. 2.0 means your motors move twice as fast forward than they do backwards.
+    // @Description: Thrust Asymmetry. Used for skid-steering. 2.0 means your motors move twice as fast forward than they do backwards.
     // @Range: 1.0 10.0
     // @User: Advanced
     AP_GROUPINFO("THST_ASYM", 14, AP_MotorsUGV, _thrust_asymmetry, 1.0f),
 
+    // @Param: REV_DELAY
+    // @DisplayName: Motor reversal delay
+    // @Description: For reversible motors that need a delay before they can change direction. When greater than zero the throttle will go to zero for this amount of time before outputting the new throttle when the demanded motor direction changes.
+    // @Units: s
+    // @Range: 0.1 1.0
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("REV_DELAY", 15, AP_MotorsUGV, _reverse_delay, 0),
+    
     AP_GROUPEND
 };
 
@@ -948,14 +957,14 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
                 thr_str_ltr_max = fabsf(thr_str_ltr_out[i]);
             }
         }
-        // Scale all outputs back evenly such that the lagest fits
+        // Scale all outputs back evenly such that the largest fits
         const float output_scale = 1 / thr_str_ltr_max;
         for (uint8_t i=0; i<_motors_num; i++) {
             // send output for each motor
             output_throttle(SRV_Channels::get_motor_function(i), thr_str_ltr_out[i] * 100.0f * output_scale);
         }
         if (output_scale < 1.0) {
-            // cant tell which command resulted in the scale back, so limit all
+            // can't tell which command resulted in the scale back, so limit all
             limit.steer_left = true;
             limit.steer_right = true;
             limit.throttle_lower = true;
@@ -1027,6 +1036,23 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Function function, float throttl
         throttle = reverse_multiplier * fabsf(throttle);
     }
 #endif  // AP_RELAY_ENABLED
+
+    if (_reverse_delay > 0) {
+        switch (function) {
+        case SRV_Channel::k_throttle:
+            rev_delay_throttle.output(function, throttle, _reverse_delay);
+            return;
+        case SRV_Channel::k_throttleLeft:
+            rev_delay_throttleLeft.output(function, throttle * 10, _reverse_delay);
+            return;
+        case SRV_Channel::k_throttleRight:
+            rev_delay_throttleRight.output(function, throttle * 10, _reverse_delay);
+            return;
+        default:
+            // fall through to other non-delayed outputs
+            break;
+        }
+    }
 
     // output to servo channel
     switch (function) {
@@ -1170,6 +1196,25 @@ bool AP_MotorsUGV::is_digital_pwm_type() const
         break;
     }
     return false;
+}
+
+/*
+  handle delay on reversal for a throttle
+ */
+void AP_MotorsUGV::ReverseThrottle::output(SRV_Channel::Function function, float throttle, float delay)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    if (is_zero(throttle)) {
+        // pass through, no change, don't update the last throttle
+    } else if (throttle * last_throttle < 0 &&
+        now_ms - last_output_ms < delay*1000) {
+        // sign change, add pause
+        throttle = 0;
+    } else {
+        last_output_ms = now_ms;
+        last_throttle = throttle;
+    }
+    SRV_Channels::set_output_scaled(function, throttle);
 }
 
 namespace AP {

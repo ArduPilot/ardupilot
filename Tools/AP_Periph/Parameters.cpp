@@ -113,8 +113,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM
     // @Param: CAN_TERMINATE
-    // @DisplayName: Enable CAN software temination in this node
-    // @Description: Enable CAN software temination in this node
+    // @DisplayName: Enable CAN software termination in this node
+    // @Description: Enable CAN software termination in this node
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     // @RebootRequired: True
@@ -636,6 +636,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(battery_balance, "BAL",  BattBalance),
 #endif
 
+#if AP_PERIPH_BATTERY_TAG_ENABLED
+    // @Group: BTAG
+    // @Path: battery_tag.cpp
+    GOBJECT(battery_tag, "BTAG",  BatteryTag),
+#endif
+    
 #if AP_PERIPH_SERIAL_OPTIONS_ENABLED
     // @Group: UART
     // @Path: serial_options.cpp
@@ -643,7 +649,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #endif
     
     // NOTE: sim parameters should go last
-#if AP_SIM_ENABLED
+#if AP_SIM_PARAM_ENABLED
     // @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
     GOBJECT(sitl, "SIM_", SITL::SIM),
@@ -740,6 +746,16 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: MAV
     // @Path: ../libraries/GCS_MAVLink/GCS.cpp
     GOBJECT(_gcs,           "MAV",  GCS),
+#endif
+
+#if AP_PERIPH_RC_OUT_ENABLED
+    // @Param: SRV_CMD_TIME_OUT
+    // @DisplayName: Servo Command Timeout
+    // @Description: This is the duration (ms) with which to hold the last driven servo command before timing out and zeroing the servo outputs. To disable zeroing of outputs in event of CAN loss, use 0. Use values greater than the expected duration between two CAN frames to ensure Periph is not starved of ESC Raw Commands.
+    // @Range: 0 10000
+    // @Units: ms
+    // @User: Advanced
+    GSCALAR(servo_command_timeout_ms, "SRV_CMD_TIME_OUT", 200),
 #endif
 
     AP_VAREND

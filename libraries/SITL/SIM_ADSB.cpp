@@ -53,8 +53,8 @@ void ADSB_Vehicle::update(const class Aircraft &aircraft, float delta_t)
         const Vector2f aircraft_offset_ne = aircraft_location.get_distance_NE(origin);
         position.x = aircraft_offset_ne[1];
         position.y = aircraft_offset_ne[0];
-        position.x += Aircraft::rand_normal(0, _sitl->adsb_radius_m);
-        position.y += Aircraft::rand_normal(0, _sitl->adsb_radius_m);
+        position.x += Aircraft::rand_normal(0, _sitl->adsb_radius_m.get());
+        position.y += Aircraft::rand_normal(0, _sitl->adsb_radius_m.get());
         position.z = -fabsf(_sitl->adsb_altitude_m);
 
         double vel_min = 5, vel_max = 20;

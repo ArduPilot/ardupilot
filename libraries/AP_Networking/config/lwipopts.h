@@ -118,6 +118,12 @@ extern "C"
 
 #define USE_PPP 1
 
+// generate a regular LCP echo to keep link up
+#define LCP_ECHOINTERVAL                1
+
+// on 5 failed echos terminate link
+#define LCP_MAXECHOFAILS                5
+
 #define LWIP_TIMEVAL_PRIVATE 0
 #define LWIP_FD_SET_PRIVATE 0
 

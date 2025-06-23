@@ -1,0 +1,7 @@
+# setup for LEDs on chan7
+SERVO7_FUNCTION 120
+
+#enable Realy 2/3
+RELAY2_FUNCTION  1
+RELAY3_FUNCTION  1
+

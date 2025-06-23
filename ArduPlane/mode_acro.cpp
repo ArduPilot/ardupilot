@@ -67,7 +67,7 @@ void ModeAcro::stabilize()
         } else {
             acro_state.locked_roll_err += ahrs.get_gyro().x * plane.G_Dt;
         }
-        int32_t roll_error_cd = -ToDeg(acro_state.locked_roll_err)*100;
+        int32_t roll_error_cd = -degrees(acro_state.locked_roll_err)*100;
         plane.nav_roll_cd = ahrs.roll_sensor + roll_error_cd;
         // try to reduce the integrated angular error to zero. We set
         // 'stabilize' to true, which disables the roll integrator

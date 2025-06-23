@@ -39,8 +39,8 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Mission options bitmask
-    // @Description: Bitmask of what options to use in missions.
-    // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe,2:ContinueAfterLand
+    // @Description: Bitmask of what options to use in missions. If the DontZeroCounter counter option is set than on completion of a jump loop the counter is left at zero, so the jump will not happen again if the loop is re-entered.
+    // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe,2:ContinueAfterLand, 3:DontZeroCounter
     // @Bitmask{Copter}: 0:Clear Mission on reboot, 2:ContinueAfterLand
     // @Bitmask{Rover, Sub}: 0:Clear Mission on reboot
     // @User: Advanced
@@ -916,6 +916,12 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_PAYLOAD_PLACE:
+    case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION:
+    case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION:
+    case MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION:
+    case MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION:
+    case MAV_CMD_NAV_FENCE_RETURN_POINT:
+    case MAV_CMD_NAV_RALLY_POINT:
         return true;
     default:
         return false;
@@ -2220,6 +2226,19 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
                 // continue searching from jump target
                 cmd_index = temp_cmd.content.jump.target;
             } else {
+                if (increment_jump_num_times_if_found && !option_is_set(Option::DONT_ZERO_COUNTER)) {
+                    /*
+                      when we have completed a jump loop reset the counter
+                      so if the user changes WP back to restart the loop
+                      they get the count again
+                    */
+                    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
+                        if (_jump_tracking[i].index == cmd_index) {
+                            _jump_tracking[i].num_times_run = 0;
+                            break;
+                        }
+                    }
+                }
                 // jump has been run specified number of times so move search to next command in mission
                 cmd_index++;
             }

@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+# flake8: noqa
 '''
 these tables are generated from the STM32 datasheet RM0430 in en.DM00305666.pdf for the
 STM32F413

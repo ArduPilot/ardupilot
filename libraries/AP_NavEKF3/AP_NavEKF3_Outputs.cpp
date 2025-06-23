@@ -246,13 +246,13 @@ float NavEKF3_core::getPosDownDerivative(void) const
 
 // Write the last estimated NE position of the body frame origin relative to the reference point (m).
 // Return true if the estimate is valid
-bool NavEKF3_core::getPosNE(Vector2f &posNE) const
+bool NavEKF3_core::getPosNE(Vector2p &posNE) const
 {
     // There are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no position estimate available)
     if (PV_AidingMode != AID_NONE) {
         // This is the normal mode of operation where we can use the EKF position states
         // correct for the IMU offset (EKF calculations are at the IMU)
-        posNE = (outputDataNew.position.xy() + posOffsetNED.xy() + public_origin.get_distance_NE_ftype(EKF_origin)).tofloat();
+        posNE = outputDataNew.position.xy().topostype() + posOffsetNED.xy().topostype() + public_origin.get_distance_NE_postype(EKF_origin);
         return true;
 
     } else {
@@ -262,7 +262,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
             if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const Location &gpsloc = gps.location(selected_gps);
-                posNE = public_origin.get_distance_NE_ftype(gpsloc).tofloat();
+                posNE = public_origin.get_distance_NE_postype(gpsloc);
                 return false;
 #if EK3_FEATURE_BEACON_FUSION
             } else if (rngBcn.alignmentStarted) {
@@ -273,7 +273,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
 #endif
             } else {
                 // If no GPS fix is available, all we can do is provide the last known position
-                posNE = outputDataNew.position.xy().tofloat();
+                posNE = outputDataNew.position.xy().topostype();
                 return false;
             }
         } else {
@@ -287,7 +287,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
 
 // Write the last calculated D position of the body frame origin relative to the EKF local origin
 // Return true if the estimate is valid
-bool NavEKF3_core::getPosD_local(float &posD) const
+bool NavEKF3_core::getPosD_local(postype_t &posD) const
 {
     posD = outputDataNew.position.z + posOffsetNED.z;
 
@@ -298,7 +298,7 @@ bool NavEKF3_core::getPosD_local(float &posD) const
 
 // Write the last calculated D position of the body frame origin relative to the public origin
 // Return true if the estimate is valid
-bool NavEKF3_core::getPosD(float &posD) const
+bool NavEKF3_core::getPosD(postype_t &posD) const
 {
     bool ret = getPosD_local(posD);
 
@@ -327,7 +327,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
 {
     Location origin;
     if (getOriginLLH(origin)) {
-        float posD;
+        postype_t posD;
         if (getPosD_local(posD) && PV_AidingMode != AID_NONE) {
             // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
             loc.set_alt_cm(origin.alt - posD*100.0, Location::AltFrame::ABSOLUTE);

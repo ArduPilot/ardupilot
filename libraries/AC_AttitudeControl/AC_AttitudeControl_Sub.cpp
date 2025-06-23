@@ -345,7 +345,7 @@ AC_AttitudeControl_Sub::AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, const AP_Mult
     _p_angle_pitch.kP().set_default(AC_ATC_SUB_ANGLE_P);
     _p_angle_yaw.kP().set_default(AC_ATC_SUB_ANGLE_P);
 
-    _accel_yaw_max.set_default(AC_ATC_SUB_ACCEL_Y_MAX);
+    _accel_yaw_max_cdss.set_default(AC_ATC_SUB_ACCEL_Y_MAX);
 }
 
 // Update Alt_Hold angle maximum
@@ -356,12 +356,12 @@ void AC_AttitudeControl_Sub::update_althold_lean_angle_max(float throttle_in)
 
     // divide by zero check
     if (is_zero(thr_max)) {
-        _althold_lean_angle_max = 0.0f;
+        _althold_lean_angle_max_rad = 0.0f;
         return;
     }
 
     float althold_lean_angle_max = acosf(constrain_float(throttle_in/(AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
-    _althold_lean_angle_max = _althold_lean_angle_max + (_dt/(_dt+_angle_limit_tc))*(althold_lean_angle_max-_althold_lean_angle_max);
+    _althold_lean_angle_max_rad = _althold_lean_angle_max_rad + (_dt/(_dt+_angle_limit_tc))*(althold_lean_angle_max-_althold_lean_angle_max_rad);
 }
 
 void AC_AttitudeControl_Sub::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
@@ -393,6 +393,8 @@ float AC_AttitudeControl_Sub::get_throttle_boosted(float throttle_in)
     return throttle_out;
 }
 
+// Returns a throttle value that accounts for the priority of attitude control over throttle.
+// This allows graceful reduction of control authority as thrust approaches its minimum.
 // returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1
 float AC_AttitudeControl_Sub::get_throttle_avg_max(float throttle_in)
@@ -401,7 +403,8 @@ float AC_AttitudeControl_Sub::get_throttle_avg_max(float throttle_in)
     return MAX(throttle_in, throttle_in*MAX(0.0f,1.0f-_throttle_rpy_mix)+_motors.get_throttle_hover()*_throttle_rpy_mix);
 }
 
-// update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
+// Slews the throttle-to-attitude mix ratio (_throttle_rpy_mix) toward the requested value (_throttle_rpy_mix_desired).
+// Increases rapidly and decreases more slowly to ensure stability during transitions.
 void AC_AttitudeControl_Sub::update_throttle_rpy_mix()
 {
     // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
@@ -420,12 +423,12 @@ void AC_AttitudeControl_Sub::rate_controller_run()
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
     update_throttle_rpy_mix();
 
-    _rate_gyro = _ahrs.get_gyro_latest();
+    _rate_gyro_rads = _ahrs.get_gyro_latest();
     _rate_gyro_time_us = AP_HAL::micros64();
 
-    _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body.x, _rate_gyro.x, _dt, _motors.limit.roll));
-    _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body.y, _rate_gyro.y, _dt, _motors.limit.pitch));
-    _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body.z, _rate_gyro.z, _dt, _motors.limit.yaw));
+    _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body_rads.x, _rate_gyro_rads.x, _dt, _motors.limit.roll));
+    _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body_rads.y, _rate_gyro_rads.y, _dt, _motors.limit.pitch));
+    _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body_rads.z, _rate_gyro_rads.z, _dt, _motors.limit.yaw));
 }
 
 // sanity check parameters.  should be called once before takeoff
@@ -451,13 +454,15 @@ void AC_AttitudeControl_Sub::parameter_sanity_check()
     }
 }
 
-// This function ensures that the ROV reaches the target orientation with the desired yaw rate
-void AC_AttitudeControl_Sub::input_euler_angle_roll_pitch_slew_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float target_yaw_rate)
+// Sets desired roll, pitch, and yaw angles (in centidegrees), with yaw slewing.
+// Slews toward target yaw at a fixed rate (in centidegrees/s) until the error is within 5 degrees.
+// Used to enforce consistent heading changes without large instantaneous yaw errors.
+void AC_AttitudeControl_Sub::input_euler_angle_roll_pitch_slew_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float slew_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
-    const float euler_yaw_angle = wrap_PI(radians(euler_yaw_angle_cd * 0.01f));
+    const float euler_yaw_angle = wrap_PI(cd_to_rad(euler_yaw_angle_cd));
 
-    const float current_yaw = AP::ahrs().get_yaw();
+    const float current_yaw = AP::ahrs().get_yaw_rad();
 
     // Compute angle error
     const float yaw_error = wrap_PI(euler_yaw_angle - current_yaw);
@@ -469,15 +474,14 @@ void AC_AttitudeControl_Sub::input_euler_angle_roll_pitch_slew_yaw(float euler_r
         direction = 1;
     }
 
-    target_yaw_rate *= direction;
-
+    slew_yaw_rate_cds *= direction;
 
     if (fabsf(yaw_error) > MAX_YAW_ERROR) {
         // rotate the rov with desired yaw rate towards the target yaw
-        input_euler_angle_roll_pitch_euler_rate_yaw(euler_roll_angle_cd, euler_pitch_angle_cd, target_yaw_rate);
+        input_euler_angle_roll_pitch_euler_rate_yaw_cd(euler_roll_angle_cd, euler_pitch_angle_cd, slew_yaw_rate_cds);
     } else {
         // holds the rov's angles
-        input_euler_angle_roll_pitch_yaw(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_angle_cd, true);
+        input_euler_angle_roll_pitch_yaw_cd(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_angle_cd, true);
     }
 }
 

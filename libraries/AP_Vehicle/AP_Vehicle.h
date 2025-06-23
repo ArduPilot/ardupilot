@@ -71,6 +71,7 @@
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <Filter/AP_Filter.h>
 #include <AP_Stats/AP_Stats.h>              // statistics library
+#include <AP_DDS/AP_DDS_config.h>
 #if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
@@ -428,7 +429,7 @@ protected:
     AP_Generator generator;
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     AP_ExternalAHRS externalAHRS;
 #endif
 
@@ -480,7 +481,7 @@ protected:
     } fence_breaches;
 
     void fence_init();
-    virtual void fence_run_checks() {};
+    virtual void fence_checks_async() {};
 #endif
 
 #if AP_TEMPERATURE_SENSOR_ENABLED

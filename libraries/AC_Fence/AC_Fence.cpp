@@ -42,6 +42,8 @@ extern const AP_HAL::HAL& hal;
 #define AC_FENCE_OPTIONS_DEFAULT                   0
 #endif
 
+#define AC_FENCE_NOTIFY_DEFAULT                     1.0f    // default to notifications at 1Hz
+
 //#define AC_FENCE_DEBUG
 
 const AP_Param::GroupInfo AC_Fence::var_info[] = {
@@ -65,11 +67,11 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @DisplayName: Fence Action
     // @Description: What action should be taken when fence is breached
     // @Values{Copter}: 0:Report Only,1:RTL or Land,2:Always Land,3:SmartRTL or RTL or Land,4:Brake or Land,5:SmartRTL or Land
-    // @Values{Rover}: 0:Report Only,1:RTL or Hold,2:Hold,3:SmartRTL or RTL or Hold,4:SmartRTL or Hold
+    // @Values{Rover}: 0:Report Only,1:RTL or Hold,2:Hold,3:SmartRTL or RTL or Hold,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
     // @Values{Plane}: 0:Report Only,1:RTL,6:Guided,7:GuidedThrottlePass,8:AUTOLAND if possible else RTL
     // @Values: 0:Report Only,1:RTL or Land
     // @User: Standard
-    AP_GROUPINFO("ACTION",      2,  AC_Fence,   _action,        AC_FENCE_ACTION_RTL_AND_LAND),
+    AP_GROUPINFO("ACTION",      2,  AC_Fence,   _action,        float(Action::RTL_AND_LAND)),
 
     // @Param{Copter, Plane, Sub}: ALT_MAX
     // @DisplayName: Fence Maximum Altitude
@@ -139,12 +141,20 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FRAME("AUTOENABLE", 10, AC_Fence, _auto_enabled, static_cast<uint8_t>(AutoEnable::ALWAYS_DISABLED), AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
 
-    // @Param{Plane, Copter}: OPTIONS
+    // @Param: OPTIONS
     // @DisplayName: Fence options
-    // @Description: When bit 0 is set sisable mode change following fence action until fence breach is cleared. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
+    // @Description: When bit 0 is set disable mode change following fence action until fence breach is cleared. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
     // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared, 1:Allow union of inclusion areas, 2:Notify on margin breaches
     // @User: Standard
-    AP_GROUPINFO_FRAME("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(AC_FENCE_OPTIONS_DEFAULT), AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
+    AP_GROUPINFO("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(AC_FENCE_OPTIONS_DEFAULT)),
+
+    // @Param: NTF_FREQ
+    // @DisplayName: Fence margin notification frequency in hz
+    // @Description: When bit 2 of FENCE_OPTIONS is set this parameter controls the frequency of margin breach notifications. If set to 0 only new margin breaches are notified.
+    // @Range: 0 10
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("NTF_FREQ", 12, AC_Fence, _notify_freq, static_cast<float>(AC_FENCE_NOTIFY_DEFAULT)),
 
     AP_GROUPEND
 };
@@ -675,7 +685,7 @@ bool AC_Fence::check_fence_polygon()
             return true;
         }
         return false;
-    } else if (option_enabled(OPTIONS::MARGIN_BREACH)
+    } else if (option_enabled(OPTIONS::NOTIFY_MARGIN_BREACH)
                && _polygon_breach_distance < 0 && fabsf(_polygon_breach_distance) < _margin) {
         record_margin_breach(AC_FENCE_TYPE_POLYGON);
     } else {
@@ -750,6 +760,10 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
     clear_breach(~_configured_fences);
     // clear any breach from disabled fences
     clear_breach(fences_to_disable);
+    // clear any margin breach from a non-enabled fence
+    clear_margin_breach(~_configured_fences);
+    // clear any marginbreach from disabled fences
+    clear_margin_breach(fences_to_disable);
 
     if (_min_alt_state == MinAltState::MANUALLY_ENABLED) {
         // if user has manually enabled the min-alt fence then don't auto-disable
@@ -770,6 +784,15 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
         float alt;
         AP::ahrs().get_relative_position_D_home(alt);
 
+        // @LoggerMessage: FENC
+        // @Description: Fence status - development diagnostic message
+        // @Field: TimeUS: Time since system startup
+        // @Field: EN: bitmask of enabled fences
+        // @Field: AE: bitmask of automatically enabled fences
+        // @Field: CF: bitmask of configured-in-parameters fences
+        // @Field: EF: bitmask of enabled fences
+        // @Field: DF: bitmask of currently disabled fences
+        // @Field: Alt: current vehicle altitude
         AP::logger().WriteStreaming("FENC", "TimeUS,EN,AE,CF,EF,DF,Alt", "QIIIIIf",
                                     AP_HAL::micros64(),
                                     enabled(),
@@ -907,20 +930,34 @@ void AC_Fence::record_breach(uint8_t fence_type)
 void AC_Fence::record_margin_breach(uint8_t fence_type)
 {
     // if we haven't already breached a margin limit, update the breach time
-    if (!(_breached_fence_margins & fence_type)) {
-        const uint32_t now = AP_HAL::millis();
-        _margin_breach_time = now;
+    const uint32_t now = AP_HAL::millis();
 
-        // emit a message indicated we're newly-breached, but not too often
-        if (option_enabled(OPTIONS::MARGIN_BREACH)
-            && AP_HAL::timeout_expired(_last_margin_breach_notify_sent_ms, now, 1000U)) {
-            _last_margin_breach_notify_sent_ms = now;
-            print_fence_message("close", _breached_fence_margins | fence_type);
+    bool notify_margin_breach = false;
+
+    if (option_enabled(OPTIONS::NOTIFY_MARGIN_BREACH)) {
+        if ((!is_zero(_notify_freq)
+            && AP_HAL::timeout_expired(_last_margin_breach_notify_sent_ms, now,
+                                       uint32_t(roundf(1000.0f / _notify_freq))))
+            || !(_breached_fence_margins & fence_type)) {
+            notify_margin_breach = true;
         }
+    }
+
+    if (!(_breached_fence_margins & fence_type)) {
+        _margin_breach_time = now;
     }
 
     // update bitmask
     _breached_fence_margins |= fence_type;
+
+    // emit a message indicated we're newly-breached, but not too often
+    if (notify_margin_breach) {
+        _last_margin_breach_notify_sent_ms = now;
+        char msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        ExpandingString e(msg, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1);
+        AC_Fence::get_fence_names(_breached_fence_margins, e);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "%s in %.1fm", e.get_writeable_string(), fabsf(get_breach_distance(_breached_fence_margins)));
+    }
 }
 
 /// clear_breach - update breach bitmask
@@ -933,12 +970,7 @@ void AC_Fence::clear_breach(uint8_t fence_type)
 void AC_Fence::clear_margin_breach(uint8_t fence_type)
 {
     if (_breached_fence_margins & fence_type) {
-        const uint32_t now = AP_HAL::millis();
-
-        // emit a message indicated we're newly-breached, but not too often
-        if (option_enabled(OPTIONS::MARGIN_BREACH)
-            && AP_HAL::timeout_expired(_last_margin_breach_notify_sent_ms, now, 1000U)) {
-            _last_margin_breach_notify_sent_ms = now;
+        if (option_enabled(OPTIONS::NOTIFY_MARGIN_BREACH)) {
             print_fence_message("cleared margin breach", fence_type);
         }
     }
@@ -951,6 +983,7 @@ void AC_Fence::clear_margin_breach(uint8_t fence_type)
 /// of the given fences.  fence_type is a bitmask here.
 float AC_Fence::get_breach_distance(uint8_t fence_type) const
 {
+    fence_type = fence_type & present();
     float max = -FLT_MAX;
 
     if (fence_type & AC_FENCE_TYPE_ALT_MAX) {
@@ -994,7 +1027,7 @@ bool AC_Fence::sys_status_enabled() const
     if (!sys_status_present()) {
         return false;
     }
-    if (_action == AC_FENCE_ACTION_REPORT_ONLY) {
+    if (_action == Action::REPORT_ONLY) {
         return false;
     }
     // Fence is only enabled when the flag is enabled

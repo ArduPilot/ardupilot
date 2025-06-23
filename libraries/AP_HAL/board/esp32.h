@@ -62,7 +62,7 @@
 #define HAL_MEM_CLASS HAL_MEM_CLASS_192
 
 // disable uncommon stuff that we'd otherwise get 
-#define HAL_EXTERNAL_AHRS_ENABLED 0
+#define AP_EXTERNAL_AHRS_ENABLED 0
 #define HAL_GENERATOR_ENABLED 0
 
 #define __LITTLE_ENDIAN  1234

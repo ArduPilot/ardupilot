@@ -170,7 +170,7 @@ AP_HW_ICSI_Kestrel                   1049
 AP_HW_SierraL431                     1050
 AP_HW_NucleoL476                     1051
 AP_HW_SierraF405                     1052
-AP_HW_CarbonixL496                   1053
+AP_HW_HolybroG4_GPS                  1053
 AP_HW_MatekF405_TE                   1054
 AP_HW_SierraF412                     1055
 AP_HW_BEASTH7v2                      1056
@@ -304,6 +304,14 @@ AP_HW_BrahmaF4                       1184
 AP_HW_X-MAV-AP-F405Mini              1185
 AP_HW_3DRControlN1                   1186
 AP_HW_CORVON405V2_1                  1187
+AP_HW_NarinH5                        1188
+AP_HW_CORVON743V1                    1189
+AP_HW_DAKEFPVF405                    1190
+AP_HW_ORBITH743                      1191
+
+AP_HW_DAKEFPVH743                    1193
+AP_HW_DAKEFPVH743PRO                 1194
+AP_HW_SEQUREH743                     1195
 
 AP_HW_JFB200                         1200
 
@@ -335,6 +343,7 @@ AP_HW_CUBERED_PERIPH                 1409
 AP_HW_RadiolinkPIX6                  1410
 
 AP_HW_JHEMCU-H743HD                  1411
+AP_HW_JHEMCUF405PRO                  1412
 
 AP_HW_LongbowF405                    1422
 
@@ -360,6 +369,9 @@ AP_HW_SakuraRC-H743                  2714
 
 # IDs 4000-4009 reserved for Karshak Drones
 AP_HW_KRSHKF7_MINI                   4000
+
+# IDs 4010-4019 reserved for Aerium
+AP_HW_AERIUM_RADIANF405              4010
 
 # IDs 4200-4220 reserved for HAKRC
 AP_HW_HAKRC_F405                     4200
@@ -391,6 +403,8 @@ AP_HW_UAV-DEV-FC-H7                  5229
 AP_HW_UAV-DEV-FC-UM982-H7            5230
 AP_HW_UAV-DEV-FC-M10S-H7             5231
 AP_HW_UAV-DEV-UM982-H7               5232
+AP_HW_UAV-DEV-PM-G4                  5233
+AP_HW_UAV-DEV-AUAV-G4                5234
 
 # IDs 5240-5249 reserved for TM IT-Systemhaus
 AP_HW_TM-SYS-BeastFC                 5240
@@ -458,9 +472,14 @@ AP_HW_MFE_RTK_CAN                    6102
 AP_HW_MFE_AirSpeed_CAN               6103
 AP_HW_PixSurveyA2-IND                6104
 
+# IDs 6110 - 6119 for S-vehicle
+AP_HW_SVehicle-E2                    6110
+
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
 # IDs 6900-6909 reserved for Easy Aerial
+
+# IDs 6960-6969 reserved for ViaDrone
 
 # IDs 7000-7099 reserved for CUAV
 AP_HW_CUAV-7-NANO                    7000
@@ -471,12 +490,18 @@ AP_HW_VUAV-V7pro                     7100
 # IDs 7110-7119 reserved for AEROFOX
 AP_HW_AEROFOX_H7                     7110
 
+# IDs 7120-7129 reserved for Accton Godwit
+AP_HW_Accton_Godwit_GA1        7120
+
 # please fill gaps in the above ranges rather than adding past ID #7199
 
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140
 AP_HW_Pixhawk6_ODID                 10053
+AP_HW_CUAV_NORA_ODID                11009
+AP_HW_CUAV_X7_PRO_ODID              11010
+AP_HW_CUAV-7-NANO_ODID              17000
 
 # do not allocate board IDs above 10,000 for non-ODID boards.
 # do not allocate board IDs above 19,999 in this file.

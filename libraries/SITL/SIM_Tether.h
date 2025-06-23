@@ -55,6 +55,7 @@ private:
     AP_Int8 sys_id;                  // MAVLink system ID for GCS reporting
     AP_Int8 tether_stuck;            // Set to 1 to simulate a stuck tether
     AP_Float tether_spring_constant; // Spring constant for modeling tether stretch
+    AP_Float tether_damping_constant; // Damping constant
 
     // Send MAVLink messages to the GCS
     void send_report();
@@ -85,7 +86,9 @@ private:
     mavlink_status_t mav_status;            // Status of MAVLink communication
 
     // Tether simulation variables
-    Vector3f veh_forces_ef;            // Earth-frame forces on the vehicle due to the tether
+    float prev_stretch = 0.0f;                // store stretch beyond maximum in last calculation
+    Vector3f veh_forces_ef;                   // Effective Earth-frame forces on the vehicle due to the tether
+    Vector3f veh_forces_teth;                 // Earth-frame forces on the vehicle due to the spring and damping forces on tether
     float tether_length = 0.0f;               // Current tether length in meters
     float tether_not_stuck_length = 0.0f;     // Tether length when the tether is not stuck
 };

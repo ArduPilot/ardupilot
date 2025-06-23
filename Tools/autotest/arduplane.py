@@ -22,6 +22,7 @@ from vehicle_test_suite import OldpymavlinkException
 from vehicle_test_suite import PreconditionFailedException
 from vehicle_test_suite import Test
 from vehicle_test_suite import WaitModeTimeout
+from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 
 from pysim import vehicleinfo
 from pysim import util
@@ -1142,6 +1143,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Bad relalt (want=%f vs got=%f)" % (takeoff_alt, x.alt_rel))
         if abs(x.alt_msl - (original_alt+30)) > 10:
             raise NotAchievedException("Bad absalt (want=%f vs got=%f)" % (original_alt+30, x.alt_msl))
+
+        self.change_mode('LOITER')
+        self.delay_sim_time(10)
+
+        self.context_collect('CAMERA_FEEDBACK')
+        self.set_rc(12, 2000)
+        self.delay_sim_time(1)
+        self.set_rc(12, 1000)
+        self.assert_received_message_field_values('CAMERA_FEEDBACK', {
+            "roll": math.degrees(self.assert_receive_message('ATTITUDE').roll),
+        }, check_context=True, epsilon=5.0)
+
         self.fly_home_land_and_disarm()
 
     def ThrottleFailsafe(self):
@@ -2028,7 +2041,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.progress("Orbit with GPS and learn wind")
             # allow longer to learn wind if there is no airspeed sensor
             if disable_airspeed_sensor:
-                self.delay_sim_time(60)
+                self.delay_sim_time(180)
             else:
                 self.delay_sim_time(20)
             self.set_parameter("SIM_GPS1_ENABLE", 0)
@@ -5044,6 +5057,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.set_parameters({
             "TKOFF_ROTATE_SPD": 15.0,
+            "TKOFF_PLIM_SEC": 0,  # Ensure TKOFF_PLIM_SEC doesn't interfere with the test.
+            "TKOFF_DIST": 500,  # Ensure stall prevention doesn't interfere with the test.
+            "TKOFF_ALT": 100  # Ditto
         })
         self.change_mode("TAKEOFF")
 
@@ -5058,7 +5074,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException(f"Did not achieve correct takeoff pitch ({nav_pitch}).")
 
         # Check whether we've achieved correct target pitch after rotation.
-        self.wait_groundspeed(23, 24)
+        self.wait_groundspeed(24, 25)
         m = self.assert_receive_message('NAV_CONTROLLER_OUTPUT', timeout=5)
         nav_pitch = m.nav_pitch
         if nav_pitch > 15.1 or nav_pitch < 14.9:
@@ -5134,6 +5150,39 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle(force=True)
 
+    def TakeoffLevelOffWind(self):
+        '''Ensure the level-off functionality works.'''
+        '''
+        This is primarily targeted to test whether the level-off angle works
+        correctly even though the groundspeed eventually drops in face of wind.
+        '''
+        tkoff_alt = 100.
+        self.set_parameters({
+            "TKOFF_ROTATE_SPD": 15.0,
+            "TKOFF_ALT": tkoff_alt,
+            "TKOFF_DIST": 500,  # Ensure stall prevention doesn't interfere with the test.
+            "TKOFF_PLIM_SEC": 5  # Give some more time to detect the level-off.
+        })
+        self.change_mode("TAKEOFF")
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Wait until we're well past the rotation.
+        self.wait_groundspeed(24, 25)
+
+        self.set_parameters({
+            "SIM_WIND_DIR": 0.0,  # Set North wind.
+            "SIM_WIND_SPD": 10.0  # Enough to bring groundspeed below cruise speed.
+        })
+
+        self.wait_altitude(tkoff_alt-10, tkoff_alt, relative=True)
+        self.wait_level_flight(accuracy=10, timeout=1)  # Ensure we have roughly level-off.
+        self.delay_sim_time(5)
+
+        self.change_mode('AUTOLAND')
+        self.wait_disarmed(timeout=180)
+
     def DCMFallback(self):
         '''Really annoy the EKF and force fallback'''
         self.reboot_sitl()
@@ -5171,7 +5220,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext("DCM Active", check_context=True)
         self.context_stop_collecting('STATUSTEXT')
 
-        self.fly_home_land_and_disarm()
+        self.change_mode('AUTOLAND')
+        self.wait_disarmed(timeout=180)
 
     def EFITest(self, efi_type, name, sim_name, check_fuel_flow=True):
         '''method to be called by EFI tests'''
@@ -6967,6 +7017,65 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         )
         self.fly_home_land_and_disarm()
 
+    def SET_POSITION_TARGET_GLOBAL_INT_for_altitude(self):
+        '''test changing altitude using SET_POSITION_TARGET_GLOBAL_INT_for_altitude in guided mode'''
+        self.takeoff(30, mode='TAKEOFF')
+        self.change_mode('GUIDED')
+        target_alt = 40
+        self.mav.mav.set_position_target_global_int_send(
+            0, # timestamp
+            self.mav.target_system, # target system_id
+            self.mav.target_component, # target component id
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            MAV_POS_TARGET_TYPE_MASK.ALT_ONLY,
+            0, # lat
+            0, # lon
+            target_alt, # alt
+            0, # vx
+            0, # vy
+            0, # vz
+            0, # afx
+            0, # afy
+            0, # afz
+            0, # yaw
+            0, # yawrate
+        )
+        self.wait_altitude(
+            target_alt-1,
+            target_alt+1,
+            minimum_duration=10,
+            timeout=120,
+            relative=True,
+        )
+
+        self.progress("Ensure ignore bit is honoured")
+        self.mav.mav.set_position_target_global_int_send(
+            0, # timestamp
+            self.mav.target_system, # target system_id
+            self.mav.target_component, # target component id
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            MAV_POS_TARGET_TYPE_MASK.IGNORE_ALL, # mask specifying use-only-alt
+            0, # lat
+            0, # lon
+            target_alt, # alt
+            0, # vx
+            0, # vy
+            0, # vz
+            0, # afx
+            0, # afy
+            0, # afz
+            0, # yaw
+            0, # yawrate
+        )
+        self.wait_altitude(
+            target_alt-1,
+            target_alt+1,
+            timeout=60,
+            minimum_duration=10,
+            relative=True,
+        )
+        self.fly_home_land_and_disarm()
+
     def mavlink_AIRSPEED(self):
         '''check receiving of two airspeed sensors'''
         self.set_parameters({
@@ -7135,6 +7244,65 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if abs(m.Pos - m.PosCmd) > 20:
                 break
 
+    def MAV_CMD_NAV_LOITER_TURNS_zero_turn(self):
+        '''Ensure air vehicle achieves loiter target before exiting'''
+        offset = 500
+        alt = self.get_parameter("RTL_ALTITUDE")
+        waypoint_radius = 100
+
+        loiter_turns_loc_ccw = self.home_relative_loc_ne(offset, offset)
+        loiter_turns_loc_cw = self.home_relative_loc_ne(offset, -offset)
+
+        # upload a mission plan containing zero-turn loiters
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 10),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                p1=0,                # Turns
+                p3=-waypoint_radius, # Radius (If positive loiter clockwise, else counter-clockwise)
+                x=int(loiter_turns_loc_ccw.lat*1e7),
+                y=int(loiter_turns_loc_ccw.lng*1e7),
+                z=alt,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
+            ),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                p1=0,               # Turns
+                p3=waypoint_radius, # Radius (If positive loiter clockwise, else counter-clockwise)
+                x=int(loiter_turns_loc_cw.lat*1e7),
+                y=int(loiter_turns_loc_cw.lng*1e7),
+                z=alt,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
+            ),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_JUMP,
+                p1=2, # waypoint to jump to
+                p2=1  # number of jumps (-1: infinite)
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -offset, -offset, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -offset, offset, alt),
+        ])
+
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+
+        # check the vehicle is flying to each waypoint as expected
+        self.wait_distance_to_waypoint(2, distance_min=90, distance_max=110, timeout=90) # North East Loiter
+        self.wait_distance_to_waypoint(3, distance_min=90, distance_max=110, timeout=90) # North West Loiter
+
+        # Jump to first 0-Turn Loiter
+        self.wait_distance_to_waypoint(2, distance_min=90, distance_max=110, timeout=90) # North East Loiter
+
+        # Ensure we go back through this loiter point
+        self.wait_distance_to_waypoint(3, distance_min=90, distance_max=110, timeout=90) # North West Loiter
+
+        self.wait_distance_to_waypoint(5, distance_min=10, distance_max=20, timeout=90)  # South West Waypoint
+        self.wait_distance_to_waypoint(6, distance_min=10, distance_max=20, timeout=90)  # South East Waypoint
+
+        self.fly_home_land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -7241,6 +7409,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TakeoffGround,
             self.TakeoffIdleThrottle,
             self.TakeoffBadLevelOff,
+            self.TakeoffLevelOffWind,
             self.ForcedDCM,
             self.DCMFallback,
             self.MAVFTP,
@@ -7298,6 +7467,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.LoggedNamedValueFloat,
             self.AdvancedFailsafeBadBaro,
             self.DO_CHANGE_ALTITUDE,
+            self.SET_POSITION_TARGET_GLOBAL_INT_for_altitude,
+            self.MAV_CMD_NAV_LOITER_TURNS_zero_turn,
         ]
 
     def disabled_tests(self):

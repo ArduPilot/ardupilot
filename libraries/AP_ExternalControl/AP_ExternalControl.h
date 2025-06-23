@@ -17,6 +17,13 @@ class AP_ExternalControl
 public:
 
     AP_ExternalControl();
+
+    /*
+        Sets the target airspeed.
+    */
+    virtual bool set_airspeed(const float airspeed) WARN_IF_UNUSED {
+        return false;
+    }
     /*
       Set linear velocity and yaw rate. Pass NaN for yaw_rate_rads to not control yaw.
       Velocity is in earth frame, NED [m/s].

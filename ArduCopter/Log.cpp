@@ -36,8 +36,8 @@ void Copter::Log_Write_Control_Tuning()
     float des_alt_m = 0.0f;
     int16_t target_climb_rate_cms = 0;
     if (!flightmode->has_manual_throttle()) {
-        des_alt_m = pos_control->get_pos_target_z_cm() * 0.01f;
-        target_climb_rate_cms = pos_control->get_vel_target_z_cms();
+        des_alt_m = pos_control->get_pos_target_U_cm() * 0.01f;
+        target_climb_rate_cms = pos_control->get_vel_target_U_cms();
     }
 
     float desired_rangefinder_alt;
@@ -58,7 +58,7 @@ void Copter::Log_Write_Control_Tuning()
         throttle_out        : motors->get_throttle(),
         throttle_hover      : motors->get_throttle_hover(),
         desired_alt         : des_alt_m,
-        inav_alt            : inertial_nav.get_position_z_up_cm() * 0.01f,
+        inav_alt            : float(pos_control->get_pos_estimate_NEU_cm().z) * 0.01,
         baro_alt            : baro_alt,
         desired_rangefinder_alt : desired_rangefinder_alt,
 #if AP_RANGEFINDER_ENABLED
@@ -68,7 +68,7 @@ void Copter::Log_Write_Control_Tuning()
 #endif
         terr_alt            : terr_alt,
         target_climb_rate   : target_climb_rate_cms,
-        climb_rate          : int16_t(inertial_nav.get_velocity_z_up_cms()) // float -> int16_t
+        climb_rate          : int16_t(pos_control->get_vel_estimate_NEU_cms().z) // float -> int16_t
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -91,10 +91,10 @@ void Copter::Log_Write_PIDS()
         logger.Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
         logger.Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
         logger.Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
-        logger.Write_PID(LOG_PIDA_MSG, pos_control->get_accel_z_pid().get_pid_info() );
+        logger.Write_PID(LOG_PIDA_MSG, pos_control->get_accel_U_pid().get_pid_info() );
         if (should_log(MASK_LOG_NTUN) && (flightmode->requires_GPS() || landing_with_GPS())) {
-            logger.Write_PID(LOG_PIDN_MSG, pos_control->get_vel_xy_pid().get_pid_info_x());
-            logger.Write_PID(LOG_PIDE_MSG, pos_control->get_vel_xy_pid().get_pid_info_y());
+            logger.Write_PID(LOG_PIDN_MSG, pos_control->get_vel_NE_pid().get_pid_info_x());
+            logger.Write_PID(LOG_PIDE_MSG, pos_control->get_vel_NE_pid().get_pid_info_y());
         }
     }
 }
@@ -355,25 +355,25 @@ struct PACKED log_Rate_Thread_Dt {
 };
 
 // Write a Guided mode position target
-// pos_target is lat, lon, alt OR offset from ekf origin in cm
-// terrain should be 0 if pos_target.z is alt-above-ekf-origin, 1 if alt-above-terrain
-// vel_target is cm/s
-void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target)
+// pos_target_cm is lat, lon, alt OR offset from ekf origin in cm
+// terrain should be 0 if pos_target_cm.z is alt-above-ekf-origin, 1 if alt-above-terrain
+// vel_target_cms is cm/s
+void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target_cm, bool terrain_alt, const Vector3f& vel_target_cms, const Vector3f& accel_target_cmss)
 {
     const log_Guided_Position_Target pkt {
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_POSITION_TARGET_MSG),
         time_us         : AP_HAL::micros64(),
         type            : (uint8_t)target_type,
-        pos_target_x    : pos_target.x,
-        pos_target_y    : pos_target.y,
-        pos_target_z    : pos_target.z,
+        pos_target_x    : pos_target_cm.x * 0.01f,
+        pos_target_y    : pos_target_cm.y * 0.01f,
+        pos_target_z    : pos_target_cm.z * 0.01f,
         terrain         : terrain_alt,
-        vel_target_x    : vel_target.x,
-        vel_target_y    : vel_target.y,
-        vel_target_z    : vel_target.z,
-        accel_target_x  : accel_target.x,
-        accel_target_y  : accel_target.y,
-        accel_target_z  : accel_target.z
+        vel_target_x    : vel_target_cms.x * 0.01f,
+        vel_target_y    : vel_target_cms.y * 0.01f,
+        vel_target_z    : vel_target_cms.z * 0.01f,
+        accel_target_x  : accel_target_cmss.x * 0.01f,
+        accel_target_y  : accel_target_cmss.y * 0.01f,
+        accel_target_z  : accel_target_cmss.z * 0.01f
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -540,7 +540,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: aZ: Target acceleration, Z-Axis
 
     { LOG_GUIDED_POSITION_TARGET_MSG, sizeof(log_Guided_Position_Target),
-      "GUIP",  "QBfffbffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ", "s-mmm-nnnooo", "F-BBB-BBBBBB" , true },
+      "GUIP",  "QBfffbffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ", "s-mmm-nnnooo", "F-000-000000" , true },
 
 // @LoggerMessage: GUIA
 // @Description: Guided mode attitude target information

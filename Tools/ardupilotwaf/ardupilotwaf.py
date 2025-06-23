@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+# flake8: noqa
+
 from waflib import Build, ConfigSet, Configure, Context, Errors, Logs, Options, Utils, Task
 from waflib.Configure import conf
 from waflib.Scripting import run_command
@@ -40,6 +42,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_GSOF',
     'AP_HAL',
     'AP_HAL_Empty',
+    'AP_DDS',
     'AP_InertialSensor',
     'AP_Math',
     'AP_Mission',
@@ -166,7 +169,6 @@ def set_double_precision_flags(flags):
 IGNORED_AP_LIBRARIES = [
     'doc',
     'AP_Scripting', # this gets explicitly included when it is needed and should otherwise never be globbed in
-    'AP_DDS',
 ]
 
 

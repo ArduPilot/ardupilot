@@ -245,7 +245,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 
 #if HAL_QUADPLANE_ENABLED
     if (new_mode.is_vtol_mode() && !plane.quadplane.available()) {
-        // dont try and switch to a Q mode if quadplane is not enabled and initalized
+        // dont try and switch to a Q mode if quadplane is not enabled and initialized
         gcs().send_text(MAV_SEVERITY_INFO,"Q_ENABLE 0");
         // make sad noise
         if (reason != ModeReason::INITIALISED) {
@@ -381,7 +381,7 @@ void Plane::check_long_failsafe()
             failsafe_long_on_event(FAILSAFE_GCS, ModeReason::GCS_FAILSAFE);
         }
     } else {
-        uint32_t timeout_seconds = g.fs_timeout_long;
+        float timeout_seconds = g.fs_timeout_long;
         if (g.fs_action_short != FS_ACTION_SHORT_DISABLED) {
             // avoid dropping back into short timeout
             timeout_seconds = g.fs_timeout_short;

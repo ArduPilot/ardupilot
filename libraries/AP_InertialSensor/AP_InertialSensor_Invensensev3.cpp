@@ -337,6 +337,10 @@ void AP_InertialSensor_Invensensev3::start()
             temp_sensitivity = 1.0 / 128.0;
             accel_scale = ACCEL_SCALE_HIGHRES_32G;
             gyro_scale = GYRO_SCALE_HIGHRES_4000DPS;
+        } else if (inv3_type == Invensensev3_Type::IIM42653) {
+            accel_scale = ACCEL_SCALE_HIGHRES_32G;
+            gyro_scale = GYRO_SCALE_HIGHRES_4000DPS;
+            temp_sensitivity = 1.0 / 132.48;
         } else if (inv3_type == Invensensev3_Type::ICM42670) {
             temp_sensitivity = 1.0 / 128.0;
         }

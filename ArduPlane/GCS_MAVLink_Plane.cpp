@@ -132,9 +132,9 @@ void GCS_MAVLINK_Plane::send_attitude() const
 {
     const AP_AHRS &ahrs = AP::ahrs();
 
-    float r = ahrs.get_roll();
-    float p = ahrs.get_pitch();
-    float y = ahrs.get_yaw();
+    float r = ahrs.get_roll_rad();
+    float p = ahrs.get_pitch_rad();
+    float y = ahrs.get_yaw_rad();
 
     if (!(plane.flight_option_enabled(FlightOptions::GCS_REMOVE_TRIM_PITCH))) {
         p -= radians(plane.g.pitch_trim);
@@ -212,7 +212,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
         const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
 
         const Vector2f& curr_pos = quadplane.inertial_nav.get_position_xy_cm();
-        const Vector2f& target_pos = quadplane.pos_control->get_pos_target_cm().xy().tofloat();
+        const Vector2f& target_pos = quadplane.pos_control->get_pos_target_NEU_cm().xy().tofloat();
         const Vector2f error = (target_pos - curr_pos) * 0.01;
 
         mavlink_msg_nav_controller_output_send(
@@ -222,7 +222,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
             targets.z * 0.01,
             degrees(error.angle()),
             MIN(error.length(), UINT16_MAX),
-            (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_pos_error_z_cm() * 0.01 : 0,
+            (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_pos_error_U_cm() * 0.01 : 0,
             plane.airspeed_error * 100,  // incorrect units; see PR#7933
             quadplane.wp_nav->crosstrack_error());
         return;
@@ -397,7 +397,7 @@ void GCS_MAVLINK_Plane::send_pid_tuning()
     }
 #if HAL_QUADPLANE_ENABLED
     if (g.gcs_pid_mask & TUNING_BITS_ACCZ && plane.quadplane.in_vtol_mode()) {
-        pid_info = &plane.quadplane.pos_control->get_accel_z_pid().get_pid_info();
+        pid_info = &plane.quadplane.pos_control->get_accel_U_pid().get_pid_info();
         send_pid_info(pid_info, PID_TUNING_ACCZ, pid_info->actual);
     }
 #endif
@@ -675,35 +675,13 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
             return MAV_RESULT_FAILED;
         }
 
-         // only airspeed commands are supported right now...
+        // only airspeed commands are supported right now...
         if (int(packet.param1) != SPEED_TYPE_AIRSPEED) {  // since SPEED_TYPE is int in range 0-1 and packet.param1 is a *float* this works.
             return MAV_RESULT_DENIED;
         }
 
-         // reject airspeeds that are outside of the tuning envelope
-        if (packet.param2 > plane.aparm.airspeed_max || packet.param2 < plane.aparm.airspeed_min) {
-            return MAV_RESULT_DENIED;
-        }
-
-         // no need to process any new packet/s with the
-         //  same airspeed any further, if we are already doing it.
-        float new_target_airspeed_cm = packet.param2 * 100;
-        if ( is_equal(new_target_airspeed_cm,plane.guided_state.target_airspeed_cm)) { 
-            return MAV_RESULT_ACCEPTED;
-        }
-        plane.guided_state.target_airspeed_cm = new_target_airspeed_cm;
-        plane.guided_state.target_airspeed_time_ms = AP_HAL::millis();
-
-         if (is_zero(packet.param3)) {
-            // the user wanted /maximum acceleration, pick a large value as close enough
-            plane.guided_state.target_airspeed_accel = 1000.0f;
-        } else {
-            plane.guided_state.target_airspeed_accel = fabsf(packet.param3);
-        }
-
-         // assign an acceleration direction
-        if (plane.guided_state.target_airspeed_cm < plane.target_airspeed_cm) {
-            plane.guided_state.target_airspeed_accel *= -1.0f;
+        if (!plane.mode_guided.handle_change_airspeed(packet.param2, packet.param3)) {
+            return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
     }
@@ -1188,11 +1166,10 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
         }
 
         // Unexpectedly, the mask is expecting "ones" for dimensions that should
-        // be IGNORNED rather than INCLUDED.  See mavlink documentation of the
+        // be IGNORED rather than INCLUDED.  See mavlink documentation of the
         // SET_POSITION_TARGET_GLOBAL_INT message, type_mask field.
-        const uint16_t alt_mask = 0b1111111111111011; // (z mask at bit 3)
-        if (pos_target.type_mask & alt_mask)
-        {
+        const bool alt_ignore = (pos_target.type_mask & POSITION_TARGET_TYPEMASK_Z_IGNORE);
+        if (!alt_ignore) {
             Location loc {
                 0,  // lat
                 0,  // lng
@@ -1255,7 +1232,7 @@ int16_t GCS_MAVLINK_Plane::high_latency_target_altitude() const
     const QuadPlane &quadplane = plane.quadplane;
     //return units are m
     if (quadplane.show_vtol_view()) {
-        return (plane.control_mode != &plane.mode_qstabilize) ? 0.01 * (global_position_current.alt + quadplane.pos_control->get_pos_error_z_cm()) : 0;
+        return (plane.control_mode != &plane.mode_qstabilize) ? 0.01 * (global_position_current.alt + quadplane.pos_control->get_pos_error_U_cm()) : 0;
     }
 #endif
     return 0.01 * (global_position_current.alt + plane.calc_altitude_error_cm());
@@ -1283,7 +1260,7 @@ uint16_t GCS_MAVLINK_Plane::high_latency_tgt_dist() const
     const QuadPlane &quadplane = plane.quadplane;
     if (quadplane.show_vtol_view()) {
         bool wp_nav_valid = quadplane.using_wp_nav();
-        return (wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination(), UINT16_MAX) : 0) / 10;
+        return (wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination_cm(), UINT16_MAX) : 0) / 10;
     }
     #endif
 

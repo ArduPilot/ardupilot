@@ -57,7 +57,7 @@ class ExtractFeatures(object):
             ('AP_COMPASS_ICM20948_ENABLED', r'AP_Compass_AK09916::probe_ICM20948',),
             ('AP_COMPASS_DRONECAN_HIRES_ENABLED', r'AP_Compass_DroneCAN::handle_magnetic_field_hires',),
 
-            ('AP_AIS_ENABLED', 'AP_AIS::AP_AIS',),
+            ('AP_AIS_ENABLED', 'AP_AIS::decode_position_report',),
 
             ('HAL_EFI_ENABLED', 'AP_EFI::AP_EFI',),
             ('AP_EFI_{type}_ENABLED', 'AP_EFI_(?P<type>.*)::update',),
@@ -72,7 +72,7 @@ class ExtractFeatures(object):
 
             ('HAL_NAVEKF3_AVAILABLE', 'NavEKF3::NavEKF3',),
             ('HAL_NAVEKF2_AVAILABLE', 'NavEKF2::NavEKF2',),
-            ('HAL_EXTERNAL_AHRS_ENABLED', r'AP_ExternalAHRS::init\b',),
+            ('AP_EXTERNAL_AHRS_ENABLED', r'AP_ExternalAHRS::init\b',),
             ('AP_EXTERNAL_AHRS_{type}_ENABLED', r'AP_ExternalAHRS_(?P<type>.*)::healthy\b',),
             ('HAL_INS_TEMPERATURE_CAL_ENABLE', 'AP_InertialSensor_TCal::Learn::save_calibration',),
             ('HAL_VISUALODOM_ENABLED', 'AP_VisualOdom::init',),
@@ -96,7 +96,7 @@ class ExtractFeatures(object):
             ('AP_OPTICALFLOW_ENABLED', 'AP_OpticalFlow::AP_OpticalFlow',),
             ('AP_OPTICALFLOW_{type}_ENABLED', r'AP_OpticalFlow_(?P<type>.*)::update\b',),
 
-            ('AP_BARO_{type}_ENABLED', r'AP_Baro_(?P<type>.*)::update\b',),
+            ('AP_BARO_{type}_ENABLED', r'AP_Baro_(?P<type>.*)::(_calculate|update)\b',),
 
             ('AP_MOTORS_FRAME_{type}_ENABLED', r'AP_MotorsMatrix::setup_(?P<type>.*)_matrix\b',),
 
@@ -263,6 +263,7 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED', 'Plane::handle_external_hagl'),
             ('AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'AP_Camera::send_video_stream_information'),
             ('AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'GCS_MAVLINK::send_flight_information'),
+            ('AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED', r'GCS_MAVLINK::send_rangefinder'),
 
             ('AP_DRONECAN_HIMARK_SERVO_SUPPORT', 'AP_DroneCAN::SRV_send_himark'),
             ('AP_DRONECAN_HOBBYWING_ESC_SUPPORT', 'AP_DroneCAN::hobbywing_ESC_update'),
@@ -270,6 +271,7 @@ class ExtractFeatures(object):
             ('AP_TUNING_ENABLED', 'AP_Tuning::check_input'),
             ('AP_DRONECAN_SERIAL_ENABLED', 'AP_DroneCAN_Serial::update'),
             ('AP_SERIALMANAGER_IMUOUT_ENABLED', 'AP_InertialSensor::send_uart_data'),
+            ('AP_NETWORKING_ENABLED', 'AP_Networking::init'),
             ('AP_NETWORKING_BACKEND_PPP', 'AP_Networking_PPP::init'),
             ('AP_NETWORKING_CAN_MCAST_ENABLED', 'AP_Networking_CAN::start'),
             ('FORCE_APJ_DEFAULT_PARAMETERS', 'AP_Param::param_defaults_data'),
@@ -285,6 +287,7 @@ class ExtractFeatures(object):
             ('AP_FOLLOW_ENABLED', 'AP_Follow::AP_Follow'),
 
             ('AP_ROVER_ADVANCED_FAILSAFE_ENABLED', r'Rover::afs_fs_check'),
+            ('AP_ROVER_AUTO_ARM_ONCE_ENABLED', r'Rover::handle_auto_arm_once'),
             ('AP_COPTER_ADVANCED_FAILSAFE_ENABLED', r'Copter::afs_fs_check'),
             ('AP_COPTER_AHRS_AUTO_TRIM_ENABLED', r'RC_Channels_Copter::auto_trim_run'),
 
@@ -294,6 +297,7 @@ class ExtractFeatures(object):
             ('AP_FILTER_ENABLED', r'AP_Filters::update'),
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
+            ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
         ]
 
     def progress(self, msg):
@@ -307,6 +311,7 @@ class ExtractFeatures(object):
         whitelist = frozenset([
             'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # this define changes single method body, hard to detect?
             'AP_PLANE_BLACKBOX_LOGGING', # no visible signature
+            'AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED',  # no visible signature
         ])
         for option in build_options.BUILD_OPTIONS:
             if option.define in whitelist:

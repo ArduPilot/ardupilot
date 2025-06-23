@@ -684,6 +684,12 @@ class ChibiOSHWDef(hwdef.HWDef):
             line = "0"
         return line
 
+    def disable_can(self, f):
+        '''setup for a non-CAN enabled board'''
+        f.write("#define HAL_NUM_CAN_IFACES 0\n")
+        f.write("#undef HAL_ENABLE_DRONECAN_DRIVERS\n")
+        f.write("#define HAL_ENABLE_DRONECAN_DRIVERS 0\n")
+
     def enable_can(self, f):
         '''setup for a CAN enabled board'''
         if self.mcu_series.startswith("STM32H7") or self.mcu_series.startswith("STM32G4"):
@@ -949,7 +955,6 @@ class ChibiOSHWDef(hwdef.HWDef):
 #define STM32_ETH_BUFFERS_EXTERN
 
 ''')
-
         defines = self.get_mcu_config('DEFINES', False)
         if defines is not None:
             for d in defines.keys():
@@ -1011,6 +1016,8 @@ class ChibiOSHWDef(hwdef.HWDef):
 
         if self.have_type_prefix('CAN') and not using_chibios_can:
             self.enable_can(f)
+        else:
+            self.disable_can(f)
         flash_size = self.get_config('FLASH_SIZE_KB', type=int)
         f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
         self.env_vars['BOARD_FLASH_SIZE'] = flash_size
@@ -1057,6 +1064,8 @@ class ChibiOSHWDef(hwdef.HWDef):
                 # storage at end of flash - leave room
                 if offset > bl_offset:
                     flash_reserve_end = flash_size - offset
+            if self.is_bootloader_fw():
+                f.write('#define STORAGE_FLASH_START_PAGE %u\n' % storage_flash_page)
 
         crashdump_enabled = bool(self.intdefines.get('AP_CRASHDUMP_ENABLED', (flash_size >= 2048 and not self.is_bootloader_fw())))  # noqa
         # lets pick a flash sector for Crash log
@@ -2950,29 +2959,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         super(ChibiOSHWDef, self).process_line_env(line, depth, a)
 
-    def process_file(self, filename, depth=0):
-        '''process a hwdef.dat file'''
-        try:
-            f = open(filename, "r")
-        except Exception:
-            self.error("Unable to open file %s" % filename)
-        for line in f.readlines():
-            line = line.split('#')[0] # ensure we discard the comments
-            line = line.strip()
-            if len(line) == 0 or line[0] == '#':
-                continue
-            a = shlex.split(line)
-            if a[0] == "include" and len(a) > 1:
-                include_file = a[1]
-                if include_file[0] != '/':
-                    dir = os.path.dirname(filename)
-                    include_file = os.path.normpath(
-                        os.path.join(dir, include_file))
-                self.progress("Including %s" % include_file)
-                self.process_file(include_file, depth+1)
-            else:
-                self.process_line(line, depth)
-
     def add_apperiph_defaults(self, f):
         '''add default defines for peripherals'''
         if not self.is_periph_fw():
@@ -3107,6 +3093,12 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         self.mcu_type = self.get_config('MCU', 1)
         self.progress("Setup for MCU %s" % self.mcu_type)
+
+        # put USE_BOOTLOADER_FROM_BOARD into the environment so the
+        # build process can use it when generating hex files:
+        use_bootloader_from_board = self.get_config('USE_BOOTLOADER_FROM_BOARD', default=None, required=False)
+        if use_bootloader_from_board is not None:
+            self.env_vars['USE_BOOTLOADER_FROM_BOARD'] = use_bootloader_from_board
 
         # build a list for peripherals for DMA resolver
         self.periph_list = self.build_peripheral_list()

@@ -371,8 +371,8 @@ void GCS_MAVLINK_Tracker::handle_message_mission_item(const mavlink_message_t &m
         case MAV_FRAME_LOCAL_NED:                         // local (relative to home position)
         {
             tell_command = Location{
-                int32_t(1.0e7f*ToDeg(packet.x/(RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat),
-                int32_t(1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng),
+                int32_t(1.0e7f*degrees(packet.x/(RADIUS_OF_EARTH*cosf(radians(home.lat/1.0e7f)))) + home.lat),
+                int32_t(1.0e7f*degrees(packet.y/RADIUS_OF_EARTH) + home.lng),
                 int32_t(-packet.z*1.0e2f),
                 Location::AltFrame::ABOVE_HOME
             };
@@ -384,8 +384,8 @@ void GCS_MAVLINK_Tracker::handle_message_mission_item(const mavlink_message_t &m
         case MAV_FRAME_LOCAL:                         // local (relative to home position)
         {
             tell_command = {
-                int32_t(1.0e7f*ToDeg(packet.x/(RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat),
-                int32_t(1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng),
+                int32_t(1.0e7f*degrees(packet.x/(RADIUS_OF_EARTH*cosf(radians(home.lat/1.0e7f)))) + home.lat),
+                int32_t(1.0e7f*degrees(packet.y/RADIUS_OF_EARTH) + home.lng),
                 int32_t(packet.z*1.0e2f),
                 Location::AltFrame::ABOVE_HOME
             };

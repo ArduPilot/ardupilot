@@ -662,7 +662,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
         dstate->auto_detected_baud = false; // specified, not detected
         return NEW_NOTHROW AP_GPS_MSP(*this, params[instance], state[instance], nullptr);
 #endif
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     case GPS_TYPE_EXTERNAL_AHRS:
         if (AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::GPS) >= 0) {
             dstate->auto_detected_baud = false; // specified, not detected
@@ -1283,7 +1283,7 @@ void AP_GPS::handle_msp(const MSP::msp_gps_data_message_t &pkt)
 }
 #endif // HAL_MSP_GPS_ENABLED
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
 
 bool AP_GPS::get_first_external_instance(uint8_t& instance) const
 {
@@ -1302,7 +1302,7 @@ void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt, con
         drivers[instance]->handle_external(pkt);
     }
 }
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_EXTERNAL_AHRS_ENABLED
 
 /**
    Lock a GPS port, preventing the GPS driver from using it. This can
@@ -1642,6 +1642,13 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
             const uint32_t crc = crc_crc32(0, buf, len);
 
 #if HAL_LOGGING_ENABLED
+// @LoggerMessage: RTCM
+// @Description: GPS atmospheric perturbation data
+// @Field: TimeUS: Time since system startup
+// @Field: Chan: mavlink channel number this data was received on
+// @Field: RTCMId: ID field from RTCM packet
+// @Field: Len: RTCM packet length
+// @Field: CRC: calculated crc32 for the packet
             AP::logger().WriteStreaming("RTCM", "TimeUS,Chan,RTCMId,Len,CRC", "s#---", "F----", "QBHHI",
                                         AP_HAL::micros64(),
                                         uint8_t(chan),
@@ -1912,11 +1919,14 @@ void AP_GPS::Write_GPS(uint8_t i)
 
     /* write auxiliary accuracy information as well */
     float hacc = 0, vacc = 0, sacc = 0;
+    int32_t alt_ellipsoid = INT32_MIN;
     float undulation = 0;
     horizontal_accuracy(i, hacc);
     vertical_accuracy(i, vacc);
     speed_accuracy(i, sacc);
-    get_undulation(i, undulation);
+    if (get_undulation(i, undulation)) {
+        alt_ellipsoid = loc.alt - (undulation*100);
+    }
     struct log_GPA pkt2{
         LOG_PACKET_HEADER_INIT(LOG_GPA_MSG),
         time_us       : time_us,
@@ -1929,7 +1939,7 @@ void AP_GPS::Write_GPS(uint8_t i)
         have_vv       : (uint8_t)have_vertical_velocity(i),
         sample_ms     : last_message_time_ms(i),
         delta_ms      : last_message_delta_time_ms(i),
-        undulation    : undulation,
+        alt_ellipsoid : alt_ellipsoid,
         rtcm_fragments_used: rtcm_stats.fragments_used,
         rtcm_fragments_discarded: rtcm_stats.fragments_discarded
     };

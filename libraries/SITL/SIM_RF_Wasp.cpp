@@ -113,5 +113,11 @@ void RF_Wasp::update(float range)
 
 uint32_t RF_Wasp::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
 {
+    // the Wasp driver does not consider 0 a valid reading, so you end
+    // up getting 0 samples back if you send exactly zero all the
+    // time.  So munge it a little bit:
+    if (alt_cm == 0) {
+        alt_cm = 1;
+    }
     return snprintf((char*)buffer, buflen, "%f\n", alt_cm*0.01f);
 }
