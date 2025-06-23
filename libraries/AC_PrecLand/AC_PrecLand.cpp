@@ -7,7 +7,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 
 #include "AC_PrecLand_Backend.h"
-#include "AC_PrecLand_Companion.h"
+#include "AC_PrecLand_MAVLink.h"
 #include "AC_PrecLand_IRLock.h"
 #include "AC_PrecLand_SITL_Gazebo.h"
 #include "AC_PrecLand_SITL.h"
@@ -240,9 +240,9 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
         default:
             return;
         // companion computer
-#if AC_PRECLAND_COMPANION_ENABLED
-        case Type::COMPANION:
-            _backend = NEW_NOTHROW AC_PrecLand_Companion(*this, _backend_state);
+#if AC_PRECLAND_MAVLINK_ENABLED
+        case Type::MAVLINK:
+            _backend = NEW_NOTHROW AC_PrecLand_MAVLink(*this, _backend_state);
             break;
         // IR Lock
 #endif
