@@ -14129,23 +14129,25 @@ RTL_ALT 111
         # self.delay_sim_time(100000)
 
         self.progress("Connect to the serial port on the peripheral, which should be talking mavlink")
+        self.drain_mav()
         mav2 = mavutil.mavlink_connection(
             "tcp:localhost:5772",
             robust_parsing=True,
             source_system=9,
             source_component=9,
         )
-        self.assert_receive_message("HEARTBEAT", mav=mav2, very_verbose=True)
+        self.assert_receive_message("HEARTBEAT", mav=mav2, very_verbose=True, timeout=5)
         self.drain_mav()
 
         self.progress("Connect to the other serial port on the peripheral, which should also be talking mavlink")
+        self.drain_mav()
         mav3 = mavutil.mavlink_connection(
             "tcp:localhost:5773",
             robust_parsing=True,
             source_system=10,
             source_component=10,
         )
-        self.assert_receive_message("HEARTBEAT", mav=mav3, very_verbose=True)
+        self.assert_receive_message("HEARTBEAT", mav=mav3, very_verbose=True, timeout=5)
         self.drain_mav()
 
         # make sure we continue to get heartbeats:
