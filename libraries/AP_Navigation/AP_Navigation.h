@@ -58,8 +58,9 @@ public:
 
     // return the provided loiter radius if its achievable, and if not, the
     // smallest radius that can be achieved at the current indicated airspeed
-    // and altitude AMSL
-    virtual float calc_corrected_loiter_radius(float original_radius) const = 0;
+    // and altitude AMSL, or at the given ones if specified
+    virtual float calc_corrected_loiter_radius(float original_radius,
+        float indicated_airspeed = NAN, float altitude_amsl = NAN) const = 0;
 
     // update the internal state of the navigation controller, given
     // the previous and next waypoints. This is the step function for
