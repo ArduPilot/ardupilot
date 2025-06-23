@@ -21,7 +21,7 @@ The Mercury H7 is a flight controller produced by [AnyLeaf](http://www.anyleaf.o
         1x I2C bus for external peripherals
         USB-C port
         All UARTs support hardware inversion
-        Onboard ExpressLRS radio tranceiver for control and/or telemetry data.
+        Onboard ExpressLRS radio transceiver for control and/or telemetry data.
     Dimensions
         Size: 37.5 x 37.5mm
         Weight: 8g
@@ -32,7 +32,7 @@ The Mercury H7 is a flight controller produced by [AnyLeaf](http://www.anyleaf.o
 ![Anyleaf H7 connectors, top](anyleaf_h7_diagram_top.jpg)
 
 Pins and connector values are labeled on the flight controller PCB, with the following exceptions:
-- The onboard ELRS tranceiver is connected to pins PA2 (FC Tx) and PA3 (FC Rx), on UART2.
+- The onboard ELRS transceiver is connected to pins PA2 (FC Tx) and PA3 (FC Rx), on UART2.
 - ESC telemetry is connected to UART3 Rx (PD9)
 - OSD HDL (DJI hand controller interop) is connected to UART1 Rx (PB7)
 

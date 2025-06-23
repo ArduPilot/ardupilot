@@ -1,3 +1,5 @@
+# flake8: noqa
+
 """
 WAF Tool to select the correct toolchain based on the target architecture.
 

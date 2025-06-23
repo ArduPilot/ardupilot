@@ -245,7 +245,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 
 #if HAL_QUADPLANE_ENABLED
     if (new_mode.is_vtol_mode() && !plane.quadplane.available()) {
-        // dont try and switch to a Q mode if quadplane is not enabled and initalized
+        // dont try and switch to a Q mode if quadplane is not enabled and initialized
         gcs().send_text(MAV_SEVERITY_INFO,"Q_ENABLE 0");
         // make sad noise
         if (reason != ModeReason::INITIALISED) {

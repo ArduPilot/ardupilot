@@ -14,7 +14,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 10
     // @Range: 0 1000
     // @User: Advanced
-    AP_GROUPINFO("HOVR_ROL_TRM",    1, AC_AttitudeControl_Heli, _hover_roll_trim, AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT),
+    AP_GROUPINFO("HOVR_ROL_TRM",    1, AC_AttitudeControl_Heli, _hover_roll_trim_cd, AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT),
 
     // @Param: RAT_RLL_P
     // @DisplayName: Roll axis rate controller P gain
@@ -321,16 +321,13 @@ AC_AttitudeControl_Heli::AC_AttitudeControl_Heli(AP_AHRS_View &ahrs, const AP_Mu
 }
 
 // passthrough_bf_roll_pitch_rate_yaw - passthrough the pilots roll and pitch inputs directly to swashplate for flybar acro mode
-void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds)
+void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw_rads(float roll_passthrough_rads, float pitch_passthrough_rads, float yaw_rate_bf_rads)
 {
-    // convert from centidegrees on public interface to radians
-    float yaw_rate_bf_rads = radians(yaw_rate_bf_cds * 0.01f);
-
     // store roll, pitch and passthroughs
     // NOTE: this abuses yaw_rate_bf_rads
-    _passthrough_roll = roll_passthrough;
-    _passthrough_pitch = pitch_passthrough;
-    _passthrough_yaw = degrees(yaw_rate_bf_rads) * 100.0f;
+    _passthrough_roll_cds = rad_to_cd(roll_passthrough_rads);
+    _passthrough_pitch_cds = rad_to_cd(pitch_passthrough_rads);
+    _passthrough_yaw_cds = rad_to_cd(yaw_rate_bf_rads);
 
     // set rate controller to use pass through
     _flags_heli.flybar_passthrough = true;
@@ -401,12 +398,16 @@ void AC_AttitudeControl_Heli::integrate_bf_rate_error_to_angle_errors()
     _att_error_rot_vec_rad.z = constrain_float(_att_error_rot_vec_rad.z, -AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD, AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD);
 }
 
+// Sets desired roll, pitch, and yaw angular rates in body-frame (in radians/s).
+// This command is used by fully stabilized acro modes.
+// It applies angular velocity targets in the body frame,
+// shaped using acceleration limits and passed to the rate controller.
 // subclass non-passthrough too, for external gyro, no flybar
-void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
+void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads)
 {
-    _passthrough_yaw = yaw_rate_bf_cds;
+    _passthrough_yaw_cds = rad_to_cd(yaw_rate_bf_rads);
 
-    AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_cds(roll_rate_bf_cds, pitch_rate_bf_cds, yaw_rate_bf_cds);
+    AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
 
 //
@@ -425,13 +426,13 @@ void AC_AttitudeControl_Heli::rate_controller_run()
     // call rate controllers and send output to motors object
     // if using a flybar passthrough roll and pitch directly to motors
     if (_flags_heli.flybar_passthrough) {
-        _motors.set_roll(_passthrough_roll / 4500.0f);
-        _motors.set_pitch(_passthrough_pitch / 4500.0f);
+        _motors.set_roll(_passthrough_roll_cds / 4500.0f);
+        _motors.set_pitch(_passthrough_pitch_cds / 4500.0f);
     } else {
         rate_bf_to_motor_roll_pitch(_rate_gyro_rads, _ang_vel_body_rads.x, _ang_vel_body_rads.y);
     }
     if (_flags_heli.tail_passthrough) {
-        _motors.set_yaw(_passthrough_yaw / 4500.0f);
+        _motors.set_yaw(_passthrough_yaw_cds / 4500.0f);
     } else {
         _motors.set_yaw(rate_target_to_motor_yaw(_rate_gyro_rads.z, _ang_vel_body_rads.z));
     }
@@ -459,7 +460,6 @@ void AC_AttitudeControl_Heli::update_althold_lean_angle_max(float throttle_in)
 // rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target rate in radians/second
 void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(const Vector3f &rate_rads, float rate_roll_target_rads, float rate_pitch_target_rads)
 {
-
     if (_flags_heli.leaky_i) {
         _pid_rate_roll.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
@@ -578,25 +578,29 @@ float AC_AttitudeControl_Heli::get_roll_trim_cd()
 {
     // hover roll trim is given the opposite sign in inverted flight since the tail rotor thrust is pointed in the opposite direction. 
     float inverted_factor = constrain_float(2.0f * _ahrs.cos_roll(), -1.0f, 1.0f);
-    return constrain_float(_hover_roll_trim_scalar * _hover_roll_trim * inverted_factor, -1000.0f,1000.0f);
+    return constrain_float(_hover_roll_trim_scalar * _hover_roll_trim_cd * inverted_factor, -1000.0f,1000.0f);
 }
 
-// Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
-void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_euler_rate_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
+// Sets desired roll and pitch angles (in radians) and yaw rate (in radians/s).
+// Used when roll/pitch stabilization is needed with manual or autonomous yaw rate control.
+// Applies acceleration-limited input shaping for smooth transitions and computes body-frame angular velocity targets.
+void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_euler_rate_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_rate_rads)
 {
     if (_inverted_flight) {
-        euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
+        euler_roll_angle_rad = wrap_PI(euler_roll_angle_rad + M_PI);
     }
-    AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_cd(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_rate_cds);
+    AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad(euler_roll_angle_rad, euler_pitch_angle_rad, euler_yaw_rate_rads);
 }
 
-// Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
-void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
+// Sets desired roll, pitch, and yaw angles (in radians).
+// Used to follow an absolute attitude setpoint. Input shaping and yaw slew limits are applied.
+// Outputs are passed to the rate controller via shaped angular velocity targets.
+void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_angle_rad, bool slew_yaw)
 {
     if (_inverted_flight) {
-        euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
+        euler_roll_angle_rad = wrap_PI(euler_roll_angle_rad + M_PI);
     }
-    AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_cd(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_angle_cd, slew_yaw);
+    AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(euler_roll_angle_rad, euler_pitch_angle_rad, euler_yaw_angle_rad, slew_yaw);
 }
 
 void AC_AttitudeControl_Heli::set_notch_sample_rate(float sample_rate)
@@ -608,35 +612,39 @@ void AC_AttitudeControl_Heli::set_notch_sample_rate(float sample_rate)
 #endif
 }
 
-// Command a thrust vector and heading rate
-void AC_AttitudeControl_Heli::input_thrust_vector_rate_heading_cds(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw)
+// Sets desired thrust vector and heading rate (in radians/s).
+// Used for tilt-based navigation with independent yaw control.
+// The thrust vector defines the desired orientation (e.g., pointing direction for vertical thrust),
+// while the heading rate adjusts yaw. The input is shaped by acceleration and slew limits.
+void AC_AttitudeControl_Heli::input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw)
 {
 
     if (!_inverted_flight) {
-        AC_AttitudeControl::input_thrust_vector_rate_heading_cds(thrust_vector, heading_rate_cds, slew_yaw);
+        AC_AttitudeControl::input_thrust_vector_rate_heading_rads(thrust_vector, heading_rate_rads, slew_yaw);
         return;
     }
     // convert thrust vector to a roll and pitch angles
     // this negates the advantage of using thrust vector control, but works just fine
     Vector3f angle_target = attitude_from_thrust_vector(thrust_vector, _ahrs.yaw).to_vector312();
 
-    float euler_roll_angle_cd = degrees(angle_target.x) * 100.0f;
-    euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
-    AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_cd(euler_roll_angle_cd, degrees(angle_target.y) * 100.0f, heading_rate_cds);
+    angle_target.x = wrap_PI(angle_target.x + M_PI);
+    AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad(angle_target.x, angle_target.y, heading_rate_rads);
 }
 
-// Command a thrust vector, heading and heading rate
-void AC_AttitudeControl_Heli::input_thrust_vector_heading_cd(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds)
+
+// Sets desired thrust vector and heading (in radians) with heading rate (in radians/s).
+// Used for advanced attitude control where thrust direction is separated from yaw orientation.
+// Heading slew is constrained based on configured limits.
+void AC_AttitudeControl_Heli::input_thrust_vector_heading_rad(const Vector3f& thrust_vector, float heading_angle_rad, float heading_rate_rads)
 {
     if (!_inverted_flight) {
-        AC_AttitudeControl::input_thrust_vector_heading_cd(thrust_vector, heading_angle_cd, heading_rate_cds);
+        AC_AttitudeControl::input_thrust_vector_heading_rad(thrust_vector, heading_angle_rad, heading_rate_rads);
         return;
     }
     // convert thrust vector to a roll and pitch angles
+    // this negates the advantage of using thrust vector control, but works just fine
     Vector3f angle_target = attitude_from_thrust_vector(thrust_vector, _ahrs.yaw).to_vector312();
 
-    float euler_roll_angle_cd = degrees(angle_target.x) * 100.0f;
-    euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
-    // note that we are throwing away heading rate here
-    AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_cd(euler_roll_angle_cd, degrees(angle_target.y) * 100.0f, heading_angle_cd, true);
+    angle_target.x = wrap_PI(angle_target.x + M_PI);
+    AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(angle_target.x, angle_target.y, heading_angle_rad, true);
 }

@@ -63,6 +63,7 @@
 #include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Rally/AP_Rally.h>
+#include <AP_OSD/AP_OSD.h>
 
 // Local modules
 #include "defines.h"
@@ -74,6 +75,7 @@
 #include "GCS_Sub.h"
 #include "mode.h"
 #include "script_button.h"
+
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 
@@ -176,6 +178,10 @@ private:
     // Optical flow sensor
 #if AP_OPTICALFLOW_ENABLED
     AP_OpticalFlow optflow;
+#endif
+
+#if OSD_ENABLED || OSD_PARAM_ENABLED
+    AP_OSD osd;
 #endif
 
     // system time in milliseconds of last recorded yaw reset from ekf

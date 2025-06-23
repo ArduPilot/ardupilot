@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+# flake8: noqa
+
 """
 Bring up ArduPilot SITL and check the GeoPoseStamped message is being published.
 
@@ -21,15 +23,12 @@ colcon test --packages-select ardupilot_dds_tests \
 
 """
 
-import launch_pytest
 import math
 import pytest
 import rclpy
 import rclpy.node
 from scipy.spatial.transform import Rotation as R
 import threading
-
-from launch import LaunchDescription
 
 from launch_pytest.tools import process as process_tools
 
@@ -39,7 +38,13 @@ from rclpy.qos import QoSHistoryPolicy
 
 from geographic_msgs.msg import GeoPoseStamped
 
+from launch_fixtures import (
+    launch_sitl_copter_dds_serial,
+    launch_sitl_copter_dds_udp,
+)
+
 TOPIC = "ap/geopose/filtered"
+WAIT_FOR_START_TIMEOUT = 5.0
 # Copied from locations.txt
 CMAC_LAT = -35.363261
 CMAC_LON = 149.165230
@@ -63,6 +68,7 @@ def validate_position_cmac(position):
         and math.isclose(position.altitude, CMAC_ABS_ALT, abs_tol=1.0)
     )
 
+
 def wrap_360(angle):
     if angle > 360:
         angle -= 360.0
@@ -71,6 +77,7 @@ def wrap_360(angle):
         angle += 360.0
         return wrap_360(angle)
     return angle
+
 
 def validate_heading_cmac(orientation):
     """
@@ -117,8 +124,6 @@ class GeoPoseListener(rclpy.node.Node):
 
     def subscriber_callback(self, msg):
         """Process a GeoPoseStamped message."""
-        self.msg_event_object.set()
-
         position = msg.pose.position
 
         self.get_logger().info("From AP : Position [lat:{}, lon: {}]".format(position.latitude, position.longitude))
@@ -129,35 +134,8 @@ class GeoPoseListener(rclpy.node.Node):
         if validate_heading_cmac(msg.pose.orientation):
             self.orientation_event_object.set()
 
-
-@launch_pytest.fixture
-def launch_sitl_copter_dds_serial(sitl_copter_dds_serial):
-    """Fixture to create the launch description."""
-    sitl_ld, sitl_actions = sitl_copter_dds_serial
-
-    ld = LaunchDescription(
-        [
-            sitl_ld,
-            launch_pytest.actions.ReadyToTest(),
-        ]
-    )
-    actions = sitl_actions
-    yield ld, actions
-
-
-@launch_pytest.fixture
-def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
-    """Fixture to create the launch description."""
-    sitl_ld, sitl_actions = sitl_copter_dds_udp
-
-    ld = LaunchDescription(
-        [
-            sitl_ld,
-            launch_pytest.actions.ReadyToTest(),
-        ]
-    )
-    actions = sitl_actions
-    yield ld, actions
+        # set event last
+        self.msg_event_object.set()
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
@@ -170,10 +148,10 @@ def test_dds_serial_geopose_msg_recv(launch_context, launch_sitl_copter_dds_seri
     sitl = actions["sitl"].action
 
     # Wait for process to start.
-    process_tools.wait_for_start_sync(launch_context, virtual_ports, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, virtual_ports, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
     rclpy.init()
     try:
@@ -199,9 +177,9 @@ def test_dds_udp_geopose_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     sitl = actions["sitl"].action
 
     # Wait for process to start.
-    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
     rclpy.init()
     try:

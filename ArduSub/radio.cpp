@@ -2,12 +2,12 @@
 
 void Sub::init_rc_in()
 {
-    channel_pitch    = RC_Channels::rc_channel(0);
-    channel_roll     = RC_Channels::rc_channel(1);
-    channel_throttle = RC_Channels::rc_channel(2);
-    channel_yaw      = RC_Channels::rc_channel(3);
-    channel_forward  = RC_Channels::rc_channel(4);
-    channel_lateral  = RC_Channels::rc_channel(5);
+    channel_roll     = &rc().get_roll_channel();
+    channel_pitch    = &rc().get_pitch_channel();
+    channel_throttle = &rc().get_throttle_channel();
+    channel_yaw      = &rc().get_yaw_channel();
+    channel_forward  = &rc().get_forward_channel();
+    channel_lateral  = &rc().get_lateral_channel();
 
     // set rc channel ranges
     channel_roll->set_angle(ROLL_PITCH_INPUT_MAX);
@@ -25,7 +25,6 @@ void Sub::init_rc_in()
     channel_forward->set_default_dead_zone(30);
     channel_lateral->set_default_dead_zone(30);
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     // initialize rc input to 1500 on control channels (rather than 0)
     for (int i = 0; i < 6; i++) {
         RC_Channels::set_override(i, 1500);
@@ -33,7 +32,6 @@ void Sub::init_rc_in()
 
     RC_Channels::set_override(6, 1500); // camera pan channel
     RC_Channels::set_override(7, 1500); // camera tilt channel
-#endif
 }
 
 // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration

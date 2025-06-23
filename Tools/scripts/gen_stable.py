@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+
+# flake8: noqa
+
 '''
 create stable-x.y.z directories so we keep all past stable releases for users to download
 '''

@@ -311,7 +311,7 @@ void Tiltrotor::continuous_update(void)
             slew(0);
         } else {
             // manual control of forward throttle up to max VTOL angle
-            float settilt = .01f * quadplane.forward_throttle_pct();
+            float settilt = 0.01f * quadplane.forward_throttle_pct();
             slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
         }
         return;
@@ -649,7 +649,7 @@ void Tiltrotor::vectoring(void)
             motors->limit.yaw = true;
         }
 
-        // constrain and scale to ouput range
+        // constrain and scale to output range
         left_tilt = constrain_float(left_tilt,0.0,1.0) * 1000.0;
         right_tilt = constrain_float(right_tilt,0.0,1.0) * 1000.0;
 
@@ -780,6 +780,34 @@ bool Tiltrotor::tilt_over_max_angle(void) const
 {
     const float tilt_threshold = (max_angle_deg/90.0f);
     return (current_tilt > MIN(tilt_threshold, get_forward_flight_tilt()));
+}
+
+// throttle of forward flight motors including any tilting motors
+bool Tiltrotor::get_forward_throttle(float &throttle) const
+{
+    if (!enabled() || !_is_vectored) {
+        return false;
+    }
+    const float throttle_range = motors->thr_lin.get_spin_max() - motors->thr_lin.get_spin_min();
+    if (!is_positive(throttle_range)) {
+        return false;
+    }
+    float throttle_sum = 0.0f;
+    uint8_t num_vectored_motors = 0;
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
+        if (is_motor_tilting(i)) {
+            float thrust;
+            if (motors->get_thrust(i, thrust)) {
+                throttle_sum += (motors->thr_lin.thrust_to_actuator(thrust) - motors->thr_lin.get_spin_min()) / throttle_range;
+                num_vectored_motors ++;
+            }
+        }
+    }
+    if (num_vectored_motors > 0) {
+        throttle = throttle_sum / (float)num_vectored_motors;
+        return true;
+    }
+    return false;
 }
 
 #endif  // HAL_QUADPLANE_ENABLED

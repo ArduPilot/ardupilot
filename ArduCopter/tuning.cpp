@@ -22,7 +22,7 @@ void Copter::tuning()
     }
 
     // exit immediately when radio failsafe is invoked or transmitter has not been turned on
-    if (failsafe.radio || failsafe.radio_counter != 0 || rc_tuning->get_radio_in() == 0) {
+    if (!rc().has_valid_input() || rc_tuning->get_radio_in() == 0) {
         return;
     }
 
@@ -104,7 +104,7 @@ void Copter::tuning()
         break;
 
     case TUNING_WP_SPEED:
-        wp_nav->set_speed_xy(tuning_value);
+        wp_nav->set_speed_NE_cms(tuning_value);
         break;
 
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
@@ -140,12 +140,12 @@ void Copter::tuning()
 #endif
 
     case TUNING_DECLINATION:
-        compass.set_declination(ToRad(tuning_value), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
+        compass.set_declination(radians(tuning_value), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
         break;
 
 #if MODE_CIRCLE_ENABLED
     case TUNING_CIRCLE_RATE:
-        circle_nav->set_rate(tuning_value);
+        circle_nav->set_rate_degs(tuning_value);
         break;
 #endif
 
@@ -198,7 +198,7 @@ void Copter::tuning()
         break;
 
     case TUNING_LOITER_MAX_XY_SPEED:
-        loiter_nav->set_max_xy_speed(tuning_value);
+        loiter_nav->set_speed_max_NE_cms(tuning_value);
         break;
     }
 }

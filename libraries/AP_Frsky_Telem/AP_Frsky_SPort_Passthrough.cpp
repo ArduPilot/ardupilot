@@ -665,7 +665,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_velandyaw(void)
     }
     // horizontal velocity in dm/s
     velandyaw |= prep_number(roundf(hspeed_m * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
-    // yaw from [0;36000] centidegrees to .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
+    // yaw from [0;36000] centidegrees to 0.2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
     velandyaw |= ((uint16_t)roundf(_ahrs.yaw_sensor * 0.05f) & VELANDYAW_YAW_LIMIT)<<VELANDYAW_YAW_OFFSET;
     // flag the airspeed bit if required
     if (airspeed_estimate_true && option_airspeed_enabled && _passthrough.send_airspeed) {
@@ -689,9 +689,9 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
     float roll;
     float pitch;
     AP::vehicle()->get_osd_roll_pitch_rad(roll,pitch);
-    // roll from [-18000;18000] centidegrees to unsigned .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
+    // roll from [-18000;18000] centidegrees to unsigned 0.2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
     uint32_t attiandrng = ((uint16_t)roundf((roll * RAD_TO_DEG * 100 + 18000) * 0.05f) & ATTIANDRNG_ROLL_LIMIT);
-    // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
+    // pitch from [-9000;9000] centidegrees to unsigned 0.2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
     attiandrng |= ((uint16_t)roundf((pitch * RAD_TO_DEG * 100 + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
     // rangefinder measurement in cm
 #if AP_RANGEFINDER_ENABLED

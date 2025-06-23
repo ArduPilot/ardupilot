@@ -16,6 +16,11 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
         return true;
     }
 
+    if (!hal.scheduler->is_system_initialized()) {
+        check_failed(display_failure, "System not initialised");
+        return false;
+    }
+
     // check if motor interlock and Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
     if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK) &&
@@ -29,6 +34,8 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
         return mandatory_checks(display_failure);
     }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wbitwise-instead-of-logical"
     return parameter_checks(display_failure)
 #if AP_FENCE_ENABLED
            & fence_checks(display_failure)
@@ -37,6 +44,7 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
            & gcs_failsafe_check(display_failure)
            & alt_checks(display_failure)
            & AP_Arming::pre_arm_checks(display_failure);
+#pragma clang diagnostic pop
 }
 
 bool AP_Arming_Blimp::barometer_checks(bool display_failure)
@@ -51,8 +59,8 @@ bool AP_Arming_Blimp::barometer_checks(bool display_failure)
         // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
         // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
         // that may differ from the baro height due to baro drift.
-        nav_filter_status filt_status = blimp.inertial_nav.get_filter_status();
-        bool using_baro_ref = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
+        const auto &ahrs = AP::ahrs();
+        const bool using_baro_ref = !ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL) && ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS);
         if (using_baro_ref) {
             if (fabsf(blimp.inertial_nav.get_position_z_up_cm() - blimp.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
                 check_failed(Check::BARO, display_failure, "Altitude disparity");
@@ -187,10 +195,7 @@ bool AP_Arming_Blimp::gps_checks(bool display_failure)
 // check ekf attitude is acceptable
 bool AP_Arming_Blimp::pre_arm_ekf_attitude_check()
 {
-    // get ekf filter status
-    nav_filter_status filt_status = blimp.inertial_nav.get_filter_status();
-
-    return filt_status.flags.attitude;
+    return AP::ahrs().has_status(AP_AHRS::Status::ATTITUDE_VALID);
 }
 
 // performs mandatory gps checks.  returns true if passed

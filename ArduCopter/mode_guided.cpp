@@ -185,12 +185,12 @@ void ModeGuided::wp_control_start()
     guided_mode = SubMode::WP;
 
     // initialise waypoint and spline controller
-    wp_nav->wp_and_spline_init();
+    wp_nav->wp_and_spline_init_cm();
 
     // initialise wpnav to stopping point
     Vector3f stopping_point;
-    wp_nav->get_wp_stopping_point(stopping_point);
-    if (!wp_nav->set_wp_destination(stopping_point, false)) {
+    wp_nav->get_wp_stopping_point_NEU_cm(stopping_point);
+    if (!wp_nav->set_wp_destination_NEU_cm(stopping_point, false)) {
         // this should never happen because terrain data is not used
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
@@ -226,12 +226,12 @@ void ModeGuided::wp_control_run()
 void ModeGuided::pva_control_start()
 {
     // initialise horizontal speed, acceleration
-    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
-    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_max_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
+    pos_control->set_correction_speed_accel_NE_cm(wp_nav->get_default_speed_NE_cms(), wp_nav->get_wp_acceleration_cmss());
 
     // initialize vertical speeds and acceleration
-    pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
-    pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
+    pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
 
     // initialise velocity controller
     pos_control->init_U_controller();
@@ -292,24 +292,24 @@ bool ModeGuided::is_taking_off() const
 bool ModeGuided::set_speed_xy(float speed_xy_cms)
 {
     // initialise horizontal speed, acceleration
-    pos_control->set_max_speed_accel_NE_cm(speed_xy_cms, wp_nav->get_wp_acceleration());
-    pos_control->set_correction_speed_accel_NE_cm(speed_xy_cms, wp_nav->get_wp_acceleration());
+    pos_control->set_max_speed_accel_NE_cm(speed_xy_cms, wp_nav->get_wp_acceleration_cmss());
+    pos_control->set_correction_speed_accel_NE_cm(speed_xy_cms, wp_nav->get_wp_acceleration_cmss());
     return true;
 }
 
 bool ModeGuided::set_speed_up(float speed_up_cms)
 {
     // initialize vertical speeds and acceleration
-    pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down(), speed_up_cms, wp_nav->get_accel_z());
-    pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down(), speed_up_cms, wp_nav->get_accel_z());
+    pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), speed_up_cms, wp_nav->get_accel_U_cmss());
+    pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down_cms(), speed_up_cms, wp_nav->get_accel_U_cmss());
     return true;
 }
 
 bool ModeGuided::set_speed_down(float speed_down_cms)
 {
     // initialize vertical speeds and acceleration
-    pos_control->set_max_speed_accel_U_cm(speed_down_cms, wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
-    pos_control->set_correction_speed_accel_U_cmss(speed_down_cms, wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_max_speed_accel_U_cm(speed_down_cms, wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
+    pos_control->set_correction_speed_accel_U_cmss(speed_down_cms, wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
     return true;
 }
 
@@ -320,8 +320,8 @@ void ModeGuided::angle_control_start()
     guided_mode = SubMode::Angle;
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
-    pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_max_speed_accel_U_cm(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
+    pos_control->set_correction_speed_accel_U_cmss(wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms(), wp_nav->get_accel_U_cmss());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_U()) {
@@ -363,7 +363,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
         set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
         // no need to check return status because terrain data is not used
-        wp_nav->set_wp_destination(destination, terrain_alt);
+        wp_nav->set_wp_destination_NEU_cm(destination, terrain_alt);
 
 #if HAL_LOGGING_ENABLED
         // log target
@@ -383,7 +383,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     if (terrain_alt) {
         // get current alt above terrain
         float origin_terr_offset;
-        if (!wp_nav->get_terrain_offset(origin_terr_offset)) {
+        if (!wp_nav->get_terrain_offset_cm(origin_terr_offset)) {
             // if we don't have terrain altitude then stop
             init(true);
             return false;
@@ -479,7 +479,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     // set position target and zero velocity and acceleration
     Vector3f pos_target_f;
     bool terrain_alt;
-    if (!wp_nav->get_vector_NEU(dest_loc, pos_target_f, terrain_alt)) {
+    if (!wp_nav->get_vector_NEU_cm(dest_loc, pos_target_f, terrain_alt)) {
         return false;
     }
 
@@ -496,7 +496,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     if (terrain_alt) {
         // get current alt above terrain
         float origin_terr_offset;
-        if (!wp_nav->get_terrain_offset(origin_terr_offset)) {
+        if (!wp_nav->get_terrain_offset_cm(origin_terr_offset)) {
             // if we don't have terrain altitude then stop
             init(true);
             return false;
@@ -719,7 +719,7 @@ void ModeGuided::pos_control_run()
 
     // calculate terrain adjustments
     float terr_offset = 0.0f;
-    if (guided_pos_terrain_alt && !wp_nav->get_terrain_offset(terr_offset)) {
+    if (guided_pos_terrain_alt && !wp_nav->get_terrain_offset_cm(terr_offset)) {
         // failure to set destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
         return;
@@ -741,7 +741,7 @@ void ModeGuided::pos_control_run()
 
     float pos_offset_z_buffer = 0.0; // Vertical buffer size in m
     if (guided_pos_terrain_alt) {
-        pos_offset_z_buffer = MIN(copter.wp_nav->get_terrain_margin() * 100.0, 0.5 * fabsF(guided_pos_target_cm.z));
+        pos_offset_z_buffer = MIN(copter.wp_nav->get_terrain_margin_m() * 100.0, 0.5 * fabsF(guided_pos_target_cm.z));
     }
     pos_control->input_pos_NEU_cm(guided_pos_target_cm, terr_offset, pos_offset_z_buffer);
 
@@ -949,10 +949,10 @@ void ModeGuided::angle_control_run()
     float climb_rate_cms = 0.0f;
     if (!guided_angle_state.use_thrust) {
         // constrain climb rate
-        climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up());
+        climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms());
 
         // get avoidance adjusted climb rate
-        climb_rate_cms = get_avoidance_adjusted_climbrate(climb_rate_cms);
+        climb_rate_cms = get_avoidance_adjusted_climbrate_cms(climb_rate_cms);
     }
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
@@ -998,7 +998,7 @@ void ModeGuided::angle_control_run()
 
     // call attitude controller
     if (guided_angle_state.attitude_quat.is_zero()) {
-        attitude_control->input_rate_bf_roll_pitch_yaw_cds(ToDeg(guided_angle_state.ang_vel_body.x) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.y) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.z) * 100.0f);
+        attitude_control->input_rate_bf_roll_pitch_yaw_cds(degrees(guided_angle_state.ang_vel_body.x) * 100.0f, degrees(guided_angle_state.ang_vel_body.y) * 100.0f, degrees(guided_angle_state.ang_vel_body.z) * 100.0f);
     } else {
         attitude_control->input_quaternion(guided_angle_state.attitude_quat, guided_angle_state.ang_vel_body);
     }
@@ -1018,9 +1018,9 @@ void ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, fl
     if (use_yaw && relative_angle) {
         auto_yaw.set_fixed_yaw(yaw_cd * 0.01f, 0.0f, 0, relative_angle);
     } else if (use_yaw && use_yaw_rate) {
-        auto_yaw.set_yaw_angle_rate(yaw_cd * 0.01f, yaw_rate_cds * 0.01f);
+        auto_yaw.set_yaw_angle_and_rate_deg(yaw_cd * 0.01f, yaw_rate_cds * 0.01f);
     } else if (use_yaw && !use_yaw_rate) {
-        auto_yaw.set_yaw_angle_rate(yaw_cd * 0.01f, 0.0f);
+        auto_yaw.set_yaw_angle_and_rate_deg(yaw_cd * 0.01f, 0.0f);
     } else if (use_yaw_rate) {
         auto_yaw.set_rate(yaw_rate_cds);
     } else {
@@ -1062,7 +1062,7 @@ void ModeGuided::limit_init_time_and_pos()
     guided_limit.start_time = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos = inertial_nav.get_position_neu_cm();
+    guided_limit.start_pos = pos_control->get_pos_estimate_NEU_cm().tofloat();
 }
 
 // limit_check - returns true if guided mode has breached a limit
@@ -1075,7 +1075,7 @@ bool ModeGuided::limit_check()
     }
 
     // get current location
-    const Vector3f& curr_pos = inertial_nav.get_position_neu_cm();
+    const Vector3f& curr_pos = pos_control->get_pos_estimate_NEU_cm().tofloat();
 
     // check if we have gone below min alt
     if (!is_zero(guided_limit.alt_min_cm) && (curr_pos.z < guided_limit.alt_min_cm)) {
@@ -1114,17 +1114,17 @@ const Vector3f& ModeGuided::get_target_accel() const
     return guided_accel_target_cmss;
 }
 
-uint32_t ModeGuided::wp_distance() const
+float ModeGuided::wp_distance_m() const
 {
     switch(guided_mode) {
     case SubMode::WP:
-        return wp_nav->get_wp_distance_to_destination();
+        return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
     case SubMode::Pos:
-        return get_horizontal_distance_cm(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy());
+        return get_horizontal_distance_cm(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat()) * 0.01f;
     case SubMode::PosVelAccel:
-        return pos_control->get_pos_error_NE_cm();
+        return pos_control->get_pos_error_NE_cm() * 0.01f;
     default:
-        return 0;
+        return 0.0f;
     }
 }
 
@@ -1132,9 +1132,9 @@ int32_t ModeGuided::wp_bearing() const
 {
     switch(guided_mode) {
     case SubMode::WP:
-        return wp_nav->get_wp_bearing_to_destination();
+        return wp_nav->get_wp_bearing_to_destination_cd();
     case SubMode::Pos:
-        return get_bearing_cd(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy());
+        return get_bearing_cd(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat());
     case SubMode::PosVelAccel:
         return pos_control->get_bearing_to_target_cd();
     case SubMode::TakeOff:

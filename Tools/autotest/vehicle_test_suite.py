@@ -216,6 +216,7 @@ class Context(object):
         self.installed_scripts = []
         self.installed_modules = []
         self.overridden_message_rates = {}
+        self.raising_debug_trap_on_exceptions = False
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
@@ -2997,7 +2998,7 @@ class TestSuite(ABC):
             print("message_info: %s" % str(message_info))
             for define in defines:
                 message_info = re.sub(define, defines[define], message_info)
-            m = re.match(r'\s*LOG_\w+\s*,\s*sizeof\([^)]+\)\s*,\s*"(\w+)"\s*,\s*"(\w+)"\s*,\s*"([\w,]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*(,\s*(true|false))?\s*$', message_info)  # noqa
+            m = re.match(r'\s*LOG_\w+\s*,\s*(?:sizeof|RLOG_SIZE)\([^)]+\)\s*,\s*"(\w+)"\s*,\s*"(\w+)"\s*,\s*"([\w,]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*(,\s*(true|false))?\s*$', message_info)  # noqa
             if m is None:
                 print("NO MATCH")
                 continue
@@ -3087,6 +3088,56 @@ class TestSuite(ABC):
 
         return ids
 
+    def LoggerDocumentation_whitelist(self):
+        '''returns a set of messages which we do not want to see
+        documentation for'''
+
+        ret = set()
+
+        # messages not expected to be on particular vehicles.  Nothing
+        # needs fixing below this point, unless you can come up with a
+        # better way to avoid this list!
+
+        # We extract all message that need to be documented from the
+        # code, but we don't pay attention to which vehicles will use
+        # those messages.  We *do* care about the documented messages
+        # for a vehicle as we follow the tree created by the
+        # documentation (eg. @Path:
+        # ../libraries/AP_LandingGear/AP_LandingGear.cpp).  The lists
+        # here have been created to fix this discrepancy.
+        vinfo_key = self.vehicleinfo_key()
+        if vinfo_key != 'ArduPlane' and vinfo_key != 'ArduCopter' and vinfo_key != 'Helicopter':
+            ret.update([
+                "ATUN",  # Plane and Copter have ATUN messages
+            ])
+        if vinfo_key != 'ArduPlane':
+            ret.update([
+                "TECS",  # only Plane has TECS
+                "TEC2",  # only Plane has TECS
+                "TEC3",  # only Plane has TECS
+                "TEC4",  # only Plane has TECS
+                "SOAR",  # only Planes can truly soar
+                "SORC",  # soaring is pure magic
+                "QBRK",  # quadplane
+                "FWDT",  # quadplane
+                "VAR",   # variometer only applicable on Plane
+            ])
+        if vinfo_key != 'ArduCopter' and vinfo_key != "Helicopter":
+            ret.update([
+                "ARHS",    # autorotation
+                "AROT",    # autorotation
+                "ARSC",    # autorotation
+                "ATDH",    # heli autotune
+                "ATNH",    # heli autotune
+                "ATSH",    # heli autotune
+                "GMB1",    # sologimbal
+                "GMB2",    # sologimbal
+                "SURF",    # surface-tracking
+            ])
+        # end not-expected-to-be-fixed block
+
+        return ret
+
     def LoggerDocumentation(self):
         '''Test Onboard Logging Generation'''
         xml_filepath = os.path.join(self.buildlogs_dirpath(), "LogMessages.xml")
@@ -3127,12 +3178,7 @@ class TestSuite(ABC):
         objectify.enable_recursive_str()
         tree = objectify.fromstring(xml)
 
-        # we allow for no docs for replay messages, as these are not for end-users. They are
-        # effectively binary blobs for replay
-        REPLAY_MSGS = ['RFRH', 'RFRF', 'REV2', 'RSO2', 'RWA2', 'REV3', 'RSO3', 'RWA3', 'RMGI',
-                       'REY3', 'RFRN', 'RISH', 'RISI', 'RISJ', 'RBRH', 'RBRI', 'RRNH', 'RRNI',
-                       'RGPH', 'RGPI', 'RGPJ', 'RASH', 'RASI', 'RBCH', 'RBCI', 'RVOH', 'RMGH',
-                       'ROFH', 'REPH', 'REVH', 'RWOH', 'RBOH', 'RSLL']
+        whitelist = self.LoggerDocumentation_whitelist()
 
         docco_ids = {}
         for thing in tree.logformat:
@@ -3142,7 +3188,7 @@ class TestSuite(ABC):
                 "labels": [],
             }
             if getattr(thing.fields, 'field', None) is None:
-                if name in REPLAY_MSGS:
+                if name in whitelist:
                     continue
                 raise NotAchievedException("no doc fields for %s" % name)
             for field in thing.fields.field:
@@ -3155,10 +3201,15 @@ class TestSuite(ABC):
         # self.progress("Code ids: (%s)" % str(sorted(code_ids.keys())))
         # self.progress("Docco ids: (%s)" % str(sorted(docco_ids.keys())))
 
+        undocumented = set()
+        overdocumented = set()
         for name in sorted(code_ids.keys()):
             if name not in docco_ids:
-                self.progress("Undocumented message: %s" % str(name))
+                if name not in whitelist:
+                    undocumented.add(name)
                 continue
+            if name in whitelist:
+                overdocumented.add(name)
             seen_labels = {}
             for label in code_ids[name]["labels"].split(","):
                 if label in seen_labels:
@@ -3166,11 +3217,31 @@ class TestSuite(ABC):
                                                (name, label))
                 seen_labels[label] = True
                 if label not in docco_ids[name]["labels"]:
-                    raise NotAchievedException("%s.%s not in documented fields (have (%s))" %
-                                               (name, label, ",".join(docco_ids[name]["labels"])))
+                    msg = ("%s.%s not in documented fields (have (%s))" %
+                           (name, label, ",".join(docco_ids[name]["labels"])))
+                    if name in whitelist:
+                        self.progress(msg)
+                        # a lot of our Replay messages have names but
+                        # nothing more
+                        try:
+                            overdocumented.remove(name)
+                        except KeyError:
+                            pass
+                        continue
+                    raise NotAchievedException(msg)
+
+        if len(undocumented):
+            for name in sorted(undocumented):
+                self.progress(f"Undocumented message: {name}")
+            raise NotAchievedException("Undocumented messages found")
+        if len(overdocumented):
+            for name in sorted(overdocumented):
+                self.progress(f"Message documented when it shouldn't be: {name}")
+            raise NotAchievedException("Overdocumented messages found")
+
         missing = []
         for name in sorted(docco_ids):
-            if name not in code_ids and name not in REPLAY_MSGS:
+            if name not in code_ids and name not in whitelist:
                 missing.append(name)
                 continue
             for label in docco_ids[name]["labels"]:
@@ -3683,6 +3754,35 @@ class TestSuite(ABC):
         if m.temperature_air == -128: # High_Latency2 defaults to INT8_MIN for no temperature available
             raise NotAchievedException("Air Temperature not received from HIGH_LATENCY2")
         self.HIGH_LATENCY2_links()
+
+    def context_set_send_debug_trap_on_exceptions(self, value=True):
+        '''send a debug trap to ArduPilot if an ErrorException is raised.'''
+
+        # this is a diagnostic tool, only expected to be used for
+        # debugging, never for committed code
+
+        def trace_calls(frame, event, arg):
+            if event == 'exception':
+                exc_type, exc_value, tb = arg
+                if issubclass(exc_type, ErrorException):
+                    print(f"[Tracer] Exception raised: {exc_type}")
+                    self.send_debug_trap()
+            return trace_calls
+
+        context = self.context_get()
+
+        if value:
+            if sys.gettrace() is not None:
+                raise ValueError("Can't trace, something else already is")
+            sys.settrace(trace_calls)
+            context.raising_debug_trap_on_exceptions = True
+            return
+
+        if not sys.gettrace():
+            raise ValueError("Expected to see something tracing")
+
+        context.raising_debug_trap_on_exceptions = False
+        sys.settrace(None)
 
     def context_set_message_rate_hz(self, id, rate_hz, run_cmd=None):
         if run_cmd is None:
@@ -4228,6 +4328,14 @@ class TestSuite(ABC):
             count += 1
 
     def create_simple_relhome_mission(self, items_in, target_system=1, target_component=1):
+        return self.create_simple_relloc_mission(
+            self.home_position_as_mav_location(),
+            items_in,
+            target_system=target_system,
+            target_component=target_component,
+        )
+
+    def create_simple_relloc_mission(self, loc, items_in, target_system=1, target_component=1):
         '''takes a list of (type, n, e, alt) items.  Creates a mission in
         absolute frame using alt as relative-to-home and n and e as
         offsets in metres from home'''
@@ -4252,9 +4360,9 @@ class TestSuite(ABC):
             lat = 0
             lng = 0
             if n != 0 or e != 0:
-                loc = self.home_relative_loc_ne(n, e)
-                lat = loc.lat
-                lng = loc.lng
+                relloc = self.offset_location_ne(loc, n, e)
+                lat = relloc.lat
+                lng = relloc.lng
             frame = mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
             if not self.ardupilot_stores_frame_for_cmd(t):
                 frame = mavutil.mavlink.MAV_FRAME_GLOBAL
@@ -4267,6 +4375,14 @@ class TestSuite(ABC):
 
     def upload_simple_relhome_mission(self, items, target_system=1, target_component=1):
         mission = self.create_simple_relhome_mission(
+            items,
+            target_system=target_system,
+            target_component=target_component)
+        self.check_mission_upload_download(mission)
+
+    def upload_simple_relloc_mission(self, loc, items, target_system=1, target_component=1):
+        mission = self.create_simple_relloc_mission(
+            loc,
             items,
             target_system=target_system,
             target_component=target_component)
@@ -5703,7 +5819,7 @@ class TestSuite(ABC):
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=chan, p2=pwm)
 
     def location_offset_ne(self, location, north, east):
-        '''move location in metres'''
+        '''move location in metres.  You probably wat offset_location_ne'''
         print("old: %f %f" % (location.lat, location.lng))
         (lat, lng) = mp_util.gps_offset(location.lat, location.lng, east, north)
         location.lat = lat
@@ -6440,6 +6556,8 @@ class TestSuite(ABC):
             self.remove_installed_modules(module)
         if dead.sitl_commandline_customised and len(self.contexts):
             self.contexts[-1].sitl_commandline_customised = True
+        if dead.raising_debug_trap_on_exceptions:
+            sys.settrace(None)
 
         dead_parameters_dict = {}
         for p in dead.parameters:
@@ -14814,8 +14932,12 @@ SERIAL5_BAUD 128
 
         return psd
 
-    def model_defaults_filepath(self, model):
-        vehicle = self.vehicleinfo_key()
+    def model_defaults_filepath(self, model, vehicleinfo_key=None):
+        if vehicleinfo_key is None:
+            vehicle = self.vehicleinfo_key()
+        else:
+            vehicle = vehicleinfo_key
+
         vinfo = vehicleinfo.VehicleInfo()
         defaults_filepath = vinfo.options[vehicle]["frames"][model]["default_params_filename"]
         if isinstance(defaults_filepath, str):

@@ -976,7 +976,6 @@ private:
     bool verify_loiter_time();
     bool verify_loiter_turns(const AP_Mission::Mission_Command &cmd);
     bool verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd);
-    bool verify_RTL();
     bool verify_continue_and_change_alt();
     bool verify_wait_delay();
     bool verify_within_distance();
@@ -1003,6 +1002,8 @@ private:
     void do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 #if HAL_QUADPLANE_ENABLED
+    // vtol takeoff from AP_Vehicle for quadplane.
+    bool start_takeoff(const float alt) override;
     bool verify_landing_vtol_approach(const AP_Mission::Mission_Command& cmd);
 #endif
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);

@@ -1,10 +1,6 @@
 #include "Sub.h"
 
 
-
-#include "Sub.h"
-
-
 bool ModeAcro::init(bool ignore_checks) {
     // set target altitude to zero for reporting
     position_control->set_pos_desired_U_cm(0);

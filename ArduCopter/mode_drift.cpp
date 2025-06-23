@@ -12,6 +12,9 @@
 #ifndef DRIFT_SPEEDLIMIT
  # define DRIFT_SPEEDLIMIT 560.0f
 #endif
+#ifndef DRIFT_VEL_FORWARD_MIN
+ # define DRIFT_VEL_FORWARD_MIN 2000.0f
+#endif
 
 #ifndef DRIFT_THR_ASSIST_GAIN
  # define DRIFT_THR_ASSIST_GAIN 0.0018f    // gain controlling amount of throttle assistance
@@ -39,41 +42,41 @@ bool ModeDrift::init(bool ignore_checks)
 void ModeDrift::run()
 {
     static float braker = 0.0f;
-    static float roll_input = 0.0f;
+    static float roll_input_cd = 0.0f;
 
     // convert pilot input to lean angles
-    float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
+    float target_roll_cd, target_pitch_cd;
+    get_pilot_desired_lean_angles_cd(target_roll_cd, target_pitch_cd, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // Grab inertial velocity
-    const Vector3f& vel = inertial_nav.get_velocity_neu_cms();
+    const Vector3f& vel_NEU_cms = pos_control->get_vel_estimate_NEU_cms();
 
     // rotate roll, pitch input from north facing to vehicle's perspective
-    float roll_vel =  vel.y * ahrs.cos_yaw() - vel.x * ahrs.sin_yaw(); // body roll vel
-    float pitch_vel = vel.y * ahrs.sin_yaw() + vel.x * ahrs.cos_yaw(); // body pitch vel
+    float vel_right_cms =  vel_NEU_cms.y * ahrs.cos_yaw() - vel_NEU_cms.x * ahrs.sin_yaw(); // body roll vel_NEU_cms
+    float vel_forward_cms = vel_NEU_cms.y * ahrs.sin_yaw() + vel_NEU_cms.x * ahrs.cos_yaw(); // body pitch vel_NEU_cms
 
     // gain scheduling for yaw
-    float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
-    float target_yaw_rate = target_roll * (1.0f - (pitch_vel2 / 5000.0f)) * g2.command_model_acro_y.get_rate() / 45.0;
+    float vel_forward_2_cms = MIN(fabsf(vel_forward_cms), DRIFT_VEL_FORWARD_MIN);
+    float target_yaw_rate_cds = target_roll_cd * (1.0f - (vel_forward_2_cms / 5000.0f)) * g2.command_model_acro_y.get_rate() / 45.0;
 
-    roll_vel = constrain_float(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
-    pitch_vel = constrain_float(pitch_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
+    vel_right_cms = constrain_float(vel_right_cms, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
+    vel_forward_cms = constrain_float(vel_forward_cms, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
 
-    roll_input = roll_input * .96f + (float)channel_yaw->get_control_in() * .04f;
+    roll_input_cd = roll_input_cd * 0.96f + (float)channel_yaw->get_control_in() * 0.04f;
 
     // convert user input into desired roll velocity
-    float roll_vel_error = roll_vel - (roll_input / DRIFT_SPEEDGAIN);
+    float roll_vel_error = vel_right_cms - (roll_input_cd / DRIFT_SPEEDGAIN);
 
     // roll velocity is feed into roll acceleration to minimize slip
-    target_roll = roll_vel_error * -DRIFT_SPEEDGAIN;
-    target_roll = constrain_float(target_roll, -4500.0f, 4500.0f);
+    target_roll_cd = roll_vel_error * -DRIFT_SPEEDGAIN;
+    target_roll_cd = constrain_float(target_roll_cd, -4500.0f, 4500.0f);
 
     // If we let go of sticks, bring us to a stop
-    if (is_zero(target_pitch)) {
-        // .14/ (.03 * 100) = 4.6 seconds till full braking
-        braker += .03f;
+    if (is_zero(target_pitch_cd)) {
+        // 0.14/ (0.03 * 100) = 4.6 seconds till full braking
+        braker += 0.03f;
         braker = MIN(braker, DRIFT_SPEEDGAIN);
-        target_pitch = pitch_vel * braker;
+        target_pitch_cd = vel_forward_cms * braker;
     } else {
         braker = 0.0f;
     }
@@ -115,10 +118,10 @@ void ModeDrift::run()
     }
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
 
     // output pilot's throttle with angle boost
-    const float assisted_throttle = get_throttle_assist(vel.z, get_pilot_desired_throttle());
+    const float assisted_throttle = get_throttle_assist(vel_NEU_cms.z, get_pilot_desired_throttle());
     attitude_control->set_throttle_out(assisted_throttle, true, g.throttle_filt);
 }
 

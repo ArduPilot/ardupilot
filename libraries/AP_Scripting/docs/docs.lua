@@ -1288,6 +1288,14 @@ local AP_Scripting_SerialAccess_ud = {}
 ---@param baud_rate uint32_t_ud|integer|number
 function AP_Scripting_SerialAccess_ud:begin(baud_rate) end
 
+-- Set UART parity (no effect for device ports)
+---@param parity integer 0=None, 1=Odd, 2=Even
+function AP_Scripting_SerialAccess_ud:configure_parity(parity) end
+
+-- Set UART stop bits (no effect for device ports)
+---@param stop_bits integer 1 or 2
+function AP_Scripting_SerialAccess_ud:set_stop_bits(stop_bits) end
+
 -- Writes a single byte
 ---@param value integer -- byte to write
 ---@return uint32_t_ud -- 1 if success else 0
@@ -2985,6 +2993,14 @@ function gcs:send_text(severity, text) end
 ---@return uint32_t_ud -- system time in milliseconds
 function gcs:last_seen() end
 
+-- Return whether the GCS library is currently allowed to set parameters
+---@return boolean
+function gcs:get_allow_param_set() end
+
+-- set whether the GCS library is currently allowed to set parameters
+---@param new_allow_value boolean
+function gcs:set_allow_param_set(new_allow_value) end
+
 -- call a MAVLink MAV_CMD_xxx command via command_int interface
 ---@param command integer -- MAV_CMD_xxx
 ---@param params table -- parameters of p1, p2, p3, p4, x, y and z and frame. Any not specified taken as zero
@@ -3439,6 +3455,10 @@ function gps:primary_sensor() end
 ---@return integer -- number of sensors
 function gps:num_sensors() end
 
+-- Inject a packet of raw binary to a GPS (e.g., RTCM3)
+---@param data string -- binary data to inject
+function gps:inject_data(data) end
+
 -- desc
 ---@class (exact) BattMonitorScript_State_ud
 local BattMonitorScript_State_ud = {}
@@ -3777,15 +3797,30 @@ function ahrs:get_position() end
 
 -- Returns the current vehicle euler yaw angle in radians.
 ---@return number -- yaw angle in radians.
+---@deprecated -- get_yaw_rad
 function ahrs:get_yaw() end
 
 -- Returns the current vehicle euler pitch angle in radians.
 ---@return number -- pitch angle in radians.
+---@deprecated -- get_pitch_rad
 function ahrs:get_pitch() end
 
 -- Returns the current vehicle euler roll angle in radians.
 ---@return number -- roll angle in radians
+---@deprecated -- get_roll_rad
 function ahrs:get_roll() end
+
+-- Returns the current vehicle euler yaw angle in radians.
+---@return number -- yaw angle in radians (0 to 2*Pi).
+function ahrs:get_yaw_rad() end
+
+-- Returns the current vehicle euler pitch angle in radians.
+---@return number -- pitch angle in radians.
+function ahrs:get_pitch_rad() end
+
+-- Returns the current vehicle euler roll angle in radians.
+---@return number -- roll angle in radians
+function ahrs:get_roll_rad() end
 
 -- desc
 AC_AttitudeControl = {}
@@ -4212,3 +4247,38 @@ function crsf:get_menu_event(events) end
 ---@param data string -- binary encoded response payload
 ---@return boolean -- true if the repsonse was successfully sent, false otherwise
 function crsf:send_write_response(data) end
+
+-- handle for DroneCAN message operations
+---@class DroneCAN_Handle_ud
+local DroneCAN_Handle_ud = {}
+
+-- create a DroneCAN_Handle, needed for all other DroneCAN message operations
+---@param driver_index number -- DroneCAN driver index, 0 for first driver
+---@param signature uint64_t_ud -- message signature
+---@param data_type number -- message data type ID
+---@param canfd? boolean -- send as CANFD
+---@return DroneCAN_Handle_ud
+function DroneCAN_Handle(driver_index, signature, data_type, canfd) end
+
+-- subscribe to the current signature and data_type
+---@return boolean
+function DroneCAN_Handle_ud:subscribe() end
+
+-- check if a new message has arrived for a request or subscription
+---@return string payload -- payload of the message
+---@return number nodeid -- node ID the message came from
+---@return uint64_t_ud timestamp -- microseconds since 1/1/1970
+---@return boolean canfd -- true if message was CANFD
+function DroneCAN_Handle_ud:check_message() end
+
+-- make a DroneCAN request
+---@param target_node number -- node to send request to
+---@param payload string -- payload for message
+---@return boolean -- true if send succeeded
+function DroneCAN_Handle_ud:request(target_node, payload) end
+
+-- send a DroneCAN broadcast
+---@param payload string -- payload for message
+---@return boolean -- true if send succeeded
+function DroneCAN_Handle_ud:broadcast(payload) end
+

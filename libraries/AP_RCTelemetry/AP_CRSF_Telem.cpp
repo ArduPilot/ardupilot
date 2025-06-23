@@ -980,7 +980,7 @@ int8_t AP_CRSF_Telem::get_vertical_speed_packed()
     float vspeed = get_vspeed_ms();
     float vertical_speed_cm_s = vspeed * 100.0f;
     const int16_t Kl = 100; // linearity constant;
-    const float Kr = .026f; // range constant;
+    const float Kr = 0.026f; // range constant;
     int8_t vspeed_packed = int8_t(logf(fabsf(vertical_speed_cm_s)/Kl + 1)/Kr);
     return vspeed_packed * (is_negative(vertical_speed_cm_s) ? -1 : 1);
 }
@@ -1014,7 +1014,7 @@ void AP_CRSF_Telem::calc_gps()
 
     _telem.bcast.gps.latitude = htobe32(loc.lat);
     _telem.bcast.gps.longitude = htobe32(loc.lng);
-    _telem.bcast.gps.groundspeed = htobe16(roundf(AP::gps().ground_speed() * 100000 / 3600));
+    _telem.bcast.gps.groundspeed = htobe16(roundf(AP::gps().ground_speed() * 36.0f));
     _telem.bcast.gps.altitude = htobe16(constrain_int16(loc.alt / 100, 0, 5000) + 1000);
     _telem.bcast.gps.gps_heading = htobe16(roundf(AP::gps().ground_course() * 100.0f));
     _telem.bcast.gps.satellites = AP::gps().num_sats();
@@ -1033,9 +1033,9 @@ void AP_CRSF_Telem::calc_attitude()
 
     const int16_t INT_PI = 31415;
     // units are radians * 10000
-    _telem.bcast.attitude.roll_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_roll()) * 10000.0f), -INT_PI, INT_PI));
-    _telem.bcast.attitude.pitch_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_pitch()) * 10000.0f), -INT_PI, INT_PI));
-    _telem.bcast.attitude.yaw_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_yaw()) * 10000.0f), -INT_PI, INT_PI));
+    _telem.bcast.attitude.roll_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_roll_rad()) * 10000.0f), -INT_PI, INT_PI));
+    _telem.bcast.attitude.pitch_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_pitch_rad()) * 10000.0f), -INT_PI, INT_PI));
+    _telem.bcast.attitude.yaw_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_yaw_rad()) * 10000.0f), -INT_PI, INT_PI));
 
     _telem_size = sizeof(AP_CRSF_Telem::AttitudeFrame);
     _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_ATTITUDE;

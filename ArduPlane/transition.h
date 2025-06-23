@@ -62,7 +62,7 @@ public:
 
 protected:
 
-    // refences for convenience
+    // references for convenience
     QuadPlane& quadplane;
     AP_MotorsMulticopter*& motors;
 

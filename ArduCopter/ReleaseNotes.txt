@@ -1,5 +1,23 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Release 4.6.1 19-Jun-2025 / 4.6.1-beta1 14-Jun-2025
+
+Changes from 4.6.0
+
+1) Bug Fixes
+
+- Prevent firmware erasure on boards using flash for parameter storage
+- bootloaders rebuilt for H7 boards using flash for parameter storage
+------------------------------------------------------------------
+Release 4.6.0 21-May-2025
+
+Changes from 4.6.0-beta6
+
+1) Bug Fixes
+
+- Plane landing fix to handle AGL or AMSL locations
+- TBS bootloaders updated to avoid firmware erase on ECC error
+------------------------------------------------------------------
 Release 4.6.0-beta6 28-Apr-2025
 
 Changes from 4.6.0-beta5

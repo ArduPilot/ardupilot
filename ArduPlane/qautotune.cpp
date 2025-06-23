@@ -18,8 +18,7 @@ bool QAutoTune::init()
     return init_internals(position_hold,
                           plane.quadplane.attitude_control,
                           plane.quadplane.pos_control,
-                          plane.quadplane.ahrs_view,
-                          &plane.quadplane.inertial_nav);
+                          plane.quadplane.ahrs_view);
 }
 
 float QAutoTune::get_pilot_desired_climb_rate_cms(void) const

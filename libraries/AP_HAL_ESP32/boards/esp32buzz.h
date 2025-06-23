@@ -43,14 +43,6 @@
 //#define HAL_INS_ICM20XXX_I2C_BUS 0
 //#define HAL_INS_ICM20XXX_I2C_ADDR (0x68)
 
-// BARO choices:
-#define HAL_BARO_DEFAULT HAL_BARO_BMP280_SPI
-#define HAL_BARO_BMP280_NAME "BMP280"
-// or one of these:
-//#define HAL_BARO_DEFAULT HAL_BARO_MS5837_I2C
-// or: GPIO 34
-//#define HAL_BARO_ANALOG_PIN (6)
-
 // MAG/COMPASS choices:
 // or others:
 //#define HAL_COMPASS_ICM20948_I2C_ADDR (0x68)
@@ -75,7 +67,7 @@
 #define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
 
-// ADC is available on lots of pints on the esp32, but adc2 cant co-exist with wifi we choose to allow ADC on :
+// ADC is available on lots of pints on the esp32, but adc2 can't co-exist with wifi we choose to allow ADC on :
 //#define HAL_DISABLE_ADC_DRIVER 1
 #define TRUE 1
 #define HAL_USE_ADC TRUE

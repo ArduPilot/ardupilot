@@ -47,6 +47,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_VNAV       1024
 #define HAL_BOARD_SUBTYPE_LINUX_OBAL_V1    1025
 #define HAL_BOARD_SUBTYPE_LINUX_CANZERO    1026
+#define HAL_BOARD_SUBTYPE_LINUX_PILOTPI    1027
 
 /* HAL CHIBIOS sub-types, starting at 5000
 
@@ -54,7 +55,7 @@
    boards do not need a subtype defined. It is only needed if we need
    to use #ifdef'd code to change behaviour
 */
-#define HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412	5000
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412	5000
 #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3         5001
 // #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4         5002
 #define HAL_BOARD_SUBTYPE_CHIBIOS_GENERIC       5009
@@ -89,13 +90,6 @@
 #define HAL_INS_INV2_I2C    24
 #define HAL_INS_INV2_SPI    25
 
-
-/* Barometer driver types */
-#define HAL_BARO_NONE        0
-#define HAL_BARO_HIL_UNUSED  6  // unused
-#define HAL_BARO_20789_I2C_I2C  14
-#define HAL_BARO_20789_I2C_SPI  15
-#define HAL_BARO_LPS25H_IMU_I2C 17
 
 /* Heat Types */
 #define HAL_LINUX_HEAT_PWM 1

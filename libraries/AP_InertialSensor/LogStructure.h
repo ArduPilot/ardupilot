@@ -71,6 +71,16 @@ struct PACKED log_IMU {
     uint16_t gyro_rate, accel_rate;
 };
 
+// @LoggerMessage: ISBH
+// @Description: InertialSensor Batch Logging Header
+// @Field: TimeUS: Time since system startup
+// @Field: N: batch sequence number
+// @Field: type: indicates if this is accel or gyro data
+// @Field: instance: IMU sensor instance
+// @Field: mul: multiplier to be applied to samples in this batch
+// @Field: smp_cnt: samples in this batch
+// @Field: SampleUS: timestamp of first sample
+// @Field: smp_rate: rate at which samples have been collected
 struct PACKED log_ISBH {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -84,6 +94,14 @@ struct PACKED log_ISBH {
 };
 static_assert(sizeof(log_ISBH) < 256, "log_ISBH is over-size");
 
+// @LoggerMessage: ISBD
+// @Description: InertialSensor Batch Logging Data
+// @Field: TimeUS: Time since system startup
+// @Field: N: batch sequence number
+// @Field: seqno: sample sequence number
+// @Field: x: x-axis sample value
+// @Field: y: y-axis sample value
+// @Field: z: z-axis sample value
 struct PACKED log_ISBD {
     LOG_PACKET_HEADER;
     uint64_t time_us;

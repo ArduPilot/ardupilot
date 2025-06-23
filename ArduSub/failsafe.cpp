@@ -170,7 +170,6 @@ void Sub::handle_battery_failsafe(const char* type_str, const int8_t action)
 // Make sure that we are receiving pilot input at an appropriate interval
 void Sub::failsafe_pilot_input_check()
 {
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (g.failsafe_pilot_input == FS_PILOT_INPUT_DISABLED) {
         failsafe.pilot_input = false;
         return;
@@ -195,7 +194,6 @@ void Sub::failsafe_pilot_input_check()
     if(g.failsafe_pilot_input == FS_PILOT_INPUT_DISARM) {
         arming.disarm(AP_Arming::Method::PILOT_INPUT_FAILSAFE);
     }
-#endif
 }
 
 // Internal pressure failsafe check
@@ -326,6 +324,7 @@ void Sub::failsafe_gcs_check()
         // Log event if we are recovering from previous gcs failsafe
         if (failsafe.gcs) {
             LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"GCS Failsafe Cleared");
         }
         failsafe.gcs = false;
         return;
@@ -537,6 +536,8 @@ void Sub::failsafe_radio_on_event()
             set_mode(Mode::Number::SURFACE, ModeReason::RADIO_FAILSAFE);
             break;
         case FS_THR_WARN:
+            set_neutral_controls();
+            break;
         case FS_THR_DISABLED:
             break;
     }    

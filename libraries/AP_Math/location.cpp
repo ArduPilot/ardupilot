@@ -26,7 +26,7 @@
 // return bearing in centi-degrees between two positions
 float get_bearing_cd(const Vector2f &origin, const Vector2f &destination)
 {
-    float bearing = atan2f(destination.y-origin.y, destination.x-origin.x) * DEGX100;
+    float bearing = rad_to_cd(atan2f(destination.y-origin.y, destination.x-origin.x));
     if (bearing < 0) {
         bearing += 36000.0f;
     }

@@ -227,8 +227,8 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @DisplayName: Sim Speedup
     // @Description: Runs the simulation at multiples of normal speed. Do not use if realtime physics, like RealFlight, is being used
     // @Range: 1 10
-    // @User: Advanced    
-    AP_GROUPINFO("SPEEDUP",       52, SIM,  speedup, -1),
+    // @User: Advanced
+    AP_GROUPINFO("SPEEDUP",       52, SIM,  speedup, 1),
     // @Param: IMU_POS
     // @DisplayName: IMU Offsets
     // @Description: XYZ position of the IMU accelerometer relative to the body frame origin
@@ -1315,9 +1315,15 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
     AP_SUBGROUPINFO(tether_sim, "TETH_", 6, SIM::ModelParm, TetherSim),
 #endif
 
+#if HAL_SIM_AIS_ENABLED
+    // @Group: AIS_
+    // @Path: ./SIM_AIS.cpp
+    AP_SUBGROUPPTR(ais_ptr, "AIS_", 7, SIM::ModelParm, AIS),
+#endif
+
     AP_GROUPEND
 };
-    
+
 const Location post_origin {
     518752066,
     146487830,
@@ -1342,9 +1348,9 @@ void SIM::simstate_send(mavlink_channel_t chan) const
     }
 
     mavlink_msg_simstate_send(chan,
-                              ToRad(state.rollDeg),
-                              ToRad(state.pitchDeg),
-                              ToRad(yaw),
+                              radians(state.rollDeg),
+                              radians(state.pitchDeg),
+                              radians(yaw),
                               state.xAccel,
                               state.yAccel,
                               state.zAccel,
@@ -1374,9 +1380,9 @@ void SIM::sim_state_send(mavlink_channel_t chan) const
             state.quaternion.q2,
             state.quaternion.q3,
             state.quaternion.q4,
-            ToRad(state.rollDeg),
-            ToRad(state.pitchDeg),
-            ToRad(yaw),
+            radians(state.rollDeg),
+            radians(state.pitchDeg),
+            radians(yaw),
             state.xAccel,
             state.yAccel,
             state.zAccel,
@@ -1435,11 +1441,11 @@ void SIM::convert_body_frame(double rollDeg, double pitchDeg,
 {
     double phi, theta, phiDot, thetaDot, psiDot;
 
-    phi = ToRad(rollDeg);
-    theta = ToRad(pitchDeg);
-    phiDot = ToRad(rollRate);
-    thetaDot = ToRad(pitchRate);
-    psiDot = ToRad(yawRate);
+    phi = radians(rollDeg);
+    theta = radians(pitchDeg);
+    phiDot = radians(rollRate);
+    thetaDot = radians(pitchRate);
+    psiDot = radians(yawRate);
 
     *p = phiDot - psiDot*sin(theta);
     *q = cos(phi)*thetaDot + sin(phi)*psiDot*cos(theta);

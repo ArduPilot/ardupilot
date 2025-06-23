@@ -86,7 +86,7 @@ public:
     virtual bool set_options(uint16_t options) { _last_options = options; return options==0; }
     virtual uint16_t get_options(void) const { return _last_options; }
 
-    enum {
+    enum Option {
         OPTION_RXINV              = (1U<<0),  // invert RX line
         OPTION_TXINV              = (1U<<1),  // invert TX line
         OPTION_HDPLEX             = (1U<<2), // half-duplex (one-wire) mode
@@ -97,10 +97,15 @@ public:
         OPTION_PULLUP_TX          = (1U<<7), // apply pullup to TX
         OPTION_NODMA_RX           = (1U<<8), // don't use DMA for RX
         OPTION_NODMA_TX           = (1U<<9), // don't use DMA for TX
-        OPTION_MAVLINK_NO_FORWARD = (1U<<10), // don't forward MAVLink data to or from this device
+        OPTION_MAVLINK_NO_FORWARD_old = (1U<<10), // // moved to GCS_MAVLINK::Option
         OPTION_NOFIFO             = (1U<<11), // disable hardware FIFO
-        OPTION_NOSTREAMOVERRIDE   = (1U<<12), // don't allow GCS to override streamrates
+        OPTION_NOSTREAMOVERRIDE_old   = (1U<<12), // moved to GCS_MAVLINK::Option
     };
+
+    bool option_is_set(Option option) const {
+        return (_last_options & (uint16_t)option) != 0;
+    }
+
 
     enum flow_control {
         FLOW_CONTROL_DISABLE=0,

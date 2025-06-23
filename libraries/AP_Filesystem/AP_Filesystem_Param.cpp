@@ -581,8 +581,10 @@ bool AP_Filesystem_Param::param_upload_parse(const rfile &r, bool &need_retry)
 
         b += 2 + name_len;
 
+        // assume that this write to the Param filesystem is coming
+        // via mavftp:
         AP_Param *p = AP_Param::find(name, &ptype2, &flags2);
-        if (p == nullptr) {
+        if (p == nullptr || !p->allow_set_via_mavlink(flags2)) {
             if (ptype == AP_PARAM_INT8) {
                 b++;
             } else if (ptype == AP_PARAM_INT16) {

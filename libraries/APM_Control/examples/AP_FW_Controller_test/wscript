@@ -10,7 +10,10 @@ def build(bld):
         name='AP_FW_Controller_test_libs',
         ap_vehicle='UNKNOWN',
         ap_libraries=bld.ap_common_vehicle_libraries() + [
-            'SITL', 'APM_Control', 'AP_AdvancedFailsafe',
+            'SITL',
+            'APM_Control',
+            'AP_AdvancedFailsafe',
+            'AP_Avoidance',
         ],
     )
 
@@ -18,4 +21,3 @@ def build(bld):
         use='AP_FW_Controller_test_libs',
         program_groups=['examples'],
     )
-

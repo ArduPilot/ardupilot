@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+# flake8: noqa
+
 """Common fixtures."""
 import os
 import pytest
@@ -22,9 +24,6 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch import LaunchDescriptionSource
 from launch.actions import IncludeLaunchDescription
-from launch.substitutions import PathJoinSubstitution
-
-from launch_ros.substitutions import FindPackageShare
 
 from pathlib import Path
 
@@ -34,7 +33,7 @@ from ardupilot_sitl.launch import MAVProxyLaunch
 from ardupilot_sitl.launch import SITLLaunch
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def device_dir(tmp_path_factory):
     """Fixture to create a temporary directory for devices."""
     path = tmp_path_factory.mktemp("devices")
@@ -45,7 +44,7 @@ def device_dir(tmp_path_factory):
     yield path
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def virtual_ports(device_dir):
     """Fixture to create virtual ports."""
     tty0 = Path(device_dir, "dev", "tty0").resolve()
@@ -63,7 +62,7 @@ def virtual_ports(device_dir):
     yield ld, vp_actions
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def micro_ros_agent_serial(device_dir):
     """Fixture to create a micro_ros_agent node."""
     tty0 = Path(device_dir, "dev", "tty0").resolve()
@@ -81,7 +80,7 @@ def micro_ros_agent_serial(device_dir):
     yield ld, mra_actions
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def micro_ros_agent_udp():
     """Fixture to create a micro_ros_agent node."""
     mra_ld, mra_actions = MicroRosAgentLaunch.generate_launch_description_with_actions()
@@ -95,7 +94,7 @@ def micro_ros_agent_udp():
     yield ld, mra_actions
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def mavproxy():
     """Fixture to bring up MAVProxy."""
     mp_ld, mp_actions = MAVProxyLaunch.generate_launch_description_with_actions()
@@ -110,7 +109,7 @@ def mavproxy():
     yield ld, mp_actions
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, mavproxy):
     """Fixture to bring up ArduPilot SITL DDS."""
     tty1 = Path(device_dir, "dev", "tty1").resolve()
@@ -168,7 +167,7 @@ def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, ma
     yield ld, actions
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def sitl_copter_dds_udp(micro_ros_agent_udp, mavproxy):
     """Fixture to bring up ArduPilot SITL DDS."""
     mra_ld, mra_actions = micro_ros_agent_udp
@@ -220,7 +219,7 @@ def sitl_copter_dds_udp(micro_ros_agent_udp, mavproxy):
     yield ld, actions
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def sitl_plane_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, mavproxy):
     """Fixture to bring up ArduPilot SITL DDS."""
     tty1 = Path(device_dir, "dev", "tty1").resolve()
@@ -278,7 +277,7 @@ def sitl_plane_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, mav
     yield ld, actions
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def sitl_plane_dds_udp(device_dir, virtual_ports, micro_ros_agent_udp, mavproxy):
     """Fixture to bring up ArduPilot SITL DDS."""
     tty1 = Path(device_dir, "dev", "tty1").resolve()

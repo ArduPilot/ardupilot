@@ -95,8 +95,8 @@ bool Sub::set_mode(Mode::Number mode, ModeReason reason)
 
     // check for valid altitude if old mode did not require it but new one does
     // we only want to stop changing modes if it could make things worse
-    if (flightmode->has_manual_throttle() &&
-        !new_flightmode->has_manual_throttle() &&
+    if (!flightmode->requires_altitude() &&
+        new_flightmode->requires_altitude() &&
         !sub.control_check_barometer()) { // maybe use ekf_alt_ok() instead?
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
@@ -143,6 +143,7 @@ void Sub::exit_mode(Mode::Number old_control_mode, Mode::Number new_control_mode
         camera_mount.set_mode_to_default();
 #endif  // HAL_MOUNT_ENABLED
     }
+    motors.set_max_throttle(1.0f);
 }
 
 bool Sub::set_mode(const uint8_t new_mode, const ModeReason reason)
@@ -163,6 +164,7 @@ void Sub::exit_mode(Mode *&old_flightmode, Mode *&new_flightmode){
 #if HAL_MOUNT_ENABLED
         camera_mount.set_mode_to_default();
 #endif  // HAL_MOUNT_ENABLED
+    motors.set_max_throttle(1.0f);
 }
 
 // notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device

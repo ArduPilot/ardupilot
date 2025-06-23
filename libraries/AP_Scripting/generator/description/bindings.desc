@@ -33,9 +33,15 @@ include AP_AHRS/AP_AHRS.h
 singleton AP_AHRS rename ahrs
 singleton AP_AHRS depends AP_AHRS_ENABLED
 singleton AP_AHRS semaphore
+singleton AP_AHRS method get_roll_rad float
 singleton AP_AHRS method get_roll float
+singleton AP_AHRS method get_roll deprecate Use get_roll_rad
+singleton AP_AHRS method get_pitch_rad float
 singleton AP_AHRS method get_pitch float
+singleton AP_AHRS method get_pitch deprecate Use get_pitch_rad
+singleton AP_AHRS method get_yaw_rad float
 singleton AP_AHRS method get_yaw float
+singleton AP_AHRS method get_yaw deprecate Use get_yaw_rad
 singleton AP_AHRS method get_location boolean Location'Null
 singleton AP_AHRS method get_location alias get_position
 singleton AP_AHRS method get_home Location
@@ -48,7 +54,9 @@ singleton AP_AHRS method head_wind float'skip_check
 singleton AP_AHRS method groundspeed_vector Vector2f
 singleton AP_AHRS method get_velocity_NED boolean Vector3f'Null
 singleton AP_AHRS method get_relative_position_NED_home boolean Vector3f'Null
-singleton AP_AHRS method get_relative_position_NED_origin boolean Vector3f'Null
+singleton AP_AHRS method get_relative_position_NED_origin_float boolean Vector3f'Null
+singleton AP_AHRS method get_relative_position_NED_origin_float rename get_relative_position_NED_origin
+
 singleton AP_AHRS method get_relative_position_D_home void float'Ref
 singleton AP_AHRS method home_is_set boolean
 singleton AP_AHRS method healthy boolean
@@ -146,6 +154,7 @@ singleton AP_GPS method get_antenna_offset Vector3f uint8_t 0 ud->num_sensors()
 singleton AP_GPS method first_unconfigured_gps boolean uint8_t'Null
 singleton AP_GPS method gps_yaw_deg boolean uint8_t 0 ud->num_sensors() float'Null float'Null uint32_t'Null
 singleton AP_GPS method time_epoch_usec uint64_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS manual inject_data lua_gps_inject_data 1 0
 
 include AP_Math/AP_Math.h
 
@@ -316,6 +325,11 @@ singleton GCS method enable_high_latency_connections void boolean
 singleton GCS method enable_high_latency_connections depends HAL_HIGH_LATENCY2_ENABLED == 1
 singleton GCS manual run_command_int lua_GCS_command_int 2 1
 
+-- GCS methods to enable/disable setting of parameters via the GCS
+--   PARAM_SET handling and the MAVFTP param-file-upload method:
+singleton GCS method get_allow_param_set boolean
+singleton GCS method set_allow_param_set void boolean
+
 include AP_ONVIF/AP_ONVIF.h depends ENABLE_ONVIF == 1
 singleton AP_ONVIF depends ENABLE_ONVIF == 1
 singleton AP_ONVIF rename onvif
@@ -423,6 +437,8 @@ include AP_Scripting/AP_Scripting_SerialAccess.h
 -- don't let user create access objects
 userdata AP_Scripting_SerialAccess creation null -1
 userdata AP_Scripting_SerialAccess method begin void uint32_t 1U UINT32_MAX
+userdata AP_Scripting_SerialAccess method configure_parity void uint8_t 0 2
+userdata AP_Scripting_SerialAccess method set_stop_bits void uint8_t 1 2
 userdata AP_Scripting_SerialAccess method write uint32_t uint8_t'skip_check
 userdata AP_Scripting_SerialAccess manual writestring lua_serial_writestring 1 1
 userdata AP_Scripting_SerialAccess method read int16_t
@@ -1103,4 +1119,11 @@ singleton SITL::SIM depends AP_SIM_ENABLED
 singleton SITL::SIM rename sim
 singleton SITL::SIM method set_pose boolean uint8_t'skip_check Location Quaternion Vector3f Vector3f
 
+userdata DroneCAN_Handle depends HAL_ENABLE_DRONECAN_DRIVERS
+userdata DroneCAN_Handle creation DroneCAN_Handle::new_handle 4
+userdata DroneCAN_Handle manual broadcast DroneCAN_Handle::broadcast 1 1
+userdata DroneCAN_Handle manual request DroneCAN_Handle::request 2 1
+userdata DroneCAN_Handle method subscribe boolean
+userdata DroneCAN_Handle manual check_message DroneCAN_Handle::check_message 0 4
+userdata DroneCAN_Handle manual_operator __gc DroneCAN_Handle::__gc
 
