@@ -46,7 +46,10 @@ from pymavlink.rotmat import Vector3
 from pymavlink import quaternion
 from pymavlink.generator import mavgen
 
-from pysim import util, vehicleinfo
+try:
+    from pysim import util, vehicleinfo
+except ImportError:  # Fall back to a relative import in pytest
+    from .pysim import util, vehicleinfo
 
 try:
     import queue as Queue
