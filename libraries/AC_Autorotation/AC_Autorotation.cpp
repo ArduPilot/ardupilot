@@ -326,35 +326,34 @@ void AC_Autorotation::update_forward_speed_controller(float pilot_accel_norm)
     _limit_accel = bf_accel_target_mss.limit_length(get_accel_max_mss());
 
     // Calculate roll and pitch targets from angles, negative accel for negative pitch (pitch forward)
-    Vector2f angle_target_deg = { accel_mss_to_angle_deg(-bf_accel_target_mss.x), // Pitch
-                              accel_mss_to_angle_deg(bf_accel_target_mss.y)}; // Roll
+    Vector2f angle_target_rad = { accel_mss_to_angle_rad(-bf_accel_target_mss.x), // Pitch
+                                  accel_mss_to_angle_rad(bf_accel_target_mss.y)}; // Roll
 
     // Ensure that the requested angles do not exceed angle max
-    // todo: FIX BUG: degrees limited in centidegrees
-    _limit_accel |= angle_target_deg.limit_length(_attitude_control->lean_angle_max_cd());
+    _limit_accel |= angle_target_rad.limit_length(_attitude_control->lean_angle_max_rad());
 
     // we may have scaled the lateral accel in the angle limit scaling, so we need to
     // back calculate the resulting accel from this constrained angle for the yaw rate calc
-    const float bf_lat_accel_target_mss = angle_deg_to_accel_mss(angle_target_deg.y);
+    const float bf_lat_accel_target_mss = angle_rad_to_accel_mss(angle_target_rad.y);
 
     // Calc yaw rate from desired body-frame accels
     // this seems suspiciously simple, but it is correct
     // accel = r * w^2, r = radius and w = angular rate
     // radius can be calculated as the distance traveled in the time it takes to do 360 deg
     // One rotation takes: (2*pi)/w seconds
-    // Distance traveled in that time: (s*2*pi)/w
-    // radius for that distance: ((s*2*pi)/w) / (2*pi)
-    // r = s / w
-    // accel = (s / w) * w^2
-    // accel = s * w
-    // w = accel / s
-    float yaw_rate_cds = 0.0;
+    // Distance traveled in that time: (vel*2*pi)/w
+    // radius for that distance: ((vel*2*pi)/w) / (2*pi)
+    // r = vel / w
+    // accel = (vel / w) * w^2
+    // accel = vel * w
+    // w = accel / vel
+    float yaw_rate_rads = 0.0;
     if (!is_zero(_target_vel_ms)) {
-        yaw_rate_cds = degrees(bf_lat_accel_target_mss / _target_vel_ms) * 100.0;
+        yaw_rate_rads = bf_lat_accel_target_mss / _target_vel_ms;
     }
 
     // Output to attitude controller
-    _attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(angle_target_deg.y * 100.0, angle_target_deg.x * 100.0, yaw_rate_cds);
+    _attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(angle_target_rad.y, angle_target_rad.x, yaw_rate_rads);
 
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: ARSC
