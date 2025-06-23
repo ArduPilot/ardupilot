@@ -144,9 +144,9 @@ bool ModeAutoLand::_enter()
     const float loiter_radius = MIN(final_wp_dist * 0.333, abs(plane.aparm.loiter_radius));
 
     // corrected_loiter_radius is the radius the vehicle will actually fly, this gets larger as altitude increases.
-    // Strictly this gets the loiter radius at the current altitude, really we want the loiter radius at final_wp_alt.
     const float corrected_loiter_radius =
-        plane.nav_controller->calc_corrected_loiter_radius(loiter_radius);
+        plane.nav_controller->calc_corrected_loiter_radius(loiter_radius, NAN,
+                                                           final_wp_alt);
 
     cmd_loiter.id = MAV_CMD_NAV_LOITER_TO_ALT;
     cmd_loiter.p1 = loiter_radius;
