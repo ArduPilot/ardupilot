@@ -26,7 +26,7 @@ void Sub::set_home_to_current_location_inflight()
     Location temp_loc;
     Location ekf_origin;
     if (ahrs.get_location(temp_loc) && ahrs.get_origin(ekf_origin)) {
-        temp_loc.alt = ekf_origin.alt;
+        temp_loc.alt = 0;
         if (!set_home(temp_loc, false)) {
             // ignore this failure
         }
