@@ -17,6 +17,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Navigation/AP_Navigation.h>
 #include <AP_TECS/AP_TECS.h>
+#include <AP_Baro/AP_Baro.h>
 #include <AP_Vehicle/AP_FixedWing.h>
 #include <AP_Common/Location.h>
 
@@ -51,7 +52,9 @@ public:
     float turn_distance(float wp_radius) const override;
     float turn_distance(float wp_radius, float turn_angle) const override;
     void update_waypoint(const class Location &prev_WP, const class Location &next_WP, float dist_min = 0.0f) override;
-    float calc_corrected_loiter_radius(float original_radius) const override;
+    float calc_corrected_loiter_radius(float original_radius,
+                                       float indicated_airspeed,
+                                       float altitude_amsl) const override;
     void update_loiter(const class Location &center_WP, float radius, int8_t loiter_direction) override;
     void update_heading_hold(int32_t navigation_heading_cd) override;
     void update_level_flight(void) override;
@@ -127,9 +130,9 @@ private:
     uint32_t _last_update_waypoint_us;
     bool _data_is_stale = true;
 
-    // calculate minimum achievable turn radius based on current indicated
-    // airspeed and altitude AMSL (assuming steady, coordinated, level turn)
-    float _calc_min_turn_radius() const;
+    // calculate minimum achievable turn radius based on indicated airspeed and
+    // altitude AMSL (assuming steady, coordinated, level turn)
+    float _calc_min_turn_radius(float ias = NAN, float altitude_amsl = NAN) const;
 
     // remember reached_loiter_target decision
     struct {

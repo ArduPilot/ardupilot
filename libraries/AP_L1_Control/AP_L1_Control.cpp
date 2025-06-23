@@ -136,16 +136,28 @@ float AP_L1_Control::turn_distance(float wp_radius, float turn_angle) const
     return distance_90 * turn_angle / 90.0f;
 }
 
-float AP_L1_Control::_calc_min_turn_radius() const
+float AP_L1_Control::_calc_min_turn_radius(float indicated_airspeed,
+                                           float altitude_amsl) const
 {
-    float tas_at_alt = _tecs.get_target_airspeed() * _ahrs.get_EAS2TAS();
+    float reference_ias = isnan(indicated_airspeed)
+                              ? _tecs.get_target_airspeed()
+                              : indicated_airspeed;
+    float reference_alt_amsl =
+        isnan(altitude_amsl) ? AP_Baro::get_singleton()->get_altitude_AMSL()
+                             : altitude_amsl;
+
+    float tas_at_alt =
+        reference_ias * AP_Baro::get_EAS2TAS_for_alt_amsl(reference_alt_amsl);
 
     return sq(tas_at_alt) / (GRAVITY_MSS * tanf(radians(_aparm.roll_limit)));
 }
 
-float AP_L1_Control::calc_corrected_loiter_radius(float original_radius) const
+float AP_L1_Control::calc_corrected_loiter_radius(float original_radius,
+                                                  float indicated_airspeed,
+                                                  float altitude_amsl) const
 {
-    return MAX(original_radius, _calc_min_turn_radius());
+    return MAX(original_radius,
+               _calc_min_turn_radius(indicated_airspeed, altitude_amsl));
 }
 
 bool AP_L1_Control::reached_loiter_target(void)
