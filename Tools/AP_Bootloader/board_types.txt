@@ -11,6 +11,7 @@ TARGET_HW_PX4_FMU_V5                   50
 TARGET_HW_PX4_FMU_V5X                  51
 TARGET_HW_PX4_FMU_V6                   52
 TARGET_HW_PX4_FMU_V6X                  53
+TARGET_HW_PX4_FMU_V6C                  56
 TARGET_HW_ARK_FMU_V6X                  57
 TARGET_HW_ARK_FPV                      59
 TARGET_HW_MINDPX_V2                    88
@@ -55,7 +56,6 @@ TARGET_HW_THE_PEACH_R1                213
 Reserved  PX4 [BL] FMU v5X.x           51
 Reserved "PX4 [BL] FMU v6.x"           52
 Reserved "PX4 [BL] FMU v6X.x"          53
-Reserved "PX4 [BL] FMU v6C.x"          56
 
 Reserved "ARK [BL] FMU v6X.x"          57
 Reserved "ARK [BL] FPV"                59
