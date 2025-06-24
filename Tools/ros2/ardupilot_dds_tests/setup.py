@@ -22,7 +22,7 @@ setup(
     description='Tests for the ArduPilot AP_DDS library',
     license='GPL-3.0',
     extras_require={
-        'test': ['pytest'],
+        'test': ['pytest',],
     },
     entry_points={
         'console_scripts': [
