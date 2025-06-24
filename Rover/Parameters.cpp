@@ -340,6 +340,16 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(_gcs,           "MAV",  GCS),
 #endif
 
+#if AP_LEAKDETECTOR_ENABLED
+
+    // @Param: FS_LEAK_ENABLE
+    // @DisplayName: Leak Failsafe Enable
+    // @Description: Controls what action to take if a leak is detected.
+    // @Values: 0:Warn only,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
+    // @User: Standard
+    GSCALAR(fs_leak_enabled, "FS_LEAK_ENABLE", 0),
+#endif
+
     AP_VAREND
 };
 
@@ -674,6 +684,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 0.1 5
     // @User: Advanced
     AP_GROUPINFO("GUID_TIMEOUT", 62, ParametersG2, guided_timeout, 3.0),
+
+#if AP_LEAKDETECTOR_ENABLED
+    // Leak detector
+    // @Group: LEAK
+    // @Path: ../libraries/AP_LeakDetector/AP_LeakDetector.cpp
+    AP_SUBGROUPINFO(leak_detector, "LEAK", 63, ParametersG2, AP_LeakDetector),
+#endif
 
     AP_GROUPEND
 };
