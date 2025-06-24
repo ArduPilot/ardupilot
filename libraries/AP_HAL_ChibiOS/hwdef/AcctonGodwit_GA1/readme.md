@@ -5,8 +5,9 @@ The G-A1 is a state-of-the-art universal controller (flight controller) develope
 
 Visit [Accton-IoT Godwit](https://www.accton-iot.com/godwit/) for more information.
 
-![AccGodwitGA1](png/outlook.png "Accton Godwit G-A1")
-![AccGodwitGA1 Top View](png/orientation.png "Accton Godwit G-A1 Top View")
+![AccGodwitGA1](outlook.png "Accton Godwit G-A1")
+
+![AccGodwitGA1 Top View](orientation.png "Accton Godwit G-A1 Top View")
 
 ## Specifications
 
@@ -56,7 +57,7 @@ Visit [Accton-IoT Godwit](https://www.accton-iot.com/godwit/) for more informati
 
 ## Pinout
 
-![G-A1 Pin definition](png/pin_definition.png "G-A1 Pin definition")
+![G-A1 Pin definition](pin_definition.png "G-A1 Pin definition")
 
 ## UART Mapping
 
@@ -71,7 +72,7 @@ Visit [Accton-IoT Godwit](https://www.accton-iot.com/godwit/) for more informati
 
 ## Wiring Diagram
 
-![G-A1 Wiring](png/wiring.png "G-A1 Wiring")
+![G-A1 Wiring](wiring.png "G-A1 Wiring")
 
 ## PWM Output
 
@@ -79,7 +80,7 @@ PWM M1~M8 (IO Main PWM), A1~A8(FMU PWM). All these 16 support normal PWM output 
 
 The motor and servo system should be connected to these ports according to the order outlined in the fuselage reference for your carrier.
 
-![G-A1 PWM Motor Servo](png/motor_servo.png "G-A1 PWM Motor Servo")
+![G-A1 PWM Motor Servo](motor_servo.png "G-A1 PWM Motor Servo")
 
 ## RC Input
 
@@ -87,7 +88,7 @@ Connect the handheld remote control to monitor and control drones in flight. The
 
 For DSM/SBUS receivers, connect them to the DSM/SBUS interface, while PPM receivers should be connected to the PPM interface. For other protocols, refer to the [Ardupilot Radio Control System documentation](https://ardupilot.org/copter/docs/common-rc-systems.html#common-rc-systems) for details.
 
-![G-A1 Radio](png/radio.png "G-A1 Radio")
+![G-A1 Radio](radio.png "G-A1 Radio")
 
 ## GPS/Compass
 
@@ -95,7 +96,7 @@ The Godwit G-A1 has a built-in compass.
 
 We recommend that you use CAN/UAVCAN GPS/RTK and you only need to connect it to the CAN 1/2 interface.Alternatively, you can also use an ordinary GPS/RTK module and connect it to the GPS interface. The GPS module generally integrates GPS, compass, safety switch, buzzer, and a LED status light. When installing the module, it should be mounted on a bracket, positioned away from other electronic devices, and oriented towards the front of the carrier.
 
-![G-A1 GPS](png/gps.png "G-A1 GPS")
+![G-A1 GPS](gps.png "G-A1 GPS")
 
 ## Power Connection and Battery Monitor
 
@@ -105,7 +106,7 @@ When running Ardupilot, the universal controller operates as a plug-and-play dev
 
 This universal controller does not provide power to the servos. To power them, an external BEC must be connected to the positive and negative terminals of any A1–A8 or M1–M8 port.
 
-![G-A1 Power](png/power.png "G-A1 Power")
+![G-A1 Power](power.png "G-A1 Power")
 
 The autopilot defaults are setup to DroneCAN BatteryInfo:
 
@@ -121,7 +122,7 @@ For a common [I2C PM02D power monitor](https://ardupilot.org/copter/docs/common-
 
 The SD card is NOT included in the package, you need to prepare the SD card and insert it into the slot.
 
-![G-A1 SD Card](png/sdcard.png "G-A1 SD Card")
+![G-A1 SD Card](sdcard.png "G-A1 SD Card")
 
 ## Firmware
 
