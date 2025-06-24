@@ -123,6 +123,9 @@ define AP_GPS_MAV_ENABLED 1
 define GPS_MOVING_BASELINE 0
 define GPS_MAX_RECEIVERS 1  # removes blended support
 
+# disable the Tri Motors class backend:
+define AP_MOTORS_TRI_ENABLED 0
+
 # enable only the QUAD frame
 define AP_MOTORS_FRAME_DEFAULT_ENABLED 0
 define AP_MOTORS_FRAME_QUAD_ENABLED 1
