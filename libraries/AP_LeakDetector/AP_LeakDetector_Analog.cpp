@@ -1,3 +1,5 @@
+#include "AP_LeakDetector_config.h"
+#if AP_LEAKDETECTOR_ANALOG_ENABLED
 #include "AP_LeakDetector_Analog.h"
 #include <AP_HAL/AP_HAL.h>
 
@@ -18,3 +20,4 @@ void AP_LeakDetector_Analog::read()
         state.status = false;
     }
 }
+#endif // AP_LEAKDETECTOR_ENABLED
