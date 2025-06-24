@@ -5,6 +5,7 @@
 #include <AP_Common/AP_Common.h>
 
 #include <AP_Arming/AP_Arming.h>
+#include <AP_LeakDetector/AP_LeakDetector_config.h>
 #include "actuators.h"
 // Global parameter class.
 //
