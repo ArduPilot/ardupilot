@@ -1,6 +1,6 @@
-# DAKEFPV H743 Flight Controller
+# DAKEFPV H743 Pro Flight Controller
 
-The DAKEFPV H743 is a flight controller produced by [DAKEFPV](https://www.dakefpv.com/).
+The DAKEFPV H743 Pro is a flight controller produced by [DAKEFPV](https://www.dakefpv.com/).
 
 ## Features
 
@@ -20,13 +20,15 @@ The DAKEFPV H743 is a flight controller produced by [DAKEFPV](https://www.dakefp
 
 ## Pinout
 
-![DAKEFPV H743 Board Top](Top.png "DAKEFPV H743 Top")
-![DAKEFPV H743 Board Bottom](Bottom.png "DAKEFPV H743 Bottom")
+![DAKEFPV H743 Pro Board Top](DAKEFPVH743Pro_Top.png "DAKEFPV H743 Pro Top")
+![DAKEFPV H743 Pro Board Bottom](DAKEFPVH743Pro_Bottom.png "DAKEFPV H743 Pro Bottom")
 
-## DAKEFPV H743 Wiring Diagram
+## DAKEFPV H743 Pro Wiring Diagram
+### DAKEFPV H743 Pro Wiring Diagram Top
+![DAKEFPV H743 Pro Wiring Diagram Top](DAKEFPVH743Pro_WiringDiagramTop.png "DAKEFPV H743 Pro Wiring Diagram Top")
 
-![DAKEFPV H743 Wiring Diagram Top]( WiringDiagramTop.png "DAKEFPV H743 Wiring Diagram Top")
-![DAKEFPV H743 Wiring Diagram Bottom](WiringDiagramBottom.png "DAKEFPV H743 Wiring Diagram Bottom")
+### DAKEFPV H743 Pro Wiring Diagram Bottom
+![DAKEFPV H743 Pro Wiring Diagram Bottom](DAKEFPVH743Pro_WiringDiagramBottom.png "DAKEFPV H743 Pro Wiring Diagram Bottom")
 
 ## UART Mapping
 
@@ -61,7 +63,7 @@ You need to set the following parameters to enable support for FrSky S.PORT:
 
 ## PWM Output
 
-The DAKEFPV H743 supports up to 14 outputs. The pads for motor output
+The DAKEFPV H743 Pro supports up to 14 outputs. The pads for motor output
 M1 to M8 are provided on both the motor connectors and on separate pads, plus
 S1-4, LED on  separate pads for LED strip and other PWM outputs. M1-8,S1,and S2 support B-Directional DShot, S2-4 support only PWM, the LED output supports serial LED or DShot.
 
@@ -97,7 +99,7 @@ The correct battery setting parameters are:
 
 ## Compass
 
-The DAKEFPV H743 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+The DAKEFPV H743 Pro does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
 ## Camera control
 
