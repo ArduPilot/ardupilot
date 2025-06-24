@@ -55,6 +55,18 @@ repos:
       rev: 7.3.0
       hooks:
       -   id: flake8
+  
+  -   repo: local
+      hooks:
+      -   id: ament-pep257
+          name: Run ament_pep257 on Tools/ros2
+          entry: bash -c 'ament_pep257 Tools/ros2 > /dev/null'
+          language: python
+          additional_dependencies:
+          -   ament-lint-pep257
+          -   tomli;python_version<'3.11'
+          pass_filenames: false
+          files: ^Tools/ros2/
 
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
