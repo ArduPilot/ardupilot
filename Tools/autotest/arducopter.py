@@ -29,7 +29,7 @@ from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 from vehicle_test_suite import WaitAndMaintainArmed
 from vehicle_test_suite import WaitModeTimeout
 
-from pymavlink.rotmat import Vector3
+from pymavlink.rotmat import Vector3, Matrix3
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -5417,9 +5417,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         #        print("r=%s" % str(r))
         return r * vector
 
-    def precision_loiter_to_pos(self, x, y, z, timeout=40):
+    def precision_loiter_to_pos(self, x, y, z, send_bf=True, timeout=40):
         '''send landing_target messages at vehicle until it arrives at
-        location to x, y, z from origin (in metres), z is *up*'''
+        location to x, y, z from origin (in metres), z is *up*
+        if send_bf is True then targets sent in body-frame, if False then sent in local FRD frame'''
         dest_ned = rotmat.Vector3(x, y, -z)
         tstart = self.get_sim_time()
         success_start = -1
@@ -5449,22 +5450,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             else:
                 success_start = -1
 
-            delta_bf = self.earth_to_body(delta_ef)
-            #            print("delta_bf=%s" % str(delta_bf))
-            angle_x = math.atan2(delta_bf.y, delta_bf.z)
-            angle_y = -math.atan2(delta_bf.x, delta_bf.z)
-            distance = math.sqrt(delta_bf.x * delta_bf.x +
-                                 delta_bf.y * delta_bf.y +
-                                 delta_bf.z * delta_bf.z)
-            #            att = self.mav.messages["ATTITUDE"]
-            #            print("r=%f p=%f y=%f" % (math.degrees(att.roll), math.degrees(att.pitch), math.degrees(att.yaw)))
-            #            print("angle_x=%s angle_y=%s" % (str(math.degrees(angle_x)), str(math.degrees(angle_y))))
-            #            print("distance=%s" % str(distance))
+            mav_frame = None
+            if send_bf:
+                # rotate delta_ef from NED to body frame FRD
+                delta_bf = self.earth_to_body(delta_ef)
+                print("delta_bf=%s" % str(delta_bf))
+                angle_x = math.atan2(delta_bf.y, delta_bf.z)
+                angle_y = -math.atan2(delta_bf.x, delta_bf.z)
+                distance = math.sqrt(delta_bf.x * delta_bf.x +
+                                     delta_bf.y * delta_bf.y +
+                                     delta_bf.z * delta_bf.z)
+                mav_frame = mavutil.mavlink.MAV_FRAME_BODY_FRD
+            else:
+                # rotate delta_ef from NED to Local FRD
+                rotmat_yaw = Matrix3()
+                rotmat_yaw.rotate_yaw(self.mav.messages["ATTITUDE"].yaw)
+                delta_local_frd = rotmat_yaw * delta_ef
+                angle_x = math.atan2(delta_local_frd.y, delta_local_frd.z)
+                angle_y = -math.atan2(delta_local_frd.x, delta_local_frd.z)
+                distance = math.sqrt(delta_local_frd.x * delta_local_frd.x +
+                                     delta_local_frd.y * delta_local_frd.y +
+                                     delta_local_frd.z * delta_local_frd.z)
+                mav_frame = mavutil.mavlink.MAV_FRAME_LOCAL_FRD
+
+            # att = self.mav.messages["ATTITUDE"]
+            # print("r=%f p=%f y=%f" % (math.degrees(att.roll), math.degrees(att.pitch), math.degrees(att.yaw)))
+            # print("angle_x=%s angle_y=%s" % (str(math.degrees(angle_x)), str(math.degrees(angle_y))))
+            # print("distance=%s" % str(distance))
 
             self.mav.mav.landing_target_send(
                 0, # time_usec
                 1, # target_num
-                mavutil.mavlink.MAV_FRAME_GLOBAL, # frame; AP ignores
+                mav_frame, # frame
                 angle_x, # angle x (radians)
                 angle_y, # angle y (radians)
                 distance, # distance to target
@@ -7850,11 +7867,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(7, 2000)
 
         # try to drag aircraft to a position 5 metres north-east-east:
-        self.precision_loiter_to_pos(start.x + 5, start.y + 10, start.z + 10)
+        self.precision_loiter_to_pos(start.x + 5, start.y + 10, start.z + 10, True)
         self.wait_statustext("PrecLand: Target Found", check_context=True, timeout=10)
         self.wait_statustext("PrecLand: Init Complete", check_context=True, timeout=10)
         # .... then northwest
-        self.precision_loiter_to_pos(start.x + 5, start.y - 10, start.z + 10)
+        self.precision_loiter_to_pos(start.x + 5, start.y - 10, start.z + 10, True)
+
+        # repeat using earth-frame targets
+        self.precision_loiter_to_pos(start.x + 5, start.y - 10, start.z + 10, False)
 
         self.disarm_vehicle(force=True)
 
