@@ -1,5 +1,46 @@
 ArduPilot Plane Release Notes:
 ------------------------------------------------------------------
+Release 4.6.2-beta1 26-Jun-2025
+
+Changes from 4.6.1
+
+1) Board specific changes
+
+- GEPRC autopilots support QMC5883P compass
+- JFB110 SD card speed increased (resolves startup failure)
+- MicoAir743-AIO OSD type fixed
+
+2) Plane specific changes
+
+- LOITER_TURNS command with zero turns fixed (was skipping waypoint)
+- VTOL transitions lose unnecessary bad descent protection
+
+3) Bug Fixes and minor enhancements
+
+- BLHeli passthrough fixes
+- CAN race condition fixed on Linux and SITL
+- ChibiOS serial driver initialisation respects options to disable TX/RX DMA
+- CRSF bootstrap completes when not using passthrough 
+- CRSF ground speed fixed (was about 20% off)
+- DroneCAN Servos/ESCs fix for zero output (previously could go to min or full reverse)
+- Fence and Rally point upload using older MISSION_ITEM messages fixed
+- Flash erased only on multiple ECC errors
+- Flash ECC check fixed on H7 boards
+- GPS ellipsoid alt only trusted if different from AMSL (protects against invalid ellipsoid alt)
+- LD06/LD19 lidar get mode filter to reduce sensitivity to sunlight
+- Linux serial driver initial baud rate fixed
+- MPPT power module nullptr check added to prevent potential hardfault
+- Networking PPP made much more robust
+- "No ap_message for mavlink id" message removed on all boards except SITL
+- Scripting gets protection against non-string-induced null pointer dereferences
+- Sensor health reporting made threadsafe (previously could incorrectly report unhealthy)
+- Set-message-interval mavlink messages rejected if intervals below -1
+- Siyi ZT6 gets warning if using old camera firmware (should use 0.1.9 or higher)
+- SLCAN potential hardfault on arming fixed
+- SPLO6 baro initialisation fix
+- UBlox F9P driver fix for GPSs configured to never send MSG_STATUS
+- VTX hang when setting LowRace band fixed
+------------------------------------------------------------------
 Release 4.6.1 19-Jun-2025 / 4.6.1-beta1 14-Jun-2025
 
 Changes from 4.6.0
