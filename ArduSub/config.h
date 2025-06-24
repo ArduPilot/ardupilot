@@ -235,4 +235,3 @@
 #ifndef FLIGHT_MODE_6
 # define FLIGHT_MODE_6 Mode::Number::SURFACE
 #endif
-
