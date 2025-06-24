@@ -8,6 +8,7 @@ from collections import defaultdict
 
 CONTAINER_PREALLOC_SIZE = 8
 
+
 def configure(cfg):
     if cfg.env.OPTIONS.get('enable_DDS', False) is False:
         return
@@ -119,7 +120,9 @@ def build(bld):
         gen_targets = []
         extra_sources = []
         for idl_gen in idl_gen_list:
-            gen_targets.extend([bld.bldnode.find_or_declare(str(dst_dir / name)) for name in [idl_gen.h_name, idl_gen.c_name]])
+            gen_targets.extend(
+                [bld.bldnode.find_or_declare(str(dst_dir / name)) for name in [idl_gen.h_name, idl_gen.c_name]]
+            )
             extra_sources.extend([bld.bldnode.find_or_declare(str(dst_dir / name)) for name in [idl_gen.c_name]])
 
         # microxrceddsgen expects a space-seperated list of *.idl files
