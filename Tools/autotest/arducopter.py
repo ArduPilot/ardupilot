@@ -143,11 +143,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 ):
         """Takeoff get to 30m altitude."""
         self.progress("TAKEOFF")
+        self.context_push()
+        if mode == 'AUTO':
+            self.set_parameter('AUTO_OPTIONS', 3)
         self.change_mode(mode)
         if not self.armed():
             self.wait_ready_to_arm(require_absolute=require_absolute, timeout=timeout)
             self.zero_throttle()
             self.arm_vehicle()
+        self.context_pop()
+        if mode == 'AUTO':
+            # hope you had a takeoff command, good luck
+            return
         if mode == 'GUIDED':
             self.user_takeoff(alt_min=alt_min, timeout=timeout, max_err=max_err)
         else:
@@ -12049,6 +12056,39 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Sprayer OK")
 
+    def DoCommandsAfterLoop(self):
+        '''test when commands are run in loops'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2, 2, 10),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_AUX_FUNCTION,
+                p1=10,
+                p2=1,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 4, 4, 10),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_AUX_FUNCTION,
+                p1=11,
+                p2=1,
+            ),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_JUMP,
+                p1=1, # waypoint to jump to
+                p2=1,  # number of jumps (-1: infinite)
+            ),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_AUX_FUNCTION,
+                p1=12,
+                p2=1,
+            ),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+            ),
+        ])
+        self.takeoff(mode='AUTO')
+        self.wait_disarmed()
+
     def tests1a(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/vehicle_test_suite.py
@@ -12203,6 +12243,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_NAV_VTOL_LAND,
              self.clear_roi,
              self.ReadOnlyDefaults,
+             self.DoCommandsAfterLoop,
         ])
         return ret
 
