@@ -256,7 +256,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Board type
     // @Description: This allows selection of a PX4 or VRBRAIN board type. If set to zero then the board type is auto-detected (PX4)
-    // @Values: 0:AUTO,1:PX4V1,2:Pixhawk,3:Cube/Pixhawk2,5:PixhawkMini,6:Pixhawk2Slim,13:Intel Aero FC,14:Pixhawk Pro,20:AUAV2.1,22:MINDPXV2,24:CUAVv5/FMUV5,34:VRX UBRAIN51,35:VRX UBRAIN52,36:VRX CORE10,39:PX4 FMUV6,100:PX4 OLDDRIVERS
+    // @Values: 0:AUTO,1:PX4V1,2:Pixhawk,3:Cube/Pixhawk2,5:PixhawkMini,6:Pixhawk2Slim,13:Intel Aero FC,14:Pixhawk Pro,20:AUAV2.1,22:MINDPXV2,24:CUAVv5/FMUV5,39:PX4 FMUV6,100:PX4 OLDDRIVERS
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE", 9, AP_BoardConfig, state.board_type, BOARD_TYPE_DEFAULT),
