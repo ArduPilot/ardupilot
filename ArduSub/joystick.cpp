@@ -816,11 +816,12 @@ void Sub::default_js_buttons()
 
 void Sub::set_neutral_controls()
 {
-    uint32_t tnow = AP_HAL::millis();
-
-    for (uint8_t i = 0; i < 6; i++) {
-        RC_Channels::set_override(i, 1500, tnow);
-    }
+    channel_roll->set_radio_in(channel_roll->get_radio_trim());
+    channel_pitch->set_radio_in(channel_pitch->get_radio_trim());
+    channel_yaw->set_radio_in(channel_yaw->get_radio_trim());
+    channel_throttle->set_radio_in(channel_throttle->get_radio_trim());
+    channel_forward->set_radio_in(channel_forward->get_radio_trim());
+    channel_lateral->set_radio_in(channel_lateral->get_radio_trim());
 
     // Clear pitch/roll trim settings
     pitchTrim = 0;

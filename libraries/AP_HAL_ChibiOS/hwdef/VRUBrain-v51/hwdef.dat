@@ -167,5 +167,4 @@ include ../include/minimize_features.inc
 
 # save some flash
 define AC_PRECLAND_ENABLED 0
-define AP_ICENGINE_ENABLED 0
 define AP_OPTICALFLOW_ENABLED 0

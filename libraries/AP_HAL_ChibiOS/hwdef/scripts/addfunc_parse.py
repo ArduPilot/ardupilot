@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+# flake8: noqa
 '''
 create additional functions ADC table, used for mapping analog pins to ADC channel numbers
 

@@ -719,7 +719,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 
     auto &ahrs = AP::ahrs();
 
-    copter.initial_armed_bearing = ahrs.yaw_sensor;
+    copter.initial_armed_bearing_rad = ahrs.get_yaw_rad();
 
     if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)

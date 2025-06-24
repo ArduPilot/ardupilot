@@ -1497,12 +1497,6 @@ void Compass::probe_i2c_spi_compasses(void)
 #endif  // AP_COMPASS_IST8310_ENABLED
         break;
 
-    case AP_BoardConfig::PX4_BOARD_SP01:
-#if AP_COMPASS_AK8963_ENABLED
-        ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(1, ROTATION_NONE));
-#endif
-        break;
-
     case AP_BoardConfig::PX4_BOARD_PHMINI:
 #if AP_COMPASS_AK8963_ENABLED
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(0, ROTATION_ROLL_180));

@@ -21,7 +21,6 @@ vehicle_hwdefs_to_skip = set([
     'SPRacingH7RF',
     'SkystarsH7HD',
     'Swan-K1',
-    'luminousbee5',
     'skyviper-journey',
     'skyviper-v2450',
 ])

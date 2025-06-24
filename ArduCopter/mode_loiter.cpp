@@ -9,15 +9,15 @@
 // loiter_init - initialise loiter controller
 bool ModeLoiter::init(bool ignore_checks)
 {
-    float target_roll, target_pitch;
+    float target_roll_cd, target_pitch_cd;
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    get_pilot_desired_lean_angles_cd(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
     // process pilot's roll and pitch input
-    loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
+    loiter_nav->set_pilot_desired_acceleration_cd(target_roll_cd, target_pitch_cd);
 
     loiter_nav->init_target();
 
@@ -79,9 +79,9 @@ void ModeLoiter::precision_loiter_xy()
 // should be called at 100hz or more
 void ModeLoiter::run()
 {
-    float target_roll, target_pitch;
-    float target_yaw_rate = 0.0f;
-    float target_climb_rate = 0.0f;
+    float target_roll_cd, target_pitch_cd;
+    float target_yaw_rate_cds = 0.0f;
+    float target_climb_rate_cms = 0.0f;
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_U_cm(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
@@ -90,17 +90,17 @@ void ModeLoiter::run()
     update_simple_mode();
 
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    get_pilot_desired_lean_angles_cd(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
     // process pilot's roll and pitch input
-    loiter_nav->set_pilot_desired_acceleration_cd(target_roll, target_pitch);
+    loiter_nav->set_pilot_desired_acceleration_cd(target_roll_cd, target_pitch_cd);
 
     // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate();
+    target_yaw_rate_cds = get_pilot_desired_yaw_rate_cds();
 
     // get pilot desired climb rate
-    target_climb_rate = get_pilot_desired_climb_rate();
-    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+    target_climb_rate_cms = get_pilot_desired_climb_rate();
+    target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
@@ -108,7 +108,7 @@ void ModeLoiter::run()
     }
 
     // Loiter State Machine Determination
-    AltHoldModeState loiter_state = get_alt_hold_state(target_climb_rate);
+    AltHoldModeState loiter_state = get_alt_hold_state(target_climb_rate_cms);
 
     // Loiter State Machine
     switch (loiter_state) {
@@ -118,7 +118,7 @@ void ModeLoiter::run()
         attitude_control->reset_yaw_target_and_rate();
         pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->init_target();
-        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate_cds, false);
         break;
 
     case AltHoldModeState::Landed_Ground_Idle:
@@ -128,7 +128,7 @@ void ModeLoiter::run()
     case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
-        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate_cds, false);
         pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
@@ -139,16 +139,16 @@ void ModeLoiter::run()
         }
 
         // get avoidance adjusted climb rate
-        target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
         // set position controller targets adjusted for pilot input
-        takeoff.do_pilot_takeoff(target_climb_rate);
+        takeoff.do_pilot_takeoff(target_climb_rate_cms);
 
         // run loiter controller
         loiter_nav->update();
 
         // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate_cds, false);
         break;
 
     case AltHoldModeState::Flying:
@@ -176,10 +176,10 @@ void ModeLoiter::run()
 #endif
 
         // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate_cds, false);
 
         // get avoidance adjusted climb rate
-        target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
 #if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
@@ -187,7 +187,7 @@ void ModeLoiter::run()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate);
+        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
         break;
     }
 

@@ -3,6 +3,7 @@
 #include "Copter.h"
 #include <AP_Math/chirp.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h> // TODO why is this needed if Copter.h includes this
+#include <AP_HAL/Semaphores.h>
 
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
 #include "afs_copter.h"
@@ -176,14 +177,14 @@ public:
     virtual int32_t get_alt_above_ground_cm(void) const;
 
     // pilot input processing
-    void get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
+    void get_pilot_desired_lean_angles_cd(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
+    float get_pilot_desired_yaw_rate_cds() const;
     Vector2f get_pilot_desired_velocity(float vel_max) const;
-    float get_pilot_desired_yaw_rate() const;
     float get_pilot_desired_throttle() const;
 
     // returns climb target_rate reduced to avoid obstacles and
     // altitude fence
-    float get_avoidance_adjusted_climbrate(float target_rate);
+    float get_avoidance_adjusted_climbrate_cms(float target_rate_cms);
 
     // send output to the motors, can be overridden by subclasses
     virtual void output_to_motors();
@@ -306,17 +307,17 @@ public:
 
         // Autopilot Yaw Mode enumeration
         enum class Mode {
-            HOLD =             0,  // hold zero yaw rate
-            LOOK_AT_NEXT_WP =  1,  // point towards next waypoint (no pilot input accepted)
-            ROI =              2,  // point towards a location held in roi (no pilot input accepted)
-            FIXED =            3,  // point towards a particular angle (no pilot input accepted)
-            LOOK_AHEAD =       4,  // point in the direction the copter is moving
-            RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
-            ANGLE_RATE =       6,  // turn at a specified rate from a starting angle
-            RATE =             7,  // turn at a specified rate (held in auto_yaw_rate)
-            CIRCLE =           8,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
-            PILOT_RATE =       9,  // target rate from pilot stick
-            WEATHERVANE =     10,  // yaw into wind
+            HOLD =             0,   // hold zero yaw rate
+            LOOK_AT_NEXT_WP =  1,   // point towards next waypoint (no pilot input accepted)
+            ROI =              2,   // point towards a location held in roi (no pilot input accepted)
+            FIXED =            3,   // point towards a particular angle (no pilot input accepted)
+            LOOK_AHEAD =       4,   // point in the direction the copter is moving
+            RESET_TO_ARMED_YAW = 5, // point towards heading at time motors were armed
+            ANGLE_RATE =       6,   // turn at a specified rate from a starting angle
+            RATE =             7,   // turn at a specified rate (held in auto_yaw_rate)
+            CIRCLE =           8,   // use AC_Circle's provided yaw (used during Loiter-Turns commands)
+            PILOT_RATE =       9,   // target rate from pilot stick
+            WEATHERVANE =     10,   // yaw into wind
         };
 
         // mode(): current method of determining desired yaw:
@@ -331,32 +332,32 @@ public:
         void set_roi(const Location &roi_location);
 
         void set_fixed_yaw(float angle_deg,
-                           float turn_rate_dps,
+                           float turn_rate_degs,
                            int8_t direction,
                            bool relative_angle);
 
-        void set_yaw_angle_rate(float yaw_angle_d, float yaw_rate_ds);
+        void set_yaw_angle_and_rate_deg(float yaw_angle_deg, float yaw_rate_degs);
 
-        void set_yaw_angle_offset(const float yaw_angle_offset_d);
+        void set_yaw_angle_offset_deg(const float yaw_angle_offset_deg);
 
         bool reached_fixed_yaw_target();
 
 #if WEATHERVANE_ENABLED
-        void update_weathervane(const int16_t pilot_yaw_cds);
+        void update_weathervane(const float pilot_yaw_rads);
 #endif
 
         AC_AttitudeControl::HeadingCommand get_heading();
 
     private:
 
-        // yaw_cd(): main product of AutoYaw; the heading:
-        float yaw_cd();
+        // yaw_rad(): main product of AutoYaw; the heading:
+        float yaw_rad();
 
-        // rate_cds(): desired yaw rate in centidegrees/second:
-        float rate_cds();
+        // rate_rads(): desired yaw rate in centidegrees/second:
+        float rate_rads();
 
-        // returns a yaw in degrees, direction of vehicle travel:
-        float look_ahead_yaw();
+        // Returns the yaw angle (in radians) representing the direction of horizontal motion.
+        float look_ahead_yaw_rad();
 
         float roi_yaw() const;
 
@@ -368,21 +369,21 @@ public:
         Vector3f roi;
 
         // yaw used for YAW_FIXED yaw_mode
-        float _fixed_yaw_offset_cd;
+        float _fixed_yaw_offset_rad;
 
-        // Deg/s we should turn
-        float _fixed_yaw_slewrate_cds;
+        // Radians/s we should turn
+        float _fixed_yaw_slewrate_rads;
 
         // time of the last yaw update
         uint32_t _last_update_ms;
 
         // heading when in yaw_look_ahead_yaw
-        float _look_ahead_yaw;
+        float _look_ahead_yaw_rad;
 
-        // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
-        float _yaw_angle_cd;
-        float _yaw_rate_cds;
-        float _pilot_yaw_rate_cds;
+        // turn heading (rad) and rate (rads) when auto_yaw_mode is set to AUTO_YAW_RATE
+        float _yaw_angle_rad;
+        float _yaw_rate_rads;
+        float _pilot_yaw_rate_rads;
     };
     static AutoYaw auto_yaw;
 
@@ -427,7 +428,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool init(bool ignore_checks) override;
     void exit() override;
-    // whether an air-mode aux switch has been toggled
+    // Called when air mode is enabled via AUX switch; prevents automatic reset to default air_mode state
     void air_mode_aux_changed();
     bool allows_save_trim() const override { return true; }
     bool allows_flip() const override { return true; }
@@ -438,9 +439,9 @@ protected:
     const char *name() const override { return "ACRO"; }
     const char *name4() const override { return "ACRO"; }
 
-    // get_pilot_desired_angle_rates - transform pilot's normalised roll pitch and yaw input into a desired lean angle rates
+    // get_pilot_desired_rates_cds - transform pilot's normalised roll pitch and yaw input into a desired lean angle rates
     // inputs are -1 to 1 and the function returns desired angle rates in centi-degrees-per-second
-    void get_pilot_desired_angle_rates(float roll_in, float pitch_in, float yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
+    void get_pilot_desired_rates_cds(float roll_in_norm, float pitch_in_norm, float yaw_in_norm, float &roll_out_cds, float &pitch_out_cds, float &yaw_out_cds);
 
     float throttle_hover() const override;
 
@@ -947,7 +948,7 @@ protected:
 private:
 
     // Flip
-    Vector3f orig_attitude;         // original vehicle attitude before flip
+    Vector3f orig_attitude_euler_cd;         // original vehicle attitude before flip
 
     enum class FlipState : uint8_t {
         Start,
@@ -1016,7 +1017,7 @@ private:
     void update_height_estimate(void);
 
     // minimum assumed height
-    const float height_min = 0.1f;
+    const float height_min_m = 0.1f;
 
     // maximum scaling height
     const float height_max = 3.0f;
@@ -1034,16 +1035,16 @@ private:
     Vector2f xy_I;
 
     // accumulated INS delta velocity in north-east form since last flow update
-    Vector2f delta_velocity_ne;
+    Vector2f delta_velocity_ne_ms;
 
     // last flow rate in radians/sec in north-east axis
-    Vector2f last_flow_rate_rps;
+    Vector2f last_flow_rate_rads;
 
     // timestamp of last flow data
     uint32_t last_flow_ms;
 
-    float last_ins_height;
-    float height_offset;
+    float last_ins_height_m;
+    float height_offset_m;
 
     // are we braking after pilot input?
     bool braking;
@@ -1857,6 +1858,10 @@ private:
     float motors_output;
     Vector2f motors_input;
     uint32_t last_throttle_warning_output_ms;
+
+    // Semaphore to protect the motors from the arming state
+    HAL_Semaphore msem;
+    bool shutdown;
 };
 #endif
 

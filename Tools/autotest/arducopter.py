@@ -13696,6 +13696,28 @@ RTL_ALT 111
         # Test done
         self.land_and_disarm()
 
+    def ScriptingFlyVelocity(self):
+        '''test flying a velocity vector using scripting'''
+
+        # enable scripting and install set-target-velocity script
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+        })
+        self.install_example_script_context('set-target-velocity.lua')
+        self.reboot_sitl()
+
+        # Should be allowed to enter from alt hold
+        self.change_mode("ALT_HOLD")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(6, 2000)
+
+        # Should return to previous mode after flipping
+        self.wait_mode("RTL", timeout=120)
+
+        # Test done
+        self.land_and_disarm()
+
     def RTLYaw(self):
         '''test that vehicle yaws to original heading on RTL'''
         # 0 is WP_YAW_BEHAVIOR_NONE
@@ -14107,23 +14129,25 @@ RTL_ALT 111
         # self.delay_sim_time(100000)
 
         self.progress("Connect to the serial port on the peripheral, which should be talking mavlink")
+        self.drain_mav()
         mav2 = mavutil.mavlink_connection(
             "tcp:localhost:5772",
             robust_parsing=True,
             source_system=9,
             source_component=9,
         )
-        self.assert_receive_message("HEARTBEAT", mav=mav2, very_verbose=True)
+        self.assert_receive_message("HEARTBEAT", mav=mav2, very_verbose=True, timeout=5)
         self.drain_mav()
 
         self.progress("Connect to the other serial port on the peripheral, which should also be talking mavlink")
+        self.drain_mav()
         mav3 = mavutil.mavlink_connection(
             "tcp:localhost:5773",
             robust_parsing=True,
             source_system=10,
             source_component=10,
         )
-        self.assert_receive_message("HEARTBEAT", mav=mav3, very_verbose=True)
+        self.assert_receive_message("HEARTBEAT", mav=mav3, very_verbose=True, timeout=5)
         self.drain_mav()
 
         # make sure we continue to get heartbeats:
@@ -14254,6 +14278,7 @@ RTL_ALT 111
             self.CommonOrigin,
             self.TestTetherStuck,
             self.ScriptingFlipMode,
+            self.ScriptingFlyVelocity,
             self.CompassLearnCopyFromEKF,
             self.AHRSAutoTrim,
             self.Ch6TuningLoitMaxXYSpeed,

@@ -20,5 +20,3 @@ IMU Invensense SPI:mpu9250 ROTATION_YAW_270
 
 undef ROMFS
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_cube_highpolh.bin
-
-define AP_IOMCU_PROFILED_SUPPORT_ENABLED 1

@@ -525,7 +525,7 @@ void GCS_MAVLINK::ftp_worker(void) {
 
                             reply.opcode = FTP_OP::Ack;
                             reply.offset = request.offset + i * max_read;
-                            reply.burst_complete = (i == (transfer_size - 1));
+                            reply.burst_complete = ((read_bytes < max_read) || (i == (transfer_size - 1)));
                             reply.size = (uint8_t)read_bytes;
 
                             ftp_push_replies(reply);

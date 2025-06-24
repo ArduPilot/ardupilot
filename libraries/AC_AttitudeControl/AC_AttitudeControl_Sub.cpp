@@ -457,7 +457,7 @@ void AC_AttitudeControl_Sub::parameter_sanity_check()
 // Sets desired roll, pitch, and yaw angles (in centidegrees), with yaw slewing.
 // Slews toward target yaw at a fixed rate (in centidegrees/s) until the error is within 5 degrees.
 // Used to enforce consistent heading changes without large instantaneous yaw errors.
-void AC_AttitudeControl_Sub::input_euler_angle_roll_pitch_slew_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float target_yaw_rate)
+void AC_AttitudeControl_Sub::input_euler_angle_roll_pitch_slew_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float slew_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
     const float euler_yaw_angle = wrap_PI(cd_to_rad(euler_yaw_angle_cd));
@@ -474,11 +474,11 @@ void AC_AttitudeControl_Sub::input_euler_angle_roll_pitch_slew_yaw_cd(float eule
         direction = 1;
     }
 
-    target_yaw_rate *= direction;
+    slew_yaw_rate_cds *= direction;
 
     if (fabsf(yaw_error) > MAX_YAW_ERROR) {
         // rotate the rov with desired yaw rate towards the target yaw
-        input_euler_angle_roll_pitch_euler_rate_yaw_cd(euler_roll_angle_cd, euler_pitch_angle_cd, target_yaw_rate);
+        input_euler_angle_roll_pitch_euler_rate_yaw_cd(euler_roll_angle_cd, euler_pitch_angle_cd, slew_yaw_rate_cds);
     } else {
         // holds the rov's angles
         input_euler_angle_roll_pitch_yaw_cd(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_angle_cd, true);

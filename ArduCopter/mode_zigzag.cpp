@@ -72,7 +72,7 @@ bool ModeZigZag::init(bool ignore_checks)
 
     // convert pilot input to lean angles
     float target_roll_cd, target_pitch_cd;
-    get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    get_pilot_desired_lean_angles_cd(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
     // process pilot's roll and pitch input
     loiter_nav->set_pilot_desired_acceleration_cd(target_roll_cd, target_pitch_cd);
@@ -257,7 +257,7 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
 void ModeZigZag::auto_control()
 {
     // process pilot's yaw input
-    const float target_yaw_rate_cds = get_pilot_desired_yaw_rate();
+    const float target_yaw_rate_cds = get_pilot_desired_yaw_rate_cds();
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -283,7 +283,7 @@ void ModeZigZag::auto_control()
 void ModeZigZag::manual_control()
 {
     float target_yaw_rate_cds = 0.0f;
-    float target_climb_rate_cd = 0.0f;
+    float target_climb_rate_cms = 0.0f;
 
     // process pilot inputs unless we are in radio failsafe
     float target_roll_cd, target_pitch_cd;
@@ -292,18 +292,18 @@ void ModeZigZag::manual_control()
     update_simple_mode();
 
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    get_pilot_desired_lean_angles_cd(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
     // process pilot's roll and pitch input
     loiter_nav->set_pilot_desired_acceleration_cd(target_roll_cd, target_pitch_cd);
 
     // get pilot's desired yaw rate
-    target_yaw_rate_cds = get_pilot_desired_yaw_rate();
+    target_yaw_rate_cds = get_pilot_desired_yaw_rate_cds();
 
     // get pilot desired climb rate
-    target_climb_rate_cd = get_pilot_desired_climb_rate();
+    target_climb_rate_cms = get_pilot_desired_climb_rate();
     // make sure the climb rate is in the given range, prevent floating point errors
-    target_climb_rate_cd = constrain_float(target_climb_rate_cd, -get_pilot_speed_dn(), g.pilot_speed_up);
+    target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
@@ -311,7 +311,7 @@ void ModeZigZag::manual_control()
     }
 
     // Loiter State Machine Determination
-    AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate_cd);
+    AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate_cms);
 
     // althold state machine
     switch (althold_state) {
@@ -331,7 +331,7 @@ void ModeZigZag::manual_control()
         }
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cd = get_avoidance_adjusted_climbrate(target_climb_rate_cd);
+        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
         // run loiter controller
         loiter_nav->update();
@@ -340,7 +340,7 @@ void ModeZigZag::manual_control()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(loiter_nav->get_roll_cd(), loiter_nav->get_pitch_cd(), target_yaw_rate_cds);
 
         // set position controller targets adjusted for pilot input
-        takeoff.do_pilot_takeoff(target_climb_rate_cd);
+        takeoff.do_pilot_takeoff(target_climb_rate_cms);
         break;
 
     case AltHoldModeState::Landed_Ground_Idle:
@@ -365,7 +365,7 @@ void ModeZigZag::manual_control()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(loiter_nav->get_roll_cd(), loiter_nav->get_pitch_cd(), target_yaw_rate_cds);
 
         // get avoidance adjusted climb rate
-        target_climb_rate_cd = get_avoidance_adjusted_climbrate(target_climb_rate_cd);
+        target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
 #if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
@@ -373,7 +373,7 @@ void ModeZigZag::manual_control()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cd);
+        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
         break;
     }
 
