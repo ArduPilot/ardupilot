@@ -384,12 +384,13 @@ void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
                                         const mavlink_message_t &msg)
 {
     // we handle these messages here to avoid them being blocked by mavlink routing code
-#if HAL_ADSB_ENABLED
+#if AP_COPTER_MODE_AVOIDADSB_ENABLED
     if (copter.g2.dev_options.get() & DevOptionADSBMAVLink) {
         // optional handling of GLOBAL_POSITION_INT as a MAVLink based avoidance source
         copter.avoidance_adsb.handle_msg(msg);
     }
-#endif
+#endif  // AP_COPTER_MODE_AVOIDADSB_ENABLED
+
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
@@ -1461,9 +1462,9 @@ uint8_t GCS_MAVLINK_Copter::send_available_mode(uint8_t index) const
 #if MODE_THROW_ENABLED
         &copter.mode_throw,
 #endif
-#if HAL_ADSB_ENABLED
+#if AP_COPTER_MODE_AVOIDADSB_ENABLED
         &copter.mode_avoid_adsb,
-#endif
+#endif  // AP_COPTER_MODE_AVOIDADSB_ENABLED
 #if MODE_GUIDED_NOGPS_ENABLED
         &copter.mode_guided_nogps,
 #endif

@@ -1,12 +1,19 @@
 #include "Copter.h"
 #include <AP_Notify/AP_Notify.h>
 
-#if HAL_ADSB_ENABLED
+#if AP_COPTER_MODE_AVOIDADSB_ENABLED || HAL_ADSB_ENABLED
 void Copter::avoidance_adsb_update(void)
 {
+#if HAL_ADSB_ENABLED
     adsb.update();
+#endif  // HAL_ADSB_ENABLED
+#if AP_COPTER_MODE_AVOIDADSB_ENABLED
     avoidance_adsb.update();
+#endif  // AP_COPTER_MODE_AVOIDADSB_ENABLED
 }
+#endif // AP_COPTER_MODE_AVOIDADSB_ENABLED || HAL_ADSB_ENABLED
+
+#if AP_COPTER_MODE_AVOIDADSB_ENABLED
 
 #include <stdio.h>
 
@@ -263,4 +270,5 @@ bool AP_Avoidance_Copter::handle_avoidance_perpendicular(const AP_Avoidance::Obs
     // if we got this far we failed to set the new target
     return false;
 }
-#endif
+
+#endif  // AP_COPTER_MODE_AVOIDADSB_ENABLED

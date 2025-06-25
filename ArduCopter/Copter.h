@@ -545,10 +545,12 @@ private:
 
 #if HAL_ADSB_ENABLED
     AP_ADSB adsb;
+#endif  // HAL_ADSB_ENABLED
 
+#if AP_COPTER_MODE_AVOIDADSB_ENABLED
     // avoidance of adsb enabled vehicles (normally manned vehicles)
     AP_Avoidance_Copter avoidance_adsb{adsb};
-#endif
+#endif  // AP_COPTER_MODE_AVOIDADSB_ENABLED
 
     // last valid RC input time
     uint32_t last_radio_update_ms;
@@ -760,10 +762,10 @@ private:
     // avoidance.cpp
     void low_alt_avoidance();
 
-#if HAL_ADSB_ENABLED
+#if AP_COPTER_MODE_AVOIDADSB_ENABLED || HAL_ADSB_ENABLED
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
-#endif
+#endif  // AP_COPTER_MODE_AVOIDADSB_ENABLED
 
     // baro_ground_effect.cpp
     void update_ground_effect_detector(void);
@@ -1078,9 +1080,9 @@ private:
 #if MODE_SYSTEMID_ENABLED
     ModeSystemId mode_systemid;
 #endif
-#if HAL_ADSB_ENABLED
+#if AP_COPTER_MODE_AVOIDADSB_ENABLED
     ModeAvoidADSB mode_avoid_adsb;
-#endif
+#endif  // AP_COPTER_MODE_AVOIDADSB_ENABLED
 #if MODE_THROW_ENABLED
     ModeThrow mode_throw;
 #endif

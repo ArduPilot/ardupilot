@@ -107,10 +107,10 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             return &mode_throw;
 #endif
 
-#if HAL_ADSB_ENABLED
+#if AP_COPTER_MODE_AVOIDADSB_ENABLED
         case Mode::Number::AVOID_ADSB:
             return &mode_avoid_adsb;
-#endif
+#endif  // AP_COPTER_MODE_AVOIDADSB_ENABLED
 
 #if MODE_GUIDED_NOGPS_ENABLED
         case Mode::Number::GUIDED_NOGPS:

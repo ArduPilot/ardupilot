@@ -232,7 +232,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if AP_TEMPCALIBRATION_ENABLED
     SCHED_TASK_CLASS(AP_TempCalibration,   &copter.g2.temp_calibration, update,          10, 100, 135),
 #endif
-#if HAL_ADSB_ENABLED
+#if AP_COPTER_MODE_AVOIDADSB_ENABLED || HAL_ADSB_ENABLED
     SCHED_TASK(avoidance_adsb_update, 10,    100, 138),
 #endif
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED

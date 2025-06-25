@@ -139,6 +139,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// AvoidADSB - set maneuvers to avoid an encounter with another vehicle
+#ifndef AP_COPTER_MODE_AVOIDADSB_ENABLED
+# define AP_COPTER_MODE_AVOIDADSB_ENABLED HAL_ADSB_ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Brake mode - bring vehicle to stop
 #ifndef MODE_BRAKE_ENABLED
 # define MODE_BRAKE_ENABLED 1
