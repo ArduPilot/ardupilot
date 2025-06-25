@@ -908,6 +908,10 @@ void AP_Logger::Write_Message(const char *message)
 {
     FOR_EACH_BACKEND(Write_Message(message));
 }
+void AP_Logger::Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq)
+{
+    FOR_EACH_BACKEND(Write_MessageChunk(id, messagechunk, chunk_seq));
+}
 
 void AP_Logger::Write_Mode(uint8_t mode, const ModeReason reason)
 {
