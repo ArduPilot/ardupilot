@@ -1871,7 +1871,7 @@ void QuadPlane::update_throttle_suppression(void)
     }
 
     // if we are more than 5m from home altitude then allow motors to run
-    if (plane.relative_ground_altitude(plane.g.rangefinder_landing) > 5) {
+    if (plane.relative_ground_altitude(RangeFinderUse::TAKEOFF) > 5) {
         return;
     }
 
@@ -2216,7 +2216,7 @@ void QuadPlane::poscontrol_init_approach(void)
                                 plane.ahrs.groundspeed(),
                                 dist,
                                 stopping_distance(),
-                                plane.relative_ground_altitude(plane.g.rangefinder_landing));
+                                plane.relative_ground_altitude(RangeFinderUse::LANDING));
                 poscontrol.set_state(QPOS_AIRBRAKE);
             }
         } else {
@@ -2431,7 +2431,7 @@ void QuadPlane::vtol_position_controller(void)
                                 groundspeed,
                                 plane.auto_state.wp_distance,
                                 stop_distance,
-                                plane.relative_ground_altitude(plane.g.rangefinder_landing));
+                                plane.relative_ground_altitude(RangeFinderUse::LANDING));
                 poscontrol.set_state(QPOS_POSITION1);
                 transition->set_last_fw_pitch();
             } else {
@@ -2439,7 +2439,7 @@ void QuadPlane::vtol_position_controller(void)
                                 groundspeed,
                                 distance,
                                 stop_distance,
-                                plane.relative_ground_altitude(plane.g.rangefinder_landing));
+                                plane.relative_ground_altitude(RangeFinderUse::LANDING));
                 poscontrol.set_state(QPOS_AIRBRAKE);
             }
         }
@@ -2466,7 +2466,7 @@ void QuadPlane::vtol_position_controller(void)
             gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 v=%.1f d=%.1f h=%.1f dc=%.1f",
                             (double)groundspeed,
                             (double)plane.auto_state.wp_distance,
-                            plane.relative_ground_altitude(plane.g.rangefinder_landing),
+                            plane.relative_ground_altitude(RangeFinderUse::LANDING),
                             desired_closing_speed);
             poscontrol.set_state(QPOS_POSITION1);
             transition->set_last_fw_pitch();
@@ -2685,7 +2685,7 @@ void QuadPlane::vtol_position_controller(void)
             poscontrol.pilot_correction_done = false;
             gcs().send_text(MAV_SEVERITY_INFO,"VTOL position2 started v=%.1f d=%.1f h=%.1f",
                             (double)ahrs.groundspeed(), (double)plane.auto_state.wp_distance,
-                            plane.relative_ground_altitude(plane.g.rangefinder_landing));
+                            plane.relative_ground_altitude(RangeFinderUse::LANDING));
         }
         break;
     }
@@ -2842,7 +2842,7 @@ void QuadPlane::vtol_position_controller(void)
     case QPOS_LAND_DESCEND:
     case QPOS_LAND_ABORT:
     case QPOS_LAND_FINAL: {
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        float height_above_ground = plane.relative_ground_altitude(RangeFinderUse::LANDING);
         if (poscontrol.get_state() == QPOS_LAND_FINAL) {
             if (!option_is_set(QuadPlane::OPTION::DISABLE_GROUND_EFFECT_COMP)) {
                 ahrs.set_touchdown_expected(true);
@@ -2998,7 +2998,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
     if (!in_vtol_land_approach()) {
         // To prevent forward motor prop strike, reduce throttle to zero when close to ground.
         float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        float height_above_ground = plane.relative_ground_altitude(RangeFinderUse::LANDING);
         fwd_thr_scaler = linear_interpolate(0.0f, 1.0f, height_above_ground, alt_cutoff, alt_cutoff+2);
     } else {
         // When we are doing horizontal positioning in a VTOL land we always allow the fwd motor
@@ -3534,7 +3534,7 @@ bool QuadPlane::check_land_complete(void)
  */
 bool QuadPlane::check_land_final(void)
 {
-    float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+    float height_above_ground = plane.relative_ground_altitude(RangeFinderUse::LANDING);
     // we require 2 readings at 10Hz to be within 5m of each other to
     // trigger the switch to land final. This prevents a short term
     // glitch at high altitude from triggering land final
@@ -3588,7 +3588,7 @@ bool QuadPlane::verify_vtol_land(void)
 #if AP_LANDINGGEAR_ENABLED
             plane.g2.landing_gear.deploy_for_landing();
 #endif
-            last_land_final_agl = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+            last_land_final_agl = plane.relative_ground_altitude(RangeFinderUse::LANDING);
             gcs().send_text(MAV_SEVERITY_INFO,"Land descend started");
             if (plane.control_mode == &plane.mode_auto) {
                 // set height to mission height, so we can use the mission
@@ -3815,7 +3815,8 @@ float QuadPlane::forward_throttle_pct()
         vel_forward.last_pct = vel_forward.integrator;
     } else if ((in_vtol_land_final() && motors->limit.throttle_lower) ||
 #if AP_RANGEFINDER_ENABLED
-              (plane.g.rangefinder_landing && (plane.rangefinder.status_orient(plane.rangefinder_orientation()) == RangeFinder::Status::OutOfRangeLow))) {
+               (plane.rangefinder_use(RangeFinderUse::LANDING) &&
+                (plane.rangefinder.status_orient(plane.rangefinder_orientation()) == RangeFinder::Status::OutOfRangeLow))) {
 #else
               false) {
 #endif
@@ -3826,7 +3827,7 @@ float QuadPlane::forward_throttle_pct()
         // If we are below alt_cutoff then scale down the effect until
         // it turns off at alt_cutoff and decay the integrator
         float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        float height_above_ground = plane.relative_ground_altitude(RangeFinderUse::LANDING);
 
         vel_forward.last_pct = linear_interpolate(0, vel_forward.integrator,
                                                   height_above_ground, alt_cutoff, alt_cutoff+2);
@@ -3867,7 +3868,7 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
     float wv_output;
     if (weathervane->get_yaw_out(wv_output,
                                      plane.channel_rudder->get_control_in(),
-                                     plane.relative_ground_altitude(plane.g.rangefinder_landing),
+                                     plane.relative_ground_altitude(RangeFinderUse::LANDING),
                                      pos_control->get_roll_cd(),
                                      pos_control->get_pitch_cd(),
                                      is_takeoff,
