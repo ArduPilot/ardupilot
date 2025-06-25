@@ -71,7 +71,15 @@ The PWM is in 4 groups:
 
  - PWM 1-4     in group1
  - PWM 5-8     in group2
- - PWM 9-10    in group3
+The outputs are in 7 groups:
+
+ - M 1-4     in group1
+ - M 5,6     in group2
+ - M 7,8    in group3
+ - S 1,2    in group4
+ - S 3,4    in group5 
+ - OSD    in group 6
+ - LED    in group 7
  - PWM 11-12   in group4
  - PWM 13      in group5 (CAMERA_CONTROL)
  - PWM 14(LED) in group6 (set as Serial LED output function by default) 
