@@ -157,7 +157,7 @@ void ModeQLoiter::run()
             }
 #endif  // AP_ICENGINE_ENABLED
         }
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        float height_above_ground = plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING);
         float descent_rate_cms = quadplane.landing_descent_rate_cms(height_above_ground);
 
         if (poscontrol.get_state() == QuadPlane::QPOS_LAND_FINAL && !quadplane.option_is_set(QuadPlane::OPTION::DISABLE_GROUND_EFFECT_COMP)) {
