@@ -46,12 +46,27 @@ function param_load(n)
       end
       -- trim trailing spaces
       line = string.gsub(line, '^(.-)%s*$', '%1')
-      local _, _, parm, value = string.find(line, "^([%w_]+)%s*([%d]*.[%d]*)")
-      if parm then
-         if not param:set(parm,value) then
-            failed = true
-         else
-            count = count +1
+
+      -- skip empty lines and comments
+      if line ~= "" and not string.match(line, "^%s*#") then
+         -- Try comma-separated format first (PARAM,value)
+         local _, _, parm, value = string.find(line, "^([%w_]+),([%d.-]+)")
+         if not parm then
+            -- Fall back to space-separated format (PARAM value)
+            _, _, parm, value = string.find(line, "^([%w_]+)%s+([%d.-]+)")
+         end
+
+         if parm and value then
+            local num_value = tonumber(value)
+            if num_value then
+               if param:set(parm, num_value) then
+                  count = count + 1
+               else
+                  failed = true
+               end
+            else
+               failed = true
+            end
          end
       end
    end 
