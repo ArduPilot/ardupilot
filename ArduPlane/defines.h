@@ -197,3 +197,16 @@ enum class FenceAutoEnable : uint8_t {
     AutoDisableFloorOnly=2,
     WhenArmed=3
 };
+
+/*
+  bitmask of options for RGFND_LANDING
+ */
+enum class RangeFinderUse : uint8_t {
+    NONE    = 0U,
+    ALL     = (1U<<0),
+    LANDING = (1U<<1),
+    TAKEOFF = (1U<<2),
+    ASSIST  = (1U<<3),
+    CLIMB   = (1U<<4),
+};
+

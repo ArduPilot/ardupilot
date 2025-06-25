@@ -374,7 +374,7 @@ return_zero:
  */
 void Plane::landing_gear_update(void)
 {
-    g2.landing_gear.update(relative_ground_altitude(g.rangefinder_landing));
+    g2.landing_gear.update(relative_ground_altitude(RangeFinderUse::LANDING));
 }
 #endif
 
