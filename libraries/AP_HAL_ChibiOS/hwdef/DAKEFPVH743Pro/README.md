@@ -113,7 +113,8 @@ The DAKEFPV H743 Pro does not have a builtin compass, but you can attach an exte
 
 GPIO 81 controls the camera output to the connectors marked "CAM1" and "CAM2". Setting this GPIO low switches the video output from CAM1 to CAM2. By default RELAY1 is configured to control this pin and sets the GPIO high.
 
-## Reserved PINIO output
+## VTX Power Control
+GPIO 82 controls the VTX power output to the connectors marked "12V". Setting this GPIO low switches the video power off. By default RELAY1 is configured to control this pin and sets the GPIO high.
 
 GPIO 82,GPIO 83 is io outpout PINIO2, PINIO3.
 
