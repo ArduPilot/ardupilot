@@ -1,7 +1,7 @@
 
 # Accton Godwit G-A1
 
-The G-A1 is a state-of-the-art universal controller (flight controller) developed based on the Pixhawk Autopilot v6X Standard. It adopts an H7 double-precision floating-point arithmetic unit, Cortex®-M3 coprocessor, independent bus, and power supply. The IMU with its 6-axis inertial sensor, pressure/temperature sensor, and geomagnetic sensor is designed for safety and rich expansion capabilities. With an integrated 10/100M Ethernet Physical Layer (PHY), the G-A1 can also communicate with the mission computer (airborne computer), high-end surveying and mapping cameras, and other UxV-mounted equipment for high-speed communications, meeting the needs of advanced UxV systems.
+The G-A1 is a state-of-the-art universal controller (flight controller) developed based on the Pixhawk Autopilot v6X Standard. It adopts an H7 double-precision floating-point arithmetic unit, Cortex®-M7 coprocessor, independent bus, and power supply. The IMU with its 6-axis inertial sensor, pressure/temperature sensor, and geomagnetic sensor is designed for safety and rich expansion capabilities. With an integrated 10/100M Ethernet Physical Layer (PHY), the G-A1 can also communicate with the mission computer (airborne computer), high-end surveying and mapping cameras, and other UxV-mounted equipment for high-speed communications, meeting the needs of advanced UxV systems.
 
 Visit [Accton-IoT Godwit](https://www.accton-iot.com/godwit/) for more information.
 
