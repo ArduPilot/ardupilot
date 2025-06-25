@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AP_Motors_config.h"
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <Filter/Filter.h>         // filter library
@@ -41,57 +43,6 @@
 #define AP_MOTORS_MOT_30 29U
 #define AP_MOTORS_MOT_31 30U
 #define AP_MOTORS_MOT_32 31U
-
-#ifndef AP_MOTORS_MAX_NUM_MOTORS
-#if AP_SCRIPTING_ENABLED
-#define AP_MOTORS_MAX_NUM_MOTORS 32
-#else
-#define AP_MOTORS_MAX_NUM_MOTORS 12
-#endif
-
-// doesn't make sense to have more motors than servo channels, so clamp:
-#if NUM_SERVO_CHANNELS < AP_MOTORS_MAX_NUM_MOTORS
-#undef AP_MOTORS_MAX_NUM_MOTORS
-#define AP_MOTORS_MAX_NUM_MOTORS NUM_SERVO_CHANNELS
-#endif
-
-// various Motors backends will not compile if we don't have 16 motors
-// available (eg. AP_Motors6DOF).  Until we stop compiling those
-// backends in when there aren't enough motors to support those
-// backends we will support a minimum of 12 motors, the limit before
-// we moved to 32 motor support:
-#if AP_MOTORS_MAX_NUM_MOTORS < 12
-#undef AP_MOTORS_MAX_NUM_MOTORS
-#define AP_MOTORS_MAX_NUM_MOTORS 12
-#endif
-
-#endif  // defined (AP_MOTORS_MAX_NUM_MOTORS)
-
-#ifndef AP_MOTORS_FRAME_DEFAULT_ENABLED
-#define AP_MOTORS_FRAME_DEFAULT_ENABLED 1
-#endif
-
-#ifndef AP_MOTORS_FRAME_QUAD_ENABLED
-#define AP_MOTORS_FRAME_QUAD_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_HEXA_ENABLED
-#define AP_MOTORS_FRAME_HEXA_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_OCTA_ENABLED
-#define AP_MOTORS_FRAME_OCTA_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_DECA_ENABLED
-#define AP_MOTORS_FRAME_DECA_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_DODECAHEXA_ENABLED
-#define AP_MOTORS_FRAME_DODECAHEXA_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_Y6_ENABLED
-#define AP_MOTORS_FRAME_Y6_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_OCTAQUAD_ENABLED
-#define AP_MOTORS_FRAME_OCTAQUAD_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
 
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
