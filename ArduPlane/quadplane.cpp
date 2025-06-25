@@ -1425,7 +1425,7 @@ float QuadPlane::assist_climb_rate_cms(void) const
 /*
   calculate desired yaw rate for assistance
  */
-float QuadPlane::desired_auto_yaw_rate_cds(void) const
+float QuadPlane::desired_auto_yaw_rate_cds(bool body_frame) const
 {
     float aspeed;
     if (!ahrs.airspeed_estimate(aspeed) || aspeed < plane.aparm.airspeed_min) {
@@ -1434,8 +1434,10 @@ float QuadPlane::desired_auto_yaw_rate_cds(void) const
     if (aspeed < 1) {
         aspeed = 1;
     }
-    float yaw_rate = degrees(GRAVITY_MSS * tanf(cd_to_rad(plane.nav_roll_cd))/aspeed) * 100;
-    return yaw_rate;
+    if (body_frame) {
+        return degrees(GRAVITY_MSS * sinf(cd_to_rad(plane.nav_roll_cd))/aspeed) * 100;
+    }
+    return degrees(GRAVITY_MSS * tanf(cd_to_rad(plane.nav_roll_cd))/aspeed) * 100;
 }
 
 /*
@@ -1564,14 +1566,9 @@ void SLT_Transition::update()
         quadplane.hold_hover(climb_rate_cms);
 
         if (!quadplane.tiltrotor.is_vectored()) {
-            // set desired yaw to current yaw in both desired angle
-            // and rate request. This reduces wing twist in transition
-            // due to multicopter yaw demands. This is disabled when
-            // using vectored yaw for tilt-rotors as the yaw control
-            // is needed to maintain good control in forward
-            // transitions
+            // set desired yaw rate to a coordinated turn
             quadplane.attitude_control->reset_yaw_target_and_rate();
-            quadplane.attitude_control->rate_bf_yaw_target(0.0);
+            quadplane.attitude_control->rate_bf_yaw_target(quadplane.desired_auto_yaw_rate_cds(true));
         }
         if (quadplane.tiltrotor.enabled() && !quadplane.tiltrotor.has_fw_motor()) {
             // tilt rotors without dedicated fw motors do not have forward throttle output in this stage
@@ -1639,15 +1636,10 @@ void SLT_Transition::update()
         quadplane.assisted_flight = true;
         quadplane.hold_stabilize(throttle_scaled);
 
-        // set desired yaw to current yaw in both desired angle and
-        // rate request while waiting for transition to
-        // complete. Navigation should be controlled by fixed wing
-        // control surfaces at this stage.
-        // We disable this for vectored yaw tilt rotors as they do need active
-        // yaw control throughout the transition
         if (!quadplane.tiltrotor.is_vectored()) {
+            // set desired yaw rate to a coordinated turn
             quadplane.attitude_control->reset_yaw_target_and_rate();
-            quadplane.attitude_control->rate_bf_yaw_target(0.0);
+            quadplane.attitude_control->rate_bf_yaw_target(quadplane.desired_auto_yaw_rate_cds(true));
         }
         break;
     }
