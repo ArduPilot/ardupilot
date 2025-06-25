@@ -93,18 +93,16 @@ bool AP_Compass_MMC3416::init()
 
     /* register the compass instance in the frontend */
     dev->set_device_type(DEVTYPE_MMC3416);
-    if (!register_compass(dev->get_bus_id(), compass_instance)) {
+    if (!register_compass(dev->get_bus_id())) {
         return false;
     }
-    
-    set_dev_id(compass_instance, dev->get_bus_id());
 
-    printf("Found a MMC3416 on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), compass_instance);
-    
-    set_rotation(compass_instance, rotation);
+    printf("Found a MMC3416 on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
+
+    set_rotation(rotation);
 
     if (force_external) {
-        set_external(compass_instance, true);
+        set_external(true);
     }
     
     dev->set_retries(1);
@@ -253,7 +251,7 @@ void AP_Compass_MMC3416::timer()
         // sensor is not FRD
         field.y = -field.y;
 
-        accumulate_sample(field, compass_instance);
+        accumulate_sample(field);
 
         if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TM)) {
             state = STATE_REFILL1;
@@ -283,7 +281,7 @@ void AP_Compass_MMC3416::timer()
         field.y = -field.y;
 
         last_sample_ms = AP_HAL::millis();
-        accumulate_sample(field, compass_instance);
+        accumulate_sample(field);
 
         // we stay in STATE_MEASURE_WAIT3 for measure_count_limit cycles
         if (measure_count++ >= measure_count_limit) {
@@ -301,7 +299,7 @@ void AP_Compass_MMC3416::timer()
 
 void AP_Compass_MMC3416::read()
 {
-    drain_accumulated_samples(compass_instance);
+    drain_accumulated_samples();
 }
 
 #endif  // AP_COMPASS_MMC3416_ENABLED
