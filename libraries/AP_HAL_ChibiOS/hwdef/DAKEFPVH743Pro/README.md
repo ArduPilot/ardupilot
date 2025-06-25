@@ -116,8 +116,6 @@ GPIO 81 controls the camera output to the connectors marked "CAM1" and "CAM2". S
 ## VTX Power Control
 GPIO 82 controls the VTX power output to the connectors marked "12V". Setting this GPIO low switches the video power off. By default RELAY1 is configured to control this pin and sets the GPIO high.
 
-GPIO 82,GPIO 83 is io outpout PINIO2, PINIO3.
-
 ## Loading Firmware
 Firmware for these boards can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "DAKEFPVH743Pro".
 Initial firmware load can be done with DFU by plugging in USB with the
