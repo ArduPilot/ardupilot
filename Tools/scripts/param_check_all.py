@@ -17,10 +17,6 @@ from pysim.vehicleinfo import VehicleInfo # noqa: E402
 
 
 vehicle_hwdefs_to_skip = set([
-    'KakuteF4Mini',
-    'SPRacingH7RF',
-    'SkystarsH7HD',
-    'Swan-K1',
     'skyviper-journey',
     'skyviper-v2450',
 ])
