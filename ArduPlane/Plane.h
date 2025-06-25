@@ -219,6 +219,7 @@ private:
     Rotation rangefinder_orientation(void) const {
         return Rotation(g2.rangefinder_land_orient.get());
     }
+
 #endif
 
 #if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
@@ -892,8 +893,9 @@ private:
     void adjust_altitude_target();
     void setup_glide_slope(void);
     int32_t get_RTL_altitude_cm() const;
-    float relative_ground_altitude(bool use_rangefinder_if_available);
-    float relative_ground_altitude(bool use_rangefinder_if_available, bool use_terrain_if_available);
+    bool rangefinder_use(enum RangeFinderUse rangefinder_use) const;
+    float relative_ground_altitude(enum RangeFinderUse rangefinder_use);
+    float relative_ground_altitude(enum RangeFinderUse rangefinder_use, bool use_terrain_if_available);
     void set_target_altitude_current(void);
     void set_target_altitude_current_adjusted(void);
     void set_target_altitude_location(const Location &loc);
