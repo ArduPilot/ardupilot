@@ -80,8 +80,8 @@ static const struct LogStructure log_structure[] = {
       "s---------",
       "F---------"
     },
-    { LOG_MESSAGE_MSG,
-      sizeof(log_Message),
+    { LOG_MSG_MSG,
+      sizeof(log_MSG),
       "MSG",
       "QZ",
       "TimeUS,Message",
