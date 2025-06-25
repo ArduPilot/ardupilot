@@ -54,8 +54,6 @@ private:
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
-    uint8_t _compass_instance;
-
     struct {
         int8_t x1;
         int8_t y1;
