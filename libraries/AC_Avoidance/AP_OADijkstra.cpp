@@ -384,7 +384,7 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
             }
 
             // don't add points in corners
-            if (fabsf(intermediate_pt.angle() - before_pt.angle()) < M_PI_2) {
+            if (fabsf(wrap_PI(intermediate_pt.angle() - before_pt.angle())) < M_PI_2) {
                 continue;
             }
 
@@ -485,7 +485,7 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
             }
 
             // don't add points in corners
-            if (fabsf(intermediate_pt.angle() - before_pt.angle()) < M_PI_2) {
+            if (fabsf(wrap_PI(intermediate_pt.angle() - before_pt.angle())) < M_PI_2) {
                 continue;
             }
 
