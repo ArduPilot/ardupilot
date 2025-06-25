@@ -214,15 +214,14 @@ bool AP_Compass_BMM150::init()
 
     /* register the compass instance in the frontend */
     _dev->set_device_type(DEVTYPE_BMM150);
-    if (!register_compass(_dev->get_bus_id(), _compass_instance)) {
+    if (!register_compass(_dev->get_bus_id())) {
         return false;
     }
-    set_dev_id(_compass_instance, _dev->get_bus_id());
 
-    set_rotation(_compass_instance, _rotation);
+    set_rotation(_rotation);
 
     if (_force_external) {
-        set_external(_compass_instance, true);
+        set_external(true);
     }
 
     // 2 retries for run
@@ -318,13 +317,13 @@ void AP_Compass_BMM150::_update()
 
     _last_read_ms = AP_HAL::millis();
 
-    accumulate_sample(raw_field, _compass_instance);
+    accumulate_sample(raw_field);
     _dev->check_next_register();
 }
 
 void AP_Compass_BMM150::read()
 {
-    drain_accumulated_samples(_compass_instance);
+    drain_accumulated_samples();
 }
 
 
