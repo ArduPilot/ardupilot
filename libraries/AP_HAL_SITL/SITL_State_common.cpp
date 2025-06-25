@@ -247,6 +247,13 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         inertiallabs = NEW_NOTHROW SITL::InertialLabs();
         return inertiallabs;
+    } else if (streq(name, "AdNav")) {
+        if (adnav != nullptr) {
+            AP_HAL::panic("Only one AdNav at a time");
+        }
+        adnav = new SITL::AdNav();
+        return adnav;
+
 
 #if HAL_SIM_AIS_ENABLED
     } else if (streq(name, "AIS")) {
@@ -379,8 +386,13 @@ void SITL_State_Common::sim_update(void)
     if (microstrain7 != nullptr) {
         microstrain7->update();
     }
+    
     if (inertiallabs != nullptr) {
         inertiallabs->update();
+    }
+    
+    if (adnav != nullptr) {
+        adnav->update();
     }
 
 #if HAL_SIM_AIS_ENABLED
