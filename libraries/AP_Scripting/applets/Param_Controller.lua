@@ -6,6 +6,15 @@
 local SEL_CH = 302
 local PARAM_FILENAME = "params.param"
 
+-- Global variables for chunked processing
+local param_lines = {}
+local param_index = 0
+local param_loading = false
+local param_subdir = 0
+local file_handle = nil
+local file_reading = false
+local file_name = ""
+
 --[[
    check that directory exists
 --]]
@@ -27,23 +36,76 @@ function get_scripts_dir()
 end
 
 --[[
+   read file in chunks to avoid timeout
+--]]
+function read_file_chunk()
+   if not file_reading or not file_handle then
+      return false
+   end
+
+   local chunk_size = 200
+   for _ = 1, chunk_size do
+      local line = file_handle:read()
+      if not line then
+         file_handle:close()
+         file_handle = nil
+         file_reading = false
+         param_loading = true
+         return false
+      end
+      table.insert(param_lines, line)
+   end
+   return true
+end
+
+--[[
 load parameters from a file PARAM_FILENAME from directory n
 --]]
 function param_load(n)
-   count = 0
-   failed = false
    file_name = get_scripts_dir() .. "/" .. n .."/" .. PARAM_FILENAME
   -- Open file
-  file = io.open(file_name)
-  if not file then
+  file_handle = io.open(file_name)
+  if not file_handle then
      gcs:send_text(0,string.format("%s not present",file_name))
      return
   end
-   while true do
-      local line = file:read()
-      if not line then
-         break
+
+  gcs:send_text(6,string.format("Loading config %d",n))
+
+  -- Initialize for chunked reading
+  param_lines = {}
+  param_index = 1
+  param_loading = false
+  file_reading = true
+  param_subdir = n
+end
+
+--[[
+   process parameters in batches to avoid timeout
+--]]
+function param_load_batch()
+   if not param_loading then
+      return false
+   end
+
+   local count = 0
+   local failed = false
+   local batch_size = 200
+
+   for _ = 1, batch_size do
+      if param_index > #param_lines then
+         param_loading = false
+         if not failed then
+            gcs:send_text(6,string.format("Config %d loaded", param_subdir))
+         else
+            gcs:send_text(6,string.format("Config %d loaded (some failed)", param_subdir))
+         end
+         return false
       end
+
+      local line = param_lines[param_index]
+      param_index = param_index + 1
+
       -- trim trailing spaces
       line = string.gsub(line, '^(.-)%s*$', '%1')
 
@@ -69,23 +131,31 @@ function param_load(n)
             end
          end
       end
-   end 
-   if not failed then
-      gcs:send_text(6,string.format("Loaded %u parameters",count)) 
-   else
-      gcs:send_text(6,string.format("Loaded %u parameters but some params did not exist to set",count)) 
    end
-end   
- 
+
+   return true
+end
+
 local sw_last = -1
-local load_param = true
 
 function update()
+   -- Handle chunked file reading
+   if file_reading then
+      read_file_chunk()
+      return update, 100
+   end
+
+   -- Handle chunked parameter loading
+   if param_loading then
+      param_load_batch()
+      return update, 200
+   end
+
    local sw_current = rc:get_aux_cached(SEL_CH)
    if (sw_current == sw_last) or (sw_current == nil) then
       return update, 500
    end
-   if sw_current == 0 then 
+   if sw_current == 0 then
         subdir = 1
       elseif sw_current == 2 then
         subdir = 3
@@ -97,12 +167,11 @@ function update()
       gcs:send_text(0,string.format("Scripts subdirectory /%s does not exist!",subdir))
       return update, 500
    end
-   if load_param then
-      param_load(subdir)
-      load_param = false
-   end
-   
-   return update, 500
+
+   -- Load parameters for new switch position
+   param_load(subdir)
+
+   return update, 100
 end
 
 gcs:send_text(5,"Loaded Parameter_Controller.lua")
