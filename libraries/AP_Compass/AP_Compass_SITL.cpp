@@ -18,18 +18,18 @@ AP_Compass_SITL::AP_Compass_SITL(uint8_t _sitl_instance) :
             if (dev_id == 0) {
                 return;
             }
-            if (!register_compass(dev_id, _compass_instance)) {
+            if (!register_compass(dev_id)) {
                 return;
             }
-            set_dev_id(_compass_instance, dev_id);
                 if (_sitl->mag_save_ids) {
                     // save so the compass always comes up configured in SITL
-                    save_dev_id(_compass_instance);
+                    save_dev_id();
                 }
-                set_rotation(_compass_instance, ROTATION_NONE);
+                set_rotation(ROTATION_NONE);
 
-            if (_compass.get_offsets(_compass_instance).is_zero()) {
-                _compass.set_offsets(_compass_instance, _sitl->mag_ofs[sitl_instance]);
+        // Scroll through the registered compasses, and set the offsets
+            if (_compass.get_offsets(instance).is_zero()) {
+                _compass.set_offsets(instance, _sitl->mag_ofs[sitl_instance]);
             }
 
         // we want to simulate a calibrated compass by default, so set
@@ -40,7 +40,7 @@ AP_Compass_SITL::AP_Compass_SITL(uint8_t _sitl_instance) :
 
         // make first compass external
         if (sitl_instance == 0) {
-            set_external(_compass_instance, true);
+            set_external(true);
         }
 
         hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_Compass_SITL::_timer, void));
@@ -130,7 +130,7 @@ void AP_Compass_SITL::_timer()
 
         switch (_sitl->mag_fail[sitl_instance]) {
         case 0:
-            accumulate_sample(f, _compass_instance, 10);
+            accumulate_sample(f, 10);
             _last_data = f;
             break;
         case 1:
@@ -138,13 +138,13 @@ void AP_Compass_SITL::_timer()
             break;
         case 2:
             // frozen compass
-            accumulate_sample(_last_data, _compass_instance, 10);
+            accumulate_sample(_last_data, 10);
             break;
         }
 }
 
 void AP_Compass_SITL::read()
 {
-    drain_accumulated_samples(_compass_instance, nullptr);
+    drain_accumulated_samples(nullptr);
 }
 #endif  // AP_COMPASS_SITL_ENABLED
