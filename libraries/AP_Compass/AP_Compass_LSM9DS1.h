@@ -39,7 +39,6 @@ private:
     void _dump_registers();
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
-    uint8_t _compass_instance;
     float _scaling;
     enum Rotation _rotation;
 
