@@ -670,23 +670,40 @@ void Plane::update_load_factor(void)
     float max_load_factor =
         sq(smoothed_airspeed / MAX(stall_airspeed_1g, 1));
 
+    // allow limiting roll command down to wings-level when necessary if
+    // airspeed is accurate and airspeed stall is set (implying low load factor
+    // overhead)
+    bool enforce_full_roll_limit =
+        ahrs.using_airspeed_sensor() && is_positive(aparm.airspeed_stall);
+
+    int32_t lf_roll_limit_cd = aparm.roll_limit * 100;
+    int32_t level_roll_limit_cd = g.level_roll_limit * 100;
     if (max_load_factor <= 1) {
-        // our airspeed is below the minimum airspeed. Limit roll to
-        // 25 degrees
-        nav_roll_cd = constrain_int32(nav_roll_cd, -2500, 2500);
-        roll_limit_cd = MIN(roll_limit_cd, 2500);
+        if (enforce_full_roll_limit) {
+            lf_roll_limit_cd = level_roll_limit_cd;
+        } else {
+            // 25° limit to ensure maneuverability if airspeed estimate is wrong
+            lf_roll_limit_cd = 2500;
+        }
     } else if (max_load_factor < aerodynamic_load_factor) {
         // the demanded nav_roll would take us past the aerodynamic
         // load limit. Limit our roll to a bank angle that will keep
-        // the load within what the airframe can handle. We always
-        // allow at least 25 degrees of roll however, to ensure the
-        // aircraft can be manoeuvered with a bad airspeed estimate. At
-        // 25 degrees the load factor is 1.1 (10%)
-        int32_t roll_limit = degrees(acosf(1.0f / max_load_factor))*100;
-        if (roll_limit < 2500) {
-            roll_limit = 2500;
+        // the load within what the airframe can handle.
+        lf_roll_limit_cd = degrees(acosf(1.0f / max_load_factor))*100;
+
+        // unless enforcing full limits, allow at least 25 degrees of roll to
+        // ensure the aircraft can be manoeuvered with a bad airspeed estimate.
+        // At 25 degrees the load factor is 1.1 (10%)
+        if (!enforce_full_roll_limit && lf_roll_limit_cd < 2500) {
+            lf_roll_limit_cd = 2500;
         }
-        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
-        roll_limit_cd = MIN(roll_limit_cd, roll_limit);
+
+        // always allow at least the wings level threshold to prevent flyaways
+        if (lf_roll_limit_cd < level_roll_limit_cd) {
+            lf_roll_limit_cd = level_roll_limit_cd;
+        }
     }
+
+    nav_roll_cd = constrain_int32(nav_roll_cd, -lf_roll_limit_cd, lf_roll_limit_cd);
+    roll_limit_cd = MIN(roll_limit_cd, lf_roll_limit_cd);
 }
