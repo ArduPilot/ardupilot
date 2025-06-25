@@ -106,17 +106,16 @@ bool AP_Compass_LIS3MDL::init()
 
     /* register the compass instance in the frontend */
     dev->set_device_type(DEVTYPE_LIS3MDL);
-    if (!register_compass(dev->get_bus_id(), compass_instance)) {
+    if (!register_compass(dev->get_bus_id())) {
         return false;
     }
-    set_dev_id(compass_instance, dev->get_bus_id());
 
-    printf("Found a LIS3MDL on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), compass_instance);
-    
-    set_rotation(compass_instance, rotation);
+    printf("Found a LIS3MDL on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
+
+    set_rotation(rotation);
 
     if (force_external) {
-        set_external(compass_instance, true);
+        set_external(true);
     }
     
     // call timer() at 80Hz
@@ -160,7 +159,7 @@ void AP_Compass_LIS3MDL::timer()
             data.magz * range_scale,
         };
 
-        accumulate_sample(field, compass_instance);
+        accumulate_sample(field);
     }
 
 check_registers:
@@ -169,7 +168,7 @@ check_registers:
 
 void AP_Compass_LIS3MDL::read()
 {
-    drain_accumulated_samples(compass_instance);
+    drain_accumulated_samples();
 }
 
 #endif  // AP_COMPASS_LIS3MDL_ENABLED

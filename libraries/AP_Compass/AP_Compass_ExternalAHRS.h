@@ -19,7 +19,6 @@ public:
 
 private:
     void handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt) override;
-    uint8_t instance;
 };
 
 #endif  // AP_COMPASS_EXTERNALAHRS_ENABLED
