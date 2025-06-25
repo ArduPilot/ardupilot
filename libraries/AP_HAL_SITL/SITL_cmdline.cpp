@@ -39,6 +39,7 @@
 #include <SITL/SIM_JSON.h>
 #include <SITL/SIM_Blimp.h>
 #include <SITL/SIM_NoVehicle.h>
+#include <SITL/SIM_StateSpace.h>
 #include <SITL/SIM_StratoBlimp.h>
 
 #include <AP_Filesystem/AP_Filesystem.h>
@@ -181,6 +182,8 @@ static const struct {
     { "webots",             Webots::create },
     { "JSON",               JSON::create },
     { "blimp",              Blimp::create },
+    { "statespace-heli",    StateSpace::create },
+    { "statespace-multi",   StateSpace::create },
     { "novehicle",          NoVehicle::create },
 #if AP_SIM_STRATOBLIMP_ENABLED
     { "stratoblimp",        StratoBlimp::create },
