@@ -151,6 +151,7 @@ BUILD_OPTIONS = [
 
     Feature('Camera', 'RUNCAM', 'AP_CAMERA_RUNCAM_ENABLED', 'Enable RunCam control', 0, 'Camera'),
 
+    Feature('Copter', 'COPTER_MODE_AVOIDADSB', 'AP_COPTER_MODE_AVOIDADSB_ENABLED', 'Enable AvoidADSB', 0, 'ADSB'),
     Feature('Copter', 'MODE_ZIGZAG', 'MODE_ZIGZAG_ENABLED', 'Enable Mode ZigZag', 0, None),
     Feature('Copter', 'MODE_SYSTEMID', 'MODE_SYSTEMID_ENABLED', 'Enable Mode SystemID', 0, 'Logging'),
     Feature('Copter', 'MODE_SPORT', 'MODE_SPORT_ENABLED', 'Enable Mode Sport', 0, None),
