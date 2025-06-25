@@ -511,9 +511,10 @@ void NavEKF3_core::SelectVelPosFusion()
         posVelFusionDelayed = false;
     }
 
+    const AP_NavEKF_Source::SourceXY posxy_source = frontend->sources.getPosXYSource();
 #if EK3_FEATURE_EXTERNAL_NAV
     // Check for data at the fusion time horizon
-    extNavDataToFuse = storedExtNav.recall(extNavDataDelayed, imuDataDelayed.time_ms);
+    extNavDataToFuse = (posxy_source == AP_NavEKF_Source::SourceXY::EXTNAV) && storedExtNav.recall(extNavDataDelayed, imuDataDelayed.time_ms);
     if (extNavDataToFuse) {
         CorrectExtNavForSensorOffset(extNavDataDelayed);
     }
@@ -534,7 +535,7 @@ void NavEKF3_core::SelectVelPosFusion()
     readGpsYawData();
 
     // get data that has now fallen behind the fusion time horizon
-    gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms) && !waitingForGpsChecks;
+    gpsDataToFuse = (posxy_source == AP_NavEKF_Source::SourceXY::GPS) && storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms) && !waitingForGpsChecks;
 
     if (gpsDataToFuse) {
         CorrectGPSForAntennaOffset(gpsDataDelayed);
@@ -545,7 +546,6 @@ void NavEKF3_core::SelectVelPosFusion()
     }
 
     // detect position source changes.  Trigger position reset if position source is valid
-    const AP_NavEKF_Source::SourceXY posxy_source = frontend->sources.getPosXYSource();
     if (posxy_source != posxy_source_last) {
         posxy_source_reset = (posxy_source != AP_NavEKF_Source::SourceXY::NONE);
         posxy_source_last = posxy_source;
@@ -698,108 +698,150 @@ void NavEKF3_core::FuseVelPosNED()
     // data from sensors like GPS receivers; it is the only assumption we can make
     // so we might as well take advantage of the computational efficiencies
     // associated with sequential fusion
-    if (fuseVelData || fusePosData || fuseHgtData) {
-        // estimate the velocity, horiz position and height measurement variances.
-        // Use different errors if operating without external aiding using an assumed position or velocity of zero
-        if (PV_AidingMode == AID_NONE) {
-            if (tiltAlignComplete && motorsArmed) {
-                // This is a compromise between corrections for gyro errors and reducing effect of manoeuvre accelerations on tilt estimate
-                R_OBS[0] = sq(constrain_ftype(frontend->_noaidHorizNoise, 0.5f, 50.0f));
-            } else {
-                // Use a smaller value to give faster initial alignment
-                R_OBS[0] = sq(0.5f);
-            }
-            R_OBS[1] = R_OBS[0];
-            R_OBS[2] = R_OBS[0];
-            R_OBS[3] = R_OBS[0];
-            R_OBS[4] = R_OBS[0];
-            for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
+    if (PV_AidingMode == AID_NONE) {
+        if (tiltAlignComplete && motorsArmed) {
+            // This is a compromise between corrections for gyro errors and reducing effect of manoeuvre accelerations on tilt estimate
+            R_OBS[0] = sq(constrain_ftype(frontend->_noaidHorizNoise, 0.5f, 50.0f));
         } else {
+            // Use a smaller value to give faster initial alignment
+            R_OBS[0] = sq(0.5f);
+        }
+        R_OBS[1] = R_OBS[0];
+        R_OBS[2] = R_OBS[0];
+        R_OBS[3] = R_OBS[0];
+        R_OBS[4] = R_OBS[0];
+        for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
+    } else {
 #if EK3_FEATURE_EXTERNAL_NAV
-            const bool extNavUsedForVel = extNavVelToFuse && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV);
+        const bool extNavUsedForVel = extNavVelToFuse && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV);
+#endif
+        if (fuseVelData)
+        {
+#if EK3_FEATURE_EXTERNAL_NAV
             if (extNavUsedForVel) {
                 R_OBS[2] = R_OBS[0] = sq(constrain_ftype(extNavVelDelayed.err, 0.05f, 50.0f));
-            } else
+            } else 
 #endif
-            if (gpsSpdAccuracy > 0.0f) {
-                // use GPS receivers reported speed accuracy if available and floor at value set by GPS velocity noise parameter
-                R_OBS[0] = sq(constrain_ftype(gpsSpdAccuracy, frontend->_gpsHorizVelNoise, 50.0f));
-                R_OBS[2] = sq(constrain_ftype(gpsSpdAccuracy, frontend->_gpsVertVelNoise, 50.0f));
-            } else {
-                // calculate additional error in GPS velocity caused by manoeuvring
-                R_OBS[0] = sq(constrain_ftype(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
-                R_OBS[2] = sq(constrain_ftype(frontend->_gpsVertVelNoise,  0.05f, 5.0f)) + sq(frontend->gpsDVelVarAccScale  * accNavMag);
+            if (gpsDataToFuse) {
+                if (gpsSpdAccuracy > 0.0f) {
+                    // use GPS receivers reported speed accuracy if available and floor at value set by GPS velocity noise parameter
+                    R_OBS[0] = sq(constrain_ftype(gpsSpdAccuracy, frontend->_gpsHorizVelNoise, 50.0f));
+                    R_OBS[2] = sq(constrain_ftype(gpsSpdAccuracy, frontend->_gpsVertVelNoise, 50.0f));
+                } else {
+                    // calculate additional error in GPS velocity caused by manoeuvring
+                    R_OBS[0] = sq(constrain_ftype(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
+                    R_OBS[2] = sq(constrain_ftype(frontend->_gpsVertVelNoise,  0.05f, 5.0f)) + sq(frontend->gpsDVelVarAccScale  * accNavMag);
+                }
+            }   
+            // TODO (EF): Beacon/optical flow/wheel encoder cases?
+            else
+            {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "fuseVel without extnav or GPS");
+                R_OBS[2] = R_OBS[0] = 5.0f;
             }
-            R_OBS[1] = R_OBS[0];
-            // Use GPS reported position accuracy if available and floor at value set by GPS position noise parameter
+        } else {
+            // No vel data this update, default value
+            R_OBS[2] = R_OBS[0] = 5.0f;
+        }
+        R_OBS[1] = R_OBS[0];
+        
+        if (fusePosData)
+        {
 #if EK3_FEATURE_EXTERNAL_NAV
             if (extNavUsedForPos) {
                 R_OBS[3] = sq(constrain_ftype(extNavDataDelayed.posErr, 0.01f, 100.0f));
             } else
-#endif
-            if (gpsPosAccuracy > 0.0f) {
-                R_OBS[3] = sq(constrain_ftype(gpsPosAccuracy, frontend->_gpsHorizPosNoise, 100.0f));
-            } else {
-                // calculate additional error in GPS position caused by manoeuvring
-                const ftype posErr = frontend->gpsPosVarAccScale * accNavMag;
-                R_OBS[3] = sq(constrain_ftype(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
-            }
-            R_OBS[4] = R_OBS[3];
-            // For data integrity checks we use the same measurement variances as used to calculate the Kalman gains for all measurements except GPS horizontal velocity
-            // For horizontal GPS velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPS performance
-            // plus a margin for manoeuvres. It is better to reject GPS horizontal velocity errors early
-            ftype obs_data_chk;
-#if EK3_FEATURE_EXTERNAL_NAV
-            if (extNavUsedForVel) {
-                obs_data_chk = sq(constrain_ftype(extNavVelDelayed.err, 0.05f, 5.0f)) + sq(frontend->extNavVelVarAccScale * accNavMag);
-            } else
-#endif
+#endif 
+            // estimate the GPS Velocity, GPS horiz position and height measurement variances.
+            // Use different errors if operating without external aiding using an assumed position or velocity of zero
+            if (gpsDataToFuse)
             {
-                obs_data_chk = sq(constrain_ftype(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
+                // calculate additional error in GPS position caused by manoeuvring
+                ftype posErr = frontend->gpsPosVarAccScale * accNavMag;
+                // Use GPS reported position accuracy if available and floor at value set by GPS position noise parameter
+                if (gpsPosAccuracy > 0.0f) {
+                    R_OBS[3] = sq(constrain_ftype(gpsPosAccuracy, frontend->_gpsHorizPosNoise, 100.0f));
+                } else {
+                    R_OBS[3] = sq(constrain_ftype(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
+                }
             }
-            R_OBS_DATA_CHECKS[0] = R_OBS_DATA_CHECKS[1] = R_OBS_DATA_CHECKS[2] = obs_data_chk;
+            // TODO (EF): Beacon case?
+            else {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "fusePos without extnav or GPS");
+                R_OBS[3] = 10.0f;
+            }
+        } else {
+            // No vel data this update, default value
+            R_OBS[3] = 10.0f;
         }
-        R_OBS[5] = posDownObsNoise;
-        for (uint8_t i=3; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
-
-        // if vertical GPS velocity data and an independent height source is being used, check to see if the GPS vertical velocity and altimeter
-        // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
-        // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
-        if (gpsDataDelayed.have_vz && fuseVelData && (frontend->sources.getPosZSource() != AP_NavEKF_Source::SourceZ::GPS)) {
-            // calculate innovations for height and vertical GPS vel measurements
-            const ftype hgtErr  = stateStruct.position.z - velPosObs[5];
-            const ftype velDErr = stateStruct.velocity.z - velPosObs[2];
-            // Check if they are the same sign and both more than 3-sigma out of bounds
-            // Step the test threshold up in stages from 1 to 2 to 3 sigma after exiting
-            // from a previous bad IMU event so that a subsequent error is caught more quickly.
-            const uint32_t timeSinceLastBadIMU_ms = imuSampleTime_ms - badIMUdata_ms;
-            float R_gain;
-            if (timeSinceLastBadIMU_ms > (BAD_IMU_DATA_HOLD_MS * 2)) {
-                R_gain = 9.0F;
-            } else if  (timeSinceLastBadIMU_ms > ((BAD_IMU_DATA_HOLD_MS * 3) / 2)) {
-                R_gain = 4.0F;
-            } else {
-                R_gain = 1.0F;
-            }
-            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > R_gain * R_OBS[5]) && (sq(velDErr) >R_gain * R_OBS[2])) {
-                badIMUdata_ms = imuSampleTime_ms;
-            } else {
-                goodIMUdata_ms = imuSampleTime_ms;
-            }
-            if (timeSinceLastBadIMU_ms < BAD_IMU_DATA_HOLD_MS) {
-                badIMUdata = true;
-                stateStruct.velocity.z = gpsDataDelayed.vel.z;
-            } else {
-                badIMUdata = false;
-            }
+        R_OBS[4] = R_OBS[3];
+        
+        if (fuseHgtData) {
+            // TODO (EF): Anthing needed here??
         }
 
-        // Test horizontal position measurements
-        if (fusePosData) {
-            innovVelPos[3] = stateStruct.position.x - velPosObs[3];
-            innovVelPos[4] = stateStruct.position.y - velPosObs[4];
-            varInnovVelPos[3] = P[7][7] + R_OBS_DATA_CHECKS[3];
-            varInnovVelPos[4] = P[8][8] + R_OBS_DATA_CHECKS[4];
+            
+        // For data integrity checks we use the same measurement variances as used to calculate the Kalman gains for all measurements except GPS horizontal velocity
+        // For horizontal GPS velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPS performance
+        // plus a margin for manoeuvres. It is better to reject GPS horizontal velocity errors early
+        ftype obs_data_chk;
+#if EK3_FEATURE_EXTERNAL_NAV
+        if (extNavUsedForVel) {
+            obs_data_chk = sq(constrain_ftype(extNavVelDelayed.err, 0.05f, 5.0f)) + sq(frontend->extNavVelVarAccScale * accNavMag);
+        } else 
+#endif
+        if (gpsDataToFuse)
+        {
+            obs_data_chk = sq(constrain_ftype(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
+        } else {
+            // TODO (EF): No horizontal vel this update, default value
+            obs_data_chk = 5.0f;
+        }
+        R_OBS_DATA_CHECKS[0] = R_OBS_DATA_CHECKS[1] = R_OBS_DATA_CHECKS[2] = obs_data_chk;
+
+    }
+
+    R_OBS[5] = posDownObsNoise;
+    for (uint8_t i=3; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
+
+    // If vertical GPS velocity data and an independent height source is being used, check to see if the GPS vertical velocity and altimeter
+    // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
+    // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
+    if (gpsDataDelayed.have_vz && fuseVelData && (frontend->sources.getPosZSource() != AP_NavEKF_Source::SourceZ::GPS)) {
+        // calculate innovations for height and vertical GPS vel measurements
+        const ftype hgtErr  = stateStruct.position.z - velPosObs[5];
+        const ftype velDErr = stateStruct.velocity.z - velPosObs[2];
+        // Check if they are the same sign and both more than 3-sigma out of bounds
+        // Step the test threshold up in stages from 1 to 2 to 3 sigma after exiting
+        // from a previous bad IMU event so that a subsequent error is caught more quickly.
+        const uint32_t timeSinceLastBadIMU_ms = imuSampleTime_ms - badIMUdata_ms;
+        float R_gain;
+        if (timeSinceLastBadIMU_ms > (BAD_IMU_DATA_HOLD_MS * 2)) {
+            R_gain = 9.0F;
+        } else if  (timeSinceLastBadIMU_ms > ((BAD_IMU_DATA_HOLD_MS * 3) / 2)) {
+            R_gain = 4.0F;
+        } else {
+            R_gain = 1.0F;
+        }
+        if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > R_gain * R_OBS[5]) && (sq(velDErr) >R_gain * R_OBS[2])) {
+            badIMUdata_ms = imuSampleTime_ms;
+        } else {
+            goodIMUdata_ms = imuSampleTime_ms;
+        }
+        if (timeSinceLastBadIMU_ms < BAD_IMU_DATA_HOLD_MS) {
+            badIMUdata = true;
+            stateStruct.velocity.z = gpsDataDelayed.vel.z;
+        } else {
+            badIMUdata = false;
+        }
+    }
+
+    // Test horizontal position measurements
+    if (fusePosData) {
+        innovVelPos[3] = stateStruct.position.x - velPosObs[3];
+        innovVelPos[4] = stateStruct.position.y - velPosObs[4];
+        varInnovVelPos[3] = P[7][7] + R_OBS_DATA_CHECKS[3];
+        varInnovVelPos[4] = P[8][8] + R_OBS_DATA_CHECKS[4];
 
             // Apply an innovation consistency threshold test
             // Don't allow test to fail if not navigating and using a constant position
@@ -812,14 +854,13 @@ void NavEKF3_core::FuseVelPosNED()
             if (posTestRatio < 1.0f || (PV_AidingMode == AID_NONE)) {
                 posCheckPassed = true;
                 lastGpsPosPassTime_ms = imuSampleTime_ms;
-            } else if ((frontend->_gpsGlitchRadiusMax <= 0) && (PV_AidingMode != AID_NONE)) {
+            } else if ((gpsDataToFuse && frontend->_gpsGlitchRadiusMax <= 0) && (PV_AidingMode != AID_NONE)) {
                 // Handle the special case where the glitch radius parameter has been set to a non-positive number.
                 // The innovation variance is increased to limit the state update to an amount corresponding
                 // to a test ratio of 1.
                 lastGpsPosPassTime_ms = imuSampleTime_ms;
                 varInnovVelPos[3] *= posTestRatio;
                 varInnovVelPos[4] *= posTestRatio;
-                posCheckPassed = true;
                 lastGpsPosPassTime_ms = imuSampleTime_ms;
             }
 
@@ -829,8 +870,25 @@ void NavEKF3_core::FuseVelPosNED()
             if (posCheckPassed || posTimeout || badIMUdata) {
                 // if timed out or outside the specified uncertainty radius, reset to the external sensor
                 // if velocity drift is being constrained, dont reset until gps passes quality checks
-                const bool posVarianceIsTooLarge = (frontend->_gpsGlitchRadiusMax > 0) && (P[8][8] + P[7][7]) > sq(ftype(frontend->_gpsGlitchRadiusMax));
-                if ((posTimeout || posVarianceIsTooLarge) && (!velAiding || gpsGoodToAlign)) {
+                bool posVarianceIsTooLarge = false;
+#if EK3_FEATURE_EXTERNAL_NAV
+                if (extNavDataToFuse)
+                {
+                    posVarianceIsTooLarge = (P[8][8] + P[7][7]) > sq(ftype(extNavDataDelayed.posErr));
+                } else 
+#endif
+                if (gpsDataToFuse)
+                {
+                    posVarianceIsTooLarge = (frontend->_gpsGlitchRadiusMax > 0) && (P[8][8] + P[7][7]) > sq(ftype(frontend->_gpsGlitchRadiusMax));
+                }
+                else
+                {
+                    // (EF): This triggers on the ground
+                    // TODO (EF): Do we need to handle this case for beacons?
+                    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "posVarianceIsTooLarge w/o extnav or GPS");
+                }
+
+                if ((posTimeout || posVarianceIsTooLarge) && (!velAiding || (gpsGoodToAlign && gpsDataToFuse))) {
                     // reset the position to the current external sensor position
                     ResetPosition(resetDataSource::DEFAULT);
 
@@ -840,7 +898,20 @@ void NavEKF3_core::FuseVelPosNED()
                     // Reset the position variances and corresponding covariances to a value that will pass the checks
                     zeroRows(P,7,8);
                     zeroCols(P,7,8);
-                    P[7][7] = sq(ftype(0.5f*frontend->_gpsGlitchRadiusMax));
+#if EK3_FEATURE_EXTERNAL_NAV
+                    if (extNavDataToFuse)
+                    {
+                        P[7][7] = sq(ftype(0.5f*extNavDataDelayed.posErr));
+                    } else
+#endif
+                    if (gpsDataToFuse)
+                    {
+                        P[7][7] = sq(ftype(0.5f*frontend->_gpsGlitchRadiusMax));
+                    }
+                    else
+                    {
+                        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "reset pos variance w/o extnav or GPS");
+                    }
                     P[8][8] = P[7][7];
 
                     // Reset the normalised innovation to avoid failing the bad fusion tests
@@ -860,14 +931,14 @@ void NavEKF3_core::FuseVelPosNED()
             } else {
                 fusePosData = false;
             }
-        }
+    }
 
         // Test velocity measurements
         if (fuseVelData) {
             uint8_t imax = 2;
             // Don't fuse vertical velocity observations if disabled in sources or not available
             if ((!frontend->sources.haveVelZSource() || PV_AidingMode != AID_ABSOLUTE ||
-                 !gpsDataDelayed.have_vz) && !useExtNavVel) {
+                    !gpsDataDelayed.have_vz) && !useExtNavVel) {
                 imax = 1;
             }
 
@@ -882,12 +953,13 @@ void NavEKF3_core::FuseVelPosNED()
                 varInnovVelPos[i] = P[stateIndex][stateIndex] + R_OBS_DATA_CHECKS[i];
                 varVelSum += varInnovVelPos[i];
             }
+            // Use the same EK3_VEL_I_GATE for external nav and GPS
             velTestRatio = innovVelSumSq / (varVelSum * sq(MAX(0.01 * (ftype)frontend->_gpsVelInnovGate, 1.0)));
             bool velCheckPassed = false; // boolean true if velocity measurements have passed innovation consistency checks
             if (velTestRatio < 1.0) {
                 velCheckPassed = true;
                 lastVelPassTime_ms = imuSampleTime_ms;
-            } else if (frontend->_gpsGlitchRadiusMax <= 0) {
+            } else if (gpsDataToFuse && frontend->_gpsGlitchRadiusMax <= 0) {
                 // Handle the special case where the glitch radius parameter has been set to a non-positive number.
                 // The innovation variance is increased to limit the state update to an amount corresponding
                 // to a test ratio of 1.
@@ -917,7 +989,6 @@ void NavEKF3_core::FuseVelPosNED()
                 fuseVelData = false;
             }
         }
-
         // Test height measurements
         if (fuseHgtData) {
             // Calculate height innovations
@@ -1154,7 +1225,6 @@ void NavEKF3_core::FuseVelPosNED()
                     } else if (obsIndex == 5) {
                         faultStatus.bad_dpos = true;
                     }
-                }
             }
         }
     }
