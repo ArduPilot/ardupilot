@@ -1867,6 +1867,7 @@ private:
 
 // modes below rely on Guided mode so must be declared at the end (instead of in alphabetical order)
 
+#if AP_ADSB_AVOIDANCE_ENABLED
 class ModeAvoidADSB : public ModeGuided {
 
 public:
@@ -1892,6 +1893,7 @@ protected:
 private:
 
 };
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 
 #if MODE_FOLLOW_ENABLED
 class ModeFollow : public ModeGuided {

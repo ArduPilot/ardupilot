@@ -1,5 +1,9 @@
 #pragma once
 
+#include <AP_Avoidance/AP_Avoidance_config.h>
+
+#if AP_ADSB_AVOIDANCE_ENABLED
+
 #include <AP_Avoidance/AP_Avoidance.h>
 
 // Provide Copter-specific implementation of avoidance.  While most of
@@ -43,3 +47,5 @@ protected:
     // control mode before avoidance began
     Mode::Number prev_control_mode = Mode::Number::RTL;
 };
+
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
