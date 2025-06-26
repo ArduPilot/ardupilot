@@ -592,6 +592,9 @@ public:
 #if AP_PLANE_SYSTEMID_ENABLED
     AP_SystemID systemid;
 #endif
+
+    // MIXING group
+    AP_Mixing mixing;
 };
 
 extern const AP_Param::Info var_info[];
