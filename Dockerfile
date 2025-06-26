@@ -13,7 +13,12 @@ ARG SKIP_AP_COV_ENV=1
 ARG SKIP_AP_GIT_CHECK=1
 ARG DO_AP_STM_ENV=1
 
-RUN groupadd ${USER_NAME} --gid ${USER_GID}\
+RUN if ! getent group ${USER_GID} > /dev/null 2>&1; then \
+        groupadd ${USER_NAME} --gid ${USER_GID}; \
+    else \
+        groupadd ${USER_NAME}; \
+        USER_GID=$(getent group ${USER_NAME} | cut -d: -f3); \
+    fi \
     && useradd -l -m ${USER_NAME} -u ${USER_UID} -g ${USER_GID} -s /bin/bash
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
