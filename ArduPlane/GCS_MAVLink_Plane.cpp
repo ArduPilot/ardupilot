@@ -545,7 +545,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_preflight_calibration(const mavlink
 void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
                                        const mavlink_message_t &msg)
 {
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
     plane.avoidance_adsb.handle_msg(msg);
 #endif
     GCS_MAVLINK::packetReceived(status, msg);

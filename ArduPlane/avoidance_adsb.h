@@ -2,6 +2,8 @@
 
 #include <AP_Avoidance/AP_Avoidance.h>
 
+#if AP_ADSB_AVOIDANCE_ENABLED
+
 // Provide Plane-specific implementation of avoidance.  While most of
 // the logic for doing the actual avoidance is present in
 // AP_Avoidance, this class allows Plane to override base
@@ -33,3 +35,5 @@ protected:
     // control mode before avoidance began
     enum Mode::Number prev_control_mode_number = Mode::Number::RTL;
 };
+
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
