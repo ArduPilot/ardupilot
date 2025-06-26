@@ -177,7 +177,6 @@ FS_GCS_ENABLE          0
 
 # baro
 TCAL_ENABLED           2
-TCAL_BARO_EXP        1.2
 
 # landing
 LAND_SPEED_HIGH      350
