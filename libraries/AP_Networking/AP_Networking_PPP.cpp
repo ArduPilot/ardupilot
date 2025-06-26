@@ -14,6 +14,13 @@
 #include <lwip/tcpip.h>
 #include <stdio.h>
 
+// PPP protocol
+#ifndef PPP_BUFSIZE_RX
+#define PPP_BUFSIZE_RX 4096
+#endif
+#ifndef PPP_BUFSIZE_TX
+#define PPP_BUFSIZE_TX 8192
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -30,7 +37,7 @@ extern const AP_HAL::HAL& hal;
 
 // timeout for PPP link, if no packets in this time then restart the link
 #ifndef PPP_LINK_TIMEOUT_MS
-#define PPP_LINK_TIMEOUT_MS 5000U
+#define PPP_LINK_TIMEOUT_MS 15000U
 #endif
 
 /*
@@ -71,15 +78,10 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
 #endif
     if (driver.uart->txspace() < remaining) {
         /*
-          unfortunately there is nothing we can do if we can't fit the
-          data in the uart transmit buffer. We can't block here as
-          this function is called with the TCPIP lock held, so any
-          blocking can block other threads
-
-          to prevent the link going down we need to lie about sending
-          this frame
+          if we can't send the whole frame then don't send any of it. This
+          minimises issues with the PPP state machine
          */
-        return remaining;
+        return 0;
     }
     auto ret = driver.uart->write(ptr, remaining);
 
@@ -229,7 +231,8 @@ void AP_Networking_PPP::ppp_loop(void)
     }
 
     // ensure this thread owns the uart
-    uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_PPP, 0));
+    // use a larger buffer space for TX to allow for large downloads (eg. MAVFTP)
+    uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_PPP, 0), PPP_BUFSIZE_RX, PPP_BUFSIZE_TX);
     uart->set_unbuffered_writes(true);
 
     while (true) {
@@ -307,7 +310,8 @@ void AP_Networking_PPP::ppp_loop(void)
                     last_read_ms = now_ms;
                 }
 #if PPP_LINK_TIMEOUT_MS
-            } else if (now_ms - last_read_ms > PPP_LINK_TIMEOUT_MS) {
+            } else if (!frontend.option_is_set(AP_Networking::OPTION::PPP_TIMEOUT_DISABLE) &&
+                       now_ms - last_read_ms > PPP_LINK_TIMEOUT_MS) {
                 break;
 #endif
             } else {
@@ -337,6 +341,13 @@ void AP_Networking_PPP::ppp_loop(void)
                 rx_bytes[last_ppp_frame_size++] = buf[i];
             }
 #endif
+
+            // allow the echo timeout to be disabled
+            if (frontend.option_is_set(AP_Networking::OPTION::PPP_ECHO_LIMIT_DISABLE)) {
+                ppp->settings.lcp_echo_fails = 0;
+            } else {
+                ppp->settings.lcp_echo_fails = LCP_MAXECHOFAILS;
+            }
         }
 
         // close with carrier loss, tear down the interface and

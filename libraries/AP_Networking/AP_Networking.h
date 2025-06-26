@@ -164,6 +164,8 @@ public:
         CAN2_MCAST_BRIDGED=(1U<<4),
 #endif
 #endif
+        PPP_TIMEOUT_DISABLE=(1U<<5),
+        PPP_ECHO_LIMIT_DISABLE=(1U<<6),
     };
     bool option_is_set(OPTION option) const {
         return (param.options.get() & int32_t(option)) != 0;
