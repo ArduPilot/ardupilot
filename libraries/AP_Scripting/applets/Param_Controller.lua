@@ -111,12 +111,8 @@ function param_load_batch()
 
       -- skip empty lines and comments
       if line ~= "" and not string.match(line, "^%s*#") then
-         -- Try comma-separated format first (PARAM,value)
-         local _, _, parm, value = string.find(line, "^([%w_]+),([%d.-]+)")
-         if not parm then
-            -- Fall back to space-separated format (PARAM value)
-            _, _, parm, value = string.find(line, "^([%w_]+)%s+([%d.-]+)")
-         end
+         -- Parse parameter using unified pattern for both comma and space delimited formats
+         local _, _, parm, value = string.find(line, "^([%w_]+)[, ] *([%d.-]+)")
 
          if parm and value then
             local num_value = tonumber(value)
