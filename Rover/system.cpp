@@ -329,8 +329,7 @@ bool Rover::is_boat() const
 }
 
 #include <AP_Avoidance/AP_Avoidance.h>
-#include <AP_ADSB/AP_ADSB.h>
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED

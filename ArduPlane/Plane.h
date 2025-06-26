@@ -78,6 +78,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_Avoidance/AP_Avoidance_config.h>      // "ADSB" avoidance library
 #include <AP_ICEngine/AP_ICEngine.h>
 #include <AP_Landing/AP_Landing.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
@@ -117,9 +118,9 @@
 
 #include "RC_Channel_Plane.h"     // RC Channel Library
 #include "Parameters.h"
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
 #include "avoidance_adsb.h"
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 #include "AP_Arming_Plane.h"
 #include "pullup.h"
 #include "systemid.h"
@@ -703,10 +704,12 @@ private:
             FUNCTOR_BIND_MEMBER(&Plane::update_flight_stage, void)};
 #if HAL_ADSB_ENABLED
     AP_ADSB adsb;
+#endif  // HAL_ADSB_ENABLED
 
+#if AP_ADSB_AVOIDANCE_ENABLED
     // avoidance of adsb enabled vehicles (normally manned vehicles)
     AP_Avoidance_Plane avoidance_adsb{adsb};
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 
     // Outback Challenge Failsafe Support
 #if AP_ADVANCEDFAILSAFE_ENABLED

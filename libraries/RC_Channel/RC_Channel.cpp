@@ -1032,7 +1032,7 @@ void RC_Channel::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
 
 void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
 {
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
     AP_Avoidance *avoidance = AP::ap_avoidance();
     if (avoidance == nullptr) {
         return;
@@ -1057,7 +1057,7 @@ void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
     avoidance->disable();
     LOGGER_WRITE_EVENT(LogEvent::AVOIDANCE_ADSB_DISABLE);
     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Disabled");
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 }
 
 void RC_Channel::do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag)

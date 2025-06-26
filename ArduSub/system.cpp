@@ -279,7 +279,7 @@ bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reaso
 AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
 #endif
 
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED

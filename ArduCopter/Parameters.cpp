@@ -617,11 +617,13 @@ const AP_Param::Info Copter::var_info[] = {
     // @Group: ADSB_
     // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
     GOBJECT(adsb,                "ADSB_", AP_ADSB),
+#endif  // HAL_ADSB_ENABLED
 
+#if AP_ADSB_AVOIDANCE_ENABLED
     // @Group: AVD_
     // @Path: ../libraries/AP_Avoidance/AP_Avoidance.cpp
     GOBJECT(avoidance_adsb, "AVD_", AP_Avoidance_Copter),
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
