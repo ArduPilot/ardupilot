@@ -1030,9 +1030,9 @@ void RC_Channel::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
     }
 }
 
+#if AP_ADSB_AVOIDANCE_ENABLED
 void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
 {
-#if AP_ADSB_AVOIDANCE_ENABLED
     AP_Avoidance *avoidance = AP::ap_avoidance();
     if (avoidance == nullptr) {
         return;
@@ -1057,8 +1057,8 @@ void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
     avoidance->disable();
     LOGGER_WRITE_EVENT(LogEvent::AVOIDANCE_ADSB_DISABLE);
     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Disabled");
-#endif  // AP_ADSB_AVOIDANCE_ENABLED
 }
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 
 void RC_Channel::do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag)
 {
@@ -1522,11 +1522,11 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         break;
 #endif
 
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
     case AUX_FUNC::AVOID_ADSB:
         do_aux_function_avoid_adsb(ch_flag);
         break;
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 
     case AUX_FUNC::FFT_NOTCH_TUNE:
         do_aux_function_fft_notch_tune(ch_flag);
