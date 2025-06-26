@@ -105,13 +105,13 @@ def check_file(file, metadata, skip=SkippedChecks()):
         else:
             value, checks_disabled = params[param]
             # If checks are disabled in a comment, then we enable all checks
-            # regardless of args (by passing None). We want to enforce that
-            # the DISABLE_CHECKS in the comment is necessary.
+            # regardless of args. We want to enforce that the DISABLE_CHECKS in
+            # the comment is necessary.
             msg = check_param(
                 param,
                 value,
                 metadata[param],
-                skip if not checks_disabled else None,
+                skip if not checks_disabled else SkippedChecks(),
             )
             # Assert that the DISABLE_CHECKS flag is necessary
             if checks_disabled:
