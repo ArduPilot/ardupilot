@@ -43,6 +43,8 @@ COMPASS_ODI_Z    0.091
 BATT_MONITOR     3
 BATT_VOLT_PIN    9
 BATT_VOLT_MULT   1
+BATT_LOW_VOLT    3.46
+BATT_FS_LOW_ACT  2
 
 # motor compensation
 COMPASS_MOTCT    3
@@ -160,8 +162,6 @@ FLTMODE6               2
 
 # failsafes
 FS_THR_ENABLE          1
-FS_BATT_ENABLE         2
-FS_BATT_VOLTAGE      3.46
 FS_GCS_ENABLE          0
 
 # baro
