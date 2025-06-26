@@ -148,6 +148,7 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 # Barometer setup
 BARO DPS310 I2C:0:0x76
 BARO BMP280 I2C:0:0x76
+BARO SPL06  I2C:0:0x76
 
 # IMU setup
 
