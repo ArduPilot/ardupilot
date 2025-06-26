@@ -477,6 +477,10 @@
 #define AP_BATT_MONITOR_MAX_INSTANCES 1
 #endif
 
+#ifndef AP_BATTERY_SUM_ENABLED
+#define AP_BATTERY_SUM_ENABLED 0  // needs three backends
+#endif  // AP_BATTERY_SUM_ENABLED
+
 // Capacity tracking off
 #ifndef AP_BATT_MONITOR_BATTERY_CAPACITY
 #define AP_BATT_MONITOR_BATTERY_CAPACITY 0
