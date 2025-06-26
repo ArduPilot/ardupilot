@@ -1,6 +1,5 @@
 # defaults for SkyRocket streaming GPS board
 BRD_IO_ENABLE 0
-BRD_PWM_COUNT 4
 MOT_PWM_TYPE 3
 MOT_PWM_MIN 1000
 MOT_PWM_MAX 2000
@@ -197,10 +196,10 @@ MOT_SPOOL_TIME        0
 MOT_HOVER_LEARN       1
 
 # control inputs
+ATC_INPUT_TC        0.15
 PILOT_THR_BHV          3
 PILOT_ACCEL_Z        400
 PILOT_SPEED_DN       500
-RC_FEEL_RP            50
 RC1_MIN             1000
 RC1_MAX             2000
 RC2_MIN             1000
@@ -224,10 +223,8 @@ PSC_POSXY_P           0.7
 PSC_VELXY_I           0.3
 PSC_VELXY_P           0.6
 PSC_VELXY_FLTE        1.0
-WPNAV_LOIT_JERK     4000
-WPNAV_LOIT_MAXA      800
-WPNAV_LOIT_MINA      250
-WPNAV_LOIT_SPEED     800
+LOIT_ACC_MAX         800
+LOIT_SPEED           800
 WPNAV_SPEED          750
 RTL_SPEED            600
 
