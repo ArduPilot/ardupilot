@@ -1,3 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ardupilot"
+version = "4.6.0"
+
+[project.optional-dependencies]
+tests = [
+    "mock",
+    "numpy",
+    "pexpect",
+    "pytest",
+    "requests"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+
 [tool.isort]
 profile = "black"
 skip = ["./modules/", "./build/"]

@@ -6,11 +6,11 @@ AP_FLAKE8_CLEAN
 
 from arducopter import AutoTestCopter
 
-import vehicle_test_suite
-from vehicle_test_suite import NotAchievedException, AutoTestTimeoutException
+from Tools.autotest import vehicle_test_suite
+from Tools.autotest.vehicle_test_suite import NotAchievedException, AutoTestTimeoutException
 
 from pymavlink import mavutil
-from pysim import vehicleinfo
+from Tools.autotest.pysim import vehicleinfo
 
 import copy
 import operator

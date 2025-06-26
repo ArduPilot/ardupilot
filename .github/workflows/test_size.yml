@@ -203,6 +203,7 @@ jobs:
           fi
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
+          python3 -m pip install --editable .
           cd pr/
           git config user.email "ardupilot-ci@ardupilot.org"
           git config user.name "ArduPilot CI"

@@ -10,7 +10,7 @@ Amilcar do Carmo Lucas, IAV GmbH
 
 import unittest
 from unittest.mock import patch, MagicMock
-from extract_param_defaults import extract_parameter_default_values, missionplanner_sort, \
+from Tools.scripts.extract_param_defaults import extract_parameter_default_values, missionplanner_sort, \
                                    mavproxy_sort, sort_params, output_params, parse_arguments, \
                                    NO_DEFAULT_VALUES_MESSAGE, MAVLINK_SYSID_MAX, MAVLINK_COMPID_MAX
 
@@ -64,7 +64,7 @@ class TestArgParseParameters(unittest.TestCase):
 
 class TestExtractParameterDefaultValues(unittest.TestCase):
 
-    @patch('extract_param_defaults.mavutil.mavlink_connection')
+    @patch('Tools.scripts.extract_param_defaults.mavutil.mavlink_connection')
     def test_logfile_does_not_exist(self, mock_mavlink_connection):
         # Mock the mavlink connection to raise an exception
         mock_mavlink_connection.side_effect = Exception("Test exception")
@@ -76,7 +76,7 @@ class TestExtractParameterDefaultValues(unittest.TestCase):
         # Check the error message
         self.assertEqual(str(cm.exception), "Error opening the dummy.bin logfile: Test exception")
 
-    @patch('extract_param_defaults.mavutil.mavlink_connection')
+    @patch('Tools.scripts.extract_param_defaults.mavutil.mavlink_connection')
     def test_extract_parameter_default_values(self, mock_mavlink_connection):
         # Mock the mavlink connection and the messages it returns
         mock_mlog = MagicMock()
@@ -93,7 +93,7 @@ class TestExtractParameterDefaultValues(unittest.TestCase):
         # Check if the defaults dictionary contains the correct parameters and values
         self.assertEqual(defaults, {'PARAM1': 1.1, 'PARAM2': 2.0})
 
-    @patch('extract_param_defaults.mavutil.mavlink_connection')
+    @patch('Tools.scripts.extract_param_defaults.mavutil.mavlink_connection')
     def test_no_parameters(self, mock_mavlink_connection):
         # Mock the mavlink connection to return no parameter messages
         mock_mlog = MagicMock()
@@ -105,7 +105,7 @@ class TestExtractParameterDefaultValues(unittest.TestCase):
             extract_parameter_default_values('dummy.bin')
         self.assertEqual(str(cm.exception), NO_DEFAULT_VALUES_MESSAGE)
 
-    @patch('extract_param_defaults.mavutil.mavlink_connection')
+    @patch('Tools.scripts.extract_param_defaults.mavutil.mavlink_connection')
     def test_no_parameter_defaults(self, mock_mavlink_connection):
         # Mock the mavlink connection to simulate no parameter default values in the .bin file
         mock_mlog = MagicMock()
@@ -117,7 +117,7 @@ class TestExtractParameterDefaultValues(unittest.TestCase):
             extract_parameter_default_values('dummy.bin')
         self.assertEqual(str(cm.exception), NO_DEFAULT_VALUES_MESSAGE)
 
-    @patch('extract_param_defaults.mavutil.mavlink_connection')
+    @patch('Tools.scripts.extract_param_defaults.mavutil.mavlink_connection')
     def test_invalid_parameter_name(self, mock_mavlink_connection):
         # Mock the mavlink connection to simulate an invalid parameter name
         mock_mlog = MagicMock()
@@ -128,7 +128,7 @@ class TestExtractParameterDefaultValues(unittest.TestCase):
         with self.assertRaises(SystemExit):
             extract_parameter_default_values('dummy.bin')
 
-    @patch('extract_param_defaults.mavutil.mavlink_connection')
+    @patch('Tools.scripts.extract_param_defaults.mavutil.mavlink_connection')
     def test_long_parameter_name(self, mock_mavlink_connection):
         # Mock the mavlink connection to simulate a too long parameter name
         mock_mlog = MagicMock()
@@ -174,7 +174,7 @@ class TestSortFunctions(unittest.TestCase):
 
 class TestOutputParams(unittest.TestCase):
 
-    @patch('extract_param_defaults.print')
+    @patch('Tools.scripts.extract_param_defaults.print')
     def test_output_params(self, mock_print):
         # Prepare a dummy defaults dictionary
         defaults = {'PARAM2': 1.0, 'PARAM1': 2.0}
@@ -186,7 +186,7 @@ class TestOutputParams(unittest.TestCase):
         expected_calls = [unittest.mock.call('PARAM2,1'), unittest.mock.call('PARAM1,2')]
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
-    @patch('extract_param_defaults.print')
+    @patch('Tools.scripts.extract_param_defaults.print')
     def test_output_params_missionplanner_non_numeric(self, mock_print):
         # Prepare a dummy defaults dictionary
         defaults = {'PARAM1': 'non-numeric'}
@@ -198,7 +198,7 @@ class TestOutputParams(unittest.TestCase):
         expected_calls = [unittest.mock.call('PARAM1,non-numeric')]
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
-    @patch('extract_param_defaults.print')
+    @patch('Tools.scripts.extract_param_defaults.print')
     def test_output_params_mavproxy(self, mock_print):
         # Prepare a dummy defaults dictionary
         defaults = {'PARAM2': 2.0, 'PARAM1': 1.0}
@@ -212,7 +212,7 @@ class TestOutputParams(unittest.TestCase):
                           unittest.mock.call("%-15s %.6f" % ('PARAM2', 2.0))]
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
-    @patch('extract_param_defaults.print')
+    @patch('Tools.scripts.extract_param_defaults.print')
     def test_output_params_qgcs(self, mock_print):
         # Prepare a dummy defaults dictionary
         defaults = {'PARAM2': 2.0, 'PARAM1': 1.0}
@@ -227,7 +227,7 @@ class TestOutputParams(unittest.TestCase):
                           unittest.mock.call("%u %u %-15s %.6f %u" % (1, 1, 'PARAM2', 2.0, 9))]
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
-    @patch('extract_param_defaults.print')
+    @patch('Tools.scripts.extract_param_defaults.print')
     def test_output_params_qgcs_2_4(self, mock_print):
         # Prepare a dummy defaults dictionary
         defaults = {'PARAM2': 2.0, 'PARAM1': 1.0}
@@ -242,7 +242,7 @@ class TestOutputParams(unittest.TestCase):
                           unittest.mock.call("%u %u %-15s %.6f %u" % (2, 4, 'PARAM2', 2.0, 9))]
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
-    @patch('extract_param_defaults.print')
+    @patch('Tools.scripts.extract_param_defaults.print')
     def test_output_params_qgcs_MAV_SYSID(self, mock_print):
         # Prepare a dummy defaults dictionary
         defaults = {'PARAM2': 2.0, 'PARAM1': 1.0, 'MAV_SYSID': 3.0}
@@ -260,7 +260,7 @@ class TestOutputParams(unittest.TestCase):
         ]
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
-    @patch('extract_param_defaults.print')
+    @patch('Tools.scripts.extract_param_defaults.print')
     def test_output_params_qgcs_SYSID_INVALID(self, mock_print):
         # Prepare a dummy defaults dictionary
         defaults = {'PARAM2': 2.0, 'PARAM1': 1.0, 'MAV_SYSID': -1.0}
@@ -277,7 +277,7 @@ class TestOutputParams(unittest.TestCase):
             output_params(defaults, 'qgcs', MAVLINK_SYSID_MAX+2, 7)
         self.assertEqual(str(cm.exception), f"Invalid system ID parameter 16777218 must be smaller than {MAVLINK_SYSID_MAX}")
 
-    @patch('extract_param_defaults.print')
+    @patch('Tools.scripts.extract_param_defaults.print')
     def test_output_params_qgcs_COMPID_INVALID(self, mock_print):
         # Prepare a dummy defaults dictionary
         defaults = {'PARAM2': 2.0, 'PARAM1': 1.0}
@@ -294,7 +294,7 @@ class TestOutputParams(unittest.TestCase):
             output_params(defaults, 'qgcs', 1, MAVLINK_COMPID_MAX+3)
         self.assertEqual(str(cm.exception), f"Invalid component ID parameter 259 must be smaller than {MAVLINK_COMPID_MAX}")
 
-    @patch('extract_param_defaults.print')
+    @patch('Tools.scripts.extract_param_defaults.print')
     def test_output_params_integer(self, mock_print):
         # Prepare a dummy defaults dictionary with an integer value
         defaults = {'PARAM1': 1.01, 'PARAM2': 2.00}

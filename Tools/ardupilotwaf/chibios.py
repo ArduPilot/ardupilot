@@ -142,8 +142,7 @@ class set_default_parameters(Task.Task):
         rel_default_parameters = self.env.get_flat('DEFAULT_PARAMETERS').replace("'", "")
         abs_default_parameters = os.path.join(self.env.SRCROOT, rel_default_parameters)
         apj_tool = self.env.APJ_TOOL
-        sys.path.append(os.path.dirname(apj_tool))
-        from apj_tool import embedded_defaults
+        from Tools.scripts.apj_tool import embedded_defaults
         defaults = embedded_defaults(self.inputs[0].abspath())
         if defaults.find():
             defaults.set_file(abs_default_parameters)
@@ -288,9 +287,7 @@ class set_app_descriptor(Task.Task):
         # to CRC32 of image after descriptor. This is very efficient
         # for bootloader to calculate
         # after CRC comes image length and 32 bit git hash
-        upload_tools = self.env.get_flat('UPLOAD_TOOLS')
-        sys.path.append(upload_tools)
-        from uploader import crc32
+        from Tools.scripts.uploader import crc32
         if self.generator.bld.env.AP_SIGNED_FIRMWARE:
             desc_len = 92
         else:

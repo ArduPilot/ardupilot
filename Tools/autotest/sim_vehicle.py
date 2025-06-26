@@ -27,8 +27,7 @@ import shlex
 import binascii
 import math
 
-from pysim import util
-from pysim import vehicleinfo
+from Tools.autotest.pysim import util, vehicleinfo
 
 
 # List of open terminal windows for macosx
@@ -40,8 +39,7 @@ root_dir = os.path.realpath(os.path.join(autotest_dir, '../..'))
 try:
     from pymavlink import mavextra
 except ImportError:
-    sys.path.append(os.path.join(root_dir, "modules/mavlink"))
-    from pymavlink import mavextra
+    from modules.mavlink.pymavlink import mavextra
 
 os.environ["SIM_VEHICLE_SESSION"] = binascii.hexlify(os.urandom(8)).decode()
 

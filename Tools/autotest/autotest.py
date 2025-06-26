@@ -32,10 +32,10 @@ import sailboat
 import helicopter
 
 import examples
-from pysim import util
+from Tools.autotest.pysim import util
 from pymavlink.generator import mavtemplate
 
-from vehicle_test_suite import Test
+from Tools.autotest.vehicle_test_suite import Test
 
 tester = None
 

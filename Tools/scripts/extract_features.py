@@ -12,9 +12,9 @@ import string
 import subprocess
 import sys
 import time
-import build_options
 import select
 
+from Tools.scripts import build_options
 
 if sys.version_info[0] < 3:
     running_python3 = False

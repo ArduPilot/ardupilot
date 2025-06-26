@@ -16,10 +16,8 @@ import json
 _board_classes = {}
 _board = None
 
-# modify our search path:
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
-import chibios_hwdef
-import build_options
+from libraries.AP_HAL_ChibiOS.hwdef.scripts import chibios_hwdef
+from Tools.scripts import build_options
 
 class BoardMeta(type):
     def __init__(cls, name, bases, dct):

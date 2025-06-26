@@ -185,6 +185,7 @@ jobs:
           source ~/.bash_profile
           PATH="/github/home/.local/bin:$PATH"
           echo $PATH
+          python3 -m pip install --editable .
           ./waf configure --board ${{matrix.config}}
           ./waf
           ./waf configure --board ${{matrix.config}} --debug

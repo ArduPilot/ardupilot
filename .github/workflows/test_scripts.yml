@@ -13,15 +13,14 @@ jobs:
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
-        config: [
-            check_autotest_options,
-            param_parse,
-            python-cleanliness,
-            astyle-cleanliness,
-            validate_board_list,
-            logger_metadata,
-            param-file-validation,
-       ]
+        config:
+          - check_autotest_options
+          - param_parse
+          - python-cleanliness
+          - astyle-cleanliness
+          - validate_board_list
+          - logger_metadata
+          - param-file-validation
     steps:
       # git checkout the PR
       - uses: actions/checkout@v4
@@ -33,4 +32,5 @@ jobs:
         shell: bash
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          python3 -m pip install --editable .
           Tools/scripts/build_ci.sh

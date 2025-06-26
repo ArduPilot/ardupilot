@@ -5,13 +5,14 @@ AP_FLAKE8_CLEAN
 """
 
 import os
-import pexpect
 import signal
 import subprocess
 import time
 import traceback
 
-from pysim import util
+import pexpect
+
+from Tools.autotest.pysim import util
 
 
 def run_example(name, filepath, valgrind=False, gdb=False):

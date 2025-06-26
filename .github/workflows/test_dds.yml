@@ -185,6 +185,7 @@ jobs:
           PATH="/github/home/.local/bin:$PATH"
           PATH="/tmp/Micro-XRCE-DDS-Gen/scripts:$PATH"
           which microxrceddsgen
+          python3 -m pip install --editable .
           Tools/scripts/build_ci.sh
 
       - name: Archive buildlog artifacts

@@ -13,8 +13,7 @@ import pickle
 import sys
 import traceback
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_Linux/hwdef/scripts'))
-import linux_hwdef  # noqa:501
+from libraries.AP_HAL_Linux.hwdef.scripts import linux_hwdef  # noqa:501
 
 
 @feature('linux_ap_library', 'linux_ap_program')
