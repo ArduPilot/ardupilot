@@ -45,6 +45,9 @@ void AP_RangeFinder_SITL::update(void)
 
     // update range_valid state based on distance measured
     update_status();
+
+    // update sample history
+    update_history();
 }
 
 #endif  // AP_RANGEFINDER_SIM_ENABLED

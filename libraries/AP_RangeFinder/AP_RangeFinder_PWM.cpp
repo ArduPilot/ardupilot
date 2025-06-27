@@ -125,6 +125,7 @@ void AP_RangeFinder_PWM::update(void)
     // update range_valid state based on distance measured
     state.last_reading_ms = AP_HAL::millis();
     update_status();
+    update_history();
 }
 
 

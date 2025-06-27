@@ -1272,6 +1272,17 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(systemid, "SID", 38, ParametersG2, AP_SystemID),
 #endif
     
+#if AP_RANGEFINDER_ENABLED
+    // @Param: RNGFND_LND_DIST
+    // @DisplayName: Rangefinder landing engagement distance
+    // @Description: The horizontal distance to the landing point at which the rangefinder engages if RNGFND_LANDING is enabled. This is useful for landing on top of platforms or small plateaus, and to avoid interference from uneven terrain or obstacles along the glide path. The default value of 0 enables the rangefinder as soon as it is in range.
+    // @Range: 0 250
+    // @Units: m
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RNGFND_LND_DIST", 39, ParametersG2, rangefinder_land_engagement_distance, 0),
+#endif
+
     AP_GROUPEND
 };
 

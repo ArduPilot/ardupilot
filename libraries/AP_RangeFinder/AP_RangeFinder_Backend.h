@@ -18,6 +18,7 @@
 
 #if AP_RANGEFINDER_ENABLED
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
@@ -60,6 +61,7 @@ public:
     float ground_clearance() const { return params.ground_clearance; }
     MAV_DISTANCE_SENSOR get_mav_distance_sensor_type() const;
     RangeFinder::Status status() const;
+    RangeFinder::Status status(float distance_m) const;
     RangeFinder::Type type() const { return (RangeFinder::Type)params.type.get(); }
 
     // true if sensor is returning data
@@ -75,6 +77,23 @@ public:
     // return system time of last successful read from the sensor
     uint32_t last_reading_ms() const { return state.last_reading_ms; }
 
+#if AP_AHRS_ENABLED
+    // return vehicle location at last successful read from the sensor
+    Location last_reading_loc() const { return state.last_reading_loc; }
+#endif
+
+    // return sample history of the sensor
+    RangeFinder::RangeFinder_State::RangeFinder_Sample *sample_history() const
+    {
+        return state.sample_history;
+    }
+
+    // return number of samples in the sample history of the sensor
+    uint8_t sample_history_size() const { return state.sample_history_size; }
+
+    // return index of the last captured sample in the history of the sensor
+    uint8_t last_sample_history_index() const { return state.last_sample_history_index; }
+
     // get temperature reading in C.  returns true on success and populates temp argument
     virtual bool get_temp(float &temp) const { return false; }
 
@@ -87,6 +106,10 @@ protected:
     // update status based on distance measurement
     void update_status(RangeFinder::RangeFinder_State &state_arg) const;
     void update_status() { update_status(state); }
+
+    // update sample history
+    void update_history(RangeFinder::RangeFinder_State &state_arg) const;
+    void update_history() { update_history(state); }
 
     // set status and update valid_count
     static void set_status(RangeFinder::RangeFinder_State &state_arg, RangeFinder::Status status);
@@ -102,6 +125,13 @@ protected:
     RangeFinder::Type _backend_type;
 
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const = 0;
+
+private:
+    enum RangeFinder::Status _get_status_for_distance(float distance_m) const;
+
+#if AP_AHRS_ENABLED
+    void _calc_rngfnd_attitude_deviation_rad(float &orient_error_rad) const;
+#endif
 };
 
 #endif  // AP_RANGEFINDER_ENABLED

@@ -18,7 +18,9 @@
 
 #if AP_RANGEFINDER_ENABLED
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
@@ -33,6 +35,16 @@
   #else
   #define RANGEFINDER_MAX_INSTANCES 1
   #endif
+#endif
+
+// Sample history size for this platform
+#ifndef RANGEFINDER_SAMPLE_HISTORY_SIZE
+#define RANGEFINDER_SAMPLE_HISTORY_SIZE 50
+#endif
+
+// Minimum number of samples for accurate average rangefinder readings
+#ifndef RANGEFINDER_MIN_SAMPLE_NUM_FOR_AVG
+#define RANGEFINDER_MIN_SAMPLE_NUM_FOR_AVG 3
 #endif
 
 #define RANGEFINDER_GROUND_CLEARANCE_DEFAULT 0.10
@@ -216,6 +228,27 @@ public:
         enum RangeFinder::Status status; // sensor status
         uint8_t  range_valid_count;     // number of consecutive valid readings (maxes out at 10)
         uint32_t last_reading_ms;       // system time of last successful update from sensor
+#ifdef AP_AHRS_ENABLED
+        Location last_reading_loc;      // vehicle location at last measurement
+#endif
+
+        struct RangeFinder_Sample {
+            float distance_m;               // distance in meters
+            int8_t signal_quality_pct;      // quality of the measurement
+            uint32_t timestamp_ms;          // timestamp of the sample
+
+#ifdef AP_AHRS_ENABLED
+            float attitude_deviation_rad;   // attitude deviation of the sensor at measurement time
+            uint8_t hor_loc_delta_dm;       // hor. travel distance from last sample, in decimeters
+#endif
+        };
+
+        // distance sample history implemented as a circular buffer, used for
+        // calculating average measured distance over travel distance, timespan,
+        // or sample count
+        RangeFinder_Sample sample_history[RANGEFINDER_SAMPLE_HISTORY_SIZE];
+        uint8_t sample_history_size;        // number of samples in the sample history
+        uint8_t last_sample_history_index;  // index of the last captured sample in the sample history
 
         const struct AP_Param::GroupInfo *var_info;
     };
@@ -305,6 +338,23 @@ public:
     // get temperature reading in C.  returns true on success and populates temp argument
     bool get_temp(enum Rotation orientation, float &temp) const;
 
+    // methods to average rangefinder readings from past travel distance,
+    // timespan, or sample count
+#ifdef AP_AHRS_ENABLED
+    bool calc_avg_distance_from_past_travel(
+        enum Rotation orientation, float horizontal_distance_m,
+        float &average_distance_m, float max_att_deviation_deg = -1.0f,
+        float max_mean_abs_deviation_m = -1.0f) const;
+    bool calc_avg_distance_from_past_timespan(
+        enum Rotation orientation, float time_span_s, float &average_distance_m,
+        float max_att_deviation_deg = -1.0f,
+        float max_mean_abs_deviation_m = -1.0f) const;
+#endif
+    bool calc_avg_distance_from_past_samples(
+        enum Rotation orientation, uint16_t sample_num,
+        float &average_distance_m, float max_att_deviation_deg = -1.0f,
+        float max_mean_abs_deviation_m = -1.0f) const;
+
     /*
       set an externally estimated terrain height. Used to enable power
       saving (where available) at high altitudes.
@@ -333,6 +383,13 @@ private:
     void detect_instance(uint8_t instance, uint8_t& serial_instance);
 
     bool _add_backend(AP_RangeFinder_Backend *driver, uint8_t instance, uint8_t serial_instance=0);
+    bool _check_backend_sample_history(const AP_RangeFinder_Backend *backend) const;
+    bool _calc_avg_distance(
+        const AP_RangeFinder_Backend *backend,
+        uint16_t sample_count,
+        float max_att_deviation_deg,
+        float max_mean_abs_deviation_m,
+        float &average_distance_m) const;
 
     uint32_t _log_rfnd_bit = -1;
     void Log_RFND() const;
