@@ -672,10 +672,12 @@ bool AP_Arming::gps_checks(bool report)
             }
         }
 
+#if !APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
         if (!AP::ahrs().home_is_set()) {
             check_failed(Check::GPS, report, "AHRS: waiting for home");
             return false;
         }
+#endif
 
         // check GPSs are within 50m of each other and that blending is healthy
         float distance_m;
