@@ -1941,6 +1941,23 @@ void GCS_MAVLINK::raw_packetReceived(uint8_t framing_status,
     handle_message(msg);
 }
 
+bool GCS_MAVLINK::should_send_timesync_request(const uint32_t tnow_ms) const
+{
+    if (is_private()) {
+        return false;
+    }
+#if HAL_HIGH_LATENCY2_ENABLED
+    if (is_high_latency_link) {
+        return false;
+    }
+#endif  // HAL_HIGH_LATENCY2_ENABLED
+    if (option_enabled(Option::UNICAST)) {
+        return false;
+    }
+
+    return tnow_ms - _timesync_request.last_sent_ms > _timesync_request.interval_ms;
+}
+
 void
 GCS_MAVLINK::update_receive(uint32_t max_time_us)
 {
@@ -2023,15 +2040,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
 
     const uint32_t tnow = AP_HAL::millis();
 
-    // send a timesync message every 10 seconds; this is for data
-    // collection purposes
-#if HAL_HIGH_LATENCY2_ENABLED
-    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms && !is_private() && !is_high_latency_link &&
-        !option_enabled(Option::UNICAST)) {
-#else
-    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms && !is_private() &&
-        !option_enabled(Option::UNICAST)) {
-#endif // HAL_HIGH_LATENCY2_ENABLED
+    if (should_send_timesync_request(tnow)) {
         if (HAVE_PAYLOAD_SPACE(chan, TIMESYNC)) {
             send_timesync();
             _timesync_request.last_sent_ms = tnow;
