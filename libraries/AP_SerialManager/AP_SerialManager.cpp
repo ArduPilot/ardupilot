@@ -584,9 +584,6 @@ void AP_SerialManager::init()
 #endif
 #if AP_NETWORKING_BACKEND_PPP
                 case SerialProtocol_PPP:
-                    uart->begin(state[i].baudrate(),
-                                         AP_SERIALMANAGER_PPP_BUFSIZE_RX,
-                                         AP_SERIALMANAGER_PPP_BUFSIZE_TX);
                     break;
 #endif
                     
