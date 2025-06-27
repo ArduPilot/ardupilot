@@ -8,9 +8,9 @@
 #define IIO_ANALOG_IN_COUNT 8
 #define IIO_ANALOG_IN_DIR "/sys/bus/iio/devices/iio:device0/"
 
-#ifndef IIO_VOLTAGE_SCALING
-#define IIO_VOLTAGE_SCALING 1.0
-#endif  // defined(IIO_VOLTAGE_SCALING)
+#ifndef AP_HAL_LINUX_ANALOGIN_IIO_VOLTAGE_SCALING
+#define AP_HAL_LINUX_ANALOGIN_IIO_VOLTAGE_SCALING 1.0
+#endif  // defined(AP_HAL_LINUX_ANALOGIN_IIO_VOLTAGE_SCALING)
 
 class AnalogSource_IIO : public AP_HAL::AnalogSource {
 public:
