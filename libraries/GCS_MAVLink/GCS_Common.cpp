@@ -2105,6 +2105,7 @@ void GCS_MAVLINK::log_mavlink_stats()
     flags                  : flags,
     stream_slowdown_ms     : stream_slowdown_ms,
     times_full             : out_of_space_to_send_count,
+    GCS_SYSID_last_seen_ms : _sysid_gcs_last_seen_time_ms,
     };
 
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
@@ -4148,7 +4149,7 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
         }
     }
 
-    gcs().sysid_mygcs_seen(tnow);
+    sysid_mygcs_seen(tnow);
 
 }
 #endif  // AP_RC_CHANNEL_ENABLED
@@ -4262,12 +4263,12 @@ void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 }
 #endif
 
-void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg) const
+void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg)
 {
     // if the heartbeat is from our GCS then we don't failsafe for
     // now...
     if (msg.sysid == gcs().sysid_gcs()) {
-        gcs().sysid_mygcs_seen(AP_HAL::millis());
+        sysid_mygcs_seen(AP_HAL::millis());
     }
 }
 
@@ -7343,9 +7344,17 @@ void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
 
     // a manual control message is considered to be a 'heartbeat'
     // from the ground station for failsafe purposes
-    gcs().sysid_mygcs_seen(tnow);
+    sysid_mygcs_seen(tnow);
 }
 #endif  // AP_RC_CHANNEL_ENABLED
+
+// called when valid traffic has been seen from our GCS
+void GCS_MAVLINK::sysid_mygcs_seen(uint32_t seen_time_ms)
+{
+    gcs().sysid_mygcs_seen(seen_time_ms);
+    _sysid_gcs_last_seen_time_ms = seen_time_ms;
+}
+
 
 #if AP_RSSI_ENABLED
 uint8_t GCS_MAVLINK::receiver_rssi() const
