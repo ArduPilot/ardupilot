@@ -653,6 +653,7 @@ protected:
     void handle_device_op_read(const mavlink_message_t &msg);
     void handle_device_op_write(const mavlink_message_t &msg);
 
+    bool should_send_timesync_request(uint32_t tnow_ms) const;
     void send_timesync();
     // returns the time a timesync message was most likely received:
     uint64_t timesync_receive_timestamp_ns() const;
