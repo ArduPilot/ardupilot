@@ -87,6 +87,12 @@ public:
         SerialProtocol_PPP = 48,
         SerialProtocol_IBUS_Telem = 49,                // i-BUS telemetry data, ie via sensor port of FS-iA6B
         SerialProtocol_IOMCU = 50,                     // IOMCU 
+        SerialProtocol_HobbyWing = 51,
+        SerialProtocol_HobbyWing = 51,
+        SerialProtocol_HobbyWing_DataLink = 52,
+        SerialProtocol_HobbyWing_PlatinumProV3 = 53,
+        SerialProtocol_HobbyWing_PlatinumV4 = 54,
+        SerialProtocol_HobbyWing_XRotorV4 = 55,
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
