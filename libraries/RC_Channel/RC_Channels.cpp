@@ -31,13 +31,15 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Math/AP_Math.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_RCMapper/AP_RCMapper.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include "RC_Channel.h"
 
 /*
   channels group object constructor
  */
-RC_Channels::RC_Channels(void)
+RC_Channels::RC_Channels(void) :
+    override_start_throttle(-1)
 {
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
@@ -90,7 +92,34 @@ bool RC_Channels::read_input(void)
         success |= channel(i)->update();
     }
 
+    // check if RC overrides should be ignored based on RC_OPTIONS and any pilot input change during active overrides
+    if (should_ignore_overrides()) {
+        set_gcs_overrides_enabled(false);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "RC overrides cleared by pilot input");
+    }
+
     return success;
+}
+
+bool RC_Channels::should_ignore_overrides(void)
+{
+    if (!rc().option_is_enabled(Option::CLEAR_OVERRIDES_BY_RC) || !has_active_overrides()) {
+        return false;
+    }
+
+    // check for pilot input exceeding the deadzone on roll, pitch, or yaw
+    if (!get_roll_channel().in_raw_trim_dz() ||
+        !get_pitch_channel().in_raw_trim_dz() ||
+        !get_yaw_channel().in_raw_trim_dz()) {
+        return true;
+    }
+
+    // check if the throttle input has changed beyond the deadzone since the override started
+    if (abs(get_throttle_channel().get_raw_radio_in() - override_start_throttle) > get_throttle_channel().get_dead_zone()) {
+        return true;
+    }
+
+    return false;
 }
 
 uint8_t RC_Channels::get_valid_channel_count(void)
