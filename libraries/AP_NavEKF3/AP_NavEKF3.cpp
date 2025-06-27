@@ -120,6 +120,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
+#define FLOW_HGT_SRC_DEFAULT    0
 #define WIND_P_NSE_DEFAULT      0.1
 
 #endif // APM_BUILD_DIRECTORY
@@ -743,6 +744,13 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @Bitmask: 0:JammingExpected, 1: ManualLaneSwitching
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
+
+    // @Param: FLOW_HGT_SRC
+    // @DisplayName: Optical flow height source
+    // @Description: Controls the source of height used by the optical flow sensor for fusion.
+    // @Values: 0:RangeFinder,1:OpticalFlow Mavlink
+    // @RebootRequired: True
+    AP_GROUPINFO("FLOW_HGT_SRC", 55, NavEKF3, _flowHgtSrc, FLOW_HGT_SRC_DEFAULT),
 
     AP_GROUPEND
 };
@@ -1578,13 +1586,13 @@ bool NavEKF3::configuredToUseGPSForPosXY(void) const
 // posOffset is the XYZ flow sensor position in the body frame in m
 // heightOverride is the fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
 #if EK3_FEATURE_OPTFLOW_FUSION
-void NavEKF3::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
+void NavEKF3::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const float rawGroundDistance, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
 {
-    dal.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
+    dal.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, rawGroundDistance, msecFlowMeas, posOffset, heightOverride);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
+            core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, rawGroundDistance, msecFlowMeas, posOffset, heightOverride);
         }
     }
 }

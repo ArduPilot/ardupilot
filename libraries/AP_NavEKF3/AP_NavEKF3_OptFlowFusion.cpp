@@ -34,6 +34,16 @@ void NavEKF3_core::SelectFlowFusion()
 
     // Check for data at the fusion time horizon
     const bool flowDataToFuse = storedOF.recall(ofDataDelayed, imuDataDelayed.time_ms);
+    flowHgtToFuse = (frontend->_flowHgtSrc == FLOW_HGT_SRC_MAVLINK) && (ofDataDelayed.ground_distance > 0);
+
+    if (flowHgtToFuse) {
+        // If the optical flow sensor is providing ground distance, correct for the sensor's offset wrt tilt
+        Vector3F posOffsetBody = ofDataDelayed.body_offset - accelPosOffset;
+        if (!posOffsetBody.is_zero()) {
+            Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+            ofDataDelayed.ground_distance += posOffsetEarth.z / prevTnb.c.z;
+        }
+    }
 
     // Perform Data Checks
     // Check if the optical flow data is still valid
@@ -52,7 +62,7 @@ void NavEKF3_core::SelectFlowFusion()
     }
 
     // if have valid flow or range measurements, fuse data into a 1-state EKF to estimate terrain height
-    if (((flowDataToFuse && (frontend->_flowUse == FLOW_USE_TERRAIN)) || rangeDataToFuse) && tiltOK) {
+    if (((flowDataToFuse && (frontend->_flowUse == FLOW_USE_TERRAIN)) || rangeDataToFuse || flowHgtToFuse) && tiltOK) {
         // Estimate the terrain offset (runs a one state EKF)
         EstimateTerrainOffset(ofDataDelayed);
     }
@@ -86,7 +96,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
     || velHorizSq < 25.0f 
     || (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) > frontend->_maxFlowRate));
 
-    if ((!rangeDataToFuse && cantFuseFlowData) || (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
+    if ((!(rangeDataToFuse || flowHgtToFuse) && cantFuseFlowData) || (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
         // skip update
         inhibitGndState = true;
     } else {
@@ -104,6 +114,60 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
         ftype Pincrement = (distanceTravelledSq * sq(frontend->_terrGradMax)) + sq(timeLapsed)*P[6][6];
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
+
+        // fuse ground distance data from optical flow
+        if (flowHgtToFuse) {
+            // reset terrain state if OF ground distance data not fused for 5 seconds
+            if (imuSampleTime_ms - gndHgtValidTime_ms > 5000) {
+                terrainState = MAX(ofDataDelayed.ground_distance * prevTnb.c.z, rngOnGnd) + stateStruct.position.z;
+            }
+
+            // predict range
+            ftype predRngMeas = MAX((terrainState - stateStruct.position[2]),rngOnGnd) / prevTnb.c.z;
+            // Copy required states to local variable names
+            ftype q0 = stateStruct.quat[0]; // quaternion at optical flow measurement time
+            ftype q1 = stateStruct.quat[1]; // quaternion at optical flow measurement time
+            ftype q2 = stateStruct.quat[2]; // quaternion at optical flow measurement time
+            ftype q3 = stateStruct.quat[3]; // quaternion at optical flow measurement time
+
+            // Set range finder measurement noise variance. TODO make this a function of range and tilt to allow for sensor, alignment and AHRS errors
+            // Use same noise variance for optical flow ground distance as for range finder
+            ftype R_RNG = frontend->_rngNoise.get();
+
+            // calculate Kalman gain
+            ftype SK_RNG = sq(q0) - sq(q1) - sq(q2) + sq(q3);
+            ftype K_RNG = Popt/(SK_RNG*(R_RNG + Popt/sq(SK_RNG)));
+
+            // Calculate the innovation variance for data logging
+            varInnovHgt = (R_RNG + Popt/sq(SK_RNG));
+
+            // constrain terrain height to be below the vehicle
+            terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
+
+            // Calculate the measurement innovation
+            innovHgt = predRngMeas - ofDataDelayed.ground_distance;
+
+            // calculate the innovation consistency test ratio
+            auxRngTestRatio = sq(innovHgt) / (sq(MAX(0.01f * (ftype)frontend->_rngInnovGate, 1.0f)) * varInnovHgt);
+
+            // Check the innovation test ratio and don't fuse if too large
+            if (auxRngTestRatio < 1.0f) {
+                // correct the state
+                terrainState -= K_RNG * innovHgt;
+
+                // constrain the state
+                terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
+
+                // correct the covariance
+                Popt = Popt - sq(Popt)/(SK_RNG*(R_RNG + Popt/sq(SK_RNG))*(sq(q0) - sq(q1) - sq(q2) + sq(q3)));
+
+                // prevent the state variance from becoming negative
+                Popt = MAX(Popt,0.0f);
+
+                // record the time we last updated the terrain offset state
+                gndHgtValidTime_ms = imuSampleTime_ms;
+            }
+        }
 
         // fuse range finder data
         if (rangeDataToFuse) {
