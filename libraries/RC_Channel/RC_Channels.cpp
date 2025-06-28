@@ -34,6 +34,8 @@ extern const AP_HAL::HAL& hal;
 
 #include "RC_Channel.h"
 
+#include <AP_Arming/AP_Arming.h>
+
 /*
   channels group object constructor
  */
@@ -88,6 +90,10 @@ bool RC_Channels::read_input(void)
     bool success = false;
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         success |= channel(i)->update();
+    }
+
+    if (success) {
+        rudder_arm_disarm_check();
     }
 
     return success;
@@ -344,6 +350,71 @@ RC_Channel &RC_Channels::get_lateral_channel() const
 };
 #endif  // AP_RCMAPPER_ENABLED
 
+
+/*
+  check for pilot input on rudder stick for arming/disarming
+*/
+void RC_Channels::rudder_arm_disarm_check()
+{
+    // run no more code if arm/disarm via rudder input channel is
+    // completely disabled.  Further checks using this parameter are
+    // done below.
+    if (AP::arming().get_rudder_arming_type() == AP_Arming::RudderArming::IS_DISABLED) {
+        return;
+    }
+
+    const RC_Channel *channel = get_arming_channel();
+    if (channel == nullptr) {
+        return;
+    }
+
+    const auto control_in = channel->get_control_in();
+    const auto abs_control_in = abs(control_in);
+
+    if (abs_control_in == 0) {
+        have_seen_neutral_rudder = true;
+    }
+
+    if (abs_control_in <= 4000) {
+        // not trying to (or no longer trying to) arm or disarm
+        rudder_arm_timer = 0;
+        return;
+    }
+
+    // enforce correct stick gesture for arming (but not disarming):
+    if (arming_check_throttle() && control_in > 4000) {
+        // only permit arming if the vehicle isn't being commanded to
+        // move via RC input
+        const auto &c = rc().get_throttle_channel();
+        if (c.get_control_in() != 0) {
+            rudder_arm_timer = 0;
+            return;
+        }
+    }
+
+    const uint32_t now = AP_HAL::millis();
+    if (rudder_arm_timer == 0) {
+        // first time we've seen the attempt
+        rudder_arm_timer = now;
+        return;
+    }
+
+    if (now - rudder_arm_timer < 3000) {
+        // not time yet....
+        return;
+    }
+
+    // time to try to arm or disarm:
+    rudder_arm_timer = 0;
+    if (control_in > 4000) {
+        AP::arming().arm(AP_Arming::Method::RUDDER);
+        have_seen_neutral_rudder = false;
+    } else {
+        if (AP::arming().get_rudder_arming_type() == AP_Arming::RudderArming::ARMDISARM) {
+            AP::arming().disarm(AP_Arming::Method::RUDDER);
+        }
+    }
+}
 
 // singleton instance
 RC_Channels *RC_Channels::_singleton;
