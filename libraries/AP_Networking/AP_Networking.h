@@ -147,6 +147,13 @@ public:
     static uint32_t convert_netmask_bitcount_to_ip(const uint32_t netmask_bitcount);
     static uint8_t convert_netmask_ip_to_bitcount(const uint32_t netmask_ip);
 
+    // add new routes for an interface.
+    // Returns true if the route is added or the route already exists
+    bool add_route(uint8_t backend_idx, uint8_t iface_idx, uint32_t dest_ip, uint8_t mask_len);
+
+    // hook for custom routes
+    struct netif *routing_hook(uint32_t dest);
+
     /*
       send contents of a file to a socket then close both socket and file
      */
