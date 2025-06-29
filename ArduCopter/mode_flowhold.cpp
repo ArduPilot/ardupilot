@@ -248,7 +248,7 @@ void ModeFlowHold::run()
     target_climb_rate_cms = constrain_float(target_climb_rate_cms, -get_pilot_speed_dn(), copter.g.pilot_speed_up);
 
     // get pilot's desired yaw rate
-    float target_yaw_rate_cds = get_pilot_desired_yaw_rate_cds();
+    float target_yaw_rate_cds = rad_to_cd(get_pilot_desired_yaw_rate_rads());
 
     // Flow Hold State Machine Determination
     AltHoldModeState flowhold_state = get_alt_hold_state(target_climb_rate_cms);
@@ -319,7 +319,11 @@ void ModeFlowHold::run()
     int16_t roll_in = copter.channel_roll->get_control_in();
     int16_t pitch_in = copter.channel_pitch->get_control_in();
     float angle_max_cd = copter.aparm.angle_max;
-    get_pilot_desired_lean_angles_cd(bf_angles_cd.x, bf_angles_cd.y, angle_max_cd, attitude_control->get_althold_lean_angle_max_cd());
+
+    float target_roll_rad, target_pitch_rad;
+    get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
+    bf_angles_cd.x = rad_to_cd(target_roll_rad);
+    bf_angles_cd.y = rad_to_cd(target_pitch_rad);
 
     if (quality_filtered >= flow_min_quality &&
         AP_HAL::millis() - copter.arm_time_ms > 3000) {

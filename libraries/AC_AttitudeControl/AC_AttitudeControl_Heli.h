@@ -72,7 +72,7 @@ public:
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle for learn hover collective. Used by helicopter to counter tail rotor thrust in hover
     float get_roll_trim_cd() override;
-
+    
     // Set output throttle
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
 
@@ -145,9 +145,6 @@ private:
 
     // pass through for yaw if tail_passthrough is set
     float _passthrough_yaw_cds;
-
-    // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
-    float get_roll_trim_rad() override { return cd_to_rad(get_roll_trim_cd()); }
 
     // internal variables
     float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim

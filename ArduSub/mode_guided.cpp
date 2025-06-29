@@ -825,7 +825,7 @@ float ModeGuided::get_auto_heading()
     case AUTO_YAW_LOOK_AT_NEXT_WP:
     default:
         // point towards next waypoint.
-        // we don't use wp_bearing because we don't want the vehicle to turn too much during flight
+        // we don't use wp_bearing_deg because we don't want the vehicle to turn too much during flight
         return sub.wp_nav.get_yaw();
         break;
     }

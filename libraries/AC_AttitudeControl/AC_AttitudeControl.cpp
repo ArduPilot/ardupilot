@@ -187,6 +187,12 @@ float AC_AttitudeControl::get_slew_yaw_max_degs() const
     return MIN(_ang_vel_yaw_max_degs, _slew_yaw_cds * 0.01);
 }
 
+// get the slew yaw rate limit in rad/s
+float AC_AttitudeControl::get_slew_yaw_max_rads() const
+{
+    return radians(get_slew_yaw_max_degs());
+}
+
 // get the latest gyro for the purposes of attitude control
 // Counter-inuitively the lowest latency for rate control is achieved by running rate control
 // *before* attitude control. This is because you want rate control to run as close as possible

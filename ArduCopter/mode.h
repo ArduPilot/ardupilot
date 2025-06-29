@@ -165,7 +165,7 @@ public:
 
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) const { return false; };
-    virtual int32_t wp_bearing() const { return 0; }
+    virtual float wp_bearing_deg() const { return 0; }
     virtual float wp_distance_m() const { return 0.0f; }
     virtual float crosstrack_error() const { return 0.0f;}
 
@@ -177,8 +177,8 @@ public:
     virtual int32_t get_alt_above_ground_cm(void) const;
 
     // pilot input processing
-    void get_pilot_desired_lean_angles_cd(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
-    float get_pilot_desired_yaw_rate_cds() const;
+    void get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_out_rad, float angle_max_rad, float angle_limit_rad) const;
+    float get_pilot_desired_yaw_rate_rads() const;
     Vector2f get_pilot_desired_velocity(float vel_max) const;
     float get_pilot_desired_throttle() const;
 
@@ -359,7 +359,7 @@ public:
         // Returns the yaw angle (in radians) representing the direction of horizontal motion.
         float look_ahead_yaw_rad();
 
-        float roi_yaw() const;
+        float roi_yaw_rad() const;
 
         // auto flight mode's yaw mode
         Mode _mode = Mode::LOOK_AT_NEXT_WP;
@@ -439,9 +439,9 @@ protected:
     const char *name() const override { return "ACRO"; }
     const char *name4() const override { return "ACRO"; }
 
-    // get_pilot_desired_rates_cds - transform pilot's normalised roll pitch and yaw input into a desired lean angle rates
+    // get_pilot_desired_rates_rads - transform pilot's normalised roll pitch and yaw input into a desired lean angle rates
     // inputs are -1 to 1 and the function returns desired angle rates in centi-degrees-per-second
-    void get_pilot_desired_rates_cds(float roll_in_norm, float pitch_in_norm, float yaw_in_norm, float &roll_out_cds, float &pitch_out_cds, float &yaw_out_cds);
+    void get_pilot_desired_rates_rads(float roll_in_norm, float pitch_in_norm, float yaw_in_norm, float &roll_out_rads, float &pitch_out_rads, float &yaw_out_rads);
 
     float throttle_hover() const override;
 
@@ -616,7 +616,7 @@ protected:
     const char *name4() const override { return auto_RTL? "ARTL" : "AUTO"; }
 
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
     bool get_wp(Location &loc) const override;
 
@@ -801,7 +801,7 @@ public:
 protected:
     bool position_ok() override;
     float get_pilot_desired_climb_rate_cms(void) const override;
-    void get_pilot_desired_rp_yrate_cd(float &roll_cd, float &pitch_cd, float &yaw_rate_cds) override;
+    void get_pilot_desired_rp_yrate_rad(float &des_roll_rad, float &des_pitch_rad, float &des_yaw_rate_rads) override;
     void init_z_limits() override;
 #if HAL_LOGGING_ENABLED
     void log_pids() override;
@@ -888,7 +888,7 @@ protected:
     const char *name4() const override { return "CIRC"; }
 
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
 
 private:
 
@@ -948,7 +948,7 @@ protected:
 private:
 
     // Flip
-    Vector3f orig_attitude_euler_cd;         // original vehicle attitude before flip
+    Vector3f orig_attitude_euler_rad;   // original vehicle attitude before flip
 
     enum class FlipState : uint8_t {
         Start,
@@ -958,11 +958,11 @@ private:
         Recover,
         Abandon
     };
-    FlipState _state;               // current state of flip
-    Mode::Number   orig_control_mode;   // flight mode when flip was initiated
-    uint32_t  start_time_ms;          // time since flip began
-    int8_t    roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
-    int8_t    pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
+    FlipState _state;                   // current state of flip
+    Mode::Number  orig_control_mode;    // flight mode when flip was initiated
+    uint32_t start_time_ms;             // time since flip began
+    int8_t roll_dir;                    // roll direction (-1 = roll left, 1 = roll right)
+    int8_t pitch_dir;                   // pitch direction (-1 = pitch forward, 1 = pitch back)
 };
 
 
@@ -1165,7 +1165,7 @@ protected:
     const char *name4() const override { return "GUID"; }
 
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
     float crosstrack_error() const override;
 
 private:
@@ -1337,7 +1337,7 @@ protected:
     const char *name4() const override { return "LOIT"; }
 
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
     float crosstrack_error() const override { return pos_control->crosstrack_error();}
 
 #if AC_PRECLAND_ENABLED
@@ -1506,7 +1506,7 @@ protected:
 
     // for reporting to GCS
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
     void descent_start();
@@ -1597,7 +1597,7 @@ protected:
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
 private:
@@ -1921,7 +1921,7 @@ protected:
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
     float  wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
@@ -1976,7 +1976,7 @@ protected:
     const char *name() const override { return "ZIGZAG"; }
     const char *name4() const override { return "ZIGZ"; }
     float wp_distance_m() const override;
-    int32_t wp_bearing() const override;
+    float wp_bearing_deg() const override;
     float crosstrack_error() const override;
 
 private:
