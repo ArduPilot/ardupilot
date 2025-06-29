@@ -37,3 +37,7 @@ define INVENSENSE_DRDY_PIN BBB_P8_14
 
 // FIXME: use of this define should go away:
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_PXF
+
+# AnalogIn_IIO configuration:
+# Note that echo BB-ADC cape should be loaded
+define AP_HAL_LINUX_ANALOGIN_IIO_VOLTAGE_SCALING 0.00142602816
