@@ -324,6 +324,7 @@ bool AC_AutoTune::currently_level()
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Failed to level, please tune manually");
         mode = FAILED;
         LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+        load_gains(GAIN_ORIGINAL);
     }
 
     // slew threshold to ensure sufficient settling time for aircraft unable to obtain small thresholds
