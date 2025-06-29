@@ -5373,7 +5373,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
         return MAV_RESULT_FAILED;
     }
 
-    if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
+    if (!roi_loc.initialised()) {
         mount->clear_roi_target();
     } else {
         mount->set_roi_target(roi_loc);
