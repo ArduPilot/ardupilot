@@ -92,6 +92,9 @@
 #ifndef AP_MOTORS_FRAME_OCTAQUAD_ENABLED
 #define AP_MOTORS_FRAME_OCTAQUAD_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
 #endif
+#ifndef AP_MOTORS_FRAME_DECAPENTA_ENABLED
+#define AP_MOTORS_FRAME_DECAPENTA_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
+#endif
 
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
@@ -119,6 +122,7 @@ public:
         MOTOR_FRAME_SCRIPTING_MATRIX = 15,
         MOTOR_FRAME_6DOF_SCRIPTING = 16,
         MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX = 17,
+        MOTOR_FRAME_DECAPENTA = 18,
     };
 
     // return string corresponding to frame_class
