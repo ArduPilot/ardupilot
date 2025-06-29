@@ -181,6 +181,10 @@ void Copter::init_ardupilot()
     custom_control.init();
 #endif
 
+#ifdef SIMULINK_APP_ENABLED
+    ac_simulink->init();
+#endif
+
     // set landed flags
     set_land_complete(true);
     set_land_complete_maybe(true);
