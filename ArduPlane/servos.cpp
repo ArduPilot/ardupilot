@@ -174,7 +174,8 @@ bool Plane::suppress_throttle(void)
   SERVOn_* parameters
  */
 void Plane::channel_function_mixer(SRV_Channel::Function func1_in, SRV_Channel::Function func2_in,
-                                   SRV_Channel::Function func1_out, SRV_Channel::Function func2_out) const
+                                   SRV_Channel::Function func1_out, SRV_Channel::Function func2_out,
+                                   float mixing_gain, int16_t mixing_offset) const
 {
     // the order is setup so that non-reversed servos go "up", and
     // func1 is the "left" channel. Users can adjust with channel
@@ -183,14 +184,14 @@ void Plane::channel_function_mixer(SRV_Channel::Function func1_in, SRV_Channel::
     float in2 = SRV_Channels::get_output_scaled(func2_in);
 
     // apply MIXING_OFFSET to input channels
-    if (g.mixing_offset < 0) {
-        in2 *= (100 - g.mixing_offset) * 0.01;
-    } else if (g.mixing_offset > 0) {
-        in1 *= (100 + g.mixing_offset) * 0.01;
+    if (mixing_offset < 0) {
+        in2 *= (100 - mixing_offset) * 0.01;
+    } else if (mixing_offset > 0) {
+        in1 *= (100 + mixing_offset) * 0.01;
     }
     
-    float out1 = constrain_float((in2 - in1) * g.mixing_gain, -4500, 4500);
-    float out2 = constrain_float((in2 + in1) * g.mixing_gain, -4500, 4500);
+    float out1 = constrain_float((in2 - in1) * mixing_gain, -4500, 4500);
+    float out2 = constrain_float((in2 + in1) * mixing_gain, -4500, 4500);
     SRV_Channels::set_output_scaled(func1_out, out1);
     SRV_Channels::set_output_scaled(func2_out, out2);
 }
@@ -987,7 +988,19 @@ void Plane::indicate_waiting_for_rud_neutral_to_takeoff(void)
 {
     if (takeoff_state.waiting_for_rudder_neutral)  {
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
-        channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left);
+        
+        // Use appropriate mixing parameters for vtail
+        float vtail_gain;
+        int16_t vtail_offset;
+        if (g2.mixing.individual_mix_enable) {
+            vtail_gain = g2.mixing.vtail_mgain;
+            vtail_offset = g2.mixing.vtail_moffset;
+        } else {
+            vtail_gain = g.mixing_gain;
+            vtail_offset = g.mixing_offset;
+        }
+        
+        channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left, vtail_gain, vtail_offset);
         if (!SRV_Channels::function_assigned(SRV_Channel::k_rudder) && !SRV_Channels::function_assigned(SRV_Channel::k_vtail_left)) {
             // if no rudder indication possible, neutral elevons during wait because on takeoff stance they are usually both full up
             SRV_Channels::set_output_scaled(SRV_Channel::k_elevon_right, 0);
@@ -1011,8 +1024,24 @@ void Plane::servos_output(void)
     servos_twin_engine_mix();
 
     // run vtail and elevon mixers
-    channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_elevon_left, SRV_Channel::k_elevon_right);
-    channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left);
+    // Use individual mixing parameters if enabled, otherwise use global parameters
+    float elevon_gain, vtail_gain;
+    int16_t elevon_offset, vtail_offset;
+    
+    if (g2.mixing.individual_mix_enable) {
+        elevon_gain = g2.mixing.elevon_mgain;
+        elevon_offset = g2.mixing.elevon_moffset;
+        vtail_gain = g2.mixing.vtail_mgain;
+        vtail_offset = g2.mixing.vtail_moffset;
+    } else {
+        elevon_gain = g.mixing_gain;
+        elevon_offset = g.mixing_offset;
+        vtail_gain = g.mixing_gain;
+        vtail_offset = g.mixing_offset;
+    }
+    
+    channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_elevon_left, SRV_Channel::k_elevon_right, elevon_gain, elevon_offset);
+    channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left, vtail_gain, vtail_offset);
 
 #if HAL_QUADPLANE_ENABLED
     // cope with tailsitters and bicopters
