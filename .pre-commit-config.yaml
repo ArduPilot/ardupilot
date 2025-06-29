@@ -55,8 +55,7 @@ repos:
       rev: 7.3.0
       hooks:
       -   id: flake8
-          args:
-            - Tools
+
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
 #       rev: 5.12.0
