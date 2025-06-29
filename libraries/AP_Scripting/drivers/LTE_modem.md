@@ -15,8 +15,16 @@ install your own using https://github.com/ArduPilot/UDPProxy
 
 # Supported Hardware
 
-Currently the only modem that is supported is the SIM76xx series of
-modems from SimCom.
+The driver currently supports:
+
+ - all SimCom SIM7600 variants
+ - SimCom A7670
+ - Quectel EC200
+ - Air780
+
+There are some limitations:
+ - the Air780 does not support signal level monitoring
+ - the SimCom A7670 only supports TCP connections, not PPP
 
 # Parameters
 
