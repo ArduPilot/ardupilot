@@ -300,6 +300,7 @@ class ExtractFeatures(object):
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
             ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
+            ('AP_PERIPH_DEVICE_TEMPERATURE_ENABLED', r'AP_Periph_FW::temperature_sensor_update'),
         ]
 
     def progress(self, msg):
