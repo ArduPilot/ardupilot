@@ -579,6 +579,7 @@ void AC_AutoTune_Multi::twitching_abort_rate(float angle, float rate, float angl
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Twitch Size Determination Failed");
                 mode = FAILED;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+                load_gains(GAIN_ORIGINAL);
             }
             // ignore result and start test again
             step = ABORT;
@@ -953,6 +954,7 @@ void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_mi
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Rate D Gain Determination Failed");
                 mode = FAILED;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+                load_gains(GAIN_ORIGINAL);
             }
         }
         // decrease P gain to match D gain reduction
@@ -963,6 +965,7 @@ void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_mi
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Rate P Gain Determination Failed");
             mode = FAILED;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+            load_gains(GAIN_ORIGINAL);
         }
     } else {
         if (ignore_next == false) {
@@ -1012,6 +1015,7 @@ void AC_AutoTune_Multi::updating_angle_p_down(float &tune_p, float tune_p_min, f
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Angle P Gain Determination Failed");
             mode = FAILED;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+            load_gains(GAIN_ORIGINAL);
        }
     }
 }
