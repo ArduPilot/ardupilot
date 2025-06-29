@@ -49,11 +49,16 @@
 #include "bl_protocol.h"
 #include "support.h"
 #include "can.h"
+#include "AP_Bootloader_config.h"
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #if EXT_FLASH_SIZE_MB
 #include <AP_FlashIface/AP_FlashIface_JEDEC.h>
 #endif
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
+
+#define FORCE_VERSION_H_INCLUDE
+#include "ap_version.h"
+#undef FORCE_VERSION_H_INCLUDE
 
 // #pragma GCC optimize("O0")
 
@@ -106,6 +111,7 @@
 #define PROTO_GET_CHIP				0x2c    // read chip version (MCU IDCODE)
 #define PROTO_SET_DELAY				0x2d    // set minimum boot delay
 #define PROTO_GET_CHIP_DES			0x2e    // read chip version In ASCII
+#define PROTO_GET_VERSION			0x2f    // read version
 #define PROTO_BOOT					0x30    // boot the application
 #define PROTO_DEBUG					0x31    // emit debug information - format not defined
 #define PROTO_SET_BAUD				0x33    // baud rate on uart
@@ -1042,6 +1048,29 @@ bootloader(unsigned timeout)
             }
 
             len = get_mcu_desc(len, buffer);
+            cout_word(len);
+            cout(buffer, len);
+        }
+        break;
+
+        // read the bootloader version (not to be confused with protocol revision)
+        //
+        // command:     GET_VERSION/EOC
+        // reply:     <length:4><buffer...>/INSYNC/OK
+        case PROTO_GET_VERSION: {
+            uint8_t buffer[MAX_VERSION_LENGTH];
+
+            // expect EOC
+            if (!wait_for_eoc(2)) {
+                goto cmd_bad;
+            }
+
+            uint32_t len = strlen(GIT_VERSION_EXTENDED);
+            if (len > MAX_VERSION_LENGTH) {
+                len = MAX_VERSION_LENGTH;
+            }
+            memcpy(buffer, GIT_VERSION_EXTENDED, len);
+
             cout_word(len);
             cout(buffer, len);
         }
