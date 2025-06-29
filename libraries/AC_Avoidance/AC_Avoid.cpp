@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FLAGS("ENABLE", 1,  AC_Avoid, _enabled, AC_AVOID_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
-    // @Param{Copter}: ANGLE_MAX
+    // @Param{Copter,Heli}: ANGLE_MAX
     // @DisplayName: Avoidance max lean angle in non-GPS flight modes
     // @Description: Max lean angle used to avoid obstacles while in non-GPS modes
     // @Units: cdeg
@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
 
-    // @Param{Copter}: DIST_MAX
+    // @Param{Copter,Heli}: DIST_MAX
     // @DisplayName: Avoidance distance maximum in non-GPS flight modes
     // @Description: Distance from object at which obstacle avoidance will begin in non-GPS modes
     // @Units: m
@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MARGIN", 4, AC_Avoid, _margin, 2.0f),
 
-    // @Param{Copter, Rover}: BEHAVE
+    // @Param{Copter, Rover, Heli}: BEHAVE
     // @DisplayName: Avoidance behaviour
     // @Description: Avoidance behaviour (slide or stop)
     // @Values: 0:Slide,1:Stop
@@ -87,7 +87,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BACKUP_SPD", 6, AC_Avoid, _backup_speed_xy_max, 0.75f),
 
-    // @Param{Copter}: ALT_MIN
+    // @Param{Copter,Heli}: ALT_MIN
     // @DisplayName: Avoidance minimum altitude
     // @Description: Minimum altitude above which proximity based avoidance will start working. This requires a valid downward facing rangefinder reading to work. Set zero to disable
     // @Units: m
