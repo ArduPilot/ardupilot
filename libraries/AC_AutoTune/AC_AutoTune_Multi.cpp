@@ -250,6 +250,7 @@ void AC_AutoTune_Multi::load_orig_gains()
             attitude_control->set_accel_yaw_max_cdss(orig_yaw_accel);
         }
     }
+    LOGGER_WRITE_EVENT(LogEvent::ACRO_TRAINER_LEVELING);
 }
 
 // load_tuned_gains - load tuned gains
@@ -333,6 +334,7 @@ void AC_AutoTune_Multi::load_intra_test_gains()
         attitude_control->get_rate_yaw_pid().set_filt_E_hz(orig_yaw_rLPF);
         attitude_control->get_angle_yaw_p().set_kP(orig_yaw_sp);
     }
+    LOGGER_WRITE_EVENT(LogEvent::ACRO_TRAINER_LIMITED);
 }
 
 // load_test_gains - load the to-be-tested gains for a single axis
@@ -377,6 +379,7 @@ void AC_AutoTune_Multi::load_test_gains()
         attitude_control->get_angle_yaw_p().set_kP(tune_yaw_sp);
         break;
     }
+    LOGGER_WRITE_EVENT(LogEvent::ACRO_TRAINER_OFF);
 }
 
 // save_tuning_gains - save the final tuned gains for each axis
@@ -579,6 +582,7 @@ void AC_AutoTune_Multi::twitching_abort_rate(float angle, float rate, float angl
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Twitch Size Determination Failed");
                 mode = FAILED;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+                load_gains(GAIN_ORIGINAL);
             }
             // ignore result and start test again
             step = ABORT;
@@ -953,6 +957,7 @@ void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_mi
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Rate D Gain Determination Failed");
                 mode = FAILED;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+                load_gains(GAIN_ORIGINAL);
             }
         }
         // decrease P gain to match D gain reduction
@@ -963,6 +968,7 @@ void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_mi
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Rate P Gain Determination Failed");
             mode = FAILED;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+            load_gains(GAIN_ORIGINAL);
         }
     } else {
         if (ignore_next == false) {
@@ -1012,6 +1018,7 @@ void AC_AutoTune_Multi::updating_angle_p_down(float &tune_p, float tune_p_min, f
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Angle P Gain Determination Failed");
             mode = FAILED;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+            load_gains(GAIN_ORIGINAL);
        }
     }
 }
