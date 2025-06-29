@@ -64,7 +64,7 @@ extern const AP_HAL::HAL& hal;
  # define POSCONTROL_POS_XY_P                   1.0f    // horizontal position controller P gain default
  # define POSCONTROL_VEL_XY_P                   2.0f    // horizontal velocity controller P gain default
  # define POSCONTROL_VEL_XY_I                   1.0f    // horizontal velocity controller I gain default
- # define POSCONTROL_VEL_XY_D                   0.5f    // horizontal velocity controller D gain default
+ # define POSCONTROL_VEL_XY_D                   0.25f   // horizontal velocity controller D gain default
  # define POSCONTROL_VEL_XY_IMAX                1000.0f // horizontal velocity controller IMAX gain default
  # define POSCONTROL_VEL_XY_FILT_HZ             5.0f    // horizontal velocity controller input filter
  # define POSCONTROL_VEL_XY_FILT_D_HZ           5.0f    // horizontal velocity controller input filter for D
