@@ -1,0 +1,24 @@
+name: test_gtest
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test_gtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+            python-version: 3.x
+      - run: pip install --upgrade pip
+      - run: pip install flake8 pytest
+      # `gtest` at https://github.com/ArduPilot/ardupilot/tree/master/modules contains
+      # Python 2 code that is incompatible with Python 3.  Should we upgrade to current
+      # https://github.com/google/googletest now at v1.17.0 released in April 2025?
+      - run: flake8 --exit-zero --select=E9 modules/gtest
+      - run: pytest modules/gtest  # Look for print is a function in Python 3 errors
