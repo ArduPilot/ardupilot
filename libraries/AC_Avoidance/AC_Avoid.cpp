@@ -495,7 +495,8 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 
 // adjust roll-pitch to push vehicle away from objects
 // roll and pitch value are in radians
-void AC_Avoid::adjust_roll_pitch(float &roll_rad, float &pitch_rad, float veh_angle_max_rad)
+// veh_angle_max_rad is the user defined maximum lean angle for the vehicle in radians
+void AC_Avoid::adjust_roll_pitch_rad(float &roll_rad, float &pitch_rad, float veh_angle_max_rad)
 {
     // exit immediately if proximity based avoidance is disabled
     if (!proximity_avoidance_enabled()) {
