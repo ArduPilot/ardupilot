@@ -888,7 +888,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_DO_CHANGE_SPEED(const mavlink_comma
             return MAV_RESULT_FAILED;
         }
 
-        if (plane.do_change_speed(packet.param1, packet.param2, packet.param3)) {
+        if (plane.do_change_speed((SPEED_TYPE)packet.param1, packet.param2, packet.param3)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
