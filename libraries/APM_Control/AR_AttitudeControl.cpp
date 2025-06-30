@@ -610,10 +610,43 @@ float AR_AttitudeControl::get_steering_out_heading(float heading_rad, float rate
     return get_steering_out_rate(desired_rate, motor_limit_left, motor_limit_right, dt);
 }
 
+// return a steering servo output from -1 to +1 given a heading in radians
+// set rate_max_rads to a non-zero number to apply a limit on the desired turn rate
+// return value is normally in range -1.0 to +1.0 but can be higher or lower
+float AR_AttitudeControl::get_directional_steering_out_heading(float heading_rad, float rate_max_rads, bool motor_limit_left, bool motor_limit_right, float dt)
+{
+    // calculate the desired turn rate (in radians) from the angle error (also in radians)
+    float desired_rate = get_directional_turn_rate_from_heading(heading_rad, rate_max_rads);
+
+    return get_steering_out_rate(desired_rate, motor_limit_left, motor_limit_right, dt);
+}
+
 // return a desired turn-rate given a desired heading in radians
 float AR_AttitudeControl::get_turn_rate_from_heading(float heading_rad, float rate_max_rads) const
 {
     const float yaw_error = wrap_PI(heading_rad - AP::ahrs().get_yaw_rad());
+
+    // Calculate the desired turn rate (in radians) from the angle error (also in radians)
+    float desired_rate = _steer_angle_p.get_p(yaw_error);
+
+    // limit desired_rate if a custom pivot turn rate is selected, otherwise use ATC_STR_RAT_MAX
+    if (is_positive(rate_max_rads)) {
+        desired_rate = constrain_float(desired_rate, -rate_max_rads, rate_max_rads);
+    }
+
+    // if acceleration limit is provided, ensure rate can be slowed to zero in time to stop at heading_rad (i.e. avoid overshoot)
+    if (is_positive(_steer_accel_max)) {
+        const float steer_accel_rate_max_rads = safe_sqrt(2.0 * fabsf(yaw_error) * radians(_steer_accel_max));
+        desired_rate = constrain_float(desired_rate, -steer_accel_rate_max_rads, steer_accel_rate_max_rads);
+    }
+
+    return desired_rate;
+}
+
+// return a desired turn-rate given a desired heading in radians
+float AR_AttitudeControl::get_directional_turn_rate_from_heading(float heading_rad, float rate_max_rads) const
+{
+    const float yaw_error = wrap_neg2PI_2PI(heading_rad - AP::ahrs().get_yaw_rad());
 
     // Calculate the desired turn rate (in radians) from the angle error (also in radians)
     float desired_rate = _steer_angle_p.get_p(yaw_error);

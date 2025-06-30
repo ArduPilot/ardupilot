@@ -101,6 +101,30 @@ void ModeGuided::update()
             break;
         }
 
+        case SubMode::TurnRateAndHeading:
+        {
+            // stop vehicle if target not updated within 3 seconds
+            if (have_attitude_target && (millis() - _des_att_time_ms) > 3000) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+                have_attitude_target = false;
+                break;
+            }
+            if (have_attitude_target) {
+                // run steering and throttle controllers
+                calc_directional_steering_to_heading(_desired_yaw_cd, _desired_yaw_rate_cds * 0.01f);
+                break;
+            }
+            // we have reached the destination so stay here
+            if (rover.is_boat()) {
+                if (!start_loiter()) {
+                    stop_vehicle();
+                }
+                break;
+            }
+            stop_vehicle();
+            break;
+        }
+
         case SubMode::Loiter:
         {
             rover.mode_loiter.update();
@@ -149,6 +173,7 @@ float ModeGuided::wp_bearing() const
         return g2.wp_nav.wp_bearing_cd() * 0.01f;
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
+    case SubMode::TurnRateAndHeading:
         return 0.0f;
     case SubMode::Loiter:
         return rover.mode_loiter.wp_bearing();
@@ -169,6 +194,8 @@ float ModeGuided::nav_bearing() const
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
         return 0.0f;
+    case SubMode::TurnRateAndHeading:
+        return _desired_yaw_cd * 0.01f;
     case SubMode::Loiter:
         return rover.mode_loiter.nav_bearing();
     case SubMode::SteeringAndThrottle:
@@ -187,6 +214,7 @@ float ModeGuided::crosstrack_error() const
         return g2.wp_nav.crosstrack_error();
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
+    case SubMode::TurnRateAndHeading:
         return 0.0f;
     case SubMode::Loiter:
         return rover.mode_loiter.crosstrack_error();
@@ -206,6 +234,7 @@ float ModeGuided::get_desired_lat_accel() const
         return g2.wp_nav.get_lat_accel();
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
+    case SubMode::TurnRateAndHeading:
         return 0.0f;
     case SubMode::Loiter:
         return rover.mode_loiter.get_desired_lat_accel();
@@ -226,6 +255,7 @@ float ModeGuided::get_distance_to_destination() const
         return _distance_to_destination;
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
+    case SubMode::TurnRateAndHeading:
         return 0.0f;
     case SubMode::Loiter:
         return rover.mode_loiter.get_distance_to_destination();
@@ -246,6 +276,7 @@ bool ModeGuided::reached_destination() const
         return g2.wp_nav.reached_destination();
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
+    case SubMode::TurnRateAndHeading:
     case SubMode::Loiter:
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
@@ -269,6 +300,7 @@ bool ModeGuided::set_desired_speed(float speed)
     case SubMode::Loiter:
         return rover.mode_loiter.set_desired_speed(speed);
     case SubMode::SteeringAndThrottle:
+    case SubMode::TurnRateAndHeading:
     case SubMode::Stop:
         // no speed control
         return false;
@@ -288,6 +320,7 @@ bool ModeGuided::get_desired_location(Location& destination) const
         return false;
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
+    case SubMode::TurnRateAndHeading:
         // not supported in these submodes
         return false;
     case SubMode::Loiter:
@@ -372,6 +405,36 @@ void ModeGuided::set_desired_turn_rate_and_speed(float turn_rate_cds, float targ
     // log new target
     rover.Log_Write_GuidedTarget((uint8_t)_guided_mode, Vector3f(_desired_yaw_rate_cds, 0.0f, 0.0f), Vector3f(_desired_speed, 0.0f, 0.0f));
 #endif
+}
+
+// set desired attitude
+void ModeGuided::set_desired_turn_rate_and_heading(float yaw_angle_cd, float turn_rate_cds, int16_t direction)
+{
+    // initialisation and logging
+    _guided_mode = SubMode::TurnRateAndHeading;
+    _des_att_time_ms = AP_HAL::millis();
+
+    // record targets
+    have_attitude_target = true;
+    _desired_yaw_rate_cds = turn_rate_cds; 
+    _desired_yaw_cd = wrap_180_cd(yaw_angle_cd);
+
+    // force clockwise or counter-clockwise movement according to direction
+    if (direction == -1 && is_positive(_desired_yaw_cd)) {
+        _desired_yaw_cd -= 36000.0;
+    } else if (direction == 1 && is_negative(_desired_yaw_cd)) {
+        _desired_yaw_cd += 36000.0;
+    }
+}
+
+// set desired attitude
+void ModeGuided::set_desired_turn_rate_and_heading_delta(float yaw_delta_cd, float turn_rate_cds, int16_t direction)
+{
+    /// handle initialisation
+    _guided_mode = SubMode::TurnRateAndHeading;
+    float current_yaw_cd = ahrs.yaw_sensor;
+
+    set_desired_turn_rate_and_heading(current_yaw_cd + yaw_delta_cd, turn_rate_cds, direction);
 }
 
 // set steering and throttle (both in the range -1 to +1)
