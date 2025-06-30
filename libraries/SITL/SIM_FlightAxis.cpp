@@ -49,6 +49,15 @@ const AP_Param::GroupInfo FlightAxis::var_info[] = {
     AP_GROUPEND
 };
 
+/*
+  we use a thread for socket creation to reduce the impact of socket
+  creation latency. These condition variables are used to synchronise
+  the thread
+ */
+static pthread_cond_t sockcond1 = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t sockcond2 = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t sockmtx = PTHREAD_MUTEX_INITIALIZER;
+
 // the asprintf() calls are not worth checking for SITL
 #pragma GCC diagnostic ignored "-Wunused-result"
 
@@ -188,7 +197,6 @@ bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
     va_list ap;
     char *req1;
 
-    // we keep sock around to let the data flow.  But not for too long:
     if (sock) {
         delete sock;
         sock = nullptr;
@@ -198,9 +206,14 @@ bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
     vasprintf(&req1, fmt, ap);
     va_end(ap);
 
-    while (!socks.pop(sock)) {
-        usleep(50);
+    pthread_mutex_lock(&sockmtx);
+    while (socknext == nullptr) {
+        pthread_cond_wait(&sockcond1, &sockmtx);
     }
+    sock = socknext;
+    socknext = nullptr;
+    pthread_cond_broadcast(&sockcond2);
+    pthread_mutex_unlock(&sockmtx);
 
     char *req;
     asprintf(&req, R"(POST / HTTP/1.1
@@ -615,10 +628,11 @@ void FlightAxis::socket_creator(void)
 {
     socket_pid = getpid();
     while (true) {
-        if (!socks.space()) {
-            usleep(500);
-            continue;
+        pthread_mutex_lock(&sockmtx);
+        while (socknext != nullptr) {
+            pthread_cond_wait(&sockcond2, &sockmtx);
         }
+        pthread_mutex_unlock(&sockmtx);
         auto *sck = NEW_NOTHROW SocketAPM_native(false);
         if (sck == nullptr) {
             usleep(500);
@@ -635,12 +649,10 @@ void FlightAxis::socket_creator(void)
             continue;
         }
         sck->set_blocking(false);
-        if (!socks.push(sck)) {
-            // bad?!
-            delete sck;
-            usleep(500);
-            continue;
-        }
+        socknext = sck;
+        pthread_mutex_lock(&sockmtx);
+        pthread_cond_broadcast(&sockcond1);
+        pthread_mutex_unlock(&sockmtx);
     }
 }
 
