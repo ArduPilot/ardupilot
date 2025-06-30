@@ -18,16 +18,15 @@ from pymavlink import mavutil
 from pymavlink import mavextra
 from pymavlink import rotmat
 
-from pysim import util
-from pysim import vehicleinfo
+from Tools.autotest.pysim import util
+from Tools.autotest.pysim import vehicleinfo
 
-import vehicle_test_suite
-
-from vehicle_test_suite import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
-from vehicle_test_suite import Test
-from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
-from vehicle_test_suite import WaitAndMaintainArmed
-from vehicle_test_suite import WaitModeTimeout
+from Tools.autotest import vehicle_test_suite
+from Tools.autotest.vehicle_test_suite import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
+from Tools.autotest.vehicle_test_suite import Test
+from Tools.autotest.vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
+from Tools.autotest.vehicle_test_suite import WaitAndMaintainArmed
+from Tools.autotest.vehicle_test_suite import WaitModeTimeout
 
 from pymavlink.rotmat import Vector3
 

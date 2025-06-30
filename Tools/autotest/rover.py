@@ -15,11 +15,11 @@ import time
 
 import vehicle_test_suite
 
-from pysim import util
+from Tools.autotest.pysim import util
 
-from vehicle_test_suite import AutoTestTimeoutException
-from vehicle_test_suite import NotAchievedException
-from vehicle_test_suite import PreconditionFailedException
+from Tools.autotest.vehicle_test_suite import AutoTestTimeoutException
+from Tools.autotest.vehicle_test_suite import NotAchievedException
+from Tools.autotest.vehicle_test_suite import PreconditionFailedException
 
 from pymavlink import mavextra
 from pymavlink import mavutil

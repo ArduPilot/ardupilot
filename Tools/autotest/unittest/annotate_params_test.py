@@ -17,7 +17,7 @@ import unittest
 import xml.etree.ElementTree as ET
 import requests
 import mock
-from annotate_params import get_xml_data, remove_prefix, split_into_lines, create_doc_dict, \
+from Tools.scripts.annotate_params import get_xml_data, remove_prefix, split_into_lines, create_doc_dict, \
                             format_columns, update_parameter_documentation, print_read_only_params, \
                             BASE_URL, PARAM_DEFINITION_XML_FILE
 

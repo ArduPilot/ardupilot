@@ -261,6 +261,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
+          python3 -m pip install --editable .
           Tools/scripts/build_ci.sh
 
       - name: Archive buildlog artifacts

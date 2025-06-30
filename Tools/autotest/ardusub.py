@@ -12,9 +12,9 @@ import sys
 
 from pymavlink import mavutil, mavextra
 
-import vehicle_test_suite
-from vehicle_test_suite import NotAchievedException
-from vehicle_test_suite import AutoTestTimeoutException
+from Tools.autotest import vehicle_test_suite
+from Tools.autotest.vehicle_test_suite import NotAchievedException
+from Tools.autotest.vehicle_test_suite import AutoTestTimeoutException
 from math import degrees
 
 if sys.version_info[0] < 3:

@@ -9,8 +9,8 @@ import os
 
 from rover import AutoTestRover
 
-from vehicle_test_suite import AutoTestTimeoutException
-from vehicle_test_suite import PreconditionFailedException
+from Tools.autotest.vehicle_test_suite import AutoTestTimeoutException
+from Tools.autotest.vehicle_test_suite import PreconditionFailedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))

@@ -12,8 +12,7 @@ import os
 import tempfile
 from argparse import ArgumentParser
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../Tools', 'autotest'))
-from pysim import vehicleinfo  # noqa: E402
+from Tools.autotest.pysim import vehicleinfo
 
 vinfo = vehicleinfo.VehicleInfo()
 

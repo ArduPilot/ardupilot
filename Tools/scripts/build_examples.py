@@ -7,13 +7,9 @@
 
 # AP_FLAKE8_CLEAN
 
-import os
-import sys
 import optparse
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '../autotest/pysim'))
-
-import util  # NOQA
+from Tools.autotest.pysim import util
 
 
 class BuildExamples():

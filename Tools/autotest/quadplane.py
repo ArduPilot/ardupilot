@@ -13,9 +13,9 @@ import copy
 from pymavlink import mavutil
 from pymavlink.rotmat import Vector3
 
-import vehicle_test_suite
-from vehicle_test_suite import Test
-from vehicle_test_suite import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
+from Tools.autotest import vehicle_test_suite
+from Tools.autotest.vehicle_test_suite import Test
+from Tools.autotest.vehicle_test_suite import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
 
 import operator
 
