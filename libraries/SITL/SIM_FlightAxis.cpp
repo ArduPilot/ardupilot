@@ -54,9 +54,8 @@ const AP_Param::GroupInfo FlightAxis::var_info[] = {
   creation latency. These condition variables are used to synchronise
   the thread
  */
-static pthread_cond_t sockcond1 = PTHREAD_COND_INITIALIZER;
-static pthread_cond_t sockcond2 = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t sockmtx = PTHREAD_MUTEX_INITIALIZER;
+static HAL_BinarySemaphore sockcond1;
+static HAL_BinarySemaphore sockcond2;
 
 // the asprintf() calls are not worth checking for SITL
 #pragma GCC diagnostic ignored "-Wunused-result"
@@ -206,14 +205,13 @@ bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
     vasprintf(&req1, fmt, ap);
     va_end(ap);
 
-    pthread_mutex_lock(&sockmtx);
-    while (socknext == nullptr) {
-        pthread_cond_wait(&sockcond1, &sockmtx);
+    while (sock == nullptr) {
+        sockcond1.wait_blocking();
+
+        sock = socknext;
+        socknext = nullptr;
+        sockcond2.signal();
     }
-    sock = socknext;
-    socknext = nullptr;
-    pthread_cond_broadcast(&sockcond2);
-    pthread_mutex_unlock(&sockmtx);
 
     char *req;
     asprintf(&req, R"(POST / HTTP/1.1
@@ -628,11 +626,11 @@ void FlightAxis::socket_creator(void)
 {
     socket_pid = getpid();
     while (true) {
-        pthread_mutex_lock(&sockmtx);
-        while (socknext != nullptr) {
-            pthread_cond_wait(&sockcond2, &sockmtx);
+        {
+            while (socknext != nullptr) {
+                sockcond2.wait_blocking();
+            }
         }
-        pthread_mutex_unlock(&sockmtx);
         auto *sck = NEW_NOTHROW SocketAPM_native(false);
         if (sck == nullptr) {
             usleep(500);
@@ -650,9 +648,7 @@ void FlightAxis::socket_creator(void)
         }
         sck->set_blocking(false);
         socknext = sck;
-        pthread_mutex_lock(&sockmtx);
-        pthread_cond_broadcast(&sockcond1);
-        pthread_mutex_unlock(&sockmtx);
+        sockcond1.signal();
     }
 }
 
