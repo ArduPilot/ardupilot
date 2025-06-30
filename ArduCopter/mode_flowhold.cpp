@@ -340,7 +340,9 @@ void ModeFlowHold::run()
 
 #if AP_AVOIDANCE_ENABLED
     // apply avoidance
-    copter.avoid.adjust_roll_pitch(bf_angles_cd.x, bf_angles_cd.y, copter.aparm.angle_max);
+    Vector2f bf_angles_rad = bf_angles_cd * cd_to_rad(1.0);
+    copter.avoid.adjust_roll_pitch_rad(bf_angles_rad.x, bf_angles_rad.y, attitude_control->lean_angle_max_rad());
+    bf_angles_cd = bf_angles_rad * rad_to_cd(1.0);
 #endif
 
     // call attitude controller
