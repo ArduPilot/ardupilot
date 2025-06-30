@@ -71,11 +71,11 @@ bool ModeZigZag::init(bool ignore_checks)
     update_simple_mode();
 
     // convert pilot input to lean angles
-    float target_roll_cd, target_pitch_cd;
-    get_pilot_desired_lean_angles_cd(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    float target_roll_rad, target_pitch_rad;
+    get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, loiter_nav->get_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
 
     // process pilot's roll and pitch input
-    loiter_nav->set_pilot_desired_acceleration_cd(target_roll_cd, target_pitch_cd);
+    loiter_nav->set_pilot_desired_acceleration_rad(target_roll_rad, target_pitch_rad);
 
     loiter_nav->init_target();
 
@@ -257,7 +257,7 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
 void ModeZigZag::auto_control()
 {
     // process pilot's yaw input
-    const float target_yaw_rate_cds = get_pilot_desired_yaw_rate_cds();
+    const float target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -271,7 +271,7 @@ void ModeZigZag::auto_control()
 
     // call attitude controller
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate_cds);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(wp_nav->get_roll_rad(), wp_nav->get_pitch_rad(), target_yaw_rate_rads);
 
     // if wpnav failed (because of lack of terrain data) switch back to pilot control for next iteration
     if (!wpnav_ok) {
@@ -282,23 +282,23 @@ void ModeZigZag::auto_control()
 // manual_control - process manual control
 void ModeZigZag::manual_control()
 {
-    float target_yaw_rate_cds = 0.0f;
+    float target_yaw_rate_rads = 0.0f;
     float target_climb_rate_cms = 0.0f;
 
     // process pilot inputs unless we are in radio failsafe
-    float target_roll_cd, target_pitch_cd;
+    float target_roll_rad, target_pitch_rad;
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles_cd(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, loiter_nav->get_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
 
     // process pilot's roll and pitch input
-    loiter_nav->set_pilot_desired_acceleration_cd(target_roll_cd, target_pitch_cd);
+    loiter_nav->set_pilot_desired_acceleration_rad(target_roll_rad, target_pitch_rad);
 
     // get pilot's desired yaw rate
-    target_yaw_rate_cds = get_pilot_desired_yaw_rate_cds();
+    target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
 
     // get pilot desired climb rate
     target_climb_rate_cms = get_pilot_desired_climb_rate();
@@ -321,7 +321,7 @@ void ModeZigZag::manual_control()
         attitude_control->reset_yaw_target_and_rate();
         pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->init_target();
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(loiter_nav->get_roll_cd(), loiter_nav->get_pitch_cd(), target_yaw_rate_cds);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(loiter_nav->get_roll_rad(), loiter_nav->get_pitch_rad(), target_yaw_rate_rads);
         break;
 
     case AltHoldModeState::Takeoff:
@@ -337,7 +337,7 @@ void ModeZigZag::manual_control()
         loiter_nav->update();
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(loiter_nav->get_roll_cd(), loiter_nav->get_pitch_cd(), target_yaw_rate_cds);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(loiter_nav->get_roll_rad(), loiter_nav->get_pitch_rad(), target_yaw_rate_rads);
 
         // set position controller targets adjusted for pilot input
         takeoff.do_pilot_takeoff(target_climb_rate_cms);
@@ -350,7 +350,7 @@ void ModeZigZag::manual_control()
     case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
-        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate_cds);
+        attitude_control->input_thrust_vector_rate_heading_rads(loiter_nav->get_thrust_vector(), target_yaw_rate_rads);
         pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
@@ -362,7 +362,7 @@ void ModeZigZag::manual_control()
         loiter_nav->update();
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(loiter_nav->get_roll_cd(), loiter_nav->get_pitch_cd(), target_yaw_rate_cds);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(loiter_nav->get_roll_rad(), loiter_nav->get_pitch_rad(), target_yaw_rate_rads);
 
         // get avoidance adjusted climb rate
         target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);

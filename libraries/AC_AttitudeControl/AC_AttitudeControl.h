@@ -147,9 +147,8 @@ public:
     // get the slew yaw rate limit in deg/s
     float get_slew_yaw_max_degs() const;
 
-    // Returns the maximum allowed yaw rate for setpoint slewing (in rad/s).
-    // This limit applies in modes like Loiter or RTL to constrain sudden yaw changes.
-    float get_slew_yaw_max_rads() const { return radians(get_slew_yaw_max_degs()); }
+    // get the slew yaw rate limit in rad/s
+    float get_slew_yaw_max_rads() const;
 
     // get the rate control input smoothing time constant
     float get_input_tc() const { return _input_tc; }
@@ -442,8 +441,12 @@ public:
     // Return configured tilt angle limit in centidegrees
     float lean_angle_max_cd() const { return _aparm.angle_max; }
 
+    // Return configured tilt angle limit in radians
+    float lean_angle_max_rad() const { return cd_to_rad(_aparm.angle_max); }
+
     // Return tilt angle in degrees
     float lean_angle_deg() const { return degrees(_thrust_angle_rad); }
+    float lean_angle_rad() const { return _thrust_angle_rad; }
 
     // Calculates the velocity correction from an angle error, applying acceleration/deceleration limits and a simple jerk-limiting mechanism via the smoothing gain.
     static float input_shaping_angle(float error_angle, float input_tc, float accel_max, float target_ang_vel, float desired_ang_vel, float max_ang_vel, float dt);

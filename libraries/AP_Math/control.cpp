@@ -582,45 +582,52 @@ float input_expo(float input, float expo)
     return input;
 }
 
+// angle_rad_to_accel_mss converts a maximum lean angle in radians to an accel limit in m/s/s
+float angle_rad_to_accel_mss(float angle_rad)
+{
+    return GRAVITY_MSS * tanf(angle_rad);
+}
+
 // angle_deg_to_accel_mss converts a maximum lean angle in degrees to an accel limit in m/s/s
 float angle_deg_to_accel_mss(float angle_deg)
 {
-    return GRAVITY_MSS * tanf(radians(angle_deg));
+    return angle_rad_to_accel_mss(radians(angle_deg));
+}
+
+// accel_mss_to_angle_rad converts a maximum accel in m/s/s to a lean angle in radians
+float accel_mss_to_angle_rad(float accel_mss)
+{
+    return atanf(accel_mss/GRAVITY_MSS);
 }
 
 // accel_mss_to_angle_deg converts a maximum accel in m/s/s to a lean angle in degrees
-float accel_mss_to_angle_deg(float accel)
+float accel_mss_to_angle_deg(float accel_mss)
 {
-    return degrees(atanf((accel/GRAVITY_MSS)));
+    return degrees(accel_mss_to_angle_rad(accel_mss));
 }
 
-// rc_input_to_roll_pitch - transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
-// roll_in_unit and pitch_in_unit - are normalised roll and pitch stick input
-// angle_max_deg - maximum lean angle from the z axis
-// angle_limit_deg - provides the ability to reduce the maximum output lean angle to less than angle_max_deg
-// returns roll and pitch angle in degrees
-void rc_input_to_roll_pitch(float roll_in_unit, float pitch_in_unit, float angle_max_deg, float angle_limit_deg, float &roll_out_deg, float &pitch_out_deg)
+// rc_input_to_roll_pitch_rad - transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
+// roll_in_norm and pitch_in_norm - are normalised roll and pitch stick input
+// angle_max_rad - maximum lean angle from the z axis
+// angle_limit_rad - provides the ability to reduce the maximum output lean angle to less than angle_max_deg without changing the scaling
+// returns roll and pitch angle in radians
+void rc_input_to_roll_pitch_rad(float roll_in_norm, float pitch_in_norm, float angle_max_rad, float angle_limit_rad, float &roll_out_rad, float &pitch_out_rad)
 {
-    angle_max_deg = MIN(angle_max_deg, 85.0);
-    float rc_2_rad = radians(angle_max_deg);
+    angle_max_rad = MIN(angle_max_rad, radians(85.0));
 
     // fetch roll and pitch stick positions and convert them to normalised horizontal thrust
     Vector2f thrust;
-    thrust.x = - tanf(rc_2_rad * pitch_in_unit);
-    thrust.y = tanf(rc_2_rad * roll_in_unit);
+    thrust.x = - tanf(angle_max_rad * pitch_in_norm);
+    thrust.y = tanf(angle_max_rad * roll_in_norm);
 
     // calculate the horizontal thrust limit based on the angle limit
-    angle_limit_deg = constrain_float(angle_limit_deg, 10.0f, angle_max_deg);
-    float thrust_limit = tanf(radians(angle_limit_deg));
+    angle_limit_rad = constrain_float(angle_limit_rad, radians(10.0), angle_max_rad);
+    float thrust_limit = tanf(angle_limit_rad);
 
     // apply horizontal thrust limit
     thrust.limit_length(thrust_limit);
 
     // Conversion from angular thrust vector to euler angles.
-    float pitch_rad = - atanf(thrust.x);
-    float roll_rad = atanf(cosf(pitch_rad) * thrust.y);
-
-    // Convert to degrees
-    roll_out_deg = degrees(roll_rad);
-    pitch_out_deg = degrees(pitch_rad);
+    pitch_out_rad = - atanf(thrust.x);
+    roll_out_rad = atanf(cosf(pitch_out_rad) * thrust.y);
 }

@@ -68,8 +68,8 @@ void ModeFollow::run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    float yaw_cd = attitude_control->get_att_target_euler_cd().z;
-    float yaw_rate_cds = 0.0f;
+    float yaw_rad = attitude_control->get_att_target_euler_rad().z;
+    float yaw_rate_rads = 0.0f;
 
     Vector3p pos_ofs_ned_m;  // vector to lead vehicle + offset
     Vector3f vel_ofs_ned_ms;  // velocity of lead vehicle + offset
@@ -100,22 +100,22 @@ void ModeFollow::run()
                 Vector3f accel_ned_mss;  // accel of lead vehicle
                 if (g2.follow.get_target_pos_vel_accel_NED_m(pos_ned_m, vel_ned_ms, accel_ned_mss))
                 if (pos_ned_m.xy().length_squared() > 1.0) {
-                    yaw_cd = get_bearing_cd(Vector2f{}, (pos_ned_m.xy() - pos_control->get_pos_target_NEU_cm().xy()).tofloat());
+                    yaw_rad = (pos_ned_m.xy() - pos_control->get_pos_target_NEU_cm().xy()).tofloat().angle();
                 }
                 break;
             }
 
             case AP_Follow::YAW_BEHAVE_SAME_AS_LEAD_VEHICLE: {
                 // Match the heading of the lead vehicle
-                yaw_cd = target_heading_deg * 100.0;
-                yaw_rate_cds = target_heading_rate_degs * 100.0;
+                yaw_rad = radians(target_heading_deg);
+                yaw_rate_rads = radians(target_heading_rate_degs);
                 break;
             }
 
             case AP_Follow::YAW_BEHAVE_DIR_OF_FLIGHT: {
                 // Face the direction of travel
                 if (vel_ofs_ne_cms.length_squared() > (100.0 * 100.0)) {
-                    yaw_cd = get_bearing_cd(Vector2f{}, vel_ofs_ne_cms);
+                    yaw_rad = vel_ofs_ne_cms.angle();
                 }
                 break;
             }
@@ -133,7 +133,7 @@ void ModeFollow::run()
         pos_control->input_vel_accel_NE_cm(vel_zero, accel_zero, false);
         float velz = 0.0;
         pos_control->input_vel_accel_U_cm(velz, 0.0, false);
-        yaw_rate_cds = 0.0f;
+        yaw_rate_rads = 0.0f;
     }
 
     // update the position controller
@@ -141,7 +141,7 @@ void ModeFollow::run()
     pos_control->update_U_controller();
 
     // call attitude controller
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), yaw_cd, yaw_rate_cds);
+    attitude_control->input_thrust_vector_heading_rad(pos_control->get_thrust_vector(), yaw_rad, yaw_rate_rads);
 }
 
 float ModeFollow::wp_distance_m() const

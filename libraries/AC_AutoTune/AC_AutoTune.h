@@ -94,7 +94,7 @@ protected:
     virtual float get_pilot_desired_climb_rate_cms(void) const = 0;
 
     // get pilot input for designed roll and pitch, and yaw rate
-    virtual void get_pilot_desired_rp_yrate_cd(float &roll_cd, float &pitch_cd, float &yaw_rate_cds) = 0;
+    virtual void get_pilot_desired_rp_yrate_rad(float &roll_rad, float &pitch_rad, float &yaw_rate_rads) = 0;
 
     // init pos controller Z velocity and accel limits
     virtual void init_z_limits() = 0;
@@ -241,7 +241,7 @@ protected:
     virtual uint32_t get_testing_step_timeout_ms() const = 0;
 
     // get attitude for slow position hold in autotune mode
-    void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
+    void get_poshold_attitude_rad(float &roll_rad, float &pitch_rad, float &yaw_rad);
 
     // type of gains to load
     enum class GainType {
@@ -298,7 +298,7 @@ protected:
     uint32_t last_announce_ms;
     float   lean_angle;
     float   rotation_rate;
-    float   desired_roll_cd, desired_pitch_cd, desired_yaw_cd;  // desired attitude target setpoints and test origins
+    float   desired_roll_rad, desired_pitch_rad, desired_yaw_rad;  // desired attitude target setpoints and test origins
 
     // heli specific variables
     float    start_freq;    //start freq for dwell test

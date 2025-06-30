@@ -50,7 +50,6 @@ void AutoTune::run()
 
     // run autotune mode
     AC_AutoTune::run();
-
 }
 
 
@@ -70,11 +69,11 @@ float AutoTune::get_pilot_desired_climb_rate_cms(void) const
 /*
   get stick roll, pitch and yaw rate
  */
-void AutoTune::get_pilot_desired_rp_yrate_cd(float &des_roll_cd, float &des_pitch_cd, float &yaw_rate_cds)
+void AutoTune::get_pilot_desired_rp_yrate_rad(float &des_roll_rad, float &des_pitch_rad, float &des_yaw_rate_rads)
 {
-    copter.mode_autotune.get_pilot_desired_lean_angles_cd(des_roll_cd, des_pitch_cd, copter.aparm.angle_max,
-                                                       copter.attitude_control->get_althold_lean_angle_max_cd());
-    yaw_rate_cds = copter.mode_autotune.get_pilot_desired_yaw_rate_cds();
+    copter.mode_autotune.get_pilot_desired_lean_angles_rad(des_roll_rad, des_pitch_rad, attitude_control->lean_angle_max_rad(),
+                                                       copter.attitude_control->get_althold_lean_angle_max_rad());
+    des_yaw_rate_rads = copter.mode_autotune.get_pilot_desired_yaw_rate_rads();
 }
 
 /*

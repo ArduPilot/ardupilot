@@ -9,15 +9,15 @@
 // loiter_init - initialise loiter controller
 bool ModeLoiter::init(bool ignore_checks)
 {
-    float target_roll_cd, target_pitch_cd;
+    float target_roll_rad, target_pitch_rad;
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles_cd(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, loiter_nav->get_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
 
     // process pilot's roll and pitch input
-    loiter_nav->set_pilot_desired_acceleration_cd(target_roll_cd, target_pitch_cd);
+    loiter_nav->set_pilot_desired_acceleration_rad(target_roll_rad, target_pitch_rad);
 
     loiter_nav->init_target();
 
@@ -79,8 +79,8 @@ void ModeLoiter::precision_loiter_xy()
 // should be called at 100hz or more
 void ModeLoiter::run()
 {
-    float target_roll_cd, target_pitch_cd;
-    float target_yaw_rate_cds = 0.0f;
+    float target_roll_rad, target_pitch_rad;
+    float target_yaw_rate_rads = 0.0f;
     float target_climb_rate_cms = 0.0f;
 
     // set vertical speed and acceleration limits
@@ -90,13 +90,13 @@ void ModeLoiter::run()
     update_simple_mode();
 
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles_cd(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, loiter_nav->get_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
 
     // process pilot's roll and pitch input
-    loiter_nav->set_pilot_desired_acceleration_cd(target_roll_cd, target_pitch_cd);
+    loiter_nav->set_pilot_desired_acceleration_rad(target_roll_rad, target_pitch_rad);
 
     // get pilot's desired yaw rate
-    target_yaw_rate_cds = get_pilot_desired_yaw_rate_cds();
+    target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
 
     // get pilot desired climb rate
     target_climb_rate_cms = get_pilot_desired_climb_rate();
@@ -118,7 +118,6 @@ void ModeLoiter::run()
         attitude_control->reset_yaw_target_and_rate();
         pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->init_target();
-        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate_cds, false);
         break;
 
     case AltHoldModeState::Landed_Ground_Idle:
@@ -128,7 +127,6 @@ void ModeLoiter::run()
     case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
-        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate_cds, false);
         pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
@@ -146,9 +144,6 @@ void ModeLoiter::run()
 
         // run loiter controller
         loiter_nav->update();
-
-        // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate_cds, false);
         break;
 
     case AltHoldModeState::Flying:
@@ -175,8 +170,6 @@ void ModeLoiter::run()
         loiter_nav->update();
 #endif
 
-        // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading_cds(loiter_nav->get_thrust_vector(), target_yaw_rate_cds, false);
 
         // get avoidance adjusted climb rate
         target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
@@ -191,6 +184,8 @@ void ModeLoiter::run()
         break;
     }
 
+    // call attitude controller
+    attitude_control->input_thrust_vector_rate_heading_rads(loiter_nav->get_thrust_vector(), target_yaw_rate_rads, false);
     // run the vertical position controller and set output throttle
     pos_control->update_U_controller();
 }
