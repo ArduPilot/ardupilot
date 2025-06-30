@@ -488,7 +488,7 @@ bool Copter::set_circle_rate(float rate_degs)
 // set desired speed (m/s). Used for scripting.
 bool Copter::set_desired_speed(float speed)
 {
-    return flightmode->set_speed_xy(speed * 100.0f);
+    return flightmode->set_speed_xy_cms(speed * 100.0f);
 }
 
 #if MODE_AUTO_ENABLED
