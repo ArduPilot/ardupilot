@@ -114,7 +114,7 @@ const AP_Param::GroupInfo AP_Airspeed_Params::var_info[] = {
     // @Param: BUS
     // @DisplayName: Airspeed I2C bus
     // @Description: Bus number of the I2C bus where the airspeed sensor is connected. May not correspond to board's I2C bus number labels. Retry another bus and reboot if airspeed sensor fails to initialize.
-    // @Values: 0:Bus0,1:Bus1,2:Bus2
+    // @Values: 0:Bus0,1:Bus1,2:Bus2,3:Bus3
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("BUS", 10, AP_Airspeed_Params, bus, 1),
