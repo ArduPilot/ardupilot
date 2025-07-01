@@ -360,7 +360,7 @@ public:
     // typically AP_Logger_File.
     bool logging_present() const;
     bool logging_enabled() const;
-    bool logging_failed() const;
+    int8_t logging_failed() const;
 
     // notify logging subsystem of an arming failure. This triggers
     // logging for HAL_LOGGER_ARM_PERSIST seconds

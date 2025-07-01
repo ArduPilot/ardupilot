@@ -599,18 +599,18 @@ bool AP_Logger::logging_enabled() const
     }
     return false;
 }
-bool AP_Logger::logging_failed() const
+int8_t AP_Logger::logging_failed() const
 {
     if (_next_backend < 1) {
         // we should not have been called!
-        return true;
+        return 1;
     }
     for (uint8_t i=0; i<_next_backend; i++) {
         if (backends[i]->logging_failed()) {
-            return true;
+            return 2;
         }
     }
-    return false;
+    return 0;
 }
 
 void AP_Logger::Write_MessageF(const char *fmt, ...)
