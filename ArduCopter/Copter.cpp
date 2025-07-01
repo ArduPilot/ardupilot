@@ -118,6 +118,10 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     FAST_TASK(run_custom_controller),
 #endif
+#ifdef CUSTOM_FASTTASK_ENABLED
+    // run custom FAST_TASK application
+    FAST_TASK(run_custom_fasttask),
+#endif
 #if FRAME_CONFIG == HELI_FRAME
     FAST_TASK(heli_update_autorotation),
 #endif //HELI_FRAME
@@ -820,7 +824,15 @@ void Copter::one_hz_loop()
     }
 #endif
 }
-
+#ifdef CUSTOM_FASTTASK_ENABLED
+void Copter::run_custom_fasttask() 
+{ 
+    if (!using_rate_thread) {
+    // only run the custom fast task if we are not using the rate thread
+        custom_fasttask->update();
+    }
+}
+#endif
 void Copter::init_simple_bearing()
 {
     // capture current cos_yaw and sin_yaw values

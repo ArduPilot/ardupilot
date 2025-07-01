@@ -156,6 +156,11 @@
 #include <AC_CustomControl/AC_CustomControl.h>                  // Custom control library
 #endif
 
+#ifdef CUSTOM_FASTTASK_ENABLED
+#include <AC_CustomFastTask/AC_Custom_FastTask_Base.h>
+#include <AC_CustomFastTask/AC_Custom_FastTask_Factory.h>
+#endif
+
 #if AP_AVOIDANCE_ENABLED && !AP_FENCE_ENABLED
   #error AC_Avoidance relies on AP_FENCE_ENABLED which is disabled
 #endif
@@ -484,6 +489,10 @@ private:
     AC_CustomControl custom_control{ahrs_view, attitude_control, motors, scheduler.get_loop_period_s()};
 #endif
 
+#ifdef CUSTOM_FASTTASK_ENABLED
+    AC_Custom_FastTask_Base *custom_fasttask = AC_Custom_FastTask_Factory::createInstance();
+#endif
+
 #if MODE_CIRCLE_ENABLED
     AC_Circle *circle_nav;
 #endif
@@ -759,7 +768,9 @@ private:
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     void run_custom_controller() { custom_control.update(); }
 #endif
-
+#ifdef CUSTOM_FASTTASK_ENABLED
+    void run_custom_fasttask();
+#endif
     // avoidance.cpp
     void low_alt_avoidance();
 
