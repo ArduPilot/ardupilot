@@ -5625,9 +5625,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         self.wait_text("Loaded UniversalAutoLand.lua", check_context=True)
         self.set_parameters({
-             "AUTOLAND_ENABLE" : 1,
-             "AUTOLAND_WP_ALT" : 55,
-             "AUTOLAND_WP_DIST" : 400
+             "ALAND_ENABLE" : 1,
+             "ALAND_WP_ALT" : 55,
+             "ALAND_WP_DIST" : 400
             })
         self.wait_ready_to_arm()
         self.scripting_restart()
