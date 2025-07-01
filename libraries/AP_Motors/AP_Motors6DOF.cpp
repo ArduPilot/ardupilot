@@ -17,6 +17,10 @@
  *       AP_Motors6DOF.cpp - ArduSub motors library
  */
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORS_FRAME_6DOF_ENABLED
+
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Motors6DOF.h"
@@ -587,3 +591,5 @@ bool AP_Motors6DOF::set_reversed(int motor_number, bool reversed) {
     }
     return true;
 }
+
+#endif  // AP_MOTORS_FRAME_6DOF_ENABLED

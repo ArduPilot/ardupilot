@@ -2,6 +2,10 @@
 /// @brief	Motor control class for tailsitters and bicopters
 #pragma once
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORS_TAILSITTER_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_MotorsMulticopter.h"
@@ -55,3 +59,5 @@ protected:
     bool _has_diff_thrust;
 
 };
+
+#endif  // AP_MOTORS_TAILSITTER_ENABLED

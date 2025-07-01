@@ -13,9 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_Scripting/AP_Scripting_config.h>
+#include "AP_Motors_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsMatrix_6DoF_Scripting.h"
@@ -326,4 +326,4 @@ bool AP_MotorsMatrix_6DoF_Scripting::init(uint8_t expected_num_motors) {
 // singleton instance
 AP_MotorsMatrix_6DoF_Scripting *AP_MotorsMatrix_6DoF_Scripting::_singleton;
 
-#endif // AP_SCRIPTING_ENABLED
+#endif  // AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
