@@ -839,6 +839,13 @@ include APM_Control/AR_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_Rover)
 singleton AR_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_Rover)
 singleton AR_AttitudeControl method get_srate void float'Ref float'Ref
 
+include AP_WheelEncoder/AP_WheelEncoder.h depends APM_BUILD_TYPE(APM_BUILD_Rover)
+singleton AP_WheelEncoder depends APM_BUILD_TYPE(APM_BUILD_Rover)
+singleton AP_WheelEncoder rename wheel_encoder
+singleton AP_WheelEncoder method get_delta_angle float uint8_t 0 WHEELENCODER_MAX_INSTANCES
+singleton AP_WheelEncoder method get_distance float uint8_t 0 WHEELENCODER_MAX_INSTANCES
+singleton AP_WheelEncoder method get_rate float uint8_t 0 WHEELENCODER_MAX_INSTANCES
+
 include AP_Mount/AP_Mount.h
 singleton AP_Mount depends HAL_MOUNT_ENABLED == 1
 singleton AP_Mount rename mount
@@ -1141,4 +1148,3 @@ userdata DroneCAN_Handle manual request DroneCAN_Handle::request 2 1
 userdata DroneCAN_Handle method subscribe boolean
 userdata DroneCAN_Handle manual check_message DroneCAN_Handle::check_message 0 4
 userdata DroneCAN_Handle manual_operator __gc DroneCAN_Handle::__gc
-

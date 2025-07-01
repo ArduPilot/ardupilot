@@ -1733,6 +1733,24 @@ function mavlink_video_stream_information_t_ud:encoding(value) end
 function camera:set_stream_information(instance, stream_info) end
 
 -- desc
+wheel_encoder = {}
+
+-- desc
+---@param instance integer
+---@return number
+function wheel_encoder:get_delta_angle(instance) end
+
+-- desc
+---@param instance integer
+---@return number
+function wheel_encoder:get_distance(instance) end
+
+-- desc
+---@param instance integer
+---@return number
+function wheel_encoder:get_rate(instance) end
+
+-- desc
 mount = {}
 
 -- desc
@@ -4340,4 +4358,3 @@ function DroneCAN_Handle_ud:request(target_node, payload) end
 ---@param payload string -- payload for message
 ---@return boolean -- true if send succeeded
 function DroneCAN_Handle_ud:broadcast(payload) end
-
