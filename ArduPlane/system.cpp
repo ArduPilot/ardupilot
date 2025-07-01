@@ -463,7 +463,12 @@ bool Plane::should_log(uint32_t mask)
 int8_t Plane::throttle_percentage(void)
 {
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.in_vtol_mode() && !quadplane.tailsitter.in_vtol_transition()) {
+#if AP_MOTORS_TAILSITTER_ENABLED
+    const bool in_tailsitter_transition = quadplane.tailsitter.in_vtol_transition();
+#else
+    const bool in_tailsitter_transition = false;
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
+    if (quadplane.in_vtol_mode() && !in_tailsitter_transition) {
         return quadplane.motors->get_throttle_out() * 100.0;
     }
 #endif

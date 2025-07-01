@@ -187,16 +187,20 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
         ret = false;
     }
 
+#if AP_MOTORS_TAILSITTER_ENABLED
     if ((plane.quadplane.tailsitter.enable > 0) && (plane.quadplane.tiltrotor.enable > 0)) {
         check_failed(Check::PARAMETERS, display_failure, "set TAILSIT_ENABLE 0 or TILT_ENABLE 0");
         ret = false;
+    } else
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
+    {
 
-    } else {
-
+#if AP_MOTORS_TAILSITTER_ENABLED
         if ((plane.quadplane.tailsitter.enable > 0) && !plane.quadplane.tailsitter.enabled()) {
             check_failed(Check::PARAMETERS, display_failure, "tailsitter setup not complete, reboot");
             ret = false;
         }
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
 
         if ((plane.quadplane.tiltrotor.enable > 0) && !plane.quadplane.tiltrotor.enabled()) {
             check_failed(Check::PARAMETERS, display_failure, "tiltrotor setup not complete, reboot");
@@ -217,9 +221,15 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
     /*
       Q_ASSIST_SPEED really should be enabled for all quadplanes except tailsitters
      */
+#if AP_MOTORS_TAILSITTER_ENABLED
+    const bool tailsitter_enabled = plane.quadplane.tailsitter.enabled();
+#else
+    const bool tailsitter_enabled = false;
+#endif
+
     if (check_enabled(Check::PARAMETERS) &&
         is_zero(plane.quadplane.assist.speed) &&
-        !plane.quadplane.tailsitter.enabled()) {
+        !tailsitter_enabled) {
         check_failed(display_failure,"Q_ASSIST_SPEED is not set");
         ret = false;
     }
