@@ -1,5 +1,29 @@
 ArduPilot Plane Release Notes:
 ------------------------------------------------------------------
+Release 4.6.2-beta2 02-Jul-2025
+
+Changes from 4.6.2-beta1
+
+1) Board specific changes
+
+- AEDROX H7 support
+- FoxeerF405v2, GEPRCF745BTHD now use SPA06 barometer
+- Skystars H7HDv2 support
+- SPEDIX F405, H743 support
+
+2) Copter/VTOL position control PSC_VELXY_D param default reduced from 0.5 to 0.25
+
+3) Plane specific changes
+
+- DO_RETURN_PATH_START mission command support
+- System ID feature implemented in Quadplane and enabled through an AUX switch
+- VTOLs get reduce speed scaler in assisted flight at low airspeed
+
+4) Bug Fixes and minor enhancements
+
+- Copter/VTOL AutoTune fix to restore gains when tuning aborts
+- ChibiOS tools fix to include bootloaders in hex files (no user impact)
+------------------------------------------------------------------
 Release 4.6.2-beta1 26-Jun-2025
 
 Changes from 4.6.1
