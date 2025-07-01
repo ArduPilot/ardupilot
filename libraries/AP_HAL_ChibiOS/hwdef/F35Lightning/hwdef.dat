@@ -134,7 +134,7 @@ BARO BMP280 SPI:bmp280
 
 # probe external compasses plus one in 9250
 COMPASS AK8963:probe_mpu9250 0 ROTATION_YAW_90
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 
 # no onboard SD, filesystem support disabled until flash logging implemented
