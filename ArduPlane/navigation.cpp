@@ -248,11 +248,29 @@ void Plane::calc_airspeed_errors()
     if (control_mode->does_auto_throttle() &&
         groundspeed_undershoot_is_valid &&
         control_mode != &mode_circle) {
-        float EAS_undershoot = (int32_t)((float)groundspeed_undershoot / ahrs.get_EAS2TAS());
-        int32_t min_gnd_target_airspeed = airspeed_measured*100 + EAS_undershoot;
-        if (min_gnd_target_airspeed > target_airspeed_cm) {
-            target_airspeed_cm = min_gnd_target_airspeed;
+        /*
+          calculate how much extra airspeed we need to target to
+          achieve the desired ground speed in MIN_GROUNDSPEED
+
+          we quantise the additional airspeed and apply a hysteresis
+          in order to avoid triggering an oscillation in TECS
+         */
+        float target_airspeed = target_airspeed_cm*0.01;
+        float EAS_undershoot = (groundspeed_undershoot*0.01) / ahrs.get_EAS2TAS();
+        float min_gnd_target_airspeed = airspeed_measured + EAS_undershoot;
+        float airspeed_target_offset = min_gnd_target_airspeed > target_airspeed? (min_gnd_target_airspeed - target_airspeed) : 0;
+
+        // round up to nearest m/s
+        airspeed_target_offset = int(airspeed_target_offset + 0.5);
+
+        // apply some hysteresis
+        if (airspeed_target_offset < last_groundspeed_undershoot_offset &&
+            last_groundspeed_undershoot_offset - airspeed_target_offset < 1.2) {
+            airspeed_target_offset = last_groundspeed_undershoot_offset;
         }
+        last_groundspeed_undershoot_offset = airspeed_target_offset;
+
+        target_airspeed_cm += airspeed_target_offset * 100;
     }
 
     // when using the special GUIDED mode features for slew control, don't allow airspeed nudging as it doesn't play nicely.
