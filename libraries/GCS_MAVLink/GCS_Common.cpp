@@ -4253,6 +4253,16 @@ void GCS_MAVLINK::handle_adsb_message(const mavlink_message_t &msg)
 }
 #endif
 
+#if AP_AIS_ENABLED
+void GCS_MAVLINK::handle_ais_message(const mavlink_message_t &msg)
+{
+    AP_AIS *ais = AP_AIS::get_singleton();
+    if (ais != nullptr) {
+        ais->handle_message(chan, msg);
+    }
+}
+#endif
+
 #if OSD_PARAM_ENABLED
 void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 {
@@ -4545,6 +4555,12 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CONTROL:
         handle_adsb_message(msg);
+        break;
+#endif
+
+#if AP_AIS_ENABLED
+    case MAVLINK_MSG_ID_AIS_VESSEL:
+        handle_ais_message(msg);
         break;
 #endif
 
