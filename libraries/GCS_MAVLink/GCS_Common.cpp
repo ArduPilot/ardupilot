@@ -4253,6 +4253,18 @@ void GCS_MAVLINK::handle_adsb_message(const mavlink_message_t &msg)
 }
 #endif
 
+#if AP_AIS_ENABLED
+void GCS_MAVLINK::handle_ais_message(const mavlink_message_t &msg)
+{
+    AP_AIS *ais = AP_AIS::get_singleton();
+    if (ais != nullptr && ais->enabled()) {
+        mavlink_ais_vessel_t packet;
+        mavlink_msg_ais_vessel_decode(&msg, &packet);
+        ais->handle_message(packet);
+    }
+}
+#endif // AP_AIS_ENABLED
+
 #if OSD_PARAM_ENABLED
 void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 {
@@ -4547,6 +4559,12 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         handle_adsb_message(msg);
         break;
 #endif
+
+#if AP_AIS_ENABLED
+    case MAVLINK_MSG_ID_AIS_VESSEL:
+        handle_ais_message(msg);
+        break;
+#endif // AP_AIS_ENABLED
 
     case MAVLINK_MSG_ID_LANDING_TARGET:
         handle_landing_target(msg);
@@ -6719,7 +6737,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         }
         break;
     }
-#endif
+#endif // AP_AIS_ENABLED
 
 #if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
     case MSG_UAVIONIX_ADSB_OUT_STATUS:
