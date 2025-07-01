@@ -327,6 +327,10 @@ submodules at specific revisions.
                  default=False,
                  help="Enables custom controller")
 
+    g.add_option('--enable-custom-fasttask', action='store_true',
+                 default=False,
+                 help="Enables custom fast task")
+
     g.add_option('--enable-gps-logging', action='store_true',
                  default=False,
                  help="Enables GPS logging")
