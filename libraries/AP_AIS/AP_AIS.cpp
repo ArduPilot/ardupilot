@@ -272,6 +272,23 @@ void AP_AIS::send(mavlink_channel_t chan)
         }
     }
 }
+void AP_AIS::handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg)
+{
+    if (msg.msgid != MAVLINK_MSG_ID_AIS_VESSEL) {
+        return;
+    }
+
+    mavlink_ais_vessel_t packet;
+    mavlink_msg_ais_vessel_decode(&msg, &packet);
+
+    uint16_t index;
+    if (!get_vessel_index(packet.MMSI, index)) {
+        // not found and not enough memory to add it
+        return;
+    }
+    memcpy(&_list[index].info, &packet, sizeof(mavlink_ais_vessel_t));
+    _list[index].last_update_ms = AP_HAL::millis();
+}
 
 #if AP_OADATABASE_ENABLED
 // Send a AIS vessel to the object avoidance database if its postion is valid
@@ -1043,6 +1060,7 @@ bool AP_AIS::enabled() const { return false; }
 void AP_AIS::init() {};
 void AP_AIS::update() {};
 void AP_AIS::send(mavlink_channel_t chan) {};
+void AP_AIS::handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg) {}
 
 AP_AIS *AP_AIS::get_singleton() { return nullptr; }
 
