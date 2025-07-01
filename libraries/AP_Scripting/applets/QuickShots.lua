@@ -15,7 +15,6 @@ local maxAltitude = 30
 local roiDistance = 8
 local startAltitude = 4
 local sdDistance = 5
-local startWP
 local roiWP
 local bearing
 local gcs_location = Location()
@@ -51,7 +50,7 @@ function handle_command_long(cmd)
 	--gcs:send_text(6, string.format("COMMAND_LONG <%d/%d> %d", cmd.sysid, cmd.target_component, cmd.command) )
 
 	local ret = 0
-	
+
 	if cmd.command == MAV_CMD_USER_1_ID then
 		gcs:send_text(6, string.format("MAV_CMD_USER_1_ID %d %d %d %d", cmd.param1, cmd.param2, cmd.param3, cmd.param4) )
 		if cmd.param1 < 1 or cmd.param1 > 3 then
@@ -78,7 +77,7 @@ function handle_command_long(cmd)
 			stage = 1
 		end
 	end
-	
+
 	return ret
 end
 
@@ -87,7 +86,7 @@ function handle_global_position_int(msg)
 	if msg.compid == MAV_COMP_ID_MISSIONPLANNER then
 		gcs_location:lat(msg.lat)
 		gcs_location:lng(msg.lon)
-		gcs_location:alt(msg.relative_alt/10)
+		gcs_location:alt(msg.relative_alt / 10)
 		gcs_location:relative_alt(true)
 	end
 end
@@ -110,7 +109,7 @@ function calcWps()
 		roiWP:offset_bearing(bearing, -roiDistance)
 	end
 	roiWP:alt(100)
-	
+
 	gcs:send_text(6, "waypoints calculated")
 	stage = 2
 end
@@ -119,14 +118,14 @@ function createRocket()
 	local sdAltitude = 6
 
 	local rocketWP = startWp:copy()
-	rocketWP:alt(100*maxAltitude)
+	rocketWP:alt(100 * maxAltitude)
 	local sldWP = startWp:copy()
-	sldWP:alt(100*sdAltitude)
+	sldWP:alt(100 * sdAltitude)
 
 	local FRAME_GLOBAL_RELATIVE_ALT = 3
-	
+
 	mission:clear()
-	
+
 	--WP0 is always home
 	local homeWP = ahrs:get_home()
 	local home = mavlink_mission_item_int_t()
@@ -145,7 +144,7 @@ function createRocket()
 	to:command(22) -- TAKEOFF
 	to:z(startAltitude)
 	mission:set_item(1, to)
-	
+
 	-- ROI
 	local wp = mavlink_mission_item_int_t()
 	wp:seq(2)
@@ -178,7 +177,7 @@ function createRocket()
 	cs:param1(3) -- down
 	cs:param2(1)
 	mission:set_item(5, cs)
-	
+
 	-- start
 	wp:seq(6)
 	wp:z(startAltitude)
@@ -190,21 +189,21 @@ function createRocket()
 	land:frame(FRAME_GLOBAL_RELATIVE_ALT)
 	land:command(21) -- LAND
 	mission:set_item(7, land)
-	
+
 	gcs:send_text(0, "Rocket mission written")
 end
 
 function createHelix()
 	local homeWP = ahrs:get_home()
-	
-	wp = startWp:copy()
-	wp:alt(100*startAltitude)
+
+	local wp = startWp:copy()
+	wp:alt(100 * startAltitude)
 
 	local FRAME_GLOBAL_RELATIVE_ALT = 3
 	local itemIdx = 0
-	
+
 	mission:clear()
-	
+
 	--WP0 is always home
 	local m = mavlink_mission_item_int_t()
 	m:seq(itemIdx)
@@ -222,7 +221,7 @@ function createHelix()
 	m:z(startAltitude)
 	mission:set_item(itemIdx, m)
 	itemIdx = itemIdx + 1
-	
+
 	-- ROI
 	m:seq(itemIdx)
 	m:command(201) -- SET_ROI
@@ -279,24 +278,24 @@ function createHelix()
 	m:y(0)
 	m:z(0)
 	mission:set_item(itemIdx, m)
-	
+
 	gcs:send_text(0, "Helix mission written")
 end
 
 function createDronie()
 	local FRAME_GLOBAL_RELATIVE_ALT = 3
-	
+
 	local dronieWP = startWp:copy()
 	dronieWP:offset_bearing(bearing, maxDistance)
-	dronieWP:alt(100*maxAltitude)
-	
+	dronieWP:alt(100 * maxAltitude)
+
 	local sdAlt = sdDistance * (maxAltitude - startAltitude) / maxDistance + startAltitude
 	local sldWP = startWp:copy()
 	sldWP:offset_bearing(bearing, sdDistance)
-	sldWP:alt(100*sdAlt)
-	
+	sldWP:alt(100 * sdAlt)
+
 	mission:clear()
-	
+
 	--WP0 is always home
 	local homeWP = ahrs:get_home()
 	local home = mavlink_mission_item_int_t()
@@ -315,7 +314,7 @@ function createDronie()
 	to:command(22) -- TAKEOFF
 	to:z(startAltitude)
 	mission:set_item(1, to)
-	
+
 	-- ROI
 	local wp = mavlink_mission_item_int_t()
 	wp:seq(2)
@@ -349,7 +348,7 @@ function createDronie()
 	cs:command(178) -- CHANGE_SPEED
 	cs:param2(1)
 	mission:set_item(5, cs)
-	
+
 	-- start
 	wp:seq(6)
 	local lat = startWp:lat()
@@ -365,7 +364,7 @@ function createDronie()
 	land:frame(FRAME_GLOBAL_RELATIVE_ALT)
 	land:command(21) -- LAND
 	mission:set_item(7, land)
-	
+
 	gcs:send_text(0, "Dronie mission written")
 end
 
@@ -381,38 +380,38 @@ function createMission()
 end
 
 function update()
-    local msg, chan = mavlink:receive_chan()
-    if msg then
-        local parsed_msg = mavlink_msgs.decode(msg, msg_map)
-        if parsed_msg then
+	local msg, chan = mavlink:receive_chan()
+	if msg then
+		local parsed_msg = mavlink_msgs.decode(msg, msg_map)
+		if parsed_msg then
 
-            local result
-            if parsed_msg.msgid == COMMAND_LONG_ID then
-                result = handle_command_long(parsed_msg)
-            elseif parsed_msg.msgid == GLOBAL_POSITION_INT_ID then
-                result = handle_global_position_int(parsed_msg)
-            end
+			local result
+			if parsed_msg.msgid == COMMAND_LONG_ID then
+				result = handle_command_long(parsed_msg)
+			elseif parsed_msg.msgid == GLOBAL_POSITION_INT_ID then
+				result = handle_global_position_int(parsed_msg)
+			end
 
-            if result then
-                -- Send ack if the command is one were interested in
-                local ack = {}
-                ack.command = parsed_msg.command
-                ack.result = result
-                ack.progress = 0
-                ack.result_param2 = 0
-                ack.target_system = parsed_msg.sysid
-                ack.target_component = parsed_msg.compid
-                mavlink:send_chan(chan, mavlink_msgs.encode("COMMAND_ACK", ack))
-            end
-        end
-    end
+			if result then
+				-- Send ack if the command is one were interested in
+				local ack = {}
+				ack.command = parsed_msg.command
+				ack.result = result
+				ack.progress = 0
+				ack.result_param2 = 0
+				ack.target_system = parsed_msg.sysid
+				ack.target_component = parsed_msg.compid
+				mavlink:send_chan(chan, mavlink_msgs.encode("COMMAND_ACK", ack))
+			end
+		end
+	end
 
 	if stage == 1 then
 		calcWps()
 	elseif stage == 2 then
 		createMission()
 	end
-	
+
 	return update, 200
 end
 
