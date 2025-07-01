@@ -60,6 +60,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Torqeedo/AP_Torqeedo.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Parachute/AP_Parachute_config.h>
+#include <AP_Scripting/AP_Scripting.h>
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
@@ -700,6 +701,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::SCRIPTING_14:
     case AUX_FUNC::SCRIPTING_15:
     case AUX_FUNC::SCRIPTING_16:
+    case AUX_FUNC::KILL_SCRIPTING:
 #endif
 #if AP_VIDEOTX_ENABLED
     case AUX_FUNC::VTX_POWER:
@@ -1879,7 +1881,21 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
     }
 #endif
 
-    // do nothing for these functions
+#if AP_SCRIPTING_ENABLED
+    case AUX_FUNC::KILL_SCRIPTING: {
+        AP_Scripting *scr = AP::scripting();
+        if (scr != nullptr) {
+            if (ch_flag == AuxSwitchPos::HIGH) {
+                scr->stop();
+            } else {
+                scr->restart_all();
+            }
+        }
+        break;
+    }
+#endif
+
+// do nothing for these functions
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::MOUNT1_ROLL:
     case AUX_FUNC::MOUNT1_PITCH:
