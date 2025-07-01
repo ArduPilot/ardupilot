@@ -161,6 +161,7 @@ define AP_COMPASS_QMC5883P_ENABLED 1
 
 # one BARO
 BARO BMP280 I2C:0:0x76
+BARO SPL06  I2C:0:0x76
 
 define HAL_OS_FATFS_IO 1
 define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
@@ -179,9 +180,9 @@ include ../include/no_bootloader_DFU.inc
 
 #only enable BMP280 Baro
 define AP_BARO_BACKEND_DEFAULT_ENABLED 0
-undef define AP_BARO_BMP280_ENABLED
 define AP_BARO_BMP280_ENABLED 1
 define AP_BARO_MS56XX_ENABLED 1
+define AP_BARO_SPL06_ENABLED 1
 
 # need to probe external baros even 'though we're minimised to allow custom build options:
 undef AP_BARO_PROBE_EXTERNAL_I2C_BUSES
