@@ -62,6 +62,16 @@ int32_t AC_WPNav_OA::get_wp_bearing_to_destination_cd() const
     return get_bearing_cd(_pos_control.get_pos_estimate_NEU_cm().xy().tofloat(), _destination_oabak_neu_cm.xy());
 }
 
+/// get_wp_bearing_to_destination_cd - get bearing to next waypoint in centi-degrees
+float AC_WPNav_OA::get_wp_bearing_to_destination_rad() const
+{
+    if (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) {
+        return AC_WPNav::get_wp_bearing_to_destination_rad();
+    }
+
+    return get_bearing_rad(_pos_control.get_pos_estimate_NEU_cm().xy().tofloat(), _destination_oabak_neu_cm.xy());
+}
+
 /// true when we have come within RADIUS cm of the waypoint
 bool AC_WPNav_OA::reached_wp_destination() const
 {
