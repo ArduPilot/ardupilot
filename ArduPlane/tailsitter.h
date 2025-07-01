@@ -14,6 +14,8 @@
  */
 #pragma once
 
+#include "config.h"
+
 #include <AP_Param/AP_Param.h>
 #include "transition.h"
 #include <AP_Motors/AP_MotorsTailsitter.h>
@@ -111,7 +113,9 @@ public:
     AP_Float VTOL_yaw_scale;
     AP_Float disk_loading_min_outflow;
 
+#if AP_MOTORS_TAILSITTER_ENABLED
     AP_MotorsTailsitter* tailsitter_motors;
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
 
 private:
 
@@ -133,6 +137,9 @@ private:
 
 
     bool setup_complete;
+
+    // true if Q_FRAME_CLASS is the dual-motor tailsitter frame (AP_MotorsTailsitter)
+    bool is_dual_motor_frame() const;
 
     // true when flying a tilt-vectored tailsitter
     bool _is_vectored;
