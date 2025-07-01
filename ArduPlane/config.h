@@ -1,6 +1,7 @@
 #pragma once
 
 #include "defines.h"
+#include <AP_HAL/AP_HAL_Boards.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -211,6 +212,14 @@
 #ifndef AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
  #define AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED 1
 #endif
+
+#ifndef HAL_QUADPLANE_ENABLED
+#define HAL_QUADPLANE_ENABLED 1
+#endif
+
+#ifndef AP_PLANE_TAILSITTER_ENABLED
+#define AP_PLANE_TAILSITTER_ENABLED (HAL_QUADPLANE_ENABLED && AP_MOTORS_TAILSITTER_ENABLED)
+#endif //  AP_PLANE_TAILSITTER_ENABLED
 
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe

@@ -17,10 +17,15 @@
   or by setting Q_TAILSIT_MOTMX nonzero and Q_FRAME_CLASS and Q_FRAME_TYPE
   to a configuration supported by AP_MotorsMatrix
  */
-#include "tailsitter.h"
-#include "Plane.h"
 
-#if HAL_QUADPLANE_ENABLED
+#include <AP_Motors/AP_Motors_config.h>
+
+#include "tailsitter.h"
+
+#if AP_PLANE_TAILSITTER_ENABLED
+
+#include "Plane.h"
+#include "quadplane.h"
 
 const AP_Param::GroupInfo Tailsitter::var_info[] = {
 
@@ -1057,4 +1062,17 @@ bool Tailsitter_Transition::allow_weathervane()
     return !tailsitter.in_vtol_transition() && (vtol_limit_start_ms == 0);
 }
 
-#endif  // HAL_QUADPLANE_ENABLED
+#else
+// stub implementations for when tailsitter support is not compiled
+// in.  Fine-grained defines throughout the code are intrusive.
+Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):quadplane(_quadplane),motors(_motors) { }
+bool Tailsitter::active(void) { return false; }
+bool Tailsitter::is_in_fw_flight(void) const { return false; }
+bool Tailsitter::relax_pitch(void) { return true; }
+void Tailsitter::write_log() { }
+bool Tailsitter::is_control_surface_tailsitter(void) const { return false; }
+void Tailsitter::output(void) { }
+bool Tailsitter::in_vtol_transition(uint32_t now) const { return false; }
+void Tailsitter::check_input(void) { }
+void Tailsitter::setup(void) { }
+#endif  // AP_PLANE_TAILSITTER_ENABLED
