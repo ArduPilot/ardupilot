@@ -2,6 +2,8 @@
 
 #include "AP_Motors_config.h"
 
+#if AP_MOTORS_ENABLED
+
 #include "AP_Motors_Class.h"
 #include "AP_MotorsMulticopter.h"
 #include "AP_MotorsMatrix.h"
@@ -17,3 +19,5 @@
 #include "AP_Motors6DOF.h"
 #include "AP_MotorsMatrix_6DoF_Scripting.h"
 #include "AP_MotorsMatrix_Scripting_Dynamic.h"
+
+#endif  // AP_MOTORS_ENABLED

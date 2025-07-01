@@ -18,6 +18,10 @@
  *
  */
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORS_TAILSITTER_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_MotorsTailsitter.h"
@@ -242,3 +246,5 @@ void AP_MotorsTailsitter::_output_test_seq(uint8_t motor_seq, int16_t pwm)
             break;
     }
 }
+
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
