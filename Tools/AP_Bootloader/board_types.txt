@@ -309,6 +309,7 @@ AP_HW_ORBITH743                      1191
 AP_HW_DAKEFPVH743                    1193
 AP_HW_DAKEFPVH743PRO                 1194
 AP_HW_SEQUREH743                     1195
+AP_HW_AEDROXH7                       1198
 
 AP_HW_JFB200                         1200
 
