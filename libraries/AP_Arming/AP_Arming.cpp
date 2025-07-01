@@ -390,12 +390,13 @@ bool AP_Arming::airspeed_checks(bool report)
 bool AP_Arming::logging_checks(bool report)
 {
     if (check_enabled(Check::LOGGING)) {
+        int8_t ret = 0;
         if (!AP::logger().logging_present()) {
             // Logging is disabled, so nothing to check.
             return true;
         }
-        if (AP::logger().logging_failed()) {
-            check_failed(Check::LOGGING, report, "Logging failed");
+        if ((ret = AP::logger().logging_failed())) {
+            check_failed(Check::LOGGING, report, "Logging failed %d", ret);
             return false;
         }
         if (!AP::logger().CardInserted()) {
