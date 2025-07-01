@@ -16,6 +16,9 @@ float get_horizontal_distance_cm(const Vector2<T> &origin, const Vector2<T> &des
     return (destination - origin).length();
 }
 
+// return bearing in radians between two positions
+float        get_bearing_rad(const Vector2f &origin, const Vector2f &destination);
+
 // return bearing in centi-degrees between two positions
 float        get_bearing_cd(const Vector2f &origin, const Vector2f &destination);
 
