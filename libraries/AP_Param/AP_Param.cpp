@@ -3189,7 +3189,7 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     }
 
     // check for valid values
-    if (param_num == 0 || param_num > 63 || strlen(pname) > 16) {
+    if (param_num == 0 || param_num > 63 || strlen(pname) > AP_MAX_NAME_SIZE) {
         return false;
     }
 
@@ -3224,6 +3224,30 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     if (load_int32(key, 0, current_crc) && current_crc != crc) {
         // crc mismatch, we have a conflict with an existing use of this key
         return false;
+    }
+
+    // Check length
+    char fullName[AP_MAX_NAME_SIZE+1] = {};
+    const int fullNameLength = hal.util->snprintf(fullName, sizeof(fullName), "%s%s", info.name, pname);
+    if ((fullNameLength < 0) || (fullNameLength > AP_MAX_NAME_SIZE)) {
+        // Param is too long with table prefix (or snprintf failed)
+        return false;
+    }
+
+    // Check for conflicting name
+    enum ap_var_type existingType;
+    ParamToken existingToken;
+    if (find_by_name(fullName, &existingType, &existingToken) != nullptr) {
+        // Param with this name already exists, check if it is the parameter were trying to add from a previous script run
+        if (existingToken.key != (_num_vars_base + i)) {
+            // Found param is not in this table, can't be this one
+            return false;
+        }
+        if (existingToken.group_element != param_num) {
+            // Index does not match, two params with the same name in the same table?
+            return false;
+        }
+        // Existing param is the same as this one, must be a scripting restart
     }
 
     // fill in idx of any gaps, leaving them hidden, this allows
