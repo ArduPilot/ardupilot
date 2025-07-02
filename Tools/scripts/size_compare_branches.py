@@ -163,6 +163,7 @@ class SizeCompareBranches(object):
             'TBS-L431-BattMon',  # uses USE_BOOTLOADER_FROM_BOARD
             'TBS-L431-CurrMon',  # uses USE_BOOTLOADER_FROM_BOARD
             'TBS-L431-PWM',  # uses USE_BOOTLOADER_FROM_BOARD
+            'ARKV6X-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
         ])
 
         # blacklist all linux boards for bootloader build:
@@ -199,6 +200,7 @@ class SizeCompareBranches(object):
             'SITL_x86_64_linux_gnu',
             'canzero',
             'linux',
+            'pilotpi',
         ]
 
     def esp32_board_names(self):
