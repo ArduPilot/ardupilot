@@ -84,9 +84,6 @@ class ChibiOSHWDef(hwdef.HWDef):
         # list of alt configs by label
         self.altlabel = {}
 
-        # list of SPI devices
-        self.spidev = []
-
         # list of WSPI devices
         self.wspidev = []
 
