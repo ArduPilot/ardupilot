@@ -42,16 +42,23 @@ ARM_TOOLCHAIN_DIR="/opt/$ARM_ROOT"
 CCACHE_DIR="/usr/lib/ccache"
 
 # Helper functions
-maybe_prompt() {
-    if $ASSUME_YES; then return 0; fi
-    read -rp "$1"
-    [[ $REPLY =~ ^[Yy]$ ]]
+function maybe_prompt_user() {
+    if $ASSUME_YES; then
+        return 0
+    else
+        IFS= read -rp "$1"
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            return 0
+        else
+            return 1
+        fi
+    fi
 }
 
 add_config_entry() {
     local line="$1" prompt="$2"
     if ! grep -Fxq "$line" "$CONFIG_FILE"; then
-        if maybe_prompt "$prompt [N/y]?"; then
+        if maybe_prompt_user "$prompt [N/y]?"; then
             echo "$line" >> "$CONFIG_FILE"
             echo "Added to $CONFIG_FILE"
             return 0
