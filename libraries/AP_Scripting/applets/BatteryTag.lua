@@ -40,6 +40,15 @@ local BTAG_ENABLE = bind_add_param('ENABLE',  1, 1)
 --]]
 local BTAG_MAX_CYCLES = bind_add_param('MAX_CYCLES',  2, 400)
 
+--[[
+  // @Param: BTAG_CUR_CYCLES
+  // @DisplayName: current battery cycles
+  // @Description: this is the highest value for battery cycles for all connected batteries
+  // @Range: 0 10000
+  // @User: Advanced
+--]]
+local BTAG_CUR_CYCLES = bind_add_param('CUR_CYCLES',  3, 0)
+
 if BTAG_ENABLE:get() == 0 then
     return
 end
@@ -69,7 +78,11 @@ local function check_batterytag()
         return
     end
 
-    highest_cycles = math.max(num_cycles, highest_cycles)
+    if num_cycles > highest_cycles then
+        highest_cycles = num_cycles
+        BTAG_CUR_CYCLES:set_and_save(highest_cycles)
+        gcs:send_text(MAV_SEVERITY.INFO, string.format("BatteryTag: Node %d, Cycles %d", nodeid, num_cycles))
+    end
 
     -- log battery information
     logger:write("BTAG",
