@@ -916,12 +916,12 @@ void GCS_MAVLINK_Plane::convert_MAV_CMD_NAV_TAKEOFF_to_COMMAND_INT(const mavlink
     out.z = -in.param7;  // up -> down
 }
 
-void GCS_MAVLINK_Plane::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
+MAV_RESULT GCS_MAVLINK_Plane::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
 {
     switch (in.command) {
     case MAV_CMD_NAV_TAKEOFF:
         convert_MAV_CMD_NAV_TAKEOFF_to_COMMAND_INT(in, out);
-        return;
+        return MAV_RESULT_ACCEPTED;
     }
     return GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(in, out, frame);
 }
