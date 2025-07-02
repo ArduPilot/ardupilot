@@ -491,7 +491,7 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
     }
 
     // check EKF's compass, position, height and velocity variances are below failsafe threshold
-    if (copter.g.fs_ekf_thresh > 0.0f) {
+    if (is_positive(copter.g.fs_ekf_thresh)) {
         float vel_variance, pos_variance, hgt_variance, tas_variance;
         Vector3f mag_variance;
         ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance);
@@ -625,7 +625,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         // check throttle is not too high - skips checks if arming from GCS/scripting in Guided,Guided_NoGPS or Auto 
         if (!((AP_Arming::method_is_GCS(method) || method == AP_Arming::Method::SCRIPTING) && copter.flightmode->allows_GCS_or_SCR_arming_with_throttle_high())) {
             // above top of deadband is too always high
-            if (copter.get_pilot_desired_climb_rate() > 0.0f) {
+            if (is_positive(copter.get_pilot_desired_climb_rate())) {
                 check_failed(Check::RC, true, "%s too high", rc_item);
                 return false;
             }

@@ -57,7 +57,7 @@ void Copter::update_ground_effect_detector(void)
     bool xy_speed_demand_low = pos_control->is_active_NE() && xy_des_speed_cms <= 125.0f;
     bool slow_horizontal = xy_speed_demand_low || (xy_speed_low && !pos_control->is_active_NE()) || (flightmode->mode_number() == Mode::Number::ALT_HOLD && small_angle_request);
 
-    bool descent_demanded = pos_control->is_active_U() && des_climb_rate_cms < 0.0f;
+    bool descent_demanded = pos_control->is_active_U() && is_negative(des_climb_rate_cms);
     bool slow_descent_demanded = descent_demanded && des_climb_rate_cms >= -100.0f;
     bool z_speed_low = AP::ahrs().get_velocity_D(vel_ned_ms.z, vibration_check.high_vibes) && fabsf(vel_ned_ms.z) <= 0.6f;
     bool slow_descent = (slow_descent_demanded || (z_speed_low && descent_demanded));
