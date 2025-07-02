@@ -933,11 +933,11 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge, float pi
     const float pitch_corrected_lpf = _pitch_measured_lpf.get() - radians(pitch_trim_deg);
     const float pitch_blended = pitch_demand_hpf + pitch_corrected_lpf;
 
-    if (pitch_blended > 0.0f && _PITCHmaxf > 0.0f)
+    if (is_positive(pitch_blended) && is_positive(_PITCHmaxf))
     {
         _throttle_dem = nomThr + (_THRmaxf - nomThr) * pitch_blended / _PITCHmaxf;
     }
-    else if (pitch_blended < 0.0f && _PITCHminf < 0.0f)
+    else if (is_negative(pitch_blended) && is_negative(_PITCHminf))
     {
         _throttle_dem = nomThr + (_THRminf - nomThr) * pitch_blended / _PITCHminf;
     }
@@ -979,7 +979,7 @@ void AP_TECS::_detect_bad_descent(void)
     // This mode will produce an undulating speed and height response as it cuts in and out, but it
     // will prevent the aircraft from descending into the ground if an unachievable speed demand is set.
     float STEdot = _SPEdot + _SKEdot;
-    if (((_STE_error > 200.0f) && (STEdot < 0.0f) && (_throttle_dem >= _THRmaxf * 0.9f)) || (_flags.badDescent && (_STE_error > 0.0f))) {
+    if (((_STE_error > 200.0f) && is_negative(STEdot) && (_throttle_dem >= _THRmaxf * 0.9f)) || (_flags.badDescent && is_positive(_STE_error))) {
         _flags.badDescent = true;
     } else {
         _flags.badDescent = false;
@@ -1083,8 +1083,8 @@ void AP_TECS::_update_pitch(void)
     _pitch_dem_unc = (SEBdot_dem_total + _integSEBdot + integSEB_delta + _integKE) / gainInv;
 
     // integrate SEB rate error and apply integrator state limits
-    const bool inhibit_integrator = ((_pitch_dem_unc > _PITCHmaxf) && integSEB_delta > 0.0f) ||
-                                    ((_pitch_dem_unc < _PITCHminf) && integSEB_delta < 0.0f);
+    const bool inhibit_integrator = ((_pitch_dem_unc > _PITCHmaxf) && is_positive(integSEB_delta)) ||
+                                    ((_pitch_dem_unc < _PITCHminf) && is_negative(integSEB_delta));
     if (!inhibit_integrator) {
         _integSEBdot += integSEB_delta;
         _integKE += (_SKE_est - _SKE_dem) * _SKE_weighting * _DT / timeConstant();
