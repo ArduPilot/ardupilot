@@ -46,7 +46,7 @@ function maybe_prompt_user() {
     if $ASSUME_YES; then
         return 0
     else
-        IFS= read -rp "$1"
+        read -rp "$1"
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             return 0
         else
