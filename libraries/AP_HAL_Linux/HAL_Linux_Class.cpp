@@ -136,7 +136,7 @@ static GPIO_Navigator gpioDriver;
 static GPIO_RPI gpioDriver;
 #elif HAL_LINUX_GPIO_SYSFS_ENABLED
 static GPIO_Sysfs gpioDriver;
-#elif HAL_BOARD_SUBTYPE_LINUX_POCKET2
+#elif HAL_LINUX_GPIO_PB2_ENABLED
 static GPIO_PB2 gpioDriver;
 #else
 static Empty::GPIO gpioDriver;
