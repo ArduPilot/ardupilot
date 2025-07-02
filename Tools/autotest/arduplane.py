@@ -1594,12 +1594,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def test_fence_breach_circle_at(self, loc, disable_on_breach=False):
         self.load_fence("CMAC-fence.txt")
-        want_radius = 100
-        # when ArduPlane is fixed, remove this fudge factor
-        REALLY_BAD_FUDGE_FACTOR = 1.16
-        expected_radius = REALLY_BAD_FUDGE_FACTOR * want_radius
+        rtl_radius = 100
         self.set_parameters({
-            "RTL_RADIUS": want_radius,
+            "RTL_RADIUS": rtl_radius,
             "NAVL1_LIM_BANK": 60,
             "FENCE_ACTION": 1, # AC_FENCE_ACTION_RTL_AND_LAND == 1. mavutil.mavlink.FENCE_ACTION_RTL == 4
         })
@@ -1629,7 +1626,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.assert_fence_sys_status(True, True, False)
             break
 
-        self.wait_circling_point_with_radius(loc, expected_radius)
+        self.wait_circling_point_with_radius(loc, rtl_radius)
         self.do_fence_disable()
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
@@ -2320,8 +2317,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_heading(290)
         self.wait_heading(300)
         dest = self.position_target_loc()
-        REALLY_BAD_FUDGE_FACTOR = 1.25  # FIXME
-        expected_radius = REALLY_BAD_FUDGE_FACTOR * self.get_parameter('WP_LOITER_RAD')
+        expected_radius = self.get_parameter('WP_LOITER_RAD')
         self.wait_circling_point_with_radius(dest, expected_radius)
 
         self.start_subtest("Testing mission resume")
