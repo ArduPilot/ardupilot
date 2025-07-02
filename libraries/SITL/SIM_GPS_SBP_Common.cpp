@@ -10,7 +10,7 @@ using namespace SITL;
 
 void GPS_SBP_Common::sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, uint8_t *payload)
 {
-    if (len != 0 && payload == 0) {
+    if (len != 0 && payload == nullptr) {
         return; //SBP_NULL_ERROR;
     }
 
