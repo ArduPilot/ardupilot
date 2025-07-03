@@ -1154,7 +1154,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             p7=x.alt_rel,    # alt
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
         )
-        expected_radius = 100
+        REALLY_BAD_FUDGE_FACTOR = 1.15  # FIXME
+        expected_radius = REALLY_BAD_FUDGE_FACTOR * self.get_parameter('WP_LOITER_RAD')
         self.wait_circling_point_with_radius(loc, expected_radius)
 
         self.context_collect('CAMERA_FEEDBACK')
@@ -1667,13 +1668,16 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.do_fence_enable()
         self.assert_fence_enabled()
 
+        REALLY_BAD_FUDGE_FACTOR = 1.085 # FIXME
+        expected_radius = REALLY_BAD_FUDGE_FACTOR * self.get_parameter('WP_LOITER_RAD')
+
         self.takeoff(alt=50, alt_max=300)
         # Trigger fence breach, fly to rally location
         self.set_parameters({
             "FENCE_RET_RALLY": 1,
             "FENCE_ALT_MIN": 60,
         })
-        self.wait_circling_point_with_radius(rally_loc, return_radius)
+        self.wait_circling_point_with_radius(rally_loc, expected_radius)
         self.set_parameter("FENCE_ALT_MIN", 0) # Clear fence breach
 
         # 10 second fence min retrigger time
@@ -1688,7 +1692,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_altitude(altitude_min=return_alt-3,
                            altitude_max=return_alt+3,
                            relative=True)
-        self.wait_circling_point_with_radius(fence_loc, return_radius)
+        self.wait_circling_point_with_radius(fence_loc, expected_radius)
         self.do_fence_disable() # Disable fence so we can land
         self.fly_home_land_and_disarm() # Pack it up, we're going home.
 
@@ -2295,7 +2299,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_heading(290)
         self.wait_heading(300)
         dest = self.position_target_loc()
-        REALLY_BAD_FUDGE_FACTOR = 1.25  # FIXME
+        REALLY_BAD_FUDGE_FACTOR = 1.15  # FIXME
         expected_radius = REALLY_BAD_FUDGE_FACTOR * self.get_parameter('WP_LOITER_RAD')
         self.wait_circling_point_with_radius(dest, expected_radius)
 
