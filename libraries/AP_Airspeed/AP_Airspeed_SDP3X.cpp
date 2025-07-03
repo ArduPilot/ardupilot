@@ -204,7 +204,7 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
         break;
     case AP_Airspeed::PITOT_TUBE_ORDER_AUTO:
     default:
-        if (press < 0.0f) {
+        if (is_negative(press)) {
             sign = -1.0f;
             press = -press;
         }
@@ -253,7 +253,7 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
     
     // flow through sensor
     float flow_SDP3X = (300.805f - 300.878f / (0.00344205f * (float)powf(press, 0.68698f) + 1.0f)) * 1.29f / rho_air;
-    if (flow_SDP3X < 0.0f) {
+    if (is_negative(flow_SDP3X)) {
         flow_SDP3X = 0.0f;
     }
 
