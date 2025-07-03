@@ -644,8 +644,8 @@ void Tiltrotor::vectoring(void)
         float right_tilt = base_output - tilt_offset;
 
         // if output saturation of both left and right then set yaw limit flag
-        if (((left_tilt > 1.0) || (left_tilt < 0.0)) &&
-            ((right_tilt > 1.0) || (right_tilt < 0.0))) {
+        if (((left_tilt > 1.0) || is_negative(left_tilt)) &&
+            ((right_tilt > 1.0) || is_negative(right_tilt))) {
             motors->limit.yaw = true;
         }
 

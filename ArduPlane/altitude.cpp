@@ -305,7 +305,7 @@ void Plane::set_target_altitude_proportion(const Location &loc, float proportion
             set_offset_altitude_location(current_loc, loc);
             change_target_altitude(-target_altitude.offset_cm*proportion);
             // adjust the new target offset altitude to reflect that we are partially already done
-            if (proportion > 0.0f)
+            if (is_positive(proportion))
                 target_altitude.offset_cm = ((float)target_altitude.offset_cm)/proportion;
         }
     }

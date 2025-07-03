@@ -1359,7 +1359,7 @@ float QuadPlane::get_pilot_desired_climb_rate_cms(void) const
     uint16_t dead_zone = plane.channel_throttle->get_dead_zone();
     uint16_t trim = (plane.channel_throttle->get_radio_max() + plane.channel_throttle->get_radio_min())/2;
     const float throttle_request = plane.channel_throttle->pwm_to_angle_dz_trim(dead_zone, trim) *0.01f;
-    return throttle_request * (throttle_request > 0.0f ? pilot_speed_z_max_up*100 : get_pilot_velocity_z_max_dn());
+    return throttle_request * (is_positive(throttle_request) ? pilot_speed_z_max_up*100 : get_pilot_velocity_z_max_dn());
 }
 
 
@@ -1916,7 +1916,7 @@ void QuadPlane::update_throttle_hover()
 
     float aspeed;
     // calc average throttle if we are in a level hover and low airspeed
-    if (throttle > 0.0f && fabsf(inertial_nav.get_velocity_z_up_cms()) < 60 &&
+    if (is_positive(throttle) && fabsf(inertial_nav.get_velocity_z_up_cms()) < 60 &&
         labs(ahrs_view->roll_sensor) < 500 && labs(ahrs_view->pitch_sensor) < 500 &&
         ahrs.airspeed_estimate(aspeed) && aspeed < plane.aparm.airspeed_min*0.3) {
         // Can we set the time constant automatically
