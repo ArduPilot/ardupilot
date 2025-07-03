@@ -682,7 +682,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         state.quat.to_euler(roll, pitch, yaw_deg);
 
         yaw_deg = fmodf(degrees(yaw_deg), 360.0f);
-        if (yaw_deg < 0.0f) {
+        if (is_negative(yaw_deg)) {
             yaw_deg += 360.0f;
         }
 
