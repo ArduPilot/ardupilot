@@ -169,10 +169,10 @@ void setup()
                 override_have_airspeed = value <= 0.0;
 
             } else if (strcmp(cmd,"ground_mode") == 0) {
-                ground_mode = value > 0.0;
+                ground_mode = is_positive(value);
 
             } else if (strcmp(cmd,"disable_integrator") == 0) {
-                disable_integrator = value > 0.0;
+                disable_integrator = is_positive(value);
 
             } else {
                 ::printf("Expected \"axis\", \"roll\", \"pitch\", \"airspeed\", \"airspeed_fail\",  \"ground_mode\",  \"disable_integrator\"\n");
