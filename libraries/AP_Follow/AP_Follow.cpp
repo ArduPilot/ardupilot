@@ -260,9 +260,9 @@ void AP_Follow::update_estimates()
     // calculate time since last estimation update
     const float e_dt = (now - _last_estimation_update_ms) * 0.001f;
 
-    const bool valid_kinematic_params = (_accel_max_ne_mss > 0.0f) && (_jerk_max_ne_msss > 0.0f) &&
-                                (_accel_max_d_mss > 0.0f) && (_jerk_max_d_msss > 0.0f) &&
-                                (_accel_max_h_degss > 0.0f) && (_jerk_max_h_degsss > 0.0f);
+    const bool valid_kinematic_params = is_positive(_accel_max_ne_mss) && is_positive(_jerk_max_ne_msss) &&
+                                is_positive(_accel_max_d_mss) && is_positive(_jerk_max_d_msss) &&
+                                is_positive(_accel_max_h_degss) && is_positive(_jerk_max_h_degsss);
     
     if (_estimate_valid && valid_kinematic_params) {
         // update X/Y position, velocity, acceleration with shaping
