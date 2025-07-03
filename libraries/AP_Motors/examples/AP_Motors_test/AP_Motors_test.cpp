@@ -87,7 +87,7 @@ void setup()
                 }
 
             } else if (strcmp(cmd,"thrust_boost") == 0) {
-                thrust_boost = value > 0.0;
+                thrust_boost = is_positive(value);
 
             } else if (strcmp(cmd,"swash") == 0) {
                 if (frame_class == AP_Motors::MOTOR_FRAME_HELI) {
