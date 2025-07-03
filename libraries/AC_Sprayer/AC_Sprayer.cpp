@@ -68,7 +68,7 @@ AC_Sprayer::AC_Sprayer()
     AP_Param::setup_object_defaults(this, var_info);
 
     // check for silly parameter values
-    if (_pump_pct_1ms < 0.0f || _pump_pct_1ms > 100.0f) {
+    if (is_negative(_pump_pct_1ms) || _pump_pct_1ms > 100.0f) {
         _pump_pct_1ms.set_and_save(AC_SPRAYER_DEFAULT_PUMP_RATE);
     }
     if (_spinner_pwm < 0) {
