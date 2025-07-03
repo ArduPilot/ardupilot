@@ -270,7 +270,7 @@ void AP_Quicktune::update(bool mode_supports_quicktune)
     const Param pname = get_pname(axis, current_stage);
     const float pval = get_param_value(pname);
     const float limit = gain_limit(pname);
-    const bool limited = (limit > 0.0 && pval >= limit);
+    const bool limited = (is_positive(limit) && pval >= limit);
     const float srate = get_slew_rate(axis);
     const bool oscillating = srate > osc_smax;
     
@@ -281,7 +281,7 @@ void AP_Quicktune::update(bool mode_supports_quicktune)
             reduction = 1.0;
         }
         float new_gain = pval * reduction;
-        if (limit > 0.0 && new_gain > limit) {
+        if (is_positive(limit) && new_gain > limit) {
             new_gain = limit;
         }
         float old_gain = param_saved[uint8_t(pname)];
@@ -364,7 +364,7 @@ void AP_Quicktune::setup_filters(AP_Quicktune::AxisName axis)
 
     if (axis == AxisName::YAW) {
         const float FLTE = get_param_value(Param::YAW_FLTE);
-        if (FLTE < 0.0 || FLTE > YAW_FLTE_MAX) {
+        if (is_negative(FLTE) || FLTE > YAW_FLTE_MAX) {
             adjust_gain(Param::YAW_FLTE, YAW_FLTE_MAX);
         }
     }
