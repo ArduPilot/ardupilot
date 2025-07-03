@@ -70,7 +70,7 @@ void AP_Generator_IE_650_800::decode_latest_term()
         case 1:
             _parsed.tank_pct = strtof(_term, NULL);
             // Out of range values
-            if (_parsed.tank_pct > 100.0f || _parsed.tank_pct < 0.0f) {
+            if (_parsed.tank_pct > 100.0f || is_negative(_parsed.tank_pct)) {
                 _data_valid = false;
             }
             break;
@@ -78,7 +78,7 @@ void AP_Generator_IE_650_800::decode_latest_term()
         case 2:
             _parsed.battery_pct = strtof(_term, NULL);
             // Out of range values
-            if (_parsed.battery_pct > 100.0f || _parsed.battery_pct < 0.0f) {
+            if (_parsed.battery_pct > 100.0f || is_negative(_parsed.battery_pct)) {
                 _data_valid = false;
             }
             break;
