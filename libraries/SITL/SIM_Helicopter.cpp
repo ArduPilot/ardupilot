@@ -460,7 +460,7 @@ float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torqu
                 accel_scale = 2000.0f / runup_time;
             }
         }else{
-            if (rotor_runup_output > 0.0f) {
+            if (is_positive(rotor_runup_output)) {
                 rotor_runup_output -= runup_increment * 10.0f; // make ramp down 10 times faster
             } else {
                 rotor_runup_output = 0.0f;

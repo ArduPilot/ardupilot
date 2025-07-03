@@ -444,7 +444,7 @@ bool Glider::update_balloon(float balloon, Vector3f &force, Vector3f &rot_accel)
     // rate increase in separation between attachment point on plane and balloon
     // tension force in tether due to stiffness and damping
     float tension_force = MAX(0.0f, (separation_distance - model.tetherLength) * tether_stiffness);
-    if (tension_force > 0.0f) {
+    if (is_positive(tension_force)) {
         tension_force += constrain_float(separation_speed * tether_damping, 0.0f, 0.05f * tension_force);
     }
 

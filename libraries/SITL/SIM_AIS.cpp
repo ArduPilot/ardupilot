@@ -197,7 +197,7 @@ void AIS::update_simulated_vessel(ais_vessel &vessel, const float dt, const Loca
     } else if (vessel.info.velocity > 14.0 * 0.1 * KNOTS_TO_M_PER_SEC * 100.0) {
         postion_interval = 6000; // every 6 seconds if faster than 14 knots
 
-    } else if (vessel.info.velocity > 0.0) {
+    } else if (is_positive(float(vessel.info.velocity))) {
         postion_interval = 10000; // every 10 seconds if moving
 
     } else {
