@@ -105,7 +105,20 @@ void AP_AIS::init()
 // update AIS, expected to be called at 20hz
 void AP_AIS::update()
 {
-    if (!_uart || !enabled()) {
+    if (!enabled()) {
+        return;
+    }
+
+    // remove expired items from the list
+    const uint32_t now_ms =  AP_HAL::millis();
+    const uint32_t timeout_ms = MAX(_time_out.get(), 1) * 1000;
+    for (uint16_t i = 0; i < _list.max_items(); i++) {
+        if (_list[i].last_update_ms != 0 && now_ms - _list[i].last_update_ms >= timeout_ms) {
+            clear_list_item(i);
+        }
+    }
+
+    if (_uart == nullptr) {
         return;
     }
 
@@ -230,20 +243,7 @@ void AP_AIS::update()
                 }
             }
         }
-    }
-
-    // remove expired items from the list
-    const uint32_t now =  AP_HAL::millis();
-    const uint32_t timeout = _time_out * 1000;
-    if (now < timeout) {
-        return;
-    }
-    const uint32_t deadline = now - timeout;
-    for (uint16_t i = 0; i < _list.max_items(); i++) {
-        if (_list[i].last_update_ms < deadline && _list[i].last_update_ms != 0) {
-            clear_list_item(i);
-        }
-    }
+    } // while
 }
 
 // Send a AIS mavlink message
