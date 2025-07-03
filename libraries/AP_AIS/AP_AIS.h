@@ -51,7 +51,7 @@ public:
     void send(mavlink_channel_t chan);
 
     // handle mavlink message
-    void handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg);
+    void handle_message(const mavlink_ais_vessel_t &packet);
 
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];

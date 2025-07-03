@@ -271,18 +271,12 @@ void AP_AIS::send(mavlink_channel_t chan)
         }
     }
 }
-void AP_AIS::handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg)
+
+void AP_AIS::handle_message(const mavlink_ais_vessel_t &packet)
 {
     if (!enabled()) {
         return;
     }
-
-    if (msg.msgid != MAVLINK_MSG_ID_AIS_VESSEL) {
-        return;
-    }
-
-    mavlink_ais_vessel_t packet;
-    mavlink_msg_ais_vessel_decode(&msg, &packet);
 
     uint16_t index;
     if (!get_vessel_index(packet.MMSI, index)) {
