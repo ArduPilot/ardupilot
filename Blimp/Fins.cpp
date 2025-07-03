@@ -100,16 +100,16 @@ void Fins::output()
         _freq[i] = 1;
 
         _num_added = 0;
-        if (fmaxf(0,_right_amp_factor[i]*right_out) > 0.0f) {
+        if (is_positive(fmaxf(0,_right_amp_factor[i]*right_out))) {
             _num_added++;
         }
-        if (fmaxf(0,_front_amp_factor[i]*front_out) > 0.0f) {
+        if (is_positive(fmaxf(0,_front_amp_factor[i]*front_out))) {
             _num_added++;
         }
-        if (fabsf(_down_amp_factor[i]*down_out) > 0.0f) {
+        if (is_positive(fabsf(_down_amp_factor[i]*down_out))) {
             _num_added++;
         }
-        if (fabsf(_yaw_amp_factor[i]*yaw_out) > 0.0f) {
+        if (is_positive(fabsf(_yaw_amp_factor[i]*yaw_out))) {
             _num_added++;
         }
 
