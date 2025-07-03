@@ -215,11 +215,11 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     // see if we need to scale down yaw_out
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         float y = _yawFactor[CH_1+i] * yaw_out;
-        if (_out[i] < 0.0f) {
+        if (is_negative(_out[i])) {
             // the slope of the yaw effect changes at zero collective
             y = -y;
         }
-        if (_out[i] * (_out[i] + y) < 0.0f) {
+        if (is_negative(_out[i] * (_out[i] + y))) {
             // applying this yaw demand would change the sign of the
             // collective, which means the yaw would not be applied
             // evenly. We scale down the overall yaw demand to prevent
@@ -232,7 +232,7 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     // now apply the yaw correction
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         float y = _yawFactor[CH_1+i] * yaw_out;
-        if (_out[i] < 0.0f) {
+        if (is_negative(_out[i])) {
             // the slope of the yaw effect changes at zero collective
             y = -y;
         }

@@ -340,7 +340,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
         }
 
         // check if we need to use engine cooldown
-        if (_fast_idle_timer > 0.0) {
+        if (is_positive(_fast_idle_timer)) {
             // running at fast idle for engine cool down
             _idle_throttle *= 1.5;
             _fast_idle_timer -= dt;
