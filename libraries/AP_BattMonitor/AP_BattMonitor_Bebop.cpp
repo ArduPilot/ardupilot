@@ -102,7 +102,7 @@ float AP_BattMonitor_Bebop::_filter_voltage(float vbat_raw)
         _prev_vbat_raw = vbat_raw;
         _prev_vbat = vbat_raw;
         only_once = 0;
-    } else  if (vbat_raw > 0.0f) {
+    } else  if (is_positive(vbat_raw)) {
         /*  1st order filter */
         vbat = b[0] * vbat_raw +
             b[1] * _prev_vbat_raw - a[1] * _prev_vbat;
@@ -199,7 +199,7 @@ void AP_BattMonitor_Bebop::read(void)
     /* ensure battery voltage/percent will not grow up during use */
     if (vbat > _battery_voltage_max) {
         vbat = _battery_voltage_max;
-    } else if (vbat < 0.0f) {
+    } else if (is_negative(vbat)) {
         vbat = 0.0f;
         _battery_voltage_max = 0.0f;
     } else {
