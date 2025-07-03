@@ -455,9 +455,9 @@ void AP_Compass_BMM350::timer()
     float magz = (float)magz_raw * BMM350_Z_SCALE;
     float temp = (float)temp_raw * BMM350_TEMP_SCALE;
 
-    if (temp > 0.0f) {
+    if (is_positive(temp)) {
         temp -= 25.49f;
-    } else if (temp < 0.0f) {
+    } else if (is_negative(temp)) {
         temp += 25.49f;
     }
 
