@@ -4257,8 +4257,11 @@ void GCS_MAVLINK::handle_adsb_message(const mavlink_message_t &msg)
 void GCS_MAVLINK::handle_ais_message(const mavlink_message_t &msg)
 {
     AP_AIS *ais = AP_AIS::get_singleton();
-    if (ais != nullptr) {
-        ais->handle_message(chan, msg);
+    if (ais != nullptr && ais->enabled()) {
+        mavlink_ais_vessel_t packet;
+        mavlink_msg_ais_vessel_decode(&msg, &packet);
+
+        ais->handle_message(packet);
     }
 }
 #endif
