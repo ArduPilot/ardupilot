@@ -1659,7 +1659,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         return_radius = 100
         return_alt = 80
         self.set_parameters({
-            "RTL_RADIUS": return_radius,
+            "WP_LOITER_RAD": return_radius,
             "FENCE_ACTION": 6, # Set Fence Action to Guided
             "FENCE_TYPE": 8,   # Only use fence floor
             "FENCE_RET_ALT": return_alt,
