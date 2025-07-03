@@ -117,6 +117,21 @@ void AP_AIS::update()
         }
     }
 
+#if 1
+    if (_type.get() == 2) {
+        mavlink_ais_vessel_t packet {};
+
+        packet.MMSI = 131313131;
+        packet.lat = -35.3621640 *1e7;
+        packet.lon = 149.1658536 *1e7;
+        strcpy(packet.callsign, "test1");
+        strcpy(packet.name, "test2");
+
+        handle_message(packet);
+    }
+#endif
+
+
     if (_uart == nullptr) {
         return;
     }
