@@ -274,6 +274,10 @@ void AP_AIS::send(mavlink_channel_t chan)
 }
 void AP_AIS::handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg)
 {
+    if (!enabled()) {
+        return;
+    }
+
     if (msg.msgid != MAVLINK_MSG_ID_AIS_VESSEL) {
         return;
     }
@@ -288,6 +292,10 @@ void AP_AIS::handle_message(const mavlink_channel_t chan, const mavlink_message_
     }
     memcpy(&_list[index].info, &packet, sizeof(mavlink_ais_vessel_t));
     _list[index].last_update_ms = AP_HAL::millis();
+
+#if AP_OADATABASE_ENABLED
+    send_to_object_avoidance_database(_list[index]);
+#endif
 }
 
 #if AP_OADATABASE_ENABLED
