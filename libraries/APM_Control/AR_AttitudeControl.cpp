@@ -29,6 +29,7 @@
 #define AR_ATTCONTROL_STEER_RATE_FILT   10.00f
 #define AR_ATTCONTROL_STEER_RATE_MAX    120.0f
 #define AR_ATTCONTROL_STEER_ACCEL_MAX   120.0f
+#define AR_ATTCONTROL_STEER_DECEL_MAX   0.0f
 #define AR_ATTCONTROL_THR_SPEED_P       0.20f
 #define AR_ATTCONTROL_THR_SPEED_I       0.20f
 #define AR_ATTCONTROL_THR_SPEED_IMAX    1.00f
@@ -564,6 +565,15 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_BAL_LIM_THR", 15, AR_AttitudeControl, _pitch_limit_throttle_thresh, AR_ATTCONTROL_PITCH_LIM_THR_THRESH),
 
+    // @Param: _STR_DEC_MAX
+    // @DisplayName: Steering control angular deceleration maximum
+    // @Description: Steering control angular deceleration maximum (in deg/s/s).  0 to disable deceleration limiting
+    // @Range: 0 1000
+    // @Increment: 0.1
+    // @Units: deg/s/s
+    // @User: Standard
+    AP_GROUPINFO("_STR_DEC_MAX", 16, AR_AttitudeControl, _steer_decel_max, AR_ATTCONTROL_STEER_DECEL_MAX),
+
     AP_GROUPEND
 };
 
@@ -623,8 +633,12 @@ float AR_AttitudeControl::get_turn_rate_from_heading(float heading_rad, float ra
         desired_rate = constrain_float(desired_rate, -rate_max_rads, rate_max_rads);
     }
 
-    // if acceleration limit is provided, ensure rate can be slowed to zero in time to stop at heading_rad (i.e. avoid overshoot)
-    if (is_positive(_steer_accel_max)) {
+    // if deceleration limit is provided, ensure rate can be slowed to zero in time to stop at heading_rad (i.e. avoid overshoot)
+    if (is_positive(_steer_decel_max)) {
+        const float steer_decel_rate_max_rads = safe_sqrt(2.0 * fabsf(yaw_error) * radians(_steer_decel_max));
+        desired_rate = constrain_float(desired_rate, -steer_decel_rate_max_rads, steer_decel_rate_max_rads);
+    } else if (is_positive(_steer_accel_max)) {
+        // if no deceleration limit, use acceleration limit
         const float steer_accel_rate_max_rads = safe_sqrt(2.0 * fabsf(yaw_error) * radians(_steer_accel_max));
         desired_rate = constrain_float(desired_rate, -steer_accel_rate_max_rads, steer_accel_rate_max_rads);
     }
