@@ -4089,7 +4089,7 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 
     AP_AccelCal *accelcal = AP::ins().get_acal();
     if (accelcal != nullptr) {
-        accelcal->handle_command_ack(packet);
+        accelcal->handle_command_ack(packet, msg.sysid, msg.compid);
     }
 #if AP_GENERATOR_LOWEHEISER_ENABLED
     // this might be an ACK from a loweheiser generator:
@@ -4858,7 +4858,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
         }
         // start accel cal
         AP::ins().acal_init();
-        AP::ins().get_acal()->start(this);
+        AP::ins().get_acal()->start(this, msg.sysid, msg.compid);
         return MAV_RESULT_ACCEPTED;
     }
 #endif
