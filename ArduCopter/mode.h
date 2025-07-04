@@ -138,6 +138,9 @@ public:
     virtual bool allows_flip() const { return false; }
     virtual bool crash_check_enabled() const { return true; }
 
+    // "no pilot input" here means eg. in RC failsafe
+    virtual bool allows_entry_in_rc_failsafe() const { return true; }
+
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // Return the type of this mode for use by advanced failsafe
     virtual AP_AdvancedFailsafe_Copter::control_mode afs_mode() const { return AP_AdvancedFailsafe_Copter::control_mode::AFS_STABILIZED; }
@@ -433,6 +436,7 @@ public:
     bool allows_save_trim() const override { return true; }
     bool allows_flip() const override { return true; }
     bool crash_check_enabled() const override { return false; }
+    bool allows_entry_in_rc_failsafe() const override { return false; }
 
 protected:
 
@@ -911,6 +915,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool allows_entry_in_rc_failsafe() const override { return false; }
 
 protected:
 
@@ -1664,6 +1669,7 @@ public:
     bool allows_auto_trim() const override { return true; }
     bool allows_autotune() const override { return true; }
     bool allows_flip() const override { return true; }
+    bool allows_entry_in_rc_failsafe() const override { return false; }
 
 protected:
 
@@ -1846,6 +1852,7 @@ public:
     bool is_autopilot() const override { return false; }
     void change_motor_direction(bool reverse);
     void output_to_motors() override;
+    bool allows_entry_in_rc_failsafe() const override { return false; }
 
 protected:
     const char *name() const override { return "TURTLE"; }
