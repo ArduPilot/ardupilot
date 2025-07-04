@@ -198,7 +198,7 @@ public:
 
     // return the maximum gyro drift rate in radians/s/s. This
     // depends on what gyro chips are being used
-    float get_gyro_drift_rate(void) const { return ToRad(0.5f/60); }
+    float get_gyro_drift_rate(void) const { return radians(0.5f/60); }
 
     // update gyro and accel values from accumulated samples
     void update(void) __RAMFUNC__;

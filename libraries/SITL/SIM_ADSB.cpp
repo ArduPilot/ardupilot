@@ -18,7 +18,7 @@
 
 #include "SIM_config.h"
 
-#if HAL_SIM_ADSB_ENABLED
+#if AP_SIM_ADSB_ENABLED
 
 #include "SIM_ADSB.h"
 
@@ -298,4 +298,4 @@ void ADSB::send_report(const class Aircraft &aircraft)
 
 } // namespace SITL
 
-#endif // HAL_SIM_ADSB_ENABLED
+#endif // AP_SIM_ADSB_ENABLED

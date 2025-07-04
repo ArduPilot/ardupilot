@@ -378,7 +378,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     // by default current_alt_cm and alt_target_cm are alt-above-EKF-origin
     int32_t alt_target_cm;
     bool alt_target_terrain = false;
-    float current_alt_cm = inertial_nav.get_position_z_up_cm();
+    float current_alt_cm = pos_control->get_pos_estimate_NEU_cm().z;
     float terrain_offset;   // terrain's altitude in cm above the ekf origin
     if ((dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_offset_cm(terrain_offset)) {
         // subtract terrain offset to convert vehicle's alt-above-ekf-origin to alt-above-terrain
@@ -535,7 +535,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
-        const float dist_to_center = get_horizontal_distance_cm(inertial_nav.get_position_xy_cm().topostype(), copter.circle_nav->get_center_NEU_cm().xy());
+        const float dist_to_center = get_horizontal_distance_cm(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), copter.circle_nav->get_center_NEU_cm().xy().tofloat());
         // initialise yaw
         // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
         if (auto_yaw.mode() != AutoYaw::Mode::ROI) {
@@ -1065,7 +1065,7 @@ void ModeAuto::wp_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // auto_land_run - lands in auto mode
@@ -1106,7 +1106,7 @@ void ModeAuto::circle_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 #if AC_NAV_GUIDED || AP_SCRIPTING_ENABLED
@@ -1138,7 +1138,7 @@ void ModeAuto::loiter_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // auto_loiter_run - loiter to altitude in AUTO flight mode
@@ -1186,15 +1186,15 @@ void ModeAuto::loiter_to_alt_run()
 
     // Compute a vertical velocity demand such that the vehicle
     // approaches the desired altitude.
-    float target_climb_rate = sqrt_controller(
+    float target_climb_rate_cms = sqrt_controller(
         -alt_error_cm,
         pos_control->get_pos_U_p().kP(),
         pos_control->get_max_accel_U_cmss(),
         G_Dt);
-    target_climb_rate = constrain_float(target_climb_rate, pos_control->get_max_speed_down_cms(), pos_control->get_max_speed_up_cms());
+    target_climb_rate_cms = constrain_float(target_climb_rate_cms, pos_control->get_max_speed_down_cms(), pos_control->get_max_speed_up_cms());
 
     // get avoidance adjusted climb rate
-    target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+    target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
 #if AP_RANGEFINDER_ENABLED
     // update the vertical offset based on the surface measurement
@@ -1202,7 +1202,7 @@ void ModeAuto::loiter_to_alt_run()
 #endif
 
     // Send the commanded climb rate to the position controller
-    pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate);
+    pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
 
     pos_control->update_U_controller();
 }
@@ -1220,15 +1220,16 @@ void ModeAuto::nav_attitude_time_run()
     float target_climb_rate_cms = constrain_float(nav_attitude_time.climb_rate * 100.0, pos_control->get_max_speed_down_cms(), pos_control->get_max_speed_up_cms());
 
     // get avoidance adjusted climb rate
-    target_climb_rate_cms = get_avoidance_adjusted_climbrate(target_climb_rate_cms);
+    target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
     // limit and scale lean angles
-    const float angle_limit_cd = MAX(1000.0f, MIN(copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd()));
-    Vector2f target_rp_cd(nav_attitude_time.roll_deg * 100, nav_attitude_time.pitch_deg * 100);
-    target_rp_cd.limit_length(angle_limit_cd);
+    // todo: change euler magnitiude limit to lean angle limit
+    const float angle_limit_rad = MAX(radians(10.0f), MIN(attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad()));
+    Vector2f target_rp_rad(radians(nav_attitude_time.roll_deg), radians(nav_attitude_time.pitch_deg));
+    target_rp_rad.limit_length(angle_limit_rad);
 
     // send targets to attitude controller
-    attitude_control->input_euler_angle_roll_pitch_yaw_cd(target_rp_cd.x, target_rp_cd.y, nav_attitude_time.yaw_deg * 100, true);
+    attitude_control->input_euler_angle_roll_pitch_yaw_rad(target_rp_rad.x, target_rp_rad.y, radians(nav_attitude_time.yaw_deg), true);
 
     // Send the commanded climb rate to the position controller
     pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
@@ -1721,6 +1722,8 @@ void ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
 
     // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
     circle_movetoedge_start(circle_center, circle_radius_m, circle_direction_ccw);
+
+    circle_last_num_complete = -1;
 }
 
 // do_loiter_time - initiate loitering at a point for a given time period
@@ -1990,7 +1993,7 @@ void ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
         !copter.camera_mount.has_pan_control()) {
         // Per the handler in AP_Mount, DO_MOUNT_CONTROL yaw angle is in body frame, which is
         // equivalent to an offset to the current yaw demand.
-        auto_yaw.set_yaw_angle_offset(cmd.content.mount_control.yaw);
+        auto_yaw.set_yaw_angle_offset_deg(cmd.content.mount_control.yaw);
     }
     // pass the target angles to the camera mount
     copter.camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
@@ -2266,8 +2269,14 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
 
     const float turns = cmd.get_loiter_turns();
 
+    const auto num_circles_completed = fabsf(copter.circle_nav->get_angle_total_rad()/float(M_2PI));
+    if (int(num_circles_completed) != int(circle_last_num_complete)) {
+        circle_last_num_complete = num_circles_completed;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: starting circle %u/%u", unsigned(num_circles_completed)+1, unsigned(turns));
+    }
+
     // check if we have completed circling
-    return fabsf(copter.circle_nav->get_angle_total_rad()/float(M_2PI)) >= turns;
+    return num_circles_completed >= turns;
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline
@@ -2357,6 +2366,44 @@ bool ModeAuto::resume()
 bool ModeAuto::paused() const
 {
     return (wp_nav != nullptr) && wp_nav->paused();
+}
+
+/*
+  get a height above ground estimate for landing
+ */
+int32_t ModeAuto::get_alt_above_ground_cm() const
+{
+    // Only override if in landing submode
+    if (_mode == SubMode::LAND) {
+        // Rangefinder takes priority
+        int32_t alt_above_ground_cm;
+        if (copter.get_rangefinder_height_interpolated_cm(alt_above_ground_cm)) {
+            return alt_above_ground_cm;
+        }
+
+        // Take land altitude from command
+        const AP_Mission::Mission_Command& cmd = mission.get_current_nav_cmd();
+        switch (cmd.id) {
+        case MAV_CMD_NAV_VTOL_LAND:
+        case MAV_CMD_NAV_LAND: {
+            if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
+                // If land location is valid return height above it
+                ftype dist;
+                if (copter.current_loc.get_height_above(cmd.content.location, dist)) {
+                    return dist * 100.0;
+                }
+            }
+            break;
+        }
+
+        default:
+            // Really should not end up here as were in SubMode land
+            break;
+        }
+    }
+
+    // Use default method
+    return Mode::get_alt_above_ground_cm();
 }
 
 #endif

@@ -1,6 +1,8 @@
-#include "AP_Avoidance.h"
+#include "AP_Avoidance_config.h"
 
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
+
+#include "AP_Avoidance.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -689,4 +691,4 @@ AP_Avoidance *ap_avoidance()
 
 }
 
-#endif // HAL_ADSB_ENABLED
+#endif // AP_ADSB_AVOIDANCE_ENABLED

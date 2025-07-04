@@ -103,6 +103,21 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input
                             float vel_max, float accel_max,
                             float jerk_max, float dt, bool limit_total);
 
+/* shape_angle_vel_accel calculate a jerk limited path from the current angle, angular velocity and angular acceleration to an input angle, angular velocity and angular acceleration.           
+ The function takes the current angle, angular velocity, and angular acceleration and calculates the required jerk limited adjustment to the angular acceleration for the next time dt.
+ The kinematic path is constrained by :
+    maximum angular velocity - angle_vel_max,
+    maximum angular acceleration - angle_accel_max,
+    maximum angular jerk - angle_jerk_max.
+ The function alters the variable accel to follow a jerk limited kinematic path to angle_input, angle_vel_input and angle_accel_input.
+ The angle_vel_max limit can be removed by setting the desired limit to zero.
+ The correction angular velocity is limited to angle_vel_max. If limit_total is true the total angular velocity is limited to angle_vel_max.
+ The correction angular acceleration can is limited to angle_accel_max. If limit_total is true the total angular acceleration is limited to angle_accel_max.
+*/            
+void shape_angle_vel_accel(float angle_input, float angle_vel_input, float angle_accel_input,
+                         float angle, float angle_vel, float& angle_accel,
+                         float angle_vel_max, float angle_accel_max,
+                         float angle_jerk_max, float dt, bool limit_total);
 
 /* limit_accel_xy limits the acceleration to prioritise acceleration perpendicular to the provided velocity vector.
  Input parameters are:
@@ -135,15 +150,21 @@ float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float m
 // The expo should be less than 1.0 but limited to be less than 0.95.
 float input_expo(float input, float expo);
 
-// angle_to_accel converts a maximum lean angle in degrees to an accel limit in m/s/s
-float angle_to_accel(float angle_deg);
+// angle_rad_to_accel_mss converts a maximum lean angle in radians to an accel limit in m/s/s
+float angle_rad_to_accel_mss(float angle_rad);
 
-// accel_to_angle converts a maximum accel in m/s/s to a lean angle in degrees
-float accel_to_angle(float accel);
+// angle_deg_to_accel_mss converts a maximum lean angle in degrees to an accel limit in m/s/s
+float angle_deg_to_accel_mss(float angle_deg);
 
-// rc_input_to_roll_pitch - transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
-// roll_in_unit and pitch_in_unit - are normalised roll and pitch stick inputs
-// angle_max_deg - maximum lean angle from the z axis
-// angle_limit_deg - provides the ability to reduce the maximum output lean angle to less than angle_max_deg
-// returns roll and pitch euler angles in degrees
-void rc_input_to_roll_pitch(float roll_in_unit, float pitch_in_unit, float angle_max_deg, float angle_limit_deg, float &roll_out_deg, float &pitch_out_deg);
+// accel_mss_to_angle_rad converts a maximum accel in m/s/s to a lean angle in radians
+float accel_mss_to_angle_rad(float accel_mss);
+
+// accel_mss_to_angle_deg converts a maximum accel in m/s/s to a lean angle in degrees
+float accel_mss_to_angle_deg(float accel_mss);
+
+// rc_input_to_roll_pitch_rad - transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
+// roll_in_norm and pitch_in_norm - are normalised roll and pitch stick input
+// angle_max_rad - maximum lean angle from the z axis
+// angle_limit_rad - provides the ability to reduce the maximum output lean angle to less than angle_max_rad without changing the scaling
+// returns roll and pitch angle in radians
+void rc_input_to_roll_pitch_rad(float roll_in_norm, float pitch_in_norm, float angle_max_rad, float angle_limit_rad, float &roll_out_rad, float &pitch_out_rad);

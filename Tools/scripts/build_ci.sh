@@ -404,7 +404,7 @@ for t in $CI_BUILD_TARGET; do
     
     if [ "$t" == "dds-stm32h7" ]; then
         echo "Building with DDS support on a STM32H7"
-        $waf configure --board Durandal --enable-dds
+        $waf configure --board Durandal --enable-DDS
         $waf clean
         $waf copter
         $waf plane
@@ -413,7 +413,7 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "dds-sitl" ]; then
         echo "Building with DDS support on SITL"
-        $waf configure --board sitl --enable-dds
+        $waf configure --board sitl --enable-DDS
         $waf clean
         $waf copter
         $waf plane
@@ -510,6 +510,14 @@ for t in $CI_BUILD_TARGET; do
         if [ $? -ne 0 ]; then
             echo The code failed astyle cleanliness checks. Please run ./Tools/scripts/run_astyle.py
         fi
+        continue
+    fi
+
+    if [ "$t" == "param-file-validation" ]; then
+        echo "Testing param check script"
+        ./Tools/scripts/param_check_unittests.py
+        echo "Validating parameter files"
+        ./Tools/scripts/param_check_all.py
         continue
     fi
 

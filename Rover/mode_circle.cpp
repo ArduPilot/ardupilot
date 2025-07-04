@@ -82,7 +82,7 @@ bool ModeCircle::set_center(const Location& center_loc, float radius_m, bool dir
 bool ModeCircle::_enter()
 {
     // capture starting point and yaw
-    if (!AP::ahrs().get_relative_position_NE_origin(config.center_pos)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(config.center_pos)) {
         return false;
     }
     config.radius = MAX(fabsf(radius), AR_CIRCLE_RADIUS_MIN);
@@ -90,7 +90,7 @@ bool ModeCircle::_enter()
 
     config.dir = (direction == 1) ? Direction::CCW : Direction::CW;
     config.speed = is_positive(speed) ? speed : g2.wp_nav.get_default_speed();
-    target.yaw_rad = AP::ahrs().get_yaw();
+    target.yaw_rad = AP::ahrs().get_yaw_rad();
     target.speed = 0;
 
     // record center as location (only used for reporting)
@@ -129,8 +129,8 @@ void ModeCircle::init_target_yaw_rad()
 {
     // if no position estimate use vehicle yaw
     Vector2f curr_pos_NE;
-    if (!AP::ahrs().get_relative_position_NE_origin(curr_pos_NE)) {
-        target.yaw_rad = AP::ahrs().get_yaw();
+    if (!AP::ahrs().get_relative_position_NE_origin_float(curr_pos_NE)) {
+        target.yaw_rad = AP::ahrs().get_yaw_rad();
         return;
     }
 
@@ -140,7 +140,7 @@ void ModeCircle::init_target_yaw_rad()
 
     // if current position is exactly at the center of the circle return vehicle yaw
     if (is_zero(dist_m)) {
-        target.yaw_rad = AP::ahrs().get_yaw();
+        target.yaw_rad = AP::ahrs().get_yaw_rad();
     } else {
         target.yaw_rad = center_to_veh.angle();
     }
@@ -150,7 +150,7 @@ void ModeCircle::update()
 {
     // get current position
     Vector2f curr_pos;
-    const bool position_ok = AP::ahrs().get_relative_position_NE_origin(curr_pos);
+    const bool position_ok = AP::ahrs().get_relative_position_NE_origin_float(curr_pos);
 
     // if no position estimate stop vehicle
     if (!position_ok) {
@@ -242,7 +242,7 @@ void ModeCircle::update_circling()
 float ModeCircle::wp_bearing() const
 {
     Vector2f curr_pos_NE;
-    if (!AP::ahrs().get_relative_position_NE_origin(curr_pos_NE)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(curr_pos_NE)) {
         return 0;
     }
     // calc vector from circle center to vehicle
@@ -305,7 +305,7 @@ void ModeCircle::check_config_speed()
 
     if (config.speed > speed_max) {
         config.speed = speed_max;
-        gcs().send_text(MAV_SEVERITY_WARNING, "Circle: max speed is %4.1f", (double)config.speed);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Circle: max speed is %4.1f", (double)config.speed);
     }
 }
 
@@ -317,6 +317,6 @@ void ModeCircle::check_config_radius()
     // ensure radius is at least as large as vehicle's turn radius
     if (config.radius < g2.turn_radius) {
         config.radius = g2.turn_radius;
-        gcs().send_text(MAV_SEVERITY_WARNING, "Circle: radius increased to TURN_RADIUS (%4.1f)", (double)g2.turn_radius);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Circle: radius increased to TURN_RADIUS (%4.1f)", (double)g2.turn_radius);
     }
 }

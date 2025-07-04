@@ -368,16 +368,16 @@ void AP_Vehicle::setup()
     gcs().setup_console();
 #endif
 
-#if AP_NETWORKING_ENABLED
-    networking.init();
-#endif
-
 #if AP_SCRIPTING_ENABLED
 #if AP_SCRIPTING_SERIALDEVICE_ENABLED
     // must be done now so ports are registered and drivers get set up properly
     // (in particular mavlink which checks during init_ardupilot())
     scripting.init_serialdevice_ports();
 #endif
+#endif
+
+#if AP_NETWORKING_ENABLED
+    networking.init();
 #endif
 
 #if AP_SCHEDULER_ENABLED
@@ -995,8 +995,8 @@ void AP_Vehicle::publish_osd_info()
 void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {
 #if AP_AHRS_ENABLED
-    roll = ahrs.get_roll();
-    pitch = ahrs.get_pitch();
+    roll = ahrs.get_roll_rad();
+    pitch = ahrs.get_pitch_rad();
 #else
     roll = 0.0;
     pitch = 0.0;

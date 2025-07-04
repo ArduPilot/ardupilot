@@ -10,8 +10,8 @@
 bool ModeBrake::init(bool ignore_checks)
 {
     // initialise pos controller speed and acceleration
-    pos_control->set_max_speed_accel_NE_cm(inertial_nav.get_velocity_neu_cms().length(), BRAKE_MODE_DECEL_RATE);
-    pos_control->set_correction_speed_accel_NE_cm(inertial_nav.get_velocity_neu_cms().length(), BRAKE_MODE_DECEL_RATE);
+    pos_control->set_max_speed_accel_NE_cm(pos_control->get_vel_estimate_NEU_cms().length(), BRAKE_MODE_DECEL_RATE);
+    pos_control->set_correction_speed_accel_NE_cm(pos_control->get_vel_estimate_NEU_cms().length(), BRAKE_MODE_DECEL_RATE);
 
     // initialise position controller
     pos_control->init_NE_controller();
@@ -56,7 +56,7 @@ void ModeBrake::run()
     pos_control->update_NE_controller();
 
     // call attitude controller
-    attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), 0.0f);
+    attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0f);
 
     pos_control->set_pos_target_U_from_climb_rate_cm(0.0f);
     pos_control->update_U_controller();

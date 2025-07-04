@@ -45,7 +45,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 Ardupilot does not currently support the integrated ELRS chip.
 
 RC input is configured on the R2 pin. It supports all serial RC
-protocols. PPM is not supoorted. For protocols requiring half-duplex serial to transmit
+protocols. PPM is not supported. For protocols requiring half-duplex serial to transmit
 telemetry (such as FPort) you should setup SERIAL2 as an RC input serial port,
 with half-duplex, pin-swap and inversion enabled. For duplex protocols, like CRSF/ELRS, T2 must also be connected to the receiver.
  
@@ -73,7 +73,7 @@ to use DShot.
 
 ## Battery Monitoring
 
-The board has a built-in voltage sesnor and current sensor input from the ESC connectors. The voltage sensor can handle up to 8S
+The board has a built-in voltage sensor and current sensor input from the ESC connectors. The voltage sensor can handle up to 8S
 LiPo batteries.
 
 The correct battery setting parameters are:

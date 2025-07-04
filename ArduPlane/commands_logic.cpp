@@ -500,7 +500,7 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
     } else {
         // use yaw based bearing hold
         steer_state.hold_course_cd = wrap_360_cd(ahrs.yaw_sensor);
-        bearing = ahrs.yaw_sensor * 0.01f;
+        bearing = ahrs.get_yaw_deg();
         next_WP_loc.offset_bearing(bearing, 1000); // push it out 1km
     }
 
@@ -744,8 +744,10 @@ bool Plane::verify_loiter_turns(const AP_Mission::Mission_Command &cmd)
     // LOITER_TURNS makes no sense as VTOL
     auto_state.vtol_loiter = false;
 
-    if (condition_value != 0) {
-        // primary goal, loiter time
+    if (!reached_loiter_target()) {
+        result = false;
+    } else if (condition_value != 0) {
+        // primary goal, loiter turns
         if (loiter.sum_cd > loiter.total_cd && loiter.sum_cd > 1) {
             // primary goal completed, initialize secondary heading goal
             condition_value = 0;
@@ -1097,7 +1099,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 const float breakout_direction_rad = radians(vtol_approach_s.approach_direction_deg + (direction > 0 ? 270 : 90));
 
                 // breakout when within 5 degrees of the opposite direction
-                if (fabsF(wrap_PI(ahrs.get_yaw() - breakout_direction_rad)) < radians(5.0f)) {
+                if (fabsF(wrap_PI(ahrs.get_yaw_rad() - breakout_direction_rad)) < radians(5.0f)) {
                     gcs().send_text(MAV_SEVERITY_INFO, "Starting VTOL land approach path");
                     vtol_approach_s.approach_stage = VTOLApproach::Stage::APPROACH_LINE;
                     set_next_WP(cmd.content.location);

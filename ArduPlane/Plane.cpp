@@ -131,9 +131,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Logger,         &plane.logger, periodic_tasks, 50, 400, 138),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor, &plane.ins,    periodic,       50,  50, 141),
-#if HAL_ADSB_ENABLED
+#if HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
     SCHED_TASK(avoidance_adsb_update,  10,    100, 144),
-#endif
+#endif  // HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
     SCHED_TASK_CLASS(RC_Channels,       (RC_Channels*)&plane.g2.rc_channels, read_aux_all,           10,    200, 147),
 #if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button, &plane.button, update, 5, 100, 150),
@@ -204,6 +204,12 @@ void Plane::ahrs_update()
 
     // update inertial_nav for quadplane
     quadplane.inertial_nav.update();
+    if (quadplane.available()) {  
+        quadplane.pos_control->update_estimates();  
+    }
+#endif
+#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+        g2.follow.update_estimates();
 #endif
 
 #if HAL_LOGGING_ENABLED
@@ -425,8 +431,8 @@ void Plane::airspeed_ratio_update(void)
         return;
     }
     if (labs(ahrs.roll_sensor) > roll_limit_cd ||
-        ahrs.pitch_sensor > aparm.pitch_limit_max*100 ||
-        ahrs.pitch_sensor < pitch_limit_min*100) {
+        ahrs.get_pitch_deg() > aparm.pitch_limit_max ||
+        ahrs.get_pitch_deg() < pitch_limit_min) {
         // don't calibrate when going beyond normal flight envelope
         return;
     }
@@ -1009,6 +1015,12 @@ bool Plane::is_taking_off() const
     return control_mode->is_taking_off();
 }
 
+#if HAL_QUADPLANE_ENABLED
+bool Plane::start_takeoff(const float alt) {
+    return plane.quadplane.available() && quadplane.do_user_takeoff(alt);
+}
+#endif
+
 // correct AHRS pitch for PTCH_TRIM_DEG in non-VTOL modes, and return VTOL view in VTOL
 void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {
@@ -1019,8 +1031,8 @@ void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
         return;
     }
 #endif
-    pitch = ahrs.get_pitch();
-    roll = ahrs.get_roll();
+    pitch = ahrs.get_pitch_rad();
+    roll = ahrs.get_roll_rad();
     if (!(flight_option_enabled(FlightOptions::OSD_REMOVE_TRIM_PITCH))) {  // correct for PTCH_TRIM_DEG
         pitch -= g.pitch_trim * DEG_TO_RAD;
     }

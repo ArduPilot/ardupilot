@@ -55,3 +55,6 @@ define RELAY6_PIN_DEFAULT 26
 
 // FIXME: use of this define should go away:
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+
+# AnalogIn_IIO configuration:
+define AP_HAL_LINUX_ANALOGIN_IIO_VOLTAGE_SCALING 3.0*1.8/4095.0

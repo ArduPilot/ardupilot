@@ -10,7 +10,6 @@
 #include <AC_PID/AC_PI_2D.h>        // PI library (2-axis)
 #include <AC_PID/AC_PID_Basic.h>    // PID library (1-axis)
 #include <AC_PID/AC_PID_2D.h>       // PID library (2-axis)
-#include <AP_InertialNav/AP_InertialNav.h>  // Inertial Navigation library
 #include <AP_Scripting/AP_Scripting_config.h>
 #include "AC_AttitudeControl.h"     // Attitude control library
 
@@ -41,8 +40,7 @@ class AC_PosControl
 public:
 
     /// Constructor
-    AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
-                  const class AP_Motors& motors, AC_AttitudeControl& attitude_control);
+    AC_PosControl(AP_AHRS_View& ahrs, const class AP_Motors& motors, AC_AttitudeControl& attitude_control);
 
     // do not allow copying
     CLASS_NO_COPY(AC_PosControl);
@@ -52,6 +50,11 @@ public:
     ///   the position controller should run updates for active controllers on each loop to ensure normal operation
     void set_dt(float dt) { _dt = dt; }
     float get_dt() const { return _dt; }
+
+    // Updates internal position and velocity estimates in the NED frame.
+    // Falls back to vertical-only estimates if full NED data is unavailable.
+    // When high_vibes is true, forces use of vertical fallback for velocity.
+    void update_estimates(bool high_vibes = false);
 
     /// get_shaping_jerk_NE_cmsss - gets the jerk limit of the ne kinematic path generation in cm/s/s/s
     float get_shaping_jerk_NE_cmsss() const { return _shaping_jerk_ne_msss * 100.0; }
@@ -255,6 +258,9 @@ public:
 
     /// Position
 
+    /// get_pos_estimate_NEU_cm - returns the current position estimate, frame NEU in cm relative to the EKF origin
+    const Vector3p& get_pos_estimate_NEU_cm() const { return _pos_estimate_neu_cm; }
+
     /// get_pos_target_NEU_cm - returns the position target, frame NEU in cm relative to the EKF origin
     const Vector3p& get_pos_target_NEU_cm() const { return _pos_target_neu_cm; }
 
@@ -297,6 +303,9 @@ public:
 
     /// Velocity
 
+    /// get_vel_estimate_NEU_cms - returns current velocity estimate in cm/s in NEU
+    const Vector3f& get_vel_estimate_NEU_cms() const { return _vel_estimate_neu_cms; }
+
     /// set_vel_desired_NEU_cms - sets desired velocity in NEU cm/s
     void set_vel_desired_NEU_cms(const Vector3f &vel_desired_neu_cms) { _vel_desired_neu_cms = vel_desired_neu_cms; }
 
@@ -304,7 +313,7 @@ public:
     void set_vel_desired_NE_cms(const Vector2f &vel_desired_ne_cms) {_vel_desired_neu_cms.xy() = vel_desired_ne_cms; }
 
     /// get_vel_desired_NEU_cms - returns desired velocity in cm/s in NEU
-    const Vector3f& get_vel_desired_NEU_cms() { return _vel_desired_neu_cms; }
+    const Vector3f& get_vel_desired_NEU_cms() const { return _vel_desired_neu_cms; }
 
     // get_vel_target_NEU_cms - returns the target velocity in NEU cm/s
     const Vector3f& get_vel_target_NEU_cms() const { return _vel_target_neu_cms; }
@@ -334,7 +343,7 @@ public:
     void init_pos_terrain_U_cm(float pos_terrain_u_cm);
 
     // get_pos_terrain_U_cm - returns the current terrain altitude in cm
-    float get_pos_terrain_U_cm() { return _pos_terrain_u_cm; }
+    float get_pos_terrain_U_cm() const { return _pos_terrain_u_cm; }
 
 
     /// Offset
@@ -377,31 +386,50 @@ public:
 
     /// Outputs
 
-    /// get desired roll and pitch to be passed to the attitude controller
-    float get_roll_cd() const { return _roll_target_cd; }
-    float get_pitch_cd() const { return _pitch_target_cd; }
+    /// Returns the desired roll angle in radians for the attitude controller.
+    float get_roll_rad() const { return _roll_target_rad; }
 
-    /// get desired yaw to be passed to the attitude controller
-    float get_yaw_cd() const { return _yaw_target_cd; }
+    /// Returns the desired pitch angle in radians for the attitude controller.
+    float get_pitch_rad() const { return _pitch_target_rad; }
 
-    /// get desired yaw rate to be passed to the attitude controller
-    float get_yaw_rate_cds() const { return _yaw_rate_target_cds; }
+    /// Returns the desired yaw angle in radians for the attitude controller.
+    float get_yaw_rad() const { return _yaw_target_rad; }
 
-    /// get desired roll and pitch to be passed to the attitude controller
+    /// Returns the desired yaw rate in radians/second for the attitude controller.
+    float get_yaw_rate_rads() const { return _yaw_rate_target_rads; }
+
+    /// Returns the desired roll angle in centidegrees for the attitude controller.
+    float get_roll_cd() const { return rad_to_cd(_roll_target_rad); }
+
+    /// Returns the desired pitch angle in centidegrees for the attitude controller.
+    float get_pitch_cd() const { return rad_to_cd(_pitch_target_rad); }
+
+    /// Returns the desired yaw angle in centidegrees for the attitude controller.
+    float get_yaw_cd() const { return rad_to_cd(_yaw_target_rad); }
+
+    /// Returns the desired yaw rate in centidegrees/second for the attitude controller.
+    float get_yaw_rate_cds() const { return rad_to_cd(_yaw_rate_target_rads); }
+
+    /// Returns the desired thrust direction vector in the body frame.
     Vector3f get_thrust_vector() const;
 
-    /// get_bearing_to_target_cd - get bearing to target position in centi-degrees
+    /// Returns the bearing to the position target in centidegrees (0 = North, CW positive).
     int32_t get_bearing_to_target_cd() const;
 
-    /// get_lean_angle_max_cd - returns the maximum lean angle the autopilot may request
-    float get_lean_angle_max_cd() const;
+    /// Returns the maximum allowed lean angle in radians (roll/pitch) for the attitude controller.
+    float get_lean_angle_max_rad() const;
 
-    /*
-      set_lean_angle_max_cd - set the maximum lean angle. A value of zero means to use the ANGLE_MAX parameter.
-      This is reset to zero on init_NE_controller()
-    */
-    void set_lean_angle_max_cd(float angle_max_cd) { _angle_max_override_cd = angle_max_cd; }
-    
+    /// Sets the maximum allowed lean angle in radians (roll/pitch) for the attitude controller.
+    /// A value of zero means to use the ANGLE_MAX parameter. This is reset to zero by init_NE_controller().
+    void set_lean_angle_max_rad(float angle_max_rad) { _angle_max_override_rad = angle_max_rad; }
+
+    /// Sets the maximum allowed lean angle in degrees (roll/pitch) for the attitude controller.
+    /// See set_lean_angle_max_rad() for full details.
+    void set_lean_angle_max_deg(float angle_max_deg) { set_lean_angle_max_rad(radians(angle_max_deg)); }
+
+    /// Sets the maximum allowed lean angle in centidegrees (roll/pitch) for the attitude controller.
+    /// See set_lean_angle_max_rad() for full details.
+    void set_lean_angle_max_cd(float angle_max_cd) { set_lean_angle_max_rad(cd_to_rad(angle_max_cd)); }
 
     /// Other
 
@@ -472,8 +500,8 @@ protected:
     // get throttle using vibration-resistant calculation (uses feed forward with manually calculated gain)
     float get_throttle_with_vibration_override();
 
-    // accel_NE_cmss_to_lean_angles - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
-    void accel_NE_cmss_to_lean_angles(float accel_n_cmss, float accel_e_cmss, float& roll_target_cd, float& pitch_target_cd) const;
+    // accel_NE_cmss_to_lean_angles_rad - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
+    void accel_NE_cmss_to_lean_angles_rad(float accel_n_cmss, float accel_e_cmss, float& roll_target_rad, float& pitch_target_rad) const;
 
     // lean_angles_to_accel_NE_cmss - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
     void lean_angles_to_accel_NE_cmss(float& accel_n_cmss, float& accel_e_cmss) const;
@@ -518,7 +546,6 @@ protected:
 
     // references to inertial nav and ahrs libraries
     AP_AHRS_View&           _ahrs;
-    const AP_InertialNav&   _inav;
     const class AP_Motors&  _motors;
     AC_AttitudeControl&     _attitude_control;
 
@@ -549,14 +576,16 @@ protected:
     float       _ne_control_scale_factor = 1.0; // single loop scale factor for XY control
 
     // output from controller
-    float       _roll_target_cd;            // desired roll angle in centi-degrees calculated by position controller
-    float       _pitch_target_cd;           // desired roll pitch in centi-degrees calculated by position controller
-    float       _yaw_target_cd;             // desired yaw in centi-degrees calculated by position controller
-    float       _yaw_rate_target_cds;       // desired yaw rate in centi-degrees per second calculated by position controller
+    float       _roll_target_rad;            // desired roll angle in radians calculated by position controller
+    float       _pitch_target_rad;           // desired roll pitch in radians calculated by position controller
+    float       _yaw_target_rad;             // desired yaw in radians calculated by position controller
+    float       _yaw_rate_target_rads;       // desired yaw rate in radians per second calculated by position controller
 
     // position controller internal variables
+    Vector3p    _pos_estimate_neu_cm;
     Vector3p    _pos_desired_neu_cm;        // desired location, frame NEU in cm relative to the EKF origin.  This is equal to the _pos_target minus offsets
     Vector3p    _pos_target_neu_cm;         // target location, frame NEU in cm relative to the EKF origin.  This is equal to the _pos_desired_neu_cm plus offsets
+    Vector3f    _vel_estimate_neu_cms;
     Vector3f    _vel_desired_neu_cms;       // desired velocity in NEU cm/s
     Vector3f    _vel_target_neu_cms;        // velocity target in NEU cm/s calculated by pos_to_rate step
     Vector3f    _accel_desired_neu_cmss;    // desired acceleration in NEU cm/s/s (feed forward)
@@ -587,7 +616,7 @@ protected:
     bool        _vibe_comp_enabled;     // true when high vibration compensation is on
 
     // angle max override, if zero then use ANGLE_MAX parameter
-    float       _angle_max_override_cd;
+    float       _angle_max_override_rad;
 
     // return true if on a real vehicle or SITL with lock-step scheduling
     bool has_good_timing(void) const;

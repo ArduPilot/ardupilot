@@ -16,7 +16,7 @@ STM32_ST_USE_TIMER 15
 define CH_CFG_ST_RESOLUTION 16
 
 # board ID. See Tools/AP_Bootloader/board_types.txt
-APJ_BOARD_ID 1062
+APJ_BOARD_ID AP_HW_MatekL431
 
 # crystal frequency
 OSCILLATOR_HZ 8000000

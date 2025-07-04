@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+# flake8: noqa
 '''
 convert a betaflight unified configuration file into a hwdef.dat
 currently very approximate, file requires cleanup afterwards
@@ -110,11 +112,13 @@ SPIDEV imu%s   SPI%s DEVID1 GYRO%s_CS   MODE3   1*MHZ   8*MHZ
 ''' % (n, bus, n))
 
     c = 0
+    found_imu = False
     for define in defines:
         for imudefine in ['USE_GYRO_SPI_', 'USE_ACCGYRO_']:
             if define.startswith(imudefine):
                 imu = define[len(imudefine):]
                 c = c + 1
+                found_imu = True
                 if c == int(n):
                     if imu == 'ICM42688P':
                         imudriver = 'Invensensev3'
@@ -125,6 +129,11 @@ SPIDEV imu%s   SPI%s DEVID1 GYRO%s_CS   MODE3   1*MHZ   8*MHZ
                     f.write('''
 IMU %s SPI:imu%s %s
 ''' % (imudriver, n, alignment[align]))
+    # no driver found, pick v3 by default
+    if not found_imu:
+        f.write('''
+IMU %s SPI:imu%s %s
+''' % ('Invensensev3', n, alignment[align]))
 
     dma = "SPI" + bus + "*"
     dma_noshare[dma] = dma
@@ -360,13 +369,15 @@ define HAL_BATT_CURR_SCALE %.1f
     nmotors = 0
     # PIN  TIMx_CHy TIMx PWM(p) GPIO(g)
     for pin, motor in functions["MOTOR"].items():
+        if not pin in timers:
+            continue
         timer = timers[pin]
         nmotors = max(nmotors, int(motor[0]))
         # for safety don't share the _UP channel
         dma_noshare[timer[1] + '_UP'] =  timer[1] + '_UP'
         f.write("%s %s_%s %s PWM(%s) GPIO(%s)" % (motor[1], timer[1], timer[2], timer[1], motor[0], 49+int(motor[0])))
         # on H7 we can reasonably safely assign bi-dir channel
-        if mcuclass == "H7" and (int(timer[2][2:]) == 1 or int(timer[2][2:]) == 3):
+        if not timer[2][2:].endswith("N") and mcuclass == "H7" and (int(timer[2][2:]) == 1 or int(timer[2][2:]) == 3):
             f.write(" BIDIR # M%s\n" % (motor[0]))
         else:
             f.write("       # M%s\n" % (motor[0]))

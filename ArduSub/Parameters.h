@@ -5,7 +5,7 @@
 #include <AP_Common/AP_Common.h>
 
 #include <AP_Arming/AP_Arming.h>
-
+#include "actuators.h"
 // Global parameter class.
 //
 class Parameters {
@@ -48,6 +48,7 @@ public:
         k_param_g2, // 2nd block of parameters
 
         k_param_sitl, // Simulation
+        k_param_osd, //OSD
 
         // Telemetry
         k_param_gcs0_unused = 10,      // unused in ArduPilot-4.7
@@ -209,7 +210,7 @@ public:
         k_param_cam_tilt_center, // deprecated
         k_param_frame_configuration,
         k_param_surface_max_throttle,
-
+        k_param_surface_nobaro_thrust,
         // 200: flight modes
         k_param_flight_mode1 = 200,
         k_param_flight_mode2,
@@ -219,6 +220,9 @@ public:
         k_param_flight_mode6,
         k_param_simple_modes,
         k_param_flight_mode_chan,
+#if AP_RSSI_ENABLED
+        k_param_rssi,
+#endif 
         
         // Acro Mode parameters
         k_param_acro_yaw_p = 220, // Used in all modes for get_pilot_desired_yaw_rate
@@ -366,7 +370,7 @@ public:
     AP_Int8         flight_mode6;
     AP_Int8         simple_modes;
     AP_Int8         flight_mode_chan;
-#endif    
+#endif 
 
     AP_Float                surface_depth;
     AP_Int8                 frame_configuration;
@@ -404,6 +408,9 @@ public:
     AP_Float backup_origin_lat;
     AP_Float backup_origin_lon;
     AP_Float backup_origin_alt;
+    AP_Float surface_nobaro_thrust;
+    Actuators actuators;
+
 };
 
 extern const AP_Param::Info        var_info[];
@@ -442,9 +449,6 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "RC_PROTOCOLS",        0},
 #endif
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
-#if AP_BARO_PROBE_EXT_PARAMETER_ENABLED
-    { "BARO_PROBE_EXT",      0},
-#endif
     { "BATT_MONITOR",        4},
     { "BATT_CAPACITY",       0},
     { "LEAK1_PIN",           27},

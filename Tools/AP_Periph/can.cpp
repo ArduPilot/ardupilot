@@ -524,6 +524,21 @@ void AP_Periph_FW::handle_arming_status(CanardInstance* canard_instance, CanardR
 }
 
 
+#if AP_PERIPH_RTC_GLOBALTIME_ENABLED
+/*
+  handle GlobalTime
+ */
+void AP_Periph_FW::handle_globaltime(CanardInstance* canard_instance, CanardRxTransfer* transfer)
+{
+    dronecan_protocol_GlobalTime req;
+    if (dronecan_protocol_GlobalTime_decode(transfer, &req)) {
+        return;
+    }
+    AP::rtc().set_utc_usec(req.timestamp.usec, AP_RTC::source_type::SOURCE_GPS);
+}
+#endif // AP_PERIPH_RTC_GLOBALTIME_ENABLED
+
+
 
 #if AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY || AP_PERIPH_NOTIFY_ENABLED
 void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
@@ -660,16 +675,23 @@ void AP_Periph_FW::handle_act_command(CanardInstance* canard_instance, CanardRxT
         return;
     }
 
+    bool valid_output = false;
     for (uint8_t i=0; i < cmd.commands.len; i++) {
         const auto &c = cmd.commands.data[i];
         switch (c.command_type) {
         case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_UNITLESS:
             rcout_srv_unitless(c.actuator_id, c.command_value);
+            valid_output = true;
             break;
         case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_PWM:
             rcout_srv_PWM(c.actuator_id, c.command_value);
+            valid_output = true;
             break;
         }
+    }
+
+    if (valid_output) {
+        actuator.last_command_ms = AP_HAL::millis();
     }
 }
 #endif // AP_PERIPH_RC_OUT_ENABLED
@@ -885,6 +907,11 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         handle_hardpoint_command(canard_instance, transfer);
         break;
 #endif
+#if AP_PERIPH_RTC_GLOBALTIME_ENABLED
+    case DRONECAN_PROTOCOL_GLOBALTIME_ID:
+        handle_globaltime(canard_instance, transfer);
+        break;
+#endif
 
     }
 }
@@ -998,6 +1025,11 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
 #if AP_PERIPH_RELAY_ENABLED
     case UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_SIGNATURE;
+        return true;
+#endif
+#if AP_PERIPH_RTC_GLOBALTIME_ENABLED
+    case DRONECAN_PROTOCOL_GLOBALTIME_ID:
+        *out_data_type_signature = DRONECAN_PROTOCOL_GLOBALTIME_SIGNATURE;
         return true;
 #endif
     default:
@@ -1455,8 +1487,9 @@ void AP_Periph_FW::process1HzTasks(uint64_t timestamp_usec)
          * record the worst case memory usage.
          */
 
-        if (pool_peak_percent() > 70) {
-            printf("WARNING: ENLARGE MEMORY POOL\n");
+        const float pool_pct = pool_peak_percent();
+        if (pool_pct > 70) {
+            printf("WARNING: ENLARGE MEMORY POOL (peak=%f%%)\n", pool_pct);
         }
     }
 

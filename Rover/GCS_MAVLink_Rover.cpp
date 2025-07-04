@@ -244,9 +244,9 @@ void GCS_MAVLINK_Rover::send_water_depth()
             loc.lat,            // latitude of vehicle
             loc.lng,            // longitude of vehicle
             loc.alt * 0.01f,    // altitude of vehicle (MSL)
-            ahrs.get_roll(),    // roll in radians
-            ahrs.get_pitch(),   // pitch in radians
-            ahrs.get_yaw(),     // yaw in radians
+            ahrs.get_roll_rad(),    // roll in radians
+            ahrs.get_pitch_rad(),   // pitch in radians
+            ahrs.get_yaw_rad(),     // yaw in radians
             s->distance(),    // distance in meters
             temp_C);            // temperature in degC
 
@@ -767,7 +767,7 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
 
     // consume yaw heading
     if (!yaw_ignore) {
-        target_yaw_cd = ToDeg(packet.yaw) * 100.0f;
+        target_yaw_cd = degrees(packet.yaw) * 100.0f;
         // rotate target yaw if provided in body-frame
         if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
             target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
@@ -776,7 +776,7 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
     // consume yaw rate
     float target_turn_rate_cds = 0.0f;
     if (!yaw_rate_ignore) {
-        target_turn_rate_cds = ToDeg(packet.yaw_rate) * 100.0f;
+        target_turn_rate_cds = degrees(packet.yaw_rate) * 100.0f;
     }
 
     // handling case when both velocity and either yaw or yaw-rate are provided
@@ -880,13 +880,13 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
 
     // consume yaw heading
     if (!yaw_ignore) {
-        target_yaw_cd = ToDeg(packet.yaw) * 100.0f;
+        target_yaw_cd = degrees(packet.yaw) * 100.0f;
     }
 
     // consume yaw rate
     float target_turn_rate_cds = 0.0f;
     if (!yaw_rate_ignore) {
-        target_turn_rate_cds = ToDeg(packet.yaw_rate) * 100.0f;
+        target_turn_rate_cds = degrees(packet.yaw_rate) * 100.0f;
     }
 
     // handling case when both velocity and either yaw or yaw-rate are provided

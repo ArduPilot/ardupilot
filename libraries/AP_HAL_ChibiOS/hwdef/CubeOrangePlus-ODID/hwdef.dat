@@ -2,6 +2,6 @@
 
 include ../CubeOrangePlus/hwdef.dat
 undef APJ_BOARD_ID
-APJ_BOARD_ID 11063
+APJ_BOARD_ID AP_HW_CUBEORANGEPLUS_ODID
 
 define AP_OPENDRONEID_ENABLED 1

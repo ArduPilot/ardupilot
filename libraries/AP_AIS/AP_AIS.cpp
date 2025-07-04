@@ -33,6 +33,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/ExpandingString.h>
+#include <AC_Avoidance/AP_OADatabase.h>
 
 const AP_Param::GroupInfo AP_AIS::var_info[] = {
 
@@ -272,6 +273,92 @@ void AP_AIS::send(mavlink_channel_t chan)
     }
 }
 
+#if AP_OADATABASE_ENABLED
+// Send a AIS vessel to the object avoidance database if its postion is valid
+void AP_AIS::send_to_object_avoidance_database(const struct ais_vehicle_t &vessel)
+{
+    // No point if database is not enabled
+    AP_OADatabase *oaDb = AP::oadatabase();
+    if (oaDb == nullptr || !oaDb->healthy()) {
+        return;
+    }
+
+    // Need a location to avoid
+    if (!check_location(vessel.info.lat, vessel.info.lon)) {
+        return;
+    }
+
+    // Populate location object
+    const Location loc { vessel.info.lat, vessel.info.lon, 0, Location::AltFrame::ABOVE_ORIGIN };
+
+    // Get position relative to origin
+    Vector3f pos;
+    if (!loc.get_vector_from_origin_NEU_m(pos)) {
+        return;
+    }
+
+    // Need current position to calculate distance
+    Vector2f current_pos;
+    if (!AP::ahrs().get_relative_position_NE_origin_float(current_pos)) {
+        return;
+    }
+    float distance = (pos.xy() - current_pos).length();
+
+    if ((vessel.info.flags & AIS_FLAGS_VALID_DIMENSIONS) == 0) {
+        // No dimensions, let the database calculate from the configured beam width
+        oaDb->queue_push(pos, vessel.last_update_ms, distance, AP_OADatabase::OA_DbItem::Source::AIS, vessel.info.MMSI);
+        return;
+    }
+
+    // Strictly even if we do have a valid dimension the "LARGE_DIMENSION" flags could be set meaning
+    // the value is larger than what can be sent over AIS. Depending on where the receiver is mounted
+    // on the vessel this may happen on vessels longer than 511m or wider than 63m it will always happen
+    // on vessels longer than 1022m or wider than 126m
+    // There is currently no real vessel that would cause this.
+
+    if ((vessel.info.heading == 0) || (vessel.info.heading > 360 * 100)) {
+        // Heading invalid, use max dimension as radius
+        float radius = vessel.info.dimension_bow;
+        radius = MAX(radius, vessel.info.dimension_stern);
+        radius = MAX(radius, vessel.info.dimension_port);
+        radius = MAX(radius, vessel.info.dimension_starboard);
+        oaDb->queue_push(pos, vessel.last_update_ms, distance, radius, AP_OADatabase::OA_DbItem::Source::AIS, vessel.info.MMSI);
+        return;
+    }
+
+    // With heading we can offset the location to be in the center of the vessel
+    Vector2f offset {
+        (vessel.info.dimension_bow - vessel.info.dimension_stern) * 0.5,
+        (vessel.info.dimension_starboard - vessel.info.dimension_port) * 0.5
+    };
+    offset.rotate(cd_to_rad(vessel.info.heading));
+    pos.xy() += offset;
+
+    // Update distance for new position
+    distance = (pos.xy() - current_pos).length();
+
+    // Radius is now the largest average dimension
+    const float radius = MAX(
+        (vessel.info.dimension_bow + vessel.info.dimension_stern) * 0.5,
+        (vessel.info.dimension_starboard + vessel.info.dimension_port) * 0.5
+    );
+
+    oaDb->queue_push(pos, vessel.last_update_ms, distance, radius, AP_OADatabase::OA_DbItem::Source::AIS, vessel.info.MMSI);
+}
+#endif
+
+// Return true if location is valid
+bool AP_AIS::check_location(int32_t lat, int32_t lng) const
+{
+    // Check for zero zero
+    if (lat == 0 && lng == 0) {
+        return false;
+    }
+
+    // Invalid lat is sent as 181 degrees and invalid lon as 91. Check both at in range
+    return check_latlng(lat, lng);
+}
+
 // remove the given index from the AIVDM buffer and shift following elements up
 void AP_AIS::buffer_shift(uint8_t i)
 {
@@ -290,7 +377,7 @@ void AP_AIS::buffer_shift(uint8_t i)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions related to the vessel list
 
-// find vessel index in existing list, if not then return NEW_NOTHROW index if possible
+// find vessel index in existing list, if not then return new index if possible, returns true if index is valid
 bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, uint32_t lat, uint32_t lon)
 {
     const uint16_t list_size = _list.max_items();
@@ -327,7 +414,7 @@ bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, uint32_t lat, uint
 
     // could not expand list, either because of memory or max list param
     // if we have a valid incoming location we can bump a further item from the list
-    if (lat == 0 && lon == 0) {
+    if (!check_location(lat, lon)) {
         return false;
     }
 
@@ -340,6 +427,13 @@ bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, uint32_t lat, uint
     float dist;
     float max_dist = 0;
     for (uint16_t i = 0; i < list_size; i++) {
+        if (!check_location(_list[i].info.lat, _list[i].info.lon)) {
+            // Remove vessel with invalid location
+            index = i;
+            clear_list_item(index);
+            _list[index].info.MMSI = mmsi;
+            return true;
+        }
         loc.lat = _list[i].info.lat;
         loc.lng = _list[i].info.lon;
         dist = loc.get_distance(current_loc);
@@ -393,6 +487,25 @@ bool AP_AIS::payload_decode(const char *payload)
     }
 }
 
+// Apply scale to lat lon felids, avoiding integer overflow
+int32_t AP_AIS::scale_lat_lon(const int32_t val) const
+{
+    // This is 16.66666...
+    const double scale_factor = (1.0 / 600000.0) * 1e7;
+
+    // Because the scale factor is larger than 1 if we do this straight into the integer its
+    // possible that the value would overflow causing a floating point error
+    // That should never happen with correctly formatted NMEA, but can happen with bad data.
+    const double ret = val * scale_factor;
+    if (ret > INT32_MAX || ret < INT32_MIN) {
+        // This is outside the range of valid lat/lon
+        // This means that both the lat and lon will be ignored
+        // If we just set to 0 the lat/lon pair might look valid
+        return INT32_MAX;
+    }
+    return ret;
+}
+
 bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
 {
     if (strlen(payload) != 28) {
@@ -405,10 +518,10 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
     int8_t rot  = get_bits_signed(payload, 42, 49);
     uint16_t sog       = get_bits(payload, 50, 59);
     bool pos_acc       = get_bits(payload, 60, 60);
-    int32_t lon = get_bits_signed(payload, 61, 88)  * ((1.0f / 600000.0f)*1e7);
-    int32_t lat = get_bits_signed(payload, 89, 115) * ((1.0f / 600000.0f)*1e7);
-    uint16_t cog       = get_bits(payload, 116, 127) * 10;
-    uint16_t head      = get_bits(payload, 128, 136) * 100;
+    int32_t lon = scale_lat_lon(get_bits_signed(payload, 61, 88));
+    int32_t lat = scale_lat_lon(get_bits_signed(payload, 89, 115));
+    uint16_t cog       = get_bits(payload, 116, 127) * 10;  // convert from 0.1 deg to centi-deg
+    uint16_t head      = get_bits(payload, 128, 136) * 100; // convert from deg to centi-deg
     uint8_t sec_utc    = get_bits(payload, 137, 142);
     uint8_t maneuver   = get_bits(payload, 143, 144);
     // 145 - 147: spare
@@ -441,12 +554,6 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
     }
 #else
     (void)repeat;
-    (void)nav;
-    (void)rot;
-    (void)sog;
-    (void)pos_acc;
-    (void)cog;
-    (void)head;
     (void)sec_utc;
     (void)maneuver;
     (void)raim;
@@ -459,39 +566,69 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
         return true;
     }
 
-    // mask of flags that we receive in this message
+    // mask of flags that we update in this message
     const uint16_t mask = ~(AIS_FLAGS_POSITION_ACCURACY | AIS_FLAGS_VALID_COG | AIS_FLAGS_VALID_VELOCITY | AIS_FLAGS_VALID_TURN_RATE | AIS_FLAGS_TURN_RATE_SIGN_ONLY);
     uint16_t flags = _list[index].info.flags & mask; // clear all flags that will be updated
+
+    // Position accuracy
     if (pos_acc) {
         flags |= AIS_FLAGS_POSITION_ACCURACY;
     }
+
+    // Course over ground
     if (cog < 36000) {
         flags |= AIS_FLAGS_VALID_COG;
+    } else {
+        // zero for invalid
+        cog = 0;
     }
+
+    // Speed over ground
+    uint16_t sog_cms = 0;
     if (sog < 1023) {
         flags |= AIS_FLAGS_VALID_VELOCITY;
+        // Convert 0.1 knots to cm/s
+        sog_cms = sog * 0.1 * KNOTS_TO_M_PER_SEC * 100.0;
+
+        // More than 102.2 knots, don't know by how much
+        if (sog == 1022) {
+            flags |= AIS_FLAGS_HIGH_VELOCITY;
+        }
     }
-    if (sog == 1022) {
-        flags |= AIS_FLAGS_HIGH_VELOCITY;
-    }
-    if (rot > -128) {
-        flags |= AIS_FLAGS_VALID_TURN_RATE;
-    }
-    if (rot == 127 || rot == -127) {
-        flags |= AIS_FLAGS_TURN_RATE_SIGN_ONLY;
+
+    // Rate of turn
+    if (rot <= -128) {
+        // Invalid
+        rot = 0;
+
     } else {
-        rot = powf((rot / 4.733f),2.0f) / 6.0f;
+        // Valid value
+        flags |= AIS_FLAGS_VALID_TURN_RATE;
+        const int8_t sign = rot > 0 ? 1 : -1;
+        if (rot == 127 || rot == -127) {
+            flags |= AIS_FLAGS_TURN_RATE_SIGN_ONLY;
+            rot = sign;
+
+        } else {
+            // Apply expo formula and convert from deg per min to cdeg per second
+            // constrain to avoid overflow, probably need to change the units or increase to int16
+            rot = sign * MIN(sq(rot / 4.733) * (100.0 / 60.0), INT8_MAX - 1);
+        }
     }
 
     _list[index].info.lat = lat; // int32_t [degE7] Latitude
     _list[index].info.lon = lon; // int32_t [degE7] Longitude
     _list[index].info.COG = cog; // uint16_t [cdeg] Course over ground
     _list[index].info.heading = head; // uint16_t [cdeg] True heading
-    _list[index].info.velocity = sog; // uint16_t [cm/s] Speed over ground
+    _list[index].info.velocity = sog_cms; // uint16_t [cm/s] Speed over ground
     _list[index].info.flags = flags; // uint16_t Bitmask to indicate various statuses including valid data fields
     _list[index].info.turn_rate = rot; // int8_t [cdeg/s] Turn rate
     _list[index].info.navigational_status = nav; // uint8_t Navigational status
     _list[index].last_update_ms = AP_HAL::millis();
+
+#if AP_OADATABASE_ENABLED
+    send_to_object_avoidance_database(_list[index]);
+#endif
 
     return true;
 }
@@ -511,8 +648,8 @@ bool AP_AIS::decode_base_station_report(const char *payload)
     uint8_t minute     = get_bits(payload, 66, 71);
     uint8_t second     = get_bits(payload, 72, 77);
     bool fix           = get_bits(payload, 78, 78);
-    int32_t lon = get_bits_signed(payload, 79, 106)  * ((1.0f / 600000.0f)*1e7);
-    int32_t lat = get_bits_signed(payload, 107, 133) * ((1.0f / 600000.0f)*1e7);
+    int32_t lon = scale_lat_lon(get_bits_signed(payload, 79, 106));
+    int32_t lat = scale_lat_lon(get_bits_signed(payload, 107, 133));
     uint8_t epfd       = get_bits(payload, 134, 137);
     // 138 - 147: spare
     bool raim          = get_bits(payload, 148, 148);
@@ -563,6 +700,10 @@ bool AP_AIS::decode_base_station_report(const char *payload)
     _list[index].info.lat = lat; // int32_t [degE7] Latitude
     _list[index].info.lon = lon; // int32_t [degE7] Longitude
     _list[index].last_update_ms = AP_HAL::millis();
+
+#if AP_OADATABASE_ENABLED
+    send_to_object_avoidance_database(_list[index]);
+#endif
 
     return true;
 }

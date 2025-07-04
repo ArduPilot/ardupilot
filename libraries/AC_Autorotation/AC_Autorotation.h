@@ -59,7 +59,7 @@ private:
     AC_AttitudeControl*& _attitude_control;
 
     // Calculates the forward ground speed in the horizontal plane
-    float get_speed_forward(void) const;
+    float get_speed_forward_ms(void) const;
 
     // (s) Time step, updated dynamically from vehicle
     float _dt; 
@@ -68,19 +68,19 @@ private:
     AP_Int8  _param_enable;
     AC_P _p_hs{1.0};
     AP_Float _param_head_speed_set_point;
-    AP_Float _param_target_speed;
+    AP_Float _param_target_speed_ms;
     AP_Float _param_col_entry_cutoff_freq;
     AP_Float _param_col_glide_cutoff_freq;
-    AP_Float _param_accel_max;
+    AP_Float _param_accel_max_mss;
     AP_Int8  _param_rpm_instance;
     AP_Float _param_fwd_k_ff;
 
     // Forward speed controller
     void update_forward_speed_controller(float pilot_norm_accel);
     AC_PID_Basic _fwd_speed_pid{2.0, 2.0, 0.2, 0.1, 4.0, 0.0, 10.0};  // PID object for vel to accel controller, Default values for kp, ki, kd, kff, imax, filt E Hz, filt D Hz
-    bool _limit_accel;            // flag used for limiting integrator wind up if vehicle is against an accel or angle limit
-    float _desired_vel;           // (m/s) This is the velocity that we want.  This is the variable that is set by the invoking function to request a certain speed
-    float _target_vel;            // (m/s) This is the acceleration constrained velocity that we are allowed
+    bool _limit_accel;      // flag used for limiting integrator wind up if vehicle is against an accel or angle limit
+    float _desired_vel_ms;  // (m/s) This is the velocity that we want.  This is the variable that is set by the invoking function to request a certain speed
+    float _target_vel_ms;   // (m/s) This is the acceleration constrained velocity that we are allowed
 
     // Head speed controller variables
     void update_headspeed_controller(void);  // Update controller used to drive head speed with collective
@@ -99,5 +99,5 @@ private:
     } _landed_reason;
 
     // Parameter accessors that provide value constraints
-    float get_accel_max(void) const { return MAX(_param_accel_max.get(), 0.5); }
+    float get_accel_max_mss(void) const { return MAX(_param_accel_max_mss.get(), 0.5); }
 };

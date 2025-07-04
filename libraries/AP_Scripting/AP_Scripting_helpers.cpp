@@ -213,7 +213,7 @@ int DroneCAN_Handle::broadcast(lua_State *L)
     DroneCAN_Handle *h = check_DroneCAN_Handle(L, 1);
 
     size_t data_length;
-    const void *data = lua_tolstring(L, 2, &data_length);
+    const void *data = luaL_checklstring(L, 2, &data_length);
     
     auto &iface = h->dc->get_canard_iface();
     Canard::Transfer transfer;
@@ -248,7 +248,7 @@ int DroneCAN_Handle::request(lua_State *L)
     uint8_t target_node = luaL_checknumber(L, 2);
 
     size_t data_length;
-    const void *data = lua_tolstring(L, 3, &data_length);
+    const void *data = luaL_checklstring(L, 3, &data_length);
 
     auto &iface = h->dc->get_canard_iface();
 

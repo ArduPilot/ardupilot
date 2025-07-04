@@ -207,6 +207,12 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_video_switch:
         set_range(1000);
         break;
+#if ACTUATOR_CHANNELS > 0
+    case k_actuator1 ... k_actuator6:
+        // We take floats from -1 to 1. see MAV_CMD_DO_SET_ACTUATOR
+        set_angle(1);
+        break;
+#endif
     default:
         break;
     }
@@ -820,6 +826,18 @@ void SRV_Channels::set_slew_rate(SRV_Channel::Function function, float slew_rate
     new_slew->max_change = max_change;
     new_slew->next = _slew;
     _slew = new_slew;
+}
+
+// update channels last_scaled_output to match value
+void SRV_Channels::set_slew_last_scaled_output(SRV_Channel::Function function, float value)
+{
+    for (slew_list *slew = _slew; slew; slew = slew->next) {
+        if (slew->func == function) {
+            // found existing item, update slew limiter value
+            slew->last_scaled_output = value;
+            return;
+        }
+    }
 }
 
 // call set_angle() on matching channels

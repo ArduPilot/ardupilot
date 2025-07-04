@@ -2998,7 +2998,7 @@ class TestSuite(ABC):
             print("message_info: %s" % str(message_info))
             for define in defines:
                 message_info = re.sub(define, defines[define], message_info)
-            m = re.match(r'\s*LOG_\w+\s*,\s*sizeof\([^)]+\)\s*,\s*"(\w+)"\s*,\s*"(\w+)"\s*,\s*"([\w,]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*(,\s*(true|false))?\s*$', message_info)  # noqa
+            m = re.match(r'\s*LOG_\w+\s*,\s*(?:sizeof|RLOG_SIZE)\([^)]+\)\s*,\s*"(\w+)"\s*,\s*"(\w+)"\s*,\s*"([\w,]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*(,\s*(true|false))?\s*$', message_info)  # noqa
             if m is None:
                 print("NO MATCH")
                 continue
@@ -3088,77 +3088,11 @@ class TestSuite(ABC):
 
         return ids
 
-    def LoggerDocumentation_greylist(self):
-        '''returns a set of messages should should be documented but
-        are currently known as undocumented'''
-        return set([
-            "FENC",  # fence
-            "FTN3",  # gyrofft
-            "IE24",  # generator
-            "IEFC",  # generator
-            "IREG",  # INS something
-            "ISBD",  # InertialSensor batch logging
-            "ISBH",  # InertialSensor batch logging
-            "RTCM",  # GPS
-            "SBRE",  # septentrio
-
-            "SAF1",  # blimp-sim
-            "SAN1",  # blimp-sim
-            "SAN2",  # blimp-sim
-            "SBA1",  # blimp-sim
-            "SBLM",  # blimp-sim
-            "SCTL",  # glider-sim
-            "SFA1",  # blimp-sim
-            "SFAN",  # blimp-sim
-            "SFN",   # blimp-sim
-            "SFT",   # blimp-sim
-            "SFV1",  # blimp-sim
-            "SMGC",  # blimp-sim
-            "SRT1",  # blimp-sim
-            "SRT2",  # blimp-sim
-            "SRT3",  # blimp-sim
-            "SSAN",  # blimp-sim
-
-            "GLT",  # glider sim
-            "SL2",  # glider-sim
-            "SLD",  # glider-sim
-
-            "SMVZ",  # Sim-Volz
-
-            "SORC",  # Soaring
-            "VAR",   # soaring
-
-            "TCLR",  # tempcal
-            "TEMP",  # temperature sensor library
-
-            "ARHS",  # autorotation
-            "AROT",  # autorotation
-            "ARSC",  # autorotation
-            "ATDH",  # heli autotune
-            "ATNH",  # heli autotune
-            "ATSH",  # heli autotune
-            "CC",    # AC_CustomControl
-            "FWDT",  # quadplane
-            "GMB1",  # sologimbal
-            "GMB2",  # sologimbal
-            "QBRK",  # quadplane
-            "SURF",  # surface-tracking
-            "ATUN",  # Copter autotune
-        ])
-
     def LoggerDocumentation_whitelist(self):
         '''returns a set of messages which we do not want to see
         documentation for'''
 
-        # we allow for no docs for replay messages, as these are not for end-users. They are
-        # effectively binary blobs for replay
-        # Documenting these is still useful! -pb
-        REPLAY_MSGS = ['RFRH', 'RFRF', 'REV2', 'RSO2', 'RWA2', 'REV3', 'RSO3', 'RWA3', 'RMGI',
-                       'REY3', 'RFRN', 'RISH', 'RISI', 'RISJ', 'RBRH', 'RBRI', 'RRNH', 'RRNI',
-                       'RGPH', 'RGPI', 'RGPJ', 'RASH', 'RASI', 'RBCH', 'RBCI', 'RVOH', 'RMGH',
-                       'ROFH', 'REPH', 'REVH', 'RWOH', 'RBOH', 'RSLL']
-
-        ret = set(REPLAY_MSGS)
+        ret = set()
 
         # messages not expected to be on particular vehicles.  Nothing
         # needs fixing below this point, unless you can come up with a
@@ -3169,21 +3103,36 @@ class TestSuite(ABC):
         # those messages.  We *do* care about the documented messages
         # for a vehicle as we follow the tree created by the
         # documentation (eg. @Path:
-        # ../libraries/AP_LandingGear/AP_LandingGear.cpp).
+        # ../libraries/AP_LandingGear/AP_LandingGear.cpp).  The lists
+        # here have been created to fix this discrepancy.
         vinfo_key = self.vehicleinfo_key()
+        if vinfo_key != 'ArduPlane' and vinfo_key != 'ArduCopter' and vinfo_key != 'Helicopter':
+            ret.update([
+                "ATUN",  # Plane and Copter have ATUN messages
+            ])
         if vinfo_key != 'ArduPlane':
             ret.update([
                 "TECS",  # only Plane has TECS
                 "TEC2",  # only Plane has TECS
                 "TEC3",  # only Plane has TECS
+                "TEC4",  # only Plane has TECS
                 "SOAR",  # only Planes can truly soar
                 "SORC",  # soaring is pure magic
                 "QBRK",  # quadplane
                 "FWDT",  # quadplane
+                "VAR",   # variometer only applicable on Plane
             ])
-        if vinfo_key == 'ArduCopter':
+        if vinfo_key != 'ArduCopter' and vinfo_key != "Helicopter":
             ret.update([
-                "CC",    # only Copter has the CustomController
+                "ARHS",    # autorotation
+                "AROT",    # autorotation
+                "ARSC",    # autorotation
+                "ATDH",    # heli autotune
+                "ATNH",    # heli autotune
+                "ATSH",    # heli autotune
+                "GMB1",    # sologimbal
+                "GMB2",    # sologimbal
+                "SURF",    # surface-tracking
             ])
         # end not-expected-to-be-fixed block
 
@@ -3230,7 +3179,6 @@ class TestSuite(ABC):
         tree = objectify.fromstring(xml)
 
         whitelist = self.LoggerDocumentation_whitelist()
-        greylist = self.LoggerDocumentation_greylist()
 
         docco_ids = {}
         for thing in tree.logformat:
@@ -3257,9 +3205,6 @@ class TestSuite(ABC):
         overdocumented = set()
         for name in sorted(code_ids.keys()):
             if name not in docco_ids:
-                if name in greylist:
-                    self.progress(f"{name} should be documented but isn't")
-                    continue
                 if name not in whitelist:
                     undocumented.add(name)
                 continue
@@ -3272,8 +3217,18 @@ class TestSuite(ABC):
                                                (name, label))
                 seen_labels[label] = True
                 if label not in docco_ids[name]["labels"]:
-                    raise NotAchievedException("%s.%s not in documented fields (have (%s))" %
-                                               (name, label, ",".join(docco_ids[name]["labels"])))
+                    msg = ("%s.%s not in documented fields (have (%s))" %
+                           (name, label, ",".join(docco_ids[name]["labels"])))
+                    if name in whitelist:
+                        self.progress(msg)
+                        # a lot of our Replay messages have names but
+                        # nothing more
+                        try:
+                            overdocumented.remove(name)
+                        except KeyError:
+                            pass
+                        continue
+                    raise NotAchievedException(msg)
 
         if len(undocumented):
             for name in sorted(undocumented):
@@ -14977,8 +14932,12 @@ SERIAL5_BAUD 128
 
         return psd
 
-    def model_defaults_filepath(self, model):
-        vehicle = self.vehicleinfo_key()
+    def model_defaults_filepath(self, model, vehicleinfo_key=None):
+        if vehicleinfo_key is None:
+            vehicle = self.vehicleinfo_key()
+        else:
+            vehicle = vehicleinfo_key
+
         vinfo = vehicleinfo.VehicleInfo()
         defaults_filepath = vinfo.options[vehicle]["frames"][model]["default_params_filename"]
         if isinstance(defaults_filepath, str):

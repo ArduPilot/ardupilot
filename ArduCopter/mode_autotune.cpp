@@ -29,8 +29,7 @@ bool AutoTune::init()
     return init_internals(position_hold,
                           copter.attitude_control,
                           copter.pos_control,
-                          copter.ahrs_view,
-                          &copter.inertial_nav);
+                          copter.ahrs_view);
 }
 
 void AutoTune::run()
@@ -51,7 +50,6 @@ void AutoTune::run()
 
     // run autotune mode
     AC_AutoTune::run();
-
 }
 
 
@@ -60,22 +58,22 @@ void AutoTune::run()
  */
 float AutoTune::get_pilot_desired_climb_rate_cms(void) const
 {
-    float target_climb_rate = copter.get_pilot_desired_climb_rate();
+    float target_climb_rate_cms = copter.get_pilot_desired_climb_rate();
 
     // get avoidance adjusted climb rate
-    target_climb_rate = copter.mode_autotune.get_avoidance_adjusted_climbrate(target_climb_rate);
+    target_climb_rate_cms = copter.mode_autotune.get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
-    return target_climb_rate;
+    return target_climb_rate_cms;
 }
 
 /*
   get stick roll, pitch and yaw rate
  */
-void AutoTune::get_pilot_desired_rp_yrate_cd(float &des_roll_cd, float &des_pitch_cd, float &yaw_rate_cds)
+void AutoTune::get_pilot_desired_rp_yrate_rad(float &des_roll_rad, float &des_pitch_rad, float &des_yaw_rate_rads)
 {
-    copter.mode_autotune.get_pilot_desired_lean_angles(des_roll_cd, des_pitch_cd, copter.aparm.angle_max,
-                                                       copter.attitude_control->get_althold_lean_angle_max_cd());
-    yaw_rate_cds = copter.mode_autotune.get_pilot_desired_yaw_rate();
+    copter.mode_autotune.get_pilot_desired_lean_angles_rad(des_roll_rad, des_pitch_rad, attitude_control->lean_angle_max_rad(),
+                                                       copter.attitude_control->get_althold_lean_angle_max_rad());
+    des_yaw_rate_rads = copter.mode_autotune.get_pilot_desired_yaw_rate_rads();
 }
 
 /*

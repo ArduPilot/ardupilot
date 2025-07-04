@@ -20,11 +20,11 @@
  *          FlipState::Recover (while copter is between -90deg and original target angle) : use earth frame angle controller to return vehicle to original attitude
  */
 
-#define FLIP_THR_INC        0.20f   // throttle increase during FlipState::Start stage (under 45deg lean angle)
-#define FLIP_THR_DEC        0.24f   // throttle decrease during FlipState::Roll stage (between 45deg ~ -90deg roll)
-#define FLIP_ROTATION_RATE  40000   // rotation rate request in centi-degrees / sec (i.e. 400 deg/sec)
-#define FLIP_TIMEOUT_MS     2500    // timeout after 2.5sec.  Vehicle will switch back to original flight mode
-#define FLIP_RECOVERY_ANGLE 500     // consider successful recovery when roll is back within 5 degrees of original
+#define FLIP_THR_INC            0.20f           // throttle increase during FlipState::Start stage (under 45deg lean angle)
+#define FLIP_THR_DEC            0.24f           // throttle decrease during FlipState::Roll stage (between 45deg ~ -90deg roll)
+#define FLIP_ROTATION_RATE_RADS radians(400.0)  // rotation rate request in centi-degrees / sec (i.e. 400 deg/sec)
+#define FLIP_TIMEOUT_MS         2500            // timeout after 2.5sec.  Vehicle will switch back to original flight mode
+#define FLIP_RECOVERY_ANGLE_RAD radians(5.0)    // consider successful recovery when roll is back within 5 degrees of original
 
 #define FLIP_ROLL_RIGHT      1      // used to set flip_dir
 #define FLIP_ROLL_LEFT      -1      // used to set flip_dir
@@ -79,10 +79,10 @@ bool ModeFlip::init(bool ignore_checks)
     LOGGER_WRITE_EVENT(LogEvent::FLIP_START);
 
     // capture current attitude which will be used during the FlipState::Recovery stage
-    const float angle_max = copter.aparm.angle_max;
-    orig_attitude.x = constrain_float(ahrs.roll_sensor, -angle_max, angle_max);
-    orig_attitude.y = constrain_float(ahrs.pitch_sensor, -angle_max, angle_max);
-    orig_attitude.z = ahrs.yaw_sensor;
+    const float angle_max_rad = attitude_control->lean_angle_max_rad();
+    orig_attitude_euler_rad.x = constrain_float(ahrs.get_roll_rad(), -angle_max_rad, angle_max_rad);
+    orig_attitude_euler_rad.y = constrain_float(ahrs.get_pitch_rad(), -angle_max_rad, angle_max_rad);
+    orig_attitude_euler_rad.z = ahrs.get_yaw_rad();
 
     return true;
 }
@@ -104,12 +104,12 @@ void ModeFlip::run()
 
     // get corrected angle based on direction and axis of rotation
     // we flip the sign of flip_angle to minimize the code repetition
-    int32_t flip_angle;
+    float flip_angle_rad;
 
     if (roll_dir != 0) {
-        flip_angle = ahrs.roll_sensor * roll_dir;
+        flip_angle_rad = ahrs.get_roll_rad() * roll_dir;
     } else {
-        flip_angle = ahrs.pitch_sensor * pitch_dir;
+        flip_angle_rad = ahrs.get_pitch_rad() * pitch_dir;
     }
 
     // state machine
@@ -117,13 +117,13 @@ void ModeFlip::run()
 
     case FlipState::Start:
         // under 45 degrees request 400deg/sec roll or pitch
-        attitude_control->input_rate_bf_roll_pitch_yaw_cds(FLIP_ROTATION_RATE * roll_dir, FLIP_ROTATION_RATE * pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw_rads(FLIP_ROTATION_RATE_RADS * roll_dir, FLIP_ROTATION_RATE_RADS * pitch_dir, 0.0);
 
         // increase throttle
         throttle_out += FLIP_THR_INC;
 
         // beyond 45deg lean angle move to next stage
-        if (flip_angle >= 4500) {
+        if (flip_angle_rad >= radians(45.0)) {
             if (roll_dir != 0) {
                 // we are rolling
             _state = FlipState::Roll;
@@ -136,58 +136,58 @@ void ModeFlip::run()
 
     case FlipState::Roll:
         // between 45deg ~ -90deg request 400deg/sec roll
-        attitude_control->input_rate_bf_roll_pitch_yaw_cds(FLIP_ROTATION_RATE * roll_dir, 0.0, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw_rads(FLIP_ROTATION_RATE_RADS * roll_dir, 0.0, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
         // beyond -90deg move on to recovery
-        if ((flip_angle < 4500) && (flip_angle > -9000)) {
+        if ((flip_angle_rad < radians(45.0)) && (flip_angle_rad > -radians(90.0))) {
             _state = FlipState::Recover;
         }
         break;
 
     case FlipState::Pitch_A:
         // between 45deg ~ -90deg request 400deg/sec pitch
-        attitude_control->input_rate_bf_roll_pitch_yaw_cds(0.0f, FLIP_ROTATION_RATE * pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw_rads(0.0f, FLIP_ROTATION_RATE_RADS * pitch_dir, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
         // check roll for inversion
-        if ((labs(ahrs.roll_sensor) > 9000) && (flip_angle > 4500)) {
+        if ((fabsf(ahrs.get_roll_rad()) > radians(90.0)) && (flip_angle_rad > radians(45.0))) {
             _state = FlipState::Pitch_B;
         }
         break;
 
     case FlipState::Pitch_B:
         // between 45deg ~ -90deg request 400deg/sec pitch
-        attitude_control->input_rate_bf_roll_pitch_yaw_cds(0.0, FLIP_ROTATION_RATE * pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw_rads(0.0, FLIP_ROTATION_RATE_RADS * pitch_dir, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
         // check roll for inversion
-        if ((labs(ahrs.roll_sensor) < 9000) && (flip_angle > -4500)) {
+        if ((fabsf(ahrs.get_roll_rad()) < radians(90.0)) && (flip_angle_rad > -radians(45.0))) {
             _state = FlipState::Recover;
         }
         break;
 
     case FlipState::Recover: {
         // use originally captured earth-frame angle targets to recover
-        attitude_control->input_euler_angle_roll_pitch_yaw_cd(orig_attitude.x, orig_attitude.y, orig_attitude.z, false);
+        attitude_control->input_euler_angle_roll_pitch_yaw_rad(orig_attitude_euler_rad.x, orig_attitude_euler_rad.y, orig_attitude_euler_rad.z, false);
 
         // increase throttle to gain any lost altitude
         throttle_out += FLIP_THR_INC;
 
-        float recovery_angle;
+        float recovery_angle_rad;
         if (roll_dir != 0) {
             // we are rolling
-            recovery_angle = fabsf(orig_attitude.x - (float)ahrs.roll_sensor);
+            recovery_angle_rad = fabsf(orig_attitude_euler_rad.x - ahrs.get_roll_rad());
         } else {
             // we are pitching
-            recovery_angle = fabsf(orig_attitude.y - (float)ahrs.pitch_sensor);
+            recovery_angle_rad = fabsf(orig_attitude_euler_rad.y - ahrs.get_pitch_rad());
         }
 
         // check for successful recovery
-        if (fabsf(recovery_angle) <= FLIP_RECOVERY_ANGLE) {
+        if (fabsf(recovery_angle_rad) <= FLIP_RECOVERY_ANGLE_RAD) {
             // restore original flight mode
             if (!copter.set_mode(orig_control_mode, ModeReason::FLIP_COMPLETE)) {
                 // this should never happen but just in case

@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+
+# flake8: noqa
+
 '''
 decode a device ID, such as used for COMPASS_DEV_ID, INS_ACC_ID etc
 
@@ -52,7 +55,7 @@ compass_types = {
     0x05 : "DEVTYPE_BMM150 ",
     0x06 : "DEVTYPE_LSM9DS1",
     0x08 : "DEVTYPE_LIS3MDL",
-    0x09 : "DEVTYPE_AK09916",
+    0x09 : "DEVTYPE_AK0991x",
     0x0A : "DEVTYPE_IST8310",
     0x0B : "DEVTYPE_ICM20948",
     0x0C : "DEVTYPE_MMC3416",
@@ -126,11 +129,13 @@ baro_types = {
     0x0F : "DEVTYPE_BARO_ICP101XX",
     0x10 : "DEVTYPE_BARO_ICP201XX",
     0x11 : "DEVTYPE_BARO_MS5607",
-    0x12 : "DEVTYPE_BARO_MS5837",
+    0x12 : "DEVTYPE_BARO_MS5837_30BA",
     0x13 : "DEVTYPE_BARO_MS5637",
     0x14 : "DEVTYPE_BARO_BMP390",
     0x15 : "DEVTYPE_BARO_BMP581",
     0x16 : "DEVTYPE_BARO_SPA06",
+    0x17 : "DEVTYPE_BARO_AUAV",
+    0x18 : "DEVTYPE_BARO_MS5837_02BA",
 }
 
 airspeed_types = {
@@ -144,8 +149,9 @@ airspeed_types = {
     0x08 : "DEVTYPE_AIRSPEED_ANALOG",
     0x09 : "DEVTYPE_AIRSPEED_NMEA",
     0x0A : "DEVTYPE_AIRSPEED_ASP5033",
+    0x0B : "DEVTYPE_AIRSPEED_AUAV",
 }
-    
+
 decoded_devname = ""
 
 if opts.compass:

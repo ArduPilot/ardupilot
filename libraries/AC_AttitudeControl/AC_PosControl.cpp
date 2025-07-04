@@ -64,7 +64,7 @@ extern const AP_HAL::HAL& hal;
  # define POSCONTROL_POS_XY_P                   1.0f    // horizontal position controller P gain default
  # define POSCONTROL_VEL_XY_P                   2.0f    // horizontal velocity controller P gain default
  # define POSCONTROL_VEL_XY_I                   1.0f    // horizontal velocity controller I gain default
- # define POSCONTROL_VEL_XY_D                   0.5f    // horizontal velocity controller D gain default
+ # define POSCONTROL_VEL_XY_D                   0.25f   // horizontal velocity controller D gain default
  # define POSCONTROL_VEL_XY_IMAX                1000.0f // horizontal velocity controller IMAX gain default
  # define POSCONTROL_VEL_XY_FILT_HZ             5.0f    // horizontal velocity controller input filter
  # define POSCONTROL_VEL_XY_FILT_D_HZ           5.0f    // horizontal velocity controller input filter for D
@@ -330,10 +330,8 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
-                             const AP_Motors& motors, AC_AttitudeControl& attitude_control) :
+AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_Motors& motors, AC_AttitudeControl& attitude_control) :
     _ahrs(ahrs),
-    _inav(inav),
     _motors(motors),
     _attitude_control(attitude_control),
     _p_pos_ne(POSCONTROL_POS_XY_P),
@@ -367,7 +365,7 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
 void AC_PosControl::input_pos_NEU_cm(const Vector3p& pos_neu_cm, float pos_terrain_target_u_cm, float terrain_buffer_cm)
 {
     // Terrain following velocity scalar must be calculated before we remove the position offset
-    const float offset_u_scaler = pos_terrain_U_scaler(pos_terrain_target_u_cm, terrain_buffer_cm);
+    const float offset_u_scalar = pos_terrain_U_scaler(pos_terrain_target_u_cm, terrain_buffer_cm);
     set_pos_terrain_target_U_cm(pos_terrain_target_u_cm);
 
     // calculated increased maximum acceleration and jerk if over speed
@@ -394,7 +392,7 @@ void AC_PosControl::input_pos_NEU_cm(const Vector3p& pos_neu_cm, float pos_terra
     }
 
     // reduce speed if we are reaching the edge of our vertical buffer
-    vel_max_ne_cms *= offset_u_scaler;
+    vel_max_ne_cms *= offset_u_scalar;
 
     Vector2f vel_ne_cms;
     Vector2f accel_ne_cmss;
@@ -416,7 +414,7 @@ float AC_PosControl::pos_terrain_U_scaler(float pos_terrain_u_cm, float pos_terr
     if (is_zero(pos_terrain_u_buffer_cm)) {
         return 1.0;
     }
-    float pos_offset_error_u_cm = _inav.get_position_z_up_cm() - (_pos_target_neu_cm.z + (pos_terrain_u_cm - _pos_terrain_u_cm));
+    float pos_offset_error_u_cm = _pos_estimate_neu_cm.z - (_pos_target_neu_cm.z + (pos_terrain_u_cm - _pos_terrain_u_cm));
     return constrain_float((1.0 - (fabsf(pos_offset_error_u_cm) - 0.5 * pos_terrain_u_buffer_cm) / (0.5 * pos_terrain_u_buffer_cm)), 0.01, 1.0);
 }
 
@@ -490,7 +488,7 @@ void AC_PosControl::soften_for_landing_NE()
 {
     // decay position error to zero
     if (is_positive(_dt)) {
-        _pos_target_neu_cm.xy() += (_inav.get_position_xy_cm().topostype() - _pos_target_neu_cm.xy()) * (_dt / (_dt + POSCONTROL_RELAX_TC));
+        _pos_target_neu_cm.xy() += (_pos_estimate_neu_cm.xy() - _pos_target_neu_cm.xy()) * (_dt / (_dt + POSCONTROL_RELAX_TC));
         _pos_desired_neu_cm.xy() = _pos_target_neu_cm.xy() - _pos_offset_neu_cm.xy();
     }
 
@@ -507,17 +505,17 @@ void AC_PosControl::init_NE_controller()
     init_offsets_NE();
     
     // set roll, pitch lean angle targets to current attitude
-    const Vector3f &att_target_euler_cd = _attitude_control.get_att_target_euler_cd();
-    _roll_target_cd = att_target_euler_cd.x;
-    _pitch_target_cd = att_target_euler_cd.y;
-    _yaw_target_cd = att_target_euler_cd.z; // todo: this should be thrust vector heading, not yaw.
-    _yaw_rate_target_cds = 0.0f;
-    _angle_max_override_cd = 0.0;
+    const Vector3f &att_target_euler_rad = _attitude_control.get_att_target_euler_rad();
+    _roll_target_rad = att_target_euler_rad.x;
+    _pitch_target_rad = att_target_euler_rad.y;
+    _yaw_target_rad = att_target_euler_rad.z; // todo: this should be thrust vector heading, not yaw.
+    _yaw_rate_target_rads = 0.0f;
+    _angle_max_override_rad = 0.0;
 
-    _pos_target_neu_cm.xy() = _inav.get_position_xy_cm().topostype();
+    _pos_target_neu_cm.xy() = _pos_estimate_neu_cm.xy();
     _pos_desired_neu_cm.xy() = _pos_target_neu_cm.xy() - _pos_offset_neu_cm.xy();
 
-    _vel_target_neu_cms.xy() = _inav.get_velocity_xy_cms();
+    _vel_target_neu_cms.xy() = _vel_estimate_neu_cms.xy();
     _vel_desired_neu_cms.xy() = _vel_target_neu_cms.xy() - _vel_offset_neu_cms.xy();
 
     // Set desired acceleration to zero because raw acceleration is prone to noise
@@ -528,9 +526,9 @@ void AC_PosControl::init_NE_controller()
     }
 
     // limit acceleration using maximum lean angles
-    float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
-    float accel_max = angle_to_accel(angle_max * 0.01) * 100.0;
-    _accel_target_neu_cmss.xy().limit_length(accel_max);
+    const float angle_max_rad = MIN(_attitude_control.get_althold_lean_angle_max_rad(), get_lean_angle_max_rad());
+    const float accel_max_cmss = angle_rad_to_accel_mss(angle_max_rad) * 100.0;
+    _accel_target_neu_cmss.xy().limit_length(accel_max_cmss);
 
     // initialise I terms from lean angles
     _pid_vel_ne.reset_filter();
@@ -611,17 +609,17 @@ void AC_PosControl::update_offsets_NE()
 /// stop_pos_NE_stabilisation - sets the target to the current position to remove any position corrections from the system
 void AC_PosControl::stop_pos_NE_stabilisation()
 {
-    _pos_target_neu_cm.xy() = _inav.get_position_xy_cm().topostype();
+    _pos_target_neu_cm.xy() = _pos_estimate_neu_cm.xy();
     _pos_desired_neu_cm.xy() = _pos_target_neu_cm.xy() - _pos_offset_neu_cm.xy();
 }
 
 /// stop_vel_NE_stabilisation - sets the target to the current position and velocity to the current velocity to remove any position and velocity corrections from the system
 void AC_PosControl::stop_vel_NE_stabilisation()
 {
-    _pos_target_neu_cm.xy() =  _inav.get_position_xy_cm().topostype();
+    _pos_target_neu_cm.xy() =  _pos_estimate_neu_cm.xy();
     _pos_desired_neu_cm.xy() = _pos_target_neu_cm.xy() - _pos_offset_neu_cm.xy();
     
-    _vel_target_neu_cms.xy() = _inav.get_velocity_xy_cms();;
+    _vel_target_neu_cms.xy() = _vel_estimate_neu_cms.xy();
     _vel_desired_neu_cms.xy() = _vel_target_neu_cms.xy() - _vel_offset_neu_cms.xy();
 
     // initialise I terms from lean angles
@@ -666,11 +664,11 @@ void AC_PosControl::update_NE_controller()
     _pos_target_neu_cm.xy() = _pos_desired_neu_cm.xy() + _pos_offset_neu_cm.xy();
 
     // determine the combined position of the actual position and the disturbance from system ID mode
-    const Vector3f &curr_pos = _inav.get_position_neu_cm();
-    Vector3f comb_pos = curr_pos;
-    comb_pos.xy() += _disturb_pos_ne_cm;
+    // calculate the target velocity correction
+    Vector2p comb_pos = _pos_estimate_neu_cm.xy();
+    comb_pos += _disturb_pos_ne_cm.topostype();
 
-    Vector2f vel_target = _p_pos_ne.update_all(_pos_target_neu_cm.x, _pos_target_neu_cm.y, comb_pos);
+    Vector2f vel_target = _p_pos_ne.update_all(_pos_target_neu_cm.xy(), comb_pos);
     _pos_desired_neu_cm.xy() = _pos_target_neu_cm.xy() - _pos_offset_neu_cm.xy();
 
     // Velocity Controller
@@ -683,8 +681,8 @@ void AC_PosControl::update_NE_controller()
     _vel_target_neu_cms.xy() += _vel_desired_neu_cms.xy() + _vel_offset_neu_cms.xy();
 
     // determine the combined velocity of the actual velocity and the disturbance from system ID mode
-    const Vector2f &curr_vel = _inav.get_velocity_xy_cms();
-    Vector2f comb_vel = curr_vel;
+    // Velocity Controller
+    Vector2f comb_vel = _vel_estimate_neu_cms.xy();
     comb_vel += _disturb_vel_ne_cms;
 
     Vector2f accel_target_ne_cmss = _pid_vel_ne.update_all(_vel_target_neu_cms.xy(), comb_vel, _dt, _limit_vector.xy());
@@ -702,17 +700,17 @@ void AC_PosControl::update_NE_controller()
     _accel_target_neu_cmss.xy() += _accel_desired_neu_cmss.xy() + _accel_offset_neu_cmss.xy();
 
     // limit acceleration using maximum lean angles
-    float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
-    float accel_max = angle_to_accel(angle_max * 0.01) * 100;
+    const float angle_max_rad = MIN(_attitude_control.get_althold_lean_angle_max_rad(), get_lean_angle_max_rad());
+    const float accel_max_cmss = angle_rad_to_accel_mss(angle_max_rad) * 100.0;
     // Define the limit vector before we constrain _accel_target_neu_cmss 
     _limit_vector.xy() = _accel_target_neu_cmss.xy();
-    if (!limit_accel_xy(_vel_desired_neu_cms.xy(), _accel_target_neu_cmss.xy(), accel_max)) {
+    if (!limit_accel_xy(_vel_desired_neu_cms.xy(), _accel_target_neu_cmss.xy(), accel_max_cmss)) {
         // _accel_target_neu_cmss was not limited so we can zero the xy limit vector
         _limit_vector.xy().zero();
     }
 
     // update angle targets that will be passed to stabilize controller
-    accel_NE_cmss_to_lean_angles(_accel_target_neu_cmss.x, _accel_target_neu_cmss.y, _roll_target_cd, _pitch_target_cd);
+    accel_NE_cmss_to_lean_angles_rad(_accel_target_neu_cmss.x, _accel_target_neu_cmss.y, _roll_target_rad, _pitch_target_rad);
     calculate_yaw_and_rate_yaw();
 
     // reset the disturbance from system ID mode to zero
@@ -821,10 +819,10 @@ void AC_PosControl::init_U_controller()
     // initialise offsets to target offsets and ensure offset targets are zero if they have not been updated.
     init_offsets_U();
 
-    _pos_target_neu_cm.z = _inav.get_position_z_up_cm();
+    _pos_target_neu_cm.z = _pos_estimate_neu_cm.z;
     _pos_desired_neu_cm.z = _pos_target_neu_cm.z - _pos_offset_neu_cm.z;
 
-    _vel_target_neu_cms.z = _inav.get_velocity_z_up_cms();
+    _vel_target_neu_cms.z = _vel_estimate_neu_cms.z;
     _vel_desired_neu_cms.z = _vel_target_neu_cms.z - _vel_offset_neu_cms.z;
 
     // Reset I term of velocity PID
@@ -1003,7 +1001,7 @@ void AC_PosControl::update_U_controller()
     // calculate the target velocity correction
     float pos_target_zf = _pos_target_neu_cm.z;
 
-    _vel_target_neu_cms.z = _p_pos_u.update_all(pos_target_zf, _inav.get_position_z_up_cm());
+    _vel_target_neu_cms.z = _p_pos_u.update_all(pos_target_zf, _pos_estimate_neu_cm.z);
     _vel_target_neu_cms.z *= AP::ahrs().getControlScaleZ();
 
     _pos_target_neu_cm.z = pos_target_zf;
@@ -1014,8 +1012,7 @@ void AC_PosControl::update_U_controller()
 
     // Velocity Controller
 
-    const float curr_vel_u_cms = _inav.get_velocity_z_up_cms();
-    _accel_target_neu_cmss.z = _pid_vel_u.update_all(_vel_target_neu_cms.z, curr_vel_u_cms, _dt, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
+    _accel_target_neu_cmss.z = _pid_vel_u.update_all(_vel_target_neu_cms.z, _vel_estimate_neu_cms.z, _dt, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
     _accel_target_neu_cmss.z *= AP::ahrs().getControlScaleZ();
 
     // add feed forward component
@@ -1066,16 +1063,16 @@ void AC_PosControl::update_U_controller()
 /// Accessors
 ///
 
-/// get_lean_angle_max_cd - returns the maximum lean angle the autopilot may request
-float AC_PosControl::get_lean_angle_max_cd() const
+/// get_lean_angle_max_rad - returns the maximum lean angle the autopilot may request
+float AC_PosControl::get_lean_angle_max_rad() const
 {
-    if (is_positive(_angle_max_override_cd)) {
-        return _angle_max_override_cd;
+    if (is_positive(_angle_max_override_rad)) {
+        return _angle_max_override_rad;
     }
     if (!is_positive(_lean_angle_max_deg)) {
-        return _attitude_control.lean_angle_max_cd();
+        return _attitude_control.lean_angle_max_rad();
     }
-    return _lean_angle_max_deg * 100.0f;
+    return radians(_lean_angle_max_deg);
 }
 
 /// set the desired position, velocity and acceleration targets
@@ -1277,10 +1274,10 @@ Vector3f AC_PosControl::get_thrust_vector() const
 void AC_PosControl::get_stopping_point_NE_cm(Vector2p &stopping_point_neu_cm) const
 {
     // todo: we should use the current target position and velocity if we are currently running the position controller
-    stopping_point_neu_cm = _inav.get_position_xy_cm().topostype();
+    stopping_point_neu_cm = _pos_estimate_neu_cm.xy();
     stopping_point_neu_cm -= _pos_offset_neu_cm.xy();
 
-    Vector2f curr_vel = _inav.get_velocity_xy_cms();
+    Vector2f curr_vel = _vel_estimate_neu_cms.xy();
     curr_vel -= _vel_offset_neu_cms.xy();
 
     // calculate current velocity
@@ -1305,10 +1302,10 @@ void AC_PosControl::get_stopping_point_NE_cm(Vector2p &stopping_point_neu_cm) co
 /// get_stopping_point_U_cm - calculates stopping point in NEU cm based on current position, velocity, vehicle acceleration
 void AC_PosControl::get_stopping_point_U_cm(postype_t &stopping_point_u_cm) const
 {
-    float curr_pos_u_cm = _inav.get_position_z_up_cm();
+    float curr_pos_u_cm = _pos_estimate_neu_cm.z;
     curr_pos_u_cm -= _pos_offset_neu_cm.z;
 
-    float curr_vel_u_cms = _inav.get_velocity_z_up_cms();
+    float curr_vel_u_cms = _vel_estimate_neu_cms.z;
     curr_vel_u_cms -= _vel_offset_neu_cms.z;
 
     // avoid divide by zero by using current position if kP is very low or acceleration is zero
@@ -1323,13 +1320,39 @@ void AC_PosControl::get_stopping_point_U_cm(postype_t &stopping_point_u_cm) cons
 /// get_bearing_to_target_cd - get bearing to target position in centi-degrees
 int32_t AC_PosControl::get_bearing_to_target_cd() const
 {
-    return get_bearing_cd(_inav.get_position_xy_cm(), _pos_target_neu_cm.tofloat().xy());
+    return get_bearing_cd(Vector2f{0.0, 0.0}, (_pos_target_neu_cm.xy() - _pos_estimate_neu_cm.xy()).tofloat());
 }
 
 
 ///
 /// System methods
 ///
+
+// Updates internal position and velocity estimates in the NED frame.
+// Falls back to vertical-only estimates if full NED data is unavailable.
+// When high_vibes is true, forces use of vertical fallback for velocity.
+void AC_PosControl::update_estimates(bool high_vibes)
+{
+    Vector3p pos_estimate_ned_m;
+    if (!AP::ahrs().get_relative_position_NED_origin(pos_estimate_ned_m)) {
+        float posD;
+        if (AP::ahrs().get_relative_position_D_origin_float(posD)) {
+            pos_estimate_ned_m.z = posD;
+        }
+    }
+    _pos_estimate_neu_cm.xy() = pos_estimate_ned_m.xy() * 100.0;
+    _pos_estimate_neu_cm.z = -pos_estimate_ned_m.z * 100.0;
+
+    Vector3f vel_estimate_ned_ms;
+    if (!AP::ahrs().get_velocity_NED(vel_estimate_ned_ms) || high_vibes) {
+        float rate_z;
+        if (AP::ahrs().get_vert_pos_rate_D(rate_z)) {
+            vel_estimate_ned_ms.z = rate_z;
+        }
+    }
+    _vel_estimate_neu_cms.xy() = vel_estimate_ned_ms.xy() * 100.0;
+    _vel_estimate_neu_cms.z = -vel_estimate_ned_ms.z * 100.0;
+}
 
 // get throttle using vibration-resistant calculation (uses feed forward with manually calculated gain)
 float AC_PosControl::get_throttle_with_vibration_override()
@@ -1353,7 +1376,7 @@ void AC_PosControl::standby_NEU_reset()
     _pid_accel_u.set_integrator(0.0f);
 
     // Set the target position to the current pos.
-    _pos_target_neu_cm = _inav.get_position_neu_cm().topostype();
+    _pos_target_neu_cm = _pos_estimate_neu_cm;
 
     // Set _pid_vel_ne integrator and derivative to zero.
     _pid_vel_ne.reset_filter();
@@ -1369,11 +1392,11 @@ void AC_PosControl::write_log()
     if (is_active_NE()) {
         float accel_n_cmss, accel_e_cmss;
         lean_angles_to_accel_NE_cmss(accel_n_cmss, accel_e_cmss);
-        Write_PSCN(_pos_desired_neu_cm.x, _pos_target_neu_cm.x, _inav.get_position_neu_cm().x,
-                   _vel_desired_neu_cms.x, _vel_target_neu_cms.x, _inav.get_velocity_neu_cms().x,
+        Write_PSCN(_pos_desired_neu_cm.x, _pos_target_neu_cm.x, _pos_estimate_neu_cm.x ,
+                   _vel_desired_neu_cms.x, _vel_target_neu_cms.x, _vel_estimate_neu_cms.x,
                    _accel_desired_neu_cmss.x, _accel_target_neu_cmss.x, accel_n_cmss);
-        Write_PSCE(_pos_desired_neu_cm.y, _pos_target_neu_cm.y, _inav.get_position_neu_cm().y,
-                   _vel_desired_neu_cms.y, _vel_target_neu_cms.y, _inav.get_velocity_neu_cms().y,
+        Write_PSCE(_pos_desired_neu_cm.y, _pos_target_neu_cm.y, _pos_estimate_neu_cm.y,
+                   _vel_desired_neu_cms.y, _vel_target_neu_cms.y, _vel_estimate_neu_cms.y,
                    _accel_desired_neu_cmss.y, _accel_target_neu_cmss.y, accel_e_cmss);
 
         // log offsets if they are being used
@@ -1384,8 +1407,8 @@ void AC_PosControl::write_log()
     }
 
     if (is_active_U()) {
-        Write_PSCD(-_pos_desired_neu_cm.z, -_pos_target_neu_cm.z, -_inav.get_position_z_up_cm(),
-                   -_vel_desired_neu_cms.z, -_vel_target_neu_cms.z, -_inav.get_velocity_z_up_cms(),
+        Write_PSCD(-_pos_desired_neu_cm.z, -_pos_target_neu_cm.z, -_pos_estimate_neu_cm.z,
+                   -_vel_desired_neu_cms.z, -_vel_target_neu_cms.z, -_vel_estimate_neu_cms.z,
                    -_accel_desired_neu_cmss.z, -_accel_target_neu_cmss.z, -get_measured_accel_U_cmss());
 
         // log down and terrain offsets if they are being used
@@ -1402,7 +1425,7 @@ void AC_PosControl::write_log()
 /// crosstrack_error - returns horizontal error to the closest point to the current track
 float AC_PosControl::crosstrack_error() const
 {
-    const Vector2f pos_error = _inav.get_position_xy_cm() - (_pos_target_neu_cm.xy()).tofloat();
+    const Vector2f pos_error = (_pos_target_neu_cm.xy() - _pos_estimate_neu_cm.xy()).tofloat();
     if (is_zero(_vel_desired_neu_cms.xy().length_squared())) {
         // crosstrack is the horizontal distance to target when stationary
         return pos_error.length();
@@ -1423,15 +1446,15 @@ bool AC_PosControl::get_fwd_pitch_is_limited() const
     if (_limit_vector.xy().is_zero()) {  
         return false;  
     }  
-    const float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
-    const float accel_max = angle_to_accel(angle_max * 0.01) * 100;
+    const float angle_max_rad = MIN(_attitude_control.get_althold_lean_angle_max_rad(), get_lean_angle_max_rad());
+    const float accel_max_cmss = angle_rad_to_accel_mss(angle_max_rad) * 100.0;
     // Check for pitch limiting in the forward direction
     const float accel_fwd_unlimited = _limit_vector.x * _ahrs.cos_yaw() + _limit_vector.y * _ahrs.sin_yaw();
-    const float pitch_target_unlimited = accel_to_angle(- MIN(accel_fwd_unlimited, accel_max) * 0.01f) * 100;
+    const float pitch_target_unlimited_cd = accel_mss_to_angle_deg(- MIN(accel_fwd_unlimited, accel_max_cmss) * 0.01f) * 100;
     const float accel_fwd_limited = _accel_target_neu_cmss.x * _ahrs.cos_yaw() + _accel_target_neu_cmss.y * _ahrs.sin_yaw();
-    const float pitch_target_limited = accel_to_angle(- accel_fwd_limited * 0.01f) * 100;
+    const float pitch_target_limited_cd = accel_mss_to_angle_deg(- accel_fwd_limited * 0.01f) * 100;
 
-    return is_negative(pitch_target_unlimited) && pitch_target_unlimited < pitch_target_limited;
+    return is_negative(pitch_target_unlimited_cd) && pitch_target_unlimited_cd < pitch_target_limited_cd;
 }
 #endif // APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 
@@ -1461,16 +1484,16 @@ void AC_PosControl::update_terrain()
 }
 
 // get_lean_angles_to_accel - convert NE frame accelerations in cm/s/s to roll, pitch lean angles in centi-degrees
-void AC_PosControl::accel_NE_cmss_to_lean_angles(float accel_n_cmss, float accel_e_cmss, float& roll_target_cd, float& pitch_target_cd) const
+void AC_PosControl::accel_NE_cmss_to_lean_angles_rad(float accel_n_cmss, float accel_e_cmss, float& roll_target_rad, float& pitch_target_rad) const
 {
     // rotate accelerations into body forward-right frame
-    const float accel_forward = accel_n_cmss * _ahrs.cos_yaw() + accel_e_cmss * _ahrs.sin_yaw();
-    const float accel_right = -accel_n_cmss * _ahrs.sin_yaw() + accel_e_cmss * _ahrs.cos_yaw();
+    const float accel_forward_mss = (accel_n_cmss * _ahrs.cos_yaw() + accel_e_cmss * _ahrs.sin_yaw()) * 0.01;
+    const float accel_right_mss = (-accel_n_cmss * _ahrs.sin_yaw() + accel_e_cmss * _ahrs.cos_yaw()) * 0.01;
 
     // update angle targets that will be passed to stabilize controller
-    pitch_target_cd = accel_to_angle(-accel_forward * 0.01) * 100;
-    float cos_pitch_target = cosf(pitch_target_cd * M_PI / 18000.0f);
-    roll_target_cd = accel_to_angle((accel_right * cos_pitch_target)*0.01) * 100;
+    pitch_target_rad = accel_mss_to_angle_rad(-accel_forward_mss);
+    float cos_pitch_target = cosf(pitch_target_rad);
+    roll_target_rad = accel_mss_to_angle_rad(accel_right_mss * cos_pitch_target);
 }
 
 // lean_angles_to_accel_NE_cmss - convert roll, pitch lean target angles to NE frame accelerations in cm/s/s
@@ -1493,8 +1516,8 @@ void AC_PosControl::calculate_yaw_and_rate_yaw()
     float turn_rate_rads = 0.0f;
     const float vel_desired_length_ne_cms = _vel_desired_neu_cms.xy().length();
     if (is_positive(vel_desired_length_ne_cms)) {
-        const float accel_forward = (_accel_desired_neu_cmss.x * _vel_desired_neu_cms.x + _accel_desired_neu_cmss.y * _vel_desired_neu_cms.y) / vel_desired_length_ne_cms;
-        const Vector2f accel_turn_ne_cmss = _accel_desired_neu_cmss.xy() - _vel_desired_neu_cms.xy() * accel_forward / vel_desired_length_ne_cms;
+        const float accel_forward_cmss = (_accel_desired_neu_cmss.x * _vel_desired_neu_cms.x + _accel_desired_neu_cmss.y * _vel_desired_neu_cms.y) / vel_desired_length_ne_cms;
+        const Vector2f accel_turn_ne_cmss = _accel_desired_neu_cmss.xy() - _vel_desired_neu_cms.xy() * accel_forward_cmss / vel_desired_length_ne_cms;
         const float accel_turn_length_ne_cmss = accel_turn_ne_cmss.length();
         turn_rate_rads = accel_turn_length_ne_cmss / vel_desired_length_ne_cms;
         if ((accel_turn_ne_cmss.y * _vel_desired_neu_cms.x - accel_turn_ne_cmss.x * _vel_desired_neu_cms.y) < 0.0) {
@@ -1504,14 +1527,14 @@ void AC_PosControl::calculate_yaw_and_rate_yaw()
 
     // update the target yaw if velocity is greater than 5% _vel_max_ne_cms
     if (vel_desired_length_ne_cms > _vel_max_ne_cms * 0.05f) {
-        _yaw_target_cd = degrees(_vel_desired_neu_cms.xy().angle()) * 100.0f;
-        _yaw_rate_target_cds = turn_rate_rads * degrees(100.0f);
+        _yaw_target_rad = _vel_desired_neu_cms.xy().angle();
+        _yaw_rate_target_rads = turn_rate_rads;
         return;
     }
 
     // use the current attitude controller yaw target
-    _yaw_target_cd = _attitude_control.get_att_target_euler_cd().z;
-    _yaw_rate_target_cds = 0;
+    _yaw_target_rad = _attitude_control.get_att_target_euler_rad().z;
+    _yaw_rate_target_rads = 0;
 }
 
 // calculate_overspeed_gain - calculated increased maximum acceleration and jerk if over speed condition is detected
@@ -1545,9 +1568,9 @@ void AC_PosControl::handle_ekf_NE_reset()
         // for this we need some sort of switch to select what type of EKF handling we want to use
 
         // To zero real position shift during relative position modes like Loiter, PosHold, Guided velocity and accleration control.
-        _pos_target_neu_cm.xy() = (_inav.get_position_xy_cm() + _p_pos_ne.get_error()).topostype();
+        _pos_target_neu_cm.xy() = _pos_estimate_neu_cm.xy() + _p_pos_ne.get_error().topostype();
         _pos_desired_neu_cm.xy() = _pos_target_neu_cm.xy() - _pos_offset_neu_cm.xy();
-        _vel_target_neu_cms.xy() = _inav.get_velocity_xy_cms() + _pid_vel_ne.get_error();
+        _vel_target_neu_cms.xy() = _vel_estimate_neu_cms.xy() + _pid_vel_ne.get_error();
         _vel_desired_neu_cms.xy() = _vel_target_neu_cms.xy() - _vel_offset_neu_cms.xy();
 
         _ekf_ne_reset_ms = reset_ms;
@@ -1573,9 +1596,9 @@ void AC_PosControl::handle_ekf_U_reset()
         // for this we need some sort of switch to select what type of EKF handling we want to use
 
         // To zero real position shift during relative position modes like Loiter, PosHold, Guided velocity and accleration control.
-        _pos_target_neu_cm.z = _inav.get_position_z_up_cm() + _p_pos_u.get_error();
+        _pos_target_neu_cm.z = _pos_estimate_neu_cm.z + _p_pos_u.get_error();
         _pos_desired_neu_cm.z = _pos_target_neu_cm.z - (_pos_offset_neu_cm.z + _pos_terrain_u_cm);
-        _vel_target_neu_cms.z = _inav.get_velocity_z_up_cms() + _pid_vel_u.get_error();
+        _vel_target_neu_cms.z = _vel_estimate_neu_cms.z + _pid_vel_u.get_error();
         _vel_desired_neu_cms.z = _vel_target_neu_cms.z - (_vel_offset_neu_cms.z + _vel_terrain_u_cms);
 
         _ekf_u_reset_ms = reset_ms;

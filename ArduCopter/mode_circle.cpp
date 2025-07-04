@@ -55,7 +55,7 @@ void ModeCircle::run()
 
     // pilot changes to circle rate and radius
     // skip if in radio failsafe
-    if (!copter.failsafe.radio && copter.circle_nav->pilot_control_enabled()) {
+    if (rc().has_valid_input() && copter.circle_nav->pilot_control_enabled()) {
         // update the circle controller's radius target based on pilot pitch stick inputs
         const float radius_current = copter.circle_nav->get_radius_cm();           // circle controller's radius target, which begins as the circle_radius parameter
         const float pitch_stick = channel_pitch->norm_input_dz();               // pitch stick normalized -1 to 1
@@ -100,10 +100,10 @@ void ModeCircle::run()
     }
 
     // get pilot desired climb rate (or zero if in radio failsafe)
-    float target_climb_rate = get_pilot_desired_climb_rate();
+    float target_climb_rate_cms = get_pilot_desired_climb_rate();
 
     // get avoidance adjusted climb rate
-    target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+    target_climb_rate_cms = get_avoidance_adjusted_climbrate_cms(target_climb_rate_cms);
 
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
@@ -119,11 +119,11 @@ void ModeCircle::run()
     copter.surface_tracking.update_surface_offset();
 #endif
 
-    copter.failsafe_terrain_set_status(copter.circle_nav->update_cms(target_climb_rate));
+    copter.failsafe_terrain_set_status(copter.circle_nav->update_cms(target_climb_rate_cms));
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 float ModeCircle::wp_distance_m() const

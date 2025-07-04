@@ -219,7 +219,7 @@ void ModeGuided::wp_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // initialise position controller
@@ -750,7 +750,7 @@ void ModeGuided::pos_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // velaccel_control_run - runs the guided velocity controller
@@ -795,7 +795,7 @@ void ModeGuided::accel_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // velaccel_control_run - runs the guided velocity and acceleration controller
@@ -850,7 +850,7 @@ void ModeGuided::velaccel_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // pause_control_run - runs the guided mode pause controller
@@ -880,7 +880,7 @@ void ModeGuided::pause_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller
-    attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), 0.0);
+    attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0);
 }
 
 // posvelaccel_control_run - runs the guided position, velocity and acceleration controller
@@ -939,7 +939,7 @@ void ModeGuided::posvelaccel_control_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // angle_control_run - runs the guided angle controller
@@ -952,7 +952,7 @@ void ModeGuided::angle_control_run()
         climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -wp_nav->get_default_speed_down_cms(), wp_nav->get_default_speed_up_cms());
 
         // get avoidance adjusted climb rate
-        climb_rate_cms = get_avoidance_adjusted_climbrate(climb_rate_cms);
+        climb_rate_cms = get_avoidance_adjusted_climbrate_cms(climb_rate_cms);
     }
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
@@ -998,7 +998,7 @@ void ModeGuided::angle_control_run()
 
     // call attitude controller
     if (guided_angle_state.attitude_quat.is_zero()) {
-        attitude_control->input_rate_bf_roll_pitch_yaw_cds(ToDeg(guided_angle_state.ang_vel_body.x) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.y) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.z) * 100.0f);
+        attitude_control->input_rate_bf_roll_pitch_yaw_rads(guided_angle_state.ang_vel_body.x, guided_angle_state.ang_vel_body.y, guided_angle_state.ang_vel_body.z);
     } else {
         attitude_control->input_quaternion(guided_angle_state.attitude_quat, guided_angle_state.ang_vel_body);
     }
@@ -1018,9 +1018,9 @@ void ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, fl
     if (use_yaw && relative_angle) {
         auto_yaw.set_fixed_yaw(yaw_cd * 0.01f, 0.0f, 0, relative_angle);
     } else if (use_yaw && use_yaw_rate) {
-        auto_yaw.set_yaw_angle_rate(yaw_cd * 0.01f, yaw_rate_cds * 0.01f);
+        auto_yaw.set_yaw_angle_and_rate_deg(yaw_cd * 0.01f, yaw_rate_cds * 0.01f);
     } else if (use_yaw && !use_yaw_rate) {
-        auto_yaw.set_yaw_angle_rate(yaw_cd * 0.01f, 0.0f);
+        auto_yaw.set_yaw_angle_and_rate_deg(yaw_cd * 0.01f, 0.0f);
     } else if (use_yaw_rate) {
         auto_yaw.set_rate(yaw_rate_cds);
     } else {
@@ -1062,7 +1062,7 @@ void ModeGuided::limit_init_time_and_pos()
     guided_limit.start_time = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos = inertial_nav.get_position_neu_cm();
+    guided_limit.start_pos = pos_control->get_pos_estimate_NEU_cm().tofloat();
 }
 
 // limit_check - returns true if guided mode has breached a limit
@@ -1075,7 +1075,7 @@ bool ModeGuided::limit_check()
     }
 
     // get current location
-    const Vector3f& curr_pos = inertial_nav.get_position_neu_cm();
+    const Vector3f& curr_pos = pos_control->get_pos_estimate_NEU_cm().tofloat();
 
     // check if we have gone below min alt
     if (!is_zero(guided_limit.alt_min_cm) && (curr_pos.z < guided_limit.alt_min_cm)) {
@@ -1120,7 +1120,7 @@ float ModeGuided::wp_distance_m() const
     case SubMode::WP:
         return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
     case SubMode::Pos:
-        return get_horizontal_distance_cm(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy()) * 0.01f;
+        return get_horizontal_distance_cm(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat()) * 0.01f;
     case SubMode::PosVelAccel:
         return pos_control->get_pos_error_NE_cm() * 0.01f;
     default:
@@ -1134,7 +1134,7 @@ int32_t ModeGuided::wp_bearing() const
     case SubMode::WP:
         return wp_nav->get_wp_bearing_to_destination_cd();
     case SubMode::Pos:
-        return get_bearing_cd(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy());
+        return get_bearing_cd(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat());
     case SubMode::PosVelAccel:
         return pos_control->get_bearing_to_target_cd();
     case SubMode::TakeOff:

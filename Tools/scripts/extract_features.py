@@ -98,6 +98,7 @@ class ExtractFeatures(object):
 
             ('AP_BARO_{type}_ENABLED', r'AP_Baro_(?P<type>.*)::(_calculate|update)\b',),
 
+            ('AP_MOTORS_TRI_ENABLED', 'AP_MotorsTri::set_frame_class_and_type'),
             ('AP_MOTORS_FRAME_{type}_ENABLED', r'AP_MotorsMatrix::setup_(?P<type>.*)_matrix\b',),
 
             ('HAL_MSP_ENABLED', r'AP_MSP::init\b',),
@@ -249,6 +250,7 @@ class ExtractFeatures(object):
             ('AP_CAN_SLCAN_ENABLED', 'SLCAN::CANIface::var_info'),
             ('AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT', 'AC_PolyFence_loader::handle_msg_fetch_fence_point'),
             ('AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED', 'GCS_MAVLINK::handle_common_rally_message'),
+            ('AP_ADSB_AVOIDANCE_ENABLED', 'AP_Avoidance::init'),
 
             ('AP_SDCARD_STORAGE_ENABLED', 'StorageAccess::attach_file'),
             ('AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED', 'GCS_MAVLINK::handle_send_autopilot_version'),
@@ -297,6 +299,8 @@ class ExtractFeatures(object):
             ('AP_FILTER_ENABLED', r'AP_Filters::update'),
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
+            ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
+            ('AP_PERIPH_DEVICE_TEMPERATURE_ENABLED', r'AP_Periph_FW::temperature_sensor_update'),
         ]
 
     def progress(self, msg):
@@ -310,6 +314,7 @@ class ExtractFeatures(object):
         whitelist = frozenset([
             'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # this define changes single method body, hard to detect?
             'AP_PLANE_BLACKBOX_LOGGING', # no visible signature
+            'AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED',  # no visible signature
         ])
         for option in build_options.BUILD_OPTIONS:
             if option.define in whitelist:

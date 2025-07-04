@@ -6,7 +6,6 @@
 #include <AP_Math/SCurve.h>
 #include <AP_Math/SplineCurve.h>
 #include <AP_Common/Location.h>
-#include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude control library
 #include <AP_Terrain/AP_Terrain.h>
@@ -20,7 +19,7 @@ class AC_WPNav
 public:
 
     /// Constructor
-    AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
+    AC_WPNav(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
     /// provide rangefinder based terrain offset
     /// terrain offset is the terrain's height above the EKF origin
@@ -204,13 +203,27 @@ public:
     /// shared methods
     ///
 
-    /// get desired roll, pitch which should be fed into stabilize controllers
-    float get_roll() const { return _pos_control.get_roll_cd(); }
-    float get_pitch() const { return _pos_control.get_pitch_cd(); }
+    /// Returns the desired roll angle in radians from the position controller.
+    float get_roll_rad() const { return _pos_control.get_roll_rad(); }
+
+    /// Returns the desired pitch angle in radians from the position controller.
+    float get_pitch_rad() const { return _pos_control.get_pitch_rad(); }
+
+    /// Returns the desired yaw target in radians from the position controller.
+    float get_yaw_rad() const { return _pos_control.get_yaw_rad(); }
+
+    /// Returns the desired thrust direction vector for tilt control from the position controller.
     Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
 
-    // get target yaw in centi-degrees
+    /// Returns the desired roll angle in centidegrees from the position controller.
+    float get_roll() const { return _pos_control.get_roll_cd(); }
+
+    /// Returns the desired pitch angle in centidegrees from the position controller.
+    float get_pitch() const { return _pos_control.get_pitch_cd(); }
+
+    /// Returns the desired yaw target in centidegrees from the position controller.
     float get_yaw() const { return _pos_control.get_yaw_cd(); }
+
     /// advance_wp_target_along_track - move target location along track from origin to destination
     bool advance_wp_target_along_track(float dt);
 
@@ -236,7 +249,6 @@ protected:
     void calc_scurve_jerk_and_snap();
 
     // references and pointers to external libraries
-    const AP_InertialNav&   _inav;
     const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
@@ -279,7 +291,7 @@ protected:
     Vector3f    _origin_neu_cm;             // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination_neu_cm;        // target destination in cm from ekf origin
     Vector3f    _next_destination_neu_cm;   // next target destination in cm from ekf origin
-    float       _track_scalar_dt;           // time compression multiplier to slow the progress along the track
+    float       _track_dt_scalar;           // time compression multiplier to slow the progress along the track
     float       _offset_vel_cms;            // horizontal velocity reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
     float       _offset_accel_cmss;         // horizontal acceleration reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
     bool        _paused;                    // flag for pausing waypoint controller

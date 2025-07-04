@@ -18,8 +18,7 @@ bool QAutoTune::init()
     return init_internals(position_hold,
                           plane.quadplane.attitude_control,
                           plane.quadplane.pos_control,
-                          plane.quadplane.ahrs_view,
-                          &plane.quadplane.inertial_nav);
+                          plane.quadplane.ahrs_view);
 }
 
 float QAutoTune::get_pilot_desired_climb_rate_cms(void) const
@@ -27,16 +26,16 @@ float QAutoTune::get_pilot_desired_climb_rate_cms(void) const
     return plane.quadplane.get_pilot_desired_climb_rate_cms();
 }
 
-void QAutoTune::get_pilot_desired_rp_yrate_cd(float &des_roll_cd, float &des_pitch_cd, float &yaw_rate_cds)
+void QAutoTune::get_pilot_desired_rp_yrate_rad(float &des_roll_rad, float &des_pitch_rad, float &des_yaw_rate_rads)
 {
     if (plane.channel_roll->get_control_in() == 0 && plane.channel_pitch->get_control_in() == 0) {
-        des_roll_cd = 0;
-        des_pitch_cd = 0;
+        des_roll_rad = 0.0;
+        des_pitch_rad = 0.0;
     } else {
-        des_roll_cd = plane.nav_roll_cd;
-        des_pitch_cd = plane.nav_pitch_cd;
+        des_roll_rad = cd_to_rad(plane.nav_roll_cd);
+        des_pitch_rad = cd_to_rad(plane.nav_pitch_cd);
     }
-    yaw_rate_cds = plane.quadplane.get_desired_yaw_rate_cds();
+    des_yaw_rate_rads = cd_to_rad(plane.quadplane.get_desired_yaw_rate_cds());
 }
 
 void QAutoTune::init_z_limits()

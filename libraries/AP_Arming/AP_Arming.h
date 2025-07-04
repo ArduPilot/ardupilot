@@ -83,6 +83,7 @@ public:
         BLACKBOX = 34,
         DDS = 35,
         AUTO_ARM_ONCE = 36,
+        TURTLE_MODE = 37,
         UNKNOWN = 100,
     };
 

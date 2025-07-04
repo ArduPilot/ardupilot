@@ -33,15 +33,16 @@
 
 // Indices in data array where each value starts being recorded
 // See comment below about data payload for more info about formatting
-#define START_BEGIN_CHARACTER       0
 #define START_DATA_LENGTH           1
-#define START_RADAR_SPEED           2
 #define START_BEGIN_ANGLE           4
 #define START_PAYLOAD               6
 #define START_END_ANGLE             42
 #define START_CHECK_SUM             46
 #define MEASUREMENT_PAYLOAD_LENGTH  3
 #define PAYLOAD_COUNT               12
+
+// confidence for each measurement must be this value or higher
+#define CONFIDENCE_THRESHOLD 20
 
  /* ------------------------------------------
     Data Packet Structure:
@@ -169,25 +170,30 @@ void AP_Proximity_LD06::parse_response_data()
 
         // Gets the distance recorded and converts to meters
         const float angle_deg = correct_angle_for_orientation(start_angle + angle_step * (i / MEASUREMENT_PAYLOAD_LENGTH));
-        const float distance_m = UINT16_VALUE(_response[i + 1], _response[i]) * 0.001;
+        const float distance_m = _dist_filt_mm.apply(UINT16_VALUE(_response[i + 1], _response[i])) * 0.001;
+        const float confidence = _response[i + 2];
 
-        if (distance_m < distance_min() || distance_m > distance_max() || _response[i + 2] < 20) { // XXX 20 good?
+        // ignore distance that are out-of-range or have low confidence
+        if (distance_m < distance_min() || distance_m > distance_max() || confidence < CONFIDENCE_THRESHOLD) {
             continue;
         }
+
+        // ignore distances that are out-of-range (based on user parameters) or within ignore areas
         if (ignore_reading(angle_deg, distance_m)) {
             continue;
         }
 
-        uint16_t a2d = (int)(angle_deg / 2.0) * 2;
+        // use the shortest distance within 2 degree sectors
+        const uint16_t a2d = (int)(angle_deg / 2.0) * 2;
         if (_angle_2deg == a2d) {
             if (distance_m < _dist_2deg_m) {
                 _dist_2deg_m = distance_m;
             }
         } else {
-            // New 2deg angle, record the old one
+            // new 2 degree sector, process the old one
 
+            // check if new sector is also a new face
             const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face((float)_angle_2deg);
-
             if (face != _last_face) {
                 // distance is for a new face, the previous one can be updated now
                 if (_last_distance_valid) {
@@ -202,15 +208,17 @@ void AP_Proximity_LD06::parse_response_data()
                 _last_distance_valid = false;
             }
 
-            // update shortest distance
+            // update face's shortest distance
             if (!_last_distance_valid || (_dist_2deg_m < _last_distance_m)) {
                 _last_distance_m = _dist_2deg_m;
                 _last_distance_valid = true;
                 _last_angle_deg = (float)_angle_2deg;
             }
-            // update OA database
-            database_push(_last_angle_deg, _last_distance_m);
 
+            // update OA database with the 2 degree sectors distance
+            database_push(_angle_2deg, _dist_2deg_m);
+
+            // advance to the next 2 degree sector
             _angle_2deg = a2d;
             _dist_2deg_m = distance_m;
         }

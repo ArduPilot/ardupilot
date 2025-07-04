@@ -113,7 +113,14 @@ void AP_CRSF_Telem::setup_custom_telemetry()
         return;
     }
 
+    // we need crossfire firmware version
+    if (_crsf_version.pending) {
+        return;
+    }
+
     if (!rc().option_is_enabled(RC_Channels::Option::CRSF_CUSTOM_TELEMETRY)) {
+       _custom_telem.init_done = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"%s: bootstrap complete, fw %d.%02d", get_protocol_string(), _crsf_version.major, _crsf_version.minor);
         return;
     }
 
@@ -123,11 +130,6 @@ void AP_CRSF_Telem::setup_custom_telemetry()
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: passthrough telemetry conflict on SERIAL%d", get_protocol_string(), frsky_port);
        _custom_telem.init_done = true;
        return;
-    }
-
-    // we need crossfire firmware version
-    if (_crsf_version.pending) {
-        return;
     }
 
     AP_Frsky_SPort_Passthrough* passthrough = AP::frsky_passthrough_telem();
@@ -1033,9 +1035,9 @@ void AP_CRSF_Telem::calc_attitude()
 
     const int16_t INT_PI = 31415;
     // units are radians * 10000
-    _telem.bcast.attitude.roll_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_roll()) * 10000.0f), -INT_PI, INT_PI));
-    _telem.bcast.attitude.pitch_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_pitch()) * 10000.0f), -INT_PI, INT_PI));
-    _telem.bcast.attitude.yaw_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_yaw()) * 10000.0f), -INT_PI, INT_PI));
+    _telem.bcast.attitude.roll_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_roll_rad()) * 10000.0f), -INT_PI, INT_PI));
+    _telem.bcast.attitude.pitch_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_pitch_rad()) * 10000.0f), -INT_PI, INT_PI));
+    _telem.bcast.attitude.yaw_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_yaw_rad()) * 10000.0f), -INT_PI, INT_PI));
 
     _telem_size = sizeof(AP_CRSF_Telem::AttitudeFrame);
     _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_ATTITUDE;

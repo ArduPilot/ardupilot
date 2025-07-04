@@ -129,7 +129,7 @@ bool ModeSystemId::init(bool ignore_checks)
             pos_control->init_U_controller();
         }
         Vector3f curr_pos;
-        curr_pos = inertial_nav.get_position_neu_cm();
+        curr_pos = pos_control->get_pos_estimate_NEU_cm().tofloat();
         target_pos = curr_pos.xy();
     }
 
@@ -161,11 +161,11 @@ void ModeSystemId::exit()
 // should be called at 100hz or more
 void ModeSystemId::run()
 {
-    float target_roll = 0.0f;
-    float target_pitch = 0.0f;
-    float target_yaw_rate = 0.0f;
+    float target_roll_rad = 0.0f;
+    float target_pitch_rad = 0.0f;
+    float target_yaw_rate_rads = 0.0f;
     float pilot_throttle_scaled = 0.0f;
-    float target_climb_rate = 0.0f;
+    float target_climb_rate_cms = 0.0f;
     Vector2f input_vel;
 
     if (!is_poscontrol_axis_type()) {
@@ -174,10 +174,10 @@ void ModeSystemId::run()
         update_simple_mode();
 
         // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
+        get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->lean_angle_max_rad());
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate();
+        target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
 
         if (!motors->armed()) {
             // Motors should be Stopped
@@ -251,9 +251,9 @@ void ModeSystemId::run()
                 gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: Landed");
                 break;
             }
-            if (attitude_control->lean_angle_deg()*100 > attitude_control->lean_angle_max_cd()) {
+            if (attitude_control->lean_angle_rad() > attitude_control->lean_angle_max_rad()) {
                 systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: lean=%f max=%f", (double)attitude_control->lean_angle_deg(), (double)attitude_control->lean_angle_max_cd());
+                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: lean=%f max=%f", (double)degrees(attitude_control->lean_angle_rad()), (double)degrees(attitude_control->lean_angle_max_rad()));
                 break;
             }
             if (waveform_time > SYSTEM_ID_DELAY + time_fade_in + time_const_freq + time_record + time_fade_out) {
@@ -268,24 +268,24 @@ void ModeSystemId::run()
                     gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: axis = 0");
                     break;
                 case AxisType::INPUT_ROLL:
-                    target_roll += waveform_sample*100.0f;
+                    target_roll_rad += radians(waveform_sample);
                     break;
                 case AxisType::INPUT_PITCH:
-                    target_pitch += waveform_sample*100.0f;
+                    target_pitch_rad += radians(waveform_sample);
                     break;
                 case AxisType::INPUT_YAW:
-                    target_yaw_rate += waveform_sample*100.0f;
+                    target_yaw_rate_rads += radians(waveform_sample);
                     break;
                 case AxisType::RECOVER_ROLL:
-                    target_roll += waveform_sample*100.0f;
+                    target_roll_rad += radians(waveform_sample);
                     attitude_control->bf_feedforward(false);
                     break;
                 case AxisType::RECOVER_PITCH:
-                    target_pitch += waveform_sample*100.0f;
+                    target_pitch_rad += radians(waveform_sample);
                     attitude_control->bf_feedforward(false);
                     break;
                 case AxisType::RECOVER_YAW:
-                    target_yaw_rate += waveform_sample*100.0f;
+                    target_yaw_rate_rads += radians(waveform_sample);
                     attitude_control->bf_feedforward(false);
                     break;
                 case AxisType::RATE_ROLL:
@@ -350,7 +350,7 @@ void ModeSystemId::run()
     if (!is_poscontrol_axis_type()) {
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(target_roll_rad, target_pitch_rad, target_yaw_rate_rads);
 
         // output pilot's throttle
         attitude_control->set_throttle_out(pilot_throttle_scaled, !copter.is_tradheli(), g.throttle_filt);
@@ -374,10 +374,10 @@ void ModeSystemId::run()
         pos_control->update_NE_controller();
 
         // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading_cds(pos_control->get_thrust_vector(), target_yaw_rate, false);
+        attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), target_yaw_rate_rads, false);
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate);
+        pos_control->set_pos_target_U_from_climb_rate_cm(target_climb_rate_cms);
 
         // run the vertical position controller and set output throttle
         pos_control->update_U_controller();

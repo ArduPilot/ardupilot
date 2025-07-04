@@ -42,7 +42,7 @@
 #include "AP_GPS_MSP.h"
 #include "AP_GPS_ExternalAHRS.h"
 #include "GPS_Backend.h"
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
 #include "AP_GPS_SITL.h"
 #endif
 
@@ -561,9 +561,9 @@ void AP_GPS::send_blob_start(uint8_t instance)
 #if AP_GPS_NOVA_ENABLED
     case GPS_TYPE_NOVA:
 #endif //AP_GPS_NOVA_ENABLED
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
     case GPS_TYPE_SITL:
-#endif  // HAL_SIM_GPS_ENABLED
+#endif  // AP_SIM_GPS_ENABLED
         // none of these GPSs have initialisation blobs
         break;
     default:
@@ -734,10 +734,10 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
         return NEW_NOTHROW AP_GPS_NOVA(*this, params[instance], state[instance], port);
 #endif //AP_GPS_NOVA_ENABLED
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
     case GPS_TYPE_SITL:
         return NEW_NOTHROW AP_GPS_SITL(*this, params[instance], state[instance], port);
-#endif  // HAL_SIM_GPS_ENABLED
+#endif  // AP_SIM_GPS_ENABLED
 
     default:
         break;
@@ -1642,6 +1642,13 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
             const uint32_t crc = crc_crc32(0, buf, len);
 
 #if HAL_LOGGING_ENABLED
+// @LoggerMessage: RTCM
+// @Description: GPS atmospheric perturbation data
+// @Field: TimeUS: Time since system startup
+// @Field: Chan: mavlink channel number this data was received on
+// @Field: RTCMId: ID field from RTCM packet
+// @Field: Len: RTCM packet length
+// @Field: CRC: calculated crc32 for the packet
             AP::logger().WriteStreaming("RTCM", "TimeUS,Chan,RTCMId,Len,CRC", "s#---", "F----", "QBHHI",
                                         AP_HAL::micros64(),
                                         uint8_t(chan),

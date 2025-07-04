@@ -40,8 +40,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
-    _inav(inav),
+AC_Circle::AC_Circle(const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
     _ahrs(ahrs),
     _pos_control(pos_control)
 {
@@ -115,7 +114,7 @@ void AC_Circle::set_center(const Location& center)
             set_center_NEU_cm(Vector3f(center_ne_cm.x, center_ne_cm.y, terr_alt_cm), true);
         } else {
             // failed to convert location so set to current position and log error
-            set_center_NEU_cm(_inav.get_position_neu_cm(), false);
+            set_center_NEU_cm(_pos_control.get_pos_estimate_NEU_cm().tofloat(), false);
             LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
         }
     } else {
@@ -123,7 +122,7 @@ void AC_Circle::set_center(const Location& center)
         Vector3f circle_center_neu_cm;
         if (!center.get_vector_from_origin_NEU_cm(circle_center_neu_cm)) {
             // default to current position and log error
-            circle_center_neu_cm = _inav.get_position_neu_cm();
+            circle_center_neu_cm = _pos_control.get_pos_estimate_NEU_cm().tofloat();
             LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
         }
         set_center_NEU_cm(circle_center_neu_cm, false);
@@ -201,7 +200,7 @@ bool AC_Circle::update_cms(float climb_rate_cms)
         target.y += - _radius_cm * sinf(-_angle_rad);
 
         // heading is from vehicle to center of circle
-        _yaw_cd = get_bearing_cd(_pos_control.get_pos_desired_NEU_cm().xy().tofloat(), _center_neu_cm.tofloat().xy());
+        _yaw_cd = get_bearing_cd(_pos_control.get_pos_desired_NEU_cm().xy().tofloat(), _center_neu_cm.xy().tofloat());
 
         if ((_options.get() & CircleOptions::FACE_DIRECTION_OF_TRAVEL) != 0) {
             _yaw_cd += is_positive(_rate_degs)?-9000.0f:9000.0f;
@@ -210,7 +209,7 @@ bool AC_Circle::update_cms(float climb_rate_cms)
 
     } else {
         // heading is same as _angle_rad but converted to centi-degrees
-        _yaw_cd = _angle_rad * DEGX100;
+        _yaw_cd = rad_to_cd(_angle_rad);
     }
 
     // update position controller target
@@ -276,18 +275,18 @@ void AC_Circle::calc_velocities(bool init_velocity)
 {
     // if we are doing a panorama set the circle_angle to the current heading
     if (_radius_cm <= 0) {
-        _angular_vel_max_rads = ToRad(_rate_degs);
-        _angular_accel_radss = MAX(fabsf(_angular_vel_max_rads),ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));  // reach maximum yaw velocity in 1 second
+        _angular_vel_max_rads = radians(_rate_degs);
+        _angular_accel_radss = MAX(fabsf(_angular_vel_max_rads),radians(AC_CIRCLE_ANGULAR_ACCEL_MIN));  // reach maximum yaw velocity in 1 second
     }else{
         // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
         float vel_max_cms = MIN(_pos_control.get_max_speed_NE_cms(), safe_sqrt(0.5f*_pos_control.get_max_accel_NE_cmss()*_radius_cm));
 
         // angular_velocity in radians per second
         _angular_vel_max_rads = vel_max_cms/_radius_cm;
-        _angular_vel_max_rads = constrain_float(ToRad(_rate_degs),-_angular_vel_max_rads,_angular_vel_max_rads);
+        _angular_vel_max_rads = constrain_float(radians(_rate_degs),-_angular_vel_max_rads,_angular_vel_max_rads);
 
         // angular_velocity in radians per second
-        _angular_accel_radss = MAX(_pos_control.get_max_accel_NE_cmss()/_radius_cm, ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));
+        _angular_accel_radss = MAX(_pos_control.get_max_accel_NE_cmss()/_radius_cm, radians(AC_CIRCLE_ANGULAR_ACCEL_MIN));
     }
 
     // initialise angular velocity
@@ -364,7 +363,7 @@ bool AC_Circle::get_terrain_offset_cm(float& offset_cm)
         float terr_alt = 0.0f;
         AP_Terrain *terrain = AP_Terrain::get_singleton();
         if (terrain != nullptr && terrain->height_above_terrain(terr_alt, true)) {
-            offset_cm = _inav.get_position_z_up_cm() - (terr_alt * 100.0);
+            offset_cm = _pos_control.get_pos_estimate_NEU_cm().z - (terr_alt * 100.0);
             return true;
         }
 #endif

@@ -34,6 +34,10 @@
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
+#ifndef HAL_GCS_ALLOW_PARAM_SET_DEFAULT
+#define HAL_GCS_ALLOW_PARAM_SET_DEFAULT 1
+#endif  // HAL_GCS_IGNORE_PARAM_SET_DEFAULT
+
 // macros used to determine if a message will fit in the space available.
 
 void gcs_out_of_space_to_send(mavlink_channel_t chan);
@@ -293,6 +297,9 @@ public:
 
     uint32_t        last_heartbeat_time; // milliseconds
 
+    // called when valid traffic has been seen from our GCS
+    void sysid_mygcs_seen(uint32_t seen_time_ms);
+
     static uint32_t last_radio_status_remrssi_ms() {
         return last_radio_status.remrssi_ms;
     }
@@ -507,10 +514,28 @@ protected:
     // saveable rate of each stream
     AP_Int16        streamRates[NUM_STREAMS];
 
-    void handle_heartbeat(const mavlink_message_t &msg) const;
+    void handle_heartbeat(const mavlink_message_t &msg);
 
     virtual bool persist_streamrates() const { return false; }
     void handle_request_data_stream(const mavlink_message_t &msg);
+
+    AP_Int16 options;
+    enum class Option : uint16_t {
+        MAVLINK2_SIGNING_DISABLED = (1U << 0),
+        // first bit is reserved for: MAVLINK2_SIGNING_DISABLED = (1U << 0),
+        NO_FORWARD                = (1U << 1),  // don't forward MAVLink data to or from this device
+        NOSTREAMOVERRIDE          = (1U << 2),  // ignore REQUEST_DATA_STREAM messages (eg. from GCSs)
+    };
+    bool option_enabled(Option option) const {
+        return options & static_cast<uint16_t>(option);
+    }
+    void enable_option(Option option) {
+        options.set_and_save(static_cast<uint16_t>(options) | static_cast<uint16_t>(option));
+    }
+    void disable_option(Option option) {
+        options.set_and_save(static_cast<uint16_t>(options) & (~ static_cast<uint16_t>(option)));
+    }
+    AP_Int8 options_were_converted;
 
     virtual void handle_command_ack(const mavlink_message_t &msg);
     void handle_set_mode(const mavlink_message_t &msg);
@@ -786,6 +811,11 @@ private:
     // been deprecated
     uint32_t last_deprecation_warning_send_time_ms;
     const char *last_deprecation_message;
+
+    // time we last saw traffic from our GCS.  Note that there is an
+    // identically named field in GCS:: which is the most recent of
+    // each of the GCS_MAVLINK backends
+    uint32_t _sysid_gcs_last_seen_time_ms;
 
     void service_statustext(void);
 
@@ -1186,7 +1216,8 @@ public:
     uint32_t sysid_mygcs_last_seen_time_ms() const {
         return _sysid_gcs_last_seen_time_ms;
     }
-    // called when valid traffic has been seen from our GCS
+    // called when valid traffic has been seen from our GCS.  This is
+    // usually only called from GCS_MAVLINK::sysid_mygcs_seen(..)!
     void sysid_mygcs_seen(uint32_t seen_time_ms) {
         _sysid_gcs_last_seen_time_ms = seen_time_ms;
     }
@@ -1239,6 +1270,17 @@ public:
     };
     bool option_is_enabled(Option option) const {
         return (mav_options & (uint16_t)option) != 0;
+    }
+
+    // returns true if attempts to set parameters via PARAM_SET or via
+    // file upload in mavftp should be honoured:
+    bool get_allow_param_set() const {
+        return allow_param_set;
+    }
+    // can be used to force sets via PARAM_SET or via mavftp file
+    // upload to be ignored by the GCS library:
+    void set_allow_param_set(bool new_allowed) {
+        allow_param_set = new_allowed;
     }
 
     bool out_of_time() const;
@@ -1308,6 +1350,7 @@ protected:
 
     virtual GCS_MAVLINK *new_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) = 0;
 
+    HAL_Semaphore control_sensors_sem; // protects the three bitmasks
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
@@ -1340,7 +1383,9 @@ private:
 
     void update_sensor_status_flags();
 
-    // time we last saw traffic from our GCS
+    // time we last saw traffic from our GCS.  Note that there is an
+    // identically named field in GCS_MAVLINK:: which is the most
+    // recent time that backend saw traffic from MAV_GCS_SYSID
     uint32_t _sysid_gcs_last_seen_time_ms;
 
     void service_statustext(void);
@@ -1349,6 +1394,11 @@ private:
 #else
     static const uint8_t _status_capacity = 30;
 #endif
+
+    // ephemeral state indicating whether the GCS (including via
+    // PARAM_SET and upload of param values via FTP) should be allowed
+    // to change parameter values:
+    bool allow_param_set = HAL_GCS_ALLOW_PARAM_SET_DEFAULT;
 
     // queue of outgoing statustext messages.  Each entry consumes 58
     // bytes of RAM on stm32

@@ -1154,11 +1154,13 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 
     // check if using compass (i.e. EK3_SRCn_YAW) with deprecated MAG_CAL values (5 was EXTERNAL_YAW, 6 was EXTERNAL_YAW_FALLBACK)
     const int8_t magCalParamVal = _magCal.get();
-    const AP_NavEKF_Source::SourceYaw yaw_source = sources.getYawSource();
-    if (((magCalParamVal == 5) || (magCalParamVal == 6)) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS)) {
-        // yaw source is configured to use compass but MAG_CAL valid is deprecated
-        dal.snprintf(failure_msg, failure_msg_len, "EK3_MAG_CAL and EK3_SRC1_YAW inconsistent");
-        return false;
+    for (uint8_t i = 0; i < num_cores; i++) {
+        const AP_NavEKF_Source::SourceYaw yaw_source = sources.getYawSource(i);
+        if (((magCalParamVal == 5) || (magCalParamVal == 6)) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS)) {
+            // yaw source is configured to use compass but MAG_CAL valid is deprecated
+            dal.snprintf(failure_msg, failure_msg_len, "EK3_MAG_CAL and EK3_SRC1_YAW inconsistent");
+            return false;
+        }
     }
 
     if (!core) {
@@ -1206,7 +1208,7 @@ int8_t NavEKF3::getPrimaryCoreIMUIndex(void) const
 // Write the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF3::getPosNE(Vector2f &posNE) const
+bool NavEKF3::getPosNE(Vector2p &posNE) const
 {
     if (!core) {
         return false;
@@ -1217,7 +1219,7 @@ bool NavEKF3::getPosNE(Vector2f &posNE) const
 // Write the last calculated D position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF3::getPosD(float &posD) const
+bool NavEKF3::getPosD(postype_t &posD) const
 {
     if (!core) {
         return false;
@@ -1566,7 +1568,10 @@ bool NavEKF3::using_extnav_for_yaw() const
 bool NavEKF3::configuredToUseGPSForPosXY(void) const
 {
     // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity, 3 = do not use GPS
-    return  (sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS);
+    if (sources.getPosXYSource(primary) == AP_NavEKF_Source::SourceXY::GPS) {
+        return true;
+    }
+    return false;
 }
 
 // write the raw optical flow measurements
@@ -2019,7 +2024,8 @@ void NavEKF3::updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_prim
 // update the position reset data to capture changes due to a lane switch
 void NavEKF3::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_primary)
 {
-    Vector2f pos_old_primary, pos_new_primary, old_pos_delta;
+    Vector2p pos_old_primary, pos_new_primary;
+    Vector2f old_pos_delta;
 
     // If core position reset data has been consumed reset delta to zero
     if (!pos_reset_data.core_changed) {
@@ -2035,7 +2041,7 @@ void NavEKF3::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_prim
     // Add current delta in case it hasn't been consumed yet
     core[old_primary].getPosNE(pos_old_primary);
     core[new_primary].getPosNE(pos_new_primary);
-    pos_reset_data.core_delta = pos_new_primary - pos_old_primary + pos_reset_data.core_delta;
+    pos_reset_data.core_delta = (pos_new_primary - pos_old_primary).tofloat() + pos_reset_data.core_delta;
     pos_reset_data.last_primary_change = imuSampleTime_us / 1000;
     pos_reset_data.core_changed = true;
 
@@ -2046,7 +2052,8 @@ void NavEKF3::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_prim
 // new primary EKF update has been run
 void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary)
 {
-    float posDownOldPrimary, posDownNewPrimary, oldPosDownDelta;
+    postype_t posDownOldPrimary, posDownNewPrimary;
+    float oldPosDownDelta;
 
     // If core position reset data has been consumed reset delta to zero
     if (!pos_down_reset_data.core_changed) {

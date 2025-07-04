@@ -67,11 +67,11 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @DisplayName: Fence Action
     // @Description: What action should be taken when fence is breached
     // @Values{Copter}: 0:Report Only,1:RTL or Land,2:Always Land,3:SmartRTL or RTL or Land,4:Brake or Land,5:SmartRTL or Land
-    // @Values{Rover}: 0:Report Only,1:RTL or Hold,2:Hold,3:SmartRTL or RTL or Hold,4:SmartRTL or Hold
+    // @Values{Rover}: 0:Report Only,1:RTL or Hold,2:Hold,3:SmartRTL or RTL or Hold,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
     // @Values{Plane}: 0:Report Only,1:RTL,6:Guided,7:GuidedThrottlePass,8:AUTOLAND if possible else RTL
     // @Values: 0:Report Only,1:RTL or Land
     // @User: Standard
-    AP_GROUPINFO("ACTION",      2,  AC_Fence,   _action,        AC_FENCE_ACTION_RTL_AND_LAND),
+    AP_GROUPINFO("ACTION",      2,  AC_Fence,   _action,        float(Action::RTL_AND_LAND)),
 
     // @Param{Copter, Plane, Sub}: ALT_MAX
     // @DisplayName: Fence Maximum Altitude
@@ -760,6 +760,10 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
     clear_breach(~_configured_fences);
     // clear any breach from disabled fences
     clear_breach(fences_to_disable);
+    // clear any margin breach from a non-enabled fence
+    clear_margin_breach(~_configured_fences);
+    // clear any marginbreach from disabled fences
+    clear_margin_breach(fences_to_disable);
 
     if (_min_alt_state == MinAltState::MANUALLY_ENABLED) {
         // if user has manually enabled the min-alt fence then don't auto-disable
@@ -780,6 +784,15 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
         float alt;
         AP::ahrs().get_relative_position_D_home(alt);
 
+        // @LoggerMessage: FENC
+        // @Description: Fence status - development diagnostic message
+        // @Field: TimeUS: Time since system startup
+        // @Field: EN: bitmask of enabled fences
+        // @Field: AE: bitmask of automatically enabled fences
+        // @Field: CF: bitmask of configured-in-parameters fences
+        // @Field: EF: bitmask of enabled fences
+        // @Field: DF: bitmask of currently disabled fences
+        // @Field: Alt: current vehicle altitude
         AP::logger().WriteStreaming("FENC", "TimeUS,EN,AE,CF,EF,DF,Alt", "QIIIIIf",
                                     AP_HAL::micros64(),
                                     enabled(),
@@ -970,6 +983,7 @@ void AC_Fence::clear_margin_breach(uint8_t fence_type)
 /// of the given fences.  fence_type is a bitmask here.
 float AC_Fence::get_breach_distance(uint8_t fence_type) const
 {
+    fence_type = fence_type & present();
     float max = -FLT_MAX;
 
     if (fence_type & AC_FENCE_TYPE_ALT_MAX) {
@@ -1013,7 +1027,7 @@ bool AC_Fence::sys_status_enabled() const
     if (!sys_status_present()) {
         return false;
     }
-    if (_action == AC_FENCE_ACTION_REPORT_ONLY) {
+    if (_action == Action::REPORT_ONLY) {
         return false;
     }
     // Fence is only enabled when the flag is enabled

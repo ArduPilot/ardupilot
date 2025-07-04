@@ -56,6 +56,7 @@ enum class StickMixing {
     FBW      = 1,
     DIRECT_REMOVED = 2,
     VTOL_YAW = 3,
+    FBW_NO_PITCH = 4,
 };
 
 // values for RTL_AUTOLAND

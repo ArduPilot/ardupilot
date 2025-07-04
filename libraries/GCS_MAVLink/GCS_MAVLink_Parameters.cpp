@@ -202,6 +202,24 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("_ADSB",   10, GCS_MAVLINK, streamRates[GCS_MAVLINK::STREAM_ADSB], DRATE(GCS_MAVLINK::STREAM_ADSB)),
+
+    // ------------
+    // IMPORTANT: Add new stream rates *before* the _OPTIONS parameter.
+    // ------------
+
+    // @Param: _OPTIONS
+    // @DisplayName: Bitmask for configuring this telemetry channel
+    // @Description: Bitmask for configuring this telemetry channel. For having effect on all channels, set the relevant mask in all MAVx_OPTIONS parameters. Keep in mind that part of the flags may require a reboot to take action.
+    // @RebootRequired: True
+    // @User: Standard
+    // @Bitmask: 1:Don't forward mavlink to/from, 2:Ignore Streamrate
+    AP_GROUPINFO("_OPTIONS",   20, GCS_MAVLINK, options, 0),
+
+    // PARAMETER_CONVERSION - Added: May-2025 for ArduPilot-4.7
+    // Hidden param used as a flag for param conversion
+    // This allows one time conversion while allowing user to flash between versions with and without converted params
+    AP_GROUPINFO_FLAGS("_OPTIONSCNV",   21, GCS_MAVLINK, options_were_converted, 0, AP_PARAM_FLAG_HIDDEN),
+
     AP_GROUPEND
 };
 #undef DRATE

@@ -16,9 +16,11 @@
 	Simulator Connector for AirSim
 */
 
-#include "SIM_AirSim.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_AIRSIM_ENABLED
+#if AP_SIM_AIRSIM_ENABLED
+
+#include "SIM_AirSim.h"
 
 #include <stdio.h>
 #include <arpa/inet.h>
@@ -431,4 +433,4 @@ void AirSim::report_FPS(void)
     }
 }
 
-#endif  // HAL_SIM_AIRSIM_ENABLED
+#endif  // AP_SIM_AIRSIM_ENABLED

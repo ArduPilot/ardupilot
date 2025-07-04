@@ -49,7 +49,6 @@
 #include <AP_Motors/AP_Motors.h>            // AP Motors library
 #include <Filter/Filter.h>                  // Filter library
 #include <AP_Vehicle/AP_Vehicle.h>          // needed for AHRS build
-#include <AP_InertialNav/AP_InertialNav.h>  // inertial navigation library
 #include <AC_WPNav/AC_WPNav.h>              // ArduCopter waypoint navigation library
 #include <AC_WPNav/AC_Loiter.h>             // ArduCopter Loiter Mode Library
 #include <AC_WPNav/AC_Circle.h>             // circle navigation library
@@ -66,6 +65,7 @@
 #include <AC_AutoTune/AC_AutoTune_Heli.h>   // ArduCopter autotune library. support for autotune of helicopters.
 #include <AP_Parachute/AP_Parachute.h>      // ArduPilot parachute release library
 #include <AC_Sprayer/AC_Sprayer.h>          // Crop sprayer library
+#include <AP_Avoidance/AP_Avoidance.h>      // "ADSB" avoidance library
 #include <AP_ADSB/AP_ADSB.h>                // ADS-B RF based collision avoidance module library
 #include <AP_Proximity/AP_Proximity.h>      // ArduPilot proximity sensor library
 #include <AC_PrecLand/AC_PrecLand_config.h>
@@ -256,8 +256,8 @@ private:
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
 
-    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, inertial_nav, 0U};
-    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, inertial_nav, 1U};
+    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, 0U};
+    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U};
 
     // helper function to get inertially interpolated rangefinder height.
     bool get_rangefinder_height_interpolated_cm(int32_t& ret) const;
@@ -450,7 +450,7 @@ private:
     float super_simple_sin_yaw;
 
     // Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
-    int32_t initial_armed_bearing;
+    float initial_armed_bearing_rad;
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
@@ -471,9 +471,6 @@ private:
     // 3D Location vectors
     // Current location of the vehicle (altitude is relative to home)
     Location current_loc;
-
-    // Inertial Navigation
-    AP_InertialNav inertial_nav;
 
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
@@ -549,7 +546,9 @@ private:
 
 #if HAL_ADSB_ENABLED
     AP_ADSB adsb;
+#endif  // HAL_ADSB_ENABLED
 
+#if AP_ADSB_AVOIDANCE_ENABLED
     // avoidance of adsb enabled vehicles (normally manned vehicles)
     AP_Avoidance_Copter avoidance_adsb{adsb};
 #endif
@@ -764,10 +763,10 @@ private:
     // avoidance.cpp
     void low_alt_avoidance();
 
-#if HAL_ADSB_ENABLED
+#if HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
-#endif
+#endif  // HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
 
     // baro_ground_effect.cpp
     void update_ground_effect_detector(void);
@@ -1082,9 +1081,9 @@ private:
 #if MODE_SYSTEMID_ENABLED
     ModeSystemId mode_systemid;
 #endif
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
     ModeAvoidADSB mode_avoid_adsb;
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 #if MODE_THROW_ENABLED
     ModeThrow mode_throw;
 #endif

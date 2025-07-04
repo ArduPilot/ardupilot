@@ -613,7 +613,7 @@ float AR_AttitudeControl::get_steering_out_heading(float heading_rad, float rate
 // return a desired turn-rate given a desired heading in radians
 float AR_AttitudeControl::get_turn_rate_from_heading(float heading_rad, float rate_max_rads) const
 {
-    const float yaw_error = wrap_PI(heading_rad - AP::ahrs().get_yaw());
+    const float yaw_error = wrap_PI(heading_rad - AP::ahrs().get_yaw_rad());
 
     // Calculate the desired turn rate (in radians) from the angle error (also in radians)
     float desired_rate = _steer_angle_p.get_p(yaw_error);
@@ -884,7 +884,7 @@ float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, float
     }
 
     // initialise output to feed forward from current pitch angle
-    const float pitch_rad = AP::ahrs().get_pitch();
+    const float pitch_rad = AP::ahrs().get_pitch_rad();
     float output = sinf(pitch_rad) * _pitch_to_throttle_ff;
 
     // add regular PID control
@@ -940,7 +940,7 @@ float AR_AttitudeControl::get_sail_out_from_heel(float desired_heel, float dt)
     }
     _heel_controller_last_ms = now;
 
-    _sailboat_heel_pid.update_all(desired_heel, fabsf(AP::ahrs().get_roll()), dt);
+    _sailboat_heel_pid.update_all(desired_heel, fabsf(AP::ahrs().get_roll_rad()), dt);
 
     // get feed-forward
     const float ff = _sailboat_heel_pid.get_ff();

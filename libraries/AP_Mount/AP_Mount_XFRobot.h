@@ -48,6 +48,9 @@ public:
     // set zoom specified as a rate or percentage
     bool set_zoom(ZoomType zoom_type, float zoom_value) override;
 
+    // set camera lens to cycle through pic-in-pic modes
+    bool set_lens(uint8_t lens) override;
+
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
     SetFocusResult set_focus(FocusType focus_type, float focus_value) override;
@@ -111,6 +114,14 @@ private:
         WAITING_FOR_CRC_HIGH,
         WAITING_FOR_CRC_LOW
     };
+
+    // camera image types
+    enum class CameraType : uint8_t {
+        MAIN_PIP_ZOOM_SUB_THERMAL = 1,
+        MAIN_THERMAL_SUB_ZOOM = 2,
+        MAIN_PIP_THERMAL_SUB_ZOOM = 3,
+        MAIN_ZOOM_SUB_THERMAL = 4
+       };
 
     // reading incoming packets from gimbal
     void read_incoming_packets();

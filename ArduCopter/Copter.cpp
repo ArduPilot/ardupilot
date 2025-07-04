@@ -83,7 +83,7 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros, _prio) SCHED_TASK_CLASS(Copter, &copter, func, _interval_ticks, _max_time_micros, _prio)
+#define SCHED_TASK(func, rate_hz, _max_time_micros, _prio) SCHED_TASK_CLASS(Copter, &copter, func, rate_hz, _max_time_micros, _prio)
 #define FAST_TASK(func) FAST_TASK_CLASS(Copter, &copter, func)
 
 /*
@@ -232,9 +232,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if AP_TEMPCALIBRATION_ENABLED
     SCHED_TASK_CLASS(AP_TempCalibration,   &copter.g2.temp_calibration, update,          10, 100, 135),
 #endif
-#if HAL_ADSB_ENABLED
+#if HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
     SCHED_TASK(avoidance_adsb_update, 10,    100, 138),
-#endif
+#endif  // HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,          10,    100, 141),
 #endif
@@ -894,7 +894,7 @@ void Copter::update_super_simple_bearing(bool force_update)
     }
 
     super_simple_last_bearing = bearing;
-    const float angle_rad = radians((super_simple_last_bearing+18000)*0.01f);
+    const float angle_rad = cd_to_rad(super_simple_last_bearing + 18000);
     super_simple_cos_yaw = cosf(angle_rad);
     super_simple_sin_yaw = sinf(angle_rad);
 }
@@ -975,7 +975,6 @@ Copter::Copter(void)
     super_simple_cos_yaw(1.0),
     land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),
     rc_throttle_control_in_filter(1.0f),
-    inertial_nav(ahrs),
     param_loader(var_info)
 {
 }

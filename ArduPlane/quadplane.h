@@ -282,7 +282,7 @@ private:
     float assist_climb_rate_cms(void) const;
 
     // calculate desired yaw rate for assistance
-    float desired_auto_yaw_rate_cds(void) const;
+    float desired_auto_yaw_rate_cds(bool body_frame = false) const;
 
     bool should_relax(void);
     void motors_output(bool run_rate_controller = true);

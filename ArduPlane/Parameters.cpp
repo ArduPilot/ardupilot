@@ -90,8 +90,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing
-    // @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes.  There are two types of stick mixing available. If you set STICK_MIXING to 1 then it will use "fly by wire" mixing, which controls the roll and pitch in the same way that the FBWA mode does. This is the safest option if you usually fly ArduPlane in FBWA or FBWB mode. If you set STICK_MIXING to 3 then it will apply to the yaw while in quadplane modes only, such as while doing an automatic VTOL takeoff or landing.
-    // @Values: 0:Disabled,1:FBWMixing,3:VTOL Yaw only
+    // @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes. There are 3 types of stick mixing available. If you set STICK_MIXING to 1 or 4 then it will use "fly by wire" mixing. 4 will provide roll and yaw control, while 1 also provides FBW-A style pitch control. If you set STICK_MIXING to 3 then it will apply to the yaw while in quadplane modes only, such as while doing an automatic VTOL takeoff or landing. WARNING: FBW-A pitch control does not offer flight envelope protections. Prolonged pitch inputs in mode 1 can result in a stall or overspeed condition, and should be avoided.
+    // @Values: 0:Disabled,1:FBW style,3:VTOL Yaw only,4:FBW style (no pitch)
     // @User: Advanced
     GSCALAR(stick_mixing,           "STICK_MIXING",   uint8_t(StickMixing::FBW)),
 
@@ -264,7 +264,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: RTL_RADIUS
     // @DisplayName: RTL loiter radius
-    // @Description: Defines the radius of the loiter circle when in RTL mode. If this is zero then WP_LOITER_RAD is used. If the radius is negative then a counter-clockwise is used. If positive then a clockwise loiter is used.
+    // @Description: Defines the radius of the loiter circle when in RTL mode. If this is zero then WP_LOITER_RAD is used. If the radius is negative then a counter-clockwise is used. If positive then a clockwise loiter is used. For quadplanes with Q_RTL_MODE set to 1 (Enabled), this value is used to set the minimum radius at which the plane will transition from fixed-wing to VTOL mode for landing.
     // @Units: m
     // @Range: -32767 32767
     // @Increment: 1
@@ -469,7 +469,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: FS_GCS_ENABL
     // @DisplayName: GCS failsafe enable
-    // @Description: Enable ground control station telemetry failsafe. Failsafe will trigger after FS_LONG_TIMEOUT seconds of no MAVLink heartbeat messages. There are three possible enabled settings. Setting FS_GCS_ENABL to 1 means that GCS failsafe will be triggered when the aircraft has not received a MAVLink HEARTBEAT message. Setting FS_GCS_ENABL to 2 means that GCS failsafe will be triggered on either a loss of HEARTBEAT messages, or a RADIO_STATUS message from a MAVLink enabled 3DR radio indicating that the ground station is not receiving status updates from the aircraft, which is indicated by the RADIO_STATUS.remrssi field being zero (this may happen if you have a one way link due to asymmetric noise on the ground station and aircraft radios).Setting FS_GCS_ENABL to 3 means that GCS failsafe will be triggered by Heartbeat(like option one), but only in AUTO mode. WARNING: Enabling this option opens up the possibility of your plane going into failsafe mode and running the motor on the ground it it loses contact with your ground station. If this option is enabled on an electric plane then you should enable ARMING_REQUIRED.
+    // @Description: Enable ground control station telemetry failsafe. Failsafe will trigger after FS_LONG_TIMEOUT seconds of no MAVLink heartbeat messages. There are three possible enabled settings. Setting FS_GCS_ENABL to 1 means that GCS failsafe will be triggered when the aircraft has not received a MAVLink HEARTBEAT message. Note that heartbeat tracking only becomes active after having received the first heartbeat from the MAV_GCS_SYSID primary GCS system. Setting FS_GCS_ENABL to 2 means that GCS failsafe will be triggered on either a loss of HEARTBEAT messages, or a RADIO_STATUS message from a MAVLink enabled telemetry adio indicating that the primary ground station is not receiving status updates from the aircraft, which is indicated by the RADIO_STATUS.remrssi field being zero (this may happen if you have a one way link due to asymmetric noise on the ground station and aircraft radios).Setting FS_GCS_ENABL to 3 means that GCS failsafe will be triggered by Heartbeat(like option one), but only in AUTO mode. WARNING: Enabling this option opens up the possibility of your plane going into failsafe mode and running the motor on the ground it it loses contact with your ground station. If this option is enabled on an electric plane then you should enable ARMING_REQUIRED.
     // @Values: 0:Disabled,1:Heartbeat,2:HeartbeatAndREMRSSI,3:HeartbeatAndAUTO
     // @User: Standard
     GSCALAR(gcs_heartbeat_fs_enabled, "FS_GCS_ENABL", GCS_FAILSAFE_OFF),
@@ -802,11 +802,13 @@ const AP_Param::Info Plane::var_info[] = {
     // @Group: ADSB_
     // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
     GOBJECT(adsb,                "ADSB_", AP_ADSB),
+#endif  // HAL_ADSB_ENABLED
 
+#if AP_ADSB_AVOIDANCE_ENABLED
     // @Group: AVD_
     // @Path: ../libraries/AP_Avoidance/AP_Avoidance.cpp
     GOBJECT(avoidance_adsb, "AVD_", AP_Avoidance_Plane),
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED
 
 #if HAL_QUADPLANE_ENABLED
     // @Group: Q_
@@ -1224,8 +1226,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: Oneshot output mask
     // @Description: Mask of output channels to use oneshot on
     // @User: Advanced
-    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15
-    AP_GROUPINFO("ONESHOT_MASK", 32, ParametersG2, oneshot_mask, 0),
+    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15, 15: Servo 16, 16: Servo 17, 17: Servo 18, 18: Servo 19, 19: Servo 20, 20: Servo 21, 21: Servo 22, 22: Servo 23, 23: Servo 24, 24: Servo 25, 25: Servo 26, 26: Servo 27, 27: Servo 28, 28: Servo 29, 29: Servo 30, 30: Servo 31, 31: Servo 32
+     AP_GROUPINFO("ONESHOT_MASK", 32, ParametersG2, oneshot_mask, 0),
 
 #if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
     // @Group: FOLL
@@ -1363,6 +1365,8 @@ void Plane::load_parameters(void)
         }
     }
 
+
+// PARAMETER_CONVERSION - Added: March 2021 for ArduPlane-4.1
 #if AP_FENCE_ENABLED
     enum ap_var_type ptype_fence_type;
     AP_Int8 *fence_type_new = (AP_Int8*)AP_Param::find("FENCE_TYPE", &ptype_fence_type);
@@ -1410,22 +1414,22 @@ void Plane::load_parameters(void)
     if (AP_Param::find_old_parameter(&fence_action_info_old, &fence_action_old)) {
         enum ap_var_type ptype;
         AP_Int8 *fence_action_new = (AP_Int8*)AP_Param::find(&fence_action_info_old.new_name[0], &ptype);
-        uint8_t fence_action_new_val;
+        AC_Fence::Action fence_action_new_val;
         if (fence_action_new && !fence_action_new->configured()) {
             switch(fence_action_old.get()) {
                 case 0: // FENCE_ACTION_NONE
                 case 2: // FENCE_ACTION_REPORT_ONLY
                 default:
-                    fence_action_new_val = AC_FENCE_ACTION_REPORT_ONLY;
+                    fence_action_new_val = AC_Fence::Action::REPORT_ONLY;
                     break;
                 case 1: // FENCE_ACTION_GUIDED
-                    fence_action_new_val = AC_FENCE_ACTION_GUIDED;
+                    fence_action_new_val = AC_Fence::Action::GUIDED;
                     break;
                 case 3: // FENCE_ACTION_GUIDED_THR_PASS
-                    fence_action_new_val = AC_FENCE_ACTION_GUIDED_THROTTLE_PASS;
+                    fence_action_new_val = AC_Fence::Action::GUIDED_THROTTLE_PASS;
                     break;
                 case 4: // FENCE_ACTION_RTL
-                    fence_action_new_val = AC_FENCE_ACTION_RTL_AND_LAND;
+                    fence_action_new_val = AC_Fence::Action::RTL_AND_LAND;
                     break;
             }
             fence_action_new->set_and_save((int8_t)fence_action_new_val);

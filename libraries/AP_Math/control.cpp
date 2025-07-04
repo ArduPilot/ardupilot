@@ -197,7 +197,7 @@ void shape_vel_accel(float vel_input, float accel_input,
     // velocity correction with input velocity
     accel_target += accel_input;
 
-    // constrain total acceleration from accel_min to accel_max
+    // Constrain total acceleration if limiting is enabled
     if (limit_total_accel) {
         accel_target = constrain_float(accel_target, accel_min, accel_max);
     }
@@ -252,7 +252,7 @@ void shape_vel_accel_xy(const Vector2f& vel_input, const Vector2f& accel_input,
 
     accel_target += accel_input;
 
-    // limit total acceleration to accel_max
+    // Constrain total acceleration if limiting is enabled 
     if (limit_total_accel) {
         accel_target.limit_length(accel_max);
     }
@@ -312,8 +312,8 @@ void shape_pos_vel_accel(postype_t pos_input, float vel_input, float accel_input
     // velocity correction with input velocity
     vel_target += vel_input;
 
-    // limit velocity between vel_min and vel_max
-    if (limit_total) {
+    // Constrain total velocity if limiting is enabled and the velocity range is valid (non-zero and min < max)
+    if (limit_total && (vel_max > vel_min)) {
         vel_target = constrain_float(vel_target, vel_min, vel_max);
     }
 
@@ -351,12 +351,66 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input
     // velocity correction with input velocity
     vel_target = vel_target + vel_input;
     
-    // limit velocity to vel_max
-    if (limit_total) {
+    // Constrain total velocity if limiting is enabled and vel_max is positive 
+    if (limit_total && is_positive(vel_max)) {
         vel_target.limit_length(vel_max);
     }
 
     shape_vel_accel_xy(vel_target, accel_input, vel, accel, accel_max, jerk_max, dt, limit_total);
+}
+
+/* shape_angle_vel_accel calculate a jerk limited path from the current angle, angular velocity and angular acceleration to an input angle, angular velocity and angular acceleration.           
+ The function takes the current angle, angular velocity, and angular acceleration and calculates the required jerk limited adjustment to the angular acceleration for the next time dt.
+ The kinematic path is constrained by :
+    maximum angular velocity - angle_vel_max,
+    maximum angular acceleration - angle_accel_max,
+    maximum angular jerk - angle_jerk_max.
+ The function alters the variable accel to follow a jerk limited kinematic path to angle_input, angle_vel_input and angle_accel_input.
+ The angle_vel_max limit can be removed by setting the desired limit to zero.
+ The correction angular acceleration can is limited to angle_accel_max. If limit_total_accel is true the total angular acceleration is limited to angle_accel_max.
+*/            
+void shape_angle_vel_accel(float angle_input, float angle_vel_input, float angle_accel_input,
+                         float angle, float angle_vel, float& angle_accel,
+                         float angle_vel_max, float angle_accel_max,
+                         float angle_jerk_max, float dt, bool limit_total)
+{
+    // sanity check accel_max
+    if (!is_positive(angle_accel_max)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+        return;
+    }
+
+    // calculate angle error to be corrected
+    // unwrap angle error to achieve fastest path
+    float stopping_time = fabsf(angle_vel / angle_accel_max);
+    float angle_error = angle_input - angle - angle_vel * stopping_time;
+    angle_error = wrap_PI(angle_error);
+    angle_error += angle_vel * stopping_time;
+
+    // Calculate time constants and limits to ensure stable operation
+    // The negative acceleration limit is used here because the square root controller
+    // manages the approach to the setpoint. Therefore the acceleration is in the opposite
+    // direction to the position error.
+    const float angle_accel_tc_max = 0.5 * angle_accel_max;
+    const float KPv = 0.5 * angle_jerk_max / angle_accel_max;
+
+    // velocity to correct position
+    float angle_vel_target = sqrt_controller(angle_error, KPv, angle_accel_tc_max, dt);
+
+    // limit velocity to vel_max
+    if (is_positive(angle_vel_max)){
+        angle_vel_target = constrain_float(angle_vel_target, -angle_vel_max, angle_vel_max);
+    }
+
+    // velocity correction with input velocity
+    angle_vel_target += angle_vel_input;
+
+    // Constrain total velocity if limiting is enabled and angle_vel_max is positive 
+    if (limit_total && is_positive(angle_vel_max)){
+        angle_vel_target = constrain_float(angle_vel_target, -angle_vel_max, angle_vel_max);
+    }
+
+    shape_vel_accel(angle_vel_target, angle_accel_input, angle_vel, angle_accel, -angle_accel_max, angle_accel_max, angle_jerk_max, dt, limit_total);
 }
 
 /* limit_accel_xy limits the acceleration to prioritise acceleration perpendicular to the provided velocity vector.
@@ -528,45 +582,52 @@ float input_expo(float input, float expo)
     return input;
 }
 
-// angle_to_accel converts a maximum lean angle in degrees to an accel limit in m/s/s
-float angle_to_accel(float angle_deg)
+// angle_rad_to_accel_mss converts a maximum lean angle in radians to an accel limit in m/s/s
+float angle_rad_to_accel_mss(float angle_rad)
 {
-    return GRAVITY_MSS * tanf(radians(angle_deg));
+    return GRAVITY_MSS * tanf(angle_rad);
 }
 
-// accel_to_angle converts a maximum accel in m/s/s to a lean angle in degrees
-float accel_to_angle(float accel)
+// angle_deg_to_accel_mss converts a maximum lean angle in degrees to an accel limit in m/s/s
+float angle_deg_to_accel_mss(float angle_deg)
 {
-    return degrees(atanf((accel/GRAVITY_MSS)));
+    return angle_rad_to_accel_mss(radians(angle_deg));
 }
 
-// rc_input_to_roll_pitch - transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
-// roll_in_unit and pitch_in_unit - are normalised roll and pitch stick input
-// angle_max_deg - maximum lean angle from the z axis
-// angle_limit_deg - provides the ability to reduce the maximum output lean angle to less than angle_max_deg
-// returns roll and pitch angle in degrees
-void rc_input_to_roll_pitch(float roll_in_unit, float pitch_in_unit, float angle_max_deg, float angle_limit_deg, float &roll_out_deg, float &pitch_out_deg)
+// accel_mss_to_angle_rad converts a maximum accel in m/s/s to a lean angle in radians
+float accel_mss_to_angle_rad(float accel_mss)
 {
-    angle_max_deg = MIN(angle_max_deg, 85.0);
-    float rc_2_rad = radians(angle_max_deg);
+    return atanf(accel_mss/GRAVITY_MSS);
+}
+
+// accel_mss_to_angle_deg converts a maximum accel in m/s/s to a lean angle in degrees
+float accel_mss_to_angle_deg(float accel_mss)
+{
+    return degrees(accel_mss_to_angle_rad(accel_mss));
+}
+
+// rc_input_to_roll_pitch_rad - transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
+// roll_in_norm and pitch_in_norm - are normalised roll and pitch stick input
+// angle_max_rad - maximum lean angle from the z axis
+// angle_limit_rad - provides the ability to reduce the maximum output lean angle to less than angle_max_deg without changing the scaling
+// returns roll and pitch angle in radians
+void rc_input_to_roll_pitch_rad(float roll_in_norm, float pitch_in_norm, float angle_max_rad, float angle_limit_rad, float &roll_out_rad, float &pitch_out_rad)
+{
+    angle_max_rad = MIN(angle_max_rad, radians(85.0));
 
     // fetch roll and pitch stick positions and convert them to normalised horizontal thrust
     Vector2f thrust;
-    thrust.x = - tanf(rc_2_rad * pitch_in_unit);
-    thrust.y = tanf(rc_2_rad * roll_in_unit);
+    thrust.x = - tanf(angle_max_rad * pitch_in_norm);
+    thrust.y = tanf(angle_max_rad * roll_in_norm);
 
     // calculate the horizontal thrust limit based on the angle limit
-    angle_limit_deg = constrain_float(angle_limit_deg, 10.0f, angle_max_deg);
-    float thrust_limit = tanf(radians(angle_limit_deg));
+    angle_limit_rad = constrain_float(angle_limit_rad, radians(10.0), angle_max_rad);
+    float thrust_limit = tanf(angle_limit_rad);
 
     // apply horizontal thrust limit
     thrust.limit_length(thrust_limit);
 
     // Conversion from angular thrust vector to euler angles.
-    float pitch_rad = - atanf(thrust.x);
-    float roll_rad = atanf(cosf(pitch_rad) * thrust.y);
-
-    // Convert to degrees
-    roll_out_deg = degrees(roll_rad);
-    pitch_out_deg = degrees(pitch_rad);
+    pitch_out_rad = - atanf(thrust.x);
+    roll_out_rad = atanf(cosf(pitch_out_rad) * thrust.y);
 }

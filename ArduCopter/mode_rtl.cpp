@@ -178,7 +178,7 @@ void ModeRTL::climb_return_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've completed this stage of RTL
     _state_complete = wp_nav->reached_wp_destination();
@@ -193,7 +193,7 @@ void ModeRTL::loiterathome_start()
 
     // yaw back to initial take-off heading yaw unless pilot has already overridden yaw
     if (auto_yaw.default_mode(true) != AutoYaw::Mode::HOLD) {
-        auto_yaw.set_mode(AutoYaw::Mode::RESETTOARMEDYAW);
+        auto_yaw.set_mode(AutoYaw::Mode::RESET_TO_ARMED_YAW);
     } else {
         auto_yaw.set_mode(AutoYaw::Mode::HOLD);
     }
@@ -220,13 +220,14 @@ void ModeRTL::loiterathome_run()
     pos_control->update_U_controller();
 
     // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've completed this stage of RTL
     if ((millis() - _loiter_start_time) >= (uint32_t)g.rtl_loiter_time.get()) {
-        if (auto_yaw.mode() == AutoYaw::Mode::RESETTOARMEDYAW) {
+        if (auto_yaw.mode() == AutoYaw::Mode::RESET_TO_ARMED_YAW) {
             // check if heading is within 2 degrees of heading when vehicle was armed
-            if (abs(wrap_180_cd(ahrs.yaw_sensor-copter.initial_armed_bearing)) <= 200) {
+            // todo: Use the target heading instead of the actual heading to allow landing even if yaw control is lost.
+            if (fabsf(wrap_PI(ahrs.get_yaw_rad() - copter.initial_armed_bearing_rad)) <= radians(2.0)) {
                 _state_complete = true;
             }
         } else {
@@ -267,7 +268,7 @@ void ModeRTL::descent_run()
     }
 
     // process pilot's input
-    if (!copter.failsafe.radio) {
+    if (rc().has_valid_input()) {
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
             LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
@@ -306,10 +307,10 @@ void ModeRTL::descent_run()
     pos_control->update_U_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_thrust_vector_heading_cd(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've reached within 20cm of final altitude
-    _state_complete = labs(rtl_path.descent_target.alt - copter.inertial_nav.get_position_z_up_cm()) < 20;
+    _state_complete = labs(rtl_path.descent_target.alt - pos_control->get_pos_estimate_NEU_cm().z) < 20;
 }
 
 // land_start - initialise controllers to loiter over home

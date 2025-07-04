@@ -830,6 +830,17 @@ bool AP_MotorsMulticopter::arming_checks(size_t buflen, char *buffer) const
     return true;
 }
 
+// return raw throttle out fraction for motor motor_num, returns true if value is valid, false otherwise
+bool AP_MotorsMulticopter::get_raw_motor_throttle(uint8_t motor_num, float& thr_out) const
+{
+    if (motor_num >= AP_MOTORS_MAX_NUM_MOTORS || !motor_enabled[motor_num]) {
+        return false;
+    }
+
+    thr_out = constrain_float(_actuator[motor_num], 0.0f, 1.0f);
+    return true;
+}
+
 #if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 // Getters for AP_Motors example, not used by vehicles
 float AP_MotorsMulticopter::get_throttle_avg_max() const

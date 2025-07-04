@@ -43,6 +43,11 @@ bool AP_TemperatureSensor_Backend::healthy(void) const
 #if HAL_LOGGING_ENABLED
 void AP_TemperatureSensor_Backend::Log_Write_TEMP() const
 {
+    // @LoggerMessage: TEMP
+    // @Description: Temperature Sensor Data
+    // @Field: TimeUS: Time since system startup
+    // @Field: Instance: temperature sensor instance
+    // @Field: Temp: temperature
     AP::logger().Write("TEMP",
             "TimeUS,"     "Instance,"       "Temp" , // labels
             "s"               "#"           "O"    , // units

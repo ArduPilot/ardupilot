@@ -47,14 +47,15 @@
 #define HAL_BOARD_SUBTYPE_LINUX_VNAV       1024
 #define HAL_BOARD_SUBTYPE_LINUX_OBAL_V1    1025
 #define HAL_BOARD_SUBTYPE_LINUX_CANZERO    1026
-
+#define HAL_BOARD_SUBTYPE_LINUX_PILOTPI    1027
+#define HAL_BOARD_SUBTYPE_LINUX_POCKET2    1028
 /* HAL CHIBIOS sub-types, starting at 5000
 
    NOTE!! Do not add more subtypes unless they are really needed. Most
    boards do not need a subtype defined. It is only needed if we need
    to use #ifdef'd code to change behaviour
 */
-#define HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412	5000
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412	5000
 #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3         5001
 // #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4         5002
 #define HAL_BOARD_SUBTYPE_CHIBIOS_GENERIC       5009

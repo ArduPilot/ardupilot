@@ -74,11 +74,16 @@ class HWDef:
             ret.append(line)
         return ret
 
+    def running_in_CI(self):
+        return os.getenv("GITHUB_ACTIONS") == "true"
+
     def get_numeric_board_id(self):
         '''return a numeric board ID, which may require mapping a string to a
         number via board_list.txt'''
         some_id = self.get_config('APJ_BOARD_ID')
         if some_id.isnumeric():
+            if self.running_in_CI():
+                raise ValueError(f"Numeric board ID found ({some_id}).  Your APJ_BOARD_ID must not use a number.  Change the number to be the name of the board used in Tools/AP_Bootloader/board_types.txt")  # noqa:E501
             return some_id
 
         board_types_filename = "board_types.txt"
@@ -345,6 +350,7 @@ class HWDef:
             f.write(
                 '#define HAL_MAG_PROBE%u %s ADD_BACKEND(DRIVER_%s, AP_Compass_%s::%s(%s))\n'
                 % (n, wrapper, driver, driver, probe, ','.join(dev[1:])))
+            f.write(f"#undef AP_COMPASS_{driver}_ENABLED\n#define AP_COMPASS_{driver}_ENABLED 1\n")
         if len(devlist) > 0:
             f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
@@ -374,6 +380,7 @@ class HWDef:
             f.write(
                 '#define HAL_BARO_PROBE%u %s ADD_BACKEND(AP_Baro_%s::%s(%s))\n'
                 % (n, wrapper, driver, probe, ','.join(args)))
+            f.write(f"#undef AP_BARO_{driver}_ENABLED\n#define AP_BARO_{driver}_ENABLED 1\n")
         if len(devlist) > 0:
             f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
 

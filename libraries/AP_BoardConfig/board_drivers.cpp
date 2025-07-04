@@ -35,7 +35,7 @@ void AP_BoardConfig::board_init_safety()
 {
     bool force_safety_off = (state.safety_enable.get() == 0);
     if (!force_safety_off && hal.util->was_watchdog_safety_off()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing safety off for watchdog\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing safety off for watchdog");
         force_safety_off = true;
     }
     if (force_safety_off) {
@@ -89,21 +89,10 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_PIXHAWK2:
     case PX4_BOARD_FMUV5:
     case PX4_BOARD_FMUV6:
-    case PX4_BOARD_SP01:
-    case PX4_BOARD_PIXRACER:
     case PX4_BOARD_PHMINI:
     case PX4_BOARD_AUAV21:
     case PX4_BOARD_PH2SLIM:
-    case VRX_BOARD_BRAIN51:
-    case VRX_BOARD_BRAIN52:
-    case VRX_BOARD_BRAIN52E:
-    case VRX_BOARD_UBRAIN51:
-    case VRX_BOARD_UBRAIN52:
-    case VRX_BOARD_CORE10:
-    case VRX_BOARD_BRAIN54:
     case PX4_BOARD_AEROFC:
-    case PX4_BOARD_PIXHAWK_PRO:
-    case PX4_BOARD_PCNC1:
     case PX4_BOARD_MINDPXV2:
     case FMUV6_BOARD_HOLYBRO_6X:
     case FMUV6_BOARD_HOLYBRO_6X_REV6:
@@ -111,7 +100,7 @@ void AP_BoardConfig::board_setup_drivers(void)
     case FMUV6_BOARD_CUAV_6X:
         break;
     default:
-        config_error("Unknown board type");
+        config_error("Unknown board type %u", px4_configured_board);
         break;
     }
 }
@@ -346,38 +335,15 @@ void AP_BoardConfig::board_autodetect(void)
     } else {
         config_error("Unable to detect board type");
     }
-#elif defined(HAL_CHIBIOS_ARCH_FMUV4)
-    // only one choice
-    state.board_type.set_and_notify(PX4_BOARD_PIXRACER);
-    DEV_PRINTF("Detected Pixracer\n");
 #elif defined(HAL_CHIBIOS_ARCH_MINDPXV2)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_MINDPXV2);
     DEV_PRINTF("Detected MindPX-V2\n");
-#elif defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
-    // only one choice
-    state.board_type.set_and_notify(PX4_BOARD_PIXHAWK_PRO);
-    DEV_PRINTF("Detected Pixhawk Pro\n");	
 #elif defined(HAL_CHIBIOS_ARCH_FMUV5)
     state.board_type.set_and_notify(PX4_BOARD_FMUV5);
     DEV_PRINTF("Detected FMUv5\n");
 #elif defined(HAL_CHIBIOS_ARCH_FMUV6)
     detect_fmuv6_variant();
-#elif defined(HAL_CHIBIOS_ARCH_BRAINV51)
-    state.board_type.set_and_notify(VRX_BOARD_BRAIN51);
-    DEV_PRINTF("Detected VR Brain 5.1\n");
-#elif defined(HAL_CHIBIOS_ARCH_BRAINV52)
-    state.board_type.set_and_notify(VRX_BOARD_BRAIN52);
-    DEV_PRINTF("Detected VR Brain 5.2\n");
-#elif defined(HAL_CHIBIOS_ARCH_UBRAINV51)
-    state.board_type.set_and_notify(VRX_BOARD_UBRAIN51);
-    DEV_PRINTF("Detected VR Micro Brain 5.1\n");
-#elif defined(HAL_CHIBIOS_ARCH_COREV10)
-    state.board_type.set_and_notify(VRX_BOARD_CORE10);
-    DEV_PRINTF("Detected VR Core 1.0\n");
-#elif defined(HAL_CHIBIOS_ARCH_BRAINV54)
-    state.board_type.set_and_notify(VRX_BOARD_BRAIN54);
-    DEV_PRINTF("Detected VR Brain 5.4\n");
 #endif
 
 }

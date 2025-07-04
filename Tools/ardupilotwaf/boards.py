@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+# flake8: noqa
+
 from collections import OrderedDict
 import re
 import sys, os
@@ -81,23 +83,45 @@ class Board:
                 AP_SCRIPTING_ENABLED = 0,
             )
 
+        # embed any scripts from ROMFS/scripts
+        if os.path.exists('ROMFS/scripts'):
+            for f in os.listdir('ROMFS/scripts'):
+                if fnmatch.fnmatch(f, "*.lua"):
+                    env.ROMFS_FILES += [('scripts/'+f,'ROMFS/scripts/'+f)]
+
         # allow GCS disable for AP_DAL example
         if cfg.options.no_gcs:
             env.CXXFLAGS += ['-DHAL_GCS_ENABLED=0']
 
-        # configurations for XRCE-DDS
-        if cfg.options.enable_dds:
-            cfg.recurse('libraries/AP_DDS')
-            env.ENABLE_DDS = True
-            env.AP_LIBRARIES += [
-                'AP_DDS'
-            ]
-            env.DEFINES.update(AP_DDS_ENABLED = 1)
-            # check for microxrceddsgen
-            cfg.find_program('microxrceddsgen',mandatory=True)
+        # Setup DDS
+        if env.BOARD_CLASS == "ChibiOS" or env.BOARD_CLASS == "Linux":
+            # need to check the hwdef.h file for the board to see if dds is enabled
+            # the issue here is that we need to configure the env properly to include
+            # the DDS library, but the definition is the the hwdef file
+            # and can be overriden by the commandline options
+            with open(env.BUILDROOT + "/hwdef.h", 'r', encoding="utf8") as file:
+                if "#define AP_DDS_ENABLED 1" in file.read():
+                    # Enable DDS if the hwdef file has it enabled
+                    cfg.env.OPTIONS['enable_DDS'] = True
+                elif cfg.env.OPTIONS.get('enable_DDS', False):
+                    # Add the define enabled if the hwdef file does not have it and the commandline option is set
+                    env.DEFINES.update(
+                        AP_DDS_ENABLED=1,
+                    )
+                else:
+                    # Add the define disabled if the hwdef file does not have it and the commandline option is not set
+                    env.DEFINES.update(
+                        AP_DDS_ENABLED=0,
+                    )
         else:
-            env.ENABLE_DDS = False
-            env.DEFINES.update(AP_DDS_ENABLED = 0)
+            if cfg.options.enable_DDS:
+                env.DEFINES.update(
+                    AP_DDS_ENABLED=1,
+                )
+            else:
+                env.DEFINES.update(
+                    AP_DDS_ENABLED=0,
+                )
 
         # setup for supporting onvif cam control
         if cfg.options.enable_onvif:
@@ -616,7 +640,8 @@ def add_dynamic_boards_from_hwdef_dir(base_type, hwdef_dir):
         if d in _board_classes.keys():
             continue
         hwdef = os.path.join(dirname, d, 'hwdef.dat')
-        if os.path.exists(hwdef):
+        hwdef_bl = os.path.join(dirname, d, 'hwdef-bl.dat')
+        if os.path.exists(hwdef) or os.path.exists(hwdef_bl):
             newclass = type(d, (base_type,), {'name': d})
 
 def add_dynamic_boards_esp32():
@@ -836,12 +861,6 @@ class sitl(Board):
         # include locations.txt so SITL on windows can lookup by name
         env.ROMFS_FILES += [('locations.txt','Tools/autotest/locations.txt')]
 
-        # embed any scripts from ROMFS/scripts
-        if os.path.exists('ROMFS/scripts'):
-            for f in os.listdir('ROMFS/scripts'):
-                if fnmatch.fnmatch(f, "*.lua"):
-                    env.ROMFS_FILES += [('scripts/'+f,'ROMFS/scripts/'+f)]
-
         if cfg.options.sitl_rgbled:
             env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
 
@@ -967,6 +986,7 @@ class sitl_periph(sitl):
             AP_PERIPH_IMU_ENABLED = 0,
             AP_PERIPH_MAG_ENABLED = 0,
             AP_PERIPH_BATTERY_BALANCE_ENABLED = 0,
+            AP_PERIPH_BATTERY_TAG_ENABLED = 0,
             AP_PERIPH_MSP_ENABLED = 0,
             AP_PERIPH_BARO_ENABLED = 0,
             AP_PERIPH_EFI_ENABLED = 0,
@@ -987,6 +1007,7 @@ class sitl_periph(sitl):
             AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED = 0,
             AP_PERIPH_BUZZER_ENABLED = 0,
             AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED = 0,
+            AP_PERIPH_RTC_GLOBALTIME_ENABLED = 0,
         )
 
         try:
@@ -1049,6 +1070,37 @@ class sitl_periph_battmon(sitl_periph):
             APJ_BOARD_ID = 101,
 
             AP_PERIPH_BATTERY_ENABLED = 1,
+        )
+
+class sitl_periph_battery_tag(sitl_periph):
+    def configure_env(self, cfg, env):
+        cfg.env.AP_PERIPH = 1
+        super(sitl_periph_battery_tag, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            HAL_BUILD_AP_PERIPH = 1,
+            PERIPH_FW = 1,
+            CAN_APP_NODE_NAME = '"org.ardupilot.battery_tag"',
+            APJ_BOARD_ID = 101,
+
+            AP_SIM_PARAM_ENABLED = 0,
+            AP_KDECAN_ENABLED = 0,
+            AP_TEMPERATURE_SENSOR_ENABLED = 0,
+            AP_PERIPH_BATTERY_TAG_ENABLED = 1,
+            AP_RTC_ENABLED = 1,
+            AP_PERIPH_RTC_ENABLED = 1,
+            AP_PERIPH_RTC_GLOBALTIME_ENABLED = 1,
+        )
+
+class sitl_periph_can_to_serial(sitl_periph):
+    def configure_env(self, cfg, env):
+        cfg.env.AP_PERIPH = 1
+        super().configure_env(cfg, env)
+        env.DEFINES.update(
+            HAL_BUILD_AP_PERIPH = 1,
+            PERIPH_FW = 1,
+            CAN_APP_NODE_NAME = '"org.ardupilot.serial_passthrough"',
+            APJ_BOARD_ID = 101,
+
         )
 
 class esp32(Board):

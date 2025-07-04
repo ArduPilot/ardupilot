@@ -303,4 +303,4 @@ void ShipSim::send_report(void)
     }
 }
 
-#endif
+#endif  // AP_SIM_SHIP_ENABLED

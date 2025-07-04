@@ -21,6 +21,11 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         return true;
     }
 
+    if (!hal.scheduler->is_system_initialized()) {
+        check_failed(display_failure, "System not initialised");
+        return false;
+    }
+
     // check if motor interlock and either Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
     bool passed = true;
@@ -131,10 +136,12 @@ bool AP_Arming_Copter::barometer_checks(bool display_failure)
         // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
         // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
         // that may differ from the baro height due to baro drift.
-        nav_filter_status filt_status = copter.inertial_nav.get_filter_status();
-        bool using_baro_ref = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
+        const auto &ahrs = AP::ahrs();
+        const bool using_baro_ref = !ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL) && ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS);
+        float pos_d_m = 0;
+        UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
         if (using_baro_ref) {
-            if (fabsf(copter.inertial_nav.get_position_z_up_cm() - copter.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
+            if (fabsf(-pos_d_m * 100.0 - copter.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
                 check_failed(Check::BARO, display_failure, "Altitude disparity");
                 ret = false;
             }
@@ -402,10 +409,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 // check ekf attitude is acceptable
 bool AP_Arming_Copter::pre_arm_ekf_attitude_check()
 {
-    // get ekf filter status
-    nav_filter_status filt_status = copter.inertial_nav.get_filter_status();
-
-    return filt_status.flags.attitude;
+    return AP::ahrs().has_status(AP_AHRS::Status::ATTITUDE_VALID);
 }
 
 #if HAL_PROXIMITY_ENABLED
@@ -715,7 +719,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 
     auto &ahrs = AP::ahrs();
 
-    copter.initial_armed_bearing = ahrs.yaw_sensor;
+    copter.initial_armed_bearing_rad = ahrs.get_yaw_rad();
 
     if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
@@ -730,8 +734,10 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
             // ignore failure
         }
 
-        // remember the height when we armed
-        copter.arming_altitude_m = copter.inertial_nav.get_position_z_up_cm() * 0.01;
+        // remember the height when we armed (ignore failures)
+        float pos_d_m = 0;
+        UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
+        copter.arming_altitude_m = -pos_d_m;
     }
     copter.update_super_simple_bearing(false);
 

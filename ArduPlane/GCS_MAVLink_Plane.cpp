@@ -132,9 +132,9 @@ void GCS_MAVLINK_Plane::send_attitude() const
 {
     const AP_AHRS &ahrs = AP::ahrs();
 
-    float r = ahrs.get_roll();
-    float p = ahrs.get_pitch();
-    float y = ahrs.get_yaw();
+    float r = ahrs.get_roll_rad();
+    float p = ahrs.get_pitch_rad();
+    float y = ahrs.get_yaw_rad();
 
     if (!(plane.flight_option_enabled(FlightOptions::GCS_REMOVE_TRIM_PITCH))) {
         p -= radians(plane.g.pitch_trim);
@@ -545,7 +545,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_preflight_calibration(const mavlink
 void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
                                        const mavlink_message_t &msg)
 {
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
     plane.avoidance_adsb.handle_msg(msg);
 #endif
     GCS_MAVLINK::packetReceived(status, msg);

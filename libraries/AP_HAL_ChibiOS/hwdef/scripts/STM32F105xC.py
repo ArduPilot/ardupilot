@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+# flake8: noqa
 '''
 setup for STM32F105xx
 '''

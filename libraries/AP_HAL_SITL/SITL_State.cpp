@@ -244,10 +244,10 @@ void SITL_State::_fdm_input_local(void)
     // construct servos structure for FDM
     _simulator_servos(input);
 
-#if HAL_SIM_JSON_MASTER_ENABLED
+#if AP_SIM_JSON_MASTER_ENABLED
     // read servo inputs from ride along flight controllers
     ride_along.receive(input);
-#endif
+#endif  // AP_SIM_JSON_MASTER_ENABLED
 
     // replace outputs from multicast
     multicast_servo_update(input);
@@ -265,10 +265,10 @@ void SITL_State::_fdm_input_local(void)
     }
 #endif
 
-#if HAL_SIM_JSON_MASTER_ENABLED
+#if AP_SIM_JSON_MASTER_ENABLED
     // output JSON state to ride along flight controllers
     ride_along.send(_sitl->state,sitl_model->get_position_relhome());
-#endif
+#endif  // AP_SIM_JSON_MASTER_ENABLED
 
     sim_update();
 
@@ -496,8 +496,7 @@ void SITL_State::set_height_agl(void)
     }
 
 #if AP_TERRAIN_AVAILABLE
-    if (_sitl != nullptr &&
-        _sitl->terrain_enable) {
+    if (_sitl->terrain_enable) {
         // get height above terrain from AP_Terrain. This assumes
         // AP_Terrain is working
         float terrain_height_amsl;
@@ -514,10 +513,8 @@ void SITL_State::set_height_agl(void)
     }
 #endif
 
-    if (_sitl != nullptr) {
-        // fall back to flat earth model
-        _sitl->state.height_agl = _sitl->state.altitude - home_alt;
-    }
+    // fall back to flat earth model
+    _sitl->state.height_agl = _sitl->state.altitude - home_alt;
 }
 
 /*

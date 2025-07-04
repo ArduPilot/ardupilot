@@ -282,7 +282,13 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
     float old_value = vp->cast_to_float(var_type);
 
     if (!vp->allow_set_via_mavlink(parameter_flags)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param write denied (%s)", key);
+        // don't warn the user about this failure if we are dropping
+        // messages here.  This is on the assumption that scripting is
+        // currently responsible for setting parameters and may set
+        // the value instead of us.
+        if (gcs().get_allow_param_set()) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param write denied (%s)", key);
+        }
         // send the readonly value
         send_parameter_value(key, var_type, old_value);
         return;

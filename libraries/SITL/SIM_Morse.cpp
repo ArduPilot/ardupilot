@@ -18,7 +18,7 @@
 
 #include "SIM_Morse.h"
 
-#if HAL_SIM_MORSE_ENABLED
+#if AP_SIM_MORSE_ENABLED
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -674,4 +674,4 @@ void Morse::send_report(void)
 }
 #endif  // HAL_GCS_ENABLED
 
-#endif  // HAL_SIM_MORSE_ENABLED
+#endif  // AP_SIM_MORSE_ENABLED

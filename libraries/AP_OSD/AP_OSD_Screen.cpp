@@ -1674,7 +1674,7 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 // draw a arrow at the given angle, and print the given magnitude
 void AP_OSD_Screen::draw_speed(uint8_t x, uint8_t y, float angle_rad, float magnitude)
 {
-    int32_t angle_cd = angle_rad * DEGX100;
+    int32_t angle_cd = rad_to_cd(angle_rad);
     char arrow = get_arrow_font_index(angle_cd);
     if (u_scale(SPEED, magnitude) < 9.95) {
         backend->write(x, y, false, "%c %1.1f%c", arrow, u_scale(SPEED, magnitude), u_icon(SPEED));
@@ -1692,7 +1692,7 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
     float angle = 0;
     const float length = v.length();
     if (length > 1.0f) {
-        angle = atan2f(v.y, v.x) - ahrs.get_yaw();
+        angle = atan2f(v.y, v.x) - ahrs.get_yaw_rad();
     }
     draw_speed(x + 1, y, angle, length);
 }
@@ -1803,7 +1803,7 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
-    uint16_t yaw = ahrs.yaw_sensor / 100;
+    uint16_t yaw = ahrs.get_yaw_deg();
     backend->write(x, y, false, "%3d%c", yaw, SYMBOL(SYM_DEGR));
 }
 
@@ -1947,7 +1947,7 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
         if (check_option(AP_OSD::OPTION_INVERTED_WIND)) {
             angle = M_PI;
         }
-        angle = angle + atan2f(v.y, v.x) - ahrs.get_yaw();
+        angle = angle + atan2f(v.y, v.x) - ahrs.get_yaw_rad();
     } 
     draw_speed(x + 1, y, angle, length);
 
@@ -2219,32 +2219,30 @@ void AP_OSD_Screen::draw_gps_longitude(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_roll_angle(uint8_t x, uint8_t y)
 {
-    AP_AHRS &ahrs = AP::ahrs();
-    uint16_t roll = abs(ahrs.roll_sensor) / 100;
+    const float roll_deg = AP::ahrs().get_roll_deg();
     char r;
-    if (ahrs.roll_sensor > 50) {
+    if (roll_deg > 0.5) {
         r = SYMBOL(SYM_ROLLR);
-    } else if (ahrs.roll_sensor < -50) {
+    } else if (roll_deg < -0.5) {
         r = SYMBOL(SYM_ROLLL);
     } else {
         r = SYMBOL(SYM_ROLL0);
     }
-    backend->write(x, y, false, "%c%3d%c", r, roll, SYMBOL(SYM_DEGR));
+    backend->write(x, y, false, "%c%3d%c", r, int(fabsf(roll_deg)), SYMBOL(SYM_DEGR));
 }
 
 void AP_OSD_Screen::draw_pitch_angle(uint8_t x, uint8_t y)
 {
-    AP_AHRS &ahrs = AP::ahrs();
-    uint16_t pitch = abs(ahrs.pitch_sensor) / 100;
+    const float pitch_deg = AP::ahrs().get_pitch_deg();
     char p;
-    if (ahrs.pitch_sensor > 50) {
+    if (pitch_deg > 0.5) {
         p = SYMBOL(SYM_PTCHUP);
-    } else if (ahrs.pitch_sensor < -50) {
+    } else if (pitch_deg < -0.5) {
         p = SYMBOL(SYM_PTCHDWN);
     } else {
         p = SYMBOL(SYM_PTCH0);
     }
-    backend->write(x, y, false, "%c%3d%c", p, pitch, SYMBOL(SYM_DEGR));
+    backend->write(x, y, false, "%c%3d%c", p, int(fabsf(pitch_deg)), SYMBOL(SYM_DEGR));
 }
 
 void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)

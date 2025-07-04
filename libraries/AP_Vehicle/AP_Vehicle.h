@@ -71,6 +71,7 @@
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <Filter/AP_Filter.h>
 #include <AP_Stats/AP_Stats.h>              // statistics library
+#include <AP_DDS/AP_DDS_config.h>
 #if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif

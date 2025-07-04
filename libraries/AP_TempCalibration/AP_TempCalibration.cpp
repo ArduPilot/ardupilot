@@ -34,6 +34,10 @@ extern const AP_HAL::HAL& hal;
 # define debug(fmt, args ...)
 #endif
 
+#ifndef HAL_TCAL_BARO_EXP_DEFAULT
+#define HAL_TCAL_BARO_EXP_DEFAULT 0.0f
+#endif
+
 // table of user settable and learned parameters
 const AP_Param::GroupInfo AP_TempCalibration::var_info[] = {
 
@@ -70,7 +74,7 @@ const AP_Param::GroupInfo AP_TempCalibration::var_info[] = {
     // @ReadOnly: True
     // @Volatile: True
     // @User: Advanced
-    AP_GROUPINFO("_BARO_EXP", 5, AP_TempCalibration, baro_exponent, 0),
+    AP_GROUPINFO("_BARO_EXP", 5, AP_TempCalibration, baro_exponent, HAL_TCAL_BARO_EXP_DEFAULT),
     
     AP_GROUPEND
 };
