@@ -44,6 +44,11 @@ void ModeAuto::switch_state(ModeAuto::State st)
                 break;
         }
         _state = st;
+
+        // NOTE: setting SAFE_DISARM_PWM to 1 will cause servos to go into trim when suppressed
+        if (_state == State::SUPPRESSED || _state == State::IDLE) {
+            tracker.stop_servos();
+        }
     }
 }
 

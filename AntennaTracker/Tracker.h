@@ -191,6 +191,7 @@ private:
     void update_yaw_position_servo(void);
     void update_yaw_onoff_servo(float yaw) const;
     void update_yaw_cr_servo(float yaw);
+    void stop_servos();
 
     // system.cpp
     void init_ardupilot() override;

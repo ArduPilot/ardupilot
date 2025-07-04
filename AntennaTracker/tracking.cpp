@@ -106,17 +106,7 @@ void Tracker::update_tracking(void)
     }
     // do not move if we are not armed:
     if (!hal.util->get_soft_armed()) {
-        switch ((PWMDisarmed)g.disarm_pwm.get()) {
-        case PWMDisarmed::TRIM:
-            SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, 0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, 0);
-            break;
-        default:
-        case PWMDisarmed::ZERO:
-            SRV_Channels::set_output_pwm(SRV_Channel::k_tracker_yaw, 0);
-            SRV_Channels::set_output_pwm(SRV_Channel::k_tracker_pitch, 0);
-            break;
-        }
+        tracker.stop_servos();
     } else {
         mode->update();
     }
