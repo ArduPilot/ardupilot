@@ -95,17 +95,44 @@ void AP_AIS::init()
     }
 
     _uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_AIS, 0);
-    if (_uart == nullptr) {
-        return;
+    if (_uart != nullptr) {
+        _uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_AIS, 0));
     }
 
-    _uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_AIS, 0));
 }
 
 // update AIS, expected to be called at 20hz
 void AP_AIS::update()
 {
-    if (!_uart || !enabled()) {
+    if (!enabled()) {
+        return;
+    }
+
+    // remove expired items from the list
+    const uint32_t now_ms =  AP_HAL::millis();
+    const uint32_t timeout_ms = MAX(_time_out.get(), 1) * 1000;
+    for (uint16_t i = 0; i < _list.max_items(); i++) {
+        if (_list[i].last_update_ms != 0 && now_ms - _list[i].last_update_ms >= timeout_ms) {
+            clear_list_item(i);
+        }
+    }
+
+#if 1
+    if (_type.get() == 2) {
+        mavlink_ais_vessel_t packet {};
+
+        packet.MMSI = 131313131;
+        packet.lat = -35.3621640 *1e7;
+        packet.lon = 149.1658536 *1e7;
+        strcpy(packet.callsign, "test1");
+        strcpy(packet.name, "test2");
+
+        handle_message(packet);
+    }
+#endif
+
+
+    if (_uart == nullptr) {
         return;
     }
 
@@ -230,20 +257,7 @@ void AP_AIS::update()
                 }
             }
         }
-    }
-
-    // remove expired items from the list
-    const uint32_t now =  AP_HAL::millis();
-    const uint32_t timeout = _time_out * 1000;
-    if (now < timeout) {
-        return;
-    }
-    const uint32_t deadline = now - timeout;
-    for (uint16_t i = 0; i < _list.max_items(); i++) {
-        if (_list[i].last_update_ms < deadline && _list[i].last_update_ms != 0) {
-            clear_list_item(i);
-        }
-    }
+    } // while
 }
 
 // Send a AIS mavlink message
@@ -271,6 +285,25 @@ void AP_AIS::send(mavlink_channel_t chan)
                 return;
         }
     }
+}
+
+void AP_AIS::handle_message(const mavlink_ais_vessel_t &packet)
+{
+    if (!enabled()) {
+        return;
+    }
+
+    uint16_t index;
+    if (!get_vessel_index(packet.MMSI, index)) {
+        // not found and not enough memory to add it
+        return;
+    }
+    memcpy(&_list[index].info, &packet, sizeof(mavlink_ais_vessel_t));
+    _list[index].last_update_ms = AP_HAL::millis();
+
+#if AP_OADATABASE_ENABLED
+    send_to_object_avoidance_database(_list[index]);
+#endif
 }
 
 #if AP_OADATABASE_ENABLED
@@ -1043,6 +1076,7 @@ bool AP_AIS::enabled() const { return false; }
 void AP_AIS::init() {};
 void AP_AIS::update() {};
 void AP_AIS::send(mavlink_channel_t chan) {};
+void AP_AIS::handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg) {}
 
 AP_AIS *AP_AIS::get_singleton() { return nullptr; }
 
