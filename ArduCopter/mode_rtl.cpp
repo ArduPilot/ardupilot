@@ -550,19 +550,19 @@ bool ModeRTL::use_pilot_yaw(void) const
     return allow_yaw_option || land_repositioning || final_landing;
 }
 
-bool ModeRTL::set_speed_xy(float speed_xy_cms)
+bool ModeRTL::set_speed_xy_cms(float speed_xy_cms)
 {
     copter.wp_nav->set_speed_NE_cms(speed_xy_cms);
     return true;
 }
 
-bool ModeRTL::set_speed_up(float speed_up_cms)
+bool ModeRTL::set_speed_up_cms(float speed_up_cms)
 {
     copter.wp_nav->set_speed_up_cms(speed_up_cms);
     return true;
 }
 
-bool ModeRTL::set_speed_down(float speed_down_cms)
+bool ModeRTL::set_speed_down_cms(float speed_down_cms)
 {
     copter.wp_nav->set_speed_down_cms(speed_down_cms);
     return true;

@@ -647,21 +647,21 @@ bool ModeAuto::use_pilot_yaw(void) const
     return allow_yaw_option || rtl_allow_yaw || landing;
 }
 
-bool ModeAuto::set_speed_xy(float speed_xy_cms)
+bool ModeAuto::set_speed_xy_cms(float speed_xy_cms)
 {
     copter.wp_nav->set_speed_NE_cms(speed_xy_cms);
     desired_speed_override.xy = speed_xy_cms * 0.01;
     return true;
 }
 
-bool ModeAuto::set_speed_up(float speed_up_cms)
+bool ModeAuto::set_speed_up_cms(float speed_up_cms)
 {
     copter.wp_nav->set_speed_up_cms(speed_up_cms);
     desired_speed_override.up = speed_up_cms * 0.01;
     return true;
 }
 
-bool ModeAuto::set_speed_down(float speed_down_cms)
+bool ModeAuto::set_speed_down_cms(float speed_down_cms)
 {
     copter.wp_nav->set_speed_down_cms(speed_down_cms);
     desired_speed_override.down = speed_down_cms * 0.01;

@@ -501,8 +501,18 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
     switch (packet.command) {
 
     case MAV_CMD_DO_CHANGE_SPEED:
-        // param1 : unused
+        // param1 : type
         // param2 : new speed in m/s
+        switch (SPEED_TYPE(packet.param1)) {
+            case SPEED_TYPE_CLIMB_SPEED:
+            case SPEED_TYPE_DESCENT_SPEED:
+            case SPEED_TYPE_ENUM_END:
+                return MAV_RESULT_DENIED;
+
+            case SPEED_TYPE_AIRSPEED: // Airspeed is treated as ground speed for GCS compatibility
+            case SPEED_TYPE_GROUNDSPEED:
+                break;
+        }
         if (!rover.control_mode->set_desired_speed(packet.param2)) {
             return MAV_RESULT_FAILED;
         }

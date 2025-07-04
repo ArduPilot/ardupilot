@@ -960,16 +960,16 @@ void Plane::do_loiter_at_location()
 bool Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     return do_change_speed(
-        (uint8_t)cmd.content.speed.speed_type,
+        (SPEED_TYPE)cmd.content.speed.speed_type,
         cmd.content.speed.target_ms,
          cmd.content.speed.throttle_pct
         );
 }
 
-bool Plane::do_change_speed(uint8_t speedtype, float speed_target_ms, float throttle_pct)
+bool Plane::do_change_speed(SPEED_TYPE speedtype, float speed_target_ms, float throttle_pct)
 {
     switch (speedtype) {
-    case 0:             // Airspeed
+    case SPEED_TYPE_AIRSPEED:
         if (is_equal(speed_target_ms, -2.0f)) {
             new_airspeed_cm = -1; // return to default airspeed
             return true;
@@ -980,10 +980,15 @@ bool Plane::do_change_speed(uint8_t speedtype, float speed_target_ms, float thro
             return true;
         }
         break;
-    case 1:             // Ground speed
+    case SPEED_TYPE_GROUNDSPEED:
         gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)speed_target_ms);
         aparm.min_groundspeed.set(speed_target_ms);
         return true;
+
+    case SPEED_TYPE_CLIMB_SPEED:
+    case SPEED_TYPE_DESCENT_SPEED:
+    case SPEED_TYPE_ENUM_END:
+        break;
     }
 
     if (throttle_pct > 0 && throttle_pct <= 100) {
