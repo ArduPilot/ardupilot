@@ -332,6 +332,11 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     }
 #endif
 
+    if (rc().in_rc_failsafe() && !new_flightmode->allows_entry_in_rc_failsafe()) {
+        mode_change_failed(new_flightmode, "in RC failsafe");
+        return false;
+    }
+
     if (!new_flightmode->init(ignore_checks)) {
         mode_change_failed(new_flightmode, "init failed");
         return false;
