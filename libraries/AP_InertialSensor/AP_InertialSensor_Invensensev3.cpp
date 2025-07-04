@@ -130,6 +130,7 @@ extern const AP_HAL::HAL& hal;
 
 // ICM42xxx specific registers
 #define INV3REG_42XXX_INTF_CONFIG1  0x4d
+#define INV3REG_42XXX_INTF_CONFIG5  0x7b    // bank1
 
 // WHOAMI values
 #define INV3_ID_ICM40605      0x33
@@ -873,7 +874,19 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
           producing constant output which causes a DC gyro bias
         */
         const uint8_t v = register_read(INV3REG_42XXX_INTF_CONFIG1);
+#if defined(INVENSENSEV3_CLKIN_BITMASK)
+        // we only support setting RTC MODE on IIM42652 now
+        if ((INVENSENSEV3_CLKIN_BITMASK & (1U << gyro_instance)) && (inv3_type == Invensensev3_Type::IIM42652)) {
+            // disable the AFSR feature and enable RTC MODE
+            register_write(INV3REG_42XXX_INTF_CONFIG1, (v & 0x3F) | 0x44, true);
+            const uint8_t intf_config5 = register_read_bank(1, INV3REG_42XXX_INTF_CONFIG5);
+            register_write_bank(1, INV3REG_42XXX_INTF_CONFIG5, (intf_config5 & ~0x06) | 0x04);
+        } else {
+            register_write(INV3REG_42XXX_INTF_CONFIG1, (v & 0x3F) | 0x40, true);
+        }
+#else
         register_write(INV3REG_42XXX_INTF_CONFIG1, (v & 0x3F) | 0x40, true);
+#endif
         break;
     }
     case Invensensev3_Type::ICM40605:
