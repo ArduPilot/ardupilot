@@ -23,7 +23,7 @@ import pathlib
 try:
     import vehicle_test_suite
     from pysim import util
-except ImportError:  # Fall back to a relative import in pytest
+except (ImportError, ModuleNotFoundError):  # Fall back to a relative import in pytest
     from . import vehicle_test_suite
     from .pysim import util
 
