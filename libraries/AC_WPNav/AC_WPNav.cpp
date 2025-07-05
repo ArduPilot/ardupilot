@@ -610,7 +610,7 @@ bool AC_WPNav::update_wpnav()
 
     // advance the target if necessary
     bool ret = true;
-    if (!advance_wp_target_along_track(_pos_control.get_dt())) {
+    if (!advance_wp_target_along_track(_pos_control.get_dt_s())) {
         // To-Do: handle inability to advance along track (probably because of missing terrain data)
         ret = false;
     }

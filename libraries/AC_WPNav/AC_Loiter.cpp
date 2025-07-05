@@ -218,7 +218,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     float ekfGndSpdLimit, ahrsControlScaleXY;
     AP::ahrs().getControlLimits(ekfGndSpdLimit, ahrsControlScaleXY);
 
-    const float dt = _pos_control.get_dt();
+    const float dt = _pos_control.get_dt_s();
 
     // calculate a loiter speed limit which is the minimum of the value set by the LOITER_SPEED
     // parameter and the value set by the EKF to observe optical flow limits
