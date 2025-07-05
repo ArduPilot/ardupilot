@@ -490,7 +490,10 @@ void AC_PrecLand::handle_msg(const mavlink_landing_target_t &packet, uint32_t ti
 
 void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
+    // Set inertial_data_delayed to the oldest sensor data in the buffer, by default.
     _inertial_data_delayed = (*_inertial_history)[0];
+    // construct_pos_meas_using_rangefinder() is then called which attempts to match timestamped
+    //  sensor frame and overwrites _target_pos_rel_meas_NED calculated from matched inertial frame, if available
 
     switch ((EstimatorType)_estimator_type.get()) {
         case EstimatorType::RAW_SENSOR: {
@@ -645,7 +648,8 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
 {
     Vector3f target_vec_unit_body;
     if (retrieve_los_meas(target_vec_unit_body)) {
-        _inertial_data_delayed = (*_inertial_history)[0];
+        // Match sensor and inertial frames or push front of buffer, into _inertial_data_delayed
+        sync_frames(_last_backend_los_meas_ms);
 
         const bool target_vec_valid = target_vec_unit_body.projected(_approach_vector_body).dot(_approach_vector_body) > 0.0f;
         const Vector3f target_vec_unit_ned = _inertial_data_delayed->Tbn * target_vec_unit_body;
@@ -691,13 +695,60 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
     return false;
 }
 
+// Set the active inertial frame, based on either sensor timestamp (higher priority) or PLND_LAG parameter
+// Return true if sensor does not send timestamp and front of buffer is used, or if sensor timestamp is successfully synced
+// Return false otherwise, so invalid sync is not propagated
+bool AC_PrecLand::sync_frames(const uint32_t los_meas_time_ms)
+{
+    uint64_t minimum_delta_us = UINT32_MAX * 1000UL;
+    uint16_t nearest_index = 0;  // If timestamp isn't set, use the oldest inertial buffer frame
+    // Retrieve timestamp from backend measurement.  If not zero, attempt to correlate with inertial history.
+    const uint64_t los_meas_time_us = los_meas_time_ms * 1000UL;  // overflows after approximately 49.7 days
+    if (los_meas_time_us != 0UL) {
+        // Search through inertial history for the nearest frame to the measurement timestamp
+        for (uint8_t i=0; i<_inertial_history->available(); i++) {
+            uint64_t delta_us;
+            uint64_t ih_point_us = (*_inertial_history)[i]->time_usec; // overflows after approximately 584 554.531 years
+            // line-of-sight measurement time (los_meas_time_ms) was in ms and overflows at this point
+            // so we remove it from the IMU so that the two timestamps can be compared
+            while (ih_point_us >= (UINT32_MAX + 1UL) * 1000UL) {
+                ih_point_us -= (UINT32_MAX + 1UL) * 1000UL; // subtract units of 49,7 days
+            }
+            // doing the comparison makes sure time wraps can be handled bellow
+            // warning the wrap point is NOT UINT64_MAX but (UINT32_MAX + 1) * 1000UL
+            if (ih_point_us > los_meas_time_us) {
+                delta_us = ih_point_us - los_meas_time_us;
+            } else {
+                delta_us = los_meas_time_us - ih_point_us;
+            }
+            // deal with time wraps
+            if (delta_us > UINT32_MAX * 1000UL / 2UL) {
+                delta_us = (UINT32_MAX + 1UL) * 1000UL - delta_us;
+            }
+            if (delta_us < minimum_delta_us) {
+                minimum_delta_us = delta_us;
+                nearest_index = i;
+            }
+        }
+        // If the nearest timestamp delta is longer than a frame, it's after the last frame or before the first, so reject
+        if (minimum_delta_us > AP::scheduler().get_loop_period_us()) {
+            _inertial_frame_index = 0;
+            _inertial_data_delayed = (*_inertial_history)[_inertial_frame_index];
+            return false;
+        }
+    }
+    _inertial_frame_index = nearest_index;
+    _inertial_data_delayed = (*_inertial_history)[_inertial_frame_index];
+    return true;
+}
+
 void AC_PrecLand::run_output_prediction()
 {
     _target_pos_rel_out_NE = _target_pos_rel_est_NE;
     _target_vel_rel_out_NE = _target_vel_rel_est_NE;
 
     // Predict forward from delayed time horizon
-    for (uint8_t i=1; i<_inertial_history->available(); i++) {
+    for (uint8_t i=1+_inertial_frame_index; i<_inertial_history->available(); i++) {
         const struct inertial_data_frame_s *inertial_data = (*_inertial_history)[i];
         _target_vel_rel_out_NE.x -= inertial_data->correctedVehicleDeltaVelocityNED.x;
         _target_vel_rel_out_NE.y -= inertial_data->correctedVehicleDeltaVelocityNED.y;
