@@ -1,0 +1,56 @@
+# hw definition file for SpeedyBee F405 WING V2 hardware
+
+include ../SpeedyBeeF405WING/hwdef.dat
+
+undef APJ_BOARD_ID
+undef IMU
+undef DEFAULT_NTF_LED_TYPES
+
+# undefine the pins we are going to change for SpeedyBeeF405WINGV2
+undef PC6 PC7 PC5 PB15 PA8
+
+# Re-defining the new configuration for SpeedyBeeF405WINGV2
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_SpeedyBeeF405WINGV2
+
+# USART1 (onboard Telemetry)
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_MAVLink2
+define DEFAULT_SERIAL1_BAUD 115
+
+# USART3 (DJI / VTX)
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_None
+define DEFAULT_SERIAL3_BAUD 115
+
+# UART4 (USER)
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_None
+define DEFAULT_SERIAL4_BAUD 115
+
+# UART5 (GPS)
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_GPS
+define DEFAULT_SERIAL5_BAUD 115
+
+# USART6 (ELRS)
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+define DEFAULT_SERIAL6_BAUD 115
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_RCIN
+
+
+# analog airspeed pin，0-6.6V
+PC5 PRESSURE_SENS     ADC1 SCALE(2)
+define HAL_DEFAULT_AIRSPEED_PIN 15
+
+# PWM out pins.  V2 has different motor mapping
+PB15 TIM1_CH3N TIM1 PWM(11) GPIO(60) NODMA
+PA8  TIM1_CH1 TIM1 PWM(12) GPIO(61) NODMA
+
+# Define DMA priority adjustments for SpeedyBeeF405WINGV2
+DMA_PRIORITY USART1* USART6* TIM4_UP TIM3_UP TIM8_UP TIM2_UP SPI1* SPI2* I2C1_RX I2C_TX SPI3_RX SPI3_TX
+DMA_NOSHARE SPI1* TIM4_UP TIM3_UP TIM8_UP TIM2_UP SPI3_RX
+
+# ICM42688P on SPI1
+SPIDEV icm42688 SPI1 DEVID1  MPU_CS  MODE3  2*MHZ  8*MHZ
+
+# one IMU
+IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180_YAW_270
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
