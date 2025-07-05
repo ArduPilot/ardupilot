@@ -459,7 +459,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     if (_terrain_alt && !get_terrain_offset_cm(terr_offset_u_cm)) {
         return false;
     }
-    const float offset_u_scalar = _pos_control.pos_terrain_U_scaler(terr_offset_u_cm, get_terrain_margin_m() * 100.0);
+    const float offset_u_scalar = _pos_control.pos_terrain_U_scaler_cm(terr_offset_u_cm, get_terrain_margin_m() * 100.0);
 
     // input shape the terrain offset
     _pos_control.set_pos_terrain_target_U_cm(terr_offset_u_cm);
