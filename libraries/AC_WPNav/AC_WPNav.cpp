@@ -459,7 +459,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     if (_terrain_alt && !get_terrain_offset_cm(terr_offset_u_cm)) {
         return false;
     }
-    const float offset_u_scalar = _pos_control.pos_terrain_U_scaler(terr_offset_u_cm, get_terrain_margin_m() * 100.0);
+    const float offset_u_scalar = _pos_control.pos_terrain_U_scaler_cm(terr_offset_u_cm, get_terrain_margin_m() * 100.0);
 
     // input shape the terrain offset
     _pos_control.set_pos_terrain_target_U_cm(terr_offset_u_cm);
@@ -604,7 +604,7 @@ bool AC_WPNav::update_wpnav()
 
     // advance the target if necessary
     bool ret = true;
-    if (!advance_wp_target_along_track(_pos_control.get_dt())) {
+    if (!advance_wp_target_along_track(_pos_control.get_dt_s())) {
         // To-Do: handle inability to advance along track (probably because of missing terrain data)
         ret = false;
     }

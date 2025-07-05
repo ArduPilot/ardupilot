@@ -74,10 +74,10 @@ public:
 
     // Sets the internal controller timestep (in seconds).
     // This is the elapsed time since the last controller update and is used in rate and smoothing calculations.
-    void set_dt(float dt) { _dt = dt; }
+    void set_dt_s(float dt_s) { _dt_s = dt_s; }
 
     // Returns the internal controller timestep (in seconds).
-    float get_dt() const { return _dt; }
+    float get_dt_s() const { return _dt_s; }
 
     // pid accessors
     AC_P& get_angle_roll_p() { return _p_angle_roll; }
@@ -621,7 +621,7 @@ protected:
     uint64_t            _rate_gyro_time_us;
 
     // Intersampling period in seconds
-    float               _dt;
+    float               _dt_s;
 
     // This represents a 321-intrinsic rotation in NED frame to the target (setpoint)
     // attitude used in the attitude controller, in radians.

@@ -344,7 +344,7 @@ void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
     }
 
     float althold_lean_angle_max = acosf(constrain_float(throttle_in / (AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
-    _althold_lean_angle_max_rad = _althold_lean_angle_max_rad + (_dt / (_dt + _angle_limit_tc)) * (althold_lean_angle_max - _althold_lean_angle_max_rad);
+    _althold_lean_angle_max_rad = _althold_lean_angle_max_rad + (_dt_s / (_dt_s + _angle_limit_tc)) * (althold_lean_angle_max - _althold_lean_angle_max_rad);
 }
 
 void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
@@ -417,10 +417,10 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
     // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
     if (_throttle_rpy_mix < _throttle_rpy_mix_desired) {
         // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
-        _throttle_rpy_mix += MIN(2.0f * _dt, _throttle_rpy_mix_desired - _throttle_rpy_mix);
+        _throttle_rpy_mix += MIN(2.0f * _dt_s, _throttle_rpy_mix_desired - _throttle_rpy_mix);
     } else if (_throttle_rpy_mix > _throttle_rpy_mix_desired) {
         // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
-        _throttle_rpy_mix -= MIN(0.5f * _dt, _throttle_rpy_mix - _throttle_rpy_mix_desired);
+        _throttle_rpy_mix -= MIN(0.5f * _dt_s, _throttle_rpy_mix - _throttle_rpy_mix_desired);
 
         // if the mix is still higher than that being used, reset immediately
         const float throttle_hover = _motors.get_throttle_hover();
@@ -479,7 +479,7 @@ void AC_AttitudeControl_Multi::rate_controller_target_reset()
 void AC_AttitudeControl_Multi::rate_controller_run()
 {
     Vector3f gyro_latest_rads = _ahrs.get_gyro_latest();
-    rate_controller_run_dt(gyro_latest_rads, _dt);
+    rate_controller_run_dt(gyro_latest_rads, _dt_s);
 }
 
 // sanity check parameters.  should be called once before takeoff
