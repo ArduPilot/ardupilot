@@ -187,6 +187,16 @@ class Board:
             )
             cfg.msg("Enabled custom controller", 'no', color='YELLOW')
 
+        # Allow enabling for custom FAST_TASK for any board
+        if cfg.options.enable_custom_fasttask:
+            env.AP_LIBRARIES += [
+                'AC_CustomFastTask'
+            ]
+            cfg.msg("Enabled custom fast task", 'yes')
+            env.DEFINES.update(
+                CUSTOM_FASTTASK_ENABLED=1,
+            )
+
         # support enabling any option in build_options.py
         for opt in build_options.BUILD_OPTIONS:
             enable_option = opt.config_option().replace("-","_")
