@@ -375,6 +375,9 @@
 #ifndef AP_RPM_ENABLED
 #define AP_RPM_ENABLED AP_PERIPH_RPM_ENABLED
 #endif
+#ifndef AP_TEMPERATURE_SENSOR_ENABLED
+#define AP_TEMPERATURE_SENSOR_ENABLED AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
+#endif
 
 /*
  * GPS Backends - we selectively turn backends on.
