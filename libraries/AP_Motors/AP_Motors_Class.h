@@ -187,11 +187,11 @@ public:
     // get_spool_state - get current spool state
     enum SpoolState  get_spool_state(void) const { return _spool_state; }
 
-    // set_dt / get_dt - dt is the time since the last time the motor mixers were updated
+    // set_dt_s / get_dt_s - dt is the time since the last time (in seconds) the motor mixers were updated
     //   _dt should be set based on the time of the last IMU read used by these controllers
     //   the motor mixers should run on each loop to ensure normal operation
-    void set_dt(float dt) { _dt = dt; }
-    float get_dt() const { return _dt; }
+    void set_dt_s(float dt_s) { _dt_s = dt_s; }
+    float get_dt_s() const { return _dt_s; }
 
     // structure for holding motor limit flags
     struct AP_Motors_limit {
@@ -308,7 +308,7 @@ protected:
     virtual void save_params_on_disarm() {}
 
     // internal variables
-    float               _dt;                        // time difference (in seconds) since the last loop time
+    float               _dt_s;                      // time difference (in seconds) since the last loop time
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
     float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
     float               _roll_in_ff;                // desired roll feed forward control from attitude controllers, -1 ~ +1

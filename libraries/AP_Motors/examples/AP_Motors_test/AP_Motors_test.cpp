@@ -261,7 +261,7 @@ void setup()
         }
 
         // motor initialisation
-        motors->set_dt(1.0/400.0);
+        motors->set_dt_s(1.0/400.0);
         motors->set_update_rate(490);
         motors->output_min();
 
@@ -298,7 +298,7 @@ void setup()
     }
 
     // motor initialisation
-    motors->set_dt(1.0/400.0);
+    motors->set_dt_s(1.0/400.0);
     motors->set_update_rate(490);
 
     char frame_and_type_string[30];

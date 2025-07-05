@@ -416,7 +416,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj)
 {
     // record filtered and scaled thrust output for motor loss monitoring purposes
-    float alpha = _dt / (_dt + 0.5f);
+    float alpha = _dt_s / (_dt_s + 0.5f);
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             _thrust_rpyt_out_filt[i] += alpha * (_thrust_rpyt_out[i] - _thrust_rpyt_out_filt[i]);
