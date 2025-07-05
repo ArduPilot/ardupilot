@@ -55,6 +55,29 @@ repos:
       rev: 7.3.0
       hooks:
       -   id: flake8
+  
+  -   repo: https://github.com/pycqa/flake8
+      rev: 7.3.0
+      hooks:
+      -   id: flake8
+          name: flake8-docstrings with ament-style rules
+          additional_dependencies:
+          - flake8-docstrings
+          files: ^Tools/ros2/
+          args:  # Settings suggested at `ament_pep257 --help`
+          -   --select=D
+          -   --ignore=D100,D101,D102,D103,D104,D105,D106,D107,D203,D212,D404
+
+  -   repo: local
+      hooks:
+      -   id: ament-pep257
+          name: Run ament_pep257 on Tools/ros2
+          entry: bash -c 'ament_pep257 Tools/ros2 > /dev/null'
+          language: python
+          additional_dependencies:
+          -   ament-lint-pep257==0.14.3
+          pass_filenames: false
+          files: ^Tools/ros2/
 
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
