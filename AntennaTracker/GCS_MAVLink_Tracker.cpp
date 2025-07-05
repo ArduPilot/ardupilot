@@ -63,6 +63,28 @@ MAV_STATE GCS_MAVLINK_Tracker::vehicle_system_status() const
     return MAV_STATE_ACTIVE;
 }
 
+void GCS_MAVLINK_Tracker::send_attitude_target()
+{
+    const Quaternion quat = tracker.mode_guided.get_attitude_target_quat();
+    const bool use_yaw_rate = tracker.mode_guided.get_attitude_target_use_yaw_rate();
+    const float yaw_rate_rads = tracker.mode_guided.get_attitude_target_yaw_rate_rads();
+    const float quat_out[4] {quat.q1, quat.q2, quat.q3, quat.q4};
+    uint16_t typemask = (1<<0) + (1<<1) + (1<<6);
+    if (!use_yaw_rate) {
+        typemask |= 1<<2;
+    }
+
+    mavlink_msg_attitude_target_send(
+        chan,
+        AP_HAL::millis(), // time since boot (ms)
+        typemask,         // Bitmask that tells the system what control dimensions should be ignored by the vehicle
+        quat_out,         // Attitude quaternion [w, x, y, z] order, zero-rotation is [1, 0, 0, 0], unit-length
+        0,                // roll rate (rad/s)
+        0,                // pitch rate (rad/s)
+        yaw_rate_rads,    // yaw rate (rad/s)
+        0);               // Collective thrust, normalized to 0 .. 1
+}
+
 void GCS_MAVLINK_Tracker::send_nav_controller_output() const
 {
 	float alt_diff = (tracker.g.alt_source == ALT_SOURCE_BARO) ? tracker.nav_status.alt_difference_baro : tracker.nav_status.alt_difference_gps;
