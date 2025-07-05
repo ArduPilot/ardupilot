@@ -156,7 +156,7 @@ bool AC_Circle::update_cms(float climb_rate_cms)
     calc_velocities(false);
 
     // calculate dt
-    const float dt = _pos_control.get_dt();
+    const float dt = _pos_control.get_dt_s();
 
     // ramp angular velocity to maximum
     if (_angular_vel_rads < _angular_vel_max_rads) {

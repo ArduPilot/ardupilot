@@ -338,7 +338,7 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw_rads(float roll
 
     // accel limit desired yaw rate
     if (get_accel_yaw_max_radss() > 0.0f) {
-        float rate_change_limit_rads = get_accel_yaw_max_radss() * _dt;
+        float rate_change_limit_rads = get_accel_yaw_max_radss() * _dt_s;
         float rate_change_rads = yaw_rate_bf_rads - _ang_vel_target_rads.z;
         rate_change_rads = constrain_float(rate_change_rads, -rate_change_limit_rads, rate_change_limit_rads);
         _ang_vel_target_rads.z += rate_change_rads;
@@ -390,7 +390,7 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw_rads(float roll
 void AC_AttitudeControl_Heli::integrate_bf_rate_error_to_angle_errors()
 {
     // Integrate the angular velocity error into the attitude error
-    _att_error_rot_vec_rad += (_ang_vel_target_rads - _ahrs.get_gyro()) * _dt;
+    _att_error_rot_vec_rad += (_ang_vel_target_rads - _ahrs.get_gyro()) * _dt_s;
 
     // Constrain attitude error
     _att_error_rot_vec_rad.x = constrain_float(_att_error_rot_vec_rad.x, -AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD, AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD);
@@ -446,7 +446,7 @@ void AC_AttitudeControl_Heli::rate_controller_run()
 void AC_AttitudeControl_Heli::update_althold_lean_angle_max(float throttle_in)
 {
     float althold_lean_angle_max = acosf(constrain_float(throttle_in / AC_ATTITUDE_HELI_ANGLE_LIMIT_THROTTLE_MAX, 0.0f, 1.0f));
-    _althold_lean_angle_max_rad = _althold_lean_angle_max_rad + (_dt / (_dt + _angle_limit_tc)) * (althold_lean_angle_max - _althold_lean_angle_max_rad);
+    _althold_lean_angle_max_rad = _althold_lean_angle_max_rad + (_dt_s / (_dt_s + _angle_limit_tc)) * (althold_lean_angle_max - _althold_lean_angle_max_rad);
 }
 
 //
@@ -463,13 +463,13 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(const Vector3f &rate_r
     if (_flags_heli.leaky_i) {
         _pid_rate_roll.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
-    float roll_pid = _pid_rate_roll.update_all(rate_roll_target_rads, rate_rads.x, _dt, _motors.limit.roll) + _actuator_sysid.x;
+    float roll_pid = _pid_rate_roll.update_all(rate_roll_target_rads, rate_rads.x, _dt_s, _motors.limit.roll) + _actuator_sysid.x;
 
     if (_flags_heli.leaky_i) {
         _pid_rate_pitch.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
 
-    float pitch_pid = _pid_rate_pitch.update_all(rate_pitch_target_rads, rate_rads.y, _dt, _motors.limit.pitch) + _actuator_sysid.y;
+    float pitch_pid = _pid_rate_pitch.update_all(rate_pitch_target_rads, rate_rads.y, _dt_s, _motors.limit.pitch) + _actuator_sysid.y;
 
     // use pid library to calculate ff
     float roll_ff = _pid_rate_roll.get_ff();
@@ -498,8 +498,8 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(const Vector3f &rate_r
         const float piro_pitch_i = _pid_rate_pitch.get_i();
 
         Vector2f yawratevector;
-        yawratevector.x     = cosf(-rate_rads.z * _dt);
-        yawratevector.y     = sinf(-rate_rads.z * _dt);
+        yawratevector.x     = cosf(-rate_rads.z * _dt_s);
+        yawratevector.y     = sinf(-rate_rads.z * _dt_s);
         yawratevector.normalize();
 
         _pid_rate_roll.set_integrator(piro_roll_i * yawratevector.x - piro_pitch_i * yawratevector.y);
@@ -515,7 +515,7 @@ float AC_AttitudeControl_Heli::rate_target_to_motor_yaw(float rate_yaw_actual_ra
         _pid_rate_yaw.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
 
-    float pid = _pid_rate_yaw.update_all(rate_target_rads, rate_yaw_actual_rads, _dt,  _motors.limit.yaw) + _actuator_sysid.z;
+    float pid = _pid_rate_yaw.update_all(rate_target_rads, rate_yaw_actual_rads, _dt_s,  _motors.limit.yaw) + _actuator_sysid.z;
 
     // use pid library to calculate ff
     float vff = _pid_rate_yaw.get_ff()*_feedforward_scalar;

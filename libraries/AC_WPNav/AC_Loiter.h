@@ -46,7 +46,7 @@ public:
     float get_distance_to_target_cm() const { return _pos_control.get_pos_error_NE_cm(); }
 
     /// get bearing to target in centi-degrees
-    int32_t get_bearing_to_target_cd() const { return _pos_control.get_bearing_to_target_cd(); }
+    float get_bearing_to_target_rad() const { return _pos_control.get_bearing_to_target_rad(); }
 
     /// get maximum lean angle when using loiter
     float get_angle_max_rad() const;

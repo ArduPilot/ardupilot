@@ -32,6 +32,9 @@ public:
     /// always returns bearing to final destination (i.e. does not use oa adjusted destination)
     int32_t get_wp_bearing_to_destination_cd() const override;
 
+    /// get_bearing_to_destination - get bearing to next waypoint in radians
+    virtual float get_wp_bearing_to_destination_rad() const override;
+
     /// true when we have come within RADIUS cm of the final destination
     bool reached_wp_destination() const override;
 

@@ -145,6 +145,9 @@ public:
     /// get_bearing_to_destination - get bearing to next waypoint in centi-degrees
     virtual int32_t get_wp_bearing_to_destination_cd() const;
 
+    /// get_bearing_to_destination - get bearing to next waypoint in radians
+    virtual float get_wp_bearing_to_destination_rad() const;
+
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
     virtual bool reached_wp_destination() const { return _flags.reached_destination; }
 

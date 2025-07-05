@@ -144,11 +144,11 @@ void AC_Loiter::set_pilot_desired_acceleration_cd(float euler_roll_angle_cd, flo
 //   dt should be the time (in seconds) since the last call to this function
 void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad)
 {
-    const float dt = _attitude_control.get_dt();
+    const float dt = _attitude_control.get_dt_s();
 
     // convert our desired attitude to an acceleration vector assuming we are not accelerating vertically
     const Vector3f desired_euler_rad {euler_roll_angle_rad, euler_pitch_angle_rad, _ahrs.yaw};
-    const Vector3f desired_accel_NEU_cmss = _pos_control.lean_angles_to_accel_NEU_cmss(desired_euler_rad);
+    const Vector3f desired_accel_NEU_cmss = _pos_control.lean_angles_rad_to_accel_NEU_cmss(desired_euler_rad);
 
     _desired_accel_ne_cmss.x = desired_accel_NEU_cmss.x;
     _desired_accel_ne_cmss.y = desired_accel_NEU_cmss.y;
@@ -164,7 +164,7 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
 
     // convert our predicted attitude to an acceleration vector assuming we are not accelerating vertically
     const Vector3f predicted_euler_rad {_predicted_euler_angle_rad.x, _predicted_euler_angle_rad.y, _ahrs.yaw};
-    const Vector3f predicted_accel = _pos_control.lean_angles_to_accel_NEU_cmss(predicted_euler_rad);
+    const Vector3f predicted_accel = _pos_control.lean_angles_rad_to_accel_NEU_cmss(predicted_euler_rad);
 
     _predicted_accel_ne_cmss.x = predicted_accel.x;
     _predicted_accel_ne_cmss.y = predicted_accel.y;
@@ -218,7 +218,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     float ekfGndSpdLimit, ahrsControlScaleXY;
     AP::ahrs().getControlLimits(ekfGndSpdLimit, ahrsControlScaleXY);
 
-    const float dt = _pos_control.get_dt();
+    const float dt = _pos_control.get_dt_s();
 
     // calculate a loiter speed limit which is the minimum of the value set by the LOITER_SPEED
     // parameter and the value set by the EKF to observe optical flow limits
