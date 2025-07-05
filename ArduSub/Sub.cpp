@@ -180,7 +180,7 @@ void Sub::run_rate_controller()
 {
     const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
     motors.set_dt(last_loop_time_s);
-    attitude_control.set_dt(last_loop_time_s);
+    attitude_control.set_dt_s(last_loop_time_s);
     pos_control.set_dt_s(last_loop_time_s);
 
     //don't run rate controller in manual or motordetection modes
