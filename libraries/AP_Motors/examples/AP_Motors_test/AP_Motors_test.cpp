@@ -353,6 +353,7 @@ void print_all_motors()
 
     first_layout = true;
 
+#if AP_MOTORS_FRAME_DECA_ENABLED
     for (uint8_t frame_class=0; frame_class <= AP_Motors::MOTOR_FRAME_DECA; frame_class++) {
         for (uint8_t frame_type=0; frame_type < AP_Motors::MOTOR_FRAME_TYPE_Y4; frame_type++) {
             if (frame_class == AP_Motors::MOTOR_FRAME_TRI) {
@@ -362,6 +363,7 @@ void print_all_motors()
             }
         }
     }
+#endif  // AP_MOTORS_FRAME_DECA_ENABLED
 
     hal.console->printf("\n");
     hal.console->printf("\t]\n");
