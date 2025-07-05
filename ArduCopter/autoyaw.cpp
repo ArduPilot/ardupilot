@@ -172,7 +172,7 @@ void Mode::AutoYaw::set_yaw_angle_offset_deg(const float yaw_angle_offset_deg)
 void Mode::AutoYaw::set_roi(const Location &roi_location)
 {
     // if location is zero lat, lon and altitude turn off ROI
-    if (roi_location.alt == 0 && roi_location.lat == 0 && roi_location.lng == 0) {
+    if (!roi_location.initialised()) {
         // set auto yaw mode back to default assuming the active command is a waypoint command.  A more sophisticated method is required to ensure we return to the proper yaw control for the active command
         auto_yaw.set_mode_to_default(false);
 #if HAL_MOUNT_ENABLED

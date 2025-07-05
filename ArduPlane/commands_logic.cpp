@@ -159,7 +159,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI_NONE:
     case MAV_CMD_DO_SET_ROI:
-        if (cmd.content.location.alt == 0 && cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
+        if (!cmd.content.location.initialised()) {
             // switch off the camera tracking if enabled
             if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
                 camera_mount.set_mode_to_default();
@@ -361,9 +361,12 @@ Location Plane::calc_best_rally_or_home_location(const Location &_current_loc, f
 #if HAL_RALLY_ENABLED
     return plane.rally.calc_best_rally_or_home_location(_current_loc, rtl_home_alt_amsl_cm);
 #else
-    Location destination = plane.home;
-    destination.set_alt_cm(rtl_home_alt_amsl_cm, Location::AltFrame::ABSOLUTE);
-    return destination;
+    return Location {
+        plane.home.lat,
+        plane.home.lng,
+        int32_t(rtl_home_alt_amsl_cm),
+        Location::AltFrame::ABSOLUTE
+    };
 #endif
 }
 
@@ -505,8 +508,7 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
     }
 
     if (cmd.content.location.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
-        next_WP_loc.set_alt_cm(cmd.content.location.alt,
-                               Location::AltFrame::ABOVE_TERRAIN);
+        next_WP_loc.copy_alt_from(cmd.content.location);
     } else {
         int32_t alt_abs_cm;
         // if this fails we don't change alt
