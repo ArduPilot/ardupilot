@@ -451,7 +451,8 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
             s.totalcurrent[j] = constrain_float(telemdata.consumption_mah, 0, UINT16_MAX);
             float rpmf;
             if (get_rpm(esc_id, rpmf)) {
-                s.rpm[j] = constrain_float(rpmf, 0, UINT16_MAX);
+                // rpm can be negative
+                s.rpm[j] = constrain_float(fabsf(rpmf), 0, UINT16_MAX);
             }
             s.count[j] = telemdata.count;
         }
