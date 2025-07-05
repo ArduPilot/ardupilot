@@ -13,13 +13,18 @@
 # limitations under the License.
 
 """Test files include a copyright notice."""
-from ament_copyright.main import main
+from pathlib import Path
+
 import pytest
+from ament_copyright.main import main
 
 
 @pytest.mark.copyright
 @pytest.mark.linter
 def test_copyright():
     """Copyright test case."""
-    rc = main(argv=[".", "test"])
+    ros2_dir = Path(__file__).parent.parent.parent
+    assert ros2_dir.name == "ros2", "This test must be run from the ROS 2 directory"
+    assert ros2_dir.parent.name == "Tools", "This test must be run in the Tools/ros2"
+    rc = main(argv=[str(ros2_dir), "test"])
     assert rc == 0, "Found errors"

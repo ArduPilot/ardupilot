@@ -13,13 +13,18 @@
 # limitations under the License.
 
 """Test Python files satisfy PEP257."""
-from ament_pep257.main import main
+from pathlib import Path
+
 import pytest
+from ament_pep257.main import main
 
 
 @pytest.mark.linter
 @pytest.mark.pep257
 def test_pep257():
     """PEP257 test case."""
-    rc = main(argv=[".", "test"])
+    ros2_dir = Path(__file__).parent.parent.parent
+    assert ros2_dir.name == "ros2", "This test must be run from the ROS 2 directory"
+    assert ros2_dir.parent.name == "Tools", "This test must be run in the Tools/ros2"
+    rc = main(argv=[str(ros2_dir), "test"])
     assert rc == 0, "Found code style errors / warnings"
