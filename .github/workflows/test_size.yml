@@ -312,12 +312,12 @@ jobs:
             echo "No differences found." >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Checksum compare with ${{ github.event.pull_request.base.ref }}
+      - name: Binary compare with ${{ github.event.pull_request.base.ref }}
         shell: bash
         run: |
-          diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.elf --exclude=*.apj || true
-          diff_output=$(diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.elf --exclude=*.apj || true || true)
-          echo "### Checksum Diff Output" >> $GITHUB_STEP_SUMMARY
+          diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.abin --exclude=*.apj || true
+          diff_output=$(diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.abin --exclude=*.apj || true)
+          echo "### Binary Diff Output" >> $GITHUB_STEP_SUMMARY
           if [ -n "$diff_output" ]; then
             echo '```diff' >> $GITHUB_STEP_SUMMARY
             echo "$diff_output" >> $GITHUB_STEP_SUMMARY
