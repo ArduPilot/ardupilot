@@ -515,6 +515,7 @@ for t in $CI_BUILD_TARGET; do
     fi
 
     if [ "$t" == "param-file-validation" ]; then
+        python -m pip install --editable .
         echo "Testing param check script"
         ./Tools/scripts/param_check_test.py
         echo "Validating parameter files"
