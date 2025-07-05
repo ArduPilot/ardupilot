@@ -136,21 +136,9 @@ int _close(struct _reent *r, int file)
 __attribute__((used))
 caddr_t _sbrk(struct _reent *r, int incr)
 {
-#if CH_CFG_USE_MEMCORE && CH_CFG_USE_HEAP == TRUE
-  void *p;
-
-  chDbgCheck(incr >= 0);
-  p = chHeapAlloc(NULL, (size_t)incr);
-  if (p == NULL) {
+    (void)incr;
     __errno_r(r) = ENOMEM;
     return (caddr_t)-1;
-  }
-  return (caddr_t)p;
-#else
-  (void)incr;
-  __errno_r(r) = ENOMEM;
-  return (caddr_t)-1;
-#endif
 }
 
 
