@@ -98,6 +98,7 @@ function run_autotest() {
 
     install_mavproxy
     install_pymavlink
+    python -m pip install --editable .
     unset BUILDROOT
     echo "Running SITL $NAME test"
 
@@ -514,8 +515,9 @@ for t in $CI_BUILD_TARGET; do
     fi
 
     if [ "$t" == "param-file-validation" ]; then
+        python -m pip install --editable .
         echo "Testing param check script"
-        ./Tools/scripts/param_check_unittests.py
+        ./Tools/scripts/param_check_test.py
         echo "Validating parameter files"
         ./Tools/scripts/param_check_all.py
         continue

@@ -11,7 +11,6 @@ Test parameter upgrade, master vs branch
 AP_FLAKE8_CLEAN
 '''
 
-import vehicle_test_suite
 import os
 import sys
 import argparse
@@ -21,7 +20,12 @@ import shutil
 import string
 import pathlib
 
-from pysim import util
+try:
+    import vehicle_test_suite
+    from pysim import util
+except (ImportError, ModuleNotFoundError):  # Fall back to a relative import in pytest
+    from . import vehicle_test_suite
+    from .pysim import util
 
 
 class ParamChange():
