@@ -365,7 +365,7 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_Motors& motors, AC_Att
 void AC_PosControl::input_pos_NEU_cm(const Vector3p& pos_neu_cm, float pos_terrain_target_u_cm, float terrain_buffer_cm)
 {
     // Terrain following velocity scalar must be calculated before we remove the position offset
-    const float offset_u_scalar = pos_terrain_U_scaler(pos_terrain_target_u_cm, terrain_buffer_cm);
+    const float offset_u_scalar = pos_terrain_U_scaler_cm(pos_terrain_target_u_cm, terrain_buffer_cm);
     set_pos_terrain_target_U_cm(pos_terrain_target_u_cm);
 
     // calculated increased maximum acceleration and jerk if over speed
@@ -408,8 +408,8 @@ void AC_PosControl::input_pos_NEU_cm(const Vector3p& pos_neu_cm, float pos_terra
 }
 
 
-/// pos_terrain_U_scaler - computes a scaling factor applied to horizontal velocity limits to ensure the vertical position controller remains within its terrain buffer.
-float AC_PosControl::pos_terrain_U_scaler(float pos_terrain_u_cm, float pos_terrain_u_buffer_cm) const
+/// pos_terrain_U_scaler_cm - computes a scaling factor applied to horizontal velocity limits to ensure the vertical position controller remains within its terrain buffer.
+float AC_PosControl::pos_terrain_U_scaler_cm(float pos_terrain_u_cm, float pos_terrain_u_buffer_cm) const
 {
     if (is_zero(pos_terrain_u_buffer_cm)) {
         return 1.0;
