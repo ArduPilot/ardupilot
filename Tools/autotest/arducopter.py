@@ -12571,33 +12571,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
-    def turn_safety_x(self, value):
-        self.mav.mav.set_mode_send(
-            self.mav.target_system,
-            mavutil.mavlink.MAV_MODE_FLAG_DECODE_POSITION_SAFETY,
-            value)
-
-    def turn_safety_off(self):
-        self.turn_safety_x(0)
-
-    def turn_safety_on(self):
-        self.turn_safety_x(1)
-
     def SafetySwitch(self):
         '''test safety switch behaviour'''
         self.wait_ready_to_arm()
 
-        self.turn_safety_on()
+        self.set_safetyswitch_on()
         self.assert_prearm_failure("safety switch")
 
-        self.turn_safety_off()
+        self.set_safetyswitch_off()
         self.wait_ready_to_arm()
 
         self.takeoff(2, mode='LOITER')
-        self.turn_safety_on()
+        self.set_safetyswitch_on()
 
         self.wait_servo_channel_value(1, 0)
-        self.turn_safety_off()
+        self.set_safetyswitch_off()
 
         self.change_mode('LAND')
         self.wait_disarmed()
