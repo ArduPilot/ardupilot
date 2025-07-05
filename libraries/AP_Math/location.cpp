@@ -26,7 +26,7 @@
 // return bearing_rad in radians between two positions
 float get_bearing_rad(const Vector2f &origin, const Vector2f &destination)
 {
-    return wrap_2PI(atan2f(destination.y-origin.y, destination.x-origin.x));
+    return wrap_2PI(atan2f(destination.y - origin.y, destination.x - origin.x));
 }
 
 // return bearing_cd in centi-degrees between two positions
