@@ -109,7 +109,7 @@ public:
         OPTION_MAVLINK_NO_FORWARD_old = (1U<<10), // // moved to GCS_MAVLINK::Option
         OPTION_NOFIFO             = (1U<<11), // disable hardware FIFO
         OPTION_NOSTREAMOVERRIDE_old   = (1U<<12), // moved to GCS_MAVLINK::Option
-        OPTION_LOGGING            = (1U<<13), // enable raw logging
+        LOGGING                   = (1U<<13), // enable raw logging
     };
 
     bool option_is_set(Option option) const {
@@ -281,15 +281,6 @@ protected:
     virtual uint32_t get_total_dropped_rx_bytes() const { return 0; }
 #endif
 
-#if HAL_UART_DEBUG_LOGGING_ENABLED
-    void log_read_data(const uint8_t *data, uint16_t length) {
-        log_data(data, length, false);
-    }
-    void log_written_data(const uint8_t *data, uint16_t length) {
-        log_data(data, length, true);
-    }
-#endif  // HAL_UART_DEBUG_LOGGING_ENABLED
-
     // option bits for port
     uint16_t _last_options;
 
@@ -315,10 +306,6 @@ private:
     };
     struct LogInfo *loginfo;  // log info for *this* backend
 
-    static LogInfo *backend_loginfos;  // linked list of all backend log infos
-    static bool log_thread_created;
-    static void logging_loop(void);
-    void logging_start(void);
 #endif  // HAL_UART_DEBUG_LOGGING_ENABLED
 
 };

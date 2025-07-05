@@ -102,6 +102,12 @@ private:
     std::atomic<uint32_t> tail{0}; // where to write data
 
     bool external_buf;
+
+#if AP_RINGBUFFER_CONTENT_LOGGING_ENABLED
+    // support for logging data written into the RingBuffer
+    TimestampedDataLogger *logger;
+    uint8_t logger_channel;  // identifier for data logged to logger
+#endif
 };
 
 /*
