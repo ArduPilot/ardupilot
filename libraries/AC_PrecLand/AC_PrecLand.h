@@ -132,6 +132,11 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
+    // Allow Aux Function to enable/disable Copter PrecLand routine.
+    // This is different from the "Enable" parameter since we want the plnd data to be logged and the sensor to be working normally.
+    void set_active(bool active) { _active = active; }
+    bool active() { return _active; }
+
 private:
     enum class EstimatorType : uint8_t {
         RAW_SENSOR = 0,
@@ -231,6 +236,8 @@ private:
     Vector3f                    _last_veh_velocity_NED_ms; // AHRS velocity at last estimate
 
     TargetState                 _current_target_state;  // Current status of the landing target
+
+    bool                       _active;            // user can use aux function to turn Copter PrecLand on/off
 
     // structure and buffer to hold a history of vehicle velocity
     struct inertial_data_frame_s {
