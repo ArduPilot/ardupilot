@@ -12,8 +12,7 @@ import glob
 from board_list import BoardList
 from param_check import get_metadata, check_file, SkippedChecks
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../Tools', 'autotest'))
-from pysim.vehicleinfo import VehicleInfo # noqa: E402
+from Tools.autotest.pysim.vehicleinfo import VehicleInfo
 
 
 periph_hwdefs_to_skip = set([ # Most of these fail due to NET_ params

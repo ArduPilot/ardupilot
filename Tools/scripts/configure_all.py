@@ -14,9 +14,7 @@ import shutil
 
 import argparse
 
-# modify our search path:
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
-import chibios_hwdef
+from libraries.AP_HAL_ChibiOS.hwdef.scripts import chibios_hwdef
 
 parser = argparse.ArgumentParser(description='configure all ChibiOS boards')
 parser.add_argument('--build', action='store_true', default=False, help='build as well as configure')

@@ -25,10 +25,8 @@ import pathlib
 import re
 import sys
 
-from pysim import util
-
-sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
-import extract_features  # noqa
+from Tools.autotest.pysim import util
+from Tools.scripts import extract_features
 
 
 class TestBuildOptionsResult(object):

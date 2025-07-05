@@ -7,16 +7,14 @@ AP_FLAKE8_CLEAN
 '''
 
 import argparse
-import sys
 import fnmatch
 import os
-import dma_resolver
 import shlex
 import re
 import shutil
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../../libraries/AP_HAL/hwdef/scripts'))
-import hwdef  # noqa:E402
+from libraries.AP_HAL_ChibiOS.hwdef.scripts import dma_resolver
+from libraries.AP_HAL.hwdef.scripts import hwdef
 
 
 class ChibiOSHWDefIncludeNotFoundException(Exception):

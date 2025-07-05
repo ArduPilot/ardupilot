@@ -9,8 +9,8 @@ import os
 
 from rover import AutoTestRover
 
-import vehicle_test_suite
-from vehicle_test_suite import NotAchievedException
+from Tools.autotest import vehicle_test_suite
+from Tools.autotest.vehicle_test_suite import NotAchievedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))

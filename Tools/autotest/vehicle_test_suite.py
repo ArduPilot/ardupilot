@@ -46,7 +46,7 @@ from pymavlink.rotmat import Vector3
 from pymavlink import quaternion
 from pymavlink.generator import mavgen
 
-from pysim import util, vehicleinfo
+from Tools.autotest.pysim import util, vehicleinfo
 
 try:
     import queue as Queue
@@ -14480,8 +14480,7 @@ switch value'''
             f.close()
 
     def add_embedded_params_to_binary(self, binary, defaults):
-        sys.path.insert(1, os.path.join(self.rootdir(), 'Tools', 'scripts'))
-        import apj_tool
+        from Tools.scripts import apj_tool
 
         # copy binary
         if getattr(self, "embedded_default_counter", None) is None:

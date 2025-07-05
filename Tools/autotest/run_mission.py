@@ -6,12 +6,12 @@ Run a mission in SITL
 AP_FLAKE8_CLEAN
 '''
 
-import vehicle_test_suite
 import os
 import sys
 import argparse
 
-from pysim import util
+from Tools.autotest import vehicle_test_suite
+from Tools.autotest.pysim import util
 
 
 class RunMission(vehicle_test_suite.TestSuite):
