@@ -6,10 +6,6 @@
   #define MAV_SYSTEM_ID    1
 #endif
 
-#ifndef ARM_DELAY_MS
-  #define ARM_DELAY_MS  2000
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // FrSky telemetry support
 //

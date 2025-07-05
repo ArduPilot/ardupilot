@@ -61,71 +61,6 @@ void Rover::init_rc_in()
     }
 }
 
-/*
-  check for driver input on rudder/steering stick for arming/disarming
-*/
-void Rover::rudder_arm_disarm_check()
-{
-    // check if arming/disarm using rudder is allowed
-    const AP_Arming::RudderArming arming_rudder = arming.get_rudder_arming_type();
-    if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
-        return;
-    }
-
-    // In Rover we need to check that its set to the throttle trim and within the DZ
-    // if throttle is not within trim dz, then pilot cannot rudder arm/disarm
-    if (!channel_throttle->in_trim_dz()) {
-        rudder_arm_timer = 0;
-        return;
-    }
-
-    // check if arming/disarming allowed from this mode
-    if (!control_mode->allows_arming_from_transmitter()) {
-        rudder_arm_timer = 0;
-        return;
-    }
-
-    if (!arming.is_armed()) {
-        // when not armed, full right rudder starts arming counter
-        if (channel_steer->get_control_in() > 4000) {
-            const uint32_t now = millis();
-
-            if (rudder_arm_timer == 0 ||
-                now - rudder_arm_timer < ARM_DELAY_MS) {
-                if (rudder_arm_timer == 0) {
-                    rudder_arm_timer = now;
-                }
-            } else {
-                // time to arm!
-                arming.arm(AP_Arming::Method::RUDDER);
-                rudder_arm_timer = 0;
-            }
-        } else {
-            // not at full right rudder
-            rudder_arm_timer = 0;
-        }
-    } else if ((arming_rudder == AP_Arming::RudderArming::ARMDISARM) && !g2.motors.active()) {
-        // when armed and motor not active (not moving), full left rudder starts disarming counter
-        if (channel_steer->get_control_in() < -4000) {
-            const uint32_t now = millis();
-
-            if (rudder_arm_timer == 0 ||
-                now - rudder_arm_timer < ARM_DELAY_MS) {
-                if (rudder_arm_timer == 0) {
-                    rudder_arm_timer = now;
-                }
-            } else {
-                // time to disarm!
-                arming.disarm(AP_Arming::Method::RUDDER);
-                rudder_arm_timer = 0;
-            }
-        } else {
-            // not at full left rudder
-            rudder_arm_timer = 0;
-        }
-    }
-}
-
 void Rover::read_radio()
 {
     if (!rc().read_input()) {
@@ -137,9 +72,6 @@ void Rover::read_radio()
     failsafe.last_valid_rc_ms = AP_HAL::millis();
     // check that RC value are valid
     radio_failsafe_check(channel_throttle->get_radio_in());
-
-    // check if we try to do RC arm/disarm
-    rudder_arm_disarm_check();
 }
 
 void Rover::radio_failsafe_check(uint16_t pwm)
