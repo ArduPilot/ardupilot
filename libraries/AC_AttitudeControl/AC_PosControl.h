@@ -45,11 +45,11 @@ public:
     // do not allow copying
     CLASS_NO_COPY(AC_PosControl);
 
-    /// set_dt / get_dt - dt is the time in seconds since the last time the position controllers were updated
-    ///   _dt should be set based on the time of the last IMU read used by these controllers
+    /// set_dt_s / get_dt_s - dt is the time in seconds since the last time the position controllers were updated
+    ///   _dt_s should be set based on the time of the last IMU read used by these controllers
     ///   the position controller should run updates for active controllers on each loop to ensure normal operation
-    void set_dt(float dt) { _dt = dt; }
-    float get_dt() const { return _dt; }
+    void set_dt_s(float dt) { _dt_s = dt; }
+    float get_dt_s() const { return _dt_s; }
 
     // Updates internal position and velocity estimates in the NED frame.
     // Falls back to vertical-only estimates if full NED data is unavailable.
@@ -560,7 +560,7 @@ protected:
     AC_PID          _pid_accel_u;           // Z axis acceleration controller to convert desired acceleration to throttle output
 
     // internal variables
-    float       _dt;                        // time difference (in seconds) since the last loop time
+    float       _dt_s;                      // time difference (in seconds) since the last loop time
     uint32_t    _last_update_ne_ticks;      // ticks of last last update_NE_controller call
     uint32_t    _last_update_u_ticks;       // ticks of last update_z_controller call
     float       _vel_max_ne_cms;            // max horizontal speed in cm/s used for kinematic shaping
