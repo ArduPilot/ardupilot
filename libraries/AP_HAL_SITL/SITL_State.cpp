@@ -445,9 +445,13 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
             throttle = hover_throttle;
         }
     } else if (_vehicle == Rover) {
-        input.servos[2] = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
+        if (input.servos[2] != 0) {
+            input.servos[2] = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
+            throttle = fabsf((input.servos[2] - 1500) / 500.0f);
+        } else {
+            throttle = 0;
+        }
         input.servos[0] = static_cast<uint16_t>(constrain_int16(input.servos[0], 1000, 2000));
-        throttle = fabsf((input.servos[2] - 1500) / 500.0f);
     } else {
         // run checks on each motor
         uint8_t running_motors = 0;
