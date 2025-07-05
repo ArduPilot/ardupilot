@@ -1479,7 +1479,7 @@ float AC_Avoid::get_stopping_distance(float kP, float accel_cmss, float speed_cm
 float AC_Avoid::distance_to_lean_norm(float dist_m)
 {
     // ignore objects beyond DIST_MAX
-    if (dist_m < 0.0f || dist_m >= _dist_max || _dist_max <= 0.0f) {
+    if (is_negative(dist_m) || dist_m >= _dist_max || _dist_max <= 0.0f) {
         return 0.0f;
     }
     // inverted but linear response
@@ -1513,14 +1513,14 @@ void AC_Avoid::get_proximity_roll_pitch_norm(float &roll_positive, float &roll_n
                 const float roll_pct = -sinf(angle_rad) * lean_pct;
                 const float pitch_pct = cosf(angle_rad) * lean_pct;
                 // update roll, pitch maximums
-                if (roll_pct > 0.0f) {
+                if (is_positive(roll_pct)) {
                     roll_positive = MAX(roll_positive, roll_pct);
-                } else if (roll_pct < 0.0f) {
+                } else if (is_negative(roll_pct)) {
                     roll_negative = MIN(roll_negative, roll_pct);
                 }
-                if (pitch_pct > 0.0f) {
+                if (is_positive(pitch_pct)) {
                     pitch_positive = MAX(pitch_positive, pitch_pct);
-                } else if (pitch_pct < 0.0f) {
+                } else if (is_negative(pitch_pct)) {
                     pitch_negative = MIN(pitch_negative, pitch_pct);
                 }
             }

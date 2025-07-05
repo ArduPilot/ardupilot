@@ -253,7 +253,7 @@ bool AP_Avoidance_Copter::handle_avoidance_perpendicular(const AP_Avoidance::Obs
         velocity_neu.x *= copter.wp_nav->get_default_speed_NE_cms();
         velocity_neu.y *= copter.wp_nav->get_default_speed_NE_cms();
         // use up and down waypoint speeds
-        if (velocity_neu.z > 0.0f) {
+        if (is_positive(velocity_neu.z)) {
             velocity_neu.z *= copter.wp_nav->get_default_speed_up_cms();
         } else {
             velocity_neu.z *= copter.wp_nav->get_default_speed_down_cms();

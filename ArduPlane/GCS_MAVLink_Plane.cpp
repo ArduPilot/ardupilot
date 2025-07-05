@@ -727,7 +727,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
         }
 
          // don't accept packets outside of [0-360] degree range
-        if (packet.param2 < 0.0f || packet.param2 >= 360.0f) {
+        if (is_negative(packet.param2) || packet.param2 >= 360.0f) {
             return MAV_RESULT_DENIED;
         }
 

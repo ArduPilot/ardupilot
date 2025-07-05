@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include "spline5.h"
+#include "AP_Math.h"
 
 void splinterp5(const float x[5], float out[4][4])
 {
@@ -47,7 +48,7 @@ void splinterp5(const float x[5], float out[4][4])
         // keep p from ever becoming zero
         if (p < 0.01f && p >= 0.0f) {
             p = 0.01f;
-        } else if (p > -0.01f && p < 0.0f) {
+        } else if (p > -0.01f && is_negative(p)) {
             p = -0.01f;
         }
         const float p_inv = 1.0f / p;

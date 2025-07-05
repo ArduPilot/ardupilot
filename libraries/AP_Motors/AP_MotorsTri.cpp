@@ -242,7 +242,7 @@ void AP_MotorsTri::output_armed_stabilizing()
         // Full range is being used by roll, pitch, and yaw.
         limit.roll = true;
         limit.pitch = true;
-        if (thr_adj > 0.0f) {
+        if (is_positive(thr_adj)) {
             limit.throttle_upper = true;
         }
         thr_adj = 0.0f;

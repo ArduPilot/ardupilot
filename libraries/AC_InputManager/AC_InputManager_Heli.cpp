@@ -109,7 +109,7 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
     // ramp to and from stab col over 1/2 second
     if (_im_flags_heli.use_stab_col && (_stab_col_ramp < 1.0f)){
         _stab_col_ramp += 2.0f/(float)_loop_rate;
-    } else if(!_im_flags_heli.use_stab_col && (_stab_col_ramp > 0.0f)){
+    } else if(!_im_flags_heli.use_stab_col && (is_positive(_stab_col_ramp))){
         _stab_col_ramp -= 2.0f/(float)_loop_rate;
     }
     _stab_col_ramp = constrain_float(_stab_col_ramp, 0.0f, 1.0f);

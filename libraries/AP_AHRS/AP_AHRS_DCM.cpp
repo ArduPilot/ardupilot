@@ -860,7 +860,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
             best_error = error_length;
         }
         // Catch case where orientation is 180 degrees out
-        if (error_dirn[besti] < 0.0f) {
+        if (is_negative(error_dirn[besti])) {
             best_error = 1.0f;
         }
 

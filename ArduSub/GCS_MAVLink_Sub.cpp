@@ -416,7 +416,7 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_command
         // param2 : new speed in m/s
         // param3 : unused
         // param4 : unused
-        if (packet.param2 > 0.0f) {
+        if (is_positive(packet.param2)) {
             sub.wp_nav.set_speed_NE_cms(packet.param2 * 100.0f);
             return MAV_RESULT_ACCEPTED;
         }

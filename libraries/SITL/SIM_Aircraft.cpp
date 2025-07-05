@@ -791,7 +791,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             // X, Y movement tracks ground movement
             velocity_ef.x = gnd_movement.x;
             velocity_ef.y = gnd_movement.y;
-            if (velocity_ef.z > 0.0f) {
+            if (is_positive(velocity_ef.z)) {
                 velocity_ef.z = 0.0f;
             }
             gyro.zero();
@@ -831,7 +831,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             }
 
             velocity_ef = dcm * v_bf;
-            if (velocity_ef.z > 0.0f) {
+            if (is_positive(velocity_ef.z)) {
                 velocity_ef.z = 0.0f;
             }
             gyro.zero();
@@ -852,7 +852,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             // X, Y movement tracks ground movement
             velocity_ef.x = gnd_movement.x;
             velocity_ef.y = gnd_movement.y;
-            if (velocity_ef.z > 0.0f) {
+            if (is_positive(velocity_ef.z)) {
                 velocity_ef.z = 0.0f;
             }
             gyro.zero();

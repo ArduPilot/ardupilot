@@ -1088,7 +1088,7 @@ bool ModeGuided::limit_check()
     }
 
     // check if we have gone beyond horizontal limit
-    if (guided_limit.horiz_max_cm > 0.0f) {
+    if (is_positive(guided_limit.horiz_max_cm)) {
         const float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos.xy(), curr_pos.xy());
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;

@@ -91,7 +91,7 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
             push_to_tgt_buffer(0, 0.0f, 0);
 
             if (meas_cnt == tgt_cnt && meas_cnt != 0) {
-                if (tgt_ampl > 0.0f) {
+                if (is_positive(tgt_ampl)) {
                     sum_gain += meas_ampl / tgt_ampl;
                     gcnt++;
                 }

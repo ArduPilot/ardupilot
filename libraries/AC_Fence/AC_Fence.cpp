@@ -429,7 +429,7 @@ bool AC_Fence::pre_arm_check_circle(char *failure_msg, const uint8_t failure_msg
 // additional checks for the alt fence:
 bool AC_Fence::pre_arm_check_alt(char *failure_msg, const uint8_t failure_msg_len) const
 {
-    if (_alt_max < 0.0f) {
+    if (is_negative(_alt_max)) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Invalid FENCE_ALT_MAX value");
         return false;
     }
@@ -512,7 +512,7 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
     }
 
     // validate FENCE_MARGIN parameter range
-    if (_margin < 0.0f) {
+    if (is_negative(_margin)) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Invalid FENCE_MARGIN value");
         return false;
     }

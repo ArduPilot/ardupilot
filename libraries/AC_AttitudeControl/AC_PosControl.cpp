@@ -1520,7 +1520,7 @@ void AC_PosControl::calculate_yaw_and_rate_yaw()
         const Vector2f accel_turn_ne_cmss = _accel_desired_neu_cmss.xy() - _vel_desired_neu_cms.xy() * accel_forward_cmss / vel_desired_length_ne_cms;
         const float accel_turn_length_ne_cmss = accel_turn_ne_cmss.length();
         turn_rate_rads = accel_turn_length_ne_cmss / vel_desired_length_ne_cms;
-        if ((accel_turn_ne_cmss.y * _vel_desired_neu_cms.x - accel_turn_ne_cmss.x * _vel_desired_neu_cms.y) < 0.0) {
+        if (is_negative(accel_turn_ne_cmss.y * _vel_desired_neu_cms.x - accel_turn_ne_cmss.x * _vel_desired_neu_cms.y)) {
             turn_rate_rads = -turn_rate_rads;
         }
     }

@@ -3075,7 +3075,7 @@ bool AP_Mission::calc_rewind_pos(Mission_Command& rewind_cmd)
         prev_loc = temp_cmd.content.location;
     }
 
-    if (rewind_distance > 0.0f) {
+    if (is_positive(rewind_distance)) {
         // then the history array was rewound all of the way without finding a wp distance > _repeat_dist distance.
         // the last read temp_cmd will be the furthest cmd back in the history array so resume to that.
         rewind_cmd = temp_cmd;

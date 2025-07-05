@@ -560,7 +560,7 @@ void AP_OpenDroneID::send_operator_id_message()
 MAV_ODID_HOR_ACC AP_OpenDroneID::create_enum_horizontal_accuracy(float accuracy) const
 {
     // Out of bounds return UNKNOWN flag
-    if (accuracy < 0.0 || accuracy >= 18520.0) {
+    if (is_negative(accuracy) || accuracy >= 18520.0) {
         return MAV_ODID_HOR_ACC_UNKNOWN;
     }
 

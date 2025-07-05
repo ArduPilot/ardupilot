@@ -86,7 +86,7 @@ void Copter::update_land_detector()
 #if MODE_AUTOROTATE_ENABLED
                                     || (flightmode->mode_number() == Mode::Number::AUTOROTATE && motors->get_below_land_min_coll())
 #endif
-                                    || ((!get_force_flying() || landing) && motors->limit.throttle_lower && pos_control->get_vel_desired_NEU_cms().z < 0.0f);
+                                    || ((!get_force_flying() || landing) && motors->limit.throttle_lower && is_negative(pos_control->get_vel_desired_NEU_cms().z));
         bool throttle_mix_at_min = true;
 #else
         // check that the average throttle output is near minimum (less than 12.5% hover throttle)

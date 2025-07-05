@@ -647,10 +647,10 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
     if (retrieve_los_meas(target_vec_unit_body)) {
         _inertial_data_delayed = (*_inertial_history)[0];
 
-        const bool target_vec_valid = target_vec_unit_body.projected(_approach_vector_body).dot(_approach_vector_body) > 0.0f;
+        const bool target_vec_valid = is_positive(target_vec_unit_body.projected(_approach_vector_body).dot(_approach_vector_body));
         const Vector3f target_vec_unit_ned = _inertial_data_delayed->Tbn * target_vec_unit_body;
         const Vector3f approach_vector_NED = _inertial_data_delayed->Tbn * _approach_vector_body;
-        const bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
+        const bool alt_valid = (rangefinder_alt_valid && is_positive(rangefinder_alt_m)) || is_positive(_backend->distance_to_target());
         if (target_vec_valid && alt_valid) {
             // distance to target and distance to target along approach vector
             float dist_to_target, dist_to_target_along_av;
@@ -661,7 +661,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
                 // take its height into account while calculating distance
                 cam_pos_ned = _inertial_data_delayed->Tbn * _cam_offset;
             }
-            if (_backend->distance_to_target() > 0.0f) {
+            if (is_positive(_backend->distance_to_target())) {
                 // sensor has provided distance to landing target
                 dist_to_target = _backend->distance_to_target();
             } else {

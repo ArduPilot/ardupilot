@@ -2346,7 +2346,7 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
         WITH_SEMAPHORE(baro.get_semaphore());
         vspd = baro.get_climb_rate();
     } while (false);
-    if (vspd < 0.0) {
+    if (is_negative(vspd)) {
         vspd = 0.0;
     }
     AP_BattMonitor &battery = AP::battery();
