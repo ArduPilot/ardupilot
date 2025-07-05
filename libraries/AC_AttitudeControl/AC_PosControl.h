@@ -68,8 +68,8 @@ public:
     /// This function updates the desired acceleration using a smooth kinematic path constrained by acceleration and jerk limits.
     void input_pos_NEU_cm(const Vector3p& pos_neu_cm, float pos_terrain_target_alt_cm, float terrain_buffer_cm);
 
-    /// pos_terrain_U_scaler - computes a scaling factor applied to horizontal velocity limits to ensure the vertical position controller remains within its terrain buffer.
-    float pos_terrain_U_scaler(float pos_terrain_u_cm, float pos_terrain_u_buffer_cm) const;
+    /// pos_terrain_U_scaler_cm - computes a scaling factor applied to horizontal velocity limits to ensure the vertical position controller remains within its terrain buffer.
+    float pos_terrain_U_scaler_cm(float pos_terrain_u_cm, float pos_terrain_u_buffer_cm) const;
 
     ///
     /// Lateral position controller
