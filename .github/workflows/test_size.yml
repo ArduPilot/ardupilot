@@ -88,7 +88,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.ref }}
+          ref: 0909f1aba8a8cb6b69e9639178fd35843f2d727e
           path: base_branch
           submodules: 'recursive'
       # Put ccache into github cache for faster build
@@ -106,7 +106,7 @@ jobs:
       - name: setup ccache
         run: |
           . base_branch/.github/workflows/ccache.env
-      - name: Build ${{ github.event.pull_request.base.ref }} ${{matrix.config}} ${{ matrix.toolchain }}
+      - name: Build 0909f1aba8a8cb6b69e9639178fd35843f2d727e ${{matrix.config}} ${{ matrix.toolchain }}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
@@ -153,7 +153,7 @@ jobs:
 
           # build a set of binaries without symbols so we can check if
           #  the binaries have changed.
-          echo [`date`] Building ${{ github.event.pull_request.base.ref }} with no versions
+          echo [`date`] Building 0909f1aba8a8cb6b69e9639178fd35843f2d727e with no versions
 
           NO_VERSIONS_DIR="$GITHUB_WORKSPACE/base_branch_bin_no_versions"
           mkdir "$NO_VERSIONS_DIR"
@@ -173,12 +173,13 @@ jobs:
           fi
           cp -r $BIN_SRC/* "$NO_VERSIONS_DIR"
 
-          echo [`date`] Built ${{ github.event.pull_request.base.ref }} with no versions
+          echo [`date`] Built 0909f1aba8a8cb6b69e9639178fd35843f2d727e with no versions
 
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           path: 'pr'
+          ref: 2eccb0d5098ced228a69d0a03800c7809d53ec34
 
       - name: Build PR rebased ${{matrix.config}} ${{ matrix.toolchain }}
         env:
@@ -207,8 +208,8 @@ jobs:
           git config user.email "ardupilot-ci@ardupilot.org"
           git config user.name "ArduPilot CI"
           git remote add target_repo https://github.com/${{github.event.pull_request.base.repo.full_name}}
-          git fetch --no-tags --prune --progress target_repo ${{ github.event.pull_request.base.ref }}
-          git rebase target_repo/${{ github.event.pull_request.base.ref }}
+          git fetch --no-tags --prune --progress target_repo 0909f1aba8a8cb6b69e9639178fd35843f2d727e
+          git rebase 0909f1aba8a8cb6b69e9639178fd35843f2d727e
           git submodule update --init --recursive --depth=1
           # configure
           if [ $BOOTLOADER -eq 1 ]; then
@@ -271,7 +272,7 @@ jobs:
           cd pr/
           Tools/scripts/build_tests/pretty_diff_size.py -m $GITHUB_WORKSPACE/base_branch_bin -s $GITHUB_WORKSPACE/pr_bin
 
-      - name: Feature compare with  ${{ github.event.pull_request.base.ref }}
+      - name: Feature compare with  0909f1aba8a8cb6b69e9639178fd35843f2d727e
         shell: bash
         run: |
           set -ex
@@ -312,7 +313,7 @@ jobs:
             echo "No differences found." >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Checksum compare with ${{ github.event.pull_request.base.ref }}
+      - name: Checksum compare with 0909f1aba8a8cb6b69e9639178fd35843f2d727e
         shell: bash
         run: |
           diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.elf --exclude=*.apj || true
@@ -325,3 +326,10 @@ jobs:
           else
             echo "No differences found." >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Archive build
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{matrix.config}}-${{ matrix.toolchain }}
+          path: .
+          retention-days: 1
