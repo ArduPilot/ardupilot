@@ -634,7 +634,7 @@ void ModeGuided::guided_posvel_control_run()
     }
 
     // advance position target using velocity target
-    posvel_pos_target_cm += (posvel_vel_target_cms * position_control->get_dt()).topostype();
+    posvel_pos_target_cm += (posvel_vel_target_cms * position_control->get_dt_s()).topostype();
 
     // send position and velocity targets to position controller
     position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
