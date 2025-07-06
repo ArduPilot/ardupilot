@@ -22,6 +22,7 @@
 //#define MODE_SYSTEMID_ENABLED 0            // disable system ID mode support
 //#define MODE_THROW_ENABLED    0            // disable throw mode support
 //#define MODE_ZIGZAG_ENABLED   0            // disable zigzag mode support
+//#define MODE_RATE_ACRO_ENABLED 0           // disable acrobatic rate mode support
 //#define OSD_ENABLED           0            // disable on-screen-display support
 
 // features below are disabled by default on all boards
