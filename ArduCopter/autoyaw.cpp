@@ -110,11 +110,11 @@ void Mode::AutoYaw::set_mode(Mode yaw_mode)
     }
 }
 
-// set_fixed_yaw - sets the yaw look at heading for auto mode
-void Mode::AutoYaw::set_fixed_yaw(float yaw_deg, float yaw_rate_degs, int8_t direction, bool relative_angle)
+// set_fixed_yaw_rad - sets the yaw look at heading for auto mode
+void Mode::AutoYaw::set_fixed_yaw_rad(float yaw_rad, float yaw_rate_rads, int8_t direction, bool relative_angle)
 {
     _last_update_ms = millis();
-    const float angle_rad = radians(yaw_deg);
+    const float angle_rad = yaw_rad;
 
     // calculate final angle as relative to vehicle heading or absolute
     if (relative_angle) {
@@ -133,24 +133,24 @@ void Mode::AutoYaw::set_fixed_yaw(float yaw_deg, float yaw_rate_degs, int8_t dir
     }
 
     // get turn speed
-    if (!is_positive(yaw_rate_degs)) {
+    if (!is_positive(yaw_rate_rads)) {
         // default to default slew rate
         _fixed_yaw_slewrate_rads = copter.attitude_control->get_slew_yaw_max_rads();
     } else {
-        _fixed_yaw_slewrate_rads = MIN(copter.attitude_control->get_slew_yaw_max_rads(), radians(yaw_rate_degs));
+        _fixed_yaw_slewrate_rads = MIN(copter.attitude_control->get_slew_yaw_max_rads(), yaw_rate_rads);
     }
 
     // set yaw mode
     set_mode(Mode::FIXED);
 }
 
-// set_fixed_yaw - sets the yaw look at heading for auto mode
-void Mode::AutoYaw::set_yaw_angle_and_rate_deg(float yaw_angle_deg, float yaw_rate_degs)
+// set_fixed_yaw_rad - sets the yaw look at heading for auto mode
+void Mode::AutoYaw::set_yaw_angle_and_rate_rad(float yaw_angle_rad, float yaw_rate_rads)
 {
     _last_update_ms = millis();
 
-    _yaw_angle_rad = radians(yaw_angle_deg);
-    _yaw_rate_rads = radians(yaw_rate_degs);
+    _yaw_angle_rad = yaw_angle_rad;
+    _yaw_rate_rads = yaw_rate_rads;
 
     // set yaw mode
     set_mode(Mode::ANGLE_RATE);
@@ -205,11 +205,11 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
     }
 }
 
-// set auto yaw rate in centi-degrees per second
-void Mode::AutoYaw::set_rate(float turn_rate_cds)
+// set auto yaw rate in radians per second
+void Mode::AutoYaw::set_rate_rad(float turn_rate_rads)
 {
     set_mode(Mode::RATE);
-    _yaw_rate_rads = cd_to_rad(turn_rate_cds);
+    _yaw_rate_rads = turn_rate_rads;
 }
 
 // return true if fixed yaw target has been reached
