@@ -708,6 +708,30 @@ void AP_Periph_FW::handle_notify_state(CanardInstance* canard_instance, CanardRx
         memcpy(&tmp, msg.aux_data.data, sizeof(tmp));
         yaw_earth = radians((float)tmp * 0.01f);
     }
+
+    AP_Notify::flags.initialising = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_INITIALISING);
+    AP_Notify::flags.armed = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_ARMED);
+    AP_Notify::flags.flying = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_FLYING);
+    AP_Notify::flags.pre_arm_check = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_PREARM);
+    AP_Notify::flags.pre_arm_gps_check = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_PREARM_GPS);
+    AP_Notify::flags.save_trim = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_SAVE_TRIM);
+    AP_Notify::flags.esc_calibration = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_ESC_CALIBRATION);
+    AP_Notify::flags.failsafe_radio = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_FAILSAFE_RADIO);
+    AP_Notify::flags.failsafe_battery = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_FAILSAFE_BATT);
+    AP_Notify::flags.failsafe_gcs = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_FAILSAFE_GCS);
+    AP_Notify::flags.parachute_release = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_CHUTE_RELEASED);
+    AP_Notify::flags.ekf_bad = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_EKF_BAD);
+    AP_Notify::flags.firmware_update = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_FW_UPDATE);
+    AP_Notify::flags.compass_cal_running = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_MAGCAL_RUN);
+    AP_Notify::flags.leak_detected = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_LEAK_DET);
+    AP_Notify::flags.gps_fusion = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_GPS_FUSION);
+    AP_Notify::flags.gps_glitching = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_GPS_GLITCH);
+    AP_Notify::flags.have_pos_abs = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_POS_ABS_AVAIL);
+    AP_Notify::flags.vehicle_lost = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_LOST);
+    AP_Notify::flags.waiting_for_throw = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_THROW_READY);
+    AP_Notify::flags.powering_off = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_POWERING_OFF);
+    AP_Notify::flags.video_recording = msg.vehicle_state & (1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_VIDEO_RECORDING);
+
     vehicle_state = msg.vehicle_state;
     last_vehicle_state = AP_HAL::millis();
 }
