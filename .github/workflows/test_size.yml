@@ -269,7 +269,7 @@ jobs:
         shell: bash
         run: |
           cd pr/
-          Tools/scripts/build_tests/pretty_diff_size.py -m $GITHUB_WORKSPACE/base_branch_bin -s $GITHUB_WORKSPACE/pr_bin
+          Tools/scripts/build_tests/pretty_diff_size.py -m $GITHUB_WORKSPACE/base_branch_bin_no_versions -s $GITHUB_WORKSPACE/pr_bin_no_versions
 
       - name: Feature compare with  ${{ github.event.pull_request.base.ref }}
         shell: bash
