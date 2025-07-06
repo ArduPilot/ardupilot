@@ -160,7 +160,12 @@ bool Mode::enter()
             quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
         }
 
-        if (is_vtol_mode() && !quadplane.tailsitter.enabled()) {
+#if AP_MOTORS_TAILSITTER_ENABLED
+        const bool tailsitter_enabled = quadplane.tailsitter.enabled();
+#else
+        const bool tailsitter_enabled = false;
+#endif
+        if (is_vtol_mode() && !tailsitter_enabled) {
             // if flying inverted and entering a VTOL mode cancel
             // inverted flight
             plane.inverted_flight = false;

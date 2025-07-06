@@ -20,12 +20,14 @@ void ModeQStabilize::update()
     const float roll_input = (float)plane.channel_roll->get_control_in() / plane.channel_roll->get_range();
     const float pitch_input = (float)plane.channel_pitch->get_control_in() / plane.channel_pitch->get_range();
 
+#if AP_MOTORS_TAILSITTER_ENABLED
     // then scale to target angles in centidegrees
     if (plane.quadplane.tailsitter.active()) {
         // tailsitters are different
         set_tailsitter_roll_pitch(roll_input, pitch_input);
         return;
     }
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
 
     if (!plane.quadplane.option_is_set(QuadPlane::OPTION::INGORE_FW_ANGLE_LIMITS_IN_Q_MODES)) {
         // by default angles are also constrained by forward flight limits
@@ -40,12 +42,14 @@ void ModeQStabilize::update()
 // quadplane stabilize mode
 void ModeQStabilize::run()
 {
+#if AP_MOTORS_TAILSITTER_ENABLED
     const uint32_t now = AP_HAL::millis();
     if (quadplane.tailsitter.in_vtol_transition(now)) {
         // Tailsitters in FW pull up phase of VTOL transition run FW controllers
         Mode::run();
         return;
     }
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
 
     plane.quadplane.assign_tilt_to_fwd_thr();
 

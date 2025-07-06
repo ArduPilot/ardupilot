@@ -86,12 +86,14 @@ void ModeQRTL::update()
  */
 void ModeQRTL::run()
 {
+#if AP_MOTORS_TAILSITTER_ENABLED
     const uint32_t now = AP_HAL::millis();
     if (quadplane.tailsitter.in_vtol_transition(now)) {
         // Tailsitters in FW pull up phase of VTOL transition run FW controllers
         Mode::run();
         return;
     }
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
 
     switch (submode) {
         case SubMode::climb: {

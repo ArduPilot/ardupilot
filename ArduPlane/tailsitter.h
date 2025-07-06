@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include <AP_Motors/AP_Motors_config.h>
+
+#if AP_MOTORS_TAILSITTER_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include "transition.h"
 #include <AP_Motors/AP_MotorsTailsitter.h>
@@ -219,3 +223,5 @@ private:
     Tailsitter& tailsitter;
 
 };
+
+#endif  // AP_MOTORS_TAILSITTER_ENABLED

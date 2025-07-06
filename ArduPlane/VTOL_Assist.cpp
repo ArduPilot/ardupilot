@@ -58,7 +58,12 @@ void VTOL_Assist::reset()
  */
 bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
 {
-    if (!plane.arming.is_armed_and_safety_off() || (state == STATE::ASSIST_DISABLED) || quadplane.tailsitter.is_control_surface_tailsitter()) {
+#if AP_MOTORS_TAILSITTER_ENABLED
+    const bool control_surface_tailsitter = quadplane.tailsitter.is_control_surface_tailsitter();
+#else
+    const bool control_surface_tailsitter = false;
+#endif
+    if (!plane.arming.is_armed_and_safety_off() || (state == STATE::ASSIST_DISABLED) || control_surface_tailsitter) {
         // disarmed or disabled by aux switch or because a control surface tailsitter
         reset();
         return false;

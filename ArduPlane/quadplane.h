@@ -560,8 +560,10 @@ private:
     // Tiltrotor control
     Tiltrotor tiltrotor{*this, motors};
 
+#if AP_MOTORS_TAILSITTER_ENABLED
     // tailsitter control
     Tailsitter tailsitter{*this, motors};
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
 
     // the attitude view of the VTOL attitude controller
     AP_AHRS_View *ahrs_view;

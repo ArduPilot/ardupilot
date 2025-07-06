@@ -208,7 +208,7 @@ void Plane::read_radio()
 
     rudder_arm_disarm_check();
 
-#if HAL_QUADPLANE_ENABLED
+#if AP_MOTORS_TAILSITTER_ENABLED
     // potentially swap inputs for tailsitters
     quadplane.tailsitter.check_input();
 #endif
