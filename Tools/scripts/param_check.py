@@ -335,7 +335,7 @@ def load_params(file, skip=SkippedChecks(), depth=0):
             continue
 
         # Split on , or any whitespace
-        parts = re.split(r'[,=\s]+', processed_line, 1)
+        parts = re.split(r'[,=\s]+', processed_line, maxsplit=1)
 
         # Check for redefinition
         if parts[0] in seen_params and not skip.no_redefinition:
