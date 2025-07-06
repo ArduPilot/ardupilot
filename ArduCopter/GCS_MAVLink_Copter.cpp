@@ -661,9 +661,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_CONDITION_YAW(const mavlink_comman
         if ((packet.param1 >= 0.0f)   &&
             (packet.param1 <= 360.0f) &&
             (is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
-            copter.flightmode->auto_yaw.set_fixed_yaw(
-                packet.param1,
-                packet.param2,
+            copter.flightmode->auto_yaw.set_fixed_yaw_rad(
+                radians(packet.param1),
+                radians(packet.param2),
                 (int8_t)packet.param3,
                 is_positive(packet.param4));
             return MAV_RESULT_ACCEPTED;

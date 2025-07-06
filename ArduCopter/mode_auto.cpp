@@ -1930,9 +1930,9 @@ void ModeAuto::do_within_distance(const AP_Mission::Mission_Command& cmd)
 
 void ModeAuto::do_yaw(const AP_Mission::Mission_Command& cmd)
 {
-    auto_yaw.set_fixed_yaw(
-        cmd.content.yaw.angle_deg,
-        cmd.content.yaw.turn_rate_dps,
+    auto_yaw.set_fixed_yaw_rad(
+        radians(cmd.content.yaw.angle_deg),
+        radians(cmd.content.yaw.turn_rate_dps),
         cmd.content.yaw.direction,
         cmd.content.yaw.relative_angle > 0);
 }
