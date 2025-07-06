@@ -329,17 +329,17 @@ public:
         void set_mode(Mode new_mode);
         Mode default_mode(bool rtl) const;
 
-        void set_rate(float new_rate_cds);
+        void set_rate_rad(float turn_rate_rads);
 
         // set_roi(...): set a "look at" location:
         void set_roi(const Location &roi_location);
 
-        void set_fixed_yaw(float angle_deg,
-                           float turn_rate_degs,
-                           int8_t direction,
-                           bool relative_angle);
+        void set_fixed_yaw_rad(float angle_rad,
+                               float turn_rate_rads,
+                               int8_t direction,
+                               bool relative_angle);
 
-        void set_yaw_angle_and_rate_deg(float yaw_angle_deg, float yaw_rate_degs);
+        void set_yaw_angle_and_rate_rad(float yaw_angle_rad, float yaw_rate_rads);
 
         void set_yaw_angle_offset_deg(const float yaw_angle_offset_deg);
 
