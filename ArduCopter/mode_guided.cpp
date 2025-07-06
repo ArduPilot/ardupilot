@@ -16,10 +16,8 @@ struct {
     uint32_t update_time_ms;
     Quaternion attitude_quat;
     Vector3f ang_vel_body;
-    float yaw_rate_cds;
     float climb_rate_cms;   // climb rate in cms.  Used if use_thrust is false
     float thrust;           // thrust from -1 to 1.  Used if use_thrust is true
-    bool use_yaw_rate;
     bool use_thrust;
 } static guided_angle_state;
 
@@ -333,8 +331,6 @@ void ModeGuided::angle_control_start()
     guided_angle_state.attitude_quat.from_euler(Vector3f(0.0, 0.0, attitude_control->get_att_target_euler_rad().z));
     guided_angle_state.ang_vel_body.zero();
     guided_angle_state.climb_rate_cms = 0.0f;
-    guided_angle_state.yaw_rate_cds = 0.0f;
-    guided_angle_state.use_yaw_rate = false;
 }
 
 // set_destination - sets guided mode's target destination
