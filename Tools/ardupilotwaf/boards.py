@@ -191,10 +191,12 @@ class Board:
         for opt in build_options.BUILD_OPTIONS:
             enable_option = opt.config_option().replace("-","_")
             disable_option = "disable_" + enable_option[len("enable-"):]
-            if getattr(cfg.options, enable_option, False):
+            lower_disable_option = disable_option.lower().replace("_", "-")
+            lower_enable_option = enable_option.lower().replace("_", "-")
+            if getattr(cfg.options, enable_option, False) or getattr(cfg.options, lower_enable_option, False):
                 env.CXXFLAGS += ['-D%s=1' % opt.define]
                 cfg.msg("Enabled %s" % opt.label, 'yes', color='GREEN')
-            elif getattr(cfg.options, disable_option, False):
+            elif getattr(cfg.options, disable_option, False) or getattr(cfg.options, lower_disable_option, False):
                 env.CXXFLAGS += ['-D%s=0' % opt.define]
                 cfg.msg("Enabled %s" % opt.label, 'no', color='YELLOW')
 
