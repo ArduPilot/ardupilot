@@ -521,6 +521,15 @@ public:
     // purposes
     void set_PD_scale_mult(const Vector3f &pd_scale) { _pd_scale *= pd_scale; }
 
+    // setup a one loop I scale multiplier, multiplying by any
+    // previously applied scale from this loop. This allows for more
+    // than one type of scale factor to be applied for different
+    // purposes
+    void set_I_scale_mult(const Vector3f &i_scale) { _i_scale *= i_scale; }
+
+    // scale I to represent the control given by angle P
+    void scale_I_to_angle_P();
+
     // write RATE message
     void Write_Rate(const AC_PosControl &pos_control) const;
 
@@ -670,6 +679,12 @@ protected:
 
     // Proportional-Derivative gains this loop (for logging/debugging)
     Vector3f            _pd_scale_used;
+
+    // Integrator gains applied dynamically per axis
+    Vector3f            _i_scale{1,1,1};
+
+    // Integrator gains this loop (for logging/debugging)
+    Vector3f            _i_scale_used;
 
     // Ratio of normal to reduced rate controller gain when landed to suppress ground resonance
     float               _landed_gain_ratio;
