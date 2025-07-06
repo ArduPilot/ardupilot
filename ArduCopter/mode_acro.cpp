@@ -137,11 +137,11 @@ void ModeAcro::get_pilot_desired_rates_rads(float roll_in_norm, float pitch_in_n
 
         // Calculate trainer mode earth frame rate command for roll
         float roll_angle_rad = wrap_PI(att_target_euler_rad.x);
-        rate_ef_level_rads.x = -constrain_float(roll_angle_rad, cd_to_rad(-ACRO_LEVEL_MAX_ANGLE), cd_to_rad(ACRO_LEVEL_MAX_ANGLE)) * g.acro_balance_roll;
+        rate_ef_level_rads.x = -constrain_float(roll_angle_rad, -ACRO_LEVEL_MAX_ANGLE_RAD, ACRO_LEVEL_MAX_ANGLE_RAD) * g.acro_balance_roll;
 
         // Calculate trainer mode earth frame rate command for pitch
         float pitch_angle_rad = wrap_PI(att_target_euler_rad.y);
-        rate_ef_level_rads.y = -constrain_float(pitch_angle_rad, cd_to_rad(-ACRO_LEVEL_MAX_ANGLE), cd_to_rad(ACRO_LEVEL_MAX_ANGLE)) * g.acro_balance_pitch;
+        rate_ef_level_rads.y = -constrain_float(pitch_angle_rad, -ACRO_LEVEL_MAX_ANGLE_RAD, ACRO_LEVEL_MAX_ANGLE_RAD) * g.acro_balance_pitch;
 
         // Calculate trainer mode earth frame rate command for yaw
         rate_ef_level_rads.z = 0;
@@ -150,15 +150,15 @@ void ModeAcro::get_pilot_desired_rates_rads(float roll_in_norm, float pitch_in_n
         if (g.acro_trainer == (uint8_t)Trainer::LIMITED) {
             const float angle_max_rad = attitude_control->lean_angle_max_rad();
             if (roll_angle_rad > angle_max_rad) {
-                rate_ef_level_rads.x += sqrt_controller(angle_max_rad - roll_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / cd_to_rad(ACRO_LEVEL_MAX_OVERSHOOT), attitude_control->get_accel_roll_max_radss(), G_Dt);
+                rate_ef_level_rads.x += sqrt_controller(angle_max_rad - roll_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / ACRO_LEVEL_MAX_OVERSHOOT_RAD, attitude_control->get_accel_roll_max_radss(), G_Dt);
             } else if (roll_angle_rad < -angle_max_rad) {
-                rate_ef_level_rads.x += sqrt_controller(-angle_max_rad - roll_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / cd_to_rad(ACRO_LEVEL_MAX_OVERSHOOT), attitude_control->get_accel_roll_max_radss(), G_Dt);
+                rate_ef_level_rads.x += sqrt_controller(-angle_max_rad - roll_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / ACRO_LEVEL_MAX_OVERSHOOT_RAD, attitude_control->get_accel_roll_max_radss(), G_Dt);
             }
 
             if (pitch_angle_rad > angle_max_rad) {
-                rate_ef_level_rads.y += sqrt_controller(angle_max_rad - pitch_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / cd_to_rad(ACRO_LEVEL_MAX_OVERSHOOT), attitude_control->get_accel_pitch_max_radss(), G_Dt);
+                rate_ef_level_rads.y += sqrt_controller(angle_max_rad - pitch_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / ACRO_LEVEL_MAX_OVERSHOOT_RAD, attitude_control->get_accel_pitch_max_radss(), G_Dt);
             } else if (pitch_angle_rad < -angle_max_rad) {
-                rate_ef_level_rads.y += sqrt_controller(-angle_max_rad - pitch_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / cd_to_rad(ACRO_LEVEL_MAX_OVERSHOOT), attitude_control->get_accel_pitch_max_radss(), G_Dt);
+                rate_ef_level_rads.y += sqrt_controller(-angle_max_rad - pitch_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / ACRO_LEVEL_MAX_OVERSHOOT_RAD, attitude_control->get_accel_pitch_max_radss(), G_Dt);
             }
         }
 
