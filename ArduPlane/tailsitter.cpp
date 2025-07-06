@@ -17,10 +17,13 @@
   or by setting Q_TAILSIT_MOTMX nonzero and Q_FRAME_CLASS and Q_FRAME_TYPE
   to a configuration supported by AP_MotorsMatrix
  */
+
+#include <AP_Motors/AP_Motors_config.h>
+
+#if AP_MOTORS_TAILSITTER_ENABLED
+
 #include "tailsitter.h"
 #include "Plane.h"
-
-#if HAL_QUADPLANE_ENABLED
 
 const AP_Param::GroupInfo Tailsitter::var_info[] = {
 
@@ -1057,4 +1060,4 @@ bool Tailsitter_Transition::allow_weathervane()
     return !tailsitter.in_vtol_transition() && (vtol_limit_start_ms == 0);
 }
 
-#endif  // HAL_QUADPLANE_ENABLED
+#endif  // AP_MOTORS_TAILSITTER_ENABLED

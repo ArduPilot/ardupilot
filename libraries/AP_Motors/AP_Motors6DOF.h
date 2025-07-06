@@ -3,6 +3,10 @@
 
 #pragma once
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORS_FRAME_6DOF_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
@@ -77,3 +81,5 @@ protected:
     float _output_limited = 1.0f;
     float _batt_current_last = 0.0f;
 };
+
+#endif  // AP_MOTORS_FRAME_6DOF_ENABLED

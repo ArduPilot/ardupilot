@@ -2,6 +2,10 @@
 /// @brief	Motor and Servo control class for Co-axial helicopters with two motors and two flaps
 #pragma once
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORS_COAX_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include "AP_MotorsMulticopter.h"
@@ -61,3 +65,5 @@ protected:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 };
+
+#endif  // AP_MOTORS_COAX_ENABLED

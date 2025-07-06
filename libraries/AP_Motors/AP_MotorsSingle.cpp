@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORS_SINGLE_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_MotorsSingle.h"
@@ -268,3 +272,5 @@ void AP_MotorsSingle::_output_test_seq(uint8_t motor_seq, int16_t pwm)
             break;
     }
 }
+
+#endif  // AP_MOTORS_SINGLE_ENABLED

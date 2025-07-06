@@ -26,12 +26,14 @@ void ModeQHover::run()
 {
     quadplane.assist.check_VTOL_recovery();
 
+#if AP_MOTORS_TAILSITTER_ENABLED
     const uint32_t now = AP_HAL::millis();
     if (quadplane.tailsitter.in_vtol_transition(now)) {
         // Tailsitters in FW pull up phase of VTOL transition run FW controllers
         Mode::run();
         return;
     }
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
 
     if (quadplane.throttle_wait) {
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
