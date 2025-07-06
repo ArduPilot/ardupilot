@@ -193,7 +193,7 @@ void AC_PID::set_notch_sample_rate(float sample_rate)
 // Computes the PID output using a target and measurement input.
 // Applies filters to the target and error, calculates the derivative and updates the integrator.
 // If `limit` is true, the integrator is allowed to shrink but not grow.
-float AC_PID::update_all(float target, float measurement, float dt, bool limit, float pd_scale)
+float AC_PID::update_all(float target, float measurement, float dt, bool limit, float pd_scale, float i_scale)
 {
     // Return zero if input is invalid (NaN or infinite)
     if (!isfinite(target) || !isfinite(measurement)) {
@@ -268,6 +268,7 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
 
     float P_out = (_error * _kp);
     float D_out = (_derivative * _kd);
+    float I_out = _integrator;
 
     // Calculate dynamic modifier to reduce P+D output based on slew rate limiter
     _pid_info.Dmod = _slew_limiter.modifier((_pid_info.P + _pid_info.D) * _slew_limit_scale, dt);
@@ -280,6 +281,8 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
     // scale pd output if required
     P_out *= pd_scale;
     D_out *= pd_scale;
+    // scale i output if required
+    I_out *= i_scale;
 
     _pid_info.PD_limit = false;
     // Apply PD sum limit if enabled
@@ -298,10 +301,15 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
     _pid_info.error = _error;
     _pid_info.P = P_out;
     _pid_info.D = D_out;
+    _pid_info.I = I_out;
+    _pid_info.limit = limit;
+    // Set I set flag for logging and clear
+    _pid_info.I_term_set = _flags._I_set;
+    _flags._I_set = false;
     _pid_info.FF = _target * _kff;
     _pid_info.DFF = _target_derivative * _kdff;
 
-    return P_out + D_out + _integrator;
+    return P_out + D_out + I_out;
 }
 
 // Computes the PID output from an error input only (target assumed to be zero).
@@ -341,12 +349,6 @@ void AC_PID::update_i(float dt, bool limit)
     } else {
         _integrator = 0.0f;
     }
-    _pid_info.I = _integrator;
-    _pid_info.limit = limit;
-
-    // Set I set flag for logging and clear
-    _pid_info.I_term_set = _flags._I_set;
-    _flags._I_set = false;
 }
 
 float AC_PID::get_p() const
