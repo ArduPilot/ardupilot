@@ -497,6 +497,14 @@ void ToyMode::update()
 #endif
         break;
 
+    case ACTION_MODE_RATE_ACRO:
+#if MODE_RATE_ACRO_ENABLED
+        new_mode = Mode::Number::RATE_ACRO;
+#else
+        gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: RATEACRO is disabled");
+#endif
+        break;
+
     case ACTION_MODE_ALTHOLD:
         new_mode = Mode::Number::ALT_HOLD;
         break;

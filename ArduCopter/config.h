@@ -133,6 +133,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Acro - fly vehicle in rate acrobatic mode
+#ifndef MODE_RATE_ACRO_ENABLED
+# define MODE_RATE_ACRO_ENABLED MODE_ACRO_ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Auto mode - allows vehicle to trace waypoints and perform automated actions
 #ifndef MODE_AUTO_ENABLED
 # define MODE_AUTO_ENABLED 1
