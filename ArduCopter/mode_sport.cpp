@@ -43,24 +43,24 @@ void ModeSport::run()
 
     // Calculate trainer mode earth frame rate command for roll
     float roll_angle_rad = wrap_PI(att_target_euler_rad.x);
-    target_roll_rads -= constrain_float(roll_angle_rad, -cd_to_rad(ACRO_LEVEL_MAX_ANGLE), cd_to_rad(ACRO_LEVEL_MAX_ANGLE)) * g.acro_balance_roll;
+    target_roll_rads -= constrain_float(roll_angle_rad, -ACRO_LEVEL_MAX_ANGLE_RAD, ACRO_LEVEL_MAX_ANGLE_RAD) * g.acro_balance_roll;
 
     // Calculate trainer mode earth frame rate command for pitch
     float pitch_angle_rad = wrap_PI(att_target_euler_rad.y);
-    target_pitch_rads -= constrain_float(pitch_angle_rad, -cd_to_rad(ACRO_LEVEL_MAX_ANGLE), cd_to_rad(ACRO_LEVEL_MAX_ANGLE)) * g.acro_balance_pitch;
+    target_pitch_rads -= constrain_float(pitch_angle_rad, -ACRO_LEVEL_MAX_ANGLE_RAD, ACRO_LEVEL_MAX_ANGLE_RAD) * g.acro_balance_pitch;
 
     const float angle_max_rad = attitude_control->lean_angle_max_rad();
 
     if (roll_angle_rad > angle_max_rad){
-        target_roll_rads +=  sqrt_controller(angle_max_rad - roll_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / cd_to_rad(ACRO_LEVEL_MAX_OVERSHOOT), attitude_control->get_accel_roll_max_radss(), G_Dt);
+        target_roll_rads +=  sqrt_controller(angle_max_rad - roll_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / ACRO_LEVEL_MAX_OVERSHOOT_RAD, attitude_control->get_accel_roll_max_radss(), G_Dt);
     }else if (roll_angle_rad < -angle_max_rad) {
-        target_roll_rads +=  sqrt_controller(-angle_max_rad - roll_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / cd_to_rad(ACRO_LEVEL_MAX_OVERSHOOT), attitude_control->get_accel_roll_max_radss(), G_Dt);
+        target_roll_rads +=  sqrt_controller(-angle_max_rad - roll_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / ACRO_LEVEL_MAX_OVERSHOOT_RAD, attitude_control->get_accel_roll_max_radss(), G_Dt);
     }
 
     if (pitch_angle_rad > angle_max_rad){
-        target_pitch_rads +=  sqrt_controller(angle_max_rad - pitch_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / cd_to_rad(ACRO_LEVEL_MAX_OVERSHOOT), attitude_control->get_accel_pitch_max_radss(), G_Dt);
+        target_pitch_rads +=  sqrt_controller(angle_max_rad - pitch_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / ACRO_LEVEL_MAX_OVERSHOOT_RAD, attitude_control->get_accel_pitch_max_radss(), G_Dt);
     }else if (pitch_angle_rad < -angle_max_rad) {
-        target_pitch_rads +=  sqrt_controller(-angle_max_rad - pitch_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / cd_to_rad(ACRO_LEVEL_MAX_OVERSHOOT), attitude_control->get_accel_pitch_max_radss(), G_Dt);
+        target_pitch_rads +=  sqrt_controller(-angle_max_rad - pitch_angle_rad, radians(g2.command_model_acro_rp.get_rate()) / ACRO_LEVEL_MAX_OVERSHOOT_RAD, attitude_control->get_accel_pitch_max_radss(), G_Dt);
     }
 
     // get pilot desired climb rate
