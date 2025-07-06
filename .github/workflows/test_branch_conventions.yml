@@ -23,6 +23,11 @@ jobs:
           git fetch upstream ${{ github.base_ref }}
           git show upstream/${{ github.base_ref }}
 
+      - name: Test boards with modified hwdefs still compile
+        shell: bash
+        run: |
+          Tools/scripts/test_modified_boards.py --master "upstream/${{ github.base_ref }}"
+
       - name: Check for merge commits in PR branch
         run: |
           # Find merge-base between base branch and (rebased) PR branch
