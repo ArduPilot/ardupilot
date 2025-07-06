@@ -67,6 +67,7 @@ public:
     float get_pitch_cd() const { return _pos_control.get_pitch_cd(); }
     Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
     float get_yaw_cd() const { return _yaw_cd; }
+    float get_yaw_rad() const { return cd_to_rad(_yaw_cd); }
 
     /// returns true if update has been run recently
     /// used by vehicle code to determine if get_yaw() is valid
@@ -82,8 +83,8 @@ public:
     /// get horizontal distance to loiter target in cm
     float get_distance_to_target_cm() const { return _pos_control.get_pos_error_NE_cm(); }
 
-    /// get bearing to target in centi-degrees
-    int32_t get_bearing_to_target_cd() const { return _pos_control.get_bearing_to_target_cd(); }
+    /// get bearing to target in degrees
+    float get_bearing_to_target_rad() const { return _pos_control.get_bearing_to_target_rad(); }
 
     /// true if pilot control of radius and turn rate is enabled
     bool pilot_control_enabled() const { return (_options.get() & CircleOptions::MANUAL_CONTROL) != 0; }
