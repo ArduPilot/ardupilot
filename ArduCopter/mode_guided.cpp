@@ -336,7 +336,7 @@ void ModeGuided::angle_control_start()
 // set_destination - sets guided mode's target destination
 // Returns true if the fence is enabled and guided waypoint is within the fence
 // else return false if the waypoint is outside the fence
-bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool terrain_alt)
+bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool terrain_alt)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
@@ -356,7 +356,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
         }
 
         // set yaw state
-        set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+        set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
         // no need to check return status because terrain data is not used
         wp_nav->set_wp_destination_NEU_cm(destination, terrain_alt);
@@ -394,7 +394,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     }
 
     // set yaw state
-    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // set position target and zero velocity and acceleration
     guided_pos_target_cm = destination.topostype();
@@ -435,7 +435,7 @@ bool ModeGuided::get_wp(Location& destination) const
 // sets guided mode's target from a Location object
 // returns false if destination could not be set (probably caused by missing terrain data)
 // or if the fence is enabled and guided waypoint is outside the fence
-bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
 {
 #if AP_FENCE_ENABLED
     // reject destination outside the fence.
@@ -461,7 +461,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         }
 
         // set yaw state
-        set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+        set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
 #if HAL_LOGGING_ENABLED
         // log target
@@ -486,7 +486,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     }
 
     // set yaw state
-    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // initialise terrain following if needed
     if (terrain_alt) {
@@ -523,7 +523,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 }
 
 // set_velaccel - sets guided mode's target velocity and acceleration
-void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
+void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
 {
     // check we are in acceleration control mode
     if (guided_mode != SubMode::Accel) {
@@ -531,7 +531,7 @@ void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw
     }
 
     // set yaw state
-    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // set velocity and acceleration targets and zero position
     guided_pos_target_cm.zero();
@@ -549,13 +549,13 @@ void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw
 }
 
 // set_velocity - sets guided mode's target velocity
-void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
+void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
 {
-    set_velaccel(velocity, Vector3f(), use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw, log_request);
+    set_velaccel(velocity, Vector3f(), use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw, log_request);
 }
 
 // set_velaccel - sets guided mode's target velocity and acceleration
-void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
+void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw, bool log_request)
 {
     // check we are in velocity and acceleration control mode
     if (guided_mode != SubMode::VelAccel) {
@@ -563,7 +563,7 @@ void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& accelera
     }
 
     // set yaw state
-    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // set velocity and acceleration targets and zero position
     guided_pos_target_cm.zero();
@@ -581,13 +581,13 @@ void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& accelera
 }
 
 // set_destination_posvel - set guided mode position and velocity target
-bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
 {
-    return set_destination_posvelaccel(destination, velocity, Vector3f(), use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    return set_destination_posvelaccel(destination, velocity, Vector3f(), use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 }
 
 // set_destination_posvelaccel - set guided mode position, velocity and acceleration target
-bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_yaw)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
@@ -605,7 +605,7 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
     }
 
     // set yaw state
-    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     update_time_ms = millis();
     guided_pos_target_cm = destination.topostype();
@@ -1009,16 +1009,16 @@ void ModeGuided::angle_control_run()
 }
 
 // helper function to set yaw state and targets
-void ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle)
+void ModeGuided::set_yaw_state_rad(bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_angle)
 {
     if (use_yaw && relative_angle) {
-        auto_yaw.set_fixed_yaw_rad(cd_to_rad(yaw_cd), 0.0f, 0, relative_angle);
+        auto_yaw.set_fixed_yaw_rad(yaw_rad, 0.0f, 0, relative_angle);
     } else if (use_yaw && use_yaw_rate) {
-        auto_yaw.set_yaw_angle_and_rate_rad(cd_to_rad(yaw_cd), yaw_rate_cds * 0.01f);
+        auto_yaw.set_yaw_angle_and_rate_rad(yaw_rad, yaw_rate_rads);
     } else if (use_yaw && !use_yaw_rate) {
-        auto_yaw.set_yaw_angle_and_rate_rad(cd_to_rad(yaw_cd), 0.0f);
+        auto_yaw.set_yaw_angle_and_rate_rad(yaw_rad, 0.0f);
     } else if (use_yaw_rate) {
-        auto_yaw.set_rate_rad(cd_to_rad(yaw_rate_cds));
+        auto_yaw.set_rate_rad(yaw_rate_rads);
     } else {
         auto_yaw.set_mode_to_default(false);
     }
