@@ -252,6 +252,9 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
 
+    // channel which is being used to tune a parameter value:
+    RC_Channel *rc_tuning;
+
     // flight modes convenience array
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
