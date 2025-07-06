@@ -1,4 +1,4 @@
-name: Fail on Merge Commits in PR Branch
+name: Fail on Malformed Commits in PR Branch
 
 on:
   pull_request:
@@ -38,3 +38,24 @@ jobs:
           else
             echo "✅ No merge commits found in the PR branch."
           fi
+
+          # Look for fixup! commits in PR branch only
+          COMMITS=$(git log $BASE..HEAD --oneline)
+
+          if [[ "$COMMITS" == *"fixup!"* ]]; then
+            echo "❌ fixup commits detected in the PR branch (not allowed):"
+            echo "$COMMITS"
+            echo "Please see https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html"
+            exit 1
+          else
+            echo "✅ No fixup commits found in the PR branch."
+          fi
+
+          # require a ":" to appear somewhere in each commit message:
+          while IFS= read x; do
+            if ! [[ "$x" == *":"* ]] ; then
+              echo "❌ Commit message ($x) missing subsystem tag on front.  Re-word your commit to reflect what subsystem it changes. E.g. 'AP_Compass: Added driver for XYZZY' (https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html)"
+              exit 1
+            fi
+          done <<< $COMMITS
+          echo "✅ Commit messages have subsystem tags."
