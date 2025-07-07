@@ -7447,21 +7447,32 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Currently MNT1_SYSID_DFLT is %f" % self.get_parameter('MNT1_SYSID_DFLT'))
         self.wait_text("warn: MNTx_SYSID != FOLL", check_context=True)
 
-        '''
         self.start_subsubtest("ArmCk: Cannot arm while motors estopped")
         self.set_parameter("RC6_OPTION", 165)
         self.progress("rebooting to enable RC channel")
-        self.reboot_sitl() # to handle MNT_TYPE changing
+        self.reboot_sitl() # to handle RC option changing
         self.wait_ekf_happy()
         self.wait_text("ArduPilot Ready", check_context=True)
-        self.wait_text("Arming Checks .* loaded", timeout=30, check_context=True, regex=True)        
+        self.wait_text("Arming Checks .* loaded", timeout=30, check_context=True, regex=True)
 
         self.set_rc(6, 1000)
         self.assert_prearm_failure("ArmCk: fail: Motors EStopped", other_prearm_failures_fatal=False)
         self.set_rc(6, 2000)
         self.wait_text("clear: Motors EStopped", timeout=30, check_context=True, regex=True)
         self.wait_ready_to_arm()
-        '''
+    
+        self.start_subsubtest("ArmCk: Fence must be enabled or autoenabled (warning)")
+        self.load_fence("CMAC-fence.txt")
+        self.wait_statustext("warn: Fence not enabled")
+        self.set_parameter("FENCE_ENABLE", 1)
+        self.wait_statustext("clear: Fence not enabled")
+        self.set_parameter("FENCE_ENABLE", 0)
+        self.wait_statustext("warn: Fence not enabled")
+        self.set_parameter("FENCE_AUTOENABLE", 1)
+        self.wait_text("clear: Fence not enabled")
+        self.set_parameter("FENCE_AUTOENABLE", 0)
+        self.wait_text("warn: Fence not enabled")
+
     def tests(self):
         '''return list of all tests'''
         ret = []
