@@ -10,12 +10,27 @@
 --
 -- Thanks to @yuri_rage and Peter Barker for help with the Lua and Autotests
 
-SCRIPT_VERSION = "4.7.0-013"
+SCRIPT_VERSION = "4.7.0-014"
 SCRIPT_NAME = "Arming Checks"
 SCRIPT_NAME_SHORT = "ArmCk"
 
-REFRESH_RATE = 500
-INITIAL_DELAY = 20000   -- wait 20 seconds for the AP to settle down before starting to show messages
+REFRESH_RATE = 500      -- wait this many milliseconds between each update loop (while not armed)
+INITIAL_DELAY = 10000   -- wait 20 seconds for the AP to settle down before starting to show messages
+
+GLOBAL_PARAM_TABLE_BASE = 160
+VALUES_PARAM_TABLE_KEY = GLOBAL_PARAM_TABLE_BASE + 9
+VALUES_PARAM_TABLE_PREFIX = "ARM_V_"
+
+FIRMWARE = {GLOBAL = 0, ROVER = 1, COPTER = 2, PLANE = 3, ANTENNA = 4, SUB = 7, BLIMP = 12, HELI = 13 }
+VEHICLE = {
+    [FIRMWARE.GLOBAL]   = {prefix = "ARM_", key = GLOBAL_PARAM_TABLE_BASE, index = 1},
+    [FIRMWARE.ROVER]    = {prefix = "ARM_R_", key = GLOBAL_PARAM_TABLE_BASE + 1, index = 1},
+    [FIRMWARE.COPTER]   = {prefix = "ARM_C_", key = GLOBAL_PARAM_TABLE_BASE + 2, index = 1},
+    [FIRMWARE.PLANE]    = {prefix = "ARM_P_", key = GLOBAL_PARAM_TABLE_BASE + 3, index = 1},
+    [FIRMWARE.ANTENNA]  = {prefix = "ARM_A_", key = GLOBAL_PARAM_TABLE_BASE + 4, index = 1},
+    [FIRMWARE.BLIMP]    = {prefix = "ARM_B_", key = GLOBAL_PARAM_TABLE_BASE + 5, index = 1},
+    [FIRMWARE.HELI]     = {prefix = "ARM_H_", key = GLOBAL_PARAM_TABLE_BASE + 6, index = 1},
+}
 
 MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7, NONE=-1}
 
@@ -29,13 +44,19 @@ MAV_SEVERITY_TEXT = {[MAV_SEVERITY.EMERGENCY]   = "emrg",
                     [MAV_SEVERITY.DEBUG]        = "debg",
                 }
 
-local PARAM_TABLE_KEY = 121
-local PARAM_TABLE_PREFIX = "ARM_"
+PLANE_MODE = { AUTO = 10, TAKEOFF = 13}
 
 local param_idx = 1
 
--- create parameter table for ARM_ parameters that will be created below. Watch out that ALT_LEGAL is using 25!
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 25), 'could not add param table')
+-- create parameter table for general/global ARM_ parameters that will be created below. 
+assert(param:add_table(VEHICLE[FIRMWARE.GLOBAL].key, VEHICLE[FIRMWARE.GLOBAL].prefix, 25), 'could not add param table: '..VEHICLE[FIRMWARE.GLOBAL].prefix)
+-- create parameter table for ARM_ parameters for plane that will be created below. 
+assert(param:add_table(VEHICLE[FIRMWARE.COPTER].key, VEHICLE[FIRMWARE.COPTER].prefix, 10), 'could not add param table:'..VEHICLE[FIRMWARE.COPTER].prefix)
+-- create parameter table for ARM_ parameters for plane that will be created below. 
+assert(param:add_table(VEHICLE[FIRMWARE.PLANE].key, VEHICLE[FIRMWARE.PLANE].prefix, 10), 'could not add param table:'..VEHICLE[FIRMWARE.PLANE].prefix)
+
+-- create parameter table for VALUE parameters which are "reference values" used by the parameter methods
+assert(param:add_table(VALUES_PARAM_TABLE_KEY, VALUES_PARAM_TABLE_PREFIX, 10), 'could not add param table:'..VALUES_PARAM_TABLE_PREFIX)
 
 local arm_auth_id = arming:get_aux_auth_id()
 if arm_auth_id == nil then
@@ -49,10 +70,11 @@ local Arming_Check = {}
 Arming_Check.__index = Arming_Check
 
 setmetatable(Arming_Check, {
-    __call = function(cls, func, param_name, text, severity, passed, changed) -- constructor
+    __call = function(cls, firmware, func, param_name, text, severity, passed, changed) -- constructor
         local self      = setmetatable({}, cls)
+        self.firmware   = firmware         -- which firmware type is this check for (0 for general/global)
         self.func       = func             -- func() is called to validate arming
-        self.param_name = param_name       -- the name of a ZAR_ parameter overriding the severity
+        self.param_name = param_name       -- the name of a ARM_ parameter overriding the severity
         self.text       = text             -- the message on failure
         self.severity   = severity         -- is failure a warning or hard stop?
         self.passed     = passed or nil
@@ -73,8 +95,10 @@ function Arming_Check:state()
     return passed_new
 end
 
-ALT_LEGAL = Parameter()
+-- parameters that store values used by the validation methods, rather than severities of the individual arming checks
+ARV_ALT_LEGAL = Parameter()
 local alt_legal_max = 120.0
+ARV_RALLY_MAX = Parameter()
 
 FENCE_TYPE = Parameter("FENCE_TYPE")
 FENCE_TOTAL = Parameter("FENCE_TOTAL")
@@ -82,9 +106,9 @@ FENCE_ENABLE = Parameter("FENCE_ENABLE")
 FENCE_AUTOENABLE = Parameter("FENCE_AUTOENABLE")
 FOLL_ENABLE = Parameter("FOLL_ENABLE")
 FOLL_SYSID = Parameter("FOLL_SYSID")
-if FWVersion:type() == 2 then -- Copter specific paramters
+if FWVersion:type() == FIRMWARE.COPTER then -- Copter specific paramters
     RTL_ALT = Parameter("RTL_ALT")
-elseif FWVersion:type() == 3 then -- Plane specific Parameters
+elseif FWVersion:type() == FIRMWARE.PLANE then -- Plane specific Parameters
     RTL_ALTITUDE = Parameter("RTL_ALTITUDE")
     RTL_CLIMB_MIN = Parameter("RTL_CLIMB_MIN")
     Q_ENABLE = Parameter("Q_ENABLE")
@@ -155,7 +179,7 @@ local function foll_ofs_default()
     return true
 end
 
--- for many use cases if MNTx_SYSID_DEFLT is set is should match the FOLL_SYSID (remember set ZAR_MNTX_SYSID severity to NONE to disable this check)
+-- for many use cases if MNTx_SYSID_DEFLT is set is should match the FOLL_SYSID (remember set ARM_MNTX_SYSID severity to NONE to disable this check)
 local function mntx_sysid_match()
     local foll_enable = FOLL_ENABLE:get()
     local mnt1_enable = (Parameter("MNT1_TYPE"):get() ~= 0)
@@ -295,151 +319,217 @@ local function motors_emergency_stopped()
     return not SRV_Channels:get_emergency_stop()
 end
 
+-- Logic provided by Peter Barker 
+-- Fences present if 
+-- a. there are basic fences (assume this includes min(8)/max(1) and home circle(2) fences) or 
+-- b. there are polygon_fences (fence type bit 2 = 4) with at least one side 
+local function fence_present()
+    local enabled_fences = (FENCE_TYPE:get() or 0)
+    local basic_fence = (enabled_fences & (8+2+1)) ~= 0
+    local polygon_fence = ((enabled_fences & 4) ~= 0) and (FENCE_TOTAL:get() or 0) > 0
+    return basic_fence or polygon_fence
+end
+
+-- check if rally point is too far away
+local function rally_ok()
+    local home_location = ahrs:get_home()
+    local rally_distance_max_m = ARV_RALLY_MAX:get() or 0
+    local rally_points = rally:get_rally_total()
+    if rally_points == 0 or rally_distance_max_m <= 0 then
+        return true
+    end
+    local rally_location
+    local rally_distance_m = 0
+    for i = 0, rally_points-1 do
+        rally_location = rally:get_rally_location_with_index(i)
+        if rally_location ~= Nil then
+            rally_distance_m = home_location:get_distance(rally_location)
+            if rally_distance_m > rally_distance_max_m then
+                return false
+            end
+        end
+    end
+    return true
+end
+
+-- fail if there is a fence on the board, it must be enabled
+local function geofence_present_enabled()
+    if not fence_present() then
+        return true
+    end
+    if (FENCE_ENABLE:get() or 0) == 1 or (FENCE_AUTOENABLE:get() or 0) > 0 then
+        return true
+    end
+    return false
+end
+
 -- Arming checks can be deleted if not required, or set the parameter to MAV_SEVERITY.NONE to avoid changing the script
 -- or new arming checks added 
 -- First add checks that can apply to all vehicles.
 local arming_checks = {
 --[[
-    // @Param: ZAR_SYSID
+    // @Param: ARM_SYSID
     // @DisplayName: MAV_SYSID must be set
     // @Description: Check that MAV_SYSID (or SYDID_THISMAV) has been set. 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
-    SYSID_NotSet = Arming_Check(sysid_set, "SYSID",
+    SYSID_NotSet = Arming_Check(FIRMWARE.GLOBAL, sysid_set, "SYSID",
                             "MAV_SYSID not set", MAV_SEVERITY.WARNING, false, false ),
 --[[
-    // @Param: ZAR_FOLL_SYSID
+    // @Param: ARM_FOLL_SYSID
     // @DisplayName: FOLL_SYSID must be set 
     // @Description: If FOLL_ENABLE = 1, check that FOLL_SYSID has been set. 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
-    FOLL_SYSID_NotSet = Arming_Check(foll_sysid_set, "FOLL_SYSID",
+    FOLL_SYSID_NotSet = Arming_Check(FIRMWARE.GLOBAL, foll_sysid_set, "FOLL_SYSID",
                             "FOLL_SYSID not set", MAV_SEVERITY.ERROR, true, false ),
 --[[
-    // @Param: ZAR_FOLL_SYSID_X
+    // @Param: ARM_FOLL_SYSID_X
     // @DisplayName: Vehicle should not follow itself
     // @Description: If FOLL_ENABLE = 1, check that FOLL_SYSID is different to MAV_SYSID. 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
-    FOLL_SYSID_not_THISMAV = Arming_Check(foll_sysid_not_thismav, "FOLL_SYSID_X",
+    FOLL_SYSID_not_THISMAV = Arming_Check(FIRMWARE.GLOBAL, foll_sysid_not_thismav, "FOLL_SYSID_X",
                             "FOLL_SYSID == MAV_SYSID", MAV_SEVERITY.ERROR, true, false ),
 --[[
-    // @Param: ZAR_FOLL_OFS_DEF
+    // @Param: ARM_FOLL_OFS_DEF
     // @DisplayName: Follow Offsets defaulted
     // @Description: Follow offsets should not be left as default (zero) if FOLL_ENABLE = 1. 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
-    FOLL_OFS_Default = Arming_Check(foll_ofs_default, "FOLL_OFS_DEF",
+    FOLL_OFS_Default = Arming_Check(FIRMWARE.GLOBAL, foll_ofs_default, "FOLL_OFS_DEF",
                             "FOLL_OFS_[XYZ] = 0", MAV_SEVERITY.ERROR, true, false ),
 --[[
-    // @Param: ZAR_MNTX_SYSID
+    // @Param: ARM_MNTX_SYSID
     // @DisplayName: Follow and Mount should follow the same vehicle
     // @Description: If FOLL_ENABLE = 1 and MNTx_SYSID_DEFLT is set, check that FOLL_SYSID is equal MNTx. 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
-    MNTx_SYSID_match_FOLL = Arming_Check(mntx_sysid_match, "MNTX_SYSID",
+    MNTx_SYSID_match_FOLL = Arming_Check(FIRMWARE.GLOBAL, mntx_sysid_match, "MNTX_SYSID",
                             "MNTx_SYSID != FOLL", MAV_SEVERITY.WARNING, true, false ),
 --[[
-    // @Param: ZAR_RTL_CLIMB
+    // @Param: ARM_RTL_CLIMB
     // @DisplayName: RTL_CLIMB_MIN should be a valid value
     // @Description: RTL_CLIMB_MIN should be < 120m (400ft). 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
-    RTLClimbLegal = Arming_Check(rtl_climb_legal, "RTL_CLIMB",
+    RTLClimbLegal = Arming_Check(FIRMWARE.GLOBAL, rtl_climb_legal, "RTL_CLIMB",
                             "RTL_CLIMB_MIN too high", MAV_SEVERITY.WARNING, true, false ),
 --[[
-// @Param: ZAR_ESTOP
+// @Param: ARM_ESTOP
 // @DisplayName: Motors EStopped
 // @Description: Emergency Stop disables arming. 3 or less to prevent arming. -1 to disable.
 // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
 // @User: Standard
 --]]
-    EmergencyStop = Arming_Check(motors_emergency_stopped, "ESTOP",
+    EmergencyStop = Arming_Check(FIRMWARE.GLOBAL, motors_emergency_stopped, "ESTOP",
                                 "Motors EStopped", MAV_SEVERITY.ERROR, true, false ),
+--[[
+// @Param: ARM_FENCE
+// @DisplayName: Fence not enabled
+// @Description: Fences loaded but no fence enabled. 3 or less to prevent arming. -1 to disable.
+// @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+// @User: Standard
+--]]
+    FenceNotEnabled = Arming_Check(FIRMWARE.GLOBAL, geofence_present_enabled, "FENCE",
+                                "Fence not enabled", MAV_SEVERITY.WARNING, true, false ),
+--[[
+// @Param: ARM_RALLY
+// @DisplayName: Rally close
+// @Description: Rally Point more than ARV_RALLY meters away. 3 or less to prevent arming. -1 to disable.
+// @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+// @User: Standard
+--]]
+    RallyTooFar = Arming_Check(FIRMWARE.GLOBAL, rally_ok, "RALLY",
+                                "Rally too far", MAV_SEVERITY.WARNING, true, false ),
 }
 
-if FWVersion:type() == 2 then -- add Copter specific Parameters
+if FWVersion:type() == FIRMWARE.COPTER then -- add Copter specific Parameters
 --[[
-// The same parameter definition as above for plane applies here
+    // @Param: ARC_RTL_ALT
+    // @DisplayName: RTL_ALT should be a valid value
+    // @Description: RTL_ALT should be < 120m (400ft). 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
 --]]
-    local RTLAltitudeLegal = Arming_Check(rtl_altitude_legal, "RTL_ALT",
+    local RTLAltitudeLegal = Arming_Check(FIRMWARE.COPTER, rtl_altitude_legal, "RTL_ALT",
                         "RTL_AL too high", MAV_SEVERITY.ERROR, false, false )
     table.insert(arming_checks, RTLAltitudeLegal)
-elseif FWVersion:type() == 3 then -- add Plane specific Parameters
+elseif FWVersion:type() == FIRMWARE.PLANE then -- add Plane specific Parameters
 --[[
-    // @Param: ZAR_Q_FS_LAND
+    // @Param: ARP_Q_FS_LAND
     // @DisplayName: Warn if Q failsafe will land
     // @Description: Notify the user that on failsafe a QuadPlan will land. 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
-    local QLandWarning = Arming_Check(qland_warning, "Q_FS_LAND",
+    local QLandWarning = Arming_Check(FIRMWARE.PLANE, qland_warning, "Q_FS_LAND",
                         "Q will land on failsafe", MAV_SEVERITY.NOTICE, true, false )
     table.insert(arming_checks, QLandWarning)
 --[[
-    // @Param: ZAR_Q_FS_RTL
+    // @Param: ARP_Q_FS_RTL
     // @DisplayName: Warn if Q failsafe will QRTL
     // @Description: Notify the user that on failsafe a QuadPlan will QRTL. 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
-    local QRTLWarning = Arming_Check(qrtl_warning, "Q_FS_RTL",
+    local QRTLWarning = Arming_Check(FIRMWARE.PLANE, qrtl_warning, "Q_FS_RTL",
                         "Q will RTL on failsafe", MAV_SEVERITY.NOTICE, true, false )
     table.insert(arming_checks, QRTLWarning)
 --[[
-    // @Param: ZAR_AIRSPEED
+    // @Param: ARP_AIRSPEED
     // @DisplayName: Check AIRSPEED_ parameters
     // @Description: Validate that AIRSPEED_STALL(if set) < MIN < CRUISE < MAX d. 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
-    local AirSpeed = Arming_Check(airspeed_check, "AIRSPEED",
+    local AirSpeed = Arming_Check(FIRMWARE.PLANE, airspeed_check, "AIRSPEED",
                         "stall < min < crs < max", MAV_SEVERITY.ERROR, true, false )
     table.insert(arming_checks, AirSpeed)
 --[[
-    // @Param: ZAR_STALL
+    // @Param: ARP_STALL
     // @DisplayName: AIRSPEED_MIN should be 25% above STALL
     // @Description: Validate that AIRSPEED_MIN is at least 25% above AIRSPEED_STALL(if set). 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
-    local StallSpeed = Arming_Check(stallspeed_check, "STALL",
+    local StallSpeed = Arming_Check(FIRMWARE.PLANE, stallspeed_check, "STALL",
                         "Min speed not 25% above stall", MAV_SEVERITY.INFO, true, false )
     table.insert(arming_checks, StallSpeed)
 --[[
-    // @Param: ZAR_SCALING
+    // @Param: ARP_SCALING
     // @DisplayName: SCALING_SPEED valid
     // @Description: Validate that SCALING_SPEED is within 20% of AIRSPEED_CRUISE. 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
-    local ScalingSpeed = Arming_Check(scaling_speed_check, "SCALING",
+    local ScalingSpeed = Arming_Check(FIRMWARE.PLANE, scaling_speed_check, "SCALING",
                         "Scaling spd >< 20% of CRUISE", MAV_SEVERITY.ERROR, true, false )
     table.insert(arming_checks, ScalingSpeed)
 --[[
-    // @Param: ZAR_RTL_ALT
+    // @Param: ARP_RTL_ALT
     // @DisplayName: RTL_ALTITUDE should be a valid value
     // @Description: RTL_ALTITITUDE should be < 120m (400ft). 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
-    local RTLAltitudeLegal = Arming_Check(rtl_altitude_legal, "RTL_ALT",
+    local RTLAltitudeLegal = Arming_Check(FIRMWARE.PLANE, rtl_altitude_legal, "RTL_ALT",
                         "RTL_ALTITUDE too high", MAV_SEVERITY.ERROR, false, false )
     table.insert(arming_checks, RTLAltitudeLegal)
 --[[
-    // @Param: ZAR_QRTL_ALT
+    // @Param: ARP_QRTL_ALT
     // @DisplayName: Q_RTL_ALT should be a valid value
     // @Description: Q_RTL_ALT should be < 120m (400ft). 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
-    local QRTLAltitudeLegal = Arming_Check(q_rtl_alt_legal, "QRTL_ALT",
+    local QRTLAltitudeLegal = Arming_Check(FIRMWARE.PLANE, q_rtl_alt_legal, "QRTL_ALT",
                             "Q_RTL_ALT too high", MAV_SEVERITY.ERROR, false, false )
     table.insert(arming_checks, QRTLAltitudeLegal)
 
@@ -453,26 +543,37 @@ end
 
 -- initialize all the parameters based on the data in the arming_checks table
 local function initialize()
--- special case for the ARM_ALT_LEGAL parameter which ideally should be a "regular" parameter
+-- special case for the ARV_ALT_LEGAL parameter which ideally should be a "regular" parameter
 --[[
-    // @Param: ALT_LEGAL
+    // @Param: ARV_ALT_LEGAL
     // @DisplayName: Legal max altitude
     // @Description: Legal max altitude for UAV/RPAS/drones in your jurisdiction
     // @Units: m
     // @User: Standard
 --]]
-    if not ALT_LEGAL:init("ALT_LEGAL") then
-        assert(param:add_param(PARAM_TABLE_KEY , param_idx, "ALT_LEGAL", 120.0),
-                            string.format('could not add param %s', "ALT_LEGAL"))
-        param_idx = param_idx + 1
-        ALT_LEGAL:init("ZAR_ALT_LEGAL")
-    end
+    assert(param:add_param(VALUES_PARAM_TABLE_KEY, param_idx, "ALT_LEGAL", 120.0),
+                        string.format('could not add param %s', "ALT_LEGAL"))
+    param_idx = param_idx + 1
+
+-- special case for the ARV_RALLY_MAX parameter which ideally should be a "regular" parameter
+--[[
+    // @Param: ARV_RALLY_MAX
+    // @DisplayName: Max distanct to rally
+    // @Description: The maximum distance to a rally point from home
+    // @Units: m
+    // @User: Standard
+--]]
+    assert(param:add_param(VALUES_PARAM_TABLE_KEY, param_idx, "RALLY_MAX", 1000.0),
+                        string.format('could not add param %s', "ARV_RALLY"))
+    param_idx = param_idx + 1
+    ARV_RALLY_MAX:init("ARV_RALLY_MAX")
 
     for _, check in pairs(arming_checks) do
-        local param_name = PARAM_TABLE_PREFIX..check.param_name
-        assert(param:add_param(PARAM_TABLE_KEY , param_idx, check.param_name, check.severity),
+        local param_name = VEHICLE[check.firmware].prefix..check.param_name
+        local index = VEHICLE[check.firmware].index
+        assert(param:add_param(VEHICLE[check.firmware].key , index, check.param_name, check.severity),
                         string.format('could not add param %s', param_name))
-        param_idx = param_idx + 1
+        VEHICLE[check.firmware].index = index + 1
     end
 end
 
@@ -508,11 +609,14 @@ validate = function() -- this is the loop which periodically runs to do the vali
 
     if arming:is_armed() then return idle_while_armed() end
 
-    alt_legal_max = ALT_LEGAL:get() or 120.0
+    alt_legal_max = ARV_ALT_LEGAL:get() or 120.0
     local validated = true
 
     for _, check in pairs(arming_checks) do
-        local param_name = PARAM_TABLE_PREFIX..check.param_name
+        local param_name = VEHICLE[check.firmware].prefix..check.param_name
+        if check.firmware == FIRMWARE.PLANE then
+        elseif check.firmware == FIRMWARE.COPTER then
+        end
         local parameter = Parameter(param_name)
         local param_severity  = parameter:get() or MAV_SEVERITY.NONE
 
