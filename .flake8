@@ -1,4 +1,10 @@
 [flake8]
+extend-select =
+    # B: flake8-bugbear
+    B,
+    # BLE: flake8-blind-except
+    BLE
+
 extend-ignore =
     # H301: one import per line
     H301,
@@ -13,7 +19,9 @@ extend-ignore =
     # E203 whitespace before ':'
     E203,
     # E221 multiple spaces before operator
-    E221
+    E221,
+    # https://github.com/PyCQA/flake8-bugbear/blob/main/README.rst#list-of-warnings
+    B007,B009,B010,B014,B018,B020,B023,B024,B027,B033,B041,B042,B902
 
 extend-exclude =
     build,
