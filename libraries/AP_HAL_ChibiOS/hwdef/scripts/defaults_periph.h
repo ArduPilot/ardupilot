@@ -378,6 +378,9 @@
 #ifndef AP_TEMPERATURE_SENSOR_ENABLED
 #define AP_TEMPERATURE_SENSOR_ENABLED AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
 #endif
+#ifndef HAL_MSP_ENABLED
+#define HAL_MSP_ENABLED AP_PERIPH_MSP_ENABLED
+#endif
 
 /*
  * GPS Backends - we selectively turn backends on.
