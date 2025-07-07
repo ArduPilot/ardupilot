@@ -301,6 +301,7 @@ class ExtractFeatures(object):
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
             ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
             ('AP_PERIPH_DEVICE_TEMPERATURE_ENABLED', r'AP_Periph_FW::temperature_sensor_update'),
+            ('AP_PERIPH_MSP_ENABLED', r'AP_Periph_FW::msp_init'),
         ]
 
     def progress(self, msg):
