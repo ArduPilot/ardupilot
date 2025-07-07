@@ -5126,9 +5126,8 @@ class TestSuite(ABC):
 
         if not match_comments:
             # strip comments from all lines
-            lines1 = [re.sub(r"\s*#.*", "", x, re.DOTALL) for x in lines1]
-            lines2 = [re.sub(r"\s*#.*", "", x, re.DOTALL) for x in lines2]
-            # FIXME: because DOTALL doesn't seem to work as expected:
+            lines1 = [re.sub(r"\s*#.*", "", x) for x in lines1]
+            lines2 = [re.sub(r"\s*#.*", "", x) for x in lines2]
             lines1 = [x.rstrip() for x in lines1]
             lines2 = [x.rstrip() for x in lines2]
             # remove now-empty lines:
