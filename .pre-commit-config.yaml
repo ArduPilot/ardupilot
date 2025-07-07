@@ -94,6 +94,18 @@ repos:
             --ignore=Tools/ros2/ardupilot_dds_tests/test/test_copyright.py,
         ]
 
+  -   repo: https://github.com/pycqa/flake8
+      rev: 7.3.0
+      hooks:
+      -   id: flake8
+          additional_dependencies:
+          -   flake8-blind-except
+          -   flake8-bugbear
+          args:
+          -   --disable-noqa
+          -   --select=B
+          -   --ignore=B001,B006,B007,B008,B009,B010,B014,B020,B018,B023,B027,B023,B024,B033,B034,B041,B042,B901,B902
+
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
 #       rev: 5.12.0
