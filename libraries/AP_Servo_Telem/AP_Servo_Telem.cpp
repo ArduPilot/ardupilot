@@ -80,7 +80,7 @@ void AP_Servo_Telem::update_telem_data(const uint8_t servo_index, const Telemetr
     if (new_data.present(TelemetryData::Types::PCB_TEMP)) {
         telemdata.pcb_temperature_cdeg = new_data.pcb_temperature_cdeg;
     }
-    if (new_data.present(TelemetryData::Types::PCB_TEMP)) {
+    if (new_data.present(TelemetryData::Types::STATUS)) {
         telemdata.status_flags = new_data.status_flags;
     }
 
