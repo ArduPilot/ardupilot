@@ -293,7 +293,7 @@ void AP_AIS::handle_message(const mavlink_ais_vessel_t &packet)
         return;
     }
     memcpy(&_list[index].info, &packet, sizeof(_list[index].info));
-    _list[index].last_update_ms = AP_HAL::millis();
+    _list[index].last_update_ms = AP_HAL::millis() - packet.tslc * 1000;
 
 #if AP_OADATABASE_ENABLED
     send_to_object_avoidance_database(_list[index]);
