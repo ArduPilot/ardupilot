@@ -87,6 +87,10 @@ private:
         _GPS_SENTENCE_AGRICA = 193, // extension for Unicore, 65 fields
         _GPS_SENTENCE_VERSIONA = 270, // extension for Unicore, version, 10 fields
         _GPS_SENTENCE_UNIHEADINGA = 290, // extension for Unicore, uniheadinga, 20 fields
+        _GPS_SENTENCE_PQTMVER = 320, // extension for Quectel, version info
+        _GPS_SENTENCE_PQTMEPE = 330, // extension for Quectel, estimated position error
+        _GPS_SENTENCE_PQTMVEL = 340, // extension for Quectel, velocity information
+        _GPS_SENTENCE_PQTMPVT = 360, // extension for Quectel, PVT result
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -144,6 +148,15 @@ private:
 #endif
 #endif
 
+#if AP_GPS_NMEA_QUECTEL_ENABLED
+    /*
+      parse PQTM message fields
+     */
+    void parse_pqtmver_field(uint16_t term_number, const char *term);
+    void parse_pqtmepe_field(uint16_t term_number, const char *term);
+    void parse_pqtmvel_field(uint16_t term_number, const char *term);
+    void parse_pqtmpvt_field(uint16_t term_number, const char *term);
+#endif
 
     uint8_t _parity;                                                    ///< NMEA message checksum accumulator
     uint32_t _crc32;                                            ///< CRC for unicore messages
@@ -255,6 +268,64 @@ private:
     } _uniheadinga;
 #endif
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
+
+#if AP_GPS_NMEA_QUECTEL_ENABLED
+    /*
+      Quectel PQTM message parsing structures
+     */
+    // PQTMVER parsing
+    struct {
+        char version[30];        // Version string (e.g., "LG290P03AANR01A05S")
+        char build_date[20];     // Build date (e.g., "2025/05/08")
+        char build_time[20];     // Build time (e.g., "16:23:00")
+    } _pqtmver;
+    bool _have_pqtmver;
+
+    // PQTMEPE parsing - Estimated Position Error
+    struct {
+        float epe_north;
+        float epe_east;
+        float epe_down;
+        float epe_2d;
+        float epe_3d;
+    } _pqtmepe;
+
+    // PQTMVEL parsing - Velocity Information
+    struct {
+        uint32_t time_ms;
+        Vector3f vel_NED;
+        float ground_speed;
+        float speed_3d;
+        float heading;
+        float ground_speed_acc;
+        float speed_acc;
+        float heading_acc;
+    } _pqtmvel;
+
+    // PQTMPVT parsing - PVT Result
+    struct {
+        uint32_t tow;
+        uint32_t date;
+        uint32_t time_ms;
+        uint8_t fix_type;
+        uint8_t num_sats;
+        int32_t leap_seconds;
+        double lat;
+        double lng;
+        float alt;
+        float sep;
+        Vector3f vel_NED;
+        float ground_speed;
+        float heading;
+        float hdop;
+        float pdop;
+    } _pqtmpvt;
+
+    uint32_t _last_PQTM_vel_ms;
+    uint32_t _last_PQTM_acc_ms;
+    uint32_t _last_PQTM_pvt_ms;
+#endif
+    bool _expect_pqtm;
     bool _expect_agrica;
 
     // last time we sent type specific config strings
