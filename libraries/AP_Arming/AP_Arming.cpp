@@ -199,6 +199,15 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     AP_GROUPINFO("NEED_LOC", 12, AP_Arming, require_location, float(AP_ARMING_NEED_LOC_DEFAULT)),
 #endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
 
+#if HAL_RALLY_ENABLED
+    // @Param: RAL_DMAX
+    // @DisplayName: Rally point maximum distance
+    // @Description: Rally point maximum distance from vehicle at arm-time.  0 is no limit.
+    // @User: Advanced
+    // @Units: km
+    AP_GROUPINFO("RAL_DMAX",    13,     AP_Arming, rally_distance_max_km, 0),
+#endif  // HAL_RALLY_ENABLED
+
     AP_GROUPEND
 };
 
@@ -867,6 +876,59 @@ bool AP_Arming::manual_transmitter_checks(bool report)
     return rc_in_calibration_check(report);
 }
 #endif  // AP_RC_CHANNEL_ENABLED
+
+#if HAL_RALLY_ENABLED
+bool AP_Arming::rally_checks(bool report)
+{
+    if (!check_enabled(Check::RALLY)) {
+        return true;
+    }
+
+    AP_Rally *rally = AP::rally();
+    if (rally == nullptr) {
+        // really?
+        check_failed(Check::RALLY, report, "No rally library present");
+        return false;
+    }
+
+#if AP_FENCE_ENABLED
+    const auto *fence = AP::fence();
+    if (fence == nullptr) {
+        check_failed(Check::RALLY, report, "No fence library present");
+        return false;
+    }
+#endif  // AP_FENCE_ENABLED
+
+    if (rally_distance_max_km > 0) {
+        Location current_loc;
+        if (!AP::ahrs().get_location(current_loc)) {
+            check_failed(Check::RALLY, report, "Rally distance check requires position");
+            return false;
+        }
+        const uint8_t count = rally->get_rally_total();
+        for (uint8_t i=0; i<count; i++) {
+            Location rally_loc;
+            if (!rally->get_rally_point_with_index(i, rally_loc)) {
+                check_failed(Check::RALLY, report, "Failed to get rally point %u", i);
+                return false;
+            }
+            const float dis = current_loc.get_distance(rally_loc);
+            if (dis * 1000 > rally_distance_max_km) {
+                check_failed(Check::RALLY, report, "Rally point %u too far away", i);
+                return false;
+            }
+#if AP_FENCE_ENABLED
+            if (!fence->check_destination_within_fence(rally_loc)) {
+                check_failed(Check::RALLY, report, "Rally point %u outside fence", i);
+                return false;
+            }
+#endif // AP_FENCE_ENABLED
+        }
+    }
+
+    return true;
+}
+#endif  // HAL_RALLY_ENABLED
 
 #if AP_MISSION_ENABLED
 bool AP_Arming::mission_checks(bool report)

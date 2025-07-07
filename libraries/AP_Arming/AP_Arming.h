@@ -43,6 +43,7 @@ public:
         VISION      = (1U << 18),
         FFT         = (1U << 19),
         OSD         = (1U << 20),
+        RALLY       = (1U << 21),
     };
 
     enum class Method {
@@ -181,6 +182,7 @@ protected:
     AP_Int32                _arming_options;
     AP_Int16                magfield_error_threshold;
     AP_Enum<RequireLocation> require_location;
+    AP_Int16                rally_distance_max_km;
 
     // internal members
     bool                    armed;
@@ -216,6 +218,7 @@ protected:
     bool manual_transmitter_checks(bool report);
 
     virtual bool mission_checks(bool report);
+    bool rally_checks(bool report);
 
     bool terrain_checks(bool report) const;
 
