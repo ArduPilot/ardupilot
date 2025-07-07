@@ -7076,6 +7076,29 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         )
         self.fly_home_land_and_disarm()
 
+    def TECSThrottleUpInDive(self):
+        '''reproduce reported problem of throttle rising in dive'''
+        self.set_parameters({
+            "FLIGHT_OPTIONS": 1 << 14,  # immediate climb in auto
+        })
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 8000, 0, 500),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 500),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_altitude(490, 510, relative=True, timeout=120)
+        self.delay_sim_time(10)  # make a flat spot!
+        self.set_rc(2, 2000)
+
+        # should reach minimum throttle within 10 seconds and maintain it:
+        w = vehicle_test_suite.WaitAndMaintainThrottle(self, 0, minimum_duration=20, timeout=25)
+        w.run()
+        self.fly_home_land_and_disarm()
+
     def mavlink_AIRSPEED(self):
         '''check receiving of two airspeed sensors'''
         self.set_parameters({
@@ -7446,6 +7469,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.InteractTest,
             self.CompassLearnInFlight,
             self.MAV_CMD_MISSION_START,
+            self.TECSThrottleUpInDive,
             self.TerrainRally,
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.MAV_CMD_NAV_RETURN_TO_LAUNCH,

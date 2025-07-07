@@ -645,6 +645,12 @@ void AP_TECS::_update_height_demand(void)
         // correct for offset between height above ground and height above datum used by control loops
         _hgt_dem += (_hgt_afe - _height);
     }
+
+    // avoid increasing the error between our current energy and
+    // demanded energy, to avoid pushing the throttle through the roof
+    if (_flags.overspeed) {
+        // _hgt_dem = _height;
+    }
 }
 
 void AP_TECS::_detect_underspeed(void)
@@ -675,6 +681,15 @@ void AP_TECS::_detect_underspeed(void)
         // we are either below 95% throttle or we above 90% of min
         // airspeed
         _flags.underspeed = false;
+    }
+}
+
+void AP_TECS::_detect_overspeed(void)
+{
+    if (_flags.overspeed) {
+        _flags.overspeed = _TAS_state > _TASmax * 0.5;
+    } else {
+        _flags.overspeed = _TAS_state > _TASmax * 1.1;
     }
 }
 
@@ -754,6 +769,8 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         _throttle_dem = 1.0f;
     } else if (_flags.is_gliding) {
         _throttle_dem = 0.0f;
+    // } else if (_flags.overspeed) {
+    //        _throttle_dem = 0.0f;
     } else {
         // Calculate gain scaler from specific energy error to throttle
         const float K_thr2STE = (_STEdot_max - _STEdot_min) / (_THRmaxf - _THRminf); // This is the derivative of STEdot wrt throttle measured across the max allowed throttle range.
@@ -1334,6 +1351,9 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Detect underspeed condition
     _detect_underspeed();
 
+    // Detect overspeed condition
+    _detect_overspeed();
+
     // Calculate specific energy quantitiues
     _update_energies();
 
@@ -1387,7 +1407,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         AP::logger().WriteStreaming("TECS", "TimeUS,h,dh,hin,hdem,dhdem,spdem,sp,dsp,th,ph,pmin,pmax,dspdem,f",
                                     "smnmmnnnn------",
                                     "F00000000------",
-                                    "QfffffffffffffB",
+                                    "QfffffffffffffH",
                                     now,
                                     (double)_height,
                                     (double)_climb_rate,

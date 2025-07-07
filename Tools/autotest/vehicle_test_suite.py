@@ -702,10 +702,11 @@ class WaitAndMaintainArmed(WaitAndMaintain):
         return "Ensuring vehicle remains armed"
 
 
-class WaitAndMaintainServoChannelValue(WaitAndMaintain):
-    def __init__(self, test_suite, channel, value, **kwargs):
-        super(WaitAndMaintainServoChannelValue, self).__init__(test_suite, **kwargs)
-        self.channel = channel
+class WaitAndMaintainMessageFieldValue(WaitAndMaintain):
+    def __init__(self, test_suite, message, field, value, **kwargs):
+        super().__init__(test_suite, **kwargs)
+        self.message = message
+        self.field = field
         self.value = value
 
     def announce_start_text(self):
@@ -715,20 +716,28 @@ class WaitAndMaintainServoChannelValue(WaitAndMaintain):
         elif self.comparator == operator.gt:
             str_operator = "more than "
 
-        return f"Waiting for SERVO_OUTPUT_RAW.servo{self.channel}_value value {str_operator}{self.value}"
+        return f"Waiting for {self.message}.{self.field} value {str_operator}{self.value}"
 
     def get_target_value(self):
         return self.value
 
     def get_current_value(self):
-        m = self.test_suite.assert_receive_message('SERVO_OUTPUT_RAW', timeout=10)
-        channel_field = "servo%u_raw" % self.channel
-        m_value = getattr(m, channel_field, None)
+        m = self.test_suite.assert_receive_message(self.message, timeout=10)
+        m_value = getattr(m, self.field, None)
         if m_value is None:
-            raise ValueError(f"message ({str(m)}) has no field {channel_field}")
+            raise ValueError(f"message ({str(m)}) has no field {self.field}")
 
-        self.last_SERVO_OUTPUT_RAW = m
         return m_value
+
+
+class WaitAndMaintainServoChannelValue(WaitAndMaintainMessageFieldValue):
+    def __init__(self, testsuite, channel, value, *args, **kwargs):
+        super().__init__(testsuite, "SERVO_OUTPUT_RAW", "servo{self.channel}_value", value, *args, **kwargs)
+
+
+class WaitAndMaintainThrottle(WaitAndMaintainMessageFieldValue):
+    def __init__(self, testsuite, value, *args, **kwargs):
+        super().__init__(testsuite, "VFR_HUD", "throttle", value, *args, **kwargs)
 
 
 class MSP_Generic(Telem):
