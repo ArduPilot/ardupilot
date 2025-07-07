@@ -16,23 +16,30 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
+      - name: Dump github context
+        run: |
+          echo '${{ toJSON(github) }}'
+
       - name: Fetch base branch
         run: |
-          git fetch origin ${{ github.base_ref }}
+          git remote -v
+          git remote add upstream ${{ github.event.pull_request.base.repo.clone_url }}
+          git fetch upstream ${{ github.base_ref }}
+          git show upstream/${{ github.base_ref }}
 
       - name: Check for merge commits in PR branch
         run: |
-          # Find merge-base between base branch and PR branch
-          BASE=$(git merge-base origin/${{ github.base_ref }} HEAD)
-
-          echo "Merge base is $BASE"
+          # Find merge-base between base branch and (rebased) PR branch
+          echo "Merge target is origin/${{ github.base_ref }}"
+          echo "github.event.pull_request.base.ref=${{ github.event.pull_request.base.ref }} "
 
           # Look for merge commits in PR branch only
-          MERGE_COMMITS=$(git log $BASE..HEAD --merges --oneline)
+          MERGE_COMMITS=$(git log upstream/${{ github.base_ref }}..HEAD --merges --oneline)
+          echo "Merge commits:"
+          echo "$MERGE_COMMITS"
 
           if [[ -n "$MERGE_COMMITS" ]]; then
             echo "❌ Merge commits detected in the PR branch (not allowed):"
-            echo "$MERGE_COMMITS"
             echo "Please see https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html"
             exit 1
           else
@@ -40,7 +47,9 @@ jobs:
           fi
 
           # Look for fixup! commits in PR branch only
-          COMMITS=$(git log $BASE..HEAD --oneline)
+          COMMITS=$(git log upstream/${{ github.base_ref }}..HEAD --oneline)
+          echo "Commits:"
+          echo "$COMMITS"
 
           if [[ "$COMMITS" == *"fixup!"* ]]; then
             echo "❌ fixup commits detected in the PR branch (not allowed):"
