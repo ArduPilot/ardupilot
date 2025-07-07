@@ -21,8 +21,6 @@ void AC_PrecLand_MAVLink::update()
 
 void AC_PrecLand_MAVLink::handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)
 {
-    _distance_to_target = packet.distance;
-
     // check frame is supported
     if (packet.frame != MAV_FRAME_BODY_FRD && packet.frame != MAV_FRAME_LOCAL_FRD) {
         if (!_wrong_frame_msg_sent) {
@@ -33,9 +31,9 @@ void AC_PrecLand_MAVLink::handle_msg(const mavlink_landing_target_t &packet, uin
     }
 
     if (packet.position_valid == 1) {
-        if (_distance_to_target > 0) {
+        if (packet.distance > 0) {
             _los_meas.vec_unit = Vector3f(packet.x, packet.y, packet.z);
-            _los_meas.vec_unit /= _distance_to_target;
+            _los_meas.vec_unit /= packet.distance;
             _los_meas.frame = (packet.frame == MAV_FRAME_BODY_FRD) ? AC_PrecLand::VectorFrame::BODY_FRD : AC_PrecLand::VectorFrame::LOCAL_FRD;
         } else {
             // distance to target must be positive
@@ -48,6 +46,7 @@ void AC_PrecLand_MAVLink::handle_msg(const mavlink_landing_target_t &packet, uin
         _los_meas.frame = (packet.frame == MAV_FRAME_BODY_FRD) ? AC_PrecLand::VectorFrame::BODY_FRD : AC_PrecLand::VectorFrame::LOCAL_FRD;
     }
 
+    _distance_to_target = MAX(0, packet.distance);
     _los_meas.time_ms = timestamp_ms;
     _los_meas.valid = true;
 }
