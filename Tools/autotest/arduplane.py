@@ -7450,15 +7450,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.start_subsubtest("ArmCk: Fence must be enabled or autoenabled (warning)")
         self.load_fence("CMAC-fence.txt")
-        self.wait_statustext("warn: Fence not enabled",check_context=True)
+        self.wait_statustext("warn: Fence not enabled", check_context=True)
         self.set_parameter("FENCE_ENABLE", 1)
-        self.wait_statustext("clear: Fence not enabled",check_context=True)
+        self.wait_statustext("clear: Fence not enabled", check_context=True)
         self.set_parameter("FENCE_ENABLE", 0)
-        self.wait_statustext("warn: Fence not enabled",check_context=True)
+        self.wait_statustext("warn: Fence not enabled", check_context=True)
         self.set_parameter("FENCE_AUTOENABLE", 1)
-        self.wait_text("clear: Fence not enabled",check_context=True)
+        self.wait_text("clear: Fence not enabled", check_context=True)
         self.set_parameter("FENCE_AUTOENABLE", 0)
-        self.wait_text("warn: Fence not enabled",check_context=True)
+        self.wait_text("warn: Fence not enabled", check_context=True)
 
     def ScriptedArmingChecksAppletEStop(self):
         """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
@@ -7532,7 +7532,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         loc = self.home_relative_loc_ne(1500, -50)
         self.upload_rally_points_from_locations([loc])
         self.wait_text("warn: Rally too far", check_context=True)
-        self.set_parameter("ARM_V_RALLY_MAX",2000)
+        self.set_parameter("ARM_V_RALLY_MAX", 2000)
         self.wait_text("clear: Rally too far", check_context=True)
 
     def tests(self):
