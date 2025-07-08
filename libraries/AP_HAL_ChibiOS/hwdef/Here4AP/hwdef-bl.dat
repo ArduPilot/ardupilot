@@ -13,8 +13,8 @@ env AP_PERIPH 1
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board ID for firmware load
-APJ_BOARD_ID 1043
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_HERE3PLUS
 
 FLASH_SIZE_KB 2048
 
@@ -45,14 +45,11 @@ STM32_VDD 330U
 PB8 LED_SCK OUTPUT LOW
 PB9 LED_DI OUTPUT HIGH
 
-define HAL_NO_MONITOR_THREAD
-
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
 # order of UARTs
 SERIAL_ORDER
-define HAL_USE_UART FALSE
 
 # setup for blanking LEDs in bootloader
 define AP_BOOTLOADER_CUSTOM_HERE4

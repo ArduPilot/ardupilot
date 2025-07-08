@@ -2,6 +2,11 @@
   EFI Scripting backend driver for Halo6000 generator
 --]]
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: undefined-field
+---@diagnostic disable: missing-parameter
+---@diagnostic disable: need-check-nil
+
 -- Check Script uses a miniumum firmware version
 local SCRIPT_AP_VERSION = 4.3
 local SCRIPT_NAME       = "EFI: Halo6000 CAN"
@@ -50,7 +55,7 @@ end
 local efi_backend = nil
 
 -- Setup EFI Parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 6), 'could not add EFI_H6K param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 10), 'could not add EFI_H6K param table')
 
 --[[
   // @Param: EFI_H6K_ENABLE
@@ -97,6 +102,17 @@ local EFI_H6K_TELEM_RT = bind_add_param('TELEM_RT', 4, 2)
 --]]
 local EFI_H6K_FUELTOT = bind_add_param('FUELTOT', 5, 20)
 
+--[[
+  // @Param: EFI_H6K_OPTIONS
+  // @DisplayName: Halo6000 options
+  // @Description: Halo6000 options
+  // @Bitmask: 0:LogAllCanPackets
+  // @User: Standard
+--]]
+local EFI_H6K_OPTIONS = bind_add_param('OPTIONS', 6, 0)
+
+local OPTION_LOGALLFRAMES = 0x01
+
 if EFI_H6K_ENABLE:get() == 0 then
    return
 end
@@ -116,6 +132,20 @@ if not driver1 then
     return
 end
 
+local frame_count = 0
+
+--[[
+   frame logging - can be replayed with Tools/scripts/CAN/CAN_playback.py
+--]]
+local function log_can_frame(frame)
+   logger.write("CANF",'Id,DLC,FC,B0,B1,B2,B3,B4,B5,B6,B7','IBIBBBBBBBB',
+                frame:id(),
+                frame:dlc(),
+                frame_count,
+                frame:data(0), frame:data(1), frame:data(2), frame:data(3),
+                frame:data(4), frame:data(5), frame:data(6), frame:data(7))
+   frame_count = frame_count + 1
+end
 
 --[[
    EFI Engine Object
@@ -151,6 +181,10 @@ local function engine_control()
             count = count + 1
             if not frame then
                 break
+            end
+
+            if EFI_H6K_OPTIONS:get() & OPTION_LOGALLFRAMES ~= 0 then
+               log_can_frame(frame)
             end
 
             -- All Frame IDs for this EFI Engine are in the 11-bit address space
@@ -225,14 +259,14 @@ local function engine_control()
 
     -- send a frame with checksum
     function self.write_frame_checksum(msg)
-       local sum = 0
-       for i=0, 7 do
-          sum = sum + msg:data(i)
-       end
-       sum = sum % 0xff
-       msg:data(7, sum)
-       msg:dlc(8)
-       driver1:write_frame(msg, 10000)
+        local sum = 0
+        for i = 0, 6 do
+        sum = sum + msg:data(i)
+        end
+        local checksum = (0 - sum) % 0x100
+        msg:data(7, checksum)
+        msg:dlc(8)
+        driver1:write_frame(msg, 10000)
     end
 
     -- send an engine start command
@@ -240,6 +274,7 @@ local function engine_control()
        local msg = CANFrame()
        msg:id(0x1A0)
        msg:data(0,1)
+       msg:data(7,1)
        self.write_frame_checksum(msg)
     end
 
@@ -304,7 +339,7 @@ local function engine_control()
     
     -- return the instance
     return self
-end -- end function engine_control(_driver)
+end -- end function engine_control()
 
 local engine1 = engine_control()
 

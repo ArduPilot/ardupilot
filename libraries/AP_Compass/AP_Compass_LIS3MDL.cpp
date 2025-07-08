@@ -48,8 +48,6 @@
 #define ADDR_WHO_AM_I       0x0f
 #define ID_WHO_AM_I         0x3d
 
-extern const AP_HAL::HAL &hal;
-
 AP_Compass_Backend *AP_Compass_LIS3MDL::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                               bool force_external,
                                               enum Rotation rotation)
@@ -57,7 +55,7 @@ AP_Compass_Backend *AP_Compass_LIS3MDL::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_LIS3MDL *sensor = new AP_Compass_LIS3MDL(std::move(dev), force_external, rotation);
+    AP_Compass_LIS3MDL *sensor = NEW_NOTHROW AP_Compass_LIS3MDL(std::move(dev), force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -113,7 +111,7 @@ bool AP_Compass_LIS3MDL::init()
     }
     set_dev_id(compass_instance, dev->get_bus_id());
 
-    printf("Found a LIS3MDL on 0x%x as compass %u\n", dev->get_bus_id(), compass_instance);
+    printf("Found a LIS3MDL on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), compass_instance);
     
     set_rotation(compass_instance, rotation);
 

@@ -3,6 +3,11 @@
 #include <stdarg.h>
 #include <AP_Common/AP_Common.h> // for FMT_PRINTF
 #include "AP_HAL_Namespace.h"
+#include <AP_Logger/AP_Logger_config.h>
+
+#ifndef ENABLE_HEAP
+#define ENABLE_HEAP 0
+#endif
 
 class ExpandingString;
 
@@ -42,11 +47,6 @@ public:
 
     // set command line parameters to the eeprom on start
     virtual void set_cmdline_parameters() {};
-
-    // run a debug shall on the given stream if possible. This is used
-    // to support dropping into a debug shell to run firmware upgrade
-    // commands
-    virtual bool run_debug_shell(AP_HAL::BetterStream *stream) = 0;
 
     enum safety_state : uint8_t {
         SAFETY_NONE,
@@ -133,11 +133,6 @@ public:
     virtual bool toneAlarm_init(uint8_t types) { return false;}
     virtual void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) {}
 
-    /*
-      return a stream for access to a system shell, if available
-     */
-    virtual AP_HAL::BetterStream *get_shell_stream() { return nullptr; }
-
     /* Support for an imu heating system */
     virtual void set_imu_temp(float current) {}
 
@@ -153,17 +148,16 @@ public:
     virtual void *malloc_type(size_t size, Memory_Type mem_type) { return calloc(1, size); }
     virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }
 
-#ifdef ENABLE_HEAP
-    // heap functions, note that a heap once alloc'd cannot be dealloc'd
-    virtual void *allocate_heap_memory(size_t size) = 0;
-    virtual void *heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size) = 0;
+#if ENABLE_HEAP
+    /*
+      heap functions used by non-scripting
+     */
 #if USE_LIBC_REALLOC
-    virtual void *std_realloc(void *ptr, size_t new_size) { return realloc(ptr, new_size); }
+    virtual void *std_realloc(void *ptr, uint32_t new_size) { return realloc(ptr, new_size); }
 #else
-    virtual void *std_realloc(void *ptr, size_t new_size) = 0;
+    virtual void *std_realloc(void *ptr, uint32_t new_size) = 0;
 #endif // USE_LIBC_REALLOC
-#endif // ENABLE_HEAP
-
+#endif
 
     /**
        how much free memory do we have in bytes. If unknown return 4096
@@ -192,7 +186,13 @@ public:
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O
     virtual void uart_info(ExpandingString &str) {}
+
+#if HAL_LOGGING_ENABLED
+    // Log UART message for each serial port
+    virtual void uart_log() {};
 #endif
+#endif // HAL_UART_STATS_ENABLED
+
     // request information on timer frequencies
     virtual void timer_info(ExpandingString &str) {}
 
@@ -219,3 +219,8 @@ protected:
     bool soft_armed = false;
     uint32_t last_armed_change_ms;
 };
+
+extern "C" {
+    void AP_stack_overflow(const char *thread_name);
+    void AP_memory_guard_error(uint32_t size);
+}

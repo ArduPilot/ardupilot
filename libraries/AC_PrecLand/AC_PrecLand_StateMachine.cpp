@@ -186,7 +186,7 @@ AC_PrecLand_StateMachine::Status AC_PrecLand_StateMachine::retry_landing(Vector3
         _retry_state = RetryLanding::IN_PROGRESS;
         // inform the user what we are doing
         if (_retry_count <= _precland->get_max_retry_allowed()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "PrecLand: Retrying");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PrecLand: Retrying");
         }
         retry_pos_m = go_to_pos;
         return Status::RETRYING;
@@ -195,7 +195,7 @@ AC_PrecLand_StateMachine::Status AC_PrecLand_StateMachine::retry_landing(Vector3
         // continue converging towards the target till we are close by
         retry_pos_m = go_to_pos;
         Vector3f pos;
-        if (!AP::ahrs().get_relative_position_NED_origin(pos)) {
+        if (!AP::ahrs().get_relative_position_NED_origin_float(pos)) {
             return Status::ERROR;
         }
         const float dist_to_target = (go_to_pos-pos).length();
@@ -210,7 +210,7 @@ AC_PrecLand_StateMachine::Status AC_PrecLand_StateMachine::retry_landing(Vector3
         // descend a little bit before completing the retry
         // This will descend to the original height of where landing target was first detected
         Vector3f pos;
-        if (!AP::ahrs().get_relative_position_NED_origin(pos)) {
+        if (!AP::ahrs().get_relative_position_NED_origin_float(pos)) {
             return Status::ERROR;
         }
         // z_target is in "D" frame
@@ -219,7 +219,7 @@ AC_PrecLand_StateMachine::Status AC_PrecLand_StateMachine::retry_landing(Vector3
         if (fabsf(pos.z - retry_pos_m.z) < MAX_POS_ERROR_M) {
             // we have descended to the original height where we started the climb from
             _retry_state = RetryLanding::COMPLETE;
-            gcs().send_text(MAV_SEVERITY_INFO, "PrecLand: Retry Completed");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PrecLand: Retry Completed");
         }
         return Status::RETRYING;
     }
@@ -249,7 +249,7 @@ AC_PrecLand_StateMachine::FailSafeAction AC_PrecLand_StateMachine::get_failsafe_
         // start the timer
         failsafe_start_ms = AP_HAL::millis();
         failsafe_initialized = true;
-        gcs().send_text(MAV_SEVERITY_INFO, "PrecLand: Failsafe Measures");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PrecLand: Failsafe Measures");
     }
 
     // Depending on the strictness we will either land vertically, wait for some time and then land vertically, not land at all

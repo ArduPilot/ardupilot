@@ -70,6 +70,18 @@ bool AP_Camera_Mount::set_lens(uint8_t lens)
     return false;
 }
 
+#if HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
+// set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+bool AP_Camera_Mount::set_camera_source(AP_Camera::CameraSource primary_source, AP_Camera::CameraSource secondary_source)
+{
+    AP_Mount* mount = AP::mount();
+    if (mount != nullptr) {
+        return mount->set_camera_source(get_mount_instance(), (uint8_t)primary_source, (uint8_t)secondary_source);
+    }
+    return false;
+}
+#endif
+
 // send camera information message to GCS
 void AP_Camera_Mount::send_camera_information(mavlink_channel_t chan) const
 {
@@ -96,5 +108,30 @@ void AP_Camera_Mount::send_camera_capture_status(mavlink_channel_t chan) const
         return mount->send_camera_capture_status(get_mount_instance(), chan);
     }
 }
+
+#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+// send camera thermal range message to GCS
+void AP_Camera_Mount::send_camera_thermal_range(mavlink_channel_t chan) const
+{
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    AP_Mount* mount = AP::mount();
+    if (mount != nullptr) {
+        mount->send_camera_thermal_range(get_mount_instance(), chan);
+    }
+#endif
+}
+#endif // AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+
+#if AP_CAMERA_SCRIPTING_ENABLED
+// change camera settings not normally used by autopilot
+bool AP_Camera_Mount::change_setting(CameraSetting setting, float value)
+{
+    AP_Mount* mount = AP::mount();
+    if (mount != nullptr) {
+        return mount->change_setting(get_mount_instance(), setting, value);
+    }
+    return false;
+}
+#endif
 
 #endif // AP_CAMERA_MOUNT_ENABLED

@@ -10,6 +10,9 @@
 -- Alternatively Mission Planner's Aux Function screen can be used in place of an actual RC switch
 --
 
+---@diagnostic disable: param-type-mismatch
+
+
 -- global definitions
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 local PARAM_TABLE_KEY = 80

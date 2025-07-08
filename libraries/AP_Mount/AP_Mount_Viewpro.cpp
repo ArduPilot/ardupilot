@@ -1,13 +1,15 @@
-#include "AP_Mount_Viewpro.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_VIEWPRO_ENABLED
+
+#include "AP_Mount_Viewpro.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_RTC/AP_RTC.h>
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -18,7 +20,8 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_VIEWPRO_DATALEN_MAX   (AP_MOUNT_VIEWPRO_PACKETLEN_MAX-AP_MOUNT_VIEWPRO_PACKETLEN_MIN) // max bytes for data portion of packet
 #define AP_MOUNT_VIEWPRO_HEALTH_TIMEOUT_MS 1000 // state will become unhealthy if no attitude is received within this timeout
 #define AP_MOUNT_VIEWPRO_UPDATE_INTERVAL_MS 100 // resend angle or rate targets to gimbal at this interval
-#define AP_MOUNT_VIEWPRO_ZOOM_SPEED     0x07    // hard-coded zoom speed (fast)
+#define AP_MOUNT_VIEWPRO_EO_ZOOM_SPEED     0x07    // hard-coded zoom speed (fast)
+#define AP_MOUNT_VIEWPRO_IR_ZOOM_SPEED     1 
 #define AP_MOUNT_VIEWPRO_ZOOM_MAX       10      // hard-coded absolute zoom times max
 #define AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT  (65536.0 / 360.0)   // scalar to convert degrees to the viewpro angle scaling
 #define AP_MOUNT_VIEWPRO_OUTPUT_TO_DEG  (360.0 / 65536.0)   // scalar to convert viewpro angle scaling to degrees
@@ -27,19 +30,6 @@ extern const AP_HAL::HAL& hal;
 #define debug(fmt, args ...) do { if (AP_MOUNT_VIEWPRO_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Viewpro: " fmt, ## args); } } while (0)
 
 const char* AP_Mount_Viewpro::send_text_prefix = "Viewpro:";
-
-// init - performs any required initialisation for this instance
-void AP_Mount_Viewpro::init()
-{
-    const AP_SerialManager& serial_manager = AP::serialmanager();
-
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Gimbal, 0);
-    if (_uart != nullptr) {
-        _initialised = true;
-    }
-
-    AP_Mount_Backend::init();
-}
 
 // update mount position - should be called periodically
 void AP_Mount_Viewpro::update()
@@ -108,20 +98,9 @@ void AP_Mount_Viewpro::update()
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's RC inputs
-            MountTarget rc_target;
-            get_rc_target(mnt_target.target_type, rc_target);
-            switch (mnt_target.target_type) {
-            case MountTargetType::ANGLE:
-                mnt_target.angle_rad = rc_target;
-                break;
-            case MountTargetType::RATE:
-                mnt_target.rate_rads = rc_target;
-                break;
-            }
+        case MAV_MOUNT_MODE_RC_TARGETING:
+            update_mnt_target_from_rc_target();
             break;
-        }
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
@@ -313,14 +292,14 @@ void AP_Mount_Viewpro::process_packet()
             const uint8_t patch_ver = atoi((const char*)fw_patch_str) & 0xFF;
             _firmware_version = (patch_ver << 16) | (minor_ver << 8) | major_ver;
             _got_firmware_version = true;
-            gcs().send_text(MAV_SEVERITY_INFO, "%s fw:%u.%u.%u", send_text_prefix, (unsigned)major_ver, (unsigned)minor_ver, (unsigned)patch_ver);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s fw:%u.%u.%u", send_text_prefix, (unsigned)major_ver, (unsigned)minor_ver, (unsigned)patch_ver);
             break;
         }
         case CommConfigCmd::QUERY_MODEL:
             // gimbal model, length is 10 bytes
             strncpy((char *)_model_name, (const char *)&_msg_buff[_msg_buff_data_start+1], sizeof(_model_name)-1);
             _got_model_name = true;
-            gcs().send_text(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, (const char*)_model_name);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, (const char*)_model_name);
             break;
         default:
             // unsupported control command
@@ -340,16 +319,16 @@ void AP_Mount_Viewpro::process_packet()
             _last_tracking_status = tracking_status;
             switch (tracking_status) {
             case TrackingStatus::STOPPED:
-                gcs().send_text(MAV_SEVERITY_INFO, "%s tracking OFF", send_text_prefix);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s tracking OFF", send_text_prefix);
                 break;
             case TrackingStatus::SEARCHING:
-                gcs().send_text(MAV_SEVERITY_INFO, "%s tracking searching", send_text_prefix);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s tracking searching", send_text_prefix);
                 break;
             case TrackingStatus::TRACKING:
-                gcs().send_text(MAV_SEVERITY_INFO, "%s tracking ON", send_text_prefix);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s tracking ON", send_text_prefix);
                 break;
             case TrackingStatus::LOST:
-                gcs().send_text(MAV_SEVERITY_INFO, "%s tracking Lost", send_text_prefix);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s tracking Lost", send_text_prefix);
                 break;
             }
         }
@@ -368,12 +347,22 @@ void AP_Mount_Viewpro::process_packet()
         const bool recording = (recording_status == RecordingStatus::RECORDING);
         if (recording != _recording) {
             _recording = recording;
-            gcs().send_text(MAV_SEVERITY_INFO,  "%s recording %s", send_text_prefix, _recording ? "ON" : "OFF");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,  "%s recording %s", send_text_prefix, _recording ? "ON" : "OFF");
         }
 
-        // get optical zoom times
-        _zoom_times = UINT16_VALUE(_msg_buff[_msg_buff_data_start+39], _msg_buff[_msg_buff_data_start+40]) * 0.1;
-
+        switch (_image_sensor) {
+            default:   
+            case ImageSensor::EO1:
+            case ImageSensor::EO1_IR_PIP:
+                //optical zoom times
+                _zoom_times = UINT16_VALUE(_msg_buff[_msg_buff_data_start+39], _msg_buff[_msg_buff_data_start+40]) * 0.1;
+                break;
+            case ImageSensor::IR:
+            case ImageSensor::IR_EO1_PIP:
+                //ir zoom times
+                _zoom_times = ((_msg_buff[_msg_buff_data_start+29] >> 3) & 0x0F) + 1;
+                break;
+        }        
         // get laser rangefinder distance
         _rangefinder_dist_m = UINT16_VALUE(_msg_buff[_msg_buff_data_start+33], _msg_buff[_msg_buff_data_start+34]) * 0.1;
         break;
@@ -544,7 +533,7 @@ bool AP_Mount_Viewpro::send_target_angles(float pitch_rad, float yaw_rad, bool y
     }
 
     // convert yaw angle to body-frame
-    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw()) : yaw_rad;
+    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw_rad()) : yaw_rad;
 
     // enforce body-frame yaw angle limits.  If beyond limits always use body-frame control
     const float yaw_bf_min = radians(_params.yaw_angle_min);
@@ -573,22 +562,23 @@ bool AP_Mount_Viewpro::send_target_angles(float pitch_rad, float yaw_rad, bool y
 }
 
 // send camera command, affected image sensor and value (e.g. zoom speed)
-bool AP_Mount_Viewpro::send_camera_command(ImageSensor img_sensor, CameraCommand cmd, uint8_t value)
+bool AP_Mount_Viewpro::send_camera_command(ImageSensor img_sensor, CameraCommand cmd, uint8_t value, LRFCommand lrf_cmd)
 {
     // fill in 2 bytes containing sensor, zoom speed, operation command and LRF
     // bit0~2: sensor
     // bit3~5: zoom speed
     // bit6~12: operation command no
-    // bit13~15: LRF command (unused)
+    // bit13~15: LRF command
     const uint16_t sensor_id = (uint16_t)img_sensor;
     const uint16_t zoom_speed = ((uint16_t)value & 0x07) << 3;
     const uint16_t operation_cmd = ((uint16_t)cmd & 0x7F) << 6;
+    const uint16_t rangefinder_cmd = ((uint16_t)lrf_cmd & 0x07) << 13;
 
     // fill in packet
     const C1Packet c1_packet {
         .content = {
             frame_id: FrameId::C1,
-            sensor_zoom_cmd_be:  htobe16(sensor_id | zoom_speed | operation_cmd)
+            sensor_zoom_cmd_be:  htobe16(sensor_id | zoom_speed | operation_cmd | rangefinder_cmd)
         }
     };
 
@@ -645,7 +635,7 @@ bool AP_Mount_Viewpro::send_tracking_command(TrackingCommand cmd, uint8_t value)
 }
 
 // send camera command2 and corresponding parameter values
-bool AP_Mount_Viewpro::send_tracking_command2(TrackingCommand2 cmd, uint16_t param1, uint16_t param2)
+bool AP_Mount_Viewpro::send_tracking_command2(TrackingCommand2 cmd, int16_t param1, int16_t param2)
 {
     // fill in packet
     const E2Packet e2_packet {
@@ -694,7 +684,7 @@ bool AP_Mount_Viewpro::send_m_ahrs()
     uint16_t gps_vdop = AP::gps().get_vdop();
 
     // get vehicle yaw in the range 0 to 360
-    const uint16_t veh_yaw_deg = wrap_360(degrees(AP::ahrs().get_yaw()));
+    const uint16_t veh_yaw_deg = wrap_360(degrees(AP::ahrs().get_yaw_rad()));
 
     // fill in packet
     const M_AHRSPacket mahrs_packet {
@@ -702,8 +692,8 @@ bool AP_Mount_Viewpro::send_m_ahrs()
             frame_id: FrameId::M_AHRS,
             data_type: 0x07,                        // Bit0: Attitude, Bit1: GPS, Bit2 Gyro
             unused2to8 : {0, 0, 0, 0, 0, 0, 0},
-            pitch_be: htobe16(-degrees(AP::ahrs().get_pitch()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
-            roll_be: htobe16(degrees(AP::ahrs().get_roll()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),      // vehicle roll angle.  1bit=360deg/65536
+            roll_be: htobe16(degrees(AP::ahrs().get_roll_rad()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),      // vehicle roll angle.  1bit=360deg/65536
+            pitch_be: htobe16(-degrees(AP::ahrs().get_pitch_rad()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
             yaw_be: htobe16(veh_yaw_deg * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),                          // vehicle yaw angle.  1bit=360deg/65536
             date_be: htobe16(date),                 // bit0~6:year, bit7~10:month, bit11~15:day
             seconds_utc: {uint8_t((second_hundredths & 0xFF0000ULL) >> 16), // seconds * 100 MSB.  1bit = 0.01sec
@@ -758,13 +748,32 @@ bool AP_Mount_Viewpro::set_zoom(ZoomType zoom_type, float zoom_value)
 
     // zoom rate
     if (zoom_type == ZoomType::RATE) {
+        uint8_t zoom_speed = 1;
         CameraCommand zoom_cmd = CameraCommand::STOP_FOCUS_AND_ZOOM;
-        if (zoom_value < 0) {
-            zoom_cmd = CameraCommand::ZOOM_OUT;
-        } else if (zoom_value > 0) {
-            zoom_cmd = CameraCommand::ZOOM_IN;
+        
+        switch (_image_sensor) {
+            default:   
+            case ImageSensor::EO1:
+            case ImageSensor::EO1_IR_PIP:
+                if (zoom_value < 0) {
+                    zoom_cmd = CameraCommand::ZOOM_OUT;
+                } else if (zoom_value > 0) {
+                    zoom_cmd = CameraCommand::ZOOM_IN;
+                }
+                zoom_speed = AP_MOUNT_VIEWPRO_EO_ZOOM_SPEED;
+                break;
+            case ImageSensor::IR:
+            case ImageSensor::IR_EO1_PIP:
+                if (zoom_value < 0) {
+                    zoom_cmd = CameraCommand::IR_ZOOM_IN;
+                } else if (zoom_value > 0) {
+                    zoom_cmd = CameraCommand::IR_ZOOM_OUT;
+                }
+                zoom_speed = AP_MOUNT_VIEWPRO_IR_ZOOM_SPEED;
+                break;    
         }
-        return send_camera_command(_image_sensor, zoom_cmd, AP_MOUNT_VIEWPRO_ZOOM_SPEED);
+        
+        return send_camera_command(_image_sensor, zoom_cmd, zoom_speed);
     }
 
     // zoom percentage
@@ -829,13 +838,13 @@ bool AP_Mount_Viewpro::set_tracking(TrackingType tracking_type, const Vector2f& 
         break;
     case TrackingType::TRK_POINT: {
         return (send_tracking_command(TrackingCommand::START, 0) &&
-                send_tracking_command2(TrackingCommand2::SET_POINT, (p1.x - 0.5) * 960, (p1.y - 0.5) * 540));
+                send_tracking_command2(TrackingCommand2::SET_POINT, (p1.x - 0.5) * 2.0 * 960, (p1.y - 0.5) * 2.0 * 540));
         break;
     }
     case TrackingType::TRK_RECTANGLE:
         return (send_tracking_command(TrackingCommand::START, 0) &&
-                send_tracking_command2(TrackingCommand2::SET_RECT_TOPLEFT, (p1.x - 0.5) * 960, (p1.y - 0.5) * 540) &&
-                send_tracking_command2(TrackingCommand2::SET_RECT_BOTTOMRIGHT, (p2.x - 0.5) * 960, (p2.y - 0.5) * 540));
+                send_tracking_command2(TrackingCommand2::SET_RECT_TOPLEFT, (p1.x - 0.5) * 2.0 * 960, (p1.y - 0.5) * 2.0 * 540) &&
+                send_tracking_command2(TrackingCommand2::SET_RECT_BOTTOMRIGHT, (p2.x - 0.5) * 2.0 * 960, (p2.y - 0.5) * 2.0 * 540));
         break;
     }
 
@@ -859,6 +868,47 @@ bool AP_Mount_Viewpro::set_lens(uint8_t lens)
 
     // if lens is zero use default lens
     ImageSensor new_image_sensor = ImageSensor(lens);
+    return send_camera_command(new_image_sensor, CameraCommand::NO_ACTION, 0);
+}
+
+// set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+// primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
+bool AP_Mount_Viewpro::set_camera_source(uint8_t primary_source, uint8_t secondary_source)
+{
+    // maps primary and secondary source to viewpro image sensor
+    ImageSensor new_image_sensor;
+    switch (primary_source) {
+    case 0: // Default (RGB)
+        FALLTHROUGH;
+    case 1: // RGB
+        switch (secondary_source) {
+        case 0: // RGB + Default (None)
+            new_image_sensor = ImageSensor::EO1;
+            break;
+        case 2: // PIP RGB+IR
+            new_image_sensor = ImageSensor::EO1_IR_PIP;
+            break;
+        default:
+            return false;
+        }
+        break;
+    case 2: // IR
+        switch (secondary_source) {
+        case 0: // IR + Default (None)
+            new_image_sensor = ImageSensor::IR;
+            break;
+        case 1: // PIP IR+RGB
+            new_image_sensor = ImageSensor::IR_EO1_PIP;
+            break;
+        default:
+            return false;
+        }
+        break;
+    default:
+        return false;
+    }
+
+    // send desired image type to camera
     return send_camera_command(new_image_sensor, CameraCommand::NO_ACTION, 0);
 }
 
@@ -892,8 +942,8 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
         vendor_name,            // vendor_name uint8_t[32]
         _model_name,            // model_name uint8_t[32]
         _firmware_version,      // firmware version uint32_t
-        0,                      // focal_length float (mm)
-        0,                      // sensor_size_h float (mm)
+        NaNf,                   // sensor_size_h float (mm)
+        NaNf,                   // sensor_size_v float (mm)
         0,                      // sensor_size_v float (mm)
         0,                      // resolution_h uint16_t (pix)
         0,                      // resolution_v uint16_t (pix)
@@ -912,8 +962,6 @@ void AP_Mount_Viewpro::send_camera_settings(mavlink_channel_t chan) const
         return;
     }
 
-    const float NaN = nanf("0x4152");
-
     // convert zoom times (e.g. 1x ~ 20x) to target zoom level (e.g. 0 to 100)
     const float zoom_level = linear_interpolate(0, 100, _zoom_times, 1, AP_MOUNT_VIEWPRO_ZOOM_MAX);
 
@@ -923,7 +971,7 @@ void AP_Mount_Viewpro::send_camera_settings(mavlink_channel_t chan) const
         AP_HAL::millis(),   // time_boot_ms
         _recording ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
         zoom_level,         // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
 // get rangefinder distance.  Returns true on success
@@ -937,6 +985,12 @@ bool AP_Mount_Viewpro::get_rangefinder_distance(float& distance_m) const
 
     distance_m = _rangefinder_dist_m;
     return true;
+}
+
+// enable/disable rangefinder.  Returns true on success
+bool AP_Mount_Viewpro::set_rangefinder_enable(bool enable)
+{
+    return send_camera_command(ImageSensor::NO_ACTION, CameraCommand::NO_ACTION, 0, enable ? LRFCommand::CONTINUOUS_RANGING_START : LRFCommand::STOP_RANGING);
 }
 
 #endif // HAL_MOUNT_VIEWPRO_ENABLED

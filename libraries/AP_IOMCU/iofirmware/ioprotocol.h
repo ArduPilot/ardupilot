@@ -7,15 +7,27 @@
   common protocol definitions between AP_IOMCU and iofirmware
  */
 
+#ifndef AP_IOMCU_PROFILED_SUPPORT_ENABLED
+#define AP_IOMCU_PROFILED_SUPPORT_ENABLED 0
+#endif
+
 // 22 is enough for the rc_input page in one transfer
 #define PKT_MAX_REGS 22
+// The number of channels that can be propagated - due to SBUS_OUT is higher than the physical channels
 #define IOMCU_MAX_RC_CHANNELS 16
+// The actual number of output channels
 #define IOMCU_MAX_CHANNELS 8
 #define IOMCU_MAX_TELEM_CHANNELS 4
 
 //#define IOMCU_DEBUG
 
-struct PACKED IOPacket {
+struct 
+#if defined(STM32H7)
+__attribute__((aligned(32), packed))
+#else
+PACKED
+#endif
+IOPacket  {
     uint8_t 	count:6;
     uint8_t 	code:2;
     uint8_t 	crc;
@@ -66,6 +78,9 @@ enum iopage {
     PAGE_RAW_DSHOT_TELEM_5_8 = 205,
     PAGE_RAW_DSHOT_TELEM_9_12 = 206,
     PAGE_RAW_DSHOT_TELEM_13_16 = 207,
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    PAGE_PROFILED = 208,
+#endif
 };
 
 // setup page registers
@@ -112,6 +127,8 @@ enum iopage {
 #define PAGE_REG_SETUP_FORCE_SAFETY_ON  14
 #define FORCE_SAFETY_MAGIC 22027
 
+#define PROFILED_ENABLE_MAGIC 123
+
 struct page_config {
     uint16_t protocol_version;
     uint16_t protocol_version2;
@@ -155,17 +172,17 @@ struct page_rc_input {
   data for mixing on FMU failsafe
  */
 struct page_mixing {
-    uint16_t servo_min[IOMCU_MAX_CHANNELS];
-    uint16_t servo_max[IOMCU_MAX_CHANNELS];
-    uint16_t servo_trim[IOMCU_MAX_CHANNELS];
-    uint8_t servo_function[IOMCU_MAX_CHANNELS];
-    uint8_t servo_reversed[IOMCU_MAX_CHANNELS];
+    uint16_t servo_min[IOMCU_MAX_RC_CHANNELS];
+    uint16_t servo_max[IOMCU_MAX_RC_CHANNELS];
+    uint16_t servo_trim[IOMCU_MAX_RC_CHANNELS];
+    uint8_t servo_function[IOMCU_MAX_RC_CHANNELS];
+    uint8_t servo_reversed[IOMCU_MAX_RC_CHANNELS];
 
     // RC input arrays are in AETR order
     uint16_t rc_min[4];
     uint16_t rc_max[4];
     uint16_t rc_trim[4];
-    uint8_t rc_reversed[IOMCU_MAX_CHANNELS];
+    uint8_t rc_reversed[IOMCU_MAX_RC_CHANNELS];
     uint8_t rc_channel[4];
 
     // gain for elevon and vtail mixing, x1000
@@ -198,6 +215,7 @@ struct page_mode_out {
     uint16_t mode;
     uint16_t bdmask;
     uint16_t esc_type;
+    uint16_t reversible_mask;
 };
 
 struct page_dshot {
@@ -221,4 +239,18 @@ struct page_dshot_telem {
     uint16_t  current_camps[4];
     uint16_t  temperature_cdeg[4];
     uint16_t  types[4];
+// if EDTv2 needs to be disabled, IOMCU firmware should be recompiled too, this is the reason
+#if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+    uint8_t   edt2_status[4];
+    uint8_t   edt2_stress[4];
+#endif
 };
+
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+struct __attribute__((packed, aligned(2))) page_profiled {
+    uint8_t magic;
+    uint8_t blue;
+    uint8_t red;
+    uint8_t green;
+};
+#endif

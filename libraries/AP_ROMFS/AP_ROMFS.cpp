@@ -45,15 +45,14 @@ const AP_ROMFS::embedded_file *AP_ROMFS::find_file(const char *name)
 }
 
 /*
-  find a compressed file and uncompress it. Space for decompressed data comes
-  from malloc. Caller must be careful to free the resulting data after use. The
-  file data buffer is guaranteed to contain at least one null (though it may be
-  at buf[size]).
+  Find the named file and return its decompressed data and size. Caller must
+  call AP_ROMFS::free() on the return value after use to free it. The data is
+  guaranteed to be null-terminated such that it can be treated as a string.
 */
 const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 {
     const struct embedded_file *f = find_file(name);
-    if (!f) {
+    if (f == nullptr) {
         return nullptr;
     }
 
@@ -61,13 +60,17 @@ const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
     size = f->decompressed_size;
     return f->contents;
 #else
+    // add one byte for null termination; ArduPilot's malloc will zero it.
     uint8_t *decompressed_data = (uint8_t *)malloc(f->decompressed_size+1);
     if (!decompressed_data) {
         return nullptr;
     }
 
-    // explicitly null-terminate the data
-    decompressed_data[f->decompressed_size] = 0;
+    if (f->decompressed_size == 0) {
+        // empty file, avoid decompression problems
+        size = 0;
+        return decompressed_data;
+    }
 
     TINF_DATA *d = (TINF_DATA *)malloc(sizeof(TINF_DATA));
     if (!d) {
@@ -100,7 +103,7 @@ const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 #endif
 }
 
-// free returned data
+// free decompressed file data
 void AP_ROMFS::free(const uint8_t *data)
 {
 #ifndef HAL_ROMFS_UNCOMPRESSED
@@ -117,11 +120,40 @@ const char *AP_ROMFS::dir_list(const char *dirname, uint16_t &ofs)
 {
     const size_t dlen = strlen(dirname);
     for ( ; ofs < ARRAY_SIZE(files); ofs++) {
-        if (strncmp(dirname, files[ofs].filename, dlen) == 0 &&
-            files[ofs].filename[dlen] == '/') {
+        if (strncmp(dirname, files[ofs].filename, dlen) == 0) {
+            const char last_char = files[ofs].filename[dlen];
+            if (dlen != 0 && last_char != '/' && last_char != 0) {
+                // only a partial match, skip
+                continue;
+            }
+            /*
+              prevent duplicate directories
+             */
+            const char *start_name = files[ofs].filename + dlen + 1;
+            const char *slash = strchr(start_name, '/');
+            if (ofs > 0 && slash != nullptr) {
+                auto len = slash - start_name;
+                if (memcmp(files[ofs].filename, files[ofs-1].filename, len+dlen+1) == 0) {
+                    continue;
+                }
+            }
             // found one
             return files[ofs++].filename;
         }
     }
     return nullptr;
 }
+
+/*
+  find a compressed file and return its size
+*/
+bool AP_ROMFS::find_size(const char *name, uint32_t &size)
+{
+    const struct embedded_file *f = find_file(name);
+    if (f == nullptr) {
+        return false;
+    }
+    size = f->decompressed_size;
+    return true;
+}
+

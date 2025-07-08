@@ -4,6 +4,7 @@
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include "GyroFrame.h"
 
 #if HAL_WITH_DSP
@@ -56,10 +57,6 @@ public:
 // create fake gcs object
 GCS_Dummy _gcs;
 
-const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-        AP_GROUPEND
-};
-
 uint32_t frame_num = 0;
 
 void setup()
@@ -71,9 +68,9 @@ void setup()
     attenuation_cutoff = powf(10.0f, -attenuation_power_db / 10.0f);
 
     for(uint16_t i = 0; i < WINDOW_SIZE; i++) {
-        float sample = sinf(2.0f * M_PI * frequency1 * i / SAMPLE_RATE) * ToRad(20) * 2000;
-        sample += sinf(2.0f * M_PI * frequency2 * i / SAMPLE_RATE) * ToRad(10) * 2000;
-        sample += sinf(2.0f * M_PI * frequency3 * i / SAMPLE_RATE) * ToRad(10) * 2000;
+        float sample = sinf(2.0f * M_PI * frequency1 * i / SAMPLE_RATE) * radians(20) * 2000;
+        sample += sinf(2.0f * M_PI * frequency2 * i / SAMPLE_RATE) * radians(10) * 2000;
+        sample += sinf(2.0f * M_PI * frequency3 * i / SAMPLE_RATE) * radians(10) * 2000;
         fft_window.push(sample);
     }
 

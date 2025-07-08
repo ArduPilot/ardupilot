@@ -74,12 +74,6 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
         AP::gps().lock_port(1, exclusive);
         break;
 #endif  // AP_GPS_ENABLED
-    case SERIAL_CONTROL_DEV_SHELL:
-        stream = hal.util->get_shell_stream();
-        if (stream == nullptr) {
-            return;
-        }
-        break;
     case SERIAL_CONTROL_SERIAL0 ... SERIAL_CONTROL_SERIAL9: {
         // direct access to a SERIALn port
         stream = port = AP::serialmanager().get_serial_by_id(packet.device - SERIAL_CONTROL_SERIAL0);

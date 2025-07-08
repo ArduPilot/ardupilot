@@ -9,6 +9,15 @@ local PARAM_TABLE_PREFIX = "EFI_INF_"
 
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
+local CMD_CDI1 = 1
+local CMD_CDI2 = 2
+local CMD_OIL_PUMP = 3
+-- local CMD_SHUTDOWN = 4
+-- local CMD_PRE_INJECTION = 5
+local CMD_THROTTLE = 6
+
+local K_THROTTLE = 70
+
 -- bind a parameter to a variable given
 local function bind_param(name)
     local p = Parameter()
@@ -32,13 +41,50 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 8), 'could not add p
   // @Values: 0:Disabled,1:Enabled
   // @User: Standard
 --]]
-EFI_INF_ENABLE = bind_add_param("ENABLE", 1, 0)
+EFI_INF_ENABLE = bind_add_param("ENABLE", 1, 1)
+
+--[[
+  // @Param: EFI_INF_OPTIONS
+  // @DisplayName: EFI INF-Inject options
+  // @Description: EFI INF driver options
+  // @Bitmask: 0:EnableLogging
+  // @User: Standard
+--]]
+EFI_INF_OPTIONS = bind_add_param("OPTIONS", 2, 0)
+
+--[[
+  // @Param: EFI_INF_THR_HZ
+  // @DisplayName: EFI INF-Inject throttle rate
+  // @Description: EFI INF throttle output rate
+  // @Range: 0 50
+  // @Units: Hz
+  // @User: Standard
+--]]
+EFI_INF_THR_HZ = bind_add_param("THR_HZ", 3, 0)
+
+--[[
+  // @Param: EFI_INF_IGN_AUX
+  // @DisplayName: EFI INF-Inject ignition aux function
+  // @Description: EFI INF throttle ignition aux function
+  // @User: Standard
+--]]
+EFI_INF_IGN_AUX = bind_add_param("IGN_AUX", 4, 300)
+
+local OPTION_LOGGING = (1<<0)
+
+--[[
+   return true if an option is enabled
+--]]
+local function option_enabled(option)
+   return (EFI_INF_OPTIONS:get() & option) ~= 0
+end
 
 if EFI_INF_ENABLE:get() ~= 1 then
    return
 end
 
 local EFI_FUEL_DENS = bind_param("EFI_FUEL_DENS")
+local SCR_VM_I_COUNT = bind_param("SCR_VM_I_COUNT")
 
 local uart = serial:find_serial(0) -- first scripting serial
 if not uart then
@@ -53,11 +99,42 @@ if not efi_backend then
    return
 end
 
+--[[
+   we need a bit more time in this driver
+--]]
+if SCR_VM_I_COUNT:get() < 50000 then
+   gcs:send_text(MAV_SEVERITY.INFO, "EFI_INF: raising SCR_VM_I_COUNT to 50000")
+   SCR_VM_I_COUNT:set_and_save(50000)
+end
+
 local state = {}
 state.last_read_us = uint32_t(0)
 state.chk0 = 0
 state.chk1 = 0
 state.total_fuel_g = 0.0
+
+local last_throttle_send_ms = uint32_t(0)
+local last_ignition_send_ms = uint32_t(0)
+local last_ign_sw_pos = -1
+
+local file_handle = nil
+local efi_device_id = nil
+
+--[[
+   log a set of bytes
+--]]
+local function log_bytes(s)
+   if not file_handle then
+      file_handle = io.open("INF_Inject.log", "w")
+   end
+   if file_handle then
+      local magic = 0x7fe53b04
+      local now_ms = millis():toint()
+      local hdr = string.pack("<III", magic, now_ms, string.len(s))
+      file_handle:write(hdr)
+      file_handle:write(s)
+   end
+end
 
 local function read_bytes(n)
    local ret = ""
@@ -67,17 +144,10 @@ local function read_bytes(n)
       state.chk1 = state.chk1 ~ state.chk0
       ret = ret .. string.char(b)
    end
-   return ret
-end
-
---[[
-   discard pending bytes
---]]
-local function discard_pending()
-   local n = uart:available():toint()
-   for _ = 1, n do
-      uart:read()
+   if option_enabled(OPTION_LOGGING) then
+      log_bytes(ret)
    end
+   return ret
 end
 
 --[[
@@ -97,40 +167,43 @@ end
    check for input and parse data
 --]]
 local function check_input()
+   local packet_size = 83
    local n_bytes = uart:available():toint()
-   if n_bytes < 83 then
-      return
-   end
-   if n_bytes > 83 then
-      discard_pending()
-      return
+   if n_bytes < packet_size then
+      return false
    end
 
    local tus = micros()
-   state.chk0 = 0
-   state.chk1 = 0
+
+   -- sync on header start
+   local header_ok = false
+   while n_bytes >= packet_size and not header_ok do
+      state.chk0 = 0
+      state.chk1 = 0
+      local header0 = string.unpack("<B", read_bytes(1))
+      n_bytes = n_bytes - 1
+      if header0 == 0xB5 then
+         local header1 = string.unpack("<B", read_bytes(1))
+         n_bytes = n_bytes - 1
+         if header1 == 0x62 then
+            header_ok = true
+         end
+      end
+   end
+   if not header_ok or n_bytes < packet_size-2 then
+      return false
+   end
 
    -- look for basic data table 2
-   header0, header1, source, target, dtype, num, id, ack = string.unpack("<BBBBBBIB", read_bytes(11))
-   if header0 ~= 0xB5 or header1 ~= 0x62 then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("bad header 0x%02x 0x%0x2", header0, header1))
-      discard_pending()
-      return
-   end
+   local _, _, dtype, num, device_id, ack = string.unpack("<BBBBIB", read_bytes(9))
    if dtype ~= 0x02 then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("bad type3 0x%02x", dtype))
-      discard_pending()
-      return
+      return false
    end
    if ack ~= 0x50 then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("bad ack 0x%02x", ack))
-      discard_pending()
-      return
+      return false
    end
-   if num < 83 then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("bad num %u n_bytes=%u", num, n_bytes))
-      discard_pending()
-      return
+   if num < packet_size then
+      return false
    end
 
    --gcs:send_text(MAV_SEVERITY.INFO, string.format("packet start"))
@@ -168,17 +241,20 @@ local function check_input()
    local chk0 = state.chk0
    local chk1 = state.chk1
    state.check0, state.check1 = string.unpack("<BB", read_bytes(2))
-   if chk0 ~= state.check0 or 0x00 ~= state.check1 then
+
+   --[[
+      the device will sometimes use 0 for the 2nd 8 bits of the checksum
+      we will accept these packets, relying on the other header checks
+   --]]
+   local checksum_ok = chk0 == state.check0 and (chk1 == state.check1 or state.check1 == 0)
+   if not checksum_ok then
       gcs:send_text(MAV_SEVERITY.INFO, string.format("chksum wrong (0x%02x,0x%02x) (0x%02x,0x%02x)", chk0, chk1, state.check0, state.check1))
-      --discard_pending()
-      --return
+      return false
    end
    state.end0, state.end1 = string.unpack("<BB", read_bytes(2))
 
    if state.end0 ~= 0x0d or state.end1 ~= 0x0a then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("end wrong 0x%02x 0x%02x", state.end0, state.end1))
-      discard_pending()
-      return
+      return false
    end
 
    local dt = (tus - state.last_read_us):tofloat()*1.0e-6
@@ -189,14 +265,20 @@ local function check_input()
 
    state.last_read_us = micros()
 
-   -- discard the rest
-   discard_pending()
-
    gcs:send_named_float('VOL_SRV', state.vol_svr)
    gcs:send_named_float('VOL_PUMP', state.vol_pump)
+   gcs:send_named_float('AMP_PUMP', state.amp_pump)
+   gcs:send_named_float('PWM_OUT2', state.PWM_OUT2)
    gcs:send_named_float('INF_ETEMP', state.tmp_env)
    gcs:send_named_float('INF_TEMP1', state.tmp0)
    gcs:send_named_float('INF_TEMP2', state.tmp1)
+
+   if not efi_device_id then
+      gcs:send_text(MAV_SEVERITY.INFO, string.format("EFI DeviceID: %u", device_id))
+      efi_device_id = device_id
+   end
+
+   return true
 end
 
 --[[
@@ -231,14 +313,98 @@ local function update_EFI()
    efi_backend:handle_scripting(efi_state)
 end
 
+local function get_checksum(pkt)
+   local chk0 = 0
+   local chk1 = 0
+   for i=1,#pkt do
+      local b = string.byte(pkt,i,i)
+      chk0 = chk0 ~ b
+      chk1 = chk1 ~ chk0
+    end
+   return (chk1 << 8) | chk0
+end
+
+--[[
+   send command packet
+--]]
+local function send_packet(cmd, content)
+   local pkt = string.pack("<BBBBBBIBBI",
+                           0xB5, 0x62,
+                           0xc3, 0xa1, 18, 20,
+                           efi_device_id, 0x50,
+                           cmd, content)
+   local crc = get_checksum(pkt)
+   pkt = pkt .. string.pack("<HBB", crc, 0x0d, 0x0a)
+   for i=1,#pkt do
+      local b = string.byte(pkt,i,i)
+      uart:write(b)
+   end
+end
+
+--[[
+   send throttle commands
+--]]
+local function update_throttle()
+   if EFI_INF_THR_HZ:get() <= 0 then
+      return
+   end
+   local now_ms = millis()
+   local rate_ms = 1000.0 / EFI_INF_THR_HZ:get()
+   if now_ms - last_throttle_send_ms < rate_ms then
+      return
+   end
+   last_throttle_send_ms = now_ms
+   local thr_k = SRV_Channels:get_output_scaled(K_THROTTLE)*10
+
+   send_packet(CMD_THROTTLE, thr_k)
+end
+
+--[[
+   send ignition commands
+--]]
+local function update_ignition()
+   local aux_fn = EFI_INF_IGN_AUX:get()
+   if not aux_fn then
+      return
+   end
+   local sw_pos = rc:get_aux_cached(aux_fn)
+   if not sw_pos then
+      return
+   end
+   local now_ms = millis()
+   if sw_pos == last_ign_sw_pos and now_ms - last_ignition_send_ms < 1000 then
+      return
+   end
+   last_ignition_send_ms = now_ms
+   local command = 0
+   if sw_pos >= 1 then
+      command = 1
+   end
+   if sw_pos ~= last_ign_sw_pos then
+      onoff = "OFF"
+      if command == 1 then
+         onoff = "ON"
+      end
+      gcs:send_text(MAV_SEVERITY.INFO, string.format("EFI_INF: ignition %s", onoff))
+   end
+   last_ign_sw_pos = sw_pos
+   send_packet(CMD_CDI1, command)
+   send_packet(CMD_CDI2, command)
+   send_packet(CMD_OIL_PUMP, command)
+end
+
 
 --[[
    main update function
 --]]
 local function update()
-   check_input()
-   update_EFI()
-
+   if check_input() then
+      update_EFI()
+   end
+   if efi_device_id then
+      update_throttle()
+      update_ignition()
+   end
    return update, 10
 end
 

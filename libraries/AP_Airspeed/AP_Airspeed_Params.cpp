@@ -26,15 +26,11 @@
 // This could be removed once the build system allows for APM_BUILD_TYPE in header files
 // note that this is re-definition of the one in AP_Airspeed.cpp, can't be shared as vehicle dependences cant go in header files
 #ifndef AP_AIRSPEED_DUMMY_METHODS_ENABLED
-#define AP_AIRSPEED_DUMMY_METHODS_ENABLED ((APM_BUILD_COPTER_OR_HELI && BOARD_FLASH_SIZE <= 1024) || \
+#define AP_AIRSPEED_DUMMY_METHODS_ENABLED ((APM_BUILD_COPTER_OR_HELI && HAL_PROGRAM_SIZE_LIMIT_KB <= 1024) || \
                                             APM_BUILD_TYPE(APM_BUILD_AntennaTracker) || APM_BUILD_TYPE(APM_BUILD_Blimp))
 #endif
 
 #if !AP_AIRSPEED_DUMMY_METHODS_ENABLED
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-#define PSI_RANGE_DEFAULT 0.05
-#endif
 
 #ifndef PSI_RANGE_DEFAULT
 #define PSI_RANGE_DEFAULT 1.0f
@@ -46,7 +42,7 @@ const AP_Param::GroupInfo AP_Airspeed_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Airspeed type
     // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:DroneCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033,16:ExternalAHRS,100:SITL
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:DroneCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033,16:ExternalAHRS,17:AUAV-10in,18:AUAV-5in,19:AUAV-30in,100:SITL
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_Airspeed_Params, type, 0, AP_PARAM_FLAG_ENABLE),
 
@@ -75,7 +71,8 @@ const AP_Param::GroupInfo AP_Airspeed_Params::var_info[] = {
 
     // @Param: PIN
     // @DisplayName: Airspeed pin
-    // @Description: The pin number that the airspeed sensor is connected to for analog sensors. Set to 15 on the Pixhawk for the analog airspeed port. 
+    // @Description: The pin number that the airspeed sensor is connected to for analog sensors. Values for some autopilots are given as examples. Search wiki for "Analog pins".
+    // @Values: -1:Disabled, 2:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 5:Navigator, 13:Pixhawk2_PM2/CubeOrange_PM2, 14:CubeOrange, 16:Durandal, 100:PX4-v1
     // @User: Advanced
     AP_GROUPINFO("PIN", 5, AP_Airspeed_Params, pin, 0),
 #endif // HAL_BUILD_AP_PERIPH
@@ -99,8 +96,10 @@ const AP_Param::GroupInfo AP_Airspeed_Params::var_info[] = {
 
     // @Param: SKIP_CAL
     // @DisplayName: Skip airspeed offset calibration on startup
-    // @Description: This parameter allows you to skip airspeed offset calibration on startup, instead using the offset from the last calibration. This may be desirable if the offset variance between flights for your sensor is low and you want to avoid having to cover the pitot tube on each boot.
-    // @Values: 0:Disable,1:Enable
+    // @Description: This parameter allows you to skip airspeed offset calibration on startup, instead using the offset from the last calibration or requiring a manual calibration. This may be desirable if the offset variance between flights for your sensor is low and you want to avoid having to cover the pitot tube on each boot.
+    // @Values: 0:Disable
+    // @Values: 1:Do not require offset calibration before flight. Manual calibration should be performed during initial setup.
+    // @Values: 2:Do not calibrate on start up. Manual calibration must be performed once per boot.
     // @User: Advanced
     AP_GROUPINFO("SKIP_CAL", 8, AP_Airspeed_Params, skip_cal, 0),
 #endif // HAL_BUILD_AP_PERIPH
@@ -115,7 +114,7 @@ const AP_Param::GroupInfo AP_Airspeed_Params::var_info[] = {
     // @Param: BUS
     // @DisplayName: Airspeed I2C bus
     // @Description: Bus number of the I2C bus where the airspeed sensor is connected. May not correspond to board's I2C bus number labels. Retry another bus and reboot if airspeed sensor fails to initialize.
-    // @Values: 0:Bus0,1:Bus1,2:Bus2
+    // @Values: 0:Bus0,1:Bus1,2:Bus2,3:Bus3
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("BUS", 10, AP_Airspeed_Params, bus, 1),

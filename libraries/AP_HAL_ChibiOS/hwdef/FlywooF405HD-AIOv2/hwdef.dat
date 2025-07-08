@@ -1,0 +1,18 @@
+
+# hw definition file for processing by chibios_hwdef.py
+# for FLYWOOF405HD_AIOv2 hardware.
+# thanks to betaflight for pin information
+
+include ../FlywooF405S-AIO/hwdef.dat
+
+#undefine items to be changed
+undef APJ_BOARD_ID
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_FlywooF405HD_AIOv2
+
+# GPIOs
+PB5  PINIO1 OUTPUT GPIO(81) LOW
+define RELAY2_PIN_DEFAULT 81
+PC8  PINIO2 OUTPUT GPIO(82) LOW
+define RELAY3_PIN_DEFAULT 82

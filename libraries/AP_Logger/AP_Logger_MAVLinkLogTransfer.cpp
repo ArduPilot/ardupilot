@@ -128,7 +128,7 @@ void AP_Logger::handle_log_request_data(GCS_MAVLINK &link, const mavlink_message
         uint16_t num_logs = get_num_logs();
         if (packet.id > num_logs || packet.id < 1) {
             // request for an invalid log; cancel any current download
-            transfer_activity = TransferActivity::IDLE;
+            end_log_transfer();
             return;
         }
 
@@ -174,11 +174,16 @@ void AP_Logger::handle_log_request_erase(GCS_MAVLINK &link, const mavlink_messag
 void AP_Logger::handle_log_request_end(GCS_MAVLINK &link, const mavlink_message_t &msg)
 {
     WITH_SEMAPHORE(_log_send_sem);
-    mavlink_log_request_end_t packet;
-    mavlink_msg_log_request_end_decode(&msg, &packet);
+    // mavlink_log_request_end_t packet;
+    // mavlink_msg_log_request_end_decode(&msg, &packet);
+    end_log_transfer();
+}
 
+void AP_Logger::end_log_transfer()
+{
     transfer_activity = TransferActivity::IDLE;
     _log_sending_link = nullptr;
+    backends[0]->end_log_transfer();
 }
 
 /**
@@ -323,8 +328,7 @@ bool AP_Logger::handle_log_send_data()
     _log_data_offset += nbytes;
     _log_data_remaining -= nbytes;
     if (nbytes < MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN || _log_data_remaining == 0) {
-        transfer_activity = TransferActivity::IDLE;
-        _log_sending_link = nullptr;
+        end_log_transfer();
     }
     return true;
 }

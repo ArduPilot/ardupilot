@@ -28,7 +28,6 @@ public:
         Benewake = 11,
         Scripting2 = 12,
         TOFSenseP = 13,
-        NanoRadar_NRA24 = 14,
-        MR72 = 15,
+        RadarCAN = 14,  // used by NanoRadar and Hexsoon
     };
 };

@@ -11,6 +11,22 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Bitmask.h>
 
+#include <AC_Sprayer/AC_Sprayer_config.h>
+#include <AP_Airspeed/AP_Airspeed_config.h>
+#include <AP_Camera/AP_Camera_config.h>
+#include <AP_Compass/AP_Compass_config.h>
+#include <AP_Gripper/AP_Gripper_config.h>
+#include <AP_OpticalFlow/AP_OpticalFlow_config.h>
+#include <AP_Parachute/AP_Parachute_config.h>
+#include <AP_RangeFinder/AP_RangeFinder_config.h>
+#include <AP_ServoRelayEvents/AP_ServoRelayEvents_config.h>
+#include <AP_Torqeedo/AP_Torqeedo_config.h>
+#include <AP_VisualOdom/AP_VisualOdom_config.h>
+#include <AP_Winch/AP_Winch_config.h>
+#include <AP_VideoTX/AP_VideoTX_config.h>
+#include <AP_Arming/AP_Arming_config.h>
+#include <AP_BattMonitor/AP_BattMonitor_config.h>
+
 #define NUM_RC_CHANNELS 16
 
 /// @class	RC_Channel
@@ -25,6 +41,12 @@ public:
         ANGLE = 0,
         RANGE = 1,
     };
+
+    // ch returns the radio channel be read, starting at 1.  so
+    // typically Roll=1, Pitch=2, throttle=3, yaw=4.  If this returns
+    // 0 then this is the dummy object which means that one of roll,
+    // pitch, yaw or throttle has not been configured correctly.
+    uint8_t ch() const { return ch_in + 1; }
 
     // setup the control preferences
     void        set_range(uint16_t high);
@@ -42,7 +64,7 @@ public:
 
     // calculate an angle given dead_zone and trim. This is used by the quadplane code
     // for hover throttle
-    int16_t     pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t trim) const;
+    float       pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t trim) const;
 
     // return a normalised input for a channel, in range -1 to 1,
     // centered around the channel trim. Ignore deadzone.
@@ -79,7 +101,7 @@ public:
     float    stick_mixing(const float servo_in);
 
     // get control input with zero deadzone
-    int16_t    get_control_in_zero_dz(void) const;
+    float      get_control_in_zero_dz(void) const;
 
     int16_t    get_radio_min() const {return radio_min.get();}
 
@@ -110,34 +132,57 @@ public:
         SIMPLE_MODE =          3, // change to simple mode
         RTL =                  4, // change to RTL flight mode
         SAVE_TRIM =            5, // save current position as level
+#if AP_MISSION_ENABLED
         SAVE_WP =              7, // save mission waypoint or RTL if in auto mode
+#endif  // AP_MISSION_ENABLED
+#if AP_CAMERA_ENABLED
         CAMERA_TRIGGER =       9, // trigger camera servo or relay
+#endif  // AP_CAMERA_ENABLED
+#if AP_RANGEFINDER_ENABLED
         RANGEFINDER =         10, // allow enabling or disabling rangefinder in flight which helps avoid surface tracking when you are far above the ground
+#endif  // AP_RANGEFINDER_ENABLED
+#if AP_FENCE_ENABLED
         FENCE =               11, // allow enabling or disabling fence in flight
+#endif  // AP_FENCE_ENABLED
         RESETTOARMEDYAW =     12, // UNUSED
         SUPERSIMPLE_MODE =    13, // change to simple mode in middle, super simple at top
         ACRO_TRAINER =        14, // low = disabled, middle = leveled, high = leveled and limited
+#if HAL_SPRAYER_ENABLED
         SPRAYER =             15, // enable/disable the crop sprayer
+#endif  // HAL_SPRAYER_ENABLED
         AUTO =                16, // change to auto flight mode
-        AUTOTUNE =            17, // auto tune
+        AUTOTUNE_MODE =       17, // auto tune
         LAND =                18, // change to LAND flight mode
+#if AP_GRIPPER_ENABLED
         GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
+#endif  // AP_GRIPPER_ENABLED
+#if HAL_PARACHUTE_ENABLED
         PARACHUTE_ENABLE  =   21, // Parachute enable/disable
         PARACHUTE_RELEASE =   22, // Parachute release
         PARACHUTE_3POS =      23, // Parachute disable, enable, release with 3 position switch
+#endif  // HAL_PARACHUTE_ENABLED
+#if AP_MISSION_ENABLED
         MISSION_RESET =       24, // Reset auto mission to start from first command
+#endif  // AP_MISSION_ENABLED
         ATTCON_FEEDFWD =      25, // enable/disable the roll and pitch rate feed forward
         ATTCON_ACCEL_LIM =    26, // enable/disable the roll, pitch and yaw accel limiting
+#if HAL_MOUNT_ENABLED
         RETRACT_MOUNT1 =      27, // Retract Mount1
+#endif  // HAL_MOUNT_ENABLED
+#if AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
+
         RELAY =               28, // Relay pin on/off (only supports first relay)
+#endif  // AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
         LANDING_GEAR =        29, // Landing gear controller
         LOST_VEHICLE_SOUND =  30, // Play lost vehicle sound
         MOTOR_ESTOP =         31, // Emergency Stop Switch
         MOTOR_INTERLOCK =     32, // Motor On/Off switch
         BRAKE =               33, // Brake flight mode
+#if AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
         RELAY2 =              34, // Relay2 pin on/off
         RELAY3 =              35, // Relay3 pin on/off
         RELAY4 =              36, // Relay4 pin on/off
+#endif  // AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
         THROW =               37, // change to THROW flight mode
         AVOID_ADSB =          38, // enable AP_Avoidance library
         PRECISION_LOITER =    39, // enable precision loiter
@@ -145,8 +190,10 @@ public:
         ARMDISARM_UNUSED =    41, // UNUSED
         SMART_RTL =           42, // change to SmartRTL flight mode
         INVERTED  =           43, // enable inverted flight
+#if AP_WINCH_ENABLED
         WINCH_ENABLE =        44, // winch enable/disable
         WINCH_CONTROL =       45, // winch control
+#endif  // AP_WINCH_ENABLED
         RC_OVERRIDE_ENABLE =  46, // enable RC Override
         USER_FUNC1 =          47, // user function #1
         USER_FUNC2 =          48, // user function #2
@@ -159,16 +206,22 @@ public:
         GUIDED       =        55, // guided mode
         LOITER       =        56, // loiter mode
         FOLLOW       =        57, // follow mode
+#if AP_MISSION_ENABLED
         CLEAR_WP     =        58, // clear waypoints
+#endif  // AP_MISSION_ENABLED
         SIMPLE       =        59, // simple mode
         ZIGZAG       =        60, // zigzag mode
         ZIGZAG_SaveWP =       61, // zigzag save waypoint
         COMPASS_LEARN =       62, // learn compass offsets
         SAILBOAT_TACK =       63, // rover sailboat tack
         REVERSE_THROTTLE =    64, // reverse throttle input
+#if AP_GPS_ENABLED
         GPS_DISABLE  =        65, // disable GPS for testing
+#endif  // AP_GPS_ENABLED
+#if AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
         RELAY5 =              66, // Relay5 pin on/off
         RELAY6 =              67, // Relay6 pin on/off
+#endif  // AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
         STABILIZE =           68, // stabilize mode
         POSHOLD   =           69, // poshold mode
         ALTHOLD   =           70, // althold mode
@@ -179,44 +232,77 @@ public:
         SURFACE_TRACKING =    75, // Surface tracking upwards or downwards
         STANDBY  =            76, // Standby mode
         TAKEOFF   =           77, // takeoff
+#if AP_CAMERA_RUNCAM_ENABLED
         RUNCAM_CONTROL =      78, // control RunCam device
         RUNCAM_OSD_CONTROL =  79, // control RunCam OSD
+#endif  // AP_CAMERA_RUNCAM_ENABLED
+#if HAL_VISUALODOM_ENABLED
         VISODOM_ALIGN =       80, // align visual odometry camera's attitude to AHRS
+#endif  // HAL_VISUALODOM_ENABLED
         DISARM =              81, // disarm vehicle
         Q_ASSIST =            82, // disable, enable and force Q assist
         ZIGZAG_Auto =         83, // zigzag auto switch
         AIRMODE =             84, // enable / disable airmode for copter
+#if HAL_GENERATOR_ENABLED
         GENERATOR   =         85, // generator control
+#endif  // HAL_GENERATOR_ENABLED
         TER_DISABLE =         86, // disable terrain following in CRUISE/FBWB modes
         CROW_SELECT =         87, // select CROW mode for diff spoilers;high disables,mid forces progressive
         SOARING =             88, // three-position switch to set soaring mode
         LANDING_FLARE =       89, // force flare, throttle forced idle, pitch to LAND_PITCH_DEG, tilts up
-        EKF_POS_SOURCE =      90, // change EKF position source between primary, secondary and tertiary sources
+        EKF_SOURCE_SET =      90, // change EKF data source set between primary, secondary and tertiary
+#if AP_AIRSPEED_AUTOCAL_ENABLE
         ARSPD_CALIBRATE=      91, // calibrate airspeed ratio 
+#endif  // AP_AIRSPEED_AUTOCAL_ENABLE
         FBWA =                92, // Fly-By-Wire-A
+#if AP_MISSION_ENABLED
         RELOCATE_MISSION =    93, // used in separate branch MISSION_RELATIVE
+#endif  // AP_MISSION_ENABLED
+#if AP_VIDEOTX_ENABLED
         VTX_POWER =           94, // VTX power level
+#endif  // AP_VIDEOTX_ENABLED
         FBWA_TAILDRAGGER =    95, // enables FBWA taildragger takeoff mode. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA.
         MODE_SWITCH_RESET =   96, // trigger re-reading of mode switch
         WIND_VANE_DIR_OFSSET= 97, // flag for windvane direction offset input, used with windvane type 2
         TRAINING            = 98, // mode training
+#if AP_MISSION_ENABLED
         AUTO_RTL =            99, // AUTO RTL via DO_LAND_START
+#endif  // AP_MISSION_ENABLED
 
+#if AP_INERTIALSENSOR_KILL_IMU_ENABLED
         // entries from 100-150  are expected to be developer
         // options used for testing
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
+#endif  // AP_INERTIALSENSOR_KILL_IMU_ENABLED
+#if AP_CAMERA_ENABLED
         CAM_MODE_TOGGLE =    102, // Momentary switch to cycle camera modes
+#endif  // AP_CAMERA_ENABLED
+#if AP_AHRS_ENABLED
         EKF_LANE_SWITCH =    103, // trigger lane switch attempt
         EKF_YAW_RESET =      104, // trigger yaw reset attempt
+#endif  // AP_AHRS_ENABLED
+#if AP_GPS_ENABLED
         GPS_DISABLE_YAW =    105, // disable GPS yaw for testing
+#endif  // AP_GPS_ENABLED
+#if AP_AIRSPEED_ENABLED
         DISABLE_AIRSPEED_USE = 106, // equivalent to AIRSPEED_USE 0
+#endif  // AP_AIRSPEED_ENABLED
         FW_AUTOTUNE =          107, // fixed wing auto tune
         QRTL =               108, // QRTL mode
         CUSTOM_CONTROLLER =  109,  // use Custom Controller
+#if AP_INERTIALSENSOR_KILL_IMU_ENABLED
         KILL_IMU3 =          110, // disable third IMU (for IMU failure testing)
+#endif  // AP_INERTIALSENSOR_KILL_IMU_ENABLED
+#if HAL_GENERATOR_ENABLED
         LOWEHEISER_STARTER = 111,  // allows for manually running starter
+#endif  // HAL_GENERATOR_ENABLED
+#if AP_AHRS_ENABLED
         AHRS_TYPE =          112, // change AHRS_EKF_TYPE
+#endif  // AP_AHRS_ENABLED
+#if HAL_MOUNT_ENABLED
+        RETRACT_MOUNT2 =     113, // Retract Mount2
+#endif  // HAL_MOUNT_ENABLED
 
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
@@ -225,31 +311,58 @@ public:
         CRUISE =             150,  // CRUISE mode
         TURTLE =             151,  // Turtle mode - flip over after crash
         SIMPLE_HEADING_RESET = 152, // reset simple mode reference heading to current
+#if AP_ARMING_ENABLED
         ARMDISARM =          153, // arm or disarm vehicle
         ARMDISARM_AIRMODE =  154, // arm or disarm vehicle enabling airmode
+#endif  // AP_ARMING_ENABLED
         TRIM_TO_CURRENT_SERVO_RC = 155, // trim to current servo and RC
+#if HAL_TORQEEDO_ENABLED
         TORQEEDO_CLEAR_ERR = 156, // clear torqeedo error
+#endif  // HAL_TORQEEDO_ENABLED
         EMERGENCY_LANDING_EN = 157, //Force long FS action to FBWA for landing out of range
+#if AP_OPTICALFLOW_ENABLED
         OPTFLOW_CAL =        158, // optical flow calibration
+#endif  // AP_OPTICALFLOW_ENABLED
         FORCEFLYING =        159, // enable or disable land detection for GPS based manual modes preventing land detection and maintainting set_throttle_mix_max
         WEATHER_VANE_ENABLE = 160, // enable/disable weathervaning
         TURBINE_START =      161, // initialize turbine start sequence
         FFT_NOTCH_TUNE =     162, // FFT notch tuning function
+#if HAL_MOUNT_ENABLED
         MOUNT_LOCK =         163, // Mount yaw lock vs follow
+#endif  // HAL_MOUNT_ENABLED
+#if HAL_LOGGING_ENABLED
         LOG_PAUSE =          164, // Pauses logging if under logging rate control
+#endif  // HAL_LOGGING_ENABLED
         ARM_EMERGENCY_STOP = 165, // ARM on high, MOTOR_ESTOP on low
+#if AP_CAMERA_ENABLED
         CAMERA_REC_VIDEO =   166, // start recording on high, stop recording on low
         CAMERA_ZOOM =        167, // camera zoom high = zoom in, middle = hold, low = zoom out
         CAMERA_MANUAL_FOCUS = 168,// camera manual focus.  high = long shot, middle = stop focus, low = close shot
         CAMERA_AUTO_FOCUS =  169, // camera auto focus
+#endif  // AP_CAMERA_ENABLED
         QSTABILIZE =         170, // QuadPlane QStabilize mode
+#if COMPASS_CAL_ENABLED
         MAG_CAL =            171, // Calibrate compasses (disarmed only)
+#endif  // COMPASS_CAL_ENABLED
+#if AP_BATTERY_ENABLED
         BATTERY_MPPT_ENABLE = 172,// Battery MPPT Power enable. high = ON, mid = auto (controlled by mppt/batt driver), low = OFF. This effects all MPPTs.
+#endif  // AP_BATTERY_ENABLED
         PLANE_AUTO_LANDING_ABORT = 173, // Abort Glide-slope or VTOL landing during payload place or do_land type mission items
+#if AP_CAMERA_ENABLED
         CAMERA_IMAGE_TRACKING = 174, // camera image tracking
         CAMERA_LENS =        175, // camera lens selection
+#endif  // AP_CAMERA_ENABLED
         VFWD_THR_OVERRIDE =  176, // force enabled VTOL forward throttle method
-
+#if HAL_MOUNT_ENABLED
+        MOUNT_LRF_ENABLE =   177,  // mount LRF enable/disable
+#endif  // HAL_MOUNT_ENABLED
+        FLIGHTMODE_PAUSE =   178,  // e.g. pause movement towards waypoint
+        ICE_START_STOP =     179, // AP_ICEngine start stop
+        AUTOTUNE_TEST_GAINS = 180, // auto tune tuning switch to test or revert gains
+        QUICKTUNE =          181,  //quicktune 3 position switch
+        AHRS_AUTO_TRIM =     182,  // in-flight AHRS autotrim
+        AUTOLAND =           183,  //Fixed Wing AUTOLAND Mode
+        SYSTEMID =           184,  // system ID as an aux switch
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
@@ -261,17 +374,23 @@ public:
         FWD_THR =            209, // VTOL manual forward throttle
         AIRBRAKE =           210, // manual airbrake control
         WALKING_HEIGHT =     211, // walking robot height input
+#if HAL_MOUNT_ENABLED
         MOUNT1_ROLL =        212, // mount1 roll input
         MOUNT1_PITCH =       213, // mount1 pitch input
         MOUNT1_YAW =         214, // mount1 yaw input
         MOUNT2_ROLL =        215, // mount2 roll input
         MOUNT2_PITCH =       216, // mount3 pitch input
         MOUNT2_YAW =         217, // mount4 yaw input
-        LOWEHEISER_THROTTLE= 218,  // allows for throttle on slider
+#endif  // HAL_MOUNT_ENABLED
+#if HAL_GENERATOR_ENABLED
+        LOWEHEISER_THROTTLE= 218, // allows for throttle on slider
+#endif  // HAL_GENERATOR_ENABLED
+        TRANSMITTER_TUNING = 219, // use a transmitter knob or slider for in-flight tuning
 
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
 
+#if AP_SCRIPTING_ENABLED
         // inputs for the use of onboard lua scripting
         SCRIPTING_1 =        300,
         SCRIPTING_2 =        301,
@@ -281,9 +400,18 @@ public:
         SCRIPTING_6 =        305,
         SCRIPTING_7 =        306,
         SCRIPTING_8 =        307,
+        SCRIPTING_9 =        308,
+        SCRIPTING_10 =       309,
+        SCRIPTING_11 =       310,
+        SCRIPTING_12 =       311,
+        SCRIPTING_13 =       312,
+        SCRIPTING_14 =       313,
+        SCRIPTING_15 =       314,
+        SCRIPTING_16 =       315,
+#endif  // AP_SCRIPTING_ENABLED
 
         // this must be higher than any aux function above
-        AUX_FUNCTION_MAX =   308,
+        AUX_FUNCTION_MAX =   316,
     };
 
     // auxiliary switch handling (n.b.: we store this as 2-bits!):
@@ -293,19 +421,29 @@ public:
         HIGH       // indicates auxiliary switch is in the high position (pwm >1800)
     };
 
-    enum class AuxFuncTriggerSource : uint8_t {
-        INIT,
-        RC,
-        BUTTON,
-        MAVLINK,
-        MISSION,
-        SCRIPTING,
+    // Trigger structure containing the function, position, source and source index
+    struct AuxFuncTrigger {
+        AUX_FUNC func;
+        AuxSwitchPos pos;
+        // @LoggerEnum: AuxFuncTrigger::Source
+        enum class Source : uint8_t {
+            INIT,      // Source index is RC channel index
+            RC,        // Source index is RC channel index
+            BUTTON,    // Source index is button index
+            MAVLINK,   // Source index is MAVLink channel number
+            MISSION,   // Source index is mission item index
+            SCRIPTING, // Source index is not used (always 0)
+        } source;
+        uint16_t source_index;
     };
 
     AuxSwitchPos get_aux_switch_pos() const;
 
+    // aux position for stick gestures used by RunCam menus etc
+    AuxSwitchPos get_stick_gesture_pos() const;
+
     // wrapper function around do_aux_function which allows us to log
-    bool run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source);
+    bool run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTrigger::Source source, uint16_t source_index);
 
 #if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     const char *string_for_aux_function(AUX_FUNC function) const;
@@ -333,10 +471,10 @@ public:
 
 protected:
 
-    virtual void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos);
+    __INITFUNC__ virtual void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos);
 
     // virtual function to be overridden my subclasses
-    virtual bool do_aux_function(AUX_FUNC ch_option, AuxSwitchPos);
+    virtual bool do_aux_function(const AuxFuncTrigger &trigger);
 
     void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
@@ -360,12 +498,15 @@ protected:
     void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
     void do_aux_function_generator(const AuxSwitchPos ch_flag);
     void do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag);
+    void do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t instance);
 
     typedef int8_t modeswitch_pos_t;
     virtual void mode_switch_changed(modeswitch_pos_t new_pos) {
         // no action by default (e.g. Tracker, Sub, who do their own thing)
     };
 
+    // the input channel this corresponds to
+    uint8_t ch_in;
 
 private:
 
@@ -385,18 +526,15 @@ private:
     ControlType type_in;
     int16_t     high_in;
 
-    // the input channel this corresponds to
-    uint8_t     ch_in;
-
     // overrides
     uint16_t override_value;
     uint32_t last_override_time;
 
-    int16_t pwm_to_angle() const;
-    int16_t pwm_to_angle_dz(uint16_t dead_zone) const;
+    float pwm_to_angle() const;
+    float pwm_to_angle_dz(uint16_t dead_zone) const;
 
-    int16_t pwm_to_range() const;
-    int16_t pwm_to_range_dz(uint16_t dead_zone) const;
+    float pwm_to_range() const;
+    float pwm_to_range_dz(uint16_t dead_zone) const;
 
     bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
     bool read_6pos_switch(int8_t& position) WARN_IF_UNUSED;
@@ -406,11 +544,19 @@ private:
         int8_t debounce_position = -1;
         int8_t current_position = -1;
         uint32_t last_edge_time_ms;
+        bool initialised;
     } switch_state;
 
     void reset_mode_switch();
     void read_mode_switch();
     bool debounce_completed(int8_t position);
+    // returns true if the first time we successfully read the
+    // channel's three-position-switch position we should record that
+    // position as the current position *without* executing the
+    // associated auxiliary function.  e.g. do not attempt to arm a
+    // vehicle when the user turns on their transmitter with the arm
+    // switch high!
+    bool init_position_on_first_radio_read(AUX_FUNC func) const;
 
 #if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     // Structure to lookup switch change announcements
@@ -434,7 +580,7 @@ public:
     // constructor
     RC_Channels(void);
 
-    void init(void);
+    __INITFUNC__ void init(void);
 
     // get singleton instance
     static RC_Channels *get_singleton() {
@@ -473,7 +619,6 @@ public:
     static int16_t get_receiver_link_quality(void);                         // returns 0-100 % of last 100 packets received at receiver are valid
     bool read_input(void);                                             // returns true if new input has been read in
     static void clear_overrides(void);                                 // clears any active overrides
-    static bool receiver_bind(const int dsmMode);                      // puts the receiver in bind mode if present, returns true if success
     static void set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms = 0); // set a channels override value
     static bool has_active_overrides(void);                            // returns true if there are overrides applied that are valid
 
@@ -483,7 +628,6 @@ public:
 
     class RC_Channel *find_channel_for_option(const RC_Channel::AUX_FUNC option);
     bool duplicate_options_exist();
-    RC_Channel::AuxSwitchPos get_channel_pos(const uint8_t rcmapchan) const;
     void convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option);
 
     void init_aux_all();
@@ -568,8 +712,8 @@ public:
 
     // method for other parts of the system (e.g. Button and mavlink)
     // to trigger auxiliary functions
-    bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTriggerSource source) {
-        return rc_channel(0)->run_aux_function(ch_option, pos, source);
+    bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTrigger::Source source, uint16_t source_index) {
+        return rc_channel(0)->run_aux_function(ch_option, pos, source, source_index);
     }
 
     // check if flight mode channel is assigned RC option
@@ -596,6 +740,16 @@ public:
 
     // get failsafe timeout in milliseconds
     uint32_t get_fs_timeout_ms() const { return MAX(_fs_timeout * 1000, 100); }
+
+    // methods which return RC input channels used for various axes.
+    RC_Channel &get_roll_channel() const;
+    RC_Channel &get_pitch_channel() const;
+    RC_Channel &get_yaw_channel() const;
+    RC_Channel &get_throttle_channel() const;
+    RC_Channel &get_forward_channel() const;
+    RC_Channel &get_lateral_channel() const;
+
+    bool seen_neutral_rudder() const { return have_seen_neutral_rudder; }
 
 protected:
 
@@ -638,6 +792,17 @@ private:
 
     void set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwitchPos pos);
 #endif
+
+    RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number) const;
+
+    // time that rudder arming has been running
+    uint32_t rudder_arm_timer;
+    // true if we have seen a neutral rudder control input after
+    // arming via rudder-input:
+    bool have_seen_neutral_rudder;
+    // check for arm/disarm command based on rudder stick position:
+    void rudder_arm_disarm_check();
+
 };
 
 RC_Channels &rc();

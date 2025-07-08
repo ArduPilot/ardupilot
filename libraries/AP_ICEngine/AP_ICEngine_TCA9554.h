@@ -9,14 +9,15 @@
 
 class AP_ICEngine_TCA9554 {
 public:
-    void set_starter(bool on);
+    void set_starter(bool on, bool crank_dir_reverse);
 
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_TCA9554;
 
     enum TCA9554_state_t {
-        STARTER_OFF = 0x30,	// output register - 0011 0000
-        STARTER_ON  = 0x11, // output register - 0001 0001 - Forward direction
+        STARTER_OFF = 0x30, // output register - 0011 0000
+        STARTER_FORWARD = 0x11, // output register - 0001 0001 - Forward direction
+        STARTER_REVERSE = 0x01, // output register - 0000 0001 - Reverse direction
     };
     TCA9554_state_t last_state;
 

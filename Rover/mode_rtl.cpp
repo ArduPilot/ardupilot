@@ -8,7 +8,7 @@ bool ModeRTL::_enter()
     }
 
     // initialise waypoint navigation library
-    g2.wp_nav.init(MAX(0, g2.rtl_speed));
+    g2.wp_nav.init(MAX(0.0f, g2.rtl_speed));
 
     // set target to the closest rally point or home
 #if HAL_RALLY_ENABLED
@@ -37,7 +37,7 @@ void ModeRTL::update()
         // send notification
         if (send_notification) {
             send_notification = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "Reached destination");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reached destination");
         }
 
         // we have reached the destination

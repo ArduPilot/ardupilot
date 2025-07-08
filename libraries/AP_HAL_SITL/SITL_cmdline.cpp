@@ -14,6 +14,7 @@
 #include <SITL/SIM_Helicopter.h>
 #include <SITL/SIM_SingleCopter.h>
 #include <SITL/SIM_Plane.h>
+#include <SITL/SIM_Glider.h>
 #include <SITL/SIM_QuadPlane.h>
 #include <SITL/SIM_Rover.h>
 #include <SITL/SIM_BalanceBot.h>
@@ -37,6 +38,9 @@
 #include <SITL/SIM_Webots_Python.h>
 #include <SITL/SIM_JSON.h>
 #include <SITL/SIM_Blimp.h>
+#include <SITL/SIM_NoVehicle.h>
+#include <SITL/SIM_StratoBlimp.h>
+
 #include <AP_Filesystem/AP_Filesystem.h>
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -92,16 +96,6 @@ void SITL_State::_usage(void)
            "\t--gimbal                 enable simulated MAVLink gimbal\n"
            "\t--autotest-dir DIR       set directory for additional files\n"
            "\t--defaults path          set path to defaults file\n"
-           "\t--uartA device           (deprecated) set device string for SERIAL0\n"
-           "\t--uartC device           (deprecated) set device string for SERIAL1\n" // ordering captures the historical use of uartB as SERIAL3
-           "\t--uartD device           (deprecated) set device string for SERIAL2\n"
-           "\t--uartB device           (deprecated) set device string for SERIAL3\n"
-           "\t--uartE device           (deprecated) set device string for SERIAL4\n"
-           "\t--uartF device           (deprecated) set device string for SERIAL5\n"
-           "\t--uartG device           (deprecated) set device string for SERIAL6\n"
-           "\t--uartH device           (deprecated) set device string for SERIAL7\n"
-           "\t--uartI device           (deprecated) set device string for SERIAL8\n"
-           "\t--uartJ device           (deprecated) set device string for SERIAL9\n"
            "\t--serial0 device         set device string for SERIAL0\n"
            "\t--serial1 device         set device string for SERIAL1\n"
            "\t--serial2 device         set device string for SERIAL2\n"
@@ -112,6 +106,7 @@ void SITL_State::_usage(void)
            "\t--serial7 device         set device string for SERIAL7\n"
            "\t--serial8 device         set device string for SERIAL8\n"
            "\t--serial9 device         set device string for SERIAL9\n"
+           "\t--uartA device           alias for --serial0 (do not use)\n"
            "\t--rtscts                 enable rtscts on serial ports (default false)\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
@@ -120,7 +115,7 @@ void SITL_State::_usage(void)
            "\t--sim-port-out PORT      set port num for simulator out\n"
            "\t--irlock-port PORT       set port num for irlock\n"
            "\t--start-time TIMESTR     set simulation start time in UNIX timestamp\n"
-           "\t--sysid ID               set SYSID_THISMAV\n"
+           "\t--sysid ID               set MAV_SYSID\n"
            "\t--slave number           set the number of JSON slaves\n"
         );
 }
@@ -130,7 +125,9 @@ static const struct {
     Aircraft *(*constructor)(const char *frame_str);
 } model_constructors[] = {
     { "quadplane",          QuadPlane::create },
+#if AP_SIM_XPLANE_ENABLED
     { "xplane",             XPlane::create },
+#endif  // AP_SIM_XPLANE_ENABLED
     { "firefly",            QuadPlane::create },
     { "+",                  MultiCopter::create },
     { "quad",               MultiCopter::create },
@@ -141,13 +138,17 @@ static const struct {
     { "djix",               MultiCopter::create },
     { "cwx",                MultiCopter::create },
     { "hexa",               MultiCopter::create },
+    { "hexax",              MultiCopter::create },
     { "hexa-cwx",           MultiCopter::create },
     { "hexa-dji",           MultiCopter::create },
     { "octa",               MultiCopter::create },
     { "octa-cwx",           MultiCopter::create },
     { "octa-dji",           MultiCopter::create },
     { "octa-quad-cwx",      MultiCopter::create },
+    { "dotriaconta_octaquad_x", MultiCopter::create },
     { "dodeca-hexa",        MultiCopter::create },
+    { "hexadeca-octa",      MultiCopter::create },
+    { "hexadeca-octa-cwx",  MultiCopter::create },
     { "tri",                MultiCopter::create },
     { "y6",                 MultiCopter::create },
     { "deca",               MultiCopter::create },
@@ -162,25 +163,52 @@ static const struct {
     { "balancebot",         BalanceBot::create },
     { "sailboat",           Sailboat::create },
     { "motorboat",          MotorBoat::create },
+#if AP_SIM_CRRCSIM_ENABLED
     { "crrcsim",            CRRCSim::create },
+#endif  // AP_SIM_CRRCSIM_ENABLED
+#if AP_SIM_JSBSIM_ENABLED
     { "jsbsim",             JSBSim::create },
+#endif  // AP_SIM_JSBSIM_ENABLED
+#if AP_SIM_FLIGHTAXIS_ENABLED
     { "flightaxis",         FlightAxis::create },
+#endif  // AP_SIM_FLIGHTAXIS_ENABLED
+#if AP_SIM_GAZEBO_ENABLED
     { "gazebo",             Gazebo::create },
+#endif  // AP_SIM_GAZEBO_ENABLED
+#if AP_SIM_LAST_LETTER_ENABLED
     { "last_letter",        last_letter::create },
+#endif  // AP_SIM_LAST_LETTER_ENABLED
     { "tracker",            Tracker::create },
     { "balloon",            Balloon::create },
+    { "glider",             Glider::create },
     { "plane",              Plane::create },
     { "calibration",        Calibration::create },
     { "vectored",           Submarine::create },
     { "vectored_6dof",      Submarine::create },
+#if AP_SIM_SILENTWINGS_ENABLED
     { "silentwings",        SilentWings::create },
+#endif  // AP_SIM_SILENTWINGS_ENABLED
+#if AP_SIM_MORSE_ENABLED
     { "morse",              Morse::create },
+#endif  // AP_SIM_MORSE_ENABLED
+#if AP_SIM_AIRSIM_ENABLED
     { "airsim",             AirSim::create},
+#endif  // AP_SIM_AIRSIM_ENABLED
+#if AP_SIM_SCRIMMAGE_ENABLED
     { "scrimmage",          Scrimmage::create },
+#endif  // AP_SIM_SCRIMMAGE_ENABLED
     { "webots-python",      WebotsPython::create },
+#if AP_SIM_WEBOTS_ENABLED
     { "webots",             Webots::create },
+#endif  // AP_SIM_WEBOTS_ENABLED
+#if AP_SIM_JSON_ENABLED
     { "JSON",               JSON::create },
+#endif  // AP_SIM_JSON_ENABLED
     { "blimp",              Blimp::create },
+    { "novehicle",          NoVehicle::create },
+#if AP_SIM_STRATOBLIMP_ENABLED
+    { "stratoblimp",        StratoBlimp::create },
+#endif
 };
 
 void SITL_State::_set_signal_handlers(void) const
@@ -208,11 +236,10 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     float speedup = 1.0f;
     float sim_rate_hz = 0;
     _instance = 0;
-    _synthetic_clock_mode = false;
     // default to CMAC
     const char *home_str = nullptr;
     const char *model_str = nullptr;
-    const char *vehicle_str = SKETCH;
+    const char *vehicle_str = AP_BUILD_TARGET_NAME;
     _use_fg_view = false;
     char *autotest_dir = nullptr;
     _fg_address = "127.0.0.1";
@@ -239,7 +266,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     static struct timeval first_tv;
     gettimeofday(&first_tv, nullptr);
     time_t start_time_UTC = first_tv.tv_sec;
-    const bool is_replay = APM_BUILD_TYPE(APM_BUILD_Replay);
+    const bool is_example = APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN);
 
     enum long_options {
         CMDLINE_GIMBAL = 1,
@@ -305,7 +332,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"enable-fgview",   false,  0, CMDLINE_FGVIEW},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
-        {"uartA",           true,   0, CMDLINE_UARTA},
+        // {"uartA",           true,   0, CMDLINE_UARTA}, // alias for serial0
         {"uartB",           true,   0, CMDLINE_UARTB},
         {"uartC",           true,   0, CMDLINE_UARTC},
         {"uartD",           true,   0, CMDLINE_UARTD},
@@ -316,6 +343,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"uartI",           true,   0, CMDLINE_UARTI},
         {"uartJ",           true,   0, CMDLINE_UARTJ},
         {"serial0",         true,   0, CMDLINE_SERIAL0},
+        {"uartA",           true,   0, CMDLINE_SERIAL0}, // for MissionPlanner compatibility
         {"serial1",         true,   0, CMDLINE_SERIAL1},
         {"serial2",         true,   0, CMDLINE_SERIAL2},
         {"serial3",         true,   0, CMDLINE_SERIAL3},
@@ -348,8 +376,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {0, false, 0, 0}
     };
 
-    if (is_replay) {
-        model_str = "quad";
+    if (is_example) {
+        model_str = "novehicle";
         HALSITL::UARTDriver::_console = true;
     }
 
@@ -371,7 +399,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:v:",
                     options);
-    while (!is_replay && (opt = gopt.getoption()) != -1) {
+    while (!is_example && (opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'w':
             erase_all_storage = true;
@@ -382,13 +410,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case 's':
             speedup = strtof(gopt.optarg, nullptr);
             temp_cmdline_param = {"SIM_SPEEDUP", speedup};
-            cmdline_param.push_back(temp_cmdline_param);
+            cmdline_param.push(temp_cmdline_param);
             printf("Setting SIM_SPEEDUP=%f\n", speedup);
             break;
         case 'r':
             sim_rate_hz = strtof(gopt.optarg, nullptr);
             temp_cmdline_param = {"SIM_RATE_HZ", sim_rate_hz};
-            cmdline_param.push_back(temp_cmdline_param);
+            cmdline_param.push(temp_cmdline_param);
             printf("Setting SIM_RATE_HZ=%f\n", sim_rate_hz);
             break;
         case 'C':
@@ -420,7 +448,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _set_param_default(gopt.optarg);
             break;
         case 'S':
-            _synthetic_clock_mode = true;
+            printf("Ignoring stale command-line parameter '-S'");
             break;
         case 'O':
             home_str = gopt.optarg;
@@ -437,9 +465,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case 'v':
             vehicle_str = gopt.optarg;
             break;
+#if AP_SIM_SOLOGIMBAL_ENABLED
         case CMDLINE_GIMBAL:
             enable_gimbal = true;
             break;
+#endif
         case CMDLINE_FGVIEW:
             _use_fg_view = true;
             break;
@@ -464,11 +494,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             static const uint8_t mapping[] = { 0, 3, 1, 2, 4, 5, 6, 7, 8, 9 };
             int serial_idx = mapping[uart_idx];
             char uart_letter = (char)(uart_idx)+'A';
-            printf("WARNING: deprecated option --uart%c will be removed in a "
-                "future release. Use --serial%d instead.\n",
-                uart_letter, serial_idx);
-            _serial_path[serial_idx] = gopt.optarg;
-            break;
+            printf("ERROR: Removed option --uart%c supplied. "
+                "Use --serial%d instead.\n", uart_letter, serial_idx);
+            exit(1);
         }
         case CMDLINE_SERIAL0:
         case CMDLINE_SERIAL1:
@@ -512,9 +540,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
                 fprintf(stderr, "You must specify a SYSID greater than 0 and less than 256\n");
                 exit(1);
             }
-            temp_cmdline_param = {"SYSID_THISMAV", static_cast<float>(sysid)};
-            cmdline_param.push_back(temp_cmdline_param);
-            printf("Setting SYSID_THISMAV=%d\n", sysid);
+            temp_cmdline_param = {"MAV_SYSID", static_cast<float>(sysid)};
+            cmdline_param.push(temp_cmdline_param);
+            printf("Setting MAV_SYSID=%d\n", sysid);
             break;
         }
 #if STORAGE_USE_POSIX
@@ -536,12 +564,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _usage();
             exit(0);
         case CMDLINE_SLAVE: {
-#if HAL_SIM_JSON_MASTER_ENABLED
+#if AP_SIM_JSON_MASTER_ENABLED
             const int32_t slaves = atoi(gopt.optarg);
             if (slaves > 0) {
                 ride_along.init(slaves);
             }
-#endif
+#endif  // AP_SIM_JSON_MASTER_ENABLED
             break;
         }
         default:
@@ -584,7 +612,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             sitl_model->set_instance(_instance);
             sitl_model->set_autotest_dir(autotest_dir);
             sitl_model->set_config(config);
-            _synthetic_clock_mode = true;
             break;
         }
     }
@@ -620,18 +647,10 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         _vehicle = ArduCopter;
     } else if (strcmp(vehicle_str, "Rover") == 0) {
         _vehicle = Rover;
-        // set right default throttle for rover (allowing for reverse)
-        pwm_input[2] = 1500;
     } else if (strcmp(vehicle_str, "ArduSub") == 0) {
         _vehicle = ArduSub;
-        for(uint8_t i = 0; i < 8; i++) {
-            pwm_input[i] = 1500;
-        }
     } else if (strcmp(vehicle_str, "Blimp") == 0) {
         _vehicle = Blimp;
-        for(uint8_t i = 0; i < 8; i++) {
-            pwm_input[i] = 1500;
-        }
     } else {
         _vehicle = ArduPlane;
     }

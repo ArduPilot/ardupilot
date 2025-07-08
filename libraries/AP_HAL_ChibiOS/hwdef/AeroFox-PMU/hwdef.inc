@@ -13,8 +13,8 @@ define HAL_STORAGE_SIZE 800
 STM32_ST_USE_TIMER 15
 define CH_CFG_ST_RESOLUTION 16
 
-# board ID for firmware load
-APJ_BOARD_ID 1080
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_AEROFOX_PMU
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -35,10 +35,6 @@ MAIN_STACK 0x300
 
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0xA00
-
-define HAL_DISABLE_LOOP_DELAY
-
-define HAL_NO_MONITOR_THREAD
 
 # setup a small defaults.parm
 define AP_PARAM_MAX_EMBEDDED_PARAM 512

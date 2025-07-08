@@ -15,7 +15,7 @@
 
 //  Novatel/Tersus/ComNav GPS driver for ArduPilot.
 //  Code by Michael Oborne
-//  Derived from http://www.novatel.com/assets/Documents/Manuals/om-20000129.pdf
+//  Derived from https://hexagondownloads.blob.core.windows.net/public/Novatel/assets/Documents/Manuals/om-20000129/om-20000129.pdf
 
 #include "AP_GPS.h"
 #include "AP_GPS_NOVA.h"
@@ -40,9 +40,11 @@ do {                                            \
  # define Debug(fmt, args ...)
 #endif
 
-AP_GPS_NOVA::AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state,
-                       AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port)
+AP_GPS_NOVA::AP_GPS_NOVA(AP_GPS &_gps,
+                         AP_GPS::Params &_params,
+                         AP_GPS::GPS_State &_state,
+                         AP_HAL::UARTDriver *_port) :
+    AP_GPS_Backend(_gps, _params, _state, _port)
 {
     nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
 
@@ -174,8 +176,8 @@ AP_GPS_NOVA::parse(uint8_t temp)
             nova_msg.crc += (uint32_t) (temp << 24);
             nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
 
-            uint32_t crc = CalculateBlockCRC32((uint32_t)nova_msg.header.nova_headeru.headerlength, (uint8_t *)&nova_msg.header.data, (uint32_t)0);
-            crc = CalculateBlockCRC32((uint32_t)nova_msg.header.nova_headeru.messagelength, (uint8_t *)&nova_msg.data, crc);
+            uint32_t crc = crc_crc32((uint32_t)0, (uint8_t *)&nova_msg.header.data, (uint32_t)nova_msg.header.nova_headeru.headerlength);
+            crc = crc_crc32(crc, (uint8_t *)&nova_msg.data, (uint32_t)nova_msg.header.nova_headeru.messagelength);
 
             if (nova_msg.crc == crc) {
                 return process_message();
@@ -197,9 +199,9 @@ AP_GPS_NOVA::process_message(void)
     Debug("NOVA process_message messid=%u\n",messageid);
 
     check_new_itow(nova_msg.header.nova_headeru.tow, nova_msg.header.nova_headeru.messagelength + nova_msg.header.nova_headeru.headerlength);
-    
-    if (messageid == 42) // bestpos
-    {
+ 
+    switch (messageid) {
+    case NOVA_BESTPOS: {  // bestpos
         const bestpos &bestposu = nova_msg.data.bestposu;
 
         state.time_week = nova_msg.header.nova_headeru.week;
@@ -209,7 +211,7 @@ AP_GPS_NOVA::process_message(void)
         state.location.lat = (int32_t) (bestposu.lat * (double)1e7);
         state.location.lng = (int32_t) (bestposu.lng * (double)1e7);
         state.have_undulation = true;
-        state.undulation = bestposu.undulation;
+        state.undulation = -bestposu.undulation;
         set_alt_amsl_cm(state, bestposu.hgt * 100);
 
         state.num_sats = bestposu.svsused;
@@ -256,10 +258,9 @@ AP_GPS_NOVA::process_message(void)
         }
         
         _new_position = true;
+        break;
     }
-
-    if (messageid == 99) // bestvel
-    {
+    case NOVA_BESTVEL: {  // bestvel
         const bestvel &bestvelu = nova_msg.data.bestvelu;
 
         state.ground_speed = (float) bestvelu.horspd;
@@ -270,15 +271,17 @@ AP_GPS_NOVA::process_message(void)
         
         _last_vel_time = (uint32_t) nova_msg.header.nova_headeru.tow;
         _new_speed = true;
+        break;
     }
-
-    if (messageid == 174) // psrdop
-    {
+    case NOVA_PSRDOP: {  // psrdop
         const psrdop &psrdopu = nova_msg.data.psrdopu;
 
         state.hdop = (uint16_t) (psrdopu.hdop*100);
         state.vdop = (uint16_t) (psrdopu.htdop*100);
         return false;
+    }
+    default:
+        break;
     }
 
     // ensure out position and velocity stay insync
@@ -291,25 +294,4 @@ AP_GPS_NOVA::process_message(void)
     return false;
 }
 
-#define CRC32_POLYNOMIAL 0xEDB88320L
-uint32_t AP_GPS_NOVA::CRC32Value(uint32_t icrc)
-{
-    int i;
-    uint32_t crc = icrc;
-    for ( i = 8 ; i > 0; i-- ) {
-        if ( crc & 1 )
-            crc = ( crc >> 1 ) ^ CRC32_POLYNOMIAL;
-        else
-            crc >>= 1;
-    }
-    return crc;
-}
-
-uint32_t AP_GPS_NOVA::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc)
-{
-    while ( length-- != 0 ) {
-        crc = ((crc >> 8) & 0x00FFFFFFL) ^ (CRC32Value(((uint32_t) crc ^ *buffer++) & 0xff));
-    }
-    return( crc );
-}
 #endif

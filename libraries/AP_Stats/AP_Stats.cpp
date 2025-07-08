@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_Stats::var_info[] = {
 
     // @Param: _RESET
     // @DisplayName: Statistics Reset Time
-    // @Description: Seconds since January 1st 2016 (Unix epoch+1451606400) since statistics reset (set to 0 to reset statistics)
+    // @Description: Seconds since January 1st 2016 (Unix epoch+1451606400) since statistics reset (set to 0 to reset statistics, other set values will be ignored)
     // @Units: s
     // @ReadOnly: True
     // @User: Standard
@@ -72,6 +72,7 @@ void AP_Stats::flush()
 {
     params.flttime.set_and_save_ifchanged(flttime);
     params.runtime.set_and_save_ifchanged(runtime);
+    last_flush_ms = AP_HAL::millis();
 }
 
 void AP_Stats::update_flighttime()
@@ -101,11 +102,15 @@ void AP_Stats::update()
         update_flighttime();
         update_runtime();
         flush();
-        last_flush_ms = now_ms;
     }
     const uint32_t params_reset = params.reset;
-    if (params_reset != reset || params_reset == 0) {
-        params.bootcount.set_and_save_ifchanged(params_reset == 0 ? 1 : 0);
+    if (params_reset == 0) {
+        // Only reset statistics if the user explicitly sets AP_STATS_RESET parameter to zero.
+        // This allows users to load parameter files (in MP, MAVProxy or any other GCS) without
+        // accidentally resetting the statistics, because the AP_STATS_RESET value contained in
+        // the parameter file will be ignored (unless it is zero and it is usually not zero).
+        // The other statistics parameters are read-only, and the GCS should be clever enough to not set those.
+        params.bootcount.set_and_save_ifchanged(0);
         params.flttime.set_and_save_ifchanged(0);
         params.runtime.set_and_save_ifchanged(0);
         uint32_t system_clock = 0; // in seconds
@@ -131,7 +136,11 @@ void AP_Stats::set_flying(const bool is_flying)
             _flying_ms = AP_HAL::millis();
         }
     } else {
-        update_flighttime();
+        if (_flying_ms) {
+            update_flighttime();
+            update_runtime();
+            flush();
+        }
         _flying_ms = 0;
     }
 }

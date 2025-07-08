@@ -27,6 +27,7 @@ public:
         FRAME_TYPE_OMNI3 = 1,
         FRAME_TYPE_OMNIX = 2,
         FRAME_TYPE_OMNIPLUS = 3,
+        FRAME_TYPE_OMNI3MECANUM = 4,
     };
 
     // initialise motors
@@ -130,16 +131,16 @@ public:
 
 private:
 
-    enum pwm_type {
-        PWM_TYPE_NORMAL = 0,
-        PWM_TYPE_ONESHOT = 1,
-        PWM_TYPE_ONESHOT125 = 2,
-        PWM_TYPE_BRUSHED_WITH_RELAY = 3,
-        PWM_TYPE_BRUSHED_BIPOLAR = 4,
-        PWM_TYPE_DSHOT150 = 5,
-        PWM_TYPE_DSHOT300 = 6,
-        PWM_TYPE_DSHOT600 = 7,
-        PWM_TYPE_DSHOT1200 = 8
+    enum PWMType {
+        NORMAL = 0,
+        ONESHOT = 1,
+        ONESHOT125 = 2,
+        BRUSHED_WITH_RELAY = 3,
+        BRUSHED_BIPOLAR = 4,
+        DSHOT150 = 5,
+        DSHOT300 = 6,
+        DSHOT600 = 7,
+        DSHOT1200 = 8
     };
 
     // sanity check parameters
@@ -171,7 +172,7 @@ private:
 
     // output throttle (-100 ~ +100) to a throttle channel.  Sets relays if required
     // dt is the main loop time interval and is required when rate control is required
-    void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt = 0.0f);
+    void output_throttle(SRV_Channel::Function function, float throttle, float dt = 0.0f);
 
     // output for sailboat's mainsail in the range of 0 to 100 and wing sail in the range +- 100
     void output_sail();
@@ -189,7 +190,7 @@ private:
     float get_scaled_throttle(float throttle) const;
 
     // use rate controller to achieve desired throttle
-    float get_rate_controlled_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt);
+    float get_rate_controlled_throttle(SRV_Channel::Function function, float throttle, float dt);
 
     // external references
     AP_WheelRateControl &_rate_controller;
@@ -208,6 +209,7 @@ private:
     AP_Float _vector_angle_max;  // angle between steering's middle position and maximum position when using vectored thrust.  zero to disable vectored thrust
     AP_Float _speed_scale_base;  // speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
     AP_Float _steering_throttle_mix; // Steering vs Throttle priorisation.  Higher numbers prioritise steering, lower numbers prioritise throttle.  Only valid for Skid Steering vehicles
+    AP_Float _reverse_delay; // delay in seconds when reversing motor
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
@@ -229,6 +231,17 @@ private:
     float   _steering_factor[AP_MOTORS_NUM_MOTORS_MAX];
     float   _lateral_factor[AP_MOTORS_NUM_MOTORS_MAX];
     uint8_t   _motors_num;
+
+    /*
+      3 reversal handling structures, for k_throttle, k_throttleLeft and k_throttleRight
+     */
+    struct ReverseThrottle {
+        float last_throttle;
+        uint32_t last_output_ms;
+
+        // output with delay for reversal
+        void output(SRV_Channel::Function function, float throttle, float delay);
+    } rev_delay_throttle, rev_delay_throttleLeft, rev_delay_throttleRight;
 
     static AP_MotorsUGV *_singleton;
 };

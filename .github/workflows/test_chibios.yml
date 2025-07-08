@@ -19,7 +19,6 @@ on:
       - 'Tools/GIT_Test/**'
       - 'Tools/gittools/**'
       - 'Tools/Hello/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
@@ -157,8 +156,10 @@ jobs:
             build-options-defaults-test,
             signing,
             CubeOrange-PPP,
-            CubeOrange-SOHW,
+            CubeOrange-EKF2,
+            SOHW,
             Pixhawk6X-PPPGW,
+            new-check,
         ]
         toolchain: [
             chibios,
@@ -181,7 +182,7 @@ jobs:
           NOW=$(date -u +"%F-%T")
           echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{matrix.config}}-${{ matrix.toolchain }}-${{ matrix.gcc }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}

@@ -40,19 +40,42 @@
     LOG_RWOH_MSG, \
     LOG_RBOH_MSG
 
-// Replay Data Structures
+// @LoggerMessage: RFRH
+// @Description: Replay FRame Header
+// @Field: TimeUS: Time since system startup
+// @Field: TF: Time flying
 struct log_RFRH {
     uint64_t time_us;
     uint32_t time_flying_ms;
     uint8_t _end;
 };
 
+// @LoggerMessage: RFRF
+// @Description: Replay FRame data - Finished frame
+// @Field: FTypes: accumulated method calls made during frame
+// @FieldBitmaskEnum: FTypes: AP_DAL::FrameType
+// @Field: Slow: true if we are not keeping up with IMU loop rate
 struct log_RFRF {
     uint8_t frame_types;
     uint8_t core_slow;
     uint8_t _end;
 };
 
+// @LoggerMessage: RFRN
+// @Description: Replay FRame - aNother frame header
+// @Field: HLat: home latitude
+// @Field: HLon: home latitude
+// @Field: HAlt: home altitude AMSL
+// @Field: E2T: EAS to TAS factor
+// @Field: AM: available memory
+// @Field: TX: AHRS trim X
+// @Field: TY: AHRS trim Y
+// @Field: TZ: AHRS trim Z
+// @Field: VC: AHRS Vehicle Class
+// @Field: EKT: configured EKF type
+// @FieldValueEnum: EKT: AP_DAL::EKFType
+// @Field: Flags: bitmask of boolean state
+// @FieldBitmaskEnum: Flags: AP_DAL::RFRNFlags
 struct log_RFRN {
     int32_t lat;
     int32_t lng;
@@ -73,18 +96,36 @@ struct log_RFRN {
     uint8_t _end;
 };
 
-// Replay Data Structure - Inertial Sensor header
+// @LoggerMessage: RISH
+// @Description: Replay Inertial Sensor header
+// @Field: LR: INS loop rate
+// @Field: PG: primary gyro index
+// @Field: PA: primary accel index
+// @Field: LD: INS loop-delta-t
+// @Field: AC: accel count
+// @Field: GC: gyro count
 struct log_RISH {
     uint16_t loop_rate_hz;
-    uint8_t primary_gyro;
-    uint8_t primary_accel;
+    uint8_t first_usable_gyro;
+    uint8_t first_usable_accel;
     float loop_delta_t;
     uint8_t accel_count;
     uint8_t gyro_count;
     uint8_t _end;
 };
 
-// Replay Data Structure - Inertial Sensor instance data
+// @LoggerMessage: RISI
+// @Description: Replay Inertial Sensor instance data
+// @Field: DVX: x-axis delta-velocity
+// @Field: DVY: y-axis delta-velocity
+// @Field: DVZ: z-axis delta-velocity
+// @Field: DAX: x-axis delta-angle
+// @Field: DAY: y-axis delta-angle
+// @Field: DAZ: z-axis delta-angle
+// @Field: DVDT: delta-velocity-delta-time
+// @Field: DADT: delta-angle-delta-time
+// @Field: Flags: use-accel, use-gyro, delta-vel-valid, delta-accel-valid
+// @Field: I: IMU instance
 struct log_RISI {
     Vector3f delta_velocity;
     Vector3f delta_angle;
@@ -99,14 +140,19 @@ struct log_RISI {
 };
 
 // @LoggerMessage: REV2
-// @Description: Replay Event
+// @Description: Replay Event (EKF2)
+// @Field: Event: external event injected into EKF
+// @FieldValueEnum: Event: AP_DAL::Event
 struct log_REV2 {
     uint8_t event;
     uint8_t _end;
 };
 
 // @LoggerMessage: RSO2
-// @Description: Replay Set Origin event
+// @Description: Replay Set Origin event (EKF2)
+// @Field: Lat: origin latitude
+// @Field: Lon: origin longitude
+// @Field: Alt: origin altitude
 struct log_RSO2 {
     int32_t lat;
     int32_t lng;
@@ -115,7 +161,9 @@ struct log_RSO2 {
 };
 
 // @LoggerMessage: RWA2
-// @Description: Replay set-default-airspeed event
+// @Description: Replay set-default-airspeed event (EKF2)
+// @Field: Airspeed: default airspeed
+// @Field: uncertainty: uncertainty in default airspeed
 struct log_RWA2 {
     float airspeed;
     float uncertainty;
@@ -123,12 +171,31 @@ struct log_RWA2 {
 };
 
 // same structures for EKF3
+// @LoggerMessage: REV3
+// @Description: Replay Event (EKF3)
+// @Field: Event: external event injected into EKF
+// @FieldValueEnum: Event: AP_DAL::Event
 #define log_REV3 log_REV2
+
+// @LoggerMessage: RSO3
+// @Description: Replay Set Origin event (EKF3)
+// @Field: Lat: origin latitude
+// @Field: Lon: origin longitude
+// @Field: Alt: origin altitude
 #define log_RSO3 log_RSO2
+
+// @LoggerMessage: RWA3
+// @Description: Replay set-default-airspeed event (EKF3)
+// @Field: Airspeed: default airspeed
+// @Field: Uncertainty: uncertainty in default airspeed
 #define log_RWA3 log_RWA2
 
 // @LoggerMessage: REY3
 // @Description: Replay Euler Yaw event
+// @Field: yawangle: externally supplied yaw angle
+// @Field: yawangleerr: error in externally supplied yaw angle
+// @Field: timestamp_ms: timestamp associated with yaw angle and yaw angle error
+// @Field: type: number that needs documenting
 struct log_REY3 {
     float yawangle;
     float yawangleerr;
@@ -139,6 +206,8 @@ struct log_REY3 {
 
 // @LoggerMessage: RBRH
 // @Description: Replay Data Barometer Header
+// @Field: Primary: primary barometer instance number
+// @Field: NumInst: number of barometer sensors
 struct log_RBRH {
     uint8_t primary;
     uint8_t num_instances;
@@ -147,6 +216,10 @@ struct log_RBRH {
 
 // @LoggerMessage: RBRI
 // @Description: Replay Data Barometer Instance
+// @Field: LastUpdate: timestamp of barometer data
+// @Field: Alt: barometer altitude estimate
+// @Field: H: barometer sensor health indication
+// @Field: I: barometer instance number
 struct log_RBRI {
     uint32_t last_update_ms;
     float altitude;  // from get_altitude
@@ -157,19 +230,29 @@ struct log_RBRI {
 
 // @LoggerMessage: RRNH
 // @Description: Replay Data Rangefinder Header
+// @Field: GCl: rangefinder ground clearance for downward-facing rangefinders
+// @Field: MaxD: rangefinder maximum distance for downward-facing rangefinders
+// @Field: NumSensors: number of rangefinder instances
 struct log_RRNH {
     // this is rotation-pitch-270!
-    int16_t ground_clearance_cm;
-    int16_t max_distance_cm;
+    float ground_clearance;
+    float max_distance;
     uint8_t num_sensors;
     uint8_t _end;
 };
 
 // @LoggerMessage: RRNI
 // @Description: Replay Data Rangefinder Instance
+// @Field: PX: rangefinder body-frame offset, X-axis
+// @Field: PY: rangefinder body-frame offset, Y-axis
+// @Field: PZ: rangefinder body-frame offset, Z-axis
+// @Field: Dist: Measured rangefinder distance
+// @Field: Orient: orientation
+// @Field: Status: status
+// @Field: I: rangefinder instance number
 struct log_RRNI {
     Vector3f pos_offset;
-    uint16_t distance_cm;
+    float distance;
     uint8_t orientation;
     uint8_t status;
     uint8_t instance;
@@ -178,6 +261,8 @@ struct log_RRNI {
 
 // @LoggerMessage: RGPH
 // @Description: Replay Data GPS Header
+// @Field: NumInst: number of GPS sensors
+// @Field: Primary: instance number of primary sensor
 struct log_RGPH {
     uint8_t num_sensors;
     uint8_t primary_sensor;
@@ -186,6 +271,15 @@ struct log_RGPH {
 
 // @LoggerMessage: RGPI
 // @Description: Replay Data GPS Instance, infrequently changing data
+// @Field: OX: antenna body-frame offset, X-axis
+// @Field: OY: antenna body-frame offset, Y-axis
+// @Field: OZ: antenna body-frame offset, Z-axis
+// @Field: Lg: GPS time lag
+// @Field: Flags: various GPS flags
+// @FieldBits: Flags: have_vertical_velocity,horizontal_accuracy_returncode,vertical_accuracy_returncode,get_lag_returncode,speed_accuracy_returncode,gps_yaw_deg_returncode
+// @Field: Stat: GPS fix status
+// @Field: NSats: number of satellites GPS is using
+// @Field: I: GPS sensor instance number
 struct log_RGPI {
     Vector3f antenna_offset;
     float lag_sec;
@@ -203,6 +297,21 @@ struct log_RGPI {
 
 // @LoggerMessage: RGPJ
 // @Description: Replay Data GPS Instance - rapidly changing data
+// @Field: TS: GPS data timestamp
+// @Field: VX: GPS velocity, North
+// @Field: VY: GPS velocity, East
+// @Field: VZ: GPS velocity, Down
+// @Field: SA: speed accuracy
+// @Field: Y: GPS yaw
+// @Field: YA: GPS yaw accuracy
+// @Field: YT: timestamp of GPS yaw estimate
+// @Field: Lat: latitude
+// @Field: Lon: longitude
+// @Field: Alt: altitude
+// @Field: HA: horizontal accuracy
+// @Field: VA: vertical accuracy
+// @Field: HD: HDOP
+// @Field: I: GPS sensor instance number
 struct log_RGPJ {
     uint32_t last_message_time_ms;
     Vector3f velocity;
@@ -220,14 +329,23 @@ struct log_RGPJ {
     uint8_t _end;
 };
 
-// Replay Data Structure - Airspeed Sensor header
+// @LoggerMessage: RASH
+// @Description: Replay Airspeed Sensor Header
+// @Field: Primary: airspeed instance number
+// @Field: NumInst: number of airspeed instances
 struct log_RASH {
     uint8_t num_sensors;
     uint8_t primary;
     uint8_t _end;
 };
 
-// Replay Data Structure - Airspeed Sensor instance
+// @LoggerMessage: RASI
+// @Description: Replay Airspeed Sensor Instance data
+// @Field: pd: measured airspeed
+// @Field: UpdateMS: timestamp of measured airspeed
+// @Field: H: indicator of airspeed sensor health
+// @Field: Use: true if airspeed is configured to be used
+// @Field: I: airspeed instance number
 struct log_RASI {
     float airspeed;
     uint32_t last_update_ms;
@@ -239,6 +357,14 @@ struct log_RASI {
 
 // @LoggerMessage: RMGH
 // @Description: Replay Data Magnetometer Header
+// @Field: Dec: vehicle declination
+// @Field: Avail: true if the compass library is marking itself as available
+// @Field: NumInst: number of compass instances
+// @Field: AutoDec: true if compass autodeclination is enabled
+// @Field: NumEna: number of enabled compass instances
+// @Field: LOE: true if compass learning of offsets is enabled
+// @Field: C: true if compasses are consistent
+// @Field: FUsable: index of first usable compass
 struct log_RMGH {
     float declination;
     bool available;
@@ -253,6 +379,17 @@ struct log_RMGH {
 
 // @LoggerMessage: RMGI
 // @Description: Replay Data Magnetometer Instance
+// @Field: LU: last update time for magnetometer data
+// @Field: OX: mag sensor offset, X-axis
+// @Field: OY: mag sensor offset, Y-axis
+// @Field: OZ: mag sensor offset, Z-axis
+// @Field: FX: field strength, X-axis
+// @Field: FY: field strength, Y-axis
+// @Field: FZ: field strength, Z-axis
+// @Field: UFY: true if compass is being used for yaw
+// @Field: H: sensor health
+// @Field: HSF: compass has scale factor
+// @Field: I: magnetometer instance number
 struct log_RMGI {
     uint32_t last_update_usec;
     Vector3f offsets;
@@ -266,6 +403,15 @@ struct log_RMGI {
 
 // @LoggerMessage: RBCH
 // @Description: Replay Data Beacon Header
+// @Field: PX: zero, unused
+// @Field: PY: zero, unused
+// @Field: PZ: zero, unused
+// @Field: AE: zero, unused
+// @Field: OLat: origin latitude
+// @Field: OLng: origin longitude
+// @Field: OAlt: origin altitude
+// @Field: Flags: vehicle_position_ned_returncode,get_origin_returncode,enabled
+// @Field: NumInst: number of beacons
 struct log_RBCH {
     Vector3f vehicle_position_ned;
     float accuracy_estimate;
@@ -281,6 +427,13 @@ struct log_RBCH {
 
 // @LoggerMessage: RBCI
 // @Description: Replay Data Beacon Instance
+// @Field: LU: last update from this beacon instance
+// @Field: PX: beacon distance from origin, X-axis
+// @Field: PY:  beacon distance from origin, Y-axis
+// @Field: PZ:  beacon distance from origin, Z-axis
+// @Field: Dist: distance to beacon
+// @Field: H: beacon data health
+// @Field: I: beacon instance number
 struct log_RBCI {
     uint32_t last_update_ms;
     Vector3f position;
@@ -292,6 +445,12 @@ struct log_RBCI {
 
 // @LoggerMessage: RVOH
 // @Description: Replay Data Visual Odometry data
+// @Field: OX: offset, x-axis
+// @Field: OY: offset, y-axis
+// @Field: OZ: offset, z-axis
+// @Field: Del: data delay
+// @Field: H: sensor health
+// @Field: Ena: sensor enabled
 struct log_RVOH {
     Vector3f pos_offset;
     uint32_t delay_ms;
@@ -302,6 +461,16 @@ struct log_RVOH {
 
 // @LoggerMessage: ROFH
 // @Description: Replay optical flow data
+// @Field: FX: raw flow rate, X-axis
+// @Field: FY: raw flow rate, Y-axis
+// @Field: GX: gyro rate, X-axis
+// @Field: GY: gyro rate, Y-axis
+// @Field: Tms: measurement timestamp
+// @Field: PX:gyro rate, X-axis
+// @Field: PY: body-frame offset, Y-axis
+// @Field: PZ: body-frame offset, Z-axis
+// @Field: HgtOvr: sensor height override
+// @Field: Qual: flow quality measurement
 struct log_ROFH {
     Vector2f rawFlowRates;
     Vector2f rawGyroRates;
@@ -314,6 +483,18 @@ struct log_ROFH {
 
 // @LoggerMessage: REPH
 // @Description: Replay external position data
+// @Field: PX: external position estimate, X-axis
+// @Field: PY: external position estimate, Y-axis
+// @Field: PZ: external position estimate, Z-axis
+// @Field: Q1: external attitude quaternion
+// @Field: Q2: external attitude quaternion
+// @Field: Q3: external attitude quaternion
+// @Field: Q4: external attitude quaternion
+// @Field: PEr: external position error estimate
+// @Field: AEr: external attitude error estimate
+// @Field: TS: timestamp on external error estimate
+// @Field: RT: timestamp of last external reset
+// @Field: D: delay on external data
 struct log_REPH {
     Vector3f pos;
     Quaternion quat;
@@ -327,6 +508,10 @@ struct log_REPH {
 
 // @LoggerMessage: RSLL
 // @Description: Replay Set Lat Lng event
+// @Field: Lat: latitude
+// @Field: Lng: longitude
+// @Field: PosAccSD: position accuracy, 1-StD
+// @Field: TS: timestamp of latitude/longitude
 struct log_RSLL {
     int32_t lat; // WGS-84 latitude in 1E-7 degrees
     int32_t lng; // WGS-84 longitude in 1E7 degrees
@@ -336,7 +521,13 @@ struct log_RSLL {
 };
 
 // @LoggerMessage: REVH
-// @Description: Replay external position data
+// @Description: Replay external velocity data
+// @Field: VX: external velocity estimate, X-axis
+// @Field: VY: external velocity estimate, Y-axis
+// @Field: VZ: external velocity estimate, Z-axis
+// @Field: Er: error in velocity estimate
+// @Field: TS: timestamp of velocity estimate
+// @Field: D: delay in external velocity data
 struct log_REVH {
     Vector3f vel;
     float err;
@@ -347,6 +538,13 @@ struct log_REVH {
 
 // @LoggerMessage: RWOH
 // @Description: Replay wheel odometry data
+// @Field: DA: delta-angle
+// @Field: DT: delta-time
+// @Field: TS: data timestamp
+// @Field: PX: sensor body-frame offset, x-axis
+// @Field: PY: sensor body-frame offset, y-axis
+// @Field: PZ: sensor body-frame offset, z-axis
+// @Field: R: wheel radius
 struct log_RWOH {
     float delAng;
     float delTime;
@@ -358,6 +556,19 @@ struct log_RWOH {
 
 // @LoggerMessage: RBOH
 // @Description: Replay body odometry data
+// @Field: Q: data quality measure
+// @Field: DPX: delta-position-X
+// @Field: DPY: delta-position-Y
+// @Field: DPZ: delta-position-Z
+// @Field: DAX: delta-angle-X
+// @Field: DAY: delta-angle-Y
+// @Field: DAZ: delta-angle-Z
+// @Field: DT: delta-time
+// @Field: TS: data timestamp
+// @Field: OX: zero, unused
+// @Field: OY: zero, unused
+// @Field: OZ: zero, unused
+// @Field: D: zero, unused
 struct log_RBOH {
     float quality;
     Vector3f delPos;
@@ -377,7 +588,7 @@ struct log_RBOH {
     { LOG_RFRF_MSG, RLOG_SIZE(RFRF),                          \
       "RFRF", "BB", "FTypes,Slow", "--", "--" }, \
     { LOG_RFRN_MSG, RLOG_SIZE(RFRN),                            \
-      "RFRN", "IIIfIfffBBB", "HLat,HLon,HAlt,E2T,AM,TX,TY,TZ,VC,EKT,Flags", "DUm????????", "GGB--------" }, \
+      "RFRN", "IIIfIfffBBB", "HLat,HLon,HAlt,E2T,AM,TX,TY,TZ,VC,EKT,Flags", "DUm-bddd---", "GGB--------" }, \
     { LOG_REV2_MSG, RLOG_SIZE(REV2),                                   \
       "REV2", "B", "Event", "-", "-" }, \
     { LOG_RSO2_MSG, RLOG_SIZE(RSO2),                         \
@@ -405,9 +616,9 @@ struct log_RBOH {
     { LOG_RBRI_MSG, RLOG_SIZE(RBRI),                                   \
       "RBRI", "IfBB", "LastUpdate,Alt,H,I", "---#", "----" }, \
     { LOG_RRNH_MSG, RLOG_SIZE(RRNH),                                   \
-      "RRNH", "hhB", "GCl,MaxD,NumSensors", "???", "???" },  \
+      "RRNH", "ffB", "GCl,MaxD,NumSensors", "mm-", "00-" },  \
     { LOG_RRNI_MSG, RLOG_SIZE(RRNI),                                   \
-      "RRNI", "fffHBBB", "PX,PY,PZ,Dist,Orient,Status,I", "------#", "-------" }, \
+      "RRNI", "ffffBBB", "PX,PY,PZ,Dist,Orient,Status,I", "---m--#", "---0---" }, \
     { LOG_RGPH_MSG, RLOG_SIZE(RGPH),                                   \
       "RGPH", "BB", "NumInst,Primary", "--", "--" },  \
     { LOG_RGPI_MSG, RLOG_SIZE(RGPI),                                   \

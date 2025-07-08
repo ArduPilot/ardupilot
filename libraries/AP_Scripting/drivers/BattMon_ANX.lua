@@ -2,6 +2,9 @@
  device driver for ANX CAN battery monitor
 --]]
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: missing-parameter
+
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
 local PARAM_TABLE_KEY = 45

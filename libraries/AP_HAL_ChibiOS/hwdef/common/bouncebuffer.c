@@ -48,7 +48,13 @@ void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_b
 bool bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf, uint32_t size)
 {
     if (!bouncebuffer || mem_is_dma_safe(*buf, size, bouncebuffer->on_axi_sram)) {
-        // nothing needs to be done
+#if defined(STM32H7)
+        /*
+          on H7 the cache needs invalidating before a read to ensure
+          there is no stale data in the buffer
+         */
+        stm32_cacheBufferInvalidate(*buf, (size+31)&~31);
+#endif
         return true;
     }
     osalDbgAssert((bouncebuffer->busy == false), "bouncebuffer read");        
@@ -97,7 +103,12 @@ void bouncebuffer_finish_read(struct bouncebuffer_t *bouncebuffer, const uint8_t
 bool bouncebuffer_setup_write(struct bouncebuffer_t *bouncebuffer, const uint8_t **buf, uint32_t size)
 {
     if (!bouncebuffer || mem_is_dma_safe(*buf, size, bouncebuffer->on_axi_sram)) {
-        // nothing needs to be done
+#if defined(STM32H7)
+        /*
+          on H7 we need to flush any pending writes to memory before the DMA operation
+         */
+        stm32_cacheBufferFlush(*buf, (size+31)&~31);
+#endif
         return true;
     }
     osalDbgAssert((bouncebuffer->busy == false), "bouncebuffer write");        

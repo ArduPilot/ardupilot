@@ -8,6 +8,8 @@ a script to test handling of 32 bit micros timer wrap with BDShot
 - BRD_SAFETY_DFLT must be 0
 - BDShot must be enabled on outputs 9-12
 --]]
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: cast-local-type
 
 local PARAM_TABLE_KEY = 138
 local PARAM_TABLE_PREFIX = "WRAP32_"

@@ -10,8 +10,8 @@ FLASH_RESERVE_START_KB 30
 STORAGE_FLASH_PAGE 13
 define HAL_STORAGE_SIZE 800
 
-# board ID for firmware load
-APJ_BOARD_ID 1027
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_FlywooF745
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -100,8 +100,6 @@ MAIN_STACK 0x300
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0xA00
 
-define HAL_DISABLE_LOOP_DELAY
-
 # enable CAN support
 PB5 CAN2_RX CAN2
 PB6 CAN2_TX CAN2
@@ -125,16 +123,12 @@ PA8 TIM1_CH1 TIM1 PWM(1) GPIO(50)
 # LED on timer
 PA15 TIM2_CH1 TIM2 PWM(2) GPIO(51)
 
-define HAL_PERIPH_ENABLE_RC_OUT
+define AP_PERIPH_RC_OUT_ENABLED 1
 
 define HAL_UART_MIN_TX_SIZE 256
 define HAL_UART_MIN_RX_SIZE 128
 
 define HAL_UART_STACK_SIZE 0x200
-
-
-define HAL_NO_MONITOR_THREAD
-
 
 define HAL_DEVICE_THREAD_STACK 0x200
 define STORAGE_THD_WA_SIZE 512
@@ -151,3 +145,6 @@ env ROMFS_UNCOMPRESSED True
 
 # don't share any DMA channels (there are enough for everyone)
 DMA_NOSHARE *
+
+define HAL_SERIAL_ESC_COMM_ENABLED 1
+define HAL_RCIN_THREAD_ENABLED 1

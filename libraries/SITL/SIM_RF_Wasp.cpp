@@ -57,7 +57,7 @@ void RF_Wasp::check_configuration()
                     offs += 1; // for '>'
                     offs += 1; // for space
                     strncpy(string_configs[i].value, &_buffer[offs], MIN(ARRAY_SIZE(config.format), unsigned(cr - _buffer - offs - 1))); // -1 for the lf, -1 for the cr
-//                    gcs().send_text(MAV_SEVERITY_INFO, "Wasp: config (%s) (%s)", string_configs[i].name, string_configs[i].value);
+//                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Wasp: config (%s) (%s)", string_configs[i].name, string_configs[i].value);
                     char response[128];
                     const size_t x = snprintf(response,
                                               ARRAY_SIZE(response),
@@ -80,7 +80,7 @@ void RF_Wasp::check_configuration()
                     char tmp[32]{};
                     strncpy(tmp, &_buffer[offs], MIN(ARRAY_SIZE(config.format), unsigned(cr - _buffer - offs - 1))); // -1 for the lf, -1 for the cr
                     *(integer_configs[i].value) = atoi(tmp);
-//                    gcs().send_text(MAV_SEVERITY_INFO, "Wasp: config (%s) (%d)", integer_configs[i].name, *(integer_configs[i].value));
+//                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Wasp: config (%s) (%d)", integer_configs[i].name, *(integer_configs[i].value));
                     char response[128];
                     const size_t x = snprintf(response,
                                               ARRAY_SIZE(response),
@@ -113,5 +113,11 @@ void RF_Wasp::update(float range)
 
 uint32_t RF_Wasp::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
 {
-    return snprintf((char*)buffer, buflen, "%f\n", alt_cm/100.0f);
+    // the Wasp driver does not consider 0 a valid reading, so you end
+    // up getting 0 samples back if you send exactly zero all the
+    // time.  So munge it a little bit:
+    if (alt_cm == 0) {
+        alt_cm = 1;
+    }
+    return snprintf((char*)buffer, buflen, "%f\n", alt_cm*0.01f);
 }

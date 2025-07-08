@@ -37,6 +37,8 @@ namespace SITL {
 class RF_NMEA : public SerialRangeFinder {
 public:
 
+    static SerialRangeFinder *create() { return NEW_NOTHROW RF_NMEA(); }
+
     uint32_t device_baud() const override { return 9600; }
 
     uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;

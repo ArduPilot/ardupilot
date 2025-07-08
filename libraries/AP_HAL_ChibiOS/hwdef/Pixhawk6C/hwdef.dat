@@ -19,8 +19,8 @@ USB_VENDOR 0x3162 # ONLY FOR USE BY Holybro
 USB_PRODUCT 0x0053
 USB_STRING_MANUFACTURER "Holybro"
 
-# board ID for firmware load
-APJ_BOARD_ID 56
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_PX4_FMU_V6C
 
 FLASH_RESERVE_START_KB 128
 
@@ -31,7 +31,6 @@ env USE_ALT_RAM_MAP 1
 # flash size
 FLASH_SIZE_KB 2048
 
-env OPTIMIZE -O2
 
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 USART3 OTG2
@@ -164,11 +163,9 @@ define HAL_IMUHEAT_I_DEFAULT 0.07
 # power enable pins
 PB2 VDD_3V3_SENSORS1_EN OUTPUT HIGH
 
-# start peripheral power off, then enable after init
-# this prevents a problem with radios that use RTS for
-# bootloader hold
-PC10 nVDD_5V_HIPOWER_EN OUTPUT HIGH
-PE2  nVDD_5V_PERIPH_EN  OUTPUT HIGH
+# start peripheral power on
+PC10 nVDD_5V_HIPOWER_EN OUTPUT LOW
+PE2  nVDD_5V_PERIPH_EN  OUTPUT LOW
 
 # Control of Spektrum power pin
 PH2 SPEKTRUM_PWR OUTPUT HIGH GPIO(73)
@@ -179,7 +176,7 @@ define HAL_SPEKTRUM_PWR_ENABLED 1
 
 # power sensing
 PE3 VDD_5V_PERIPH_nOC INPUT PULLUP
-PF13 VDD_5V_HIPOWER_nOC INPUT PULLUP
+PC11 VDD_5V_HIPOWER_nOC INPUT PULLUP
 
 PA15 VDD_BRICK_nVALID INPUT PULLUP
 PB12 VDD_BRICK2_nVALID INPUT PULLUP
@@ -198,9 +195,9 @@ PD10 LED_RED OUTPUT OPENDRAIN GPIO(90) HIGH
 PD11 LED_BLUE OUTPUT OPENDRAIN GPIO(92) HIGH
 
 # setup for BoardLED2
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 define HAL_GPIO_A_LED_PIN 90
 define HAL_GPIO_B_LED_PIN 92
-define HAL_GPIO_LED_ON 0
 
 # ID pins
 PE12 HW_VER_REV_DRIVE OUTPUT LOW
@@ -211,8 +208,8 @@ PE12 HW_VER_REV_DRIVE OUTPUT LOW
 PB0 TIM3_CH3 TIM3 GPIO(77) ALARM
 
 # barometers
-BARO MS56XX I2C:0:0x76
-BARO MS56XX I2C:0:0x77
+BARO MS5611 I2C:0:0x76
+BARO MS5611 I2C:0:0x77
 BARO BMP388 I2C:0:0x77
 
 # prototypes may have no baro
@@ -258,6 +255,10 @@ DMA_PRIORITY SDMMC* USART6* ADC* UART* USART* SPI* TIM*
 define HAL_OS_FATFS_IO 1
 
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_lowpolh.bin
+
+# build ABIN for flash-from-bootloader support:
+env BUILD_ABIN True
+
 # enable support for dshot on iomcu
 ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
 define HAL_WITH_IO_MCU_BIDIR_DSHOT 1

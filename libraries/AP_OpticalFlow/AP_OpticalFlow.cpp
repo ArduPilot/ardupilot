@@ -19,20 +19,15 @@
 extern const AP_HAL::HAL& hal;
 
 #ifndef OPTICAL_FLOW_TYPE_DEFAULT
- #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412 || defined(HAL_HAVE_PIXARTFLOW_SPI)
-  #define OPTICAL_FLOW_TYPE_DEFAULT Type::PIXART
- #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-  #define OPTICAL_FLOW_TYPE_DEFAULT Type::BEBOP
- #else
   #define OPTICAL_FLOW_TYPE_DEFAULT Type::NONE
- #endif
 #endif
 
 const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Optical flow sensor type
     // @Description: Optical flow sensor type
-    // @Values: 0:None, 1:PX4Flow, 2:Pixart, 3:Bebop, 4:CXOF, 5:MAVLink, 6:DroneCAN, 7:MSP, 8:UPFLOW
+    // @SortValues: AlphabeticalZeroAtTop
+    // @Values: 0:None, 1:PX4Flow, 2:Pixart, 3:Bebop, 4:CXOF, 5:MAVLink, 6:DroneCAN, 7:MSP, 8:UPFLOW, 10:SITL
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 0,  AP_OpticalFlow,    _type,   (float)OPTICAL_FLOW_TYPE_DEFAULT, AP_PARAM_FLAG_ENABLE),
@@ -126,54 +121,54 @@ void AP_OpticalFlow::init(uint32_t log_bit)
     switch ((Type)_type) {
     case Type::NONE:
         break;
-    case Type::PX4FLOW:
 #if AP_OPTICALFLOW_PX4FLOW_ENABLED
+    case Type::PX4FLOW:
         backend = AP_OpticalFlow_PX4Flow::detect(*this);
-#endif
         break;
-    case Type::PIXART:
+#endif  // AP_OPTICALFLOW_PX4FLOW_ENABLED
 #if AP_OPTICALFLOW_PIXART_ENABLED
+    case Type::PIXART:
         backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
         if (backend == nullptr) {
             backend = AP_OpticalFlow_Pixart::detect("pixartPC15", *this);
         }
-#endif
         break;
+#endif  // AP_OPTICALFLOW_PIXART_ENABLED
+#if AP_OPTICALFLOW_ONBOARD_ENABLED
     case Type::BEBOP:
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-        backend = new AP_OpticalFlow_Onboard(*this);
-#endif
+        backend = NEW_NOTHROW AP_OpticalFlow_Onboard(*this);
         break;
-    case Type::CXOF:
+#endif  // AP_OPTICALFLOW_ONBOARD_ENABLED
 #if AP_OPTICALFLOW_CXOF_ENABLED
+    case Type::CXOF:
         backend = AP_OpticalFlow_CXOF::detect(*this);
-#endif
         break;
-    case Type::MAVLINK:
+#endif  // AP_OPTICALFLOW_CXOF_ENABLED
 #if AP_OPTICALFLOW_MAV_ENABLED
+    case Type::MAVLINK:
         backend = AP_OpticalFlow_MAV::detect(*this);
-#endif
         break;
-    case Type::UAVCAN:
+#endif  // AP_OPTICALFLOW_MAV_ENABLED
 #if AP_OPTICALFLOW_HEREFLOW_ENABLED
-        backend = new AP_OpticalFlow_HereFlow(*this);
-#endif
+    case Type::UAVCAN:
+        backend = NEW_NOTHROW AP_OpticalFlow_HereFlow(*this);
         break;
-    case Type::MSP:
+#endif  // AP_OPTICALFLOW_HEREFLOW_ENABLED
 #if HAL_MSP_OPTICALFLOW_ENABLED
+    case Type::MSP:
         backend = AP_OpticalFlow_MSP::detect(*this);
-#endif
         break;
-    case Type::UPFLOW:
+#endif  // HAL_MSP_OPTICALFLOW_ENABLED
 #if AP_OPTICALFLOW_UPFLOW_ENABLED
+    case Type::UPFLOW:
         backend = AP_OpticalFlow_UPFLOW::detect(*this);
-#endif
         break;
-    case Type::SITL:
+#endif  // AP_OPTICALFLOW_UPFLOW_ENABLED
 #if AP_OPTICALFLOW_SITL_ENABLED
-        backend = new AP_OpticalFlow_SITL(*this);
-#endif
+    case Type::SITL:
+        backend = NEW_NOTHROW AP_OpticalFlow_SITL(*this);
         break;
+#endif  // AP_OPTICALFLOW_SITL_ENABLED
     }
 
     if (backend != nullptr) {
@@ -243,7 +238,7 @@ void AP_OpticalFlow::handle_msp(const MSP::msp_opflow_data_message_t &pkt)
 void AP_OpticalFlow::start_calibration()
 {
     if (_calibrator == nullptr) {
-        _calibrator = new AP_OpticalFlow_Calibrator();
+        _calibrator = NEW_NOTHROW AP_OpticalFlow_Calibrator();
         if (_calibrator == nullptr) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "FlowCal: failed to start");
             return;

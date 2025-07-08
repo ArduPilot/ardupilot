@@ -16,9 +16,11 @@
   Simulator for the TeraRangerTower proximity sensor
 */
 
-#include "SIM_PS_TeraRangerTower.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_PS_TERARANGERTOWER_ENABLED
+#if AP_SIM_PS_TERARANGERTOWER_ENABLED
+
+#include "SIM_PS_TeraRangerTower.h"
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -78,4 +80,4 @@ void PS_TeraRangerTower::update(const Location &location)
     update_output(location);
 }
 
-#endif  // HAL_SIM_PS_TERARANGERTOWER_ENABLED
+#endif  // AP_SIM_PS_TERARANGERTOWER_ENABLED

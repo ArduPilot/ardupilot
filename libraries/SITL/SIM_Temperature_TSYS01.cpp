@@ -1,8 +1,12 @@
+#include "SIM_config.h"
+
+#if AP_SIM_TEMPERATURE_TSYS01_ENABLED
+
 #include "SIM_Temperature_TSYS01.h"
 
 #include <stdio.h>
 
-constexpr const int32_t SITL::TSYS01::_k[5];
+constexpr const int32_t SITL::TSYS01::_k[6];
 
 int SITL::TSYS01::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
 {
@@ -30,7 +34,7 @@ int SITL::TSYS01::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
             if (data->msgs[1].len != 2) {
                 AP_HAL::panic("Unexpected prom read length");
             }
-            uint8_t offs = 5-((uint8_t(command) - uint8_t(Command::READ_PROM0))/2);
+            uint8_t offs = ARRAY_SIZE(_k)-((uint8_t(command) - uint8_t(Command::READ_PROM0))/2);
             const uint16_t k = _k[offs];
             data->msgs[1].buf[0] = k >> 8;
             data->msgs[1].buf[1] = k & 0xFF;
@@ -105,13 +109,16 @@ int SITL::TSYS01::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
 float SITL::TSYS01::temperature_for_adc(uint32_t _adc) const
 {
     const float adc16 = _adc/256.0;
-    // const uint32_t _k[] { 28446, 24926, 36016, 32791, 40781 };
+    // Note that the offsets used here start from 1 (PROM1), not like
+    // in the main codebase where they start from 0 (PROM1)!  The main
+    // code does not read PROM0 from the device (real or simulated),
+    // but the array in the simulator here reserves a space for it.
     return
-        -2   * _k[4] * powf(10, -21) * powf(adc16, 4) +
-        4    * _k[3] * powf(10, -16) * powf(adc16, 3) +
-        -2   * _k[2] * powf(10, -11) * powf(adc16, 2) +
-        1    * _k[1] * powf(10, -6)  * adc16 +
-        -1.5 * _k[0] * powf(10, -2);
+        -2   * _k[5] * powf(10, -21) * powf(adc16, 4) +
+        4    * _k[4] * powf(10, -16) * powf(adc16, 3) +
+        -2   * _k[3] * powf(10, -11) * powf(adc16, 2) +
+        1    * _k[2] * powf(10, -6)  * adc16 +
+        -1.5 * _k[1] * powf(10, -2);
 }
 
 uint32_t SITL::TSYS01::calculate_adc(float temperature) const
@@ -193,9 +200,8 @@ float SITL::TSYS01::get_sim_temperature() const
     float sim_alt = AP::sitl()->state.altitude;
     sim_alt += 2 * rand_float();
 
-    float sigma, delta, theta;
-    AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
-
     // To Do: Add a sensor board temperature offset parameter
-    return (KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta)) + 25.0;
+    return AP_Baro::get_temperatureC_for_alt_amsl(sim_alt) + 25;
 }
+
+#endif  // AP_SIM_TEMPERATURE_TSYS01_ENABLED

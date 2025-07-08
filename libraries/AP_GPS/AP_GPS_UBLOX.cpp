@@ -29,10 +29,7 @@
 #include "RTCM3_Parser.h"
 #include <stdio.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
-    #define UBLOX_SPEED_CHANGE  1
-#else
+#ifndef UBLOX_SPEED_CHANGE
     #define UBLOX_SPEED_CHANGE 0
 #endif
 
@@ -94,14 +91,12 @@ extern const AP_HAL::HAL& hal;
  # define CFG_Debug(fmt, args ...)
 #endif
 
-AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port, AP_GPS::GPS_Role _role) :
-    AP_GPS_Backend(_gps, _state, _port),
-    _next_message(STEP_PVT),
-    _ublox_port(255),
-    _unconfigured_messages(CONFIG_ALL),
-    _hardware_generation(UBLOX_UNKNOWN_HARDWARE_GENERATION),
-    next_fix(AP_GPS::NO_FIX),
-    noReceivedHdop(true),
+AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps,
+                           AP_GPS::Params &_params,
+                           AP_GPS::GPS_State &_state,
+                           AP_HAL::UARTDriver *_port,
+                           AP_GPS::GPS_Role _role) :
+    AP_GPS_Backend(_gps, _params, _state, _port),
     role(_role)
 {
     // stop any config strings that are pending
@@ -116,7 +111,7 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
 
 #if GPS_MOVING_BASELINE
     if (role == AP_GPS::GPS_ROLE_MB_BASE && !mb_use_uart2()) {
-        rtcm3_parser = new RTCM3_Parser;
+        rtcm3_parser = NEW_NOTHROW RTCM3_Parser;
         if (rtcm3_parser == nullptr) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "u-blox %d: failed RTCMv3 parser allocation", state.instance + 1);
         }
@@ -134,6 +129,8 @@ AP_GPS_UBLOX::~AP_GPS_UBLOX()
 #if GPS_MOVING_BASELINE
     delete rtcm3_parser;
 #endif
+
+    free(config_GNSS);
 }
 
 #if GPS_MOVING_BASELINE
@@ -283,7 +280,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         return;
     }
 
-    if (_unconfigured_messages == CONFIG_RATE_SOL && havePvtMsg) {
+    if ((_unconfigured_messages & CONFIG_RATE_SOL) != 0 && havePvtMsg) {
         /*
           we don't need SOL if we have PVT and TIMEGPS. This is needed
           as F9P doesn't support the SOL message
@@ -330,6 +327,12 @@ AP_GPS_UBLOX::_request_next_config(void)
         }
         break;
     case STEP_POLL_GNSS:
+        if (supports_F9_config()) {
+            if (last_configured_gnss != params.gnss_mode) {
+                _unconfigured_messages |= CONFIG_F9;
+            }
+            break;
+        }
         if (!_send_message(CLASS_CFG, MSG_CFG_GNSS, nullptr, 0)) {
             _next_message--;
         }
@@ -451,7 +454,45 @@ AP_GPS_UBLOX::_request_next_config(void)
 #endif
         break;
 
+    case STEP_F9: {
+        if (_hardware_generation == UBLOX_F9 ||
+            _hardware_generation == UBLOX_M10) {
+            uint8_t cfg_count = populate_F9_gnss();
+            // special handling of F9 config
+            if (cfg_count > 0) {
+                CFG_Debug("Sending F9 settings, GNSS=%u", unsigned(params.gnss_mode));
 
+                if (!_configure_list_valset(config_GNSS, cfg_count, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
+                    _next_message--;
+                    break;
+                }
+                _f9_config_time = AP_HAL::millis();
+            }
+        }
+        break;
+    }
+
+    case STEP_F9_VALIDATE: {
+        if (_hardware_generation == UBLOX_F9 ||
+            _hardware_generation == UBLOX_M10) {
+            // GNSS takes 0.5s to reset
+            if (AP_HAL::millis() - _f9_config_time < 500) {
+                _next_message--;
+                break;
+            }
+            _f9_config_time = 0;
+            uint8_t cfg_count = populate_F9_gnss();
+            // special handling of F9 config
+            if (cfg_count > 0) {
+                CFG_Debug("Validating F9 settings, GNSS=%u", unsigned(params.gnss_mode));
+                // now validate all of the settings, this is a no-op if the first call succeeded
+                if (!_configure_config_set(config_GNSS, cfg_count, CONFIG_F9, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
+                    _next_message--;
+                }
+            }
+        }
+        break;
+    }
     case STEP_M10: {
         if (_hardware_generation == UBLOX_M10) {
             // special handling of M10 config
@@ -614,16 +655,24 @@ AP_GPS_UBLOX::read(void)
     if (millis_now - _last_config_time >= _delay_time) {
         _request_next_config();
         _last_config_time = millis_now;
-        if (_unconfigured_messages) { // send the updates faster until fully configured
-            if (!havePvtMsg && (_unconfigured_messages & CONFIG_REQUIRED_INITIAL)) {
-                _delay_time = 300;
-            } else {
-                _delay_time = 750;
-            }
+        if (_unconfigured_messages) {
+            // send the updates faster until fully configured
+            _delay_time = 200;
         } else {
             _delay_time = 2000;
         }
     }
+
+#if 0
+    // this can be modified to force a particular config state for
+    // state machine config debugging
+    static bool done_force_config_error;
+    if (!_unconfigured_messages && !done_force_config_error) {
+        done_force_config_error = true;
+        _unconfigured_messages = CONFIG_F9 | CONFIG_RATE_SOL;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing config state 0x%04x", unsigned(_unconfigured_messages));
+    }
+#endif
 
     if(!_unconfigured_messages && gps._save_config && !_cfg_saved &&
        _num_cfg_save_tries < 5 && (millis_now - _last_cfg_sent_time) > 5000 &&
@@ -1025,6 +1074,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                     _unconfigured_messages &= ~CONFIG_TP5;
                     break;
                 }
+
                 break;
             case CLASS_MON:
                 switch(_buffer.ack.msgID) {
@@ -1042,6 +1092,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             case CLASS_CFG:
                 switch(_buffer.nack.msgID) {
                 case MSG_CFG_VALGET:
+                    CFG_Debug("NACK VALGET 0x%x", (unsigned)_buffer.nack.msgID);
                     if (active_config.list != nullptr) {
                         /*
                           likely this device does not support fetching multiple keys at once, go one at a time
@@ -1049,6 +1100,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                         if (active_config.fetch_index == -1) {
                             CFG_Debug("NACK starting %u", unsigned(active_config.count));
                             active_config.fetch_index = 0;
+                            use_single_valget = true;
                         } else {
                             // the device does not support the config key we asked for,
                             // consider the bit as done
@@ -1057,7 +1109,8 @@ AP_GPS_UBLOX::_parse_gps(void)
                                      int(active_config.fetch_index),
                                      unsigned(active_config.list[active_config.fetch_index].key),
                                      unsigned(active_config.done_mask));
-                            if (active_config.done_mask == (1U<<active_config.count)-1) {
+                            if (active_config.done_mask == (1U<<active_config.count)-1 ||
+                                active_config.fetch_index >= active_config.count) {
                                 // all done!
                                 _unconfigured_messages &= ~active_config.unconfig_bit;
                             }
@@ -1065,6 +1118,17 @@ AP_GPS_UBLOX::_parse_gps(void)
                         }
                         if (active_config.fetch_index < active_config.count) {
                             _configure_valget(active_config.list[active_config.fetch_index].key);
+                        }
+                    }
+                    break;
+                case MSG_CFG_VALSET:
+                    if (active_config.list != nullptr) {
+                        CFG_Debug("NACK VALSET 0x%x 0x%x", (unsigned)_buffer.nack.msgID,
+                                  unsigned(active_config.list[active_config.set_index].key));
+                        if (is_gnss_key(active_config.list[active_config.set_index].key)) {
+                            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %u: unable to configure band 0x%02x",
+                                          unsigned(state.instance + 1), unsigned(active_config.list[active_config.set_index].key));
+
                         }
                     }
                     break;
@@ -1110,7 +1174,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 
 #if UBLOX_GNSS_SETTINGS
         case MSG_CFG_GNSS:
-            if (gps._gnss_mode[state.instance] != 0) {
+            if (params.gnss_mode != 0 && !supports_F9_config()) {
                 struct ubx_cfg_gnss start_gnss = _buffer.gnss;
                 uint8_t gnssCount = 0;
                 Debug("Got GNSS Settings %u %u %u %u:\n",
@@ -1129,13 +1193,13 @@ AP_GPS_UBLOX::_parse_gps(void)
 #endif
 
                 for(int i = 0; i < UBLOX_MAX_GNSS_CONFIG_BLOCKS; i++) {
-                    if((gps._gnss_mode[state.instance] & (1 << i)) && i != GNSS_SBAS) {
+                    if((params.gnss_mode & (1 << i)) && i != GNSS_SBAS) {
                         gnssCount++;
                     }
                 }
                 for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
                     // Reserve an equal portion of channels for all enabled systems that supports it
-                    if(gps._gnss_mode[state.instance] & (1 << _buffer.gnss.configBlock[i].gnssId)) {
+                    if(params.gnss_mode & (1 << _buffer.gnss.configBlock[i].gnssId)) {
                         if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId && (_hardware_generation > UBLOX_M8 || GNSS_GALILEO !=_buffer.gnss.configBlock[i].gnssId)) {
                             _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
                             _buffer.gnss.configBlock[i].maxTrkCh = _buffer.gnss.numTrkChHw;
@@ -1210,7 +1274,7 @@ AP_GPS_UBLOX::_parse_gps(void)
            _ublox_port = _buffer.prt.portID;
            return false;
         case MSG_CFG_RATE:
-            if(_buffer.nav_rate.measure_rate_ms != gps._rate_ms[state.instance] ||
+            if(_buffer.nav_rate.measure_rate_ms != params.rate_ms ||
                _buffer.nav_rate.nav_rate != 1 ||
                _buffer.nav_rate.timeref != 0) {
                _configure_rate();
@@ -1286,12 +1350,16 @@ AP_GPS_UBLOX::_parse_gps(void)
                 // see if it is in active config list
                 int8_t cfg_idx = find_active_config_index(id);
                 if (cfg_idx >= 0) {
+                    CFG_Debug("valset(0x%lx): %u", (long unsigned)id, unsigned((*cfg_data) & 0x1));
                     const uint8_t key_size = config_key_size(id);
-                    if (cfg_len < key_size ||
-                        memcmp(&active_config.list[cfg_idx].value, cfg_data, key_size) != 0) {
+                    if (cfg_len < key_size
+                        // for keys of length 1 only the LSB is significant
+                        || (key_size == 1 && (active_config.list[cfg_idx].value & 0x1) != (*cfg_data & 0x1))
+                        || memcmp(&active_config.list[cfg_idx].value, cfg_data, key_size) != 0) {
                         _configure_valset(id, &active_config.list[cfg_idx].value, active_config.layers);
                         _unconfigured_messages |= active_config.unconfig_bit;
                         active_config.done_mask &= ~(1U << cfg_idx);
+                        active_config.set_index = cfg_idx;
                         _cfg_needs_save = true;
                     } else {
                         active_config.done_mask |= (1U << cfg_idx);
@@ -1314,6 +1382,8 @@ AP_GPS_UBLOX::_parse_gps(void)
                                   unsigned(active_config.list[active_config.fetch_index].key));
                         }
                     }
+                } else {
+                    CFG_Debug("valget no active config for 0x%lx", (long unsigned)id);
                 }
 
                 // step over the value
@@ -1345,8 +1415,14 @@ AP_GPS_UBLOX::_parse_gps(void)
             _have_version = true;
             strncpy(_version.hwVersion, _buffer.mon_ver.hwVersion, sizeof(_version.hwVersion));
             strncpy(_version.swVersion, _buffer.mon_ver.swVersion, sizeof(_version.swVersion));
+            void* mod = memmem(_buffer.mon_ver.extension, sizeof(_buffer.mon_ver.extension), "MOD=", 4);
+            if (mod != nullptr) {
+                strncpy(_module, (char*)mod+4, UBLOX_MODULE_LEN-1);
+            }
+
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, 
-                                             "u-blox %d HW: %s SW: %s",
+                                             "u-blox %s%s%d HW: %s SW: %s",
+                                             _module, mod != nullptr ? " " : "",
                                              state.instance + 1,
                                              _version.hwVersion,
                                              _version.swVersion);
@@ -1360,6 +1436,13 @@ AP_GPS_UBLOX::_parse_gps(void)
                         _unconfigured_messages |= CONFIG_TMODE_MODE;
                     }
                     _hardware_generation = UBLOX_F9;
+                    _unconfigured_messages |= CONFIG_F9;
+                    _unconfigured_messages &= ~CONFIG_GNSS;
+                    if (strncmp(_module, "ZED-F9P", UBLOX_MODULE_LEN) == 0) {
+                        _hardware_variant = UBLOX_F9_ZED;
+                    } else if (strncmp(_module, "NEO-F9P", UBLOX_MODULE_LEN) == 0) {
+                        _hardware_variant = UBLOX_F9_NEO;
+                    }
                 }
                 if (strncmp(_version.swVersion, "EXT CORE 4", 10) == 0) {
                     // a M9
@@ -1374,6 +1457,9 @@ AP_GPS_UBLOX::_parse_gps(void)
                 // M10 does not support CONFIG_GNSS
                 _unconfigured_messages &= ~CONFIG_GNSS;
                 check_L1L5 = true;
+
+                // M10 does not support multi-valued VALGET
+                use_single_valget = true;
             }
             if (check_L1L5) {
                 // check if L1L5 in extension
@@ -1448,7 +1534,9 @@ AP_GPS_UBLOX::_parse_gps(void)
               _buffer.status.fix_type);
         _check_new_itow(_buffer.status.itow);
         if (havePvtMsg) {
-            _unconfigured_messages |= CONFIG_RATE_STATUS;
+            // when we have PVT we don't need status, just change the rate for STATUS to zero
+            _unconfigured_messages &= ~CONFIG_RATE_STATUS;
+            _configure_message_rate(CLASS_NAV, _msg_id, 0);
             break;
         }
         if (_buffer.status.fix_status & NAV_STATUS_FIX_VALID) {
@@ -1578,6 +1666,10 @@ AP_GPS_UBLOX::_parse_gps(void)
         Debug("MSG_PVT");
 
         havePvtMsg = true;
+
+        // if we have PVT we don't want MSG_STATUS
+        _unconfigured_messages &= ~CONFIG_RATE_STATUS;
+
         // position
         _check_new_itow(_buffer.pvt.itow);
         _last_pvt_itow = _buffer.pvt.itow;
@@ -1643,8 +1735,10 @@ AP_GPS_UBLOX::_parse_gps(void)
             state.hdop        = _buffer.pvt.p_dop;
             state.vdop        = _buffer.pvt.p_dop;
         }
-                    
-        state.last_gps_time_ms = AP_HAL::millis();
+
+        if (_buffer.pvt.fix_type >= 2) {
+            state.last_gps_time_ms = AP_HAL::millis();
+        }
         
         // time
         state.time_week_ms    = _buffer.pvt.itow;
@@ -1759,7 +1853,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 void
 AP_GPS_UBLOX::pps_interrupt(uint8_t pin, bool high, uint32_t timestamp_us)
 {
-    _last_pps_time_us = timestamp_us;
+    _last_pps_time_us = AP_HAL::micros64();
 }
 
 void
@@ -1862,6 +1956,7 @@ AP_GPS_UBLOX::_configure_valset(ConfigKey key, const void *value, uint8_t layers
     if (!supports_F9_config()) {
         return false;
     }
+
     const uint8_t len = config_key_size(key);
     struct ubx_cfg_valset msg {};
     uint8_t buf[sizeof(msg)+len];
@@ -1919,7 +2014,7 @@ AP_GPS_UBLOX::_configure_config_set(const config_list *list, uint8_t count, uint
     // -1) then if we get a NACK for VALGET we switch to fetching one
     // value at a time. This copes with the M10S which can only fetch
     // one value at a time
-    active_config.fetch_index = -1;
+    active_config.fetch_index = use_single_valget? 0 :-1;
 
     uint8_t buf[sizeof(ubx_cfg_valget)+count*sizeof(ConfigKey)];
     struct ubx_cfg_valget msg {};
@@ -1933,6 +2028,48 @@ AP_GPS_UBLOX::_configure_config_set(const config_list *list, uint8_t count, uint
         memcpy(&buf[sizeof(msg)+i*sizeof(ConfigKey)], &list[i].key, sizeof(ConfigKey));
     }
     return _send_message(CLASS_CFG, MSG_CFG_VALGET, buf, sizeof(buf));
+}
+
+/*
+ *  configure F9 based key/value pair for a complete configuration set
+ *
+ *  this method sends all the key/value pairs in a block, but makes no attempt to check
+ *  the results. Sending in a block is necessary for updates such as GNSS where certain
+ *  combinations are invalid and setting one at a time will not produce the correct result
+ *  if the result needs to be validated then a subsequent _configure_config_set() can be
+ *  issued which will get all the values and reset those that are not properly updated.
+ */
+bool
+AP_GPS_UBLOX::_configure_list_valset(const config_list *list, uint8_t count, uint8_t layers)
+{
+    if (!supports_F9_config()) {
+        return false;
+    }
+
+    struct ubx_cfg_valset msg {};
+    uint8_t buf[sizeof(msg)+sizeof(config_list)*count];
+    if (port->txspace() < (uint16_t)(sizeof(struct ubx_header)+sizeof(buf)+2)) {
+        return false;
+    }
+    msg.version = 1;
+    msg.layers = layers;
+    msg.transaction = 0;
+    uint32_t msg_len = sizeof(msg) - sizeof(msg.key);
+    memcpy(buf, &msg, msg_len);
+
+    uint8_t* payload = &buf[msg_len];
+    for (uint8_t i=0; i<count; i++) {
+        const uint8_t len = config_key_size(list[i].key);
+        memcpy(payload, &list[i].key, sizeof(ConfigKey));
+        payload += sizeof(ConfigKey);
+        msg_len += sizeof(ConfigKey);
+        memcpy(payload, &list[i].value, len);
+        payload += len;
+        msg_len += len;
+    }
+
+    auto ret = _send_message(CLASS_CFG, MSG_CFG_VALSET, buf, msg_len);
+    return ret;
 }
 
 /*
@@ -2053,6 +2190,7 @@ static const char *reasons[] = {"navigation rate",
                                 "Time mode settings",
                                 "RTK MB",
                                 "TIM TM2",
+                                "F9",
                                 "M10",
                                 "L5 Enable Disable"};
 
@@ -2111,9 +2249,9 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_GPS_UBLOX::Write_AP_Logger_Log_Startup_messages() const
 {
-#if HAL_LOGGING_ENABLED
     AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages();
 
     if (_have_version) {
@@ -2122,8 +2260,8 @@ void AP_GPS_UBLOX::Write_AP_Logger_Log_Startup_messages() const
                                            _version.hwVersion,
                                            _version.swVersion);
     }
-#endif
 }
+#endif
 
 // uBlox specific check_new_itow(), handling message length
 void AP_GPS_UBLOX::_check_new_itow(uint32_t itow)
@@ -2177,10 +2315,99 @@ bool AP_GPS_UBLOX::is_healthy(void) const
     return true;
 }
 
+// populate config_GNSS with F9 GNSS configuration
+uint8_t AP_GPS_UBLOX::populate_F9_gnss(void)
+{
+    uint8_t cfg_count = 0;
+
+    if (params.gnss_mode == 0) {
+        _unconfigured_messages &= ~CONFIG_F9;
+        last_configured_gnss = params.gnss_mode;
+        return 0;
+    }
+
+    if ((_unconfigured_messages & CONFIG_F9) != 0) {
+        // ZED-F9P defaults are
+        // GPS L1C/A+L2C(ZED)
+        // SBAS L1C/A
+        // GALILEO E1+E5B(ZED)+E5A(NEO)
+        // BEIDOU B1+B2(ZED)+B2A(NEO)
+        // QZSS L1C/A+L2C(ZED)+L5(NEO)
+        // GLONASS L1+L2(ZED)
+        // IMES not supported
+        // GPS and QZSS should be enabled/disabled together, but we will leave them alone
+        // QZSS and SBAS can only be enabled if GPS is enabled
+
+        if (config_GNSS == nullptr) {
+            config_GNSS = (config_list*)calloc(UBLOX_MAX_GNSS_CONFIG_BLOCKS*3, sizeof(config_list));
+        }
+
+        if (config_GNSS == nullptr) {
+            return 0;
+        }
+
+        uint8_t gnss_mode = params.gnss_mode;
+        gnss_mode |= 1U<<GNSS_GPS;
+        gnss_mode |= 1U<<GNSS_QZSS;
+        gnss_mode &= ~(1U<<GNSS_IMES);
+        params.gnss_mode.set_and_save(gnss_mode);
+
+        for(int i = 0; i < UBLOX_MAX_GNSS_CONFIG_BLOCKS; i++) {
+            bool ena = gnss_mode & (1U<<i);
+            switch (i) {
+            case GNSS_SBAS:
+                config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_SBAS_ENA, ena };
+                config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_SBAS_L1CA_ENA, ena };
+                break;
+            case GNSS_GALILEO:
+                config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GAL_ENA, ena };
+                config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GAL_E1_ENA, ena };
+                if (_hardware_variant == UBLOX_F9_ZED) {
+                    config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GAL_E5B_ENA, ena };
+                } else {
+                    config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GAL_E5A_ENA, ena };
+                }
+                break;
+            case GNSS_BEIDOU:
+                config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_BDS_ENA, ena };
+                config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_BDS_B1_ENA, ena };
+                if (_hardware_variant == UBLOX_F9_ZED) {
+                    config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_BDS_B2_ENA, ena };
+                } else {
+                    config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_BDS_B2A_ENA, ena };
+                }
+                break;
+            case GNSS_GLONASS:
+                config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GLO_ENA, ena };
+                config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GLO_L1_ENA, ena };
+                if (_hardware_variant == UBLOX_F9_ZED) {
+                    config_GNSS[cfg_count++] = { ConfigKey::CFG_SIGNAL_GLO_L2_ENA, ena };
+                }
+                break;
+            // not supported or leave alone
+            case GNSS_IMES:
+            case GNSS_QZSS:
+            case GNSS_GPS:
+                break;
+            }
+        }
+    }
+
+    last_configured_gnss = params.gnss_mode;
+
+    return cfg_count;
+}
+
 // return true if GPS is capable of F9 config
 bool AP_GPS_UBLOX::supports_F9_config(void) const
 {
     return _hardware_generation == UBLOX_F9 || _hardware_generation == UBLOX_M10;
+}
+
+// return true if GPS is capable of F9 config
+bool AP_GPS_UBLOX::is_gnss_key(ConfigKey key) const
+{
+    return (unsigned(key) & 0xFFFF0000) == 0x10310000;
 }
 
 #endif

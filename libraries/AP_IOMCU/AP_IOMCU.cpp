@@ -19,7 +19,9 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AP_BLHeli/AP_BLHeli.h>
 #include <ch.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -42,6 +44,7 @@ enum ioevents {
     IOEVENT_SET_DSHOT_PERIOD,
     IOEVENT_SET_CHANNEL_MASK,
     IOEVENT_DSHOT,
+    IOEVENT_PROFILED,
 };
 
 // max number of consecutve protocol failures we accept before raising
@@ -76,6 +79,9 @@ void AP_IOMCU::init(void)
 {
     // uart runs at 1.5MBit
     uart.begin(1500*1000, 128, 128);
+#ifdef AP_IOMCU_UART_OPTIONS
+    uart.set_options(AP_IOMCU_UART_OPTIONS);
+#endif
     uart.set_unbuffered_writes(true);
 
 #if IOMCU_DEBUG_ENABLE
@@ -88,7 +94,9 @@ void AP_IOMCU::init(void)
         crc_is_ok = true;
     }
 #endif
-
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    use_safety_as_led = boardconfig->use_safety_as_led();
+#endif
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_IOMCU::thread_main, void), "IOMCU",
                                       1024, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
         AP_HAL::panic("Unable to allocate IOMCU thread");
@@ -118,11 +126,13 @@ void AP_IOMCU::thread_main(void)
     uart.set_unbuffered_writes(true);
 
 #if HAL_WITH_IO_MCU_BIDIR_DSHOT
-    AP_BLHeli* blh = AP_BLHeli::get_singleton();
     uint16_t erpm_period_ms = 10; // default 100Hz
+#if HAVE_AP_BLHELI_SUPPORT
+    AP_BLHeli* blh = AP_BLHeli::get_singleton();
     if (blh && blh->get_telemetry_rate() > 0) {
         erpm_period_ms = constrain_int16(1000 / blh->get_telemetry_rate(), 1, 1000);
     }
+#endif
 #endif
     trigger_event(IOEVENT_INIT);
 
@@ -153,10 +163,9 @@ void AP_IOMCU::thread_main(void)
 
             DEV_PRINTF("IOMCU: 0x%lx\n", config.mcuid);
 
-            // set IO_ARM_OK and FMU_ARMED
-            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, 0,
+            // set IO_ARM_OK and clear FMU_ARMED
+            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, P_SETUP_ARMING_FMU_ARMED,
                                  P_SETUP_ARMING_IO_ARM_OK |
-                                 P_SETUP_ARMING_FMU_ARMED |
                                  P_SETUP_ARMING_RC_HANDLING_DISABLED)) {
                 event_failed(mask);
                 continue;
@@ -298,6 +307,16 @@ void AP_IOMCU::thread_main(void)
         }
         mask &= ~EVENT_MASK(IOEVENT_DSHOT);
 
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+        if (mask & EVENT_MASK(IOEVENT_PROFILED)) {
+            if (!write_registers(PAGE_PROFILED, 0, sizeof(profiled)/sizeof(uint16_t), (const uint16_t*)&profiled)) {
+                event_failed(mask);
+                continue;
+            }
+        }
+        mask &= ~EVENT_MASK(IOEVENT_PROFILED);
+#endif
+
         // check for regular timed events
         uint32_t now = AP_HAL::millis();
         if (now - last_rc_read_ms > 20) {
@@ -335,7 +354,8 @@ void AP_IOMCU::thread_main(void)
             last_telem_read_ms = AP_HAL::millis();
         }
 #endif
-        if (now - last_safety_option_check_ms > 1000) {
+        // update options at the same rate that the iomcu updates the state
+        if (now - last_safety_option_check_ms > 100) {
             update_safety_options();
             last_safety_option_check_ms = now;
         }
@@ -343,7 +363,7 @@ void AP_IOMCU::thread_main(void)
         // update failsafe pwm
         if (pwm_out.failsafe_pwm_set != pwm_out.failsafe_pwm_sent) {
             uint8_t set = pwm_out.failsafe_pwm_set;
-            if (write_registers(PAGE_FAILSAFE_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.failsafe_pwm)) {
+            if (write_registers(PAGE_FAILSAFE_PWM, 0, IOMCU_MAX_RC_CHANNELS, pwm_out.failsafe_pwm)) {
                 pwm_out.failsafe_pwm_sent = set;
             }
         }
@@ -369,7 +389,7 @@ void AP_IOMCU::send_servo_out()
         if (rate.sbus_rate_hz == 0) {
             n = MIN(n, 8);
         } else {
-            n = MIN(n, IOMCU_MAX_CHANNELS);
+            n = MIN(n, IOMCU_MAX_RC_CHANNELS);
         }
         uint32_t now = AP_HAL::micros();
         if (now - last_servo_out_us >= 2000 || AP_BoardConfig::io_dshot()) {
@@ -409,15 +429,17 @@ void AP_IOMCU::read_erpm()
         return;
     }
     uint8_t motor_poles = 14;
+#if HAVE_AP_BLHELI_SUPPORT
     AP_BLHeli* blh = AP_BLHeli::get_singleton();
     if (blh) {
         motor_poles = blh->get_motor_poles();
     }
+#endif
     for (uint8_t i = 0; i < IOMCU_MAX_TELEM_CHANNELS/4; i++) {
         for (uint8_t j = 0; j < 4; j++) {
             const uint8_t esc_id = (i * 4 + j);
             if (dshot_erpm.update_mask & 1U<<esc_id) {
-                update_rpm(esc_id, dshot_erpm.erpm[esc_id] * 200U / motor_poles, dshot_telem[i].error_rate[j] / 100.0);
+                update_rpm(esc_id, dshot_erpm.erpm[esc_id] * 200U / motor_poles, dshot_telem[i].error_rate[j] * 0.01);
             }
         }
     }
@@ -448,7 +470,11 @@ void AP_IOMCU::read_telem()
         TelemetryData t {
             .temperature_cdeg = int16_t(telem->temperature_cdeg[i]),
             .voltage = float(telem->voltage_cvolts[i]) * 0.01,
-            .current = float(telem->current_camps[i]) * 0.01
+            .current = float(telem->current_camps[i]) * 0.01,
+#if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+            .edt2_status = telem->edt2_status[i],
+            .edt2_stress = telem->edt2_stress[i],
+#endif
         };
         update_telem_data(esc_group * 4 + i, t, telem->types[i]);
     }
@@ -637,8 +663,8 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
 
     // wait for the expected number of reply bytes or timeout
     if (!uart.wait_timeout(count*2+4, 10)) {
-        debug("t=%lu timeout read page=%u offset=%u count=%u\n",
-              AP_HAL::millis(), page, offset, count);
+        debug("t=%lu timeout read page=%u offset=%u count=%u avail=%u\n",
+              AP_HAL::millis(), page, offset, count, uart.available());
         protocol_fail_count++;
         return false;
     }
@@ -786,7 +812,7 @@ bool AP_IOMCU::modify_register(uint8_t page, uint8_t offset, uint16_t clearbits,
 
 void AP_IOMCU::write_channel(uint8_t chan, uint16_t pwm)
 {
-    if (chan >= IOMCU_MAX_CHANNELS) {
+    if (chan >= IOMCU_MAX_RC_CHANNELS) {    // could be SBUS out
         return;
     }
     if (chan >= pwm_out.num_channels) {
@@ -981,10 +1007,27 @@ void AP_IOMCU::set_bidir_dshot_mask(uint16_t mask)
     trigger_event(IOEVENT_SET_OUTPUT_MODE);
 }
 
+// set reversible mask
+void AP_IOMCU::set_reversible_mask(uint16_t mask)
+{
+    mode_out.reversible_mask = mask;
+    trigger_event(IOEVENT_SET_OUTPUT_MODE);
+}
+
 AP_HAL::RCOutput::output_mode AP_IOMCU::get_output_mode(uint8_t& mask) const
 {
     mask = reg_status.rcout_mask;
     return AP_HAL::RCOutput::output_mode(reg_status.rcout_mode);
+}
+
+uint32_t AP_IOMCU::get_disabled_channels(uint32_t digital_mask) const
+{
+    uint32_t dig_out = reg_status.rcout_mask & (digital_mask & 0xFF);
+    if (dig_out > 0
+        && AP_HAL::RCOutput::is_dshot_protocol(AP_HAL::RCOutput::output_mode(reg_status.rcout_mode))) {
+        return ~dig_out & 0xFF;
+    }
+    return 0;
 }
 
 // setup channels
@@ -1013,17 +1056,23 @@ void AP_IOMCU::update_safety_options(void)
     }
     uint16_t desired_options = 0;
     uint16_t options = boardconfig->get_safety_button_options();
+    bool armed = hal.util->get_soft_armed();
     if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF)) {
         desired_options |= P_SETUP_ARMING_SAFETY_DISABLE_OFF;
     }
     if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
         desired_options |= P_SETUP_ARMING_SAFETY_DISABLE_ON;
     }
-    if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) && AP::arming().is_armed()) {
+    if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) && armed) {
         desired_options |= (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF);
     }
+    // update armed state
+    if (armed) {
+        desired_options |= P_SETUP_ARMING_FMU_ARMED;
+    }
+
     if (last_safety_options != desired_options) {
-        uint16_t mask = (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF);
+        uint16_t mask = (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF | P_SETUP_ARMING_FMU_ARMED);
         uint32_t bits_to_set = desired_options & mask;
         uint32_t bits_to_clear = (~desired_options) & mask;
         if (modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, bits_to_clear, bits_to_set)) {
@@ -1047,10 +1096,11 @@ void AP_IOMCU::send_rc_protocols()
 /*
   check ROMFS firmware against CRC on IOMCU, and if incorrect then upload new firmware
  */
+
 bool AP_IOMCU::check_crc(void)
 {
     // flash size minus 4k bootloader
-	const uint32_t flash_size = 0x10000 - 0x1000;
+	const uint32_t flash_size = AP_IOMCU_FW_FLASH_SIZE;
     const char *path = AP_BoardConfig::io_dshot() ? dshot_fw_name : fw_name;
 
     fw = AP_ROMFS::find_decompress(path, fw_size);
@@ -1107,7 +1157,7 @@ bool AP_IOMCU::check_crc(void)
 void AP_IOMCU::set_failsafe_pwm(uint16_t chmask, uint16_t period_us)
 {
     bool changed = false;
-    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
+    for (uint8_t i=0; i<IOMCU_MAX_RC_CHANNELS; i++) {
         if (chmask & (1U<<i)) {
             if (pwm_out.failsafe_pwm[i] != period_us) {
                 pwm_out.failsafe_pwm[i] = period_us;
@@ -1143,6 +1193,10 @@ bool AP_IOMCU::healthy(void)
  */
 void AP_IOMCU::shutdown(void)
 {
+    if (!initialised) {
+        // we're not initialised yet, so cannot shutdown
+        return;
+    }
     do_shutdown = true;
     while (!done_shutdown) {
         hal.scheduler->delay(1);
@@ -1162,13 +1216,13 @@ void AP_IOMCU::soft_reboot(void)
 /*
   request bind on a DSM radio
  */
-void AP_IOMCU::bind_dsm(uint8_t mode)
+void AP_IOMCU::bind_dsm()
 {
     if (!is_chibios_backend || AP::arming().is_armed()) {
         // only with ChibiOS IO firmware, and disarmed
         return;
     }
-    uint16_t reg = mode;
+    uint16_t reg = 0;  // this is unused by the IOMCU
     write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM_BIND, 1, &reg);
 }
 
@@ -1176,7 +1230,7 @@ void AP_IOMCU::bind_dsm(uint8_t mode)
   setup for mixing. This allows fixed wing aircraft to fly in manual
   mode if the FMU dies
  */
-bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
+bool AP_IOMCU::setup_mixing(int8_t override_chan,
                             float mixing_gain, uint16_t manual_rc_mask)
 {
     if (!is_chibios_backend) {
@@ -1186,7 +1240,7 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
 #define MIX_UPDATE(a,b) do { if ((a) != (b)) { a = b; changed = true; }} while (0)
 
     // update mixing structure, checking for changes
-    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
+    for (uint8_t i=0; i<IOMCU_MAX_RC_CHANNELS; i++) {
         const SRV_Channel *c = SRV_Channels::srv_channel(i);
         if (!c) {
             continue;
@@ -1197,16 +1251,19 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
         MIX_UPDATE(mixing.servo_function[i], c->get_function());
         MIX_UPDATE(mixing.servo_reversed[i], c->get_reversed());
     }
-    // update RCMap
-    MIX_UPDATE(mixing.rc_channel[0], rcmap->roll());
-    MIX_UPDATE(mixing.rc_channel[1], rcmap->pitch());
-    MIX_UPDATE(mixing.rc_channel[2], rcmap->throttle());
-    MIX_UPDATE(mixing.rc_channel[3], rcmap->yaw());
+    auto &xrc = rc();
+    // note that if not all of these channels are specified correctly
+    // in parameters then these may be a "dummy" RC channel pointer.
+    // In that case c->ch() will be zero.
+    const RC_Channel *channels[] {
+        &xrc.get_roll_channel(),
+        &xrc.get_pitch_channel(),
+        &xrc.get_throttle_channel(),
+        &xrc.get_yaw_channel()
+    };
     for (uint8_t i=0; i<4; i++) {
-        const RC_Channel *c = RC_Channels::rc_channel(mixing.rc_channel[i]-1);
-        if (!c) {
-            continue;
-        }
+        const auto *c = channels[i];
+        MIX_UPDATE(mixing.rc_channel[i], c->ch());
         MIX_UPDATE(mixing.rc_min[i], c->get_radio_min());
         MIX_UPDATE(mixing.rc_max[i], c->get_radio_max());
         MIX_UPDATE(mixing.rc_trim[i], c->get_radio_trim());
@@ -1360,6 +1417,12 @@ void AP_IOMCU::set_GPIO_mask(uint8_t mask)
     trigger_event(IOEVENT_GPIO);
 }
 
+// Get GPIO mask of channels setup for output
+uint8_t AP_IOMCU::get_GPIO_mask() const
+{
+    return GPIO.channel_mask;
+}
+
 // write to a output pin
 void AP_IOMCU::write_GPIO(uint8_t pin, bool value)
 {
@@ -1377,6 +1440,17 @@ void AP_IOMCU::write_GPIO(uint8_t pin, bool value)
     trigger_event(IOEVENT_GPIO);
 }
 
+// Read the last output value send to the GPIO pin
+// This is not a real read of the actual pin
+// This allows callers to check for state change
+uint8_t AP_IOMCU::read_virtual_GPIO(uint8_t pin) const
+{
+    if (!convert_pin_number(pin)) {
+        return 0;
+    }
+    return (GPIO.output_mask & (1U << pin)) != 0;
+}
+
 // toggle a output pin
 void AP_IOMCU::toggle_GPIO(uint8_t pin)
 {
@@ -1387,6 +1461,23 @@ void AP_IOMCU::toggle_GPIO(uint8_t pin)
     trigger_event(IOEVENT_GPIO);
 }
 
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+// set profiled R G B values
+void AP_IOMCU::set_profiled(uint8_t r, uint8_t g, uint8_t b)
+{
+    if (!use_safety_as_led) {
+        return;
+    }
+    if (r == profiled.red && g == profiled.green && b == profiled.blue) {
+        return;
+    }
+    profiled.magic = PROFILED_ENABLE_MAGIC;
+    profiled.red = r;
+    profiled.green = g;
+    profiled.blue = b;
+    trigger_event(IOEVENT_PROFILED);
+}
+#endif
 
 namespace AP {
     AP_IOMCU *iomcu(void) {

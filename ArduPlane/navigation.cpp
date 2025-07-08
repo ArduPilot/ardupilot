@@ -116,8 +116,8 @@ float Plane::mode_auto_target_airspeed_cm()
 {
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.landing_with_fixed_wing_spiral_approach() &&
-        ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
-         (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
+        ((vtol_approach_s.approach_stage == VTOLApproach::Stage::APPROACH_LINE) ||
+         (vtol_approach_s.approach_stage == VTOLApproach::Stage::VTOL_LANDING))) {
         const float land_airspeed = TECS_controller.get_land_airspeed();
         if (is_positive(land_airspeed)) {
             return land_airspeed * 100;
@@ -187,7 +187,7 @@ void Plane::calc_airspeed_errors()
             target_airspeed_cm = ((int32_t)(aparm.airspeed_max - aparm.airspeed_min) *
                                   get_throttle_input()) + ((int32_t)aparm.airspeed_min * 100);
         }
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     } else if (control_mode == &mode_guided && guided_state.target_airspeed_cm >  0.0) { // if offboard guided speed change cmd not set, then this section is skipped
         // offboard airspeed demanded
         uint32_t now = AP_HAL::millis();
@@ -203,7 +203,7 @@ void Plane::calc_airspeed_errors()
             target_airspeed_cm = constrain_float(MAX(guided_state.target_airspeed_cm, target_airspeed_cm), aparm.airspeed_min *100, aparm.airspeed_max *100);
         }
 
-#endif // OFFBOARD_GUIDED == ENABLED
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 
 #if HAL_SOARING_ENABLED
     } else if (g2.soaring_controller.is_active() && g2.soaring_controller.get_throttle_suppressed()) {
@@ -256,7 +256,7 @@ void Plane::calc_airspeed_errors()
     }
 
     // when using the special GUIDED mode features for slew control, don't allow airspeed nudging as it doesn't play nicely.
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     if (control_mode == &mode_guided && !is_zero(guided_state.target_airspeed_cm) && (airspeed_nudge_cm != 0)) {
         airspeed_nudge_cm = 0; //airspeed_nudge_cm forced to zero
     }
@@ -267,8 +267,12 @@ void Plane::calc_airspeed_errors()
         target_airspeed_cm += airspeed_nudge_cm;
     }
 
+    float airspeed_lower_bound = is_positive(aparm.airspeed_stall)
+                                     ? aparm.airspeed_stall
+                                     : aparm.airspeed_min;
+
     // Apply airspeed limit
-    target_airspeed_cm = constrain_int32(target_airspeed_cm, aparm.airspeed_min*100, aparm.airspeed_max*100);
+    target_airspeed_cm = constrain_int32(target_airspeed_cm, airspeed_lower_bound*100, aparm.airspeed_max*100);
 
     // use the TECS view of the target airspeed for reporting, to take
     // account of the landing speed
@@ -321,7 +325,7 @@ void Plane::update_loiter_update_nav(uint16_t radius)
     if ((loiter.start_time_ms == 0 &&
          (control_mode == &mode_auto || control_mode == &mode_guided) &&
          auto_state.crosstrack &&
-         current_loc.get_distance(next_WP_loc) > radius*3) ||
+         current_loc.get_distance(next_WP_loc) > 3 * nav_controller->loiter_radius(radius)) ||
         quadplane_qrtl_switch) {
         /*
           if never reached loiter point and using crosstrack and somewhat far away from loiter point
@@ -394,14 +398,18 @@ void Plane::update_fbwb_speed_height(void)
             elevator_input = -elevator_input;
         }
 
-        int32_t alt_change_cm = g.flybywire_climb_rate * elevator_input * dt * 100;
-        change_target_altitude(alt_change_cm);
-
-        if (is_zero(elevator_input) && !is_zero(target_altitude.last_elevator_input)) {
-            // the user has just released the elevator, lock in
-            // the current altitude
+        bool input_stop_climb = !is_positive(elevator_input) && is_positive(target_altitude.last_elevator_input);
+        bool input_stop_descent = !is_negative(elevator_input) && is_negative(target_altitude.last_elevator_input);
+        if (input_stop_climb || input_stop_descent) {
+            // user elevator input reached or passed zero, lock in the current altitude
             set_target_altitude_current();
         }
+
+        float climb_rate = g.flybywire_climb_rate * elevator_input;
+        climb_rate = constrain_float(climb_rate, -TECS_controller.get_max_sinkrate(), TECS_controller.get_max_climbrate());
+
+        int32_t alt_change_cm = climb_rate * dt * 100;
+        change_target_altitude(alt_change_cm);
 
 #if HAL_SOARING_ENABLED
         if (g2.soaring_controller.is_active()) {
@@ -420,8 +428,6 @@ void Plane::update_fbwb_speed_height(void)
     }
 
     check_fbwb_altitude();
-
-    altitude_error_cm = calc_altitude_error_cm();
 
     calc_throttle();
     calc_nav_pitch();

@@ -10,12 +10,14 @@
 #endif
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_GPS/AP_GPS.h>
 
 #include "lua_bindings.h"
 
 #include "lua_boxed_numerics.h"
 #include <AP_Scripting/lua_generated_bindings.h>
 
+#include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <string.h>
 
@@ -33,8 +35,7 @@ extern const AP_HAL::HAL& hal;
 int lua_millis(lua_State *L) {
     binding_argcheck(L, 0);
 
-    new_uint32_t(L);
-    *check_uint32_t(L, -1) = AP_HAL::millis();
+    *new_uint32_t(L) = AP_HAL::millis();
 
     return 1;
 }
@@ -43,8 +44,7 @@ int lua_millis(lua_State *L) {
 int lua_micros(lua_State *L) {
     binding_argcheck(L, 0);
 
-    new_uint32_t(L);
-    *check_uint32_t(L, -1) = AP_HAL::micros();
+    *new_uint32_t(L) = AP_HAL::micros();
 
     return 1;
 }
@@ -56,27 +56,38 @@ int lua_mavlink_init(lua_State *L) {
     const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
 
     binding_argcheck(L, 2+arg_offset);
-    WITH_SEMAPHORE(AP::scripting()->mavlink_data.sem);
     // get the depth of receive queue
     const uint32_t queue_size = get_uint32(L, 1+arg_offset, 0, 25);
     // get number of msgs to accept
     const uint32_t num_msgs = get_uint32(L, 2+arg_offset, 0, 25);
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
-    if (data.rx_buffer == nullptr) {
-        data.rx_buffer = new ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
+    bool failed = false;
+    {
+        WITH_SEMAPHORE(data.sem);
         if (data.rx_buffer == nullptr) {
-            return luaL_error(L, "Failed to allocate mavlink rx buffer");
+            data.rx_buffer = NEW_NOTHROW ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
         }
-    }
-    if (data.accept_msg_ids == nullptr) {
-        data.accept_msg_ids = new uint32_t[num_msgs];
         if (data.accept_msg_ids == nullptr) {
-            return luaL_error(L, "Failed to allocate mavlink rx registry");
+            data.accept_msg_ids = NEW_NOTHROW uint32_t[num_msgs];
         }
-        data.accept_msg_ids_size = num_msgs;
-        memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
+        if ((data.rx_buffer == nullptr) || (data.accept_msg_ids == nullptr)) {
+            delete data.rx_buffer;
+            delete[] data.accept_msg_ids;
+            data.rx_buffer = nullptr;
+            data.accept_msg_ids = nullptr;
+            data.accept_msg_ids_size = 0;
+            failed = true;
+        } else {
+            data.accept_msg_ids_size = num_msgs;
+            memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
+        }
+    } // release semaphore here as luaL_error will NOT do that!
+
+    if (failed) {
+        return luaL_error(L, "out of memory");
     }
+
     return 0;
 }
 
@@ -91,17 +102,13 @@ int lua_mavlink_receive_chan(lua_State *L) {
     ObjectBuffer<struct AP_Scripting::mavlink_msg> *rx_buffer = AP::scripting()->mavlink_data.rx_buffer;
 
     if (rx_buffer == nullptr) {
-        return luaL_error(L, "Never subscribed to a message");
+        return luaL_error(L, "RX not initialized");
     }
 
     if (rx_buffer->pop(msg)) {
-        luaL_Buffer b;
-        luaL_buffinit(L, &b);
-        luaL_addlstring(&b, (char *)&msg.msg, sizeof(msg.msg));
-        luaL_pushresult(&b);
+        lua_pushlstring(L, (char *)&msg.msg, sizeof(msg.msg));
         lua_pushinteger(L, msg.chan);
-        new_uint32_t(L);
-        *check_uint32_t(L, -1) = msg.timestamp_ms;
+        *new_uint32_t(L) = msg.timestamp_ms;
         return 3;
     } else {
         // no MAVLink to handle, just return no results
@@ -136,7 +143,7 @@ int lua_mavlink_register_rx_msgid(lua_State *L) {
     }
 
     if (i >= data.accept_msg_ids_size) {
-        return luaL_error(L, "Out of MAVLink ID's to monitor");
+        return luaL_error(L, "no registrations free");
     }
 
     {
@@ -203,7 +210,7 @@ int lua_mavlink_block_command(lua_State *L) {
     }
 
     // Add new list item
-    AP_Scripting::command_block_list *new_item = new AP_Scripting::command_block_list;
+    AP_Scripting::command_block_list *new_item = NEW_NOTHROW AP_Scripting::command_block_list;
     if (new_item == nullptr) {
         lua_pushboolean(L, false);
         return 1;
@@ -239,8 +246,7 @@ int lua_mission_receive(lua_State *L) {
         return 0;
     }
 
-    new_uint32_t(L);
-    *check_uint32_t(L, -1) = cmd.time_ms;
+    *new_uint32_t(L) = cmd.time_ms;
 
     lua_pushinteger(L, cmd.p1);
     lua_pushnumber(L, cmd.content_p1);
@@ -381,9 +387,8 @@ int AP_Logger_Write(lua_State *L) {
         switch(fmt_cat[index]) {
             // logger variable types not available to scripting
             // 'd': double
-            // 'Q': uint64_t
             // 'q': int64_t
-            // 'a': arrays
+            // 'a': int16_t[32]
             case 'b': { // int8_t
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
@@ -460,11 +465,17 @@ int AP_Logger_Write(lua_State *L) {
             case 'M': // uint8_t (flight mode)
             case 'B': { // uint8_t
                 int isnum;
-                const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
+                lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum || (tmp1 < 0) || (tmp1 > UINT8_MAX)) {
-                    luaM_free(L, buffer);
-                    luaL_argerror(L, arg_index, "argument out of range");
-                    // no return
+                    // Also allow boolean
+                    if (!isnum && lua_isboolean(L, arg_index)) {
+                        tmp1 = lua_toboolean(L, arg_index);
+
+                    } else {
+                        luaM_free(L, buffer);
+                        luaL_argerror(L, arg_index, "argument out of range");
+                        // no return
+                    }
                 }
                 uint8_t tmp = static_cast<uint8_t>(tmp1);
                 memcpy(&buffer[offset], &tmp, sizeof(uint8_t));
@@ -494,6 +505,18 @@ int AP_Logger_Write(lua_State *L) {
                 }
                 memcpy(&buffer[offset], &tmp, sizeof(uint32_t));
                 offset += sizeof(uint32_t);
+                break;
+            }
+            case 'Q': { // uint64_t
+                void * ud = luaL_testudata(L, arg_index, "uint64_t");
+                if (ud == nullptr) {
+                    luaM_free(L, buffer);
+                    luaL_argerror(L, arg_index, "argument out of range");
+                    // no return
+                }
+                uint64_t tmp = *static_cast<uint64_t *>(ud);
+                memcpy(&buffer[offset], &tmp, sizeof(uint64_t));
+                offset += sizeof(uint64_t);
                 break;
             }
             case 'N': { // char[16]
@@ -577,19 +600,13 @@ int lua_get_i2c_device(lua_State *L) {
         return luaL_argerror(L, 1, "no i2c devices available");
     }
 
-    scripting->_i2c_dev[scripting->num_i2c_devices] = new AP_HAL::OwnPtr<AP_HAL::I2CDevice>;
+    scripting->_i2c_dev[scripting->num_i2c_devices] = hal.i2c_mgr->get_device_ptr(bus, address, bus_clock, use_smbus);
+
     if (scripting->_i2c_dev[scripting->num_i2c_devices] == nullptr) {
         return luaL_argerror(L, 1, "i2c device nullptr");
     }
 
-    *scripting->_i2c_dev[scripting->num_i2c_devices] = std::move(hal.i2c_mgr->get_device(bus, address, bus_clock, use_smbus));
-
-    if (scripting->_i2c_dev[scripting->num_i2c_devices] == nullptr || scripting->_i2c_dev[scripting->num_i2c_devices]->get() == nullptr) {
-        return luaL_argerror(L, 1, "i2c device nullptr");
-    }
-
-    new_AP_HAL__I2CDevice(L);
-    *((AP_HAL::I2CDevice**)luaL_checkudata(L, -1, "AP_HAL::I2CDevice")) = scripting->_i2c_dev[scripting->num_i2c_devices]->get();
+    *new_AP_HAL__I2CDevice(L) = scripting->_i2c_dev[scripting->num_i2c_devices];
 
     scripting->num_i2c_devices++;
 
@@ -638,27 +655,30 @@ int AP_HAL__I2CDevice_read_registers(lua_State *L) {
     return success;
 }
 
-int AP_HAL__UARTDriver_readstring(lua_State *L) {
-    binding_argcheck(L, 2);
+int AP_HAL__I2CDevice_transfer(lua_State *L) {
+    binding_argcheck(L, 3);
 
-    AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
+    AP_HAL::I2CDevice * ud = *check_AP_HAL__I2CDevice(L, 1);
 
-    const uint16_t count = get_uint16_t(L, 2);
-    uint8_t *data = (uint8_t*)malloc(count);
-    if (data == nullptr) {
+    // Parse string of bytes to send
+    size_t send_len;
+    const uint8_t* send_data = (const uint8_t*)(lua_tolstring(L, 2, &send_len));
+
+    // Parse and setup rx buffer
+    uint32_t rx_len = get_uint8_t(L, 3);
+    uint8_t rx_data[rx_len];
+
+    // Transfer
+    ud->get_semaphore()->take_blocking();
+    const bool success = ud->transfer(send_data, send_len, rx_data, rx_len);
+    ud->get_semaphore()->give();
+
+    if (!success) {
         return 0;
     }
 
-    const auto ret = ud->read(data, count);
-    if (ret < 0) {
-        free(data);
-        return 0;
-    }
-
-    // push to lua string
-    lua_pushlstring(L, (const char *)data, ret);
-    free(data);
-
+    // Return a string
+    lua_pushlstring(L, (const char *)rx_data, rx_len);
     return 1;
 }
 
@@ -676,14 +696,19 @@ int lua_get_CAN_device(lua_State *L) {
     auto *scripting = AP::scripting();
 
     if (scripting->_CAN_dev == nullptr) {
-        scripting->_CAN_dev = new ScriptingCANSensor(AP_CAN::Protocol::Scripting);
+        scripting->_CAN_dev = NEW_NOTHROW ScriptingCANSensor(AP_CAN::Protocol::Scripting);
         if (scripting->_CAN_dev == nullptr) {
             return luaL_argerror(L, 1, "CAN device nullptr");
         }
     }
 
-    new_ScriptingCANBuffer(L);
-    *((ScriptingCANBuffer**)luaL_checkudata(L, -1, "ScriptingCANBuffer")) = scripting->_CAN_dev->add_buffer(buffer_len);
+    if (!scripting->_CAN_dev->initialized()) {
+        // Driver not initialized, probably because there is no can driver set to scripting
+        // Return nil
+        return 0;
+    }
+
+    *new_ScriptingCANBuffer(L) = scripting->_CAN_dev->add_buffer(buffer_len);
 
     return 1;
 }
@@ -701,18 +726,126 @@ int lua_get_CAN_device2(lua_State *L) {
     auto *scripting = AP::scripting();
 
     if (scripting->_CAN_dev2 == nullptr) {
-        scripting->_CAN_dev2 = new ScriptingCANSensor(AP_CAN::Protocol::Scripting2);
+        scripting->_CAN_dev2 = NEW_NOTHROW ScriptingCANSensor(AP_CAN::Protocol::Scripting2);
         if (scripting->_CAN_dev2 == nullptr) {
             return luaL_argerror(L, 1, "CAN device nullptr");
         }
     }
 
-    new_ScriptingCANBuffer(L);
-    *((ScriptingCANBuffer**)luaL_checkudata(L, -1, "ScriptingCANBuffer")) = scripting->_CAN_dev2->add_buffer(buffer_len);
+    if (!scripting->_CAN_dev2->initialized()) {
+        // Driver not initialized, probably because there is no can driver set to scripting 2
+        // Return nil
+        return 0;
+    }
+
+    *new_ScriptingCANBuffer(L) = scripting->_CAN_dev2->add_buffer(buffer_len);
 
     return 1;
 }
 #endif // AP_SCRIPTING_CAN_SENSOR_ENABLED
+
+#if AP_SERIALMANAGER_ENABLED
+int lua_serial_find_serial(lua_State *L) {
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "serial") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 1 + arg_offset);
+
+    uint8_t instance = get_uint8_t(L, 1 + arg_offset);
+
+    AP_SerialManager *mgr = &AP::serialmanager();
+    AP_HAL::UARTDriver *driver_stream = mgr->find_serial(
+        AP_SerialManager::SerialProtocol_Scripting, instance);
+
+    if (driver_stream == nullptr) { // not found
+        return 0;
+    }
+
+    AP_Scripting_SerialAccess *port = new_AP_Scripting_SerialAccess(L);
+    port->stream = driver_stream;
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+    port->is_device_port = false;
+#endif
+
+    return 1;
+}
+#endif // AP_SERIALMANAGER_ENABLED
+
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+int lua_serial_find_simulated_device(lua_State *L) {
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "serial") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 2 + arg_offset);
+
+    const int8_t protocol = (int8_t)get_uint32(L, 1 + arg_offset, 0, 127);
+    uint32_t instance = get_uint16_t(L, 2 + arg_offset);
+
+    auto *scripting = AP::scripting();
+    AP_Scripting_SerialDevice::Port *device_stream = nullptr;
+
+    for (auto &port : scripting->_serialdevice.ports) {
+        if (port.state.protocol == protocol) {
+            if (instance-- == 0) {
+                device_stream = &port;
+                break;
+            }
+        }
+    }
+
+    if (!scripting->_serialdevice.enable || device_stream == nullptr) {
+        // serial devices as a whole are disabled, or port not found
+        return 0;
+    }
+
+    AP_Scripting_SerialAccess *port = new_AP_Scripting_SerialAccess(L);
+    port->stream = device_stream;
+    port->is_device_port = true;
+
+    return 1;
+}
+#endif // AP_SCRIPTING_SERIALDEVICE_ENABLED
+
+int lua_serial_writestring(lua_State *L)
+{
+    binding_argcheck(L, 2);
+
+    AP_Scripting_SerialAccess * port = check_AP_Scripting_SerialAccess(L, 1);
+
+    // get the bytes the user wants to write, along with their length
+    size_t req_bytes;
+    const char *data = luaL_checklstring(L, 2, &req_bytes);
+
+    // write up to that number of bytes
+    const uint32_t written_bytes = port->write((const uint8_t*)data, req_bytes);
+
+    // return the number of bytes that were actually written
+    lua_pushinteger(L, written_bytes);
+
+    return 1;
+}
+
+int lua_serial_readstring(lua_State *L) {
+    binding_argcheck(L, 2);
+
+    AP_Scripting_SerialAccess * port = check_AP_Scripting_SerialAccess(L, 1);
+
+    // create a buffer sized to hold the number of bytes the user wants to read
+    luaL_Buffer b;
+    const uint16_t req_bytes = get_uint16_t(L, 2);
+    uint8_t *data = (uint8_t *)luaL_buffinitsize(L, &b, req_bytes);
+
+    // read up to that number of bytes
+    const ssize_t read_bytes = port->read(data, req_bytes);
+    if (read_bytes < 0) {
+        return 0; // error, return nil
+    }
+
+    // push the buffer as a string, truncated to the number of bytes actually read
+    luaL_pushresultsize(&b, read_bytes);
+
+    return 1;
+}
 
 /*
   directory listing, return table of files in a directory
@@ -751,7 +884,7 @@ int lua_dirlist(lua_State *L) {
 int lua_removefile(lua_State *L) {
     binding_argcheck(L, 1);
     const char *filename = luaL_checkstring(L, 1);
-    return luaL_fileresult(L, remove(filename) == 0, filename);
+    return luaL_fileresult(L, AP::FS().unlink(filename) == 0, filename);
 }
 
 // Manual binding to allow SRV_Channels table to see safety state
@@ -772,13 +905,12 @@ int lua_get_PWMSource(lua_State *L) {
         return luaL_argerror(L, 1, "no PWMSources available");
     }
 
-    scripting->_pwm_source[scripting->num_pwm_source] = new AP_HAL::PWMSource;
+    scripting->_pwm_source[scripting->num_pwm_source] = NEW_NOTHROW AP_HAL::PWMSource;
     if (scripting->_pwm_source[scripting->num_pwm_source] == nullptr) {
         return luaL_argerror(L, 1, "PWMSources device nullptr");
     }
 
-    new_AP_HAL__PWMSource(L);
-    *((AP_HAL::PWMSource**)luaL_checkudata(L, -1, "AP_HAL::PWMSource")) = scripting->_pwm_source[scripting->num_pwm_source];
+    *new_AP_HAL__PWMSource(L) = scripting->_pwm_source[scripting->num_pwm_source];
 
     scripting->num_pwm_source++;
 
@@ -794,15 +926,14 @@ int lua_get_SocketAPM(lua_State *L) {
     const uint8_t datagram = get_uint8_t(L, 1);
     auto *scripting = AP::scripting();
 
-    auto *sock = new SocketAPM(datagram);
+    auto *sock = NEW_NOTHROW SocketAPM(datagram);
     if (sock == nullptr) {
         return luaL_argerror(L, 1, "SocketAPM device nullptr");
     }
     for (uint8_t i=0; i<SCRIPTING_MAX_NUM_NET_SOCKET; i++) {
         if (scripting->_net_sockets[i] == nullptr) {
             scripting->_net_sockets[i] = sock;
-            new_SocketAPM(L);
-            *((SocketAPM**)luaL_checkudata(L, -1, "SocketAPM")) = scripting->_net_sockets[i];
+            *new_SocketAPM(L) = scripting->_net_sockets[i];
             return 1;
         }
     }
@@ -877,11 +1008,23 @@ int SocketAPM_recv(lua_State *L) {
         return 0;
     }
 
-    // push to lua string
+    int retcount = 1;
+
+    // push data to lua string
     lua_pushlstring(L, (const char *)data, ret);
+
+    // also push the address and port if available
+    uint32_t ip_addr;
+    uint16_t port;
+    if (ud->last_recv_address(ip_addr, port)) {
+        *new_uint32_t(L) = ip_addr;
+        lua_pushinteger(L, port);
+        retcount += 2;
+    }
+
     free(data);
 
-    return 1;
+    return retcount;
 }
 
 /*
@@ -901,8 +1044,7 @@ int SocketAPM_accept(lua_State *L) {
             if (scripting->_net_sockets[i] == nullptr) {
                 return 0;
             }
-            new_SocketAPM(L);
-            *((SocketAPM**)luaL_checkudata(L, -1, "SocketAPM")) = scripting->_net_sockets[i];
+            *new_SocketAPM(L) = scripting->_net_sockets[i];
             return 1;
         }
     }
@@ -911,13 +1053,65 @@ int SocketAPM_accept(lua_State *L) {
     return 0;
 }
 
+/*
+  convert a uint32_t ipv4 address to a string
+ */
+int SocketAPM_ipv4_addr_to_string(lua_State *L) {
+    binding_argcheck(L, 1);
+    const uint32_t ip_addr = get_uint32(L, 1, 0, UINT32_MAX);
+    char buf[IP4_STR_LEN];
+    const char *ret = SocketAPM::inet_addr_to_str(ip_addr, buf, sizeof(buf));
+    if (ret == nullptr) {
+        return 0;
+    }
+    lua_pushlstring(L, (const char *)ret, strlen(ret));
+    return 1;
+}
+
+/*
+  convert a ipv4 string address to a uint32_t
+ */
+int SocketAPM_string_to_ipv4_addr(lua_State *L) {
+    binding_argcheck(L, 1);
+    const char *str = luaL_checkstring(L, 1);
+    *new_uint32_t(L) = SocketAPM::inet_str_to_addr(str);
+    return 1;
+}
+
 #endif // AP_NETWORKING_ENABLED
 
 
-int lua_get_current_ref()
+int lua_get_current_env_ref()
 {
     auto *scripting = AP::scripting();
-    return scripting->get_current_ref();
+    return scripting->get_current_env_ref();
+}
+
+// This is used when loading modules with require, lua must only look in enabled directory's
+const char* lua_get_modules_path()
+{
+#define LUA_PATH_ROMFS "@ROMFS/scripts/modules/?.lua;" "@ROMFS/scripts/modules/?/init.lua"
+#define LUA_PATH_SCRIPTS LUA_LDIR"?.lua;"  LUA_LDIR"?/init.lua"
+
+    uint16_t dir_disable = AP_Scripting::get_singleton()->get_disabled_dir();
+    dir_disable &= uint16_t(AP_Scripting::SCR_DIR::SCRIPTS) | uint16_t(AP_Scripting::SCR_DIR::ROMFS);
+    if (dir_disable == 0) {
+        // Both directory's are enabled, return both, ROMFS takes priority
+        return LUA_PATH_ROMFS ";" LUA_PATH_SCRIPTS;
+    }
+
+    if ((dir_disable & uint16_t(AP_Scripting::SCR_DIR::SCRIPTS)) == 0) {
+        // Only scripts enabled
+        return LUA_PATH_SCRIPTS;
+    }
+
+    if ((dir_disable & uint16_t(AP_Scripting::SCR_DIR::ROMFS)) == 0) {
+        // Only ROMFS enabled
+        return LUA_PATH_ROMFS;
+    }
+
+    // Nothing enabled?
+    return "";
 }
 
 // Simple print to GCS or over CAN
@@ -930,7 +1124,7 @@ int lua_print(lua_State *L) {
     return 0;
 }
 
-#if (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
+#if AP_RANGEFINDER_ENABLED
 int lua_range_finder_handle_script_msg(lua_State *L) {
     // Arg 1 => self (an instance of rangefinder_backend)
     // Arg 2 => a float distance or a RangeFinder_State user data
@@ -954,6 +1148,146 @@ int lua_range_finder_handle_script_msg(lua_State *L) {
     lua_pushboolean(L, result);
     return 1;
 }
+#endif  // AP_RANGEFINDER_ENABLED
+
+/*
+  lua wants to abort, and doesn't have access to a panic function
+ */
+void lua_abort()
+{
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+#if AP_SIM_ENABLED
+    AP_HAL::panic("lua_abort called");
+#else
+    if (!hal.util->get_soft_armed()) {
+        AP_HAL::panic("lua_abort called");
+    }
+    // abort while flying, all we can do is loop
+    while (true) {
+        hal.scheduler->delay(1000);
+    }
 #endif
+}
+
+#if (HAL_GCS_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
+/*
+  implement gcs:command_int() access to MAV_CMD_xxx commands
+ */
+int lua_GCS_command_int(lua_State *L)
+{
+    GCS *_gcs = check_GCS(L);
+    binding_argcheck(L, 3);
+
+    const uint16_t command = get_uint16_t(L, 2);
+    if (!lua_istable(L, 3)) {
+        // must have parameter table
+        return 0;
+    }
+
+    mavlink_command_int_t pkt {};
+
+    pkt.command = command;
+
+    float *params = &pkt.param1;
+    int32_t *xy = &pkt.x;
+
+    // extract the first 4 parameters as floats
+    for (uint8_t i=0; i<4; i++) {
+        char pname[3] { 'p' , char('1' + i), 0 };
+        lua_pushstring(L, pname);
+        lua_gettable(L, 3);
+        if (lua_isnumber(L, -1)) {
+            params[i] = lua_tonumber(L, -1);
+        }
+        lua_pop(L, 1);
+    }
+
+    // extract the xy values
+    for (uint8_t i=0; i<2; i++) {
+        const char *names[] = { "x", "y" };
+        lua_pushstring(L, names[i]);
+        lua_gettable(L, 3);
+        if (lua_isinteger(L, -1)) {
+            xy[i] = lua_tointeger(L, -1);
+        }
+        lua_pop(L, 1);
+    }
+
+    // and z
+    lua_pushstring(L, "z");
+    lua_gettable(L, 3);
+    if (lua_isnumber(L, -1)) {
+        pkt.z = lua_tonumber(L, -1);
+    }
+    lua_pop(L, 1);
+
+    // optional frame
+    lua_pushstring(L, "frame");
+    lua_gettable(L, 3);
+    if (lua_isinteger(L, -1)) {
+        pkt.frame = lua_tointeger(L, -1);
+    }
+    lua_pop(L, 1);
+    
+    // call the interface with scheduler lock
+    WITH_SEMAPHORE(AP::scheduler().get_semaphore());
+
+    auto result = _gcs->lua_command_int_packet(pkt);
+
+    // Return the resulting MAV_RESULT
+    lua_pushinteger(L, result);
+
+    return 1;
+}
+#endif
+
+#if HAL_ENABLE_DRONECAN_DRIVERS
+/*
+  get FlexDebug from a DroneCAN node
+ */
+int lua_DroneCAN_get_FlexDebug(lua_State *L)
+{
+    binding_argcheck(L, 4);
+
+    const uint8_t bus = get_uint8_t(L, 1);
+    const uint8_t node_id = get_uint8_t(L, 2);
+    const uint16_t msg_id = get_uint16_t(L, 3);
+    uint32_t tstamp_us = get_uint32(L, 4, 0, UINT32_MAX);
+
+    const auto *dc = AP_DroneCAN::get_dronecan(bus);
+    if (dc == nullptr) {
+        return 0;
+    }
+    dronecan_protocol_FlexDebug msg;
+
+    if (!dc->get_FlexDebug(node_id, msg_id, tstamp_us, msg)) {
+        return 0;
+    }
+
+    *new_uint32_t(L) = tstamp_us;
+    lua_pushlstring(L, (const char *)msg.u8.data, msg.u8.len);
+
+    return 2;
+}
+#endif // HAL_ENABLE_DRONECAN_DRIVERS
+
+#if AP_GPS_ENABLED
+int lua_gps_inject_data(lua_State *L)
+{
+    binding_argcheck(L, 2);
+    luaL_checkudata(L, 1, "gps");
+
+    size_t len = 0;
+    const char *data = luaL_checklstring(L, 2, &len);
+
+    if (len > 0 && len <= UINT16_MAX)
+    {
+        AP::gps().inject_data((const uint8_t *)data, (uint16_t)len);
+    }
+
+    return 0;
+}
+
+#endif  // AP_GPS_ENABLED
 
 #endif  // AP_SCRIPTING_ENABLED

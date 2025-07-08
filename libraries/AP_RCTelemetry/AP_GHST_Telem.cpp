@@ -74,7 +74,7 @@ void AP_GHST_Telem::setup_wfq_scheduler(void)
     // priority[i] = 1/_scheduler.packet_weight[i]
     // rate[i] = LinkRate * ( priority[i] / (sum(priority[1-n])) )
 
-    // CSRF telemetry rate is 150Hz (4ms) max, so these rates must fit
+    // CRSF telemetry rate is 150Hz (4ms) max, so these rates must fit
     add_scheduler_entry(50, 120);   // Attitude and compass 8Hz
     add_scheduler_entry(200, 1000); // VTX parameters    1Hz
     add_scheduler_entry(1300, 500); // battery           2Hz
@@ -373,7 +373,7 @@ AP_GHST_Telem *AP_GHST_Telem::get_singleton(void) {
     if (!singleton && !hal.util->get_soft_armed()) {
         // if telem data is requested when we are disarmed and don't
         // yet have a AP_GHST_Telem object then try to allocate one
-        new AP_GHST_Telem();
+        NEW_NOTHROW AP_GHST_Telem();
         // initialize the passthrough scheduler
         if (singleton) {
             singleton->init();

@@ -14,6 +14,7 @@ class BL_Network {
 public:
     void init(void);
     void save_comms_ip(void);
+    void status_printf(const char *fmt, ...);
 
 private:
     struct netif *thisif;
@@ -53,7 +54,6 @@ private:
     HAL_Semaphore status_mtx;
     char bl_status[256];
 
-    void status_printf(const char *fmt, ...);
 };
 
 #endif // AP_BOOTLOADER_NETWORK_ENABLED

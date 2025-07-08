@@ -18,32 +18,31 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include "SIM_config.h"
 
-#ifndef HAL_SIM_GIMBAL_ENABLED
-#define HAL_SIM_GIMBAL_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL) && !defined(HAL_BUILD_AP_PERIPH)
-#endif
+#if AP_SIM_GIMBAL_ENABLED
 
-#if HAL_SIM_GIMBAL_ENABLED
-
-#include <AP_HAL/utility/Socket_native.h>
-
-#include "SIM_Aircraft.h"
+#include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS.h>
 
 namespace SITL {
 
 class Gimbal {
 public:
-    Gimbal(const struct sitl_fdm &_fdm);
-    void update(void);
+
+    void update(const class Aircraft &aircraft);
+    void set_demanded_rates(const Vector3f &rates) {
+        demanded_angular_rate = rates;
+    }
+
+    void get_deltas(Vector3f &_delta_angle, Vector3f &_delta_velocity, uint32_t &_delta_time_us);
+    void get_joint_angles(Vector3f &_angles) { _angles = joint_angles; }
 
 private:
-    const struct sitl_fdm &fdm;
-    const char *target_address;
-    const uint16_t target_port;
 
     // rotation matrix (gimbal body -> earth)
     Matrix3f dcm;
+    bool init_done;
 
     // time of last update
     uint32_t last_update_us;
@@ -63,19 +62,16 @@ private:
     Vector3f joint_angles;
 
     // physical constraints on joint angles in (roll, pitch, azimuth) order
-    Vector3f lower_joint_limits;
-    Vector3f upper_joint_limits;
+    Vector3f lower_joint_limits{radians(-40), radians(-135), radians(-7.5)};
+    Vector3f upper_joint_limits{radians(40),  radians(45),   radians(7.5)};
 
-    const float travelLimitGain;
+    const float travelLimitGain = 20;
 
     // true gyro bias
     Vector3f true_gyro_bias;
 
-    // reporting variables. gimbal pushes these to vehicle code over
-    // MAVLink at approx 100Hz
-
-    // reporting period in ms
-    const float reporting_period_ms;
+    // time since delta angles/velocities returned
+    uint32_t delta_start_us;
 
     // integral of gyro vector over last time interval. In radians
     Vector3f delta_angle;
@@ -92,32 +88,9 @@ private:
     // gyro bias provided by EKF on vehicle. In rad/s.
     // Should be subtracted from the gyro readings to get true body
     // rotatation rates
-    Vector3f supplied_gyro_bias;
-
-    uint32_t last_report_us;
-    uint32_t last_heartbeat_ms;
-    bool seen_heartbeat;
-    bool seen_gimbal_control;
-    uint8_t vehicle_system_id;
-    uint8_t vehicle_component_id;
-
-    SocketAPM_native mav_socket;
-    struct {
-        // socket to telem2 on aircraft
-        bool connected;
-        mavlink_message_t rxmsg;
-        mavlink_status_t status;
-        uint8_t seq;
-    } mavlink;
-
-    uint32_t param_send_last_ms;
-    uint8_t param_send_idx;
-
-    void send_report(void);
-    void param_send(const struct gimbal_param *p);
-    struct gimbal_param *param_find(const char *name);
+    // Vector3f supplied_gyro_bias;
 };
 
 }  // namespace SITL
 
-#endif  // HAL_SIM_GIMBAL_ENABLED
+#endif  // AP_SIM_GIMBAL_ENABLED

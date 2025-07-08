@@ -79,8 +79,6 @@ private:
     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro;
     AP_HAL::Device::PeriodicHandle gyro_periodic_handle;
 
-    uint8_t accel_instance;
-    uint8_t gyro_instance;
     enum Rotation rotation;
     uint8_t temperature_counter;
     enum DevTypes _accel_devtype;

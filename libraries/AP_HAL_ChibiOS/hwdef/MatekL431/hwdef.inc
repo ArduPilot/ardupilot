@@ -15,8 +15,8 @@ define HAL_STORAGE_SIZE 800
 STM32_ST_USE_TIMER 15
 define CH_CFG_ST_RESOLUTION 16
 
-# board ID for firmware load
-APJ_BOARD_ID 1062
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MatekL431
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -37,10 +37,6 @@ MAIN_STACK 0x300
 
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0xA00
-
-define HAL_DISABLE_LOOP_DELAY
-
-define HAL_NO_MONITOR_THREAD
 
 # we setup a small defaults.parm
 define AP_PARAM_MAX_EMBEDDED_PARAM 512
@@ -102,3 +98,5 @@ define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime
 env ROMFS_UNCOMPRESSED True
+
+define HAL_RCIN_THREAD_ENABLED 1

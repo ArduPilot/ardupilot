@@ -9,16 +9,14 @@ USB_STRING_MANUFACTURER "Hex/ProfiCNC"
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board ID for firmware load
-APJ_BOARD_ID 140
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CUBEORANGE
 
 FLASH_SIZE_KB 2048
 
 # supports upto 8MBits/s
 CANFD_SUPPORTED 8
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
 
 FLASH_RESERVE_START_KB 128
 
@@ -212,17 +210,8 @@ PE15 VDD_5V_PERIPH_nOC INPUT PULLUP
 
 SPIDEV ms5611         SPI1 DEVID3  BARO_CS      MODE3 20*MHZ 20*MHZ
 SPIDEV ms5611_ext     SPI4 DEVID2  BARO_EXT_CS  MODE3 20*MHZ 20*MHZ
-SPIDEV mpu6000        SPI1 DEVID4  MPU_CS       MODE3  2*MHZ  8*MHZ
-SPIDEV icm20608-am    SPI1 DEVID2  ACCEL_EXT_CS MODE3  4*MHZ  8*MHZ
-SPIDEV mpu9250        SPI1 DEVID4  MPU_CS       MODE3  4*MHZ  8*MHZ
-SPIDEV mpu9250_ext    SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
 SPIDEV icm20948       SPI1 DEVID4  MPU_CS       MODE3  4*MHZ  8*MHZ
 SPIDEV icm20948_ext   SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
-SPIDEV hmc5843        SPI1 DEVID5  MAG_CS       MODE3 11*MHZ 11*MHZ
-SPIDEV lsm9ds0_g      SPI1 DEVID1  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ
-SPIDEV lsm9ds0_am     SPI1 DEVID2  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ
-SPIDEV lsm9ds0_ext_g  SPI4 DEVID4  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ
-SPIDEV lsm9ds0_ext_am SPI4 DEVID3  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ
 SPIDEV icm20602_ext   SPI4 DEVID4  GYRO_EXT_CS  MODE3  4*MHZ  8*MHZ
 SPIDEV ramtron        SPI2 DEVID10 FRAM_CS      MODE3  8*MHZ  8*MHZ
 SPIDEV external0m0    SPI4 DEVID5  MPU_EXT_CS   MODE0  2*MHZ  2*MHZ
@@ -231,18 +220,7 @@ SPIDEV external0m2    SPI4 DEVID5  MPU_EXT_CS   MODE2  2*MHZ  2*MHZ
 SPIDEV external0m3    SPI4 DEVID5  MPU_EXT_CS   MODE3  2*MHZ  2*MHZ
 SPIDEV pixartPC15     SPI4 DEVID13 ACCEL_EXT_CS MODE3  2*MHZ  2*MHZ
 
-# three IMUs, but allow for different variants. First two IMUs are
-# isolated, 3rd isn't
-IMU Invensense SPI:mpu9250_ext ROTATION_PITCH_180
-
-# the 3 rotations for the LSM9DS0 driver are for the accel, the gyro
-# and the H variant of the gyro
-IMU LSM9DS0 SPI:lsm9ds0_ext_g SPI:lsm9ds0_ext_am ROTATION_ROLL_180_YAW_270 ROTATION_ROLL_180_YAW_90 ROTATION_ROLL_180_YAW_90
-
-# 3rd non-isolated IMU
-IMU Invensense SPI:mpu9250 ROTATION_YAW_270
-
-# alternative IMU set for newer cubes
+# IMU set for newer cubes
 IMU Invensense SPI:icm20602_ext ROTATION_ROLL_180_YAW_270
 IMU Invensensev2 SPI:icm20948_ext ROTATION_PITCH_180
 IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
@@ -267,15 +245,10 @@ BOARD_VALIDATE $CHECK_IMU0_PRESENT $CHECK_IMU1_PRESENT $CHECK_IMU2_PRESENT $CHEC
 define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
 # two baros
-BARO MS56XX SPI:ms5611_ext
-BARO MS56XX SPI:ms5611
+BARO MS5611 SPI:ms5611_ext
+BARO MS5611 SPI:ms5611
 
-# two compasses. First is in the LSM303D
-COMPASS LSM303D SPI:lsm9ds0_ext_am ROTATION_YAW_270
-# 2nd compass is part of the 2nd invensense IMU
-COMPASS AK8963:probe_mpu9250 1 ROTATION_YAW_270
-
-# compass as part of ICM20948 on newer cubes
+# one internal compass
 COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
 
 # offset the internal compass for EM impact of the IMU heater
@@ -321,11 +294,13 @@ define HAL_GPIO_PWM_VOLT_3v3 1
 # we can automatically update the IOMCU firmware on boot. The format
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root.
-ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_cube_highpolh.bin
 
 # enable support for dshot on iomcu
-ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_highpolh.bin
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_cube_dshot_highpolh.bin
 define HAL_WITH_IO_MCU_DSHOT 1
+
+define AP_IOMCU_PROFILED_SUPPORT_ENABLED 1
 
 DMA_NOSHARE SPI1* SPI4* USART6*
 

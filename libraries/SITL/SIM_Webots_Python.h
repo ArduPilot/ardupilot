@@ -18,13 +18,9 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include "SIM_config.h"
 
-#ifndef HAL_SIM_WEBOTSPYTHON_ENABLED
-#define HAL_SIM_WEBOTSPYTHON_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#endif
-
-#if HAL_SIM_WEBOTSPYTHON_ENABLED
+#if AP_SIM_WEBOTSPYTHON_ENABLED
 
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket_native.h>
@@ -43,7 +39,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new WebotsPython(frame_str);
+        return NEW_NOTHROW WebotsPython(frame_str);
     }
 
     /*  Create and set in/out socket for Webots simulator */
@@ -87,4 +83,4 @@ private:
 }  // namespace SITL
 
 
-#endif  // HAL_SIM_WEBOTSPYTHON_ENABLED
+#endif  // AP_SIM_WEBOTSPYTHON_ENABLED

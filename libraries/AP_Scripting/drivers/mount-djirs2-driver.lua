@@ -1,5 +1,4 @@
 -- mount-djirs2-driver.lua: DJIRS2 mount/gimbal driver
--- luacheck: only 0
 
 --[[
   How to use
@@ -12,6 +11,12 @@
     Reboot the autopilot
     Copy this script to the autopilot's SD card in the APM/scripts directory and reboot the autopilot
     set DJIR_DEBUG to 1 to display parsing and errors stats at 5sec.  Set to 2 to display gimbal angles
+
+  Advanced usage
+    The gimbal can be connected to an existing DroneCAN bus (on ArduPilot 4.6 or later) by setting CAN_Dx_PROTOCOL2=10 on that bus's driver
+    The gimbal can be used as the Nth mount (instead of the first) by setting MNTn_TYPE = 9 and modifying the script's user definitions
+    The gimbal can be used with the Scripting2 protocol by modifying the script's user definitions
+    Multiple gimbals can be used at once by duplicating the script and connecting them to different buses
  
   The following sources were used as a reference during the development of this script
     Constant Robotics DJIR SDK: https://github.com/ConstantRobotics/DJIR_SDK
@@ -71,13 +76,16 @@
 
 --]]
 
+-- user definitions
+local MOUNT_INSTANCE = 0                -- default to MNT1
+local CAN_INSTANCE = 0                  -- default to first scripting CAN protocol
+
 -- global definitions
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
 local UPDATE_INTERVAL_MS = 1            -- update interval in millis
 local REPLY_TIMEOUT_MS = 100            -- timeout waiting for reply after 0.1 sec
 local REQUEST_ATTITUDE_INTERVAL_MS = 100-- request attitude at 10hz
 local SET_ATTITUDE_INTERVAL_MS = 100    -- set attitude at 10hz
-local MOUNT_INSTANCE = 0                -- always control the first mount/gimbal
 local SEND_FRAMEID = 0x223              -- send CAN messages with this frame id
 local RECEIVE_FRAMEID = 0x222           -- receive CAN messages with this frame id
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
@@ -106,15 +114,6 @@ local DJIR_DEBUG = Parameter("DJIR_DEBUG")              -- debug level. 0:disabl
 --]]
 local DJIR_UPSIDEDOWN = Parameter("DJIR_UPSIDEDOWN")    -- 0:rightsideup, 1:upsidedown
 
--- bind parameters to variables
-local CAN_P1_DRIVER = Parameter("CAN_P1_DRIVER")        -- If using CAN1, should be 1:First driver
-local CAN_P1_BITRATE = Parameter("CAN_P1_BITRATE")      -- If using CAN1, should be 1000000
-local CAN_D1_PROTOCOL = Parameter("CAN_D1_PROTOCOL")    -- If using CAN1, should be 10:Scripting
-local CAN_P2_DRIVER = Parameter("CAN_P2_DRIVER")        -- If using CAN2, should be 2:Second driver
-local CAN_P2_BITRATE = Parameter("CAN_P2_BITRATE")      -- If using CAN2, should be 1000000
-local CAN_D2_PROTOCOL = Parameter("CAN_D2_PROTOCOL")    -- If using CAN2, should be 10:Scripting
-local MNT1_TYPE = Parameter("MNT1_TYPE")                -- should be 9:Scripting
-
 -- message definitions
 local HEADER = 0xAA
 local RETURN_CODE = {SUCCESS=0x00, PARSE_ERROR=0x01, EXECUTION_FAILED=0x02, UNDEFINED=0xFF}
@@ -140,18 +139,17 @@ local parse_length = 0                  -- incoming message's packet length
 local parse_buff = {}                   -- message buffer holding roll, pitch and yaw angles from gimbal
 local parse_bytes_recv = 0              -- message buffer length.  count of the number of bytes received in the message so far
 local last_send_seq = 0                 -- last sequence number sent
-local last_req_attitude_ms = 0          -- system time of last request for attitude
-local last_set_attitude_ms = 0          -- system time of last set attitude call
+local last_req_attitude_ms = uint32_t(0)  -- system time of last request for attitude
+local last_set_attitude_ms = uint32_t(0)  -- system time of last set attitude call
 local REPLY_TYPE = {NONE=0, ATTITUDE=1, POSITION_CONTROL=2, SPEED_CONTROL=3} -- enum of expected reply types
 local expected_reply = REPLY_TYPE.NONE  -- currently expected reply type
-local expected_reply_ms = 0             -- system time that reply is first expected.  used for timeouts
+local expected_reply_ms = uint32_t(0)   -- system time that reply is first expected.  used for timeouts
 
 -- parsing status reporting variables
-local last_print_ms = 0                 -- system time that debug output was last printed
+local last_print_ms = uint32_t(0)       -- system time that debug output was last printed
 local bytes_read = 0                    -- number of bytes read from gimbal
 local bytes_written = 0                 -- number of bytes written to gimbal
 local bytes_error = 0                   -- number of bytes read that could not be parsed
-local msg_ignored = 0                   -- number of ignored messages (because frame id does not match)
 local write_fails = 0                   -- number of times write failed
 local execute_fails = 0                 -- number of times that gimbal was unable to execute the command
 local reply_timeouts = 0                -- number of timeouts waiting for replies
@@ -310,43 +308,21 @@ end
 
 -- perform any require initialisation
 function init()
-  -- check parameter settings
-  if CAN_D1_PROTOCOL:get() ~= 10 and CAN_D2_PROTOCOL:get() ~= 10 then
-    gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set CAN_D1_PROTOCOL or CAN_D2_PROTOCOL=10")
-    do return end
-  end
-  if CAN_D1_PROTOCOL:get() == 10 and CAN_D2_PROTOCOL:get() == 10 then
-    gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set CAN_D1_PROTOCOL or CAN_D2_PROTOCOL=0")
-    do return end
-  end
-  if CAN_D1_PROTOCOL:get() == 10 then
-    if CAN_P1_DRIVER:get() <= 0 then
-      gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set CAN_P1_DRIVER=1")
-      do return end
-    end
-    if CAN_P1_BITRATE:get() ~= 1000000 then
-      gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set CAN_P1_BITRATE=1000000")
-      do return end
-    end
-  end
-  if CAN_D2_PROTOCOL:get() == 10 then
-    if CAN_P2_DRIVER:get() <= 0 then
-      gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set CAN_P2_DRIVER=2")
-      do return end
-    end
-    if CAN_P2_BITRATE:get() ~= 1000000 then
-      gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set CAN_P2_BITRATE=1000000")
-      do return end
-    end
-  end
-  if MNT1_TYPE:get() ~= 9 then
-    gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set MNT1_TYPE=9")   
+  local mnt_type_name = ("MNT%d_TYPE"):format(MOUNT_INSTANCE+1)
+  local mnt_type = param:get(mnt_type_name)
+  if mnt_type ~= 9 then
+    gcs:send_text(MAV_SEVERITY.CRITICAL, ("DJIR: set %s=9"):format(mnt_type_name))
     do return end
   end
 
-  -- get CAN device
-  driver = CAN:get_device(25)
-  if driver then
+  -- get CAN device and filter to receive only replies from the gimbal
+  local buffer_size = 8 -- buffer up to two replies
+  if CAN_INSTANCE == 0 then
+    driver = CAN:get_device(buffer_size)
+  elseif CAN_INSTANCE == 1 then
+    driver = CAN:get_device2(buffer_size)
+  end
+  if driver and driver:add_filter(-1, RECEIVE_FRAMEID) then
     initialised = true
     gcs:send_text(MAV_SEVERITY.INFO, "DJIR: mount driver started")   
   else
@@ -516,7 +492,6 @@ function send_target_rates(roll_rate_degs, pitch_rate_degs, yaw_rate_degs)
   roll_rate_degs = roll_rate_degs or 0
   pitch_rate_degs = pitch_rate_degs or 0
   yaw_rate_degs = yaw_rate_degs or 0
-  time_sec = time_sec or 2
 
   -- ensure rates are integers. invert roll direction
   roll_rate_degs = -math.floor(roll_rate_degs + 0.5)
@@ -561,18 +536,13 @@ end
 -- consume incoming CAN packets
 function read_incoming_packets()
   local canframe
-  repeat
+  while true do
     canframe = driver:read_frame()
-    if canframe then
-      if uint32_t(canframe:id()) == uint32_t(RECEIVE_FRAMEID) then
-        for i = 0, canframe:dlc()-1 do
-          parse_byte(canframe:data(i))
-        end
-      else
-        msg_ignored = msg_ignored + 1
-      end
+    if not canframe then return end
+    for i = 0, canframe:dlc()-1 do
+      parse_byte(canframe:data(i))
     end
-  until not canframe
+  end
 end
 
 -- parse an byte from the gimbal
@@ -743,12 +713,7 @@ function update()
   -- report parsing status
   if (DJIR_DEBUG:get() > 0) and ((now_ms - last_print_ms) > 5000) then
     last_print_ms = now_ms
-    gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR: r:%u w:%u fail:%u,%u perr:%u to:%u ign:%u", bytes_read, bytes_written, write_fails, execute_fails, bytes_error, reply_timeouts, msg_ignored))
-  end
-
-  -- do not send any messages until CAN traffic has been seen
-  if msg_ignored == 0 and bytes_read == 0 then
-    return update, UPDATE_INTERVAL_MS
+    gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR: r:%u w:%u fail:%u,%u perr:%u to:%u", bytes_read, bytes_written, write_fails, execute_fails, bytes_error, reply_timeouts))
   end
 
   -- handle expected reply timeouts
@@ -781,14 +746,14 @@ function update()
     if roll_deg and pitch_deg and yaw_deg then
       if yaw_is_ef then
         -- convert to body-frame
-        yaw_deg = wrap_180(yaw_deg - math.deg(ahrs:get_yaw()))
+        yaw_deg = wrap_180(yaw_deg - math.deg(ahrs:get_yaw_rad()))
       end
       send_target_angles(roll_deg, pitch_deg, yaw_deg, 1)
       return update, UPDATE_INTERVAL_MS
     end
 
-    -- send rate target
-    local roll_degs, pitch_degs, yaw_degs, yaw_is_ef = mount:get_rate_target(MOUNT_INSTANCE)
+    -- send rate target (ignoring earth-frame flag as the gimbal doesn't use it)
+    local roll_degs, pitch_degs, yaw_degs, _ = mount:get_rate_target(MOUNT_INSTANCE)
     if roll_degs and pitch_degs and yaw_degs then
       send_target_rates(roll_degs, pitch_degs, yaw_degs)
       return update, UPDATE_INTERVAL_MS

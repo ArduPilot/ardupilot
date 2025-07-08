@@ -29,7 +29,11 @@
 #define PACKED_NAME "param.pck"
 
 extern const AP_HAL::HAL& hal;
+
+// QURT HAL already has a declaration of errno in errno.h
+#if CONFIG_HAL_BOARD != HAL_BOARD_QURT
 extern int errno;
+#endif
 
 int AP_Filesystem_Param::open(const char *fname, int flags, bool allow_absolute_path)
 {
@@ -50,7 +54,7 @@ int AP_Filesystem_Param::open(const char *fname, int flags, bool allow_absolute_
     }
     struct rfile &r = file[idx];
     if (read_only) {
-        r.cursors = new cursor[num_cursors];
+        r.cursors = NEW_NOTHROW cursor[num_cursors];
         if (r.cursors == nullptr) {
             errno = ENOMEM;
             return -1;
@@ -66,7 +70,7 @@ int AP_Filesystem_Param::open(const char *fname, int flags, bool allow_absolute_
     r.writebuf = nullptr;
     if (!read_only) {
         // setup for upload
-        r.writebuf = new ExpandingString();
+        r.writebuf = NEW_NOTHROW ExpandingString();
         if (r.writebuf == nullptr) {
             close(idx);
             errno = ENOMEM;
@@ -577,8 +581,10 @@ bool AP_Filesystem_Param::param_upload_parse(const rfile &r, bool &need_retry)
 
         b += 2 + name_len;
 
+        // assume that this write to the Param filesystem is coming
+        // via mavftp:
         AP_Param *p = AP_Param::find(name, &ptype2, &flags2);
-        if (p == nullptr) {
+        if (p == nullptr || !p->allow_set_via_mavlink(flags2)) {
             if (ptype == AP_PARAM_INT8) {
                 b++;
             } else if (ptype == AP_PARAM_INT16) {

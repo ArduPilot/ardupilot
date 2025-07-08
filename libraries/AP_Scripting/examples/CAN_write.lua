@@ -1,4 +1,5 @@
 -- This script is an example of writing to CAN bus
+---@diagnostic disable: need-check-nil
 
 -- Load CAN driver, using the scripting protocol and with a buffer size of 5
 local driver = CAN:get_device(5)

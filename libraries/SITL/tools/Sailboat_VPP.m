@@ -128,7 +128,7 @@ title('Polar Plot, boat speed (m/s) vs heading (deg)')
 plot_heading = 50;
 plot_wind_speed = 5;
 
-% convet from values to indexs
+% convert from values to indexs
 plot_heading = find(heading == plot_heading);
 plot_wind_speed = find(wind_speed == plot_wind_speed);
 

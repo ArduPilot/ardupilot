@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32F7xx STM32F767xx
 
-# board ID for firmware load
-APJ_BOARD_ID 143
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MATEKF765_WING
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -90,11 +90,11 @@ define HAL_BATT2_CURR_PIN 15
 PC1 RSSI_ADC ADC1
 define BOARD_RSSI_ANA_PIN 11
 
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 PD10 LED0 OUTPUT LOW GPIO(90) # blue
 PD11 LED1 OUTPUT LOW GPIO(91) # green
 define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
-define HAL_GPIO_LED_OFF 1
 
 # USART1 (telem2)
 PA10 USART1_RX USART1
@@ -132,10 +132,10 @@ PE10 UART7_CTS UART7
 PE9  UART7_RTS UART7
 
 # telem1-UART7 RTS and CTS as GPIO in alternative configs
-PE10 EXTERN_GPIO1 OUTPUT GPIO(1) ALT(2) # Cts7 pin as GPIO 1 (set RELAY_PINx = 1 to use it)
-PE9  EXTERN_GPIO2 OUTPUT GPIO(2) ALT(2) # Rts7 pin as GPIO 2 (set RELAY_PINx = 2 to use it)
-PE10 EXTERN_GPIO1 OUTPUT GPIO(1) ALT(3) # Cts7 pin as GPIO 1 (set RELAY_PINx = 1 to use it)
-PE9  EXTERN_GPIO2 OUTPUT GPIO(2) ALT(3) # Rts7 pin as GPIO 2 (set RELAY_PINx = 2 to use it)
+PE10 EXTERN_GPIO1 OUTPUT GPIO(1) ALT(2) # Cts7 pin as GPIO 1 (set RELAYx_PIN = 1 to use it)
+PE9  EXTERN_GPIO2 OUTPUT GPIO(2) ALT(2) # Rts7 pin as GPIO 2 (set RELAYx_PIN = 2 to use it)
+PE10 EXTERN_GPIO1 OUTPUT GPIO(1) ALT(3) # Cts7 pin as GPIO 1 (set RELAYx_PIN = 1 to use it)
+PE9  EXTERN_GPIO2 OUTPUT GPIO(2) ALT(3) # Rts7 pin as GPIO 2 (set RELAYx_PIN = 2 to use it)
 
 # alternative configs:
 # 1: bidirectional receiver protocol on RX6 pin
@@ -203,7 +203,7 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 # board variants
 BARO BMP280 I2C:0:0x76
 BARO DPS310 I2C:0:0x76
-BARO MS56XX I2C:0:0x77
+BARO MS5611 I2C:0:0x77
 
 define HAL_OS_FATFS_IO 1
 

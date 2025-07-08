@@ -15,8 +15,8 @@ define HAL_STORAGE_SIZE 800
 STM32_ST_USE_TIMER 15
 define CH_CFG_ST_RESOLUTION 16
 
-# board ID for firmware load
-APJ_BOARD_ID 1091
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_Sierra-TrueNavPro
 
 # crystal frequency
 OSCILLATOR_HZ 16000000
@@ -36,10 +36,7 @@ MAIN_STACK 0x300
 PROCESS_STACK 0xA00
 
 # save memory
-define HAL_DISABLE_LOOP_DELAY
-define HAL_NO_MONITOR_THREAD
 define HAL_USE_ADC FALSE
-define HAL_NO_RCIN_THREAD
 
 # we setup a small defaults.parm
 define AP_PARAM_MAX_EMBEDDED_PARAM 256
@@ -89,20 +86,19 @@ define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
 env ROMFS_UNCOMPRESSED True
 
 # enable GPS and compass
-define HAL_PERIPH_ENABLE_GPS
-define HAL_PERIPH_ENABLE_MAG
-define HAL_PERIPH_ENABLE_BARO
-define HAL_PERIPH_ENABLE_RC_OUT
-define HAL_PERIPH_ENABLE_NOTIFY
+define AP_PERIPH_GPS_ENABLED 1
+define AP_PERIPH_MAG_ENABLED 1
+define AP_PERIPH_BARO_ENABLED 1
+define AP_PERIPH_RC_OUT_ENABLED 1
+define AP_PERIPH_NOTIFY_ENABLED 1
 
 # disable dual GPS and GPS blending to save flash space
 define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
 define HAL_PERIPH_GPS_PORT_DEFAULT 0
-
-# minimal GPS drivers to reduce flash usage
-include ../include/minimal_GPS.inc
+define AP_GPS_BACKEND_DEFAULT_ENABLED 0
+define AP_GPS_UBLOX_ENABLED 1
 
 # GPS PPS
 PA15 GPS_PPS_IN INPUT
@@ -114,3 +110,5 @@ define CAN_APP_NODE_NAME "in.sierraaerospace.TrueNavPro"
 
 # Enable GPS LDO
 PC13 VDD_3V3_SENSORS_EN OUTPUT HIGH
+
+define HAL_SERIAL_ESC_COMM_ENABLED 1

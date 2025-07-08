@@ -24,7 +24,6 @@
 #         # default params
 #         self.mra_serial_device = f"./dev/ttyROS0"
 #         self.mra_serial_baud = 115200
-#         self.mra_refs_file = "dds_xrce_profile.xml"
 #
 #         self.ap_sim_vehicle_cmd = "sim_vehicle.py"
 #         self.ap_serial_device = f"./dev/ttyROS1"

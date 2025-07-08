@@ -70,11 +70,12 @@ parameter. The format is:
 
 ```
     uint8_t type:4;         // AP_Param type NONE=0, INT8=1, INT16=2, INT32=3, FLOAT=4
-    uint8_t flags:4;        // for future use
+    uint8_t flags:4;        // bit 0: default value included, bits 1-3: for future use
     uint8_t common_len:4;   // number of name bytes in common with previous entry, 0..15
     uint8_t name_len:4;     // non-common length of param name -1 (0..15)
     uint8_t name[name_len]; // name
     uint8_t data[];         // value, length given by variable type
+    uint8_t default[];      // optional default value, included if flags bit 0 is set
 ```
 
 There may be any number of leading zero pad bytes before the start of
@@ -91,6 +92,10 @@ file.
 
 The name_len field is the number of non-common characters, minus one.
 
+The default value is included only if requested by the withdefaults
+query string and if different from the set value. Otherwise, flags
+bit 0 will not be set, and default will be of zero length.
+
 ### Query Strings
 
 The file name @PARAM/param.pck can optionally be extended with query
@@ -100,6 +105,11 @@ string elements to change the result. For example:
 
 that means to download 10 parameters starting with parameter number
 50.
+
+ - @PARAM/param.pck?withdefaults=1
+
+that means to include the default values in the returned data, where
+it is different from the parameter's set value.
 
 ### Parameter Client Examples
 

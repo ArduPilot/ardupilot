@@ -96,22 +96,12 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 }
 
 
-#ifdef ENABLE_HEAP
-
-void *Util::allocate_heap_memory(size_t size)
-{
-    memory_heap_t *heap = (memory_heap_t *)malloc(size + sizeof(memory_heap_t));
-    if (heap == nullptr) {
-        return nullptr;
-    }
-    chHeapObjectInit(heap, heap + 1U, size);
-    return heap;
-}
-
+#if ENABLE_HEAP
 /*
-  realloc implementation thanks to wolfssl, used by AP_Scripting
+  realloc implementation thanks to wolfssl, used by ExpandingString
+  and ExpandingArray
  */
-void *Util::std_realloc(void *addr, size_t size)
+void *Util::std_realloc(void *addr, uint32_t size)
 {
     if (size == 0) {
        free(addr);
@@ -128,33 +118,6 @@ void *Util::std_realloc(void *addr, size_t size)
     return new_mem;
 }
 
-void *Util::heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size)
-{
-    if (heap == nullptr) {
-        return nullptr;
-    }
-    if (new_size == 0) {
-        if (ptr != nullptr) {
-            chHeapFree(ptr);
-        }
-        return nullptr;
-    }
-    if (ptr == nullptr) {
-        return chHeapAlloc((memory_heap_t *)heap, new_size);
-    }
-    void *new_mem = chHeapAlloc((memory_heap_t *)heap, new_size);
-    if (new_mem != nullptr) {
-        const size_t old_size2 = chHeapGetSize(ptr);
-#if defined(HAL_DEBUG_BUILD) && !defined(IOMCU_FW)
-        if (new_size != 0 && old_size2 != old_size) {
-            INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
-        }
-#endif
-        memcpy(new_mem, ptr, old_size2 > new_size ? new_size : old_size2);
-        chHeapFree(ptr);
-    }
-    return new_mem;
-}
 #endif // ENABLE_HEAP
 
 #endif // CH_CFG_USE_HEAP
@@ -227,7 +190,7 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
 #endif // HAL_USE_PWM
 #if HAL_DSHOT_ALARM_ENABLED
     // don't play the motors while flying
-    if (!(_toneAlarm_types & AP_Notify::Notify_Buzz_DShot) || get_soft_armed() || hal.rcout->get_dshot_esc_type() == RCOutput::DSHOT_ESC_NONE) {
+    if (!(_toneAlarm_types & uint8_t(AP_Notify::BuzzerType::DSHOT)) || get_soft_armed() || hal.rcout->get_dshot_esc_type() == RCOutput::DSHOT_ESC_NONE) {
         return;
     }
 
@@ -269,7 +232,7 @@ uint64_t Util::get_hw_rtc() const
 
 #if HAL_GCS_ENABLED
 #include <GCS_MAVLink/GCS.h>
-#define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
+#define Debug(fmt, args ...)  do { GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
 #endif // HAL_GCS_ENABLED
 
 #ifndef Debug
@@ -641,8 +604,11 @@ void Util::apply_persistent_params(void) const
                   been done by whether the IDs are configured in
                   storage
                  */
-                if (strncmp(pname, "INS_ACC", 7) == 0 &&
-                    strcmp(pname+strlen(pname)-3, "_ID") == 0) {
+                bool legacy_acc_id = strncmp(pname, "INS_ACC", 7) == 0 &&
+                    strcmp(pname+strlen(pname)-3, "_ID") == 0;
+                bool new_acc_id = strncmp(pname, "INS", 3) == 0 &&
+                    strcmp(pname+strlen(pname)-6, "ACC_ID") == 0;
+                if (legacy_acc_id || new_acc_id) {
                     enum ap_var_type ptype;
                     AP_Int32 *ap = (AP_Int32 *)AP_Param::find(pname, &ptype);
                     if (ap && ptype == AP_PARAM_INT32) {
@@ -682,21 +648,48 @@ extern ChibiOS::UARTDriver uart_io;
 // request information on uart I/O
 void Util::uart_info(ExpandingString &str)
 {
+    // Calculate time since last call
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t dt_ms = now_ms - sys_uart_stats.last_ms;
+    sys_uart_stats.last_ms = now_ms;
+
     // a header to allow for machine parsers to determine format
     str.printf("UARTV1\n");
     for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
         auto *uart = hal.serial(i);
         if (uart) {
-            str.printf("SERIAL%u ", i);
-            uart->uart_info(str);
+#if HAL_WITH_IO_MCU
+            if (i == HAL_UART_IOMCU_IDX) {
+                str.printf("IOMCU   ");
+            } else
+#endif
+            {
+                str.printf("SERIAL%u ", i);
+            }
+            uart->uart_info(str, sys_uart_stats.serial[i], dt_ms);
         }
     }
-#if HAL_WITH_IO_MCU
-    str.printf("IOMCU   ");
-    uart_io.uart_info(str);
-#endif
 }
-#endif
+
+// Log UART message for each serial port
+#if HAL_LOGGING_ENABLED
+void Util::uart_log()
+{
+    // Calculate time since last call
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t dt_ms = now_ms - log_uart_stats.last_ms;
+    log_uart_stats.last_ms = now_ms;
+
+    // Loop over all numbered ports
+    for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
+        auto *uart = hal.serial(i);
+        if (uart) {
+            uart->log_stats(i, log_uart_stats.serial[i], dt_ms);
+        }
+    }
+}
+#endif // HAL_LOGGING_ENABLED
+#endif // HAL_UART_STATS_ENABLED
 
 // request information on uart I/O
 #if HAL_USE_PWM == TRUE
@@ -835,7 +828,7 @@ void Util::boot_to_dfu()
 {
     hal.util->persistent_data.boot_to_dfu = true;
     stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
-    hal.scheduler->reboot(false);
+    hal.scheduler->reboot();
 }
 #endif
 

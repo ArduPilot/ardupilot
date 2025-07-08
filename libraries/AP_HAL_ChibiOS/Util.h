@@ -20,6 +20,7 @@
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include "AP_HAL_ChibiOS.h"
 #include <ch.h>
+#include <AP_Logger/AP_Logger_config.h>
 
 class ExpandingString;
 
@@ -36,7 +37,6 @@ public:
         return static_cast<Util*>(util);
     }
 
-    bool run_debug_shell(AP_HAL::BetterStream *stream) override { return false; }
     uint32_t available_memory() override;
 
     // get path to custom defaults file for AP_Param
@@ -48,11 +48,8 @@ public:
     void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
     void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
 
-#ifdef ENABLE_HEAP
-    // heap functions, note that a heap once alloc'd cannot be dealloc'd
-    virtual void *allocate_heap_memory(size_t size) override;
-    virtual void *heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size) override;
-    virtual void *std_realloc(void *ptr, size_t new_size) override;
+#if ENABLE_HEAP
+    void *std_realloc(void *ptr, uint32_t new_size) override;
 #endif // ENABLE_HEAP
 
     /*
@@ -98,8 +95,14 @@ public:
 #endif
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O
-    virtual void uart_info(ExpandingString &str) override;
+    void uart_info(ExpandingString &str) override;
+
+#if HAL_LOGGING_ENABLED
+    // Log UART message for each serial port
+    void uart_log() override;
 #endif
+#endif // HAL_UART_STATS_ENABLED
+
 #if HAL_USE_PWM == TRUE
     void timer_info(ExpandingString &str) override;
 #endif
@@ -136,10 +139,6 @@ private:
     FlashBootloader flash_bootloader() override;
 #endif
 
-#ifdef ENABLE_HEAP
-    static memory_heap_t scripting_heap;
-#endif // ENABLE_HEAP
-
     // stm32F4 and F7 have 20 total RTC backup registers. We use the first one for boot type
     // flags, so 19 available for persistent data
     static_assert(sizeof(persistent_data) <= 19*4, "watchdog persistent data too large");
@@ -160,5 +159,16 @@ private:
 
 #if HAL_ENABLE_DFU_BOOT
     void boot_to_dfu() override;
+#endif
+
+#if HAL_UART_STATS_ENABLED
+    struct uart_stats {
+        AP_HAL::UARTDriver::StatsTracker serial[HAL_UART_NUM_SERIAL_PORTS];
+        uint32_t last_ms;
+    };
+    uart_stats sys_uart_stats;
+#if HAL_LOGGING_ENABLED
+    uart_stats log_uart_stats;
+#endif
 #endif
 };

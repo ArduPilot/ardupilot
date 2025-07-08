@@ -72,7 +72,7 @@ AP_OpticalFlow_CXOF *AP_OpticalFlow_CXOF::detect(AP_OpticalFlow &_frontend)
     }
 
     // we have found a serial port so use it
-    AP_OpticalFlow_CXOF *sensor = new AP_OpticalFlow_CXOF(_frontend, uart);
+    AP_OpticalFlow_CXOF *sensor = NEW_NOTHROW AP_OpticalFlow_CXOF(_frontend, uart);
     return sensor;
 }
 

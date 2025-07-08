@@ -29,7 +29,6 @@ on:
       - 'Tools/Hello/**'
       - 'Tools/IO_Firmware/**'
       - 'Tools/Linux_HAL_Essentials/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
@@ -175,35 +174,20 @@ jobs:
       - name: Install Prerequisites
         shell: bash
         run: |
-          sudo apt-get install git wget libncurses-dev flex bison gperf python3 python3-pip python3-venv python3-setuptools python3-serial python3-gevent python3-cryptography python3-future python3-pyparsing python3-pyelftools cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
-          sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
-          update-alternatives --query python
-          python --version
-          pip3 install gevent
+          sudo apt-get update
+          sudo apt-get install git wget libncurses-dev flex bison gperf python3 python3-pip python3-venv python3-setuptools python3-serial python3-gevent python3-cryptography python3-future python3-pyparsing python3-pyelftools cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 cmake
+          python3 --version
+          python3 -m pip install gevent
 
           # we actualy want 3.11 .. but the above only gave us 3.10, not ok with esp32 builds.
           sudo add-apt-repository ppa:deadsnakes/ppa
           sudo apt-get update
           sudo apt-get install python3.11 python3.11-venv python3.11-distutils  -y
           sudo apt-get install python3 python3-pip python3-venv python3-setuptools python3-serial python3-cryptography python3-future python3-pyparsing python3-pyelftools
-          update-alternatives --query python
-          pip3 install gevent
-          python --version
+          python3 -m pip install gevent
+          python3 --version
           python3.11 --version
           which python3.11
-          sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.11 11
-          update-alternatives --query python
-
-          rm -rf /usr/local/bin/cmake
-          sudo apt-get remove --purge --auto-remove cmake
-          sudo apt-get update && \
-          sudo apt-get install -y software-properties-common lsb-release && \
-          sudo apt-get clean all
-          wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
-          sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
-          sudo apt-get update
-          sudo apt-get install cmake
-
 
           git submodule update --init --recursive --depth=1
           ./Tools/scripts/esp32_get_idf.sh
@@ -229,7 +213,7 @@ jobs:
           ./install.sh
           source ./export.sh
           cd ../..
-          python -m pip install --progress-bar off future lxml pymavlink MAVProxy pexpect flake8 geocoder empy==3.3.4 dronecan
+          python3 -m pip install --progress-bar off future lxml pymavlink MAVProxy pexpect flake8 geocoder empy==3.3.4 dronecan
           which cmake
           ./waf configure --board ${{matrix.config}} 
           echo './waf configure --board ${{matrix.config}}' >> $GITHUB_STEP_SUMMARY  
@@ -256,7 +240,7 @@ jobs:
           ls bootloader* partition* Ardu*.elf Ardu*.bin >> $GITHUB_STEP_SUMMARY
 
       - name: Archive artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
            name: esp32-binaries -${{matrix.config}}
            path: |

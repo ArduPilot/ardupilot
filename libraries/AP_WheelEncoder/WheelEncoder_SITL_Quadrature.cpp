@@ -38,7 +38,7 @@ void AP_WheelEncoder_SITL_Quadrature::update(void)
 
     // calculate dt
     const uint32_t time_now = AP_HAL::millis();
-    const double dt = (time_now - _state.last_reading_ms)/1000.0f;
+    const double dt = (time_now - _state.last_reading_ms)*0.001f;
     if (is_zero(dt)) { // sanity check
         return;
     }
@@ -55,7 +55,7 @@ void AP_WheelEncoder_SITL_Quadrature::update(void)
     // distance from center of wheel axis to each wheel
     const double half_wheelbase = ( fabsf(_frontend.get_pos_offset(0).y) + fabsf(_frontend.get_pos_offset(1).y) )/2.0f;
     if (is_zero(half_wheelbase)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "WheelEncoder: wheel offset not set!");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "WheelEncoder: wheel offset not set!");
     }
 
     if (_state.instance == 0) { 
@@ -69,7 +69,7 @@ void AP_WheelEncoder_SITL_Quadrature::update(void)
 
     const double radius = _frontend.get_wheel_radius(_state.instance);
     if (is_zero(radius)) { // avoid divide by zero
-        gcs().send_text(MAV_SEVERITY_WARNING, "WheelEncoder: wheel radius not set!");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "WheelEncoder: wheel radius not set!");
         return; 
     }
 

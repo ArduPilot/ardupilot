@@ -9,6 +9,7 @@
 #include <AP_HAL/utility/Socket_native.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_CSVReader/AP_CSVReader.h>
+#include <AP_HAL/utility/DataRateLimit.h>
 
 #include <SITL/SIM_SerialDevice.h>
 
@@ -65,6 +66,13 @@ public:
      */
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
 
+    uint32_t get_baud_rate() const override { return _uart_baudrate; }
+
+#if HAL_UART_STATS_ENABLED
+    // request information on uart I/O
+    void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) override;
+#endif
+
 private:
 
     int _fd;
@@ -106,8 +114,10 @@ private:
     uint16_t _mc_myport;
 
     // for baud-rate limiting:
-    uint32_t last_read_tick_us;
-    uint32_t last_write_tick_us;
+    struct {
+        DataRateLimit write;
+        DataRateLimit read;
+    } baud_limits;
 
     HAL_Semaphore write_mtx;
 
@@ -138,9 +148,20 @@ protected:
     void _flush() override;
     bool _discard_input() override;
 
+#if HAL_UART_STATS_ENABLED
+    // Getters for cumulative tx and rx counts
+    uint32_t get_total_tx_bytes() const override { return _tx_stats_bytes; }
+    uint32_t get_total_rx_bytes() const override { return _rx_stats_bytes; }
+#endif
+
 private:
     void handle_writing_from_writebuffer_to_device();
     void handle_reading_from_device_to_readbuffer();
+
+    // statistics
+    uint32_t _tx_stats_bytes;
+    uint32_t _rx_stats_bytes;
+
 };
 
 #endif

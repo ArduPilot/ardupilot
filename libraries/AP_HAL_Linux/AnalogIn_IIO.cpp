@@ -16,11 +16,11 @@ const char* AnalogSource_IIO::analog_sources[] = {
 };
 
 AnalogSource_IIO::AnalogSource_IIO(int16_t pin, float initial_value, float voltage_scaling) :
-    _pin(pin),
     _value(initial_value),
-    _voltage_scaling(voltage_scaling),
     _sum_value(0),
+    _voltage_scaling(voltage_scaling),
     _sum_count(0),
+    _pin(pin),
     _pin_fd(-1)
 {
     init_pins();
@@ -29,6 +29,8 @@ AnalogSource_IIO::AnalogSource_IIO(int16_t pin, float initial_value, float volta
 
 void AnalogSource_IIO::init_pins(void)
 {
+    static_assert(ARRAY_SIZE(AnalogSource_IIO::analog_sources) == ARRAY_SIZE(fd_analog_sources), "AnalogIn_IIO channels count mismatch");
+
     char buf[100];
     for (unsigned int i = 0; i < ARRAY_SIZE(AnalogSource_IIO::analog_sources); i++) {
         // Construct the path by appending strings
@@ -44,7 +46,11 @@ void AnalogSource_IIO::init_pins(void)
  */
 void AnalogSource_IIO::select_pin(void)
 {
-    _pin_fd = fd_analog_sources[_pin];
+    if (0 <= _pin && (size_t)_pin < ARRAY_SIZE(fd_analog_sources)) {
+        _pin_fd = fd_analog_sources[_pin];
+    } else {
+        _pin_fd = -1;
+    }
 }
 
 float AnalogSource_IIO::read_average()
@@ -123,5 +129,5 @@ void AnalogIn_IIO::init()
 
 
 AP_HAL::AnalogSource* AnalogIn_IIO::channel(int16_t pin) {
-    return new AnalogSource_IIO(pin, 0.0f, IIO_VOLTAGE_SCALING);
+    return NEW_NOTHROW AnalogSource_IIO(pin, 0.0f, AP_HAL_LINUX_ANALOGIN_IIO_VOLTAGE_SCALING);
 }

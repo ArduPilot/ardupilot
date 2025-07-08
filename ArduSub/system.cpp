@@ -14,11 +14,6 @@ static void failsafe_check_static()
 
 void Sub::init_ardupilot()
 {
-    // init cargo gripper
-#if AP_GRIPPER_ENABLED
-    g2.gripper.init();
-#endif
-
     // initialise notify system
     notify.init();
 
@@ -65,6 +60,10 @@ void Sub::init_ardupilot()
     relay.init();
 #endif
 
+#if OSD_ENABLED
+    osd.init();
+#endif
+
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
      *  the RC library being initialised.
@@ -73,7 +72,7 @@ void Sub::init_ardupilot()
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
-    gps.init(serial_manager);
+    gps.init();
 
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
@@ -134,7 +133,7 @@ void Sub::init_ardupilot()
     last_pilot_heading = ahrs.yaw_sensor;
 
     // initialise rangefinder
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     init_rangefinder();
 #endif
 
@@ -145,6 +144,9 @@ void Sub::init_ardupilot()
 
     // initialise mission library
     mission.init();
+#if HAL_LOGGING_ENABLED
+    mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
+#endif
 
     // initialise AP_Logger library
 #if HAL_LOGGING_ENABLED
@@ -157,6 +159,7 @@ void Sub::init_ardupilot()
     mainloop_failsafe_enable();
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
+    g2.actuators.initialize_actuators();
 
     // flag that initialisation has completed
     ap.initialised = true;
@@ -171,6 +174,7 @@ void Sub::startup_INS_ground()
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
     ahrs.set_vehicle_class(AP_AHRS::VehicleClass::SUBMARINE);
+    ahrs.set_fly_forward(false);
 
     // Warm up and calibrate gyro offsets
     ins.init(scheduler.get_loop_rate_hz());
@@ -200,16 +204,22 @@ bool Sub::ekf_position_ok()
         return false;
     }
 
-    // with EKF use filter status and ekf check
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-
     // if disarmed we accept a predicted horizontal position
     if (!motors.armed()) {
-        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
+        if (ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
+            return true;
+        }
+        if (ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS)) {
+            return true;
+        }
+        return false;
     }
 
     // once armed we require a good absolute position and EKF must not be in const_pos_mode
-    return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
+    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+        return false;
+    }
+    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS);
 }
 
 // optflow_position_ok - returns true if optical flow based position estimate is ok
@@ -236,14 +246,16 @@ bool Sub::optflow_position_ok()
         return false;
     }
 
-    // get filter status from EKF
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-
     // if disarmed we accept a predicted horizontal relative position
     if (!motors.armed()) {
-        return (filt_status.flags.pred_horiz_pos_rel);
+        return ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL);
     }
-    return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
+
+    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+        return false;
+    }
+
+    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_REL);
 }
 
 #if HAL_LOGGING_ENABLED
@@ -267,7 +279,7 @@ bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reaso
 AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
 #endif
 
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED

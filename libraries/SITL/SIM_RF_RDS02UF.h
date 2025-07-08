@@ -18,7 +18,8 @@
 ./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:rds02uf --speedup=1
 
 param set SERIAL5_PROTOCOL 9
-param set RNGFND1_TYPE 36
+param set RNGFND1_TYPE 43
+module load graph
 graph RANGEFINDER.distance
 graph GLOBAL_POSITION_INT.relative_alt/1000-RANGEFINDER.distance
 reboot
@@ -35,6 +36,8 @@ namespace SITL {
 
 class RF_RDS02UF : public SerialRangeFinder {
 public:
+
+    static SerialRangeFinder *create() { return NEW_NOTHROW RF_RDS02UF(); }
 
     uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
 

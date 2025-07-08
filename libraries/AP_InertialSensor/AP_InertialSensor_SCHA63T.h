@@ -78,13 +78,11 @@ private:
 
     bool read_register(uint8_t tp, reg_scha63t reg, uint8_t* val);
     bool write_register(uint8_t tp, reg_scha63t reg, uint16_t val);
-    void set_temperature(uint8_t instance, uint16_t temper);
+    void set_temperature(uint8_t instance, int16_t temper);
     bool check_startup();
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev_uno;
     AP_HAL::OwnPtr<AP_HAL::Device> dev_due;
 
-    uint8_t accel_instance;
-    uint8_t gyro_instance;
     enum Rotation rotation;
 };

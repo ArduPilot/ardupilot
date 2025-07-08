@@ -32,7 +32,7 @@ Display_SSD1306_I2C::~Display_SSD1306_I2C()
 
 Display_SSD1306_I2C *Display_SSD1306_I2C::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev)
 {
-    Display_SSD1306_I2C *driver = new Display_SSD1306_I2C(std::move(dev));
+    Display_SSD1306_I2C *driver = NEW_NOTHROW Display_SSD1306_I2C(std::move(dev));
     if (!driver || !driver->hw_init()) {
         delete driver;
         return nullptr;

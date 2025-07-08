@@ -6,8 +6,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
-APJ_BOARD_ID 125
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MATEKF405
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -25,6 +25,7 @@ I2C_ORDER I2C1
 SERIAL_ORDER OTG1 USART3 UART4 USART1 UART5 USART2
 
 # LEDs
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 PB9 LED_BLUE OUTPUT LOW GPIO(0)
 PA14 LED_GREEN OUTPUT LOW GPIO(1)
 
@@ -156,11 +157,9 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
-# disable parachute and sprayer to save flash
+# disable parachute to save flash
 define HAL_PARACHUTE_ENABLED 0
-define HAL_SPRAYER_ENABLED 0
 
 # save some flash
-include ../include/save_some_flash.inc
 include ../include/minimize_fpv_osd.inc
 

@@ -27,6 +27,7 @@
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Scheduler.h>
 #include <AP_ROMFS/AP_ROMFS.h>
+#include <SITL/SITL.h>
 #include <utility>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -51,7 +52,7 @@ void AP_OSD_SITL::load_font(void)
     for (uint16_t i=0; i<256; i++) {
         const uint8_t *c = &fd->data[i*54];
         // each pixel is 4 bytes, RGBA
-        sf::Uint8 *pixels = new sf::Uint8[char_width * char_height * 4];
+        sf::Uint8 *pixels = NEW_NOTHROW sf::Uint8[char_width * char_height * 4];
         if (!font[i].create(char_width, char_height)) {
             AP_HAL::panic("Failed to create texture");
         }
@@ -100,7 +101,7 @@ void AP_OSD_SITL::write(uint8_t x, uint8_t y, const char* text)
     WITH_SEMAPHORE(mutex);
 
     while ((x < video_cols) && (*text != 0)) {
-        buffer[y][x] = *text;
+        getbuffer(buffer, y, x) = *text;
         ++text;
         ++x;
     }
@@ -110,7 +111,7 @@ void AP_OSD_SITL::clear(void)
 {
     AP_OSD_Backend::clear();
     WITH_SEMAPHORE(mutex);
-    memset(buffer, 0, sizeof(buffer));
+    memset(buffer, 0, video_cols*video_lines);
 }
 
 void AP_OSD_SITL::flush(void)
@@ -124,7 +125,7 @@ void AP_OSD_SITL::update_thread(void)
     load_font();
     {
         WITH_SEMAPHORE(AP::notify().sf_window_mutex);
-        w = new sf::RenderWindow(sf::VideoMode(video_cols*(char_width+char_spacing)*char_scale,
+        w = NEW_NOTHROW sf::RenderWindow(sf::VideoMode(video_cols*(char_width+char_spacing)*char_scale,
                                                video_lines*(char_height+char_spacing)*char_scale),
                                  "OSD");
     }
@@ -193,7 +194,7 @@ bool AP_OSD_SITL::init(void)
 
 AP_OSD_Backend *AP_OSD_SITL::probe(AP_OSD &osd)
 {
-    AP_OSD_SITL *backend = new AP_OSD_SITL(osd);
+    AP_OSD_SITL *backend = NEW_NOTHROW AP_OSD_SITL(osd);
     if (!backend) {
         return nullptr;
     }
@@ -207,6 +208,10 @@ AP_OSD_Backend *AP_OSD_SITL::probe(AP_OSD &osd)
 AP_OSD_SITL::AP_OSD_SITL(AP_OSD &osd):
     AP_OSD_Backend(osd)
 {
+    const auto *_sitl = AP::sitl();
+    video_lines = _sitl->osd_rows;
+    video_cols = _sitl->osd_columns;
+    buffer = (uint8_t *)malloc(video_lines*video_cols);
 }
 
 #endif // WITH_SITL_OSD

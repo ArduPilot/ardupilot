@@ -45,7 +45,7 @@ struct MsgHandler::format_field_info *MsgHandler::find_field_info(const char *la
             return &field_info[i];
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 MsgHandler::MsgHandler(const struct log_Format &_f) : next_field(0), f(_f)
@@ -83,7 +83,6 @@ void MsgHandler::parse_format_fields()
 
     while ((next_label = strtok(arg, ",")) != NULL) {
         if (label_offset > strlen(format)) {
-            free(labels);
             printf("too few field times for labels %s (format=%s) (labels=%s)\n",
                    f.name, format, labels);
             exit(1);
@@ -108,7 +107,7 @@ void MsgHandler::parse_format_fields()
 bool MsgHandler::field_value(uint8_t *msg, const char *label, char *ret, uint8_t retlen)
 {
     struct format_field_info *info = find_field_info(label);
-    if (info == NULL) {
+    if (info == nullptr) {
       ::printf("No info for (%s)\n",label);
       exit(1);
     }
@@ -129,8 +128,7 @@ bool MsgHandler::field_value(uint8_t *msg, const char *label, char *ret, uint8_t
 bool MsgHandler::field_value(uint8_t *msg, const char *label, Vector3f &ret)
 {
     const char *axes = "XYZ";
-    uint8_t i;
-    for(i=0; i<next_field; i++) {
+    for(uint8_t i=0; i<next_field; i++) {
 	if (!strncmp(field_info[i].label, label, strlen(label)) &&
 	    strlen(field_info[i].label) == strlen(label)+1) {
 	    for (uint8_t j=0; j<3; j++) {
@@ -144,7 +142,7 @@ bool MsgHandler::field_value(uint8_t *msg, const char *label, Vector3f &ret)
             }
         }
         if (i == next_field) {
-            return 0; // not found
+            return false; // not found
         }
     }
 
@@ -231,7 +229,7 @@ void MsgHandler::field_not_found(uint8_t *msg, const char *label)
 {
     char all_labels[256];
     uint8_t type = msg[2];
-    string_for_labels(all_labels, 256);
+    string_for_labels(all_labels, ARRAY_SIZE(all_labels));
     ::printf("Field (%s) not found for id=%d; options are (%s)\n",
              label, type, all_labels);
     abort();

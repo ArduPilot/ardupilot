@@ -19,6 +19,32 @@
 #include <stdint.h>
 #include <AP_Math/AP_Math.h>
 
+#define MAX_EKF_CORES     3 // maximum allowed EKF Cores to be instantiated
+
+// enumeration corresponding to buts within nav_filter_status union.
+// Only used for documentation purposes.
+enum class NavFilterStatusBit {
+    ATTITUDE_VALID     =      1, // attitude estimate valid
+    HORIZ_VEL          =      2, // horizontal velocity estimate valid
+    VERT_VEL           =      4, // vertical velocity estimate valid
+    HORIZ_POS_REL      =      8, // relative horizontal position estimate valid
+    HORIZ_POS_ABS      =     16, // absolute horizontal position estimate valid
+    VERT_POS           =     32, // vertical position estimate valid
+    TERRAIN_ALT        =     64, // terrain height estimate valid
+    CONST_POS_MODE     =    128, // in constant position mode
+    PRED_HORIZ_POS_REL =    256, // expected good relative horizontal position estimate - used before takeoff
+    PRED_HORIZ_POS_ABS =    512, // expected good absolute horizontal position estimate - used before takeoff
+    TAKEOFF_DETECTED   =   1024, // optical flow takeoff has been detected
+    TAKEOFF_EXPECTED   =   2048, // compensating for baro errors during takeoff
+    TOUCHDOWN_EXPECTED =   4096, // compensating for baro errors during touchdown
+    USING_GPS          =   8192, // using GPS position
+    GPS_GLITCHING      =  16384, // GPS glitching is affecting navigation accuracy
+    GPS_QUALITY_GOOD   =  32768, // can use GPS for navigation
+    INITALIZED         =  65536, // has ever been healthy
+    REJECTING_AIRSPEED = 131072, // rejecting airspeed data
+    DEAD_RECKONING     = 262144, // dead reckoning (e.g. no position or velocity source)
+};
+
 union nav_filter_status {
     struct {
         bool attitude           : 1; // 0 - true if attitude estimate is valid

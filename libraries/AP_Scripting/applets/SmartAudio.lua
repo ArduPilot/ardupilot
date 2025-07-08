@@ -20,6 +20,9 @@
 ---------and set to -1 for unchanged, 0 (PitMode),1,2,3, or 4 for power level (1 lowest,4 maximum)
 -- 3. Attach the UART's TX for the Serial port chosen above to the VTX's SmartAudio input
 
+---@diagnostic disable: need-check-nil
+
+
 -- init local variables
 local startup_pwr = param:get('SCR_USER1') 
 local scripting_rc = rc:find_channel_for_option(300)

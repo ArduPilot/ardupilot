@@ -1,5 +1,7 @@
 #include "Sub.h"
 
+#include <AP_Gripper/AP_Gripper.h>
+
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,23 +36,11 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Eeprom format version number
     // @Description: This value is incremented when changes are made to the eeprom format
     // @User: Advanced
-    // @ReadOnly: True
     GSCALAR(format_version, "FORMAT_VERSION",   0),
 
-    // @Param: SYSID_THISMAV
-    // @DisplayName: MAVLink system ID of this vehicle
-    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network
-    // @Range: 1 255
-    // @User: Advanced
-    GSCALAR(sysid_this_mav, "SYSID_THISMAV",   MAV_SYSTEM_ID),
+    // SYSID_THISMAV was here
 
-    // @Param: SYSID_MYGCS
-    // @DisplayName: My ground station number
-    // @Description: Allows restricting radio overrides to only come from my ground station
-    // @Range: 1 255
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(sysid_my_gcs,   "SYSID_MYGCS",     255),
+    // SYSID_MYGCS was here
 
     // @Param: PILOT_THR_FILT
     // @DisplayName: Throttle filter cutoff
@@ -58,30 +48,17 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Advanced
     // @Units: Hz
     // @Range: 0 10
-    // @Increment: .5
+    // @Increment: 0.5
     GSCALAR(throttle_filt,  "PILOT_THR_FILT",     0),
 
-    // @Group: SERIAL
-    // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
-    GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
+    // AP_SerialManager was here
 
     // @Param: GCS_PID_MASK
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Values: 0:None,1:Roll,2:Pitch,4:Yaw
     // @Bitmask: 0:Roll,1:Pitch,2:Yaw
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
-
-#if RANGEFINDER_ENABLED == ENABLED
-    // @Param: RNGFND_GAIN
-    // @DisplayName: Rangefinder gain
-    // @Description: Used to adjust the speed with which the target altitude is changed when objects are sensed below the sub
-    // @Range: 0.01 2.0
-    // @Increment: 0.01
-    // @User: Standard
-    GSCALAR(rangefinder_gain,     "RNGFND_GAIN",           RANGEFINDER_GAIN_DEFAULT),
-#endif
 
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
@@ -89,6 +66,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @Values: 0:Disabled,1:Warn only,2:Disarm,3:Enter depth hold mode,4:Enter surface mode
     // @User: Standard
     GSCALAR(failsafe_gcs, "FS_GCS_ENABLE", FS_GCS_DISARM),
+
+    // @Param: FS_GCS_TIMEOUT
+    // @DisplayName: GCS failsafe timeout
+    // @Description: Timeout before triggering the GCS failsafe
+    // @Units: s
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(failsafe_gcs_timeout, "FS_GCS_TIMEOUT", FS_GCS_TIMEOUT_S),
 
     // @Param: FS_LEAK_ENABLE
     // @DisplayName: Leak Failsafe Enable
@@ -110,7 +95,75 @@ const AP_Param::Info Sub::var_info[] = {
     // @Values: 0:Disabled,1:Warn only
     // @User: Standard
     GSCALAR(failsafe_temperature, "FS_TEMP_ENABLE", FS_TEMP_DISABLED),
+    
+#if AP_SUB_RC_ENABLED        
+    // @Param: FS_THR_ENABLE
+    // @DisplayName: Throttle Failsafe Enable
+    // @Description: The throttle failsafe allows you to configure a software RC failsafe activated by a setting on the throttle input channel. It also enables RC failsafe on absence of RC signals being recieved.
+    // @Values:  0:Disabled,1: Force effective control inputs to trim positions and prevent arming,2:Surface and hold on surface on failsafe 
+    // @User: Standard
+    GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   0),
 
+    // @Param: FS_THR_VALUE
+    // @DisplayName: Throttle Failsafe Value
+    // @Description: The PWM level in microseconds on channel 3 below which throttle failsafe triggers
+    // @Range: 910 1100
+    // @Units: PWM
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",  FS_THR_VALUE_DEFAULT),
+    
+    // @Param: FLTMODE1
+    // @DisplayName: Flight Mode 1
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is <= 1230
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,7:Circle,9:Surface,16:PosHold,19:Manual,20:Motor Detect,21:SurfTrak
+    // @User: Standard
+    GSCALAR(flight_mode1, "FLTMODE1",               (uint8_t)FLIGHT_MODE_1),
+
+    // @Param: FLTMODE2
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 2
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1230, <= 1360
+    GSCALAR(flight_mode2, "FLTMODE2",               (uint8_t)FLIGHT_MODE_2),
+
+    // @Param: FLTMODE3
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 3
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1360, <= 1490
+    GSCALAR(flight_mode3, "FLTMODE3",               (uint8_t)FLIGHT_MODE_3),
+
+    // @Param: FLTMODE4
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 4
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1490, <= 1620
+    GSCALAR(flight_mode4, "FLTMODE4",               (uint8_t)FLIGHT_MODE_4),
+
+    // @Param: FLTMODE5
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 5
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1620, <= 1749
+    GSCALAR(flight_mode5, "FLTMODE5",               (uint8_t)FLIGHT_MODE_5),
+
+    // @Param: FLTMODE6
+    // @CopyFieldsFrom: FLTMODE1
+    // @DisplayName: Flight Mode 6
+    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >=1750
+    GSCALAR(flight_mode6, "FLTMODE6",               (uint8_t)FLIGHT_MODE_6),
+
+    // @Param: FLTMODE_CH
+    // @DisplayName: Flightmode channel
+    // @Description: RC Channel to use for flight mode control
+    // @Values: 0:Disabled,5:Channel5,6:Channel6,7:Channel7,8:Channel8,9:Channel9,10:Channel 10,11:Channel 11,12:Channel 12,13:Channel 13,14:Channel 14,15:Channel 15
+    // @User: Advanced
+    GSCALAR(flight_mode_chan, "FLTMODE_CH",         0),
+
+    // @Param: THR_ARM_POS
+    // @DisplayName: Throttle arming position
+    // @Description: Determines if throttle must be at min or within trim value to arm, if RC checks and RC_OPTION for "0" throttle are enabled.
+    // @User: Standard
+    // @Bitmask: 0:Throttle at or below min, 1: Throttle within a dead zone of RC trim value
+    GSCALAR(thr_arming_position, "THR_ARM_POS", 1),    
+#endif
     // @Param: FS_PRESS_MAX
     // @DisplayName: Internal Pressure Failsafe Threshold
     // @Description: The maximum internal pressure allowed before triggering failsafe. Failsafe action is determined by FS_PRESS_ENABLE parameter
@@ -124,6 +177,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @Units: degC
     // @User: Standard
     GSCALAR(failsafe_temperature_max, "FS_TEMP_MAX", FS_TEMP_MAX_DEFAULT),
+
+    // @Param: SURFACE_MAX_THR
+    // @DisplayName: Surface Maximum Throttle
+    // @Description: Maximum throttle value when the vehicle is at the surface. This value is used to scale throttle linearly from 1. (full) to min as the vehicle approaches the surface. The attenuation starts at 1 meter from surface.  Only upwards throttle is limited.
+    // @Range: 0.0 1.0
+    // @User: Standard
+    // @Increment: 0.01
+    GSCALAR(surface_max_throttle, "SURFACE_MAX_THR", 0.1f),
 
     // @Param: FS_TERRAIN_ENAB
     // @DisplayName: Terrain Failsafe Enable
@@ -165,7 +226,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Pilot maximum vertical ascending speed
     // @Description: The maximum vertical ascending velocity the pilot may request in cm/s
     // @Units: cm/s
-    // @Range: 50 500
+    // @Range: 20 500
     // @Increment: 10
     // @User: Standard
     GSCALAR(pilot_speed_up,     "PILOT_SPEED_UP",   PILOT_VELZ_MAX),
@@ -174,10 +235,19 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Pilot maximum vertical descending speed
     // @Description: The maximum vertical descending velocity the pilot may request in cm/s
     // @Units: cm/s
-    // @Range: 50 500
+    // @Range: 20 500
     // @Increment: 10
     // @User: Standard
     GSCALAR(pilot_speed_dn,     "PILOT_SPEED_DN",   0),
+
+    // @Param: PILOT_SPEED
+    // @DisplayName: Pilot maximum horizontal speed
+    // @Description: The maximum horizontal velocity the pilot may request in cm/s
+    // @Units: cm/s
+    // @Range: 10 500
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(pilot_speed,     "PILOT_SPEED",   PILOT_SPEED_DEFAULT),
 
     // @Param: PILOT_ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
@@ -200,7 +270,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: 4 byte bitmap of log types to enable
-    // @Values: 830:Default,894:Default+RCIN,958:Default+IMU,1854:Default+Motors,-6146:NearlyAll-AC315,45054:NearlyAll,131071:All+FastATT,262142:All+MotBatt,393214:All+FastIMU,397310:All+FastIMU+PID,655358:All+FullIMU,0:Disabled
     // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:RCIN,7:IMU,8:CMD,9:CURRENT,10:RCOUT,11:OPTFLOW,12:PID,13:COMPASS,14:INAV,15:CAMERA,17:MOTBATT,18:IMU_FAST,19:IMU_RAW
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
@@ -497,7 +566,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
     GOBJECT(loiter_nav, "LOIT_", AC_Loiter),
 
-#if CIRCLE_NAV_ENABLED == ENABLED
+#if CIRCLE_NAV_ENABLED
     // @Group: CIRCLE_
     // @Path: ../libraries/AC_WPNav/AC_Circle.cpp
     GOBJECT(circle_nav, "CIRCLE_",  AC_Circle),
@@ -510,46 +579,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Group: PSC
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
     GOBJECT(pos_control, "PSC", AC_PosControl),
-
-    // @Group: SR0_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[0],  gcs0,       "SR0_",     GCS_MAVLINK_Parameters),
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 2
-    // @Group: SR1_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[1],  gcs1,       "SR1_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 3
-    // @Group: SR2_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[2],  gcs2,       "SR2_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 4
-    // @Group: SR3_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[3],  gcs3,       "SR3_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 5
-    // @Group: SR4_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[4],  gcs4,       "SR4_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 6
-    // @Group: SR5_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[5],  gcs5,       "SR5_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 7
-    // @Group: SR6_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[6],  gcs6,       "SR6_",     GCS_MAVLINK_Parameters),
-#endif
 
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
@@ -603,7 +632,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
 
-#if AVOIDANCE_ENABLED == ENABLED
+#if AVOIDANCE_ENABLED
     // @Group: AVOID_
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
     GOBJECT(avoid,      "AVOID_",   AC_Avoid),
@@ -619,7 +648,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp,../libraries/AP_Motors/AP_MotorsMulticopter.cpp
     GOBJECT(motors, "MOT_",         AP_Motors6DOF),
 
-#if RCMAP_ENABLED == ENABLED
+#if RCMAP_ENABLED
     // @Group: RCMAP_
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
     GOBJECT(rcmap, "RCMAP_",        RCMapper),
@@ -641,10 +670,24 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),
 
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
     GOBJECT(rangefinder,   "RNGFND", RangeFinder),
+
+    // @Param: RNGFND_SQ_MIN
+    // @DisplayName: Rangefinder signal quality minimum
+    // @Description: Minimum signal quality for good rangefinder readings
+    // @Range: 0 100
+    // @User: Advanced
+    GSCALAR(rangefinder_signal_min, "RNGFND_SQ_MIN", RANGEFINDER_SIGNAL_MIN_DEFAULT),
+
+    // @Param: SURFTRAK_DEPTH
+    // @DisplayName: SURFTRAK minimum depth
+    // @Description: Minimum depth to engage SURFTRAK mode
+    // @Units: cm
+    // @User: Standard
+    GSCALAR(surftrak_depth, "SURFTRAK_DEPTH", SURFTRAK_DEPTH_DEFAULT),
 #endif
 
 #if AP_TERRAIN_AVAILABLE
@@ -659,10 +702,22 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(optflow,   "FLOW", AP_OpticalFlow),
 #endif
 
+#if OSD_ENABLED || OSD_PARAM_ENABLED
+    // @Group: OSD
+    // @Path: ../libraries/AP_OSD/AP_OSD.cpp
+    GOBJECT(osd, "OSD", AP_OSD),
+#endif
+
 #if AP_RPM_ENABLED
     // @Group: RPM
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
+#endif
+
+#if AP_RSSI_ENABLED
+    // @Group: RSSI_
+    // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
+    GOBJECT(rssi, "RSSI_",  AP_RSSI),
 #endif
 
     // @Group: NTF_
@@ -676,6 +731,12 @@ const AP_Param::Info Sub::var_info[] = {
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     PARAM_VEHICLE_INFO,
+
+#if HAL_GCS_ENABLED
+    // @Group: MAV
+    // @Path: ../libraries/GCS_MAVLink/GCS.cpp
+    GOBJECT(_gcs,           "MAV",  GCS),
+#endif
 
     AP_VAREND
 };
@@ -693,11 +754,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(proximity, "PRX", 2, ParametersG2, AP_Proximity),
 #endif
 
-#if AP_GRIPPER_ENABLED
-    // @Group: GRIP_
-    // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
-    AP_SUBGROUPINFO(gripper, "GRIP_", 3, ParametersG2, AP_Gripper),
-#endif
+    // 3 was AP_Gripper
 
     // @Group: SERVO
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
@@ -709,7 +766,38 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // 18 was scripting
 
-    // 19 was airspeed
+    // @Param: ORIGIN_LAT
+    // @DisplayName: Backup latitude for EKF origin
+    // @Description:  Backup EKF origin latitude used when not using a positioning system.
+    // @Units: deg
+    // @User: Standard
+    AP_GROUPINFO("ORIGIN_LAT", 19, ParametersG2, backup_origin_lat, 0),
+
+    // @Param: ORIGIN_LON
+    // @DisplayName: Backup longitude for EKF origin
+    // @Description:  Backup EKF origin longitude used when not using a positioning system.
+    // @Units: deg
+    // @User: Standard
+    AP_GROUPINFO("ORIGIN_LON", 20, ParametersG2, backup_origin_lon, 0),
+
+    // @Param: ORIGIN_ALT
+    // @DisplayName: Backup altitude (MSL) for EKF origin
+    // @Description:  Backup EKF origin altitude (MSL) used when not using a positioning system.
+    // @Units: m
+    // @User: Standard
+    AP_GROUPINFO("ORIGIN_ALT", 21, ParametersG2, backup_origin_alt, 0),
+
+    // @Param: SFC_NOBARO_THST
+    // @DisplayName: Surface mode throttle output when no barometer is available
+    // @Description: Surface mode throttle output when no borometer is available. 100% is full throttle. -100% is maximum throttle downwards
+    // @Units: %
+    // @User: Standard
+    // @Range: -100 100
+    AP_GROUPINFO("SFC_NOBARO_THST", 22, ParametersG2, surface_nobaro_thrust, 10),
+
+    // @Group: ACTUATOR
+    // @Path: ../ArduSub/actuators.cpp
+    AP_SUBGROUPINFO(actuators, "ACTUATOR", 23, ParametersG2, Actuators),
 
     AP_GROUPEND
 };
@@ -743,58 +831,57 @@ void Sub::load_parameters()
     // We should ignore this parameter since ROVs are neutral buoyancy
     AP_Param::set_by_name("MOT_THST_HOVER", 0.5);
 
-// PARAMETER_CONVERSION - Added: JAN-2022
-#if AP_AIRSPEED_ENABLED
-    // Find G2's Top Level Key
-    AP_Param::ConversionInfo info;
-    if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
-        return;
-    }
-
-    const uint16_t old_index = 19;          // Old parameter index in the tree
-    const uint16_t old_top_element = 4051;  // Old group element in the tree for the first subgroup element
-    AP_Param::convert_class(info.old_key, &airspeed, airspeed.var_info, old_index, old_top_element, false);
-#endif
-
-
     // PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
-    AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, true);
 #endif
 
-    // PARAMETER_CONVERSION - Added: Jan-2024
+    static const AP_Param::G2ObjectConversion g2_conversions[] {
+#if AP_AIRSPEED_ENABLED
+    // PARAMETER_CONVERSION - Added: JAN-2022
+        { &airspeed, airspeed.var_info, 19 },
+#endif
 #if AP_STATS_ENABLED
-    {
-        // Find G2's Top Level Key
-        AP_Param::ConversionInfo stats_info;
-        if (!AP_Param::find_top_level_key_by_pointer(&g2, stats_info.old_key)) {
-            return;
-        }
-
-        const uint16_t stats_old_index = 1;       // Old parameter index in g2
-        const uint16_t stats_old_top_element = 4033; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
-        AP_Param::convert_class(stats_info.old_key, &stats, stats.var_info, stats_old_index, stats_old_top_element, false);
-    }
-#endif
     // PARAMETER_CONVERSION - Added: Jan-2024
-#if AP_SCRIPTING_ENABLED
-    {
-        // Find G2's Top Level Key
-        AP_Param::ConversionInfo scripting_info;
-        if (!AP_Param::find_top_level_key_by_pointer(&g2, scripting_info.old_key)) {
-            return;
-        }
-
-        const uint16_t scripting_old_index = 18;       // Old parameter index in g2
-        const uint16_t scripting_old_top_element = 82; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
-        AP_Param::convert_class(scripting_info.old_key, &scripting, scripting.var_info, scripting_old_index, scripting_old_top_element, false);
-    }
+        { &stats, stats.var_info, 1 },
 #endif
+#if AP_SCRIPTING_ENABLED
+    // PARAMETER_CONVERSION - Added: Jan-2024
+        { &scripting, scripting.var_info, 18 },
+#endif
+#if AP_GRIPPER_ENABLED
+    // PARAMETER_CONVERSION - Added: Feb-2024
+        { &gripper, gripper.var_info, 3 },
+#endif
+    };
+
+    AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));
 
     // PARAMETER_CONVERSION - Added: Feb-2024
 #if HAL_LOGGING_ENABLED
-    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
 #endif
+
+    static const AP_Param::TopLevelObjectConversion toplevel_conversions[] {
+#if AP_SERIALMANAGER_ENABLED
+        // PARAMETER_CONVERSION - Added: Feb-2024
+        { &serial_manager, serial_manager.var_info, Parameters::k_param_serial_manager_old },
+#endif
+    };
+
+    AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
+
+#if HAL_GCS_ENABLED
+    // Move parameters into new MAV_ parameter namespace
+    // PARAMETER_CONVERSION - Added: Mar-2025
+    {
+        static const AP_Param::ConversionInfo gcs_conversion_info[] {
+            { Parameters::k_param_sysid_this_mav_old, 0, AP_PARAM_INT16,  "MAV_SYSID" },
+            { Parameters::k_param_sysid_my_gcs_old, 0, AP_PARAM_INT16, "MAV_GCS_SYSID" },
+        };
+        AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
+    }
+#endif  // HAL_GCS_ENABLED
 }
 
 void Sub::convert_old_parameters()

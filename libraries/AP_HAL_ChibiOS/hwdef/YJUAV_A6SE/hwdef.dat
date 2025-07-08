@@ -6,10 +6,9 @@ MCU STM32H7xx STM32H750xx
 # crystal frequency
 OSCILLATOR_HZ 16000000
 
-# board ID for firmware load
-APJ_BOARD_ID 1127
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_YJUAV_A6SE
 
-env OPTIMIZE -O2
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5
@@ -167,15 +166,12 @@ PE15 LED_R1 OUTPUT OPENDRAIN HIGH GPIO(0)
 PD10 LED_G1 OUTPUT OPENDRAIN LOW GPIO(1)
 PG0  LED_B1 OUTPUT OPENDRAIN HIGH GPIO(2)
 
-define HAL_GPIO_A_LED_PIN 0
-define HAL_GPIO_B_LED_PIN 1
-define HAL_GPIO_C_LED_PIN 2
-
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 0
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 1
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 2
 
 # use pixracer style 3-LED indicators
-define HAL_HAVE_PIXRACER_LED
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
@@ -201,7 +197,7 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 5
 
 # baro
 BARO DPS310 SPI:dps310
-BARO MS56XX SPI:ms5611
+BARO MS5611 SPI:ms5611
 BARO ICP201XX I2C:0:0x64
 
 # compass
@@ -229,9 +225,6 @@ PD2  SDMMC1_CMD SDMMC1
 
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
-
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # enable RAMTROM parameter storage
 define HAL_STORAGE_SIZE 32768

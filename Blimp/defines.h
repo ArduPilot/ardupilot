@@ -2,14 +2,6 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
-// Just so that it's completely clear...
-#define ENABLED                 1
-#define DISABLED                0
-
-// this avoids a very common config error
-#define ENABLE ENABLED
-#define DISABLE DISABLED
-
 // bit options for DEV_OPTIONS parameter
 enum DevOptions {
     DevOptionADSBMAVLink = 1,

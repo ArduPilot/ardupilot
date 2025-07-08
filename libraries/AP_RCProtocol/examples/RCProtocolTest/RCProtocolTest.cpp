@@ -19,11 +19,45 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <RC_Channel/RC_Channel.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <stdio.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#endif
 
 void setup();
 void loop();
+
+class RC_Channel_Example : public RC_Channel {};
+
+class RC_Channels_Example : public RC_Channels
+{
+public:
+    RC_Channel_Example obj_channels[NUM_RC_CHANNELS];
+
+    RC_Channel_Example *channel(const uint8_t chan) override {
+        if (chan >= NUM_RC_CHANNELS) {
+            return nullptr;
+        }
+        return &obj_channels[chan];
+    }
+
+protected:
+    int8_t flight_mode_channel_number() const override { return 5; }
+};
+
+#define RC_CHANNELS_SUBCLASS RC_Channels_Example
+#define RC_CHANNEL_SUBCLASS RC_Channel_Example
+
+#include <RC_Channel/RC_Channels_VarInfo.h>
+
+static RC_Channels_Example rchannels;
+static AP_SerialManager serial_manager;
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -31,36 +65,62 @@ static AP_VideoTX vtx; // for set_vtx functions
 
 static AP_RCProtocol *rcprot;
 
+static uint32_t test_count;
+static uint32_t test_failures;
+
+static void delay_ms(uint32_t ms)
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    hal.scheduler->stop_clock(AP_HAL::micros64()+ms*1000);
+#else
+    hal.scheduler->delay(ms);
+#endif
+}
+
 // setup routine
 void setup()
 {
     // introduction
     hal.console->printf("ArduPilot RC protocol test\n");
-    hal.scheduler->delay(100);
+    delay_ms(100);
 }
 
 static bool check_result(const char *name, bool bytes, const uint16_t *values, uint8_t nvalues)
 {
     char label[20];
     snprintf(label, 20, "%s(%s)", name, bytes?"bytes":"pulses");
-    if (!rcprot->new_input()) {
+    const bool have_input = rcprot->new_input();
+    if (values == nullptr) {
+        if (have_input) {
+            printf("%s: got input, none expected\n", label);
+            return false;
+        } else {
+            printf("%s: OK (no input)\n", label);
+            return true;
+        }
+    }
+    if (!have_input) {
         printf("%s: No new input\n", label);
+        test_failures++;
         return false;
     }
-    const char *pname = rcprot->protocol_name();
+    const char *pname = rcprot->detected_protocol_name();
     if (strncmp(pname, name, strlen(pname)) != 0) {
-        printf("%s: wrong protocol detected %s\n", label, rcprot->protocol_name());
+        printf("%s: wrong protocol detected %s\n", label, pname);
+        test_failures++;
         return false;
     }
     uint8_t n = rcprot->num_channels();
     if (n != nvalues) {
         printf("%s: wrong number of channels %u should be %u\n", label, n, nvalues);
+        test_failures++;
         return false;
     }
     for (uint8_t i=0; i<n; i++) {
         uint16_t v = rcprot->read(i);
         if (values[i] != v) {
             printf("%s: chan %u wrong value %u should be %u\n", label, i+1, v, values[i]);
+            test_failures++;
             return false;
         }
     }
@@ -81,11 +141,11 @@ static bool test_byte_protocol(const char *name, uint32_t baudrate,
     for (uint8_t repeat=0; repeat<repeats+4; repeat++) {
         for (uint8_t i=0; i<nbytes; i++) {
             if (pause_at > 0 && i > 0 && ((i % pause_at) == 0)) {
-                hal.scheduler->delay(10);
+                delay_ms(10);
             }
             rcprot->process_byte(bytes[i], baudrate);
         }
-        hal.scheduler->delay(10);
+        delay_ms(10);
         if (repeat > repeats) {
             ret &= check_result(name, true, values, nvalues);
         }
@@ -202,7 +262,66 @@ static bool test_protocol(const char *name, uint32_t baudrate,
     return ret;
 }
 
+/*
+  test a protocol handler where we only expected byte input to work
+ */
+static bool test_protocol_bytesonly(const char *name, uint32_t baudrate,
+                                    const uint8_t *bytes, uint8_t nbytes,
+                                    const uint16_t *values, uint8_t nvalues,
+                                    uint8_t repeats=1,
+                                    int8_t pause_at=0,
+                                    bool inverted=false)
+{
+    bool ret = true;
+    rcprot = new AP_RCProtocol();
+    rcprot->init();
+
+    ret &= test_byte_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats, pause_at);
+    delete rcprot;
+
+    rcprot = new AP_RCProtocol();
+    rcprot->init();
+    ret &= test_pulse_protocol(name, baudrate, bytes, nbytes, nullptr, 0, repeats, pause_at, inverted);
+    delete rcprot;
+
+    return ret;
+}
+
+/*
+  test with random data
+ */
+static void test_random(void)
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    const uint32_t baudrates[] = { 115200, 100000, 416666, 420000 };
+    const uint32_t test_bytes = 1000000;
+    int fd = open("/dev/urandom", O_RDONLY);
+    if (fd == -1) {
+        printf("Can't open /dev/urandom\n");
+        return;
+    }
+    uint8_t *buf = (uint8_t *)malloc(test_bytes);
+    for (const auto b : baudrates) {
+        printf("Testing random with baud %u\n", unsigned(b));
+        rcprot = new AP_RCProtocol();
+        rcprot->init();
+        if (::read(fd, buf, test_bytes) != test_bytes) {
+            printf("Failed to read from /dev/urandom\n");
+            break;
+        }
+        for (uint32_t i=0; i<test_bytes; i++) {
+            rcprot->process_byte(buf[i], b);
+        }
+        delete rcprot;
+        rcprot = nullptr;
+    }
+    free(buf);
+    close(fd);
+#endif
+}
+
 //Main loop where the action takes place
+#pragma GCC diagnostic error "-Wframe-larger-than=2000"
 void loop()
 {
     const uint8_t srxl_bytes[] = { 0xa5, 0x03, 0x0c, 0x04, 0x2f, 0x6c, 0x10, 0xb4, 0x26,
@@ -340,6 +459,35 @@ void loop()
     // we only decode up to 18ch
     const uint16_t fport2_24ch_output[] = {1495, 1495, 986, 1495, 982, 1495, 982, 982, 1495, 2006, 982, 1495, 1495, 1495, 1495, 1495, 1495, 1495};
 
+    const uint8_t crsf_bytes[] = {0xC8, 0x14, 0x17, 0x20, 0x03, 0x0C, 0xA0, 0x00, 0xF6, 0xB7, 0x6E, 0x94, 0xFC,
+                                  0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFE, 0x0F, 0x6E };
+    const uint16_t crsf_output[] = {1501, 1500, 989, 1497, 1873, 1136, 2011, 988, 988, 988, 988, 2011, 0, 0, 0, 0, 0, 0};
+    // CRSF partial frame followed by full frame
+    const uint8_t crsf_bad_bytes1[] = {0xC8, 0x14, 0x17, 0x20, 0x03, 0x0C, 0xA0, 0xC8, 0x14, 0x17, 0x20, 0x03, 0x0C, 0xA0, 0x00, 0xF6, 0xB7, 0x6E, 0x94, 0xFC,
+                                  0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFE, 0x0F, 0x6E };
+    const uint16_t crsf_bad_output1[] = {1501, 1500, 989, 1497, 1873, 1136, 2011, 988, 988, 988, 988, 2011, 0, 0, 0, 0, 0, 0};
+    // CRSF full frame with bad CRC followed by full frame
+    const uint8_t crsf_bad_bytes2[] = {0xC8, 0x14, 0x17, 0x20, 0x03, 0x0C, 0xA0, 0x00, 0xF6, 0xB7, 0x6E, 0x94, 0xFC,
+                                  0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFE, 0x0F, 0x6F,
+                                  0xC8, 0x14, 0x17, 0x20, 0x03, 0x0C, 0xA0, 0x00, 0xF6, 0xB7, 0x6E, 0x94, 0xFC,
+                                  0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFE, 0x0F, 0x6E };
+    const uint16_t crsf_bad_output2[] = {1501, 1500, 989, 1497, 1873, 1136, 2011, 988, 988, 988, 988, 2011, 0, 0, 0, 0, 0, 0};
+
+    // CRSF with lots of start markers followed by full frame
+    const uint8_t crsf_bad_bytes3[] = {0xC8, 0x14, 0xC8, 0x14, 0xC8, 0x0C, 0xA0,
+                                   0xC8, 0x14, 0x17, 0x20, 0x03, 0x0C, 0xA0, 0x00, 0xF6, 0xB7, 0x6E, 0x94, 0xFC,
+                                   0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFE, 0x0F, 0x6E, };
+    const uint16_t crsf_bad_output3[] = {1501, 1500, 989, 1497, 1873, 1136, 2011, 988, 988, 988, 988, 2011, 0, 0, 0, 0, 0, 0};
+
+    // CRSF with a partial frame followed by a full frame
+    const uint8_t crsf_bad_bytes4[] = {
+                                   0xC8, 0x14, 0x17, 0x20, 0x03, 0x0C, 0xA0, 0x00, 0xF6, 0xB7, 0x6E, 0x94, 0xFC,
+                                   0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFE,
+                                   0xC8, 0x14, 0x17, 0x20, 0x03, 0x0C, 0xA0, 0x00, 0xF6, 0xB7, 0x6E, 0x94, 0xFC,
+                                   0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFE, 0x0F, 0x6E };
+    const uint16_t crsf_bad_output4[] = {1501, 1500, 989, 1497, 1873, 1136, 2011, 988, 988, 988, 988, 2011, 0, 0, 0, 0, 0, 0};
+    
+
     test_protocol("SRXL", 115200, srxl_bytes, sizeof(srxl_bytes), srxl_output, ARRAY_SIZE(srxl_output), 1);
     test_protocol("SUMD", 115200, sumd_bytes, sizeof(sumd_bytes), sumd_output, ARRAY_SIZE(sumd_output), 1);
     test_protocol("SUMD2", 115200, sumd_bytes2, sizeof(sumd_bytes2), sumd_output2, ARRAY_SIZE(sumd_output2), 1);
@@ -348,6 +496,13 @@ void loop()
 
     // SBUS needs 3 repeats to pass the RCProtocol 3 frames test
     test_protocol("SBUS", 100000, sbus_bytes, sizeof(sbus_bytes), sbus_output, ARRAY_SIZE(sbus_output), 3, 0, true);
+
+    // CRSF needs 3 repeats to pass the RCProtocol 3 frames test
+    test_protocol_bytesonly("CRSF", 416666, crsf_bytes, sizeof(crsf_bytes), crsf_output, ARRAY_SIZE(crsf_output), 3, 0, true);
+    test_protocol_bytesonly("CRSF2", 416666, crsf_bad_bytes1, sizeof(crsf_bad_bytes1), crsf_bad_output1, ARRAY_SIZE(crsf_bad_output1), 3, 0, true);
+    test_protocol_bytesonly("CRSF3", 416666, crsf_bad_bytes2, sizeof(crsf_bad_bytes2), crsf_bad_output2, ARRAY_SIZE(crsf_bad_output2), 3, 0, true);
+    test_protocol_bytesonly("CRSF4", 416666, crsf_bad_bytes3, sizeof(crsf_bad_bytes3), crsf_bad_output3, ARRAY_SIZE(crsf_bad_output3), 3, 0, true);
+    test_protocol_bytesonly("CRSF5", 416666, crsf_bad_bytes4, sizeof(crsf_bad_bytes4), crsf_bad_output4, ARRAY_SIZE(crsf_bad_output4), 3, 0, true);
 
     // DSM needs 8 repeats, 5 to guess the format, then 3 to pass the RCProtocol 3 frames test
     test_protocol("DSM1", 115200, dsm_bytes,  sizeof(dsm_bytes),  dsm_output,  ARRAY_SIZE(dsm_output), 9);
@@ -363,6 +518,23 @@ void loop()
     test_protocol("FPORT", 115200, fport_bytes, sizeof(fport_bytes), fport_output, ARRAY_SIZE(fport_output), 3, 0, true);
     test_protocol("FPORT2_16CH", 115200, fport2_16ch_bytes, sizeof(fport2_16ch_bytes), fport2_16ch_output, ARRAY_SIZE(fport2_16ch_output), 3, 0, true);
     test_protocol("FPORT2_24CH", 115200, fport2_24ch_bytes, sizeof(fport2_24ch_bytes), fport2_24ch_output, ARRAY_SIZE(fport2_24ch_output), 3, 0, true);
+
+    /*
+      now test with random data to ensure we don't have any logic bugs that can cause a crash of the parser
+     */
+    test_random();
+
+    if (test_count++ == 10) {
+        if (test_failures == 0) {
+            printf("Test PASSED\n");
+            ::exit(0);
+        }
+        printf("Test FAILED - %u failures\n", unsigned(test_failures));
+        ::exit(1);
+    }
+    printf("Test count %u - %u failures\n", unsigned(test_count), unsigned(test_failures));
 }
+
+GCS_Dummy _gcs;
 
 AP_HAL_MAIN();

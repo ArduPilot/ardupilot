@@ -8,9 +8,11 @@
 
 #pragma once
 
-#include "AP_Mount_Backend.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_XACTI_ENABLED
+
+#include "AP_Mount_Backend.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -62,6 +64,10 @@ public:
     // set camera lens as a value from 0 to 5
     bool set_lens(uint8_t lens) override;
 
+    // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+    // primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
+    bool set_camera_source(uint8_t primary_source, uint8_t secondary_source) override;
+
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
 
@@ -69,7 +75,7 @@ public:
     void send_camera_settings(mavlink_channel_t chan) const override;
 
     // subscribe to Xacti DroneCAN messages
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
     // xacti specific message handlers
     static void handle_gimbal_attitude_status(AP_DroneCAN* ap_dronecan, const CanardRxTransfer& transfer, const com_xacti_GimbalAttitudeStatus &msg);
@@ -252,7 +258,7 @@ private:
         uint16_t apeture;                           // cameras' aperture * 100
         uint16_t iso_sensitivity;                   // camera's iso sensitivity
     } _status;                                      // latest status received
-    static_assert(sizeof(_status) == 48);           // status should be 48 bytes
+    static_assert(sizeof(_status) == 48, "status must be 48 bytes");           // status should be 48 bytes
     struct {
         uint32_t last_request_ms;                   // system time that status was last requested
         uint32_t last_error_status;                 // last error status reported to user
@@ -261,7 +267,6 @@ private:
     bool _camera_error;                             // true if status reports camera error
 
     // DroneCAN related variables
-    static bool _subscribed;                        // true once subscribed to receive DroneCAN messages
     static struct DetectedModules {
         AP_Mount_Xacti *driver;                     // pointer to Xacti backends
         AP_DroneCAN* ap_dronecan;                   // DroneCAN interface used by this backend

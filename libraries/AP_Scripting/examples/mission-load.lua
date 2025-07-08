@@ -1,11 +1,10 @@
 -- Example of loading a mission from the SD card using Scripting
 -- Would be trivial to select a mission based on scripting params or RC switch
--- luacheck: only 0
 --Copy this "mission-load.lua" script to the "scripts" directory of the simulation or autopilot's SD card. 
 --The "mission1.txt" file containing the mission items should be placed in the directory above the "scripts" directory. 
 --In case of placing it on SD Card, mission1.txt file should be placed in the APM directory root.
 
-
+---@diagnostic disable: param-type-mismatch
 
 local function read_mission(file_name)
 
@@ -23,12 +22,11 @@ local function read_mission(file_name)
   local index = 0
   local fail = false
   while true and not fail do
-     local data = {}
      local line = file:read()
      if not line then
         break
      end
-     local ret, _, seq, curr, frame, cmd, p1, p2, p3, p4, x, y, z, autocont = string.find(line, "^(%d+)%s+(%d+)%s+(%d+)%s+(%d+)%s+([-.%d]+)%s+([-.%d]+)%s+([-.%d]+)%s+([-.%d]+)%s+([-.%d]+)%s+([-.%d]+)%s+([-.%d]+)%s+(%d+)")
+     local ret, _, seq, _--[[ curr ]], frame, cmd, p1, p2, p3, p4, x, y, z, _--[[ autocont ]] = string.find(line, "^(%d+)%s+(%d+)%s+(%d+)%s+(%d+)%s+([-.%d]+)%s+([-.%d]+)%s+([-.%d]+)%s+([-.%d]+)%s+([-.%d]+)%s+([-.%d]+)%s+([-.%d]+)%s+(%d+)")
      if not ret then
         fail = true
         break

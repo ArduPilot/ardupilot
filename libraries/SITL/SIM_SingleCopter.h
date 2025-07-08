@@ -35,7 +35,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new SingleCopter(frame_str);
+        return NEW_NOTHROW SingleCopter(frame_str);
     }
 
 private:

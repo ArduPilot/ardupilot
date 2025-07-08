@@ -6,6 +6,10 @@
 --    b) slows the spiral and stops at the preset altitude
 --    c) switches to RTL
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: need-check-nil
+
 -- constants
 local copter_guided_mode_num = 4    -- Guided mode is 4 on copter
 local copter_rtl_mode_num = 6       -- RTL is 6 on copter
@@ -102,15 +106,15 @@ function update()
       circle_radius = 0           -- reset circle radius to zero
       if yaw_behave:get() == 0 then
         -- yaw does not move so reset starting angle to current heading
-        circle_angle_rad = ahrs:get_yaw()
+        circle_angle_rad = ahrs:get_yaw_rad()
       else
         -- yaw points towards center so start 180deg behind vehicle
-        circle_angle_rad = ahrs:get_yaw() + math.pi
+        circle_angle_rad = ahrs:get_yaw_rad() + math.pi
         if (circle_angle_rad >= (math.pi * 2)) then
           circle_angle_rad = circle_angle_rad - (math.pi * 2)
         end
       end
-      target_yaw_deg = math.deg(ahrs:get_yaw()) -- target heading will be kept at original heading
+      target_yaw_deg = math.deg(ahrs:get_yaw_rad()) -- target heading will be kept at original heading
       target_alt_D = circle_center_pos:z() -- initialise target alt using current position (Note: down is positive)
       speed_xy = 0
       speed_z = 0

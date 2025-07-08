@@ -16,20 +16,20 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // Some helper classes to allow accessing protected variables, also useful for adding type specific prints
 
-class LowPassHelper : public LowPassFilterFloat {
+class LowPassConstDtHelper : public LowPassFilterConstDtFloat {
 public:
-    using LowPassFilterFloat::LowPassFilterFloat;
+    using LowPassFilterConstDtFloat::LowPassFilterConstDtFloat;
 
-    void set_cutoff_frequency_override(float sample_freq, float cutoff_freq) {
+    void set_cutoff_frequency_override(float sample_freq, float new_cutoff_freq) {
         // Stash the sample rate so we can use it later
         _sample_freq = sample_freq;
-        set_cutoff_frequency(sample_freq, cutoff_freq);
+        set_cutoff_frequency(sample_freq, new_cutoff_freq);
     }
 
     // Were really cheating here and using the same method as the filter to get the coefficient
     // rather than pulling the coefficient directly
     void print_transfer_function() {
-        hal.console->printf("LowPassFilterFloat\n");
+        hal.console->printf("LowPassFilterConstDtFloat\n");
         hal.console->printf("Sample rate: %.9f Hz, Cutoff: %.9f Hz\n", _sample_freq, get_cutoff_freq());
         hal.console->printf("Low pass filter in the form: H(z) = a/(1-(1-a)*z^-1)\n");
         hal.console->printf("a: %.9f\n", calc_lowpass_alpha_dt(1.0/_sample_freq, get_cutoff_freq()));
@@ -37,6 +37,33 @@ public:
 
 private:
     float _sample_freq;
+};
+
+class LowPassHelper : public LowPassFilterFloat {
+public:
+    using LowPassFilterFloat::LowPassFilterFloat;
+
+    void set_cutoff_frequency_override(float sample_freq, float new_cutoff_freq) {
+        // Stash the DT so we can use it later
+        _DT = 1.0 / sample_freq;
+        set_cutoff_frequency(new_cutoff_freq);
+    }
+
+    // Were really cheating here and using the same method as the filter to get the coefficient
+    // rather than pulling the coefficient directly
+    void print_transfer_function() {
+        hal.console->printf("LowPassFilterFloat\n");
+        hal.console->printf("Sample rate: %.9f Hz, Cutoff: %.9f Hz\n", 1.0 / _DT, get_cutoff_freq());
+        hal.console->printf("Low pass filter in the form: H(z) = a/(1-(1-a)*z^-1)\n");
+        hal.console->printf("a: %.9f\n", calc_lowpass_alpha_dt(_DT, get_cutoff_freq()));
+    }
+
+    float apply_override(const float sample) {
+        return apply(sample, _DT);
+    }
+
+private:
+    float _DT;
 };
 
 class LowPass2pHelper : public LowPassFilter2pFloat {
@@ -67,12 +94,14 @@ public:
 
 
 // create an instance each filter to test
+LowPassConstDtHelper lowpassConstDt;
 LowPassHelper lowpass;
 LowPass2pHelper biquad;
 NotchHelper notch;
 NotchHelper notch2;
 
 enum class filter_type {
+    LowPassConstDT,
     LowPass,
     Biquad,
     Notch,
@@ -97,7 +126,7 @@ void setup()
     const float sample_rate = 1000;
     const float target_freq = 50;
 
-    type = filter_type::Combination;
+    type = filter_type::LowPassConstDT;
 
     // Run 1000 time steps at each frequency
     const uint16_t num_samples = 1000;
@@ -108,6 +137,11 @@ void setup()
     // Print transfer function of filter under test
     hal.console->printf("\n");
     switch (type) {
+    case filter_type::LowPassConstDT:
+        lowpassConstDt.set_cutoff_frequency_override(sample_rate, target_freq);
+        lowpassConstDt.print_transfer_function();
+        break;
+
     case filter_type::LowPass:
         lowpass.set_cutoff_frequency_override(sample_rate, target_freq);
         lowpass.print_transfer_function();
@@ -147,6 +181,7 @@ void setup()
 
 void reset_all()
 {
+    lowpassConstDt.reset(0.0);
     lowpass.reset(0.0);
     biquad.reset(0.0);
     notch.reset();
@@ -156,8 +191,11 @@ void reset_all()
 float apply_to_filter_under_test(float input)
 {
     switch (type) {
+        case filter_type::LowPassConstDT:
+            return lowpassConstDt.apply(input);
+
         case filter_type::LowPass:
-            return lowpass.apply(input);
+            return lowpass.apply_override(input);
 
         case filter_type::Biquad:
             return biquad.apply(input);
@@ -195,6 +233,9 @@ void sweep(uint16_t num_samples,  uint16_t max_freq, float sample_rate)
             hal.console->printf(", %+.9f", output);
         }
         hal.console->printf("\n");
+
+        // Try not to overflow the print buffer
+        hal.scheduler->delay(100);
     }
 }
 

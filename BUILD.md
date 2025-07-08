@@ -191,6 +191,27 @@ list some basic and more used commands as example.
 
     Also, take a look on the [Advanced section](#advanced-usage) below.
 
+### Using Docker ###
+
+A docker environment is provided which may be helpful for building in a clean
+environment and avoiding modification of the host environment.
+
+To build the docker image (should only need to be done once), run:
+
+```bash
+docker build --rm -t ardupilot-dev .
+```
+
+To build inside the container, prefix your `waf` commands, e.g.:
+
+```bash
+docker run --rm -it -v $PWD:/ardupilot ardupilot-dev ./waf configure --board=sitl
+docker run --rm -it -v $PWD:/ardupilot ardupilot-dev ./waf copter
+```
+
+Alternatively, simply run `docker run --rm -it -v $PWD:/ardupilot ardupilot-dev` to
+start a `bash` shell in which you can run other commands from this document.
+
 ## Advanced usage ##
 
 This section contains some explanations on how the Waf build system works

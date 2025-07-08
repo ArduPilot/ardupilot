@@ -6,13 +6,13 @@
 */
 void Plane::parachute_check()
 {
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
     parachute.update();
     parachute.check_sink_rate();
 #endif
 }
 
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
 
 /*
   parachute_release - trigger the release of the parachute

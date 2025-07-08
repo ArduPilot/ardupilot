@@ -76,15 +76,17 @@ float AP_Baro::wind_pressure_correction(uint8_t instance)
         return 0;
     }
 
+    auto &ahrs = AP::ahrs();
+
     // correct for static pressure position errors
     Vector3f airspeed_vec_bf;
-    if (!AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+    if (!ahrs.airspeed_vector_true(airspeed_vec_bf)) {
         return 0;
     }
 
     float error = 0.0;
 
-    const float kp = 0.5 * SSL_AIR_DENSITY * get_air_density_ratio();
+    const float kp = 0.5 * SSL_AIR_DENSITY * ahrs.get_air_density_ratio();
     const float sqxp = sq(airspeed_vec_bf.x) * kp;
     const float sqyp = sq(airspeed_vec_bf.y) * kp;
     const float sqzp = sq(airspeed_vec_bf.z) * kp;

@@ -3,8 +3,8 @@
 
 MCU STM32F4xx STM32F412Rx
 
-# board ID for firmware load
-APJ_BOARD_ID 9
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_CUBE_F4
 
 # short board name override (13 chars) to match original max length; can't change because name is used for transmitter bind CRC
 define CHIBIOS_SHORT_BOARD_NAME "skyviper-jour"
@@ -92,24 +92,28 @@ SPIDEV pixartflow SPI2 DEVID2 FLOW_CS  MODE3 2*MHZ 2*MHZ
 # reserve 16k for bootloader and 32k for storage
 FLASH_RESERVE_START_KB 48
 
-define HAL_CHIBIOS_ARCH_F412 1
-
 IMU Invensense I2C:1:0x68 ROTATION_NONE
 
 # radio IRQ is on GPIO(100)
 define HAL_GPIO_RADIO_IRQ 100
 
-define HAL_RCINPUT_WITH_AP_RADIO 1
+define AP_RADIO_ENABLED 1
 define AP_RADIO_BACKEND_DEFAULT_ENABLED 0
 define AP_RADIO_CC2500_ENABLED 1
 define AP_RADIO_CYRF6936_ENABLED 1
 define AP_RADIO_BK2425_ENABLED 1
 
+define AP_RADIO_AUTO_ENABLED 1
+
+define AP_RCPROTOCOL_ENABLED 1
+define AP_RCPROTOCOL_BACKEND_DEFAULT_ENABLED 0
+define AP_RCPROTOCOL_RADIO_ENABLED 1
+
 STORAGE_FLASH_PAGE	 1
 define HAL_STORAGE_SIZE 15360
 
 # setup defines for ArduCopter config
-define TOY_MODE_ENABLED ENABLED
+define TOY_MODE_ENABLED 1
 define ARMING_DELAY_SEC 0
 define LAND_START_ALT 700
 define LAND_DETECTOR_ACCEL_MAX 2.0f
@@ -117,15 +121,13 @@ define ALLOW_ARM_NO_COMPASS
 
 COMPASS BMM150 I2C:0:0x10 false ROTATION_NONE
 
-define HAL_BARO_DEFAULT HAL_BARO_20789_I2C_I2C
-define HAL_BARO_20789_I2C_BUS           1
-define HAL_BARO_20789_I2C_ADDR_PRESS 0x63
-define HAL_BARO_20789_I2C_ADDR_ICM   0x68
+BARO ICM20789 I2C:1:0x63 I2C:1:0x68
+define HAL_TCAL_BARO_EXP_DEFAULT 1.2
 
 # unstick 20789 on I2C on boot
 define HAL_I2C_CLEAR_BUS
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
+define OPTICAL_FLOW_TYPE_DEFAULT Type::PIXART
 
 # the web UI uses an abin file for firmware uploads
 env BUILD_ABIN True
@@ -134,6 +136,7 @@ env BUILD_ABIN True
 define AP_PARAM_MAX_EMBEDDED_PARAM 8192
 
 # Disable un-needed hardware drivers
+include ../include/skyviper.inc
 define HAL_WITH_ESC_TELEM 0
 define AP_FETTEC_ONEWIRE_ENABLED 0
 

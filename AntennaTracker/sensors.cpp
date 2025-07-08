@@ -16,15 +16,6 @@ void Tracker::update_compass(void)
     compass.read();
 }
 
-// Save compass offsets
-void Tracker::compass_save() {
-    if (AP::compass().available() &&
-        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
-        !hal.util->get_soft_armed()) {
-        compass.save_offsets();
-    }
-}
-
 /*
   read the GPS
  */
@@ -51,7 +42,7 @@ void Tracker::update_GPS(void)
                 // Now have an initial GPS position
                 // use it as the HOME position in future startups
                 current_loc = gps.location();
-                IGNORE_RETURN(set_home(current_loc));
+                IGNORE_RETURN(set_home(current_loc, false));
                 ground_start_count = 0;
             }
         }

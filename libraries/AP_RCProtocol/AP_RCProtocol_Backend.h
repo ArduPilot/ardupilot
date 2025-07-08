@@ -39,14 +39,15 @@ public:
     uint8_t num_channels() const;
 
     // support for receivers that have FC initiated bind support
-    virtual void start_bind(void) {}
+    virtual void start_bind() {}
 
     // allow for backends that need regular polling
     virtual void update(void) {}
-    enum {
-        PARSE_TYPE_SIGREAD,
-        PARSE_TYPE_SERIAL
-    };
+
+    // update from mavlink messages
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+    virtual void update_radio_rc_channels(const mavlink_radio_rc_channels_t* packet) {}
+#endif
 
     // get number of frames, ignoring failsafe
     uint32_t get_rc_frame_count(void) const {

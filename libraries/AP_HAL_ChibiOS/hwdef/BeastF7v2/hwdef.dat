@@ -10,11 +10,10 @@ undef BARO
 undef PD15
 undef PE9 PE11 PB8 PB9 PB11 PB10 PA10 PA9 PA3 PA2
 undef HAL_DEFAULT_INS_FAST_SAMPLE DMA_PRIORITY DMA_NOSHARE
-undef STM32_PWM_USE_ADVANCED
 undef I2C1
 
-# board ID for firmware load
-APJ_BOARD_ID 1057
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_BEASTF7v2
 
 # V2 has different motor mapping
 PB4 TIM3_CH1 TIM3 PWM(2) GPIO(51)  BIDIR   # 2
@@ -59,8 +58,3 @@ IMU BMI270 SPI:bmi270 ROTATION_ROLL_180_YAW_225
 
 # v2 has no BARO
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
-
-# save some flash
-include ../include/minimize_fpv_osd.inc
-
-define DEFAULT_NTF_LED_TYPES 257

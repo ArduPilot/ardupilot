@@ -56,10 +56,10 @@ void WiFiDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     #define FASTCPU 0
     #define SLOWCPU 1
 
-	if (xTaskCreatePinnedToCore(_wifi_thread, "APM_WIFI1", Scheduler::WIFI_SS1, this, Scheduler::WIFI_PRIO1, &_wifi_task_handle,FASTCPU) != pdPASS) {
-           hal.console->printf("FAILED to create task _wifi_thread on FASTCPU\n");
+	if (xTaskCreatePinnedToCore(_wifi_thread, "APM_WIFI1", Scheduler::WIFI_SS1, this, Scheduler::WIFI_PRIO1, &_wifi_task_handle, SLOWCPU) != pdPASS) {
+           hal.console->printf("FAILED to create task _wifi_thread on SLOWCPU\n");
         } else {
-           hal.console->printf("OK created task _wifi_thread on FASTCPU\n");
+           hal.console->printf("OK created task _wifi_thread for TCP with PORT 5760 on SLOWCPU\n");
         }
 
         _readbuf.set_size(RX_BUF_SIZE);
@@ -145,7 +145,7 @@ bool WiFiDriver::start_listen()
 bool WiFiDriver::try_accept()
 {
     struct sockaddr_in sourceAddr;
-    uint addrLen = sizeof(sourceAddr);
+    socklen_t addrLen = sizeof(sourceAddr);
     short i = available_socket();
     if (i != WIFI_MAX_CONNECTION) {
         socket_list[i] = accept(accept_socket, (struct sockaddr *)&sourceAddr, &addrLen);
@@ -246,7 +246,7 @@ static void _sta_event_handler(void* arg, esp_event_base_t event_base,
 void WiFiDriver::initialize_wifi()
 {
 #ifndef WIFI_PWD
-    #default WIFI_PWD "ardupilot1"
+    #define WIFI_PWD "ardupilot1"
 #endif
     //Initialize NVS
     esp_err_t ret = nvs_flash_init();

@@ -28,6 +28,8 @@ https://www.youtube.com/watch?v=UdXGXjigxAo&t=7155s
 Credit to @ktrussell for the idea and discussion!
 ------------------------------------------------------------------------------]]
 
+---@diagnostic disable: param-type-mismatch
+
 local SCRIPT_NAME     = 'TerrainDetector'
 local RUN_INTERVAL_MS =  25  -- needs to be pretty fast for good detection
 local SBY_INTERVAL_MS = 500  -- slower interval when detection is disabled

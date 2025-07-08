@@ -4,9 +4,10 @@
 
 #include "AP_HAL_Namespace.h"
 #include "utility/BetterStream.h"
+#include <AP_Logger/AP_Logger_config.h>
 
 #ifndef HAL_UART_STATS_ENABLED
-#define HAL_UART_STATS_ENABLED !defined(HAL_NO_UARTDRIVER)
+#define HAL_UART_STATS_ENABLED AP_HAL_UARTDRIVER_ENABLED
 #endif
 
 #ifndef AP_UART_MONITOR_ENABLED
@@ -77,12 +78,15 @@ public:
 
     // read buffer from a locked port. If port is locked and key is not correct then -1 is returned
     ssize_t read_locked(uint8_t *buf, size_t count, uint32_t key) WARN_IF_UNUSED;
+
+    // get current parity for passthrough use
+    uint8_t get_parity(void);
     
     // control optional features
     virtual bool set_options(uint16_t options) { _last_options = options; return options==0; }
     virtual uint16_t get_options(void) const { return _last_options; }
 
-    enum {
+    enum Option {
         OPTION_RXINV              = (1U<<0),  // invert RX line
         OPTION_TXINV              = (1U<<1),  // invert TX line
         OPTION_HDPLEX             = (1U<<2), // half-duplex (one-wire) mode
@@ -93,18 +97,27 @@ public:
         OPTION_PULLUP_TX          = (1U<<7), // apply pullup to TX
         OPTION_NODMA_RX           = (1U<<8), // don't use DMA for RX
         OPTION_NODMA_TX           = (1U<<9), // don't use DMA for TX
-        OPTION_MAVLINK_NO_FORWARD = (1U<<10), // don't forward MAVLink data to or from this device
+        OPTION_MAVLINK_NO_FORWARD_old = (1U<<10), // // moved to GCS_MAVLINK::Option
         OPTION_NOFIFO             = (1U<<11), // disable hardware FIFO
-        OPTION_NOSTREAMOVERRIDE   = (1U<<12), // don't allow GCS to override streamrates
+        OPTION_NOSTREAMOVERRIDE_old   = (1U<<12), // moved to GCS_MAVLINK::Option
     };
+
+    bool option_is_set(Option option) const {
+        return (_last_options & (uint16_t)option) != 0;
+    }
+
 
     enum flow_control {
         FLOW_CONTROL_DISABLE=0,
         FLOW_CONTROL_ENABLE=1,
         FLOW_CONTROL_AUTO=2,
+        FLOW_CONTROL_RTS_DE=3, // RTS pin is used as a driver enable (used in RS-485)
     };
     virtual void set_flow_control(enum flow_control flow_control_setting) {};
     virtual enum flow_control get_flow_control(void) { return FLOW_CONTROL_DISABLE; }
+
+    // Return true if flow control is currently enabled
+    bool flow_control_enabled() { return flow_control_enabled(get_flow_control()); }
 
     virtual void configure_parity(uint8_t v){};
     virtual void set_stop_bits(int n){};
@@ -152,9 +165,28 @@ public:
     virtual bool is_dma_enabled() const { return false; }
 
 #if HAL_UART_STATS_ENABLED
+    // Helper to keep track of data usage since last call
+    struct StatsTracker {
+        class ByteTracker {
+        public:
+            // Take cumulative bytes and return the change since last call
+            uint32_t update(uint32_t bytes);
+        private:
+            uint32_t last_bytes;
+        };
+        ByteTracker tx;
+        ByteTracker rx;
+        ByteTracker rx_dropped;
+    };
+
     // request information on uart I/O for this uart, for @SYS/uarts.txt
-    virtual void uart_info(ExpandingString &str) {}
+    virtual void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) {}
+
+#if HAL_LOGGING_ENABLED
+    // Log stats for this instance
+    void log_stats(const uint8_t inst, StatsTracker &stats, const uint32_t dt_ms);
 #endif
+#endif // HAL_UART_STATS_ENABLED
 
     /*
       software control of the CTS/RTS pins if available. Return false if
@@ -165,6 +197,9 @@ public:
 
     // return true requested baud on USB port
     virtual uint32_t get_usb_baud(void) const { return 0; }
+
+    // return requested parity on USB port
+    virtual uint8_t get_usb_parity(void) const { return parity; }
 
     // disable TX/RX pins for unusued uart
     virtual void disable_rxtx(void) const {}
@@ -189,6 +224,8 @@ protected:
     // key for a locked port
     uint32_t lock_write_key;
     uint32_t lock_read_key;
+
+    uint8_t parity;
 
     /*
       backend begin method
@@ -220,10 +257,21 @@ protected:
 
     // discard incoming data on the port
     virtual bool _discard_input(void) = 0;
-    
-private:
+
+    // Helper to check if flow control is enabled given the passed setting
+    bool flow_control_enabled(enum flow_control flow_control_setting) const;
+
+#if HAL_UART_STATS_ENABLED
+    // Getters for cumulative tx and rx counts
+    virtual uint32_t get_total_tx_bytes() const { return 0; }
+    virtual uint32_t get_total_rx_bytes() const { return 0; }
+    virtual uint32_t get_total_dropped_rx_bytes() const { return 0; }
+#endif
+
     // option bits for port
     uint16_t _last_options;
+
+private:
 
 #if AP_UART_MONITOR_ENABLED
     ByteBuffer *_monitor_read_buffer;

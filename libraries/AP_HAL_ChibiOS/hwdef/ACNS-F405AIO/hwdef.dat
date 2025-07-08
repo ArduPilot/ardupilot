@@ -8,8 +8,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1116
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_ACNS_F405AIO
 
 # crystal frequency
 OSCILLATOR_HZ 16000000
@@ -112,6 +112,7 @@ PC14 LED_BLUE OUTPUT LOW GPIO(0)
 PA13 LED_GREEN OUTPUT LOW GPIO(1) 
 PC15 LED_RED OUTPUT LOW GPIO(2) 
 
+define AP_NOTIFY_GPIO_LED_3_ENABLED 1
 define HAL_GPIO_A_LED_PIN 0
 define HAL_GPIO_B_LED_PIN 1
 define HAL_GPIO_C_LED_PIN 2
@@ -168,9 +169,6 @@ COMPASS LIS3MDL SPI:lis3mdl false ROTATION_ROLL_180_YAW_90
 
 
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 
 # define default battery setup
 define HAL_BATT_MONITOR_DEFAULT 4
@@ -191,9 +189,6 @@ define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
 #define OSD_ENABLED 0
-
-define STM32_PWM_USE_ADVANCED TRUE
-
 
 
 # --------------------- save flash ----------------------

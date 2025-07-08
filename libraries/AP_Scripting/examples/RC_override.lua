@@ -1,5 +1,8 @@
 -- example of overriding RC inputs
 
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: param-type-mismatch
+
 local RC4 = rc:get_channel(4)
 
 function update()

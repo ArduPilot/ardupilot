@@ -6,8 +6,8 @@
 # MCU class and specific type
 MCU STM32F7xx STM32F745xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1074
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_REAPERF745_V2
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -121,6 +121,7 @@ define HAL_LOGGING_DATAFLASH_ENABLED 1
 # spi devices bmi270(v2) icm42688 (v3)
 SPIDEV bmi270    SPI3 DEVID1 GYRO_CS  MODE3  1*MHZ  4*MHZ
 SPIDEV icm42688  SPI3 DEVID1 GYRO_CS  MODE3  2*MHZ  8*MHZ
+SPIDEV mpu6000   SPI3 DEVID1 GYRO_CS  MODE3  1*MHZ  4*MHZ
 SPIDEV dataflash SPI4 DEVID1 FLASH_CS   MODE3 32*MHZ 32*MHZ
 SPIDEV osd       SPI1 DEVID1 AT7456E_CS MODE0 10*MHZ 10*MHZ
 
@@ -129,9 +130,10 @@ define ALLOW_ARM_NO_COMPASS
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 
-# one IMU: bmi270 or icm42688
+# one IMU: bmi270 or icm42688 or mpu6000
 IMU BMI270 SPI:bmi270 ROTATION_ROLL_180
 IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180_YAW_90
+IMU Invensense SPI:mpu6000 ROTATION_YAW_90
 
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
@@ -143,13 +145,8 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
-define STM32_PWM_USE_ADVANCED TRUE
-
 # save some flash
-include ../include/save_some_flash.inc
 include ../include/minimize_fpv_osd.inc
-define AP_GRIPPER_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
-define HAL_SPRAYER_ENABLED 0
 
 include ../include/no_bootloader_DFU.inc

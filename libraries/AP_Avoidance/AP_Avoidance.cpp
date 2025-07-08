@@ -1,6 +1,8 @@
-#include "AP_Avoidance.h"
+#include "AP_Avoidance_config.h"
 
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
+
+#include "AP_Avoidance.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -144,7 +146,7 @@ void AP_Avoidance::init(void)
 {
     debug("ADSB initialisation: %d obstacles", _obstacles_max.get());
     if (_obstacles == nullptr) {
-        _obstacles = new AP_Avoidance::Obstacle[_obstacles_max];
+        _obstacles = NEW_NOTHROW AP_Avoidance::Obstacle[_obstacles_max];
 
         if (_obstacles == nullptr) {
             // dynamic RAM allocation of _obstacles[] failed, disable gracefully
@@ -689,4 +691,4 @@ AP_Avoidance *ap_avoidance()
 
 }
 
-#endif // HAL_ADSB_ENABLED
+#endif // AP_ADSB_AVOIDANCE_ENABLED

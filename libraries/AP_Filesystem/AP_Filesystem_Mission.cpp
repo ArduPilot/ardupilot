@@ -30,7 +30,11 @@
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
+
+// QURT HAL already has a declaration of errno in errno.h
+#if CONFIG_HAL_BOARD != HAL_BOARD_QURT
 extern int errno;
+#endif
 
 #define IDLE_TIMEOUT_MS 30000
 
@@ -70,7 +74,7 @@ int AP_Filesystem_Mission::open(const char *fname, int flags, bool allow_absolut
     r.num_items = get_num_items(r.mtype);
     if (!readonly) {
         // setup for upload
-        r.writebuf = new ExpandingString();
+        r.writebuf = NEW_NOTHROW ExpandingString();
     } else {
         r.writebuf = nullptr;
     }
@@ -464,7 +468,7 @@ bool AP_Filesystem_Mission::finish_upload_fence(const struct header &hdr, const 
     // passing nullptr and 0 items through to Polyfence loader is
     // absolutely OK:
     if (hdr.num_items != 0) {
-        new_items = new AC_PolyFenceItem[hdr.num_items];
+        new_items = NEW_NOTHROW AC_PolyFenceItem[hdr.num_items];
         if (new_items == nullptr) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Out of memory for upload");
             goto OUT;

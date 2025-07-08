@@ -1,11 +1,14 @@
 #pragma once
 
+#include "AP_Motors_config.h"
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <Filter/Filter.h>         // filter library
 #include <Filter/DerivativeFilter.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Logger/AP_Logger_config.h>
+#include <SRV_Channel/SRV_Channel_config.h>
 
 // offsets for motors in motor_out and _motor_filtered arrays
 #define AP_MOTORS_MOT_1 0U
@@ -20,34 +23,26 @@
 #define AP_MOTORS_MOT_10 9U
 #define AP_MOTORS_MOT_11 10U
 #define AP_MOTORS_MOT_12 11U
-
-#define AP_MOTORS_MAX_NUM_MOTORS 12
-
-#ifndef AP_MOTORS_FRAME_DEFAULT_ENABLED
-#define AP_MOTORS_FRAME_DEFAULT_ENABLED 1
-#endif
-
-#ifndef AP_MOTORS_FRAME_QUAD_ENABLED
-#define AP_MOTORS_FRAME_QUAD_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_HEXA_ENABLED
-#define AP_MOTORS_FRAME_HEXA_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_OCTA_ENABLED
-#define AP_MOTORS_FRAME_OCTA_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_DECA_ENABLED
-#define AP_MOTORS_FRAME_DECA_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_DODECAHEXA_ENABLED
-#define AP_MOTORS_FRAME_DODECAHEXA_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_Y6_ENABLED
-#define AP_MOTORS_FRAME_Y6_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
-#ifndef AP_MOTORS_FRAME_OCTAQUAD_ENABLED
-#define AP_MOTORS_FRAME_OCTAQUAD_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
-#endif
+#define AP_MOTORS_MOT_13 12U
+#define AP_MOTORS_MOT_14 13U
+#define AP_MOTORS_MOT_15 14U
+#define AP_MOTORS_MOT_16 15U
+#define AP_MOTORS_MOT_17 16U
+#define AP_MOTORS_MOT_18 17U
+#define AP_MOTORS_MOT_19 18U
+#define AP_MOTORS_MOT_20 19U
+#define AP_MOTORS_MOT_21 20U
+#define AP_MOTORS_MOT_22 21U
+#define AP_MOTORS_MOT_23 22U
+#define AP_MOTORS_MOT_24 23U
+#define AP_MOTORS_MOT_25 24U
+#define AP_MOTORS_MOT_26 25U
+#define AP_MOTORS_MOT_27 26U
+#define AP_MOTORS_MOT_28 27U
+#define AP_MOTORS_MOT_29 28U
+#define AP_MOTORS_MOT_30 29U
+#define AP_MOTORS_MOT_31 30U
+#define AP_MOTORS_MOT_32 31U
 
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
@@ -155,6 +150,8 @@ public:
     float               get_yaw() const { return _yaw_in; }
     float               get_yaw_ff() const { return _yaw_in_ff; }
     float               get_throttle_out() const { return _throttle_out; }
+    virtual bool        get_thrust(uint8_t motor_num, float& thr_out) const { return false; }
+    virtual bool        get_raw_motor_throttle(uint8_t motor_num, float& thr_out) const { return false; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(), 0.0f, 1.0f); }
     float               get_throttle_bidirectional() const { return constrain_float(2 * (_throttle_filter.get() - 0.5f), -1.0f, 1.0f); }
     float               get_throttle_slew_rate() const { return _throttle_slew_rate; }
@@ -190,11 +187,11 @@ public:
     // get_spool_state - get current spool state
     enum SpoolState  get_spool_state(void) const { return _spool_state; }
 
-    // set_dt / get_dt - dt is the time since the last time the motor mixers were updated
+    // set_dt_s / get_dt_s - dt is the time since the last time (in seconds) the motor mixers were updated
     //   _dt should be set based on the time of the last IMU read used by these controllers
     //   the motor mixers should run on each loop to ensure normal operation
-    void set_dt(float dt) { _dt = dt; }
-    float get_dt() const { return _dt; }
+    void set_dt_s(float dt_s) { _dt_s = dt_s; }
+    float get_dt_s() const { return _dt_s; }
 
     // structure for holding motor limit flags
     struct AP_Motors_limit {
@@ -235,7 +232,8 @@ public:
     // output_test_seq - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    void                output_test_seq(uint8_t motor_seq, int16_t pwm);
+    //  return true if output was successful, false if not possible
+    bool                output_test_seq(uint8_t motor_seq, int16_t pwm);
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -262,10 +260,10 @@ public:
     bool is_digital_pwm_type() const;
 
     // returns true is pwm type is brushed
-    bool is_brushed_pwm_type() const { return _pwm_type == PWM_TYPE_BRUSHED; }
+    bool is_brushed_pwm_type() const { return _pwm_type == PWMType::BRUSHED; }
 
     // returns true is pwm type is normal
-    bool is_normal_pwm_type() const { return (_pwm_type == PWM_TYPE_NORMAL) || (_pwm_type == PWM_TYPE_PWM_RANGE); }
+    bool is_normal_pwm_type() const { return (_pwm_type == PWMType::NORMAL) || (_pwm_type == PWMType::PWM_RANGE) || (_pwm_type == PWMType::PWM_ANGLE); }
 
     MAV_TYPE get_frame_mav_type() const { return _mav_type; }
 
@@ -310,7 +308,7 @@ protected:
     virtual void save_params_on_disarm() {}
 
     // internal variables
-    float               _dt;                        // time difference (in seconds) since the last loop time
+    float               _dt_s;                      // time difference (in seconds) since the last loop time
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
     float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
     float               _roll_in_ff;                // desired roll feed forward control from attitude controllers, -1 ~ +1
@@ -333,8 +331,15 @@ protected:
     // mask of what channels need fast output
     uint32_t            _motor_fast_mask;
 
-    // mask of what channels need to use SERVOn_MIN/MAX for output mapping
-    uint32_t            _motor_pwm_range_mask;
+    // Used with PWMType::PWM_RANGE and PWMType::PWM_ANGLE
+    struct {
+        // Mask of motors using scaled output
+        uint32_t mask;
+
+        // Offset used to convert from PWM to scaled value
+        float offset;
+    } _motor_pwm_scaled;
+
     
     // pass through variables
     float _roll_radio_passthrough;     // roll input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
@@ -342,7 +347,20 @@ protected:
     float _throttle_radio_passthrough; // throttle/collective input from pilot in 0 ~ 1 range.  used for setup and providing servo feedback while landed
     float _yaw_radio_passthrough;      // yaw input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
 
-    AP_Int8             _pwm_type;            // PWM output type
+    enum class PWMType : uint8_t {
+        NORMAL     = 0,
+        ONESHOT    = 1,
+        ONESHOT125 = 2,
+        BRUSHED    = 3,
+        DSHOT150   = 4,
+        DSHOT300   = 5,
+        DSHOT600   = 6,
+        DSHOT1200  = 7,
+        PWM_RANGE  = 8,
+        PWM_ANGLE  = 9,
+    };
+
+    AP_Enum<PWMType>             _pwm_type;            // PWM output type
 
     // motor failure handling
     bool                _thrust_boost;          // true if thrust boost is enabled to handle motor failure
@@ -353,16 +371,6 @@ protected:
     AP_Int16            _options;
 
     MAV_TYPE _mav_type; // MAV_TYPE_GENERIC = 0;
-
-    enum pwm_type { PWM_TYPE_NORMAL     = 0,
-                    PWM_TYPE_ONESHOT    = 1,
-                    PWM_TYPE_ONESHOT125 = 2,
-                    PWM_TYPE_BRUSHED    = 3,
-                    PWM_TYPE_DSHOT150   = 4,
-                    PWM_TYPE_DSHOT300   = 5,
-                    PWM_TYPE_DSHOT600   = 6,
-                    PWM_TYPE_DSHOT1200  = 7,
-                    PWM_TYPE_PWM_RANGE  = 8 };
 
     // return string corresponding to frame_class
     virtual const char* _get_frame_string() const = 0;

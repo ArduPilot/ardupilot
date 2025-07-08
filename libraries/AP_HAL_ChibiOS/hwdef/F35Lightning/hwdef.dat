@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
-APJ_BOARD_ID 135
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_F35LIGHTNING
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -70,8 +70,9 @@ define BOARD_RSSI_ANA_PIN 13
 #PA4 VDD_5V_SENS ADC1 SCALE(2)
 
 # LED
+define AP_NOTIFY_GPIO_LED_1_ENABLED 1
 PC10 LED OUTPUT HIGH GPIO(57)
-define HAL_GPIO_A_LED_PIN 57
+define AP_NOTIFY_GPIO_LED_1_PIN 57
 
 # SPI
 PA5 SPI1_SCK SPI1
@@ -112,7 +113,6 @@ PB6 I2C1_SCL I2C1
 PB7 I2C1_SDA I2C1
 
 # PWM pins S1-S6
-define STM32_PWM_USE_ADVANCED TRUE
 PC8 TIM8_CH3 TIM8 PWM(1) GPIO(50)
 PC9 TIM8_CH4 TIM8 PWM(2) GPIO(51)
 PB8 TIM4_CH3 TIM4 PWM(3) GPIO(52)
@@ -155,9 +155,6 @@ define HAL_BATT_VOLT_PIN 11
 define HAL_BATT_CURR_PIN 12
 define HAL_BATT_VOLT_SCALE 11
 define HAL_BATT_CURR_SCALE 25
-
-# minimal drivers to reduce flash usage
-include ../include/no_bootloader_DFU.inc
 
 # enable IMU fast sampling
 define HAL_DEFAULT_INS_FAST_SAMPLE 1

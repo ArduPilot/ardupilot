@@ -7,7 +7,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include <SITL/SITL_Input.h>
-#include <SITL/SIM_Gimbal.h>
+#include <SITL/SIM_SoloGimbal.h>
 #include <SITL/SIM_ADSB.h>
 #include <SITL/SIM_Vicon.h>
 #include <SITL/SIM_RF_Benewake_TF02.h>
@@ -62,7 +62,7 @@ public:
 
     void update();
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
     void set_gps0(SITL::GPS *_gps) { gps[0] = _gps; }
 #endif
 
@@ -93,16 +93,11 @@ private:
     pid_t _parent_pid;
     uint32_t _update_count;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SocketAPM_native _sitl_rc_in{true};
-#endif
     SITL::SIM *_sitl;
     uint16_t _rcin_port;
     uint16_t _fg_view_port;
     uint16_t _irlock_port;
     float _current;
-
-    bool _synthetic_clock_mode;
 
     bool _use_rtscts;
     bool _use_fg_view;
@@ -112,16 +107,16 @@ private:
     // internal SITL model
     SITL::Aircraft *sitl_model;
 
-#if HAL_SIM_GIMBAL_ENABLED
+#if AP_SIM_SOLOGIMBAL_ENABLED
     // simulated gimbal
     bool enable_gimbal;
-    SITL::Gimbal *gimbal;
+    SITL::SoloGimbal *gimbal;
 #endif
 
-#if HAL_SIM_ADSB_ENABLED
+#if AP_SIM_ADSB_ENABLED
     // simulated ADSb
     SITL::ADSB *adsb;
-#endif
+#endif  // AP_SIM_ADSB_ENABLED
 
     // simulated vicon system:
     SITL::Vicon *vicon;
@@ -169,7 +164,7 @@ private:
     // SITL::Frsky_SPort *frsky_sport;
     // SITL::Frsky_SPortPassthrough *frsky_sportpassthrough;
 
-#if HAL_SIM_PS_RPLIDARA2_ENABLED
+#if AP_SIM_PS_RPLIDARA2_ENABLED
     // simulated RPLidarA2:
     SITL::PS_RPLidarA2 *rplidara2;
 #endif
@@ -177,12 +172,12 @@ private:
     // simulated FETtec OneWire ESCs:
     SITL::FETtecOneWireESC *fetteconewireesc;
 
-#if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
+#if AP_SIM_PS_LIGHTWARE_SF45B_ENABLED
     // simulated SF45B proximity sensor:
     SITL::PS_LightWare_SF45B *sf45b;
 #endif
 
-#if HAL_SIM_PS_TERARANGERTOWER_ENABLED
+#if AP_SIM_PS_TERARANGERTOWER_ENABLED
     SITL::PS_TeraRangerTower *terarangertower;
 #endif
 
@@ -202,13 +197,13 @@ private:
 
     // simulated InertialLabs INS-U
     SITL::InertialLabs *inertiallabs;
-    
-#if HAL_SIM_JSON_MASTER_ENABLED
+
+#if AP_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
     SITL::JSON_Master ride_along;
-#endif
+#endif  // AP_SIM_JSON_MASTER_ENABLED
 
-#if HAL_SIM_AIS_ENABLED
+#if AP_SIM_AIS_ENABLED
     // simulated AIS stream
     SITL::AIS *ais;
 #endif
@@ -230,7 +225,7 @@ private:
 
     uint32_t wind_start_delay_micros;
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
     // simulated GPS devices
     SITL::GPS *gps[2];  // constrained by # of parameter sets
 #endif

@@ -16,7 +16,7 @@ exclude: |
 
 repos:
   -   repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v4.4.0
+      rev: v5.0.0
       hooks:
         #-   id: trailing-whitespace
         #-   id: end-of-file-fixer
@@ -41,13 +41,8 @@ repos:
         -   id: check-xml
         -   id: check-yaml
 
-  -   repo: https://github.com/lsst-ts/pre-commit-xmllint
-      rev: 6f36260b537bf9a42b6ea5262c915ae50786296e
-      hooks:
-        - id: format-xmllint
-          files: libraries/AP_DDS/dds_xrce_profile.xml
   -   repo: https://github.com/psf/black
-      rev: 23.7.0
+      rev: 25.1.0
       hooks:
         - id: black
           files: |
@@ -55,6 +50,11 @@ repos:
               libraries\/AP_DDS\/(wscript|.*\.py)$ |
               Tools/ros2/.*\.py
             )$
+
+  -   repo: https://github.com/pycqa/flake8
+      rev: 7.3.0
+      hooks:
+      -   id: flake8
 
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort

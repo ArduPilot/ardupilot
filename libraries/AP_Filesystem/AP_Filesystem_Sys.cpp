@@ -83,7 +83,7 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
         return -1;
     }
     struct rfile &r = file[idx];
-    r.str = new ExpandingString;
+    r.str = NEW_NOTHROW ExpandingString;
     if (r.str == nullptr) {
         errno = ENOMEM;
         return -1;
@@ -158,7 +158,7 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
 #if AP_FILESYSTEM_SYS_FLASH_ENABLED
     if (strcmp(fname, "flash.bin") == 0) {
         void *ptr = (void*)0x08000000;
-        const size_t size = BOARD_FLASH_SIZE*1024;
+        const size_t size = HAL_PROGRAM_SIZE_LIMIT_KB*1024;
         r.str->set_buffer((char*)ptr, size, size);
     }
 #endif
@@ -229,7 +229,7 @@ void *AP_Filesystem_Sys::opendir(const char *pathname)
         errno = ENOENT;
         return nullptr;
     }
-    DirReadTracker *dtracker = new DirReadTracker;
+    DirReadTracker *dtracker = NEW_NOTHROW DirReadTracker;
     if (dtracker == nullptr) {
         errno = ENOMEM;
         return nullptr;
@@ -244,7 +244,9 @@ struct dirent *AP_Filesystem_Sys::readdir(void *dirp)
         // we have reached end of list
         return nullptr;
     }
+#if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
     dtracker->curr_file.d_type = DT_REG;
+#endif
     size_t max_length = ARRAY_SIZE(dtracker->curr_file.d_name);
     strncpy_noterm(dtracker->curr_file.d_name, sysfs_file_list[dtracker->file_offset].name, max_length);
     dtracker->file_offset++;

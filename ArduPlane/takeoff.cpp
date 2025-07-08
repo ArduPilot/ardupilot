@@ -22,17 +22,24 @@ bool Plane::auto_takeoff_check(void)
         return false;
     }
 
-    // Reset states if process has been interrupted
-    if (takeoff_state.last_check_ms && (now - takeoff_state.last_check_ms) > 200) {
-        memset(&takeoff_state, 0, sizeof(takeoff_state));
-        return false;
-    }
-
+    // Reset states if process has been interrupted, except initial_direction.initialized if set
+#if MODE_AUTOLAND_ENABLED
+    bool takeoff_dir_initialized = takeoff_state.initial_direction.initialized;
+    float takeoff_dir = takeoff_state.initial_direction.heading;
+#endif
+     if (takeoff_state.last_check_ms && (now - takeoff_state.last_check_ms) > 200) {
+         memset(&takeoff_state, 0, sizeof(takeoff_state));
+#if MODE_AUTOLAND_ENABLED
+         takeoff_state.initial_direction.initialized = takeoff_dir_initialized; //restore dir init state
+         takeoff_state.initial_direction.heading = takeoff_dir;
+#endif
+         return false;
+     }
     takeoff_state.last_check_ms = now;
     
     //check if waiting for rudder neutral after rudder arm
     if (plane.arming.last_arm_method() == AP_Arming::Method::RUDDER &&
-        !seen_neutral_rudder) {
+        !rc().seen_neutral_rudder()) {
         // we were armed with rudder but have not seen rudder neutral yet
         takeoff_state.waiting_for_rudder_neutral = true;
         // warn if we have been waiting a long time
@@ -57,7 +64,7 @@ bool Plane::auto_takeoff_check(void)
     bool do_takeoff_attitude_check = !(flight_option_enabled(FlightOptions::DISABLE_TOFF_ATTITUDE_CHK));
 #if HAL_QUADPLANE_ENABLED
     // disable attitude check on tailsitters
-    do_takeoff_attitude_check = !quadplane.tailsitter.enabled();
+    do_takeoff_attitude_check &= !quadplane.tailsitter.enabled();
 #endif
 
     if (!takeoff_state.launchTimerStarted && !is_zero(g.takeoff_throttle_min_accel)) {
@@ -121,6 +128,8 @@ bool Plane::auto_takeoff_check(void)
         takeoff_state.launchTimerStarted = false;
         takeoff_state.last_tkoff_arm_time = 0;
         takeoff_state.start_time_ms = now;
+        takeoff_state.level_off_start_time_ms = 0;
+        takeoff_state.throttle_max_timer_ms = now;
         steer_state.locked_course_err = 0; // use current heading without any error offset
         return true;
     }
@@ -179,47 +188,116 @@ void Plane::takeoff_calc_roll(void)
  */
 void Plane::takeoff_calc_pitch(void)
 {
-    if (auto_state.highest_airspeed < g.takeoff_rotate_speed) {
-        // we have not reached rotate speed, use the specified takeoff target pitch angle
-        nav_pitch_cd = int32_t(100.0f * mode_takeoff.ground_pitch);
-        return;
+    // First see if TKOFF_ROTATE_SPD applies.
+    // This will set the pitch for the first portion of the takeoff, up until cruise speed is reached.
+    if (!auto_state.rotation_complete && g.takeoff_rotate_speed > 0) {
+        // A non-zero rotate speed is recommended for ground takeoffs.
+        if (auto_state.highest_airspeed < g.takeoff_rotate_speed) {
+            // We have not reached rotate speed, use the specified takeoff target pitch angle.
+            nav_pitch_cd = int32_t(100.0f * mode_takeoff.ground_pitch);
+            TECS_controller.set_pitch_min(0.01f*nav_pitch_cd);
+            TECS_controller.set_pitch_max(0.01f*nav_pitch_cd);
+            return;
+        } else if (gps.ground_speed() <= (float)aparm.airspeed_cruise) {
+            // If rotate speed applied, gradually transition from TKOFF_GND_PITCH to the climb angle.
+            // This is recommended for ground takeoffs, so delay rotation until ground speed indicates adequate airspeed.
+            const uint16_t min_pitch_cd = 500; // Set a minimum of 5 deg climb angle.
+            nav_pitch_cd = (gps.ground_speed() / (float)aparm.airspeed_cruise) * auto_state.takeoff_pitch_cd;
+            nav_pitch_cd = constrain_int32(nav_pitch_cd, min_pitch_cd, auto_state.takeoff_pitch_cd); 
+            TECS_controller.set_pitch_min(0.01f*nav_pitch_cd);
+            TECS_controller.set_pitch_max(0.01f*nav_pitch_cd);
+            return;
+        }
     }
+    auto_state.rotation_complete = true;
 
+    // We are now past the rotation.
+    // Initialize pitch limits for TECS.
+    int16_t pitch_min_cd = get_takeoff_pitch_min_cd();
+    bool pitch_clipped_max = false;
+
+    // If we're using an airspeed sensor, we consult TECS.
     if (ahrs.using_airspeed_sensor()) {
-        int16_t takeoff_pitch_min_cd = get_takeoff_pitch_min_cd();
         calc_nav_pitch();
-        if (nav_pitch_cd < takeoff_pitch_min_cd) {
-            nav_pitch_cd = takeoff_pitch_min_cd;
+        // At any rate, we don't want to go lower than the minimum pitch bound.
+        if (nav_pitch_cd < pitch_min_cd) {
+            nav_pitch_cd = pitch_min_cd;
         }
     } else {
-        if (g.takeoff_rotate_speed > 0) {
-            // Rise off ground takeoff so delay rotation until ground speed indicates adequate airspeed
-            nav_pitch_cd = (gps.ground_speed() / (float)aparm.airspeed_cruise) * auto_state.takeoff_pitch_cd;
-            nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd); 
-        } else {
-            // Doing hand or catapult launch so need at least 5 deg pitch to prevent initial height loss
-            nav_pitch_cd = MAX(auto_state.takeoff_pitch_cd, 500);
-        }
+        // If not, we will use the minimum allowed angle.
+        nav_pitch_cd = pitch_min_cd;
+
+        pitch_clipped_max = true;
     }
 
+    // Check if we have trouble with roll control.
     if (aparm.stall_prevention != 0) {
-        if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF ||
-            control_mode == &mode_takeoff) {
-            // during takeoff we want to prioritise roll control over
-            // pitch. Apply a reduction in pitch demand if our roll is
-            // significantly off. The aim of this change is to
-            // increase the robustness of hand launches, particularly
-            // in cross-winds. If we start to roll over then we reduce
-            // pitch demand until the roll recovers
-            float roll_error_rad = radians(constrain_float(labs(nav_roll_cd - ahrs.roll_sensor) * 0.01, 0, 90));
-            float reduction = sq(cosf(roll_error_rad));
-            nav_pitch_cd *= reduction;
+        // during takeoff we want to prioritise roll control over
+        // pitch. Apply a reduction in pitch demand if our roll is
+        // significantly off. The aim of this change is to
+        // increase the robustness of hand launches, particularly
+        // in cross-winds. If we start to roll over then we reduce
+        // pitch demand until the roll recovers
+        float roll_error_rad = cd_to_rad(constrain_float(labs(nav_roll_cd - ahrs.roll_sensor), 0, 9000));
+        float reduction = sq(cosf(roll_error_rad));
+        nav_pitch_cd *= reduction;
+
+        if (nav_pitch_cd < pitch_min_cd) {
+            pitch_min_cd = nav_pitch_cd;
         }
     }
+    // Notify TECS about the external pitch setting, for the next iteration.
+    TECS_controller.set_pitch_min(0.01f*pitch_min_cd);
+    if (pitch_clipped_max) {TECS_controller.set_pitch_max(0.01f*nav_pitch_cd);}
 }
 
 /*
- * get the pitch min used during takeoff. This matches the mission pitch until near the end where it allows it to levels off
+ * Calculate the throttle limits to run at during a takeoff.
+ * These limits are meant to be used exclusively by Plane::apply_throttle_limits().
+ */
+void Plane::takeoff_calc_throttle() {
+    // Initialize the maximum throttle limit.
+    if (aparm.takeoff_throttle_max != 0) {
+        takeoff_state.throttle_lim_max = aparm.takeoff_throttle_max;
+    } else {
+        takeoff_state.throttle_lim_max = aparm.throttle_max;
+    }
+
+    // Initialize the minimum throttle limit.
+    if (aparm.takeoff_throttle_min != 0) {
+        takeoff_state.throttle_lim_min = aparm.takeoff_throttle_min;
+    } else {
+        takeoff_state.throttle_lim_min = aparm.throttle_cruise;
+    }
+
+    // Raise min to force max throttle for TKOFF_THR_MAX_T after a takeoff.
+    // It only applies if the timer has been started externally.
+    if (takeoff_state.throttle_max_timer_ms != 0) {
+        const uint32_t dt = AP_HAL::millis() - takeoff_state.throttle_max_timer_ms;
+        if (dt*0.001 < aparm.takeoff_throttle_max_t) {
+            takeoff_state.throttle_lim_min = takeoff_state.throttle_lim_max;
+        } else {
+            // Reset the timer for future use.
+            takeoff_state.throttle_max_timer_ms = 0;
+        }
+    }
+
+    // Enact the TKOFF_OPTIONS logic.
+    const float current_baro_alt = barometer.get_altitude();
+    const bool below_lvl_alt = current_baro_alt < auto_state.baro_takeoff_alt + mode_takeoff.level_alt;
+    // Set the minimum throttle limit.
+    const bool use_throttle_range = tkoff_option_is_set(AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
+    if (!use_throttle_range // We don't want to employ a throttle range.
+        || !ahrs.using_airspeed_sensor() // We don't have an airspeed sensor.
+        || below_lvl_alt // We are below TKOFF_LVL_ALT.
+        ) { // Traditional takeoff throttle limit.
+        takeoff_state.throttle_lim_min = takeoff_state.throttle_lim_max;
+    }
+
+    calc_throttle();
+}
+
+/* get the pitch min used during takeoff. This matches the mission pitch until near the end where it allows it to levels off
  */
 int16_t Plane::get_takeoff_pitch_min_cd(void)
 {
@@ -247,6 +325,7 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
                 // make a note of that altitude to use it as a start height for scaling
                 gcs().send_text(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", int(remaining_height_to_target_cm/100));
                 auto_state.height_below_takeoff_to_level_off_cm = remaining_height_to_target_cm;
+                takeoff_state.level_off_start_time_ms = AP_HAL::millis();
             }
         }
     }
@@ -307,9 +386,8 @@ void Plane::landing_gear_update(void)
 #endif
 
 /*
- check takeoff_timeout; checks time after the takeoff start time; returns true if timeout has occurred and disarms on timeout
+ check takeoff_timeout; checks time after the takeoff start time; returns true if timeout has occurred
 */
-
 bool Plane::check_takeoff_timeout(void)
 {
     if (takeoff_state.start_time_ms != 0 && g2.takeoff_timeout > 0) {
@@ -331,3 +409,17 @@ bool Plane::check_takeoff_timeout(void)
      return false;
 }
 
+/*
+ check if the pitch level-off time has expired; returns true if timeout has occurred
+*/
+bool Plane::check_takeoff_timeout_level_off(void)
+{
+    if (takeoff_state.level_off_start_time_ms > 0) {
+        // A takeoff is in progress.
+        uint32_t now = AP_HAL::millis();
+        if ((now - takeoff_state.level_off_start_time_ms) > (uint32_t)(1000U * g.takeoff_pitch_limit_reduction_sec)) {
+            return true;
+        }
+    }
+    return false;
+}

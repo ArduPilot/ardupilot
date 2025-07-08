@@ -78,8 +78,10 @@
 //SPI Devices
 #define HAL_ESP32_SPI_DEVICES {}
 
-//RCIN
-#define HAL_ESP32_RCIN GPIO_NUM_36
+//RMT pin number
+#define HAL_ESP32_RMT_RX_PIN_NUMBER 4
+//RCIN pin number - NOTE: disabled due to issue with legacy rmt library.
+// #define HAL_ESP32_RCIN GPIO_NUM_36
 
 //RCOUT
 #define HAL_ESP32_RCOUT {GPIO_NUM_25, GPIO_NUM_27, GPIO_NUM_33, GPIO_NUM_32, GPIO_NUM_22, GPIO_NUM_21}
@@ -124,9 +126,6 @@
 //LED
 #define DEFAULT_NTF_LED_TYPES Notify_LED_None
 
-//RMT pin number
-#define HAL_ESP32_RMT_RX_PIN_NUMBER 4
-
 //SD CARD
 // Do u want to use mmc or spi mode for the sd card, this is board specific,
 // as mmc uses specific pins but is quicker,
@@ -149,3 +148,7 @@
 #define HAL_LOGGING_BACKENDS_DEFAULT 1
 
 #define AP_RCPROTOCOL_ENABLED 0
+
+// disable all frames for sim on hw except quad to save DRAM .bss
+#define AP_MOTORS_FRAME_DEFAULT_ENABLED 0
+#define AP_MOTORS_FRAME_QUAD_ENABLED 1

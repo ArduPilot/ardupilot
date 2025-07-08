@@ -1,3 +1,7 @@
+#include "SIM_config.h"
+
+#if AP_SIM_TEMPERATURE_TSYS01_ENABLED
+
 #include "SIM_I2CDevice.h"
 
 /*
@@ -59,7 +63,10 @@ private:
         READ_ADC    = 0x00,
     };
 
-    static constexpr int32_t _k[] { 40781, 32791, 36016, 24926, 28446 };
+    // _k[0] is unused
+    static constexpr int32_t _k[] { 0, 40781, 32791, 36016, 24926, 28446 };
 };
 
 } // namespace SITL
+
+#endif  // AP_SIM_TEMPERATURE_TSYS01_ENABLED

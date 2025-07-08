@@ -20,6 +20,12 @@
 
 #include "AP_HAL_Namespace.h"
 #include "utility/functor.h"
+#include "AP_HAL_Boards.h"
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_QURT
+// we need utility for std::move, but not on QURT due to a include error in hexagon SDK
+#include <utility>
+#endif
 
 /*
  * This is an interface abstracting I2C and SPI devices
@@ -110,14 +116,27 @@ public:
     virtual bool set_speed(Speed speed)  = 0;
 
     /*
-     * Core transfer function. This does a single bus transaction which
-     * sends send_len bytes and receives recv_len bytes back from the slave.
+     * This does a single bus transaction which sends send_len bytes, 
+     * then receives recv_len bytes back from the slave. Operation is
+     * half-duplex independent of bus type.
      *
      * Return: true on a successful transfer, false on failure.
      */
     virtual bool transfer(const uint8_t *send, uint32_t send_len,
                           uint8_t *recv, uint32_t recv_len) = 0;
 
+    /*
+     * Core transfer function. This does a single bus transaction which
+     * sends len bytes and receives len bytes back from the slave.
+     * On full-duplex buses (e.g. SPI), the transfer is full-duplex,
+     * unlike `transfer`.
+     * DMA-optimized on some implementations
+     *
+     * Return: true on a successful transfer, false on failure.
+     */
+    virtual bool transfer_fullduplex(uint8_t *send_recv, uint32_t len) {
+        return transfer(send_recv, len, send_recv, len);
+    }
 
     /*
      * Sets the required flags before transaction starts

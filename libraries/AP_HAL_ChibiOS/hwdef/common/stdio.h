@@ -48,8 +48,6 @@ void *realloc(void* ptr, size_t size) __attribute__((deprecated));
 extern int (*vprintf_console_hook)(const char *fmt, va_list arg);
 void malloc_check(const void *ptr);
 
-#define L_tmpnam 32
-
 #ifdef __cplusplus
 }
 #endif

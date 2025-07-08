@@ -189,5 +189,83 @@ TEST(RotationsTest, TestFailedGetLinux)
     }
 }*/
 
+/*
+  rotate a matrix using a give order, specified as a string
+  for example "321"
+ */
+static void rotate_ordered(Matrix3f &m, const char *order,
+                           const float roll_deg,
+                           const float pitch_deg,
+                           const float yaw_deg)
+{
+    while (*order) {
+        Matrix3f m2;
+        switch (*order) {
+        case '1':
+            m2.from_euler(radians(roll_deg), 0, 0);
+            break;
+        case '2':
+            m2.from_euler(0, radians(pitch_deg), 0);
+            break;
+        case '3':
+            m2.from_euler(0, 0, radians(yaw_deg));
+            break;
+        }
+        m *= m2;
+        order++;
+    }
+}
+
+/*
+  test the two euler orders we use in ArduPilot
+ */
+TEST(RotationsTest, TestEulerOrder)
+{
+    const float roll_deg = 20;
+    const float pitch_deg = 31;
+    const float yaw_deg = 72;
+    float r, p, y;
+    Vector3f v;
+
+    Matrix3f m;
+
+    // apply in 321 ordering
+    m.identity();
+    rotate_ordered(m, "321", roll_deg, pitch_deg, yaw_deg);
+
+    // get using to_euler
+    m.to_euler(&r, &p, &y);
+
+    EXPECT_FLOAT_EQ(degrees(r), roll_deg);
+    EXPECT_FLOAT_EQ(degrees(p), pitch_deg);
+    EXPECT_FLOAT_EQ(degrees(y), yaw_deg);
+
+    // get using to_euler312, should not match
+    v = m.to_euler312();
+
+    EXPECT_GE(fabsf(degrees(v.x)-roll_deg), 1);
+    EXPECT_GE(fabsf(degrees(v.y)-pitch_deg), 1);
+    EXPECT_GE(fabsf(degrees(v.z)-yaw_deg), 1);
+
+    // apply in 312 ordering
+    m.identity();
+    rotate_ordered(m, "312", roll_deg, pitch_deg, yaw_deg);
+
+    // get using to_euler312
+    v = m.to_euler312();
+
+    EXPECT_FLOAT_EQ(degrees(v.x), roll_deg);
+    EXPECT_FLOAT_EQ(degrees(v.y), pitch_deg);
+    EXPECT_FLOAT_EQ(degrees(v.z), yaw_deg);
+
+    // get using to_euler, should not match
+    m.to_euler(&r, &p, &y);
+
+    EXPECT_GE(fabsf(degrees(r)-roll_deg), 1);
+    EXPECT_GE(fabsf(degrees(p)-pitch_deg), 1);
+    EXPECT_GE(fabsf(degrees(y)-yaw_deg), 1);
+}
+
+
 AP_GTEST_PANIC()
 AP_GTEST_MAIN()

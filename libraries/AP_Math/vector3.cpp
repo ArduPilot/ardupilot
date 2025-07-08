@@ -259,8 +259,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_CUSTOM_1:
     case ROTATION_CUSTOM_2:
-#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
-        // Do not support custom rotations on Periph
+#if AP_CUSTOMROTATIONS_ENABLED
+        // custom rotations not supported on eg. Periph by default
         AP::custom_rotations().rotate(rotation, *this);
         return;
 #endif
@@ -429,7 +429,7 @@ T Vector3<T>::angle(const Vector3<T> &v2) const
         return 0.0f;
     }
     const T cosv = ((*this)*v2) / len;
-    if (fabsF(cosv) >= 1) {
+    if (cosv >= 1 || cosv <= -1) {
         return 0.0f;
     }
     return acosF(cosv);

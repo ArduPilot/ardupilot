@@ -58,6 +58,8 @@ void MS5XXX::convert_D2()
         // bug in the conversion code.  The simulation can pass in
         // very, very low numbers.  Clamp it.
         P_Pa = 0.1;
+
+        // This should be a simulation error??? Pressure at 86km is 0.374Pa
     }
 
     uint32_t D1;

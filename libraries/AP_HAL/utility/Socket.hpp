@@ -43,6 +43,7 @@ public:
 
     ssize_t send(const void *pkt, size_t size) const;
     ssize_t sendto(const void *buf, size_t size, const char *address, uint16_t port);
+    ssize_t sendto(const void *buf, size_t size, uint32_t address, uint16_t port);
     ssize_t recv(void *pkt, size_t size, uint32_t timeout_ms);
 
     // return the IP address and port of the last received packet
@@ -50,6 +51,9 @@ public:
 
     // return the IP address and port of the last received packet, using caller supplied buffer
     const char *last_recv_address(char *ip_addr_buf, uint8_t buflen, uint16_t &port) const;
+
+    // return the IP address and port of the last received packet
+    bool last_recv_address(uint32_t &ip_addr, uint16_t &port) const;
 
     // return true if there is pending data for input
     bool pollin(uint32_t timeout_ms);

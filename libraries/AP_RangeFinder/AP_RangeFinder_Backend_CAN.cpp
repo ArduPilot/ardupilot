@@ -13,10 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_BACKEND_CAN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_Backend_CAN.h"
-
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
 
 const AP_Param::GroupInfo AP_RangeFinder_Backend_CAN::var_info[] = {
 
@@ -39,11 +41,16 @@ const AP_Param::GroupInfo AP_RangeFinder_Backend_CAN::var_info[] = {
 
 // constructor
 AP_RangeFinder_Backend_CAN::AP_RangeFinder_Backend_CAN(
-    RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+    RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_CAN::Protocol can_type,
+                                    const char *driver_name) :
     AP_RangeFinder_Backend(_state, _params)
 {
     AP_Param::setup_object_defaults(this, var_info);
     state.var_info = var_info;
+    multican_rangefinder = NEW_NOTHROW MultiCAN{FUNCTOR_BIND_MEMBER(&AP_RangeFinder_Backend_CAN::handle_frame, bool, AP_HAL::CANFrame &), can_type, driver_name};
+    if (multican_rangefinder == nullptr) {
+        AP_BoardConfig::allocation_error("Failed to create rangefinder multican");
+    }
 }
 
 // update the state of the sensor
@@ -82,15 +89,4 @@ bool AP_RangeFinder_Backend_CAN::is_correct_id(uint32_t id) const
     return true;
 }
 
-// handle frames from CANSensor, passing to the drivers
-void RangeFinder_MultiCAN::handle_frame(AP_HAL::CANFrame &frame)
-{
-    WITH_SEMAPHORE(sem);
-    for (auto *d = drivers; d != nullptr; d=d->next) {
-        if (d->handle_frame(frame)) {
-            break;
-        }
-    }
-}
-
-#endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+#endif  // AP_RANGEFINDER_BACKEND_CAN_ENABLED

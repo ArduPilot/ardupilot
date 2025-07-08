@@ -11,8 +11,8 @@ FLASH_SIZE_KB 1024
 STORAGE_FLASH_PAGE 1
 define HAL_STORAGE_SIZE 15360
 
-# board ID for firmware load
-APJ_BOARD_ID 1054
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MatekF405_TE
 
 define STM32_ST_USE_TIMER 5
 define CH_CFG_ST_RESOLUTION 32
@@ -22,11 +22,11 @@ OSCILLATOR_HZ 8000000
 
 
 # --------------------- LED -----------------------
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 PA14 LED0 OUTPUT LOW GPIO(90) # blue marked as ACT
 PA13 LED1 OUTPUT LOW GPIO(91) # green marked as B/E
 define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
-define HAL_GPIO_LED_OFF 1
 
 
 # --------------------- PWM -----------------------
@@ -43,8 +43,6 @@ PB14 TIM12_CH1  TIM12 PWM(9)  GPIO(58) NODMA
 PA6  TIM13_CH1  TIM13 PWM(10) GPIO(59) NODMA
 PB6  TIM4_CH1   TIM4  PWM(11) GPIO(60) NODMA
 PB1  TIM3_CH4   TIM3  PWM(12) GPIO(61)  # LED pad
-
-define STM32_PWM_USE_ADVANCED TRUE
 
 # Beeper
 PB9 TIM11_CH1  TIM11 GPIO(32) ALARM
@@ -144,7 +142,6 @@ define HAL_OS_FATFS_IO 1
 # external compass types
 define ALLOW_ARM_NO_COMPASS
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
-define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
 # built-in barometer
@@ -170,21 +167,13 @@ define HAL_BATT_CURR_SCALE 66.7
 define BOARD_RSSI_ANA_PIN 8
 define HAL_DEFAULT_AIRSPEED_PIN 10
 
-define HAL_GYROFFT_ENABLED 0
-
 # --------------------- save flash ----------------------
 # save some flash
 include ../include/minimize_fpv_osd.inc
-include ../include/save_some_flash.inc
 include ../include/no_bootloader_DFU.inc
 
 define HAL_PARACHUTE_ENABLED 0
-define HAL_SPRAYER_ENABLED 0
-define AP_GRIPPER_ENABLED 0
 define HAL_RUNCAM_ENABLED 0
-define HAL_HOTT_TELEM_ENABLED 0
-define HAL_NMEA_OUTPUT_ENABLED 0
 define HAL_BUTTON_ENABLED 0
 define AP_NOTIFY_OREOLED_ENABLED 0
-define HAL_PICCOLO_CAN_ENABLE 0
 

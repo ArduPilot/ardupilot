@@ -10,7 +10,7 @@
 bool AP_DDS_Client::udp_transport_open(uxrCustomTransport *t)
 {
     AP_DDS_Client *dds = (AP_DDS_Client *)t->args;
-    auto *sock = new SocketAPM(true);
+    auto *sock = NEW_NOTHROW SocketAPM(true);
     if (sock == nullptr) {
         return false;
     }

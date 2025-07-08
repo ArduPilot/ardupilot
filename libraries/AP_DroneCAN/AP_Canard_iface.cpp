@@ -30,7 +30,7 @@ HAL_Semaphore test_iface_sem;
 
 void canard_allocate_sem_take(CanardPoolAllocator *allocator) {
     if (allocator->semaphore == nullptr) {
-        allocator->semaphore = new HAL_Semaphore;
+        allocator->semaphore = NEW_NOTHROW HAL_Semaphore;
         if (allocator->semaphore == nullptr) {
             // out of memory
             CANARD_ASSERT(0);
@@ -186,7 +186,7 @@ bool CanardInterface::shouldAcceptTransfer(const CanardInstance* ins,
                                            CanardTransferType transfer_type,
                                            uint8_t source_node_id) {
     CanardInterface* iface = (CanardInterface*) ins->user_reference;
-    return iface->accept_message(data_type_id, *out_data_type_signature);
+    return iface->accept_message(data_type_id, transfer_type, *out_data_type_signature);
 }
 
 #if AP_TEST_DRONECAN_DRIVERS
@@ -285,38 +285,38 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
 
 void CanardInterface::update_rx_protocol_stats(int16_t res)
 {
-    switch (res) {
+    switch (-res) {
     case CANARD_OK:
         protocol_stats.rx_frames++;
         break;
-    case -CANARD_ERROR_OUT_OF_MEMORY:
+    case CANARD_ERROR_OUT_OF_MEMORY:
         protocol_stats.rx_error_oom++;
         break;
-    case -CANARD_ERROR_INTERNAL:
+    case CANARD_ERROR_INTERNAL:
         protocol_stats.rx_error_internal++;
         break;
-    case -CANARD_ERROR_RX_INCOMPATIBLE_PACKET:
+    case CANARD_ERROR_RX_INCOMPATIBLE_PACKET:
         protocol_stats.rx_ignored_not_wanted++;
         break;
-    case -CANARD_ERROR_RX_WRONG_ADDRESS:
+    case CANARD_ERROR_RX_WRONG_ADDRESS:
         protocol_stats.rx_ignored_wrong_address++;
         break;
-    case -CANARD_ERROR_RX_NOT_WANTED:
+    case CANARD_ERROR_RX_NOT_WANTED:
         protocol_stats.rx_ignored_not_wanted++;
         break;
-    case -CANARD_ERROR_RX_MISSED_START:
+    case CANARD_ERROR_RX_MISSED_START:
         protocol_stats.rx_error_missed_start++;
         break;
-    case -CANARD_ERROR_RX_WRONG_TOGGLE:
+    case CANARD_ERROR_RX_WRONG_TOGGLE:
         protocol_stats.rx_error_wrong_toggle++;
         break;
-    case -CANARD_ERROR_RX_UNEXPECTED_TID:
+    case CANARD_ERROR_RX_UNEXPECTED_TID:
         protocol_stats.rx_ignored_unexpected_tid++;
         break;
-    case -CANARD_ERROR_RX_SHORT_FRAME:
+    case CANARD_ERROR_RX_SHORT_FRAME:
         protocol_stats.rx_error_short_frame++;
         break;
-    case -CANARD_ERROR_RX_BAD_CRC:
+    case CANARD_ERROR_RX_BAD_CRC:
         protocol_stats.rx_error_bad_crc++;
         break;
     default:
@@ -456,14 +456,15 @@ bool CanardInterface::add_11bit_driver(CANSensor *sensor)
 }
 
 // handler for outgoing frames for auxillary drivers
-bool CanardInterface::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us)
+bool CanardInterface::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us)
 {
+    const uint64_t tx_deadline_us = AP_HAL::micros64() + timeout_us;
     bool ret = false;
     for (uint8_t iface = 0; iface < num_ifaces; iface++) {
         if (ifaces[iface] == NULL) {
             continue;
         }
-        ret |= ifaces[iface]->send(out_frame, timeout_us, 0) > 0;
+        ret |= ifaces[iface]->send(out_frame, tx_deadline_us, 0) > 0;
     }
     return ret;
 }

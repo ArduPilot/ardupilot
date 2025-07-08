@@ -5,14 +5,13 @@
  */
 #pragma once
 
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
 class AP_InertialNav
 {
 public:
     // Constructor
-    AP_InertialNav(AP_AHRS &ahrs) :
+    AP_InertialNav(class AP_AHRS &ahrs) :
         _ahrs_ekf(ahrs)
         {}
 
@@ -20,11 +19,6 @@ public:
        update internal state
     */
     void        update(bool high_vibes = false);
-
-    /**
-     * get_filter_status - returns filter status as a series of flags
-     */
-    nav_filter_status get_filter_status() const;
 
     /**
      * get_position_neu_cm - returns the current position relative to the EKF origin in cm.

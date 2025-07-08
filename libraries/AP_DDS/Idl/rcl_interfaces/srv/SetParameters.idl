@@ -1,0 +1,21 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from rcl_interfaces/srv/SetParameters.srv
+// generated code does not contain a copyright notice
+
+#include "rcl_interfaces/msg/Parameter.idl"
+#include "rcl_interfaces/msg/SetParametersResult.idl"
+
+module rcl_interfaces {
+  module srv {
+    @verbatim (language="comment", text=
+      "A list of parameters to set.")
+    struct SetParameters_Request {
+      sequence<rcl_interfaces::msg::Parameter> parameters;
+    };
+    @verbatim (language="comment", text=
+      "Indicates whether setting each parameter succeeded or not and why.")
+    struct SetParameters_Response {
+      sequence<rcl_interfaces::msg::SetParametersResult> results;
+    };
+  };
+};

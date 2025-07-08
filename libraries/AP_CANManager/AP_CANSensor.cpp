@@ -21,6 +21,7 @@
 
 #include <AP_Scheduler/AP_Scheduler.h>
 #include "AP_CANSensor.h"
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -134,7 +135,7 @@ bool CANSensor::add_interface(AP_HAL::CANIface* can_iface)
     return true;
 }
 
-bool CANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us)
+bool CANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us)
 {
     if (!_initialized) {
         debug_can(AP_CANManager::LOG_ERROR, "Driver not initialized for write_frame");
@@ -170,12 +171,12 @@ void CANSensor::loop()
 #endif
 
     while (true) {
-        uint64_t timeout = AP_HAL::micros64() + LOOP_INTERVAL_US;
+        uint64_t deadline_us = AP_HAL::micros64() + LOOP_INTERVAL_US;
 
         // wait to receive frame
         bool read_select = true;
         bool write_select = false;
-        bool ret = _can_iface->select(read_select, write_select, nullptr, timeout);
+        bool ret = _can_iface->select(read_select, write_select, nullptr, deadline_us);
         if (ret && read_select) {
             uint64_t time;
             AP_HAL::CANIface::CanIOFlags flags {};
@@ -186,6 +187,58 @@ void CANSensor::loop()
             if (res == 1) {
                 handle_frame(frame);
             }
+        }
+    }
+}
+
+MultiCAN::MultiCANLinkedList* MultiCAN::callbacks;
+
+MultiCAN::MultiCAN(ForwardCanFrame cf, AP_CAN::Protocol can_type, const char *driver_name) :
+        CANSensor(driver_name)
+{
+    if (callbacks == nullptr) {
+        callbacks = NEW_NOTHROW MultiCANLinkedList();
+    }
+    if (callbacks == nullptr) {
+        AP_BoardConfig::allocation_error("Failed to create multican callback");
+    }
+
+    // Register new driver
+    register_driver(can_type);
+    callbacks->register_callback(cf);
+}
+
+// handle a received frame from the CAN bus
+void MultiCAN::handle_frame(AP_HAL::CANFrame &frame)
+{
+    if (callbacks != nullptr) {
+        callbacks->handle_frame(frame);
+    }
+
+}
+
+// register a callback for a CAN frame by adding it to the linked list
+void MultiCAN::MultiCANLinkedList::register_callback(ForwardCanFrame callback)
+{
+    CANSensor_Multi* newNode = NEW_NOTHROW CANSensor_Multi();
+    if (newNode == nullptr) {
+        AP_BoardConfig::allocation_error("Failed to create multican node");
+    }
+    WITH_SEMAPHORE(sem);
+    {
+        newNode->_callback = callback;
+        newNode->next = head;
+        head = newNode;
+    }
+}
+
+// distribute the CAN frame to the registered callbacks
+void MultiCAN::MultiCANLinkedList::handle_frame(AP_HAL::CANFrame &frame)
+{
+    WITH_SEMAPHORE(sem);
+    for (CANSensor_Multi* current = head; current != nullptr; current = current->next) {
+        if (current->_callback(frame)) {
+            return;
         }
     }
 }

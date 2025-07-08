@@ -28,8 +28,8 @@ if [ -n "$SITL_RITW_TERMINAL" ]; then
   printf "%q " "$@" >>"$FILEPATH"
   chmod +x "$FILEPATH"
   $SITL_RITW_TERMINAL "$FILEPATH" &
-elif [ "$TERM" = "screen" ] && [ -n "$TMUX" ]; then
-  tmux new-window -dn "$name" "$*"
+elif [ -n "$TMUX" ]; then
+  tmux new-window -dn "$name" "$TMUX_PREFIX $*"
 elif [ -n "$DISPLAY" -a -n "$(which osascript)" ]; then
   osascript -e 'tell application "Terminal" to do script "'"cd $(pwd) && clear && $* "'"'
 elif [ -n "$DISPLAY" -a -n "$(which xterm)" ]; then
@@ -44,6 +44,9 @@ elif [ -n "$DISPLAY" -a -n "$(which gnome-terminal)" ]; then
 elif [ -n "$STY" ]; then
   # We are running inside of screen, try to start it there
   screen -X screen -t "$name" bash -c "cd $PWD; $*"
+elif [ -n "$ZELLIJ" ]; then
+  # Create a new pane to run
+  zellij run -n "$name" -- "$1" "${@:2}"
 else
   filename="/tmp/$name.log"
   echo "RiTW: Window access not found, logging to $filename"

@@ -12,6 +12,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
@@ -30,7 +31,6 @@ on:
       - 'Tools/Hello/**'
       - 'Tools/IO_Firmware/**'
       - 'Tools/Linux_HAL_Essentials/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/Replay/**'
@@ -89,6 +89,7 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
@@ -177,6 +178,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+
       # Put ccache into github cache for faster build
       - name: Prepare ccache timestamp
         id: ccache_cache_timestamp
@@ -184,7 +186,7 @@ jobs:
           NOW=$(date -u +"%F-%T")
           echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
@@ -224,6 +226,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+
+      - name: Register gcc problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/gcc.json"
+
+      - name: Register python problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/python.json"
+
+      - name: Register autotest warn matcher
+        run: echo "::add-matcher::.github/problem-matchers/autotestwarn.json"
+
+      - name: Register autotest fail matcher
+        run: echo "::add-matcher::.github/problem-matchers/autotestfail.json"
+
       # Put ccache into github cache for faster build
       - name: Prepare ccache timestamp
         id: ccache_cache_timestamp
@@ -231,7 +246,7 @@ jobs:
           NOW=$(date -u +"%F-%T")
           echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-base-${{steps.ccache_cache_timestamp.outputs.timestamp}}
@@ -249,7 +264,7 @@ jobs:
           Tools/scripts/build_ci.sh
 
       - name: Archive buildlog artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
            name: fail-${{matrix.config}}
@@ -263,7 +278,7 @@ jobs:
            retention-days: 14
 
       - name: Archive .bin artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
            name: BIN-${{matrix.config}}
            path: /__w/ardupilot/ardupilot/logs

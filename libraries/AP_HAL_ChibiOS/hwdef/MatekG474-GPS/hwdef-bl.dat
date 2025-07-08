@@ -1,0 +1,5 @@
+include ../MatekG474/hwdef-bl.inc
+
+# disable CAN1
+undef PA11
+undef PA12

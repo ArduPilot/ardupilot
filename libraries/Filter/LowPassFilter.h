@@ -15,14 +15,12 @@
 
 //
 /// @file	LowPassFilter.h
-/// @brief	A class to implement a low pass filter without losing precision even for int types
-///         the downside being that it's a little slower as it internally uses a float
-///         and it consumes an extra 4 bytes of memory to hold the constant gain
+/// @brief	A class to implement a low pass filter.
 
 /*
-  Note that this filter can be used in 2 ways:
+  Two classes are provided:
 
-   1) providing dt on every sample, and calling apply like this:
+   LowPassFilter: providing dt on every sample, and calling apply like this:
 
       // call once
       filter.set_cutoff_frequency(frequency_hz);
@@ -30,7 +28,7 @@
       // then on each sample
       output = filter.apply(sample, dt);
 
-   2) providing a sample freq and cutoff_freq once at start
+   LowPassFilterConstDt: providing a sample freq and cutoff_freq once at start
 
       // call once
       filter.set_cutoff_frequency(sample_freq, frequency_hz);
@@ -45,79 +43,89 @@
 #pragma once
 
 #include <AP_Math/AP_Math.h>
-#include "FilterClass.h"
 
 // DigitalLPF implements the filter math
 template <class T>
 class DigitalLPF {
 public:
+
+    // constructor
     DigitalLPF();
-    // add a new raw value to the filter, retrieve the filtered result
-    T apply(const T &sample, float cutoff_freq, float dt);
-    T apply(const T &sample);
 
     CLASS_NO_COPY(DigitalLPF);
 
-    void compute_alpha(float sample_freq, float cutoff_freq);
-    
     // get latest filtered value from filter (equal to the value returned by latest call to apply method)
     const T &get() const;
-    void reset(T value);
-    void reset() {
-        initialised = false;
-    }
+
+    // Reset filter to given value
+    void reset(const T &value);
+
+    // Set reset flag such that the filter will be reset to the next value applied
+    void reset();
+
+protected:
+    // add a new raw value to the filter, retrieve the filtered result
+    T _apply(const T &sample, const float &alpha);
 
 private:
-    T _output;
-    float alpha = 1.0f;
+    T output;
     bool initialised;
 };
 
-// LPF base class
+// Low pass filter with constant time step
 template <class T>
-class LowPassFilter {
+class LowPassFilterConstDt : public DigitalLPF<T> {
 public:
-    LowPassFilter();
-    LowPassFilter(float cutoff_freq);
-    LowPassFilter(float sample_freq, float cutoff_freq);
+
+    // constructors
+    LowPassFilterConstDt() {};
+    LowPassFilterConstDt(const float &sample_freq, const float &cutoff_freq);
+
+    CLASS_NO_COPY(LowPassFilterConstDt);
+
+    // change parameters
+    void set_cutoff_frequency(const float &sample_freq, const float &cutoff_freq);
+
+    // return the cutoff frequency
+    float get_cutoff_freq() const;
+
+    // add a new raw value to the filter, retrieve the filtered result
+    T apply(const T &sample);
+
+private:
+    float cutoff_freq;
+    float alpha;
+};
+
+typedef LowPassFilterConstDt<float>    LowPassFilterConstDtFloat;
+typedef LowPassFilterConstDt<Vector2f> LowPassFilterConstDtVector2f;
+typedef LowPassFilterConstDt<Vector3f> LowPassFilterConstDtVector3f;
+
+// Low pass filter with variable time step
+template <class T>
+class LowPassFilter : public DigitalLPF<T> {
+public:
+
+    // constructors
+    LowPassFilter() {};
+    LowPassFilter(const float &cutoff_freq);
 
     CLASS_NO_COPY(LowPassFilter);
 
     // change parameters
-    void set_cutoff_frequency(float cutoff_freq);
-    void set_cutoff_frequency(float sample_freq, float cutoff_freq);
+    void set_cutoff_frequency(const float &cutoff_freq);
 
     // return the cutoff frequency
-    float get_cutoff_freq(void) const;
-    T apply(T sample, float dt);
-    T apply(T sample);
-    const T &get() const;
-    void reset(T value);
-    void reset(void) { _filter.reset(); }
+    float get_cutoff_freq() const;
 
-protected:
-    float _cutoff_freq;
+    // add a new raw value to the filter, retrieve the filtered result
+    T apply(const T &sample, const float &dt);
 
 private:
-    DigitalLPF<T> _filter;
+    float cutoff_freq;
 };
 
-// Uncomment this, if you decide to remove the instantiations in the implementation file
-/*
-template <class T>
-LowPassFilter<T>::LowPassFilter() : _cutoff_freq(0.0f) { 
-  
-}
-// constructor
-template <class T>
-LowPassFilter<T>::LowPassFilter(float cutoff_freq) : _cutoff_freq(cutoff_freq) { 
-  
-}
-*/
-
 // typedefs for compatibility
-typedef LowPassFilter<int>      LowPassFilterInt;
-typedef LowPassFilter<long>     LowPassFilterLong;
 typedef LowPassFilter<float>    LowPassFilterFloat;
 typedef LowPassFilter<Vector2f> LowPassFilterVector2f;
 typedef LowPassFilter<Vector3f> LowPassFilterVector3f;

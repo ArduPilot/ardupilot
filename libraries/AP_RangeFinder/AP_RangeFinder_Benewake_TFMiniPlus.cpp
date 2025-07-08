@@ -56,7 +56,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_Benewake_TFMiniPlus::detect(
     }
 
     AP_RangeFinder_Benewake_TFMiniPlus *sensor
-        = new AP_RangeFinder_Benewake_TFMiniPlus(_state, _params, std::move(dev));
+        = NEW_NOTHROW AP_RangeFinder_Benewake_TFMiniPlus(_state, _params, std::move(dev));
 
     if (!sensor || !sensor->init()) {
         delete sensor;
@@ -169,7 +169,7 @@ void AP_RangeFinder_Benewake_TFMiniPlus::process_raw_measure(le16_t distance_raw
          * value to 0." - force it to the max distance so status is set to OutOfRangeHigh
          * rather than NoData.
          */
-        output_distance_cm = MAX(MAX_DIST_CM, max_distance_cm() + BENEWAKE_OUT_OF_RANGE_ADD_CM);
+        output_distance_cm = MAX(MAX_DIST_CM, max_distance()*100 + BENEWAKE_OUT_OF_RANGE_ADD_CM);
     } else {
         output_distance_cm = constrain_int16(output_distance_cm, MIN_DIST_CM, MAX_DIST_CM);
     }

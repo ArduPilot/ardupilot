@@ -16,6 +16,9 @@
 #include "AP_Filesystem.h"
 
 #include "AP_Filesystem_config.h"
+
+#if AP_FILESYSTEM_FILE_READING_ENABLED
+
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/Util.h>
 #include <AP_Math/AP_Math.h>
@@ -29,6 +32,9 @@ static AP_Filesystem_FATFS fs_local;
 #elif AP_FILESYSTEM_ESP32_ENABLED
 #include "AP_Filesystem_ESP32.h"
 static AP_Filesystem_ESP32 fs_local;
+#elif AP_FILESYSTEM_LITTLEFS_ENABLED
+#include "AP_Filesystem_FlashMemory_LittleFS.h"
+static AP_Filesystem_FlashMemory_LittleFS fs_local;
 #elif AP_FILESYSTEM_POSIX_ENABLED
 #include "AP_Filesystem_posix.h"
 static AP_Filesystem_Posix fs_local;
@@ -63,17 +69,16 @@ static AP_Filesystem_Mission fs_mission;
 const AP_Filesystem::Backend AP_Filesystem::backends[] = {
     { nullptr, fs_local },
 #if AP_FILESYSTEM_ROMFS_ENABLED
-    { "@ROMFS/", fs_romfs },
+    { "@ROMFS", fs_romfs },
 #endif
 #if AP_FILESYSTEM_PARAM_ENABLED
-    { "@PARAM/", fs_param },
+    { "@PARAM", fs_param },
 #endif
 #if AP_FILESYSTEM_SYS_ENABLED
-    { "@SYS/", fs_sys },
     { "@SYS", fs_sys },
 #endif
 #if AP_FILESYSTEM_MISSION_ENABLED
-    { "@MISSION/", fs_mission },
+    { "@MISSION", fs_mission },
 #endif
 };
 
@@ -89,10 +94,19 @@ extern const AP_HAL::HAL& hal;
  */
 const AP_Filesystem::Backend &AP_Filesystem::backend_by_path(const char *&path) const
 {
+    // ignore leading slashes:
+    const char *path_with_no_leading_slash = path;
+    if (path_with_no_leading_slash[0] == '/') {
+        path_with_no_leading_slash = &path_with_no_leading_slash[1];
+    }
     for (uint8_t i=1; i<NUM_BACKENDS; i++) {
         const uint8_t plen = strlen(backends[i].prefix);
-        if (strncmp(path, backends[i].prefix, plen) == 0) {
+        if (strncmp(path_with_no_leading_slash, backends[i].prefix, plen) == 0) {
+            path = path_with_no_leading_slash;
             path += plen;
+            if (strlen(path) > 0 && path[0] == '/') {
+                path++;
+            }
             return backends[i];
         }
     }
@@ -181,14 +195,37 @@ int AP_Filesystem::mkdir(const char *pathname)
 
 int AP_Filesystem::rename(const char *oldpath, const char *newpath)
 {
-    const Backend &backend = backend_by_path(oldpath);
-    return backend.fs.rename(oldpath, newpath);
+    const Backend &oldbackend = backend_by_path(oldpath);
+
+    // Don't need the backend again, but we also need to remove the backend pre-fix from the new path.
+    const Backend &newbackend = backend_by_path(newpath);
+
+    // Don't try and rename between backends.
+    if (&oldbackend != &newbackend) {
+        return -1;
+    }
+
+    return oldbackend.fs.rename(oldpath, newpath);
 }
 
 AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
 {
+    // support reading a list of "@" filesystems (e.g. @SYS) in
+    // listing of root directory.  Note that backend_by_path modifies
+    // its parameter.
+    if (strlen(pathname) == 0 ||
+        (strlen(pathname) == 1 && pathname[0] == '/')) {
+        virtual_dirent.backend_ofs = 0;
+        virtual_dirent.d_off = 0;
+#if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
+        virtual_dirent.de.d_type = DT_DIR;
+#endif
+    } else {
+        virtual_dirent.backend_ofs = 255;
+    }
+
     const Backend &backend = backend_by_path(pathname);
-    DirHandle *h = new DirHandle;
+    DirHandle *h = NEW_NOTHROW DirHandle;
     if (!h) {
         return nullptr;
     }
@@ -198,6 +235,7 @@ AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
         return nullptr;
     }
     h->fs_index = BACKEND_IDX(backend);
+
     return h;
 }
 
@@ -207,7 +245,34 @@ struct dirent *AP_Filesystem::readdir(DirHandle *dirp)
         return nullptr;
     }
     const Backend &backend = backends[dirp->fs_index];
-    return backend.fs.readdir(dirp->dir);
+    struct dirent * ret = backend.fs.readdir(dirp->dir);
+    if (ret != nullptr) {
+        return ret;
+    }
+
+    // virtual directory entries in the root directory (e.g. @SYS, @MISSION)
+    for (; ret == nullptr && virtual_dirent.backend_ofs < ARRAY_SIZE(AP_Filesystem::backends); virtual_dirent.backend_ofs++) {
+        const char *prefix = backends[virtual_dirent.backend_ofs].prefix;
+        if (prefix == nullptr) {
+            continue;
+        }
+        if (prefix[0] != '@') {
+            continue;
+        }
+
+        // only return @ entries in root if we can successfully opendir them:
+        auto *d = backends[virtual_dirent.backend_ofs].fs.opendir("");
+        if (d == nullptr) {
+            continue;
+        }
+        backends[virtual_dirent.backend_ofs].fs.closedir(d);
+
+        // found a virtual directory we haven't returned yet
+        strncpy_noterm(virtual_dirent.de.d_name, prefix, sizeof(virtual_dirent.de.d_name));
+        virtual_dirent.d_off++;
+        ret = &virtual_dirent.de;
+    }
+    return ret;
 }
 
 int AP_Filesystem::closedir(DirHandle *dirp)
@@ -219,6 +284,14 @@ int AP_Filesystem::closedir(DirHandle *dirp)
     int ret = backend.fs.closedir(dirp->dir);
     delete dirp;
     return ret;
+}
+
+// return number of bytes that should be written before fsync for optimal
+// streaming performance/robustness. if zero, any number can be written.
+uint32_t AP_Filesystem::bytes_until_fsync(int fd)
+{
+    const Backend &backend = backend_by_fd(fd);
+    return backend.fs.bytes_until_fsync(fd);
 }
 
 // return free disk space in bytes
@@ -258,7 +331,9 @@ void AP_Filesystem::unmount(void)
 }
 
 /*
-  load a file to memory as a single chunk. Use only for small files
+  Load a file's contents into memory. Returned object must be `delete`d to free
+  the data. The data is guaranteed to be null-terminated such that it can be
+  treated as a string.
  */
 FileData *AP_Filesystem::load_file(const char *filename)
 {
@@ -271,19 +346,31 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
 {
     const Backend &backend = backend_by_fd(fd);
 
+    // we will need to seek back to the right location at the end
+    auto offset_start = backend.fs.lseek(fd, 0, SEEK_CUR);
+    if (offset_start < 0) {
+        return false;
+    }
+
+    auto n = backend.fs.read(fd, buf, buflen);
+    if (n <= 0) {
+        return false;
+    }
+
     uint8_t i = 0;
-    for (; i<buflen-1; i++) {
-        if (backend.fs.read(fd, &buf[i], 1) <= 0) {
-            if (i==0) {
-                return false;
-            }
-            break;
-        }
+    for (; i < n; i++) {
         if (buf[i] == '\r' || buf[i] == '\n') {
             break;
         }
     }
     buf[i] = '\0';
+
+    // get back to the right offset
+    if (backend.fs.lseek(fd, offset_start+i+1, SEEK_SET) != offset_start+i+1) {
+        // we need to fail if we can't seek back or the caller may loop or get corrupt data
+        return false;
+    }
+
     return true;
 }
 
@@ -368,3 +455,4 @@ AP_Filesystem &FS()
 }
 }
 
+#endif // AP_FILESYSTEM_FILE_READING_ENABLED

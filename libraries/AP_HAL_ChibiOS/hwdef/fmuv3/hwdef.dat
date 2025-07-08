@@ -58,8 +58,8 @@ define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
 
 # Note that APJ is "ArduPilot JSON Firmware Format".
 
-# board ID for firmware load
-APJ_BOARD_ID 9
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_CUBE_F4
 
 # Now you need to say what crystal frequency you have for this
 # board. All of the clocks are scaled against this. Typical values are
@@ -73,10 +73,6 @@ OSCILLATOR_HZ 24000000
 # explained later in this file to override values suitable for your
 # board. Refer to your MCU datasheet or examples from supported boards
 # in ChibiOS for the right values.
-
-# Now define the voltage the MCU runs at. This is needed for ChibiOS
-# to set various internal driver limits. It is in 0.01 volt units.
-
 
 # This is the STM32 timer that ChibiOS will use for the low level
 # driver. This must be a 32 bit timer. We currently only support

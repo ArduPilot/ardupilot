@@ -18,6 +18,9 @@ option(ARDUPILOT_DISABLE_WATCHDOG "Build with watchdog disabled" OFF)
 option(ARDUPILOT_ENABLE_DDS "Enable the DDS client" ON)
 option(ARDUPILOT_ENABLE_NETWORKING_TESTS "Enable the networking test code" OFF)
 option(ARDUPILOT_ENABLE_PPP "Enable PPP networking" OFF)
+set(ARDUPILOT_WAF_CONFIGURE_ARGS "" CACHE STRING "Arbitrary waf configure arguments")
+set(ARDUPILOT_WAF_BUILD_ARGS "" CACHE STRING  "Arbitrary waf build arguments")
+
 
 # NOTE: look for `waf` and set source and build directories to top level.
 # ${PROJECT_SOURCE_DIR} = ./Tools/ros2/ardupilot
@@ -32,9 +35,9 @@ set(WAF_CONFIG $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:"--debug">)
 set(WAF_DISABLE_NETWORKING $<$<BOOL:${ARDUPILOT_DISABLE_NETWORKING}>:"--disable-networking">)
 set(WAF_DISABLE_SCRIPTING $<$<BOOL:${ARDUPILOT_DISABLE_SCRIPTING}>:"--disable-scripting">)
 set(WAF_DISABLE_WATCHDOG $<$<BOOL:${ARDUPILOT_DISABLE_WATCHDOG}>:"--disable-watchdog">)
-set(WAF_ENABLE_DDS $<$<BOOL:${ARDUPILOT_ENABLE_DDS}>:"--enable-dds">)
+set(WAF_ENABLE_DDS $<$<BOOL:${ARDUPILOT_ENABLE_DDS}>:"--enable-DDS">)
 set(WAF_ENABLE_NETWORKING_TESTS $<$<BOOL:${ARDUPILOT_ENABLE_NETWORKING_TESTS}>:"--enable-networking-tests">)
-set(WAF_ENABLE_PPP $<$<BOOL:${ARDUPILOT_ENABLE_PPP}>:"--enable-ppp">)
+set(WAF_ENABLE_PPP $<$<BOOL:${ARDUPILOT_ENABLE_PPP}>:"--enable-PPP">)
 
 add_custom_target(ardupilot_configure ALL
   ${WAF_COMMAND} configure --board sitl
@@ -45,11 +48,12 @@ add_custom_target(ardupilot_configure ALL
     ${WAF_ENABLE_DDS}
     ${WAF_ENABLE_NETWORKING_TESTS}
     ${WAF_ENABLE_PPP}
+    ${ARDUPILOT_WAF_CONFIGURE_ARGS}
   WORKING_DIRECTORY ${ARDUPILOT_ROOT}
 )
 
 add_custom_target(ardupilot_build ALL
-  ${WAF_COMMAND} build --enable-dds ${WAF_CONFIG}
+  ${WAF_COMMAND} build --enable-DDS ${WAF_CONFIG} ${ARDUPILOT_WAF_BUILD_ARGS}
   WORKING_DIRECTORY ${ARDUPILOT_ROOT}
 )
 add_dependencies(ardupilot_build ardupilot_configure)
@@ -81,12 +85,6 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/
 )
 
-# Install DDS profile.
-install(FILES
-  ${ARDUPILOT_ROOT}/libraries/AP_DDS/dds_xrce_profile.xml
-  DESTINATION share/${PROJECT_NAME}/config
-)
-
 # Install additional default params.
 install(DIRECTORY
   config/default_params
@@ -96,6 +94,12 @@ install(DIRECTORY
 # Install autotest default params.
 install(DIRECTORY
   ${ARDUPILOT_ROOT}/Tools/autotest/default_params
+  DESTINATION share/${PROJECT_NAME}/config/
+)
+
+# Install additional autotest model params.
+install(DIRECTORY
+  ${ARDUPILOT_ROOT}/Tools/autotest/models
   DESTINATION share/${PROJECT_NAME}/config/
 )
 

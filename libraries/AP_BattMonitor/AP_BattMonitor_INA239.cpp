@@ -30,16 +30,41 @@ extern const AP_HAL::HAL& hal;
 #define HAL_BATTMON_INA239_MAX_CURRENT 90
 #endif
 
+const AP_Param::GroupInfo AP_BattMonitor_INA239::var_info[] = {
+
+    // @Param: MAX_AMPS
+    // @DisplayName: Battery monitor max current
+    // @Description: This controls the maximum current the INA239 sensor will work with.
+    // @Range: 1 400
+    // @Units: A
+    // @User: Advanced
+    AP_GROUPINFO("MAX_AMPS", 27, AP_BattMonitor_INA239, max_amps, HAL_BATTMON_INA239_MAX_CURRENT),
+
+    // @Param: SHUNT
+    // @DisplayName: Battery monitor shunt resistor
+    // @Description: This sets the shunt resistor used in the device
+    // @Range: 0.0001 0.01
+    // @Units: Ohm
+    // @User: Advanced
+    AP_GROUPINFO("SHUNT", 28, AP_BattMonitor_INA239, rShunt, HAL_BATTMON_INA239_SHUNT_RESISTANCE),
+
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
+
+    AP_GROUPEND
+};
+
 AP_BattMonitor_INA239::AP_BattMonitor_INA239(AP_BattMonitor &mon,
                                              AP_BattMonitor::BattMonitor_State &mon_state,
                                              AP_BattMonitor_Params &params)
         : AP_BattMonitor_Backend(mon, mon_state, params)
 {
+    AP_Param::setup_object_defaults(this, var_info);
+    _state.var_info = var_info;
 }
 
 void AP_BattMonitor_INA239::init(void)
 {
-    dev = hal.spi->get_device(AP_BATTERY_INA239_SPI_DEVICE);
+    dev = hal.spi->get_device_ptr(AP_BATTERY_INA239_SPI_DEVICE);
     if (!dev) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "device fail");
         return;
@@ -61,8 +86,8 @@ void AP_BattMonitor_INA239::configure(void)
     }
 
     voltage_LSB = 3.125e-3;
-    current_LSB = float(HAL_BATTMON_INA239_MAX_CURRENT) / 0x8000;
-    const int16_t shunt_cal = 819.2 * 1e6 * current_LSB * HAL_BATTMON_INA239_SHUNT_RESISTANCE;
+    current_LSB = max_amps.get() / 0x8000;
+    const int16_t shunt_cal = 819.2 * 1e6 * current_LSB * rShunt.get();
     int16_t shunt_cal2 = 0;
 
     if (!write_word(REG_SHUNT_CAL, shunt_cal) ||

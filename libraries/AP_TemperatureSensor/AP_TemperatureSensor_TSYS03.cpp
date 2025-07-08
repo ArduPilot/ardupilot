@@ -36,6 +36,7 @@ static const uint8_t TSYS03_CMD_READ_ADC    = 0x00;
 void AP_TemperatureSensor_TSYS03::init()
 {
     constexpr char name[] = "TSYS03";
+    (void)name;  // sometimes this is unused (e.g. HAL_GCS_ENABLED false)
 
 #if AP_TEMPERATURE_SENSOR_TSYS03_ENFORCE_KNOWN_VALID_I2C_ADDRESS
     // I2C Address: Default to using TSYS03_ADDR_CSB0 & Check I2C Address is Correct
@@ -45,7 +46,7 @@ void AP_TemperatureSensor_TSYS03::init()
     }
 #endif
 
-    _dev = std::move(hal.i2c_mgr->get_device(_params.bus, _params.bus_address));
+    _dev = hal.i2c_mgr->get_device_ptr(_params.bus, _params.bus_address);
     if (!_dev) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s device is null!", name);
         return;

@@ -177,6 +177,12 @@ void AP_RCProtocol_GHST::_process_byte(uint32_t timestamp_us, uint8_t byte)
         return;
     }
 
+    if (_frame.length < 2) {
+        // invalid length, we subtract 2 below
+        _frame_ofs = 0;
+        return;
+    }
+    
     // decode whatever we got and expect
     if (_frame_ofs == _frame.length + GHST_HEADER_LEN) {
         log_data(AP_RCProtocol::GHST, timestamp_us, (const uint8_t*)&_frame, _frame_ofs - GHST_HEADER_LEN);
@@ -274,6 +280,7 @@ bool AP_RCProtocol_GHST::decode_ghost_packet()
     const RadioFrame* radio_frame = (const RadioFrame*)(&_frame.payload);
     const Channels12Bit_4Chan* channels = &(radio_frame->channels);
     const uint8_t* lowres_channels = radio_frame->lowres_channels;
+    bool rc_frame = false;
 
     // Scaling from Betaflight
     // Scaling 12bit channels (8bit channels in brackets)
@@ -322,6 +329,7 @@ bool AP_RCProtocol_GHST::decode_ghost_packet()
             _channels[offset++] = CHANNEL_LR_SCALE_LEGACY(lowres_channels[1]);
             _channels[offset++] = CHANNEL_LR_SCALE_LEGACY(lowres_channels[2]);
             _channels[offset++] = CHANNEL_LR_SCALE_LEGACY(lowres_channels[3]);
+            rc_frame = true;
             break;
         }
         case GHST_UL_RC_CHANS_HS4_12_5TO8:
@@ -332,6 +340,7 @@ bool AP_RCProtocol_GHST::decode_ghost_packet()
             _channels[offset++] = CHANNEL_LR_SCALE(lowres_channels[1]);
             _channels[offset++] = CHANNEL_LR_SCALE(lowres_channels[2]);
             _channels[offset++] = CHANNEL_LR_SCALE(lowres_channels[3]);
+            rc_frame = true;
             break;
         }
         case GHST_UL_RC_CHANS_RSSI:
@@ -349,7 +358,7 @@ bool AP_RCProtocol_GHST::decode_ghost_packet()
     }
 #endif
 
-    return true;
+    return rc_frame;
 }
 
 // send out telemetry

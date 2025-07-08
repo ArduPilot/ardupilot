@@ -1,0 +1,62 @@
+# 5 inch FPV Freestyle/Racing model
+
+{
+    # total vehicle mass in kg
+    "mass" : 0.8,
+
+    # vehicle diameter
+    "diagonal_size" : 0.25,
+
+    # the ref parameters should be taken from a test
+    # with the copter flying at constant speed in zero wind. This is used
+    # to estimate the drag coefficient
+    "refSpd" : 20.0,    # m/s
+    "refAngle" : 45.0,   # degrees
+    "refVoltage" : 23.2, # volts
+    "refCurrent" : 5, # Amps
+    "refAlt" : 607,       # meters AMSL
+    "refTempC" : 25,     # degrees C
+    "refBatRes" : 0.0226, # BAT.Res from log
+
+    # full battery voltage
+    "maxVoltage" : 25.2,
+
+    # full battery capacity, Ah
+    # 0 means unlimited
+    "battCapacityAh" : 0,
+
+    # MOT_THST_EXPO
+    "propExpo" : 0.7,
+
+    # approximate maximum yaw rate in deg/sec
+    "refRotRate" : 700,
+
+    # hover throttle from 0 to 1
+    "hoverThrOut" : 0.125,
+
+    # MOT_PWM_MIN
+    "pwmMin" : 1000,
+
+    # MOT_PWM_MAX
+    "pwmMax" : 2000,
+
+    # MOT_SPIN_MIN
+    "spin_min" : 0.01,
+
+    # MOT_SPIN_MAX
+    "spin_max" : 0.95,
+
+    # maximum motor slew rate, or zero to disable
+    "slew_max" : 0,
+
+    # total effective disc area in sq m for 4 x 5 inch diameter rotors
+    "disc_area" : 0.204,
+
+    # momentum drag coefficient
+    # ratio of momentum drag relative to a ducted rotor of the same effective disc area
+    "mdrag_coef" : 0.10,
+
+    # number of motors
+    "num_motors" : 4
+}
+

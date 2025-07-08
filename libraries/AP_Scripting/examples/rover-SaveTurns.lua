@@ -12,6 +12,9 @@ of a vehicle.  Use this script AT YOUR OWN RISK.
 LICENSE - GNU GPLv3 https://www.gnu.org/licenses/gpl-3.0.en.html
 ------------------------------------------------------------------------------]]
 
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: need-check-nil
+
 local SCRIPT_NAME = 'SaveTurns'
 
 --------  USER EDITABLE GLOBALS  --------
@@ -106,7 +109,7 @@ function collect_breadcrumbs()
     if not ahrs:healthy() then return collect_breadcrumbs, RUN_INTERVAL_MS end
 
     local cur_pos = ahrs:get_location()
-    local cur_yaw = ahrs:get_yaw() * 180.0 / math.pi
+    local cur_yaw = ahrs:get_yaw_rad() * 180.0 / math.pi
 
     if cur_pos:get_distance(last_wp) < MIN_DIST then
         last_yaw = cur_yaw

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <AP_Logger/AP_Logger.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_FixedWing.h>
@@ -65,6 +64,8 @@ public:
     // are we running?
     bool running;
 
+    static const char *axis_string(ATType _type);
+
 private:
     // the current gains
     ATGains &current;
@@ -128,9 +129,9 @@ private:
     // 5 point mode filter for FF estimate
     ModeFilterFloat_Size5 ff_filter;
 
-    LowPassFilterFloat actuator_filter;
-    LowPassFilterFloat rate_filter;
-    LowPassFilterFloat target_filter;
+    LowPassFilterConstDtFloat actuator_filter;
+    LowPassFilterConstDtFloat rate_filter;
+    LowPassFilterConstDtFloat target_filter;
 
     // separate slew limiters for P and D
     float slew_limit_max, slew_limit_tau;

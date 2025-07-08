@@ -14,7 +14,7 @@
  */
 #include "AP_Proximity_config.h"
 
-#if AP_PROXIMITY_MR72_ENABLED
+#if AP_PROXIMITY_MR72_DRIVER_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -32,26 +32,14 @@ const AP_Param::GroupInfo AP_Proximity_MR72_CAN::var_info[] = {
     AP_GROUPEND
 };
 
-MR72_MultiCAN *AP_Proximity_MR72_CAN::multican;
-
 AP_Proximity_MR72_CAN::AP_Proximity_MR72_CAN(AP_Proximity &_frontend,
                                      AP_Proximity::Proximity_State &_state,
                                      AP_Proximity_Params& _params):
     AP_Proximity_Backend(_frontend, _state, _params)
 {
-    if (multican == nullptr) {
-        multican = new MR72_MultiCAN();
-        if (multican == nullptr) {
-            AP_BoardConfig::allocation_error("MR72_CAN");
-        }
-    }
-
-    {
-        // add to linked list of drivers
-        WITH_SEMAPHORE(multican->sem);
-        auto *prev = multican->drivers;
-        next = prev;
-        multican->drivers = this;
+    multican_MR72 = NEW_NOTHROW MultiCAN{FUNCTOR_BIND_MEMBER(&AP_Proximity_MR72_CAN::handle_frame, bool, AP_HAL::CANFrame &), AP_CAN::Protocol::RadarCAN, "MR72 MultiCAN"};
+    if (multican_MR72 == nullptr) {
+        AP_BoardConfig::allocation_error("Failed to create proximity multican");
     }
 
     AP_Param::setup_object_defaults(this, var_info);
@@ -129,18 +117,8 @@ bool AP_Proximity_MR72_CAN::parse_distance_message(AP_HAL::CANFrame &frame)
 
     const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(yaw);
     _temp_boundary.add_distance(face, yaw, objects_dist);
+    database_push(yaw, objects_dist);
     return true;
 }
 
-// handle frames from CANSensor, passing to the drivers
-void MR72_MultiCAN::handle_frame(AP_HAL::CANFrame &frame)
-{
-    WITH_SEMAPHORE(sem);
-    for (auto *d = drivers; d; d=d->next) {
-        if (d->handle_frame(frame)) {
-            break;
-        }
-    }
-}
-
-#endif // HAL_PROXIMITY_ENABLED
+#endif  // AP_PROXIMITY_MR72_DRIVER_ENABLED

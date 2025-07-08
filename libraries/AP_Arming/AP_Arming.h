@@ -3,6 +3,8 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_GPS/AP_GPS_config.h>
+#include <AP_BoardConfig/AP_BoardConfig_config.h>
 
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"
@@ -19,28 +21,28 @@ public:
 
     void update();
 
-    enum ArmingChecks {
-        ARMING_CHECK_ALL         = (1U << 0),
-        ARMING_CHECK_BARO        = (1U << 1),
-        ARMING_CHECK_COMPASS     = (1U << 2),
-        ARMING_CHECK_GPS         = (1U << 3),
-        ARMING_CHECK_INS         = (1U << 4),
-        ARMING_CHECK_PARAMETERS  = (1U << 5),
-        ARMING_CHECK_RC          = (1U << 6),
-        ARMING_CHECK_VOLTAGE     = (1U << 7),
-        ARMING_CHECK_BATTERY     = (1U << 8),
-        ARMING_CHECK_AIRSPEED    = (1U << 9),
-        ARMING_CHECK_LOGGING     = (1U << 10),
-        ARMING_CHECK_SWITCH      = (1U << 11),
-        ARMING_CHECK_GPS_CONFIG  = (1U << 12),
-        ARMING_CHECK_SYSTEM      = (1U << 13),
-        ARMING_CHECK_MISSION     = (1U << 14),
-        ARMING_CHECK_RANGEFINDER = (1U << 15),
-        ARMING_CHECK_CAMERA      = (1U << 16),
-        ARMING_CHECK_AUX_AUTH    = (1U << 17),
-        ARMING_CHECK_VISION      = (1U << 18),
-        ARMING_CHECK_FFT         = (1U << 19),
-        ARMING_CHECK_OSD         = (1U << 20),
+    enum class Check {
+        ALL         = (1U << 0),
+        BARO        = (1U << 1),
+        COMPASS     = (1U << 2),
+        GPS         = (1U << 3),
+        INS         = (1U << 4),
+        PARAMETERS  = (1U << 5),
+        RC          = (1U << 6),
+        VOLTAGE     = (1U << 7),
+        BATTERY     = (1U << 8),
+        AIRSPEED    = (1U << 9),
+        LOGGING     = (1U << 10),
+        SWITCH      = (1U << 11),
+        GPS_CONFIG  = (1U << 12),
+        SYSTEM      = (1U << 13),
+        MISSION     = (1U << 14),
+        RANGEFINDER = (1U << 15),
+        CAMERA      = (1U << 16),
+        AUX_AUTH    = (1U << 17),
+        VISION      = (1U << 18),
+        FFT         = (1U << 19),
+        OSD         = (1U << 20),
     };
 
     enum class Method {
@@ -80,13 +82,18 @@ public:
         DEADRECKON_FAILSAFE = 33, // only disarm uses this...
         BLACKBOX = 34,
         DDS = 35,
+        AUTO_ARM_ONCE = 36,
+        TURTLE_MODE = 37,
+        TOYMODE = 38,
         UNKNOWN = 100,
     };
 
     enum class Required {
         NO           = 0,
         YES_MIN_PWM  = 1,
-        YES_ZERO_PWM = 2
+        YES_ZERO_PWM = 2,
+        YES_AUTO_ARM_MIN_PWM = 3,
+        YES_AUTO_ARM_ZERO_PWM = 4,
     };
 
     void init(void);
@@ -94,15 +101,20 @@ public:
     // these functions should not be used by Copter which holds the armed state in the motors library
     Required arming_required() const;
     virtual bool arm(AP_Arming::Method method, bool do_arming_checks=true);
+    virtual bool arm_force(AP_Arming::Method method) { return arm(method, false); }
     virtual bool disarm(AP_Arming::Method method, bool do_disarm_checks=true);
     bool is_armed() const;
     bool is_armed_and_safety_off() const;
+
+    // Returns the time since boot (in microseconds) that we armed. Returns 0 if disarmed.
+    uint64_t arm_time_us() const { return is_armed() ? last_arm_time_us : 0; }
 
     // get bitmask of enabled checks
     uint32_t get_enabled_checks() const;
 
     // pre_arm_checks() is virtual so it can be modified in a vehicle specific subclass
     virtual bool pre_arm_checks(bool report);
+    bool get_last_prearm_checks_result() const { return last_prearm_checks_result; }
 
     // some arming checks have side-effects, or require some form of state
     // change to have occurred, and thus should not be done as pre-arm
@@ -126,6 +138,7 @@ public:
     bool get_aux_auth_id(uint8_t& auth_id);
     void set_aux_auth_passed(uint8_t auth_id);
     void set_aux_auth_failed(uint8_t auth_id, const char* fail_msg);
+    void reset_all_aux_auths();
 #endif
 
     static const struct AP_Param::GroupInfo        var_info[];
@@ -152,6 +165,12 @@ public:
     static bool method_is_GCS(Method method) {
         return (method == Method::MAVLINK || method == Method::DDS);
     }
+
+    enum class RequireLocation : uint8_t {
+        NO = 0,
+        YES = 1,
+    };
+
 protected:
 
     // Parameters
@@ -162,6 +181,7 @@ protected:
     AP_Int32                _required_mission_items;
     AP_Int32                _arming_options;
     AP_Int16                magfield_error_threshold;
+    AP_Enum<RequireLocation> require_location;
 
     // internal members
     bool                    armed;
@@ -230,6 +250,10 @@ protected:
     
     bool estop_checks(bool display_failure);
 
+#if AP_ARMING_CRASHDUMP_ACK_ENABLED
+    bool crashdump_checks(bool report);
+#endif
+
     virtual bool system_checks(bool report);
 
     bool can_checks(bool report);
@@ -250,9 +274,9 @@ protected:
     virtual bool mandatory_checks(bool report);
 
     // returns true if a particular check is enabled
-    bool check_enabled(const enum AP_Arming::ArmingChecks check) const;
+    bool check_enabled(const AP_Arming::Check check) const;
     // handle the case where a check fails
-    void check_failed(const enum AP_Arming::ArmingChecks check, bool report, const char *fmt, ...) const FMT_PRINTF(4, 5);
+    void check_failed(const AP_Arming::Check check, bool report, const char *fmt, ...) const FMT_PRINTF(4, 5);
     void check_failed(bool report, const char *fmt, ...) const FMT_PRINTF(3, 4);
 
     void Log_Write_Arm(bool forced, AP_Arming::Method method);
@@ -302,6 +326,8 @@ private:
     Method _last_disarm_method = Method::UNKNOWN;
     Method _last_arm_method = Method::UNKNOWN;
 
+    uint64_t last_arm_time_us; // last time we successfully armed
+
     uint32_t last_prearm_display_ms;  // last time we send statustexts for prearm failures
     bool running_arming_checks;  // true if the arming checks currently being performed are being done because the vehicle is trying to arm the vehicle
     
@@ -309,6 +335,18 @@ private:
     bool report_immediately; // set to true when check goes from true to false, to trigger immediate report
 
     void update_arm_gpio();
+
+#if !AP_GPS_BLENDED_ENABLED
+    bool blending_auto_switch_checks(bool report);
+#endif
+
+#if AP_ARMING_CRASHDUMP_ACK_ENABLED
+    struct CrashDump {
+        void check_reset();
+        AP_Int8  acked;
+    } crashdump_ack;
+#endif  // AP_ARMING_CRASHDUMP_ACK_ENABLED
+
 };
 
 namespace AP {

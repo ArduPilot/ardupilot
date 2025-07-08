@@ -8,7 +8,9 @@
 
 void Copter::init_precland()
 {
-    copter.precland.init(400);
+    // scheduler table specifies 400Hz, but we can call it no faster
+    // than the scheduler loop rate:
+    copter.precland.init(MIN(400, scheduler.get_loop_rate_hz()));
 }
 
 void Copter::update_precland()

@@ -30,5 +30,12 @@ define HAL_MSP_ENABLED 0
 
 # Copter-specific defines; these defines are only used in the Copter
 #  directory, but are seen across the entire codebase:
-define MODE_FLOWHOLD_ENABLED 0
 define MODE_TURTLE_ENABLED 0
+
+define AP_MOTORS_FRAME_DEFAULT_ENABLED 0
+define AP_MOTORS_FRAME_QUAD_ENABLED 1
+define AP_MOTORS_FRAME_HEXA_ENABLED 1
+define AP_MOTORS_FRAME_OCTA_ENABLED 1
+
+define HAL_EFI_ENABLED 0
+define AP_ICENGINE_ENABLED 0

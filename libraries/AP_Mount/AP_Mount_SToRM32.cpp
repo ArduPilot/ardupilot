@@ -1,6 +1,9 @@
-#include "AP_Mount_SToRM32.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_STORM32MAVLINK_ENABLED
+
+#include "AP_Mount_SToRM32.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -52,21 +55,10 @@ void AP_Mount_SToRM32::update()
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's RC inputs
-            MountTarget rc_target;
-            get_rc_target(mnt_target.target_type, rc_target);
-            switch (mnt_target.target_type) {
-            case MountTargetType::ANGLE:
-                mnt_target.angle_rad = rc_target;
-                break;
-            case MountTargetType::RATE:
-                mnt_target.rate_rads = rc_target;
-                break;
-            }
+        case MAV_MOUNT_MODE_RC_TARGETING:
+            update_mnt_target_from_rc_target();
             resend_now = true;
             break;
-        }
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
@@ -118,8 +110,8 @@ void AP_Mount_SToRM32::find_gimbal()
         return;
     }
 
-    // return if search time has has passed
-    if (AP_HAL::millis() > AP_MOUNT_STORM32_SEARCH_MS) {
+    // search for gimbal for 60 seconds or until armed
+    if ((AP_HAL::millis() > AP_MOUNT_STORM32_SEARCH_MS) && hal.util->get_soft_armed()) {
         return;
     }
 
@@ -128,7 +120,7 @@ void AP_Mount_SToRM32::find_gimbal()
     if (GCS_MAVLINK::find_by_mavtype_and_compid(MAV_TYPE_GIMBAL, compid, _sysid, _chan)) {
         _compid = compid;
         _initialised = true;
-        gcs().send_text(MAV_SEVERITY_INFO, "Mount: SToRM32");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: SToRM32");
     }
 }
 

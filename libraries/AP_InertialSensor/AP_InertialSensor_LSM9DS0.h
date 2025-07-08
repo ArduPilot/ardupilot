@@ -97,8 +97,6 @@ private:
     float _accel_scale;
     int _drdy_pin_num_a;
     int _drdy_pin_num_g;
-    uint8_t _gyro_instance;
-    uint8_t _accel_instance;
     float _temperature;
     uint8_t _temp_counter;
     LowPassFilter2pFloat _temp_filter;

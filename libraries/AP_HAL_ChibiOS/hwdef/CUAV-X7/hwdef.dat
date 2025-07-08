@@ -6,13 +6,11 @@ MCU STM32H7xx STM32H743xx
 # crystal frequency
 OSCILLATOR_HZ 16000000
 
-# board ID for firmware load
-APJ_BOARD_ID 1010
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CUAV_X7_PRO
 
 FLASH_SIZE_KB 2048
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 2
@@ -29,7 +27,6 @@ PA12 OTG_FS_DP OTG1
 
 # Port switching for USB HS and FS,high = USB_FS , LOW = USB_HS
 PH15 USB_HS_ENABLE OUTPUT HIGH
-define USB_HW_ENABLE_HS 0
 
 # these are the pins for SWD debugging with a STlinkv2 or black-magic probe
 PA13 JTMS-SWDIO SWD
@@ -105,9 +102,7 @@ define HAL_I2C_INTERNAL_MASK 1
 # enable pins
 PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
 
-# start peripheral power off, then enable after init
-# this prevents a problem with radios that use RTS for
-# bootloader hold
+# start peripheral power on
 PD11 VDD_5V_HIPOWER_EN OUTPUT HIGH
 PG4  VDD_5V_PERIPH_EN OUTPUT HIGH
 
@@ -243,12 +238,12 @@ SPIDEV icm42688       SPI4 DEVID2  ICM42688_CS     MODE3  2*MHZ  8*MHZ
 
 # RM3100 may be on SPI1 or SPI2 (not both). Later board revisions
 # have the RM3100 on SPI2, to leave SPI1 free for ADIS1647x
-SPIDEV rm3100-1       SPI1 DEVID1  RM3100_CS       MODE3  2*MHZ  8*MHZ
-SPIDEV rm3100-2       SPI2 DEVID2  RM3100_CS       MODE3  2*MHZ  8*MHZ
+SPIDEV rm3100-1       SPI1 DEVID1  RM3100_CS       MODE3  1*MHZ  1*MHZ
+SPIDEV rm3100-2       SPI2 DEVID2  RM3100_CS       MODE3  1*MHZ  1*MHZ
 
 # two baro
-BARO MS56XX SPI:ms5611_imu
-BARO MS56XX SPI:ms5611_board
+BARO MS5611 SPI:ms5611_imu
+BARO MS5611 SPI:ms5611_board
 
 # three IMUs, only one of ICM20689 and ADIS16470 will be included
 IMU ADIS1647x    SPI:adis16470 ROTATION_PITCH_180_YAW_270 ADIS_DRDY_PIN
@@ -285,15 +280,12 @@ PI5 LED_R1 OUTPUT OPENDRAIN HIGH GPIO(0)
 PI6 LED_G1 OUTPUT OPENDRAIN LOW  GPIO(1)
 PI7 LED_B1 OUTPUT OPENDRAIN HIGH GPIO(2)
 
-define HAL_GPIO_A_LED_PIN 0
-define HAL_GPIO_B_LED_PIN 1
-define HAL_GPIO_C_LED_PIN 2
-
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 0
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 1
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 2
 
 # use pixracer style 3-LED indicators
-define HAL_HAVE_PIXRACER_LED
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
 # enable RAMTROM parameter storage
 define HAL_STORAGE_SIZE 32768

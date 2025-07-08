@@ -1,10 +1,3 @@
-/*****************************************************************************
-The init_ardupilot function processes everything we need for an in - air restart
-    We will determine later if we are actually on the ground and process a
-    ground start in that case.
-
-*****************************************************************************/
-
 #include "Rover.h"
 
 static void failsafe_check_static()
@@ -14,11 +7,6 @@ static void failsafe_check_static()
 
 void Rover::init_ardupilot()
 {
-    // init gripper
-#if AP_GRIPPER_ENABLED
-    g2.gripper.init();
-#endif
-
     // initialise notify system
     notify.init();
     notify_mode(control_mode);
@@ -30,7 +18,9 @@ void Rover::init_ardupilot()
     rpm_sensor.init();
 #endif
 
+#if AP_RSSI_ENABLED
     rssi.init();
+#endif
 
     g2.windvane.init(serial_manager);
 
@@ -40,7 +30,7 @@ void Rover::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED
     osd.init();
 #endif
 
@@ -52,9 +42,11 @@ void Rover::init_ardupilot()
     airspeed.set_log_bit(MASK_LOG_IMU);
 #endif
 
+#if AP_RANGEFINDER_ENABLED
     // initialise rangefinder
     rangefinder.set_log_rfnd_bit(MASK_LOG_RANGEFINDER);
     rangefinder.init(ROTATION_NONE);
+#endif
 
 #if HAL_PROXIMITY_ENABLED
     // init proximity sensor
@@ -72,13 +64,13 @@ void Rover::init_ardupilot()
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
-    gps.init(serial_manager);
+    gps.init();
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     init_rc_in();            // sets up rc channels deadzone
     g2.motors.init(get_frame_type());        // init motors including setting servo out channels ranges
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     // init wheel encoders
     g2.wheel_encoder.init();
@@ -121,10 +113,29 @@ void Rover::init_ardupilot()
     // initialize SmartRTL
     g2.smart_rtl.init();
 
+#if AP_OAPATHPLANNER_ENABLED
     // initialise object avoidance
     g2.oa.init();
+#endif
 
-    startup_ground();
+    set_mode(mode_initializing, ModeReason::INITIALISED);
+
+    startup_INS();
+
+#if AP_MISSION_ENABLED
+    // initialise mission library
+    mode_auto.mission.init();
+#if HAL_LOGGING_ENABLED
+    mode_auto.mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
+#endif
+#endif
+
+    // initialise AP_Logger library
+#if HAL_LOGGING_ENABLED
+    logger.setVehicle_Startup_Writer(
+        FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
+        );
+#endif
 
     Mode *initial_mode = mode_from_mode_num((enum Mode::Number)g.initial_mode.get());
     if (initial_mode == nullptr) {
@@ -141,35 +152,11 @@ void Rover::init_ardupilot()
 
     // boat should loiter after completing a mission to avoid drifting off
     if (is_boat()) {
-        rover.g2.mis_done_behave.set_default(ModeAuto::Mis_Done_Behave::MIS_DONE_BEHAVE_LOITER);
+        rover.g2.mis_done_behave.set_default(uint8_t(ModeAuto::DoneBehaviour::LOITER));
     }
 
     // flag that initialisation has completed
     initialised = true;
-}
-
-//*********************************************************************************
-// This function does all the calibrations, etc. that we need during a ground start
-//*********************************************************************************
-void Rover::startup_ground(void)
-{
-    set_mode(mode_initializing, ModeReason::INITIALISED);
-
-    // IMU ground start
-    //------------------------
-    //
-
-    startup_INS_ground();
-
-    // initialise mission library
-    mode_auto.mission.init();
-
-    // initialise AP_Logger library
-#if HAL_LOGGING_ENABLED
-    logger.setVehicle_Startup_Writer(
-        FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
-        );
-#endif
 }
 
 // update the ahrs flyforward setting which can allow
@@ -217,7 +204,7 @@ bool Rover::gcs_mode_enabled(const Mode::Number mode_num) const
         (uint8_t)Mode::Number::RTL,
         (uint8_t)Mode::Number::SMART_RTL,
         (uint8_t)Mode::Number::GUIDED,
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
         (uint8_t)Mode::Number::DOCK
 #endif
     };
@@ -234,7 +221,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
 
     // Check if GCS mode change is disabled via parameter
     if ((reason == ModeReason::GCS_COMMAND) && !gcs_mode_enabled((Mode::Number)new_mode.mode_number())) {
-        gcs().send_text(MAV_SEVERITY_NOTICE,"Mode change to %s denied, GCS entry disabled (FLTMODE_GCSBLOCK)", new_mode.name4());
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"Mode change to %s denied, GCS entry disabled (FLTMODE_GCSBLOCK)", new_mode.name4());
         return false;
     }
 
@@ -243,7 +230,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
         // Log error that we failed to enter desired flight mode
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE,
                            LogErrorCode(new_mode.mode_number()));
-        gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Flight mode change failed");
         return false;
     }
 
@@ -288,9 +275,9 @@ bool Rover::set_mode(Mode::Number new_mode, ModeReason reason)
     return rover.set_mode(*mode, reason);
 }
 
-void Rover::startup_INS_ground(void)
+void Rover::startup_INS(void)
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
     hal.scheduler->delay(100);
 
     ahrs.init();
@@ -342,8 +329,7 @@ bool Rover::is_boat() const
 }
 
 #include <AP_Avoidance/AP_Avoidance.h>
-#include <AP_ADSB/AP_ADSB.h>
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED

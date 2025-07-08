@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+# flake8: noqa
 from waflib.TaskGen import after_method, before_method, feature
 
 def build(bld):
@@ -11,8 +12,7 @@ def build(bld):
         dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'AP_OSD',
-            'AP_RCMapper',
-            'AP_Arming'
+            'AP_Avoidance',
         ],
     )
     bld.ap_program(

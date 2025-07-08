@@ -1,8 +1,10 @@
+#include "AP_Mount_config.h"
+
+#if HAL_SOLO_GIMBAL_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include "SoloGimbal.h"
-
-#if HAL_SOLO_GIMBAL_ENABLED
 
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h>
@@ -245,7 +247,7 @@ void SoloGimbal::update_fast() {
         // single gyro mode - one of the first two gyros are unhealthy or don't exist
         // just read primary gyro
         Vector3f dAng;
-        readVehicleDeltaAngle(ins.get_primary_gyro(), dAng);
+        readVehicleDeltaAngle(ins.get_first_usable_gyro(), dAng);
         _vehicle_delta_angles += dAng;
     }
 }

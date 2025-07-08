@@ -1,5 +1,6 @@
-#!/usr/bin/env python
 # encoding: utf-8
+
+# flake8: noqa
 
 def build(bld):
     if not bld.env.BOOTLOADER:
@@ -12,7 +13,7 @@ def build(bld):
 
     bld.ap_stlib(
         name= 'AP_Bootloader_libs',
-        use='dronecan',
+        use=['dronecan'],
         dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
         ap_vehicle='AP_Bootloader',
         ap_libraries= flashiface_lib + [
@@ -21,12 +22,13 @@ def build(bld):
         'AP_HAL',
         'AP_Networking',
         'AP_ROMFS',
+        'AP_Common',
         ])
 
     # build external libcanard library
     bld.stlib(source='../../modules/DroneCAN/libcanard/canard.c',
               name='libcanard',
-              use='dronecan',
+              use=['dronecan'],
               target='libcanard')
 
     bld.ap_program(

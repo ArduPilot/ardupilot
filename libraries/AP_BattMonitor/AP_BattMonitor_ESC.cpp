@@ -20,6 +20,30 @@
 
 #include "AP_BattMonitor_ESC.h"
 
+const AP_Param::GroupInfo AP_BattMonitor_ESC::var_info[] = {
+
+    // @Param: ESC_MASK
+    // @DisplayName: ESC mask
+    // @Description: If 0 all connected ESCs will be used. If non-zero, only those selected in will be used.
+    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16, 16: ESC 17, 17: ESC 18, 18: ESC 19, 19: ESC 20, 20: ESC 21, 21: ESC 22, 22: ESC 23, 23: ESC 24, 24: ESC 25, 25: ESC 26, 26: ESC 27, 27: ESC 28, 28: ESC 29, 29: ESC 30, 30: ESC 31, 31: ESC 32
+    // @User: Standard
+    AP_GROUPINFO("ESC_MASK", 36, AP_BattMonitor_ESC, _mask, 0),
+
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
+
+    AP_GROUPEND
+};
+
+// constructor. This incorporates initialisation as well.
+AP_BattMonitor_ESC::AP_BattMonitor_ESC(AP_BattMonitor &mon,
+                                       AP_BattMonitor::BattMonitor_State &mon_state,
+                                       AP_BattMonitor_Params &params):
+    AP_BattMonitor_Backend(mon, mon_state, params)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+    _state.var_info = var_info;
+};
+
 void AP_BattMonitor_ESC::init(void)
 {
 }
@@ -33,10 +57,16 @@ void AP_BattMonitor_ESC::read(void)
     float voltage_sum = 0;
     float current_sum = 0;
     float temperature_sum = 0;
+    float consumed_mah_sum = 0.0;
     uint32_t highest_ms = 0;
-     _state.consumed_mah = delta_mah;
 
+    const bool all_enabled = _mask == 0;
     for (uint8_t i=0; i<ESC_TELEM_MAX_ESCS; i++) {
+        if (!all_enabled && ((_mask & (1U<<i)) == 0)) {
+            // Only include ESCs set in mask
+            continue;
+        }
+
         int16_t  temperature_cdeg;
         float voltage;
         float current;
@@ -45,7 +75,8 @@ void AP_BattMonitor_ESC::read(void)
         if (telem.get_consumption_mah(i, consumption_mah)) {
             // accumulate consumed_sum regardless of age, to cope with ESC
             // dropping out
-            _state.consumed_mah += consumption_mah;
+            consumed_mah_sum += consumption_mah;
+            have_consumed_mah = true;
         }
 
         if (telem.get_voltage(i, voltage)) {
@@ -55,6 +86,7 @@ void AP_BattMonitor_ESC::read(void)
 
         if (telem.get_current(i, current)) {
             current_sum += current;
+            have_current = true;
         }
 
         if (telem.get_temperature(i, temperature_cdeg)) {
@@ -85,10 +117,19 @@ void AP_BattMonitor_ESC::read(void)
     _state.last_time_micros = highest_ms * 1000;
     _state.temperature_time = highest_ms;
 
-    if (current_sum > 0) {
-        // if we have ever got a current value then we know we have a
-        // current sensor
-        have_current = true;
+    const uint32_t now_us = AP_HAL::micros();
+    const uint32_t dt_us = now_us - last_read_us;
+    last_read_us = now_us;
+
+    if (have_consumed_mah) {
+        // Report the cumulative consumed mah as reported by the ESCs
+        // delta_mah allows reset_remaining to function without being able to reset the values sent by the ESCs
+        _state.consumed_mah = delta_mah + consumed_mah_sum;
+
+    } else if (have_current) {
+        // ESCs provide current but not consumed mah, integrate manually
+        update_consumed(_state, dt_us);
+
     }
 }
 

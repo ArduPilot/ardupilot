@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Landing::var_info[] = {
@@ -207,6 +208,28 @@ AP_Landing::AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_TECS *_tecs_Cont
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+/*
+  return a location alt in cm as AMSL
+  assumes loc frame is either AMSL or ABOVE_TERRAIN
+*/
+int32_t AP_Landing::loc_alt_AMSL_cm(const Location &loc) const
+{
+    int32_t alt_cm;
+    // try first with full conversion
+    if (loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm)) {
+        return alt_cm;
+    }
+    if (loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
+        // if we can't get true terrain then assume flat terrain
+        // around home
+        return loc.alt + ahrs.get_home().alt;
+    }
+
+    // this should not happen, but return a value
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    return loc.alt;
+}
+
 void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
     Log(); // log old state so we get a nice transition from old to new here
@@ -347,6 +370,24 @@ bool AP_Landing::is_flaring(void) const
     }
 }
 
+// return true if the landing is at the pre-flare stage or later
+bool AP_Landing::is_on_final(void) const
+{
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_on_final();
+#if HAL_LANDING_DEEPSTALL_ENABLED
+    case TYPE_DEEPSTALL:
+#endif
+    default:
+        return false;
+    }
+}
+
 // return true while the aircraft is performing a landing approach
 // when true the vehicle will:
 //   - disable ground steering
@@ -464,6 +505,18 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
 }
 
 /*
+  reset landing state
+ */
+void AP_Landing::reset(void)
+{
+    initial_slope = 0;
+    slope = 0;
+    type_slope_flags.post_stats = false;
+    type_slope_flags.has_aborted_due_to_slope_recalc = false;
+    type_slope_stage = SlopeStage::NORMAL;
+}
+
+/*
      Restart a landing by first checking for a DO_LAND_START and
      jump there. Otherwise decrement waypoint so we would re-start
      from the top with same glide slope. Return true if successful.
@@ -474,7 +527,11 @@ bool AP_Landing::restart_landing_sequence()
         return false;
     }
 
-    uint16_t do_land_start_index = mission.get_landing_sequence_start();
+    uint16_t do_land_start_index = 0;
+    Location loc;
+    if (ahrs.get_location(loc)) {
+        do_land_start_index = mission.get_landing_sequence_start(loc);
+    }
     uint16_t prev_cmd_with_wp_index = mission.get_prev_nav_cmd_with_wp_index();
     bool success = false;
     uint16_t current_index = mission.get_current_nav_index();

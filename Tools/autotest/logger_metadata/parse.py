@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
+'''
+AP_FLAKE8_CLEAN
+'''
 
 import argparse
 import copy
@@ -33,7 +35,11 @@ re_vehicles = re.compile(r"\s*//\s*@Vehicles\s*:\s*(.*)")
 # Regular expressions for finding message definitions in structure format
 re_start_messagedef = re.compile(r"^\s*{?\s*LOG_[A-Z0-9_]+_[MSGTA]+[A-Z0-9_]*\s*,")
 re_deffield = r'[\s\\]*"?([\w\-#?%]+)"?\s*'
-re_full_messagedef = re.compile(r'\s*LOG_\w+\s*,\s*\w+\([^)]+\)[\s\\]*,' + f'{re_deffield},{re_deffield},' + r'[\s\\]*"?([\w,]+)"?[\s\\]*,' + f'{re_deffield},{re_deffield}' , re.MULTILINE)
+re_full_messagedef = re.compile(r'\s*LOG_\w+\s*,\s*\w+\([^)]+\)[\s\\]*,' +
+                                f'{re_deffield},{re_deffield},' +
+                                r'[\s\\]*"?([\w,]+)"?[\s\\]*,' +
+                                f'{re_deffield},{re_deffield}',
+                                re.MULTILINE)
 re_fmt_define = re.compile(r'#define\s+(\w+_FMT)\s+"([\w\-#?%]+)"')
 re_units_define = re.compile(r'#define\s+(\w+_UNITS)\s+"([\w\-#?%]+)"')
 re_mults_define = re.compile(r'#define\s+(\w+_MULTS)\s+"([\w\-#?%]+)"')
@@ -41,7 +47,9 @@ re_mults_define = re.compile(r'#define\s+(\w+_MULTS)\s+"([\w\-#?%]+)"')
 # Regular expressions for finding message definitions in Write calls
 re_start_writecall = re.compile(r"\s*[AP:]*logger[\(\)]*.Write[StreamingCrcl]*\(")
 re_writefield = r'\s*"([\w\-#?%,]+)"\s*'
-re_full_writecall = re.compile(r'\s*[AP:]*logger[\(\)]*.Write[StreamingCrcl]*\(' + f'{re_writefield},{re_writefield},{re_writefield},({re_writefield},{re_writefield})?' , re.MULTILINE)
+re_full_writecall = re.compile(r'\s*[AP:]*logger[\(\)]*.Write[StreamingCrcl]*\(' +
+                               f'{re_writefield},{re_writefield},{re_writefield},({re_writefield},{re_writefield})?',
+                               re.MULTILINE)
 
 # Regular expression for extracting unit and multipliers from structure
 re_units_mults_struct = re.compile(r"^\s*{\s*'([\w\-#?%!/])',"+r'\s*"?([\w\-#?%./]*)"?\s*}')
@@ -63,6 +71,7 @@ mult_prefix_lookup = {
     1e-6: "μ", # micro-
     1e-9: "n"  # nano-
 }
+
 
 class LoggerDocco(object):
 
@@ -93,7 +102,7 @@ class LoggerDocco(object):
         def __init__(self, name):
             self.name = name
             self.url = None
-            if isinstance(name,list):
+            if isinstance(name, list):
                 self.description = [None] * len(name)
             else:
                 self.description = None
@@ -104,15 +113,15 @@ class LoggerDocco(object):
 
         def add_name(self, name):
             # If self.name/description aren't lists, convert them
-            if isinstance(self.name,str):
+            if isinstance(self.name, str):
                 self.name = [self.name]
                 self.description = [self.description]
             # Replace any existing empty descriptions with empty strings
-            for i in range(0,len(self.description)):
+            for i in range(0, len(self.description)):
                 if self.description[i] is None:
                     self.description[i] = ""
             # Extend the name and description lists
-            if isinstance(name,list):
+            if isinstance(name, list):
                 self.name.extend(name)
                 self.description.extend([None] * len(name))
             else:
@@ -120,8 +129,8 @@ class LoggerDocco(object):
                 self.description.append(None)
 
         def set_description(self, desc):
-            if isinstance(self.description,list):
-                for i in range(0,len(self.description)):
+            if isinstance(self.description, list):
+                for i in range(0, len(self.description)):
                     if self.description[i] is None:
                         self.description[i] = desc
             else:
@@ -147,7 +156,7 @@ class LoggerDocco(object):
             count = 0
             entries = []
             for bit in bits:
-                entries.append(EnumDocco.EnumEntry(bit, 1<<count, None))
+                entries.append(EnumDocco.EnumEntry(bit, 1 << count, None))
                 count += 1
             bitmask_name = self.name + field
             self.bits_enums.append(EnumDocco.Enumeration(bitmask_name, entries))
@@ -167,14 +176,14 @@ class LoggerDocco(object):
 
         def set_fmts(self, fmts):
             # If no fields are defined, do nothing
-            if len(self.fields_order)==0:
+            if len(self.fields_order) == 0:
                 return
             # Make sure lengths match up
             if len(fmts) != len(self.fields_order):
-                print(f"Number of fmts don't match fields: msg={self.name} fmts={fmts} num_fields={len(self.fields_order)}")
+                print(f"Number of fmts don't match fields: msg={self.name} fmts={fmts} num_fields={len(self.fields_order)} {self.fields_order}")  # noqa:E501
                 return
             # Loop through the list
-            for idx in range(0,len(fmts)):
+            for idx in range(0, len(fmts)):
                 if fmts[idx] in log_fmt_lookup:
                     self.fields[self.fields_order[idx]]["fmt"] = log_fmt_lookup[fmts[idx]]
                 else:
@@ -182,14 +191,14 @@ class LoggerDocco(object):
 
         def set_units(self, units, mults):
             # If no fields are defined, do nothing
-            if len(self.fields_order)==0:
+            if len(self.fields_order) == 0:
                 return
             # Make sure lengths match up
             if len(units) != len(self.fields_order) or len(units) != len(mults):
-                print(f"Number of units/mults/fields don't match: msg={self.name} units={units} mults={mults} num_fields={len(self.fields_order)}")
+                print(f"Number of units/mults/fields don't match: msg={self.name} units={units} mults={mults} num_fields={len(self.fields_order)}")  # noqa:E501
                 return
             # Loop through the list
-            for idx in range(0,len(units)):
+            for idx in range(0, len(units)):
                 # Get the index into fields from field_order
                 f = self.fields_order[idx]
                 # Convert unit char to base unit
@@ -217,7 +226,7 @@ class LoggerDocco(object):
                 # Check if we have a defined prefix for this multiplier
                 elif mult_num in mult_prefix_lookup:
                     self.fields[f]["units"] = f"{mult_prefix_lookup[mult_num]}{baseunit}"
-                # If all else fails, set the unit as the multipler and base unit together
+                # If all else fails, set the unit as the multiplier and base unit together
                 else:
                     self.fields[f]["units"] = f"{mult} {baseunit}"
 
@@ -275,8 +284,8 @@ class LoggerDocco(object):
         if len(_next):
             self.search_for_files(_next)
 
-    def parse_messagedef(self,messagedef):
-        # Merge concatinated strings and remove comments
+    def parse_messagedef(self, messagedef):
+        # Merge concatenated strings and remove comments
         messagedef = re.sub(r'"\s+"', '', messagedef)
         messagedef = re.sub(r'//[^\n]*', '', messagedef)
         # Extract details from a structure definition
@@ -299,9 +308,9 @@ class LoggerDocco(object):
                 self.msg_mults_list[d.group(1)] = d.group(5)
             return
         # Didn't parse
-        #print(f"Unable to parse: {messagedef}")
+        # print(f"Unable to parse: {messagedef}")
 
-    def search_messagedef_start(self,line,prevmessagedef=""):
+    def search_messagedef_start(self, line, prevmessagedef=""):
         # Look for the start of a structure definition
         d = re_start_messagedef.search(line)
         if d is not None:
@@ -325,13 +334,14 @@ class LoggerDocco(object):
 
     def parse_file(self, filepath):
         with open(filepath) as f:
-#            print("Opened (%s)" % filepath)
+            # print("Opened (%s)" % filepath)
             lines = f.readlines()
             f.close()
+
         def debug(x):
             pass
-#        if filepath == "/home/pbarker/rc/ardupilot/libraries/AP_HAL/AnalogIn.h":
-#            debug = print
+        #        if filepath == "/home/pbarker/rc/ardupilot/libraries/AP_HAL/AnalogIn.h":
+        #            debug = print
         state_outside = "outside"
         state_inside = "inside"
         messagedef = ""
@@ -346,7 +356,7 @@ class LoggerDocco(object):
                     messagedef = ""
             if state == state_outside:
                 # Check for start of a message definition
-                messagedef = self.search_messagedef_start(line,messagedef)
+                messagedef = self.search_messagedef_start(line, messagedef)
 
                 # Check for fmt/unit/mult #define
                 u = re_fmt_define.search(line)
@@ -425,7 +435,7 @@ class LoggerDocco(object):
         new_doccos = []
         for docco in self.doccos:
             if isinstance(docco.name, list):
-                for name,desc in zip(docco.name, docco.description):
+                for name, desc in zip(docco.name, docco.description):
                     tmpdocco = copy.copy(docco)
                     tmpdocco.name = name
                     tmpdocco.description = desc
@@ -463,7 +473,7 @@ class LoggerDocco(object):
                     mults = self.msg_mults_list[docco.name]
             # Apply the units/mults to the docco
             if units is not None and mults is not None:
-                docco.set_units(units,mults)
+                docco.set_units(units, mults)
             elif units is not None or mults is not None:
                 print(f"Cannot find matching units/mults for message {docco.name}")
 

@@ -164,7 +164,7 @@ AP_Compass_Backend *AP_Compass_LSM303D::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_LSM303D *sensor = new AP_Compass_LSM303D(std::move(dev));
+    AP_Compass_LSM303D *sensor = NEW_NOTHROW AP_Compass_LSM303D(std::move(dev));
     if (!sensor || !sensor->init(rotation)) {
         delete sensor;
         return nullptr;

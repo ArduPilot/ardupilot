@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_Scheduler_config.h"
+
+#if AP_SCHEDULER_ENABLED
+
 #include <stdint.h>
 #include <AP_Common/ExpandingString.h>
 
@@ -76,3 +80,5 @@ private:
 };
 
 };
+
+#endif  // AP_SCHEDULER_ENABLED

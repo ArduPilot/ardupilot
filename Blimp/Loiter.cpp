@@ -1,5 +1,7 @@
 #include "Blimp.h"
 
+#include <AC_AttitudeControl/AC_PosControl.h>
+
 #define MA 0.99
 #define MO (1-MA)
 
@@ -32,7 +34,7 @@ void Loiter::run(Vector3f& target_pos, float& target_yaw, Vector4b axes_disabled
                                 scaler_xz, scaler_yyaw, scaler_xz_n, scaler_yyaw_n);
 #endif
 
-    float yaw_ef = blimp.ahrs.get_yaw();
+    float yaw_ef = blimp.ahrs.get_yaw_rad();
     Vector3f err_xyz = target_pos - blimp.pos_ned;
     float err_yaw = wrap_PI(target_yaw - yaw_ef);
 
@@ -94,7 +96,7 @@ void Loiter::run(Vector3f& target_pos, float& target_yaw, Vector4b axes_disabled
         blimp.pid_vel_z.set_integrator(0);
         blimp.pid_vel_yaw.set_integrator(0);
         target_pos = blimp.pos_ned;
-        target_yaw = blimp.ahrs.get_yaw();
+        target_yaw = blimp.ahrs.get_yaw_rad();
     }
 
     if (zero.x) {
@@ -123,9 +125,9 @@ void Loiter::run(Vector3f& target_pos, float& target_yaw, Vector4b axes_disabled
     }
 
 #if HAL_LOGGING_ENABLED
-    AP::logger().Write_PSCN(target_pos.x * 100.0, blimp.pos_ned.x * 100.0, 0.0, target_vel_ef_c.x * 100.0, blimp.vel_ned_filtd.x * 100.0, 0.0, 0.0, 0.0);
-    AP::logger().Write_PSCE(target_pos.y * 100.0, blimp.pos_ned.y * 100.0, 0.0, target_vel_ef_c.y * 100.0, blimp.vel_ned_filtd.y * 100.0, 0.0, 0.0, 0.0);
-    AP::logger().Write_PSCD(-target_pos.z * 100.0, -blimp.pos_ned.z * 100.0, 0.0, -target_vel_ef_c.z * 100.0, -blimp.vel_ned_filtd.z * 100.0, 0.0, 0.0, 0.0);
+    AC_PosControl::Write_PSCN(0.0, target_pos.x * 100.0, blimp.pos_ned.x * 100.0, 0.0, target_vel_ef_c.x * 100.0, blimp.vel_ned_filtd.x * 100.0, 0.0, 0.0, 0.0);
+    AC_PosControl::Write_PSCE(0.0, target_pos.y * 100.0, blimp.pos_ned.y * 100.0, 0.0, target_vel_ef_c.y * 100.0, blimp.vel_ned_filtd.y * 100.0, 0.0, 0.0, 0.0);
+    AC_PosControl::Write_PSCD(0.0, -target_pos.z * 100.0, -blimp.pos_ned.z * 100.0, 0.0, -target_vel_ef_c.z * 100.0, -blimp.vel_ned_filtd.z * 100.0, 0.0, 0.0, 0.0);
 #endif
 }
 
@@ -201,8 +203,8 @@ void Loiter::run_vel(Vector3f& target_vel_ef, float& target_vel_yaw, Vector4b ax
     }
 
 #if HAL_LOGGING_ENABLED
-    AP::logger().Write_PSCN(0.0, blimp.pos_ned.x * 100.0, 0.0, target_vel_ef_c.x * 100.0, blimp.vel_ned_filtd.x * 100.0, 0.0, 0.0, 0.0);
-    AP::logger().Write_PSCE(0.0, blimp.pos_ned.y * 100.0, 0.0, target_vel_ef_c.y * 100.0, blimp.vel_ned_filtd.y * 100.0, 0.0, 0.0, 0.0);
-    AP::logger().Write_PSCD(0.0, -blimp.pos_ned.z * 100.0, 0.0, -target_vel_ef_c.z * 100.0, -blimp.vel_ned_filtd.z * 100.0, 0.0, 0.0, 0.0);
+    AC_PosControl::Write_PSCN(0.0, 0.0, blimp.pos_ned.x * 100.0, 0.0, target_vel_ef_c.x * 100.0, blimp.vel_ned_filtd.x * 100.0, 0.0, 0.0, 0.0);
+    AC_PosControl::Write_PSCE(0.0, 0.0, blimp.pos_ned.y * 100.0, 0.0, target_vel_ef_c.y * 100.0, blimp.vel_ned_filtd.y * 100.0, 0.0, 0.0, 0.0);
+    AC_PosControl::Write_PSCD(0.0, 0.0, -blimp.pos_ned.z * 100.0, 0.0, -target_vel_ef_c.z * 100.0, -blimp.vel_ned_filtd.z * 100.0, 0.0, 0.0, 0.0);
 #endif
 }

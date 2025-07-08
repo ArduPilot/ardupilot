@@ -8,33 +8,6 @@ extern const AP_HAL::HAL& hal;
 // ==========================================================================
 // based on tables.cpp from http://www.pdas.com/atmosdownload.html
 
-/* 
-   Compute the temperature, density, and pressure in the standard atmosphere
-   Correct to 20 km.  Only approximate thereafter.
-*/
-void AP_Baro::SimpleAtmosphere(
-	const float alt,                           // geometric altitude, km.
-	float& sigma,                   // density/sea-level standard density
-	float& delta,                 // pressure/sea-level standard pressure
-	float& theta)           // temperature/sea-level standard temperature
-{
-    const float REARTH = 6369.0f;        // radius of the Earth (km)
-    const float GMR    = 34.163195f;     // gas constant
-    float h=alt*REARTH/(alt+REARTH);     // geometric to geopotential altitude
-
-    if (h < 11.0f) {
-        // Troposphere
-        theta = (SSL_AIR_TEMPERATURE - 6.5f * h) / SSL_AIR_TEMPERATURE;
-        delta = powf(theta, GMR / 6.5f);
-    } else {
-        // Stratosphere
-        theta = 216.65f / SSL_AIR_TEMPERATURE;
-        delta = 0.2233611f * expf(-GMR * (h - 11.0f) / 216.65f);
-    }
-
-    sigma = delta/theta;
-}
-
 void AP_Baro::SimpleUnderWaterAtmosphere(
 	float alt,            // depth, km.
 	float& rho,           // density/sea-level

@@ -1,8 +1,13 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_NavEKF3.h"
+
 #include "AP_NavEKF3_core.h"
+
+#if EK3_FEATURE_OPTFLOW_FUSION
+
 #include <GCS_MAVLink/GCS.h>
+#include <AP_DAL/AP_DAL.h>
 
 /********************************************************
 *                   RESET FUNCTIONS                     *
@@ -54,7 +59,7 @@ void NavEKF3_core::SelectFlowFusion()
 
     // Fuse optical flow data into the main filter
     if (flowDataToFuse && tiltOK) {
-        const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW);
+        const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index);
         // Set the flow noise used by the fusion processes
         R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
         // Fuse the optical flow X and Y axis data into the main filter sequentially
@@ -116,7 +121,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             ftype q3 = stateStruct.quat[3]; // quaternion at optical flow measurement time
 
             // Set range finder measurement noise variance. TODO make this a function of range and tilt to allow for sensor, alignment and AHRS errors
-            ftype R_RNG = frontend->_rngNoise;
+            ftype R_RNG = frontend->_rngNoise.get();
 
             // calculate Kalman gain
             ftype SK_RNG = sq(q0) - sq(q1) - sq(q2) + sq(q3);
@@ -491,7 +496,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                 zero_range(&Kfusion[0], 16, 21);
             }
 
-            if (!inhibitWindStates) {
+            if (!inhibitWindStates && !treatWindStatesAsTruth) {
                 Kfusion[22] = t78*(P[22][0]*t2*t5-P[22][4]*t2*t7+P[22][1]*t2*t15+P[22][6]*t2*t10+P[22][2]*t2*t19-P[22][3]*t2*t22+P[22][5]*t2*t27);
                 Kfusion[23] = t78*(P[23][0]*t2*t5-P[23][4]*t2*t7+P[23][1]*t2*t15+P[23][6]*t2*t10+P[23][2]*t2*t19-P[23][3]*t2*t22+P[23][5]*t2*t27);
             } else {
@@ -668,7 +673,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                 zero_range(&Kfusion[0], 16, 21);
             }
 
-            if (!inhibitWindStates) {
+            if (!inhibitWindStates && !treatWindStatesAsTruth) {
                 Kfusion[22] = -t78*(P[22][0]*t2*t5+P[22][5]*t2*t8-P[22][6]*t2*t10+P[22][1]*t2*t16-P[22][2]*t2*t19+P[22][3]*t2*t22+P[22][4]*t2*t27);
                 Kfusion[23] = -t78*(P[23][0]*t2*t5+P[23][5]*t2*t8-P[23][6]*t2*t10+P[23][1]*t2*t16-P[23][2]*t2*t19+P[23][3]*t2*t22+P[23][4]*t2*t27);
             } else {
@@ -779,3 +784,4 @@ bool NavEKF3_core::getOptFlowSample(uint32_t& timestamp_ms, Vector2f& flowRate, 
 *                   MISC FUNCTIONS                      *
 ********************************************************/
 
+#endif  //  EK3_FEATURE_OPTFLOW_FUSION

@@ -22,8 +22,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
-APJ_BOARD_ID 127
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MATEKF405_WING
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -72,6 +72,7 @@ PA10 USART1_RX USART1
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
 
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 PA14 LED_BLUE OUTPUT LOW GPIO(0)
 PA13 LED_GREEN OUTPUT LOW GPIO(1) # optional
 
@@ -180,21 +181,10 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
-define STM32_PWM_USE_ADVANCED TRUE
-
-define HAL_GYROFFT_ENABLED 0
-
 # save some flash
-include ../include/save_some_flash.inc
-define AP_GRIPPER_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
-define HAL_SPRAYER_ENABLED 0
 define HAL_RUNCAM_ENABLED 0
-define HAL_HOTT_TELEM_ENABLED 0
-define HAL_NMEA_OUTPUT_ENABLED 0
 define HAL_BUTTON_ENABLED 0
-define AP_NOTIFY_OREOLED_ENABLED 0
-define HAL_PICCOLO_CAN_ENABLE 0
 
 include ../include/minimize_fpv_osd.inc
 

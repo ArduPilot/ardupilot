@@ -23,6 +23,7 @@
 #include "AP_EFI_DroneCAN.h"
 #include "AP_EFI_Currawong_ECU.h"
 #include "AP_EFI_Serial_Hirth.h"
+#include "AP_EFI_Loweheiser.h"
 #include "AP_EFI_Scripting.h"
 #include "AP_EFI_MAV.h"
 
@@ -41,7 +42,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,5:DroneCAN,6:Currawong-ECU,7:Scripting,8:Hirth,9:MAV
+    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,4:Loweheiser,5:DroneCAN,6:Currawong-ECU,7:Scripting,8:Hirth,9:MAVLink
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_EFI, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -98,42 +99,47 @@ void AP_EFI::init(void)
         break;
 #if AP_EFI_SERIAL_MS_ENABLED
     case Type::MegaSquirt:
-        backend = new AP_EFI_Serial_MS(*this);
+        backend = NEW_NOTHROW AP_EFI_Serial_MS(*this);
         break;
 #endif
 #if AP_EFI_SERIAL_LUTAN_ENABLED
     case Type::Lutan:
-        backend = new AP_EFI_Serial_Lutan(*this);
+        backend = NEW_NOTHROW AP_EFI_Serial_Lutan(*this);
+        break;
+#endif
+#if AP_EFI_LOWEHEISER_ENABLED
+    case Type::LOWEHEISER:
+        backend = NEW_NOTHROW AP_EFI_Loweheiser(*this);
         break;
 #endif
 #if AP_EFI_NWPWU_ENABLED
     case Type::NWPMU:
-        backend = new AP_EFI_NWPMU(*this);
+        backend = NEW_NOTHROW AP_EFI_NWPMU(*this);
         break;
 #endif
 #if AP_EFI_DRONECAN_ENABLED
     case Type::DroneCAN:
-        backend = new AP_EFI_DroneCAN(*this);
+        backend = NEW_NOTHROW AP_EFI_DroneCAN(*this);
         break;
 #endif
 #if AP_EFI_CURRAWONG_ECU_ENABLED
     case Type::CurrawongECU:
-        backend = new AP_EFI_Currawong_ECU(*this);
+        backend = NEW_NOTHROW AP_EFI_Currawong_ECU(*this);
         break;
 #endif
 #if AP_EFI_SCRIPTING_ENABLED
     case Type::SCRIPTING:
-        backend = new AP_EFI_Scripting(*this);
+        backend = NEW_NOTHROW AP_EFI_Scripting(*this);
         break;
 #endif        
 #if AP_EFI_SERIAL_HIRTH_ENABLED        
     case Type::Hirth:
-        backend = new AP_EFI_Serial_Hirth(*this);
+        backend = NEW_NOTHROW AP_EFI_Serial_Hirth(*this);
         break;
 #endif
 #if AP_EFI_MAV_ENABLED
     case Type::MAV:
-            backend = new AP_EFI_MAV(*this);
+            backend = NEW_NOTHROW AP_EFI_MAV(*this);
             break;
 #endif
     default:
@@ -155,7 +161,10 @@ void AP_EFI::update()
 
 bool AP_EFI::is_healthy(void) const
 {
-    return (backend && (AP_HAL::millis() - state.last_updated_ms) < HEALTHY_LAST_RECEIVED_MS);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->healthy();
 }
 
 #if HAL_LOGGING_ENABLED
@@ -178,7 +187,7 @@ void AP_EFI::log_status(void)
 // @Field: OilT: Oil temperature
 // @Field: FP: Fuel Pressure
 // @Field: FCR: Fuel Consumption Rate
-// @Field: CFV: Consumed fueld volume
+// @Field: CFV: Consumed fuel volume
 // @Field: TPS: Throttle Position
 // @Field: IDX: Index of the publishing ECU
     AP::logger().WriteStreaming("EFI",
@@ -252,16 +261,16 @@ void AP_EFI::log_status(void)
                                 "TimeUS,Inst,IgnT,InjT,CHT,EGT,Lambda,CHT2,EGT2,IDX",
                                 "s#dsOO-OO-",
                                 "F-0C000000",
-                                "QBfffffBff",
+                                "QBffffffff",
                                 AP_HAL::micros64(),
                                 0,
                                 state.cylinder_status.ignition_timing_deg,
                                 state.cylinder_status.injection_time_ms,
-                                state.cylinder_status.cylinder_head_temperature,
-                                state.cylinder_status.exhaust_gas_temperature,
+                                KELVIN_TO_C(state.cylinder_status.cylinder_head_temperature),
+                                KELVIN_TO_C(state.cylinder_status.exhaust_gas_temperature),
                                 state.cylinder_status.lambda_coefficient,
-                                state.cylinder_status.cylinder_head_temperature2,
-                                state.cylinder_status.exhaust_gas_temperature2,
+                                KELVIN_TO_C(state.cylinder_status.cylinder_head_temperature2),
+                                KELVIN_TO_C(state.cylinder_status.exhaust_gas_temperature2),
                                 state.ecu_index);
 }
 #endif // LOGGING_ENABLED

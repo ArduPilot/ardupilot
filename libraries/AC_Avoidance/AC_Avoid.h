@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AC_Avoidance_config.h"
+
+#if AP_AVOIDANCE_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
@@ -64,19 +68,12 @@ public:
 
     // adjust vertical climb rate so vehicle does not break the vertical fence
     void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float& backup_speed, float dt);
-    void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt) {
-        float backup_speed = 0.0f;
-        adjust_velocity_z(kP, accel_cmss, climb_rate_cms, backup_speed, dt);
-        if (!is_zero(backup_speed)) {
-            climb_rate_cms = MIN(climb_rate_cms, backup_speed);
-        }
-    }
-    
+    void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt);
 
     // adjust roll-pitch to push vehicle away from objects
-    // roll and pitch value are in centi-degrees
-    // angle_max is the user defined maximum lean angle for the vehicle in centi-degrees
-    void adjust_roll_pitch(float &roll, float &pitch, float angle_max);
+    // roll and pitch value are in radians
+    // veh_angle_max_rad is the user defined maximum lean angle for the vehicle in radians
+    void adjust_roll_pitch_rad(float &roll_rad, float &pitch_rad, float veh_angle_max_rad);
 
     // enable/disable proximity based avoidance
     void proximity_avoidance_enable(bool on_off) { _proximity_enabled = on_off; }
@@ -197,24 +194,25 @@ private:
      */
 
     // convert distance (in meters) to a lean percentage (in 0~1 range) for use in manual flight modes
-    float distance_to_lean_pct(float dist_m);
+    float distance_to_lean_norm(float dist_m);
 
     // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
-    void get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative);
+    void get_proximity_roll_pitch_norm(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative);
 
     // Logging function
     void Write_SimpleAvoidance(const uint8_t state, const Vector3f& desired_vel, const Vector3f& modified_vel, const bool back_up) const;
 
     // parameters
     AP_Int8 _enabled;
-    AP_Int16 _angle_max;        // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
-    AP_Float _dist_max;         // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
-    AP_Float _margin;           // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
-    AP_Int8 _behavior;          // avoidance behaviour (slide or stop)
-    AP_Float _backup_speed_max; // Maximum speed that will be used to back away (in m/s)
-    AP_Float _alt_min;          // alt below which Proximity based avoidance is turned off
-    AP_Float _accel_max;        // maximum acceleration while simple avoidance is active
-    AP_Float _backup_deadzone;  // distance beyond AVOID_MARGIN parameter, after which vehicle will backaway from obstacles
+    AP_Int16 _angle_max_cd;        // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
+    AP_Float _dist_max;            // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
+    AP_Float _margin;              // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
+    AP_Int8 _behavior;             // avoidance behaviour (slide or stop)
+    AP_Float _backup_speed_xy_max; // Maximum speed that will be used to back away horizontally (in m/s)
+    AP_Float _backup_speed_z_max;  // Maximum speed that will be used to back away verticality (in m/s)
+    AP_Float _alt_min;             // alt below which Proximity based avoidance is turned off
+    AP_Float _accel_max;           // maximum acceleration while simple avoidance is active
+    AP_Float _backup_deadzone;     // distance beyond AVOID_MARGIN parameter, after which vehicle will backaway from obstacles
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
     bool _proximity_alt_enabled = true; // true if proximity sensor based avoidance is enabled based on altitude
@@ -228,3 +226,5 @@ private:
 namespace AP {
     AC_Avoid *ac_avoid();
 };
+
+#endif  // AP_AVOIDANCE_ENABLED

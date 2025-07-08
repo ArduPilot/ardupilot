@@ -60,7 +60,11 @@ bool AP_Logger_Backend::Write_Format(const struct LogStructure *s)
 {
     struct log_Format pkt;
     Fill_Format(s, pkt);
-    return WriteCriticalBlock(&pkt, sizeof(pkt));
+    if (!WriteCriticalBlock(&pkt, sizeof(pkt))) {
+        return false;
+    }
+    _formats_written.set(s->msg_type);
+    return true;
 }
 
 /*
@@ -296,12 +300,13 @@ void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
 }
 
 bool AP_Logger_Backend::Write_Mission_Cmd(const AP_Mission &mission,
-                                              const AP_Mission::Mission_Command &cmd)
+                                          const AP_Mission::Mission_Command &cmd,
+                                          LogMessages msgid)
 {
     mavlink_mission_item_int_t mav_cmd = {};
     AP_Mission::mission_cmd_to_mavlink_int(cmd,mav_cmd);
-    const struct log_Cmd pkt{
-        LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
+    const struct log_CMD pkt{
+        LOG_PACKET_HEADER_INIT(msgid),
         time_us         : AP_HAL::micros64(),
         command_total   : mission.num_commands(),
         sequence        : mav_cmd.seq,
@@ -447,31 +452,6 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
-/*
-  write servo status from CAN servo
- */
-void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct,
-                                  float pos_cmd, float voltage, float current, float mot_temp, float pcb_temp, uint8_t error)
-{
-    const struct log_CSRV pkt {
-        LOG_PACKET_HEADER_INIT(LOG_CSRV_MSG),
-        time_us     : time_us,
-        id          : id,
-        position    : position,
-        force       : force,
-        speed       : speed,
-        power_pct   : power_pct,
-        pos_cmd     : pos_cmd,
-        voltage     : voltage,
-        current     : current,
-        mot_temp    : mot_temp,
-        pcb_temp    : pcb_temp,
-        error       : error,
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-
 // Write a Yaw PID packet
 void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
 {
@@ -548,39 +528,6 @@ void AP_Logger::Write_Winch(bool healthy, bool thread_end, bool moving, bool clu
         temp            : temp
     };
     WriteBlock(&pkt, sizeof(pkt));
-}
-
-// a convenience function for writing out the position controller PIDs
-void AP_Logger::Write_PSCx(LogMessages id, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
-{
-    const struct log_PSCx pkt{
-        LOG_PACKET_HEADER_INIT(id),
-            time_us         : AP_HAL::micros64(),
-            pos_target    : pos_target * 0.01f,
-            pos           : pos * 0.01f,
-            vel_desired   : vel_desired * 0.01f,
-            vel_target    : vel_target * 0.01f,
-            vel           : vel * 0.01f,
-            accel_desired : accel_desired * 0.01f,
-            accel_target  : accel_target * 0.01f,
-            accel         : accel * 0.01f
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-void AP_Logger::Write_PSCN(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
-{
-    Write_PSCx(LOG_PSCN_MSG, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
-}
-
-void AP_Logger::Write_PSCE(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
-{
-    Write_PSCx(LOG_PSCE_MSG, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
-}
-
-void AP_Logger::Write_PSCD(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
-{
-    Write_PSCx(LOG_PSCD_MSG, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
 }
 
 #endif  // HAL_LOGGING_ENABLED

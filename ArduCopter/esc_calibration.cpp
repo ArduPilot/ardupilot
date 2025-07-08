@@ -95,9 +95,10 @@ void Copter::esc_calibration_passthrough()
         hal.scheduler->delay(3);
 
         // pass through to motors
-        SRV_Channels::cork();
+        auto &srv = AP::srv();
+        srv.cork();
         motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() * 0.001f);
-        SRV_Channels::push();
+        srv.push();
     }
 #endif  // FRAME_CONFIG != HELI_FRAME
 }
@@ -112,25 +113,26 @@ void Copter::esc_calibration_auto()
     esc_calibration_setup();
 
     // raise throttle to maximum
-    SRV_Channels::cork();
+    auto &srv = AP::srv();
+    srv.cork();
     motors->set_throttle_passthrough_for_esc_calibration(1.0f);
-    SRV_Channels::push();
+    srv.push();
 
     // delay for 5 seconds while outputting pulses
     uint32_t tstart = millis();
     while (millis() - tstart < 5000) {
-        SRV_Channels::cork();
+        srv.cork();
         motors->set_throttle_passthrough_for_esc_calibration(1.0f);
-        SRV_Channels::push();
+        srv.push();
         esc_calibration_notify();
         hal.scheduler->delay(3);
     }
 
     // block until we restart
     while(1) {
-        SRV_Channels::cork();
+        srv.cork();
         motors->set_throttle_passthrough_for_esc_calibration(0.0f);
-        SRV_Channels::push();
+        srv.push();
         esc_calibration_notify();
         hal.scheduler->delay(3);
     }

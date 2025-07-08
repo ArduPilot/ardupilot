@@ -27,7 +27,6 @@ on:
       - 'Tools/gittools/**'
       - 'Tools/Hello/**'
       - 'Tools/Linux_HAL_Essentials/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
@@ -170,7 +169,7 @@ jobs:
           NOW=$(date -u +"%F-%T")
           echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{matrix.config}}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
@@ -187,6 +186,8 @@ jobs:
           PATH="/github/home/.local/bin:$PATH"
           echo $PATH
           ./waf configure --board ${{matrix.config}}
+          ./waf
+          ./waf configure --board ${{matrix.config}} --debug
           ./waf
           ccache -s
           ccache -z

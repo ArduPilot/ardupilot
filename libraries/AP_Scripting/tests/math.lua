@@ -33,6 +33,9 @@
 -- luacheck: ignore 421 (Shadowing a local variable)
 -- luacheck: ignore 581 (Negation of a relational operator - operator can be flipped)
 
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: undefined-global
+
 gcs:send_text(6, "testing numbers and math lib")
 
 local minint = math.mininteger

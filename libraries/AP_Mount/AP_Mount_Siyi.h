@@ -19,28 +19,27 @@
 
 #pragma once
 
-#include "AP_Mount_Backend.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_SIYI_ENABLED
+
+#include "AP_Mount_Backend_Serial.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 
-#define AP_MOUNT_SIYI_PACKETLEN_MAX     38  // maximum number of bytes in a packet sent to or received from the gimbal
+#define AP_MOUNT_SIYI_PACKETLEN_MAX     42  // maximum number of bytes in a packet sent to or received from the gimbal
 
-class AP_Mount_Siyi : public AP_Mount_Backend
+class AP_Mount_Siyi : public AP_Mount_Backend_Serial
 {
 
 public:
     // Constructor
-    using AP_Mount_Backend::AP_Mount_Backend;
+    using AP_Mount_Backend_Serial::AP_Mount_Backend_Serial;
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Mount_Siyi);
-
-    // init - performs any required initialisation for this instance
-    void init() override;
 
     // update mount position - should be called periodically
     void update() override;
@@ -75,11 +74,26 @@ public:
     // set camera lens as a value from 0 to 8.  ZT30 only
     bool set_lens(uint8_t lens) override;
 
+    // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+    // primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
+    bool set_camera_source(uint8_t primary_source, uint8_t secondary_source) override;
+
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
 
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan) const override;
+
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // send camera thermal range message to GCS
+    void send_camera_thermal_range(mavlink_channel_t chan) const override;
+#endif
+
+    // change camera settings not normally used by autopilot
+    // THERMAL_PALETTE: 0:WhiteHot, 2:Sepia, 3:IronBow, 4:Rainbow, 5:Night, 6:Aurora, 7:RedHot, 8:Jungle, 9:Medical, 10:BlackHot, 11:GloryHot
+    // THERMAL_GAIN: 0:Low gain (50C ~ 550C), 1:High gain (-20C ~ 150C)
+    // THERMAL_RAW_DATA: 0:Disable Raw Data (30fps), 1:Enable Raw Data (25fps)
+    bool change_setting(CameraSetting setting, float value) override;
 
     //
     // rangefinder
@@ -116,9 +130,14 @@ private:
         ACQUIRE_GIMBAL_ATTITUDE = 0x0D,
         ABSOLUTE_ZOOM = 0x0F,
         SET_CAMERA_IMAGE_TYPE = 0x11,
+        GET_TEMP_FULL_IMAGE = 0x14,
         READ_RANGEFINDER = 0x15,
+        SET_THERMAL_PALETTE = 0x1B,
         EXTERNAL_ATTITUDE = 0x22,
         SET_TIME = 0x30,
+        SET_THERMAL_RAW_DATA = 0x34,
+        SET_THERMAL_GAIN = 0x38,
+        POSITION_DATA = 0x3e,
     };
 
     // Function Feedback Info packet info_type values
@@ -162,6 +181,7 @@ private:
         A8,
         ZR10,
         ZR30,
+        ZT6,
         ZT30
     } _hardware_model;
 
@@ -204,7 +224,7 @@ private:
         GimbalMountingDirection mounting_dir;
         VideoOutputStatus video_mode;
     } GimbalConfigInfo;
-    static_assert(sizeof(GimbalConfigInfo) == 7);
+    static_assert(sizeof(GimbalConfigInfo) == 7, "GimbalConfigInfo must be 7 bytes");
 
     // camera image types (aka lens)
     enum class CameraImageType : uint8_t {
@@ -288,9 +308,12 @@ private:
     // Checks that the firmware version on the Gimbal meets the minimum supported version.
     void check_firmware_version() const;
 
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // get thermal min/max if available at 5hz
+    void request_thermal_minmax();
+#endif
+
     // internal variables
-    AP_HAL::UARTDriver *_uart;                      // uart connected to gimbal
-    bool _initialised;                              // true once the driver has been initialised
     bool _got_hardware_id;                          // true once hardware id ha been received
 
     FirmwareVersion _fw_version;                    // firmware version (for reporting for GCS)
@@ -333,9 +356,9 @@ private:
     uint32_t _last_rangefinder_dist_ms;             // system time of last successful read of rangefinder distance
     float _rangefinder_dist_m;                      // distance received from rangefinder
 
-    // sending of attitude to gimbal
+    // sending of attitude and position to gimbal
     uint32_t _last_attitude_send_ms;
-    void send_attitude(void);
+    void send_attitude_position(void);
 
     // hardware lookup table indexed by HardwareModel enum values (see above)
     struct HWInfo {
@@ -344,8 +367,20 @@ private:
     };
     static const HWInfo hardware_lookup_table[];
 
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // thermal variables
+    struct {
+        uint32_t last_req_ms;       // system time of last request for thermal min/max temperatures
+        uint32_t last_update_ms;    // system time of last update of thermal min/max temperatures
+        float max_C;                // thermal max temp in C
+        float min_C;                // thermal min temp in C
+        Vector2ui max_pos;          // thermal max temp position on image in pixels. x=0 is left, y=0 is top
+        Vector2ui min_pos;          // thermal min temp position on image in pixels. x=0 is left, y=0 is top
+    } _thermal;
+#endif
+
     // count of SET_TIME packets, we send 5 times to cope with packet loss
     uint8_t sent_time_count;
 };
 
-#endif // HAL_MOUNT_SIYISERIAL_ENABLED
+#endif // HAL_MOUNT_SIYI_ENABLED

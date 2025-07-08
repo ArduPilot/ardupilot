@@ -38,6 +38,14 @@ typedef uint32_t dmar_uint_t;
 typedef int32_t dmar_int_t;
 #endif
 
+#ifdef AP_RCOUT_USE_32BIT_TIME
+typedef uint32_t rcout_timer_t;
+#define rcout_micros() AP_HAL::micros()
+#else
+typedef uint64_t rcout_timer_t;
+#define rcout_micros() AP_HAL::micros64()
+#endif
+
 #define RCOU_DSHOT_TIMING_DEBUG 0
 
 class ChibiOS::RCOutput : public AP_HAL::RCOutput
@@ -104,12 +112,12 @@ public:
     /*
       timer push (for oneshot min rate)
      */
-    void timer_tick(uint64_t last_run_us);
+    void timer_tick(rcout_timer_t cycle_start_us, rcout_timer_t timeout_period_us);
 
     /*
       LED push
      */
-    void led_timer_tick(uint64_t last_run_us);
+    void led_timer_tick(rcout_timer_t cycle_start_us, rcout_timer_t timeout_period_us);
 
 #if defined(IOMCU_FW) && HAL_DSHOT_ENABLED
     void timer_tick() override;
@@ -147,14 +155,21 @@ public:
       read a byte from a port, using serial parameters from serial_setup_output()
       return the number of bytes read
      */
-    uint16_t serial_read_bytes(uint8_t *buf, uint16_t len) override;
+    uint16_t serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeout_us) override;
 
     /*
       stop serial output. This restores the previous output mode for
       the channel and any other channels that were stopped by
       serial_setup_output()
      */
-    void serial_end(void) override;
+    void serial_end(uint32_t chanmask) override;
+
+    /*
+      reset serial output. This re-initializes the DMA configuration to that configured by
+      serial_setup_output()
+     */
+    void serial_reset(uint32_t chanmask) override;
+
 #endif
 
     /*
@@ -278,6 +293,11 @@ public:
     void rcout_thread();
 
     /*
+      Force group trigger from all callers rather than just from the main thread
+    */
+    void force_trigger_groups(bool onoff) override { force_trigger = onoff; }
+
+    /*
      timer information
      */
     void timer_info(ExpandingString &str) override;
@@ -355,9 +375,9 @@ private:
         uint32_t bit_width_mul;
         uint32_t rc_frequency;
         bool in_serial_dma;
-        uint64_t last_dmar_send_us;
-        uint64_t dshot_pulse_time_us;
-        uint64_t dshot_pulse_send_time_us;
+        rcout_timer_t last_dmar_send_us;
+        rcout_timer_t dshot_pulse_time_us;
+        rcout_timer_t dshot_pulse_send_time_us;
         virtual_timer_t dma_timeout;
 #if HAL_SERIALLED_ENABLED
         // serial LED support
@@ -406,7 +426,7 @@ private:
 #if RCOU_DSHOT_TIMING_DEBUG
             uint16_t telem_rate[4];
             uint16_t telem_err_rate[4];
-            uint64_t last_print;  // debug
+            rcout_timer_t last_print;  // debug
 #endif
         } bdshot;
 
@@ -478,9 +498,6 @@ private:
         // bitmask of bits so far (includes start and stop bits)
         uint16_t bitmask;
 
-        // value of completed byte (includes start and stop bits)
-        uint16_t byteval;
-
         // expected time per bit in micros
         uint16_t bit_time_tick;
 
@@ -492,13 +509,20 @@ private:
 
         // timeout for byte read
         virtual_timer_t serial_timeout;
-        bool timed_out;
     } irq;
 
+    // ring buffer to hold soft serial input
+    static ByteBuffer serial_buffer;
+    // binary semaphore to mediate consumer/producer access to the serial buffer
+    static HAL_BinarySemaphore serial_sem;
+  
     // the group being used for serial output
     struct pwm_group *serial_group;
-    thread_t *serial_thread;
+    // preserved state
     tprio_t serial_priority;
+    iomode_t serial_mode;
+    // mask of channels configured for serial output
+    uint32_t serial_chanmask;
 #endif // HAL_SERIAL_ESC_COMM_ENABLED
 
     static bool soft_serial_waiting() {
@@ -548,6 +572,7 @@ private:
     // these values are for the local channels. Non-local channels are handled by IOMCU
     uint32_t en_mask;
     uint16_t period[max_channels];
+    uint16_t period_corked[max_channels];
 
     // handling of bi-directional dshot
     struct {
@@ -564,13 +589,15 @@ private:
     } _bdshot;
 
     // dshot period
-    uint32_t _dshot_period_us = 400;
+    rcout_timer_t _dshot_period_us = 400;
     // dshot rate as a multiple of loop rate or 0 for 1Khz
     uint8_t _dshot_rate;
     // dshot periods since the last push()
     uint8_t _dshot_cycle;
     // virtual timer for post-push() pulses
     virtual_timer_t _dshot_rate_timer;
+    // force triggering of groups, this is used by the rate thread to ensure output occurs
+    bool force_trigger;
 
 #if HAL_DSHOT_ENABLED
     // dshot commands
@@ -605,8 +632,8 @@ private:
     // mask of active ESCs
     uint32_t _active_escs_mask;
 
-    // min time to trigger next pulse to prevent overlap
-    uint64_t min_pulse_trigger_us;
+    // last time pulse was triggererd used to prevent overlap
+    rcout_timer_t last_pulse_trigger_us;
 
     // mutex for oneshot triggering
     mutex_t trigger_mutex;
@@ -687,20 +714,20 @@ private:
     static const eventmask_t EVT_PWM_SEND  = EVENT_MASK(11);
     static const eventmask_t EVT_PWM_SYNTHETIC_SEND  = EVENT_MASK(13);
 
-    void dshot_send_groups(uint64_t time_out_us);
-    void dshot_send(pwm_group &group, uint64_t time_out_us);
+    void dshot_send_groups(rcout_timer_t cycle_start_us, rcout_timer_t timeout_us);
+    void dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_timer_t timeout_us);
     bool dshot_send_command(pwm_group &group, uint8_t command, uint8_t chan);
     static void dshot_update_tick(virtual_timer_t*, void* p);
     static void dshot_send_next_group(void* p);
     // release locks on the groups that are pending in reverse order
-    sysinterval_t calc_ticks_remaining(pwm_group &group, uint64_t time_out_us, uint32_t output_period_us);
-    void dshot_collect_dma_locks(uint64_t last_run_us, bool led_thread = false);
+    sysinterval_t calc_ticks_remaining(pwm_group &group, rcout_timer_t cycle_start_us, rcout_timer_t timeout_period_us, rcout_timer_t output_period_us);
+    void dshot_collect_dma_locks(rcout_timer_t cycle_start_us, rcout_timer_t timeout_period_us, bool led_thread = false);
     static void dma_up_irq_callback(void *p, uint32_t flags);
     static void dma_unlock(virtual_timer_t*, void *p);
     void dma_cancel(pwm_group& group);
     bool mode_requires_dma(enum output_mode mode) const;
     bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high,
-                         const uint16_t buffer_length, uint32_t pulse_time_us,
+                         const uint16_t buffer_length, rcout_timer_t pulse_time_us,
                          bool at_least_freq);
     void send_pulses_DMAR(pwm_group &group, uint32_t buffer_length);
     void set_group_mode(pwm_group &group);
@@ -725,6 +752,7 @@ private:
     static void bdshot_receive_pulses_DMAR_f1(pwm_group* group);
     static void bdshot_reset_pwm(pwm_group& group, uint8_t telem_channel);
     static void bdshot_reset_pwm_f1(pwm_group& group, uint8_t telem_channel);
+    static void bdshot_disable_pwm_f1(pwm_group& group);
     static void bdshot_config_icu_dshot(stm32_tim_t* TIMx, uint8_t chan, uint8_t ccr_ch);
     static void bdshot_config_icu_dshot_f1(stm32_tim_t* TIMx, uint8_t chan, uint8_t ccr_ch);
     static uint32_t bdshot_get_output_rate_hz(const enum output_mode mode);
@@ -741,9 +769,11 @@ private:
     void _set_profiled_clock(pwm_group *grp, uint8_t idx, uint8_t led);
     void _set_profiled_blank_frame(pwm_group *grp, uint8_t idx, uint8_t led);
 #if AP_HAL_SHARED_DMA_ENABLED
-    // serial output support
+    /*
+      serial output support
+     */
     bool serial_write_byte(uint8_t b);
-    bool serial_read_byte(uint8_t &b);
+    bool serial_read_byte(uint8_t &b, uint32_t timeout_us);
     void fill_DMA_buffer_byte(dmar_uint_t *buffer, uint8_t stride, uint8_t b , uint32_t bitval);
     static void serial_bit_irq(void);
     static void serial_byte_timeout(virtual_timer_t* vt, void *ctx);

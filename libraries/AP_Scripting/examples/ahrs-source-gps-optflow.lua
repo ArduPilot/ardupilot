@@ -2,9 +2,9 @@
 -- this script is intended to help vehicles automatically switch between GPS and optical flow
 --
 -- configure a forward or downward facing lidar with a range of at least 5m
--- setup RCx_OPTION = 90 (EKF Pos Source) to select the source (low=GPS, middle=opticalflow, high=Not Used)
+-- setup RCx_OPTION = 90 (EKF Source Set) to select the source (low=GPS, middle=opticalflow, high=Not Used)
 -- setup RCx_OPTION = 300 (Scripting1).  When this switch is pulled high, the source will be automatically selected
--- SRC_ENABLE = 1 (enable scripting)
+-- SCR_ENABLE = 1 (enable scripting)
 -- setup EK3_SRCn_ parameters so that GPS is the primary source, opticalflow is secondary.
 --     EK3_SRC1_POSXY = 3 (GPS)
 --     EK3_SRC1_VELXY = 3 (GPS)
@@ -26,11 +26,10 @@
 -- SCR_USER4 holds the threshold for optical flow innovations (about 0.15 is a good choice)
 --
 -- When the 2nd auxiliary switch (300/Scripting1) is pulled high automatic source selection uses these thresholds:
--- luacheck: only 0
+---@diagnostic disable: need-check-nil
 
 local rangefinder_rotation = 25     -- check downward (25) facing lidar
 local source_prev = 0               -- previous source, defaults to primary source
-local sw_source_prev = -1           -- previous source switch position
 local sw_auto_pos_prev = -1         -- previous auto source switch position
 local auto_switch = false           -- true when auto switching between sources is active
 local gps_usable_accuracy = 1.0     -- GPS is usable if speed accuracy is at or below this value
@@ -113,19 +112,16 @@ function update()
 
   -- get opticalflow innovations from ahrs (only x and y values are valid)
   local opticalflow_over_threshold = true
-  local opticalflow_xy_innov = 0
-  local opticalflow_innov = Vector3f()
-  local opticalflow_var = Vector3f()
-  opticalflow_innov, opticalflow_var = ahrs:get_vel_innovations_and_variances_for_source(5)
+  local opticalflow_innov = ahrs:get_vel_innovations_and_variances_for_source(5)
   if (opticalflow_innov) then
-    opticalflow_xy_innov = math.sqrt(opticalflow_innov:x() * opticalflow_innov:x() + opticalflow_innov:y() * opticalflow_innov:y())
+    local opticalflow_xy_innov = math.sqrt(opticalflow_innov:x() * opticalflow_innov:x() + opticalflow_innov:y() * opticalflow_innov:y())
     opticalflow_over_threshold = (opticalflow_xy_innov == 0.0) or (opticalflow_xy_innov > opticalflow_innov_thresh)
   end
 
   -- get rangefinder distance
   local rngfnd_distance_m = 0
   if rangefinder:has_data_orient(rangefinder_rotation) then
-    rngfnd_distance_m = rangefinder:distance_cm_orient(rangefinder_rotation) * 0.01
+    rngfnd_distance_m = rangefinder:distance_orient(rangefinder_rotation)
   end
   local rngfnd_over_threshold = (rngfnd_distance_m == 0) or (rngfnd_distance_m > rangefinder_thresh_dist)
 

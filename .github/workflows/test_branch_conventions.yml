@@ -1,0 +1,70 @@
+name: Fail on Malformed Commits in PR Branch
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-merge-commits:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Dump github context
+        run: |
+          echo '${{ toJSON(github) }}'
+
+      - name: Fetch base branch
+        run: |
+          git remote -v
+          git remote add upstream ${{ github.event.pull_request.base.repo.clone_url }}
+          git fetch upstream ${{ github.base_ref }}
+          git show upstream/${{ github.base_ref }}
+
+      - name: Check for merge commits in PR branch
+        run: |
+          # Find merge-base between base branch and (rebased) PR branch
+          echo "Merge target is origin/${{ github.base_ref }}"
+          echo "github.event.pull_request.base.ref=${{ github.event.pull_request.base.ref }} "
+
+          # Look for merge commits in PR branch only
+          MERGE_COMMITS=$(git log upstream/${{ github.base_ref }}..HEAD --merges --oneline)
+          echo "Merge commits:"
+          echo "$MERGE_COMMITS"
+
+          if [[ -n "$MERGE_COMMITS" ]]; then
+            echo "❌ Merge commits detected in the PR branch (not allowed):"
+            echo "Please see https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html"
+            exit 1
+          else
+            echo "✅ No merge commits found in the PR branch."
+          fi
+
+          # Look for fixup! commits in PR branch only
+          COMMITS=$(git log upstream/${{ github.base_ref }}..HEAD --oneline)
+          echo "Commits:"
+          echo "$COMMITS"
+
+          if [[ "$COMMITS" == *"fixup!"* ]]; then
+            echo "❌ fixup commits detected in the PR branch (not allowed):"
+            echo "$COMMITS"
+            echo "Please see https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html"
+            exit 1
+          else
+            echo "✅ No fixup commits found in the PR branch."
+          fi
+
+          # require a ":" to appear somewhere in each commit message:
+          while IFS= read x; do
+            if ! [[ "$x" == *":"* ]] ; then
+              echo "❌ Commit message ($x) missing subsystem tag on front.  Re-word your commit to reflect what subsystem it changes. E.g. 'AP_Compass: Added driver for XYZZY' (https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html)"
+              exit 1
+            fi
+          done <<< $COMMITS
+          echo "✅ Commit messages have subsystem tags."

@@ -33,20 +33,22 @@ void Copter::check_dynamic_flight(void)
     bool moving = false;
 
     // with GPS lock use inertial nav to determine if we are moving
-    if (position_ok()) {
+    Vector3f vel_ned_ms;
+    if (AP::ahrs().get_velocity_NED(vel_ned_ms)) {
         // get horizontal speed
-        const float speed = inertial_nav.get_speed_xy_cms();
-        moving = (speed >= HELI_DYNAMIC_FLIGHT_SPEED_MIN);
+        moving = (vel_ned_ms.xy().length() * 100.0 >= HELI_DYNAMIC_FLIGHT_SPEED_MIN);
     } else {
         // with no GPS lock base it on throttle and forward lean angle
-        moving = (motors->get_throttle() > 0.8f || ahrs.pitch_sensor < -1500);
+        moving = (motors->get_throttle() > 0.8f || ahrs.get_pitch_deg() < -15);
     }
 
+#if AP_RANGEFINDER_ENABLED
     if (!moving && rangefinder_state.enabled && rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) {
         // when we are more than 2m from the ground with good
         // rangefinder lock consider it to be dynamic flight
-        moving = (rangefinder.distance_cm_orient(ROTATION_PITCH_270) > 200);
+        moving = (rangefinder.distance_orient(ROTATION_PITCH_270) > 2);
     }
+#endif
 
     if (moving) {
         // if moving for 2 seconds, set the dynamic flight flag
@@ -104,8 +106,9 @@ void Copter::update_heli_control_dynamics(void)
 bool Copter::should_use_landing_swash() const
 {
     if (flightmode->has_manual_throttle() ||
-        flightmode->mode_number() == Mode::Number::DRIFT) {
-        // manual modes always uses full swash range
+        flightmode->mode_number() == Mode::Number::DRIFT ||
+        attitude_control->get_inverted_flight()) {
+        // manual modes or modes using inverted flight uses full swash range
         return false;
     }
     if (flightmode->is_landing()) {
@@ -154,9 +157,6 @@ float Copter::get_pilot_desired_rotor_speed() const
 // heli_update_rotor_speed_targets - reads pilot input and passes new rotor speed targets to heli motors object
 void Copter::heli_update_rotor_speed_targets()
 {
-
-    static bool rotor_runup_complete_last = false;
-
     // get rotor control method
     uint8_t rsc_control_mode = motors->get_rsc_mode();
 
@@ -182,13 +182,6 @@ void Copter::heli_update_rotor_speed_targets()
         break;
     }
 
-    // when rotor_runup_complete changes to true, log event
-    if (!rotor_runup_complete_last && motors->rotor_runup_complete()) {
-        LOGGER_WRITE_EVENT(LogEvent::ROTOR_RUNUP_COMPLETE);
-    } else if (rotor_runup_complete_last && !motors->rotor_runup_complete() && !heli_flags.in_autorotation) {
-        LOGGER_WRITE_EVENT(LogEvent::ROTOR_SPEED_BELOW_CRITICAL);
-    }
-    rotor_runup_complete_last = motors->rotor_runup_complete();
 }
 
 
@@ -196,32 +189,25 @@ void Copter::heli_update_rotor_speed_targets()
 // to autorotation flight mode if manual collective is not being used.
 void Copter::heli_update_autorotation()
 {
-    // check if flying and interlock disengaged
-    if (!ap.land_complete && !motors->get_interlock()) {
-#if MODE_AUTOROTATE_ENABLED == ENABLED
-        if (g2.arot.is_enable()) {
-            if (!flightmode->has_manual_throttle()) {
-                // set autonomous autorotation flight mode
-                set_mode(Mode::Number::AUTOROTATE, ModeReason::AUTOROTATION_START);
-            }
-            // set flag to facilitate both auto and manual autorotations
-            heli_flags.in_autorotation = true;
-            motors->set_in_autorotation(heli_flags.in_autorotation);
-            motors->set_enable_bailout(true);
-        }
+    bool in_autorotation_mode = false;
+#if MODE_AUTOROTATE_ENABLED
+    in_autorotation_mode = flightmode == &mode_autorotate;
 #endif
-        if (flightmode->has_manual_throttle() && motors->arot_man_enabled()) {
-            // set flag to facilitate both auto and manual autorotations
-            heli_flags.in_autorotation = true;
-            motors->set_in_autorotation(heli_flags.in_autorotation);
-            motors->set_enable_bailout(true);
-        }
-    } else {
-        heli_flags.in_autorotation = false;
-        motors->set_in_autorotation(heli_flags.in_autorotation);
-        motors->set_enable_bailout(false);
+
+    // If we have landed then we do not want to be in autorotation and we do not want to via the bailout state
+    if (ap.land_complete || ap.land_complete_maybe) {
+        motors->force_deactivate_autorotation();
+        return;
     }
 
+    // if we got this far we are flying, check for conditions to set autorotation state
+    if (!motors->get_interlock() && (flightmode->has_manual_throttle() || in_autorotation_mode)) {
+        // set state in motors to facilitate manual and assisted autorotations
+        motors->set_autorotation_active(true);
+    } else {
+        // deactivate the autorotation state via the bailout case
+        motors->set_autorotation_active(false);
+    }
 }
 
 // update collective low flag.  Use a debounce time of 400 milliseconds.

@@ -3,6 +3,9 @@
 --
 -- CAUTION: This script only works for Plane
 
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: undefined-global
+
 -- store the batt info as { instance, filtered, capacity, margin_mah }
 -- instance: the battery monitor instance (zero indexed)
 -- filtered: internal variable for current draw
@@ -132,7 +135,7 @@ local function time_to_home()
     local effective_speed = home_airspeed + tail_wind
 
     -- Estimate the extra distance required to turn
-    local yaw = ahrs:get_yaw()
+    local yaw = ahrs:get_yaw_rad()
     -- this is the estimated angle we have to turn to be at the home bearing and crab angle
     local turn_angle_rad = bearing - crab_angle - yaw 
     -- wrap to +- PI

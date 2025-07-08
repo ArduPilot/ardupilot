@@ -38,6 +38,13 @@ bool AP_Arming_Sub::has_disarm_function() const {
             }
         }
     }
+    // check if an AUX function that disarms or estops is setup
+    if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP) || 
+        rc().find_channel_for_option(RC_Channel::AUX_FUNC::DISARM) || 
+        rc().find_channel_for_option(RC_Channel::AUX_FUNC::ARMDISARM) || 
+        rc().find_channel_for_option(RC_Channel::AUX_FUNC::ARM_EMERGENCY_STOP)) {
+        return true;
+    }  
     return false;
 }
 
@@ -48,7 +55,7 @@ bool AP_Arming_Sub::pre_arm_checks(bool display_failure)
     }
     // don't allow arming unless there is a disarm button configured
     if (!has_disarm_function()) {
-        check_failed(display_failure, "Must assign a disarm or arm_toggle button");
+        check_failed(display_failure, "Must assign a disarm or arm_toggle button or disarm aux function");
         return false;
     }
 
@@ -63,10 +70,10 @@ bool AP_Arming_Sub::ins_checks(bool display_failure)
     }
 
     // additional sub-specific checks
-    if (check_enabled(ARMING_CHECK_INS)) {
+    if (check_enabled(Check::INS)) {
         char failure_msg[50] = {};
         if (!AP::ahrs().pre_arm_check(false, failure_msg, sizeof(failure_msg))) {
-            check_failed(ARMING_CHECK_INS, display_failure, "AHRS: %s", failure_msg);
+            check_failed(Check::INS, display_failure, "AHRS: %s", failure_msg);
             return false;
         }
     }
@@ -84,6 +91,20 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     }
 
     in_arm_motors = true;
+
+    //if RC checks enabled, and RC_OPTIONS enabled for "0" throttle, and enabled check for throttle within trim position
+    if (check_enabled(Check::RC) &&
+     rc().option_is_enabled(RC_Channels::Option::ARMING_CHECK_THROTTLE) &&
+     (sub.g.thr_arming_position == WITHIN_THR_TRIM)) {
+        const char *rc_item = "Throttle";
+        // check throttle is within trim+/- dz, ie centered throttle
+        if (!sub.channel_throttle->in_trim_dz()) {
+           check_failed(Check::RC, true, "%s not centered/close to trim", rc_item);
+           AP_Notify::events.arming_failed = true;
+           in_arm_motors = false;
+           return false;
+        }
+    }
 
     if (!AP_Arming::arm(method, do_arming_checks)) {
         AP_Notify::events.arming_failed = true;
@@ -106,9 +127,7 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
         AP::notify().update();
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     send_arm_disarm_statustext("Arming motors");
-#endif
 
     AP_AHRS &ahrs = AP::ahrs();
 
@@ -120,7 +139,7 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
         // Always use absolute altitude for ROV
         // ahrs.resetHeightDatum();
         // AP::logger().Write_Event(LogEvent::EKF_ALT_RESET);
-    } else if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
+    } else if (!ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
         if (!sub.set_home_to_current_location(false)) {
             // ignore this failure
@@ -149,6 +168,14 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     // flag exiting this function
     in_arm_motors = false;
 
+    // if we do not have an ekf origin then we can't use the WMM tables
+    if (!sub.ensure_ekf_origin()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Compass performance degraded");
+        if (check_enabled(Check::PARAMETERS)) {
+            check_failed(Check::PARAMETERS, true, "No world position, check ORIGIN_* parameters");
+            return false;
+        }
+    }
     // return success
     return true;
 }
@@ -164,14 +191,12 @@ bool AP_Arming_Sub::disarm(const AP_Arming::Method method, bool do_disarm_checks
         return false;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     send_arm_disarm_statustext("Disarming motors");
-#endif
 
     auto &ahrs = AP::ahrs();
 
     // save compass offsets learned by the EKF if enabled
-    if (ahrs.use_compass() && AP::compass().get_learn_type() == Compass::LEARN_EKF) {
+    if (ahrs.use_compass() && AP::compass().get_learn_type() == Compass::LearnType::COPY_FROM_EKF) {
         for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
             Vector3f magOffsets;
             if (ahrs.getMagOffsets(i, magOffsets)) {

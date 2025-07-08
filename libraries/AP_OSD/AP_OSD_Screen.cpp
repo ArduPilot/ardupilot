@@ -44,6 +44,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RPM/AP_RPM.h>
+#include <AP_MSP/AP_MSP.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_WindVane/AP_WindVane.h>
 #endif
@@ -52,6 +53,11 @@
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AC_Fence/AC_Fence.h>
+
+#if AP_OSD_EXTENDED_LNK_STATS
+// We need to this file to access the CRSF telemetry objects which contains the link stats data
+#include <AP_RCProtocol/AP_RCProtocol_CRSF.h>   
+#endif
 
 const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
@@ -352,7 +358,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 #if HAL_WITH_ESC_TELEM
     // @Param: ESCTEMP_EN
     // @DisplayName: ESCTEMP_EN
-    // @Description: Displays first esc's temp
+    // @Description: Displays highest temp of all active ESCs, or of a specific ECS if OSDx_ESC_IDX is set
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: ESCTEMP_X
@@ -368,7 +374,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: ESCRPM_EN
     // @DisplayName: ESCRPM_EN
-    // @Description: Displays first esc's rpm
+    // @Description: Displays highest rpm of all active ESCs, or of a specific ESC if OSDx_ESC_IDX is set
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: ESCRPM_X
@@ -384,7 +390,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: ESCAMPS_EN
     // @DisplayName: ESCAMPS_EN
-    // @Description: Displays first esc's current
+    // @Description: Displays the current of the ESC with the highest rpm of all active ESCs, or of a specific ESC if OSDx_ESC_IDX is set
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: ESCAMPS_X
@@ -1065,8 +1071,8 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 #if HAL_WITH_MSP_DISPLAYPORT
     // @Param: TXT_RES
     // @DisplayName: Sets the overlay text resolution (MSP DisplayPort only)
-    // @Description: Sets the overlay text resolution for this screen to either LD 30x16 or HD 50x18 (MSP DisplayPort only)
-    // @Values: 0:30x16,1:50x18
+    // @Description: Sets the overlay text resolution for this screen to either SD 30x16 or HD 50x18/60x22 (MSP DisplayPort only)
+    // @Values: 0:30x16,1:50x18,2:60x22
     // @User: Standard
     AP_GROUPINFO("TXT_RES", 3, AP_OSD_Screen, txt_resolution, 0),
 
@@ -1077,6 +1083,97 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("FONT", 4, AP_OSD_Screen, font_index, 0),
 #endif
+
+#if AP_OSD_EXTENDED_LNK_STATS
+    // @Param: RC_PWR_EN
+    // @DisplayName: RC_PWR_EN
+    // @Description: Displays the RC link transmit (TX) power in mW or W, depending on level
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: RC_PWR_X
+    // @DisplayName: RC_PWR_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 59
+
+    // @Param: RC_PWR_Y
+    // @DisplayName: RC_PWR_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 21
+    AP_SUBGROUPINFO(rc_tx_power, "RC_PWR", 5, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: RSSIDBM_EN
+    // @DisplayName: RSSIDBM_EN
+    // @Description: Displays RC link signal strength in dBm
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: RSSIDBM_X
+    // @DisplayName: RSSIDBM_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 59
+
+    // @Param: RSSIDBM_Y
+    // @DisplayName: RSSIDBM_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 21
+    AP_SUBGROUPINFO(rc_rssi_dbm, "RSSIDBM", 6, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: RC_SNR_EN
+    // @DisplayName: RC_SNR_EN
+    // @Description: Displays RC link signal to noise ratio in dB
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: RC_SNR_X
+    // @DisplayName: RC_SNR_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 59
+
+    // @Param: RC_SNR_Y
+    // @DisplayName: RC_SNR_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 21
+    AP_SUBGROUPINFO(rc_snr, "RC_SNR", 7, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: RC_ANT_EN
+    // @DisplayName: RC_ANT_EN
+    // @Description: Displays the current RC link active antenna
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: RC_ANT_X
+    // @DisplayName: RC_ANT_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 59
+
+    // @Param: RC_ANT_Y
+    // @DisplayName: RC_ANT_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 21
+    AP_SUBGROUPINFO(rc_active_antenna, "RC_ANT", 8, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: RC_LQ_EN
+    // @DisplayName: RC_LQ_EN
+    // @Description: Displays the RC link quality (uplink, 0 to 100%) and also RF mode if bit 7 of OSD_OPTIONS is set
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: RC_LQ_X
+    // @DisplayName: RC_LQ_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 59
+
+    // @Param: RC_LQ_Y
+    // @DisplayName: RC_LQ_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 21
+    AP_SUBGROUPINFO(rc_lq, "RC_LQ", 9, AP_OSD_Screen, AP_OSD_Setting),
+#endif
+
+#if HAL_WITH_ESC_TELEM
+    // @Param: ESC_IDX
+    // @DisplayName: ESC_IDX
+    // @Description: Index of the ESC to use for displaying ESC information. 0 means use the ESC with the highest value.
+    // @Range: 0 32
+    AP_GROUPINFO("ESC_IDX", 10, AP_OSD_Screen, esc_index, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -1185,6 +1282,24 @@ uint8_t AP_OSD_AbstractScreen::symbols_lookup_table[AP_OSD_NUM_SYMBOLS];
 #define SYM_SIDEBAR_H 88
 #define SYM_SIDEBAR_I 89
 #define SYM_SIDEBAR_J 90
+
+#define SYM_WATT 91
+#define SYM_WH 92
+#define SYM_DB 93
+#define SYM_DBM 94
+#define SYM_SNR 95
+#define SYM_ANT 96
+#define SYM_ARROW_RIGHT 97
+#define SYM_ARROW_LEFT 98
+
+#define SYM_G 99
+#define SYM_BATT_UNKNOWN 100
+#define SYM_ROLL 101
+#define SYM_PITCH 102
+#define SYM_DPS 103
+#define SYM_HEADING 104
+#define SYM_RADIUS 105
+#define SYM_FLAP 106
 
 #define SYMBOL(n) AP_OSD_AbstractScreen::symbols_lookup_table[n]
 
@@ -1559,7 +1674,7 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 // draw a arrow at the given angle, and print the given magnitude
 void AP_OSD_Screen::draw_speed(uint8_t x, uint8_t y, float angle_rad, float magnitude)
 {
-    int32_t angle_cd = angle_rad * DEGX100;
+    int32_t angle_cd = rad_to_cd(angle_rad);
     char arrow = get_arrow_font_index(angle_cd);
     if (u_scale(SPEED, magnitude) < 9.95) {
         backend->write(x, y, false, "%c %1.1f%c", arrow, u_scale(SPEED, magnitude), u_icon(SPEED));
@@ -1577,7 +1692,7 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
     float angle = 0;
     const float length = v.length();
     if (length > 1.0f) {
-        angle = atan2f(v.y, v.x) - ahrs.get_yaw();
+        angle = atan2f(v.y, v.x) - ahrs.get_yaw_rad();
     }
     draw_speed(x + 1, y, angle, length);
 }
@@ -1688,7 +1803,7 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
-    uint16_t yaw = ahrs.yaw_sensor / 100;
+    uint16_t yaw = ahrs.get_yaw_deg();
     backend->write(x, y, false, "%3d%c", yaw, SYMBOL(SYM_DEGR));
 }
 
@@ -1755,10 +1870,14 @@ void AP_OSD_Screen::draw_sidebars(uint8_t x, uint8_t y)
     static const int aspd_interval = 10; //units between large tick marks
     int alt_interval = (osd->units == AP_OSD::UNITS_AVIATION || osd->units == AP_OSD::UNITS_IMPERIAL) ? 20 : 10;
 
+    // Height values taking into account configurable vertical extension
+    const int bar_total_height = 7 + (osd->sidebar_v_ext * 2);
+    const int bar_middle = bar_total_height / 2;     // Integer division
+
     // render airspeed ladder
     int aspd_symbol_index = fmodf(scaled_aspd, aspd_interval) / aspd_interval * total_sectors;
-    for (int i = 0; i < 7; i++){
-        if (i == 3) {
+    for (int i = 0; i < bar_total_height; i++){
+        if (i == bar_middle) {
             // the middle section of the ladder with the currrent airspeed
             backend->write(x, y+i, false, "%3d%c%c", (int) scaled_aspd, u_icon(SPEED), SYMBOL(SYM_SIDEBAR_R_ARROW));
         } else {
@@ -1770,12 +1889,12 @@ void AP_OSD_Screen::draw_sidebars(uint8_t x, uint8_t y)
     // render the altitude ladder
     // similar formula to above, but accounts for negative altitudes
     int alt_symbol_index = fmodf(fmodf(scaled_alt, alt_interval) + alt_interval, alt_interval) / alt_interval * total_sectors;
-    for (int i = 0; i < 7; i++){
-        if (i == 3) {
+    for (int i = 0; i < bar_total_height; i++){
+        if (i == bar_middle) {
             // the middle section of the ladder with the currrent altitude
-            backend->write(x+16, y+i, false, "%c%d%c", SYMBOL(SYM_SIDEBAR_L_ARROW), (int) scaled_alt, u_icon(ALTITUDE));
+            backend->write(x + 16 + osd->sidebar_h_offset, y+i, false, "%c%d%c", SYMBOL(SYM_SIDEBAR_L_ARROW), (int) scaled_alt, u_icon(ALTITUDE));
         } else {
-            backend->write(x+16, y+i, false,  "%c", SYMBOL(sidebar_sectors[alt_symbol_index]));
+            backend->write(x + 16 + osd->sidebar_h_offset, y+i, false,  "%c", SYMBOL(sidebar_sectors[alt_symbol_index]));
         }
         alt_symbol_index = (alt_symbol_index + 12) % 18;
     }
@@ -1828,7 +1947,7 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
         if (check_option(AP_OSD::OPTION_INVERTED_WIND)) {
             angle = M_PI;
         }
-        angle = angle + atan2f(v.y, v.x) - ahrs.get_yaw();
+        angle = angle + atan2f(v.y, v.x) - ahrs.get_yaw_rad();
     } 
     draw_speed(x + 1, y, angle, length);
 
@@ -1892,8 +2011,13 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_esc_temp(uint8_t x, uint8_t y)
 {
     int16_t etemp;
-    // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
-    if (!AP::esc_telem().get_temperature(0, etemp)) {
+
+    if (esc_index > 0) {
+        if (!AP::esc_telem().get_temperature(esc_index-1, etemp)) {
+            return;
+        }
+    }
+    else if (!AP::esc_telem().get_highest_temperature(etemp)) {
         return;
     }
 
@@ -1903,8 +2027,12 @@ void AP_OSD_Screen::draw_esc_temp(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_esc_rpm(uint8_t x, uint8_t y)
 {
     float rpm;
-    // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
-    if (!AP::esc_telem().get_rpm(0, rpm)) {
+    uint8_t esc = AP::esc_telem().get_max_rpm_esc();
+    if (esc_index > 0) {
+        if (!AP::esc_telem().get_rpm(esc_index-1, rpm)) {
+            return;
+        }
+    } else if (!AP::esc_telem().get_rpm(esc, rpm)) {
         return;
     }
     float krpm = rpm * 0.001f;
@@ -1915,13 +2043,153 @@ void AP_OSD_Screen::draw_esc_rpm(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_esc_amps(uint8_t x, uint8_t y)
 {
     float amps;
-    // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
-    if (!AP::esc_telem().get_current(0, amps)) {
+    uint8_t esc = AP::esc_telem().get_max_rpm_esc();
+    if (esc_index > 0) {
+        if (!AP::esc_telem().get_current(esc_index-1, amps)) {
+            return;
+        }
+    } else if (!AP::esc_telem().get_current(esc, amps)) {
         return;
     }
     backend->write(x, y, false, "%4.1f%c", amps, SYMBOL(SYM_AMP));
 }
 #endif
+
+#if AP_OSD_EXTENDED_LNK_STATS
+bool AP_OSD_Screen::is_btfl_fonts()
+{
+    const AP_MSP *p_msp = AP::msp();
+    return (p_msp != nullptr && p_msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_BTFL_SYMBOLS) && !p_msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_INAV_SYMBOLS));
+}
+
+void AP_OSD_Screen::draw_rc_tx_power(uint8_t x, uint8_t y)
+{
+    const int16_t tx_power = AP::crsf()->get_link_status().tx_power;
+    bool btfl = is_btfl_fonts();
+    if (tx_power > 0) {
+        if (tx_power < 1000) {
+            if (btfl) {
+                backend->write(x, y, false, "%3d%cW", tx_power, SYMBOL(SYM_ALT_M));  // SYM_ALT_M (0x0C) is the BTFL character for a small "m"
+            } else {
+                backend->write(x, y, false, "%3d%c", tx_power, SYMBOL(SYM_MW));
+            }
+        } else {
+            const float value_w = float(tx_power) * 0.001f;
+            if (btfl) {
+                backend->write(x, y, false, "%.2fW", value_w);
+            } else {
+                backend->write(x, y, false, "%.2f%c", value_w, SYMBOL(SYM_WATT));
+            }
+        }
+    } else {
+        if (btfl) {
+            backend->write(x, y, false, "---%cW", SYMBOL(SYM_ALT_M));
+        } else {
+            backend->write(x, y, false, "---%c", SYMBOL(SYM_MW));
+        }
+    }
+}
+
+void AP_OSD_Screen::draw_rc_rssi_dbm(uint8_t x, uint8_t y)
+{
+    const int8_t rssidbm = AP::crsf()->get_link_status().rssi_dbm;
+    const bool blink = -rssidbm < osd->warn_rssi;
+    bool btfl = is_btfl_fonts();
+
+    backend->write(x, y, blink, "%c", SYMBOL(SYM_RSSI));
+    uint8_t new_x = x + 1;
+    if (rssidbm >= 0) {
+        if (btfl) {
+            backend->write(new_x, y, blink, "%4dDBM", -rssidbm);
+        } else {
+            backend->write(new_x, y, blink, "%4d%c", -rssidbm, SYMBOL(SYM_DBM));
+        }
+    } else {
+        if (btfl){
+            backend->write(new_x, y, blink, "----DBM");
+        } else {
+            backend->write(new_x, y, blink, "----%c", SYMBOL(SYM_DBM));
+        }
+    }
+}
+
+void AP_OSD_Screen::draw_rc_snr(uint8_t x, uint8_t y)
+{
+    const int8_t snr = AP::crsf()->get_link_status().snr;
+    const bool blink = snr < osd->warn_snr;
+    bool btfl = is_btfl_fonts();
+    if (snr == INT8_MIN) {
+        if (btfl) {
+            backend->write(x, y, blink, "SNR---DB");
+        } else {
+            backend->write(x, y, blink, "%c---%c", SYMBOL(SYM_SNR), SYMBOL(SYM_DB));
+        }
+    } else {
+        if (btfl) {
+            backend->write(x, y, blink, "SNR%3dDB", snr);
+        } else {
+            backend->write(x, y, blink, "%c%3d%c", SYMBOL(SYM_SNR), snr, SYMBOL(SYM_DB));
+        }
+    }
+}
+
+void AP_OSD_Screen::draw_rc_active_antenna(uint8_t x, uint8_t y)
+{
+    const int8_t active_antenna = AP::crsf()->get_link_status().active_antenna;
+    bool btfl = is_btfl_fonts();
+    if (active_antenna < 0) {
+        if (btfl) {
+            backend->write(x, y, false, "ANT-");
+        } else {
+            backend->write(x, y, false, "%c-", SYMBOL(SYM_ANT));
+        }
+    } else {
+        if (btfl) {
+            backend->write(x, y, false, "ANT%d", active_antenna + 1);
+        } else {
+            backend->write(x, y, false, "%c%d", SYMBOL(SYM_ANT), active_antenna + 1);
+        }
+    }
+}
+
+void AP_OSD_Screen::draw_rc_lq(uint8_t x, uint8_t y)
+{    
+    const int16_t lqv = AP::crsf()->get_link_status().link_quality;
+    const bool blink = lqv < osd->warn_lq;
+    bool btfl = is_btfl_fonts();
+    bool prefix_rf = check_option(AP_OSD::OPTION_RF_MODE_ALONG_WITH_LQ);
+    const int16_t rf_mode = AP::crsf()->get_link_status().rf_mode;    
+    if (lqv < 0) {
+        if (btfl) {
+            if (prefix_rf) {
+                backend->write(x, y, blink, "LQ--:--");
+            } else {
+                backend->write(x, y, blink, "LQ--");
+            }
+        } else {
+            if (prefix_rf) {
+                backend->write(x, y, blink, "%c--:--", SYMBOL(SYM_LQ));
+            } else {
+                backend->write(x, y, blink, "%c--", SYMBOL(SYM_LQ));
+            }
+        }
+    } else {    
+        if (btfl) {
+            if (prefix_rf) {                    
+                backend->write(x, y, blink, "LQ%2d:%2d", rf_mode, lqv);
+            } else {
+                backend->write(x, y, blink, "LQ%2d", lqv);
+            }
+        } else {
+            if(prefix_rf) {
+                backend->write(x, y, blink, "%c%2d:%2d", SYMBOL(SYM_LQ), rf_mode, lqv);
+            } else {
+                backend->write(x, y, blink, "%c%2d", SYMBOL(SYM_LQ), lqv);
+            }
+        }
+    }
+}
+#endif  // AP_OSD_EXTENDED_LNK_STATS
 
 void AP_OSD_Screen::draw_gps_latitude(uint8_t x, uint8_t y)
 {
@@ -1951,32 +2219,30 @@ void AP_OSD_Screen::draw_gps_longitude(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_roll_angle(uint8_t x, uint8_t y)
 {
-    AP_AHRS &ahrs = AP::ahrs();
-    uint16_t roll = abs(ahrs.roll_sensor) / 100;
+    const float roll_deg = AP::ahrs().get_roll_deg();
     char r;
-    if (ahrs.roll_sensor > 50) {
+    if (roll_deg > 0.5) {
         r = SYMBOL(SYM_ROLLR);
-    } else if (ahrs.roll_sensor < -50) {
+    } else if (roll_deg < -0.5) {
         r = SYMBOL(SYM_ROLLL);
     } else {
         r = SYMBOL(SYM_ROLL0);
     }
-    backend->write(x, y, false, "%c%3d%c", r, roll, SYMBOL(SYM_DEGR));
+    backend->write(x, y, false, "%c%3d%c", r, int(fabsf(roll_deg)), SYMBOL(SYM_DEGR));
 }
 
 void AP_OSD_Screen::draw_pitch_angle(uint8_t x, uint8_t y)
 {
-    AP_AHRS &ahrs = AP::ahrs();
-    uint16_t pitch = abs(ahrs.pitch_sensor) / 100;
+    const float pitch_deg = AP::ahrs().get_pitch_deg();
     char p;
-    if (ahrs.pitch_sensor > 50) {
+    if (pitch_deg > 0.5) {
         p = SYMBOL(SYM_PTCHUP);
-    } else if (ahrs.pitch_sensor < -50) {
+    } else if (pitch_deg < -0.5) {
         p = SYMBOL(SYM_PTCHDWN);
     } else {
         p = SYMBOL(SYM_PTCH0);
     }
-    backend->write(x, y, false, "%c%3d%c", p, pitch, SYMBOL(SYM_DEGR));
+    backend->write(x, y, false, "%c%3d%c", p, int(fabsf(pitch_deg)), SYMBOL(SYM_DEGR));
 }
 
 void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)
@@ -2266,6 +2532,7 @@ void AP_OSD_Screen::draw_fence(uint8_t x, uint8_t y)
 }
 #endif
 
+#if AP_RANGEFINDER_ENABLED
 void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
 {
     RangeFinder *rangefinder = RangeFinder::get_singleton();
@@ -2279,6 +2546,7 @@ void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
         backend->write(x, y, false, "%c%4.1f%c", SYMBOL(SYM_RNGFD), u_scale(DISTANCE, distance), u_icon(DISTANCE));
     }
 }
+#endif
 
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
@@ -2304,7 +2572,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(hgt_abvterr);
 #endif
 
+#if AP_RANGEFINDER_ENABLED
     DRAW_SETTING(rngf);
+#endif
     DRAW_SETTING(waypoint);
     DRAW_SETTING(xtrack_error);
     DRAW_SETTING(bat_volt);
@@ -2312,8 +2582,10 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(avgcellvolt);
     DRAW_SETTING(avgcellrestvolt);
     DRAW_SETTING(restvolt);
+#if AP_RSSI_ENABLED
     DRAW_SETTING(rssi);
     DRAW_SETTING(link_quality);
+#endif
     DRAW_SETTING(current);
     DRAW_SETTING(batused);
     DRAW_SETTING(bat2used);
@@ -2367,6 +2639,14 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(eff);
     DRAW_SETTING(callsign);
     DRAW_SETTING(current2);
+
+#if AP_OSD_EXTENDED_LNK_STATS
+    DRAW_SETTING(rc_tx_power);
+    DRAW_SETTING(rc_rssi_dbm);
+    DRAW_SETTING(rc_snr);
+    DRAW_SETTING(rc_active_antenna);
+    DRAW_SETTING(rc_lq);
+#endif
 }
 #endif
 #endif // OSD_ENABLED

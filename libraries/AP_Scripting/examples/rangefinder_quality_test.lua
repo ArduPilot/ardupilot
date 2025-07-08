@@ -7,8 +7,11 @@
 -- Parameters should be set as follows before this test is loaded.
 -- "RNGFND1_TYPE": 36,
 -- "RNGFND1_ORIENT": 25,
--- "RNGFND1_MIN_CM": 10,
--- "RNGFND1_MAX_CM": 5000,
+-- "RNGFND1_MIN": 0.10,
+-- "RNGFND1_MAX": 50.00,
+
+---@diagnostic disable: cast-local-type
+
 
 -- UPDATE_PERIOD_MS is the time between when a distance is set and
 -- when it is read. There is a periodic task that copies the set distance to
@@ -40,8 +43,8 @@ local SIGNAL_QUALITY_MAX = 100
 local SIGNAL_QUALITY_UNKNOWN = -1
 
 -- Read parameters for min and max valid range finder ranges.
-local RNGFND1_MIN_CM = Parameter("RNGFND1_MIN_CM"):get()
-local RNGFND1_MAX_CM = Parameter("RNGFND1_MAX_CM"):get()
+local RNGFND1_MIN = Parameter("RNGFND1_MIN"):get()
+local RNGFND1_MAX = Parameter("RNGFND1_MAX"):get()
 
 local function send(str)
     gcs:send_text(3, string.format("%s %s", TEST_ID_STR, str))
@@ -85,12 +88,12 @@ local function get_and_eval(test_idx, dist_m_in, signal_quality_pct_in, status_e
 
     -- L U A   I N T E R F A C E   T E S T
     -- Check that the distance and signal_quality from the frontend are as expected
-    local distance1_cm_out = rangefinder:distance_cm_orient(RNGFND_ORIENTATION_DOWN)
+    local distance1_cm_out = rangefinder:distance_orient(RNGFND_ORIENTATION_DOWN) * 100
     local signal_quality1_pct_out = rangefinder:signal_quality_pct_orient(RNGFND_ORIENTATION_DOWN)
 
     -- Make sure data was returned
     if not distance1_cm_out or not signal_quality1_pct_out then
-        return "No data returned from rangefinder:distance_cm_orient()"
+        return "No data returned from rangefinder:distance_orient()"
     end
 
     send(string.format("Frontend test %i dist in_m: %.2f out_cm: %.2f, signal_quality_pct in: %.1f out: %.1f",
@@ -250,9 +253,9 @@ local function _update_begin_test()
         -- The full state udata must be initialized.
         local rf_state = RangeFinder_State()
         -- Set the status
-        if dist_m_in < RNGFND1_MIN_CM * 0.01 then
+        if dist_m_in < RNGFND1_MIN then
             rf_state:status(RNDFND_STATUS_OUT_OF_RANGE_LOW)
-        elseif dist_m_in > RNGFND1_MAX_CM * 0.01 then
+        elseif dist_m_in > RNGFND1_MAX then
             rf_state:status(RNDFND_STATUS_OUT_OF_RANGE_HIGH)
         else
             rf_state:status(RNDFND_STATUS_GOOD)

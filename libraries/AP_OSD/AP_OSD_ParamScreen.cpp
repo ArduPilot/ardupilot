@@ -26,7 +26,6 @@
 #include <AP_HAL/Util.h>
 #include <limits.h>
 #include <ctype.h>
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -129,49 +128,49 @@ static const char* event_names[5] = {
 static const AP_OSD_ParamSetting::Initializer PARAM_DEFAULTS[AP_OSD_NUM_PARAM_SCREENS][AP_OSD_ParamScreen::NUM_PARAMS] {
 #if APM_BUILD_COPTER_OR_HELI
     {
-        { 1, { 102, 0, 4033 }, OSD_PARAM_NONE },            // ATC_RAT_RLL_P
-        { 2, { 102, 0, 129  }, OSD_PARAM_NONE },            // ATC_RAT_RLL_D
-        { 3, { 102, 0, 705  }, OSD_PARAM_NONE },            // ATC_RAT_RLL_FLTD
-        { 4, { 102, 0, 4034 }, OSD_PARAM_NONE },            // ATC_RAT_PIT_P
-        { 5, { 102, 0, 130  }, OSD_PARAM_NONE },            // ATC_RAT_PIT_D
-        { 6, { 102, 0, 706  }, OSD_PARAM_NONE },            // ATC_RAT_PIT_FLTD
-        { 7, { 102, 0, 4035 }, OSD_PARAM_NONE },            // ATC_RAT_YAW_P
-        { 8, { 102, 0, 131  }, OSD_PARAM_NONE },            // ATC_RAT_YAW_D
-        { 9, { 102, 0, 643  }, OSD_PARAM_NONE }             // ATC_RAT_YAW_FLTE
+        { 1, { 102, 0, 4033 }, AP_OSD_ParamSetting::Type::NONE },            // ATC_RAT_RLL_P
+        { 2, { 102, 0, 129  }, AP_OSD_ParamSetting::Type::NONE },            // ATC_RAT_RLL_D
+        { 3, { 102, 0, 705  }, AP_OSD_ParamSetting::Type::NONE },            // ATC_RAT_RLL_FLTD
+        { 4, { 102, 0, 4034 }, AP_OSD_ParamSetting::Type::NONE },            // ATC_RAT_PIT_P
+        { 5, { 102, 0, 130  }, AP_OSD_ParamSetting::Type::NONE },            // ATC_RAT_PIT_D
+        { 6, { 102, 0, 706  }, AP_OSD_ParamSetting::Type::NONE },            // ATC_RAT_PIT_FLTD
+        { 7, { 102, 0, 4035 }, AP_OSD_ParamSetting::Type::NONE },            // ATC_RAT_YAW_P
+        { 8, { 102, 0, 131  }, AP_OSD_ParamSetting::Type::NONE },            // ATC_RAT_YAW_D
+        { 9, { 102, 0, 643  }, AP_OSD_ParamSetting::Type::NONE }             // ATC_RAT_YAW_FLTE
     },
     {
-        { 1, { 3, 0, 231 }, OSD_PARAM_NONE },               // INS_LOG_BAT_OPT
-        { 2, { 3, 0, 167 }, OSD_PARAM_NONE },               // INS_LOG_BAT_MASK
-        { 3, { 60, 0, 0  }, OSD_PARAM_NONE },               // LOG_BITMASK
-        { 4, { 3, 0, 18  }, OSD_PARAM_NONE },               // INS_GYRO_FILT
-        { 5, { 102, 0, 6 }, OSD_PARAM_NONE },               // ATC_THR_MIX_MAN
-        { 6, { 102, 0, 5 }, OSD_PARAM_NONE },               // ATC_THR_MIX_MAX
-        { 7, { 6, 0, 25041 }, OSD_PARAM_AUX_FUNCTION },     // RC7_OPTION
-        { 8, { 6, 0, 25105 }, OSD_PARAM_AUX_FUNCTION },     // RC8_OPTION
-        { 9, { 36, 0, 1047 }, OSD_PARAM_FAILSAFE_ACTION_2 } // BATT_FS_LOW_ACT
+        { 1, { 3, 0, 231 }, AP_OSD_ParamSetting::Type::NONE },               // INS_LOG_BAT_OPT
+        { 2, { 3, 0, 167 }, AP_OSD_ParamSetting::Type::NONE },               // INS_LOG_BAT_MASK
+        { 3, { 60, 0, 0  }, AP_OSD_ParamSetting::Type::NONE },               // LOG_BITMASK
+        { 4, { 3, 0, 18  }, AP_OSD_ParamSetting::Type::NONE },               // INS_GYRO_FILT
+        { 5, { 102, 0, 6 }, AP_OSD_ParamSetting::Type::NONE },               // ATC_THR_MIX_MAN
+        { 6, { 102, 0, 5 }, AP_OSD_ParamSetting::Type::NONE },               // ATC_THR_MIX_MAX
+        { 7, { 6, 0, 25041 }, AP_OSD_ParamSetting::Type::AUX_FUNCTION },     // RC7_OPTION
+        { 8, { 6, 0, 25105 }, AP_OSD_ParamSetting::Type::AUX_FUNCTION },     // RC8_OPTION
+        { 9, { 36, 0, 1047 }, AP_OSD_ParamSetting::Type::FAILSAFE_ACTION_2 } // BATT_FS_LOW_ACT
     }
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     {
-        { 1, { 232, 0, 265 }, OSD_PARAM_NONE },             // RLL_RATE_FF
-        { 2, { 232, 0, 4041 }, OSD_PARAM_NONE },            // RLL_RATE_P
-        { 3, { 232, 0, 73 }, OSD_PARAM_NONE },              // RLL_RATE_I
-        { 4, { 233, 0, 267 }, OSD_PARAM_NONE },             // PTCH_RATE_FF
-        { 5, { 233, 0, 4043 }, OSD_PARAM_NONE },            // PTCH_RATE_P
-        { 6, { 233, 0, 75 }, OSD_PARAM_NONE },              // PTCH_RATE_I
-        { 7, { 233, 0, 6 }, OSD_PARAM_NONE },               // PTCH2SRV_RLL
-        { 8, { 199, 0, 1 }, OSD_PARAM_NONE },               // TUNE_PARAM
-        { 9, { 199, 0, 320 }, OSD_PARAM_NONE }              // TUNE_RANGE
+        { 1, { 232, 0, 265 }, AP_OSD_ParamSetting::Type::NONE },             // RLL_RATE_FF
+        { 2, { 232, 0, 4041 }, AP_OSD_ParamSetting::Type::NONE },            // RLL_RATE_P
+        { 3, { 232, 0, 73 }, AP_OSD_ParamSetting::Type::NONE },              // RLL_RATE_I
+        { 4, { 233, 0, 267 }, AP_OSD_ParamSetting::Type::NONE },             // PTCH_RATE_FF
+        { 5, { 233, 0, 4043 }, AP_OSD_ParamSetting::Type::NONE },            // PTCH_RATE_P
+        { 6, { 233, 0, 75 }, AP_OSD_ParamSetting::Type::NONE },              // PTCH_RATE_I
+        { 7, { 233, 0, 6 }, AP_OSD_ParamSetting::Type::NONE },               // PTCH2SRV_RLL
+        { 8, { 199, 0, 1 }, AP_OSD_ParamSetting::Type::NONE },               // TUNE_PARAM
+        { 9, { 199, 0, 320 }, AP_OSD_ParamSetting::Type::NONE }              // TUNE_RANGE
     },
     {
-        { 1, { 185, 0, 0 }, OSD_PARAM_NONE },               // TRIM_THROTTLE
-        { 2, { 155, 0, 0 }, OSD_PARAM_NONE },               // AIRSPEED_CRUISE
-        { 3, { 4, 0, 1094 }, OSD_PARAM_NONE },              // SERVO_AUTO_TRIM
-        { 4, { 120, 0, 0 }, OSD_PARAM_NONE},                // AIRSPEED_MIN
-        { 5, { 121, 0, 0 }, OSD_PARAM_NONE },               // AIRSPEED_MAX
-        { 6, { 156, 0, 0 }, OSD_PARAM_NONE },               // RTL_ALTITUDE
-        { 7, { 140, 2, 8 }, OSD_PARAM_NONE },               // AHRS_TRIM_Y
-        { 8, { 182, 0, 0 }, OSD_PARAM_NONE },               // THR_MAX
-        { 9, { 189, 0, 0 }, OSD_PARAM_NONE }                // THR_SLEWRATE
+        { 1, { 185, 0, 0 }, AP_OSD_ParamSetting::Type::NONE },               // TRIM_THROTTLE
+        { 2, { 155, 0, 0 }, AP_OSD_ParamSetting::Type::NONE },               // AIRSPEED_CRUISE
+        { 3, { 4, 0, 1094 }, AP_OSD_ParamSetting::Type::NONE },              // SERVO_AUTO_TRIM
+        { 4, { 120, 0, 0 }, AP_OSD_ParamSetting::Type::NONE},                // AIRSPEED_MIN
+        { 5, { 121, 0, 0 }, AP_OSD_ParamSetting::Type::NONE },               // AIRSPEED_MAX
+        { 6, { 156, 0, 0 }, AP_OSD_ParamSetting::Type::NONE },               // RTL_ALTITUDE
+        { 7, { 140, 2, 8 }, AP_OSD_ParamSetting::Type::NONE },               // AHRS_TRIM_Y
+        { 8, { 182, 0, 0 }, AP_OSD_ParamSetting::Type::NONE },               // THR_MAX
+        { 9, { 189, 0, 0 }, AP_OSD_ParamSetting::Type::NONE }                // THR_SLEWRATE
     }
 #else
     {
@@ -381,7 +380,7 @@ void AP_OSD_ParamScreen::modify_configured_parameter(uint8_t number, Event ev)
         setting._param_key.set(AP_Param::get_persistent_key(setting._current_token.key));
         setting._param_idx.set(setting._current_token.idx);
         setting._param = param;
-        setting._type.set(OSD_PARAM_NONE);
+        setting._type.set(AP_OSD_ParamSetting::Type::NONE);
         // force update() to refresh the token
         setting._current_token.key = 0;
         setting._current_token.idx = 0;
@@ -389,40 +388,13 @@ void AP_OSD_ParamScreen::modify_configured_parameter(uint8_t number, Event ev)
     }
 }
 
-// return radio values as LOW, MIDDLE, HIGH
-// this function uses different threshold values to RC_Chanel::get_channel_pos()
-// to avoid glitching on the stick travel
-RC_Channel::AuxSwitchPos AP_OSD_ParamScreen::get_channel_pos(uint8_t rcmapchan) const
-{
-    const RC_Channel* chan = rc().channel(rcmapchan-1);
-    if (chan == nullptr) {
-        return RC_Channel::AuxSwitchPos::LOW;
-    }
-
-    const uint16_t in = chan->get_radio_in();
-    if (in <= 900 || in >= 2200) {
-        return RC_Channel::AuxSwitchPos::LOW;
-    }
-
-    // switch is reversed if 'reversed' option set on channel and switches reverse is allowed by RC_OPTIONS
-    bool switch_reversed = chan->get_reverse() && rc().option_is_enabled(RC_Channels::Option::ALLOW_SWITCH_REV);
-
-    if (in < RC_Channel::AUX_PWM_TRIGGER_LOW) {
-        return switch_reversed ? RC_Channel::AuxSwitchPos::HIGH : RC_Channel::AuxSwitchPos::LOW;
-    } else if (in > RC_Channel::AUX_PWM_TRIGGER_HIGH) {
-        return switch_reversed ? RC_Channel::AuxSwitchPos::LOW : RC_Channel::AuxSwitchPos::HIGH;
-    } else {
-        return RC_Channel::AuxSwitchPos::MIDDLE;
-    }
-}
-
 // map rc input to an event
 AP_OSD_ParamScreen::Event AP_OSD_ParamScreen::map_rc_input_to_event() const
 {
-    const RC_Channel::AuxSwitchPos throttle = get_channel_pos(AP::rcmap()->throttle());
-    const RC_Channel::AuxSwitchPos yaw = get_channel_pos(AP::rcmap()->yaw());
-    const RC_Channel::AuxSwitchPos roll = get_channel_pos(AP::rcmap()->roll());
-    const RC_Channel::AuxSwitchPos pitch = get_channel_pos(AP::rcmap()->pitch());
+    const RC_Channel::AuxSwitchPos throttle = rc().get_throttle_channel().get_stick_gesture_pos();
+    const RC_Channel::AuxSwitchPos yaw = rc().get_yaw_channel().get_stick_gesture_pos();
+    const RC_Channel::AuxSwitchPos roll = rc().get_roll_channel().get_stick_gesture_pos();
+    const RC_Channel::AuxSwitchPos pitch = rc().get_pitch_channel().get_stick_gesture_pos();
 
     Event result = Event::NONE;
 
@@ -486,7 +458,7 @@ void AP_OSD_ParamScreen::update_state_machine()
             if (_selected_param == SAVE_PARAM) {
                 if (_transition_count >= OSD_HOLD_BUTTON_PRESS_COUNT) {
                     save_parameters();
-                    hal.scheduler->reboot(false);
+                    hal.scheduler->reboot();
                 } else {
                     save_parameters();
                 }
@@ -636,7 +608,7 @@ void AP_OSD_ParamScreen::handle_read_msg(const mavlink_osd_param_show_config_t& 
     // request out of range - return an error
     if (packet.osd_index < 1 || packet.osd_index > AP_OSD_ParamScreen::NUM_PARAMS) {
         mavlink_msg_osd_param_show_config_reply_send(link.get_chan(), packet.request_id, OSD_PARAM_INVALID_PARAMETER_INDEX,
-            nullptr, OSD_PARAM_NONE, 0, 0, 0);
+            nullptr, uint8_t(AP_OSD_ParamSetting::Type::NONE), 0, 0, 0);
         return;
     }
     // get the parameter and make sure it is fresh
@@ -646,7 +618,7 @@ void AP_OSD_ParamScreen::handle_read_msg(const mavlink_osd_param_show_config_t& 
     // check for bad things
     if (param._param == nullptr) {
         mavlink_msg_osd_param_show_config_reply_send(link.get_chan(), packet.request_id, OSD_PARAM_INVALID_PARAMETER_INDEX,
-            nullptr, OSD_PARAM_NONE, 0, 0, 0);
+            nullptr, uint8_t(AP_OSD_ParamSetting::Type::NONE), 0, 0, 0);
         return;
     }
     // get the name and send back the details

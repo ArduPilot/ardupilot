@@ -23,7 +23,7 @@
 #include "version.h"
 #undef FORCE_VERSION_H_INCLUDE
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros, _prio) SCHED_TASK_CLASS(Tracker, &tracker, func, _interval_ticks, _max_time_micros, _prio)
+#define SCHED_TASK(func, rate_hz, _max_time_micros, _prio) SCHED_TASK_CLASS(Tracker, &tracker, func, rate_hz, _max_time_micros, _prio)
 
 /*
   All entries in this table must be ordered by priority.
@@ -53,12 +53,10 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(update_tracking,        50,    1000, 15),
     SCHED_TASK(update_GPS,             10,    4000, 20),
     SCHED_TASK(update_compass,         10,    1500, 25),
-    SCHED_TASK(compass_save,            0.02,  200, 30),
     SCHED_TASK_CLASS(AP_BattMonitor,    &tracker.battery,   read,           10, 1500, 35),
     SCHED_TASK_CLASS(AP_Baro,          &tracker.barometer,  update,         10, 1500, 40),
     SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_receive, 50, 1700, 45),
     SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_send,    50, 3000, 50),
-    SCHED_TASK_CLASS(AP_Baro,           &tracker.barometer, accumulate,     50,  900, 55),
 #if HAL_LOGGING_ENABLED
     SCHED_TASK(ten_hz_logging_loop,    10,    300, 60),
     SCHED_TASK_CLASS(AP_Logger,   &tracker.logger, periodic_tasks, 50,  300, 65),
@@ -79,11 +77,8 @@ void Tracker::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 
 void Tracker::one_second_loop()
 {
-    // sync MAVLink system ID
-    mavlink_system.sysid = g.sysid_this_mav;
-
     // update assigned functions and enable auxiliary servos
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     // updated armed/disarmed status LEDs
     update_armed_disarmed();
@@ -92,7 +87,7 @@ void Tracker::one_second_loop()
         // set home to current location
         Location temp_loc;
         if (ahrs.get_location(temp_loc)) {
-            if (!set_home(temp_loc)){
+            if (!set_home(temp_loc, false)) {
                 // fail silently
             }
         }

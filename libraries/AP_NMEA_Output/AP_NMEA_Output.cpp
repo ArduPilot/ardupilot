@@ -108,7 +108,8 @@ void AP_NMEA_Output::update()
 
     // not completely accurate, our time includes leap seconds and time_t should be without
     const time_t time_sec = time_usec / 1000000;
-    struct tm* tm = gmtime(&time_sec);
+    struct tm tmd {};
+    struct tm* tm = gmtime_r(&time_sec, &tmd);
 
     // format time string
     char tstring[10];
@@ -250,9 +251,9 @@ void AP_NMEA_Output::update()
 #if AP_AHRS_ENABLED
     if ((_message_enable_bitmask.get() & static_cast<int16_t>(Enabled_Messages::PASHR)) != 0) {
         // get roll, pitch, yaw
-        const float roll_deg = wrap_180(degrees(ahrs.get_roll()));
-        const float pitch_deg = wrap_180(degrees(ahrs.get_pitch()));
-        const float yaw_deg = wrap_360(degrees(ahrs.get_yaw()));
+        const float roll_deg = wrap_180(degrees(ahrs.get_roll_rad()));
+        const float pitch_deg = wrap_180(degrees(ahrs.get_pitch_rad()));
+        const float yaw_deg = wrap_360(degrees(ahrs.get_yaw_rad()));
         const float heave_m = 0; // instantaneous heave in meters
         const float roll_deg_accuracy = 0; // stddev of roll_deg;
         const float pitch_deg_accuracy = 0; // stddev of pitch_deg;

@@ -15,7 +15,7 @@
 
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_NETWORKING
+#if AP_PERIPH_NETWORKING_ENABLED
 
 const AP_Param::GroupInfo Networking_Periph::var_info[] {
     // @Group:
@@ -197,5 +197,5 @@ void Networking_Periph::update(void)
 #endif // HAL_RAM_RESERVE_START
 }
 
-#endif  // HAL_PERIPH_ENABLE_NETWORKING
+#endif  // AP_PERIPH_NETWORKING_ENABLED
 

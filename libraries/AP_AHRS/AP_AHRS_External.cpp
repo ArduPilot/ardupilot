@@ -23,7 +23,9 @@ bool AP_AHRS_External::healthy() const {
 void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 {
     Quaternion quat;
-    if (!AP::externalAHRS().get_quaternion(quat)) {
+    auto &extahrs = AP::externalAHRS();
+    const AP_InertialSensor &_ins = AP::ins();
+    if (!extahrs.get_quaternion(quat)) {
         return;
     }
     quat.rotation_matrix(results.dcm_matrix);
@@ -31,9 +33,15 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
 
     results.gyro_drift.zero();
-    results.gyro_estimate = AP::externalAHRS().get_gyro();
+    if (!extahrs.get_gyro(results.gyro_estimate)) {
+        results.gyro_estimate = _ins.get_gyro();
+    }
 
-    const Vector3f accel = AP::externalAHRS().get_accel();
+    Vector3f accel;
+    if (!extahrs.get_accel(accel)) {
+        accel = _ins.get_accel();
+    }
+
     const Vector3f accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
     results.accel_ef = accel_ef;
 
@@ -51,21 +59,21 @@ Vector2f AP_AHRS_External::groundspeed_vector()
 }
 
 
-bool AP_AHRS_External::get_relative_position_NED_origin(Vector3f &vec) const
+bool AP_AHRS_External::get_relative_position_NED_origin(Vector3p &vec) const
 {
     auto &extahrs = AP::externalAHRS();
     Location loc, orgn;
     if (extahrs.get_origin(orgn) &&
         extahrs.get_location(loc)) {
         const Vector2f diff2d = orgn.get_distance_NE(loc);
-        vec = Vector3f(diff2d.x, diff2d.y,
+        vec = Vector3p(diff2d.x, diff2d.y,
                        -(loc.alt - orgn.alt)*0.01);
         return true;
     }
     return false;
 }
 
-bool AP_AHRS_External::get_relative_position_NE_origin(Vector2f &posNE) const
+bool AP_AHRS_External::get_relative_position_NE_origin(Vector2p &posNE) const
 {
     auto &extahrs = AP::externalAHRS();
 
@@ -74,11 +82,11 @@ bool AP_AHRS_External::get_relative_position_NE_origin(Vector2f &posNE) const
         !extahrs.get_origin(orgn)) {
         return false;
     }
-    posNE = orgn.get_distance_NE(loc);
+    posNE = orgn.get_distance_NE_postype(loc);
     return true;
 }
 
-bool AP_AHRS_External::get_relative_position_D_origin(float &posD) const
+bool AP_AHRS_External::get_relative_position_D_origin(postype_t &posD) const
 {
     auto &extahrs = AP::externalAHRS();
 

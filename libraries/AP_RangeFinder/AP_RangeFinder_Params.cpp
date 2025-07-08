@@ -1,3 +1,7 @@
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_ENABLED
+
 #include "AP_RangeFinder_Params.h"
 #include "AP_RangeFinder.h"
 
@@ -10,13 +14,14 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Rangefinder type
     // @Description: Type of connected rangefinder
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLite-I2C,5:PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:USD1_Serial,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X or VL53L1X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:Benewake-Serial,21:LidarLightV3HP,22:PWM,23:BlueRoboticsPing,24:DroneCAN,25:BenewakeTFminiPlus-I2C,26:LanbaoPSK-CM8JL65-CC5,27:BenewakeTF03,28:VL53L1X-ShortRange,29:LeddarVu8-Serial,30:HC-SR04,31:GYUS42v2,32:MSP,33:USD1_CAN,34:Benewake_CAN,35:TeraRangerSerial,36:Lua_Scripting,37:NoopLoop_TOFSense,38:NoopLoop_TOFSense_CAN,39:NRA24_CAN,40:NoopLoop_TOFSenseF_I2C,41:JRE_Serial,100:SITL
+    // @SortValues: AlphabeticalZeroAtTop
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLite-I2C,5:PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:USD1_Serial,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X or VL53L1X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:Benewake-Serial,21:LidarLightV3HP,22:PWM,23:BlueRoboticsPing,24:DroneCAN,25:BenewakeTFminiPlus-I2C,26:LanbaoPSK-CM8JL65-CC5,27:BenewakeTF03,28:VL53L1X-ShortRange,29:LeddarVu8-Serial,30:HC-SR04,31:GYUS42v2,32:MSP,33:USD1_CAN,34:Benewake_CAN,35:TeraRangerSerial,36:Lua_Scripting,37:NoopLoop_TOFSense,38:NoopLoop_TOFSense_CAN,39:NRA24_CAN,40:NoopLoop_TOFSenseF_I2C,41:JRE_Serial,42:Ainstein_LR_D1,43:RDS02UF,44:HexsoonRadar,100:SITL
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RangeFinder_Params, type, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: PIN
     // @DisplayName: Rangefinder pin
-    // @Description: Analog or PWM input pin that rangefinder is connected to. Airspeed ports can be used for Analog input, AUXOUT can be used for PWM input. When using analog pin 103, the maximum value of the input in 3.3V. For PWM input, the pin must be configured as a digital GPIO, see the Wiki's "GPIOs" section for details.
+    // @Description: Analog or PWM input pin that rangefinder is connected to. Analog RSSI or Airspeed ports can be used for Analog inputs (some autopilots provide others also), Non-IOMCU Servo/MotorOutputs can be used for PWM input when configured as "GPIOs". Values for some autopilots are given as examples. Search wiki for "Analog pins" for analog pin or "GPIOs", if PWM input type, to determine pin number.
     // @Values: -1:Not Used,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("PIN",     2, AP_RangeFinder_Params, pin, -1),
@@ -44,21 +49,21 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FUNCTION", 5, AP_RangeFinder_Params, function, 0),
 
-    // @Param: MIN_CM
+    // @Param: MIN
     // @DisplayName: Rangefinder minimum distance
-    // @Description: Minimum distance in centimeters that rangefinder can reliably read
-    // @Units: cm
-    // @Increment: 1
+    // @Description: Minimum distance in metres that rangefinder can reliably read
+    // @Units: m
+    // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("MIN_CM",  6, AP_RangeFinder_Params, min_distance_cm, 20),
+    AP_GROUPINFO("MIN",  6, AP_RangeFinder_Params, min_distance, 0.20),
 
-    // @Param: MAX_CM
+    // @Param: MAX
     // @DisplayName: Rangefinder maximum distance
-    // @Description: Maximum distance in centimeters that rangefinder can reliably read
-    // @Units: cm
-    // @Increment: 1
+    // @Description: Maximum distance in metres that rangefinder can reliably read
+    // @Units: m
+    // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("MAX_CM",  7, AP_RangeFinder_Params, max_distance_cm, 700),
+    AP_GROUPINFO("MAX",  7, AP_RangeFinder_Params, max_distance, 7.00),
 
     // @Param: STOP_PIN
     // @DisplayName: Rangefinder stop pin
@@ -84,14 +89,14 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("PWRRNG", 11, AP_RangeFinder_Params, powersave_range, 0),
 
-    // @Param: GNDCLEAR
-    // @DisplayName: Distance (in cm) from the range finder to the ground
-    // @Description: This parameter sets the expected range measurement(in cm) that the range finder should return when the vehicle is on the ground.
-    // @Units: cm
-    // @Range: 5 127
-    // @Increment: 1
+    // @Param: GNDCLR
+    // @DisplayName: Distance from the range finder to the ground
+    // @Description: This parameter sets the expected range measurement that the range finder should return when the vehicle is on the ground.
+    // @Units: m
+    // @Range: 0.05 1.5
+    // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("GNDCLEAR", 12, AP_RangeFinder_Params, ground_clearance_cm, RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
+    AP_GROUPINFO("GNDCLR", 12, AP_RangeFinder_Params, ground_clearance, RANGEFINDER_GROUND_CLEARANCE_DEFAULT),
 
     // @Param: ADDR
     // @DisplayName: Bus address of sensor
@@ -136,6 +141,18 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     AP_GROUPEND
 };
 
+
+// PARAMETER_CONVERSION - Added: Dec-2024 for 4.7
+void AP_RangeFinder_Params::convert_min_max_params(void)
+{
+    // ./Tools/autotest/test_param_upgrade.py --vehicle=arducopter --param "RNGFND1_MAX_CM=300->RNGFND1_MAX=3.00" --param "RNGFND2_MIN_CM=678->RNGFND2_MIN=6.78" --param "RNGFNDA_MIN_CM=1->RNGFNDA_MIN=0.01" --param "RNGFND5_GNDCLEAR=103->RNGFND5_GNDCLR=1.03"
+    max_distance.convert_parameter_width(AP_PARAM_INT16, 0.01);
+    min_distance.convert_parameter_width(AP_PARAM_INT16, 0.01);
+    ground_clearance.convert_parameter_width(AP_PARAM_INT8, 0.01);
+}
+
 AP_RangeFinder_Params::AP_RangeFinder_Params(void) {
     AP_Param::setup_object_defaults(this, var_info);
 }
+
+#endif  // AP_RANGEFINDER_ENABLED

@@ -29,6 +29,10 @@
 #define HAL_FLASH_ALLOW_UPDATE 0
 #endif
 
+#ifndef HAL_PROGRAM_SIZE_LIMIT_KB
+#define HAL_PROGRAM_SIZE_LIMIT_KB 4096
+#endif
+
 #ifndef HAL_STORAGE_SIZE
 #define HAL_STORAGE_SIZE            32768
 #endif
@@ -38,12 +42,17 @@
 #define HAL_BOARD_TERRAIN_DIRECTORY "terrain"
 #define HAL_PARAM_DEFAULTS_PATH nullptr
 #define HAL_INS_DEFAULT HAL_INS_NONE
-#define HAL_BARO_DEFAULT HAL_BARO_NONE
-#define HAL_GPIO_A_LED_PIN        61
-#define HAL_GPIO_B_LED_PIN        48
-#define HAL_GPIO_C_LED_PIN        117
-#define HAL_GPIO_LED_ON           0
-#define HAL_GPIO_LED_OFF          1
+
+// simulated LEDs are disabled by default as they lead to a large
+// amount of SIM_GPIO_MASK mavlink traffic
+
+// #define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
+#define AP_NOTIFY_GPIO_LED_RGB_RED_PIN    8  // these are set in SIM_PIN_MASK
+#define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN  9
+#define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN  10
+
+// #define AP_NOTIFY_GPIO_LED_1_ENABLED 1
+#define AP_NOTIFY_GPIO_LED_A_PIN          8  // these are set in SIM_PIN_MASK
 
 #define HAL_HAVE_BOARD_VOLTAGE 1
 #define HAL_HAVE_SERVO_VOLTAGE 1
@@ -84,3 +93,28 @@
 #ifndef AP_FILTER_ENABLED
 #define AP_FILTER_ENABLED 1
 #endif
+
+#define HAL_SOLO_GIMBAL_ENABLED 1
+
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 1
+#endif
+
+#ifndef HAL_INS_RATE_LOOP
+#define HAL_INS_RATE_LOOP 1
+#endif
+
+#ifndef AP_NOTIFY_TONEALARM_ENABLED
+#define AP_NOTIFY_TONEALARM_ENABLED 1
+#endif
+
+#ifndef AP_NOTIFY_BUZZER_ENABLED
+#define AP_NOTIFY_BUZZER_ENABLED 1
+#endif
+
+#define HAL_BATT_VOLT_PIN                  13
+#define HAL_BATT_CURR_PIN                  12
+#define HAL_BATT_VOLT_SCALE                10.1f
+#define HAL_BATT_CURR_SCALE                17.0f
+
+#define RELAY1_PIN_DEFAULT 13

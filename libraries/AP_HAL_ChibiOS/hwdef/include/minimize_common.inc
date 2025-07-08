@@ -48,6 +48,7 @@ define AP_WINCH_ENABLED 0
 define AP_CAMERA_BACKEND_DEFAULT_ENABLED 0
 define AP_CAMERA_RELAY_ENABLED AP_CAMERA_ENABLED
 define AP_CAMERA_SERVO_ENABLED AP_CAMERA_ENABLED
+define AP_CAMERA_RUNCAM_ENABLED AP_CAMERA_ENABLED
 
 # no SLCAN on these boards (use can-over-mavlink if required)
 define AP_CAN_SLCAN_ENABLED 0
@@ -101,15 +102,15 @@ define AP_LANDINGGEAR_ENABLED APM_BUILD_COPTER_OR_HELI
 
 # Plane-specific defines; these defines are only used in the Plane
 #  directory, but are seen across the entire codebase:
-define OFFBOARD_GUIDED 0
-define QAUTOTUNE_ENABLED 0
+define AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED 0
 
 # Copter-specific defines; these defines are only used in the Copter
 #  directory, but are seen across the entire codebase:
 define MODE_FLOWHOLD_ENABLED 0
 define MODE_ZIGZAG_ENABLED 0
 define AC_NAV_GUIDED 0
-define AC_OAPATHPLANNER_ENABLED 0
+define AP_OAPATHPLANNER_ENABLED 0
+define AP_FOLLOW_ENABLED 0
 define MODE_FOLLOW_ENABLED 0
 define MODE_GUIDED_NOGPS_ENABLED 0
 define MODE_SYSTEMID_ENABLED 0
@@ -133,3 +134,13 @@ define AP_AIRSPEED_DRONECAN_ENABLED HAL_ENABLE_DRONECAN_DRIVERS
 define AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED 0
 # don't need the payload place flight behaviour either:
 define AC_PAYLOAD_PLACE_ENABLED 0
+
+# disable extra camera messages
+define AP_CAMERA_INFO_FROM_SCRIPT_ENABLED 0
+define AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED 0
+
+# no servo feedback on minimized boards:
+define AP_SERVO_TELEM_ENABLED 0
+
+# don't send extra flight information on small boards
+define AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED 0

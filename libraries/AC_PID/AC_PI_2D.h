@@ -41,14 +41,11 @@ public:
     // reset_filter - input filter will be reset to the next value provided to set_input()
     void reset_filter();
 
-    // load gain from eeprom
+    // Loads controller configuration from EEPROM, including gains and filter frequencies. (not used)
     void load_gains();
 
-    // save gain to eeprom
+    // Saves controller configuration from EEPROM, including gains and filter frequencies. (not used)
     void save_gains();
-
-    /// operator function call for easy initialisation
-    void operator() (float p, float i, float imaxval, float input_filt_hz, float dt);
 
     // get accessors
     AP_Float &kP() { return _kp; }

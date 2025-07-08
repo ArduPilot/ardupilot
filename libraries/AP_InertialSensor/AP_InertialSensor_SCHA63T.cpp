@@ -63,7 +63,7 @@ AP_InertialSensor_Backend* AP_InertialSensor_SCHA63T::probe(AP_InertialSensor &i
     if (!dev_uno || !dev_due) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_SCHA63T(imu, std::move(dev_uno), std::move(dev_due), rotation);
+    auto sensor = NEW_NOTHROW AP_InertialSensor_SCHA63T(imu, std::move(dev_uno), std::move(dev_due), rotation);
 
     if (!sensor) {
         return nullptr;
@@ -381,7 +381,7 @@ void AP_InertialSensor_SCHA63T::read_gyro()
         return;
     }
     due_temp = combine(rsp_due_temper[1], rsp_due_temper[2]);
-    set_temperature(gyro_instance, (uno_temp + due_temp) * 0.5);
+    set_temperature(gyro_instance, (int16_t)((uno_temp + due_temp) * 0.5f));
 
     // change coordinate system from left hand too right hand
     gyro_z = (gyro_z == INT16_MIN) ? INT16_MAX : -gyro_z;
@@ -399,9 +399,9 @@ void AP_InertialSensor_SCHA63T::read_gyro()
     }
 }
 
-void AP_InertialSensor_SCHA63T::set_temperature(uint8_t instance, uint16_t temper)
+void AP_InertialSensor_SCHA63T::set_temperature(uint8_t instance, int16_t temper)
 {
-    const float temperature = 25.0f + ( temper / 30 );
+    const float temperature = 25.0f + ((float)temper / 30.0f);
     const float temp_degc = (0.5f * temperature) + 23.0f;
     _publish_temperature(instance, temp_degc);
 }
@@ -428,12 +428,12 @@ bool AP_InertialSensor_SCHA63T::read_register(uint8_t uno_due, reg_scha63t reg_a
     switch (uno_due) {
     case SCHA63T_UNO:
         memcpy(buf, cmd, 4);
-        ret = dev_uno->transfer(buf, 4, buf, 4);
+        ret = dev_uno->transfer_fullduplex(buf, 4);
         memcpy(val, buf, 4);
         break;
     case SCHA63T_DUE:
         memcpy(buf, cmd, 4);
-        ret = dev_due->transfer(buf, 4, buf, 4);
+        ret = dev_due->transfer_fullduplex(buf, 4);
         memcpy(val, buf, 4);
         break;
     default:
@@ -454,7 +454,6 @@ bool AP_InertialSensor_SCHA63T::read_register(uint8_t uno_due, reg_scha63t reg_a
 bool AP_InertialSensor_SCHA63T::write_register(uint8_t uno_due, reg_scha63t reg_addr, uint16_t val)
 {
     bool ret = false;
-    uint8_t res[4];
     uint8_t cmd[4];
 
     cmd[0] = reg_addr << 2;
@@ -467,13 +466,11 @@ bool AP_InertialSensor_SCHA63T::write_register(uint8_t uno_due, reg_scha63t reg_
     switch (uno_due) {
     case SCHA63T_UNO:
         memcpy(buf, cmd, 4);
-        ret = dev_uno->transfer(buf, 4, buf, 4);
-        memcpy(res, buf, 4);
+        ret = dev_uno->transfer_fullduplex(buf, 4);
         break;
     case SCHA63T_DUE:
         memcpy(buf, cmd, 4);
-        ret = dev_due->transfer(buf, 4, buf, 4);
-        memcpy(res, buf, 4);
+        ret = dev_due->transfer_fullduplex(buf, 4);
         break;
     default:
         break;

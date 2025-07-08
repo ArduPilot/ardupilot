@@ -13,6 +13,11 @@ if [ $who != 'root' ]; then
     exit 1
 fi
 
+DISTRIBUTION_ID=$(lsb_release -i -s)
+if [ ${DISTRIBUTION_ID} == 'Ubuntu' ]; then
+  DISTRIBUTION_CODENAME=$(lsb_release -c -s)
+fi
+
 VAGRANT_USER=ubuntu
 if [ -e /home/vagrant ]; then
     # prefer vagrant user
@@ -22,12 +27,34 @@ echo USING VAGRANT_USER:$VAGRANT_USER
 
 cd /home/$VAGRANT_USER
 
+IS_BENTO=0
+if [ -e /etc/update-motd.d/99-bento ]; then
+    IS_BENTO=1
+fi
 
-# artful rootfs is 2GB without resize:
-sudo resize2fs /dev/sda1
+# artful rootfs is 2GB without resize.  Do not resize if using Bento:
+if [ ! $IS_BENTO ]; then
+    sudo resize2fs /dev/sda1
+fi
+
+DASHDASHLOGIN=""
+if false ||
+     [ ${DISTRIBUTION_CODENAME} == 'oracular' ] ||
+     [ ${DISTRIBUTION_CODENAME} == 'plucky' ] ||
+     false; then
+    # we run out of space in tmpfs /tmp while compiling wxpython, so
+    # do it elsewhere:
+cat <<"EOF" | sudo -H -u vagrant bash
+    mkdir -p $HOME/tmp
+    echo "export TMPDIR=$HOME/tmp" >>$HOME/.bashrc
+    echo "export TMPDIR=$HOME/tmp" >>$HOME/.profile
+EOF
+    export TMPDIR=/home/vagrant/tmp
+    DASHDASHLOGIN="--login"
+fi
 
 echo "calling pre-reqs script..."
-sudo -H -u $VAGRANT_USER /vagrant/Tools/environment_install/install-prereqs-ubuntu.sh -y
+sudo $DASHDASHLOGIN -H -u $VAGRANT_USER /vagrant/Tools/environment_install/install-prereqs-ubuntu.sh -y
 echo "...pre-reqs script done... initvagrant.sh continues."
 
 # valgrind support:
@@ -44,12 +71,10 @@ echo 0 > /proc/sys/kernel/yama/ptrace_scope
 
 RELEASE_CODENAME=$(lsb_release -c -s)
 
-if [ ${RELEASE_CODENAME} != 'bionic' ]; then
-    # build JSB sim
-    apt-get install -y libtool automake autoconf libexpat1-dev cmake
-    #  libtool-bin
-    sudo --login -u $VAGRANT_USER /vagrant/Tools/scripts/build-jsbsim.sh
-fi
+# build JSB sim
+apt-get install -y libtool automake autoconf libexpat1-dev cmake
+#  libtool-bin
+sudo --login -u $VAGRANT_USER /vagrant/Tools/scripts/build-jsbsim.sh
 
 # adjust environment for every login shell:
 DOT_PROFILE=/home/$VAGRANT_USER/.profile

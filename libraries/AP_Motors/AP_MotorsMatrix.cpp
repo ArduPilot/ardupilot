@@ -148,7 +148,7 @@ void AP_MotorsMatrix::output_to_motors()
         case SpoolState::SHUT_DOWN: {
             // no output
             for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-                if (motor_enabled[i]) {
+                if (motor_enabled_mask(i)) {
                     _actuator[i] = 0.0f;
                 }
             }
@@ -416,7 +416,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj)
 {
     // record filtered and scaled thrust output for motor loss monitoring purposes
-    float alpha = _dt / (_dt + 0.5f);
+    float alpha = _dt_s / (_dt_s + 0.5f);
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             _thrust_rpyt_out_filt[i] += alpha * (_thrust_rpyt_out[i] - _thrust_rpyt_out_filt[i]);
@@ -686,7 +686,7 @@ bool AP_MotorsMatrix::setup_quad_matrix(motor_frame_type frame_type)
         break;
     }
     case MOTOR_FRAME_TYPE_H: {
-        // H frame set-up - same as X but motors spin in opposite directiSons
+        // H frame set-up - same as X but motors spin in opposite directions
         _frame_type_string = "H";
         static const AP_MotorsMatrix::MotorDef motors[] {
             {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1 },

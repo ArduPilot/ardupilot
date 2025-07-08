@@ -25,8 +25,9 @@ param set SERIAL5_PROTOCOL 5
 
 #include "SIM_config.h"
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
 
+#include <sys/time.h>
 #include "SIM_SerialDevice.h"
 
 namespace SITL {
@@ -49,8 +50,9 @@ struct GPS_Data {
     float speed_acc;
     uint8_t num_sats;
 
-    // Get heading [rad], where 0 = North in WGS-84 coordinate system
-    float heading() const WARN_IF_UNUSED;
+    // Get course over ground [rad], where 0 = North in WGS-84 coordinate system.
+    // Calculated from 2D velocity.
+    float ground_track_rad() const WARN_IF_UNUSED;
 
     // Get 2D speed [m/s] in WGS-84 coordinate system
     float speed_2d() const WARN_IF_UNUSED;
@@ -119,8 +121,11 @@ public:
 #if AP_SIM_GPS_SBP2_ENABLED
         SBP2  =  9,
 #endif
+#if AP_SIM_GPS_SBF_ENABLED
+        SBF = 10, //matches GPS_TYPE 
+#endif
 #if AP_SIM_GPS_TRIMBLE_ENABLED
-        TRIMBLE  = 11, // matches GPS_TYPE
+        TRIMBLE  = 11, // matches GPS1_TYPE
 #endif
 #if AP_SIM_GPS_MSP_ENABLED
         MSP   = 19,
@@ -174,4 +179,4 @@ private:
 
 }
 
-#endif  // HAL_SIM_GPS_ENABLED
+#endif  // AP_SIM_GPS_ENABLED

@@ -96,8 +96,7 @@ for reviewing patches on their specific area.
   - ***Vehicle***: Rover
 - [Willian Galvani](https://github.com/williangalvani):
   - ***Vehicle***: Sub
-- [Lucas De Marchi](https://github.com/lucasdemarchi):
-  - ***Subsystem***: Linux
+  - ***Board***: Navigator
 - [Michael du Breuil](https://github.com/WickedShell):
   - ***Subsystem***: Batteries
   - ***Subsystem***: GPS

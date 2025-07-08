@@ -37,7 +37,7 @@ public:
     bool initialised(void) const override;
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
     void get_filter_status(nav_filter_status &status) const override;
-    void send_status_report(class GCS_MAVLINK &link) const override;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 
     // check for new data
     void update() override {
@@ -47,6 +47,11 @@ public:
     // Get model/type name
     const char* get_name() const override;
 
+protected:
+
+    uint8_t num_gps_sensors(void) const override {
+        return 1;
+    }
 private:
     AP_HAL::UARTDriver *uart;
     int8_t port_num;
@@ -56,42 +61,53 @@ private:
     void update_thread();
     bool check_uart();
 
-    void process_packet1(const uint8_t *b);
-    void process_packet2(const uint8_t *b);
-    void process_packet_VN_100(const uint8_t *b);
-    void wait_register_responce(const uint8_t register_num);
+    void initialize();
+
+    void run_command(const char *fmt, ...);
+
+    struct VNAT;
+    void write_vnat(const VNAT& data_to_log) const;
+    void process_imu_packet(const uint8_t *b);
+    void process_ahrs_ekf_packet(const uint8_t *b);
+    void process_ins_ekf_packet(const uint8_t *b);
+    void process_ins_gnss_packet(const uint8_t *b);
+
 
     uint8_t *pktbuf;
     uint16_t pktoffset;
     uint16_t bufsize;
 
-    struct VN_packet1 *last_pkt1;
-    struct VN_packet2 *last_pkt2;
+    struct VN_imu_packet *latest_imu_packet;
+    struct VN_INS_ekf_packet *latest_ins_ekf_packet;
+    struct VN_INS_gnss_packet *latest_ins_gnss_packet;
 
     uint32_t last_pkt1_ms;
     uint32_t last_pkt2_ms;
+    uint32_t last_pkt3_ms;
 
     enum class TYPE {
-        VN_300,
-        VN_100,
+        VN_INS,  // Full INS mode, requiring GNSS. Used by VN-2X0 and VN-3X0
+        VN_AHRS,  // IMU-only mode, used by VN-1X0
     } type;
 
-    char model_name[25];
+    bool has_dual_gnss = false;
 
+    char model_name[20];
+
+    char message_to_send[50];
     // NMEA parsing for setup
     bool decode(char c);
     bool decode_latest_term();
     struct NMEA_parser {
-        char term[25];            // buffer for the current term within the current sentence
+        char term[20];            // buffer for the current term within the current sentence
         uint8_t term_offset;      // offset within the _term buffer where the next character should be placed
         uint8_t term_number;      // term index within the current sentence
         uint8_t checksum;         // checksum accumulator
         bool term_is_checksum;    // current term is the checksum
         bool sentence_valid;      // is current sentence valid so far
         bool sentence_done;       // true if this sentence has already been decoded
-        uint8_t register_number;  // VectorNAV register number were reading
+        bool error_response;      // true if received a VNERR response
     } nmea;
-
 };
 
 #endif  // AP_EXTERNAL_AHRS_VECTORNAV_ENABLED

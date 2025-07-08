@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+# flake8: noqa
+
 """
 Waf tool for defining ardupilot's submodules, so that they are kept up to date.
 Submodules can be considered dynamic sources, since they are updated during the
@@ -31,7 +33,7 @@ post_mode should be set to POST_LAZY. Example::
         ...
 """
 
-from waflib import Context, Logs, Task, Utils
+from waflib import Context, Logs, Task, Utils, Errors
 from waflib.Configure import conf
 from waflib.TaskGen import before_method, feature, taskgen_method
 
@@ -91,7 +93,7 @@ class update_submodule(Task.Task):
                 else:
                     r = Task.RUN_ME
 
-        if self.non_fast_forward:
+        if getattr(self,'non_fast_forward',[]):
             r = Task.SKIP_ME
 
         return r
@@ -148,7 +150,7 @@ def git_submodule(bld, git_submodule, **kw):
 def _post_fun(bld):
     Logs.info('')
     for name, t in _submodules_tasks.items():
-        if not t.non_fast_forward:
+        if not getattr(t,'non_fast_forward',[]):
             continue
         Logs.warn("Submodule %s not updated: non-fastforward" % name)
 
@@ -161,7 +163,12 @@ def _git_head_hash(ctx, path, short=False):
     if short:
         cmd.append('--short=8')
     cmd.append('HEAD')
-    out = ctx.cmd_and_log(cmd, quiet=Context.BOTH, cwd=path)
+    try:
+        out = ctx.cmd_and_log(cmd, quiet=Context.BOTH, cwd=path)
+    except Errors.WafError as e:
+        print(e.stdout, e.stderr)
+        raise e
+
     return out.strip()
 
 @conf

@@ -26,7 +26,6 @@ on:
       - 'Tools/gittools/**'
       - 'Tools/Hello/**'
       - 'Tools/IO_Firmware/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
@@ -157,7 +156,7 @@ jobs:
           NOW=$(date -u +"%F-%T")
           echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
@@ -176,31 +175,36 @@ jobs:
         run: |
           apt update
           rosdep update
-          # Workaround for flake8 attribute error
-          # https://github.com/ArduPilot/ardupilot/pull/24277#issuecomment-1632833433
-          python -m pip install flake8==3.7.9
+          python3 -m pip install flake8
           source /opt/ros/humble/setup.bash
           rosdep install --from-paths src --ignore-src --default-yes
       - name: Install MAVProxy
         run: |
           # Install this specific version just to prevent rolling updates.
-          # These are the latest available
-          python3 -m pip install MAVProxy==1.8.67
+          # See the latest available at https://pypi.org/project/MAVProxy
+          python3 -m pip install MAVProxy==1.8.71
       - name: Install local pymavlink
         working-directory: ./src/ardupilot/modules/mavlink/pymavlink
         run: |
-          pip install . -U --user
+          python3 -m pip install . --upgrade --user
+      # install Micro-XRCE-DDS-Gen from source until image is updated
+      - name: install Micro-XRCE-DDS-Gen from source
+        run: |
+          cd /tmp
+          git clone --depth 1 --recurse-submodules --branch v4.7.0 https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git
+          cd Micro-XRCE-DDS-Gen
+          ./gradlew assemble
       - name: Build with colcon
         shell: 'bash'
         run: |
           source /opt/ros/humble/setup.bash
+          PATH="/tmp/Micro-XRCE-DDS-Gen/scripts:$PATH"
           colcon build --packages-up-to ardupilot_dds_tests --cmake-args -DBUILD_TESTING=ON
       - name: Test with colcon
         shell: 'bash'
         run: |
           source install/setup.bash
-          colcon test --packages-select ardupilot_dds_tests --event-handlers=console_cohesion+
+          colcon test --python-testing "pytest" --pytest-args " --verbose" " --stepwise" --executor sequential --parallel-workers 0 --base-paths src/ardupilot --event-handlers=console_cohesion+
       - name: Report colcon test results
         run: |
           colcon test-result --all --verbose
-

@@ -14,6 +14,8 @@
 #
 # You may have to run "./waf distclean" if failing to build
 
+# flake8: noqa
+
 import os
 import subprocess
 import csv

@@ -14,7 +14,11 @@
 #if HAL_LOGGING_FILESYSTEM_ENABLED
 
 #ifndef HAL_LOGGER_WRITE_CHUNK_SIZE
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#define HAL_LOGGER_WRITE_CHUNK_SIZE 2048
+#else
 #define HAL_LOGGER_WRITE_CHUNK_SIZE 4096
+#endif
 #endif
 
 class AP_Logger_File : public AP_Logger_Backend
@@ -26,7 +30,7 @@ public:
 
     static AP_Logger_Backend  *probe(AP_Logger &front,
                                      LoggerMessageWriter_DFLogStart *ls) {
-        return new AP_Logger_File(front, ls);
+        return NEW_NOTHROW AP_Logger_File(front, ls);
     }
 
     // initialisation
@@ -45,6 +49,7 @@ public:
     void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) override;
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) override;
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override;
+    void end_log_transfer() override;
     uint16_t get_num_logs() override;
     void start_new_log(void) override;
     uint16_t find_oldest_log() override;
@@ -72,7 +77,7 @@ private:
     char *_write_filename;
     bool last_log_is_marked_discard;
     uint32_t _last_write_ms;
-#if AP_RTC_ENABLED
+#if AP_RTC_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     bool _need_rtc_update;
 #endif
     
@@ -111,8 +116,6 @@ private:
 
     /* construct a file name given a log number. Caller must free. */
     char *_log_file_name(const uint16_t log_num) const;
-    char *_log_file_name_long(const uint16_t log_num) const;
-    char *_log_file_name_short(const uint16_t log_num) const;
     char *_lastlog_file_name() const;
     uint32_t _get_log_size(const uint16_t log_num);
     uint32_t _get_log_time(const uint16_t log_num);
@@ -126,7 +129,15 @@ private:
     // data and failures-to-boot.
     uint32_t _free_space_last_check_time; // milliseconds
     const uint32_t _free_space_check_interval = 1000UL; // milliseconds
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+    const uint32_t _free_space_min_avail = 1024 * 1024; // bytes
+#else
+    const uint32_t _free_space_min_avail = 1024 * 256; // bytes
+#endif
+#else
     const uint32_t _free_space_min_avail = 8388608; // bytes
+#endif
 
     // semaphore mediates access to the ringbuffer
     HAL_Semaphore semaphore;

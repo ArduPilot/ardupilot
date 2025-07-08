@@ -21,9 +21,7 @@
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
-#define BMI270_DEFAULT_ROTATION ROTATION_ROLL_180
-#else
+#ifndef BMI270_DEFAULT_ROTATION
 #define BMI270_DEFAULT_ROTATION ROTATION_NONE
 #endif
 
@@ -115,8 +113,6 @@ private:
 
     enum Rotation _rotation;
 
-    uint8_t _accel_instance;
-    uint8_t _gyro_instance;
     uint8_t temperature_counter;
 
     static const uint8_t maximum_fifo_config_file[];

@@ -10,8 +10,8 @@ FLASH_RESERVE_START_KB 25
 STORAGE_FLASH_PAGE 23
 define HAL_STORAGE_SIZE 800
 
-# board ID for firmware load
-APJ_BOARD_ID 1000
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_F103_PERIPH
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -64,13 +64,9 @@ define PORT_INT_REQUIRED_STACK 64
 # avoid timer and RCIN threads to save memory
 define HAL_NO_TIMER_THREAD
 define HAL_NO_RCOUT_THREAD
-define HAL_NO_RCIN_THREAD
 
 #defined to turn off undef warnings
 define __FPU_PRESENT 0
-
-define HAL_USE_RTC FALSE
-define DISABLE_SERIAL_ESC_COMM TRUE
 
 define DMA_RESERVE_SIZE 0
 
@@ -80,7 +76,6 @@ MAIN_STACK 0x200
 
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0xA00
-define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
 PA11 CAN_RX CAN
@@ -100,9 +95,6 @@ define HAL_UART_MIN_RX_SIZE 128
 define HAL_UART_STACK_SIZE 256
 define STORAGE_THD_WA_SIZE 300
 define IO_THD_WA_SIZE      300
-
-define HAL_NO_MONITOR_THREAD
-
 
 # only one I2C bus
 I2C_ORDER I2C1

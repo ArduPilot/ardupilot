@@ -96,13 +96,13 @@ void Blimp::failsafe_gcs_check()
         return;
     }
 
-    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    const uint32_t gcs_last_seen_ms = gcs().sysid_mygcs_last_seen_time_ms();
     if (gcs_last_seen_ms == 0) {
         return;
     }
 
     // calc time since last gcs update
-    // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
+    // note: this only looks at the heartbeat from the device id set by gcs().sysid_mygcs()
     const uint32_t last_gcs_update_ms = millis() - gcs_last_seen_ms;
     const uint32_t gcs_timeout_ms = uint32_t(constrain_float(g2.fs_gcs_timeout * 1000.0f, 0.0f, UINT32_MAX));
 
@@ -161,8 +161,7 @@ void Blimp::do_failsafe_action(Failsafe_Action action, ModeReason reason)
 void Blimp::gpsglitch_check()
 {
     // get filter status
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-    bool gps_glitching = filt_status.flags.gps_glitching;
+    const bool gps_glitching = AP::ahrs().has_status(AP_AHRS::Status::GPS_GLITCHING);
 
     // log start or stop of gps glitch.  AP_Notify update is handled from within AP_AHRS
     if (ap.gps_glitching != gps_glitching) {

@@ -69,13 +69,11 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GPS, &blimp.gps, update, 50, 200,   9),
     SCHED_TASK(update_batt_compass,   10,    120,  12),
     SCHED_TASK_CLASS(RC_Channels,          (RC_Channels*)&blimp.g2.rc_channels,      read_aux_all,    10,     50,  15),
-    SCHED_TASK(arm_motors_check,      10,     50,  18),
     SCHED_TASK(update_altitude,       10,    100,  21),
     SCHED_TASK(three_hz_loop,          3,     75,  24),
 #if AP_SERVORELAYEVENTS_ENABLED
     SCHED_TASK_CLASS(AP_ServoRelayEvents,  &blimp.ServoRelayEvents,      update_events, 50,     75,  27),
 #endif
-    SCHED_TASK_CLASS(AP_Baro,              &blimp.barometer,             accumulate,    50,     90,  30),
 #if HAL_LOGGING_ENABLED
     SCHED_TASK(full_rate_logging,     50,    50,  33),
 #endif
@@ -166,9 +164,11 @@ void Blimp::ten_hz_logging_loop()
     }
     if (should_log(MASK_LOG_RCIN)) {
         logger.Write_RCIN();
+#if AP_RSSI_ENABLED
         if (rssi.enabled()) {
             logger.Write_RSSI();
         }
+#endif
     }
     if (should_log(MASK_LOG_RCOUT)) {
         logger.Write_RCOUT();
@@ -209,7 +209,7 @@ void Blimp::one_hz_loop()
 #endif
 
     // update assigned functions and enable auxiliary servos
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     AP_Notify::flags.flying = !ap.land_complete;
 
@@ -222,7 +222,7 @@ void Blimp::read_AHRS(void)
     ahrs.update(true);
 
     IGNORE_RETURN(ahrs.get_velocity_NED(vel_ned));
-    IGNORE_RETURN(ahrs.get_relative_position_NED_origin(pos_ned));
+    IGNORE_RETURN(ahrs.get_relative_position_NED_origin_float(pos_ned));
 
     vel_yaw = ahrs.get_yaw_rate_earth();
     Vector2f vel_xy_filtd = vel_xy_filter.apply({vel_ned.x, vel_ned.y});
@@ -243,7 +243,7 @@ void Blimp::read_AHRS(void)
                                 pos_ned.x,
                                 pos_ned.y,
                                 pos_ned.z,
-                                blimp.ahrs.get_yaw());
+                                blimp.ahrs.get_yaw_rad());
 #endif
 }
 
@@ -255,7 +255,9 @@ void Blimp::update_altitude()
 
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_CTUN)) {
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
         AP::ins().write_notch_log_messages();
+#endif
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();
 #endif

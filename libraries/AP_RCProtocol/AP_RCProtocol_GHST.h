@@ -180,7 +180,6 @@ private:
 
     uint32_t _last_frame_time_us;
     uint32_t _last_tx_frame_time_us;
-    uint32_t _last_uart_start_time_ms;
     uint32_t _last_rx_frame_time_us;
     uint32_t _start_frame_time_us;
     bool telem_available;

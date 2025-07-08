@@ -23,6 +23,7 @@ and how the content should be interpreted.
 |M   | uint8_t flight mode|
 |q   | int64_t|
 |Q   | uint64_t|
+|g   | float16_t|
 
 Legacy field types - do not use.  These have been replaced by using  the base C type and an appropriate multiplier column entry.
 
@@ -46,6 +47,7 @@ Please keep the names consistent with Tools/autotest/param_metadata/param.py:33
 | 'A' | "A" | Ampere|
 | 'd' | "deg" | of the angular variety | -180 to 180|
 | 'b' | "B" | bytes|
+| 'B' | "B/s" | bytes per second |
 | 'k' | "deg/s" | degrees per second | Not an SI unit, but in some situations more user-friendly than radians per second|
 | 'D' | "deglatitude" | degrees of latitude|
 | 'e' | "deg/s/s" | degrees per second per second | Not an SI unit, but in some situations more user-friendly than radians per second^2|
@@ -66,6 +68,7 @@ Please keep the names consistent with Tools/autotest/param_metadata/param.py:33
 | 's' | "s" | seconds|
 | 'q' | "rpm" | revolutions per minute|  Not an SI unit, but sometimes more intuitive than Hertz|
 | 'r' | "rad" | radians|
+| 't' | "N.m" | Newton meters | torque |
 | 'U' | "deglongitude" | degrees of longitude|
 | 'u' | "ppm" | pulses per minute|
 | 'v' | "V" | Volt|

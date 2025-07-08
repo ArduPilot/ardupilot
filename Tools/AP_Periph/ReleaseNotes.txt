@@ -1,3 +1,54 @@
+Release 1.8.0 4th June 2025
+---------------------------
+
+This is a major AP_Periph release with the following changes:
+
+- added BTAG battery information node support for tracking armed hours and cycles
+- added DAC (Digital-to-Analog Converter) support
+- support for CAN termination control via hardware switch and LED indicators
+- support for up to two rangefinders
+- added streaming of RPM messages
+- support for HiRes magnetometer data
+- support for extended ESC status reporting
+- support for publishing raw IMU data
+- improved ESC rate control with ESC_RATE parameter for RC_OUT peripherals
+- added battery state of health reporting
+- support for larger RTCMv3 packets (>300 bytes) for newer GPS receivers
+- added MCU temperature display in PPPGW web UI
+- improved continuous probing for airspeed and compass
+- improved DroneCAN servo status simulation for SITL testing
+- improved CAN mirroring functionality
+- fixed compilation issues with enabled feature combinations
+- refactored AP_PERIPH_*_ENABLED defines
+- new builds:
+  - BotBloxDroneNet
+  - CubeNode, CubeNode-ETH,
+  - HolybroF4_PMU
+  - HolybroG4_Airspeed
+  - MatekG474-DShot, MatekG474-GPS
+  - MatekL431-APDTelem, MatekL431-BatteryTag, MatekL431-MagHiRes
+  - MFE_AirSpeed_CAN
+  - MFE_POS3_CAN
+  - TBS-L431-Airspeed, TBS-L431-BattMon, TBS-L431-CurrMon, TBS-L431-PWM
+  - uav-dev_m10s
+  - uav-dev-powermodule
+  - VM-L431-Periph-Pico, VM-L431-SRV-Hub-4CHP
+
+Release 1.7.0 26th February 2023
+--------------------------------
+
+This is a major AP_Periph release with the following key changes:
+
+- fixed DroneCAN packet parsing bug when dealing with corrupt packets
+- added BATT_HIDE_MASK parameter
+- support IPv4 networking in AP_Periph and PPP gateway
+- support per-cell battery monitoring
+- rate limit EFI updates
+- support serial tunnelling over DroneCAN
+- support relays over DroneCAN via hardpoint messages
+- support mapping MAVLink SEND_TEXT to DroneCAN debug levels
+- fixed CANFD timings
+
 Release 1.6.0 8th September 2023
 --------------------------------
 

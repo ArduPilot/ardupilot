@@ -19,7 +19,7 @@
 
 #include <SITL/SITL.h>
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
 
 class AP_GPS_SITL : public AP_GPS_Backend
 {
@@ -37,4 +37,4 @@ private:
     uint32_t last_update_ms;
 };
 
-#endif  // HAL_SIM_GPS_ENABLED
+#endif  // AP_SIM_GPS_ENABLED

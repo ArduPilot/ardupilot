@@ -18,7 +18,7 @@
   advanced failsafe support for rover
  */
 
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 
 /*

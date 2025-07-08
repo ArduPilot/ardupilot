@@ -7,8 +7,8 @@ USB_PRODUCT 0x0001
 USB_STRING_MANUFACTURER "ThePeach"
 USB_STRING_PRODUCT "FCC-K1 BL"
 
-# board ID for firmware load
-APJ_BOARD_ID 212
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_THE_PEACH_K1
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
@@ -77,5 +77,4 @@ PC15 ICM20602_CS CS
 PD7 MS5611_CS CS
 PD10 FRAM_CS CS SPEED_VERYLOW
 
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
+

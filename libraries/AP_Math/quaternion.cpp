@@ -381,8 +381,8 @@ void QuaternionT<T>::from_rotation(enum Rotation rotation)
 
     case ROTATION_CUSTOM_1:
     case ROTATION_CUSTOM_2:
-#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
-        // Do not support custom rotations on Periph
+#if AP_CUSTOMROTATIONS_ENABLED
+        // custom rotations not supported on eg. Periph by default
         AP::custom_rotations().from_rotation(rotation, *this);
         return;
 #endif

@@ -3,6 +3,8 @@
 
 #if HAL_WITH_MSP_DISPLAYPORT
 
+#define DISPLAYPORT_WRITE_BUFFER_MAX_LEN 30
+
 class AP_OSD_MSP_DisplayPort : public AP_OSD_Backend
 {
     using AP_OSD_Backend::AP_OSD_Backend;
@@ -14,6 +16,9 @@ public:
 
     //draw given text to framebuffer
     void write(uint8_t x, uint8_t y, const char* text) override;
+    
+    //draw given text to framebuffer using INAV fonts
+    void write_INAV(uint8_t x, uint8_t y, const char* text);
 
     //flush framebuffer to screen
     void flush() override;
@@ -53,6 +58,7 @@ protected:
 
 private:
     void setup_defaults(void);
+    char displayport_write_buffer[DISPLAYPORT_WRITE_BUFFER_MAX_LEN]; // terminator
 
     AP_MSP_Telem_Backend* _displayport;
 
@@ -146,6 +152,20 @@ private:
     static const uint8_t SYM_RNGFD = 0x7F;
     static const uint8_t SYM_LQ = 0xF8;
 
+    static const uint8_t SYM_SIDEBAR_L_ARROW = 0x02;
+    static const uint8_t SYM_SIDEBAR_R_ARROW = 0x03;
+    static const uint8_t SYM_SIDEBAR_A = 0x13;
+    static const uint8_t SYM_SIDEBAR_B = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_C = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_D = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_E = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_F = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_G = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_H = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_I = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_J = SYM_SIDEBAR_A;
+
+
     static constexpr uint8_t symbols[AP_OSD_NUM_SYMBOLS] {
         SYM_M,
         SYM_KM,
@@ -226,8 +246,22 @@ private:
         SYM_FENCE_DISABLED,
         SYM_RNGFD,
         SYM_LQ,
+        SYM_SIDEBAR_L_ARROW,
+        SYM_SIDEBAR_R_ARROW,
+        SYM_SIDEBAR_A,
+        SYM_SIDEBAR_B,
+        SYM_SIDEBAR_C,
+        SYM_SIDEBAR_D,
+        SYM_SIDEBAR_E,
+        SYM_SIDEBAR_F,
+        SYM_SIDEBAR_G,
+        SYM_SIDEBAR_H,
+        SYM_SIDEBAR_I,
+        SYM_SIDEBAR_J,
     };
-
+#if AP_MSP_INAV_FONTS_ENABLED
+    static const uint8_t ap_to_inav_symbols_map[256][2];
+#endif //AP_MSP_INAV_FONTS_ENABLED
     bool _blink_on;
 };
 #endif

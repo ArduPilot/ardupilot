@@ -106,6 +106,14 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_YAW_M_NSE", 7, AP_VisualOdom, _yaw_noise, 0.2f),
 
+    // @Param: _QUAL_MIN
+    // @DisplayName: Visual odometry minimum quality
+    // @Description: Visual odometry will only be sent to EKF if over this value. -1 to always send (even bad values), 0 to send if good or unknown
+    // @Units: %
+    // @Range: -1 100
+    // @User: Advanced
+    AP_GROUPINFO("_QUAL_MIN", 8, AP_VisualOdom, _quality_min, 0),
+
     AP_GROUPEND
 };
 
@@ -114,7 +122,7 @@ AP_VisualOdom::AP_VisualOdom()
     AP_Param::setup_object_defaults(this, var_info);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_singleton != nullptr) {
-        AP_HAL::panic("must be singleton");
+        AP_HAL::panic("AP_VisualOdom must be singleton");
     }
 #endif
     _singleton = this;
@@ -130,13 +138,13 @@ void AP_VisualOdom::init()
         break;
 #if AP_VISUALODOM_MAV_ENABLED
     case VisualOdom_Type::MAV:
-        _driver = new AP_VisualOdom_MAV(*this);
+        _driver = NEW_NOTHROW AP_VisualOdom_MAV(*this);
         break;
 #endif
 #if AP_VISUALODOM_INTELT265_ENABLED
     case VisualOdom_Type::IntelT265:
     case VisualOdom_Type::VOXL:
-        _driver = new AP_VisualOdom_IntelT265(*this);
+        _driver = NEW_NOTHROW AP_VisualOdom_IntelT265(*this);
         break;
 #endif
     }
@@ -161,6 +169,16 @@ bool AP_VisualOdom::healthy() const
     return _driver->healthy();
 }
 
+// return quality as a measure from 0 ~ 100
+// -1 means failed, 0 means unknown, 1 is worst, 100 is best
+int8_t AP_VisualOdom::quality() const
+{
+    if (_driver == nullptr) {
+        return 0;
+    }
+    return _driver->quality();
+}
+
 #if HAL_GCS_ENABLED
 // consume vision_position_delta mavlink messages
 void AP_VisualOdom::handle_vision_position_delta_msg(const mavlink_message_t &msg)
@@ -179,7 +197,8 @@ void AP_VisualOdom::handle_vision_position_delta_msg(const mavlink_message_t &ms
 
 // general purpose method to consume position estimate data and send to EKF
 // distances in meters, roll, pitch and yaw are in radians
-void AP_VisualOdom::handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float posErr, float angErr, uint8_t reset_counter)
+// quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
+void AP_VisualOdom::handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float posErr, float angErr, uint8_t reset_counter, int8_t quality)
 {
     // exit immediately if not enabled
     if (!enabled()) {
@@ -191,12 +210,13 @@ void AP_VisualOdom::handle_pose_estimate(uint64_t remote_time_us, uint32_t time_
         // convert attitude to quaternion and call backend
         Quaternion attitude;
         attitude.from_euler(roll, pitch, yaw);
-        _driver->handle_pose_estimate(remote_time_us, time_ms, x, y, z, attitude, posErr, angErr, reset_counter);
+        _driver->handle_pose_estimate(remote_time_us, time_ms, x, y, z, attitude, posErr, angErr, reset_counter, quality);
     }
 }
 
 // general purpose method to consume position estimate data and send to EKF
-void AP_VisualOdom::handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter)
+// quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
+void AP_VisualOdom::handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter, int8_t quality)
 {
     // exit immediately if not enabled
     if (!enabled()) {
@@ -205,11 +225,14 @@ void AP_VisualOdom::handle_pose_estimate(uint64_t remote_time_us, uint32_t time_
 
     // call backend
     if (_driver != nullptr) {
-        _driver->handle_pose_estimate(remote_time_us, time_ms, x, y, z, attitude, posErr, angErr, reset_counter);
+        _driver->handle_pose_estimate(remote_time_us, time_ms, x, y, z, attitude, posErr, angErr, reset_counter, quality);
     }
 }
 
-void AP_VisualOdom::handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter)
+// general purpose methods to consume velocity estimate data and send to EKF
+// velocity in NED meters per second
+// quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
+void AP_VisualOdom::handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter, int8_t quality)
 {
     // exit immediately if not enabled
     if (!enabled()) {
@@ -218,7 +241,7 @@ void AP_VisualOdom::handle_vision_speed_estimate(uint64_t remote_time_us, uint32
 
     // call backend
     if (_driver != nullptr) {
-        _driver->handle_vision_speed_estimate(remote_time_us, time_ms, vel, reset_counter);
+        _driver->handle_vision_speed_estimate(remote_time_us, time_ms, vel, reset_counter, quality);
     }
 }
 

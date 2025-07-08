@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
     // @DisplayName: Video Transmitter Band
     // @Description: Video Transmitter Band
     // @User: Standard
-    // @Values: 0:Band A,1:Band B,2:Band E,3:Airwave,4:RaceBand,5:Low RaceBand,6:1G3 Band A,7:1G3 Band B
+    // @Values: 0:Band A,1:Band B,2:Band E,3:Airwave,4:RaceBand,5:Low RaceBand,6:1G3 Band A,7:1G3 Band B,8:Band X,9:3G3 Band A,10:3G3 Band B
     AP_GROUPINFO("BAND",  4, AP_VideoTX, _band, 0),
 
     // @Param: FREQ
@@ -87,7 +87,7 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
 
 extern const AP_HAL::HAL& hal;
 
-const char * AP_VideoTX::band_names[] = {"A","B","E","F","R","L"};
+const char * AP_VideoTX::band_names[] = {"A","B","E","F","R","L","1G3_A","1G3_B","X","3G3_A","3G3_B"};
 
 const uint16_t AP_VideoTX::VIDEO_CHANNELS[AP_VideoTX::MAX_BANDS][VTX_MAX_CHANNELS] =
 {
@@ -96,9 +96,12 @@ const uint16_t AP_VideoTX::VIDEO_CHANNELS[AP_VideoTX::MAX_BANDS][VTX_MAX_CHANNEL
     { 5705, 5685, 5665, 5645, 5885, 5905, 5925, 5945}, /* Band E */
     { 5740, 5760, 5780, 5800, 5820, 5840, 5860, 5880}, /* Airwave */
     { 5658, 5695, 5732, 5769, 5806, 5843, 5880, 5917}, /* Race */
-    { 5621, 5584, 5547, 5510, 5473, 5436, 5399, 5362}, /* LO Race */
+    { 5362, 5399, 5436, 5473, 5510, 5547, 5584, 5621}, /* LO Race */
     { 1080, 1120, 1160, 1200, 1240, 1280, 1320, 1360}, /* Band 1G3_A */
-    { 1080, 1120, 1160, 1200, 1258, 1280, 1320, 1360}  /* Band 1G3_B */
+    { 1080, 1120, 1160, 1200, 1258, 1280, 1320, 1360}, /* Band 1G3_B */
+    { 4990, 5020, 5050, 5080, 5110, 5140, 5170, 5200}, /* Band X */
+    { 3330, 3350, 3370, 3390, 3410, 3430, 3450, 3470}, /* Band 3G3_A */
+    { 3170, 3190, 3210, 3230, 3250, 3270, 3290, 3310}  /* Band 3G3_B */
 };
 
 // mapping of power level to milliwatt to dbm
@@ -112,7 +115,7 @@ AP_VideoTX::PowerLevel AP_VideoTX::_power_levels[VTX_MAX_POWER_LEVELS] = {
     { 1,    200,  23, 16   },
     { 0x12, 400,  26, 0xFF }, // only in SA 2.1
     { 2,    500,  27, 25   },
-    //{ 0x13, 600,  28, 0xFF },
+    { 0x12, 600,  28, 0xFF }, // Tramp lies above power levels and always returns 25/100/200/400/600
     { 3,    800,  29, 40   },
     { 0x13, 1000, 30, 0xFF }, // only in SA 2.1
     { 0xFF, 0,    0,  0XFF, PowerActive::Inactive }  // slot reserved for a custom power level
@@ -247,7 +250,7 @@ uint8_t AP_VideoTX::update_power_dbm(uint8_t power, PowerActive active)
     _power_levels[VTX_MAX_POWER_LEVELS-1].dbm = power;
     _power_levels[VTX_MAX_POWER_LEVELS-1].level = 255;
     _power_levels[VTX_MAX_POWER_LEVELS-1].dac = 255;
-    _power_levels[VTX_MAX_POWER_LEVELS-1].mw = uint16_t(roundf(powf(10, power / 10.0f)));
+    _power_levels[VTX_MAX_POWER_LEVELS-1].mw = uint16_t(roundf(powf(10, power * 0.1f)));
     _power_levels[VTX_MAX_POWER_LEVELS-1].active = active;
     debug("non-standard power %ddbm -> %dmw", power, _power_levels[VTX_MAX_POWER_LEVELS-1].mw);
     return VTX_MAX_POWER_LEVELS-1;
@@ -341,13 +344,6 @@ void AP_VideoTX::update(void)
         return;
     }
 
-#if HAL_CRSF_TELEM_ENABLED
-    AP_CRSF_Telem* crsf = AP::crsf_telem();
-
-    if (crsf != nullptr) {
-        crsf->update();
-    }
-#endif
     // manipulate pitmode if pitmode-on-disarm or power-on-arm is set
     if (has_option(VideoOptions::VTX_PITMODE_ON_DISARM) || has_option(VideoOptions::VTX_PITMODE_UNTIL_ARM)) {
         if (hal.util->get_soft_armed() && has_option(VideoOptions::VTX_PITMODE)) {

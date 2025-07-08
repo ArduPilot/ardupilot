@@ -10,6 +10,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Arming/AP_Arming.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -65,7 +66,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("DELAY_MS", 5, AP_Parachute, _delay_ms, AP_PARACHUTE_RELEASE_DELAY_MS),
-    
+
     // @Param: CRT_SINK
     // @DisplayName: Critical sink speed rate in m/s to trigger emergency parachute
     // @Description: Release parachute when critical sink rate is reached
@@ -78,9 +79,9 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Parachute options
     // @Description: Optional behaviour for parachute
-    // @Bitmask: 0:hold open forever after release
+    // @Bitmask: 0:hold open forever after release,1:skip disarm before parachute release
     // @User: Standard
-    AP_GROUPINFO("OPTIONS", 7, AP_Parachute, _options, 0),
+    AP_GROUPINFO("OPTIONS", 7, AP_Parachute, _options, AP_PARACHUTE_OPTIONS_DEFAULT),
 
     AP_GROUPEND
 };
@@ -106,6 +107,12 @@ void AP_Parachute::release()
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Parachute: Released");
     LOGGER_WRITE_EVENT(LogEvent::PARACHUTE_RELEASED);
+
+    bool need_disarm = (_options.get() & uint32_t(Options::SkipDisarmBeforeParachuteRelease)) == 0;
+    if (need_disarm) {
+        // stop motors to avoid parachute tangling
+        AP::arming().disarm(AP_Arming::Method::PARACHUTE_RELEASE);
+    }
 
     // set release time to current system time
     if (_release_time == 0) {

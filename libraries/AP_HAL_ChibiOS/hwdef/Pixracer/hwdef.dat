@@ -1,13 +1,11 @@
 # hw definition file for processing by chibios_hwdef.py for the
 # mRo Pixracer board. This is a fmuv4 board
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4
-
 # MCU class and specific type
 MCU STM32F4xx STM32F427xx
 
-# board ID for firmware load
-APJ_BOARD_ID 11
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_PX4_FMU_V4
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
@@ -19,7 +17,6 @@ STM32_ST_USE_TIMER 5
 # flash size
 FLASH_SIZE_KB 2048
 
-env OPTIMIZE -O2
 
 # serial port for stdout disabled, use USB console
 # STDOUT_SERIAL SD7
@@ -172,8 +169,6 @@ SPIDEV hmc5843     SPI1 DEVID5  MAG_CS     MODE3  11*MHZ  11*MHZ
 SPIDEV lis3mdl     SPI1 DEVID5  MAG_CS     MODE3 500*KHZ 500*KHZ
 SPIDEV ramtron     SPI2 DEVID10 FRAM_CS    MODE3   8*MHZ   8*MHZ
 
-define HAL_CHIBIOS_ARCH_FMUV4 1
-
 define HAL_STORAGE_SIZE        16384
 
 # enable RAMTROM parameter storage
@@ -183,19 +178,16 @@ define HAL_WITH_RAMTRON 1
 define HAL_OS_FATFS_IO 1
 
 # pixracer has 3 LEDs, Red, Green, Blue
-define HAL_HAVE_PIXRACER_LED
-
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
 # LED setup for PixracerLED driver
 PB11 LED_RED   OUTPUT GPIO(0)
 PB1  LED_GREEN OUTPUT GPIO(1)
 PB3  LED_BLUE  OUTPUT GPIO(2)
 
-define HAL_GPIO_A_LED_PIN 0
-define HAL_GPIO_B_LED_PIN 1
-define HAL_GPIO_C_LED_PIN 2
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 0
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 1
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 2
 
 # battery setup
 define HAL_BATT_VOLT_PIN 2
@@ -218,7 +210,7 @@ COMPASS LIS3MDL SPI:lis3mdl false ROTATION_NONE
 COMPASS AK8963:probe_mpu9250 0 ROTATION_ROLL_180_YAW_90
 
 # also probe all types of external I2C compasses
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES 1
 
 # one barometer
-BARO MS56XX SPI:ms5611_int
+BARO MS5611 SPI:ms5611_int

@@ -12,12 +12,16 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Code by Charles Villard
+ * Code by Charles Villard, ARg and Bayu Laksono
  */
 
 #pragma once
 
 #include "AP_HAL_ESP32.h"
+
+#include "esp_adc/adc_oneshot.h"
+#include "esp_adc/adc_cali.h"
+#include "esp_adc/adc_cali_scheme.h"
 
 #if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 
@@ -30,7 +34,7 @@ class AnalogSource : public AP_HAL::AnalogSource
 {
 public:
     friend class AnalogIn;
-    AnalogSource(int16_t ardupin,int16_t pin,float scaler, float initial_value, uint8_t unit);
+    AnalogSource(int16_t ardupin, adc_channel_t adc_channel, float scaler, float initial_value);
     float read_average() override;
     float read_latest() override;
     bool set_pin(uint8_t p) override;
@@ -42,18 +46,16 @@ public:
 
 private:
     //ADC number (1 or 2). ADC2 is unavailable when WIFI on
-    uint8_t _unit;
+    adc_unit_t _adc_unit;
 
-    //adc Pin number (1-8)
-    // gpio-adc lower level pin name
-    int16_t _pin;
+    //ADC channel
+    adc_channel_t _adc_channel;
 
     //human readable Pin number used in ardu params
     int16_t _ardupin;
     //scaling from ADC count to Volts
-    int16_t _scaler;
-    // gpio pin number on esp32:
-    gpio_num_t _gpio;
+    float _scaler;
+    adc_cali_handle_t _adc_cali_handle;
 
     //Current computed value (average)
     float _value;
@@ -64,6 +66,8 @@ private:
     //Sum of fetched values
     float _sum_value;
 
+    bool adc_init();
+    float adc_read();
     void _add_value();
 
     HAL_Semaphore _semaphore;
@@ -93,7 +97,6 @@ private:
         uint8_t channel;  // adc1 pin offset
         float scaling;
         uint8_t ardupin; // eg 3 , as typed into an ardupilot parameter
-        uint8_t gpio; // eg 32 for D32 esp pin number/s
     };
 
     static const pin_info pin_config[];

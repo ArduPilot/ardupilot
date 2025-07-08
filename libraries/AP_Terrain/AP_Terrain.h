@@ -14,12 +14,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-#include <AP_Filesystem/AP_Filesystem_config.h>
-
-#ifndef AP_TERRAIN_AVAILABLE
-#define AP_TERRAIN_AVAILABLE AP_FILESYSTEM_FILE_READING_ENABLED
-#endif
+#include "AP_Terrain_config.h"
 
 #if AP_TERRAIN_AVAILABLE
 
@@ -51,7 +46,9 @@
 #define TERRAIN_GRID_BLOCK_SIZE_Y (TERRAIN_GRID_MAVLINK_SIZE*TERRAIN_GRID_BLOCK_MUL_Y)
 
 // number of grid_blocks in the LRU memory cache
+#ifndef TERRAIN_GRID_BLOCK_CACHE_SIZE
 #define TERRAIN_GRID_BLOCK_CACHE_SIZE 12
+#endif
 
 // format of grid on disk
 #define TERRAIN_GRID_FORMAT_VERSION 1
@@ -106,15 +103,20 @@ public:
 
     bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) const;
 
+#if HAL_GCS_ENABLED
     // send any pending terrain request message
     bool send_cache_request(mavlink_channel_t chan);
     void send_request(mavlink_channel_t chan);
 
     // handle terrain data and reports from GCS
+    // send a terrain report for the current location, extrapolating height as we do for navigation:
+    void send_report(mavlink_channel_t chan);
+    // send a terrain report or Location loc
     void send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate);
     void handle_data(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_terrain_check(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_terrain_data(const mavlink_message_t &msg);
+#endif
 
     /*
       find the terrain height in meters above sea level for a location
@@ -316,11 +318,13 @@ private:
     */
     bool check_bitmap(const struct grid_block &grid, uint8_t idx_x, uint8_t idx_y);
 
+#if HAL_GCS_ENABLED
     /*
       request any missing 4x4 grids from a block
     */
     bool request_missing(mavlink_channel_t chan, struct grid_cache &gcache);
     bool request_missing(mavlink_channel_t chan, const struct grid_info &info);
+#endif
 
     /*
       look for blocks that need to be read/written to disk
@@ -371,6 +375,7 @@ private:
     AP_Int16 grid_spacing; // meters between grid points
     AP_Int16 options; // option bits
     AP_Float offset_max;
+    AP_Int16 config_cache_size;
 
     enum class Options {
         DisableDownload = (1U<<0),
@@ -391,8 +396,10 @@ private:
     volatile enum DiskIoState disk_io_state;
     union grid_io_block disk_block;
 
+#if HAL_GCS_ENABLED
     // last time we asked for more grids
     uint32_t last_request_time_ms[MAVLINK_COMM_NUM_BUFFERS];
+#endif
 
     static const uint64_t bitmap_mask = (((uint64_t)1U)<<(TERRAIN_GRID_BLOCK_MUL_X*TERRAIN_GRID_BLOCK_MUL_Y)) - 1;
 

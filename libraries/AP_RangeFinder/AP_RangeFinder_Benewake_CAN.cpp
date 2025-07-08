@@ -5,30 +5,6 @@
 
 #if AP_RANGEFINDER_BENEWAKE_CAN_ENABLED
 
-RangeFinder_MultiCAN *AP_RangeFinder_Benewake_CAN::multican;
-
-/*
-  constructor
- */
-AP_RangeFinder_Benewake_CAN::AP_RangeFinder_Benewake_CAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    AP_RangeFinder_Backend_CAN(_state, _params)
-{
-    if (multican == nullptr) {
-        multican = new RangeFinder_MultiCAN(AP_CAN::Protocol::Benewake, "Benewake MultiCAN");
-        if (multican == nullptr) {
-            AP_BoardConfig::allocation_error("Benewake_CAN");
-        }
-    }
-
-    {
-        // add to linked list of drivers
-        WITH_SEMAPHORE(multican->sem);
-        auto *prev = multican->drivers;
-        next = prev;
-        multican->drivers = this;
-    }
-}
-
 // handler for incoming frames for H30 radar
 bool AP_RangeFinder_Benewake_CAN::handle_frame_H30(AP_HAL::CANFrame &frame)
 {

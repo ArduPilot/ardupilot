@@ -299,29 +299,29 @@ void Loweheiser::update_send()
     const float volt_batt = base_supply_voltage - (3 * (_current_current / max_current));
 
     const mavlink_loweheiser_gov_efi_t loweheiser_efi_gov{
-        volt_batt, // volt_batt
-        curr_batt, // curr_batt
-        curr_gen, // curr_gen
-        curr_rot, // curr_rot
-        efi_fuel_level, // fuel_level in litres
-        throttle, // throttle
-        UINT32_MAX, // runtime in seconds
-        INT32_MAX, // time until maintenance
-        std::numeric_limits<float>::quiet_NaN(),  // rectifier temperature
-        std::numeric_limits<float>::quiet_NaN(),  // generator temperature
-        efi_batt, // efi_batt
-        generatorengine.current_rpm, // efi_rpm
-        efi_pw, // efi_pw
-        efi_fuel_flow, // efi_fuelflow
-        efi_fuel_consumed, // efi_fuel_consumed
-        efi_baro, // efi_baro
-        efi_mat, // efi_mat
-        efi_clt, // efi_clt
-        efi_tps, // efi_tps
-        efi_egt, // efi_exhaust_gas_temperature
-        1,  // EFI index
-        0, // generator_status
-        0  // EFI status
+    volt_batt: volt_batt, // volt_batt
+    curr_batt: curr_batt, // curr_batt
+    curr_gen: curr_gen, // curr_gen
+    curr_rot: curr_rot, // curr_rot
+    fuel_level: efi_fuel_level, // fuel_level in litres
+    throttle: throttle, // throttle
+    runtime: UINT32_MAX, // runtime in seconds
+    until_maintenance: INT32_MAX, // time until maintenance
+    rectifier_temp: std::numeric_limits<float>::quiet_NaN(),  // rectifier temperature
+    generator_temp: std::numeric_limits<float>::quiet_NaN(),  // generator temperature
+    efi_batt: efi_batt, // efi_batt
+    efi_rpm: generatorengine.current_rpm, // efi_rpm
+    efi_pw: efi_pw, // efi_pw
+    efi_fuel_flow: efi_fuel_flow, // efi_fuelflow
+    efi_fuel_consumed: efi_fuel_consumed, // efi_fuel_consumed
+    efi_baro: efi_baro, // efi_baro
+    efi_mat: efi_mat, // efi_mat
+    efi_clt: efi_clt, // efi_clt
+    efi_tps: efi_tps, // efi_tps
+    efi_exhaust_gas_temperature: efi_egt, // efi_exhaust_gas_temperature
+    generator_status: 0, // generator_status
+    efi_status: 0, // EFI status
+    efi_index: 1,  // EFI index
     };
 
     mavlink_message_t msg;

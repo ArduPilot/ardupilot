@@ -69,7 +69,7 @@ public:
     void update(const struct sitl_input &input) override;
 
     static Aircraft *create(const char *frame_str) {
-        return new Calibration(frame_str);
+        return NEW_NOTHROW Calibration(frame_str);
     }
 
 private:

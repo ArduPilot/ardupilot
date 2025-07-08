@@ -34,25 +34,18 @@ void Plane::check_home_alt_change(void)
     if (home_alt_cm != auto_state.last_home_alt_cm && hal.util->get_soft_armed()) {
         // cope with home altitude changing
         const int32_t alt_change_cm = home_alt_cm - auto_state.last_home_alt_cm;
-        if (next_WP_loc.terrain_alt) {
-            /*
-              next_WP_loc for terrain alt WP are quite strange. They
-              have terrain_alt=1, but also have relative_alt=0 and
-              have been calculated to be relative to home. We need to
-              adjust for the change in home alt
-             */
-            next_WP_loc.alt += alt_change_cm;
-        }
+        fix_terrain_WP(next_WP_loc, __LINE__);
+
         // reset TECS to force the field elevation estimate to reset
-        TECS_controller.reset();
+        TECS_controller.offset_altitude(alt_change_cm * 0.01f);
     }
     auto_state.last_home_alt_cm = home_alt_cm;
 }
 
 /*
-  setup for a gradual glide slope to the next waypoint, if appropriate
+  setup for a gradual altitude slope to the next waypoint, if appropriate
  */
-void Plane::setup_glide_slope(void)
+void Plane::setup_alt_slope(void)
 {
     // establish the distance we are travelling to the next waypoint,
     // for calculating out rate of change of altitude
@@ -66,6 +59,9 @@ void Plane::setup_glide_slope(void)
       the new altitude as quickly as possible.
      */
     switch (control_mode->mode_number()) {
+#if MODE_AUTOLAND_ENABLED
+    case Mode::Number::AUTOLAND:
+#endif
     case Mode::Number::RTL:
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
@@ -81,6 +77,12 @@ void Plane::setup_glide_slope(void)
         break;
 
     case Mode::Number::AUTO:
+        // climb without doing slope if option is enabled
+        if (!above_location_current(next_WP_loc) && plane.flight_option_enabled(FlightOptions::IMMEDIATE_CLIMB_IN_AUTO)) {
+            reset_offset_altitude();
+            break;
+        }
+
         // we only do glide slide handling in AUTO when above 20m or
         // when descending. The 20 meter threshold is arbitrary, and
         // is basically to prevent situations where we try to slowly
@@ -115,13 +117,23 @@ int32_t Plane::get_RTL_altitude_cm() const
  */
 float Plane::relative_ground_altitude(bool use_rangefinder_if_available, bool use_terrain_if_available)
 {
+#if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+   float height_AGL;
+   // use external HAGL if available
+   if (get_external_HAGL(height_AGL)) {
+       return height_AGL;
+   }
+#endif // AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+
+#if AP_RANGEFINDER_ENABLED
    if (use_rangefinder_if_available && rangefinder_state.in_range) {
         return rangefinder_state.height_estimate;
    }
+#endif
 
-#if HAL_QUADPLANE_ENABLED
+#if HAL_QUADPLANE_ENABLED && AP_RANGEFINDER_ENABLED
    if (use_rangefinder_if_available && quadplane.in_vtol_land_final() &&
-       rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeLow) {
+       rangefinder.status_orient(rangefinder_orientation()) == RangeFinder::Status::OutOfRangeLow) {
        // a special case for quadplane landing when rangefinder goes
        // below minimum. Consider our height above ground to be zero
        return 0;
@@ -173,7 +185,7 @@ void Plane::set_target_altitude_current(void)
     // target altitude
     target_altitude.amsl_cm = current_loc.alt;
 
-    // reset any glide slope offset
+    // reset any altitude slope offset
     reset_offset_altitude();
 
 #if AP_TERRAIN_AVAILABLE
@@ -189,17 +201,6 @@ void Plane::set_target_altitude_current(void)
         target_altitude.terrain_following = false;        
     }
 #endif
-}
-
-/*
-  set the target altitude to the current altitude, with ALT_OFFSET adjustment
- */
-void Plane::set_target_altitude_current_adjusted(void)
-{
-    set_target_altitude_current();
-
-    // use adjusted_altitude_cm() to take account of ALTITUDE_OFFSET
-    target_altitude.amsl_cm = adjusted_altitude_cm();
 }
 
 /*
@@ -227,10 +228,6 @@ void Plane::set_target_altitude_location(const Location &loc)
     if (loc.terrain_alt && terrain.height_above_terrain(height, true)) {
         target_altitude.terrain_following = true;
         target_altitude.terrain_alt_cm = loc.alt;
-        if (!loc.relative_alt) {
-            // it has home added, remove it
-            target_altitude.terrain_alt_cm -= home.alt;
-        }
     } else {
         target_altitude.terrain_following = false;
     }
@@ -252,8 +249,10 @@ int32_t Plane::relative_target_altitude_cm(void)
         target_altitude.lookahead = lookahead_adjustment();
         relative_home_height += target_altitude.lookahead;
 
+#if AP_RANGEFINDER_ENABLED
         // correct for rangefinder data
         relative_home_height += rangefinder_correction();
+#endif
 
         // we are following terrain, and have terrain data for the
         // current location. Use it.
@@ -262,7 +261,9 @@ int32_t Plane::relative_target_altitude_cm(void)
 #endif
     int32_t relative_alt = target_altitude.amsl_cm - home.alt;
     relative_alt += mission_alt_offset()*100;
+#if AP_RANGEFINDER_ENABLED
     relative_alt += rangefinder_correction() * 100;
+#endif
     return relative_alt;
 }
 
@@ -279,6 +280,7 @@ void Plane::change_target_altitude(int32_t change_cm)
     }
 #endif
 }
+
 /*
   change target altitude by a proportion of the target altitude offset
   (difference in height to next WP from previous WP). proportion
@@ -295,18 +297,58 @@ void Plane::set_target_altitude_proportion(const Location &loc, float proportion
     set_target_altitude_location(loc);
     proportion = constrain_float(proportion, 0.0f, 1.0f);
     change_target_altitude(-target_altitude.offset_cm*proportion);
-    //rebuild the glide slope if we are above it and supposed to be climbing
-    if(g.glide_slope_threshold > 0) {
-        if(target_altitude.offset_cm > 0 && calc_altitude_error_cm() < -100 * g.glide_slope_threshold) {
+
+    // rebuild the altitude slope if we are above it and supposed to be climbing
+    if (g.alt_slope_max_height > 0) {
+        if (target_altitude.offset_cm > 0 && calc_altitude_error_cm() < -100 * g.alt_slope_max_height) {
             set_target_altitude_location(loc);
             set_offset_altitude_location(current_loc, loc);
             change_target_altitude(-target_altitude.offset_cm*proportion);
-            //adjust the new target offset altitude to reflect that we are partially already done
-            if(proportion > 0.0f)
+            // adjust the new target offset altitude to reflect that we are partially already done
+            if (proportion > 0.0f)
                 target_altitude.offset_cm = ((float)target_altitude.offset_cm)/proportion;
         }
     }
 }
+
+#if AP_TERRAIN_AVAILABLE
+/*
+  change target altitude along a path between two locations
+  (prev_WP_loc and next_WP_loc) where the second location is a terrain
+  altitude
+ */
+bool Plane::set_target_altitude_proportion_terrain(void)
+{
+    if (!next_WP_loc.terrain_alt ||
+        !next_WP_loc.relative_alt) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return false;
+    }
+    /*
+      we first need to get the height of the terrain at prev_WP_loc
+     */
+    float prev_WP_height_terrain;
+    if (!plane.prev_WP_loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN,
+                                     prev_WP_height_terrain)) {
+        return false;
+    }
+    // and next_WP_loc alt as terrain
+    float next_WP_height_terrain;
+    if (!plane.next_WP_loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN,
+                                     next_WP_height_terrain)) {
+        return false;
+    }
+    Location loc = next_WP_loc;
+    const auto alt = linear_interpolate(prev_WP_height_terrain, next_WP_height_terrain,
+                                        plane.auto_state.wp_proportion, 0, 1);
+
+    loc.set_alt_m(alt, Location::AltFrame::ABOVE_TERRAIN);
+
+    set_target_altitude_location(loc);
+
+    return true;
+}
+#endif // AP_TERRAIN_AVAILABLE
 
 /*
   constrain target altitude to be between two locations. Used to
@@ -392,7 +434,7 @@ void Plane::check_fbwb_altitude(void)
 }
 
 /*
-  reset the altitude offset used for glide slopes
+  reset the altitude offset used for altitude slopes
  */
 void Plane::reset_offset_altitude(void)
 {
@@ -401,14 +443,18 @@ void Plane::reset_offset_altitude(void)
 
 
 /*
-  reset the altitude offset used for glide slopes, based on difference
-  between altitude at a destination and a specified start altitude. If
-  destination is above the starting altitude then the result is
-  positive.
+  reset the altitude offset used for slopes, based on difference between
+  altitude at a destination and a specified start altitude. If destination is
+  above the starting altitude then the result is positive.
  */
 void Plane::set_offset_altitude_location(const Location &start_loc, const Location &destination_loc)
 {
-    target_altitude.offset_cm = destination_loc.alt - start_loc.alt;
+    ftype alt_difference_m = 0;
+    if (destination_loc.get_height_above(start_loc, alt_difference_m)) {
+        target_altitude.offset_cm = alt_difference_m * 100;
+    } else {
+        target_altitude.offset_cm = 0;
+    }
 
 #if AP_TERRAIN_AVAILABLE
     /*
@@ -425,20 +471,19 @@ void Plane::set_offset_altitude_location(const Location &start_loc, const Locati
 #endif
 
     if (flight_stage != AP_FixedWing::FlightStage::LAND) {
-        // if we are within GLIDE_SLOPE_MIN meters of the target altitude
-        // then reset the offset to not use a glide slope. This allows for
-        // more accurate flight of missions where the aircraft may lose or
-        // gain a bit of altitude near waypoint turn points due to local
-        // terrain changes
-        if (g.glide_slope_min <= 0 ||
-            labs(target_altitude.offset_cm)*0.01f < g.glide_slope_min) {
+        // if we are within ALT_SLOPE_MIN meters of the target altitude then
+        // reset the offset to not use an altitude slope. This allows for more
+        // accurate flight of missions where the aircraft may lose or gain a bit
+        // of altitude near waypoint turn points due to local terrain changes
+        if (g.alt_slope_min <= 0 ||
+            labs(target_altitude.offset_cm)*0.01f < g.alt_slope_min) {
             target_altitude.offset_cm = 0;
         }
     }
 }
 
 /*
-  return true if current_loc is above loc. Used for glide slope
+  return true if current_loc is above loc. Used for altitude slope
   calculations.
 
   "above" is simple if we are not terrain following, as it just means
@@ -499,9 +544,9 @@ int32_t Plane::adjusted_altitude_cm(void)
 }
 
 /*
-  return home-relative altitude adjusted for ALT_OFFSET This is useful
+  return home-relative altitude adjusted for ALT_OFFSET. This is useful
   during long flights to account for barometer changes from the GCS,
-  or to adjust the flying height of a long mission
+  or to adjust the flying height of a long mission.
  */
 int32_t Plane::adjusted_relative_altitude_cm(void)
 {
@@ -608,6 +653,7 @@ float Plane::lookahead_adjustment(void)
 }
 
 
+#if AP_RANGEFINDER_ENABLED
 /*
   correct target altitude using rangefinder data. Returns offset in
   meters to correct target altitude. A positive number means we need
@@ -657,16 +703,36 @@ void Plane::rangefinder_terrain_correction(float &height)
  */
 void Plane::rangefinder_height_update(void)
 {
-    float distance = rangefinder.distance_orient(ROTATION_PITCH_270);
-    
-    if ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) && ahrs.home_is_set()) {
+    const auto orientation = rangefinder_orientation();
+    bool range_ok = rangefinder.status_orient(orientation) == RangeFinder::Status::Good;
+    float distance = rangefinder.distance_orient(orientation);
+    float corrected_distance = distance;
+
+    /*
+      correct distance for attitude
+     */
+    if (range_ok) {
+        // correct the range for attitude
+        const auto &dcm = ahrs.get_rotation_body_to_ned();
+
+        Vector3f v{corrected_distance, 0, 0};
+        v.rotate(orientation);
+        v = dcm * v;
+
+        if (!is_positive(v.z)) {
+            // not pointing at the ground
+            range_ok = false;
+        } else {
+            corrected_distance = v.z;
+        }
+    }
+
+    if (range_ok && ahrs.home_is_set()) {
         if (!rangefinder_state.have_initial_reading) {
             rangefinder_state.have_initial_reading = true;
             rangefinder_state.initial_range = distance;
         }
-        // correct the range for attitude (multiply by DCM.c.z, which
-        // is cos(roll)*cos(pitch))
-        rangefinder_state.height_estimate = distance * ahrs.get_rotation_body_to_ned().c.z;
+        rangefinder_state.height_estimate = corrected_distance;
 
         rangefinder_terrain_correction(rangefinder_state.height_estimate);
 
@@ -677,10 +743,10 @@ void Plane::rangefinder_height_update(void)
         // to misconfiguration or a faulty sensor
         if (rangefinder_state.in_range_count < 10) {
             if (!is_equal(distance, rangefinder_state.last_distance) &&
-                fabsf(rangefinder_state.initial_range - distance) > 0.05f * rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)*0.01f) {
+                fabsf(rangefinder_state.initial_range - distance) > 0.05f * rangefinder.max_distance_orient(rangefinder_orientation())) {
                 rangefinder_state.in_range_count++;
             }
-            if (fabsf(rangefinder_state.last_distance - distance) > rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)*0.01*0.2) {
+            if (fabsf(rangefinder_state.last_distance - distance) > rangefinder.max_distance_orient(rangefinder_orientation())*0.2) {
                 // changes by more than 20% of full range will reset counter
                 rangefinder_state.in_range_count = 0;
             }
@@ -711,9 +777,8 @@ void Plane::rangefinder_height_update(void)
     }
 
     if (rangefinder_state.in_range) {
-        // base correction is the difference between baro altitude and
-        // rangefinder estimate
-        float correction = adjusted_relative_altitude_cm()*0.01 - rangefinder_state.height_estimate;
+        // If not using terrain data, we expect zero correction when our height above target is equal to our rangefinder measurement
+        float correction = height_above_target() - rangefinder_state.height_estimate;
 
 #if AP_TERRAIN_AVAILABLE
         // if we are terrain following then correction is based on terrain data
@@ -748,6 +813,7 @@ void Plane::rangefinder_height_update(void)
         
     }
 }
+#endif  // AP_RANGEFINDER_ENABLED
 
 /*
   determine if Non Auto Terrain Disable is active and allowed in present control mode
@@ -776,6 +842,9 @@ const Plane::TerrainLookupTable Plane::Terrain_lookup[] = {
     {Mode::Number::QLAND, terrain_bitmask::QLAND},
     {Mode::Number::QLOITER, terrain_bitmask::QLOITER},
 #endif
+#if MODE_AUTOLAND_ENABLED
+    {Mode::Number::AUTOLAND, terrain_bitmask::AUTOLAND},
+#endif
 };
 
 bool Plane::terrain_enabled_in_current_mode() const
@@ -803,3 +872,88 @@ bool Plane::terrain_enabled_in_mode(Mode::Number num) const
     return false;
 }
 #endif
+
+#if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+/*
+  handle a MAV_CMD_SET_HAGL request. The accuracy is ignored
+ */
+void Plane::handle_external_hagl(const mavlink_command_int_t &packet)
+{
+    auto &hagl = plane.external_hagl;
+    hagl.hagl = packet.param1;
+    hagl.last_update_ms = AP_HAL::millis();
+    hagl.timeout_ms = uint32_t(packet.param3 * 1000);
+}
+
+/*
+  get HAGL from external source if current
+ */
+bool Plane::get_external_HAGL(float &height_agl)
+{
+    auto &hagl = plane.external_hagl;
+    if (hagl.last_update_ms != 0) {
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - hagl.last_update_ms <= hagl.timeout_ms) {
+            height_agl = hagl.hagl;
+            return true;
+        }
+        hagl.last_update_ms = 0;
+    }
+    return false;
+}
+#endif // AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+
+/*
+  get height for landing. Set using_rangefinder to true if a rangefinder
+  or external HAGL source is active
+ */
+float Plane::get_landing_height(bool &rangefinder_active)
+{
+    float height;
+
+#if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+    // if external HAGL is active use that
+    if (get_external_HAGL(height)) {
+        // ensure no terrain correction is applied - that is the job
+        // of the external system if it is wanted
+        auto_state.terrain_correction = 0;
+
+        // an external HAGL is considered to be a type of rangefinder
+        rangefinder_active = true;
+        return height;
+    }
+#endif
+
+    // get basic height above target
+    height = height_above_target();
+    rangefinder_active = false;
+
+#if AP_RANGEFINDER_ENABLED
+    // possibly correct with rangefinder
+    height -= rangefinder_correction();
+    rangefinder_active = g.rangefinder_landing && rangefinder_state.in_range;
+#endif
+
+    return height;
+}
+
+/*
+  if a terrain location doesn't have the relative_alt flag set
+  then fix the alt and trigger a flow of control error
+ */
+void Plane::fix_terrain_WP(Location &loc, uint32_t linenum)
+{
+    if (loc.terrain_alt && !loc.relative_alt) {
+        AP::internalerror().error(AP_InternalError::error_t::flow_of_control, linenum);
+        /*
+          we definitely have a bug, now we need to guess what was
+          really meant. The lack of the relative_alt flag notionally
+          means that home.alt has been added to loc.alt, so remove it,
+          but only if it doesn't lead to a negative terrain altitude
+         */
+        if (loc.alt - home.alt > -500) {
+            loc.alt -= home.alt;
+        }
+        loc.relative_alt = true;
+    }
+}

@@ -28,7 +28,7 @@ class AP_TemperatureSensor_DroneCAN : public AP_TemperatureSensor_Backend {
 public:
     AP_TemperatureSensor_DroneCAN(AP_TemperatureSensor &front, AP_TemperatureSensor::TemperatureSensor_State &state, AP_TemperatureSensor_Params &params);
 
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
     // Don't do anything in update, but still need to override the pure virtual method.
     void update(void) override {};

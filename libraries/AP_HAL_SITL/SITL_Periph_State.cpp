@@ -40,6 +40,9 @@ using namespace HALSITL;
     };
 
 void SITL_State::init(int argc, char * const argv[]) {
+    const int BASE_PORT = 5760;
+    _base_port = BASE_PORT;
+
     int opt;
     const struct GetOptLong::option options[] = {
         {"help",            false,  0, 'h'},
@@ -69,6 +72,9 @@ void SITL_State::init(int argc, char * const argv[]) {
         switch (opt) {
         case 'I':
             _instance = atoi(gopt.optarg);
+            if (_base_port == BASE_PORT) {
+                _base_port += _instance * 10;
+            }
             break;
         case 'M':
             printf("Running in Maintenance Mode\n");
@@ -112,7 +118,7 @@ void SITL_State::init(int argc, char * const argv[]) {
 
     printf("Running Instance: %d\n", _instance);
 
-    sitl_model = new SimMCast("");
+    sitl_model = NEW_NOTHROW SimMCast("");
 
     _sitl = AP::sitl();
 
@@ -123,11 +129,15 @@ void SITL_State::init(int argc, char * const argv[]) {
 void SITL_State::wait_clock(uint64_t wait_time_usec)
 {
     while (AP_HAL::micros64() < wait_time_usec) {
-        struct sitl_input input {};
-        sitl_model->update(input);
-        sim_update();
-        update_voltage_current(input, 0);
-        usleep(100);
+        if (hal.scheduler->in_main_thread() ||
+            Scheduler::from(hal.scheduler)->semaphore_wait_hack_required()) {
+            struct sitl_input input {};
+            sitl_model->update(input); // delays up to 1 millisecond
+            sim_update();
+            update_voltage_current(input, 0);
+        } else {
+            usleep(1000);
+        }
     }
 }
 
@@ -195,7 +205,7 @@ void SimMCast::multicast_read(void)
         printf("Waiting for multicast state\n");
     }
     struct SITL::sitl_fdm state;
-    while (sock.recv((void*)&state, sizeof(state), 0) != sizeof(state)) {
+    while (sock.recv((void*)&state, sizeof(state), 1) != sizeof(state)) {
         // nop
     }
     if (_sitl->state.timestamp_us == 0) {

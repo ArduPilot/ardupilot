@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma GCC optimize("Os")
+
 #include "AP_Generator_IE_FuelCell.h"
 
 #if AP_GENERATOR_IE_ENABLED
@@ -33,7 +35,7 @@ void AP_Generator_IE_FuelCell::init()
     _health_warn_last_ms = AP_HAL::millis();
 }
 
-// Update fuelcell, expected to be called at 20hz
+// Update fuelcell, expected to be called at 10hz
 void AP_Generator_IE_FuelCell::update()
 {
     if (_uart == nullptr) {
@@ -42,12 +44,10 @@ void AP_Generator_IE_FuelCell::update()
 
     const uint32_t now = AP_HAL::millis();
 
-   // Read any available data
-    uint32_t nbytes = MIN(_uart->available(),30u);
-    while (nbytes-- > 0) {
-        const int16_t c = _uart->read();
-        if (c < 0) {
-            // Nothing to decode
+    // Read any available data
+    for (uint8_t i = 0; i < UINT8_MAX; i++) {  // process at most n bytes
+        uint8_t c;
+        if (!_uart->read(c)) {
             break;
         }
 
@@ -179,14 +179,16 @@ void AP_Generator_IE_FuelCell::check_for_err_code_if_changed()
         return;
     }
 
+#if HAL_GCS_ENABLED
     char msg_txt[64];
     if (check_for_err_code(msg_txt, sizeof(msg_txt)) || check_for_warning_code(msg_txt, sizeof(msg_txt))) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "%s", msg_txt);
+        GCS_SEND_TEXT(get_mav_severity(_err_code), "%s", msg_txt);
 
     } else if ((_err_code == 0) && (_sub_err_code == 0)) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Fuel cell error cleared");
 
     }
+#endif
 
     _last_err_code = _err_code;
     _last_sub_err_code = _sub_err_code;

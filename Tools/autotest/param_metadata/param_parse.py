@@ -7,7 +7,6 @@
 
 '''
 
-from __future__ import print_function
 import copy
 import os
 import re
@@ -30,7 +29,7 @@ parser.add_argument("--no-emit",
                     dest='emit_params',
                     action='store_false',
                     default=True,
-                    help="don't emit parameter documention, just validate")
+                    help="don't emit parameter documentation, just validate")
 parser.add_argument("--format",
                     dest='output_format',
                     action='store',
@@ -170,13 +169,17 @@ def process_vehicle(vehicle):
 
     debug(group_matches)
     for group_match in group_matches:
-        lib = Library(group_match[0])
-        fields = prog_param_fields.findall(group_match[1])
+        library_name = group_match[0].strip()
+        fields_text = group_match[1].strip()
+        lib = Library(library_name)
+        fields = prog_param_fields.findall(fields_text)
         for field in fields:
-            if field[0] in known_group_fields:
-                setattr(lib, field[0], field[1])
+            field_name = field[0].strip()
+            field_value = field[1].strip()
+            if field_name in known_group_fields:
+                setattr(lib, field_name, field_value)
             else:
-                error("group: unknown parameter metadata field '%s'" % field[0])
+                error(f"group: unknown parameter metadata field '{field_name}'")
         if not any(lib.name == parsed_l.name for parsed_l in libraries):
             libraries.append(lib)
 
@@ -184,9 +187,9 @@ def process_vehicle(vehicle):
     param_matches = prog_param.findall(p_text)
 
     for param_match in param_matches:
-        (only_vehicles, param_name, field_text) = (param_match[0],
-                                                   param_match[1],
-                                                   param_match[2])
+        (only_vehicles, param_name, field_text) = (param_match[0].strip(),
+                                                   param_match[1].strip(),
+                                                   param_match[2].strip())
         if len(only_vehicles):
             only_vehicles_list = [x.strip() for x in only_vehicles.split(",")]
             for only_vehicle in only_vehicles_list:
@@ -202,10 +205,10 @@ def process_vehicle(vehicle):
         p.__field_text = field_text
         field_list = []
         for field in fields:
-            (field_name, field_value) = field
-            field_list.append(field[0])
-            if field[0] in known_param_fields:
-                value = re.sub('@PREFIX@', "", field[1]).rstrip()
+            (field_name, field_value) = (field[0].strip(), field[1].strip())
+            field_list.append(field_name)
+            if field_name in known_param_fields:
+                value = re.sub('@PREFIX@', "", field_value).rstrip()
                 if hasattr(p, field_name):
                     if field_name in documentation_tags_which_are_comma_separated_nv_pairs:
                         # allow concatenation of (e.g.) bitmask fields
@@ -215,11 +218,15 @@ def process_vehicle(vehicle):
                         value = x
                     else:
                         error("%s already has field %s" % (p.name, field_name))
-                setattr(p, field[0], value)
-            elif field[0] in frozenset(["CopyFieldsFrom", "CopyValuesFrom"]):
-                setattr(p, field[0], field[1])
+                setattr(p, field_name, value)
+            elif field_name in frozenset(["CopyFieldsFrom", "CopyValuesFrom"]):
+                setattr(p, field_name, field_value)
             else:
-                error("param: unknown parameter metadata field '%s'" % field[0])
+                error(f"param: unknown parameter metadata field '{field_name}'")
+
+        if (getattr(p, 'Values', None) is not None and
+                getattr(p, 'Bitmask', None) is not None):
+            error("Both @Values and @Bitmask present")
 
         vehicle.params.append(p)
     current_file = None
@@ -260,9 +267,9 @@ def process_library(vehicle, library, pathprefix=None):
         param_matches = prog_param.findall(p_text)
         debug("Found %u documented parameters" % len(param_matches))
         for param_match in param_matches:
-            (only_vehicles, param_name, field_text) = (param_match[0],
-                                                       param_match[1],
-                                                       param_match[2])
+            (only_vehicles, param_name, field_text) = (param_match[0].strip(),
+                                                       param_match[1].strip(),
+                                                       param_match[2].strip())
             if len(only_vehicles):
                 only_vehicles_list = [x.strip() for x in only_vehicles.split(",")]
                 for only_vehicle in only_vehicles_list:
@@ -278,10 +285,10 @@ def process_library(vehicle, library, pathprefix=None):
             p.__field_text = field_text
             field_list = []
             for field in fields:
-                (field_name, field_value) = field
-                field_list.append(field[0])
-                if field[0] in known_param_fields:
-                    value = re.sub('@PREFIX@', library.name, field[1])
+                (field_name, field_value) = (field[0].strip(), field[1].strip())
+                field_list.append(field_name)
+                if field_name in known_param_fields:
+                    value = re.sub('@PREFIX@', library.name, field_value)
                     if hasattr(p, field_name):
                         if field_name in documentation_tags_which_are_comma_separated_nv_pairs:
                             # allow concatenation of (e.g.) bitmask fields
@@ -291,11 +298,11 @@ def process_library(vehicle, library, pathprefix=None):
                             value = x
                         else:
                             error("%s already has field %s" % (p.name, field_name))
-                    setattr(p, field[0], value)
-                elif field[0] in frozenset(["CopyFieldsFrom", "CopyValuesFrom"]):
-                    setattr(p, field[0], field[1])
+                    setattr(p, field_name, value)
+                elif field_name in frozenset(["CopyFieldsFrom", "CopyValuesFrom"]):
+                    setattr(p, field_name, field_value)
                 else:
-                    error("param: unknown parameter metadata field %s" % field[0])
+                    error(f"param: unknown parameter metadata field '{field_name}'")
 
             debug("matching %s" % field_text)
             fields = prog_param_tagged_fields.findall(field_text)
@@ -305,37 +312,40 @@ def process_library(vehicle, library, pathprefix=None):
             seen_values_or_bitmask_for_this_vehicle = False
             seen_values_or_bitmask_for_other_vehicle = False
             for field in fields:
-                only_for_vehicles = field[1].split(",")
-                only_for_vehicles = [some_vehicle.rstrip().lstrip() for some_vehicle in only_for_vehicles]
+                (field_name, only_for_vehicles, field_value) = (field[0].strip(),
+                                                                field[1].strip(),
+                                                                field[2].strip())
+                only_for_vehicles = only_for_vehicles.split(",")
+                only_for_vehicles = [some_vehicle.strip() for some_vehicle in only_for_vehicles]
                 delta = set(only_for_vehicles) - set(truename_map.values())
                 if len(delta):
                     error("Unknown vehicles (%s)" % delta)
-                debug("field[0]=%s vehicle=%s field[1]=%s only_for_vehicles=%s\n" %
-                      (field[0], vehicle.name, field[1], str(only_for_vehicles)))
-                if field[0] not in known_param_fields:
-                    error("tagged param: unknown parameter metadata field '%s'" % field[0])
+                debug("field_name=%s vehicle=%s field[1]=%s only_for_vehicles=%s\n" %
+                      (field_name, vehicle.name, field[1], str(only_for_vehicles)))
+                if field_name not in known_param_fields:
+                    error(f"tagged param: unknown parameter metadata field '{field_name}'")
                     continue
                 if vehicle.name not in only_for_vehicles:
-                    if len(only_for_vehicles) and field[0] in documentation_tags_which_are_comma_separated_nv_pairs:
+                    if len(only_for_vehicles) and field_name in documentation_tags_which_are_comma_separated_nv_pairs:
                         seen_values_or_bitmask_for_other_vehicle = True
                     continue
 
                 append_value = False
-                if field[0] in documentation_tags_which_are_comma_separated_nv_pairs:
+                if field_name in documentation_tags_which_are_comma_separated_nv_pairs:
                     if vehicle.name in only_for_vehicles:
                         if seen_values_or_bitmask_for_this_vehicle:
-                            append_value = hasattr(p, field[0])
+                            append_value = hasattr(p, field_name)
                         seen_values_or_bitmask_for_this_vehicle = True
                     else:
                         if seen_values_or_bitmask_for_this_vehicle:
                             continue
-                        append_value = hasattr(p, field[0])
+                        append_value = hasattr(p, field_name)
 
-                value = re.sub('@PREFIX@', library.name, field[2])
+                value = re.sub('@PREFIX@', library.name, field_value)
                 if append_value:
-                    setattr(p, field[0], getattr(p, field[0]) + ',' + value)
+                    setattr(p, field_name, getattr(p, field_name) + ',' + value)
                 else:
-                    setattr(p, field[0], value)
+                    setattr(p, field_name, value)
 
             if (getattr(p, 'Values', None) is not None and
                     getattr(p, 'Bitmask', None) is not None):
@@ -377,7 +387,7 @@ def process_library(vehicle, library, pathprefix=None):
         debug(group_matches)
         done_groups = dict()
         for group_match in group_matches:
-            group = group_match[0]
+            group = group_match[0].strip()
             debug("Group: %s" % group)
             do_append = True
             if group in done_groups:
@@ -390,14 +400,15 @@ def process_library(vehicle, library, pathprefix=None):
                 lib = Library(group)
                 done_groups[group] = lib
 
-            fields = prog_param_fields.findall(group_match[1])
+            fields = prog_param_fields.findall(group_match[1].strip())
             for field in fields:
-                if field[0] in known_group_fields:
-                    setattr(lib, field[0], field[1])
-                elif field[0] in ["CopyFieldsFrom", "CopyValuesFrom"]:
-                    setattr(p, field[0], field[1])
+                (field_name, field_value) = (field[0].strip(), field[1].strip())
+                if field_name in known_group_fields:
+                    setattr(lib, field_name, field_value)
+                elif field_name in ["CopyFieldsFrom", "CopyValuesFrom"]:
+                    setattr(p, field_name, field_value)
                 else:
-                    error("unknown parameter metadata field '%s'" % field[0])
+                    error(f"unknown parameter metadata field '{field_name}'")
             if not any(lib.name == parsed_l.name for parsed_l in libraries):
                 if do_append:
                     lib.set_name(library.name + lib.name)
@@ -440,7 +451,7 @@ def clean_param(param):
         for i in valueList:
             (start, sep, end) = i.partition(":")
             if sep != ":":
-                raise ValueError("Expected a colon seperator in (%s)" % (i,))
+                raise ValueError("Expected a colon separator in (%s)" % (i,))
             if len(end) == 0:
                 raise ValueError("Expected a colon-separated string, got (%s)" % i)
             end = end.strip()

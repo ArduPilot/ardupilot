@@ -19,7 +19,7 @@ public:
         LOITER       = 5,
         FOLLOW       = 6,
         SIMPLE       = 7,
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
         DOCK         = 8,
 #endif
         CIRCLE       = 9,
@@ -28,6 +28,7 @@ public:
         SMART_RTL    = 12,
         GUIDED       = 15,
         INITIALISING = 16,
+        // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
     // Constructor
@@ -124,6 +125,9 @@ public:
     // execute the mission in reverse (i.e. backing up)
     void set_reversed(bool value);
 
+    // init reversed flag for autopilot mode
+    virtual void init_reversed_flag() { if (is_autopilot_mode()) { set_reversed(false); } }
+
     // handle tacking request (from auxiliary switch) in sailboats
     virtual void handle_tack_request();
 
@@ -138,24 +142,24 @@ protected:
     // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
     // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
     // throttle_out is in the range -100 ~ +100
-    void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out);
+    void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out) const;
 
     // decode pilot input steering and return steering_out and speed_out (in m/s)
-    void get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out);
+    void get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out) const;
 
     // decode pilot lateral movement input and return in lateral_out argument
-    void get_pilot_desired_lateral(float &lateral_out);
+    void get_pilot_desired_lateral(float &lateral_out) const;
 
     // decode pilot's input and return heading_out (in cd) and speed_out (in m/s)
-    void get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out);
+    void get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out) const;
 
     // decode pilot roll and pitch inputs and return in roll_out and pitch_out arguments
     // outputs are in the range -1 to +1
-    void get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out);
+    void get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out) const;
 
     // decode pilot height inputs and return in height_out arguments
     // outputs are in the range -1 to +1
-    void get_pilot_desired_walking_height(float &walking_height_out);
+    void get_pilot_desired_walking_height(float &walking_height_out) const;
 
     // high level call to navigate to waypoint
     void navigate_to_waypoint();
@@ -192,7 +196,7 @@ protected:
     // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
     // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
     // throttle_out is in the range -100 ~ +100
-    void get_pilot_input(float &steering_out, float &throttle_out);
+    void get_pilot_input(float &steering_out, float &throttle_out) const;
     void set_steering(float steering_value);
 
     // references to avoid code churn:
@@ -277,16 +281,23 @@ public:
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4);
     void nav_script_time_done(uint16_t id);
 
+    // 
+    void init_reversed_flag() override {
+        if (!mission.is_resume()) {
+            set_reversed(false);
+        }
+    }
+
     AP_Mission mission{
         FUNCTOR_BIND_MEMBER(&ModeAuto::start_command, bool, const AP_Mission::Mission_Command&),
         FUNCTOR_BIND_MEMBER(&ModeAuto::verify_command_callback, bool, const AP_Mission::Mission_Command&),
         FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
 
-    enum Mis_Done_Behave {
-        MIS_DONE_BEHAVE_HOLD      = 0,
-        MIS_DONE_BEHAVE_LOITER    = 1,
-        MIS_DONE_BEHAVE_ACRO      = 2,
-        MIS_DONE_BEHAVE_MANUAL    = 3
+    enum class DoneBehaviour : uint8_t {
+        HOLD      = 0,
+        LOITER    = 1,
+        ACRO      = 2,
+        MANUAL    = 3,
     };
 
 protected:
@@ -408,6 +419,9 @@ public:
     Number mode_number() const override { return Number::CIRCLE; }
     const char *name4() const override { return "CIRC"; }
 
+    // return the distance at which the vehicle is considered to be on track along the circle
+    float get_reached_distance() const;
+
     // initialise with specific center location, radius (in meters) and direction
     // replaces use of _enter when initialised from within Auto mode
     bool set_center(const Location& center_loc, float radius_m, bool dir_ccw);
@@ -447,6 +461,12 @@ protected:
     // initialise mode
     bool _enter() override;
 
+    // Update position controller targets driving to the circle edge
+    void update_drive_to_radius();
+
+    // Update position controller targets while circling
+    void update_circling();
+
     // initialise target_yaw_rad using the vehicle's position and yaw
     // if there is no current position estimate target_yaw_rad is set to vehicle yaw
     void init_target_yaw_rad();
@@ -483,6 +503,7 @@ protected:
     float angle_total_rad;  // total angle in radians that vehicle has circled
     bool reached_edge;      // true once vehicle has reached edge of circle
     float dist_to_edge_m;   // distance to edge of circle in meters (equivalent to crosstrack error)
+    bool tracking_back;     // true if the vehicle is trying to track back onto the circle
 };
 
 class ModeGuided : public Mode
@@ -745,7 +766,7 @@ protected:
     bool _loitering;        // true if loitering at end of SRTL
 };
 
-   
+
 
 class ModeSteering : public Mode
 {
@@ -792,7 +813,7 @@ protected:
     bool _enter() override { return false; };
 };
 
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
 class ModeFollow : public Mode
 {
 public:
@@ -852,7 +873,7 @@ private:
     float _desired_heading_cd;  // latest desired heading (in centi-degrees) from pilot
 };
 
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
 class ModeDock : public Mode
 {
 public:

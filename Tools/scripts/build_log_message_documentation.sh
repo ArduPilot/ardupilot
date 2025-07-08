@@ -27,6 +27,6 @@ generate_log_message_documentation() {
     xz -e <"$VEHICLE_DIR"/LogMessages.xml >"$VEHICLE_DIR"/LogMessages.xml.xz.new && mv "$VEHICLE_DIR"/LogMessages.xml.xz.new "$VEHICLE_DIR"/LogMessages.xml.xz
 }
 
-for vehicle in Rover Plane Copter Tracker Blimp; do
+for vehicle in Rover Plane Copter Tracker Blimp Sub; do
     generate_log_message_documentation "$vehicle"
 done

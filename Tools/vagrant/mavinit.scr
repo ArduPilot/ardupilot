@@ -17,7 +17,6 @@ module load graph
 @alias add odroidpower relay set 0
 @alias add neutral2 servo set 12 1500
 @alias add ekf param set AHRS_EKF_USE
-@alias add gpsdisable param set SIM_GPS_DISABLE
 @alias add bb status gps* scaled* raw*
 @alias add g graph
 @alias add grc3 g RC_CHANNELS.chan3_raw SERVO_OUTPUT_RAW.servo3_raw

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# flake8: noqa
+
 '''
 combined two aerobatics logs to generate a new log for showing the combined
 path of more than one aircraft
@@ -25,19 +27,22 @@ mlog1 = mavutil.mavlink_connection(args.log1)
 mlog2 = mavutil.mavlink_connection(args.log2)
 output = open(args.logout, mode='wb')
 
-types1 = ['ORGN','VEH','PARM','MSG','FMT','FMTU','MULT','MODE','EVT']
-types2 = ['VEH']
+types1 = ['ORGN','VEH','PARM','MSG','FMT','FMTU','MULT','MODE','EVT','PTHT']
+types2 = ['VEH','PTHT']
 
 m1 = None
 m2 = None
 
-veh_fmt = None
+veh1_formats = {}
 
-def write_VEH(m, veh_fmt):
-    buf = bytearray(m.get_msgbuf())
-    if veh_fmt is None:
+def write_message(m):
+    global veh1_formats
+    mtype = m.get_type()
+    if not mtype in veh1_formats:
         return
-    buf[2] = veh_fmt
+    veh1_fmt = veh1_formats[mtype]
+    buf = bytearray(m.get_msgbuf())
+    buf[2] = veh1_fmt
     output.write(buf)
 
 m1_count = 0
@@ -49,44 +54,41 @@ while True:
     if m2 is None:
         m2 = mlog2.recv_match(type=types2)
 
-    if m1 is not None and m1.get_type() != 'VEH':
+    if m1 is not None:
+        veh1_formats[m1.get_type()] = m1.get_msgbuf()[2]
+
+    if m1 is not None and m1.get_type() not in types2:
+        # passthrough
         output.write(m1.get_msgbuf())
         m1 = None
         continue
 
-    if m2 is not None and m2.get_type() != 'VEH':
+    if m2 is not None and m2.get_type() not in types2:
         continue
-    
-    if veh_fmt is None and m1 is not None:
-        veh_fmt = m1.get_msgbuf()[2]
 
     if m1 is None and m2 is None:
         break
 
     if m1 is None:
-        write_VEH(m2, veh_fmt)
+        write_message(m2)
         m2 = None
         continue
 
     if m2 is None:
-        write_VEH(m1, veh_fmt)
+        write_message(m1)
         m1 = None
         continue
 
-    if hasattr(m1,'TSec'):
-        # old format
-        t1 = m1.TSec + m1.TUSec*1.0e-6
-        t2 = m2.TSec + m2.TUSec*1.0e-6
-    else:
-        t1 = m1.GWk*7*24*60*60 + m1.GMS*0.001
-        t2 = m2.GWk*7*24*60*60 + m2.GMS*0.001
+    t1 = m1.GWk*7*24*60*60 + m1.GMS*0.001
+    t2 = m2.GWk*7*24*60*60 + m2.GMS*0.001
+
     if t1 <= t2:
         m1_count += 1
         if m1_count % args.decimate == 0:
-            write_VEH(m1, veh_fmt)
+            write_message(m1)
         m1 = None
     else:
         m2_count += 1
         if m2_count % args.decimate == 0:
-            write_VEH(m2, veh_fmt)
+            write_message(m2)
         m2 = None

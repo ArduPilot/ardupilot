@@ -2,7 +2,7 @@
 
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
 
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
@@ -21,10 +21,8 @@ public:
     bool get_output_banner(char* banner, uint8_t banner_len) override;
 
 private:
-    uint8_t gyro_instance;
-    uint8_t accel_instance;
     const uint8_t serial_port;
     bool started;
 };
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_EXTERNAL_AHRS_ENABLED
 

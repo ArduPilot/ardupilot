@@ -101,7 +101,7 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
             if (group.dma_ch[i].stream_id == group.dma_up_stream_id) {
                 group.bdshot.ic_dma_handle[i] = group.dma_handle;
             } else {
-                group.bdshot.ic_dma_handle[i] = new Shared_DMA(group.dma_ch[i].stream_id, SHARED_DMA_NONE,
+                group.bdshot.ic_dma_handle[i] = NEW_NOTHROW Shared_DMA(group.dma_ch[i].stream_id, SHARED_DMA_NONE,
                                                 FUNCTOR_BIND_MEMBER(&RCOutput::bdshot_ic_dma_allocate, void, Shared_DMA *),
                                                 FUNCTOR_BIND_MEMBER(&RCOutput::bdshot_ic_dma_deallocate, void, Shared_DMA *));
             }
@@ -121,7 +121,7 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
             // when switching from output to input
 #if defined(STM32F1)
             // on F103 the line mode has to be managed manually
-            // PAL_MODE_STM32_ALTERNATE_PUSHPULL is 50Mhz, similar to the medieum speed on other MCUs
+            // PAL_MODE_STM32_ALTERNATE_PUSHPULL is 50Mhz, similar to the medium speed on other MCUs
             palSetLineMode(group.pal_lines[i], PAL_MODE_STM32_ALTERNATE_PUSHPULL);
 #else
             palSetLineMode(group.pal_lines[i], PAL_MODE_ALTERNATE(group.alt_functions[i])
@@ -165,7 +165,7 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
                 group.bdshot.ic_dma_handle[i] = group.dma_handle;
             } else {
                 // we can use the next channel
-                group.bdshot.ic_dma_handle[i] = new Shared_DMA(group.dma_ch[curr_chan].stream_id, SHARED_DMA_NONE,
+                group.bdshot.ic_dma_handle[i] = NEW_NOTHROW Shared_DMA(group.dma_ch[curr_chan].stream_id, SHARED_DMA_NONE,
                                             FUNCTOR_BIND_MEMBER(&RCOutput::bdshot_ic_dma_allocate, void, Shared_DMA *),
                                             FUNCTOR_BIND_MEMBER(&RCOutput::bdshot_ic_dma_deallocate, void, Shared_DMA *));
             }
@@ -230,6 +230,11 @@ void RCOutput::bdshot_ic_dma_deallocate(Shared_DMA *ctx)
             chSysLock();
             if (group.bdshot.ic_dma_handle[icuch] == ctx && group.bdshot.ic_dma[icuch] != nullptr) {
                 dmaStreamFreeI(group.bdshot.ic_dma[icuch]);
+#if defined(STM32F1)
+                if (group.bdshot.ic_dma_handle[icuch]->is_shared()) {
+                    bdshot_disable_pwm_f1(group);
+                }
+#endif
                 group.bdshot.ic_dma[icuch] = nullptr;
             }
             chSysUnlock();
@@ -491,6 +496,13 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
 #ifdef HAL_GPIO_LINE_GPIO56
     TOGGLE_PIN_DEBUG(56);
 #endif
+    osalDbgAssert(group->dshot_waiter, "No dshot waiter to signal");
+
+    if (group->dshot_waiter == nullptr) {   // transaction was cancelled, leave everything alone
+        chSysUnlockFromISR();
+        return;
+    }
+
     uint8_t curr_telem_chan = group->bdshot.curr_telem_chan;
 
     // the DMA buffer is either the regular outbound one because we are sharing UP and CH
@@ -537,6 +549,8 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
 
     // tell the waiting process we've done the DMA
     chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
+    group->dshot_waiter = nullptr;
+
 #ifdef HAL_GPIO_LINE_GPIO56
     TOGGLE_PIN_DEBUG(56);
 #endif
@@ -576,7 +590,7 @@ bool RCOutput::bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan)
 #endif
     }
 #if !defined(IOMCU_FW)
-    uint64_t now = AP_HAL::micros64();
+    rcout_timer_t now = rcout_micros();
     if (chan == DEBUG_CHANNEL && (now  - group.bdshot.last_print) > 1000000) {
         hal.console->printf("TELEM: %d <%d Hz, %.1f%% err>", group.bdshot.erpm[chan], group.bdshot.telem_rate[chan],
             100.0f * float(group.bdshot.telem_err_rate[chan]) / (group.bdshot.telem_err_rate[chan] + group.bdshot.telem_rate[chan]));
@@ -631,8 +645,10 @@ __RAMFUNC__ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
 
     if (soft_serial_waiting()) {
 #if HAL_SERIAL_ESC_COMM_ENABLED
-        // tell the waiting process we've done the DMA
-        chEvtSignalI(irq.waiter, serial_event_mask);
+        if (group->in_serial_dma) {
+            // tell the waiting process we've done the DMA
+            chEvtSignalI(irq.waiter, serial_event_mask);
+        }
 #endif
     } else if (!group->in_serial_dma && group->bdshot.enabled) {
         group->dshot_state = DshotState::SEND_COMPLETE;
@@ -755,12 +771,12 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
     uint16_t value = (encodederpm & 0x000001ffU);               // 9bits
 #if HAL_WITH_ESC_TELEM
     uint8_t normalized_chan = chan;
-#endif
 #if HAL_WITH_IO_MCU
-    if (iomcu_dshot) {
+    if (iomcu_enabled) {
         normalized_chan = chan + chan_offset;
     }
 #endif
+#endif // HAL_WITH_ESC_TELEM: one can possibly imagine a FC with IOMCU but with ESC_TELEM compiled out...
 
     if (!(value & 0x100U) && (_dshot_esc_type == DSHOT_ESC_BLHELI_EDT || _dshot_esc_type == DSHOT_ESC_BLHELI_EDT_S)) {
         switch (expo) {
@@ -796,9 +812,27 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
             break;
         case 0b100:  // Debug 1
         case 0b101:  // Debug 2
-        case 0b110:  // Stress level
-        case 0b111:  // Status
             return false;
+            break;
+        case 0b110: { // Stress level
+    #if HAL_WITH_ESC_TELEM && AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+            TelemetryData t {
+                .edt2_stress = value
+            };
+            update_telem_data(normalized_chan, t, AP_ESC_Telem_Backend::TelemetryType::EDT2_STRESS);
+    #endif
+            return false;
+            }
+            break;
+        case 0b111: { // Status
+    #if HAL_WITH_ESC_TELEM && AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+            TelemetryData t {
+                .edt2_status = value
+            };
+            update_telem_data(normalized_chan, t, AP_ESC_Telem_Backend::TelemetryType::EDT2_STATUS);
+    #endif
+            return false;
+            }
             break;
         default:     // eRPM
             break;

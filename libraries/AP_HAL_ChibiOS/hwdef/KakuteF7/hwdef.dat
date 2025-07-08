@@ -5,8 +5,8 @@
 # MCU class and specific type
 MCU STM32F7xx STM32F745xx
 
-# board ID for firmware load
-APJ_BOARD_ID 123
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_KAKUTEF7
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -138,18 +138,16 @@ define HAL_BARO_ALLOW_INIT_NO_BARO
 
 define HAL_OS_FATFS_IO 1
 
-define STM32_PWM_USE_ADVANCED TRUE
-
 # disable parachute to save flash
 define HAL_PARACHUTE_ENABLED 0
 
 # save FLASH, but leave above when flash issue is fixed
 include ../include/minimize_fpv_osd.inc
 include ../include/no_bootloader_DFU.inc
-
-# disable SMBUS battery monitors to save flash
-undef AP_BATTERY_SMBUS_ENABLED
-define AP_BATTERY_SMBUS_ENABLED 0
+#only enable BMP280 Baro
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+undef define AP_BARO_BMP280_ENABLED
+define AP_BARO_BMP280_ENABLED 1
 
 # setup for OSD
 define HAL_OSD_TYPE_DEFAULT 1
@@ -161,6 +159,6 @@ define HAL_WITH_MSP_DISPLAYPORT 1
 undef HAL_MSP_ENABLED
 define HAL_MSP_ENABLED 1
 
-# need to probe external baros even 'though we're minimised:
+# need to probe external baros even 'though we're minimised to allow custom build options:
 undef AP_BARO_PROBE_EXTERNAL_I2C_BUSES
 define AP_BARO_PROBE_EXTERNAL_I2C_BUSES 1

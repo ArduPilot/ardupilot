@@ -47,6 +47,11 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
             mavlink_gps_input_t packet;
             mavlink_msg_gps_input_decode(&msg, &packet);
 
+            // check if target instance belongs to incoming gps data.
+            if (state.instance != packet.gps_id) {
+                return;
+            }
+
             bool have_alt    = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_ALT) == 0);
             bool have_hdop   = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_HDOP) == 0);
             bool have_vdop   = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VDOP) == 0);
@@ -138,44 +143,8 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
             state.last_gps_time_ms = now_ms;
             _new_data = true;
             break;
-            }
+        }
 
-        case MAVLINK_MSG_ID_HIL_GPS: {
-            mavlink_hil_gps_t packet;
-            mavlink_msg_hil_gps_decode(&msg, &packet);
-
-            state.time_week = 0;
-            state.time_week_ms  = packet.time_usec/1000;
-            state.status = (AP_GPS::GPS_Status)packet.fix_type;
-
-            Location loc = {};
-            loc.lat = packet.lat;
-            loc.lng = packet.lon;
-            loc.alt = packet.alt * 0.1f;
-            state.location = loc;
-            state.hdop = MIN(packet.eph, GPS_UNKNOWN_DOP);
-            state.vdop = MIN(packet.epv, GPS_UNKNOWN_DOP);
-            if (packet.vel < 65535) {
-                state.ground_speed = packet.vel * 0.01f;
-            }
-            Vector3f vel(packet.vn*0.01f, packet.ve*0.01f, packet.vd*0.01f);
-            state.velocity = vel;
-            if (packet.vd != 0) {
-                state.have_vertical_velocity = true;
-            }
-            if (packet.cog < 36000) {
-                state.ground_course = packet.cog * 0.01f;
-            }
-            state.have_speed_accuracy = false;
-            state.have_horizontal_accuracy = false;
-            state.have_vertical_accuracy = false;
-            if (packet.satellites_visible < 255) {
-                state.num_sats = packet.satellites_visible;
-            }
-            state.last_gps_time_ms = AP_HAL::millis();
-            _new_data = true;
-            break;
-            }
         default:
             // ignore all other messages
             break;

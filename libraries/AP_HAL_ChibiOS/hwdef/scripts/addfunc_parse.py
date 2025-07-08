@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+# flake8: noqa
 '''
 create additional functions ADC table, used for mapping analog pins to ADC channel numbers
 
@@ -28,7 +30,7 @@ def is_pin(str):
         return False
 
 def parse_adc_table(fname, table):
-    csvt = csv.reader(open(fname,'rb'))
+    csvt = csv.reader(open(fname,'r'))
     i = 0
     for row in csvt:
         for col in row:

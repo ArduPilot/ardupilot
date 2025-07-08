@@ -34,7 +34,8 @@ public:
     // update the state machine and calculate offsets, diagonals and offdiagonals
     void update();
 
-    // compass calibration states
+    // compass calibration states - these correspond to the mavlink
+    // MAG_CAL_STATUS enumeration
     enum class Status {
         NOT_STARTED = 0,
         WAITING_TO_START = 1,

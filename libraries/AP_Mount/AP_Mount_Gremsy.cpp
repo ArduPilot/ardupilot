@@ -1,6 +1,8 @@
-#include "AP_Mount_Gremsy.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_GREMSY_ENABLED
+
+#include "AP_Mount_Gremsy.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
@@ -48,20 +50,9 @@ void AP_Mount_Gremsy::update()
         }
 
         // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's RC inputs
-            MountTarget rc_target;
-            get_rc_target(mnt_target.target_type, rc_target);
-            switch (mnt_target.target_type) {
-            case MountTargetType::ANGLE:
-                mnt_target.angle_rad = rc_target;
-                break;
-            case MountTargetType::RATE:
-                mnt_target.rate_rads = rc_target;
-                break;
-            }
+        case MAV_MOUNT_MODE_RC_TARGETING:
+            update_mnt_target_from_rc_target();
             break;
-        }
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
@@ -202,7 +193,7 @@ void AP_Mount_Gremsy::handle_gimbal_device_information(const mavlink_message_t &
     const uint8_t fw_ver_build = (info.firmware_version & 0xFF000000) >> 24;
 
     // display gimbal info to user
-    gcs().send_text(MAV_SEVERITY_INFO, "Mount: %s %s fw:%u.%u.%u.%u",
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: %s %s fw:%u.%u.%u.%u",
             info.vendor_name,
             info.model_name,
             (unsigned)fw_ver_major,

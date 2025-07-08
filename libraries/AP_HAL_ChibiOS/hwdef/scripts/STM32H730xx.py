@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+# flake8: noqa
 '''
 these tables are generated from the STM32 datasheets for the STM32H730IBT
 '''
@@ -29,7 +31,7 @@ mcu = {
     # flags of 2 means faster memory for CPU intensive work
     # flags of 4 means memory can be used for SDMMC DMA
 
-	# overall ram map for information only, board not useable without external flash
+	# overall ram map for information only, board not usable without external flash
     #'RAM_MAP' : [
     #    (0x24000000, 320, 4), # AXI SRAM. Use this for SDMMC IDMA ops
     #    (0x30000000,  32, 0), # SRAM1, SRAM2
@@ -255,7 +257,7 @@ AltFunction_map = {
 	"PA10:USART1_RX"    	:	7,
 	"PA10:USB_OTG_HS_ID"	:	10,
 	"PA11:EVENTOUT"     	:	15,
-	"PA11:FDCAN1_RX"    	:	9,
+	"PA11:CAN1_RX"    	:	9,
 	"PA11:I2S2_WS"      	:	5,
 	"PA11:LPUART1_CTS"  	:	3,
 	"PA11:LTDC_R4"      	:	14,
@@ -266,7 +268,7 @@ AltFunction_map = {
 	"PA11:USART1_NSS"   	:	7,
 	"PA11:OTG_HS_DM"		:   0,
 	"PA12:EVENTOUT"     	:	15,
-	"PA12:FDCAN1_TX"    	:	9,
+	"PA12:CAN1_TX"    	:	9,
 	"PA12:I2S2_CK"      	:	5,
 	"PA12:LPUART1_DE"   	:	3,
 	"PA12:LPUART1_RTS"  	:	3,
@@ -364,7 +366,7 @@ AltFunction_map = {
 	"PB5:DCMI_D10"      	:	13,
 	"PB5:ETH_PPS_OUT"   	:	11,
 	"PB5:EVENTOUT"      	:	15,
-	"PB5:FDCAN2_RX"     	:	9,
+	"PB5:CAN2_RX"     	:	9,
 	"PB5:FMC_SDCKE1"    	:	12,
 	"PB5:I2C1_SMBA"     	:	4,
 	"PB5:I2C4_SMBA"     	:	6,
@@ -384,7 +386,7 @@ AltFunction_map = {
 	"PB6:DCMI_D5"       	:	13,
 	"PB6:DFSDM1_DATIN5" 	:	11,
 	"PB6:EVENTOUT"      	:	15,
-	"PB6:FDCAN2_TX"     	:	9,
+	"PB6:CAN2_TX"     	:	9,
 	"PB6:FMC_SDNE1"     	:	12,
 	"PB6:I2C1_SCL"      	:	4,
 	"PB6:I2C4_SCL"      	:	6,
@@ -410,7 +412,7 @@ AltFunction_map = {
 	"PB8:DFSDM1_CKIN7"  	:	3,
 	"PB8:ETH_TXD3"      	:	11,
 	"PB8:EVENTOUT"      	:	15,
-	"PB8:FDCAN1_RX"     	:	9,
+	"PB8:CAN1_RX"     	:	9,
 	"PB8:I2C1_SCL"      	:	4,
 	"PB8:I2C4_SCL"      	:	6,
 	"PB8:LTDC_B6"       	:	14,
@@ -424,7 +426,7 @@ AltFunction_map = {
 	"PB9:DCMI_D7"       	:	13,
 	"PB9:DFSDM1_DATIN7" 	:	3,
 	"PB9:EVENTOUT"      	:	15,
-	"PB9:FDCAN1_TX"     	:	9,
+	"PB9:CAN1_TX"     	:	9,
 	"PB9:I2C1_SDA"      	:	4,
 	"PB9:I2C4_SDA"      	:	6,
 	"PB9:I2C4_SMBA"     	:	11,
@@ -462,7 +464,7 @@ AltFunction_map = {
 	"PB12:DFSDM1_DATIN1"	:	6,
 	"PB12:ETH_TXD0"     	:	11,
 	"PB12:EVENTOUT"     	:	15,
-	"PB12:FDCAN2_RX"    	:	9,
+	"PB12:CAN2_RX"    	:	9,
 	"PB12:I2C2_SMBA"    	:	4,
 	"PB12:I2S2_WS"      	:	5,
 	"PB12:OCTOSPIM_P1_IO0"	:	12,
@@ -478,7 +480,7 @@ AltFunction_map = {
 	"PB13:DFSDM1_CKIN1" 	:	6,
 	"PB13:ETH_TXD1"     	:	11,
 	"PB13:EVENTOUT"     	:	15,
-	"PB13:FDCAN2_TX"    	:	9,
+	"PB13:CAN2_TX"    	:	9,
 	"PB13:I2S2_CK"      	:	5,
 	"PB13:LPTIM2_OUT"   	:	3,
 	"PB13:OCTOSPIM_P1_IO2"	:	4,
@@ -685,7 +687,7 @@ AltFunction_map = {
 	"PC15:EVENTOUT"     	:	15,
 	"PD0:DFSDM1_CKIN6"  	:	3,
 	"PD0:EVENTOUT"      	:	15,
-	"PD0:FDCAN1_RX"     	:	9,
+	"PD0:CAN1_RX"     	:	9,
 	"PD0:FMC_D2"        	:	12,
 	"PD0:FMC_DA2"       	:	12,
 	"PD0:LTDC_B1"       	:	14,
@@ -693,7 +695,7 @@ AltFunction_map = {
 	"PD0:UART9_CTS"     	:	11,
 	"PD1:DFSDM1_DATIN6" 	:	3,
 	"PD1:EVENTOUT"      	:	15,
-	"PD1:FDCAN1_TX"     	:	9,
+	"PD1:CAN1_TX"     	:	9,
 	"PD1:FMC_D3"        	:	12,
 	"PD1:FMC_DA3"       	:	12,
 	"PD1:UART4_TX"      	:	8,
@@ -780,7 +782,7 @@ AltFunction_map = {
 	"PD11:USART3_NSS"   	:	7,
 	"PD12:DCMI_D12"     	:	13,
 	"PD12:EVENTOUT"     	:	15,
-	"PD12:FDCAN3_RX"    	:	5,
+	"PD12:CAN3_RX"    	:	5,
 	"PD12:FMC_A17"      	:	12,
 	"PD12:FMC_ALE"      	:	12,
 	"PD12:I2C4_SCL"     	:	4,
@@ -794,7 +796,7 @@ AltFunction_map = {
 	"PD12:USART3_RTS"   	:	7,
 	"PD13:DCMI_D13"     	:	13,
 	"PD13:EVENTOUT"     	:	15,
-	"PD13:FDCAN3_TX"    	:	5,
+	"PD13:CAN3_TX"    	:	5,
 	"PD13:FMC_A18"      	:	12,
 	"PD13:I2C4_SDA"     	:	4,
 	"PD13:LPTIM1_OUT"   	:	1,
@@ -995,7 +997,7 @@ AltFunction_map = {
 	"PF5:FMC_A5"        	:	12,
 	"PF5:OCTOSPIM_P2_NCLK"	:	9,
 	"PF6:EVENTOUT"      	:	15,
-	"PF6:FDCAN3_RX"     	:	2,
+	"PF6:CAN3_RX"     	:	2,
 	"PF6:OCTOSPIM_P1_IO3"	:	10,
 	"PF6:SAI1_SD_B"     	:	6,
 	"PF6:SAI4_SD_B"     	:	8,
@@ -1004,7 +1006,7 @@ AltFunction_map = {
 	"PF6:TIM23_CH1"     	:	13,
 	"PF6:UART7_RX"      	:	7,
 	"PF7:EVENTOUT"      	:	15,
-	"PF7:FDCAN3_TX"     	:	2,
+	"PF7:CAN3_TX"     	:	2,
 	"PF7:OCTOSPIM_P1_IO2"	:	10,
 	"PF7:SAI1_MCLK_B"   	:	6,
 	"PF7:SAI4_MCLK_B"   	:	8,
@@ -1121,7 +1123,7 @@ AltFunction_map = {
 	"PG8:USART6_RTS"    	:	7,
 	"PG9:DCMI_VSYNC"    	:	13,
 	"PG9:EVENTOUT"      	:	15,
-	"PG9:FDCAN3_TX"     	:	2,
+	"PG9:CAN3_TX"     	:	2,
 	"PG9:FMC_NCE"       	:	12,
 	"PG9:FMC_NE2"       	:	12,
 	"PG9:I2S1_SDI"      	:	5,
@@ -1133,7 +1135,7 @@ AltFunction_map = {
 	"PG9:USART6_RX"     	:	7,
 	"PG10:DCMI_D2"      	:	13,
 	"PG10:EVENTOUT"     	:	15,
-	"PG10:FDCAN3_RX"    	:	2,
+	"PG10:CAN3_RX"    	:	2,
 	"PG10:FMC_NE3"      	:	12,
 	"PG10:I2S1_WS"      	:	5,
 	"PG10:LTDC_B2"      	:	14,

@@ -17,7 +17,8 @@
  */
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
+#if AP_INERTIALSENSOR_RST_ENABLED
+
 #include "AP_InertialSensor_RST.h"
 #include <AP_Math/AP_Math.h>
 
@@ -206,7 +207,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_RST::probe(AP_InertialSensor &imu,
         return nullptr;
     }
     AP_InertialSensor_RST *sensor
-        = new AP_InertialSensor_RST(imu, std::move(dev_gyro), std::move(dev_accel), rotation_g, rotation_a);
+        = NEW_NOTHROW AP_InertialSensor_RST(imu, std::move(dev_gyro), std::move(dev_accel), rotation_g, rotation_a);
     if (!sensor || !sensor->_init_sensor()) {
         delete sensor;
         return nullptr;
@@ -336,13 +337,13 @@ bool AP_InertialSensor_RST::_init_sensor(void)
  */
 void AP_InertialSensor_RST::start(void)
 {
-    if (!_imu.register_gyro(_gyro_instance, 800, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_I3G4250D)) ||
-        !_imu.register_accel(_accel_instance, 1000, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_IIS328DQ))) {
+    if (!_imu.register_gyro(gyro_instance, 800, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_I3G4250D)) ||
+        !_imu.register_accel(accel_instance, 1000, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_IIS328DQ))) {
         return;
     }
 
-    set_gyro_orientation(_gyro_instance, _rotation_g);
-    set_accel_orientation(_accel_instance, _rotation_a);
+    set_gyro_orientation(gyro_instance, _rotation_g);
+    set_accel_orientation(accel_instance, _rotation_a);
 
     // start the timer process to read samples
     _dev_gyro->register_periodic_callback(1150, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_RST::gyro_measure, void));
@@ -354,8 +355,8 @@ void AP_InertialSensor_RST::start(void)
  */
 bool AP_InertialSensor_RST::update(void)
 {
-    update_gyro(_gyro_instance);
-    update_accel(_accel_instance);
+    update_gyro(gyro_instance);
+    update_accel(accel_instance);
 
     return true;
 }
@@ -376,8 +377,8 @@ void AP_InertialSensor_RST::gyro_measure(void)
     if (_dev_gyro->read_registers(GYRO_OUT_X_L | ADDR_INCREMENT, (uint8_t *)raw_data, sizeof(raw_data))) {
         gyro = Vector3f(raw_data[0], raw_data[1], raw_data[2]);
         gyro *= _gyro_scale;
-        _rotate_and_correct_gyro(_gyro_instance, gyro);
-        _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+        _rotate_and_correct_gyro(gyro_instance, gyro);
+        _notify_new_gyro_raw_sample(gyro_instance, gyro);
     }
 }
 
@@ -397,9 +398,9 @@ void AP_InertialSensor_RST::accel_measure(void)
     if (_dev_accel->read_registers(ACCEL_OUT_X_L | ADDR_INCREMENT, (uint8_t *)raw_data, sizeof(raw_data))) {
         accel = Vector3f(raw_data[0], raw_data[1], raw_data[2]);
         accel *= _accel_scale;
-        _rotate_and_correct_accel(_accel_instance, accel);
-        _notify_new_accel_raw_sample(_accel_instance, accel);
+        _rotate_and_correct_accel(accel_instance, accel);
+        _notify_new_accel_raw_sample(accel_instance, accel);
     }
 }
 
-#endif
+#endif  // AP_INERTIALSENSOR_RST_ENABLED

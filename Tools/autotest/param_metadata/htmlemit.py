@@ -1,3 +1,5 @@
+# flake8: noqa
+
 """
 Emit docs in a form acceptable to the old Ardupilot wordpress docs site
 """
@@ -65,6 +67,8 @@ DO NOT EDIT
             t += "<ul>\n"
 
             for field in param.__dict__.keys():
+                if not self.should_emit_field(param, field):
+                    continue
                 if field not in ['name', 'DisplayName', 'Description', 'User', 'SortValues'] and field in known_param_fields:
                     if field == 'Values' and Emit.prog_values_field.match(param.__dict__[field]):
                         values = (param.__dict__[field]).split(',')
@@ -78,7 +82,7 @@ DO NOT EDIT
                     elif field == 'Units':
                         abreviated_units = param.__dict__[field]
                         if abreviated_units != '':
-                            units = known_units[abreviated_units]   # use the known_units dictionary to convert the abreviated unit into a full textual one
+                            units = known_units[abreviated_units]   # use the known_units dictionary to convert the abbreviated unit into a full textual one
                             t += "<li>%s: %s</li>\n" % (field, cescape(units))
                     else:
                         t += "<li>%s: %s</li>\n" % (field, cescape(param.__dict__[field]))

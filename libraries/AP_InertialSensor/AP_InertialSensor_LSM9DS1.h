@@ -68,7 +68,5 @@ private:
     float _gyro_scale;
     float _accel_scale;
     int _drdy_pin_num_xg;
-    uint8_t _gyro_instance;
-    uint8_t _accel_instance;
     enum Rotation _rotation;
 };

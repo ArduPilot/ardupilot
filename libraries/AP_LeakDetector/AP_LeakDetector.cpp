@@ -112,11 +112,11 @@ void AP_LeakDetector::init()
         switch(_type[i]) {
             case ANALOG:
                 _state[i].instance = i;
-                _drivers[i] = new AP_LeakDetector_Analog(*this, _state[i]);
+                _drivers[i] = NEW_NOTHROW AP_LeakDetector_Analog(*this, _state[i]);
                 break;
             case DIGITAL:
                 _state[i].instance = i;
-                _drivers[i] = new AP_LeakDetector_Digital(*this, _state[i]);
+                _drivers[i] = NEW_NOTHROW AP_LeakDetector_Digital(*this, _state[i]);
                 break;
         }
     }

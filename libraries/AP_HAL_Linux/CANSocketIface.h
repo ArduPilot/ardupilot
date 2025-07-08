@@ -58,8 +58,8 @@ class CANIface: public AP_HAL::CANIface {
 public:
     CANIface(int index)
       : _self_index(index)
-      , _frames_in_socket_tx_queue(0)
       , _max_frames_in_socket_tx_queue(2)
+      , _frames_in_socket_tx_queue(0)
     { }
 
     ~CANIface() { }

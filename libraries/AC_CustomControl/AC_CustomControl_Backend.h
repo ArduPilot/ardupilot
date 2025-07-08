@@ -1,17 +1,19 @@
 #pragma once
 
-#include "AC_CustomControl.h"
+#include "AC_CustomControl_config.h"
 
 #if AP_CUSTOMCONTROL_ENABLED
+
+#include "AC_CustomControl.h"
 
 class AC_CustomControl_Backend
 {
 public:
     AC_CustomControl_Backend(AC_CustomControl& frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl*& att_control, AP_MotorsMulticopter*& motors, float dt) :
-        _frontend(frontend),
         _ahrs(ahrs),
         _att_control(att_control),
-        _motors(motors)
+        _motors(motors),
+        _frontend(frontend)
     {}
 
     // empty destructor to suppress compiler warning
@@ -34,4 +36,4 @@ protected:
     AC_CustomControl& _frontend;
 };
 
-#endif
+#endif  // AP_CUSTOMCONTROL_ENABLED

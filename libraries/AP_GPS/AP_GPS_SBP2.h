@@ -28,7 +28,7 @@
 class AP_GPS_SBP2 : public AP_GPS_Backend
 {
 public:
-    AP_GPS_SBP2(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+    AP_GPS_SBP2(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     AP_GPS::GPS_Status highest_supported_status(void) override { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
@@ -197,7 +197,6 @@ private:
 
     void logging_log_full_update();
     void logging_ext_event();
-    void logging_log_raw_sbp(uint16_t msg_type, uint16_t sender_id, uint8_t msg_len, uint8_t *msg_buff);
 
     int32_t distMod(int32_t tow1_ms, int32_t tow2_ms, int32_t mod);
 

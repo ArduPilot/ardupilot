@@ -7,8 +7,8 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1015
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MRO_NEXUS
 
 # crystal frequency
 OSCILLATOR_HZ 25000000
@@ -16,8 +16,6 @@ OSCILLATOR_HZ 25000000
 
 FLASH_SIZE_KB 2048
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
 
 # start on 2th sector (1st sector for bootloader)
 FLASH_RESERVE_START_KB 128
@@ -142,7 +140,7 @@ PC7 SENSORS_SPI4_EN OUTPUT HIGH
 
 SPIDEV adis16470  SPI2 DEVID1  CS_ADIS16470      MODE3  1*MHZ  2*MHZ 
 SPIDEV icm40609d  SPI3 DEVID2  CS_ICM40609D      MODE3  16*MHZ 16*MHZ
-SPIDEV rm3100      SPI3 DEVID4  CS_RM3100        MODE3  2*MHZ  8*MHZ
+SPIDEV rm3100      SPI3 DEVID4  CS_RM3100        MODE3  1*MHZ  1*MHZ
 SPIDEV dps310      SPI4 DEVID3  CS_DPS310        MODE3  5*MHZ  5*MHZ
 SPIDEV ramtron     SPI4 DEVID10 CS_FRAM          MODE3  8*MHZ  8*MHZ
 
@@ -153,19 +151,16 @@ define HAL_HAVE_SAFETY_SWITCH 0
 define HAL_OS_FATFS_IO 1
 
 # Nexus has a TriColor LED like the Pixracer, Red, Green, Blue
-define HAL_HAVE_PIXRACER_LED
-
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
 # LED setup for PixracerLED driver
 PA6 LED_R OUTPUT HIGH GPIO(0)
 PA7 LED_G OUTPUT HIGH GPIO(1)
 PB0 LED_B OUTPUT HIGH GPIO(2)
 
-define HAL_GPIO_A_LED_PIN 0
-define HAL_GPIO_B_LED_PIN 1
-define HAL_GPIO_C_LED_PIN 2
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 0
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 1
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 2
 
 # 2 IMUs (Analog Devices ADIS16470 and Invensense / TDK ICM40609D)
 IMU ADIS1647x      SPI:adis16470 ROTATION_ROLL_180 HAL_DRDY_ADIS16470_PIN

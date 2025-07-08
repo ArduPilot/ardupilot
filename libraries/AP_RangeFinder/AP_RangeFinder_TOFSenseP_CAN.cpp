@@ -7,31 +7,6 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_HAL/AP_HAL.h>
 
-RangeFinder_MultiCAN *AP_RangeFinder_TOFSenseP_CAN::multican_TOFSenseP;
-
-/*
-  constructor
- */
-AP_RangeFinder_TOFSenseP_CAN::AP_RangeFinder_TOFSenseP_CAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    AP_RangeFinder_Backend_CAN(_state, _params)
-{
-    if (multican_TOFSenseP == nullptr) {
-        multican_TOFSenseP = new RangeFinder_MultiCAN(AP_CAN::Protocol::TOFSenseP, "TOFSenseP MultiCAN");
-        if (multican_TOFSenseP == nullptr) {
-            AP_BoardConfig::allocation_error("Rangefinder_MultiCAN");
-        }
-    }
-
-    {
-        // add to linked list of drivers
-        WITH_SEMAPHORE(multican_TOFSenseP->sem);
-        auto *prev = multican_TOFSenseP->drivers;
-        next = prev;
-        multican_TOFSenseP->drivers = this;
-    }
-}
-
-
 // handler for incoming frames. These come in at 10-30Hz
 bool AP_RangeFinder_TOFSenseP_CAN::handle_frame(AP_HAL::CANFrame &frame)
 {

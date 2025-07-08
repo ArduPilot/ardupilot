@@ -73,8 +73,6 @@
 #define DEBUG 0
 #endif
 
-extern const AP_HAL::HAL &hal;
-
 AP_Compass_Backend *AP_Compass_QMC5883P::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
         bool force_external,
         enum Rotation rotation)
@@ -82,7 +80,7 @@ AP_Compass_Backend *AP_Compass_QMC5883P::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice>
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_QMC5883P *sensor = new AP_Compass_QMC5883P(std::move(dev),force_external,rotation);
+    AP_Compass_QMC5883P *sensor = NEW_NOTHROW AP_Compass_QMC5883P(std::move(dev),force_external,rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -134,7 +132,7 @@ bool AP_Compass_QMC5883P::init()
     set_dev_id(_instance, _dev->get_bus_id());
 
     printf("%s found on bus %u id %u address 0x%02x\n", name,
-           _dev->bus_num(), _dev->get_bus_id(), _dev->get_bus_address());
+           _dev->bus_num(), unsigned(_dev->get_bus_id()), _dev->get_bus_address());
 
     set_rotation(_instance, _rotation);
 

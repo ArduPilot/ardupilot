@@ -35,7 +35,7 @@ void AP_RangeFinder_SITL::update(void)
     const float dist = AP::sitl()->get_rangefinder(_instance);
 
     // nan distance means nothing is connected
-    if (isnan(dist)) {
+    if (isnan(dist) || isinf(dist)) {
         state.status = RangeFinder::Status::NoData;
         return;
     }

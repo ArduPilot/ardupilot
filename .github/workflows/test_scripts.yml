@@ -19,6 +19,8 @@ jobs:
             python-cleanliness,
             astyle-cleanliness,
             validate_board_list,
+            logger_metadata,
+            param-file-validation,
        ]
     steps:
       # git checkout the PR
@@ -30,4 +32,5 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           Tools/scripts/build_ci.sh

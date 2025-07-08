@@ -75,15 +75,17 @@ void RCOutput::rcout_thread() {
     rcout_thread_ctx = chThdGetSelfX();
     chRegSetThreadNameX(rcout_thread_ctx, rcout_thread_name);
 
-    uint64_t last_cycle_run_us = 0;
+    rcout_timer_t last_cycle_run_us = 0;
 
     while (true) {
         chEvtWaitOne(EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND);
+
         // start the clock
-        const uint64_t last_thread_run_us = AP_HAL::micros64();
+        const rcout_timer_t last_thread_run_us = rcout_micros();
+
         // this is when the cycle is supposed to start
         if (_dshot_cycle == 0) {
-            last_cycle_run_us = AP_HAL::micros64();
+            last_cycle_run_us = rcout_micros();
             // register a timer for the next tick if push() will not be providing it
             if (_dshot_rate != 1) {
                 chVTSet(&_dshot_rate_timer, chTimeUS2I(_dshot_period_us), dshot_update_tick, this);
@@ -92,10 +94,9 @@ void RCOutput::rcout_thread() {
 
         // if DMA sharing is in effect there can be quite a delay between the request to begin the cycle and
         // actually sending out data - thus we need to work out how much time we have left to collect the locks
-        uint64_t time_out_us = (_dshot_cycle + 1) * _dshot_period_us + last_cycle_run_us;
-        if (!_dshot_rate) {
-            time_out_us = last_thread_run_us + _dshot_period_us;
-        }
+        const rcout_timer_t timeout_period_us = _dshot_rate ? (_dshot_cycle + 1) * _dshot_period_us : _dshot_period_us;
+        // timeout is measured from the beginning of the push() that initiated it to preserve periodicity
+        const rcout_timer_t cycle_start_us = _dshot_rate ? last_cycle_run_us : last_thread_run_us;
 
         // DMA channel sharing on F10x is complicated. The allocations are
         // TIM2_UP  - (1,2)
@@ -124,15 +125,31 @@ void RCOutput::rcout_thread() {
         // TIM4_CH3 - unlock
         // TIM4_UP  - unlock
 
-        dshot_send_groups(time_out_us);
+        dshot_send_groups(cycle_start_us, timeout_period_us);
 #if AP_HAL_SHARED_DMA_ENABLED
-        dshot_collect_dma_locks(time_out_us);
+        dshot_collect_dma_locks(cycle_start_us, timeout_period_us);
 #endif
         if (_dshot_rate > 0) {
             _dshot_cycle = (_dshot_cycle + 1) % _dshot_rate;
         }
     }
 }
+
+#if defined(STM32F1)
+void RCOutput::bdshot_disable_pwm_f1(pwm_group& group)
+{
+    stm32_tim_t* TIMx = group.pwm_drv->tim;
+    // pwmStop sets these
+    TIMx->CR1  = 0;                    /* Timer disabled.              */
+    TIMx->DIER = 0;                    /* All IRQs disabled.           */
+    TIMx->SR   = 0;                    /* Clear eventual pending IRQs. */
+    TIMx->CNT  = 0;
+    TIMx->CCR[0] = 0;                  /* Comparator 1 disabled.       */
+    TIMx->CCR[1] = 0;                  /* Comparator 2 disabled.       */
+    TIMx->CCR[2] = 0;                  /* Comparator 3 disabled.       */
+    TIMx->CCR[3] = 0;                  /* Comparator 4 disabled.       */
+}
+#endif
 
 #if defined(HAL_WITH_BIDIR_DSHOT) && defined(STM32F1)
 // reset pwm driver to output mode without resetting the clock or the peripheral
@@ -142,15 +159,8 @@ void RCOutput::bdshot_reset_pwm_f1(pwm_group& group, uint8_t telem_channel)
     osalSysLock();
 
     stm32_tim_t* TIMx = group.pwm_drv->tim;
-    // pwmStop sets these
-    TIMx->CR1  = 0;                    /* Timer disabled.              */
-    TIMx->DIER = 0;                    /* All IRQs disabled.           */
-    TIMx->SR   = 0;                    /* Clear eventual pending IRQs. */
-    TIMx->CNT = 0;
-    TIMx->CCR[0] = 0;                  /* Comparator 1 disabled.       */
-    TIMx->CCR[1] = 0;                  /* Comparator 2 disabled.       */
-    TIMx->CCR[2] = 0;                  /* Comparator 3 disabled.       */
-    TIMx->CCR[3] = 0;                  /* Comparator 4 disabled.       */
+    bdshot_disable_pwm_f1(group);
+
     // at the point this is called we will have done input capture on two CC channels
     // we need to switch those channels back to output and the default settings
     // all other channels will not have been modified
@@ -194,7 +204,7 @@ void RCOutput::bdshot_reset_pwm_f1(pwm_group& group, uint8_t telem_channel)
     // we need to switch every output on the same input channel to avoid
     // spurious line changes
     for (uint8_t i = 0; i<4; i++) {
-        if (group.chan[i] == CHAN_DISABLED) {
+        if (!group.is_chan_enabled(i)) {
             continue;
         }
         if (group.bdshot.telem_tim_ch[telem_channel] == group.bdshot.telem_tim_ch[i]) {
@@ -240,7 +250,7 @@ void RCOutput::bdshot_receive_pulses_DMAR_f1(pwm_group* group)
     // we need to switch every input on the same input channel to allow
     // the ESCs to drive the lines
     for (uint8_t i = 0; i<4; i++) {
-        if (group->chan[i] == CHAN_DISABLED) {
+        if (!group->is_chan_enabled(i)) {
             continue;
         }
         if (group->bdshot.telem_tim_ch[curr_ch] == group->bdshot.telem_tim_ch[i]) {

@@ -18,6 +18,7 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Common/Location.h>
 
 #define TELEM_PAYLOAD_STATUS_CAPACITY          5 // size of the message buffer queue (max number of messages waiting to be sent)
 
@@ -69,13 +70,16 @@ public:
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-    uint32_t sensor_status_flags() const;
+    uint32_t unhealthy_sensors() const;
     uint16_t get_avg_packet_rate() const {
         return _scheduler.avg_packet_rate;
     }
     uint16_t get_max_packet_rate() const {
         return _scheduler.max_packet_rate;
     }
+
+    static float get_vspeed_ms(void);
+    static float get_nav_alt_m(Location::AltFrame frame = Location::AltFrame::ABSOLUTE);
 
 protected:
     uint8_t run_wfq_scheduler(const bool use_shaper = true);

@@ -44,7 +44,7 @@ void AP_TemperatureSensor_TSYS01::init()
     }
 #endif
 
-    _dev = std::move(hal.i2c_mgr->get_device(_params.bus, _params.bus_address));
+    _dev = hal.i2c_mgr->get_device_ptr(_params.bus, _params.bus_address);
     if (!_dev) {
         printf("%s device is null!", name);
         return;

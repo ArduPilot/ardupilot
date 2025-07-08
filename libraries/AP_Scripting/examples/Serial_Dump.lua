@@ -1,5 +1,9 @@
 -- this script reads data from a serial port and dumps it to a file
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: cast-local-type
+
 local file_name = 'raw serial dump.txt'
 local file_name_plain = 'serial dump.txt'
 local baud_rate = 9600

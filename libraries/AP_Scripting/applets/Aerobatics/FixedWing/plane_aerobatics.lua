@@ -5,6 +5,12 @@
    assistance from Paul Riseborough, testing by Henry Wurzburg
 ]]--
 -- luacheck: ignore 212 (Unused argument)
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: undefined-field
+---@diagnostic disable: missing-parameter
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: undefined-global
+---@diagnostic disable: inject-field
 
 -- setup param block for aerobatics, reserving 35 params beginning with AERO_
 local PARAM_TABLE_KEY = 70
@@ -278,7 +284,7 @@ ACRO_ROLL_RATE = Parameter("ACRO_ROLL_RATE")
 ACRO_YAW_RATE = Parameter('ACRO_YAW_RATE')
 AIRSPEED_MIN = Parameter("AIRSPEED_MIN")
 SCALING_SPEED = Parameter("SCALING_SPEED")
-SYSID_THISMAV = Parameter("SYSID_THISMAV")
+MAV_SYSID = Parameter("MAV_SYSID")
 
 GRAVITY_MSS = 9.80665
 
@@ -652,8 +658,8 @@ end
 --[[
    create a class that inherits from a base class
 --]]
-local function inheritsFrom(baseClass, _name)
-    local new_class = { name = _name }
+local function inheritsFrom(baseClass, name_in)
+    local new_class = { name = name_in }
     local class_mt = { __index = new_class }
 
     function new_class:create()
@@ -1651,10 +1657,8 @@ end
 --[[
    perform a rudder over maneuver
 --]]
-function rudder_over(_direction, _min_speed)
+function rudder_over(direction, min_speed)
    local self = {}
-   local direction = _direction
-   local min_speed = _min_speed
    local reached_speed = false
    local kick_started = false
    local pitch2_done = false
@@ -1699,7 +1703,7 @@ function rudder_over(_direction, _min_speed)
 
       -- use user set throttle for achieving the stall
       local throttle = AEROM_STALL_THR:get()
-      local pitch_deg = math.deg(ahrs:get_pitch())
+      local pitch_deg = math.deg(ahrs:get_pitch_rad())
       if reached_speed and not kick_started and math.abs(math.deg(ahrs_gyro:z())) > ACRO_YAW_RATE:get()/3 then
          kick_started = true
       end
@@ -1815,14 +1819,12 @@ end
 --[[
    takeoff controller
 --]]
-function takeoff_controller(_distance, _thr_slew)
+function takeoff_controller(distance, thr_slew)
    local self = {}
    local start_time = 0
    local start_pos = nil
-   local thr_slew = _thr_slew
-   local distance = _distance
    local all_done = false
-   local initial_yaw_deg = math.deg(ahrs:get_yaw())
+   local initial_yaw_deg = math.deg(ahrs:get_yaw_rad())
    local yaw_correction_tconst = 1.0
    gcs:send_text(MAV_SEVERITY.INFO,string.format("Takeoff init"))
 
@@ -1843,7 +1845,7 @@ function takeoff_controller(_distance, _thr_slew)
       end
       local throttle = constrain(thr_slew * (now - start_time), 0, 100)
 
-      local yaw_deg = math.deg(ahrs:get_yaw())
+      local yaw_deg = math.deg(ahrs:get_yaw_rad())
       local yaw_err_deg = wrap_180(yaw_deg - initial_yaw_deg)
       local targ_yaw_rate = -yaw_err_deg / yaw_correction_tconst
 
@@ -2117,7 +2119,9 @@ end
 
 -- log a pose from position and quaternion attitude
 function log_pose(logname, pos, quat)
-   logger.write(logname, 'px,py,pz,q1,q2,q3,q4,r,p,y', 'ffffffffff',
+   local loc = ahrs:get_origin():copy()
+   loc:offset(pos:x(),pos:y())
+   logger.write(logname, 'px,py,pz,q1,q2,q3,q4,r,p,y,Lat,Lon', 'ffffffffffLL',
                 pos:x(),
                 pos:y(),
                 pos:z(),
@@ -2127,11 +2131,15 @@ function log_pose(logname, pos, quat)
                 quat:q4(),
                 math.deg(quat:get_euler_roll()),
                 math.deg(quat:get_euler_pitch()),
-                math.deg(quat:get_euler_yaw()))
+                math.deg(quat:get_euler_yaw()),
+                loc:lat(),
+                loc:lng())
 end
 
-
-function log_position(logname, loc, quat)
+--[[
+   get GPS week and MS, coping with crossing a week boundary
+--]]
+function get_gps_times()
    local gps_last_fix_ms1 = gps:last_fix_time_ms(0)
    local gps_week = gps:time_week(0)
    local gps_week_ms = gps:time_week_ms(0)
@@ -2144,12 +2152,17 @@ function log_position(logname, loc, quat)
       gps_week_ms = gps:time_week_ms(0)
    end
    gps_week_ms = gps_week_ms + (now_ms - gps_last_fix_ms2)
+   return gps_week, gps_week_ms
+end
+
+function log_position(logname, loc, quat)
+   local gps_week, gps_week_ms = get_gps_times()
 
    logger.write(logname, 'I,GWk,GMS,Lat,Lon,Alt,R,P,Y',
                 'BHILLffff',
                 '#--DU----',
                 '---GG----',
-                SYSID_THISMAV:get(),
+                MAV_SYSID:get(),
                 gps_week,
                 gps_week_ms,
                 loc:lat(),
@@ -2227,11 +2240,9 @@ end
    milliseconds means we lose accuracy over time. At 9 hours we have
    an accuracy of about 1 millisecond
 --]]
-local function JitterCorrection(_max_lag_ms, _convergence_loops)
+local function JitterCorrection(max_lag_ms, convergence_loops)
    local self = {}
 
-   local max_lag_ms = _max_lag_ms
-   local convergence_loops = _convergence_loops
    local link_offset_ms = 0
    local min_sample_ms = 0
    local initialised = false
@@ -2298,8 +2309,8 @@ local function mavlink_receiver()
 
    msg_map[NAMED_VALUE_FLOAT_msgid] = "NAMED_VALUE_FLOAT"
 
-   -- initialise mavlink rx with number of messages, and buffer depth
-   mavlink.init(1, 10)
+   -- initialize MAVLink rx with buffer depth and number of rx message IDs to register
+   mavlink.init(10, 1)
 
    -- register message id to receive
    mavlink.register_rx_msgid(NAMED_VALUE_FLOAT_msgid)
@@ -2346,7 +2357,7 @@ function handle_speed_adjustment()
       return
    end
    -- gcs:send_text(MAV_SEVERITY.INFO, string.format("NVF: name='%s' value=%f sysid=%d tbm=%f", name, remote_timestamp, sysid, time_boot_ms))
-   if name == "PATHT" and sysid ~= SYSID_THISMAV:get() then
+   if name == "PATHT" and sysid ~= MAV_SYSID:get() then
       local remote_t = time_boot_ms * 0.001
       local dt = local_t - remote_t
       local rem_patht = current_task.fn:timestamp_to_patht(remote_timestamp)
@@ -2359,8 +2370,15 @@ function handle_speed_adjustment()
          path_var.speed_adjustment = 0.0
       end
 
-      logger.write("PTHT",'SysID,RemT,LocT,TS,RemTS,PathT,RemPathT,Dt,ARPT,DE,SA','Bffffffffff',
-                   sysid, remote_t, local_t,
+      local gps_week, gps_week_ms = get_gps_times()
+      logger.write("PTHT",
+                   'SysID,GWk,GMS,RemT,LocT,TS,RTS,PT,RPT,Dt,ARPT,DE,SA',
+                   'BHIffffffffff',
+                   '#------------',
+                   '-------------',
+                   sysid,
+                   gps_week, gps_week_ms,
+                   remote_t, local_t,
                    loc_timestamp,
                    remote_timestamp,
                    path_var.path_t, rem_patht,
@@ -2703,8 +2721,10 @@ function do_path()
                    lookahead_bf_dps:y(),
                    path_rate_bf_dps:z(),
                    lookahead_bf_dps:z())
-      path_rate_bf_dps:y(lookahead_bf_dps:y())
-      path_rate_bf_dps:z(lookahead_bf_dps:z())
+      if not Vec3IsNaN(lookahead_bf_dps) then
+         path_rate_bf_dps:y(lookahead_bf_dps:y())
+         path_rate_bf_dps:z(lookahead_bf_dps:z())
+      end
    end
    
    --[[
@@ -3015,7 +3035,9 @@ function load_trick(id)
    local pc = path_composer(name, paths)
    gcs:send_text(MAV_SEVERITY.INFO, string.format("Loaded trick%u '%s'", id, name))
    command_table[id] = PathFunction(pc, name)
-   logger:log_file_content(filename)
+   if logger.log_file_content then
+      logger:log_file_content(filename)
+   end
 
    calculate_timestamps(command_table[id])
 end

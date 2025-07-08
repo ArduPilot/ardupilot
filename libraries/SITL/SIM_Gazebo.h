@@ -18,13 +18,9 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include "SIM_config.h"
 
-#ifndef HAL_SIM_GAZEBO_ENABLED
-#define HAL_SIM_GAZEBO_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#endif
-
-#if HAL_SIM_GAZEBO_ENABLED
+#if AP_SIM_GAZEBO_ENABLED
 
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket_native.h>
@@ -43,7 +39,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Gazebo(frame_str);
+        return NEW_NOTHROW Gazebo(frame_str);
     }
 
     /*  Create and set in/out socket for Gazebo simulator */
@@ -85,4 +81,4 @@ private:
 }  // namespace SITL
 
 
-#endif  // HAL_SIM_GAZEBO_ENABLED
+#endif  // AP_SIM_GAZEBO_ENABLED

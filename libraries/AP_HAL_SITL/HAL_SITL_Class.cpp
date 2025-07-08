@@ -42,7 +42,7 @@ static Storage sitlStorage;
 static SITL_State sitlState;
 static Scheduler sitlScheduler(&sitlState);
 #if AP_RCPROTOCOL_ENABLED
-static RCInput sitlRCInput(&sitlState);
+static RCInput sitlRCInput;
 #else
 static Empty::RCInput  sitlRCInput;
 #endif
@@ -205,6 +205,11 @@ bool HAL_SITL::run_in_maintenance_mode() const
     return _sitl_state->run_in_maintenance_mode();
 }
 #endif
+
+uint32_t HAL_SITL::get_uart_output_full_queue_count() const
+{
+    return _sitl_state->_serial_0_outqueue_full_count;
+}
 
 void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {

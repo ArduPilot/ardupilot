@@ -1,13 +1,11 @@
 # hw definition file for processing by chibios_hwdef.py
 # for VRBRAINv54 hardware
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54
-
 # MCU class and specific type
 MCU STM32F4xx STM32F427xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1154
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_VRBRAIN_V54
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
@@ -127,7 +125,17 @@ SPIDEV mpu6000     SPI2 DEVID4  MPU_CS     MODE3   2*MHZ   8*MHZ
 SPIDEV ramtron     SPI3 DEVID10 FRAM_CS    MODE3   8*MHZ   8*MHZ
 SPIDEV sdcard      SPI3 DEVID1  SDCARD_CS  MODE0 400*KHZ  25*MHZ
 
-define HAL_CHIBIOS_ARCH_BRAINV54 1
+# Barometers
+BARO MS5611 SPI:ms5611
+
+# Compasses
+COMPASS HMC5843 I2C:1:0x1e true ROTATION_ROLL_180  # forced external
+COMPASS HMC5843 I2C:0:0x1e false ROTATION_YAW_270  # internal
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES 1
+
+# IMUs
+IMU Invensense SPI:mpu6000 ROTATION_YAW_180
+define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
 define HAL_STORAGE_SIZE   16384
 
@@ -137,8 +145,8 @@ define HAL_WITH_RAMTRON 1
 # enable FAT filesystem
 define HAL_OS_FATFS_IO 1
 
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
+define AP_NOTIFY_VRBOARD_LED_ENABLED 1
+define AP_NOTIFY_EXTERNALLED_ENABLED 1
 
 define HAL_GPIO_A_LED_PIN  25
 define HAL_GPIO_B_LED_PIN  26
@@ -161,5 +169,3 @@ define HAL_BATT_VOLT_PIN 10
 define HAL_BATT_CURR_PIN 11
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
-
-define STM32_PWM_USE_ADVANCED TRUE

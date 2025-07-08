@@ -13,7 +13,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
-  interfaces to ArduPilot collection of CRCs. 
+  interfaces to ArduPilot collection of CRCs.
  */
 #pragma once
 
@@ -21,13 +21,14 @@
 
 uint16_t crc_crc4(uint16_t *data);
 uint8_t crc_crc8(const uint8_t *p, uint8_t len);
-uint8_t crc8_generic(const uint8_t *buf, const uint16_t buf_len, const uint8_t polynomial);     // CRC8 that does not use a lookup table for generic polynomials
+uint8_t crc8_generic(const uint8_t *buf, const uint16_t buf_len, const uint8_t polynomial, uint8_t initial_value=0);     // CRC8 that does not use a lookup table for generic polynomials
 uint8_t crc8_dvb_s2(uint8_t crc, uint8_t a);
 uint8_t crc8_dvb(uint8_t crc, uint8_t a, uint8_t seed);
 uint8_t crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length);
 uint8_t crc8_dvb_update(uint8_t crc, const uint8_t* buf, const uint16_t buf_len);
 uint8_t crc8_maxim(const uint8_t *data, uint16_t length);
 uint8_t crc8_sae(const uint8_t *data, uint16_t length);
+uint8_t crc8_rds02uf(const uint8_t *data, uint16_t length);
 uint16_t crc_xmodem_update(uint16_t crc, uint8_t data);
 uint16_t crc_xmodem(const uint8_t *data, uint16_t len);
 uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size);

@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_GUIDED_NOGPS_ENABLED == ENABLED
+#if MODE_GUIDED_NOGPS_ENABLED
 
 /*
  * Init and run calls for guided_nogps flight mode

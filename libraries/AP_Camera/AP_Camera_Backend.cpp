@@ -1,9 +1,13 @@
-#include "AP_Camera_Backend.h"
+#include "AP_Camera_config.h"
 
 #if AP_CAMERA_ENABLED
+
+#include "AP_Camera_Backend.h"
+
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Mount/AP_Mount.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -14,11 +18,22 @@ AP_Camera_Backend::AP_Camera_Backend(AP_Camera &frontend, AP_Camera_Params &para
     _instance(instance)
 {}
 
+void AP_Camera_Backend::init()
+{
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+    _camera_info.focal_length = NaNf;
+    _camera_info.sensor_size_h = NaNf;
+    _camera_info.sensor_size_v = NaNf;
+
+    _camera_info.flags = CAMERA_CAP_FLAGS_CAPTURE_IMAGE;
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+}
+
 // update - should be called at 50hz
 void AP_Camera_Backend::update()
 {
     // Check camera options and start/stop recording based on arm/disarm
-    if ((_params.options.get() & (uint8_t)Options::RecordWhileArmed) != 0) {
+    if (option_is_enabled(Option::RecordWhileArmed)) {
         if (hal.util->get_soft_armed() != last_is_armed) {
             last_is_armed = hal.util->get_soft_armed();
             if (!record_video(last_is_armed)) {
@@ -57,8 +72,10 @@ void AP_Camera_Backend::update()
         return;
     }
 
-    // check GPS status
-    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    Location current_loc;
+    if (!ahrs.get_location(current_loc)) {
         return;
     }
 
@@ -68,14 +85,9 @@ void AP_Camera_Backend::update()
     }
 
     // check vehicle roll angle is less than configured maximum
-    const AP_AHRS &ahrs = AP::ahrs();
-    if ((_frontend.get_roll_max() > 0) && (fabsf(AP::ahrs().roll_sensor * 1e-2f) > _frontend.get_roll_max())) {
+    if ((_frontend.get_roll_max() > 0) && (fabsf(ahrs.roll_sensor * 1e-2f) > _frontend.get_roll_max())) {
         return;
     }
-
-    // get current location. ignore failure because AHRS will provide its best guess
-    Location current_loc;
-    IGNORE_RETURN(ahrs.get_location(current_loc));
 
     // initialise last location to current location
     if (last_location.lat == 0 && last_location.lng == 0) {
@@ -200,9 +212,9 @@ void AP_Camera_Backend::send_camera_feedback(mavlink_channel_t chan)
         camera_feedback.location.lng,       // longitude
         altitude*1e-2f,                     // alt MSL
         altitude_rel*1e-2f,                 // alt relative to home
-        camera_feedback.roll_sensor*1e-2f,  // roll angle (deg)
-        camera_feedback.pitch_sensor*1e-2f, // pitch angle (deg)
-        camera_feedback.yaw_sensor*1e-2f,   // yaw angle (deg)
+        camera_feedback.roll_deg,           // roll angle (deg)
+        camera_feedback.pitch_deg,          // pitch angle (deg)
+        camera_feedback.yaw_deg,            // yaw angle (deg)
         0.0f,                               // focal length
         CAMERA_FEEDBACK_PHOTO,              // flags
         camera_feedback.feedback_trigger_logged_count); // completed image captures
@@ -211,44 +223,71 @@ void AP_Camera_Backend::send_camera_feedback(mavlink_channel_t chan)
 // send camera information message to GCS
 void AP_Camera_Backend::send_camera_information(mavlink_channel_t chan) const
 {
-    // prepare vendor, model and cam definition strings
-    const uint8_t vendor_name[32] {};
-    const uint8_t model_name[32] {};
-    const char cam_definition_uri[140] {};
-    const uint32_t cap_flags = CAMERA_CAP_FLAGS_CAPTURE_IMAGE;
-    const float NaN = nanf("0x4152");
+    mavlink_camera_information_t camera_info;
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
-    // send CAMERA_INFORMATION message
-    mavlink_msg_camera_information_send(
-        chan,
-        AP_HAL::millis(),       // time_boot_ms
-        vendor_name,            // vendor_name uint8_t[32]
-        model_name,             // model_name uint8_t[32]
-        0,                      // firmware version uint32_t
-        NaN,                    // focal_length float (mm)
-        NaN,                    // sensor_size_h float (mm)
-        NaN,                    // sensor_size_v float (mm)
-        0,                      // resolution_h uint16_t (pix)
-        0,                      // resolution_v uint16_t (pix)
-        0,                      // lens_id, uint8_t
-        cap_flags,              // flags uint32_t (CAMERA_CAP_FLAGS)
-        0,                      // cam_definition_version uint16_t
-        cam_definition_uri,     // cam_definition_uri char[140]
-        get_gimbal_device_id());// gimbal_device_id uint8_t
+    camera_info = _camera_info;
+
+#else
+
+    memset(&camera_info, 0, sizeof(camera_info));
+
+    camera_info.focal_length = NaNf;
+    camera_info.sensor_size_h = NaNf;
+    camera_info.sensor_size_v = NaNf;
+
+    camera_info.flags = CAMERA_CAP_FLAGS_CAPTURE_IMAGE;
+
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+
+    // Set fixed fields
+    // lens_id is populated with the instance number, to disambiguate multiple cameras
+    camera_info.lens_id = _instance;
+    camera_info.gimbal_device_id = get_gimbal_device_id();
+    camera_info.time_boot_ms = AP_HAL::millis();
+
+    // Send CAMERA_INFORMATION message
+    mavlink_msg_camera_information_send_struct(chan, &camera_info);
 }
+
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+void AP_Camera_Backend::set_camera_information(mavlink_camera_information_t camera_info)
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Camera %u CAMERA_INFORMATION (%s %s) set from script", _instance, camera_info.vendor_name, camera_info.model_name);
+    _camera_info = camera_info;
+};
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+// send video stream information message to GCS
+void AP_Camera_Backend::send_video_stream_information(mavlink_channel_t chan) const
+{
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+
+    // Send VIDEO_STREAM_INFORMATION message
+    mavlink_msg_video_stream_information_send_struct(chan, &_stream_info);
+
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+}
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+void AP_Camera_Backend::set_stream_information(mavlink_video_stream_information_t stream_info)
+{
+    _stream_info = stream_info;
+};
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
 // send camera settings message to GCS
 void AP_Camera_Backend::send_camera_settings(mavlink_channel_t chan) const
 {
-    const float NaN = nanf("0x4152");
-
     // send CAMERA_SETTINGS message
     mavlink_msg_camera_settings_send(
         chan,
         AP_HAL::millis(),   // time_boot_ms
         CAMERA_MODE_IMAGE,  // camera mode (0:image, 1:video, 2:image survey)
-        NaN,                // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf,               // zoomLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
 #if AP_CAMERA_SEND_FOV_STATUS_ENABLED
@@ -256,36 +295,49 @@ void AP_Camera_Backend::send_camera_settings(mavlink_channel_t chan) const
 void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
 {
     // getting corresponding mount instance for camera
-    const AP_Mount* mount = AP::mount();
+    AP_Mount* mount = AP::mount();
     if (mount == nullptr) {
         return;
     }
+
+    // get latest POI from mount
     Quaternion quat;
-    Location loc;
+    Location camera_loc;
     Location poi_loc;
-    if (!mount->get_poi(get_mount_instance(), quat, loc, poi_loc)) {
-        return;
+    const bool have_poi_loc = mount->get_poi(get_mount_instance(), quat, camera_loc, poi_loc);
+
+    // if failed to get POI, get camera location directly from AHRS
+    // and attitude directly from mount
+    bool have_camera_loc = have_poi_loc;
+    if (!have_camera_loc) {
+        have_camera_loc = AP::ahrs().get_location(camera_loc);
+        mount->get_attitude_quaternion(get_mount_instance(), quat);
     }
+
+    // calculate attitude quaternion in earth frame using AHRS yaw
+    Quaternion quat_ef;
+    quat_ef.from_euler(0, 0, AP::ahrs().get_yaw_rad());
+    quat_ef *= quat;
+
     // send camera fov status message only if the last calculated values aren't stale
-    const float NaN = nanf("0x4152");
     const float quat_array[4] = {
-        quat.q1,
-        quat.q2,
-        quat.q3,
-        quat.q4
+        quat_ef.q1,
+        quat_ef.q2,
+        quat_ef.q3,
+        quat_ef.q4
     };
     mavlink_msg_camera_fov_status_send(
         chan,
         AP_HAL::millis(),
-        loc.lat,
-        loc.lng,
-        loc.alt,
-        poi_loc.lat,
-        poi_loc.lng,
-        poi_loc.alt,
+        have_camera_loc ? camera_loc.lat : INT32_MAX,
+        have_camera_loc ? camera_loc.lng : INT32_MAX,
+        have_camera_loc ? camera_loc.alt * 10 : INT32_MAX,
+        have_poi_loc ? poi_loc.lat : INT32_MAX,
+        have_poi_loc ? poi_loc.lng : INT32_MAX,
+        have_poi_loc ? poi_loc.alt * 10 : INT32_MAX,
         quat_array,
-        horizontal_fov() > 0 ? horizontal_fov() : NaN,
-        vertical_fov() > 0 ? vertical_fov() : NaN
+        horizontal_fov() > 0 ? horizontal_fov() : NaNf,
+        vertical_fov() > 0 ? vertical_fov() : NaNf
     );
 }
 #endif
@@ -293,8 +345,6 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
 // send camera capture status message to GCS
 void AP_Camera_Backend::send_camera_capture_status(mavlink_channel_t chan) const
 {
-    const float NaN = nanf("0x4152");
-
     // Current status of image capturing (0: idle, 1: capture in progress, 2: interval set but idle, 3: interval set and capture in progress)
     const uint8_t image_status = (time_interval_settings.num_remaining > 0) ? 2 : 0;
 
@@ -306,7 +356,7 @@ void AP_Camera_Backend::send_camera_capture_status(mavlink_channel_t chan) const
         0,                // current status of video capturing (0: idle, 1: capture in progress)
         static_cast<float>(time_interval_settings.time_interval_ms) / 1000.0, // image capture interval (s)
         0,                // elapsed time since recording started (ms)
-        NaN,              // available storage capacity (ms)
+        NaNf,             // available storage capacity (ms)
         image_index);     // total number of images captured
 }
 
@@ -386,9 +436,9 @@ void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
         // completely ignore this failure!  AHRS will provide its best guess.
     }
     camera_feedback.timestamp_us = timestamp_us;
-    camera_feedback.roll_sensor = ahrs.roll_sensor;
-    camera_feedback.pitch_sensor = ahrs.pitch_sensor;
-    camera_feedback.yaw_sensor = ahrs.yaw_sensor;
+    camera_feedback.roll_deg = ahrs.get_roll_deg();
+    camera_feedback.pitch_deg = ahrs.get_pitch_deg();
+    camera_feedback.yaw_deg = ahrs.get_yaw_deg();
     camera_feedback.feedback_trigger_logged_count = feedback_trigger_logged_count;
 
     GCS_SEND_MESSAGE(MSG_CAMERA_FEEDBACK);

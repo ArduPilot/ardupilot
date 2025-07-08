@@ -17,7 +17,8 @@
     $ ./Tools/autotest/sim_vehicle.py -v Plane -A "--serial3=uart:/dev/3dm-gq7" -DG
     param set AHRS_EKF_TYPE 11
     param set EAHRS_TYPE 7
-    param set GPS_TYPE 21
+    param set GPS1_TYPE 21
+    param set GPS2_TYPE 21
     param set SERIAL3_BAUD 115
     param set SERIAL3_PROTOCOL 36
   UDEV rules for repeatable USB connection:
@@ -45,6 +46,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
+static const char* LOG_FMT = "%s ExternalAHRS: %s";
+
 extern const AP_HAL::HAL &hal;
 
 AP_ExternalAHRS_MicroStrain7::AP_ExternalAHRS_MicroStrain7(AP_ExternalAHRS *_frontend,
@@ -57,12 +60,12 @@ AP_ExternalAHRS_MicroStrain7::AP_ExternalAHRS_MicroStrain7(AP_ExternalAHRS *_fro
     port_num = sm.find_portnum(AP_SerialManager::SerialProtocol_AHRS, 0);
 
     if (!uart) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "MicroStrain7 ExternalAHRS no UART");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, LOG_FMT, get_name(), "no UART");
         return;
     }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_ExternalAHRS_MicroStrain7::update_thread, void), "AHRS", 2048, AP_HAL::Scheduler::PRIORITY_SPI, 0)) {
-        AP_BoardConfig::allocation_error("MicroStrain7 failed to allocate ExternalAHRS update thread");
+        AP_BoardConfig::allocation_error("MicroStrain7 ExternalAHRS failed to allocate ExternalAHRS update thread");
     }
 
     // don't offer IMU by default, at 100Hz it is too slow for many aircraft
@@ -71,7 +74,9 @@ AP_ExternalAHRS_MicroStrain7::AP_ExternalAHRS_MicroStrain7(AP_ExternalAHRS *_fro
                         uint16_t(AP_ExternalAHRS::AvailableSensor::COMPASS));
 
     hal.scheduler->delay(5000);
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MicroStrain7 ExternalAHRS initialised");
+    if (!initialised()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, LOG_FMT, get_name(), "failed to initialise.");
+    }
 }
 
 void AP_ExternalAHRS_MicroStrain7::update_thread(void)
@@ -84,9 +89,19 @@ void AP_ExternalAHRS_MicroStrain7::update_thread(void)
     while (true) {
         build_packet();
         hal.scheduler->delay_microseconds(100);
+        check_initialise_state();
     }
 }
 
+void AP_ExternalAHRS_MicroStrain7::check_initialise_state(void)
+{
+    const auto new_init_state = initialised();
+    // Only send the message after fully booted up, otherwise it gets dropped.
+    if (!last_init_state && new_init_state && AP_HAL::millis() > 5000) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, LOG_FMT, get_name(), "initialised.");
+        last_init_state = new_init_state;
+    }
+}
 
 
 // Builds packets by looking at each individual byte, once a full packet has been read in it checks the checksum then handles the packet.
@@ -134,9 +149,6 @@ void AP_ExternalAHRS_MicroStrain7::post_imu() const
         WITH_SEMAPHORE(state.sem);
         state.accel = imu_data.accel;
         state.gyro = imu_data.gyro;
-
-        state.quat = imu_data.quat;
-        state.have_quaternion = true;
     }
 
     {
@@ -188,6 +200,9 @@ void AP_ExternalAHRS_MicroStrain7::post_filter() const
         // Use GNSS 0 even though it may be bad.
         state.location = Location{filter_data.lat, filter_data.lon, gnss_data[0].msl_altitude, Location::AltFrame::ABSOLUTE};
         state.have_location = true;
+
+        state.quat = filter_data.attitude_quat;
+        state.have_quaternion = true;
     }
 
     for (int instance = 0; instance < NUM_GNSS_INSTANCES; instance++) {
@@ -195,7 +210,7 @@ void AP_ExternalAHRS_MicroStrain7::post_filter() const
         AP_ExternalAHRS::gps_data_message_t gps {
             gps_week: filter_data.week,
             ms_tow: filter_data.tow_ms,
-            fix_type: (uint8_t) gnss_data[instance].fix_type,
+            fix_type: AP_GPS_FixType(gnss_data[instance].fix_type),
             satellites_in_view: gnss_data[instance].satellites,
 
             horizontal_pos_accuracy: gnss_data[instance].horizontal_position_accuracy,
@@ -205,20 +220,20 @@ void AP_ExternalAHRS_MicroStrain7::post_filter() const
             hdop: gnss_data[instance].hdop,
             vdop: gnss_data[instance].vdop,
 
-            longitude: filter_data.lon,
-            latitude: filter_data.lat,
+            longitude: gnss_data[instance].lon,
+            latitude: gnss_data[instance].lat,
             msl_altitude: gnss_data[instance].msl_altitude,
 
-            ned_vel_north: filter_data.ned_velocity_north,
-            ned_vel_east: filter_data.ned_velocity_east,
-            ned_vel_down: filter_data.ned_velocity_down,
+            ned_vel_north: gnss_data[instance].ned_velocity_north,
+            ned_vel_east: gnss_data[instance].ned_velocity_east,
+            ned_vel_down: gnss_data[instance].ned_velocity_down,
         };
         // *INDENT-ON*
 
-        if (gps.fix_type >= 3 && !state.have_origin) {
+        if (gps.fix_type >= AP_GPS_FixType::FIX_3D && !state.have_origin) {
             WITH_SEMAPHORE(state.sem);
-            state.origin = Location{int32_t(filter_data.lat),
-                                    int32_t(filter_data.lon),
+            state.origin = Location{int32_t(gnss_data[instance].lat),
+                                    int32_t(gnss_data[instance].lon),
                                     int32_t(gnss_data[instance].msl_altitude),
                                     Location::AltFrame::ABSOLUTE};
             state.have_origin = true;
@@ -238,54 +253,41 @@ int8_t AP_ExternalAHRS_MicroStrain7::get_port(void) const
 // Get model/type name
 const char* AP_ExternalAHRS_MicroStrain7::get_name() const
 {
-    return "MICROSTRAIN7";
+    return "MicroStrain7";
 }
 
 bool AP_ExternalAHRS_MicroStrain7::healthy(void) const
 {
-    uint32_t now = AP_HAL::millis();
-
-    // Expect the following rates:
-    // * Navigation Filter: 25Hz = 40mS
-    // * GPS: 2Hz = 500mS
-    // * IMU: 25Hz = 40mS
-
-    // Allow for some slight variance of 10%
-    constexpr float RateFoS = 1.1;
-
-    constexpr uint32_t expected_filter_time_delta_ms = 40;
-    constexpr uint32_t expected_gps_time_delta_ms = 500;
-    constexpr uint32_t expected_imu_time_delta_ms = 40;
-
-    const bool times_healthy = (now - last_imu_pkt < expected_imu_time_delta_ms * RateFoS && \
-                                now - last_gps_pkt < expected_gps_time_delta_ms * RateFoS && \
-                                now - last_filter_pkt < expected_filter_time_delta_ms * RateFoS);
-    const auto filter_state = static_cast<FilterState>(filter_status.state);
-    const bool filter_healthy = (filter_state == FilterState::GQ7_FULL_NAV || filter_state == FilterState::GQ7_AHRS);
-    return times_healthy && filter_healthy;
+    return times_healthy() && filter_healthy();
 }
 
 bool AP_ExternalAHRS_MicroStrain7::initialised(void) const
 {
     const bool got_packets = last_imu_pkt != 0 && last_gps_pkt != 0 && last_filter_pkt != 0;
-    const auto filter_state = static_cast<FilterState>(filter_status.state);
-    const bool filter_healthy = filter_state_healthy(filter_state);
-    return got_packets && filter_healthy;
+    return got_packets;
 }
 
 bool AP_ExternalAHRS_MicroStrain7::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
+    if (!initialised()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "not initialised");
+        return false;
+    }
+    if (!times_healthy()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "data is stale");
+        return false;
+    }
+    if (!filter_healthy()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "filter is unhealthy");
+        return false;
+    }
     if (!healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "MicroStrain7 unhealthy");
+        hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "unhealthy");
         return false;
     }
-    // TODO is this necessary?  hard coding the first instance.
-    if (gnss_data[0].fix_type < 3) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "MicroStrain7 no GPS lock");
-        return false;
-    }
-    if (!filter_state_healthy(FilterState(filter_status.state))) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "MicroStrain7 filter not running");
+    static_assert(NUM_GNSS_INSTANCES == 2, "This check only works if there are two GPS types.");
+    if (gnss_data[0].fix_type < GPS_FIX_TYPE_3D_FIX && gnss_data[1].fix_type < GPS_FIX_TYPE_3D_FIX) {
+        hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "missing 3D GPS fix on either GPS");
         return false;
     }
 
@@ -315,58 +317,44 @@ void AP_ExternalAHRS_MicroStrain7::get_filter_status(nav_filter_status &status) 
     }
 }
 
-void AP_ExternalAHRS_MicroStrain7::send_status_report(GCS_MAVLINK &link) const
+// get variances
+bool AP_ExternalAHRS_MicroStrain7::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
 {
-    // prepare flags
-    uint16_t flags = 0;
-    nav_filter_status filterStatus;
-    get_filter_status(filterStatus);
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (!filterStatus.flags.initalized) {
-        flags |= EKF_UNINITIALIZED;
-    }
+    velVar = filter_data.ned_velocity_uncertainty.length() * vel_gate_scale;
+    posVar = filter_data.ned_position_uncertainty.xy().length() * pos_gate_scale;
+    hgtVar = filter_data.ned_position_uncertainty.z * hgt_gate_scale;
+    tasVar = 0;
+    return true;
+}
 
-    // send message
-    const float vel_gate = 4; // represents hz value data is posted at
-    const float pos_gate = 4; // represents hz value data is posted at
-    const float hgt_gate = 4; // represents hz value data is posted at
-    const float mag_var = 0; //we may need to change this to be like the other gates, set to 0 because mag is ignored by the ins filter in vectornav
+bool AP_ExternalAHRS_MicroStrain7::times_healthy() const
+{
+    uint32_t now = AP_HAL::millis();
 
-    // TODO fix to use NED filter speed accuracy instead of first gnss
-    // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/filter_data/data/mip_field_filter_ned_vel_uncertainty.htm
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
-                                       gnss_data[0].speed_accuracy/vel_gate, gnss_data[0].horizontal_position_accuracy/pos_gate, gnss_data[0].vertical_position_accuracy/hgt_gate,
-                                       mag_var, 0, 0);
+    // Expect the following rates:
+    // * Navigation Filter: 25Hz = 40mS
+    // * GPS: 2Hz = 500mS
+    // * IMU: 25Hz = 40mS
 
+    // Allow for some slight variance of 10%
+    constexpr float RateFoS = 1.1;
+
+    constexpr uint32_t expected_filter_time_delta_ms = 40;
+    constexpr uint32_t expected_gps_time_delta_ms = 500;
+    constexpr uint32_t expected_imu_time_delta_ms = 40;
+
+    const bool times_healthy = (now - last_imu_pkt < expected_imu_time_delta_ms * RateFoS && \
+                                now - last_gps_pkt < expected_gps_time_delta_ms * RateFoS && \
+                                now - last_filter_pkt < expected_filter_time_delta_ms * RateFoS);
+
+    return times_healthy;
+}
+
+bool AP_ExternalAHRS_MicroStrain7::filter_healthy() const
+{
+    const auto filter_state = static_cast<FilterState>(filter_status.state);
+    const bool filter_healthy = filter_state_healthy(filter_state);
+    return filter_healthy;
 }
 
 bool AP_ExternalAHRS_MicroStrain7::filter_state_healthy(FilterState state)
@@ -378,7 +366,6 @@ bool AP_ExternalAHRS_MicroStrain7::filter_state_healthy(FilterState state)
     default:
         return false;
     }
-    // return state == FilterState::GQ7_FULL_NAV || state == FilterState::GQ7_AHRS;
 }
 
 #endif // AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED

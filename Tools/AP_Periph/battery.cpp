@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY
+#if AP_PERIPH_BATTERY_ENABLED
 
 /*
   battery support
@@ -54,7 +54,13 @@ void AP_Periph_FW::can_battery_update(void)
             pkt.temperature = C_TO_KELVIN(temperature);
         }
 
+        // Populate state of health
         pkt.state_of_health_pct = UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATE_OF_HEALTH_UNKNOWN;
+        uint8_t state_of_health_pct = 0;
+        if (battery_lib.get_state_of_health_pct(i, state_of_health_pct)) {
+            pkt.state_of_health_pct = state_of_health_pct;
+        }
+
         uint8_t percentage = 0;
         if (battery_lib.capacity_remaining_pct(percentage, i)) {
             pkt.state_of_charge_pct = percentage;
@@ -67,7 +73,7 @@ void AP_Periph_FW::can_battery_update(void)
         pkt.model_name.len = strnlen((char*)pkt.model_name.data, sizeof(pkt.model_name.data));
 #endif //defined(HAL_PERIPH_BATTERY_SKIP_NAME)
 
-        uint8_t buffer[UAVCAN_EQUIPMENT_POWER_BATTERYINFO_MAX_SIZE] {};
+        uint8_t buffer[UAVCAN_EQUIPMENT_POWER_BATTERYINFO_MAX_SIZE];
         const uint16_t total_size = uavcan_equipment_power_BatteryInfo_encode(&pkt, buffer, !periph.canfdout());
 
         canard_broadcast(UAVCAN_EQUIPMENT_POWER_BATTERYINFO_SIGNATURE,
@@ -90,8 +96,8 @@ void AP_Periph_FW::can_battery_send_cells(uint8_t instance)
 {
     // allocate space for the packet. This is a large
     // packet that won't fit on the stack, so dynamically allocate
-    auto* pkt = new ardupilot_equipment_power_BatteryInfoAux;
-    uint8_t* buffer = new uint8_t[ARDUPILOT_EQUIPMENT_POWER_BATTERYINFOAUX_MAX_SIZE];
+    auto* pkt = NEW_NOTHROW ardupilot_equipment_power_BatteryInfoAux;
+    uint8_t* buffer = NEW_NOTHROW uint8_t[ARDUPILOT_EQUIPMENT_POWER_BATTERYINFOAUX_MAX_SIZE];
     if (pkt == nullptr || buffer == nullptr) {
         delete pkt;
         delete [] buffer;
@@ -124,5 +130,4 @@ void AP_Periph_FW::can_battery_send_cells(uint8_t instance)
     delete [] buffer;
 }
 
-#endif // HAL_PERIPH_ENABLE_BATTERY
-
+#endif // AP_PERIPH_BATTERY_ENABLED

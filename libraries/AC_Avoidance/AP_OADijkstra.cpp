@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AC_Avoidance_config.h"
+
+#if AP_OAPATHPLANNER_DIJKSTRA_ENABLED
+
 #include "AP_OADijkstra.h"
 #include "AP_OAPathPlanner.h"
 
@@ -30,12 +34,12 @@
 
 /// Constructor
 AP_OADijkstra::AP_OADijkstra(AP_Int16 &options) :
-        _options(options),
         _inclusion_polygon_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _exclusion_polygon_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _exclusion_circle_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _short_path_data(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
-        _path(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK)
+        _path(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
+        _options(options)
 {
 }
 
@@ -170,7 +174,8 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         _dest_to_next_dest_clear = false;
         if (!next_destination.is_zero()) {
             Vector2f seg_start, seg_end;
-            if (destination.get_vector_xy_from_origin_NE(seg_start) && next_destination.get_vector_xy_from_origin_NE(seg_end)) {
+            if (destination.get_vector_xy_from_origin_NE_cm(seg_start) &&
+                next_destination.get_vector_xy_from_origin_NE_cm(seg_end)) {
                 _dest_to_next_dest_clear = !intersects_fence(seg_start, seg_end);
             }
         }
@@ -379,7 +384,7 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
             }
 
             // don't add points in corners
-            if (fabsf(intermediate_pt.angle() - before_pt.angle()) < M_PI_2) {
+            if (fabsf(wrap_PI(intermediate_pt.angle() - before_pt.angle())) < M_PI_2) {
                 continue;
             }
 
@@ -480,7 +485,7 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
             }
 
             // don't add points in corners
-            if (fabsf(intermediate_pt.angle() - before_pt.angle()) < M_PI_2) {
+            if (fabsf(wrap_PI(intermediate_pt.angle() - before_pt.angle())) < M_PI_2) {
                 continue;
             }
 
@@ -875,7 +880,8 @@ bool AP_OADijkstra::find_closest_node_idx(node_index &node_idx) const
 bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &destination, AP_OADijkstra_Error &err_id)
 {
     // convert origin and destination to offsets from EKF origin
-    if (!origin.get_vector_xy_from_origin_NE(_path_source) || !destination.get_vector_xy_from_origin_NE(_path_destination)) {
+    if (!origin.get_vector_xy_from_origin_NE_cm(_path_source) ||
+        !destination.get_vector_xy_from_origin_NE_cm(_path_destination)) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_NO_POSITION_ESTIMATE;
         return false;
     }
@@ -1011,3 +1017,5 @@ bool AP_OADijkstra::convert_node_to_point(const AP_OAVisGraph::OAItemID& id, Vec
 }
 #endif // AP_FENCE_ENABLED
 
+
+#endif  // AP_OAPATHPLANNER_DIJKSTRA_ENABLED

@@ -79,11 +79,17 @@ void ModeAuto::update()
     }
 #endif
 
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    if (pullup.in_pullup()) {
+        return;
+    }
+#endif
+
     if (nav_cmd_id == MAV_CMD_NAV_TAKEOFF ||
         (nav_cmd_id == MAV_CMD_NAV_LAND && plane.flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)) {
         plane.takeoff_calc_roll();
         plane.takeoff_calc_pitch();
-        plane.calc_throttle();
+        plane.takeoff_calc_throttle();
     } else if (nav_cmd_id == MAV_CMD_NAV_LAND) {
         plane.calc_nav_roll();
         plane.calc_nav_pitch();
@@ -166,9 +172,24 @@ bool ModeAuto::is_landing() const
 
 void ModeAuto::run()
 {
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    if (pullup.in_pullup()) {
+        pullup.stabilize_pullup();
+        return;
+    }
+#endif
+    
     if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_ALTITUDE_WAIT) {
-        // Wiggle servos
-        plane.set_servos_idle();
+
+        wiggle_servos();
+
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0.0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0.0);
+
+        SRV_Channels::set_output_to_trim(SRV_Channel::k_throttle);
+        SRV_Channels::set_output_to_trim(SRV_Channel::k_throttleLeft);
+        SRV_Channels::set_output_to_trim(SRV_Channel::k_throttleRight);
 
         // Relax attitude control
         reset_controllers();

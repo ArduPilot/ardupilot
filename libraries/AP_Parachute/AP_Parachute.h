@@ -2,6 +2,10 @@
 /// @brief  Parachute release library
 #pragma once
 
+#include "AP_Parachute_config.h"
+
+#if HAL_PARACHUTE_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
 
@@ -19,14 +23,8 @@
 
 #define AP_PARACHUTE_ALT_MIN_DEFAULT            10     // default min altitude the vehicle should have before parachute is released
 
-#define AP_PARACHUTE_CRITICAL_SINK_DEFAULT      0    // default critical sink speed in m/s to trigger emergency parachute
-
-#ifndef HAL_PARACHUTE_ENABLED
-// default to parachute enabled to match previous configs
-#define HAL_PARACHUTE_ENABLED 1
-#endif
-
-#if HAL_PARACHUTE_ENABLED
+#define AP_PARACHUTE_CRITICAL_SINK_DEFAULT      0      // default critical sink speed in m/s to trigger emergency parachute
+#define AP_PARACHUTE_OPTIONS_DEFAULT            0      // default parachute options: enabled disarm after parachute release
 
 /// @class  AP_Parachute
 /// @brief  Class managing the release of a parachute
@@ -115,6 +113,7 @@ private:
 
     enum class Options : uint8_t {
         HoldOpen = (1U<<0),
+        SkipDisarmBeforeParachuteRelease = (1U<<1),
     };
 
     AP_Int32    _options;

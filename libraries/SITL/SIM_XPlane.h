@@ -18,19 +18,15 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include "SIM_config.h"
 
-#ifndef HAL_SIM_XPLANE_ENABLED
-#define HAL_SIM_XPLANE_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#endif
-
-#if HAL_SIM_XPLANE_ENABLED
+#if AP_SIM_XPLANE_ENABLED
 
 #include <AP_HAL/utility/Socket_native.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 
 #include "SIM_Aircraft.h"
-#include "picojson.h"
+#include <AP_JSON/AP_JSON.h>
 
 namespace SITL {
 
@@ -46,7 +42,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new XPlane(frame_str);
+        return NEW_NOTHROW XPlane(frame_str);
     }
 
 private:
@@ -126,9 +122,9 @@ private:
     struct stat map_st;
 
     bool load_dref_map(const char *map_json);
-    void add_dref(const char *name, DRefType type, const picojson::value &dref);
-    void add_joyinput(const char *name, JoyType type, const picojson::value &d);
-    void handle_setting(const picojson::value &d);
+    void add_dref(const char *name, DRefType type, const AP_JSON::value &dref);
+    void add_joyinput(const char *name, JoyType type, const AP_JSON::value &d);
+    void handle_setting(const AP_JSON::value &d);
 
     void check_reload_dref(void);
 
@@ -139,4 +135,4 @@ private:
 } // namespace SITL
 
 
-#endif  // HAL_SIM_XPLANE_ENABLED
+#endif  // AP_SIM_XPLANE_ENABLED

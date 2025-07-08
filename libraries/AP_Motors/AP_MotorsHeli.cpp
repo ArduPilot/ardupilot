@@ -17,6 +17,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsHeli.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
+#include <AC_Autorotation/RSC_Autorotation.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -146,6 +148,10 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("COL_LAND_MIN", 32, AP_MotorsHeli, _collective_land_min_deg, AP_MOTORS_HELI_COLLECTIVE_LAND_MIN),
 
+    // @Group: RSC_AROT_
+    // @Path: ../AC_Autorotation/RSC_Autorotation.cpp
+    AP_SUBGROUPINFO(_main_rotor.autorotation, "RSC_AROT_", 33, AP_MotorsHeli, RSC_Autorotation),
+
     AP_GROUPEND
 };
 
@@ -211,11 +217,7 @@ void AP_MotorsHeli::output()
         // block servo_test from happening at disarm
         _servo_test_cycle_counter = 0;
         calculate_armed_scalars();
-        if (!get_interlock()) {
-            output_armed_zero_throttle();
-        } else {
-            output_armed_stabilizing();
-        }
+        output_armed_stabilizing();
     } else {
         output_disarmed();
     }
@@ -228,17 +230,6 @@ void AP_MotorsHeli::output()
 
 // sends commands to the motors
 void AP_MotorsHeli::output_armed_stabilizing()
-{
-    // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
-        reset_flight_controls();
-    }
-
-    move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
-}
-
-// output_armed_zero_throttle - sends commands to the motors
-void AP_MotorsHeli::output_armed_zero_throttle()
 {
     // if manual override active after arming, deactivate it and reinitialize servos
     if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
@@ -443,7 +434,7 @@ void AP_MotorsHeli::output_logic()
 // update the throttle input filter
 void AP_MotorsHeli::update_throttle_filter()
 {
-    _throttle_filter.apply(_throttle_in,  _dt);
+    _throttle_filter.apply(_throttle_in,  _dt_s);
 
     // constrain filtered throttle
     if (_throttle_filter.get() < 0.0f) {
@@ -568,6 +559,10 @@ bool AP_MotorsHeli::arming_checks(size_t buflen, char *buffer) const
         return false;
     }
 
+    if (!_main_rotor.autorotation.arming_checks(buflen, buffer)) {
+        return false;
+    }
+
     return true;
 }
 
@@ -612,4 +607,51 @@ AP_MotorsHeli_RSC::RotorControlState AP_MotorsHeli::get_rotor_control_state() co
 
     // Should be unreachable, but needed to keep the compiler happy
     return AP_MotorsHeli_RSC::RotorControlState::STOP;
+}
+
+// Update _heliflags.rotor_runup_complete value writing log event on state change
+void AP_MotorsHeli::set_rotor_runup_complete(bool new_value)
+{
+#if HAL_LOGGING_ENABLED
+    if (!_heliflags.rotor_runup_complete && new_value) {
+        LOGGER_WRITE_EVENT(LogEvent::ROTOR_RUNUP_COMPLETE);
+    } else if (_heliflags.rotor_runup_complete && !new_value && !_main_rotor.in_autorotation()) {
+        LOGGER_WRITE_EVENT(LogEvent::ROTOR_SPEED_BELOW_CRITICAL);
+    }
+#endif
+    _heliflags.rotor_runup_complete = new_value;
+}
+
+#if HAL_LOGGING_ENABLED
+// Returns the scaling value required to convert the collective angle parameters into the cyclic-output-to-angle conversion
+float AP_MotorsHeli::get_cyclic_angle_scaler(void) const {
+    // We want to use the collective min-max to angle relationship to calculate the cyclic input to angle relationship
+    // First we scale the collective angle range by it's min-max output. Recall that we assume that the maximum possible
+    // collective range is 1000, hence the *1e-3.
+    // The factor 2.0 accounts for the fact that we scale the servo outputs from 0 ~ 1 to -1 ~ 1
+    return ((float)(_collective_max-_collective_min))*1e-3 * (_collective_max_deg.get() - _collective_min_deg.get()) * 2.0;
+}
+#endif
+
+// Helper function for param conversions to be done in motors class
+void AP_MotorsHeli::heli_motors_param_conversions(void)
+{
+    // PARAMETER_CONVERSION - Added: Sep-2024
+    // move autorotation related parameters within the RSC into their own class
+    const AP_Param::ConversionInfo rsc_arot_conversion_info[] = {
+        { 90, 108096, AP_PARAM_INT8,  "H_RSC_AROT_ENBL" },
+        { 90, 104000, AP_PARAM_INT8,  "H_RSC_AROT_RAMP" },
+        { 90, 112192, AP_PARAM_INT16,  "H_RSC_AROT_IDLE" },
+    };
+    uint8_t table_size = ARRAY_SIZE(rsc_arot_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&rsc_arot_conversion_info[i], 1.0);
+    }
+}
+
+// function to calculate and set the normalised collective position given a desired blade pitch angle (deg)
+void AP_MotorsHeli::set_coll_from_ang(float col_ang_deg)
+{
+    const float col_norm = (col_ang_deg - _collective_min_deg.get()) / MAX((_collective_max_deg.get() - _collective_min_deg.get()), 1.0);
+    set_throttle(constrain_float(col_norm, 0.0, 1.0));
 }

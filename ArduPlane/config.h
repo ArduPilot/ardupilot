@@ -2,14 +2,6 @@
 
 #include "defines.h"
 
-// Just so that it's completely clear...
-#define ENABLED                 1
-#define DISABLED                0
-
-// this avoids a very common config error
-#define ENABLE ENABLED
-#define DISABLE DISABLED
-
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // HARDWARE CONFIGURATION AND CONNECTIONS
@@ -17,7 +9,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #ifdef CONFIG_APM_HARDWARE
-#error CONFIG_APM_HARDWARE option is depreated! use CONFIG_HAL_BOARD instead.
+#error CONFIG_APM_HARDWARE option is deprecated! use CONFIG_HAL_BOARD instead.
 #endif
 
 #ifndef MAV_SYSTEM_ID
@@ -213,18 +205,8 @@
  # define FENCE_TRIGGERED_PIN -1
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Parachute release
-#ifndef PARACHUTE
-#define PARACHUTE HAL_PARACHUTE_ENABLED
-#endif
-
-#ifndef OSD_ENABLED
- #define OSD_ENABLED DISABLED
-#endif
-
-#ifndef OFFBOARD_GUIDED
- #define OFFBOARD_GUIDED 1
+#ifndef AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+ #define AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

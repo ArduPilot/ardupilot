@@ -16,6 +16,7 @@
 
 #include <AP_Param/AP_Param.h>
 #include "transition.h"
+#include <AP_Logger/LogStructure.h>
 
 class QuadPlane;
 class AP_MotorsMulticopter;
@@ -69,6 +70,12 @@ public:
     // always return true if not enabled or not a continuous type
     bool tilt_angle_achieved() const { return !enabled() || (type != TILT_TYPE_CONTINUOUS) || angle_achieved; }
 
+    // throttle of tilting motors used for forward flight
+    bool get_forward_throttle(float &throttle) const;
+
+    // Write tiltrotor specific log
+    void write_log();
+
     AP_Int8 enable;
     AP_Int16 tilt_mask;
     AP_Int16 max_rate_up_dps;
@@ -98,6 +105,15 @@ public:
 
 private:
 
+    // Tiltrotor specific log message
+    struct PACKED log_tiltrotor {
+        LOG_PACKET_HEADER;
+        uint64_t time_us;
+        float current_tilt;
+        float front_left_tilt;
+        float front_right_tilt;
+    };
+
     bool setup_complete;
 
     // true if a fixed forward motor is setup
@@ -110,7 +126,7 @@ private:
     // with slow tilt rates the tilt angle can lag
     bool angle_achieved;
 
-    // refences for convenience
+    // references for convenience
     QuadPlane& quadplane;
     AP_MotorsMulticopter*& motors;
 
@@ -129,6 +145,8 @@ public:
     bool update_yaw_target(float& yaw_target_cd) override;
 
     bool show_vtol_view() const override;
+
+    bool use_multirotor_control_in_fwd_transition() const override;
 
 private:
 

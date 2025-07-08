@@ -21,6 +21,8 @@
 
 #define HNF_MAX_HARMONICS 16
 
+class HarmonicNotchFilterParams;
+
 /*
   a filter that manages a set of notch filters targetted at a fundamental center frequency
   and multiples of that fundamental frequency
@@ -34,15 +36,28 @@ public:
     // expand filter bank with new filters
     void expand_filter_count(uint16_t total_notches);
     // initialize the underlying filters using the provided filter parameters
-    void init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB);
+    void init(float sample_freq_hz, HarmonicNotchFilterParams &params);
     // update the underlying filters' center frequencies using center_freq_hz as the fundamental
     void update(float center_freq_hz);
-    // update all o fthe underlying center frequencies individually
+    // update all of the underlying center frequencies individually
     void update(uint8_t num_centers, const float center_freq_hz[]);
+
+    /*
+      set center frequency of one notch.
+      spread_mul is a scale factor for spreading of double or triple notch
+      harmonic_mul is the multiplier for harmonics, 1 is for the fundamental
+    */
+    void set_center_frequency(uint16_t idx, float center_freq_hz, float spread_mul, uint8_t harmonic_mul);
+
     // apply a sample to each of the underlying filters in turn
     T apply(const T &sample);
     // reset each of the underlying filters
     void reset();
+
+    /*
+      log notch center frequencies and first harmonic
+     */
+    void log_notch_centers(uint8_t instance, uint64_t now_us) const;
 
 private:
     // underlying bank of notch filters
@@ -69,6 +84,12 @@ private:
 
     // have we failed to expand filters?
     bool _alloc_has_failed;
+
+    // minimum frequency (from INS_HNTCH_FREQ * INS_HNTCH_FM_RAT)
+    float _minimum_freq;
+
+    // pointer to params object for this filter
+    HarmonicNotchFilterParams *params;
 };
 
 // Harmonic notch update mode
@@ -92,6 +113,7 @@ public:
         LoopRateUpdate = 1<<2,
         EnableOnAllIMUs = 1<<3,
         TripleNotch = 1<<4,
+        TreatLowAsMin = 1<<5,
     };
 
     HarmonicNotchFilterParams(void);
@@ -100,17 +122,26 @@ public:
 
     // set the fundamental center frequency of the harmonic notch
     void set_center_freq_hz(float center_freq) { _center_freq_hz.set(center_freq); }
+
     // set the bandwidth of the harmonic notch
     void set_bandwidth_hz(float bandwidth_hz) { _bandwidth_hz.set(bandwidth_hz); }
+
+    // set the attenuation of the harmonic notch
+    void set_attenuation(float attenuation_dB) { _attenuation_dB.set(attenuation_dB); }
+    
     // harmonics enabled on the harmonic notch
     uint32_t harmonics(void) const { return _harmonics; }
+
     // set the harmonics value
     void set_harmonics(uint32_t hmncs) { _harmonics.set(hmncs); }
+
     // has the user set the harmonics value
     void set_default_harmonics(uint32_t hmncs) { _harmonics.set_default(hmncs); }
+
     // reference value of the harmonic notch
     float reference(void) const { return _reference; }
     void set_reference(float ref) { _reference.set(ref); }
+
     // notch options
     bool hasOption(Options option) const { return _options & uint16_t(option); }
     // notch dynamic tracking mode
@@ -123,8 +154,16 @@ public:
     }
     void set_freq_min_ratio(float ratio) { _freq_min_ratio.set(ratio); }
 
+    // set options flags
+    void set_options(uint16_t options) { _options.set(options); }
+
     // save parameters
     void save_params();
+
+    // return the number of composite notches given the options
+    uint8_t num_composite_notches(void) const {
+        return hasOption(Options::DoubleNotch) ? 2 : hasOption(Options::TripleNotch) ? 3: 1;
+    }
 
 private:
     // configured notch harmonics

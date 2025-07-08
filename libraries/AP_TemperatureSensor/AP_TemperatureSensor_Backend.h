@@ -30,7 +30,7 @@ public:
     AP_TemperatureSensor_Backend(AP_TemperatureSensor &front, AP_TemperatureSensor::TemperatureSensor_State &state, AP_TemperatureSensor_Params &params);
 
     // initialise
-    virtual void init() {};
+    __INITFUNC__ virtual void init() {};
 
     // update the latest temperature
     virtual void update() = 0;
@@ -41,7 +41,7 @@ public:
     // logging functions
     void Log_Write_TEMP() const;
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device *_dev;
 
 
 protected:

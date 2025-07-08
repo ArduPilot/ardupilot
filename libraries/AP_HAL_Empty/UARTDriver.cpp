@@ -24,7 +24,7 @@ ssize_t Empty::UARTDriver::_read(uint8_t *buffer, uint16_t size)
 }
 
 #if HAL_UART_STATS_ENABLED
-void Empty::UARTDriver::uart_info(ExpandingString &str)
+void Empty::UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms)
 {
     str.printf("EMPTY\n");
 }

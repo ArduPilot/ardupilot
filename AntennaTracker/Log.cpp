@@ -7,9 +7,7 @@
 // Write an attitude packet
 void Tracker::Log_Write_Attitude()
 {
-    Vector3f targets;
-    targets.y = nav_status.pitch * 100.0f;
-    targets.z = wrap_360_cd(nav_status.bearing * 100.0f);
+    const Vector3f targets{0.0f, nav_status.pitch, nav_status.bearing};
     ahrs.Write_Attitude(targets);
     AP::ahrs().Log_Write();
 }

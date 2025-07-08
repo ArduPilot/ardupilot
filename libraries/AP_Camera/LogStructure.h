@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include "AP_Camera_config.h"
 
 #define LOG_IDS_FROM_CAMERA \
     LOG_CAMERA_MSG, \
@@ -38,8 +39,12 @@ struct PACKED log_Camera {
     uint16_t yaw;
 };
 
+#if AP_CAMERA_ENABLED
 #define LOG_STRUCTURE_FROM_CAMERA \
     { LOG_CAMERA_MSG, sizeof(log_Camera), \
       "CAM", "QBHIHLLeeeccC","TimeUS,I,Img,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,R,P,Y", "s#---DUmmmddd", "F----GGBBBBBB" }, \
     { LOG_TRIGGER_MSG, sizeof(log_Camera), \
       "TRIG", "QBHIHLLeeeccC","TimeUS,I,Img,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,R,P,Y", "s#---DUmmmddd", "F----GGBBBBBB" },
+#else
+#define LOG_STRUCTURE_FROM_CAMERA
+#endif

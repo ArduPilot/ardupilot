@@ -69,12 +69,12 @@ public:
     // Write the last calculated NE position relative to the reference point (m)
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosNE(Vector2f &posNE) const;
+    bool getPosNE(Vector2p &posNE) const;
 
     // Write the last calculated D position relative to the reference point (m)
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosD(float &posD) const;
+    bool getPosD(postype_t &posD) const;
 
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
@@ -364,7 +364,18 @@ private:
     AP_Int8 _gsfRunMask;            // mask controlling which EKF2 instances run a separate EKF-GSF yaw estimator
     AP_Int8 _gsfUseMask;            // mask controlling which EKF2 instances will use EKF-GSF yaw estimator data to assit with yaw resets
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF2 is allowed to reset it's yaw to the EKF-GSF estimate
+    AP_Int32 _options;              // optional behaviour bitmask
 
+    // enum for processing options
+    enum class Option {
+        DisableExternalNav     = (1U<<0),
+    };
+
+    // return true if an option is set
+    bool option_is_set(Option option) const {
+        return (uint32_t(option) & uint32_t(_options)) != 0;
+    }
+    
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
 #define FLOW_USE_NAV     1
@@ -442,15 +453,6 @@ private:
         NO_MEM, 
         NO_SETUP,
         NUM_INIT_FAILURES
-    };
-    // initialization failure reasons
-    const char* initFailureReason[int(InitFailures::NUM_INIT_FAILURES)] {
-        "EKF2: unknown initialization failure",
-        "EKF2: EK2_enable is false",
-        "EKF2: no IMUs available",
-        "EKF2: EK2_IMU_MASK is zero",
-        "EKF2: insufficient memory available",
-        "EKF2: core setup failed"
     };
     InitFailures initFailure;
 

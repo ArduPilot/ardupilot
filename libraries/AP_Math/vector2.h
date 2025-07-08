@@ -32,6 +32,9 @@
 #ifndef MATH_CHECK_INDEXES
 #define MATH_CHECK_INDEXES 0
 #endif
+#if MATH_CHECK_INDEXES
+#include <assert.h>
+#endif
 
 #include <cmath>
 #include <float.h>
@@ -44,12 +47,12 @@ struct Vector2
     T x, y;
 
     // trivial ctor
-    constexpr Vector2<T>()
+    constexpr Vector2()
         : x(0)
         , y(0) {}
 
     // setting ctor
-    constexpr Vector2<T>(const T x0, const T y0)
+    constexpr Vector2(const T x0, const T y0)
         : x(x0)
         , y(y0) {}
 
@@ -101,7 +104,7 @@ struct Vector2
     // returns 0 if the vectors are parallel, and M_PI if they are antiparallel
     T angle(const Vector2<T> &v2) const;
 
-    // computes the angle of this vector in radians, from 0 to 2pi,
+    // computes the angle of this vector in radians, from -M_PI to M_PI,
     // from a unit vector(1,0); a (1,1) vector's angle is +M_PI/4
     T angle(void) const;
 

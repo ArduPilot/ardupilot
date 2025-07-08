@@ -6,8 +6,6 @@
 
 #include <AP_Math/AP_Math.h>
 
-#define AUTOTUNE_DWELL_CYCLES                6
-
 class AC_AutoTune_FreqResp {
 public:
     // Constructor
@@ -29,7 +27,7 @@ public:
 
     // Initialize the Frequency Response Object. 
     // Must be called before running dwell or frequency sweep tests
-    void init(InputType input_type, ResponseType response_type);
+    void init(InputType input_type, ResponseType response_type, uint8_t cycles);
 
     // Determines the gain and phase based on angle response for a dwell or sweep
     void update(float command, float tgt_resp, float meas_resp, float tgt_freq);
@@ -137,6 +135,9 @@ private:
     // flag indicating when one oscillation cycle is complete
     bool cycle_complete = false;
 
+    // number of dwell cycles to complete for dwell excitation
+    uint8_t dwell_cycles;
+
     // current test frequency, gain, and phase
     float curr_test_freq; 
     float curr_test_gain;
@@ -179,10 +180,10 @@ private:
     };
 
     // Buffer object for measured peak data
-    ObjectBuffer<peak_info> meas_peak_info_buffer{AUTOTUNE_DWELL_CYCLES};
+    ObjectBuffer<peak_info> meas_peak_info_buffer{12};
 
     // Buffer object for target peak data
-    ObjectBuffer<peak_info> tgt_peak_info_buffer{AUTOTUNE_DWELL_CYCLES};
+    ObjectBuffer<peak_info> tgt_peak_info_buffer{12};
 
     // Push data into measured peak data buffer object
     void push_to_meas_buffer(uint16_t count, float amplitude, uint32_t time_ms);

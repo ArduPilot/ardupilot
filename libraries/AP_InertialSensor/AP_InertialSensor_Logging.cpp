@@ -5,6 +5,7 @@
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
 
 // Write ACC data packet: raw accel data
@@ -140,32 +141,34 @@ bool AP_InertialSensor::BatchSampler::Write_ISBD() const
 }
 #endif
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 // @LoggerMessage: FTN
 // @Description: Filter Tuning Message - per motor
 // @Field: TimeUS: microseconds since system startup
 // @Field: I: instance
-// @Field: NDn: number of active dynamic harmonic notches
-// @Field: NF1: dynamic harmonic notch centre frequency for motor 1
-// @Field: NF2: dynamic harmonic notch centre frequency for motor 2
-// @Field: NF3: dynamic harmonic notch centre frequency for motor 3
-// @Field: NF4: dynamic harmonic notch centre frequency for motor 4
-// @Field: NF5: dynamic harmonic notch centre frequency for motor 5
-// @Field: NF6: dynamic harmonic notch centre frequency for motor 6
-// @Field: NF7: dynamic harmonic notch centre frequency for motor 7
-// @Field: NF8: dynamic harmonic notch centre frequency for motor 8
-// @Field: NF9: dynamic harmonic notch centre frequency for motor 9
-// @Field: NF10: dynamic harmonic notch centre frequency for motor 10
-// @Field: NF11: dynamic harmonic notch centre frequency for motor 11
-// @Field: NF12: dynamic harmonic notch centre frequency for motor 12
+// @Field: NDn: number of active harmonic notches
+// @Field: NF1: desired harmonic notch centre frequency for motor 1
+// @Field: NF2: desired harmonic notch centre frequency for motor 2
+// @Field: NF3: desired harmonic notch centre frequency for motor 3
+// @Field: NF4: desired harmonic notch centre frequency for motor 4
+// @Field: NF5: desired harmonic notch centre frequency for motor 5
+// @Field: NF6: desired harmonic notch centre frequency for motor 6
+// @Field: NF7: desired harmonic notch centre frequency for motor 7
+// @Field: NF8: desired harmonic notch centre frequency for motor 8
+// @Field: NF9: desired harmonic notch centre frequency for motor 9
+// @Field: NF10: desired harmonic notch centre frequency for motor 10
+// @Field: NF11: desired harmonic notch centre frequency for motor 11
+// @Field: NF12: desired harmonic notch centre frequency for motor 12
 
 // @LoggerMessage: FTNS
 // @Description: Filter Tuning Message
 // @Field: TimeUS: microseconds since system startup
 // @Field: I: instance
-// @Field: NF: dynamic harmonic notch centre frequency
+// @Field: NF: desired harmonic notch centre frequency
 
 void AP_InertialSensor::write_notch_log_messages() const
 {
+    const uint64_t now_us = AP_HAL::micros64();
     for (auto &notch : harmonic_notches) {
         const uint8_t i = &notch - &harmonic_notches[0];
         if (!notch.params.enabled()) {
@@ -176,7 +179,7 @@ void AP_InertialSensor::write_notch_log_messages() const
             // log per motor center frequencies
             AP::logger().WriteStreaming(
                 "FTN", "TimeUS,I,NDn,NF1,NF2,NF3,NF4,NF5,NF6,NF7,NF8,NF9,NF10,NF11,NF12", "s#-zzzzzzzzzzzz", "F--------------", "QBBffffffffffff",
-                AP_HAL::micros64(),
+                now_us,
                 i,
                 notch.num_calculated_notch_frequencies,
                 notches[0], notches[1], notches[2], notches[3],
@@ -186,11 +189,16 @@ void AP_InertialSensor::write_notch_log_messages() const
             // log single center frequency
             AP::logger().WriteStreaming(
                 "FTNS", "TimeUS,I,NF", "s#z", "F--", "QBf",
-                AP_HAL::micros64(),
+                now_us,
                 i,
                 notches[0]);
         }
+
+        // ask the HarmonicNotchFilter object for primary gyro to
+        // log the actual notch centers
+        notch.filter[_primary].log_notch_centers(i, now_us);
     }
 }
+#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
 #endif  // HAL_LOGGING_ENABLED

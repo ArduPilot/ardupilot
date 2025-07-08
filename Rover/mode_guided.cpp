@@ -53,7 +53,7 @@ void ModeGuided::update()
         {
             // stop vehicle if target not updated within 3 seconds
             if (have_attitude_target && (millis() - _des_att_time_ms) > 3000) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
                 have_attitude_target = false;
             }
             if (have_attitude_target) {
@@ -77,12 +77,12 @@ void ModeGuided::update()
         {
             // stop vehicle if target not updated within 3 seconds
             if (have_attitude_target && (millis() - _des_att_time_ms) > 3000) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
                 have_attitude_target = false;
             }
             if (have_attitude_target) {
                 // run steering and throttle controllers
-                float steering_out = attitude_control.get_steering_out_rate(radians(_desired_yaw_rate_cds / 100.0f),
+                float steering_out = attitude_control.get_steering_out_rate(radians(_desired_yaw_rate_cds * 0.01f),
                                                                             g2.motors.limit.steer_left,
                                                                             g2.motors.limit.steer_right,
                                                                             rover.G_Dt);
@@ -112,7 +112,7 @@ void ModeGuided::update()
             // handle timeout
             if (_have_strthr && (AP_HAL::millis() - _strthr_time_ms) > 3000) {
                 _have_strthr = false;
-                gcs().send_text(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
             }
             if (_have_strthr) {
                 // pass latest steering and throttle directly to motors library
@@ -136,7 +136,7 @@ void ModeGuided::update()
             break;
 
         default:
-            gcs().send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
             break;
     }
 }
@@ -443,5 +443,5 @@ bool ModeGuided::limit_breached() const
 // scurves provide path planning and object avoidance but cannot handle fast updates to the destination (for fast updates use position controller input shaping)
 bool ModeGuided::use_scurves_for_navigation() const
 {
-    return ((rover.g2.guided_options.get() & uint32_t(Options::SCurvesUsedForNavigation)) != 0);
+    return ((g2.guided_options.get() & uint32_t(Options::SCurvesUsedForNavigation)) != 0);
 }

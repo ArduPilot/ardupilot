@@ -27,8 +27,6 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_LINUX
-
 // On H750 we want to measure external flash to ram performance
 #if defined(EXT_FLASH_SIZE_MB) && EXT_FLASH_SIZE_MB>0 && defined(STM32H7)
 #include "ch.h"
@@ -214,13 +212,13 @@ static void test_div1000(void)
     for (uint32_t i=0; i<2000000; i++) {
         uint64_t v = 0;
         if (!hal.util->get_random_vals((uint8_t*)&v, sizeof(v))) {
-            AP_HAL::panic("ERROR: div1000 no random\n");
+            AP_HAL::panic("ERROR: div1000 no random");
             break;
         }
         uint64_t v1 = v / 1000ULL;
         uint64_t v2 = uint64_div1000(v);
         if (v1 != v2) {
-            AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx\n",
+            AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx",
                           (unsigned long long)v, (unsigned long long)v1, (unsigned long long)v2);
             return;
         }
@@ -230,7 +228,7 @@ static void test_div1000(void)
     for (uint32_t i=0; i<2000000; i++) {
         uint64_t v = 0;
         if (!hal.util->get_random_vals((uint8_t*)&v, sizeof(v))) {
-            AP_HAL::panic("ERROR: div1000 no random\n");
+            AP_HAL::panic("ERROR: div1000 no random");
             break;
         }
         chSysLock();
@@ -238,7 +236,7 @@ static void test_div1000(void)
         uint64_t v2 = uint64_div1000(v);
         chSysUnlock();
         if (v1 != v2) {
-            AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx\n",
+            AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx",
                           (unsigned long long)v, (unsigned long long)v1, (unsigned long long)v2);
             return;
         }
@@ -256,10 +254,5 @@ void loop()
     hal.console->printf("\n");
     hal.scheduler->delay(3000);
 }
-
-#else
-void loop() {}
-void setup() {}
-#endif
 
 AP_HAL_MAIN();

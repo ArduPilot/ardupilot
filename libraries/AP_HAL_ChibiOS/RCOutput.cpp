@@ -40,9 +40,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Common/ExpandingString.h>
-#ifndef HAL_NO_UARTDRIVER
 #include <GCS_MAVLink/GCS.h>
-#endif
 
 #if AP_SIM_ENABLED
 #include <AP_HAL/SIMState.h>
@@ -214,7 +212,7 @@ void RCOutput::led_thread()
         // actually sending out data - thus we need to work out how much time we have left to collect the locks
 
         // process any pending LED output requests
-        led_timer_tick(LED_OUTPUT_PERIOD_US + AP_HAL::micros64());
+        led_timer_tick(rcout_micros(), LED_OUTPUT_PERIOD_US);
     }
 }
 #endif // HAL_SERIAL_ENABLED
@@ -225,8 +223,8 @@ void RCOutput::led_thread()
 #if !defined(IOMCU_FW)
 void RCOutput::rcout_thread()
 {
-    uint64_t last_thread_run_us = 0; // last time we did a 1kHz run of rcout
-    uint64_t last_cycle_run_us = 0;
+    rcout_timer_t last_thread_run_us = 0; // last time we did a 1kHz run of rcout
+    rcout_timer_t last_cycle_run_us = 0;
 
     rcout_thread_ctx = chThdGetSelfX();
 
@@ -241,11 +239,11 @@ void RCOutput::rcout_thread()
         const auto mask = chEvtWaitOne(EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND);
         const bool have_pwm_event = (mask & (EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND)) != 0;
         // start the clock
-        last_thread_run_us = AP_HAL::micros64();
+        last_thread_run_us = rcout_micros();
 
         // this is when the cycle is supposed to start
         if (_dshot_cycle == 0 && have_pwm_event) {
-            last_cycle_run_us = AP_HAL::micros64();
+            last_cycle_run_us = rcout_micros();
             // register a timer for the next tick if push() will not be providing it
             if (_dshot_rate != 1) {
                 chVTSet(&_dshot_rate_timer, chTimeUS2I(_dshot_period_us), dshot_update_tick, this);
@@ -254,18 +252,17 @@ void RCOutput::rcout_thread()
 
         // if DMA sharing is in effect there can be quite a delay between the request to begin the cycle and
         // actually sending out data - thus we need to work out how much time we have left to collect the locks
-        uint64_t time_out_us = (_dshot_cycle + 1) * _dshot_period_us + last_cycle_run_us;
-        if (!_dshot_rate) {
-            time_out_us = last_thread_run_us + _dshot_period_us;
-        }
+        const rcout_timer_t timeout_period_us = _dshot_rate ? (_dshot_cycle + 1) * _dshot_period_us : _dshot_period_us;
+        // timeout is measured from the beginning of the push() that initiated it to preserve periodicity
+        const rcout_timer_t cycle_start_us = _dshot_rate ? last_cycle_run_us : last_thread_run_us;
 
         // main thread requested a new dshot send or we timed out - if we are not running
         // as a multiple of loop rate then ignore EVT_PWM_SEND events to preserve periodicity
         if (!in_soft_serial() && have_pwm_event) {
-            dshot_send_groups(time_out_us);
+            dshot_send_groups(cycle_start_us, timeout_period_us);
 
             // now unlock everything
-            dshot_collect_dma_locks(time_out_us);
+            dshot_collect_dma_locks(cycle_start_us, timeout_period_us);
 
             if (_dshot_rate > 0) {
                 _dshot_cycle = (_dshot_cycle + 1) % _dshot_rate;
@@ -273,7 +270,7 @@ void RCOutput::rcout_thread()
         }
 
         // process any pending RC output requests
-        timer_tick(time_out_us);
+        timer_tick(cycle_start_us, timeout_period_us);
 #if RCOU_DSHOT_TIMING_DEBUG
         static bool output_masks = true;
         if (AP_HAL::millis() > 5000 && output_masks) {
@@ -302,34 +299,32 @@ __RAMFUNC__ void RCOutput::dshot_update_tick(virtual_timer_t* vt, void* p)
 
 #if AP_HAL_SHARED_DMA_ENABLED
 // calculate how much time remains in the current cycle
-sysinterval_t RCOutput::calc_ticks_remaining(pwm_group &group, uint64_t time_out_us, uint32_t output_period_us)
+sysinterval_t RCOutput::calc_ticks_remaining(pwm_group &group, rcout_timer_t cycle_start_us, rcout_timer_t timeout_period_us, rcout_timer_t output_period_us)
 {
     // calculate how long we have left
-    uint64_t now = AP_HAL::micros64();
+    rcout_timer_t now = rcout_micros();
     // if we have time left wait for the event
-    const uint64_t pulse_elapsed_us = now - group.last_dmar_send_us;
-    uint32_t wait_us = 0;
-    if (now < time_out_us) {
-        wait_us = time_out_us - now;
-    }
-    if (pulse_elapsed_us < group.dshot_pulse_send_time_us) {
-        // better to let the burst write in progress complete rather than cancelling mid way through
-        wait_us = MAX(wait_us, group.dshot_pulse_send_time_us - pulse_elapsed_us);
-    }
+
+    const rcout_timer_t pulse_remaining_us
+        = AP_HAL::timeout_remaining(group.last_dmar_send_us, now, group.dshot_pulse_send_time_us);
+    const rcout_timer_t timeout_remaining_us
+        = AP_HAL::timeout_remaining(cycle_start_us, now, timeout_period_us);
+    // better to let the burst write in progress complete rather than cancelling mid way through
+    rcout_timer_t wait_us = MAX(pulse_remaining_us, timeout_remaining_us);
 
     // waiting for a very short period of time can cause a
     // timer wrap with ChibiOS timers. Use CH_CFG_ST_TIMEDELTA
     // as minimum. Don't allow for a very long delay (over _dshot_period_us)
     // to prevent bugs in handling timer wrap
-    const uint32_t max_delay_us = output_period_us;
-    const uint32_t min_delay_us = 10; // matches our CH_CFG_ST_TIMEDELTA
+    const rcout_timer_t max_delay_us = output_period_us;
+    const rcout_timer_t min_delay_us = 10; // matches our CH_CFG_ST_TIMEDELTA
     wait_us = constrain_uint32(wait_us, min_delay_us, max_delay_us);
 
     return MIN(TIME_MAX_INTERVAL, chTimeUS2I(wait_us));
 }
 
 // release locks on the groups that are pending in reverse order
-void RCOutput::dshot_collect_dma_locks(uint64_t time_out_us, bool led_thread)
+void RCOutput::dshot_collect_dma_locks(rcout_timer_t cycle_start_us, rcout_timer_t timeout_period_us, bool led_thread)
 {
     if (NUM_GROUPS == 0) {
         return;
@@ -344,7 +339,7 @@ void RCOutput::dshot_collect_dma_locks(uint64_t time_out_us, bool led_thread)
         // dma handle will only be unlocked if the send was aborted
         if (group.dma_handle != nullptr && group.dma_handle->is_locked()) {
             // if we have time left wait for the event
-            const sysinterval_t wait_ticks = calc_ticks_remaining(group, time_out_us,
+            const sysinterval_t wait_ticks = calc_ticks_remaining(group, cycle_start_us, timeout_period_us,
                                                                   led_thread ? LED_OUTPUT_PERIOD_US : _dshot_period_us);
             const eventmask_t mask = chEvtWaitOneTimeout(group.dshot_event_mask, wait_ticks);
 
@@ -352,7 +347,7 @@ void RCOutput::dshot_collect_dma_locks(uint64_t time_out_us, bool led_thread)
             if (!mask) {
                 dma_cancel(group);
             }
-            group.dshot_waiter = nullptr;
+            osalDbgAssert(group.dshot_waiter == nullptr, "Dshot waiter was not reset");
 #ifdef HAL_WITH_BIDIR_DSHOT
             // if using input capture DMA then clean up
             if (group.bdshot.enabled) {
@@ -556,19 +551,19 @@ void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
     }
 
     uint16_t drate = dshot_rate * loop_rate_hz;
-    _dshot_rate = dshot_rate;
     // BLHeli32 uses a 16 bit counter for input calibration which at 48Mhz will wrap
     // at 732Hz so never allow rates below 800hz
     while (drate < 800) {
-        _dshot_rate++;
-        drate = _dshot_rate * loop_rate_hz;
+        dshot_rate++;
+        drate = dshot_rate * loop_rate_hz;
     }
-    // prevent stupidly high rates, ideally should also prevent high rates
+    // prevent stupidly high rate multiples, ideally should also prevent high rates
     // with slower dshot variants
-    if (drate > 4000) {
-        _dshot_rate = 4000 / loop_rate_hz;
-        drate = _dshot_rate * loop_rate_hz;
+    while (dshot_rate > 1 && drate > MAX(4096, loop_rate_hz)) {
+        dshot_rate--;
+        drate = dshot_rate * loop_rate_hz;
     }
+    _dshot_rate = dshot_rate;
     _dshot_period_us = 1000000UL / drate;
 #if HAL_WITH_IO_MCU
     if (iomcu_dshot) {
@@ -653,6 +648,11 @@ uint32_t RCOutput::get_disabled_channels(uint32_t digital_mask)
     }
 
     disabled_chan_mask <<= chan_offset;
+#if HAL_WITH_IO_MCU
+    if (iomcu_dshot) {
+       disabled_chan_mask |= iomcu.get_disabled_channels(digital_mask);
+    }
+#endif
     return disabled_chan_mask;
 }
 
@@ -737,7 +737,13 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
 
     chan -= chan_offset;
 
-    period[chan] = period_us;
+    if (corked) {
+        // when corked we put the updated period in a separate array which is
+        // copied to period[] when we push
+        period_corked[chan] = period_us;
+    } else {
+        period[chan] = period_us;
+    }
 
     if (chan < num_fmu_channels) {
         active_fmu_channels = MAX(chan+1, active_fmu_channels);
@@ -811,11 +817,9 @@ void RCOutput::push_local(void)
 #endif // HAL_DSHOT_ENABLED
                 if (group.current_mode == MODE_PWM_ONESHOT ||
                     group.current_mode == MODE_PWM_ONESHOT125 ||
-                    group.current_mode == MODE_NEOPIXEL ||
-                    group.current_mode == MODE_NEOPIXELRGB ||
-                    group.current_mode == MODE_PROFILED ||
                     is_dshot_protocol(group.current_mode)) {
                     // only control widest pulse for oneshot and dshot
+                    // do not control for neopixel since updates to these are not pushed
                     if (period_us > widest_pulse) {
                         widest_pulse = period_us;
                     }
@@ -829,7 +833,7 @@ void RCOutput::push_local(void)
     if (widest_pulse > 2300) {
         widest_pulse = 2300;
     }
-    trigger_widest_pulse = widest_pulse;
+    trigger_widest_pulse = widest_pulse + 50;
 
     trigger_groupmask = need_trigger;
 
@@ -903,7 +907,7 @@ bool RCOutput::mode_requires_dma(enum output_mode mode) const
 
 void RCOutput::print_group_setup_error(pwm_group &group, const char* error_string)
 {
-#ifndef HAL_NO_UARTDRIVER
+#if AP_HAVE_GCS_SEND_TEXT
     uint8_t min_chan = UINT8_MAX;
     uint8_t max_chan = 0;
     for (uint8_t j = 0; j < 4; j++) {
@@ -921,7 +925,7 @@ void RCOutput::print_group_setup_error(pwm_group &group, const char* error_strin
     } else {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Chan %i to %i, %s: %s",min_chan+1,max_chan+1,get_output_mode_string(group.current_mode),error_string);
     }
-#endif
+#endif  // AP_HAVE_GCS_SEND_TEXT
 }
 
 /*
@@ -931,7 +935,7 @@ void RCOutput::print_group_setup_error(pwm_group &group, const char* error_strin
   This is used for both DShot and serial output
  */
 bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high, const uint16_t buffer_length,
-                               uint32_t pulse_time_us, bool at_least_freq)
+                               rcout_timer_t pulse_time_us, bool at_least_freq)
 {
 #if HAL_DSHOT_ENABLED
     // for dshot we setup for DMAR based output
@@ -948,7 +952,7 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
     }
 #else
     if (!group.dma_handle) {
-        group.dma_handle = new Shared_DMA(group.dma_up_stream_id, SHARED_DMA_NONE,
+        group.dma_handle = NEW_NOTHROW Shared_DMA(group.dma_up_stream_id, SHARED_DMA_NONE,
                                           FUNCTOR_BIND_MEMBER(&RCOutput::dma_allocate, void, Shared_DMA *),
                                           FUNCTOR_BIND_MEMBER(&RCOutput::dma_deallocate, void, Shared_DMA *));
         if (!group.dma_handle) {
@@ -1136,6 +1140,7 @@ void RCOutput::set_group_mode(pwm_group &group)
         if (is_bidir_dshot_enabled(group)) {
             group.dshot_pulse_send_time_us = pulse_send_time_us;
             // to all intents and purposes the pulse time of send and receive are the same
+            // for dshot600 this is roughly 26us + 30us + 26us = 82us
             group.dshot_pulse_time_us = pulse_send_time_us + pulse_send_time_us + 30;
         }
 #endif
@@ -1266,9 +1271,13 @@ bool RCOutput::get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len)
     if (iomcu_enabled) {
         uint8_t iomcu_mask;
         const output_mode iomcu_mode = iomcu.get_output_mode(iomcu_mask);
+        const uint8_t gpio_mask = iomcu.get_GPIO_mask();
         for (uint8_t i = 0; i < chan_offset; i++ ) {
-            if (iomcu_mask & 1U<<i) {
+            const uint8_t chan_bit = 1U<<i;
+            if (iomcu_mask & chan_bit) {
                 ch_mode[i] = iomcu_mode;
+            } else if (gpio_mask & chan_bit) {
+                ch_mode[i] = MODE_PWM_NONE;
             } else {
                 ch_mode[i] = MODE_PWM_NORMAL;
             }
@@ -1337,7 +1346,11 @@ void RCOutput::cork(void)
  */
 void RCOutput::push(void)
 {
+    if (!corked) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
     corked = false;
+    memcpy(period, period_corked, sizeof(period));
     push_local();
 #if HAL_WITH_IO_MCU
     if (iomcu_enabled) {
@@ -1362,15 +1375,17 @@ bool RCOutput::enable_px4io_sbus_out(uint16_t rate_hz)
 /*
   trigger output groups for oneshot or dshot modes
  */
-void RCOutput::trigger_groups(void)
+void RCOutput::trigger_groups()
 {
     if (!chMtxTryLock(&trigger_mutex)) {
         return;
     }
-    uint64_t now = AP_HAL::micros64();
-    if (now < min_pulse_trigger_us) {
+
+    rcout_timer_t now = rcout_micros();
+
+    if (!AP_HAL::timeout_expired(last_pulse_trigger_us, now, trigger_widest_pulse)) {
         // guarantee minimum pulse separation
-        hal.scheduler->delay_microseconds(min_pulse_trigger_us - now);
+        hal.scheduler->delay_microseconds(AP_HAL::timeout_remaining(last_pulse_trigger_us, now, trigger_widest_pulse));
     }
 
     osalSysLock();
@@ -1391,7 +1406,11 @@ void RCOutput::trigger_groups(void)
     osalSysUnlock();
 #if !defined(HAL_NO_RCOUT_THREAD) || HAL_DSHOT_ENABLED
     // trigger a PWM send
-    if (!in_soft_serial() && hal.scheduler->in_main_thread() && rcout_thread_ctx) {
+    if (!in_soft_serial() &&
+        // we always trigger an output if we are in the main thread
+        // we also always trigger an output if we are in the rate thread and thus
+        // force_trigger has been set
+        (hal.scheduler->in_main_thread() || force_trigger) && rcout_thread_ctx) {
         chEvtSignal(rcout_thread_ctx, EVT_PWM_SEND);
     }
 #endif
@@ -1399,7 +1418,7 @@ void RCOutput::trigger_groups(void)
       calculate time that we are allowed to trigger next pulse
       to guarantee at least a 50us gap between pulses
     */
-    min_pulse_trigger_us = AP_HAL::micros64() + trigger_widest_pulse + 50;
+    last_pulse_trigger_us = rcout_micros();
 
     chMtxUnlock(&trigger_mutex);
 }
@@ -1408,20 +1427,17 @@ void RCOutput::trigger_groups(void)
   periodic timer. This is used for oneshot and dshot modes, plus for
   safety switch update. Runs every 1000us.
  */
-void RCOutput::timer_tick(uint64_t time_out_us)
+void RCOutput::timer_tick(rcout_timer_t cycle_start_us, rcout_timer_t timeout_period_us)
 {
     if (in_soft_serial()) {
         return;
     }
 
-    if (min_pulse_trigger_us == 0) {
+    if (last_pulse_trigger_us == 0) {
         return;
     }
 
-    uint64_t now = AP_HAL::micros64();
-
-    if (now > min_pulse_trigger_us &&
-        now - min_pulse_trigger_us > 4000) {
+    if (AP_HAL::timeout_expired(last_pulse_trigger_us, rcout_micros(), trigger_widest_pulse + 4000U)) {
         // trigger at a minimum of 250Hz
         trigger_groups();
     }
@@ -1430,7 +1446,7 @@ void RCOutput::timer_tick(uint64_t time_out_us)
 /*
   periodic timer called from led thread. This is used for LED output
  */
-void RCOutput::led_timer_tick(uint64_t time_out_us)
+void RCOutput::led_timer_tick(rcout_timer_t cycle_start_us, rcout_timer_t timeout_period_us)
 {
     if (in_soft_serial()) {
         return;
@@ -1444,12 +1460,12 @@ void RCOutput::led_timer_tick(uint64_t time_out_us)
         }
 
         // release locks on the groups that are pending in reverse order
-        dshot_collect_dma_locks(time_out_us, true);
+        dshot_collect_dma_locks(cycle_start_us, timeout_period_us, true);
     }
 }
 
 // send dshot for all groups that support it
-void RCOutput::dshot_send_groups(uint64_t time_out_us)
+void RCOutput::dshot_send_groups(rcout_timer_t cycle_start_us, rcout_timer_t timeout_period_us)
 {
 #if HAL_DSHOT_ENABLED
     if (in_soft_serial()) {
@@ -1464,21 +1480,21 @@ void RCOutput::dshot_send_groups(uint64_t time_out_us)
     }
 
     for (auto &group : pwm_group_list) {
-        bool pulse_sent;
+        bool pulse_sent = false;
         // send a dshot command
-        if (is_dshot_protocol(group.current_mode)
+        if (group.can_send_dshot_pulse()
             && dshot_command_is_active(group)) {
             command_sent = dshot_send_command(group, _dshot_current_command.command, _dshot_current_command.chan);
             pulse_sent = true;
         // actually do a dshot send
         } else if (group.can_send_dshot_pulse()) {
-            dshot_send(group, time_out_us);
+            dshot_send(group, cycle_start_us, timeout_period_us);
             pulse_sent = true;
         }
 #if defined(HAL_WITH_BIDIR_DSHOT) && defined(HAL_TIM_UP_SHARED)
         // prevent the next send going out until the previous send has released its DMA channel
         if (pulse_sent && group.shared_up_dma && group.bdshot.enabled) {
-            chEvtWaitOneTimeout(DSHOT_CASCADE, calc_ticks_remaining(group, time_out_us, _dshot_period_us));
+            chEvtWaitOneTimeout(DSHOT_CASCADE, calc_ticks_remaining(group, cycle_start_us, timeout_period_us, _dshot_period_us));
         }
 #else
         (void)pulse_sent;
@@ -1535,16 +1551,15 @@ void RCOutput::dma_deallocate(Shared_DMA *ctx)
     for (auto &group : pwm_group_list) {
         if (group.dma_handle == ctx && group.dma != nullptr) {
             chSysLock();
+            dmaStreamFreeI(group.dma);
 #if defined(STM32F1)
             // leaving the peripheral running on IOMCU plays havoc with the UART that is
             // also sharing this channel, we only turn it off rather than resetting so
             // that we don't have to worry about line modes etc
             if (group.pwm_started && group.dma_handle->is_shared()) {
-                group.pwm_drv->tim->CR1   = 0;
-                group.pwm_drv->tim->DIER  = 0;
+                bdshot_disable_pwm_f1(group);
             }
 #endif
-            dmaStreamFreeI(group.dma);
             group.dma = nullptr;
             chSysUnlock();
         }
@@ -1611,7 +1626,7 @@ void RCOutput::fill_DMA_buffer_dshot(dmar_uint_t *buffer, uint8_t stride, uint16
   This call be called in blocking mode from the timer, in which case it waits for the DMA lock.
   In normal operation it doesn't wait for the DMA lock.
  */
-void RCOutput::dshot_send(pwm_group &group, uint64_t time_out_us)
+void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_timer_t timeout_period_us)
 {
 #if HAL_DSHOT_ENABLED
     if (soft_serial_waiting() || !is_dshot_send_allowed(group.dshot_state)) {
@@ -1627,7 +1642,7 @@ void RCOutput::dshot_send(pwm_group &group, uint64_t time_out_us)
     // if we are sharing UP channels then it might have taken a long time to get here,
     // if there's not enough time to actually send a pulse then cancel
 #if AP_HAL_SHARED_DMA_ENABLED
-    if (AP_HAL::micros64() + group.dshot_pulse_time_us > time_out_us) {
+    if (AP_HAL::timeout_remaining(cycle_start_us, rcout_micros(), timeout_period_us) < group.dshot_pulse_time_us) {
         group.dma_handle->unlock();
         return;
     }
@@ -1639,9 +1654,8 @@ void RCOutput::dshot_send(pwm_group &group, uint64_t time_out_us)
     bdshot_prepare_for_next_pulse(group);
 #endif
     bool safety_on = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
-#if !defined(IOMCU_FW)
     bool armed = hal.util->get_soft_armed();
-#endif
+
     memset((uint8_t *)group.dma_buffer, 0, DSHOT_BUFFER_LENGTH);
 
     for (uint8_t i=0; i<4; i++) {
@@ -1652,7 +1666,9 @@ void RCOutput::dshot_send(pwm_group &group, uint64_t time_out_us)
                 bdshot_decode_telemetry_from_erpm(group.bdshot.erpm[i], chan);
             }
 #endif
-            if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
+            const uint32_t servo_chan_mask = 1U<<(chan+chan_offset);
+
+            if (safety_on && !(safety_mask & servo_chan_mask)) {
                 // safety is on, don't output anything
                 continue;
             }
@@ -1664,12 +1680,10 @@ void RCOutput::dshot_send(pwm_group &group, uint64_t time_out_us)
                 continue;
             }
 
-            const uint32_t chan_mask = (1U<<chan);
-
             pwm = constrain_int16(pwm, 1000, 2000);
             uint16_t value = MIN(2 * (pwm - 1000), 1999);
 
-            if ((chan_mask & _reversible_mask) != 0) {
+            if ((servo_chan_mask & _reversible_mask) != 0) {
                 // this is a DShot-3D output, map so that 1500 PWM is zero throttle reversed
                 if (value < 1000) {
                     value = 1999 - value;
@@ -1685,13 +1699,14 @@ void RCOutput::dshot_send(pwm_group &group, uint64_t time_out_us)
             if (value != 0) {
                 value += DSHOT_ZERO_THROTTLE;
             }
-#if !defined(IOMCU_FW)
+
             if (!armed) {
                 // when disarmed we always send a zero value
                 value = 0;
             }
-#endif
+
             // according to sskaug requesting telemetry while trying to arm may interfere with the good frame calc
+            const uint32_t chan_mask = (1U<<chan);
             bool request_telemetry = telem_request_mask & chan_mask;
             uint16_t packet = create_dshot_packet(value, request_telemetry,
 #ifdef HAL_WITH_BIDIR_DSHOT
@@ -1780,6 +1795,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 #ifdef HAL_GPIO_LINE_GPIO54
     TOGGLE_PIN_DEBUG(54);
 #endif
+
 #if STM32_DMA_SUPPORTS_DMAMUX
     dmaSetRequestSource(group.dma, group.dma_up_channel);
 #endif
@@ -1820,7 +1836,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 
     dmaStreamEnable(group.dma);
     // record when the transaction was started
-    group.last_dmar_send_us = AP_HAL::micros64();
+    group.last_dmar_send_us = rcout_micros();
 #endif // HAL_DSHOT_ENABLED
 }
 
@@ -1831,12 +1847,12 @@ __RAMFUNC__ void RCOutput::dma_unlock(virtual_timer_t* vt, void *p)
 {
     chSysLockFromISR();
     pwm_group *group = (pwm_group *)p;
-
     group->dshot_state = DshotState::IDLE;
     if (group->dshot_waiter != nullptr) {
         // tell the waiting process we've done the DMA. Note that
-        // dshot_waiter can be null if we have cancelled the send
+        // dshot_waiter can be null if we have just cancelled the send
         chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
+        group->dshot_waiter = nullptr;
     }
     chSysUnlockFromISR();
 }
@@ -1851,9 +1867,11 @@ __RAMFUNC__ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
     chSysLockFromISR();
     dmaStreamDisable(group->dma);
 #if HAL_SERIAL_ESC_COMM_ENABLED
-    if (group->in_serial_dma && soft_serial_waiting()) {
-        // tell the waiting process we've done the DMA
-        chEvtSignalI(irq.waiter, serial_event_mask);
+    if (soft_serial_waiting()) {
+        if (group->in_serial_dma) {
+            // tell the waiting process we've done the DMA
+            chEvtSignalI(irq.waiter, serial_event_mask);
+        }
     } else
 #endif
     {
@@ -1895,6 +1913,7 @@ void RCOutput::dma_cancel(pwm_group& group)
     chEvtGetAndClearEventsI(group.dshot_event_mask | DSHOT_CASCADE);
 
     group.dshot_state = DshotState::IDLE;
+    group.dshot_waiter = nullptr;
     chSysUnlock();
 }
 
@@ -1906,16 +1925,25 @@ void RCOutput::dma_cancel(pwm_group& group)
 
   While serial output is active normal output to the channel group is
   suspended.
+
+  chanmask could refer to more than one group so it is assumed that
+  this function is always called before outputting to the group
+  implied by chan, but that DMA channels are setup only once
+  until serial_end() has been called
 */
 #if HAL_SERIAL_ESC_COMM_ENABLED
+#define BYTE_BITS 10
+
 bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t chanmask)
 {
+    osalDbgAssert(hal.scheduler->in_main_thread(), "serial_setup_output(): not called from main thread");
     // account for IOMCU channels
     chan -= chan_offset;
     chanmask >>= chan_offset;
     pwm_group *new_serial_group = nullptr;
+    uint8_t new_serial_chan = 0;
 
-    // find the channel group
+    // find the channel group for the next output
     for (auto &group : pwm_group_list) {
         if (group.current_mode == MODE_PWM_BRUSHED) {
             // can't do serial output with brushed motors
@@ -1925,41 +1953,45 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t cha
             new_serial_group = &group;
             for (uint8_t j=0; j<4; j++) {
                 if (group.chan[j] == chan) {
-                    group.serial.chan = j;
+                    new_serial_chan = j;
                 }
             }
             break;
         }
     }
 
+    // couldn't find a group, shutdown everything
     if (!new_serial_group) {
         if (in_soft_serial()) {
             // shutdown old group
-            serial_end();
+            serial_end(chanmask);
         }
         return false;
     }
 
+#if RCOU_SERIAL_TIMING_DEBUG
+    hal.gpio->pinMode(54, 1);
+    hal.gpio->pinMode(55, 1);
+#endif
+
     // stop further dshot output before we reconfigure the DMA
     serial_group = new_serial_group;
+    serial_group->serial.chan = new_serial_chan;
 
-    // setup the groups for serial output. We ask for a bit width of 1, which gets modified by the
+    // setup the unconfigured groups for serial output. We ask for a bit width of 1, which gets modified by the
     // we setup all groups so they all are setup with the right polarity, and to make switching between
     // channels in blheli pass-thru fast
     for (auto &group : pwm_group_list) {
-        if (group.ch_mask & chanmask) {
-            if (!setup_group_DMA(group, baudrate, 10, false, DSHOT_BUFFER_LENGTH, 10, false)) {
-                serial_end();
+        if ((group.ch_mask & chanmask) && !(group.ch_mask & serial_chanmask)) {
+            const uint32_t pulse_time_us = 1000000UL * 10 / baudrate;
+            if (!setup_group_DMA(group, baudrate, 10, false, DSHOT_BUFFER_LENGTH, pulse_time_us, false)) {
+                serial_end(chanmask);
                 return false;
             }
         }
     }
-
-    // run the thread doing serial IO at highest priority. This is needed to ensure we don't
-    // lose bytes when we switch between output and input
-    serial_thread = chThdGetSelfX();
-    serial_priority  = chThdGetSelfX()->realprio;
-    chThdSetPriority(HIGHPRIO);
+    // mask of channels currently configured
+    serial_chanmask |= chanmask;
 
     // remember the bit period for serial_read_byte()
     serial_group->serial.bit_time_us = 1000000UL / baudrate;
@@ -1985,15 +2017,16 @@ void RCOutput::fill_DMA_buffer_byte(dmar_uint_t *buffer, uint8_t stride, uint8_t
     buffer[0] = BIT_0;
 
     // stop bit
-    buffer[9*stride] = BIT_1;
+    buffer[(BYTE_BITS-1)*stride] = BIT_1;
 
     // 8 data bits
-    for (uint8_t i = 0; i < 8; i++) {
+    for (uint8_t i = 0; i < (BYTE_BITS-2); i++) {
         buffer[(1 + i) * stride] = (b & 1) ? BIT_1 : BIT_0;
         b >>= 1;
     }
 }
 
+#define BYTE_TIME(bitus) (bitus *  (BYTE_BITS + 2))   // timeout should come well after the next start bit
 
 /*
   send one serial byte, blocking call, should be called with the DMA lock held
@@ -2001,20 +2034,27 @@ void RCOutput::fill_DMA_buffer_byte(dmar_uint_t *buffer, uint8_t stride, uint8_t
 bool RCOutput::serial_write_byte(uint8_t b)
 {
     chEvtGetAndClearEvents(serial_event_mask);
+    pwm_group &group = *serial_group;
 
-    fill_DMA_buffer_byte(serial_group->dma_buffer+serial_group->serial.chan, 4, b, serial_group->bit_width_mul*10);
+    memset(group.dma_buffer, 0, DSHOT_BUFFER_LENGTH);
+    fill_DMA_buffer_byte(group.dma_buffer+group.serial.chan, 4, b, group.bit_width_mul*BYTE_BITS);
 
-    serial_group->in_serial_dma = true;
+    group.in_serial_dma = true;
 
     // start sending the pulses out
-    send_pulses_DMAR(*serial_group, 10*4*sizeof(uint32_t));
+    send_pulses_DMAR(group, BYTE_BITS*4*sizeof(uint32_t));
 
-    // wait for the event
-    eventmask_t mask = chEvtWaitAnyTimeout(serial_event_mask, chTimeMS2I(2));
+    // wait for the event, timing out as necessary
+    eventmask_t mask = chEvtWaitOneTimeout(serial_event_mask, chTimeUS2I(BYTE_TIME(group.serial.bit_time_us)));
 
-    serial_group->in_serial_dma = false;
+    // in the event of a timeout reset the timeout and keep
+    // going since we have probably just missed the final event
+    if ((mask & serial_event_mask) == 0) {
+        dma_cancel(group);
+    }
+    group.in_serial_dma = false;
 
-    return (mask & serial_event_mask) != 0;
+    return true;
 }
 
 /*
@@ -2026,11 +2066,33 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
     if (!in_soft_serial()) {
         return false;
     }
-    serial_group->dma_handle->lock();
-    memset(serial_group->dma_buffer, 0, DSHOT_BUFFER_LENGTH);
+    pwm_group &group = *serial_group;
+#if AP_HAL_SHARED_DMA_ENABLED
+    // first make sure we have the DMA channel before anything else
+    osalDbgAssert(!serial_group->dma_handle->is_locked(), "DMA handle is already locked");
+    group.dma_handle->lock();
+#endif
+
+    // run the thread doing serial IO at highest priority. This is needed to ensure we don't
+    // lose bytes when we switch between output and input. Since we always check for acks after
+    // a write we reset the priority after the read.
+    serial_priority = chThdSetPriority(HIGHPRIO);
+    serial_mode = palReadLineMode(group.pal_lines[group.serial.chan]);
+
+    // belt-and-braces reset to put DMA in a sane state for the write that will
+    // almost certainly follow this read. without this the DMA seems to get left in a state
+    // which bit shifts the DMA output on the first write. when that happens typically
+    // a CRC error will occur but some tools seem unable to cope with the appropriate retry.
+    dma_cancel(group);
+    pwmStop(group.pwm_drv);
+    pwmStart(group.pwm_drv, &group.pwm_cfg);
+
     while (len--) {
         if (!serial_write_byte(*bytes++)) {
-            serial_group->dma_handle->unlock();
+            chThdSetPriority(serial_priority);
+#if AP_HAL_SHARED_DMA_ENABLED
+            group.dma_handle->unlock();
+#endif
             return false;
         }
     }
@@ -2038,13 +2100,20 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
     // add a small delay for last word of output to have completely
     // finished
     hal.scheduler->delay_microseconds(25);
-
-    serial_group->dma_handle->unlock();
+#if AP_HAL_SHARED_DMA_ENABLED
+    group.dma_handle->unlock();
+#endif
     return true;
 #else
     return false;
 #endif // DISABLE_DSHOT
 }
+
+#define BAD_BYTE 0xFFFF
+#define START_BIT_TIMEOUT 2000 // 2ms
+
+ByteBuffer RCOutput::serial_buffer{64};
+HAL_BinarySemaphore RCOutput::serial_sem;
 
 /*
   irq handler for bit transition in serial_read_byte()
@@ -2060,22 +2129,35 @@ void RCOutput::serial_bit_irq(void)
     palWriteLine(HAL_GPIO_LINE_GPIO55, bit);
 #endif
 
-    if (irq.nbits == 0 || bit == irq.last_bit) {
+    chSysLockFromISR();
+
+    // value of completed byte (includes start and stop bits)
+    uint16_t byteval = 0;
+
+    // packets are 8N1 so 0 for start bit, 8 bits of data and 1 for stop bit
+    // start and stop bits are always different so there should always be
+    // a transition between bytes of data
+    if (irq.nbits == 0 ||
+        // bit transition but previous is the same as current, should never happen
+        bit == irq.last_bit) {
         // start of byte, should be low
         if (bit != 0) {
-            irq.byteval = 0x200;
+            byteval = 0x200;
             send_signal = true;
         } else {
+            // new start bit
             irq.nbits = 1;
             irq.byte_start_tick = now;
             irq.bitmask = 0;
+            // start bit has been seen so start the ticker for the end of the byte
+            chVTSetI(&irq.serial_timeout, chTimeUS2I(BYTE_TIME(irq.bit_time_tick)), serial_byte_timeout, irq.waiter);
         }
     } else {
         uint16_t dt = now - irq.byte_start_tick;
         uint8_t bitnum = (dt+(irq.bit_time_tick/2)) / irq.bit_time_tick;
 
-        if (bitnum > 10) {
-            bitnum = 10;
+        if (bitnum > BYTE_BITS) {
+            bitnum = BYTE_BITS;
         }
         if (!bit) {
             // set the bits that we've processed
@@ -2083,9 +2165,10 @@ void RCOutput::serial_bit_irq(void)
         }
         irq.nbits = bitnum;
 
-        if (irq.nbits == 10) {
+        if (irq.nbits == BYTE_BITS) {
             send_signal = true;
-            irq.byteval = irq.bitmask & 0x3FF;
+            // we have enough bits, transition should be to stop bit
+            byteval = irq.bitmask & 0x3FF;
             irq.bitmask = 0;
             irq.nbits = 1;
             irq.byte_start_tick = now;
@@ -2094,11 +2177,19 @@ void RCOutput::serial_bit_irq(void)
     irq.last_bit = bit;
 
     if (send_signal) {
-        chSysLockFromISR();
-        chVTResetI(&irq.serial_timeout);
-        chEvtSignalI(irq.waiter, serial_event_mask);
+        if ((byteval & 0x201) != 0x200) {
+            // wrong start/stop bits
+            byteval = BAD_BYTE;
+        } else {
+            // seen the last bit so setup the timeout for the next byte
+            chVTSetI(&irq.serial_timeout, chTimeUS2I(BYTE_TIME(irq.bit_time_tick)), serial_byte_timeout, irq.waiter);
+        }
+        serial_buffer.write((uint8_t*)&byteval, 2);
         chSysUnlockFromISR();
+        serial_sem.signal_ISR();
+        return;
     }
+    chSysUnlockFromISR();
 }
 
 /*
@@ -2107,44 +2198,57 @@ void RCOutput::serial_bit_irq(void)
 void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
 {
     chSysLockFromISR();
-    irq.timed_out = true;
-    chEvtSignalI((thread_t *)ctx, serial_event_mask);
+    uint16_t byteval = irq.bitmask | (((1U<<BYTE_BITS)-1) & ~((1U<<irq.nbits)-1));
+    // we can accept a byte with a timeout if the last bit was 1
+    // and the start bit is set correctly
+    if (irq.last_bit == 0) {
+        byteval = BAD_BYTE;
+    } else if ((byteval & 0x201) != 0x200) {
+        // wrong start/stop bits
+        byteval = BAD_BYTE;
+    }
+
+    serial_buffer.write((uint8_t*)&byteval, 2);
     chSysUnlockFromISR();
+    serial_sem.signal_ISR();
 }
 
 /*
   read a byte from a port, using serial parameters from serial_setup_output()
 */
-bool RCOutput::serial_read_byte(uint8_t &b)
+bool RCOutput::serial_read_byte(uint8_t &b, uint32_t timeout_us)
 {
-    irq.timed_out = false;
-    chVTSet(&irq.serial_timeout, chTimeMS2I(10), serial_byte_timeout, irq.waiter);
-    bool timed_out = ((chEvtWaitAny(serial_event_mask) & serial_event_mask) == 0) || irq.timed_out;
+    while (true) {
+        // consumer/producer pattern
+        if (serial_buffer.is_empty()) {
+            if (!serial_sem.wait(timeout_us)) {
+                return false;  // no data after 2ms
+            }
+        }
 
-    uint16_t byteval = irq.byteval;
+        chSysLock();
+        uint16_t byteval;
+        if (!serial_buffer.read((uint8_t*)&byteval, 2)) {
+            chSysUnlock();
+            continue;
+        }
+        chSysUnlock();
 
-    if (timed_out) {
-        // we can accept a byte with a timeout if the last bit was 1
-        // and the start bit is set correctly
-        if (irq.last_bit == 0) {
+        if (byteval == BAD_BYTE) {
             return false;
         }
-        byteval = irq.bitmask | 0x200;
+        b = uint8_t(byteval>>1);
+        return true;
     }
-
-    if ((byteval & 0x201) != 0x200) {
-        // wrong start/stop bits
-        return false;
-    }
-
-    b = uint8_t(byteval>>1);
-    return true;
 }
 
 /*
   read a byte from a port, using serial parameters from serial_setup_output()
+  timeout_us is the maximum time to wait for input - it is important to timeout
+  at this level rather than doing multiple reads as its possible to miss acks
+  in the thin slice of time during re-setup.
 */
-uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
+uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeout_us)
 {
     if (!in_soft_serial()) {
         return 0;
@@ -2158,74 +2262,94 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 #else
     uint32_t gpio_mode = PAL_STM32_MODE_INPUT | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_LOWEST;
 #endif
-    // restore the line to what it was before
-    iomode_t restore_mode = palReadLineMode(line);
-    uint16_t i = 0;
-
-#if RCOU_SERIAL_TIMING_DEBUG
-    hal.gpio->pinMode(54, 1);
-    hal.gpio->pinMode(55, 1);
-#endif
-
     // assume GPIO mappings for PWM outputs start at 50
     palSetLineMode(line, gpio_mode);
 
     chVTObjectInit(&irq.serial_timeout);
     chEvtGetAndClearEvents(serial_event_mask);
+    serial_buffer.clear();
 
     irq.line = group.pal_lines[group.serial.chan];
     irq.nbits = 0;
     irq.bitmask = 0;
-    irq.byteval = 0;
     irq.bit_time_tick = serial_group->serial.bit_time_us;
     irq.last_bit = 0;
-    irq.waiter = chThdGetSelfX();
-
-#if RCOU_SERIAL_TIMING_DEBUG
-    palWriteLine(HAL_GPIO_LINE_GPIO54, 1);
-#endif
 
     if (!((GPIO *)hal.gpio)->_attach_interrupt(line, serial_bit_irq, AP_HAL::GPIO::INTERRUPT_BOTH)) {
-#if RCOU_SERIAL_TIMING_DEBUG
-        palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
-#endif
-        return false;
+        chThdSetPriority(serial_priority);
+        palSetLineMode(line, serial_mode);
+        return 0;
     }
 
+#if RCOU_SERIAL_TIMING_DEBUG
+    palToggleLine(HAL_GPIO_LINE_GPIO54);
+#endif
+
+    uint16_t i = 0;
+    uint32_t start_us = AP_HAL::micros();
+
     for (i=0; i<len; i++) {
-        if (!serial_read_byte(buf[i])) {
+        uint32_t spent_us = AP_HAL::micros() - start_us;
+        if (spent_us > timeout_us) {
+            break;
+        }
+        if (!serial_read_byte(buf[i], timeout_us)) {
             break;
         }
     }
 
-    ((GPIO *)hal.gpio)->_attach_interrupt(line, nullptr, 0);
-    irq.waiter = nullptr;
+    chSysLock();
+    palDisableLineEventI(line);
+    chEvtGetAndClearEvents(serial_event_mask);
+    chVTReset(&irq.serial_timeout);
+    palSetLineMode(line, serial_mode);
+    chSysUnlock();
+    chThdSetPriority(serial_priority);
 
-    palSetLineMode(line, restore_mode);
 #if RCOU_SERIAL_TIMING_DEBUG
-    palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
+    palToggleLine(HAL_GPIO_LINE_GPIO54);
 #endif
     return i;
 }
 
 /*
   end serial output
-*/
-void RCOutput::serial_end(void)
+ */
+void RCOutput::serial_end(uint32_t chanmask)
 {
+    osalDbgAssert(hal.scheduler->in_main_thread(), "serial_end(): not called from main thread");
+    chanmask >>= chan_offset;
+    // restore settings as best we can
     if (in_soft_serial()) {
-        if (serial_thread == chThdGetSelfX()) {
-            chThdSetPriority(serial_priority);
-            serial_thread = nullptr;
-        }
-        irq.waiter = nullptr;
-        for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
-            pwm_group &group = pwm_group_list[i];
-            set_group_mode(group);
-            set_freq_group(group);
+        palSetLineMode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
+    }
+    irq.waiter = nullptr;
+    for (auto &group : pwm_group_list) {
+        // re-configure groups that were previous configured
+        if ((group.ch_mask & chanmask)) {
+            dma_cancel(group);  // this ensures the DMA is in a sane state
+            set_group_mode(group);  // stops the timer
         }
     }
     serial_group = nullptr;
+    serial_chanmask = 0;
+}
+
+/*
+  reset serial output
+ */
+void RCOutput::serial_reset(uint32_t chanmask)
+{
+    osalDbgAssert(hal.scheduler->in_main_thread(), "serial_reset(): not called from main thread");
+    chanmask >>= chan_offset;
+    // reset settings as best we can
+    if (in_soft_serial()) {
+        palSetLineMode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
+        dma_cancel(*serial_group);
+        chEvtGetAndClearEvents(serial_event_mask);
+        pwmStop(serial_group->pwm_drv);
+        pwmStart(serial_group->pwm_drv, &serial_group->pwm_cfg);
+    }
 }
 #endif // HAL_SERIAL_ESC_COMM_ENABLED
 
@@ -2297,7 +2421,7 @@ void RCOutput::safety_update(void)
     bool safety_pressed = palReadLine(HAL_GPIO_PIN_SAFETY_IN);
     if (safety_pressed) {
         AP_BoardConfig *brdconfig = AP_BoardConfig::get_singleton();
-        if (safety_press_count < 255) {
+        if (safety_press_count < UINT8_MAX) {
             safety_press_count++;
         }
         if (brdconfig && brdconfig->safety_button_handle_pressed(safety_press_count)) {
@@ -2570,7 +2694,7 @@ bool RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t 
         for (uint8_t j = 0; j < 4; j++) {
             delete[] grp->serial_led_data[j];
             grp->serial_led_data[j] = nullptr;
-            grp->serial_led_data[j] = new SerialLed[grp->serial_nleds];
+            grp->serial_led_data[j] = NEW_NOTHROW SerialLed[grp->serial_nleds];
             if (grp->serial_led_data[j] == nullptr) {
                 // if allocation failed clear all memory
                  for (uint8_t k = 0; k < 4; k++) {

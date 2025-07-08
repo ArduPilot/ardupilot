@@ -4,14 +4,10 @@
 
 #include "Location.h"
 
+#ifndef HAL_BOOTLOADER_BUILD
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Terrain/AP_Terrain.h>
-
-/// constructors
-Location::Location()
-{
-    zero();
-}
 
 const Location definitely_zero{};
 bool Location::is_zero(void) const
@@ -90,10 +86,23 @@ bool Location::change_alt_frame(AltFrame desired_frame)
     return true;
 }
 
+void Location::copy_alt_from(const Location &other)
+{
+    alt = other.alt;
+    relative_alt = other.relative_alt;
+    terrain_alt = other.terrain_alt;
+    origin_alt = other.origin_alt;
+}
+
 // get altitude frame
 Location::AltFrame Location::get_alt_frame() const
 {
     if (terrain_alt) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (!relative_alt) {
+            AP_HAL::panic("terrain loc must be relative_alt1");
+        }
+#endif
         return AltFrame::ABOVE_TERRAIN;
     }
     if (origin_alt) {
@@ -105,12 +114,15 @@ Location::AltFrame Location::get_alt_frame() const
     return AltFrame::ABSOLUTE;
 }
 
-/// get altitude in desired frame
+/// get altitude in desired frame.  Must not change ret_alt_cm unless true is returned!
 bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!initialised()) {
         AP_HAL::panic("Should not be called on invalid location: Location cannot be (0, 0, 0)");
+    }
+    if (terrain_alt && !relative_alt) {
+        AP_HAL::panic("terrain loc must be relative_alt2");
     }
 #endif
     Location::AltFrame frame = get_alt_frame();
@@ -209,9 +221,22 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
     }
     return false;  // LCOV_EXCL_LINE  - not reachable
 }
+//  Must not change ret_alt_cm unless true is returned!
+bool Location::get_alt_m(AltFrame desired_frame, float &ret_alt) const
+{
+    int32_t ret_alt_cm;
+    if (!get_alt_cm(desired_frame, ret_alt_cm)) {
+        return false;
+    }
+    ret_alt = ret_alt_cm * 0.01;
+    return true;
+}
 
 #if AP_AHRS_ENABLED
-bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
+// converts location to a vector from origin; if this method returns
+// false then vec_ne is unmodified
+template<typename T>
+bool Location::get_vector_xy_from_origin_NE_cm(T &vec_ne) const
 {
     Location ekf_origin;
     if (!AP::ahrs().get_origin(ekf_origin)) {
@@ -222,22 +247,76 @@ bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
     return true;
 }
 
-bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
-{
-    // convert lat, lon
-    if (!get_vector_xy_from_origin_NE(vec_neu.xy())) {
-        return false;
-    }
+// define for float and position vectors
+template bool Location::get_vector_xy_from_origin_NE_cm<Vector2f>(Vector2f &vec_ne) const;
+#if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_xy_from_origin_NE_cm<Vector2p>(Vector2p &vec_ne) const;
+#endif
 
+// converts location to a vector from origin; if this method returns
+// false then vec_neu is unmodified
+template<typename T>
+bool Location::get_vector_from_origin_NEU_cm(T &vec_neu) const
+{
     // convert altitude
     int32_t alt_above_origin_cm = 0;
     if (!get_alt_cm(AltFrame::ABOVE_ORIGIN, alt_above_origin_cm)) {
         return false;
     }
+
+    // convert lat, lon
+    if (!get_vector_xy_from_origin_NE_cm(vec_neu.xy())) {
+        return false;
+    }
+
     vec_neu.z = alt_above_origin_cm;
 
     return true;
 }
+template<typename T>
+bool Location::get_vector_from_origin_NEU(T &vec_neu) const
+{
+    return get_vector_from_origin_NEU_cm(vec_neu);
+}
+
+// define for float and position vectors
+template bool Location::get_vector_from_origin_NEU_cm<Vector3f>(Vector3f &vec_neu) const;
+template bool Location::get_vector_from_origin_NEU<Vector3f>(Vector3f &vec_neu) const;
+#if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_from_origin_NEU_cm<Vector3p>(Vector3p &vec_neu) const;
+template bool Location::get_vector_from_origin_NEU<Vector3p>(Vector3p &vec_neu) const;
+#endif
+
+template<typename T>
+bool Location::get_vector_xy_from_origin_NE_m(T &vec_ne) const
+{
+    if (!get_vector_xy_from_origin_NE_cm(vec_ne)) {
+        return false;
+    }
+    vec_ne *= 0.01;
+    return true;
+}
+template bool Location::get_vector_xy_from_origin_NE_m<Vector2f>(Vector2f &vec_ne) const;
+#if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_xy_from_origin_NE_m<Vector2p>(Vector2p &vec_ne) const;
+#endif
+
+template<typename T>
+bool Location::get_vector_from_origin_NEU_m(T &vec_neu) const
+{
+    if (!get_vector_from_origin_NEU_cm(vec_neu)) {
+        return false;
+    }
+    vec_neu *= 0.01;
+    return true;
+}
+// define for float and position vectors
+template bool Location::get_vector_from_origin_NEU_m<Vector3f>(Vector3f &vec_neu) const;
+#if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_from_origin_NEU_m<Vector3p>(Vector3p &vec_neu) const;
+#endif
+
+
 #endif  // AP_AHRS_ENABLED
 
 // return horizontal distance in meters between two locations
@@ -248,9 +327,28 @@ ftype Location::get_distance(const Location &loc2) const
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
-// return the altitude difference in meters taking into account alt frame.
-bool Location::get_alt_distance(const Location &loc2, ftype &distance) const
+// return the altitude difference in meters taking into account alt
+// frame.  if loc2 is below this location then "distance" will be
+// positive.  ie. this method returns how far above loc2 this location
+// is.
+bool Location::get_height_above(const Location &loc2, ftype &distance) const
 {
+    if (get_alt_frame() == loc2.get_alt_frame()) {
+        switch (get_alt_frame()) {
+        case AltFrame::ABSOLUTE:
+        case AltFrame::ABOVE_HOME:
+        case AltFrame::ABOVE_ORIGIN:
+            // all of these use the same reference
+            distance = (alt - loc2.alt) * 0.01;
+            return true;
+        case AltFrame::ABOVE_TERRAIN:
+            // 1m above terrain here is not the same as 1m above
+            // terrain at loc2, so convert both to absolute and then
+            // subtract.
+            break;
+        }
+    }
+
     int32_t alt1, alt2;
     if (!get_alt_cm(AltFrame::ABSOLUTE, alt1) || !loc2.get_alt_cm(AltFrame::ABSOLUTE, alt2)) {
         return false;
@@ -277,6 +375,13 @@ Vector3f Location::get_distance_NED(const Location &loc2) const
                     (alt - loc2.alt) * 0.01);
 }
 
+Vector3p Location::get_distance_NED_postype(const Location &loc2) const
+{
+    return Vector3p((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
+                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((lat+loc2.lat)/2),
+                    (alt - loc2.alt) * 0.01);
+}
+
 // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
 Vector3d Location::get_distance_NED_double(const Location &loc2) const
 {
@@ -285,9 +390,28 @@ Vector3d Location::get_distance_NED_double(const Location &loc2) const
                     (alt - loc2.alt) * 0.01);
 }
 
+// return the distance in meters in North/East/Down plane as a N/E/D vector to loc2 considering alt frame, if altitude cannot be resolved down distance is 0
+Vector3f Location::get_distance_NED_alt_frame(const Location &loc2) const
+{
+    int32_t alt1, alt2 = 0;
+    if (!get_alt_cm(AltFrame::ABSOLUTE, alt1) || !loc2.get_alt_cm(AltFrame::ABSOLUTE, alt2)) {
+        // one or both of the altitudes are invalid, don't do alt distance calc
+        alt1 = 0, alt2 = 0;
+    }
+    return Vector3f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
+                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((loc2.lat+lat)/2),
+                    (alt1 - alt2) * 0.01);
+}
+
 Vector2d Location::get_distance_NE_double(const Location &loc2) const
 {
     return Vector2d((loc2.lat - lat) * double(LOCATION_SCALING_FACTOR),
+                    diff_longitude(loc2.lng,lng) * double(LOCATION_SCALING_FACTOR) * longitude_scale((lat+loc2.lat)/2));
+}
+
+Vector2p Location::get_distance_NE_postype(const Location &loc2) const
+{
+    return Vector2p((loc2.lat - lat) * double(LOCATION_SCALING_FACTOR),
                     diff_longitude(loc2.lng,lng) * double(LOCATION_SCALING_FACTOR) * longitude_scale((lat+loc2.lat)/2));
 }
 
@@ -412,7 +536,7 @@ bool Location::same_alt_as(const Location &loc2) const
     }
 
     ftype alt_diff;
-    bool have_diff = this->get_alt_distance(loc2, alt_diff);
+    bool have_diff = this->get_height_above(loc2, alt_diff);
 
     const ftype tolerance = FLT_EPSILON;
     return have_diff && (fabsF(alt_diff) < tolerance);
@@ -505,3 +629,5 @@ void Location::linearly_interpolate_alt(const Location &point1, const Location &
     // new target's distance along the original track and then linear interpolate between the original origin and destination altitudes
     set_alt_cm(point1.alt + (point2.alt - point1.alt) * constrain_float(line_path_proportion(point1, point2), 0.0f, 1.0f), point2.get_alt_frame());
 }
+
+#endif // HAL_BOOTLOADER_BUILD

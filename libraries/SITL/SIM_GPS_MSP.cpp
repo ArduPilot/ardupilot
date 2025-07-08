@@ -7,6 +7,7 @@
 #include <SITL/SITL.h>
 
 #include <time.h>
+#include <sys/time.h>
 
 using namespace SITL;
 
@@ -56,14 +57,15 @@ void GPS_MSP::publish(const GPS_Data *d)
     auto t = gps_time();
     struct timeval tv;
     simulation_timeval(&tv);
-    auto *tm = gmtime(&tv.tv_sec);
+    struct tm tvd {};
+    auto *tm = gmtime_r(&tv.tv_sec, &tvd);
 
     msp_gps.gps_week = t.week;
     msp_gps.ms_tow = t.ms;
     msp_gps.fix_type = d->have_lock?3:0;
-    msp_gps.satellites_in_view = d->have_lock ? _sitl->gps_numsats[instance] : 3;
-    msp_gps.horizontal_pos_accuracy = _sitl->gps_accuracy[instance]*100;
-    msp_gps.vertical_pos_accuracy = _sitl->gps_accuracy[instance]*100;
+    msp_gps.satellites_in_view = d->have_lock ? d->num_sats : 3;
+    msp_gps.horizontal_pos_accuracy = d->horizontal_acc*100;
+    msp_gps.vertical_pos_accuracy = d->vertical_acc*100;
     msp_gps.horizontal_vel_accuracy = 30;
     msp_gps.hdop = 100;
     msp_gps.longitude = d->longitude * 1.0e7;
@@ -72,7 +74,7 @@ void GPS_MSP::publish(const GPS_Data *d)
     msp_gps.ned_vel_north = 100 * d->speedN;
     msp_gps.ned_vel_east = 100 * d->speedE;
     msp_gps.ned_vel_down = 100 * d->speedD;
-    msp_gps.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 100;
+    msp_gps.ground_course = degrees(atan2f(d->speedE, d->speedN)) * 100;
     msp_gps.true_yaw = wrap_360(d->yaw_deg)*100U; // can send 65535 for no yaw
     msp_gps.year = tm->tm_year;
     msp_gps.month = tm->tm_mon;

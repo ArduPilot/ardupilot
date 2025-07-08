@@ -4,7 +4,6 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
-env OPTIMIZE -O2
 
 # USB setup
 USB_STRING_MANUFACTURER "ArduPilot"
@@ -20,8 +19,6 @@ FLASH_SIZE_KB 2048
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
-define HAL_BUILD_AP_PERIPH
-
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 128
 FLASH_BOOTLOADER_LOAD_KB 128
@@ -32,8 +29,8 @@ RAM_RESERVE_START 256
 MAIN_STACK 0x2000
 PROCESS_STACK 0x6000
 
-# board ID for firmware load
-APJ_BOARD_ID 1315
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_KHA_ETH
 
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
@@ -98,7 +95,7 @@ define HAL_GPIO_ETH_ENABLE 113
 
 define BOARD_PHY_ID MII_LAN8742A_ID
 define BOARD_PHY_RMII
-define HAL_PERIPH_ENABLE_NETWORKING
+define AP_PERIPH_NETWORKING_ENABLED 1
 
 ###################
 
@@ -131,15 +128,8 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 # ---------------------------------------------------------------------------------------------
 # AP_Periph - boiler-plate configurations that all HW AP-Periph need
 # ---------------------------------------------------------------------------------------------
-define DISABLE_SERIAL_ESC_COMM TRUE
-define HAL_NO_RCIN_THREAD
 #define HAL_NO_GPIO_IRQ
-define HAL_DISABLE_LOOP_DELAY
 define HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS
-
-
-define PERIPH_FW TRUE
-#define NO_DATAFLASH TRUE
 
 #################################
 # AP_Periph - configurations specific to this App
@@ -155,5 +145,7 @@ DMA_NOSHARE USART1* USART2* CAN1*
 
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
+
+define HAL_MONITOR_THREAD_ENABLED 1
 
 AUTOBUILD_TARGETS None

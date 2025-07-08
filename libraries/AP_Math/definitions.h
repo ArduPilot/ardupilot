@@ -27,11 +27,10 @@
   #define MATH_CHECK_INDEXES 0
 #endif
 
+#define CDEG_TO_RAD     (M_PI / 18000.0f)
+#define RAD_TO_CDEG     (18000.0f / M_PI)
 #define DEG_TO_RAD      (M_PI / 180.0f)
 #define RAD_TO_DEG      (180.0f / M_PI)
-
-// Centi-degrees to radians
-#define DEGX100 5729.57795f
 
 // GPS Specific double precision conversions
 // The precision here does matter when using the wsg* functions for converting
@@ -40,8 +39,6 @@
 static const double DEG_TO_RAD_DOUBLE = asin(1) / 90;
 static const double RAD_TO_DEG_DOUBLE = 1 / DEG_TO_RAD_DOUBLE;
 #endif
-
-#define RadiansToCentiDegrees(x) (static_cast<float>(x) * RAD_TO_DEG * static_cast<float>(100))
 
 // acceleration due to gravity in m/s/s
 #define GRAVITY_MSS     9.80665f

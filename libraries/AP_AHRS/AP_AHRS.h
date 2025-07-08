@@ -33,6 +33,7 @@
 #include "AP_AHRS_DCM.h"
 #include "AP_AHRS_SIM.h"
 #include "AP_AHRS_External.h"
+#include <AP_NavEKF/AP_Nav_Common.h>
 
 // forward declare view class
 class AP_AHRS_View;
@@ -47,9 +48,18 @@ class AP_AHRS {
     friend class AP_AHRS_View;
 public:
 
+    // copy this into our namespace
+    using Status = NavFilterStatusBit;
+
     enum Flags {
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
+
+    // has_status returns information about the EKF health and
+    // capabilities.  It is currently invalid to call this when a
+    // backend is in charge which returns false for get_filter_status
+    // - so this will simply return false for DCM, for example.
+    bool has_status(Status status) const;
 
     // Constructor
     AP_AHRS(uint8_t flags = 0);
@@ -131,6 +141,12 @@ public:
 #endif
     }
 
+#if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
+    void set_external_wind_estimate(float speed, float direction) {
+        dcm.set_external_wind_estimate(speed, direction);
+    }
+#endif
+
     // return the parameter AHRS_WIND_MAX in metres per second
     uint8_t get_max_wind() const {
         return _wind_max;
@@ -141,11 +157,12 @@ public:
      */
 
     // get apparent to true airspeed ratio
-    float get_EAS2TAS(void) const {
-        return state.EAS2TAS;
-    }
+    float get_EAS2TAS(void) const;
 
-    // return an airspeed estimate if available. return true
+    // get air density / sea level density - decreases as altitude climbs
+    float get_air_density_ratio(void) const;
+    
+    // return an (equivalent) airspeed estimate if available. return true
     // if we have an estimate
     bool airspeed_estimate(float &airspeed_ret) const;
 
@@ -188,7 +205,7 @@ public:
         return AP_AHRS_Backend::airspeed_sensor_enabled(airspeed_index);
     }
 
-    // return a synthetic airspeed estimate (one derived from sensors
+    // return a synthetic (equivalent) airspeed estimate (one derived from sensors
     // other than an actual airspeed sensor), if available. return
     // true if we have a synthetic airspeed.  ret will not be modified
     // on failure.
@@ -262,22 +279,29 @@ public:
     // return the relative position NED from either home or origin
     // return true if the estimate is valid
     bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED;
-    bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED;
+    bool get_relative_position_NED_origin(Vector3p &vec) const WARN_IF_UNUSED;
+    bool get_relative_position_NED_origin_float(Vector3f &vec) const WARN_IF_UNUSED;
 
     // return the relative position NE from home or origin
     // return true if the estimate is valid
     bool get_relative_position_NE_home(Vector2f &posNE) const WARN_IF_UNUSED;
-    bool get_relative_position_NE_origin(Vector2f &posNE) const WARN_IF_UNUSED;
+    bool get_relative_position_NE_origin(Vector2p &posNE) const WARN_IF_UNUSED;
+    bool get_relative_position_NE_origin_float(Vector2f &posNE) const WARN_IF_UNUSED;
 
     // return the relative position down from home or origin
     // baro will be used for the _home relative one if the EKF isn't
     void get_relative_position_D_home(float &posD) const;
-    bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED;
+    bool get_relative_position_D_origin(postype_t &posD) const WARN_IF_UNUSED;
+    bool get_relative_position_D_origin_float(float &posD) const WARN_IF_UNUSED;
 
     // return location corresponding to vector relative to the
     // vehicle's origin
-    bool get_location_from_origin_offset(Location &loc, const Vector3p &offset_ned) const WARN_IF_UNUSED;
-    bool get_location_from_home_offset(Location &loc, const Vector3p &offset_ned) const WARN_IF_UNUSED;
+    bool get_location_from_origin_offset_NED(Location &loc, const Vector3p &offset_ned) const WARN_IF_UNUSED;
+    bool get_location_from_home_offset_NED(Location &loc, const Vector3p &offset_ned) const WARN_IF_UNUSED;
+
+    // get velocity down in m/s.  This returns get_velocity_NED.z() if available, otherwise falls back to get_vert_pos_rate_D()
+    // if high_vibes is true then this is equivalent to get_vert_pos_rate_D
+    bool get_velocity_D(float &velD, bool high_vibes = false) const WARN_IF_UNUSED;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
@@ -410,7 +434,7 @@ public:
     void request_yaw_reset(void);
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-    void set_posvelyaw_source_set(uint8_t source_set_idx);
+    void set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx);
 
     //returns index of active source set used, 0=primary, 1=secondary, 2=tertiary
     uint8_t get_posvelyaw_source_set() const;
@@ -548,10 +572,23 @@ public:
      * Attitude-related public methods and attributes:
      */
 
-    // roll/pitch/yaw euler angles, all in radians
+#if AP_SCRIPTING_ENABLED
+    // deprecated functions for accessing rpy.  Do not use, these will
+    // be removed.
     float get_roll() const { return roll; }
     float get_pitch() const { return pitch; }
     float get_yaw() const { return yaw; }
+#endif  // AP_SCRIPTING_ENABLED
+
+    // roll/pitch/yaw euler angles, all in radians
+    float get_roll_rad() const { return roll; }
+    float get_pitch_rad() const { return pitch; }
+    float get_yaw_rad() const { return yaw; }
+
+    // roll/pitch/yaw euler angles, all in degrees
+    float get_roll_deg() const { return rpy_deg[0]; }
+    float get_pitch_deg() const { return rpy_deg[1]; }
+    float get_yaw_deg() const { return rpy_deg[2]; }
 
     // helper trig value accessors
     float cos_roll() const  {
@@ -572,6 +609,9 @@ public:
     float sin_yaw() const   {
         return _sin_yaw;
     }
+
+    // floating point Euler angles (Degrees)
+    float rpy_deg[3];
 
     // integer Euler angles (Degrees * 100)
     int32_t roll_sensor;
@@ -611,9 +651,9 @@ public:
     // return current vibration vector for primary IMU
     Vector3f get_vibration(void) const;
 
-    // return primary accels, for lua
+    // return primary accels
     const Vector3f &get_accel(void) const {
-        return AP::ins().get_accel();
+        return AP::ins().get_accel(_get_primary_accel_index());
     }
 
     // return primary accel bias. This should be subtracted from
@@ -760,9 +800,6 @@ private:
     void update_EKF3(void);
 #endif
 
-    // rotation from vehicle body to NED frame
-
-
     const uint16_t startup_delay_ms = 1000;
     uint32_t start_time_ms;
     uint8_t _ekf_flags; // bitmask from Flags enumeration
@@ -866,7 +903,7 @@ private:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool _airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &status) const;
+    bool _airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &status) const;
 
     // return secondary attitude solution if available, as eulers in radians
     bool _get_secondary_attitude(Vector3f &eulers) const;
@@ -885,11 +922,11 @@ private:
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
-    bool _airspeed_estimate_true(float &airspeed_ret) const;
+    bool _airspeed_TAS(float &airspeed_ret) const;
 
     // return estimate of true airspeed vector in body frame in m/s
     // returns false if estimate is unavailable
-    bool _airspeed_vector_true(Vector3f &vec) const;
+    bool _airspeed_TAS(Vector3f &vec) const;
 
     // return the quaternion defining the rotation from NED to XYZ (body) axes
     bool _get_quaternion(Quaternion &quat) const WARN_IF_UNUSED;
@@ -1011,12 +1048,16 @@ private:
     enum class Options : uint16_t {
         DISABLE_DCM_FALLBACK_FW=(1U<<0),
         DISABLE_DCM_FALLBACK_VTOL=(1U<<1),
+        DISABLE_AIRSPEED_EKF_CHECK=(1U<<2),
     };
     AP_Int16 _options;
     
     bool option_set(Options option) const {
         return (_options & uint16_t(option)) != 0;
     }
+
+    // true when we have completed the common origin setup
+    bool done_common_origin;
 };
 
 namespace AP {

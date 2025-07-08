@@ -23,11 +23,16 @@ class AStyleChecker(object):
         self.directories_to_check = [
             'libraries/AP_DDS',
             'libraries/AP_ExternalControl',
+            'libraries/AP_GSOF',
         ]
         self.files_to_check = [
             pathlib.Path(s) for s in [
+                'ArduCopter/AP_ExternalControl_Copter.cpp',
+                'ArduCopter/AP_ExternalControl_Copter.h',
                 'libraries/AP_ExternalAHRS/AP_ExternalAHRS_MicroStrain7.cpp',
                 'libraries/AP_ExternalAHRS/AP_ExternalAHRS_MicroStrain7.h',
+                'Rover/AP_ExternalControl_Rover.cpp',
+                'Rover/AP_ExternalControl_Rover.h',
             ]
         ]
         self.dry_run = dry_run
@@ -55,7 +60,7 @@ class AStyleChecker(object):
             self.progress("astyle check failed: (%s)" % (ret.stdout))
             self.retcode = 1
         if "Formatted" in ret.stdout:
-            self.progress("Files needing formatting found")
+            self.progress("Files needing formatting found.")
             print(ret.stdout)
             self.retcode = 1
 

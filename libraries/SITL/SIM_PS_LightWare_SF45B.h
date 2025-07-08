@@ -41,13 +41,11 @@ rc 2 1450
 
 #pragma once
 
+#include "SIM_config.h"
+
+#if AP_SIM_PS_LIGHTWARE_SF45B_ENABLED
+
 #include "SIM_PS_LightWare.h"
-
-#ifndef HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
-#define HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED HAL_SIM_PS_LIGHTWARE_ENABLED
-#endif
-
-#if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
 
 #include <AP_Math/crc.h>
 #include <AP_InternalError/AP_InternalError.h>
@@ -71,8 +69,8 @@ private:
     class PACKED PackedMessage {
     public:
         PackedMessage(T _msg, uint16_t _flags) :
-            msg(_msg),
-            flags(_flags)
+            flags(_flags),
+            msg(_msg)
         {
             flags |= (sizeof(T)) << 6;
         }
@@ -266,4 +264,4 @@ private:
 
 };
 
-#endif  // HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
+#endif  // AP_SIM_PS_LIGHTWARE_SF45B_ENABLED

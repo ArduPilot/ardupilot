@@ -7,6 +7,8 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_NavEKF3/AP_NavEKF3_feature.h>
+#include <AP_NavEKF/AP_Nav_Common.h>
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 #include <AP_NavEKF2/AP_NavEKF2.h>
@@ -65,7 +67,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.lat = _home.lat;
     _RFRN.lng = _home.lng;
     _RFRN.alt = _home.alt;
-    _RFRN.EAS2TAS = AP::baro().get_EAS2TAS();
+    _RFRN.EAS2TAS = ahrs.get_EAS2TAS();
     _RFRN.vehicle_class = (uint8_t)ahrs.get_vehicle_class();
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
@@ -90,9 +92,11 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     if (_airspeed) {
         _airspeed->start_frame();
     }
+#if AP_RANGEFINDER_ENABLED
     if (_rangefinder) {
         _rangefinder->start_frame();
     }
+#endif
 #if AP_BEACON_ENABLED
     if (_beacon) {
         _beacon->start_frame();
@@ -134,29 +138,31 @@ void AP_DAL::init_sensors(void)
       at the time we startup the EKF
      */
 
+#if AP_RANGEFINDER_ENABLED
     auto *rng = AP::rangefinder();
     if (rng && rng->num_sensors() > 0) {
-        alloc_failed |= (_rangefinder = new AP_DAL_RangeFinder) == nullptr;
+        alloc_failed |= (_rangefinder = NEW_NOTHROW AP_DAL_RangeFinder) == nullptr;
     }
+#endif
 
 #if AP_AIRSPEED_ENABLED
     auto *aspeed = AP::airspeed();
     if (aspeed != nullptr && aspeed->get_num_sensors() > 0) {
-        alloc_failed |= (_airspeed = new AP_DAL_Airspeed) == nullptr;
+        alloc_failed |= (_airspeed = NEW_NOTHROW AP_DAL_Airspeed) == nullptr;
     }
 #endif
 
 #if AP_BEACON_ENABLED
     auto *bcn = AP::beacon();
     if (bcn != nullptr && bcn->enabled()) {
-        alloc_failed |= (_beacon = new AP_DAL_Beacon) == nullptr;
+        alloc_failed |= (_beacon = NEW_NOTHROW AP_DAL_Beacon) == nullptr;
     }
 #endif
 
 #if HAL_VISUALODOM_ENABLED
     auto *vodom = AP::visualodom();
     if (vodom != nullptr && vodom->enabled()) {
-        alloc_failed |= (_visualodom = new AP_DAL_VisualOdom) == nullptr;
+        alloc_failed |= (_visualodom = NEW_NOTHROW AP_DAL_VisualOdom) == nullptr;
     }
 #endif
 
@@ -267,9 +273,13 @@ int AP_DAL::snprintf(char* str, size_t size, const char *format, ...) const
     return res;
 }
 
-void *AP_DAL::malloc_type(size_t size, Memory_Type mem_type) const
+void *AP_DAL::malloc_type(size_t size, MemoryType mem_type) const
 {
     return hal.util->malloc_type(size, AP_HAL::Util::Memory_Type(mem_type));
+}
+void AP_DAL::free_type(void *ptr, size_t size, MemoryType mem_type) const
+{
+    return hal.util->free_type(ptr, size, AP_HAL::Util::Memory_Type(mem_type));
 }
 
 // map core number for replay
@@ -463,7 +473,9 @@ void AP_DAL::handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _ROFH = msg;
     ekf2.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride);
+#if EK3_FEATURE_OPTFLOW_FUSION
     ekf3.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride);
+#endif
 }
 
 /*
@@ -543,6 +555,9 @@ void rprintf(const char *format, ...)
     static FILE *f;
     if (!f) {
         f = ::fopen(fname, "w");
+    }
+    if (!f) {
+        return;
     }
     va_list ap;
     va_start(ap, format);

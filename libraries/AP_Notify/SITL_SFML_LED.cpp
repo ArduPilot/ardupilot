@@ -126,7 +126,7 @@ void SITL_SFML_LED::update_serial_LEDs()
         if (!layout_size(layout, xsize, ysize)) {
             return;
         }
-        w = new sf::RenderWindow(sf::VideoMode(xsize*(serialLED_size+1), ysize*(serialLED_size+1)), "SerialLED");
+        w = NEW_NOTHROW sf::RenderWindow(sf::VideoMode(xsize*(serialLED_size+1), ysize*(serialLED_size+1)), "SerialLED");
         if (!w) {
             return;
         }
@@ -150,7 +150,7 @@ void SITL_SFML_LED::update_serial_LEDs()
             uint8_t *rgb = &sitl->led.rgb[chan][led].rgb[0];
 
             if (leds[chan][led] == nullptr) {
-                leds[chan][led] = new sf::RectangleShape(sf::Vector2f(serialLED_size, serialLED_size));
+                leds[chan][led] = NEW_NOTHROW sf::RectangleShape(sf::Vector2f(serialLED_size, serialLED_size));
                 if (!leds[chan][led]) {
                     return;
                 }

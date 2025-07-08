@@ -16,7 +16,6 @@
 
 #include "AP_Frsky_Telem.h"
 
-#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 
@@ -33,11 +32,11 @@ public:
 
 private:
     // settable parameters
-    AP_Int8 _uplink_id;
     AP_Int8 _dnlink_id;
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+    AP_Int8 _uplink_id;
     AP_Int8 _dnlink1_id;
     AP_Int8 _dnlink2_id;
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     AP_Int8 _options;
 };
-
-#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL

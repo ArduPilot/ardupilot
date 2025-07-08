@@ -63,7 +63,7 @@ void AP_KDECAN::init()
 
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
         if (CANSensor::get_driver_type(i) == AP_CAN::Protocol::KDECAN) {
-            _driver = new AP_KDECAN_Driver();
+            _driver = NEW_NOTHROW AP_KDECAN_Driver();
             return;
         }
     }
@@ -161,7 +161,7 @@ void AP_KDECAN_Driver::update(const uint8_t num_poles)
     
     WITH_SEMAPHORE(_output.sem);
     for (uint8_t i = 0; i < ARRAY_SIZE(_output.pwm); i++) {
-        if ((_init.detected_bitmask & (1UL<<i)) == 0 || SRV_Channels::channel_function(i) <= SRV_Channel::Aux_servo_function_t::k_none) {
+        if ((_init.detected_bitmask & (1UL<<i)) == 0 || SRV_Channels::channel_function(i) <= SRV_Channel::Function::k_none) {
             _output.pwm[i] = 0;
             continue;
         }
@@ -235,14 +235,14 @@ void AP_KDECAN_Driver::loop()
 
         for (uint8_t i=0; i<ARRAY_SIZE(_output.pwm); i++) {
             if ((_init.detected_bitmask & (1UL<<i)) != 0) {
-                send_packet_uint16(SET_PWM_OBJ_ADDR, (i + ESC_NODE_ID_FIRST), 1, pwm[i]);
+                send_packet_uint16(SET_PWM_OBJ_ADDR, (i + ESC_NODE_ID_FIRST), 1000, pwm[i]);
             }
         }
 
 #if HAL_WITH_ESC_TELEM
         // broadcast as request-telemetry msg to everyone
         if (_init.detected_bitmask != 0 && now_ms - _telemetry.timer_ms >= TELEMETRY_INTERVAL_MS) {
-            if (send_packet(TELEMETRY_OBJ_ADDR, BROADCAST_NODE_ID, 10)) {
+            if (send_packet(TELEMETRY_OBJ_ADDR, BROADCAST_NODE_ID, 10000)) {
                 _telemetry.timer_ms = now_ms;
             }
         }
@@ -256,7 +256,7 @@ void AP_KDECAN_Driver::loop()
                 broadcast_esc_info_next_interval_ms = 1000;
             }
 
-            if (send_packet(ESC_INFO_OBJ_ADDR, BROADCAST_NODE_ID, 100)) {
+            if (send_packet(ESC_INFO_OBJ_ADDR, BROADCAST_NODE_ID, 100000)) {
                 _init.detected_bitmask_ms = now_ms;
             }
         }
@@ -264,13 +264,13 @@ void AP_KDECAN_Driver::loop()
     } // while true
 }
 
-bool AP_KDECAN_Driver::send_packet_uint16(const uint8_t address, const uint8_t dest_id, const uint32_t timeout_ms, const uint16_t data)
+bool AP_KDECAN_Driver::send_packet_uint16(const uint8_t address, const uint8_t dest_id, const uint32_t timeout_us, const uint16_t data)
 {
     const uint16_t data_be16 = htobe16(data);
-    return send_packet(address, dest_id, timeout_ms, (uint8_t*)&data_be16, 2);
+    return send_packet(address, dest_id, timeout_us, (uint8_t*)&data_be16, 2);
 }
 
-bool AP_KDECAN_Driver::send_packet(const uint8_t address, const uint8_t dest_id, const uint32_t timeout_ms, const uint8_t *data, const uint8_t data_len)
+bool AP_KDECAN_Driver::send_packet(const uint8_t address, const uint8_t dest_id, const uint32_t timeout_us, const uint8_t *data, const uint8_t data_len)
 {
     // broadcast telemetry request frame
     const frame_id_t id {
@@ -285,7 +285,6 @@ bool AP_KDECAN_Driver::send_packet(const uint8_t address, const uint8_t dest_id,
 
     AP_HAL::CANFrame frame = AP_HAL::CANFrame((id.value | AP_HAL::CANFrame::FlagEFF), data, data_len, false);
 
-    const uint64_t timeout_us = uint64_t(timeout_ms) * 1000UL;
     return write_frame(frame, timeout_us);
 }
 

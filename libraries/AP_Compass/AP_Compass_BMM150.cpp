@@ -70,7 +70,7 @@ AP_Compass_Backend *AP_Compass_BMM150::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> d
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_BMM150 *sensor = new AP_Compass_BMM150(std::move(dev), force_external, rotation);
+    AP_Compass_BMM150 *sensor = NEW_NOTHROW AP_Compass_BMM150(std::move(dev), force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;

@@ -11,12 +11,16 @@
 #if HAL_WITH_IO_MCU
 
 #include "iofirmware/ioprotocol.h"
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_HAL/RCOutput.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
 typedef uint32_t eventmask_t;
 typedef struct ch_thread thread_t;
+
+#ifndef AP_IOMCU_FW_FLASH_SIZE
+#define AP_IOMCU_FW_FLASH_SIZE (0x10000 - 0x1000)
+#endif
+
 
 class AP_IOMCU
 #ifdef HAL_WITH_ESC_TELEM
@@ -72,7 +76,7 @@ public:
     bool check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_channels);
 
     // Do DSM receiver binding
-    void bind_dsm(uint8_t mode);
+    void bind_dsm();
 
     // get the name of the RC protocol
     const char *get_rc_protocol(void);
@@ -110,8 +114,14 @@ public:
     // set bi-directional mask
     void set_bidir_dshot_mask(uint16_t mask);
 
+    // set reversible mask
+    void set_reversible_mask(uint16_t mask);
+
     // get output mode
     AP_HAL::RCOutput::output_mode get_output_mode(uint8_t& mask) const;
+
+    // approximation to disabled channel
+    uint32_t get_disabled_channels(uint32_t digital_mask) const;
 
     // MCUID
     uint32_t get_mcu_id() const { return config.mcuid; }
@@ -145,7 +155,7 @@ public:
     void soft_reboot();
 
     // setup for FMU failsafe mixing
-    bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
+    bool setup_mixing(int8_t override_chan,
                       float mixing_gain, uint16_t manual_rc_mask);
 
     // Check if pin number is valid and configured for GPIO
@@ -157,11 +167,24 @@ public:
     // set GPIO mask of channels setup for output
     void set_GPIO_mask(uint8_t mask);
 
+    // Get GPIO mask of channels setup for output
+    uint8_t get_GPIO_mask() const;
+
     // write to a output pin
     void write_GPIO(uint8_t pin, bool value);
 
+    // Read the last output value send to the GPIO pin
+    // This is not a real read of the actual pin
+    // This allows callers to check for state change
+    uint8_t read_virtual_GPIO(uint8_t pin) const;
+
     // toggle a output pin
     void toggle_GPIO(uint8_t pin);
+
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    // set profiled values
+    void set_profiled(uint8_t r, uint8_t g, uint8_t b);
+#endif
 
     // channel group masks
     const uint8_t ch_masks[3] = { 0x03,0x0C,0xF0 };
@@ -243,9 +266,9 @@ private:
     // output pwm values
     struct {
         uint8_t num_channels;
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
+        uint16_t pwm[IOMCU_MAX_RC_CHANNELS];
         uint16_t safety_mask;
-        uint16_t failsafe_pwm[IOMCU_MAX_CHANNELS];
+        uint16_t failsafe_pwm[IOMCU_MAX_RC_CHANNELS];
         uint8_t failsafe_pwm_set;
         uint8_t failsafe_pwm_sent;
         uint16_t channel_mask;
@@ -253,7 +276,7 @@ private:
 
     // read back pwm values
     struct {
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
+        uint16_t pwm[IOMCU_MAX_RC_CHANNELS];
     } pwm_in;
 
     // output rates
@@ -284,6 +307,11 @@ private:
     // output mode values
     struct page_mode_out mode_out;
 
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    // profiled control
+    struct page_profiled profiled {0, 255, 255, 255}; // by default, white
+#endif
+
     // IMU heater duty cycle
     uint8_t heater_duty_cycle;
 
@@ -297,6 +325,9 @@ private:
     bool detected_io_reset;
     bool initialised;
     bool is_chibios_backend;
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    bool use_safety_as_led;
+#endif
 
     uint32_t protocol_fail_count;
     uint32_t protocol_count;

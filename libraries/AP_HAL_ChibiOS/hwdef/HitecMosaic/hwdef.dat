@@ -10,8 +10,8 @@ FLASH_RESERVE_START_KB 26
 STORAGE_FLASH_PAGE 11
 define HAL_STORAGE_SIZE 800
 
-# board ID for firmware load
-APJ_BOARD_ID 1016
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_HITEC_MOSAIC
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -63,7 +63,7 @@ COMPASS RM3100 I2C:0:0x22 false ROTATION_NONE
 COMPASS RM3100 I2C:0:0x23 false ROTATION_NONE
 
 # single MS5611 baro on I2C
-BARO MS56XX I2C:0:0x77
+BARO MS5611 I2C:0:0x77
 
 # analog input
 # PA5 VIN5 ADC1
@@ -73,12 +73,6 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 
 define HAL_NO_GPIO_IRQ
 define SERIAL_BUFFERS_SIZE 512
-
-# avoid timer and RCIN threads to save memory
-define HAL_NO_RCIN_THREAD
-
-define HAL_USE_RTC FALSE
-define DISABLE_SERIAL_ESC_COMM TRUE
 
 define DMA_RESERVE_SIZE 0
 
@@ -92,8 +86,6 @@ MAIN_STACK 0x300
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0xA00
 
-define HAL_DISABLE_LOOP_DELAY
-
 # enable CAN support
 PB8 CAN_RX CAN
 PB9 CAN_TX CAN
@@ -106,10 +98,6 @@ define HAL_UART_MIN_TX_SIZE 256
 define HAL_UART_MIN_RX_SIZE 128
 
 define HAL_UART_STACK_SIZE 0x200
-
-
-define HAL_NO_MONITOR_THREAD
-
 
 # only one I2C bus
 I2C_ORDER I2C1
@@ -148,12 +136,12 @@ PA7 LED_BUS_I2C OUTPUT LOW
 env ROMFS_UNCOMPRESSED True
 
 
-define HAL_PERIPH_ENABLE_GPS
-define HAL_PERIPH_ENABLE_MAG
-define HAL_PERIPH_ENABLE_BARO
+define AP_PERIPH_GPS_ENABLED 1
+define AP_PERIPH_MAG_ENABLED 1
+define AP_PERIPH_BARO_ENABLED 1
 
 # septentrio on com 3
-define HAL_GPS_TYPE_DEFAULT 10
+define HAL_GPS1_TYPE_DEFAULT 10
 define HAL_GPS_COM_PORT_DEFAULT 3
 define GPS_SBF_STREAM_NUMBER 3
 define GPS_SBF_EXTRA_CONFIG "sdfa, DSK1, DeleteOldest", "sfn, DSK1, Incremental, Mosaic", "sfno, off"

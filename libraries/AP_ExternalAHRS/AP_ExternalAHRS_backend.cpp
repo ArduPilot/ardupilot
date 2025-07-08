@@ -17,13 +17,14 @@
  */
 
 #include "AP_ExternalAHRS_backend.h"
+#include <AP_AHRS/AP_AHRS.h>
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
 
 AP_ExternalAHRS_backend::AP_ExternalAHRS_backend(AP_ExternalAHRS *_frontend,
                                                  AP_ExternalAHRS::state_t &_state) :
-    frontend(*_frontend),
-    state(_state)
+    state(_state),
+    frontend(*_frontend)
 {}
 
 
@@ -37,5 +38,10 @@ bool AP_ExternalAHRS_backend::option_is_set(AP_ExternalAHRS::OPTIONS option) con
     return frontend.option_is_set(option);
 }
 
-#endif  // HAL_EXTERNAL_AHRS_ENABLED
+bool AP_ExternalAHRS_backend::in_fly_forward(void) const
+{
+    return AP::ahrs().get_fly_forward();
+}
+
+#endif  // AP_EXTERNAL_AHRS_ENABLED
 

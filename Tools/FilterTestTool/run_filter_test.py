@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# flake8: noqa
+
 """ ArduPilot IMU Filter Test Tool
 
 This program is free software: you can redistribute it and/or modify it under

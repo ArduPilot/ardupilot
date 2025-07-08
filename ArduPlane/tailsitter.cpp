@@ -161,7 +161,7 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
 
     // @Param: MIN_VO
     // @DisplayName: Tailsitter Disk loading minimum outflow speed
-    // @Description: Use in conjunction with disk theory gain scaling and Q_TAILSIT_DSKLD to specify minumum airspeed over control surfaces, this will be used to boost throttle, when descending for example, 0 disables
+    // @Description: Use in conjunction with disk theory gain scaling and Q_TAILSIT_DSKLD to specify minimum airspeed over control surfaces, this will be used to boost throttle, when descending for example, 0 disables
     // @Range: 0 15
     AP_GROUPINFO("MIN_VO", 22, Tailsitter, disk_loading_min_outflow, 0),
 
@@ -208,6 +208,8 @@ void Tailsitter::setup()
         return;
     }
 
+    quadplane.thrust_type = QuadPlane::ThrustType::TAILSITTER;
+
     // Set tailsitter transition rate to match old calculation
     if (!transition_rate_fw.configured()) {
         transition_rate_fw.set_and_save(transition_angle_fw / (quadplane.transition_time_ms/2000.0f));
@@ -233,7 +235,7 @@ void Tailsitter::setup()
 
     // Setup for control surface less operation
     if (enable == 2) {
-        quadplane.q_assist_state = QuadPlane::Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE;
+        quadplane.assist.set_state(VTOL_Assist::STATE::FORCE_ENABLED);
         quadplane.air_mode = AirMode::ASSISTED_FLIGHT_ONLY;
 
         // Do not allow arming in forward flight modes
@@ -241,7 +243,7 @@ void Tailsitter::setup()
         quadplane.options.set(quadplane.options.get() | int32_t(QuadPlane::OPTION::ONLY_ARM_IN_QMODE_OR_AUTO));
     }
 
-    transition = new Tailsitter_Transition(quadplane, motors, *this);
+    transition = NEW_NOTHROW Tailsitter_Transition(quadplane, motors, *this);
     if (!transition) {
         AP_BoardConfig::allocation_error("tailsitter transition");
     }
@@ -287,8 +289,11 @@ void Tailsitter::output(void)
         return;
     }
 
-    float tilt_left = 0.0f;
-    float tilt_right = 0.0f;
+    if (!hal.util->get_soft_armed() ||
+        SRV_Channels::get_emergency_stop()) {
+        // Ensure motors stop on disarm
+        motors->output_min();
+    }
 
     // throttle 0 to 1
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01;
@@ -305,7 +310,7 @@ void Tailsitter::output(void)
                 throttle = motors->thr_lin.actuator_to_thrust(MIN(transition_throttle_vtol*0.01,1.0));
             } else {
                 throttle = motors->get_throttle_hover();
-                // work out equivelent motors throttle level for cruise
+                // work out equivalent motors throttle level for cruise
                 throttle = MAX(throttle,motors->thr_lin.actuator_to_thrust(plane.aparm.throttle_cruise.get() * 0.01));
             }
 
@@ -337,7 +342,11 @@ void Tailsitter::output(void)
 
         if (!quadplane.assisted_flight) {
             // set AP_MotorsMatrix throttles for forward flight
-            motors->output_motor_mask(throttle, motor_mask, plane.rudder_dt);
+            motors->output_motor_mask(throttle, uint32_t(motor_mask.get()), plane.rudder_dt);
+
+            // No tilt output unless forward gain is set
+            float tilt_left = 0.0;
+            float tilt_right = 0.0;
 
             // in forward flight: set motor tilt servos and throttles using FW controller
             if (vectored_forward_gain > 0) {
@@ -367,7 +376,7 @@ void Tailsitter::output(void)
             // only use motors for Q assist, control surfaces remain under plane control. Zero copter I terms and use plane.
             // Smoothly relax to zero so there is no step change in output, must also set limit flags so integrator cannot build faster than the relax.
             // Assume there is always roll control surfaces, otherwise motors only assist should not be set.
-            const float dt = quadplane.attitude_control->get_dt();
+            const float dt = quadplane.attitude_control->get_dt_s();
 
             // VTOL yaw / FW roll
             quadplane.attitude_control->get_rate_yaw_pid().relax_integrator(0.0, dt, AC_ATTITUDE_RATE_RELAX_TC);
@@ -396,8 +405,11 @@ void Tailsitter::output(void)
             }
 
             // output tilt motors
-            tilt_left = 0.0f;
-            tilt_right = 0.0f;
+
+            // No output unless hover gain is set
+            float tilt_left = 0.0;
+            float tilt_right = 0.0;
+
             if (vectored_hover_gain > 0) {
                 const float hover_throttle = motors->get_throttle_hover();
                 const float output_throttle = motors->get_throttle();
@@ -436,8 +448,10 @@ void Tailsitter::output(void)
         tailsitter_motors->set_min_throttle(0.0);
     }
 
-    tilt_left = 0.0f;
-    tilt_right = 0.0f;
+    // No tilt output unless hover gain is set
+    float tilt_left = 0.0;
+    float tilt_right = 0.0;
+
     if (vectored_hover_gain > 0) {
         // thrust vectoring VTOL modes
         tilt_left = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft);
@@ -462,10 +476,10 @@ void Tailsitter::output(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
 
     // Check for saturated limits
-    bool tilt_lim = _is_vectored && ((fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft)) >= SERVO_MAX) || (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) >= SERVO_MAX));
-    bool roll_lim = _have_rudder && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_rudder)) >= SERVO_MAX);
-    bool pitch_lim = _have_elevator && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_elevator)) >= SERVO_MAX);
-    bool yaw_lim = _have_aileron && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_aileron)) >= SERVO_MAX);
+    bool tilt_lim = _is_vectored && ((fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Function::k_tiltMotorLeft)) >= SERVO_MAX) || (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Function::k_tiltMotorRight)) >= SERVO_MAX));
+    bool roll_lim = _have_rudder && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Function::k_rudder)) >= SERVO_MAX);
+    bool pitch_lim = _have_elevator && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Function::k_elevator)) >= SERVO_MAX);
+    bool yaw_lim = _have_aileron && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Function::k_aileron)) >= SERVO_MAX);
 
     // Mix elevons and V-tail, always giving full priority to pitch
     float elevator_mix = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) * (100.0 - plane.g.mixing_offset) * 0.01 * plane.g.mixing_gain;
@@ -543,7 +557,7 @@ bool Tailsitter::transition_vtol_complete(void) const
         return true;
     }
     // for vectored tailsitters at zero pilot throttle
-    if ((quadplane.get_pilot_throttle() < .05f) && _is_vectored) {
+    if ((quadplane.get_pilot_throttle() < 0.05f) && _is_vectored) {
         // if we are not moving (hence on the ground?) or don't know
         // transition immediately to tilt motors up and prevent prop strikes
         if (quadplane.ahrs.groundspeed() < 1.0f) {
@@ -707,7 +721,7 @@ void Tailsitter::speed_scaling(void)
             // (mass / A) is disk loading DL so:
             // Ue^2 = (((t / t_h) * DL * 9.81)/(0.5 * rho)) + U0^2
 
-            const float rho = SSL_AIR_DENSITY * plane.barometer.get_air_density_ratio();
+            const float rho = SSL_AIR_DENSITY * quadplane.ahrs.get_air_density_ratio();
             float hover_rho = rho;
             if ((gain_scaling_mask & TAILSITTER_GSCL_ALTITUDE) != 0) {
                 // if applying altitude correction use sea level density for hover case
@@ -752,18 +766,18 @@ void Tailsitter::speed_scaling(void)
 
     if ((gain_scaling_mask & TAILSITTER_GSCL_ALTITUDE) != 0) {
         // air density correction
-        spd_scaler /= plane.barometer.get_air_density_ratio();
+        spd_scaler /= quadplane.ahrs.get_air_density_ratio();
     }
 
-    const SRV_Channel::Aux_servo_function_t functions[] = {
-        SRV_Channel::Aux_servo_function_t::k_aileron,
-        SRV_Channel::Aux_servo_function_t::k_elevator,
-        SRV_Channel::Aux_servo_function_t::k_rudder,
-        SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft,
-        SRV_Channel::Aux_servo_function_t::k_tiltMotorRight};
+    const SRV_Channel::Function functions[] = {
+        SRV_Channel::Function::k_aileron,
+        SRV_Channel::Function::k_elevator,
+        SRV_Channel::Function::k_rudder,
+        SRV_Channel::Function::k_tiltMotorLeft,
+        SRV_Channel::Function::k_tiltMotorRight};
     for (uint8_t i=0; i<ARRAY_SIZE(functions); i++) {
         float v = SRV_Channels::get_output_scaled(functions[i]);
-        if ((functions[i] == SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft) || (functions[i] == SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) {
+        if ((functions[i] == SRV_Channel::Function::k_tiltMotorLeft) || (functions[i] == SRV_Channel::Function::k_tiltMotorRight)) {
             // always apply throttle scaling to tilts
             v *= throttle_scaler;
         } else {
@@ -819,7 +833,7 @@ void Tailsitter_Transition::update()
 
     float aspeed;
     bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
-    quadplane.assisted_flight = quadplane.should_assist(aspeed, have_airspeed);
+    quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
 
     if (transition_state < TRANSITION_DONE) {
         // during transition we ask TECS to use a synthetic
@@ -848,7 +862,7 @@ void Tailsitter_Transition::update()
         plane.nav_pitch_cd = constrain_float(fw_transition_initial_pitch - (quadplane.tailsitter.transition_rate_fw * dt) * 0.1f * (plane.fly_inverted()?-1.0f:1.0f), -8500, 8500);
         plane.nav_roll_cd = 0;
         quadplane.disable_yaw_rate_time_constant();
-        quadplane.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+        quadplane.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
                                                                       0);
         // set throttle at either hover throttle or current throttle, whichever is higher, through the transition
@@ -885,7 +899,7 @@ void Tailsitter_Transition::VTOL_update()
         float aspeed;
         bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
         // provide assistance in forward flight portion of tailsitter transition
-        quadplane.assisted_flight = quadplane.should_assist(aspeed, have_airspeed);
+        quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
         if (!quadplane.tailsitter.transition_vtol_complete()) {
             return;
         }
@@ -894,6 +908,13 @@ void Tailsitter_Transition::VTOL_update()
             vtol_limit_start_ms = now;
             vtol_limit_initial_pitch = quadplane.ahrs_view->pitch_sensor;
         }
+
+        // clear inverted flight flag to make behaviour consistent
+        // with other quadplane types
+        plane.inverted_flight = false;
+    } else {
+        // Keep assistance reset while not checking
+        quadplane.assist.reset();
     }
     restart();
 }
@@ -948,7 +969,7 @@ void Tailsitter_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& na
 
 bool Tailsitter_Transition::allow_stick_mixing() const
 {
-    // Transitioning into VTOL flight, inital pitch up
+    // Transitioning into VTOL flight, initial pitch up
     if (tailsitter.in_vtol_transition()) {
         return false;
     }
@@ -1006,6 +1027,8 @@ void Tailsitter_Transition::force_transition_complete()
     vtol_transition_start_ms = AP_HAL::millis();
     vtol_transition_initial_pitch = constrain_float(plane.nav_pitch_cd,-8500,8500);
     fw_limit_start_ms = 0;
+
+    quadplane.assist.reset();
 }
 
 MAV_VTOL_STATE Tailsitter_Transition::get_mav_vtol_state() const

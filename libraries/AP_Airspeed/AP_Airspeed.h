@@ -31,7 +31,19 @@ public:
 #ifndef HAL_BUILD_AP_PERIPH
     AP_Int8  use;
     AP_Int8  pin;
-    AP_Int8  skip_cal;
+
+    enum class SkipCalType : int8_t {
+        // Do not skip boot calibration, this is the default
+        None = 0,
+
+        // Skip boot calibration, use saved offset, no calibration is required (but can be performed manually)
+        NoCalRequired = 1,
+
+        // Skip boot calibration, require manual calibration once per boot
+        SkipBootCal = 2,
+    };
+    AP_Enum<SkipCalType> skip_cal;
+
     AP_Int8  tube_order;
 #endif
     AP_Int8  type;
@@ -63,7 +75,6 @@ private:
     const float Q0; // process noise matrix top left and middle element
     const float Q1; // process noise matrix bottom right element
     Vector3f state; // state vector
-    const float DT; // time delta
 };
 
 class AP_Airspeed
@@ -171,27 +182,57 @@ public:
         ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE         = (1<<1),   // If set then automatically enable the airspeed sensor use when healthy again.
         DISABLE_VOLTAGE_CORRECTION                            = (1<<2),
         USE_EKF_CONSISTENCY                                   = (1<<3),
+        REPORT_OFFSET                                         = (1<<4),   // report offset cal to GCS
     };
 
     enum airspeed_type {
         TYPE_NONE=0,
+#if AP_AIRSPEED_MS4525_ENABLED
         TYPE_I2C_MS4525=1,
+#endif  // AP_AIRSPEED_MSP_ENABLED
+#if AP_AIRSPEED_ANALOG_ENABLED
         TYPE_ANALOG=2,
+#endif  // AP_AIRSPEED_ANALOG_ENABLED
+#if AP_AIRSPEED_MS5525_ENABLED
         TYPE_I2C_MS5525=3,
         TYPE_I2C_MS5525_ADDRESS_1=4,
         TYPE_I2C_MS5525_ADDRESS_2=5,
+#endif  // AP_AIRSPEED_MS5525_ENABLED
+#if AP_AIRSPEED_SDP3X_ENABLED
         TYPE_I2C_SDP3X=6,
+#endif  // AP_AIRSPEED_SDP3X_ENABLED
+#if AP_AIRSPEED_DLVR_ENABLED
         TYPE_I2C_DLVR_5IN=7,
+#endif  // AP_AIRSPEED_DLVR_ENABLED
+#if AP_AIRSPEED_DRONECAN_ENABLED
         TYPE_UAVCAN=8,
+#endif  // AP_AIRSPEED_DRONECAN_ENABLED
+#if AP_AIRSPEED_DLVR_ENABLED
         TYPE_I2C_DLVR_10IN=9,
         TYPE_I2C_DLVR_20IN=10,
         TYPE_I2C_DLVR_30IN=11,
         TYPE_I2C_DLVR_60IN=12,
+#endif  // AP_AIRSPEED_DLVR_ENABLED
+#if AP_AIRSPEED_NMEA_ENABLED
         TYPE_NMEA_WATER=13,
+#endif  // AP_AIRSPEED_NMEA_ENABLED
+#if AP_AIRSPEED_MSP_ENABLED
         TYPE_MSP=14,
+#endif  // AP_AIRSPEED_MSP_ENABLED
+#if AP_AIRSPEED_ASP5033_ENABLED
         TYPE_I2C_ASP5033=15,
+#endif  // AP_AIRSPEED_ASP5033_ENABLED
+#if AP_AIRSPEED_EXTERNAL_ENABLED
         TYPE_EXTERNAL=16,
+#endif  // AP_AIRSPEED_EXTERNAL_ENABLED
+#if AP_AIRSPEED_AUAV_ENABLED
+        TYPE_AUAV_10IN=17,
+        TYPE_AUAV_5IN=18,
+        TYPE_AUAV_30IN=19,
+#endif  // AP_AIRSPEED_AUAV_ENABLED
+#if AP_AIRSPEED_SITL_ENABLED
         TYPE_SITL=100,
+#endif  // AP_AIRSPEED_SITL_ENABLED
     };
 
     // get current primary sensor
@@ -215,15 +256,20 @@ public:
 #if AP_AIRSPEED_EXTERNAL_ENABLED
     void handle_external(const AP_ExternalAHRS::airspeed_data_message_t &pkt);
 #endif
-    
+
     enum class CalibrationState {
         NOT_STARTED,
+        NOT_REQUIRED_ZERO_OFFSET,
         IN_PROGRESS,
         SUCCESS,
         FAILED
     };
+
     // get aggregate calibration state for the Airspeed library:
     CalibrationState get_calibration_state() const;
+
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool arming_checks(size_t buflen, char *buffer) const;
 
 private:
     static AP_Airspeed *_singleton;
@@ -240,8 +286,6 @@ private:
 
     AP_Airspeed_Params param[AIRSPEED_MAX_SENSORS];
 
-    CalibrationState calibration_state[AIRSPEED_MAX_SENSORS];
-
     struct airspeed_state {
         float   raw_airspeed;
         float   airspeed;
@@ -249,18 +293,19 @@ private:
         float   filtered_pressure;
         float	corrected_pressure;
         uint32_t last_update_ms;
-        bool use_zero_offset;
         bool	healthy;
 
-        // state of runtime calibration
+        // Pre-flight offset calibration
         struct {
             uint32_t start_ms;
             float    sum;
             uint16_t count;
             uint16_t read_count;
+            CalibrationState state;
         } cal;
 
 #if AP_AIRSPEED_AUTOCAL_ENABLE
+        // In flight ratio calibration
         Airspeed_Calibration calibration;
         float last_saved_ratio;
         uint8_t counter;
@@ -291,9 +336,6 @@ private:
     uint32_t _log_bit = -1;     // stores which bit in LOG_BITMASK is used to indicate we should log airspeed readings
 
     void read(uint8_t i);
-    // return the differential pressure in Pascal for the last airspeed reading for the requested instance
-    // returns 0 if the sensor is not enabled
-    float get_pressure(uint8_t i);
 
     // get the health probability
     float get_health_probability(uint8_t i) const {
@@ -315,13 +357,7 @@ private:
     void update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
     void send_airspeed_calibration(const Vector3f &vg);
     // return the current calibration offset
-    float get_offset(uint8_t i) const {
-#ifndef HAL_BUILD_AP_PERIPH
-        return param[i].offset;
-#else
-        return 0.0;
-#endif
-    }
+    float get_offset(uint8_t i) const;
     float get_offset(void) const { return get_offset(primary); }
 
     void check_sensor_failures();

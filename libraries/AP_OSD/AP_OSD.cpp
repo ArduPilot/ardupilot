@@ -85,7 +85,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: OSD Options
     // @Description: This sets options that change the display
-    // @Bitmask: 0:UseDecimalPack, 1:InvertedWindArrow, 2:InvertedAHRoll, 3:Convert feet to miles at 5280ft instead of 10000ft, 4:DisableCrosshair, 5:TranslateArrows, 6:AviationStyleAH
+    // @Bitmask: 0:UseDecimalPack, 1:InvertedWindArrow, 2:InvertedAHRoll, 3:Convert feet to miles at 5280ft instead of 10000ft, 4:DisableCrosshair, 5:TranslateArrows, 6:AviationStyleAH, 7:Prefix LQ with RF Mode
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 8, AP_OSD, options, OPTION_DECIMAL_PACK),
 
@@ -114,10 +114,10 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
 
     // @Param: _W_RSSI
     // @DisplayName: RSSI warn level (in %)
-    // @Description: Set level at which RSSI item will flash
-    // @Range: 0 99
+    // @Description: Set level at which RSSI item will flash (in positive % or negative dBm values as applicable). 30% or -100dBm are defaults.
+    // @Range: -128 100
     // @User: Standard
-    AP_GROUPINFO("_W_RSSI", 12, AP_OSD, warn_rssi, 30),
+    AP_GROUPINFO("_W_RSSI", 12, AP_OSD, warn_rssi, AP_OSD_WARN_RSSI_DEFAULT),
 
     // @Param: _W_NSAT
     // @DisplayName: NSAT warn level
@@ -214,6 +214,38 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_W_ACRVOLT", 31, AP_OSD, warn_avgcellrestvolt, 3.6f),
 
+#if AP_OSD_EXTENDED_LNK_STATS
+    // @Param: _W_LQ
+    // @DisplayName: RC link quality warn level (in %)
+    // @Description: Set level at which RC_LQ item will flash (%)
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("_W_LQ", 33, AP_OSD, warn_lq, 50),
+
+    // @Param: _W_SNR
+    // @DisplayName: RC link SNR warn level (in %)
+    // @Description: Set level at which RC_SNR item will flash (in db)
+    // @Range: -20 10
+    // @User: Standard
+    AP_GROUPINFO("_W_SNR", 34, AP_OSD, warn_snr, 0),
+#endif
+
+#if HAL_OSD_SIDEBAR_ENABLE
+    // @Param: _SB_H_OFS
+    // @DisplayName: Sidebar horizontal offset
+    // @Description: Extends the spacing between the sidebar elements by this amount of columns. Positive values increases the width to the right of the screen.
+    // @Range: 0 20
+    // @User: Standard
+    AP_GROUPINFO("_SB_H_OFS", 35, AP_OSD, sidebar_h_offset, 0),
+
+    // @Param: _SB_V_EXT
+    // @DisplayName: Sidebar vertical extension
+    // @Description: Increase of vertical length of the sidebar itens by this amount of lines. Applied equally both above and below the default setting.
+    // @Range: 0 10
+    // @User: Standard
+    AP_GROUPINFO("_SB_V_EXT", 36, AP_OSD, sidebar_v_ext, 0),
+#endif // HAL_OSD_SIDEBAR_ENABLE
+
 #endif //osd enabled
 #if OSD_PARAM_ENABLED
     // @Group: 5_
@@ -256,8 +288,8 @@ AP_OSD::AP_OSD()
     }
     AP_Param::setup_object_defaults(this, var_info);
 #if OSD_ENABLED
-    // default first screen enabled
-    screen[0].enabled.set(1);
+    // force first screen enabled
+    screen[0].enabled.set_and_default(1);
     previous_pwm_screen = -1;
 #endif
 #ifdef WITH_SITL_OSD
@@ -474,7 +506,7 @@ void AP_OSD::update_stats()
     // max esc temp
     AP_ESC_Telem& telem = AP::esc_telem();
     int16_t highest_temperature = 0;
-    telem.get_highest_motor_temperature(highest_temperature);
+    telem.get_highest_temperature(highest_temperature);
     _stats.max_esc_temp = MAX(_stats.max_esc_temp, highest_temperature);
 #endif
 }

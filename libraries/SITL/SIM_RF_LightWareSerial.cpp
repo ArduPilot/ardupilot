@@ -32,7 +32,7 @@ bool RF_LightWareSerial::check_synced()
         ssize_t n = read_from_autopilot(buffer, ARRAY_SIZE(buffer) - 1);
         if (n > 0) {
             if (!strncmp(buffer, "www\r\n", ARRAY_SIZE(buffer))) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Slurped a sync thing\n");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Slurped a sync thing");
                 synced = true;
             }
         }
@@ -55,5 +55,5 @@ uint32_t RF_LightWareSerial::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, ui
         alt_cm = 13000;  // from datasheet
     }
 
-    return snprintf((char*)buffer, buflen, "%0.2f\r", alt_cm / 100.0f); // note tragic lack of snprintf return checking
+    return snprintf((char*)buffer, buflen, "%0.2f\r", alt_cm * 0.01f); // note tragic lack of snprintf return checking
 }

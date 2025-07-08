@@ -7,11 +7,14 @@
 # sim_vehicle.py --map --console # in the starting directory should start a Copter simulation
 # sim_vehicle.py --debug --gdb
 # sim_vehicle.py --debug --valgrind
-# time (cd /vagrant && ./waf configure --board=fmuv2 && ./waf build --target=bin/ardusub) # ~9 minutes
-# time (cd /vagrant && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~ minutes (after building fmuv2)
-# time (cd /vagrant && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)
-# time (cd /vagrant && ./Tools/autotest/sim_vehicle.py --map --console -v ArduPlane -f jsbsim) # should test JSBSim
-# time (cd /vagrant && ./Tools/autotest/autotest.py build.Rover test.Rover)
+#
+# Make testing rather faster:
+# time rsync -aPH /vagrant/ $HOME/ardupilot  # real	50s
+# time (cd $HOME/ardupilot && ./waf configure --board=fmuv2 && ./waf build --target=bin/ardusub) # ~4 minutes
+# time (cd $HOME/ardupilot && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~4 minutes (after building fmuv2)
+# time (cd $HOME/ardupilot && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)  # ~6 minutes
+# time (cd $HOME/ardupilot && ./Tools/autotest/sim_vehicle.py --map --console -v ArduPlane -f jsbsim) # should test JSBSim
+# time (cd $HOME/ardupilot && ./Tools/autotest/autotest.py build.Rover test.Rover)
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
@@ -45,128 +48,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # and this is the default box that will be booted if no name is specified
   config.vm.boot_timeout = 1500
 
-  # LTS, EOL April, 2019:
-  config.vm.define "trusty32", autostart: false do |trusty32|
-    trusty32.vm.box = "ubuntu/trusty32"
-    trusty32.vm.provision "trusty32", type: "shell", path: "Tools/vagrant/initvagrant.sh"
-    trusty32.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (trusty32)"
+  config.vm.define "autotest-server", primary: true do |autotest|
+    autotest.vm.box = "ubuntu/jammy64"
+    autotest.vm.provision :shell, path: "Tools/vagrant/initvagrant-autotest-server.sh"
+    autotest.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (autotest-server)"
     end
+    autotest.vm.boot_timeout = 1200
   end
-
-  # 14.04.5 LTS, EOL April, 2019:
-  config.vm.define "trusty64", autostart: false do |trusty64|
-    trusty64.vm.box = "ubuntu/trusty64"
-    trusty64.vm.provision "trusty64", type: "shell", path: "Tools/vagrant/initvagrant.sh"
-    trusty64.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (trusty64)"
-    end
-  end
-
-  # LTS, EOL April 2021
-  # this VM is useful for running valgrind on!
-  config.vm.define "xenial32", autostart: false do |xenial32|
-    xenial32.vm.box = "ubuntu/xenial32"
-    xenial32.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    xenial32.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (xenial32)"
-    end
-  end
-
-  config.vm.define "xenial64", autostart: false do |xenial64|
-    xenial64.vm.box = "ubuntu/xenial64"
-    xenial64.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    xenial64.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (xenial64)"
-    end
-  end
-
-  # NO LONGER AVAILABLE FOR DOWNLOAD, EOL January 2018
-  # EOL January 2018
-  # Only kept around for those few dev's who have already got this image and continue to use it.
-  config.vm.define "zesty32", autostart: false do |zesty32|
-    zesty32.vm.box = "ubuntu/zesty32"
-    zesty32.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    zesty32.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (zesty32)"
-    end
-  end
-
-  # 17.10, EOL July 2018
-  # Only kept around for those few dev's who have already got this image and continue to use it; not available for download
-  config.vm.define "artful32", autostart: false do |artful32|
-    artful32.vm.box = "ubuntu/artful32"
-    artful32.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    artful32.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (artful32)"
-    end
-  end
-
-  # 18.04 LTS EOL April 2023
-  # Only kept around for those few dev's who have already got this image and continue to use it; not available for download
-  config.vm.define "bionic32", autostart: false do |bionic32|
-    bionic32.vm.box = "ubuntu/bionic32"
-    bionic32.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    bionic32.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (bionic32)"
-    end
-  end
-
-  # 18.04 LTS EOL April 2023
-  config.vm.define "bionic64", autostart: false do |bionic64|
-    bionic64.vm.box = "ubuntu/bionic64"
-    bionic64.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    bionic64.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (bionic64)"
-    end
-  end
-
-  # 18.04 LTS EOL April 2023
-  config.vm.define "bionic64-desktop", autostart: false do |bionic64|
-    bionic64.vm.box = "ubuntu/bionic64"
-    bionic64.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
-    bionic64.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (bionic64-desktop)"
-      vb.gui = true
-    end
-  end
-
-  # 18.10
-  config.vm.define "cosmic32", autostart: false do |cosmic32|
-    cosmic32.vm.box = "ubuntu/cosmic32"
-    cosmic32.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    cosmic32.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (cosmic32)"
-    end
-  end
-
-  # 18.10
-  config.vm.define "cosmic64", autostart: false do |cosmic64|
-    cosmic64.vm.box = "ubuntu/cosmic64"
-    cosmic64.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    cosmic64.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (cosmic64)"
-    end
-  end
-
-  # 19.04
-  config.vm.define "disco64", autostart: false do |disco64|
-    disco64.vm.box = "ubuntu/disco64"
-    disco64.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    disco64.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (disco64)"
-    end
-  end
-
-  # 19.10 - broken; fails to use NamedTemporaryFile to create file for gdb
-#  config.vm.define "eoan", autostart: false do |eoan|
-#    eoan.vm.box = "ubuntu/eoan64"
-#    eoan.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-#    eoan.vm.provider "virtualbox" do |vb|
-#      vb.name = "ArduPilot (eoan)"
-#    end
-#    eoan.vm.boot_timeout = 1200
-#  end
 
   # 20.04 LTS  EOL April 2025
   config.vm.define "focal", autostart: false do |focal|
@@ -186,45 +75,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
     focal.vm.boot_timeout = 1500
   end
-
-  # 20.10  EOL July 2021
-#   config.vm.define "groovy", autostart: false do |groovy|
-#     groovy.vm.box = "ubuntu/groovy64"
-#     groovy.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-#     groovy.vm.provider "virtualbox" do |vb|
-#       vb.name = "ArduPilot (groovy)"
-#     end
-#     groovy.vm.boot_timeout = 1200
-#   end
-
-  # 21.04 EOL January 2022 apt repo down
-#   config.vm.define "hirsute", autostart: false do |hirsute|
-#     hirsute.vm.box = "ubuntu/hirsute64"
-#     hirsute.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-#     hirsute.vm.provider "virtualbox" do |vb|
-#       vb.name = "ArduPilot (hirsute)"
-#     end
-#     hirsute.vm.boot_timeout = 1200
-#   end
-#   config.vm.define "hirsute-desktop", autostart: false do |hirsute|
-#     hirsute.vm.box = "ubuntu/hirsute64"
-#     hirsute.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
-#     hirsute.vm.provider "virtualbox" do |vb|
-#       vb.name = "ArduPilot (hirsute-desktop)"
-#       vb.gui = true
-#     end
-#     hirsute.vm.boot_timeout = 1200
-#   end
-
-  # 21.10 EOL July 2022
-#   config.vm.define "impish", autostart: false do |impish|
-#     impish.vm.box = "ubuntu/impish64"
-#     impish.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-#     impish.vm.provider "virtualbox" do |vb|
-#       vb.name = "ArduPilot (impish)"
-#     end
-#     impish.vm.boot_timeout = 1200
-#   end
 
   # 22.04 LTS EOL Apr 2032
   config.vm.define "jammy", primary: true do |jammy|
@@ -281,5 +131,68 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.gui = true
     end
     mantic.vm.boot_timeout = 1200
+  end
+
+  # 24.04 end of standard support Jun 2029
+  # note the use of "bento" here; Ubuntu stopped providing Vagrant
+  # images due to Hashicorp adopting the "Business Source License".
+  config.vm.define "noble", autostart: false do |noble|
+    noble.vm.box = "bento/ubuntu-24.04"
+    noble.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    noble.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (noble)"
+    end
+    noble.vm.boot_timeout = 1200
+  end
+  config.vm.define "noble-desktop", autostart: false do |noble|
+    noble.vm.box = "bento/ubuntu-24.04"
+    noble.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    noble.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (noble-desktop)"
+      vb.gui = true
+    end
+    noble.vm.boot_timeout = 1200
+  end
+
+  # 24.10 end of standard support ??
+  # note the use of "alvistack" here; Ubuntu stopped providing Vagrant
+  # images due to Hashicorp adopting the "Business Source License".
+  config.vm.define "oracular", autostart: false do |oracular|
+    oracular.vm.box = "alvistack/ubuntu-24.10"
+    oracular.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    oracular.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (oracular)"
+    end
+    oracular.vm.boot_timeout = 1200
+  end
+  config.vm.define "oracular-desktop", autostart: false do |oracular|
+    oracular.vm.box = "alvistack/ubuntu-24.10"
+    oracular.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    oracular.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (oracular-desktop)"
+      vb.gui = true
+    end
+    oracular.vm.boot_timeout = 1200
+  end
+
+  # 25.04 end of standard support ??
+  # note the use of "alvistack" here; Ubuntu stopped providing Vagrant
+  # images due to Hashicorp adopting the "Business Source License".
+  config.vm.define "plucky", autostart: false do |plucky|
+    plucky.vm.box = "alvistack/ubuntu-25.04"
+    plucky.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    plucky.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (plucky)"
+    end
+    plucky.vm.boot_timeout = 1200
+  end
+  config.vm.define "plucky-desktop", autostart: false do |plucky|
+    plucky.vm.box = "alvistack/ubuntu-25.04"
+    plucky.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    plucky.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (plucky-desktop)"
+      vb.gui = true
+    end
+    plucky.vm.boot_timeout = 1200
   end
 end

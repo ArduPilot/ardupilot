@@ -106,7 +106,7 @@ void BinarySemaphore::signal_ISR()
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     xSemaphoreGiveFromISR(_sem, &xHigherPriorityTaskWoken);
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR_ARG(xHigherPriorityTaskWoken);
 }
 
 BinarySemaphore::~BinarySemaphore(void)

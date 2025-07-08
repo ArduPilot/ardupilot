@@ -4,14 +4,13 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1013
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MATEKH743
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
 
 FLASH_SIZE_KB 2048
-env OPTIMIZE -Os
 
 # bootloader takes first sector
 FLASH_RESERVE_START_KB 128
@@ -93,11 +92,11 @@ define BOARD_RSSI_ANA_PIN 8
 # LED
 # green LED1 marked as B/E
 # blue LED0 marked as ACT
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 PE3 LED0 OUTPUT LOW GPIO(90) # blue
 PE4 LED1 OUTPUT LOW GPIO(91) # green
 define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
-define HAL_GPIO_LED_OFF 1
 
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7 USART1 USART2 USART3 UART8 UART4 USART6 OTG2
@@ -211,7 +210,7 @@ IMU Invensense SPI:mpu6000 ROTATION_ROLL_180_YAW_270
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
 # DPS310 integrated on I2C2 bus, multiple possible choices for external barometer
-BARO MS56XX I2C:0:0x77
+BARO MS5611 I2C:0:0x77
 BARO DPS310 I2C:0:0x76
 BARO BMP280 I2C:0:0x76
 
@@ -221,3 +220,6 @@ define HAL_OS_FATFS_IO 1
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# build ABIN for flash-from-bootloader support:
+env BUILD_ABIN True

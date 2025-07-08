@@ -42,7 +42,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define Debug(level, fmt, args...)   do { if ((level) <= get_debug_level()) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ##args); }} while (0)
+#define Debug(level, fmt, args...)   do { if ((level) <= get_debug_level()) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt, ##args); }} while (0)
 
 #define LP_FIFO_SIZE  16      // Physical data FIFO lengths in Radio
 
@@ -264,7 +264,7 @@ bool AP_Radio_cypress::init(void)
     dev = hal.spi->get_device(CYRF_SPI_DEVICE);
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     if (_irq_handler_ctx != nullptr) {
-        AP_HAL::panic("AP_Radio_cypress: double instantiation of irq_handler\n");
+        AP_HAL::panic("AP_Radio_cypress: double instantiation of irq_handler");
     }
     chVTObjectInit(&timeout_vt);
     _irq_handler_ctx = chThdCreateFromHeap(NULL,

@@ -2,6 +2,9 @@
    Driver for NoopLoop TOFSense-M CAN Version. Can be used as a 1-D RangeFidner or 3-D proximity sensor. Upto 3 CAN devices supported in this script although its easy to extend.
 --]]
 
+---@diagnostic disable: undefined-field
+---@diagnostic disable: undefined-global
+
 local update_rate_ms    = 10  -- update rate (in ms) of the driver. 10ms was found to be appropriate
 
 -- Global variables (DO NOT CHANGE)

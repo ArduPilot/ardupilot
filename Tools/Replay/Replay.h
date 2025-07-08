@@ -15,6 +15,7 @@
 
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Vehicle/AP_FixedWing.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #include "LogReader.h"
 
@@ -57,6 +58,8 @@ public:
     NavEKF2 ekf2;
     NavEKF3 ekf3;
 
+    SRV_Channels servo_channels;
+
 protected:
 
 protected:
@@ -97,6 +100,8 @@ private:
     ReplayVehicle &_vehicle;
 
     LogReader reader{_vehicle.log_structure, _vehicle.ekf2, _vehicle.ekf3};
+    bool show_progress = false;  // Flag to determine if progress bar should be shown
+    uint32_t last_progress_update = 0; // Last time progress was displayed
 
     void _parse_command_line(uint8_t argc, char * const argv[]);
 
@@ -104,4 +109,7 @@ private:
     bool parse_param_line(char *line, char **vname, float &value);
     void load_param_file(const char *filename);
     void usage();
+
+    void Write_Format(const struct LogStructure &s);
+    void write_EKF_formats(void);
 };

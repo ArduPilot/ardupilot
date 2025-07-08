@@ -1,0 +1,13 @@
+[Unit]
+Description=ArduPilot
+After=sscrpcd.service
+Requires=sscrpcd.service
+
+[Service]
+Restart=always
+RestartSec=1s
+ExecStartPre=/bin/sleep 1
+ExecStart=/usr/bin/voxl-ardupilot
+
+[Install]
+WantedBy=multi-user.target

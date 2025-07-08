@@ -20,7 +20,7 @@ void AnalogSource_Navio2::set_channel(uint8_t pin)
     }
 
     if (asprintf(&channel_path, "%s/ch%d", ADC_BASE_PATH, pin) == -1) {
-        AP_HAL::panic("asprintf failed\n");
+        AP_HAL::panic("asprintf failed");
     }
 
     if (_fd >= 0) {
@@ -111,7 +111,7 @@ AP_HAL::AnalogSource *AnalogIn_Navio2::channel(int16_t pin)
     WITH_SEMAPHORE(_semaphore);
     for (uint8_t j = 0; j < _channels_number; j++) {
         if (_channels[j] == nullptr) {
-            _channels[j] = new AnalogSource_Navio2(pin);
+            _channels[j] = NEW_NOTHROW AnalogSource_Navio2(pin);
             return _channels[j];
         }
     }

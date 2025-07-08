@@ -44,17 +44,17 @@ AP_Airspeed_DLVR::AP_Airspeed_DLVR(AP_Airspeed &_frontend, uint8_t _instance, co
  */
 AP_Airspeed_Backend *AP_Airspeed_DLVR::probe(AP_Airspeed &_frontend,
                                              uint8_t _instance,
-                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev,
+                                             AP_HAL::I2CDevice *_dev,
                                              const float _range_inH2O)
 {
     if (!_dev) {
         return nullptr;
     }
-    AP_Airspeed_DLVR *sensor = new AP_Airspeed_DLVR(_frontend, _instance, _range_inH2O);
+    AP_Airspeed_DLVR *sensor = NEW_NOTHROW AP_Airspeed_DLVR(_frontend, _instance, _range_inH2O);
     if (!sensor) {
         return nullptr;
     }
-    sensor->dev = std::move(_dev);
+    sensor->dev = _dev;
     sensor->setup();
     return sensor;
 }
@@ -75,7 +75,7 @@ void AP_Airspeed_DLVR::setup()
 // probe and initialise the sensor
 bool AP_Airspeed_DLVR::init()
 {
-    dev = hal.i2c_mgr->get_device(get_bus(), DLVR_I2C_ADDR);
+    dev = hal.i2c_mgr->get_device_ptr(get_bus(), DLVR_I2C_ADDR);
     if (!dev) {
         return false;
     }

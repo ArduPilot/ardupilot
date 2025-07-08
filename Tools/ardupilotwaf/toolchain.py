@@ -1,5 +1,7 @@
+# flake8: noqa
+
 """
-WAF Tool to select the correct toolchain based on the target archtecture.
+WAF Tool to select the correct toolchain based on the target architecture.
 
 This tool loads compiler_c and compiler_cxx, so you don't need to load them
 (and you must not load them before this tool). Use the environment variable
@@ -50,7 +52,7 @@ def _clang_cross_support(cfg):
     try:
         cfg.find_program(prefix + 'gcc', var='CROSS_GCC')
     except Errors.ConfigurationError as e:
-        cfg.fatal('toolchain: clang: couldn\'t find cross GCC', ex=e)
+        cfg.fatal("toolchain: clang: couldn't find cross GCC", ex=e)
 
     environ = dict(os.environ)
     if 'TOOLCHAIN_CROSS_AR' in environ:
@@ -63,7 +65,7 @@ def _clang_cross_support(cfg):
             environ=environ,
         )
     except Errors.ConfigurationError as e:
-        cfg.fatal('toolchain: clang: couldn\'t find toolchain path', ex=e)
+        cfg.fatal("toolchain: clang: couldn't find toolchain path", ex=e)
 
     toolchain_path = os.path.join(cfg.env.TOOLCHAIN_CROSS_AR[0], '..', '..')
     toolchain_path = os.path.abspath(toolchain_path)
@@ -133,6 +135,8 @@ def configure(cfg):
     _filter_supported_cxx_compilers('g++', 'clang++')
 
     cfg.msg('Using toolchain', cfg.env.TOOLCHAIN)
+    if cfg.env.TOOLCHAIN == "custom":
+        return
 
     if cfg.env.TOOLCHAIN == 'native':
         cfg.load('compiler_cxx compiler_c')
@@ -149,6 +153,11 @@ def configure(cfg):
     else:
         cfg.find_program('%s-ar' % cfg.env.TOOLCHAIN, var='AR', quiet=True)
     cfg.load('compiler_cxx compiler_c')
+
+    if sys.platform.startswith("cygwin"):
+        cfg.find_program('nm', var='NM')
+    else:
+        cfg.find_program('%s-nm' % cfg.env.TOOLCHAIN, var='NM')
 
     if not cfg.options.disable_gccdeps:
         cfg.load('gccdeps')

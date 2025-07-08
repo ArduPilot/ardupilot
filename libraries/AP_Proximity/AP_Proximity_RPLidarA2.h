@@ -151,6 +151,7 @@ private:
         UNKNOWN,
         A1,
         A2,
+        C1,
         S1,
     } model = Model::UNKNOWN;
 

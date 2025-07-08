@@ -1,6 +1,8 @@
 -- example script for using "set_home()"
 -- sets the home location to the current vehicle location every 5 seconds
 
+---@diagnostic disable: param-type-mismatch
+
 function update ()
 
     if ahrs:home_is_set() then

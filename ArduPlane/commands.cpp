@@ -33,16 +33,15 @@ void Plane::set_next_WP(const Location &loc)
         next_WP_loc.lng = current_loc.lng;
         // additionally treat zero altitude as current altitude
         if (next_WP_loc.alt == 0) {
-            next_WP_loc.alt = current_loc.alt;
-            next_WP_loc.relative_alt = false;
-            next_WP_loc.terrain_alt = false;
+            next_WP_loc.set_alt_cm(current_loc.alt, Location::AltFrame::ABSOLUTE);
         }
     }
 
+    fix_terrain_WP(next_WP_loc, __LINE__);
+
     // convert relative alt to absolute alt
-    if (next_WP_loc.relative_alt) {
-        next_WP_loc.relative_alt = false;
-        next_WP_loc.alt += home.alt;
+    if (!next_WP_loc.terrain_alt) {
+        next_WP_loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
     }
 
     // are we already past the waypoint? This happens when we jump
@@ -57,7 +56,7 @@ void Plane::set_next_WP(const Location &loc)
     // zero out our loiter vals to watch for missed waypoints
     loiter_angle_reset();
 
-    setup_glide_slope();
+    setup_alt_slope();
     setup_turn_angle();
 
     // update plane.target_altitude straight away, or if we are too
@@ -85,11 +84,13 @@ void Plane::set_guided_WP(const Location &loc)
     // ---------------------
     next_WP_loc = loc;
 
+    fix_terrain_WP(next_WP_loc, __LINE__);
+
     // used to control FBW and limit the rate of climb
     // -----------------------------------------------
     set_target_altitude_current();
 
-    setup_glide_slope();
+    setup_alt_slope();
     setup_turn_angle();
 
     // disable crosstrack, head directly to the point
@@ -139,7 +140,8 @@ bool Plane::update_home()
             // altitude or we can end up perpetuating a bias in
             // altitude, as AHRS alt depends on home alt, which means
             // we would have a circular dependency
-            loc.alt = gps.location().alt;
+            loc.set_alt_cm(gps.location().alt,
+                           Location::AltFrame::ABSOLUTE);
             ret = AP::ahrs().set_home(loc);
         }
     }
@@ -162,9 +164,6 @@ bool Plane::set_home_persistently(const Location &loc)
     if (!AP::ahrs().set_home(loc)) {
         return false;
     }
-
-    // Save Home to EEPROM
-    mission.write_home_to_storage();
 
     return true;
 }

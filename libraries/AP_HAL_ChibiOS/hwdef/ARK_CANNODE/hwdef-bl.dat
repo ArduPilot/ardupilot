@@ -5,8 +5,8 @@
 # note: the device is STM32F412CE, not all F412 pins are available
 MCU STM32F4xx STM32F412Rx
 
-# board ID for firmware load
-APJ_BOARD_ID 83
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_ARK_CANNODE
 
 env AP_PERIPH 1
 
@@ -39,15 +39,12 @@ PA8  LED_R1 OUTPUT OPENDRAIN HIGH GPIO(0)
 PA9  LED_G1 OUTPUT OPENDRAIN LOW GPIO(1)
 PA10 LED_B1 OUTPUT OPENDRAIN LOW GPIO(2)
 
-define HAL_GPIO_A_LED_PIN 0
-define HAL_GPIO_B_LED_PIN 1
-define HAL_GPIO_C_LED_PIN 2
-
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 0
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 1
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 2
 
 # use pixracer style 3-LED indicators
-define HAL_HAVE_PIXRACER_LED
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
 # CAN bus
 PA11 CAN1_RX CAN1

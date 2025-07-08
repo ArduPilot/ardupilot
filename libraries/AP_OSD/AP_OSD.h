@@ -33,6 +33,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #endif
 #include <AC_Fence/AC_Fence_config.h>
+#include <AP_RangeFinder/AP_RangeFinder_config.h>
 
 class AP_OSD_Backend;
 class AP_MSP;
@@ -48,8 +49,18 @@ class AP_MSP;
 #define PARAM_INDEX(key, idx, group) (uint32_t(uint32_t(key) << 23 | uint32_t(idx) << 18 | uint32_t(group)))
 #define PARAM_TOKEN_INDEX(token) PARAM_INDEX(AP_Param::get_persistent_key(token.key), token.idx, token.group_element)
 
-#define AP_OSD_NUM_SYMBOLS 91
+#define AP_OSD_NUM_SYMBOLS 107
 #define OSD_MAX_INSTANCES 2
+
+#if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
+// For the moment, these extra panels only work with CRSF protocol based RC systems
+#define AP_OSD_EXTENDED_LNK_STATS 1
+#define AP_OSD_WARN_RSSI_DEFAULT -100   // Default value for OSD RSSI panel warning, in dbm
+#else
+#define AP_OSD_EXTENDED_LNK_STATS 0
+#define AP_OSD_WARN_RSSI_DEFAULT 30     // Default value for OSD RSSI panel warning, in %
+#endif
+
 /*
   class to hold one setting
  */
@@ -226,6 +237,15 @@ private:
 #endif
     AP_OSD_Setting sidebars{false, 4, 5};
 
+#if AP_OSD_EXTENDED_LNK_STATS
+    // Extended link stats data panels
+    AP_OSD_Setting rc_tx_power{false, 25, 12};
+    AP_OSD_Setting rc_rssi_dbm{false, 6, 2};
+    AP_OSD_Setting rc_snr{false, 23, 13};
+    AP_OSD_Setting rc_active_antenna{false, 27, 13};
+    AP_OSD_Setting rc_lq{false, 18, 2};
+#endif
+
     // MSP OSD only
     AP_OSD_Setting crosshair;
     AP_OSD_Setting home_dist{true, 1, 1};
@@ -239,6 +259,9 @@ private:
     // Per screen HD resolution options (currently supported only by DisplayPort)
     AP_Int8 txt_resolution;
     AP_Int8 font_index;
+#endif
+#if HAL_WITH_ESC_TELEM
+    AP_Int8 esc_index;
 #endif
 
     void draw_altitude(uint8_t x, uint8_t y);
@@ -312,7 +335,19 @@ private:
 #if AP_FENCE_ENABLED
     void draw_fence(uint8_t x, uint8_t y);
 #endif
+#if AP_RANGEFINDER_ENABLED
     void draw_rngf(uint8_t x, uint8_t y);
+#endif
+
+#if AP_OSD_EXTENDED_LNK_STATS
+    // Extended link stats data panels
+    bool is_btfl_fonts();    
+    void draw_rc_tx_power(uint8_t x, uint8_t y);
+    void draw_rc_rssi_dbm(uint8_t x, uint8_t y);
+    void draw_rc_snr(uint8_t x, uint8_t y);
+    void draw_rc_active_antenna(uint8_t x, uint8_t y);    
+    void draw_rc_lq(uint8_t x, uint8_t y);
+#endif
 
     struct {
         bool load_attempted;
@@ -329,6 +364,18 @@ class AP_OSD_ParamSetting
 {
 public:
 
+    enum class Type : uint8_t {
+        NONE = 0,
+        SERIAL_PROTOCOL    =  1,
+        SERVO_FUNCTION     =  2,
+        AUX_FUNCTION       =  3,
+        FLIGHT_MODE        =  4,
+        FAILSAFE_ACTION    =  5,
+        FAILSAFE_ACTION_1  =  6,
+        FAILSAFE_ACTION_2  =  7,
+        NUM_TYPES          =  8,
+    };
+
     AP_Int8 enabled;
     AP_Int8 xpos;
     AP_Int8 ypos;
@@ -341,7 +388,7 @@ public:
     AP_Float _param_min;
     AP_Float _param_max;
     AP_Float _param_incr;
-    AP_Int8 _type;
+    AP_Enum<Type> _type;
 
     // parameter number
     uint8_t _param_number;
@@ -357,11 +404,12 @@ public:
         uint8_t values_max;
         const char** values;
     };
+
     // compact structure used to hold default values for static initialization
     struct Initializer {
         uint8_t index;
         AP_Param::ParamToken token;
-        int8_t type;
+        Type type;
     };
 
     static const ParamMetadata _param_metadata[];
@@ -455,7 +503,6 @@ private:
 
 #if AP_RC_CHANNEL_ENABLED
     Event map_rc_input_to_event() const;
-    RC_Channel::AuxSwitchPos get_channel_pos(uint8_t rcmapchan) const;
 #endif
 
     uint8_t _selected_param = 1;
@@ -544,6 +591,16 @@ public:
     AP_Int8 failsafe_scr;
     AP_Int32 button_delay_ms;
 
+#if AP_OSD_EXTENDED_LNK_STATS
+    AP_Int8 warn_lq;
+    AP_Int8 warn_snr;
+#endif
+
+#if HAL_OSD_SIDEBAR_ENABLE
+    AP_Int8 sidebar_h_offset;
+    AP_Int8 sidebar_v_ext;
+#endif
+
     enum {
         OPTION_DECIMAL_PACK = 1U<<0,
         OPTION_INVERTED_WIND = 1U<<1,
@@ -552,6 +609,9 @@ public:
         OPTION_DISABLE_CROSSHAIR = 1U<<4,
         OPTION_BF_ARROWS = 1U<<5,
         OPTION_AVIATION_AH = 1U<<6,
+#if AP_OSD_EXTENDED_LNK_STATS
+        OPTION_RF_MODE_ALONG_WITH_LQ = 1U<<7,
+#endif
     };
 
     enum {

@@ -201,20 +201,24 @@ check_fw_result_t check_good_firmware(void)
 #endif
 }
 
+const app_descriptor_t *get_app_descriptor(void)
+{
+#if AP_SIGNED_FIRMWARE
+    const uint8_t sig[8] = AP_APP_DESCRIPTOR_SIGNATURE_SIGNED;
+#else
+    const uint8_t sig[8] = AP_APP_DESCRIPTOR_SIGNATURE_UNSIGNED;
+#endif
+    const uint8_t *flash1 = (const uint8_t *)(FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024);
+    const uint32_t flash_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB))*1024;
+    const app_descriptor_t *ad = (const app_descriptor_t *)memmem(flash1, flash_size-sizeof(app_descriptor_t), sig, sizeof(sig));
+    return ad;
+}
+
 #endif // HAL_BOOTLOADER_BUILD
 
 #if !defined(HAL_BOOTLOADER_BUILD)
 extern const AP_HAL::HAL &hal;
-
-/*
-  declare constant app_descriptor in flash
- */
 extern const app_descriptor_t app_descriptor;
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-const app_descriptor_t app_descriptor __attribute__((section(".app_descriptor")));
-#else
-const app_descriptor_t app_descriptor;
-#endif
 
 /*
   this is needed to ensure we don't elide the app_descriptor

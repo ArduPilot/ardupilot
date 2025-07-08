@@ -23,6 +23,9 @@
 #include "driver/gpio.h"
 #include "driver/uart.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 namespace ESP32
 {
 
@@ -71,6 +74,9 @@ public:
       A return value of zero means the HAL does not support this API */
      
     uint64_t receive_time_constraint_us(uint16_t nbytes) override; 
+
+    uint32_t get_baud_rate() const override { return _baudrate; }
+
 private:
     bool _initialized;
     const size_t TX_BUF_SIZE = 1024;
@@ -88,6 +94,8 @@ private:
     uint64_t _receive_timestamp[2];
     uint8_t _receive_timestamp_idx;
     uint32_t _baudrate;
+
+    const tskTaskControlBlock* _uart_owner_thd;
 
     void _receive_timestamp_update(void);
 

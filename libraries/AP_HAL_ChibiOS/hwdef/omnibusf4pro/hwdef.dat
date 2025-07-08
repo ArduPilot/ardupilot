@@ -4,10 +4,8 @@
 
 MCU STM32F4xx STM32F405xx
 
-HAL_CHIBIOS_ARCH_F405 1
-
-# board ID for firmware load
-APJ_BOARD_ID 131
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_OMNIBUSF4PRO
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -86,6 +84,7 @@ PC12 SPI3_MOSI SPI3
 PC11 SPI3_MISO SPI3
 PC10 SPI3_SCK SPI3
 
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 PB5 LED_BLUE OUTPUT LOW GPIO(1)
 define HAL_GPIO_A_LED_PIN 1
 
@@ -144,17 +143,10 @@ define HAL_BATT_CURR_SCALE 18.2
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 
-#To complementary channels work we define this
-define STM32_PWM_USE_ADVANCED TRUE
-
 #font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
-define HAL_SPRAYER_ENABLED 0
-
-# save some flash
-include ../include/save_some_flash.inc
 
 include ../include/minimize_fpv_osd.inc

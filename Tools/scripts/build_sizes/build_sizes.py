@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description='create builds.html for list of bui
 parser.add_argument('basedir', default=None, help='base directory (binaries directory)')
 parser.add_argument('--outfile', default="builds.html", help='output file')
 
-build_dirs = ['latest', 'beta', 'beta-4.3', 'stable']
+build_dirs = ['latest', 'beta', 'stable']
 builds = ['Plane', 'Copter', 'Rover', 'Sub', 'Blimp', 'AntennaTracker', 'AP_Periph']
 
 args = parser.parse_args()

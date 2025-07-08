@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_BARO
+#if AP_PERIPH_BARO_ENABLED
 
 /*
   barometer support
@@ -34,7 +34,7 @@ void AP_Periph_FW::can_baro_update(void)
         pkt.static_pressure = press;
         pkt.static_pressure_variance = 0; // should we make this a parameter?
 
-        uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_STATICPRESSURE_MAX_SIZE] {};
+        uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_STATICPRESSURE_MAX_SIZE];
         uint16_t total_size = uavcan_equipment_air_data_StaticPressure_encode(&pkt, buffer, !periph.canfdout());
 
         canard_broadcast(UAVCAN_EQUIPMENT_AIR_DATA_STATICPRESSURE_SIGNATURE,
@@ -49,7 +49,7 @@ void AP_Periph_FW::can_baro_update(void)
         pkt.static_temperature = C_TO_KELVIN(temp);
         pkt.static_temperature_variance = 0; // should we make this a parameter?
 
-        uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_STATICTEMPERATURE_MAX_SIZE] {};
+        uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_STATICTEMPERATURE_MAX_SIZE];
         uint16_t total_size = uavcan_equipment_air_data_StaticTemperature_encode(&pkt, buffer, !periph.canfdout());
 
         canard_broadcast(UAVCAN_EQUIPMENT_AIR_DATA_STATICTEMPERATURE_SIGNATURE,
@@ -60,4 +60,4 @@ void AP_Periph_FW::can_baro_update(void)
     }
 }
 
-#endif // HAL_PERIPH_ENABLE_BARO
+#endif // AP_PERIPH_BARO_ENABLED

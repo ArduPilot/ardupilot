@@ -90,7 +90,7 @@ void SingleCopter::update(const struct sitl_input &input)
     rot_accel.z -= gyro.z * radians(400.0)  / terminal_rotation_rate;
 
     // air resistance
-    Vector3f air_resistance = -velocity_air_ef * (GRAVITY_MSS/terminal_velocity);
+    Vector3f air_resistance = -velocity_air_ef * (GRAVITY_MSS/terminal_velocity) / eas2tas;
 
     // scale thrust to newtons
     thrust *= thrust_scale;

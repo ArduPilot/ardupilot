@@ -31,7 +31,7 @@
 
 class AP_GPS_DroneCAN : public AP_GPS_Backend {
 public:
-    AP_GPS_DroneCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role role);
+    AP_GPS_DroneCAN(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role role);
     ~AP_GPS_DroneCAN();
 
     bool read() override;
@@ -44,7 +44,7 @@ public:
 
     const char *name() const override { return _name; }
 
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
     static AP_GPS_Backend* probe(AP_GPS &_gps, AP_GPS::GPS_State &_state);
 
     static void handle_fix2_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_gnss_Fix2& msg);
@@ -56,7 +56,7 @@ public:
     static void handle_moving_baseline_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_MovingBaselineData& msg);
     static void handle_relposheading_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_RelPosHeading& msg);
 #endif
-    static bool backends_healthy(char failure_msg[], uint16_t failure_msg_len);
+    static bool inter_instance_pre_arm_checks(char failure_msg[], uint16_t failure_msg_len);
     void inject_data(const uint8_t *data, uint16_t len) override;
 
     bool get_error_codes(uint32_t &error_codes) const override { error_codes = error_code; return seen_status; };
@@ -111,6 +111,7 @@ private:
     bool seen_aux;
     bool seen_status;
     bool seen_relposheading;
+    bool seen_valid_height_ellipsoid;
 
     bool healthy;
     uint32_t status_flags;
@@ -149,6 +150,15 @@ private:
         uint32_t last_send_ms;
         ByteBuffer *buf;
     } _rtcm_stream;
+
+    // returns true if the supplied GPS_Type is a DroneCAN GPS type
+    static bool is_dronecan_gps_type(AP_GPS::GPS_Type type) {
+        return (
+            type == AP_GPS::GPS_TYPE_UAVCAN ||
+            type == AP_GPS::GPS_TYPE_UAVCAN_RTK_BASE ||
+            type == AP_GPS::GPS_TYPE_UAVCAN_RTK_ROVER
+       );
+    }
 };
 
 #endif  // AP_GPS_DRONECAN_ENABLED

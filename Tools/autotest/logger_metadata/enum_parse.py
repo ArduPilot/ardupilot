@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
+'''
+AP_FLAKE8_CLEAN
+'''
 
 import argparse
 import os
@@ -9,6 +11,7 @@ import sys
 
 topdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 topdir = os.path.realpath(topdir)
+
 
 class EnumDocco(object):
 
@@ -35,35 +38,35 @@ class EnumDocco(object):
         # attempts to extract name, value and comment from line.
 
         # Match:  "            FRED,  // optional comment"
-        m = re.match("\s*([A-Z0-9_a-z]+)\s*,? *(?://[/>]* *(.*) *)?$", line)
+        m = re.match(r"\s*([A-Z0-9_a-z]+)\s*,? *(?://[/>]* *(.*) *)?$", line)
         if m is not None:
             return (m.group(1), None, m.group(2))
 
         # Match:  "            FRED,  /* optional comment */"
-        m = re.match("\s*([A-Z0-9_a-z]+)\s*,? *(?:/[*] *(.*) *[*]/ *)?$", line)
+        m = re.match(r"\s*([A-Z0-9_a-z]+)\s*,? *(?:/[*] *(.*) *[*]/ *)?$", line)
         if m is not None:
             return (m.group(1), None, m.group(2))
 
         # Match:  "            FRED  = 17,  // optional comment"
-        m = re.match("\s*([A-Z0-9_a-z]+)\s*=\s*([-0-9]+)\s*,?(?:\s*//[/<]*\s*(.*) *)?$",
+        m = re.match(r"\s*([A-Z0-9_a-z]+)\s*=\s*([-0-9]+)\s*,?(?:\s*//[/<]*\s*(.*) *)?$",
                      line)
         if m is not None:
             return (m.group(1), m.group(2), m.group(3))
 
         # Match:  "            FRED  = 17,  // optional comment"
-        m = re.match("\s*([A-Z0-9_a-z]+) *= *([-0-9]+) *,?(?: */* *(.*) *)? *[*]/ *$",
+        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *([-0-9]+) *,?(?: */* *(.*) *)? *[*]/ *$",
                      line)
         if m is not None:
             return (m.group(1), m.group(2), m.group(3))
 
         # Match:  "            FRED  = 1U<<0,  // optional comment"
-        m = re.match("\s*([A-Z0-9_a-z]+) *= *[(]?1U? *[<][<] *(\d+)(?:, *// *(.*) *)?",
+        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *[(]?1U? *[<][<] *(\d+)(?:, *// *(.*) *)?",
                      line)
         if m is not None:
             return (m.group(1), 1 << int(m.group(2)), m.group(3))
 
         # Match:  "            FRED  = 0xabc,  // optional comment"
-        m = re.match("\s*([A-Z0-9_a-z]+) *= *(?:0[xX]([0-9A-Fa-f]+))(?:, *// *(.*) *)?",
+        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *(?:0[xX]([0-9A-Fa-f]+))(?:, *// *(.*) *)?",
                      line)
         if m is not None:
             return (m.group(1), int(m.group(2), 16), m.group(3))
@@ -71,22 +74,26 @@ class EnumDocco(object):
         '''start discarded matches - lines we understand but can't do anything
         with:'''
         # Match:  "            FRED  = 17,  // optional comment"
-        m = re.match("\s*([A-Z0-9_a-z]+) *= *(\w+) *,?(?: *// *(.*) *)?$",
+        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *(\w+) *,?(?: *// *(.*) *)?$",
                      line)
         if m is not None:
             return (None, None, None)
         # Match:  "            FRED  = FOO(17),  // optional comment"
-        m = re.match("\s*([A-Z0-9_a-z]+) *= *(\w+) *\\( *(\w+) *\\) *,?(?: *// *(.*) *)?$",
+        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *(\w+) *\\( *(\w+) *\\) *,?(?: *// *(.*) *)?$",
                      line)
         if m is not None:
             return (None, None, None)
 
-
-         # Match:  "            FRED  = 1U<<0,  // optional comment"
-        m = re.match("\s*([A-Z0-9_a-z]+) *= *[(]?3U? *[<][<] *(\d+)(?:, *// *(.*) *)?",
+        # Match:  "            FRED  = 1U<<0,  // optional comment"
+        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *[(]?3U? *[<][<] *(\d+)(?:, *// *(.*) *)?",
                      line)
         if m is not None:
             return (m.group(1), 1 << int(m.group(2)), m.group(3))
+
+        # Match:  "#define FRED 1  // optional comment"
+        m = re.match(r"#define\s*([A-Z0-9_a-z]+)\s+(-?\d+) *(// *(.*) *)?$", line)
+        if m is not None:
+            return (m.group(1), m.group(2), m.group(4))
 
         if m is None:
             raise ValueError("Failed to match (%s)" % line)
@@ -112,21 +119,27 @@ class EnumDocco(object):
                     break
                 line = line.rstrip()
                 #        print("state=%s line: %s" % (state, line))
-                if re.match("\s*//.*", line):
+                # Skip single-line comments - unless they contain LoggerEnum tags
+                if re.match(r"\s*//.*", line) and "LoggerEnum" not in line:
+                    continue
+                # Skip multi-line comments
+                if re.match(r"\s*/\*.*", line):
+                    while "*/" not in line:
+                        line = f.readline()
                     continue
                 if state == "outside":
                     if re.match("class .*;", line) is not None:
                         # forward-declaration of a class
                         continue
-                    m = re.match("class *([:\w]+)", line)
+                    m = re.match(r"class *([:\w]+)", line)
                     if m is not None:
                         in_class = m.group(1)
                         continue
-                    m = re.match("namespace *(\w+)", line)
+                    m = re.match(r"namespace *(\w+)", line)
                     if m is not None:
                         in_class = m.group(1)
                         continue
-                    m = re.match(".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{(.*)};", line)
+                    m = re.match(r".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{(.*)};", line)
                     if m is not None:
                         # all one one line!  Thanks!
                         enum_name = m.group(2)
@@ -142,7 +155,7 @@ class EnumDocco(object):
                         enumerations.append(new_enumeration)
                         continue
 
-                    m = re.match(".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{", line)
+                    m = re.match(r".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{", line)
                     if m is not None:
                         enum_name = m.group(2)
                         debug("%s: %s" % (source_file, enum_name))
@@ -150,17 +163,33 @@ class EnumDocco(object):
                         last_value = None
                         state = state_inside
                         skip_enumeration = False
+                        continue
+
+                    # // @LoggerEnum: NAME  -  can be used around for #define sets
+                    m = re.match(r".*@LoggerEnum: *([\w:]+)", line)
+                    if m is not None:
+                        enum_name = m.group(1)
+                        debug("%s: %s" % (source_file, enum_name))
+                        entries = []
+                        last_value = None
+                        state = state_inside
+                        skip_enumeration = False
+                        continue
+
                     continue
                 if state == "inside":
-                    if re.match("\s*$", line):
+                    if re.match(r"\s*enum.*$", line):
+                        # Allow @LoggerEnum around Enum for name override
                         continue
-                    if re.match("#if", line):
+                    if re.match(r"\s*$", line):
                         continue
-                    if re.match("#endif", line):
+                    if re.match(r"#if", line):
                         continue
-                    if re.match("#else", line):
+                    if re.match(r"#endif", line):
                         continue
-                    if re.match(".*}\s*\w*(\s*=\s*[\w:]+)?;", line):
+                    if re.match(r"#else", line):
+                        continue
+                    if re.match(r".*}\s*\w*(\s*=\s*[\w:]+)?;", line) or "@LoggerEnumEnd" in line:
                         # potential end of enumeration
                         if not skip_enumeration:
                             if enum_name is None:
@@ -189,7 +218,7 @@ class EnumDocco(object):
                     else:
                         value = int(value)
                         last_value = value
-#                    print("entry=%s value=%s comment=%s" % (name, value, comment))
+                        # print("entry=%s value=%s comment=%s" % (name, value, comment))
                     entries.append(EnumDocco.EnumEntry(name, value, comment))
         return enumerations
 
@@ -199,6 +228,9 @@ class EnumDocco(object):
             # print("creating enum %s" % name)
             self.name = name
             self.entries = entries
+
+        def __str__(self):
+            return f"EnumDocco.Enumeration: {self.name} [{len(self.entries)} entries]"
 
     def search_for_files(self, dirs_to_search):
         _next = []
@@ -218,6 +250,9 @@ class EnumDocco(object):
                 if extension not in [".cpp", ".h"]:
                     continue
                 if filepath.endswith("libraries/AP_HAL/utility/getopt_cpp.h"):
+                    continue
+                # Failed to match (    IOEVENT_PWM = EVENT_MASK(1),)
+                if filepath.endswith("libraries/AP_IOMCU/iofirmware/iofirmware.cpp"):
                     continue
                 self.files.append(filepath)
         if len(_next):
@@ -253,4 +288,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     s.run()
-#    print("Enumerations: %s" % s.enumerations)
+
+    if args.verbose:
+        for e in s.enumerations:
+            print(e)

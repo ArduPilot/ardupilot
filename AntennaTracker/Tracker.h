@@ -46,12 +46,12 @@
 #include "config.h"
 #include "defines.h"
 
-#include "RC_Channel.h"
+#include "RC_Channel_Tracker.h"
 #include "Parameters.h"
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Tracker.h"
 #include "GCS_Tracker.h"
 
-#include "AP_Arming.h"
+#include "AP_Arming_Tracker.h"
 
 #include "mode.h"
 
@@ -177,7 +177,6 @@ private:
 
     // sensors.cpp
     void update_ahrs();
-    void compass_save();
     void update_compass(void);
     void update_GPS(void);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
@@ -197,7 +196,8 @@ private:
     void init_ardupilot() override;
     bool get_home_eeprom(Location &loc) const;
     bool set_home_eeprom(const Location &temp) WARN_IF_UNUSED;
-    bool set_home(const Location &temp) WARN_IF_UNUSED;
+    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
+    bool set_home(const Location &temp, bool lock) override WARN_IF_UNUSED;
     void prepare_servos();
     void set_mode(Mode &newmode, ModeReason reason);
     bool set_mode(uint8_t new_mode, ModeReason reason) override;

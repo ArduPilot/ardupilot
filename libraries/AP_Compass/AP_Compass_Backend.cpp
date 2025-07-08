@@ -1,3 +1,7 @@
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_Compass.h"
@@ -6,8 +10,6 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-
-extern const AP_HAL::HAL& hal;
 
 AP_Compass_Backend::AP_Compass_Backend()
     : _compass(AP::compass())
@@ -294,3 +296,5 @@ enum Rotation AP_Compass_Backend::get_board_orientation(void) const
 {
     return _compass._board_orientation;
 }
+
+#endif  // AP_COMPASS_ENABLED

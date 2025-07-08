@@ -31,6 +31,9 @@
      n+2       checksum        XOR of byte3 to n+1 (inclusive)
 --]]
 
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: undefined-global
+
 -- parameters
 local PARAM_TABLE_KEY = 39
 assert(param:add_table(PARAM_TABLE_KEY, "VIEP_", 6), "could not add param table")
@@ -814,7 +817,7 @@ function update()
     local roll_deg, pitch_deg, yaw_deg, yaw_is_ef = mount:get_angle_target(MOUNT_INSTANCE)
     if roll_deg and pitch_deg and yaw_deg then
       if yaw_is_ef then
-        yaw_deg = wrap_180(yaw_deg - math.deg(ahrs:get_yaw()))
+        yaw_deg = wrap_180(yaw_deg - math.deg(ahrs:get_yaw_rad()))
       end
       send_target_angles(pitch_deg, yaw_deg)
       return update, UPDATE_INTERVAL_MS

@@ -5,6 +5,7 @@
 #if AP_GENERATOR_IE_ENABLED
 
 #include <AP_Logger/AP_Logger_config.h>
+#include <GCS_MAVLink/GCS.h>
 
 class AP_Generator_IE_FuelCell : public AP_Generator_Backend
 {
@@ -14,7 +15,7 @@ public:
     using AP_Generator_Backend::AP_Generator_Backend;
 
     // Initialize the fuel cell driver
-    void init(void) override;
+    __INITFUNC__ void init(void) override;
 
     // Check if readings are healthy
     bool healthy(void) const override { return _healthy; }
@@ -100,7 +101,7 @@ protected:
     virtual void decode_latest_term(void) = 0;
 
     // Check if we should notify on any change of fuel cell state
-    void check_status(const uint32_t now);
+    virtual void check_status(const uint32_t now);
 
     // Check error codes and populate message with error code
     virtual bool check_for_err_code(char* msg_txt, uint8_t msg_len) const = 0;
@@ -116,6 +117,11 @@ protected:
 
     // Print msg to user updating on state change
     virtual void update_state_msg();
+
+#if HAL_GCS_ENABLED
+    // Get the MAV_SEVERITY level of a given error code
+    virtual MAV_SEVERITY get_mav_severity(uint32_t err_code) const { return MAV_SEVERITY_ALERT; }
+#endif
 
 };
 #endif  // AP_GENERATOR_IE_ENABLED

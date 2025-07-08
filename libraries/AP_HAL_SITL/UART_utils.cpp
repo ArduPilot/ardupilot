@@ -19,7 +19,7 @@
 
 #include "UARTDriver.h"
 
-#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(__APPLE__)
+#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(__APPLE__) || defined(__OpenBSD__)
 #define USE_TERMIOS
 #endif
 
@@ -73,6 +73,7 @@ void HALSITL::UARTDriver::configure_parity(uint8_t v)
     if (_fd < 0) {
         return;
     }
+    UARTDriver::parity = v;
 #ifdef USE_TERMIOS
     struct termios t;
 

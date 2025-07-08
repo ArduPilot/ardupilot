@@ -20,7 +20,7 @@
 
 #include "AP_ExternalAHRS_config.h"
 
-#if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+#if AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
 
 #include "AP_ExternalAHRS_backend.h"
 
@@ -37,7 +37,7 @@ public:
     bool initialised(void) const override;
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
     void get_filter_status(nav_filter_status &status) const override;
-    void send_status_report(class GCS_MAVLINK &link) const override;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 
     // check for new data
     void update() override {
@@ -77,6 +77,11 @@ public:
         SUPPLY_VOLTAGE = 0x50,
         TEMPERATURE = 0x52,
         UNIT_STATUS2 = 0x5A,
+        GNSS_ANGLES = 0x33,
+        GNSS_ANGLE_POS_TYPE = 0x3A,
+        GNSS_HEADING_TIMESTAMP = 0x40,
+        GNSS_DOP = 0x42,
+        INS_SOLUTION_STATUS = 0x54,
     };
 
     /*
@@ -129,8 +134,8 @@ public:
     };
     
     union PACKED ILabsData {
-        uint32_t gps_time_ms; // ms since start of GPS week
-        uint16_t gps_week;
+        uint32_t gnss_time_ms; // ms since start of GNSS week
+        uint16_t gnss_week;
         vec3_32_t accel_data_hr; // g * 1e6
         vec3_32_t gyro_data_hr; // deg/s * 1e5
         struct PACKED {
@@ -139,7 +144,7 @@ public:
         } baro_data;
         vec3_16_t mag_data; // nT/10
         struct PACKED {
-            int16_t yaw; // deg*100
+            uint16_t yaw; // deg*100
             int16_t pitch; // deg*100
             int16_t roll; // deg*100
         } orientation_angles; // 321 euler order?
@@ -150,10 +155,15 @@ public:
             int32_t alt; // m*100, AMSL
         } position;
         vec3_u8_t kf_vel_covariance; // mm/s
-        vec3_u16_t kf_pos_covariance;
+        vec3_u16_t kf_pos_covariance; // mm
         uint16_t unit_status; // set ILABS_UNIT_STATUS_*
         gnss_extended_info_t gnss_extended_info;
         uint8_t num_sats;
+        struct PACKED {
+            int32_t lat; // deg*1e7
+            int32_t lon; // deg*1e7
+            int32_t alt; // m*100
+        } gnss_position;
         struct PACKED {
             int32_t hor_speed; // m/s*100
             uint16_t track_over_ground; // deg*100
@@ -170,6 +180,20 @@ public:
         uint16_t supply_voltage; // V*100
         int16_t temperature; // degC*10
         uint16_t unit_status2;
+        struct PACKED {
+            uint16_t heading; // deg*100
+            int16_t pitch; // deg*100
+        } gnss_angles;
+        uint8_t gnss_angle_pos_type;
+        uint32_t gnss_heading_timestamp; // ms
+        struct PACKED {
+            uint16_t gdop;
+            uint16_t pdop;
+            uint16_t hdop;
+            uint16_t vdop;
+            uint16_t tdop;
+        } gnss_dop; // 10e3
+        uint8_t ins_sol_status;
     };
 
     AP_ExternalAHRS::gps_data_message_t gps_data;
@@ -180,6 +204,12 @@ public:
 
     uint16_t buffer_ofs;
     uint8_t buffer[256]; // max for normal message set is 167+8
+
+protected:
+
+    uint8_t num_gps_sensors(void) const override {
+        return 1;
+    }
 
 private:
     AP_HAL::UARTDriver *uart;
@@ -200,21 +230,47 @@ private:
     } message_lengths[];
 
     struct {
+        float baro_alt;
         Vector3f kf_vel_covariance;
         Vector3f kf_pos_covariance;
-        uint32_t gnss_ins_time_ms;
         uint16_t unit_status;
         uint16_t unit_status2;
-        gnss_extended_info_t gnss_extended_info;
-        gnss_info_short_t gnss_info_short;
-        uint8_t gnss_new_data;
-        uint8_t gnss_jam_status;
         float differential_pressure;
         float true_airspeed;
         Vector3f wind_speed;
         uint16_t air_data_status;
         float supply_voltage;
+        uint8_t ins_sol_status;
     } state2;
+
+    struct {
+        float lat;
+        float lng;
+        float alt;
+        float hor_speed;
+        float ver_speed;
+        float track_over_ground;
+        uint8_t new_data;
+        uint32_t pos_timestamp;
+        uint32_t heading_timestamp;
+        uint8_t spoof_status;
+        uint8_t jam_status;
+        uint8_t angle_pos_type;
+        gnss_info_short_t info_short;
+        float heading;
+        float pitch;
+        float gdop;
+        float pdop;
+        float tdop;
+    } gnss_data;
+
+    uint16_t last_unit_status;
+    uint16_t last_unit_status2;
+    uint16_t last_air_data_status;
+    uint8_t last_spoof_status;
+    uint8_t last_jam_status;
+
+    uint32_t last_critical_msg_ms;
 
     uint32_t last_att_ms;
     uint32_t last_vel_ms;
@@ -222,5 +278,5 @@ private:
     uint32_t last_gps_ms;
 };
 
-#endif  // AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+#endif  // AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
 

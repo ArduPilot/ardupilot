@@ -2,6 +2,8 @@
    driver for HobbyWing DataLink ESC telemetry
 --]]
 
+---@diagnostic disable: param-type-mismatch
+
 local PARAM_TABLE_KEY = 44
 local PARAM_TABLE_PREFIX = "ESC_HW_"
 

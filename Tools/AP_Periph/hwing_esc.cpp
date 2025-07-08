@@ -12,7 +12,7 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <dronecan_msgs.h>
 
-#ifdef HAL_PERIPH_ENABLE_HWESC
+#if AP_PERIPH_HOBBYWING_ESC_ENABLED
 
 #include <SITL/SITL.h>
 
@@ -164,7 +164,7 @@ void AP_Periph_FW::hwesc_telem_update()
     pkt.power_rating_pct = t.phase_current;
     pkt.error_count = t.error_count;
 
-    uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE] {};
+    uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE];
     uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer, !canfdout());
     canard_broadcast(UAVCAN_EQUIPMENT_ESC_STATUS_SIGNATURE,
                     UAVCAN_EQUIPMENT_ESC_STATUS_ID,
@@ -173,5 +173,5 @@ void AP_Periph_FW::hwesc_telem_update()
                     total_size);
 }
 
-#endif // HAL_PERIPH_ENABLE_HWESC
+#endif // AP_PERIPH_HOBBYWING_ESC_ENABLED
 

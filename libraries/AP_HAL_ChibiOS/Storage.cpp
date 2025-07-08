@@ -31,9 +31,9 @@ using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_STORAGE_FILE
-// using SKETCHNAME allows the one microSD to be used
+// using AP_BUILD_TARGET_NAME allows the one microSD to be used
 // for multiple vehicle types
-#define HAL_STORAGE_FILE "/APM/" SKETCHNAME ".stg"
+#define HAL_STORAGE_FILE "/APM/" AP_BUILD_TARGET_NAME ".stg"
 #endif
 
 #ifndef HAL_STORAGE_BACKUP_FOLDER
@@ -127,8 +127,8 @@ void Storage::_storage_open(void)
  */
 void Storage::_save_backup(void)
 {
-#ifdef USE_POSIX
-    // allow for fallback to microSD based storage
+#if HAL_USE_FATFS
+    // allow for fallback to microSD or littlefs flash based storage
     // create the backup directory if need be
     int ret;
     const char* _storage_bak_directory = HAL_STORAGE_BACKUP_FOLDER;
@@ -421,12 +421,7 @@ bool Storage::_flash_erase_sector(uint8_t sector)
     // erasing a page can take long enough that USB may not initialise properly if it happens
     // while the host is connecting. Only do a flash erase if we have been up for more than 4s
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
-        /*
-          a sector erase stops the whole MCU. We need to setup a long
-          expected delay, and not only when running in the main
-          thread.  We can't use EXPECT_DELAY_MS() as it checks we are
-          in the main thread
-         */
+        // a sector erase stops the whole MCU so set up a long expected delay
         EXPECT_DELAY_MS(1000);
 #if AP_FLASH_STORAGE_DOUBLE_PAGE
         if (hal.flash->erasepage(_flash_page+sector) && hal.flash->erasepage(_flash_page+sector+1)) {

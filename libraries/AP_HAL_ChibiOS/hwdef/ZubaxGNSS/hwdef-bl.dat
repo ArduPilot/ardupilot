@@ -8,8 +8,8 @@ define STM32F107_MCUCONF
 FLASH_RESERVE_START_KB 0
 FLASH_BOOTLOADER_LOAD_KB 34
 
-# board ID for firmware load
-APJ_BOARD_ID 1005
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_ZUBAXGNSS
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -71,7 +71,6 @@ define PORT_INT_REQUIRED_STACK 64
 
 # avoid timer and RCIN threads to save memory
 define HAL_NO_TIMER_THREAD
-define HAL_NO_RCIN_THREAD
 
 #defined to turn off undef warnings
 define __FPU_PRESENT 0
@@ -81,15 +80,12 @@ define DMA_RESERVE_SIZE 0
 
 MAIN_STACK 0x100
 PROCESS_STACK 0x600
-define HAL_DISABLE_LOOP_DELAY
 
 define HAL_UART_MIN_TX_SIZE 256
 define HAL_UART_MIN_RX_SIZE 128
 
 define HAL_UART_STACK_SIZE 256
 define STORAGE_THD_WA_SIZE 512
-
-define HAL_NO_MONITOR_THREAD
 
 define HAL_DEVICE_THREAD_STACK 768
 

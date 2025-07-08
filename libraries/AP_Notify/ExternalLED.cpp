@@ -12,6 +12,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_EXTERNALLED_ENABLED
+
 #include "ExternalLED.h"
 
 #include "AP_Notify.h"
@@ -242,3 +246,5 @@ void ExternalLED::motor_led2(bool on_off)
 bool ExternalLED::init(void) {return true;}
 void ExternalLED::update(void) {return;}
 #endif
+
+#endif  // AP_NOTIFY_EXTERNALLED_ENABLED

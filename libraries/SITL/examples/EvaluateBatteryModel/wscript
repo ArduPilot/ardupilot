@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+# flake8: noqa
 
 def build(bld):
 
@@ -9,9 +10,6 @@ def build(bld):
     source = bld.path.ant_glob('*.cpp')
     source.append('../../../../libraries/SITL/SIM_Battery.cpp')
     source.append('../../../../libraries/SITL/SIM_Frame.cpp')
-    source.append('../../../../libraries/SITL/picojson.cpp')
-
-    bld.env.DEFINES.append("USE_PICOJSON=1")
 
     bld.ap_program(
         use='ap',

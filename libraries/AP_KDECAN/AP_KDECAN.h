@@ -56,8 +56,8 @@ private:
     // handler for incoming frames
     void handle_frame(AP_HAL::CANFrame &frame) override;
     
-    bool send_packet_uint16(const uint8_t address, const uint8_t dest_id, const uint32_t timeout_ms, const uint16_t data);
-    bool send_packet(const uint8_t address, const uint8_t dest_id, const uint32_t timeout_ms, const uint8_t *data = nullptr, const uint8_t data_len = 0);
+    bool send_packet_uint16(const uint8_t address, const uint8_t dest_id, const uint32_t timeout_us, const uint16_t data);
+    bool send_packet(const uint8_t address, const uint8_t dest_id, const uint32_t timeout_us, const uint8_t *data = nullptr, const uint8_t data_len = 0);
 
     void loop();
 

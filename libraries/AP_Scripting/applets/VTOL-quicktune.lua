@@ -6,6 +6,9 @@
 
 --]]
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: missing-parameter
 
 --[[
  - TODO:
@@ -16,6 +19,7 @@
 
 local MAV_SEVERITY_INFO = 6
 local MAV_SEVERITY_NOTICE = 5
+local MAV_SEVERITY_CRITICAL = 2
 local MAV_SEVERITY_EMERGENCY = 0
 
 local PARAM_TABLE_KEY = 8
@@ -37,7 +41,7 @@ function bind_add_param(name, idx, default_value)
 end
 
 -- setup quicktune specific parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 14), 'could not add param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 15), 'could not add param table')
 
 --[[
   // @Param: QUIK_ENABLE
@@ -167,6 +171,15 @@ local QUIK_MAX_REDUCE  = bind_add_param('MAX_REDUCE',    13, 20)
 --]]
 local QUIK_OPTIONS     = bind_add_param('OPTIONS',       14, 0)
 
+--[[
+  // @Param: QUIK_ANGLE_MAX
+  // @DisplayName: maximum angle error for tune abort
+  // @Description: If while tuning the angle error goes over this limit then the tune will aborts to prevent a bad oscillation in the case of the tuning algorithm failing. If you get an error "Tuning: attitude error ABORTING" and you think it is a false positive then you can either raise this parameter or you can try increasing the QUIK_DOUBLE_TIME to do the tune more slowly. A value of zero disables this check.
+  // @Units: deg
+  // @User: Standard
+--]]
+local QUIK_ANGLE_MAX = bind_add_param('ANGLE_MAX', 15, 10)
+
 local OPTIONS_TWO_POSITION = (1<<0)
 
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
@@ -183,7 +196,7 @@ local UPDATE_RATE_HZ = 40
 local STAGE_DELAY = 4.0
 local PILOT_INPUT_DELAY = 4.0
 
-local YAW_FLTE_MAX = 2.0
+local YAW_FLTE_MAX = 8.0
 local FLTD_MUL = 0.5
 local FLTT_MUL = 0.5
 
@@ -219,6 +232,7 @@ local tune_done_time = nil
 local slew_parm = nil
 local slew_target = 0
 local slew_delta = 0
+local aborted = false
 
 local axes_done = {}
 local filters_done = {}
@@ -288,6 +302,7 @@ end
 -- setup filter frequencies
 function setup_filters(axis)
    if QUIK_AUTO_FILTER:get() <= 0 then
+      filters_done[axis] = true
       return
    end
    local fltd = axis .. "_FLTD"
@@ -297,7 +312,7 @@ function setup_filters(axis)
    adjust_gain(fltd, INS_GYRO_FILTER:get() * FLTD_MUL)
    if axis == "YAW" then
       local FLTE = params[flte]
-      if FLTE:get() <= 0.0 or FLTE:get() > YAW_FLTE_MAX then
+      if FLTE:get() < 0.0 or FLTE:get() > YAW_FLTE_MAX then
          adjust_gain(flte, YAW_FLTE_MAX)
       end
    end
@@ -397,7 +412,7 @@ function adjust_gain(pname, value)
       local FF = params[ffname]
       if FF:get() > 0 then
          -- if we have any FF on an axis then we don't couple I to P,
-         -- usually we want I = FF for a one sectond time constant for trim
+         -- usually we want I = FF for a one second time constant for trim
          return
       end
       param_changed[iname] = true
@@ -507,6 +522,14 @@ function update()
       sw_pos_tune = 2
       sw_pos_save = -1
    end
+   if aborted then
+       if sw_pos == 0 then
+           aborted = false
+       else
+           -- after an abort require low switch position to reset
+           return
+       end
+   end
    if sw_pos == sw_pos_tune and (not arming:is_armed() or not vehicle:get_likely_flying()) and get_time() > last_warning + 5 then
       gcs:send_text(MAV_SEVERITY_EMERGENCY, string.format("Tuning: Must be flying to tune"))
       last_warning = get_time()
@@ -519,6 +542,7 @@ function update()
          restore_all_params()
          gcs:send_text(MAV_SEVERITY_EMERGENCY, string.format("Tuning: reverted"))
          tune_done_time = nil
+         aborted = true
       end
       reset_axes_done()
       return
@@ -533,6 +557,19 @@ function update()
    end
    if sw_pos ~= sw_pos_tune then
       return
+   end
+
+   if QUIK_ANGLE_MAX:get() > 0 and need_restore then
+       local att_error = AC_AttitudeControl:get_att_error_angle_deg()
+       if att_error > QUIK_ANGLE_MAX:get() then
+         need_restore = false
+         restore_all_params()
+         gcs:send_text(MAV_SEVERITY_CRITICAL, string.format("Tuning: attitude error %.1fdeg - ABORTING", att_error))
+         tune_done_time = nil
+         aborted = true
+         reset_axes_done()
+         return
+      end
    end
 
    if get_time() - last_stage_change < STAGE_DELAY then
@@ -624,8 +661,7 @@ function protected_wrapper()
      gcs:send_text(MAV_SEVERITY_EMERGENCY, "Internal Error: " .. err)
      -- when we fault we run the update function again after 1s, slowing it
      -- down a bit so we don't flood the console with errors
-     --return protected_wrapper, 1000
-     return
+     return protected_wrapper, 1000
   end
   return protected_wrapper, 1000/UPDATE_RATE_HZ
 end

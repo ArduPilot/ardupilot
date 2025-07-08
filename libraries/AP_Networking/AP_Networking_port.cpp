@@ -13,6 +13,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/packetise.h>
+#include <errno.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -115,7 +116,7 @@ void AP_Networking::Port::thread_create(AP_HAL::MemberProc proc)
  */
 void AP_Networking::Port::udp_client_init(void)
 {
-    sock = new SocketAPM(true);
+    sock = NEW_NOTHROW SocketAPM(true);
     if (sock == nullptr) {
         return;
     }
@@ -133,7 +134,7 @@ void AP_Networking::Port::udp_client_init(void)
  */
 void AP_Networking::Port::udp_server_init(void)
 {
-    sock = new SocketAPM(true);
+    sock = NEW_NOTHROW SocketAPM(true);
     if (sock == nullptr) {
         return;
     }
@@ -151,7 +152,7 @@ void AP_Networking::Port::udp_server_init(void)
  */
 void AP_Networking::Port::tcp_server_init(void)
 {
-    listen_sock = new SocketAPM(false);
+    listen_sock = NEW_NOTHROW SocketAPM(false);
     if (listen_sock == nullptr) {
         return;
     }
@@ -165,7 +166,7 @@ void AP_Networking::Port::tcp_server_init(void)
  */
 void AP_Networking::Port::tcp_client_init(void)
 {
-    sock = new SocketAPM(false);
+    sock = NEW_NOTHROW SocketAPM(false);
     if (sock != nullptr) {
         sock->set_blocking(true);
         thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking::Port::tcp_client_loop, void));
@@ -255,7 +256,7 @@ void AP_Networking::Port::tcp_server_loop(void)
             sock = listen_sock->accept(100);
             if (sock != nullptr) {
                 sock->set_blocking(false);
-                char buf[16];
+                char buf[IP4_STR_LEN];
                 uint16_t last_port;
                 const char *last_addr = listen_sock->last_recv_address(buf, sizeof(buf), last_port);
                 if (last_addr != nullptr) {
@@ -286,7 +287,7 @@ void AP_Networking::Port::tcp_client_loop(void)
             hal.scheduler->delay_microseconds(100);
         }
         if (sock == nullptr) {
-            sock = new SocketAPM(false);
+            sock = NEW_NOTHROW SocketAPM(false);
             if (sock == nullptr) {
                 continue;
             }
@@ -340,8 +341,37 @@ bool AP_Networking::Port::send_receive(void)
         if (ret > 0) {
             WITH_SEMAPHORE(sem);
             readbuffer->write(buf, ret);
+
+            // Cant track dropped read packets because we only read in what there is space for
+            // The socket buffer becomes full and data is lost there
+            rx_stats_bytes += ret;
+
             active = true;
             have_received = true;
+        }
+    }
+
+    if (type == NetworkPortType::UDP_SERVER && have_received) {
+        // connect the socket to the last receive address if we have one
+        uint32_t last_addr = 0;
+        uint16_t last_port = 0;
+        if (sock->last_recv_address(last_addr, last_port)) {
+            // we might be disconnected and want to reconnect to a different address/port
+            // if we haven't received anything for a while
+            bool maybe_disconnected = (AP_HAL::millis() - last_udp_srv_recv_time_ms) > 3000 &&
+                                      ((last_addr != last_udp_connect_address) || (last_port != last_udp_connect_port));
+            if (maybe_disconnected || !connected) {
+                char last_addr_str[IP4_STR_LEN];
+                sock->inet_addr_to_str(last_addr, last_addr_str, sizeof(last_addr_str));
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP[%u]: connected to %s:%u", unsigned(state.idx), last_addr_str, unsigned(last_port));
+                connected = true;
+                last_udp_connect_address = last_addr;
+                last_udp_connect_port = last_port;
+            }
+            // if we received something from the same address, reset the timer
+            if (((last_addr == last_udp_connect_address) && (last_port == last_udp_connect_port))) {
+                last_udp_srv_recv_time_ms = AP_HAL::millis();
+            }
         }
     }
 
@@ -353,7 +383,7 @@ bool AP_Networking::Port::send_receive(void)
             WITH_SEMAPHORE(sem);
             available = writebuffer->available();
             available = MIN(300U, available);
-#if HAL_GCS_ENABLED
+#if AP_MAVLINK_PACKETISE_ENABLED
             if (packetise) {
                 available = mavlink_packetise(*writebuffer, available);
             }
@@ -368,23 +398,36 @@ bool AP_Networking::Port::send_receive(void)
             WITH_SEMAPHORE(sem);
             n = writebuffer->peekbytes(buf, available);
         }
-        if (n > 0) {
-            const auto ret = sock->send(buf, n);
-            if (ret > 0) {
-                WITH_SEMAPHORE(sem);
-                writebuffer->advance(ret);
-                active = true;
-            }
+
+        // nothing to send return
+        if (n <= 0) {
+            return active;
         }
-    } else {
-        if (type == NetworkPortType::UDP_SERVER && have_received) {
-            // connect the socket to the last receive address if we have one
-            char buf[16];
-            uint16_t last_port;
-            const char *last_addr = sock->last_recv_address(buf, sizeof(buf), last_port);
-            if (last_addr != nullptr && port != 0) {
-                connected = sock->connect(last_addr, last_port);
+
+        ssize_t ret = -1;
+        if (type == NetworkPortType::UDP_SERVER) {
+            // UDP Server uses sendto, allowing us to change the destination address port on the fly
+            if(last_udp_connect_address != 0 && last_udp_connect_port != 0) {
+                ret = sock->sendto(buf, n, last_udp_connect_address, last_udp_connect_port);
             }
+        } else {
+            // TCP Server and Client and UDP Client use send
+            ret = sock->send(buf, n);
+        }
+
+        if (ret > 0) {
+            WITH_SEMAPHORE(sem);
+            writebuffer->advance(ret);
+            tx_stats_bytes += ret;
+            active = true;
+        } else if (errno == ENOTCONN &&
+            (type == NetworkPortType::TCP_CLIENT || type == NetworkPortType::TCP_SERVER)) {
+            // close socket and mark as disconnected, so we can reconnect with another client or when server comes back
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP[%u]: disconnected", unsigned(state.idx));
+            sock->close();
+            delete sock;
+            sock = nullptr;
+            connected = false;
         }
     }
 
@@ -444,12 +487,12 @@ bool AP_Networking::Port::init_buffers(const uint32_t size_rx, const uint32_t si
     }
     WITH_SEMAPHORE(sem);
     if (readbuffer == nullptr) {
-        readbuffer = new ByteBuffer(size_rx);
+        readbuffer = NEW_NOTHROW ByteBuffer(size_rx);
     } else {
         readbuffer->set_size_best(size_rx);
     }
     if (writebuffer == nullptr) {
-        writebuffer = new ByteBuffer(size_tx);
+        writebuffer = NEW_NOTHROW ByteBuffer(size_tx);
     } else {
         writebuffer->set_size_best(size_tx);
     }

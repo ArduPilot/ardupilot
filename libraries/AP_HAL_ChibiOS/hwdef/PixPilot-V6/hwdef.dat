@@ -6,18 +6,14 @@ MCU STM32H7xx STM32H743xx
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board ID for firmware load
-APJ_BOARD_ID 1083
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_PixPilot-V6
 
 FLASH_SIZE_KB 2048
 
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
 
 FLASH_RESERVE_START_KB 128
-
-define HAL_STORAGE_SIZE 32768
 
 # order of I2C buses
 I2C_ORDER I2C3 I2C2 I2C1
@@ -161,14 +157,12 @@ PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
 PB4  LED_RED     OUTPUT OPENDRAIN  GPIO(11) HIGH
 PB3  LED_GREEN   OUTPUT OPENDRAIN  GPIO(12) HIGH
 PB5  LED_BLUE    OUTPUT OPENDRAIN  GPIO(13) HIGH
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
 
-define HAL_GPIO_A_LED_PIN 11
-define HAL_GPIO_B_LED_PIN 13
-define HAL_GPIO_C_LED_PIN 12
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 11
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 13
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 12
 
-define HAL_HAVE_PIXRACER_LED
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
 # Power flag pins: these tell the MCU the status of the various power
 # supplies that are available. The pin names need to exactly match the
@@ -200,8 +194,8 @@ IMU Invensensev3 SPI:ICM40605_ext     ROTATION_NONE
 define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
 # two baros
-BARO MS56XX SPI:ms5611
-BARO MS56XX SPI:ms5611_ext
+BARO MS5611 SPI:ms5611
+BARO MS5611 SPI:ms5611_ext
 
 # probe external I2C compasses plus some internal IST8310
 COMPASS IST8310 I2C:0:0x0E false ROTATION_ROLL_180

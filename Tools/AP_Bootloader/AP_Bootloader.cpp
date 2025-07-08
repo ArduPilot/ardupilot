@@ -74,7 +74,7 @@ int main(void)
 
     flash_init();
 
-#ifdef STM32H7
+#if AP_FLASH_ECC_CHECK_ENABLED
     check_ecc_errors();
 #endif
     
@@ -134,6 +134,18 @@ int main(void)
         try_boot = false;
         led_set(LED_BAD_FW);
     }
+#if AP_BOOTLOADER_NETWORK_ENABLED
+    if (ok == check_fw_result_t::CHECK_FW_OK) {
+        const auto *app_descriptor = get_app_descriptor();
+        if (app_descriptor != nullptr) {
+            network.status_printf("Firmware OK: %ld.%ld.%lx\n", app_descriptor->version_major,
+                                                                app_descriptor->version_minor,
+                                                                app_descriptor->git_hash);
+        }
+    } else {
+        network.status_printf("Firmware Error: %d\n", (int)ok);
+    }
+#endif
 #endif  // AP_CHECK_FIRMWARE_ENABLED
 #ifndef BOOTLOADER_DEV_LIST
     else if (timeout == HAL_BOOTLOADER_TIMEOUT) {

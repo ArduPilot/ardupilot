@@ -4,8 +4,6 @@ Fly Helicopter in SITL
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import print_function
-
 from arducopter import AutoTestCopter
 
 import vehicle_test_suite
@@ -15,6 +13,7 @@ from pymavlink import mavutil
 from pysim import vehicleinfo
 
 import copy
+import operator
 
 
 class AutoTestHelicopter(AutoTestCopter):
@@ -57,7 +56,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Skipping loiter-requires-position for heli; rotor runup issues")
 
     def get_collective_out(self):
-        servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+        servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
         chan_pwm = (servo.servo1_raw + servo.servo2_raw + servo.servo3_raw)/3.0
         return chan_pwm
 
@@ -69,7 +68,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.change_mode('LOITER')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+        servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
         coll = servo.servo1_raw
         coll = coll + 50
         self.set_parameter("H_RSC_RUNUP_TIME", TARGET_RUNUP_TIME)
@@ -79,7 +78,10 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Collective threshold PWM %u" % coll)
         tstart = self.get_sim_time()
         self.progress("Wait that collective PWM pass threshold value")
-        servo = self.mav.recv_match(condition='SERVO_OUTPUT_RAW.servo1_raw>%u' % coll, blocking=True)
+        servo = self.assert_receive_message(
+            "SERVO_OUTPUT_RAW",
+            condition=f'SERVO_OUTPUT_RAW.servo1_raw>{coll}'
+        )
         runup_time = self.get_sim_time() - tstart
         self.progress("Collective is now at PWM %u" % servo.servo1_raw)
         self.mav.wait_heartbeat()
@@ -91,7 +93,6 @@ class AutoTestHelicopter(AutoTestCopter):
             raise NotAchievedException("Takeoff initiated before runup time complete %u" % runup_time)
         self.progress("Runup time %u" % runup_time)
         self.zero_throttle()
-        self.set_rc(8, 1000)
         self.land_and_disarm()
         self.mav.wait_heartbeat()
 
@@ -199,25 +200,25 @@ class AutoTestHelicopter(AutoTestCopter):
             if not isinstance(defaults, list):
                 defaults = [defaults]
             self.customise_SITL_commandline(
-                ["--defaults", ','.join(defaults), ],
+                [],
+                defaults_filepath=defaults,
                 model=model,
                 wipe=True,
             )
             self.takeoff(10)
             self.do_RTL()
-            self.set_rc(8, 1000)
 
     def governortest(self):
         '''Test Heli Internal Throttle Curve and Governor'''
         self.customise_SITL_commandline(
-            ["--defaults", ','.join(self.model_defaults_filepath('heli-gas')), ],
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-gas'),
             model="heli-gas",
             wipe=True,
         )
         self.set_parameter("H_RSC_MODE", 4)
         self.takeoff(10)
         self.do_RTL()
-        self.set_rc(8, 1000)
 
     def hover(self):
         self.progress("Setting hover collective")
@@ -225,103 +226,67 @@ class AutoTestHelicopter(AutoTestCopter):
 
     def PosHoldTakeOff(self):
         """ensure vehicle stays put until it is ready to fly"""
-        self.context_push()
+        self.set_parameter("PILOT_TKOFF_ALT", 700)
+        self.change_mode('POSHOLD')
+        self.zero_throttle()
+        self.set_rc(8, 1000)
+        self.wait_ready_to_arm()
+        # Arm
+        self.arm_vehicle()
+        self.progress("Raising rotor speed")
+        self.set_rc(8, 2000)
+        self.progress("wait for rotor runup to complete")
+        self.wait_servo_channel_value(8, 1659, timeout=10)
+        self.delay_sim_time(20)
+        # check we are still on the ground...
+        max_relalt = 1  # metres
+        relative_alt = self.get_altitude(relative=True)
+        if abs(relative_alt) > max_relalt:
+            raise NotAchievedException("Took off prematurely (abs(%f)>%f)" %
+                                       (relative_alt, max_relalt))
 
-        ex = None
-        try:
-            self.set_parameter("PILOT_TKOFF_ALT", 700)
-            self.change_mode('POSHOLD')
-            self.zero_throttle()
-            self.set_rc(8, 1000)
-            self.wait_ready_to_arm()
-            # Arm
-            self.arm_vehicle()
-            self.progress("Raising rotor speed")
-            self.set_rc(8, 2000)
-            self.progress("wait for rotor runup to complete")
-            self.wait_servo_channel_value(8, 1659, timeout=10)
-            self.delay_sim_time(20)
-            # check we are still on the ground...
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            max_relalt_mm = 1000
-            if abs(m.relative_alt) > max_relalt_mm:
-                raise NotAchievedException("Took off prematurely (abs(%f)>%f)" %
-                                           (m.relative_alt, max_relalt_mm))
+        self.progress("Pushing collective past half-way")
+        self.set_rc(3, 1600)
+        self.delay_sim_time(0.5)
+        self.hover()
 
-            self.progress("Pushing collective past half-way")
-            self.set_rc(3, 1600)
-            self.delay_sim_time(0.5)
-            self.hover()
+        # make sure we haven't already reached alt:
+        relative_alt = self.get_altitude(relative=True)
+        max_initial_alt = 1.5  # metres
+        if abs(relative_alt) > max_initial_alt:
+            raise NotAchievedException("Took off too fast (%f > %f" %
+                                       (abs(relative_alt), max_initial_alt))
 
-            # make sure we haven't already reached alt:
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            max_initial_alt = 1500
-            if abs(m.relative_alt) > max_initial_alt:
-                raise NotAchievedException("Took off too fast (%f > %f" %
-                                           (abs(m.relative_alt), max_initial_alt))
-
-            self.progress("Monitoring takeoff-to-alt")
-            self.wait_altitude(6.9, 8, relative=True)
-
-            self.progress("Making sure we stop at our takeoff altitude")
-            tstart = self.get_sim_time()
-            while self.get_sim_time() - tstart < 5:
-                m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-                delta = abs(7000 - m.relative_alt)
-                self.progress("alt=%f delta=%f" % (m.relative_alt/1000,
-                                                   delta/1000))
-                if delta > 1000:
-                    raise NotAchievedException("Failed to maintain takeoff alt")
-            self.progress("takeoff OK")
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        self.progress("Monitoring takeoff-to-alt")
+        self.wait_altitude(6, 8, relative=True, minimum_duration=5)
+        self.progress("takeoff OK")
 
         self.land_and_disarm()
-        self.set_rc(8, 1000)
-
-        self.context_pop()
-
-        if ex is not None:
-            raise ex
 
     def StabilizeTakeOff(self):
         """Fly stabilize takeoff"""
-        self.context_push()
+        self.change_mode('STABILIZE')
+        self.set_rc(3, 1000)
+        self.set_rc(8, 1000)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(8, 2000)
+        self.progress("wait for rotor runup to complete")
+        self.wait_servo_channel_value(8, 1659, timeout=10)
+        self.delay_sim_time(20)
+        # check we are still on the ground...
+        relative_alt = self.get_altitude(relative=True)
+        if abs(relative_alt) > 0.1:
+            raise NotAchievedException("Took off prematurely")
+        self.progress("Pushing throttle past half-way")
+        self.set_rc(3, 1650)
 
-        ex = None
-        try:
-            self.change_mode('STABILIZE')
-            self.set_rc(3, 1000)
-            self.set_rc(8, 1000)
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.set_rc(8, 2000)
-            self.progress("wait for rotor runup to complete")
-            self.wait_servo_channel_value(8, 1659, timeout=10)
-            self.delay_sim_time(20)
-            # check we are still on the ground...
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            if abs(m.relative_alt) > 100:
-                raise NotAchievedException("Took off prematurely")
-            self.progress("Pushing throttle past half-way")
-            self.set_rc(3, 1650)
+        self.progress("Monitoring takeoff")
+        self.wait_altitude(6.9, 8, relative=True)
 
-            self.progress("Monitoring takeoff")
-            self.wait_altitude(6.9, 8, relative=True)
-
-            self.progress("takeoff OK")
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        self.progress("takeoff OK")
 
         self.land_and_disarm()
-        self.set_rc(8, 1000)
-
-        self.context_pop()
-
-        if ex is not None:
-            raise ex
 
     def SplineWaypoint(self, timeout=600):
         """ensure basic spline functionality works"""
@@ -334,21 +299,20 @@ class AutoTestHelicopter(AutoTestCopter):
         self.delay_sim_time(20)
         self.change_mode("AUTO")
         self.set_rc(3, 1500)
-        tstart = self.get_sim_time()
-        while True:
-            if self.get_sim_time() - tstart > timeout:
-                raise AutoTestTimeoutException("Vehicle did not disarm after mission")
-            if not self.armed():
-                break
-            self.delay_sim_time(1)
+        self.wait_disarmed(timeout=600)
         self.progress("Lowering rotor speed")
         self.set_rc(8, 1000)
 
-    def AutoRotation(self, timeout=600):
+    def Autorotation(self, timeout=600):
         """Check engine-out behaviour"""
-        self.set_parameter("AROT_ENABLE", 1)
+        self.context_push()
         start_alt = 100 # metres
-        self.set_parameter("PILOT_TKOFF_ALT", start_alt * 100)
+        self.set_parameters({
+            "AROT_ENABLE": 1,
+            "H_RSC_AROT_ENBL": 1,
+            "H_COL_LAND_MIN" : -2.0
+        })
+        bail_out_time = self.get_parameter('H_RSC_AROT_RUNUP')
         self.change_mode('POSHOLD')
         self.set_rc(3, 1000)
         self.set_rc(8, 1000)
@@ -364,68 +328,27 @@ class AutoTestHelicopter(AutoTestCopter):
                            relative=True,
                            timeout=timeout)
         self.context_collect('STATUSTEXT')
-        self.progress("Triggering autorotate by raising interlock")
-        self.set_rc(8, 1000)
-        self.wait_statustext("SS Glide Phase", check_context=True)
-        self.wait_statustext(r"SIM Hit ground at ([0-9.]+) m/s",
-                             check_context=True,
-                             regex=True)
-        speed = float(self.re_match.group(1))
-        if speed > 30:
-            raise NotAchievedException("Hit too hard")
-        self.wait_disarmed()
 
-    def ManAutoRotation(self, timeout=600):
-        """Check autorotation power recovery behaviour"""
-        RAMP_TIME = 4
-        AROT_RAMP_TIME = 2
-        self.set_parameter("H_RSC_AROT_MN_EN", 1)
-        self.set_parameter("H_RSC_AROT_ENG_T", AROT_RAMP_TIME)
-        self.set_parameter("H_RSC_AROT_IDLE", 20)
-        self.set_parameter("H_RSC_RAMP_TIME", RAMP_TIME)
-        self.set_parameter("H_RSC_IDLE", 0)
-        start_alt = 100 # metres
-        self.set_parameter("PILOT_TKOFF_ALT", start_alt * 100)
-        self.change_mode('POSHOLD')
-        self.set_rc(3, 1000)
-        self.set_rc(8, 1000)
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-        self.set_rc(8, 2000)
-        self.progress("wait for rotor runup to complete")
-        self.wait_servo_channel_value(8, 1659, timeout=10)
-        self.delay_sim_time(20)
-        self.set_rc(3, 2000)
-        self.wait_altitude(start_alt - 1,
-                           (start_alt + 5),
-                           relative=True,
-                           timeout=timeout)
-        self.context_collect('STATUSTEXT')
-        self.change_mode('STABILIZE')
-        self.progress("Triggering manual autorotation by disabling interlock")
-        self.set_rc(3, 1000)
-        self.set_rc(8, 1000)
-        self.wait_servo_channel_value(8, 1199, timeout=3)
-        self.progress("channel 8 set to autorotation window")
-
-        # wait to establish autorotation
-        self.delay_sim_time(2)
-
-        self.set_rc(8, 2000)
-        self.wait_servo_channel_value(8, 1659, timeout=AROT_RAMP_TIME * 1.1)
-
-        # give time for engine to power up
-        self.set_rc(3, 1400)
-        self.delay_sim_time(2)
-
-        self.progress("in-flight power recovery")
+        # Reset collective to enter hover
         self.set_rc(3, 1500)
-        self.delay_sim_time(5)
 
-        # initiate autorotation again
-        self.set_rc(3, 1000)
+        # Change to the autorotation flight mode
+        self.progress("Triggering autorotate mode")
+        self.change_mode('AUTOROTATE')
+
+        # Disengage the interlock to remove power
         self.set_rc(8, 1000)
 
+        # Ensure we have progressed through the mode's state machine
+        self.wait_statustext("Glide Phase", check_context=True)
+
+        self.progress("Testing bailout from autorotation")
+        self.set_rc(8, 2000)
+        # See if the output ramps to a value close to expected with the prescribed time
+        self.wait_servo_channel_value(8, 1659, timeout=bail_out_time+1, comparator=operator.ge)
+
+        # Successfully bailed out, disengage the interlock and allow autorotation to progress
+        self.set_rc(8, 1000)
         self.wait_statustext(r"SIM Hit ground at ([0-9.]+) m/s",
                              check_context=True,
                              regex=True)
@@ -433,10 +356,177 @@ class AutoTestHelicopter(AutoTestCopter):
         if speed > 30:
             raise NotAchievedException("Hit too hard")
 
+        # Set throttle low to trip auto disarm
         self.set_rc(3, 1000)
-        # verify servo 8 resets to RSC_IDLE after land complete
-        self.wait_servo_channel_value(8, 1000, timeout=3)
+
         self.wait_disarmed()
+        self.context_pop()
+
+    def AutorotationPreArm(self):
+        """Check autorotation pre-arms are working"""
+        self.context_push()
+        self.start_subtest("Check pass when autorotation mode not enabled")
+        self.set_parameters({
+            "AROT_ENABLE": 0,
+            "RPM1_TYPE": 0
+        })
+        self.reboot_sitl()
+        try:
+            self.wait_statustext("PreArm: AROT: RPM1 not enabled", timeout=50)
+            raise NotAchievedException("Received AROT prearm when not AROT not enabled")
+        except AutoTestTimeoutException:
+            # We want to hit the timeout on wait_statustext()
+            pass
+
+        self.start_subtest("Check pre-arm fails when autorotation mode enabled")
+        self.set_parameter("AROT_ENABLE", 1)
+        self.wait_statustext("PreArm: AROT: RPM1 not enabled", timeout=50)
+        self.set_parameter("RPM1_TYPE", 10) # reboot required to take effect
+        self.reboot_sitl()
+
+        self.start_subtest("Check pre-arm fails with bad HS_Sensor config")
+        self.context_push()
+        self.set_parameter("AROT_HS_SENSOR", -1)
+        self.wait_statustext("PreArm: AROT: RPM instance <0", timeout=50)
+        self.context_pop()
+
+        self.start_subtest("Check pre-arm fails with bad RSC config")
+        self.wait_statustext("PreArm: AROT: H_RSC_AROT_* not configured", timeout=50)
+
+        self.start_subtest("Check pre-arms clear with all issues corrected")
+        self.set_parameter("H_RSC_AROT_ENBL", 1)
+        self.wait_ready_to_arm()
+
+        self.context_pop()
+
+    def ManAutorotation(self, timeout=600):
+        """Check autorotation power recovery behaviour"""
+        RSC_CHAN = 8
+
+        def check_rsc_output(self, throttle, timeout):
+            # Check we get a sensible throttle output
+            expected_pwm = int(throttle * 0.01 * 1000 + 1000)
+
+            # Help out the detection by accepting some margin
+            margin = 2
+
+            # See if the output ramps to a value close to expected with the prescribed time
+            self.wait_servo_channel_in_range(RSC_CHAN, expected_pwm-margin, expected_pwm+margin, timeout=timeout)
+
+        def TestAutorotationConfig(self, rsc_idle, arot_ramp_time, arot_idle, cool_down):
+            RAMP_TIME = 10
+            RUNUP_TIME = 15
+            AROT_RUNUP_TIME = arot_ramp_time + 4
+            RSC_SETPOINT = 66
+            self.set_parameters({
+                "H_RSC_AROT_ENBL": 1,
+                "H_RSC_AROT_RAMP": arot_ramp_time,
+                "H_RSC_AROT_RUNUP": AROT_RUNUP_TIME,
+                "H_RSC_AROT_IDLE": arot_idle,
+                "H_RSC_RAMP_TIME": RAMP_TIME,
+                "H_RSC_RUNUP_TIME": RUNUP_TIME,
+                "H_RSC_IDLE": rsc_idle,
+                "H_RSC_SETPOINT": RSC_SETPOINT,
+                "H_RSC_CLDWN_TIME": cool_down
+            })
+
+            # Check the RSC config so we know what to expect on the throttle output
+            if self.get_parameter("H_RSC_MODE") != 2:
+                self.set_parameter("H_RSC_MODE", 2)
+                self.reboot_sitl()
+
+            self.change_mode('POSHOLD')
+            self.set_rc(3, 1000)
+            self.set_rc(8, 1000)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.set_rc(8, 2000)
+            self.progress("wait for rotor runup to complete")
+            check_rsc_output(self, RSC_SETPOINT, RUNUP_TIME+1)
+
+            self.delay_sim_time(20)
+            self.set_rc(3, 2000)
+            self.wait_altitude(100,
+                               105,
+                               relative=True,
+                               timeout=timeout)
+            self.context_collect('STATUSTEXT')
+            self.change_mode('STABILIZE')
+
+            self.progress("Triggering manual autorotation by disabling interlock")
+            self.set_rc(3, 1000)
+            self.set_rc(8, 1000)
+
+            self.wait_statustext(r"RSC: In Autorotation", check_context=True)
+
+            # Check we are using the correct throttle output. This should happen instantly on ramp down.
+            idle_thr = rsc_idle
+            if (arot_idle > 0):
+                idle_thr = arot_idle
+
+            check_rsc_output(self, idle_thr, 1)
+
+            self.progress("RSC is outputting correct idle throttle")
+
+            # Wait to establish autorotation.
+            self.delay_sim_time(2)
+
+            # Re-engage interlock to start bailout sequence
+            self.set_rc(8, 2000)
+
+            # Ensure we see the bailout state
+            self.wait_statustext("RSC: Bailing Out", check_context=True)
+
+            # Check we are back up to flight throttle. Autorotation ramp up time should be used
+            check_rsc_output(self, RSC_SETPOINT, arot_ramp_time+1)
+
+            # Give time for engine to power up
+            self.set_rc(3, 1400)
+            self.delay_sim_time(2)
+
+            self.progress("in-flight power recovery")
+            self.set_rc(3, 1500)
+            self.delay_sim_time(5)
+
+            # Initiate autorotation again
+            self.set_rc(3, 1000)
+            self.set_rc(8, 1000)
+
+            self.wait_statustext(r"SIM Hit ground at ([0-9.]+) m/s",
+                                 check_context=True,
+                                 regex=True)
+            speed = float(self.re_match.group(1))
+            if speed > 30:
+                raise NotAchievedException("Hit too hard")
+
+            # Check that cool down is still used correctly if set
+            # First wait until we are out of the autorotation state
+            self.wait_statustext("RSC: Autorotation Stopped")
+            if (cool_down > 0):
+                check_rsc_output(self, rsc_idle*1.5, cool_down)
+
+            # Verify RSC output resets to RSC_IDLE after land complete
+            check_rsc_output(self, rsc_idle, 20)
+            self.wait_disarmed()
+
+        # We test the bailout behavior of two different configs
+        # First we test config with a regular throttle curve
+        self.start_subtest("testing autorotation with throttle curve config")
+        self.context_push()
+        TestAutorotationConfig(self, rsc_idle=5.0, arot_ramp_time=2.0, arot_idle=0, cool_down=0)
+
+        # Now we test a config that would be used with an ESC with internal governor and an autorotation window
+        self.start_subtest("testing autorotation with ESC autorotation window config")
+        TestAutorotationConfig(self, rsc_idle=0.0, arot_ramp_time=0.0, arot_idle=20.0, cool_down=0)
+
+        # Check rsc output behavior when using the cool down feature
+        self.start_subtest("testing autorotation with cool down enabled and zero autorotation idle")
+        TestAutorotationConfig(self, rsc_idle=5.0, arot_ramp_time=2.0, arot_idle=0, cool_down=5.0)
+
+        self.start_subtest("testing that H_RSC_AROT_IDLE is used over RSC_IDLE when cool down is enabled")
+        TestAutorotationConfig(self, rsc_idle=5.0, arot_ramp_time=2.0, arot_idle=10, cool_down=5.0)
+
+        self.context_pop()
 
     def mission_item_home(self, target_system, target_component):
         '''returns a mission_item_int which can be used as home in a mission'''
@@ -656,6 +746,48 @@ class AutoTestHelicopter(AutoTestCopter):
         self.change_mode('LOITER')
         self.fly_mission_points(self.scurve_nasty_up_mission())
 
+    def MountFailsafeAction(self):
+        """Fly Mount Failsafe action"""
+        self.context_push()
+
+        self.progress("Setting up servo mount")
+        roll_servo = 12
+        pitch_servo = 11
+        yaw_servo = 10
+        open_servo = 9
+        roll_limit = 50
+        self.set_parameters({
+            "MNT1_TYPE": 1,
+            "SERVO%u_MIN" % roll_servo: 1000,
+            "SERVO%u_MAX" % roll_servo: 2000,
+            "SERVO%u_FUNCTION" % yaw_servo: 6,  # yaw
+            "SERVO%u_FUNCTION" % pitch_servo: 7,  # roll
+            "SERVO%u_FUNCTION" % roll_servo: 8,  # pitch
+            "SERVO%u_FUNCTION" % open_servo: 9,  # mount open
+            "MNT1_OPTIONS": 2,  # retract
+            "MNT1_DEFLT_MODE": 3,  # RC targeting
+            "MNT1_ROLL_MIN": -roll_limit,
+            "MNT1_ROLL_MAX": roll_limit,
+        })
+
+        self.reboot_sitl()
+
+        retract_roll = 25.0
+        self.set_parameter("MNT1_NEUTRAL_X", retract_roll)
+        self.progress("Killing RC")
+        self.set_parameter("SIM_RC_FAIL", 2)
+        self.delay_sim_time(10)
+        want_servo_channel_value = int(1500 + 500*retract_roll/roll_limit)
+        self.wait_servo_channel_value(roll_servo, want_servo_channel_value, epsilon=1)
+
+        self.progress("Resurrecting RC")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_servo_channel_value(roll_servo, 1500)
+
+        self.context_pop()
+
+        self.reboot_sitl()
+
     def set_rc_default(self):
         super(AutoTestHelicopter, self).set_rc_default()
         self.progress("Lowering rotor speed")
@@ -679,7 +811,14 @@ class AutoTestHelicopter(AutoTestCopter):
     def AirspeedDrivers(self, timeout=600):
         '''Test AirSpeed drivers'''
 
+        # Copter's airspeed sensors are off by default
+        self.set_parameters({
+            "ARSPD_ENABLE": 1,
+            "ARSPD_TYPE": 2,     # Analog airspeed driver
+            "ARSPD_PIN": 1,      # Analog airspeed driver pin for SITL
+        })
         # set the start location to CMAC to use same test script as other vehicles
+
         self.sitl_start_loc = mavutil.location(-35.362881, 149.165222, 582.000000, 90.0)   # CMAC
         self.customise_SITL_commandline(["--home", "%s,%s,%s,%s"
                                          % (-35.362881, 149.165222, 582.000000, 90.0)])
@@ -702,12 +841,6 @@ class AutoTestHelicopter(AutoTestCopter):
             if delta > 3:
                 raise NotAchievedException("Airspeed mismatch (as1=%f as2=%f)" % (airspeed[0], airspeed[1]))
 
-        # Copter's airspeed sensors are off by default
-        self.set_parameter("ARSPD_ENABLE", 1)
-        self.set_parameter("ARSPD_TYPE", 2)     # Analog airspeed driver
-        self.set_parameter("ARSPD_PIN", 1)      # Analog airspeed driver pin for SITL
-        self.reboot_sitl()
-
         airspeed_sensors = [
             ("MS5525", 3, 1),
             ("DLVR", 7, 2),
@@ -728,11 +861,59 @@ class AutoTestHelicopter(AutoTestCopter):
                 raise NotAchievedException("Never saw an airspeed1")
             if airspeed[1] is None:
                 raise NotAchievedException("Never saw an airspeed2")
-            self.context_pop()
             if not self.current_onboard_log_contains_message("ARSP"):
                 raise NotAchievedException("Expected ARSP log message")
+            self.disarm_vehicle()
+            self.context_pop()
 
-        self.reboot_sitl()
+    def TurbineCoolDown(self, timeout=200):
+        """Check Turbine Cool Down Feature"""
+        self.context_push()
+        # set option for Turbine
+        RAMP_TIME = 4
+        SETPOINT = 66
+        IDLE = 15
+        COOLDOWN_TIME = 5
+        self.set_parameters({"RC6_OPTION": 161,
+                             "H_RSC_RAMP_TIME": RAMP_TIME,
+                             "H_RSC_SETPOINT": SETPOINT,
+                             "H_RSC_IDLE": IDLE,
+                             "H_RSC_CLDWN_TIME": COOLDOWN_TIME})
+        self.set_rc(3, 1000)
+        self.set_rc(8, 1000)
+
+        self.progress("Starting turbine")
+        self.wait_ready_to_arm()
+        self.context_collect("STATUSTEXT")
+        self.arm_vehicle()
+
+        self.set_rc(6, 2000)
+        self.wait_statustext('Turbine startup', check_context=True)
+
+        # Engage interlock to run up to head speed
+        self.set_rc(8, 2000)
+
+        # Check throttle gets to setpoint
+        expected_thr = SETPOINT * 0.01 * 1000 + 1000 - 1 # servo end points are 1000 to 2000
+        self.wait_servo_channel_value(8, expected_thr, timeout=RAMP_TIME+1, comparator=operator.ge)
+
+        self.progress("Checking cool down behaviour, idle x 1.5")
+        self.set_rc(8, 1000)
+        tstart = self.get_sim_time()
+        expected_thr = IDLE * 1.5 * 0.01 * 1000 + 1000 + 1
+        self.wait_servo_channel_value(8, expected_thr, timeout=2, comparator=operator.le)
+
+        # Check that the throttle drops to idle after cool down time
+        expected_thr = IDLE * 0.01 * 1000 + 1000 + 1
+        self.wait_servo_channel_value(8, expected_thr, timeout=COOLDOWN_TIME+1, comparator=operator.le)
+
+        measured_time = self.get_sim_time() - tstart
+        if (abs(measured_time - COOLDOWN_TIME) > 1.0):
+            raise NotAchievedException('Throttle did not reduce to idle within H_RSC_CLDWN_TIME')
+
+        self.set_rc(6, 1000)
+        self.wait_disarmed(timeout=20)
+        self.context_pop()
 
     def TurbineStart(self, timeout=200):
         """Check Turbine Start Feature"""
@@ -750,7 +931,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(6, 2000)
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 2:
-            servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1050:
                 raise NotAchievedException("Turbine Start activated while disarmed")
         self.set_rc(6, 1000)
@@ -763,7 +944,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(6, 2000)
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 5:
-            servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1660:
                 raise NotAchievedException("Turbine Start activated with interlock enabled")
 
@@ -781,7 +962,7 @@ class AutoTestHelicopter(AutoTestCopter):
         while True:
             if self.get_sim_time() - tstart > 5:
                 raise AutoTestTimeoutException("Turbine Start did not activate")
-            servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1800:
                 break
 
@@ -794,7 +975,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(6, 2000)
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 5:
-            servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1660:
                 raise NotAchievedException("Turbine Start activated with interlock enabled")
         self.set_rc(6, 1000)
@@ -804,43 +985,203 @@ class AutoTestHelicopter(AutoTestCopter):
     def PIDNotches(self):
         """Use dynamic harmonic notch to control motor noise."""
         self.progress("Flying with PID notches")
-        self.context_push()
+        self.set_parameters({
+            "FILT1_TYPE": 1,
+            "FILT2_TYPE": 1,
+            "AHRS_EKF_TYPE": 10,
+            "INS_LOG_BAT_MASK": 3,
+            "INS_LOG_BAT_OPT": 0,
+            "INS_GYRO_FILTER": 100, # set the gyro filter high so we can observe behaviour
+            "LOG_BITMASK": 65535,
+            "LOG_DISARMED": 0,
+            "SIM_VIB_FREQ_X": 120,  # roll
+            "SIM_VIB_FREQ_Y": 120,  # pitch
+            "SIM_VIB_FREQ_Z": 180,  # yaw
+            "FILT1_NOTCH_FREQ": 120,
+            "FILT2_NOTCH_FREQ": 180,
+            "ATC_RAT_RLL_NEF": 1,
+            "ATC_RAT_PIT_NEF": 1,
+            "ATC_RAT_YAW_NEF": 2,
+            "SIM_GYR1_RND": 5,
+        })
+        self.reboot_sitl()
 
-        ex = None
-        try:
-            self.set_parameters({
-                "FILT1_TYPE": 1,
-                "FILT2_TYPE": 1,
-                "AHRS_EKF_TYPE": 10,
-                "INS_LOG_BAT_MASK": 3,
-                "INS_LOG_BAT_OPT": 0,
-                "INS_GYRO_FILTER": 100, # set the gyro filter high so we can observe behaviour
-                "LOG_BITMASK": 65535,
-                "LOG_DISARMED": 0,
-                "SIM_VIB_FREQ_X": 120,  # roll
-                "SIM_VIB_FREQ_Y": 120,  # pitch
-                "SIM_VIB_FREQ_Z": 180,  # yaw
-                "FILT1_NOTCH_FREQ": 120,
-                "FILT2_NOTCH_FREQ": 180,
-                "ATC_RAT_RLL_NEF": 1,
-                "ATC_RAT_PIT_NEF": 1,
-                "ATC_RAT_YAW_NEF": 2,
-                "SIM_GYR1_RND": 5,
+        self.hover_and_check_matched_frequency_with_fft(5, 20, 350, reverse=True, takeoff=True)
+
+    def AutoTune(self):
+        """Test autotune mode"""
+        # test roll and pitch FF tuning
+        self.set_parameters({
+            "ATC_ANG_RLL_P": 4.5,
+            "ATC_RAT_RLL_P": 0,
+            "ATC_RAT_RLL_I": 0.1,
+            "ATC_RAT_RLL_D": 0,
+            "ATC_RAT_RLL_FF": 0.15,
+            "ATC_ANG_PIT_P": 4.5,
+            "ATC_RAT_PIT_P": 0,
+            "ATC_RAT_PIT_I": 0.1,
+            "ATC_RAT_PIT_D": 0,
+            "ATC_RAT_PIT_FF": 0.15,
+            "ATC_ANG_YAW_P": 4.5,
+            "ATC_RAT_YAW_P": 0.18,
+            "ATC_RAT_YAW_I": 0.024,
+            "ATC_RAT_YAW_D": 0.003,
+            "ATC_RAT_YAW_FF": 0.024,
+            "AUTOTUNE_AXES": 3,
+            "AUTOTUNE_SEQ": 1,
             })
-            self.reboot_sitl()
 
-            self.takeoff(10, mode="ALT_HOLD")
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
 
-            freq, hover_throttle, peakdb1 = self.hover_and_check_matched_frequency_with_fft(5, 20, 350, reverse=True)
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
 
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.autotune_land_and_save_gains()
 
-        self.context_pop()
+        # test pitch rate P and Rate D tuning
+        self.set_parameters({
+            "AUTOTUNE_AXES": 2,
+            "AUTOTUNE_SEQ": 2,
+            "AUTOTUNE_GN_MAX": 1.8,
+            })
 
-        if ex is not None:
-            raise ex
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.autotune_land_and_save_gains()
+
+        # test Roll rate P and Rate D tuning
+        self.set_parameters({
+            "AUTOTUNE_AXES": 1,
+            "AUTOTUNE_SEQ": 2,
+            "AUTOTUNE_GN_MAX": 1.6,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.autotune_land_and_save_gains()
+
+        # test Roll and pitch angle P tuning
+        self.set_parameters({
+            "AUTOTUNE_AXES": 3,
+            "AUTOTUNE_SEQ": 4,
+            "AUTOTUNE_FRQ_MIN": 5,
+            "AUTOTUNE_FRQ_MAX": 50,
+            "AUTOTUNE_GN_MAX": 1.6,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.autotune_land_and_save_gains()
+
+        # test yaw FF and rate P and Rate D
+        self.set_parameters({
+            "AUTOTUNE_AXES": 4,
+            "AUTOTUNE_SEQ": 3,
+            "AUTOTUNE_FRQ_MIN": 10,
+            "AUTOTUNE_FRQ_MAX": 70,
+            "AUTOTUNE_GN_MAX": 1.4,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.autotune_land_and_save_gains()
+
+        # test yaw angle P tuning
+        self.set_parameters({
+            "AUTOTUNE_AXES": 4,
+            "AUTOTUNE_SEQ": 4,
+            "AUTOTUNE_FRQ_MIN": 5,
+            "AUTOTUNE_FRQ_MAX": 50,
+            "AUTOTUNE_GN_MAX": 1.5,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.autotune_land_and_save_gains()
+
+        # tune check
+        self.set_parameters({
+            "AUTOTUNE_AXES": 7,
+            "AUTOTUNE_SEQ": 16,
+            "AUTOTUNE_FRQ_MIN": 10,
+            "AUTOTUNE_FRQ_MAX": 80,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.land_and_disarm()
+
+    def autotune_land_and_save_gains(self):
+        self.set_rc(3, 1000)
+        self.context_collect('STATUSTEXT')
+        self.wait_statustext(r"SIM Hit ground at ([0-9.]+) m/s",
+                             check_context=True,
+                             regex=True)
+        self.set_rc(8, 1000)
+        self.wait_disarmed()
+
+    def land_and_disarm(self, **kwargs):
+        super(AutoTestHelicopter, self).land_and_disarm(**kwargs)
+        self.progress("Killing rotor speed")
+        self.set_rc(8, 1000)
+
+    def do_RTL(self, **kwargs):
+        super(AutoTestHelicopter, self).do_RTL(**kwargs)
+        self.progress("Killing rotor speed")
+        self.set_rc(8, 1000)
 
     def tests(self):
         '''return list of all tests'''
@@ -851,14 +1192,18 @@ class AutoTestHelicopter(AutoTestCopter):
             self.PosHoldTakeOff,
             self.StabilizeTakeOff,
             self.SplineWaypoint,
-            self.AutoRotation,
-            self.ManAutoRotation,
+            self.AutorotationPreArm,
+            self.Autorotation,
+            self.ManAutorotation,
             self.governortest,
             self.FlyEachFrame,
             self.AirspeedDrivers,
             self.TurbineStart,
+            self.TurbineCoolDown,
             self.NastyMission,
             self.PIDNotches,
+            self.AutoTune,
+            self.MountFailsafeAction,
         ])
         return ret
 

@@ -3,7 +3,6 @@
 #define AP_PARAM_VEHICLE_NAME plane
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Gripper/AP_Gripper.h>
 
 // Global parameter class.
 //
@@ -37,6 +36,11 @@ public:
     static const uint16_t k_format_version = 13;
     //////////////////////////////////////////////////////////////////
 
+    enum class ThrFailsafe {
+        Disabled    = 0,
+        Enabled     = 1,
+        EnabledNoFS = 2
+    };
 
     enum {
         // Layout version number, always key zero.
@@ -119,7 +123,7 @@ public:
         k_param_terrain,
         k_param_terrain_follow,
         k_param_stab_pitch_down_cd_old, // deprecated
-        k_param_glide_slope_min,
+        k_param_alt_slope_min,
         k_param_stab_pitch_down,
         k_param_terrain_lookahead,
         k_param_fbwa_tdrag_chan, // unused - moved to RC option
@@ -135,9 +139,9 @@ public:
         k_param_trim_rc_at_start, // unused
         k_param_hil_mode_unused,  // unused
         k_param_land_disarm_delay,  // unused - moved to AP_Landing
-        k_param_glide_slope_threshold,
+        k_param_alt_slope_max_height,
         k_param_rudder_only,
-        k_param_gcs3,            // 93
+        k_param_gcs3_unused,               // unused in ArduPilot-4.7
         k_param_gcs_pid_mask,
         k_param_crash_detection_enable,
         k_param_land_abort_throttle_enable, // unused - moved to AP_Landing
@@ -159,14 +163,14 @@ public:
 
         // 110: Telemetry control
         //
-        k_param_gcs0 = 110,         // stream rates for SERIAL0
-        k_param_gcs1,               // stream rates for SERIAL1
-        k_param_sysid_this_mav,
-        k_param_sysid_my_gcs,
+        k_param_gcs0_unused = 110,         // unused in ArduPilot-4.7
+        k_param_gcs1_unused,               // unused in ArduPilot-4.7
+        k_param_sysid_this_mav_old,
+        k_param_sysid_my_gcs_old,
         k_param_serial1_baud_old,   // deprecated
-        k_param_telem_delay,
+        k_param_telem_delay_old,
         k_param_serial0_baud_old,   // deprecated
-        k_param_gcs2,               // stream rates for SERIAL2
+        k_param_gcs2_unused,               // unused in ArduPilot-4.7
         k_param_serial2_baud_old,   // deprecated
         k_param_serial2_protocol,   // deprecated
 
@@ -203,7 +207,7 @@ public:
         k_param_curr_amp_offset,
         k_param_NavEKF,  // deprecated - remove
         k_param_mission, // mission library
-        k_param_serial_manager, // serial manager library
+        k_param_serial_manager_old, // serial manager library
         k_param_NavEKF2_old,  // deprecated - remove
         k_param_land_pre_flare_alt, // unused - moved to AP_Landing
         k_param_land_pre_flare_airspeed = 149,  // unused - moved to AP_Landing
@@ -344,28 +348,32 @@ public:
 
         k_param_mixing_offset,
         k_param_dspoiler_rud_rate,
+        k_param_airspeed_stall,
 
         k_param_logger = 253, // Logging Group
 
         // 254,255: reserved
 
         k_param_vehicle = 257, // vehicle common block of parameters
-        k_param_gcs4,          // stream rates
-        k_param_gcs5,          // stream rates
-        k_param_gcs6,          // stream rates
+        k_param_gcs4_unused,               // unused in ArduPilot-4.7
+        k_param_gcs5_unused,               // unused in ArduPilot-4.7
+        k_param_gcs6_unused,               // unused in ArduPilot-4.7
         k_param_fence,         // vehicle fence - unused
         k_param_acro_yaw_rate,
         k_param_takeoff_throttle_max_t,
         k_param_autotune_options,
+        k_param_takeoff_throttle_min,
+        k_param_takeoff_options,
+        k_param_takeoff_throttle_idle,
+
+        k_param_pullup = 270,
+        k_param_quicktune,
+        k_param_mode_autoland,
+        k_param__gcs,
+
     };
 
     AP_Int16 format_version;
-
-    // Telemetry control
-    //
-    AP_Int16 sysid_this_mav;
-    AP_Int16 sysid_my_gcs;
-    AP_Int8 telem_delay;
 
     AP_Enum<RtlAutoland> rtl_autoland;
 
@@ -398,7 +406,7 @@ public:
     //
     AP_Int8 throttle_suppress_manual;
     AP_Int8 throttle_passthru_stabilize;
-    AP_Int8 throttle_fs_enabled;
+    AP_Enum<ThrFailsafe> throttle_fs_enabled;
     AP_Int16 throttle_fs_value;
     AP_Int8 throttle_nudge;
     AP_Int32 use_reverse_thrust;
@@ -459,8 +467,8 @@ public:
     AP_Int32 terrain_follow;
     AP_Int16 terrain_lookahead;
 #endif
-    AP_Int16 glide_slope_min;
-    AP_Float glide_slope_threshold;
+    AP_Int16 alt_slope_min;
+    AP_Float alt_slope_max_height;
     AP_Int8 rangefinder_landing;
     AP_Int8 flap_slewrate;
 #if HAL_WITH_IO_MCU
@@ -479,6 +487,9 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
+    // just to make compilation easier when all things are compiled out...
+    uint8_t unused_integer;
+
     // button reporting library
 #if HAL_BUTTON_ENABLED
     AP_Button *button_ptr;
@@ -495,9 +506,6 @@ public:
     // control over servo output ranges
     SRV_Channels servo_channels;
 
-    // whether to enforce acceptance of packets only from sysid_my_gcs
-    AP_Int8 sysid_enforce;
-
 #if HAL_SOARING_ENABLED
     // ArduSoar parameters
     SoaringController soaring_controller;
@@ -512,11 +520,6 @@ public:
     // home reset altitude threshold
     AP_Int8 home_reset_threshold;
 
-#if AP_GRIPPER_ENABLED
-    // Payload Gripper
-    AP_Gripper gripper;
-#endif
-
     AP_Int32 flight_options;
 
     AP_Int8 takeoff_throttle_accel_count;
@@ -524,6 +527,10 @@ public:
 
 #if AP_LANDINGGEAR_ENABLED
     AP_LandingGear landing_gear;
+#endif
+
+#if AC_PRECLAND_ENABLED
+    AC_PrecLand precland;
 #endif
 
     // crow flaps weighting
@@ -546,6 +553,7 @@ public:
 
         AP_Float batt_voltage_max;
         AP_Float batt_voltage_min;
+        AP_Float batt_voltage_throttle_cutoff;
         AP_Int8  batt_idx;
 
     private:
@@ -554,7 +562,7 @@ public:
     } fwd_batt_cmp;
 
 
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // guided yaw heading PID
     AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.0};
 #endif
@@ -576,8 +584,14 @@ public:
     
     AP_Int8         axis_bitmask; // axes to be autotuned
 
-    // just to make compilation easier when all things are compiled out...
-    uint8_t unused_integer;
+#if AP_RANGEFINDER_ENABLED
+    // orientation of rangefinder to use for landing
+    AP_Int8 rangefinder_land_orient;
+#endif
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    AP_SystemID systemid;
+#endif
 };
 
 extern const AP_Param::Info var_info[];

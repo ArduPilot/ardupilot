@@ -1,7 +1,7 @@
 --[[
  add ALT_OFFSET parameter for copter
- This behaves similarly to ALT_OFFSET in plane. It operators only in AUTO mode, and slews the BARO_ALT_OFFSET to allow
- for change of altitude without mission change
+ This behaves similarly to ALT_OFFSET in plane. It operates only in AUTO mode, and slews the BARO_ALT_OFFSET to allow
+ for change of altitude without mission change.
 --]]
 
 

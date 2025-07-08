@@ -85,22 +85,19 @@ void AP_InternalError::errors_as_string(uint8_t *buffer, const uint16_t len) con
 {
     buffer[0] = 0;
     uint32_t buffer_used = 0;
+    const char *format = "%s"; // no comma before the first item
     for (uint8_t i=0; i<ARRAY_SIZE(error_bit_descriptions); i++) {
         if (buffer_used >= len) {
             break;
         }
         if (internal_errors & (1U<<i)) {
-            const char *format;
-            if (buffer_used == 0) {
-                format = "%s";
-            } else {
-                format = ",%s";
-            }
-            const size_t written = hal.util->snprintf((char*)&buffer[buffer_used],
+            const int written = hal.util->snprintf((char*)&buffer[buffer_used],
                                                       len-buffer_used,
                                                       format,
                                                       error_bit_descriptions[i]);
-            if (written <= 0) {
+            format = ",%s"; // once we write something, need commas thereafter
+
+            if (written < 0) {
                 break;
             }
             buffer_used += written;
@@ -116,32 +113,4 @@ AP_InternalError &internalerror()
 }
 
 };
-
-// stack overflow hook for low level RTOS code, C binding
-void AP_stack_overflow(const char *thread_name)
-{
-    static bool done_stack_overflow;
-    INTERNAL_ERROR(AP_InternalError::error_t::stack_overflow);
-    if (!done_stack_overflow) {
-        // we don't want to record the thread name more than once, as
-        // first overflow can trigger a 2nd
-        strncpy_noterm(hal.util->persistent_data.thread_name4, thread_name, 4);
-        done_stack_overflow = true;
-    }
-    hal.util->persistent_data.fault_type = 42; // magic value
-    if (!hal.util->get_soft_armed()) {
-        AP_HAL::panic("stack overflow %s\n", thread_name);
-    }
-}
-
-// hook for memory guard errors with --enable-memory-guard
-void AP_memory_guard_error(uint32_t size)
-{
-    INTERNAL_ERROR(AP_InternalError::error_t::mem_guard);
-    if (!hal.util->get_soft_armed()) {
-        ::printf("memory guard error size=%u\n", unsigned(size));
-        AP_HAL::panic("memory guard size=%u\n", unsigned(size));
-    }
-}
-
 #endif  // AP_INTERNALERROR_ENABLED

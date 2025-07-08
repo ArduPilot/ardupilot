@@ -54,7 +54,7 @@ private:
     bool _corked;
     uint16_t _pending[SITL_NUM_CHANNELS];
 
-    AP_HAL::Util::safety_state safety_state;
+    AP_HAL::Util::safety_state safety_state = AP_HAL::Util::safety_state::SAFETY_DISARMED;
 };
 
 #endif

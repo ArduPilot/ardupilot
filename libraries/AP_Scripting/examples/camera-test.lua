@@ -1,5 +1,7 @@
 -- camera-test.lua.  Tests triggering taking pictures at regular intervals
 
+---@diagnostic disable: cast-local-type
+
 -- global definitions
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 local TAKE_PIC_INTERVAL_MS = 5000   -- take pictures at this interval

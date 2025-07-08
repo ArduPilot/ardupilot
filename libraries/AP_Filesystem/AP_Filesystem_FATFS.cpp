@@ -40,58 +40,37 @@ static bool remount_needed;
 static HAL_Semaphore sem;
 
 typedef struct {
-    FIL *fh;
+    FIL fobj; // should be first member; it's the most used
     char *name;
 } FAT_FILE;
 
 #define MAX_FILES 16
 static FAT_FILE *file_table[MAX_FILES];
 
-static int isatty_(int fileno)
-{
-    if (fileno >= 0 && fileno <= 2) {
-        return true;
-    }
-    return false;
-}
-
 /*
   allocate a file descriptor
 */
-static int new_file_descriptor(const char *pathname)
+static int new_file_descriptor(const char *pathname, FIL * &fh)
 {
     int i;
     FAT_FILE *stream;
-    FIL *fh;
 
     for (i=0; i<MAX_FILES; ++i) {
-        if (isatty_(i)) {
-            continue;
-        }
         if (file_table[i] == NULL) {
-            stream = (FAT_FILE *) calloc(sizeof(FAT_FILE),1);
+            stream = (FAT_FILE *) calloc(1, sizeof(FAT_FILE));
             if (stream == NULL) {
                 errno = ENOMEM;
                 return -1;
             }
-            fh = (FIL *) calloc(sizeof(FIL),1);
-            if (fh == NULL) {
+            stream->name = strdup(pathname);
+            if (stream->name == NULL) {
                 free(stream);
                 errno = ENOMEM;
                 return -1;
             }
-            char *fname = (char *)malloc(strlen(pathname)+1);
-            if (fname == NULL) {
-                free(fh);
-                free(stream);
-                errno = ENOMEM;
-                return -1;
-            }
-            strcpy(fname, pathname);
-            stream->name = fname;
 
             file_table[i]  = stream;
-            stream->fh = fh;
+            fh = &stream->fobj;
             return i;
         }
     }
@@ -115,58 +94,26 @@ static FAT_FILE *fileno_to_stream(int fileno)
     return stream;
 }
 
-static int free_file_descriptor(int fileno)
+static void free_file_descriptor(int fileno)
 {
-    FAT_FILE *stream;
-    FIL *fh;
-
-    if (isatty_( fileno )) {
-        errno = EBADF;
-        return -1;
+    FAT_FILE *stream = fileno_to_stream(fileno);
+    if (stream != nullptr) {
+        file_table[fileno] = NULL;
+        free(stream->name);
+        free(stream);
     }
-
-    // checks if fileno out of bounds
-    stream = fileno_to_stream(fileno);
-    if (stream == nullptr) {
-        return -1;
-    }
-
-    fh = stream->fh;
-
-    if (fh != NULL) {
-        free(fh);
-    }
-
-    free(stream->name);
-    stream->name = NULL;
-
-    file_table[fileno]  = NULL;
-    free(stream);
-    return fileno;
 }
 
 static FIL *fileno_to_fatfs(int fileno)
 {
     FAT_FILE *stream;
-    FIL *fh;
 
-    if (isatty_(fileno)) {
-        errno = EBADF;
-        return nullptr;
-    }
-
-    // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
-    if (stream == nullptr) {
-        return nullptr;
+    if (stream == nullptr) { // unknown fileno?
+        return nullptr; // errno already set
     }
 
-    fh = stream->fh;
-    if (fh == NULL) {
-        errno = EBADF;
-        return nullptr;
-    }
-    return fh;
+    return &stream->fobj;
 }
 
 static int fatfs_to_errno(FRESULT Result)
@@ -254,7 +201,6 @@ static bool remount_file_system(void)
     }
     if (!sdcard_retry()) {
         remount_needed = true;
-        EXPECT_DELAY_MS(0);
         return false;
     }
     remount_needed = false;
@@ -263,7 +209,7 @@ static bool remount_file_system(void)
         if (!f) {
             continue;
         }
-        FIL *fh = f->fh;
+        FIL *fh = &f->fobj;
         FSIZE_t offset = fh->fptr;
         uint8_t flags = fh->flag & (FA_READ | FA_WRITE);
 
@@ -278,7 +224,6 @@ static bool remount_file_system(void)
             f_lseek(fh, offset);
         }
     }
-    EXPECT_DELAY_MS(0);
     return true;
 }
 
@@ -286,7 +231,6 @@ int AP_Filesystem_FATFS::open(const char *pathname, int flags, bool allow_absolu
 {
     int fileno;
     int fatfs_modes;
-    FAT_FILE *stream;
     FIL *fh;
     int res;
 
@@ -314,22 +258,11 @@ int AP_Filesystem_FATFS::open(const char *pathname, int flags, bool allow_absolu
         }
     }
 
-    fileno = new_file_descriptor(pathname);
-
-    // checks if fileno out of bounds
-    stream = fileno_to_stream(fileno);
-    if (stream == nullptr) {
-        free_file_descriptor(fileno);
-        return -1;
+    fileno = new_file_descriptor(pathname, fh);
+    if (fileno < 0) { // creation failed?
+        return -1; // errno already set
     }
 
-    // fileno_to_fatfs checks for fileno out of bounds
-    fh = fileno_to_fatfs(fileno);
-    if (fh == nullptr) {
-        free_file_descriptor(fileno);
-        errno = EBADF;
-        return -1;
-    }
     res = f_open(fh, pathname, (BYTE) (fatfs_modes & 0xff));
     if (res == FR_DISK_ERR && RETRY_ALLOWED()) {
         // one retry on disk error
@@ -361,7 +294,6 @@ int AP_Filesystem_FATFS::open(const char *pathname, int flags, bool allow_absolu
 
 int AP_Filesystem_FATFS::close(int fileno)
 {
-    FAT_FILE *stream;
     FIL *fh;
     int res;
 
@@ -370,16 +302,9 @@ int AP_Filesystem_FATFS::close(int fileno)
 
     errno = 0;
 
-    // checks if fileno out of bounds
-    stream = fileno_to_stream(fileno);
-    if (stream == nullptr) {
-        return -1;
-    }
-
-    // fileno_to_fatfs checks for fileno out of bounds
     fh = fileno_to_fatfs(fileno);
-    if (fh == nullptr) {
-        return -1;
+    if (fh == nullptr) { // unknown fileno?
+        return -1; // errno already set
     }
     res = f_close(fh);
     free_file_descriptor(fileno);
@@ -407,11 +332,9 @@ int32_t AP_Filesystem_FATFS::read(int fd, void *buf, uint32_t count)
 
     errno = 0;
 
-    // fileno_to_fatfs checks for fd out of bounds
     fh = fileno_to_fatfs(fd);
-    if (fh == nullptr) {
-        errno = EBADF;
-        return -1;
+    if (fh == nullptr) { // unknown fd?
+        return -1; // errno already set
     }
 
     UINT total = 0;
@@ -455,11 +378,9 @@ int32_t AP_Filesystem_FATFS::write(int fd, const void *buf, uint32_t count)
 
     CHECK_REMOUNT();
 
-    // fileno_to_fatfs checks for fd out of bounds
     fh = fileno_to_fatfs(fd);
-    if (fh == nullptr) {
-        errno = EBADF;
-        return -1;
+    if (fh == nullptr) { // unknown fd?
+        return -1; // errno already set
     }
 
     UINT total = 0;
@@ -497,7 +418,6 @@ int32_t AP_Filesystem_FATFS::write(int fd, const void *buf, uint32_t count)
 
 int AP_Filesystem_FATFS::fsync(int fileno)
 {
-    FAT_FILE *stream;
     FIL *fh;
     int res;
 
@@ -506,16 +426,9 @@ int AP_Filesystem_FATFS::fsync(int fileno)
 
     errno = 0;
 
-    // checks if fileno out of bounds
-    stream = fileno_to_stream(fileno);
-    if (stream == nullptr) {
-        return -1;
-    }
-
-    // fileno_to_fatfs checks for fileno out of bounds
     fh = fileno_to_fatfs(fileno);
-    if (fh == nullptr) {
-        return -1;
+    if (fh == nullptr) { // unknown fileno?
+        return -1; // errno already set
     }
     res = f_sync(fh);
     if (res != FR_OK) {
@@ -534,14 +447,9 @@ off_t AP_Filesystem_FATFS::lseek(int fileno, off_t position, int whence)
     FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(sem);
 
-    // fileno_to_fatfs checks for fd out of bounds
     fh = fileno_to_fatfs(fileno);
-    if (fh == nullptr) {
-        errno = EMFILE;
-        return -1;
-    }
-    if (isatty_(fileno)) {
-        return -1;
+    if (fh == nullptr) { // unknown fileno?
+        return -1; // errno already set
     }
 
     if (whence == SEEK_END) {
@@ -706,7 +614,7 @@ void *AP_Filesystem_FATFS::opendir(const char *pathdir)
     CHECK_REMOUNT_NULL();
 
     debug("Opendir %s", pathdir);
-    struct DIR_Wrapper *ret = new DIR_Wrapper;
+    struct DIR_Wrapper *ret = NEW_NOTHROW DIR_Wrapper;
     if (!ret) {
         return nullptr;
     }
@@ -779,6 +687,25 @@ int AP_Filesystem_FATFS::closedir(void *dirp_void)
     return 0;
 }
 
+// return number of bytes that should be written before fsync for optimal
+// streaming performance/robustness. if zero, any number can be written.
+// assume similar to old logging code that max-IO-size boundaries are good.
+uint32_t AP_Filesystem_FATFS::bytes_until_fsync(int fd)
+{
+    FS_CHECK_ALLOWED(0);
+    WITH_SEMAPHORE(sem);
+
+    FIL *fh = fileno_to_fatfs(fd);
+    if (fh == nullptr) { // unknown fd?
+        return 0; // return "any number", the write/fsync will fail anyway
+    }
+
+    const uint32_t block_size = MAX_IO_SIZE;
+
+    uint32_t block_pos = fh->fptr % block_size;
+    return block_size - block_pos;
+}
+
 // return free disk space in bytes
 int64_t AP_Filesystem_FATFS::disk_free(const char *path)
 {
@@ -828,7 +755,8 @@ int64_t AP_Filesystem_FATFS::disk_space(const char *path)
  */
 static void unix_time_to_fat(time_t epoch, uint16_t &date, uint16_t &time)
 {
-    struct tm *t = gmtime((time_t *)&epoch);
+    struct tm tmd {};
+    struct tm *t = gmtime_r((time_t *)&epoch, &tmd);
 
     /* Pack date and time into a uint32_t variable */
     date = ((uint16_t)(t->tm_year - 80) << 9)

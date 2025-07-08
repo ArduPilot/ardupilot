@@ -67,6 +67,7 @@ class CANIface: public AP_HAL::CANIface
     char buf_[SLCAN_BUFFER_SIZE + 1]; // buffer to record raw frame nibbles before parsing
     int16_t pos_ = 0; // position in the buffer recording nibble frames before parsing
     AP_HAL::UARTDriver* _port; // UART interface port reference to be used for SLCAN iface
+    bool _enabled; // Flag to check whether we are allowed to use _port
 
     ObjectBuffer<AP_HAL::CANIface::CanRxItem> rx_queue_; // Parsed Rx Frame queue
 
@@ -136,6 +137,9 @@ protected:
 
     bool add_to_rx_queue(const AP_HAL::CANIface::CanRxItem &frm) override {
         return rx_queue_.push(frm);
+    }
+    bool is_enabled() const {
+        return (_port != nullptr) && _enabled;
     }
 };
 

@@ -150,7 +150,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     // @Param: LIST_ALT
     // @DisplayName: ADSB vehicle list altitude filter
-    // @Description: ADSB vehicle list altitude filter. Vehicles detected above this altitude will be completely ignored. They will not show up in the SRx_ADSB stream to the GCS and will not be considered in any avoidance calculations. A value of 0 will disable this filter.
+    // @Description: ADSB vehicle list altitude filter. Vehicles detected more than this altitude above our own altitude will be completely ignored. They will not show up in the SRx_ADSB stream to the GCS and will not be considered in any avoidance calculations. A value of 0 will disable this filter.
     // @Range: 0 32767
     // @User: Advanced
     // @Units: m
@@ -172,7 +172,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: ADS-B Options
     // @Description: Options for emergency failsafe codes and device capabilities
-    // @Bitmask: 0:Ping200X Send GPS,1:Squawk 7400 on RC failsafe,2:Squawk 7400 on GCS failsafe,3:Sagetech MXS use External Config
+    // @Bitmask: 0:Ping200X Send GPS,1:Squawk 7400 on RC failsafe,2:Squawk 7400 on GCS failsafe,3:Sagetech MXS use External Config,4:Transmit in traditional Mode 3A/C only and inhibit Mode-S and ES (ADSB) transmissions
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  15, AP_ADSB, _options, 0),
 
@@ -204,7 +204,7 @@ void AP_ADSB::init(void)
         // sanity check param
         in_state.list_size_param.set(constrain_int16(in_state.list_size_param, 1, INT16_MAX));
 
-        in_state.vehicle_list = new adsb_vehicle_t[in_state.list_size_param];
+        in_state.vehicle_list = NEW_NOTHROW adsb_vehicle_t[in_state.list_size_param];
 
         if (in_state.vehicle_list == nullptr) {
             // dynamic RAM allocation of in_state.vehicle_list[] failed
@@ -272,7 +272,7 @@ void AP_ADSB::detect_instance(uint8_t instance)
     case Type::uAvionix_MAVLink:
 #if HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
         if (AP_ADSB_uAvionix_MAVLink::detect()) {
-            _backend[instance] = new AP_ADSB_uAvionix_MAVLink(*this, instance);
+            _backend[instance] = NEW_NOTHROW AP_ADSB_uAvionix_MAVLink(*this, instance);
         }
 #endif
         break;
@@ -280,7 +280,7 @@ void AP_ADSB::detect_instance(uint8_t instance)
     case Type::uAvionix_UCP:
 #if HAL_ADSB_UCP_ENABLED
         if (AP_ADSB_uAvionix_UCP::detect()) {
-            _backend[instance] = new AP_ADSB_uAvionix_UCP(*this, instance);
+            _backend[instance] = NEW_NOTHROW AP_ADSB_uAvionix_UCP(*this, instance);
         }
 #endif
         break;
@@ -288,7 +288,7 @@ void AP_ADSB::detect_instance(uint8_t instance)
     case Type::Sagetech:
 #if HAL_ADSB_SAGETECH_ENABLED
         if (AP_ADSB_Sagetech::detect()) {
-            _backend[instance] = new AP_ADSB_Sagetech(*this, instance);
+            _backend[instance] = NEW_NOTHROW AP_ADSB_Sagetech(*this, instance);
         }
 #endif
         break;
@@ -296,7 +296,7 @@ void AP_ADSB::detect_instance(uint8_t instance)
     case Type::Sagetech_MXS:
 #if HAL_ADSB_SAGETECH_MXS_ENABLED
         if (AP_ADSB_Sagetech_MXS::detect()) {
-            _backend[instance] = new AP_ADSB_Sagetech_MXS(*this, instance);
+            _backend[instance] = NEW_NOTHROW AP_ADSB_Sagetech_MXS(*this, instance);
         }
 #endif
         break;
@@ -697,7 +697,6 @@ void AP_ADSB::handle_out_control(const mavlink_uavionix_adsb_out_control_t &pack
 {
     out_state.ctrl.baroCrossChecked = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_EXTERNAL_BARO_CROSSCHECKED;
     out_state.ctrl.airGroundState = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_ON_GROUND;
-    out_state.ctrl.identActive = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_IDENT_BUTTON_ACTIVE;
     out_state.ctrl.modeAEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_A_ENABLED;
     out_state.ctrl.modeCEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_C_ENABLED;
     out_state.ctrl.modeSEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_S_ENABLED;
@@ -707,6 +706,10 @@ void AP_ADSB::handle_out_control(const mavlink_uavionix_adsb_out_control_t &pack
     out_state.ctrl.emergencyState = packet.emergencyStatus;
     memcpy(out_state.ctrl.callsign, packet.flight_id, sizeof(out_state.ctrl.callsign));
     out_state.ctrl.x_bit = packet.x_bit;
+
+    if (packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_IDENT_BUTTON_ACTIVE) {
+        IGNORE_RETURN(ident_start());
+    }
 }
 
 /*
@@ -930,6 +933,18 @@ uint32_t AP_ADSB::convert_base_to_decimal(const uint8_t baseIn, uint32_t inputNu
     return outputNumber;
 }
 
+// Trigger a Mode 3/A transponder IDENT. This should only be done when requested to do so by an Air Traffic Controller.
+// See wikipedia for IDENT explanation https://en.wikipedia.org/wiki/Transponder_(aeronautics)
+bool AP_ADSB::ident_start()
+{
+    if (!healthy()) {
+        return false;
+    }
+    out_state.ctrl.identActive = true;
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO,"ADSB: IDENT!");
+    return true;
+}
+
 // methods for embedded class Location
 bool AP_ADSB::Loc::speed_accuracy(float &sacc) const
 {
@@ -956,6 +971,26 @@ bool AP_ADSB::Loc::vertical_accuracy(float &vacc) const
     }
     vacc = vertical_pos_accuracy;
     return true;
+}
+
+uint8_t AP_ADSB::convert_maxknots_to_enum(const float maxAircraftSpeed_knots)
+{
+    if (maxAircraftSpeed_knots <= 0) {
+        // not set or unknown. no bits set
+        return 0;
+    } else if (maxAircraftSpeed_knots <= 75) {
+        return 1;
+    } else if (maxAircraftSpeed_knots <= 150) {
+        return 2;
+    } else if (maxAircraftSpeed_knots <= 300) {
+        return 3;
+    } else if (maxAircraftSpeed_knots <= 600) {
+        return 4;
+    } else if (maxAircraftSpeed_knots <= 1200) {
+        return 5;
+    } else {
+        return 6;
+    }
 }
 
 AP_ADSB *AP::ADSB()

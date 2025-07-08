@@ -21,8 +21,10 @@ void Blimp::init_ardupilot()
     // initialise battery monitor
     battery.init();
 
+#if AP_RSSI_ENABLED
     // Init RSSI
     rssi.init();
+#endif
 
     barometer.init();
 
@@ -33,7 +35,7 @@ void Blimp::init_ardupilot()
 
     // allocate the motors class
     allocate_motors();
-    loiter = new Loiter(blimp.scheduler.get_loop_rate_hz());
+    loiter = NEW_NOTHROW Loiter(blimp.scheduler.get_loop_rate_hz());
 
     // initialise rc channels including setting mode
     rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
@@ -58,7 +60,7 @@ void Blimp::init_ardupilot()
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
-    gps.init(serial_manager);
+    gps.init();
 
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
@@ -140,16 +142,21 @@ bool Blimp::ekf_has_absolute_position() const
         return false;
     }
 
-    // with EKF use filter status and ekf check
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-
     // if disarmed we accept a predicted horizontal position
     if (!motors->armed()) {
-        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
-    } else {
-        // once armed we require a good absolute position and EKF must not be in const_pos_mode
-        return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
+        if (ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
+            return true;
+        }
+        if (ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS)) {
+            return true;
+        }
+        return false;
     }
+    // once armed we require a good absolute position and EKF must not be in const_pos_mode
+    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+        return false;
+     }
+    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS);
 }
 
 // ekf_has_relative_position - returns true if the EKF can provide a position estimate relative to it's starting position
@@ -166,15 +173,14 @@ bool Blimp::ekf_has_relative_position() const
         return false;
     }
 
-    // get filter status from EKF
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-
     // if disarmed we accept a predicted horizontal relative position
     if (!motors->armed()) {
-        return (filt_status.flags.pred_horiz_pos_rel);
-    } else {
-        return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
+        return ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL);
     }
+    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+        return false;
+    }
+    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_REL);
 }
 
 // returns true if the ekf has a good altitude estimate (required for modes which do AltHold)
@@ -185,11 +191,15 @@ bool Blimp::ekf_alt_ok() const
         return false;
     }
 
-    // with EKF use filter status and ekf check
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-
     // require both vertical velocity and position
-    return (filt_status.flags.vert_vel && filt_status.flags.vert_pos);
+    if (!ahrs.has_status(AP_AHRS::Status::VERT_VEL)) {
+        return false;
+    }
+    if (!ahrs.has_status(AP_AHRS::Status::VERT_POS)) {
+        return false;
+    }
+
+    return true;
 }
 
 // update_auto_armed - update status of auto_armed flag
@@ -240,7 +250,7 @@ void Blimp::allocate_motors(void)
     switch ((Fins::motor_frame_class)g2.frame_class.get()) {
     case Fins::MOTOR_FRAME_AIRFISH:
     default:
-        motors = new Fins(blimp.scheduler.get_loop_rate_hz());
+        motors = NEW_NOTHROW Fins(blimp.scheduler.get_loop_rate_hz());
         break;
     }
     if (motors == nullptr) {

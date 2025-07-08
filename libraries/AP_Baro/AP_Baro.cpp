@@ -34,6 +34,8 @@
 #include "AP_Baro_SITL.h"
 #include "AP_Baro_BMP085.h"
 #include "AP_Baro_BMP280.h"
+#include "AP_Baro_BMP388.h"
+#include "AP_Baro_BMP581.h"
 #include "AP_Baro_SPL06.h"
 #include "AP_Baro_KellerLD.h"
 #include "AP_Baro_MS5611.h"
@@ -41,13 +43,13 @@
 #include "AP_Baro_LPS2XH.h"
 #include "AP_Baro_FBM320.h"
 #include "AP_Baro_DPS280.h"
-#include "AP_Baro_BMP388.h"
 #include "AP_Baro_Dummy.h"
 #include "AP_Baro_DroneCAN.h"
 #include "AP_Baro_MSP.h"
 #include "AP_Baro_ExternalAHRS.h"
 #include "AP_Baro_ICP101XX.h"
 #include "AP_Baro_ICP201XX.h"
+#include "AP_Baro_AUAV.h"
 
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -55,6 +57,9 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#if AP_BARO_THST_COMP_ENABLED
+#include <AP_Motors/AP_Motors.h>
+#endif
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
@@ -72,6 +77,10 @@
 
 #ifdef HAL_BUILD_AP_PERIPH
 #define HAL_BARO_ALLOW_INIT_NO_BARO
+#endif
+
+#ifndef AP_FIELD_ELEVATION_ENABLED
+#define AP_FIELD_ELEVATION_ENABLED !defined(HAL_BUILD_AP_PERIPH) && !APM_BUILD_TYPE(APM_BUILD_ArduSub)
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -169,11 +178,11 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Increment: 1
     AP_GROUPINFO("_FLTR_RNG", 13, AP_Baro, _filter_range, HAL_BARO_FILTER_DEFAULT),
 
-#if AP_BARO_PROBE_EXTERNAL_I2C_BUSES || AP_BARO_MSP_ENABLED
+#if AP_BARO_PROBE_EXT_PARAMETER_ENABLED
     // @Param: _PROBE_EXT
     // @DisplayName: External barometers to probe
     // @Description: This sets which types of external i2c barometer to look for. It is a bitmask of barometer types. The I2C buses to probe is based on BARO_EXT_BUS. If BARO_EXT_BUS is -1 then it will probe all external buses, otherwise it will probe just the bus number given in BARO_EXT_BUS.
-    // @Bitmask: 0:BMP085,1:BMP280,2:MS5611,3:MS5607,4:MS5637,5:FBM320,6:DPS280,7:LPS25H,8:Keller,9:MS5837,10:BMP388,11:SPL06,12:MSP
+    // @Bitmask: 0:BMP085,1:BMP280,2:MS5611,3:MS5607,4:MS5637,5:FBM320,6:DPS280,7:LPS25H,8:Keller,9:MS5837,10:BMP388,11:SPL06,12:MSP,13:BMP581,14:AUAV
     // @User: Advanced
     AP_GROUPINFO("_PROBE_EXT", 14, AP_Baro, _baro_probe_ext, HAL_BARO_PROBE_EXT_DEFAULT),
 #endif
@@ -213,13 +222,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Path: AP_Baro_Wind.cpp
     AP_SUBGROUPINFO(sensors[1].wind_coeff, "2_WCF_", 19, AP_Baro, WindCoeff),
 #endif
-
 #if BARO_MAX_INSTANCES > 2
     // @Group: 3_WCF_
     // @Path: AP_Baro_Wind.cpp
     AP_SUBGROUPINFO(sensors[2].wind_coeff, "3_WCF_", 20, AP_Baro, WindCoeff),
 #endif
-#ifndef HAL_BUILD_AP_PERIPH
+#endif  // HAL_BARO_WIND_COMP_ENABLED
+
+#if AP_FIELD_ELEVATION_ENABLED
     // @Param: _FIELD_ELV
     // @DisplayName: field elevation
     // @Description: User provided field elevation in meters. This is used to improve the calculation of the altitude the vehicle is at. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted. Changes to this parameter will only be used when disarmed. A value of 0 means the EKF origin height is used for takeoff height above sea level.
@@ -228,7 +238,6 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Volatile: True
     // @User: Advanced
     AP_GROUPINFO("_FIELD_ELV", 22, AP_Baro, _field_elevation, 0),
-#endif
 #endif
 
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -248,18 +257,20 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 24, AP_Baro, _options, 0),
 #endif
-    
+
+#if AP_BARO_THST_COMP_ENABLED
+    // @Param: 1_THST_SCALE
+    // @DisplayName: Thrust compensation
+    // @Description: Thrust scaling in Pascals. This value scaled by the normalized thrust is subtracted from the barometer pressure. This is used to adjust linearly based on the thrust output for local pressure difference induced by the props.
+    // @Range: -300 300
+    // @User: Advanced
+    AP_GROUPINFO("1_THST_SCALE", 25, AP_Baro, sensors[0].mot_scale, 0),
+#endif  // AP_BARO_THST_COMP_ENABLED
     AP_GROUPEND
 };
 
 // singleton instance
 AP_Baro *AP_Baro::_singleton;
-
-#if HAL_GCS_ENABLED
-#define BARO_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
-#else
-#define BARO_SEND_TEXT(severity, format, args...)
-#endif
 
 /*
   AP_Baro constructor
@@ -283,7 +294,7 @@ void AP_Baro::calibrate(bool save)
     }
 
     if (hal.util->was_watchdog_reset()) {
-        BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: skipping calibration after WDG reset");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: skipping calibration after WDG reset");
         return;
     }
 
@@ -295,12 +306,12 @@ void AP_Baro::calibrate(bool save)
 
     #ifdef HAL_BARO_ALLOW_INIT_NO_BARO
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
-            BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: no sensors found, skipping calibration");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: no sensors found, skipping calibration");
             return;
     }
     #endif
     
-    BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Calibrating barometer");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Calibrating barometer");
 
     // reset the altitude offset when we calibrate. The altitude
     // offset is supposed to be for within a flight
@@ -347,7 +358,7 @@ void AP_Baro::calibrate(bool save)
             sensors[i].calibrated = false;
         } else {
             if (save) {
-                float p0_sealevel = get_sealevel_pressure(sum_pressure[i] / count[i]);
+                float p0_sealevel = get_sealevel_pressure(sum_pressure[i] / count[i], _field_elevation_active);
                 sensors[i].ground_pressure.set_and_save(p0_sealevel);
             }
         }
@@ -359,7 +370,7 @@ void AP_Baro::calibrate(bool save)
     uint8_t num_calibrated = 0;
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].calibrated) {
-            BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
             num_calibrated++;
         }
     }
@@ -383,7 +394,7 @@ void AP_Baro::update_calibration()
     }
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (healthy(i)) {
-            float corrected_pressure = get_sealevel_pressure(get_pressure(i) + sensors[i].p_correction);
+            float corrected_pressure = get_sealevel_pressure(get_pressure(i) + sensors[i].p_correction, _field_elevation_active);
             sensors[i].ground_pressure.set(corrected_pressure);
         }
 
@@ -395,71 +406,13 @@ void AP_Baro::update_calibration()
 
     // always update the guessed ground temp
     _guessed_ground_temperature = get_external_temperature();
-
-    // force EAS2TAS to recalculate
-    _EAS2TAS = 0;
 }
 
-// return altitude difference in meters between current pressure and a
-// given base_pressure in Pascal
-float AP_Baro::get_altitude_difference(float base_pressure, float pressure) const
-{
-    float temp    = C_TO_KELVIN(get_ground_temperature());
-    float scaling = pressure / base_pressure;
-
-    // This is an exact calculation that is within +-2.5m of the standard
-    // atmosphere tables in the troposphere (up to 11,000 m amsl).
-    return 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)))-_field_elevation_active;
-}
-
-// return sea level pressure where in which the current measured pressure
-// at field elevation returns the same altitude under the
-// 1976 standard atmospheric model
-float AP_Baro::get_sealevel_pressure(float pressure) const
-{
-    float temp    = C_TO_KELVIN(get_ground_temperature());
-    float p0_sealevel;
-    // This is an exact calculation that is within +-2.5m of the standard
-    // atmosphere tables in the troposphere (up to 11,000 m amsl).
-    p0_sealevel = 8.651154799255761e30f*pressure*powF((769231.0f-(5000.0f*_field_elevation_active)/temp),-5.255993146184937f);
-
-    return p0_sealevel;
-}
-
-
-// return current scale factor that converts from equivalent to true airspeed
-// valid for altitudes up to 10km AMSL
-// assumes standard atmosphere lapse rate
-float AP_Baro::get_EAS2TAS(void)
-{
-    float altitude = get_altitude();
-    if ((fabsf(altitude - _last_altitude_EAS2TAS) < 25.0f) && !is_zero(_EAS2TAS)) {
-        // not enough change to require re-calculating
-        return _EAS2TAS;
-    }
-
-    float pressure = get_pressure();
-    if (is_zero(pressure)) {
-        return 1.0f;
-    }
-
-    // only estimate lapse rate for the difference from the ground location
-    // provides a more consistent reading then trying to estimate a complete
-    // ISA model atmosphere
-    float tempK = C_TO_KELVIN(get_ground_temperature()) - ISA_LAPSE_RATE * altitude;
-    const float eas2tas_squared = SSL_AIR_DENSITY / (pressure / (ISA_GAS_CONSTANT * tempK));
-    if (!is_positive(eas2tas_squared)) {
-        return 1.0f;
-    }
-    _EAS2TAS = sqrtf(eas2tas_squared);
-    _last_altitude_EAS2TAS = altitude;
-    return _EAS2TAS;
-}
 
 // return air density / sea level density - decreases as altitude climbs
-float AP_Baro::get_air_density_ratio(void)
+float AP_Baro::_get_air_density_ratio(void)
 {
-    const float eas2tas = get_EAS2TAS();
+    const float eas2tas = _get_EAS2TAS();
     if (eas2tas > 0.0f) {
         return 1.0f/(sq(eas2tas));
     } else {
@@ -601,7 +554,7 @@ void AP_Baro::init(void)
 #if !AP_TEST_DRONECAN_DRIVERS
     // use dronecan instances instead of SITL instances
     for(uint8_t i = 0; i < sitl->baro_count; i++) {
-        ADD_BACKEND(new AP_Baro_SITL(*this));
+        ADD_BACKEND(NEW_NOTHROW AP_Baro_SITL(*this));
     }
 #endif
 #endif
@@ -616,7 +569,7 @@ void AP_Baro::init(void)
 #if AP_BARO_EXTERNALAHRS_ENABLED
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::BARO);
     if (serial_port >= 0) {
-        ADD_BACKEND(new AP_Baro_ExternalAHRS(*this, serial_port));
+        ADD_BACKEND(NEW_NOTHROW AP_Baro_ExternalAHRS(*this, serial_port));
     }
 #endif
 
@@ -624,8 +577,8 @@ void AP_Baro::init(void)
 #define GET_I2C_DEVICE(bus, address) _have_i2c_driver(bus, address)?nullptr:hal.i2c_mgr->get_device(bus, address)
 
 #if AP_SIM_BARO_ENABLED
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_BARO_MS56XX_ENABLED
-    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_BARO_MS5611_ENABLED
+    ADD_BACKEND(AP_Baro_MS5611::probe(*this,
                                       std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
 #endif
     // do not probe for other drivers when using simulation:
@@ -638,8 +591,8 @@ void AP_Baro::init(void)
 #elif AP_FEATURE_BOARD_DETECT
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PX4V1:
-#if AP_BARO_MS56XX_ENABLED && defined(HAL_BARO_MS5611_I2C_BUS)
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+#if AP_BARO_MS5611_ENABLED && defined(HAL_BARO_MS5611_I2C_BUS)
+        ADD_BACKEND(AP_Baro_MS5611::probe(*this,
                                           std::move(GET_I2C_DEVICE(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR))));
 #endif
         break;
@@ -648,112 +601,51 @@ void AP_Baro::init(void)
     case AP_BoardConfig::PX4_BOARD_PHMINI:
     case AP_BoardConfig::PX4_BOARD_AUAV21:
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+    case AP_BoardConfig::PX4_BOARD_FMUV5:
+    case AP_BoardConfig::PX4_BOARD_FMUV6:
+#if AP_BARO_MS5611_ENABLED
+        ADD_BACKEND(AP_Baro_MS5611::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
 #endif
         break;
 
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
-    case AP_BoardConfig::PX4_BOARD_SP01:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+#if AP_BARO_MS5611_ENABLED
+        ADD_BACKEND(AP_Baro_MS5611::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME))));
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-#endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_MINDPXV2:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+        ADD_BACKEND(AP_Baro_MS5611::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
 #endif
         break;
 
     case AP_BoardConfig::PX4_BOARD_AEROFC:
-#if AP_BARO_MS56XX_ENABLED
+#if AP_BARO_MS5607_ENABLED
 #ifdef HAL_BARO_MS5607_I2C_BUS
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(GET_I2C_DEVICE(HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR)),
-                                          AP_Baro_MS56XX::BARO_MS5607));
+        ADD_BACKEND(AP_Baro_MS5607::probe(*this,
+                                          std::move(GET_I2C_DEVICE(HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR))));
 #endif
-#endif  // AP_BARO_MS56XX_ENABLED
-        break;
-
-    case AP_BoardConfig::VRX_BOARD_BRAIN54:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME))));
-#ifdef HAL_BARO_MS5611_SPI_IMU_NAME
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_IMU_NAME))));
-#endif
-#endif  // AP_BARO_MS56XX_ENABLED
-        break;
-
-    case AP_BoardConfig::VRX_BOARD_BRAIN51:
-    case AP_BoardConfig::VRX_BOARD_BRAIN52:
-    case AP_BoardConfig::VRX_BOARD_BRAIN52E:
-    case AP_BoardConfig::VRX_BOARD_CORE10:
-    case AP_BoardConfig::VRX_BOARD_UBRAIN51:
-    case AP_BoardConfig::VRX_BOARD_UBRAIN52:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-#endif  // AP_BARO_MS56XX_ENABLED
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_PCNC1:
-#if AP_BARO_ICM20789_ENABLED
-        ADD_BACKEND(AP_Baro_ICM20789::probe(*this,
-                                            std::move(GET_I2C_DEVICE(1, 0x63)),
-                                            std::move(hal.spi->get_device(HAL_INS_MPU60x0_NAME))));
-#endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_FMUV5:
-    case AP_BoardConfig::PX4_BOARD_FMUV6:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-#endif
+#endif  // AP_BARO_MS5607_ENABLED
         break;
 
     default:
         break;
     }
-#elif HAL_BARO_DEFAULT == HAL_BARO_LPS25H_IMU_I2C
-	ADD_BACKEND(AP_Baro_LPS2XH::probe_InvensenseIMU(*this,
-                                                    std::move(GET_I2C_DEVICE(HAL_BARO_LPS25H_I2C_BUS, HAL_BARO_LPS25H_I2C_ADDR)),
-                                                    HAL_BARO_LPS25H_I2C_IMU_ADDR));
-#elif HAL_BARO_DEFAULT == HAL_BARO_20789_I2C_I2C
-    ADD_BACKEND(AP_Baro_ICM20789::probe(*this,
-                                        std::move(GET_I2C_DEVICE(HAL_BARO_20789_I2C_BUS, HAL_BARO_20789_I2C_ADDR_PRESS)),
-                                        std::move(GET_I2C_DEVICE(HAL_BARO_20789_I2C_BUS, HAL_BARO_20789_I2C_ADDR_ICM))));
-#elif HAL_BARO_DEFAULT == HAL_BARO_20789_I2C_SPI
-    ADD_BACKEND(AP_Baro_ICM20789::probe(*this,
-                                        std::move(GET_I2C_DEVICE(HAL_BARO_20789_I2C_BUS, HAL_BARO_20789_I2C_ADDR_PRESS)),
-                                        std::move(hal.spi->get_device("icm20789"))));
-#endif
+#endif  // defined(HAL_BARO_PROBE_LIST) / AP_FEATURE_BOARD_DETECT
 
     // can optionally have baro on I2C too
     if (_ext_bus >= 0) {
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_MS5837_I2C_ADDR)), AP_Baro_MS56XX::BARO_MS5837));
+#if AP_BARO_MS5837_ENABLED
+        ADD_BACKEND(AP_Baro_MS5837::probe(*this,
+                                          std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_MS5837_I2C_ADDR))));
 #endif
 #if AP_BARO_KELLERLD_ENABLED
         ADD_BACKEND(AP_Baro_KellerLD::probe(*this,
                                           std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_KELLERLD_I2C_ADDR))));
 #endif
 #else
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+#if AP_BARO_MS5611_ENABLED
+        ADD_BACKEND(AP_Baro_MS5611::probe(*this,
                                           std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
 #endif
 #endif
@@ -770,7 +662,7 @@ void AP_Baro::init(void)
     }
     for (uint8_t i=0; i<8; i++) {
         if (msp_instance_mask & (1U<<i)) {
-            ADD_BACKEND(new AP_Baro_MSP(*this, i));
+            ADD_BACKEND(NEW_NOTHROW AP_Baro_MSP(*this, i));
         }
     }
 #endif
@@ -795,6 +687,7 @@ void AP_Baro::init(void)
 #endif
 }
 
+#if AP_BARO_PROBE_EXTERNAL_I2C_BUSES
 /*
   probe all the i2c barometers enabled with BARO_PROBE_EXT. This is
   used on boards without a builtin barometer
@@ -835,12 +728,20 @@ void AP_Baro::_probe_i2c_barometers(void)
         { PROBE_BMP388, AP_Baro_BMP388::probe, HAL_BARO_BMP388_I2C_ADDR },
         { PROBE_BMP388, AP_Baro_BMP388::probe, HAL_BARO_BMP388_I2C_ADDR2 },
 #endif
-#if AP_BARO_MS56XX_ENABLED
-        { PROBE_MS5611, AP_Baro_MS56XX::probe_5611, HAL_BARO_MS5611_I2C_ADDR },
-        { PROBE_MS5611, AP_Baro_MS56XX::probe_5611, HAL_BARO_MS5611_I2C_ADDR2 },
-        { PROBE_MS5607, AP_Baro_MS56XX::probe_5607, HAL_BARO_MS5607_I2C_ADDR },
-        { PROBE_MS5637, AP_Baro_MS56XX::probe_5637, HAL_BARO_MS5637_I2C_ADDR },
+#if AP_BARO_BMP581_ENABLED
+        { PROBE_BMP581, AP_Baro_BMP581::probe, HAL_BARO_BMP581_I2C_ADDR },
+        { PROBE_BMP581, AP_Baro_BMP581::probe, HAL_BARO_BMP581_I2C_ADDR2 },
 #endif
+#if AP_BARO_MS5611_ENABLED
+        { PROBE_MS5611, AP_Baro_MS5611::probe, HAL_BARO_MS5611_I2C_ADDR },
+        { PROBE_MS5611, AP_Baro_MS5611::probe, HAL_BARO_MS5611_I2C_ADDR2 },
+#endif  // AP_BARO_MS5611_ENABLED
+#if AP_BARO_MS5607_ENABLED
+        { PROBE_MS5607, AP_Baro_MS5607::probe, HAL_BARO_MS5607_I2C_ADDR },
+#endif  // AP_BARO_MS5607_ENABLED
+#if AP_BARO_MS5637_ENABLED
+        { PROBE_MS5637, AP_Baro_MS5637::probe, HAL_BARO_MS5637_I2C_ADDR },
+#endif  // AP_BARO_MS5637_ENABLED
 #if AP_BARO_FBM320_ENABLED
         { PROBE_FBM320, AP_Baro_FBM320::probe, HAL_BARO_FBM320_I2C_ADDR },
         { PROBE_FBM320, AP_Baro_FBM320::probe, HAL_BARO_FBM320_I2C_ADDR2 },
@@ -852,13 +753,16 @@ void AP_Baro::_probe_i2c_barometers(void)
 #if AP_BARO_LPS2XH_ENABLED
         { PROBE_LPS25H, AP_Baro_LPS2XH::probe, HAL_BARO_LPS25H_I2C_ADDR },
 #endif
+#if AP_BARO_AUAV_ENABLED
+        { PROBE_AUAV, AP_Baro_AUAV::probe, HAL_BARO_AUAV_I2C_ADDR },
+#endif
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
 #if AP_BARO_KELLERLD_ENABLED
         { PROBE_KELLER, AP_Baro_KellerLD::probe, HAL_BARO_KELLERLD_I2C_ADDR },
 #endif
-#if AP_BARO_MS56XX_ENABLED
-        { PROBE_MS5837, AP_Baro_MS56XX::probe_5837, HAL_BARO_MS5837_I2C_ADDR },
+#if AP_BARO_MS5837_ENABLED
+        { PROBE_MS5837, AP_Baro_MS5837::probe, HAL_BARO_MS5837_I2C_ADDR },
 #endif
 #endif  // APM_BUILD_TYPE(APM_BUILD_ArduSub)
     };
@@ -873,6 +777,7 @@ void AP_Baro::_probe_i2c_barometers(void)
         }
     }
 }
+#endif  // AP_BARO_PROBE_EXTERNAL_I2C_BUSES
 
 #if HAL_LOGGING_ENABLED
 bool AP_Baro::should_log() const
@@ -927,7 +832,16 @@ void AP_Baro::update(void)
 #if HAL_BARO_WIND_COMP_ENABLED
                 corrected_pressure -= wind_pressure_correction(i);
 #endif
+#if AP_BARO_THST_COMP_ENABLED
+                corrected_pressure -= thrust_pressure_correction(i);
+#endif
+#if (HAL_BARO_WIND_COMP_ENABLED || AP_BARO_THST_COMP_ENABLED)
+                sensors[i].corrected_pressure = corrected_pressure;
+#endif
                 altitude = get_altitude_difference(sensors[i].ground_pressure, corrected_pressure);
+
+                // the ground pressure is references against the field elevation
+                altitude -= _field_elevation_active;
             } else if (sensors[i].type == BARO_TYPE_WATER) {
                 //101325Pa is sea level air pressure, 9800 Pascal/ m depth in water.
                 //No temperature or depth compensation for density of water.
@@ -958,7 +872,7 @@ void AP_Baro::update(void)
             }
         }
     }
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_FIELD_ELEVATION_ENABLED
     update_field_elevation();
 #endif
 
@@ -1004,6 +918,7 @@ bool AP_Baro::healthy(uint8_t instance) const {
  */
 void AP_Baro::update_field_elevation(void)
 {
+#if AP_FIELD_ELEVATION_ENABLED
     const uint32_t now_ms = AP_HAL::millis();
     bool new_field_elev = false;
     const bool armed = hal.util->get_soft_armed();
@@ -1025,7 +940,7 @@ void AP_Baro::update_field_elevation(void)
             } else {
                 _field_elevation.set(_field_elevation_active);
                 _field_elevation.notify();
-                BARO_SEND_TEXT(MAV_SEVERITY_ALERT, "Failed to Set Field Elevation: Armed");
+                GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "Failed to Set Field Elevation: Armed");
             }
         }
     }
@@ -1033,20 +948,27 @@ void AP_Baro::update_field_elevation(void)
         _field_elevation_last_ms = now_ms;
         AP::ahrs().resetHeightDatum();
         update_calibration();
-        BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Field Elevation Set: %.0fm", _field_elevation_active);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Field Elevation Set: %.0fm", _field_elevation_active);
     }
+#endif
 }
 
-/*
-  call accumulate on all drivers
- */
-void AP_Baro::accumulate(void)
+#if AP_BARO_THST_COMP_ENABLED
+// scale the baro linearly with thrust
+float AP_Baro::thrust_pressure_correction(uint8_t instance)
 {
-    for (uint8_t i=0; i<_num_drivers; i++) {
-        drivers[i]->accumulate();
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_COPTER_OR_HELI
+    const AP_Motors* motors = AP::motors();
+    if (motors == nullptr) {
+         return 0.0f;
     }
+    const float motors_throttle = MAX(0,motors->get_throttle_out());
+    return sensors[instance].mot_scale * motors_throttle;
+#else
+    return 0.0f;
+#endif
 }
-
+#endif
 
 /* register a new sensor, claiming a sensor slot. If we are out of
    slots it will panic
@@ -1130,7 +1052,7 @@ bool AP_Baro::arming_checks(size_t buflen, char *buffer) const
     if (_alt_error_max > 0 && gps.status() >= AP_GPS::GPS_Status::GPS_OK_FIX_3D) {
         const float alt_amsl = gps.location().alt*0.01;
         // note the addition of _field_elevation_active as this is subtracted in get_altitude_difference()
-        const float alt_pressure = get_altitude_difference(SSL_AIR_PRESSURE, get_pressure()) + _field_elevation_active;
+        const float alt_pressure = get_altitude_difference(SSL_AIR_PRESSURE, get_pressure());
         const float error = fabsf(alt_amsl - alt_pressure);
         if (error > _alt_error_max) {
             hal.util->snprintf(buffer, buflen, "GPS alt error %.0fm (see BARO_ALTERR_MAX)", error);

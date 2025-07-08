@@ -35,14 +35,8 @@ public:
     // initialise rc input (channel_mainsail)
     void init_rc_in();
 
-    // decode pilot mainsail input and return in steer_out and throttle_out arguments
-    // mainsail_out is in the range 0 to 100, defaults to 100 (fully relaxed) if no input configured
-    // wingsail_out is in the range -100 to 100, defaults to 0
-    // mast_rotation_out is in the range -100 to 100, defaults to 0
-    void get_pilot_desired_mainsail(float &mainsail_out, float &wingsail_out, float &mast_rotation_out);
-
-    // calculate throttle and mainsail angle required to attain desired speed (in m/s)
-    void get_throttle_and_mainsail_out(float desired_speed, float &throttle_out, float &mainsail_out, float &wingsail_out, float &mast_rotation_out);
+    // calculate throttle and set sail
+    void get_throttle_and_set_mainsail(float desired_speed, float &throttle_out);
 
     // Velocity Made Good, this is the speed we are traveling towards the desired destination
     float get_VMG() const;
@@ -65,7 +59,7 @@ public:
     // returns true if sailboat should take a indirect navigation route to go upwind
     bool use_indirect_route(float desired_heading_cd) const;
 
-    // calculate the heading to sail on if we cant go upwind
+    // calculate the heading to sail on if we can't go upwind
     float calc_heading(float desired_heading_cd);
 
     // states of USE_MOTOR parameter and motor_state variable
@@ -84,6 +78,16 @@ public:
 
     // return sailboat loiter radius
     float get_loiter_radius() const {return loit_radius;}
+
+    // set mainsail according to pilot input
+    void set_pilot_desired_mainsail();
+
+    // set mainsail in auto modes
+    void set_auto_mainsail(float desired_speed);
+
+    // as far as possible stop sails driving the boat
+    // by feathering or sheeting right out
+    void relax_sails();
 
 private:
 

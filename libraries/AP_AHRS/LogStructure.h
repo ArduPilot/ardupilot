@@ -57,20 +57,16 @@ struct PACKED log_AOA_SSA {
 // @Field: Pitch: achieved vehicle pitch
 // @Field: DesYaw: vehicle desired yaw
 // @Field: Yaw: achieved vehicle yaw
-// @Field: ErrRP: lowest estimated gyro drift error
-// @Field: ErrYaw: difference between measured yaw and DCM yaw estimate
 // @Field: AEKF: active EKF type
 struct PACKED log_Attitude {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    int16_t  control_roll;
-    int16_t  roll;
-    int16_t  control_pitch;
-    int16_t  pitch;
-    uint16_t control_yaw;
-    uint16_t yaw;
-    uint16_t error_rp;
-    uint16_t error_yaw;
+    float control_roll;
+    float roll;
+    float control_pitch;
+    float pitch;
+    float control_yaw;
+    float yaw;
     uint8_t  active;
 };
 
@@ -107,40 +103,6 @@ struct PACKED log_POS {
     float alt;
     float rel_home_alt;
     float rel_origin_alt;
-};
-
-// @LoggerMessage: RATE
-// @Description: Desired and achieved vehicle attitude rates. Not logged in Fixed Wing Plane modes.
-// @Field: TimeUS: Time since system startup
-// @Field: RDes: vehicle desired roll rate
-// @Field: R: achieved vehicle roll rate
-// @Field: ROut: normalized output for Roll
-// @Field: PDes: vehicle desired pitch rate
-// @Field: P: vehicle pitch rate
-// @Field: POut: normalized output for Pitch
-// @Field: Y: achieved vehicle yaw rate
-// @Field: YOut: normalized output for Yaw
-// @Field: YDes: vehicle desired yaw rate
-// @Field: ADes: desired vehicle vertical acceleration
-// @Field: A: achieved vehicle vertical acceleration
-// @Field: AOut: percentage of vertical thrust output current being used
-// @Field: AOutSlew: vertical thrust output slew rate
-struct PACKED log_Rate {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float   control_roll;
-    float   roll;
-    float   roll_out;
-    float   control_pitch;
-    float   pitch;
-    float   pitch_out;
-    float   control_yaw;
-    float   yaw;
-    float   yaw_out;
-    float   control_accel;
-    float   accel;
-    float   accel_out;
-    float   throttle_slew;
 };
 
 // @LoggerMessage: VSTB
@@ -199,13 +161,11 @@ struct PACKED log_ATSC {
     { LOG_AOA_SSA_MSG, sizeof(log_AOA_SSA), \
         "AOA", "Qff", "TimeUS,AOA,SSA", "sdd", "F00" , true }, \
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
-        "ATT", "QccccCCCCB", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw,AEKF", "sddddhhdh-", "FBBBBBBBB-" , true }, \
+        "ATT", "QffffffB", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,AEKF", "sddddhh-", "F000000-" , true }, \
     { LOG_ORGN_MSG, sizeof(log_ORGN), \
         "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt", "s#DUm", "F-GGB" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
         "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGG000" , true }, \
-    { LOG_RATE_MSG, sizeof(log_Rate), \
-        "RATE", "Qfffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut,AOutSlew", "skk-kk-kk-oo--", "F?????????BB--" , true }, \
     { LOG_ATSC_MSG, sizeof(log_ATSC), \
         "ATSC", "Qffffff",  "TimeUS,AngPScX,AngPScY,AngPScZ,PDScX,PDScY,PDScZ", "s------", "F000000" , true }, \
     { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \

@@ -25,7 +25,6 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_RTC/AP_RTC.h>
 #include <GCS_MAVLink/GCS.h>
@@ -201,6 +200,7 @@ void AP_MSP_Telem_Backend::update_home_pos(home_state_t &home_state)
     home_state.home_is_set = _ahrs.home_is_set();
 }
 
+#if AP_GPS_ENABLED
 void AP_MSP_Telem_Backend::update_gps_state(gps_state_t &gps_state)
 {
     AP_GPS& gps = AP::gps();
@@ -217,9 +217,10 @@ void AP_MSP_Telem_Backend::update_gps_state(gps_state_t &gps_state)
         gps_state.lon = loc.lng;
         gps_state.alt_m = loc.alt/100; // 1m resolution
         gps_state.speed_cms = gps.ground_speed() * 100;
-        gps_state.ground_course_cd = gps.ground_course_cd();
+        gps_state.ground_course_dd = gps.ground_course_cd() / 10;
     }
 }
+#endif
 
 #if AP_BATTERY_ENABLED
 void AP_MSP_Telem_Backend::update_battery_state(battery_state_t &battery_state)
@@ -311,7 +312,7 @@ void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, uint8_t
         const char* unit = (units == OSD_UNIT_METRIC) ? "m/s" : "f/s";
 
         if (v_length > 1.0f) {
-            const int32_t angle = wrap_360_cd(DEGX100 * atan2f(v.y, v.x) - ahrs.yaw_sensor);
+            const int32_t angle = wrap_360_cd(rad_to_cd(atan2f(v.y, v.x)) - ahrs.yaw_sensor);
             const int32_t interval = 36000 / ARRAY_SIZE(arrows);
             uint8_t arrow = arrows[((angle + interval / 2) / interval) % ARRAY_SIZE(arrows)];
             snprintf(flight_mode_str, size, "%s %d%s%c%c%c", notify->get_flight_mode_str(),  (uint8_t)roundf(v_length), unit, 0xE2, 0x86, arrow);
@@ -501,93 +502,105 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
     MSP_UNUSED(src);
 
     switch (cmd_msp) {
+#if HAL_MSP_RANGEFINDER_ENABLED
     case MSP2_SENSOR_RANGEFINDER: {
         const MSP::msp_rangefinder_data_message_t *pkt = (const MSP::msp_rangefinder_data_message_t *)src->ptr;
         msp_handle_rangefinder(*pkt);
     }
     break;
+#endif
+#if HAL_MSP_OPTICALFLOW_ENABLED
     case MSP2_SENSOR_OPTIC_FLOW: {
         const MSP::msp_opflow_data_message_t *pkt = (const MSP::msp_opflow_data_message_t *)src->ptr;
         msp_handle_opflow(*pkt);
     }
     break;
+#endif
+#if HAL_MSP_GPS_ENABLED
     case MSP2_SENSOR_GPS: {
         const MSP::msp_gps_data_message_t *pkt = (const MSP::msp_gps_data_message_t *)src->ptr;
         msp_handle_gps(*pkt);
     }
     break;
+#endif
+#if AP_COMPASS_MSP_ENABLED
     case MSP2_SENSOR_COMPASS: {
         const MSP::msp_compass_data_message_t *pkt = (const MSP::msp_compass_data_message_t *)src->ptr;
         msp_handle_compass(*pkt);
     }
     break;
+#endif
+#if AP_BARO_MSP_ENABLED
     case MSP2_SENSOR_BAROMETER: {
         const MSP::msp_baro_data_message_t *pkt = (const MSP::msp_baro_data_message_t *)src->ptr;
         msp_handle_baro(*pkt);
     }
     break;
+#endif
+#if AP_AIRSPEED_MSP_ENABLED && AP_AIRSPEED_ENABLED
     case MSP2_SENSOR_AIRSPEED: {
         const MSP::msp_airspeed_data_message_t *pkt = (const MSP::msp_airspeed_data_message_t *)src->ptr;
         msp_handle_airspeed(*pkt);
     }
     break;
+#endif
     }
 
     return MSP_RESULT_NO_REPLY;
 }
 
+#if HAL_MSP_OPTICALFLOW_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_opflow(const MSP::msp_opflow_data_message_t &pkt)
 {
-#if HAL_MSP_OPTICALFLOW_ENABLED
     AP_OpticalFlow *optflow = AP::opticalflow();
     if (optflow == nullptr) {
         return;
     }
     optflow->handle_msp(pkt);
-#endif
 }
+#endif
 
+#if HAL_MSP_RANGEFINDER_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_rangefinder(const MSP::msp_rangefinder_data_message_t &pkt)
 {
-#if HAL_MSP_RANGEFINDER_ENABLED
     RangeFinder *rangefinder = AP::rangefinder();
     if (rangefinder == nullptr) {
         return;
     }
     rangefinder->handle_msp(pkt);
-#endif
 }
+#endif
 
+#if HAL_MSP_GPS_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_gps(const MSP::msp_gps_data_message_t &pkt)
 {
-#if HAL_MSP_GPS_ENABLED
     AP::gps().handle_msp(pkt);
-#endif
 }
+#endif
 
+#if AP_COMPASS_MSP_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_compass(const MSP::msp_compass_data_message_t &pkt)
 {
-#if AP_COMPASS_MSP_ENABLED
     AP::compass().handle_msp(pkt);
-#endif
 }
+#endif
 
+#if AP_BARO_MSP_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_baro(const MSP::msp_baro_data_message_t &pkt)
 {
-#if AP_BARO_MSP_ENABLED
     AP::baro().handle_msp(pkt);
-#endif
 }
+#endif
 
+#if AP_AIRSPEED_MSP_ENABLED && AP_AIRSPEED_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_airspeed(const MSP::msp_airspeed_data_message_t &pkt)
 {
-#if AP_AIRSPEED_MSP_ENABLED && AP_AIRSPEED_ENABLED
     auto *airspeed = AP::airspeed();
     if (airspeed) {
         airspeed->handle_msp(pkt);
     }
-#endif
 }
+#endif
 
 uint32_t AP_MSP_Telem_Backend::get_osd_flight_mode_bitmask(void)
 {
@@ -645,8 +658,10 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_raw_gps(sbuf_t *dst)
         return MSP_RESULT_ERROR;
     }
 #endif
-    gps_state_t gps_state;
+    gps_state_t gps_state {};
+#if AP_GPS_ENABLED
     update_gps_state(gps_state);
+#endif
 
     // handle airspeed override
     bool airspeed_en = false;
@@ -889,9 +904,9 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_attitude(sbuf_t *dst)
         int16_t pitch;
         int16_t yaw;
     } attitude {
-        roll : int16_t(ahrs.roll_sensor * 0.1),     // centidegress to decidegrees
-        pitch : int16_t(ahrs.pitch_sensor * 0.1),   // centidegress to decidegrees
-        yaw : int16_t(ahrs.yaw_sensor * 0.01)       // centidegress to degrees
+        roll : int16_t(ahrs.get_roll_deg() * 10),     // degress to decidegrees
+        pitch : int16_t(ahrs.get_pitch_deg() * 10),   // degress to decidegrees
+        yaw : int16_t(ahrs.get_yaw_deg())
     };
 
     sbuf_write_data(dst, &attitude, sizeof(attitude));
@@ -1023,7 +1038,8 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
 #if AP_RTC_ENABLED
     if (AP::rtc().get_utc_usec(time_usec)) { // may fail, leaving time_unix at 0
         const time_t time_sec = time_usec / 1000000;
-        localtime_tm = *gmtime(&time_sec);
+        struct tm tmd {};
+        localtime_tm = *gmtime_r(&time_sec, &tmd);
     }
 #endif
     const struct PACKED {
@@ -1051,13 +1067,10 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
 #if AP_RC_CHANNEL_ENABLED
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 {
-#if AP_RCMAPPER_ENABLED
-    const RCMapper* rcmap = AP::rcmap();
-    if (rcmap == nullptr) {
-        return MSP_RESULT_ERROR;
-    }
-    uint16_t values[16] = {};
-    rc().get_radio_in(values, ARRAY_SIZE(values));
+    float roll = rc().get_roll_channel().norm_input_dz();
+    float pitch = -rc().get_pitch_channel().norm_input_dz();
+    float yaw = rc().get_yaw_channel().norm_input_dz();
+    float throttle = rc().get_throttle_channel().norm_input_dz();
 
     const struct PACKED {
         uint16_t a;
@@ -1066,18 +1079,14 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
         uint16_t t;
     } rc {
         // send only 4 channels, MSP order is AERT
-        // note: rcmap channels start at 1
-        a : values[rcmap->roll()-1],       // A
-        e : values[rcmap->pitch()-1],      // E
-        r : values[rcmap->yaw()-1],        // R
-        t : values[rcmap->throttle()-1]    // T
+        a : uint16_t(roll*500+1500),       // A
+        e : uint16_t(pitch*500+1500),      // E
+        r : uint16_t(yaw*500+1500),        // R
+        t : uint16_t(throttle*1000+1000)    // T
     };
 
     sbuf_write_data(dst, &rc, sizeof(rc));
     return MSP_RESULT_ACK;
-#else
-    return MSP_RESULT_ERROR;
-#endif
 }
 #endif  // AP_RC_CHANNEL_ENABLED
 
@@ -1252,7 +1261,7 @@ void AP_MSP_Telem_Backend::msp_displayport_draw_screen()
     msp_send_packet(MSP_DISPLAYPORT, MSP::MSP_V1, subcmd, sizeof(subcmd), false);
 }
 
-void AP_MSP_Telem_Backend::msp_displayport_write_string(uint8_t col, uint8_t row, bool blink, const char *string)
+void AP_MSP_Telem_Backend::msp_displayport_write_string(uint8_t col, uint8_t row, bool blink, const char *string, const uint8_t font_table)
 {
     const uint8_t len = strnlen(string, OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH);
 
@@ -1267,6 +1276,7 @@ void AP_MSP_Telem_Backend::msp_displayport_write_string(uint8_t col, uint8_t row
     packet.sub_cmd = msp_displayport_subcmd_e::MSP_DISPLAYPORT_WRITE_STRING;
     packet.row = row;
     packet.col = col;
+    packet.attr |= (font_table & 0x03); // first 2 bits are for the table index
     if (blink) {
         packet.attr |= DISPLAYPORT_MSP_ATTR_BLINK;
     }

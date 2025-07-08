@@ -5,8 +5,8 @@
 # MCU class and specific type
 MCU STM32F7xx STM32F745xx
 
-# board ID for firmware load
-APJ_BOARD_ID 121
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_OMNIBUSF7V2
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -129,9 +129,8 @@ define HAL_PARACHUTE_ENABLED 0
 # save FLASH, but leave above when flash issue is fixed
 include ../include/minimize_fpv_osd.inc
 
-# disable SMBUS monitors to save flash
-undef AP_BATTERY_SMBUS_ENABLED
-define AP_BATTERY_SMBUS_ENABLED 0
+#not useable for quadplane
+define HAL_QUADPLANE_ENABLED 0
 
 # one baro
 BARO BMP280 SPI:bmp280

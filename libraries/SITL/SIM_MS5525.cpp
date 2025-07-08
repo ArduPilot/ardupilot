@@ -1,3 +1,7 @@
+#include "SIM_config.h"
+
+#if AP_SIM_MS5525_ENABLED
+
 #include "SIM_MS5525.h"
 
 #include <SITL/SITL.h>
@@ -68,11 +72,9 @@ void MS5525::get_pressure_temperature_readings(float &P_Pa, float &Temp_C)
     float sim_alt = AP::sitl()->state.altitude;
     sim_alt += 2 * rand_float();
 
-    float sigma, delta, theta;
-    AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
-
-    // To Do: Add a sensor board temperature offset parameter
-    Temp_C = (KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta)) + 25.0;
+    Temp_C = AP_Baro::get_temperatureC_for_alt_amsl(sim_alt);
     const uint8_t instance = 0;  // TODO: work out which sensor this is
     P_Pa = AP::sitl()->state.airspeed_raw_pressure[instance] + AP::sitl()->airspeed[instance].offset;
 }
+
+#endif  // AP_SIM_MS5525_ENABLED

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-from __future__ import print_function
+
+# flake8: noqa
+
 import re
 from param import known_param_fields, known_units
 from emit import Emit
@@ -225,6 +227,9 @@ This list is automatically generated from the latest ardupilot source code, and 
            reference=reference)
 
         for param in g.params:
+            if getattr(param, "Legacy", False):
+                # do not emit legacy parameters to the Wiki
+                continue
             if not hasattr(param, 'DisplayName') or not hasattr(param, 'Description'):
                 continue
             d = param.__dict__
@@ -263,6 +268,8 @@ This list is automatically generated from the latest ardupilot source code, and 
             headings = []
             row = []
             for field in sorted(param.__dict__.keys()):
+                if not self.should_emit_field(param, field):
+                    continue
                 if (field not in ['name', 'DisplayName', 'Description', 'User', 'SortValues', 'RebootRequired'] and
                         field in known_param_fields):
                     headings.append(field)

@@ -1,18 +1,12 @@
 // Created by Asa Davis and Davis Schenkenberger on 23rd September 21.
 
-//usage:
-//PARAMS:
-// param set AHRS_EKF_TYPE 11
-// param set EAHRS_TYPE 2
-// param set SERIAL3_PROTOCOL 36
-// param set SERIAL3_BAUD 115
-// sim_vehicle.py -v Plane -A "--serial3=sim:MicroStrain7" --console --map -DG
 #pragma once
 
 #include "SIM_Aircraft.h"
 
 #include <SITL/SITL.h>
 #include "SIM_SerialDevice.h"
+#include <sys/time.h>
 
 namespace SITL
 {

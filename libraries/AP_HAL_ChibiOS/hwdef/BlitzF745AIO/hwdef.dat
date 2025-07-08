@@ -3,11 +3,13 @@
 # for IFLIGHT_BLITZ_F7_AIO hardware.
 # thanks to betaflight for pin information
 
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 # MCU class and specific type
 MCU STM32F7xx STM32F745xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1117
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_BLITZF7AIO
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -130,11 +132,12 @@ define STM32_I2C_USE_DMA FALSE
 # Dataflash setup
 SPIDEV dataflash SPI3 DEVID1 FLASH1_CS     MODE3 104*MHZ 104*MHZ
 SPIDEV bmi270    SPI1 DEVID1 GYRO1_CS      MODE3 2*MHZ 10*MHZ
+SPIDEV icm42688  SPI1 DEVID1 GYRO1_CS      MODE3 1*MHZ 16*MHZ
 
 define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 # OSD setup
-# SPIDEV osd SPI4 DEVID1 OSD1_CS   MODE0  10*MHZ  10*MHZ
+SPIDEV osd SPI4 DEVID1 OSD1_CS   MODE0  10*MHZ  10*MHZ
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
@@ -144,21 +147,17 @@ BARO DPS310 I2C:1:0x76
         
 # no built-in compass
 define ALLOW_ARM_NO_COMPASS
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 
-define STM32_PWM_USE_ADVANCED TRUE
-
 # save some flash
-include ../include/save_some_flash.inc
+include ../include/minimize_fpv_osd.inc
 
 # one IMU: bmi270
 IMU BMI270 SPI:bmi270 ROTATION_ROLL_180_YAW_135
+IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180_YAW_315
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
 # Motor order implies Betaflight/X for standard ESCs
 define HAL_FRAME_TYPE_DEFAULT 12
 
-# This is a whoop AIO board, not really suitable for anything other than copter
-AUTOBUILD_TARGETS Copter
-
-include ../include/no_bootloader_DFU.inc

@@ -26,6 +26,7 @@
 #include "tailsitter.h"
 #include "tiltrotor.h"
 #include "transition.h"
+#include "VTOL_Assist.h"
 
 /*
   QuadPlane specific functionality
@@ -45,6 +46,7 @@ public:
     friend class Tiltrotor;
     friend class SLT_Transition;
     friend class Tailsitter_Transition;
+    friend class VTOL_Assist;
 
     friend class Mode;
     friend class ModeManual;
@@ -60,7 +62,9 @@ public:
     friend class ModeQAutotune;
     friend class ModeQAcro;
     friend class ModeLoiterAltQLand;
-    
+    friend class ModeAutoLand;
+    friend class AP_SystemID;
+
     QuadPlane(AP_AHRS &_ahrs);
 
     static QuadPlane *get_singleton() {
@@ -73,6 +77,13 @@ public:
 
     void control_auto(void);
     bool setup(void);
+
+    enum class ThrustType : uint8_t {
+        SLT=0, // Traditional quadplane, with a pusher motor and independent multicopter lift.
+        TAILSITTER,
+        TILTROTOR,
+    };
+    ThrustType get_thrust_type(void) {return thrust_type;}
 
     void vtol_position_controller(void);
     void setup_target_position(void);
@@ -101,10 +112,7 @@ public:
     // abort landing, only valid when in a VTOL landing descent
     bool abort_landing(void);
 
-    /*
-      return true if we are in a transition to fwd flight from hover
-    */
-    bool in_transition(void) const;
+    bool in_frwd_transition(void) const;
 
     bool handle_do_vtol_transition(enum MAV_VTOL_STATE state) const;
 
@@ -162,13 +170,6 @@ public:
 
     MAV_TYPE get_mav_type(void) const;
 
-    enum Q_ASSIST_STATE_ENUM {
-        Q_ASSIST_DISABLED,
-        Q_ASSIST_ENABLED,
-        Q_ASSIST_FORCE,
-    };
-    void set_q_assist_state(Q_ASSIST_STATE_ENUM state) {q_assist_state = state;};
-
     // called when we change mode (for any mode, not just Q modes)
     void mode_enter(void);
 
@@ -192,6 +193,8 @@ public:
     // Get pilot throttle input with deadzone, this will return 50% throttle in failsafe!
     float get_throttle_input() const;
 
+    void Log_Write_AttRate();
+
 private:
     AP_AHRS &ahrs;
 
@@ -202,6 +205,9 @@ private:
 
     AP_Enum<AP_Motors::motor_frame_class> frame_class;
     AP_Enum<AP_Motors::motor_frame_type> frame_type;
+
+    // Types of different "quadplane" configurations.
+    ThrustType thrust_type;
 
     // Initialise motors to allow passing it to tailsitter in its constructor
     AP_MotorsMulticopter *motors = nullptr;
@@ -231,9 +237,6 @@ private:
 
     // return true if airmode should be active
     bool air_mode_active() const;
-
-    // check for quadplane assistance needed
-    bool should_assist(float aspeed, bool have_airspeed);
 
     // check for an EKF yaw reset
     void check_yaw_reset(void);
@@ -279,7 +282,7 @@ private:
     float assist_climb_rate_cms(void) const;
 
     // calculate desired yaw rate for assistance
-    float desired_auto_yaw_rate_cds(void) const;
+    float desired_auto_yaw_rate_cds(bool body_frame = false) const;
 
     bool should_relax(void);
     void motors_output(bool run_rate_controller = true);
@@ -336,18 +339,8 @@ private:
 
     AP_Int16 rc_speed;
 
-    // speed below which quad assistance is given
-    AP_Float assist_speed;
-
-    // angular error at which quad assistance is given
-    AP_Int8 assist_angle;
-    uint32_t angle_error_start_ms;
-    AP_Float assist_delay;
-
-    // altitude to trigger assistance
-    AP_Int16 assist_alt;
-    uint32_t alt_error_start_ms;
-    bool in_alt_assist;
+    // VTOL assistance in a forward flight mode
+    VTOL_Assist assist {*this};
 
     // landing speed in m/s
     AP_Float land_final_speed;
@@ -403,6 +396,9 @@ private:
     // limit applied to forward pitch to prevent wing producing negative lift
     AP_Float q_fwd_pitch_lim;
 
+    // limit applied to back pitch to prevent wing producing excessive lift
+    AP_Float q_bck_pitch_lim;
+
     // which fwd throttle handling method is active
     enum class ActiveFwdThr : uint8_t {
         NONE = 0,
@@ -441,6 +437,8 @@ private:
 
     float q_fwd_throttle; // forward throttle used in q modes
     float q_fwd_pitch_lim_cd; // forward pitch limit applied when using q_fwd_throttle
+    float q_bck_pitch_lim_cd; // backward pitch limit applied when using Q_BCK_PIT_LIM
+    uint32_t q_pitch_limit_update_ms; // last time the backward pitch limit was updated
 
     // when did we last run the attitude controller?
     uint32_t last_att_control_ms;
@@ -449,16 +447,13 @@ private:
     Transition *transition = nullptr;
 
     // true when waiting for pilot throttle
-    bool throttle_wait:1;
+    bool throttle_wait;
 
     // true when quad is assisting a fixed wing mode
-    bool assisted_flight:1;
-
-    // true when in angle assist
-    bool in_angle_assist:1;
+    bool assisted_flight;
 
     // are we in a guided takeoff?
-    bool guided_takeoff:1;
+    bool guided_takeoff;
 
     /* if we arm in guided mode when we arm then go into a "waiting
        for takeoff command" state. In this state we are waiting for
@@ -556,8 +551,8 @@ private:
         uint8_t motor_count;          // number of motors to cycle
     } motor_test;
 
-    // time of last control log message
-    uint32_t last_ctrl_log_ms;
+    // time of last MOTB log message
+    uint32_t last_motb_log_ms;
 
     // time of last QTUN log message
     uint32_t last_qtun_log_ms;
@@ -618,6 +613,9 @@ private:
         return (options.get() & int32_t(option)) != 0;
     }
 
+    // minimum distance to be from destination to use approach logic
+    AP_Float approach_distance;
+
     AP_Float takeoff_failure_scalar;
     AP_Float maximum_takeoff_airspeed;
     uint32_t takeoff_start_time_ms;
@@ -636,6 +634,12 @@ private:
     // oneshot with duration ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
     // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set
     bool delay_arming;
+
+    // should we force use of fixed wing controller for attitude upset recovery?
+    bool force_fw_control_recovery;
+
+    // are we in spin recovery?
+    bool in_spin_recovery;
 
     /*
       return true if current mission item is a vtol takeoff
@@ -679,9 +683,6 @@ private:
 
     // returns true if the vehicle should currently be doing a spiral landing
     bool landing_with_fixed_wing_spiral_approach(void) const;
-
-    // Q assist state, can be enabled, disabled or force. Default to enabled
-    Q_ASSIST_STATE_ENUM q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED;
 
     /*
       return true if we should use the fixed wing attitude control loop

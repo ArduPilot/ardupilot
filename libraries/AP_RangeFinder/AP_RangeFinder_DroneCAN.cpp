@@ -13,14 +13,11 @@ extern const AP_HAL::HAL& hal;
 #define debug_range_finder_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { hal.console->printf(fmt, ##args); }} while (0)
 
 //links the rangefinder uavcan message to this backend
-void AP_RangeFinder_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+bool AP_RangeFinder_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_dronecan == nullptr) {
-        return;
-    }
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_measurement, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("measurement_sub");
-    }
+    const auto driver_index = ap_dronecan->get_driver_index();
+
+    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_measurement, driver_index) != nullptr);
 }
 
 //Method to find the backend relating to the node id
@@ -60,7 +57,7 @@ AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneC
                     //it up as UAVCAN type
                     return nullptr;
                 }
-                frontend.drivers[i] = new AP_RangeFinder_DroneCAN(frontend.state[i], frontend.params[i]);
+                frontend.drivers[i] = NEW_NOTHROW AP_RangeFinder_DroneCAN(frontend.state[i], frontend.params[i]);
                 driver = (AP_RangeFinder_DroneCAN*)frontend.drivers[i];
                 if (driver == nullptr) {
                     break;

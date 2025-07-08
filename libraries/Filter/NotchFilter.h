@@ -44,11 +44,18 @@ public:
     // calculate attenuation and quality from provided center frequency and bandwidth
     static void calculate_A_and_Q(float center_freq_hz, float bandwidth_hz, float attenuation_dB, float& A, float& Q); 
 
+    void disable(void) {
+        initialised = false;
+    }
+
+    // return the frequency to log for the notch
+    float logging_frequency(void) const;
+
 protected:
 
     bool initialised, need_reset;
     float b0, b1, b2, a1, a2;
-    float _center_freq_hz, _sample_freq_hz;
+    float _center_freq_hz, _sample_freq_hz, _A;
     T ntchsig1, ntchsig2, signal2, signal1;
 };
 

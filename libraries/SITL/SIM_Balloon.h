@@ -34,7 +34,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Balloon(frame_str);
+        return NEW_NOTHROW Balloon(frame_str);
     }
 
 private:

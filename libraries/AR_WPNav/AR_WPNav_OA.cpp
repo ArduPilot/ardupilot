@@ -25,6 +25,7 @@ extern const AP_HAL::HAL& hal;
 // update navigation
 void AR_WPNav_OA::update(float dt)
 {
+#if AP_OAPATHPLANNER_ENABLED
     // exit immediately if no current location, origin or destination
     Location current_loc;
     float speed;
@@ -142,6 +143,7 @@ void AR_WPNav_OA::update(float dt)
         _desired_turn_rate_rads = 0.0f;
         return;
     }
+#endif  // AP_OAPATHPLANNER_ENABLED
 
     // call parent update
     AR_WPNav::update(dt);

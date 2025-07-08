@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Code by Charles Villard
+ * Code by Charles Villard, ARg and Bayu Laksono
  */
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_ESP32/Semaphores.h>
@@ -22,10 +22,10 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "driver/gpio.h"
-#include "driver/adc.h"
-#include "esp_adc_cal.h"
 #include "soc/adc_channel.h"
+#include "esp_adc/adc_oneshot.h"
+#include "esp_adc/adc_cali.h"
+#include "esp_adc/adc_cali_scheme.h"
 
 #if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 
@@ -41,13 +41,17 @@
 #define ANALOGIN_DEBUGGING 0
 
 // base voltage scaling for 12 bit 3.3V ADC
-#define VOLTAGE_SCALING (3.3f/4096.0f)
+#define VOLTAGE_SCALING (3300.0f/4096.0f)
 
 #if ANALOGIN_DEBUGGING
 # define Debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
 # define Debug(fmt, args ...)
 #endif
+
+
+//ADC handle
+static adc_oneshot_unit_handle_t g_adc1_handle = NULL;
 
 // we are limited to using adc1, and it supports 8 channels max, on gpio, in this order:
 // ADC1_CH0=D36,ADC1_CH1=D37,ADC1_CH2=D38,ADC1_CH3=D39,ADC1_CH4=D32,ADC1_CH5=D33,ADC1_CH6=D34,ADC1_CH7=D35
@@ -67,46 +71,96 @@ const AnalogIn::pin_info AnalogIn::pin_config[] = HAL_ESP32_ADC_PINS;
 #define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE(AnalogIn::pin_config)
 
 
-#define DEFAULT_VREF    1100       //Use adc2_vref_to_gpio() to obtain a better estimate
+#define DEFAULT_VREF    3300         //Use adc2_vref_to_gpio() to obtain a better estimate
 #define NO_OF_SAMPLES   256          //Multisampling
 
 static const adc_atten_t atten = ADC_ATTEN_DB_12;
 
-//ardupin is the ardupilot assigned number, starting from 1-8(max)
-// 'pin' and _pin is a macro like 'ADC1_GPIO35_CHANNEL' from board config .h
-AnalogSource::AnalogSource(int16_t ardupin,int16_t pin,float scaler, float initial_value, uint8_t unit) :
+/*---------------------------------------------------------------
+        ADC Calibration
+---------------------------------------------------------------*/
+bool adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle)
+{
+    adc_cali_handle_t handle = NULL;
+    esp_err_t ret = ESP_FAIL;
+    bool calibrated = false;
 
-    _unit(unit),
+#if ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
+    if (!calibrated) {
+        Debug("AnalogIn: calibration scheme version is %s", "Curve Fitting");
+        adc_cali_curve_fitting_config_t cali_config = {
+            .unit_id = unit,
+            .chan = channel,
+            .atten = atten,
+            .bitwidth = ADC_BITWIDTH_12,
+        };
+        ret = adc_cali_create_scheme_curve_fitting(&cali_config, &handle);
+        if (ret == ESP_OK) {
+            calibrated = true;
+        }
+    }
+#endif
+
+#if ADC_CALI_SCHEME_LINE_FITTING_SUPPORTED
+    if (!calibrated) {
+        Debug("AnalogIn: calibration scheme version is %s", "Line Fitting");
+        adc_cali_line_fitting_config_t cali_config = {
+            .unit_id = unit,
+            .atten = atten,
+            .bitwidth = ADC_BITWIDTH_12,
+        };
+        ret = adc_cali_create_scheme_line_fitting(&cali_config, &handle);
+        if (ret == ESP_OK) {
+            calibrated = true;
+        }
+    }
+#endif
+
+    *out_handle = handle;
+    if (ret == ESP_OK) {
+        Debug("AnalogIn: Calibration Success for channel %d:%d", unit, channel);
+    } else if (ret == ESP_ERR_NOT_SUPPORTED || !calibrated) {
+        Debug("AnalogIn: eFuse not burnt, skip software calibration");
+    } else {
+        Debug("AnalogIn: Invalid arg or no memory");
+    }
+
+    return calibrated;
+}
+
+void adc_calibration_deinit(adc_cali_handle_t handle)
+{
+#if ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
+    Debug("AnalogIn: deregister %s calibration scheme", "Curve Fitting");
+    adc_cali_delete_scheme_curve_fitting(handle);
+#elif ADC_CALI_SCHEME_LINE_FITTING_SUPPORTED
+    Debug("AnalogIn: deregister %s calibration scheme", "Line Fitting");
+    adc_cali_delete_scheme_line_fitting(handle);
+#endif
+}
+
+//ardupin is the ardupilot assigned number, starting from 1-8(max)
+AnalogSource::AnalogSource(int16_t ardupin, adc_channel_t adc_channel, float scaler, float initial_value) :
+    _adc_channel(adc_channel),
     _ardupin(ardupin),
-    _pin(pin),
     _scaler(scaler),
     _value(initial_value),
     _latest_value(initial_value),
     _sum_count(0),
     _sum_value(0)
 {
-    printf("AnalogIn: adding ardupin:%d-> which is adc1_offset:%d\n", _ardupin,_pin);
+    Debug("AnalogIn: adding ardupin:%d-> which is adc1_channel:%d\n", _ardupin, _adc_channel);
 
-    // init the pin now if possible, otherwise doo it later from set_pin
-    if ( _ardupin != ANALOG_INPUT_NONE ) {
+    // for now, hard coded using adc1
+    _adc_unit = ADC_UNIT_1;
 
-        // dertermine actial gpio from adc offset and configure it
-        gpio_num_t gpio;
-        //Configure ADC
-        if (unit == 1) {
-            adc1_config_channel_atten((adc1_channel_t)_pin, atten);
-            adc1_pad_get_io_num((adc1_channel_t)_pin, &gpio);
-        } else {
-            adc2_config_channel_atten((adc2_channel_t)_pin, atten);
-        }
-
-        esp_adc_cal_characteristics_t adc_chars;
-        esp_adc_cal_characterize(ADC_UNIT_1, atten, ADC_WIDTH_BIT_12, DEFAULT_VREF, &adc_chars);
-        printf("AnalogIn: determined actual gpio as: %d\n", gpio);
-
-        _gpio = gpio;// save it for later
-
+    adc_oneshot_unit_init_cfg_t init_config = { .unit_id = _adc_unit };
+    if (!g_adc1_handle && ESP_OK != adc_oneshot_new_unit(&init_config, &g_adc1_handle)) {
+        Debug("AnalogIn: adc_oneshot_new_unit failed for unit_id = %d\n", _adc_unit);
+        return;
     }
+
+    adc_init();
 }
 
 
@@ -119,16 +173,10 @@ float AnalogSource::read_average()
     WITH_SEMAPHORE(_semaphore);
 
     if (_sum_count == 0) {
-        uint32_t adc_reading = 0;
+        float adc_reading = 0;
         //Multisampling
         for (int i = 0; i < NO_OF_SAMPLES; i++) {
-            if (_unit == 1) {
-                adc_reading += adc1_get_raw((adc1_channel_t)_pin);
-            } else {
-                int raw;
-                adc2_get_raw((adc2_channel_t)_pin, ADC_WIDTH_BIT_12, &raw);
-                adc_reading += raw;
-            }
+            adc_reading += adc_read();
         }
         adc_reading /= NO_OF_SAMPLES;
         return adc_reading;
@@ -176,46 +224,37 @@ bool AnalogSource::set_pin(uint8_t ardupin)
     if (_ardupin == ardupin) {
         return true;
     }
+    _ardupin = ardupin;
 
     int8_t pinconfig_offset = AnalogIn::find_pinconfig(ardupin);
     if (pinconfig_offset == -1 ) {
-        DEV_PRINTF("AnalogIn: sorry set_pin() can't determine ADC1 offset from ardupin : %d \n",ardupin);
+        Debug("AnalogIn: sorry set_pin() can't determine ADC1 offset from ardupin : %d \n",ardupin);
         return false;
     }
 
-    int16_t newgpioAdcPin = AnalogIn::pin_config[(uint8_t)pinconfig_offset].channel;
+    adc_channel_t newChannel = (adc_channel_t)AnalogIn::pin_config[(uint8_t)pinconfig_offset].channel;
     float newscaler = AnalogIn::pin_config[(uint8_t)pinconfig_offset].scaling;
 
-    if (_pin == newgpioAdcPin) {
+    Debug("AnalogIn: ardupin = %d, new channel = %d\n", ardupin, newChannel);
+
+    if (_adc_channel == newChannel) {
         return true;
     }
 
     WITH_SEMAPHORE(_semaphore);
 
-    // init the target pin now if possible
-    if ( ardupin != ANALOG_INPUT_NONE ) {
+    if (_adc_cali_handle) {
+        
+        Debug("AnalogIn: adc_calibration_deinit(%x)\n", (uint)_adc_cali_handle);
 
-        gpio_num_t gpio; // new gpio
-        //Configure ADC
-        if (_unit == 1) {
-            adc1_config_channel_atten((adc1_channel_t)newgpioAdcPin, atten);
-            adc1_pad_get_io_num((adc1_channel_t)newgpioAdcPin, &gpio);
-        } else {
-            adc2_config_channel_atten((adc2_channel_t)newgpioAdcPin, atten);
-        }
+        adc_calibration_deinit(_adc_cali_handle);
+        _adc_cali_handle = 0;
+    }    
 
-        esp_adc_cal_characteristics_t adc_chars;
-        esp_adc_cal_characterize(ADC_UNIT_1, atten, ADC_WIDTH_BIT_12, DEFAULT_VREF, &adc_chars);
-        printf("AnalogIn: Adding gpio on: %d\n", gpio);
+    _adc_channel = newChannel;
+    _scaler = newscaler;
 
-        DEV_PRINTF("AnalogIn: set_pin() FROM (ardupin:%d adc1_offset:%d gpio:%d) TO (ardupin:%d adc1_offset:%d gpio:%d)\n", \
-                            _ardupin,_pin,_gpio,ardupin,newgpioAdcPin,gpio);
-        _pin = newgpioAdcPin;
-        _ardupin = ardupin;
-        _gpio = gpio;
-        _scaler = newscaler;
-
-    }
+    adc_init();
 
     _sum_value = 0;
     _sum_count = 0;
@@ -224,6 +263,60 @@ bool AnalogSource::set_pin(uint8_t ardupin)
 
     return true;
 
+}
+
+// init ADC
+bool AnalogSource::adc_init()
+{
+    // init the pin now if possible, otherwise doo it later from set_pin
+    if ( _ardupin != ANALOG_INPUT_NONE ) {
+
+        adc_oneshot_chan_cfg_t config = {
+            .atten = atten,
+            .bitwidth = ADC_BITWIDTH_12
+        };
+        if (ESP_OK != adc_oneshot_config_channel(g_adc1_handle, _adc_channel, &config)) {
+            Debug("AnalogIn: adc_oneshot_config_channel failed for adc_channel = %d\n", _adc_channel);
+            return false;
+        }
+        else {
+            Debug("AnalogIn: adc_oneshot_config_channel for adc_channel = %d\n completed successfully", _adc_channel);
+        }
+
+        if (!adc_calibration_init(_adc_unit, _adc_channel, atten, &_adc_cali_handle)){
+            Debug("AnalogIn: adc_calibration_init failed for adc_channel = %d\n", _adc_channel);
+            return false;
+        }
+        else {
+            Debug("AnalogIn: adc_calibration_init for adc_channel = %d\n completed successfully", _adc_channel);
+        }
+    }
+    else {
+        Debug("AnalogIn: adc_init(%d) skipped.\n",  _ardupin);
+    }
+    return true;
+}
+
+// read value from ADC
+float AnalogSource::adc_read()
+{
+    int raw, value = 0;
+
+    if (ESP_OK != adc_oneshot_read(g_adc1_handle, _adc_channel, &raw)) {
+        Debug("AnalogIn: adc_oneshot_read failed\n");
+        return 0;
+    }
+
+    if (_adc_cali_handle) {
+        if(ESP_OK != adc_cali_raw_to_voltage(_adc_cali_handle, raw, &value)) {
+            Debug("AnalogIn: adc_oneshot_read failed\n");
+            return 0;
+        }
+    }
+    else {
+        value = raw * VOLTAGE_SCALING;
+    }
+    return (float)value / 1000;
 }
 
 /*
@@ -237,12 +330,7 @@ void AnalogSource::_add_value()
 
     WITH_SEMAPHORE(_semaphore);
 
-    int value = 0;
-    if (_unit == 1) {
-        value = adc1_get_raw((adc1_channel_t)_pin);
-    } else {
-        adc2_get_raw((adc2_channel_t)_pin, ADC_WIDTH_BIT_12, &value);
-    }
+    float value = adc_read();
 
     _latest_value = value;
     _sum_value += value;
@@ -254,31 +342,11 @@ void AnalogSource::_add_value()
     }
 }
 
-static void check_efuse()
-{
-    //Check TP is burned into eFuse
-    if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_TP) == ESP_OK) {
-        printf("AnalogIn: eFuse Two Point: Supported\n");
-    } else {
-        printf("AnalogIn: eFuse Two Point: NOT supported\n");
-    }
-
-    //Check Vref is burned into eFuse
-    if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_VREF) == ESP_OK) {
-        printf("AnalogIn: eFuse Vref: Supported\n");
-    } else {
-        printf("AnalogIn: eFuse Vref: NOT supported\n");
-    }
-}
-
 /*
    setup adc peripheral to capture samples with DMA into a buffer
    */
 void AnalogIn::init()
 {
-    check_efuse();
-
-    adc1_config_width(ADC_WIDTH_BIT_12);
 }
 
 /*
@@ -290,7 +358,7 @@ void AnalogIn::_timer_tick()
         ESP32::AnalogSource *c = _channels[j];
         if (c != nullptr) {
             // add a value
-            //c->_add_value();
+            c->_add_value();
         }
     }
 
@@ -322,7 +390,7 @@ int8_t AnalogIn::find_pinconfig(int16_t ardupin)
             return j;
         }
     }
-    // can't find a match in definitons
+    // can't find a match in definitions
     return -1;
 
 }
@@ -330,39 +398,44 @@ int8_t AnalogIn::find_pinconfig(int16_t ardupin)
 //
 AP_HAL::AnalogSource *AnalogIn::channel(int16_t ardupin)
 {
+    if (ardupin < 0) ardupin = ANALOG_INPUT_NONE;
+
+    Debug("AnalogIn: configuring channel %d\n", ardupin);
+
     int8_t pinconfig_offset = find_pinconfig(ardupin);
 
-    int16_t gpioAdcPin = -1;
-    float scaler = -1;
+    adc_channel_t adc_channel = (adc_channel_t)ANALOG_INPUT_NONE;
+    float scaler = 0;
 
     if ((ardupin != ANALOG_INPUT_NONE) && (pinconfig_offset == -1 )) {
-        DEV_PRINTF("AnalogIn: sorry channel() can't determine ADC1 offset from ardupin : %d \n",ardupin);
+        Debug("AnalogIn: sorry channel() can't determine ADC1 offset from ardupin : %d \n",ardupin);
         ardupin = ANALOG_INPUT_NONE; // default it to this not terrible value and allow to continue
     }
+
     // although ANALOG_INPUT_NONE=255 is not a valid pin, we let it through here as
     //  a special case, so that it can be changed with set_pin(..) later.
     if (ardupin != ANALOG_INPUT_NONE) {
-        gpioAdcPin = pin_config[(uint8_t)pinconfig_offset].channel;
+        adc_channel = (adc_channel_t)pin_config[(uint8_t)pinconfig_offset].channel;
         scaler = pin_config[(uint8_t)pinconfig_offset].scaling;
     }
 
     for (uint8_t j = 0; j < ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
-            _channels[j] = new AnalogSource(ardupin,gpioAdcPin, scaler,0.0f,1);
+
+            _channels[j] = NEW_NOTHROW AnalogSource(ardupin, adc_channel, scaler, 0.0f);
 
             if (ardupin != ANALOG_INPUT_NONE) {
-                DEV_PRINTF("AnalogIn: channel:%d attached to ardupin:%d at adc1_offset:%d on gpio:%d\n",\
-                                    j,ardupin, gpioAdcPin, _channels[j]->_gpio);
+                Debug("AnalogIn: channel: %d attached to ardupin:%d at adc1_offset:%d\n",\
+                                    j, ardupin, adc_channel);
             }
-
-            if (ardupin == ANALOG_INPUT_NONE) {
-                DEV_PRINTF("AnalogIn: channel:%d created but using delayed adc and gpio pin configuration\n",j );
+            else {
+                Debug("AnalogIn: channel: %d created but using delayed adc and gpio pin configuration\n", j);
             }
 
             return _channels[j];
         }
     }
-    DEV_PRINTF("AnalogIn: out of channels\n");
+    Debug("AnalogIn: out of channels\n");
     return nullptr;
 }
 

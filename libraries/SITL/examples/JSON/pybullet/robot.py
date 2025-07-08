@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+# flake8: noqa
+
 '''
 example rover for JSON backend using pybullet
 based on racecar example from pybullet

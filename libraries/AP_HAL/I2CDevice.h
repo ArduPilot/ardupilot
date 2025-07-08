@@ -17,7 +17,6 @@
 #pragma once
 
 #include <inttypes.h>
-#include <vector>
 
 #include "AP_HAL_Namespace.h"
 #include "Device.h"
@@ -71,25 +70,21 @@ public:
 
 class I2CDeviceManager {
 public:
-    /* Get a device handle */
-    virtual OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
-                                                 uint32_t bus_clock=400000,
-                                                 bool use_smbus = false,
-                                                 uint32_t timeout_ms=4) = 0;
-    /*
-     * Get device by looking up the I2C bus on the buses from @devpaths.
-     *
-     * Each string in @devpaths are possible locations for the bus. How the
-     * strings are implemented are HAL-specific. On Linux this is the info
-     * returned by 'udevadm info -q path /dev/i2c-X'. The first I2C bus
-     * matching a prefix in @devpaths is used to create a I2CDevice object.
-     */
-    virtual OwnPtr<I2CDevice> get_device(std::vector<const char *> devpaths,
-                                         uint8_t address) {
-        // Not implemented
-        return nullptr;
+    /* Get a pointer to a newly-allocated I2CDevice handle.  Lifetime
+     * is externally handled */
+    virtual AP_HAL::I2CDevice *get_device_ptr(uint8_t bus, uint8_t address,
+                                              uint32_t bus_clock=400000,
+                                              bool use_smbus = false,
+                                              uint32_t timeout_ms=4) = 0;
+    /* Get a device handle.  Lifetime is handled by OwnPtr system.
+     * Progressively being eliminated */
+    OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
+                                         uint32_t bus_clock=400000,
+                                         bool use_smbus = false,
+                                         uint32_t timeout_ms=4) {
+        return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(get_device_ptr(bus, address, bus_clock, use_smbus, timeout_ms));
     }
-
+;
     /*
       get mask of bus numbers for all configured I2C buses
      */

@@ -39,8 +39,8 @@ Deadreckoning will only be activated while the vehicle is in autonomous modes (e
 ## Testing in SITL
 
   - set map setshowsimpos 1 (to allow seeing where vehicle really is in simulator even with GPS disabled)
-  - set SIM_GPS_DISABLE = 1 to disable GPS (confirm dead reckoning begins)
-  - set SIM_GPS_DISABLE = 0 to re-enable GPS
+  - set SIM_GPS1_ENABLE = 0 to disable GPS (confirm dead reckoning begins)
+  - set SIM_GPS1_ENABLE = 1 to re-enable GPS
   - set SIM_GPS_NUMSAT = 3 to lower simulated satellite count to confirm script triggers
   - set DR_GPS_SACC_MAX = 0.01 to lower the threshold and trigger below the simulator value which is 0.04 (remember to set this back after testing!)
 
@@ -48,16 +48,16 @@ Deadreckoning will only be activated while the vehicle is in autonomous modes (e
 
   1. set DR_FLY_TIMEOUT to a low value (e.g. 5 seconds)
   2. fly the vehicle at least DR_DIST_MIN meters from home and confirm the "DR: activated!" message is displayed
-  3. set GPS_TYPE = 0 to disable GPS and confirm the vehicle begins deadreckoning after a few seconds
-  4. restore GPS_TYPE to its original value (normally 1) and confirm the vehicle switches to DR_NEXT_MODE
+  3. set GPS1_TYPE = 0 to disable GPS and confirm the vehicle begins deadreckoning after a few seconds
+  4. restore GPS1_TYPE to its original value (normally 1) and confirm the vehicle switches to DR_NEXT_MODE
   5. restore DR_FLY_TIMEOUT to a higher value for real-world use
 
-  Note: Instaed of setting GPS_TYPE, an auxiliary function switch can be setup to disable the GPS (e.g. RC9_OPTION = 65/"Disable GPS")
+  Note: Instaed of setting GPS1_TYPE, an auxiliary function switch can be setup to disable the GPS (e.g. RC9_OPTION = 65/"Disable GPS")
 
 ## Testing that it does not require RC (in SITL):
   - set FS_OPTIONS's "Continue if in Guided on RC failsafe" bit
   - set FS_GCS_ENABLE = 1 (to enable GCS failsafe otherwise RC failsafe will trigger anyway)
-  - optionally set SYSID_MYGCS = 77 (or almost any other unused system id) to trick the above check so that GCS failsafe can really be disabled
+  - optionally set MAV_GCS_SYSID = 77 (or almost any other unused system id) to trick the above check so that GCS failsafe can really be disabled
   - set SIM_RC_FAIL = 1 (to simulate RC failure, note vehicle keeps flying)
   - set SIM_RC_FAIL = 0 (to simulate RC recovery)
 

@@ -26,12 +26,12 @@
 extern const AP_HAL::HAL &hal;
 
 #if 0
-#define DEBUG_PRINT(fmt,args...) do {GCS_SEND_TEXT(MAV_SEVERITY_INFO ,"AP_ONVIF:" fmt "\n", ## args); } while(0)
+#define DEBUG_PRINT(fmt,args...) do {GCS_SEND_TEXT(MAV_SEVERITY_INFO ,"AP_ONVIF:" fmt, ## args); } while(0)
 #else
 #define DEBUG_PRINT(fmt,args...)
 #endif
 
-#define ERROR_PRINT(fmt,args...) do {GCS_SEND_TEXT(MAV_SEVERITY_ERROR , "AP_ONVIF:" fmt "\n", ## args); } while(0)
+#define ERROR_PRINT(fmt,args...) do {GCS_SEND_TEXT(MAV_SEVERITY_ERROR , "AP_ONVIF:" fmt, ## args); } while(0)
 
 const char *wsse_PasswordDigestURI = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest";
 const char *wsse_Base64BinaryURI = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary";
@@ -63,13 +63,13 @@ bool AP_ONVIF::start(const char *user, const char *pass, const char *hostname)
         soap->connect_timeout = soap->recv_timeout = soap->send_timeout = 30; // 30 sec
 
         if (proxy_device == nullptr) {
-            proxy_device = new DeviceBindingProxy(soap);
+            proxy_device = NEW_NOTHROW DeviceBindingProxy(soap);
         }
         if (proxy_media == nullptr) {
-            proxy_media = new MediaBindingProxy(soap);
+            proxy_media = NEW_NOTHROW MediaBindingProxy(soap);
         }
         if (proxy_ptz == nullptr) {
-            proxy_ptz = new PTZBindingProxy(soap);
+            proxy_ptz = NEW_NOTHROW PTZBindingProxy(soap);
         }
 
         if (proxy_device == nullptr ||

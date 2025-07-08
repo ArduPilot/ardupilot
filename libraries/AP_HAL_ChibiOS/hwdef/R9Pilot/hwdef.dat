@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32F7xx STM32F767xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1008
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_FRSKY_R9
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -112,11 +112,11 @@ define BOARD_RSSI_ANA_PIN 15
 PC0 PRESSURE_SENS ADC1 SCALE(2)
 define HAL_DEFAULT_AIRSPEED_PIN 10
 
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 PE0 LED0 OUTPUT LOW GPIO(90) # blue
 PA3 LED1 OUTPUT LOW GPIO(91) # green
 define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
-define HAL_GPIO_LED_OFF 1
 
 # PWM outputs
 PB0  TIM3_CH3 TIM3 PWM(1) GPIO(50)

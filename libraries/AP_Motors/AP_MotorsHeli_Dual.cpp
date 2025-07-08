@@ -248,14 +248,6 @@ void AP_MotorsHeli_Dual::calculate_armed_scalars()
         _main_rotor._rsc_mode.save();
         _heliflags.save_rsc_mode = false;
     }
-
-    if (_heliflags.in_autorotation) {
-        _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
-        // set bailout ramp time
-        _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-    }else { 
-        _main_rotor.set_autorotation_flag(false);
-    }
 }
 
 // calculate_scalars
@@ -374,7 +366,8 @@ void AP_MotorsHeli_Dual::update_motor_control(AP_MotorsHeli_RSC::RotorControlSta
     }
 
     // Check if rotors are run-up
-    _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
+    set_rotor_runup_complete(_main_rotor.is_runup_complete());
+
     // Check if rotors are spooled down
     _heliflags.rotor_spooldown_complete = _main_rotor.is_spooldown_complete();
 }
@@ -403,7 +396,8 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
             pitch_out = _cyclic_max/4500.0f;
             limit.pitch = true;
         }
-    } else {
+    }
+    if (_dual_mode != AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE) {
         if (roll_out < -_cyclic_max/4500.0f) {
             roll_out = -_cyclic_max/4500.0f;
             limit.roll = true;
@@ -413,10 +407,6 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
             roll_out = _cyclic_max/4500.0f;
             limit.roll = true;
         }
-    }
-
-    if (_heliflags.inverted_flight) {
-        collective_in = 1 - collective_in;
     }
 
     // constrain collective input
@@ -437,11 +427,7 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     }
 
     // updates below land min collective flag
-    if (collective_out <= _collective_land_min_pct) {
-        _heliflags.below_land_min_coll = true;
-    } else {
-        _heliflags.below_land_min_coll = false;
-    }
+    _heliflags.below_land_min_coll = !is_positive(collective_out - _collective_land_min_pct);
 
     // updates takeoff collective flag based on 50% hover collective
     update_takeoff_collective_flag(collective_out);
@@ -535,27 +521,27 @@ void AP_MotorsHeli_Dual::servo_test()
     // this test cycle is equivalent to that of AP_MotorsHeli_Single, but excluding
     // mixing of yaw, as that physical movement is represented by pitch and roll
 
-    _servo_test_cycle_time += _dt;
+    _servo_test_cycle_time += _dt_s;
 
     if ((_servo_test_cycle_time >= 0.0f && _servo_test_cycle_time < 0.5f)||                                   // Tilt swash back
         (_servo_test_cycle_time >= 6.0f && _servo_test_cycle_time < 6.5f)){
-        _pitch_test += 2.0 * _dt;
-        _oscillate_angle += 8 * M_PI * _dt;
+        _pitch_test += 2.0 * _dt_s;
+        _oscillate_angle += 8 * M_PI * _dt_s;
     } else if ((_servo_test_cycle_time >= 0.5f && _servo_test_cycle_time < 4.5f)||                            // Roll swash around
                (_servo_test_cycle_time >= 6.5f && _servo_test_cycle_time < 10.5f)){
-        _oscillate_angle += 0.5 * M_PI * _dt;
+        _oscillate_angle += 0.5 * M_PI * _dt_s;
         _roll_test = sinf(_oscillate_angle);
         _pitch_test = cosf(_oscillate_angle);
     } else if ((_servo_test_cycle_time >= 4.5f && _servo_test_cycle_time < 5.0f)||                            // Return swash to level
                (_servo_test_cycle_time >= 10.5f && _servo_test_cycle_time < 11.0f)){
-        _pitch_test -= 2.0 * _dt;
-        _oscillate_angle += 8 * M_PI * _dt;
+        _pitch_test -= 2.0 * _dt_s;
+        _oscillate_angle += 8 * M_PI * _dt_s;
     } else if (_servo_test_cycle_time >= 5.0f && _servo_test_cycle_time < 6.0f){                              // Raise swash to top
-        _collective_test +=  _dt;
-        _oscillate_angle += 2 * M_PI * _dt;
+        _collective_test +=  _dt_s;
+        _oscillate_angle += 2 * M_PI * _dt_s;
     } else if (_servo_test_cycle_time >= 11.0f && _servo_test_cycle_time < 12.0f){                            // Lower swash to bottom
-        _collective_test -=  _dt;
-        _oscillate_angle += 2 * M_PI * _dt;
+        _collective_test -=  _dt_s;
+        _oscillate_angle += 2 * M_PI * _dt_s;
     } else {                                                                                                  // reset cycle
         _servo_test_cycle_time = 0.0f;
         _oscillate_angle = 0.0f;
@@ -597,3 +583,16 @@ bool AP_MotorsHeli_Dual::arming_checks(size_t buflen, char *buffer) const
 
     return true;
 }
+
+#if HAL_LOGGING_ENABLED
+// heli motors logging - called at 10 Hz
+void AP_MotorsHeli_Dual::Log_Write(void)
+{
+    // write swashplate log
+    _swashplate1.write_log(get_cyclic_angle_scaler(), _collective_min_deg.get(), _collective_max_deg.get(), _collective_min.get(), _collective_max.get());
+    _swashplate2.write_log(get_cyclic_angle_scaler(), _collective_min_deg.get(), _collective_max_deg.get(), _collective2_min.get(), _collective2_max.get());
+
+    // write RSC log
+    _main_rotor.write_log();
+}
+#endif

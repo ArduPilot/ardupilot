@@ -64,6 +64,15 @@ public:
         uint8_t remaining; // ( percent )
     };
 
+    struct PACKED BaroVarioFrame {
+        uint16_t altitude_packed; // Altitude above start (calibration) point.
+        int8_t vertical_speed_packed; // vertical speed.
+    };
+
+    struct PACKED VarioFrame {
+        int16_t v_speed; // vertical speed cm/s
+    };
+
     struct PACKED VTXFrame {
 #if __BYTE_ORDER != __LITTLE_ENDIAN
 #error "Only supported on little-endian architectures"
@@ -137,10 +146,13 @@ public:
     };
 
     // CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY
-    struct PACKED ParameterSettingsEntryHeader {
+    struct PACKED ParameterSettingsHeader {
         uint8_t destination;
         uint8_t origin;
         uint8_t param_num;
+    };
+
+    struct PACKED ParameterSettingsEntryHeader : public ParameterSettingsHeader {
         uint8_t chunks_left;
     };
 
@@ -151,20 +163,102 @@ public:
     };
 
     // CRSF_FRAMETYPE_PARAMETER_READ
-    struct PACKED ParameterSettingsReadFrame {
-        uint8_t destination;
-        uint8_t origin;
-        uint8_t param_num;
+    struct PACKED ParameterSettingsReadFrame : public ParameterSettingsHeader {
         uint8_t param_chunk;
-    } _param_request;
+    };
 
     // CRSF_FRAMETYPE_PARAMETER_WRITE
-    struct PACKED ParameterSettingsWriteFrame {
-        uint8_t destination;
-        uint8_t origin;
-        uint8_t param_num;
+    struct PACKED ParameterSettingsWriteFrame : public ParameterSettingsHeader {
         uint8_t payload[57];   // largest possible frame is 60
     };
+
+    struct ParameterPayload {
+        uint8_t payload_length;
+        uint8_t payload[57];
+    };
+
+    // Generic pending parameter request, used internally
+    struct PendingParameterRequest : public ParameterSettingsReadFrame {
+        ParameterPayload payload;
+    } _param_request;
+
+    const static uint8_t PARAMETER_MENU_ID = 1; // id of the parameter menu
+
+#if AP_CRSF_SCRIPTING_ENABLED
+    // scripted CRSF menus
+    // menus follow the predefined ardupilot parameter menu
+    // to avoid a lot of id shuffling at most 10 menus each with at most 20 parameters are allowed
+    // menu indexes are SCRIPTED_MENU_START_ID -> SCRIPTED_MENU_START_ID + 10
+    // parameter indexes are SCRIPTED_MENU_START_ID + 10 + menu_id * MAX_SCRIPTED_MENU_SIZE
+    const static uint8_t MAX_SCRIPTED_MENUS = 10U;
+    const static uint8_t MAX_SCRIPTED_MENU_SIZE = 20U;
+    const static uint8_t MAX_SCRIPTED_PARAMETERS = 255U;
+    const static uint8_t MAX_SCRIPTED_PARAMETER_SIZE = 255U;
+    const static uint8_t MAX_SCRIPTED_MENU_NAME_LEN = 16;
+    const static uint8_t SCRIPTED_MENU_START_ID = AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS + 2;
+
+    // 8-bit parameter ids must be unique within the whole menu structure
+    // each parameter has an id, length and packed data
+    // to avoid heavy flash usage in the CRSF protocol implementation, the data encoding is
+    // managed in lua
+    struct ScriptedEntry {
+        uint8_t id; // indexed from the menu id + 1 to menu id + MAX_SCRIPTED_MENU_SIZE
+        uint8_t parent_id;
+    };
+
+    struct ScriptedParameter : public ScriptedEntry {
+        uint16_t length;
+        const char* data;
+    };
+
+    // each menu contains a number of parameters and has a name
+    struct ScriptedMenu : public ScriptedEntry {
+        friend class AP_CRSF_Telem;
+
+        uint8_t num_params;
+        const char* name;
+        ScriptedParameter* params;
+        ScriptedMenu* next_menu;    // linked list of menus to make addition/removal/modification easy
+
+        ScriptedMenu(const char* menu_name, uint8_t size, uint8_t parent_menu);
+        ~ScriptedMenu();
+        ScriptedMenu* find_menu(uint8_t param_num);
+        bool remove_menu(uint8_t param_num);
+        ScriptedMenu* add_menu(const char* menu_name, uint8_t size, uint8_t parent_menu);
+        ScriptedParameter* find_parameter(uint8_t param_num);
+        ScriptedParameter* add_parameter(uint8_t length, const char* data);
+        void dump_structure(uint8_t indent);
+        ScriptedMenu() {}
+    };
+
+    enum ScriptedParameterEvents : uint8_t {
+        PARAMETER_READ = 1<<0,
+        PARAMETER_WRITE = 1<<1
+    };
+
+    ScriptedMenu scripted_menus;
+
+    typedef ParameterPayload ScriptedPayload;
+
+    struct ScriptedParameterWrite {
+        ScriptedParameterEvents type;
+        ParameterSettingsHeader settings;
+        ScriptedParameter* param;
+        ScriptedPayload payload;
+    };
+
+    ObjectBuffer<ScriptedParameterWrite> inbound_params{8};
+    ObjectBuffer<ScriptedParameterWrite> outbound_params{8};
+
+    ScriptedMenu* add_menu(const char* name);
+    void clear_menus();
+    bool process_scripted_param_write(ParameterSettingsWriteFrame* write, uint8_t length);
+    bool process_scripted_param_read(ParameterSettingsReadFrame* read);
+    uint8_t get_menu_event(uint8_t menu_events, uint8_t& param_id, ScriptedPayload& payload);
+    bool send_write_response(uint8_t length, const char* data);
+    void send_response(const ScriptedParameterWrite& spw);
+    void dump_menu_structure();
+#endif
 
     // Frame to hold passthrough telemetry
     struct PACKED PassthroughSinglePacketFrame {
@@ -201,6 +295,8 @@ public:
     union PACKED BroadcastFrame {
         GPSFrame gps;
         HeartbeatFrame heartbeat;
+        BaroVarioFrame baro_vario;
+        VarioFrame vario;
         BatteryFrame battery;
         VTXFrame vtx;
         AttitudeFrame attitude;
@@ -231,17 +327,19 @@ public:
     bool is_tracer() const { return _crsf_version.protocol == AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_TRACER; }
 
     // Process a frame from the CRSF protocol decoder
-    static bool process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data);
-    // process any changed settings and schedule for transmission
-    void update();
+    static bool process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data, uint8_t length);
     // get next telemetry data for external consumers of SPort data
     static bool get_telem_data(AP_RCProtocol_CRSF::Frame* frame, bool is_tx_active);
+    // start bind request
+    void start_bind() { _bind_request_pending = true; }
 
 private:
 
     enum SensorType {
         HEARTBEAT,
         PARAMETERS,
+        BARO_VARIO,
+        VARIO,
         ATTITUDE,
         VTX_PARAMETERS,
         BATTERY,
@@ -265,12 +363,17 @@ private:
     void calc_parameter_ping();
     void calc_heartbeat();
     void calc_battery();
+    uint16_t get_altitude_packed();
+    int8_t get_vertical_speed_packed();
+    void calc_baro_vario();
+    void calc_vario();
     void calc_gps();
     void calc_attitude();
     void calc_flight_mode();
     void calc_device_info();
     void calc_device_ping(uint8_t destination);
     void calc_command_response();
+    void calc_bind();
     void calc_parameter();
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
     void calc_text_selection( AP_OSD_ParamSetting* param, uint8_t chunk);
@@ -290,7 +393,7 @@ private:
     void process_vtx_telem_frame(VTXTelemetryFrame* vtx);
     void process_ping_frame(ParameterPingFrame* ping);
     void process_param_read_frame(ParameterSettingsReadFrame* read);
-    void process_param_write_frame(ParameterSettingsWriteFrame* write);
+    void process_param_write_frame(ParameterSettingsWriteFrame* write, uint8_t length);
     void process_device_info_frame(ParameterDeviceInfoFrame* info);
     void process_command_frame(CommandFrame* command);
 
@@ -305,7 +408,7 @@ private:
 
     // get next telemetry data for external consumers
     bool _get_telem_data(AP_RCProtocol_CRSF::Frame* data, bool is_tx_active);
-    bool _process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data);
+    bool _process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data, uint8_t length);
 
     TelemetryPayload _telem;
     uint8_t _telem_size;
@@ -349,6 +452,8 @@ private:
         bool valid;
         uint8_t port_id;
     } _baud_rate_request;
+
+    bool _bind_request_pending;
 
     // vtx state
     bool _vtx_freq_update;  // update using the frequency method or not

@@ -14,10 +14,12 @@ public:
     using AP_VisualOdom_Backend::AP_VisualOdom_Backend;
 
     // consume vision pose estimate data and send to EKF. distances in meters
-    void handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter) override;
+    // quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
+    void handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter, int8_t quality) override;
 
     // consume vision velocity estimate data and send to EKF, velocity in NED meters per second
-    void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter) override;
+    // quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
+    void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter, int8_t quality) override;
 
     // request sensor's yaw be aligned with vehicle's AHRS/EKF attitude
     void request_align_yaw_to_ahrs() override { _align_yaw = true; }

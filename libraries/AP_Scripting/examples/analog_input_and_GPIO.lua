@@ -2,6 +2,8 @@
 
 -- for these examples BRD_PWM_COUNT must be 0
 
+---@diagnostic disable: need-check-nil
+
 -- load the analog pin, there are only 16 of these available
 -- some are used by the main AP code, ie battery monitors
 -- assign them like this in the init, not in the main loop

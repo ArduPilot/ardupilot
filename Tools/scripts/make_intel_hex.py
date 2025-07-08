@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# flake8: noqa
+
 import sys, os, shutil, struct
 import intelhex
 
@@ -39,13 +41,14 @@ with_bl = blimage + appimage
 
 tmpfile = hexfile + ".tmp"
 
-open(tmpfile, "wb").write(appimage)
-
-intelhex.bin2hex(tmpfile, hexfile, offset=(0x08000000 + reserve_kb*1024))
-
+# we either write a _with_bl.hex or a .hex. We don't write both as users get
+# confused if offered a arducopter.hex and try to flash it with INAV DFU
+# flashing tool, not realising it has to be flashed at the correct flash offset
 if reserve_kb > 0:
-   open(tmpfile, "wb").write(with_bl)
-   intelhex.bin2hex(tmpfile, hex_with_bl, offset=0x08000000)
-   
-os.unlink(tmpfile)
+    open(tmpfile, "wb").write(with_bl)
+    intelhex.bin2hex(tmpfile, hex_with_bl, offset=0x08000000)
+else:
+    open(tmpfile, "wb").write(appimage)
+    intelhex.bin2hex(tmpfile, hexfile, offset=(0x08000000 + reserve_kb*1024))
 
+os.unlink(tmpfile)

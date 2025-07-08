@@ -19,8 +19,8 @@
 #ifndef AC_ATC_MULTI_RATE_RP_IMAX
  # define AC_ATC_MULTI_RATE_RP_IMAX         0.5f
 #endif
-#ifndef AC_ATC_MULTI_RATE_RP_FILT_HZ
- # define AC_ATC_MULTI_RATE_RP_FILT_HZ      20.0f
+#ifndef AC_ATC_MULTI_RATE_RPY_FILT_HZ
+ # define AC_ATC_MULTI_RATE_RPY_FILT_HZ      20.0f
 #endif
 #ifndef AC_ATC_MULTI_RATE_YAW_P
  # define AC_ATC_MULTI_RATE_YAW_P           0.180f
@@ -60,22 +60,24 @@ public:
     // Set output throttle
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
 
-    // calculate total body frame throttle required to produce the given earth frame throttle
+    // Calculate body-frame throttle required to produce the given earth-frame throttle input (accounts for vehicle tilt)
     float get_throttle_boosted(float throttle_in);
 
-    // set desired throttle vs attitude mixing (actual mix is slewed towards this value over 1~2 seconds)
-    //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
-    //  has no effect when throttle is above hover throttle
+    // Set desired throttle vs attitude mixing (actual mix is slewed toward this value over 1~2 seconds)
+    // Low values favor pilot/autopilot throttle over attitude control; high values prioritize attitude control
+    // Has no effect when throttle is above hover throttle
     void set_throttle_mix_min() override { _throttle_rpy_mix_desired = _thr_mix_min; }
     void set_throttle_mix_man() override { _throttle_rpy_mix_desired = _thr_mix_man; }
     void set_throttle_mix_max(float ratio) override;
     void set_throttle_mix_value(float value) override { _throttle_rpy_mix_desired = _throttle_rpy_mix = value; }
     float get_throttle_mix(void) const override { return _throttle_rpy_mix; }
 
-    // are we producing min throttle?
+    // Returns true if throttle mix is near minimum (i.e., attitude control is deprioritised)
     bool is_throttle_mix_min() const override { return (_throttle_rpy_mix < 1.25f * _thr_mix_min); }
 
     // run lowest level body-frame rate controller and send outputs to the motors
+    void rate_controller_run_dt(const Vector3f& gyro_rads, float dt) override;
+    void rate_controller_target_reset() override;
     void rate_controller_run() override;
 
     // sanity check parameters.  should be called once before take-off
@@ -89,16 +91,19 @@ public:
 
 protected:
 
+    // Boosts angle controller gains during rapid throttle changes to improve responsiveness
     // boost angle_p/pd each cycle on high throttle slew
     void update_throttle_gain_boost();
 
-    // update_throttle_rpy_mix - updates thr_low_comp value towards the target
+    // Slews the current throttle-to-attitude mix ratio toward the target (_throttle_rpy_mix_desired)
     void update_throttle_rpy_mix();
 
-    // get maximum value throttle can be raised to based on throttle vs attitude prioritisation
+    // Get throttle limit based on priority of attitude vs throttle control (used for blending during low thrust)
     float get_throttle_avg_max(float throttle_in);
 
     AP_MotorsMulticopter& _motors_multi;
+
+    // Roll rate PID controller (used for body-frame angular rate control)
     AC_PID                _pid_rate_roll {
         AC_PID::Defaults{
             .p         = AC_ATC_MULTI_RATE_RP_P,
@@ -106,13 +111,14 @@ protected:
             .d         = AC_ATC_MULTI_RATE_RP_D,
             .ff        = 0.0f,
             .imax      = AC_ATC_MULTI_RATE_RP_IMAX,
-            .filt_T_hz = AC_ATC_MULTI_RATE_RP_FILT_HZ,
+            .filt_T_hz = AC_ATC_MULTI_RATE_RPY_FILT_HZ,
             .filt_E_hz = 0.0f,
-            .filt_D_hz = AC_ATC_MULTI_RATE_RP_FILT_HZ,
+            .filt_D_hz = AC_ATC_MULTI_RATE_RPY_FILT_HZ,
             .srmax     = 0,
             .srtau     = 1.0
         }
     };
+    // Pitch rate PID controller (used for body-frame angular rate control)
     AC_PID                _pid_rate_pitch{
         AC_PID::Defaults{
             .p         = AC_ATC_MULTI_RATE_RP_P,
@@ -120,14 +126,14 @@ protected:
             .d         = AC_ATC_MULTI_RATE_RP_D,
             .ff        = 0.0f,
             .imax      = AC_ATC_MULTI_RATE_RP_IMAX,
-            .filt_T_hz = AC_ATC_MULTI_RATE_RP_FILT_HZ,
+            .filt_T_hz = AC_ATC_MULTI_RATE_RPY_FILT_HZ,
             .filt_E_hz = 0.0f,
-            .filt_D_hz = AC_ATC_MULTI_RATE_RP_FILT_HZ,
+            .filt_D_hz = AC_ATC_MULTI_RATE_RPY_FILT_HZ,
             .srmax     = 0,
             .srtau     = 1.0
         }
     };
-
+    // Yaw rate PID controller (used for body-frame angular rate control)
     AC_PID                _pid_rate_yaw{
         AC_PID::Defaults{
             .p         = AC_ATC_MULTI_RATE_YAW_P,
@@ -135,9 +141,9 @@ protected:
             .d         = AC_ATC_MULTI_RATE_YAW_D,
             .ff        = 0.0f,
             .imax      = AC_ATC_MULTI_RATE_YAW_IMAX,
-            .filt_T_hz = AC_ATC_MULTI_RATE_RP_FILT_HZ,
+            .filt_T_hz = AC_ATC_MULTI_RATE_RPY_FILT_HZ,
             .filt_E_hz = AC_ATC_MULTI_RATE_YAW_FILT_HZ,
-            .filt_D_hz = 0.0f,
+            .filt_D_hz = AC_ATC_MULTI_RATE_RPY_FILT_HZ,
             .srmax     = 0,
             .srtau     = 1.0
         }

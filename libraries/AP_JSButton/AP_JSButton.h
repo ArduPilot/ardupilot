@@ -22,8 +22,9 @@ public:
         k_mode_circle           = 10,           ///< enter circle mode
         k_mode_guided           = 11,           ///< enter guided mode
         k_mode_acro             = 12,           ///< enter acro mode
+        k_mode_surftrak         = 13,           ///< enter surftrak mode
 
-        // 12-20 reserved for future mode functions
+        // 14-20 reserved for future mode functions
         k_mount_center          = 21,           ///< move mount to center
         k_mount_tilt_up         = 22,           ///< tilt mount up
         k_mount_tilt_down       = 23,           ///< tilt mount down
@@ -117,7 +118,36 @@ public:
         k_script_3              = 110,
         k_script_4              = 111,
 
-        // 112+ reserved for future functions
+        k_servo_4_min            = 112,
+        k_servo_4_max            = 113,
+        k_servo_4_center         = 114,
+        k_servo_4_inc            = 115,
+        k_servo_4_dec            = 116,
+        k_servo_4_min_momentary  = 117,
+        k_servo_4_max_momentary  = 118,
+        k_servo_4_min_toggle     = 119,
+        k_servo_4_max_toggle     = 120,
+
+        k_servo_5_min            = 121,
+        k_servo_5_max            = 122,
+        k_servo_5_center         = 123,
+        k_servo_5_inc            = 124,
+        k_servo_5_dec            = 125,
+        k_servo_5_min_momentary  = 126,
+        k_servo_5_max_momentary  = 127,
+        k_servo_5_min_toggle     = 128,
+        k_servo_5_max_toggle     = 129,
+
+        k_servo_6_min            = 130,
+        k_servo_6_max            = 131,
+        k_servo_6_center         = 132,
+        k_servo_6_inc            = 133,
+        k_servo_6_dec            = 134,
+        k_servo_6_min_momentary  = 135,
+        k_servo_6_max_momentary  = 136,
+        k_servo_6_min_toggle     = 137,
+        k_servo_6_max_toggle     = 138,
+
         k_nr_btn_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } button_function_t;
 

@@ -13,10 +13,19 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-    simulate MicroStrain GNSS-INS devices
+    Simulate MicroStrain CX5 GNSS-INS devices
+    
+    Usage:
+    PARAMS:
+        param set AHRS_EKF_TYPE 11
+        param set EAHRS_TYPE 2
+        param set SERIAL3_PROTOCOL 36
+        param set SERIAL3_BAUD 115
+    sim_vehicle.py -v Plane -A "--serial3=sim:MicroStrain5" --console --map -DG
 */
 #include "SIM_MicroStrain.h"
 #include <stdio.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -93,9 +102,9 @@ void MicroStrain::send_imu_packet(void)
     // Add ambient pressure field
     packet.payload[packet.payload_size++] = 0x06; // Ambient Pressure Field Size
     packet.payload[packet.payload_size++] = 0x17; // Descriptor
-    float sigma, delta, theta;
-    AP_Baro::SimpleAtmosphere(fdm.altitude * 0.001f, sigma, delta, theta);
-    put_float(packet, SSL_AIR_PRESSURE * delta * 0.001 + rand_float() * 0.1);
+
+    float pressure_Pa = AP_Baro::get_pressure_for_alt_amsl(fdm.altitude);
+    put_float(packet, pressure_Pa*0.001 + rand_float() * 0.1);
 
     // Add scaled magnetometer field
     packet.payload[packet.payload_size++] = 0x0E; // Scaled Magnetometer Field Size

@@ -28,7 +28,9 @@
 
 #include <AP_HAL/Semaphores.h>
 
-#define PROXIMITY_MAX_INSTANCES             3   // Maximum number of proximity sensor instances available on this platform
+#ifndef AP_PROXIMITY_MAX_INSTANCES 
+  #define AP_PROXIMITY_MAX_INSTANCES             5   // Maximum number of proximity sensor instances available on this platform
+#endif
 #define PROXIMITY_SENSOR_ID_START 10
 
 class AP_Proximity_Backend;
@@ -90,6 +92,9 @@ public:
 #if AP_PROXIMITY_MR72_ENABLED
         MR72 = 17,
 #endif
+#if AP_PROXIMITY_HEXSOONRADAR_ENABLED
+        Hexsoon_Radar = 18,
+#endif
     };
 
     enum class Status {
@@ -99,7 +104,7 @@ public:
     };
 
     // detect and initialise any available proximity sensors
-    void init();
+    __INITFUNC__ void init();
 
     // update state of all proximity sensors. Should be called at high rate from main loop
     void update();
@@ -115,6 +120,8 @@ public:
 
     // return sensor health
     Status get_instance_status(uint8_t instance) const;
+
+    // Returns status of first good sensor. If no good sensor found, returns status of last instance sensor 
     Status get_status() const;
 
     // prearm checks
@@ -186,7 +193,7 @@ public:
         const struct AP_Param::GroupInfo *var_info; // stores extra parameter information for the sensor (if it exists)
     };
 
-    static const struct AP_Param::GroupInfo *backend_var_info[PROXIMITY_MAX_INSTANCES];
+    static const struct AP_Param::GroupInfo *backend_var_info[AP_PROXIMITY_MAX_INSTANCES];
 
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
@@ -204,18 +211,18 @@ public:
 
     // get proximity address (for AP_Periph CAN)
     uint8_t get_address(uint8_t id) const {
-        return id >= PROXIMITY_MAX_INSTANCES? 0 : uint8_t(params[id].address.get());
+        return id >= AP_PROXIMITY_MAX_INSTANCES? 0 : uint8_t(params[id].address.get());
     }
 
 protected:
 
     // parameters for backends
-    AP_Proximity_Params params[PROXIMITY_MAX_INSTANCES];
+    AP_Proximity_Params params[AP_PROXIMITY_MAX_INSTANCES];
 
 private:
     static AP_Proximity *_singleton;
-    Proximity_State state[PROXIMITY_MAX_INSTANCES];
-    AP_Proximity_Backend *drivers[PROXIMITY_MAX_INSTANCES];
+    Proximity_State state[AP_PROXIMITY_MAX_INSTANCES];
+    AP_Proximity_Backend *drivers[AP_PROXIMITY_MAX_INSTANCES];
     uint8_t num_instances;
 
     // return true if the given instance exists

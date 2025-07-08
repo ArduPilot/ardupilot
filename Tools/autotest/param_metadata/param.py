@@ -1,3 +1,5 @@
+# flake8: noqa
+
 
 class Parameter(object):
     def __init__(self, name, real_path):
@@ -51,7 +53,8 @@ known_param_fields = [
              'ReadOnly',
              'Calibration',
              'Vector3Parameter',
-             'SortValues'
+             'SortValues',
+             'Legacy',
                       ]
 
 # Follow SI units conventions from:
@@ -63,7 +66,7 @@ known_param_fields = [
 # http://www1.bipm.org/en/CGPM/db/3/2/   g_n unit for G-force
 # one further constrain is that only printable (7bit) ASCII characters are allowed
 known_units = {
-#          abreviation : full-text (used in .html .rst and .wiki files)
+#          abbreviation : full-text (used in .html .rst and .wiki files)
 # time
              's'       : 'seconds'               ,
              'ds'      : 'deciseconds'           ,
@@ -91,6 +94,7 @@ known_units = {
              'deg'     : 'degrees'               ,     # Not SI, but is some situations more user-friendly than radians
              'deg/s'   : 'degrees per second'    ,     # Not SI, but is some situations more user-friendly than radians
              'deg/s/s' : 'degrees per square second',  # Not SI, but is some situations more user-friendly than radians
+             'deg/s/s/s' : 'degrees per cube second',  # Not SI, but is some situations more user-friendly than radians
              'cdeg'    : 'centidegrees'          ,     # Not SI, but is some situations more user-friendly than radians
              'cdeg/s'  : 'centidegrees per second',    # Not SI, but is some situations more user-friendly than radians
              'cdeg/s/s': 'centidegrees per square second' , # Not SI, but is some situations more user-friendly than radians
@@ -115,22 +119,26 @@ known_units = {
              'dB'      : 'decibel'               ,
 # compound
 
-             'kB'      : 'kilobytes'                ,
+             'kB'      : 'kilobytes'               ,
+             'KiB'     : 'kibibytes',
              'MB'      : 'megabyte'                ,
              'm.m/s/s' : 'square meter per square second',
              'deg/m/s' : 'degrees per meter per second'  ,
              'm/s/m'   : 'meters per second per meter'   , # Why not use Hz here ????
              'mGauss/A': 'milligauss per ampere' ,
-             'mAh'    : 'milliampere hour'      ,
+             'mAh'     : 'milliampere hour'      ,
+             'Ah'      : 'ampere hour'           ,
              'A/V'     : 'ampere per volt'       ,
              'm/V'     : 'meters per volt'       ,
              'gravities': 'standard acceleration due to gravity' , # g_n would be a more correct unit, but IMHO no one understands what g_n means
              'octal'   : 'octal'                 ,
              'RPM'     : 'Revolutions Per Minute',
+             'kg'      : 'kilograms',
              'kg/m/m'  : 'kilograms per square meter', # metre is the SI unit name, meter is the american spelling of it
              'kg/m/m/m': 'kilograms per cubic meter',
              'litres'  : 'litres',
              'Ohm'     : 'Ohm',
+             'N'       : 'Newtons',
              }
 
 required_param_fields = [

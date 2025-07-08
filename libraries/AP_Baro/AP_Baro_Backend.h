@@ -12,11 +12,6 @@ public:
     // data to the frontend
     virtual void update() = 0;
 
-    // accumulate function. This is used for backends that don't use a
-    // timer, and need to be called regularly by the main code to
-    // trigger them to read the sensor
-    virtual void accumulate(void) {}
-
     void backend_update(uint8_t instance);
 
     //  Check that the baro valid by using a mean filter.
@@ -55,11 +50,15 @@ public:
         DEVTYPE_BARO_ICP101XX = 0x0F,
         DEVTYPE_BARO_ICP201XX = 0x10,
         DEVTYPE_BARO_MS5607   = 0x11,
-        DEVTYPE_BARO_MS5837   = 0x12,
+        DEVTYPE_BARO_MS5837_30BA = 0x12,
         DEVTYPE_BARO_MS5637   = 0x13,
         DEVTYPE_BARO_BMP390   = 0x14,
+        DEVTYPE_BARO_BMP581   = 0x15,
+        DEVTYPE_BARO_SPA06    = 0x16,
+        DEVTYPE_BARO_AUAV     = 0x17,
+        DEVTYPE_BARO_MS5837_02BA = 0x18,
     };
-    
+
 protected:
     // reference to frontend object
     AP_Baro &_frontend;

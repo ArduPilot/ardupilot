@@ -1,5 +1,7 @@
 #include "Rover.h"
 
+#include <AP_Gripper/AP_Gripper.h>
+
 /*
   Rover parameter definitions
 */
@@ -31,35 +33,16 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Advanced
     GSCALAR(initial_mode,        "INITIAL_MODE",     (int8_t)Mode::Number::MANUAL),
 
-    // @Param: SYSID_THISMAV
-    // @DisplayName: MAVLink system ID of this vehicle
-    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network
-    // @Range: 1 255
-    // @User: Advanced
-    GSCALAR(sysid_this_mav,         "SYSID_THISMAV",    MAV_SYSTEM_ID),
+    // SYSID_THISMAV was here
 
-    // @Param: SYSID_MYGCS
-    // @DisplayName: MAVLink ground station ID
-    // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
-    // @Range: 1 255
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",      255),
+    // SYSID_MYGCS was here
 
-    // @Param: TELEM_DELAY
-    // @DisplayName: Telemetry startup delay
-    // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
-    // @User: Standard
-    // @Units: s
-    // @Range: 0 30
-    // @Increment: 1
-    GSCALAR(telem_delay,            "TELEM_DELAY",     0),
+    // TELEM_DELAY was here
 
     // @Param: GCS_PID_MASK
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Values: 0:None,1:Steering,2:Throttle,4:Pitch,8:Left Wheel,16:Right Wheel,32:Sailboat Heel,64:Velocity North,128:Velocity East
     // @Bitmask: 0:Steering,1:Throttle,2:Pitch,3:Left Wheel,4:Right Wheel,5:Sailboat Heel,6:Velocity North,7:Velocity East
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
@@ -108,7 +91,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_ACTION
     // @DisplayName: Failsafe Action
     // @Description: What to do on a failsafe event
-    // @Values: 0:Nothing,1:RTL,2:Hold,3:SmartRTL or RTL,4:SmartRTL or Hold
+    // @Values: 0:Nothing,1:RTL,2:Hold,3:SmartRTL or RTL,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
     // @User: Standard
     GSCALAR(fs_action,    "FS_ACTION",     (int8_t)FailsafeAction::Hold),
 
@@ -232,53 +215,15 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
     GOBJECT(rcmap,                 "RCMAP_",         RCMapper),
 
-    // @Group: SR0_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[0], gcs0,        "SR0_",     GCS_MAVLINK_Parameters),
+    // SR0 through SR6 were here
 
-#if MAVLINK_COMM_NUM_BUFFERS >= 2
-    // @Group: SR1_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[1],  gcs1,       "SR1_",     GCS_MAVLINK_Parameters),
-#endif
+    // AP_SerialManager was here
 
-#if MAVLINK_COMM_NUM_BUFFERS >= 3
-    // @Group: SR2_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[2],  gcs2,       "SR2_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 4
-    // @Group: SR3_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[3],  gcs3,       "SR3_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 5
-    // @Group: SR4_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[4],  gcs4,       "SR4_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 6
-    // @Group: SR5_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[5],  gcs5,       "SR5_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 7
-    // @Group: SR6_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[6],  gcs6,       "SR6_",     GCS_MAVLINK_Parameters),
-#endif
-
-    // @Group: SERIAL
-    // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
-    GOBJECT(serial_manager,         "SERIAL",   AP_SerialManager),
-
+#if AP_RANGEFINDER_ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
     GOBJECT(rangefinder,                 "RNGFND", RangeFinder),
+#endif
 
     // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
@@ -357,9 +302,11 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECTN(mode_auto.mission, mission, "MIS_", AP_Mission),
 
+#if AP_RSSI_ENABLED
     // @Group: RSSI_
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
     GOBJECT(rssi, "RSSI_",  AP_RSSI),
+#endif
 
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
@@ -391,6 +338,12 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     PARAM_VEHICLE_INFO,
 
+#if HAL_GCS_ENABLED
+    // @Group: MAV
+    // @Path: ../libraries/GCS_MAVLink/GCS.cpp
+    GOBJECT(_gcs,           "MAV",  GCS),
+#endif
+
     AP_VAREND
 };
 
@@ -400,12 +353,7 @@ const AP_Param::Info Rover::var_info[] = {
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // 1 was AP_Stats
 
-    // @Param: SYSID_ENFORCE
-    // @DisplayName: GCS sysid enforcement
-    // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
-    // @Values: 0:NotEnforced,1:Enforced
-    // @User: Advanced
-    AP_GROUPINFO("SYSID_ENFORCE", 2, ParametersG2, sysid_enforce, 0),
+    // 2 was SYSID_ENFORCE
 
     // @Group: SERVO
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
@@ -415,7 +363,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channels_VarInfo.h
     AP_SUBGROUPINFO(rc_channels, "RC", 4, ParametersG2, RC_Channels_Rover),
 
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     // @Group: AFS_
     // @Path: ../libraries/AP_AdvancedFailsafe/AP_AdvancedFailsafe.cpp
     AP_SUBGROUPINFO(afs, "AFS_", 5, ParametersG2, AP_AdvancedFailsafe),
@@ -487,9 +435,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(proximity, "PRX", 18, ParametersG2, AP_Proximity),
 #endif
 
+#if AP_AVOIDANCE_ENABLED
     // @Group: AVOID_
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
     AP_SUBGROUPINFO(avoid, "AVOID_", 19, ParametersG2, AC_Avoid),
+#endif
 
     // 20 was PIVOT_TURN_RATE and should not be re-used
 
@@ -520,7 +470,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type
     // @Description: Frame Type
-    // @Values: 0:Undefined,1:Omni3,2:OmniX,3:OmniPlus
+    // @Values: 0:Undefined,1:Omni3,2:OmniX,3:OmniPlus,4:Omni3Mecanum
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FRAME_TYPE", 24, ParametersG2, frame_type, 0),
@@ -580,11 +530,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MIS_DONE_BEHAVE", 38, ParametersG2, mis_done_behave, 0),
 
-#if AP_GRIPPER_ENABLED
-    // @Group: GRIP_
-    // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
-    AP_SUBGROUPINFO(gripper, "GRIP_", 39, ParametersG2, AP_Gripper),
-#endif
+    // 39 was AP_Gripper
 
     // @Param: BAL_PITCH_TRIM
     // @DisplayName: Balance Bot pitch trim angle
@@ -612,9 +558,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: sailboat.cpp
     AP_SUBGROUPINFO(sailboat, "SAIL_", 44, ParametersG2, Sailboat),
 
+#if AP_OAPATHPLANNER_ENABLED
     // @Group: OA_
     // @Path: ../libraries/AC_Avoidance/AP_OAPathPlanner.cpp
     AP_SUBGROUPINFO(oa, "OA_", 45, ParametersG2, AP_OAPathPlanner),
+#endif
 
     // @Param: SPEED_MAX
     // @DisplayName: Speed maximum
@@ -627,7 +575,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: LOIT_SPEED_GAIN
     // @DisplayName: Loiter speed gain
-    // @Description: Determines how agressively LOITER tries to correct for drift from loiter point. Higher is faster but default should be acceptable.
+    // @Description: Determines how aggressively LOITER tries to correct for drift from loiter point. Higher is faster but default should be acceptable.
     // @Range: 0 5
     // @Increment: 0.01
     // @User: Advanced
@@ -636,15 +584,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FS_OPTIONS
     // @DisplayName: Failsafe Options
     // @Description: Bitmask to enable failsafe options
-    // @Values: 0:None,1:Failsafe enabled in Hold mode
     // @Bitmask: 0:Failsafe enabled in Hold mode
     // @User: Advanced
     AP_GROUPINFO("FS_OPTIONS", 48, ParametersG2, fs_options, 0),
 
 #if HAL_TORQEEDO_ENABLED
-    // @Group: TRQD_
+    // @Group: TRQ
     // @Path: ../libraries/AP_Torqeedo/AP_Torqeedo.cpp
-    AP_SUBGROUPINFO(torqeedo, "TRQD_", 49, ParametersG2, AP_Torqeedo),
+    AP_SUBGROUPINFO(torqeedo, "TRQ", 49, ParametersG2, AP_Torqeedo),
 #endif
 
     // @Group: PSC
@@ -665,7 +612,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MANUAL_OPTIONS", 53, ParametersG2, manual_options, 0),
 
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
     // @Group: DOCK
     // @Path: mode_dock.cpp
     AP_SUBGROUPPTR(mode_dock_ptr, "DOCK", 54, ParametersG2, ModeDock),
@@ -727,30 +674,32 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
 ParametersG2::ParametersG2(void)
     :
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     afs(),
 #endif
 #if AP_BEACON_ENABLED
     beacon(),
 #endif
-    motors(wheel_rate_control),
     wheel_rate_control(wheel_encoder),
+    motors(wheel_rate_control),
     attitude_control(),
     smart_rtl(),
-#if MODE_DOCK_ENABLED == ENABLED
-    mode_dock_ptr(&rover.mode_dock),
-#endif
 #if HAL_PROXIMITY_ENABLED
     proximity(),
 #endif
+#if MODE_DOCK_ENABLED
+    mode_dock_ptr(&rover.mode_dock),
+#endif
+#if AP_AVOIDANCE_ENABLED
     avoid(),
+#endif
 #if AP_FOLLOW_ENABLED
     follow(),
 #endif
     windvane(),
-    pos_control(attitude_control),
     wp_nav(attitude_control, pos_control),
-    sailboat()
+    sailboat(),
+    pos_control(attitude_control)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -806,6 +755,13 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_g2,               722,     AP_PARAM_INT8,  "PRX1_IGN_WID4" },
     { Parameters::k_param_g2,               1234,    AP_PARAM_FLOAT, "PRX1_MIN" },
     { Parameters::k_param_g2,               1298,    AP_PARAM_FLOAT, "PRX1_MAX" },
+    { Parameters::k_param_g2,               113,     AP_PARAM_INT8, "TRQ1_TYPE" },
+    { Parameters::k_param_g2,               177,     AP_PARAM_INT8, "TRQ1_ONOFF_PIN" },
+    { Parameters::k_param_g2,               241,     AP_PARAM_INT8, "TRQ1_DE_PIN" },
+    { Parameters::k_param_g2,               305,     AP_PARAM_INT16, "TRQ1_OPTIONS" },
+    { Parameters::k_param_g2,               369,     AP_PARAM_INT8, "TRQ1_POWER" },
+    { Parameters::k_param_g2,               433,     AP_PARAM_FLOAT, "TRQ1_SLEW_TIME" },
+    { Parameters::k_param_g2,               497,     AP_PARAM_FLOAT, "TRQ1_DIR_DELAY" },
 };
 
 
@@ -877,55 +833,61 @@ void Rover::load_parameters(void)
     }
 #endif
 
-// PARAMETER_CONVERSION - Added: JAN-2022
+    static const AP_Param::G2ObjectConversion g2_conversions[] {
 #if AP_AIRSPEED_ENABLED
-    const uint16_t old_index = 37;          // Old parameter index in the tree
-    const uint16_t old_top_element = 4069;  // Old group element in the tree for the first subgroup element
-    AP_Param::convert_class(info.old_key, &airspeed, airspeed.var_info, old_index, old_top_element, false);
+// PARAMETER_CONVERSION - Added: JAN-2022
+        { &airspeed, airspeed.var_info, 37 },
 #endif
-
-// PARAMETER_CONVERSION - Added: MAR-2022
 #if AP_AIS_ENABLED
-    AP_Param::convert_class(info.old_key, &ais, ais.var_info, 50, 114, false);
+// PARAMETER_CONVERSION - Added: MAR-2022
+        { &ais, ais.var_info, 50 },
 #endif
-
-// PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
-    AP_Param::convert_class(info.old_key, &fence, fence.var_info, 17, 4049, false);
+// PARAMETER_CONVERSION - Added: Mar-2022
+        { &fence, fence.var_info, 17 },
 #endif
-
-    // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
 #if AP_STATS_ENABLED
-    {
-        // Find G2's Top Level Key
-        AP_Param::ConversionInfo stats_info;
-        if (!AP_Param::find_top_level_key_by_pointer(&g2, stats_info.old_key)) {
-            return;
-        }
-
-        const uint16_t stats_old_index = 1;       // Old parameter index in g2
-        const uint16_t stats_old_top_element = 4033; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
-        AP_Param::convert_class(stats_info.old_key, &stats, stats.var_info, stats_old_index, stats_old_top_element, false);
-    }
-#endif
     // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
-#if AP_SCRIPTING_ENABLED
-    {
-        // Find G2's Top Level Key
-        AP_Param::ConversionInfo scripting_info;
-        if (!AP_Param::find_top_level_key_by_pointer(&g2, scripting_info.old_key)) {
-            return;
-        }
-
-        const uint16_t scripting_old_index = 41;       // Old parameter index in g2
-        const uint16_t scripting_old_top_element = 105; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
-        AP_Param::convert_class(scripting_info.old_key, &scripting, scripting.var_info, scripting_old_index, scripting_old_top_element, false);
-    }
+        { &stats, stats.var_info, 1 },
 #endif
+#if AP_SCRIPTING_ENABLED
+    // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
+        { &scripting, scripting.var_info, 41 },
+#endif
+#if AP_GRIPPER_ENABLED
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
+        { &gripper, gripper.var_info, 39 },
+#endif
+    };
+
+    AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));
 
     // PARAMETER_CONVERSION - Added: Feb-2024 for Rover-4.6
 #if HAL_LOGGING_ENABLED
-    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
 #endif
+
+    static const AP_Param::TopLevelObjectConversion toplevel_conversions[] {
+#if AP_SERIALMANAGER_ENABLED
+        // PARAMETER_CONVERSION - Added: Feb-2024 for Rover-4.6
+        { &serial_manager, serial_manager.var_info, Parameters::k_param_serial_manager_old },
+#endif
+    };
+
+    AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
+
+#if HAL_GCS_ENABLED
+    // Move parameters into new MAV_ parameter namespace
+    // PARAMETER_CONVERSION - Added: Mar-2025 for ArduPilot-4.7
+    {
+        static const AP_Param::ConversionInfo gcs_conversion_info[] {
+            { Parameters::k_param_sysid_this_mav_old, 0, AP_PARAM_INT16,  "MAV_SYSID" },
+            { Parameters::k_param_sysid_my_gcs_old, 0, AP_PARAM_INT16, "MAV_GCS_SYSID" },
+            { Parameters::k_param_g2,  2, AP_PARAM_INT8, "MAV_OPTIONS" },
+            { Parameters::k_param_telem_delay_old,  0, AP_PARAM_INT8, "MAV_TELEM_DELAY" },
+        };
+        AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
+    }
+#endif  // HAL_GCS_ENABLED
 
 }

@@ -2,6 +2,11 @@
    example script to test lua socket API
 --]]
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: redundant-parameter
+---@diagnostic disable: undefined-field
+
 PARAM_TABLE_KEY = 47
 PARAM_TABLE_PREFIX = "WEB_"
 
@@ -216,6 +221,7 @@ local DYNAMIC_PAGES = {
          <tr><td>IP</td><td><?lstr networking:address_to_str(networking:get_ip_active()) ?></td></tr>
          <tr><td>Netmask</td><td><?lstr networking:address_to_str(networking:get_netmask_active()) ?></td></tr>
          <tr><td>Gateway</td><td><?lstr networking:address_to_str(networking:get_gateway_active()) ?></td></tr>
+         <tr><td>MCU Temperature</td><td><?lstr string.format("%.1fC", analog:mcu_temperature()) ?></td></tr>
          </table>
 ]]
 }
@@ -436,13 +442,11 @@ end
 --[[
    client class for open connections
 --]]
-local function Client(_sock, _idx)
+local function Client(sock, idx)
    local self = {}
 
    self.closed = false
 
-   local sock = _sock
-   local idx = _idx
    local have_header = false
    local header = ""
    local header_lines = {}
@@ -933,6 +937,9 @@ local function Client(_sock, _idx)
 
    function self.remove()
       DEBUG(string.format("%u: removing client OFFSET=%u", idx, offset))
+      if self.closed then
+         return
+      end
       sock:close()
       self.closed = true
    end

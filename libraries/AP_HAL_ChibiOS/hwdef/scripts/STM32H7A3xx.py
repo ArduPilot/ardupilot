@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+# flake8: noqa
 '''
 these tables are generated from the STM32 datasheets for the STM32H7A3bi
 '''
@@ -211,7 +213,7 @@ AltFunction_map = {
 	"PA10:USB_OTG_HS_ID"	:	10,
     "PA11:OTG_HS_DM"		:   0,
     "PA11:EVENTOUT"     	:	15,
-	"PA11:FDCAN1_RX"    	:	9,
+	"PA11:CAN1_RX"    	:	9,
 	"PA11:I2S2_WS"      	:	5,
 	"PA11:LPUART1_CTS"  	:	3,
 	"PA11:LTDC_R4"      	:	14,
@@ -222,7 +224,7 @@ AltFunction_map = {
 	"PA11:USART1_NSS"   	:	7,
     "PA12:OTG_HS_DP"		:   0,
     "PA12:EVENTOUT"     	:	15,
-	"PA12:FDCAN1_TX"    	:	9,
+	"PA12:CAN1_TX"    	:	9,
 	"PA12:I2S2_CK"      	:	5,
 	"PA12:LPUART1_DE"   	:	3,
 	"PA12:LPUART1_RTS"  	:	3,
@@ -311,7 +313,7 @@ AltFunction_map = {
 	"PB4:UART7_TX"      	:	11,
 	"PB5:DCMI_D10"      	:	13,
 	"PB5:EVENTOUT"      	:	15,
-	"PB5:FDCAN2_RX"     	:	9,
+	"PB5:CAN2_RX"     	:	9,
 	"PB5:FMC_SDCKE1"    	:	12,
 	"PB5:I2C1_SMBA"     	:	4,
 	"PB5:I2C4_SMBA"     	:	6,
@@ -331,7 +333,7 @@ AltFunction_map = {
 	"PB6:DCMI_D5"       	:	13,
 	"PB6:DFSDM1_DATIN5" 	:	11,
 	"PB6:EVENTOUT"      	:	15,
-	"PB6:FDCAN2_TX"     	:	9,
+	"PB6:CAN2_TX"     	:	9,
 	"PB6:FMC_SDNE1"     	:	12,
 	"PB6:I2C1_SCL"      	:	4,
 	"PB6:I2C4_SCL"      	:	6,
@@ -356,7 +358,7 @@ AltFunction_map = {
 	"PB8:DCMI_D6"       	:	13,
 	"PB8:DFSDM1_CKIN7"  	:	3,
 	"PB8:EVENTOUT"      	:	15,
-	"PB8:FDCAN1_RX"     	:	9,
+	"PB8:CAN1_RX"     	:	9,
 	"PB8:I2C1_SCL"      	:	4,
 	"PB8:I2C4_SCL"      	:	6,
 	"PB8:LTDC_B6"       	:	14,
@@ -370,7 +372,7 @@ AltFunction_map = {
 	"PB9:DCMI_D7"       	:	13,
 	"PB9:DFSDM1_DATIN7" 	:	3,
 	"PB9:EVENTOUT"      	:	15,
-	"PB9:FDCAN1_TX"     	:	9,
+	"PB9:CAN1_TX"     	:	9,
 	"PB9:I2C1_SDA"      	:	4,
 	"PB9:I2C4_SDA"      	:	6,
 	"PB9:I2C4_SMBA"     	:	11,
@@ -406,7 +408,7 @@ AltFunction_map = {
 	"PB12:DFSDM1_DATIN1"	:	6,
 	"PB12:DFSDM2_DATIN1"	:	11,
 	"PB12:EVENTOUT"     	:	15,
-	"PB12:FDCAN2_RX"    	:	9,
+	"PB12:CAN2_RX"    	:	9,
 	"PB12:I2C2_SMBA"    	:	4,
 	"PB12:I2S2_WS"      	:	5,
 	"PB12:OCTOSPIM_P1_NCLK"	:	3,
@@ -421,7 +423,7 @@ AltFunction_map = {
 	"PB13:DFSDM1_CKIN1" 	:	6,
 	"PB13:DFSDM2_CKIN1" 	:	4,
 	"PB13:EVENTOUT"     	:	15,
-	"PB13:FDCAN2_TX"    	:	9,
+	"PB13:CAN2_TX"    	:	9,
 	"PB13:I2S2_CK"      	:	5,
 	"PB13:LPTIM2_OUT"   	:	3,
 	"PB13:PSSI_D2"      	:	13,

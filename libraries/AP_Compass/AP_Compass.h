@@ -23,16 +23,8 @@
 #define AP_COMPASS_MOT_COMP_CURRENT     0x02
 #define AP_COMPASS_MOT_COMP_PER_MOTOR   0x03
 
-// setup default mag orientation for some board types
 #ifndef MAG_BOARD_ORIENTATION
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-# define MAG_BOARD_ORIENTATION ROTATION_YAW_90
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI)
-# define MAG_BOARD_ORIENTATION ROTATION_YAW_270
-#else
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
-#endif
+#define MAG_BOARD_ORIENTATION ROTATION_NONE
 #endif
 
 #ifndef COMPASS_MOT_ENABLED
@@ -98,7 +90,7 @@ public:
     /// @returns    True if the compass was initialized OK, false if it was not
     ///             found or is not functioning.
     ///
-    void init();
+    __INITFUNC__ void init();
 
     /// Read the compass and update the mag_ variables.
     ///
@@ -162,9 +154,6 @@ public:
     /// Return true if we have set a scale factor for a compass
     bool have_scale_factor(uint8_t i) const;
 
-    // compass calibrator interface
-    void cal_update();
-
 #if COMPASS_MOT_ENABLED
     // per-motor calibration access
     void per_motor_calibration_start(void) {
@@ -178,6 +167,10 @@ public:
     }
 #endif
 
+#if COMPASS_CAL_ENABLED
+    // compass calibrator interface
+    void cal_update();
+
     // start_calibration_all will only return false if there are no
     // compasses to calibrate.
     bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
@@ -187,9 +180,7 @@ public:
     bool compass_cal_requires_reboot() const { return _cal_requires_reboot; }
     bool is_calibrating() const;
 
-    // indicate which bit in LOG_BITMASK indicates we should log compass readings
-    void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
-
+#if HAL_MAVLINK_BINDINGS_ENABLED
     /*
       handle an incoming MAG_CAL command
     */
@@ -197,6 +188,11 @@ public:
 
     bool send_mag_cal_progress(const class GCS_MAVLINK& link);
     bool send_mag_cal_report(const class GCS_MAVLINK& link);
+#endif  // HAL_MAVLINK_BINDINGS_ENABLED
+#endif  // COMPASS_CAL_ENABLED
+
+    // indicate which bit in LOG_BITMASK indicates we should log compass readings
+    void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
 
     // check if the compasses are pointing in the same direction
     bool consistent() const;
@@ -222,7 +218,7 @@ public:
 #endif  // AP_COMPASS_DIAGONALS_ENABLED
 
     // learn offsets accessor
-    bool learn_offsets_enabled() const { return _learn == LEARN_INFLIGHT; }
+    bool learn_offsets_enabled() const { return _learn == LearnType::INFLIGHT; }
 
     /// return true if the compass should be used for yaw calculations
     bool use_for_yaw(uint8_t i) const;
@@ -314,24 +310,24 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    enum LearnType {
-        LEARN_NONE=0,
-        LEARN_INTERNAL=1,
-        LEARN_EKF=2,
-        LEARN_INFLIGHT=3
+    enum class LearnType {
+        NONE          = 0,
+        // INTERNAL   = 1,
+        COPY_FROM_EKF = 2,
+        INFLIGHT      = 3,
     };
 
     // return the chosen learning type
-    enum LearnType get_learn_type(void) const {
-        return (enum LearnType)_learn.get();
+    LearnType get_learn_type(void) const {
+        return (LearnType)_learn.get();
     }
 
     // set the learning type
-    void set_learn_type(enum LearnType type, bool save) {
+    void set_learn_type(LearnType type, bool save) {
         if (save) {
-            _learn.set_and_save((int8_t)type);
+            _learn.set_and_save(type);
         } else {
-            _learn.set((int8_t)type);
+            _learn.set(type);
         }
     }
     
@@ -384,13 +380,14 @@ private:
 
     // load backend drivers
     bool _add_backend(AP_Compass_Backend *backend);
-    void _probe_external_i2c_compasses(void);
-    void _detect_backends(void);
-    void probe_i2c_spi_compasses(void);
+    __INITFUNC__ void _probe_external_i2c_compasses(void);
+    __INITFUNC__ void _detect_backends(void);
+    __INITFUNC__ void probe_i2c_spi_compasses(void);
 #if AP_COMPASS_DRONECAN_ENABLED
     void probe_dronecan_compasses(void);
 #endif
 
+#if COMPASS_CAL_ENABLED
     // compass cal
     void _update_calibration_trampoline();
     bool _accept_calibration(uint8_t i);
@@ -401,8 +398,11 @@ private:
     bool _start_calibration(uint8_t i, bool retry=false, float delay_sec=0.0f);
     bool _start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
     bool _auto_reboot() const { return _compass_cal_autoreboot; }
+#if HAL_MAVLINK_BINDINGS_ENABLED
     Priority next_cal_progress_idx[MAVLINK_COMM_NUM_BUFFERS];
     Priority next_cal_report_idx[MAVLINK_COMM_NUM_BUFFERS];
+#endif
+#endif  // COMPASS_CAL_ENABLED
 
     // see if we already have probed a i2c driver by bus number and address
     bool _have_i2c_driver(uint8_t bus_num, uint8_t address) const;
@@ -419,12 +419,12 @@ private:
     //keep track of which calibrators have been saved
     RestrictIDTypeArray<bool, COMPASS_MAX_INSTANCES, Priority> _cal_saved;
     bool _cal_autosave;
-#endif
 
     //autoreboot after compass calibration
     bool _compass_cal_autoreboot;
     bool _cal_requires_reboot;
     bool _cal_has_run;
+#endif  // COMPASS_CAL_ENABLED
 
     // enum of drivers for COMPASS_DISBLMSK
     enum DriverType {
@@ -488,6 +488,12 @@ private:
 #if AP_COMPASS_QMC5883P_ENABLED
         DRIVER_QMC5883P =20,
 #endif
+#if AP_COMPASS_BMM350_ENABLED
+        DRIVER_BMM350   =21,
+#endif
+#if AP_COMPASS_IIS2MDC_ENABLED
+        DRIVER_IIS2MDC  =22,
+#endif
 };
 
     bool _driver_enabled(enum DriverType driver_type);
@@ -506,7 +512,7 @@ private:
     uint8_t     _unreg_compass_count;
 
     // settable parameters
-    AP_Int8 _learn;
+    AP_Enum<LearnType> _learn;
 
     // board orientation from AHRS
     enum Rotation _board_orientation = ROTATION_NONE;

@@ -58,6 +58,12 @@ enum class FilterPacketField {
     FILTER_STATUS = 0x10,
     LLH_POSITION = 0x01,
     NED_VELOCITY = 0x02,
+    // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/filter_data/data/mip_field_filter_attitude_quaternion.htm
+    ATTITUDE_QUAT = 0x03,
+    // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/0x82/data/0x08.htm
+    LLH_POSITION_UNCERTAINTY = 0x08,
+    // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/0x82/data/0x09.htm
+    NED_VELOCITY_UNCERTAINTY = 0x09,
     // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/shared_data/data/mip_field_shared_gps_timestamp.htm
     GPS_TIMESTAMP = 0xD3,
 };
@@ -288,6 +294,33 @@ void AP_MicroStrain::handle_filter(const MicroStrain_Packet &packet)
             filter_data.ned_velocity_down = be32tofloat_ptr(packet.payload, i+10);
             break;
         }
+        case FilterPacketField::ATTITUDE_QUAT: {
+            filter_data.attitude_quat = populate_quaternion(packet.payload, i+2);
+            filter_data.attitude_quat.normalize();
+            break;
+        }
+        case FilterPacketField::LLH_POSITION_UNCERTAINTY: {
+            const float north_pos_acc = be32tofloat_ptr(packet.payload, i+2);
+            const float east_pos_acc = be32tofloat_ptr(packet.payload, i+6);
+            const float down_pos_acc = be32tofloat_ptr(packet.payload, i+10);
+            filter_data.ned_position_uncertainty = Vector3f(
+                north_pos_acc,
+                east_pos_acc,
+                down_pos_acc
+            );
+            break;
+        }
+        case FilterPacketField::NED_VELOCITY_UNCERTAINTY: {
+            const float north_vel_uncertainty = be32tofloat_ptr(packet.payload, i+2);
+            const float east_vel_uncertainty = be32tofloat_ptr(packet.payload, i+6);
+            const float down_vel_uncertainty = be32tofloat_ptr(packet.payload, i+10);
+            filter_data.ned_velocity_uncertainty = Vector3f(
+                north_vel_uncertainty,
+                east_vel_uncertainty,
+                down_vel_uncertainty
+            );
+            break;
+        }
         case FilterPacketField::FILTER_STATUS: {
             filter_status.state = be16toh_ptr(&packet.payload[i+2]);
             filter_status.mode = be16toh_ptr(&packet.payload[i+4]);
@@ -309,6 +342,9 @@ Vector3f AP_MicroStrain::populate_vector3f(const uint8_t *data, uint8_t offset)
 
 Quaternion AP_MicroStrain::populate_quaternion(const uint8_t *data, uint8_t offset)
 {
+    // https://github.com/clemense/quaternion-conventions
+    // AP follows W + Xi + Yj + Zk format.
+    // Microstrain follows the same
     return Quaternion {
         be32tofloat_ptr(data, offset),
         be32tofloat_ptr(data, offset+4),

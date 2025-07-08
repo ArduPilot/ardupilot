@@ -38,6 +38,11 @@
 // Race lock - settings can't be changed
 #define TRAMP_CONTROL_RACE_LOCK (0x01)
 
+#define VTX_TRAMP_UART_BAUD            9600
+#define VTX_TRAMP_SMARTBAUD_MIN        9120     // -5%
+#define VTX_TRAMP_SMARTBAUD_MAX        10080    // +5%
+#define VTX_TRAMP_SMARTBAUD_STEP       120
+
 class AP_Tramp
 {
 public:
@@ -73,6 +78,8 @@ private:
     void set_frequency(uint16_t freq);
     void set_power(uint16_t power);
     void set_pit_mode(uint8_t onoff);
+    // change baud automatically when request-response fails many times
+    void update_baud_rate();
 
     // serial interface
     AP_HAL::UARTDriver *port;                  // UART used to send data to Tramp VTX
@@ -114,6 +121,17 @@ private:
     uint16_t cur_act_power; // Actual power
     int16_t cur_temp;
     uint8_t cur_control_mode;
+
+    // statistics
+    uint16_t _packets_sent;
+    uint16_t _packets_rcvd;
+
+    // value for current baud adjust
+    int32_t _smartbaud = VTX_TRAMP_UART_BAUD;
+    enum class AutobaudDirection {
+        UP = 1,
+        DOWN = -1
+    } _smartbaud_direction = AutobaudDirection::DOWN;
 
     // Retry count
     uint8_t retry_count = VTX_TRAMP_MAX_RETRIES;

@@ -11,7 +11,9 @@ TARGET_HW_PX4_FMU_V5                   50
 TARGET_HW_PX4_FMU_V5X                  51
 TARGET_HW_PX4_FMU_V6                   52
 TARGET_HW_PX4_FMU_V6X                  53
+TARGET_HW_PX4_FMU_V6C                  56
 TARGET_HW_ARK_FMU_V6X                  57
+TARGET_HW_ARK_FPV                      59
 TARGET_HW_MINDPX_V2                    88
 TARGET_HW_PX4_FLOW_V1                   6
 TARGET_HW_PX4_DISCOVERY_V1             99
@@ -54,9 +56,9 @@ TARGET_HW_THE_PEACH_R1                213
 Reserved  PX4 [BL] FMU v5X.x           51
 Reserved "PX4 [BL] FMU v6.x"           52
 Reserved "PX4 [BL] FMU v6X.x"          53
-Reserved "PX4 [BL] FMU v6C.x"          56
 
 Reserved "ARK [BL] FMU v6X.x"          57
+Reserved "ARK [BL] FPV"                59
 
 Reserved "GUMSTIX [BL] FMU v6"         54
 Reserved "ARK CAN FLOW"                80
@@ -65,12 +67,17 @@ Reserved "NXP ucans32k146"             34
 # values from external vendors
 EXT_HW_RADIOLINK_MINI_PIX               3
 
-# NOTE: the full range from 1000 to 1999 (inclusive) is reserved for
+# NOTE: the full range from 1000 to 19999 (inclusive) is reserved for
 # use by the ArduPilot bootloader. Do not allocate IDs in this range
 # except via changes to the ArduPilot code
 
-# Do not allocate IDs in the range 1000 to 1999 except via a PR
+# Do not allocate IDs in the range 1000 to 19999 except via a PR
 # against this file in https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader/board_types.txt
+
+# if you want to reserve a block of IDs, please limit that allocation
+#  to 10 IDs at a time.
+
+# please fill gaps rather than adding past ID #7109
 
 # values starting with AP_ are implemented in the ArduPilot bootloader
 # https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader
@@ -103,6 +110,8 @@ AP_HW_JDMINIF405                      144
 AP_HW_KAKUTEF7_MINI                   145
 AP_HW_H757I_EVAL                      146
 AP_HW_F4BY                             20 # value due to previous release by vendor
+AP_HW_MAZZYSTARDRONE                  188
+
 AP_HW_VRBRAIN_V51                    1151
 AP_HW_VRBRAIN_V52                    1152
 AP_HW_VRBRAIN_V54                    1154
@@ -111,7 +120,7 @@ AP_HW_VRUBRAIN_V51                   1351
 AP_HW_F103_PERIPH                    1000
 AP_HW_CUAV_GPS                       1001
 AP_HW_OMNIBUSF4                      1002
-AP_HW_CUBEBLACK+                     1003
+AP_HW_CUBEBLACKPLUS                  1003
 AP_HW_F303_PERIPH                    1004
 AP_HW_ZUBAXGNSS                      1005
 AP_HW_NIGHTCRAWLER                   1006
@@ -161,7 +170,7 @@ AP_HW_ICSI_Kestrel                   1049
 AP_HW_SierraL431                     1050
 AP_HW_NucleoL476                     1051
 AP_HW_SierraF405                     1052
-AP_HW_CarbonixL496                   1053
+AP_HW_HolybroG4_GPS                  1053
 AP_HW_MatekF405_TE                   1054
 AP_HW_SierraF412                     1055
 AP_HW_BEASTH7v2                      1056
@@ -187,7 +196,7 @@ AP_HW_SKYSTARSH7HD                   1075
 AP_HW_PixSurveyA1                    1076
 AP_HW_AEROFOX_AIRSPEED               1077
 AP_HW_ATOMRCF405                     1078
-AP_HW_CUBEPILOT_CANMOD               1079
+AP_HW_CUBENODE                       1079
 AP_HW_AEROFOX_PMU                    1080
 AP_HW_JHEMCUGF16F405                 1081
 AP_HW_SPEEDYBEEF4V3                  1082
@@ -200,7 +209,7 @@ AP_HW_HolybroCompass                 1088
 AP_HW_FOXEERH743_V1                  1089
 AP_HW_PixFlamingoL4R5_V1             1090
 
-AP_HW_Sierra-TrueNav Pro             1091
+AP_HW_Sierra-TrueNavPro              1091
 AP_HW_Sierra-TrueNav                 1092
 AP_HW_Sierra-TrueNorth               1093
 AP_HW_Sierra-TrueSpeed               1094
@@ -227,7 +236,7 @@ AP_HW_YJUAV_A6                       1113
 AP_HW_YJUAV_A6Nano                   1114
 AP_HW_ACNS_CM4PILOT                  1115
 AP_HW_ACNS_F405AIO                   1116
-AP_HW_BLITZF7                        1117
+AP_HW_BLITZF7AIO                     1117
 AP_HW_RADIX2HD                       1118
 AP_HW_HEEWING_F405                   1119
 AP_HW_PodmanH7                       1120
@@ -262,9 +271,65 @@ AP_HW_AnyleafH7                      1146
 AP_HW_mRoKitCANrevC                  1147
 AP_HW_BotBloxSwitch                  1148
 AP_HW_MatekH7A3                      1149
+AP_HW_MicoAir405v2                   1150
+AP_HW_ORAQF405PRO                    1155
+AP_HW_CBU_StampH743                  1156
+AP_HW_FOXEERF405_V2                  1157
+AP_HW_CSKY405                        1158
+AP_HW_NxtPX4v2                       1159
+AP_HW_PixPilot-V6PRO                 1160
+AP_HW_MicoAir405Mini                 1161
+AP_HW_BlitzH7Pro                     1162
+AP_HW_BlitzF7Mini                    1163
+AP_HW_BlitzF7                        1164
+AP_HW_3DR-ASAUAV                     1165
+AP_HW_MicoAir743                     1166
+AP_HW_BlitzH7Wing                    1168
+AP_HW_SDMODELH7V2                    1167
+AP_HW_JHEMCUF405WING                 1169
+AP_HW_MatekG474                      1170
+AP_HW_PhenixH7_lite                  1171
+AP_HW_PhenixH7_Pro                   1172
+AP_HW_2RAWH743                       1173
+AP_HW_X-MAV-AP-H743V2                1174
+AP_HW_BETAFPV_F4_2-3S_20A            1175
+AP_HW_MicoAir743-AIO                 1176
+AP_HW_CrazyF405                      1177
+AP_HW_MicoAir743v2                   1179
+AP_HW_FlywooF405HD_AIOv2             1180
+AP_HW_FlywooH743Pro                  1181
+AP_HW_CBU_StampH743_LC               1182
+AP_HW_NarinH7                        1183
+AP_HW_BrahmaF4                       1184
+AP_HW_X-MAV-AP-F405Mini              1185
+AP_HW_3DRControlN1                   1186
+AP_HW_CORVON405V2_1                  1187
+AP_HW_NarinH5                        1188
+AP_HW_CORVON743V1                    1189
+AP_HW_DAKEFPVF405                    1190
+AP_HW_ORBITH743                      1191
+
+AP_HW_DAKEFPVH743                    1193
+AP_HW_DAKEFPVH743PRO                 1194
+AP_HW_SEQUREH743                     1195
+AP_HW_SPEDIXH743                     1196
+AP_HW_SPEDIXF405                     1197
+AP_HW_AEDROXH7                       1198
+
+AP_HW_JFB200                         1200
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
+
+AP_HW_CSKY-PMU                       1212
+
+AP_HW_MUPilot                        1222
+
+AP_HW_CBUnmanned-CM405-FC            1301
+
+AP_HW_KHA_ETH                        1315
+
+AP_HW_FlysparkF4                     1361
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
@@ -280,6 +345,44 @@ AP_HW_PIXHAWK6X_PERIPH               1408
 AP_HW_CUBERED_PERIPH                 1409
 AP_HW_RadiolinkPIX6                  1410
 
+AP_HW_JHEMCU-H743HD                  1411
+AP_HW_JHEMCUF405PRO                  1412
+
+AP_HW_LongbowF405                    1422
+
+AP_HW_MountainEagleH743              1444
+
+AP_HW_StellarF4                      1500
+AP_HW_GEPRCF745BTHD                  1501
+AP_HW_GEPRC_TAKER_H743               1502
+AP_HW_StellarH7V2                    1503
+AP_HW_StellarF4V2                    1504
+
+AP_HW_HGLRCF405V4                    1524
+
+AP_HW_F4BY_F427                      1530
+
+AP_HW_MFT-SEMA100                    2000
+
+AP_HW_SULILGH7-P1-P2                 2005
+
+AP_HW_AET-H743-Basic                 2024
+
+AP_HW_SakuraRC-H743                  2714
+
+# IDs 4000-4009 reserved for Karshak Drones
+AP_HW_KRSHKF7_MINI                   4000
+
+# IDs 4010-4019 reserved for Aerium
+AP_HW_AERIUM_RADIANF405              4010
+
+# IDs 4200-4220 reserved for HAKRC
+AP_HW_HAKRC_F405                     4200
+AP_HW_HAKRC_F405Wing                 4201
+
+# IDs 4500-4509 reserved for Lumenier
+AP_HW_LUMENIER_LUX_F765_NDAA         4500
+
 # IDs 5000-5099 reserved for Carbonix
 # IDs 5100-5199 reserved for SYPAQ Systems
 # IDs 5200-5209 reserved for Airvolute
@@ -288,6 +391,40 @@ AP_HW_AIRVOLUTE_DCS2                 5200
 # IDs 5210-5219 reserved for Aocoda-RC
 AP_HW_AOCODA-RC-H743DUAL             5210
 AP_HW_AOCODA-RC-F405V3               5211
+
+# IDs 5220-5239 reserved for UAV-DEV GmbH
+AP_HW_UAV-DEV-HAT-H7                 5220
+AP_HW_UAV-DEV-NucPilot-H7            5221
+AP_HW_UAV-DEV-M10S-L4                5222
+AP_HW_UAV-DEV-F9P-G4                 5223
+AP_HW_UAV-DEV-UM982-G4               5224
+AP_HW_UAV-DEV-M20D-G4                5225
+AP_HW_UAV-DEV-Sensorboard-G4         5226
+AP_HW_UAV-DEV-PWM-G4                 5227
+AP_HW_UAV-DEV-AUAV-H7                5228
+AP_HW_UAV-DEV-FC-H7                  5229
+AP_HW_UAV-DEV-FC-UM982-H7            5230
+AP_HW_UAV-DEV-FC-M10S-H7             5231
+AP_HW_UAV-DEV-UM982-H7               5232
+AP_HW_UAV-DEV-PM-G4                  5233
+AP_HW_UAV-DEV-AUAV-G4                5234
+
+# IDs 5240-5249 reserved for TM IT-Systemhaus
+AP_HW_TM-SYS-BeastFC                 5240
+AP_HW_TM-SYS-Sensornode              5241
+AP_HW_TM-SYS-OpenHDFPV               5242
+AP_HW_TM-SYS-VisualNAV               5243
+AP_HW_TM-SYS-Airspeed                5244
+
+# IDs 5250-5269 reserved for Team Black Sheep
+AP_HW_TBS_LUCID_H7                   5250
+AP_HW_TBS_LUCID_PRO                  5251
+AP_HW_TBS_L431_PERIPH                5252
+AP_HW_TBS_LUCID_H7_WING              5253
+
+# IDs 5270-5279 reserved for SpeedyBee
+AP_HW_SpeedyBeeF405WINGV2            5270
+AP_HW_SpeedyBeeF405AIO               5271
 
 #IDs 5301-5399 reserved for Sierra Aerospace
 AP_HW_Sierra-TrueNavPro-G4           5301
@@ -300,8 +437,83 @@ AP_HW_Sierra-TrueFlow                5307
 AP_HW_Sierra-TrueNavIC-Pro           5308
 AP_HW_Sierra-F1-Pro                  5309
 
+#IDs 5401-5499 reserved for holybro
+AP_HW_Holybro-PMU-F4                 5401
+AP_HW_Holybro-UM982-G4               5402
+AP_HW_Holybro-UM960-H7               5403
+AP_HW_Holybro-PERIPH-H7              5404
+AP_HW_Holybro-DroneCAN-Airspeed      5405
+AP_HW_Holybro-KakuteF4-Wing          5406
+
+#IDs 5501-5599 reserved for MATEKSYS
+AP_HW_MATEKH743SE                    5501
+
+#IDs 5600-5699 reserved for ZeroOne
+AP_HW_ZeroOne_X6                     5600
+AP_HW_ZeroOne_PMU                    5601
+AP_HW_ZeroOne_GNSS                   5602
+
+#IDs 5700-5710 reserved for DroneBuild  
+AP_HW_DroneBuild_G1                  5700
+AP_HW_DroneBuild_G2                  5701
+
+# IDs 5711-5720 reserved for iomcu-specific "boards"
+AP_HW_IOMCU_F103                     5711
+AP_HW_IOMCU_F103_8MHZ                5712  # some boards are clocked differently
+AP_HW_IOMCU_F100                     5713
+
+
+#IDs 5800-5809 reserved for Droneer
+AP_HW_DroneerF405                    5800
+
+#IDs 5810-5819 reserved for Brother Hobby
+AP_HW_BrotherHobbyH743               5810
+AP_HW_BrotherHobbyF405v3             5811
+
 # IDs 6000-6099 reserved for SpektreWorks
+AP_HW_sw-spar-f407                   6000
+AP_HW_sw-boom-f407                   6001
+AP_HW_sw-nav-f405                    6002
+
+# IDs 6100-6109 reserved for MFE
+AP_HW_MFE_PDB_CAN                    6100
+AP_HW_MFE_POS3_CAN                   6101
+AP_HW_MFE_RTK_CAN                    6102
+AP_HW_MFE_AirSpeed_CAN               6103
+AP_HW_PixSurveyA2-IND                6104
+
+# IDs 6110 - 6119 for S-vehicle
+AP_HW_SVehicle-E2                    6110
+
+# IDs 6600-6699 reserved for Eagle Eye Drones
+
+# IDs 6900-6909 reserved for Easy Aerial
+
+# IDs 6960-6969 reserved for ViaDrone
+
+# IDs 7000-7099 reserved for CUAV
+AP_HW_CUAV-7-NANO                    7000
+
+# IDs 7100-7109 reserved for V-UAV
+AP_HW_VUAV-V7pro                     7100
+
+# IDs 7110-7119 reserved for AEROFOX
+AP_HW_AEROFOX_H7                     7110
+
+# IDs 7120-7129 reserved for Accton Godwit
+AP_HW_Accton_Godwit_GA1        7120
+
+# please fill gaps in the above ranges rather than adding past ID #7199
+
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140
 AP_HW_Pixhawk6_ODID                 10053
+AP_HW_CUAV_NORA_ODID                11009
+AP_HW_CUAV_X7_PRO_ODID              11010
+AP_HW_CUAV-7-NANO_ODID              17000
+
+AP_HW_CUBEORANGEPLUS_ODID           11063
+
+# do not allocate board IDs above 10,000 for non-ODID boards.
+# do not allocate board IDs above 19,999 in this file.

@@ -1,6 +1,6 @@
 -- This script helps vehicles move between GPS and Non-GPS environments using GPS and Wheel Encoders
 --
--- setup RCx_OPTION = 90 (EKF Pos Source) to select the source (low=primary, middle=secondary, high=tertiary)
+-- setup RCx_OPTION = 90 (EKF Source Set) to select the source (low=primary, middle=secondary, high=tertiary)
 -- setup RCx_OPTION = 300 (Scripting1).  When this switch is pulled high, the source will be automatically selected
 -- setup EK3_SRCn_ parameters so that GPS is the primary source, WheelEncoders are the secondary
 --
@@ -9,13 +9,11 @@
 -- SCR_USER3 holds the threshold for GPS innovations (around 0.3 is a good choice)
 --     if GPS speed accuracy <= SCR_USER2 and GPS innovations <= SRC_USER3 then the GPS (primary source set) will be used
 --     otherwise wheel encoders (secondary source set) will be used
--- luacheck: only 0
+---@diagnostic disable: need-check-nil
 
 local source_prev = 0               -- previous source, defaults to primary source
-local sw_source_prev = -1           -- previous source switch position
 local sw_auto_pos_prev = -1         -- previous auto source switch position
 local auto_switch = false           -- true when auto switching between sources is active
-local gps_usable_accuracy = 1.0     -- GPS is usable if speed accuracy is at or below this value
 local vote_counter_max = 20         -- when a vote counter reaches this number (i.e. 2sec) source may be switched
 local gps_vs_nongps_vote = 0        -- vote counter for GPS vs NonGPS (-20 = GPS, +20 = NonGPS)
 
@@ -65,9 +63,7 @@ function update()
   local gps_over_threshold = (gps_speed_accuracy == nil) or (gps:speed_accuracy(gps:primary_sensor()) > gps_speedaccuracy_thresh)
 
   -- get GPS innovations from ahrs
-  local gps_innov = Vector3f()
-  local gps_var = Vector3f()
-  gps_innov, gps_var = ahrs:get_vel_innovations_and_variances_for_source(3)
+  local gps_innov = ahrs:get_vel_innovations_and_variances_for_source(3)
   local gps_innov_over_threshold = (gps_innov == nil) or (gps_innov:z() == 0.0) or (math.abs(gps_innov:z()) > gps_innov_thresh)
 
   -- automatic selection logic --

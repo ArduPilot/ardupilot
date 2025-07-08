@@ -5,8 +5,8 @@
    generators. It monitors battery voltage and controls the throttle
    of the generator to maintain a target voltage using a PI controller
 --]]
--- luacheck: only 0
-
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: param-type-mismatch
 
 UPDATE_RATE_HZ = 10
 
@@ -61,7 +61,6 @@ GENCTL_VOLT_TARG = bind_add_param('VOLT_TARG', 11, 0)
 GENCTL_SLEW_RATE = bind_add_param('SLEW_RATE', 12, 100)
 
 local MAV_SEVERITY_INFO = 6
-local MAV_SEVERITY_NOTICE = 5
 local MAV_SEVERITY_EMERGENCY = 0
 
 local switch = nil
@@ -199,8 +198,7 @@ function protected_wrapper()
      gcs:send_text(MAV_SEVERITY_EMERGENCY, "Internal Error: " .. err)
      -- when we fault we run the update function again after 1s, slowing it
      -- down a bit so we don't flood the console with errors
-     --return protected_wrapper, 1000
-     return
+     return protected_wrapper, 1000
   end
   return protected_wrapper, 1000/UPDATE_RATE_HZ
 end

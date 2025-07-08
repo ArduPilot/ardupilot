@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+# flake8: noqa
 '''
 these tables are generated from the STM32 datasheets for the STM32H757
 '''
@@ -1296,9 +1298,6 @@ ADC1_map = {
     "PA1"	:	17,
     "PA4"	:	18,
     "PA5"	:	19,
-    "PF11"  :   2,
-	"PF12"  :   6,
-    "PF3"   :   5,
 }
 
 ADC2_map = {

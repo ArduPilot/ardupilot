@@ -12,16 +12,13 @@ FLASH_RESERVE_START_KB 64
 define STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 8192
 
-# board ID for firmware load
-APJ_BOARD_ID 1055
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_SierraF412
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
 STM32_ST_USE_TIMER 5
-
-# enable watchdog
-define HAL_WATCHDOG_ENABLED_DEFAULT true
 
 # crystal frequency
 OSCILLATOR_HZ 16000000
@@ -84,13 +81,7 @@ PA0 VSENSE ADC1 SCALE(2)
 
 define HAL_NO_GPIO_IRQ
 
-# avoid RCIN thread to save memory
-define HAL_NO_RCIN_THREAD
-define HAL_USE_RTC FALSE
-define DISABLE_SERIAL_ESC_COMM TRUE
 define DMA_RESERVE_SIZE 0
-define PERIPH_FW TRUE
-define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
 PA11 CAN1_RX CAN1
@@ -99,8 +90,6 @@ PA12 CAN1_TX CAN1
 # use DNA
 define HAL_CAN_DEFAULT_NODE_ID 0
 
-define HAL_NO_MONITOR_THREAD
-define HAL_BUILD_AP_PERIPH
 define HAL_DEVICE_THREAD_STACK 768
 
 # disable dual GPS and GPS blending to save flash space
@@ -109,12 +98,12 @@ define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
 
 # GPS+MAG+BARO+Buzzer+NeoPixels
-define HAL_PERIPH_ENABLE_GPS
+define AP_PERIPH_GPS_ENABLED 1
 define HAL_PERIPH_GPS_PORT_DEFAULT 3
-define HAL_PERIPH_ENABLE_MAG
-define HAL_PERIPH_ENABLE_BARO
-define HAL_PERIPH_ENABLE_RC_OUT
-define HAL_PERIPH_ENABLE_NOTIFY
+define AP_PERIPH_MAG_ENABLED 1
+define AP_PERIPH_BARO_ENABLED 1
+define AP_PERIPH_RC_OUT_ENABLED 1
+define AP_PERIPH_NOTIFY_ENABLED 1
 
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+# flake8: noqa
+
 '''
 add a set of up to 10 public keys to an ArduPilot bootloader bin file
 '''
@@ -6,12 +9,6 @@ add a set of up to 10 public keys to an ArduPilot bootloader bin file
 import sys
 import os
 import base64
-
-try:
-    import monocypher
-except ImportError:
-    print("Please install monocypher with: python3 -m pip install pymonocypher")
-    sys.exit(1)
 
 # get command line arguments
 from argparse import ArgumentParser
