@@ -16,10 +16,6 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
-      - name: Dump github context
-        run: |
-          echo '${{ toJSON(github) }}'
-
       - name: Fetch base branch
         run: |
           git remote -v
