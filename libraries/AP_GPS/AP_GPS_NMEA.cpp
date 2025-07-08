@@ -281,6 +281,28 @@ bool AP_GPS_NMEA::_have_new_message()
     }
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
 
+#if AP_GPS_NMEA_QUECTEL_ENABLED
+    // Check for PQTM message timeouts
+    // Note: PQTMPVT only provides auxiliary data (undulation, VDOP, leap seconds)
+    // so we don't treat it as essential for GPS health
+    if (now - _last_PQTM_vel_ms > 500) {
+        if (_last_PQTM_vel_ms != 0) {
+            // we have lost PQTM velocity messages
+            state.have_vertical_velocity = false;
+            state.have_speed_accuracy = false;
+            _last_PQTM_vel_ms = 0;
+        }
+    }
+    if (now - _last_PQTM_acc_ms > 500) {
+        if (_last_PQTM_acc_ms != 0) {
+            // we have lost PQTM accuracy messages  
+            state.have_horizontal_accuracy = false;
+            state.have_vertical_accuracy = false;
+            _last_PQTM_acc_ms = 0;
+        }
+    }
+#endif // AP_GPS_NMEA_QUECTEL_ENABLED
+
     _last_fix_ms = now;
 
     _last_GGA_ms = 1;
@@ -508,6 +530,27 @@ bool AP_GPS_NMEA::_term_complete()
                 break;
             }
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
+
+#if AP_GPS_NMEA_QUECTEL_ENABLED
+            case _GPS_SENTENCE_PQTMVER: {
+                if (_have_pqtmver) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                                  "NMEA Quectel %s %s",
+                                  _pqtmver.version,
+                                  _pqtmver.build_date);
+                }
+                break;
+            }
+            case _GPS_SENTENCE_PQTMEPE:
+                // Accuracy information already processed in parse function
+                break;
+            case _GPS_SENTENCE_PQTMVEL:
+                // Velocity information already processed in parse function
+                break;
+            case _GPS_SENTENCE_PQTMPVT:
+                // PVT information already processed in parse function
+                break;
+#endif // AP_GPS_NMEA_QUECTEL_ENABLED
             }
             // see if we got a good message
             return _have_new_message();
@@ -543,6 +586,26 @@ bool AP_GPS_NMEA::_term_complete()
             return false;
         }
 #endif
+
+#if AP_GPS_NMEA_QUECTEL_ENABLED
+        // Check for Quectel PQTM messages
+        if (strcmp(_term, "PQTMVERNO") == 0 && _expect_pqtm) {
+            _sentence_type = _GPS_SENTENCE_PQTMVER;
+            return false;
+        }
+        if (strcmp(_term, "PQTMEPE") == 0 && _expect_pqtm) {
+            _sentence_type = _GPS_SENTENCE_PQTMEPE;
+            return false;
+        }
+        if (strcmp(_term, "PQTMVEL") == 0 && _expect_pqtm) {
+            _sentence_type = _GPS_SENTENCE_PQTMVEL;
+            return false;
+        }
+        if (strcmp(_term, "PQTMPVT") == 0 && _expect_pqtm) {
+            _sentence_type = _GPS_SENTENCE_PQTMPVT;
+            return false;
+        }
+#endif // AP_GPS_NMEA_QUECTEL_ENABLED
         /*
           The first two letters of the NMEA term are the talker
           ID. The most common is 'GP' but there are a bunch of others
@@ -670,6 +733,22 @@ bool AP_GPS_NMEA::_term_complete()
             break;
 #endif
 #endif
+
+#if AP_GPS_NMEA_QUECTEL_ENABLED
+        // Quectel PQTM message parsing
+        case _GPS_SENTENCE_PQTMVER + 1 ... _GPS_SENTENCE_PQTMVER + 3: // PQTMVER message (3 data fields)
+            parse_pqtmver_field(_term_number, _term);
+            break;
+        case _GPS_SENTENCE_PQTMEPE + 1 ... _GPS_SENTENCE_PQTMEPE + 6: // PQTMEPE message (6 fields)
+            parse_pqtmepe_field(_term_number, _term);
+            break;
+        case _GPS_SENTENCE_PQTMVEL + 1 ... _GPS_SENTENCE_PQTMVEL + 11: // PQTMVEL message (11 fields)
+            parse_pqtmvel_field(_term_number, _term);
+            break;
+        case _GPS_SENTENCE_PQTMPVT + 1 ... _GPS_SENTENCE_PQTMPVT + 19: // PQTMPVT message (19 fields)
+            parse_pqtmpvt_field(_term_number, _term);
+            break;
+#endif // AP_GPS_NMEA_QUECTEL_ENABLED
         }
     }
 
@@ -794,6 +873,150 @@ void AP_GPS_NMEA::parse_versiona_field(uint16_t term_number, const char *term)
 }
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
 
+#if AP_GPS_NMEA_QUECTEL_ENABLED
+/*
+  Parse PQTM message fields for Quectel GNSS modules
+ */
+
+/*
+  parse PQTMVER field - Firmware Version Output
+  Example: $PQTMVER,1,MODULE,LG290P03AANR01A03S,2024/04/30,10:53:07*32
+ */
+void AP_GPS_NMEA::parse_pqtmver_field(uint16_t term_number, const char *term)
+{
+    auto &pv = _pqtmver;
+    
+    switch (term_number) {
+    case 1: // Version string (VerStr)
+        strncpy(pv.version, term, sizeof(pv.version)-1);
+        pv.version[sizeof(pv.version)-1] = 0;
+        break;
+    case 2: // Build date (BuildDate)
+        strncpy(pv.build_date, term, sizeof(pv.build_date)-1);
+        pv.build_date[sizeof(pv.build_date)-1] = 0;
+        break;
+    case 3: // Build time (BuildTime)
+        strncpy(pv.build_time, term, sizeof(pv.build_time)-1);
+        pv.build_time[sizeof(pv.build_time)-1] = 0;
+        _have_pqtmver = true;
+        break;
+    }
+}
+
+/*
+  parse PQTMEPE field - Estimated Position Error
+  Example: $PQTMEPE,2,1.000,1.000,1.000,1.414,1.732*52
+ */
+void AP_GPS_NMEA::parse_pqtmepe_field(uint16_t term_number, const char *term)
+{
+    auto &pe = _pqtmepe;
+    switch (term_number) {
+    case 2: // EPE North
+        pe.epe_north = atof(term);
+        break;
+    case 3: // EPE East
+        pe.epe_east = atof(term);
+        break;
+    case 4: // EPE Down
+        pe.epe_down = atof(term);
+        break;
+    case 5: // EPE 2D
+        pe.epe_2d = atof(term);
+        break;
+    case 6: // EPE 3D
+        pe.epe_3d = atof(term);
+        // Update state accuracy information
+        state.horizontal_accuracy = pe.epe_2d;
+        state.have_horizontal_accuracy = true;
+        state.vertical_accuracy = pe.epe_down;
+        state.have_vertical_accuracy = true;
+        _last_PQTM_acc_ms = AP_HAL::millis();
+        break;
+    }
+}
+
+/*
+  parse PQTMVEL field - Velocity Information
+  Example: $PQTMVEL,1,154512.100,1.251,2.452,1.245,2.752,3.021,180.512,0.124,0.254,0.250*67
+ */
+void AP_GPS_NMEA::parse_pqtmvel_field(uint16_t term_number, const char *term)
+{
+    auto &pv = _pqtmvel;
+    switch (term_number) {
+    case 2: // UTC time
+        pv.time_ms = _parse_decimal_100(term) * 10;
+        break;
+    case 3: // North velocity
+        pv.vel_NED.x = atof(term);
+        break;
+    case 4: // East velocity
+        pv.vel_NED.y = atof(term);
+        break;
+    case 5: // Down velocity
+        pv.vel_NED.z = atof(term);
+        break;
+    case 6: // Ground speed
+        pv.ground_speed = atof(term);
+        break;
+    case 7: // 3D speed
+        pv.speed_3d = atof(term);
+        break;
+    case 8: // Heading
+        pv.heading = atof(term);
+        break;
+    case 9: // Ground speed accuracy
+        pv.ground_speed_acc = atof(term);
+        break;
+    case 10: // 3D speed accuracy
+        pv.speed_acc = atof(term);
+        break;
+    case 11: // Heading accuracy
+        pv.heading_acc = atof(term);
+        // Update state with velocity information
+        state.velocity = pv.vel_NED;
+        state.have_vertical_velocity = true;
+        state.ground_speed = pv.ground_speed;
+        state.ground_course = pv.heading;
+        state.speed_accuracy = pv.speed_acc;
+        state.have_speed_accuracy = true;
+        _last_PQTM_vel_ms = AP_HAL::millis();
+        break;
+    }
+}
+
+/*
+  parse PQTMPVT field - Only auxiliary data not available in standard NMEA
+  Example: $PQTMPVT,1,31075000,20221225,083737.000,,3,09,18,31.12738291,117.26372910,34.212,5.267,3.212,2.928,0.238,4.346,34.12,2.16,4.38*51
+ */
+void AP_GPS_NMEA::parse_pqtmpvt_field(uint16_t term_number, const char *term)
+{
+    auto &pp = _pqtmpvt;
+    switch (term_number) {
+    case 2: // Time of week
+        pp.tow = atol(term);
+        break;
+    case 8: // Leap seconds
+        if (strlen(term) > 0) {
+            pp.leap_seconds = atol(term);
+        }
+        break;
+    case 12: // Geoidal separation
+        if (strlen(term) > 0) {
+            pp.sep = atof(term);
+            state.undulation = -pp.sep;
+            state.have_undulation = true;
+        }
+        break;
+    case 19: // PDOP
+        if (strlen(term) > 0) {
+            pp.pdop = atof(term);
+            state.vdop = pp.pdop * 100;
+        }
+        break;
+    }
+}
+#endif // AP_GPS_NMEA_QUECTEL_ENABLED
+
 /*
   detect a NMEA GPS. Adds one byte, and returns true if the stream
   matches a NMEA string
@@ -841,6 +1064,7 @@ void AP_GPS_NMEA::send_config(void)
     const auto type = get_type();
     _expect_agrica = (type == AP_GPS::GPS_TYPE_UNICORE_NMEA ||
                       type == AP_GPS::GPS_TYPE_UNICORE_MOVINGBASE_NMEA);
+    _expect_pqtm = (type == AP_GPS::GPS_TYPE_QUECTEL_NMEA);
     if (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         // not doing auto-config
         return;
@@ -902,6 +1126,49 @@ void AP_GPS_NMEA::send_config(void)
                     unsigned(rate_hz), unsigned(rate_ms));
         break;
 
+#if AP_GPS_NMEA_QUECTEL_ENABLED
+    case AP_GPS::GPS_TYPE_QUECTEL_NMEA: {
+        // Configure Quectel GNSS for PQTM message output
+        // Set fix rate (1Hz to 10Hz typically)
+
+        nmea_printf(port, "$PQTMCFGFIXRATE,W,%u", rate_ms);
+        
+        // It seems per the documentation that only 1Hz is supported for non-RTCM messages
+        // // Configure standard NMEA message output rates
+        // nmea_printf(port, "$PQTMCFGMSGRATE,W,GGA,%u", rate_hz);
+        // nmea_printf(port, "$PQTMCFGMSGRATE,W,RMC,%u", rate_hz);
+        // nmea_printf(port, "$PQTMCFGMSGRATE,W,VTG,%u", rate_hz);
+
+        // // Configure PQTM proprietary message output rates
+        // nmea_printf(port, "$PQTMCFGMSGRATE,W,PQTMEPE,%u,2", rate_hz);
+        // nmea_printf(port, "$PQTMCFGMSGRATE,W,PQTMVEL,%u,1", rate_hz);
+        // nmea_printf(port, "$PQTMCFGMSGRATE,W,PQTMPVT,%u,1", rate_hz);
+
+        nmea_printf(port, "$PQTMCFGMSGRATE,W,GGA,1");
+        nmea_printf(port, "$PQTMCFGMSGRATE,W,RMC,1");
+        nmea_printf(port, "$PQTMCFGMSGRATE,W,VTG,1");
+        
+        nmea_printf(port, "$PQTMCFGMSGRATE,W,PQTMVEL,1,1");
+        nmea_printf(port, "$PQTMCFGMSGRATE,W,PQTMEPE,1,2");
+        nmea_printf(port, "$PQTMCFGMSGRATE,W,PQTMPVT,1,1");
+        
+        if (!_have_pqtmver) {
+            nmea_printf(port, "$PQTMVERNO");
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+            nmea_printf(port, "$PQTMDEBUGON");
+#else
+            nmea_printf(port, "$PQTMDEBUGOFF");
+#endif
+            if (gps._save_config) {
+                // Save configuration for next startup
+                nmea_printf(port, "$PQTMSAVEPAR");
+            }
+        }
+    
+        break;
+    }
+#endif // AP_GPS_NMEA_QUECTEL_ENABLED
+
     default:
         break;
     }
@@ -933,6 +1200,11 @@ bool AP_GPS_NMEA::is_healthy(void) const
         // we should get vertical velocity and accuracy from PHD
         return _last_vvelocity_ms != 0 && _last_vaccuracy_ms != 0;
 
+#if AP_GPS_NMEA_QUECTEL_ENABLED
+    case AP_GPS::GPS_TYPE_QUECTEL_NMEA:
+        // we should be getting PQTM messages for velocity and accuracy
+        return _last_PQTM_vel_ms != 0 && _last_PQTM_acc_ms != 0;
+#endif // AP_GPS_NMEA_QUECTEL_ENABLED
     default:
         break;
     }
@@ -970,6 +1242,14 @@ void AP_GPS_NMEA::Write_AP_Logger_Log_Startup_messages() const
                                     _versiona.build_date);
     }
 #endif
+#if AP_GPS_NMEA_QUECTEL_ENABLED
+    if (_have_pqtmver) {
+        AP::logger().Write_MessageF("NMEA %u Quectel %s %s",
+                                    state.instance+1,
+                                    _pqtmver.version,
+                                    _pqtmver.build_date);
+    }
+#endif // AP_GPS_NMEA_QUECTEL_ENABLED
 }
 #endif
 
