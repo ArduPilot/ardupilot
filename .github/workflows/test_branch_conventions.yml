@@ -7,6 +7,7 @@ on:
 jobs:
   check-merge-commits:
     runs-on: ubuntu-latest
+    container: ardupilot/ardupilot-dev-chibios:v0.1.3
 
     steps:
       - name: Checkout PR branch
@@ -14,6 +15,7 @@ jobs:
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.ref }}
+          submodules: 'recursive'
           fetch-depth: 0
 
       - name: Fetch base branch
@@ -22,6 +24,11 @@ jobs:
           git remote add upstream ${{ github.event.pull_request.base.repo.clone_url }}
           git fetch upstream ${{ github.base_ref }}
           git show upstream/${{ github.base_ref }}
+
+      - name: Test boards with modified hwdefs still compile
+        shell: bash
+        run: |
+          Tools/scripts/test_modified_boards.py --master "upstream/${{ github.base_ref }}"
 
       - name: Check for merge commits in PR branch
         run: |

@@ -41,6 +41,8 @@ class HWDef:
 
         # boolean indicating whether we have read and processed self.hwdef
         self.processed_hwdefs = False
+        # a set of files which have been processed to populate this object:
+        self.loaded_files = set()
 
         # sensor lists
         self.imu_list = []
@@ -73,6 +75,9 @@ class HWDef:
                     continue
             ret.append(line)
         return ret
+
+    def uses_filepath(self, filepath : str) -> bool:
+        return os.path.abspath(filepath) in self.loaded_files
 
     def running_in_CI(self):
         return os.getenv("GITHUB_ACTIONS") == "true"
@@ -159,10 +164,9 @@ class HWDef:
 
     def process_file(self, filename, depth=0):
         '''process a hwdef.dat file'''
-        try:
-            f = open(filename, "r")
-        except Exception:
-            self.error("Unable to open file %s" % filename)
+        self.progress(f"Processing {filename}")
+        self.loaded_files.add(os.path.abspath(filename))
+        f = open(filename, "r")
         for line in f.readlines():
             line = line.split('#')[0] # ensure we discard the comments
             line = line.strip()
@@ -175,7 +179,6 @@ class HWDef:
                     dir = os.path.dirname(filename)
                     include_file = os.path.normpath(
                         os.path.join(dir, include_file))
-                self.progress("Including %s" % include_file)
                 self.process_file(include_file, depth+1)
             else:
                 self.process_line(line, depth)

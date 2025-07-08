@@ -147,37 +147,7 @@ class SizeCompareBranches(object):
                 new_self_board.append(board_name)
         self.board = new_self_board
 
-        # some boards we don't have a -bl.dat for, so skip them.
-        # TODO: find a way to get this information from board_list:
-        self.bootloader_blacklist = set([
-            'CubeOrange-SimOnHardWare',
-            'CubeOrangePlus-SimOnHardWare',
-            'CubeRedSecondary-IO',
-            'fmuv2',
-            'fmuv3-bdshot',
-            'iomcu',
-            'iomcu-dshot',
-            'iomcu-f103',
-            'iomcu-f103-dshot',
-            'iomcu-f103-8MHz-dshot',
-            'iomcu_f103_8MHz',
-            'luminousbee4',
-            'skyviper-v2450',
-            'skyviper-f412-rev1',
-            'skyviper-journey',
-            'Pixhawk1-1M-bdshot',
-            'Pixhawk1-bdshot',
-            'SITL_arm_linux_gnueabihf',
-            'RADIX2HD',
-            'canzero',
-            'CUAV-Pixhack-v3',  # uses USE_BOOTLOADER_FROM_BOARD
-            'kha_eth',  # no hwdef-bl.dat
-            'TBS-L431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
-            'TBS-L431-BattMon',  # uses USE_BOOTLOADER_FROM_BOARD
-            'TBS-L431-CurrMon',  # uses USE_BOOTLOADER_FROM_BOARD
-            'TBS-L431-PWM',  # uses USE_BOOTLOADER_FROM_BOARD
-            'ARKV6X-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
-        ])
+        self.bootloader_blacklist = board_list.BoardList().bootloader_blacklist
 
         # blacklist all linux boards for bootloader build:
         self.bootloader_blacklist.update(self.linux_board_names())
