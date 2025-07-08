@@ -10,12 +10,12 @@
 --
 -- Thanks to @yuri_rage and Peter Barker for help with the Lua and Autotests
 
-SCRIPT_VERSION = "4.7.0-014"
+SCRIPT_VERSION = "4.7.0-015"
 SCRIPT_NAME = "Arming Checks"
 SCRIPT_NAME_SHORT = "ArmCk"
 
 REFRESH_RATE = 500      -- wait this many milliseconds between each update loop (while not armed)
-INITIAL_DELAY = 10000   -- wait 20 seconds for the AP to settle down before starting to show messages
+INITIAL_DELAY = 20000   -- wait 20 seconds for the AP to settle down before starting to show messages
 
 GLOBAL_PARAM_TABLE_BASE = 160
 VALUES_PARAM_TABLE_KEY = GLOBAL_PARAM_TABLE_BASE + 9
@@ -96,9 +96,9 @@ function Arming_Check:state()
 end
 
 -- parameters that store values used by the validation methods, rather than severities of the individual arming checks
-ARV_ALT_LEGAL = Parameter()
+ARM_V_ALT_LEGAL = Parameter()
 local alt_legal_max = 120.0
-ARV_RALLY_MAX = Parameter()
+ARM_V_RALLY_MAX = Parameter()
 
 FENCE_TYPE = Parameter("FENCE_TYPE")
 FENCE_TOTAL = Parameter("FENCE_TOTAL")
@@ -330,16 +330,20 @@ local function fence_present()
     return basic_fence or polygon_fence
 end
 
--- check if rally point is too far away
+-- check if any rally point is too far away
 local function rally_ok()
     local home_location = ahrs:get_home()
-    local rally_distance_max_m = ARV_RALLY_MAX:get() or 0
+    local rally_distance_max_m = ARM_V_RALLY_MAX:get() or 0
     local rally_points = rally:get_rally_total()
     if rally_points == 0 or rally_distance_max_m <= 0 then
+--        gcs:send_text(MAV_SEVERITY.ERROR, string.format('%s: %s: %s', SCRIPT_NAME_SHORT,"rally",
+--             "no points:"..rally_distance_max_m))
         return true
     end
     local rally_location
     local rally_distance_m = 0
+--        gcs:send_text(MAV_SEVERITY.ERROR, string.format('%s: %s: %s', SCRIPT_NAME_SHORT,"rally",
+--             "points:"..rally_points))
     for i = 0, rally_points-1 do
         rally_location = rally:get_rally_location_with_index(i)
         if rally_location ~= Nil then
@@ -452,7 +456,7 @@ local arming_checks = {
 
 if FWVersion:type() == FIRMWARE.COPTER then -- add Copter specific Parameters
 --[[
-    // @Param: ARC_RTL_ALT
+    // @Param: ARM_C_RTL_ALT
     // @DisplayName: RTL_ALT should be a valid value
     // @Description: RTL_ALT should be < 120m (400ft). 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
@@ -463,7 +467,7 @@ if FWVersion:type() == FIRMWARE.COPTER then -- add Copter specific Parameters
     table.insert(arming_checks, RTLAltitudeLegal)
 elseif FWVersion:type() == FIRMWARE.PLANE then -- add Plane specific Parameters
 --[[
-    // @Param: ARP_Q_FS_LAND
+    // @Param: ARM_P_Q_FS_LAND
     // @DisplayName: Warn if Q failsafe will land
     // @Description: Notify the user that on failsafe a QuadPlan will land. 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
@@ -473,7 +477,7 @@ elseif FWVersion:type() == FIRMWARE.PLANE then -- add Plane specific Parameters
                         "Q will land on failsafe", MAV_SEVERITY.NOTICE, true, false )
     table.insert(arming_checks, QLandWarning)
 --[[
-    // @Param: ARP_Q_FS_RTL
+    // @Param: ARM_P_Q_FS_RTL
     // @DisplayName: Warn if Q failsafe will QRTL
     // @Description: Notify the user that on failsafe a QuadPlan will QRTL. 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
@@ -483,7 +487,7 @@ elseif FWVersion:type() == FIRMWARE.PLANE then -- add Plane specific Parameters
                         "Q will RTL on failsafe", MAV_SEVERITY.NOTICE, true, false )
     table.insert(arming_checks, QRTLWarning)
 --[[
-    // @Param: ARP_AIRSPEED
+    // @Param: ARM_P_AIRSPEED
     // @DisplayName: Check AIRSPEED_ parameters
     // @Description: Validate that AIRSPEED_STALL(if set) < MIN < CRUISE < MAX d. 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
@@ -493,7 +497,7 @@ elseif FWVersion:type() == FIRMWARE.PLANE then -- add Plane specific Parameters
                         "stall < min < crs < max", MAV_SEVERITY.ERROR, true, false )
     table.insert(arming_checks, AirSpeed)
 --[[
-    // @Param: ARP_STALL
+    // @Param: ARM_P_STALL
     // @DisplayName: AIRSPEED_MIN should be 25% above STALL
     // @Description: Validate that AIRSPEED_MIN is at least 25% above AIRSPEED_STALL(if set). 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
@@ -503,7 +507,7 @@ elseif FWVersion:type() == FIRMWARE.PLANE then -- add Plane specific Parameters
                         "Min speed not 25% above stall", MAV_SEVERITY.INFO, true, false )
     table.insert(arming_checks, StallSpeed)
 --[[
-    // @Param: ARP_SCALING
+    // @Param: ARM_P_SCALING
     // @DisplayName: SCALING_SPEED valid
     // @Description: Validate that SCALING_SPEED is within 20% of AIRSPEED_CRUISE. 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
@@ -513,7 +517,7 @@ elseif FWVersion:type() == FIRMWARE.PLANE then -- add Plane specific Parameters
                         "Scaling spd >< 20% of CRUISE", MAV_SEVERITY.ERROR, true, false )
     table.insert(arming_checks, ScalingSpeed)
 --[[
-    // @Param: ARP_RTL_ALT
+    // @Param: ARM_P_RTL_ALT
     // @DisplayName: RTL_ALTITUDE should be a valid value
     // @Description: RTL_ALTITITUDE should be < 120m (400ft). 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
@@ -523,7 +527,7 @@ elseif FWVersion:type() == FIRMWARE.PLANE then -- add Plane specific Parameters
                         "RTL_ALTITUDE too high", MAV_SEVERITY.ERROR, false, false )
     table.insert(arming_checks, RTLAltitudeLegal)
 --[[
-    // @Param: ARP_QRTL_ALT
+    // @Param: ARM_P_QRTL_ALT
     // @DisplayName: Q_RTL_ALT should be a valid value
     // @Description: Q_RTL_ALT should be < 120m (400ft). 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
@@ -545,28 +549,28 @@ end
 local function initialize()
 -- special case for the ARV_ALT_LEGAL parameter which ideally should be a "regular" parameter
 --[[
-    // @Param: ARV_ALT_LEGAL
+    // @Param: ARM_V_ALT_LEGAL
     // @DisplayName: Legal max altitude
     // @Description: Legal max altitude for UAV/RPAS/drones in your jurisdiction
     // @Units: m
     // @User: Standard
 --]]
     assert(param:add_param(VALUES_PARAM_TABLE_KEY, param_idx, "ALT_LEGAL", 120.0),
-                        string.format('could not add param %s', "ALT_LEGAL"))
+                        string.format('could not add param %s', VALUES_PARAM_TABLE_PREFIX.."ALT_LEGAL"))
     param_idx = param_idx + 1
 
 -- special case for the ARV_RALLY_MAX parameter which ideally should be a "regular" parameter
 --[[
-    // @Param: ARV_RALLY_MAX
+    // @Param: ARM_V_RALLY_MAX
     // @DisplayName: Max distanct to rally
     // @Description: The maximum distance to a rally point from home
     // @Units: m
     // @User: Standard
 --]]
     assert(param:add_param(VALUES_PARAM_TABLE_KEY, param_idx, "RALLY_MAX", 1000.0),
-                        string.format('could not add param %s', "ARV_RALLY"))
+                        string.format('could not add param %s', VALUES_PARAM_TABLE_PREFIX.."RALLY_MAX"))
     param_idx = param_idx + 1
-    ARV_RALLY_MAX:init("ARV_RALLY_MAX")
+    ARM_V_RALLY_MAX:init(VALUES_PARAM_TABLE_PREFIX.."RALLY_MAX")
 
     for _, check in pairs(arming_checks) do
         local param_name = VEHICLE[check.firmware].prefix..check.param_name
@@ -609,17 +613,13 @@ validate = function() -- this is the loop which periodically runs to do the vali
 
     if arming:is_armed() then return idle_while_armed() end
 
-    alt_legal_max = ARV_ALT_LEGAL:get() or 120.0
+    alt_legal_max = ARM_V_ALT_LEGAL:get() or 120.0
     local validated = true
 
     for _, check in pairs(arming_checks) do
         local param_name = VEHICLE[check.firmware].prefix..check.param_name
-        if check.firmware == FIRMWARE.PLANE then
-        elseif check.firmware == FIRMWARE.COPTER then
-        end
         local parameter = Parameter(param_name)
         local param_severity  = parameter:get() or MAV_SEVERITY.NONE
-
         if param_severity ~= MAV_SEVERITY.NONE then -- ignore if NONE
             validated = run_check(check, param_severity, validated)
         end
@@ -634,9 +634,9 @@ end
 
 local function delayed_startup()
     gcs:send_text(MAV_SEVERITY.INFO, string.format("%s %s loaded", SCRIPT_NAME, SCRIPT_VERSION) )
-    initialize()
     return validate, REFRESH_RATE
 end
 
+initialize()
 -- start running update loop - waiting 20s for the AP to initialize so we don't spam the user with spurios notices
 return delayed_startup, INITIAL_DELAY
