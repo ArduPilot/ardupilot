@@ -166,12 +166,7 @@ class HWDef:
         '''process a hwdef.dat file'''
         self.progress(f"Processing {filename}")
         self.loaded_files.add(os.path.abspath(filename))
-        try:
-            f = open(filename, "r")
-        except Exception as e:
-            if False:
-                raise e
-            self.error("Unable to open file %s" % filename)
+        f = open(filename, "r")
         for line in f.readlines():
             line = line.split('#')[0] # ensure we discard the comments
             line = line.strip()
