@@ -2839,11 +2839,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.QLoiterRecovery,
             self.FastInvertedRecovery,
             self.CruiseRecovery,
-<<<<<<< HEAD
             self.RudderArmedTakeoffRequiresNeutralThrottle,
             self.RudderArmingWithARMING_CHECK_THROTTLEUnset,
-=======
             self.ScriptedArmingChecksApplet,
->>>>>>> e0c683f4fe (Tools: tests for scripted arming checks)
         ])
         return ret
