@@ -10,7 +10,7 @@
 --
 -- Thanks to @yuri_rage and Peter Barker for help with the Lua and Autotests
 
-SCRIPT_VERSION = "4.7.0-015"
+SCRIPT_VERSION = "4.7.0-016"
 SCRIPT_NAME = "Arming Checks"
 SCRIPT_NAME_SHORT = "ArmCk"
 
@@ -22,7 +22,7 @@ VALUES_PARAM_TABLE_KEY = GLOBAL_PARAM_TABLE_BASE + 9
 VALUES_PARAM_TABLE_PREFIX = "ARM_V_"
 
 FIRMWARE = {GLOBAL = 0, ROVER = 1, COPTER = 2, PLANE = 3, ANTENNA = 4, SUB = 7, BLIMP = 12, HELI = 13 }
-VEHICLE = {
+local VEHICLE = {
     [FIRMWARE.GLOBAL]   = {prefix = "ARM_", key = GLOBAL_PARAM_TABLE_BASE, index = 1},
     [FIRMWARE.ROVER]    = {prefix = "ARM_R_", key = GLOBAL_PARAM_TABLE_BASE + 1, index = 1},
     [FIRMWARE.COPTER]   = {prefix = "ARM_C_", key = GLOBAL_PARAM_TABLE_BASE + 2, index = 1},
@@ -100,6 +100,7 @@ ARM_V_ALT_LEGAL = Parameter()
 local alt_legal_max = 120.0
 ARM_V_RALLY_MAX = Parameter()
 
+-- other parameters used by various checks
 FENCE_TYPE = Parameter("FENCE_TYPE")
 FENCE_TOTAL = Parameter("FENCE_TOTAL")
 FENCE_ENABLE = Parameter("FENCE_ENABLE")
@@ -336,18 +337,13 @@ local function rally_ok()
     local rally_distance_max_m = ARM_V_RALLY_MAX:get() or 0
     local rally_points = rally:get_rally_total()
     if rally_points == 0 or rally_distance_max_m <= 0 then
---        gcs:send_text(MAV_SEVERITY.ERROR, string.format('%s: %s: %s', SCRIPT_NAME_SHORT,"rally",
---             "no points:"..rally_distance_max_m))
         return true
     end
     local rally_location
-    local rally_distance_m = 0
---        gcs:send_text(MAV_SEVERITY.ERROR, string.format('%s: %s: %s', SCRIPT_NAME_SHORT,"rally",
---             "points:"..rally_points))
     for i = 0, rally_points-1 do
         rally_location = rally:get_rally_location_with_index(i)
         if rally_location ~= Nil then
-            rally_distance_m = home_location:get_distance(rally_location)
+            local rally_distance_m = home_location:get_distance(rally_location)
             if rally_distance_m > rally_distance_max_m then
                 return false
             end
