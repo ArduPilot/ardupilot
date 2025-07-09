@@ -51,7 +51,7 @@ void Copter::tuning(const RC_Channel *tuning_ch, int8_t tuning_param, float tuni
     const float tuning_value = linear_interpolate(tuning_min, tuning_max, norm_in, -1, 1);
 
 #if HAL_LOGGING_ENABLED
-    Log_Write_Parameter_Tuning(tuning_param, tuning_value, tuning_min, tuning_max);
+    Log_Write_PTUN(tuning_param, tuning_value, tuning_min, tuning_max, norm_in);
 #endif
 
     switch(tuning_param) {
