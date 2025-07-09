@@ -48,16 +48,18 @@ bool ExpandingString::expand(uint32_t min_extra_space_needed)
     }
     
     // add one to ensure we are always null terminated
-    void *newbuf = hal.util->std_realloc(buf, newsize+1);
+    void *newbuf = malloc(newsize+1);
 
     if (newbuf == nullptr) {
         allocation_failed = true;
         return false;
     }
 
+    memcpy(newbuf, buf, used);
+    free(buf);
+
     buflen = newsize;
     buf = (char *)newbuf;
-    memset(&buf[used], 0, newsize-used);
 
     return true;
 }
