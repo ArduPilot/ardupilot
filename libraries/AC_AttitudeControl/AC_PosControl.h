@@ -806,16 +806,8 @@ protected:
     // Integrator is adjusted using velocity error when PID is being overridden.
     float get_throttle_with_vibration_override();
 
-    // Converts horizontal acceleration (cm/s²) to roll/pitch lean angles in radians.
-    // See accel_NE_mss_to_lean_angles_rad() for full details.
-    void accel_NE_cmss_to_lean_angles_rad(float accel_n_cmss, float accel_e_cmss, float& roll_target_rad, float& pitch_target_rad) const;
-
     // Converts horizontal acceleration (m/s²) to roll/pitch lean angles in radians.
     void accel_NE_mss_to_lean_angles_rad(float accel_n_mss, float accel_e_mss, float& roll_target_rad, float& pitch_target_rad) const;
-
-    // Converts current target lean angles to NE acceleration in cm/s².
-    // See lean_angles_to_accel_NE_mss() for full details.
-    void lean_angles_to_accel_NE_cmss(float& accel_n_cmss, float& accel_e_cmss) const;
 
     // Converts current target lean angles to NE acceleration in m/s².
     void lean_angles_to_accel_NE_mss(float& accel_n_mss, float& accel_e_mss) const;

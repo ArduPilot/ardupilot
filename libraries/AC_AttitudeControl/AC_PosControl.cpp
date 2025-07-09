@@ -1696,13 +1696,6 @@ void AC_PosControl::update_terrain()
     // if we know how fast the terain altitude is changing we would add update_pos_vel_accel for _pos_terrain_target_u_m here
 }
 
-// Converts horizontal acceleration (cm/s²) to roll/pitch lean angles in radians.
-// See accel_NE_mss_to_lean_angles_rad() for full details.
-void AC_PosControl::accel_NE_cmss_to_lean_angles_rad(float accel_n_cmss, float accel_e_cmss, float& roll_target_rad, float& pitch_target_rad) const
-{
-    accel_NE_mss_to_lean_angles_rad(accel_n_cmss * 0.01, accel_e_cmss * 0.01, roll_target_rad, pitch_target_rad);
-}
-
     // Converts horizontal acceleration (m/s²) to roll/pitch lean angles in radians.
 void AC_PosControl::accel_NE_mss_to_lean_angles_rad(float accel_n_mss, float accel_e_mss, float& roll_target_rad, float& pitch_target_rad) const
 {
@@ -1714,17 +1707,6 @@ void AC_PosControl::accel_NE_mss_to_lean_angles_rad(float accel_n_mss, float acc
     pitch_target_rad = accel_mss_to_angle_rad(-accel_forward_mss);
     float cos_pitch_target = cosf(pitch_target_rad);
     roll_target_rad = accel_mss_to_angle_rad(accel_right_mss * cos_pitch_target);
-}
-
-// Converts current target lean angles to NE acceleration in cm/s².
-// See lean_angles_to_accel_NE_mss() for full details.
-// todo: this should be based on thrust vector attitude control
-void AC_PosControl::lean_angles_to_accel_NE_cmss(float& accel_n_cmss, float& accel_e_cmss) const
-{
-    float accel_n_mss, accel_e_mss;
-    lean_angles_to_accel_NE_mss(accel_n_mss, accel_e_mss);
-    accel_n_cmss = accel_n_mss * 100.0;
-    accel_e_cmss = accel_e_mss * 100.0;
 }
 
 // Converts current target lean angles to NE acceleration in m/s².
