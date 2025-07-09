@@ -290,16 +290,16 @@ public:
     // Sets the desired vertical acceleration in m/s² using jerk-limited shaping.
     // Smoothly transitions to the target acceleration from current kinematic state.
     // Constraints: max acceleration and jerk set via set_max_speed_accel_U_m().
-    virtual void input_accel_U_m(float accel_u_mss);
+    void input_accel_U_m(float accel_u_mss);
 
     // Sets desired vertical velocity and acceleration (cm/s, cm/s²) using jerk-limited shaping.
     // See input_vel_accel_U_m() for full details.
-    virtual void input_vel_accel_U_cm(float &vel_u_cms, float accel_u_cmss, bool limit_output = true);
+    void input_vel_accel_U_cm(float &vel_u_cms, float accel_u_cmss, bool limit_output = true);
 
     // Sets desired vertical velocity and acceleration (m/s, m/s²) using jerk-limited shaping.
     // Calculates required acceleration using current vertical kinematics.
     // If `limit_output` is true, limits apply to the combined (desired + correction) command.
-    virtual void input_vel_accel_U_m(float &vel_u_ms, float accel_u_mss, bool limit_output = true);
+    void input_vel_accel_U_m(float &vel_u_ms, float accel_u_mss, bool limit_output = true);
 
     // Generates a vertical trajectory using the given climb rate in cm/s and jerk-limited shaping.
     // Adjusts the internal target altitude based on integrated climb rate.
