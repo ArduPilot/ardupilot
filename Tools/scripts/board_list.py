@@ -16,7 +16,7 @@ class Board(object):
     def __init__(self, name):
         self.name = name
         self.is_ap_periph = False
-        self.toolchain = 'arm-eabi-none'  # FIXME: try to remove this?
+        self.toolchain = 'arm-none-eabi'  # FIXME: try to remove this?
         self.autobuild_targets = [
             'Tracker',
             'Blimp',
@@ -26,6 +26,12 @@ class Board(object):
             'Rover',
             'Sub',
         ]
+        SITL_toolchain = {
+            "SITL_x86_64_linux_gnu": "x86_64-linux-gnu",
+            "SITL_arm_linux_gnueabihf": "arm-linux-gnueabihf",
+        }
+        if name in SITL_toolchain:
+            self.toolchain = SITL_toolchain[name]
 
 
 def in_boardlist(boards : Collection[str], board : str) -> bool:
