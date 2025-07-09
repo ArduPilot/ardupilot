@@ -225,9 +225,13 @@ extern const app_descriptor_t app_descriptor;
  */
 void check_firmware_print(void)
 {
-    hal.console->printf("Booting %u/%u\n",
-                        app_descriptor.version_major,
-                        app_descriptor.version_minor);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+        "Booting %u/%u (crc1=%u crc2=%u)\n",
+        app_descriptor.version_major,
+        app_descriptor.version_minor,
+        app_descriptor.image_crc1,
+        app_descriptor.image_crc2,
+        );
 }
 #endif
 
