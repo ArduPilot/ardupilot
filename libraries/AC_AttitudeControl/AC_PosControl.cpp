@@ -95,7 +95,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Description: Position (vertical) controller P gain.  Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller
     // @Range: 1.000 3.000
     // @User: Standard
-    AP_SUBGROUPINFO(_p_pos_u, "_POSZ_", 2, AC_PosControl, AC_P_1D),
+    AP_SUBGROUPINFO(_p_pos_u_cm, "_POSZ_", 2, AC_PosControl, AC_P_1D),
 
     // @Param: _VELZ_P
     // @DisplayName: Velocity (vertical) controller P gain
@@ -143,7 +143,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
-    AP_SUBGROUPINFO(_pid_vel_u, "_VELZ_", 3, AC_PosControl, AC_PID_Basic),
+    AP_SUBGROUPINFO(_pid_vel_u_cm, "_VELZ_", 3, AC_PosControl, AC_PID_Basic),
 
     // @Param: _ACCZ_P
     // @DisplayName: Acceleration (vertical) controller P gain
@@ -234,14 +234,14 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Range: 1 8
     // @User: Advanced
 
-    AP_SUBGROUPINFO(_pid_accel_u, "_ACCZ_", 4, AC_PosControl, AC_PID),
+    AP_SUBGROUPINFO(_pid_accel_u_cm_to_kt, "_ACCZ_", 4, AC_PosControl, AC_PID),
 
     // @Param: _POSXY_P
     // @DisplayName: Position (horizontal) controller P gain
     // @Description: Position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller
     // @Range: 0.500 2.000
     // @User: Standard
-    AP_SUBGROUPINFO(_p_pos_ne, "_POSXY_", 5, AC_PosControl, AC_P_2D),
+    AP_SUBGROUPINFO(_p_pos_ne_cm, "_POSXY_", 5, AC_PosControl, AC_P_2D),
 
     // @Param: _VELXY_P
     // @DisplayName: Velocity (horizontal) P gain
@@ -292,7 +292,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Range: 0 6
     // @Increment: 0.01
     // @User: Advanced
-    AP_SUBGROUPINFO(_pid_vel_ne, "_VELXY_", 6, AC_PosControl, AC_PID_2D),
+    AP_SUBGROUPINFO(_pid_vel_ne_cm, "_VELXY_", 6, AC_PosControl, AC_PID_2D),
 
     // @Param: _ANGLE_MAX
     // @DisplayName: Position Control Angle Max
@@ -334,11 +334,11 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_Motors& motors, AC_Att
     _ahrs(ahrs),
     _motors(motors),
     _attitude_control(attitude_control),
-    _p_pos_ne(POSCONTROL_POS_XY_P),
-    _p_pos_u(POSCONTROL_POS_Z_P),
-    _pid_vel_ne(POSCONTROL_VEL_XY_P, POSCONTROL_VEL_XY_I, POSCONTROL_VEL_XY_D, 0.0f, POSCONTROL_VEL_XY_IMAX, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ),
-    _pid_vel_u(POSCONTROL_VEL_Z_P, 0.0f, 0.0f, 0.0f, POSCONTROL_VEL_Z_IMAX, POSCONTROL_VEL_Z_FILT_HZ, POSCONTROL_VEL_Z_FILT_D_HZ),
-    _pid_accel_u(POSCONTROL_ACC_Z_P, POSCONTROL_ACC_Z_I, POSCONTROL_ACC_Z_D, 0.0f, POSCONTROL_ACC_Z_IMAX, 0.0f, POSCONTROL_ACC_Z_FILT_HZ, 0.0f),
+    _p_pos_ne_cm(POSCONTROL_POS_XY_P),
+    _p_pos_u_cm(POSCONTROL_POS_Z_P),
+    _pid_vel_ne_cm(POSCONTROL_VEL_XY_P, POSCONTROL_VEL_XY_I, POSCONTROL_VEL_XY_D, 0.0f, POSCONTROL_VEL_XY_IMAX, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ),
+    _pid_vel_u_cm(POSCONTROL_VEL_Z_P, 0.0f, 0.0f, 0.0f, POSCONTROL_VEL_Z_IMAX, POSCONTROL_VEL_Z_FILT_HZ, POSCONTROL_VEL_Z_FILT_D_HZ),
+    _pid_accel_u_cm_to_kt(POSCONTROL_ACC_Z_P, POSCONTROL_ACC_Z_I, POSCONTROL_ACC_Z_D, 0.0f, POSCONTROL_ACC_Z_IMAX, 0.0f, POSCONTROL_ACC_Z_FILT_HZ, 0.0f),
     _vel_max_ne_cms(POSCONTROL_SPEED),
     _vel_max_up_cms(POSCONTROL_SPEED_UP),
     _vel_max_down_cms(POSCONTROL_SPEED_DOWN),
@@ -373,10 +373,10 @@ void AC_PosControl::input_pos_NEU_cm(const Vector3p& pos_neu_cm, float pos_terra
     const float accel_max_u_cmss = _accel_max_u_cmss * overspeed_gain;
     const float jerk_max_u_cmsss = _jerk_max_u_cmsss * overspeed_gain;
 
-    update_pos_vel_accel_xy(_pos_desired_neu_cm.xy(), _vel_desired_neu_cms.xy(), _accel_desired_neu_cmss.xy(), _dt_s, _limit_vector.xy(), _p_pos_ne.get_error(), _pid_vel_ne.get_error());
+    update_pos_vel_accel_xy(_pos_desired_neu_cm.xy(), _vel_desired_neu_cms.xy(), _accel_desired_neu_cmss.xy(), _dt_s, _limit_vector.xy(), _p_pos_ne_cm.get_error(), _pid_vel_ne_cm.get_error());
 
     // adjust desired altitude if motors have not hit their limits
-    update_pos_vel_accel(_pos_desired_neu_cm.z, _vel_desired_neu_cms.z, _accel_desired_neu_cmss.z, _dt_s, _limit_vector.z, _p_pos_u.get_error(), _pid_vel_u.get_error());
+    update_pos_vel_accel(_pos_desired_neu_cm.z, _vel_desired_neu_cms.z, _accel_desired_neu_cmss.z, _dt_s, _limit_vector.z, _p_pos_u_cm.get_error(), _pid_vel_u_cm.get_error());
 
     // calculate the horizontal and vertical velocity limits to travel directly to the destination defined by pos_ne_cm
     float vel_max_ne_cms = 0.0f;
@@ -453,7 +453,7 @@ void AC_PosControl::set_max_speed_accel_NE_cm(float speed_ne_cms, float accel_ne
 ///     This should be done only during initialisation to avoid discontinuities
 void AC_PosControl::set_correction_speed_accel_NE_cm(float speed_ne_cms, float accel_ne_cmss)
 {
-    _p_pos_ne.set_limits(speed_ne_cms, accel_ne_cmss, 0.0f);
+    _p_pos_ne_cm.set_limits(speed_ne_cms, accel_ne_cmss, 0.0f);
 }
 
 /// init_NE_controller_stopping_point - initialise the position controller to the stopping point with zero velocity and acceleration.
@@ -531,10 +531,10 @@ void AC_PosControl::init_NE_controller()
     _accel_target_neu_cmss.xy().limit_length(accel_max_cmss);
 
     // initialise I terms from lean angles
-    _pid_vel_ne.reset_filter();
+    _pid_vel_ne_cm.reset_filter();
     // initialise the I term to (_accel_target_neu_cmss - _accel_desired_neu_cmss)
     // _accel_desired_neu_cmss is zero and can be removed from the equation
-    _pid_vel_ne.set_integrator(_accel_target_neu_cmss.xy() - _vel_target_neu_cms.xy() * _pid_vel_ne.ff());
+    _pid_vel_ne_cm.set_integrator(_accel_target_neu_cmss.xy() - _vel_target_neu_cms.xy() * _pid_vel_ne_cm.ff());
 
     // initialise ekf xy reset handler
     init_ekf_NE_reset();
@@ -550,7 +550,7 @@ void AC_PosControl::init_NE_controller()
 ///     The jerk limit also defines the time taken to achieve the maximum acceleration.
 void AC_PosControl::input_accel_NE_cm(const Vector3f& accel_neu_cmss)
 {
-    update_pos_vel_accel_xy(_pos_desired_neu_cm.xy(), _vel_desired_neu_cms.xy(), _accel_desired_neu_cmss.xy(), _dt_s, _limit_vector.xy(), _p_pos_ne.get_error(), _pid_vel_ne.get_error());
+    update_pos_vel_accel_xy(_pos_desired_neu_cm.xy(), _vel_desired_neu_cms.xy(), _accel_desired_neu_cmss.xy(), _dt_s, _limit_vector.xy(), _p_pos_ne_cm.get_error(), _pid_vel_ne_cm.get_error());
     shape_accel_xy(accel_neu_cmss.xy(), _accel_desired_neu_cmss.xy(), _jerk_max_ne_cmsss, _dt_s);
 }
 
@@ -561,7 +561,7 @@ void AC_PosControl::input_accel_NE_cm(const Vector3f& accel_neu_cmss)
 ///     The parameter limit_output specifies if the velocity and acceleration limits are applied to the sum of commanded and correction values or just correction.
 void AC_PosControl::input_vel_accel_NE_cm(Vector2f& vel_ne_cms, const Vector2f& accel_ne_cmss, bool limit_output)
 {
-    update_pos_vel_accel_xy(_pos_desired_neu_cm.xy(), _vel_desired_neu_cms.xy(), _accel_desired_neu_cmss.xy(), _dt_s, _limit_vector.xy(), _p_pos_ne.get_error(), _pid_vel_ne.get_error());
+    update_pos_vel_accel_xy(_pos_desired_neu_cm.xy(), _vel_desired_neu_cms.xy(), _accel_desired_neu_cmss.xy(), _dt_s, _limit_vector.xy(), _p_pos_ne_cm.get_error(), _pid_vel_ne_cm.get_error());
 
     shape_vel_accel_xy(vel_ne_cms, accel_ne_cmss, _vel_desired_neu_cms.xy(), _accel_desired_neu_cmss.xy(),
         _accel_max_ne_cmss, _jerk_max_ne_cmsss, _dt_s, limit_output);
@@ -576,7 +576,7 @@ void AC_PosControl::input_vel_accel_NE_cm(Vector2f& vel_ne_cms, const Vector2f& 
 ///     The parameter limit_output specifies if the velocity and acceleration limits are applied to the sum of commanded and correction values or just correction.
 void AC_PosControl::input_pos_vel_accel_NE_cm(Vector2p& pos_ne_cm, Vector2f& vel_ne_cms, const Vector2f& accel_ne_cmss, bool limit_output)
 {
-    update_pos_vel_accel_xy(_pos_desired_neu_cm.xy(), _vel_desired_neu_cms.xy(), _accel_desired_neu_cmss.xy(), _dt_s, _limit_vector.xy(), _p_pos_ne.get_error(), _pid_vel_ne.get_error());
+    update_pos_vel_accel_xy(_pos_desired_neu_cm.xy(), _vel_desired_neu_cms.xy(), _accel_desired_neu_cmss.xy(), _dt_s, _limit_vector.xy(), _p_pos_ne_cm.get_error(), _pid_vel_ne_cm.get_error());
 
     shape_pos_vel_accel_xy(pos_ne_cm, vel_ne_cms, accel_ne_cmss, _pos_desired_neu_cm.xy(), _vel_desired_neu_cms.xy(), _accel_desired_neu_cmss.xy(),
                            _vel_max_ne_cms, _accel_max_ne_cmss, _jerk_max_ne_cmsss, _dt_s, limit_output);
@@ -598,7 +598,7 @@ void AC_PosControl::update_offsets_NE()
 
     // update position, velocity, acceleration offsets for this iteration
     update_pos_vel_accel_xy(_pos_offset_target_neu_cm.xy(), _vel_offset_target_neu_cms.xy(), _accel_offset_target_neu_cmss.xy(), _dt_s, Vector2f(), Vector2f(), Vector2f());
-    update_pos_vel_accel_xy(_pos_offset_neu_cm.xy(), _vel_offset_neu_cms.xy(), _accel_offset_neu_cmss.xy(), _dt_s, _limit_vector.xy(), _p_pos_ne.get_error(), _pid_vel_ne.get_error());
+    update_pos_vel_accel_xy(_pos_offset_neu_cm.xy(), _vel_offset_neu_cms.xy(), _accel_offset_neu_cmss.xy(), _dt_s, _limit_vector.xy(), _p_pos_ne_cm.get_error(), _pid_vel_ne_cm.get_error());
 
     // input shape horizontal position, velocity and acceleration offsets
     shape_pos_vel_accel_xy(_pos_offset_target_neu_cm.xy(), _vel_offset_target_neu_cms.xy(), _accel_offset_target_neu_cmss.xy(),
@@ -623,8 +623,8 @@ void AC_PosControl::stop_vel_NE_stabilisation()
     _vel_desired_neu_cms.xy() = _vel_target_neu_cms.xy() - _vel_offset_neu_cms.xy();
 
     // initialise I terms from lean angles
-    _pid_vel_ne.reset_filter();
-    _pid_vel_ne.reset_I();
+    _pid_vel_ne_cm.reset_filter();
+    _pid_vel_ne_cm.reset_I();
 }
 
 // is_active_NE - returns true if the xy position controller has been run in the previous loop
@@ -668,7 +668,7 @@ void AC_PosControl::update_NE_controller()
     Vector2p comb_pos = _pos_estimate_neu_cm.xy();
     comb_pos += _disturb_pos_ne_cm.topostype();
 
-    Vector2f vel_target = _p_pos_ne.update_all(_pos_target_neu_cm.xy(), comb_pos);
+    Vector2f vel_target = _p_pos_ne_cm.update_all(_pos_target_neu_cm.xy(), comb_pos);
     _pos_desired_neu_cm.xy() = _pos_target_neu_cm.xy() - _pos_offset_neu_cm.xy();
 
     // Velocity Controller
@@ -685,7 +685,7 @@ void AC_PosControl::update_NE_controller()
     Vector2f comb_vel = _vel_estimate_neu_cms.xy();
     comb_vel += _disturb_vel_ne_cms;
 
-    Vector2f accel_target_ne_cmss = _pid_vel_ne.update_all(_vel_target_neu_cms.xy(), comb_vel, _dt_s, _limit_vector.xy());
+    Vector2f accel_target_ne_cmss = _pid_vel_ne_cm.update_all(_vel_target_neu_cms.xy(), comb_vel, _dt_s, _limit_vector.xy());
 
     // Acceleration Controller
     
@@ -746,11 +746,11 @@ void AC_PosControl::set_max_speed_accel_U_cm(float speed_down_cms, float speed_u
 
     // ensure the vertical Jerk is not limited by the filters in the Z acceleration PID object
     _jerk_max_u_cmsss = _shaping_jerk_u_msss * 100.0;
-    if (is_positive(_pid_accel_u.filt_T_hz())) {
-        _jerk_max_u_cmsss = MIN(_jerk_max_u_cmsss, MIN(GRAVITY_MSS * 100.0, _accel_max_u_cmss) * (M_2PI * _pid_accel_u.filt_T_hz()) / 5.0);
+    if (is_positive(_pid_accel_u_cm_to_kt.filt_T_hz())) {
+        _jerk_max_u_cmsss = MIN(_jerk_max_u_cmsss, MIN(GRAVITY_MSS * 100.0, _accel_max_u_cmss) * (M_2PI * _pid_accel_u_cm_to_kt.filt_T_hz()) / 5.0);
     }
-    if (is_positive(_pid_accel_u.filt_E_hz())) {
-        _jerk_max_u_cmsss = MIN(_jerk_max_u_cmsss, MIN(GRAVITY_MSS * 100.0, _accel_max_u_cmss) * (M_2PI * _pid_accel_u.filt_E_hz()) / 5.0);
+    if (is_positive(_pid_accel_u_cm_to_kt.filt_E_hz())) {
+        _jerk_max_u_cmsss = MIN(_jerk_max_u_cmsss, MIN(GRAVITY_MSS * 100.0, _accel_max_u_cmss) * (M_2PI * _pid_accel_u_cm_to_kt.filt_E_hz()) / 5.0);
     }
 }
 
@@ -760,7 +760,7 @@ void AC_PosControl::set_max_speed_accel_U_cm(float speed_down_cms, float speed_u
 void AC_PosControl::set_correction_speed_accel_U_cmss(float speed_down_cms, float speed_up_cms, float accel_cmss)
 {
     // define maximum position error and maximum first and second differential limits
-    _p_pos_u.set_limits(-fabsf(speed_down_cms), speed_up_cms, accel_cmss, 0.0f);
+    _p_pos_u_cm.set_limits(-fabsf(speed_down_cms), speed_up_cms, accel_cmss, 0.0f);
 }
 
 /// init_U_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
@@ -805,7 +805,7 @@ void AC_PosControl::relax_U_controller(float throttle_setting)
 
     // init_U_controller has set the acceleration PID I term to generate the current throttle set point
     // Use relax_integrator to decay the throttle set point to throttle_setting
-    _pid_accel_u.relax_integrator((throttle_setting - _motors.get_throttle_hover()) * 1000.0f, _dt_s, POSCONTROL_RELAX_TC);
+    _pid_accel_u_cm_to_kt.relax_integrator((throttle_setting - _motors.get_throttle_hover()) * 1000.0f, _dt_s, POSCONTROL_RELAX_TC);
 }
 
 /// init_U_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
@@ -826,19 +826,19 @@ void AC_PosControl::init_U_controller()
     _vel_desired_neu_cms.z = _vel_target_neu_cms.z - _vel_offset_neu_cms.z;
 
     // Reset I term of velocity PID
-    _pid_vel_u.reset_filter();
-    _pid_vel_u.set_integrator(0.0f);
+    _pid_vel_u_cm.reset_filter();
+    _pid_vel_u_cm.set_integrator(0.0f);
 
     _accel_target_neu_cmss.z = constrain_float(get_measured_accel_U_cmss(), -_accel_max_u_cmss, _accel_max_u_cmss);
     _accel_desired_neu_cmss.z = _accel_target_neu_cmss.z - (_accel_offset_neu_cmss.z + _accel_terrain_u_cmss);
-    _pid_accel_u.reset_filter();
+    _pid_accel_u_cm_to_kt.reset_filter();
 
     // Set acceleration PID I term based on the current throttle
     // Remove the expected P term due to _accel_desired_neu_cmss.z being constrained to _accel_max_u_cmss
     // Remove the expected FF term due to non-zero _accel_target_neu_cmss.z
-    _pid_accel_u.set_integrator((_attitude_control.get_throttle_in() - _motors.get_throttle_hover()) * 1000.0f
-        - _pid_accel_u.kP() * (_accel_target_neu_cmss.z - get_measured_accel_U_cmss())
-        - _pid_accel_u.ff() * _accel_target_neu_cmss.z);
+    _pid_accel_u_cm_to_kt.set_integrator((_attitude_control.get_throttle_in() - _motors.get_throttle_hover()) * 1000.0f
+        - _pid_accel_u_cm_to_kt.kP() * (_accel_target_neu_cmss.z - get_measured_accel_U_cmss())
+        - _pid_accel_u_cm_to_kt.ff() * _accel_target_neu_cmss.z);
 
     // initialise ekf z reset handler
     init_ekf_U_reset();
@@ -856,7 +856,7 @@ void AC_PosControl::input_accel_U_cm(float accel_cmss)
     float jerk_max_u_cmsss = _jerk_max_u_cmsss * calculate_overspeed_gain();
 
     // adjust desired alt if motors have not hit their limits
-    update_pos_vel_accel(_pos_desired_neu_cm.z, _vel_desired_neu_cms.z, _accel_desired_neu_cmss.z, _dt_s, _limit_vector.z, _p_pos_u.get_error(), _pid_vel_u.get_error());
+    update_pos_vel_accel(_pos_desired_neu_cm.z, _vel_desired_neu_cms.z, _accel_desired_neu_cmss.z, _dt_s, _limit_vector.z, _p_pos_u_cm.get_error(), _pid_vel_u_cm.get_error());
 
     shape_accel(accel_cmss, _accel_desired_neu_cmss.z, jerk_max_u_cmsss, _dt_s);
 }
@@ -874,7 +874,7 @@ void AC_PosControl::input_vel_accel_U_cm(float &vel_u_cms, float accel_cmss, boo
     const float jerk_max_u_cmsss = _jerk_max_u_cmsss * overspeed_gain;
 
     // adjust desired alt if motors have not hit their limits
-    update_pos_vel_accel(_pos_desired_neu_cm.z, _vel_desired_neu_cms.z, _accel_desired_neu_cmss.z, _dt_s, _limit_vector.z, _p_pos_u.get_error(), _pid_vel_u.get_error());
+    update_pos_vel_accel(_pos_desired_neu_cm.z, _vel_desired_neu_cms.z, _accel_desired_neu_cmss.z, _dt_s, _limit_vector.z, _p_pos_u_cm.get_error(), _pid_vel_u_cm.get_error());
 
     shape_vel_accel(vel_u_cms, accel_cmss,
                     _vel_desired_neu_cms.z, _accel_desired_neu_cmss.z,
@@ -918,7 +918,7 @@ void AC_PosControl::input_pos_vel_accel_U_cm(float &pos_u_cm, float &vel_u_cms, 
     const float jerk_max_u_cmsss = _jerk_max_u_cmsss * overspeed_gain;
 
     // adjust desired altitude if motors have not hit their limits
-    update_pos_vel_accel(_pos_desired_neu_cm.z, _vel_desired_neu_cms.z, _accel_desired_neu_cmss.z, _dt_s, _limit_vector.z, _p_pos_u.get_error(), _pid_vel_u.get_error());
+    update_pos_vel_accel(_pos_desired_neu_cm.z, _vel_desired_neu_cms.z, _accel_desired_neu_cmss.z, _dt_s, _limit_vector.z, _p_pos_u_cm.get_error(), _pid_vel_u_cm.get_error());
 
     shape_pos_vel_accel(pos_u_cm, vel_u_cms, accel_cmss,
                         _pos_desired_neu_cm.z, _vel_desired_neu_cms.z, _accel_desired_neu_cmss.z,
@@ -952,7 +952,7 @@ void AC_PosControl::update_offsets_U()
 
     // update position, velocity, acceleration offsets for this iteration
     postype_t p_offset_u_cm = _pos_offset_neu_cm.z;
-    update_pos_vel_accel(p_offset_u_cm, _vel_offset_neu_cms.z, _accel_offset_neu_cmss.z, _dt_s, MIN(_limit_vector.z, 0.0f), _p_pos_u.get_error(), _pid_vel_u.get_error());
+    update_pos_vel_accel(p_offset_u_cm, _vel_offset_neu_cms.z, _accel_offset_neu_cmss.z, _dt_s, MIN(_limit_vector.z, 0.0f), _p_pos_u_cm.get_error(), _pid_vel_u_cm.get_error());
     _pos_offset_neu_cm.z = p_offset_u_cm;
 
     // input shape vertical position, velocity and acceleration offsets
@@ -1001,7 +1001,7 @@ void AC_PosControl::update_U_controller()
     // calculate the target velocity correction
     float pos_target_zf = _pos_target_neu_cm.z;
 
-    _vel_target_neu_cms.z = _p_pos_u.update_all(pos_target_zf, _pos_estimate_neu_cm.z);
+    _vel_target_neu_cms.z = _p_pos_u_cm.update_all(pos_target_zf, _pos_estimate_neu_cm.z);
     _vel_target_neu_cms.z *= AP::ahrs().getControlScaleZ();
 
     _pos_target_neu_cm.z = pos_target_zf;
@@ -1012,7 +1012,7 @@ void AC_PosControl::update_U_controller()
 
     // Velocity Controller
 
-    _accel_target_neu_cmss.z = _pid_vel_u.update_all(_vel_target_neu_cms.z, _vel_estimate_neu_cms.z, _dt_s, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
+    _accel_target_neu_cmss.z = _pid_vel_u_cm.update_all(_vel_target_neu_cms.z, _vel_estimate_neu_cms.z, _dt_s, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
     _accel_target_neu_cmss.z *= AP::ahrs().getControlScaleZ();
 
     // add feed forward component
@@ -1024,15 +1024,15 @@ void AC_PosControl::update_U_controller()
     const float measured_accel_u_cmss = get_measured_accel_U_cmss();
 
     // ensure imax is always large enough to overpower hover throttle
-    if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_u.imax()) {
-        _pid_accel_u.set_imax(_motors.get_throttle_hover() * 1000.0f);
+    if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_u_cm_to_kt.imax()) {
+        _pid_accel_u_cm_to_kt.set_imax(_motors.get_throttle_hover() * 1000.0f);
     }
     float thr_out;
     if (_vibe_comp_enabled) {
         thr_out = get_throttle_with_vibration_override();
     } else {
-        thr_out = _pid_accel_u.update_all(_accel_target_neu_cmss.z, measured_accel_u_cmss, _dt_s, (_motors.limit.throttle_lower || _motors.limit.throttle_upper)) * 0.001f;
-        thr_out += _pid_accel_u.get_ff() * 0.001f;
+        thr_out = _pid_accel_u_cm_to_kt.update_all(_accel_target_neu_cmss.z, measured_accel_u_cmss, _dt_s, (_motors.limit.throttle_lower || _motors.limit.throttle_upper)) * 0.001f;
+        thr_out += _pid_accel_u_cm_to_kt.get_ff() * 0.001f;
     }
     thr_out += _motors.get_throttle_hover();
 
@@ -1044,7 +1044,7 @@ void AC_PosControl::update_U_controller()
     // Check for vertical controller health
 
     // _speed_down_cms is checked to be non-zero when set
-    float error_ratio = _pid_vel_u.get_error() / _vel_max_down_cms;
+    float error_ratio = _pid_vel_u_cm.get_error() / _vel_max_down_cms;
     _vel_u_control_ratio += _dt_s * 0.1f * (0.5 - error_ratio);
     _vel_u_control_ratio = constrain_float(_vel_u_control_ratio, 0.0f, 2.0f);
 
@@ -1287,7 +1287,7 @@ void AC_PosControl::get_stopping_point_NE_cm(Vector2p &stopping_point_neu_cm) co
         return;
     }
     
-    float kP = _p_pos_ne.kP();
+    float kP = _p_pos_ne_cm.kP();
     const float stopping_dist = stopping_distance(constrain_float(vel_total, 0.0, _vel_max_ne_cms), kP, _accel_max_ne_cmss);
     if (!is_positive(stopping_dist)) {
         return;
@@ -1309,12 +1309,12 @@ void AC_PosControl::get_stopping_point_U_cm(postype_t &stopping_point_u_cm) cons
     curr_vel_u_cms -= _vel_offset_neu_cms.z;
 
     // avoid divide by zero by using current position if kP is very low or acceleration is zero
-    if (!is_positive(_p_pos_u.kP()) || !is_positive(_accel_max_u_cmss)) {
+    if (!is_positive(_p_pos_u_cm.kP()) || !is_positive(_accel_max_u_cmss)) {
         stopping_point_u_cm = curr_pos_u_cm;
         return;
     }
 
-    stopping_point_u_cm = curr_pos_u_cm + constrain_float(stopping_distance(curr_vel_u_cms, _p_pos_u.kP(), _accel_max_u_cmss), - POSCONTROL_STOPPING_DIST_DOWN_MAX, POSCONTROL_STOPPING_DIST_UP_MAX);
+    stopping_point_u_cm = curr_pos_u_cm + constrain_float(stopping_distance(curr_vel_u_cms, _p_pos_u_cm.kP(), _accel_max_u_cmss), - POSCONTROL_STOPPING_DIST_DOWN_MAX, POSCONTROL_STOPPING_DIST_UP_MAX);
 }
 
 /// get_bearing_to_target_cd - get bearing to target position in centi-degrees
@@ -1360,10 +1360,10 @@ float AC_PosControl::get_throttle_with_vibration_override()
     const float thr_per_accel_u_cmss = _motors.get_throttle_hover() / (GRAVITY_MSS * 100.0f);
     // during vibration compensation use feed forward with manually calculated gain
     // ToDo: clear pid_info P, I and D terms for logging
-    if (!(_motors.limit.throttle_lower || _motors.limit.throttle_upper) || ((is_positive(_pid_accel_u.get_i()) && is_negative(_pid_vel_u.get_error())) || (is_negative(_pid_accel_u.get_i()) && is_positive(_pid_vel_u.get_error())))) {
-        _pid_accel_u.set_integrator(_pid_accel_u.get_i() + _dt_s * thr_per_accel_u_cmss * 1000.0f * _pid_vel_u.get_error() * _pid_vel_u.kP() * POSCONTROL_VIBE_COMP_I_GAIN);
+    if (!(_motors.limit.throttle_lower || _motors.limit.throttle_upper) || ((is_positive(_pid_accel_u_cm_to_kt.get_i()) && is_negative(_pid_vel_u_cm.get_error())) || (is_negative(_pid_accel_u_cm_to_kt.get_i()) && is_positive(_pid_vel_u_cm.get_error())))) {
+        _pid_accel_u_cm_to_kt.set_integrator(_pid_accel_u_cm_to_kt.get_i() + _dt_s * thr_per_accel_u_cmss * 1000.0f * _pid_vel_u_cm.get_error() * _pid_vel_u_cm.kP() * POSCONTROL_VIBE_COMP_I_GAIN);
     }
-    return POSCONTROL_VIBE_COMP_P_GAIN * thr_per_accel_u_cmss * _accel_target_neu_cmss.z + _pid_accel_u.get_i() * 0.001f;
+    return POSCONTROL_VIBE_COMP_P_GAIN * thr_per_accel_u_cmss * _accel_target_neu_cmss.z + _pid_accel_u_cm_to_kt.get_i() * 0.001f;
 }
 
 /// standby_NEU_reset - resets I terms and removes position error
@@ -1372,14 +1372,14 @@ float AC_PosControl::get_throttle_with_vibration_override()
 ///     aircraft when in standby.
 void AC_PosControl::standby_NEU_reset()
 {
-    // Set _pid_accel_u integrator to zero.
-    _pid_accel_u.set_integrator(0.0f);
+    // Set _pid_accel_u_cm_to_kt integrator to zero.
+    _pid_accel_u_cm_to_kt.set_integrator(0.0f);
 
     // Set the target position to the current pos.
     _pos_target_neu_cm = _pos_estimate_neu_cm;
 
-    // Set _pid_vel_ne integrator and derivative to zero.
-    _pid_vel_ne.reset_filter();
+    // Set _pid_vel_ne_cm integrator and derivative to zero.
+    _pid_vel_ne_cm.reset_filter();
 
     // initialise ekf xy reset handler
     init_ekf_NE_reset();
@@ -1469,7 +1469,7 @@ void AC_PosControl::update_terrain()
 {
     // update position, velocity, acceleration offsets for this iteration
     postype_t pos_terrain_u_cm = _pos_terrain_u_cm;
-    update_pos_vel_accel(pos_terrain_u_cm, _vel_terrain_u_cms, _accel_terrain_u_cmss, _dt_s, MIN(_limit_vector.z, 0.0f), _p_pos_u.get_error(), _pid_vel_u.get_error());
+    update_pos_vel_accel(pos_terrain_u_cm, _vel_terrain_u_cms, _accel_terrain_u_cmss, _dt_s, MIN(_limit_vector.z, 0.0f), _p_pos_u_cm.get_error(), _pid_vel_u_cm.get_error());
     _pos_terrain_u_cm = pos_terrain_u_cm;
 
     // input shape horizontal position, velocity and acceleration offsets
@@ -1568,9 +1568,9 @@ void AC_PosControl::handle_ekf_NE_reset()
         // for this we need some sort of switch to select what type of EKF handling we want to use
 
         // To zero real position shift during relative position modes like Loiter, PosHold, Guided velocity and accleration control.
-        _pos_target_neu_cm.xy() = _pos_estimate_neu_cm.xy() + _p_pos_ne.get_error().topostype();
+        _pos_target_neu_cm.xy() = _pos_estimate_neu_cm.xy() + _p_pos_ne_cm.get_error().topostype();
         _pos_desired_neu_cm.xy() = _pos_target_neu_cm.xy() - _pos_offset_neu_cm.xy();
-        _vel_target_neu_cms.xy() = _vel_estimate_neu_cms.xy() + _pid_vel_ne.get_error();
+        _vel_target_neu_cms.xy() = _vel_estimate_neu_cms.xy() + _pid_vel_ne_cm.get_error();
         _vel_desired_neu_cms.xy() = _vel_target_neu_cms.xy() - _vel_offset_neu_cms.xy();
 
         _ekf_ne_reset_ms = reset_ms;
@@ -1596,9 +1596,9 @@ void AC_PosControl::handle_ekf_U_reset()
         // for this we need some sort of switch to select what type of EKF handling we want to use
 
         // To zero real position shift during relative position modes like Loiter, PosHold, Guided velocity and accleration control.
-        _pos_target_neu_cm.z = _pos_estimate_neu_cm.z + _p_pos_u.get_error();
+        _pos_target_neu_cm.z = _pos_estimate_neu_cm.z + _p_pos_u_cm.get_error();
         _pos_desired_neu_cm.z = _pos_target_neu_cm.z - (_pos_offset_neu_cm.z + _pos_terrain_u_cm);
-        _vel_target_neu_cms.z = _vel_estimate_neu_cms.z + _pid_vel_u.get_error();
+        _vel_target_neu_cms.z = _vel_estimate_neu_cms.z + _pid_vel_u_cm.get_error();
         _vel_desired_neu_cms.z = _vel_target_neu_cms.z - (_vel_offset_neu_cms.z + _vel_terrain_u_cms);
 
         _ekf_u_reset_ms = reset_ms;
