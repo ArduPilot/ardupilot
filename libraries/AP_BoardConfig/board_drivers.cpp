@@ -98,6 +98,7 @@ void AP_BoardConfig::board_setup_drivers(void)
     case FMUV6_BOARD_HOLYBRO_6X_REV6:
     case FMUV6_BOARD_HOLYBRO_6X_45686:
     case FMUV6_BOARD_CUAV_6X:
+    case FMUV6_BOARD_ROBU_6C:
         break;
     default:
         config_error("Unknown board type %u", px4_configured_board);
@@ -490,6 +491,10 @@ void AP_BoardConfig::detect_fmuv6_variant()
                spi_check_register("icm45686", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686)) {
         state.board_type.set_and_notify(FMUV6_BOARD_HOLYBRO_6X_REV6);
         DEV_PRINTF("Detected Holybro 6X_Rev6\n");
+    } else if (spi_check_register("icm20649_2", INV2REG_WHOAMI, INV2_WHOAMI_ICM20649) &&
+               spi_check_register("bmi088_g", BMI088REG_CHIPID, CHIPID_BMI088_G)) {
+        state.board_type.set_and_notify(FMUV6_BOARD_ROBU_6C);
+        DEV_PRINTF("Detected Robu 6C\n");
     }
 }
 #endif
