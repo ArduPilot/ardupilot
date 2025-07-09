@@ -220,9 +220,10 @@ struct PACKED log_ParameterTuning {
     float    tuning_value;  // normalized value used inside tuning() function
     float    tuning_min;    // tuning minimum value
     float    tuning_max;    // tuning maximum value
+    float    control_in;    // normalized control input (-1 to 1)
 };
 
-void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max)
+void Copter::Log_Write_PTUN(uint8_t param, float tuning_val, float tune_min, float tune_max, float control_in)
 {
     struct log_ParameterTuning pkt_tune = {
         LOG_PACKET_HEADER_INIT(LOG_PARAMTUNE_MSG),
@@ -230,7 +231,8 @@ void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float t
         parameter      : param,
         tuning_value   : tuning_val,
         tuning_min     : tune_min,
-        tuning_max     : tune_max
+        tuning_max     : tune_max,
+        control_in     : control_in
     };
 
     logger.WriteBlock(&pkt_tune, sizeof(pkt_tune));
@@ -430,9 +432,10 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: TunVal: Normalized value used inside tuning() function
 // @Field: TunMin: Tuning minimum limit
 // @Field: TunMax: Tuning maximum limit
+// @Field: CIn: control in (normalised -1 to 1 value)
 
     { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
-      "PTUN", "QBfff",         "TimeUS,Param,TunVal,TunMin,TunMax", "s----", "F----" },
+      "PTUN", "QBffff",         "TimeUS,Param,TunVal,TunMin,TunMax,CIn", "s#----", "F-----" },
 
 // @LoggerMessage: CTUN
 // @Description: Control Tuning information
