@@ -145,10 +145,10 @@ local LTE_IBAUD       = bind_add_param('IBAUD', 13, 115200)
     // @Param: LTE_MCCMNC
     // @DisplayName: LTE operator selection
     // @Description: This allows selection of network operator
-    // @Values: 0:Default,AU-Telstra:50501,AU-Optus:50502,AU-Vodaphone:50503
+    // @Values: -1:NoChange,0:Default,AU-Telstra:50501,AU-Optus:50502,AU-Vodaphone:50503
     // @User: Standard
 --]]
-local LTE_MCCMNC      = bind_add_param('MCCMNC', 14, 0)
+local LTE_MCCMNC      = bind_add_param('MCCMNC', 14, -1)
 
 local supports_routing = networking and networking.add_route -- luacheck: ignore 143
 
@@ -211,11 +211,11 @@ local LTE_TX_RATE  = bind_add_param('TX_RATE',  20, 0)
 --[[
     // @Param: LTE_BAND
     // @DisplayName: LTE band selection
-    // @Description: This allows selection of LTE band, 0 for no preference
-    // @Range: 0 50
+    // @Description: This allows selection of LTE band. A value of -1 means no band setting change is made. A value of 0 sets all bands. Otherwise the specified band is set.
+    // @Range: -1 50
     // @User: Standard
 --]]
-local LTE_BAND      = bind_add_param('BAND', 21, 0)
+local LTE_BAND      = bind_add_param('BAND', 21, -1)
 
 LTE_OPTIONS_LOGALL  = (1<<0)
 LTE_OPTIONS_SIGNALS = (1<<1)
@@ -746,7 +746,7 @@ local function set_MCCMNC()
     local mccmnc = math.floor(LTE_MCCMNC:get())
     if mccmnc > 0 then
         AT_send(string.format(modem.mccmnc, mccmnc))
-    else
+    elseif mccmnc == 0 then
         AT_send("AT+COPS=0\r\n")
     end
     last_mccmnc = mccmnc
@@ -766,7 +766,7 @@ local function set_BAND()
        else
           AT_send(string.format(modem.setband, band))
        end
-    else
+    elseif band == 0 then
         AT_send(modem.setband_all)
     end
     last_band = band
