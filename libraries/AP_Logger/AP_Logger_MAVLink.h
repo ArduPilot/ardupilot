@@ -98,6 +98,8 @@ private:
     struct _stats {
         // the following are reset any time we log stats (see "reset_stats")
         uint32_t resends;
+        uint32_t sent_count;
+        uint32_t dropped_count;
         uint8_t collection_count;
         uint16_t state_free; // cumulative across collection period
         uint8_t state_free_min;
@@ -111,6 +113,9 @@ private:
         uint16_t state_sent; // cumulative across collection period
         uint8_t state_sent_min;
         uint8_t state_sent_max;
+        uint16_t state_dropped; // cumulative across collection period
+        uint8_t state_dropped_min;
+        uint8_t state_dropped_max;
     } stats;
 
     // this method is used when reporting system status over mavlink
@@ -125,8 +130,8 @@ private:
     // this controls the maximum number of blocks we will push from
     // the pending and send queues in any call to push_log_blocks.
     // push_log_blocks is called by periodic_tasks.  Each block is 200
-    // bytes.  In Plane, at 50Hz, a _max_blocks_per_send_blocks of 2
-    // means we will push at most 2*50*200 == 20KB of logs per second
+    // bytes.  In Plane, at 50Hz, a _max_blocks_per_send_blocks of 8
+    // means we will push at most 8*50*200 == 80KB of logs per second
     // _max_blocks_per_send_blocks has to be high enough to push all
     // of the logs, but low enough that we don't spend way too much
     // time packing messages in any one loop
@@ -160,6 +165,8 @@ private:
     uint32_t _stats_last_collected_time;
     uint32_t _stats_last_logged_time;
     uint8_t mavlink_seq;
+
+    uint8_t _dropped_message_counter;
 
     /* we currently ignore requests to start a new log.  Notionally we
      * could close the currently logging session and hope the client
