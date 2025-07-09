@@ -92,10 +92,10 @@ public:
     float get_max_accel_NE_cmss() const { return _accel_max_ne_cmss; }
 
     // set_pos_error_max_NE_cm - set the maximum horizontal position error that will be allowed in the horizontal plane
-    void set_pos_error_max_NE_cm(float error_max_cm) { _p_pos_ne.set_error_max(error_max_cm); }
+    void set_pos_error_max_NE_cm(float error_max_cm) { _p_pos_ne_cm.set_error_max(error_max_cm); }
 
     // get_pos_error_max_NE_cm - return the maximum horizontal position error that will be allowed in the horizontal plane
-    float get_pos_error_max_NE_cm() { return _p_pos_ne.get_error_max(); }
+    float get_pos_error_max_NE_cm() { return _p_pos_ne_cm.get_error_max(); }
 
     /// init_NE_controller_stopping_point - initialise the position controller to the stopping point with zero velocity and acceleration.
     ///     This function should be used when the expected kinematic path assumes a stationary initial condition but does not specify a specific starting position.
@@ -174,10 +174,10 @@ public:
     float get_max_accel_U_cmss() const { return _accel_max_u_cmss; }
 
     // get_pos_error_up_cm - get the allowed upper bound of vertical position error (positive direction)
-    float get_pos_error_up_cm() { return _p_pos_u.get_error_max(); }
+    float get_pos_error_up_cm() { return _p_pos_u_cm.get_error_max(); }
 
     // get_pos_error_down_cm - get the allowed lower bound of vertical position error (negative direction)
-    float get_pos_error_down_cm() { return _p_pos_u.get_error_min(); }
+    float get_pos_error_down_cm() { return _p_pos_u_cm.get_error_min(); }
 
     /// get_max_speed_up_cms - accessors for current maximum up speed in cm/s
     float get_max_speed_up_cms() const { return _vel_max_up_cms; }
@@ -292,13 +292,13 @@ public:
     /// Position Error
 
     /// get_pos_error_NEU_cm - returns the 3D position error vector between the current and target NEU positions.
-    const Vector3f get_pos_error_NEU_cm() const { return Vector3f(_p_pos_ne.get_error().x, _p_pos_ne.get_error().y, _p_pos_u.get_error()); }
+    const Vector3f get_pos_error_NEU_cm() const { return Vector3f(_p_pos_ne_cm.get_error().x, _p_pos_ne_cm.get_error().y, _p_pos_u_cm.get_error()); }
 
     /// get_pos_error_NE_cm - get the length of the position error vector in the ne plane
-    float get_pos_error_NE_cm() const { return _p_pos_ne.get_error().length(); }
+    float get_pos_error_NE_cm() const { return _p_pos_ne_cm.get_error().length(); }
 
     /// get_pos_error_U_cm - returns altitude error in cm
-    float get_pos_error_U_cm() const { return _p_pos_u.get_error(); }
+    float get_pos_error_U_cm() const { return _p_pos_u_cm.get_error(); }
 
 
     /// Velocity
@@ -434,11 +434,11 @@ public:
     /// Other
 
     /// get pid controllers
-    AC_P_2D& get_pos_NE_p() { return _p_pos_ne; }
-    AC_P_1D& get_pos_U_p() { return _p_pos_u; }
-    AC_PID_2D& get_vel_NE_pid() { return _pid_vel_ne; }
-    AC_PID_Basic& get_vel_U_pid() { return _pid_vel_u; }
-    AC_PID& get_accel_U_pid() { return _pid_accel_u; }
+    AC_P_2D& get_pos_NE_p() { return _p_pos_ne_cm; }
+    AC_P_1D& get_pos_U_p() { return _p_pos_u_cm; }
+    AC_PID_2D& get_vel_NE_pid() { return _pid_vel_ne_cm; }
+    AC_PID_Basic& get_vel_U_pid() { return _pid_vel_u_cm; }
+    AC_PID& get_accel_U_pid() { return _pid_accel_u_cm_to_kt; }
 
     /// set_externally_limited_NE - mark that accel has been limited
     ///     this prevents integrator windup during external acceleration saturation
@@ -553,11 +553,11 @@ protected:
     AP_Float        _lean_angle_max_deg;    // Maximum autopilot commanded angle (in degrees). Set to zero for Angle Max
     AP_Float        _shaping_jerk_ne_msss;  // Jerk limit of the ne kinematic path generation in m/s^3 used to determine how quickly the aircraft varies the acceleration target
     AP_Float        _shaping_jerk_u_msss;   // Jerk limit of the u kinematic path generation in m/s^3 used to determine how quickly the aircraft varies the acceleration target
-    AC_P_2D         _p_pos_ne;              // XY axis position controller to convert distance error to desired velocity
-    AC_P_1D         _p_pos_u;               // Z axis position controller to convert altitude error to desired climb rate
-    AC_PID_2D       _pid_vel_ne;            // XY axis velocity controller to convert velocity error to desired acceleration
-    AC_PID_Basic    _pid_vel_u;             // Z axis velocity controller to convert climb rate error to desired acceleration
-    AC_PID          _pid_accel_u;           // Z axis acceleration controller to convert desired acceleration to throttle output
+    AC_P_2D         _p_pos_ne_cm;           // XY axis position controller to convert target distance (cm) to target velocity (cm/s)
+    AC_P_1D         _p_pos_u_cm;            // Z axis position controller to convert target altitude (cm) to target climb rate (cm/s)
+    AC_PID_2D       _pid_vel_ne_cm;         // XY axis velocity controller to convert target velocity (cm/s) to target acceleration (cm/s^2)
+    AC_PID_Basic    _pid_vel_u_cm;          // Z axis velocity controller to convert target climb rate (cm/s) to target acceleration (cm/s^2)
+    AC_PID          _pid_accel_u_cm_to_kt;  // Z axis acceleration controller to convert target acceleration (cm/s^2) to throttle output (0 to 1000)
 
     // internal variables
     float       _dt_s;                      // time difference (in seconds) since the last loop time
