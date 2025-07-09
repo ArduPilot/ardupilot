@@ -135,10 +135,10 @@ public:
 
     // Returns maximum allowed horizontal position error in cm.
     // See get_pos_error_max_NE_m() for full details.
-    float get_pos_error_max_NE_cm() { return get_pos_error_max_NE_m() * 100.0; }
+    float get_pos_error_max_NE_cm() const { return get_pos_error_max_NE_m() * 100.0; }
 
     // Returns maximum allowed horizontal position error in meters.
-    float get_pos_error_max_NE_m() { return _p_pos_ne_m.get_error_max(); }
+    float get_pos_error_max_NE_m() const { return _p_pos_ne_m.get_error_max(); }
 
     // Initializes NE controller to a stationary stopping point with zero velocity and acceleration.
     // Use when the expected trajectory begins at rest but the starting position is unspecified.
@@ -238,17 +238,17 @@ public:
 
     // Returns maximum allowed positive (upward) position error in cm.
     // See get_pos_error_up_m() for full details.
-    float get_pos_error_up_cm() { return get_pos_error_up_m() * 100.0; }
+    float get_pos_error_up_cm() const { return get_pos_error_up_m() * 100.0; }
 
     // Returns maximum allowed positive (upward) position error in meters.
-    float get_pos_error_up_m() { return _p_pos_u_m.get_error_max(); }
+    float get_pos_error_up_m() const { return _p_pos_u_m.get_error_max(); }
 
     // Returns maximum allowed negative (downward) position error in cm.
     // See get_pos_error_down_m() for full details.
-    float get_pos_error_down_cm() { return get_pos_error_down_m() * 100.0; }
+    float get_pos_error_down_cm() const { return get_pos_error_down_m() * 100.0; }
 
     // Returns maximum allowed negative (downward) position error in meters.
-    float get_pos_error_down_m() { return _p_pos_u_m.get_error_min(); }
+    float get_pos_error_down_m() const { return _p_pos_u_m.get_error_min(); }
 
     // Returns maximum climb rate in cm/s.
     // See get_max_speed_up_ms() for full details.
@@ -681,11 +681,11 @@ public:
 
     // Overrides the maximum allowed roll/pitch angle in degrees.
     // See set_lean_angle_max_rad() for full details.
-    void set_lean_angle_max_deg(float angle_max_deg) { set_lean_angle_max_rad(radians(angle_max_deg)); }
+    void set_lean_angle_max_deg(const float angle_max_deg) { set_lean_angle_max_rad(radians(angle_max_deg)); }
 
     // Overrides the maximum allowed roll/pitch angle in centidegrees.
     // See set_lean_angle_max_rad() for full details.
-    void set_lean_angle_max_cd(float angle_max_cd) { set_lean_angle_max_rad(cd_to_rad(angle_max_cd)); }
+    void set_lean_angle_max_cd(const float angle_max_cd) { set_lean_angle_max_rad(cd_to_rad(angle_max_cd)); }
 
     /// Other
 
@@ -753,17 +753,17 @@ public:
     
     // Sets artificial NE position disturbance in centimeters.
     // See set_disturb_pos_NE_m() for full details.
-    void set_disturb_pos_NE_cm(Vector2f disturb_pos_cm) { set_disturb_pos_NE_m(disturb_pos_cm * 0.01); }
+    void set_disturb_pos_NE_cm(const Vector2f& disturb_pos_cm) { set_disturb_pos_NE_m(disturb_pos_cm * 0.01); }
 
     // Sets artificial NE position disturbance in meters.
-    void set_disturb_pos_NE_m(Vector2f disturb_pos_m) { _disturb_pos_ne_m = disturb_pos_m; }
+    void set_disturb_pos_NE_m(const Vector2f& disturb_pos_m) { _disturb_pos_ne_m = disturb_pos_m; }
 
     // Sets artificial NE velocity disturbance in cm/s.
     // See set_disturb_vel_NE_ms() for full details.
-    void set_disturb_vel_NE_cms(Vector2f disturb_vel_cms) { set_disturb_vel_NE_ms(disturb_vel_cms * 0.01); }
+    void set_disturb_vel_NE_cms(const Vector2f& disturb_vel_cms) { set_disturb_vel_NE_ms(disturb_vel_cms * 0.01); }
 
     // Sets artificial NE velocity disturbance in m/s.
-    void set_disturb_vel_NE_ms(Vector2f disturb_vel_ms) { _disturb_vel_ne_ms = disturb_vel_ms; }
+    void set_disturb_vel_NE_ms(const Vector2f& disturb_vel_ms) { _disturb_vel_ne_ms = disturb_vel_ms; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
