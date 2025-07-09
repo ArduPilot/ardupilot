@@ -623,6 +623,11 @@ public:
     void *mode_zigzag_ptr;
 #endif
 
+#if MODE_KILOMETER_ENABLED
+    // we need a pointer to the mode for the G2 table
+    void *mode_kilometer_ptr;
+#endif
+
     // command model parameters
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
     AC_CommandModel command_model_acro_rp;

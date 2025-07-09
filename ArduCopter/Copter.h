@@ -227,6 +227,7 @@ public:
     friend class ModeZigZag;
     friend class ModeAutorotate;
     friend class ModeTurtle;
+    friend class ModeKilometer;
 
     friend class _AutoTakeoff;
 
@@ -1101,6 +1102,9 @@ private:
 #endif
 #if MODE_TURTLE_ENABLED
     ModeTurtle mode_turtle;
+#endif
+#if MODE_KILOMETER_ENABLED
+    ModeKilometer mode_kilometer;
 #endif
 
     // mode.cpp

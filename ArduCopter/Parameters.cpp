@@ -1121,6 +1121,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // ID 62 is reserved for the SHOW_... parameters from the Skybrush fork at
     // https://github.com/skybrush-io/ardupilot
 
+    #if MODE_KILOMETER_ENABLED
+    #endif
+
     AP_GROUPEND
 };
 

@@ -239,6 +239,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// KILOMETER
+#ifndef MODE_KILOMETER_ENABLED
+# define MODE_KILOMETER_ENABLED 1
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Flowhold - use optical flow to hover in place
 #ifndef MODE_FLOWHOLD_ENABLED
 # define MODE_FLOWHOLD_ENABLED AP_OPTICALFLOW_ENABLED

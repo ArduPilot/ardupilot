@@ -101,6 +101,10 @@ public:
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
+        KILOMETER =    29,  /* FlightMode Kilometer, який при увімкненні буде змушувати літак летіти 
+                            вперед (по курсу) на 1 кілометр, розвертатись, летіти на стартову точку 
+                            (де режим було увімкнено), розвертатись і знову летіти на ту ж точку "через кілометр
+                             */
 
         // Mode number 30 reserved for "offboard" for external/lua control.
 
@@ -1933,6 +1937,74 @@ protected:
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
 #endif
+
+
+class ModeKilometer : public ModeGuided
+{
+public:
+    // Constructor
+    ModeKilometer();
+
+    // Override mode number - you'll need to assign a unique number
+    Number mode_number() const override { return Number::KILOMETER; }
+
+    // Override mode name
+    const char *name() const override { return "KILOMETER"; }
+
+    // Override mode name for display
+    const char *name4() const override { return "KILM"; }
+
+    // Override run function - required by ArduPilot
+    void run() override;
+    
+    // Override init function
+    bool init(bool ignore_checks) override;
+
+    // Override exit function for cleanup
+    void exit() override;
+
+    // Public function to start the kilometer mission
+    bool start_kilometer_mission();
+
+    // Public function to abort the mission
+    void abort_mission();
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+protected:
+    // Mission states
+    enum class KilometerState {
+        IDLE,
+        GOING_FORWARD,
+        GOING_BACK,
+        COMPLETED,
+        ABORTED
+    };
+
+    // State variables
+    KilometerState current_state;
+    Location start_position;
+    Location forward_position;
+    float start_yaw_deg;
+    bool mission_active;
+    uint32_t state_start_time_ms;
+    
+    // Mission parameters
+    static constexpr float KILOMETER_DISTANCE_M = 100.0f;
+    static constexpr float WAYPOINT_RADIUS_M = 5.0f;
+    
+    // Helper functions
+    void calculate_forward_position();
+    bool is_at_target_position(const Location& target);
+    void transition_to_state(KilometerState new_state);
+    void handle_state_idle();
+    void handle_state_going_forward();
+    void handle_state_going_back();
+    void handle_state_completed();
+    void handle_state_aborted();
+    float get_distance_to_target();
+    void send_mission_status();
+};
 
 class ModeZigZag : public Mode {        
 
