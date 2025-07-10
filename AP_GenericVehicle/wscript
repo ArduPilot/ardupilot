@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+def build(bld):
+    vehicle = bld.path.name
+    bld.ap_stlib(
+        name=vehicle + '_libs',
+        ap_vehicle=vehicle,
+        ap_libraries=bld.ap_common_vehicle_libraries() + [
+        ],
+    )
+
+    bld.ap_program(
+        program_name='genericvehicle',
+        program_groups=['bin', 'genericvehicle'],
+        use=vehicle + '_libs',
+    )

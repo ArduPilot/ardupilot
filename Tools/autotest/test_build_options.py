@@ -92,9 +92,11 @@ class TestBuildOptions(object):
                 'AP_COMPASS_AK09916_ENABLED',
                 'AP_COMPASS_ICM20948_ENABLED',
             ]),
-            "Pixhawk6X-GenericVehicle": frozenset([
+            "FSO_Beacon": frozenset([
                 "AP_BARO_BMP388_ENABLED",
                 "AP_BARO_ICP201XX_ENABLED",
+                'AP_COMPASS_BMM150_ENABLED',
+                'AP_COMPASS_RM3100_ENABLED',
             ]),
         }
         return must_have_defines.get(board, frozenset([]))

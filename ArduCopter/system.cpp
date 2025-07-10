@@ -32,8 +32,6 @@ void Copter::init_ardupilot()
     rssi.init();
 #endif
 
-    barometer.init();
-
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
@@ -88,7 +86,6 @@ void Copter::init_ardupilot()
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
-    gps.init();
 
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
@@ -131,11 +128,6 @@ void Copter::init_ardupilot()
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
 #endif
-
-    // read Baro pressure at ground
-    //-----------------------------
-    barometer.set_log_baro_bit(MASK_LOG_IMU);
-    barometer.calibrate();
 
 #if AP_RANGEFINDER_ENABLED
     // initialise rangefinder
@@ -212,7 +204,6 @@ void Copter::init_ardupilot()
 void Copter::startup_INS_ground()
 {
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
-    ahrs.init();
     ahrs.set_vehicle_class(AP_AHRS::VehicleClass::COPTER);
 
     // Warm up and calibrate gyro offsets

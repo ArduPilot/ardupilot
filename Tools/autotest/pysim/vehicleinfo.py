@@ -499,6 +499,14 @@ class VehicleInfo(object):
             },
         },
     },
+    "AP_GenericVehicle": {
+        "default_frame": "xyzzy",
+        "frames": {
+            "xyzzy": {
+                "waf_target": "bin/genericvehicle",
+            },
+        },
+    },
     "sitl_periph_universal": {
         "frames": {
             "universal": {

@@ -614,14 +614,9 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
-    // @Group: BARO
-    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "BARO", AP_Baro),
+    // BARO was here
 
-    // GPS driver
-    // @Group: GPS
-    // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS", AP_GPS),
+    // GPS was here
 
     // Leak detector
     // @Group: LEAK
@@ -882,6 +877,10 @@ void Sub::load_parameters()
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
     }
 #endif  // HAL_GCS_ENABLED
+
+#if AP_BARO_ENABLED
+    AP::baro().convert_parameters_for_move_to_ap_vehicle(Parameters::k_param_barometer_old);
+#endif
 }
 
 void Sub::convert_old_parameters()

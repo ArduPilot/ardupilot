@@ -55,7 +55,7 @@ public:
         k_param_sitl = 10,
 
         // barometer object (needed for SITL)
-        k_param_barometer,
+        k_param_barometer_old,
 
         // scheduler object (for debugging)
         k_param_scheduler,
@@ -153,7 +153,7 @@ public:
         //
         k_param_compass,
         k_param_frame_type, //unused
-        k_param_ahrs, // AHRS group // 159
+        k_param_ahrs_old, // AHRS group
 
         //
         // 160: Navigation parameters

@@ -26,8 +26,6 @@ void Blimp::init_ardupilot()
     rssi.init();
 #endif
 
-    barometer.init();
-
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
@@ -60,15 +58,9 @@ void Blimp::init_ardupilot()
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
-    gps.init();
 
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
-
-    // read Baro pressure at ground
-    //-----------------------------
-    barometer.set_log_baro_bit(MASK_LOG_IMU);
-    barometer.calibrate();
 
 #if HAL_LOGGING_ENABLED
     // initialise AP_Logger library

@@ -19,6 +19,13 @@
 #define COMPASS_CAL_ENABLED AP_COMPASS_ENABLED && AP_AHRS_DCM_ENABLED
 #endif
 
+// note that this is a particularly poorly named define.  This does
+// NOT guard throttle-based motor/compass interference, it guards
+// quadcopter-specific per-motor calibration:
+#ifndef COMPASS_MOT_ENABLED
+#define COMPASS_MOT_ENABLED AP_COMPASS_ENABLED
+#endif
+
 #ifndef AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
 #define AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED AP_COMPASS_ENABLED && AP_GPS_ENABLED && AP_AHRS_ENABLED
 #endif

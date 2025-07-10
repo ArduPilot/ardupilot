@@ -707,7 +707,7 @@ def list_ap_periph_boards(ctx):
 def ap_periph_boards(ctx):
     return boards.get_ap_periph_boards()
 
-vehicles = ['antennatracker', 'blimp', 'copter', 'heli', 'plane', 'rover', 'sub']
+vehicles = ['antennatracker', 'blimp', 'copter', 'genericvehicle', 'heli', 'plane', 'rover', 'sub']
 
 def generate_tasklist(ctx, do_print=True):
     boardlist = boards.get_boards_names()

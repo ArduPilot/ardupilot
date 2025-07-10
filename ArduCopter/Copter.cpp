@@ -153,7 +153,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if AP_FENCE_ENABLED
     SCHED_TASK(fence_check,           25,    100,  7),
 #endif
-    SCHED_TASK_CLASS(AP_GPS,               &copter.gps,                 update,          50, 200,   9),
 #if AP_OPTICALFLOW_ENABLED
     SCHED_TASK_CLASS(AP_OpticalFlow,          &copter.optflow,             update,         200, 160,  12),
 #endif
@@ -175,7 +174,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if AP_BEACON_ENABLED
     SCHED_TASK_CLASS(AP_Beacon,            &copter.g2.beacon,           update,         400,  50,  39),
 #endif
-    SCHED_TASK(update_altitude,       10,    100,  42),
     SCHED_TASK(run_nav_updates,       50,    100,  45),
     SCHED_TASK(update_throttle_hover,100,     90,  48),
 #if MODE_SMARTRTL_ENABLED
@@ -905,10 +903,12 @@ void Copter::read_AHRS(void)
 }
 
 // read baro and log control tuning
-void Copter::update_altitude()
+void Copter::update_barometer()
 {
     // read in baro altitude
-    read_barometer();
+    AP_Vehicle::update_barometer();
+
+    baro_alt = barometer.get_altitude() * 100.0f;
 
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_CTUN)) {

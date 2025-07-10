@@ -484,9 +484,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // SR0 through SR6 was here
 
-    // @Group: AHRS_
-    // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
-    GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
+    // AHRS was here
 
 #if HAL_MOUNT_ENABLED
     // @Group: MNT
@@ -520,14 +518,9 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
-    // @Group: BARO
-    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "BARO", AP_Baro),
+    // BARO was here
 
-    // GPS driver
-    // @Group: GPS
-    // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS", AP_GPS),
+    // GPS was here
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
@@ -1333,6 +1326,10 @@ void Copter::load_parameters(void)
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
     }
 #endif  // HAL_GCS_ENABLED
+
+#if AP_BARO_ENABLED
+    AP::baro().convert_parameters_for_move_to_ap_vehicle(Parameters::k_param_barometer_old);
+#endif
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);

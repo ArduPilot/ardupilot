@@ -413,7 +413,6 @@ private:
     void one_hz_loop();
     void update_turn_counter();
     void read_AHRS(void);
-    void update_altitude();
     float get_smoothing_gain();
     void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
     float get_pilot_desired_yaw_rate(int16_t stick_angle) const;
@@ -518,12 +517,13 @@ private:
     JSButton* get_button(uint8_t index);
     void default_js_buttons(void);
     void clear_input_hold();
-    void read_barometer(void);
+    void update_barometer(void) override;
     void init_rangefinder(void);
     void read_rangefinder(void);
     void terrain_update();
     void terrain_logging();
     void init_ardupilot() override;
+    uint32_t baro_log_bit() const override { return MASK_LOG_IMU; }
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
                              uint32_t &log_bit) override;

@@ -75,7 +75,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(navigate,               10,    150,  36),
     SCHED_TASK(update_compass,         10,    200,  39),
     SCHED_TASK(calc_airspeed_errors,   10,    100,  42),
-    SCHED_TASK(update_alt,             10,    200,  45),
     SCHED_TASK(adjust_altitude_target, 10,    200,  48),
 #if AP_ADVANCEDFAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,           10,    100,  51),
@@ -446,8 +445,6 @@ void Plane::airspeed_ratio_update(void)
  */
 void Plane::update_GPS_50Hz(void)
 {
-    gps.update();
-
     update_current_loc();
 }
 
@@ -590,9 +587,9 @@ void Plane::set_flight_stage(AP_FixedWing::FlightStage fs)
 #endif
 }
 
-void Plane::update_alt()
+void Plane::update_barometer()
 {
-    barometer.update();
+    AP_Vehicle::update_barometer();
 
     // calculate the sink rate.
     float sink_rate;
