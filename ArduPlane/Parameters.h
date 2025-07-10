@@ -275,7 +275,7 @@ public:
         k_param_rc_12_old,
         k_param_fs_batt_voltage, // unused - moved to AP_BattMonitor
         k_param_fs_batt_mah,     // unused - moved to AP_BattMonitor
-        k_param_fs_timeout_short,
+        k_param_fs_timeout_short_unused, // unused
         k_param_fs_timeout_long,
         k_param_rc_13_old,
         k_param_rc_14_old,
@@ -414,7 +414,6 @@ public:
     // Failsafe
     AP_Int8 fs_action_short;
     AP_Int8 fs_action_long;
-    AP_Float fs_timeout_short;
     AP_Float fs_timeout_long;
     AP_Int8 gcs_heartbeat_fs_enabled;
 
