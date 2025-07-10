@@ -75,11 +75,6 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     ret &= AP_Arming::airspeed_checks(display_failure);
 #endif
 
-    if (plane.g.fs_timeout_long < plane.g.fs_timeout_short && plane.g.fs_action_short != FS_ACTION_SHORT_DISABLED) {
-        check_failed(display_failure, "FS_LONG_TIMEOUT < FS_SHORT_TIMEOUT");
-        ret = false;
-    }
-
     if (plane.aparm.roll_limit < 3) {
         check_failed(display_failure, "ROLL_LIMIT_DEG too small (%.1f)", plane.aparm.roll_limit.get());
         ret = false;
