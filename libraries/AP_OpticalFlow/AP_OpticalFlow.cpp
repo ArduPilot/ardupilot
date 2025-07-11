@@ -268,6 +268,7 @@ void AP_OpticalFlow::update_state(const OpticalFlow_state &state)
     AP::ahrs().writeOptFlowMeas(quality(),
                                 _state.flowRate,
                                 _state.bodyRate,
+                                _state.groundDistance,
                                 _last_update_ms,
                                 get_pos_offset(),
                                 get_height_override());
@@ -296,7 +297,8 @@ void AP_OpticalFlow::Log_Write_Optflow()
         flow_x          : _state.flowRate.x,
         flow_y          : _state.flowRate.y,
         body_x          : _state.bodyRate.x,
-        body_y          : _state.bodyRate.y
+        body_y          : _state.bodyRate.y,
+        distZ           : _state.groundDistance,
     };
     logger->WriteBlock(&pkt, sizeof(pkt));
 }
