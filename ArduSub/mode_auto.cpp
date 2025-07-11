@@ -208,7 +208,7 @@ void ModeAuto::auto_circle_movetoedge_start(const Location &circle_center, float
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
-        float dist_to_center = get_horizontal_distance_cm(inertial_nav.get_position_xy_cm().topostype(), sub.circle_nav.get_center_NEU_cm().xy());
+        float dist_to_center = get_horizontal_distance(inertial_nav.get_position_xy_cm().topostype(), sub.circle_nav.get_center_NEU_cm().xy());
         if (dist_to_center > sub.circle_nav.get_radius_cm() && dist_to_center > 500) {
             set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         } else {
