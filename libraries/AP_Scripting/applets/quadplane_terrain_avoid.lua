@@ -35,11 +35,11 @@ CMTC can be disabled by setting TA_CMTC_ENABLE = 0. The loiter radius will be TA
 
 SCRIPT_NAME = "OvrhdIntl Terrain Avoid"
 SCRIPT_NAME_SHORT = "TerrAvoid"
-SCRIPT_VERSION = "4.7.0-009"
+SCRIPT_VERSION = "4.7.0-010"
 
 STARTUP_DELAY = 20  -- wait this many seconds for the FC to come up before starting the script
 
-FLIGHT_MODE = {AUTO=10, RTL=11, LOITER=12, GUIDED=15, QHOVER=18, QLOITER=19, QRTL=21}
+FLIGHT_MODE = {FBWA=5, AUTO=10, RTL=11, LOITER=12, GUIDED=15, QHOVER=18, QLOITER=19, QRTL=21}
 
 MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 MAV_FRAME = { GLOBAL = 0, GLOBAL_RELATIVE_ALT = 3}
@@ -249,6 +249,7 @@ THROTTLE_CHANNEL = rc:get_channel(RCMAP_THROTTLE:get()) -- The RC channel used f
 THROTTLE_UP_PWM = 1800
 
 PITCH_TOLERANCE = 1.1
+QUAD_TOLERANCE = 1.2
 
 local vehicle_mode = vehicle:get_mode()
 
@@ -324,23 +325,22 @@ local function reset_avoid_mode()
         avoid_enter_mode == FLIGHT_MODE.RTL then
        new_mode= avoid_enter_mode
     end
-    vehicle:set_mode(new_mode)
-    avoid_enter_mode = -1
 
     if new_mode == FLIGHT_MODE.AUTO then
         previous_location = location_tracker.get_saved_location()
         if previous_location ~= nil then
-            gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..
-                string.format(": current loc lat %.5f lng %.5f alt %.0f frame %.0f", 
-                                current_location:lat()*.00000001, current_location:lng()*.00000001, current_location:alt()*.01, current_location:get_alt_frame()))
+            --gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..
+            --    string.format(": current loc lat %.5f lng %.5f alt %.0f frame %.0f", 
+            --                    current_location:lat()*.00000001, current_location:lng()*.00000001, current_location:alt()*.01, current_location:get_alt_frame()))
 
             vehicle:set_crosstrack_start(previous_location)
-            gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": xtrack start lat %.5f lng %.5f alt %.0f frame %.0f", 
-                        previous_location:lat()*.00000001, previous_location:lng()*.00000001, previous_location:alt() / 100.0, previous_location:get_alt_frame() ))
-        else
-            gcs:send_text(MAV_SEVERITY.ERROR, "NO PREV LOCATION")
+            --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": xtrack start lat %.5f lng %.5f alt %.0f frame %.0f", 
+            --            previous_location:lat()*.00000001, previous_location:lng()*.00000001, previous_location:alt() / 100.0, previous_location:get_alt_frame() ))
         end
     end
+
+    vehicle:set_mode(new_mode)
+    avoid_enter_mode = -1
 end
 
 local function disable_wvane()
@@ -427,9 +427,9 @@ local function set_altitude_target(new_altitude)
     return new_altitude
 end
 
--- This method forces the plane to target a very high altitude to force it to gain altitude quicky
+-- This method forces the plane to target a very high altitude to force it to gain altitude quicky (fixed wing only)
 local function set_altitude_high()
-    local target_altitude = current_altitude + 250
+    local target_altitude = current_altitude + 2000
     local old_target_altitude = 0.0
     if current_location_target == nil and current_location ~= nil then
         old_target_altitude = current_location:alt() * 0.01
@@ -469,9 +469,9 @@ local function LocationTracker()
                 previous_previous_target_location = previous_target_location:copy()
             end
             previous_target_location = target_location:copy()
-            gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..
-                string.format(": saved loc lat %.5f lng %.5f alt %.0f frame %.0f", 
-                                target_location:lat()*.00000001, target_location:lng(), target_location:alt()*.01, target_location:get_alt_frame()))
+            --gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..
+            --    string.format(": saved loc lat %.5f lng %.5f alt %.0f frame %.0f", 
+            --                    target_location:lat()*.00000001, target_location:lng(), target_location:alt()*.01, target_location:get_alt_frame()))
             end
             if previous_previous_target_location == nil then
                 previous_previous_target_location = previous_target_location:copy()
@@ -480,12 +480,12 @@ local function LocationTracker()
     end
 
     function self.get_saved_location()
-            gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..
-                string.format(": target loc lat %.5f lng %.5f alt %.0f frame %.0f", 
-                                target_location:lat()*.00000001, target_location:lng()*.00000001, target_location:alt()*.01, target_location:get_alt_frame()))
-            gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..
-                string.format(": retrieved loc lat %.5f lng %.5f alt %.0f frame %.0f", 
-                                previous_previous_target_location:lat()*.00000001, previous_previous_target_location:lng()*.00000001, previous_previous_target_location:alt()*.01, previous_previous_target_location:get_alt_frame()))
+            --gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..
+            --    string.format(": target loc lat %.5f lng %.5f alt %.0f frame %.0f", 
+            --                    target_location:lat()*.00000001, target_location:lng()*.00000001, target_location:alt()*.01, target_location:get_alt_frame()))
+            --gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..
+            --    string.format(": retrieved loc lat %.5f lng %.5f alt %.0f frame %.0f", 
+            --                    previous_previous_target_location:lat()*.00000001, previous_previous_target_location:lng()*.00000001, previous_previous_target_location:alt()*.01, previous_previous_target_location:get_alt_frame()))
         return previous_previous_target_location
     end
 
@@ -540,6 +540,7 @@ local function start_pitching()
     pre_pitch_mode = vehicle_mode
     pre_pitch_target_altitude = set_altitude_high()
     pre_pitch_target_location = current_location_target:copy()
+    airspeed_desired = airspeed_max
 
     -- pitch up by setting a very high altitude and high speed. TECS will make it so.
     pitch_last_bad_timestamp = millis():tofloat() * 0.001
@@ -620,9 +621,13 @@ local function do_pitching()
         if pitch_obstacle_detected(PITCH_TOLERANCE) then
             pitch_last_bad_timestamp = millis():tofloat() * 0.001
         end
-        airspeed_desired = airspeed_min
+        airspeed_desired = airspeed_max
+        gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT .. ": Piching:" .. math.deg(ahrs:get_pitch_rad()))
     end
 end
+
+local last_quading_location
+local quad_tolerance = QUAD_TOLERANCE
 
 start_quading = function() -- forward declaration above
     gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT .. ": Quading started")
@@ -635,6 +640,17 @@ start_quading = function() -- forward declaration above
     quading_active = true
     pitching_active = false
     THROTTLE_CHANNEL:set_override(THROTTLE_UP_PWM)
+
+    if last_quading_location ~= nil and current_location ~= nil then
+        -- if we seem to be repeatedly quading at the same location, try going a little higher this time
+        if current_location:get_distance(last_quading_location) < 50 then
+            gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT .. ": Quading repeat:" .. quad_tolerance)
+            quad_tolerance = quad_tolerance * QUAD_TOLERANCE
+        else 
+            quad_tolerance = QUAD_TOLERANCE
+        end
+    end
+    last_quading_location = current_location:copy()
 end
 
 local function check_quading()
@@ -674,7 +690,7 @@ end
 
 local function do_quading()
     -- not a typo, if we kick into quading we want to go higher than would trigger pitching when when we are done
-    if not pitch_obstacle_detected(PITCH_TOLERANCE) or terrain_max_exceeded then
+    if not pitch_obstacle_detected(quad_tolerance) or terrain_max_exceeded then
         -- we are done quadding
         stop_quading()
     else
@@ -689,15 +705,19 @@ end
 -- 3. if there is a valid rangefinder forward and rangefinder_forward_value < pitch_forward_min
 --
 pitch_obstacle_down = function(multiplier)
-    if rangefinder_down_value > 0 and rangefinder_down_value < MAX_RANGEFINDER_VALUE
-       and rangefinder_down_value < (pitch_down_min * multiplier) then
+    --gcs:send_text(MAV_SEVERITY.CRITICAL, SCRIPT_NAME_SHORT .. ": obstacle? " .. rangefinder_down_value .. " above? " .. (pitch_down_min * multiplier))
+
+    if rangefinder_down_value > 0 and
+            rangefinder_down_value < MAX_RANGEFINDER_VALUE and
+            rangefinder_down_value < (pitch_down_min * multiplier) then
         return true
     end
     return false
 end
 pitch_obstacle_forward = function(multiplier)
-    if rangefinder_forward_value > 0 and rangefinder_forward_value < MAX_RANGEFINDER_VALUE 
-       and rangefinder_forward_value < (pitch_forward_min * multiplier) then
+    if rangefinder_forward_value > 0 and 
+            rangefinder_forward_value < MAX_RANGEFINDER_VALUE and
+            rangefinder_forward_value < (pitch_forward_min * multiplier) then
         return true
     end
     return false
@@ -1153,13 +1173,13 @@ local function update()
     -- quading is the priority. If we are quading, do that, otherwise if we are pitching do that
     if quading_active then
         do_quading()
-        -- return
+        return
     elseif pitching_active then
         do_pitching()
-        -- return
+        return
     elseif cmtc_active then
         do_cmtc()
-        -- return
+        return
     end
 
     if groundspeed_vector ~= nil then
