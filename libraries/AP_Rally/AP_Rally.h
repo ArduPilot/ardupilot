@@ -53,6 +53,7 @@ public:
 
     // data handling
     bool get_rally_point_with_index(uint8_t i, RallyLocation &ret) const;
+    bool get_rally_point_with_index(uint8_t i, Location &ret) const;
     bool set_rally_point_with_index(uint8_t i, const RallyLocation &rallyLoc);
     uint8_t get_rally_total() const {
         return (uint8_t)_rally_point_total_count;
