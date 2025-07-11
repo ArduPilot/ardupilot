@@ -22,20 +22,20 @@
  - Otherwise switching to QuadPlane Qloiter mode (Quading) and gaining altitude using VTOL motors
  This code requires long range rangefinders such as the LightWare long range lidars that can measure
    distances up to 90-95 meters away.
- The terrain avoidance will be on by default but will not function at "home" or within ZTA_HOME_DIST meters
- of home. The scripting function ZTA_ACT_FN can be used to disable terrain folling at any time
+ The terrain avoidance will be on by default but will not function at "home" or within TA_HOME_DIST meters
+ of home. The scripting function TA_ACT_FN can be used to disable terrain folling at any time
  Terrain following will operate in modes Auto, Guided, RTL and QRTL.
 
 The "Can't make that climb" (CMTC) feature will prevent ArduPlane from flying into terrain it does know about
 by calculating the required pitch to avoid terrain between the current location and the next waypoint including
 all points in between. If the pitch required is > PTCH_TRIM_MAX_DEG / 2 then the code will perform a loiter to
-altitude to achieve a safe AMSL altitude (terrain + ZTA_CMTC_ALT) to avoid the terrain before continuing the mission.
-CMTC can be disabled by setting ZTA_CMTC_ENABLE = 0.
+altitude to achieve a safe AMSL altitude (terrain + TA_CMTC_ALT) to avoid the terrain before continuing the mission.
+CMTC can be disabled by setting TA_CMTC_ENABLE = 0. The loiter radius will be TA_CMTC_RAD if set or otherwise WP_LOITER_RAD.
 --]]
 
 SCRIPT_NAME = "OvrhdIntl Terrain Avoid"
 SCRIPT_NAME_SHORT = "TerrAvoid"
-SCRIPT_VERSION = "4.7.0-008"
+SCRIPT_VERSION = "4.7.0-009"
 
 STARTUP_DELAY = 20  -- wait this many seconds for the FC to come up before starting the script
 
@@ -53,8 +53,8 @@ local rangefinder_down_value = 0.0
 local rangefinder_forward_value = 0.0
 MAX_RANGEFINDER_VALUE = 90
 
-PARAM_TABLE_KEY = 99
-PARAM_TABLE_PREFIX = "ZTA_"
+PARAM_TABLE_KEY = 105
+PARAM_TABLE_PREFIX = "TA_"
 
 -- bind a parameter to a variable
 function bind_param(name)
@@ -71,160 +71,152 @@ end
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 19), SCRIPT_NAME_SHORT .. 'could not add param table: ' .. PARAM_TABLE_PREFIX)
 
 --[[
-    // @Param: ZTA_ACT_FN
+    // @Param: TA_ACT_FN
     // @DisplayName: Activation Function for Terrain Avoidance
     // @Description: Setting an RC channel's _OPTION to this value will use it for Terrain Avoidance enable/disable
     // @Range: 300 307
 --]]
-ZTA_ACT_FN = bind_add_param("ACT_FN", 1, 305)
+TA_ACT_FN = bind_add_param("ACT_FN", 1, 305)
 
 --[[
-    // @Param: ZTA_PTCH_DWN_MIN
+    // @Param: TA_PTCH_DWN_MIN
     // @DisplayName: down distance minimum for Pitching
     // @Description: If the downward distance is less than this value then start Pitching up to gain altitude.
     // @Units: m
 --]]
-ZTA_PTCH_DWN_MIN = bind_add_param("PTCH_DWN_MIN", 2, 46)
+TA_PTCH_DWN_MIN = bind_add_param("PTCH_DWN_MIN", 2, 46)
 
 --[[
-    // @Param: ZTA_PTCH_FWD_MIN
+    // @Param: TA_PTCH_FWD_MIN
     // @DisplayName: forward distance minimum for Pitching
     // @Description: If the farwardward distance is less than this value then start Pitching up to gain altitude.
     // @Units: m
 --]]
-ZTA_PTCH_FWD_MIN = bind_add_param("PTCH_FWD_MIN", 3, 80)
+TA_PTCH_FWD_MIN = bind_add_param("PTCH_FWD_MIN", 3, 80)
 
 --[[
-    // @Param: ZTA_QUAD_DWN_MIN
+    // @Param: TA_QUAD_DWN_MIN
     // @DisplayName: Downward distance minimum Quading
     // @Description: If the downward distance is less than this value then start Quading up to gain altitude.
     // @Units: m
 --]]
-ZTA_QUAD_DWN_MIN = bind_add_param("QUAD_DWN_MIN", 4, 35)
+TA_QUAD_DWN_MIN = bind_add_param("QUAD_DWN_MIN", 4, 35)
 
 --[[
-    // @Param: ZTA_QUAD_FWD_MIN
+    // @Param: TA_QUAD_FWD_MIN
     // @DisplayName: minimum forward distance for Quading
     // @Description: If the farwardward distance is less than this value then start Quading up to gain altitude.
     // @Units: m
 --]]
-ZTA_QUAD_FWD_MIN = bind_add_param("QUAD_FWD_MIN", 5, 20)
+TA_QUAD_FWD_MIN = bind_add_param("QUAD_FWD_MIN", 5, 20)
 
 --[[
-    // @Param: ZTA_PTCH_GSP_MIN
+    // @Param: TA_PTCH_GSP_MIN
     // @DisplayName: minimum ground speed for Pitching
     // @Description: Minimum Groundspeed (not airspeed) to be flying for Pitching to be used.
     // @Units: m/s
 --]]
-ZTA_PTCH_GSP_MIN = bind_add_param("PTCH_GSP_MIN", 6, 17)
+TA_PTCH_GSP_MIN = bind_add_param("PTCH_GSP_MIN", 6, 17)
 
 --[[
-    // @Param: ZTA_PTCH_TIMEOUT
+    // @Param: TA_PTCH_TIMEOUT
     // @DisplayName: timeout Pitching
     // @Description: Minimum down or forward distance must be triggered for more than this many seconds to start Pitching
     // @Units: s
 --]]
-ZTA_PTCH_TIMEOUT = bind_add_param("PTCH_TIMEOUT", 7, 2)
+TA_PTCH_TIMEOUT = bind_add_param("PTCH_TIMEOUT", 7, 2)
 
 --[[
-    // @Param: ZTA_HOME_DIST
+    // @Param: TA_HOME_DIST
     // @DisplayName: safe distance around home
     // @Description: Terrain avoidance will not be applied if the vehicle is less than this distance from home
     // @Units: m
 --]]
-ZTA_HOME_DIST = bind_add_param("HOME_DIST", 8, 20)
+TA_HOME_DIST = bind_add_param("HOME_DIST", 8, 100)
 
 --[[
-    // @Param: ZTA_SIM_DWN_FN
-    // @DisplayName: Sim Down Function
-    // @Description: Setting an RC channel's _OPTION to this value will use it to generate a simulated "down" rangefinder value based on the PWM value of the channel
-    // @Range: 300 307
---
-ZTA_SIM_DWN_FN = bind_add_param("SIM_DWN_FN", 9, 306)
-
---[[
-    // @Param: ZTA_SIM_FWD_FN
-    // @DisplayName: Sim Forward Function
-    // @Description: Setting an RC channel's _OPTION to this value will use it to generate a simulated "forward" rangefinder value based on the PWM value of the channel
-    // @Range: 300 307
---
-ZTA_SIM_FWD_FN = bind_add_param("SIM_FWD_FN", 10, 307)
---]]
-
---[[
-    // @Param: ZTA_ALT_MAX
+    // @Param: TA_ALT_MAX
     // @DisplayName: ceiling for pitching/quading
     // @Description: This is a limit on how high the terrain avoidane will take the vehicle. It acts a failsafe to prevent vertical flyaways.
     // @Range: 20 1000
     // @Units: m
 --]]
-ZTA_ALT_MAX = bind_add_param("ALT_MAX", 9, 100)
+TA_ALT_MAX = bind_add_param("ALT_MAX", 9, 100)
 
 --[[
-    // @Param: ZTA_GSP_MAX
+    // @Param: TA_GSP_MAX
     // @DisplayName: Maximum Groundspeed
     // @Description: This is a limit on how fast in groundspeeed terrain avoidance will take the vehicle. This is to allow for reliable sensor readings. -1 for disabled.
     // @Range: 10 40
     // @Units: m/s
 --]]
-ZTA_GSP_MAX = bind_add_param("GSP_MAX", 10, -1)
+TA_GSP_MAX = bind_add_param("GSP_MAX", 10, -1)
 
 --[[
-    // @Param: ZTA_GSP_AIRBRAKE
+    // @Param: TA_GSP_AIRBRAKE
     // @DisplayName: Groudspeed Airbrake limt
     // @Description: This is the limit for triggering airbrake to slow groundspeed as a difference between the airspeed and groundspeed. -1 for disabled.
     // @Range: -1 -10
     // @Units: m/s
 --]]
-ZTA_GSP_AIRBRAKE = bind_add_param("GSP_AIRBRAKE", 11, 0)
+TA_GSP_AIRBRAKE = bind_add_param("GSP_AIRBRAKE", 11, 0)
 
 --[[
-    // @Param: ZTA_CMTC_ALT
+    // @Param: TA_CMTC_ALT
     // @DisplayName: CMTC Altitude
-    // @Description: The minimum altitude above terrain to maintain when following an AUTO mission or RTL. If zero(0) use ZTA_PTCH_DOW_MIN.
+    // @Description: The minimum altitude above terrain to maintain when following an AUTO mission or RTL. If zero(0) use TA_PTCH_DOW_MIN.
     // @Units: m
 --]]
-ZTA_CMTC_ALT = bind_add_param("CMTC_ALT", 12, 0)
+TA_CMTC_ALT = bind_add_param("CMTC_ALT", 12, 0)
 
 --[[
-    // @Param: ZTA_CMTC_ENABLE
+    // @Param: TA_CMTC_ENABLE
     // @DisplayName: CMTC Enable
     // @Description: Whether to enable Can't Make That Climb while running Terrain Avoidance
     // @Range: 0 1
 --]]
-ZTA_CMTC_ENABLE = bind_add_param("CMTC_ENABLE", 13, 0)
+TA_CMTC_ENABLE = bind_add_param("CMTC_ENABLE", 13, 0)
 
 --[[
-    // @Param: ZTA_UPDATE_RATE
+    // @Param: TA_UPDATE_RATE
     // @DisplayName: Frequency to process avoidance
     // @Description: Avoidance processing rate
     // @Units: Hz
 --]]
-ZTA_UPDATE_RATE = bind_add_param("UPDATE_RATE", 14, 10)
+TA_UPDATE_RATE = bind_add_param("UPDATE_RATE", 14, 10)
 
-local pitch_groundspeed_min = ZTA_PTCH_GSP_MIN:get()
-local pitch_down_min = ZTA_PTCH_DWN_MIN:get()
-local pitch_forward_min = ZTA_PTCH_FWD_MIN:get()
-local pitch_timeout = ZTA_PTCH_TIMEOUT:get()
-local home_distance_max = ZTA_HOME_DIST:get()
+--[[
+    // @Param: TA_CMTC_RAD
+    // @DisplayName: CMTC loiter radius
+    // @Description: Use this radius for the loiter when trying to gain altitude. If not set or <=0 use WP_LOITER_RAD
+    // @Units: m
+--]]
+TA_CMTC_RAD = bind_add_param("CMTC_RAD", 15, 0)
 
-local quad_down_min = ZTA_QUAD_DWN_MIN:get()
-local quad_forward_min = ZTA_QUAD_FWD_MIN:get()
 
-local altitude_max = ZTA_ALT_MAX:get()
+local pitch_groundspeed_min = TA_PTCH_GSP_MIN:get()
+local pitch_down_min = TA_PTCH_DWN_MIN:get()
+local pitch_forward_min = TA_PTCH_FWD_MIN:get()
+local pitch_timeout = TA_PTCH_TIMEOUT:get()
+local home_distance_max = TA_HOME_DIST:get()
 
-local groundspeed_max = ZTA_GSP_MAX:get() or -1
-local groundspeed_airbrake_limit = ZTA_GSP_AIRBRAKE:get() or 0
+local quad_down_min = TA_QUAD_DWN_MIN:get()
+local quad_forward_min = TA_QUAD_FWD_MIN:get()
 
-local cmtc_alt_m = ZTA_CMTC_ALT:get()
+local altitude_max = TA_ALT_MAX:get()
+
+local groundspeed_max = TA_GSP_MAX:get() or -1
+local groundspeed_airbrake_limit = TA_GSP_AIRBRAKE:get() or 0
+
+local cmtc_alt_m = TA_CMTC_ALT:get()
 if cmtc_alt_m == 0 then
     cmtc_alt_m = pitch_down_min
 end
-local cmtc_enable = ZTA_CMTC_ENABLE:get()
+local cmtc_enable = TA_CMTC_ENABLE:get()
 
 MIN_ALT_MAX = 20
 
-REFRESH_RATE = 1.0 / (ZTA_UPDATE_RATE:get() or 10)
+REFRESH_RATE = 1.0 / (TA_UPDATE_RATE:get() or 10)
 
 Q_ENABLE = bind_param('Q_ENABLE')
 Q_WVANE_ENABLE = bind_param('Q_WVANE_ENABLE')
@@ -241,14 +233,20 @@ local airspeed_min = AIRSPEED_MIN:get() or 10
 local airspeed_cruise = AIRSPEED_CRUISE:get() or 18
 local airspeed_max = AIRSPEED_MAX:get() or 30
 local wp_loiter_rad = WP_LOITER_RAD:get() or 150
+local cmtc_rad_m = TA_CMTC_RAD:get() or wp_loiter_rad
 local q_enable = Q_ENABLE:get() or 0
 local terrain_enable = TERRAIN_ENABLE:get() or 0
 local terrain_spacing = TERRAIN_SPACING:get() or 100
 local ptch_lim_max_deg = PTCH_LIM_MAX_DEG:get() or 25
 local tecs_climb_max = TECS_CLMB_MAX:get() or 5.0
 
+if cmtc_rad_m <= 0 then
+    cmtc_rad_m = wp_loiter_rad
+end
+
 RCMAP_THROTTLE = bind_param('RCMAP_THROTTLE')
 THROTTLE_CHANNEL = rc:get_channel(RCMAP_THROTTLE:get()) -- The RC channel used for throttle
+THROTTLE_UP_PWM = 1800
 
 PITCH_TOLERANCE = 1.1
 
@@ -297,6 +295,8 @@ local pitch_obstacle_forward
 
 local mavlink = require("mavlink_wrappers")
 
+local location_tracker  -- forward declaration. See below for definition and instantiation.
+
 -- constrain a value between limits
 local function constrain(v, vmin, vmax)
     if v < vmin then
@@ -308,13 +308,15 @@ local function constrain(v, vmin, vmax)
     return v
 end
 
+-- save the current mode and then enter the new mode
 local function set_avoid_mode(new_mode)
-    avoid_enter_mode = vehicle_mode
-    vehicle:set_mode(new_mode)
+    if vehicle:get_mode() ~= new_mode then
+        avoid_enter_mode = vehicle_mode
+        vehicle:set_mode(new_mode)
+    end
 end
 
-local location_tracker  -- forward declaration. See below for definition and instantiation.
-
+-- reset the flight mode to the previously saved flight mode (if valid) or AUTO
 local function reset_avoid_mode()
     local new_mode = FLIGHT_MODE.AUTO
     if avoid_enter_mode == FLIGHT_MODE.AUTO or avoid_enter_mode == FLIGHT_MODE.GUIDED or avoid_enter_mode == FLIGHT_MODE.LOITER or
@@ -328,7 +330,15 @@ local function reset_avoid_mode()
     if new_mode == FLIGHT_MODE.AUTO then
         previous_location = location_tracker.get_saved_location()
         if previous_location ~= nil then
+            gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..
+                string.format(": current loc lat %.5f lng %.5f alt %.0f frame %.0f", 
+                                current_location:lat()*.00000001, current_location:lng()*.00000001, current_location:alt()*.01, current_location:get_alt_frame()))
+
             vehicle:set_crosstrack_start(previous_location)
+            gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": xtrack start lat %.5f lng %.5f alt %.0f frame %.0f", 
+                        previous_location:lat()*.00000001, previous_location:lng()*.00000001, previous_location:alt() / 100.0, previous_location:get_alt_frame() ))
+        else
+            gcs:send_text(MAV_SEVERITY.ERROR, "NO PREV LOCATION")
         end
     end
 end
@@ -455,20 +465,27 @@ local function LocationTracker()
        if target_location ~= nil then
           if not self.same_loc_as(previous_target_location, target_location) then
             -- maintain three generations of location
-            if previous_target_location ~= nil then
+            if previous_target_location ~= nil and not self.same_loc_as(previous_target_location, previous_previous_target_location)  then
                 previous_previous_target_location = previous_target_location:copy()
             end
             previous_target_location = target_location:copy()
-            --gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..
-            --    string.format(": saved loc lat %.1f lng %.1f alt %.1f", target_location:lat(), target_location:lng(), target_location:alt()))
+            gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..
+                string.format(": saved loc lat %.5f lng %.5f alt %.0f frame %.0f", 
+                                target_location:lat()*.00000001, target_location:lng(), target_location:alt()*.01, target_location:get_alt_frame()))
             end
-       else
-          previous_target_location = ahrs:get_location()
-          previous_previous_target_location = previous_target_location
-       end
+            if previous_previous_target_location == nil then
+                previous_previous_target_location = previous_target_location:copy()
+            end
+        end
     end
 
     function self.get_saved_location()
+            gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..
+                string.format(": target loc lat %.5f lng %.5f alt %.0f frame %.0f", 
+                                target_location:lat()*.00000001, target_location:lng()*.00000001, target_location:alt()*.01, target_location:get_alt_frame()))
+            gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..
+                string.format(": retrieved loc lat %.5f lng %.5f alt %.0f frame %.0f", 
+                                previous_previous_target_location:lat()*.00000001, previous_previous_target_location:lng()*.00000001, previous_previous_target_location:alt()*.01, previous_previous_target_location:get_alt_frame()))
         return previous_previous_target_location
     end
 
@@ -535,7 +552,7 @@ local function check_pitching()
 
     if pitch_obstacle_detected(1.0) then
         if not pitching_active then
-            -- we don't jump into pitching right away, we give it a ZTA_PTCH_TIMEOUT seconds to be sure
+            -- we don't jump into pitching right away, we give it a TA_PTCH_TIMEOUT seconds to be sure
             local time_since_good = (now - pitch_last_good_timestamp)
             if time_since_good > pitch_timeout then
                 start_pitching()
@@ -594,7 +611,7 @@ local function do_pitching()
     end
 
     -- if we are above the pitching altitude (with a margin) we might want to stop pitching
-    -- we don't stop pitching right away, we give it a ZTA_PTCH_TIMEOUT seconds * 2 to be sure
+    -- we don't stop pitching right away, we give it a TA_PTCH_TIMEOUT seconds * 2 to be sure
     if not pitch_obstacle_detected(PITCH_TOLERANCE) and (now - pitch_last_bad_timestamp) > (pitch_timeout * 2) or
         not (pre_pitch_target_location:lat() == current_location_target:lat() and pre_pitch_target_location:lng() == current_location_target:lng() ) then
         stop_pitching()
@@ -617,7 +634,7 @@ start_quading = function() -- forward declaration above
     end
     quading_active = true
     pitching_active = false
-    THROTTLE_CHANNEL:set_override(2000)
+    THROTTLE_CHANNEL:set_override(THROTTLE_UP_PWM)
 end
 
 local function check_quading()
@@ -662,7 +679,7 @@ local function do_quading()
         stop_quading()
     else
         -- continually override the throttle to keep going up
-        THROTTLE_CHANNEL:set_override(2000)
+        THROTTLE_CHANNEL:set_override(THROTTLE_UP_PWM)
     end
 end
 
@@ -761,14 +778,14 @@ local function populate_rangefinder_values()
 
     if rangefinder:has_data_orient(RANGEFINDER_ORIENT.DOWNWARD)
         and rangefinder:status_orient(RANGEFINDER_ORIENT.DOWNWARD) == RANGEFINDER_STATUS.GOOD then
-        rangefinder_down_value = rangefinder:distance_orient(RANGEFINDER_ORIENT.DOWNWARD)
+        rangefinder_down_value = rangefinder:distance_cm_orient(RANGEFINDER_ORIENT.DOWNWARD) / 100.0
     else
         -- if we don't have a downward rangefinder revert to terrain altitude
         rangefinder_down_value = terrain:height_above_terrain(true) or 0.0
     end
     if rangefinder:has_data_orient(RANGEFINDER_ORIENT.FORWARD)
         and rangefinder:status_orient(RANGEFINDER_ORIENT.FORWARD) == RANGEFINDER_STATUS.GOOD then
-        rangefinder_forward_value = rangefinder:distance_orient(RANGEFINDER_ORIENT.FORWARD)
+        rangefinder_forward_value = rangefinder:distance_cm_orient(RANGEFINDER_ORIENT.FORWARD) / 100.0
     else
         rangefinder_forward_value = 0.0
     end
@@ -779,9 +796,9 @@ local function populate_rangefinder_values()
         terrain_max_exceeded = (altitude_max > MIN_ALT_MAX and terrain_altitude > altitude_max)
     end
 
-    if rangefinder_down_value == nil or rangefinder_down_value <= 0 or
-        rangefinder_down_value > MAX_RANGEFINDER_VALUE then
+    if rangefinder_down_value == nil or rangefinder_down_value <= 0 or rangefinder_down_value > MAX_RANGEFINDER_VALUE then
         rangefinder_down_value = terrain_altitude or 0
+        -- gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT .. string.format(": Use Terrain down: %.2f m", rangefinder_down_value) )
     end
     if rangefinder_forward_value == nil or rangefinder_forward_value <= 0 then
         rangefinder_forward_value = 0
@@ -894,14 +911,14 @@ terrain_approaching = function(clearance)
     return pitch_required, alt_required_amsl, highest_alt_difference
 end
 
-local function highest_arc_terrain(loiter_center, bearing_start, bearing_step, arc_max)
+local function highest_arc_terrain(loiter_center, bearing_start, bearing_step, arc_max, loiter_rad_m)
     local next_increment = bearing_step
     local highest_terrain = 0.0
     while math.abs(next_increment) < arc_max do
         local test_bearing = wrap_360(bearing_start + next_increment)
 
         local loiter_edge = loiter_center:copy()
-        loiter_edge:offset_bearing(test_bearing, wp_loiter_rad)
+        loiter_edge:offset_bearing(test_bearing, loiter_rad_m)
         local terrain_height = terrain:height_amsl(loiter_edge, true)
         if terrain_height > highest_terrain then
             highest_terrain = terrain_height or 0.0
@@ -924,24 +941,28 @@ avoid_terrain = function(target_alt_amsl) -- forward declaration above
     local direction
     local loiter_center_left = current_location:copy()
     local loiter_center_right = current_location:copy()
-    loiter_center_left:offset_bearing(wrap_360(current_bearing - 90), wp_loiter_rad)
-    loiter_center_right:offset_bearing(wrap_360(current_bearing + 90), wp_loiter_rad)
-    -- at a radius of WP_LOITER_RAD how many degrees is TERRAIN_SPACING
+    -- calculate a loiter location (center of the circle) 90 degrees left and 90 degrees right
+    loiter_center_left:offset_bearing(wrap_360(current_bearing - 90), cmtc_rad_m)
+    loiter_center_right:offset_bearing(wrap_360(current_bearing + 90), cmtc_rad_m)
+    -- at a radius of cmtc_rad_m how many degrees is TERRAIN_SPACING
     -- Central Angle = Arc length(AB) / Radius(OA) = (s × 360°) / 2πr
-    local spacing_degrees = (terrain_spacing * 360.0) / (2.0 * math.pi * wp_loiter_rad)
+    local spacing_degrees = (terrain_spacing * 360.0) / (2.0 * math.pi * cmtc_rad_m)
 
-    local highest_left_terrain = highest_arc_terrain(loiter_center_left, current_bearing, -spacing_degrees, 180)
-    local highest_right_terrain = highest_arc_terrain(loiter_center_right, current_bearing, spacing_degrees, 180)
-    local roll = ahrs:get_roll()
+    -- find the highest terrain we are likely to hit if we loiter left vs right
+    local highest_left_terrain = highest_arc_terrain(loiter_center_left, current_bearing, -spacing_degrees, 180, cmtc_rad_m)
+    local highest_right_terrain = highest_arc_terrain(loiter_center_right, current_bearing, spacing_degrees, 180, cmtc_rad_m)
+    local roll = ahrs:get_roll() or 0
 
     set_avoid_mode(FLIGHT_MODE.GUIDED)
 
     -- loiter up to the requjired AMSL height, in the direction of lowest terrain
+    -- except if the vehicle is already rolling > 30 degrees left then it won't try to "reverse" the roll
     if highest_left_terrain < highest_right_terrain or roll < -30 then
         mavlink.set_vehicle_target_location({lat = loiter_center_left:lat(),
             lng = loiter_center_left:lng(),
             alt = target_alt_amsl,
             alt_frame = mavlink.ALT_FRAME.ABSOLUTE,
+            radius = cmtc_rad_m,
             yaw = 1 })
         direction = "left"
     else
@@ -949,14 +970,14 @@ avoid_terrain = function(target_alt_amsl) -- forward declaration above
             lng = loiter_center_right:lng(),
             alt = target_alt_amsl,
             alt_frame = mavlink.ALT_FRAME.ABSOLUTE,
+            radius = cmtc_rad_m,
             yaw = -1 })
         direction = "right"
     end
 
-    -- Set an extra hight altitude to ensure the plane tries to climb as fast as possible
+    -- Set an extra height altitude to ensure the plane tries to climb as fast as possible
     mavlink.set_vehicle_target_altitude({alt = target_alt_amsl + 100.0, alt_frame = mavlink.ALT_FRAME.ABSOLUTE})
     airspeed_desired = airspeed_max
-    --mavlink.set_vehicle_speed({speed=airspeed_max})
 
     return direction
 end
@@ -964,12 +985,14 @@ end
 local switch_on = true
 local last_switch_state = -1
 
+-- activate Terrain Avoidance
 local function activate()
     switch_on = true
     gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..": activated")
     pitch_last_good_timestamp = now
 end
 
+-- deactivate Terrain Avoidance
 local function deactivate()
     switch_on = false
     gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT ..": deactivated")
@@ -977,7 +1000,7 @@ end
 
 -- This method checks if the activation switch has been newly enabled or disabled
 local function check_activation_switch()
-    local switch_function = ZTA_ACT_FN:get()
+    local switch_function = TA_ACT_FN:get()
     if switch_function == nil then
         return
     end
@@ -1047,34 +1070,41 @@ local function update()
 
     -- save the previous target location only if in auto mode, if restoring it in AUTO mode
     -- don't update it if already pitching or quading because the altitude change will mess up the history
-    if vehicle_mode == FLIGHT_MODE.AUTO and location_tracker ~= nil and not (pitching_active or quading_active) then
+    if (vehicle_mode == FLIGHT_MODE.AUTO or vehicle_mode == FLIGHT_MODE.GUIDED) and
+            location_tracker ~= nil and
+            not (pitching_active or quading_active) then
         location_tracker.update()
     end
 
     -- make the pitching and quading parameters updatable in the air (refresh every second)
     if math.floor(old_now) ~= math.floor(now) then
-        pitch_groundspeed_min = ZTA_PTCH_GSP_MIN:get()
-        pitch_down_min = ZTA_PTCH_DWN_MIN:get()
-        pitch_forward_min = ZTA_PTCH_FWD_MIN:get()
-        pitch_timeout = ZTA_PTCH_TIMEOUT:get()
-        home_distance_max = ZTA_HOME_DIST:get()
+        pitch_groundspeed_min = TA_PTCH_GSP_MIN:get()
+        pitch_down_min = TA_PTCH_DWN_MIN:get()
+        pitch_forward_min = TA_PTCH_FWD_MIN:get()
+        pitch_timeout = TA_PTCH_TIMEOUT:get()
+        home_distance_max = TA_HOME_DIST:get()
 
-        quad_down_min = ZTA_QUAD_DWN_MIN:get()
-        quad_forward_min = ZTA_QUAD_FWD_MIN:get()
+        quad_down_min = TA_QUAD_DWN_MIN:get()
+        quad_forward_min = TA_QUAD_FWD_MIN:get()
 
-        altitude_max = ZTA_ALT_MAX:get()
+        altitude_max = TA_ALT_MAX:get()
 
-        groundspeed_max = ZTA_GSP_MAX:get() or -1
-        groundspeed_airbrake_limit = ZTA_GSP_AIRBRAKE:get() or 0
+        groundspeed_max = TA_GSP_MAX:get() or -1
+        groundspeed_airbrake_limit = TA_GSP_AIRBRAKE:get() or 0
         airspeed_min = AIRSPEED_MIN:get() or 10
         airspeed_cruise = AIRSPEED_CRUISE:get() or 18
         airspeed_max = AIRSPEED_MAX:get() or 30
 
-        cmtc_alt_m = ZTA_CMTC_ALT:get()
-        if cmtc_alt_m == 0 then
+        cmtc_alt_m = TA_CMTC_ALT:get()
+        if cmtc_alt_m <= 0 then
             cmtc_alt_m = pitch_down_min
         end
-        cmtc_enable = ZTA_CMTC_ENABLE:get()
+        cmtc_rad_m = TA_CMTC_RAD:get() or wp_loiter_rad
+        if cmtc_rad_m <= 0 then
+            cmtc_rad_m = wp_loiter_rad
+        end
+
+        cmtc_enable = TA_CMTC_ENABLE:get()
     end
     check_activation_switch()
     if not terravoid_active() then
@@ -1097,11 +1127,11 @@ local function update()
         if cmtc_enable ==1 and not cmtc_active then
             -- lets check if our current flight path is likely to hit terrain 
             -- sometime soon, and if so we need to avoid it.
-            local pitch_required_deg, alt_required_amsl, terrain_diff = terrain_approaching(cmtc_alt_m)
+            local pitch_required_deg, alt_required_amsl, terrain_diff_m = terrain_approaching(cmtc_alt_m)
             if pitch_required_deg > (ptch_lim_max_deg * 0.5) then
-                gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. string.format(": Can't Make that climb", terrain_diff) )
+                gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. string.format(": Can't Make that climb %dm", terrain_diff_m) )
                 gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT .. string.format(": CMTC pitch required %.0f deg", pitch_required_deg) )
-                -- need to fly OVER the highest point - with ZTA_CMTC_ALT clearance
+                -- need to fly OVER the highest point - with TA_CMTC_ALT clearance
                 start_cmtc(alt_required_amsl + cmtc_alt_m)
             end
         end
