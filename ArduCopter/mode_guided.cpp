@@ -1085,7 +1085,7 @@ bool ModeGuided::limit_check()
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        const float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos.xy(), curr_pos.xy());
+        const float horiz_move = get_horizontal_distance(guided_limit.start_pos.xy(), curr_pos.xy());
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;
         }
@@ -1116,7 +1116,7 @@ float ModeGuided::wp_distance_m() const
     case SubMode::WP:
         return wp_nav->get_wp_distance_to_destination_cm() * 0.01f;
     case SubMode::Pos:
-        return get_horizontal_distance_cm(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat()) * 0.01f;
+        return get_horizontal_distance(pos_control->get_pos_estimate_NEU_cm().xy().tofloat(), guided_pos_target_cm.xy().tofloat()) * 0.01f;
     case SubMode::PosVelAccel:
         return pos_control->get_pos_error_NE_cm() * 0.01f;
     default:
