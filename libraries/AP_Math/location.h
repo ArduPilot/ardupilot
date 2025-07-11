@@ -9,9 +9,10 @@
  * LOCATION
  */
 
-// return horizontal distance between two positions in cm
+// Computes straight-line distance in the horizontal plane between two positions.
+// Input units (e.g., meters, centimeters) must match; no unit conversion is performed.
 template <typename T>
-float get_horizontal_distance_cm(const Vector2<T> &origin, const Vector2<T> &destination)
+float get_horizontal_distance(const Vector2<T> &origin, const Vector2<T> &destination)
 {
     return (destination - origin).length();
 }
