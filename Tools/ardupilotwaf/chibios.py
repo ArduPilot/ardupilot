@@ -488,7 +488,7 @@ def setup_canmgr_build(cfg):
         ]
     env.CFLAGS += ['-DHAL_CAN_IFACES=2']
 
-    if not env.AP_PERIPH:
+    if not env.AP_PERIPH and not cfg.options.bootloader:
         env.DEFINES += [
             'DRONECAN_CXX_WRAPPERS=1',
             'USE_USER_HELPERS=1',
