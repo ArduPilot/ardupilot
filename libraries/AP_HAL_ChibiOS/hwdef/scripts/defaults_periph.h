@@ -156,10 +156,6 @@
 #define AP_SERVORELAYEVENTS_ENABLED 0
 #endif
 
-#ifndef AP_RELAY_ENABLED
-#define AP_RELAY_ENABLED 0
-#endif
-
 /*
  * sanity checks that hwdefs are up-to-date in terms of how they are
  * trying to configure the peripheral:
@@ -380,6 +376,9 @@
 #endif
 #ifndef HAL_MSP_ENABLED
 #define HAL_MSP_ENABLED AP_PERIPH_MSP_ENABLED
+#endif
+#ifndef AP_RELAY_ENABLED
+#define AP_RELAY_ENABLED AP_PERIPH_RELAY_ENABLED
 #endif
 
 /*
