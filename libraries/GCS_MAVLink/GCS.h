@@ -582,6 +582,7 @@ protected:
     void handle_obstacle_distance_3d(const mavlink_message_t &msg);
 
     void handle_adsb_message(const mavlink_message_t &msg);
+    void handle_ais_message(const mavlink_message_t &msg);
 
     void handle_osd_param_config(const mavlink_message_t &msg) const;
 
