@@ -387,17 +387,17 @@ bool AC_WPNav::set_wp_destination_next_NEU_cm(const Vector3f& destination_neu_cm
 }
 
 /// set waypoint destination using NED position vector from ekf origin in meters
-bool AC_WPNav::set_wp_destination_NED_cm(const Vector3f& destination_NED_cm)
+bool AC_WPNav::set_wp_destination_NED_m(const Vector3f& destination_NED_m)
 {
     // convert NED to NEU and do not use terrain following
-    return set_wp_destination_NEU_cm(Vector3f(destination_NED_cm.x * 100.0f, destination_NED_cm.y * 100.0f, -destination_NED_cm.z * 100.0f), false);
+    return set_wp_destination_NEU_cm(Vector3f(destination_NED_m.x * 100.0f, destination_NED_m.y * 100.0f, -destination_NED_m.z * 100.0f), false);
 }
 
 /// set waypoint destination using NED position vector from ekf origin in meters
-bool AC_WPNav::set_wp_destination_next_NED_cm(const Vector3f& destination_NED_cm)
+bool AC_WPNav::set_wp_destination_next_NED_m(const Vector3f& destination_NED_m)
 {
     // convert NED to NEU and do not use terrain following
-    return set_wp_destination_next_NEU_cm(Vector3f(destination_NED_cm.x * 100.0f, destination_NED_cm.y * 100.0f, -destination_NED_cm.z * 100.0f), false);
+    return set_wp_destination_next_NEU_cm(Vector3f(destination_NED_m.x * 100.0f, destination_NED_m.y * 100.0f, -destination_NED_m.z * 100.0f), false);
 }
 
 /// shifts the origin and destination horizontally to the current position

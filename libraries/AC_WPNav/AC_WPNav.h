@@ -121,8 +121,8 @@ public:
 
     /// set waypoint destination using NED position vector from ekf origin in meters
     ///     provide next_destination_NED if known
-    bool set_wp_destination_NED_cm(const Vector3f& destination_NED_cm);
-    bool set_wp_destination_next_NED_cm(const Vector3f& destination_NED_cm);
+    bool set_wp_destination_NED_m(const Vector3f& destination_NED_m);
+    bool set_wp_destination_next_NED_m(const Vector3f& destination_NED_m);
 
     /// shifts the origin and destination horizontally to the current position
     ///     used to reset the track when taking off without horizontal position control
