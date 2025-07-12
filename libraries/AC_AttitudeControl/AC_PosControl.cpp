@@ -269,7 +269,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: cm/s/s
+    // @Units: cm/s²
     // @User: Advanced
 
     // @Param: _VELXY_FLTE
@@ -308,7 +308,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Param: _JERK_XY
     // @DisplayName: Jerk limit for the horizontal kinematic input shaping
     // @Description: Jerk limit of the horizontal kinematic path generation used to determine how quickly the aircraft varies the acceleration target
-    // @Units: m/s/s/s
+    // @Units: m/s³
     // @Range: 1 20
     // @Increment: 1
     // @User: Advanced
@@ -317,7 +317,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Param: _JERK_Z
     // @DisplayName: Jerk limit for the vertical kinematic input shaping
     // @Description: Jerk limit of the vertical kinematic path generation used to determine how quickly the aircraft varies the acceleration target
-    // @Units: m/s/s/s
+    // @Units: m/s³
     // @Range: 5 50
     // @Increment: 1
     // @User: Advanced
