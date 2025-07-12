@@ -9,7 +9,7 @@ extern const AP_HAL::HAL& hal;
 #define LOITER_SPEED_MIN                    20.0f   // minimum loiter speed in cm/s
 #define LOITER_ACCEL_MAX_DEFAULT            500.0f  // default acceleration in loiter mode
 #define LOITER_BRAKE_ACCEL_DEFAULT          250.0f  // minimum acceleration in loiter mode
-#define LOITER_BRAKE_JERK_DEFAULT           500.0f  // maximum jerk in cm/s/s/s in loiter mode
+#define LOITER_BRAKE_JERK_DEFAULT           500.0f  // maximum jerk in cm/s³ in loiter mode
 #define LOITER_BRAKE_START_DELAY_DEFAULT    1.0f    // delay (in seconds) before loiter braking begins after sticks are released
 #define LOITER_VEL_CORRECTION_MAX           200.0f  // max speed used to correct position errors in loiter
 #define LOITER_POS_CORRECTION_MAX           200.0f  // max position error in loiter
@@ -38,8 +38,8 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 
     // @Param: ACC_MAX
     // @DisplayName: Loiter maximum correction acceleration
-    // @Description: Loiter maximum correction acceleration in cm/s/s.  Higher values cause the copter to correct position errors more aggressively.
-    // @Units: cm/s/s
+    // @Description: Loiter maximum correction acceleration in cm/s².  Higher values cause the copter to correct position errors more aggressively.
+    // @Units: cm/s²
     // @Range: 100 981
     // @Increment: 1
     // @User: Advanced
@@ -47,8 +47,8 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 
     // @Param: BRK_ACCEL
     // @DisplayName: Loiter braking acceleration
-    // @Description: Loiter braking acceleration in cm/s/s. Higher values stop the copter more quickly when the stick is centered.
-    // @Units: cm/s/s
+    // @Description: Loiter braking acceleration in cm/s². Higher values stop the copter more quickly when the stick is centered.
+    // @Units: cm/s²
     // @Range: 25 250
     // @Increment: 1
     // @User: Advanced
@@ -56,8 +56,8 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 
     // @Param: BRK_JERK
     // @DisplayName: Loiter braking jerk
-    // @Description: Loiter braking jerk in cm/s/s/s. Higher values will remove braking faster if the pilot moves the sticks during a braking maneuver.
-    // @Units: cm/s/s/s
+    // @Description: Loiter braking jerk in cm/s³. Higher values will remove braking faster if the pilot moves the sticks during a braking maneuver.
+    // @Units: cm/s³
     // @Range: 500 5000
     // @Increment: 1
     // @User: Advanced

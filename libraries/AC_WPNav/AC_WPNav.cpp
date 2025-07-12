@@ -10,7 +10,7 @@ extern const AP_HAL::HAL& hal;
 #define WPNAV_WP_RADIUS_MIN_CM            5.0f      // minimum waypoint radius in cm
 #define WPNAV_WP_SPEED_UP_CMS           250.0f      // default maximum climb velocity
 #define WPNAV_WP_SPEED_DOWN_CMS         150.0f      // default maximum descent velocity
-#define WPNAV_WP_ACCEL_Z_DEFAULT_CMSS   100.0f      // default vertical acceleration between waypoints in cm/s/s
+#define WPNAV_WP_ACCEL_Z_DEFAULT_CMSS   100.0f      // default vertical acceleration between waypoints in cm/s²
 
 const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // index 0 was used for the old orientation matrix
@@ -53,8 +53,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
 
     // @Param: ACCEL
     // @DisplayName: Waypoint Acceleration 
-    // @Description: Defines the horizontal acceleration in cm/s/s used during missions
-    // @Units: cm/s/s
+    // @Description: Defines the horizontal acceleration in cm/s² used during missions
+    // @Units: cm/s²
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
@@ -62,8 +62,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
 
     // @Param: ACCEL_Z
     // @DisplayName: Waypoint Vertical Acceleration
-    // @Description: Defines the vertical acceleration in cm/s/s used during missions
-    // @Units: cm/s/s
+    // @Description: Defines the vertical acceleration in cm/s² used during missions
+    // @Units: cm/s²
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
@@ -78,8 +78,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
 
     // @Param: JERK
     // @DisplayName: Waypoint Jerk
-    // @Description: Defines the horizontal jerk in m/s/s used during missions
-    // @Units: m/s/s/s
+    // @Description: Defines the horizontal jerk in m/s² used during missions
+    // @Units: m/s³
     // @Range: 1 20
     // @User: Standard
     AP_GROUPINFO("JERK",   11, AC_WPNav, _wp_jerk_msss, 1.0f),
@@ -94,8 +94,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
 
     // @Param: ACCEL_C
     // @DisplayName: Waypoint Cornering Acceleration
-    // @Description: Defines the maximum cornering acceleration in cm/s/s used during missions.  If zero uses 2x accel value.
-    // @Units: cm/s/s
+    // @Description: Defines the maximum cornering acceleration in cm/s² used during missions.  If zero uses 2x accel value.
+    // @Units: cm/s²
     // @Range: 0 500
     // @Increment: 10
     // @User: Standard
