@@ -143,6 +143,9 @@ struct PACKED log_Video_Stabilisation {
 // @Field: PDScX: PD scale X
 // @Field: PDScY: PD scale Y
 // @Field: PDScZ: PD scale Z
+// @Field: IScX: I scale X
+// @Field: IScY: I scale Y
+// @Field: IScZ: I scale Z
 struct PACKED log_ATSC {
     LOG_PACKET_HEADER;
     uint64_t time_us;
