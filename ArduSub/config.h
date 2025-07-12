@@ -182,7 +182,7 @@
 # define PILOT_SPEED_DEFAULT 200 // maximum horizontal velocity in cm/s while under pilot control
 #endif
 #ifndef PILOT_ACCEL_Z_DEFAULT
-# define PILOT_ACCEL_Z_DEFAULT 100 // vertical acceleration in cm/s/s while altitude is under pilot control
+# define PILOT_ACCEL_Z_DEFAULT 100 // vertical acceleration in cm/s² while altitude is under pilot control
 #endif
 
 #ifndef AUTO_DISARMING_DELAY
