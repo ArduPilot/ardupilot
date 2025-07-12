@@ -272,6 +272,19 @@ uint8_t crc8_rds02uf(const uint8_t *data, uint16_t length)
     return crc;
 }
 
+uint16_t crc16_lightware(const uint8_t *data, uint16_t length)
+{
+    uint16_t crc = 0;
+    for (uint16_t i = 0; i < length; i++) {
+        uint16_t code = crc >> 8;
+        code ^= data[i];
+        code ^= code >> 4;
+        crc = (crc << 8) ^ (code << 12) ^ (code << 5) ^ code;
+    }
+    return crc;
+}
+
+
 /*
   xmodem CRC thanks to avr-liberty
   https://github.com/dreamiurg/avr-liberty
