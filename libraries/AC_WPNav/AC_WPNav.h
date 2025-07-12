@@ -43,9 +43,9 @@ public:
     // return terrain following altitude margin.  vehicle will stop if distance from target altitude is larger than this margin
     float get_terrain_margin_m() const { return MAX(_terrain_margin_m, 0.1); }
 
-    // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
+    // convert location to vector from ekf origin.  is_terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
     //      returns false if conversion failed (likely because terrain data was not available)
-    bool get_vector_NEU_cm(const Location &loc, Vector3f &pos_from_origin_NEU_cm, bool &terrain_alt);
+    bool get_vector_NEU_cm(const Location &loc, Vector3f &pos_from_origin_NEU_cm, bool &is_terrain_alt);
 
     ///
     /// waypoint controller
@@ -98,7 +98,7 @@ public:
     const Vector3f &get_wp_origin_NEU_cm() const { return _origin_neu_cm; }
 
     /// true if origin.z and destination.z are alt-above-terrain, false if alt-above-ekf-origin
-    bool origin_and_destination_are_terrain_alt() const { return _terrain_alt; }
+    bool origin_and_destination_are_terrain_alt() const { return _is_terrain_alt; }
 
     /// set_wp_destination_NEU_cm waypoint using location class
     ///     provide the next_destination if known
@@ -115,9 +115,9 @@ public:
     virtual bool get_oa_wp_destination(Location& destination) const { return get_wp_destination_loc(destination); }
 
     /// set_wp_destination_NEU_cm waypoint using position vector (distance from ekf origin in cm)
-    ///     terrain_alt should be true if destination.z is a desired altitude above terrain
-    virtual bool set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool terrain_alt = false);
-    bool set_wp_destination_next_NEU_cm(const Vector3f& destination_neu_cm, bool terrain_alt = false);
+    ///     is_terrain_alt should be true if destination.z is a desired altitude above terrain
+    virtual bool set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt = false);
+    bool set_wp_destination_next_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt = false);
 
     /// set waypoint destination using NED position vector from ekf origin in meters
     ///     provide next_destination_NED if known
@@ -187,20 +187,20 @@ public:
     bool set_spline_destination_next_loc(const Location& next_destination, const Location& next_next_destination, bool next_next_is_spline);
 
     /// set_spline_destination_NEU_cm waypoint using position vector (distance from ekf origin in cm)
-    ///     terrain_alt should be true if destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
+    ///     is_terrain_alt should be true if destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
     ///     next_destination is the next segment's destination
-    ///     next_terrain_alt should be true if next_destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
+    ///     next_is_terrain_alt should be true if next_destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
     ///     next_destination.z must be in the same "frame" as destination.z (i.e. if destination is a alt-above-terrain, next_destination must be too)
     ///     next_is_spline should be true if next_destination is a spline segment
-    bool set_spline_destination_NEU_cm(const Vector3f& destination_neu_cm, bool terrain_alt, const Vector3f& next_destination_neu_cm, bool next_terrain_alt, bool next_is_spline);
+    bool set_spline_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt, const Vector3f& next_destination_neu_cm, bool next_is_terrain_alt, bool next_is_spline);
 
     /// set next destination (e.g. the one after the current destination) as an offset (in cm, NEU frame) from the EKF origin
-    ///     next_terrain_alt should be true if next_destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
+    ///     next_is_terrain_alt should be true if next_destination.z is a desired altitude above terrain (false if its desired altitudes above ekf origin)
     ///     next_next_destination is the next segment's destination
-    ///     next_next_terrain_alt should be true if next_next_destination.z is a desired altitude above terrain (false if it is desired altitude above ekf origin)
+    ///     next_next_is_terrain_alt should be true if next_next_destination.z is a desired altitude above terrain (false if it is desired altitude above ekf origin)
     ///     next_next_destination.z must be in the same "frame" as destination.z (i.e. if next_destination is a alt-above-terrain, next_next_destination must be too)
     ///     next_next_is_spline should be true if next_next_destination is a spline segment
-    bool set_spline_destination_next_NEU_cm(const Vector3f& next_destination_neu_cm, bool next_terrain_alt, const Vector3f& next_next_destination_neu_cm, bool next_next_terrain_alt, bool next_next_is_spline);
+    bool set_spline_destination_next_NEU_cm(const Vector3f& next_destination_neu_cm, bool next_is_terrain_alt, const Vector3f& next_next_destination_neu_cm, bool next_next_is_terrain_alt, bool next_next_is_spline);
 
     ///
     /// shared methods
@@ -300,7 +300,7 @@ protected:
     bool        _paused;                    // flag for pausing waypoint controller
 
     // terrain following variables
-    bool        _terrain_alt;                   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
+    bool        _is_terrain_alt;                // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
     bool        _rangefinder_available;         // true if rangefinder is enabled (user switch can turn this true/false)
     AP_Int8     _rangefinder_use;               // parameter that specifies if the range finder should be used for terrain following commands
     bool        _rangefinder_healthy;           // true if rangefinder distance is healthy (i.e. between min and maximum)
