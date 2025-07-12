@@ -91,7 +91,7 @@ public:
 
     /// get_wp_destination_NEU_cm waypoint using position vector
     /// x,y are distance from ekf origin in cm
-    /// z may be cm above ekf origin or terrain (see origin_and_destination_are_terrain_alt method)
+    /// z may be cm above ekf origin or terrain (see origin_and_destination_are_is_terrain_alt method)
     const Vector3f &get_wp_destination_NEU_cm() const { return _destination_neu_cm; }
 
     /// get origin using position vector (distance from ekf origin in cm)
