@@ -78,3 +78,5 @@ define PSI_RANGE_DEFAULT 0.05
 
 // FIXME: use of this define should go away:
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_DISCO
+
+AUTOBUILD_TARGETS plane
