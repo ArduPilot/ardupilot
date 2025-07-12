@@ -525,6 +525,7 @@ protected:
         // first bit is reserved for: MAVLINK2_SIGNING_DISABLED = (1U << 0),
         NO_FORWARD                = (1U << 1),  // don't forward MAVLink data to or from this device
         NOSTREAMOVERRIDE          = (1U << 2),  // ignore REQUEST_DATA_STREAM messages (eg. from GCSs)
+        NO_TS_CORRECT             = (1U << 3),  // no offboard timestamp correction, companion computer will take responsibility for timesync
     };
     bool option_enabled(Option option) const {
         return options & static_cast<uint16_t>(option);
