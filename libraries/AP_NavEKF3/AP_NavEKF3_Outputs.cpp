@@ -131,7 +131,7 @@ void NavEKF3_core::getGyroBias(Vector3f &gyroBias) const
     gyroBias = (stateStruct.gyro_bias / dtEkfAvg).tofloat();
 }
 
-// return accelerometer bias in m/s/s
+// return accelerometer bias in m/s²
 void NavEKF3_core::getAccelBias(Vector3f &accelBias) const
 {
     if (!statesInitialised) {

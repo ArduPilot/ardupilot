@@ -96,7 +96,7 @@
 #define EK3_POSXY_STATE_LIMIT 1.0e6
 #endif
 
-// IMU acceleration process noise in m/s/s used when bad vibration affected IMU accel is detected
+// IMU acceleration process noise in m/s² used when bad vibration affected IMU accel is detected
 #define BAD_IMU_DATA_ACC_P_NSE 5.0f
 
 // Number of milliseconds of bad IMU data before a reset to vertical position and velocity height sources is performed
@@ -180,7 +180,7 @@ public:
     // return body axis gyro bias estimates in rad/sec
     void getGyroBias(Vector3f &gyroBias) const;
 
-    // return accelerometer bias in m/s/s
+    // return accelerometer bias in m/s²
     void getAccelBias(Vector3f &accelBias) const;
 
     // reset body axis gyro bias estimates
@@ -1465,9 +1465,9 @@ private:
 
     // Used by on ground movement check required when operating on ground without a yaw reference
     ftype gyro_diff;                    // filtered gyro difference (rad/s)
-    ftype accel_diff;                   // filtered acceerometer difference (m/s/s)
+    ftype accel_diff;                   // filtered acceerometer difference (m/s²)
     Vector3F gyro_prev;                 // gyro vector from previous time step (rad/s)
-    Vector3F accel_prev;                // accelerometer vector from previous time step (m/s/s)
+    Vector3F accel_prev;                // accelerometer vector from previous time step (m/s²)
     bool onGroundNotMoving;             // true when on the ground and not moving
     uint32_t lastMoveCheckLogTime_ms;   // last time the movement check data was logged (msec)
 

@@ -96,7 +96,7 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getGyroBias(int8_t instance, Vector3f &gyroBias) const;
 
-    // return accelerometer bias estimate in m/s/s
+    // return accelerometer bias estimate in m/s²
     // An out of range instance (eg -1) returns data for the primary instance
     void getAccelBias(int8_t instance, Vector3f &accelBias) const;
 
@@ -429,7 +429,7 @@ private:
     AP_Int16 _rngBcnInnovGate;      // Percentage number of standard deviations applied to range beacon innovation consistency check
     AP_Int8  _rngBcnDelay_ms;       // effective average delay of range beacon measurements rel to IMU (msec)
     AP_Float _useRngSwSpd;          // Maximum horizontal ground speed to use range finder as the primary height source (m/s)
-    AP_Float _accBiasLim;           // Accelerometer bias limit (m/s/s)
+    AP_Float _accBiasLim;           // Accelerometer bias limit (m/s²)
     AP_Int8 _magMask;               // Bitmask forcing specific EKF core instances to use simple heading magnetometer fusion.
     AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
     AP_Float _visOdmVelErrMax;      // Observation 1-STD velocity error assumed for visual odometry sensor at lowest reported quality (m/s)
@@ -443,7 +443,7 @@ private:
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF3 is allowed to reset it's yaw to the EKF-GSF estimate
     AP_Float _err_thresh;           // lanes have to be consistently better than the primary by at least this threshold to reduce their overall relativeCoreError
     AP_Int32 _affinity;             // bitmask of sensor affinity options
-    AP_Float _dragObsNoise;         // drag specific force observatoin noise (m/s/s)**2
+    AP_Float _dragObsNoise;         // drag specific force observatoin noise (m/s²)²
     AP_Float _ballisticCoef_x;      // ballistic coefficient measured for flow in X body frame directions
     AP_Float _ballisticCoef_y;      // ballistic coefficient measured for flow in Y body frame directions
     AP_Float _momentumDragCoef;     // lift rotor momentum drag coefficient

@@ -513,7 +513,7 @@ void NavEKF3_core::FuseDragForces()
         // correct accel data for bias
         const ftype mea_acc = dragSampleDelayed.accelXY[axis_index]  - stateStruct.accel_bias[axis_index] / dtEkfAvg;
 
-        // Acceleration in m/s/s predicted using vehicle and wind velocity estimates
+        // Acceleration in m/s² predicted using vehicle and wind velocity estimates
         // Initialised to measured value and updated later using available drag model
         ftype predAccel = mea_acc;
 
