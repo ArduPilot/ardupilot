@@ -368,7 +368,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: cm/s/s
+    // @Units: cm/s²
     // @User: Advanced
 
     // @Param: VELXY_FLTE
@@ -419,7 +419,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Description: Velocity (vertical) integrator maximum.  Constrains the target acceleration that the I gain will output
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: cm/s/s
+    // @Units: cm/s²
     // @User: Advanced
 
     // @Param: VELZ_FLTE
@@ -470,7 +470,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Description: Velocity (yaw) integrator maximum.  Constrains the target acceleration that the I gain will output
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: cm/s/s
+    // @Units: cm/s²
     // @User: Advanced
 
     // @Param: VELYAW_FLTE
@@ -514,7 +514,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Description: Position (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: cm/s/s
+    // @Units: cm/s²
     // @User: Advanced
 
     // @Param: POSXY_FLTE
@@ -565,7 +565,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Description: Position (vertical) integrator maximum.  Constrains the target acceleration that the I gain will output
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: cm/s/s
+    // @Units: cm/s²
     // @User: Advanced
 
     // @Param: POSZ_FLTE
