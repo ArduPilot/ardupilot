@@ -64,7 +64,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
      // @Param: PILOT_ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
     // @Description: The vertical acceleration used when pilot is controlling the altitude
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: 0.5 5
     // @Increment: 0.1
     // @User: Standard
@@ -304,7 +304,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Param: TRANS_DECEL
     // @DisplayName: Transition deceleration
     // @Description: This is deceleration rate that will be used in calculating the stopping distance when transitioning from fixed wing flight to multicopter flight.
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Increment: 0.1
     // @Range: 0.2 5
     // @User: Standard

@@ -315,7 +315,7 @@ private:
     AP_Int16 transition_time_ms;
     AP_Int16 back_trans_pitch_limit_ms;
 
-    // transition deceleration, m/s/s
+    // transition deceleration, m/s²
     AP_Float transition_decel;
 
     // transition failure handling
