@@ -26,11 +26,11 @@ bool AC_WPNav_OA::get_oa_wp_destination(Location& destination) const
 }
 
 /// set_wp_destination_NEU_cm waypoint using position vector (distance from ekf origin in cm)
-///     terrain_alt should be true if destination.z is a desired altitude above terrain
+///     is_terrain_alt should be true if destination.z is a desired altitude above terrain
 ///     returns false on failure (likely caused by missing terrain data)
-bool AC_WPNav_OA::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool terrain_alt)
+bool AC_WPNav_OA::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt)
 {
-    const bool ret = AC_WPNav::set_wp_destination_NEU_cm(destination_neu_cm, terrain_alt);
+    const bool ret = AC_WPNav::set_wp_destination_NEU_cm(destination_neu_cm, is_terrain_alt);
 
     if (ret) {
         // reset object avoidance state
@@ -90,14 +90,14 @@ bool AC_WPNav_OA::update_wpnav()
         if (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) {
             _origin_oabak_neu_cm = _origin_neu_cm;
             _destination_oabak_neu_cm = _destination_neu_cm;
-            _terrain_alt_oabak = _terrain_alt;
+            _is_terrain_alt_oabak = _is_terrain_alt;
             _next_destination_oabak_neu_cm = _next_destination_neu_cm;
         }
 
         // convert origin, destination and next_destination to Locations and pass into oa
-        const Location origin_loc(_origin_oabak_neu_cm, _terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
-        const Location destination_loc(_destination_oabak_neu_cm, _terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
-        const Location next_destination_loc(_next_destination_oabak_neu_cm, _terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+        const Location origin_loc(_origin_oabak_neu_cm, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+        const Location destination_loc(_destination_oabak_neu_cm, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+        const Location next_destination_loc(_next_destination_oabak_neu_cm, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
         Location oa_origin_new, oa_destination_new, oa_next_destination_new;
         bool dest_to_next_dest_clear = true;
         AP_OAPathPlanner::OAPathPlannerUsed path_planner_used = AP_OAPathPlanner::OAPathPlannerUsed::None;
@@ -116,7 +116,7 @@ bool AC_WPNav_OA::update_wpnav()
         case AP_OAPathPlanner::OA_NOT_REQUIRED:
             if (_oa_state != oa_retstate) {
                 // object avoidance has become inactive so reset target to original destination
-                if (!set_wp_destination_NEU_cm(_destination_oabak_neu_cm, _terrain_alt_oabak)) {
+                if (!set_wp_destination_NEU_cm(_destination_oabak_neu_cm, _is_terrain_alt_oabak)) {
                     // trigger terrain failsafe
                     return false;
                 }
@@ -173,8 +173,8 @@ bool AC_WPNav_OA::update_wpnav()
             case AP_OAPathPlanner::OAPathPlannerUsed::Dijkstras:
                 // Dijkstra's.  Action is only needed if path planner has just became active or the target destination's lat or lon has changed
                 if ((_oa_state != AP_OAPathPlanner::OA_SUCCESS) || !oa_destination_new.same_latlon_as(_oa_destination)) {
-                    Location origin_oabak_loc(_origin_oabak_neu_cm, _terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
-                    Location destination_oabak_loc(_destination_oabak_neu_cm, _terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+                    Location origin_oabak_loc(_origin_oabak_neu_cm, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+                    Location destination_oabak_loc(_destination_oabak_neu_cm, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
                     oa_destination_new.linearly_interpolate_alt(origin_oabak_loc, destination_oabak_loc);
 
                     // set new OA adjusted destination
@@ -190,7 +190,7 @@ bool AC_WPNav_OA::update_wpnav()
                     if ((oa_ptr->get_options() & AP_OAPathPlanner::OA_OPTION_FAST_WAYPOINTS) && !oa_next_destination_new.is_zero()) {
                         // calculate oa_next_destination_new's altitude using linear interpolation between original origin and destination
                         // this "next destination" is still an intermediate point between the origin and destination
-                        Location next_destination_oabak_loc(_next_destination_oabak_neu_cm, _terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+                        Location next_destination_oabak_loc(_next_destination_oabak_neu_cm, _is_terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
                         oa_next_destination_new.linearly_interpolate_alt(origin_oabak_loc, destination_oabak_loc);
                         if (set_wp_destination_next_loc(oa_next_destination_new)) {
                             _oa_next_destination = oa_next_destination_new;
@@ -210,7 +210,7 @@ bool AC_WPNav_OA::update_wpnav()
                 // correct target_alt_loc's alt-above-ekf-origin if using terrain altitudes
                 // positive terr_offset means terrain below vehicle is above ekf origin's altitude
                 float terr_offset = 0;
-                if (_terrain_alt_oabak && !get_terrain_offset_cm(terr_offset)) {
+                if (_is_terrain_alt_oabak && !get_terrain_offset_cm(terr_offset)) {
                     // trigger terrain failsafe
                     return false;
                 }
