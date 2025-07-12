@@ -574,7 +574,7 @@ void AC_WPNav::update_track_with_speed_accel_limits()
 /// get_wp_distance_to_destination - get horizontal distance to destination_neu_cm in cm
 float AC_WPNav::get_wp_distance_to_destination_cm() const
 {
-    return get_horizontal_distance_cm(_pos_control.get_pos_estimate_NEU_cm().xy().tofloat(), _destination_neu_cm.xy());
+    return get_horizontal_distance(_pos_control.get_pos_estimate_NEU_cm().xy().tofloat(), _destination_neu_cm.xy());
 }
 
 /// get_wp_bearing_to_destination_cd - get bearing to next waypoint in centi-degrees

@@ -48,7 +48,7 @@ float AC_WPNav_OA::get_wp_distance_to_destination_cm() const
         return AC_WPNav::get_wp_distance_to_destination_cm();
     }
 
-    return get_horizontal_distance_cm(_pos_control.get_pos_estimate_NEU_cm().xy().tofloat(), _destination_oabak_neu_cm.xy());
+    return get_horizontal_distance(_pos_control.get_pos_estimate_NEU_cm().xy().tofloat(), _destination_oabak_neu_cm.xy());
 }
 
 /// get_wp_bearing_to_destination - get bearing to next waypoint in centi-degrees
