@@ -40,7 +40,7 @@ static const double DEG_TO_RAD_DOUBLE = asin(1) / 90;
 static const double RAD_TO_DEG_DOUBLE = 1 / DEG_TO_RAD_DOUBLE;
 #endif
 
-// acceleration due to gravity in m/s/s
+// acceleration due to gravity in m/s²
 #define GRAVITY_MSS     9.80665f
 
 // radius of earth in meters
