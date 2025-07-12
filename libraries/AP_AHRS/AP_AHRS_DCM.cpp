@@ -791,7 +791,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     }
 
     // equation 9: get the corrected acceleration vector in earth frame. Units
-    // are m/s/s
+    // are m/s²
     Vector3f GA_e(0.0f, 0.0f, -1.0f);
 
     if (_ra_deltat <= 0) {
