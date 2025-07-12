@@ -245,15 +245,15 @@ void AC_WPNav::set_speed_down_cms(float speed_down_cms)
 bool AC_WPNav::set_wp_destination_loc(const Location& destination)
 {
     bool is_terrain_alt;
-    Vector3f dest_neu;
+    Vector3f dest_neu_cm;
 
     // convert destination location to vector
-    if (!get_vector_NEU_cm(destination, dest_neu, is_terrain_alt)) {
+    if (!get_vector_NEU_cm(destination, dest_neu_cm, is_terrain_alt)) {
         return false;
     }
 
     // set target as vector from EKF origin
-    return set_wp_destination_NEU_cm(dest_neu, is_terrain_alt);
+    return set_wp_destination_NEU_cm(dest_neu_cm, is_terrain_alt);
 }
 
 /// set next destination using location class
@@ -261,15 +261,15 @@ bool AC_WPNav::set_wp_destination_loc(const Location& destination)
 bool AC_WPNav::set_wp_destination_next_loc(const Location& destination)
 {
     bool is_terrain_alt;
-    Vector3f dest_neu;
+    Vector3f dest_neu_cm;
 
     // convert destination location to vector
-    if (!get_vector_NEU_cm(destination, dest_neu, is_terrain_alt)) {
+    if (!get_vector_NEU_cm(destination, dest_neu_cm, is_terrain_alt)) {
         return false;
     }
 
     // set target as vector from EKF origin
-    return set_wp_destination_next_NEU_cm(dest_neu, is_terrain_alt);
+    return set_wp_destination_next_NEU_cm(dest_neu_cm, is_terrain_alt);
 }
 
 // get destination as a location. Altitude frame will be above origin or above terrain
@@ -295,7 +295,7 @@ bool AC_WPNav::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, boo
     }
 
     _scurve_prev_leg.init();
-    float origin_speed = 0.0f;
+    float origin_speed_cms = 0.0f;
 
     // use previous destination as origin
     _origin_neu_cm = _destination_neu_cm;
@@ -305,7 +305,7 @@ bool AC_WPNav::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, boo
             // if previous leg was a spline we can use current target velocity vector for origin velocity vector
             Vector3f curr_target_vel_neu_cms = _pos_control.get_vel_desired_NEU_cms();
             curr_target_vel_neu_cms.z -= _pos_control.get_vel_offset_U_cms();
-            origin_speed = curr_target_vel_neu_cms.length();
+            origin_speed_cms = curr_target_vel_neu_cms.length();
         } else {
             // store previous leg
             _scurve_prev_leg = _scurve_this_leg;
@@ -313,19 +313,19 @@ bool AC_WPNav::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, boo
     } else {
 
         // get current alt above terrain
-        float origin_terr_offset;
-        if (!get_terrain_offset_cm(origin_terr_offset)) {
+        float origin_terr_offset_u_cm;
+        if (!get_terrain_offset_cm(origin_terr_offset_u_cm)) {
             return false;
         }
 
         // convert origin to alt-above-terrain if necessary
         if (is_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            _origin_neu_cm.z -= origin_terr_offset;
-            _pos_control.init_pos_terrain_U_cm(origin_terr_offset);
+            _origin_neu_cm.z -= origin_terr_offset_u_cm;
+            _pos_control.init_pos_terrain_U_cm(origin_terr_offset_u_cm);
         } else {
             // new destination is alt-above-ekf-origin, previous destination was alt-above-terrain
-            _origin_neu_cm.z += origin_terr_offset;
+            _origin_neu_cm.z += origin_terr_offset_u_cm;
             _pos_control.init_pos_terrain_U_cm(0.0);
         }
     }
@@ -341,9 +341,9 @@ bool AC_WPNav::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, boo
                                          _pos_control.get_max_speed_NE_cms(), _pos_control.get_max_speed_up_cms(), _pos_control.get_max_speed_down_cms(),
                                          get_wp_acceleration_cmss(), _wp_accel_z_cmss,
                                          _scurve_snap_max_mssss * 100.0f, _scurve_jerk_max_msss * 100.0f);
-        if (!is_zero(origin_speed)) {
+        if (!is_zero(origin_speed_cms)) {
             // rebuild start of scurve if we have a non-zero origin speed
-            _scurve_this_leg.set_origin_speed_max(origin_speed);
+            _scurve_this_leg.set_origin_speed_max(origin_speed_cms);
         }
     }
 
@@ -539,8 +539,8 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
                 _flags.reached_destination = true;
             } else {
                 // regular waypoints also require the copter to be within the waypoint radius
-                const Vector3f dist_to_dest = curr_pos_neu_cm - _destination_neu_cm;
-                if (dist_to_dest.length_squared() <= sq(_wp_radius_cm)) {
+                const Vector3f dist_to_dest_cm = curr_pos_neu_cm - _destination_neu_cm;
+                if (dist_to_dest_cm.length_squared() <= sq(_wp_radius_cm)) {
                     _flags.reached_destination = true;
                 }
             }
@@ -699,14 +699,14 @@ bool AC_WPNav::set_spline_destination_loc(const Location& destination, const Loc
     }
 
     // convert next destination to vector
-    Vector3f next_dest_neu;
+    Vector3f next_dest_neu_cm;
     bool next_dest_is_terrain_alt;
-    if (!get_vector_NEU_cm(next_destination, next_dest_neu, next_dest_is_terrain_alt)) {
+    if (!get_vector_NEU_cm(next_destination, next_dest_neu_cm, next_dest_is_terrain_alt)) {
         return false;
     }
 
     // set target as vector from EKF origin
-    return set_spline_destination_NEU_cm(dest_neu, dest_is_terrain_alt, next_dest_neu, next_dest_is_terrain_alt, next_is_spline);
+    return set_spline_destination_NEU_cm(dest_neu, dest_is_terrain_alt, next_dest_neu_cm, next_dest_is_terrain_alt, next_is_spline);
 }
 
 /// set next destination (e.g. the one after the current destination) as a spline segment specified as a location
@@ -715,9 +715,9 @@ bool AC_WPNav::set_spline_destination_loc(const Location& destination, const Loc
 bool AC_WPNav::set_spline_destination_next_loc(const Location& next_destination, const Location& next_next_destination, bool next_next_is_spline)
 {
     // convert next_destination location to vector
-    Vector3f next_dest_neu;
+    Vector3f next_dest_neu_cm;
     bool next_dest_is_terrain_alt;
-    if (!get_vector_NEU_cm(next_destination, next_dest_neu, next_dest_is_terrain_alt)) {
+    if (!get_vector_NEU_cm(next_destination, next_dest_neu_cm, next_dest_is_terrain_alt)) {
         return false;
     }
 
@@ -729,7 +729,7 @@ bool AC_WPNav::set_spline_destination_next_loc(const Location& next_destination,
     }
 
     // set target as vector from EKF origin
-    return set_spline_destination_next_NEU_cm(next_dest_neu, next_dest_is_terrain_alt, next_next_dest_neu, next_next_dest_is_terrain_alt, next_next_is_spline);
+    return set_spline_destination_next_NEU_cm(next_dest_neu_cm, next_dest_is_terrain_alt, next_next_dest_neu, next_next_dest_is_terrain_alt, next_next_is_spline);
 }
 
 /// set_spline_destination_NEU_cm waypoint using position vector (distance from ekf origin in cm)
@@ -770,19 +770,19 @@ bool AC_WPNav::set_spline_destination_NEU_cm(const Vector3f& destination_neu_cm,
         _origin_neu_cm = _destination_neu_cm;
 
         // get current alt above terrain
-        float origin_terr_offset;
-        if (!get_terrain_offset_cm(origin_terr_offset)) {
+        float origin_terr_offset_u_cm;
+        if (!get_terrain_offset_cm(origin_terr_offset_u_cm)) {
             return false;
         }
 
         // convert origin to alt-above-terrain if necessary
         if (is_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            _origin_neu_cm.z -= origin_terr_offset;
-            _pos_control.init_pos_terrain_U_cm(origin_terr_offset);
+            _origin_neu_cm.z -= origin_terr_offset_u_cm;
+            _pos_control.init_pos_terrain_U_cm(origin_terr_offset_u_cm);
         } else {
             // new destination is alt-above-ekf-origin, previous destination was alt-above-terrain
-            _origin_neu_cm.z += origin_terr_offset;
+            _origin_neu_cm.z += origin_terr_offset_u_cm;
             _pos_control.init_pos_terrain_U_cm(0.0);
         }
     }
