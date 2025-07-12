@@ -379,9 +379,6 @@ AP_HW_SakuraRC-H743                  2714
 # IDs 4000-4009 reserved for Karshak Drones
 AP_HW_KRSHKF7_MINI                   4000
 
-# IDs 4010-4019 reserved for Aerium
-AP_HW_AERIUM_RADIANF405              4010
-
 # IDs 4200-4220 reserved for HAKRC
 AP_HW_HAKRC_F405                     4200
 AP_HW_HAKRC_F405Wing                 4201
