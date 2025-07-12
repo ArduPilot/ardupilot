@@ -138,6 +138,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,           10,    200, 129),
 #endif
+#if AP_LEAKDETECTOR_ENABLED
+    SCHED_TASK(failsafe_leak_check,    5,    200, 200),
+#endif
 };
 
 
@@ -359,6 +362,12 @@ void Rover::gcs_failsafe_check(void)
         // we've never seen the GCS, so we never failsafe for not seeing it
         return;
     }
+
+#if AP_LEAKDETECTOR_ENABLED
+    if (leak_detector.get_status()) {
+        failsafe_trigger(FAILSAFE_EVENT_LEAK, "Leak", true);
+    }
+#endif
 
     // calc time since last gcs update
     // note: this only looks at the heartbeat from the device id set by gcs().sysid_gcs()
