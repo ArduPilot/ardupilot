@@ -350,7 +350,7 @@
 # define LAND_DETECTOR_ACCEL_LPF_CUTOFF     1.0f    // frequency cutoff of land detector accelerometer filter
 #endif
 #ifndef LAND_DETECTOR_ACCEL_MAX
-# define LAND_DETECTOR_ACCEL_MAX            1.0f    // vehicle acceleration must be under 1m/s/s
+# define LAND_DETECTOR_ACCEL_MAX            1.0f    // vehicle acceleration must be under 1m/s²
 #endif
 #ifndef LAND_DETECTOR_VEL_Z_MAX
 # define LAND_DETECTOR_VEL_Z_MAX              1.0f    // vehicle vertical velocity must be under 1m/s
@@ -465,7 +465,7 @@
  # define BRAKE_MODE_SPEED_Z     250 // z-axis speed in cm/s in Brake Mode
 #endif
 #ifndef BRAKE_MODE_DECEL_RATE
- # define BRAKE_MODE_DECEL_RATE  750 // acceleration rate in cm/s/s in Brake Mode
+ # define BRAKE_MODE_DECEL_RATE  750 // acceleration rate in cm/s² in Brake Mode
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -492,7 +492,7 @@
  # define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
 #endif
 #ifndef PILOT_ACCEL_Z_DEFAULT
- # define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
+ # define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s² while altitude is under pilot control
 #endif
 
 #ifndef PILOT_Y_RATE_DEFAULT

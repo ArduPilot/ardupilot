@@ -129,7 +129,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: ACCTHRESH
     // @DisplayName: Accelerometer error threshold
     // @Description: Accelerometer error threshold used to determine inconsistent accelerometers. Compares this error range to other accelerometers to detect a hardware or calibration error. Lower value means tighter check and harder to pass arming check. Not all accelerometers are created equal.
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: 0.25 3.0
     // @User: Advanced
     AP_GROUPINFO("ACCTHRESH",    3,     AP_Arming,  accel_error_threshold,  AP_ARMING_ACCEL_ERROR_THRESHOLD),

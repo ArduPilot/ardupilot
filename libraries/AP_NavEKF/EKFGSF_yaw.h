@@ -76,7 +76,7 @@ private:
         Matrix3F R;             // matrix that rotates a vector from body to earth frame
         Vector3F gyro_bias;     // gyro bias learned and used by the quaternion calculation
         bool aligned;           // true when AHRS has been aligned
-        ftype accel_FR[2];      // front-right acceleration vector in a horizontal plane (m/s/s)
+        ftype accel_FR[2];      // front-right acceleration vector in a horizontal plane (m/s²)
         ftype vel_NE[2];        // NE velocity vector from last GPS measurement (m/s)
         bool fuse_gps;          // true when GPS should be fused on that frame
         ftype accel_dt;         // time step used when generating _simple_accel_FR data (sec)
@@ -84,8 +84,8 @@ private:
     ahrs_struct AHRS[N_MODELS_EKFGSF];
     bool ahrs_tilt_aligned;         // true the initial tilt alignment has been calculated
     ftype accel_gain;               // gain from accel vector tilt error to rate gyro correction used by AHRS calculation
-    Vector3F ahrs_accel;            // filtered body frame specific force vector used by AHRS calculation (m/s/s)
-    ftype ahrs_accel_norm;          // length of body frame specific force vector used by AHRS calculation (m/s/s)
+    Vector3F ahrs_accel;            // filtered body frame specific force vector used by AHRS calculation (m/s²)
+    ftype ahrs_accel_norm;          // length of body frame specific force vector used by AHRS calculation (m/s²)
     ftype true_airspeed;            // true airspeed used to correct for centripetal acceleratoin in coordinated turns (m/s)
 
     // Runs quaternion prediction for the selected AHRS using IMU (and optionally true airspeed) data

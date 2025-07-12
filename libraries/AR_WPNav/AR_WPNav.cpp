@@ -69,7 +69,7 @@ const AP_Param::GroupInfo AR_WPNav::var_info[] = {
     // @Param: ACCEL
     // @DisplayName: Waypoint acceleration
     // @Description: Waypoint acceleration.  If zero then ATC_ACCEL_MAX is used
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
@@ -78,7 +78,7 @@ const AP_Param::GroupInfo AR_WPNav::var_info[] = {
     // @Param: JERK
     // @DisplayName: Waypoint jerk
     // @Description: Waypoint jerk (change in acceleration).  If zero then jerk is same as acceleration
-    // @Units: m/s/s/s
+    // @Units: m/s³
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard

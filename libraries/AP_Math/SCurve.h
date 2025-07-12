@@ -29,7 +29,7 @@
  *     this is used to smoothly integrate with spline segments
  *
  * This library works with any units (meters, cm, etc) as long as they are used consistently.
- *    e.g. if origin and destination are meters, speeds should be in m/s, accel in m/s/s, etc.
+ *    e.g. if origin and destination are meters, speeds should be in m/s, accel in m/s², etc.
  *
  * Terminology:
  *    position: a point in space

@@ -175,7 +175,7 @@
 #define ICM_ACC_FCHOICE_B             0x08
 
 /* this is an undocumented register which
-   if set incorrectly results in getting a 2.7m/s/s offset
+   if set incorrectly results in getting a 2.7m/s² offset
    on the Y axis of the accelerometer
 */
 #define MPUREG_ICM_UNDOC1       0x11

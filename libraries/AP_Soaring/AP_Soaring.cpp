@@ -92,7 +92,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: POLAR_K
     // @DisplayName: Cl factor
     // @Description: Cl factor 2*m*g/(rho*S)
-    // @Units: m.m/s/s
+    // @Units: m.m/s²
     // @Range: 20 400
     // @User: Advanced
     AP_GROUPINFO("POLAR_K", 11, SoaringController, _polarParams.K, 25.6),

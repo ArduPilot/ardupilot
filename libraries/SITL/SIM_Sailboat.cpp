@@ -116,7 +116,7 @@ float Sailboat::get_yaw_rate(float steering, float speed) const
     return rate;
 }
 
-// return lateral acceleration in m/s/s given a steering input (in the range -1 to +1) and speed in m/s
+// return lateral acceleration in m/s² given a steering input (in the range -1 to +1) and speed in m/s
 float Sailboat::get_lat_accel(float steering, float speed) const
 {
     float yaw_rate = get_yaw_rate(steering, speed);

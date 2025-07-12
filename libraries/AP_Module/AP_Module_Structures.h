@@ -78,7 +78,7 @@ struct AHRS_state {
     float gyro_rate[3];
 
     // current earth frame acceleration estimate, including
-    // gravitational forces, m/s/s order is NED
+    // gravitational forces, m/s² order is NED
     float accel_ef[3];
 
     // the current primary accel instance
@@ -133,7 +133,7 @@ struct accel_sample {
     // time associated with this sample (seconds)
     float delta_time;
 
-    // body frame rates in m/s/s
+    // body frame rates in m/s²
     float accel[3];
 
     // true if external frame sync is set

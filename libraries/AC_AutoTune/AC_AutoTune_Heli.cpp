@@ -114,7 +114,7 @@ const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
 
     // @Param: ACC_MAX
     // @DisplayName: AutoTune maximum allowable angular acceleration
-    // @Description: maximum angular acceleration in deg/s/s allowed during autotune maneuvers
+    // @Description: maximum angular acceleration in deg/s² allowed during autotune maneuvers
     // @Range: 1 4000
     // @User: Standard
     AP_GROUPINFO("ACC_MAX", 7, AC_AutoTune_Heli, accel_max, 0.0f),

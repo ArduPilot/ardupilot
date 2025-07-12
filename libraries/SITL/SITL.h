@@ -64,7 +64,7 @@ struct sitl_fdm {
     double altitude;  // MSL
     double heading;   // degrees
     double speedN, speedE, speedD; // m/s
-    double xAccel, yAccel, zAccel;       // m/s/s in body frame
+    double xAccel, yAccel, zAccel;       // m/s² in body frame
     double rollRate, pitchRate, yawRate; // degrees/s in body frame
     double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
     Quaternion quaternion;
@@ -80,7 +80,7 @@ struct sitl_fdm {
     float  rcin[12];         // RC input 0..1
     double range;           // rangefinder value
     Vector3f bodyMagField;  // Truth XYZ magnetic field vector in body-frame. Includes motor interference. Units are milli-Gauss.
-    Vector3f angAccel; // Angular acceleration in degrees/s/s about the XYZ body axes
+    Vector3f angAccel; // Angular acceleration in degrees/s² about the XYZ body axes
 
     struct {
         // data from simulated laser scanner, if available
@@ -585,9 +585,9 @@ public:
     AP_Float gyro_noise[INS_MAX_INSTANCES];  // in degrees/second
     AP_Vector3f gyro_scale[INS_MAX_INSTANCES];  // percentage
     AP_Vector3f gyro_bias[INS_MAX_INSTANCES]; // in rad/s
-    AP_Float accel_noise[INS_MAX_INSTANCES]; // in m/s/s
-    AP_Vector3f accel_bias[INS_MAX_INSTANCES]; // in m/s/s
-    AP_Vector3f accel_scale[INS_MAX_INSTANCES]; // in m/s/s
+    AP_Float accel_noise[INS_MAX_INSTANCES]; // in m/s²
+    AP_Vector3f accel_bias[INS_MAX_INSTANCES]; // in m/s²
+    AP_Vector3f accel_scale[INS_MAX_INSTANCES]; // in m/s²
     AP_Vector3f accel_trim;
     AP_Float accel_fail[INS_MAX_INSTANCES];  // accelerometer failure value
     // gyro and accel fail masks

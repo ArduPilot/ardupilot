@@ -40,7 +40,7 @@ public:
 private:
     static constexpr float MAX_YAW_RATE = 360.0;  // MAX 360 deg/s yaw rate speed to not nuke the ekf gsf
     float max_speed = 20.0f;            // vehicle's maximum forward speed in m/s
-    float max_accel = 10.0f;            // vehicle's maximum forward acceleration in m/s/s
+    float max_accel = 10.0f;            // vehicle's maximum forward acceleration in m/s²
     float max_wheel_turn = 35.0f;       // ackermann steering vehicle's maximum steering angle
     float turning_circle = 1.8f;        // ackermann steering vehicle's minimum turn diameter in meters
     float skid_turn_rate = 140.0f;      // skid-steering vehicle's maximum turn rate in deg/sec
@@ -54,7 +54,7 @@ private:
     // omni3 Mecanum related members
     bool omni3;                             // true if vehicle is omni-directional with 3 Mecanum wheels
     float omni3_max_speed = 2.3625f;        // omni vehicle's maximum forward speed in m/s
-    float omni3_max_accel = 1.0f;           // omni vehicle's maximum forward acceleration in m/s/s
+    float omni3_max_accel = 1.0f;           // omni vehicle's maximum forward acceleration in m/s²
     float omni3_wheel_max_ang_vel = 50.0f;  // omni vehicle's wheel maximum angular velocity in rad/s
 
     void update_ackermann_or_skid(const struct sitl_input &input, float delta_time);

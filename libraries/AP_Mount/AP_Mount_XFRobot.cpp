@@ -35,9 +35,9 @@ const char* AP_Mount_XFRobot::send_text_prefix = "XFRobot:";
 // byte 12~13: absolute roll angle of vehicle (int16, -18000 ~ +18000)
 // byte 14~15: absolute pitch angle of vehicle (int16, -9000 ~ +9000)
 // byte 16~17: absolute yaw angle of vehicle (uint16, 0 ~ 36000)
-// byte 18~19: North acceleration of vehicle (int16, cm/s/s)
-// byte 20~21: East acceleration of vehicle (int16, cm/s/s)
-// byte 22~23: Upward acceleration of vehicle (int16, cm/s/s)
+// byte 18~19: North acceleration of vehicle (int16, cm/s²)
+// byte 20~21: East acceleration of vehicle (int16, cm/s²)
+// byte 22~23: Upward acceleration of vehicle (int16, cm/s²)
 // byte 24~25: North speed of vehicle (int16, decimeter/s)
 // byte 26~27: East speed of vehicle (int16, decimeter/s)
 // byte 28~29: Upward speed of vehicle (int16, decimeter/s)
@@ -459,9 +459,9 @@ void AP_Mount_XFRobot::send_target_angles(const MountTarget& angle_target_rad)
     set_attitude_packet.content.main.pitch_abs = htole16(constrain_int16(degrees(AP::ahrs().get_pitch_rad()) * 100, -9000, 9000));
     set_attitude_packet.content.main.yaw_abs = htole16(constrain_int16(degrees(wrap_PI(AP::ahrs().get_yaw_rad())) * 100, -18000, 18000));
 
-    // byte 18~19: North acceleration of vehicle (int16, cm/s/s)
-    // byte 20~21: East acceleration of vehicle (int16, cm/s/s)
-    // byte 22~23: Upward acceleration of vehicle (int16, cm/s/s)
+    // byte 18~19: North acceleration of vehicle (int16, cm/s²)
+    // byte 20~21: East acceleration of vehicle (int16, cm/s²)
+    // byte 22~23: Upward acceleration of vehicle (int16, cm/s²)
     const Vector3f &accel_ef = AP::ahrs().get_accel_ef();
     set_attitude_packet.content.main.accel_north = htole16(constrain_int16(accel_ef.x * 100, -INT16_MAX, INT16_MAX));
     set_attitude_packet.content.main.accel_east = htole16(constrain_int16(accel_ef.y * 100, -INT16_MAX, INT16_MAX));

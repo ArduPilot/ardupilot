@@ -362,7 +362,7 @@ void Morse::output_rover_regular(const struct sitl_input &input)
     // target speed with current throttle
     float target_speed = throttle * max_speed;
 
-    // linear acceleration in m/s/s - very crude model
+    // linear acceleration in m/s² - very crude model
     float accel = max_accel * (target_speed - speed) / max_speed;
 
     //force directly proportion to acceleration 
