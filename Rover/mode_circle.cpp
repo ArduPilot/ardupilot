@@ -1,6 +1,6 @@
 #include "Rover.h"
 
-#define AR_CIRCLE_ACCEL_DEFAULT         1.0 // default acceleration in m/s/s if not specified by user
+#define AR_CIRCLE_ACCEL_DEFAULT         1.0 // default acceleration in m/s² if not specified by user
 #define AR_CIRCLE_RADIUS_MIN            0.1 // minimum radius in meters
 
 const AP_Param::GroupInfo ModeCircle::var_info[] = {

@@ -56,7 +56,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: AUTO_KICKSTART
     // @DisplayName: Auto mode trigger kickstart acceleration
     // @Description: X acceleration in meters/second/second to use to trigger the motor start in auto mode. If set to zero then auto throttle starts immediately when the mode switch happens, otherwise the rover waits for the X acceleration to go above this value before it will start the motor
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: 0 20
     // @Increment: 0.1
     // @User: Standard
